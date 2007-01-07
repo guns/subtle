@@ -1,0 +1,114 @@
+# Process this file with autoconf to produce a configure script.
+
+AC_PREREQ(2.5.9)
+AC_INIT(subtle, 0.6, unexist@hilflos.org)
+AC_CONFIG_SRCDIR([src/main.c])
+AM_INIT_AUTOMAKE(no-define)
+AM_CONFIG_HEADER(config.h)
+
+# Checks for programs.
+AC_PROG_CC
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_PROG_MAKE_SET
+
+# Checks for header files.
+AC_PATH_X
+AC_PATH_XTRA
+AC_HEADER_DIRENT
+AC_HEADER_STDC
+AC_CHECK_HEADERS([limits.h malloc.h memory.h sys/time.h unistd.h])
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_TYPE_SIZE_T
+AC_TYPE_SIGNAL
+AC_HEADER_TIME
+AC_STRUCT_TM
+
+# Checks for library functions.
+AC_FUNC_CLOSEDIR_VOID
+AC_FUNC_MALLOC
+AC_FUNC_REALLOC
+AC_FUNC_SELECT_ARGTYPES
+AC_FUNC_STRFTIME
+AC_CHECK_FUNCS([memmove memset select strchr strdup strerror strrchr])
+
+# Paths
+prefix="/usr/local"
+scriptdir="$prefix/share/$PACKAGE_NAME"
+configdir="$prefix/etc/$PACKAGE_NAME"
+
+AC_DEFINE_UNQUOTED(SCRIPTDIR, "$scriptdir", [Directory for scripts])
+AC_DEFINE_UNQUOTED(CONFIGDIR, "$configdir", [Directory fot config files])
+
+AC_SUBST(scriptdir)
+AC_SUBST(configdir)
+
+# Configure switches
+AC_ARG_ENABLE(debug, [  --enable-debug   Enable debugging support], debug="$enableval")
+AM_CONDITIONAL(DEBUG, test "x$debug" = "xyes")
+
+if test "x$debug" = "xyes"; then
+	AC_DEFINE(DEBUG, 1, [Define to 1 if you want debug support])
+else
+	AC_DEFINE(DEBUG, 0, [Define to 1 if you want debug support])
+fi
+
+# Check for X11
+if test "x$no_x" = "xyes"; then
+  AC_MSG_ERROR([The X Window System libraries and headers are required.])
+fi
+	
+CFLAGS="$CFLAGS $X_CFLAGS"
+LIBS="$LIBS $X_LIBS -ldl"
+LDFLAGS="$LDFLAGS $LIBS $X_PRE_LIBS"
+
+# Check for functions in X11
+AC_CHECK_LIB(X11, XOpenDisplay,
+  LIBS="$LIBS -lX11",
+  AC_MSG_ERROR([Could not find XOpenDisplay in -lX11.])
+)
+
+# Check for Lua support..
+PKG_CHECK_MODULES(Lua, lua >= 5.1,
+	LUA_CFLAGS=$Lua_CFLAGS
+	LUA_LIBS=$Lua_LIBS,
+	[
+		AC_MSG_RESULT(no)
+		PKG_CHECK_MODULES(Lua51, lua51 >= 5.1,
+			LUA_CFLAGS=$Lua51_CFLAGS
+			LUA_LIBS=$Lua51_LIBS,
+			[
+				AC_MSG_RESULT(no)
+				PKG_CHECK_MODULES(Lua51, lua5.1 >= 5.1,
+					LUA_CFLAGS=$Lua51_CFLAGS
+					LUA_LIBS=$Lua51_LIBS,
+					AC_MSG_ERROR([Lua library and header >= 5.1 are required.])
+				)
+			]
+		)
+	]
+)
+AC_SUBST(LUA_CFLAGS)
+AC_SUBST(LUA_LIBS)
+
+# Outout
+AC_OUTPUT([
+	Makefile
+	src/Makefile
+	scripts/Makefile
+	config/Makefile]
+)
+
+echo
+echo $PACKAGE_STRING
+echo -----------------
+echo Binary....................: $prefix/bin
+echo Scripts...................: $scriptdir
+echo Config....................: $configdir
+echo
+echo Debugging messages........: $debug
+echo
+echo Try 'make' now, good luck!
+echo
