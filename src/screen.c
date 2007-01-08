@@ -2,16 +2,6 @@
 
 SubScreen *screen = NULL;
 
-static int
-ScreenFind(SubWin *w)
-{
-	int i;
-
-	for(i = 0; i < screen->n; i++)
-		if(screen->wins[i] == w) return(i);
-	return(-1);
-}
-
 void
 subScreenNew(void)
 {
