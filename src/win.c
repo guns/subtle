@@ -24,7 +24,6 @@ subWinNew(Window win)
 {
 	long mask = 0;
 	XSetWindowAttributes attrs;
-	XWMHints *hints = NULL;
 	SubWin *w = (SubWin *)calloc(1, sizeof(SubWin));
 	if(!w) subLogError("Can't alloc memory. Exhausted?\n");
 
@@ -67,14 +66,6 @@ subWinNew(Window win)
 		}
 	else
 		{
-			/* WMHints */
-			hints = XGetWMHints(d->dpy, win);
-			if(hints)
-				{
-					if(hints->flags & StateHint && hints->initial_state == IconicState) printf("iconic\n");			
-					XFree(hints);
-				}
-
 			w->win = win;
 			XSetWindowBorderWidth(d->dpy, w->win, 0);
 			XReparentWindow(d->dpy, w->win, w->frame, d->bw, d->th);
