@@ -50,10 +50,11 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_subtle_OBJECTS = subtle-client.$(OBJEXT) subtle-display.$(OBJEXT) \
-	subtle-event.$(OBJEXT) subtle-log.$(OBJEXT) \
-	subtle-lua.$(OBJEXT) subtle-main.$(OBJEXT) \
-	subtle-screen.$(OBJEXT) subtle-sublet.$(OBJEXT) \
-	subtle-tile.$(OBJEXT) subtle-win.$(OBJEXT)
+	subtle-event.$(OBJEXT) subtle-ewmh.$(OBJEXT) \
+	subtle-log.$(OBJEXT) subtle-lua.$(OBJEXT) \
+	subtle-main.$(OBJEXT) subtle-screen.$(OBJEXT) \
+	subtle-sublet.$(OBJEXT) subtle-tile.$(OBJEXT) \
+	subtle-win.$(OBJEXT)
 subtle_OBJECTS = $(am_subtle_OBJECTS)
 am__DEPENDENCIES_1 =
 subtle_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -169,6 +170,7 @@ subtle_SOURCES = \
 	client.c \
 	display.c \
 	event.c \
+	ewmh.c \
 	log.c \
 	lua.c \
 	main.c \
@@ -252,6 +254,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/subtle-client.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/subtle-display.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/subtle-event.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/subtle-ewmh.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/subtle-log.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/subtle-lua.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/subtle-main.Po@am__quote@
@@ -315,6 +318,20 @@ subtle-event.obj: event.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='event.c' object='subtle-event.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(subtle_CFLAGS) $(CFLAGS) -c -o subtle-event.obj `if test -f 'event.c'; then $(CYGPATH_W) 'event.c'; else $(CYGPATH_W) '$(srcdir)/event.c'; fi`
+
+subtle-ewmh.o: ewmh.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(subtle_CFLAGS) $(CFLAGS) -MT subtle-ewmh.o -MD -MP -MF "$(DEPDIR)/subtle-ewmh.Tpo" -c -o subtle-ewmh.o `test -f 'ewmh.c' || echo '$(srcdir)/'`ewmh.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/subtle-ewmh.Tpo" "$(DEPDIR)/subtle-ewmh.Po"; else rm -f "$(DEPDIR)/subtle-ewmh.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ewmh.c' object='subtle-ewmh.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(subtle_CFLAGS) $(CFLAGS) -c -o subtle-ewmh.o `test -f 'ewmh.c' || echo '$(srcdir)/'`ewmh.c
+
+subtle-ewmh.obj: ewmh.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(subtle_CFLAGS) $(CFLAGS) -MT subtle-ewmh.obj -MD -MP -MF "$(DEPDIR)/subtle-ewmh.Tpo" -c -o subtle-ewmh.obj `if test -f 'ewmh.c'; then $(CYGPATH_W) 'ewmh.c'; else $(CYGPATH_W) '$(srcdir)/ewmh.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/subtle-ewmh.Tpo" "$(DEPDIR)/subtle-ewmh.Po"; else rm -f "$(DEPDIR)/subtle-ewmh.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ewmh.c' object='subtle-ewmh.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(subtle_CFLAGS) $(CFLAGS) -c -o subtle-ewmh.obj `if test -f 'ewmh.c'; then $(CYGPATH_W) 'ewmh.c'; else $(CYGPATH_W) '$(srcdir)/ewmh.c'; fi`
 
 subtle-log.o: log.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(subtle_CFLAGS) $(CFLAGS) -MT subtle-log.o -MD -MP -MF "$(DEPDIR)/subtle-log.Tpo" -c -o subtle-log.o `test -f 'log.c' || echo '$(srcdir)/'`log.c; \

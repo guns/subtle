@@ -6,6 +6,7 @@ subtle_SOURCES = \
 	client.c \
 	display.c \
 	event.c \
+	ewmh.c \
 	log.c \
 	lua.c \
 	main.c \
