@@ -40,6 +40,7 @@
 #define SUB_WIN_TRANS		(1L << 5)											// Transient window
 #define SUB_WIN_FLOAT		(1L << 6)											// Floating window
 #define SUB_WIN_SHADED	(1L << 7)											// Shaded window
+#define SUB_WIN_FIXED		(1L << 8)											// Fixed size window
 
 struct subtile;
 struct subclient;
@@ -70,6 +71,7 @@ void subWinMap(SubWin *w);														// Map a window
 /* client.c */
 typedef struct subclient
 {
+	int 			focus;																		// Client focus model
 	char			*name;																		// Client name
 	Window		caption;																	// Client caption
 	Colormap	cmap;																			// Client colormap	
@@ -134,11 +136,8 @@ typedef struct subdisplay
 	} gcs;
 	struct
 	{
-		Atom						protos, delete, state, change;		// Used atoms
-	} atoms;
-	struct
-	{
-		Cursor					arrow, square, left, right, bottom, resize;				// Used cursors
+		Cursor					arrow, square, left, right, 
+			bottom, resize;																	// Used cursors
 	} cursors;
 } SubDisplay;
 
@@ -200,5 +199,60 @@ void subSubletKill(void);															// Delete all sublet items
 /* event.c */
 int subEventGetTime(void);														// Get the current time
 int subEventLoop(void);																// Event loop
+
+/* ewmh.c */
+enum SubEwmhHints
+{
+	/* ICCCM */
+	SUB_EWMH_WM_STATE,
+	SUB_EWMH_WM_CHANGE_STATE,
+	SUB_EWMH_WM_PROTOCOLS,
+	SUB_EWMH_WM_COLORMAP_WINDOWS,
+	SUB_EWMH_WM_TAKE_FOCUS,
+	SUB_EWMH_WM_WINDOW_ROLE,
+	SUB_EWMH_WM_DELETE_WINDOW,
+
+	/* EWMH */
+	SUB_EWMH_NET_SUPPORTED,
+	SUB_EWMH_NET_CLIENT_LIST,
+	SUB_EWMH_NET_NUMBER_OF_DESKTOPS,
+	SUB_EWMH_NET_DESKTOP_GEOMETRY,
+	SUB_EWMH_NET_DESKTOP_VIEWPORT,
+	SUB_EWMH_NET_CURRENT_DESKTOP,
+	SUB_EWMH_NET_ACTIVE_WINDOW,
+	SUB_EWMH_NET_WORKAREA,
+	SUB_EWMH_NET_SUPPORTING_WM_CHECK,
+	SUB_EWMH_NET_VIRTUAL_ROOTS,
+	SUB_EWMH_NET_CLOSE_WINDOW,
+	SUB_EWMH_NET_WM_NAME,
+	SUB_EWMH_NET_WM_DESKTOP,
+
+	SUB_EWMH_NET_WM_STATE,
+	SUB_EWMH_NET_WM_STATE_SHADED,
+	SUB_EWMH_NET_WM_STATE_FULLSCREEN,
+
+	SUB_EWMH_NET_WM_WINDOW_TYPE,
+	SUB_EWMH_NET_WM_WINDOW_TYPE_DESKTOP,
+	SUB_EWMH_NET_WM_WINDOW_TYPE_NORMAL,
+	SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG,
+
+	SUB_EWMH_NET_WM_ALLOWED_ACTIONS,
+	SUB_EWMH_NET_WM_ACTION_MOVE,
+	SUB_EWMH_NET_WM_ACTION_RESIZE,
+	SUB_EWMH_NET_WM_ACTION_SHADE,
+	SUB_EWMH_NET_WM_ACTION_FULLSCREEN,
+	SUB_EWMH_NET_WM_ACTION_CHANGE_DESKTOP,
+	SUB_EWMH_NET_WM_ACTION_CLOSE
+};
+
+void subEwmhNew(void);																	// Create a new ewmh
+
+#define subEwmhGetCardinal(win, hint) \
+	(long)subEwmhGet(XA_CARDINAL, win, hint);
+#define subEwmhGetWindow(win, hint) \
+	(Window)subEwmhGet(XA_WINDOW, win, hint);
+
+Atom subEwmhGetAtom(int hint);													// Get EWMH/ICCCM atom
+char *subEwmhGet(Atom type, Window win, int hint);			// Get EWMH/ICCCM hint
 
 #endif /* SUBTLE_H */
