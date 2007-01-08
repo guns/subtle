@@ -219,7 +219,8 @@ static void
 HandleMessage(XClientMessageEvent *ev)
 {
 	SubWin *w = subWinFind(ev->window);
-	if(w && ev->message_type == d->atoms.change && ev->format == 32 && ev->data.l[0] == IconicState)
+	if(w && ev->message_type == subEwmhGetAtom(SUB_EWMH_WM_CHANGE_STATE) 
+		&& ev->format == 32 && ev->data.l[0] == IconicState)
 		subWinUnmap(w);
 }
 
@@ -238,7 +239,7 @@ static void
 HandleProperty(XPropertyEvent *ev)
 {
 	SubWin *w = subWinFind(ev->window);
-	if(w && (w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV)))
+	if(w && w->prop & SUB_WIN_CLIENT)
 		switch(ev->atom)
 			{
 				case XA_WM_NAME:
@@ -267,8 +268,9 @@ HandleCrossing(XCrossingEvent *ev)
 			if(ev->type == LeaveNotify && !ev->mode && w->parent) w = w->parent;
 			d->focus = w->frame;
 			RenderWindow(w);
-			XSetInputFocus(d->dpy, w->win, RevertToNone, CurrentTime);
-			printf("%%EVENT%: type=%d, state=%d, mode=%d\n", ev->type, ev->state, ev->mode);
+
+			if(w->prop & SUB_WIN_CLIENT && w->client->focus && w->win)
+				XSetInputFocus(d->dpy, w->win, RevertToNone, CurrentTime);
 		}
 }
 

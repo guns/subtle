@@ -125,12 +125,6 @@ subDisplayNew(const char *display_string)
 	d->th	= d->xfs->ascent + d->xfs->descent + 2;
 	d->bw	= subLuaGetNum("options", "border",	2);
 
-	/* Create atoms */
-	d->atoms.protos	= XInternAtom(d->dpy, "WM_PROTOCOLS",			False);
-	d->atoms.delete	= XInternAtom(d->dpy, "WM_DELETE_WINDOW",	False);
-	d->atoms.state	= XInternAtom(d->dpy, "WM_STATE",					False);
-	d->atoms.change	= XInternAtom(d->dpy, "WM_CHANGE_STATE",	False); 
-
 	/* Read colors from config */
 	d->colors.font		= ParseColor("font",				"#000000"); 	
 	d->colors.border	= ParseColor("border",			"#bdbabd");
