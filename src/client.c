@@ -10,6 +10,7 @@ SubWin *
 subClientNew(Window win)
 {
 	Window unnused;
+	XWMHints *hints = NULL;
 	XWindowAttributes attr;
 	SubWin *w = subWinNew(win);
 	w->client = (SubClient *)calloc(1, sizeof(SubClient));
@@ -26,6 +27,15 @@ subClientNew(Window win)
 	if(!w->client->name) w->client->name = strdup("subtle");
 	w->client->caption = XCreateSimpleWindow(d->dpy, w->frame, d->th, 0, 
 		(strlen(w->client->name) + 1) * d->fx, d->th, 0, d->colors.border, d->colors.norm);
+
+	/* WMHints */
+	hints = XGetWMHints(d->dpy, win);
+	if(hints)
+		{
+			if(hints->flags & StateHint && hints->initial_state == IconicState) subLogDebug("Iconic: win=%#lx\n", win);			
+			w->client->focus = hints->input;
+			XFree(hints);
+		}
 
 	/*XGetTransientForHint(d->dpy, win, &unnused);
 	if(unnused) subClientToggleFloat(w); */
@@ -70,8 +80,8 @@ subClientSetWMState(SubWin *w,
 	data[0] = state;
 	data[1] = None; /* No icons */
 
-	XChangeProperty(d->dpy, w->win, d->atoms.state,	d->atoms.state, 32, 
-		PropModeReplace, (unsigned char *) data, 2);
+	XChangeProperty(d->dpy, w->win, subEwmhGetAtom(SUB_EWMH_WM_STATE), subEwmhGetAtom(SUB_EWMH_WM_STATE),
+		32, PropModeReplace, (unsigned char *) data, 2);
 }
 
  /**
@@ -88,9 +98,9 @@ subClientGetWMState(SubWin *w)
 	unsigned long read, left;
 	long *data = NULL, state = WithdrawnState;
 
-	if(XGetWindowProperty(d->dpy, w->win, d->atoms.state, 0L, 2L, False, 
-				d->atoms.state, &type, &format, &read, &left,
-				(unsigned char **) &data) == Success && read)
+	if(XGetWindowProperty(d->dpy, w->win, subEwmhGetAtom(SUB_EWMH_WM_STATE), 0L, 2L, False, 
+			subEwmhGetAtom(SUB_EWMH_WM_STATE), &type, &format, &read, &left,
+			(unsigned char **) &data) == Success && read)
 		{
 			state = *data;
 			XFree(data);
@@ -160,7 +170,7 @@ subClientSendDelete(SubWin *w)
 
 	if(XGetWMProtocols(d->dpy, w->win, &protos, &n))
 		{
-			for(i = 0; i < n; i++) if(protos[i] == d->atoms.delete) found++;
+			for(i = 0; i < n; i++) if(protos[i] == subEwmhGetAtom(SUB_EWMH_WM_DELETE_WINDOW)) found++;
 			XFree(protos);
 		}
 	if(found)
@@ -169,9 +179,9 @@ subClientSendDelete(SubWin *w)
 
 			ev.type									= ClientMessage;
 			ev.xclient.window				= w->win;
-			ev.xclient.message_type = d->atoms.protos;
+			ev.xclient.message_type = subEwmhGetAtom(SUB_EWMH_WM_PROTOCOLS);
 			ev.xclient.format				= 32;
-			ev.xclient.data.l[0]		= d->atoms.delete;
+			ev.xclient.data.l[0]		= subEwmhGetAtom(SUB_EWMH_WM_DELETE_WINDOW);
 			ev.xclient.data.l[1]		= CurrentTime;
 
 			XSendEvent(d->dpy, w->win, False, NoEventMask, &ev);
