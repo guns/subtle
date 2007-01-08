@@ -90,6 +90,8 @@ main(int argc,
 	subDisplayNew(display);
 	subLuaKill();
 
+	subEwmhNew();
+
 	subScreenNew();
 	subScreenAdd();
 
