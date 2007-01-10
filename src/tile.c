@@ -9,7 +9,7 @@
 SubWin *
 subTileNew(short mode)
 {
-	SubWin *w		= subWinNew(0);
+	SubWin *w = subWinNew(0);
 
 	w->prop	= mode ? SUB_WIN_TILEV : SUB_WIN_TILEH;
 	w->tile	= (SubTile *)calloc(1, sizeof(SubTile));
@@ -72,16 +72,13 @@ subTileDelete(SubWin *w)
 				{
 					SubWin *c = subWinFind(wins[i]);
 					if(c && c->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV)) subTileDelete(c);
-					else if(c && c->prop & SUB_WIN_CLIENT) subClientDelete(c);
+					else if(c && c->prop & SUB_WIN_CLIENT) subClientSendDelete(c);
 				}
 
 			subLogDebug("Deleting %s-tile with %d children\n", (w->prop & SUB_WIN_TILEH) ? "h" : "v", n);
 
-			XDestroyWindow(d->dpy, w->tile->newcol);
-			XDestroyWindow(d->dpy, w->tile->delcol);
-			free(w->tile); 
-
 			if(w->parent) parent = w->parent; 
+			free(w->tile); 
 			subWinDelete(w);
 			subTileConfigure(parent); 
 			XFree(wins);
