@@ -33,14 +33,17 @@
 		InputOutput, CopyFromParent, mask, &attrs);
 
 /* win.c */
-#define SUB_WIN_SCREEN	(1L << 1)											// Screen window
-#define SUB_WIN_CLIENT	(1L << 2)											// Client window
-#define SUB_WIN_TILEH		(1L << 3)											// Horizontal tiling window
-#define SUB_WIN_TILEV		(1L << 4)											// Vertical tiling window
-#define SUB_WIN_TRANS		(1L << 5)											// Transient window
-#define SUB_WIN_FLOAT		(1L << 6)											// Floating window
-#define SUB_WIN_SHADED	(1L << 7)											// Shaded window
-#define SUB_WIN_FIXED		(1L << 8)											// Fixed size window
+#define SUB_WIN_SCREEN			(1L << 1)									// Screen window
+#define SUB_WIN_CLIENT			(1L << 2)									// Client window
+#define SUB_WIN_TILEH				(1L << 3)									// Horizontal tiling window
+#define SUB_WIN_TILEV				(1L << 4)									// Vertical tiling window
+#define SUB_WIN_TRANS				(1L << 5)									// Transient window
+#define SUB_WIN_FLOAT				(1L << 6)									// Floating window
+#define SUB_WIN_SHADED			(1L << 7)									// Shaded window
+#define SUB_WIN_FIXED				(1L << 8)									// Fixed size window
+#define SUB_WIN_INPUT				(1L << 9)									// Expect to get focus active/passiv
+#define SUB_WIN_SEND_FOCUS	(1L << 10)								// Send focus messages
+#define SUB_WIN_SEND_CLOSE	(1L << 11)								// Send close messages
 
 struct subtile;
 struct subclient;
@@ -71,7 +74,6 @@ void subWinMap(SubWin *w);														// Map a window
 /* client.c */
 typedef struct subclient
 {
-	int 			focus;																		// Client focus model
 	char			*name;																		// Client name
 	Window		caption;																	// Client caption
 	Colormap	cmap;																			// Client colormap	
@@ -206,25 +208,27 @@ enum SubEwmhHints
 	/* ICCCM */
 	SUB_EWMH_WM_STATE,
 	SUB_EWMH_WM_CHANGE_STATE,
-	SUB_EWMH_WM_PROTOCOLS,
+	SUB_EWMH_WM_PROTOCOLS,															// Supported protocols 
 	SUB_EWMH_WM_COLORMAP_WINDOWS,
-	SUB_EWMH_WM_TAKE_FOCUS,
+	SUB_EWMH_WM_TAKE_FOCUS,															// Send focus messages
 	SUB_EWMH_WM_WINDOW_ROLE,
-	SUB_EWMH_WM_DELETE_WINDOW,
+	SUB_EWMH_WM_DELETE_WINDOW,													// Send close messages
 
 	/* EWMH */
 	SUB_EWMH_NET_SUPPORTED,
 	SUB_EWMH_NET_CLIENT_LIST,
-	SUB_EWMH_NET_NUMBER_OF_DESKTOPS,
-	SUB_EWMH_NET_DESKTOP_GEOMETRY,
-	SUB_EWMH_NET_DESKTOP_VIEWPORT,
-	SUB_EWMH_NET_CURRENT_DESKTOP,
+	SUB_EWMH_NET_NUMBER_OF_DESKTOPS,										// Total number of desktops
+	SUB_EWMH_NET_DESKTOP_GEOMETRY,											// Desktop geometry
+	SUB_EWMH_NET_DESKTOP_VIEWPORT,											// Viewport of the desktop
+	SUB_EWMH_NET_CURRENT_DESKTOP,												// Number of current desktop
 	SUB_EWMH_NET_ACTIVE_WINDOW,
-	SUB_EWMH_NET_WORKAREA,
-	SUB_EWMH_NET_SUPPORTING_WM_CHECK,
-	SUB_EWMH_NET_VIRTUAL_ROOTS,
+	SUB_EWMH_NET_WORKAREA,															// Workarea of the desktop
+	SUB_EWMH_NET_SUPPORTING_WM_CHECK,										// Check for compliant window manager
+	SUB_EWMH_NET_VIRTUAL_ROOTS,													// List of virtual destops
 	SUB_EWMH_NET_CLOSE_WINDOW,
-	SUB_EWMH_NET_WM_NAME,
+
+	SUB_EWMH_NET_WM_NAME,																// Name of a window
+	SUB_EWMH_NET_WM_PID,																// PID of a client
 	SUB_EWMH_NET_WM_DESKTOP,
 
 	SUB_EWMH_NET_WM_STATE,
@@ -254,5 +258,17 @@ void subEwmhNew(void);																	// Create a new ewmh
 
 Atom subEwmhGetAtom(int hint);													// Get EWMH/ICCCM atom
 char *subEwmhGet(Atom type, Window win, int hint);			// Get EWMH/ICCCM hint
+
+
+int subEwmhSetWindow(Window win, int hint, 
+	Window value);																				// Set window property
+int subEwmhSetWindows(Window win, int hint, 
+	Window *values, int size);														// Set window properties
+int subEwmhSetString(Window win, int hint, 
+	const char *value);																		// Set string property
+int subEwmhSetCardinal(Window win, int hint,
+	long value);																					// Set cardinal property
+int subEwmhSetCardinals(Window win, int hint,
+	long *values, int size);															// Set cardinal properties
 
 #endif /* SUBTLE_H */
