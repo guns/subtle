@@ -29,7 +29,9 @@ subEwmhNew(void)
 		"_NET_SUPPORTING_WM_CHECK",
 		"_NET_VIRTUAL_ROOTS",
 		"_NET_CLOSE_WINDOW",
+
 		"_NET_WM_NAME",
+		"_NET_WM_PID",
 		"_NET_WM_DESKTOP",
 
 		"_NET_WM_STATE",
@@ -78,19 +80,49 @@ subEwmhGet(Atom type,
 	return(ret);
 }
 
-/*void*/
-/*subEwmhSetHint(Window win,*/
-/*int hint)*/
-/*{*/
-/*XChangeProperty(d->dpy, win, hints[SUB_HINT_WIN_TYPE], XA_ATOM, 32, PropModeReplace,*/
-/*(unsigned char *)&hints[hint], 1);*/
-/*}*/
+int
+subEwmhSetWindow(Window win,
+	int hint,
+	Window value)
+{
+	return(XChangeProperty(d->dpy, win, atoms[hint], XA_WINDOW, 32, PropModeReplace,
+		(unsigned char *)&value, 1));
+}
 
-/*void*/
-/*subEwmhSetCardinalHint(Window win,*/
-/*int hint,*/
-/*int value)*/
-/*{*/
-/*XChangeProperty(d->dpy, win, hints[hint], XA_CARDINAL, 32, PropModeReplace,*/
-/*(unsigned char *)&value, 1);*/
-/*}*/
+int
+subEwmhSetWindows(Window win,
+	int hint,
+	Window *values,
+	int size)
+{
+	return(XChangeProperty(d->dpy, win, atoms[hint], XA_WINDOW, 32, PropModeReplace,
+		(unsigned char *)values, size));
+}
+
+int
+subEwmhSetString(Window win,
+	int hint,
+	const char *value)
+{
+	return(XChangeProperty(d->dpy, win, atoms[hint], XA_STRING, 8, PropModeReplace,
+		(unsigned char *)value, strlen(value)));
+}
+
+int
+subEwmhSetCardinal(Window win,
+	int hint,
+	long value)
+{
+	return(XChangeProperty(d->dpy, win, atoms[hint], XA_CARDINAL, 32, PropModeReplace,
+		(unsigned char *)&value, 1));
+}
+
+int
+subEwmhSetCardinals(Window win,
+	int hint,
+	long *values,
+	int size)
+{
+	return(XChangeProperty(d->dpy, win, atoms[hint], XA_CARDINAL, 32, PropModeReplace,
+		(unsigned char *)values, size));
+}
