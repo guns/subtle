@@ -9,16 +9,18 @@
 SubWin *
 subClientNew(Window win)
 {
+	int i, n = 0;
 	Window unnused;
 	XWMHints *hints = NULL;
 	XWindowAttributes attr;
+	Atom *protos;
 	SubWin *w = subWinNew(win);
 	w->client = (SubClient *)calloc(1, sizeof(SubClient));
 	if(!w->client) subLogError("Can't alloc memory. Exhausted?\n");
 
 	XGrabServer(d->dpy);
-	XAddToSaveSet(d->dpy, win);
-	XGetWindowAttributes(d->dpy, win, &attr);
+	XAddToSaveSet(d->dpy, w->win);
+	XGetWindowAttributes(d->dpy, w->win, &attr);
 	w->client->cmap	= attr.colormap;
 	w->prop	= SUB_WIN_CLIENT; 
 
@@ -33,8 +35,19 @@ subClientNew(Window win)
 	if(hints)
 		{
 			if(hints->flags & StateHint && hints->initial_state == IconicState) subLogDebug("Iconic: win=%#lx\n", win);			
-			w->client->focus = hints->input;
+			if(hints->input) w->prop |= SUB_WIN_INPUT;
 			XFree(hints);
+		}
+	
+	/* Protocols */
+	if(XGetWMProtocols(d->dpy, w->win, &protos, &n))
+		{
+			for(i = 0; i < n; i++)
+				{
+					if(protos[i] == subEwmhGetAtom(SUB_EWMH_WM_TAKE_FOCUS)) 		w->prop |= SUB_WIN_SEND_FOCUS;
+					if(protos[i] == subEwmhGetAtom(SUB_EWMH_WM_DELETE_WINDOW))	w->prop |= SUB_WIN_SEND_CLOSE;
+				}
+			XFree(protos);
 		}
 
 	/*XGetTransientForHint(d->dpy, win, &unnused);
@@ -142,18 +155,18 @@ subClientDelete(SubWin *w)
 {
 	if(w->prop & SUB_WIN_CLIENT)
 		{
+			XEvent event;
 			XGrabServer(d->dpy);
-			XUnmapWindow(d->dpy, w->frame);
-			XRemoveFromSaveSet(d->dpy, w->win);
-			XDestroyWindow(d->dpy, w->client->caption);
-			subClientSendDelete(w);
-			subWinDelete(w);
+
+			subWinUnmap(w);
 
 			if(w->client->name) XFree(w->client->name);
 			free(w->client);
+			subWinDelete(w);
 
 			XSync(d->dpy, False);
 			XUngrabServer(d->dpy);
+			while(XCheckTypedEvent(d->dpy, EnterWindowMask|LeaveWindowMask, &event));
 		}
 }
 
@@ -165,26 +178,20 @@ subClientDelete(SubWin *w)
 void
 subClientSendDelete(SubWin *w)
 {
-	int i, n, found = 0;
-	Atom *protos = NULL;
+	subWinUnmap(w);
+	if(w)
+		if(w->prop & SUB_WIN_SEND_CLOSE)
+			{
+				XEvent ev;
 
-	if(XGetWMProtocols(d->dpy, w->win, &protos, &n))
-		{
-			for(i = 0; i < n; i++) if(protos[i] == subEwmhGetAtom(SUB_EWMH_WM_DELETE_WINDOW)) found++;
-			XFree(protos);
-		}
-	if(found)
-		{
-			XEvent ev;
+				ev.type									= ClientMessage;
+				ev.xclient.window				= w->win;
+				ev.xclient.message_type = subEwmhGetAtom(SUB_EWMH_WM_PROTOCOLS);
+				ev.xclient.format				= 32;
+				ev.xclient.data.l[0]		= subEwmhGetAtom(SUB_EWMH_WM_DELETE_WINDOW);
+				ev.xclient.data.l[1]		= CurrentTime;
 
-			ev.type									= ClientMessage;
-			ev.xclient.window				= w->win;
-			ev.xclient.message_type = subEwmhGetAtom(SUB_EWMH_WM_PROTOCOLS);
-			ev.xclient.format				= 32;
-			ev.xclient.data.l[0]		= subEwmhGetAtom(SUB_EWMH_WM_DELETE_WINDOW);
-			ev.xclient.data.l[1]		= CurrentTime;
-
-			XSendEvent(d->dpy, w->win, False, NoEventMask, &ev);
-		}
-	else XKillClient(d->dpy, w->win);
+				XSendEvent(d->dpy, w->win, False, NoEventMask, &ev);
+			}
+		else XKillClient(d->dpy, w->win);
 }
