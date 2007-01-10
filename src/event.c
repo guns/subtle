@@ -213,6 +213,7 @@ HandleDestroy(XDestroyWindowEvent *ev)
 {
 	SubWin *w = subWinFind(ev->event);
 	if(w && w->prop & SUB_WIN_CLIENT) subClientDelete(w); 
+
 }
 	
 static void
@@ -269,8 +270,26 @@ HandleCrossing(XCrossingEvent *ev)
 			d->focus = w->frame;
 			RenderWindow(w);
 
-			if(w->prop & SUB_WIN_CLIENT && w->client->focus && w->win)
-				XSetInputFocus(d->dpy, w->win, RevertToNone, CurrentTime);
+			/* Focus */
+			if(w->prop & SUB_WIN_CLIENT)
+				{
+					if(w->prop & SUB_WIN_INPUT) XSetInputFocus(d->dpy, w->win, RevertToNone, CurrentTime);
+					if(w->prop & SUB_WIN_SEND_FOCUS)
+						{
+							XEvent ev;
+
+							ev.type									= ClientMessage;
+							ev.xclient.window				= w->win;
+							ev.xclient.message_type = subEwmhGetAtom(SUB_EWMH_WM_PROTOCOLS);
+							ev.xclient.format				= 32;
+							ev.xclient.data.l[0]		= subEwmhGetAtom(SUB_EWMH_WM_TAKE_FOCUS);
+							ev.xclient.data.l[1]		= CurrentTime;
+
+							XSendEvent(d->dpy, w->win, False, NoEventMask, &ev);
+						}
+					subLogDebug("Focus: win=%#lx, input=%d, send=%d\n", w->win, 
+						w->prop & SUB_WIN_INPUT ? 1 : 0, w->prop & SUB_WIN_SEND_FOCUS ? 1 : 0);
+				}
 		}
 }
 
@@ -343,8 +362,6 @@ int subEventLoop(void)
 							case ClientMessage: 		HandleMessage(&ev.xclient); 						break;
 							case ColormapNotify: 		HandleColormap(&ev.xcolormap); 					break;
 							case PropertyNotify: 		HandleProperty(&ev.xproperty); 					break;
-																			/*case EnterNotify: 			HandleEnter(&ev.xcrossing);				 			break;*/
-																			/*case LeaveNotify:				HandleLeave(&ev.xcrossing);							break;*/
 							case EnterNotify:
 							case LeaveNotify:				HandleCrossing(&ev.xcrossing);					break;
 							case VisibilityNotify:	
