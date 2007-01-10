@@ -83,12 +83,6 @@ subWinNew(Window win)
 void
 subWinDelete(SubWin *w)
 {
-	/* Check for shaded state */
-	if(w->prop & SUB_WIN_SHADED && w->parent && w->parent->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV))
-		w->parent->tile->shaded--;
-
-	/* Reset focus to root */
-	XSetInputFocus(d->dpy, PointerRoot, RevertToNone, CurrentTime);
 	XDeleteContext(d->dpy, w->frame, 1);
 	XDestroySubwindows(d->dpy, w->frame);
 	XDestroyWindow(d->dpy, w->frame);
@@ -108,10 +102,10 @@ subWinRender(short mode,
 	unsigned long col = mode ? d->colors.norm : d->colors.act;
 
 	/* Update color */
-	XSetWindowBackground(d->dpy, w->title,		col);
+	XSetWindowBackground(d->dpy, w->title,	col);
 	XSetWindowBackground(d->dpy, w->icon,		col);
 	XSetWindowBackground(d->dpy, w->icon,		col);
-	XSetWindowBackground(d->dpy, w->left, 		col);
+	XSetWindowBackground(d->dpy, w->left, 	col);
 	XSetWindowBackground(d->dpy, w->right, 	col);
 	XSetWindowBackground(d->dpy, w->bottom,	col);
 
@@ -312,7 +306,10 @@ subWinMap(SubWin *w)
 void
 subWinUnmap(SubWin *w)
 {
-	XUnmapSubwindows(d->dpy, w->frame);
+	/* Check for shaded state */
+	if(w->prop & SUB_WIN_SHADED && w->parent && w->parent->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV))
+		w->parent->tile->shaded--;
+
 	XUnmapWindow(d->dpy, w->frame);
 	//subClientSetWMState(w, IconicState);
 }
