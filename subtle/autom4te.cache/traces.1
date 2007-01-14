@@ -835,6 +835,9 @@ m4trace:configure.in:10: -1- m4_pattern_allow([^CFLAGS$])
 m4trace:configure.in:10: -1- AC_SUBST([LDFLAGS])
 m4trace:configure.in:10: -1- AC_SUBST_TRACE([LDFLAGS])
 m4trace:configure.in:10: -1- m4_pattern_allow([^LDFLAGS$])
+m4trace:configure.in:10: -1- AC_SUBST([LIBS])
+m4trace:configure.in:10: -1- AC_SUBST_TRACE([LIBS])
+m4trace:configure.in:10: -1- m4_pattern_allow([^LIBS$])
 m4trace:configure.in:10: -1- AC_SUBST([CPPFLAGS])
 m4trace:configure.in:10: -1- AC_SUBST_TRACE([CPPFLAGS])
 m4trace:configure.in:10: -1- m4_pattern_allow([^CPPFLAGS$])
@@ -1157,163 +1160,66 @@ m4trace:configure.in:71: -1- AC_CHECK_LIB([X11], [XOpenDisplay], [LIBS="$LIBS -l
 echo "$as_me: error: Could not find XOpenDisplay in -lX11." >&2;}
    { (exit 1); exit 1; }; }
 ])
-m4trace:configure.in:92: -1- PKG_CHECK_MODULES([Lua], [lua >= 5.1], [LUA_CFLAGS=$Lua_CFLAGS
-	LUA_LIBS=$Lua_LIBS], [
-		AC_MSG_RESULT(no)
-		PKG_CHECK_MODULES(Lua51, lua51 >= 5.1,
-			LUA_CFLAGS=$Lua51_CFLAGS
-			LUA_LIBS=$Lua51_LIBS,
-			[
-				AC_MSG_RESULT(no)
-				PKG_CHECK_MODULES(Lua51, lua5.1 >= 5.1,
-					LUA_CFLAGS=$Lua51_CFLAGS
-					LUA_LIBS=$Lua51_LIBS,
-					AC_MSG_ERROR([Lua library and header >= 5.1 are required.])
-				)
-			]
-		)
-	
+m4trace:configure.in:76: -1- PKG_PROG_PKG_CONFIG([0.1])
+m4trace:configure.in:76: -1- m4_pattern_forbid([^_?PKG_[A-Z_]+$])
+m4trace:configure.in:76: -1- m4_pattern_allow([^PKG_CONFIG(_PATH)?$])
+m4trace:configure.in:76: -1- AC_SUBST([PKG_CONFIG])
+m4trace:configure.in:76: -1- AC_SUBST_TRACE([PKG_CONFIG])
+m4trace:configure.in:76: -1- m4_pattern_allow([^PKG_CONFIG$])
+m4trace:configure.in:76: -1- AC_SUBST([PKG_CONFIG])
+m4trace:configure.in:76: -1- AC_SUBST_TRACE([PKG_CONFIG])
+m4trace:configure.in:76: -1- m4_pattern_allow([^PKG_CONFIG$])
+m4trace:configure.in:77: -1- AC_SUBST([check])
+m4trace:configure.in:77: -1- AC_SUBST_TRACE([check])
+m4trace:configure.in:77: -1- m4_pattern_allow([^check$])
+m4trace:configure.in:81: -1- AC_SUBST([check])
+m4trace:configure.in:81: -1- AC_SUBST_TRACE([check])
+m4trace:configure.in:81: -1- m4_pattern_allow([^check$])
+m4trace:configure.in:85: -1- AC_SUBST([check])
+m4trace:configure.in:85: -1- AC_SUBST_TRACE([check])
+m4trace:configure.in:85: -1- m4_pattern_allow([^check$])
+m4trace:configure.in:102: -1- PKG_CHECK_MODULES([lua], [$lua_name >= 5.1], [LUA_CFLAGS=$lua_CFLAGS
+	LUA_LIBS=$lua_LIBS], [{ { echo "$as_me:$LINENO: error: Lua library and header >= 5.1 are required." >&5
+echo "$as_me: error: Lua library and header >= 5.1 are required." >&2;}
+   { (exit 1); exit 1; }; }
 ])
-m4trace:configure.in:92: -1- PKG_PROG_PKG_CONFIG
-m4trace:configure.in:92: -1- m4_pattern_forbid([^_?PKG_[A-Z_]+$])
-m4trace:configure.in:92: -1- m4_pattern_allow([^PKG_CONFIG(_PATH)?$])
-m4trace:configure.in:92: -1- AC_SUBST([PKG_CONFIG])
-m4trace:configure.in:92: -1- AC_SUBST_TRACE([PKG_CONFIG])
-m4trace:configure.in:92: -1- m4_pattern_allow([^PKG_CONFIG$])
-m4trace:configure.in:92: -1- AC_SUBST([PKG_CONFIG])
-m4trace:configure.in:92: -1- AC_SUBST_TRACE([PKG_CONFIG])
-m4trace:configure.in:92: -1- m4_pattern_allow([^PKG_CONFIG$])
-m4trace:configure.in:92: -1- AC_SUBST([Lua_CFLAGS])
-m4trace:configure.in:92: -1- AC_SUBST_TRACE([Lua_CFLAGS])
-m4trace:configure.in:92: -1- m4_pattern_allow([^Lua_CFLAGS$])
-m4trace:configure.in:92: -1- AC_SUBST([Lua_LIBS])
-m4trace:configure.in:92: -1- AC_SUBST_TRACE([Lua_LIBS])
-m4trace:configure.in:92: -1- m4_pattern_allow([^Lua_LIBS$])
-m4trace:configure.in:92: -1- PKG_CHECK_EXISTS([lua >= 5.1], [pkg_cv_[]Lua_CFLAGS=`$PKG_CONFIG --[]cflags "lua >= 5.1" 2>/dev/null`], [pkg_failed=yes])
-m4trace:configure.in:92: -1- PKG_CHECK_EXISTS([lua >= 5.1], [pkg_cv_[]Lua_LIBS=`$PKG_CONFIG --[]libs "lua >= 5.1" 2>/dev/null`], [pkg_failed=yes])
-m4trace:configure.in:92: -1- _PKG_SHORT_ERRORS_SUPPORTED
-m4trace:configure.in:92: -1- PKG_CHECK_MODULES([Lua51], [lua51 >= 5.1], [LUA_CFLAGS=$Lua51_CFLAGS
-			LUA_LIBS=$Lua51_LIBS], [
-				AC_MSG_RESULT(no)
-				PKG_CHECK_MODULES(Lua51, lua5.1 >= 5.1,
-					LUA_CFLAGS=$Lua51_CFLAGS
-					LUA_LIBS=$Lua51_LIBS,
-					AC_MSG_ERROR([Lua library and header >= 5.1 are required.])
-				)
-			
-		])
-m4trace:configure.in:92: -1- AC_SUBST([Lua51_CFLAGS])
-m4trace:configure.in:92: -1- AC_SUBST_TRACE([Lua51_CFLAGS])
-m4trace:configure.in:92: -1- m4_pattern_allow([^Lua51_CFLAGS$])
-m4trace:configure.in:92: -1- AC_SUBST([Lua51_LIBS])
-m4trace:configure.in:92: -1- AC_SUBST_TRACE([Lua51_LIBS])
-m4trace:configure.in:92: -1- m4_pattern_allow([^Lua51_LIBS$])
-m4trace:configure.in:92: -1- PKG_CHECK_EXISTS([lua51 >= 5.1], [pkg_cv_[]Lua51_CFLAGS=`$PKG_CONFIG --[]cflags "lua51 >= 5.1" 2>/dev/null`], [pkg_failed=yes])
-m4trace:configure.in:92: -1- PKG_CHECK_EXISTS([lua51 >= 5.1], [pkg_cv_[]Lua51_LIBS=`$PKG_CONFIG --[]libs "lua51 >= 5.1" 2>/dev/null`], [pkg_failed=yes])
-m4trace:configure.in:92: -1- _PKG_SHORT_ERRORS_SUPPORTED
-m4trace:configure.in:92: -1- PKG_CHECK_MODULES([Lua51], [lua5.1 >= 5.1], [LUA_CFLAGS=$Lua51_CFLAGS
-					LUA_LIBS=$Lua51_LIBS], [{ { echo "$as_me:$LINENO: error: Lua library and header >= 5.1 are required." >&5
-echo "$as_me: error: Lua library and header >= 5.1 are required." >&2;}
-   { (exit 1); exit 1; }; }
-				])
-m4trace:configure.in:92: -1- AC_SUBST([Lua51_CFLAGS])
-m4trace:configure.in:92: -1- AC_SUBST_TRACE([Lua51_CFLAGS])
-m4trace:configure.in:92: -1- m4_pattern_allow([^Lua51_CFLAGS$])
-m4trace:configure.in:92: -1- AC_SUBST([Lua51_LIBS])
-m4trace:configure.in:92: -1- AC_SUBST_TRACE([Lua51_LIBS])
-m4trace:configure.in:92: -1- m4_pattern_allow([^Lua51_LIBS$])
-m4trace:configure.in:92: -1- PKG_CHECK_EXISTS([lua5.1 >= 5.1], [pkg_cv_[]Lua51_CFLAGS=`$PKG_CONFIG --[]cflags "lua5.1 >= 5.1" 2>/dev/null`], [pkg_failed=yes])
-m4trace:configure.in:92: -1- PKG_CHECK_EXISTS([lua5.1 >= 5.1], [pkg_cv_[]Lua51_LIBS=`$PKG_CONFIG --[]libs "lua5.1 >= 5.1" 2>/dev/null`], [pkg_failed=yes])
-m4trace:configure.in:92: -1- _PKG_SHORT_ERRORS_SUPPORTED
-m4trace:configure.in:92: -1- PKG_CHECK_MODULES([Lua51], [lua5.1 >= 5.1], [LUA_CFLAGS=$Lua51_CFLAGS
-					LUA_LIBS=$Lua51_LIBS], [{ { echo "$as_me:$LINENO: error: Lua library and header >= 5.1 are required." >&5
-echo "$as_me: error: Lua library and header >= 5.1 are required." >&2;}
-   { (exit 1); exit 1; }; }
-				])
-m4trace:configure.in:92: -1- AC_SUBST([Lua51_CFLAGS])
-m4trace:configure.in:92: -1- AC_SUBST_TRACE([Lua51_CFLAGS])
-m4trace:configure.in:92: -1- m4_pattern_allow([^Lua51_CFLAGS$])
-m4trace:configure.in:92: -1- AC_SUBST([Lua51_LIBS])
-m4trace:configure.in:92: -1- AC_SUBST_TRACE([Lua51_LIBS])
-m4trace:configure.in:92: -1- m4_pattern_allow([^Lua51_LIBS$])
-m4trace:configure.in:92: -1- PKG_CHECK_EXISTS([lua5.1 >= 5.1], [pkg_cv_[]Lua51_CFLAGS=`$PKG_CONFIG --[]cflags "lua5.1 >= 5.1" 2>/dev/null`], [pkg_failed=yes])
-m4trace:configure.in:92: -1- PKG_CHECK_EXISTS([lua5.1 >= 5.1], [pkg_cv_[]Lua51_LIBS=`$PKG_CONFIG --[]libs "lua5.1 >= 5.1" 2>/dev/null`], [pkg_failed=yes])
-m4trace:configure.in:92: -1- _PKG_SHORT_ERRORS_SUPPORTED
-m4trace:configure.in:92: -1- PKG_CHECK_MODULES([Lua51], [lua51 >= 5.1], [LUA_CFLAGS=$Lua51_CFLAGS
-			LUA_LIBS=$Lua51_LIBS], [
-				AC_MSG_RESULT(no)
-				PKG_CHECK_MODULES(Lua51, lua5.1 >= 5.1,
-					LUA_CFLAGS=$Lua51_CFLAGS
-					LUA_LIBS=$Lua51_LIBS,
-					AC_MSG_ERROR([Lua library and header >= 5.1 are required.])
-				)
-			
-		])
-m4trace:configure.in:92: -1- AC_SUBST([Lua51_CFLAGS])
-m4trace:configure.in:92: -1- AC_SUBST_TRACE([Lua51_CFLAGS])
-m4trace:configure.in:92: -1- m4_pattern_allow([^Lua51_CFLAGS$])
-m4trace:configure.in:92: -1- AC_SUBST([Lua51_LIBS])
-m4trace:configure.in:92: -1- AC_SUBST_TRACE([Lua51_LIBS])
-m4trace:configure.in:92: -1- m4_pattern_allow([^Lua51_LIBS$])
-m4trace:configure.in:92: -1- PKG_CHECK_EXISTS([lua51 >= 5.1], [pkg_cv_[]Lua51_CFLAGS=`$PKG_CONFIG --[]cflags "lua51 >= 5.1" 2>/dev/null`], [pkg_failed=yes])
-m4trace:configure.in:92: -1- PKG_CHECK_EXISTS([lua51 >= 5.1], [pkg_cv_[]Lua51_LIBS=`$PKG_CONFIG --[]libs "lua51 >= 5.1" 2>/dev/null`], [pkg_failed=yes])
-m4trace:configure.in:92: -1- _PKG_SHORT_ERRORS_SUPPORTED
-m4trace:configure.in:92: -1- PKG_CHECK_MODULES([Lua51], [lua5.1 >= 5.1], [LUA_CFLAGS=$Lua51_CFLAGS
-					LUA_LIBS=$Lua51_LIBS], [{ { echo "$as_me:$LINENO: error: Lua library and header >= 5.1 are required." >&5
-echo "$as_me: error: Lua library and header >= 5.1 are required." >&2;}
-   { (exit 1); exit 1; }; }
-				])
-m4trace:configure.in:92: -1- AC_SUBST([Lua51_CFLAGS])
-m4trace:configure.in:92: -1- AC_SUBST_TRACE([Lua51_CFLAGS])
-m4trace:configure.in:92: -1- m4_pattern_allow([^Lua51_CFLAGS$])
-m4trace:configure.in:92: -1- AC_SUBST([Lua51_LIBS])
-m4trace:configure.in:92: -1- AC_SUBST_TRACE([Lua51_LIBS])
-m4trace:configure.in:92: -1- m4_pattern_allow([^Lua51_LIBS$])
-m4trace:configure.in:92: -1- PKG_CHECK_EXISTS([lua5.1 >= 5.1], [pkg_cv_[]Lua51_CFLAGS=`$PKG_CONFIG --[]cflags "lua5.1 >= 5.1" 2>/dev/null`], [pkg_failed=yes])
-m4trace:configure.in:92: -1- PKG_CHECK_EXISTS([lua5.1 >= 5.1], [pkg_cv_[]Lua51_LIBS=`$PKG_CONFIG --[]libs "lua5.1 >= 5.1" 2>/dev/null`], [pkg_failed=yes])
-m4trace:configure.in:92: -1- _PKG_SHORT_ERRORS_SUPPORTED
-m4trace:configure.in:92: -1- PKG_CHECK_MODULES([Lua51], [lua5.1 >= 5.1], [LUA_CFLAGS=$Lua51_CFLAGS
-					LUA_LIBS=$Lua51_LIBS], [{ { echo "$as_me:$LINENO: error: Lua library and header >= 5.1 are required." >&5
-echo "$as_me: error: Lua library and header >= 5.1 are required." >&2;}
-   { (exit 1); exit 1; }; }
-				])
-m4trace:configure.in:92: -1- AC_SUBST([Lua51_CFLAGS])
-m4trace:configure.in:92: -1- AC_SUBST_TRACE([Lua51_CFLAGS])
-m4trace:configure.in:92: -1- m4_pattern_allow([^Lua51_CFLAGS$])
-m4trace:configure.in:92: -1- AC_SUBST([Lua51_LIBS])
-m4trace:configure.in:92: -1- AC_SUBST_TRACE([Lua51_LIBS])
-m4trace:configure.in:92: -1- m4_pattern_allow([^Lua51_LIBS$])
-m4trace:configure.in:92: -1- PKG_CHECK_EXISTS([lua5.1 >= 5.1], [pkg_cv_[]Lua51_CFLAGS=`$PKG_CONFIG --[]cflags "lua5.1 >= 5.1" 2>/dev/null`], [pkg_failed=yes])
-m4trace:configure.in:92: -1- PKG_CHECK_EXISTS([lua5.1 >= 5.1], [pkg_cv_[]Lua51_LIBS=`$PKG_CONFIG --[]libs "lua5.1 >= 5.1" 2>/dev/null`], [pkg_failed=yes])
-m4trace:configure.in:92: -1- _PKG_SHORT_ERRORS_SUPPORTED
-m4trace:configure.in:93: -1- AC_SUBST([LUA_CFLAGS])
-m4trace:configure.in:93: -1- AC_SUBST_TRACE([LUA_CFLAGS])
-m4trace:configure.in:93: -1- m4_pattern_allow([^LUA_CFLAGS$])
-m4trace:configure.in:94: -1- AC_SUBST([LUA_LIBS])
-m4trace:configure.in:94: -1- AC_SUBST_TRACE([LUA_LIBS])
-m4trace:configure.in:94: -1- m4_pattern_allow([^LUA_LIBS$])
-m4trace:configure.in:102: -1- AC_CONFIG_FILES([
+m4trace:configure.in:102: -1- AC_SUBST([lua_CFLAGS])
+m4trace:configure.in:102: -1- AC_SUBST_TRACE([lua_CFLAGS])
+m4trace:configure.in:102: -1- m4_pattern_allow([^lua_CFLAGS$])
+m4trace:configure.in:102: -1- AC_SUBST([lua_LIBS])
+m4trace:configure.in:102: -1- AC_SUBST_TRACE([lua_LIBS])
+m4trace:configure.in:102: -1- m4_pattern_allow([^lua_LIBS$])
+m4trace:configure.in:102: -1- PKG_CHECK_EXISTS([$lua_name >= 5.1], [pkg_cv_[]lua_CFLAGS=`$PKG_CONFIG --[]cflags "$lua_name >= 5.1" 2>/dev/null`], [pkg_failed=yes])
+m4trace:configure.in:102: -1- PKG_CHECK_EXISTS([$lua_name >= 5.1], [pkg_cv_[]lua_LIBS=`$PKG_CONFIG --[]libs "$lua_name >= 5.1" 2>/dev/null`], [pkg_failed=yes])
+m4trace:configure.in:102: -1- _PKG_SHORT_ERRORS_SUPPORTED
+m4trace:configure.in:103: -1- AC_SUBST([LUA_CFLAGS])
+m4trace:configure.in:103: -1- AC_SUBST_TRACE([LUA_CFLAGS])
+m4trace:configure.in:103: -1- m4_pattern_allow([^LUA_CFLAGS$])
+m4trace:configure.in:104: -1- AC_SUBST([LUA_LIBS])
+m4trace:configure.in:104: -1- AC_SUBST_TRACE([LUA_LIBS])
+m4trace:configure.in:104: -1- m4_pattern_allow([^LUA_LIBS$])
+m4trace:configure.in:112: -1- AC_CONFIG_FILES([
 	Makefile
 	src/Makefile
 	scripts/Makefile
 	config/Makefile
 ])
-m4trace:configure.in:102: -1- _m4_warn([obsolete], [AC_OUTPUT should be used without arguments.
+m4trace:configure.in:112: -1- _m4_warn([obsolete], [AC_OUTPUT should be used without arguments.
 You should run autoupdate.], [])
-m4trace:configure.in:102: -1- AC_SUBST([LIB@&t@OBJS], [$ac_libobjs])
-m4trace:configure.in:102: -1- AC_SUBST_TRACE([LIB@&t@OBJS])
-m4trace:configure.in:102: -1- m4_pattern_allow([^LIB@&t@OBJS$])
-m4trace:configure.in:102: -1- AC_SUBST([LTLIBOBJS], [$ac_ltlibobjs])
-m4trace:configure.in:102: -1- AC_SUBST_TRACE([LTLIBOBJS])
-m4trace:configure.in:102: -1- m4_pattern_allow([^LTLIBOBJS$])
-m4trace:configure.in:102: -1- AC_SUBST_TRACE([top_builddir])
-m4trace:configure.in:102: -1- AC_SUBST_TRACE([srcdir])
-m4trace:configure.in:102: -1- AC_SUBST_TRACE([abs_srcdir])
-m4trace:configure.in:102: -1- AC_SUBST_TRACE([top_srcdir])
-m4trace:configure.in:102: -1- AC_SUBST_TRACE([abs_top_srcdir])
-m4trace:configure.in:102: -1- AC_SUBST_TRACE([builddir])
-m4trace:configure.in:102: -1- AC_SUBST_TRACE([abs_builddir])
-m4trace:configure.in:102: -1- AC_SUBST_TRACE([abs_top_builddir])
-m4trace:configure.in:102: -1- AC_SUBST_TRACE([INSTALL])
-m4trace:configure.in:102: -1- _AC_AM_CONFIG_HEADER_HOOK([$ac_file])
-m4trace:configure.in:102: -1- _AM_OUTPUT_DEPENDENCY_COMMANDS
+m4trace:configure.in:112: -1- AC_SUBST([LIB@&t@OBJS], [$ac_libobjs])
+m4trace:configure.in:112: -1- AC_SUBST_TRACE([LIB@&t@OBJS])
+m4trace:configure.in:112: -1- m4_pattern_allow([^LIB@&t@OBJS$])
+m4trace:configure.in:112: -1- AC_SUBST([LTLIBOBJS], [$ac_ltlibobjs])
+m4trace:configure.in:112: -1- AC_SUBST_TRACE([LTLIBOBJS])
+m4trace:configure.in:112: -1- m4_pattern_allow([^LTLIBOBJS$])
+m4trace:configure.in:112: -1- AC_SUBST_TRACE([top_builddir])
+m4trace:configure.in:112: -1- AC_SUBST_TRACE([srcdir])
+m4trace:configure.in:112: -1- AC_SUBST_TRACE([abs_srcdir])
+m4trace:configure.in:112: -1- AC_SUBST_TRACE([top_srcdir])
+m4trace:configure.in:112: -1- AC_SUBST_TRACE([abs_top_srcdir])
+m4trace:configure.in:112: -1- AC_SUBST_TRACE([builddir])
+m4trace:configure.in:112: -1- AC_SUBST_TRACE([abs_builddir])
+m4trace:configure.in:112: -1- AC_SUBST_TRACE([abs_top_builddir])
+m4trace:configure.in:112: -1- AC_SUBST_TRACE([INSTALL])
+m4trace:configure.in:112: -1- _AC_AM_CONFIG_HEADER_HOOK([$ac_file])
+m4trace:configure.in:112: -1- _AM_OUTPUT_DEPENDENCY_COMMANDS

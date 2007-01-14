@@ -70,25 +70,35 @@ AC_CHECK_LIB(X11, XOpenDisplay,
   AC_MSG_ERROR([Could not find XOpenDisplay in -lX11.])
 )
 
-# Check for Lua support..
-PKG_CHECK_MODULES(Lua, lua >= 5.1,
-	LUA_CFLAGS=$Lua_CFLAGS
-	LUA_LIBS=$Lua_LIBS,
-	[
-		AC_MSG_RESULT(no)
-		PKG_CHECK_MODULES(Lua51, lua51 >= 5.1,
-			LUA_CFLAGS=$Lua51_CFLAGS
-			LUA_LIBS=$Lua51_LIBS,
-			[
-				AC_MSG_RESULT(no)
-				PKG_CHECK_MODULES(Lua51, lua5.1 >= 5.1,
-					LUA_CFLAGS=$Lua51_CFLAGS
-					LUA_LIBS=$Lua51_LIBS,
-					AC_MSG_ERROR([Lua library and header >= 5.1 are required.])
-				)
-			]
-		)
-	]
+# FIXME: Check for Lua support
+# Due the change of the name with every new version
+# we need to bruteforce the _real_ name of the lib.
+PKG_PROG_PKG_CONFIG(0.1)
+AC_CHECK_PROG(check, grep, yes, no)
+if test x"$check" = xno ; then
+	AC_MSG_ERROR([grep is need to properly build subtle])
+fi
+AC_CHECK_PROG(check, tail, yes, no)
+if test x"$check" = xno ; then
+  AC_MSG_ERROR([tail is need to properly build subtle])
+fi
+AC_CHECK_PROG(check, awk, yes, no)
+if test x"$check" = xno ; then
+  AC_MSG_ERROR([awk is need to properly build subtle])
+fi
+
+AC_MSG_CHECKING([lua pkg-config name])
+lua_name=`pkg-config --list-all | grep -i lua | tail -n 1 | awk '{print $1}'`
+if test -z $lua_name ; then
+	AC_MSG_RESULT([not found])
+	AC_MSG_ERROR([Lua library and header >= 5.1 are required.])
+fi
+AC_MSG_RESULT($lua_name)
+
+PKG_CHECK_MODULES(lua, $lua_name >= 5.1,
+	LUA_CFLAGS=$lua_CFLAGS
+	LUA_LIBS=$lua_LIBS,
+	AC_MSG_ERROR([Lua library and header >= 5.1 are required.])
 )
 AC_SUBST(LUA_CFLAGS)
 AC_SUBST(LUA_LIBS)
