@@ -37,7 +37,7 @@ subWinNew(Window win)
 	attrs.background_pixel			= d->colors.norm;
 	attrs.do_not_propagate_mask	=	ButtonPressMask|ButtonMotionMask|KeyPressMask;
 	attrs.event_mask						= ButtonPressMask|ButtonMotionMask|KeyPressMask|EnterWindowMask|LeaveWindowMask|
-		ExposureMask|VisibilityChangeMask|SubstructureRedirectMask|SubstructureNotifyMask;
+		ExposureMask|VisibilityChangeMask|PropertyChangeMask|SubstructureRedirectMask|SubstructureNotifyMask;
 
 	/* Create windows */
 	mask			= CWOverrideRedirect|CWBackPixmap|CWDontPropagate|CWEventMask;
@@ -67,6 +67,7 @@ subWinNew(Window win)
 	else
 		{
 			w->win = win;
+			XSelectInput(d->dpy, w->win, PropertyChangeMask);
 			XSetWindowBorderWidth(d->dpy, w->win, 0);
 			XReparentWindow(d->dpy, w->win, w->frame, d->bw, d->th);
 		}
@@ -83,14 +84,24 @@ subWinNew(Window win)
 void
 subWinDelete(SubWin *w)
 {
-	/* Focus */
-	if(w->parent) d->focus = w->parent->win;
-	subWinRender(1, w->parent);
+	if(w)
+		{
+			SubWin *p = w->parent;
 
-	XDeleteContext(d->dpy, w->frame, 1);
-	XDestroySubwindows(d->dpy, w->frame);
-	XDestroyWindow(d->dpy, w->frame);
-	free(w);
+			/* Focus */
+			if(p) 
+				{
+					d->focus = p->win;
+					subWinRender(1, p);
+				}
+
+			XDeleteContext(d->dpy, w->frame, 1);
+			XDestroySubwindows(d->dpy, w->frame);
+			XDestroyWindow(d->dpy, w->frame);
+
+			if(p && p->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV)) subTileConfigure(p);
+			free(w);
+		}
 }
 
  /**
@@ -153,7 +164,7 @@ GetPointer(Window *win,
 	unsigned int unused;
   
   return(XQueryPointer(d->dpy, DefaultRootWindow(d->dpy) , &root, win, x, y, 
-		&unused, &unused, &unused));
+		(int *)&unused, (int *)&unused, &unused));
 }
 
  /**
@@ -304,12 +315,16 @@ subWinResize(SubWin *w)
 {
 	XMoveResizeWindow(d->dpy, w->frame, w->x, w->y, w->width, w->height);
 	XMoveResizeWindow(d->dpy, w->title, 0, 0, w->width, d->th);
-	XMoveResizeWindow(d->dpy, w->win, d->bw, d->th, w->width - 2 * d->bw, 
-		w->height - d->th - d->bw);
-	XMoveResizeWindow(d->dpy, w->right, w->width - d->bw, d->th, 
-		d->bw, w->height - d->th);
-	XMoveResizeWindow(d->dpy, w->bottom, 0, w->height - d->bw, w->width, d->bw);
-	//subClientSendConfigure(w);
+
+	if(!(w->prop & SUB_WIN_SHADED))
+		{
+			XMoveResizeWindow(d->dpy, w->win, d->bw, d->th, w->width - 2 * d->bw, 
+				w->height - d->th - d->bw);
+			XMoveResizeWindow(d->dpy, w->right, w->width - d->bw, d->th, 
+				d->bw, w->height - d->th);
+			XMoveResizeWindow(d->dpy, w->bottom, 0, w->height - d->bw, w->width, d->bw);
+			if(w->prop & SUB_WIN_CLIENT) subClientSendConfigure(w);
+		}
 }
 
  /**
