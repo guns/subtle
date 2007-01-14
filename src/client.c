@@ -30,11 +30,13 @@ subClientNew(Window win)
 	w->client->caption = XCreateSimpleWindow(d->dpy, w->frame, d->th, 0, 
 		(strlen(w->client->name) + 1) * d->fx, d->th, 0, d->colors.border, d->colors.norm);
 
-	/* WMHints */
+	/* Hints */
 	hints = XGetWMHints(d->dpy, win);
 	if(hints)
 		{
-			if(hints->flags & StateHint && hints->initial_state == IconicState) subLogDebug("Iconic: win=%#lx\n", win);			
+			if(hints->flags & StateHint) subClientSetWMState(w, hints->initial_state);
+			else subClientSetWMState(w, NormalState);
+			if(hints->initial_state == IconicState) subLogDebug("Iconic: win=%#lx\n", win);			
 			if(hints->input) w->prop |= SUB_WIN_INPUT;
 			XFree(hints);
 		}
@@ -87,7 +89,7 @@ subClientRender(short mode,
 
 void
 subClientSetWMState(SubWin *w,
-	int state)
+	long state)
 {
 	CARD32 data[2];
 	data[0] = state;
@@ -136,7 +138,7 @@ subClientSendConfigure(SubWin *w)
 	ev.window							= w->win;
 	ev.x									= w->x;
 	ev.y									= w->y;
-	ev.width							= w->width;
+	ev.width							= w->width - 2 * d->bw;
 	ev.height							= w->height - d->th;
 	ev.above							= None;
 	ev.border_width 			= 0;
