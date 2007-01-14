@@ -61,23 +61,19 @@ subEwmhGetAtom(int hint)
 	return(atoms[hint]);
 }
 
-char *
-subEwmhGet(Atom type,
+static unsigned long
+GetProperty(Atom type,
 	Window win,
-	int hint)
+	int hint,
+	unsigned long size,
+	unsigned char **data)
 {
 	Atom ar;
 	unsigned long n, b;
-	unsigned char *data = NULL, *ret = NULL;
 	int format;
 
-	XGetWindowProperty(d->dpy, win, atoms[hint], 0L, 1L, False, type, &ar, &format, &n, &b, &data);
-	if(data)
-		{
-			ret	= data[0];
-			XFree(data);
-		}
-	return(ret);
+	XGetWindowProperty(d->dpy, win, atoms[hint], 0L, size, False, type, &ar, &format, &n, &b, data);
+	return(n);
 }
 
 int
@@ -109,6 +105,22 @@ subEwmhSetString(Window win,
 }
 
 int
+subEwmhGetString(Window win,
+	int hint,
+	char *value)
+{
+	unsigned char *data = NULL;
+
+	if(GetProperty(XA_STRING, win, hint, 64L, &data))
+		{
+			value = (char *)data;
+			XFree(data);
+			return(True);
+		}
+	return(False);
+}
+
+int
 subEwmhSetCardinal(Window win,
 	int hint,
 	long value)
@@ -125,4 +137,39 @@ subEwmhSetCardinals(Window win,
 {
 	return(XChangeProperty(d->dpy, win, atoms[hint], XA_CARDINAL, 32, PropModeReplace,
 		(unsigned char *)values, size));
+}
+
+int
+subEwmhGetCardinal(Window win,
+	int hint,
+	long *value)
+{
+	long *data = NULL;
+
+	if(GetProperty(XA_CARDINAL, win, hint, 1L, (unsigned char **)&data))
+		{
+			*value = *data;
+			XFree(data);
+			return(True);
+		}
+	return(False);
+}
+
+void *
+subEwmhGetProperty(Window win,
+	int hint,
+	Atom type,
+	int *num)
+{
+	unsigned char *data = NULL;
+
+	*num = (int)GetProperty(type, win, hint, 0x7fffffff, &data);
+	return((void *)data);
+}
+
+void
+subEwmhDeleteProperty(Window win,
+	int hint)
+{
+	XDeleteProperty(d->dpy, win, atoms[hint]);
 }
