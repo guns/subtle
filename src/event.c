@@ -240,15 +240,31 @@ static void
 HandleProperty(XPropertyEvent *ev)
 {
 	SubWin *w = subWinFind(ev->window);
+	if(!w)
+		{
+			unsigned int n = 0, i;
+			Window parent, nil, *wins = NULL;
+
+			XQueryTree(d->dpy, ev->window, &nil, &parent, &wins, &n);
+			XFree(wins);
+			if(parent) w = subWinFind(parent);
+		}
 	if(w && w->prop & SUB_WIN_CLIENT)
-		switch(ev->atom)
-			{
-				case XA_WM_NAME:
+		{
+			subLogDebug("Property: atom=%ld\n", ev->atom);
+			if(ev->atom == XA_WM_NAME || ev->atom == subEwmhGetAtom(SUB_EWMH_NET_WM_NAME))
+				{
+					int width;
 					if(w->client->name) XFree(w->client->name);
 					XFetchName(d->dpy, w->win, &w->client->name);
+
+					/* Check max length of the caption */
+					width = (strlen(w->client->name) + 1) * d->fx;
+					if(width > w->width - d->th - 4) width = w->width - d->th - 10;
+					XMoveResizeWindow(d->dpy, w->client->caption, d->th, 0, width, d->th);
 					RenderWindow(w);
-					break;
-			}
+				}
+		}
 }
 
 static void
@@ -356,7 +372,7 @@ int subEventLoop(void)
 							case KeyPress:					HandleKeyPress(&ev.xkey);								break;
 							case ConfigureRequest:	HandleConfigure(&ev.xconfigurerequest);	break;
 							case MapRequest: 				HandleMap(&ev.xmaprequest); 						break;
-							case UnmapNotify: 			HandleUnmap(&ev.xunmap); 								break;
+																			/*case UnmapNotify: 			HandleUnmap(&ev.xunmap); 								break;*/
 							case DestroyNotify: 		HandleDestroy(&ev.xdestroywindow);			break;
 							case ClientMessage: 		HandleMessage(&ev.xclient); 						break;
 							case ColormapNotify: 		HandleColormap(&ev.xcolormap); 					break;
