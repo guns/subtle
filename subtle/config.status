@@ -587,10 +587,10 @@ s,@DEBUG_TRUE@,|#_!!_#|,g
 s,@DEBUG_FALSE@,|#_!!_#|#,g
 s,@PKG_CONFIG@,|#_!!_#|/usr/bin/pkg-config,g
 s,@check@,|#_!!_#|yes,g
-s,@lua_CFLAGS@,|#_!!_#|-I/usr/include/5.1  ,g
-s,@lua_LIBS@,|#_!!_#|-llua -lm  ,g
-s,@LUA_CFLAGS@,|#_!!_#|-I/usr/include/5.1  ,g
-s,@LUA_LIBS@,|#_!!_#|-llua -lm  ,g
+s,@lua_CFLAGS@,|#_!!_#|-I/usr/include/lua-5.1  ,g
+s,@lua_LIBS@,|#_!!_#|-llua-5.1 -lm  ,g
+s,@LUA_CFLAGS@,|#_!!_#|-I/usr/include/lua-5.1  ,g
+s,@LUA_LIBS@,|#_!!_#|-llua-5.1 -lm  ,g
 s,@LTLIBOBJS@,|#_!!_#|,g
 :end
 s/|#_!!_#|//g

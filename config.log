@@ -536,8 +536,8 @@ ac_cv_struct_tm=time.h
 ac_cv_type_signal=void
 ac_cv_type_size_t=yes
 am_cv_CC_dependencies_compiler_type=gcc3
-pkg_cv_lua_CFLAGS='-I/usr/include/5.1  '
-pkg_cv_lua_LIBS='-llua -lm  '
+pkg_cv_lua_CFLAGS='-I/usr/include/lua-5.1  '
+pkg_cv_lua_LIBS='-llua-5.1 -lm  '
 
 ## ----------------- ##
 ## Output variables. ##
@@ -577,8 +577,8 @@ LIBOBJS=''
 LIBS='  -ldl -lX11'
 LN_S='ln -s'
 LTLIBOBJS=''
-LUA_CFLAGS='-I/usr/include/5.1  '
-LUA_LIBS='-llua -lm  '
+LUA_CFLAGS='-I/usr/include/lua-5.1  '
+LUA_LIBS='-llua-5.1 -lm  '
 MAKEINFO='${SHELL} /home/unexist/projects/subtle/missing --run makeinfo'
 OBJEXT='o'
 PACKAGE='subtle'
@@ -624,8 +624,8 @@ libdir='${exec_prefix}/lib'
 libexecdir='${exec_prefix}/libexec'
 localedir='${datarootdir}/locale'
 localstatedir='${prefix}/var'
-lua_CFLAGS='-I/usr/include/5.1  '
-lua_LIBS='-llua -lm  '
+lua_CFLAGS='-I/usr/include/lua-5.1  '
+lua_LIBS='-llua-5.1 -lm  '
 mandir='${datarootdir}/man'
 mkdir_p='mkdir -p --'
 oldincludedir='/usr/include'
