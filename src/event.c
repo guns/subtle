@@ -24,7 +24,7 @@ RenderWindow(SubWin *w)
 	Window win;
 
 	mode = (d->focus == w->frame) ? 0 : 1;
-	subLogDebug("Redraw: win=%#lx, mode=%d\n", w->win, mode);
+	/* Redraw every sublet */
 	if(w->prop & SUB_WIN_SCREEN) 
 		{
 			XExposeEvent event;
@@ -81,13 +81,13 @@ HandleButtonPress(XButtonEvent *ev)
 					/* Check double clicks */
 					if(last_time > 0 && ev->time - last_time <= 300)
 						{
-							subLogDebug("Double click on %#lx\n", ev->window);
+							subLogDebug("Double click: win=%#lx\n", ev->window);
 							subWinShade(w);
 							last_time = 0;
 						}						
 					else
 						{
-							subLogDebug("Single click on %#lx\n", ev->window);
+							subLogDebug("Single click: win=%#lx\n", ev->window);
 							switch(ev->button)
 								{
 									case 1: subWinDrag(0, w);	break;
@@ -260,7 +260,6 @@ HandleCrossing(XCrossingEvent *ev)
 			if(d->focus) 
 				{
 					SubWin *w1 = subWinFind(d->focus);
-					subLogDebug("Enter: focus: old=%#lx, new=%#lx\n", d->focus, w->frame);
 					d->focus = 0;
 					if(w1) RenderWindow(w1);
 				}
