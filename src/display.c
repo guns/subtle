@@ -12,9 +12,9 @@ HandleXError(Display *display,
 		}
 	else
 		{
-			char msg[255];
-			XGetErrorText(display, ev->error_code, msg, sizeof(msg));
-			subLogDebug("%s(%#lx)\n", msg, ev->resourceid);
+			char error[255];
+			XGetErrorText(display, ev->error_code, error, sizeof(error));
+			subLogDebug("%s: win=%#lx, request=%d\n", error, ev->resourceid, ev->request_code);
 		}
 	return(0);
 }
@@ -98,7 +98,7 @@ subDisplayNew(const char *display_string)
 					subLogError("Can't open display `%s'.\n", display_string);
 					return(0);
 				}
-			/*XSetErrorHandler(HandleXError);*/
+			XSetErrorHandler(HandleXError);
 		}
 	else subLogError("Can't alloc memory.\n");
 
