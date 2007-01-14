@@ -83,6 +83,10 @@ subWinNew(Window win)
 void
 subWinDelete(SubWin *w)
 {
+	/* Focus */
+	if(w->parent) d->focus = w->parent->win;
+	subWinRender(1, w->parent);
+
 	XDeleteContext(d->dpy, w->frame, 1);
 	XDestroySubwindows(d->dpy, w->frame);
 	XDestroyWindow(d->dpy, w->frame);
@@ -239,18 +243,40 @@ subWinDrag(short mode,
 void
 subWinShade(SubWin *w)
 {
-	if(w->parent && w->parent->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV))
+	if(w && w->parent)
 		{
+			XEvent event;
+			XGrabServer(d->dpy);
 			if(w->prop & SUB_WIN_SHADED)
 				{
 					w->prop &= ~SUB_WIN_SHADED;
-					(w->tile->shaded)--;
+					(w->parent->tile->shaded)--;
+
+					/* Set state */
+					if(w->prop & SUB_WIN_CLIENT) subClientSetWMState(w, NormalState);
+
+					/* Map most of the windows */
+					XMapWindow(d->dpy, w->win);
+					XMapWindow(d->dpy, w->left);
+					XMapWindow(d->dpy, w->right);
+					XMapWindow(d->dpy, w->bottom);
 				}
 			else 
 				{
 					w->prop	|= SUB_WIN_SHADED;
-					(w->tile->shaded)++;
+					(w->parent->tile->shaded)++;
+
+					/* Set state */
+					if(w->prop & SUB_WIN_CLIENT) subClientSetWMState(w, WithdrawnState);
+
+					/* Unmap most of the windows */
+					XUnmapWindow(d->dpy, w->win);
+					XUnmapWindow(d->dpy, w->left);
+					XUnmapWindow(d->dpy, w->right);
+					XUnmapWindow(d->dpy, w->bottom);
 				}
+			XUngrabServer(d->dpy);
+			while(XCheckTypedEvent(d->dpy, UnmapNotify, &event));
 			subTileConfigure(w->parent);
 		}
 }
