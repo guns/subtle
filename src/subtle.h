@@ -37,13 +37,14 @@
 #define SUB_WIN_CLIENT			(1L << 2)									// Client window
 #define SUB_WIN_TILEH				(1L << 3)									// Horizontal tiling window
 #define SUB_WIN_TILEV				(1L << 4)									// Vertical tiling window
-#define SUB_WIN_TRANS				(1L << 5)									// Transient window
-#define SUB_WIN_FLOAT				(1L << 6)									// Floating window
-#define SUB_WIN_SHADED			(1L << 7)									// Shaded window
-#define SUB_WIN_FIXED				(1L << 8)									// Fixed size window
-#define SUB_WIN_INPUT				(1L << 9)									// Expect to get focus active/passiv
-#define SUB_WIN_SEND_FOCUS	(1L << 10)								// Send focus messages
-#define SUB_WIN_SEND_CLOSE	(1L << 11)								// Send close messages
+#define SUB_WIN_SUBLET			(1L << 5)									// Sublet window
+#define SUB_WIN_TRANS				(1L << 6)									// Transient window
+#define SUB_WIN_FLOAT				(1L << 7)									// Floating window
+#define SUB_WIN_SHADED			(1L << 8)									// Shaded window
+#define SUB_WIN_FIXED				(1L << 9)									// Fixed size window
+#define SUB_WIN_INPUT				(1L << 10)								// Expect to get focus active/passiv
+#define SUB_WIN_SEND_FOCUS	(1L << 11)								// Send focus messages
+#define SUB_WIN_SEND_CLOSE	(1L << 12)								// Send close messages
 
 struct subtile;
 struct subclient;
@@ -81,7 +82,7 @@ typedef struct subclient
 
 SubWin *subClientNew(Window win);											// Create a new client
 void subClientDelete(SubWin *w);											// Delete a client
-void subClientSetWMState(SubWin *w, int state);				// Set client WM state
+void subClientSetWMState(SubWin *w, long state);			// Set client WM state
 long subClientGetWMState(SubWin *w);									// Get client WM state
 void subClientSendConfigure(SubWin *w);								// Send configure request
 void subClientSendDelete(SubWin *w);									// Send delete request
@@ -206,7 +207,7 @@ int subEventLoop(void);																// Event loop
 enum SubEwmhHints
 {
 	/* ICCCM */
-	SUB_EWMH_WM_STATE,
+	SUB_EWMH_WM_STATE,																	// Window state
 	SUB_EWMH_WM_CHANGE_STATE,
 	SUB_EWMH_WM_PROTOCOLS,															// Supported protocols 
 	SUB_EWMH_WM_COLORMAP_WINDOWS,
@@ -249,16 +250,8 @@ enum SubEwmhHints
 	SUB_EWMH_NET_WM_ACTION_CLOSE
 };
 
-void subEwmhNew(void);																	// Create a new ewmh
-
-#define subEwmhGetCardinal(win, hint) \
-	(long)subEwmhGet(XA_CARDINAL, win, hint);
-#define subEwmhGetWindow(win, hint) \
-	(Window)subEwmhGet(XA_WINDOW, win, hint);
-
-Atom subEwmhGetAtom(int hint);													// Get EWMH/ICCCM atom
-char *subEwmhGet(Atom type, Window win, int hint);			// Get EWMH/ICCCM hint
-
+void subEwmhNew(void);																	// Register atoms/hints
+Atom subEwmhGetAtom(int hint);													// Get an atom
 
 int subEwmhSetWindow(Window win, int hint, 
 	Window value);																				// Set window property
@@ -266,9 +259,17 @@ int subEwmhSetWindows(Window win, int hint,
 	Window *values, int size);														// Set window properties
 int subEwmhSetString(Window win, int hint, 
 	const char *value);																		// Set string property
+int subEwmhGetString(Window win, int hint,
+	char *value);																					// Get string property
 int subEwmhSetCardinal(Window win, int hint,
 	long value);																					// Set cardinal property
 int subEwmhSetCardinals(Window win, int hint,
 	long *values, int size);															// Set cardinal properties
+int subEwmhGetCardinal(Window win, int hint,
+	long *value);																					// Get cardinal property
+
+void * subEwmhGetProperty(Window win, int hint,
+	Atom type, int *num);																	// Get window properties
+void subEwmhDeleteProperty(Window win, int hint);				// Delete window property
 
 #endif /* SUBTLE_H */
