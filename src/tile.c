@@ -132,7 +132,7 @@ subTileConfigure(SubWin *w)
 				{
 					n						= n - w->tile->shaded >= 0 ? n - w->tile->shaded : 1; /* Prevent division by zero */
 					w->tile->mw = (w->prop & SUB_WIN_TILEH) ? attr.width / n	: attr.width;
-					w->tile->mh = (w->prop & SUB_WIN_TILEH) ? attr.height	: (attr.height - w->tile->shaded * d->th) / n;
+					w->tile->mh = (w->prop & SUB_WIN_TILEH) ? attr.height			: (attr.height - w->tile->shaded * d->th) / n;
 					for(i = 0; i < n + w->tile->shaded; i++)
 						{
 							SubWin *c = subWinFind(wins[i]);
@@ -149,12 +149,12 @@ subTileConfigure(SubWin *w)
 
 									y += c->height;
 
+									subLogDebug("Configuring %s-window: x=%d, y=%d, width=%d, height=%d\n", (c->prop & SUB_WIN_SHADED) ? "s" : "n", c->x, c->y, c->width, c->height);
+
 									subWinResize(c);
 
 									if(c->prop & SUB_WIN_CLIENT) subClientSendConfigure(c);
 									else if(c->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV)) subTileConfigure(c);
-
-									subLogDebug("Configuring %s-window: x=%d, y=%d, width=%d, height=%d\n", (c->prop & SUB_WIN_SHADED) ? "s" : "n", c->x, c->y, c->width, c->height);
 								}
 						}
 					XFree(wins);
