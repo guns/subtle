@@ -120,7 +120,7 @@ subTileRender(short mode,
 void
 subTileConfigure(SubWin *w)
 {
-	unsigned int n = 0, i, s = 0;
+	unsigned int n = 0, i, y = 0;
 	Window nil, *wins = NULL;
 	XWindowAttributes attr;
 
@@ -130,7 +130,7 @@ subTileConfigure(SubWin *w)
 			XQueryTree(d->dpy, w->win, &nil, &nil, &wins, &n);
 			if(w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV) && n > 0)
 				{
-					n						= n - w->tile->shaded >= 0 ? n - w->tile->shaded : 0; /* Prevent division by zero */
+					n						= n - w->tile->shaded >= 0 ? n - w->tile->shaded : 1; /* Prevent division by zero */
 					w->tile->mw = (w->prop & SUB_WIN_TILEH) ? attr.width / n	: attr.width;
 					w->tile->mh = (w->prop & SUB_WIN_TILEH) ? attr.height	: (attr.height - w->tile->shaded * d->th) / n;
 					for(i = 0; i < n + w->tile->shaded; i++)
@@ -138,19 +138,16 @@ subTileConfigure(SubWin *w)
 							SubWin *c = subWinFind(wins[i]);
 							if(c && !(c->prop & (SUB_WIN_FLOAT|SUB_WIN_TRANS)))
 								{
-									/* Shaded windows */
-									if(c->prop & SUB_WIN_SHADED) 
-										{
-											c->y = (w->prop & SUB_WIN_TILEH) ? 0 : (n * w->tile->mh) + (s++ * d->th);
-										}
-									else 
-										{
-											c->y = (w->prop & SUB_WIN_TILEH) ? 0 : (i - s) * w->tile->mh;
-										}
-									/* Fix rounding */
-									c->height = (w->prop & SUB_WIN_TILEV && i == n - 1) ? w->tile->mh - w->tile->shaded * d->th + abs(n * w->tile->mh - attr.height) : w->tile->mh;
-									c->width	= (w->prop & SUB_WIN_TILEH && i == n - 1) ? w->tile->mw + abs(n * w->tile->mw - attr.width) : w->tile->mw;
+									if(c->prop & SUB_WIN_SHADED) c->height = d->th;
+									else c->height = (w->prop & SUB_WIN_TILEV && i == n + w->tile->shaded - 1) ?
+										((c->prop & SUB_WIN_SHADED) ? d->th : w->tile->mh) - w->tile->shaded * d->th + abs(n * w->tile->mh - attr.height) : w->tile->mh;
+
+									c->width	= (w->prop & SUB_WIN_TILEH && i == n - 1) ? 
+										w->tile->mw + abs(n * w->tile->mw - attr.width) : w->tile->mw;
 									c->x			= (w->prop & SUB_WIN_TILEH) ? i * w->tile->mw : 0;
+									c->y			= (w->prop & SUB_WIN_TILEH) ? 0 : y;
+
+									y += c->height;
 
 									subWinResize(c);
 
