@@ -98,7 +98,7 @@ subDisplayNew(const char *display_string)
 					subLogError("Can't open display `%s'.\n", display_string);
 					return(0);
 				}
-			XSetErrorHandler(HandleXError);
+			/*XSetErrorHandler(HandleXError);*/
 		}
 	else subLogError("Can't alloc memory.\n");
 
@@ -147,7 +147,7 @@ subDisplayNew(const char *display_string)
 					
 	gvals.function				= GXinvert;
 	gvals.subwindow_mode	= IncludeInferiors;
-	gvals.line_width			= 2;
+	gvals.line_width			= 3;
 	d->gcs.invert 				= XCreateGC(d->dpy, root, GCFunction|GCSubwindowMode|GCLineWidth, &gvals);
 
 	/* Create cursors */
