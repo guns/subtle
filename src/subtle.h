@@ -51,7 +51,7 @@ struct subclient;
 
 typedef struct subwin
 {
-	int			x, y, width, height, prop;									// Window properties
+	int			x, y, width, height, prop, aspect;					// Window properties
 	Window	icon, frame, title, win;										// Subwindows
 	Window	left, right, bottom;												// Border windows
 	struct subwin *parent;															// Parent window
@@ -65,7 +65,8 @@ typedef struct subwin
 SubWin *subWinFind(Window win);												// Find a window
 SubWin *subWinNew(Window win);												// Create a new window
 void subWinDelete(SubWin *w);													// Delete a window
-void subWinDrag(short mode, SubWin *w);								// Move/Resize a window
+void subWinDrag(short mode, SubWin *w, 
+	XButtonEvent *bev);																	// Move/Resize a window
 void subWinShade(SubWin *w);													// Shade/unshade a window
 void subWinResize(SubWin *w);													// Resize a window
 void subWinRender(short mode, SubWin *w);							// Render a window
@@ -87,13 +88,14 @@ long subClientGetWMState(SubWin *w);									// Get client WM state
 void subClientSendConfigure(SubWin *w);								// Send configure request
 void subClientSendDelete(SubWin *w);									// Send delete request
 void subClientToggleShade(SubWin *w);									// Toggle shaded state
+void subClientFetchName(SubWin *w);										// Fetch client name
 void subClientRender(short mode, SubWin *w);					// Render the window
 
 /* tile.c */
 typedef struct subtile
 {
 	unsigned int 		mw, mh, shaded;											// Tile min. width / height
-	Window					newcol, delcol;											// Tile buttons
+	Window					btnew, btdel;												// Tile buttons
 } SubTile;
 
 #define subTileNewHoriz()	subTileNew(0)
