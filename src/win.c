@@ -37,7 +37,7 @@ subWinNew(Window win)
 	attrs.background_pixel			= d->colors.norm;
 	attrs.do_not_propagate_mask	=	ButtonPressMask|ButtonMotionMask|KeyPressMask;
 	attrs.event_mask						= ButtonPressMask|ButtonMotionMask|KeyPressMask|EnterWindowMask|LeaveWindowMask|
-		ExposureMask|VisibilityChangeMask|PropertyChangeMask|SubstructureRedirectMask|SubstructureNotifyMask;
+		ExposureMask|VisibilityChangeMask|SubstructureRedirectMask|SubstructureNotifyMask;
 
 	/* Create windows */
 	mask			= CWOverrideRedirect|CWBackPixmap|CWDontPropagate|CWEventMask;
@@ -51,7 +51,7 @@ subWinNew(Window win)
 	w->icon		= SUBWINNEW(w->frame, 2, 2, d->th - 6, d->th - 6, 1);
 	
 	/* Create borders */
-	mask 					|= CWCursor;
+	mask					|= CWCursor;
 	attrs.cursor	= d->cursors.left;
 	w->left				= SUBWINNEW(w->frame, 0, d->th, d->bw, w->height - d->th, 0);
 	attrs.cursor	= d->cursors.right;
@@ -88,13 +88,6 @@ subWinDelete(SubWin *w)
 		{
 			SubWin *p = w->parent;
 
-			/* Focus */
-			if(p) 
-				{
-					d->focus = p->win;
-					subWinRender(1, p);
-				}
-
 			XDeleteContext(d->dpy, w->frame, 1);
 			XDestroySubwindows(d->dpy, w->frame);
 			XDestroyWindow(d->dpy, w->frame);
@@ -119,7 +112,6 @@ subWinRender(short mode,
 	/* Update color */
 	XSetWindowBackground(d->dpy, w->title,	col);
 	XSetWindowBackground(d->dpy, w->icon,		col);
-	XSetWindowBackground(d->dpy, w->icon,		col);
 	XSetWindowBackground(d->dpy, w->left, 	col);
 	XSetWindowBackground(d->dpy, w->right, 	col);
 	XSetWindowBackground(d->dpy, w->bottom,	col);
@@ -137,84 +129,95 @@ subWinRender(short mode,
 }
 
 static void
-DrawOutline(int mode,
-	int x,
-	int y,
-	SubWin *w)
+DrawOutline(short mode,
+	SubWin *w,
+	int start,
+	int rx,
+	int ry,
+	int sx,
+	int sy,
+	int sw,
+	int sh)
 {
-	char buf[32];
-	Window nil;
-	int rx, ry, len;
-    
-	XTranslateCoordinates(d->dpy, w->frame, DefaultRootWindow(d->dpy), 
-		x, y, &rx, &ry, &nil);
-	snprintf(buf, sizeof(buf), "%dx%d+%d+%d", w->width, w->height, rx, ry);
-	printf("x=%3d, y=%3d, wx=%3d, wy=%3d, rx=%3d, ry=%3d\n", x, y, w->x, w->y, rx, ry);
-
-	XDrawRectangle(d->dpy, DefaultRootWindow(d->dpy), d->gcs.invert,
-		rx, ry, w->width, w->height);
-}
-
-static int
-GetPointer(Window *win, 
-	int *x,
-  int *y)
-{ 
-  Window root;
-	unsigned int unused;
-  
-  return(XQueryPointer(d->dpy, DefaultRootWindow(d->dpy) , &root, win, x, y, 
-		(int *)&unused, (int *)&unused, &unused));
+	w->x = sx;
+	w->y = sy;
+	switch(mode)
+		{
+			case 1: w->x 			= sx - (start - rx); w->width = sx + (start - rx);	break;
+			case 2:	w->width	= sw + (rx - start); 																break;
+			case 3: w->height	= sh + (ry - start); 																break;
+		}
+	XDrawRectangle(d->dpy, DefaultRootWindow(d->dpy), d->gcs.invert, w->x, w->y, w->width, w->height);
 }
 
  /**
 	* Movie/resize the window.
 	* @param mode Attach mode
 	* @param w A #SubWin
+	* @param bev A #XButtonEvent
 	**/
 
 void
 subWinDrag(short mode,
-	SubWin *w)
+	SubWin *w,
+	XButtonEvent *bev)
 {
 	XEvent ev;
+	Cursor cursor;
 	Window win;
 	SubWin *w2 = NULL, *p = NULL, *p2 = NULL;
-	int mx = 0, my = 0, nx = w->x, ny = w->y, sw = w->width, sh = w->height;
+	int start = 0, rx = 0, ry = 0, sx = 0, sy = 0, sw = w->width, sh = w->height;
+	unsigned int mask;
 
+	/* Get window position */
+	XQueryPointer(d->dpy, DefaultRootWindow(d->dpy), &win, &win, &rx, &ry, &sx, &sy, &mask);
+	sx = rx - bev->x;
+	sy = ry - bev->y;
+
+	/* Select cursor */
+	switch(mode)
+		{
+			case 0: cursor = d->cursors.square;							break;
+			case 1:	cursor = d->cursors.left;		start = rx;	break;
+			case 2:	cursor = d->cursors.right;	start = rx;	break;
+			case 3:	cursor = d->cursors.bottom;	start = ry;	break;
+		}
 	if(!XGrabPointer(d->dpy, w->frame, True, POINTER_MASK, GrabModeAsync, 
-			GrabModeAsync, None, d->cursors.square, CurrentTime) == GrabSuccess)
+			GrabModeAsync, None, cursor, CurrentTime) == GrabSuccess)
 		return;
 
 	XGrabServer(d->dpy);
-	GetPointer(&win, &mx, &my);
+	if(mode) DrawOutline(mode, w, start, rx, ry, sx, sy, sw, sh);
 	for(;;)
 		{
-			XMaskEvent(d->dpy, (PointerMotionMask|ButtonReleaseMask|EnterWindowMask), &ev);
+			XMaskEvent(d->dpy, PointerMotionMask|ButtonReleaseMask|EnterWindowMask, &ev);
 			switch(ev.type)
 				{
-					/* FIXME: ButtonRelease events doesn't return the real destination window */
+					/* Button release doesn't return our destination window */
 					case EnterNotify:
 						win = ev.xcrossing.window;
 						break;
 					case MotionNotify:
-						nx = w->x + (ev.xmotion.x - mx);
-						ny = w->y + (ev.xmotion.y - my);
+						if(mode) DrawOutline(mode, w, start, rx, ry, sx, sy, sw, sh);
+						rx = ev.xmotion.x_root;
+						ry = ev.xmotion.y_root;
+						if(mode) DrawOutline(mode, w, start, rx, ry, sx, sy, sw, sh);
 						break;
 					case ButtonRelease:
-						/* Prevent from unneccessary config loops whithin double clicks */
-						if(nx != w->x && ny != w->y)
-							{ 
+						if(win != w->frame && !mode)
+							{
 								w2 = subWinFind(win);
 						
 								if(w && w2 && w->parent && w2->parent)
 									{
-										/* Append a window to tile (* to tile) */
-										if((mode || w->prop & SUB_WIN_CLIENT) && w2->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV))
+										/* Append a window to tile */
+										if((mode == 0 || w->prop & SUB_WIN_CLIENT) && w2->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV))
 											{
+												SubWin *p = w->parent;
+		
 												subTileAdd(w2, w);
 												subTileConfigure(w2->parent);
-												if(mode) subTileConfigure(w->parent);
+												subTileConfigure(p);
 											}
 										/* Swap two windows manually */
 										else
@@ -237,6 +240,11 @@ subWinDrag(short mode,
 												else subTileConfigure(w->parent);
 											}
 									}
+								}
+						else if(mode) /* Resize */
+							{
+								DrawOutline(mode, w, start, rx, ry, sx, sy, sw, sh);
+								/*subWinResize(w);*/
 							}
 												
 						XUngrabServer(d->dpy);
