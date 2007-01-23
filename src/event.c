@@ -73,9 +73,12 @@ HandleButtonPress(XButtonEvent *ev)
 
 			if(ev->subwindow == w->icon)
 				{
-					subWinDrag(1, w);
+					subWinDrag(0, w, ev);
 					return;
 				}
+			else if(ev->subwindow == w->left) subWinDrag(1, w, ev);
+			else if(ev->subwindow == w->right) subWinDrag(2, w, ev);
+			else if(ev->subwindow == w->bottom) subWinDrag(3, w, ev);
 			else if(ev->subwindow == w->title) 
 				{
 					/* Check double clicks */
@@ -90,7 +93,7 @@ HandleButtonPress(XButtonEvent *ev)
 							subLogDebug("Single click: win=%#lx\n", ev->window);
 							switch(ev->button)
 								{
-									case 1: subWinDrag(0, w);	break;
+									case 1: subWinDrag(0, w, ev);	break;
 									case 2: 
 										if(w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV)) 
 											{
@@ -98,7 +101,7 @@ HandleButtonPress(XButtonEvent *ev)
 												if(w->prop & SUB_WIN_SCREEN) subScreenDelete(w);
 												else subTileDelete(w);
 											}
-										else subClientDelete(w);
+										else subClientSendDelete(w);
 										return;
 								}
 							last_time = ev->time;
@@ -106,13 +109,13 @@ HandleButtonPress(XButtonEvent *ev)
 				}
 			if(w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV))
 				{
-					if(ev->subwindow == w->tile->newcol) 
+					if(ev->subwindow == w->tile->btnew) 
 						switch(ev->button)
 							{
 								case 1: subTileAdd(w, subTileNewVert());	break; 
 								case 3: subTileAdd(w, subTileNewHoriz());	break;
 							}
-					else if(ev->subwindow == w->tile->delcol) 
+					else if(ev->subwindow == w->tile->btdel) 
 						{
 							/* Check for screens */
 							if(w->prop & SUB_WIN_SCREEN) subScreenDelete(w);
@@ -142,6 +145,10 @@ HandleKeyPress(XKeyEvent *ev)
 			else if(!strcmp(buf, "add_htile"))
 				{
 					subTileAdd(w, subTileNewHoriz());
+				}
+			else if(!strcmp(buf, "del_tile") && w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV))
+				{
+					subTileDelete(w);
 				}
 		}
 }
@@ -239,31 +246,20 @@ HandleColormap(XColormapEvent *ev)
 static void
 HandleProperty(XPropertyEvent *ev)
 {
-	SubWin *w = subWinFind(ev->window);
-	if(!w)
-		{
-			unsigned int n = 0, i;
-			Window parent, nil, *wins = NULL;
+	SubWin *w = NULL;
+	unsigned int n = 0, i;
+	Window parent, nil, *wins = NULL;
 
-			XQueryTree(d->dpy, ev->window, &nil, &parent, &wins, &n);
-			XFree(wins);
-			if(parent) w = subWinFind(parent);
-		}
+	/* Property changes never propagate.. */
+	XQueryTree(d->dpy, ev->window, &nil, &parent, &wins, &n);
+	XFree(wins);
+
+	if(parent) w = subWinFind(parent);
 	if(w && w->prop & SUB_WIN_CLIENT)
 		{
 			subLogDebug("Property: atom=%ld\n", ev->atom);
-			if(ev->atom == XA_WM_NAME || ev->atom == subEwmhGetAtom(SUB_EWMH_NET_WM_NAME))
-				{
-					int width;
-					if(w->client->name) XFree(w->client->name);
-					XFetchName(d->dpy, w->win, &w->client->name);
-
-					/* Check max length of the caption */
-					width = (strlen(w->client->name) + 1) * d->fx;
-					if(width > w->width - d->th - 4) width = w->width - d->th - 10;
-					XMoveResizeWindow(d->dpy, w->client->caption, d->th, 0, width, d->th);
-					RenderWindow(w);
-				}
+			if(ev->atom == XA_WM_NAME || 
+				ev->atom == subEwmhGetAtom(SUB_EWMH_NET_WM_NAME)) subClientFetchName(w);
 		}
 }
 
@@ -284,6 +280,9 @@ HandleCrossing(XCrossingEvent *ev)
 			if(ev->type == LeaveNotify && !ev->mode && w->parent) w = w->parent;
 			d->focus = w->frame;
 			RenderWindow(w);
+			subEwmhSetWindow(DefaultRootWindow(d->dpy), SUB_EWMH_NET_ACTIVE_WINDOW, w->frame);
+
+			XGrabKey(d->dpy, AnyKey, AnyModifier, w->frame, True, GrabModeAsync, GrabModeAsync); 
 
 			/* Focus */
 			if(w->prop & SUB_WIN_CLIENT)
