@@ -15,12 +15,10 @@ subTileNew(short mode)
 	w->tile	= (SubTile *)calloc(1, sizeof(SubTile));
 	if(!w->tile) subLogError("Can't alloc memory. Exhausted?\n");
 
-	w->tile->newcol = XCreateSimpleWindow(d->dpy, w->frame, d->th, 0, 7 * d->fx, 
-		d->th, 0, d->colors.border, d->colors.norm);
-	w->tile->delcol	= XCreateSimpleWindow(d->dpy, w->frame, d->th + 7 * d->fx, 0,
-		7 * d->fx, d->th, 0, d->colors.border, d->colors.norm);
-	w->tile->mw = w->width;
-	w->tile->mh = w->height;
+	w->tile->btnew	= XCreateSimpleWindow(d->dpy, w->frame, d->th, 0, 7 * d->fx, d->th, 0, d->colors.border, d->colors.norm);
+	w->tile->btdel	= XCreateSimpleWindow(d->dpy, w->frame, d->th + 7 * d->fx, 0, 7 * d->fx, d->th, 0, d->colors.border, d->colors.norm);
+	w->tile->mw			= w->width;
+	w->tile->mh			= w->height;
 
 	screen->active = w;
 
@@ -102,15 +100,18 @@ subTileRender(short mode,
 
 	if(w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV))
 		{
-			XSetWindowBackground(d->dpy, w->tile->newcol, col);
-			XSetWindowBackground(d->dpy, w->tile->delcol, col);
-			XClearWindow(d->dpy, w->tile->newcol);
-			XClearWindow(d->dpy, w->tile->delcol);
-			XDrawString(d->dpy, w->tile->newcol, d->gcs.font, 3, d->fy - 1, "Newcol", 6);
-			XDrawString(d->dpy, w->tile->delcol, d->gcs.font, 3, d->fy - 1, "Delcol", 6);
+			XSetWindowBackground(d->dpy, w->tile->btnew, col);
+			XSetWindowBackground(d->dpy, w->tile->btdel, col);
+			XClearWindow(d->dpy, w->tile->btnew);
+			XClearWindow(d->dpy, w->tile->btdel);
+
+			/* Descriptive buttons */
+			if(w->prop & SUB_WIN_TILEV) XDrawString(d->dpy, w->tile->btnew, d->gcs.font, 3, d->fy - 1, "Newrow", 6);
+			else XDrawString(d->dpy, w->tile->btnew, d->gcs.font, 3, d->fy - 1, "Newcol", 6);
+			if(w->parent && w->parent->prop & SUB_WIN_TILEV) XDrawString(d->dpy, w->tile->btdel, d->gcs.font, 3, d->fy - 1, "Delrow", 6);
+			else XDrawString(d->dpy, w->tile->btdel, d->gcs.font, 3, d->fy - 1, "Delcol", 6);
 		}
 }
-
 
  /**
 	* Configure a tile and each child.
@@ -120,7 +121,7 @@ subTileRender(short mode,
 void
 subTileConfigure(SubWin *w)
 {
-	unsigned int n = 0, i, y = 0;
+	unsigned int n = 0, i, y = 0, fix = 0;
 	Window nil, *wins = NULL;
 	XWindowAttributes attr;
 
@@ -132,20 +133,25 @@ subTileConfigure(SubWin *w)
 				{
 					n						= n - w->tile->shaded >= 0 ? n - w->tile->shaded : 1; /* Prevent division by zero */
 					w->tile->mw = (w->prop & SUB_WIN_TILEH) ? attr.width / n	: attr.width;
-					w->tile->mh = (w->prop & SUB_WIN_TILEH) ? attr.height			: (attr.height - w->tile->shaded * d->th) / n;
+					w->tile->mh = (w->prop & SUB_WIN_TILEH) ? attr.height : (attr.height - w->tile->shaded * d->th) / n;
+
+					/* Fix rounding */
+					if(w->prop & SUB_WIN_TILEH) fix = abs(attr.width - n * w->tile->mw - w->tile->shaded * d->th);
+					else fix = abs(attr.height - n * w->tile->mh - w->tile->shaded * d->th);
+
 					for(i = 0; i < n + w->tile->shaded; i++)
 						{
 							SubWin *c = subWinFind(wins[i]);
 							if(c && !(c->prop & (SUB_WIN_FLOAT|SUB_WIN_TRANS)))
 								{
-									if(c->prop & SUB_WIN_SHADED) c->height = d->th;
-									else c->height = (w->prop & SUB_WIN_TILEV && i == n + w->tile->shaded - 1) ?
-										((c->prop & SUB_WIN_SHADED) ? d->th : w->tile->mh) - w->tile->shaded * d->th + abs(n * w->tile->mh - attr.height) : w->tile->mh;
-
-									c->width	= (w->prop & SUB_WIN_TILEH && i == n - 1) ? 
-										w->tile->mw + abs(n * w->tile->mw - attr.width) : w->tile->mw;
+									c->height = (c->prop & SUB_WIN_SHADED) ? d->th : w->tile->mh;
+									c->width	= w->tile->mw;
 									c->x			= (w->prop & SUB_WIN_TILEH) ? i * w->tile->mw : 0;
 									c->y			= (w->prop & SUB_WIN_TILEH) ? 0 : y;
+
+									if(i == n + w->tile->shaded - 1) 
+										if(w->prop & SUB_WIN_TILEH) c->width += fix;
+										else c->height += fix;
 
 									y += c->height;
 
