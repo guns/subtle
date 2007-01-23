@@ -63,23 +63,30 @@ subClientNew(Window win)
 }
 
  /**
-	* Render the client window.
+	* Delete a client.
 	* @param w A #SubWin
 	**/
 
 void
-subClientRender(short mode,
-	SubWin *w)
+subClientDelete(SubWin *w)
 {
-	unsigned long col = mode ? d->colors.norm : d->colors.act;
 	if(w->prop & SUB_WIN_CLIENT)
 		{
-			XSetWindowBackground(d->dpy, w->client->caption, col);
-			XClearWindow(d->dpy, w->client->caption);
-			XDrawString(d->dpy, w->client->caption, d->gcs.font, 3, d->fy - 1, w->client->name, 
-				strlen(w->client->name));
+			XEvent event;
+			XGrabServer(d->dpy);
+
+			subWinUnmap(w);
+
+			if(w->client->name) XFree(w->client->name);
+			free(w->client);
+			subWinDelete(w);
+
+			XSync(d->dpy, False);
+			XUngrabServer(d->dpy);
+			while(XCheckTypedEvent(d->dpy, EnterWindowMask|LeaveWindowMask, &event));
 		}
 }
+
 
  /**
 	* Set the WM state for the client.
@@ -110,12 +117,12 @@ subClientGetWMState(SubWin *w)
 {
 	Atom type;
 	int format;
-	unsigned long read, left;
+	unsigned long nil, bytes;
 	long *data = NULL, state = WithdrawnState;
 
 	if(XGetWindowProperty(d->dpy, w->win, subEwmhGetAtom(SUB_EWMH_WM_STATE), 0L, 2L, False, 
-			subEwmhGetAtom(SUB_EWMH_WM_STATE), &type, &format, &read, &left,
-			(unsigned char **) &data) == Success && read)
+			subEwmhGetAtom(SUB_EWMH_WM_STATE), &type, &format, &bytes, &nil,
+			(unsigned char **) &data) == Success && bytes)
 		{
 			state = *data;
 			XFree(data);
@@ -148,31 +155,6 @@ subClientSendConfigure(SubWin *w)
 }
 
  /**
-	* Delete a client.
-	* @param w A #SubWin
-	**/
-
-void
-subClientDelete(SubWin *w)
-{
-	if(w->prop & SUB_WIN_CLIENT)
-		{
-			XEvent event;
-			XGrabServer(d->dpy);
-
-			subWinUnmap(w);
-
-			if(w->client->name) XFree(w->client->name);
-			free(w->client);
-			subWinDelete(w);
-
-			XSync(d->dpy, False);
-			XUngrabServer(d->dpy);
-			while(XCheckTypedEvent(d->dpy, EnterWindowMask|LeaveWindowMask, &event));
-		}
-}
-
- /**
 	* Send delete event to client if supported, otherwise just kill the window.
 	* @param w A #SubWin
 	**/
@@ -180,20 +162,65 @@ subClientDelete(SubWin *w)
 void
 subClientSendDelete(SubWin *w)
 {
-	subWinUnmap(w);
-	if(w)
-		if(w->prop & SUB_WIN_SEND_CLOSE)
-			{
-				XEvent ev;
+	if(w && w->prop & SUB_WIN_CLIENT)
+		{
 
-				ev.type									= ClientMessage;
-				ev.xclient.window				= w->win;
-				ev.xclient.message_type = subEwmhGetAtom(SUB_EWMH_WM_PROTOCOLS);
-				ev.xclient.format				= 32;
-				ev.xclient.data.l[0]		= subEwmhGetAtom(SUB_EWMH_WM_DELETE_WINDOW);
-				ev.xclient.data.l[1]		= CurrentTime;
+			subWinUnmap(w);
+			if(w->prop & SUB_WIN_SEND_CLOSE)
+				{
+					XEvent ev;
 
-				XSendEvent(d->dpy, w->win, False, NoEventMask, &ev);
-			}
-		else XKillClient(d->dpy, w->win);
+					ev.type									= ClientMessage;
+					ev.xclient.window				= w->win;
+					ev.xclient.message_type = subEwmhGetAtom(SUB_EWMH_WM_PROTOCOLS);
+					ev.xclient.format				= 32;
+					ev.xclient.data.l[0]		= subEwmhGetAtom(SUB_EWMH_WM_DELETE_WINDOW);
+					ev.xclient.data.l[1]		= CurrentTime;
+
+					XSendEvent(d->dpy, w->win, False, NoEventMask, &ev);
+				}
+			else XKillClient(d->dpy, w->win);
+		}
+}
+
+	/**
+	 * Fetch client name.
+	 * @param w A #SubWin
+	 **/
+
+void
+subClientFetchName(SubWin *w)
+{
+	if(w && w->prop & SUB_WIN_CLIENT)
+		{
+			int width;
+			if(w->client->name) XFree(w->client->name);
+			XFetchName(d->dpy, w->win, &w->client->name);
+
+			/* Check max length of the caption */
+			width = (strlen(w->client->name) + 1) * d->fx;
+			if(width > w->width - d->th - 4) width = w->width - d->th - 14;
+			XMoveResizeWindow(d->dpy, w->client->caption, d->th, 0, width, d->th);
+			subWinRender(d->focus == w->frame ? 0 : 1, w);
+			subClientRender(d->focus == w->frame ? 0 : 1, w);
+		}
+}
+
+ /**
+	* Render the client window.
+	* @param w A #SubWin
+	**/
+
+void
+subClientRender(short mode,
+	SubWin *w)
+{
+	unsigned long col = mode ? d->colors.norm : d->colors.act;
+	if(w && w->prop & SUB_WIN_CLIENT)
+		{
+			XSetWindowBackground(d->dpy, w->client->caption, col);
+			XClearWindow(d->dpy, w->client->caption);
+			XDrawString(d->dpy, w->client->caption, d->gcs.font, 3, d->fy - 1, w->client->name, 
+				strlen(w->client->name));
+		}
 }
