@@ -4,9 +4,9 @@ subtle-main.o subtle-main.o: main.c /usr/include/getopt.h \
   /usr/include/gnu/stubs-32.h /usr/include/bits/types.h \
   /usr/lib/gcc/i686-pc-linux-gnu/4.1.1/include/stddef.h \
   /usr/include/bits/typesizes.h /usr/include/endian.h \
-  /usr/include/bits/endian.h /usr/include/lua-5.1/lua.h \
+  /usr/include/bits/endian.h /usr/include/lua.h \
   /usr/lib/gcc/i686-pc-linux-gnu/4.1.1/include/stdarg.h \
-  /usr/include/lua-5.1/luaconf.h \
+  /usr/include/luaconf.h \
   /usr/lib/gcc/i686-pc-linux-gnu/4.1.1/include/limits.h \
   /usr/lib/gcc/i686-pc-linux-gnu/4.1.1/include/syslimits.h \
   /usr/include/limits.h /usr/include/bits/posix1_lim.h \
@@ -30,12 +30,12 @@ subtle-main.o subtle-main.o: main.c /usr/include/getopt.h \
   /usr/include/bits/sigthread.h /usr/include/errno.h \
   /usr/include/bits/errno.h /usr/include/linux/errno.h \
   /usr/include/asm/errno.h /usr/include/asm-generic/errno.h \
-  /usr/include/asm-generic/errno-base.h /usr/include/X11/Xlib.h \
-  /usr/include/X11/X.h /usr/include/X11/Xfuncproto.h \
-  /usr/include/X11/Xosdefs.h /usr/include/X11/Xutil.h \
-  /usr/include/X11/keysym.h /usr/include/X11/keysymdef.h \
-  /usr/include/X11/cursorfont.h /usr/include/X11/Xatom.h \
-  /usr/include/X11/Xmd.h ../config.h
+  /usr/include/asm-generic/errno-base.h /usr/include/assert.h \
+  /usr/include/X11/Xlib.h /usr/include/X11/X.h \
+  /usr/include/X11/Xfuncproto.h /usr/include/X11/Xosdefs.h \
+  /usr/include/X11/Xutil.h /usr/include/X11/keysym.h \
+  /usr/include/X11/keysymdef.h /usr/include/X11/cursorfont.h \
+  /usr/include/X11/Xatom.h /usr/include/X11/Xmd.h ../config.h
 
 /usr/include/getopt.h:
 
@@ -61,11 +61,11 @@ subtle-main.o subtle-main.o: main.c /usr/include/getopt.h \
 
 /usr/include/bits/endian.h:
 
-/usr/include/lua-5.1/lua.h:
+/usr/include/lua.h:
 
 /usr/lib/gcc/i686-pc-linux-gnu/4.1.1/include/stdarg.h:
 
-/usr/include/lua-5.1/luaconf.h:
+/usr/include/luaconf.h:
 
 /usr/lib/gcc/i686-pc-linux-gnu/4.1.1/include/limits.h:
 
@@ -162,6 +162,8 @@ subtle.h:
 /usr/include/asm-generic/errno.h:
 
 /usr/include/asm-generic/errno-base.h:
+
+/usr/include/assert.h:
 
 /usr/include/X11/Xlib.h:
 

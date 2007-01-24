@@ -24,12 +24,12 @@ subtle-sublet.o subtle-sublet.o: sublet.c subtle.h /usr/include/stdio.h \
   /usr/include/bits/sigthread.h /usr/include/errno.h \
   /usr/include/bits/errno.h /usr/include/linux/errno.h \
   /usr/include/asm/errno.h /usr/include/asm-generic/errno.h \
-  /usr/include/asm-generic/errno-base.h /usr/include/X11/Xlib.h \
-  /usr/include/X11/X.h /usr/include/X11/Xfuncproto.h \
-  /usr/include/X11/Xosdefs.h /usr/include/X11/Xutil.h \
-  /usr/include/X11/keysym.h /usr/include/X11/keysymdef.h \
-  /usr/include/X11/cursorfont.h /usr/include/X11/Xatom.h \
-  /usr/include/X11/Xmd.h ../config.h
+  /usr/include/asm-generic/errno-base.h /usr/include/assert.h \
+  /usr/include/X11/Xlib.h /usr/include/X11/X.h \
+  /usr/include/X11/Xfuncproto.h /usr/include/X11/Xosdefs.h \
+  /usr/include/X11/Xutil.h /usr/include/X11/keysym.h \
+  /usr/include/X11/keysymdef.h /usr/include/X11/cursorfont.h \
+  /usr/include/X11/Xatom.h /usr/include/X11/Xmd.h ../config.h
 
 subtle.h:
 
@@ -136,6 +136,8 @@ subtle.h:
 /usr/include/asm-generic/errno.h:
 
 /usr/include/asm-generic/errno-base.h:
+
+/usr/include/assert.h:
 
 /usr/include/X11/Xlib.h:
 
