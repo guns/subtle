@@ -34,7 +34,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-subdir = scripts
+subdir = sublets
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.in
@@ -51,9 +51,9 @@ am__vpath_adj = case $$p in \
     *) f=$$p;; \
   esac;
 am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
-am__installdirs = "$(DESTDIR)$(scriptdir)"
-scriptDATA_INSTALL = $(INSTALL_DATA)
-DATA = $(script_DATA)
+am__installdirs = "$(DESTDIR)$(subletdir)"
+subletDATA_INSTALL = $(INSTALL_DATA)
+DATA = $(sublet_DATA)
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMDEP_FALSE = @AMDEP_FALSE@
@@ -145,11 +145,11 @@ prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
 sbindir = @sbindir@
-scriptdir = @scriptdir@
 sharedstatedir = @sharedstatedir@
+subletdir = @subletdir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
-script_DATA = 
+sublet_DATA = clock.lua loadavg.lua
 all: all-am
 
 .SUFFIXES:
@@ -162,9 +162,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  scripts/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  sublets/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu  scripts/Makefile
+	  $(AUTOMAKE) --gnu  sublets/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -183,22 +183,22 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 uninstall-info-am:
-install-scriptDATA: $(script_DATA)
+install-subletDATA: $(sublet_DATA)
 	@$(NORMAL_INSTALL)
-	test -z "$(scriptdir)" || $(mkdir_p) "$(DESTDIR)$(scriptdir)"
-	@list='$(script_DATA)'; for p in $$list; do \
+	test -z "$(subletdir)" || $(mkdir_p) "$(DESTDIR)$(subletdir)"
+	@list='$(sublet_DATA)'; for p in $$list; do \
 	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
 	  f=$(am__strip_dir) \
-	  echo " $(scriptDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(scriptdir)/$$f'"; \
-	  $(scriptDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(scriptdir)/$$f"; \
+	  echo " $(subletDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(subletdir)/$$f'"; \
+	  $(subletDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(subletdir)/$$f"; \
 	done
 
-uninstall-scriptDATA:
+uninstall-subletDATA:
 	@$(NORMAL_UNINSTALL)
-	@list='$(script_DATA)'; for p in $$list; do \
+	@list='$(sublet_DATA)'; for p in $$list; do \
 	  f=$(am__strip_dir) \
-	  echo " rm -f '$(DESTDIR)$(scriptdir)/$$f'"; \
-	  rm -f "$(DESTDIR)$(scriptdir)/$$f"; \
+	  echo " rm -f '$(DESTDIR)$(subletdir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(subletdir)/$$f"; \
 	done
 tags: TAGS
 TAGS:
@@ -238,7 +238,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(DATA)
 installdirs:
-	for dir in "$(DESTDIR)$(scriptdir)"; do \
+	for dir in "$(DESTDIR)$(subletdir)"; do \
 	  test -z "$$dir" || $(mkdir_p) "$$dir"; \
 	done
 install: install-am
@@ -283,7 +283,7 @@ info: info-am
 
 info-am:
 
-install-data-am: install-scriptDATA
+install-data-am: install-subletDATA
 
 install-exec-am:
 
@@ -309,16 +309,16 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-info-am uninstall-scriptDATA
+uninstall-am: uninstall-info-am uninstall-subletDATA
 
 .PHONY: all all-am check check-am clean clean-generic distclean \
 	distclean-generic distdir dvi dvi-am html html-am info info-am \
 	install install-am install-data install-data-am install-exec \
 	install-exec-am install-info install-info-am install-man \
-	install-scriptDATA install-strip installcheck installcheck-am \
+	install-strip install-subletDATA installcheck installcheck-am \
 	installdirs maintainer-clean maintainer-clean-generic \
 	mostlyclean mostlyclean-generic pdf pdf-am ps ps-am uninstall \
-	uninstall-am uninstall-info-am uninstall-scriptDATA
+	uninstall-am uninstall-info-am uninstall-subletDATA
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
