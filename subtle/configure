@@ -699,7 +699,7 @@ X_EXTRA_LIBS
 GREP
 EGREP
 LIBOBJS
-scriptdir
+subletdir
 configdir
 DEBUG_TRUE
 DEBUG_FALSE
@@ -7169,12 +7169,12 @@ done
 
 # Paths
 prefix="/usr/local"
-scriptdir="$prefix/share/$PACKAGE_NAME"
+subletdir="$prefix/share/$PACKAGE_NAME"
 configdir="$prefix/etc/$PACKAGE_NAME"
 
 
 cat >>confdefs.h <<_ACEOF
-#define SCRIPTDIR "$scriptdir"
+#define SCRIPTDIR "$subletdir"
 _ACEOF
 
 
@@ -7213,6 +7213,11 @@ else
 
 cat >>confdefs.h <<\_ACEOF
 #define DEBUG 0
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define NODEBUG 1
 _ACEOF
 
 fi
@@ -7646,7 +7651,7 @@ fi
 
 
 # Outout
-ac_config_files="$ac_config_files Makefile src/Makefile scripts/Makefile config/Makefile"
+ac_config_files="$ac_config_files Makefile src/Makefile sublets/Makefile config/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -8235,7 +8240,7 @@ do
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
-    "scripts/Makefile") CONFIG_FILES="$CONFIG_FILES scripts/Makefile" ;;
+    "sublets/Makefile") CONFIG_FILES="$CONFIG_FILES sublets/Makefile" ;;
     "config/Makefile") CONFIG_FILES="$CONFIG_FILES config/Makefile" ;;
 
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
@@ -8383,7 +8388,7 @@ X_EXTRA_LIBS!$X_EXTRA_LIBS$ac_delim
 GREP!$GREP$ac_delim
 EGREP!$EGREP$ac_delim
 LIBOBJS!$LIBOBJS$ac_delim
-scriptdir!$scriptdir$ac_delim
+subletdir!$subletdir$ac_delim
 configdir!$configdir$ac_delim
 DEBUG_TRUE!$DEBUG_TRUE$ac_delim
 DEBUG_FALSE!$DEBUG_FALSE$ac_delim
@@ -8992,7 +8997,7 @@ echo
 echo $PACKAGE_STRING
 echo -----------------
 echo Binary....................: $prefix/bin
-echo Scripts...................: $scriptdir
+echo Sublets...................: $subletdir
 echo Config....................: $configdir
 echo
 echo Debugging messages........: $debug

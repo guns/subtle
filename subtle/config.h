@@ -7,7 +7,7 @@
 /* Directory fot config files */
 #define CONFIGDIR "/usr/local/etc/subtle"
 
-/* Define to 1 if you want debug support */
+/* Define to 1 if you want debugging support */
 #define DEBUG 1
 
 /* Define to 1 if you have the <dirent.h> header file, and it defines `DIR'.
@@ -99,6 +99,9 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #define HAVE_UNISTD_H 1
 
+/* Define to 1 if you want no debugging support */
+/* #undef NODEBUG */
+
 /* Define to the address where bug reports for this package should be sent. */
 #define PACKAGE_BUGREPORT "unexist@hilflos.org"
 
@@ -117,7 +120,7 @@
 /* Define as the return type of signal handlers (`int' or `void'). */
 #define RETSIGTYPE void
 
-/* Directory for scripts */
+/* Directory for sublets */
 #define SCRIPTDIR "/usr/local/share/subtle"
 
 /* Define to the type of arg 1 for `select'. */

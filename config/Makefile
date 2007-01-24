@@ -88,8 +88,8 @@ LIBOBJS =
 LIBS =   -ldl -lX11
 LN_S = ln -s
 LTLIBOBJS = 
-LUA_CFLAGS = -I/usr/include/lua-5.1  
-LUA_LIBS = -llua-5.1 -lm  
+LUA_CFLAGS = -I/usr/local/include  
+LUA_LIBS = -L/usr/local/lib -llua -lm  
 MAKEINFO = ${SHELL} /home/unexist/projects/subtle/missing --run makeinfo
 OBJEXT = o
 PACKAGE = subtle
@@ -135,8 +135,8 @@ libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
 localstatedir = ${prefix}/var
-lua_CFLAGS = -I/usr/include/lua-5.1  
-lua_LIBS = -llua-5.1 -lm  
+lua_CFLAGS = -I/usr/local/include  
+lua_LIBS = -L/usr/local/lib -llua -lm  
 mandir = ${datarootdir}/man
 mkdir_p = mkdir -p --
 oldincludedir = /usr/include
@@ -145,11 +145,11 @@ prefix = /usr/local
 program_transform_name = s,x,x,
 psdir = ${docdir}
 sbindir = ${exec_prefix}/sbin
-scriptdir = /usr/local/share/subtle
 sharedstatedir = ${prefix}/com
+subletdir = /usr/local/share/subtle
 sysconfdir = ${prefix}/etc
 target_alias = 
-config_DATA = config.lua dock.lua
+config_DATA = config.lua
 all: all-am
 
 .SUFFIXES:

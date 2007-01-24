@@ -402,31 +402,31 @@ configure:7135: gcc -o conftest -g -O2   conftest.c  >&5
 conftest.c:65: warning: conflicting types for built-in function 'strrchr'
 configure:7141: $? = 0
 configure:7159: result: yes
-configure:7232: checking for XOpenDisplay in -lX11
-configure:7267: gcc -o conftest -g -O2      -ldl  -lSM -lICE conftest.c -lX11    -ldl >&5
-configure:7273: $? = 0
-configure:7291: result: yes
-configure:7355: checking for pkg-config
-configure:7373: found /usr/bin/pkg-config
-configure:7385: result: /usr/bin/pkg-config
-configure:7414: checking pkg-config is at least version 0.1
-configure:7417: result: yes
-configure:7428: checking for grep
-configure:7444: found /bin/grep
-configure:7456: result: yes
-configure:7471: checking for tail
-configure:7499: result: yes
-configure:7514: checking for awk
-configure:7542: result: yes
-configure:7556: checking lua pkg-config name
-configure:7566: result: lua-5.1
-configure:7571: checking for lua
-configure:7579: $PKG_CONFIG --exists --print-errors "$lua_name >= 5.1"
-configure:7582: $? = 0
-configure:7597: $PKG_CONFIG --exists --print-errors "$lua_name >= 5.1"
-configure:7600: $? = 0
-configure:7640: result: yes
-configure:7772: creating ./config.status
+configure:7237: checking for XOpenDisplay in -lX11
+configure:7272: gcc -o conftest -g -O2      -ldl  -lSM -lICE conftest.c -lX11    -ldl >&5
+configure:7278: $? = 0
+configure:7296: result: yes
+configure:7360: checking for pkg-config
+configure:7378: found /usr/bin/pkg-config
+configure:7390: result: /usr/bin/pkg-config
+configure:7419: checking pkg-config is at least version 0.1
+configure:7422: result: yes
+configure:7433: checking for grep
+configure:7449: found /bin/grep
+configure:7461: result: yes
+configure:7476: checking for tail
+configure:7504: result: yes
+configure:7519: checking for awk
+configure:7547: result: yes
+configure:7561: checking lua pkg-config name
+configure:7571: result: lua
+configure:7576: checking for lua
+configure:7584: $PKG_CONFIG --exists --print-errors "$lua_name >= 5.1"
+configure:7587: $? = 0
+configure:7602: $PKG_CONFIG --exists --print-errors "$lua_name >= 5.1"
+configure:7605: $? = 0
+configure:7645: result: yes
+configure:7777: creating ./config.status
 
 ## ---------------------- ##
 ## Running config.status. ##
@@ -445,10 +445,9 @@ on meanas
 
 config.status:652: creating Makefile
 config.status:652: creating src/Makefile
-config.status:652: creating scripts/Makefile
+config.status:652: creating sublets/Makefile
 config.status:652: creating config/Makefile
 config.status:652: creating config.h
-config.status:898: config.h is unchanged
 config.status:944: executing depfiles commands
 
 ## ---------------- ##
@@ -536,8 +535,8 @@ ac_cv_struct_tm=time.h
 ac_cv_type_signal=void
 ac_cv_type_size_t=yes
 am_cv_CC_dependencies_compiler_type=gcc3
-pkg_cv_lua_CFLAGS='-I/usr/include/lua-5.1  '
-pkg_cv_lua_LIBS='-llua-5.1 -lm  '
+pkg_cv_lua_CFLAGS='-I/usr/local/include  '
+pkg_cv_lua_LIBS='-L/usr/local/lib -llua -lm  '
 
 ## ----------------- ##
 ## Output variables. ##
@@ -577,8 +576,8 @@ LIBOBJS=''
 LIBS='  -ldl -lX11'
 LN_S='ln -s'
 LTLIBOBJS=''
-LUA_CFLAGS='-I/usr/include/lua-5.1  '
-LUA_LIBS='-llua-5.1 -lm  '
+LUA_CFLAGS='-I/usr/local/include  '
+LUA_LIBS='-L/usr/local/lib -llua -lm  '
 MAKEINFO='${SHELL} /home/unexist/projects/subtle/missing --run makeinfo'
 OBJEXT='o'
 PACKAGE='subtle'
@@ -624,8 +623,8 @@ libdir='${exec_prefix}/lib'
 libexecdir='${exec_prefix}/libexec'
 localedir='${datarootdir}/locale'
 localstatedir='${prefix}/var'
-lua_CFLAGS='-I/usr/include/lua-5.1  '
-lua_LIBS='-llua-5.1 -lm  '
+lua_CFLAGS='-I/usr/local/include  '
+lua_LIBS='-L/usr/local/lib -llua -lm  '
 mandir='${datarootdir}/man'
 mkdir_p='mkdir -p --'
 oldincludedir='/usr/include'
@@ -634,8 +633,8 @@ prefix='/usr/local'
 program_transform_name='s,x,x,'
 psdir='${docdir}'
 sbindir='${exec_prefix}/sbin'
-scriptdir='/usr/local/share/subtle'
 sharedstatedir='${prefix}/com'
+subletdir='/usr/local/share/subtle'
 sysconfdir='${prefix}/etc'
 target_alias=''
 

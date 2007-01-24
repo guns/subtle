@@ -301,7 +301,7 @@ on `(hostname || uname -n) 2>/dev/null | sed 1q`
 "
 
 # Files that config.status was made for.
-config_files=" Makefile src/Makefile scripts/Makefile config/Makefile"
+config_files=" Makefile src/Makefile sublets/Makefile config/Makefile"
 config_headers=" config.h"
 config_commands=" depfiles"
 
@@ -438,7 +438,7 @@ do
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
-    "scripts/Makefile") CONFIG_FILES="$CONFIG_FILES scripts/Makefile" ;;
+    "sublets/Makefile") CONFIG_FILES="$CONFIG_FILES sublets/Makefile" ;;
     "config/Makefile") CONFIG_FILES="$CONFIG_FILES config/Makefile" ;;
 
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
@@ -581,16 +581,16 @@ s,@X_EXTRA_LIBS@,|#_!!_#|,g
 s,@GREP@,|#_!!_#|/bin/grep,g
 s,@EGREP@,|#_!!_#|/bin/grep -E,g
 s,@LIBOBJS@,|#_!!_#|,g
-s,@scriptdir@,|#_!!_#|/usr/local/share/subtle,g
+s,@subletdir@,|#_!!_#|/usr/local/share/subtle,g
 s,@configdir@,|#_!!_#|/usr/local/etc/subtle,g
 s,@DEBUG_TRUE@,|#_!!_#|,g
 s,@DEBUG_FALSE@,|#_!!_#|#,g
 s,@PKG_CONFIG@,|#_!!_#|/usr/bin/pkg-config,g
 s,@check@,|#_!!_#|yes,g
-s,@lua_CFLAGS@,|#_!!_#|-I/usr/include/lua-5.1  ,g
-s,@lua_LIBS@,|#_!!_#|-llua-5.1 -lm  ,g
-s,@LUA_CFLAGS@,|#_!!_#|-I/usr/include/lua-5.1  ,g
-s,@LUA_LIBS@,|#_!!_#|-llua-5.1 -lm  ,g
+s,@lua_CFLAGS@,|#_!!_#|-I/usr/local/include  ,g
+s,@lua_LIBS@,|#_!!_#|-L/usr/local/lib -llua -lm  ,g
+s,@LUA_CFLAGS@,|#_!!_#|-I/usr/local/include  ,g
+s,@LUA_LIBS@,|#_!!_#|-L/usr/local/lib -llua -lm  ,g
 s,@LTLIBOBJS@,|#_!!_#|,g
 :end
 s/|#_!!_#|//g

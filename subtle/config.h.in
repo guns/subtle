@@ -6,7 +6,7 @@
 /* Directory fot config files */
 #undef CONFIGDIR
 
-/* Define to 1 if you want debug support */
+/* Define to 1 if you want debugging support */
 #undef DEBUG
 
 /* Define to 1 if you have the <dirent.h> header file, and it defines `DIR'.
@@ -98,6 +98,9 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
+/* Define to 1 if you want no debugging support */
+#undef NODEBUG
+
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
 
@@ -116,7 +119,7 @@
 /* Define as the return type of signal handlers (`int' or `void'). */
 #undef RETSIGTYPE
 
-/* Directory for scripts */
+/* Directory for sublets */
 #undef SCRIPTDIR
 
 /* Define to the type of arg 1 for `select'. */

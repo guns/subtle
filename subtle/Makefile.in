@@ -159,11 +159,11 @@ prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
 sbindir = @sbindir@
-scriptdir = @scriptdir@
 sharedstatedir = @sharedstatedir@
+subletdir = @subletdir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
-SUBDIRS = src scripts config
+SUBDIRS = src config sublets 
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 

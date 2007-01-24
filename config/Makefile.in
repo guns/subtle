@@ -145,11 +145,11 @@ prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
 sbindir = @sbindir@
-scriptdir = @scriptdir@
 sharedstatedir = @sharedstatedir@
+subletdir = @subletdir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
-config_DATA = config.lua dock.lua
+config_DATA = config.lua
 all: all-am
 
 .SUFFIXES:
