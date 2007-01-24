@@ -340,27 +340,30 @@ int subEventLoop(void)
 		{
 			fd_set fdset;
 
-			s		= subSubletGetRecent();
-			cur	= subEventGetTime();
-
-			while(s->time <= cur)
+			s = subSubletGetRecent();
+			if(s)
 				{
-					s->time = cur + s->interval;
+					cur	= subEventGetTime();
 
-					subLuaCall(s->function, &s->data);
-					RenderSublet(s);
-					subSubletSift(1);
+					while(s->time <= cur)
+						{
+							s->time = cur + s->interval;
 
-					s = subSubletGetRecent();
+							subLuaCall(s->function, &s->data);
+							RenderSublet(s);
+							subSubletSift(1);
+
+							s = subSubletGetRecent();
+						}
+
+					tv.tv_sec		= s->interval;
+					tv.tv_usec	= 0;
+					FD_ZERO(&fdset);
+					FD_SET(ConnectionNumber(d->dpy), &fdset);
+
+					if(select(ConnectionNumber(d->dpy) + 1, &fdset, NULL, NULL, &tv) == -1)
+						subLogError("Can't select the connection\n");
 				}
-
-			tv.tv_sec		= s->interval;
-			tv.tv_usec	= 0;
-			FD_ZERO(&fdset);
-			FD_SET(ConnectionNumber(d->dpy), &fdset);
-
-			if(select(ConnectionNumber(d->dpy) + 1, &fdset, NULL, NULL, &tv) == -1)
-				subLogError("Can't select the connection\n");
 
 			while(XPending(d->dpy))
 				{

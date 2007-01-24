@@ -2,6 +2,8 @@
 #include <lua.h>
 #include "subtle.h"
 
+static char *config = NULL;
+
 static void
 Usage(void)
 {
@@ -18,7 +20,7 @@ Usage(void)
 static void
 Version(void)
 {
-	printf("%s v%s - Copyright (c) 2005-2006 Christoph Kappel\n" \
+	printf("%s v%s - Copyright (c) 2005-2007 Christoph Kappel\n" \
 					"Released under the GNU Public License\n" \
 					"Compiled for X%d and %s\n", PACKAGE_NAME, PACKAGE_VERSION,
 					X_PROTOCOL, LUA_VERSION);
@@ -29,6 +31,10 @@ HandleSignal(int signum)
 {
 	switch(signum)
 		{
+			case SIGHUP:
+				printf("Realoding config..\n");
+				subLuaLoadConfig(config);
+				break;
 			case SIGTERM:
 			case SIGINT: 
 				subScreenKill();
@@ -46,11 +52,12 @@ main(int argc,
 	char *argv[])
 {
 	int c;
-	char *path = NULL, *display = NULL;
+	char *sublets = NULL, *display = NULL;
 	struct sigaction act;
 	static struct option long_options[] =
 	{
 		{ "configdir",	required_argument,		0,	'c' },
+		{ "subletdir",	required_argument,		0,	's' },
 		{ "display",		required_argument,		0,	'd' },
 #ifdef DEBUG
 		{ "debug",			no_argument,					0,	'D' },
@@ -60,11 +67,12 @@ main(int argc,
 		{ 0, 0, 0, 0}
 	};
 
-	while((c = getopt_long(argc, argv, "c:d:Dvh", long_options, NULL)) != -1)
+	while((c = getopt_long(argc, argv, "c:s:d:Dvh", long_options, NULL)) != -1)
 		{
 			switch(c)
 				{
-					case 'c': path		= optarg; 		break;
+					case 'c': config	= optarg; 		break;
+					case 's': sublets	= optarg;			break;
 					case 'd': display = optarg;			break;
 #ifdef DEBUG					
 					case 'D': subLogToggleDebug();	break;
@@ -81,14 +89,13 @@ main(int argc,
 	act.sa_handler	= HandleSignal;
 	act.sa_flags		= 0;
 	memset(&act.sa_mask, 0, sizeof(sigset_t)); /* Avoid uninitialized values */
+	sigaction(SIGHUP, &act, NULL);
 	sigaction(SIGTERM, &act, NULL);
 	sigaction(SIGINT, &act, NULL);
 	sigaction(SIGSEGV, &act, NULL);
 
-	subLuaNew();
-	if(!subLuaLoad(path, "config.lua")) subLogError("Can't find configuration file.\n");
 	subDisplayNew(display);
-	subLuaKill();
+	subLuaLoadConfig(config);
 
 	subEwmhNew();
 
@@ -96,8 +103,7 @@ main(int argc,
 	subScreenAdd();
 
 	subSubletNew();
-	subLuaNew();
-	if(!subLuaLoad(path, "dock.lua")) subLogWarn("Can't find dock file.\n");
+	subLuaLoadSublets(sublets);
 
 	subEventLoop();
 

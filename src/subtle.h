@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <errno.h>
+#include <assert.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
@@ -166,18 +167,9 @@ void subLog(short type, const char *file, 						// Print messages
 	short line, const char *format, ...);
 
 /* lua.c */
-typedef void(*SubLuaFunction)(const char *, const char *);
-
-int subLuaNew(void);																	// Open a Lua state
-void subLuaKill(void);																// Close a Lua state
-int subLuaLoad(const char *path, const char *file);		// Load a Lua script
-void subLuaForeach(const char *table, 								// Do fearch field in table
-	SubLuaFunction function);
-int subLuaCall(const char *function, char **data);		// Call a Lua function
-int subLuaGetNum(const char *table, 									// Get number from table
-	const char *field, int fallback);
-char *subLuaGetString(const char *table,			 				// Get string from table
-	const char *field, char *fallback);
+void subLuaLoadConfig(const char *path);							// Load config file
+void subLuaLoadSublets(const char *path);							// Load sublets
+void subLuaKill(void);																// Kill Lua state
 
 /* sublet.c */
 typedef struct subsublet
