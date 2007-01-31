@@ -179,7 +179,6 @@ subtle_SOURCES = \
 	win.c 
 
 subtle_CFLAGS = $(CFLAGS) $(LUA_CFLAGS)
-#subtle_LDFLAGS = $(LUA_LIBS)
 subtle_LDADD = $(LUA_LIBS)
 INCLUDES = -I$(top_srcdir)
 noinst_HEADERS = subtle.h
