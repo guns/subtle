@@ -62,8 +62,10 @@ subScreenAdd(void)
 	free(wins);
 
 	screen->active = screen->wins[screen->n];
-	screen->n++;
 	XMapRaised(d->dpy, screen->statusbar);
+	XSetInputFocus(d->dpy, screen->wins[screen->n]->win, RevertToNone, CurrentTime);
+
+	screen->n++;
 
 	subLogDebug("Adding screen (%d)\n", screen->n);
 }
@@ -84,7 +86,7 @@ subScreenDelete(SubWin *w)
 	if(!screen->wins) subLogError("Can't alloc memory. Exhausted?\n");
 	screen->n--;
 
-	if(screen->n == 0) raise(SIGINT);
+	if(screen->n == 0) raise(SIGTERM);
 
 	screen->active = screen->wins[screen->n - 1];
 	subWinMap(screen->active);
@@ -94,11 +96,14 @@ void
 subScreenKill(void)
 {
 	int i;
-	
-	for(i = 0; i < screen->n; i++) subTileDelete(screen->wins[i]);
-	XDestroyWindow(d->dpy, screen->statusbar);
-	free(screen->wins);
-	free(screen);
+
+	if(screen)
+		{
+			for(i = 0; i < screen->n; i++) subTileDelete(screen->wins[i]);
+			XDestroyWindow(d->dpy, screen->statusbar);
+			free(screen->wins);
+			free(screen);
+		}
 }
 
 void
