@@ -84,7 +84,7 @@ subSubletAdd(const char *function,
 
 	XMapRaised(d->dpy, s->win);
 
-	printf("Loaded docklet %s (%d)\n", function, interval);
+	printf("Loaded sublet %s (%d)\n", function, interval);
 }
 
 void
