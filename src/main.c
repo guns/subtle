@@ -9,12 +9,14 @@ Usage(void)
 {
 	printf("Usage: %s [OPTIONS]\n\n" \
 					"Options:\n" \
-					"  -c, --configdir \t Change config dir. (default: ~/.subtle/\n" \
+					"  -c, --configdir \t Change config dir. (default: ~/.%s/\n" \
+					"  -s, --subletdir \t Change sublet dir. (default: ~/.%s/sublets" \
 					"  -d, --display   \t Display to connect. (default: $DISPLAY)\n" \
 					"  -D, --debug     \t Print debugging messages.\n" \
 					"  -v, --version   \t Display version and exit.\n" \
 					"  -h, --help      \t Display this help and exit.\n\n" \
-					"Please report bugs to <%s>\n", PACKAGE_NAME, PACKAGE_BUGREPORT);
+					"Please report bugs to <%s>\n", 
+					PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_BUGREPORT);
 }
 
 static void
@@ -32,7 +34,7 @@ HandleSignal(int signum)
 	switch(signum)
 		{
 			case SIGHUP:
-				printf("Realoding config..\n");
+				printf("Reloading config..\n");
 				subLuaLoadConfig(config);
 				break;
 			case SIGTERM:
@@ -61,7 +63,7 @@ main(int argc,
 		{ "display",		required_argument,		0,	'd' },
 #ifdef DEBUG
 		{ "debug",			no_argument,					0,	'D' },
-#endif
+#endif /* DEBUG */
 		{ "version",		no_argument,					0,	'v' },
 		{ "help",				no_argument,					0,	'h' },
 		{ 0, 0, 0, 0}
@@ -76,7 +78,7 @@ main(int argc,
 					case 'd': display = optarg;			break;
 #ifdef DEBUG					
 					case 'D': subLogToggleDebug();	break;
-#endif
+#endif /* DEBUG */
 					case 'v': Version(); 						return(0);
 					case 'h': Usage(); 							return(0);
 					case '?':
@@ -107,7 +109,7 @@ main(int argc,
 
 	subEventLoop();
 
-	raise(SIGINT);
+	raise(SIGTERM);
 	
 	return(0);
 }
