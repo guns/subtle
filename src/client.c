@@ -215,7 +215,7 @@ void
 subClientRender(short mode,
 	SubWin *w)
 {
-	unsigned long col = mode ? d->colors.norm : d->colors.act;
+	unsigned long col = mode ? (w->prop & SUB_WIN_SHADED ? d->colors.shade : d->colors.norm) : d->colors.focus;
 	if(w && w->prop & SUB_WIN_CLIENT)
 		{
 			XSetWindowBackground(d->dpy, w->client->caption, col);
