@@ -147,6 +147,7 @@ subLuaLoadConfig(const char *path)
 	if(luaL_loadfile(configstate, full) || lua_pcall(configstate, 0, 0, 0))
 		{
 			subLogDebug("%s\n", (char *)lua_tostring(configstate, -1));
+			lua_close(configstate);
 			subLogError("Can't load config file `%s'.\n", full);
 		}
 
@@ -174,7 +175,8 @@ subLuaLoadConfig(const char *path)
 	d->colors.font		= ParseColor(configstate, "font",				"#000000"); 	
 	d->colors.border	= ParseColor(configstate, "border",			"#bdbabd");
 	d->colors.norm		= ParseColor(configstate, "normal",			"#22aa99");
-	d->colors.act			= ParseColor(configstate, "active",			"#ffa500");		
+	d->colors.focus		= ParseColor(configstate, "focus",			"#ffa500");		
+	d->colors.shade		= ParseColor(configstate, "shade",			"#FFE6E6");
 	d->colors.bg			= ParseColor(configstate, "background",	"#336699");
 
 	/* Change GCs */
@@ -248,7 +250,6 @@ subLuaLoadSublets(const char *path)
 				}
 			closedir(dir);
 		}
-						
 }
 
  /**
@@ -258,7 +259,7 @@ subLuaLoadSublets(const char *path)
 void
 subLuaKill(void)
 {
-	lua_close(state);
+	if(state) lua_close(state);
 }
 
  /**
