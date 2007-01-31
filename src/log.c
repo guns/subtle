@@ -15,7 +15,7 @@ subLogToggleDebug(void)
 {
 	debug = !debug;
 }
-#endif
+#endif /* DEBUG */
 
  /**
 	* Print messages dependant to their type.
@@ -37,9 +37,8 @@ subLog(short type,
 	char buf[255];
 
 #ifdef DEBUG
-	if(debug == 0 && type == 0)
-		return;
-#endif
+	if(!debug && !type) return;
+#endif /* DEBUG */
 
 	va_start(vargs, format);
 	vsnprintf(buf, sizeof(buf), format, vargs);
@@ -51,7 +50,7 @@ subLog(short type,
 			case 0:
 				fprintf(stderr, "<DEBUG:%s:%d> %s", file, line, buf);
 				break;
-#endif
+#endif /* DEBUG */
 			case 1: 
 				fprintf(stderr, "<ERROR> %s", buf);
 				raise(SIGINT);
