@@ -92,7 +92,7 @@ subWinDelete(SubWin *w)
 			XDestroySubwindows(d->dpy, w->frame);
 			XDestroyWindow(d->dpy, w->frame);
 
-			if(p && p->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV)) subTileConfigure(p);
+			if(SUBISTILE(p)) subTileConfigure(p);
 			free(w);
 		}
 }
@@ -107,7 +107,7 @@ void
 subWinRender(short mode,
 	SubWin *w)
 {
-	unsigned long col = mode ? d->colors.norm : d->colors.act;
+	unsigned long col = mode ? (w->prop & SUB_WIN_SHADED ? d->colors.shade : d->colors.norm) : d->colors.focus;
 
 	/* Update color */
 	XSetWindowBackground(d->dpy, w->title,	col);
@@ -131,21 +131,21 @@ subWinRender(short mode,
 static void
 DrawOutline(short mode,
 	SubWin *w,
-	int start,
-	int rx,
-	int ry,
-	int sx,
-	int sy,
-	int sw,
-	int sh)
+	int start,	// Start on root window
+	int rx,			// X position on root window
+	int ry,			// Y position on root window
+	int sx,			// Start x position of the dragged window
+	int sy,			// Start y position of the dragged window
+	int sw,			// Start width of the dragged window
+	int sh)			// Start height of the dragged window
 {
 	w->x = sx;
 	w->y = sy;
 	switch(mode)
 		{
-			case 1: w->x 			= sx - (start - rx); w->width = sx + (start - rx);	break;
-			case 2:	w->width	= sw + (rx - start); 																break;
-			case 3: w->height	= sh + (ry - start); 																break;
+			case SUB_WIN_DRAG_LEFT: 	w->x 			= sx - (start - rx); w->width = sx + (start - rx);	break;
+			case SUB_WIN_DRAG_RIGHT:	w->width	= sw + (rx - start); 																break;
+			case SUB_WIN_DRAG_BOTTOM: w->height	= sh + (ry - start); 																break;
 		}
 	XDrawRectangle(d->dpy, DefaultRootWindow(d->dpy), d->gcs.invert, w->x, w->y, w->width, w->height);
 }
@@ -169,7 +169,7 @@ subWinDrag(short mode,
 	int start = 0, rx = 0, ry = 0, sx = 0, sy = 0, sw = w->width, sh = w->height;
 	unsigned int mask;
 
-	/* Get window position */
+	/* Get window position on root window */
 	XQueryPointer(d->dpy, DefaultRootWindow(d->dpy), &win, &win, &rx, &ry, &sx, &sy, &mask);
 	sx = rx - bev->x;
 	sy = ry - bev->y;
@@ -177,41 +177,39 @@ subWinDrag(short mode,
 	/* Select cursor */
 	switch(mode)
 		{
-			case 0: cursor = d->cursors.square;							break;
-			case 1:	cursor = d->cursors.left;		start = rx;	break;
-			case 2:	cursor = d->cursors.right;	start = rx;	break;
-			case 3:	cursor = d->cursors.bottom;	start = ry;	break;
+			case SUB_WIN_DRAG_LEFT:		cursor = d->cursors.left;		start = rx;	break;
+			case SUB_WIN_DRAG_RIGHT:	cursor = d->cursors.right;	start = rx;	break;
+			case SUB_WIN_DRAG_BOTTOM:	cursor = d->cursors.bottom;	start = ry;	break;
+			default:									cursor = d->cursors.square;							break;
 		}
-	if(!XGrabPointer(d->dpy, w->frame, True, POINTER_MASK, GrabModeAsync, 
-			GrabModeAsync, None, cursor, CurrentTime) == GrabSuccess)
-		return;
+
+	if(!XGrabPointer(d->dpy, w->frame, True, SUBPOINTERMASK, GrabModeAsync, GrabModeAsync, None, 
+		cursor, CurrentTime) == GrabSuccess) return;
 
 	XGrabServer(d->dpy);
-	if(mode) DrawOutline(mode, w, start, rx, ry, sx, sy, sw, sh);
+	if(mode < SUB_WIN_DRAG_ICON) DrawOutline(mode, w, start, rx, ry, sx, sy, sw, sh);
 	for(;;)
 		{
 			XMaskEvent(d->dpy, PointerMotionMask|ButtonReleaseMask|EnterWindowMask, &ev);
 			switch(ev.type)
 				{
 					/* Button release doesn't return our destination window */
-					case EnterNotify:
-						win = ev.xcrossing.window;
-						break;
+					case EnterNotify: win = ev.xcrossing.window; break;
 					case MotionNotify:
-						if(mode) DrawOutline(mode, w, start, rx, ry, sx, sy, sw, sh);
+						if(mode < SUB_WIN_DRAG_ICON) DrawOutline(mode, w, start, rx, ry, sx, sy, sw, sh);
 						rx = ev.xmotion.x_root;
 						ry = ev.xmotion.y_root;
-						if(mode) DrawOutline(mode, w, start, rx, ry, sx, sy, sw, sh);
+						if(mode < SUB_WIN_DRAG_ICON) DrawOutline(mode, w, start, rx, ry, sx, sy, sw, sh);
 						break;
 					case ButtonRelease:
-						if(win != w->frame && !mode)
+						if(win != w->frame && mode >= SUB_WIN_DRAG_ICON)
 							{
 								w2 = subWinFind(win);
 						
 								if(w && w2 && w->parent && w2->parent)
 									{
 										/* Append a window to tile */
-										if((mode == 0 || w->prop & SUB_WIN_CLIENT) && w2->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV))
+										if(SUBISTILE(w2) && mode == SUB_WIN_DRAG_ICON)
 											{
 												SubWin *p = w->parent;
 		
@@ -222,26 +220,51 @@ subWinDrag(short mode,
 										/* Swap two windows manually */
 										else
 											{
-												subTileAdd(w->parent, w2);
-												subTileAdd(w2->parent, w);
+												Window swap;
+												SubTile *tile = NULL;
+												SubClient *client = NULL;
 
-												/* Take care of shaded windows */
-												if(w->prop & SUB_WIN_SHADED && !(w2->prop & SUB_WIN_SHADED)) 
+												XReparentWindow(d->dpy, w->win, w2->frame, d->bw, d->th);
+												XReparentWindow(d->dpy, w2->win, w->frame, d->bw, d->th);
+
+												/* Swap titlebar fields */
+												if(SUBISCLIENT(w) && SUBISCLIENT(w2))
 													{
-														subWinShade(w);
-														subWinShade(w2);
+														XReparentWindow(d->dpy, w->client->caption, w2->frame, d->th, 0); 
+														XReparentWindow(d->dpy, w2->client->caption, w->frame, d->th, 0); 
+
+														client = w->client; w->client = w2->client; w2->client = client;
 													}
-												else subTileConfigure(w2->parent);
-												if(w2->prop & SUB_WIN_SHADED && !(w->prop & SUB_WIN_SHADED))
+												else if(!(SUBISTILE(w) && SUBISTILE(w2)))
 													{
-														subWinShade(w2);
-														subWinShade(w);
+														if(SUBISTILE(w) && SUBISCLIENT(w2))
+															{
+																XReparentWindow(d->dpy, w->tile->btnew, w2->frame, d->th, 0);
+																XReparentWindow(d->dpy, w->tile->btdel, w2->frame, d->th + 7 * d->fx, 0);
+																XReparentWindow(d->dpy, w2->client->caption, w->frame, d->th, 0); 
+															}
+														else
+															{
+																XReparentWindow(d->dpy, w2->tile->btnew, w->frame, d->th, 0);
+																XReparentWindow(d->dpy, w2->tile->btdel, w->frame, d->th + 7 * d->fx, 0);
+																XReparentWindow(d->dpy, w->client->caption, w2->frame, d->th, 0); 
+															}
+
+														/* Swap union members carefully at the same time */
+														tile			= w->tile;	client			= w->client;
+														w->tile		= w2->tile; w->client		= w2->client;
+														w2->tile	= tile; 		w2->client	= client;
 													}
-												else subTileConfigure(w->parent);
+
+												swap	= w->win;		w->win	= w2->win;	w2->win		= swap; 
+												swap	= w->prop;	w->prop	= w2->prop;	w2->prop	= swap;
+
+												subTileConfigure(w->parent);
+												subTileConfigure(w2->parent);
 											}
 									}
 								}
-						else if(mode) /* Resize */
+						else if(mode < SUB_WIN_DRAG_ICON) /* Resize */
 							{
 								DrawOutline(mode, w, start, rx, ry, sx, sy, sw, sh);
 								/*subWinResize(w);*/
