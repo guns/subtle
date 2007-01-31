@@ -57,25 +57,25 @@ subTileDelete(SubWin *w)
 	unsigned int n, i;
 	Window nil, *wins = NULL;
 
-	if(w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV))
+	if(SUBISTILE(w))
 		{
 			SubWin *parent = NULL;
 			XGrabServer(d->dpy);
 			subWinUnmap(w);
 
-			if(screen->active == w) screen->active = w->parent;
+			//if(screen->active == w) screen->active = w->parent;
 
 			XQueryTree(d->dpy, w->win, &nil, &nil, &wins, &n);	
 			for(i = 0; i < n; i++)
 				{
 					SubWin *c = subWinFind(wins[i]);
-					if(c && c->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV)) subTileDelete(c);
-					else if(c && c->prop & SUB_WIN_CLIENT) subClientSendDelete(c);
+					if(SUBISTILE(c)) subTileDelete(c);
+					else if(SUBISCLIENT(c)) subClientSendDelete(c);
 				}
 
 			subLogDebug("Deleting %s-tile with %d children\n", (w->prop & SUB_WIN_TILEH) ? "h" : "v", n);
 
-			if(w->parent) parent = w->parent; 
+			/*if(w->parent) parent = w->parent; */
 			free(w->tile); 
 			subWinDelete(w);
 			subTileConfigure(parent); 
@@ -96,9 +96,9 @@ void
 subTileRender(short mode,
 	SubWin *w)
 {
-	unsigned long col = mode ? d->colors.norm : d->colors.act;
+	unsigned long col = mode ? (w->prop & SUB_WIN_SHADED ? d->colors.shade : d->colors.norm) : d->colors.focus;
 
-	if(w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV))
+	if(SUBISTILE(w))
 		{
 			XSetWindowBackground(d->dpy, w->tile->btnew, col);
 			XSetWindowBackground(d->dpy, w->tile->btdel, col);
@@ -106,10 +106,8 @@ subTileRender(short mode,
 			XClearWindow(d->dpy, w->tile->btdel);
 
 			/* Descriptive buttons */
-			if(w->prop & SUB_WIN_TILEV) XDrawString(d->dpy, w->tile->btnew, d->gcs.font, 3, d->fy - 1, "Newrow", 6);
-			else XDrawString(d->dpy, w->tile->btnew, d->gcs.font, 3, d->fy - 1, "Newcol", 6);
-			if(w->parent && w->parent->prop & SUB_WIN_TILEV) XDrawString(d->dpy, w->tile->btdel, d->gcs.font, 3, d->fy - 1, "Delrow", 6);
-			else XDrawString(d->dpy, w->tile->btdel, d->gcs.font, 3, d->fy - 1, "Delcol", 6);
+			XDrawString(d->dpy, w->tile->btnew, d->gcs.font, 3, d->fy - 1, (w->prop & SUB_WIN_TILEV ? "Newrow" : "Newcol"), 6);
+			XDrawString(d->dpy, w->tile->btdel, d->gcs.font, 3, d->fy - 1, (w->parent && w->parent->prop & SUB_WIN_TILEV ? "Delrow" : "Delcol"), 6);
 		}
 }
 
@@ -125,13 +123,13 @@ subTileConfigure(SubWin *w)
 	Window nil, *wins = NULL;
 	XWindowAttributes attr;
 
-	if(w && w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV))
+	if(SUBISTILE(w))
 		{
 			XGetWindowAttributes(d->dpy, w->win, &attr);
 			XQueryTree(d->dpy, w->win, &nil, &nil, &wins, &n);
-			if(w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV) && n > 0)
+			if(n > 0)
 				{
-					n						= n - w->tile->shaded >= 0 ? n - w->tile->shaded : 1; /* Prevent division by zero */
+					n						= n - w->tile->shaded > 0 ? n - w->tile->shaded : 1; /* Prevent division by zero */
 					w->tile->mw = (w->prop & SUB_WIN_TILEH) ? attr.width / n	: attr.width;
 					w->tile->mh = (w->prop & SUB_WIN_TILEH) ? attr.height : (attr.height - w->tile->shaded * d->th) / n;
 
@@ -144,6 +142,7 @@ subTileConfigure(SubWin *w)
 							SubWin *c = subWinFind(wins[i]);
 							if(c && !(c->prop & (SUB_WIN_FLOAT|SUB_WIN_TRANS)))
 								{
+									c->parent	= w;
 									c->height = (c->prop & SUB_WIN_SHADED) ? d->th : w->tile->mh;
 									c->width	= w->tile->mw;
 									c->x			= (w->prop & SUB_WIN_TILEH) ? i * w->tile->mw : 0;
@@ -159,8 +158,8 @@ subTileConfigure(SubWin *w)
 
 									subWinResize(c);
 
-									if(c->prop & SUB_WIN_CLIENT) subClientSendConfigure(c);
-									else if(c->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV)) subTileConfigure(c);
+									if(SUBISTILE(c)) subTileConfigure(c);
+									else if(SUBISCLIENT(c)) subClientSendConfigure(c);
 								}
 						}
 					XFree(wins);
