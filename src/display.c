@@ -10,7 +10,7 @@ HandleXError(Display *display,
 		{
 			subLogError("Seems there is another WM running. Exiting.\n");
 		}
-	else
+	else if(ev->error_code != 42) /* X_SetInputFocus */
 		{
 			char error[255];
 			XGetErrorText(display, ev->error_code, error, sizeof(error));
@@ -57,7 +57,7 @@ subDisplayNew(const char *display_string)
 					subLogError("Can't open display `%s'.\n", display_string);
 					return(0);
 				}
-			/*XSetErrorHandler(HandleXError);*/
+			XSetErrorHandler(HandleXError);
 		}
 	else subLogError("Can't alloc memory.\n");
 
@@ -100,16 +100,19 @@ subDisplayNew(const char *display_string)
 void
 subDisplayKill(void)
 {
-  XFreeCursor(d->dpy, d->cursors.square);
-  XFreeCursor(d->dpy, d->cursors.arrow);
-  XFreeCursor(d->dpy, d->cursors.left);
-  XFreeCursor(d->dpy, d->cursors.right);
-  XFreeCursor(d->dpy, d->cursors.bottom);
-  XFreeCursor(d->dpy, d->cursors.resize);
+	if(d)
+		{
+		  XFreeCursor(d->dpy, d->cursors.square);
+		  XFreeCursor(d->dpy, d->cursors.arrow);
+		  XFreeCursor(d->dpy, d->cursors.left);
+		  XFreeCursor(d->dpy, d->cursors.right);
+		  XFreeCursor(d->dpy, d->cursors.bottom);
+		  XFreeCursor(d->dpy, d->cursors.resize);
 
-	XFreeGC(d->dpy, d->gcs.border);
-	XFreeGC(d->dpy, d->gcs.font);
-	XFreeGC(d->dpy, d->gcs.invert);
-	XFreeFont(d->dpy, d->xfs);
-	free(d);
+			XFreeGC(d->dpy, d->gcs.border);
+			XFreeGC(d->dpy, d->gcs.font);
+			XFreeGC(d->dpy, d->gcs.invert);
+			if(d->xfs) XFreeFont(d->dpy, d->xfs);
+			free(d);
+		}
 }
