@@ -20,18 +20,22 @@
 #endif /* HAVE_CONFIG_H */
 
 /* Masks */
-#define ENTER_MASK		(EnterWindowMask|LeaveWindowMask)
-#define BUTTON_MASK		(ButtonPressMask|ButtonReleaseMask)
-#define POINTER_MASK	(BUTTON_MASK|PointerMotionMask)
-#define STRUCT_MASK		(StructureNotifyMask|SubstructureNotifyMask)
-#define KEY_MASK			(KeyPressMask|KeyReleaseMask)
-#define FRAME_MASK		(ENTER_MASK|BUTTON_MASK|KEY_MASK|FocusChangeMask| \
-	VisibilityChangeMask|ExposureMask)
+#define ENTER_MASK			(EnterWindowMask|LeaveWindowMask)
+#define BUTTON_MASK			(ButtonPressMask|ButtonReleaseMask)
+#define STRUCT_MASK			(StructureNotifyMask|SubstructureNotifyMask)
+#define KEY_MASK				(KeyPressMask|KeyReleaseMask)
+#define FRAME_MASK			(ENTER_MASK|BUTTON_MASK|KEY_MASK|FocusChangeMask|VisibilityChangeMask|ExposureMask)
+
+#define SUBPOINTERMASK	(ButtonPressMask|ButtonReleaseMask|PointerMotionMask)
 
 /* Macros */
 #define SUBWINNEW(parent,x,y,width,height,border) \
 	XCreateWindow(d->dpy, parent, x, y, width, height, border, CopyFromParent, \
 		InputOutput, CopyFromParent, mask, &attrs);
+
+#define SUBISSCREEN(w)	(w && w->prop & SUB_WIN_SCREEN)
+#define SUBISTILE(w) 		(w && w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV))
+#define SUBISCLIENT(w)	(w && w->prop & SUB_WIN_CLIENT)
 
 /* win.c */
 #define SUB_WIN_SCREEN			(1L << 1)									// Screen window
@@ -46,6 +50,12 @@
 #define SUB_WIN_INPUT				(1L << 10)								// Expect to get focus active/passiv
 #define SUB_WIN_SEND_FOCUS	(1L << 11)								// Send focus messages
 #define SUB_WIN_SEND_CLOSE	(1L << 12)								// Send close messages
+
+#define SUB_WIN_DRAG_LEFT		(1L << 1)									// Drag start from left
+#define SUB_WIN_DRAG_RIGHT	(1L << 2)									// Drag start from right
+#define SUB_WIN_DRAG_BOTTOM	(1L << 3)									// Drag start from bottom
+#define SUB_WIN_DRAG_ICON		(1L << 4)									// Drag start from icon
+#define SUB_WIN_DRAG_TITLE	(1L << 5)									// Drag start from titlebar
 
 struct subtile;
 struct subclient;
@@ -74,6 +84,21 @@ void subWinRender(short mode, SubWin *w);							// Render a window
 void subWinRestack(SubWin *w);												// Restack a window
 void subWinMap(SubWin *w);														// Map a window
 
+/* tile.c */
+typedef struct subtile
+{
+	unsigned int 		mw, mh, shaded;											// Tile min. width / height
+	Window					btnew, btdel;												// Tile buttons
+} SubTile;
+
+#define subTileNewHoriz()	subTileNew(0)
+#define subTileNewVert()	subTileNew(1)
+SubWin *subTileNew(short mode);												// Create a new tile
+void subTileAdd(SubWin *t, SubWin *w);								// Add a window to the tile
+void subTileDelete(SubWin *w);												// Delete a tile
+void subTileRender(short mode, SubWin *w);						// Render a tile
+void subTileConfigure(SubWin *w);											// Configure a tile and it's children
+
 /* client.c */
 typedef struct subclient
 {
@@ -91,21 +116,6 @@ void subClientSendDelete(SubWin *w);									// Send delete request
 void subClientToggleShade(SubWin *w);									// Toggle shaded state
 void subClientFetchName(SubWin *w);										// Fetch client name
 void subClientRender(short mode, SubWin *w);					// Render the window
-
-/* tile.c */
-typedef struct subtile
-{
-	unsigned int 		mw, mh, shaded;											// Tile min. width / height
-	Window					btnew, btdel;												// Tile buttons
-} SubTile;
-
-#define subTileNewHoriz()	subTileNew(0)
-#define subTileNewVert()	subTileNew(1)
-SubWin *subTileNew(short mode);												// Create a new tile
-void subTileAdd(SubWin *t, SubWin *w);								// Add a window to the tile
-void subTileDelete(SubWin *w);												// Delete a tile
-void subTileRender(short mode, SubWin *w);						// Render a tile
-void subTileConfigure(SubWin *w);											// Configure a tile and it's children
 
 /* screen.c */
 typedef struct subscreen
@@ -134,7 +144,8 @@ typedef struct subdisplay
 	XFontStruct				*xfs;															// Font
 	struct
 	{
-		unsigned long		font, border, norm, act, bg;			// Colors
+		unsigned long		font, border, norm, focus, 
+										shade, bg;												// Colors
 	} colors;
 	struct
 	{
@@ -143,7 +154,7 @@ typedef struct subdisplay
 	struct
 	{
 		Cursor					arrow, square, left, right, 
-			bottom, resize;																	// Used cursors
+										bottom, resize;										// Used cursors
 	} cursors;
 } SubDisplay;
 
