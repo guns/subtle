@@ -7,7 +7,7 @@
 static short debug = 0;
 
  /**
-	* Toggle either to show debugging messages or not.
+	* Toggle debugging messages.
 	**/
 
 void
@@ -18,9 +18,9 @@ subLogToggleDebug(void)
 #endif /* DEBUG */
 
  /**
-	* Print messages dependant to their type.
+	* Print messages depending on their type.
 	* @param type Message type
-	* @param file File name with the call
+	* @param file File name
 	* @param line Line number
 	* @param format Message format
 	* @param ... Variadic arguments
@@ -33,29 +33,24 @@ subLog(short type,
 	const char *format,
 	...)
 {
-	va_list vargs;
+	va_list ap;
 	char buf[255];
 
 #ifdef DEBUG
 	if(!debug && !type) return;
 #endif /* DEBUG */
 
-	va_start(vargs, format);
-	vsnprintf(buf, sizeof(buf), format, vargs);
-	va_end(vargs);
+	va_start(ap, format);
+	vsnprintf(buf, sizeof(buf), format, ap);
+	va_end(ap);
 
 	switch(type)
 		{
 #ifdef DEBUG
-			case 0:
-				fprintf(stderr, "<DEBUG:%s:%d> %s", file, line, buf);
-				break;
+			case 0: fprintf(stderr, "<DEBUG:%s:%d> %s", file, line, buf);	break;
 #endif /* DEBUG */
-			case 1: 
-				fprintf(stderr, "<ERROR> %s", buf);
-				raise(SIGINT);
-				break;
-			case 2: fprintf(stdout, "<WARNING> %s", buf);		break;
-			case 3: fprintf(stdout, "%s", buf);							break;
+			case 1: fprintf(stderr, "<ERROR> %s", buf); raise(SIGINT);		break;
+			case 2: fprintf(stdout, "<WARNING> %s", buf);									break;
+			case 3: fprintf(stdout, "%s", buf);														break;
 		}
 }
