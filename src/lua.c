@@ -1,6 +1,7 @@
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
+#include <stdarg.h>
 #include <sys/types.h>
 #include <dirent.h>
 #include <fnmatch.h>
@@ -86,7 +87,7 @@ BindKey(const char *key,
 {
 	int n = 0;
 	KeySym *keys = NULL;
-	char *tok = strtok((char *) value, "+");
+	char *tok = strtok((char *)value, "+");
 
 	while(tok)
 		{
@@ -108,47 +109,30 @@ void
 subLuaLoadConfig(const char *path)
 {
 	int size;
-	char font[50], *face = NULL, *style = NULL;
+	char buf[100], *face = NULL, *style = NULL;
 	DIR *dir = NULL;
-	char full[100];
 	XGCValues gvals;
 	XSetWindowAttributes attrs;
-	lua_State *configstate = NULL;
+	lua_State *configstate = StateNew();
 
-	configstate = StateNew();
-
-	/* Check whether relative or absolute path */
-	if(path)
+	/* Check path */
+	if(!path)
 		{
-			if(!strncmp(path, "/", 1)) snprintf(full, sizeof(full), "%s", path);
-			else
+			snprintf(buf, sizeof(buf), "%s/.%s", getenv("HOME"), PACKAGE_NAME);
+			if((dir = opendir(buf))) 
 				{
-					snprintf(full, sizeof(full), "%s/.%s", getenv("HOME"), PACKAGE_NAME);
-					if((dir = opendir(full)))
-						{
-							strncat(full, path, sizeof(path));
-							closedir(dir);
-						}
-					else snprintf(full, sizeof(full), "/etc/%s/%s", PACKAGE_NAME, path);
-				}
-		}
-	else
-		{
-			snprintf(full, sizeof(full), "%s/.%s", getenv("HOME"), PACKAGE_NAME);
-			if((dir = opendir(full))) 
-				{
-					snprintf(full, sizeof(full), "%s/.%s/config.lua", getenv("HOME"), PACKAGE_NAME);
+					snprintf(buf, sizeof(buf), "%s/.%s/config.lua", getenv("HOME"), PACKAGE_NAME);
 					closedir(dir);
 				}
-			else snprintf(full, sizeof(full), "/etc/%s/config.lua", PACKAGE_NAME);
+			else snprintf(buf, sizeof(buf), "/etc/%s/config.lua", PACKAGE_NAME);
 		}
 
-	subLogDebug("Reading `%s'\n", full);
-	if(luaL_loadfile(configstate, full) || lua_pcall(configstate, 0, 0, 0))
+	subLogDebug("Reading `%s'\n", buf);
+	if(luaL_loadfile(configstate, buf) || lua_pcall(configstate, 0, 0, 0))
 		{
 			subLogDebug("%s\n", (char *)lua_tostring(configstate, -1));
 			lua_close(configstate);
-			subLogError("Can't load config file `%s'.\n", full);
+			subLogError("Can't load config file `%s'.\n", buf);
 		}
 
 	/* Parse and load the font */
@@ -156,11 +140,11 @@ subLuaLoadConfig(const char *path)
 	style	= GetString(configstate, "font", "style", "medium");
 	size	= GetNum(configstate, "font", "size", 12);
 
-	snprintf(font, sizeof(font), "-*-%s-%s-*-*-*-%d-*-*-*-*-*-*-*", face, style, size);
-	if(!(d->xfs = XLoadQueryFont(d->dpy, font)))
+	snprintf(buf, sizeof(buf), "-*-%s-%s-*-*-*-%d-*-*-*-*-*-*-*", face, style, size);
+	if(!(d->xfs = XLoadQueryFont(d->dpy, buf)))
 		{
 			subLogWarn("Can't load font `%s', using fixed instead.\n", face);
-			subLogDebug("Font: %s\n", font);
+			subLogDebug("Font: %s\n", buf);
 			d->xfs = XLoadQueryFont(d->dpy, "-*-fixed-medium-*-*-*-12-*-*-*-*-*-*-*");
 		}
 
@@ -210,10 +194,87 @@ subLuaLoadConfig(const char *path)
 	lua_close(configstate);
 }
 
-static int
-l_add(lua_State *state)
+static void
+SetField(lua_State *state,
+  const char *key,
+  int type,
+  ...)
 {
-	subSubletAdd((char *)lua_tostring(state, 1), (int)lua_tonumber(state, 2), (int)lua_tonumber(state, 3));
+	va_list ap;
+
+	va_start(ap, type);
+	lua_pushstring(state, key);
+	switch(type)
+		{
+			case LUA_TSTRING:   lua_pushstring(state, va_arg(ap, char *));						break;
+			case LUA_TFUNCTION: lua_pushcfunction(state, va_arg(ap, lua_CFunction));  break;
+			case LUA_TNUMBER:   lua_pushnumber(state, va_arg(ap, double));						break;
+			case LUA_TBOOLEAN:  lua_pushboolean(state, va_arg(ap, int));							break;
+		}
+	lua_settable(state, -3);
+	va_end(ap);
+}
+
+#ifdef DEBUG
+static void
+DumpStack(lua_State *state)
+{
+	int i;
+	int top = lua_gettop(state);
+	for(i = 1; i <= top; i++)
+		{
+	  	int t = lua_type(state, i);
+			switch(t)
+			 	{
+ 	  		 	case LUA_TSTRING:		printf("%d.) `%s'", i, lua_tostring(state, i));							break;
+					case LUA_TNUMBER:		printf("%d.) %g", i, lua_tonumber(state, i));								break;
+					case LUA_TBOOLEAN:	printf("%d.) %s", i, lua_toboolean(state, i) ? "true" : "false"); break;
+		 	   	default:  					printf("%d.) %s", i, lua_typename(state, t));								break;
+				}
+			printf("  ");
+			printf("\n");
+		}
+}
+#endif /* DEBUG */
+
+static int
+PrepareSublet(int type, 
+	lua_State *state)
+{
+	char *table = NULL;
+	int ref, interval, width;
+	table			= (char *)lua_tostring(state, 2);
+	interval	= (int)lua_tonumber(state, 3);
+	width			= (int)lua_tonumber(state, 4);
+
+	lua_getglobal(state, table);
+	lua_pushstring(state, "run");
+	lua_gettable(state, -2);
+	ref = luaL_ref(state, LUA_REGISTRYINDEX);
+
+	subLogDebug("Sublet: table=%s, ref=%d, interval=%d, width=%d\n", table, ref, interval, width);
+
+	if(ref && interval && width) subSubletAdd(type, ref, interval, width);
+
+	return(printf("Loaded sublet %s (%d)\n", table, interval)); // Make the compiler happy
+}
+
+static int
+l_AddText(lua_State *state)
+{
+	return(PrepareSublet(SUB_SUBLET_TEXT, state));
+}
+
+static int
+l_AddTeaser(lua_State *state)
+{
+	return(PrepareSublet(SUB_SUBLET_TEASER, state));
+}
+
+static int
+l_AddMeter(lua_State *state)
+{
+	return(PrepareSublet(SUB_SUBLET_METER, state));
 }
 
  /**
@@ -225,26 +286,30 @@ void
 subLuaLoadSublets(const char *path)
 {
 	DIR *dir = NULL;
-	char full[100];
-	struct dirent *rent = NULL;
+	char buf[100];
+	struct dirent *entry = NULL;
 
 	state = StateNew();
 
-	if(path) snprintf(full, sizeof(full), "%s", full);
-	else snprintf(full, sizeof(full), "%s/.%s/sublets", getenv("HOME"), PACKAGE_NAME);
+	if(path) snprintf(buf, sizeof(buf), "%s", buf);
+	else snprintf(buf, sizeof(buf), "%s/.%s/sublets", getenv("HOME"), PACKAGE_NAME);
 
 	/* Put functions onto stack */
-	lua_pushcfunction(state, l_add);
-	lua_setglobal(state, "add");
+	lua_newtable(state);
+	SetField(state, "version",		LUA_TSTRING,		PACKAGE_VERSION);
+	SetField(state, "add_text",		LUA_TFUNCTION,	l_AddText);
+	SetField(state, "add_teaser",	LUA_TFUNCTION,	l_AddTeaser);
+	SetField(state, "add_meter",	LUA_TFUNCTION,	l_AddMeter);
+	lua_setglobal(state, PACKAGE_NAME);
 
-	if((dir = opendir(full)))
+	if((dir = opendir(buf)))
 		{
-			while((rent = readdir(dir)))
+			while((entry = readdir(dir)))
 				{
-					if(!fnmatch("*.lua", rent->d_name, FNM_PATHNAME))
+					if(!fnmatch("*.lua", entry->d_name, FNM_PATHNAME))
 						{
-							snprintf(full, sizeof(full), "%s/.%s/sublets/%s", getenv("HOME"), PACKAGE_NAME, rent->d_name);
-							luaL_loadfile(state, full);
+							snprintf(buf, sizeof(buf), "%s/.%s/sublets/%s", getenv("HOME"), PACKAGE_NAME, entry->d_name);
+							luaL_loadfile(state, buf);
 							lua_pcall(state, 0, 0, 0);
 						}
 				}
@@ -263,32 +328,30 @@ subLuaKill(void)
 }
 
  /**
-	* Call a Lua function
-	* @param function Function to call
+	* Call a Lua script
+	* @param ref Lua object reference
 	* @param data Storage for the function return value
 	* @return Returns either a nonzero on succces or otherwise zero.
 	**/
 
-int
-subLuaCall(const char *function,
-	char **data)
+void
+subLuaCall(int ref,
+	SubSubletData *data)
 {
-	lua_getglobal(state, function);
+	lua_settop(state, 0);
+	lua_rawgeti(state, LUA_REGISTRYINDEX, ref);
 	if(lua_pcall(state, 0, 1, 0))
 		{
-			subLogWarn("Failed to call `%s'.\n", function);
-			return(0);
+			subLogWarn("Failed to call sublet (#%d).\n", ref);
 		}
-	switch(lua_type(state, -1))
+	if(lua_isnumber(state, -1))
 		{
-			case LUA_TSTRING:
-			case LUA_TNUMBER:
-				if(*data) free(*data);
-				*data = strdup((char *)lua_tostring(state, -1));
-				break;
-			default:
-				subLogWarn("Sublet %s has no (valid) return value.\n", function);
-				subLogDebug("Unhandled return type `%s'.", lua_typename(state, -1));
+			data->number = (int)lua_tonumber(state, -1);
 		}
-	return(1);
+	else if(lua_isstring(state, -1)) 
+		{
+			if(data->string) free(data->string);
+			data->string = strdup((char *)lua_tostring(state, -1));
+		}
+
 }
