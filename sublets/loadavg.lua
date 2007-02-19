@@ -1,15 +1,17 @@
 ---- Loadavg
 -- Author: Christoph Kappel
 -- Contact: unexist@hilflos.org
--- Description: Shows the average load
+-- Description: Show the average load
 -- Version: 0.1
--- Date: Wed Jan 24 19:42 CET 2007
+-- Date: Mon Feb 19 00:41 CET 2007
 ----
 
-function loadavg()
+loadavg = {}
+
+function loadavg:run()
 	io.input("/proc/loadavg")
 	load1, load2, load3 = io.read("*number", "*number", "*numer")
 	return(string.format("%.2f %.2f %.2f", load1, load2, load3))
 end
 
-add("loadavg", 20, 15)
+subtle:add_teaser("loadavg", 20, 15)

@@ -1,13 +1,15 @@
 ------ Clock
 -- Author: Christoph Kappel
 -- Contact: unexist@hilflos.org
--- Description: Shows the clock
+-- Description: Show the clock
 -- Version: 0.1
--- Date: Wed Jan 24 19:42 CET 2007
+-- Date: Mon Feb 19 00:29 CET 2007
 ----
---
-function clock()
-	return(os.date("%c"))
+
+clock = {}
+
+function clock:run()
+	return(os.date("%a %b %d %H:%M %Y"))
 end
 
-add("clock", 2, 25)
+subtle:add_teaser("clock", 2, 22)
