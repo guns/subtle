@@ -3,7 +3,7 @@
  /**
 	* Find a window via Xlib context manager.
 	* @param win A #Window
-	* @return Returns a #SubWin on success or otherwise NULL.
+	* @return Return the #SubWin associated with the window or NULL
 	**/
 
 SubWin *
@@ -16,7 +16,7 @@ subWinFind(Window win)
  /**
 	* Create a new window and append it to the window list.
 	* @param win A #Window
-	* @return Returns a #SubWin on success.
+	* @return Return a #SubWin on success.
 	**/
 
 SubWin *
