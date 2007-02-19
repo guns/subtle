@@ -50,17 +50,6 @@ RenderWindow(SubWin *w)
 }
 
 static void
-RenderSublet(SubSublet *s)
-{
-	if(s && s->data)
-		{
-			XClearWindow(d->dpy, s->win);
-			XDrawString(d->dpy, s->win, d->gcs.font, 3, d->fy - 1, s->data, strlen(s->data));
-			XFlush(d->dpy);
-		}
-}
-
-static void
 HandleButtonPress(XButtonEvent *ev)
 {
 	static Time last_time = 0;
@@ -299,7 +288,7 @@ HandleExpose(XEvent *ev)
 	else
 		{
 			SubSublet *s = subSubletFind(win);
-			if(s) RenderSublet(s);
+			if(s) subSubletRender(s);
 		}
 }
 
@@ -327,8 +316,8 @@ int subEventLoop(void)
 						{
 							s->time = cur + s->interval;
 
-							subLuaCall(s->function, &s->data);
-							RenderSublet(s);
+							subLuaCall(s->ref, &s->data);
+							subSubletRender(s);
 							subSubletSift(1);
 
 							s = subSubletGetRecent();
