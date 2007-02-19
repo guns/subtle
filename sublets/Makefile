@@ -149,7 +149,7 @@ sharedstatedir = ${prefix}/com
 subletdir = /usr/local/share/subtle
 sysconfdir = ${prefix}/etc
 target_alias = 
-sublet_DATA = clock.lua loadavg.lua
+sublet_DATA = battery.lua clock.lua loadavg.lua
 all: all-am
 
 .SUFFIXES:
