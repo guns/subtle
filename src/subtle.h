@@ -177,18 +177,23 @@ void subLogToggleDebug(void);
 void subLog(short type, const char *file, 						// Print messages
 	short line, const char *format, ...);
 
-/* lua.c */
-void subLuaLoadConfig(const char *path);							// Load config file
-void subLuaLoadSublets(const char *path);							// Load sublets
-void subLuaKill(void);																// Kill Lua state
-
 /* sublet.c */
+#define SUB_SUBLET_TEXT		(1L << 1)										// Text sublet
+#define SUB_SUBLET_TEASER	(1L << 2)										// Teaser sublet
+#define SUB_SUBLET_METER	(1L << 3)										// Text sublet
+
+typedef union subsubletdata
+{
+	char *string;
+	int number;
+} SubSubletData;
+
 typedef struct subsublet
 {
-	unsigned int time, interval;
-	const char *function;
-	char *data;
-	Window win;
+	int ref, type, width;																// Lua object referece, Sublet type width
+	unsigned int time, interval;												// Last update time, update interval
+	Window win;																					// Sublet window
+	SubSubletData data; 																// Sublet data
 } SubSublet;
 
 typedef struct subsubletlist
@@ -200,9 +205,16 @@ typedef struct subsubletlist
 SubSublet *subSubletFind(Window win);									// Find a sublet window
 SubSublet *subSubletGetRecent(void);									// Get the last recent sublet
 void subSubletNew(void);															// Create a sublet
-void subSubletAdd(const char *function,								// Add a new sublet item 
+void subSubletAdd(int type, int ref, 									// Add a new sublet item 
 	unsigned int interval, unsigned int width);
+void subSubletRender(SubSublet *s);										// Render a sublet
 void subSubletKill(void);															// Delete all sublet items
+
+/* lua.c */
+void subLuaLoadConfig(const char *path);							// Load config file
+void subLuaLoadSublets(const char *path);							// Load sublets
+void subLuaKill(void);																// Kill Lua state
+void subLuaCall(int ref, SubSubletData *data);				// Call a Lua script
 
 /* event.c */
 int subEventGetTime(void);														// Get the current time
