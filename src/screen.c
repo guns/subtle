@@ -107,7 +107,7 @@ subScreenKill(void)
 }
 
 void
-subScreenShift(int dir)
+subScreenSwitch(int dir)
 {
 }
 	
