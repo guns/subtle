@@ -57,54 +57,51 @@ HandleButtonPress(XButtonEvent *ev)
 	SubWin *w = subWinFind(ev->window);
 	if(w)
 		{
-			if(ev->button == 4) subScreenAdd();
-
-			if(ev->subwindow == w->left) 				subWinDrag(SUB_WIN_DRAG_LEFT, w, ev);
-			else if(ev->subwindow == w->right)	subWinDrag(SUB_WIN_DRAG_RIGHT, w, ev);
-			else if(ev->subwindow == w->bottom) subWinDrag(SUB_WIN_DRAG_BOTTOM, w, ev);
-			else if(ev->subwindow == w->icon) 	subWinDrag(SUB_WIN_DRAG_ICON, w, ev);
-			else if(ev->subwindow == w->title) 
+			switch(ev->button)
 				{
-					/* Check double clicks */
-					if(last_time > 0 && ev->time - last_time <= 300)
-						{
-							subLogDebug("Double click: win=%#lx\n", ev->window);
-							subWinShade(w);
-							last_time = 0;
-						}						
-					else
-						{
-							subLogDebug("Single click: win=%#lx\n", ev->window);
-							switch(ev->button)
-								{
-									case 1: subWinDrag(SUB_WIN_DRAG_TITLE, w, ev);	break;
-									case 2: 
-										if(SUBISTILE(w)) 
-											{
-												/* Check for screens */
-												if(SUBISSCREEN(w)) subScreenDelete(w); else subTileDelete(w);
-											}
-										else subClientSendDelete(w);
-										return;
-								}
-							last_time = ev->time;
-						}
-				}
-			else if(SUBISTILE(w))
-				{
-					if(ev->subwindow == w->tile->btnew) 
-						switch(ev->button)
+					case Button1:
+						if(last_time > 0 && ev->time - last_time <= 300) /* Double click */
 							{
-								case 1: subTileAdd(w, subTileNewVert());	break; 
-								case 3: subTileAdd(w, subTileNewHoriz());	break;
+								subLogDebug("Double click: win=%#lx\n", ev->window);
+								subWinToggle(SUB_WIN_SHADED, w);
+								last_time = 0;
+							}						
+						else /* Single click */
+							{
+								subLogDebug("Single click: win=%#lx\n", ev->window);
+								if(w->prop & SUB_WIN_FLOAT) subWinRaise(w);
+								if(ev->subwindow == w->left) 				subWinDrag(SUB_WIN_DRAG_LEFT, w, ev);
+								else if(ev->subwindow == w->right)	subWinDrag(SUB_WIN_DRAG_RIGHT, w, ev);
+								else if(ev->subwindow == w->bottom) subWinDrag(SUB_WIN_DRAG_BOTTOM, w, ev);
+								else if(ev->subwindow == w->icon) 	subWinDrag(SUB_WIN_DRAG_ICON, w, ev);
+								else if(ev->subwindow == w->title)
+									{
+										subWinDrag(SUB_WIN_DRAG_MOVE, w, ev);
+										last_time = ev->time;
+									}
+								else if(SUBISTILE(w))
+									{
+										if(ev->subwindow == w->tile->btnew) subTileAdd(w, subTileNewVert());
+										else if(ev->subwindow == w->tile->btdel) 
+											{
+												if(SUBISSCREEN(w)) subScreenDelete(w); 
+												else subTileDelete(w);
+											}
+									}
 							}
-					else if(ev->subwindow == w->tile->btdel) 
-						{
-							/* Check for screens */
-							if(SUBISSCREEN(w)) subScreenDelete(w); else subTileDelete(w);
-						}
+						break;
+					case Button2:
+						if(SUBISSCREEN(w)) subScreenDelete(w); 
+						else if(SUBISTILE(w)) subTileDelete(w);
+						else subClientSendDelete(w);
+						break;
+					case Button3: 
+						if(SUBISTILE(w) && ev->subwindow == w->tile->btnew) subTileAdd(w, subTileNewHoriz());
+						else subWinToggle(SUB_WIN_FLOAT, w); 
+						break;
+					case Button4: subScreenSwitch(1);		break;
+					case Button5: subScreenSwitch(-1);	break;
 				}
-				
 		}
 }
 
@@ -142,9 +139,9 @@ HandleConfigure(XConfigureRequestEvent *ev)
 	SubWin *w = subWinFind(ev->window);
 	if(w)
 		{
-			if(ev->value_mask & CWX)			w->x = ev->x;
-			if(ev->value_mask & CWY)			w->y = ev->y;
-			if(ev->value_mask & CWWidth)	w->width = ev->width;
+			if(ev->value_mask & CWX)			w->x			= ev->x;
+			if(ev->value_mask & CWY)			w->y 			= ev->y;
+			if(ev->value_mask & CWWidth)	w->width	= ev->width;
 			if(ev->value_mask & CWHeight)	w->height = ev->height;
 
 			wc.x						= w->x;
@@ -227,8 +224,7 @@ HandleProperty(XPropertyEvent *ev)
 	if(SUBISCLIENT(w))
 		{
 			subLogDebug("Property: atom=%ld\n", ev->atom);
-			if(ev->atom == XA_WM_NAME || 
-				ev->atom == subEwmhGetAtom(SUB_EWMH_NET_WM_NAME)) subClientFetchName(w);
+			if(ev->atom == XA_WM_NAME || ev->atom == subEwmhGetAtom(SUB_EWMH_NET_WM_NAME)) subClientFetchName(w);
 		}
 }
 
@@ -252,7 +248,7 @@ HandleCrossing(XCrossingEvent *ev)
 			subEwmhSetWindow(DefaultRootWindow(d->dpy), SUB_EWMH_NET_ACTIVE_WINDOW, w->frame);
 
 			/* Focus */
-			if(SUBISCLIENT(w))
+			if(SUBISCLIENT(w) && !(w->prop & SUB_WIN_SHADED))
 				{
 					if(w->prop & SUB_WIN_INPUT) XSetInputFocus(d->dpy, w->win, RevertToNone, CurrentTime);
 					if(w->prop & SUB_WIN_SEND_FOCUS)
@@ -271,7 +267,8 @@ HandleCrossing(XCrossingEvent *ev)
 					subLogDebug("Focus: win=%#lx, input=%d, send=%d\n", w->win, 
 						w->prop & SUB_WIN_INPUT ? 1 : 0, w->prop & SUB_WIN_SEND_FOCUS ? 1 : 0);
 				}
-			else if(SUBISTILE(w)) XSetInputFocus(d->dpy, w->win, RevertToNone, CurrentTime);
+			else if(SUBISTILE(w) && !(w->prop & SUB_WIN_SHADED)) 
+				XSetInputFocus(d->dpy, w->win, RevertToNone, CurrentTime);
 		}
 }
 
