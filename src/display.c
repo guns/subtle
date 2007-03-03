@@ -82,6 +82,7 @@ subDisplayNew(const char *display_string)
 	XParseColor(d->dpy, DefaultColormap(d->dpy, DefaultScreen(d->dpy)), "black", &fg);
 	XParseColor(d->dpy, DefaultColormap(d->dpy, DefaultScreen(d->dpy)), "white", &bg);
 	d->cursors.square	= XCreatePixmapCursor(d->dpy, shape, mask, &fg, &bg, 1, 1);
+	d->cursors.move		= XCreateFontCursor(d->dpy, XC_fleur);
 	d->cursors.arrow	= XCreateFontCursor(d->dpy, XC_left_ptr);
 	d->cursors.left		= XCreateFontCursor(d->dpy, XC_left_side);
 	d->cursors.right	= XCreateFontCursor(d->dpy, XC_right_side);
@@ -103,6 +104,7 @@ subDisplayKill(void)
 	if(d)
 		{
 		  XFreeCursor(d->dpy, d->cursors.square);
+			XFreeCursor(d->dpy, d->cursors.move);
 		  XFreeCursor(d->dpy, d->cursors.arrow);
 		  XFreeCursor(d->dpy, d->cursors.left);
 		  XFreeCursor(d->dpy, d->cursors.right);
