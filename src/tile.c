@@ -129,15 +129,15 @@ subTileConfigure(SubWin *w)
 			XQueryTree(d->dpy, w->win, &nil, &nil, &wins, &n);
 			if(n > 0)
 				{
-					n						= n - w->tile->shaded > 0 ? n - w->tile->shaded : 1; /* Prevent division by zero */
+					n						= n - w->tile->excl > 0 ? n - w->tile->excl : 1; /* Prevent division by zero */
 					w->tile->mw = (w->prop & SUB_WIN_TILEH) ? attr.width / n	: attr.width;
-					w->tile->mh = (w->prop & SUB_WIN_TILEH) ? attr.height : (attr.height - w->tile->shaded * d->th) / n;
+					w->tile->mh = (w->prop & SUB_WIN_TILEH) ? attr.height : (attr.height - w->tile->excl * d->th) / n;
 
 					/* Fix rounding */
-					if(w->prop & SUB_WIN_TILEH) fix = abs(attr.width - n * w->tile->mw - w->tile->shaded * d->th);
-					else fix = abs(attr.height - n * w->tile->mh - w->tile->shaded * d->th);
+					if(w->prop & SUB_WIN_TILEH) fix = abs(attr.width - n * w->tile->mw - w->tile->excl * d->th);
+					else fix = abs(attr.height - n * w->tile->mh - w->tile->excl * d->th);
 
-					for(i = 0; i < n + w->tile->shaded; i++)
+					for(i = 0; i < n + w->tile->excl; i++)
 						{
 							SubWin *c = subWinFind(wins[i]);
 							if(c && !(c->prop & (SUB_WIN_FLOAT|SUB_WIN_TRANS)))
@@ -148,7 +148,7 @@ subTileConfigure(SubWin *w)
 									c->x			= (w->prop & SUB_WIN_TILEH) ? i * w->tile->mw : 0;
 									c->y			= (w->prop & SUB_WIN_TILEH) ? 0 : y;
 
-									if(i == n + w->tile->shaded - 1) 
+									if(i == n + w->tile->excl - 1) 
 										if(w->prop & SUB_WIN_TILEH) c->width += fix;
 										else c->height += fix;
 
