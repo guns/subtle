@@ -226,10 +226,10 @@ DumpStack(lua_State *state)
 	  	int t = lua_type(state, i);
 			switch(t)
 			 	{
- 	  		 	case LUA_TSTRING:		printf("%d.) `%s'", i, lua_tostring(state, i));							break;
-					case LUA_TNUMBER:		printf("%d.) %g", i, lua_tonumber(state, i));								break;
+ 	  		 	case LUA_TSTRING:		printf("%d.) `%s'", i, lua_tostring(state, i));										break;
+					case LUA_TNUMBER:		printf("%d.) %g", i, lua_tonumber(state, i));											break;
 					case LUA_TBOOLEAN:	printf("%d.) %s", i, lua_toboolean(state, i) ? "true" : "false"); break;
-		 	   	default:  					printf("%d.) %s", i, lua_typename(state, t));								break;
+		 	   	default:  					printf("%d.) %s", i, lua_typename(state, t));											break;
 				}
 			printf("  ");
 			printf("\n");
@@ -241,22 +241,33 @@ static int
 PrepareSublet(int type, 
 	lua_State *state)
 {
-	char *table = NULL;
-	int ref, interval, width;
-	table			= (char *)lua_tostring(state, 2);
-	interval	= (int)lua_tonumber(state, 3);
-	width			= (int)lua_tonumber(state, 4);
+	char *string = (char *)lua_tostring(state, 2);
+	int ref, interval = (int)lua_tonumber(state, 3), width = (int)lua_tonumber(state, 4);
 
-	lua_getglobal(state, table);
-	lua_pushstring(state, "run");
-	lua_gettable(state, -2);
-	ref = luaL_ref(state, LUA_REGISTRYINDEX);
+	if(string && interval && width)
+		{
+			if(index(string, ':'))
+				{
+					char *table = strtok(string, ":"), *func = strtok(NULL, ":");
+	
+					if(table && func)
+						{
+							lua_getglobal(state, table);
+							lua_pushstring(state, func);
+							lua_gettable(state, -2);
+						}
+					else return(0);
+				}
+			else lua_getglobal(state, string);
 
-	subLogDebug("Sublet: table=%s, ref=%d, interval=%d, width=%d\n", table, ref, interval, width);
+			ref = luaL_ref(state, LUA_REGISTRYINDEX);
+			if(ref) subSubletAdd(type, ref, interval, width);
 
-	if(ref && interval && width) subSubletAdd(type, ref, interval, width);
+			printf("Loaded sublet %s (%d)\n", string, interval);
+			subLogDebug("Sublet: string=%s, ref=%d, interval=%d, width=%d\n", string, ref, interval, width);
+		}
 
-	return(printf("Loaded sublet %s (%d)\n", table, interval)); // Make the compiler happy
+	return(1); // Make the compiler happy
 }
 
 static int
