@@ -3,13 +3,13 @@
 -- Contact: unexist@hilflos.org
 -- Description: Show the clock
 -- Version: 0.1
--- Date: Mon Feb 19 00:29 CET 2007
+-- Date: Sat Mar 03 16:58 CET 2007
 ----
 
 clock = {}
 
-function clock:run()
+function clock:teaser()
 	return(os.date("%a %b %d %H:%M %Y"))
 end
 
-subtle:add_teaser("clock", 2, 22)
+subtle:add_teaser("clock:teaser", 60, 22)
