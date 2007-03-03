@@ -54,8 +54,8 @@
 #define SUB_WIN_DRAG_LEFT		(1L << 1)									// Drag start from left
 #define SUB_WIN_DRAG_RIGHT	(1L << 2)									// Drag start from right
 #define SUB_WIN_DRAG_BOTTOM	(1L << 3)									// Drag start from bottom
-#define SUB_WIN_DRAG_ICON		(1L << 4)									// Drag start from icon
-#define SUB_WIN_DRAG_TITLE	(1L << 5)									// Drag start from titlebar
+#define SUB_WIN_DRAG_MOVE		(1L << 4)									// Drag move start from titlebar
+#define SUB_WIN_DRAG_ICON		(1L << 5)									// Drag start from icon
 
 struct subtile;
 struct subclient;
@@ -78,16 +78,17 @@ SubWin *subWinNew(Window win);												// Create a new window
 void subWinDelete(SubWin *w);													// Delete a window
 void subWinDrag(short mode, SubWin *w, 
 	XButtonEvent *bev);																	// Move/Resize a window
-void subWinShade(SubWin *w);													// Shade/unshade a window
+void subWinToggle(short type, SubWin *w);							// Toggle shading or floating state of a window
 void subWinResize(SubWin *w);													// Resize a window
 void subWinRender(short mode, SubWin *w);							// Render a window
 void subWinRestack(SubWin *w);												// Restack a window
 void subWinMap(SubWin *w);														// Map a window
+void subWinRaise(SubWin *w);													// Raise a window
 
 /* tile.c */
 typedef struct subtile
 {
-	unsigned int 		mw, mh, shaded;											// Tile min. width / height
+	unsigned int 		mw, mh, excl;												// Tile min. width / height, exclude shaded windows
 	Window					btnew, btdel;												// Tile buttons
 } SubTile;
 
@@ -132,7 +133,7 @@ void subScreenNew(void);															// Create a new screen
 void subScreenAdd(void);															// Add a screen
 void subScreenDelete(SubWin *w);											// Delete a screen
 void subScreenKill(void);															// Kill all screens
-void subScreenShift(int dir);													// Shift current screen
+void subScreenSwitch(int dir);												// Switch current screen
 
 /* display.c */
 typedef struct subdisplay
@@ -153,7 +154,7 @@ typedef struct subdisplay
 	} gcs;
 	struct
 	{
-		Cursor					arrow, square, left, right, 
+		Cursor					square, move, arrow, left, right, 
 										bottom, resize;										// Used cursors
 	} cursors;
 } SubDisplay;
