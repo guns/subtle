@@ -131,7 +131,8 @@ subWinRender(short mode,
 static void
 DrawOutline(short mode,
 	SubWin *w,
-	int start,	// Start on root window
+	int ix,			// Init x position on root window
+	int iy,			// Init y position on root window
 	int rx,			// X position on root window
 	int ry,			// Y position on root window
 	int sx,			// Start x position of the dragged window
@@ -143,11 +144,13 @@ DrawOutline(short mode,
 	w->y = sy;
 	switch(mode)
 		{
-			case SUB_WIN_DRAG_LEFT: 	w->x 			= sx - (start - rx); w->width = sx + (start - rx);	break;
-			case SUB_WIN_DRAG_RIGHT:	w->width	= sw + (rx - start); 																break;
-			case SUB_WIN_DRAG_BOTTOM: w->height	= sh + (ry - start); 																break;
+			case SUB_WIN_DRAG_LEFT: 	w->x 			= sx - (ix - rx); w->width	= sx + (ix - rx);	break;
+			case SUB_WIN_DRAG_RIGHT:	w->width	= sw + (rx - ix); 														break;
+			case SUB_WIN_DRAG_BOTTOM: w->height	= sh + (ry - iy); 														break;
+			case SUB_WIN_DRAG_MOVE:		w->x			= sx - (ix - rx); w->y			= sy - (iy - ry);	break; 
 		}
-	XDrawRectangle(d->dpy, DefaultRootWindow(d->dpy), d->gcs.invert, w->x, w->y, w->width, w->height);
+	XDrawRectangle(d->dpy, DefaultRootWindow(d->dpy), d->gcs.invert, w->x, w->y, 
+		w->width, (w->prop & SUB_WIN_SHADED) ? d->th : w->height);
 }
 
  /**
@@ -166,28 +169,31 @@ subWinDrag(short mode,
 	Cursor cursor;
 	Window win;
 	SubWin *w2 = NULL, *p = NULL, *p2 = NULL;
-	int start = 0, rx = 0, ry = 0, sx = 0, sy = 0, sw = w->width, sh = w->height;
+	int ix = 0, iy = 0, rx = 0, ry = 0, sx = 0, sy = 0, sw = w->width, sh = w->height;
 	unsigned int mask;
 
 	/* Get window position on root window */
 	XQueryPointer(d->dpy, DefaultRootWindow(d->dpy), &win, &win, &rx, &ry, &sx, &sy, &mask);
+	ix = rx;
+	iy = ry;
 	sx = rx - bev->x;
 	sy = ry - bev->y;
 
 	/* Select cursor */
 	switch(mode)
 		{
-			case SUB_WIN_DRAG_LEFT:		cursor = d->cursors.left;		start = rx;	break;
-			case SUB_WIN_DRAG_RIGHT:	cursor = d->cursors.right;	start = rx;	break;
-			case SUB_WIN_DRAG_BOTTOM:	cursor = d->cursors.bottom;	start = ry;	break;
-			default:									cursor = d->cursors.square;							break;
+			case SUB_WIN_DRAG_LEFT:		cursor = d->cursors.left;		break;
+			case SUB_WIN_DRAG_RIGHT:	cursor = d->cursors.right;	break;
+			case SUB_WIN_DRAG_BOTTOM:	cursor = d->cursors.bottom;	break;
+			case SUB_WIN_DRAG_MOVE:		cursor = d->cursors.move;		break;
+			default:									cursor = d->cursors.square;	break;
 		}
 
 	if(!XGrabPointer(d->dpy, w->frame, True, SUBPOINTERMASK, GrabModeAsync, GrabModeAsync, None, 
 		cursor, CurrentTime) == GrabSuccess) return;
 
 	XGrabServer(d->dpy);
-	if(mode < SUB_WIN_DRAG_ICON) DrawOutline(mode, w, start, rx, ry, sx, sy, sw, sh);
+	if(mode < SUB_WIN_DRAG_ICON) DrawOutline(mode, w, ix, iy, rx, ry, sx, sy, sw, sh);
 	for(;;)
 		{
 			XMaskEvent(d->dpy, PointerMotionMask|ButtonReleaseMask|EnterWindowMask, &ev);
@@ -196,10 +202,10 @@ subWinDrag(short mode,
 					/* Button release doesn't return our destination window */
 					case EnterNotify: win = ev.xcrossing.window; break;
 					case MotionNotify:
-						if(mode < SUB_WIN_DRAG_ICON) DrawOutline(mode, w, start, rx, ry, sx, sy, sw, sh);
+						if(mode < SUB_WIN_DRAG_ICON) DrawOutline(mode, w, ix, iy, rx, ry, sx, sy, sw, sh);
 						rx = ev.xmotion.x_root;
 						ry = ev.xmotion.y_root;
-						if(mode < SUB_WIN_DRAG_ICON) DrawOutline(mode, w, start, rx, ry, sx, sy, sw, sh);
+						if(mode < SUB_WIN_DRAG_ICON) DrawOutline(mode, w, ix, iy, rx, ry, sx, sy, sw, sh);
 						break;
 					case ButtonRelease:
 						if(win != w->frame && mode >= SUB_WIN_DRAG_ICON)
@@ -256,18 +262,32 @@ subWinDrag(short mode,
 														w2->tile	= tile; 		w2->client	= client;
 													}
 
-												swap	= w->win;		w->win	= w2->win;	w2->win		= swap; 
-												swap	= w->prop;	w->prop	= w2->prop;	w2->prop	= swap;
+												swap = w->win;	w->win	= w2->win;	w2->win		= swap; 
+												swap = w->prop;	w->prop	= w2->prop;	w2->prop	= swap;
 
-												subTileConfigure(w->parent);
-												subTileConfigure(w2->parent);
+												if(w->prop & SUB_WIN_FLOAT)
+													{ 
+														subWinResize(w); 
+														subTileConfigure(w);
+													}
+												else subTileConfigure(w->parent);
+
+												if(w2->prop & SUB_WIN_FLOAT)
+													{
+														subWinResize(w2); 
+														subTileConfigure(w2);
+													}
+												else subTileConfigure(w2->parent);
+
+												subLogDebug("Swap: %#lx <=> %#lx\n", w->win, w2->win);
 											}
 									}
 								}
 						else if(mode < SUB_WIN_DRAG_ICON) /* Resize */
 							{
-								DrawOutline(mode, w, start, rx, ry, sx, sy, sw, sh);
-								/*subWinResize(w);*/
+								DrawOutline(mode, w, ix, iy, rx, ry, sx, sy, sw, sh);
+								if(w->prop & SUB_WIN_FLOAT) subWinResize(w);
+								if(SUBISTILE(w)) subTileConfigure(w);
 							}
 												
 						XUngrabServer(d->dpy);
@@ -278,44 +298,103 @@ subWinDrag(short mode,
 }
 
  /**
-	* Shade/Unshade a window.
+	* Toggle shaded/float state of a window.
 	* @param w A #SubWin
 	**/
 
 void
-subWinShade(SubWin *w)
+subWinToggle(short type,
+	SubWin *w)
 {
 	if(w && w->parent)
 		{
 			XEvent event;
 			XGrabServer(d->dpy);
-			if(w->prop & SUB_WIN_SHADED)
+			if(w->prop & type)
 				{
-					w->prop &= ~SUB_WIN_SHADED;
-					(w->parent->tile->shaded)--;
+					w->prop &= ~type;
 
-					/* Set state */
-					if(w->prop & SUB_WIN_CLIENT) subClientSetWMState(w, NormalState);
+					switch(type)
+						{
+							case SUB_WIN_SHADED:
+								/* Set state */
+								if(w->prop & SUB_WIN_CLIENT) subClientSetWMState(w, NormalState);
 
-					/* Map most of the windows */
-					XMapWindow(d->dpy, w->win);
-					XMapWindow(d->dpy, w->left);
-					XMapWindow(d->dpy, w->right);
-					XMapWindow(d->dpy, w->bottom);
+								/* Map most of the windows */
+								XMapWindow(d->dpy, w->win);
+								XMapWindow(d->dpy, w->left);
+								XMapWindow(d->dpy, w->right);
+								XMapWindow(d->dpy, w->bottom);
+
+								/* Resize frame */
+								XMoveResizeWindow(d->dpy, w->frame, w->x, w->y, w->width, w->height);
+
+								if(!(w->prop & SUB_WIN_FLOAT)) (w->parent->tile->excl)--;
+								break;
+							case SUB_WIN_FLOAT: XReparentWindow(d->dpy, w->frame, w->parent->win, w->x, w->y);
+						}
 				}
 			else 
 				{
-					w->prop	|= SUB_WIN_SHADED;
-					(w->parent->tile->shaded)++;
+					SubWin *iter = NULL;
+					XSizeHints *hints = NULL;
 
-					/* Set state */
-					if(w->prop & SUB_WIN_CLIENT) subClientSetWMState(w, WithdrawnState);
+					w->prop	|= type;
 
-					/* Unmap most of the windows */
-					XUnmapWindow(d->dpy, w->win);
-					XUnmapWindow(d->dpy, w->left);
-					XUnmapWindow(d->dpy, w->right);
-					XUnmapWindow(d->dpy, w->bottom);
+					switch(type)
+						{
+							case SUB_WIN_SHADED:
+								/* Set state */
+								if(w->prop & SUB_WIN_CLIENT) subClientSetWMState(w, WithdrawnState);
+
+								/* Unmap most of the windows */
+								XUnmapWindow(d->dpy, w->win);
+								XUnmapWindow(d->dpy, w->left);
+								XUnmapWindow(d->dpy, w->right);
+								XUnmapWindow(d->dpy, w->bottom);
+
+								/* Resize frame */
+								XMoveResizeWindow(d->dpy, w->frame, w->x, w->y, w->width, d->th);
+
+								if(!(w->prop & SUB_WIN_FLOAT)) (w->parent->tile->excl)++;
+								break;
+							case SUB_WIN_FLOAT:
+								/* Respect the user/program preferences */
+								hints = XAllocSizeHints();
+								if(!hints) subLogError("Can't alloc memory. Exhausted?\n");
+
+								if(hints->flags & USSize || hints->flags & PSize)
+									{
+										w->width	= hints->width;
+										w->height	= hints->height;
+									}
+								else if(hints->flags & PBaseSize)
+									{
+										w->width	= hints->base_width;
+										w->height	= hints->base_height;
+									}
+								if(hints->flags & USPosition || hints->flags & PPosition)
+									{
+										w->x = hints->x;
+										w->y = hints->y;
+									}
+								else if(hints->flags & PAspect)
+									{
+										w->x = (hints->min_aspect.x - hints->max_aspect.x) / 2;
+										w->y = (hints->min_aspect.y - hints->max_aspect.y) / 2;
+									}
+								else
+									{
+										w->x = (DisplayWidth(d->dpy, DefaultScreen(d->dpy)) - w->width) / 2;
+										w->y = (DisplayHeight(d->dpy, DefaultScreen(d->dpy)) - w->height) / 2;
+									}
+
+								subWinResize(w);
+								XReparentWindow(d->dpy, w->frame, DefaultRootWindow(d->dpy), w->x, w->y);
+								subWinRaise(w);
+
+								XFree(hints);
+						}
 				}
 			XUngrabServer(d->dpy);
 			while(XCheckTypedEvent(d->dpy, UnmapNotify, &event));
@@ -344,7 +423,7 @@ subWinRestack(SubWin *w)
 void
 subWinResize(SubWin *w)
 {
-	XMoveResizeWindow(d->dpy, w->frame, w->x, w->y, w->width, w->height);
+	XMoveResizeWindow(d->dpy, w->frame, w->x, w->y, w->width, (w->prop & SUB_WIN_SHADED) ? d->th : w->height);
 	XMoveResizeWindow(d->dpy, w->title, 0, 0, w->width, d->th);
 
 	if(!(w->prop & SUB_WIN_SHADED))
@@ -379,8 +458,8 @@ void
 subWinUnmap(SubWin *w)
 {
 	/* Check for shaded state */
-	if(w->prop & SUB_WIN_SHADED && w->parent && w->parent->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV))
-		w->parent->tile->shaded--;
+	if(w && w->prop & SUB_WIN_SHADED && w->parent && w->parent->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV))
+		w->parent->tile->excl;
 
 	XUnmapWindow(d->dpy, w->frame);
 	//subClientSetWMState(w, IconicState);
