@@ -74,7 +74,7 @@ HandleButtonPress(XButtonEvent *ev)
 								else if(ev->subwindow == w->right)	subWinDrag(SUB_WIN_DRAG_RIGHT, w, ev);
 								else if(ev->subwindow == w->bottom) subWinDrag(SUB_WIN_DRAG_BOTTOM, w, ev);
 								else if(ev->subwindow == w->icon) 	subWinDrag(SUB_WIN_DRAG_ICON, w, ev);
-								else if(ev->subwindow == w->title)
+								else if(ev->subwindow == w->title && w->prop & SUB_WIN_FLOAT)
 									{
 										subWinDrag(SUB_WIN_DRAG_MOVE, w, ev);
 										last_time = ev->time;
@@ -91,9 +91,12 @@ HandleButtonPress(XButtonEvent *ev)
 							}
 						break;
 					case Button2:
-						if(SUBISSCREEN(w)) subScreenDelete(w); 
-						else if(SUBISTILE(w)) subTileDelete(w);
-						else subClientSendDelete(w);
+						if(ev->subwindow == w->title)
+							{
+								if(SUBISSCREEN(w)) subScreenDelete(w); 
+								else if(SUBISTILE(w)) subTileDelete(w);
+								else subClientSendDelete(w);
+							}
 						break;
 					case Button3: 
 						if(SUBISTILE(w) && ev->subwindow == w->tile->btnew) subTileAdd(w, subTileNewHoriz());
