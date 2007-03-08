@@ -189,11 +189,11 @@ subWinDrag(short mode,
 			default:									cursor = d->cursors.square;	break;
 		}
 
-	if(!XGrabPointer(d->dpy, w->frame, True, SUBPOINTERMASK, GrabModeAsync, GrabModeAsync, None, 
-		cursor, CurrentTime) == GrabSuccess) return;
+	if(XGrabPointer(d->dpy, w->frame, True, SUBPOINTERMASK, GrabModeAsync, GrabModeAsync, None, 
+		cursor, CurrentTime)) return;
 
 	XGrabServer(d->dpy);
-	if(mode < SUB_WIN_DRAG_ICON) DrawOutline(mode, w, ix, iy, rx, ry, sx, sy, sw, sh);
+	if(mode <= SUB_WIN_DRAG_MOVE) DrawOutline(mode, w, ix, iy, rx, ry, sx, sy, sw, sh);
 	for(;;)
 		{
 			XMaskEvent(d->dpy, PointerMotionMask|ButtonReleaseMask|EnterWindowMask, &ev);
@@ -202,13 +202,13 @@ subWinDrag(short mode,
 					/* Button release doesn't return our destination window */
 					case EnterNotify: win = ev.xcrossing.window; break;
 					case MotionNotify:
-						if(mode < SUB_WIN_DRAG_ICON) DrawOutline(mode, w, ix, iy, rx, ry, sx, sy, sw, sh);
+						if(mode <= SUB_WIN_DRAG_MOVE) DrawOutline(mode, w, ix, iy, rx, ry, sx, sy, sw, sh);
 						rx = ev.xmotion.x_root;
 						ry = ev.xmotion.y_root;
-						if(mode < SUB_WIN_DRAG_ICON) DrawOutline(mode, w, ix, iy, rx, ry, sx, sy, sw, sh);
+						if(mode <= SUB_WIN_DRAG_MOVE) DrawOutline(mode, w, ix, iy, rx, ry, sx, sy, sw, sh);
 						break;
 					case ButtonRelease:
-						if(win != w->frame && mode >= SUB_WIN_DRAG_ICON)
+						if(win != w->frame && mode > SUB_WIN_DRAG_MOVE)
 							{
 								w2 = subWinFind(win);
 						
@@ -267,6 +267,9 @@ subWinDrag(short mode,
 
 												if(w->prop & SUB_WIN_FLOAT)
 													{ 
+														w->prop		&= ~SUB_WIN_FLOAT;
+														w2->prop	|= SUB_WIN_FLOAT;
+
 														subWinResize(w); 
 														subTileConfigure(w);
 													}
@@ -274,6 +277,9 @@ subWinDrag(short mode,
 
 												if(w2->prop & SUB_WIN_FLOAT)
 													{
+														w2->prop	&= ~SUB_WIN_FLOAT;
+														w->prop		|= SUB_WIN_FLOAT;
+
 														subWinResize(w2); 
 														subTileConfigure(w2);
 													}
@@ -283,7 +289,7 @@ subWinDrag(short mode,
 											}
 									}
 								}
-						else if(mode < SUB_WIN_DRAG_ICON) /* Resize */
+						else /* Resize */
 							{
 								DrawOutline(mode, w, ix, iy, rx, ry, sx, sy, sw, sh);
 								if(w->prop & SUB_WIN_FLOAT) subWinResize(w);
@@ -336,7 +342,6 @@ subWinToggle(short type,
 				}
 			else 
 				{
-					SubWin *iter = NULL;
 					XSizeHints *hints = NULL;
 
 					w->prop	|= type;
