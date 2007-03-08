@@ -10,7 +10,7 @@ HandleXError(Display *display,
 		{
 			subLogError("Seems there is another WM running. Exiting.\n");
 		}
-	else if(ev->error_code != 42) /* X_SetInputFocus */
+	else if(ev->request_code != 42) /* X_SetInputFocus */
 		{
 			char error[255];
 			XGetErrorText(display, ev->error_code, error, sizeof(error));
@@ -30,22 +30,11 @@ subDisplayNew(const char *display_string)
 {
 	XGCValues gvals;
 	XWindowChanges wc;
-	XColor fg, bg;
 	Pixmap shape, mask;
 	static char stipple[] = {
 		0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 
 		0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 0x49, 0x12, 0x24, 0x49, 0x92, 0x24,
 		0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 0x49, 0x12		
-	};
-	static char shape_bits[]	= {
-		0x00, 0x00, 0xfe, 0x7f, 0xfe, 0x7f, 0xfe, 0x7f, 0x0e, 0x70, 0x0e, 0x70,
-		0x0e, 0x70, 0x0e, 0x70, 0x0e, 0x70, 0x0e, 0x70, 0x0e, 0x70, 0x0e, 0x70,
-		0xfe, 0x7f, 0xfe, 0x7f, 0xfe, 0x7f, 0x00, 0x00		
-	};
-	static char mask_bits[]	= {
-		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x1f, 0xf8,
-		0x1f, 0xf8, 0x1f, 0xf8, 0x1f, 0xf8, 0x1f, 0xf8, 0x1f, 0xf8, 0xff, 0xff,
-		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
 	};
 
 	/* Create display and setup error handler */
@@ -77,11 +66,7 @@ subDisplayNew(const char *display_string)
 		GCFunction|GCSubwindowMode|GCLineWidth, &gvals);
 
 	/* Create cursors */
-	shape	= XCreatePixmapFromBitmapData(d->dpy, DefaultRootWindow(d->dpy), shape_bits, 16, 16, 1, 0, 1);
-	mask	= XCreatePixmapFromBitmapData(d->dpy, DefaultRootWindow(d->dpy), mask_bits, 16, 16, 1, 0, 1);
-	XParseColor(d->dpy, DefaultColormap(d->dpy, DefaultScreen(d->dpy)), "black", &fg);
-	XParseColor(d->dpy, DefaultColormap(d->dpy, DefaultScreen(d->dpy)), "white", &bg);
-	d->cursors.square	= XCreatePixmapCursor(d->dpy, shape, mask, &fg, &bg, 1, 1);
+	d->cursors.square	= XCreateFontCursor(d->dpy, XC_dotbox);
 	d->cursors.move		= XCreateFontCursor(d->dpy, XC_fleur);
 	d->cursors.arrow	= XCreateFontCursor(d->dpy, XC_left_ptr);
 	d->cursors.left		= XCreateFontCursor(d->dpy, XC_left_side);
