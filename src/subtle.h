@@ -55,7 +55,8 @@
 #define SUB_WIN_DRAG_RIGHT	(1L << 2)									// Drag start from right
 #define SUB_WIN_DRAG_BOTTOM	(1L << 3)									// Drag start from bottom
 #define SUB_WIN_DRAG_MOVE		(1L << 4)									// Drag move start from titlebar
-#define SUB_WIN_DRAG_ICON		(1L << 5)									// Drag start from icon
+#define SUB_WIN_DRAG_SWAP		(1L << 5)									// Drag swap start from titlebar
+#define SUB_WIN_DRAG_ICON		(1L << 6)									// Drag start from icon
 
 struct subtile;
 struct subclient;
