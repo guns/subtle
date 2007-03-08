@@ -63,7 +63,7 @@ HandleButtonPress(XButtonEvent *ev)
 						if(last_time > 0 && ev->time - last_time <= 300) /* Double click */
 							{
 								subLogDebug("Double click: win=%#lx\n", ev->window);
-								subWinToggle(SUB_WIN_SHADED, w);
+								if(ev->subwindow == w->title) subWinToggle(SUB_WIN_SHADED, w);
 								last_time = 0;
 							}						
 						else /* Single click */
@@ -74,9 +74,9 @@ HandleButtonPress(XButtonEvent *ev)
 								else if(ev->subwindow == w->right)	subWinDrag(SUB_WIN_DRAG_RIGHT, w, ev);
 								else if(ev->subwindow == w->bottom) subWinDrag(SUB_WIN_DRAG_BOTTOM, w, ev);
 								else if(ev->subwindow == w->icon) 	subWinDrag(SUB_WIN_DRAG_ICON, w, ev);
-								else if(ev->subwindow == w->title && w->prop & SUB_WIN_FLOAT)
-									{
-										subWinDrag(SUB_WIN_DRAG_MOVE, w, ev);
+								else if(ev->subwindow == w->title)
+									{ /* Either drag and move or drag an swap windows */
+										subWinDrag((w->prop & SUB_WIN_FLOAT) ? SUB_WIN_DRAG_MOVE : SUB_WIN_DRAG_SWAP, w, ev);
 										last_time = ev->time;
 									}
 								else if(SUBISTILE(w))
@@ -100,7 +100,7 @@ HandleButtonPress(XButtonEvent *ev)
 						break;
 					case Button3: 
 						if(SUBISTILE(w) && ev->subwindow == w->tile->btnew) subTileAdd(w, subTileNewHoriz());
-						else subWinToggle(SUB_WIN_FLOAT, w); 
+						else if(ev->subwindow == w->title) subWinToggle(SUB_WIN_FLOAT, w); 
 						break;
 					case Button4: subScreenSwitch(1);		break;
 					case Button5: subScreenSwitch(-1);	break;
