@@ -33,6 +33,9 @@
 	XCreateWindow(d->dpy, parent, x, y, width, height, border, CopyFromParent, \
 		InputOutput, CopyFromParent, mask, &attrs);
 
+#define SUBWINWIDTH(w)	(w->width - 2 * d->bw)
+#define SUBWINHEIGHT(w)	(w->height - d->th - d->bw)
+
 #define SUBISSCREEN(w)	(w && w->prop & SUB_WIN_SCREEN)
 #define SUBISTILE(w) 		(w && w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV))
 #define SUBISCLIENT(w)	(w && w->prop & SUB_WIN_CLIENT)
@@ -63,7 +66,7 @@ struct subclient;
 
 typedef struct subwin
 {
-	int			x, y, width, height, prop, aspect;					// Window properties
+	int			x, y, width, height, prop, fixed;						// Window properties
 	Window	icon, frame, title, win;										// Subwindows
 	Window	left, right, bottom;												// Border windows
 	struct subwin *parent;															// Parent window
@@ -89,7 +92,7 @@ void subWinRaise(SubWin *w);													// Raise a window
 /* tile.c */
 typedef struct subtile
 {
-	unsigned int 		mw, mh, excl;												// Tile min. width / height, exclude shaded windows
+	unsigned int 		mw, mh;															// Tile min. width / height
 	Window					btnew, btdel;												// Tile buttons
 } SubTile;
 
