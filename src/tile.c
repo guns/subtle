@@ -119,39 +119,73 @@ subTileRender(short mode,
 void
 subTileConfigure(SubWin *w)
 {
-	unsigned int n = 0, i, y = 0, fix = 0;
+	unsigned int x = 0, y = 0, i = 0, n = 0, size = 0, comp = 0, shaded = 0, fixed = 0;
 	Window nil, *wins = NULL;
-	XWindowAttributes attr;
 
 	if(SUBISTILE(w))
 		{
-			XGetWindowAttributes(d->dpy, w->win, &attr);
+			int width		= SUBWINWIDTH(w);
+			int height	= SUBWINHEIGHT(w);
+
 			XQueryTree(d->dpy, w->win, &nil, &nil, &wins, &n);
 			if(n > 0)
 				{
-					n						= n - w->tile->excl > 0 ? n - w->tile->excl : 1; /* Prevent division by zero */
-					w->tile->mw = (w->prop & SUB_WIN_TILEH) ? attr.width / n	: attr.width;
-					w->tile->mh = (w->prop & SUB_WIN_TILEH) ? attr.height : (attr.height - w->tile->excl * d->th) / n;
+					size = (w->prop & SUB_WIN_TILEH) ? width : height;
 
-					/* Fix rounding */
-					if(w->prop & SUB_WIN_TILEH) fix = abs(attr.width - n * w->tile->mw - w->tile->excl * d->th);
-					else fix = abs(attr.height - n * w->tile->mh - w->tile->excl * d->th);
+					/* Find shaded and fixed windows */
+					for(i = 0; i < n; i++)
+						{
+							SubWin *c = subWinFind(wins[i]);
+							if(c)
+								{
+									if(c->prop & SUB_WIN_SHADED) shaded++;
+									if(c->prop & SUB_WIN_FIXED && c->fixed > 0)
+										{
+											if(n == 1)
+												{
+													c->prop &= ~SUB_WIN_FIXED;
+													c->fixed = 0;
+												}
+											else size -= size * c->fixed / 100;
+											fixed++;
+										}
+								}
+						}
 
-					for(i = 0; i < n + w->tile->excl; i++)
+					if(fixed > 0)
+						{
+							if(w->prop & SUB_WIN_TILEH) width = size;
+							else if(w->prop & SUB_WIN_TILEV) height = size;
+						}
+
+
+					n						= (n - shaded - fixed) > 0 ? n - shaded - fixed : 1; /* Prevent divide by zero */
+					w->tile->mw = (w->prop & SUB_WIN_TILEH) ? width / n : width;
+					w->tile->mh = (w->prop & SUB_WIN_TILEV) ? (height - shaded * d->th) / n : height;
+
+					/* Get compensation for bad rounding */
+					if(w->prop & SUB_WIN_TILEH) comp = abs(width - n * w->tile->mw - shaded * d->th);
+					else comp = abs(height - n * w->tile->mh - shaded * d->th);
+
+					for(i = 0; i < n + shaded + fixed; i++)
 						{
 							SubWin *c = subWinFind(wins[i]);
 							if(c && !(c->prop & (SUB_WIN_FLOAT|SUB_WIN_TRANS)))
 								{
+									c->height = (c->prop & SUB_WIN_SHADED) ? d->th : 
+										((c->prop & SUB_WIN_FIXED && w->prop & SUB_WIN_TILEV) ? SUBWINHEIGHT(w) * c->fixed / 100 : w->tile->mh);
+									c->width	= (c->prop & SUB_WIN_FIXED && w->prop & SUB_WIN_TILEH) ? SUBWINWIDTH(w) * c->fixed / 100 : w->tile->mw;
+
+									c->x			= (w->prop & SUB_WIN_TILEH) ? x : 0;
+									c->y			= (w->prop & SUB_WIN_TILEV) ? y : 0;
 									c->parent	= w;
-									c->height = (c->prop & SUB_WIN_SHADED) ? d->th : w->tile->mh;
-									c->width	= w->tile->mw;
-									c->x			= (w->prop & SUB_WIN_TILEH) ? i * w->tile->mw : 0;
-									c->y			= (w->prop & SUB_WIN_TILEH) ? 0 : y;
 
-									if(i == n + w->tile->excl - 1) 
-										if(w->prop & SUB_WIN_TILEH) c->width += fix;
-										else c->height += fix;
-
+									/* Add compensation to width or height */
+									if(i == n + shaded + fixed - 1) 
+										if(w->prop & SUB_WIN_TILEH) c->width += comp;
+										else c->height += comp;
+		
+									x += c->width;
 									y += c->height;
 
 									subLogDebug("Configuring %s-window: x=%d, y=%d, width=%d, height=%d\n", (c->prop & SUB_WIN_SHADED) ? "s" : "n", c->x, c->y, c->width, c->height);
