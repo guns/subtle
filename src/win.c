@@ -123,9 +123,12 @@ subWinRender(short mode,
 	XClearWindow(d->dpy, w->right);
 	XClearWindow(d->dpy, w->bottom);
 
-	/* Titlebar and buttons */
+	/* Titlebar */
 	XFillRectangle(d->dpy, w->title, d->gcs.border, d->th + 1, 2, w->width - d->th - 4, d->th - 4);	
-	XDrawString(d->dpy, w->icon, d->gcs.font, (d->th - 8 - d->fx) / 2 + 1, d->fy - 5, "s", 1);
+
+	/* Icons */
+	if(w->prop & SUB_WIN_FIXED) XDrawString(d->dpy, w->icon, d->gcs.font, (d->th - 8 - d->fx) / 2 + 1, d->fy - 3, "f", 1);
+	else XDrawString(d->dpy, w->icon, d->gcs.font, (d->th - 8 - d->fx) / 2 + 1, d->fy - 5, "s", 1);
 }
 
 static void
@@ -285,17 +288,33 @@ subWinDrag(short mode,
 													}
 												else subTileConfigure(w2->parent);
 
-												subLogDebug("Swap: %#lx <=> %#lx\n", w->win, w2->win);
+												subLogDebug("Swap: %#lx (%#lx) <=> %#lx (%#lx)\n", w->win, w->frame, w2->win, w2->frame);
 											}
 									}
 								}
 						else /* Resize */
 							{
 								DrawOutline(mode, w, ix, iy, rx, ry, sx, sy, sw, sh);
-								if(w->prop & SUB_WIN_FLOAT) subWinResize(w);
-								if(SUBISTILE(w)) subTileConfigure(w);
+
+								if(w->prop & SUB_WIN_FLOAT) 
+									{
+										subWinResize(w);
+										if(SUBISTILE(w)) subTileConfigure(w);
+									}
+								else if(SUBISTILE(w->parent) && mode <= SUB_WIN_DRAG_BOTTOM)
+									{
+										if(!(w->prop & SUB_WIN_FIXED)) w->prop |= SUB_WIN_FIXED;
+
+										/* Adjust window size ratio depending on parent tile type */
+										if(w->parent->prop & SUB_WIN_TILEH && mode == SUB_WIN_DRAG_LEFT || mode == SUB_WIN_DRAG_RIGHT)
+											w->fixed = w->width * 100 / SUBWINWIDTH(w->parent);
+										else if(w->parent->prop & SUB_WIN_TILEV && mode == SUB_WIN_DRAG_BOTTOM)
+											w->fixed = w->height * 100 / SUBWINHEIGHT(w->parent); 
+
+										subTileConfigure(w->parent);
+									}
 							}
-												
+
 						XUngrabServer(d->dpy);
 						XUngrabPointer(d->dpy, CurrentTime);
 						return;
@@ -316,6 +335,7 @@ subWinToggle(short type,
 		{
 			XEvent event;
 			XGrabServer(d->dpy);
+
 			if(w->prop & type)
 				{
 					w->prop &= ~type;
@@ -334,10 +354,11 @@ subWinToggle(short type,
 
 								/* Resize frame */
 								XMoveResizeWindow(d->dpy, w->frame, w->x, w->y, w->width, w->height);
-
-								if(!(w->prop & SUB_WIN_FLOAT)) (w->parent->tile->excl)--;
 								break;
-							case SUB_WIN_FLOAT: XReparentWindow(d->dpy, w->frame, w->parent->win, w->x, w->y);
+							case SUB_WIN_FLOAT: XReparentWindow(d->dpy, w->frame, w->parent->win, w->x, w->y);	break;
+							case SUB_WIN_FIXED:
+								w->fixed = 0;
+								if(w->parent) subTileConfigure(w->parent);
 						}
 				}
 			else 
@@ -360,8 +381,6 @@ subWinToggle(short type,
 
 								/* Resize frame */
 								XMoveResizeWindow(d->dpy, w->frame, w->x, w->y, w->width, d->th);
-
-								if(!(w->prop & SUB_WIN_FLOAT)) (w->parent->tile->excl)++;
 								break;
 							case SUB_WIN_FLOAT:
 								/* Respect the user/program preferences */
@@ -462,12 +481,7 @@ subWinMap(SubWin *w)
 void
 subWinUnmap(SubWin *w)
 {
-	/* Check for shaded state */
-	if(w && w->prop & SUB_WIN_SHADED && w->parent && w->parent->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV))
-		w->parent->tile->excl;
-
 	XUnmapWindow(d->dpy, w->frame);
-	//subClientSetWMState(w, IconicState);
 }
 
  /**
