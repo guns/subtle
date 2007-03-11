@@ -64,6 +64,7 @@ HandleButtonPress(XButtonEvent *ev)
 							{
 								subLogDebug("Double click: win=%#lx\n", ev->window);
 								if(ev->subwindow == w->title) subWinToggle(SUB_WIN_SHADED, w);
+								else if(ev->subwindow == w->icon) subWinToggle(SUB_WIN_FIXED, w);
 								last_time = 0;
 							}						
 						else /* Single click */
@@ -73,7 +74,11 @@ HandleButtonPress(XButtonEvent *ev)
 								if(ev->subwindow == w->left) 				subWinDrag(SUB_WIN_DRAG_LEFT, w, ev);
 								else if(ev->subwindow == w->right)	subWinDrag(SUB_WIN_DRAG_RIGHT, w, ev);
 								else if(ev->subwindow == w->bottom) subWinDrag(SUB_WIN_DRAG_BOTTOM, w, ev);
-								else if(ev->subwindow == w->icon) 	subWinDrag(SUB_WIN_DRAG_ICON, w, ev);
+								else if(ev->subwindow == w->icon) 	
+									{
+										subWinDrag(SUB_WIN_DRAG_ICON, w, ev);
+										last_time = ev->time;
+									}
 								else if(ev->subwindow == w->title)
 									{ /* Either drag and move or drag an swap windows */
 										subWinDrag((w->prop & SUB_WIN_FLOAT) ? SUB_WIN_DRAG_MOVE : SUB_WIN_DRAG_SWAP, w, ev);
