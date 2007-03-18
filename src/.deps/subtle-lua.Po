@@ -32,7 +32,7 @@ subtle-lua.o subtle-lua.o: lua.c /usr/include/lua.h \
   /usr/include/bits/errno.h /usr/include/linux/errno.h \
   /usr/include/asm/errno.h /usr/include/asm-generic/errno.h \
   /usr/include/asm-generic/errno-base.h /usr/include/assert.h \
-  /usr/include/X11/Xlib.h /usr/include/X11/X.h \
+  /usr/include/sys/time.h /usr/include/X11/Xlib.h /usr/include/X11/X.h \
   /usr/include/X11/Xfuncproto.h /usr/include/X11/Xosdefs.h \
   /usr/include/X11/Xutil.h /usr/include/X11/keysym.h \
   /usr/include/X11/keysymdef.h /usr/include/X11/cursorfont.h \
@@ -175,6 +175,8 @@ subtle.h:
 /usr/include/asm-generic/errno-base.h:
 
 /usr/include/assert.h:
+
+/usr/include/sys/time.h:
 
 /usr/include/X11/Xlib.h:
 

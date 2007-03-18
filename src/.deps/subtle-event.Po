@@ -1,13 +1,12 @@
-subtle-event.o subtle-event.o: event.c /usr/include/sys/time.h \
+subtle-event.o subtle-event.o: event.c /usr/include/sys/types.h \
   /usr/include/features.h /usr/include/sys/cdefs.h \
   /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h \
   /usr/include/gnu/stubs-32.h /usr/include/bits/types.h \
   /usr/lib/gcc/i686-pc-linux-gnu/4.1.1/include/stddef.h \
-  /usr/include/bits/typesizes.h /usr/include/time.h \
-  /usr/include/bits/time.h /usr/include/sys/select.h \
+  /usr/include/bits/typesizes.h /usr/include/time.h /usr/include/endian.h \
+  /usr/include/bits/endian.h /usr/include/sys/select.h \
   /usr/include/bits/select.h /usr/include/bits/sigset.h \
-  /usr/include/sys/types.h /usr/include/endian.h \
-  /usr/include/bits/endian.h /usr/include/sys/sysmacros.h \
+  /usr/include/bits/time.h /usr/include/sys/sysmacros.h \
   /usr/include/bits/pthreadtypes.h subtle.h /usr/include/stdio.h \
   /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h \
   /usr/include/bits/wchar.h /usr/include/gconv.h \
@@ -25,13 +24,13 @@ subtle-event.o subtle-event.o: event.c /usr/include/sys/time.h \
   /usr/include/bits/errno.h /usr/include/linux/errno.h \
   /usr/include/asm/errno.h /usr/include/asm-generic/errno.h \
   /usr/include/asm-generic/errno-base.h /usr/include/assert.h \
-  /usr/include/X11/Xlib.h /usr/include/X11/X.h \
+  /usr/include/sys/time.h /usr/include/X11/Xlib.h /usr/include/X11/X.h \
   /usr/include/X11/Xfuncproto.h /usr/include/X11/Xosdefs.h \
   /usr/include/X11/Xutil.h /usr/include/X11/keysym.h \
   /usr/include/X11/keysymdef.h /usr/include/X11/cursorfont.h \
   /usr/include/X11/Xatom.h /usr/include/X11/Xmd.h ../config.h
 
-/usr/include/sys/time.h:
+/usr/include/sys/types.h:
 
 /usr/include/features.h:
 
@@ -51,7 +50,9 @@ subtle-event.o subtle-event.o: event.c /usr/include/sys/time.h \
 
 /usr/include/time.h:
 
-/usr/include/bits/time.h:
+/usr/include/endian.h:
+
+/usr/include/bits/endian.h:
 
 /usr/include/sys/select.h:
 
@@ -59,11 +60,7 @@ subtle-event.o subtle-event.o: event.c /usr/include/sys/time.h \
 
 /usr/include/bits/sigset.h:
 
-/usr/include/sys/types.h:
-
-/usr/include/endian.h:
-
-/usr/include/bits/endian.h:
+/usr/include/bits/time.h:
 
 /usr/include/sys/sysmacros.h:
 
@@ -140,6 +137,8 @@ subtle.h:
 /usr/include/asm-generic/errno-base.h:
 
 /usr/include/assert.h:
+
+/usr/include/sys/time.h:
 
 /usr/include/X11/Xlib.h:
 
