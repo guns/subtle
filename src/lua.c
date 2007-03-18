@@ -124,7 +124,7 @@ subLuaLoadConfig(const char *path)
 					snprintf(buf, sizeof(buf), "%s/.%s/config.lua", getenv("HOME"), PACKAGE_NAME);
 					closedir(dir);
 				}
-			else snprintf(buf, sizeof(buf), "/etc/%s/config.lua", PACKAGE_NAME);
+			else snprintf(buf, sizeof(buf), "%s/config.lua", CONFIG_DIR);
 		}
 
 	subLogDebug("Reading `%s'\n", buf);
@@ -160,7 +160,7 @@ subLuaLoadConfig(const char *path)
 	d->colors.border	= ParseColor(configstate, "border",			"#bdbabd");
 	d->colors.norm		= ParseColor(configstate, "normal",			"#22aa99");
 	d->colors.focus		= ParseColor(configstate, "focus",			"#ffa500");		
-	d->colors.shade		= ParseColor(configstate, "shade",			"#FFE6E6");
+	d->colors.cover		= ParseColor(configstate, "shade",			"#FFE6E6");
 	d->colors.bg			= ParseColor(configstate, "background",	"#336699");
 
 	/* Change GCs */
