@@ -1,11 +1,11 @@
 #include "subtle.h"
 
-static Atom atoms[34];
+static Atom atoms[36];
 
 void
 subEwmhNew(void)
 {
-	int n = 34;
+	int n = 36;
 	char *names[] =
 	{
 		/* ICCCM */
@@ -16,6 +16,8 @@ subEwmhNew(void)
 		"WM_TAKE_FOCUS",
 		"WM_WINDOW_ROLE",
 		"WM_DELETE_WINDOW",
+		"WM_NORMAL_HINTS",
+		"WM_SIZE_HINTS",
 
 		/* EWMH */
 		"_NET_SUPPORTED",
