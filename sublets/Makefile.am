@@ -1,4 +1,4 @@
 ## Process this file with automake to produce Makefile.in
 
-subletdir = @subletdir@
+subletdir = @sublet_dir@
 sublet_DATA = battery.lua clock.lua loadavg.lua
