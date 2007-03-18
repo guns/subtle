@@ -699,8 +699,8 @@ X_EXTRA_LIBS
 GREP
 EGREP
 LIB@&t@OBJS
-subletdir
-configdir
+sublet_dir
+config_dir
 DEBUG_TRUE
 DEBUG_FALSE
 PKG_CONFIG
@@ -7170,17 +7170,17 @@ done
 
 # Paths
 prefix="/usr/local"
-subletdir="$prefix/share/$PACKAGE_NAME"
-configdir="$prefix/etc/$PACKAGE_NAME"
+sublet_dir="$prefix/share/$PACKAGE_NAME"
+config_dir="$prefix/etc/$PACKAGE_NAME"
 
 
 cat >>confdefs.h <<_ACEOF
-@%:@define SCRIPTDIR "$subletdir"
+@%:@define SCRIPT_DIR "$sublet_dir"
 _ACEOF
 
 
 cat >>confdefs.h <<_ACEOF
-@%:@define CONFIGDIR "$configdir"
+@%:@define CONFIG_DIR "$config_dir"
 _ACEOF
 
 
@@ -8389,8 +8389,8 @@ X_EXTRA_LIBS!$X_EXTRA_LIBS$ac_delim
 GREP!$GREP$ac_delim
 EGREP!$EGREP$ac_delim
 LIB@&t@OBJS!$LIB@&t@OBJS$ac_delim
-subletdir!$subletdir$ac_delim
-configdir!$configdir$ac_delim
+sublet_dir!$sublet_dir$ac_delim
+config_dir!$config_dir$ac_delim
 DEBUG_TRUE!$DEBUG_TRUE$ac_delim
 DEBUG_FALSE!$DEBUG_FALSE$ac_delim
 PKG_CONFIG!$PKG_CONFIG$ac_delim
@@ -8998,8 +8998,8 @@ echo
 echo $PACKAGE_STRING
 echo -----------------
 echo Binary....................: $prefix/bin
-echo Sublets...................: $subletdir
-echo Config....................: $configdir
+echo Sublets...................: $sublet_dir
+echo Config....................: $config_dir
 echo
 echo Debugging messages........: $debug
 echo

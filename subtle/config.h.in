@@ -4,7 +4,7 @@
 #undef CLOSEDIR_VOID
 
 /* Directory fot config files */
-#undef CONFIGDIR
+#undef CONFIG_DIR
 
 /* Define to 1 if you want debugging support */
 #undef DEBUG
@@ -123,7 +123,7 @@
 #undef RETSIGTYPE
 
 /* Directory for sublets */
-#undef SCRIPTDIR
+#undef SCRIPT_DIR
 
 /* Define to the type of arg 1 for `select'. */
 #undef SELECT_TYPE_ARG1

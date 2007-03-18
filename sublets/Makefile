@@ -120,7 +120,7 @@ am__untar = ${AMTAR} xf -
 bindir = ${exec_prefix}/bin
 build_alias = 
 check = yes
-configdir = /usr/local/etc/subtle
+config_dir = /usr/local/etc/subtle
 datadir = ${datarootdir}
 datarootdir = ${prefix}/share
 docdir = ${datarootdir}/doc/${PACKAGE_TARNAME}
@@ -146,9 +146,10 @@ program_transform_name = s,x,x,
 psdir = ${docdir}
 sbindir = ${exec_prefix}/sbin
 sharedstatedir = ${prefix}/com
-subletdir = /usr/local/share/subtle
+sublet_dir = /usr/local/share/subtle
 sysconfdir = ${prefix}/etc
 target_alias = 
+subletdir = /usr/local/share/subtle
 sublet_DATA = battery.lua clock.lua loadavg.lua
 all: all-am
 

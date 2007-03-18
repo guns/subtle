@@ -459,6 +459,7 @@ config.status:652: creating src/Makefile
 config.status:652: creating sublets/Makefile
 config.status:652: creating config/Makefile
 config.status:652: creating config.h
+config.status:899: config.h is unchanged
 config.status:945: executing depfiles commands
 
 ## ---------------- ##
@@ -620,7 +621,7 @@ am__untar='${AMTAR} xf -'
 bindir='${exec_prefix}/bin'
 build_alias=''
 check='yes'
-configdir='/usr/local/etc/subtle'
+config_dir='/usr/local/etc/subtle'
 datadir='${datarootdir}'
 datarootdir='${prefix}/share'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -646,7 +647,7 @@ program_transform_name='s,x,x,'
 psdir='${docdir}'
 sbindir='${exec_prefix}/sbin'
 sharedstatedir='${prefix}/com'
-subletdir='/usr/local/share/subtle'
+sublet_dir='/usr/local/share/subtle'
 sysconfdir='${prefix}/etc'
 target_alias=''
 
@@ -695,8 +696,8 @@ target_alias=''
 #define HAVE_STRDUP 1
 #define HAVE_STRERROR 1
 #define HAVE_STRRCHR 1
-#define SCRIPTDIR "/usr/local/share/subtle"
-#define CONFIGDIR "/usr/local/etc/subtle"
+#define SCRIPT_DIR "/usr/local/share/subtle"
+#define CONFIG_DIR "/usr/local/etc/subtle"
 #define DEBUG 1
 
 configure: exit 0

@@ -581,8 +581,8 @@ s,@X_EXTRA_LIBS@,|#_!!_#|,g
 s,@GREP@,|#_!!_#|/bin/grep,g
 s,@EGREP@,|#_!!_#|/bin/grep -E,g
 s,@LIBOBJS@,|#_!!_#|,g
-s,@subletdir@,|#_!!_#|/usr/local/share/subtle,g
-s,@configdir@,|#_!!_#|/usr/local/etc/subtle,g
+s,@sublet_dir@,|#_!!_#|/usr/local/share/subtle,g
+s,@config_dir@,|#_!!_#|/usr/local/etc/subtle,g
 s,@DEBUG_TRUE@,|#_!!_#|,g
 s,@DEBUG_FALSE@,|#_!!_#|#,g
 s,@PKG_CONFIG@,|#_!!_#|/usr/bin/pkg-config,g
@@ -884,8 +884,8 @@ s,^\([	 #]*\)[^	 ]*\([	 ]*HAVE_STRCHR\)[	 (].*,\1define\2 1 ,
 s,^\([	 #]*\)[^	 ]*\([	 ]*HAVE_STRDUP\)[	 (].*,\1define\2 1 ,
 s,^\([	 #]*\)[^	 ]*\([	 ]*HAVE_STRERROR\)[	 (].*,\1define\2 1 ,
 s,^\([	 #]*\)[^	 ]*\([	 ]*HAVE_STRRCHR\)[	 (].*,\1define\2 1 ,
-s,^\([	 #]*\)[^	 ]*\([	 ]*SCRIPTDIR\)[	 (].*,\1define\2 "/usr/local/share/subtle" ,
-s,^\([	 #]*\)[^	 ]*\([	 ]*CONFIGDIR\)[	 (].*,\1define\2 "/usr/local/etc/subtle" ,
+s,^\([	 #]*\)[^	 ]*\([	 ]*SCRIPT_DIR\)[	 (].*,\1define\2 "/usr/local/share/subtle" ,
+s,^\([	 #]*\)[^	 ]*\([	 ]*CONFIG_DIR\)[	 (].*,\1define\2 "/usr/local/etc/subtle" ,
 s,^\([	 #]*\)[^	 ]*\([	 ]*DEBUG\)[	 (].*,\1define\2 1 ,
 s/ $//
 s,^[	 #]*u.*,/* & */,

@@ -5,7 +5,7 @@
 /* #undef CLOSEDIR_VOID */
 
 /* Directory fot config files */
-#define CONFIGDIR "/usr/local/etc/subtle"
+#define CONFIG_DIR "/usr/local/etc/subtle"
 
 /* Define to 1 if you want debugging support */
 #define DEBUG 1
@@ -124,7 +124,7 @@
 #define RETSIGTYPE void
 
 /* Directory for sublets */
-#define SCRIPTDIR "/usr/local/share/subtle"
+#define SCRIPT_DIR "/usr/local/share/subtle"
 
 /* Define to the type of arg 1 for `select'. */
 #define SELECT_TYPE_ARG1 int
