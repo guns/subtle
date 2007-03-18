@@ -9,6 +9,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <assert.h>
+#include <sys/time.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
@@ -36,20 +37,16 @@
 #define SUBWINWIDTH(w)	(w->width - 2 * d->bw)
 #define SUBWINHEIGHT(w)	(w->height - d->th - d->bw)
 
-#define SUBISSCREEN(w)	(w && w->prop & SUB_WIN_SCREEN)
-#define SUBISTILE(w) 		(w && w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV))
-#define SUBISCLIENT(w)	(w && w->prop & SUB_WIN_CLIENT)
-
 /* win.c */
 #define SUB_WIN_SCREEN			(1L << 1)									// Screen window
 #define SUB_WIN_CLIENT			(1L << 2)									// Client window
 #define SUB_WIN_TILEH				(1L << 3)									// Horizontal tiling window
 #define SUB_WIN_TILEV				(1L << 4)									// Vertical tiling window
-#define SUB_WIN_SUBLET			(1L << 5)									// Sublet window
+#define SUB_WIN_PILE				(1L << 5)									// Piled tiling window
 #define SUB_WIN_TRANS				(1L << 6)									// Transient window
-#define SUB_WIN_FLOAT				(1L << 7)									// Floating window
-#define SUB_WIN_SHADED			(1L << 8)									// Shaded window
-#define SUB_WIN_FIXED				(1L << 9)									// Fixed size window
+#define SUB_WIN_RAISE				(1L << 7)									// Raised window
+#define SUB_WIN_COLLAPSE		(1L << 8)									// Collapsed window
+#define SUB_WIN_WEIGHT			(1L << 9)									// Weighted window
 #define SUB_WIN_INPUT				(1L << 10)								// Expect to get focus active/passiv
 #define SUB_WIN_SEND_FOCUS	(1L << 11)								// Send focus messages
 #define SUB_WIN_SEND_CLOSE	(1L << 12)								// Send close messages
@@ -66,7 +63,7 @@ struct subclient;
 
 typedef struct subwin
 {
-	int			x, y, width, height, prop, fixed;						// Window properties
+	int			x, y, width, height, prop, weight;					// Window properties
 	Window	icon, frame, title, win;										// Subwindows
 	Window	left, right, bottom;												// Border windows
 	struct subwin *parent;															// Parent window
@@ -94,6 +91,7 @@ typedef struct subtile
 {
 	unsigned int 		mw, mh;															// Tile min. width / height
 	Window					btnew, btdel;												// Tile buttons
+	SubWin					*peak;															// Peak window
 } SubTile;
 
 #define subTileNewHoriz()	subTileNew(0)
@@ -150,7 +148,7 @@ typedef struct subdisplay
 	struct
 	{
 		unsigned long		font, border, norm, focus, 
-										shade, bg;												// Colors
+										cover, bg;												// Colors
 	} colors;
 	struct
 	{
@@ -196,7 +194,7 @@ typedef union subsubletdata
 typedef struct subsublet
 {
 	int ref, type, width;																// Lua object referece, Sublet type width
-	unsigned int time, interval;												// Last update time, update interval
+	time_t time, interval;															// Last update time, update interval
 	Window win;																					// Sublet window
 	SubSubletData data; 																// Sublet data
 } SubSublet;
@@ -222,7 +220,7 @@ void subLuaKill(void);																// Kill Lua state
 void subLuaCall(int ref, SubSubletData *data);				// Call a Lua script
 
 /* event.c */
-int subEventGetTime(void);														// Get the current time
+time_t subEventGetTime(void);													// Get the current time
 int subEventLoop(void);																// Event loop
 
 /* ewmh.c */
@@ -236,6 +234,8 @@ enum SubEwmhHints
 	SUB_EWMH_WM_TAKE_FOCUS,															// Send focus messages
 	SUB_EWMH_WM_WINDOW_ROLE,
 	SUB_EWMH_WM_DELETE_WINDOW,													// Send close messages
+	SUB_EWMH_WM_NORMAL_HINTS,														// Window normal hints
+	SUB_EWMH_WM_SIZE_HINTS,															// Window size hints
 
 	/* EWMH */
 	SUB_EWMH_NET_SUPPORTED,
