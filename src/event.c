@@ -1,4 +1,3 @@
-#include <sys/time.h>
 #include <sys/types.h>
 #include "subtle.h"
 
@@ -7,7 +6,7 @@
 	* @return Returns the current time.
 	**/
 
-int
+time_t
 subEventGetTime(void)
 {
   struct timeval tv;
@@ -23,8 +22,8 @@ RenderWindow(SubWin *w)
 	short mode;
 	Window win;
 
-	mode = (d->focus == w->frame) ? 0 : 1;
-	if(SUBISSCREEN(w))
+	mode = (w && d->focus == w->frame) ? 0 : 1;
+	if(w && w->prop & SUB_WIN_SCREEN)
 		{
 			XExposeEvent event;
 			unsigned int n = 0, i;
@@ -45,8 +44,8 @@ RenderWindow(SubWin *w)
 			XFlush(d->dpy);
 		}
 	subWinRender(mode, w);
-	if(SUBISTILE(w)) subTileRender(mode, w);
-	else if(SUBISCLIENT(w)) subClientRender(mode, w);
+	if(w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV)) subTileRender(mode, w);
+	else if(w->prop & SUB_WIN_CLIENT) subClientRender(mode, w);
 }
 
 static void
@@ -63,14 +62,16 @@ HandleButtonPress(XButtonEvent *ev)
 						if(last_time > 0 && ev->time - last_time <= 300) /* Double click */
 							{
 								subLogDebug("Double click: win=%#lx\n", ev->window);
-								if(ev->subwindow == w->title) subWinToggle(SUB_WIN_SHADED, w);
-								else if(ev->subwindow == w->icon) subWinToggle(SUB_WIN_FIXED, w);
+								if((ev->subwindow == w->title && w->parent && w->parent->prop & SUB_WIN_TILEV) || w->prop & SUB_WIN_RAISE) 
+									subWinToggle(SUB_WIN_COLLAPSE, w);
+								else if(ev->subwindow == w->icon) subWinToggle(SUB_WIN_WEIGHT, w);
 								last_time = 0;
 							}						
 						else /* Single click */
 							{
 								subLogDebug("Single click: win=%#lx\n", ev->window);
-								if(w->prop & SUB_WIN_FLOAT) subWinRaise(w);
+								/*printf("Click: x=%d, y=%d, w=%d, h=%d, weight=%d\n", w->x, w->y, w->width, w->height, w->weight);*/
+								if(w->prop & SUB_WIN_RAISE) subWinRaise(w);
 								if(ev->subwindow == w->left) 				subWinDrag(SUB_WIN_DRAG_LEFT, w, ev);
 								else if(ev->subwindow == w->right)	subWinDrag(SUB_WIN_DRAG_RIGHT, w, ev);
 								else if(ev->subwindow == w->bottom) subWinDrag(SUB_WIN_DRAG_BOTTOM, w, ev);
@@ -81,15 +82,15 @@ HandleButtonPress(XButtonEvent *ev)
 									}
 								else if(ev->subwindow == w->title)
 									{ /* Either drag and move or drag an swap windows */
-										subWinDrag((w->prop & SUB_WIN_FLOAT) ? SUB_WIN_DRAG_MOVE : SUB_WIN_DRAG_SWAP, w, ev);
+										subWinDrag((w->prop & SUB_WIN_RAISE) ? SUB_WIN_DRAG_MOVE : SUB_WIN_DRAG_SWAP, w, ev);
 										last_time = ev->time;
 									}
-								else if(SUBISTILE(w))
+								else if(w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV))
 									{
 										if(ev->subwindow == w->tile->btnew) subTileAdd(w, subTileNewVert());
 										else if(ev->subwindow == w->tile->btdel) 
 											{
-												if(SUBISSCREEN(w)) subScreenDelete(w); 
+												if(w->prop & SUB_WIN_SCREEN) subScreenDelete(w); 
 												else subTileDelete(w);
 											}
 									}
@@ -98,14 +99,14 @@ HandleButtonPress(XButtonEvent *ev)
 					case Button2:
 						if(ev->subwindow == w->title)
 							{
-								if(SUBISSCREEN(w)) subScreenDelete(w); 
-								else if(SUBISTILE(w)) subTileDelete(w);
+								if(w->prop & SUB_WIN_SCREEN) subScreenDelete(w); 
+								else if(w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV)) subTileDelete(w);
 								else subClientSendDelete(w);
 							}
 						break;
 					case Button3: 
-						if(SUBISTILE(w) && ev->subwindow == w->tile->btnew) subTileAdd(w, subTileNewHoriz());
-						else if(ev->subwindow == w->title) subWinToggle(SUB_WIN_FLOAT, w); 
+						if(w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV) && ev->subwindow == w->tile->btnew) subTileAdd(w, subTileNewHoriz());
+						else if(ev->subwindow == w->title) subWinToggle(SUB_WIN_RAISE, w); 
 						break;
 					case Button4: subScreenSwitch(1);		break;
 					case Button5: subScreenSwitch(-1);	break;
@@ -132,7 +133,7 @@ HandleKeyPress(XKeyEvent *ev)
 				{
 					subTileAdd(w, subTileNewHoriz());
 				}
-			else if(!strcmp(buf, "del_tile") && SUBISTILE(w))
+			else if(!strcmp(buf, "del_tile") && w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV))
 				{
 					subTileDelete(w);
 				}
@@ -152,7 +153,7 @@ HandleConfigure(XConfigureRequestEvent *ev)
 			if(ev->value_mask & CWWidth)	w->width	= ev->width;
 			if(ev->value_mask & CWHeight)	w->height = ev->height;
 
-			wc.x						= w->x;
+			/*wc.x						= w->x;
 			wc.y						= w->y;
 			wc.width				= w->width;
 			wc.height				= w->height;
@@ -160,7 +161,11 @@ HandleConfigure(XConfigureRequestEvent *ev)
 			wc.stack_mode		= ev->detail;
 			wc.border_width	= d->bw;
 
-			XConfigureWindow(d->dpy, w->frame, ev->value_mask, &wc);
+			printf("x=%d, y=%d, width=%d, height=%d, sibling=%d, stack_mode=%d, border_width=%d\n", w->x, w->y, w->width, w->height,
+				ev->above, ev->detail, d->bw);
+
+			XConfigureWindow(d->dpy, w->frame, ev->value_mask, &wc); */
+
 			subClientSendConfigure(w);
 			wc.x = 0;
 			wc.y = d->th;
@@ -185,7 +190,8 @@ HandleMap(XMapRequestEvent *ev)
 	if(!w) 
 		{
 			w = subClientNew(ev->window);
-			subTileAdd(screen->active, w);
+			if(!(w->prop & SUB_WIN_RAISE)) subTileAdd(screen->active, w);
+			else w->parent = screen->active;
 		}
 }
 
@@ -193,7 +199,7 @@ static void
 HandleDestroy(XDestroyWindowEvent *ev)
 {
 	SubWin *w = subWinFind(ev->event);
-	if(SUBISCLIENT(w)) subClientDelete(w); 
+	if(w && w->prop & SUB_WIN_CLIENT) subClientDelete(w); 
 
 }
 	
@@ -210,7 +216,7 @@ static void
 HandleColormap(XColormapEvent *ev)
 {	
 	SubWin *w = subWinFind(ev->window);
-	if(SUBISCLIENT(w) && ev->new)
+	if(w && w->prop & SUB_WIN_CLIENT && ev->new)
 		{
 			w->client->cmap = ev->colormap;
 			XInstallColormap(d->dpy, w->client->cmap);
@@ -229,7 +235,7 @@ HandleProperty(XPropertyEvent *ev)
 	XFree(wins);
 
 	if(parent) w = subWinFind(parent);
-	if(SUBISCLIENT(w))
+	if(w && w->prop & SUB_WIN_CLIENT)
 		{
 			subLogDebug("Property: atom=%ld\n", ev->atom);
 			if(ev->atom == XA_WM_NAME || ev->atom == subEwmhGetAtom(SUB_EWMH_NET_WM_NAME)) subClientFetchName(w);
@@ -256,7 +262,7 @@ HandleCrossing(XCrossingEvent *ev)
 			subEwmhSetWindow(DefaultRootWindow(d->dpy), SUB_EWMH_NET_ACTIVE_WINDOW, w->frame);
 
 			/* Focus */
-			if(SUBISCLIENT(w) && !(w->prop & SUB_WIN_SHADED))
+			if(w->prop & SUB_WIN_CLIENT && !(w->prop & SUB_WIN_COLLAPSE))
 				{
 					if(w->prop & SUB_WIN_INPUT) XSetInputFocus(d->dpy, w->win, RevertToNone, CurrentTime);
 					if(w->prop & SUB_WIN_SEND_FOCUS)
@@ -275,7 +281,7 @@ HandleCrossing(XCrossingEvent *ev)
 					subLogDebug("Focus: win=%#lx, input=%d, send=%d\n", w->win, 
 						w->prop & SUB_WIN_INPUT ? 1 : 0, w->prop & SUB_WIN_SEND_FOCUS ? 1 : 0);
 				}
-			else if(SUBISTILE(w) && !(w->prop & SUB_WIN_SHADED)) 
+			else if(w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV) && !(w->prop & SUB_WIN_COLLAPSE)) 
 				XSetInputFocus(d->dpy, w->win, RevertToNone, CurrentTime);
 		}
 }
