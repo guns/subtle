@@ -1,0 +1,217 @@
+2007-01-24 19:58  unexist
+
+	* src/.deps/subtle-client.Po, src/.deps/subtle-display.Po,
+	  src/.deps/subtle-event.Po, src/.deps/subtle-log.Po,
+	  src/.deps/subtle-lua.Po, src/.deps/subtle-main.Po,
+	  src/.deps/subtle-screen.Po, src/.deps/subtle-sublet.Po,
+	  src/.deps/subtle-tile.Po, src/.deps/subtle-win.Po: Autotool
+	  update
+
+2007-01-24 19:58  unexist
+
+	* src/display.c, src/event.c, src/lua.c, src/main.c, src/subtle.h:
+	  Completely re-wrote Lua functions
+
+2007-01-24 19:57  unexist
+
+	* src/Makefile, src/Makefile.in: Autotool update
+
+2007-01-24 19:57  unexist
+
+	* Makefile, Makefile.am, Makefile.in, autom4te.cache/output.0,
+	  autom4te.cache/output.1, autom4te.cache/traces.0,
+	  autom4te.cache/traces.1, config.h, config.h.in, config.log,
+	  config.status, config/Makefile, config/Makefile.am,
+	  config/Makefile.in, configure, configure.in: Autotool update
+
+2007-01-24 19:55  unexist
+
+	* scripts: Renamed to sublets
+
+2007-01-24 19:52  unexist
+
+	* scripts/Makefile, scripts/Makefile.am, scripts/Makefile.in:
+	  Renamed to sublets
+
+2007-01-23 20:42  unexist
+
+	* src/win.c: Re-wrote window drag
+
+2007-01-23 20:38  unexist
+
+	* src/tile.c: Tidied up configure code and renamed tile buttons
+
+2007-01-23 20:34  unexist
+
+	* src/subtle.h: Renamed tile buttons and added a variable
+
+2007-01-23 20:32  unexist
+
+	* src/event.c: Added a key command
+
+2007-01-23 20:30  unexist
+
+	* src/display.c: Disabled error handler again and changed line
+	  width of the resize border
+
+2007-01-23 20:29  unexist
+
+	* src/client.c: Tidied up and re-ordered
+
+2007-01-14 16:20  unexist
+
+	* src/event.c: Property handling
+
+2007-01-14 16:20  unexist
+
+	* src/win.c: Property handling and re-configure of tiles
+
+2007-01-14 16:19  unexist
+
+	* src/tile.c: Debugging things
+
+2007-01-14 16:19  unexist
+
+	* Makefile, autom4te.cache/requests, config.log, config.status,
+	  config/Makefile, scripts/Makefile, src/.deps/subtle-lua.Po,
+	  src/.deps/subtle-main.Po, src/Makefile: Autotool update for the
+	  dozen of lua pkg-config names
+
+2007-01-14 13:59  unexist
+
+	* src/display.c: Enabled X error handler again
+
+2007-01-14 13:58  unexist
+
+	* src/event.c: Removed some debugging messages
+
+2007-01-14 13:58  unexist
+
+	* src/client.c: Added WM_STATE and hints
+
+2007-01-14 13:57  unexist
+
+	* src/ewmh.c: Much more EWMH
+
+2007-01-14 13:55  unexist
+
+	* src/tile.c: Shading and rounding fix
+
+2007-01-14 13:55  unexist
+
+	* src/win.c: Focus change and improved shading
+
+2007-01-14 13:54  unexist
+
+	* src/subtle.h: More EWMH
+
+2007-01-14 13:52  unexist
+
+	* src/Makefile, src/Makefile.in: Autotool update for the dozen of
+	  lua pkg-config names
+
+2007-01-14 13:52  unexist
+
+	* Makefile, Makefile.in, autom4te.cache/output.0,
+	  autom4te.cache/output.1, autom4te.cache/requests,
+	  autom4te.cache/traces.0, autom4te.cache/traces.1, config.log,
+	  config.status, config/Makefile, config/Makefile.in, configure,
+	  configure.in, scripts/Makefile, scripts/Makefile.in: Autotool
+	  update for the dozen of lua pkg-config names
+
+2007-01-10 13:51  unexist
+
+	* src/client.c: Added support for WMProtocols and changed delete
+
+2007-01-10 13:51  unexist
+
+	* src/win.c: Changed lookup for shaded state
+
+2007-01-10 13:50  unexist
+
+	* src/tile.c: Send delete instead of just kill a client
+
+2007-01-10 13:50  unexist
+
+	* src/screen.c: Hints and EWMH
+
+2007-01-10 13:49  unexist
+
+	* src/event.c: Added TAKE_FOCUS and changed focus handling to be
+	  compliant
+
+2007-01-10 13:48  unexist
+
+	* src/ewmh.c: Added function to set hints/atoms
+
+2007-01-10 13:47  unexist
+
+	* src/subtle.h: Hints and EWMH
+
+2007-01-08 17:19  unexist
+
+	* src/display.c, src/event.c: Hints and EWMH
+
+2007-01-08 17:18  unexist
+
+	* src/screen.c: Removed not needed code
+
+2007-01-08 17:18  unexist
+
+	* src/main.c: Inserted EWMH start code
+
+2007-01-08 17:17  unexist
+
+	* src/win.c: Moved hints to client.c
+
+2007-01-08 17:17  unexist
+
+	* src/tile.c: Bugfix
+
+2007-01-08 17:13  unexist
+
+	* src/subtle.h: EWMH compliance
+
+2007-01-08 17:12  unexist
+
+	* src/client.c: Hints and EWMH
+
+2007-01-08 17:10  unexist
+
+	* src/ewmh.c: EWMH compliance
+
+2007-01-08 17:09  unexist
+
+	* src/Makefile, src/Makefile.am, src/Makefile.in: Autotool changes
+
+2007-01-08 17:06  unexist
+
+	* src/.main.c.swp, src/parent: Accidently versioned..
+
+2007-01-08 17:03  unexist
+
+	* config.log: Autotool changes
+
+2007-01-07 16:03  unexist
+
+	* ., AUTHORS, COPYING, ChangeLog, INSTALL, Makefile, Makefile.am,
+	  Makefile.in, NEWS, README, aclocal.m4, autom4te.cache,
+	  autom4te.cache/output.0, autom4te.cache/output.1,
+	  autom4te.cache/requests, autom4te.cache/traces.0,
+	  autom4te.cache/traces.1, bootstrap.sh, compile, config, config.h,
+	  config.h.in, config.log, config.status, config/Makefile,
+	  config/Makefile.am, config/Makefile.in, config/config.lua,
+	  config/dock.lua, configure, configure.in, depcomp, doc,
+	  install-sh, missing, scripts, scripts/Makefile,
+	  scripts/Makefile.am, scripts/Makefile.in, src, src/.deps,
+	  src/.deps/subtle-client.Po, src/.deps/subtle-display.Po,
+	  src/.deps/subtle-dock.Po, src/.deps/subtle-event.Po,
+	  src/.deps/subtle-log.Po, src/.deps/subtle-lua.Po,
+	  src/.deps/subtle-main.Po, src/.deps/subtle-screen.Po,
+	  src/.deps/subtle-sublet.Po, src/.deps/subtle-tile.Po,
+	  src/.deps/subtle-win.Po, src/.main.c.swp, src/Makefile,
+	  src/Makefile.am, src/Makefile.in, src/client.c, src/display.c,
+	  src/event.c, src/log.c, src/lua.c, src/main.c, src/parent,
+	  src/screen.c, src/sublet.c, src/subtle.h, src/tile.c, src/win.c,
+	  stamp-h1: Initial import
+
