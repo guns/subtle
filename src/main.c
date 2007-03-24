@@ -9,12 +9,12 @@ Usage(void)
 {
 	printf("Usage: %s [OPTIONS]\n\n" \
 					"Options:\n" \
-					"  -c, --configdir \t Change config dir. (default: ~/.%s/\n" \
-					"  -s, --subletdir \t Change sublet dir. (default: ~/.%s/sublets" \
-					"  -d, --display   \t Display to connect. (default: $DISPLAY)\n" \
-					"  -D, --debug     \t Print debugging messages.\n" \
-					"  -v, --version   \t Display version and exit.\n" \
-					"  -h, --help      \t Display this help and exit.\n\n" \
+					"  -c, --configdir DIR     \t Look for config in DIR (default: ~/.%s/\n" \
+					"  -s, --subletdir DIR     \t Look for sublets in DIR (default: ~/.%s/sublets" \
+					"  -d, --display   DISPLAY \t Connect to DISPLAY (default: $DISPLAY)\n" \
+					"  -D, --debug             \t Print debugging messages\n" \
+					"  -v, --version           \t Enable debugging output\n" \
+					"  -h, --help              \t Show this help and exit\n\n" \
 					"Please report bugs to <%s>\n", 
 					PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_BUGREPORT);
 }
