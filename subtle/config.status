@@ -343,7 +343,7 @@ gives unlimited permission to copy, distribute and modify it."
 
 ac_pwd='/home/unexist/projects/subtle'
 srcdir='.'
-INSTALL='/bin/install -c'
+INSTALL='/usr/bin/install -c'
 # If no file are specified by the user, then we need to provide default
 # value.  By we need to know if files were specified by the user.
 ac_need_defaults=:
@@ -587,10 +587,10 @@ s,@DEBUG_TRUE@,|#_!!_#|,g
 s,@DEBUG_FALSE@,|#_!!_#|#,g
 s,@PKG_CONFIG@,|#_!!_#|/usr/bin/pkg-config,g
 s,@check@,|#_!!_#|yes,g
-s,@lua_CFLAGS@,|#_!!_#|-I/usr/local/include  ,g
-s,@lua_LIBS@,|#_!!_#|-L/usr/local/lib -llua -lm  ,g
-s,@LUA_CFLAGS@,|#_!!_#|-I/usr/local/include  ,g
-s,@LUA_LIBS@,|#_!!_#|-L/usr/local/lib -llua -lm  ,g
+s,@lua_CFLAGS@,|#_!!_#| ,g
+s,@lua_LIBS@,|#_!!_#|-llua -lm  ,g
+s,@LUA_CFLAGS@,|#_!!_#| ,g
+s,@LUA_LIBS@,|#_!!_#|-llua -lm  ,g
 s,@LTLIBOBJS@,|#_!!_#|,g
 :end
 s/|#_!!_#|//g
