@@ -31,15 +31,23 @@ subClientNew(Window win)
 		(strlen(w->client->name) + 1) * d->fx, d->th, 0, d->colors.border, d->colors.norm);
 
 	/* Hints */
-	hints = XGetWMHints(d->dpy, win);
-	if(hints)
+	hints = XAllocWMHints();
+	if(!hints) subLogError("Can't alloc memory. Exhausted?\n");
+	if(!(XGetWMHints(d->dpy, win)))
 		{
 			if(hints->flags & StateHint) subClientSetWMState(w, hints->initial_state);
 			else subClientSetWMState(w, NormalState);
 			if(hints->initial_state == IconicState) subLogDebug("Iconic: win=%#lx\n", win);			
 			if(hints->input) w->prop |= SUB_WIN_INPUT;
-			XFree(hints);
+			if(hints->flags & (XUrgencyHint|WindowGroupHint)) 
+				{
+					subWinToggle(SUB_WIN_RAISE, w);
+					printf("Transient: flags=%s%s\n", hints->flags & XUrgencyHint ? "u" : " ", hints->flags & WindowGroupHint ? "g" : " ");
+				}
+printf ("Debug %s() [%s,%d]\n", __func__, __FILE__, __LINE__);
+
 		}
+	XFree(hints);
 	
 	/* Protocols */
 	if(XGetWMProtocols(d->dpy, w->win, &protos, &n))
@@ -52,10 +60,16 @@ subClientNew(Window win)
 			XFree(protos);
 		}
 
-	/*XGetTransientForHint(d->dpy, win, &unnused);
-	if(unnused) subClientToggleFloat(w); */
-
 	subWinMap(w);
+
+	/* Check fpr dialog fensters etc. */
+	XGetTransientForHint(d->dpy, win, &unnused);
+	if(unnused) subWinToggle(SUB_WIN_RAISE, w);
+
+	printf("Transient: window=%d\n", unnused);
+
+
+
 
 	XSync(d->dpy, False);
 	XUngrabServer(d->dpy);
@@ -145,11 +159,14 @@ subClientSendConfigure(SubWin *w)
 	ev.window							= w->win;
 	ev.x									= w->x;
 	ev.y									= w->y;
-	ev.width							= w->width - 2 * d->bw;
-	ev.height							= w->height - d->th;
+	ev.width							= SUBWINWIDTH(w);
+	ev.height							= SUBWINHEIGHT(w);
 	ev.above							= None;
 	ev.border_width 			= 0;
 	ev.override_redirect	= 0;
+
+	printf("x=%d, y=%d, width=%d, height=%d, stack_mode=%d, border_width=%d\n", w->x, w->y, w->width, 
+		w->height, ev.above, d->bw);
 
 	XSendEvent(d->dpy, w->win, False, StructureNotifyMask, (XEvent *)&ev);
 }
@@ -215,7 +232,7 @@ void
 subClientRender(short mode,
 	SubWin *w)
 {
-	unsigned long col = mode ? (w->prop & SUB_WIN_SHADED ? d->colors.shade : d->colors.norm) : d->colors.focus;
+	unsigned long col = mode ? (w->prop & SUB_WIN_COLLAPSE ? d->colors.cover : d->colors.norm) : d->colors.focus;
 	if(w && w->prop & SUB_WIN_CLIENT)
 		{
 			XSetWindowBackground(d->dpy, w->client->caption, col);
