@@ -75,7 +75,7 @@ subSubletAdd(int type,
 	unsigned int interval,
 	unsigned int width)
 {
-	int i;
+	int i, time;
 	static total_width = 0;
 	long mask = CWOverrideRedirect|CWBackPixmap|CWEventMask;
 	XSetWindowAttributes attrs;
@@ -91,11 +91,12 @@ subSubletAdd(int type,
 	XMoveResizeWindow(d->dpy, screen->statusbar,
 		DisplayWidth(d->dpy, DefaultScreen(d->dpy)) - total_width, 0, total_width, d->th);
 
+	time				= subEventGetTime();
 	s->type			= type;
 	s->ref			= ref;
 	s->interval = interval;
 	s->width		= width * d->fx;
-	s->time			= subEventGetTime();
+	s->time			= time;
 	s->win			= SUBWINNEW(screen->statusbar, total_width - width * d->fx, 0, width * d->fx, d->th, 0);
 
 	subLuaCall(s->ref, &s->data);
