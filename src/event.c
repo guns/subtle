@@ -70,7 +70,6 @@ HandleButtonPress(XButtonEvent *ev)
 						else /* Single click */
 							{
 								subLogDebug("Single click: win=%#lx\n", ev->window);
-								/*printf("Click: x=%d, y=%d, w=%d, h=%d, weight=%d\n", w->x, w->y, w->width, w->height, w->weight);*/
 								if(w->prop & SUB_WIN_RAISE) subWinRaise(w);
 								if(ev->subwindow == w->left) 				subWinDrag(SUB_WIN_DRAG_LEFT, w, ev);
 								else if(ev->subwindow == w->right)	subWinDrag(SUB_WIN_DRAG_RIGHT, w, ev);
@@ -118,6 +117,8 @@ static void
 HandleKeyPress(XKeyEvent *ev)
 {
 	SubWin *w = subWinFind(ev->window);
+printf ("Debug %s() [%s,%d]\n", __func__, __FILE__, __LINE__);
+
 	if(w)
 		{
 			KeySym keysym;
@@ -137,7 +138,18 @@ HandleKeyPress(XKeyEvent *ev)
 				{
 					subTileDelete(w);
 				}
-			else subLogDebug("KeyPress: state=%d, keycode=%d\n", ev->state, ev->keycode);
+			else if(ev->state & (Mod4Mask & ShiftMask) && ev->keycode == XStringToKeysym("f"))
+				{
+					printf ("Baz!\n");
+				}
+			else
+				{
+  				XAllowEvents(d->dpy, ReplayKeyboard, ev->time);
+  				XFlush(d->dpy);
+					subLogDebug("KeyPress: state=%d, keycode=%d\n", ev->state, ev->keycode);
+					return;
+				}
+			XAllowEvents(d->dpy, AsyncKeyboard, ev->time);
 		}
 }
 
@@ -253,6 +265,7 @@ HandleCrossing(XCrossingEvent *ev)
 					SubWin *w1 = subWinFind(d->focus);
 					d->focus = 0;
 					if(w1) RenderWindow(w1);
+					XUngrabKey(d->dpy, AnyKey, AnyModifier, w->frame);
 				}
 
 			/* Make leave events to enter event of the parent window */
@@ -260,6 +273,15 @@ HandleCrossing(XCrossingEvent *ev)
 			d->focus = w->frame;
 			RenderWindow(w);
 			subEwmhSetWindow(DefaultRootWindow(d->dpy), SUB_EWMH_NET_ACTIVE_WINDOW, w->frame);
+
+			/* Grab key */
+			XGrabKey(d->dpy, AnyKey, AnyModifier, w->frame, True, GrabModeSync, GrabModeSync);
+
+      Display *display;
+      Window grab_window;
+      Bool owner_events;
+      int pointer_mode, keyboard_mode;
+      Time time;
 
 			/* Focus */
 			if(w->prop & SUB_WIN_CLIENT && !(w->prop & SUB_WIN_COLLAPSE))
@@ -349,6 +371,8 @@ int subEventLoop(void)
 					switch(ev.type)
 						{
 							case ButtonPress:				HandleButtonPress(&ev.xbutton);					break;
+
+							case KeyRelease:				
 							case KeyPress:					HandleKeyPress(&ev.xkey);								break;
 							case ConfigureRequest:	HandleConfigure(&ev.xconfigurerequest);	break;
 							case MapRequest: 				HandleMap(&ev.xmaprequest); 						break;
