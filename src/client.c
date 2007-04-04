@@ -44,8 +44,6 @@ subClientNew(Window win)
 					subWinToggle(SUB_WIN_RAISE, w);
 					printf("Transient: flags=%s%s\n", hints->flags & XUrgencyHint ? "u" : " ", hints->flags & WindowGroupHint ? "g" : " ");
 				}
-printf ("Debug %s() [%s,%d]\n", __func__, __FILE__, __LINE__);
-
 		}
 	XFree(hints);
 	
