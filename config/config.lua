@@ -31,7 +31,7 @@ colors1 = {
 
 -- Key config
 keys = {
-	add_vtile	= "Super_L+Control_L+v",	-- Add a vertical tile
-	add_htile	= "Super_L+Control_L+h",	-- Add a horizontal tile
-	del_tile	= "Super_L+Control_L+d"		-- Delete a tile
+	add_vtile	= "Shift_L+Control_L+v",	-- Add a vertical tile
+	add_htile	= "Shift_L+Control_L+h",	-- Add a horizontal tile
+	del_tile	= "Shift_L+Control_L+d"		-- Delete a tile
 }
