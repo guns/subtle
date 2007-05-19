@@ -96,7 +96,7 @@ BindKey(const char *key,
 			tok					= strtok(NULL, "+");
 		}
 	XRebindKeysym(d->dpy, keys[n - 1], keys, n - 1, key, strlen(key));
-	subLogDebug("Adding keychain: name=%s\n", key);
+	subLogDebug("Parsing keychain: name=%s\n", key);
 	free(keys);
 }
 
@@ -215,28 +215,6 @@ SetField(lua_State *state,
 	va_end(ap);
 }
 
-#ifdef DEBUG
-static void
-DumpStack(lua_State *state)
-{
-	int i;
-	int top = lua_gettop(state);
-	for(i = 1; i <= top; i++)
-		{
-	  	int t = lua_type(state, i);
-			switch(t)
-			 	{
- 	  		 	case LUA_TSTRING:		printf("%d.) `%s'", i, lua_tostring(state, i));										break;
-					case LUA_TNUMBER:		printf("%d.) %g", i, lua_tonumber(state, i));											break;
-					case LUA_TBOOLEAN:	printf("%d.) %s", i, lua_toboolean(state, i) ? "true" : "false"); break;
-		 	   	default:  					printf("%d.) %s", i, lua_typename(state, t));											break;
-				}
-			printf("  ");
-			printf("\n");
-		}
-}
-#endif /* DEBUG */
-
 static int
 PrepareSublet(int type, 
 	lua_State *state)
@@ -261,31 +239,31 @@ PrepareSublet(int type,
 			else lua_getglobal(state, string);
 
 			ref = luaL_ref(state, LUA_REGISTRYINDEX);
-			if(ref) subSubletAdd(type, ref, interval, width);
+			if(ref) subSubletNew(type, ref, interval, width);
 
 			printf("Loaded sublet %s (%d)\n", string, interval);
-			subLogDebug("Sublet: string=%s, ref=%d, interval=%d, width=%d\n", string, ref, interval, width);
+			subLogDebug("Sublet: name=%s, ref=%d, interval=%d, width=%d\n", string, ref, interval, width);
 		}
 
 	return(1); // Make the compiler happy
 }
 
 static int
-l_AddText(lua_State *state)
+LuaAddText(lua_State *state)
 {
-	return(PrepareSublet(SUB_SUBLET_TEXT, state));
+	return(PrepareSublet(SUB_SUBLET_TYPE_TEXT, state));
 }
 
 static int
-l_AddTeaser(lua_State *state)
+LuaAddTeaser(lua_State *state)
 {
-	return(PrepareSublet(SUB_SUBLET_TEASER, state));
+	return(PrepareSublet(SUB_SUBLET_TYPE_TEASER, state));
 }
 
 static int
-l_AddMeter(lua_State *state)
+LuaAddMeter(lua_State *state)
 {
-	return(PrepareSublet(SUB_SUBLET_METER, state));
+	return(PrepareSublet(SUB_SUBLET_TYPE_METER, state));
 }
 
  /**
@@ -308,9 +286,9 @@ subLuaLoadSublets(const char *path)
 	/* Put functions onto stack */
 	lua_newtable(state);
 	SetField(state, "version",		LUA_TSTRING,		PACKAGE_VERSION);
-	SetField(state, "add_text",		LUA_TFUNCTION,	l_AddText);
-	SetField(state, "add_teaser",	LUA_TFUNCTION,	l_AddTeaser);
-	SetField(state, "add_meter",	LUA_TFUNCTION,	l_AddMeter);
+	SetField(state, "add_text",		LUA_TFUNCTION,	LuaAddText);
+	SetField(state, "add_teaser",	LUA_TFUNCTION,	LuaAddTeaser);
+	SetField(state, "add_meter",	LUA_TFUNCTION,	LuaAddMeter);
 	lua_setglobal(state, PACKAGE_NAME);
 
 	if((dir = opendir(buf)))
@@ -326,6 +304,7 @@ subLuaLoadSublets(const char *path)
 				}
 			closedir(dir);
 		}
+	subScreenConfigure();
 }
 
  /**
@@ -340,29 +319,43 @@ subLuaKill(void)
 
  /**
 	* Call a Lua script
-	* @param ref Lua object reference
-	* @param data Storage for the function return value
-	* @return Returns either a nonzero on succces or otherwise zero.
+	* @param w A #SubWin
 	**/
 
 void
-subLuaCall(int ref,
-	SubSubletData *data)
+subLuaCall(SubSublet *s)
 {
-	lua_settop(state, 0);
-	lua_rawgeti(state, LUA_REGISTRYINDEX, ref);
-	if(lua_pcall(state, 0, 1, 0))
+	if(s)
 		{
-			subLogWarn("Failed to call sublet (#%d).\n", ref);
-		}
-	if(lua_isnumber(state, -1))
-		{
-			data->number = (int)lua_tonumber(state, -1);
-		}
-	else if(lua_isstring(state, -1)) 
-		{
-			if(data->string) free(data->string);
-			data->string = strdup((char *)lua_tostring(state, -1));
+			lua_settop(state, 0);
+			lua_rawgeti(state, LUA_REGISTRYINDEX, s->ref);
+			if(lua_pcall(state, 0, 1, 0))
+				{
+					if(s->flags & SUB_SUBLET_FAIL_THIRD)
+						{
+							subLogWarn("Unloaded sublet (#%d) after 3 failed attempts\n", s->ref);
+							subSubletDelete(s);
+							return;
+						}				
+					else if(s->flags & SUB_SUBLET_FAIL_SECOND) s->flags |= SUB_SUBLET_FAIL_THIRD;
+					else if(s->flags & SUB_SUBLET_FAIL_FIRST) s->flags |= SUB_SUBLET_FAIL_SECOND;
+
+					subLogWarn("Failed attempt #%d to call sublet (#%d).\n", 
+						(s->flags & SUB_SUBLET_FAIL_SECOND) ? 2 : 1, s->ref);
+				}
+
+			switch(lua_type(state, -1))
+				{
+					case LUA_TNIL: 		subLogWarn("Sublet (#%d) does not return any usuable value\n", s->ref);	break;
+					case LUA_TNUMBER: s->number = (int)lua_tonumber(state, -1);																break;
+					case LUA_TSTRING:
+						if(s->string) free(s->string);
+						s->string = strdup((char *)lua_tostring(state, -1));
+						break;
+					default:
+						subLogDebug("Sublet (#%d) returned unkown type %s\n", s->ref, lua_typename(state, -1));
+						lua_pop(state, -1);
+				}
 		}
 
 }
