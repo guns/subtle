@@ -1,10 +1,11 @@
 #include "subtle.h"
 
-static SubSubletList *list = NULL;
+static int size = 0;
+static SubSublet **sublets = NULL;
 
  /**
-	* Find a sublet via the Xlib content manager.
-	* @param win A window
+	* Find a window via Xlib context manager {{{
+	* @param win A #Window
 	* @return Return the #SubSublet associated with the window or NULL
 	**/
 
@@ -12,57 +13,55 @@ SubSublet *
 subSubletFind(Window win)
 {
 	SubSublet *s = NULL;
-	return(XFindContext(d->dpy, win, 3, (void *)&s) != XCNOENT ? s : NULL);
-}
+	return(XFindContext(d->dpy, win, 2, (void *)&s) != XCNOENT ? s : NULL);
+} /* }}} */
 
  /**
-	* Sift the sublet through the list
-	* @param pos Position of the sublet in the list
+	* Sift the sublet through the sublets {{{
+	* @param pos Position of the sublet in the sublets
 	**/
 
 void
 subSubletSift(int pos)
 {
-	int l		= 2 * pos;
-	int r		= l + 1;
-	int max = (l <= list->size && list->content[l]->time < list->content[pos]->time) ? l : pos;
+	int left	= 2 * pos;
+	int right	= left + 1;
+	int max 	= (left <= size && sublets[left]->time < sublets[pos]->time) ? left : pos;
 
-	if(r <= list->size && list->content[r]->time < list->content[max]->time) max = r;
+	if(right <= size && sublets[right]->time < sublets[max]->time) max = right;
 	if(max != pos)
 		{
-			SubSublet *tmp			= list->content[pos];
-			list->content[pos]	= list->content[max];
-			list->content[max]	= tmp;
+			SubSublet *tmp	= sublets[pos];
+			sublets[pos]		= sublets[max];
+			sublets[max]		= tmp;
 			subSubletSift(max);
 		}
-}
+} /* }}} */
 
  /**
-	* Get the recent sublet
-	* @return Return either the recent sublet or NULL if the list is empty
+	* Get the next sublet {{{
+	* @return Return either the next #SubSublet or NULL if the sublets is empty
 	**/
 
 SubSublet *
-subSubletGetRecent(void)
+subSubletNext(void)
 {
-	return(list->size > 0 ? list->content[1] : NULL);
-}
+	return(size > 0 ? sublets[1] : NULL);
+} /* }}} */
 
  /**
-	* Init sublet list
+	* Init sublet sublets {{{
 	**/
 
 void
-subSubletNew(void)
+subSubletInit(void)
 {
-	list = (SubSubletList *)calloc(1, sizeof(SubSubletList));
-	if(!list) subLogError("Can't alloc memory. Exhausted?\n");
-	list->content = (SubSublet **)calloc(1, sizeof(SubSublet *));
-	if(!list->content) subLogError("Can't alloc memory. Exhausted?\n");
-}
+	sublets = (SubSublet **)calloc(1, sizeof(SubSublet *));
+	if(!sublets) subLogError("Can't alloc memory. Exhausted?\n");
+} /* }}} */
 
  /**
-	* Add a new sublet
+	* Create a new sublet {{{
 	* @param type Type of the sublet
 	* @param ref Lua object reference
 	* @param interval Update interval
@@ -70,84 +69,86 @@ subSubletNew(void)
 	**/
 
 void
-subSubletAdd(int type,
+subSubletNew(int type,
 	int ref,
-	unsigned int interval,
+	time_t interval,
 	unsigned int width)
 {
-	int i, time;
-	static total_width = 0;
-	long mask = CWOverrideRedirect|CWBackPixmap|CWEventMask;
-	XSetWindowAttributes attrs;
+	int i;
+
 	SubSublet *s = (SubSublet *)calloc(1, sizeof(SubSublet));
 	if(!s) subLogError("Can't alloc memory. Exhausted?\n");
 
-	attrs.override_redirect	= True;
-	attrs.background_pixmap	= ParentRelative;
-	attrs.event_mask				= ExposureMask|VisibilityChangeMask;
-
 	/* Init the sublet */
-	total_width += width * d->fx;
-	XMoveResizeWindow(d->dpy, screen->statusbar,
-		DisplayWidth(d->dpy, DefaultScreen(d->dpy)) - total_width, 0, total_width, d->th);
-
-	time				= subEventGetTime();
-	s->type			= type;
+	s->flags		= type;
 	s->ref			= ref;
-	s->interval = interval;
 	s->width		= width * d->fx;
-	s->time			= time;
-	s->win			= SUBWINNEW(screen->statusbar, total_width - width * d->fx, 0, width * d->fx, d->th, 0);
+	s->interval	= interval;
+	s->time			= subEventGetTime();
+	s->win			= XCreateSimpleWindow(d->dpy, d->bar.sublets, 0, 0, 1, d->th, 0, 0, d->colors.norm);
 
-	subLuaCall(s->ref, &s->data);
-	XSaveContext(d->dpy, s->win, 3, (void *)s);
+	subLuaCall(s);
+	XSaveContext(d->dpy, s->win, 2, (void *)s);
 
-	/* Don't add teaser sublets to the list */
-	if(type > SUB_SUBLET_TEXT)
+	/* Don't add text sublets to the sublet list */
+	if(type != SUB_SUBLET_TYPE_TEXT)
 		{
-			list->content = (SubSublet **)realloc(list->content, sizeof(SubSublet *) * (list->size + 2));
-			if(!list->content) subLogError("Can't alloc memory. Exhausted?\n");
+			sublets = (SubSublet **)realloc(sublets, sizeof(SubSublet *) * (size + 2));
+			if(!sublets) subLogError("Can't alloc memory. Exhausted?\n");
 	
-			i = ++(list->size);
+			i = ++size;
 
-			while(i > 1 && s->time < list->content[i / 2]->time)
+			while(i > 1 && s->time < sublets[i / 2]->time)
 				{
-					list->content[i] = list->content[i / 2];
+					sublets[i] = sublets[i / 2];
 					i /= 2;
 				}
-			list->content[i] = s;
+			sublets[i] = s;
 		}
-
 	XMapRaised(d->dpy, s->win);
-}
+} /* }}} */
 
  /**
-	* Render a sublet.
+	* Delete a sublet {{{
+	* @param w A #Sublet
+	**/
+
+void
+subSubletDelete(SubSublet *s)
+{
+}	/* }}} */
+
+ /**
+	* Render a sublet {{{
 	* @param s A #SubSublet
 	**/
 
 void
-subSubletRender(SubSublet *s)
+subSubletRender(short mode,
+	SubSublet *s)
 {
-	if(s && (s->data.string || s->data.number))
+	if(s)
 		{
+			unsigned long col = mode ? d->colors.norm : d->colors.focus;
+
+			XSetWindowBackground(d->dpy, s->win, col);
 			XClearWindow(d->dpy, s->win);
-			switch(s->type)
+
+			if(s->flags & (SUB_SUBLET_TYPE_TEXT|SUB_SUBLET_TYPE_TEASER) && s->string)
 				{
-					case SUB_SUBLET_TEXT:
-					case SUB_SUBLET_TEASER:
-						XDrawString(d->dpy, s->win, d->gcs.font, 3, d->fy - 1, s->data.string, strlen(s->data.string));
-						break;
-					case SUB_SUBLET_METER:
-						XDrawRectangle(d->dpy, s->win, d->gcs.font, 2, 2, s->width - 4, d->th - 5);
-						XFillRectangle(d->dpy, s->win, d->gcs.font, 4, 4, ((s->width - 7) * s->data.number) / 100, d->th - 8);
+					XDrawString(d->dpy, s->win, d->gcs.font, 3, d->fy - 1, s->string, strlen(s->string));
+				}
+			else if(s->flags & SUB_SUBLET_TYPE_METER && s->number)
+				{
+					XDrawRectangle(d->dpy, s->win, d->gcs.font, 2, 2, s->width - 4, d->th - 5);
+					XFillRectangle(d->dpy, s->win, d->gcs.font, 4, 4, ((s->width - 7) * s->number) / 100, d->th - 8);
 				}
 			XFlush(d->dpy);
 		}
-}
+} /* }}} */
 
  /**
-	* Kill all sublets 
+	* Kill all sublets {{{
 	**/
 
 void
@@ -155,12 +156,12 @@ subSubletKill(void)
 {
 	int i;
 
-	for(i = 1; i < list->size; i++)
+	for(i = 1; i < size; i++)
 		{
-			XUnmapWindow(d->dpy, list->content[i]->win);
-			XDeleteContext(d->dpy, list->content[i]->win, 3);
-			XDestroyWindow(d->dpy, list->content[i]->win);
-			free(list->content[i]);
+			XUnmapWindow(d->dpy, sublets[i]->win);
+			XDeleteContext(d->dpy, sublets[i]->win, 2);
+			XDestroyWindow(d->dpy, sublets[i]->win);
+			free(sublets[i]);
 		}
-	free(list);
-}
+	free(sublets);
+} /* }}} */
