@@ -20,7 +20,7 @@ HandleXError(Display *display,
 }
 
  /**
-	* Create the display.
+	* Create the display {{{
 	* @param display_string The display name as string
 	* @return Returns either nonzero on success or otherwise zero
 	**/
@@ -69,18 +69,18 @@ subDisplayNew(const char *display_string)
 	d->cursors.square	= XCreateFontCursor(d->dpy, XC_dotbox);
 	d->cursors.move		= XCreateFontCursor(d->dpy, XC_fleur);
 	d->cursors.arrow	= XCreateFontCursor(d->dpy, XC_left_ptr);
-	d->cursors.left		= XCreateFontCursor(d->dpy, XC_left_side);
-	d->cursors.right	= XCreateFontCursor(d->dpy, XC_right_side);
-	d->cursors.bottom	= XCreateFontCursor(d->dpy, XC_bottom_side);
+	d->cursors.horz		= XCreateFontCursor(d->dpy, XC_sb_h_double_arrow);
+	d->cursors.vert		= XCreateFontCursor(d->dpy, XC_sb_v_double_arrow);
 	d->cursors.resize	= XCreateFontCursor(d->dpy, XC_sizing);
+
 
 	printf("Display (%s) is %d x %d\n", DisplayString(d->dpy), DisplayWidth(d->dpy, 
 		DefaultScreen(d->dpy)), DisplayHeight(d->dpy, DefaultScreen(d->dpy)));
 	XSync(d->dpy, False);
-}
+} /* }}} */
 
  /**
-	* Kill the display.
+	* Kill the display
 	**/
 
 void
@@ -91,9 +91,8 @@ subDisplayKill(void)
 		  XFreeCursor(d->dpy, d->cursors.square);
 			XFreeCursor(d->dpy, d->cursors.move);
 		  XFreeCursor(d->dpy, d->cursors.arrow);
-		  XFreeCursor(d->dpy, d->cursors.left);
-		  XFreeCursor(d->dpy, d->cursors.right);
-		  XFreeCursor(d->dpy, d->cursors.bottom);
+		  XFreeCursor(d->dpy, d->cursors.horz);
+		  XFreeCursor(d->dpy, d->cursors.vert);
 		  XFreeCursor(d->dpy, d->cursors.resize);
 
 			XFreeGC(d->dpy, d->gcs.border);
