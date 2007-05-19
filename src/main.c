@@ -99,12 +99,12 @@ main(int argc,
 	subDisplayNew(display);
 	subLuaLoadConfig(config);
 
-	subEwmhNew();
+	subEwmhInit();
 
+	subScreenInit();
 	subScreenNew();
-	subScreenAdd();
 
-	subSubletNew();
+	subSubletInit();
 	subLuaLoadSublets(sublets);
 
 	subEventLoop();
