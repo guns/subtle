@@ -1,7 +1,7 @@
 #include "subtle.h"
 
  /**
-	* Create a new client.
+	* Create a new client
 	* @param win Window of the client
 	* @return Returns either a #SubWin on success or otherwise NULL
 	**/
@@ -13,7 +13,7 @@ subClientNew(Window win)
 	Window unnused;
 	XWMHints *hints = NULL;
 	XWindowAttributes attr;
-	Atom *protos;
+	Atom *protos = NULL;
 	SubWin *w = subWinNew(win);
 	w->client = (SubClient *)calloc(1, sizeof(SubClient));
 	if(!w->client) subLogError("Can't alloc memory. Exhausted?\n");
@@ -22,7 +22,7 @@ subClientNew(Window win)
 	XAddToSaveSet(d->dpy, w->win);
 	XGetWindowAttributes(d->dpy, w->win, &attr);
 	w->client->cmap	= attr.colormap;
-	w->prop	= SUB_WIN_CLIENT; 
+	w->flags				= SUB_WIN_TYPE_CLIENT; 
 
 	/* Window caption */
 	XFetchName(d->dpy, win, &w->client->name);
@@ -38,11 +38,12 @@ subClientNew(Window win)
 			if(hints->flags & StateHint) subClientSetWMState(w, hints->initial_state);
 			else subClientSetWMState(w, NormalState);
 			if(hints->initial_state == IconicState) subLogDebug("Iconic: win=%#lx\n", win);			
-			if(hints->input) w->prop |= SUB_WIN_INPUT;
+			if(hints->input) w->flags |= SUB_WIN_PREF_INPUT;
 			if(hints->flags & (XUrgencyHint|WindowGroupHint)) 
 				{
-					subWinToggle(SUB_WIN_RAISE, w);
-					printf("Transient: flags=%s%s\n", hints->flags & XUrgencyHint ? "u" : " ", hints->flags & WindowGroupHint ? "g" : " ");
+					subWinToggle(SUB_WIN_OPT_RAISE, w);
+					printf("Transient: flags=%s%s\n", hints->flags & XUrgencyHint ? "u" : " ", 
+						hints->flags & WindowGroupHint ? "g" : " ");
 				}
 		}
 	XFree(hints);
@@ -52,8 +53,8 @@ subClientNew(Window win)
 		{
 			for(i = 0; i < n; i++)
 				{
-					if(protos[i] == subEwmhGetAtom(SUB_EWMH_WM_TAKE_FOCUS)) 		w->prop |= SUB_WIN_SEND_FOCUS;
-					if(protos[i] == subEwmhGetAtom(SUB_EWMH_WM_DELETE_WINDOW))	w->prop |= SUB_WIN_SEND_CLOSE;
+					if(protos[i] == subEwmhGetAtom(SUB_EWMH_WM_TAKE_FOCUS)) 		w->flags |= SUB_WIN_PREF_FOCUS;
+					if(protos[i] == subEwmhGetAtom(SUB_EWMH_WM_DELETE_WINDOW))	w->flags |= SUB_WIN_PREF_CLOSE;
 				}
 			XFree(protos);
 		}
@@ -62,12 +63,9 @@ subClientNew(Window win)
 
 	/* Check fpr dialog fensters etc. */
 	XGetTransientForHint(d->dpy, win, &unnused);
-	if(unnused) subWinToggle(SUB_WIN_RAISE, w);
+	if(unnused) subWinToggle(SUB_WIN_OPT_RAISE, w);
 
 	printf("Transient: window=%d\n", unnused);
-
-
-
 
 	XSync(d->dpy, False);
 	XUngrabServer(d->dpy);
@@ -75,14 +73,14 @@ subClientNew(Window win)
 }
 
  /**
-	* Delete a client.
+	* Delete a client
 	* @param w A #SubWin
 	**/
 
 void
 subClientDelete(SubWin *w)
 {
-	if(w->prop & SUB_WIN_CLIENT)
+	if(w->flags & SUB_WIN_TYPE_CLIENT)
 		{
 			XEvent event;
 			XGrabServer(d->dpy);
@@ -101,7 +99,7 @@ subClientDelete(SubWin *w)
 
 
  /**
-	* Set the WM state for the client.
+	* Set the WM state for the client
 	* @param w A #SubWin
 	* @param state New state for the client
 	**/
@@ -115,11 +113,11 @@ subClientSetWMState(SubWin *w,
 	data[1] = None; /* No icons */
 
 	XChangeProperty(d->dpy, w->win, subEwmhGetAtom(SUB_EWMH_WM_STATE), subEwmhGetAtom(SUB_EWMH_WM_STATE),
-		32, PropModeReplace, (unsigned char *) data, 2);
+		32, PropModeReplace, (unsigned char *)data, 2);
 }
 
  /**
-	* Get the WM state of the client.
+	* Get the WM state of the client
 	* @param w A #SubWin
 	* @return Returns the state of the client
 	**/
@@ -143,7 +141,7 @@ subClientGetWMState(SubWin *w)
 }
 
  /**
-	* Send a configure request to the client.
+	* Send a configure request to the client
 	* @param w A #SubWin
 	**/
 
@@ -163,25 +161,22 @@ subClientSendConfigure(SubWin *w)
 	ev.border_width 			= 0;
 	ev.override_redirect	= 0;
 
-	printf("x=%d, y=%d, width=%d, height=%d, stack_mode=%d, border_width=%d\n", w->x, w->y, w->width, 
-		w->height, ev.above, d->bw);
-
 	XSendEvent(d->dpy, w->win, False, StructureNotifyMask, (XEvent *)&ev);
 }
 
  /**
-	* Send delete event to client if supported, otherwise just kill the window.
+	* Send delete event to client if supported, otherwise just kill the window
 	* @param w A #SubWin
 	**/
 
 void
 subClientSendDelete(SubWin *w)
 {
-	if(w && w->prop & SUB_WIN_CLIENT)
+	if(w && w->flags & SUB_WIN_TYPE_CLIENT)
 		{
 
 			subWinUnmap(w);
-			if(w->prop & SUB_WIN_SEND_CLOSE)
+			if(w->flags & SUB_WIN_PREF_CLOSE)
 				{
 					XEvent ev;
 
@@ -199,16 +194,16 @@ subClientSendDelete(SubWin *w)
 }
 
 	/**
-	 * Fetch client name.
+	 * Fetch client name
 	 * @param w A #SubWin
 	 **/
 
 void
 subClientFetchName(SubWin *w)
 {
-	if(w && w->prop & SUB_WIN_CLIENT)
+	if(w && w->flags & SUB_WIN_TYPE_CLIENT)
 		{
-			int width;
+			int width, mode;
 			if(w->client->name) XFree(w->client->name);
 			XFetchName(d->dpy, w->win, &w->client->name);
 
@@ -216,13 +211,15 @@ subClientFetchName(SubWin *w)
 			width = (strlen(w->client->name) + 1) * d->fx;
 			if(width > w->width - d->th - 4) width = w->width - d->th - 14;
 			XMoveResizeWindow(d->dpy, w->client->caption, d->th, 0, width, d->th);
-			subWinRender(d->focus == w->frame ? 0 : 1, w);
-			subClientRender(d->focus == w->frame ? 0 : 1, w);
+
+			mode = (d->focus && d->focus->frame == w->frame) ? 0 : 1;
+			subWinRender(mode, w);
+			subClientRender(mode, w);
 		}
 }
 
  /**
-	* Render the client window.
+	* Render the client window
 	* @param w A #SubWin
 	**/
 
@@ -230,8 +227,10 @@ void
 subClientRender(short mode,
 	SubWin *w)
 {
-	unsigned long col = mode ? (w->prop & SUB_WIN_COLLAPSE ? d->colors.cover : d->colors.norm) : d->colors.focus;
-	if(w && w->prop & SUB_WIN_CLIENT)
+	unsigned long col = mode ? (w->flags & SUB_WIN_OPT_COLLAPSE ?  d->colors.cover : d->colors.norm) : 
+		d->colors.focus;
+
+	if(w && w->flags & SUB_WIN_TYPE_CLIENT)
 		{
 			XSetWindowBackground(d->dpy, w->client->caption, col);
 			XClearWindow(d->dpy, w->client->caption);
