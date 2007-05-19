@@ -7,7 +7,7 @@
 static short debug = 0;
 
  /**
-	* Toggle debugging messages.
+	* Toggle debugging messages
 	**/
 
 void
@@ -18,7 +18,7 @@ subLogToggleDebug(void)
 #endif /* DEBUG */
 
  /**
-	* Print messages depending on their type.
+	* Print messages depending on their type
 	* @param type Message type
 	* @param file File name
 	* @param line Line number
