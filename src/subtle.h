@@ -38,39 +38,46 @@
 #define SUBWINHEIGHT(w)	(w->height - d->th - d->bw)
 
 /* win.c */
-#define SUB_WIN_SCREEN			(1L << 1)									// Screen window
-#define SUB_WIN_CLIENT			(1L << 2)									// Client window
-#define SUB_WIN_TILEH				(1L << 3)									// Horizontal tiling window
-#define SUB_WIN_TILEV				(1L << 4)									// Vertical tiling window
-#define SUB_WIN_PILE				(1L << 5)									// Piled tiling window
-#define SUB_WIN_TRANS				(1L << 6)									// Transient window
-#define SUB_WIN_RAISE				(1L << 7)									// Raised window
-#define SUB_WIN_COLLAPSE		(1L << 8)									// Collapsed window
-#define SUB_WIN_WEIGHT			(1L << 9)									// Weighted window
-#define SUB_WIN_INPUT				(1L << 10)								// Expect to get focus active/passiv
-#define SUB_WIN_SEND_FOCUS	(1L << 11)								// Send focus messages
-#define SUB_WIN_SEND_CLOSE	(1L << 12)								// Send close messages
+#define SUB_WIN_TYPE_SCREEN		(1L << 1)								// Screen window
+#define SUB_WIN_TYPE_TILE			(1L << 2)								// Tile window
+#define SUB_WIN_TYPE_CLIENT		(1L << 3)								// Client window
 
-#define SUB_WIN_DRAG_LEFT		(1L << 1)									// Drag start from left
-#define SUB_WIN_DRAG_RIGHT	(1L << 2)									// Drag start from right
-#define SUB_WIN_DRAG_BOTTOM	(1L << 3)									// Drag start from bottom
-#define SUB_WIN_DRAG_MOVE		(1L << 4)									// Drag move start from titlebar
-#define SUB_WIN_DRAG_SWAP		(1L << 5)									// Drag swap start from titlebar
-#define SUB_WIN_DRAG_ICON		(1L << 6)									// Drag start from icon
+#define SUB_WIN_OPT_PILE			(1L << 4)								// Piled tiling window
+#define SUB_WIN_OPT_TRANS			(1L << 5)								// Transient window
+#define SUB_WIN_OPT_RAISE			(1L << 6)								// Raised window
+#define SUB_WIN_OPT_COLLAPSE	(1L << 7)								// Collapsed window
+#define SUB_WIN_OPT_WEIGHT		(1L << 8)								// Weighted window
 
+#define SUB_WIN_PREF_INPUT		(1L << 9)								// Expect to get focus active/passiv
+#define SUB_WIN_PREF_FOCUS		(1L << 10)							// Send focus messages
+#define SUB_WIN_PREF_CLOSE		(1L << 11)							// Send close messages
+
+#define SUB_WIN_TILE_VERT			(1L << 13)							// Vertical tile
+#define SUB_WIN_TILE_HORZ			(1L << 14)							// Horizontal tile
+
+#define SUB_WIN_DRAG_LEFT			(1L << 1)								// Drag start from left
+#define SUB_WIN_DRAG_RIGHT		(1L << 2)								// Drag start from right
+#define SUB_WIN_DRAG_BOTTOM		(1L << 3)								// Drag start from bottom
+#define SUB_WIN_DRAG_MOVE			(1L << 4)								// Drag move start from titlebar
+#define SUB_WIN_DRAG_SWAP			(1L << 5)								// Drag swap start from titlebar
+#define SUB_WIN_DRAG_ICON			(1L << 6)								// Drag start from icon
+
+/* Forward declarations */
 struct subtile;
 struct subclient;
 
 typedef struct subwin
 {
-	int			x, y, width, height, prop, weight;					// Window properties
+	int			flags;																			// Window flags
+	int			x, y, width, height, weight;								// Window properties
 	Window	icon, frame, title, win;										// Subwindows
 	Window	left, right, bottom;												// Border windows
-	struct subwin *parent;															// Parent window
+	struct	subwin *parent;															// Parent window
+
 	union
 	{
-		struct subtile *tile;
-		struct subclient *client;
+		struct subtile		*tile;													// Tile data
+		struct subclient	*client;												// Client data
 	};
 } SubWin;
 
@@ -89,18 +96,15 @@ void subWinRaise(SubWin *w);													// Raise a window
 /* tile.c */
 typedef struct subtile
 {
-	unsigned int 		mw, mh;															// Tile min. width / height
-	Window					btnew, btdel;												// Tile buttons
-	SubWin					*peak;															// Peak window
+	Window		btnew, btdel;															// Tile buttons
+	SubWin		*peak;																		// Peak window
 } SubTile;
 
-#define subTileNewHoriz()	subTileNew(0)
-#define subTileNewVert()	subTileNew(1)
 SubWin *subTileNew(short mode);												// Create a new tile
-void subTileAdd(SubWin *t, SubWin *w);								// Add a window to the tile
 void subTileDelete(SubWin *w);												// Delete a tile
 void subTileRender(short mode, SubWin *w);						// Render a tile
-void subTileConfigure(SubWin *w);											// Configure a tile and it's children
+void subTileAdd(SubWin *t, SubWin *w);								// Add a window to tile
+void subTileConfigure(SubWin *w);											// Configure a tile
 
 /* client.c */
 typedef struct subclient
@@ -112,39 +116,79 @@ typedef struct subclient
 
 SubWin *subClientNew(Window win);											// Create a new client
 void subClientDelete(SubWin *w);											// Delete a client
+void subClientRender(short mode, SubWin *w);					// Render the window
 void subClientSetWMState(SubWin *w, long state);			// Set client WM state
 long subClientGetWMState(SubWin *w);									// Get client WM state
 void subClientSendConfigure(SubWin *w);								// Send configure request
 void subClientSendDelete(SubWin *w);									// Send delete request
 void subClientToggleShade(SubWin *w);									// Toggle shaded state
 void subClientFetchName(SubWin *w);										// Fetch client name
-void subClientRender(short mode, SubWin *w);					// Render the window
+
+/* sublet.c */
+#define SUB_SUBLET_TYPE_TEXT		(1L << 1)							// Text sublet
+#define SUB_SUBLET_TYPE_TEASER	(1L << 2)							// Teaser sublet
+#define SUB_SUBLET_TYPE_METER		(1L << 3)							// Text sublet
+
+#define SUB_SUBLET_FAIL_FIRST		(1L << 4)							// Fail first time
+#define SUB_SUBLET_FAIL_SECOND	(1L << 5)							// Fail second time
+#define SUB_SUBLET_FAIL_THIRD		(1L << 6)							// Fail third time
+
+typedef struct subsublet
+{
+	int			flags, ref, width;													// Flags, Lua object reference, width
+	time_t	time, interval;															// Last update time, interval time
+	Window	win;																				// Sublet window
+
+	union 
+	{
+		char *string;
+		int number;
+	};
+} SubSublet;
+
+SubSublet *subSubletFind(Window win);									// Find a sublet
+void subSubletInit(void);															// Init sublet list
+void subSubletNew(int type, int ref, 									// Create a new sublet
+	time_t interval, unsigned int width);
+void subSubletDelete(SubSublet *s);										// Delete a sublet
+void subSubletRender(short mode, SubSublet *s);				// Render a sublet
+SubSublet *subSubletNext(void);												// Get the next sublet
+void subSubletKill(void);															// Delete all sublets
 
 /* screen.c */
 typedef struct subscreen
 {
-	int n;																							// Number of screens
-	SubWin **wins;																			// Root windows
-	SubWin *active;																			// Active screen
-	Window statusbar;																		// Statusbar
+	int width;																					// Screen button width
+	char *name;																					// Screen names
+	SubWin *w;																					// Root windows
+	Window button;																			// Virtual screen buttons
 } SubScreen;
 
-extern SubScreen *screen;
-
-void subScreenNew(void);															// Create a new screen
-void subScreenAdd(void);															// Add a screen
+SubWin * subScreenGetActive(void);										// Get active screen
+void subScreenInit(void);															// Init the screens
+SubScreen *subScreenNew(void);												// Create a new screen
 void subScreenDelete(SubWin *w);											// Delete a screen
 void subScreenKill(void);															// Kill all screens
 void subScreenSwitch(int dir);												// Switch current screen
+void subScreenRender(short mode, SubWin *w);					// Render the screen window
+void subScreenAdd(Window win);												// Add a window to the bar
+void subScreenConfigure(void);												// Configure the screen
 
 /* display.c */
 typedef struct subdisplay
 {
 	Display						*dpy;															// Connection to X server
-	Window						focus;														// Focus window
-	unsigned int			th, bw;														// Tab height, border
+	unsigned int			th, bw;														// Tab height, border width
 	unsigned int			fx, fy;														// Font metrics
 	XFontStruct				*xfs;															// Font
+
+	SubWin						*focus;														// Focus window
+
+	struct
+	{
+		Window					win, screens, sublets;						// Screen bar
+	} bar;
+
 	struct
 	{
 		unsigned long		font, border, norm, focus, 
@@ -152,12 +196,12 @@ typedef struct subdisplay
 	} colors;
 	struct
 	{
-		GC							font, border, invert;							// Used graphic contexts (GCs)
+		GC							font, border, invert;							// Graphic contexts (GCs)
 	} gcs;
 	struct
 	{
-		Cursor					square, move, arrow, left, right, 
-										bottom, resize;										// Used cursors
+		Cursor					square, move, arrow, horz, vert, 
+										resize;														// Cursors
 	} cursors;
 } SubDisplay;
 
@@ -180,44 +224,11 @@ void subLogToggleDebug(void);
 void subLog(short type, const char *file, 						// Print messages
 	short line, const char *format, ...);
 
-/* sublet.c */
-#define SUB_SUBLET_TEXT		(1L << 1)										// Text sublet
-#define SUB_SUBLET_TEASER	(1L << 2)										// Teaser sublet
-#define SUB_SUBLET_METER	(1L << 3)										// Text sublet
-
-typedef union subsubletdata
-{
-	char *string;
-	int number;
-} SubSubletData;
-
-typedef struct subsublet
-{
-	int ref, type, width;																// Lua object referece, Sublet type width
-	time_t time, interval;															// Last update time, update interval
-	Window win;																					// Sublet window
-	SubSubletData data; 																// Sublet data
-} SubSublet;
-
-typedef struct subsubletlist
-{
-	int size;
-	SubSublet **content;
-} SubSubletList;
-
-SubSublet *subSubletFind(Window win);									// Find a sublet window
-SubSublet *subSubletGetRecent(void);									// Get the last recent sublet
-void subSubletNew(void);															// Create a sublet
-void subSubletAdd(int type, int ref, 									// Add a new sublet item 
-	unsigned int interval, unsigned int width);
-void subSubletRender(SubSublet *s);										// Render a sublet
-void subSubletKill(void);															// Delete all sublet items
-
 /* lua.c */
 void subLuaLoadConfig(const char *path);							// Load config file
 void subLuaLoadSublets(const char *path);							// Load sublets
 void subLuaKill(void);																// Kill Lua state
-void subLuaCall(int ref, SubSubletData *data);				// Call a Lua script
+void subLuaCall(SubSublet *s);												// Call a Lua script
 
 /* event.c */
 time_t subEventGetTime(void);													// Get the current time
@@ -272,7 +283,7 @@ enum SubEwmhHints
 	SUB_EWMH_NET_WM_ACTION_CLOSE
 };
 
-void subEwmhNew(void);																	// Register atoms/hints
+void subEwmhInit(void);																	// Init atoms/hints
 Atom subEwmhGetAtom(int hint);													// Get an atom
 
 int subEwmhSetWindow(Window win, int hint, 
