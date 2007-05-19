@@ -9,7 +9,7 @@
 clock = {}
 
 function clock:teaser()
-	return(os.date("%a %b %d %H:%M %Y"))
+	return(os.date("%a %b %d %H:%M:%S %Y"))
 end
 
-subtle:add_teaser("clock:teaser", 60, 22)
+subtle:add_teaser("clock:teaser", 1, 26)
