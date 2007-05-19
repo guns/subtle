@@ -5,6 +5,7 @@ AC_INIT(subtle, 0.6, unexist@hilflos.org)
 AC_CONFIG_SRCDIR([src/main.c])
 AM_INIT_AUTOMAKE(no-define)
 AM_CONFIG_HEADER(config.h)
+AM_MAINTAINER_MODE
 
 # Checks for programs.
 AC_PROG_CC
