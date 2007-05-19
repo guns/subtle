@@ -3,7 +3,7 @@
 static Atom atoms[36];
 
 void
-subEwmhNew(void)
+subEwmhInit(void)
 {
 	int n = 36;
 	char *names[] =
