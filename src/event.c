@@ -2,8 +2,8 @@
 #include "subtle.h"
 
  /**
-	* Get the current time in seconds
-	* @return Returns the current time.
+	* Get the current time in seconds {{{
+	* @return Returns the current time
 	**/
 
 time_t
@@ -14,38 +14,23 @@ subEventGetTime(void)
   gettimeofday(&tv, 0);
 
   return(tv.tv_sec);
-}
+} /* }}} */
 
+/* Render wrapper */
 static void 
 RenderWindow(SubWin *w)
 {
 	short mode;
 	Window win;
 
-	mode = (w && d->focus == w->frame) ? 0 : 1;
-	if(w && w->prop & SUB_WIN_SCREEN)
+	if(w)
 		{
-			XExposeEvent event;
-			unsigned int n = 0, i;
-			Window nil, *wins = NULL;
-
-			XSetWindowBackground(d->dpy, screen->statusbar, mode ? d->colors.norm : d->colors.focus);
-			XClearWindow(d->dpy, screen->statusbar);
-
-			/* Forward Expose to every sublet */
-			event.type = Expose;
-			XQueryTree(d->dpy, screen->statusbar, &nil, &nil, &wins, &n);
-			for(i = 0; i < n; i++)
-				{
-					event.window = wins[i];
-					XSendEvent(d->dpy, wins[i], False, ExposureMask, (XEvent *)&event);
-				}
-			XFree(wins);
-			XFlush(d->dpy);
+			mode = (d->focus && d->focus->frame == w->frame) ? 0 : 1;
+			subWinRender(mode, w);
+			if(w->flags & SUB_WIN_TYPE_SCREEN) subScreenRender(mode, w);
+			if(w->flags & SUB_WIN_TYPE_TILE) subTileRender(mode, w);
+			else if(w->flags & SUB_WIN_TYPE_CLIENT) subClientRender(mode, w);
 		}
-	subWinRender(mode, w);
-	if(w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV)) subTileRender(mode, w);
-	else if(w->prop & SUB_WIN_CLIENT) subClientRender(mode, w);
 }
 
 static void
@@ -62,15 +47,15 @@ HandleButtonPress(XButtonEvent *ev)
 						if(last_time > 0 && ev->time - last_time <= 300) /* Double click */
 							{
 								subLogDebug("Double click: win=%#lx\n", ev->window);
-								if((ev->subwindow == w->title && w->parent && w->parent->prop & SUB_WIN_TILEV) || w->prop & SUB_WIN_RAISE) 
-									subWinToggle(SUB_WIN_COLLAPSE, w);
-								else if(ev->subwindow == w->icon) subWinToggle(SUB_WIN_WEIGHT, w);
+								if((ev->subwindow == w->title && w->parent && w->parent->flags & SUB_WIN_TYPE_TILE) || w->flags & SUB_WIN_OPT_RAISE) 
+									subWinToggle(SUB_WIN_OPT_COLLAPSE, w);
+								else if(ev->subwindow == w->icon) subWinToggle(SUB_WIN_OPT_WEIGHT, w);
 								last_time = 0;
 							}						
 						else /* Single click */
 							{
 								subLogDebug("Single click: win=%#lx\n", ev->window);
-								if(w->prop & SUB_WIN_RAISE) subWinRaise(w);
+								if(w->flags & SUB_WIN_OPT_RAISE) subWinRaise(w);
 								if(ev->subwindow == w->left) 				subWinDrag(SUB_WIN_DRAG_LEFT, w, ev);
 								else if(ev->subwindow == w->right)	subWinDrag(SUB_WIN_DRAG_RIGHT, w, ev);
 								else if(ev->subwindow == w->bottom) subWinDrag(SUB_WIN_DRAG_BOTTOM, w, ev);
@@ -81,15 +66,15 @@ HandleButtonPress(XButtonEvent *ev)
 									}
 								else if(ev->subwindow == w->title)
 									{ /* Either drag and move or drag an swap windows */
-										subWinDrag((w->prop & SUB_WIN_RAISE) ? SUB_WIN_DRAG_MOVE : SUB_WIN_DRAG_SWAP, w, ev);
+										subWinDrag((w->flags & SUB_WIN_OPT_RAISE) ? SUB_WIN_DRAG_MOVE : SUB_WIN_DRAG_SWAP, w, ev);
 										last_time = ev->time;
 									}
-								else if(w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV))
+								else if(w->flags & SUB_WIN_TYPE_TILE)
 									{
-										if(ev->subwindow == w->tile->btnew) subTileAdd(w, subTileNewVert());
+										if(ev->subwindow == w->tile->btnew) subTileAdd(w, subTileNew(SUB_WIN_TILE_VERT));
 										else if(ev->subwindow == w->tile->btdel) 
 											{
-												if(w->prop & SUB_WIN_SCREEN) subScreenDelete(w); 
+												if(w->flags & SUB_WIN_TYPE_SCREEN) subScreenDelete(w); 
 												else subTileDelete(w);
 											}
 									}
@@ -98,14 +83,14 @@ HandleButtonPress(XButtonEvent *ev)
 					case Button2:
 						if(ev->subwindow == w->title)
 							{
-								if(w->prop & SUB_WIN_SCREEN) subScreenDelete(w); 
-								else if(w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV)) subTileDelete(w);
+								if(w->flags & SUB_WIN_TYPE_SCREEN) subScreenDelete(w); 
+								else if(w->flags & SUB_WIN_TYPE_TILE) subTileDelete(w);
 								else subClientSendDelete(w);
 							}
 						break;
 					case Button3: 
-						if(w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV) && ev->subwindow == w->tile->btnew) subTileAdd(w, subTileNewHoriz());
-						else if(ev->subwindow == w->title) subWinToggle(SUB_WIN_RAISE, w); 
+						if(w->flags & SUB_WIN_TYPE_TILE && ev->subwindow == w->tile->btnew) subTileAdd(w, subTileNew(SUB_WIN_TILE_HORZ));
+						else if(ev->subwindow == w->title) subWinToggle(SUB_WIN_OPT_RAISE, w); 
 						break;
 					case Button4: subScreenSwitch(1);		break;
 					case Button5: subScreenSwitch(-1);	break;
@@ -117,8 +102,6 @@ static void
 HandleKeyPress(XKeyEvent *ev)
 {
 	SubWin *w = subWinFind(ev->window);
-printf ("Debug %s() [%s,%d]\n", __func__, __FILE__, __LINE__);
-
 	if(w)
 		{
 			KeySym keysym;
@@ -128,13 +111,13 @@ printf ("Debug %s() [%s,%d]\n", __func__, __FILE__, __LINE__);
 			XLookupString(ev, buf, sizeof(buf), &keysym, &compose);
 			if(!strcmp(buf, "add_vtile")) 
 				{
-					subTileAdd(w, subTileNewVert());
+					subTileAdd(w, subTileNew(SUB_WIN_TILE_VERT));
 				}
 			else if(!strcmp(buf, "add_htile"))
 				{
-					subTileAdd(w, subTileNewHoriz());
+					subTileAdd(w, subTileNew(SUB_WIN_TILE_HORZ));
 				}
-			else if(!strcmp(buf, "del_tile") && w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV))
+			else if(!strcmp(buf, "del_tile") && w->flags & SUB_WIN_TYPE_TILE)
 				{
 					subTileDelete(w);
 				}
@@ -202,8 +185,8 @@ HandleMap(XMapRequestEvent *ev)
 	if(!w) 
 		{
 			w = subClientNew(ev->window);
-			if(!(w->prop & SUB_WIN_RAISE)) subTileAdd(screen->active, w);
-			else w->parent = screen->active;
+			if(!(w->flags & SUB_WIN_OPT_RAISE)) subTileAdd(subScreenGetActive(), w);
+			else w->parent = subScreenGetActive();
 		}
 }
 
@@ -211,7 +194,7 @@ static void
 HandleDestroy(XDestroyWindowEvent *ev)
 {
 	SubWin *w = subWinFind(ev->event);
-	if(w && w->prop & SUB_WIN_CLIENT) subClientDelete(w); 
+	if(w && w->flags & SUB_WIN_TYPE_CLIENT) subClientDelete(w); 
 
 }
 	
@@ -228,7 +211,7 @@ static void
 HandleColormap(XColormapEvent *ev)
 {	
 	SubWin *w = subWinFind(ev->window);
-	if(w && w->prop & SUB_WIN_CLIENT && ev->new)
+	if(w && w->flags & SUB_WIN_TYPE_CLIENT && ev->new)
 		{
 			w->client->cmap = ev->colormap;
 			XInstallColormap(d->dpy, w->client->cmap);
@@ -247,7 +230,7 @@ HandleProperty(XPropertyEvent *ev)
 	XFree(wins);
 
 	if(parent) w = subWinFind(parent);
-	if(w && w->prop & SUB_WIN_CLIENT)
+	if(w && w->flags & SUB_WIN_TYPE_CLIENT)
 		{
 			subLogDebug("Property: atom=%ld\n", ev->atom);
 			if(ev->atom == XA_WM_NAME || ev->atom == subEwmhGetAtom(SUB_EWMH_NET_WM_NAME)) subClientFetchName(w);
@@ -260,34 +243,29 @@ HandleCrossing(XCrossingEvent *ev)
 	SubWin *w = subWinFind(ev->window);
 	if(w)
 		{
+			/* Remove focus from window */
 			if(d->focus) 
 				{
-					SubWin *w1 = subWinFind(d->focus);
-					d->focus = 0;
-					if(w1) RenderWindow(w1);
+					SubWin *f = d->focus;
+					d->focus = NULL;
+					if(f) RenderWindow(f);
 					XUngrabKey(d->dpy, AnyKey, AnyModifier, w->frame);
 				}
 
 			/* Make leave events to enter event of the parent window */
 			if(ev->type == LeaveNotify && !ev->mode && w->parent) w = w->parent;
-			d->focus = w->frame;
+			d->focus = w;
 			RenderWindow(w);
 			subEwmhSetWindow(DefaultRootWindow(d->dpy), SUB_EWMH_NET_ACTIVE_WINDOW, w->frame);
 
 			/* Grab key */
 			XGrabKey(d->dpy, AnyKey, AnyModifier, w->frame, True, GrabModeSync, GrabModeSync);
 
-      Display *display;
-      Window grab_window;
-      Bool owner_events;
-      int pointer_mode, keyboard_mode;
-      Time time;
-
 			/* Focus */
-			if(w->prop & SUB_WIN_CLIENT && !(w->prop & SUB_WIN_COLLAPSE))
+			if(w->flags & SUB_WIN_TYPE_CLIENT && !(w->flags & SUB_WIN_OPT_COLLAPSE))
 				{
-					if(w->prop & SUB_WIN_INPUT) XSetInputFocus(d->dpy, w->win, RevertToNone, CurrentTime);
-					if(w->prop & SUB_WIN_SEND_FOCUS)
+					if(w->flags & SUB_WIN_PREF_INPUT) XSetInputFocus(d->dpy, w->win, RevertToNone, CurrentTime);
+					if(w->flags & SUB_WIN_PREF_FOCUS)
 						{
 							XEvent ev;
 
@@ -301,9 +279,9 @@ HandleCrossing(XCrossingEvent *ev)
 							XSendEvent(d->dpy, w->win, False, NoEventMask, &ev);
 						}
 					subLogDebug("Focus: win=%#lx, input=%d, send=%d\n", w->win, 
-						w->prop & SUB_WIN_INPUT ? 1 : 0, w->prop & SUB_WIN_SEND_FOCUS ? 1 : 0);
+						w->flags & SUB_WIN_PREF_INPUT ? 1 : 0, w->flags & SUB_WIN_PREF_FOCUS ? 1 : 0);
 				}
-			else if(w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV) && !(w->prop & SUB_WIN_COLLAPSE)) 
+			else if(w->flags & SUB_WIN_TYPE_TILE && !(w->flags & SUB_WIN_OPT_COLLAPSE)) 
 				XSetInputFocus(d->dpy, w->win, RevertToNone, CurrentTime);
 		}
 }
@@ -318,42 +296,39 @@ HandleExpose(XEvent *ev)
 	while(XCheckTypedWindowEvent(d->dpy, win, ev->type, &event));
 
 	if(w) RenderWindow(w);
-	else
-		{
-			SubSublet *s = subSubletFind(win);
-			if(s) subSubletRender(s);
-		}
 }
 
  /**
-	* Handle the X events.
-	* @return Return zero on failure.
+	* Handle the X events {{{
+	* @return Return zero on failure
 	**/
 
 int subEventLoop(void)
 {
-	int cur;
+	short mode;
+	time_t current;
 	XEvent ev;
 	struct timeval tv;
 	SubSublet *s = NULL;
 
 	while(1)
 		{
-			s = subSubletGetRecent();
+			s = subSubletNext();
 			if(s)
 				{
 					fd_set fdset;
-					cur	= subEventGetTime();
+					current	= subEventGetTime();
 
-					while(s->time <= cur)
+					while(s->time <= current)
 						{
-							s->time = cur + s->interval;
+							s->time = current + s->interval;
+							mode = (d->focus && d->focus->flags & SUB_WIN_TYPE_SCREEN) ? 0 : 1;
 
-							subLuaCall(s->ref, &s->data);
-							subSubletRender(s);
+							subLuaCall(s);
+							subSubletRender(mode, s);
 							subSubletSift(1);
 
-							s = subSubletGetRecent();
+							s = subSubletNext();
 						}
 
 					tv.tv_sec		= s->interval;
@@ -362,7 +337,7 @@ int subEventLoop(void)
 					FD_SET(ConnectionNumber(d->dpy), &fdset);
 
 					if(select(ConnectionNumber(d->dpy) + 1, &fdset, NULL, NULL, &tv) == -1)
-						subLogDebug("Can't select the connection\n");
+						subLogDebug("Failed to select the connection\n");
 				}
 
 			while(XPending(d->dpy))
@@ -371,7 +346,6 @@ int subEventLoop(void)
 					switch(ev.type)
 						{
 							case ButtonPress:				HandleButtonPress(&ev.xbutton);					break;
-
 							case KeyRelease:				
 							case KeyPress:					HandleKeyPress(&ev.xkey);								break;
 							case ConfigureRequest:	HandleConfigure(&ev.xconfigurerequest);	break;
@@ -382,9 +356,9 @@ int subEventLoop(void)
 							case PropertyNotify: 		HandleProperty(&ev.xproperty); 					break;
 							case EnterNotify:
 							case LeaveNotify:				HandleCrossing(&ev.xcrossing);					break;
-							case VisibilityNotify:	
+							//case VisibilityNotify:	
 							case Expose:						HandleExpose(&ev);											break;
 						}
 				}
 		}
-}
+} /* }}} */
