@@ -38,29 +38,33 @@
 #define SUBWINHEIGHT(w)	(w->height - d->th - d->bw)
 
 /* win.c */
-#define SUB_WIN_TYPE_SCREEN		(1L << 1)								// Screen window
-#define SUB_WIN_TYPE_TILE			(1L << 2)								// Tile window
-#define SUB_WIN_TYPE_CLIENT		(1L << 3)								// Client window
+#define SUB_WIN_TYPE_SCREEN				(1L << 1)						// Screen window
+#define SUB_WIN_TYPE_TILE					(1L << 2)						// Tile window
+#define SUB_WIN_TYPE_CLIENT				(1L << 3)						// Client window
 
-#define SUB_WIN_OPT_PILE			(1L << 4)								// Piled tiling window
-#define SUB_WIN_OPT_TRANS			(1L << 5)								// Transient window
-#define SUB_WIN_OPT_RAISE			(1L << 6)								// Raised window
-#define SUB_WIN_OPT_COLLAPSE	(1L << 7)								// Collapsed window
-#define SUB_WIN_OPT_WEIGHT		(1L << 8)								// Weighted window
+#define SUB_WIN_OPT_PILE					(1L << 4)						// Piled tiling window
+#define SUB_WIN_OPT_TRANS					(1L << 5)						// Transient window
+#define SUB_WIN_OPT_RAISE					(1L << 6)						// Raised window
+#define SUB_WIN_OPT_COLLAPSE			(1L << 7)						// Collapsed window
+#define SUB_WIN_OPT_WEIGHT				(1L << 8)						// Weighted window
 
-#define SUB_WIN_PREF_INPUT		(1L << 9)								// Expect to get focus active/passiv
-#define SUB_WIN_PREF_FOCUS		(1L << 10)							// Send focus messages
-#define SUB_WIN_PREF_CLOSE		(1L << 11)							// Send close messages
+#define SUB_WIN_PREF_INPUT				(1L << 9)						// Expect to get focus active/passiv
+#define SUB_WIN_PREF_FOCUS				(1L << 10)					// Send focus messages
+#define SUB_WIN_PREF_CLOSE				(1L << 11)					// Send close messages
 
-#define SUB_WIN_TILE_VERT			(1L << 13)							// Vertical tile
-#define SUB_WIN_TILE_HORZ			(1L << 14)							// Horizontal tile
+#define SUB_WIN_TILE_VERT					(1L << 13)					// Vertical tile
+#define SUB_WIN_TILE_HORZ					(1L << 14)					// Horizontal tile
 
-#define SUB_WIN_DRAG_LEFT			(1L << 1)								// Drag start from left
-#define SUB_WIN_DRAG_RIGHT		(1L << 2)								// Drag start from right
-#define SUB_WIN_DRAG_BOTTOM		(1L << 3)								// Drag start from bottom
-#define SUB_WIN_DRAG_MOVE			(1L << 4)								// Drag move start from titlebar
-#define SUB_WIN_DRAG_SWAP			(1L << 5)								// Drag swap start from titlebar
-#define SUB_WIN_DRAG_ICON			(1L << 6)								// Drag start from icon
+#define SUB_WIN_DRAG_LEFT					(1L << 1)						// Drag start from left
+#define SUB_WIN_DRAG_RIGHT				(1L << 2)						// Drag start from right
+#define SUB_WIN_DRAG_BOTTOM				(1L << 3)						// Drag start from bottom
+#define SUB_WIN_DRAG_MOVE					(1L << 4)						// Drag move start from titlebar
+#define SUB_WIN_DRAG_SWAP					(1L << 5)						// Drag swap start from titlebar
+
+#define SUB_WIN_DRAG_STATE_START	(1L << 1)						// Drag state start
+#define SUB_WIN_DRAG_STATE_APPEND (1L << 2)						// Drag state append
+#define SUB_WIN_DRAG_STATE_BELOW	(1L << 3)						// DRag state below
+#define SUB_WIN_DRAG_STATE_SWAP		(1L << 4)						// Drag state swap
 
 /* Forward declarations */
 struct subtile;
@@ -84,8 +88,7 @@ typedef struct subwin
 SubWin *subWinFind(Window win);												// Find a window
 SubWin *subWinNew(Window win);												// Create a new window
 void subWinDelete(SubWin *w);													// Delete a window
-void subWinDrag(short mode, SubWin *w, 
-	XButtonEvent *bev);																	// Move/Resize a window
+void subWinDrag(short mode, SubWin *w);								// Move/Resize a window
 void subWinToggle(short type, SubWin *w);							// Toggle shading or floating state of a window
 void subWinResize(SubWin *w);													// Resize a window
 void subWinRender(short mode, SubWin *w);							// Render a window
@@ -156,6 +159,9 @@ SubSublet *subSubletNext(void);												// Get the next sublet
 void subSubletKill(void);															// Delete all sublets
 
 /* screen.c */
+#define SUB_SCREEN_NEXT	-3														// Next screen
+#define SUB_SCREEN_PREV	-5														// Prev screen
+
 typedef struct subscreen
 {
 	int width;																					// Screen button width
@@ -164,15 +170,16 @@ typedef struct subscreen
 	Window button;																			// Virtual screen buttons
 } SubScreen;
 
-SubWin * subScreenGetActive(void);										// Get active screen
+SubScreen *subScreenFind(Window win);									// Find a screen
 void subScreenInit(void);															// Init the screens
 SubScreen *subScreenNew(void);												// Create a new screen
 void subScreenDelete(SubWin *w);											// Delete a screen
 void subScreenKill(void);															// Kill all screens
-void subScreenSwitch(int dir);												// Switch current screen
 void subScreenRender(short mode, SubWin *w);					// Render the screen window
 void subScreenAdd(Window win);												// Add a window to the bar
 void subScreenConfigure(void);												// Configure the screen
+SubWin * subScreenGetActive(void);										// Get active screen
+void subScreenSetActive(int pos);											// Set active screen
 
 /* display.c */
 typedef struct subdisplay
