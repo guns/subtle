@@ -20,7 +20,7 @@ HandleXError(Display *display,
 }
 
  /**
-	* Create the display {{{
+	* Create the display 
 	* @param display_string The display name as string
 	* @return Returns either nonzero on success or otherwise zero
 	**/
@@ -73,11 +73,11 @@ subDisplayNew(const char *display_string)
 	d->cursors.vert		= XCreateFontCursor(d->dpy, XC_sb_v_double_arrow);
 	d->cursors.resize	= XCreateFontCursor(d->dpy, XC_sizing);
 
-
 	printf("Display (%s) is %d x %d\n", DisplayString(d->dpy), DisplayWidth(d->dpy, 
 		DefaultScreen(d->dpy)), DisplayHeight(d->dpy, DefaultScreen(d->dpy)));
+
 	XSync(d->dpy, False);
-} /* }}} */
+}
 
  /**
 	* Kill the display
