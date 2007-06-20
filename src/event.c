@@ -2,7 +2,7 @@
 #include "subtle.h"
 
  /**
-	* Get the current time in seconds {{{
+	* Get the current time in seconds 
 	* @return Returns the current time
 	**/
 
@@ -14,7 +14,7 @@ subEventGetTime(void)
   gettimeofday(&tv, 0);
 
   return(tv.tv_sec);
-} /* }}} */
+}
 
 /* Render wrapper */
 static void 
@@ -38,6 +38,13 @@ HandleButtonPress(XButtonEvent *ev)
 {
 	static Time last_time = 0;
 
+	if(ev->window == d->bar.win)
+		{
+			SubScreen *s = subScreenFind(ev->subwindow);
+			if(s) printf("screen=%s\n", s->name);
+
+			return;
+		}
 	SubWin *w = subWinFind(ev->window);
 	if(w)
 		{
@@ -55,18 +62,14 @@ HandleButtonPress(XButtonEvent *ev)
 						else /* Single click */
 							{
 								subLogDebug("Single click: win=%#lx\n", ev->window);
-								if(w->flags & SUB_WIN_OPT_RAISE) subWinRaise(w);
-								if(ev->subwindow == w->left) 				subWinDrag(SUB_WIN_DRAG_LEFT, w, ev);
-								else if(ev->subwindow == w->right)	subWinDrag(SUB_WIN_DRAG_RIGHT, w, ev);
-								else if(ev->subwindow == w->bottom) subWinDrag(SUB_WIN_DRAG_BOTTOM, w, ev);
-								else if(ev->subwindow == w->icon) 	
-									{
-										subWinDrag(SUB_WIN_DRAG_ICON, w, ev);
-										last_time = ev->time;
-									}
+								if(w->flags & SUB_WIN_OPT_RAISE) 		subWinRaise(w);
+								if(ev->subwindow == w->left) 				subWinDrag(SUB_WIN_DRAG_LEFT, w);
+								else if(ev->subwindow == w->right)	subWinDrag(SUB_WIN_DRAG_RIGHT, w);
+								else if(ev->subwindow == w->bottom) subWinDrag(SUB_WIN_DRAG_BOTTOM, w);
+								else if(ev->subwindow == w->icon) 	last_time = ev->time;
 								else if(ev->subwindow == w->title)
 									{ /* Either drag and move or drag an swap windows */
-										subWinDrag((w->flags & SUB_WIN_OPT_RAISE) ? SUB_WIN_DRAG_MOVE : SUB_WIN_DRAG_SWAP, w, ev);
+										subWinDrag((w->flags & SUB_WIN_OPT_RAISE) ? SUB_WIN_DRAG_MOVE : SUB_WIN_DRAG_SWAP, w);
 										last_time = ev->time;
 									}
 								else if(w->flags & SUB_WIN_TYPE_TILE)
@@ -92,8 +95,8 @@ HandleButtonPress(XButtonEvent *ev)
 						if(w->flags & SUB_WIN_TYPE_TILE && ev->subwindow == w->tile->btnew) subTileAdd(w, subTileNew(SUB_WIN_TILE_HORZ));
 						else if(ev->subwindow == w->title) subWinToggle(SUB_WIN_OPT_RAISE, w); 
 						break;
-					case Button4: subScreenSwitch(1);		break;
-					case Button5: subScreenSwitch(-1);	break;
+					case Button4: subScreenSetActive(SUB_SCREEN_NEXT); break;
+					case Button5: subScreenSetActive(SUB_SCREEN_PREV); break;
 				}
 		}
 }
@@ -299,7 +302,7 @@ HandleExpose(XEvent *ev)
 }
 
  /**
-	* Handle the X events {{{
+	* Handle the X events 
 	* @return Return zero on failure
 	**/
 
@@ -356,9 +359,9 @@ int subEventLoop(void)
 							case PropertyNotify: 		HandleProperty(&ev.xproperty); 					break;
 							case EnterNotify:
 							case LeaveNotify:				HandleCrossing(&ev.xcrossing);					break;
-							//case VisibilityNotify:	
+							case VisibilityNotify:	
 							case Expose:						HandleExpose(&ev);											break;
 						}
 				}
 		}
-} /* }}} */
+}
