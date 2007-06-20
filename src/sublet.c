@@ -4,7 +4,7 @@ static int size = 0;
 static SubSublet **sublets = NULL;
 
  /**
-	* Find a window via Xlib context manager {{{
+	* Find a window via Xlib context manager 
 	* @param win A #Window
 	* @return Return the #SubSublet associated with the window or NULL
 	**/
@@ -14,10 +14,10 @@ subSubletFind(Window win)
 {
 	SubSublet *s = NULL;
 	return(XFindContext(d->dpy, win, 2, (void *)&s) != XCNOENT ? s : NULL);
-} /* }}} */
+}
 
  /**
-	* Sift the sublet through the sublets {{{
+	* Sift the sublet through the sublets 
 	* @param pos Position of the sublet in the sublets
 	**/
 
@@ -36,10 +36,10 @@ subSubletSift(int pos)
 			sublets[max]		= tmp;
 			subSubletSift(max);
 		}
-} /* }}} */
+}
 
  /**
-	* Get the next sublet {{{
+	* Get the next sublet 
 	* @return Return either the next #SubSublet or NULL if the sublets is empty
 	**/
 
@@ -47,10 +47,10 @@ SubSublet *
 subSubletNext(void)
 {
 	return(size > 0 ? sublets[1] : NULL);
-} /* }}} */
+}
 
  /**
-	* Init sublet sublets {{{
+	* Init sublet sublets 
 	**/
 
 void
@@ -58,10 +58,10 @@ subSubletInit(void)
 {
 	sublets = (SubSublet **)calloc(1, sizeof(SubSublet *));
 	if(!sublets) subLogError("Can't alloc memory. Exhausted?\n");
-} /* }}} */
+}
 
  /**
-	* Create a new sublet {{{
+	* Create a new sublet 
 	* @param type Type of the sublet
 	* @param ref Lua object reference
 	* @param interval Update interval
@@ -106,20 +106,20 @@ subSubletNew(int type,
 			sublets[i] = s;
 		}
 	XMapRaised(d->dpy, s->win);
-} /* }}} */
+}
 
  /**
-	* Delete a sublet {{{
+	* Delete a sublet 
 	* @param w A #Sublet
 	**/
 
 void
 subSubletDelete(SubSublet *s)
 {
-}	/* }}} */
+}
 
  /**
-	* Render a sublet {{{
+	* Render a sublet 
 	* @param s A #SubSublet
 	**/
 
@@ -145,10 +145,10 @@ subSubletRender(short mode,
 				}
 			XFlush(d->dpy);
 		}
-} /* }}} */
+}
 
  /**
-	* Kill all sublets {{{
+	* Kill all sublets 
 	**/
 
 void
@@ -164,4 +164,4 @@ subSubletKill(void)
 			free(sublets[i]);
 		}
 	free(sublets);
-} /* }}} */
+}
