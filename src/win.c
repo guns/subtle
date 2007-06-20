@@ -1,7 +1,7 @@
 #include "subtle.h"
 
  /**
-	* Find a window via Xlib context manager.
+	* Find a window via Xlib context manager 
 	* @param win A #Window
 	* @return Return the #SubWin associated with the window or NULL
 	**/
@@ -11,10 +11,10 @@ subWinFind(Window win)
 {
 	SubWin *w = NULL;
 	return(XFindContext(d->dpy, win, 1, (void *)&w) != XCNOENT ? w : NULL);
-}
+} /*  */
 
  /**
-	* Create a new window and append it to the window list.
+	* Create a new window and append it to the window list 
 	* @param win A #Window
 	* @return Return a #SubWin on success.
 	**/
@@ -31,35 +31,32 @@ subWinNew(Window win)
 	w->width	= DisplayWidth(d->dpy, DefaultScreen(d->dpy));
 	w->height	= DisplayHeight(d->dpy, DefaultScreen(d->dpy));
 
-	attrs.override_redirect			= True;
-	attrs.border_pixel					= d->colors.border;
-	attrs.background_pixmap			= ParentRelative;
-	attrs.background_pixel			= d->colors.norm;
-	attrs.do_not_propagate_mask	=	ButtonPressMask|ButtonMotionMask;
-	attrs.event_mask						= ButtonPressMask|ButtonMotionMask|EnterWindowMask|LeaveWindowMask|
+	attrs.border_pixel			= d->colors.border;
+	attrs.background_pixmap	= ParentRelative;
+	attrs.background_pixel	= d->colors.norm;
+	attrs.event_mask				= ButtonPressMask|ButtonMotionMask|EnterWindowMask|LeaveWindowMask|
 		ExposureMask|VisibilityChangeMask|SubstructureRedirectMask|SubstructureNotifyMask;
 
 	/* Create windows */
-	mask			= CWOverrideRedirect|CWBackPixmap|CWEventMask;
+	mask			= CWBackPixmap|CWEventMask;
 	w->frame	= SUBWINNEW(DefaultRootWindow(d->dpy), 0, 0, w->width, w->height, 0);
-	mask			= CWOverrideRedirect|CWBackPixel;
+	mask			= CWBackPixel;
 	w->title	= SUBWINNEW(w->frame, 0, 0, w->width, d->th, 0);
-	mask 			= CWOverrideRedirect|CWBorderPixel|CWBackPixel;
+	mask 			= CWBorderPixel|CWBackPixel;
 	w->icon		= SUBWINNEW(w->frame, 2, 2, d->th - 6, d->th - 6, 1);
 	
 	/* Create borders */
 	mask					|= CWCursor;
-	attrs.cursor	= d->cursors.left;
+	attrs.cursor	= d->cursors.horz;
 	w->left				= SUBWINNEW(w->frame, 0, d->th, d->bw, w->height - d->th, 0);
-	attrs.cursor	= d->cursors.right;
 	w->right			= SUBWINNEW(w->frame, w->width - d->bw, d->th, d->bw, w->height - d->th, 0);
-	attrs.cursor	= d->cursors.bottom;
+	attrs.cursor	= d->cursors.vert;
 	w->bottom			= SUBWINNEW(w->frame, 0, w->height - d->bw, w->width, d->bw, 0);
 	
 	if(!win)
 		{
-			mask = CWOverrideRedirect|CWBackPixmap;
-			w->win = SUBWINNEW(w->frame, d->bw, d->th, SUBWINWIDTH(w), SUBWINHEIGHT(w), 0);
+			mask		= CWBackPixmap;
+			w->win	= SUBWINNEW(w->frame, d->bw, d->th, SUBWINWIDTH(w), SUBWINHEIGHT(w), 0);
 		}
 	else
 		{
@@ -74,7 +71,7 @@ subWinNew(Window win)
 }
 
  /**
-	* Delete a window.
+	* Delete a window 
 	* @param w A #SubWin
 	**/
 
@@ -85,17 +82,19 @@ subWinDelete(SubWin *w)
 		{
 			SubWin *p = w->parent;
 
+			if(d->focus == w && p) d->focus = p;
+
 			XDeleteContext(d->dpy, w->frame, 1);
 			XDestroySubwindows(d->dpy, w->frame);
 			XDestroyWindow(d->dpy, w->frame);
 
-			if(w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV)) subTileConfigure(p);
+			if(w->flags & SUB_WIN_TYPE_TILE) subTileConfigure(p);
 			free(w);
 		}
 }
 
  /**
-	* Render a window.
+	* Render a window 
 	* @param mode Render mode
 	* @param w A #SubWin
 	**/
@@ -107,7 +106,7 @@ subWinRender(short mode,
 	if(w)
 		{
 			char c = 's';
-			unsigned long col = mode ? (w->prop & SUB_WIN_COLLAPSE ? d->colors.cover : d->colors.norm) : d->colors.focus;
+			unsigned long col = mode ? (w->flags & SUB_WIN_OPT_COLLAPSE ? d->colors.cover : d->colors.norm) : d->colors.focus;
 
 			/* Update color */
 			XSetWindowBackground(d->dpy, w->title,	col);
@@ -127,46 +126,46 @@ subWinRender(short mode,
 			XFillRectangle(d->dpy, w->title, d->gcs.border, d->th + 1, 2, w->width - d->th - 4, d->th - 4);	
 
 			/* Icons */
-			if(w->prop & SUB_WIN_RAISE)					c = 'r';
-			else if(w->prop & SUB_WIN_COLLAPSE)	c = 'c';
-			else if(w->prop & SUB_WIN_PILE)			c = 'p';
-			else if(w->prop & SUB_WIN_WEIGHT)		c = 'w';
+			XSetWindowBorder(d->dpy, w->icon, d->colors.border);
+			if(w->flags & SUB_WIN_OPT_RAISE)					c = 'r';
+			else if(w->flags & SUB_WIN_OPT_COLLAPSE)	c = 'c';
+			else if(w->flags & SUB_WIN_OPT_PILE)			c = 'p';
+			else if(w->flags & SUB_WIN_OPT_WEIGHT)		c = 'w';
 	
 			XDrawString(d->dpy, w->icon, d->gcs.font, (d->th - 8 - d->fx) / 2 + 1, d->fy - 5, &c, 1);
 	}
 }
 
-static void
-DrawOutline(short mode,
-	SubWin *w,	// Window
-	int *bx,		// Base x position
-	int *by,		// Base y position
-	int *bw,		// Base width 
-	int *bh,		// Base height
-	int ix,			// Init x position on root window
-	int iy,			// Init y position on root window
-	int rx,			// X position on root window
-	int ry,			// Y position on root window
-	int sx,			// Start x position of the dragged window
-	int sy)			// Start y position of the dragged window
+void
+DrawMask(short type,
+	SubWin *w,
+	XRectangle *box)
 {
-	*bx = sx;
-	*by = sy;
-
-	/* XTranslateCoordinates() does not work with too many parent windows */
-	switch(mode)
+	if(w)
 		{
-			case SUB_WIN_DRAG_LEFT: 	*bx = sx - (ix - rx);					*bw = w->width + (ix - rx);	break;
-			case SUB_WIN_DRAG_RIGHT:	*bw = w->width + (rx - ix);																break;
-			case SUB_WIN_DRAG_BOTTOM: *bh = w->height + (ry - iy);															break;
-			case SUB_WIN_DRAG_MOVE:		*bx = sx - (ix - rx);					*by = sy - (iy - ry);				break; 
+			switch(type)
+				{
+					case SUB_WIN_DRAG_STATE_START: 
+						XDrawRectangle(d->dpy, DefaultRootWindow(d->dpy), d->gcs.invert, box->x + 1, box->y + 1, 
+							box->width - 3, (w->flags & SUB_WIN_OPT_COLLAPSE) ? d->th - 3 : box->height - 3);
+						break;
+					case SUB_WIN_DRAG_STATE_APPEND:
+						XDrawRectangle(d->dpy, w->frame, d->gcs.invert, 3, d->th + 1, SUBWINWIDTH(w) - 3, SUBWINHEIGHT(w) - 4);
+						XDrawLine(d->dpy, w->frame, d->gcs.invert, 3, d->th + SUBWINHEIGHT(w) - 3, SUBWINWIDTH(w) - 3, d->th + 3);
+						break;
+					case SUB_WIN_DRAG_STATE_BELOW:
+						XDrawLine(d->dpy, w->frame, d->gcs.invert, 0, w->height - 3, w->width, w->height - 3);
+						break;
+					case SUB_WIN_DRAG_STATE_SWAP:
+						XDrawRectangle(d->dpy, w->frame, d->gcs.invert, 1, 1, w->width - 3, w->height - 3);
+						XDrawLine(d->dpy, w->frame, d->gcs.invert, 3, w->height - 3, w->width - 3, 3);
+						break;
+				}
 		}
-	XDrawRectangle(d->dpy, DefaultRootWindow(d->dpy), d->gcs.invert, *bx, *by, 
-		*bw - 2, (w->prop & SUB_WIN_COLLAPSE) ? d->th - 2 : *bh - 2);
 }
 
  /**
-	* Movie/resize the window.
+	* Movie/resize the window 
 	* @param mode Attach mode
 	* @param w A #SubWin
 	* @param bev A #XButtonEvent
@@ -174,29 +173,32 @@ DrawOutline(short mode,
 
 void
 subWinDrag(short mode,
-	SubWin *w,
-	XButtonEvent *bev)
+	SubWin *w)
 {
 	XEvent ev;
 	Cursor cursor;
 	Window win;
-	SubWin *w2 = NULL, *p = NULL, *p2 = NULL;
-	int bx = w->x, by = w->y, bw = w->width, bh = w->height, ix = 0, iy = 0, rx = 0, ry = 0, sx = 0, sy = 0;
+	SubWin *w2 = NULL, *p = NULL, *p2 = NULL, *last_w = NULL;
+
+	short state = SUB_WIN_DRAG_STATE_START, last_state = SUB_WIN_DRAG_STATE_START;
+
+	XRectangle box = { w->x, w->y, w->width, w->height };
+
 	unsigned int mask;
+	int wx = 0, wy = 0, rx = 0, ry = 0;
 
 	/* Get window position on root window */
-	XQueryPointer(d->dpy, DefaultRootWindow(d->dpy), &win, &win, &rx, &ry, &sx, &sy, &mask);
-	ix = rx;
-	iy = ry;
-	sx = rx - bev->x;
-	sy = ry - bev->y;
+	XQueryPointer(d->dpy, w->frame, &win, &win, &rx, &ry, &wx, &wy, &mask);
+
+	box.x = rx - wx;
+	box.y = ry - wy;
 
 	/* Select cursor */
 	switch(mode)
 		{
-			case SUB_WIN_DRAG_LEFT:		cursor = d->cursors.left;		break;
-			case SUB_WIN_DRAG_RIGHT:	cursor = d->cursors.right;	break;
-			case SUB_WIN_DRAG_BOTTOM:	cursor = d->cursors.bottom;	break;
+			case SUB_WIN_DRAG_LEFT:		
+			case SUB_WIN_DRAG_RIGHT:	cursor = d->cursors.horz;		break;
+			case SUB_WIN_DRAG_BOTTOM:	cursor = d->cursors.vert;		break;
 			case SUB_WIN_DRAG_MOVE:		cursor = d->cursors.move;		break;
 			default:									cursor = d->cursors.square;	break;
 		}
@@ -205,7 +207,8 @@ subWinDrag(short mode,
 		cursor, CurrentTime)) return;
 
 	XGrabServer(d->dpy);
-	if(mode <= SUB_WIN_DRAG_MOVE) DrawOutline(mode, w, &bx, &by, &bw, &bh, ix, iy, rx, ry, sx, sy);
+	if(mode <= SUB_WIN_DRAG_MOVE) DrawMask(SUB_WIN_DRAG_STATE_START, w, &box);
+
 	for(;;)
 		{
 			XMaskEvent(d->dpy, PointerMotionMask|ButtonReleaseMask|EnterWindowMask, &ev);
@@ -214,20 +217,71 @@ subWinDrag(short mode,
 					/* Button release doesn't return our destination window */
 					case EnterNotify: win = ev.xcrossing.window; break;
 					case MotionNotify:
-						if(mode <= SUB_WIN_DRAG_MOVE) DrawOutline(mode, w, &bx, &by, &bw, &bh, ix, iy, rx, ry, sx, sy);
-						rx = ev.xmotion.x_root;
-						ry = ev.xmotion.y_root;
-						if(mode <= SUB_WIN_DRAG_MOVE) DrawOutline(mode, w, &bx, &by, &bw, &bh, ix, iy, rx, ry, sx, sy);
+						if(mode <= SUB_WIN_DRAG_MOVE) 
+							{
+								DrawMask(SUB_WIN_DRAG_STATE_START, w, &box);
+					
+								/* Calculate dimensions of the selection box */
+								switch(mode)
+									{
+										case SUB_WIN_DRAG_LEFT: 	
+											box.x			= (rx - wx) - (rx - ev.xmotion.x_root);	
+											box.width = w->width + ((rx - wx ) - ev.xmotion.x_root);	
+											break;
+										case SUB_WIN_DRAG_RIGHT:	box.width		= w->width + (ev.xmotion.x_root - rx);	break;
+										case SUB_WIN_DRAG_BOTTOM: box.height	= w->height + (ev.xmotion.y_root - ry);	break;
+										case SUB_WIN_DRAG_MOVE:
+											box.x	= (rx - wx) - (rx - ev.xmotion.x_root);
+											box.y	= (ry - wy) - (ry - ev.xmotion.y_root);
+											break;
+									}	
+								DrawMask(SUB_WIN_DRAG_STATE_START, w, &box);
+							}
+						else if(mode == SUB_WIN_DRAG_SWAP)
+							{
+								/* Exclude own window to reduce pointless redraws */
+								if(win != w->frame)
+									{
+										if(!w2 || w2->frame != win) w2 = subWinFind(win);
+										if(w2)
+											{
+												if(state != SUB_WIN_DRAG_STATE_BELOW && ev.xmotion.y >= w2->height - d->th)
+													{
+														state = SUB_WIN_DRAG_STATE_BELOW;
+														printf("state=below\n");
+													}
+												else if(state != SUB_WIN_DRAG_STATE_APPEND && w2->flags & SUB_WIN_TYPE_TILE && ev.xmotion.y >= d->th)
+													{
+														state = SUB_WIN_DRAG_STATE_APPEND;
+														printf("state=append\n");
+													}
+												else if(state != SUB_WIN_DRAG_STATE_SWAP && (w2->flags & SUB_WIN_TYPE_CLIENT || ev.xmotion.y <= d->th))
+													{
+														state = SUB_WIN_DRAG_STATE_SWAP;
+														printf("state=swap\n");
+													}
+
+												if(last_state != state) 
+													{
+														if(last_state != SUB_WIN_DRAG_STATE_START) DrawMask(last_state, last_w, &box);
+														DrawMask(state, w2, &box);
+
+														last_w		 = w2;
+														last_state = state;
+													}
+											}
+									}
+								}
 						break;
 					case ButtonRelease:
 						if(win != w->frame && mode > SUB_WIN_DRAG_MOVE)
 							{
-								w2 = subWinFind(win);
+								//w2 = subWinFind(win);
 						
 								if(w && w2 && w->parent && w2->parent)
 									{
 										/* Append a window to tile */
-										if(w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV) && mode == SUB_WIN_DRAG_ICON)
+										if(w2->flags & SUB_WIN_TYPE_TILE && state == SUB_WIN_DRAG_STATE_APPEND)
 											{
 												SubWin *p = w->parent;
 		
@@ -236,7 +290,7 @@ subWinDrag(short mode,
 												subTileConfigure(p);
 											}
 										/* Swap two windows manually */
-										else
+										else if(state == SUB_WIN_DRAG_STATE_SWAP)
 											{
 												Window swap;
 												SubTile *tile = NULL;
@@ -246,16 +300,16 @@ subWinDrag(short mode,
 												XReparentWindow(d->dpy, w2->win, w->frame, d->bw, d->th);
 
 												/* Swap titlebar fields */
-												if(w->prop & SUB_WIN_CLIENT && w2->prop & SUB_WIN_CLIENT)
+												if(w->flags & SUB_WIN_TYPE_CLIENT && w2->flags & SUB_WIN_TYPE_CLIENT)
 													{
 														XReparentWindow(d->dpy, w->client->caption, w2->frame, d->th, 0); 
 														XReparentWindow(d->dpy, w2->client->caption, w->frame, d->th, 0); 
 
 														client = w->client; w->client = w2->client; w2->client = client;
 													}
-												else if(!(w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV) && w2->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV)))
+												else if(!(w->flags & SUB_WIN_TYPE_TILE && w2->flags & SUB_WIN_TYPE_TILE))
 													{
-														if(w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV) && w2->prop & SUB_WIN_CLIENT)
+														if(w->flags & SUB_WIN_TYPE_TILE && w2->flags & SUB_WIN_TYPE_CLIENT)
 															{
 																XReparentWindow(d->dpy, w->tile->btnew, w2->frame, d->th, 0);
 																XReparentWindow(d->dpy, w->tile->btdel, w2->frame, d->th + 7 * d->fx, 0);
@@ -274,57 +328,60 @@ subWinDrag(short mode,
 														w2->tile	= tile; 		w2->client	= client;
 													}
 
-												swap = w->win;	w->win	= w2->win;	w2->win		= swap; 
-												swap = w->prop;	w->prop	= w2->prop;	w2->prop	= swap;
+												swap = w->win;		w->win		= w2->win;		w2->win		= swap; 
+												swap = w->flags;	w->flags	= w2->flags;	w2->flags	= swap;
 
-												if(w->prop & SUB_WIN_RAISE)
+												/* Swap some special flags */
+												if(w->flags & SUB_WIN_OPT_RAISE)
 													{ 
-														w->prop		&= ~SUB_WIN_RAISE;
-														w2->prop	|= SUB_WIN_RAISE;
+														w->flags		&= ~SUB_WIN_OPT_RAISE;
+														w2->flags	|= SUB_WIN_OPT_RAISE;
 
 														subWinResize(w2); 
-														if(w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV)) subTileConfigure(w2);
+														if(w->flags & SUB_WIN_TYPE_TILE) subTileConfigure(w2);
 													}
-												else if(w2->prop & SUB_WIN_RAISE)
+												else if(w2->flags & SUB_WIN_OPT_RAISE)
 													{
-														w2->prop	&= ~SUB_WIN_RAISE;
-														w->prop		|= SUB_WIN_RAISE;
+														w2->flags	&= ~SUB_WIN_OPT_RAISE;
+														w->flags		|= SUB_WIN_OPT_RAISE;
 
 														subWinResize(w); 
-														if(w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV)) subTileConfigure(w);
+														if(w->flags & SUB_WIN_TYPE_TILE) subTileConfigure(w);
 													}
 
-												/* Configure only the non-raised tile to save configure cycles */
-												if(!(w->prop & SUB_WIN_RAISE)) subTileConfigure(w->parent);
-												if(!(w2->prop & SUB_WIN_RAISE)) subTileConfigure(w2->parent);
+												/* Configure only the non-raised tiles to save configure cycles */
+												if(!(w->flags & SUB_WIN_OPT_RAISE)) subTileConfigure(w->parent);
+												if(!(w2->flags & SUB_WIN_OPT_RAISE)) subTileConfigure(w2->parent);
 
-												subLogDebug("Swap: %#lx (%#lx) <=> %#lx (%#lx)\n", w->win, w->frame, w2->win, w2->frame);
+												subLogDebug("Swap: %#lx (%#lx) <=> %#lx (%#lx)\n", 
+													w->win, w->frame, w2->win, w2->frame);
 											}
 									}
 								}
 						else /* Resize */
 							{
-								DrawOutline(mode, w, &bx, &by, &bw, &bh, ix, iy, rx, ry, sx, sy);
-
-								if(w->prop & SUB_WIN_RAISE) 
+								XDrawRectangle(d->dpy, DefaultRootWindow(d->dpy), d->gcs.invert, box.x + 1, box.y + 1, 
+									box.width - 3, (w->flags & SUB_WIN_OPT_COLLAPSE) ? d->th - 3 : box.height - 3);
+					
+								if(w->flags & SUB_WIN_OPT_RAISE) 
 									{
-										w->x			= bx;
-										w->y			= by;
-										w->width	= bw;
-										w->height	= bh;
+										w->x			= box.x;
+										w->y			= box.y;
+										w->width	= box.width;
+										w->height	= box.height;
 
 										subWinResize(w);
-										if(w->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV)) subTileConfigure(w);
+										if(w->flags & SUB_WIN_TYPE_TILE) subTileConfigure(w);
 									}
-								else if(w->parent && w->parent->prop & (SUB_WIN_TILEH|SUB_WIN_TILEV) && mode <= SUB_WIN_DRAG_BOTTOM)
+								else if(w->parent && w->parent->flags & SUB_WIN_TYPE_TILE && mode <= SUB_WIN_DRAG_BOTTOM)
 									{
-										if(!(w->prop & SUB_WIN_WEIGHT)) w->prop |= SUB_WIN_WEIGHT;
+										if(!(w->flags & SUB_WIN_OPT_WEIGHT)) w->flags |= SUB_WIN_OPT_WEIGHT;
 
 										/* Adjust window weight */
-										if(w->parent->prop & SUB_WIN_TILEH && mode == SUB_WIN_DRAG_LEFT || mode == SUB_WIN_DRAG_RIGHT)
-											w->weight = bw * 100 / SUBWINWIDTH(w->parent);
-										else if(w->parent->prop & SUB_WIN_TILEV && mode == SUB_WIN_DRAG_BOTTOM)
-											w->weight = bh * 100 / SUBWINHEIGHT(w->parent); 
+										if(w->parent->flags & SUB_WIN_TYPE_TILE && mode == SUB_WIN_DRAG_LEFT || mode == SUB_WIN_DRAG_RIGHT)
+											w->weight = box.width * 100 / SUBWINWIDTH(w->parent);
+										else if(w->parent->flags & SUB_WIN_TYPE_TILE && mode == SUB_WIN_DRAG_BOTTOM)
+											w->weight = box.height * 100 / SUBWINHEIGHT(w->parent); 
 										if(w->weight >= 80) w->weight = 80;
 
 										subTileConfigure(w->parent);
@@ -339,7 +396,7 @@ subWinDrag(short mode,
 }
 
  /**
-	* Toggle states of a window.
+	* Toggle states of a window 
 	* @param w A #SubWin
 	**/
 
@@ -352,15 +409,15 @@ subWinToggle(short type,
 			XEvent event;
 			XGrabServer(d->dpy);
 
-			if(w->prop & type)
+			if(w->flags & type)
 				{
-					w->prop &= ~type;
+					w->flags &= ~type;
 
 					switch(type)
 						{
-							case SUB_WIN_COLLAPSE:
+							case SUB_WIN_OPT_COLLAPSE:
 								/* Set state */
-								if(w->prop & SUB_WIN_CLIENT) subClientSetWMState(w, NormalState);
+								if(w->flags & SUB_WIN_TYPE_CLIENT) subClientSetWMState(w, NormalState);
 
 								/* Map most of the windows */
 								XMapWindow(d->dpy, w->win);
@@ -371,21 +428,21 @@ subWinToggle(short type,
 								/* Resize frame */
 								XMoveResizeWindow(d->dpy, w->frame, w->x, w->y, w->width, w->height);
 								break;
-							case SUB_WIN_RAISE: XReparentWindow(d->dpy, w->frame, w->parent->win, w->x, w->y);	break;
-							case SUB_WIN_WEIGHT:
+							case SUB_WIN_OPT_RAISE: XReparentWindow(d->dpy, w->frame, w->parent->win, w->x, w->y);	break;
+							case SUB_WIN_OPT_WEIGHT:
 								w->weight = 0;
 								if(w->parent) subTileConfigure(w->parent);
 						}
 				}
 			else 
 				{
-					w->prop	|= type;
+					w->flags |= type;
 
 					switch(type)
 						{
-							case SUB_WIN_COLLAPSE:
+							case SUB_WIN_OPT_COLLAPSE:
 								/* Set state */
-								if(w->prop & SUB_WIN_CLIENT) subClientSetWMState(w, WithdrawnState);
+								if(w->flags & SUB_WIN_TYPE_CLIENT) subClientSetWMState(w, WithdrawnState);
 
 								/* Unmap most of the windows */
 								XUnmapWindow(d->dpy, w->win);
@@ -396,9 +453,9 @@ subWinToggle(short type,
 								/* Resize frame */
 								XMoveResizeWindow(d->dpy, w->frame, w->x, w->y, w->width, d->th);
 								break;
-							case SUB_WIN_RAISE:
+							case SUB_WIN_OPT_RAISE:
 								/* Respect the user/program preferences */
-								if(w->prop & SUB_WIN_CLIENT)
+								if(w->flags & SUB_WIN_TYPE_CLIENT)
 									{
 										XSizeHints *hints = NULL;
 										long supplied;
@@ -449,7 +506,7 @@ subWinToggle(short type,
 }
 
  /**
-	* Change the stacking order of the windows.
+	* Change the stacking order of the windows 
 	* @param w A #SubWin
 	**/
 
@@ -465,7 +522,7 @@ subWinRestack(SubWin *w)
 }
 
  /**
-	* Resize the client window.
+	* Resize the client window 
 	* @param w A #SubWin
 	**/
 
@@ -474,21 +531,22 @@ subWinResize(SubWin *w)
 {
 	if(w)
 		{
-			XMoveResizeWindow(d->dpy, w->frame, w->x, w->y, w->width, (w->prop & SUB_WIN_COLLAPSE) ? d->th : w->height);
+			XMoveResizeWindow(d->dpy, w->frame, w->x, w->y, w->width, 
+				(w->flags & SUB_WIN_OPT_COLLAPSE) ? d->th : w->height);
 			XMoveResizeWindow(d->dpy, w->title, 0, 0, w->width, d->th);
 
-			if(!(w->prop & SUB_WIN_COLLAPSE))
+			if(!(w->flags & SUB_WIN_OPT_COLLAPSE))
 				{
 					XMoveResizeWindow(d->dpy, w->win, d->bw, d->th, w->width - 2 * d->bw, w->height - d->th - d->bw);
 					XMoveResizeWindow(d->dpy, w->right, w->width - d->bw, d->th, d->bw, w->height - d->th);
 					XMoveResizeWindow(d->dpy, w->bottom, 0, w->height - d->bw, w->width, d->bw);
-					if(w->prop & SUB_WIN_CLIENT) subClientSendConfigure(w);
+					if(w->flags & SUB_WIN_TYPE_CLIENT) subClientSendConfigure(w);
 				}
 		}
 }
 
  /**
-	* Map a window to the screen.
+	* Map a window to the screen 
 	* @param w A #SubWin
 	**/
 
@@ -503,7 +561,7 @@ subWinMap(SubWin *w)
 }
 
  /**
-	* Unmap a window.
+	* Unmap a window 
 	* @param w A #SubWin
 	**/
 
@@ -514,7 +572,7 @@ subWinUnmap(SubWin *w)
 }
 
  /**
-	* Lower a window.
+	* Lower a window 
 	* @param w A #SubWin
 	**/
 
@@ -529,8 +587,8 @@ subWinLower(SubWin *w)
 }
 
  /**
-	* Raise a window
-	* @param w A #SubWin.
+	* Raise a window 
+	* @param w A #SubWin
 	**/
 
 void
