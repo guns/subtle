@@ -94,6 +94,7 @@ void subWinResize(SubWin *w);													// Resize a window
 void subWinRender(short mode, SubWin *w);							// Render a window
 void subWinRestack(SubWin *w);												// Restack a window
 void subWinMap(SubWin *w);														// Map a window
+void subWinUnmap(SubWin *w);													// Unmap a window
 void subWinRaise(SubWin *w);													// Raise a window
 
 /* tile.c */
@@ -164,7 +165,7 @@ void subSubletKill(void);															// Delete all sublets
 
 typedef struct subscreen
 {
-	int width;																					// Screen button width
+	int id, width;																			// Screen id, button width
 	char *name;																					// Screen names
 	SubWin *w;																					// Root windows
 	Window button;																			// Virtual screen buttons
