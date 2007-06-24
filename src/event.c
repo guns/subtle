@@ -38,10 +38,10 @@ HandleButtonPress(XButtonEvent *ev)
 {
 	static Time last_time = 0;
 
-	if(ev->window == d->bar.win)
+	if(ev->window == d->bar.screens)
 		{
 			SubScreen *s = subScreenFind(ev->subwindow);
-			if(s) printf("screen=%s\n", s->name);
+			if(s) subScreenSetActive(s->id);
 
 			return;
 		}
