@@ -15,7 +15,7 @@ subScreenFind(Window win)
 	int i;
 
 	for(i = 0; i < size; i++)
-		if(screens[i]->button) return(screens[i]);
+		if(screens[i]->button == win) return(screens[i]);
 	return(NULL);
 }
 
@@ -31,7 +31,7 @@ subScreenInit(void)
 	d->bar.screens	= XCreateSimpleWindow(d->dpy, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
 	d->bar.sublets	= XCreateSimpleWindow(d->dpy, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
 
-	XSelectInput(d->dpy, d->bar.win, ButtonPressMask); 
+	XSelectInput(d->dpy, d->bar.screens, ButtonPressMask); 
 
 	XMapWindow(d->dpy, d->bar.screens);
 	XMapWindow(d->dpy, d->bar.sublets);
@@ -59,9 +59,9 @@ subScreenNew(void)
 
 	s->w				= subTileNew(SUB_WIN_TILE_HORZ);
 	s->w->flags |= SUB_WIN_TYPE_SCREEN;
+	s->id				= size;
 	s->width		= strlen(s->name) * d->fx + 2;
-	s->button		= XCreateSimpleWindow(d->dpy, d->bar.screens, 0, 0, 1, d->th - 6, 1, 
-		d->colors.border, d->colors.norm);
+	s->button		= XCreateSimpleWindow(d->dpy, d->bar.screens, 0, 0, 1, d->th - 6, 1, d->colors.border, d->colors.norm);
 
 	screens = (SubScreen **)realloc(screens, sizeof(SubScreen *) * (size + 1));
 	if(!screens) subLogError("Can't alloc memory. Exhausted?\n");
@@ -286,25 +286,34 @@ subScreenGetActive(void)
 void
 subScreenSetActive(int pos)
 {
-	int screen = pos;
+	int next;
 
-	/* Switch through screens */
-	if(pos == SUB_SCREEN_NEXT) screen = active + 1;
-	else if(pos == SUB_SCREEN_PREV && active > 0) screen = active - 1;
-	else return;
+	/* Switch to screens */
+	if(pos == active) return;
+	else if(pos == SUB_SCREEN_NEXT) next = active + 1;
+	else if(pos == SUB_SCREEN_PREV && active > 0) next = active - 1;
+	else if(pos >= 0 && pos < size) next = pos;
 
-	if(screen > size - 1)
+	if(next > size - 1)
 		{
 			subScreenNew();
 			return;
 		}
 
 	subWinUnmap(screens[active]->w);
-	active = screen;
+	active = next;
+
 	XMapRaised(d->dpy, d->bar.win);
 	XMapRaised(d->dpy, screens[active]->button);
 	subWinMap(screens[active]->w);
 	XSetInputFocus(d->dpy, screens[active]->w->win, RevertToNone, CurrentTime);	
 
-	printf("Switchting to screen (%d)\n", active);
+	if(d->focus->flags & SUB_WIN_TYPE_SCREEN)
+		{
+			d->focus = screens[active]->w;
+			subScreenRender(0, screens[active]->w);
+			subTileRender(0, screens[active]->w);
+		}
+
+	printf("Switching to screen (%s)\n", screens[active]->name);
 }
