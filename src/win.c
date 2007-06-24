@@ -88,7 +88,7 @@ subWinDelete(SubWin *w)
 			XDestroySubwindows(d->dpy, w->frame);
 			XDestroyWindow(d->dpy, w->frame);
 
-			if(w->flags & SUB_WIN_TYPE_TILE) subTileConfigure(p);
+			if(p && p->flags & SUB_WIN_TYPE_TILE) subTileConfigure(p);
 			free(w);
 		}
 }
@@ -125,7 +125,7 @@ subWinRender(short mode,
 			/* Titlebar */
 			XFillRectangle(d->dpy, w->title, d->gcs.border, d->th + 1, 2, w->width - d->th - 4, d->th - 4);	
 
-			/* Icons */
+			/* Icon */
 			XSetWindowBorder(d->dpy, w->icon, d->colors.border);
 			if(w->flags & SUB_WIN_OPT_RAISE)					c = 'r';
 			else if(w->flags & SUB_WIN_OPT_COLLAPSE)	c = 'c';
@@ -150,8 +150,10 @@ DrawMask(short type,
 							box->width - 3, (w->flags & SUB_WIN_OPT_COLLAPSE) ? d->th - 3 : box->height - 3);
 						break;
 					case SUB_WIN_DRAG_STATE_APPEND:
-						XDrawRectangle(d->dpy, w->frame, d->gcs.invert, 3, d->th + 1, SUBWINWIDTH(w) - 3, SUBWINHEIGHT(w) - 4);
-						XDrawLine(d->dpy, w->frame, d->gcs.invert, 3, d->th + SUBWINHEIGHT(w) - 3, SUBWINWIDTH(w) - 3, d->th + 3);
+						XDrawRectangle(d->dpy, w->frame, d->gcs.invert, d->bw + 1, d->th + 1, 
+							SUBWINWIDTH(w) - 3, SUBWINHEIGHT(w) - 3);
+						XDrawLine(d->dpy, w->frame, d->gcs.invert, d->bw + 3, d->th + SUBWINHEIGHT(w) - 3, 
+							SUBWINWIDTH(w) - 3, d->th + 3);
 						break;
 					case SUB_WIN_DRAG_STATE_BELOW:
 						XDrawLine(d->dpy, w->frame, d->gcs.invert, 0, w->height - 3, w->width, w->height - 3);
@@ -250,18 +252,21 @@ subWinDrag(short mode,
 														state = SUB_WIN_DRAG_STATE_BELOW;
 														printf("state=below\n");
 													}
-												else if(state != SUB_WIN_DRAG_STATE_APPEND && w2->flags & SUB_WIN_TYPE_TILE && ev.xmotion.y >= d->th)
+												else if(state != SUB_WIN_DRAG_STATE_APPEND && w2->flags & SUB_WIN_TYPE_TILE && 
+													ev.xmotion.y >= d->th && ev.xmotion.y <= w2->height - d->th)
 													{
 														state = SUB_WIN_DRAG_STATE_APPEND;
 														printf("state=append\n");
 													}
-												else if(state != SUB_WIN_DRAG_STATE_SWAP && (w2->flags & SUB_WIN_TYPE_CLIENT || ev.xmotion.y <= d->th))
+												else if(state != SUB_WIN_DRAG_STATE_SWAP && 
+													((w2->flags & SUB_WIN_TYPE_CLIENT && ev.xmotion.y > w2->height - d->th) ||
+													(w2->flags & SUB_WIN_TYPE_TILE && ev.xmotion.y <= d->th)))
 													{
 														state = SUB_WIN_DRAG_STATE_SWAP;
 														printf("state=swap\n");
 													}
 
-												if(last_state != state) 
+												if(last_state != state || last_w != w2) 
 													{
 														if(last_state != SUB_WIN_DRAG_STATE_START) DrawMask(last_state, last_w, &box);
 														DrawMask(state, w2, &box);
