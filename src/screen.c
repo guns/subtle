@@ -125,6 +125,8 @@ subScreenDelete(SubWin *w)
 	for(i = 0; i < size; i++) 	
 		if(screens[i]->w == w)
 			{
+				printf("Removing screen (%s)\n", screens[i]->name);
+
 				XSetInputFocus(d->dpy, None, RevertToNone, CurrentTime);
 				XUnmapWindow(d->dpy, screens[i]->button);
 				XDestroyWindow(d->dpy, screens[i]->button);
@@ -132,7 +134,7 @@ subScreenDelete(SubWin *w)
 				free(screens[i]->name);
 				free(screens[i]);
 
-				for(j = i; j < size; j++, i++) screens[i] = screens[j];
+				for(j = i + 1; j < size; j++, i++) screens[i] = screens[j];
 			}
 
 	screens = (SubScreen **)realloc(screens, sizeof(SubScreen *) * size);
@@ -141,8 +143,8 @@ subScreenDelete(SubWin *w)
 	size--;
 	if(size == 0) raise(SIGTERM);
 
-	active = size - 1;
 	subWinMap(screens[active]->w);
+	printf("Switching to screen (%s)\n", screens[active]->name);
 
 	subScreenConfigure();
 
