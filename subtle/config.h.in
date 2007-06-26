@@ -3,7 +3,7 @@
 /* Define to 1 if the `closedir' function returns void instead of `int'. */
 #undef CLOSEDIR_VOID
 
-/* Directory fot config files */
+/* Directory for config files */
 #undef CONFIG_DIR
 
 /* Define to 1 if you want debugging support */

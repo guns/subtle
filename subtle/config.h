@@ -4,7 +4,7 @@
 /* Define to 1 if the `closedir' function returns void instead of `int'. */
 /* #undef CLOSEDIR_VOID */
 
-/* Directory fot config files */
+/* Directory for config files */
 #define CONFIG_DIR "/usr/local/etc/subtle"
 
 /* Define to 1 if you want debugging support */
@@ -112,13 +112,13 @@
 #define PACKAGE_NAME "subtle"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "subtle 0.6"
+#define PACKAGE_STRING "subtle 0.7b"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "subtle"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.6"
+#define PACKAGE_VERSION "0.7b"
 
 /* Define as the return type of signal handlers (`int' or `void'). */
 #define RETSIGTYPE void

@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.5.9)
-AC_INIT(subtle, 0.6, unexist@hilflos.org)
+AC_INIT(subtle, 0.7b, unexist@hilflos.org)
 AC_CONFIG_SRCDIR([src/main.c])
 AM_INIT_AUTOMAKE(no-define)
 AM_CONFIG_HEADER(config.h)
@@ -41,7 +41,7 @@ sublet_dir="$prefix/share/$PACKAGE_NAME"
 config_dir="$prefix/etc/$PACKAGE_NAME"
 
 AC_DEFINE_UNQUOTED(SCRIPT_DIR, "$sublet_dir", [Directory for sublets])
-AC_DEFINE_UNQUOTED(CONFIG_DIR, "$config_dir", [Directory fot config files])
+AC_DEFINE_UNQUOTED(CONFIG_DIR, "$config_dir", [Directory for config files])
 
 AC_SUBST(sublet_dir)
 AC_SUBST(config_dir)

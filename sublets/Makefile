@@ -90,23 +90,23 @@ LN_S = ln -s
 LTLIBOBJS = 
 LUA_CFLAGS =  
 LUA_LIBS = -llua -lm  
-MAINT = 
-MAINTAINER_MODE_FALSE = #
-MAINTAINER_MODE_TRUE = 
+MAINT = #
+MAINTAINER_MODE_FALSE = 
+MAINTAINER_MODE_TRUE = #
 MAKEINFO = ${SHELL} /home/unexist/projects/subtle/missing --run makeinfo
 OBJEXT = o
 PACKAGE = subtle
 PACKAGE_BUGREPORT = unexist@hilflos.org
 PACKAGE_NAME = subtle
-PACKAGE_STRING = subtle 0.6
+PACKAGE_STRING = subtle 0.7b
 PACKAGE_TARNAME = subtle
-PACKAGE_VERSION = 0.6
+PACKAGE_VERSION = 0.7b
 PATH_SEPARATOR = :
 PKG_CONFIG = /usr/bin/pkg-config
 SET_MAKE = 
 SHELL = /bin/sh
 STRIP = 
-VERSION = 0.6
+VERSION = 0.7b
 XMKMF = 
 X_CFLAGS = 
 X_EXTRA_LIBS = 
@@ -153,11 +153,15 @@ sublet_dir = /usr/local/share/subtle
 sysconfdir = ${prefix}/etc
 target_alias = 
 subletdir = /usr/local/share/subtle
-sublet_DATA = battery.lua clock.lua loadavg.lua
+sublet_DATA = battery.lua \
+	clock.lua \
+	loadavg.lua
+
+EXTRA_DIST = $(sublet_DATA)
 all: all-am
 
 .SUFFIXES:
-$(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
+$(srcdir)/Makefile.in: # $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
@@ -182,9 +186,9 @@ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 
-$(top_srcdir)/configure:  $(am__configure_deps)
+$(top_srcdir)/configure: # $(am__configure_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
-$(ACLOCAL_M4):  $(am__aclocal_m4_deps)
+$(ACLOCAL_M4): # $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 uninstall-info-am:
 install-subletDATA: $(sublet_DATA)

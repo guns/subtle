@@ -154,6 +154,7 @@ sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 configdir = @config_dir@
 config_DATA = config.lua
+EXTRA_DIST = $(config_DATA)
 all: all-am
 
 .SUFFIXES:

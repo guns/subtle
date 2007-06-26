@@ -153,7 +153,11 @@ sublet_dir = @sublet_dir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 subletdir = @sublet_dir@
-sublet_DATA = battery.lua clock.lua loadavg.lua
+sublet_DATA = battery.lua \
+	clock.lua \
+	loadavg.lua
+
+EXTRA_DIST = $(sublet_DATA)
 all: all-am
 
 .SUFFIXES:
