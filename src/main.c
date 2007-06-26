@@ -1,3 +1,23 @@
+
+ /**
+	* subtle - window manager
+	* Copyright (c) 2005-2007 Christoph Kappel
+	*
+	* This program is free software; you can redistribute it and/or modify
+	* it under the terms of the GNU General Public License as published by
+	* the Free Software Foundation; either version 2 of the License, or
+	* (at your option) any later version.
+	*
+	* This program is distributed in the hope that it will be useful,
+	* but WITHOUT ANY WARRANTY; without even the implied warranty of
+	* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	* GNU General Public License for more details.
+	*
+	* You should have received a copy of the GNU General Public License along
+	* with this program; if not, write to the Free Software Foundation, Inc.,
+	* 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+	**/
+
 #include <getopt.h>
 #include <lua.h>
 #include "subtle.h"
@@ -23,7 +43,7 @@ static void
 Version(void)
 {
 	printf("%s v%s - Copyright (c) 2005-2007 Christoph Kappel\n" \
-					"Released under the GNU Public License\n" \
+					"Released under the GNU General Public License\n" \
 					"Compiled for X%d and %s\n", PACKAGE_NAME, PACKAGE_VERSION,
 					X_PROTOCOL, LUA_VERSION);
 }

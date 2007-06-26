@@ -1,3 +1,23 @@
+
+ /**
+	* subtle - window manager
+	* Copyright (c) 2005-2007 Christoph Kappel
+	*
+	* This program is free software; you can redistribute it and/or modify
+	* it under the terms of the GNU General Public License as published by
+	* the Free Software Foundation; either version 2 of the License, or
+	* (at your option) any later version.
+	*
+	* This program is distributed in the hope that it will be useful,
+	* but WITHOUT ANY WARRANTY; without even the implied warranty of
+	* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	* GNU General Public License for more details.
+	*
+	* You should have received a copy of the GNU General Public License along
+	* with this program; if not, write to the Free Software Foundation, Inc.,
+	* 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+	**/
+
 #include "subtle.h"
 
  /**
@@ -250,20 +270,17 @@ subWinDrag(short mode,
 												if(state != SUB_WIN_DRAG_STATE_BELOW && ev.xmotion.y >= w2->height - d->th)
 													{
 														state = SUB_WIN_DRAG_STATE_BELOW;
-														printf("state=below\n");
 													}
 												else if(state != SUB_WIN_DRAG_STATE_APPEND && w2->flags & SUB_WIN_TYPE_TILE && 
 													ev.xmotion.y >= d->th && ev.xmotion.y <= w2->height - d->th)
 													{
 														state = SUB_WIN_DRAG_STATE_APPEND;
-														printf("state=append\n");
 													}
 												else if(state != SUB_WIN_DRAG_STATE_SWAP && 
-													((w2->flags & SUB_WIN_TYPE_CLIENT && ev.xmotion.y > w2->height - d->th) ||
+													((w2->flags & SUB_WIN_TYPE_CLIENT && ev.xmotion.y < w2->height - d->th) ||
 													(w2->flags & SUB_WIN_TYPE_TILE && ev.xmotion.y <= d->th)))
 													{
 														state = SUB_WIN_DRAG_STATE_SWAP;
-														printf("state=swap\n");
 													}
 
 												if(last_state != state || last_w != w2) 
@@ -293,6 +310,46 @@ subWinDrag(short mode,
 												subTileAdd(w2, w);
 												subTileConfigure(w2->parent);
 												subTileConfigure(p);
+											}
+										/* Append a window below */
+										else if(state == SUB_WIN_DRAG_STATE_BELOW)
+											{
+												unsigned int n, i, j, k;
+												Window nil, *wins = NULL;
+
+												XQueryTree(d->dpy, w2->parent->win, &nil, &nil, &wins, &n);	
+
+												/* Reverse array */
+												for(i = 0; i < n / 2; i++)
+													{
+														nil							= wins[i];
+														wins[i]					= wins[n - 1 - i];
+														wins[n - 1 - i]	= nil;
+													}
+
+												wins = (Window *)realloc(wins, (n + 2) * sizeof(Window));
+												wins[n + 1] = 0;
+
+												/* Loop backwards */
+												for(i = 0; i < n; i++)
+													{
+														if(wins[i] == w2->frame)
+															{
+																for(j = n + 1; j > i + 1; j--)
+																	{	
+																		wins[j] = wins[j - 1];
+																	}
+																wins[i] = w->frame;
+
+																XReparentWindow(d->dpy, w->frame, w2->parent->win, 0, 0);
+																XRestackWindows(d->dpy, wins, n + 1);
+																subTileConfigure(w->parent);
+																subTileConfigure(w2->parent);
+																break;
+															}
+													}						
+													
+												XFree(wins);
 											}
 										/* Swap two windows manually */
 										else if(state == SUB_WIN_DRAG_STATE_SWAP)
