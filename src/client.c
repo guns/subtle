@@ -31,9 +31,8 @@ subClientNew(Window win)
 		(strlen(w->client->name) + 1) * d->fx, d->th, 0, d->colors.border, d->colors.norm);
 
 	/* Hints */
-	hints = XAllocWMHints();
-	if(!hints) subLogError("Can't alloc memory. Exhausted?\n");
-	if(!(XGetWMHints(d->dpy, win)))
+	hints = XGetWMHints(d->dpy, win);
+	if(hints)
 		{
 			if(hints->flags & StateHint) subClientSetWMState(w, hints->initial_state);
 			else subClientSetWMState(w, NormalState);
@@ -42,11 +41,11 @@ subClientNew(Window win)
 			if(hints->flags & (XUrgencyHint|WindowGroupHint)) 
 				{
 					subWinToggle(SUB_WIN_OPT_RAISE, w);
-					printf("Transient: flags=%s%s\n", hints->flags & XUrgencyHint ? "u" : " ", 
-						hints->flags & WindowGroupHint ? "g" : " ");
+					printf("Transient: flags=%s%s\n", hints->flags & XUrgencyHint ? "u" : "", 
+						hints->flags & WindowGroupHint ? "g" : "");
 				}
+			XFree(hints);
 		}
-	XFree(hints);
 	
 	/* Protocols */
 	if(XGetWMProtocols(d->dpy, w->win, &protos, &n))
@@ -61,7 +60,7 @@ subClientNew(Window win)
 
 	subWinMap(w);
 
-	/* Check fpr dialog fensters etc. */
+	/* Check for dialog windows etc. */
 	XGetTransientForHint(d->dpy, win, &unnused);
 	if(unnused) subWinToggle(SUB_WIN_OPT_RAISE, w);
 
