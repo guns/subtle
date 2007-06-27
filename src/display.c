@@ -61,7 +61,7 @@ subDisplayNew(const char *display_string)
 	if((d = (SubDisplay *)calloc(1, sizeof(SubDisplay))))
 		{
 			d->dpy = XOpenDisplay(display_string);
-			if(!d->dpy) subLogError("Can't open display `%s'.\n", (display_string) ? display_string : ":0");
+			if(!d->dpy) subLogError("Can't open display `%s'.\n", (display_string) ? display_string : ":0.0");
 			XSetErrorHandler(HandleXError);
 		}
 	else subLogError("Can't alloc memory.\n");
@@ -104,17 +104,20 @@ subDisplayKill(void)
 {
 	if(d)
 		{
-		  XFreeCursor(d->dpy, d->cursors.square);
-			XFreeCursor(d->dpy, d->cursors.move);
-		  XFreeCursor(d->dpy, d->cursors.arrow);
-		  XFreeCursor(d->dpy, d->cursors.horz);
-		  XFreeCursor(d->dpy, d->cursors.vert);
-		  XFreeCursor(d->dpy, d->cursors.resize);
+			if(d->dpy)
+				{
+					XFreeCursor(d->dpy, d->cursors.square);
+					XFreeCursor(d->dpy, d->cursors.move);
+					XFreeCursor(d->dpy, d->cursors.arrow);
+					XFreeCursor(d->dpy, d->cursors.horz);
+					XFreeCursor(d->dpy, d->cursors.vert);
+					XFreeCursor(d->dpy, d->cursors.resize);
 
-			XFreeGC(d->dpy, d->gcs.border);
-			XFreeGC(d->dpy, d->gcs.font);
-			XFreeGC(d->dpy, d->gcs.invert);
-			if(d->xfs) XFreeFont(d->dpy, d->xfs);
+					XFreeGC(d->dpy, d->gcs.border);
+					XFreeGC(d->dpy, d->gcs.font);
+					XFreeGC(d->dpy, d->gcs.invert);
+					if(d->xfs) XFreeFont(d->dpy, d->xfs);
+				}
 			free(d);
 		}
 }
