@@ -282,7 +282,7 @@ HandleCrossing(XCrossingEvent *ev)
 			subEwmhSetWindow(DefaultRootWindow(d->dpy), SUB_EWMH_NET_ACTIVE_WINDOW, w->frame);
 
 			/* Grab key */
-			XGrabKey(d->dpy, AnyKey, AnyModifier, w->frame, True, GrabModeSync, GrabModeSync);
+			/*XGrabKey(d->dpy, AnyKey, AnyModifier, w->frame, True, GrabModeSync, GrabModeSync);*/
 
 			/* Focus */
 			if(w->flags & SUB_WIN_TYPE_CLIENT && !(w->flags & SUB_WIN_OPT_COLLAPSE))
@@ -369,8 +369,8 @@ int subEventLoop(void)
 					switch(ev.type)
 						{
 							case ButtonPress:				HandleButtonPress(&ev.xbutton);					break;
-							case KeyRelease:				
-							case KeyPress:					HandleKeyPress(&ev.xkey);								break;
+							/*case KeyRelease:				*/
+							/*case KeyPress:					HandleKeyPress(&ev.xkey);								break;*/
 							case ConfigureRequest:	HandleConfigure(&ev.xconfigurerequest);	break;
 							case MapRequest: 				HandleMap(&ev.xmaprequest); 						break;
 							case DestroyNotify: 		HandleDestroy(&ev.xdestroywindow);			break;
