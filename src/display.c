@@ -63,7 +63,7 @@ subDisplayNew(const char *display_string)
 			d->dpy = XOpenDisplay(display_string);
 			if(!d->dpy)
 				{
-					subLogError("Can't open display `%s'.\n", display_string);
+					subLogError("Can't open display `%s'.\n", (display_string) ? display_string : ":0");
 					return(0);
 				}
 			XSetErrorHandler(HandleXError);
