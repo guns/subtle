@@ -61,11 +61,7 @@ subDisplayNew(const char *display_string)
 	if((d = (SubDisplay *)calloc(1, sizeof(SubDisplay))))
 		{
 			d->dpy = XOpenDisplay(display_string);
-			if(!d->dpy)
-				{
-					subLogError("Can't open display `%s'.\n", (display_string) ? display_string : ":0");
-					return(0);
-				}
+			if(!d->dpy) subLogError("Can't open display `%s'.\n", (display_string) ? display_string : ":0");
 			XSetErrorHandler(HandleXError);
 		}
 	else subLogError("Can't alloc memory.\n");
