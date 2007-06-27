@@ -193,21 +193,27 @@ subTileConfigure(SubWin *w)
 							if(c && !(c->flags & (SUB_WIN_OPT_RAISE|SUB_WIN_OPT_TRANS)))
 								{
 									c->parent	= w;
-									c->x			= (w->flags & SUB_WIN_TILE_HORZ) ? x : 0;
-									c->y			= (w->flags & SUB_WIN_TILE_VERT) ? y : 0;
+									c->x			= (w->flags & SUB_WIN_TILE_HORZ && !(c->flags & SUB_WIN_OPT_COLLAPSE)) ? x : 0;
+									c->y = (w->flags & SUB_WIN_TILE_VERT) ? y : ((c->flags & SUB_WIN_OPT_COLLAPSE) ? y : collapsed * d->th);
 									c->width	= (w->flags & SUB_WIN_TILE_HORZ && c->flags & SUB_WIN_OPT_WEIGHT) ? 
-										SUBWINWIDTH(w) * c->weight / 100 : mw;
+										SUBWINWIDTH(w) * c->weight / 100 : 
+											((w->flags & SUB_WIN_TILE_HORZ && c->flags & SUB_WIN_OPT_COLLAPSE) ? width : mw);
 									c->height = (c->flags & SUB_WIN_OPT_COLLAPSE) ? d->th : 
 										((w->flags & SUB_WIN_TILE_VERT && c->flags & SUB_WIN_OPT_WEIGHT) ? 
-										SUBWINHEIGHT(w) * c->weight / 100 : mh);
+										SUBWINHEIGHT(w) * c->weight / 100 : 
+											((w->flags & SUB_WIN_TILE_HORZ && collapsed > 0) ? mh - collapsed * d->th : mh));
 
 									/* Add compensation to width or height */
 									if(i == n + collapsed + weighted - 1) 
 										if(w->flags & SUB_WIN_TILE_HORZ) c->width += comp; 
 										else c->height += comp;
 		
-									x += c->width;
-									y += c->height;
+									if(w->flags & SUB_WIN_TILE_HORZ) 
+										{
+											if(c->flags & SUB_WIN_OPT_COLLAPSE) y += d->th;
+											else x += c->width;
+										}
+									if(w->flags & SUB_WIN_TILE_VERT) y += c->height;
 
 									subLogDebug("Configuring %s-window: x=%d, y=%d, width=%d, height=%d, weight=%d\n", 
 										(c->flags & SUB_WIN_OPT_COLLAPSE) ? "c" : ((w->flags & SUB_WIN_OPT_WEIGHT) ? "w" : "n"), 
