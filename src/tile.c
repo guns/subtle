@@ -208,6 +208,7 @@ subTileConfigure(SubWin *w)
 										if(w->flags & SUB_WIN_TILE_HORZ) c->width += comp; 
 										else c->height += comp;
 		
+									/* Adjust steps */
 									if(w->flags & SUB_WIN_TILE_HORZ) 
 										{
 											if(c->flags & SUB_WIN_OPT_COLLAPSE) y += d->th;
