@@ -154,7 +154,9 @@ subScreenDelete(SubWin *w)
 				free(screens[i]->name);
 				free(screens[i]);
 
-				for(j = i + 1; j < size; j++, i++) screens[i] = screens[j];
+				for(j = i; j < size; j++) screens[j] = screens[j + 1];
+
+				break;
 			}
 
 	screens = (SubScreen **)realloc(screens, sizeof(SubScreen *) * size);
