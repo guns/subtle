@@ -197,7 +197,7 @@ subTileConfigure(SubWin *w)
 									c->y = (w->flags & SUB_WIN_TILE_VERT) ? y : ((c->flags & SUB_WIN_OPT_COLLAPSE) ? y : collapsed * d->th);
 									c->width	= (w->flags & SUB_WIN_TILE_HORZ && c->flags & SUB_WIN_OPT_WEIGHT) ? 
 										SUBWINWIDTH(w) * c->weight / 100 : 
-											((w->flags & SUB_WIN_TILE_HORZ && c->flags & SUB_WIN_OPT_COLLAPSE) ? width : mw);
+											((w->flags & SUB_WIN_TILE_HORZ && c->flags & SUB_WIN_OPT_COLLAPSE) ? SUBWINWIDTH(w) : mw);
 									c->height = (c->flags & SUB_WIN_OPT_COLLAPSE) ? d->th : 
 										((w->flags & SUB_WIN_TILE_VERT && c->flags & SUB_WIN_OPT_WEIGHT) ? 
 										SUBWINHEIGHT(w) * c->weight / 100 : 
