@@ -59,6 +59,7 @@ HandleSignal(int signum)
 				break;
 			case SIGTERM:
 			case SIGINT: 
+				subKeyKill();
 				subScreenKill();
 				subLuaKill();
 				subDisplayKill();
