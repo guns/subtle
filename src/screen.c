@@ -154,7 +154,11 @@ subScreenDelete(SubWin *w)
 				free(screens[i]->name);
 				free(screens[i]);
 
-				for(j = i; j < size; j++) screens[j] = screens[j + 1];
+				for(j = i; j < size - 1; j++) 
+					{
+						screens[j] = screens[j + 1];
+						screens[j]->id = j;
+					}
 
 				break;
 			}
