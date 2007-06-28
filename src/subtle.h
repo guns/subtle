@@ -52,8 +52,8 @@
 #define SUB_WIN_PREF_FOCUS				(1L << 10)					// Send focus messages
 #define SUB_WIN_PREF_CLOSE				(1L << 11)					// Send close messages
 
-#define SUB_WIN_TILE_VERT					(1L << 13)					// Vertical tile
-#define SUB_WIN_TILE_HORZ					(1L << 14)					// Horizontal tile
+#define SUB_WIN_TILE_VERT					(1L << 13)					// Vert-tile
+#define SUB_WIN_TILE_HORZ					(1L << 14)					// Horiz-tile
 
 #define SUB_WIN_DRAG_LEFT					(1L << 1)						// Drag start from left
 #define SUB_WIN_DRAG_RIGHT				(1L << 2)						// Drag start from right
@@ -231,6 +231,25 @@ void subLogToggleDebug(void);
 
 void subLog(short type, const char *file, 						// Print messages
 	short line, const char *format, ...);
+
+/* key.c */
+#define SUB_KEY_ACTION_ADD_VTILE			(1L << 1)				// Add vert-tile
+#define SUB_KEY_ACTION_ADD_HTILE			(1L << 2)				// Add horiz-tile
+#define SUB_KEY_ACTION_DEL_WIN				(1L << 3)				// Delete win
+#define SUB_KEY_ACTION_COLLAPSE_WIN		(1L << 4)				// Collapse win
+#define SUB_KEY_ACTION_RAISE_WIN			(1L << 5)				// Raise win
+
+typedef struct subkey
+{
+	int flags, code;
+	unsigned int mod;
+} SubKey;
+
+void subKeyParseChain(const char *key,
+	const char *value);																	// Parse key chain
+SubKey *subKeyFind(int keycode, int mod);							// Find a key
+void subKeyGrab(SubWin *w);														// Grab keys for a window
+void subKeyUnrab(SubWin *w);													// Ungrab keys for a window
 
 /* lua.c */
 void subLuaLoadConfig(const char *path);							// Load config file
