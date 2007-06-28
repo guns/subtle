@@ -54,7 +54,7 @@ subWinNew(Window win)
 	attrs.border_pixel			= d->colors.border;
 	attrs.background_pixmap	= ParentRelative;
 	attrs.background_pixel	= d->colors.norm;
-	attrs.event_mask				= ButtonPressMask|ButtonMotionMask|EnterWindowMask|LeaveWindowMask|
+	attrs.event_mask				= KeyPressMask|ButtonPressMask|ButtonMotionMask|EnterWindowMask|LeaveWindowMask|
 		ExposureMask|VisibilityChangeMask|SubstructureRedirectMask|SubstructureNotifyMask;
 
 	/* Create windows */
