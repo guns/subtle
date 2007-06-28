@@ -101,25 +101,6 @@ ParseColor(lua_State *configstate,
 	return(color.pixel);
 }
 
-static void
-BindKey(const char *key,
-	const char *value)
-{
-	int n = 0;
-	KeySym *keys = NULL;
-	char *tok = strtok((char *)value, "+");
-
-	while(tok)
-		{
-			keys 				= (KeySym *)realloc(keys, ++n * sizeof(KeySym));
-			keys[n - 1] = XStringToKeysym(tok);
-			tok					= strtok(NULL, "+");
-		}
-	XRebindKeysym(d->dpy, keys[n - 1], keys, n - 1, key, strlen(key));
-	subLogDebug("Parsing keychain: name=%s\n", key);
-	free(keys);
-}
-
  /**
 	* Load config file
 	* @param path Path to the config file
@@ -206,7 +187,7 @@ subLuaLoadConfig(const char *path)
 			lua_pushnil(configstate);
 			while(lua_next(configstate, -2))
 				{
-					BindKey(lua_tostring(configstate, -2), lua_tostring(configstate, -1));
+					subKeyParseChain(lua_tostring(configstate, -2), lua_tostring(configstate, -1));
 					lua_pop(configstate, 1);
 				}
 		}
