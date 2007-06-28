@@ -14,13 +14,22 @@ font = {
 colors = {
 	font				= "#ffffff",						-- Color of the font
 	border			= "#ffffff",						-- Color of the border/tiles
+	normal			= "#cecfce",						-- Color of the inactive windows
+	focus				= "#ffcf00",						-- Color of the focussed window
+	shade				= "#bac5ce",						-- Color of shaded windows
+	background	= "#525152"							-- Color of the root background
+}
+
+colors1 = {
+	font				= "#ffffff",						-- Color of the font
+	border			= "#ffffff",						-- Color of the border/tiles
 	normal			= "#CFDCE6",						-- Color of the inactive windows
 	focus				= "#6096BF",						-- Color of the focussed window
 	shade				= "#bac5ce",						-- Color of shaded windows
 	background	= "#596F80"							-- Color of the root background
 }
 
-colors1 = {
+colors2 = {
   font        = "#ffffff",            -- Color of the font
   border      = "#ffffff",            -- Color of the border/tiles
   normal      = "#848684",            -- Color of the inactive windows
@@ -31,7 +40,9 @@ colors1 = {
 
 -- Key config
 keys = {
-	add_vtile	= "Shift_L+Control_L+v",	-- Add a vertical tile
-	add_htile	= "Shift_L+Control_L+h",	-- Add a horizontal tile
-	del_tile	= "Shift_L+Control_L+d"		-- Delete a tile
+	add_vtile				= "Shift_L+Control_L+v",	-- Add a vertical tile
+	add_htile				= "Shift_L+Control_L+h",	-- Add a horizontal tile
+	del_win					= "Shift_L+Control_L+d",	-- Delete a window
+	collapse_win		= "Shift_L+Control_L+c",	-- Collapse a window
+	raise_win				= "Shift_L+Control_L+r"		-- Raise a window
 }
