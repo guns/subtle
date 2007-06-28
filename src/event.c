@@ -79,20 +79,23 @@ HandleButtonPress(XButtonEvent *ev)
 								else if(ev->subwindow == w->icon) subWinToggle(SUB_WIN_OPT_WEIGHT, w);
 								last_time = 0;
 							}						
-						else /* Single click */
+						else  /* Single click */
 							{
 								subLogDebug("Single click: win=%#lx\n", ev->window);
-								if(w->flags & SUB_WIN_OPT_RAISE) 		subWinRaise(w);
-								if(ev->subwindow == w->left) 				subWinDrag(SUB_WIN_DRAG_LEFT, w);
-								else if(ev->subwindow == w->right)	subWinDrag(SUB_WIN_DRAG_RIGHT, w);
-								else if(ev->subwindow == w->bottom) subWinDrag(SUB_WIN_DRAG_BOTTOM, w);
-								else if(ev->subwindow == w->icon) 	last_time = ev->time;
-								else if(ev->subwindow == w->title || (w->flags & SUB_WIN_TYPE_CLIENT && ev->subwindow == w->client->caption))
-									{ /* Either drag and move or drag an swap windows */
-										subWinDrag((w->flags & SUB_WIN_OPT_RAISE) ? SUB_WIN_DRAG_MOVE : SUB_WIN_DRAG_SWAP, w);
-										last_time = ev->time;
+								if(!(w->flags & SUB_WIN_TYPE_SCREEN))
+									{
+										if(w->flags & SUB_WIN_OPT_RAISE) 		subWinRaise(w);
+										if(ev->subwindow == w->left) 				subWinDrag(SUB_WIN_DRAG_LEFT, w);
+										else if(ev->subwindow == w->right)	subWinDrag(SUB_WIN_DRAG_RIGHT, w);
+										else if(ev->subwindow == w->bottom) subWinDrag(SUB_WIN_DRAG_BOTTOM, w);
+										else if(ev->subwindow == w->icon) 	last_time = ev->time;
+										else if(ev->subwindow == w->title || (w->flags & SUB_WIN_TYPE_CLIENT && ev->subwindow == w->client->caption))
+											{ /* Either drag and move or drag an swap windows */
+												subWinDrag((w->flags & SUB_WIN_OPT_RAISE) ? SUB_WIN_DRAG_MOVE : SUB_WIN_DRAG_SWAP, w);
+												last_time = ev->time;
+											}
 									}
-								else if(w->flags & SUB_WIN_TYPE_TILE)
+								if(w->flags & SUB_WIN_TYPE_TILE)
 									{
 										if(ev->subwindow == w->tile->btnew) subTileAdd(w, subTileNew(SUB_WIN_TILE_VERT));
 										else if(ev->subwindow == w->tile->btdel) 
@@ -127,35 +130,23 @@ HandleKeyPress(XKeyEvent *ev)
 	SubWin *w = subWinFind(ev->window);
 	if(w)
 		{
-			KeySym keysym;
-			XComposeStatus compose;
-			char buf[10];
-
-			XLookupString(ev, buf, sizeof(buf), &keysym, &compose);
-			if(!strcmp(buf, "add_vtile")) 
+			SubKey *k = subKeyFind(ev->keycode, ev->state);
+			if(k) 
 				{
-					subTileAdd(w, subTileNew(SUB_WIN_TILE_VERT));
+					printf("KeyPress: code=%d, mod=%d\n", k->code, k->mod);
+					switch(k->flags)
+						{
+							case SUB_KEY_ACTION_ADD_VTILE: subTileAdd(w, subTileNew(SUB_WIN_TILE_VERT));	break;
+							case SUB_KEY_ACTION_ADD_HTILE: subTileAdd(w, subTileNew(SUB_WIN_TILE_HORZ));	break;
+							case SUB_KEY_ACTION_DEL_WIN:
+								if(w->flags & SUB_WIN_TYPE_SCREEN) subScreenDelete(w); 
+								else if(w->flags & SUB_WIN_TYPE_TILE) subTileDelete(w);
+								else if(w->flags & SUB_WIN_TYPE_CLIENT) subClientDelete(w);
+								break;
+							case SUB_KEY_ACTION_COLLAPSE_WIN: subWinToggle(SUB_WIN_OPT_COLLAPSE, w); 			break;
+							case SUB_KEY_ACTION_RAISE_WIN: subWinToggle(SUB_WIN_OPT_RAISE, w); 						break;
+						}
 				}
-			else if(!strcmp(buf, "add_htile"))
-				{
-					subTileAdd(w, subTileNew(SUB_WIN_TILE_HORZ));
-				}
-			else if(!strcmp(buf, "del_tile") && w->flags & SUB_WIN_TYPE_TILE)
-				{
-					subTileDelete(w);
-				}
-			else if(ev->state & (Mod4Mask & ShiftMask) && ev->keycode == XStringToKeysym("f"))
-				{
-					printf ("Baz!\n");
-				}
-			else
-				{
-  				XAllowEvents(d->dpy, ReplayKeyboard, ev->time);
-  				XFlush(d->dpy);
-					subLogDebug("KeyPress: state=%d, keycode=%d\n", ev->state, ev->keycode);
-					return;
-				}
-			XAllowEvents(d->dpy, AsyncKeyboard, ev->time);
 		}
 }
 
@@ -272,7 +263,8 @@ HandleCrossing(XCrossingEvent *ev)
 					SubWin *f = d->focus;
 					d->focus = NULL;
 					if(f) RenderWindow(f);
-					XUngrabKey(d->dpy, AnyKey, AnyModifier, w->frame);
+
+					subKeyUngrab(f);
 				}
 
 			/* Make leave events to enter event of the parent window */
@@ -282,7 +274,8 @@ HandleCrossing(XCrossingEvent *ev)
 			subEwmhSetWindow(DefaultRootWindow(d->dpy), SUB_EWMH_NET_ACTIVE_WINDOW, w->frame);
 
 			/* Grab key */
-			/*XGrabKey(d->dpy, AnyKey, AnyModifier, w->frame, True, GrabModeSync, GrabModeSync);*/
+			subKeyGrab(w);
+			XSetInputFocus(d->dpy, w->frame, RevertToNone, CurrentTime);
 
 			/* Focus */
 			if(w->flags & SUB_WIN_TYPE_CLIENT && !(w->flags & SUB_WIN_OPT_COLLAPSE))
@@ -370,7 +363,7 @@ int subEventLoop(void)
 						{
 							case ButtonPress:				HandleButtonPress(&ev.xbutton);					break;
 							/*case KeyRelease:				*/
-							/*case KeyPress:					HandleKeyPress(&ev.xkey);								break;*/
+							case KeyPress:					HandleKeyPress(&ev.xkey);								break;
 							case ConfigureRequest:	HandleConfigure(&ev.xconfigurerequest);	break;
 							case MapRequest: 				HandleMap(&ev.xmaprequest); 						break;
 							case DestroyNotify: 		HandleDestroy(&ev.xdestroywindow);			break;
