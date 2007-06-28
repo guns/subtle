@@ -51,7 +51,7 @@ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_subtle_OBJECTS = subtle-client.$(OBJEXT) subtle-display.$(OBJEXT) \
 	subtle-event.$(OBJEXT) subtle-ewmh.$(OBJEXT) \
-	subtle-log.$(OBJEXT) subtle-lua.$(OBJEXT) \
+	subtle-key.$(OBJEXT) subtle-log.$(OBJEXT) subtle-lua.$(OBJEXT) \
 	subtle-main.$(OBJEXT) subtle-screen.$(OBJEXT) \
 	subtle-sublet.$(OBJEXT) subtle-tile.$(OBJEXT) \
 	subtle-win.$(OBJEXT)
@@ -82,9 +82,11 @@ AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
 CFLAGS = -g -O2 
+CONFIG_DIR = /usr/local/etc/subtle
 CPP = gcc -E
 CPPFLAGS = 
 CYGPATH_W = echo
+DEBUG_CFLAGS = -g
 DEBUG_FALSE = #
 DEBUG_TRUE = 
 DEFS = -DHAVE_CONFIG_H
@@ -114,15 +116,16 @@ OBJEXT = o
 PACKAGE = subtle
 PACKAGE_BUGREPORT = unexist@hilflos.org
 PACKAGE_NAME = subtle
-PACKAGE_STRING = subtle 0.7b
+PACKAGE_STRING = subtle 0.7c
 PACKAGE_TARNAME = subtle
-PACKAGE_VERSION = 0.7b
+PACKAGE_VERSION = 0.7c
 PATH_SEPARATOR = :
 PKG_CONFIG = /usr/bin/pkg-config
 SET_MAKE = 
 SHELL = /bin/sh
 STRIP = 
-VERSION = 0.7b
+SUBLET_DIR = /usr/local/share/subtle
+VERSION = 0.7c
 XMKMF = 
 X_CFLAGS = 
 X_EXTRA_LIBS = 
@@ -139,7 +142,6 @@ am__untar = ${AMTAR} xf -
 bindir = ${exec_prefix}/bin
 build_alias = 
 check = yes
-config_dir = /usr/local/etc/subtle
 datadir = ${datarootdir}
 datarootdir = ${prefix}/share
 docdir = ${datarootdir}/doc/${PACKAGE_TARNAME}
@@ -165,7 +167,6 @@ program_transform_name = s,x,x,
 psdir = ${docdir}
 sbindir = ${exec_prefix}/sbin
 sharedstatedir = ${prefix}/com
-sublet_dir = /usr/local/share/subtle
 sysconfdir = ${prefix}/etc
 target_alias = 
 subtle_SOURCES = \
@@ -173,6 +174,7 @@ subtle_SOURCES = \
 	display.c \
 	event.c \
 	ewmh.c \
+	key.c \
 	log.c \
 	lua.c \
 	main.c \
@@ -185,7 +187,7 @@ subtle_CFLAGS = $(CFLAGS) $(LUA_CFLAGS)
 subtle_LDADD = $(LUA_LIBS)
 INCLUDES = -I$(top_srcdir)
 noinst_HEADERS = subtle.h
-AM_CFLAGS = -Wall -Wpointer-arith -Wstrict-prototypes -Wunused -O2 -g
+AM_CFLAGS = -Wall -Wpointer-arith -Wstrict-prototypes -Wunused -O2 $(DEBUG_CFLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -256,6 +258,7 @@ include ./$(DEPDIR)/subtle-client.Po
 include ./$(DEPDIR)/subtle-display.Po
 include ./$(DEPDIR)/subtle-event.Po
 include ./$(DEPDIR)/subtle-ewmh.Po
+include ./$(DEPDIR)/subtle-key.Po
 include ./$(DEPDIR)/subtle-log.Po
 include ./$(DEPDIR)/subtle-lua.Po
 include ./$(DEPDIR)/subtle-main.Po
@@ -333,6 +336,20 @@ subtle-ewmh.obj: ewmh.c
 #	source='ewmh.c' object='subtle-ewmh.obj' libtool=no \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
 #	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(subtle_CFLAGS) $(CFLAGS) -c -o subtle-ewmh.obj `if test -f 'ewmh.c'; then $(CYGPATH_W) 'ewmh.c'; else $(CYGPATH_W) '$(srcdir)/ewmh.c'; fi`
+
+subtle-key.o: key.c
+	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(subtle_CFLAGS) $(CFLAGS) -MT subtle-key.o -MD -MP -MF "$(DEPDIR)/subtle-key.Tpo" -c -o subtle-key.o `test -f 'key.c' || echo '$(srcdir)/'`key.c; \
+	then mv -f "$(DEPDIR)/subtle-key.Tpo" "$(DEPDIR)/subtle-key.Po"; else rm -f "$(DEPDIR)/subtle-key.Tpo"; exit 1; fi
+#	source='key.c' object='subtle-key.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(subtle_CFLAGS) $(CFLAGS) -c -o subtle-key.o `test -f 'key.c' || echo '$(srcdir)/'`key.c
+
+subtle-key.obj: key.c
+	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(subtle_CFLAGS) $(CFLAGS) -MT subtle-key.obj -MD -MP -MF "$(DEPDIR)/subtle-key.Tpo" -c -o subtle-key.obj `if test -f 'key.c'; then $(CYGPATH_W) 'key.c'; else $(CYGPATH_W) '$(srcdir)/key.c'; fi`; \
+	then mv -f "$(DEPDIR)/subtle-key.Tpo" "$(DEPDIR)/subtle-key.Po"; else rm -f "$(DEPDIR)/subtle-key.Tpo"; exit 1; fi
+#	source='key.c' object='subtle-key.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(subtle_CFLAGS) $(CFLAGS) -c -o subtle-key.obj `if test -f 'key.c'; then $(CYGPATH_W) 'key.c'; else $(CYGPATH_W) '$(srcdir)/key.c'; fi`
 
 subtle-log.o: log.c
 	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(subtle_CFLAGS) $(CFLAGS) -MT subtle-log.o -MD -MP -MF "$(DEPDIR)/subtle-log.Tpo" -c -o subtle-log.o `test -f 'log.c' || echo '$(srcdir)/'`log.c; \

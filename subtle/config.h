@@ -112,19 +112,16 @@
 #define PACKAGE_NAME "subtle"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "subtle 0.7b"
+#define PACKAGE_STRING "subtle 0.7c"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "subtle"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.7b"
+#define PACKAGE_VERSION "0.7c"
 
 /* Define as the return type of signal handlers (`int' or `void'). */
 #define RETSIGTYPE void
-
-/* Directory for sublets */
-#define SCRIPT_DIR "/usr/local/share/subtle"
 
 /* Define to the type of arg 1 for `select'. */
 #define SELECT_TYPE_ARG1 int
@@ -137,6 +134,9 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
+
+/* Directory for sublets */
+#define SUBLET_DIR "/usr/local/share/subtle"
 
 /* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
 #define TIME_WITH_SYS_TIME 1

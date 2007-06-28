@@ -51,7 +51,7 @@ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_subtle_OBJECTS = subtle-client.$(OBJEXT) subtle-display.$(OBJEXT) \
 	subtle-event.$(OBJEXT) subtle-ewmh.$(OBJEXT) \
-	subtle-log.$(OBJEXT) subtle-lua.$(OBJEXT) \
+	subtle-key.$(OBJEXT) subtle-log.$(OBJEXT) subtle-lua.$(OBJEXT) \
 	subtle-main.$(OBJEXT) subtle-screen.$(OBJEXT) \
 	subtle-sublet.$(OBJEXT) subtle-tile.$(OBJEXT) \
 	subtle-win.$(OBJEXT)
@@ -82,9 +82,11 @@ AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
+CONFIG_DIR = @CONFIG_DIR@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CYGPATH_W = @CYGPATH_W@
+DEBUG_CFLAGS = @DEBUG_CFLAGS@
 DEBUG_FALSE = @DEBUG_FALSE@
 DEBUG_TRUE = @DEBUG_TRUE@
 DEFS = @DEFS@
@@ -122,6 +124,7 @@ PKG_CONFIG = @PKG_CONFIG@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
+SUBLET_DIR = @SUBLET_DIR@
 VERSION = @VERSION@
 XMKMF = @XMKMF@
 X_CFLAGS = @X_CFLAGS@
@@ -139,7 +142,6 @@ am__untar = @am__untar@
 bindir = @bindir@
 build_alias = @build_alias@
 check = @check@
-config_dir = @config_dir@
 datadir = @datadir@
 datarootdir = @datarootdir@
 docdir = @docdir@
@@ -165,7 +167,6 @@ program_transform_name = @program_transform_name@
 psdir = @psdir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
-sublet_dir = @sublet_dir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 subtle_SOURCES = \
@@ -173,6 +174,7 @@ subtle_SOURCES = \
 	display.c \
 	event.c \
 	ewmh.c \
+	key.c \
 	log.c \
 	lua.c \
 	main.c \
@@ -185,7 +187,7 @@ subtle_CFLAGS = $(CFLAGS) $(LUA_CFLAGS)
 subtle_LDADD = $(LUA_LIBS)
 INCLUDES = -I$(top_srcdir)
 noinst_HEADERS = subtle.h
-AM_CFLAGS = -Wall -Wpointer-arith -Wstrict-prototypes -Wunused -O2 -g
+AM_CFLAGS = -Wall -Wpointer-arith -Wstrict-prototypes -Wunused -O2 $(DEBUG_CFLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -256,6 +258,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/subtle-display.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/subtle-event.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/subtle-ewmh.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/subtle-key.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/subtle-log.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/subtle-lua.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/subtle-main.Po@am__quote@
@@ -333,6 +336,20 @@ subtle-ewmh.obj: ewmh.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ewmh.c' object='subtle-ewmh.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(subtle_CFLAGS) $(CFLAGS) -c -o subtle-ewmh.obj `if test -f 'ewmh.c'; then $(CYGPATH_W) 'ewmh.c'; else $(CYGPATH_W) '$(srcdir)/ewmh.c'; fi`
+
+subtle-key.o: key.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(subtle_CFLAGS) $(CFLAGS) -MT subtle-key.o -MD -MP -MF "$(DEPDIR)/subtle-key.Tpo" -c -o subtle-key.o `test -f 'key.c' || echo '$(srcdir)/'`key.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/subtle-key.Tpo" "$(DEPDIR)/subtle-key.Po"; else rm -f "$(DEPDIR)/subtle-key.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key.c' object='subtle-key.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(subtle_CFLAGS) $(CFLAGS) -c -o subtle-key.o `test -f 'key.c' || echo '$(srcdir)/'`key.c
+
+subtle-key.obj: key.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(subtle_CFLAGS) $(CFLAGS) -MT subtle-key.obj -MD -MP -MF "$(DEPDIR)/subtle-key.Tpo" -c -o subtle-key.obj `if test -f 'key.c'; then $(CYGPATH_W) 'key.c'; else $(CYGPATH_W) '$(srcdir)/key.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/subtle-key.Tpo" "$(DEPDIR)/subtle-key.Po"; else rm -f "$(DEPDIR)/subtle-key.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key.c' object='subtle-key.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(subtle_CFLAGS) $(CFLAGS) -c -o subtle-key.obj `if test -f 'key.c'; then $(CYGPATH_W) 'key.c'; else $(CYGPATH_W) '$(srcdir)/key.c'; fi`
 
 subtle-log.o: log.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(subtle_CFLAGS) $(CFLAGS) -MT subtle-log.o -MD -MP -MF "$(DEPDIR)/subtle-log.Tpo" -c -o subtle-log.o `test -f 'log.c' || echo '$(srcdir)/'`log.c; \

@@ -7,6 +7,7 @@ subtle_SOURCES = \
 	display.c \
 	event.c \
 	ewmh.c \
+	key.c \
 	log.c \
 	lua.c \
 	main.c \
@@ -22,4 +23,4 @@ INCLUDES = -I$(top_srcdir)
 
 noinst_HEADERS = subtle.h
 
-AM_CFLAGS = -Wall -Wpointer-arith -Wstrict-prototypes -Wunused -O2 -g
+AM_CFLAGS = -Wall -Wpointer-arith -Wstrict-prototypes -Wunused -O2 $(DEBUG_CFLAGS)

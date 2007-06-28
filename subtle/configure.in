@@ -37,25 +37,30 @@ AC_CHECK_FUNCS([memmove memset select strchr strdup strerror strrchr])
 
 # Paths
 prefix="/usr/local"
-sublet_dir="$prefix/share/$PACKAGE_NAME"
-config_dir="$prefix/etc/$PACKAGE_NAME"
+SUBLET_DIR="$prefix/share/$PACKAGE_NAME"
+CONFIG_DIR="$prefix/etc/$PACKAGE_NAME"
 
-AC_DEFINE_UNQUOTED(SCRIPT_DIR, "$sublet_dir", [Directory for sublets])
-AC_DEFINE_UNQUOTED(CONFIG_DIR, "$config_dir", [Directory for config files])
+AC_DEFINE_UNQUOTED(SUBLET_DIR, "$SUBLET_DIR", [Directory for sublets])
+AC_DEFINE_UNQUOTED(CONFIG_DIR, "$CONFIG_DIR", [Directory for config files])
 
-AC_SUBST(sublet_dir)
-AC_SUBST(config_dir)
+AC_SUBST(SUBLET_DIR)
+AC_SUBST(CONFIG_DIR)
 
 # Configure switches
 AC_ARG_ENABLE(debug, [  --enable-debug   Enable debugging support], debug="$enableval")
 AM_CONDITIONAL(DEBUG, test "x$debug" = "xyes")
 
+DEBUG_CFLAGS=""
+
 if test "x$debug" = "xyes"; then
 	AC_DEFINE(DEBUG, 1, [Define to 1 if you want debugging support])
+	DEBUG_CFLAGS="-g"
 else
 	AC_DEFINE(DEBUG, 0, [Define to 1 if you want debugging support])
 	AC_DEFINE(NODEBUG, 1, [Define to 1 if you want no debugging support])
 fi
+
+AC_SUBST(DEBUG_CFLAGS)
 
 # Check for X11
 if test "x$no_x" = "xyes"; then
@@ -117,8 +122,8 @@ echo
 echo $PACKAGE_STRING
 echo -----------------
 echo Binary....................: $prefix/bin
-echo Sublets...................: $sublet_dir
-echo Config....................: $config_dir
+echo Sublets...................: $SUBLET_DIR
+echo Config....................: $CONFIG_DIR
 echo
 echo Debugging messages........: $debug
 echo
