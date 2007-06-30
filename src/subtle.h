@@ -238,11 +238,18 @@ void subLog(short type, const char *file, 						// Print messages
 #define SUB_KEY_ACTION_DEL_WIN				(1L << 3)				// Delete win
 #define SUB_KEY_ACTION_COLLAPSE_WIN		(1L << 4)				// Collapse win
 #define SUB_KEY_ACTION_RAISE_WIN			(1L << 5)				// Raise win
+#define SUB_KEY_ACTION_EXEC						(1L << 6)				// Exec an app
 
 typedef struct subkey
 {
 	int flags, code;
 	unsigned int mod;
+
+	union
+	{
+		char *string;
+		int number;
+	};
 } SubKey;
 
 void subKeyParseChain(const char *key,
