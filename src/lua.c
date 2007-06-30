@@ -131,9 +131,9 @@ subLuaLoadConfig(const char *path)
 	subLogDebug("Reading `%s'\n", buf);
 	if(luaL_loadfile(configstate, buf) || lua_pcall(configstate, 0, 0, 0))
 		{
-			subLogDebug("%s\n", (char *)lua_tostring(configstate, -1));
+			subLogWarn("%s\n", (char *)lua_tostring(configstate, -1));
 			lua_close(configstate);
-			subLogError("Can't load config file `%s'.\n", buf);
+			subLogError("Can't parse config file\n");
 		}
 
 	/* Parse and load the font */
@@ -147,6 +147,7 @@ subLuaLoadConfig(const char *path)
 			subLogWarn("Can't load font `%s', using fixed instead.\n", face);
 			subLogDebug("Font: %s\n", buf);
 			d->xfs = XLoadQueryFont(d->dpy, "-*-fixed-medium-*-*-*-12-*-*-*-*-*-*-*");
+			if(!d->xfs) subLogError("Can't load font `fixed`.\n");
 		}
 
 	/* Font metrics */
