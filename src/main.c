@@ -67,6 +67,9 @@ HandleSignal(int signum)
 			case SIGSEGV: 
 				printf("Please report this bug to <%s>\n", PACKAGE_BUGREPORT);
 				abort();
+			case SIGCHLD:
+				wait(NULL);
+				break;
 		}
 }
 
@@ -116,6 +119,7 @@ main(int argc,
 	sigaction(SIGTERM, &act, NULL);
 	sigaction(SIGINT, &act, NULL);
 	sigaction(SIGSEGV, &act, NULL);
+	sigaction(SIGCHLD, &act, NULL);
 
 	subDisplayNew(display);
 	subLuaLoadConfig(config);
