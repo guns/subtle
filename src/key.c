@@ -57,11 +57,11 @@ subKeyParseChain(const char *key,
 	if(!k) subLogError("Can't alloc memory. Exhausted?\n");
 
 	/* FIXME: strncmp() is way to slow.. */	
-	if(!strncmp(key, "add_vtile", 9)) 					k->flags = SUB_KEY_ACTION_ADD_VTILE;
-	else if(!strncmp(key, "add_htile", 9)) 			k->flags = SUB_KEY_ACTION_ADD_HTILE;
-	else if(!strncmp(key, "del_win", 7))				k->flags = SUB_KEY_ACTION_DEL_WIN;
-	else if(!strncmp(key, "collapse_win", 12))	k->flags = SUB_KEY_ACTION_COLLAPSE_WIN;
-	else if(!strncmp(key, "raise_win", 9))			k->flags = SUB_KEY_ACTION_RAISE_WIN;
+	if(!strncmp(key, "AddVertTile", 11)) 					k->flags = SUB_KEY_ACTION_ADD_VTILE;
+	else if(!strncmp(key, "AddHorzTile", 11)) 			k->flags = SUB_KEY_ACTION_ADD_HTILE;
+	else if(!strncmp(key, "DeleteWindow", 12))			k->flags = SUB_KEY_ACTION_DEL_WIN;
+	else if(!strncmp(key, "ToggleCollapse", 14))	k->flags = SUB_KEY_ACTION_COLLAPSE_WIN;
+	else if(!strncmp(key, "ToggleRaise", 11))			k->flags = SUB_KEY_ACTION_RAISE_WIN;
 	else
 		{
 			k->flags	= SUB_KEY_ACTION_EXEC;
