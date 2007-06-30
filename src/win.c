@@ -405,7 +405,7 @@ subWinDrag(short mode,
 												else if(w2->flags & SUB_WIN_OPT_RAISE)
 													{
 														w2->flags	&= ~SUB_WIN_OPT_RAISE;
-														w->flags		|= SUB_WIN_OPT_RAISE;
+														w->flags	|= SUB_WIN_OPT_RAISE;
 
 														subWinResize(w); 
 														if(w->flags & SUB_WIN_TYPE_TILE) subTileConfigure(w);
