@@ -89,7 +89,7 @@ ParseColor(lua_State *configstate,
 	char *fallback)
 {
 	XColor color;
-	char *name = GetString(configstate, "colors", field, fallback);
+	char *name = GetString(configstate, "Colors", field, fallback);
 	color.pixel = 0;
 
 	if(!XParseColor(d->dpy, DefaultColormap(d->dpy, DefaultScreen(d->dpy)), name, &color))
@@ -137,9 +137,9 @@ subLuaLoadConfig(const char *path)
 		}
 
 	/* Parse and load the font */
-	face	= GetString(configstate, "font", "face", "fixed");
-	style	= GetString(configstate, "font", "style", "medium");
-	size	= GetNum(configstate, "font", "size", 12);
+	face	= GetString(configstate, "Font", "Face", "fixed");
+	style	= GetString(configstate, "Font", "Style", "medium");
+	size	= GetNum(configstate, "Font", "Size", 12);
 
 	snprintf(buf, sizeof(buf), "-*-%s-%s-*-*-*-%d-*-*-*-*-*-*-*", face, style, size);
 	if(!(d->xfs = XLoadQueryFont(d->dpy, buf)))
@@ -155,15 +155,15 @@ subLuaLoadConfig(const char *path)
 	d->fy	= d->xfs->max_bounds.ascent + d->xfs->max_bounds.descent;
 
 	d->th	= d->xfs->ascent + d->xfs->descent + 2;
-	d->bw	= GetNum(configstate, "options", "border",	2);
+	d->bw	= GetNum(configstate, "Options", "Border",	2);
 
 	/* Read colors from config */
-	d->colors.font		= ParseColor(configstate, "font",				"#000000"); 	
-	d->colors.border	= ParseColor(configstate, "border",			"#bdbabd");
-	d->colors.norm		= ParseColor(configstate, "normal",			"#22aa99");
-	d->colors.focus		= ParseColor(configstate, "focus",			"#ffa500");		
-	d->colors.cover		= ParseColor(configstate, "shade",			"#FFE6E6");
-	d->colors.bg			= ParseColor(configstate, "background",	"#336699");
+	d->colors.font		= ParseColor(configstate, "Font",				"#000000"); 	
+	d->colors.border	= ParseColor(configstate, "Border",			"#bdbabd");
+	d->colors.norm		= ParseColor(configstate, "Normal",			"#22aa99");
+	d->colors.focus		= ParseColor(configstate, "Focus",			"#ffa500");		
+	d->colors.cover		= ParseColor(configstate, "Collapse",		"#FFE6E6");
+	d->colors.bg			= ParseColor(configstate, "Background",	"#336699");
 
 	/* Change GCs */
 	gvals.foreground	= d->colors.border;
@@ -182,7 +182,7 @@ subLuaLoadConfig(const char *path)
 	XClearWindow(d->dpy, DefaultRootWindow(d->dpy));
 
 	/* Bind key chains */
-	lua_getglobal(configstate, "keys");
+	lua_getglobal(configstate, "Keys");
 	if(lua_istable(configstate, -1)) 
 		{ 
 			lua_pushnil(configstate);
