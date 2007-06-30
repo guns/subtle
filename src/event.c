@@ -125,6 +125,23 @@ HandleButtonPress(XButtonEvent *ev)
 }
 
 static void
+Exec(char *cmd)
+{
+	pid_t pid = fork();
+
+	switch(pid)
+		{
+			case 0:
+				setsid();
+				execlp("/bin/sh", "sh", "-c", cmd, NULL);
+				subLogWarn("Can't exec command `%s'.\n", cmd);
+				exit(1);
+			case -1:
+				subLogWarn("Failed to fork.\n");
+		}
+}
+
+static void
 HandleKeyPress(XKeyEvent *ev)
 {
 	SubWin *w = subWinFind(ev->window);
@@ -145,6 +162,7 @@ HandleKeyPress(XKeyEvent *ev)
 								break;
 							case SUB_KEY_ACTION_COLLAPSE_WIN: subWinToggle(SUB_WIN_OPT_COLLAPSE, w); 			break;
 							case SUB_KEY_ACTION_RAISE_WIN: subWinToggle(SUB_WIN_OPT_RAISE, w); 						break;
+							case SUB_KEY_ACTION_EXEC:	if(k->string) Exec(k->string);										break;
 						}
 				}
 		}
