@@ -160,8 +160,9 @@ SubSublet *subSubletNext(void);												// Get the next sublet
 void subSubletKill(void);															// Delete all sublets
 
 /* screen.c */
-#define SUB_SCREEN_NEXT	-3														// Next screen
-#define SUB_SCREEN_PREV	-5														// Prev screen
+#define SUB_SCREEN_NEXT		-3													// Next screen
+#define SUB_SCREEN_PREV		-5													// Prev screen
+#define SUB_SCREEN_ACTIVE -7													// Active screen
 
 typedef struct subscreen
 {
@@ -179,8 +180,8 @@ void subScreenKill(void);															// Kill all screens
 void subScreenRender(short mode, SubWin *w);					// Render the screen window
 void subScreenAdd(Window win);												// Add a window to the bar
 void subScreenConfigure(void);												// Configure the screen
-SubWin * subScreenGetActive(void);										// Get active screen
-void subScreenSetActive(int pos);											// Set active screen
+SubScreen *subScreenGet(int pos);											// Get active screen
+void subScreenSet(int pos);														// Set active screen
 
 /* display.c */
 typedef struct subdisplay
@@ -233,12 +234,15 @@ void subLog(short type, const char *file, 						// Print messages
 	short line, const char *format, ...);
 
 /* key.c */
-#define SUB_KEY_ACTION_ADD_VTILE			(1L << 1)				// Add vert-tile
-#define SUB_KEY_ACTION_ADD_HTILE			(1L << 2)				// Add horiz-tile
-#define SUB_KEY_ACTION_DEL_WIN				(1L << 3)				// Delete win
-#define SUB_KEY_ACTION_COLLAPSE_WIN		(1L << 4)				// Collapse win
-#define SUB_KEY_ACTION_RAISE_WIN			(1L << 5)				// Raise win
-#define SUB_KEY_ACTION_EXEC						(1L << 6)				// Exec an app
+#define SUB_KEY_ACTION_ADD_VTILE				(1L << 1)			// Add vert-tile
+#define SUB_KEY_ACTION_ADD_HTILE				(1L << 2)			// Add horiz-tile
+#define SUB_KEY_ACTION_DELETE_WIN				(1L << 3)			// Delete win
+#define SUB_KEY_ACTION_TOGGLE_COLLAPSE	(1L << 4)			// Collapse win
+#define SUB_KEY_ACTION_TOGGLE_RAISE			(1L << 5)			// Raise win
+#define SUB_KEY_ACTION_DESKTOP_NEXT			(1L << 6)			// Switch to next desktop
+#define SUB_KEY_ACTION_DESKTOP_PREV			(1L << 7)			// Switch to previous desktop
+#define SUB_KEY_ACTION_DESKTOP_MOVE			(1L << 8)			// Move window to desktop
+#define SUB_KEY_ACTION_EXEC							(1L << 9)			// Exec an app
 
 typedef struct subkey
 {
