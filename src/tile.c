@@ -162,12 +162,14 @@ subTileConfigure(SubWin *w)
 									if(c->flags & SUB_WIN_OPT_COLLAPSE) collapsed++;
 									else if(c->flags & SUB_WIN_OPT_WEIGHT && c->weight > 0)
 										{
-											if(n == 1)
+											/* Prevent weighted single or only weighted windows */
+											if(n == 1 || (i == n - 1 && weighted == n - 1))
 												{
 													c->flags &= ~SUB_WIN_OPT_WEIGHT;
 													c->weight = 0;
+													continue;
 												}
-											else size -= size * c->weight / 100;
+											else size -= width * c->weight / 100;
 											weighted++;
 										}
 								}
@@ -193,15 +195,25 @@ subTileConfigure(SubWin *w)
 							if(c && !(c->flags & (SUB_WIN_OPT_RAISE|SUB_WIN_OPT_TRANS)))
 								{
 									c->parent	= w;
-									c->x			= (w->flags & SUB_WIN_TILE_HORZ && !(c->flags & SUB_WIN_OPT_COLLAPSE)) ? x : 0;
-									c->y = (w->flags & SUB_WIN_TILE_VERT) ? y : ((c->flags & SUB_WIN_OPT_COLLAPSE) ? y : collapsed * d->th);
-									c->width	= (w->flags & SUB_WIN_TILE_HORZ && c->flags & SUB_WIN_OPT_WEIGHT) ? 
-										SUBWINWIDTH(w) * c->weight / 100 : 
-											((w->flags & SUB_WIN_TILE_HORZ && c->flags & SUB_WIN_OPT_COLLAPSE) ? SUBWINWIDTH(w) : mw);
-									c->height = (c->flags & SUB_WIN_OPT_COLLAPSE) ? d->th : 
-										((w->flags & SUB_WIN_TILE_VERT && c->flags & SUB_WIN_OPT_WEIGHT) ? 
-										SUBWINHEIGHT(w) * c->weight / 100 : 
-											((w->flags & SUB_WIN_TILE_HORZ && collapsed > 0) ? mh - collapsed * d->th : mh));
+									c->x			= 0;
+									c->y			= (c->flags & SUB_WIN_OPT_COLLAPSE) ? y : collapsed * d->th;
+									c->width	= mw;
+									c->height = (c->flags & SUB_WIN_OPT_COLLAPSE) ? d->th : mh;
+
+									/* Adjust sizes according to the tile alignment */
+									if(w->flags & SUB_WIN_TILE_HORZ)
+										{
+											if(!(c->flags & SUB_WIN_OPT_COLLAPSE)) c->x = x;
+											if(c->flags & SUB_WIN_OPT_COLLAPSE) c->width = SUBWINWIDTH(w);
+											else if(c->flags & SUB_WIN_OPT_WEIGHT) c->width = SUBWINWIDTH(w) * c->weight / 100;
+
+											if(collapsed > 0) c->height = mh - collapsed * d->th;
+										}
+									else if(w->flags & SUB_WIN_TILE_VERT)
+										{
+											c->y = y;
+											if(c->flags & SUB_WIN_OPT_WEIGHT) c->height = SUBWINHEIGHT(w) * c->weight / 100;
+										}
 
 									/* Add compensation to width or height */
 									if(i == n + collapsed + weighted - 1) 
@@ -217,8 +229,8 @@ subTileConfigure(SubWin *w)
 									if(w->flags & SUB_WIN_TILE_VERT) y += c->height;
 
 									subLogDebug("Configuring %s-window: x=%d, y=%d, width=%d, height=%d, weight=%d\n", 
-										(c->flags & SUB_WIN_OPT_COLLAPSE) ? "c" : ((w->flags & SUB_WIN_OPT_WEIGHT) ? "w" : "n"), 
-										c->x, c->y, c->width, c->height, c->weight);
+										(c->flags & SUB_WIN_OPT_COLLAPSE) ? "c" : ((w->flags & SUB_WIN_OPT_WEIGHT) ? "w" : 
+										((w->flags & SUB_WIN_OPT_RAISE) ? "r" : "n")), c->x, c->y, c->width, c->height, c->weight);
 
 									subWinResize(c);
 									if(w->flags & SUB_WIN_TYPE_TILE) subTileConfigure(c);
