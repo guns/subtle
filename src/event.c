@@ -61,7 +61,7 @@ HandleButtonPress(XButtonEvent *ev)
 	if(ev->window == d->bar.screens)
 		{
 			SubScreen *s = subScreenFind(ev->subwindow);
-			if(s) subScreenSetActive(s->id);
+			if(s) subScreenSet(s->id);
 
 			return;
 		}
@@ -118,8 +118,8 @@ HandleButtonPress(XButtonEvent *ev)
 						if(w->flags & SUB_WIN_TYPE_TILE && ev->subwindow == w->tile->btnew) subTileAdd(w, subTileNew(SUB_WIN_TILE_HORZ));
 						else if(ev->subwindow == w->title) subWinToggle(SUB_WIN_OPT_RAISE, w); 
 						break;
-					case Button4: subScreenSetActive(SUB_SCREEN_NEXT); break;
-					case Button5: subScreenSetActive(SUB_SCREEN_PREV); break;
+					case Button4: subScreenSet(SUB_SCREEN_NEXT); break;
+					case Button5: subScreenSet(SUB_SCREEN_PREV); break;
 				}
 		}
 }
@@ -150,6 +150,9 @@ HandleKeyPress(XKeyEvent *ev)
 			SubKey *k = subKeyFind(ev->keycode, ev->state);
 			if(k) 
 				{
+					SubWin *p = NULL;
+					SubScreen *s = NULL;
+
 					subLogDebug("KeyPress: code=%d, mod=%d\n", k->code, k->mod);
 					switch(k->flags)
 						{
@@ -159,18 +162,32 @@ HandleKeyPress(XKeyEvent *ev)
 							case SUB_KEY_ACTION_ADD_HTILE: 
 								if(w->flags & SUB_WIN_TYPE_TILE) subTileAdd(w, subTileNew(SUB_WIN_TILE_HORZ));
 								break;
-							case SUB_KEY_ACTION_DEL_WIN:
+							case SUB_KEY_ACTION_DELETE_WIN:
 								if(w->flags & SUB_WIN_TYPE_SCREEN) subScreenDelete(w); 
 								else if(w->flags & SUB_WIN_TYPE_TILE) subTileDelete(w);
 								else if(w->flags & SUB_WIN_TYPE_CLIENT) subClientDelete(w);
 								break;
-							case SUB_KEY_ACTION_COLLAPSE_WIN: 
+							case SUB_KEY_ACTION_TOGGLE_COLLAPSE: 
 								if(!(w->flags & SUB_WIN_TYPE_SCREEN)) subWinToggle(SUB_WIN_OPT_COLLAPSE, w);
 								break;
-							case SUB_KEY_ACTION_RAISE_WIN: 
+							case SUB_KEY_ACTION_TOGGLE_RAISE: 
 								if(!(w->flags & SUB_WIN_TYPE_SCREEN)) subWinToggle(SUB_WIN_OPT_RAISE, w); 						
 								break;
-							case SUB_KEY_ACTION_EXEC:	if(k->string) Exec(k->string);										break;
+							case SUB_KEY_ACTION_DESKTOP_NEXT: subScreenSet(SUB_SCREEN_NEXT);			break;
+							case SUB_KEY_ACTION_DESKTOP_PREV: subScreenSet(SUB_SCREEN_PREV);			break;
+							case SUB_KEY_ACTION_DESKTOP_MOVE:
+								if(k->number && !(w->flags & SUB_WIN_TYPE_SCREEN))
+									{
+										p = w->parent;
+										s = subScreenGet(k->number);
+										if(s)
+											{
+												subTileAdd(s->w, w);
+												subTileConfigure(p);
+											}
+									}
+								break;
+							case SUB_KEY_ACTION_EXEC:	if(k->string) Exec(k->string);							break;
 						}
 				}
 		}
@@ -211,9 +228,10 @@ HandleMap(XMapRequestEvent *ev)
 	SubWin *w = subWinFind(ev->window);
 	if(!w) 
 		{
+			SubScreen *s = subScreenGet(SUB_SCREEN_ACTIVE);
 			w = subClientNew(ev->window);
-			if(!(w->flags & SUB_WIN_OPT_RAISE)) subTileAdd(subScreenGetActive(), w);
-			else w->parent = subScreenGetActive();
+			if(!(w->flags & SUB_WIN_OPT_RAISE)) subTileAdd(s->w, w);
+			else w->parent = s->w;
 		}
 }
 

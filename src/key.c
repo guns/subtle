@@ -58,10 +58,26 @@ subKeyParseChain(const char *key,
 
 	/* FIXME: strncmp() is way to slow.. */	
 	if(!strncmp(key, "AddVertTile", 11)) 					k->flags = SUB_KEY_ACTION_ADD_VTILE;
-	else if(!strncmp(key, "AddHorzTile", 11)) 			k->flags = SUB_KEY_ACTION_ADD_HTILE;
-	else if(!strncmp(key, "DeleteWindow", 12))			k->flags = SUB_KEY_ACTION_DEL_WIN;
-	else if(!strncmp(key, "ToggleCollapse", 14))	k->flags = SUB_KEY_ACTION_COLLAPSE_WIN;
-	else if(!strncmp(key, "ToggleRaise", 11))			k->flags = SUB_KEY_ACTION_RAISE_WIN;
+	else if(!strncmp(key, "AddHorzTile", 11)) 		k->flags = SUB_KEY_ACTION_ADD_HTILE;
+	else if(!strncmp(key, "DeleteWindow", 12))		k->flags = SUB_KEY_ACTION_DELETE_WIN;
+	else if(!strncmp(key, "ToggleCollapse", 14))	k->flags = SUB_KEY_ACTION_TOGGLE_COLLAPSE;
+	else if(!strncmp(key, "ToggleRaise", 11))			k->flags = SUB_KEY_ACTION_TOGGLE_RAISE;
+	else if(!strncmp(key, "NextDesktop", 11))			k->flags = SUB_KEY_ACTION_DESKTOP_NEXT;
+	else if(!strncmp(key, "PreviousDesktop", 11))	k->flags = SUB_KEY_ACTION_DESKTOP_PREV;
+	else if(!strncmp(key, "MoveToDesktop", 13))
+		{
+			char *desktop = (char *)key + 13;
+			if(desktop) 
+				{
+					k->number = atoi(desktop);
+					k->flags = SUB_KEY_ACTION_DESKTOP_MOVE;
+				}
+			else 
+				{
+					subLogWarn("Can't assign keychain `%s'.\n", key);
+					return;
+				}
+		}
 	else
 		{
 			k->flags	= SUB_KEY_ACTION_EXEC;
