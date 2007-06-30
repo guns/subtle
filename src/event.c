@@ -150,18 +150,26 @@ HandleKeyPress(XKeyEvent *ev)
 			SubKey *k = subKeyFind(ev->keycode, ev->state);
 			if(k) 
 				{
-					printf("KeyPress: code=%d, mod=%d\n", k->code, k->mod);
+					subLogDebug("KeyPress: code=%d, mod=%d\n", k->code, k->mod);
 					switch(k->flags)
 						{
-							case SUB_KEY_ACTION_ADD_VTILE: subTileAdd(w, subTileNew(SUB_WIN_TILE_VERT));	break;
-							case SUB_KEY_ACTION_ADD_HTILE: subTileAdd(w, subTileNew(SUB_WIN_TILE_HORZ));	break;
+							case SUB_KEY_ACTION_ADD_VTILE: 
+								if(w->flags & SUB_WIN_TYPE_TILE) subTileAdd(w, subTileNew(SUB_WIN_TILE_VERT));	
+								break;
+							case SUB_KEY_ACTION_ADD_HTILE: 
+								if(w->flags & SUB_WIN_TYPE_TILE) subTileAdd(w, subTileNew(SUB_WIN_TILE_HORZ));
+								break;
 							case SUB_KEY_ACTION_DEL_WIN:
 								if(w->flags & SUB_WIN_TYPE_SCREEN) subScreenDelete(w); 
 								else if(w->flags & SUB_WIN_TYPE_TILE) subTileDelete(w);
 								else if(w->flags & SUB_WIN_TYPE_CLIENT) subClientDelete(w);
 								break;
-							case SUB_KEY_ACTION_COLLAPSE_WIN: subWinToggle(SUB_WIN_OPT_COLLAPSE, w); 			break;
-							case SUB_KEY_ACTION_RAISE_WIN: subWinToggle(SUB_WIN_OPT_RAISE, w); 						break;
+							case SUB_KEY_ACTION_COLLAPSE_WIN: 
+								if(!(w->flags & SUB_WIN_TYPE_SCREEN)) subWinToggle(SUB_WIN_OPT_COLLAPSE, w);
+								break;
+							case SUB_KEY_ACTION_RAISE_WIN: 
+								if(!(w->flags & SUB_WIN_TYPE_SCREEN)) subWinToggle(SUB_WIN_OPT_RAISE, w); 						
+								break;
 							case SUB_KEY_ACTION_EXEC:	if(k->string) Exec(k->string);										break;
 						}
 				}
@@ -179,19 +187,6 @@ HandleConfigure(XConfigureRequestEvent *ev)
 			if(ev->value_mask & CWY)			w->y 			= ev->y;
 			if(ev->value_mask & CWWidth)	w->width	= ev->width;
 			if(ev->value_mask & CWHeight)	w->height = ev->height;
-
-			/*wc.x						= w->x;
-			wc.y						= w->y;
-			wc.width				= w->width;
-			wc.height				= w->height;
-			wc.sibling			= ev->above;
-			wc.stack_mode		= ev->detail;
-			wc.border_width	= d->bw;
-
-			printf("x=%d, y=%d, width=%d, height=%d, sibling=%d, stack_mode=%d, border_width=%d\n", w->x, w->y, w->width, w->height,
-				ev->above, ev->detail, d->bw);
-
-			XConfigureWindow(d->dpy, w->frame, ev->value_mask, &wc); */
 
 			subClientSendConfigure(w);
 			wc.x = 0;
