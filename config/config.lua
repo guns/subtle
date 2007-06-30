@@ -40,9 +40,11 @@ colors2 = {
 
 -- Key config
 keys = {
-	add_vtile				= "Shift_L+Control_L+v",	-- Add a vertical tile
-	add_htile				= "Shift_L+Control_L+h",	-- Add a horizontal tile
-	del_win					= "Shift_L+Control_L+d",	-- Delete a window
-	collapse_win		= "Shift_L+Control_L+c",	-- Collapse a window
-	raise_win				= "Shift_L+Control_L+r"		-- Raise a window
+	add_vtile				= "S-C-v",	-- Add a vertical tile
+	add_htile				= "S-C-h",	-- Add a horizontal tile
+	del_win					= "S-C-d",	-- Delete a window
+	collapse_win		= "S-C-c",	-- Collapse a window
+	raise_win				= "S-C-r",	-- Raise a window
+	["rxvt +sb"]		= "S-C-s",		-- Exec an app
+	["mutt"]				= "S-F1"
 }
