@@ -22,11 +22,17 @@ Colors = {
 
 -- Key config
 Keys = {
-	AddVertTile			= "S-C-v",					-- Add a vertical tile
-	AddHorzTile			= "S-C-h",					-- Add a horizontal tile
-	DeleteWindow		= "S-C-d",					-- Delete a window
-	ToggleCollapse	= "S-C-c",					-- Collapse a window
-	ToggleRaise			= "S-C-r",					-- Raise a window
-	["rxvt +sb"]		= "S-C-s",					-- Exec an app
-	["mutt"]				= "S-F1"
+	AddVertTile			= "A-v",						-- Add a vertical tile
+	AddHorzTile			= "A-h",						-- Add a horizontal tile
+	DeleteWindow		= "A-d",						-- Delete a window
+	ToggleCollapse	= "A-c",						-- Collapse a window
+	ToggleRaise			= "A-r",						-- Raise a window
+	NextDesktop			= "S-Page_Up",			-- Switch to next desktop
+	PreviousDesktop	= "S-Page_Down",		-- Switch to previous desktop
+	MoveToDesktop1	= "S-A-1",					-- Move window to desktop 1
+	MoveToDesktop2	= "S-A-2",					-- Move window to desktop 2
+	MoveToDesktop3	= "S-A-3",					-- Move window to desktop 3
+	MoveToDesktop4	= "S-A-4",					-- Move window to desktop 4
+	["rxvt +sb"]		= "S-F1",						-- Exec an app
+	["mutt"]				= "S-F2"
 }
