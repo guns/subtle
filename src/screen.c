@@ -296,23 +296,25 @@ subScreenKill(void)
 }
 
  /**
-	* Get active screen
-	* @return Returns the active #SubWin or NULL
+	* Get screen
+	* @params pos Position
+	* @return Returns a #SubScreen or NULL
 	**/
 
-SubWin *
-subScreenGetActive(void)
+SubScreen *
+subScreenGet(int pos)
 {
-	return((active >= 0) ? screens[active]->w : NULL);
+	if(pos == SUB_SCREEN_ACTIVE) return(active >= 0 ? screens[active] : NULL);
+	else return(pos < size ? screens[pos - 1] : NULL);
 }
 
  /**
-	* Set active screen 
+	* Set screen 
 	* @param pos New active screen
 	**/
 
 void
-subScreenSetActive(int pos)
+subScreenSet(int pos)
 {
 	int next;
 
