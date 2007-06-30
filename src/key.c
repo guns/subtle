@@ -40,20 +40,6 @@ subKeyFind(int keycode,
 	return(NULL);
 }
 
-int
-GetModifier(KeySym sym)
-{
-	if(sym == XK_Shift_L || sym == XK_Shift_R) return(ShiftMask);
-	else if(sym == XK_Control_L || sym == XK_Control_R) return(ControlMask);
-	else if(sym == XK_Meta_L || sym == XK_Meta_R) return(Mod1Mask);
-	else if(sym == XK_Alt_L || sym == XK_Alt_R) return(Mod1Mask);
-	else if(sym == XK_Num_Lock) return(Mod2Mask);
-	else if(sym == XK_Super_L || XK_Super_R) return(Mod4Mask);
-	else if(sym == XK_Hyper_L || XK_Hyper_L) return(Mod4Mask);
-	else if(sym == XK_ISO_Level3_Shift) return(Mod5Mask);
-	else return(AnyModifier);
-}
-
  /**
 	* Parse key chains
 	* @key Key name
@@ -64,40 +50,56 @@ void
 subKeyParseChain(const char *key,
 	const char *value)
 {
+	int mod;
 	KeySym sym;
-	char *tok = strtok((char *)value, "+");
+	char *tok = strtok((char *)value, "-");
 	SubKey *k = (SubKey *)calloc(1, sizeof(SubKey));
 	if(!k) subLogError("Can't alloc memory. Exhausted?\n");
 
-	keys = (SubKey **)realloc(keys, sizeof(SubKey *) * (size + 1));
-	if(!keys) subLogError("Can't alloc memory. Exhausted?\n");
-
-	keys[size] = k;
+	/* FIXME: strncmp() is way to slow.. */	
+	if(!strncmp(key, "add_vtile", 9)) 					k->flags = SUB_KEY_ACTION_ADD_VTILE;
+	else if(!strncmp(key, "add_htile", 9)) 			k->flags = SUB_KEY_ACTION_ADD_HTILE;
+	else if(!strncmp(key, "del_win", 7))				k->flags = SUB_KEY_ACTION_DEL_WIN;
+	else if(!strncmp(key, "collapse_win", 12))	k->flags = SUB_KEY_ACTION_COLLAPSE_WIN;
+	else if(!strncmp(key, "raise_win", 9))			k->flags = SUB_KEY_ACTION_RAISE_WIN;
+	else
+		{
+			k->flags	= SUB_KEY_ACTION_EXEC;
+			k->string	= strdup(key);
+		}
 
 	while(tok)
 		{
-			sym = XStringToKeysym(tok);
-			if(sym == NoSymbol) 
+			if(*tok == 'S') 			{ sym = XK_Shift_L;		mod = ShiftMask; 		}
+			else if(*tok == 'C')	{ sym = XK_Control_L;	mod = ControlMask;	}
+			else if(*tok == 'A')	{ sym = XK_Alt_L;			mod = Mod1Mask;			}
+			else 
 				{
-					subLogWarn("Can't assign keychain `%s'.\n", key);
-					return;
+					sym = XStringToKeysym(tok);
+					if(sym == NoSymbol) 
+						{
+							subLogWarn("Can't assign keychain `%s'.\n", key);
+							if(k->string) free(k->string);
+							free(k);
+							return;
+						}
 				}
-			if(IsModifierKey(sym)) k->mod |= GetModifier(sym);
+			if(IsModifierKey(sym)) k->mod |= mod;
 			else k->code = XKeysymToKeycode(d->dpy, sym);
 
-			/* FIXME: strncmp() is way to slow.. */	
-			if(!strncmp(key, "add_vtile", 9)) 					k->flags = SUB_KEY_ACTION_ADD_VTILE;
-			else if(!strncmp(key, "add_htile", 9)) 			k->flags = SUB_KEY_ACTION_ADD_HTILE;
-			else if(!strncmp(key, "del_win", 7))				k->flags = SUB_KEY_ACTION_DEL_WIN;
-			else if(!strncmp(key, "collapse_win", 12))	k->flags = SUB_KEY_ACTION_COLLAPSE_WIN;
-			else if(!strncmp(key, "raise_win", 9))			k->flags = SUB_KEY_ACTION_RAISE_WIN;
-
-			tok = strtok(NULL, "+");
+			tok = strtok(NULL, "-");
 		}
+	
+	if(k->code && k->mod)
+		{
+			keys = (SubKey **)realloc(keys, sizeof(SubKey *) * (size + 1));
+			if(!keys) subLogError("Can't alloc memory. Exhausted?\n");
 
-	subLogDebug("Parsing keychain: name=%s, code=%d, mod=%d\n", key, k->code, k->mod);
+			keys[size] = k;
+			size++;
 
-	size++;
+			printf("Keychain: name=%s, code=%d, mod=%d\n", key, k->code, k->mod);
+		}
 }
 
  /**
@@ -113,6 +115,8 @@ subKeyKill(void)
 		{
 			for(i = 0; i < size; i++) 
 				{
+					if(keys[i]->flags == SUB_KEY_ACTION_EXEC && keys[i]->string) 
+						free(keys[i]->string);
 					free(keys[i]);
 				}
 
