@@ -61,55 +61,43 @@ subTileDelete(SubWin *w)
 			unsigned int n, i;
 			Window nil, *wins = NULL;
 
-			XGrabServer(d->dpy);
-			subWinUnmap(w);
-
 			XQueryTree(d->dpy, w->win, &nil, &nil, &wins, &n);	
 			for(i = 0; i < n; i++)
 				{
 					SubWin *c = subWinFind(wins[i]);
-					if(c && c->flags & SUB_WIN_TYPE_TILE) subTileDelete(c);
-					else if(c && c->flags & SUB_WIN_TYPE_CLIENT) subClientSendDelete(c);
+					if(c) subWinDelete(c);
 				}
 
 			subLogDebug("Deleting %s-tile with %d children\n", (w->flags & SUB_WIN_TILE_HORZ) ? "h" : "v", n);
 
 			free(w->tile); 
-			subWinDelete(w);
 			XFree(wins);
-
-			XSync(d->dpy, False);
-			XUngrabServer(d->dpy);
 		}
 }
 
  /**
 	* Render a tile window 
-	* @param mode Render mode
 	* @param w A #SubWin
 	**/
 
 void
-subTileRender(short mode,
-	SubWin *w)
+subTileRender(SubWin *w)
 {
-	if(w)
+	if(w && w->flags & SUB_WIN_TYPE_TILE)
 		{
-			unsigned long col = mode ? (w->flags & SUB_WIN_OPT_COLLAPSE ? d->colors.cover : d->colors.norm) : d->colors.focus;
+			unsigned long col = d->focus && d->focus == w ? d->colors.focus : 
+				(w->flags & SUB_WIN_OPT_COLLAPSE ? d->colors.cover : d->colors.norm);
 
-			if(w->flags & SUB_WIN_TYPE_TILE)
-				{
-					XSetWindowBackground(d->dpy, w->tile->btnew, col);
-					XSetWindowBackground(d->dpy, w->tile->btdel, col);
-					XClearWindow(d->dpy, w->tile->btnew);
-					XClearWindow(d->dpy, w->tile->btdel);
+			XSetWindowBackground(d->dpy, w->tile->btnew, col);
+			XSetWindowBackground(d->dpy, w->tile->btdel, col);
+			XClearWindow(d->dpy, w->tile->btnew);
+			XClearWindow(d->dpy, w->tile->btdel);
 
-					/* Descriptive buttons */
-					XDrawString(d->dpy, w->tile->btnew, d->gcs.font, 3, d->fy - 1, 
-						(w->flags & SUB_WIN_TILE_HORZ ? "Newrow" : "Newcol"), 6);
-					XDrawString(d->dpy, w->tile->btdel, d->gcs.font, 3, d->fy - 1, 
-						(w->parent && w->parent->flags & SUB_WIN_TILE_HORZ ? "Delrow" : "Delcol"), 6);
-				}
+			/* Descriptive buttons */
+			XDrawString(d->dpy, w->tile->btnew, d->gcs.font, 3, d->fy - 1, 
+				(w->flags & SUB_WIN_TILE_HORZ ? "Newrow" : "Newcol"), 6);
+			XDrawString(d->dpy, w->tile->btdel, d->gcs.font, 3, d->fy - 1, 
+				(w->parent && w->parent->flags & SUB_WIN_TILE_HORZ ? "Delrow" : "Delcol"), 6);
 		}
 }
 
