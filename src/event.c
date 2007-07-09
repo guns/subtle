@@ -36,36 +36,20 @@ subEventGetTime(void)
   return(tv.tv_sec);
 }
 
-/* Render wrapper */
-static void 
-RenderWindow(SubWin *w)
-{
-	short mode;
-	Window win;
-
-	if(w)
-		{
-			mode = (d->focus && d->focus->frame == w->frame) ? 0 : 1;
-			subWinRender(mode, w);
-			if(w->flags & SUB_WIN_TYPE_SCREEN) subScreenRender(mode, w);
-			if(w->flags & SUB_WIN_TYPE_TILE) subTileRender(mode, w);
-			else if(w->flags & SUB_WIN_TYPE_CLIENT) subClientRender(mode, w);
-		}
-}
-
 static void
 HandleButtonPress(XButtonEvent *ev)
 {
+	SubWin *w = NULL;
 	static Time last_time = 0;
 
 	if(ev->window == d->bar.screens)
-		{
-			SubScreen *s = subScreenFind(ev->subwindow);
-			if(s) subScreenSet(s->id);
+	{
+		SubScreen *s = subScreenFind(ev->subwindow);
+		if(s) subScreenSwitch(subScreenGetPos(s));
 
-			return;
-		}
-	SubWin *w = subWinFind(ev->window);
+		return;
+	}
+	w = subWinFind(ev->window);
 	if(w)
 		{
 			switch(ev->button)
@@ -98,28 +82,22 @@ HandleButtonPress(XButtonEvent *ev)
 								if(w->flags & SUB_WIN_TYPE_TILE)
 									{
 										if(ev->subwindow == w->tile->btnew) subTileAdd(w, subTileNew(SUB_WIN_TILE_VERT));
-										else if(ev->subwindow == w->tile->btdel) 
-											{
-												if(w->flags & SUB_WIN_TYPE_SCREEN) subScreenDelete(w); 
-												else subTileDelete(w);
-											}
+										else if(ev->subwindow == w->tile->btdel) subWinDelete(w);
 									}
 							}
 						break;
 					case Button2:
 						if(ev->subwindow == w->title)
 							{
-								if(w->flags & SUB_WIN_TYPE_SCREEN) subScreenDelete(w); 
-								else if(w->flags & SUB_WIN_TYPE_TILE) subTileDelete(w);
-								else subClientSendDelete(w);
+								subWinDelete(w);
 							}
 						break;
 					case Button3: 
 						if(w->flags & SUB_WIN_TYPE_TILE && ev->subwindow == w->tile->btnew) subTileAdd(w, subTileNew(SUB_WIN_TILE_HORZ));
 						else if(ev->subwindow == w->title) subWinToggle(SUB_WIN_OPT_RAISE, w); 
 						break;
-					case Button4: subScreenSet(SUB_SCREEN_NEXT); break;
-					case Button5: subScreenSet(SUB_SCREEN_PREV); break;
+					case Button4: subScreenSwitch(SUB_SCREEN_NEXT); break;
+					case Button5: subScreenSwitch(SUB_SCREEN_PREV); break;
 				}
 		}
 }
@@ -153,7 +131,6 @@ HandleKeyPress(XKeyEvent *ev)
 					SubWin *p = NULL;
 					SubScreen *s = NULL;
 
-					subLogDebug("KeyPress: code=%d, mod=%d\n", k->code, k->mod);
 					switch(k->flags)
 						{
 							case SUB_KEY_ACTION_ADD_VTILE: 
@@ -162,26 +139,22 @@ HandleKeyPress(XKeyEvent *ev)
 							case SUB_KEY_ACTION_ADD_HTILE: 
 								if(w->flags & SUB_WIN_TYPE_TILE) subTileAdd(w, subTileNew(SUB_WIN_TILE_HORZ));
 								break;
-							case SUB_KEY_ACTION_DELETE_WIN:
-								if(w->flags & SUB_WIN_TYPE_SCREEN) subScreenDelete(w); 
-								else if(w->flags & SUB_WIN_TYPE_TILE) subTileDelete(w);
-								else if(w->flags & SUB_WIN_TYPE_CLIENT) subClientDelete(w);
-								break;
+							case SUB_KEY_ACTION_DELETE_WIN: subWinDelete(w);												break;
 							case SUB_KEY_ACTION_TOGGLE_COLLAPSE: 
 								if(!(w->flags & SUB_WIN_TYPE_SCREEN)) subWinToggle(SUB_WIN_OPT_COLLAPSE, w);
 								break;
 							case SUB_KEY_ACTION_TOGGLE_RAISE: 
 								if(!(w->flags & SUB_WIN_TYPE_SCREEN)) subWinToggle(SUB_WIN_OPT_RAISE, w); 						
 								break;
-							case SUB_KEY_ACTION_DESKTOP_NEXT: subScreenSet(SUB_SCREEN_NEXT);			break;
-							case SUB_KEY_ACTION_DESKTOP_PREV: subScreenSet(SUB_SCREEN_PREV);			break;
+							case SUB_KEY_ACTION_DESKTOP_NEXT: subScreenSwitch(SUB_SCREEN_NEXT);			break;
+							case SUB_KEY_ACTION_DESKTOP_PREV: subScreenSwitch(SUB_SCREEN_PREV);			break;
 							case SUB_KEY_ACTION_DESKTOP_MOVE:
 								if(k->number && !(w->flags & SUB_WIN_TYPE_SCREEN))
 									{
-										p = w->parent;
-										s = subScreenGet(k->number);
+										s = subScreenGetPtr(k->number);
 										if(s)
 											{
+												p = w->parent;
 												subTileAdd(s->w, w);
 												subTileConfigure(p);
 											}
@@ -189,6 +162,8 @@ HandleKeyPress(XKeyEvent *ev)
 								break;
 							case SUB_KEY_ACTION_EXEC:	if(k->string) Exec(k->string);							break;
 						}
+
+					subLogDebug("KeyPress: code=%d, mod=%d\n", k->code, k->mod);
 				}
 		}
 }
@@ -228,7 +203,7 @@ HandleMap(XMapRequestEvent *ev)
 	SubWin *w = subWinFind(ev->window);
 	if(!w) 
 		{
-			SubScreen *s = subScreenGet(SUB_SCREEN_ACTIVE);
+			SubScreen *s = subScreenGetPtr(SUB_SCREEN_ACTIVE);
 			w = subClientNew(ev->window);
 			if(!(w->flags & SUB_WIN_OPT_RAISE)) subTileAdd(s->w, w);
 			else w->parent = s->w;
@@ -239,7 +214,7 @@ static void
 HandleDestroy(XDestroyWindowEvent *ev)
 {
 	SubWin *w = subWinFind(ev->event);
-	if(w && w->flags & SUB_WIN_TYPE_CLIENT) subClientDelete(w); 
+	if(w && w->flags & SUB_WIN_TYPE_CLIENT) subWinDelete(w); 
 
 }
 	
@@ -288,25 +263,25 @@ HandleCrossing(XCrossingEvent *ev)
 	SubWin *w = subWinFind(ev->window);
 	if(w)
 		{
+			/* Make leave events to enter event of the parent window */
+			if(ev->type == LeaveNotify && !ev->mode && w->parent) w = w->parent; 
+
 			/* Remove focus from window */
 			if(d->focus) 
 				{
 					SubWin *f = d->focus;
 					d->focus = NULL;
-					if(f) RenderWindow(f);
+					if(f) subWinRender(f);
 
 					subKeyUngrab(f);
 				}
 
-			/* Make leave events to enter event of the parent window */
-			if(ev->type == LeaveNotify && !ev->mode && w->parent) w = w->parent;
 			d->focus = w;
-			RenderWindow(w);
+			subWinRender(w);
 			subEwmhSetWindow(DefaultRootWindow(d->dpy), SUB_EWMH_NET_ACTIVE_WINDOW, w->frame);
 
 			/* Grab key */
 			subKeyGrab(w);
-			XSetInputFocus(d->dpy, w->frame, RevertToNone, CurrentTime);
 
 			/* Focus */
 			if(w->flags & SUB_WIN_TYPE_CLIENT && !(w->flags & SUB_WIN_OPT_COLLAPSE))
@@ -328,8 +303,7 @@ HandleCrossing(XCrossingEvent *ev)
 					subLogDebug("Focus: win=%#lx, input=%d, send=%d\n", w->win, 
 						w->flags & SUB_WIN_PREF_INPUT ? 1 : 0, w->flags & SUB_WIN_PREF_FOCUS ? 1 : 0);
 				}
-			else if(w->flags & SUB_WIN_TYPE_TILE && !(w->flags & SUB_WIN_OPT_COLLAPSE)) 
-				XSetInputFocus(d->dpy, w->win, RevertToNone, CurrentTime);
+			else if(!(w->flags & SUB_WIN_OPT_COLLAPSE)) XSetInputFocus(d->dpy, w->win, RevertToNone, CurrentTime);
 		}
 }
 
@@ -339,10 +313,10 @@ HandleExpose(XEvent *ev)
 	XEvent event;
 	Window win = ev->type == Expose ? ev->xexpose.window : ev->xvisibility.window;
 	SubWin *w = subWinFind(win);
+	if(w) subWinRender(w);
 
+	/* Remove any other event of the same type and window */
 	while(XCheckTypedWindowEvent(d->dpy, win, ev->type, &event));
-
-	if(w) RenderWindow(w);
 }
 
  /**
@@ -352,7 +326,6 @@ HandleExpose(XEvent *ev)
 
 int subEventLoop(void)
 {
-	short mode;
 	time_t current;
 	XEvent ev;
 	struct timeval tv;
@@ -369,10 +342,9 @@ int subEventLoop(void)
 					while(s->time <= current)
 						{
 							s->time = current + s->interval;
-							mode = (d->focus && d->focus->flags & SUB_WIN_TYPE_SCREEN) ? 0 : 1;
 
 							subLuaCall(s);
-							subSubletRender(mode, s);
+							subSubletRender(s);
 							subSubletSift(1);
 
 							s = subSubletNext();
@@ -393,7 +365,6 @@ int subEventLoop(void)
 					switch(ev.type)
 						{
 							case ButtonPress:				HandleButtonPress(&ev.xbutton);					break;
-							/*case KeyRelease:				*/
 							case KeyPress:					HandleKeyPress(&ev.xkey);								break;
 							case ConfigureRequest:	HandleConfigure(&ev.xconfigurerequest);	break;
 							case MapRequest: 				HandleMap(&ev.xmaprequest); 						break;
