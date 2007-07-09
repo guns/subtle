@@ -52,8 +52,8 @@
 #define SUB_WIN_PREF_FOCUS				(1L << 10)					// Send focus messages
 #define SUB_WIN_PREF_CLOSE				(1L << 11)					// Send close messages
 
-#define SUB_WIN_TILE_VERT					(1L << 13)					// Vert-tile
-#define SUB_WIN_TILE_HORZ					(1L << 14)					// Horiz-tile
+#define SUB_WIN_TILE_VERT					(1L << 12)					// Vert-tile
+#define SUB_WIN_TILE_HORZ					(1L << 13)					// Horiz-tile
 
 #define SUB_WIN_DRAG_LEFT					(1L << 1)						// Drag start from left
 #define SUB_WIN_DRAG_RIGHT				(1L << 2)						// Drag start from right
@@ -91,7 +91,7 @@ void subWinDelete(SubWin *w);													// Delete a window
 void subWinDrag(short mode, SubWin *w);								// Move/Resize a window
 void subWinToggle(short type, SubWin *w);							// Toggle shading or floating state of a window
 void subWinResize(SubWin *w);													// Resize a window
-void subWinRender(short mode, SubWin *w);							// Render a window
+void subWinRender(SubWin *w);													// Render a window
 void subWinRestack(SubWin *w);												// Restack a window
 void subWinMap(SubWin *w);														// Map a window
 void subWinUnmap(SubWin *w);													// Unmap a window
@@ -106,7 +106,7 @@ typedef struct subtile
 
 SubWin *subTileNew(short mode);												// Create a new tile
 void subTileDelete(SubWin *w);												// Delete a tile
-void subTileRender(short mode, SubWin *w);						// Render a tile
+void subTileRender(SubWin *w);												// Render a tile
 void subTileAdd(SubWin *t, SubWin *w);								// Add a window to tile
 void subTileConfigure(SubWin *w);											// Configure a tile
 
@@ -120,7 +120,7 @@ typedef struct subclient
 
 SubWin *subClientNew(Window win);											// Create a new client
 void subClientDelete(SubWin *w);											// Delete a client
-void subClientRender(short mode, SubWin *w);					// Render the window
+void subClientRender(SubWin *w);											// Render the window
 void subClientSetWMState(SubWin *w, long state);			// Set client WM state
 long subClientGetWMState(SubWin *w);									// Get client WM state
 void subClientSendConfigure(SubWin *w);								// Send configure request
@@ -155,7 +155,7 @@ void subSubletInit(void);															// Init sublet list
 void subSubletNew(int type, int ref, 									// Create a new sublet
 	time_t interval, unsigned int width);
 void subSubletDelete(SubSublet *s);										// Delete a sublet
-void subSubletRender(short mode, SubSublet *s);				// Render a sublet
+void subSubletRender(SubSublet *s);										// Render a sublet
 SubSublet *subSubletNext(void);												// Get the next sublet
 void subSubletKill(void);															// Delete all sublets
 
@@ -166,7 +166,7 @@ void subSubletKill(void);															// Delete all sublets
 
 typedef struct subscreen
 {
-	int id, width;																			// Screen id, button width
+	int  width;																					// Screen button width
 	char *name;																					// Screen names
 	SubWin *w;																					// Root windows
 	Window button;																			// Virtual screen buttons
@@ -177,11 +177,12 @@ void subScreenInit(void);															// Init the screens
 SubScreen *subScreenNew(void);												// Create a new screen
 void subScreenDelete(SubWin *w);											// Delete a screen
 void subScreenKill(void);															// Kill all screens
-void subScreenRender(short mode, SubWin *w);					// Render the screen window
+void subScreenRender(SubWin *w);											// Render the screen window
 void subScreenAdd(Window win);												// Add a window to the bar
 void subScreenConfigure(void);												// Configure the screen
-SubScreen *subScreenGet(int pos);											// Get active screen
-void subScreenSet(int pos);														// Set active screen
+SubScreen *subScreenGetPtr(int pos);									// Get screen pointer
+int subScreenGetPos(SubScreen *s);										// Get screen position
+void subScreenSwitch(int pos);												// Switch screens
 
 /* display.c */
 typedef struct subdisplay
