@@ -101,18 +101,8 @@ subClientDelete(SubWin *w)
 {
 	if(w->flags & SUB_WIN_TYPE_CLIENT)
 		{
-			XEvent event;
-			XGrabServer(d->dpy);
-
-			subWinUnmap(w);
-
 			if(w->client->name) XFree(w->client->name);
 			free(w->client);
-			subWinDelete(w);
-
-			XSync(d->dpy, False);
-			XUngrabServer(d->dpy);
-			while(XCheckTypedEvent(d->dpy, EnterWindowMask|LeaveWindowMask, &event));
 		}
 }
 
@@ -208,7 +198,7 @@ subClientSendDelete(SubWin *w)
 
 					XSendEvent(d->dpy, w->win, False, NoEventMask, &ev);
 				}
-			else XKillClient(d->dpy, w->win);
+			else subClientDelete(w);
 		}
 }
 
@@ -232,8 +222,7 @@ subClientFetchName(SubWin *w)
 			XMoveResizeWindow(d->dpy, w->client->caption, d->th, 0, width, d->th);
 
 			mode = (d->focus && d->focus->frame == w->frame) ? 0 : 1;
-			subWinRender(mode, w);
-			subClientRender(mode, w);
+			subClientRender(w);
 		}
 }
 
@@ -243,14 +232,13 @@ subClientFetchName(SubWin *w)
 	**/
 
 void
-subClientRender(short mode,
-	SubWin *w)
+subClientRender(SubWin *w)
 {
-	unsigned long col = mode ? (w->flags & SUB_WIN_OPT_COLLAPSE ?  d->colors.cover : d->colors.norm) : 
-		d->colors.focus;
-
 	if(w && w->flags & SUB_WIN_TYPE_CLIENT)
 		{
+			unsigned long col = d->focus && d->focus == w ? d->colors.focus : 
+				(w->flags & SUB_WIN_OPT_COLLAPSE ? d->colors.cover : d->colors.norm);
+
 			XSetWindowBackground(d->dpy, w->client->caption, col);
 			XClearWindow(d->dpy, w->client->caption);
 			XDrawString(d->dpy, w->client->caption, d->gcs.font, 3, d->fy - 1, w->client->name, 
