@@ -114,7 +114,7 @@ subKeyParseChain(const char *key,
 			keys[size] = k;
 			size++;
 
-			printf("Keychain: name=%s, code=%d, mod=%d\n", key, k->code, k->mod);
+			subLogDebug("Keychain: name=%s, code=%d, mod=%d\n", key, k->code, k->mod);
 		}
 }
 
@@ -131,9 +131,11 @@ subKeyKill(void)
 		{
 			for(i = 0; i < size; i++) 
 				{
-					if(keys[i]->flags == SUB_KEY_ACTION_EXEC && keys[i]->string) 
-						free(keys[i]->string);
-					free(keys[i]);
+					if(keys[i])
+						{
+							if(keys[i]->flags == SUB_KEY_ACTION_EXEC && keys[i]->string) free(keys[i]->string);
+							free(keys[i]);
+						}
 				}
 
 			free(keys);
