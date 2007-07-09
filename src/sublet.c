@@ -144,12 +144,11 @@ subSubletDelete(SubSublet *s)
 	**/
 
 void
-subSubletRender(short mode,
-	SubSublet *s)
+subSubletRender(SubSublet *s)
 {
 	if(s)
 		{
-			unsigned long col = mode ? d->colors.norm : d->colors.focus;
+			unsigned long col = d->focus && d->focus->flags & SUB_WIN_TYPE_SCREEN ? d->colors.focus : d->colors.norm;
 
 			XSetWindowBackground(d->dpy, s->win, col);
 			XClearWindow(d->dpy, s->win);
