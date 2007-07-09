@@ -31,7 +31,7 @@ subWinFind(Window win)
 {
 	SubWin *w = NULL;
 	return(XFindContext(d->dpy, win, 1, (void *)&w) != XCNOENT ? w : NULL);
-} /*  */
+}
 
  /**
 	* Create a new window and append it to the window list 
@@ -54,11 +54,12 @@ subWinNew(Window win)
 	attrs.border_pixel			= d->colors.border;
 	attrs.background_pixmap	= ParentRelative;
 	attrs.background_pixel	= d->colors.norm;
-	attrs.event_mask				= KeyPressMask|ButtonPressMask|ButtonMotionMask|EnterWindowMask|LeaveWindowMask|
-		ExposureMask|VisibilityChangeMask|SubstructureRedirectMask|SubstructureNotifyMask;
+	attrs.save_under				= True;
+	attrs.event_mask				= KeyPressMask|ButtonPressMask|EnterWindowMask|LeaveWindowMask|ExposureMask|
+		VisibilityChangeMask|SubstructureRedirectMask|SubstructureNotifyMask;
 
 	/* Create windows */
-	mask			= CWBackPixmap|CWEventMask;
+	mask			= CWBackPixmap|CWSaveUnder|CWEventMask;
 	w->frame	= SUBWINNEW(DefaultRootWindow(d->dpy), 0, 0, w->width, w->height, 0);
 	mask			= CWBackPixel;
 	w->title	= SUBWINNEW(w->frame, 0, 0, w->width, d->th, 0);
@@ -102,7 +103,18 @@ subWinDelete(SubWin *w)
 		{
 			SubWin *p = w->parent;
 
-			if(d->focus == w && p) d->focus = p;
+			subWinUnmap(w);
+
+			if(d->focus == w && p)
+				{
+					d->focus = p;
+					subWinRender(p);
+				}
+					
+			/* Check window flags */
+			if(w->flags & SUB_WIN_TYPE_SCREEN) subScreenDelete(w);
+			if(w->flags & SUB_WIN_TYPE_TILE) subTileDelete(w);
+			else if(w->flags & SUB_WIN_TYPE_CLIENT) subClientSendDelete(w);			
 
 			XDeleteContext(d->dpy, w->frame, 1);
 			XDestroySubwindows(d->dpy, w->frame);
@@ -115,18 +127,17 @@ subWinDelete(SubWin *w)
 
  /**
 	* Render a window 
-	* @param mode Render mode
 	* @param w A #SubWin
 	**/
 
 void
-subWinRender(short mode,
-	SubWin *w)
+subWinRender(SubWin *w)
 {
 	if(w)
 		{
 			char c = 's';
-			unsigned long col = mode ? (w->flags & SUB_WIN_OPT_COLLAPSE ? d->colors.cover : d->colors.norm) : d->colors.focus;
+			unsigned long col = d->focus && d->focus == w ? d->colors.focus : 
+				(w->flags & SUB_WIN_OPT_COLLAPSE ? d->colors.cover : d->colors.norm);
 
 			/* Update color */
 			XSetWindowBackground(d->dpy, w->title,	col);
@@ -153,6 +164,11 @@ subWinRender(short mode,
 			else if(w->flags & SUB_WIN_OPT_WEIGHT)		c = 'w';
 	
 			XDrawString(d->dpy, w->icon, d->gcs.font, (d->th - 8 - d->fx) / 2 + 1, d->fy - 5, &c, 1);
+
+			/* Check window flags */
+			if(w->flags & SUB_WIN_TYPE_SCREEN) subScreenRender(w);
+			else if(w->flags & SUB_WIN_TYPE_TILE) subTileRender(w);
+			else if(w->flags & SUB_WIN_TYPE_CLIENT) subClientRender(w);
 	}
 }
 
