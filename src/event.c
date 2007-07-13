@@ -112,6 +112,8 @@ Exec(char *cmd)
 			case 0:
 				setsid();
 				execlp("/bin/sh", "sh", "-c", cmd, NULL);
+
+				/* Never to be reached statement */
 				subLogWarn("Can't exec command `%s'.\n", cmd);
 				exit(1);
 			case -1:
@@ -128,16 +130,18 @@ HandleKeyPress(XKeyEvent *ev)
 			SubKey *k = subKeyFind(ev->keycode, ev->state);
 			if(k) 
 				{
+					int type = SUB_WIN_TILE_HORZ;
 					SubWin *p = NULL;
 					SubScreen *s = NULL;
 
 					switch(k->flags)
 						{
 							case SUB_KEY_ACTION_ADD_VTILE: 
-								if(w->flags & SUB_WIN_TYPE_TILE) subTileAdd(w, subTileNew(SUB_WIN_TILE_VERT));	
-								break;
+								type = SUB_WIN_TILE_VERT;
 							case SUB_KEY_ACTION_ADD_HTILE: 
-								if(w->flags & SUB_WIN_TYPE_TILE) subTileAdd(w, subTileNew(SUB_WIN_TILE_HORZ));
+								if(w->flags & SUB_WIN_TYPE_TILE) subTileAdd(w, subTileNew(type));
+								else if(w->flags & SUB_WIN_TYPE_CLIENT && w->parent && w->parent->flags & SUB_WIN_TYPE_TILE)
+									subTileAdd(w->parent, subTileNew(type));
 								break;
 							case SUB_KEY_ACTION_DELETE_WIN: subWinDelete(w);												break;
 							case SUB_KEY_ACTION_TOGGLE_COLLAPSE: 
@@ -180,7 +184,7 @@ HandleConfigure(XConfigureRequestEvent *ev)
 			if(ev->value_mask & CWWidth)	w->width	= ev->width;
 			if(ev->value_mask & CWHeight)	w->height = ev->height;
 
-			subClientSendConfigure(w);
+			subClientConfigure(w);
 			wc.x = 0;
 			wc.y = d->th;
 		}
@@ -205,8 +209,12 @@ HandleMap(XMapRequestEvent *ev)
 		{
 			SubScreen *s = subScreenGetPtr(SUB_SCREEN_ACTIVE);
 			w = subClientNew(ev->window);
-			if(!(w->flags & SUB_WIN_OPT_RAISE)) subTileAdd(s->w, w);
-			else w->parent = s->w;
+			if(!(w->flags & SUB_WIN_OPT_TRANS)) subTileAdd(s->w, w);
+			else 
+				{
+					w->parent = s->w;
+					subWinToggle(SUB_WIN_OPT_RAISE, w);
+				}
 		}
 }
 
@@ -215,16 +223,44 @@ HandleDestroy(XDestroyWindowEvent *ev)
 {
 	SubWin *w = subWinFind(ev->event);
 	if(w && w->flags & SUB_WIN_TYPE_CLIENT) subWinDelete(w); 
-
 }
 	
 static void
 HandleMessage(XClientMessageEvent *ev)
 {
-	SubWin *w = subWinFind(ev->window);
-	if(w && ev->message_type == subEwmhGetAtom(SUB_EWMH_WM_CHANGE_STATE) 
-		&& ev->format == 32 && ev->data.l[0] == IconicState)
-		subWinUnmap(w);
+	SubWin *w = NULL;
+	unsigned int n = 0, i;
+	Window parent, nil, *wins = NULL;
+
+	/* Client messages never propagate.. */
+	XQueryTree(d->dpy, ev->window, &nil, &parent, &wins, &n);
+	XFree(wins);
+
+	if(parent) w = subWinFind(parent);
+	if(w && w->flags & SUB_WIN_TYPE_CLIENT)
+		{
+			printf("message_type=%d\n", ev->message_type);
+			if(ev->format == 32)
+				{
+					for(i = 0; i < 5; i++)
+						printf("-> l[%d]=%d\n", i, ev->data.l[i]);
+				}
+			if(ev->message_type == subEwmhGetAtom(SUB_EWMH_NET_WM_STATE))
+				{
+					if(ev->data.l[1] == subEwmhGetAtom(SUB_EWMH_NET_WM_STATE_FULLSCREEN))
+						{
+							if(ev->data.l[0] == 0) /* Remove state */
+								{
+									subWinToggle(SUB_WIN_OPT_FULL, w);
+								}						
+
+							else if(ev->data.l[0] == 1) /* Add state */
+								{
+									subWinToggle(SUB_WIN_OPT_FULL, w);
+								}
+						}
+				}
+		}
 }
 
 static void
@@ -252,7 +288,7 @@ HandleProperty(XPropertyEvent *ev)
 	if(parent) w = subWinFind(parent);
 	if(w && w->flags & SUB_WIN_TYPE_CLIENT)
 		{
-			subLogDebug("Property: atom=%ld\n", ev->atom);
+			printf("Property: atom=%ld\n", ev->atom);
 			if(ev->atom == XA_WM_NAME || ev->atom == subEwmhGetAtom(SUB_EWMH_NET_WM_NAME)) subClientFetchName(w);
 		}
 }
