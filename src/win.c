@@ -103,7 +103,7 @@ subWinDelete(SubWin *w)
 		{
 			SubWin *p = w->parent;
 
-			subWinUnmap(w);
+			//if(w->flags & SUB_WIN_TYPE_CLIENT && !(w->flags & SUB_WIN_PREF_CLOSE)) printf("unmap\n"),subWinUnmap(w);
 
 			if(d->focus == w && p)
 				{
@@ -114,7 +114,7 @@ subWinDelete(SubWin *w)
 			/* Check window flags */
 			if(w->flags & SUB_WIN_TYPE_SCREEN) subScreenDelete(w);
 			if(w->flags & SUB_WIN_TYPE_TILE) subTileDelete(w);
-			else if(w->flags & SUB_WIN_TYPE_CLIENT) subClientSendDelete(w);			
+			else if(w->flags & SUB_WIN_TYPE_CLIENT) subClientDelete(w);			
 
 			XDeleteContext(d->dpy, w->frame, 1);
 			XDestroySubwindows(d->dpy, w->frame);
@@ -493,6 +493,7 @@ subWinToggle(short type,
 
 					switch(type)
 						{
+							case SUB_WIN_OPT_RAISE: XReparentWindow(d->dpy, w->frame, w->parent->win, w->x, w->y);	break;						
 							case SUB_WIN_OPT_COLLAPSE:
 								/* Set state */
 								if(w->flags & SUB_WIN_TYPE_CLIENT) subClientSetWMState(w, NormalState);
@@ -506,10 +507,23 @@ subWinToggle(short type,
 								/* Resize frame */
 								XMoveResizeWindow(d->dpy, w->frame, w->x, w->y, w->width, w->height);
 								break;
-							case SUB_WIN_OPT_RAISE: XReparentWindow(d->dpy, w->frame, w->parent->win, w->x, w->y);	break;
 							case SUB_WIN_OPT_WEIGHT:
 								w->weight = 0;
 								if(w->parent) subTileConfigure(w->parent);
+								break;
+							case SUB_WIN_OPT_FULL:
+								if(w->flags & SUB_WIN_TYPE_CLIENT)
+									{
+										/* Map most of the windows */
+										XMapWindow(d->dpy, w->title);
+										XMapWindow(d->dpy, w->icon);
+										XMapWindow(d->dpy, w->client->caption);
+										XMapWindow(d->dpy, w->left);
+										XMapWindow(d->dpy, w->right);
+										XMapWindow(d->dpy, w->bottom);
+										
+										subTileConfigure(w->parent);
+									}								
 						}
 				}
 			else 
@@ -518,30 +532,19 @@ subWinToggle(short type,
 
 					switch(type)
 						{
-							case SUB_WIN_OPT_COLLAPSE:
-								/* Set state */
-								if(w->flags & SUB_WIN_TYPE_CLIENT) subClientSetWMState(w, WithdrawnState);
 
-								/* Unmap most of the windows */
-								XUnmapWindow(d->dpy, w->win);
-								XUnmapWindow(d->dpy, w->left);
-								XUnmapWindow(d->dpy, w->right);
-								XUnmapWindow(d->dpy, w->bottom);
-
-								/* Resize frame */
-								XMoveResizeWindow(d->dpy, w->frame, w->x, w->y, w->width, d->th);
-								break;
 							case SUB_WIN_OPT_RAISE:
 								/* Respect the user/program preferences */
 								if(w->flags & SUB_WIN_TYPE_CLIENT)
 									{
-										XSizeHints *hints = NULL;
-										long supplied;
-
-										hints = XAllocSizeHints();
+										long supplied = 0;
+										XSizeHints *hints = XAllocSizeHints();
 										if(!hints) subLogError("Can't alloc memory. Exhausted?\n");
 										if(!(XGetWMSizeHints(d->dpy, w->win, hints, &supplied, subEwmhGetAtom(SUB_EWMH_WM_SIZE_HINTS))))
 											{
+												printf("width=%d, height=%d, base_width=%d, base_height=%d\n",
+													hints->width, hints->height, hints->base_width, hints->base_height);
+
 												if(hints->flags & (USSize|PSize))
 													{
 														w->width	= hints->width;
@@ -574,12 +577,48 @@ subWinToggle(short type,
 								subWinResize(w);
 								XReparentWindow(d->dpy, w->frame, DefaultRootWindow(d->dpy), w->x, w->y);
 								subWinRaise(w);
+								break;
+							case SUB_WIN_OPT_COLLAPSE:
+								/* Set state */
+								if(w->flags & SUB_WIN_TYPE_CLIENT) subClientSetWMState(w, WithdrawnState);
 
+								/* Unmap most of the windows */
+								XUnmapWindow(d->dpy, w->win);
+								XUnmapWindow(d->dpy, w->left);
+								XUnmapWindow(d->dpy, w->right);
+								XUnmapWindow(d->dpy, w->bottom);
+
+								/* Resize frame */
+								XMoveResizeWindow(d->dpy, w->frame, w->x, w->y, w->width, d->th);
+								break;
+							case SUB_WIN_OPT_FULL:
+								if(w->flags & SUB_WIN_TYPE_CLIENT)
+									{
+										/* Unmap some windows */
+										XUnmapWindow(d->dpy, w->title);
+										XUnmapWindow(d->dpy, w->icon);
+										XUnmapWindow(d->dpy, w->client->caption);
+										XUnmapWindow(d->dpy, w->left);
+										XUnmapWindow(d->dpy, w->right);
+										XUnmapWindow(d->dpy, w->bottom);
+
+										w->x			= 0;
+										w->y			= 0;
+										w->width	= DisplayWidth(d->dpy, DefaultScreen(d->dpy));
+										w->height	= DisplayHeight(d->dpy, DefaultScreen(d->dpy));
+
+										XReparentWindow(d->dpy, w->frame, DefaultRootWindow(d->dpy), 0, 0);
+										subWinResize(w);
+
+										subKeyUngrab(d->focus);
+										d->focus = w;
+										subKeyGrab(w);
+									}
 						}
 				}
 			XUngrabServer(d->dpy);
 			while(XCheckTypedEvent(d->dpy, UnmapNotify, &event));
-			subTileConfigure(w->parent);
+			if(type != SUB_WIN_OPT_FULL) subTileConfigure(w->parent);
 		}
 }
 
@@ -611,15 +650,17 @@ subWinResize(SubWin *w)
 		{
 			XMoveResizeWindow(d->dpy, w->frame, w->x, w->y, w->width, 
 				(w->flags & SUB_WIN_OPT_COLLAPSE) ? d->th : w->height);
-			XMoveResizeWindow(d->dpy, w->title, 0, 0, w->width, d->th);
 
-			if(!(w->flags & SUB_WIN_OPT_COLLAPSE))
+			if(w->flags & SUB_WIN_OPT_FULL) XMoveResizeWindow(d->dpy, w->win, 0, 0, w->width, w->height);
+			else if(!(w->flags & SUB_WIN_OPT_COLLAPSE))
 				{
 					XMoveResizeWindow(d->dpy, w->win, d->bw, d->th, w->width - 2 * d->bw, w->height - d->th - d->bw);
 					XMoveResizeWindow(d->dpy, w->right, w->width - d->bw, d->th, d->bw, w->height - d->th);
 					XMoveResizeWindow(d->dpy, w->bottom, 0, w->height - d->bw, w->width, d->bw);
-					if(w->flags & SUB_WIN_TYPE_CLIENT) subClientSendConfigure(w);
 				}
+			else XMoveResizeWindow(d->dpy, w->title, 0, 0, w->width, d->th);
+
+			if(w->flags & SUB_WIN_TYPE_CLIENT && !(w->flags & SUB_WIN_OPT_COLLAPSE)) subClientConfigure(w);
 		}
 }
 
