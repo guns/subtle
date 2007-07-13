@@ -43,6 +43,8 @@ subScreenFind(Window win)
 void
 subScreenInit(void)
 {
+	long data[4] = { 0, 0, 0, 0 };
+
 	/* Screen bar windows */
 	d->bar.win			= XCreateSimpleWindow(d->dpy, DefaultRootWindow(d->dpy), 0, 0, 1, d->th, 0, 0, d->colors.norm);
 	d->bar.screens	= XCreateSimpleWindow(d->dpy, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
@@ -52,6 +54,63 @@ subScreenInit(void)
 
 	XMapWindow(d->dpy, d->bar.screens);
 	XMapWindow(d->dpy, d->bar.sublets);
+
+	/* EWMH: Window manager information */
+	subEwmhSetWindow(DefaultRootWindow(d->dpy), SUB_EWMH_NET_SUPPORTING_WM_CHECK, DefaultRootWindow(d->dpy));
+	subEwmhSetString(DefaultRootWindow(d->dpy), SUB_EWMH_NET_WM_NAME, PACKAGE_STRING);
+	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_WM_PID, (long)getpid());
+	subEwmhSetCardinals(DefaultRootWindow(d->dpy), SUB_EWMH_NET_DESKTOP_VIEWPORT, (long *)&data, 2);
+
+	/* EWMH: Workarea size */
+	data[2] = DisplayWidth(d->dpy, DefaultScreen(d->dpy)); 
+	data[3] = DisplayHeight(d->dpy, DefaultScreen(d->dpy));
+	subEwmhSetCardinals(DefaultRootWindow(d->dpy), SUB_EWMH_NET_WORKAREA, (long *)&data, 4);
+
+	/* EWMH: Desktop sizes */
+	data[0] = DisplayWidth(d->dpy, DefaultScreen(d->dpy));
+	data[1] = DisplayHeight(d->dpy, DefaultScreen(d->dpy));
+	subEwmhSetCardinals(DefaultRootWindow(d->dpy), SUB_EWMH_NET_DESKTOP_GEOMETRY, (long *)&data, 2);
+
+	/* EWMH: Supported window states */
+	data[0] = subEwmhGetAtom(SUB_EWMH_NET_WM_STATE_MODAL);
+	data[1] = subEwmhGetAtom(SUB_EWMH_NET_WM_STATE_SHADED);
+	data[2] = subEwmhGetAtom(SUB_EWMH_NET_WM_STATE_HIDDEN);
+	data[3] = subEwmhGetAtom(SUB_EWMH_NET_WM_STATE_FULLSCREEN);
+	subEwmhSetCardinals(DefaultRootWindow(d->dpy), SUB_EWMH_NET_SUPPORTED, (long *)&data, 4);
+}
+
+static void
+UpdateName(SubScreen *s,
+	int n)
+{
+	if(s)
+		{
+			char buf[5]; /* FIXME: static buffer */
+
+			if(s->name) free(s->name);
+			snprintf(buf, sizeof(buf), "%d", n);
+			s->name = (char *)calloc(strlen(buf) + 1, sizeof(char));
+			if(!s->name) subLogError("Can't alloc memory. Exhausted?\n");
+			strncpy(s->name, buf, strlen(buf));
+		}
+}
+
+static void
+UpdateScreens(void)
+{
+	int i;
+	Window *wins = NULL;
+
+	/* EWMH: Desktops */
+	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_NUMBER_OF_DESKTOPS, size);
+	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CURRENT_DESKTOP, active);
+
+	/* EWMH: Virtual roots */
+	wins = (Window *)calloc(size, sizeof(Window));
+	if(!wins) subLogError("Can't alloc memory. Exhausted?\n");
+	for(i = 0; i < size; i++) wins[i] = screens[i]->w->frame;
+	subEwmhSetWindows(DefaultRootWindow(d->dpy), SUB_EWMH_NET_VIRTUAL_ROOTS, wins, size);
+	free(wins);
 }
 
  /**
@@ -62,17 +121,11 @@ subScreenInit(void)
 SubScreen *
 subScreenNew(void)
 {
-	int i;
-	char buf[5];
-	Window *wins = NULL;
-
 	/* Create screen  */
 	SubScreen *s = (SubScreen *)calloc(1, sizeof(SubScreen));
 	if(!s) subLogError("Can't alloc memory. Exhausted?\n");
 
-	snprintf(buf, sizeof(buf), "%d", size + 1);
-	s->name = (char *)calloc(strlen(buf) + 1, sizeof(char));
-	strncpy(s->name, buf, strlen(buf));
+	UpdateName(s, size + 1);
 
 	s->w				= subTileNew(SUB_WIN_TILE_HORZ);
 	s->w->flags |= SUB_WIN_TYPE_SCREEN;
@@ -81,36 +134,7 @@ subScreenNew(void)
 
 	screens = (SubScreen **)realloc(screens, sizeof(SubScreen *) * (size + 1));
 	if(!screens) subLogError("Can't alloc memory. Exhausted?\n");
-
 	screens[size] = s;
-
-	/* EWMH WM information */
-	if(size == 0)
-		{
-			long info[4] = { 0, 0, 0, 0 };
-
-			subEwmhSetWindow(DefaultRootWindow(d->dpy), SUB_EWMH_NET_SUPPORTING_WM_CHECK, screens[0]->w->frame);
-			subEwmhSetString(screens[0]->w->frame, SUB_EWMH_NET_WM_NAME, PACKAGE_STRING);
-			subEwmhSetCardinal(screens[0]->w->frame, SUB_EWMH_NET_WM_PID, (long)getpid());
-			subEwmhSetCardinals(DefaultRootWindow(d->dpy), SUB_EWMH_NET_DESKTOP_VIEWPORT, (long *)&info, 2);
-
-			info[0] = DisplayWidth(d->dpy, DefaultScreen(d->dpy));
-			info[1] = DisplayHeight(d->dpy, DefaultScreen(d->dpy));
-			subEwmhSetCardinals(DefaultRootWindow(d->dpy), SUB_EWMH_NET_DESKTOP_GEOMETRY, (long *)&info, 2);
-
-			info[2] = info[0]; info[3] = info[1];
-			info[0] = 0; info[1] = 0;
-			subEwmhSetCardinals(DefaultRootWindow(d->dpy), SUB_EWMH_NET_WORKAREA, (long *)&info, 4);
-		}
-	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_NUMBER_OF_DESKTOPS, size + 1);
-	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CURRENT_DESKTOP, size + 1);
-
-	/* Virtual roots */
-	wins = (Window *)calloc(size + 1, sizeof(Window));
-	if(!wins) subLogError("Can'b alloc memory. Exhausted?\n");
-	for(i = 0; i < size; i++) wins[i] = screens[i]->w->frame;
-	subEwmhSetWindows(DefaultRootWindow(d->dpy), SUB_EWMH_NET_VIRTUAL_ROOTS, wins, size + 1);
-	free(wins);
 
 	/* Switch to new screen */
 	if(active >= 0) subWinUnmap(screens[active]->w);
@@ -121,6 +145,8 @@ subScreenNew(void)
 	active		= size;
 	size++;
 	XSetInputFocus(d->dpy, s->w->win, RevertToNone, CurrentTime);
+
+	UpdateScreens();
 
 	subScreenConfigure();
 	printf("Adding screen (%d)\n", size);
@@ -141,29 +167,32 @@ subScreenDelete(SubWin *w)
 			int i, j;
 
 			for(i = 0; i < size; i++) 	
-				if(screens[i]->w == w)
-					{
-						printf("Removing screen (%s)\n", screens[i]->name);
+				{
+					UpdateName(screens[i], i + 1);
+					if(screens[i]->w == w)
+						{
+							printf("Removing screen (%s)\n", screens[i]->name);
+		
+							XUnmapWindow(d->dpy, screens[i]->button);
+							XDeleteContext(d->dpy, screens[i]->button, 1);
+							XDestroyWindow(d->dpy, screens[i]->button);
+							free(screens[i]->name);
+							free(screens[i]);
 
-						XUnmapWindow(d->dpy, screens[i]->button);
-						XDeleteContext(d->dpy, screens[i]->button, 1);
-						XDestroyWindow(d->dpy, screens[i]->button);
-						free(screens[i]->name);
-						free(screens[i]);
+							if(i == size) active = i - 1; /* Deletion of latest screen */
+							else active = i;
 
-						for(j = i; j < size - 1; j++) screens[j] = screens[j + 1];
-
-						break; /* Leave loop */
-					}
+							for(j = i; j < size - 1; j++) screens[j] = screens[j + 1];
+						}
+				}
 
 			screens = (SubScreen **)realloc(screens, sizeof(SubScreen *) * size);
 			if(!screens) subLogError("Can't alloc memory. Exhausted?\n");
 
 			size--;
-			if(size == 0) raise(SIGTERM);
-			if(i == size) i -= 1; /* Delete last screen */
+			if(size == 0) raise(SIGTERM); /* Exit if the last screen is deleted */
 
-			active = i;
+			UpdateScreens();
 
 			subWinMap(screens[active]->w);
 			printf("Switching to screen (%s)\n", screens[active]->name);
@@ -272,7 +301,7 @@ subScreenKill(void)
 
 			for(i = 0; i < size; i++) 
 				{
-					/* Manually to skip some unneeded steps */
+					/* Manually to skip useless reallocs */
 					XUnmapWindow(d->dpy, screens[i]->button);
 					XDeleteContext(d->dpy, screens[i]->button, 1);
 					XDestroyWindow(d->dpy, screens[i]->button);
@@ -355,6 +384,9 @@ subScreenSwitch(int pos)
 			d->focus = screens[active]->w;
 			subWinRender(screens[active]->w);				
 		}
+
+	/* EWMH: Desktops */
+	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CURRENT_DESKTOP, active);
 
 	printf("Switching to screen (%s)\n", screens[active]->name);
 }
