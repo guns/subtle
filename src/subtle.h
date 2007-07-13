@@ -47,13 +47,14 @@
 #define SUB_WIN_OPT_RAISE					(1L << 6)						// Raised window
 #define SUB_WIN_OPT_COLLAPSE			(1L << 7)						// Collapsed window
 #define SUB_WIN_OPT_WEIGHT				(1L << 8)						// Weighted window
+#define SUB_WIN_OPT_FULL					(1L << 9)						// Fullscreen window
 
-#define SUB_WIN_PREF_INPUT				(1L << 9)						// Expect to get focus active/passiv
-#define SUB_WIN_PREF_FOCUS				(1L << 10)					// Send focus messages
-#define SUB_WIN_PREF_CLOSE				(1L << 11)					// Send close messages
+#define SUB_WIN_PREF_INPUT				(1L << 10)					// Active/passive focus-model
+#define SUB_WIN_PREF_FOCUS				(1L << 11)					// Send focus message
+#define SUB_WIN_PREF_CLOSE				(1L << 12)					// Send close message
 
-#define SUB_WIN_TILE_VERT					(1L << 12)					// Vert-tile
-#define SUB_WIN_TILE_HORZ					(1L << 13)					// Horiz-tile
+#define SUB_WIN_TILE_VERT					(1L << 13)					// Vert-tile
+#define SUB_WIN_TILE_HORZ					(1L << 14)					// Horiz-tile
 
 #define SUB_WIN_DRAG_LEFT					(1L << 1)						// Drag start from left
 #define SUB_WIN_DRAG_RIGHT				(1L << 2)						// Drag start from right
@@ -88,10 +89,10 @@ typedef struct subwin
 SubWin *subWinFind(Window win);												// Find a window
 SubWin *subWinNew(Window win);												// Create a new window
 void subWinDelete(SubWin *w);													// Delete a window
+void subWinRender(SubWin *w);													// Render a window
 void subWinDrag(short mode, SubWin *w);								// Move/Resize a window
 void subWinToggle(short type, SubWin *w);							// Toggle shading or floating state of a window
 void subWinResize(SubWin *w);													// Resize a window
-void subWinRender(SubWin *w);													// Render a window
 void subWinRestack(SubWin *w);												// Restack a window
 void subWinMap(SubWin *w);														// Map a window
 void subWinUnmap(SubWin *w);													// Unmap a window
@@ -121,12 +122,10 @@ typedef struct subclient
 SubWin *subClientNew(Window win);											// Create a new client
 void subClientDelete(SubWin *w);											// Delete a client
 void subClientRender(SubWin *w);											// Render the window
+void subClientConfigure(SubWin *w);										// Send configure request
+void subClientFetchName(SubWin *w);										// Fetch client name
 void subClientSetWMState(SubWin *w, long state);			// Set client WM state
 long subClientGetWMState(SubWin *w);									// Get client WM state
-void subClientSendConfigure(SubWin *w);								// Send configure request
-void subClientSendDelete(SubWin *w);									// Send delete request
-void subClientToggleShade(SubWin *w);									// Toggle shaded state
-void subClientFetchName(SubWin *w);										// Fetch client name
 
 /* sublet.c */
 #define SUB_SUBLET_TYPE_TEXT		(1L << 1)							// Text sublet
@@ -278,23 +277,21 @@ enum SubEwmhHints
 {
 	/* ICCCM */
 	SUB_EWMH_WM_STATE,																	// Window state
-	SUB_EWMH_WM_CHANGE_STATE,
 	SUB_EWMH_WM_PROTOCOLS,															// Supported protocols 
-	SUB_EWMH_WM_COLORMAP_WINDOWS,
 	SUB_EWMH_WM_TAKE_FOCUS,															// Send focus messages
-	SUB_EWMH_WM_WINDOW_ROLE,
 	SUB_EWMH_WM_DELETE_WINDOW,													// Send close messages
 	SUB_EWMH_WM_NORMAL_HINTS,														// Window normal hints
 	SUB_EWMH_WM_SIZE_HINTS,															// Window size hints
 
 	/* EWMH */
-	SUB_EWMH_NET_SUPPORTED,
-	SUB_EWMH_NET_CLIENT_LIST,
+	SUB_EWMH_NET_SUPPORTED,															// Supported states
+	SUB_EWMH_NET_CLIENT_LIST,														// List of clients
+	SUB_EWMH_NET_CLIENT_LIST_STACKING,									// List of clients
 	SUB_EWMH_NET_NUMBER_OF_DESKTOPS,										// Total number of desktops
 	SUB_EWMH_NET_DESKTOP_GEOMETRY,											// Desktop geometry
 	SUB_EWMH_NET_DESKTOP_VIEWPORT,											// Viewport of the desktop
 	SUB_EWMH_NET_CURRENT_DESKTOP,												// Number of current desktop
-	SUB_EWMH_NET_ACTIVE_WINDOW,
+	SUB_EWMH_NET_ACTIVE_WINDOW,													// Focus window
 	SUB_EWMH_NET_WORKAREA,															// Workarea of the desktop
 	SUB_EWMH_NET_SUPPORTING_WM_CHECK,										// Check for compliant window manager
 	SUB_EWMH_NET_VIRTUAL_ROOTS,													// List of virtual destops
@@ -302,11 +299,13 @@ enum SubEwmhHints
 
 	SUB_EWMH_NET_WM_NAME,																// Name of a window
 	SUB_EWMH_NET_WM_PID,																// PID of a client
-	SUB_EWMH_NET_WM_DESKTOP,
+	SUB_EWMH_NET_WM_DESKTOP,														// Desktop a client is on
 
-	SUB_EWMH_NET_WM_STATE,
-	SUB_EWMH_NET_WM_STATE_SHADED,
-	SUB_EWMH_NET_WM_STATE_FULLSCREEN,
+	SUB_EWMH_NET_WM_STATE,															// Window state
+	SUB_EWMH_NET_WM_STATE_MODAL,												// Modal window
+	SUB_EWMH_NET_WM_STATE_SHADED,												// Shaded window
+	SUB_EWMH_NET_WM_STATE_HIDDEN,												// Hidden window
+	SUB_EWMH_NET_WM_STATE_FULLSCREEN,										// Fullscreen window
 
 	SUB_EWMH_NET_WM_WINDOW_TYPE,
 	SUB_EWMH_NET_WM_WINDOW_TYPE_DESKTOP,
