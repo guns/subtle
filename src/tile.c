@@ -133,7 +133,7 @@ subTileConfigure(SubWin *w)
 	if(w && w->flags & SUB_WIN_TYPE_TILE)
 		{
 			int mw = 0, mh = 0, width = SUBWINWIDTH(w), height = SUBWINHEIGHT(w);
-			unsigned int x = 0, y = 0, i = 0, n = 0, size = 0, comp = 0, collapsed = 0, weighted = 0;
+			unsigned int x = 0, y = 0, i = 0, n = 0, size = 0, comp = 0, collapsed = 0, weighted = 0, full = 0;
 			Window nil, *wins = NULL;
 
 			XQueryTree(d->dpy, w->win, &nil, &nil, &wins, &n);
@@ -148,6 +148,7 @@ subTileConfigure(SubWin *w)
 							if(c)
 								{
 									if(c->flags & SUB_WIN_OPT_COLLAPSE) collapsed++;
+									else if(c->flags & SUB_WIN_OPT_FULL) full++;
 									else if(c->flags & SUB_WIN_OPT_WEIGHT && c->weight > 0)
 										{
 											/* Prevent weighted single or only weighted windows */
@@ -169,7 +170,8 @@ subTileConfigure(SubWin *w)
 							else if(w->flags & SUB_WIN_TILE_VERT) height = size;
 						}
 
-					n		= (n - collapsed - weighted) > 0 ? n - collapsed - weighted : 1; /* Prevent divide by zero */
+					 /* Prevent divide by zero */
+					n		= (n - collapsed - weighted - full) > 0 ? n - collapsed - weighted - full: 1;
 					mw	= (w->flags & SUB_WIN_TILE_HORZ) ? width / n : width;
 					mh	= (w->flags & SUB_WIN_TILE_VERT) ? (height - collapsed * d->th) / n : height;
 
@@ -177,10 +179,10 @@ subTileConfigure(SubWin *w)
 					if(w->flags & SUB_WIN_TILE_HORZ) comp = abs(width - n * mw - collapsed * d->th);
 					else comp = abs(height - n * mh - collapsed * d->th);
 
-					for(i = 0; i < n + collapsed + weighted; i++)
+					for(i = 0; i < n + collapsed + weighted + full; i++)
 						{
 							SubWin *c = subWinFind(wins[i]);
-							if(c && !(c->flags & (SUB_WIN_OPT_RAISE|SUB_WIN_OPT_TRANS)))
+							if(c && !(c->flags & (SUB_WIN_OPT_TRANS|SUB_WIN_OPT_RAISE|SUB_WIN_OPT_FULL)))
 								{
 									c->parent	= w;
 									c->x			= 0;
@@ -222,7 +224,7 @@ subTileConfigure(SubWin *w)
 
 									subWinResize(c);
 									if(w->flags & SUB_WIN_TYPE_TILE) subTileConfigure(c);
-									else if(w->flags & SUB_WIN_TYPE_CLIENT) subClientSendConfigure(c);
+									else if(w->flags & SUB_WIN_TYPE_CLIENT) subClientConfigure(c);
 								}
 						}
 					XFree(wins);
