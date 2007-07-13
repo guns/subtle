@@ -20,21 +20,18 @@
 
 #include "subtle.h"
 
-static Atom atoms[36];
+static Atom atoms[37];
 
 void
 subEwmhInit(void)
 {
-	int n = 36;
+	int n = 37;
 	char *names[] =
 	{
 		/* ICCCM */
 		"WM_STATE",
-		"WM_CHANGE_STATE",
 		"WM_PROTOCOLS",
-		"WM_COLORMAP_WINDOWS",
 		"WM_TAKE_FOCUS",
-		"WM_WINDOW_ROLE",
 		"WM_DELETE_WINDOW",
 		"WM_NORMAL_HINTS",
 		"WM_SIZE_HINTS",
@@ -42,6 +39,7 @@ subEwmhInit(void)
 		/* EWMH */
 		"_NET_SUPPORTED",
 		"_NET_CLIENT_LIST",
+		"_NET_CLIENT_LIST_STACKING",
 		"_NET_NUMBER_OF_DESKTOPS",
 		"_NET_DESKTOP_GEOMETRY", 
 		"_NET_DESKTOP_VIEWPORT",
@@ -57,7 +55,9 @@ subEwmhInit(void)
 		"_NET_WM_DESKTOP",
 
 		"_NET_WM_STATE",
+		"_NET_WM_STATE_MODAL",
 		"_NET_WM_STATE_SHADED",
+		"_NET_WM_STATE_HIDDEN",
 		"_NET_WM_STATE_FULLSCREEN",
 
 		"_NET_WM_WINDOW_TYPE",
