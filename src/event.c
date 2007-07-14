@@ -150,6 +150,9 @@ HandleKeyPress(XKeyEvent *ev)
 							case SUB_KEY_ACTION_TOGGLE_RAISE: 
 								if(!(w->flags & SUB_WIN_TYPE_SCREEN)) subWinToggle(SUB_WIN_OPT_RAISE, w); 						
 								break;
+							case SUB_KEY_ACTION_TOGGLE_FULL: 
+								if(!(w->flags & SUB_WIN_TYPE_SCREEN)) subWinToggle(SUB_WIN_OPT_FULL, w); 						
+								break;								
 							case SUB_KEY_ACTION_DESKTOP_NEXT: subScreenSwitch(SUB_SCREEN_NEXT);			break;
 							case SUB_KEY_ACTION_DESKTOP_PREV: subScreenSwitch(SUB_SCREEN_PREV);			break;
 							case SUB_KEY_ACTION_DESKTOP_MOVE:
@@ -301,6 +304,7 @@ HandleCrossing(XCrossingEvent *ev)
 		{
 			/* Make leave events to enter event of the parent window */
 			if(ev->type == LeaveNotify && !ev->mode && w->parent) w = w->parent; 
+			if(ev->type == LeaveNotify) printf("Leave: mode=%d, detail=%d\n", ev->mode, ev->detail);
 
 			/* Remove focus from window */
 			if(d->focus) 
