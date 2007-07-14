@@ -21,19 +21,25 @@ Colors = {
 }
 
 -- Key config
--- A = Alt, S = Shift, C = Control
+-- Modifier keys:
+-- A = Alt key
+-- S = Shift key
+-- C = Control key
+-- W = Super (Windows key)
+-- M = Meta key
 Keys = {
 	AddVertTile			= "A-v",						-- Add a vertical tile
 	AddHorzTile			= "A-h",						-- Add a horizontal tile
 	DeleteWindow		= "A-d",						-- Delete a window
-	ToggleCollapse	= "A-c",						-- Collapse a window
-	ToggleRaise			= "A-r",						-- Raise a window
-	NextDesktop			= "S-Page_Up",			-- Switch to next desktop
-	PreviousDesktop	= "S-Page_Down",		-- Switch to previous desktop
+	ToggleCollapse	= "A-c",						-- Toggle collapse
+	ToggleRaise			= "A-r",						-- Toggle raise
+	ToggleFull			= "A-f",						-- Toggle fullscreen
+	NextDesktop			= "W-Page_Up",			-- Switch to next desktop
+	PreviousDesktop	= "W-Page_Down",		-- Switch to previous desktop
 	MoveToDesktop1	= "S-A-1",					-- Move window to desktop 1
 	MoveToDesktop2	= "S-A-2",					-- Move window to desktop 2
 	MoveToDesktop3	= "S-A-3",					-- Move window to desktop 3
 	MoveToDesktop4	= "S-A-4",					-- Move window to desktop 4
-	["rxvt +sb"]					= "S-F1",			-- Exec a term
-	["rxvt +sb -e mutt"]	= "S-F2"			-- Exec mutt in a term
+	["rxvt +sb"]		= "S-F1",						-- Exec a term
+	["firefox"] = "S-F3"
 }
