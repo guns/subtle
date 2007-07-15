@@ -69,7 +69,7 @@ subClientNew(Window win)
 			else subClientSetWMState(w, NormalState);
 			if(hints->initial_state == IconicState) subLogDebug("Iconic: win=%#lx\n", win);			
 			if(hints->input) w->flags |= SUB_WIN_PREF_INPUT;
-			if(hints->flags & XUrgencyHint) w->flags |= SUB_WIN_OPT_TRANS;
+			if(hints->flags & XUrgencyHint) w->flags |= SUB_WIN_STATE_TRANS;
 			XFree(hints);
 		}
 	
@@ -88,7 +88,7 @@ subClientNew(Window win)
 
 	/* Check for dialog windows etc. */
 	XGetTransientForHint(d->dpy, win, &unnused);
-	if(unnused && !(w->flags & SUB_WIN_OPT_TRANS)) w->flags |= SUB_WIN_OPT_TRANS;
+	if(unnused && !(w->flags & SUB_WIN_STATE_TRANS)) w->flags |= SUB_WIN_STATE_TRANS;
 
 	XSync(d->dpy, False);
 	XUngrabServer(d->dpy);
@@ -156,7 +156,7 @@ subClientRender(SubWin *w)
 	if(w && w->flags & SUB_WIN_TYPE_CLIENT)
 		{
 			unsigned long col = d->focus && d->focus == w ? d->colors.focus : 
-				(w->flags & SUB_WIN_OPT_COLLAPSE ? d->colors.cover : d->colors.norm);
+				(w->flags & SUB_WIN_STATE_COLLAPSE ? d->colors.cover : d->colors.norm);
 
 			XSetWindowBackground(d->dpy, w->client->caption, col);
 			XClearWindow(d->dpy, w->client->caption);
