@@ -56,12 +56,15 @@ subKeyParseChain(const char *key,
 	SubKey *k = (SubKey *)calloc(1, sizeof(SubKey));
 	if(!k) subLogError("Can't alloc memory. Exhausted?\n");
 
-	/* FIXME: strncmp() is way to slow.. */	
+	/* FIXME: strncmp() is really slow.. */	
 	if(!strncmp(key, "AddVertTile", 11)) 					k->flags = SUB_KEY_ACTION_ADD_VTILE;
 	else if(!strncmp(key, "AddHorzTile", 11)) 		k->flags = SUB_KEY_ACTION_ADD_HTILE;
 	else if(!strncmp(key, "DeleteWindow", 12))		k->flags = SUB_KEY_ACTION_DELETE_WIN;
 	else if(!strncmp(key, "ToggleCollapse", 14))	k->flags = SUB_KEY_ACTION_TOGGLE_COLLAPSE;
 	else if(!strncmp(key, "ToggleRaise", 11))			k->flags = SUB_KEY_ACTION_TOGGLE_RAISE;
+	else if(!strncmp(key, "ToggleFull", 10))			k->flags = SUB_KEY_ACTION_TOGGLE_FULL;
+	else if(!strncmp(key, "ToggleWeight", 12))		k->flags = SUB_KEY_ACTION_TOGGLE_WEIGHT;
+	else if(!strncmp(key, "TogglePile", 10))			k->flags = SUB_KEY_ACTION_TOGGLE_PILE;
 	else if(!strncmp(key, "NextDesktop", 11))			k->flags = SUB_KEY_ACTION_DESKTOP_NEXT;
 	else if(!strncmp(key, "PreviousDesktop", 11))	k->flags = SUB_KEY_ACTION_DESKTOP_PREV;
 	else if(!strncmp(key, "MoveToDesktop", 13))
@@ -85,7 +88,8 @@ subKeyParseChain(const char *key,
 		}
 
 	while(tok)
-		{
+		{ 
+			/* Get key sym and modifier */
 			switch(*tok)
 				{
 					case 'S':	sym = XK_Shift_L;		mod = ShiftMask;		break;
