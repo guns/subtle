@@ -20,34 +20,25 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-/* Masks */
-#define ENTER_MASK			(EnterWindowMask|LeaveWindowMask)
-#define BUTTON_MASK			(ButtonPressMask|ButtonReleaseMask)
-#define STRUCT_MASK			(StructureNotifyMask|SubstructureNotifyMask)
-#define KEY_MASK				(KeyPressMask|KeyReleaseMask)
-#define FRAME_MASK			(ENTER_MASK|BUTTON_MASK|KEY_MASK|FocusChangeMask|VisibilityChangeMask|ExposureMask)
-
-#define SUBPOINTERMASK	(ButtonPressMask|ButtonReleaseMask|PointerMotionMask)
-
 /* Macros */
 #define SUBWINNEW(parent,x,y,width,height,border) \
 	XCreateWindow(d->dpy, parent, x, y, width, height, border, CopyFromParent, \
-		InputOutput, CopyFromParent, mask, &attrs);
+		InputOutput, CopyFromParent, mask, &attrs);				// Shortcut
 
-#define SUBWINWIDTH(w)	(w->width - 2 * d->bw)
-#define SUBWINHEIGHT(w)	(w->height - d->th - d->bw)
+#define SUBWINWIDTH(w)	(w->width - 2 * d->bw)				// Get real window width
+#define SUBWINHEIGHT(w)	(w->height - d->th - d->bw)		// Get real window height
 
 /* win.c */
 #define SUB_WIN_TYPE_SCREEN				(1L << 1)						// Screen window
 #define SUB_WIN_TYPE_TILE					(1L << 2)						// Tile window
 #define SUB_WIN_TYPE_CLIENT				(1L << 3)						// Client window
 
-#define SUB_WIN_OPT_PILE					(1L << 4)						// Piled tiling window
-#define SUB_WIN_OPT_TRANS					(1L << 5)						// Transient window
-#define SUB_WIN_OPT_COLLAPSE			(1L << 6)						// Collapsed window
-#define SUB_WIN_OPT_RAISE					(1L << 7)						// Raised window
-#define SUB_WIN_OPT_FULL					(1L << 8)						// Fullscreen window
-#define SUB_WIN_OPT_WEIGHT				(1L << 9)						// Weighted window
+#define SUB_WIN_STATE_COLLAPSE		(1L << 4)						// Collapsed window
+#define SUB_WIN_STATE_RAISE				(1L << 5)						// Raised window
+#define SUB_WIN_STATE_FULL				(1L << 6)						// Fullscreen window
+#define SUB_WIN_STATE_WEIGHT			(1L << 7)						// Weighted window
+#define SUB_WIN_STATE_PILE				(1L << 8)						// Piled tiling window
+#define SUB_WIN_STATE_TRANS				(1L << 9)						// Transient window
 
 #define SUB_WIN_PREF_INPUT				(1L << 10)					// Active/passive focus-model
 #define SUB_WIN_PREF_FOCUS				(1L << 11)					// Send focus message
@@ -240,10 +231,12 @@ void subLog(short type, const char *file, 						// Print messages
 #define SUB_KEY_ACTION_TOGGLE_COLLAPSE	(1L << 4)			// Toggle collapse
 #define SUB_KEY_ACTION_TOGGLE_RAISE			(1L << 5)			// Toggle raise
 #define SUB_KEY_ACTION_TOGGLE_FULL			(1L << 6)			// Toggle fullscreen
-#define SUB_KEY_ACTION_DESKTOP_NEXT			(1L << 7)			// Switch to next desktop
-#define SUB_KEY_ACTION_DESKTOP_PREV			(1L << 8)			// Switch to previous desktop
-#define SUB_KEY_ACTION_DESKTOP_MOVE			(1L << 9)			// Move window to desktop
-#define SUB_KEY_ACTION_EXEC							(1L << 10)		// Exec an app
+#define SUB_KEY_ACTION_TOGGLE_WEIGHT		(1L << 7)			// Toggle weight
+#define SUB_KEY_ACTION_TOGGLE_PILE			(1L << 8)			// Toggle pile
+#define SUB_KEY_ACTION_DESKTOP_NEXT			(1L << 9)			// Switch to next desktop
+#define SUB_KEY_ACTION_DESKTOP_PREV			(1L << 10)		// Switch to previous desktop
+#define SUB_KEY_ACTION_DESKTOP_MOVE			(1L << 11)		// Move window to desktop
+#define SUB_KEY_ACTION_EXEC							(1L << 12)		// Exec an app
 
 typedef struct subkey
 {
