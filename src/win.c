@@ -137,7 +137,7 @@ subWinRender(SubWin *w)
 		{
 			char c = 's';
 			unsigned long col = d->focus && d->focus == w ? d->colors.focus : 
-				(w->flags & SUB_WIN_OPT_COLLAPSE ? d->colors.cover : d->colors.norm);
+				(w->flags & SUB_WIN_STATE_COLLAPSE ? d->colors.cover : d->colors.norm);
 
 			/* Update color */
 			XSetWindowBackground(d->dpy, w->title,	col);
@@ -158,10 +158,10 @@ subWinRender(SubWin *w)
 
 			/* Icon */
 			XSetWindowBorder(d->dpy, w->icon, d->colors.border);
-			if(w->flags & SUB_WIN_OPT_RAISE)					c = 'r';
-			else if(w->flags & SUB_WIN_OPT_COLLAPSE)	c = 'c';
-			else if(w->flags & SUB_WIN_OPT_PILE)			c = 'p';
-			else if(w->flags & SUB_WIN_OPT_WEIGHT)		c = 'w';
+			if(w->flags & SUB_WIN_STATE_RAISE)					c = 'r';
+			else if(w->flags & SUB_WIN_STATE_COLLAPSE)	c = 'c';
+			else if(w->flags & SUB_WIN_STATE_PILE)			c = 'p';
+			else if(w->flags & SUB_WIN_STATE_WEIGHT)		c = 'w';
 	
 			XDrawString(d->dpy, w->icon, d->gcs.font, (d->th - 8 - d->fx) / 2 + 1, d->fy - 5, &c, 1);
 
@@ -183,7 +183,7 @@ DrawMask(short type,
 				{
 					case SUB_WIN_DRAG_STATE_START: 
 						XDrawRectangle(d->dpy, DefaultRootWindow(d->dpy), d->gcs.invert, box->x + 1, box->y + 1, 
-							box->width - 3, (w->flags & SUB_WIN_OPT_COLLAPSE) ? d->th - 3 : box->height - 3);
+							box->width - 3, (w->flags & SUB_WIN_STATE_COLLAPSE) ? d->th - 3 : box->height - 3);
 						break;
 					case SUB_WIN_DRAG_STATE_APPEND:
 						XDrawRectangle(d->dpy, w->frame, d->gcs.invert, d->bw + 1, d->th + 1, 
@@ -216,18 +216,14 @@ subWinDrag(short mode,
 	XEvent ev;
 	Cursor cursor;
 	Window win;
-	SubWin *w2 = NULL, *p = NULL, *p2 = NULL, *last_w = NULL;
-
-	short state = SUB_WIN_DRAG_STATE_START, last_state = SUB_WIN_DRAG_STATE_START;
-
-	XRectangle box = { w->x, w->y, w->width, w->height };
-
-	unsigned int mask;
 	int wx = 0, wy = 0, rx = 0, ry = 0;
+	unsigned int mask;
+	short state = SUB_WIN_DRAG_STATE_START, last_state = SUB_WIN_DRAG_STATE_START;
+	XRectangle box = { w->x, w->y, w->width, w->height };
+	SubWin *w2 = NULL, *p = NULL, *p2 = NULL, *last_w = NULL;
 
 	/* Get window position on root window */
 	XQueryPointer(d->dpy, w->frame, &win, &win, &rx, &ry, &wx, &wy, &mask);
-
 	box.x = rx - wx;
 	box.y = ry - wy;
 
@@ -241,8 +237,8 @@ subWinDrag(short mode,
 			default:									cursor = d->cursors.square;	break;
 		}
 
-	if(XGrabPointer(d->dpy, w->frame, True, SUBPOINTERMASK, GrabModeAsync, GrabModeAsync, None, 
-		cursor, CurrentTime)) return;
+	if(XGrabPointer(d->dpy, w->frame, True, ButtonPressMask|ButtonReleaseMask|PointerMotionMask, 
+		GrabModeAsync, GrabModeAsync, None, cursor, CurrentTime)) return;
 
 	XGrabServer(d->dpy);
 	if(mode <= SUB_WIN_DRAG_MOVE) DrawMask(SUB_WIN_DRAG_STATE_START, w, &box);
@@ -410,26 +406,26 @@ subWinDrag(short mode,
 												swap = w->flags;	w->flags	= w2->flags;	w2->flags	= swap;
 
 												/* Swap some special flags */
-												if(w->flags & SUB_WIN_OPT_RAISE)
+												if(w->flags & SUB_WIN_STATE_RAISE)
 													{ 
-														w->flags		&= ~SUB_WIN_OPT_RAISE;
-														w2->flags	|= SUB_WIN_OPT_RAISE;
+														w->flags		&= ~SUB_WIN_STATE_RAISE;
+														w2->flags	|= SUB_WIN_STATE_RAISE;
 
 														subWinResize(w2); 
 														if(w->flags & SUB_WIN_TYPE_TILE) subTileConfigure(w2);
 													}
-												else if(w2->flags & SUB_WIN_OPT_RAISE)
+												else if(w2->flags & SUB_WIN_STATE_RAISE)
 													{
-														w2->flags	&= ~SUB_WIN_OPT_RAISE;
-														w->flags	|= SUB_WIN_OPT_RAISE;
+														w2->flags	&= ~SUB_WIN_STATE_RAISE;
+														w->flags	|= SUB_WIN_STATE_RAISE;
 
 														subWinResize(w); 
 														if(w->flags & SUB_WIN_TYPE_TILE) subTileConfigure(w);
 													}
 
 												/* Configure only the non-raised tiles to save configure cycles */
-												if(!(w->flags & SUB_WIN_OPT_RAISE)) subTileConfigure(w->parent);
-												if(!(w2->flags & SUB_WIN_OPT_RAISE)) subTileConfigure(w2->parent);
+												if(!(w->flags & SUB_WIN_STATE_RAISE)) subTileConfigure(w->parent);
+												if(!(w2->flags & SUB_WIN_STATE_RAISE)) subTileConfigure(w2->parent);
 
 												subLogDebug("Swap: %#lx (%#lx) <=> %#lx (%#lx)\n", 
 													w->win, w->frame, w2->win, w2->frame);
@@ -439,9 +435,9 @@ subWinDrag(short mode,
 						else /* Resize */
 							{
 								XDrawRectangle(d->dpy, DefaultRootWindow(d->dpy), d->gcs.invert, box.x + 1, box.y + 1, 
-									box.width - 3, (w->flags & SUB_WIN_OPT_COLLAPSE) ? d->th - 3 : box.height - 3);
+									box.width - 3, (w->flags & SUB_WIN_STATE_COLLAPSE) ? d->th - 3 : box.height - 3);
 					
-								if(w->flags & SUB_WIN_OPT_RAISE) 
+								if(w->flags & SUB_WIN_STATE_RAISE) 
 									{
 										w->x			= box.x;
 										w->y			= box.y;
@@ -453,7 +449,7 @@ subWinDrag(short mode,
 									}
 								else if(w->parent && w->parent->flags & SUB_WIN_TYPE_TILE && mode <= SUB_WIN_DRAG_BOTTOM)
 									{
-										if(!(w->flags & SUB_WIN_OPT_WEIGHT)) w->flags |= SUB_WIN_OPT_WEIGHT;
+										if(!(w->flags & SUB_WIN_STATE_WEIGHT)) w->flags |= SUB_WIN_STATE_WEIGHT;
 
 										/* Adjust window weight */
 										if(w->parent->flags & SUB_WIN_TYPE_TILE && mode == SUB_WIN_DRAG_LEFT || mode == SUB_WIN_DRAG_RIGHT)
@@ -493,7 +489,7 @@ subWinToggle(short type,
 
 					switch(type)
 						{
-							case SUB_WIN_OPT_COLLAPSE:
+							case SUB_WIN_STATE_COLLAPSE:
 								/* Set state */
 								if(w->flags & SUB_WIN_TYPE_CLIENT) subClientSetWMState(w, NormalState);
 
@@ -506,9 +502,9 @@ subWinToggle(short type,
 								/* Resize frame */
 								XMoveResizeWindow(d->dpy, w->frame, w->x, w->y, w->width, w->height);
 								break;
-							case SUB_WIN_OPT_RAISE: XReparentWindow(d->dpy, w->frame, w->parent->win, w->x, w->y);	break;						
+							case SUB_WIN_STATE_RAISE: XReparentWindow(d->dpy, w->frame, w->parent->win, w->x, w->y);	break;						
 
-							case SUB_WIN_OPT_FULL:
+							case SUB_WIN_STATE_FULL:
 								/* Map most of the windows */
 								XMapWindow(d->dpy, w->title);
 								XMapWindow(d->dpy, w->icon);
@@ -517,10 +513,17 @@ subWinToggle(short type,
 								XMapWindow(d->dpy, w->bottom);
 
 								if(w->flags & SUB_WIN_TYPE_CLIENT) XMapWindow(d->dpy, w->client->caption);
+								else if(w->flags & SUB_WIN_TYPE_TILE) 
+									{
+										XMapWindow(d->dpy, w->tile->btnew);
+										XMapWindow(d->dpy, w->tile->btdel);
+									}
+
+								subWinResize(w);
 								
 								subTileAdd(w->parent, w);
 								break;								
-							case SUB_WIN_OPT_WEIGHT:
+							case SUB_WIN_STATE_WEIGHT:
 								w->weight = 0;
 								if(w->parent) subTileConfigure(w->parent);
 						}
@@ -531,7 +534,7 @@ subWinToggle(short type,
 
 					switch(type)
 						{
-							case SUB_WIN_OPT_COLLAPSE:
+							case SUB_WIN_STATE_COLLAPSE:
 								/* Set state */
 								if(w->flags & SUB_WIN_TYPE_CLIENT) subClientSetWMState(w, WithdrawnState);
 
@@ -544,7 +547,7 @@ subWinToggle(short type,
 								/* Resize frame */
 								XMoveResizeWindow(d->dpy, w->frame, w->x, w->y, w->width, d->th);
 								break;						
-							case SUB_WIN_OPT_RAISE:
+							case SUB_WIN_STATE_RAISE:
 								/* Respect the user/program preferences */
 								if(w->flags & SUB_WIN_TYPE_CLIENT)
 									{
@@ -589,14 +592,20 @@ subWinToggle(short type,
 								XReparentWindow(d->dpy, w->frame, DefaultRootWindow(d->dpy), w->x, w->y);
 								subWinRaise(w);
 								break;
-							case SUB_WIN_OPT_FULL:
+							case SUB_WIN_STATE_FULL:
 								/* Unmap some windows */
 								XUnmapWindow(d->dpy, w->title);
 								XUnmapWindow(d->dpy, w->icon);
-								if(w->flags & SUB_WIN_TYPE_CLIENT) XUnmapWindow(d->dpy, w->client->caption);
 								XUnmapWindow(d->dpy, w->left);
 								XUnmapWindow(d->dpy, w->right);
-								XUnmapWindow(d->dpy, w->bottom);
+								XUnmapWindow(d->dpy, w->bottom);								
+
+								if(w->flags & SUB_WIN_TYPE_CLIENT) XUnmapWindow(d->dpy, w->client->caption);
+								else if(w->flags & SUB_WIN_TYPE_TILE) 
+									{
+										XUnmapWindow(d->dpy, w->tile->btnew);
+										XUnmapWindow(d->dpy, w->tile->btdel);
+									}
 
 								/* Resize wo display size */
 								w->x			= 0;
@@ -606,11 +615,13 @@ subWinToggle(short type,
 
 								XReparentWindow(d->dpy, w->frame, DefaultRootWindow(d->dpy), 0, 0);
 								subWinResize(w);
+
+								if(w->flags & SUB_WIN_TYPE_TILE) subTileConfigure(w);
 						}
 				}
 			XUngrabServer(d->dpy);
 			while(XCheckTypedEvent(d->dpy, UnmapNotify, &event));
-			if(type != SUB_WIN_OPT_FULL) subTileConfigure(w->parent);
+			if(type != SUB_WIN_STATE_FULL) subTileConfigure(w->parent);
 		}
 }
 
@@ -641,10 +652,10 @@ subWinResize(SubWin *w)
 	if(w)
 		{
 			XMoveResizeWindow(d->dpy, w->frame, w->x, w->y, w->width, 
-				(w->flags & SUB_WIN_OPT_COLLAPSE) ? d->th : w->height);
+				(w->flags & SUB_WIN_STATE_COLLAPSE) ? d->th : w->height);
 
-			if(w->flags & SUB_WIN_OPT_FULL) XMoveResizeWindow(d->dpy, w->win, 0, 0, w->width, w->height);
-			else if(!(w->flags & SUB_WIN_OPT_COLLAPSE))
+			if(w->flags & SUB_WIN_STATE_FULL) XMoveResizeWindow(d->dpy, w->win, 0, 0, w->width, w->height);
+			else if(!(w->flags & SUB_WIN_STATE_COLLAPSE))
 				{
 					XMoveResizeWindow(d->dpy, w->win, d->bw, d->th, w->width - 2 * d->bw, w->height - d->th - d->bw);
 					XMoveResizeWindow(d->dpy, w->right, w->width - d->bw, d->th, d->bw, w->height - d->th);
@@ -652,7 +663,7 @@ subWinResize(SubWin *w)
 				}
 			else XMoveResizeWindow(d->dpy, w->title, 0, 0, w->width, d->th);
 
-			if(w->flags & SUB_WIN_TYPE_CLIENT && !(w->flags & SUB_WIN_OPT_COLLAPSE)) subClientConfigure(w);
+			if(w->flags & SUB_WIN_TYPE_CLIENT && !(w->flags & SUB_WIN_STATE_COLLAPSE)) subClientConfigure(w);
 		}
 }
 
