@@ -144,8 +144,8 @@ subScreenNew(void)
 	d->focus	= s->w;
 	active		= size;
 	size++;
-	XSetInputFocus(d->dpy, s->w->win, RevertToNone, CurrentTime);
 
+	subKeyGrab(s->w);
 	UpdateScreens();
 
 	subScreenConfigure();
