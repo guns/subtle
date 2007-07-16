@@ -125,7 +125,6 @@ am__tar = @am__tar@
 am__untar = @am__untar@
 bindir = @bindir@
 build_alias = @build_alias@
-check = @check@
 datadir = @datadir@
 datarootdir = @datarootdir@
 docdir = @docdir@
