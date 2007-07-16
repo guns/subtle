@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.5.9)
-AC_INIT(subtle, 0.7c, unexist@hilflos.org)
+AC_INIT(subtle, 0.7d, unexist@hilflos.org)
 AC_CONFIG_SRCDIR([src/main.c])
 AC_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE(no-define)
@@ -12,6 +12,8 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
+AC_PROG_AWK
+PKG_PROG_PKG_CONFIG(0.1)
 
 # Checks for header files.
 AC_PATH_X
@@ -94,33 +96,26 @@ AC_CHECK_LIB(X11, XOpenDisplay,
 # FIXME: Check for Lua support
 # Due the change of the name with every new version
 # we need to bruteforce the _real_ name of the lib.
-PKG_PROG_PKG_CONFIG(0.1)
-AC_CHECK_PROG(check, grep, yes, no)
-if test x"$check" = xno ; then
-	AC_MSG_ERROR([grep is need to properly build subtle])
-fi
-AC_CHECK_PROG(check, tail, yes, no)
-if test x"$check" = xno ; then
-  AC_MSG_ERROR([tail is need to properly build subtle])
-fi
-AC_CHECK_PROG(check, awk, yes, no)
-if test x"$check" = xno ; then
-  AC_MSG_ERROR([awk is need to properly build subtle])
-fi
-
-AC_MSG_CHECKING([lua pkg-config name])
-lua_name=`pkg-config --list-all | grep -i lua | tail -n 1 | awk '{print $1}'`
-if test -z $lua_name ; then
+AC_MSG_CHECKING([for lua pkg-config names])
+lua_name=`pkg-config --list-all | grep "^lua" | awk '{print $1}' | tr '\n' ' '`
+if test -z "$lua_name" ; then
 	AC_MSG_RESULT([not found])
 	AC_MSG_ERROR([Lua library and header >= 5.1 are required.])
 fi
 AC_MSG_RESULT($lua_name)
 
-PKG_CHECK_MODULES(lua, $lua_name >= 5.1,
-	LUA_CFLAGS=$lua_CFLAGS
-	LUA_LIBS=$lua_LIBS,
+# Try every result
+for l in "$lua_name"; do
+	PKG_CHECK_MODULES(lua, $l >= 5.1,
+		LUA_CFLAGS=$lua_CFLAGS
+		LUA_LIBS=$lua_LIBS
+	)
+done
+
+if test -z "$LUA_CFLAGS" ; then
 	AC_MSG_ERROR([Lua library and header >= 5.1 are required.])
-)
+fi
+
 AC_SUBST(LUA_CFLAGS)
 AC_SUBST(LUA_LIBS)
 
