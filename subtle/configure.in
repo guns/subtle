@@ -96,7 +96,7 @@ AC_CHECK_LIB(X11, XOpenDisplay,
 # FIXME: Check for Lua support
 # Due the change of the name with every new version
 # we need to bruteforce the _real_ name of the lib.
-AC_MSG_CHECKING([for lua pkg-config names])
+AC_MSG_CHECKING([for Lua pkg-config names])
 lua_name=`pkg-config --list-all | grep "^lua" | awk '{print $1}' | tr '\n' ' '`
 if test -z "$lua_name" ; then
 	AC_MSG_RESULT([not found])
@@ -105,7 +105,7 @@ fi
 AC_MSG_RESULT($lua_name)
 
 # Try every result
-AC_MSG_CHECKING([names for required lua version (>=5.1)])
+AC_MSG_CHECKING([names for required Lua version (>=5.1)])
 for l in $lua_name; do
 	if pkg-config $l --atleast-version=5.1; then
 		LUA_CFLAGS=`pkg-config $l --cflags`
