@@ -105,11 +105,11 @@ fi
 AC_MSG_RESULT($lua_name)
 
 # Try every result
-AC_MSG_CHECKING([for required lua version (>=5.1)])
-for l in "$lua_name"; do
-	if pkg-config "$l" --atleast-version=5.1; then
-		LUA_CFLAGS=`pkg-config "$l" --cflags`
-		LUA_LIBS=`pkg-config "$l" --libs`
+AC_MSG_CHECKING([names for required lua version (>=5.1)])
+for l in $lua_name; do
+	if pkg-config $l --atleast-version=5.1; then
+		LUA_CFLAGS=`pkg-config $l --cflags`
+		LUA_LIBS=`pkg-config $l --libs`
 		AC_MSG_RESULT([$l])
 		break
 	fi
