@@ -205,14 +205,14 @@ HandleMap(XMapRequestEvent *ev)
 	SubWin *w = subWinFind(ev->window);
 	if(!w) 
 		{
-			SubScreen *s = subScreenGetPtr(SUB_SCREEN_ACTIVE);
+			SubWin *p = (d->focus->flags & SUB_WIN_TYPE_TILE) ? d->focus : d->focus->parent;
 			w = subClientNew(ev->window);
-			if(!(w->flags & SUB_WIN_STATE_TRANS)) subTileAdd(s->w, w);
-			else 
+			if(w->flags & SUB_WIN_STATE_TRANS) 
 				{
-					w->parent = s->w;
+					w->parent = p;
 					subWinToggle(SUB_WIN_STATE_RAISE, w);
 				}
+			else subTileAdd(p, w);
 		}
 }
 
@@ -222,21 +222,29 @@ HandleDestroy(XDestroyWindowEvent *ev)
 	SubWin *w = subWinFind(ev->event);
 	if(w && w->flags & SUB_WIN_TYPE_CLIENT) subWinDelete(w); 
 }
+
+/* Some events don't propagate but we need them to do so */
+static Window
+GetParent(Window win)
+{
+	unsigned int n;
+	Window parent, nil, *wins = NULL;
+
+	XQueryTree(d->dpy, win, &nil, &parent, &wins, &n);
+	XFree(wins);
+
+	return(parent);
+}
 	
 static void
 HandleMessage(XClientMessageEvent *ev)
 {
-	SubWin *w = NULL;
-	unsigned int n = 0, i;
-	Window parent, nil, *wins = NULL;
+	SubWin *w = subWinFind(GetParent(ev->window));
 
-	/* Client messages never propagate.. */
-	XQueryTree(d->dpy, ev->window, &nil, &parent, &wins, &n);
-	XFree(wins);
-
-	if(parent) w = subWinFind(parent);
 	if(w && w->flags & SUB_WIN_TYPE_CLIENT)
 		{
+			int i;
+
 			printf("message_type=%d\n", ev->message_type);
 			if(ev->format == 32)
 				{
@@ -275,19 +283,11 @@ HandleColormap(XColormapEvent *ev)
 static void
 HandleProperty(XPropertyEvent *ev)
 {
-	SubWin *w = NULL;
-	unsigned int n = 0, i;
-	Window parent, nil, *wins = NULL;
-
-	/* Property changes never propagate.. */
-	XQueryTree(d->dpy, ev->window, &nil, &parent, &wins, &n);
-	XFree(wins);
-
-	if(parent) w = subWinFind(parent);
-	if(w && w->flags & SUB_WIN_TYPE_CLIENT)
+	/* Prevent expensive query tree if the atom isn't supported */
+	if(ev->atom == XA_WM_NAME || ev->atom == subEwmhGetAtom(SUB_EWMH_NET_WM_NAME))
 		{
-			printf("Property: atom=%ld\n", ev->atom);
-			if(ev->atom == XA_WM_NAME || ev->atom == subEwmhGetAtom(SUB_EWMH_NET_WM_NAME)) subClientFetchName(w);
+			SubWin *w = subWinFind(GetParent(ev->window));
+			if(w && w->flags & SUB_WIN_TYPE_CLIENT) subClientFetchName(w);
 		}
 }
 
@@ -309,26 +309,7 @@ HandleCrossing(XCrossingEvent *ev)
 				}
 			if(d->focus == w) return;
 
-
-printf("Crossing: type=%s, win=%#lx, mode=%d, detail=%d\n", ev->type == EnterNotify ? "enter" : "leave", 
-	w->win, ev->mode, ev->detail);
-
-			/* Remove focus from window */
-			if(d->focus) 
-				{
-					SubWin *f = d->focus;
-					d->focus = NULL;
-					if(f) subWinRender(f);
-
-					subKeyUngrab(f);
-				}
-
-			d->focus = w;
-			subWinRender(w);
-			subEwmhSetWindow(DefaultRootWindow(d->dpy), SUB_EWMH_NET_ACTIVE_WINDOW, w->frame);
-
-			/* Grab key */
-			subKeyGrab(w);
+			subWinFocus(w);
 
 			/* Remove any other event of the same type and window */
 			while(XCheckTypedWindowEvent(d->dpy, ev->window, ev->type, &event));			
@@ -343,8 +324,39 @@ HandleExpose(XEvent *ev)
 	SubWin *w = subWinFind(win);
 	if(w) subWinRender(w);
 
+	printf("Expose: type=%s, count=%d, state=%d\n", ev->type == Expose ? "expose" : "visibility", 
+		ev->type == Expose ? ev->xexpose.count : -1, ev->type == VisibilityNotify ? ev->xvisibility.state : -1);
+
 	/* Remove any other event of the same type and window */
 	while(XCheckTypedWindowEvent(d->dpy, win, ev->type, &event));
+}
+
+static void
+HandleFocus(XFocusInEvent *ev)
+{
+	SubWin *w = subWinFind(ev->window);
+	if(w && w->flags & SUB_WIN_PREF_FOCUS)
+		{
+			if(w != d->focus) 
+				{
+					/* Remove focus from window */
+					if(d->focus) 
+					{
+						SubWin *f = d->focus;
+						d->focus = NULL;
+						if(f) subWinRender(f);
+
+						subKeyUngrab(f);
+					}
+
+					d->focus = w;
+					subWinRender(w);
+					subEwmhSetWindow(DefaultRootWindow(d->dpy), SUB_EWMH_NET_ACTIVE_WINDOW, w->frame);
+
+					/* Grab key */
+					subKeyGrab(w);					
+				}
+		}
 }
 
  /**
@@ -404,6 +416,7 @@ int subEventLoop(void)
 							case LeaveNotify:				HandleCrossing(&ev.xcrossing);					break;
 							case VisibilityNotify:	
 							case Expose:						HandleExpose(&ev);											break;
+							case FocusIn:						HandleFocus(&ev.xfocus);								break;
 						}
 				}
 		}
