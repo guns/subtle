@@ -81,6 +81,7 @@ SubWin *subWinFind(Window win);												// Find a window
 SubWin *subWinNew(Window win);												// Create a new window
 void subWinDelete(SubWin *w);													// Delete a window
 void subWinRender(SubWin *w);													// Render a window
+void subWinFocus(SubWin *w);													// Set focus
 void subWinDrag(short mode, SubWin *w);								// Move/Resize a window
 void subWinToggle(short type, SubWin *w);							// Toggle shading or floating state of a window
 void subWinResize(SubWin *w);													// Resize a window
