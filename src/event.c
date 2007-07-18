@@ -297,15 +297,21 @@ HandleCrossing(XCrossingEvent *ev)
 	SubWin *w = subWinFind(ev->window);
 	if(w)
 		{
+			XEvent event;
+		
 			/* Make leave events to enter event of the parent window */
-			if(ev->type == LeaveNotify && ev->mode == 0 && ev->detail == 4 && w->parent) w = w->parent; 
-			if(ev->type == LeaveNotify) printf("Leave: mode=%d, detail=%d\n", ev->mode, ev->detail);
-
-			if(ev->type == EnterNotify && d->focus == w) 
-				{ 
-					printf("Enter: skip\n"); 
-					return;
+			if(ev->type == LeaveNotify && w->parent) 
+				{
+					if(ev->subwindow == w->icon || ev->subwindow == w->title) w = w->parent;
+					else if(w->flags & SUB_WIN_TYPE_TILE && 
+						(ev->subwindow == w->tile->btnew || ev->subwindow == w->tile->btdel)) w = w->parent; 
+					else if(w->flags & SUB_WIN_TYPE_CLIENT && ev->subwindow == w->client->caption) w = w->parent;
 				}
+			if(d->focus == w) return;
+
+
+printf("Crossing: type=%s, win=%#lx, mode=%d, detail=%d\n", ev->type == EnterNotify ? "enter" : "leave", 
+	w->win, ev->mode, ev->detail);
 
 			/* Remove focus from window */
 			if(d->focus) 
@@ -324,27 +330,8 @@ HandleCrossing(XCrossingEvent *ev)
 			/* Grab key */
 			subKeyGrab(w);
 
-			/* Focus */
-			if(w->flags & SUB_WIN_TYPE_CLIENT && !(w->flags & SUB_WIN_STATE_COLLAPSE))
-				{
-					if(w->flags & SUB_WIN_PREF_INPUT) XSetInputFocus(d->dpy, w->win, RevertToNone, CurrentTime);
-					if(w->flags & SUB_WIN_PREF_FOCUS)
-						{
-							XEvent ev;
-
-							ev.type									= ClientMessage;
-							ev.xclient.window				= w->win;
-							ev.xclient.message_type = subEwmhGetAtom(SUB_EWMH_WM_PROTOCOLS);
-							ev.xclient.format				= 32;
-							ev.xclient.data.l[0]		= subEwmhGetAtom(SUB_EWMH_WM_TAKE_FOCUS);
-							ev.xclient.data.l[1]		= CurrentTime;
-
-							XSendEvent(d->dpy, w->win, False, NoEventMask, &ev);
-						}
-					subLogDebug("Focus: win=%#lx, input=%d, send=%d\n", w->win, 
-						w->flags & SUB_WIN_PREF_INPUT ? 1 : 0, w->flags & SUB_WIN_PREF_FOCUS ? 1 : 0);
-				}
-			else if(!(w->flags & SUB_WIN_STATE_COLLAPSE)) XSetInputFocus(d->dpy, w->win, RevertToNone, CurrentTime);
+			/* Remove any other event of the same type and window */
+			while(XCheckTypedWindowEvent(d->dpy, ev->window, ev->type, &event));			
 		}
 }
 
