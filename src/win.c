@@ -54,16 +54,17 @@ subWinNew(Window win)
 	attrs.border_pixel			= d->colors.border;
 	attrs.background_pixmap	= ParentRelative;
 	attrs.background_pixel	= d->colors.norm;
-	attrs.save_under				= True;
+	attrs.save_under				= False;
+	attrs.backing_store			= WhenMapped;
 	attrs.event_mask				= KeyPressMask|ButtonPressMask|EnterWindowMask|LeaveWindowMask|ExposureMask|
-		VisibilityChangeMask|SubstructureRedirectMask|SubstructureNotifyMask;
+		VisibilityChangeMask|FocusChangeMask|SubstructureRedirectMask|SubstructureNotifyMask;
 
 	/* Create windows */
 	mask			= CWBackPixmap|CWSaveUnder|CWEventMask;
 	w->frame	= SUBWINNEW(DefaultRootWindow(d->dpy), 0, 0, w->width, w->height, 0);
-	mask			= CWBackPixel;
+	mask			= CWBackPixel|CWBackingStore;
 	w->title	= SUBWINNEW(w->frame, 0, 0, w->width, d->th, 0);
-	mask 			= CWBorderPixel|CWBackPixel;
+	mask 			= CWBorderPixel|CWBackPixel|CWBackingStore;
 	w->icon		= SUBWINNEW(w->frame, 2, 2, d->th - 6, d->th - 6, 1);
 	
 	/* Create borders */
@@ -102,8 +103,6 @@ subWinDelete(SubWin *w)
 	if(w)
 		{
 			SubWin *p = w->parent;
-
-			//if(w->flags & SUB_WIN_TYPE_CLIENT && !(w->flags & SUB_WIN_PREF_CLOSE)) printf("unmap\n"),subWinUnmap(w);
 
 			if(d->focus == w && p)
 				{
@@ -170,6 +169,56 @@ subWinRender(SubWin *w)
 			else if(w->flags & SUB_WIN_TYPE_TILE) subTileRender(w);
 			else if(w->flags & SUB_WIN_TYPE_CLIENT) subClientRender(w);
 	}
+}
+
+ /**
+	* Set focus
+	* @param w A #SubWin
+	**/
+
+void
+subWinFocus(SubWin *w)
+{
+	if(w)
+		{
+			if(w->flags & SUB_WIN_TYPE_CLIENT && w->flags & SUB_WIN_PREF_FOCUS && !(w->flags & SUB_WIN_STATE_COLLAPSE))
+				{
+					XEvent ev;
+
+					ev.type									= ClientMessage;
+					ev.xclient.window				= w->win;
+					ev.xclient.message_type = subEwmhGetAtom(SUB_EWMH_WM_PROTOCOLS);
+					ev.xclient.format				= 32;
+					ev.xclient.data.l[0]		= subEwmhGetAtom(SUB_EWMH_WM_TAKE_FOCUS);
+					ev.xclient.data.l[1]		= CurrentTime;
+
+					XSendEvent(d->dpy, w->win, False, NoEventMask, &ev);
+
+					subLogDebug("Focus: win=%#lx, input=%d, send=%d\n", w->win, 
+						!!(w->flags & SUB_WIN_PREF_INPUT), !!(w->flags & SUB_WIN_PREF_FOCUS));
+				}
+			else if(!(w->flags & SUB_WIN_STATE_COLLAPSE))
+				{
+					/* Remove focus from window */
+					if(d->focus) 
+					{
+						SubWin *f = d->focus;
+						d->focus = NULL;
+						if(f) subWinRender(f);
+
+						subKeyUngrab(f);
+					}
+
+					XSetInputFocus(d->dpy, w->frame, RevertToNone, CurrentTime);			
+
+					d->focus = w;
+					subWinRender(w);
+					subEwmhSetWindow(DefaultRootWindow(d->dpy), SUB_EWMH_NET_ACTIVE_WINDOW, w->frame);
+
+					/* Grab key */
+					subKeyGrab(w);
+				}
+		}
 }
 
 void
@@ -554,31 +603,46 @@ subWinToggle(short type,
 										long supplied = 0;
 										XSizeHints *hints = XAllocSizeHints();
 										if(!hints) subLogError("Can't alloc memory. Exhausted?\n");
-										if(!(XGetWMSizeHints(d->dpy, w->win, hints, &supplied, subEwmhGetAtom(SUB_EWMH_WM_SIZE_HINTS))))
+										if(XGetWMNormalHints(d->dpy, w->win, hints, &supplied))
 											{
-												printf("width=%d, height=%d, base_width=%d, base_height=%d\n",
-													hints->width, hints->height, hints->base_width, hints->base_height);
+	printf("SizeHints: x=%d, y=%d, width=%d, height=%d, min_width=%d, min_height=%d, \
+		max_width=%d, max_height=%d, base_width=%d, base_height=%d\n", 
+		hints->x, hints->y, hints->width, hints->height, hints->min_width, 
+		hints->min_height, hints->max_width, hints->max_height, hints->base_width, hints->base_height);
 
-												if(hints->flags & (USSize|PSize))
-													{
-														w->width	= hints->width;
-														w->height	= hints->height;
-													}
-												else if(hints->flags & PBaseSize)
-													{
-														w->width	= hints->base_width;
-														w->height	= hints->base_height;
-													}
 												if(hints->flags & (USPosition|PPosition))
 													{
-														w->x = hints->x;
-														w->y = hints->y;
+														w->x = hints->x + 2 * d->bw;
+														w->y = hints->y + d->th + d->bw;
 													}
 												else if(hints->flags & PAspect)
 													{
 														w->x = (hints->min_aspect.x - hints->max_aspect.x) / 2;
 														w->y = (hints->min_aspect.y - hints->max_aspect.y) / 2;
 													}
+												if(hints->flags & (USSize|PSize))
+													{
+														w->width	= hints->width + 2 * d->bw;
+														w->height	= hints->height + d->th + d->bw;
+													}
+												else if(hints->flags & PBaseSize)
+													{
+														w->width	= hints->base_width + 2 * d->bw;
+														w->height	= hints->base_height + d->th + d->bw;
+													}
+												else
+													{
+														/* Fallback for clients breaking the ICCCM (mostly Gtk+ stuff) */
+														if(hints->base_width > 0 && hints->base_width <= DisplayWidth(d->dpy, DefaultScreen(d->dpy)) &&
+															hints->base_height > 0 && hints->base_height <= DisplayHeight(d->dpy, DefaultScreen(d->dpy))) 
+															{
+																w->width	= hints->base_width + 2 * d->bw;
+																w->height	= hints->base_width + d->th + d->bw;
+																w->x			= (DisplayWidth(d->dpy, DefaultScreen(d->dpy)) - w->width) / 2;
+																w->y			= (DisplayHeight(d->dpy, DefaultScreen(d->dpy)) - w->height) / 2;
+															}
+													}
+
 											}
 										XFree(hints);
 									}
