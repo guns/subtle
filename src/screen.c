@@ -92,8 +92,6 @@ UpdateName(SubScreen *s,
 			s->name = (char *)calloc(strlen(buf) + 1, sizeof(char));
 			if(!s->name) subLogError("Can't alloc memory. Exhausted?\n");
 			strncpy(s->name, buf, strlen(buf));
-
-			printf("Name: %d -> %s\n", n, s->name);
 		}
 }
 
