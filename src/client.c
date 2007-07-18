@@ -78,7 +78,7 @@ subClientNew(Window win)
 		{
 			for(i = 0; i < n; i++)
 				{
-					if(protos[i] == subEwmhGetAtom(SUB_EWMH_WM_TAKE_FOCUS)) 		w->flags |= SUB_WIN_PREF_FOCUS;
+					if(protos[i] == subEwmhGetAtom(SUB_EWMH_WM_TAKE_FOCUS)) 		w->flags |= SUB_WIN_PREF_FOCUS,printf("take\n");
 					if(protos[i] == subEwmhGetAtom(SUB_EWMH_WM_DELETE_WINDOW))	w->flags |= SUB_WIN_PREF_CLOSE;
 				}
 			XFree(protos);
@@ -180,8 +180,8 @@ subClientConfigure(SubWin *w)
 	ev.window							= w->win;
 	ev.x									= w->x;
 	ev.y									= w->y;
-	ev.width							= SUBWINWIDTH(w);
-	ev.height							= SUBWINHEIGHT(w);
+	ev.width							= (w->flags & SUB_WIN_STATE_FULL) ? w->width	: SUBWINWIDTH(w);
+	ev.height							= (w->flags & SUB_WIN_STATE_FULL) ? w->height : SUBWINHEIGHT(w);
 	ev.above							= None;
 	ev.border_width 			= 0;
 	ev.override_redirect	= 0;
