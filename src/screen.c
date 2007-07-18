@@ -92,6 +92,8 @@ UpdateName(SubScreen *s,
 			s->name = (char *)calloc(strlen(buf) + 1, sizeof(char));
 			if(!s->name) subLogError("Can't alloc memory. Exhausted?\n");
 			strncpy(s->name, buf, strlen(buf));
+
+			printf("Name: %d -> %s\n", n, s->name);
 		}
 }
 
@@ -168,7 +170,6 @@ subScreenDelete(SubWin *w)
 
 			for(i = 0; i < size; i++) 	
 				{
-					UpdateName(screens[i], i + 1);
 					if(screens[i]->w == w)
 						{
 							printf("Removing screen (%s)\n", screens[i]->name);
@@ -179,22 +180,28 @@ subScreenDelete(SubWin *w)
 							free(screens[i]->name);
 							free(screens[i]);
 
-							if(i == size) active = i - 1; /* Deletion of latest screen */
+							if(i == size - 1) active = i - 1; /* Deletion of last screen */
 							else active = i;
 
-							for(j = i; j < size - 1; j++) screens[j] = screens[j + 1];
+							for(j = i; j < size - 1; j++) 
+								{
+									screens[j] = screens[j + 1];
+									UpdateName(screens[j], j + 1);
+								}
 						}
 				}
 
 			screens = (SubScreen **)realloc(screens, sizeof(SubScreen *) * size);
 			if(!screens) subLogError("Can't alloc memory. Exhausted?\n");
 
-			size--;
-			if(size == 0) raise(SIGTERM); /* Exit if the last screen is deleted */
+			if(--size == 0) raise(SIGTERM); /* Exit if the last screen is deleted */
 
 			UpdateScreens();
 
+			/* Active screen */
+			d->focus = screens[active]->w;
 			subWinMap(screens[active]->w);
+
 			printf("Switching to screen (%s)\n", screens[active]->name);
 
 			subScreenConfigure();
