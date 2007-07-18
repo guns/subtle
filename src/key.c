@@ -157,12 +157,35 @@ subKeyKill(void)
 void
 subKeyGrab(SubWin *w)
 {
-	int i;
-
 	if(w && keys)
 		{
+			int i;
+
 			for(i = 0; i < size; i++) 
 				XGrabKey(d->dpy, keys[i]->code, keys[i]->mod, w->frame, True, GrabModeAsync, GrabModeAsync);
+
+			/* Focus */
+			if(w->flags & SUB_WIN_TYPE_CLIENT && !(w->flags & SUB_WIN_STATE_COLLAPSE))
+				{
+					if(w->flags & SUB_WIN_PREF_FOCUS)
+						{
+							XEvent ev;
+
+							ev.type									= ClientMessage;
+							ev.xclient.window				= w->win;
+							ev.xclient.message_type = subEwmhGetAtom(SUB_EWMH_WM_PROTOCOLS);
+							ev.xclient.format				= 32;
+							ev.xclient.data.l[0]		= subEwmhGetAtom(SUB_EWMH_WM_TAKE_FOCUS);
+							ev.xclient.data.l[1]		= CurrentTime;
+
+							XSendEvent(d->dpy, w->win, False, NoEventMask, &ev);
+						}
+					else if(w->flags & SUB_WIN_PREF_INPUT) XSetInputFocus(d->dpy, w->win, RevertToNone, CurrentTime);
+
+					subLogDebug("Grab: Focus on win=%#lx, input=%d, send=%d\n", w->win, 
+						w->flags & SUB_WIN_PREF_INPUT, w->flags & SUB_WIN_PREF_FOCUS);
+				}
+			else if(!(w->flags & SUB_WIN_STATE_COLLAPSE)) XSetInputFocus(d->dpy, w->frame, RevertToNone, CurrentTime);				
 		}
 }
 
