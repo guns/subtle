@@ -78,7 +78,7 @@ subClientNew(Window win)
 		{
 			for(i = 0; i < n; i++)
 				{
-					if(protos[i] == subEwmhGetAtom(SUB_EWMH_WM_TAKE_FOCUS)) 		w->flags |= SUB_WIN_PREF_FOCUS,printf("take\n");
+					if(protos[i] == subEwmhGetAtom(SUB_EWMH_WM_TAKE_FOCUS)) 		w->flags |= SUB_WIN_PREF_FOCUS;
 					if(protos[i] == subEwmhGetAtom(SUB_EWMH_WM_DELETE_WINDOW))	w->flags |= SUB_WIN_PREF_CLOSE;
 				}
 			XFree(protos);
@@ -119,8 +119,6 @@ subClientDelete(SubWin *w)
 					ev.xclient.data.l[1]		= CurrentTime;
 
 					XSendEvent(d->dpy, w->win, False, NoEventMask, &ev);
-
-					printf("Delete: send %#lx delete event\n", w->win);
 				}
 			else XDestroyWindow(d->dpy, w->win);
 
