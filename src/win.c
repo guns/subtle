@@ -197,7 +197,7 @@ subWinFocus(SubWin *w)
 					subLogDebug("Focus: win=%#lx, input=%d, send=%d\n", w->win, 
 						!!(w->flags & SUB_WIN_PREF_INPUT), !!(w->flags & SUB_WIN_PREF_FOCUS));
 				}
-			else if(!(w->flags & SUB_WIN_STATE_COLLAPSE))
+			else
 				{
 					/* Remove focus from window */
 					if(d->focus) 
@@ -532,10 +532,11 @@ subWinToggle(short type,
 			XEvent event;
 			XGrabServer(d->dpy);
 
+if(type == SUB_WIN_STATE_PILE) printf("Toggle pile\n");
+
 			if(w->flags & type)
 				{
 					w->flags &= ~type;
-
 					switch(type)
 						{
 							case SUB_WIN_STATE_COLLAPSE:
@@ -575,6 +576,7 @@ subWinToggle(short type,
 							case SUB_WIN_STATE_WEIGHT:
 								w->weight = 0;
 								if(w->parent) subTileConfigure(w->parent);
+								break;
 						}
 				}
 			else 
@@ -671,7 +673,7 @@ subWinToggle(short type,
 										XUnmapWindow(d->dpy, w->tile->btdel);
 									}
 
-								/* Resize wo display size */
+								/* Resize to display size */
 								w->x			= 0;
 								w->y			= 0;
 								w->width	= DisplayWidth(d->dpy, DefaultScreen(d->dpy));
