@@ -164,6 +164,12 @@ subTileConfigure(SubWin *w)
 								}
 						}
 
+					/* Piled window */
+					if(w->flags & SUB_WIN_STATE_PILE) 
+						{
+							collapsed = n - 1;
+							weighted	= 0;
+						}
 					if(weighted > 0)
 						{
 							if(w->flags & SUB_WIN_TILE_HORZ) width = size;
@@ -184,6 +190,8 @@ subTileConfigure(SubWin *w)
 							SubWin *c = subWinFind(wins[i]);
 							if(c && !(c->flags & (SUB_WIN_STATE_TRANS|SUB_WIN_STATE_RAISE|SUB_WIN_STATE_FULL)))
 								{
+									if(w->flags & SUB_WIN_STATE_PILE && w->tile->pile != c) c->flags |= SUB_WIN_STATE_COLLAPSE;
+
 									c->parent	= w;
 									c->x			= 0;
 									c->y			= (c->flags & SUB_WIN_STATE_COLLAPSE) ? y : collapsed * d->th;
