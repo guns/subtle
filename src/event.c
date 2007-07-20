@@ -69,6 +69,12 @@ HandleButtonPress(XButtonEvent *ev)
 								if(!(w->flags & SUB_WIN_TYPE_SCREEN))
 									{
 										if(w->flags & SUB_WIN_STATE_RAISE) 		subWinRaise(w);
+										if(w->parent && w->parent->flags & SUB_WIN_STATE_PILE) 
+											{
+												w->parent->tile->pile = w;
+												if(w->flags & SUB_WIN_STATE_COLLAPSE) w->flags &= ~SUB_WIN_STATE_COLLAPSE;
+												subTileConfigure(w->parent);
+											}
 										if(ev->subwindow == w->left) 				subWinDrag(SUB_WIN_DRAG_LEFT, w);
 										else if(ev->subwindow == w->right)	subWinDrag(SUB_WIN_DRAG_RIGHT, w);
 										else if(ev->subwindow == w->bottom) subWinDrag(SUB_WIN_DRAG_BOTTOM, w);
@@ -147,7 +153,20 @@ HandleKeyPress(XKeyEvent *ev)
 							case SUB_KEY_ACTION_TOGGLE_WEIGHT:		if(!mode) mode = SUB_WIN_STATE_WEIGHT;
 								if(!(w->flags & SUB_WIN_TYPE_SCREEN)) subWinToggle(mode, w);
 								break;									
-							case SUB_KEY_ACTION_TOGGLE_PILE: subWinToggle(SUB_WIN_STATE_PILE, w);		break;
+							case SUB_KEY_ACTION_TOGGLE_PILE: 
+								if(w->flags & SUB_WIN_TYPE_TILE) subWinToggle(SUB_WIN_STATE_PILE, w);		
+								else if(w->parent && w->parent->flags & SUB_WIN_STATE_PILE) 
+									subWinToggle(SUB_WIN_STATE_PILE, w->parent);
+								break;
+							case SUB_KEY_ACTION_TOGGLE_LAYOUT: 
+								if(w->flags & SUB_WIN_TYPE_TILE)
+									{
+										type = (w->flags & SUB_WIN_TILE_HORZ) ? SUB_WIN_TILE_HORZ : SUB_WIN_TILE_VERT;
+										w->flags &= ~type;
+										w->flags |= (type == SUB_WIN_TILE_HORZ) ? SUB_WIN_TILE_VERT : SUB_WIN_TILE_HORZ;
+										subTileConfigure(w);
+									}			
+								break;
 							case SUB_KEY_ACTION_DESKTOP_NEXT: subScreenSwitch(SUB_SCREEN_NEXT);			break;
 							case SUB_KEY_ACTION_DESKTOP_PREV: subScreenSwitch(SUB_SCREEN_PREV);			break;
 							case SUB_KEY_ACTION_DESKTOP_MOVE:
