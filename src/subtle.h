@@ -94,7 +94,7 @@ void subWinRaise(SubWin *w);													// Raise a window
 typedef struct subtile
 {
 	Window		btnew, btdel;															// Tile buttons
-	SubWin		*peak;																		// Peak window
+	SubWin		*pile;																		// Pile top
 } SubTile;
 
 SubWin *subTileNew(short mode);												// Create a new tile
@@ -234,10 +234,11 @@ void subLog(short type, const char *file, 						// Print messages
 #define SUB_KEY_ACTION_TOGGLE_FULL			(1L << 6)			// Toggle fullscreen
 #define SUB_KEY_ACTION_TOGGLE_WEIGHT		(1L << 7)			// Toggle weight
 #define SUB_KEY_ACTION_TOGGLE_PILE			(1L << 8)			// Toggle pile
-#define SUB_KEY_ACTION_DESKTOP_NEXT			(1L << 9)			// Switch to next desktop
-#define SUB_KEY_ACTION_DESKTOP_PREV			(1L << 10)		// Switch to previous desktop
-#define SUB_KEY_ACTION_DESKTOP_MOVE			(1L << 11)		// Move window to desktop
-#define SUB_KEY_ACTION_EXEC							(1L << 12)		// Exec an app
+#define SUB_KEY_ACTION_TOGGLE_LAYOUT		(1L << 9)			// Toggle tile layout
+#define SUB_KEY_ACTION_DESKTOP_NEXT			(1L << 10)		// Switch to next desktop
+#define SUB_KEY_ACTION_DESKTOP_PREV			(1L << 11)		// Switch to previous desktop
+#define SUB_KEY_ACTION_DESKTOP_MOVE			(1L << 12)		// Move window to desktop
+#define SUB_KEY_ACTION_EXEC							(1L << 13)		// Exec an app
 
 typedef struct subkey
 {
