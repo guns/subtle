@@ -65,6 +65,7 @@ subKeyParseChain(const char *key,
 	else if(!strncmp(key, "ToggleFull", 10))			k->flags = SUB_KEY_ACTION_TOGGLE_FULL;
 	else if(!strncmp(key, "ToggleWeight", 12))		k->flags = SUB_KEY_ACTION_TOGGLE_WEIGHT;
 	else if(!strncmp(key, "TogglePile", 10))			k->flags = SUB_KEY_ACTION_TOGGLE_PILE;
+	else if(!strncmp(key, "ToggleLayout", 12))		k->flags = SUB_KEY_ACTION_TOGGLE_LAYOUT;
 	else if(!strncmp(key, "NextDesktop", 11))			k->flags = SUB_KEY_ACTION_DESKTOP_NEXT;
 	else if(!strncmp(key, "PreviousDesktop", 11))	k->flags = SUB_KEY_ACTION_DESKTOP_PREV;
 	else if(!strncmp(key, "MoveToDesktop", 13))
