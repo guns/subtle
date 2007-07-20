@@ -141,11 +141,9 @@ subScreenNew(void)
 	XMapRaised(d->dpy, d->bar.win);
 	XMapRaised(d->dpy, s->button);
 
-	d->focus	= s->w;
-	active		= size;
-	size++;
+	active = size++;
 
-	subKeyGrab(s->w);
+	subWinFocus(s->w);
 	UpdateScreens();
 
 	subScreenConfigure();
