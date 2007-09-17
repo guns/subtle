@@ -3,19 +3,7 @@
 	* subtle - window manager
 	* Copyright (c) 2005-2007 Christoph Kappel
 	*
-	* This program is free software; you can redistribute it and/or modify
-	* it under the terms of the GNU General Public License as published by
-	* the Free Software Foundation; either version 2 of the License, or
-	* (at your option) any later version.
-	*
-	* This program is distributed in the hope that it will be useful,
-	* but WITHOUT ANY WARRANTY; without even the implied warranty of
-	* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	* GNU General Public License for more details.
-	*
-	* You should have received a copy of the GNU General Public License along
-	* with this program; if not, write to the Free Software Foundation, Inc.,
-	* 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+	* See the COPYING file for the license in the latest tarball.
 	**/
 
 #include <lua.h>
@@ -36,8 +24,8 @@ StateNew(void)
 	lua_State *state = NULL;
 	if(!(state = luaL_newstate()))
 		{
-			subLogDebug("%s\n", (char *)lua_tostring(state, -1));
-			subLogError("Can't open lua state.\n");
+			subUtilLogDebug("%s\n", (char *)lua_tostring(state, -1));
+			subUtilLogError("Can't open lua state.\n");
 		}
 	luaL_openlibs(state);
 
@@ -62,7 +50,7 @@ GetNum(lua_State *configstate,
 	GET_GLOBAL(configstate);
 	if(!lua_isnumber(configstate, -1))
 		{
-			subLogDebug("Expected double, got `%s' for `%s'.\n", lua_typename(configstate, -1), field);
+			subUtilLogDebug("Expected double, got `%s' for `%s'.\n", lua_typename(configstate, -1), field);
 			return(fallback);
 		}
 	return((int)lua_tonumber(configstate, -1));
@@ -77,7 +65,7 @@ GetString(lua_State *configstate,
 	GET_GLOBAL(configstate);
 	if(!lua_isstring(configstate, -1))
 		{
-			subLogDebug("Expected string, got `%s' for `%s'.\n", lua_typename(configstate, -1), field);
+			subUtilLogDebug("Expected string, got `%s' for `%s'.\n", lua_typename(configstate, -1), field);
 			return(fallback);
 		}
 	return((char *)lua_tostring(configstate, -1));
@@ -94,10 +82,10 @@ ParseColor(lua_State *configstate,
 
 	if(!XParseColor(d->dpy, DefaultColormap(d->dpy, DefaultScreen(d->dpy)), name, &color))
 		{
-			subLogWarn("Can't load color '%s'.\n", name);
+			subUtilLogWarn("Can't load color '%s'.\n", name);
 		}
 	else if(!XAllocColor(d->dpy, DefaultColormap(d->dpy, DefaultScreen(d->dpy)), &color))
-		subLogWarn("Can't alloc color '%s'.\n", name);
+		subUtilLogWarn("Can't alloc color '%s'.\n", name);
 	return(color.pixel);
 }
 
@@ -128,12 +116,12 @@ subLuaLoadConfig(const char *path)
 			else snprintf(buf, sizeof(buf), "%s/config.lua", CONFIG_DIR);
 		}
 
-	subLogDebug("Reading `%s'\n", buf);
+	subUtilLogDebug("Reading `%s'\n", buf);
 	if(luaL_loadfile(configstate, buf) || lua_pcall(configstate, 0, 0, 0))
 		{
-			subLogWarn("%s\n", (char *)lua_tostring(configstate, -1));
+			subUtilLogWarn("%s\n", (char *)lua_tostring(configstate, -1));
 			lua_close(configstate);
-			subLogError("Can't parse config file\n");
+			subUtilLogError("Can't parse config file\n");
 		}
 
 	/* Parse and load the font */
@@ -144,10 +132,10 @@ subLuaLoadConfig(const char *path)
 	snprintf(buf, sizeof(buf), "-*-%s-%s-*-*-*-%d-*-*-*-*-*-*-*", face, style, size);
 	if(!(d->xfs = XLoadQueryFont(d->dpy, buf)))
 		{
-			subLogWarn("Can't load font `%s', using fixed instead.\n", face);
-			subLogDebug("Font: %s\n", buf);
+			subUtilLogWarn("Can't load font `%s', using fixed instead.\n", face);
+			subUtilLogDebug("Font: %s\n", buf);
 			d->xfs = XLoadQueryFont(d->dpy, "-*-fixed-medium-*-*-*-12-*-*-*-*-*-*-*");
-			if(!d->xfs) subLogError("Can't load font `fixed`.\n");
+			if(!d->xfs) subUtilLogError("Can't load font `fixed`.\n");
 		}
 
 	/* Font metrics */
@@ -244,10 +232,10 @@ PrepareSublet(int type,
 			if(ref) subSubletNew(type, ref, interval, width);
 
 			printf("Loaded sublet %s (%d)\n", string, interval);
-			subLogDebug("Sublet: name=%s, ref=%d, interval=%d, width=%d\n", string, ref, interval, width);
+			subUtilLogDebug("Sublet: name=%s, ref=%d, interval=%d, width=%d\n", string, ref, interval, width);
 		}
 
-	return(1); // Make the compiler happy
+	return(1); /* Make the compiler happy */
 }
 
 static int
@@ -335,27 +323,27 @@ subLuaCall(SubSublet *s)
 				{
 					if(s->flags & SUB_SUBLET_FAIL_THIRD)
 						{
-							subLogWarn("Unloaded sublet (#%d) after 3 failed attempts\n", s->ref);
+							subUtilLogWarn("Unloaded sublet (#%d) after 3 failed attempts\n", s->ref);
 							subSubletDelete(s);
 							return;
 						}				
 					else if(s->flags & SUB_SUBLET_FAIL_SECOND) s->flags |= SUB_SUBLET_FAIL_THIRD;
 					else if(s->flags & SUB_SUBLET_FAIL_FIRST) s->flags |= SUB_SUBLET_FAIL_SECOND;
 
-					subLogWarn("Failed attempt #%d to call sublet (#%d).\n", 
+					subUtilLogWarn("Failed attempt #%d to call sublet (#%d).\n", 
 						(s->flags & SUB_SUBLET_FAIL_SECOND) ? 2 : 1, s->ref);
 				}
 
 			switch(lua_type(state, -1))
 				{
-					case LUA_TNIL: 		subLogWarn("Sublet (#%d) does not return any usuable value\n", s->ref);	break;
+					case LUA_TNIL: 		subUtilLogWarn("Sublet (#%d) does not return any usuable value\n", s->ref);	break;
 					case LUA_TNUMBER: s->number = (int)lua_tonumber(state, -1);																break;
 					case LUA_TSTRING:
 						if(s->string) free(s->string);
 						s->string = strdup((char *)lua_tostring(state, -1));
 						break;
 					default:
-						subLogDebug("Sublet (#%d) returned unkown type %s\n", s->ref, lua_typename(state, -1));
+						subUtilLogDebug("Sublet (#%d) returned unkown type %s\n", s->ref, lua_typename(state, -1));
 						lua_pop(state, -1);
 				}
 		}
