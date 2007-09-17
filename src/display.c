@@ -3,19 +3,7 @@
 	* subtle - window manager
 	* Copyright (c) 2005-2007 Christoph Kappel
 	*
-	* This program is free software; you can redistribute it and/or modify
-	* it under the terms of the GNU General Public License as published by
-	* the Free Software Foundation; either version 2 of the License, or
-	* (at your option) any later version.
-	*
-	* This program is distributed in the hope that it will be useful,
-	* but WITHOUT ANY WARRANTY; without even the implied warranty of
-	* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	* GNU General Public License for more details.
-	*
-	* You should have received a copy of the GNU General Public License along
-	* with this program; if not, write to the Free Software Foundation, Inc.,
-	* 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+	* See the COPYING file for the license in the latest tarball.
 	**/
 
 #include "subtle.h"
@@ -28,13 +16,13 @@ HandleXError(Display *display,
 {
 	if(ev->error_code == BadAccess && ev->resourceid == DefaultRootWindow(display))
 		{
-			subLogError("Seems there is another WM running. Exiting.\n");
+			subUtilLogError("Seems there is another WM running. Exiting.\n");
 		}
 	else if(ev->request_code != 42) /* X_SetInputFocus */
 		{
 			char error[255];
 			XGetErrorText(display, ev->error_code, error, sizeof(error));
-			subLogDebug("%s: win=%#lx, request=%d\n", error, ev->resourceid, ev->request_code);
+			subUtilLogDebug("%s: win=%#lx, request=%d\n", error, ev->resourceid, ev->request_code);
 		}
 	return(0);
 }
@@ -58,13 +46,12 @@ subDisplayNew(const char *display_string)
 	};
 
 	/* Create display and setup error handler */
-	if((d = (SubDisplay *)calloc(1, sizeof(SubDisplay))))
+	if((d = (SubDisplay *)subUtilAlloc(1, sizeof(SubDisplay))))
 		{
 			d->dpy = XOpenDisplay(display_string);
-			if(!d->dpy) subLogError("Can't open display `%s'.\n", (display_string) ? display_string : ":0.0");
+			if(!d->dpy) subUtilLogError("Can't open display `%s'.\n", (display_string) ? display_string : ":0.0");
 			XSetErrorHandler(HandleXError);
 		}
-	else subLogError("Can't alloc memory.\n");
 
 	/* Create gcs */
 	gvals.function		= GXcopy;
