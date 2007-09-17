@@ -3,38 +3,13 @@
 	* subtle - window manager
 	* Copyright (c) 2005-2007 Christoph Kappel
 	*
-	* This program is free software; you can redistribute it and/or modify
-	* it under the terms of the GNU General Public License as published by
-	* the Free Software Foundation; either version 2 of the License, or
-	* (at your option) any later version.
-	*
-	* This program is distributed in the hope that it will be useful,
-	* but WITHOUT ANY WARRANTY; without even the implied warranty of
-	* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	* GNU General Public License for more details.
-	*
-	* You should have received a copy of the GNU General Public License along
-	* with this program; if not, write to the Free Software Foundation, Inc.,
-	* 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+	* See the COPYING file for the license in the latest tarball.
 	**/
 
 #include "subtle.h"
 
-static int size = 0, active = -1;
-static SubScreen **screens = NULL;
-
- /**
-	* Find a screen
-	* @param s A window
-	* @return Returns a #SubScreen or NULL
-	**/
-
-SubScreen *
-subScreenFind(Window win)
-{
-	SubScreen *s = NULL;
-	return(XFindContext(d->dpy, win, 1, (void *)&s) != XCNOENT ? s : NULL);
-}
+static int screens = 0;
+static SubWin *main = NULL;
 
  /**
 	* Init screen 
@@ -46,9 +21,14 @@ subScreenInit(void)
 	long data[4] = { 0, 0, 0, 0 };
 
 	/* Screen bar windows */
-	d->bar.win			= XCreateSimpleWindow(d->dpy, DefaultRootWindow(d->dpy), 0, 0, 1, d->th, 0, 0, d->colors.norm);
+	d->bar.win			= XCreateSimpleWindow(d->dpy, DefaultRootWindow(d->dpy), 0, 0, 
+		DisplayWidth(d->dpy, DefaultScreen(d->dpy)), d->th, 0, 0, d->colors.norm);
 	d->bar.screens	= XCreateSimpleWindow(d->dpy, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
 	d->bar.sublets	= XCreateSimpleWindow(d->dpy, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
+
+	XSetWindowBackground(d->dpy, d->bar.win, d->colors.norm);
+	XSetWindowBackground(d->dpy, d->bar.screens, d->colors.norm);
+	XSetWindowBackground(d->dpy, d->bar.sublets, d->colors.norm);
 
 	XSelectInput(d->dpy, d->bar.screens, ButtonPressMask); 
 
@@ -89,8 +69,8 @@ UpdateName(SubScreen *s,
 
 			if(s->name) free(s->name);
 			snprintf(buf, sizeof(buf), "%d", n);
-			s->name = (char *)calloc(strlen(buf) + 1, sizeof(char));
-			if(!s->name) subLogError("Can't alloc memory. Exhausted?\n");
+			s->name = (char *)subUtilAlloc(strlen(buf) + 1, sizeof(char));
+			s->n		= n;
 			strncpy(s->name, buf, strlen(buf));
 		}
 }
@@ -98,58 +78,64 @@ UpdateName(SubScreen *s,
 static void
 UpdateScreens(void)
 {
-	int i;
+	int i = 0;
+	SubWin *s = main;
 	Window *wins = NULL;
 
-	/* EWMH: Desktops */
-	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_NUMBER_OF_DESKTOPS, size);
-	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CURRENT_DESKTOP, active);
-
 	/* EWMH: Virtual roots */
-	wins = (Window *)calloc(size, sizeof(Window));
-	if(!wins) subLogError("Can't alloc memory. Exhausted?\n");
-	for(i = 0; i < size; i++) wins[i] = screens[i]->w->frame;
-	subEwmhSetWindows(DefaultRootWindow(d->dpy), SUB_EWMH_NET_VIRTUAL_ROOTS, wins, size);
+	wins = (Window *)subUtilAlloc(screens, sizeof(Window));
+	while(s)
+		{
+			wins[i++] = s->frame;
+			s = s->next;
+		}
+	subEwmhSetWindows(DefaultRootWindow(d->dpy), SUB_EWMH_NET_VIRTUAL_ROOTS, wins, screens);
 	free(wins);
+
+	/* EWMH: Desktops */
+	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_NUMBER_OF_DESKTOPS, screens);
+	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CURRENT_DESKTOP, d->screen->screen->n);
 }
 
  /**
-	* Create a screen window 
-	* @return Returns a new #SubScreen
+	* Create a screen 
+	* @return Returns a new #SubWin
 	**/
 
-SubScreen *
+SubWin *
 subScreenNew(void)
 {
-	/* Create screen  */
-	SubScreen *s = (SubScreen *)calloc(1, sizeof(SubScreen));
-	if(!s) subLogError("Can't alloc memory. Exhausted?\n");
+	SubWin *w = subWinNew();
 
-	UpdateName(s, size + 1);
+	w->screen = (SubScreen *)subUtilAlloc(1, sizeof(SubScreen));
 
-	s->w				= subTileNew(SUB_WIN_TILE_HORZ);
-	s->w->flags |= SUB_WIN_TYPE_SCREEN;
-	s->width		= strlen(s->name) * d->fx + 2;
-	s->button		= XCreateSimpleWindow(d->dpy, d->bar.screens, 0, 0, 1, d->th - 6, 1, d->colors.border, d->colors.norm);
+	UpdateName(w->screen, ++screens);
 
-	screens = (SubScreen **)realloc(screens, sizeof(SubScreen *) * (size + 1));
-	if(!screens) subLogError("Can't alloc memory. Exhausted?\n");
-	screens[size] = s;
+	w->flags = SUB_WIN_TYPE_SCREEN|SUB_WIN_TYPE_TILE|SUB_WIN_TILE_HORZ;
+
+	w->screen->width	= strlen(w->screen->name) * d->fx + 2;
+	w->screen->button	= XCreateSimpleWindow(d->dpy, d->bar.screens, 0, 0, 1, d->th - 6, 1, d->colors.border, d->colors.norm);
+
+	/* Hierarchy */
+	if(d->screen) d->screen->next = w;
+	w->prev = d->screen;
+	if(!main) main = w;
 
 	/* Switch to new screen */
-	if(active >= 0) subWinUnmap(screens[active]->w);
+	if(d->screen) XUnmapWindow(d->dpy, d->screen->frame);
+	d->screen = w;
 	XMapRaised(d->dpy, d->bar.win);
-	XMapRaised(d->dpy, s->button);
+	XMapRaised(d->dpy, w->screen->button);
 
-	active = size++;
-
-	subWinFocus(s->w);
 	UpdateScreens();
 
 	subScreenConfigure();
-	printf("Adding screen (%d)\n", size);
+	printf("Adding screen (%s)\n", w->screen->name);
 
-	XSaveContext(d->dpy, s->button, 1, (void *)s);
+	subWinMap(w);
+
+	XSaveContext(d->dpy, w->screen->button, 1, (void *)w);
+	return(w);
 }
 
  /**
@@ -162,43 +148,26 @@ subScreenDelete(SubWin *w)
 {
 	if(w && w->flags & SUB_WIN_TYPE_SCREEN)
 		{
-			int i, j;
+			printf("Removing screen (%s)\n", w->screen->name);
 
-			for(i = 0; i < size; i++) 	
-				{
-					if(screens[i]->w == w)
-						{
-							printf("Removing screen (%s)\n", screens[i]->name);
-		
-							XUnmapWindow(d->dpy, screens[i]->button);
-							XDeleteContext(d->dpy, screens[i]->button, 1);
-							XDestroyWindow(d->dpy, screens[i]->button);
-							free(screens[i]->name);
-							free(screens[i]);
+			XUnmapWindow(d->dpy, w->screen->button);
+			XDeleteContext(d->dpy, w->screen->button, 1);
+			XDestroyWindow(d->dpy, w->screen->button);
+			free(w->screen->name);
+			free(w->screen);
 
-							if(i == size - 1) active = i - 1; /* Deletion of last screen */
-							else active = i;
-
-							for(j = i; j < size - 1; j++) 
-								{
-									screens[j] = screens[j + 1];
-									UpdateName(screens[j], j + 1);
-								}
-						}
-				}
-
-			screens = (SubScreen **)realloc(screens, sizeof(SubScreen *) * size);
-			if(!screens) subLogError("Can't alloc memory. Exhausted?\n");
-
-			if(--size == 0) raise(SIGTERM); /* Exit if the last screen is deleted */
+			if(d->screen == w)
+				if(w->prev) 
+					{
+						d->screen = w->prev;
+						XMapSubwindows(d->dpy, d->screen->frame);
+					}
 
 			UpdateScreens();
 
-			/* Active screen */
-			d->focus = screens[active]->w;
-			subWinMap(screens[active]->w);
+			printf("Switching to screen (%s)\n", d->screen->screen->name);
 
-			printf("Switching to screen (%s)\n", screens[active]->name);
+			screens--;
 
 			subScreenConfigure();
 		}
@@ -213,39 +182,35 @@ subScreenDelete(SubWin *w)
 void
 subScreenRender(SubWin *w)
 {
-	if(w && w->flags & SUB_WIN_TYPE_SCREEN)
+	int i;
+	unsigned int n = 0;
+	Window nil, *wins = NULL;
+	SubWin *s = main;
+
+	/* Redraw tile */
+	XClearWindow(d->dpy, d->bar.win);
+	XFillRectangle(d->dpy, d->bar.win, d->gcs.border, 0, 2, DisplayWidth(d->dpy, DefaultScreen(d->dpy)), d->th - 4);	
+
+	/* Screens */
+	while(s)
 		{
-			int i;
-			unsigned int n = 0;
-			Window nil, *wins = NULL;
-			unsigned long col = d->focus && d->focus == w ? d->colors.focus : d->colors.norm;
-
-			XSetWindowBackground(d->dpy, d->bar.screens, col);
-			XClearWindow(d->dpy, d->bar.screens);
-
-			/* Screens */
-			for(i = 0; i < size; i++)
-				{
-					XSetWindowBackground(d->dpy, screens[i]->button, (active == i) ? d->colors.cover : col);
-					XClearWindow(d->dpy, screens[i]->button);
-					XDrawString(d->dpy, screens[i]->button, d->gcs.font, 1, d->fy - 4, 
-						screens[i]->name, strlen(screens[i]->name));
-				}
-
-			/* Sublets */
-			XQueryTree(d->dpy, d->bar.sublets, &nil, &nil, &wins, &n);
-			if(n > 0)
-				{
-					for(i = 0; i < n; i++)
-						{
-							SubSublet *s = subSubletFind(wins[i]);
-							if(s) subSubletRender(s);
-						}
-					XFree(wins);
-				}					
-
-			subTileRender(w);
+			XSetWindowBackground(d->dpy, s->screen->button, (d->screen == s) ? d->colors.cover : d->colors.norm);
+			XClearWindow(d->dpy, s->screen->button);
+			XDrawString(d->dpy, s->screen->button, d->gcs.font, 1, d->fy - 4, s->screen->name, strlen(s->screen->name));
+			s = s->next;
 		}
+
+	/* Sublets */
+	XQueryTree(d->dpy, d->bar.sublets, &nil, &nil, &wins, &n);
+	if(n > 0)
+		{
+			for(i = 0; i < n; i++)
+				{
+					SubSublet *s = subSubletFind(wins[i]);
+					if(s) subSubletRender(s);
+				}
+			XFree(wins);
+		}					
 }
 
  /**
@@ -260,12 +225,14 @@ subScreenConfigure(void)
 			int i, scw = 3, suw = 0, width = 0;
 			unsigned int n = 0;
 			Window nil, *wins = NULL;
+			SubWin *s = main;
 
 			/* Screens */
-			for(i = 0; i < size; i++)
+			while(s)
 				{
-					XMoveResizeWindow(d->dpy, screens[i]->button, scw, 2, screens[i]->width, d->th - 6);
-					scw += screens[i]->width + 6;
+					XMoveResizeWindow(d->dpy, s->screen->button, scw, 2, s->screen->width, d->th - 6);
+					scw += s->screen->width + 6;
+					s = s->next;
 				}
 			XMoveResizeWindow(d->dpy, d->bar.screens, 0, 0, scw, d->th);
 
@@ -282,12 +249,9 @@ subScreenConfigure(void)
 									suw += s->width;
 								}
 						}
-					XMoveResizeWindow(d->dpy, d->bar.sublets, scw, 0, suw, d->th);
+					XMoveResizeWindow(d->dpy, d->bar.sublets, DisplayWidth(d->dpy, DefaultScreen(d->dpy)) - suw, 0, suw, d->th);
 					XFree(wins);
 				}
-
-			XMoveResizeWindow(d->dpy, d->bar.win, DisplayWidth(d->dpy, DefaultScreen(d->dpy)) - (scw + suw), 
-				0, scw + suw, d->th);
 		}
 }
 
@@ -300,96 +264,53 @@ subScreenKill(void)
 {
 	if(screens)
 		{
-			int i;
+			SubWin *s = main;
 
-			for(i = 0; i < size; i++) 
+			printf("Removing screens\n");
+
+			while(s)
 				{
-					/* Manually to skip useless reallocs */
-					XUnmapWindow(d->dpy, screens[i]->button);
-					XDeleteContext(d->dpy, screens[i]->button, 1);
-					XDestroyWindow(d->dpy, screens[i]->button);
-					free(screens[i]->name);
-					free(screens[i]);					
+					/* Manually removing all screens */
+					XUnmapWindow(d->dpy, s->screen->button);
+					XDeleteContext(d->dpy, s->screen->button, 1);
+					XDeleteContext(d->dpy, s->frame, 1);
+					XDestroyWindow(d->dpy, s->screen->button);
+					XDestroyWindow(d->dpy, s->frame);
+
+					free(s->screen->name);
+					s = s->next;
+					free(s->tile);
+					free(s);					
 				}
 
+			XDestroyWindow(d->dpy, d->bar.win);
 			XDestroyWindow(d->dpy, d->bar.screens);
 			XDestroyWindow(d->dpy, d->bar.sublets);
-			free(screens);
 		}
 }
 
  /**
-	* Get screen pointer
-	* @params pos Position
-	* @return Returns a #SubScreen or NULL
-	**/
-
-SubScreen *
-subScreenGetPtr(int pos)
-{
-	if(pos == SUB_SCREEN_ACTIVE) return(active >= 0 ? screens[active] : NULL);
-	else return(pos - 1 < size ? screens[pos - 1] : NULL);
-}
-
- /**
-	* Get screen position
-	* @param s A #SubScreen
-	* @return Returns either a number on success or otherwise -1
-	**/
-
-int
-subScreenGetPos(SubScreen *s)
-{
-	if(s)
-		{
-			int i;
-
-			for(i = 0; i < size; i++)
-				if(screens[i] == s) return(i);
-			return(-1);
-		}	
-}
-
- /**
 	* Switch screen
-	* @param pos New active screen
+	* @param w New active screen
 	**/
 
 void
-subScreenSwitch(int pos)
+subScreenSwitch(SubWin *w)
 {
-	int next;
-
-	/* Switch to screens */
-	if(pos == active) return;
-	else if(pos == SUB_SCREEN_NEXT) next = active + 1;
-	else if(pos == SUB_SCREEN_PREV && active > 0) next = active - 1;
-	else if(pos >= 0 && pos - 1 < size) next = pos;
-	else return;
-
-	if(next == size)
+	if(!w) 
 		{
 			subScreenNew();
 			return;
 		}
 	
-	subWinUnmap(screens[active]->w);
-	active = next;
+	XUnmapWindow(d->dpy, d->screen->frame);
 
 	XMapRaised(d->dpy, d->bar.win);
-	XMapRaised(d->dpy, screens[active]->button);
-	subWinMap(screens[active]->w);
-
-	/* Check focus */
-	if(d->focus->flags & SUB_WIN_TYPE_SCREEN)
-		{
-			if(d->focus) subWinRender(d->focus);
-			d->focus = screens[active]->w;
-			subWinRender(screens[active]->w);				
-		}
+	XMapRaised(d->dpy, d->screen->screen->button);
+	XMapSubwindows(d->dpy, d->screen->frame);
 
 	/* EWMH: Desktops */
-	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CURRENT_DESKTOP, active);
+	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CURRENT_DESKTOP, d->screen->screen->n);
 
-	printf("Switching to screen (%s)\n", screens[active]->name);
+	printf("Switching to screen (%s)\n", d->screen->screen->name);
 }
