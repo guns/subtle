@@ -8,12 +8,12 @@ subtle_SOURCES = \
 	event.c \
 	ewmh.c \
 	key.c \
-	log.c \
 	lua.c \
 	main.c \
 	screen.c \
 	sublet.c \
 	tile.c \
+	util.c \
 	win.c 
 
 subtle_CFLAGS  = $(CFLAGS) $(LUA_CFLAGS)
