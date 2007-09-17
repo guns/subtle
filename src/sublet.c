@@ -3,19 +3,7 @@
 	* subtle - window manager
 	* Copyright (c) 2005-2007 Christoph Kappel
 	*
-	* This program is free software; you can redistribute it and/or modify
-	* it under the terms of the GNU General Public License as published by
-	* the Free Software Foundation; either version 2 of the License, or
-	* (at your option) any later version.
-	*
-	* This program is distributed in the hope that it will be useful,
-	* but WITHOUT ANY WARRANTY; without even the implied warranty of
-	* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	* GNU General Public License for more details.
-	*
-	* You should have received a copy of the GNU General Public License along
-	* with this program; if not, write to the Free Software Foundation, Inc.,
-	* 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+	* See the COPYING file for the license in the latest tarball.
 	**/
 
 #include "subtle.h"
@@ -70,17 +58,6 @@ subSubletNext(void)
 }
 
  /**
-	* Init sublet sublets 
-	**/
-
-void
-subSubletInit(void)
-{
-	sublets = (SubSublet **)calloc(1, sizeof(SubSublet *));
-	if(!sublets) subLogError("Can't alloc memory. Exhausted?\n");
-}
-
- /**
 	* Create a new sublet 
 	* @param type Type of the sublet
 	* @param ref Lua object reference
@@ -95,9 +72,9 @@ subSubletNew(int type,
 	unsigned int width)
 {
 	int i;
+	SubSublet *s = (SubSublet *)subUtilAlloc(1, sizeof(SubSublet));
 
-	SubSublet *s = (SubSublet *)calloc(1, sizeof(SubSublet));
-	if(!s) subLogError("Can't alloc memory. Exhausted?\n");
+	if(!sublets) sublets = (SubSublet **)subUtilAlloc(1, sizeof(SubSublet *));
 
 	/* Init the sublet */
 	s->flags		= type;
@@ -114,7 +91,7 @@ subSubletNew(int type,
 	if(type != SUB_SUBLET_TYPE_TEXT)
 		{
 			sublets = (SubSublet **)realloc(sublets, sizeof(SubSublet *) * (size + 2));
-			if(!sublets) subLogError("Can't alloc memory. Exhausted?\n");
+			if(!sublets) subUtilLogError("Can't alloc memory. Exhausted?\n");
 	
 			i = ++size;
 
@@ -148,9 +125,6 @@ subSubletRender(SubSublet *s)
 {
 	if(s)
 		{
-			unsigned long col = d->focus && d->focus->flags & SUB_WIN_TYPE_SCREEN ? d->colors.focus : d->colors.norm;
-
-			XSetWindowBackground(d->dpy, s->win, col);
 			XClearWindow(d->dpy, s->win);
 
 			if(s->flags & (SUB_SUBLET_TYPE_TEXT|SUB_SUBLET_TYPE_TEASER) && s->string)
