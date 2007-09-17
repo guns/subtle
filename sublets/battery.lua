@@ -28,7 +28,7 @@ function battery:first_run()
 end
 
 -- Get remaining battery in percent
-function battery:meter()
+function battery:teaser()
 	local f = io.open("/proc/acpi/battery/BAT" .. battery.slot .. "/state", "r")
 	local info = f:read("*a")
 	f:close()
@@ -37,21 +37,19 @@ function battery:meter()
   _, _, battery.rate      = string.find(info, "present rate:%s*(%d+).*")
 	_, _, battery.state			= string.find(info, "charging state:%s*(%a+).*")
 
-	return(math.floor(battery.remaining * 100 / battery.capacity))
-end
-
--- Get remaining battery time
-function battery:teaser()
-  local remain  = battery.remaining / battery.rate * 60
-  if(tonumber(battery.rate) > 0) then
-    return(string.format("(%dh %dmins)", remain / 60, math.floor(remain % 60)))
-  elseif(state == "charging") then
-		return("(charging)")
-	else
-    return("(on-line)")
+	-- Get remaining battery time
+  local remain = battery.remaining / battery.rate * 60
+	local ac = ""
+	if(battery.state == "charged") then
+		ac = "AC: on"
+	elseif(battery.state == "discharging") then
+    ac = string.format("%dh %dm", remain / 60, math.floor(remain % 60))
+  elseif(battery.state == "charging") then
+		ac = "AC: chg"
   end
+
+	return("Bat: " .. math.floor(battery.remaining * 100 / battery.capacity) .. "% " .. ac)
 end
 
 battery:first_run()
-subtle:add_meter("battery:meter", 60, 4)
-subtle:add_teaser("battery:teaser", 60, 12)
+subtle:add_teaser("battery:teaser", 60, 18)
