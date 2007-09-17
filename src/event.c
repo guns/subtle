@@ -3,19 +3,7 @@
 	* subtle - window manager
 	* Copyright (c) 2005-2007 Christoph Kappel
 	*
-	* This program is free software; you can redistribute it and/or modify
-	* it under the terms of the GNU General Public License as published by
-	* the Free Software Foundation; either version 2 of the License, or
-	* (at your option) any later version.
-	*
-	* This program is distributed in the hope that it will be useful,
-	* but WITHOUT ANY WARRANTY; without even the implied warranty of
-	* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	* GNU General Public License for more details.
-	*
-	* You should have received a copy of the GNU General Public License along
-	* with this program; if not, write to the Free Software Foundation, Inc.,
-	* 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+	* See the COPYING file for the license in the latest tarball.
 	**/
 
 #include <sys/types.h>
@@ -43,67 +31,57 @@ HandleButtonPress(XButtonEvent *ev)
 	static Time last_time = 0;
 
 	if(ev->window == d->bar.screens)
-	{
-		SubScreen *s = subScreenFind(ev->subwindow);
-		if(s) subScreenSwitch(subScreenGetPos(s));
+		{
+			SubWin *w = subWinFind(ev->subwindow);
+			if(w) subScreenSwitch(w);
 
-		return;
-	}
+			return;
+		}
 	w = subWinFind(ev->window);
-	if(w)
+	if(w && w->flags & SUB_WIN_TYPE_CLIENT)
 		{
 			switch(ev->button)
 				{
 					case Button1:
 						if(last_time > 0 && ev->time - last_time <= 300) /* Double click */
 							{
-								subLogDebug("Double click: win=%#lx\n", ev->window);
-								if((ev->subwindow == w->title && w->parent && w->parent->flags & SUB_WIN_TYPE_TILE) || w->flags & SUB_WIN_STATE_RAISE) 
-									subWinToggle(SUB_WIN_STATE_COLLAPSE, w);
-								else if(ev->subwindow == w->icon) subWinToggle(SUB_WIN_STATE_WEIGHT, w);
+								subUtilLogDebug("Double click: win=%#lx\n", ev->window);
+								if((ev->subwindow == w->client->title && w->parent && w->parent->flags & SUB_WIN_TYPE_TILE) || w->flags & SUB_WIN_STATE_RAISE) 
+									subClientToggle(SUB_WIN_STATE_COLLAPSE, w);
 								last_time = 0;
 							}						
 						else  /* Single click */
 							{
-								subLogDebug("Single click: win=%#lx\n", ev->window);
+								subUtilLogDebug("Single click: win=%#lx\n", ev->window);
 								if(!(w->flags & SUB_WIN_TYPE_SCREEN))
 									{
-										if(w->flags & SUB_WIN_STATE_RAISE) 		subWinRaise(w);
+										if(w->flags & SUB_WIN_STATE_RAISE) XRaiseWindow(d->dpy, w->frame);
 										if(w->parent && w->parent->flags & SUB_WIN_STATE_PILE) 
 											{
 												w->parent->tile->pile = w;
 												if(w->flags & SUB_WIN_STATE_COLLAPSE) w->flags &= ~SUB_WIN_STATE_COLLAPSE;
 												subTileConfigure(w->parent);
 											}
-										if(ev->subwindow == w->left) 				subWinDrag(SUB_WIN_DRAG_LEFT, w);
-										else if(ev->subwindow == w->right)	subWinDrag(SUB_WIN_DRAG_RIGHT, w);
-										else if(ev->subwindow == w->bottom) subWinDrag(SUB_WIN_DRAG_BOTTOM, w);
-										else if(ev->subwindow == w->icon) 	last_time = ev->time;
-										else if(ev->subwindow == w->title || (w->flags & SUB_WIN_TYPE_CLIENT && ev->subwindow == w->client->caption))
+										if(ev->subwindow == w->client->left) 				subClientDrag(SUB_CLIENT_DRAG_LEFT, w);
+										else if(ev->subwindow == w->client->right)	subClientDrag(SUB_CLIENT_DRAG_RIGHT, w);
+										else if(ev->subwindow == w->client->bottom) subClientDrag(SUB_CLIENT_DRAG_BOTTOM, w);
+										else if(ev->subwindow == w->client->icon) 	last_time = ev->time;
+										else if(ev->subwindow == w->client->title || (w->flags & SUB_WIN_TYPE_CLIENT && ev->subwindow == w->client->caption))
 											{ /* Either drag and move or drag an swap windows */
-												subWinDrag((w->flags & SUB_WIN_STATE_RAISE) ? SUB_WIN_DRAG_MOVE : SUB_WIN_DRAG_SWAP, w);
+												subClientDrag((w->flags & SUB_WIN_STATE_RAISE) ? SUB_CLIENT_DRAG_MOVE : SUB_CLIENT_DRAG_SWAP, w);
 												last_time = ev->time;
 											}
-									}
-								if(w->flags & SUB_WIN_TYPE_TILE)
-									{
-										if(ev->subwindow == w->tile->btnew) subTileAdd(w, subTileNew(SUB_WIN_TILE_VERT));
-										else if(ev->subwindow == w->tile->btdel) subWinDelete(w);
 									}
 							}
 						break;
 					case Button2:
-						if(ev->subwindow == w->title)
-							{
-								subWinDelete(w);
-							}
+						if(ev->subwindow == w->client->title) subWinDelete(w);
 						break;
 					case Button3: 
-						if(w->flags & SUB_WIN_TYPE_TILE && ev->subwindow == w->tile->btnew) subTileAdd(w, subTileNew(SUB_WIN_TILE_HORZ));
-						else if(ev->subwindow == w->title) subWinToggle(SUB_WIN_STATE_RAISE, w); 
+						if(ev->subwindow == w->client->title) subClientToggle(SUB_WIN_STATE_RAISE, w); 
 						break;
-					case Button4: subScreenSwitch(SUB_SCREEN_NEXT); break;
-					case Button5: subScreenSwitch(SUB_SCREEN_PREV); break;
+					case Button4: subScreenSwitch(d->screen->next); break;
+					case Button5: if(d->screen->prev) subScreenSwitch(d->screen->prev); break;
 				}
 		}
 }
@@ -120,10 +98,10 @@ Exec(char *cmd)
 				execlp("/bin/sh", "sh", "-c", cmd, NULL);
 
 				/* Never to be reached statement */
-				subLogWarn("Can't exec command `%s'.\n", cmd);
+				subUtilLogWarn("Can't exec command `%s'.\n", cmd);
 				exit(1);
 			case -1:
-				subLogWarn("Failed to fork.\n");
+				subUtilLogWarn("Failed to fork.\n");
 		}
 }
 
@@ -146,17 +124,17 @@ HandleKeyPress(XKeyEvent *ev)
 								else if(w->flags & SUB_WIN_TYPE_CLIENT && w->parent && w->parent->flags & SUB_WIN_TYPE_TILE)
 									subTileAdd(w->parent, subTileNew(type));
 								break;
-							case SUB_KEY_ACTION_DELETE_WIN: subWinDelete(w);												break;
+							case SUB_KEY_ACTION_DELETE_WIN: subWinDelete(w); break;
 							case SUB_KEY_ACTION_TOGGLE_COLLAPSE:	if(!mode) mode = SUB_WIN_STATE_COLLAPSE;
 							case SUB_KEY_ACTION_TOGGLE_RAISE:			if(!mode) mode = SUB_WIN_STATE_RAISE;
 							case SUB_KEY_ACTION_TOGGLE_FULL:			if(!mode) mode = SUB_WIN_STATE_FULL;
 							case SUB_KEY_ACTION_TOGGLE_WEIGHT:		if(!mode) mode = SUB_WIN_STATE_WEIGHT;
-								if(!(w->flags & SUB_WIN_TYPE_SCREEN)) subWinToggle(mode, w);
+								if(!(w->flags & SUB_WIN_TYPE_SCREEN)) subClientToggle(mode, w);
 								break;									
 							case SUB_KEY_ACTION_TOGGLE_PILE: 
-								if(w->flags & SUB_WIN_TYPE_TILE) subWinToggle(SUB_WIN_STATE_PILE, w);		
+								if(w->flags & SUB_WIN_TYPE_TILE) subClientToggle(SUB_WIN_STATE_PILE, w);		
 								else if(w->parent && w->parent->flags & SUB_WIN_STATE_PILE) 
-									subWinToggle(SUB_WIN_STATE_PILE, w->parent);
+									subClientToggle(SUB_WIN_STATE_PILE, w->parent);
 								break;
 							case SUB_KEY_ACTION_TOGGLE_LAYOUT: 
 								if(w->flags & SUB_WIN_TYPE_TILE)
@@ -167,9 +145,12 @@ HandleKeyPress(XKeyEvent *ev)
 										subTileConfigure(w);
 									}			
 								break;
-							case SUB_KEY_ACTION_DESKTOP_NEXT: subScreenSwitch(SUB_SCREEN_NEXT);			break;
-							case SUB_KEY_ACTION_DESKTOP_PREV: subScreenSwitch(SUB_SCREEN_PREV);			break;
+							case SUB_KEY_ACTION_DESKTOP_NEXT: subScreenSwitch(d->screen->next);	break;
+							case SUB_KEY_ACTION_DESKTOP_PREV: 
+								if(d->screen->prev) subScreenSwitch(d->screen->prev);		
+								break;
 							case SUB_KEY_ACTION_DESKTOP_MOVE:
+#if 0
 								if(k->number && !(w->flags & SUB_WIN_TYPE_SCREEN))
 									{
 										SubScreen *s = subScreenGetPtr(k->number);
@@ -179,12 +160,13 @@ HandleKeyPress(XKeyEvent *ev)
 												subTileAdd(s->w, w);
 												if(p) subTileConfigure(p);
 											}
-									}
+									} 
+#endif
 								break;
-							case SUB_KEY_ACTION_EXEC:	if(k->string) Exec(k->string);								break;
+							case SUB_KEY_ACTION_EXEC:	if(k->string) Exec(k->string); break;
 						}
 
-					subLogDebug("KeyPress: code=%d, mod=%d\n", k->code, k->mod);
+					subUtilLogDebug("KeyPress: code=%d, mod=%d\n", k->code, k->mod);
 				}
 		}
 }
@@ -224,14 +206,13 @@ HandleMap(XMapRequestEvent *ev)
 	SubWin *w = subWinFind(ev->window);
 	if(!w) 
 		{
-			SubWin *p = (d->focus->flags & SUB_WIN_TYPE_TILE) ? d->focus : d->focus->parent;
 			w = subClientNew(ev->window);
 			if(w->flags & SUB_WIN_STATE_TRANS) 
 				{
-					w->parent = p;
-					subWinToggle(SUB_WIN_STATE_RAISE, w);
+					w->parent = d->screen;
+					subClientToggle(SUB_WIN_STATE_RAISE, w);
 				}
-			else subTileAdd(p, w);
+			else subTileAdd(d->screen, w);
 		}
 }
 
@@ -276,12 +257,12 @@ HandleMessage(XClientMessageEvent *ev)
 						{
 							if(ev->data.l[0] == 0) /* Remove state */
 								{
-									subWinToggle(SUB_WIN_STATE_FULL, w);
+									subClientToggle(SUB_WIN_STATE_FULL, w);
 								}						
 
 							else if(ev->data.l[0] == 1) /* Add state */
 								{
-									subWinToggle(SUB_WIN_STATE_FULL, w);
+									subClientToggle(SUB_WIN_STATE_FULL, w);
 								}
 						}
 				}
@@ -318,17 +299,9 @@ HandleCrossing(XCrossingEvent *ev)
 		{
 			XEvent event;
 		
-			/* Make leave events to enter event of the parent window */
-			if(ev->type == LeaveNotify && w->parent) 
-				{
-					if(ev->subwindow == w->icon || ev->subwindow == w->title) w = w->parent;
-					else if(w->flags & SUB_WIN_TYPE_TILE && 
-						(ev->subwindow == w->tile->btnew || ev->subwindow == w->tile->btdel)) w = w->parent; 
-					else if(w->flags & SUB_WIN_TYPE_CLIENT && ev->subwindow == w->client->caption) w = w->parent;
-				}
 			if(d->focus == w) return;
 
-			subWinFocus(w);
+			subClientFocus(w);
 
 			/* Remove any other event of the same type and window */
 			while(XCheckTypedWindowEvent(d->dpy, ev->window, ev->type, &event));			
@@ -342,9 +315,6 @@ HandleExpose(XEvent *ev)
 	Window win = ev->type == Expose ? ev->xexpose.window : ev->xvisibility.window;
 	SubWin *w = subWinFind(win);
 	if(w) subWinRender(w);
-
-	printf("Expose: type=%s, count=%d, state=%d\n", ev->type == Expose ? "expose" : "visibility", 
-		ev->type == Expose ? ev->xexpose.count : -1, ev->type == VisibilityNotify ? ev->xvisibility.state : -1);
 
 	/* Remove any other event of the same type and window */
 	while(XCheckTypedWindowEvent(d->dpy, win, ev->type, &event));
@@ -363,13 +333,13 @@ HandleFocus(XFocusInEvent *ev)
 					{
 						SubWin *f = d->focus;
 						d->focus = NULL;
-						if(f) subWinRender(f);
+						if(f) subClientRender(f);
 
 						subKeyUngrab(f);
 					}
 
 					d->focus = w;
-					subWinRender(w);
+					subClientRender(w);
 					subEwmhSetWindow(DefaultRootWindow(d->dpy), SUB_EWMH_NET_ACTIVE_WINDOW, w->frame);
 
 					/* Grab key */
@@ -415,7 +385,7 @@ int subEventLoop(void)
 					FD_SET(ConnectionNumber(d->dpy), &fdset);
 
 					if(select(ConnectionNumber(d->dpy) + 1, &fdset, NULL, NULL, &tv) == -1)
-						subLogDebug("Failed to select the connection\n");
+						subUtilLogDebug("Failed to select the connection\n");
 				}
 
 			while(XPending(d->dpy))
