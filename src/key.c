@@ -3,19 +3,7 @@
 	* subtle - window manager
 	* Copyright (c) 2005-2007 Christoph Kappel
 	*
-	* This program is free software; you can redistribute it and/or modify
-	* it under the terms of the GNU General Public License as published by
-	* the Free Software Foundation; either version 2 of the License, or
-	* (at your option) any later version.
-	*
-	* This program is distributed in the hope that it will be useful,
-	* but WITHOUT ANY WARRANTY; without even the implied warranty of
-	* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	* GNU General Public License for more details.
-	*
-	* You should have received a copy of the GNU General Public License along
-	* with this program; if not, write to the Free Software Foundation, Inc.,
-	* 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+	* See the COPYING file for the license in the latest tarball.
 	**/
 
 #include "subtle.h"
@@ -53,8 +41,7 @@ subKeyParseChain(const char *key,
 	int mod;
 	KeySym sym;
 	char *tok = strtok((char *)value, "-");
-	SubKey *k = (SubKey *)calloc(1, sizeof(SubKey));
-	if(!k) subLogError("Can't alloc memory. Exhausted?\n");
+	SubKey *k = (SubKey *)subUtilAlloc(1, sizeof(SubKey));
 
 	/* FIXME: strncmp() is really slow.. */	
 	if(!strncmp(key, "AddVertTile", 11)) 					k->flags = SUB_KEY_ACTION_ADD_VTILE;
@@ -78,7 +65,7 @@ subKeyParseChain(const char *key,
 				}
 			else 
 				{
-					subLogWarn("Can't assign keychain `%s'.\n", key);
+					subUtilLogWarn("Can't assign keychain `%s'.\n", key);
 					return;
 				}
 		}
@@ -102,7 +89,7 @@ subKeyParseChain(const char *key,
 						sym = XStringToKeysym(tok);
 						if(sym == NoSymbol) 
 							{
-								subLogWarn("Can't assign keychain `%s'.\n", key);
+								subUtilLogWarn("Can't assign keychain `%s'.\n", key);
 								if(k->string) free(k->string);
 								free(k);
 								return;
@@ -117,12 +104,12 @@ subKeyParseChain(const char *key,
 	if(k->code && k->mod)
 		{
 			keys = (SubKey **)realloc(keys, sizeof(SubKey *) * (size + 1));
-			if(!keys) subLogError("Can't alloc memory. Exhausted?\n");
+			if(!keys) subUtilLogError("Can't alloc memory. Exhausted?\n");
 
 			keys[size] = k;
 			size++;
 
-			subLogDebug("Keychain: name=%s, code=%d, mod=%d\n", key, k->code, k->mod);
+			subUtilLogDebug("Keychain: name=%s, code=%d, mod=%d\n", key, k->code, k->mod);
 		}
 }
 
