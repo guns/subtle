@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.5.9)
-AC_INIT(subtle, 0.7.1, unexist@hilflos.org)
+AC_INIT(subtle, 0.7.1)
 AC_CONFIG_SRCDIR([src/main.c])
 AC_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE(no-define)
@@ -54,8 +54,8 @@ AC_DEFUN([AC_DEFINE_DIR], [
   test "$exec_prefix_NONE" && exec_prefix=NONE
 ])
 
-SUBLET_DIR=`eval echo $datadir/$PACKAGE_NAME`
-CONFIG_DIR=`eval echo $sysconfdir/$PACKAGE_NAME`
+SUBLET_DIR=`eval echo $prefix/$datadir/$PACKAGE_NAME`
+CONFIG_DIR=`eval echo $prefix/$sysconfdir/$PACKAGE_NAME`
 
 AC_DEFINE_DIR(SUBLET_DIR, SUBLET_DIR, [Directory for sublets])
 AC_DEFINE_DIR(CONFIG_DIR, CONFIG_DIR, [Directory for configuration files])
