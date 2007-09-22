@@ -30,7 +30,7 @@ Usage(void)
 static void
 Version(void)
 {
-	printf("%s v%s - Copyright (c) 2005-2007 Christoph Kappel\n" \
+	printf("%s %s - Copyright (c) 2005-2007 Christoph Kappel\n" \
 					"Released under the GNU General Public License\n" \
 					"Compiled for X%d and %s\n", PACKAGE_NAME, PACKAGE_VERSION,
 					X_PROTOCOL, LUA_VERSION);
