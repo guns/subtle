@@ -91,7 +91,7 @@ subWinDelete(SubWin *w)
 			XDestroySubwindows(d->dpy, w->frame);
 			XDestroyWindow(d->dpy, w->frame);
 
-			if(p && p->flags & SUB_WIN_TYPE_TILE) subTileConfigure(p);
+			if(p) subTileConfigure(p);
 			free(w);
 		}
 }
@@ -125,20 +125,9 @@ subWinPrepend(SubWin *p,
 	if(p && p->parent && w)
 		{
 			/* Hierarchy */
-			if(!p->parent->tile->first)
-				{
-					p->parent->tile->first = w;
-					p->parent->tile->last = w;
-					w->next = NULL;
-					w->prev = NULL;
-				}
-			else
-				{
-					w->next = p->parent->tile->first;
-					if(p->parent->tile->first) p->parent->tile->first->prev = w;
-					p->parent->tile->first = w;
-					w->prev = NULL;
-				}
+			w->next = p->parent->tile->first;
+			if(p->parent->tile->first) p->parent->tile->first->prev = w;
+			p->parent->tile->first = w;
 		}
 }
 
@@ -195,6 +184,10 @@ subWinReplace(SubWin *w,
 
 			if(w->prev) w->prev->next = w2;
 			if(w->next) w->next->prev = w2;
+
+			w->prev		= NULL;
+			w->next		= NULL;
+			w->parent = NULL;
 		}
 }
 
