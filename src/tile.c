@@ -117,18 +117,8 @@ subTileConfigure(SubWin *w)
 							n++;
 						}
 
-					/* Remove unneeded tiles */
-					if(n == 1 && !(w->flags & SUB_WIN_TYPE_SCREEN))
-						{
-							SubWin *swap = w->tile->first;
-							subWinReplace(w, swap);
-							XReparentWindow(d->dpy, swap->frame, swap->parent->frame, 0, 0);
-							subWinCut(w);
-							w->tile->first = NULL;
-							subWinDelete(w);
-							printf("Removing dynamic window..\n");
-							return;
-						}
+			printf("configure %#lx with %d children\n", w->frame, n);
+
 
 					/* Piled window */
 					if(w->flags & SUB_WIN_STATE_PILE) 
@@ -136,6 +126,8 @@ subTileConfigure(SubWin *w)
 							collapsed = n - 1;
 							weighted	= 0;
 						}
+
+					/* Weighted window */
 					if(weighted > 0)
 						{
 							if(w->flags & SUB_WIN_TILE_HORZ) width = size;
@@ -184,7 +176,7 @@ subTileConfigure(SubWin *w)
 										if(w->flags & SUB_WIN_TILE_HORZ) c->width += comp; 
 										else c->height += comp;
 		
-									/* Adjust steps */
+									/* Adjust size */
 									if(w->flags & SUB_WIN_TILE_HORZ) 
 										{
 											if(c->flags & SUB_WIN_STATE_COLLAPSE) y += d->th;
@@ -197,11 +189,79 @@ subTileConfigure(SubWin *w)
 										((w->flags & SUB_WIN_STATE_RAISE) ? "r" : "n")), c->x, c->y, c->width, c->height, c->weight);
 
 									subWinResize(c);
-									if(w->flags & SUB_WIN_TYPE_TILE) subTileConfigure(c);
-									else if(w->flags & SUB_WIN_TYPE_CLIENT) subClientConfigure(c);
+
+									if(c->flags & SUB_WIN_TYPE_TILE) 
+										{
+											/* Remove tiles with only one client */
+											if(c->tile->first == c->tile->last && !(c->flags & SUB_WIN_TYPE_SCREEN))
+												{
+													SubWin *first = c->tile->first;
+
+  printf("\nw      = %#9lx\tc     = %#9lx\n" \
+         "prev   = %#9lx\tprev   = %#9lx\n" \
+         "next   = %#9lx\tnext   = %#9lx\n" \
+         "parent = %#9lx\tparent = %#9lx\n" \
+         "first  = %#9lx\tfirst  = %#9lx\n" \
+         "last   = %#9lx\tlast   = %#9lx\n",
+    w, c, 
+		w->prev, c->prev, 
+		w->next, c->next, 
+		w->parent, c->parent,
+    w->parent ? w->parent->tile->first : 0, c->parent ? c->parent->tile->first : 0, 
+    w->parent ? w->parent->tile->last : 0, c->parent ? c->parent->tile->last : 0);
+
+													if(w->tile->first == c) w->tile->first	= first;
+													if(w->tile->last == c) w->tile->last		= first;
+
+													first->prev		= c->prev;
+													first->next		= c->next;
+													first->parent	= c->parent;
+
+													if(first->prev) first->prev->next = first;
+													if(first->next) first->next->prev = first;
+
+													c->prev		= NULL;
+													c->next		= NULL;
+													c->parent = NULL;
+													c->tile->first = NULL;
+
+													XReparentWindow(d->dpy, first->frame, first->parent->frame, 0, 0);
+
+													printf("Removing dynamic tile %#lx\n", c->frame);
+
+													subTileDelete(c);
+
+													XDeleteContext(d->dpy, c->frame, 1);
+													XDestroySubwindows(d->dpy, c->frame);
+													XDestroyWindow(d->dpy, c->frame);
+													
+													//subWinDelete(c);
+
+													c = first;
+
+													subClientConfigure(c);
+
+  printf("\nw      = %#9lx\tc     = %#9lx\n" \
+         "prev   = %#9lx\tprev   = %#9lx\n" \
+         "next   = %#9lx\tnext   = %#9lx\n" \
+         "parent = %#9lx\tparent = %#9lx\n" \
+         "first  = %#9lx\tfirst  = %#9lx\n" \
+         "last   = %#9lx\tlast   = %#9lx\n",
+    w, c, 
+		w->prev, c->prev, 
+		w->next, c->next, 
+		w->parent, c->parent,
+    w->parent ? w->parent->tile->first : 0, c->parent ? c->parent->tile->first : 0, 
+    w->parent ? w->parent->tile->last : 0, c->parent ? c->parent->tile->last : 0);
+													
+												}
+											else subTileConfigure(c);
+										}
+									else if(c->flags & SUB_WIN_TYPE_CLIENT) subClientConfigure(c);
 								}
 							c = c->next;
 						}
+
 					subUtilLogDebug("Configuring %s-tile: n=%d, mw=%d, mh=%d\n", (w->flags & SUB_WIN_TILE_HORZ) ? "h" : "v", n, mw, mh);
 				}
 		}
