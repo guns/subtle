@@ -450,9 +450,9 @@ subClientDrag(short mode,
 										if(state == SUB_CLIENT_DRAG_STATE_TOP || state == SUB_CLIENT_DRAG_STATE_BOTTOM ||
 											state == SUB_CLIENT_DRAG_STATE_LEFT || state == SUB_CLIENT_DRAG_STATE_RIGHT)
 											{
+												SubWin *p = w->parent;
 												SubWin *t = subTileNew(state == SUB_CLIENT_DRAG_STATE_TOP || 
 													state == SUB_CLIENT_DRAG_STATE_BOTTOM ? SUB_WIN_TILE_VERT : SUB_WIN_TILE_HORZ);
-												SubWin *p = w->parent;
 
 												subWinReplace(w2, t);
 												subWinCut(w);
@@ -468,7 +468,7 @@ subClientDrag(short mode,
 												XReparentWindow(d->dpy, w2->frame, t->frame, 0, 0);
 
 												subTileConfigure(t->parent);
-												subTileConfigure(p);
+												if(t->parent != p) subTileConfigure(p);
 											}
 										else if(state == SUB_CLIENT_DRAG_STATE_BEFORE || state == SUB_CLIENT_DRAG_STATE_ABOVE ||
 											state == SUB_CLIENT_DRAG_STATE_AFTER || state == SUB_CLIENT_DRAG_STATE_BELOW)										
