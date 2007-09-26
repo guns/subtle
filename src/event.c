@@ -6,8 +6,11 @@
 	* See the COPYING file for the license in the latest tarball.
 	**/
 
-#include <sys/types.h>
 #include "subtle.h"
+
+#ifdef HAVE_SYS_INOTIFY_H
+#define BUFLEN (sizeof(struct inotify_event))
+#endif
 
  /**
 	* Get the current time in seconds 
@@ -37,6 +40,7 @@ HandleButtonPress(XButtonEvent *ev)
 
 			return;
 		}
+
 	w = subWinFind(ev->window);
 	if(w && w->flags & SUB_WIN_TYPE_CLIENT)
 		{
@@ -313,8 +317,14 @@ HandleExpose(XEvent *ev)
 {
 	XEvent event;
 	Window win = ev->type == Expose ? ev->xexpose.window : ev->xvisibility.window;
-	SubWin *w = subWinFind(win);
-	if(w) subWinRender(w);
+
+  SubWin *w = subWinFind(win);
+  if(w) subWinRender(w);
+	else if(win == d->bar.win)
+		{
+			subSubletConfigure();
+			subSubletRender();
+		}
 
 	/* Remove any other event of the same type and window */
 	while(XCheckTypedWindowEvent(d->dpy, win, ev->type, &event));
@@ -359,6 +369,7 @@ int subEventLoop(void)
 	XEvent ev;
 	struct timeval tv;
 	SubSublet *s = NULL;
+	char buf[BUFLEN];
 
 	while(1)
 		{
@@ -373,20 +384,46 @@ int subEventLoop(void)
 							s->time = current + s->interval;
 
 							subLuaCall(s);
-							subSubletRender(s);
 							subSubletSift(1);
 
 							s = subSubletNext();
 						}
+
+					subSubletRender();
 
 					tv.tv_sec		= s->interval;
 					tv.tv_usec	= 0;
 					FD_ZERO(&fdset);
 					FD_SET(ConnectionNumber(d->dpy), &fdset);
 
+#ifdef HAVE_SYS_INOTIFY_H
+					/* Add inotify socket to the set */
+					FD_SET(d->notify, &fdset);
+#endif /* HAVE_SYS_INOTIFY_H */
+
 					if(select(ConnectionNumber(d->dpy) + 1, &fdset, NULL, NULL, &tv) == -1)
 						subUtilLogDebug("Failed to select the connection\n");
 				}
+
+#ifdef HAVE_SYS_INOTIFY_H
+			if(read(d->notify, buf, BUFLEN) > 0)
+				{
+					struct inotify_event *event = (struct inotify_event *)&buf[0];
+					if(event)
+						{
+							SubSublet *s = subSubletFind(event->wd);
+							if(s)
+								{
+									subLuaCall(s);
+
+									subSubletConfigure();
+									subSubletRender();
+
+									printf("Inotify: wd=%d\n", event->wd);
+								}
+						}
+				}
+#endif /* HAVE_SYS_INOTIFY_H */
 
 			while(XPending(d->dpy))
 				{
