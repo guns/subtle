@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <sys/time.h>
+#include <sys/types.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
@@ -19,6 +20,10 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
+
+#ifdef HAVE_SYS_INOTIFY_H
+#include <sys/inotify.h>
+#endif /* HAVE_SYS_INOTIFY */
 
 /* Macros */
 #define SUBWINNEW(parent,x,y,width,height,border) \
@@ -98,7 +103,7 @@ SubWin *subScreenNew(void);														// Create a new screen
 void subScreenDelete(SubWin *w);											// Delete a screen
 void subScreenKill(void);															// Kill all screens
 void subScreenRender(SubWin *w);											// Render the screen window
-void subScreenConfigure(void);												// Configure the screen
+void subScreenConfigure(void);												// Configure the screen bar
 void subScreenSwitch(SubWin *w);											// Switch screens
 
 /* tile.c */
@@ -142,9 +147,9 @@ SubWin *subClientNew(Window win);											// Create a new client
 void subClientDelete(SubWin *w);											// Delete a client
 void subClientRender(SubWin *w);											// Render the window
 void subClientConfigure(SubWin *w);										// Send configure request
-void subClientFocus(SubWin *w);													// Set focus
-void subClientDrag(short mode, SubWin *w);								// Move/Resize a window
-void subClientToggle(short type, SubWin *w);							// Toggle various states
+void subClientFocus(SubWin *w);												// Set focus
+void subClientDrag(short mode, SubWin *w);						// Move/Resize a window
+void subClientToggle(short type, SubWin *w);					// Toggle various states
 void subClientFetchName(SubWin *w);										// Fetch client name
 void subClientSetWMState(SubWin *w, long state);			// Set client WM state
 long subClientGetWMState(SubWin *w);									// Get client WM state
@@ -152,17 +157,19 @@ long subClientGetWMState(SubWin *w);									// Get client WM state
 /* sublet.c */
 #define SUB_SUBLET_TYPE_TEXT		(1L << 1)							// Text sublet
 #define SUB_SUBLET_TYPE_TEASER	(1L << 2)							// Teaser sublet
-#define SUB_SUBLET_TYPE_METER		(1L << 3)							// Text sublet
+#define SUB_SUBLET_TYPE_METER		(1L << 3)							// Meter sublet
+#define SUB_SUBLET_TYPE_WATCH		(1L << 4)							// Watch sublet
 
-#define SUB_SUBLET_FAIL_FIRST		(1L << 4)							// Fail first time
-#define SUB_SUBLET_FAIL_SECOND	(1L << 5)							// Fail second time
-#define SUB_SUBLET_FAIL_THIRD		(1L << 6)							// Fail third time
+#define SUB_SUBLET_FAIL_FIRST		(1L << 5)							// Fail first time
+#define SUB_SUBLET_FAIL_SECOND	(1L << 6)							// Fail second time
+#define SUB_SUBLET_FAIL_THIRD		(1L << 7)							// Fail third time
 
 typedef struct subsublet
 {
-	int			flags, ref, width;													// Flags, Lua object reference, width
+	int			flags, ref;																	// Flags, Lua object reference, width
 	time_t	time, interval;															// Last update time, interval time
-	Window	win;																				// Sublet window
+
+	struct subsublet *next;															// Next sibling
 
 	union 
 	{
@@ -171,12 +178,13 @@ typedef struct subsublet
 	};
 } SubSublet;
 
-SubSublet *subSubletFind(Window win);									// Find a sublet
+SubSublet *subSubletFind(int wd);											// Find a sublet
 void subSubletNew(int type, int ref, 									// Create a new sublet
-	time_t interval, unsigned int width);
+	time_t interval, char *watch);
 void subSubletDelete(SubSublet *s);										// Delete a sublet
-void subSubletRender(SubSublet *s);										// Render a sublet
-SubSublet *subSubletNext(void);												// Get the next sublet
+void subSubletRender(void);														// Render a sublet
+void subSubletConfigure(void);												// Configure sublet bar
+SubSublet *subSubletNext(void);												// Get next sublet
 void subSubletKill(void);															// Delete all sublets
 
 /* display.c */
@@ -190,9 +198,13 @@ typedef struct subdisplay
 	SubWin						*focus;														// Focus window
 	SubWin						*screen;													// Screen window
 
+#ifdef HAVE_SYS_INOTIFY_H
+	int								notify;
+#endif
+
 	struct
 	{
-		Window					win, screens, sublets;						// Screen bar
+		Window					win, screens, sublets;						// Screen bars
 	} bar;
 
 	struct
