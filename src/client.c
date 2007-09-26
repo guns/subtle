@@ -288,10 +288,10 @@ DrawMask(short type,
 				break;
 
 			case SUB_CLIENT_DRAG_STATE_BEFORE:
-				XDrawLine(d->dpy, w->frame, d->gcs.invert, 0, 0, 0, w->height);
+				XFillRectangle(d->dpy, w->frame, d->gcs.invert, 5, 5, w->width * 0.1, w->height);
 				break;
 			case SUB_CLIENT_DRAG_STATE_AFTER:
-				XDrawLine(d->dpy, w->frame, d->gcs.invert, w->width - d->bw, 0, w->width - d->bw, w->height);
+				XFillRectangle(d->dpy, w->frame, d->gcs.invert, w->width * 0.9 - 5, 5, w->width * 0.9 - 5, w->height - 10);
 				break;
 			case SUB_CLIENT_DRAG_STATE_ABOVE:
 				XDrawLine(d->dpy, DefaultRootWindow(d->dpy), d->gcs.invert, box->x, box->y - d->bw / 2, box->x + w->width, box->y + d->bw / 2);
