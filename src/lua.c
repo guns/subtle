@@ -10,9 +10,9 @@
 #include <lauxlib.h>
 #include <lualib.h>
 #include <stdarg.h>
-#include <sys/types.h>
 #include <dirent.h>
 #include <fnmatch.h>
+#include <fcntl.h>
 
 #include "subtle.h"
 
@@ -209,11 +209,23 @@ static int
 PrepareSublet(int type, 
 	lua_State *state)
 {
-	char *string = (char *)lua_tostring(state, 2);
-	int ref, interval = (int)lua_tonumber(state, 3), width = (int)lua_tonumber(state, 4);
-
-	if(string && interval && width)
+	char *string = (char *)lua_tostring(state, 2), *watch = NULL;
+	int ref, interval = 0;
+	
+	switch(type)
 		{
+			case SUB_SUBLET_TYPE_TEXT: 																				break;
+
+#ifdef HAVE_SYS_INOTIFY_H
+			case SUB_SUBLET_TYPE_WATCH: watch = (char *)lua_tostring(state, 3);	break;
+#endif /* HAVE_SYS_INOTIFY_H */
+
+			default: interval = (int)lua_tonumber(state, 3); 									break;
+		}
+
+	if(string)
+		{
+			/* Check functions with a namespace */
 			if(index(string, ':'))
 				{
 					char *table = strtok(string, ":"), *func = strtok(NULL, ":");
@@ -229,15 +241,16 @@ PrepareSublet(int type,
 			else lua_getglobal(state, string);
 
 			ref = luaL_ref(state, LUA_REGISTRYINDEX);
-			if(ref) subSubletNew(type, ref, interval, width);
+			if(ref) subSubletNew(type, ref, interval, watch);
 
 			printf("Loaded sublet %s (%d)\n", string, interval);
-			subUtilLogDebug("Sublet: name=%s, ref=%d, interval=%d, width=%d\n", string, ref, interval, width);
+			subUtilLogDebug("Sublet: name=%s, ref=%d, interval=%d, watch=%s\n", string, ref, interval, watch);
 		}
 
 	return(1); /* Make the compiler happy */
 }
 
+/* Sublet functions */
 static int
 LuaAddText(lua_State *state)
 {
@@ -256,6 +269,16 @@ LuaAddMeter(lua_State *state)
 	return(PrepareSublet(SUB_SUBLET_TYPE_METER, state));
 }
 
+static int
+LuaAddWatch(lua_State *state)
+{
+#ifdef HAVE_SYS_INOTIFY_H
+	return(PrepareSublet(SUB_SUBLET_TYPE_WATCH, state));
+#else
+	subUtilLogWarn("add_watch: Inotify not supported on this machine - disabled\n");
+#endif /* HAVE_SYS_INOTIFY_H */
+}
+
  /**
 	* Load sublets
 	* @param path Path to the sublets
@@ -270,15 +293,26 @@ subLuaLoadSublets(const char *path)
 
 	state = StateNew();
 
+#ifdef HAVE_SYS_INOTIFY_H
+	if((d->notify = inotify_init()) < 0)
+		{
+			subUtilLogWarn("Can't init inotify\n");
+			subUtilLogDebug("Inotify: %s\n", strerror(errno));
+		}
+	else fcntl(d->notify, F_SETFL, O_NONBLOCK);
+#endif /* HAVE_SYS_INOTIFY_H */
+
 	if(path) snprintf(buf, sizeof(buf), "%s", buf);
 	else snprintf(buf, sizeof(buf), "%s/.%s/sublets", getenv("HOME"), PACKAGE_NAME);
 
-	/* Put functions onto stack */
+	/* Push functions on the stack */
 	lua_newtable(state);
 	SetField(state, "version",		LUA_TSTRING,		PACKAGE_VERSION);
 	SetField(state, "add_text",		LUA_TFUNCTION,	LuaAddText);
 	SetField(state, "add_teaser",	LUA_TFUNCTION,	LuaAddTeaser);
 	SetField(state, "add_meter",	LUA_TFUNCTION,	LuaAddMeter);
+	SetField(state,	"add_watch",	LUA_TFUNCTION,	LuaAddWatch);
+
 	lua_setglobal(state, PACKAGE_NAME);
 
 	if((dir = opendir(buf)))
@@ -295,6 +329,7 @@ subLuaLoadSublets(const char *path)
 			closedir(dir);
 		}
 	subScreenConfigure();
+	subSubletConfigure();
 }
 
  /**
@@ -305,6 +340,11 @@ void
 subLuaKill(void)
 {
 	if(state) lua_close(state);
+
+#ifdef HAVE_SYS_INOTIFY_H
+	if(d->notify) close(d->notify);
+#endif /* HAVE_SYS_INOTIFY_H */
+
 }
 
  /**
@@ -319,8 +359,10 @@ subLuaCall(SubSublet *s)
 		{
 			lua_settop(state, 0);
 			lua_rawgeti(state, LUA_REGISTRYINDEX, s->ref);
+
 			if(lua_pcall(state, 0, 1, 0))
 				{
+					/* Fail check */
 					if(s->flags & SUB_SUBLET_FAIL_THIRD)
 						{
 							subUtilLogWarn("Unloaded sublet (#%d) after 3 failed attempts\n", s->ref);
@@ -337,7 +379,7 @@ subLuaCall(SubSublet *s)
 			switch(lua_type(state, -1))
 				{
 					case LUA_TNIL: 		subUtilLogWarn("Sublet (#%d) does not return any usuable value\n", s->ref);	break;
-					case LUA_TNUMBER: s->number = (int)lua_tonumber(state, -1);																break;
+					case LUA_TNUMBER: s->number = (int)lua_tonumber(state, -1);																		break;
 					case LUA_TSTRING:
 						if(s->string) free(s->string);
 						s->string = strdup((char *)lua_tostring(state, -1));
