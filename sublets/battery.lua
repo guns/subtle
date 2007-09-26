@@ -52,4 +52,4 @@ function battery:teaser()
 end
 
 battery:first_run()
-subtle:add_teaser("battery:teaser", 60, 18)
+subtle:add_teaser("battery:teaser", 60)

@@ -9,9 +9,11 @@
 loadavg = {}
 
 function loadavg:teaser()
-	io.input("/proc/loadavg")
-	load1, load2, load3 = io.read("*number", "*number", "*numer")
+	f = io.input("/proc/loadavg")
+	load1, load2, load3 = io.read("*number", "*number", "*number")
+	f:close()
+
 	return(string.format("%.2f %.2f %.2f", load1, load2, load3))
 end
 
-subtle:add_teaser("loadavg:teaser", 20, 15)
+subtle:add_teaser("loadavg:teaser", 20)
