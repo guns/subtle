@@ -150,6 +150,40 @@ subTileConfigure(SubWin *w)
 								{
 									if(w->flags & SUB_WIN_STATE_PILE && w->tile->pile != c) c->flags |= SUB_WIN_STATE_COLLAPSE;
 
+									/* Remove tiles with only one client */
+									if(c->flags & SUB_WIN_TYPE_TILE && !(c->flags & SUB_WIN_TYPE_SCREEN) && c->tile->first == c->tile->last)
+										{
+											SubWin *first = c->tile->first;
+
+											if(w->tile->first == c) w->tile->first	= first;
+											if(w->tile->last == c) w->tile->last		= first;
+
+											first->prev		= c->prev;
+											first->next		= c->next;
+											first->parent	= c->parent;
+
+											if(first->prev) first->prev->next = first;
+											if(first->next) first->next->prev = first;
+
+											c->prev		= NULL;
+											c->next		= NULL;
+											c->parent = NULL;
+											c->tile->first = NULL;
+
+											XReparentWindow(d->dpy, first->frame, first->parent->frame, 0, 0);
+
+											printf("Removing dynamic tile %#lx\n", c->frame);
+
+											/* Delete manually to skip configure */
+											subTileDelete(c);
+
+											XDeleteContext(d->dpy, c->frame, 1);
+											XDestroySubwindows(d->dpy, c->frame);
+											XDestroyWindow(d->dpy, c->frame);
+
+											c = first;
+										}
+
 									c->parent	= w;
 									c->x			= w->flags & SUB_WIN_TYPE_SCREEN ? d->th : 0;
 									c->y			= (c->flags & SUB_WIN_STATE_COLLAPSE) ? y : collapsed * d->th;
@@ -190,73 +224,7 @@ subTileConfigure(SubWin *w)
 
 									subWinResize(c);
 
-									if(c->flags & SUB_WIN_TYPE_TILE) 
-										{
-											/* Remove tiles with only one client */
-											if(c->tile->first == c->tile->last && !(c->flags & SUB_WIN_TYPE_SCREEN))
-												{
-													SubWin *first = c->tile->first;
-
-  printf("\nw      = %#9lx\tc     = %#9lx\n" \
-         "prev   = %#9lx\tprev   = %#9lx\n" \
-         "next   = %#9lx\tnext   = %#9lx\n" \
-         "parent = %#9lx\tparent = %#9lx\n" \
-         "first  = %#9lx\tfirst  = %#9lx\n" \
-         "last   = %#9lx\tlast   = %#9lx\n",
-    w, c, 
-		w->prev, c->prev, 
-		w->next, c->next, 
-		w->parent, c->parent,
-    w->parent ? w->parent->tile->first : 0, c->parent ? c->parent->tile->first : 0, 
-    w->parent ? w->parent->tile->last : 0, c->parent ? c->parent->tile->last : 0);
-
-													if(w->tile->first == c) w->tile->first	= first;
-													if(w->tile->last == c) w->tile->last		= first;
-
-													first->prev		= c->prev;
-													first->next		= c->next;
-													first->parent	= c->parent;
-
-													if(first->prev) first->prev->next = first;
-													if(first->next) first->next->prev = first;
-
-													c->prev		= NULL;
-													c->next		= NULL;
-													c->parent = NULL;
-													c->tile->first = NULL;
-
-													XReparentWindow(d->dpy, first->frame, first->parent->frame, 0, 0);
-
-													printf("Removing dynamic tile %#lx\n", c->frame);
-
-													subTileDelete(c);
-
-													XDeleteContext(d->dpy, c->frame, 1);
-													XDestroySubwindows(d->dpy, c->frame);
-													XDestroyWindow(d->dpy, c->frame);
-													
-													//subWinDelete(c);
-
-													c = first;
-
-													subClientConfigure(c);
-
-  printf("\nw      = %#9lx\tc     = %#9lx\n" \
-         "prev   = %#9lx\tprev   = %#9lx\n" \
-         "next   = %#9lx\tnext   = %#9lx\n" \
-         "parent = %#9lx\tparent = %#9lx\n" \
-         "first  = %#9lx\tfirst  = %#9lx\n" \
-         "last   = %#9lx\tlast   = %#9lx\n",
-    w, c, 
-		w->prev, c->prev, 
-		w->next, c->next, 
-		w->parent, c->parent,
-    w->parent ? w->parent->tile->first : 0, c->parent ? c->parent->tile->first : 0, 
-    w->parent ? w->parent->tile->last : 0, c->parent ? c->parent->tile->last : 0);
-													
-												}
-											else subTileConfigure(c);
-										}
+									if(c->flags & SUB_WIN_TYPE_TILE) subTileConfigure(c);
 									else if(c->flags & SUB_WIN_TYPE_CLIENT) subClientConfigure(c);
 								}
 							c = c->next;
@@ -266,3 +234,19 @@ subTileConfigure(SubWin *w)
 				}
 		}
 }
+
+#if 0
+  printf("\nw      = %#9lx\tc     = %#9lx\n" \
+         "prev   = %#9lx\tprev   = %#9lx\n" \
+         "next   = %#9lx\tnext   = %#9lx\n" \
+         "parent = %#9lx\tparent = %#9lx\n" \
+         "first  = %#9lx\tfirst  = %#9lx\n" \
+         "last   = %#9lx\tlast   = %#9lx\n",
+    w, c, 
+		w->prev, c->prev, 
+		w->next, c->next, 
+		w->parent, c->parent,
+    w->parent ? w->parent->tile->first : 0, c->parent ? c->parent->tile->first : 0, 
+    w->parent ? w->parent->tile->last : 0, c->parent ? c->parent->tile->last : 0);
+#endif
+
