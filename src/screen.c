@@ -9,7 +9,7 @@
 #include "subtle.h"
 
 static int screens = 0;
-static SubWin *main = NULL;
+static SubWin *first = NULL;
 
  /**
 	* Init screen 
@@ -79,7 +79,7 @@ static void
 UpdateScreens(void)
 {
 	int i = 0;
-	SubWin *s = main;
+	SubWin *s = first;
 	Window *wins = NULL;
 
 	/* EWMH: Virtual roots */
@@ -119,7 +119,7 @@ subScreenNew(void)
 	/* Hierarchy */
 	if(d->screen) d->screen->next = w;
 	w->prev = d->screen;
-	if(!main) main = w;
+	if(!first) first = w;
 
 	/* Switch to new screen */
 	if(d->screen) XUnmapWindow(d->dpy, d->screen->frame);
@@ -185,13 +185,11 @@ subScreenRender(SubWin *w)
 	int i;
 	unsigned int n = 0;
 	Window nil, *wins = NULL;
-	SubWin *s = main;
+	SubWin *s = first;
 
-	/* Redraw tile */
 	XClearWindow(d->dpy, d->bar.win);
 	XFillRectangle(d->dpy, d->bar.win, d->gcs.border, 0, 2, DisplayWidth(d->dpy, DefaultScreen(d->dpy)), d->th - 4);	
 
-	/* Screens */
 	while(s)
 		{
 			XSetWindowBackground(d->dpy, s->screen->button, (d->screen == s) ? d->colors.cover : d->colors.norm);
@@ -199,18 +197,6 @@ subScreenRender(SubWin *w)
 			XDrawString(d->dpy, s->screen->button, d->gcs.font, 1, d->fy - 4, s->screen->name, strlen(s->screen->name));
 			s = s->next;
 		}
-
-	/* Sublets */
-	XQueryTree(d->dpy, d->bar.sublets, &nil, &nil, &wins, &n);
-	if(n > 0)
-		{
-			for(i = 0; i < n; i++)
-				{
-					SubSublet *s = subSubletFind(wins[i]);
-					if(s) subSubletRender(s);
-				}
-			XFree(wins);
-		}					
 }
 
  /**
@@ -222,36 +208,16 @@ subScreenConfigure(void)
 {
 	if(screens)
 		{
-			int i, scw = 3, suw = 0, width = 0;
-			unsigned int n = 0;
-			Window nil, *wins = NULL;
-			SubWin *s = main;
+			int i, width = 3;
+			SubWin *s = first;
 
-			/* Screens */
 			while(s)
 				{
-					XMoveResizeWindow(d->dpy, s->screen->button, scw, 2, s->screen->width, d->th - 6);
-					scw += s->screen->width + 6;
+					XMoveResizeWindow(d->dpy, s->screen->button, width, 2, s->screen->width, d->th - 6);
+					width += s->screen->width + 6;
 					s = s->next;
 				}
-			XMoveResizeWindow(d->dpy, d->bar.screens, 0, 0, scw, d->th);
-
-			/* Sublets */
-			XQueryTree(d->dpy, d->bar.sublets, &nil, &nil, &wins, &n);
-			if(n > 0)
-				{
-					for(i = 0; i < n; i++)
-						{
-							SubSublet *s = subSubletFind(wins[i]);
-							if(s) 
-								{
-									XMoveResizeWindow(d->dpy, s->win, suw, 0, s->width, d->th);
-									suw += s->width;
-								}
-						}
-					XMoveResizeWindow(d->dpy, d->bar.sublets, DisplayWidth(d->dpy, DefaultScreen(d->dpy)) - suw, 0, suw, d->th);
-					XFree(wins);
-				}
+			XMoveResizeWindow(d->dpy, d->bar.screens, 0, 0, width, d->th);
 		}
 }
 
@@ -264,7 +230,7 @@ subScreenKill(void)
 {
 	if(screens)
 		{
-			SubWin *s = main;
+			SubWin *s = first;
 
 			printf("Removing screens\n");
 
