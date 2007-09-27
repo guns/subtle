@@ -119,6 +119,8 @@ main(int argc,
 
 	subLuaLoadSublets(sublets);
 
+	subDisplayScan();
+
 	subEventLoop();
 
 	raise(SIGTERM);
