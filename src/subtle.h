@@ -225,8 +225,9 @@ typedef struct subdisplay
 
 extern SubDisplay *d;
 
-int subDisplayNew(const char *display_string);				// Create a new display
+void subDisplayNew(const char *display_string);				// Create a new display
 void subDisplayKill(void);														// Delete a display
+void subDisplayScan(void);														// Scan root window
 
 /* util.c */
 #ifdef DEBUG
