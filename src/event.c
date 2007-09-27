@@ -71,7 +71,8 @@ HandleButtonPress(XButtonEvent *ev)
 										else if(ev->subwindow == w->client->bottom) subClientDrag(SUB_CLIENT_DRAG_BOTTOM, w);
 										else if(ev->subwindow == w->client->icon) 	last_time = ev->time;
 										else if(ev->subwindow == w->client->title || (w->flags & SUB_WIN_TYPE_CLIENT && ev->subwindow == w->client->caption))
-											{ /* Either drag and move or drag an swap windows */
+											{ 
+												/* Either drag and move or drag an swap windows */
 												subClientDrag((w->flags & SUB_WIN_STATE_RAISE) ? SUB_CLIENT_DRAG_MOVE : SUB_CLIENT_DRAG_SWAP, w);
 												last_time = ev->time;
 											}
