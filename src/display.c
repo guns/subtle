@@ -33,7 +33,7 @@ HandleXError(Display *display,
 	* @return Returns either nonzero on success or otherwise zero
 	**/
 
-int
+void
 subDisplayNew(const char *display_string)
 {
 	XGCValues gvals;
@@ -107,4 +107,36 @@ subDisplayKill(void)
 				}
 			free(d);
 		}
+}
+
+ /**
+	* Scan root window for clients
+	**/
+
+void
+subDisplayScan(void)
+{
+	unsigned int i, n;
+	Window nil, *wins = NULL;
+	XWindowAttributes attr;
+
+	XQueryTree(d->dpy, DefaultRootWindow(d->dpy), &nil, &nil, &wins, &n);
+	for(i = 0; i < n; i++)
+		{
+			XGetWindowAttributes(d->dpy, wins[i], &attr);
+			if(wins[i] != d->bar.win && wins[i] != d->bar.screens && 
+				wins[i] != d->bar.sublets && wins[i] != d->screen->frame && 
+				wins[i] != d->screen->screen->button && attr.map_state == IsViewable)
+				{
+					printf("win=%#lx\n", wins[i]);
+					SubWin *w = subClientNew(wins[i]);
+					if(w->flags & SUB_WIN_STATE_TRANS) 
+						{
+							w->parent = d->screen;
+							subClientToggle(SUB_WIN_STATE_RAISE, w);
+						}
+					else subTileAdd(d->screen, w);				
+				}
+		}
+	XFree(wins);
 }
