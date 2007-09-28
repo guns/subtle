@@ -192,7 +192,7 @@ subScreenRender(SubWin *w)
 
 	while(s)
 		{
-			XSetWindowBackground(d->dpy, s->screen->button, (d->screen == s) ? d->colors.cover : d->colors.norm);
+			XSetWindowBackground(d->dpy, s->screen->button, (d->screen == s) ? d->colors.focus : d->colors.norm);
 			XClearWindow(d->dpy, s->screen->button);
 			XDrawString(d->dpy, s->screen->button, d->gcs.font, 1, d->fy - 4, s->screen->name, strlen(s->screen->name));
 			s = s->next;
@@ -245,7 +245,6 @@ subScreenKill(void)
 
 					free(s->screen->name);
 					s = s->next;
-					free(s->tile);
 					free(s);					
 				}
 
