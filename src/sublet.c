@@ -61,6 +61,7 @@ subSubletNext(void)
  /**
 	* Create a new sublet 
 	* @param type Type of the sublet
+	* @param name Name of the sublet
 	* @param ref Lua object reference
 	* @param interval Update interval
 	* @param watch Watch file
@@ -68,6 +69,7 @@ subSubletNext(void)
 
 void
 subSubletNew(int type,
+	char *name,
 	int ref,
 	time_t interval,
 	char *watch)
@@ -90,8 +92,11 @@ subSubletNew(int type,
 #ifdef HAVE_SYS_INOTIFY_H
 	if(s->flags & SUB_SUBLET_TYPE_WATCH && ((s->interval = inotify_add_watch(d->notify, watch, IN_MODIFY)) < 0))
 		{
-			subUtilLogWarn("Can't create inotify watch\n");
+			subUtilLogWarn("Can't load sublet %s:\n", name);
+			subUtilLogWarn("Watch file does not exist\n");
 			subUtilLogDebug("Inotify: %s\n", strerror(errno));
+
+			free(s);
 
 			return;
 		}
@@ -119,6 +124,9 @@ subSubletNew(int type,
 	/* Smart use of unused array index */
 	if(first != s) sublets[0]->next = s;
 	sublets[0] = s;
+
+	printf("Loaded sublet %s (%d)\n", name, interval);
+	subUtilLogDebug("Sublet: name=%s, ref=%d, interval=%d, watch=%s\n", name, ref, interval, watch);		
 }
 
  /**
@@ -129,6 +137,31 @@ subSubletNew(int type,
 void
 subSubletDelete(SubSublet *s)
 {
+	int i, j;
+
+	if(first == s) first = s->next;
+	else
+		{
+			SubSublet *prev = first;
+
+			while(prev->next && prev->next != s) prev = prev->next;
+			prev->next = s->next;
+		}
+
+	for(i = 1; i <= size; i++) 
+		if(sublets[i] == s)
+			for(j = i; j < size; j++) sublets[j] = sublets[j + 1],printf("%d - %d\n", i, j);;
+
+	sublets = (SubSublet **)realloc(sublets, sizeof(SubSublet *) * (size + 1));
+	if(!sublets) subUtilLogError("Can't alloc memory. Exhausted?\n");			
+	if(!(s->flags & SUB_SUBLET_TYPE_METER) && s->string) free(s->string);
+
+	printf("Unloaded sublet #%d\n", s->ref);
+	size--;
+	free(s);
+
+	subSubletConfigure();
+	subSubletRender();
 }
 
  /**
