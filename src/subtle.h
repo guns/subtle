@@ -179,7 +179,7 @@ typedef struct subsublet
 } SubSublet;
 
 SubSublet *subSubletFind(int wd);											// Find a sublet
-void subSubletNew(int type, int ref, 									// Create a new sublet
+void subSubletNew(int type, char *name, int ref, 			// Create a new sublet
 	time_t interval, char *watch);
 void subSubletDelete(SubSublet *s);										// Delete a sublet
 void subSubletRender(void);														// Render a sublet
