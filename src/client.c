@@ -263,42 +263,31 @@ DrawMask(short type,
 					box->width - 3, (w->flags & SUB_WIN_STATE_COLLAPSE) ? d->th - d->bw : box->height - d->bw);
 				break;
 			case SUB_CLIENT_DRAG_STATE_TOP:
-				XDrawRectangle(d->dpy, w->frame, d->gcs.invert, 1, 1, w->width - 3, w->height - 3);
-				XDrawLine(d->dpy, w->frame, d->gcs.invert, 3, w->height / 2, w->width - 3, w->height / 2);
-				XFillRectangle(d->dpy, w->frame, d->gcs.invert, 5, 5, w->width - 10, w->height / 2 - 8);
+				XFillRectangle(d->dpy, w->frame, d->gcs.invert, 5, 5, w->width - 10, w->height * 0.5 - 5);
 				break;
 			case SUB_CLIENT_DRAG_STATE_BOTTOM:
-				XDrawRectangle(d->dpy, w->frame, d->gcs.invert, 1, 1, w->width - 3, w->height - 3);
-				XDrawLine(d->dpy, w->frame, d->gcs.invert, 3, w->height / 2, w->width - 3, w->height / 2);
-				XFillRectangle(d->dpy, w->frame, d->gcs.invert, 5, w->height / 2 + 4, w->width - 10, w->height / 2 - 8);
+				XFillRectangle(d->dpy, w->frame, d->gcs.invert, 5, w->height * 0.5, w->width - 10, w->height * 0.5 - 5);
 				break;
 			case SUB_CLIENT_DRAG_STATE_LEFT:
-				XDrawRectangle(d->dpy, w->frame, d->gcs.invert, 1, 1, w->width - 3, w->height - 3);
-				XDrawLine(d->dpy, w->frame, d->gcs.invert, w->width / 2, 3, w->width / 2, w->height - 3);
-				XFillRectangle(d->dpy, w->frame, d->gcs.invert, 5, 5, w->width / 2 - 8, w->height - 10);
+				XFillRectangle(d->dpy, w->frame, d->gcs.invert, 5, 5, w->width * 0.5 - 5, w->height - 10);
 				break;
 			case SUB_CLIENT_DRAG_STATE_RIGHT:
-				XDrawRectangle(d->dpy, w->frame, d->gcs.invert, 1, 1, w->width - 3, w->height - 3);
-				XDrawLine(d->dpy, w->frame, d->gcs.invert, w->width / 2, 3, w->width / 2, w->height - 3);
-				XFillRectangle(d->dpy, w->frame, d->gcs.invert, w->width / 2 + 4, 5, w->width / 2 - 9, w->height - 10);
+				XFillRectangle(d->dpy, w->frame, d->gcs.invert, w->width * 0.5, 5, w->width * 0.5 - 5, w->height - 10);
 				break;
 			case SUB_CLIENT_DRAG_STATE_SWAP:
-				XDrawRectangle(d->dpy, w->frame, d->gcs.invert, 1, 1, w->width - 3, w->height - 3);
-				XDrawLine(d->dpy, w->frame, d->gcs.invert, 0, w->height, w->width, 0);
+				XFillRectangle(d->dpy, w->frame, d->gcs.invert, w->width * 0.35, w->height * 0.35, w->width * 0.3, w->height * 0.3);
 				break;
-
 			case SUB_CLIENT_DRAG_STATE_BEFORE:
-				XFillRectangle(d->dpy, w->frame, d->gcs.invert, 5, 5, w->width * 0.1, w->height);
+				XFillRectangle(d->dpy, w->frame, d->gcs.invert, 5, 5, w->width * 0.1 - 5, w->height - 10);
 				break;
 			case SUB_CLIENT_DRAG_STATE_AFTER:
-				XFillRectangle(d->dpy, w->frame, d->gcs.invert, w->width * 0.9 - 5, 5, w->width * 0.9 - 5, w->height - 10);
+				XFillRectangle(d->dpy, w->frame, d->gcs.invert, w->width * 0.9, 5, w->width * 0.1 - 5, w->height - 10);
 				break;
 			case SUB_CLIENT_DRAG_STATE_ABOVE:
-				XDrawLine(d->dpy, DefaultRootWindow(d->dpy), d->gcs.invert, box->x, box->y - d->bw / 2, box->x + w->width, box->y + d->bw / 2);
+				XFillRectangle(d->dpy, w->frame, d->gcs.invert, 5, 5, w->width - 10, w->height * 0.1 - 5);
 				break;
 			case SUB_CLIENT_DRAG_STATE_BELOW:
-				XDrawLine(d->dpy, DefaultRootWindow(d->dpy), d->gcs.invert, box->x, box->y + w->height - d->bw / 2, 
-					box->x + w->width, box->y + w->height- d->bw / 2);
+				XFillRectangle(d->dpy, w->frame, d->gcs.invert, 5, w->height * 0.9, w->width - 10, w->height * 0.1 - 5);
 				break;
 		}
 }
@@ -408,24 +397,22 @@ subClientDrag(short mode,
 												state = SUB_CLIENT_DRAG_STATE_SWAP;printf("SWAP\n");
 											}
 										else if(state != SUB_CLIENT_DRAG_STATE_BEFORE && 
-											w2->parent && w2->parent->flags & SUB_WIN_TILE_HORZ && 
-											wx < w2->width * 0.1 && wy > w2->height * 0.1 && wy < w2->height * 0.9)
+											w2->parent && wx < w2->width * 0.1 && wy > w2->height * 0.1 && wy < w2->height * 0.9)
 											{
 												state = SUB_CLIENT_DRAG_STATE_BEFORE;printf("BEFORE\n");
 											}
 										else if(state != SUB_CLIENT_DRAG_STATE_AFTER && 
-											w2->parent && w2->parent->flags & SUB_WIN_TILE_HORZ && 
-											wx > w2->width * 0.9 && wy > w2->height * 0.1 && wy < w2->height * 0.9)
+											w2->parent && wx > w2->width * 0.9 && wy > w2->height * 0.1 && wy < w2->height * 0.9)
 											{
 												state = SUB_CLIENT_DRAG_STATE_AFTER;printf("AFTER\n");
 											}													
 										else if(state != SUB_CLIENT_DRAG_STATE_ABOVE &&
-											w2->parent && w2->parent->flags & SUB_WIN_TILE_VERT && wy < w2->height * 0.1)
+											w2->parent && wy < w2->height * 0.1)
 											{
 												state = SUB_CLIENT_DRAG_STATE_ABOVE;printf("ABOVE\n");
 											}													
 										else if(state != SUB_CLIENT_DRAG_STATE_BELOW &&
-											w2->parent && w2->parent->flags & SUB_WIN_TILE_VERT && wy > w2->height * 0.9)
+											w2->parent && wy > w2->height * 0.9)
 											{
 												state = SUB_CLIENT_DRAG_STATE_BELOW;printf("BELOW\n");
 											}													
