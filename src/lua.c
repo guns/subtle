@@ -89,6 +89,18 @@ ParseColor(lua_State *configstate,
 	return(color.pixel);
 }
 
+void
+CountHook(lua_State *state,
+	lua_Debug *ar)
+{
+	if(ar && ar->event == LUA_HOOKCOUNT)
+		{
+			lua_sethook(state, NULL, 0, 0);
+			lua_pushstring(state, "Maximum instructions reached");
+			lua_error(state);
+		}
+}
+
  /**
 	* Load config file
 	* @param path Path to the config file
@@ -115,6 +127,8 @@ subLuaLoadConfig(const char *path)
 				}
 			else snprintf(buf, sizeof(buf), "%s/config.lua", CONFIG_DIR);
 		}
+
+	lua_sethook(configstate, CountHook, LUA_MASKCOUNT, 1000);
 
 	subUtilLogDebug("Reading `%s'\n", buf);
 	if(luaL_loadfile(configstate, buf) || lua_pcall(configstate, 0, 0, 0))
@@ -214,13 +228,13 @@ PrepareSublet(int type,
 	
 	switch(type)
 		{
-			case SUB_SUBLET_TYPE_TEXT: 																				break;
+			case SUB_SUBLET_TYPE_TEXT: break;
 
 #ifdef HAVE_SYS_INOTIFY_H
 			case SUB_SUBLET_TYPE_WATCH: watch = (char *)lua_tostring(state, 3);	break;
 #endif /* HAVE_SYS_INOTIFY_H */
 
-			default: interval = (int)lua_tonumber(state, 3); 									break;
+			default: interval = (int)lua_tonumber(state, 3); break;
 		}
 
 	if(string)
@@ -241,10 +255,7 @@ PrepareSublet(int type,
 			else lua_getglobal(state, string);
 
 			ref = luaL_ref(state, LUA_REGISTRYINDEX);
-			if(ref) subSubletNew(type, ref, interval, watch);
-
-			printf("Loaded sublet %s (%d)\n", string, interval);
-			subUtilLogDebug("Sublet: name=%s, ref=%d, interval=%d, watch=%s\n", string, ref, interval, watch);
+			if(ref) subSubletNew(type, string, ref, interval, watch);
 		}
 
 	return(1); /* Make the compiler happy */
@@ -275,7 +286,7 @@ LuaAddWatch(lua_State *state)
 #ifdef HAVE_SYS_INOTIFY_H
 	return(PrepareSublet(SUB_SUBLET_TYPE_WATCH, state));
 #else
-	subUtilLogWarn("add_watch: Inotify not supported on this machine - disabled\n");
+	subUtilLogWarn("add_watch: Inotify is supported on this machine\n");
 #endif /* HAVE_SYS_INOTIFY_H */
 }
 
@@ -357,35 +368,54 @@ subLuaCall(SubSublet *s)
 {
 	if(s)
 		{
+			lua_sethook(state, CountHook, LUA_MASKCOUNT, 1000);
+
 			lua_settop(state, 0);
 			lua_rawgeti(state, LUA_REGISTRYINDEX, s->ref);
 
 			if(lua_pcall(state, 0, 1, 0))
 				{
 					/* Fail check */
-					if(s->flags & SUB_SUBLET_FAIL_THIRD)
-						{
-							subUtilLogWarn("Unloaded sublet (#%d) after 3 failed attempts\n", s->ref);
-							subSubletDelete(s);
-							return;
-						}				
-					else if(s->flags & SUB_SUBLET_FAIL_SECOND) s->flags |= SUB_SUBLET_FAIL_THIRD;
+					if(s->flags & SUB_SUBLET_FAIL_SECOND) s->flags |= SUB_SUBLET_FAIL_THIRD;
 					else if(s->flags & SUB_SUBLET_FAIL_FIRST) s->flags |= SUB_SUBLET_FAIL_SECOND;
+					else s->flags |= SUB_SUBLET_FAIL_FIRST;
 
-					subUtilLogWarn("Failed attempt #%d to call sublet (#%d).\n", 
-						(s->flags & SUB_SUBLET_FAIL_SECOND) ? 2 : 1, s->ref);
+					subUtilLogWarn("Error (%d/3) in sublet #%d:\n", 
+						(s->flags & SUB_SUBLET_FAIL_THIRD) ? 3 : (s->flags & SUB_SUBLET_FAIL_SECOND ? 2 : 1), s->ref);
+					subUtilLogWarn("%s\n", (char *)lua_tostring(state, -1));
+
+					if(s->flags & SUB_SUBLET_FAIL_THIRD) subSubletDelete(s);
+					else
+						{
+							if(s->flags & SUB_SUBLET_TYPE_METER) s->number = 0;
+							else
+								{
+									if(s->string) free(s->string);
+									s->string = strdup("subtle");
+								}
+						}
+					return;
 				}
 
 			switch(lua_type(state, -1))
 				{
-					case LUA_TNIL: 		subUtilLogWarn("Sublet (#%d) does not return any usuable value\n", s->ref);	break;
-					case LUA_TNUMBER: s->number = (int)lua_tonumber(state, -1);																		break;
 					case LUA_TSTRING:
 						if(s->string) free(s->string);
 						s->string = strdup((char *)lua_tostring(state, -1));
 						break;
+					case LUA_TNUMBER: s->number = (int)lua_tonumber(state, -1);	break;
+					case LUA_TNIL: 		
+						subUtilLogWarn("Sublet #%d returns no usuable value\n", s->ref);	
+
+						if(s->flags & SUB_SUBLET_TYPE_METER) s->number = 0;
+						else
+							{
+								if(s->string) free(s->string);
+								s->string = strdup("subtle");
+							}
+						break;
 					default:
-						subUtilLogDebug("Sublet (#%d) returned unkown type %s\n", s->ref, lua_typename(state, -1));
+						subUtilLogDebug("Sublet #%d returned unkown type %s\n", s->ref, lua_typename(state, -1));
 						lua_pop(state, -1);
 				}
 		}
