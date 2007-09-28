@@ -192,28 +192,6 @@ subWinReplace(SubWin *w,
 }
 
  /**
-	* Cut a window from the list
-	* @param w A #SubWin
-	**/
-
-void
-subWinCut(SubWin *w)
-{
-	if(w)
-		{
-			if(w->parent->tile->first == w) w->parent->tile->first = w->next;
-			if(w->prev) w->prev->next = w->next;
-			if(w->next) w->next->prev = w->prev;
-			if(w->parent->tile->last == w) w->parent->tile->last = w->prev;
-
-			w->next 	= NULL;
-			w->prev 	= NULL;
-			w->parent = NULL;
-		}
-}
-	
-
- /**
 	* Swap two windows
 	* @param a A #SubWin
 	* @param b A #SubWin
