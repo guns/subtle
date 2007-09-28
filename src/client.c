@@ -442,7 +442,6 @@ subClientDrag(short mode,
 													state == SUB_CLIENT_DRAG_STATE_BOTTOM ? SUB_WIN_TILE_VERT : SUB_WIN_TILE_HORZ);
 
 												subWinReplace(w2, t);
-												subWinCut(w);
 
 												subWinAppend(t, state == SUB_CLIENT_DRAG_STATE_TOP || 
 													state == SUB_CLIENT_DRAG_STATE_LEFT ? w : w2);
