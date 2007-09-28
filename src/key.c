@@ -38,7 +38,7 @@ void
 subKeyParseChain(const char *key,
 	const char *value)
 {
-	int mod;
+	int mod = 0;
 	KeySym sym;
 	char *tok = strtok((char *)value, "-");
 	SubKey *k = (SubKey *)subUtilAlloc(1, sizeof(SubKey));
@@ -78,24 +78,29 @@ subKeyParseChain(const char *key,
 	while(tok)
 		{ 
 			/* Get key sym and modifier */
-			switch(*tok)
+			sym = XStringToKeysym(tok);
+			if(sym == NoSymbol) 
 				{
-					case 'S':	sym = XK_Shift_L;		mod = ShiftMask;		break;
-					case 'C':	sym = XK_Control_L;	mod = ControlMask;	break;
-					case 'A':	sym = XK_Alt_L;			mod = Mod1Mask;			break;
-					case 'W':	sym = XK_Super_L;		mod = Mod4Mask;			break;
-					case 'M':	sym = XK_Meta_L;		mod = Mod3Mask;			break;
-					default:
-						sym = XStringToKeysym(tok);
-						if(sym == NoSymbol) 
-							{
-								subUtilLogWarn("Can't assign keychain `%s'.\n", key);
-								if(k->string) free(k->string);
-								free(k);
-								return;
-							}
+					subUtilLogWarn("Can't assign keychain `%s'.\n", key);
+					if(k->string) free(k->string);
+					free(k);
+					return;
 				}
-			if(IsModifierKey(sym)) k->mod |= mod;
+
+			switch(sym)
+				{
+					case XK_A: mod = ShiftMask;		break;
+					case XK_S: mod = ControlMask;	break;
+					case XK_C: mod = Mod1Mask;		break;
+					case XK_W: mod = Mod4Mask;		break;
+					case XK_M: mod = Mod3Mask;		break;
+				}
+
+			if(mod) 
+				{
+					k->mod	|= mod;
+					mod			= 0;
+				}
 			else k->code = XKeysymToKeycode(d->dpy, sym);
 
 			tok = strtok(NULL, "-");
