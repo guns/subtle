@@ -374,47 +374,47 @@ subClientDrag(short mode,
 										if(state != SUB_CLIENT_DRAG_STATE_TOP &&
 											wx > w2->width * 0.35 && wx < w2->width * 0.65 && wy > w2->height * 0.1 && wy < w2->height * 0.35)
 											{
-												state = SUB_CLIENT_DRAG_STATE_TOP;printf("TOP\n");
+												state = SUB_CLIENT_DRAG_STATE_TOP;
 											}
 										else if(state != SUB_CLIENT_DRAG_STATE_BOTTOM &&
 											wx > w2->width * 0.35 && wx < w2->width * 0.65 && wy > w2->height * 0.65 && wy < w2->height * 0.9)
 											{
-												state = SUB_CLIENT_DRAG_STATE_BOTTOM;printf("BOTTOM\n");
+												state = SUB_CLIENT_DRAG_STATE_BOTTOM;
 											}
 										else if(state != SUB_CLIENT_DRAG_STATE_LEFT && 
 											wx > w2->width * 0.1 && wx < w2->width * 0.25 && wy > w2->height * 0.1 && wy < w2->height * 0.9)
 											{
-												state = SUB_CLIENT_DRAG_STATE_LEFT;printf("LEFT\n");
+												state = SUB_CLIENT_DRAG_STATE_LEFT;
 											}
 										else if(state != SUB_CLIENT_DRAG_STATE_RIGHT &&
 											wx > w2->width * 0.65 && wx < w2->width * 0.9 && wy > w2->height * 0.1 && wy < w2->height * 0.9)
 											{
-												state = SUB_CLIENT_DRAG_STATE_RIGHT;printf("RIGHT\n");
+												state = SUB_CLIENT_DRAG_STATE_RIGHT;
 											}
 										else if(state != SUB_CLIENT_DRAG_STATE_SWAP && 
 											wx > w2->width * 0.35 && wx < w2->width * 0.65 && wy > w2->height * 0.35 && wy < w2->height * 0.65)
 											{
-												state = SUB_CLIENT_DRAG_STATE_SWAP;printf("SWAP\n");
+												state = SUB_CLIENT_DRAG_STATE_SWAP;
 											}
 										else if(state != SUB_CLIENT_DRAG_STATE_BEFORE && 
 											w2->parent && wx < w2->width * 0.1 && wy > w2->height * 0.1 && wy < w2->height * 0.9)
 											{
-												state = SUB_CLIENT_DRAG_STATE_BEFORE;printf("BEFORE\n");
+												state = SUB_CLIENT_DRAG_STATE_BEFORE;
 											}
 										else if(state != SUB_CLIENT_DRAG_STATE_AFTER && 
 											w2->parent && wx > w2->width * 0.9 && wy > w2->height * 0.1 && wy < w2->height * 0.9)
 											{
-												state = SUB_CLIENT_DRAG_STATE_AFTER;printf("AFTER\n");
+												state = SUB_CLIENT_DRAG_STATE_AFTER;
 											}													
 										else if(state != SUB_CLIENT_DRAG_STATE_ABOVE &&
 											w2->parent && wy < w2->height * 0.1)
 											{
-												state = SUB_CLIENT_DRAG_STATE_ABOVE;printf("ABOVE\n");
+												state = SUB_CLIENT_DRAG_STATE_ABOVE;
 											}													
 										else if(state != SUB_CLIENT_DRAG_STATE_BELOW &&
 											w2->parent && wy > w2->height * 0.9)
 											{
-												state = SUB_CLIENT_DRAG_STATE_BELOW;printf("BELOW\n");
+												state = SUB_CLIENT_DRAG_STATE_BELOW;
 											}													
 										if(last_state != state || last_w != w2) 
 											{
