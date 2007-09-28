@@ -82,7 +82,6 @@ void subWinRender(SubWin *w);													// Render wrapper
 void subWinPrepend(SubWin *p, SubWin *w);							// Prepend window
 void subWinAppend(SubWin *w1, SubWin *w2);						// Append window
 void subWinReplace(SubWin *w, SubWin *w2);						// Replace two windows
-void subWinCut(SubWin *w);														// Cut a window
 void subWinSwap(SubWin *w, SubWin *w2);								// Swap two windows
 void subWinResize(SubWin *w);													// Resize a window
 void subWinReparent(SubWin *p, SubWin *w);						// Reparent a window
