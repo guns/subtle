@@ -89,9 +89,9 @@ subKeyParseChain(const char *key,
 
 			switch(sym)
 				{
-					case XK_A: mod = ShiftMask;		break;
-					case XK_S: mod = ControlMask;	break;
-					case XK_C: mod = Mod1Mask;		break;
+					case XK_A: mod = Mod1Mask;		break;
+					case XK_S: mod = ShiftMask;		break;
+					case XK_C: mod = ControlMask;	break;
 					case XK_W: mod = Mod4Mask;		break;
 					case XK_M: mod = Mod3Mask;		break;
 				}
