@@ -138,5 +138,7 @@ subDisplayScan(void)
 					else subTileAdd(d->screen, w);				
 				}
 		}
+	
+	subTileConfigure(d->screen);
 	XFree(wins);
 }
