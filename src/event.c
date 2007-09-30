@@ -105,8 +105,7 @@ Exec(char *cmd)
 				/* Never to be reached statement */
 				subUtilLogWarn("Can't exec command `%s'.\n", cmd);
 				exit(1);
-			case -1:
-				subUtilLogWarn("Failed to fork.\n");
+			case -1: subUtilLogWarn("Failed to fork.\n");
 		}
 }
 
@@ -125,9 +124,16 @@ HandleKeyPress(XKeyEvent *ev)
 						{
 							case SUB_KEY_ACTION_ADD_VTILE: type = SUB_WIN_TILE_VERT;
 							case SUB_KEY_ACTION_ADD_HTILE: 
-								if(w->flags & SUB_WIN_TYPE_TILE) subTileAdd(w, subTileNew(type));
+								if(w->flags & SUB_WIN_TYPE_TILE) 
+									{
+										subTileAdd(w, subTileNew(type));
+										subTileConfigure(w);
+									}
 								else if(w->flags & SUB_WIN_TYPE_CLIENT && w->parent && w->parent->flags & SUB_WIN_TYPE_TILE)
-									subTileAdd(w->parent, subTileNew(type));
+									{
+										subTileAdd(w->parent, subTileNew(type));
+										subTileConfigure(w->parent);
+									}
 								break;
 							case SUB_KEY_ACTION_DELETE_WIN: subWinDelete(w); break;
 							case SUB_KEY_ACTION_TOGGLE_COLLAPSE:	if(!mode) mode = SUB_WIN_STATE_COLLAPSE;
@@ -217,7 +223,11 @@ HandleMap(XMapRequestEvent *ev)
 					w->parent = d->screen;
 					subClientToggle(SUB_WIN_STATE_RAISE, w);
 				}
-			else subTileAdd(d->screen, w);
+			else 
+				{
+					subTileAdd(d->screen, w);
+					subTileConfigure(d->screen);
+				}
 		}
 }
 
