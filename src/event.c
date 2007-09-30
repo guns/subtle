@@ -404,27 +404,28 @@ int subEventLoop(void)
 
 					if(select(ConnectionNumber(d->dpy) + 1, &fdset, NULL, NULL, &tv) == -1)
 						subUtilLogDebug("Failed to select the connection\n");
-				}
 
 #ifdef HAVE_SYS_INOTIFY_H
-			if(read(d->notify, buf, BUFLEN) > 0)
-				{
-					struct inotify_event *event = (struct inotify_event *)&buf[0];
-					if(event)
+					if(read(d->notify, buf, BUFLEN) > 0)
 						{
-							SubSublet *s = subSubletFind(event->wd);
-							if(s)
+							struct inotify_event *event = (struct inotify_event *)&buf[0];
+							if(event)
 								{
-									subLuaCall(s);
+									SubSublet *s = subSubletFind(event->wd);
+									if(s)
+										{
+											subLuaCall(s);
 
-									subSubletConfigure();
-									subSubletRender();
+											subSubletConfigure();
+											subSubletRender();
 
-									printf("Inotify: wd=%d\n", event->wd);
+											printf("Inotify: wd=%d\n", event->wd);
+										}
 								}
 						}
-				}
 #endif /* HAVE_SYS_INOTIFY_H */
+
+				}
 
 			while(XPending(d->dpy))
 				{
