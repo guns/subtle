@@ -442,21 +442,57 @@ subClientDrag(short mode,
 													state == SUB_CLIENT_DRAG_STATE_BOTTOM ? SUB_WIN_TILE_VERT : SUB_WIN_TILE_HORZ);
 
 												subWinReplace(w2, t);
+												subWinCut(w);
 
-												subWinAppend(t, state == SUB_CLIENT_DRAG_STATE_TOP || 
-													state == SUB_CLIENT_DRAG_STATE_LEFT ? w : w2);
-												subWinAppend(t, state == SUB_CLIENT_DRAG_STATE_TOP || 
-													state == SUB_CLIENT_DRAG_STATE_LEFT ? w2 : w);
-
-												XReparentWindow(d->dpy, t->frame, t->parent->frame, 0, 
-													t->parent->flags & SUB_WIN_TYPE_SCREEN ? d->th : 0);
-												XReparentWindow(d->dpy, w->frame, t->frame, 0, 0);
-												XReparentWindow(d->dpy, w2->frame, t->frame, 0, 0);
+												subTileAdd(t, state == SUB_CLIENT_DRAG_STATE_TOP || state == SUB_CLIENT_DRAG_STATE_LEFT ? w : w2);
+												subTileAdd(t, state == SUB_CLIENT_DRAG_STATE_TOP || state == SUB_CLIENT_DRAG_STATE_LEFT ? w2 : w);
 
 												subTileConfigure(t->parent);
 												if(t->parent != p) subTileConfigure(p);
 											}
-										else if(state == SUB_CLIENT_DRAG_STATE_BEFORE || state == SUB_CLIENT_DRAG_STATE_ABOVE ||
+										else if(state == SUB_CLIENT_DRAG_STATE_BEFORE || state == SUB_CLIENT_DRAG_STATE_AFTER)
+											{
+												SubWin *p = w->parent;
+
+												if(w2->parent->flags & SUB_WIN_TILE_HORZ)
+													{
+														subWinCut(w);
+
+														if(state == SUB_CLIENT_DRAG_STATE_BEFORE) subWinPrepend(w2, w);
+														else subWinAppend(w2, w);
+
+														subTileConfigure(w->parent);
+														if(w->parent != p) subTileConfigure(p); 
+													}
+												else if(w2->parent->flags & SUB_WIN_TILE_VERT && w2->parent->parent) 
+													{
+														subWinCut(w);
+
+														if(state == SUB_CLIENT_DRAG_STATE_BEFORE) subWinPrepend(w2->parent, w);
+														else subWinAppend(w2->parent, w);
+														
+														subTileConfigure(w->parent);
+														subTileConfigure(p); 
+													}
+											}
+										else if(state == SUB_CLIENT_DRAG_STATE_ABOVE)
+											{
+												SubWin *p = w2->parent;
+
+												if(p->flags & SUB_WIN_TILE_HORZ)
+													{
+														SubWin *t = subTileNew(SUB_WIN_TILE_VERT);
+
+														subWinReplace(w2, t);
+														subWinCut(w);
+														subTileAdd(t, w);
+														subTileAdd(t, w2);
+													}
+												else subWinPrepend(w2, w);
+
+												subTileConfigure(p);
+											}
+										else if(state == SUB_CLIENT_DRAG_STATE_BEFORE ||
 											state == SUB_CLIENT_DRAG_STATE_AFTER || state == SUB_CLIENT_DRAG_STATE_BELOW)										
 											{
 												SubWin *p = w->parent;
@@ -470,10 +506,7 @@ subClientDrag(short mode,
 												subTileConfigure(w2->parent);
 												subTileConfigure(p);
 											}
-										else if(state == SUB_CLIENT_DRAG_STATE_SWAP)
-											{
-												subWinSwap(w, w2);
-											}
+										else if(state == SUB_CLIENT_DRAG_STATE_SWAP) subWinSwap(w, w2);
 									}
 								}
 						else /* Resize */
@@ -559,6 +592,7 @@ subClientToggle(short type,
 								subWinResize(w);
 								
 								subTileAdd(w->parent, w);
+								subTileConfigure(w->parent);
 								break;								
 							case SUB_WIN_STATE_WEIGHT:
 								w->weight = 0;
