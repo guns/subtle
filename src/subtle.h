@@ -79,7 +79,8 @@ SubWin *subWinFind(Window win);												// Find a window
 SubWin *subWinNew(void);															// Create a new window
 void subWinDelete(SubWin *w);													// Delete a window
 void subWinRender(SubWin *w);													// Render wrapper
-void subWinPrepend(SubWin *p, SubWin *w);							// Prepend window
+void subWinCut(SubWin *w);														// Cut a window
+void subWinPrepend(SubWin *w1, SubWin *w2);						// Prepend window
 void subWinAppend(SubWin *w1, SubWin *w2);						// Append window
 void subWinReplace(SubWin *w, SubWin *w2);						// Replace two windows
 void subWinSwap(SubWin *w, SubWin *w2);								// Swap two windows
@@ -112,9 +113,9 @@ typedef struct subtile
 } SubTile;
 
 SubWin *subTileNew(short mode);												// Create a new tile
-void subTileDelete(SubWin *w);												// Delete a tile
+void subTileDelete(SubWin *t);												// Delete a tile
 void subTileAdd(SubWin *t, SubWin *w);								// Add a window to tile
-void subTileConfigure(SubWin *w);											// Configure a tile
+void subTileConfigure(SubWin *t);											// Configure a tile
 
 /* client.c */
 #define SUB_CLIENT_DRAG_LEFT					(1L << 1)				// Drag start from left
