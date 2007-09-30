@@ -113,26 +113,51 @@ subWinRender(SubWin *w)
 }
 
  /**
-	* Prepend a window to the list
-	* @param p A #SubWin
+	* Cut a window from the list
 	* @param w A #SubWin
 	**/
 
 void
-subWinPrepend(SubWin *p,
-	SubWin *w)
+subWinCut(SubWin *w)
 {
-	if(p && p->parent && w)
+	if(w)
 		{
-			/* Hierarchy */
-			w->next = p->parent->tile->first;
-			if(p->parent->tile->first) p->parent->tile->first->prev = w;
-			p->parent->tile->first = w;
+			if(w->parent->tile->first == w) w->parent->tile->first = w->next;
+			if(w->prev) w->prev->next = w->next;
+			if(w->next) w->next->prev = w->prev;
+			if(w->parent->tile->last == w) w->parent->tile->last = w->prev;
+
+			w->next		= NULL;
+			w->prev		= NULL;
+			w->parent	= NULL;
 		}
 }
 
  /**
-	* Append a window to or after the window to the list
+	* Prepend window w2 before window w1
+	* @param w1 A #SubWin
+	* @param w2 A #SubWin
+	**/
+
+void
+subWinPrepend(SubWin *w1,
+	SubWin *w2)
+{
+	if(w1 && w2)
+		{
+			w2->prev = w1->prev;
+			if(w1->prev) w1->prev->next = w2;
+			w1->prev = w2;
+			w2->next = w1;
+			if(w1->parent->tile->first == w1) w1->parent->tile->first = w2;
+			w2->parent = w1->parent;
+
+			XReparentWindow(d->dpy, w2->frame, w1->parent->frame, 0, w1->parent->flags & SUB_WIN_TYPE_SCREEN ? d->th : 0); 
+		}
+}
+
+ /**
+	* Append window w2 after window w1
 	* @param w1 A #SubWin
 	* @param w2 A #SubWin
 	**/
@@ -143,23 +168,14 @@ subWinAppend(SubWin *w1,
 {
 	if(w1 && w2)
 		{
-			SubWin *p = w1->flags & SUB_WIN_TYPE_TILE ? w1 : w1->parent;
+			w2->next = w1->next;
+			if(w1->next) w1->next->prev = w2;
+			w1->next = w2;
+			w2->prev = w1;
+			if(w1->parent->tile->last == w1) w1->parent->tile->last = w2;
+			w2->parent = w1->parent;
 
-			/* Hierarchy */
-			if(!p->tile->first)
-				{
-					p->tile->first = w2;
-					p->tile->last = w2;
-					w2->next = NULL;
-					w2->prev = NULL;
-				}
-			else
-				{
-					w2->prev = w1->tile->last;
-					if(p->tile->last) p->tile->last->next = w2;
-					p->tile->last = w2;
-					w2->next = NULL;
-				}
+			XReparentWindow(d->dpy, w2->frame, w1->parent->frame, 0, w1->parent->flags & SUB_WIN_TYPE_SCREEN ? d->th : 0); 
 		}
 }
 
@@ -188,6 +204,8 @@ subWinReplace(SubWin *w,
 			w->prev		= NULL;
 			w->next		= NULL;
 			w->parent = NULL;
+
+			XReparentWindow(d->dpy, w2->frame, w2->parent->frame, 0, 0);
 		}
 }
 
