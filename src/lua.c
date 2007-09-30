@@ -127,6 +127,7 @@ subLuaLoadConfig(const char *path)
 				}
 			else snprintf(buf, sizeof(buf), "%s/config.lua", CONFIG_DIR);
 		}
+	else snprintf(buf, sizeof(buf), "%s/config.lua", path);
 
 	lua_sethook(configstate, CountHook, LUA_MASKCOUNT, 1000);
 
@@ -314,9 +315,13 @@ subLuaLoadSublets(const char *path)
 #endif /* HAVE_SYS_INOTIFY_H */
 
 	/* Check path */
-	snprintf(buf, sizeof(buf), "%s/.%s/sublets", getenv("HOME"), PACKAGE_NAME);
-	if((dir = opendir(buf))) closedir(dir);
-	else if(path) snprintf(buf, sizeof(buf), "%s", buf);
+	if(!path)
+		{
+			snprintf(buf, sizeof(buf), "%s/.%s/sublets", getenv("HOME"), PACKAGE_NAME);
+			if((dir = opendir(buf))) closedir(dir);
+			else snprintf(buf, sizeof(buf), "%s", SUBLET_DIR);
+		}
+	else snprintf(buf, sizeof(buf), "%s", path);
 
 	/* Push functions on the stack */
 	lua_newtable(state);
