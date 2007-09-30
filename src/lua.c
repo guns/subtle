@@ -313,8 +313,10 @@ subLuaLoadSublets(const char *path)
 	else fcntl(d->notify, F_SETFL, O_NONBLOCK);
 #endif /* HAVE_SYS_INOTIFY_H */
 
-	if(path) snprintf(buf, sizeof(buf), "%s", buf);
-	else snprintf(buf, sizeof(buf), "%s/.%s/sublets", getenv("HOME"), PACKAGE_NAME);
+	/* Check path */
+	snprintf(buf, sizeof(buf), "%s/.%s/sublets", getenv("HOME"), PACKAGE_NAME);
+	if((dir = opendir(buf))) closedir(dir);
+	else if(path) snprintf(buf, sizeof(buf), "%s", buf);
 
 	/* Push functions on the stack */
 	lua_newtable(state);
@@ -338,9 +340,11 @@ subLuaLoadSublets(const char *path)
 						}
 				}
 			closedir(dir);
+				
+			subScreenConfigure();
+			subSubletConfigure();
 		}
-	subScreenConfigure();
-	subSubletConfigure();
+	else subUtilLogWarn("Can't find any sublets to load\n");
 }
 
  /**
