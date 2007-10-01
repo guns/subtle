@@ -128,7 +128,6 @@ subDisplayScan(void)
 				wins[i] != d->bar.sublets && wins[i] != d->screen->frame && 
 				wins[i] != d->screen->screen->button && attr.map_state == IsViewable)
 				{
-					printf("win=%#lx\n", wins[i]);
 					SubWin *w = subClientNew(wins[i]);
 					if(w->flags & SUB_WIN_STATE_TRANS) 
 						{

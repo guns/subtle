@@ -124,9 +124,6 @@ subTileConfigure(SubWin *t)
 							n++;
 						}
 
-			printf("configure %#lx with %d children\n", t->frame, n);
-
-
 					/* Piled window */
 					if(t->flags & SUB_WIN_STATE_PILE) 
 						{
