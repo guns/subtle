@@ -113,6 +113,7 @@ main(int argc,
 	subLuaLoadConfig(config);
 
 	subEwmhInit();
+	subKeyInit();
 
 	subScreenInit();
 	subScreenNew();
