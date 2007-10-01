@@ -8,8 +8,32 @@
 
 #include "subtle.h"
 
-int size = 0;
-SubKey **keys = NULL;
+static int size = 0;
+static SubKey **keys = NULL;
+static unsigned int num_lock_mask = 0;
+static unsigned int scroll_lock_mask = 0;
+
+ /**
+	* Init keys
+	**/
+
+void
+subKeyInit(void)
+{
+	XModifierKeymap *modmap = XGetModifierMapping(d->dpy);
+	if(modmap && modmap->max_keypermod > 0)
+		{
+			static int masks[] = { ShiftMask, LockMask, ControlMask, Mod1Mask, Mod2Mask, Mod3Mask, Mod4Mask, Mod5Mask };
+			const unsigned int num_lock = XKeysymToKeycode(d->dpy, XK_Num_Lock);
+			const unsigned int scroll_lock = XKeysymToKeycode(d->dpy, XK_Scroll_Lock);
+			int i, max = (sizeof(masks) / sizeof(KeyCode)) * modmap->max_keypermod;
+
+			for(i = 0; i < max; i++)
+				if(num_lock && (modmap->modifiermap[i] == num_lock)) num_lock_mask = masks[i / modmap->max_keypermod];
+				else if(scroll_lock && (modmap->modifiermap[i] == scroll_lock)) scroll_lock_mask = masks[i / modmap->max_keypermod];
+		}
+	XFreeModifiermap(modmap);
+}
 
  /**
 	* Find a key
@@ -19,7 +43,7 @@ SubKey **keys = NULL;
 
 SubKey *
 subKeyFind(int keycode,
-	int mod)
+	unsigned int mod)
 {
 	int i;
 
@@ -130,13 +154,11 @@ subKeyKill(void)
 	if(keys)
 		{
 			for(i = 0; i < size; i++) 
-				{
-					if(keys[i])
-						{
-							if(keys[i]->flags == SUB_KEY_ACTION_EXEC && keys[i]->string) free(keys[i]->string);
-							free(keys[i]);
-						}
-				}
+				if(keys[i])
+					{
+						if(keys[i]->flags == SUB_KEY_ACTION_EXEC && keys[i]->string) free(keys[i]->string);
+						free(keys[i]);
+					}
 			free(keys);
 		}
 }
@@ -154,7 +176,19 @@ subKeyGrab(SubWin *w)
 			int i;
 
 			for(i = 0; i < size; i++) 
-				XGrabKey(d->dpy, keys[i]->code, keys[i]->mod, w->frame, True, GrabModeAsync, GrabModeAsync);
+				{
+					XGrabKey(d->dpy, keys[i]->code, keys[i]->mod, w->frame, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->dpy, keys[i]->code, keys[i]->mod | LockMask, w->frame, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->dpy, keys[i]->code, keys[i]->mod | num_lock_mask, w->frame, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->dpy, keys[i]->code, keys[i]->mod | scroll_lock_mask, w->frame, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->dpy, keys[i]->code, keys[i]->mod | LockMask | num_lock_mask, 
+						w->frame, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->dpy, keys[i]->code, keys[i]->mod | LockMask | scroll_lock_mask, 
+						w->frame, True, GrabModeAsync, GrabModeAsync);
+						
+					XGrabKey(d->dpy, keys[i]->code, keys[i]->mod | LockMask | num_lock_mask | scroll_lock_mask, 
+						w->frame, True, GrabModeAsync, GrabModeAsync);
+				}
 		}
 }
 
