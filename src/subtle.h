@@ -271,11 +271,13 @@ typedef struct subkey
 	};
 } SubKey;
 
+void subKeyInit(void);																// Init the keys
+SubKey *subKeyFind(int keycode, unsigned int mod);		// Find a key
 void subKeyParseChain(const char *key,
 	const char *value);																	// Parse key chain
-SubKey *subKeyFind(int keycode, int mod);							// Find a key
 void subKeyGrab(SubWin *w);														// Grab keys for a window
 void subKeyUnrab(SubWin *w);													// Ungrab keys for a window
+void subKeyKill(void);																// Delete all keys
 
 /* lua.c */
 void subLuaLoadConfig(const char *path);							// Load config file
