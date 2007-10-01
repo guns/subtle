@@ -363,7 +363,6 @@ HandleFocus(XFocusInEvent *ev)
 					subClientRender(w);
 					subEwmhSetWindow(DefaultRootWindow(d->dpy), SUB_EWMH_NET_ACTIVE_WINDOW, w->frame);
 
-					/* Grab key */
 					subKeyGrab(w);					
 				}
 		}
@@ -374,13 +373,17 @@ HandleFocus(XFocusInEvent *ev)
 	* @return Return zero on failure
 	**/
 
-int subEventLoop(void)
+int 
+subEventLoop(void)
 {
 	time_t current;
 	XEvent ev;
 	struct timeval tv;
 	SubSublet *s = NULL;
+
+#ifdef HAVE_SYS_INOTIFY_H
 	char buf[BUFLEN];
+#endif /* HAVE_SYS_INOTIFY_H */
 
 	while(1)
 		{
