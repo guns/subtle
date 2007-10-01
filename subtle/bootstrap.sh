@@ -1,7 +1,7 @@
 #! /bin/bash
 set -x
-
-rev=`svn info | sed -n 's/Revision: \([0-9]*\)/\1/p'`
+rev=`hg log | head -n1 | sed -n 's/changeset:[ ]*\([0-9]*\):[0-9a-zA-Z]*/\1/p'`
+#rev=`svn info | sed -n 's/Revision: \([0-9]*\)/\1/p'`
 if test -z "$rev"; then
 	$rev="UNKNOWN"
 fi
