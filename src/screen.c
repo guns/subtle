@@ -133,6 +133,7 @@ subScreenNew(void)
 	printf("Adding screen (%s)\n", w->screen->name);
 
 	subWinMap(w);
+	subWinFocus(w);
 
 	XSaveContext(d->dpy, w->screen->button, 1, (void *)w);
 	return(w);
