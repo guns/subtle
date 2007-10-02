@@ -48,18 +48,18 @@ subKeyFind(int keycode,
 	int i;
 
 	for(i = 0; i < size; i++)
-		if(keys[i]->code == keycode && keys[i]->mod == mod) return(keys[i]);
+		if(keys[i]->code == keycode && keys[i]->mod == (mod & ~(LockMask|num_lock_mask|scroll_lock_mask))) return(keys[i]);
 	return(NULL);
 }
 
  /**
-	* Parse key chains
+	* Create new key
 	* @key Key name
 	* @value Key action
 	**/
 
 void
-subKeyParseChain(const char *key,
+subKeyNew(const char *key,
 	const char *value)
 {
 	int mod = 0;
@@ -180,13 +180,14 @@ subKeyGrab(SubWin *w)
 					XGrabKey(d->dpy, keys[i]->code, keys[i]->mod, w->frame, True, GrabModeAsync, GrabModeAsync);
 					XGrabKey(d->dpy, keys[i]->code, keys[i]->mod | LockMask, w->frame, True, GrabModeAsync, GrabModeAsync);
 					XGrabKey(d->dpy, keys[i]->code, keys[i]->mod | num_lock_mask, w->frame, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->dpy, keys[i]->code, keys[i]->mod | scroll_lock_mask, w->frame, True, GrabModeAsync, GrabModeAsync);
 					XGrabKey(d->dpy, keys[i]->code, keys[i]->mod | LockMask | num_lock_mask, 
 						w->frame, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->dpy, keys[i]->code, keys[i]->mod | LockMask | scroll_lock_mask, 
+					XGrabKey(d->dpy, keys[i]->code, keys[i]->mod | scroll_lock_mask, w->frame, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->dpy, keys[i]->code, keys[i]->mod | scroll_lock_mask | LockMask, 
 						w->frame, True, GrabModeAsync, GrabModeAsync);
-						
-					XGrabKey(d->dpy, keys[i]->code, keys[i]->mod | LockMask | num_lock_mask | scroll_lock_mask, 
+					XGrabKey(d->dpy, keys[i]->code, keys[i]->mod | scroll_lock_mask | num_lock_mask, 
+						w->frame, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->dpy, keys[i]->code, keys[i]->mod | scroll_lock_mask | LockMask | num_lock_mask, 
 						w->frame, True, GrabModeAsync, GrabModeAsync);
 				}
 		}
