@@ -193,61 +193,10 @@ subClientRender(SubWin *w)
 			XSetWindowBorder(d->dpy, w->client->icon, d->colors.border);
 			if(w->flags & SUB_WIN_STATE_RAISE)					c = 'r';
 			else if(w->flags & SUB_WIN_STATE_COLLAPSE)	c = 'c';
-			else if(w->flags & SUB_WIN_STATE_PILE)			c = 'p';
-			else if(w->flags & SUB_WIN_STATE_WEIGHT)		c = 'w';
 	
 			XDrawString(d->dpy, w->client->icon, d->gcs.font, (d->th - 8 - d->fx) / 2 + 1, d->fy - 5, &c, 1);
 			XDrawString(d->dpy, w->client->caption, d->gcs.font, 3, d->fy - 1, w->client->name, 
 				strlen(w->client->name));
-		}
-}
-
- /**
-	* Set focus
-	* @param w A #SubWin
-	**/
-
-void
-subClientFocus(SubWin *w)
-{
-	if(w && w->flags & SUB_WIN_TYPE_CLIENT)
-		{
-			if(w->flags & SUB_WIN_PREF_FOCUS && !(w->flags & SUB_WIN_STATE_COLLAPSE))
-				{
-					XEvent ev;
-
-					ev.type									= ClientMessage;
-					ev.xclient.window				= w->client->win;
-					ev.xclient.message_type = subEwmhGetAtom(SUB_EWMH_WM_PROTOCOLS);
-					ev.xclient.format				= 32;
-					ev.xclient.data.l[0]		= subEwmhGetAtom(SUB_EWMH_WM_TAKE_FOCUS);
-					ev.xclient.data.l[1]		= CurrentTime;
-
-					XSendEvent(d->dpy, w->client->win, False, NoEventMask, &ev);
-
-					subUtilLogDebug("Focus: win=%#lx, input=%d, send=%d\n", w->client->win, 
-						!!(w->flags & SUB_WIN_PREF_INPUT), !!(w->flags & SUB_WIN_PREF_FOCUS));
-				}
-			else
-				{
-					/* Remove focus from window */
-					if(d->focus) 
-						{
-							SubWin *f = d->focus;
-							d->focus = NULL;
-							if(f) subClientRender(f);
-
-							subKeyUngrab(f);
-						}
-
-					XSetInputFocus(d->dpy, w->frame, RevertToNone, CurrentTime);			
-
-					d->focus = w;
-					subClientRender(w);
-					subEwmhSetWindow(DefaultRootWindow(d->dpy), SUB_EWMH_NET_ACTIVE_WINDOW, w->frame);
-
-					subKeyGrab(w);
-				}
 		}
 }
 
@@ -289,6 +238,55 @@ DrawMask(short type,
 			case SUB_CLIENT_DRAG_STATE_BELOW:
 				XFillRectangle(d->dpy, w->frame, d->gcs.invert, 5, w->height * 0.9, w->width - 10, w->height * 0.1 - 5);
 				break;
+		}
+}
+
+static void
+AdjustWeight(short mode,
+	SubWin *w,
+	XRectangle *box)
+{
+	if(w && w->parent)
+		{
+		printf("Adjust: Check %s\n", w->flags & SUB_WIN_TILE_HORZ ? "horz" : (w->flags & SUB_WIN_TYPE_CLIENT ? "client" : "vert"));
+
+			/* Adjust window weight */
+			if(mode == SUB_CLIENT_DRAG_LEFT || mode == SUB_CLIENT_DRAG_RIGHT)
+				{
+					if(w->parent->flags & SUB_WIN_TILE_HORZ)
+						{
+							w->weight = box->width * 100 / SUBWINWIDTH(w->parent);
+							if(w->weight >= 80) w->weight = 80;
+							if(!(w->flags & SUB_WIN_STATE_WEIGHT)) w->flags |= SUB_WIN_STATE_WEIGHT;
+							subTileConfigure(w->parent);
+
+							printf("Adjust: Change %s\n", w->flags & SUB_WIN_TILE_HORZ ? "horz" : (w->flags & SUB_WIN_TYPE_CLIENT ? "client" : "vert"));
+							return;
+						}
+					else if(w->parent->flags & SUB_WIN_TILE_VERT && w->parent->parent)
+						{
+							printf("Adjust: Recursion\n");
+							AdjustWeight(mode, w->parent, box);
+						}
+				}
+			else if(mode == SUB_CLIENT_DRAG_BOTTOM)
+				{
+					if(w->parent->flags & SUB_WIN_TILE_VERT)
+						{
+							w->weight = box->height * 100 / SUBWINHEIGHT(w->parent);
+							if(w->weight >= 80) w->weight = 80;
+							if(!(w->flags & SUB_WIN_STATE_WEIGHT)) w->flags |= SUB_WIN_STATE_WEIGHT;
+							subTileConfigure(w->parent);					
+
+							printf("Adjust: Change %s\n", w->flags & SUB_WIN_TILE_HORZ ? "horz" : (w->flags & SUB_WIN_TYPE_CLIENT ? "client" : "vert"));
+							return;
+						}
+					else if(w->parent->flags & SUB_WIN_TILE_HORZ && w->parent->parent)
+						{
+							printf("Adjust: Recursion\n");
+							AdjustWeight(mode, w->parent, box);
+						}
+				}
 		}
 }
 
@@ -444,6 +442,15 @@ subClientDrag(short mode,
 												subWinReplace(w2, t);
 												subWinCut(w);
 
+												/* Check weighted windows */
+												if(w2->flags & SUB_WIN_STATE_WEIGHT)
+													{
+														t->flags 		|= SUB_WIN_STATE_WEIGHT;
+														t->weight		= w2->weight;
+														w2->flags		&= ~SUB_WIN_STATE_WEIGHT;
+														w2->weight	= 0;
+													}
+
 												subTileAdd(t, state == SUB_CLIENT_DRAG_STATE_TOP || state == SUB_CLIENT_DRAG_STATE_LEFT ? w : w2);
 												subTileAdd(t, state == SUB_CLIENT_DRAG_STATE_TOP || state == SUB_CLIENT_DRAG_STATE_LEFT ? w2 : w);
 
@@ -519,18 +526,11 @@ subClientDrag(short mode,
 										subWinResize(w);
 										if(w->flags & SUB_WIN_TYPE_TILE) subTileConfigure(w);
 									}
-								else if(w->parent && w->parent->flags & SUB_WIN_TYPE_TILE && mode <= SUB_CLIENT_DRAG_BOTTOM)
+								else if(w->parent && mode <= SUB_CLIENT_DRAG_BOTTOM)
 									{
-										if(!(w->flags & SUB_WIN_STATE_WEIGHT)) w->flags |= SUB_WIN_STATE_WEIGHT;
+										
 
-										/* Adjust window weight */
-										if(w->parent->flags & SUB_WIN_TYPE_TILE && mode == SUB_CLIENT_DRAG_LEFT || mode == SUB_CLIENT_DRAG_RIGHT)
-											w->weight = box.width * 100 / SUBWINWIDTH(w->parent);
-										else if(w->parent->flags & SUB_WIN_TYPE_TILE && mode == SUB_CLIENT_DRAG_BOTTOM)
-											w->weight = box.height * 100 / SUBWINHEIGHT(w->parent); 
-										if(w->weight >= 80) w->weight = 80;
-
-										subTileConfigure(w->parent);
+										AdjustWeight(mode, w, &box);
 									}
 							}
 
