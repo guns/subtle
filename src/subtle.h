@@ -273,8 +273,8 @@ typedef struct subkey
 
 void subKeyInit(void);																// Init the keys
 SubKey *subKeyFind(int keycode, unsigned int mod);		// Find a key
-void subKeyParseChain(const char *key,
-	const char *value);																	// Parse key chain
+void subKeyNew(const char *key,
+	const char *value);																	// Create new key
 void subKeyGrab(SubWin *w);														// Grab keys for a window
 void subKeyUnrab(SubWin *w);													// Ungrab keys for a window
 void subKeyKill(void);																// Delete all keys
