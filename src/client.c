@@ -475,36 +475,31 @@ subClientDrag(short mode,
 														subTileConfigure(p); 
 													}
 											}
-										else if(state == SUB_CLIENT_DRAG_STATE_ABOVE)
-											{
-												SubWin *p = w2->parent;
-
-												if(p->flags & SUB_WIN_TILE_HORZ)
-													{
-														SubWin *t = subTileNew(SUB_WIN_TILE_VERT);
-
-														subWinReplace(w2, t);
-														subWinCut(w);
-														subTileAdd(t, w);
-														subTileAdd(t, w2);
-													}
-												else subWinPrepend(w2, w);
-
-												subTileConfigure(p);
-											}
-										else if(state == SUB_CLIENT_DRAG_STATE_BEFORE ||
-											state == SUB_CLIENT_DRAG_STATE_AFTER || state == SUB_CLIENT_DRAG_STATE_BELOW)										
+										else if(state == SUB_CLIENT_DRAG_STATE_ABOVE || state == SUB_CLIENT_DRAG_STATE_BELOW)		
 											{
 												SubWin *p = w->parent;
 
-												subWinReparent(w2->parent, w);
+												if(w2->parent->flags & SUB_WIN_TILE_VERT)
+													{
+														subWinCut(w);
 
-												if(state == SUB_CLIENT_DRAG_STATE_AFTER || state == SUB_CLIENT_DRAG_STATE_BELOW)
-													subWinAppend(w2, w);
-												else subWinPrepend(w2, w);
+														if(state == SUB_CLIENT_DRAG_STATE_ABOVE) subWinPrepend(w2, w);
+														else subWinAppend(w2, w);
 
-												subTileConfigure(w2->parent);
-												subTileConfigure(p);
+														subTileConfigure(w->parent);
+														if(w->parent != p) subTileConfigure(p); 
+													}
+												else if(w2->parent->flags & SUB_WIN_TILE_HORZ && w2->parent->parent) 
+													{
+														subWinCut(w);
+
+														if(state == SUB_CLIENT_DRAG_STATE_ABOVE) subWinPrepend(w2->parent, w);
+														else subWinAppend(w2->parent, w);
+														
+														subTileConfigure(w->parent);
+														subTileConfigure(p); 
+													}
+											
 											}
 										else if(state == SUB_CLIENT_DRAG_STATE_SWAP) subWinSwap(w, w2);
 									}
