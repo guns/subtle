@@ -248,45 +248,20 @@ AdjustWeight(short mode,
 {
 	if(w && w->parent)
 		{
-		printf("Adjust: Check %s\n", w->flags & SUB_WIN_TILE_HORZ ? "horz" : (w->flags & SUB_WIN_TYPE_CLIENT ? "client" : "vert"));
-
-			/* Adjust window weight */
-			if(mode == SUB_CLIENT_DRAG_LEFT || mode == SUB_CLIENT_DRAG_RIGHT)
+			if((w->parent->flags & SUB_WIN_TILE_HORZ && (mode == SUB_CLIENT_DRAG_LEFT || mode == SUB_CLIENT_DRAG_RIGHT)) ||
+				(w->parent->flags & SUB_WIN_TILE_VERT && mode == SUB_CLIENT_DRAG_BOTTOM))
 				{
-					if(w->parent->flags & SUB_WIN_TILE_HORZ)
-						{
-							w->weight = box->width * 100 / SUBWINWIDTH(w->parent);
-							if(w->weight >= 80) w->weight = 80;
-							if(!(w->flags & SUB_WIN_STATE_WEIGHT)) w->flags |= SUB_WIN_STATE_WEIGHT;
-							subTileConfigure(w->parent);
+					if(w->parent->flags & SUB_WIN_TILE_HORZ) w->weight = box->width * 100 / SUBWINWIDTH(w->parent);
+					else if(w->parent->flags & SUB_WIN_TILE_VERT) w->weight = box->height * 100 / SUBWINHEIGHT(w->parent);
 
-							printf("Adjust: Change %s\n", w->flags & SUB_WIN_TILE_HORZ ? "horz" : (w->flags & SUB_WIN_TYPE_CLIENT ? "client" : "vert"));
-							return;
-						}
-					else if(w->parent->flags & SUB_WIN_TILE_VERT && w->parent->parent)
-						{
-							printf("Adjust: Recursion\n");
-							AdjustWeight(mode, w->parent, box);
-						}
+					if(w->weight >= 80) w->weight = 80;
+					if(!(w->flags & SUB_WIN_STATE_WEIGHT)) w->flags |= SUB_WIN_STATE_WEIGHT;
+					subTileConfigure(w->parent);
+					return;
 				}
-			else if(mode == SUB_CLIENT_DRAG_BOTTOM)
-				{
-					if(w->parent->flags & SUB_WIN_TILE_VERT)
-						{
-							w->weight = box->height * 100 / SUBWINHEIGHT(w->parent);
-							if(w->weight >= 80) w->weight = 80;
-							if(!(w->flags & SUB_WIN_STATE_WEIGHT)) w->flags |= SUB_WIN_STATE_WEIGHT;
-							subTileConfigure(w->parent);					
-
-							printf("Adjust: Change %s\n", w->flags & SUB_WIN_TILE_HORZ ? "horz" : (w->flags & SUB_WIN_TYPE_CLIENT ? "client" : "vert"));
-							return;
-						}
-					else if(w->parent->flags & SUB_WIN_TILE_HORZ && w->parent->parent)
-						{
-							printf("Adjust: Recursion\n");
-							AdjustWeight(mode, w->parent, box);
-						}
-				}
+			else if(((w->parent->flags & SUB_WIN_TILE_VERT && (mode == SUB_CLIENT_DRAG_LEFT || mode == SUB_CLIENT_DRAG_RIGHT)) ||
+				(w->parent->flags & SUB_WIN_TILE_HORZ && mode == SUB_CLIENT_DRAG_BOTTOM)) && w->parent->parent)
+				AdjustWeight(mode, w->parent, box);
 		}
 }
 
@@ -364,56 +339,30 @@ subClientDrag(short mode,
 								if(!w2 || w2->frame != win) w2 = subWinFind(win);
 								if(w2)
 									{
+										int i, dragmask[9][5] = {
+											{ SUB_CLIENT_DRAG_STATE_TOP, 		w2->width * 0.35, w2->width * 0.65, w2->height * 0.1, 	w2->height * 0.35 },	
+											{ SUB_CLIENT_DRAG_STATE_BOTTOM,	w2->width * 0.35, w2->width * 0.65, w2->height * 0.65,	w2->height * 0.9	},
+											{ SUB_CLIENT_DRAG_STATE_LEFT,		w2->width * 0.1,	w2->width * 0.25,	w2->height * 0.1,		w2->height * 0.9	},
+											{ SUB_CLIENT_DRAG_STATE_RIGHT,	w2->width * 0.65,	w2->width * 0.9,	w2->height * 0.1,		w2->height * 0.9	},
+											{ SUB_CLIENT_DRAG_STATE_SWAP,		w2->width * 0.35,	w2->width * 0.65,	w2->height * 0.35,	w2->height * 0.65 },
+											{ SUB_CLIENT_DRAG_STATE_BEFORE,	0,								w2->width * 0.1,	w2->height * 0.1,		w2->height * 0.9	},
+											{ SUB_CLIENT_DRAG_STATE_AFTER,	w2->width * 0.9,	w2->width,				w2->height * 0.1,		w2->height * 0.9	},
+											{ SUB_CLIENT_DRAG_STATE_ABOVE,	0,								w2->width,				0,									w2->height * 0.1	},
+											{ SUB_CLIENT_DRAG_STATE_BELOW,	0,								w2->width,				w2->height * 0.9,		w2->height				}
+										};
+
 										XQueryPointer(d->dpy, win, &nil, &nil, &rx, &ry, &wx, &wy, &mask);
 										box.x = rx - wx;
 										box.y = ry - wy;
 
 										/* Change drag state */
-										if(state != SUB_CLIENT_DRAG_STATE_TOP &&
-											wx > w2->width * 0.35 && wx < w2->width * 0.65 && wy > w2->height * 0.1 && wy < w2->height * 0.35)
-											{
-												state = SUB_CLIENT_DRAG_STATE_TOP;
-											}
-										else if(state != SUB_CLIENT_DRAG_STATE_BOTTOM &&
-											wx > w2->width * 0.35 && wx < w2->width * 0.65 && wy > w2->height * 0.65 && wy < w2->height * 0.9)
-											{
-												state = SUB_CLIENT_DRAG_STATE_BOTTOM;
-											}
-										else if(state != SUB_CLIENT_DRAG_STATE_LEFT && 
-											wx > w2->width * 0.1 && wx < w2->width * 0.25 && wy > w2->height * 0.1 && wy < w2->height * 0.9)
-											{
-												state = SUB_CLIENT_DRAG_STATE_LEFT;
-											}
-										else if(state != SUB_CLIENT_DRAG_STATE_RIGHT &&
-											wx > w2->width * 0.65 && wx < w2->width * 0.9 && wy > w2->height * 0.1 && wy < w2->height * 0.9)
-											{
-												state = SUB_CLIENT_DRAG_STATE_RIGHT;
-											}
-										else if(state != SUB_CLIENT_DRAG_STATE_SWAP && 
-											wx > w2->width * 0.35 && wx < w2->width * 0.65 && wy > w2->height * 0.35 && wy < w2->height * 0.65)
-											{
-												state = SUB_CLIENT_DRAG_STATE_SWAP;
-											}
-										else if(state != SUB_CLIENT_DRAG_STATE_BEFORE && 
-											w2->parent && wx < w2->width * 0.1 && wy > w2->height * 0.1 && wy < w2->height * 0.9)
-											{
-												state = SUB_CLIENT_DRAG_STATE_BEFORE;
-											}
-										else if(state != SUB_CLIENT_DRAG_STATE_AFTER && 
-											w2->parent && wx > w2->width * 0.9 && wy > w2->height * 0.1 && wy < w2->height * 0.9)
-											{
-												state = SUB_CLIENT_DRAG_STATE_AFTER;
-											}													
-										else if(state != SUB_CLIENT_DRAG_STATE_ABOVE &&
-											w2->parent && wy < w2->height * 0.1)
-											{
-												state = SUB_CLIENT_DRAG_STATE_ABOVE;
-											}													
-										else if(state != SUB_CLIENT_DRAG_STATE_BELOW &&
-											w2->parent && wy > w2->height * 0.9)
-											{
-												state = SUB_CLIENT_DRAG_STATE_BELOW;
-											}													
+										for(i = 0; i < 9; i++)
+											if(state != dragmask[i][0] && wx > dragmask[i][1] && wx < dragmask[i][2] && 
+												wy > dragmask[i][3] && wy < dragmask[i][4])
+												{
+													state = dragmask[i][0];
+													break;
+												}
 										if(last_state != state || last_w != w2) 
 											{
 												if(last_state != SUB_CLIENT_DRAG_STATE_START) DrawMask(last_state, last_w, &box);
@@ -455,7 +404,7 @@ subClientDrag(short mode,
 												subTileAdd(t, state == SUB_CLIENT_DRAG_STATE_TOP || state == SUB_CLIENT_DRAG_STATE_LEFT ? w2 : w);
 
 												subTileConfigure(t->parent);
-												if(t->parent != p) subTileConfigure(p);
+												subTileConfigure(p);
 											}
 										else if(state == SUB_CLIENT_DRAG_STATE_BEFORE || state == SUB_CLIENT_DRAG_STATE_AFTER)
 											{
