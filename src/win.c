@@ -307,6 +307,55 @@ subWinReparent(SubWin *p,
 }
 
  /**
+	* Set focus
+	* @param w A #SubWin
+	**/
+
+void
+subWinFocus(SubWin *w)
+{
+	if(w)
+		{
+			if(w->flags & SUB_WIN_PREF_FOCUS && !(w->flags & SUB_WIN_STATE_COLLAPSE))
+				{
+					XEvent ev;
+
+					ev.type									= ClientMessage;
+					ev.xclient.window				= w->client->win;
+					ev.xclient.message_type = subEwmhGetAtom(SUB_EWMH_WM_PROTOCOLS);
+					ev.xclient.format				= 32;
+					ev.xclient.data.l[0]		= subEwmhGetAtom(SUB_EWMH_WM_TAKE_FOCUS);
+					ev.xclient.data.l[1]		= CurrentTime;
+
+					XSendEvent(d->dpy, w->client->win, False, NoEventMask, &ev);
+
+					subUtilLogDebug("Focus: win=%#lx, input=%d, send=%d\n", w->client->win, 
+						!!(w->flags & SUB_WIN_PREF_INPUT), !!(w->flags & SUB_WIN_PREF_FOCUS));
+				}
+			else
+				{
+					/* Remove focus from window */
+					if(d->focus) 
+						{
+							SubWin *f = d->focus;
+							d->focus = NULL;
+							if(f) subWinRender(f);
+
+							subKeyUngrab(f);
+						}
+
+					XSetInputFocus(d->dpy, w->frame, RevertToNone, CurrentTime);			
+
+					d->focus = w;
+					subWinRender(w);
+					subEwmhSetWindow(DefaultRootWindow(d->dpy), SUB_EWMH_NET_ACTIVE_WINDOW, w->frame);
+
+					subKeyGrab(w);
+				}
+		}
+}
+
+ /**
 	* Resize the client window 
 	* @param w A #SubWin
 	**/
