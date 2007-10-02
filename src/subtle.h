@@ -84,6 +84,7 @@ void subWinPrepend(SubWin *w1, SubWin *w2);						// Prepend window
 void subWinAppend(SubWin *w1, SubWin *w2);						// Append window
 void subWinReplace(SubWin *w, SubWin *w2);						// Replace two windows
 void subWinSwap(SubWin *w, SubWin *w2);								// Swap two windows
+void subWinFocus(SubWin *w);													// Focus wrapper
 void subWinResize(SubWin *w);													// Resize a window
 void subWinReparent(SubWin *p, SubWin *w);						// Reparent a window
 void subWinMap(SubWin *w);														// Map a window
@@ -147,7 +148,6 @@ SubWin *subClientNew(Window win);											// Create a new client
 void subClientDelete(SubWin *w);											// Delete a client
 void subClientRender(SubWin *w);											// Render the window
 void subClientConfigure(SubWin *w);										// Send configure request
-void subClientFocus(SubWin *w);												// Set focus
 void subClientDrag(short mode, SubWin *w);						// Move/Resize a window
 void subClientToggle(short type, SubWin *w);					// Toggle various states
 void subClientFetchName(SubWin *w);										// Fetch client name
