@@ -315,8 +315,7 @@ HandleCrossing(XCrossingEvent *ev)
 			XEvent event;
 		
 			if(d->focus == w) return;
-
-			subClientFocus(w);
+			subWinFocus(w);
 
 			/* Remove any other event of the same type and window */
 			while(XCheckTypedWindowEvent(d->dpy, ev->window, ev->type, &event));			
