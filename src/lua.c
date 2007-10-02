@@ -191,7 +191,7 @@ subLuaLoadConfig(const char *path)
 			lua_pushnil(configstate);
 			while(lua_next(configstate, -2))
 				{
-					subKeyParseChain(lua_tostring(configstate, -2), lua_tostring(configstate, -1));
+					subKeyNew(lua_tostring(configstate, -2), lua_tostring(configstate, -1)); 
 					lua_pop(configstate, 1);
 				}
 		}
