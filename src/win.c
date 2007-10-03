@@ -149,7 +149,7 @@ subWinPrepend(SubWin *w1,
 			if(w1->prev) w1->prev->next = w2;
 			w1->prev = w2;
 			w2->next = w1;
-			if(w1->parent->tile->first == w1) w1->parent->tile->first = w2;
+			if(w1->parent && w1->parent->tile->first == w1) w1->parent->tile->first = w2;
 			w2->parent = w1->parent;
 
 			XReparentWindow(d->dpy, w2->frame, w1->parent->frame, 0, w1->parent->flags & SUB_WIN_TYPE_SCREEN ? d->th : 0); 
@@ -172,7 +172,7 @@ subWinAppend(SubWin *w1,
 			if(w1->next) w1->next->prev = w2;
 			w1->next = w2;
 			w2->prev = w1;
-			if(w1->parent->tile->last == w1) w1->parent->tile->last = w2;
+			if(w1->parent && w1->parent->tile->last == w1) w1->parent->tile->last = w2;
 			w2->parent = w1->parent;
 
 			XReparentWindow(d->dpy, w2->frame, w1->parent->frame, 0, w1->parent->flags & SUB_WIN_TYPE_SCREEN ? d->th : 0); 
@@ -335,7 +335,7 @@ subWinFocus(SubWin *w)
 			else
 				{
 					/* Remove focus from window */
-					if(d->focus) 
+					if(d->focus && d->focus != w->frame) 
 						{
 							SubWin *f = d->focus;
 							d->focus = NULL;
