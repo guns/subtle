@@ -276,216 +276,202 @@ void
 subClientDrag(short mode,
 	SubWin *w)
 {
-	XEvent ev;
-	Cursor cursor;
-	Window win, nil;
-	int wx = 0, wy = 0, rx = 0, ry = 0;
-	unsigned int mask;
-	short state = SUB_CLIENT_DRAG_STATE_START, last_state = SUB_CLIENT_DRAG_STATE_START;
-	XRectangle box = { w->x, w->y, w->width, w->height };
-	SubWin *w2 = NULL, *p = NULL, *p2 = NULL, *last_w = NULL;
-
-	/* Get window position on root window */
-	XQueryPointer(d->dpy, w->frame, &win, &win, &rx, &ry, &wx, &wy, &mask);
-	box.x = rx - wx;
-	box.y = ry - wy;
-
-	/* Select cursor */
-	switch(mode)
+	if(w)
 		{
-			case SUB_CLIENT_DRAG_LEFT:		
-			case SUB_CLIENT_DRAG_RIGHT:		cursor = d->cursors.horz;		break;
-			case SUB_CLIENT_DRAG_BOTTOM:	cursor = d->cursors.vert;		break;
-			case SUB_CLIENT_DRAG_MOVE:		cursor = d->cursors.move;		break;
-			default:											cursor = d->cursors.square;	break;
-		}
+			XEvent ev;
+			Cursor cursor;
+			Window win, nil;
+			int wx = 0, wy = 0, rx = 0, ry = 0;
+			unsigned int mask;
+			short state = SUB_CLIENT_DRAG_STATE_START, last_state = SUB_CLIENT_DRAG_STATE_START;
+			XRectangle box = { w->x, w->y, w->width, w->height };
+			SubWin *w2 = NULL, *p = NULL, *p2 = NULL, *last_w = NULL;
 
-	if(XGrabPointer(d->dpy, w->frame, True, ButtonPressMask|ButtonReleaseMask|PointerMotionMask, 
-		GrabModeAsync, GrabModeAsync, None, cursor, CurrentTime)) return;
+			/* Get window position on root window */
+			XQueryPointer(d->dpy, w->frame, &win, &win, &rx, &ry, &wx, &wy, &mask);
+			box.x = rx - wx;
+			box.y = ry - wy;
 
-	XGrabServer(d->dpy);
-	if(mode <= SUB_CLIENT_DRAG_MOVE) DrawMask(SUB_CLIENT_DRAG_STATE_START, w, &box);
-
-	for(;;)
-		{
-			XMaskEvent(d->dpy, PointerMotionMask|ButtonReleaseMask|EnterWindowMask, &ev);
-			switch(ev.type)
+			/* Select cursor */
+			switch(mode)
 				{
-					/* Button release doesn't return our destination window */
-					case EnterNotify: win = ev.xcrossing.window; break;
-					case MotionNotify:
-						if(mode <= SUB_CLIENT_DRAG_MOVE) 
-							{
-								DrawMask(SUB_CLIENT_DRAG_STATE_START, w, &box);
-					
-								/* Calculate dimensions of the selection box */
-								switch(mode)
-									{
-										case SUB_CLIENT_DRAG_LEFT: 	
-											box.x			= (rx - wx) - (rx - ev.xmotion.x_root);	
-											box.width = w->width + ((rx - wx ) - ev.xmotion.x_root);	
-											break;
-										case SUB_CLIENT_DRAG_RIGHT:	box.width		= w->width + (ev.xmotion.x_root - rx);	break;
-										case SUB_CLIENT_DRAG_BOTTOM: box.height	= w->height + (ev.xmotion.y_root - ry);	break;
-										case SUB_CLIENT_DRAG_MOVE:
-											box.x	= (rx - wx) - (rx - ev.xmotion.x_root);
-											box.y	= (ry - wy) - (ry - ev.xmotion.y_root);
-											break;
-									}	
-								DrawMask(SUB_CLIENT_DRAG_STATE_START, w, &box);
-							}
-						else if(win != w->frame && mode == SUB_CLIENT_DRAG_SWAP)
-							{
-								if(!w2 || w2->frame != win) w2 = subWinFind(win);
-								if(w2)
-									{
-										int i, dragmask[9][5] = {
-											{ SUB_CLIENT_DRAG_STATE_TOP, 		w2->width * 0.35, w2->width * 0.65, w2->height * 0.1, 	w2->height * 0.35 },	
-											{ SUB_CLIENT_DRAG_STATE_BOTTOM,	w2->width * 0.35, w2->width * 0.65, w2->height * 0.65,	w2->height * 0.9	},
-											{ SUB_CLIENT_DRAG_STATE_LEFT,		w2->width * 0.1,	w2->width * 0.25,	w2->height * 0.1,		w2->height * 0.9	},
-											{ SUB_CLIENT_DRAG_STATE_RIGHT,	w2->width * 0.65,	w2->width * 0.9,	w2->height * 0.1,		w2->height * 0.9	},
-											{ SUB_CLIENT_DRAG_STATE_SWAP,		w2->width * 0.35,	w2->width * 0.65,	w2->height * 0.35,	w2->height * 0.65 },
-											{ SUB_CLIENT_DRAG_STATE_BEFORE,	0,								w2->width * 0.1,	w2->height * 0.1,		w2->height * 0.9	},
-											{ SUB_CLIENT_DRAG_STATE_AFTER,	w2->width * 0.9,	w2->width,				w2->height * 0.1,		w2->height * 0.9	},
-											{ SUB_CLIENT_DRAG_STATE_ABOVE,	0,								w2->width,				0,									w2->height * 0.1	},
-											{ SUB_CLIENT_DRAG_STATE_BELOW,	0,								w2->width,				w2->height * 0.9,		w2->height				}
-										};
+					case SUB_CLIENT_DRAG_LEFT:		
+					case SUB_CLIENT_DRAG_RIGHT:		cursor = d->cursors.horz;		break;
+					case SUB_CLIENT_DRAG_BOTTOM:	cursor = d->cursors.vert;		break;
+					case SUB_CLIENT_DRAG_MOVE:		cursor = d->cursors.move;		break;
+					default:											cursor = d->cursors.square;	break;
+				}
 
-										XQueryPointer(d->dpy, win, &nil, &nil, &rx, &ry, &wx, &wy, &mask);
-										box.x = rx - wx;
-										box.y = ry - wy;
+			if(XGrabPointer(d->dpy, w->frame, True, ButtonPressMask|ButtonReleaseMask|PointerMotionMask, 
+				GrabModeAsync, GrabModeAsync, None, cursor, CurrentTime)) return;
 
-										/* Change drag state */
-										for(i = 0; i < 9; i++)
-											if(state != dragmask[i][0] && wx > dragmask[i][1] && wx < dragmask[i][2] && 
-												wy > dragmask[i][3] && wy < dragmask[i][4])
-												{
-													state = dragmask[i][0];
+			XGrabServer(d->dpy);
+			if(mode <= SUB_CLIENT_DRAG_MOVE) DrawMask(SUB_CLIENT_DRAG_STATE_START, w, &box);
+
+			for(;;)
+				{
+					XMaskEvent(d->dpy, PointerMotionMask|ButtonReleaseMask|EnterWindowMask, &ev);
+					switch(ev.type)
+						{
+							/* Button release doesn't return our destination window */
+							case EnterNotify: win = ev.xcrossing.window; break;
+							case MotionNotify:
+								if(mode <= SUB_CLIENT_DRAG_MOVE) 
+									{
+										DrawMask(SUB_CLIENT_DRAG_STATE_START, w, &box);
+							
+										/* Calculate dimensions of the selection box */
+										switch(mode)
+											{
+												case SUB_CLIENT_DRAG_LEFT: 	
+													box.x			= (rx - wx) - (rx - ev.xmotion.x_root);	
+													box.width = w->width + ((rx - wx ) - ev.xmotion.x_root);	
 													break;
+												case SUB_CLIENT_DRAG_RIGHT:	box.width		= w->width + (ev.xmotion.x_root - rx);	break;
+												case SUB_CLIENT_DRAG_BOTTOM: box.height	= w->height + (ev.xmotion.y_root - ry);	break;
+												case SUB_CLIENT_DRAG_MOVE:
+													box.x	= (rx - wx) - (rx - ev.xmotion.x_root);
+													box.y	= (ry - wy) - (ry - ev.xmotion.y_root);
+													break;
+											}	
+										DrawMask(SUB_CLIENT_DRAG_STATE_START, w, &box);
+									}
+								else if(win != w->frame && mode == SUB_CLIENT_DRAG_SWAP)
+									{
+										if(!w2 || w2->frame != win) w2 = subWinFind(win);
+										if(w2)
+											{
+												XQueryPointer(d->dpy, win, &nil, &nil, &rx, &ry, &wx, &wy, &mask);
+												box.x = rx - wx;
+												box.y = ry - wy;
+
+												/* Change drag state */
+												if(wx > w2->width * 0.35 && wx < w2->width * 0.65)
+													{
+														if(state != SUB_CLIENT_DRAG_STATE_TOP && wy > w2->height * 0.1 && wy < w2->height * 0.35)
+															state = SUB_CLIENT_DRAG_STATE_TOP;
+														else if(state != SUB_CLIENT_DRAG_STATE_BOTTOM && wy > w2->height * 0.65 && wy < w2->height * 0.9)
+															state = SUB_CLIENT_DRAG_STATE_BOTTOM;
+														else if(state != SUB_CLIENT_DRAG_STATE_SWAP && wy > w2->height * 0.35 && wy < w2->height * 0.65)
+															state = SUB_CLIENT_DRAG_STATE_SWAP;
+													}
+												if(state != SUB_CLIENT_DRAG_STATE_ABOVE && wy < w2->height * 0.1) state = SUB_CLIENT_DRAG_STATE_ABOVE;
+												else if(state != SUB_CLIENT_DRAG_STATE_BELOW && wy > w2->height * 0.9) state = SUB_CLIENT_DRAG_STATE_BELOW;
+												if(wy > w2->height * 0.1 && wy < w2->height * 0.9)
+													{
+														if(state != SUB_CLIENT_DRAG_STATE_LEFT && wx > w2->width * 0.1 && wx < w2->width * 0.35)
+															state = SUB_CLIENT_DRAG_STATE_LEFT;
+														else if(state != SUB_CLIENT_DRAG_STATE_RIGHT && wx > w2->width * 0.65 && wx < w2->width * 0.9)
+															state = SUB_CLIENT_DRAG_STATE_RIGHT;
+														else if(state != SUB_CLIENT_DRAG_STATE_BEFORE && wx < w2->width * 0.1)
+															state = SUB_CLIENT_DRAG_STATE_BEFORE;
+														else if(state != SUB_CLIENT_DRAG_STATE_AFTER && wx > w2->width * 0.9)
+															state = SUB_CLIENT_DRAG_STATE_AFTER;
+													}
+
+												if(last_state != state || last_w != w2) 
+													{
+														if(last_state != SUB_CLIENT_DRAG_STATE_START) DrawMask(last_state, last_w, &box);
+														DrawMask(state, w2, &box);
+
+														last_w		 = w2;
+														last_state = state;
+													}
 												}
-										if(last_state != state || last_w != w2) 
-											{
-												if(last_state != SUB_CLIENT_DRAG_STATE_START) DrawMask(last_state, last_w, &box);
-												DrawMask(state, w2, &box);
-
-												last_w		 = w2;
-												last_state = state;
-											}
 										}
-								}
-						break;
-					case ButtonRelease:
-						if(win != w->frame && mode > SUB_CLIENT_DRAG_MOVE)
-							{
-								DrawMask(state, w2, &box); /* Erase mask */
-
-								if(w && w2 && w->parent && w2->parent)
+								break;
+							case ButtonRelease:
+								if(win != w->frame && mode > SUB_CLIENT_DRAG_MOVE)
 									{
-										if(state == SUB_CLIENT_DRAG_STATE_TOP || state == SUB_CLIENT_DRAG_STATE_BOTTOM ||
-											state == SUB_CLIENT_DRAG_STATE_LEFT || state == SUB_CLIENT_DRAG_STATE_RIGHT)
+										DrawMask(state, w2, &box); /* Erase mask */
+
+										if(w && w2 && w->parent && w2->parent)
 											{
-												SubWin *p = w->parent;
-												SubWin *t = subTileNew(state == SUB_CLIENT_DRAG_STATE_TOP || 
-													state == SUB_CLIENT_DRAG_STATE_BOTTOM ? SUB_WIN_TILE_VERT : SUB_WIN_TILE_HORZ);
-
-												subWinReplace(w2, t);
-												subWinCut(w);
-
-												/* Check weighted windows */
-												if(w2->flags & SUB_WIN_STATE_WEIGHT)
+												if(state == SUB_CLIENT_DRAG_STATE_TOP || state == SUB_CLIENT_DRAG_STATE_BOTTOM ||
+													state == SUB_CLIENT_DRAG_STATE_LEFT || state == SUB_CLIENT_DRAG_STATE_RIGHT)
 													{
-														t->flags 		|= SUB_WIN_STATE_WEIGHT;
-														t->weight		= w2->weight;
-														w2->flags		&= ~SUB_WIN_STATE_WEIGHT;
-														w2->weight	= 0;
+														SubWin *p = w->parent;
+														SubWin *t = subTileNew(state == SUB_CLIENT_DRAG_STATE_TOP || 
+															state == SUB_CLIENT_DRAG_STATE_BOTTOM ? SUB_WIN_TILE_VERT : SUB_WIN_TILE_HORZ);
+
+														subWinReplace(w2, t);
+														subWinCut(w);
+
+														/* Check weighted windows */
+														if(w2->flags & SUB_WIN_STATE_WEIGHT)
+															{
+																t->flags 		|= SUB_WIN_STATE_WEIGHT;
+																t->weight		= w2->weight;
+																w2->flags		&= ~SUB_WIN_STATE_WEIGHT;
+																w2->weight	= 0;
+															}
+
+														subTileAdd(t, state == SUB_CLIENT_DRAG_STATE_TOP || state == SUB_CLIENT_DRAG_STATE_LEFT ? w : w2);
+														subTileAdd(t, state == SUB_CLIENT_DRAG_STATE_TOP || state == SUB_CLIENT_DRAG_STATE_LEFT ? w2 : w);
+
+														subTileConfigure(t->parent);
+														subTileConfigure(p);
 													}
+												else if(state == SUB_CLIENT_DRAG_STATE_BEFORE || state == SUB_CLIENT_DRAG_STATE_AFTER ||
+													state == SUB_CLIENT_DRAG_STATE_ABOVE || state == SUB_CLIENT_DRAG_STATE_BELOW)
+													{
+														SubWin *p = w->parent;
 
-												subTileAdd(t, state == SUB_CLIENT_DRAG_STATE_TOP || state == SUB_CLIENT_DRAG_STATE_LEFT ? w : w2);
-												subTileAdd(t, state == SUB_CLIENT_DRAG_STATE_TOP || state == SUB_CLIENT_DRAG_STATE_LEFT ? w2 : w);
+														if((((state == SUB_CLIENT_DRAG_STATE_BEFORE || state == SUB_CLIENT_DRAG_STATE_AFTER) && 
+															w2->parent->flags & SUB_WIN_TILE_HORZ)) ||
+															((state == SUB_CLIENT_DRAG_STATE_ABOVE || state == SUB_CLIENT_DRAG_STATE_BELOW) && 
+															w2->parent->flags & SUB_WIN_TILE_VERT))
+															{
+																subWinCut(w);
 
-												subTileConfigure(t->parent);
-												subTileConfigure(p);
+																if(state == SUB_CLIENT_DRAG_STATE_BEFORE || state == SUB_CLIENT_DRAG_STATE_ABOVE) 
+																	subWinPrepend(w2, w);
+																else subWinAppend(w2, w);
+
+																subTileConfigure(w->parent);
+																if(w->parent != p) subTileConfigure(p); 
+															}
+														else if(w2->parent->parent && 
+															(((state == SUB_CLIENT_DRAG_STATE_BEFORE || state == SUB_CLIENT_DRAG_STATE_AFTER) && 
+															w2->parent->flags & SUB_WIN_TILE_VERT)) ||
+															((state == SUB_CLIENT_DRAG_STATE_ABOVE || state == SUB_CLIENT_DRAG_STATE_BELOW) && 
+															w2->parent->flags & SUB_WIN_TILE_HORZ))
+															{
+																subWinCut(w);
+
+																if(state == SUB_CLIENT_DRAG_STATE_BEFORE || state == SUB_CLIENT_DRAG_STATE_ABOVE) 
+																	subWinPrepend(w2->parent, w);
+																else subWinAppend(w2->parent, w);
+																
+																subTileConfigure(w->parent);
+																subTileConfigure(p); 
+															}
+													}
+												else if(state == SUB_CLIENT_DRAG_STATE_SWAP) subWinSwap(w, w2);
 											}
-										else if(state == SUB_CLIENT_DRAG_STATE_BEFORE || state == SUB_CLIENT_DRAG_STATE_AFTER)
-											{
-												SubWin *p = w->parent;
-
-												if(w2->parent->flags & SUB_WIN_TILE_HORZ)
-													{
-														subWinCut(w);
-
-														if(state == SUB_CLIENT_DRAG_STATE_BEFORE) subWinPrepend(w2, w);
-														else subWinAppend(w2, w);
-
-														subTileConfigure(w->parent);
-														if(w->parent != p) subTileConfigure(p); 
-													}
-												else if(w2->parent->flags & SUB_WIN_TILE_VERT && w2->parent->parent) 
-													{
-														subWinCut(w);
-
-														if(state == SUB_CLIENT_DRAG_STATE_BEFORE) subWinPrepend(w2->parent, w);
-														else subWinAppend(w2->parent, w);
-														
-														subTileConfigure(w->parent);
-														subTileConfigure(p); 
-													}
-											}
-										else if(state == SUB_CLIENT_DRAG_STATE_ABOVE || state == SUB_CLIENT_DRAG_STATE_BELOW)		
-											{
-												SubWin *p = w->parent;
-
-												if(w2->parent->flags & SUB_WIN_TILE_VERT)
-													{
-														subWinCut(w);
-
-														if(state == SUB_CLIENT_DRAG_STATE_ABOVE) subWinPrepend(w2, w);
-														else subWinAppend(w2, w);
-
-														subTileConfigure(w->parent);
-														if(w->parent != p) subTileConfigure(p); 
-													}
-												else if(w2->parent->flags & SUB_WIN_TILE_HORZ && w2->parent->parent) 
-													{
-														subWinCut(w);
-
-														if(state == SUB_CLIENT_DRAG_STATE_ABOVE) subWinPrepend(w2->parent, w);
-														else subWinAppend(w2->parent, w);
-														
-														subTileConfigure(w->parent);
-														subTileConfigure(p); 
-													}
-											
-											}
-										else if(state == SUB_CLIENT_DRAG_STATE_SWAP) subWinSwap(w, w2);
 									}
-								}
-						else /* Resize */
-							{
-								XDrawRectangle(d->dpy, DefaultRootWindow(d->dpy), d->gcs.invert, box.x + 1, box.y + 1, 
-									box.width - 3, (w->flags & SUB_WIN_STATE_COLLAPSE) ? d->th - 3 : box.height - 3);
-					
-								if(w->flags & SUB_WIN_STATE_RAISE) 
+								else /* Resize */
 									{
-										w->x			= box.x;
-										w->y			= box.y;
-										w->width	= box.width;
-										w->height	= box.height;
+										XDrawRectangle(d->dpy, DefaultRootWindow(d->dpy), d->gcs.invert, box.x + 1, box.y + 1, 
+											box.width - 3, (w->flags & SUB_WIN_STATE_COLLAPSE) ? d->th - 3 : box.height - 3);
+							
+										if(w->flags & SUB_WIN_STATE_RAISE) 
+											{
+												w->x			= box.x;
+												w->y			= box.y;
+												w->width	= box.width;
+												w->height	= box.height;
 
-										subWinResize(w);
-										if(w->flags & SUB_WIN_TYPE_TILE) subTileConfigure(w);
+												subWinResize(w);
+												if(w->flags & SUB_WIN_TYPE_TILE) subTileConfigure(w);
+											}
+										else if(w->parent && mode <= SUB_CLIENT_DRAG_BOTTOM) AdjustWeight(mode, w, &box);
 									}
-								else if(w->parent && mode <= SUB_CLIENT_DRAG_BOTTOM)
-									{
-										
 
-										AdjustWeight(mode, w, &box);
-									}
-							}
-
-						XUngrabServer(d->dpy);
-						XUngrabPointer(d->dpy, CurrentTime);
-						return;
+								XUngrabServer(d->dpy);
+								XUngrabPointer(d->dpy, CurrentTime);
+								return;
+						}
 				}
 		}
 }
