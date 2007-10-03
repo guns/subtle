@@ -245,19 +245,23 @@ void subUtilLog(short type, const char *file, 				// Print messages
 void *subUtilAlloc(size_t n, size_t size);						// Allocate memory
 
 /* key.c */
-#define SUB_KEY_ACTION_ADD_VTILE				(1L << 1)			// Add vert-tile
-#define SUB_KEY_ACTION_ADD_HTILE				(1L << 2)			// Add horiz-tile
-#define SUB_KEY_ACTION_DELETE_WIN				(1L << 3)			// Delete win
-#define SUB_KEY_ACTION_TOGGLE_COLLAPSE	(1L << 4)			// Toggle collapse
-#define SUB_KEY_ACTION_TOGGLE_RAISE			(1L << 5)			// Toggle raise
-#define SUB_KEY_ACTION_TOGGLE_FULL			(1L << 6)			// Toggle fullscreen
-#define SUB_KEY_ACTION_TOGGLE_WEIGHT		(1L << 7)			// Toggle weight
-#define SUB_KEY_ACTION_TOGGLE_PILE			(1L << 8)			// Toggle pile
-#define SUB_KEY_ACTION_TOGGLE_LAYOUT		(1L << 9)			// Toggle tile layout
-#define SUB_KEY_ACTION_DESKTOP_NEXT			(1L << 10)		// Switch to next desktop
-#define SUB_KEY_ACTION_DESKTOP_PREV			(1L << 11)		// Switch to previous desktop
-#define SUB_KEY_ACTION_DESKTOP_MOVE			(1L << 12)		// Move window to desktop
-#define SUB_KEY_ACTION_EXEC							(1L << 13)		// Exec an app
+#define SUB_KEY_ACTION_FOCUS_ABOVE			(1L << 1)			// Focus above window
+#define SUB_KEY_ACTION_FOCUS_BELOW			(1L << 2)			// Focus below window
+#define SUB_KEY_ACTION_FOCUS_NEXT				(1L << 3)			// Focus next window
+#define SUB_KEY_ACTION_FOCUS_PREV				(1L << 4)			// Focus prev window
+#define SUB_KEY_ACTION_FOCUS_ANY				(1L << 5)			// Focus any window
+
+#define SUB_KEY_ACTION_DELETE_WIN				(1L << 6)			// Delete win
+#define SUB_KEY_ACTION_TOGGLE_COLLAPSE	(1L << 7)			// Toggle collapse
+#define SUB_KEY_ACTION_TOGGLE_RAISE			(1L << 8)			// Toggle raise
+#define SUB_KEY_ACTION_TOGGLE_FULL			(1L << 9)			// Toggle fullscreen
+#define SUB_KEY_ACTION_TOGGLE_PILE			(1L << 10)		// Toggle pile
+
+#define SUB_KEY_ACTION_TOGGLE_LAYOUT		(1L << 11)		// Toggle tile layout
+#define SUB_KEY_ACTION_DESKTOP_NEXT			(1L << 12)		// Switch to next desktop
+#define SUB_KEY_ACTION_DESKTOP_PREV			(1L << 13)		// Switch to previous desktop
+#define SUB_KEY_ACTION_DESKTOP_MOVE			(1L << 14)		// Move window to desktop
+#define SUB_KEY_ACTION_EXEC							(1L << 15)		// Exec an app
 
 typedef struct subkey
 {
