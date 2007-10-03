@@ -68,8 +68,7 @@ subClientNew(Window win)
 	/* EWMH: Client list and client list stacking */
 	clients = (Window *)realloc(clients, sizeof(Window) * (size + 1));
 	if(!clients) subUtilLogError("Can't alloc memory. Exhausted?\n");
-	clients[size] = w->client->win;
-	size++;
+	clients[size++] = w->client->win;
 	subEwmhSetWindows(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CLIENT_LIST, clients, size);
 	subEwmhSetWindows(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CLIENT_LIST_STACKING, clients, size);
 
@@ -433,9 +432,9 @@ subClientDrag(short mode,
 															}
 														else if(w2->parent->parent && 
 															(((state == SUB_CLIENT_DRAG_STATE_BEFORE || state == SUB_CLIENT_DRAG_STATE_AFTER) && 
-															w2->parent->flags & SUB_WIN_TILE_VERT)) ||
+															w2->parent->flags & SUB_WIN_TILE_VERT) ||
 															((state == SUB_CLIENT_DRAG_STATE_ABOVE || state == SUB_CLIENT_DRAG_STATE_BELOW) && 
-															w2->parent->flags & SUB_WIN_TILE_HORZ))
+															w2->parent->flags & SUB_WIN_TILE_HORZ)))
 															{
 																subWinCut(w);
 
@@ -516,18 +515,12 @@ subClientToggle(short type,
 								XMapWindow(d->dpy, w->client->left);
 								XMapWindow(d->dpy, w->client->right);
 								XMapWindow(d->dpy, w->client->bottom);
-
 								XMapWindow(d->dpy, w->client->caption);
 
 								subWinResize(w);
-								
 								subTileAdd(w->parent, w);
 								subTileConfigure(w->parent);
 								break;								
-							case SUB_WIN_STATE_WEIGHT:
-								w->weight = 0;
-								if(w->parent) subTileConfigure(w->parent);
-								break;
 						}
 				}
 			else 
@@ -603,7 +596,6 @@ subClientToggle(short type,
 								XUnmapWindow(d->dpy, w->client->left);
 								XUnmapWindow(d->dpy, w->client->right);
 								XUnmapWindow(d->dpy, w->client->bottom);								
-
 								XUnmapWindow(d->dpy, w->client->caption);
 
 								/* Resize to display size */
