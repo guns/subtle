@@ -122,24 +122,14 @@ HandleKeyPress(XKeyEvent *ev)
 
 					switch(k->flags)
 						{
-							case SUB_KEY_ACTION_ADD_VTILE: type = SUB_WIN_TILE_VERT;
-							case SUB_KEY_ACTION_ADD_HTILE: 
-								if(w->flags & SUB_WIN_TYPE_TILE) 
-									{
-										subTileAdd(w, subTileNew(type));
-										subTileConfigure(w);
-									}
-								else if(w->flags & SUB_WIN_TYPE_CLIENT && w->parent && w->parent->flags & SUB_WIN_TYPE_TILE)
-									{
-										subTileAdd(w->parent, subTileNew(type));
-										subTileConfigure(w->parent);
-									}
-								break;
+							case SUB_KEY_ACTION_FOCUS_ABOVE: if(w->prev) subWinFocus(w->prev); break;
+							case SUB_KEY_ACTION_FOCUS_BELOW: if(w->next) subWinFocus(w->next); break;
+
+
 							case SUB_KEY_ACTION_DELETE_WIN: subWinDelete(w); break;
 							case SUB_KEY_ACTION_TOGGLE_COLLAPSE:	if(!mode) mode = SUB_WIN_STATE_COLLAPSE;
 							case SUB_KEY_ACTION_TOGGLE_RAISE:			if(!mode) mode = SUB_WIN_STATE_RAISE;
 							case SUB_KEY_ACTION_TOGGLE_FULL:			if(!mode) mode = SUB_WIN_STATE_FULL;
-							case SUB_KEY_ACTION_TOGGLE_WEIGHT:		if(!mode) mode = SUB_WIN_STATE_WEIGHT;
 								if(!(w->flags & SUB_WIN_TYPE_SCREEN)) subClientToggle(mode, w);
 								break;									
 							case SUB_KEY_ACTION_TOGGLE_PILE: 
@@ -314,8 +304,7 @@ HandleCrossing(XCrossingEvent *ev)
 		{
 			XEvent event;
 		
-			if(d->focus == w) return;
-			subWinFocus(w);
+			if(d->focus != w) subWinFocus(w);
 
 			/* Remove any other event of the same type and window */
 			while(XCheckTypedWindowEvent(d->dpy, ev->window, ev->type, &event));			

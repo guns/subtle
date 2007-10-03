@@ -68,13 +68,15 @@ subKeyNew(const char *key,
 	SubKey *k = (SubKey *)subUtilAlloc(1, sizeof(SubKey));
 
 	/* FIXME: strncmp() is really slow.. */	
-	if(!strncmp(key, "AddVertTile", 11)) 					k->flags = SUB_KEY_ACTION_ADD_VTILE;
-	else if(!strncmp(key, "AddHorzTile", 11)) 		k->flags = SUB_KEY_ACTION_ADD_HTILE;
+	if(!strncmp(key, "FocusAbove", 10))						k->flags = SUB_KEY_ACTION_FOCUS_ABOVE;
+	else if(!strncmp(key, "FocusBelow", 10))			k->flags = SUB_KEY_ACTION_FOCUS_BELOW;
+	else if(!strncmp(key, "FocusNext", 9))				k->flags = SUB_KEY_ACTION_FOCUS_NEXT;
+	else if(!strncmp(key, "FocusPrev", 9))				k->flags = SUB_KEY_ACTION_FOCUS_PREV;
+	else if(!strncmp(key, "FocusAny", 8))					k->flags = SUB_KEY_ACTION_FOCUS_ANY;
 	else if(!strncmp(key, "DeleteWindow", 12))		k->flags = SUB_KEY_ACTION_DELETE_WIN;
 	else if(!strncmp(key, "ToggleCollapse", 14))	k->flags = SUB_KEY_ACTION_TOGGLE_COLLAPSE;
 	else if(!strncmp(key, "ToggleRaise", 11))			k->flags = SUB_KEY_ACTION_TOGGLE_RAISE;
 	else if(!strncmp(key, "ToggleFull", 10))			k->flags = SUB_KEY_ACTION_TOGGLE_FULL;
-	else if(!strncmp(key, "ToggleWeight", 12))		k->flags = SUB_KEY_ACTION_TOGGLE_WEIGHT;
 	else if(!strncmp(key, "TogglePile", 10))			k->flags = SUB_KEY_ACTION_TOGGLE_PILE;
 	else if(!strncmp(key, "ToggleLayout", 12))		k->flags = SUB_KEY_ACTION_TOGGLE_LAYOUT;
 	else if(!strncmp(key, "NextDesktop", 11))			k->flags = SUB_KEY_ACTION_DESKTOP_NEXT;
@@ -135,8 +137,7 @@ subKeyNew(const char *key,
 			keys = (SubKey **)realloc(keys, sizeof(SubKey *) * (size + 1));
 			if(!keys) subUtilLogError("Can't alloc memory. Exhausted?\n");
 
-			keys[size] = k;
-			size++;
+			keys[size++] = k;
 
 			subUtilLogDebug("Keychain: name=%s, code=%d, mod=%d\n", key, k->code, k->mod);
 		}
