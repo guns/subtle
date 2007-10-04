@@ -346,7 +346,7 @@ subLuaLoadSublets(const char *path)
 				}
 			closedir(dir);
 				
-			subScreenConfigure();
+			subViewConfigure();
 			subSubletConfigure();
 		}
 	else subUtilLogWarn("Can't find any sublets to load\n");

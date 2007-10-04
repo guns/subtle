@@ -124,20 +124,20 @@ subDisplayScan(void)
 	for(i = 0; i < n; i++)
 		{
 			XGetWindowAttributes(d->dpy, wins[i], &attr);
-			if(wins[i] != d->bar.win && wins[i] != d->bar.screens && 
-				wins[i] != d->bar.sublets && wins[i] != d->screen->frame && 
-				wins[i] != d->screen->screen->button && attr.map_state == IsViewable)
+			if(wins[i] != d->bar.win && wins[i] != d->bar.views && 
+				wins[i] != d->bar.sublets && wins[i] != d->view->frame && 
+				wins[i] != d->view->screen->button && attr.map_state == IsViewable)
 				{
 					SubWin *w = subClientNew(wins[i]);
 					if(w->flags & SUB_WIN_STATE_TRANS) 
 						{
-							w->parent = d->screen;
+							w->parent = d->view;
 							subClientToggle(SUB_WIN_STATE_RAISE, w);
 						}
-					else subTileAdd(d->screen, w);				
+					else subTileAdd(d->view, w);				
 				}
 		}
 	
-	subTileConfigure(d->screen);
+	subTileConfigure(d->view);
 	XFree(wins);
 }

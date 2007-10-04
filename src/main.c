@@ -48,7 +48,7 @@ HandleSignal(int signum)
 			case SIGTERM:
 			case SIGINT: 
 				subKeyKill();
-				subScreenKill();
+				subViewKill();
 				subLuaKill();
 				subDisplayKill();
 				exit(1);
@@ -115,8 +115,8 @@ main(int argc,
 	subEwmhInit();
 	subKeyInit();
 
-	subScreenInit();
-	subScreenNew();
+	subViewInit();
+	subViewNew();
 
 	subLuaLoadSublets(sublets);
 

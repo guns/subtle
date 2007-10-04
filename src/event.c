@@ -33,10 +33,10 @@ HandleButtonPress(XButtonEvent *ev)
 	SubWin *w = NULL;
 	static Time last_time = 0;
 
-	if(ev->window == d->bar.screens)
+	if(ev->window == d->bar.views)
 		{
 			SubWin *w = subWinFind(ev->subwindow);
-			if(w) subScreenSwitch(w);
+			if(w) subViewSwitch(w);
 
 			return;
 		}
@@ -85,8 +85,8 @@ HandleButtonPress(XButtonEvent *ev)
 					case Button3: 
 						if(ev->subwindow == w->client->title) subClientToggle(SUB_WIN_STATE_RAISE, w); 
 						break;
-					case Button4: subScreenSwitch(d->screen->next); break;
-					case Button5: if(d->screen->prev) subScreenSwitch(d->screen->prev); break;
+					case Button4: subViewSwitch(d->view->next); break;
+					case Button5: if(d->view->prev) subViewSwitch(d->view->prev); break;
 				}
 		}
 }
@@ -146,15 +146,15 @@ HandleKeyPress(XKeyEvent *ev)
 										subTileConfigure(w);
 									}			
 								break;
-							case SUB_KEY_ACTION_DESKTOP_NEXT: subScreenSwitch(d->screen->next);	break;
+							case SUB_KEY_ACTION_DESKTOP_NEXT: subViewSwitch(d->view->next);	break;
 							case SUB_KEY_ACTION_DESKTOP_PREV: 
-								if(d->screen->prev) subScreenSwitch(d->screen->prev);		
+								if(d->view->prev) subViewSwitch(d->view->prev);		
 								break;
 							case SUB_KEY_ACTION_DESKTOP_MOVE:
 #if 0
 								if(k->number && !(w->flags & SUB_WIN_TYPE_SCREEN))
 									{
-										SubScreen *s = subScreenGetPtr(k->number);
+										SubView *s = subViewGetPtr(k->number);
 										if(s)
 											{
 												SubWin *p = w->parent;
@@ -210,13 +210,13 @@ HandleMap(XMapRequestEvent *ev)
 			w = subClientNew(ev->window);
 			if(w->flags & SUB_WIN_STATE_TRANS) 
 				{
-					w->parent = d->screen;
+					w->parent = d->view;
 					subClientToggle(SUB_WIN_STATE_RAISE, w);
 				}
 			else 
 				{
-					subTileAdd(d->screen, w);
-					subTileConfigure(d->screen);
+					subTileAdd(d->view, w);
+					subTileConfigure(d->view);
 				}
 		}
 }

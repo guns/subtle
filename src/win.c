@@ -66,7 +66,7 @@ subWinDelete(SubWin *w)
 			SubWin *p = w->parent;
 
 			/* Check window flags */
-			if(w->flags & SUB_WIN_TYPE_SCREEN) subScreenDelete(w);
+			if(w->flags & SUB_WIN_TYPE_SCREEN) subViewDelete(w);
 			else if(w->flags & SUB_WIN_TYPE_TILE) subTileDelete(w);
 			else if(w->flags & SUB_WIN_TYPE_CLIENT) subClientDelete(w);	
 
@@ -107,7 +107,7 @@ subWinRender(SubWin *w)
 	if(w)
 		{
 			/* Check window flags */
-			if(w->flags & SUB_WIN_TYPE_SCREEN) subScreenRender(w);
+			if(w->flags & SUB_WIN_TYPE_SCREEN) subViewRender(w);
 			else if(w->flags & SUB_WIN_TYPE_CLIENT) subClientRender(w);	
 		}
 }

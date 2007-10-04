@@ -97,15 +97,15 @@ typedef struct subscreen
 	int  width, n;																			// Screen button width, screen number
 	char *name;																					// Screen name
 	Window button;																			// Screen button
-} SubScreen;
+} SubView;
 
-void subScreenInit(void);															// Init the screens
-SubWin *subScreenNew(void);														// Create a new screen
-void subScreenDelete(SubWin *w);											// Delete a screen
-void subScreenKill(void);															// Kill all screens
-void subScreenRender(SubWin *w);											// Render the screen window
-void subScreenConfigure(void);												// Configure the screen bar
-void subScreenSwitch(SubWin *w);											// Switch screens
+void subViewInit(void);															// Init the views
+SubWin *subViewNew(void);														// Create a new screen
+void subViewDelete(SubWin *w);											// Delete a screen
+void subViewKill(void);															// Kill all views
+void subViewRender(SubWin *w);											// Render the screen window
+void subViewConfigure(void);												// Configure the screen bar
+void subViewSwitch(SubWin *w);											// Switch views
 
 /* tile.c */
 typedef struct subtile
@@ -196,7 +196,7 @@ typedef struct subdisplay
 	XFontStruct				*xfs;															// Font
 
 	SubWin						*focus;														// Focus window
-	SubWin						*screen;													// Screen window
+	SubWin						*view;														// Screenq window
 
 #ifdef HAVE_SYS_INOTIFY_H
 	int								notify;
@@ -204,7 +204,7 @@ typedef struct subdisplay
 
 	struct
 	{
-		Window					win, screens, sublets;						// Screen bars
+		Window					win, views, sublets;							// Screen bars
 	} bar;
 
 	struct
