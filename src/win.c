@@ -335,7 +335,7 @@ subWinFocus(SubWin *w)
 			else
 				{
 					/* Remove focus from window */
-					if(d->focus && d->focus != w->frame) 
+					if(d->focus && d->focus != w) 
 						{
 							SubWin *f = d->focus;
 							d->focus = NULL;
