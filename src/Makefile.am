@@ -10,10 +10,10 @@ subtle_SOURCES = \
 	key.c \
 	lua.c \
 	main.c \
-	screen.c \
 	sublet.c \
 	tile.c \
 	util.c \
+	view.c \
 	win.c 
 
 subtle_CFLAGS  = $(CFLAGS) $(LUA_CFLAGS)
