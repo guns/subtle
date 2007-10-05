@@ -50,7 +50,8 @@ Keys = {
 	["firefox"] 			= "S-F4"
 }
 
--- Tags
-Tags = {
-	terms = { "*term" }
+-- Rules
+Rules = {
+	terms = { "/*term/", "rxvt" },
+	inet = { "firefox", "kmail" }
 }
