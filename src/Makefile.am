@@ -10,6 +10,7 @@ subtle_SOURCES = \
 	key.c \
 	lua.c \
 	main.c \
+	rule.c \
 	sublet.c \
 	tile.c \
 	util.c \
