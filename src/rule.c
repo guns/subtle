@@ -74,6 +74,8 @@ subRuleNew(char *tag,
 
 			r->v = v;
 
+			subUtilLogDebug("Rule: tag=%s, name=%s\n", tag, v->name);
+
 			return(r);
 		}
 	return(NULL);
