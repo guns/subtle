@@ -184,7 +184,7 @@ subLuaLoadConfig(const char *path)
 	XChangeWindowAttributes(d->dpy, DefaultRootWindow(d->dpy), CWCursor|CWBackPixel|CWEventMask, &attrs);
 	XClearWindow(d->dpy, DefaultRootWindow(d->dpy));
 
-	/* Bind key chains */
+	/* Keys */
 	lua_getglobal(configstate, "Keys");
 	if(lua_istable(configstate, -1)) 
 		{ 
@@ -192,6 +192,29 @@ subLuaLoadConfig(const char *path)
 			while(lua_next(configstate, -2))
 				{
 					subKeyNew(lua_tostring(configstate, -2), lua_tostring(configstate, -1)); 
+					lua_pop(configstate, 1);
+				}
+		}
+	
+	/* Rules */
+	lua_getglobal(configstate, "Rules");
+	if(lua_istable(configstate, -1)) 
+		{ 
+			SubView *v = NULL;
+
+			lua_pushnil(configstate);
+			while(lua_next(configstate, -2))
+				{
+					if(lua_istable(configstate, -1))
+						{ 
+							v = subViewNew(lua_tostring(configstate, -2));
+							lua_pushnil(configstate);
+							while(lua_next(configstate, -2))
+								{
+									subRuleNew(lua_tostring(configstate, -1), v);
+									lua_pop(configstate, 1);
+								}
+						}
 					lua_pop(configstate, 1);
 				}
 		}
