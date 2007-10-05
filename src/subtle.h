@@ -34,7 +34,7 @@
 #define SUBWINHEIGHT(w)	(w->height - d->th - d->bw)		// Get real window height
 
 /* win.c */
-#define SUB_WIN_TYPE_SCREEN				(1L << 1)						// Screen window
+#define SUB_WIN_TYPE_VIEW					(1L << 1)						// View window
 #define SUB_WIN_TYPE_TILE					(1L << 2)						// Tile window
 #define SUB_WIN_TYPE_CLIENT				(1L << 3)						// Client window
 
@@ -53,7 +53,6 @@
 #define SUB_WIN_TILE_HORZ					(1L << 14)					// Horiz-tile
 
 /* Forward declarations */
-struct subscreen;
 struct subtile;
 struct subclient;
 
@@ -69,7 +68,6 @@ typedef struct subwin
 
 	union
 	{
-		struct subscreen	*screen;												// Screen data;
 		struct subtile		*tile;													// Tile data
 		struct subclient	*client;												// Client data
 	};
@@ -89,23 +87,6 @@ void subWinResize(SubWin *w);													// Resize a window
 void subWinReparent(SubWin *p, SubWin *w);						// Reparent a window
 void subWinMap(SubWin *w);														// Map a window
 void subWinUnmap(SubWin *w);													// Unmap a window
-
-/* screen.c */
-typedef struct subscreen
-{
-	SubWin *pile, *first, *last;												// Pile top, first/last child
-	int  width, n;																			// Screen button width, screen number
-	char *name;																					// Screen name
-	Window button;																			// Screen button
-} SubView;
-
-void subViewInit(void);															// Init the views
-SubWin *subViewNew(void);														// Create a new screen
-void subViewDelete(SubWin *w);											// Delete a screen
-void subViewKill(void);															// Kill all views
-void subViewRender(SubWin *w);											// Render the screen window
-void subViewConfigure(void);												// Configure the screen bar
-void subViewSwitch(SubWin *w);											// Switch views
 
 /* tile.c */
 typedef struct subtile
@@ -154,6 +135,50 @@ void subClientFetchName(SubWin *w);										// Fetch client name
 void subClientSetWMState(SubWin *w, long state);			// Set client WM state
 long subClientGetWMState(SubWin *w);									// Get client WM state
 
+/* rule.c */
+#define SUB_RULE_TYPE_VALUE	(1L << 1)									// Value type
+#define SUB_RULE_TYPE_REGEX	(1L << 2)									// Regexp type
+
+/* Forward declarations */
+struct regex_t;
+
+typedef struct subrule
+{
+	int				flags;	
+	SubView		*v;																				// Tag view
+	SubTag		*next;																		// Next sibling
+
+	union
+	{
+		char 		*tag;																			// Tag name
+		regex_t *regex;																		// Tag rexex
+	};
+} SubRule;
+
+SubView *subRuleFind(char *tag);											// Find rule
+void subRuleNew(char *tag);														// Create new rulw
+void subRuleKill(void);																// Kill all rules
+
+/* view.c */
+typedef struct subview
+{
+	int			width, n;																		// View button width, view number
+	char 		*name;																			// View name
+	Window	button;																			// View button
+	SubWin	*w;																					// View window
+
+	struct subview *next;																// Next sibling
+	struct subview *prev;																// Prev sibling
+} SubView;
+
+void subViewInit(void);																// Init the views
+SubView *subViewNew(char *tagname);										// Create a new view
+void subViewDelete(SubWin *w);												// Delete a screen
+void subViewKill(void);																// Kill all views
+void subViewRender(SubWin *w);												// Render the screen window
+void subViewConfigure(void);													// Configure the screen bar
+void subViewSwitch(SubWin *w);												// Switch views
+
 /* sublet.c */
 #define SUB_SUBLET_TYPE_TEXT		(1L << 1)							// Text sublet
 #define SUB_SUBLET_TYPE_TEASER	(1L << 2)							// Teaser sublet
@@ -191,12 +216,11 @@ void subSubletKill(void);															// Delete all sublets
 typedef struct subdisplay
 {
 	Display						*dpy;															// Connection to X server
-	unsigned int			th, bw;														// Tab height, border width
-	unsigned int			fx, fy;														// Font metrics
+	unsigned int			th, bw, fx, fy;										// Tab height, border widthm font metrics
 	XFontStruct				*xfs;															// Font
 
 	SubWin						*focus;														// Focus window
-	SubWin						*view;														// Screenq window
+	SubView						*cv;															// Current view
 
 #ifdef HAVE_SYS_INOTIFY_H
 	int								notify;
@@ -204,7 +228,7 @@ typedef struct subdisplay
 
 	struct
 	{
-		Window					win, views, sublets;							// Screen bars
+		Window					win, views, sublets;							// Bar windows
 	} bar;
 
 	struct
