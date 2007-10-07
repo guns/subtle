@@ -14,7 +14,7 @@ static unsigned int num_lock_mask = 0;
 static unsigned int scroll_lock_mask = 0;
 
  /**
-	* Init keys
+	* Init keys and get modifiers
 	**/
 
 void
@@ -23,16 +23,17 @@ subKeyInit(void)
 	XModifierKeymap *modmap = XGetModifierMapping(d->dpy);
 	if(modmap && modmap->max_keypermod > 0)
 		{
-			static int masks[] = { ShiftMask, LockMask, ControlMask, Mod1Mask, Mod2Mask, Mod3Mask, Mod4Mask, Mod5Mask };
-			const unsigned int num_lock = XKeysymToKeycode(d->dpy, XK_Num_Lock);
-			const unsigned int scroll_lock = XKeysymToKeycode(d->dpy, XK_Scroll_Lock);
-			int i, max = (sizeof(masks) / sizeof(KeyCode)) * modmap->max_keypermod;
+			const int modmasks[] = { ShiftMask, LockMask, ControlMask, Mod1Mask, Mod2Mask, Mod3Mask, Mod4Mask, Mod5Mask };
+			const KeyCode num_lock = XKeysymToKeycode(d->dpy, XK_Num_Lock);
+			const KeyCode scroll_lock = XKeysymToKeycode(d->dpy, XK_Scroll_Lock);
+			int i, size = (sizeof(modmasks) / sizeof(int)) * modmap->max_keypermod;
 
-			for(i = 0; i < max; i++)
-				if(num_lock && (modmap->modifiermap[i] == num_lock)) num_lock_mask = masks[i / modmap->max_keypermod];
-				else if(scroll_lock && (modmap->modifiermap[i] == scroll_lock)) scroll_lock_mask = masks[i / modmap->max_keypermod];
+			for(i = 0; i < size; i++)
+				if(!modmap->modifiermap[i]) continue;
+				else if(num_lock && (modmap->modifiermap[i] == num_lock)) num_lock_mask = modmasks[i / modmap->max_keypermod];
+				else if(scroll_lock && (modmap->modifiermap[i] == scroll_lock)) scroll_lock_mask = modmasks[i / modmap->max_keypermod];
 		}
-	XFreeModifiermap(modmap);
+	if(modmap) XFreeModifiermap(modmap);
 }
 
  /**
@@ -139,7 +140,7 @@ subKeyNew(const char *key,
 
 			keys[size++] = k;
 
-			subUtilLogDebug("Keychain: name=%s, code=%d, mod=%d\n", key, k->code, k->mod);
+			subUtilLogDebug("Key: name=%s, code=%d, mod=%d\n", key, k->code, k->mod);
 		}
 }
 
