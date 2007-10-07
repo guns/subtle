@@ -8,167 +8,75 @@
 
 #include "subtle.h"
 
-static int views = 0;
-static SubWin *first = NULL;
-
- /**
-	* Init screen 
-	**/
-
-void
-subViewInit(void)
-{
-	long data[4] = { 0, 0, 0, 0 };
-
-	/* Screen bar windows */
-	d->bar.win			= XCreateSimpleWindow(d->dpy, DefaultRootWindow(d->dpy), 0, 0, 
-		DisplayWidth(d->dpy, DefaultScreen(d->dpy)), d->th, 0, 0, d->colors.norm);
-	d->bar.views	= XCreateSimpleWindow(d->dpy, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
-	d->bar.sublets	= XCreateSimpleWindow(d->dpy, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
-
-	XSetWindowBackground(d->dpy, d->bar.win, d->colors.norm);
-	XSetWindowBackground(d->dpy, d->bar.views, d->colors.norm);
-	XSetWindowBackground(d->dpy, d->bar.sublets, d->colors.norm);
-
-	XSelectInput(d->dpy, d->bar.views, ButtonPressMask); 
-
-	XMapWindow(d->dpy, d->bar.views);
-	XMapWindow(d->dpy, d->bar.sublets);
-
-	/* EWMH: Window manager information */
-	subEwmhSetWindow(DefaultRootWindow(d->dpy), SUB_EWMH_NET_SUPPORTING_WM_CHECK, DefaultRootWindow(d->dpy));
-	subEwmhSetString(DefaultRootWindow(d->dpy), SUB_EWMH_NET_WM_NAME, PACKAGE_STRING);
-	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_WM_PID, (long)getpid());
-	subEwmhSetCardinals(DefaultRootWindow(d->dpy), SUB_EWMH_NET_DESKTOP_VIEWPORT, (long *)&data, 2);
-
-	/* EWMH: Workarea size */
-	data[2] = DisplayWidth(d->dpy, DefaultScreen(d->dpy)); 
-	data[3] = DisplayHeight(d->dpy, DefaultScreen(d->dpy));
-	subEwmhSetCardinals(DefaultRootWindow(d->dpy), SUB_EWMH_NET_WORKAREA, (long *)&data, 4);
-
-	/* EWMH: Desktop sizes */
-	data[0] = DisplayWidth(d->dpy, DefaultScreen(d->dpy));
-	data[1] = DisplayHeight(d->dpy, DefaultScreen(d->dpy));
-	subEwmhSetCardinals(DefaultRootWindow(d->dpy), SUB_EWMH_NET_DESKTOP_GEOMETRY, (long *)&data, 2);
-
-	/* EWMH: Supported window states */
-	data[0] = subEwmhGetAtom(SUB_EWMH_NET_WM_STATE_MODAL);
-	data[1] = subEwmhGetAtom(SUB_EWMH_NET_WM_STATE_SHADED);
-	data[2] = subEwmhGetAtom(SUB_EWMH_NET_WM_STATE_HIDDEN);
-	data[3] = subEwmhGetAtom(SUB_EWMH_NET_WM_STATE_FULLSCREEN);
-	subEwmhSetCardinals(DefaultRootWindow(d->dpy), SUB_EWMH_NET_SUPPORTED, (long *)&data, 4);
-}
+static int nviews = 0;
+static SubView *root = NULL;
 
 static void
-UpdateName(SubView *s,
-	int n)
-{
-	if(s)
-		{
-			char buf[5]; /* FIXME: static buffer */
-
-			if(s->name) free(s->name);
-			snprintf(buf, sizeof(buf), "%d", n);
-			s->name = (char *)subUtilAlloc(strlen(buf) + 1, sizeof(char));
-			s->n		= n;
-			strncpy(s->name, buf, strlen(buf));
-		}
-}
-
-static void
-UpdateScreens(void)
+UpdateViews(void)
 {
 	int i = 0;
-	SubWin *s = first;
+	SubView *v = root;
 	Window *wins = NULL;
 
 	/* EWMH: Virtual roots */
-	wins = (Window *)subUtilAlloc(views, sizeof(Window));
-	while(s)
+	wins = (Window *)subUtilAlloc(nviews, sizeof(Window));
+	while(v)
 		{
-			wins[i++] = s->frame;
-			s = s->next;
+			if(v->w) wins[i++] = v->w->frame;
+			v = v->next;
 		}
-	subEwmhSetWindows(DefaultRootWindow(d->dpy), SUB_EWMH_NET_VIRTUAL_ROOTS, wins, views);
+	subEwmhSetWindows(DefaultRootWindow(d->dpy), SUB_EWMH_NET_VIRTUAL_ROOTS, wins, nviews);
 	free(wins);
 
 	/* EWMH: Desktops */
-	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_NUMBER_OF_DESKTOPS, views);
-	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CURRENT_DESKTOP, d->view->screen->n);
+	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_NUMBER_OF_DESKTOPS, nviews);
+	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CURRENT_DESKTOP, d->cv->n);
 }
 
  /**
-	* Create a screen 
+	* Create a view
+	* @param name Name of the view
 	* @return Returns a new #SubWin
 	**/
 
-SubWin *
-subViewNew(void)
+SubView *
+subViewNew(char *name)
 {
-	SubWin *w = subWinNew();
+	SubView *tail = NULL, *v = NULL;
 
-	w->screen = (SubView *)subUtilAlloc(1, sizeof(SubView));
+	assert(name);
+	
+	v	= (SubView *)subUtilAlloc(1, sizeof(SubView));
+	v->name			= strdup(name);
+	v->width		=	strlen(v->name) * d->fx + 2;
 
-	UpdateName(w->screen, ++views);
+	if(!root) root = v;
+	else
+		{
+			tail = root;
+			while(tail->next) tail = tail->next;
+			tail->next = v;
+		}
 
-	w->flags = SUB_WIN_TYPE_SCREEN|SUB_WIN_TYPE_TILE|SUB_WIN_TILE_HORZ;
-
-	w->screen->width	= strlen(w->screen->name) * d->fx + 2;
-	w->screen->button	= XCreateSimpleWindow(d->dpy, d->bar.views, 0, 0, 1, d->th - 6, 1, d->colors.border, d->colors.norm);
-
-	/* Hierarchy */
-	if(d->view) d->view->next = w;
-	w->prev = d->view;
-	if(!first) first = w;
-
-	/* Switch to new screen */
-	if(d->view) XUnmapWindow(d->dpy, d->view->frame);
-	d->view = w;
-	XMapRaised(d->dpy, d->bar.win);
-	XMapRaised(d->dpy, w->screen->button);
-
-	UpdateScreens();
-
-	subViewConfigure();
-	printf("Adding screen (%s)\n", w->screen->name);
-
-	subWinMap(w);
-	subWinFocus(w);
-
-	XSaveContext(d->dpy, w->screen->button, 1, (void *)w);
-	return(w);
+	printf("Adding view (%s)\n", v->name);
+	return(v);
 }
 
  /**
-	* Delete a screen window 
+	* Delete a view
 	* @param w A #SubWin
 	**/
 
 void
-subViewDelete(SubWin *w)
+subViewDelete(SubView *v)
 {
-	if(w && w->flags & SUB_WIN_TYPE_SCREEN)
+	if(v && d->cv != v)
 		{
-			printf("Removing screen (%s)\n", w->screen->name);
+			printf("Removing view (%s)\n", v->name);
 
-			XUnmapWindow(d->dpy, w->screen->button);
-			XDeleteContext(d->dpy, w->screen->button, 1);
-			XDestroyWindow(d->dpy, w->screen->button);
-			free(w->screen->name);
-			free(w->screen);
-
-			if(d->view == w)
-				if(w->prev) 
-					{
-						d->view = w->prev;
-						XMapSubwindows(d->dpy, d->view->frame);
-					}
-
-			UpdateScreens();
-
-			printf("Switching to screen (%s)\n", d->view->screen->name);
-
-			views--;
+			subWinUnmap(v->w);
+			XUnmapWindow(d->dpy, v->button);
+			nviews--;
 
 			subViewConfigure();
 		}
@@ -176,47 +84,49 @@ subViewDelete(SubWin *w)
 
  /**
 	* Render a screen 
-	* @param mode Render mode
-	* @param w A #SubWin
+	* @param v A #SubView
 	**/
 
 void
-subViewRender(SubWin *w)
+subViewRender(void)
 {
-	int i;
-	unsigned int n = 0;
-	Window nil, *wins = NULL;
-	SubWin *s = first;
+	SubView *v = root;
 
 	XClearWindow(d->dpy, d->bar.win);
 	XFillRectangle(d->dpy, d->bar.win, d->gcs.border, 0, 2, DisplayWidth(d->dpy, DefaultScreen(d->dpy)), d->th - 4);	
 
-	while(s)
+	while(v)
 		{
-			XSetWindowBackground(d->dpy, s->screen->button, (d->view == s) ? d->colors.focus : d->colors.norm);
-			XClearWindow(d->dpy, s->screen->button);
-			XDrawString(d->dpy, s->screen->button, d->gcs.font, 1, d->fy - 4, s->screen->name, strlen(s->screen->name));
-			s = s->next;
+			if(v->w)
+				{
+					XSetWindowBackground(d->dpy, v->button, (d->cv == v) ? d->colors.focus : d->colors.norm);
+					XClearWindow(d->dpy, v->button);
+					XDrawString(d->dpy, v->button, d->gcs.font, 1, d->fy - 4, v->name, strlen(v->name));
+				}
+			v = v->next;
 		}
 }
 
  /**
-	* Configure screen bar
+	* Configure view bar
 	**/
 
 void
 subViewConfigure(void)
 {
-	if(views)
+	if(root)
 		{
-			int i, width = 3;
-			SubWin *s = first;
+			int  width = 3;
+			SubView *v = root;
 
-			while(s)
+			while(v)
 				{
-					XMoveResizeWindow(d->dpy, s->screen->button, width, 2, s->screen->width, d->th - 6);
-					width += s->screen->width + 6;
-					s = s->next;
+					if(v->w)
+						{
+							XMoveResizeWindow(d->dpy, v->button, width, 2, v->width, d->th - 6);
+							width += v->width + 6;
+						}
+					v = v->next;
 				}
 			XMoveResizeWindow(d->dpy, d->bar.views, 0, 0, width, d->th);
 		}
@@ -229,24 +139,26 @@ subViewConfigure(void)
 void
 subViewKill(void)
 {
-	if(views)
+	if(root)
 		{
-			SubWin *s = first;
+			SubView *v = root;
 
-			printf("Removing views\n");
+			printf("Removing all views\n");
 
-			while(s)
+			while(v)
 				{
-					/* Manually removing all views */
-					XUnmapWindow(d->dpy, s->screen->button);
-					XDeleteContext(d->dpy, s->screen->button, 1);
-					XDeleteContext(d->dpy, s->frame, 1);
-					XDestroyWindow(d->dpy, s->screen->button);
-					XDestroyWindow(d->dpy, s->frame);
+					SubView *next = v->next;
 
-					free(s->screen->name);
-					s = s->next;
-					free(s);					
+					XUnmapWindow(d->dpy, v->button);
+					XDeleteContext(d->dpy, v->button, 1);
+					XDeleteContext(d->dpy, v->w->frame, 1);
+					XDestroyWindow(d->dpy, v->button);
+					XDestroyWindow(d->dpy, v->w->frame);
+
+					free(v->name);
+					free(v);					
+
+					v = next;
 				}
 
 			XDestroyWindow(d->dpy, d->bar.win);
@@ -261,22 +173,34 @@ subViewKill(void)
 	**/
 
 void
-subViewSwitch(SubWin *w)
+subViewSwitch(SubView *v)
 {
-	if(!w) 
+	if(v) 
 		{
-			subViewNew();
-			return;
+			if(d->cv != v)	
+				{
+					subWinUnmap(d->cv->w);
+					d->cv = v;
+				}
+			if(!v->w)
+				{
+					v->w = subTileNew(SUB_WIN_TILE_HORZ);
+					v->w->flags |= SUB_WIN_TYPE_VIEW;
+					v->button = XCreateSimpleWindow(d->dpy, d->bar.views, 0, 0, 1, d->th - 6, 1, d->colors.border, d->colors.norm);
+
+					XSaveContext(d->dpy, v->button, 1, (void *)v);
+				}
+
+			XMapRaised(d->dpy, d->bar.win);
+			XMapRaised(d->dpy, d->cv->button);
+			subWinMap(d->cv->w);
+
+			/* EWMH: Desktops */
+			subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CURRENT_DESKTOP, d->cv->n);
+
+			subViewConfigure();
+			subViewRender();
+
+			printf("Switching to view (%s)\n", d->cv->name);
 		}
-	
-	XUnmapWindow(d->dpy, d->view->frame);
-
-	XMapRaised(d->dpy, d->bar.win);
-	XMapRaised(d->dpy, d->view->screen->button);
-	XMapSubwindows(d->dpy, d->view->frame);
-
-	/* EWMH: Desktops */
-	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CURRENT_DESKTOP, d->view->screen->n);
-
-	printf("Switching to screen (%s)\n", d->view->screen->name);
 }
