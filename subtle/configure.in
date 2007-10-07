@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.5.9)
-AC_INIT(subtle, 0.7-r326, unexist@hilflos.org)
+AC_INIT(subtle, 0.7-r336, unexist@hilflos.org)
 AC_CONFIG_SRCDIR([src/main.c])
 AC_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE(no-define)
@@ -20,7 +20,7 @@ AC_PATH_X
 AC_PATH_XTRA
 AC_HEADER_DIRENT
 AC_HEADER_STDC
-AC_CHECK_HEADERS([limits.h malloc.h memory.h sys/time.h unistd.h fnmatch.h sys/inotify.h regex.h])
+AC_CHECK_HEADERS([limits.h malloc.h memory.h sys/time.h unistd.h assert.h fnmatch.h sys/inotify.h regex.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
