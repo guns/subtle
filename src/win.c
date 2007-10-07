@@ -9,19 +9,6 @@
 #include "subtle.h"
 
  /**
-	* Find a window via Xlib context manager 
-	* @param win A #Window
-	* @return Return the #SubWin associated with the window or NULL
-	**/
-
-SubWin *
-subWinFind(Window win)
-{
-	SubWin *w = NULL;
-	return(XFindContext(d->dpy, win, 1, (void *)&w) != XCNOENT ? w : NULL);
-}
-
- /**
 	* Create a new window and append it to the window list 
 	* @param win A #Window
 	* @return Return a #SubWin on success.
@@ -66,26 +53,10 @@ subWinDelete(SubWin *w)
 			SubWin *p = w->parent;
 
 			/* Check window flags */
-			if(w->flags & SUB_WIN_TYPE_SCREEN) subViewDelete(w);
-			else if(w->flags & SUB_WIN_TYPE_TILE) subTileDelete(w);
+			if(w->flags & SUB_WIN_TYPE_TILE) subTileDelete(w);
 			else if(w->flags & SUB_WIN_TYPE_CLIENT) subClientDelete(w);	
 
-			/* Hierarchy */
-			if(w->parent && w->parent->tile->first == w)
-				{
-					w->parent->tile->first = w->next;
-					if(w->next) w->next->prev = NULL;
-				}
-			else if(w->prev && w->next)
-				{
-					w->prev->next = w->next;
-					w->next->prev = w->prev;
-				}
-			else if(w->parent)
-				{
-					w->parent->tile->last = w->prev;
-					if(w->prev) w->prev->next = NULL;
-				}
+			subWinCut(w);
 
 			XDeleteContext(d->dpy, w->frame, 1);
 			XDestroySubwindows(d->dpy, w->frame);
@@ -107,7 +78,7 @@ subWinRender(SubWin *w)
 	if(w)
 		{
 			/* Check window flags */
-			if(w->flags & SUB_WIN_TYPE_SCREEN) subViewRender(w);
+			if(w->flags & SUB_WIN_TYPE_VIEW) subViewRender();
 			else if(w->flags & SUB_WIN_TYPE_CLIENT) subClientRender(w);	
 		}
 }
@@ -152,7 +123,7 @@ subWinPrepend(SubWin *w1,
 			if(w1->parent && w1->parent->tile->first == w1) w1->parent->tile->first = w2;
 			w2->parent = w1->parent;
 
-			XReparentWindow(d->dpy, w2->frame, w1->parent->frame, 0, w1->parent->flags & SUB_WIN_TYPE_SCREEN ? d->th : 0); 
+			XReparentWindow(d->dpy, w2->frame, w1->parent->frame, 0, w1->parent->flags & SUB_WIN_TYPE_VIEW ? d->th : 0); 
 		}
 }
 
@@ -175,7 +146,7 @@ subWinAppend(SubWin *w1,
 			if(w1->parent && w1->parent->tile->last == w1) w1->parent->tile->last = w2;
 			w2->parent = w1->parent;
 
-			XReparentWindow(d->dpy, w2->frame, w1->parent->frame, 0, w1->parent->flags & SUB_WIN_TYPE_SCREEN ? d->th : 0); 
+			XReparentWindow(d->dpy, w2->frame, w1->parent->frame, 0, w1->parent->flags & SUB_WIN_TYPE_VIEW ? d->th : 0); 
 		}
 }
 
