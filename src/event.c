@@ -35,13 +35,13 @@ HandleButtonPress(XButtonEvent *ev)
 
 	if(ev->window == d->bar.views)
 		{
-			SubWin *w = subWinFind(ev->subwindow);
-			if(w) subViewSwitch(w);
+			SubView *v = (SubView *)subUtilFind(ev->subwindow, 1);
+			if(v) subViewSwitch(v);
 
 			return;
 		}
 
-	w = subWinFind(ev->window);
+	w = (SubWin *)subUtilFind(ev->window, 1);
 	if(w && w->flags & SUB_WIN_TYPE_CLIENT)
 		{
 			switch(ev->button)
@@ -57,7 +57,7 @@ HandleButtonPress(XButtonEvent *ev)
 						else  /* Single click */
 							{
 								subUtilLogDebug("Single click: win=%#lx\n", ev->window);
-								if(!(w->flags & SUB_WIN_TYPE_SCREEN))
+								if(!(w->flags & SUB_WIN_TYPE_VIEW))
 									{
 										if(w->flags & SUB_WIN_STATE_RAISE) XRaiseWindow(d->dpy, w->frame);
 										if(w->parent && w->parent->flags & SUB_WIN_STATE_PILE) 
@@ -85,8 +85,8 @@ HandleButtonPress(XButtonEvent *ev)
 					case Button3: 
 						if(ev->subwindow == w->client->title) subClientToggle(SUB_WIN_STATE_RAISE, w); 
 						break;
-					case Button4: subViewSwitch(d->view->next); break;
-					case Button5: if(d->view->prev) subViewSwitch(d->view->prev); break;
+					case Button4: subViewSwitch(d->cv->next); break;
+					case Button5: if(d->cv->prev) subViewSwitch(d->cv->prev); break;
 				}
 		}
 }
@@ -112,7 +112,7 @@ Exec(char *cmd)
 static void
 HandleKeyPress(XKeyEvent *ev)
 {
-	SubWin *w = subWinFind(ev->window);
+	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
 	if(w)
 		{
 			SubKey *k = subKeyFind(ev->keycode, ev->state);
@@ -130,7 +130,7 @@ HandleKeyPress(XKeyEvent *ev)
 							case SUB_KEY_ACTION_TOGGLE_COLLAPSE:	if(!mode) mode = SUB_WIN_STATE_COLLAPSE;
 							case SUB_KEY_ACTION_TOGGLE_RAISE:			if(!mode) mode = SUB_WIN_STATE_RAISE;
 							case SUB_KEY_ACTION_TOGGLE_FULL:			if(!mode) mode = SUB_WIN_STATE_FULL;
-								if(!(w->flags & SUB_WIN_TYPE_SCREEN)) subClientToggle(mode, w);
+								if(!(w->flags & SUB_WIN_TYPE_VIEW)) subClientToggle(mode, w);
 								break;									
 							case SUB_KEY_ACTION_TOGGLE_PILE: 
 								if(w->flags & SUB_WIN_TYPE_TILE) subClientToggle(SUB_WIN_STATE_PILE, w);		
@@ -146,13 +146,13 @@ HandleKeyPress(XKeyEvent *ev)
 										subTileConfigure(w);
 									}			
 								break;
-							case SUB_KEY_ACTION_DESKTOP_NEXT: subViewSwitch(d->view->next);	break;
+							case SUB_KEY_ACTION_DESKTOP_NEXT: subViewSwitch(d->cv->next);	break;
 							case SUB_KEY_ACTION_DESKTOP_PREV: 
-								if(d->view->prev) subViewSwitch(d->view->prev);		
+								if(d->cv->prev) subViewSwitch(d->cv->prev);		
 								break;
 							case SUB_KEY_ACTION_DESKTOP_MOVE:
 #if 0
-								if(k->number && !(w->flags & SUB_WIN_TYPE_SCREEN))
+								if(k->number && !(w->flags & SUB_WIN_TYPE_VIEW))
 									{
 										SubView *s = subViewGetPtr(k->number);
 										if(s)
@@ -176,7 +176,7 @@ static void
 HandleConfigure(XConfigureRequestEvent *ev)
 {
 	XWindowChanges wc;
-	SubWin *w = subWinFind(ev->window);
+	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
 	if(w)
 		{
 			if(ev->value_mask & CWX)			w->x			= ev->x;
@@ -204,19 +204,19 @@ HandleConfigure(XConfigureRequestEvent *ev)
 static void
 HandleMap(XMapRequestEvent *ev)
 {
-	SubWin *w = subWinFind(ev->window);
+	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
 	if(!w) 
 		{
 			w = subClientNew(ev->window);
 			if(w->flags & SUB_WIN_STATE_TRANS) 
 				{
-					w->parent = d->view;
+					w->parent = d->cv->w;
 					subClientToggle(SUB_WIN_STATE_RAISE, w);
 				}
 			else 
 				{
-					subTileAdd(d->view, w);
-					subTileConfigure(d->view);
+					subTileAdd(d->cv->w, w);
+					subTileConfigure(d->cv->w);
 				}
 		}
 }
@@ -224,7 +224,7 @@ HandleMap(XMapRequestEvent *ev)
 static void
 HandleDestroy(XDestroyWindowEvent *ev)
 {
-	SubWin *w = subWinFind(ev->event);
+	SubWin *w = (SubWin *)subUtilFind(ev->event, 1);
 	if(w && w->flags & SUB_WIN_TYPE_CLIENT) subWinDelete(w); 
 }
 
@@ -244,7 +244,7 @@ GetParent(Window win)
 static void
 HandleMessage(XClientMessageEvent *ev)
 {
-	SubWin *w = subWinFind(GetParent(ev->window));
+	SubWin *w = (SubWin *)subUtilFind(GetParent(ev->window), 1);
 
 	if(w && w->flags & SUB_WIN_TYPE_CLIENT)
 		{
@@ -277,7 +277,7 @@ HandleMessage(XClientMessageEvent *ev)
 static void
 HandleColormap(XColormapEvent *ev)
 {	
-	SubWin *w = subWinFind(ev->window);
+	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
 	if(w && w->flags & SUB_WIN_TYPE_CLIENT && ev->new)
 		{
 			w->client->cmap = ev->colormap;
@@ -291,7 +291,7 @@ HandleProperty(XPropertyEvent *ev)
 	/* Prevent expensive query tree if the atom isn't supported */
 	if(ev->atom == XA_WM_NAME || ev->atom == subEwmhGetAtom(SUB_EWMH_NET_WM_NAME))
 		{
-			SubWin *w = subWinFind(GetParent(ev->window));
+			SubWin *w = (SubWin *)subUtilFind(GetParent(ev->window), 1);
 			if(w && w->flags & SUB_WIN_TYPE_CLIENT) subClientFetchName(w);
 		}
 }
@@ -299,7 +299,7 @@ HandleProperty(XPropertyEvent *ev)
 static void
 HandleCrossing(XCrossingEvent *ev)
 {
-	SubWin *w = subWinFind(ev->window);
+	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
 	if(w)
 		{
 			XEvent event;
@@ -315,14 +315,18 @@ static void
 HandleExpose(XEvent *ev)
 {
 	XEvent event;
+	SubWin *w = NULL;
 	Window win = ev->type == Expose ? ev->xexpose.window : ev->xvisibility.window;
 
-  SubWin *w = subWinFind(win);
-  if(w) subWinRender(w);
-	else if(win == d->bar.win)
+	if(win == d->bar.win)
 		{
 			subSubletConfigure();
 			subSubletRender();
+		}
+	else
+		{
+  		w = (SubWin *)subUtilFind(win, 1);
+			if(w) subWinRender(w);
 		}
 
 	/* Remove any other event of the same type and window */
@@ -332,7 +336,7 @@ HandleExpose(XEvent *ev)
 static void
 HandleFocus(XFocusInEvent *ev)
 {
-	SubWin *w = subWinFind(ev->window);
+	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
 	if(w && w->flags & SUB_WIN_PREF_FOCUS)
 		{
 			if(w != d->focus) 
@@ -390,7 +394,6 @@ subEventLoop(void)
 
 							s = subSubletNext();
 						}
-
 					subSubletRender();
 
 					tv.tv_sec		= s->interval;
@@ -412,7 +415,7 @@ subEventLoop(void)
 							struct inotify_event *event = (struct inotify_event *)&buf[0];
 							if(event)
 								{
-									SubSublet *s = subSubletFind(event->wd);
+									SubSublet *s = (SubSublet *)subUtilFind(d->bar.sublets, event->wd);
 									if(s)
 										{
 											subLuaCall(s);
