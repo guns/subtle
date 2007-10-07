@@ -14,55 +14,47 @@ void
 subEwmhInit(void)
 {
 	int n = 37;
+	long data[4] = { 0, 0, 0, 0 };
 	char *names[] =
 	{
 		/* ICCCM */
-		"WM_STATE",
-		"WM_PROTOCOLS",
-		"WM_TAKE_FOCUS",
-		"WM_DELETE_WINDOW",
-		"WM_NORMAL_HINTS",
-		"WM_SIZE_HINTS",
+		"WM_STATE", "WM_PROTOCOLS", "WM_TAKE_FOCUS", "WM_DELETE_WINDOW", "WM_NORMAL_HINTS", "WM_SIZE_HINTS",
 
 		/* EWMH */
-		"_NET_SUPPORTED",
-		"_NET_CLIENT_LIST",
-		"_NET_CLIENT_LIST_STACKING",
-		"_NET_NUMBER_OF_DESKTOPS",
-		"_NET_DESKTOP_GEOMETRY", 
-		"_NET_DESKTOP_VIEWPORT",
-		"_NET_CURRENT_DESKTOP", 
-		"_NET_ACTIVE_WINDOW",
-		"_NET_WORKAREA",
-		"_NET_SUPPORTING_WM_CHECK",
-		"_NET_VIRTUAL_ROOTS",
-		"_NET_CLOSE_WINDOW",
-
-		"_NET_WM_NAME",
-		"_NET_WM_PID",
-		"_NET_WM_DESKTOP",
-
-		"_NET_WM_STATE",
-		"_NET_WM_STATE_MODAL",
-		"_NET_WM_STATE_SHADED",
-		"_NET_WM_STATE_HIDDEN",
-		"_NET_WM_STATE_FULLSCREEN",
-
-		"_NET_WM_WINDOW_TYPE",
-		"_NET_WM_WINDOW_TYPE_DESKTOP",
-		"_NET_WM_WINDOW_TYPE_NORMAL",
-		"_NET_WM_WINDOW_TYPE_DIALOG",
-
-		"_NET_WM_ALLOWED_ACTIONS",
-		"_NET_WM_ACTION_MOVE",
-		"_NET_WM_ACTION_RESIZE",
-		"_NET_WM_ACTION_SHADE",
-		"_NET_WM_ACTION_FULLSCREEN",
-		"_NET_WM_ACTION_CHANGE_DESKTOP",
-		"_NET_WM_ACTION_CLOSE"
+		"_NET_SUPPORTED", "_NET_CLIENT_LIST", "_NET_CLIENT_LIST_STACKING", "_NET_NUMBER_OF_DESKTOPS",
+		"_NET_DESKTOP_GEOMETRY", "_NET_DESKTOP_VIEWPORT", "_NET_CURRENT_DESKTOP", "_NET_ACTIVE_WINDOW",
+		"_NET_WORKAREA", "_NET_SUPPORTING_WM_CHECK", "_NET_VIRTUAL_ROOTS", "_NET_CLOSE_WINDOW",
+		"_NET_WM_NAME", "_NET_WM_PID", "_NET_WM_DESKTOP", 
+		"_NET_WM_STATE", "_NET_WM_STATE_MODAL", "_NET_WM_STATE_SHADED", "_NET_WM_STATE_HIDDEN", "_NET_WM_STATE_FULLSCREEN",
+		"_NET_WM_WINDOW_TYPE", "_NET_WM_WINDOW_TYPE_DESKTOP", "_NET_WM_WINDOW_TYPE_NORMAL", "_NET_WM_WINDOW_TYPE_DIALOG",
+		"_NET_WM_ALLOWED_ACTIONS", "_NET_WM_ACTION_MOVE", "_NET_WM_ACTION_RESIZE", "_NET_WM_ACTION_SHADE",
+		"_NET_WM_ACTION_FULLSCREEN", "_NET_WM_ACTION_CHANGE_DESKTOP", "_NET_WM_ACTION_CLOSE"
 	};
 
 	XInternAtoms(d->dpy, names, n, 0, atoms);
+
+	/* Window manager information */
+	subEwmhSetWindow(DefaultRootWindow(d->dpy), SUB_EWMH_NET_SUPPORTING_WM_CHECK, DefaultRootWindow(d->dpy));
+	subEwmhSetString(DefaultRootWindow(d->dpy), SUB_EWMH_NET_WM_NAME, PACKAGE_STRING);
+	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_WM_PID, (long)getpid());
+	subEwmhSetCardinals(DefaultRootWindow(d->dpy), SUB_EWMH_NET_DESKTOP_VIEWPORT, (long *)&data, 2);
+
+	/* Workarea size */
+	data[2] = DisplayWidth(d->dpy, DefaultScreen(d->dpy)); 
+	data[3] = DisplayHeight(d->dpy, DefaultScreen(d->dpy));
+	subEwmhSetCardinals(DefaultRootWindow(d->dpy), SUB_EWMH_NET_WORKAREA, (long *)&data, 4);
+
+	/* Desktop sizes */
+	data[0] = DisplayWidth(d->dpy, DefaultScreen(d->dpy));
+	data[1] = DisplayHeight(d->dpy, DefaultScreen(d->dpy));
+	subEwmhSetCardinals(DefaultRootWindow(d->dpy), SUB_EWMH_NET_DESKTOP_GEOMETRY, (long *)&data, 2);
+
+	/* Supported window states */
+	data[0] = subEwmhGetAtom(SUB_EWMH_NET_WM_STATE_MODAL);
+	data[1] = subEwmhGetAtom(SUB_EWMH_NET_WM_STATE_SHADED);
+	data[2] = subEwmhGetAtom(SUB_EWMH_NET_WM_STATE_HIDDEN);
+	data[3] = subEwmhGetAtom(SUB_EWMH_NET_WM_STATE_FULLSCREEN);
+	subEwmhSetCardinals(DefaultRootWindow(d->dpy), SUB_EWMH_NET_SUPPORTED, (long *)&data, 4);	
 }
 
 Atom
