@@ -9,6 +9,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <assert.h>
+#include <regex.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <X11/Xlib.h>
@@ -73,7 +74,6 @@ typedef struct subwin
 	};
 } SubWin;
 
-SubWin *subWinFind(Window win);												// Find a window
 SubWin *subWinNew(void);															// Create a new window
 void subWinDelete(SubWin *w);													// Delete a window
 void subWinRender(SubWin *w);													// Render wrapper
@@ -135,30 +135,6 @@ void subClientFetchName(SubWin *w);										// Fetch client name
 void subClientSetWMState(SubWin *w, long state);			// Set client WM state
 long subClientGetWMState(SubWin *w);									// Get client WM state
 
-/* rule.c */
-#define SUB_RULE_TYPE_VALUE	(1L << 1)									// Value type
-#define SUB_RULE_TYPE_REGEX	(1L << 2)									// Regexp type
-
-/* Forward declarations */
-struct regex_t;
-
-typedef struct subrule
-{
-	int				flags;	
-	SubView		*v;																				// Tag view
-	SubTag		*next;																		// Next sibling
-
-	union
-	{
-		char 		*tag;																			// Tag name
-		regex_t *regex;																		// Tag rexex
-	};
-} SubRule;
-
-SubView *subRuleFind(char *tag);											// Find rule
-void subRuleNew(char *tag);														// Create new rulw
-void subRuleKill(void);																// Kill all rules
-
 /* view.c */
 typedef struct subview
 {
@@ -171,13 +147,33 @@ typedef struct subview
 	struct subview *prev;																// Prev sibling
 } SubView;
 
-void subViewInit(void);																// Init the views
-SubView *subViewNew(char *tagname);										// Create a new view
-void subViewDelete(SubWin *w);												// Delete a screen
+SubView *subViewNew(char *name);											// Create a new view
+void subViewDelete(SubView *v);												// Delete a screen
 void subViewKill(void);																// Kill all views
-void subViewRender(SubWin *w);												// Render the screen window
+void subViewRender(void);															// Render the screen window
 void subViewConfigure(void);													// Configure the screen bar
-void subViewSwitch(SubWin *w);												// Switch views
+void subViewSwitch(SubView *v);												// Switch views
+
+/* rule.c */
+#define SUB_RULE_TYPE_VALUE	(1L << 1)									// Value type
+#define SUB_RULE_TYPE_REGEX	(1L << 2)									// Regexp type
+
+typedef struct subrule
+{
+	int							flags;															// Rule flags
+	SubView					*v;																	// Rule view
+	struct subrule	*next;															// Next sibling
+
+	union
+	{
+		char 		*tag;																			// Rule name
+		regex_t *regex;																		// Rule rexex
+	};
+} SubRule;
+
+SubView *subRuleFind(char *tag);											// Find rule
+SubRule *subRuleNew(char *tag, SubView *v);						// Create new rule
+void subRuleKill(void);																// Kill all rules
 
 /* sublet.c */
 #define SUB_SUBLET_TYPE_TEXT		(1L << 1)							// Text sublet
@@ -203,7 +199,6 @@ typedef struct subsublet
 	};
 } SubSublet;
 
-SubSublet *subSubletFind(int wd);											// Find a sublet
 void subSubletNew(int type, char *name, int ref, 			// Create a new sublet
 	time_t interval, char *watch);
 void subSubletDelete(SubSublet *s);										// Delete a sublet
@@ -223,7 +218,7 @@ typedef struct subdisplay
 	SubView						*cv;															// Current view
 
 #ifdef HAVE_SYS_INOTIFY_H
-	int								notify;
+	int								notify;														// Inotify descriptor
 #endif
 
 	struct
@@ -267,6 +262,7 @@ void subUtilLogToggle(void);
 void subUtilLog(short type, const char *file, 				// Print messages
 	short line, const char *format, ...);
 void *subUtilAlloc(size_t n, size_t size);						// Allocate memory
+XPointer *subUtilFind(Window win, XContext id);				// Find window data
 
 /* key.c */
 #define SUB_KEY_ACTION_FOCUS_ABOVE			(1L << 1)			// Focus above window
