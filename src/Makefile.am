@@ -24,4 +24,4 @@ INCLUDES = -I$(top_srcdir)
 
 noinst_HEADERS = subtle.h
 
-AM_CFLAGS = -Wall -Wpointer-arith -Wstrict-prototypes -Wunused -O2 $(DEBUG_CFLAGS)
+AM_CFLAGS = -Wall -W -pedantic -Wpointer-arith -Wstrict-prototypes -Wunused -Wshadow -O2 $(DEBUG_CFLAGS)
