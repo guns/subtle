@@ -8,7 +8,6 @@
 
 #include <stdarg.h>
 #include <signal.h>
-
 #include "subtle.h"
 
 #ifdef DEBUG
@@ -76,4 +75,19 @@ subUtilAlloc(size_t n,
 	void *mem = calloc(n, size);
 	if(!mem) subUtilLogError("Can't alloc memory. Exhausted?\n");
 	return(mem);
+}
+
+ /**
+	* Find data with the context manager
+	* @param win A #Window
+	* @param id Context id
+	* @return Return the data associated with the window or NULL
+	**/
+
+XPointer *
+subUtilFind(Window win,
+	XContext id)
+{
+	XPointer *data = NULL;
+	return(XFindContext(d->dpy, win, id, (XPointer *)&data) != XCNOENT ? data : NULL);
 }
