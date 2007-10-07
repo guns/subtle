@@ -13,7 +13,6 @@
 #include <dirent.h>
 #include <fnmatch.h>
 #include <fcntl.h>
-
 #include "subtle.h"
 
 static lua_State *state = NULL;
@@ -197,28 +196,27 @@ subLuaLoadConfig(const char *path)
 		}
 	
 	/* Rules */
+	d->cv = subViewNew("root");
+
 	lua_getglobal(configstate, "Rules");
 	if(lua_istable(configstate, -1)) 
 		{ 
-			SubView *v = NULL;
-
 			lua_pushnil(configstate);
 			while(lua_next(configstate, -2))
 				{
 					if(lua_istable(configstate, -1))
 						{ 
-							v = subViewNew(lua_tostring(configstate, -2));
+							SubView *v = subViewNew((char *)lua_tostring(configstate, -2));
 							lua_pushnil(configstate);
 							while(lua_next(configstate, -2))
 								{
-									subRuleNew(lua_tostring(configstate, -1), v);
+									subRuleNew((char *)lua_tostring(configstate, -1), v);
 									lua_pop(configstate, 1);
 								}
 						}
 					lua_pop(configstate, 1);
 				}
 		}
-
 	lua_close(configstate);
 }
 
@@ -345,6 +343,21 @@ subLuaLoadSublets(const char *path)
 			else snprintf(buf, sizeof(buf), "%s", SUBLET_DIR);
 		}
 	else snprintf(buf, sizeof(buf), "%s", path);
+
+	/* Bar windows */
+	d->bar.win			= XCreateSimpleWindow(d->dpy, DefaultRootWindow(d->dpy), 0, 0, 
+		DisplayWidth(d->dpy, DefaultScreen(d->dpy)), d->th, 0, 0, d->colors.norm);
+	d->bar.views		= XCreateSimpleWindow(d->dpy, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
+	d->bar.sublets	= XCreateSimpleWindow(d->dpy, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
+
+	XSetWindowBackground(d->dpy, d->bar.win, d->colors.norm);
+	XSetWindowBackground(d->dpy, d->bar.views, d->colors.norm);
+	XSetWindowBackground(d->dpy, d->bar.sublets, d->colors.norm);
+
+	XSelectInput(d->dpy, d->bar.views, ButtonPressMask); 
+
+	XMapWindow(d->dpy, d->bar.views);
+	XMapWindow(d->dpy, d->bar.sublets);
 
 	/* Push functions on the stack */
 	lua_newtable(state);
