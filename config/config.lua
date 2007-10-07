@@ -52,6 +52,6 @@ Keys = {
 
 -- Rules
 Rules = {
-	terms = { "/*term/", "rxvt" },
+	terms = { "/.*term/", "rxvt" },
 	inet = { "firefox", "kmail" }
 }
