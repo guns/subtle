@@ -73,7 +73,7 @@ subTileAdd(SubWin *t,
 					w->prev = NULL;
 					w->parent = t;
 
-					XReparentWindow(d->dpy, w->frame, t->frame, 0, t->flags & SUB_WIN_TYPE_SCREEN ? d->th : 0); 
+					XReparentWindow(d->dpy, w->frame, t->frame, 0, t->flags & SUB_WIN_TYPE_VIEW ? d->th : 0); 
 				}
 			else subWinAppend(t->tile->last, w);
 
@@ -154,7 +154,7 @@ subTileConfigure(SubWin *t)
 									if(t->flags & SUB_WIN_STATE_PILE && t->tile->pile != c) c->flags |= SUB_WIN_STATE_COLLAPSE;
 
 									/* Remove tiles with only one client */
-									if(c->flags & SUB_WIN_TYPE_TILE && !(c->flags & SUB_WIN_TYPE_SCREEN) && 
+									if(c->flags & SUB_WIN_TYPE_TILE && !(c->flags & SUB_WIN_TYPE_VIEW) && 
 										c->tile->first == c->tile->last)
 										{
 											SubWin *first = c->tile->first;
@@ -189,7 +189,7 @@ subTileConfigure(SubWin *t)
 										}
 
 									c->parent	= t;
-									c->x			= t->flags & SUB_WIN_TYPE_SCREEN ? d->th : 0;
+									c->x			= t->flags & SUB_WIN_TYPE_VIEW ? d->th : 0;
 									c->y			= (c->flags & SUB_WIN_STATE_COLLAPSE) ? y : collapsed * d->th;
 									c->width	= mw;
 									c->height	= (c->flags & SUB_WIN_STATE_COLLAPSE) ? d->th : mh;
