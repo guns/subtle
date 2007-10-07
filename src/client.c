@@ -337,7 +337,7 @@ subClientDrag(short mode,
 									}
 								else if(win != w->frame && mode == SUB_CLIENT_DRAG_SWAP)
 									{
-										if(!w2 || w2->frame != win) w2 = subWinFind(win);
+										if(!w2 || w2->frame != win) w2 = (SubWin *)subUtilFind(win, 1);
 										if(w2)
 											{
 												XQueryPointer(d->dpy, win, &nil, &nil, &rx, &ry, &wx, &wy, &mask);
