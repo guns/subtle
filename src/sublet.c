@@ -10,20 +10,7 @@
 
 static int size = 0;
 static SubSublet **sublets = NULL;
-static SubSublet *first = NULL;
-
- /**
-	* Find a window via Xlib context manager 
-	* @param win A watch descriptor
-	* @return Return the #SubSublet associated with the wd or NULL
-	**/
-
-SubSublet *
-subSubletFind(int wd)
-{
-	SubSublet *s = NULL;
-	return(XFindContext(d->dpy, d->bar.sublets, wd, (void *)&s) != XCNOENT ? s : NULL);
-}
+static SubSublet *root = NULL;
 
  /**
 	* Sift the sublet through the queue
@@ -79,7 +66,7 @@ subSubletNew(int type,
 
 	if(!sublets) 
 		{
-			first		= s;
+			root		= s;
 			sublets = (SubSublet **)subUtilAlloc(1, sizeof(SubSublet *));
 		}
 
@@ -122,10 +109,10 @@ subSubletNew(int type,
 		}
 	
 	/* Smart use of unused array index */
-	if(first != s) sublets[0]->next = s;
+	if(root != s) sublets[0]->next = s;
 	sublets[0] = s;
 
-	printf("Loaded sublet %s (%d)\n", name, interval);
+	printf("Loading sublet %s (%d)\n", name, interval);
 	subUtilLogDebug("Sublet: name=%s, ref=%d, interval=%d, watch=%s\n", name, ref, interval, watch);		
 }
 
@@ -139,10 +126,10 @@ subSubletDelete(SubSublet *s)
 {
 	int i, j;
 
-	if(first == s) first = s->next;
+	if(root == s) root = s->next;
 	else
 		{
-			SubSublet *prev = first;
+			SubSublet *prev = root;
 
 			while(prev->next && prev->next != s) prev = prev->next;
 			prev->next = s->next;
@@ -156,7 +143,7 @@ subSubletDelete(SubSublet *s)
 	if(!sublets) subUtilLogError("Can't alloc memory. Exhausted?\n");			
 	if(!(s->flags & SUB_SUBLET_TYPE_METER) && s->string) free(s->string);
 
-	printf("Unloaded sublet #%d\n", s->ref);
+	printf("Unloading sublet #%d\n", s->ref);
 	size--;
 	free(s);
 
@@ -174,14 +161,13 @@ subSubletConfigure(void)
 	if(sublets)
 		{
 			int width = 3;
-			SubSublet *s = first;
+			SubSublet *s = root;
 
 			while(s)
 				{
 					if(s->flags & SUB_SUBLET_TYPE_METER) width += 66;
 					else width += strlen(s->string) * d->fx + 12;
 					s = s->next;
-					printf("width=%d\n", width);
 				}
 			XMoveResizeWindow(d->dpy, d->bar.sublets, DisplayWidth(d->dpy, DefaultScreen(d->dpy)) - width, 0, width, d->th);
 		}
@@ -197,7 +183,7 @@ subSubletRender(void)
 	if(sublets)
 		{
 			int i, width = 3;
-			SubSublet *s = first;
+			SubSublet *s = root;
 
 			XClearWindow(d->dpy, d->bar.sublets);
 
@@ -227,10 +213,11 @@ subSubletRender(void)
 void
 subSubletKill(void)
 {
-	SubSublet *s = first;
+	SubSublet *s = root;
 
 	while(s)
 		{
+			if(!(s->flags & SUB_SUBLET_TYPE_METER) && s->string) free(s->string);
 			free(s);
 			s = s->next;
 		}
