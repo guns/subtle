@@ -49,7 +49,7 @@ HandleSignal(int signum)
 			case SIGINT: 
 				subKeyKill();
 				subViewKill();
-				subRulesKill();
+				subRuleKill();
 				subLuaKill();
 				subDisplayKill();
 				exit(1);
@@ -111,15 +111,14 @@ main(int argc,
 	sigaction(SIGCHLD, &act, NULL);
 
 	subDisplayNew(display);
-	subLuaLoadConfig(config);
 
 	subEwmhInit();
 	subKeyInit();
 
-	subViewInit();
-	subViewNew(NULL);
-
+	subLuaLoadConfig(config);
 	subLuaLoadSublets(sublets);
+
+	subViewSwitch(d->cv);
 
 	subDisplayScan();
 
