@@ -204,6 +204,7 @@ void subSubletNew(int type, char *name, int ref, 			// Create a new sublet
 void subSubletDelete(SubSublet *s);										// Delete a sublet
 void subSubletRender(void);														// Render a sublet
 void subSubletConfigure(void);												// Configure sublet bar
+void subSubletSift(int pos);													// Sift sublet
 SubSublet *subSubletNext(void);												// Get next sublet
 void subSubletKill(void);															// Delete all sublets
 
@@ -211,7 +212,7 @@ void subSubletKill(void);															// Delete all sublets
 typedef struct subdisplay
 {
 	Display						*dpy;															// Connection to X server
-	unsigned int			th, bw, fx, fy;										// Tab height, border widthm font metrics
+	int								th, bw, fx, fy;										// Tab height, border widthm font metrics
 	XFontStruct				*xfs;															// Font
 
 	SubWin						*focus;														// Focus window
@@ -300,7 +301,7 @@ SubKey *subKeyFind(int keycode, unsigned int mod);		// Find a key
 void subKeyNew(const char *key,
 	const char *value);																	// Create new key
 void subKeyGrab(SubWin *w);														// Grab keys for a window
-void subKeyUnrab(SubWin *w);													// Ungrab keys for a window
+void subKeyUngrab(SubWin *w);													// Ungrab keys for a window
 void subKeyKill(void);																// Delete all keys
 
 /* lua.c */
