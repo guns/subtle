@@ -1,0 +1,20 @@
+# Environment
+Import('env')
+
+source = Split("""
+	client.c
+	display.c
+	event.c
+	ewmh.c
+	key.c
+	lua.c
+	main.c
+	rule.c
+	sublet.c
+	tile.c
+	util.c
+	view.c
+	win.c
+""")
+
+subtle = env.Program('subtle', source)
