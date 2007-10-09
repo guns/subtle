@@ -78,7 +78,7 @@ subClientNew(Window win)
 		{
 			if(hints->flags & StateHint) subClientSetWMState(w, hints->initial_state);
 			else subClientSetWMState(w, NormalState);
-			if(hints->initial_state == IconicState) subUtilLogDebug("Iconic: win=%#lx\n", win);			
+			if(hints->initial_state == IconicState) printf("Iconic: win=%#lx\n", win);			
 			if(hints->input) w->flags |= SUB_WIN_PREF_INPUT;
 			if(hints->flags & XUrgencyHint) w->flags |= SUB_WIN_STATE_TRANS;
 			XFree(hints);
@@ -284,7 +284,7 @@ subClientDrag(short mode,
 			unsigned int mask;
 			short state = SUB_CLIENT_DRAG_STATE_START, last_state = SUB_CLIENT_DRAG_STATE_START;
 			XRectangle box = { w->x, w->y, w->width, w->height };
-			SubWin *w2 = NULL, *p = NULL, *p2 = NULL, *last_w = NULL;
+			SubWin *w2 = NULL, *p = NULL, *last_w = NULL;
 
 			/* Get window position on root window */
 			XQueryPointer(d->dpy, w->frame, &win, &win, &rx, &ry, &wx, &wy, &mask);
@@ -389,9 +389,9 @@ subClientDrag(short mode,
 												if(state == SUB_CLIENT_DRAG_STATE_TOP || state == SUB_CLIENT_DRAG_STATE_BOTTOM ||
 													state == SUB_CLIENT_DRAG_STATE_LEFT || state == SUB_CLIENT_DRAG_STATE_RIGHT)
 													{
-														SubWin *p = w->parent;
 														SubWin *t = subTileNew(state == SUB_CLIENT_DRAG_STATE_TOP || 
 															state == SUB_CLIENT_DRAG_STATE_BOTTOM ? SUB_WIN_TILE_VERT : SUB_WIN_TILE_HORZ);
+														p = w->parent;
 
 														subWinReplace(w2, t);
 														subWinCut(w);
@@ -414,7 +414,7 @@ subClientDrag(short mode,
 												else if(state == SUB_CLIENT_DRAG_STATE_BEFORE || state == SUB_CLIENT_DRAG_STATE_AFTER ||
 													state == SUB_CLIENT_DRAG_STATE_ABOVE || state == SUB_CLIENT_DRAG_STATE_BELOW)
 													{
-														SubWin *p = w->parent;
+														p = w->parent;
 
 														if((((state == SUB_CLIENT_DRAG_STATE_BEFORE || state == SUB_CLIENT_DRAG_STATE_AFTER) && 
 															w2->parent->flags & SUB_WIN_TILE_HORZ)) ||
