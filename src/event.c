@@ -250,15 +250,15 @@ HandleMessage(XClientMessageEvent *ev)
 		{
 			int i;
 
-			printf("message_type=%d\n", ev->message_type);
+			printf("message_type=%ld\n", ev->message_type);
 			if(ev->format == 32)
 				{
 					for(i = 0; i < 5; i++)
-						printf("-> l[%d]=%d\n", i, ev->data.l[i]);
+						printf("-> l[%d]=%ld\n", i, ev->data.l[i]);
 				}
 			if(ev->message_type == subEwmhGetAtom(SUB_EWMH_NET_WM_STATE))
 				{
-					if(ev->data.l[1] == subEwmhGetAtom(SUB_EWMH_NET_WM_STATE_FULLSCREEN))
+					if(ev->data.l[1] == (long)subEwmhGetAtom(SUB_EWMH_NET_WM_STATE_FULLSCREEN))
 						{
 							if(ev->data.l[0] == 0) /* Remove state */
 								{
@@ -407,7 +407,7 @@ subEventLoop(void)
 #endif /* HAVE_SYS_INOTIFY_H */
 
 					if(select(ConnectionNumber(d->dpy) + 1, &fdset, NULL, NULL, &tv) == -1)
-						subUtilLogDebug("Failed to select the connection\n");
+						subUtilLogWarn("Can't select the set\n");
 
 #ifdef HAVE_SYS_INOTIFY_H
 					if(read(d->notify, buf, BUFLEN) > 0)
@@ -415,15 +415,12 @@ subEventLoop(void)
 							struct inotify_event *event = (struct inotify_event *)&buf[0];
 							if(event)
 								{
-									SubSublet *s = (SubSublet *)subUtilFind(d->bar.sublets, event->wd);
-									if(s)
+									SubSublet *ws = (SubSublet *)subUtilFind(d->bar.sublets, event->wd);
+									if(ws)
 										{
-											subLuaCall(s);
-
+											subLuaCall(ws);
 											subSubletConfigure();
 											subSubletRender();
-
-											printf("Inotify: wd=%d\n", event->wd);
 										}
 								}
 						}
