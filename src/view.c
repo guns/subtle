@@ -101,7 +101,7 @@ subViewRender(void)
 				{
 					XSetWindowBackground(d->dpy, v->button, (d->cv == v) ? d->colors.focus : d->colors.norm);
 					XClearWindow(d->dpy, v->button);
-					XDrawString(d->dpy, v->button, d->gcs.font, 1, d->fy - 4, v->name, strlen(v->name));
+					XDrawString(d->dpy, v->button, d->gcs.font, 1, d->fy - 1, v->name, strlen(v->name));
 				}
 			v = v->next;
 		}
@@ -116,14 +116,14 @@ subViewConfigure(void)
 {
 	if(root)
 		{
-			int  width = 3;
+			int  width = 0;
 			SubView *v = root;
 
 			while(v)
 				{
 					if(v->w)
 						{
-							XMoveResizeWindow(d->dpy, v->button, width, 2, v->width, d->th - 6);
+							XMoveResizeWindow(d->dpy, v->button, width, 0, v->width, d->th);
 							width += v->width + 6;
 						}
 					v = v->next;
@@ -151,9 +151,13 @@ subViewKill(void)
 
 					XUnmapWindow(d->dpy, v->button);
 					XDeleteContext(d->dpy, v->button, 1);
-					XDeleteContext(d->dpy, v->w->frame, 1);
 					XDestroyWindow(d->dpy, v->button);
-					XDestroyWindow(d->dpy, v->w->frame);
+
+					if(v->w)
+						{
+							XDeleteContext(d->dpy, v->w->frame, 1);
+							XDestroyWindow(d->dpy, v->w->frame);
+						}
 
 					free(v->name);
 					free(v);					
@@ -186,7 +190,7 @@ subViewSwitch(SubView *v)
 				{
 					v->w = subTileNew(SUB_WIN_TILE_HORZ);
 					v->w->flags |= SUB_WIN_TYPE_VIEW;
-					v->button = XCreateSimpleWindow(d->dpy, d->bar.views, 0, 0, 1, d->th - 6, 1, d->colors.border, d->colors.norm);
+					v->button = XCreateSimpleWindow(d->dpy, d->bar.views, 0, 0, 1, d->th, 0, d->colors.border, d->colors.norm);
 
 					XSaveContext(d->dpy, v->button, 1, (void *)v);
 				}
