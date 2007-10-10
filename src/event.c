@@ -69,7 +69,6 @@ HandleButtonPress(XButtonEvent *ev)
 										if(ev->subwindow == w->client->left) 				subClientDrag(SUB_CLIENT_DRAG_LEFT, w);
 										else if(ev->subwindow == w->client->right)	subClientDrag(SUB_CLIENT_DRAG_RIGHT, w);
 										else if(ev->subwindow == w->client->bottom) subClientDrag(SUB_CLIENT_DRAG_BOTTOM, w);
-										else if(ev->subwindow == w->client->icon) 	last_time = ev->time;
 										else if(ev->subwindow == w->client->title || (w->flags & SUB_WIN_TYPE_CLIENT && ev->subwindow == w->client->caption))
 											{ 
 												/* Either drag and move or drag an swap windows */
@@ -215,8 +214,19 @@ HandleMap(XMapRequestEvent *ev)
 				}
 			else 
 				{
-					subTileAdd(d->cv->w, w);
-					subTileConfigure(d->cv->w);
+					SubRule *r = subRuleFind(w->client->name);
+					if(r) 
+						{
+							subViewSwitch(r->v);
+							subTileAdd(r->v->w, w);
+							subTileConfigure(r->v->w);
+							printf("Using tag `%s'\n", r->tag);
+						}
+					else
+						{
+							subTileAdd(d->cv->w, w);
+							subTileConfigure(d->cv->w);
+						}
 				}
 		}
 }
