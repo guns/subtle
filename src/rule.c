@@ -9,7 +9,7 @@
 #include "subtle.h"
 
 static int nrules = 0;
-static SubRule *rules = NULL;
+static SubRule **rules = NULL;
 
  /**
 	* Find a rule
@@ -17,7 +17,7 @@ static SubRule *rules = NULL;
 	* @return Return the view associated with the rule or NULL
 	**/
 
-SubView *
+SubRule *
 subRuleFind(char *tag)
 {
 	int i;
@@ -25,7 +25,7 @@ subRuleFind(char *tag)
 	for(i = 0; i < nrules; i++)
 		if((rules[i]->flags == SUB_RULE_TYPE_REGEX && regexec(rules[i]->regex, tag, 0, NULL, 0)) ||
 			(rules[i]->flags == SUB_RULE_TYPE_VALUE && (!strncasecmp(tag, rules[i]->tag, strlen(rules[i]->tag)))))
-				return(rules[i]->v);
+				return(rules[i]);
 	return(NULL);
 }
 
@@ -39,13 +39,14 @@ SubRule *
 subRuleNew(char *tag,
 	SubView *v)
 {
-	SubRuke *r = NULL;
+	SubRule *r = NULL;
 
 	assert(tag && v);
 
 	r			= (SubRule *)subUtilAlloc(1, sizeof(SubRule));
 	r->v	= v;
 
+	if(!rules) rules = (SubRule **)subUtilAlloc(1, sizeof(SubRule *));
 	if(tag[0] == '/')
 		{
 			int errcode;
@@ -69,7 +70,6 @@ subRuleNew(char *tag,
 					free(errbuf);
 					regfree(r->regex);
 					free(r);
-
 					return(NULL);
 				}
 			free(buf);
@@ -80,16 +80,9 @@ subRuleNew(char *tag,
 			r->tag		= strdup(tag);
 		}
 
-	subUtilLogDebug("Rule: view=%s, tag=%s, type=%s\n", v->name, tag,
-		r->flags & SUB_RULE_TYPE_REGEX ? "regex" : "value");
-
-	if(!rules) 
-		{
-			rules = (SubRule **)realloc(rules, sizeof(SubRule *) * (nrules + 2));
-			if(!rules) subUtilLogError("Can't alloc memory. Exhausted?\n");
-		}
-	rules[++nrules] = r;
-
+	subUtilLogDebug("Rule: view=%s, tag=%s, type=%s\n", v->name, tag, r->flags & SUB_RULE_TYPE_REGEX ? "regex" : "value");
+	rules = (SubRule **)subUtilRealloc(rules, sizeof(SubRule *) * (nrules + 2));
+	rules[nrules++] = r;
 	return(r);
 }
 
@@ -100,7 +93,7 @@ subRuleNew(char *tag,
 void
 subRuleKill(void)
 {
-	if(root)
+	if(rules)
 		{
 			int i;
 
@@ -108,7 +101,6 @@ subRuleKill(void)
 				{
 					if(rules[i]->flags == SUB_RULE_TYPE_REGEX) if(rules[i]->regex) regfree(rules[i]->regex);
 					else if(rules[i]->flags == SUB_RULE_TYPE_VALUE) if(rules[i]->tag) free(rules[i]->tag);
-
 					free(rules[i]);
 				}
 			free(rules);
