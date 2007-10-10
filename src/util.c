@@ -78,6 +78,22 @@ subUtilAlloc(size_t n,
 }
 
  /**
+	* Realloc memory and check for result
+	* @param mem Memory block
+	* @param size Size of the memory block
+	* @return 
+	**/
+
+void *
+subUtilRealloc(void *mem,
+	size_t size)
+{
+	mem = realloc(mem, size);
+	if(!mem) subUtilLogError("Can't alloc memory. Exhausted?\n");
+	return(mem);
+}
+
+ /**
 	* Find data with the context manager
 	* @param win A #Window
 	* @param id Context id
