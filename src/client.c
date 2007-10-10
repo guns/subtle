@@ -8,7 +8,7 @@
 
 #include "subtle.h"
 
-static int size = 0;
+static int nclients = 0;
 static Window *clients = NULL;
 
  /**
@@ -46,31 +46,24 @@ subClientNew(Window win)
 	w->flags				= SUB_WIN_TYPE_CLIENT; 
 
 	/* Create windows */
-	mask							= CWBackPixel;
-	w->client->title	= SUBWINNEW(w->frame, 0, 0, w->width, d->th, 0);
-	mask 							= CWBorderPixel|CWBackPixel;
-	w->client->icon		= SUBWINNEW(w->frame, 2, 2, d->th - 6, d->th - 6, 1);
-	
+	mask								= CWBackPixel;
+	w->client->title		= SUBWINNEW(w->frame, 0, 0, w->width, d->th, 0);
+	w->client->caption	= XCreateSimpleWindow(d->dpy, w->frame, 0, 0, 1, d->th, 0, d->colors.border, d->colors.norm);
+	mask								|= CWCursor;
+	attrs.cursor				= d->cursors.horz;
+	w->client->left			= SUBWINNEW(w->frame, 0, d->th, d->bw, w->height - d->th, 0);
+	w->client->right		= SUBWINNEW(w->frame, w->width - d->bw, d->th, d->bw, w->height - d->th, 0);
+	attrs.cursor				= d->cursors.vert;
+	w->client->bottom		= SUBWINNEW(w->frame, 0, w->height - d->bw, w->width, d->bw, 0);
+
 	/* Window caption */
-	XFetchName(d->dpy, w->client->win, &w->client->name);
-	if(!w->client->name) w->client->name = strdup("subtle");
-	w->client->caption = XCreateSimpleWindow(d->dpy, w->frame, d->th, 0, 
-		(strlen(w->client->name) + 1) * d->fx, d->th, 0, d->colors.border, d->colors.norm);
-	
-	/* Create borders */
-	mask							|= CWCursor;
-	attrs.cursor			= d->cursors.horz;
-	w->client->left		= SUBWINNEW(w->frame, 0, d->th, d->bw, w->height - d->th, 0);
-	w->client->right	= SUBWINNEW(w->frame, w->width - d->bw, d->th, d->bw, w->height - d->th, 0);
-	attrs.cursor			= d->cursors.vert;
-	w->client->bottom	= SUBWINNEW(w->frame, 0, w->height - d->bw, w->width, d->bw, 0);
+	subClientFetchName(w);
 
 	/* EWMH: Client list and client list stacking */
-	clients = (Window *)realloc(clients, sizeof(Window) * (size + 1));
-	if(!clients) subUtilLogError("Can't alloc memory. Exhausted?\n");
-	clients[size++] = w->client->win;
-	subEwmhSetWindows(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CLIENT_LIST, clients, size);
-	subEwmhSetWindows(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CLIENT_LIST_STACKING, clients, size);
+	clients = (Window *)subUtilRealloc(clients, sizeof(Window) * (nclients + 1));
+	clients[nclients++] = w->client->win;
+	subEwmhSetWindows(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CLIENT_LIST, clients, nclients);
+	subEwmhSetWindows(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CLIENT_LIST_STACKING, clients, nclients);
 
 	/* Window manager hints */
 	hints = XGetWMHints(d->dpy, win);
@@ -78,7 +71,6 @@ subClientNew(Window win)
 		{
 			if(hints->flags & StateHint) subClientSetWMState(w, hints->initial_state);
 			else subClientSetWMState(w, NormalState);
-			if(hints->initial_state == IconicState) printf("Iconic: win=%#lx\n", win);			
 			if(hints->input) w->flags |= SUB_WIN_PREF_INPUT;
 			if(hints->flags & XUrgencyHint) w->flags |= SUB_WIN_STATE_TRANS;
 			XFree(hints);
@@ -119,10 +111,10 @@ subClientDelete(SubWin *w)
 			int i, j;
 
 			/* Update client list */
-			for(i = 0; i < size; i++) 	
+			for(i = 0; i < nclients; i++) 	
 				if(clients[i] == w->client->win)
 					{
-						for(j = i; j < size - 1; j++) clients[j] = clients[j + 1];
+						for(j = i; j < nclients - 1; j++) clients[j] = clients[j + 1];
 						break; /* Leave loop */
 					}
 
@@ -145,13 +137,12 @@ subClientDelete(SubWin *w)
 			if(w->client->name) XFree(w->client->name);
 			free(w->client);
 
-			clients = (Window *)realloc(clients, sizeof(Window) * size);
-			if(!clients)  subUtilLogError("Can't alloc memory. Exhausted?\n");
-			size--;
+			clients = (Window *)subUtilRealloc(clients, sizeof(Window) * nclients);
+			nclients--;
 
 			/* EWMH: Client list and client list stacking */			
-			subEwmhSetWindows(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CLIENT_LIST, clients, size);
-			subEwmhSetWindows(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CLIENT_LIST_STACKING, clients, size);					
+			subEwmhSetWindows(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CLIENT_LIST, clients, nclients);
+			subEwmhSetWindows(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CLIENT_LIST_STACKING, clients, nclients);					
 		}
 }
 
@@ -165,13 +156,11 @@ subClientRender(SubWin *w)
 {
 	if(w && w->flags & SUB_WIN_TYPE_CLIENT)
 		{
-			char c = 's';
 			unsigned long col = d->focus && d->focus == w ? d->colors.focus : 
 				(w->flags & SUB_WIN_STATE_COLLAPSE ? d->colors.cover : d->colors.norm);
 
 			/* Update color */
 			XSetWindowBackground(d->dpy, w->client->title,	col);
-			XSetWindowBackground(d->dpy, w->client->icon,		col);
 			XSetWindowBackground(d->dpy, w->client->left, 	col);
 			XSetWindowBackground(d->dpy, w->client->right, 	col);
 			XSetWindowBackground(d->dpy, w->client->bottom,	col);
@@ -179,7 +168,6 @@ subClientRender(SubWin *w)
 	
 			/* Clear windows */
 			XClearWindow(d->dpy, w->client->title);
-			XClearWindow(d->dpy, w->client->icon);
 			XClearWindow(d->dpy, w->client->left);
 			XClearWindow(d->dpy, w->client->right);
 			XClearWindow(d->dpy, w->client->bottom);
@@ -187,15 +175,7 @@ subClientRender(SubWin *w)
 
 			/* Titlebar */
 			XFillRectangle(d->dpy, w->client->title, d->gcs.border, d->th + 1, 2, w->width - d->th - 4, d->th - 4);	
-
-			/* Icon */
-			XSetWindowBorder(d->dpy, w->client->icon, d->colors.border);
-			if(w->flags & SUB_WIN_STATE_RAISE)					c = 'r';
-			else if(w->flags & SUB_WIN_STATE_COLLAPSE)	c = 'c';
-	
-			XDrawString(d->dpy, w->client->icon, d->gcs.font, (d->th - 8 - d->fx) / 2 + 1, d->fy - 5, &c, 1);
-			XDrawString(d->dpy, w->client->caption, d->gcs.font, 3, d->fy - 1, w->client->name, 
-				strlen(w->client->name));
+			XDrawString(d->dpy, w->client->caption, d->gcs.font, 5, d->fy - 1, w->client->name, strlen(w->client->name));
 		}
 }
 
@@ -265,7 +245,7 @@ AdjustWeight(short mode,
 }
 
  /**
-	* Movie/resize the client
+	* Movie/renclients the client
 	* @param mode Attach mode
 	* @param w A #SubWin
 	* @param bev A #XButtonEvent
@@ -511,7 +491,6 @@ subClientToggle(short type,
 							case SUB_WIN_STATE_FULL:
 								/* Map most of the windows */
 								XMapWindow(d->dpy, w->client->title);
-								XMapWindow(d->dpy, w->client->icon);
 								XMapWindow(d->dpy, w->client->left);
 								XMapWindow(d->dpy, w->client->right);
 								XMapWindow(d->dpy, w->client->bottom);
@@ -545,7 +524,6 @@ subClientToggle(short type,
 							case SUB_WIN_STATE_RAISE:
 								/* Respect the user/program preferences */
 								hints = XAllocSizeHints();
-
 								if(!hints) subUtilLogError("Can't alloc memory. Exhausted?\n");
 								if(XGetWMNormalHints(d->dpy, w->client->win, hints, &supplied))
 									{
@@ -592,13 +570,12 @@ subClientToggle(short type,
 							case SUB_WIN_STATE_FULL:
 								/* Unmap some windows */
 								XUnmapWindow(d->dpy, w->client->title);
-								XUnmapWindow(d->dpy, w->client->icon);
 								XUnmapWindow(d->dpy, w->client->left);
 								XUnmapWindow(d->dpy, w->client->right);
 								XUnmapWindow(d->dpy, w->client->bottom);								
 								XUnmapWindow(d->dpy, w->client->caption);
 
-								/* Resize to display size */
+								/* Resize to display resolution */
 								w->x			= 0;
 								w->y			= 0;
 								w->width	= DisplayWidth(d->dpy, DefaultScreen(d->dpy));
@@ -648,16 +625,17 @@ subClientFetchName(SubWin *w)
 {
 	if(w && w->flags & SUB_WIN_TYPE_CLIENT)
 		{
-			int width, mode;
+			int width;
+
 			if(w->client->name) XFree(w->client->name);
 			XFetchName(d->dpy, w->client->win, &w->client->name);
+			if(!w->client->name) w->client->name = strdup("subtle");
 
 			/* Check max length of the caption */
-			width = (strlen(w->client->name) + 1) * d->fx;
+			width = (strlen(w->client->name) + 1) * d->fx + 3;
 			if(width > w->width - d->th - 4) width = w->width - d->th - 14;
 			XMoveResizeWindow(d->dpy, w->client->caption, d->th, 0, width, d->th);
 
-			mode = (d->focus && d->focus->frame == w->frame) ? 0 : 1;
 			subClientRender(w);
 		}
 }
