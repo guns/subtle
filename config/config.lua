@@ -32,8 +32,8 @@ Keys = {
 	FocusBelow				=	"A-j",						-- Focus below window
 	FocusNext					= "A-n",						-- Focus next window
 	FocusPrev					= "A-p",						-- Focus prev window
-	FocusAny					= "A-a",						-- Focus any window
-	DeleteWindow			= "A-d",						-- Delete a window
+--	DragWindow				= "A-d",						-- Drag window
+	DeleteWindow			= "A-S-d",					-- Delete a window
 	ToggleCollapse		= "A-c",						-- Toggle collapse
 	ToggleRaise				= "A-r",						-- Toggle raise
 	ToggleFull				= "A-f",						-- Toggle fullscreen
@@ -52,6 +52,6 @@ Keys = {
 
 -- Rules
 Rules = {
-	terms = { "/.*term/", "rxvt" },
+	terms = { "urxvt" },
 	inet = { "firefox", "kmail" }
 }
