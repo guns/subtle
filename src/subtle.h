@@ -119,9 +119,10 @@ void subTileConfigure(SubWin *t);											// Configure a tile
 
 typedef struct subclient
 {
+	int				n;																				// Client number
 	char			*name;																		// Client name
 	Colormap	cmap;																			// Client colormap	
-	Window		icon, caption, title, win;								// Subwindows
+	Window		caption, title, win;											// Subwindows
 	Window		left, right, bottom;											// Border windows	
 } SubClient;
 
@@ -171,7 +172,7 @@ typedef struct subrule
 	};
 } SubRule;
 
-SubView *subRuleFind(char *tag);											// Find rule
+SubRule *subRuleFind(char *tag);											// Find rule
 SubRule *subRuleNew(char *tag, SubView *v);						// Create new rule
 void subRuleKill(void);																// Kill all rules
 
@@ -262,6 +263,7 @@ void subUtilLogToggle(void);
 
 void subUtilLog(short type, const char *file, 				// Print messages
 	short line, const char *format, ...);
+void *subUtilRealloc(void *mem, size_t size);					// Reallocate memory
 void *subUtilAlloc(size_t n, size_t size);						// Allocate memory
 XPointer *subUtilFind(Window win, XContext id);				// Find window data
 
