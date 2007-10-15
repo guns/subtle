@@ -196,7 +196,7 @@ subLuaLoadConfig(const char *path)
 		}
 	
 	/* Rules */
-	d->cv = subViewNew("root");
+	d->cv = subViewNew("root", NULL);
 
 	lua_getglobal(configstate, "Rules");
 	if(lua_istable(configstate, -1)) 
@@ -206,13 +206,23 @@ subLuaLoadConfig(const char *path)
 				{
 					if(lua_istable(configstate, -1))
 						{ 
-							SubView *v = subViewNew((char *)lua_tostring(configstate, -2));
+							char *tags = NULL, *view = (char *)lua_tostring(configstate, -2);
+
 							lua_pushnil(configstate);
 							while(lua_next(configstate, -2))
 								{
-									subRuleNew((char *)lua_tostring(configstate, -1), v);
+									if(!tags) tags = strdup((char *)lua_tostring(configstate, -1));
+									else
+										{
+											char *tag = (char *)lua_tostring(configstate, -1);
+
+											tags = (char *)subUtilRealloc(tags, sizeof(char) * (strlen(tags) + strlen(tag) + 2));
+											sprintf(tags, "%s|%s", tags, tag);
+										}
 									lua_pop(configstate, 1);
 								}
+							if(tags) subViewNew(view, tags);;
+							free(tags);
 						}
 					lua_pop(configstate, 1);
 				}
