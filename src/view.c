@@ -36,19 +36,22 @@ UpdateViews(void)
  /**
 	* Create a view
 	* @param name Name of the view
+	* @param tags Tag list
 	* @return Returns a new #SubWin
 	**/
 
 SubView *
-subViewNew(char *name)
+subViewNew(char *name,
+	char *tags)
 {
 	SubView *tail = NULL, *v = NULL;
 
 	assert(name);
 	
 	v	= (SubView *)subUtilAlloc(1, sizeof(SubView));
-	v->name			= strdup(name);
-	v->width		=	strlen(v->name) * d->fx + 2;
+	v->name		= strdup(name);
+	v->width	=	strlen(v->name) * d->fx + 2;
+	if(tags) v->r = subRuleNew(tags);
 
 	if(!root) root = v;
 	else
@@ -158,7 +161,7 @@ subViewKill(void)
 							XDeleteContext(d->dpy, v->w->frame, 1);
 							XDestroyWindow(d->dpy, v->w->frame);
 						}
-
+					if(v->r) subRuleDelete(v->r);
 					free(v->name);
 					free(v);					
 
