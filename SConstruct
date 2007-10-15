@@ -16,12 +16,21 @@ BuildDir('build', 'src', duplicate = 0)
 
 # Environment
 env	= Environment(
+	options = opts,
 	CPPPATH = '.', 
 	CCFLAGS = ' -Wall -W -Wpointer-arith -Wstrict-prototypes -Wunused -Wshadow -std=gnu99',
-	options = opts)
+	CPPDEFINES = {
+		'PACKAGE_NAME' : '"' + package + '"',
+		'PACKAGE_VERSION' : '"' + version + '"',
+		'PACKAGE_STRING' : '"' + package + '-' + version + '"',
+		'PACKAGE_BUGREPORT' : '"' + report + '"'
+	}
+)
 
+debug = 'no'
 if env['with_debug']:
 	env.Append(CCFLAGS = ' -g -DDEBUG')
+	debug = 'yes'
 
 # Help
 env.Help(opts.GenerateHelpText(env))
@@ -71,12 +80,6 @@ checkFunctions(conf, Split("""
 
 env = conf.Finish()
 
-env.Append(CPPFLAGS = [
-	' -DPACKAGE_NAME=\\"' + package + '\\"',
-	' -DPACKAGE_VERSION=\\"' + version + '\\"',
-	' -DPACKAGE_STRING=\\"' + package + ' ' + version + '\\"'
-	] )
-
 print
 print package + ' ' + version
 print '-----------------'
@@ -85,7 +88,7 @@ print 'Binary..............: ' + env['prefix'] + '/bin'
 print 'Configuration.......: ' + env['sysconfdir']
 print 'Sublets.............: ' + env['datadir']
 print
-print 'Debugging messages..: ' + env['debug']
+print 'Debugging messages..: ' + debug
 print
 
 # Conscripts
