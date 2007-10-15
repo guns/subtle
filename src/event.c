@@ -214,19 +214,8 @@ HandleMap(XMapRequestEvent *ev)
 				}
 			else 
 				{
-					SubRule *r = subRuleFind(w->client->name);
-					if(r) 
-						{
-							subViewSwitch(r->v);
-							subTileAdd(r->v->w, w);
-							subTileConfigure(r->v->w);
-							printf("Using tag `%s'\n", r->tag);
-						}
-					else
-						{
 							subTileAdd(d->cv->w, w);
 							subTileConfigure(d->cv->w);
-						}
 				}
 		}
 }
@@ -435,7 +424,6 @@ subEventLoop(void)
 								}
 						}
 #endif /* HAVE_SYS_INOTIFY_H */
-
 				}
 
 			while(XPending(d->dpy))
@@ -451,8 +439,7 @@ subEventLoop(void)
 							case ClientMessage: 		HandleMessage(&ev.xclient); 						break;
 							case ColormapNotify: 		HandleColormap(&ev.xcolormap); 					break;
 							case PropertyNotify: 		HandleProperty(&ev.xproperty); 					break;
-							case EnterNotify:
-							case LeaveNotify:				HandleCrossing(&ev.xcrossing);					break;
+							case EnterNotify:				HandleCrossing(&ev.xcrossing);					break;
 							case VisibilityNotify:	
 							case Expose:						HandleExpose(&ev);											break;
 							case FocusIn:						HandleFocus(&ev.xfocus);								break;
