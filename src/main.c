@@ -49,7 +49,6 @@ HandleSignal(int signum)
 			case SIGINT: 
 				subKeyKill();
 				subViewKill();
-				subRuleKill();
 				subLuaKill();
 				subDisplayKill();
 				exit(1);
