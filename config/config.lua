@@ -53,5 +53,5 @@ Keys = {
 -- Rules
 Rules = {
 	terms = { "urxvt" },
-	inet = { "firefox", "kmail" }
+	inet = { "urxvt", "firefox", "kmail" }
 }
