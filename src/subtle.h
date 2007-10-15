@@ -136,6 +136,16 @@ void subClientFetchName(SubWin *w);										// Fetch client name
 void subClientSetWMState(SubWin *w, long state);			// Set client WM state
 long subClientGetWMState(SubWin *w);									// Get client WM state
 
+/* rule.c */
+typedef struct subrule
+{
+	regex_t *regex;																			// Rule regex
+} SubRule;
+
+int subRuleMatch(SubRule *r, char *tag);							// Find rule
+SubRule *subRuleNew(char *tags);											// Create new rule
+void subRuleDelete(SubRule *r);												// Kill all rules
+
 /* view.c */
 typedef struct subview
 {
@@ -143,38 +153,18 @@ typedef struct subview
 	char 		*name;																			// View name
 	Window	button;																			// View button
 	SubWin	*w;																					// View window
+	SubRule	*r;																					// View rule
 
 	struct subview *next;																// Next sibling
 	struct subview *prev;																// Prev sibling
 } SubView;
 
-SubView *subViewNew(char *name);											// Create a new view
+SubView *subViewNew(char *name, char *tags);					// Create a new view
 void subViewDelete(SubView *v);												// Delete a screen
 void subViewKill(void);																// Kill all views
 void subViewRender(void);															// Render the screen window
 void subViewConfigure(void);													// Configure the screen bar
 void subViewSwitch(SubView *v);												// Switch views
-
-/* rule.c */
-#define SUB_RULE_TYPE_VALUE	(1L << 1)									// Value type
-#define SUB_RULE_TYPE_REGEX	(1L << 2)									// Regexp type
-
-typedef struct subrule
-{
-	int							flags;															// Rule flags
-	SubView					*v;																	// Rule view
-	struct subrule	*next;															// Next sibling
-
-	union
-	{
-		char 		*tag;																			// Rule name
-		regex_t *regex;																		// Rule rexex
-	};
-} SubRule;
-
-SubRule *subRuleFind(char *tag);											// Find rule
-SubRule *subRuleNew(char *tag, SubView *v);						// Create new rule
-void subRuleKill(void);																// Kill all rules
 
 /* sublet.c */
 #define SUB_SUBLET_TYPE_TEXT		(1L << 1)							// Text sublet
@@ -195,8 +185,8 @@ typedef struct subsublet
 
 	union 
 	{
-		char *string;
-		int number;
+		char *string;																			// String data
+		int number;																				// Number data
 	};
 } SubSublet;
 
