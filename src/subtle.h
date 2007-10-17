@@ -35,23 +35,23 @@
 #define SUBWINHEIGHT(w)	(w->height - d->th - d->bw)		// Get real window height
 
 /* win.c */
-#define SUB_WIN_TYPE_VIEW					(1L << 1)						// View window
-#define SUB_WIN_TYPE_TILE					(1L << 2)						// Tile window
-#define SUB_WIN_TYPE_CLIENT				(1L << 3)						// Client window
+#define SUB_WIN_TYPE_VIEW			(1L << 1)						// View window
+#define SUB_WIN_TYPE_TILE			(1L << 2)						// Tile window
+#define SUB_WIN_TYPE_CLIENT		(1L << 3)						// Client window
 
-#define SUB_WIN_STATE_COLLAPSE		(1L << 4)						// Collapsed window
-#define SUB_WIN_STATE_RAISE				(1L << 5)						// Raised window
-#define SUB_WIN_STATE_FULL				(1L << 6)						// Fullscreen window
-#define SUB_WIN_STATE_WEIGHT			(1L << 7)						// Weighted window
-#define SUB_WIN_STATE_PILE				(1L << 8)						// Piled tiling window
-#define SUB_WIN_STATE_TRANS				(1L << 9)						// Transient window
+#define SUB_WIN_STATE_SHADE		(1L << 4)						// Shaded window
+#define SUB_WIN_STATE_FLOAT		(1L << 5)						// Floated window
+#define SUB_WIN_STATE_FULL		(1L << 6)						// Fullscreen window
+#define SUB_WIN_STATE_RESIZE	(1L << 7)						// Resized window
+#define SUB_WIN_STATE_STACK		(1L << 8)						// Piled tiling window
+#define SUB_WIN_STATE_TRANS		(1L << 9)						// Transient window
 
-#define SUB_WIN_PREF_INPUT				(1L << 10)					// Active/passive focus-model
-#define SUB_WIN_PREF_FOCUS				(1L << 11)					// Send focus message
-#define SUB_WIN_PREF_CLOSE				(1L << 12)					// Send close message
+#define SUB_WIN_PREF_INPUT		(1L << 10)					// Active/passive focus-model
+#define SUB_WIN_PREF_FOCUS		(1L << 11)					// Send focus message
+#define SUB_WIN_PREF_CLOSE		(1L << 12)					// Send close message
 
-#define SUB_WIN_TILE_VERT					(1L << 13)					// Vert-tile
-#define SUB_WIN_TILE_HORZ					(1L << 14)					// Horiz-tile
+#define SUB_WIN_TILE_VERT			(1L << 13)					// Vert-tile
+#define SUB_WIN_TILE_HORZ			(1L << 14)					// Horiz-tile
 
 /* Forward declarations */
 struct subtile;
@@ -74,19 +74,20 @@ typedef struct subwin
 	};
 } SubWin;
 
-SubWin *subWinNew(void);															// Create a new window
-void subWinDelete(SubWin *w);													// Delete a window
+SubWin *subWinNew(void);															// Create new window
+void subWinDelete(SubWin *w);													// Delete window
+void subWinDestroy(SubWin *w);												// Destroy window
 void subWinRender(SubWin *w);													// Render wrapper
-void subWinCut(SubWin *w);														// Cut a window
+void subWinCut(SubWin *w);														// Cut window
 void subWinPrepend(SubWin *w1, SubWin *w2);						// Prepend window
 void subWinAppend(SubWin *w1, SubWin *w2);						// Append window
-void subWinReplace(SubWin *w, SubWin *w2);						// Replace two windows
-void subWinSwap(SubWin *w, SubWin *w2);								// Swap two windows
+void subWinReplace(SubWin *w1, SubWin *w2);						// Replace two windows
+void subWinSwap(SubWin *w1, SubWin *w2);							// Swap two windows
 void subWinFocus(SubWin *w);													// Focus wrapper
-void subWinResize(SubWin *w);													// Resize a window
-void subWinReparent(SubWin *p, SubWin *w);						// Reparent a window
-void subWinMap(SubWin *w);														// Map a window
-void subWinUnmap(SubWin *w);													// Unmap a window
+void subWinResize(SubWin *w);													// Resize window
+void subWinReparent(SubWin *p, SubWin *w);						// Reparent window
+void subWinMap(SubWin *w);														// Map window
+void subWinUnmap(SubWin *w);													// Unmap window
 
 /* tile.c */
 typedef struct subtile
@@ -94,10 +95,11 @@ typedef struct subtile
 	SubWin *pile, *first, *last;												// Pile top, first/last child
 } SubTile;
 
-SubWin *subTileNew(short mode);												// Create a new tile
-void subTileDelete(SubWin *t);												// Delete a tile
+SubWin *subTileNew(short mode);												// Create new tile
+void subTileDelete(SubWin *t);												// Delete tile
+void subTileDestroy(SubWin *t);												// Destroy tile
 void subTileAdd(SubWin *t, SubWin *w);								// Add a window to tile
-void subTileConfigure(SubWin *t);											// Configure a tile
+void subTileConfigure(SubWin *t);											// Configure tile
 
 /* client.c */
 #define SUB_CLIENT_DRAG_LEFT					(1L << 1)				// Drag start from left
@@ -126,8 +128,9 @@ typedef struct subclient
 	Window		left, right, bottom;											// Border windows	
 } SubClient;
 
-SubWin *subClientNew(Window win);											// Create a new client
-void subClientDelete(SubWin *w);											// Delete a client
+SubWin *subClientNew(Window win);											// Create new client
+void subClientDelete(SubWin *w);											// Delete client
+void subClientDestroy(SubWin *w);											// Destroy client
 void subClientRender(SubWin *w);											// Render the window
 void subClientConfigure(SubWin *w);										// Send configure request
 void subClientDrag(short mode, SubWin *w);						// Move/Resize a window
@@ -136,35 +139,28 @@ void subClientFetchName(SubWin *w);										// Fetch client name
 void subClientSetWMState(SubWin *w, long state);			// Set client WM state
 long subClientGetWMState(SubWin *w);									// Get client WM state
 
-/* rule.c */
-typedef struct subrule
-{
-	regex_t *regex;																			// Rule regex
-} SubRule;
-
-int subRuleMatch(SubRule *r, char *tag);							// Find rule
-SubRule *subRuleNew(char *tags);											// Create new rule
-void subRuleDelete(SubRule *r);												// Kill all rules
-
 /* view.c */
 typedef struct subview
 {
-	int			width, n;																		// View button width, view number
+	int			width, xid;																	// View button width, view xid
 	char 		*name;																			// View name
 	Window	button;																			// View button
+
+	regex_t	*regex;																			// View regex
 	SubWin	*w;																					// View window
-	SubRule	*r;																					// View rule
 
 	struct subview *next;																// Next sibling
 	struct subview *prev;																// Prev sibling
 } SubView;
 
-SubView *subViewNew(char *name, char *tags);					// Create a new view
-void subViewDelete(SubView *v);												// Delete a screen
-void subViewKill(void);																// Kill all views
-void subViewRender(void);															// Render the screen window
-void subViewConfigure(void);													// Configure the screen bar
-void subViewSwitch(SubView *v);												// Switch views
+SubView *subViewNew(char *name, char *tags);					// Create new view
+void subViewDelete(SubView *v);												// Delete view
+void subViewDestroy(SubView *v);											// Destroy view
+void subViewKill(void);																// Kill views
+void subViewSift(Window win);													// Sift window
+void subViewRender(void);															// Render views
+void subViewConfigure(void);													// Configure views
+void subViewSwitch(SubView *v);												// Switch view
 
 /* sublet.c */
 #define SUB_SUBLET_TYPE_TEXT		(1L << 1)							// Text sublet
@@ -190,14 +186,15 @@ typedef struct subsublet
 	};
 } SubSublet;
 
-void subSubletNew(int type, char *name, int ref, 			// Create a new sublet
+void subSubletNew(int type, char *name, int ref, 			// Create new sublet
 	time_t interval, char *watch);
-void subSubletDelete(SubSublet *s);										// Delete a sublet
-void subSubletRender(void);														// Render a sublet
+void subSubletDelete(SubSublet *s);										// Delete sublet
+void subSubletDestroy(SubSublet *s);									// Destroy sublet
+void subSubletRender(void);														// Render sublet
 void subSubletConfigure(void);												// Configure sublet bar
 void subSubletSift(int pos);													// Sift sublet
 SubSublet *subSubletNext(void);												// Get next sublet
-void subSubletKill(void);															// Delete all sublets
+void subSubletKill(void);															// Delete sublets
 
 /* display.c */
 typedef struct subdisplay
@@ -236,8 +233,8 @@ typedef struct subdisplay
 
 extern SubDisplay *d;
 
-void subDisplayNew(const char *display_string);				// Create a new display
-void subDisplayKill(void);														// Delete a display
+void subDisplayNew(const char *display_string);				// Create new display
+void subDisplayKill(void);														// Delete display
 void subDisplayScan(void);														// Scan root window
 
 /* util.c */
