@@ -52,6 +52,7 @@ Keys = {
 
 -- Rules
 Rules = {
-	terms = { "urxvt" },
-	inet = { "urxvt", "firefox", "kmail" }
+	terms = { "[ur]+xvt", "[aex]+term", "foo" },
+	net = { "firefox", "kmail", "foo" },
+	gimp = { "gimp.*" }
 }
