@@ -9,7 +9,31 @@
 #include "subtle.h"
 
 static int nviews = 0;
-static SubView *root = NULL;
+static SubView *root = NULL, *last = NULL;
+
+static void
+TagView(SubView *v)
+{
+	assert(v);
+	v->w = subTileNew(SUB_WIN_TILE_HORZ);
+	v->w->flags |= SUB_WIN_TYPE_VIEW;
+	v->button = XCreateSimpleWindow(d->dpy, d->bar.views, 0, 0, 1, d->th, 0, d->colors.border, d->colors.norm);
+
+	XMapWindow(d->dpy, v->button);
+	XSaveContext(d->dpy, v->button, 1, (void *)v);
+}
+
+static void
+UntagView(SubView *v)
+{
+	assert(v->w);
+	XDestroySubwindows(d->dpy, v->w->frame);
+	XDeleteContext(d->dpy, v->button, 1);
+	XDestroyWindow(d->dpy, v->button);
+	subTileDelete(v->w);
+	free(v->w);
+	v->w = NULL;
+}
 
 static void
 UpdateViews(void)
@@ -30,7 +54,7 @@ UpdateViews(void)
 
 	/* EWMH: Desktops */
 	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_NUMBER_OF_DESKTOPS, nviews);
-	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CURRENT_DESKTOP, d->cv->n);
+	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CURRENT_DESKTOP, d->cv->xid);
 }
 
  /**
@@ -44,24 +68,52 @@ SubView *
 subViewNew(char *name,
 	char *tags)
 {
-	SubView *tail = NULL, *v = NULL;
+	SubView *v = NULL;
 
 	assert(name);
 	
 	v	= (SubView *)subUtilAlloc(1, sizeof(SubView));
 	v->name		= strdup(name);
 	v->width	=	strlen(v->name) * d->fx + 2;
-	if(tags) v->r = subRuleNew(tags);
+	v->xid		= ++nviews;
 
-	if(!root) root = v;
-	else
+	if(tags)
 		{
-			tail = root;
-			while(tail->next) tail = tail->next;
-			tail->next = v;
+			int errcode;
+			v->regex = (regex_t *)subUtilAlloc(1, sizeof(regex_t));
+
+			/* Stupid error handling */
+			if((errcode = regcomp(v->regex, tags, REG_EXTENDED|REG_NOSUB|REG_ICASE)))
+				{
+					size_t errsize = regerror(errcode, v->regex, NULL, 0);
+					char *errbuf = (char *)subUtilAlloc(1, errsize);
+
+					regerror(errcode, v->regex, errbuf, errsize);
+
+					subUtilLogWarn("Can't compile regex `%s'\n", tags);
+					subUtilLogDebug("%s\n", errbuf);
+
+					free(errbuf);
+					regfree(v->regex);
+					free(v->regex);
+					free(v);
+					return(NULL);
+				}
 		}
 
-	printf("Adding view (%s)\n", v->name);
+	if(!root) 
+		{
+			root = v;
+			last = v;
+		}
+	else
+		{
+			last->next = v;
+			v->prev = last;
+			last = v;
+		}
+
+	printf("Adding view %s (%s)\n", v->name, tags ? tags : "default");
 	return(v);
 }
 
@@ -86,7 +138,56 @@ subViewDelete(SubView *v)
 }
 
  /**
-	* Render a screen 
+	* Sift window
+	* @param w A #SubWin
+	**/
+
+void
+subViewSift(Window win)
+{
+	int sifted = 0;
+	SubView *v = last;
+	char *name = NULL;
+
+	assert(win);
+
+	XFetchName(d->dpy, win, &name);
+
+	while(v)
+		{
+			if((v == root && !sifted) || (v->regex && !regexec(v->regex, name, 0, NULL, 0)))
+				{
+					SubWin *w = subClientNew(win);
+
+					if(w->flags & SUB_WIN_STATE_TRANS) 
+						{
+							XSaveContext(d->dpy, w->frame, d->cv->xid, (void *)w);
+							w->parent = d->cv->w;
+							subClientToggle(SUB_WIN_STATE_FLOAT, w);
+						}
+					else XSaveContext(d->dpy, w->frame, v->xid, (void *)w);
+
+					if(!v->w) TagView(v);
+					subTileAdd(v->w, w);
+					subTileConfigure(v->w);
+					sifted++;
+
+					if(d->cv == v) subWinMap(w);
+					else XMapSubwindows(d->dpy, w->frame);
+
+					printf("Adding client %s (%s)\n", w->client->name, v->name);
+				}
+			v = v->prev;
+		}
+	
+	XFree(name);
+	
+	subViewConfigure();
+	subViewRender();
+}
+
+ /**
+	* Render views
 	* @param v A #SubView
 	**/
 
@@ -111,7 +212,7 @@ subViewRender(void)
 }
 
  /**
-	* Configure view bar
+	* Configure views
 	**/
 
 void
@@ -158,10 +259,16 @@ subViewKill(void)
 
 					if(v->w)
 						{
-							XDeleteContext(d->dpy, v->w->frame, 1);
+							subTileDelete(v->w);
+							XDeleteContext(d->dpy, v->w->frame, v->xid);
 							XDestroyWindow(d->dpy, v->w->frame);
+							free(v->w);
 						}
-					if(v->r) subRuleDelete(v->r);
+					if(v->regex) 
+						{
+							regfree(v->regex);
+							free(v->regex);
+						}
 					free(v->name);
 					free(v);					
 
@@ -182,32 +289,24 @@ subViewKill(void)
 void
 subViewSwitch(SubView *v)
 {
-	if(v) 
+	assert(v);
+
+	if(d->cv != v)	
 		{
-			if(d->cv != v)	
-				{
-					subWinUnmap(d->cv->w);
-					d->cv = v;
-				}
-			if(!v->w)
-				{
-					v->w = subTileNew(SUB_WIN_TILE_HORZ);
-					v->w->flags |= SUB_WIN_TYPE_VIEW;
-					v->button = XCreateSimpleWindow(d->dpy, d->bar.views, 0, 0, 1, d->th, 0, d->colors.border, d->colors.norm);
-
-					XSaveContext(d->dpy, v->button, 1, (void *)v);
-				}
-
-			XMapRaised(d->dpy, d->bar.win);
-			XMapRaised(d->dpy, d->cv->button);
-			subWinMap(d->cv->w);
-
-			/* EWMH: Desktops */
-			subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CURRENT_DESKTOP, d->cv->n);
-
-			subViewConfigure();
-			subViewRender();
-
-			printf("Switching to view (%s)\n", d->cv->name);
+			subWinUnmap(d->cv->w);
+			if(!d->cv->w->tile->first && d->cv != root) UntagView(d->cv);
+			d->cv = v;
 		}
+	if(!v->w) TagView(v);
+
+	XMapRaised(d->dpy, d->bar.win);
+	subWinMap(d->cv->w);
+
+	/* EWMH: Desktops */
+	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CURRENT_DESKTOP, d->cv->xid);
+
+	subViewConfigure();
+	subViewRender();
+
+	printf("Switching view (%s)\n", d->cv->name);
 }
