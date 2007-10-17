@@ -87,8 +87,6 @@ subClientNew(Window win)
 			XFree(protos);
 		}
 
-	subWinMap(w);
-
 	/* Check for dialog windows etc. */
 	XGetTransientForHint(d->dpy, win, &unnused);
 	if(unnused && !(w->flags & SUB_WIN_STATE_TRANS)) w->flags |= SUB_WIN_STATE_TRANS;
@@ -157,7 +155,7 @@ subClientRender(SubWin *w)
 	if(w && w->flags & SUB_WIN_TYPE_CLIENT)
 		{
 			unsigned long col = d->focus && d->focus == w ? d->colors.focus : 
-				(w->flags & SUB_WIN_STATE_COLLAPSE ? d->colors.cover : d->colors.norm);
+				(w->flags & SUB_WIN_STATE_SHADE ? d->colors.cover : d->colors.norm);
 
 			/* Update color */
 			XSetWindowBackground(d->dpy, w->client->title,	col);
@@ -188,7 +186,7 @@ DrawMask(short type,
 		{
 			case SUB_CLIENT_DRAG_STATE_START: 
 				XDrawRectangle(d->dpy, DefaultRootWindow(d->dpy), d->gcs.invert, box->x + 1, box->y + 1, 
-					box->width - 3, (w->flags & SUB_WIN_STATE_COLLAPSE) ? d->th - d->bw : box->height - d->bw);
+					box->width - 3, (w->flags & SUB_WIN_STATE_SHADE) ? d->th - d->bw : box->height - d->bw);
 				break;
 			case SUB_CLIENT_DRAG_STATE_TOP:
 				XFillRectangle(d->dpy, w->frame, d->gcs.invert, 5, 5, w->width - 10, w->height * 0.5 - 5);
@@ -234,7 +232,7 @@ AdjustWeight(short mode,
 					else if(w->parent->flags & SUB_WIN_TILE_VERT) w->weight = box->height * 100 / SUBWINHEIGHT(w->parent);
 
 					if(w->weight >= 80) w->weight = 80;
-					if(!(w->flags & SUB_WIN_STATE_WEIGHT)) w->flags |= SUB_WIN_STATE_WEIGHT;
+					if(!(w->flags & SUB_WIN_STATE_RESIZE)) w->flags |= SUB_WIN_STATE_RESIZE;
 					subTileConfigure(w->parent);
 					return;
 				}
@@ -317,7 +315,7 @@ subClientDrag(short mode,
 									}
 								else if(win != w->frame && mode == SUB_CLIENT_DRAG_SWAP)
 									{
-										if(!w2 || w2->frame != win) w2 = (SubWin *)subUtilFind(win, 1);
+										if(!w2 || w2->frame != win) w2 = (SubWin *)subUtilFind(win, d->cv->xid);
 										if(w2)
 											{
 												XQueryPointer(d->dpy, win, &nil, &nil, &rx, &ry, &wx, &wy, &mask);
@@ -377,11 +375,11 @@ subClientDrag(short mode,
 														subWinCut(w);
 
 														/* Check weighted windows */
-														if(w2->flags & SUB_WIN_STATE_WEIGHT)
+														if(w2->flags & SUB_WIN_STATE_RESIZE)
 															{
-																t->flags 		|= SUB_WIN_STATE_WEIGHT;
+																t->flags 		|= SUB_WIN_STATE_RESIZE;
 																t->weight		= w2->weight;
-																w2->flags		&= ~SUB_WIN_STATE_WEIGHT;
+																w2->flags		&= ~SUB_WIN_STATE_RESIZE;
 																w2->weight	= 0;
 															}
 
@@ -432,9 +430,9 @@ subClientDrag(short mode,
 								else /* Resize */
 									{
 										XDrawRectangle(d->dpy, DefaultRootWindow(d->dpy), d->gcs.invert, box.x + 1, box.y + 1, 
-											box.width - 3, (w->flags & SUB_WIN_STATE_COLLAPSE) ? d->th - 3 : box.height - 3);
+											box.width - 3, (w->flags & SUB_WIN_STATE_SHADE) ? d->th - 3 : box.height - 3);
 							
-										if(w->flags & SUB_WIN_STATE_RAISE) 
+										if(w->flags & SUB_WIN_STATE_FLOAT) 
 											{
 												w->x			= box.x;
 												w->y			= box.y;
@@ -475,7 +473,7 @@ subClientToggle(short type,
 					w->flags &= ~type;
 					switch(type)
 						{
-							case SUB_WIN_STATE_COLLAPSE:
+							case SUB_WIN_STATE_SHADE:
 								subClientSetWMState(w, NormalState);
 
 								/* Map most of the windows */
@@ -487,7 +485,7 @@ subClientToggle(short type,
 								/* Resize frame */
 								XMoveResizeWindow(d->dpy, w->frame, w->x, w->y, w->width, w->height);
 								break;
-							case SUB_WIN_STATE_RAISE: XReparentWindow(d->dpy, w->frame, w->parent->frame, w->x, w->y);	break;
+							case SUB_WIN_STATE_FLOAT: XReparentWindow(d->dpy, w->frame, w->parent->frame, w->x, w->y);	break;
 							case SUB_WIN_STATE_FULL:
 								/* Map most of the windows */
 								XMapWindow(d->dpy, w->client->title);
@@ -510,7 +508,7 @@ subClientToggle(short type,
 
 					switch(type)
 						{
-							case SUB_WIN_STATE_COLLAPSE:
+							case SUB_WIN_STATE_SHADE:
 								subClientSetWMState(w, WithdrawnState);
 
 								/* Unmap most of the windows */
@@ -521,7 +519,7 @@ subClientToggle(short type,
 
 								XMoveResizeWindow(d->dpy, w->frame, w->x, w->y, w->width, d->th);
 								break;						
-							case SUB_WIN_STATE_RAISE:
+							case SUB_WIN_STATE_FLOAT:
 								/* Respect the user/program preferences */
 								hints = XAllocSizeHints();
 								if(!hints) subUtilLogError("Can't alloc memory. Exhausted?\n");
