@@ -41,7 +41,7 @@ HandleButtonPress(XButtonEvent *ev)
 			return;
 		}
 
-	w = (SubWin *)subUtilFind(ev->window, 1);
+	w = (SubWin *)subUtilFind(ev->window, d->cv->xid);
 	if(w && w->flags & SUB_WIN_TYPE_CLIENT)
 		{
 			switch(ev->button)
@@ -50,8 +50,8 @@ HandleButtonPress(XButtonEvent *ev)
 						if(last_time > 0 && ev->time - last_time <= 300) /* Double click */
 							{
 								subUtilLogDebug("Double click: win=%#lx\n", ev->window);
-								if((ev->subwindow == w->client->title && w->parent && w->parent->flags & SUB_WIN_TYPE_TILE) || w->flags & SUB_WIN_STATE_RAISE) 
-									subClientToggle(SUB_WIN_STATE_COLLAPSE, w);
+								if((ev->subwindow == w->client->title && w->parent && w->parent->flags & SUB_WIN_TYPE_TILE) || w->flags & SUB_WIN_STATE_FLOAT) 
+									subClientToggle(SUB_WIN_STATE_SHADE, w);
 								last_time = 0;
 							}						
 						else  /* Single click */
@@ -59,11 +59,11 @@ HandleButtonPress(XButtonEvent *ev)
 								subUtilLogDebug("Single click: win=%#lx\n", ev->window);
 								if(!(w->flags & SUB_WIN_TYPE_VIEW))
 									{
-										if(w->flags & SUB_WIN_STATE_RAISE) XRaiseWindow(d->dpy, w->frame);
-										if(w->parent && w->parent->flags & SUB_WIN_STATE_PILE) 
+										if(w->flags & SUB_WIN_STATE_FLOAT) XRaiseWindow(d->dpy, w->frame);
+										if(w->parent && w->parent->flags & SUB_WIN_STATE_STACK) 
 											{
 												w->parent->tile->pile = w;
-												if(w->flags & SUB_WIN_STATE_COLLAPSE) w->flags &= ~SUB_WIN_STATE_COLLAPSE;
+												if(w->flags & SUB_WIN_STATE_SHADE) w->flags &= ~SUB_WIN_STATE_SHADE;
 												subTileConfigure(w->parent);
 											}
 										if(ev->subwindow == w->client->left) 				subClientDrag(SUB_CLIENT_DRAG_LEFT, w);
@@ -72,7 +72,7 @@ HandleButtonPress(XButtonEvent *ev)
 										else if(ev->subwindow == w->client->title || (w->flags & SUB_WIN_TYPE_CLIENT && ev->subwindow == w->client->caption))
 											{ 
 												/* Either drag and move or drag an swap windows */
-												subClientDrag((w->flags & SUB_WIN_STATE_RAISE) ? SUB_CLIENT_DRAG_MOVE : SUB_CLIENT_DRAG_SWAP, w);
+												subClientDrag((w->flags & SUB_WIN_STATE_FLOAT) ? SUB_CLIENT_DRAG_MOVE : SUB_CLIENT_DRAG_SWAP, w);
 												last_time = ev->time;
 											}
 									}
@@ -82,7 +82,7 @@ HandleButtonPress(XButtonEvent *ev)
 						if(ev->subwindow == w->client->title) subWinDelete(w);
 						break;
 					case Button3: 
-						if(ev->subwindow == w->client->title) subClientToggle(SUB_WIN_STATE_RAISE, w); 
+						if(ev->subwindow == w->client->title) subClientToggle(SUB_WIN_STATE_FLOAT, w); 
 						break;
 					case Button4: subViewSwitch(d->cv->next); break;
 					case Button5: if(d->cv->prev) subViewSwitch(d->cv->prev); break;
@@ -111,7 +111,7 @@ Exec(char *cmd)
 static void
 HandleKeyPress(XKeyEvent *ev)
 {
-	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
+	SubWin *w = (SubWin *)subUtilFind(ev->window, d->cv->xid);
 	if(w)
 		{
 			SubKey *k = subKeyFind(ev->keycode, ev->state);
@@ -126,15 +126,15 @@ HandleKeyPress(XKeyEvent *ev)
 
 
 							case SUB_KEY_ACTION_DELETE_WIN: subWinDelete(w); break;
-							case SUB_KEY_ACTION_TOGGLE_COLLAPSE:	if(!mode) mode = SUB_WIN_STATE_COLLAPSE;
-							case SUB_KEY_ACTION_TOGGLE_RAISE:			if(!mode) mode = SUB_WIN_STATE_RAISE;
+							case SUB_KEY_ACTION_TOGGLE_COLLAPSE:	if(!mode) mode = SUB_WIN_STATE_SHADE;
+							case SUB_KEY_ACTION_TOGGLE_RAISE:			if(!mode) mode = SUB_WIN_STATE_FLOAT;
 							case SUB_KEY_ACTION_TOGGLE_FULL:			if(!mode) mode = SUB_WIN_STATE_FULL;
 								if(!(w->flags & SUB_WIN_TYPE_VIEW)) subClientToggle(mode, w);
 								break;									
 							case SUB_KEY_ACTION_TOGGLE_PILE: 
-								if(w->flags & SUB_WIN_TYPE_TILE) subClientToggle(SUB_WIN_STATE_PILE, w);		
-								else if(w->parent && w->parent->flags & SUB_WIN_STATE_PILE) 
-									subClientToggle(SUB_WIN_STATE_PILE, w->parent);
+								if(w->flags & SUB_WIN_TYPE_TILE) subClientToggle(SUB_WIN_STATE_STACK, w);		
+								else if(w->parent && w->parent->flags & SUB_WIN_STATE_STACK) 
+									subClientToggle(SUB_WIN_STATE_STACK, w->parent);
 								break;
 							case SUB_KEY_ACTION_TOGGLE_LAYOUT: 
 								if(w->flags & SUB_WIN_TYPE_TILE)
@@ -175,7 +175,7 @@ static void
 HandleConfigure(XConfigureRequestEvent *ev)
 {
 	XWindowChanges wc;
-	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
+	SubWin *w = (SubWin *)subUtilFind(ev->window, d->cv->xid);
 	if(w)
 		{
 			if(ev->value_mask & CWX)			w->x			= ev->x;
@@ -203,27 +203,14 @@ HandleConfigure(XConfigureRequestEvent *ev)
 static void
 HandleMap(XMapRequestEvent *ev)
 {
-	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
-	if(!w) 
-		{
-			w = subClientNew(ev->window);
-			if(w->flags & SUB_WIN_STATE_TRANS) 
-				{
-					w->parent = d->cv->w;
-					subClientToggle(SUB_WIN_STATE_RAISE, w);
-				}
-			else 
-				{
-							subTileAdd(d->cv->w, w);
-							subTileConfigure(d->cv->w);
-				}
-		}
+	SubWin *w = (SubWin *)subUtilFind(ev->window, d->cv->xid);
+	if(!w) subViewSift(ev->window);
 }
 
 static void
 HandleDestroy(XDestroyWindowEvent *ev)
 {
-	SubWin *w = (SubWin *)subUtilFind(ev->event, 1);
+	SubWin *w = (SubWin *)subUtilFind(ev->event, d->cv->xid);
 	if(w && w->flags & SUB_WIN_TYPE_CLIENT) subWinDelete(w); 
 }
 
@@ -243,7 +230,7 @@ GetParent(Window win)
 static void
 HandleMessage(XClientMessageEvent *ev)
 {
-	SubWin *w = (SubWin *)subUtilFind(GetParent(ev->window), 1);
+	SubWin *w = (SubWin *)subUtilFind(GetParent(ev->window), d->cv->xid);
 
 	if(w && w->flags & SUB_WIN_TYPE_CLIENT)
 		{
@@ -276,7 +263,7 @@ HandleMessage(XClientMessageEvent *ev)
 static void
 HandleColormap(XColormapEvent *ev)
 {	
-	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
+	SubWin *w = (SubWin *)subUtilFind(ev->window, d->cv->xid);
 	if(w && w->flags & SUB_WIN_TYPE_CLIENT && ev->new)
 		{
 			w->client->cmap = ev->colormap;
@@ -290,7 +277,7 @@ HandleProperty(XPropertyEvent *ev)
 	/* Prevent expensive query tree if the atom isn't supported */
 	if(ev->atom == XA_WM_NAME || ev->atom == subEwmhGetAtom(SUB_EWMH_NET_WM_NAME))
 		{
-			SubWin *w = (SubWin *)subUtilFind(GetParent(ev->window), 1);
+			SubWin *w = (SubWin *)subUtilFind(GetParent(ev->window), d->cv->xid);
 			if(w && w->flags & SUB_WIN_TYPE_CLIENT) subClientFetchName(w);
 		}
 }
@@ -298,7 +285,7 @@ HandleProperty(XPropertyEvent *ev)
 static void
 HandleCrossing(XCrossingEvent *ev)
 {
-	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
+	SubWin *w = (SubWin *)subUtilFind(ev->window, d->cv->xid);
 	if(w)
 		{
 			XEvent event;
@@ -324,7 +311,7 @@ HandleExpose(XEvent *ev)
 		}
 	else
 		{
-  		w = (SubWin *)subUtilFind(win, 1);
+  		w = (SubWin *)subUtilFind(win, d->cv->xid);
 			if(w) subWinRender(w);
 		}
 
@@ -335,7 +322,7 @@ HandleExpose(XEvent *ev)
 static void
 HandleFocus(XFocusInEvent *ev)
 {
-	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
+	SubWin *w = (SubWin *)subUtilFind(ev->window, d->cv->xid);
 	if(w && w->flags & SUB_WIN_PREF_FOCUS)
 		{
 			if(w != d->focus) 
