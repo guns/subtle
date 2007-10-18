@@ -228,10 +228,10 @@ AdjustWeight(short mode,
 			if((w->parent->flags & SUB_WIN_TILE_HORZ && (mode == SUB_CLIENT_DRAG_LEFT || mode == SUB_CLIENT_DRAG_RIGHT)) ||
 				(w->parent->flags & SUB_WIN_TILE_VERT && mode == SUB_CLIENT_DRAG_BOTTOM))
 				{
-					if(w->parent->flags & SUB_WIN_TILE_HORZ) w->weight = box->width * 100 / SUBWINWIDTH(w->parent);
-					else if(w->parent->flags & SUB_WIN_TILE_VERT) w->weight = box->height * 100 / SUBWINHEIGHT(w->parent);
+					if(w->parent->flags & SUB_WIN_TILE_HORZ) w->resized = box->width * 100 / SUBWINWIDTH(w->parent);
+					else if(w->parent->flags & SUB_WIN_TILE_VERT) w->resized = box->height * 100 / SUBWINHEIGHT(w->parent);
 
-					if(w->weight >= 80) w->weight = 80;
+					if(w->resized >= 80) w->resized = 80;
 					if(!(w->flags & SUB_WIN_STATE_RESIZE)) w->flags |= SUB_WIN_STATE_RESIZE;
 					subTileConfigure(w->parent);
 					return;
@@ -374,17 +374,18 @@ subClientDrag(short mode,
 														subWinReplace(w2, t);
 														subWinCut(w);
 
-														/* Check weighted windows */
+														/* Check resizeded windows */
 														if(w2->flags & SUB_WIN_STATE_RESIZE)
 															{
 																t->flags 		|= SUB_WIN_STATE_RESIZE;
-																t->weight		= w2->weight;
+																t->resized		= w2->resized;
 																w2->flags		&= ~SUB_WIN_STATE_RESIZE;
-																w2->weight	= 0;
+																w2->resized	= 0;
 															}
 
 														subTileAdd(t, state == SUB_CLIENT_DRAG_STATE_TOP || state == SUB_CLIENT_DRAG_STATE_LEFT ? w : w2);
 														subTileAdd(t, state == SUB_CLIENT_DRAG_STATE_TOP || state == SUB_CLIENT_DRAG_STATE_LEFT ? w2 : w);
+														subWinMap(t);
 
 														subTileConfigure(t->parent);
 														subTileConfigure(p);
