@@ -56,6 +56,7 @@ subWinDelete(SubWin *w)
 	else if(w->flags & SUB_WIN_TYPE_CLIENT) subClientDelete(w);	
 
 	p = w->parent;
+	subWinUnmap(w);
 	subWinCut(w);
 	subWinDestroy(w);
 
