@@ -47,13 +47,13 @@ subTileDelete(SubWin *t)
 
 	while(c)
 		{
+			SubWin *next = c->next;
 			subWinDelete(c);
-			c = c->next;
+			c = next;
 		}
 
 	subUtilLogDebug("Deleting %s-tile\n", (t->flags & SUB_WIN_TILE_HORZ) ? "h" : "v");
-
-	free(t->tile); 
+	subTileDestroy(t);
 }
 
  /**
@@ -62,9 +62,9 @@ subTileDelete(SubWin *t)
 	**/
 
 void
-subTileDestroy(SubWin *t);
+subTileDestroy(SubWin *t)
 {
-	assert(t);
+	assert(t && t->flags & SUB_WIN_TYPE_TILE);
 
 	free(t->tile);
 }
@@ -79,7 +79,7 @@ void
 subTileAdd(SubWin *t,
 	SubWin *w)
 {
-	assert(t && w);
+	assert(t && t->flags & SUB_WIN_TYPE_TILE && w);
 
 	if(!t->tile->first)
 		{
@@ -105,14 +105,15 @@ void
 subTileConfigure(SubWin *t)
 {
 	SubWin *c = NULL;
-	int mw = 0, mh = 0, width = 0; height = 0;
-	unsigned int x = 0, y = 0, n = 0, size = 0, comp = 0, collapsed = 0, weighted = 0, full = 0, raised = 0;
+	int mw = 0, mh = 0, width = 0, height = 0;
+	unsigned int x = 0, y = 0, n = 0, size = 0, comp = 0, shaded = 0, resized = 0, full = 0, floated = 0;
 
 	assert(t && t->flags & SUB_WIN_TYPE_TILE);
 
-	int mw = 0, mh = 0, width = t->width, height = t->height;
+	width		= t->width;
+	height	= t->height;
+	c				= t->tile->first;
 
-	c = t->tile->first;
 	if(c)
 		{
 			size = (t->flags & SUB_WIN_TILE_HORZ) ? width : height;
@@ -120,21 +121,21 @@ subTileConfigure(SubWin *t)
 			/* Find special windows */
 			while(c)
 				{
-					if(c->flags & SUB_WIN_STATE_SHADE) collapsed++;
+					if(c->flags & SUB_WIN_STATE_SHADE) shaded++;
 					else if(c->flags & SUB_WIN_STATE_FULL) full++;
-					else if(c->flags & SUB_WIN_STATE_FLOAT) raised++;
-					else if(c->flags & SUB_WIN_STATE_RESIZE && c->weight > 0)
+					else if(c->flags & SUB_WIN_STATE_FLOAT) floated++;
+					else if(c->flags & SUB_WIN_STATE_RESIZE && c->resized > 0)
 						{
-							/* Prevent only weighted windows */
-							if(!c->next && weighted == n)
+							/* Prevent only resized windows */
+							if(!c->next && resized == n)
 								{
 									c->flags &= ~SUB_WIN_STATE_RESIZE;
-									c->weight = 0;
+									c->resized = 0;
 								}
 							else 
 								{
-									size -= width * c->weight / 100;
-									weighted++;
+									size -= width * c->resized / 100;
+									resized++;
 								}
 						}
 					c = c->next;
@@ -144,25 +145,25 @@ subTileConfigure(SubWin *t)
 			/* Stacked window */
 			if(t->flags & SUB_WIN_STATE_STACK) 
 				{
-					collapsed = n - 1;
-					weighted	= 0;
+					shaded = n - 1;
+					resized	= 0;
 				}
 
 			/* Weighted window */
-			if(weighted > 0)
+			if(resized > 0)
 				{
 					if(t->flags & SUB_WIN_TILE_HORZ) width = size;
 					else if(t->flags & SUB_WIN_TILE_VERT) height = size;
 				}
 
 			 /* Prevent divide by zero */
-			n		= (n - collapsed - weighted - full - raised) > 0 ? n - collapsed - weighted - full - raised : 1;
+			n		= (n - shaded - resized - full - floated) > 0 ? n - shaded - resized - full - floated : 1;
 			mw	= (t->flags & SUB_WIN_TILE_HORZ) ? width / n : width;
-			mh	= (t->flags & SUB_WIN_TILE_VERT) ? (height - collapsed * d->th) / n : height;
+			mh	= (t->flags & SUB_WIN_TILE_VERT) ? (height - shaded * d->th) / n : height;
 
 			/* Get compensation for bad rounding */
-			if(t->flags & SUB_WIN_TILE_HORZ) comp = abs(width - n * mw - collapsed * d->th);
-			else comp = abs(height - n * mh - collapsed * d->th);
+			if(t->flags & SUB_WIN_TILE_HORZ) comp = abs(width - n * mw - shaded * d->th);
+			else comp = abs(height - n * mh - shaded * d->th);
 
 			c = t->tile->first;
 			while(c)
@@ -194,21 +195,21 @@ subTileConfigure(SubWin *t)
 
 									XReparentWindow(d->dpy, first->frame, first->parent->frame, 0, 0);
 
-									printf("Removing dynamic tile %#lx\n", c->frame);
-
-									/* Delete manually to skip configure */
 									subTileDelete(c);
+									//subWinDestroy(c);
 
 									XDeleteContext(d->dpy, c->frame, 1);
 									XDestroySubwindows(d->dpy, c->frame);
 									XDestroyWindow(d->dpy, c->frame);
+
+									printf("Removing dynamic tile %#lx\n", c->frame);
 
 									c = first;
 								}
 
 							c->parent	= t;
 							c->x			= t->flags & SUB_WIN_TYPE_VIEW ? d->th : 0;
-							c->y			= (c->flags & SUB_WIN_STATE_SHADE) ? y : collapsed * d->th;
+							c->y			= (c->flags & SUB_WIN_STATE_SHADE) ? y : shaded * d->th;
 							c->width	= mw;
 							c->height	= (c->flags & SUB_WIN_STATE_SHADE) ? d->th : mh;
 
@@ -217,14 +218,14 @@ subTileConfigure(SubWin *t)
 								{
 									if(!(c->flags & SUB_WIN_STATE_SHADE)) c->x = x;
 									if(c->flags & SUB_WIN_STATE_SHADE) c->width = SUBWINWIDTH(t);
-									else if(c->flags & SUB_WIN_STATE_RESIZE) c->width = SUBWINWIDTH(t) * c->weight / 100;
+									else if(c->flags & SUB_WIN_STATE_RESIZE) c->width = SUBWINWIDTH(t) * c->resized / 100;
 
-									if(collapsed > 0) c->height = mh - collapsed * d->th;
+									if(shaded > 0) c->height = mh - shaded * d->th;
 								}
 							else if(t->flags & SUB_WIN_TILE_VERT)
 								{
 									c->y = y;
-									if(c->flags & SUB_WIN_STATE_RESIZE) c->height = SUBWINHEIGHT(t) * c->weight / 100;
+									if(c->flags & SUB_WIN_STATE_RESIZE) c->height = SUBWINHEIGHT(t) * c->resized / 100;
 								}
 
 							/* Add compensation to width or height */
@@ -240,9 +241,9 @@ subTileConfigure(SubWin *t)
 								}
 							if(t->flags & SUB_WIN_TILE_VERT) y += c->height;
 
-							subUtilLogDebug("Configuring %s-window: x=%d, y=%d, width=%d, height=%d, weight=%d\n", 
+							subUtilLogDebug("Configuring %s-window: x=%d, y=%d, width=%d, height=%d, resized=%d\n", 
 								(c->flags & SUB_WIN_STATE_SHADE) ? "c" : ((t->flags & SUB_WIN_STATE_RESIZE) ? "t" : 
-								((t->flags & SUB_WIN_STATE_FLOAT) ? "r" : "n")), c->x, c->y, c->width, c->height, c->weight);
+								((t->flags & SUB_WIN_STATE_FLOAT) ? "r" : "n")), c->x, c->y, c->width, c->height, c->resized);
 
 							subWinResize(c);
 
