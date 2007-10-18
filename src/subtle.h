@@ -60,7 +60,7 @@ struct subclient;
 typedef struct subwin
 {
 	int			flags;																			// Window flags
-	int			x, y, width, height, weight;								// Window properties
+	int			x, y, width, height, resized;								// Window properties
 	Window	frame;
 
 	struct	subwin *parent;															// Parent window
