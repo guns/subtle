@@ -74,7 +74,7 @@ subViewNew(char *name,
 	
 	v	= (SubView *)subUtilAlloc(1, sizeof(SubView));
 	v->name		= strdup(name);
-	v->width	=	strlen(v->name) * d->fx + 2;
+	v->width	=	strlen(v->name) * d->fx + 8;
 	v->xid		= ++nviews;
 
 	if(tags)
@@ -205,7 +205,7 @@ subViewRender(void)
 				{
 					XSetWindowBackground(d->dpy, v->button, (d->cv == v) ? d->colors.focus : d->colors.norm);
 					XClearWindow(d->dpy, v->button);
-					XDrawString(d->dpy, v->button, d->gcs.font, 1, d->fy - 1, v->name, strlen(v->name));
+					XDrawString(d->dpy, v->button, d->gcs.font, 3, d->fy - 1, v->name, strlen(v->name));
 				}
 			v = v->next;
 		}
@@ -228,7 +228,7 @@ subViewConfigure(void)
 					if(v->w)
 						{
 							XMoveResizeWindow(d->dpy, v->button, width, 0, v->width, d->th);
-							width += v->width + 6;
+							width += v->width;
 						}
 					v = v->next;
 				}
