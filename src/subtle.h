@@ -153,6 +153,7 @@ typedef struct subview
 	struct subview *prev;																// Prev sibling
 } SubView;
 
+SubView *subViewFind(int xid);												// Find view
 SubView *subViewNew(char *name, char *tags);					// Create new view
 void subViewDelete(SubView *v);												// Delete view
 void subViewDestroy(SubView *v);											// Destroy view
@@ -358,7 +359,7 @@ enum SubEwmhHints
 };
 
 void subEwmhInit(void);																	// Init atoms/hints
-Atom subEwmhGetAtom(int hint);													// Get atom
+Atom subEwmhFind(int hint);															// Find atom
 
 char * subEwmhGetProperty(Window win, Atom type,				// Get property
 	int hint, unsigned long *size);
