@@ -36,6 +36,30 @@ UntagView(SubView *v)
 }
 
  /**
+	* Find view
+	* @param xid View id
+	* @return Returns the found #SubView or NULL
+	**/
+
+SubView *
+subViewFind(int xid)
+{
+	int i;
+	SubView *v = d->rv;
+
+	while(v)
+		{
+			if(v->w)
+				{
+					if(i == xid) return(v);
+					i++;
+				}
+			v = v->next;
+		}
+	return(NULL);
+}
+
+ /**
 	* Create a view
 	* @param name Name of the view
 	* @param tags Tag list
@@ -227,7 +251,7 @@ subViewConfigure(void)
 	XMoveResizeWindow(d->disp, d->bar.views, 0, 0, width, d->th);
 
 	/* EWMH: Virtual roots */
-	subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_VIRTUAL_ROOTS, wins, nviews);
+	subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_VIRTUAL_ROOTS, wins, i);
 	free(wins);
 
 	/* EWMH: Desktops */
@@ -282,8 +306,8 @@ subViewKill(void)
 }
 
  /**
-	* Switch screen
-	* @param w New active screen
+	* Switch view
+	* @param v New active view
 	**/
 
 void
