@@ -9,7 +9,7 @@
 #include "subtle.h"
 
 static int nviews = 0;
-static SubView *root = NULL, *last = NULL;
+static SubView *last = NULL;
 
 static void
 TagView(SubView *v)
@@ -17,44 +17,22 @@ TagView(SubView *v)
 	assert(v);
 	v->w = subTileNew(SUB_WIN_TILE_HORZ);
 	v->w->flags |= SUB_WIN_TYPE_VIEW;
-	v->button = XCreateSimpleWindow(d->dpy, d->bar.views, 0, 0, 1, d->th, 0, d->colors.border, d->colors.norm);
+	v->button = XCreateSimpleWindow(d->disp, d->bar.views, 0, 0, 1, d->th, 0, d->colors.border, d->colors.norm);
 
-	XMapWindow(d->dpy, v->button);
-	XSaveContext(d->dpy, v->button, 1, (void *)v);
+	XMapWindow(d->disp, v->button);
+	XSaveContext(d->disp, v->button, 1, (void *)v);
 }
 
 static void
 UntagView(SubView *v)
 {
 	assert(v->w);
-	XDestroySubwindows(d->dpy, v->w->frame);
-	XDeleteContext(d->dpy, v->button, 1);
-	XDestroyWindow(d->dpy, v->button);
+	XDestroySubwindows(d->disp, v->w->frame);
+	XDeleteContext(d->disp, v->button, 1);
+	XDestroyWindow(d->disp, v->button);
 	subTileDelete(v->w);
 	free(v->w);
 	v->w = NULL;
-}
-
-static void
-UpdateViews(void)
-{
-	int i = 0;
-	SubView *v = root;
-	Window *wins = NULL;
-
-	/* EWMH: Virtual roots */
-	wins = (Window *)subUtilAlloc(nviews, sizeof(Window));
-	while(v)
-		{
-			if(v->w) wins[i++] = v->w->frame;
-			v = v->next;
-		}
-	subEwmhSetWindows(DefaultRootWindow(d->dpy), SUB_EWMH_NET_VIRTUAL_ROOTS, wins, nviews);
-	free(wins);
-
-	/* EWMH: Desktops */
-	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_NUMBER_OF_DESKTOPS, nviews);
-	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CURRENT_DESKTOP, d->cv->xid);
 }
 
  /**
@@ -82,7 +60,7 @@ subViewNew(char *name,
 			int errcode;
 			v->regex = (regex_t *)subUtilAlloc(1, sizeof(regex_t));
 
-			/* Stupid error handling */
+			/* Thread safe error handling.. */
 			if((errcode = regcomp(v->regex, tags, REG_EXTENDED|REG_NOSUB|REG_ICASE)))
 				{
 					size_t errsize = regerror(errcode, v->regex, NULL, 0);
@@ -100,11 +78,10 @@ subViewNew(char *name,
 					return(NULL);
 				}
 		}
-
-	if(!root) 
+	if(!d->rv) 
 		{
-			root = v;
-			last = v;
+			d->rv = v;
+			last	= v;
 		}
 	else
 		{
@@ -130,7 +107,7 @@ subViewDelete(SubView *v)
 			printf("Removing view (%s)\n", v->name);
 
 			subWinUnmap(v->w);
-			XUnmapWindow(d->dpy, v->button);
+			XUnmapWindow(d->disp, v->button);
 			nviews--;
 
 			subViewConfigure();
@@ -146,41 +123,45 @@ void
 subViewSift(Window win)
 {
 	int sifted = 0;
-	SubView *v = last;
-	char *name = NULL;
+	SubView *v = NULL;
+	char *class = NULL;
 
-	assert(win);
+	assert(win && last);
 
-	XFetchName(d->dpy, win, &name);
+	class = subEwmhGetProperty(win, XA_STRING, SUB_EWMH_NET_WM_CLASS, NULL);
 
+	/* Loop backwards because root view has no regex */
+	v = last;
 	while(v)
 		{
-			if((v == root && !sifted) || (v->regex && !regexec(v->regex, name, 0, NULL, 0)))
+			if((v == d->rv && !sifted) || (v->regex && !regexec(v->regex, class, 0, NULL, 0)))
 				{
 					SubWin *w = subClientNew(win);
 
 					if(w->flags & SUB_WIN_STATE_TRANS) 
 						{
-							XSaveContext(d->dpy, w->frame, d->cv->xid, (void *)w);
 							w->parent = d->cv->w;
 							subClientToggle(SUB_WIN_STATE_FLOAT, w);
 						}
-					else XSaveContext(d->dpy, w->frame, v->xid, (void *)w);
+					else w->views |= v->xid;
 
 					if(!v->w) TagView(v);
 					subTileAdd(v->w, w);
 					subTileConfigure(v->w);
 					sifted++;
 
+					XSaveContext(d->disp, w->frame, 1, (void *)w);
+
+					/* Map only if the desired view is the current view */
 					if(d->cv == v) subWinMap(w);
-					else XMapSubwindows(d->dpy, w->frame);
+					else XMapSubwindows(d->disp, w->frame);
 
 					printf("Adding client %s (%s)\n", w->client->name, v->name);
 				}
 			v = v->prev;
 		}
 	
-	XFree(name);
+	XFree(class);
 	
 	subViewConfigure();
 	subViewRender();
@@ -194,18 +175,21 @@ subViewSift(Window win)
 void
 subViewRender(void)
 {
-	SubView *v = root;
+	SubView *v = NULL;
+	
+	assert(d->rv);
 
-	XClearWindow(d->dpy, d->bar.win);
-	XFillRectangle(d->dpy, d->bar.win, d->gcs.border, 0, 2, DisplayWidth(d->dpy, DefaultScreen(d->dpy)), d->th - 4);	
+	XClearWindow(d->disp, d->bar.win);
+	XFillRectangle(d->disp, d->bar.win, d->gcs.border, 0, 2, DisplayWidth(d->disp, DefaultScreen(d->disp)), d->th - 4);	
 
+	v = d->rv;
 	while(v)
 		{
 			if(v->w)
 				{
-					XSetWindowBackground(d->dpy, v->button, (d->cv == v) ? d->colors.focus : d->colors.norm);
-					XClearWindow(d->dpy, v->button);
-					XDrawString(d->dpy, v->button, d->gcs.font, 3, d->fy - 1, v->name, strlen(v->name));
+					XSetWindowBackground(d->disp, v->button, (d->cv == v) ? d->colors.focus : d->colors.norm);
+					XClearWindow(d->disp, v->button);
+					XDrawString(d->disp, v->button, d->gcs.font, 3, d->fy - 1, v->name, strlen(v->name));
 				}
 			v = v->next;
 		}
@@ -218,22 +202,38 @@ subViewRender(void)
 void
 subViewConfigure(void)
 {
-	if(root)
-		{
-			int  width = 0;
-			SubView *v = root;
+	int xid = 0, i = 0, width = 0;
+	char **names = NULL;
+	Window *wins = NULL;
+	SubView *v = NULL;
 
-			while(v)
+	assert(d->rv);
+
+	wins = (Window *)subUtilAlloc(nviews, sizeof(Window));
+	names = (char **)subUtilAlloc(nviews, sizeof(char *));
+
+	v = d->rv;
+	while(v)
+		{
+			if(v->w)
 				{
-					if(v->w)
-						{
-							XMoveResizeWindow(d->dpy, v->button, width, 0, v->width, d->th);
-							width += v->width;
-						}
-					v = v->next;
+					XMoveResizeWindow(d->disp, v->button, width, 0, v->width, d->th);
+					width += v->width;
+					wins[i] = v->w->frame;
+					names[i++]	= v->name;
 				}
-			XMoveResizeWindow(d->dpy, d->bar.views, 0, 0, width, d->th);
+			v = v->next;
 		}
+	XMoveResizeWindow(d->disp, d->bar.views, 0, 0, width, d->th);
+
+	/* EWMH: Virtual roots */
+	subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_VIRTUAL_ROOTS, wins, nviews);
+	free(wins);
+
+	/* EWMH: Desktops */
+	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_NUMBER_OF_DESKTOPS, (long *)&i, 1);
+	subEwmhSetStrings(DefaultRootWindow(d->disp), SUB_EWMH_NET_DESKTOP_NAMES, names, i);
+	free(names);
 }
 
  /**
@@ -243,42 +243,42 @@ subViewConfigure(void)
 void
 subViewKill(void)
 {
-	if(root)
+	SubView *v = NULL;
+
+	assert(d->rv);
+
+	printf("Removing all views\n");
+	
+	v = d->rv;
+	while(v)
 		{
-			SubView *v = root;
+			SubView *next = v->next;
 
-			printf("Removing all views\n");
+			XUnmapWindow(d->disp, v->button);
+			XDeleteContext(d->disp, v->button, 1);
+			XDestroyWindow(d->disp, v->button);
 
-			while(v)
+			if(v->w)
 				{
-					SubView *next = v->next;
-
-					XUnmapWindow(d->dpy, v->button);
-					XDeleteContext(d->dpy, v->button, 1);
-					XDestroyWindow(d->dpy, v->button);
-
-					if(v->w)
-						{
-							subTileDelete(v->w);
-							XDeleteContext(d->dpy, v->w->frame, v->xid);
-							XDestroyWindow(d->dpy, v->w->frame);
-							free(v->w);
-						}
-					if(v->regex) 
-						{
-							regfree(v->regex);
-							free(v->regex);
-						}
-					free(v->name);
-					free(v);					
-
-					v = next;
+					subTileDelete(v->w);
+					XDeleteContext(d->disp, v->w->frame, v->xid);
+					XDestroyWindow(d->disp, v->w->frame);
+					free(v->w);
 				}
+			if(v->regex) 
+				{
+					regfree(v->regex);
+					free(v->regex);
+				}
+			free(v->name);
+			free(v);					
 
-			XDestroyWindow(d->dpy, d->bar.win);
-			XDestroyWindow(d->dpy, d->bar.views);
-			XDestroyWindow(d->dpy, d->bar.sublets);
+			v = next;
 		}
+
+	XDestroyWindow(d->disp, d->bar.win);
+	XDestroyWindow(d->disp, d->bar.views);
+	XDestroyWindow(d->disp, d->bar.sublets);
 }
 
  /**
@@ -289,21 +289,23 @@ subViewKill(void)
 void
 subViewSwitch(SubView *v)
 {
+	int xid = 0;
 	assert(v);
 
 	if(d->cv != v)	
 		{
 			subWinUnmap(d->cv->w);
-			if(!d->cv->w->tile->first && d->cv != root) UntagView(d->cv);
+			if(!d->cv->w->tile->first && d->cv != d->rv) UntagView(d->cv);
 			d->cv = v;
 		}
 	if(!v->w) TagView(v);
 
-	XMapRaised(d->dpy, d->bar.win);
+	XMapRaised(d->disp, d->bar.win);
 	subWinMap(d->cv->w);
 
 	/* EWMH: Desktops */
-	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_CURRENT_DESKTOP, d->cv->xid);
+	xid = d->cv->xid - 1;
+	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_CURRENT_DESKTOP, (long *)&xid, 1);
 
 	subViewConfigure();
 	subViewRender();
