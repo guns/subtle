@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include <signal.h>
 #include <errno.h>
 #include <assert.h>
@@ -25,21 +26,61 @@
 
 #define ACTION_CLIENTS	(1L << 1)		// List clients
 #define ACTION_VIEWS		(1L << 2)		// List views
+#define ACTION_SWITCH		(1L << 3)		// Switch view
 
 static Display *disp = NULL;
 
 #ifdef DEBUG
 static short debug = 0;
+#define Debug(...) Log(0, __FILE__, __LINE__, __VA_ARGS__);
+#else
+#define Debug(...)
 #endif /* DEBUG */
+
+#define Error(...) Log(1, __FILE__, __LINE__, __VA_ARGS__);
+#define Warn(...) Log(2, __FILE__, __LINE__, __VA_ARGS__);
+
+void
+Log(short type,
+	const char *file,
+	short line,
+	const char *format,
+	...)
+{
+	va_list ap;
+	char buf[255];
+
+#ifdef DEBUG
+	if(!debug) return;
+#endif /* DEBUG */
+
+	va_start(ap, format);
+	vsnprintf(buf, sizeof(buf), format, ap);
+	va_end(ap);
+
+	switch(type)
+		{
+#ifdef DEBUG
+			case 0: fprintf(stderr, "<DEBUG:%s:%d> %s", file, line, buf);	break;
+#endif /* DEBUG */
+			case 1: fprintf(stderr, "<ERROR> %s", buf); raise(SIGTERM);		break;
+			case 2: fprintf(stdout, "<WARNING> %s", buf);									break;
+		}
+}
 
 static void
 Usage(void)
 {
 	printf("Usage: %s [OPTIONS]\n\n" \
 					"Options:\n" \
-					"  -d, --display   DISPLAY \t Connect to DISPLAY (default: $DISPLAY)\n" \
+					"  -d, --display=DISPLAY   \t Connect to DISPLAY (default: $DISPLAY)\n" \
 					"  -c, --clients           \t List all clients managed by subtle\n" \
 					"  -v, --views             \t List all views managed by subtle\n" \
+					"  -s, --switch=VIEW       \t Switch to view\n" \
+					"  -f, --find=CLIENT       \t Find client\n" \
+					"  -A, --active=CLIENT     \t Give focus to client\n" \
+					"  -S, --shade=CLIENT      \t Toggle shade of a client\n" \
+					"  -F, --float=CLIENT      \t Toggle float of a client\n" \
 					"  -D, --debug             \t Print debugging messages\n" \
 					"  -V, --version           \t Show version info and exit\n" \
 					"  -h, --help              \t Show this help and exit\n\n" \
@@ -98,21 +139,51 @@ GetProperty(Window win,
 }
 
 static char *
-GetClientName(Window win)
+GetName(Window win)
 {
 	char *name = GetProperty(win, XA_STRING, "WM_NAME", NULL);
 	return(name ? name : NULL);
 }
 
 static char *
-GetClientClass(Window win)
+GetClass(Window win)
 {
 	char *class = GetProperty(win, XA_STRING, "WM_CLASS", NULL);
 	return(class ? class : NULL);
 }
 
 static void
-GetClientList(void)
+SendMessage(Window win,
+	char *prop,
+	unsigned long data0,
+	unsigned long data1,
+	unsigned long data2,
+	unsigned long data3,
+	unsigned long data4)
+{
+	int ret;
+	XEvent ev;
+	long mask = SubstructureRedirectMask|SubstructureNotifyMask;
+
+	ev.xclient.type					= ClientMessage;
+	ev.xclient.serial				= 0;
+	ev.xclient.send_event		= True;
+	ev.xclient.message_type	= XInternAtom(disp, prop, False);
+	ev.xclient.window				= win;
+	ev.xclient.format				= 32;
+	ev.xclient.data.l[0]		= data0;
+	ev.xclient.data.l[1]		= data1;
+	ev.xclient.data.l[2]		= data2;
+	ev.xclient.data.l[3]		= data3;
+	ev.xclient.data.l[4]		= data4;
+
+	if(!XSendEvent(disp, DefaultRootWindow(disp), False, mask, &ev))
+		printf("Can't send client message %s\n", prop);
+	Debug("Send: prop=%s, data0=%ld\n", prop, data0);
+}
+
+static void
+GetClients(void)
 {
 	unsigned long size = 0;
 	Window *list = NULL;
@@ -123,8 +194,8 @@ GetClientList(void)
 
 			for(i = 0; i < size / sizeof(Window); i++)
 				{
-					char *name = GetClientName(list[i]);
-					char *class = GetClientClass(list[i]);
+					char *name = GetName(list[i]);
+					char *class = GetClass(list[i]);
 
 					printf("%#lx %s %s\n", list[i], name, class);
 
@@ -140,22 +211,33 @@ GetClientList(void)
 }
 
 static void
-GetViewList(void)
+GetViews(void)
 {
 }
 
+static void
+SetView(int view)
+{
+	assert(view >= 0);
+	SendMessage(DefaultRootWindow(disp), "_NET_CURRENT_DESKTOP", (unsigned long)view, 0, 0, 0, 0);
+	Debug("Set: view=%d\n", view);
+}
+	
 int
 main(int argc,
 	char *argv[])
 {
-	int c, action = 0;
-	char *display_string = NULL;
+	int c, action = 0, view = 0;
+	char *display_string = NULL, buf[256];
 	struct sigaction act;
 	static struct option long_options[] =
 	{
 		{ "display",		required_argument,		0,	'd' },
 		{ "clients",		no_argument,					0,	'c' },
 		{ "views",			no_argument,					0,	'v' },
+		{ "switch",			required_argument,		0,	's' },
+		{ "shade",			required_argument,		0,	'S' },
+		{ "float",			required_argument,		0,	'F' },
 #ifdef DEBUG
 		{ "debug",			no_argument,					0,	'D' },
 #endif /* DEBUG */
@@ -164,13 +246,28 @@ main(int argc,
 		{ 0, 0, 0, 0}
 	};
 
-	while((c = getopt_long(argc, argv, "d:cvDVh", long_options, NULL)) != -1)
+	while((c = getopt_long(argc, argv, "d:cvs:S:DVh", long_options, NULL)) != -1)
 		{
+			if(optarg)
+				{
+					if(!strncmp(optarg, "-", 1)) 
+						{
+							if(!fgets(buf, sizeof(buf), stdin)) 
+								Error("Can't read from pipe\n");
+							Debug("Read: buf=%s", buf);
+						}
+					else snprintf(buf, sizeof(buf), "%s", optarg);
+				}
+
 			switch(c)
 				{
 					case 'd': display_string = optarg;	break;
 					case 'c':	action = ACTION_CLIENTS;	break;
 					case 'v':	action = ACTION_VIEWS;		break;
+					case 's': 
+						action = ACTION_SWITCH;
+						view = atoi(buf);
+						break;
 #ifdef DEBUG					
 					case 'D': debug = 1;								break;
 #endif /* DEBUG */
@@ -202,8 +299,9 @@ main(int argc,
 
 	switch(action)
 		{
-			case ACTION_CLIENTS:	GetClientList();	break;
-			case ACTION_VIEWS:		GetViewList();		break;
+			case ACTION_CLIENTS:	GetClients();		break;
+			case ACTION_VIEWS:		GetViews();			break;
+			case ACTION_SWITCH:		SetView(view);	break;
 		}
 	
 	return(0);
