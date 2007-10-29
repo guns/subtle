@@ -5,16 +5,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <signal.h>
 #include <errno.h>
 #include <assert.h>
 #include <regex.h>
+#include <unistd.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <X11/cursorfont.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-#include <X11/cursorfont.h>
 #include <X11/Xatom.h>
 #include <X11/Xmd.h>
 
@@ -28,7 +28,7 @@
 
 /* Macros */
 #define SUBWINNEW(parent,x,y,width,height,border) \
-	XCreateWindow(d->dpy, parent, x, y, width, height, border, CopyFromParent, \
+	XCreateWindow(d->disp, parent, x, y, width, height, border, CopyFromParent, \
 		InputOutput, CopyFromParent, mask, &attrs);				// Shortcut
 
 #define SUBWINWIDTH(w)	(w->width - 2 * d->bw)				// Get real window width
@@ -51,7 +51,7 @@
 #define SUB_WIN_PREF_CLOSE		(1L << 12)					// Send close message
 
 #define SUB_WIN_TILE_VERT			(1L << 13)					// Vert-tile
-#define SUB_WIN_TILE_HORZ			(1L << 14)					// Horiz-tile
+#define SUB_WIN_TILE_HORZ			(1L << 14)					// Horiz-tile>
 
 /* Forward declarations */
 struct subtile;
@@ -59,7 +59,7 @@ struct subclient;
 
 typedef struct subwin
 {
-	int			flags;																			// Window flags
+	int			flags, views;																// Window flags and views
 	int			x, y, width, height, resized;								// Window properties
 	Window	frame;
 
@@ -199,12 +199,12 @@ void subSubletKill(void);															// Delete sublets
 /* display.c */
 typedef struct subdisplay
 {
-	Display						*dpy;															// Connection to X server
+	Display						*disp;														// Connection to X server
 	int								th, bw, fx, fy;										// Tab height, border widthm font metrics
 	XFontStruct				*xfs;															// Font
 
 	SubWin						*focus;														// Focus window
-	SubView						*cv;															// Current view
+	SubView						*rv, *cv;													// Root view, current view
 
 #ifdef HAVE_SYS_INOTIFY_H
 	int								notify;														// Inotify descriptor
@@ -236,23 +236,6 @@ extern SubDisplay *d;
 void subDisplayNew(const char *display_string);				// Create new display
 void subDisplayKill(void);														// Delete display
 void subDisplayScan(void);														// Scan root window
-
-/* util.c */
-#ifdef DEBUG
-void subUtilLogToggle(void);
-#define subUtilLogDebug(...)	subUtilLog(0, __FILE__, __LINE__, __VA_ARGS__);
-#else
-#define subUtilLogDebug(...)
-#endif /* DEBUG */
-
-#define subUtilLogError(...)	subUtilLog(1, __FILE__, __LINE__, __VA_ARGS__);
-#define subUtilLogWarn(...)		subUtilLog(2, __FILE__, __LINE__, __VA_ARGS__);
-
-void subUtilLog(short type, const char *file, 				// Print messages
-	short line, const char *format, ...);
-void *subUtilRealloc(void *mem, size_t size);					// Reallocate memory
-void *subUtilAlloc(size_t n, size_t size);						// Allocate memory
-XPointer *subUtilFind(Window win, XContext id);				// Find window data
 
 /* key.c */
 #define SUB_KEY_ACTION_FOCUS_ABOVE			(1L << 1)			// Focus above window
@@ -297,11 +280,28 @@ void subKeyKill(void);																// Delete all keys
 void subLuaLoadConfig(const char *path);							// Load config file
 void subLuaLoadSublets(const char *path);							// Load sublets
 void subLuaKill(void);																// Kill Lua state
-void subLuaCall(SubSublet *s);												// Call a Lua script
+void subLuaCall(SubSublet *s);												// Call Lua script
 
 /* event.c */
 time_t subEventGetTime(void);													// Get the current time
 int subEventLoop(void);																// Event loop
+
+/* util.c */
+#ifdef DEBUG
+void subUtilLogToggle(void);
+#define subUtilLogDebug(...)	subUtilLog(0, __FILE__, __LINE__, __VA_ARGS__);
+#else
+#define subUtilLogDebug(...)
+#endif /* DEBUG */
+
+#define subUtilLogError(...)	subUtilLog(1, __FILE__, __LINE__, __VA_ARGS__);
+#define subUtilLogWarn(...)		subUtilLog(2, __FILE__, __LINE__, __VA_ARGS__);
+
+void subUtilLog(short type, const char *file, 				// Print messages
+	short line, const char *format, ...);
+void *subUtilRealloc(void *mem, size_t size);					// Reallocate memory
+void *subUtilAlloc(size_t n, size_t size);						// Allocate memory
+XPointer *subUtilFind(Window win, XContext id);				// Find window data
 
 /* ewmh.c */
 enum SubEwmhHints
@@ -318,19 +318,21 @@ enum SubEwmhHints
 	SUB_EWMH_NET_SUPPORTED,															// Supported states
 	SUB_EWMH_NET_CLIENT_LIST,														// List of clients
 	SUB_EWMH_NET_CLIENT_LIST_STACKING,									// List of clients
-	SUB_EWMH_NET_NUMBER_OF_DESKTOPS,										// Total number of desktops
+	SUB_EWMH_NET_NUMBER_OF_DESKTOPS,										// Total number of views
+	SUB_EWMH_NET_DESKTOP_NAMES,													// Names of the views
 	SUB_EWMH_NET_DESKTOP_GEOMETRY,											// Desktop geometry
-	SUB_EWMH_NET_DESKTOP_VIEWPORT,											// Viewport of the desktop
-	SUB_EWMH_NET_CURRENT_DESKTOP,												// Number of current desktop
+	SUB_EWMH_NET_DESKTOP_VIEWPORT,											// Viewport of the view
+	SUB_EWMH_NET_CURRENT_DESKTOP,												// Number of current view
 	SUB_EWMH_NET_ACTIVE_WINDOW,													// Focus window
-	SUB_EWMH_NET_WORKAREA,															// Workarea of the desktop
+	SUB_EWMH_NET_WORKAREA,															// Workarea of the views
 	SUB_EWMH_NET_SUPPORTING_WM_CHECK,										// Check for compliant window manager
 	SUB_EWMH_NET_VIRTUAL_ROOTS,													// List of virtual destops
 	SUB_EWMH_NET_CLOSE_WINDOW,
 
-	SUB_EWMH_NET_WM_NAME,																// Name of a window
-	SUB_EWMH_NET_WM_PID,																// PID of a client
-	SUB_EWMH_NET_WM_DESKTOP,														// Desktop a client is on
+	SUB_EWMH_NET_WM_NAME,																// Name of window
+	SUB_EWMH_NET_WM_CLASS,															// Class of window
+	SUB_EWMH_NET_WM_PID,																// PID of client
+	SUB_EWMH_NET_WM_DESKTOP,														// Desktop client is on
 
 	SUB_EWMH_NET_WM_STATE,															// Window state
 	SUB_EWMH_NET_WM_STATE_MODAL,												// Modal window
@@ -349,29 +351,24 @@ enum SubEwmhHints
 	SUB_EWMH_NET_WM_ACTION_SHADE,
 	SUB_EWMH_NET_WM_ACTION_FULLSCREEN,
 	SUB_EWMH_NET_WM_ACTION_CHANGE_DESKTOP,
-	SUB_EWMH_NET_WM_ACTION_CLOSE
+	SUB_EWMH_NET_WM_ACTION_CLOSE,
+
+	/* Misc */
+	SUB_EWMH_UTF8
 };
 
 void subEwmhInit(void);																	// Init atoms/hints
-Atom subEwmhGetAtom(int hint);													// Get an atom
+Atom subEwmhGetAtom(int hint);													// Get atom
 
-int subEwmhSetWindow(Window win, int hint, 
-	Window value);																				// Set window property
-int subEwmhSetWindows(Window win, int hint, 
+char * subEwmhGetProperty(Window win, Atom type,				// Get property
+	int hint, unsigned long *size);
+void subEwmhSetWindows(Window win, int hint, 
 	Window *values, int size);														// Set window properties
-int subEwmhSetString(Window win, int hint, 
-	const char *value);																		// Set string property
-int subEwmhGetString(Window win, int hint,
-	char *value);																					// Get string property
-int subEwmhSetCardinal(Window win, int hint,
-	long value);																					// Set cardinal property
-int subEwmhSetCardinals(Window win, int hint,
+void subEwmhSetCardinals(Window win, int hint,
 	long *values, int size);															// Set cardinal properties
-int subEwmhGetCardinal(Window win, int hint,
-	long *value);																					// Get cardinal property
-
-void * subEwmhGetProperty(Window win, int hint,
-	Atom type, int *num);																	// Get window properties
-void subEwmhDeleteProperty(Window win, int hint);				// Delete window property
+void subEwmhSetString(Window win, int hint, 
+	char *value);																					// Set string property
+void subEwmhSetStrings(Window win, int hint,						// Set string properties
+	char **values, int size);
 
 #endif /* SUBTLE_H */
