@@ -8,13 +8,18 @@
 
 #include "subtle.h"
 
-static Atom atoms[37];
+#define NATOMS 40
+
+static Atom atoms[NATOMS];
+
+ /**
+	* Init ewmh
+	**/
 
 void
 subEwmhInit(void)
 {
-	int n = 37;
-	long data[4] = { 0, 0, 0, 0 };
+	int n = NATOMS;
 	char *names[] =
 	{
 		/* ICCCM */
@@ -22,156 +27,174 @@ subEwmhInit(void)
 
 		/* EWMH */
 		"_NET_SUPPORTED", "_NET_CLIENT_LIST", "_NET_CLIENT_LIST_STACKING", "_NET_NUMBER_OF_DESKTOPS",
-		"_NET_DESKTOP_GEOMETRY", "_NET_DESKTOP_VIEWPORT", "_NET_CURRENT_DESKTOP", "_NET_ACTIVE_WINDOW",
+		"_NET_DESKTOP_NAMES", "_NET_DESKTOP_GEOMETRY", "_NET_DESKTOP_VIEWPORT", "_NET_CURRENT_DESKTOP", "_NET_ACTIVE_WINDOW",
 		"_NET_WORKAREA", "_NET_SUPPORTING_WM_CHECK", "_NET_VIRTUAL_ROOTS", "_NET_CLOSE_WINDOW",
-		"_NET_WM_NAME", "_NET_WM_PID", "_NET_WM_DESKTOP", 
+		"WM_NAME", "WM_CLASS", "_NET_WM_PID", "_NET_WM_DESKTOP", 
 		"_NET_WM_STATE", "_NET_WM_STATE_MODAL", "_NET_WM_STATE_SHADED", "_NET_WM_STATE_HIDDEN", "_NET_WM_STATE_FULLSCREEN",
 		"_NET_WM_WINDOW_TYPE", "_NET_WM_WINDOW_TYPE_DESKTOP", "_NET_WM_WINDOW_TYPE_NORMAL", "_NET_WM_WINDOW_TYPE_DIALOG",
 		"_NET_WM_ALLOWED_ACTIONS", "_NET_WM_ACTION_MOVE", "_NET_WM_ACTION_RESIZE", "_NET_WM_ACTION_SHADE",
-		"_NET_WM_ACTION_FULLSCREEN", "_NET_WM_ACTION_CHANGE_DESKTOP", "_NET_WM_ACTION_CLOSE"
-	};
+		"_NET_WM_ACTION_FULLSCREEN", "_NET_WM_ACTION_CHANGE_DESKTOP", "_NET_WM_ACTION_CLOSE",
 
-	XInternAtoms(d->dpy, names, n, 0, atoms);
+		/* Misc */
+		"UTF8_STRING"
+	};
+	long data[4] = { 0, 0, 0, 0 }, pid = (long)getpid();
+
+	XInternAtoms(d->disp, names, n, 0, atoms);
 
 	/* Window manager information */
-	subEwmhSetWindow(DefaultRootWindow(d->dpy), SUB_EWMH_NET_SUPPORTING_WM_CHECK, DefaultRootWindow(d->dpy));
-	subEwmhSetString(DefaultRootWindow(d->dpy), SUB_EWMH_NET_WM_NAME, PACKAGE_STRING);
-	subEwmhSetCardinal(DefaultRootWindow(d->dpy), SUB_EWMH_NET_WM_PID, (long)getpid());
-	subEwmhSetCardinals(DefaultRootWindow(d->dpy), SUB_EWMH_NET_DESKTOP_VIEWPORT, (long *)&data, 2);
+	subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_SUPPORTING_WM_CHECK, &DefaultRootWindow(d->disp), 1);
+	subEwmhSetString(DefaultRootWindow(d->disp), SUB_EWMH_NET_WM_NAME, PACKAGE_STRING);
+	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_WM_PID, &pid, 1);
+	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_DESKTOP_VIEWPORT, (long *)&data, 2);
 
 	/* Workarea size */
-	data[2] = DisplayWidth(d->dpy, DefaultScreen(d->dpy)); 
-	data[3] = DisplayHeight(d->dpy, DefaultScreen(d->dpy));
-	subEwmhSetCardinals(DefaultRootWindow(d->dpy), SUB_EWMH_NET_WORKAREA, (long *)&data, 4);
+	data[2] = DisplayWidth(d->disp, DefaultScreen(d->disp)); 
+	data[3] = DisplayHeight(d->disp, DefaultScreen(d->disp));
+	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_WORKAREA, (long *)&data, 4);
 
 	/* Desktop sizes */
-	data[0] = DisplayWidth(d->dpy, DefaultScreen(d->dpy));
-	data[1] = DisplayHeight(d->dpy, DefaultScreen(d->dpy));
-	subEwmhSetCardinals(DefaultRootWindow(d->dpy), SUB_EWMH_NET_DESKTOP_GEOMETRY, (long *)&data, 2);
+	data[0] = DisplayWidth(d->disp, DefaultScreen(d->disp));
+	data[1] = DisplayHeight(d->disp, DefaultScreen(d->disp));
+	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_DESKTOP_GEOMETRY, (long *)&data, 2);
 
 	/* Supported window states */
-	data[0] = subEwmhGetAtom(SUB_EWMH_NET_WM_STATE_MODAL);
-	data[1] = subEwmhGetAtom(SUB_EWMH_NET_WM_STATE_SHADED);
-	data[2] = subEwmhGetAtom(SUB_EWMH_NET_WM_STATE_HIDDEN);
-	data[3] = subEwmhGetAtom(SUB_EWMH_NET_WM_STATE_FULLSCREEN);
-	subEwmhSetCardinals(DefaultRootWindow(d->dpy), SUB_EWMH_NET_SUPPORTED, (long *)&data, 4);	
+	data[0] = atoms[SUB_EWMH_NET_WM_STATE_MODAL];
+	data[1] = atoms[SUB_EWMH_NET_WM_STATE_SHADED];
+	data[2] = atoms[SUB_EWMH_NET_WM_STATE_HIDDEN];
+	data[3] = atoms[SUB_EWMH_NET_WM_STATE_FULLSCREEN];
+	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_SUPPORTED, (long *)&data, 4);	
 }
+
+ /**
+	* Get intern atom 
+	* @param hint Hint number
+	* @return The desired atom
+	**/
 
 Atom
 subEwmhGetAtom(int hint)
 {
+	assert(hint <= NATOMS);
 	return(atoms[hint]);
 }
 
-static unsigned long
-GetProperty(Atom type,
-	Window win,
+ /**
+	* Get property from window
+	* @param win Window
+	* @param type Atom type
+	* @param hint Hint number
+	* @param size Size of items
+	* @return Return data associated with the property
+	**/
+
+char *
+subEwmhGetProperty(Window win,
+	Atom type,
 	int hint,
-	unsigned long size,
-	unsigned char **data)
+	unsigned long *size)
 {
-	Atom ar;
-	unsigned long n, b;
+	unsigned long nitems, bytes;
+	unsigned char *data = NULL;
 	int format;
+	Atom rtype;
 
-	XGetWindowProperty(d->dpy, win, atoms[hint], 0L, size, False, type, &ar, &format, &n, &b, data);
-	return(n);
+	if(XGetWindowProperty(d->disp, win, atoms[hint], 0L, 1024, False, type, &rtype, 
+		&format, &nitems, &bytes, &data) != Success)
+		{
+			subUtilLogDebug("Failed to get property (%d)\n", hint);
+			return(NULL);
+		}
+	if(type != rtype)
+		{
+			subUtilLogDebug("Invalid type for property (%d)\n", hint);
+			XFree(data);
+			return(NULL);
+		}
+	if(size) *size = (format / 8) * nitems;
+
+	return(data);
 }
 
-int
-subEwmhSetWindow(Window win,
-	int hint,
-	Window value)
-{
-	return(XChangeProperty(d->dpy, win, atoms[hint], XA_WINDOW, 32, PropModeReplace,
-		(unsigned char *)&value, 1));
-}
+ /**
+	* Change window property
+	* @param win Window
+	* @param hint Hint number
+	* @param values Window list
+	* @param size Size of the list
+	**/
 
-int
+void
 subEwmhSetWindows(Window win,
 	int hint,
 	Window *values,
 	int size)
 {
-	return(XChangeProperty(d->dpy, win, atoms[hint], XA_WINDOW, 32, PropModeReplace,
-		(unsigned char *)values, size));
+	XChangeProperty(d->disp, win, atoms[hint], XA_WINDOW, 32, PropModeReplace, (unsigned char *)values, size);
 }
 
-int
-subEwmhSetString(Window win,
-	int hint,
-	const char *value)
-{
-	return(XChangeProperty(d->dpy, win, atoms[hint], XA_STRING, 8, PropModeReplace,
-		(unsigned char *)value, strlen(value)));
-}
+ /**
+	* Change window property
+	* @param win Window
+	* @param hint Hint number
+	* @param values Cardinal list
+	* @param size Size of the list
+	**/
 
-int
-subEwmhGetString(Window win,
-	int hint,
-	char *value)
-{
-	unsigned char *data = NULL;
-
-	if(GetProperty(XA_STRING, win, hint, 64L, &data))
-		{
-			value = (char *)data;
-			XFree(data);
-			return(True);
-		}
-	return(False);
-}
-
-int
-subEwmhSetCardinal(Window win,
-	int hint,
-	long value)
-{
-	return(XChangeProperty(d->dpy, win, atoms[hint], XA_CARDINAL, 32, PropModeReplace,
-		(unsigned char *)&value, 1));
-}
-
-int
+void
 subEwmhSetCardinals(Window win,
 	int hint,
 	long *values,
 	int size)
 {
-	return(XChangeProperty(d->dpy, win, atoms[hint], XA_CARDINAL, 32, PropModeReplace,
-		(unsigned char *)values, size));
+	XChangeProperty(d->disp, win, atoms[hint], XA_CARDINAL, 32, PropModeReplace, (unsigned char *)values, size);
 }
 
-int
-subEwmhGetCardinal(Window win,
-	int hint,
-	long *value)
-{
-	long *data = NULL;
-
-	if(GetProperty(XA_CARDINAL, win, hint, 1L, (unsigned char **)&data))
-		{
-			*value = *data;
-			XFree(data);
-			return(True);
-		}
-	return(False);
-}
-
-void *
-subEwmhGetProperty(Window win,
-	int hint,
-	Atom type,
-	int *num)
-{
-	unsigned char *data = NULL;
-
-	*num = (int)GetProperty(type, win, hint, 0x7fffffff, &data);
-	return((void *)data);
-}
+ /**
+	* Change window property
+	* @param win Window
+	* @param hint Hint number
+	* @param value String value
+	**/
 
 void
-subEwmhDeleteProperty(Window win,
-	int hint)
+subEwmhSetString(Window win,
+	int hint,
+	char *value)
 {
-	XDeleteProperty(d->dpy, win, atoms[hint]);
+	XChangeProperty(d->disp, win, atoms[hint], atoms[SUB_EWMH_UTF8], 8, 
+		PropModeReplace, (unsigned char *)value, strlen(value));
+}
+
+ /**
+	* Change window property
+	* @param win Window
+	* @param hint Hint number
+	* @param values String list
+	* @param size Size of the list
+	**/
+
+void
+subEwmhSetStrings(Window win,
+	int hint,
+	char **values,
+	int size)
+{
+	int i, len = 0, pos = 0;
+	char *str = NULL;
+
+	for(i = 0; i < size; i++) len += strlen(values[i]);
+
+	str = (char *)subUtilAlloc(len + i + 1, sizeof(char *));
+
+	for(i = 0; i < size; i++)
+		{
+			strncpy(str + pos, values[i], strlen(values[i]));
+			pos += strlen(values[i]);
+			str[pos] = '\0';
+			pos++;
+		}
+
+	XChangeProperty(d->disp, win, atoms[hint], atoms[SUB_EWMH_UTF8], 8, PropModeReplace, (unsigned char *)str, pos);
+	free(str);
 }
