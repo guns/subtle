@@ -17,9 +17,9 @@ Usage(void)
 {
 	printf("Usage: %s [OPTIONS]\n\n" \
 					"Options:\n" \
-					"  -c, --configdir DIR     \t Look for config in DIR (default: ~/.%s/\n" \
-					"  -s, --subletdir DIR     \t Look for sublets in DIR (default: ~/.%s/sublets" \
-					"  -d, --display   DISPLAY \t Connect to DISPLAY (default: $DISPLAY)\n" \
+					"  -c, --configdir=DIR     \t Look for config in DIR (default: ~/.%s/\n" \
+					"  -s, --subletdir=DIR     \t Look for sublets in DIR (default: ~/.%s/sublets" \
+					"  -d, --display=DISPLAY   \t Connect to DISPLAY (default: $DISPLAY)\n" \
 					"  -D, --debug             \t Print debugging messages\n" \
 					"  -v, --version           \t Show version info and exit\n" \
 					"  -h, --help              \t Show this help and exit\n\n" \

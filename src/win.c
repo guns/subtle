@@ -298,9 +298,9 @@ subWinFocus(SubWin *w)
 
 			ev.type									= ClientMessage;
 			ev.xclient.window				= w->client->win;
-			ev.xclient.message_type = subEwmhGetAtom(SUB_EWMH_WM_PROTOCOLS);
+			ev.xclient.message_type = subEwmhFind(SUB_EWMH_WM_PROTOCOLS);
 			ev.xclient.format				= 32;
-			ev.xclient.data.l[0]		= subEwmhGetAtom(SUB_EWMH_WM_TAKE_FOCUS);
+			ev.xclient.data.l[0]		= subEwmhFind(SUB_EWMH_WM_TAKE_FOCUS);
 			ev.xclient.data.l[1]		= CurrentTime;
 
 			XSendEvent(d->disp, w->client->win, False, NoEventMask, &ev);

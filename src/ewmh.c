@@ -67,13 +67,13 @@ subEwmhInit(void)
 }
 
  /**
-	* Get intern atom 
+	* Find intern atom 
 	* @param hint Hint number
 	* @return The desired atom
 	**/
 
 Atom
-subEwmhGetAtom(int hint)
+subEwmhFind(int hint)
 {
 	assert(hint <= NATOMS);
 	return(atoms[hint]);

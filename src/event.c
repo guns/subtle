@@ -230,8 +230,21 @@ GetParent(Window win)
 static void
 HandleMessage(XClientMessageEvent *ev)
 {
-	SubWin *w = (SubWin *)subUtilFind(GetParent(ev->window), d->cv->xid);
+	SubWin *w = NULL;
+printf("Debug %s() [%s,%d]\n", __func__, __FILE__, __LINE__);
 
+	if(ev->window == DefaultRootWindow(d->disp))
+		{
+
+printf("Debug %s() [%s,%d]\n", __func__, __FILE__, __LINE__);
+			if(ev->message_type == subEwmhFind(SUB_EWMH_NET_CURRENT_DESKTOP))
+				{
+					SubView *v = subViewFind(ev->data.l[0]);
+					if(v) subViewSwitch(v);
+				}
+			return;
+		}
+	w = (SubWin *)subUtilFind(GetParent(ev->window), d->cv->xid);
 	if(w && w->flags & SUB_WIN_TYPE_CLIENT)
 		{
 			int i;
@@ -242,9 +255,9 @@ HandleMessage(XClientMessageEvent *ev)
 					for(i = 0; i < 5; i++)
 						printf("-> l[%d]=%ld\n", i, ev->data.l[i]);
 				}
-			if(ev->message_type == subEwmhGetAtom(SUB_EWMH_NET_WM_STATE))
+			if(ev->message_type == subEwmhFind(SUB_EWMH_NET_WM_STATE))
 				{
-					if(ev->data.l[1] == (long)subEwmhGetAtom(SUB_EWMH_NET_WM_STATE_FULLSCREEN))
+					if(ev->data.l[1] == (long)subEwmhFind(SUB_EWMH_NET_WM_STATE_FULLSCREEN))
 						{
 							if(ev->data.l[0] == 0) /* Remove state */
 								{
@@ -275,7 +288,7 @@ static void
 HandleProperty(XPropertyEvent *ev)
 {
 	/* Prevent expensive query tree if the atom isn't supported */
-	if(ev->atom == XA_WM_NAME || ev->atom == subEwmhGetAtom(SUB_EWMH_NET_WM_NAME))
+	if(ev->atom == XA_WM_NAME || ev->atom == subEwmhFind(SUB_EWMH_NET_WM_NAME))
 		{
 			SubWin *w = (SubWin *)subUtilFind(GetParent(ev->window), d->cv->xid);
 			if(w && w->flags & SUB_WIN_TYPE_CLIENT) subClientFetchName(w);

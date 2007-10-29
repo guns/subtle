@@ -81,8 +81,8 @@ subClientNew(Window win)
 		{
 			for(i = 0; i < n; i++)
 				{
-					if(protos[i] == subEwmhGetAtom(SUB_EWMH_WM_TAKE_FOCUS)) 		w->flags |= SUB_WIN_PREF_FOCUS;
-					if(protos[i] == subEwmhGetAtom(SUB_EWMH_WM_DELETE_WINDOW))	w->flags |= SUB_WIN_PREF_CLOSE;
+					if(protos[i] == subEwmhFind(SUB_EWMH_WM_TAKE_FOCUS)) 		w->flags |= SUB_WIN_PREF_FOCUS;
+					if(protos[i] == subEwmhFind(SUB_EWMH_WM_DELETE_WINDOW))	w->flags |= SUB_WIN_PREF_CLOSE;
 				}
 			XFree(protos);
 		}
@@ -123,9 +123,9 @@ subClientDelete(SubWin *w)
 
 					ev.type									= ClientMessage;
 					ev.xclient.window				= w->client->win;
-					ev.xclient.message_type = subEwmhGetAtom(SUB_EWMH_WM_PROTOCOLS);
+					ev.xclient.message_type = subEwmhFind(SUB_EWMH_WM_PROTOCOLS);
 					ev.xclient.format				= 32;
-					ev.xclient.data.l[0]		= subEwmhGetAtom(SUB_EWMH_WM_DELETE_WINDOW);
+					ev.xclient.data.l[0]		= subEwmhFind(SUB_EWMH_WM_DELETE_WINDOW);
 					ev.xclient.data.l[1]		= CurrentTime;
 
 					XSendEvent(d->disp, w->client->win, False, NoEventMask, &ev);
@@ -653,7 +653,7 @@ subClientSetWMState(SubWin *w,
 	data[0] = state;
 	data[1] = None; /* No icons */
 
-	XChangeProperty(d->disp, w->client->win, subEwmhGetAtom(SUB_EWMH_WM_STATE), subEwmhGetAtom(SUB_EWMH_WM_STATE),
+	XChangeProperty(d->disp, w->client->win, subEwmhFind(SUB_EWMH_WM_STATE), subEwmhFind(SUB_EWMH_WM_STATE),
 		32, PropModeReplace, (unsigned char *)data, 2);
 }
 
@@ -671,8 +671,8 @@ subClientGetWMState(SubWin *w)
 	unsigned long nil, bytes;
 	long *data = NULL, state = WithdrawnState;
 
-	if(XGetWindowProperty(d->disp, w->client->win, subEwmhGetAtom(SUB_EWMH_WM_STATE), 0L, 2L, False, 
-			subEwmhGetAtom(SUB_EWMH_WM_STATE), &type, &format, &bytes, &nil,
+	if(XGetWindowProperty(d->disp, w->client->win, subEwmhFind(SUB_EWMH_WM_STATE), 0L, 2L, False, 
+			subEwmhFind(SUB_EWMH_WM_STATE), &type, &format, &bytes, &nil,
 			(unsigned char **) &data) == Success && bytes)
 		{
 			state = *data;
