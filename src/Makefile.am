@@ -1,6 +1,6 @@
 ## Process this file with automake to produce Makefile.in
 
-bin_PROGRAMS = subtle
+bin_PROGRAMS = subtle subtler
 
 subtle_SOURCES = \
 	client.c \
@@ -16,8 +16,12 @@ subtle_SOURCES = \
 	view.c \
 	win.c 
 
+subtler_SOURCES = subtler.c
+
 subtle_CFLAGS  = $(CFLAGS) $(LUA_CFLAGS)
 subtle_LDADD = $(LUA_LIBS)
+
+subtler_CFLAGS = $(CFLAGS)
 
 INCLUDES = -I$(top_srcdir)
 
