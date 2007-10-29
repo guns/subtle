@@ -21,7 +21,7 @@ Usage(void)
 					"  -s, --subletdir DIR     \t Look for sublets in DIR (default: ~/.%s/sublets" \
 					"  -d, --display   DISPLAY \t Connect to DISPLAY (default: $DISPLAY)\n" \
 					"  -D, --debug             \t Print debugging messages\n" \
-					"  -v, --version           \t Enable debugging output\n" \
+					"  -v, --version           \t Show version info and exit\n" \
 					"  -h, --help              \t Show this help and exit\n\n" \
 					"Please report bugs to <%s>\n", 
 					PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_BUGREPORT);
