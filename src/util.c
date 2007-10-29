@@ -105,5 +105,7 @@ subUtilFind(Window win,
 	XContext id)
 {
 	XPointer *data = NULL;
-	return(XFindContext(d->dpy, win, id, (XPointer *)&data) != XCNOENT ? data : NULL);
+
+	assert(win && id);
+	return(XFindContext(d->disp, win, id, (XPointer *)&data) != XCNOENT ? data : NULL);
 }

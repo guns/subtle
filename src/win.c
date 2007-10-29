@@ -24,8 +24,8 @@ subWinNew(void)
 	/* Init with real values */
 	w->x 			= 0;
 	w->y 			= d->th;
-	w->width	= DisplayWidth(d->dpy, DefaultScreen(d->dpy));
-	w->height	= DisplayHeight(d->dpy, DefaultScreen(d->dpy)) - d->th;
+	w->width	= DisplayWidth(d->disp, DefaultScreen(d->disp));
+	w->height	= DisplayHeight(d->disp, DefaultScreen(d->disp)) - d->th;
 
 	/* Create frame window */
 	attrs.background_pixmap	= ParentRelative;
@@ -34,7 +34,7 @@ subWinNew(void)
 		VisibilityChangeMask|FocusChangeMask|SubstructureRedirectMask|SubstructureNotifyMask;
 
 	mask			= CWBackPixmap|CWSaveUnder|CWEventMask;
-	w->frame	= SUBWINNEW(DefaultRootWindow(d->dpy), w->x, w->y, w->width, w->height, 0);
+	w->frame	= SUBWINNEW(DefaultRootWindow(d->disp), w->x, w->y, w->width, w->height, 0);
 
 	return(w);
 }
@@ -73,8 +73,8 @@ subWinDestroy(SubWin *w)
 {
 	assert(w);
 
-	XDestroySubwindows(d->dpy, w->frame);
-	XDestroyWindow(d->dpy, w->frame);
+	XDestroySubwindows(d->disp, w->frame);
+	XDestroyWindow(d->disp, w->frame);
 
 	free(w);
 }
@@ -133,7 +133,7 @@ subWinPrepend(SubWin *w1,
 	if(w1->parent && w1->parent->tile->first == w1) w1->parent->tile->first = w2;
 	w2->parent = w1->parent;
 
-	XReparentWindow(d->dpy, w2->frame, w1->parent->frame, 0, w1->parent->flags & SUB_WIN_TYPE_VIEW ? d->th : 0); 
+	XReparentWindow(d->disp, w2->frame, w1->parent->frame, 0, w1->parent->flags & SUB_WIN_TYPE_VIEW ? d->th : 0); 
 }
 
  /**
@@ -155,7 +155,7 @@ subWinAppend(SubWin *w1,
 	if(w1->parent && w1->parent->tile->last == w1) w1->parent->tile->last = w2;
 	w2->parent = w1->parent;
 
-	XReparentWindow(d->dpy, w2->frame, w1->parent->frame, 0, w1->parent->flags & SUB_WIN_TYPE_VIEW ? d->th : 0); 
+	XReparentWindow(d->disp, w2->frame, w1->parent->frame, 0, w1->parent->flags & SUB_WIN_TYPE_VIEW ? d->th : 0); 
 }
 
  /** 
@@ -184,7 +184,7 @@ subWinReplace(SubWin *w1,
 	w1->next		= NULL;
 	w1->parent = NULL;
 
-	XReparentWindow(d->dpy, w2->frame, w2->parent->frame, 0, 0);
+	XReparentWindow(d->disp, w2->frame, w2->parent->frame, 0, 0);
 }
 
  /**
@@ -231,8 +231,8 @@ subWinSwap(SubWin *w1,
 			if(w2->parent->tile->first == w2) w2->parent->tile->first = w1;
 			if(w2->parent->tile->last == w2)  w2->parent->tile->last	= w1;
 
-			XReparentWindow(d->dpy, w1->frame, w2->parent->frame, 0, 0);
-			XReparentWindow(d->dpy, w2->frame, w1->parent->frame, 0, 0);
+			XReparentWindow(d->disp, w1->frame, w2->parent->frame, 0, 0);
+			XReparentWindow(d->disp, w2->frame, w1->parent->frame, 0, 0);
 
 			swap1 = w1->parent; w1->parent = w2->parent; w2->parent = swap1;
 
@@ -279,7 +279,7 @@ subWinReparent(SubWin *p,
 	if(w->parent) subTileConfigure(w->parent);
 	w->parent = p;
 
-	XReparentWindow(d->dpy, w->frame, p->frame, 0, 0);
+	XReparentWindow(d->disp, w->frame, p->frame, 0, 0);
 }
 
  /**
@@ -303,7 +303,7 @@ subWinFocus(SubWin *w)
 			ev.xclient.data.l[0]		= subEwmhGetAtom(SUB_EWMH_WM_TAKE_FOCUS);
 			ev.xclient.data.l[1]		= CurrentTime;
 
-			XSendEvent(d->dpy, w->client->win, False, NoEventMask, &ev);
+			XSendEvent(d->disp, w->client->win, False, NoEventMask, &ev);
 
 			subUtilLogDebug("Focus: win=%#lx, input=%d, send=%d\n", w->client->win, 
 				!!(w->flags & SUB_WIN_PREF_INPUT), !!(w->flags & SUB_WIN_PREF_FOCUS));
@@ -320,11 +320,11 @@ subWinFocus(SubWin *w)
 					subKeyUngrab(f);
 				}
 
-			XSetInputFocus(d->dpy, w->frame, RevertToNone, CurrentTime);			
+			XSetInputFocus(d->disp, w->frame, RevertToNone, CurrentTime);			
 
 			d->focus = w;
 			subWinRender(w);
-			subEwmhSetWindow(DefaultRootWindow(d->dpy), SUB_EWMH_NET_ACTIVE_WINDOW, w->frame);
+			subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_ACTIVE_WINDOW, &w->frame, 1);
 
 			subKeyGrab(w);
 		}
@@ -340,18 +340,18 @@ subWinResize(SubWin *w)
 {
 	assert(w);
 
-	XMoveResizeWindow(d->dpy, w->frame, w->x, w->y, w->width, (w->flags & SUB_WIN_STATE_SHADE) ? d->th : w->height);
+	XMoveResizeWindow(d->disp, w->frame, w->x, w->y, w->width, (w->flags & SUB_WIN_STATE_SHADE) ? d->th : w->height);
 
 	if(w->flags & SUB_WIN_TYPE_CLIENT)
 		{
-			if(w->flags & SUB_WIN_STATE_FULL) XMoveResizeWindow(d->dpy, w->client->win, 0, 0, w->width, w->height);
+			if(w->flags & SUB_WIN_STATE_FULL) XMoveResizeWindow(d->disp, w->client->win, 0, 0, w->width, w->height);
 			else if(!(w->flags & SUB_WIN_STATE_SHADE))
 				{
-					XMoveResizeWindow(d->dpy, w->client->win, d->bw, d->th, w->width - 2 * d->bw, w->height - d->th - d->bw);
-					XMoveResizeWindow(d->dpy, w->client->right, w->width - d->bw, d->th, d->bw, w->height - d->th);
-					XMoveResizeWindow(d->dpy, w->client->bottom, 0, w->height - d->bw, w->width, d->bw);
+					XMoveResizeWindow(d->disp, w->client->win, d->bw, d->th, w->width - 2 * d->bw, w->height - d->th - d->bw);
+					XMoveResizeWindow(d->disp, w->client->right, w->width - d->bw, d->th, d->bw, w->height - d->th);
+					XMoveResizeWindow(d->disp, w->client->bottom, 0, w->height - d->bw, w->width, d->bw);
 				}
-			else XMoveResizeWindow(d->dpy, w->client->title, 0, 0, w->width, d->th);
+			else XMoveResizeWindow(d->disp, w->client->title, 0, 0, w->width, d->th);
 
 			if(!(w->flags & SUB_WIN_STATE_SHADE)) subClientConfigure(w);
 		}
@@ -367,8 +367,8 @@ subWinMap(SubWin *w)
 {
 	assert(w);
 
-	XMapSubwindows(d->dpy, w->frame);
-	XMapWindow(d->dpy, w->frame);
+	XMapSubwindows(d->disp, w->frame);
+	XMapWindow(d->disp, w->frame);
 }
 
  /**
@@ -381,5 +381,5 @@ subWinUnmap(SubWin *w)
 {
 	assert(w);
 
-	XUnmapWindow(d->dpy, w->frame);
+	XUnmapWindow(d->disp, w->frame);
 }

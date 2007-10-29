@@ -87,7 +87,7 @@ subSubletNew(int type,
 
 			return;
 		}
-	else XSaveContext(d->dpy, d->bar.sublets, s->interval, (void *)s);
+	else XSaveContext(d->disp, d->bar.sublets, s->interval, (void *)s);
 #endif /* HAVE_SYS_INOTIFY_H */
 
 	subLuaCall(s);
@@ -169,7 +169,7 @@ subSubletConfigure(void)
 					else width += strlen(s->string) * d->fx + 12;
 					s = s->next;
 				}
-			XMoveResizeWindow(d->dpy, d->bar.sublets, DisplayWidth(d->dpy, DefaultScreen(d->dpy)) - width, 0, width, d->th);
+			XMoveResizeWindow(d->disp, d->bar.sublets, DisplayWidth(d->disp, DefaultScreen(d->disp)) - width, 0, width, d->th);
 		}
 }
 
@@ -185,24 +185,24 @@ subSubletRender(void)
 			int i, width = 3;
 			SubSublet *s = root;
 
-			XClearWindow(d->dpy, d->bar.sublets);
+			XClearWindow(d->disp, d->bar.sublets);
 
 			while(s)
 				{
 					if(s->flags & SUB_SUBLET_TYPE_METER && s->number)
 						{
-							XDrawRectangle(d->dpy, d->bar.sublets, d->gcs.font, width, 2, 60, d->th - 5);
-							XFillRectangle(d->dpy, d->bar.sublets, d->gcs.font, width + 2, 4, (56 * s->number) / 100, d->th - 8);
+							XDrawRectangle(d->disp, d->bar.sublets, d->gcs.font, width, 2, 60, d->th - 5);
+							XFillRectangle(d->disp, d->bar.sublets, d->gcs.font, width + 2, 4, (56 * s->number) / 100, d->th - 8);
 							width += 63;
 						}
 					else if(s->string) 
 						{
-							XDrawString(d->dpy, d->bar.sublets, d->gcs.font, width, d->fy - 1, s->string, strlen(s->string));
+							XDrawString(d->disp, d->bar.sublets, d->gcs.font, width, d->fy - 1, s->string, strlen(s->string));
 							width += strlen(s->string) * d->fx + 6;
 						}
 					s = s->next;
 				}
-			XFlush(d->dpy);
+			XFlush(d->disp);
 		}
 }
 

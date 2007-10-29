@@ -44,40 +44,38 @@ subDisplayNew(const char *display_string)
 	};
 
 	/* Create display and setup error handler */
-	if((d = (SubDisplay *)subUtilAlloc(1, sizeof(SubDisplay))))
-		{
-			d->dpy = XOpenDisplay(display_string);
-			if(!d->dpy) subUtilLogError("Can't open display `%s'.\n", (display_string) ? display_string : ":0.0");
-			XSetErrorHandler(HandleXError);
-		}
+	d = (SubDisplay *)subUtilAlloc(1, sizeof(SubDisplay));
+	d->disp = XOpenDisplay(display_string);
+	if(!d->disp) subUtilLogError("Can't open display `%s'.\n", (display_string) ? display_string : ":0.0");
+	XSetErrorHandler(HandleXError);
 
 	/* Create gcs */
 	gvals.function		= GXcopy;
 	gvals.fill_style	= FillStippled;
-	gvals.stipple			= XCreateBitmapFromData(d->dpy, DefaultRootWindow(d->dpy), stipple, 15, 16);
-	d->gcs.border			= XCreateGC(d->dpy, DefaultRootWindow(d->dpy),
+	gvals.stipple			= XCreateBitmapFromData(d->disp, DefaultRootWindow(d->disp), stipple, 15, 16);
+	d->gcs.border			= XCreateGC(d->disp, DefaultRootWindow(d->disp),
 		GCFunction|GCFillStyle|GCStipple, &gvals);
 
-	d->gcs.font				= XCreateGC(d->dpy, DefaultRootWindow(d->dpy), GCFunction, &gvals);
+	d->gcs.font				= XCreateGC(d->disp, DefaultRootWindow(d->disp), GCFunction, &gvals);
 
 	gvals.function				= GXinvert;
 	gvals.subwindow_mode	= IncludeInferiors;
 	gvals.line_width			= 3;
-	d->gcs.invert 				= XCreateGC(d->dpy, DefaultRootWindow(d->dpy), 
+	d->gcs.invert 				= XCreateGC(d->disp, DefaultRootWindow(d->disp), 
 		GCFunction|GCSubwindowMode|GCLineWidth, &gvals);
 
 	/* Create cursors */
-	d->cursors.square	= XCreateFontCursor(d->dpy, XC_dotbox);
-	d->cursors.move		= XCreateFontCursor(d->dpy, XC_fleur);
-	d->cursors.arrow	= XCreateFontCursor(d->dpy, XC_left_ptr);
-	d->cursors.horz		= XCreateFontCursor(d->dpy, XC_sb_h_double_arrow);
-	d->cursors.vert		= XCreateFontCursor(d->dpy, XC_sb_v_double_arrow);
-	d->cursors.resize	= XCreateFontCursor(d->dpy, XC_sizing);
+	d->cursors.square	= XCreateFontCursor(d->disp, XC_dotbox);
+	d->cursors.move		= XCreateFontCursor(d->disp, XC_fleur);
+	d->cursors.arrow	= XCreateFontCursor(d->disp, XC_left_ptr);
+	d->cursors.horz		= XCreateFontCursor(d->disp, XC_sb_h_double_arrow);
+	d->cursors.vert		= XCreateFontCursor(d->disp, XC_sb_v_double_arrow);
+	d->cursors.resize	= XCreateFontCursor(d->disp, XC_sizing);
 
-	printf("Display (%s) is %d x %d\n", DisplayString(d->dpy), DisplayWidth(d->dpy, 
-		DefaultScreen(d->dpy)), DisplayHeight(d->dpy, DefaultScreen(d->dpy)));
+	printf("Display (%s) is %d x %d\n", DisplayString(d->disp), DisplayWidth(d->disp, 
+		DefaultScreen(d->disp)), DisplayHeight(d->disp, DefaultScreen(d->disp)));
 
-	XSync(d->dpy, False);
+	XSync(d->disp, False);
 }
 
  /**
@@ -87,24 +85,23 @@ subDisplayNew(const char *display_string)
 void
 subDisplayKill(void)
 {
-	if(d)
-		{
-			if(d->dpy)
-				{
-					XFreeCursor(d->dpy, d->cursors.square);
-					XFreeCursor(d->dpy, d->cursors.move);
-					XFreeCursor(d->dpy, d->cursors.arrow);
-					XFreeCursor(d->dpy, d->cursors.horz);
-					XFreeCursor(d->dpy, d->cursors.vert);
-					XFreeCursor(d->dpy, d->cursors.resize);
+	assert(d);
 
-					XFreeGC(d->dpy, d->gcs.border);
-					XFreeGC(d->dpy, d->gcs.font);
-					XFreeGC(d->dpy, d->gcs.invert);
-					if(d->xfs) XFreeFont(d->dpy, d->xfs);
-				}
-			free(d);
+	if(d->disp)
+		{
+			XFreeCursor(d->disp, d->cursors.square);
+			XFreeCursor(d->disp, d->cursors.move);
+			XFreeCursor(d->disp, d->cursors.arrow);
+			XFreeCursor(d->disp, d->cursors.horz);
+			XFreeCursor(d->disp, d->cursors.vert);
+			XFreeCursor(d->disp, d->cursors.resize);
+
+			XFreeGC(d->disp, d->gcs.border);
+			XFreeGC(d->disp, d->gcs.font);
+			XFreeGC(d->disp, d->gcs.invert);
+			if(d->xfs) XFreeFont(d->disp, d->xfs);
 		}
+	free(d);
 }
 
  /**
@@ -118,10 +115,12 @@ subDisplayScan(void)
 	Window nil, *wins = NULL;
 	XWindowAttributes attr;
 
-	XQueryTree(d->dpy, DefaultRootWindow(d->dpy), &nil, &nil, &wins, &n);
+	assert(d);
+
+	XQueryTree(d->disp, DefaultRootWindow(d->disp), &nil, &nil, &wins, &n);
 	for(i = 0; i < n; i++)
 		{
-			XGetWindowAttributes(d->dpy, wins[i], &attr);
+			XGetWindowAttributes(d->disp, wins[i], &attr);
 			if(wins[i] != d->bar.win && wins[i] != d->bar.views && 
 				wins[i] != d->bar.sublets && wins[i] != d->cv->w->frame && 
 				wins[i] != d->cv->button && attr.map_state == IsViewable) subViewSift(wins[i]);

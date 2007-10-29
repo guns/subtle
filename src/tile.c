@@ -22,8 +22,8 @@ subTileNew(short mode)
 	t->flags	= SUB_WIN_TYPE_TILE|mode;
 	t->tile		= (SubTile *)subUtilAlloc(1, sizeof(SubTile));
 
-	XMapSubwindows(d->dpy, t->frame);
-	XSaveContext(d->dpy, t->frame, d->cv->xid, (void *)t);
+	XMapSubwindows(d->disp, t->frame);
+	XSaveContext(d->disp, t->frame, d->cv->xid, (void *)t);
 
 	subUtilLogDebug("Adding %s-tile: x=%d, y=%d, width=%d, height=%d\n", 
 		(t->flags & SUB_WIN_TILE_HORZ) ? "h" : "v", t->x, t->y, t->width, t->height);
@@ -89,7 +89,7 @@ subTileAdd(SubWin *t,
 			w->prev = NULL;
 			w->parent = t;
 
-			XReparentWindow(d->dpy, w->frame, t->frame, 0, t->flags & SUB_WIN_TYPE_VIEW ? d->th : 0); 
+			XReparentWindow(d->disp, w->frame, t->frame, 0, t->flags & SUB_WIN_TYPE_VIEW ? d->th : 0); 
 		}
 	else subWinAppend(t->tile->last, w);
 
@@ -172,7 +172,7 @@ subTileConfigure(SubWin *t)
 						{
 							if(t->flags & SUB_WIN_STATE_STACK && t->tile->pile != c) c->flags |= SUB_WIN_STATE_SHADE;
 
-							/* Remove tiles with only one client */
+							/* Remove tiles with only one or less clients */
 							if(c->flags & SUB_WIN_TYPE_TILE && !(c->flags & SUB_WIN_TYPE_VIEW) && 
 								c->tile->first == c->tile->last)
 								{
@@ -193,14 +193,14 @@ subTileConfigure(SubWin *t)
 									c->parent = NULL;
 									c->tile->first = NULL;
 
-									XReparentWindow(d->dpy, first->frame, first->parent->frame, 0, 0);
+									XReparentWindow(d->disp, first->frame, first->parent->frame, 0, 0);
 
 									subTileDelete(c);
 									//subWinDestroy(c);
 
-									XDeleteContext(d->dpy, c->frame, 1);
-									XDestroySubwindows(d->dpy, c->frame);
-									XDestroyWindow(d->dpy, c->frame);
+									XDeleteContext(d->disp, c->frame, 1);
+									XDestroySubwindows(d->disp, c->frame);
+									XDestroyWindow(d->disp, c->frame);
 
 									printf("Removing dynamic tile %#lx\n", c->frame);
 

@@ -79,11 +79,11 @@ ParseColor(lua_State *configstate,
 	char *name = GetString(configstate, "Colors", field, fallback);
 	color.pixel = 0;
 
-	if(!XParseColor(d->dpy, DefaultColormap(d->dpy, DefaultScreen(d->dpy)), name, &color))
+	if(!XParseColor(d->disp, DefaultColormap(d->disp, DefaultScreen(d->disp)), name, &color))
 		{
 			subUtilLogWarn("Can't load color '%s'.\n", name);
 		}
-	else if(!XAllocColor(d->dpy, DefaultColormap(d->dpy, DefaultScreen(d->dpy)), &color))
+	else if(!XAllocColor(d->disp, DefaultColormap(d->disp, DefaultScreen(d->disp)), &color))
 		subUtilLogWarn("Can't alloc color '%s'.\n", name);
 	return(color.pixel);
 }
@@ -144,11 +144,11 @@ subLuaLoadConfig(const char *path)
 	size	= GetNum(configstate, "Font", "Size", 12);
 
 	snprintf(buf, sizeof(buf), "-*-%s-%s-*-*-*-%d-*-*-*-*-*-*-*", face, style, size);
-	if(!(d->xfs = XLoadQueryFont(d->dpy, buf)))
+	if(!(d->xfs = XLoadQueryFont(d->disp, buf)))
 		{
 			subUtilLogWarn("Can't load font `%s', using fixed instead.\n", face);
 			subUtilLogDebug("Font: %s\n", buf);
-			d->xfs = XLoadQueryFont(d->dpy, "-*-fixed-medium-*-*-*-12-*-*-*-*-*-*-*");
+			d->xfs = XLoadQueryFont(d->disp, "-*-fixed-medium-*-*-*-12-*-*-*-*-*-*-*");
 			if(!d->xfs) subUtilLogError("Can't load font `fixed`.\n");
 		}
 
@@ -170,18 +170,18 @@ subLuaLoadConfig(const char *path)
 	/* Change GCs */
 	gvals.foreground	= d->colors.border;
 	gvals.line_width	= d->bw;
-	XChangeGC(d->dpy, d->gcs.border, GCForeground|GCLineWidth, &gvals);
+	XChangeGC(d->disp, d->gcs.border, GCForeground|GCLineWidth, &gvals);
 
 	gvals.foreground	= d->colors.font;
 	gvals.font				= d->xfs->fid;
-	XChangeGC(d->dpy, d->gcs.font, GCForeground|GCFont, &gvals);
+	XChangeGC(d->disp, d->gcs.font, GCForeground|GCFont, &gvals);
 
 	/* Adjust root window */
 	attrs.cursor						= d->cursors.arrow;
 	attrs.background_pixel	= d->colors.bg;
 	attrs.event_mask				= SubstructureRedirectMask|SubstructureNotifyMask|PropertyChangeMask;
-	XChangeWindowAttributes(d->dpy, DefaultRootWindow(d->dpy), CWCursor|CWBackPixel|CWEventMask, &attrs);
-	XClearWindow(d->dpy, DefaultRootWindow(d->dpy));
+	XChangeWindowAttributes(d->disp, DefaultRootWindow(d->disp), CWCursor|CWBackPixel|CWEventMask, &attrs);
+	XClearWindow(d->disp, DefaultRootWindow(d->disp));
 
 	/* Keys */
 	lua_getglobal(configstate, "Keys");
@@ -355,19 +355,19 @@ subLuaLoadSublets(const char *path)
 	else snprintf(buf, sizeof(buf), "%s", path);
 
 	/* Bar windows */
-	d->bar.win			= XCreateSimpleWindow(d->dpy, DefaultRootWindow(d->dpy), 0, 0, 
-		DisplayWidth(d->dpy, DefaultScreen(d->dpy)), d->th, 0, 0, d->colors.norm);
-	d->bar.views		= XCreateSimpleWindow(d->dpy, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
-	d->bar.sublets	= XCreateSimpleWindow(d->dpy, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
+	d->bar.win			= XCreateSimpleWindow(d->disp, DefaultRootWindow(d->disp), 0, 0, 
+		DisplayWidth(d->disp, DefaultScreen(d->disp)), d->th, 0, 0, d->colors.norm);
+	d->bar.views		= XCreateSimpleWindow(d->disp, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
+	d->bar.sublets	= XCreateSimpleWindow(d->disp, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
 
-	XSetWindowBackground(d->dpy, d->bar.win, d->colors.norm);
-	XSetWindowBackground(d->dpy, d->bar.views, d->colors.norm);
-	XSetWindowBackground(d->dpy, d->bar.sublets, d->colors.norm);
+	XSetWindowBackground(d->disp, d->bar.win, d->colors.norm);
+	XSetWindowBackground(d->disp, d->bar.views, d->colors.norm);
+	XSetWindowBackground(d->disp, d->bar.sublets, d->colors.norm);
 
-	XSelectInput(d->dpy, d->bar.views, ButtonPressMask); 
+	XSelectInput(d->disp, d->bar.views, ButtonPressMask); 
 
-	XMapWindow(d->dpy, d->bar.views);
-	XMapWindow(d->dpy, d->bar.sublets);
+	XMapWindow(d->disp, d->bar.views);
+	XMapWindow(d->disp, d->bar.sublets);
 
 	/* Push functions on the stack */
 	lua_newtable(state);

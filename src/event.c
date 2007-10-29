@@ -41,7 +41,7 @@ HandleButtonPress(XButtonEvent *ev)
 			return;
 		}
 
-	w = (SubWin *)subUtilFind(ev->window, d->cv->xid);
+	w = (SubWin *)subUtilFind(ev->window, 1);
 	if(w && w->flags & SUB_WIN_TYPE_CLIENT)
 		{
 			switch(ev->button)
@@ -59,7 +59,7 @@ HandleButtonPress(XButtonEvent *ev)
 								subUtilLogDebug("Single click: win=%#lx\n", ev->window);
 								if(!(w->flags & SUB_WIN_TYPE_VIEW))
 									{
-										if(w->flags & SUB_WIN_STATE_FLOAT) XRaiseWindow(d->dpy, w->frame);
+										if(w->flags & SUB_WIN_STATE_FLOAT) XRaiseWindow(d->disp, w->frame);
 										if(w->parent && w->parent->flags & SUB_WIN_STATE_STACK) 
 											{
 												w->parent->tile->pile = w;
@@ -111,7 +111,7 @@ Exec(char *cmd)
 static void
 HandleKeyPress(XKeyEvent *ev)
 {
-	SubWin *w = (SubWin *)subUtilFind(ev->window, d->cv->xid);
+	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
 	if(w)
 		{
 			SubKey *k = subKeyFind(ev->keycode, ev->state);
@@ -175,7 +175,7 @@ static void
 HandleConfigure(XConfigureRequestEvent *ev)
 {
 	XWindowChanges wc;
-	SubWin *w = (SubWin *)subUtilFind(ev->window, d->cv->xid);
+	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
 	if(w)
 		{
 			if(ev->value_mask & CWX)			w->x			= ev->x;
@@ -197,20 +197,20 @@ HandleConfigure(XConfigureRequestEvent *ev)
 	wc.height			= ev->height;
 	wc.sibling		= ev->above;
 	wc.stack_mode	= ev->detail;
-	XConfigureWindow(d->dpy, ev->window, ev->value_mask, &wc);
+	XConfigureWindow(d->disp, ev->window, ev->value_mask, &wc);
 }
 
 static void
 HandleMap(XMapRequestEvent *ev)
 {
-	SubWin *w = (SubWin *)subUtilFind(ev->window, d->cv->xid);
+	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
 	if(!w) subViewSift(ev->window);
 }
 
 static void
 HandleDestroy(XDestroyWindowEvent *ev)
 {
-	SubWin *w = (SubWin *)subUtilFind(ev->event, d->cv->xid);
+	SubWin *w = (SubWin *)subUtilFind(ev->event, 1);
 	if(w && w->flags & SUB_WIN_TYPE_CLIENT) subWinDelete(w); 
 }
 
@@ -221,7 +221,7 @@ GetParent(Window win)
 	unsigned int n;
 	Window parent, nil, *wins = NULL;
 
-	XQueryTree(d->dpy, win, &nil, &parent, &wins, &n);
+	XQueryTree(d->disp, win, &nil, &parent, &wins, &n);
 	XFree(wins);
 
 	return(parent);
@@ -263,11 +263,11 @@ HandleMessage(XClientMessageEvent *ev)
 static void
 HandleColormap(XColormapEvent *ev)
 {	
-	SubWin *w = (SubWin *)subUtilFind(ev->window, d->cv->xid);
+	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
 	if(w && w->flags & SUB_WIN_TYPE_CLIENT && ev->new)
 		{
 			w->client->cmap = ev->colormap;
-			XInstallColormap(d->dpy, w->client->cmap);
+			XInstallColormap(d->disp, w->client->cmap);
 		}
 }
 
@@ -285,7 +285,7 @@ HandleProperty(XPropertyEvent *ev)
 static void
 HandleCrossing(XCrossingEvent *ev)
 {
-	SubWin *w = (SubWin *)subUtilFind(ev->window, d->cv->xid);
+	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
 	if(w)
 		{
 			XEvent event;
@@ -293,7 +293,7 @@ HandleCrossing(XCrossingEvent *ev)
 			if(d->focus != w) subWinFocus(w);
 
 			/* Remove any other event of the same type and window */
-			while(XCheckTypedWindowEvent(d->dpy, ev->window, ev->type, &event));			
+			while(XCheckTypedWindowEvent(d->disp, ev->window, ev->type, &event));			
 		}
 }
 
@@ -302,27 +302,26 @@ HandleExpose(XEvent *ev)
 {
 	XEvent event;
 	SubWin *w = NULL;
-	Window win = ev->type == Expose ? ev->xexpose.window : ev->xvisibility.window;
 
-	if(win == d->bar.win)
+	if(ev->xany.window == d->bar.win)
 		{
 			subSubletConfigure();
 			subSubletRender();
 		}
 	else
 		{
-  		w = (SubWin *)subUtilFind(win, d->cv->xid);
+  		w = (SubWin *)subUtilFind(ev->xany.window, 1);
 			if(w) subWinRender(w);
 		}
 
 	/* Remove any other event of the same type and window */
-	while(XCheckTypedWindowEvent(d->dpy, win, ev->type, &event));
+	while(XCheckTypedWindowEvent(d->disp, ev->xany.window, ev->type, &event));
 }
 
 static void
 HandleFocus(XFocusInEvent *ev)
 {
-	SubWin *w = (SubWin *)subUtilFind(ev->window, d->cv->xid);
+	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
 	if(w && w->flags & SUB_WIN_PREF_FOCUS)
 		{
 			if(w != d->focus) 
@@ -339,7 +338,7 @@ HandleFocus(XFocusInEvent *ev)
 
 					d->focus = w;
 					subClientRender(w);
-					subEwmhSetWindow(DefaultRootWindow(d->dpy), SUB_EWMH_NET_ACTIVE_WINDOW, w->frame);
+					subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_ACTIVE_WINDOW, &w->frame, 1);
 
 					subKeyGrab(w);					
 				}
@@ -385,14 +384,14 @@ subEventLoop(void)
 					tv.tv_sec		= s->interval;
 					tv.tv_usec	= 0;
 					FD_ZERO(&fdset);
-					FD_SET(ConnectionNumber(d->dpy), &fdset);
+					FD_SET(ConnectionNumber(d->disp), &fdset);
 
 #ifdef HAVE_SYS_INOTIFY_H
 					/* Add inotify socket to the set */
 					FD_SET(d->notify, &fdset);
 #endif /* HAVE_SYS_INOTIFY_H */
 
-					if(select(ConnectionNumber(d->dpy) + 1, &fdset, NULL, NULL, &tv) == -1)
+					if(select(ConnectionNumber(d->disp) + 1, &fdset, NULL, NULL, &tv) == -1)
 						subUtilLogWarn("Can't select the set\n");
 
 #ifdef HAVE_SYS_INOTIFY_H
@@ -413,9 +412,9 @@ subEventLoop(void)
 #endif /* HAVE_SYS_INOTIFY_H */
 				}
 
-			while(XPending(d->dpy))
+			while(XPending(d->disp))
 				{
-					XNextEvent(d->dpy, &ev);
+					XNextEvent(d->disp, &ev);
 					switch(ev.type)
 						{
 							case ButtonPress:				HandleButtonPress(&ev.xbutton);					break;
