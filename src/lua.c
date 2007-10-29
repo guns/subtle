@@ -179,7 +179,7 @@ subLuaLoadConfig(const char *path)
 	/* Adjust root window */
 	attrs.cursor						= d->cursors.arrow;
 	attrs.background_pixel	= d->colors.bg;
-	attrs.event_mask				= SubstructureRedirectMask|SubstructureNotifyMask|PropertyChangeMask;
+	attrs.event_mask				= SubstructureRedirectMask|SubstructureNotifyMask|StructureNotifyMask|PropertyChangeMask;
 	XChangeWindowAttributes(d->disp, DefaultRootWindow(d->disp), CWCursor|CWBackPixel|CWEventMask, &attrs);
 	XClearWindow(d->disp, DefaultRootWindow(d->disp));
 
