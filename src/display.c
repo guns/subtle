@@ -100,6 +100,8 @@ subDisplayKill(void)
 			XFreeGC(d->disp, d->gcs.font);
 			XFreeGC(d->disp, d->gcs.invert);
 			if(d->xfs) XFreeFont(d->disp, d->xfs);
+
+			XCloseDisplay(d->disp);
 		}
 	free(d);
 }
