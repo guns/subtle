@@ -308,6 +308,8 @@ XPointer *subUtilFind(Window win, XContext id);				// Find window data
 enum SubEwmhHints
 {
 	/* ICCCM */
+	SUB_EWMH_WM_NAME,																		// Name of window
+	SUB_EWMH_WM_CLASS,																	// Class of window
 	SUB_EWMH_WM_STATE,																	// Window state
 	SUB_EWMH_WM_PROTOCOLS,															// Supported protocols 
 	SUB_EWMH_WM_TAKE_FOCUS,															// Send focus messages
@@ -330,8 +332,6 @@ enum SubEwmhHints
 	SUB_EWMH_NET_VIRTUAL_ROOTS,													// List of virtual destops
 	SUB_EWMH_NET_CLOSE_WINDOW,
 
-	SUB_EWMH_NET_WM_NAME,																// Name of window
-	SUB_EWMH_NET_WM_CLASS,															// Class of window
 	SUB_EWMH_NET_WM_PID,																// PID of client
 	SUB_EWMH_NET_WM_DESKTOP,														// Desktop client is on
 
