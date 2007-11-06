@@ -31,6 +31,8 @@ debug = 'no'
 if env['with_debug']:
 	env.Append(CCFLAGS = ' -g -DDEBUG')
 	debug = 'yes'
+else
+	env.Append(CCFLAGS = ' -DNDEBUG')
 
 # Help
 env.Help(opts.GenerateHelpText(env))
@@ -47,38 +49,39 @@ def checkFunctions(conf, funcs):
 		if not conf.CheckFunc(f):
 			print "You need '" + f + "()' to compile this program"
 
-conf = Configure(env)
+if not os.path.exists("config.log"):
+	conf = Configure(env)
 
-checkCHeaders(conf, Split("""
-	stdio.h
-	stdlib.h
-	stdarg.h
-	string.h
-	unistd.h
-	signal.h
-	errno.h
-	assert.h
-	regex.h
-	sys/time.h
-	sys/types.h
-"""))
+	checkCHeaders(conf, Split("""
+		stdio.h
+		stdlib.h
+		stdarg.h
+		string.h
+		unistd.h
+		signal.h
+		errno.h
+		assert.h
+		regex.h
+		sys/time.h
+		sys/types.h
+	"""))
 
-if conf.CheckCHeader('sys/inotify.h'):
-	env.Append(CCFLAGS = ' -DHAVE_SYS_INOTIFY_H')
+	if conf.CheckCHeader('sys/inotify.h'):
+		env.Append(CCFLAGS = ' -DHAVE_SYS_INOTIFY_H')
 
-conf.CheckLibWithHeader('X11', 'X11/X.h', 'C')
-conf.CheckLibWithHeader('lua', 'lua.h', 'C')
-conf.CheckLibWithHeader('m', 'math.h', 'C')
-conf.CheckLibWithHeader('dl', 'dlfcn.h', 'C')
+	conf.CheckLibWithHeader('X11', 'X11/X.h', 'C')
+	conf.CheckLibWithHeader('lua', 'lua.h', 'C')
+	conf.CheckLibWithHeader('m', 'math.h', 'C')
+	conf.CheckLibWithHeader('dl', 'dlfcn.h', 'C')
 
-checkFunctions(conf, Split("""
-	select
-	strdup
-	strcpy
-	strerror
-"""))
+	checkFunctions(conf, Split("""
+		select
+		strdup
+		strcpy
+		strerror
+	"""))
 
-env = conf.Finish()
+	env = conf.Finish()
 
 print
 print package + ' ' + version

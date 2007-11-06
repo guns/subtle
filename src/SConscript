@@ -9,7 +9,6 @@ source = Split("""
 	key.c
 	lua.c
 	main.c
-	rule.c
 	sublet.c
 	tile.c
 	util.c
@@ -18,3 +17,4 @@ source = Split("""
 """)
 
 subtle = env.Program('subtle', source)
+subtler = env.Program('subtler', 'subtler.c')
