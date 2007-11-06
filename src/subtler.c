@@ -15,6 +15,7 @@
 #include <assert.h>
 #include <regex.h>
 #include <getopt.h>
+#include <ctype.h>
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
@@ -138,6 +139,22 @@ GetProperty(Window win,
 	return(data);
 }
 
+static Window *
+GetClients(unsigned long *size)
+{
+	Window *clients = (Window *)GetProperty(DefaultRootWindow(disp), XA_WINDOW, "_NET_CLIENT_LIST", &size);
+	if(list)
+		{
+			*size = *size / sizeof(Window);
+			return(clients);
+		}
+	else
+		{
+			*size = 0;
+			return(NULL);
+		}
+}
+
 static char *
 GetName(Window win)
 {
@@ -161,7 +178,6 @@ SendMessage(Window win,
 	unsigned long data3,
 	unsigned long data4)
 {
-	int ret;
 	XEvent ev;
 	long mask = SubstructureRedirectMask|SubstructureNotifyMask;
 
@@ -179,20 +195,20 @@ SendMessage(Window win,
 
 	if(!XSendEvent(disp, DefaultRootWindow(disp), False, mask, &ev))
 		printf("Can't send client message %s\n", prop);
-	Debug("Send: prop=%s, data0=%ld\n", prop, data0);
+	Debug("Send: prop=%s, data=%ld %ld %ld %ld %ld\n", prop, data0, data1, data2, data3, data4);
 }
 
 static void
-GetClients(void)
+ActionGetClients(void)
 {
 	unsigned long size = 0;
-	Window *list = NULL;
+	Window *clients = GetClients(&size);
 
-	if((list = (Window *)GetProperty(DefaultRootWindow(disp), XA_WINDOW, "_NET_CLIENT_LIST", &size)))
+	if(list)
 		{
 			int i;
 
-			for(i = 0; i < size / sizeof(Window); i++)
+			for(i = 0; i < size; i++)
 				{
 					char *name = GetName(list[i]);
 					char *class = GetClass(list[i]);
@@ -211,12 +227,29 @@ GetClients(void)
 }
 
 static void
+ActionSetFocus(char name)
+{
+	unsigned long size = 0;
+	Window *list = NULL;
+
+	if((list = (Window *)GetProperty(DefaultRootWindow(disp), XA_WINDOW, "_NET_CLIENT_LIST", &size)))
+		{
+			int i;
+
+			for(i = 0; i < size / sizeof(Window); i++)
+				{
+				}
+		}
+
+}
+
+static void
 GetViews(void)
 {
 }
 
 static void
-SetView(int view)
+ActionSetView(int view)
 {
 	assert(view >= 0);
 	SendMessage(DefaultRootWindow(disp), "_NET_CURRENT_DESKTOP", (unsigned long)view, 0, 0, 0, 0);
@@ -227,8 +260,8 @@ int
 main(int argc,
 	char *argv[])
 {
-	int c, action = 0, view = 0;
-	char *display_string = NULL, buf[256];
+	int c, action = 0, number = 0;
+	char *display = NULL, string[256];
 	struct sigaction act;
 	static struct option long_options[] =
 	{
@@ -250,24 +283,25 @@ main(int argc,
 		{
 			if(optarg)
 				{
+					/* Pipe or argument */
 					if(!strncmp(optarg, "-", 1)) 
 						{
-							if(!fgets(buf, sizeof(buf), stdin)) 
+							if(!fgets(string, sizeof(string), stdin)) 
 								Error("Can't read from pipe\n");
-							Debug("Read: buf=%s", buf);
+							Debug("Read: string=%s", string);
 						}
-					else snprintf(buf, sizeof(buf), "%s", optarg);
+					else snprintf(string, sizeof(string), "%s", optarg);
+
+					/* Convert string to int if possible */
+					if(isdigit(string)) number = atoi(string);
 				}
 
 			switch(c)
 				{
-					case 'd': display_string = optarg;	break;
-					case 'c':	action = ACTION_CLIENTS;	break;
-					case 'v':	action = ACTION_VIEWS;		break;
-					case 's': 
-						action = ACTION_SWITCH;
-						view = atoi(buf);
-						break;
+					case 'd': display	= optarg;					break;
+					case 'c':	action	= ACTION_CLIENTS;	break;
+					case 'v':	action	= ACTION_VIEWS;		break;
+					case 's': action	= ACTION_SWITCH;	break;
 #ifdef DEBUG					
 					case 'D': debug = 1;								break;
 #endif /* DEBUG */
@@ -291,18 +325,20 @@ main(int argc,
 	sigaction(SIGINT, &act, NULL);
 	sigaction(SIGSEGV, &act, NULL);
 
-	if(!(disp = XOpenDisplay(display_string)))
+	if(!(disp = XOpenDisplay(display)))
 		{
-			printf("Can't open display `%s'.\n", (display_string) ? display_string : ":0.0");
+			printf("Can't open display `%s'.\n", (display) ? display : ":0.0");
 			return(-1);
 		}
 
 	switch(action)
 		{
-			case ACTION_CLIENTS:	GetClients();		break;
-			case ACTION_VIEWS:		GetViews();			break;
-			case ACTION_SWITCH:		SetView(view);	break;
+			case ACTION_CLIENTS:	ActionGetClients();			break;
+			case ACTION_VIEWS:		ActionGetViews();				break;
+			case ACTION_SWITCH:		ActionSetView(number);	break;
 		}
+
+	XCloseDisplay(disp);
 	
 	return(0);
 }
