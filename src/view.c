@@ -152,7 +152,7 @@ subViewSift(Window win)
 
 	assert(win && last);
 
-	class = subEwmhGetProperty(win, XA_STRING, SUB_EWMH_NET_WM_CLASS, NULL);
+	class = subEwmhGetProperty(win, XA_STRING, SUB_EWMH_WM_CLASS, NULL);
 
 	/* Loop backwards because root view has no regex */
 	v = last;
