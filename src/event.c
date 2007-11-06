@@ -231,12 +231,9 @@ static void
 HandleMessage(XClientMessageEvent *ev)
 {
 	SubWin *w = NULL;
-printf("Debug %s() [%s,%d]\n", __func__, __FILE__, __LINE__);
 
 	if(ev->window == DefaultRootWindow(d->disp))
 		{
-
-printf("Debug %s() [%s,%d]\n", __func__, __FILE__, __LINE__);
 			if(ev->message_type == subEwmhFind(SUB_EWMH_NET_CURRENT_DESKTOP))
 				{
 					SubView *v = subViewFind(ev->data.l[0]);
