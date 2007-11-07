@@ -285,7 +285,7 @@ static void
 HandleProperty(XPropertyEvent *ev)
 {
 	/* Prevent expensive query tree if the atom isn't supported */
-	if(ev->atom == XA_WM_NAME || ev->atom == subEwmhFind(SUB_EWMH_NET_WM_NAME))
+	if(ev->atom == XA_WM_NAME || ev->atom == subEwmhFind(SUB_EWMH_WM_NAME))
 		{
 			SubWin *w = (SubWin *)subUtilFind(GetParent(ev->window), d->cv->xid);
 			if(w && w->flags & SUB_WIN_TYPE_CLIENT) subClientFetchName(w);
