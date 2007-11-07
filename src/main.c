@@ -17,12 +17,12 @@ Usage(void)
 {
 	printf("Usage: %s [OPTIONS]\n\n" \
 					"Options:\n" \
-					"  -c, --configdir=DIR     \t Look for config in DIR (default: ~/.%s/\n" \
-					"  -s, --subletdir=DIR     \t Look for sublets in DIR (default: ~/.%s/sublets" \
-					"  -d, --display=DISPLAY   \t Connect to DISPLAY (default: $DISPLAY)\n" \
-					"  -D, --debug             \t Print debugging messages\n" \
-					"  -v, --version           \t Show version info and exit\n" \
-					"  -h, --help              \t Show this help and exit\n\n" \
+					"  -c, --configdir=DIR   \t Look for config in DIR (default: ~/.%s/\n" \
+					"  -d, --display=DISPLAY \t Connect to DISPLAY (default: $DISPLAY)\n" \
+					"  -h, --help            \t Show this help and exit\n\n" \
+					"  -s, --subletdir=DIR   \t Look for sublets in DIR (default: ~/.%s/sublets" \
+					"  -v, --version         \t Show version info and exit\n" \
+					"  -D, --debug           \t Print debugging messages\n" \
 					"Please report bugs to <%s>\n", 
 					PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_BUGREPORT);
 }
@@ -71,28 +71,28 @@ main(int argc,
 	static struct option long_options[] =
 	{
 		{ "configdir",	required_argument,		0,	'c' },
-		{ "subletdir",	required_argument,		0,	's' },
 		{ "display",		required_argument,		0,	'd' },
+		{ "help",				no_argument,					0,	'h' },
+		{ "subletdir",	required_argument,		0,	's' },
+		{ "version",		no_argument,					0,	'v' },
 #ifdef DEBUG
 		{ "debug",			no_argument,					0,	'D' },
 #endif /* DEBUG */
-		{ "version",		no_argument,					0,	'v' },
-		{ "help",				no_argument,					0,	'h' },
 		{ 0, 0, 0, 0}
 	};
 
-	while((c = getopt_long(argc, argv, "c:s:d:Dvh", long_options, NULL)) != -1)
+	while((c = getopt_long(argc, argv, "c:d:hs:vD", long_options, NULL)) != -1)
 		{
 			switch(c)
 				{
 					case 'c': config	= optarg; 		break;
-					case 's': sublets	= optarg;			break;
 					case 'd': display = optarg;			break;
+					case 'h': Usage(); 							return(0);
+					case 's': sublets	= optarg;			break;
+					case 'v': Version(); 						return(0);
 #ifdef DEBUG					
 					case 'D': subUtilLogToggle();		break;
 #endif /* DEBUG */
-					case 'v': Version(); 						return(0);
-					case 'h': Usage(); 							return(0);
 					case '?':
 						printf("Try `%s --help for more information\n", PACKAGE_NAME);
 						return(-1);
