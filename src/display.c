@@ -72,7 +72,7 @@ subDisplayNew(const char *display_string)
 	d->cursors.vert		= XCreateFontCursor(d->disp, XC_sb_v_double_arrow);
 	d->cursors.resize	= XCreateFontCursor(d->disp, XC_sizing);
 
-	printf("Display (%s) is %d x %d\n", DisplayString(d->disp), DisplayWidth(d->disp, 
+	printf("Display (%s) is %dx%d\n", DisplayString(d->disp), DisplayWidth(d->disp, 
 		DefaultScreen(d->disp)), DisplayHeight(d->disp, DefaultScreen(d->disp)));
 
 	XSync(d->disp, False);
