@@ -99,6 +99,7 @@ subViewNew(char *name,
 					regfree(v->regex);
 					free(v->regex);
 					free(v);
+
 					return(NULL);
 				}
 		}
@@ -149,6 +150,7 @@ subViewSift(Window win)
 	int sifted = 0;
 	SubView *v = NULL;
 	char *class = NULL;
+	long xid = 0;
 
 	assert(win && last);
 
@@ -168,6 +170,10 @@ subViewSift(Window win)
 							subClientToggle(SUB_WIN_STATE_FLOAT, w);
 						}
 					else w->views |= v->xid;
+
+					/* EWMH: Desktop */
+					xid = v->xid - 1;
+					subEwmhSetCardinals(w->client->win, SUB_EWMH_NET_WM_DESKTOP, &xid, 1);
 
 					if(!v->w) TagView(v);
 					subTileAdd(v->w, w);
@@ -313,7 +319,7 @@ subViewKill(void)
 void
 subViewSwitch(SubView *v)
 {
-	int xid = 0;
+	long xid = 0;
 	assert(v);
 
 	if(d->cv != v)	
@@ -329,7 +335,7 @@ subViewSwitch(SubView *v)
 
 	/* EWMH: Desktops */
 	xid = d->cv->xid - 1;
-	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_CURRENT_DESKTOP, (long *)&xid, 1);
+	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_CURRENT_DESKTOP, &xid, 1);
 
 	subViewConfigure();
 	subViewRender();
