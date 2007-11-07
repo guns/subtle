@@ -46,7 +46,7 @@ subEwmhInit(void)
 
 	/* Window manager information */
 	subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_SUPPORTING_WM_CHECK, &DefaultRootWindow(d->disp), 1);
-	subEwmhSetString(DefaultRootWindow(d->disp), SUB_EWMH_NET_WM_NAME, PACKAGE_STRING);
+	subEwmhSetString(DefaultRootWindow(d->disp), SUB_EWMH_WM_NAME, PACKAGE_STRING);
 	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_WM_PID, &pid, 1);
 	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_DESKTOP_VIEWPORT, (long *)&data, 2);
 
