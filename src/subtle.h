@@ -27,7 +27,7 @@
 #endif /* HAVE_SYS_INOTIFY */
 
 /* Macros */
-#define SUBWINNEW(parent,x,y,width,height,border) \
+#define SUBWINNEW(parent,x,y,width,height,border,mask) \
 	XCreateWindow(d->disp, parent, x, y, width, height, border, CopyFromParent, \
 		InputOutput, CopyFromParent, mask, &attrs);				// Shortcut
 
@@ -361,8 +361,8 @@ enum SubEwmhHints
 void subEwmhInit(void);																	// Init atoms/hints
 Atom subEwmhFind(int hint);															// Find atom
 
-char * subEwmhGetProperty(Window win, Atom type,				// Get property
-	int hint, unsigned long *size);
+char * subEwmhGetProperty(Window win, 
+	Atom type, int hint, unsigned long *size);						// Get property
 void subEwmhSetWindows(Window win, int hint, 
 	Window *values, int size);														// Set window properties
 void subEwmhSetCardinals(Window win, int hint,
