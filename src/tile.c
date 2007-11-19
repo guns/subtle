@@ -230,8 +230,10 @@ subTileConfigure(SubWin *t)
 
 							/* Add compensation to width or height */
 							if(t->tile->last == c) 
-								if(t->flags & SUB_WIN_TILE_HORZ) c->width += comp; 
-								else c->height += comp;
+								{
+									if(t->flags & SUB_WIN_TILE_HORZ) c->width += comp; 
+									else c->height += comp;
+								}
 
 							/* Adjust size */
 							if(t->flags & SUB_WIN_TILE_HORZ) 
