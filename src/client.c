@@ -21,7 +21,6 @@ SubWin *
 subClientNew(Window win)
 {
 	int i, n = 0;
-	long mask = 0;
 	Window unnused;
 	XWMHints *hints = NULL;
 	XWindowAttributes attr;
@@ -32,29 +31,27 @@ subClientNew(Window win)
 
 	XGrabServer(d->disp);
 
-	attrs.border_pixel			= d->colors.border;
-	attrs.background_pixel	= d->colors.norm;
-
 	w->client->win = win;
 	XSelectInput(d->disp, w->client->win, PropertyChangeMask);
 	XSetWindowBorderWidth(d->disp, w->client->win, 0);
 	XReparentWindow(d->disp, w->client->win, w->frame, d->bw, d->th);
-
 	XAddToSaveSet(d->disp, w->client->win);
+
+	/* Create windows */
+	attrs.border_pixel			= d->colors.border;
+	attrs.background_pixel	= d->colors.norm;
+	w->client->title		= SUBWINNEW(w->frame, 0, 0, w->width, d->th, 0, CWBackPixel);
+	w->client->caption	= SUBWINNEW(w->frame, 0, 0, 1, d->th, 0, CWBackPixel);
+	attrs.cursor				= d->cursors.horz;
+	w->client->left			= SUBWINNEW(w->frame, 0, d->th, d->bw, w->height - d->th, 0, CWBackPixel|CWCursor);
+	w->client->right		= SUBWINNEW(w->frame, w->width - d->bw, d->th, d->bw, w->height - d->th, 0, CWBackPixel|CWCursor);
+	attrs.cursor				= d->cursors.vert;
+	w->client->bottom		= SUBWINNEW(w->frame, 0, w->height - d->bw, w->width, d->bw, 0, CWBackPixel|CWCursor);
+
+	/* Window attributes */
 	XGetWindowAttributes(d->disp, w->client->win, &attr);
 	w->client->cmap	= attr.colormap;
 	w->flags				= SUB_WIN_TYPE_CLIENT; 
-
-	/* Create windows */
-	mask								= CWBackPixel;
-	w->client->title		= SUBWINNEW(w->frame, 0, 0, w->width, d->th, 0);
-	w->client->caption	= XCreateSimpleWindow(d->disp, w->frame, 0, 0, 1, d->th, 0, d->colors.border, d->colors.norm);
-	mask								|= CWCursor;
-	attrs.cursor				= d->cursors.horz;
-	w->client->left			= SUBWINNEW(w->frame, 0, d->th, d->bw, w->height - d->th, 0);
-	w->client->right		= SUBWINNEW(w->frame, w->width - d->bw, d->th, d->bw, w->height - d->th, 0);
-	attrs.cursor				= d->cursors.vert;
-	w->client->bottom		= SUBWINNEW(w->frame, 0, w->height - d->bw, w->width, d->bw, 0);
 
 	/* Window caption */
 	subClientFetchName(w);
@@ -257,7 +254,7 @@ subClientDrag(short mode,
 		{
 			XEvent ev;
 			Cursor cursor;
-			Window win, nil;
+			Window win, unused;
 			int wx = 0, wy = 0, rx = 0, ry = 0;
 			unsigned int mask;
 			short state = SUB_CLIENT_DRAG_STATE_START, last_state = SUB_CLIENT_DRAG_STATE_START;
@@ -318,7 +315,7 @@ subClientDrag(short mode,
 										if(!w2 || w2->frame != win) w2 = (SubWin *)subUtilFind(win, 1);
 										if(w2)
 											{
-												XQueryPointer(d->disp, win, &nil, &nil, &rx, &ry, &wx, &wy, &mask);
+												XQueryPointer(d->disp, win, &unused, &unused, &rx, &ry, &wx, &wy, &mask);
 												box.x = rx - wx;
 												box.y = ry - wy;
 
@@ -668,12 +665,11 @@ subClientGetWMState(SubWin *w)
 {
 	Atom type;
 	int format;
-	unsigned long nil, bytes;
+	unsigned long unused, bytes;
 	long *data = NULL, state = WithdrawnState;
 
 	if(XGetWindowProperty(d->disp, w->client->win, subEwmhFind(SUB_EWMH_WM_STATE), 0L, 2L, False, 
-			subEwmhFind(SUB_EWMH_WM_STATE), &type, &format, &bytes, &nil,
-			(unsigned char **) &data) == Success && bytes)
+			subEwmhFind(SUB_EWMH_WM_STATE), &type, &format, &bytes, &unused, (unsigned char **)&data) == Success && bytes)
 		{
 			state = *data;
 			XFree(data);
