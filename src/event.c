@@ -219,9 +219,9 @@ static Window
 GetParent(Window win)
 {
 	unsigned int n;
-	Window parent, nil, *wins = NULL;
+	Window parent, unused, *wins = NULL;
 
-	XQueryTree(d->disp, win, &nil, &parent, &wins, &n);
+	XQueryTree(d->disp, win, &unused, &parent, &wins, &n);
 	XFree(wins);
 
 	return(parent);
@@ -232,6 +232,8 @@ HandleMessage(XClientMessageEvent *ev)
 {
 	SubWin *w = NULL;
 
+	subUtilLogDebug("ClientMesg: type=%ld\n", ev->message_type);
+
 	if(ev->window == DefaultRootWindow(d->disp))
 		{
 			if(ev->message_type == subEwmhFind(SUB_EWMH_NET_CURRENT_DESKTOP))
@@ -239,32 +241,29 @@ HandleMessage(XClientMessageEvent *ev)
 					SubView *v = subViewFind(ev->data.l[0]);
 					if(v) subViewSwitch(v);
 				}
+			else if(ev->message_type == subEwmhFind(SUB_EWMH_NET_ACTIVE_WINDOW))
+				{
+					SubWin *focus = (SubWin *)subUtilFind(GetParent(ev->data.l[0]), 1);
+					if(focus) subWinFocus(focus);
+				}
 			return;
 		}
-	w = (SubWin *)subUtilFind(GetParent(ev->window), d->cv->xid);
-	if(w && w->flags & SUB_WIN_TYPE_CLIENT)
+	w = (SubWin *)subUtilFind(GetParent(ev->window), 1);
+	if(w && w->flags & SUB_WIN_TYPE_CLIENT && ev->format == 32)
 		{
-			int i;
+			subUtilLogDebug("ClientMsg: [0]=%ld, [1]=%ld, [2]=%ld, [3]=%ld, [4]=%ld\n", 
+				ev->data.l[0], ev->data.l[1], ev->data.l[2], ev->data.l[3], ev->data.l[4]);
 
-			printf("message_type=%ld\n", ev->message_type);
-			if(ev->format == 32)
-				{
-					for(i = 0; i < 5; i++)
-						printf("-> l[%d]=%ld\n", i, ev->data.l[i]);
-				}
 			if(ev->message_type == subEwmhFind(SUB_EWMH_NET_WM_STATE))
 				{
+					/* [0] => Remove = 0 / Add = 1 / Toggle = 2 - but we always toggle */
 					if(ev->data.l[1] == (long)subEwmhFind(SUB_EWMH_NET_WM_STATE_FULLSCREEN))
 						{
-							if(ev->data.l[0] == 0) /* Remove state */
-								{
-									subClientToggle(SUB_WIN_STATE_FULL, w);
-								}						
-
-							else if(ev->data.l[0] == 1) /* Add state */
-								{
-									subClientToggle(SUB_WIN_STATE_FULL, w);
-								}
+							subClientToggle(SUB_WIN_STATE_FULL, w);
+						}
+					else if(ev->data.l[1] == (long)subEwmhFind(SUB_EWMH_NET_WM_STATE_SHADED))
+						{
+							subClientToggle(SUB_WIN_STATE_SHADE, w);
 						}
 				}
 		}
