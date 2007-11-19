@@ -8,6 +8,7 @@
 
 #include <getopt.h>
 #include <lua.h>
+#include <sys/wait.h>
 #include "subtle.h"
 
 static char *config = NULL;
