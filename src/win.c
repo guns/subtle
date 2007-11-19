@@ -17,7 +17,6 @@
 SubWin *
 subWinNew(void)
 {
-	long mask = 0;
 	XSetWindowAttributes attrs;
 	SubWin *w = (SubWin *)subUtilAlloc(1, sizeof(SubWin));
 
@@ -33,8 +32,8 @@ subWinNew(void)
 	attrs.event_mask				= KeyPressMask|ButtonPressMask|EnterWindowMask|LeaveWindowMask|ExposureMask|
 		VisibilityChangeMask|FocusChangeMask|SubstructureRedirectMask|SubstructureNotifyMask;
 
-	mask			= CWBackPixmap|CWSaveUnder|CWEventMask;
-	w->frame	= SUBWINNEW(DefaultRootWindow(d->disp), w->x, w->y, w->width, w->height, 0);
+	w->frame = SUBWINNEW(DefaultRootWindow(d->disp), w->x, w->y, w->width, w->height, 0, 
+		CWBackPixmap|CWSaveUnder|CWEventMask);
 
 	return(w);
 }
