@@ -114,12 +114,12 @@ void
 subDisplayScan(void)
 {
 	unsigned int i, n;
-	Window nil, *wins = NULL;
+	Window unused, *wins = NULL;
 	XWindowAttributes attr;
 
 	assert(d);
 
-	XQueryTree(d->disp, DefaultRootWindow(d->disp), &nil, &nil, &wins, &n);
+	XQueryTree(d->disp, DefaultRootWindow(d->disp), &unused, &unused, &wins, &n);
 	for(i = 0; i < n; i++)
 		{
 			XGetWindowAttributes(d->disp, wins[i], &attr);
