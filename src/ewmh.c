@@ -36,9 +36,7 @@ subEwmhInit(void)
 		"_NET_WM_ACTION_FULLSCREEN", "_NET_WM_ACTION_CHANGE_DESKTOP", "_NET_WM_ACTION_CLOSE",
 
 		/* Misc */
-		"UTF8_STRING",
-
-		/* subtle */
+		"UTF8_STRING"
 	};
 	long data[4] = { 0, 0, 0, 0 }, pid = (long)getpid();
 
@@ -46,7 +44,7 @@ subEwmhInit(void)
 
 	/* Window manager information */
 	subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_SUPPORTING_WM_CHECK, &DefaultRootWindow(d->disp), 1);
-	subEwmhSetString(DefaultRootWindow(d->disp), SUB_EWMH_WM_NAME, PACKAGE_STRING);
+	subEwmhSetString(DefaultRootWindow(d->disp), SUB_EWMH_WM_NAME, PACKAGE_NAME);
 	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_WM_PID, &pid, 1);
 	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_DESKTOP_VIEWPORT, (long *)&data, 2);
 
@@ -113,9 +111,9 @@ subEwmhGetProperty(Window win,
 			XFree(data);
 			return(NULL);
 		}
-	if(size) *size = (format / 8) * nitems;
+	if(size) *size = (unsigned long)(format / 8) * nitems;
 
-	return(data);
+	return((char *)data);
 }
 
  /**
