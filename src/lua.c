@@ -15,7 +15,7 @@
 #include <fcntl.h>
 #include "subtle.h"
 
-static lua_State *state = NULL;
+static lua_State *subletstate = NULL;
 
 static lua_State *
 StateNew(void)
@@ -334,7 +334,7 @@ subLuaLoadSublets(const char *path)
 	char buf[100];
 	struct dirent *entry = NULL;
 
-	state = StateNew();
+	subletstate = StateNew();
 
 #ifdef HAVE_SYS_INOTIFY_H
 	if((d->notify = inotify_init()) < 0)
@@ -370,14 +370,14 @@ subLuaLoadSublets(const char *path)
 	XMapWindow(d->disp, d->bar.sublets);
 
 	/* Push functions on the stack */
-	lua_newtable(state);
-	SetField(state, "version",		LUA_TSTRING,		PACKAGE_VERSION);
-	SetField(state, "add_text",		LUA_TFUNCTION,	LuaAddText);
-	SetField(state, "add_teaser",	LUA_TFUNCTION,	LuaAddTeaser);
-	SetField(state, "add_meter",	LUA_TFUNCTION,	LuaAddMeter);
-	SetField(state,	"add_watch",	LUA_TFUNCTION,	LuaAddWatch);
+	lua_newtable(subletstate);
+	SetField(subletstate, "version",		LUA_TSTRING,		PACKAGE_VERSION);
+	SetField(subletstate, "add_text",		LUA_TFUNCTION,	LuaAddText);
+	SetField(subletstate, "add_teaser",	LUA_TFUNCTION,	LuaAddTeaser);
+	SetField(subletstate, "add_meter",	LUA_TFUNCTION,	LuaAddMeter);
+	SetField(subletstate,	"add_watch",	LUA_TFUNCTION,	LuaAddWatch);
 
-	lua_setglobal(state, PACKAGE_NAME);
+	lua_setglobal(subletstate, PACKAGE_NAME);
 
 	if((dir = opendir(buf)))
 		{
@@ -386,8 +386,8 @@ subLuaLoadSublets(const char *path)
 					if(!fnmatch("*.lua", entry->d_name, FNM_PATHNAME))
 						{
 							snprintf(buf, sizeof(buf), "%s/.%s/sublets/%s", getenv("HOME"), PACKAGE_NAME, entry->d_name);
-							luaL_loadfile(state, buf);
-							lua_pcall(state, 0, 0, 0);
+							luaL_loadfile(subletstate, buf);
+							lua_pcall(subletstate, 0, 0, 0);
 						}
 				}
 			closedir(dir);
@@ -405,7 +405,7 @@ subLuaLoadSublets(const char *path)
 void
 subLuaKill(void)
 {
-	if(state) lua_close(state);
+	if(subletstate) lua_close(subletstate);
 
 #ifdef HAVE_SYS_INOTIFY_H
 	if(d->notify) close(d->notify);
@@ -423,12 +423,12 @@ subLuaCall(SubSublet *s)
 {
 	if(s)
 		{
-			lua_sethook(state, CountHook, LUA_MASKCOUNT, 1000);
+			lua_sethook(subletstate, CountHook, LUA_MASKCOUNT, 1000);
 
-			lua_settop(state, 0);
-			lua_rawgeti(state, LUA_REGISTRYINDEX, s->ref);
+			lua_settop(subletstate, 0);
+			lua_rawgeti(subletstate, LUA_REGISTRYINDEX, s->ref);
 
-			if(lua_pcall(state, 0, 1, 0))
+			if(lua_pcall(subletstate, 0, 1, 0))
 				{
 					/* Fail check */
 					if(s->flags & SUB_SUBLET_FAIL_SECOND) s->flags |= SUB_SUBLET_FAIL_THIRD;
@@ -437,7 +437,7 @@ subLuaCall(SubSublet *s)
 
 					subUtilLogWarn("Error (%d/3) in sublet #%d:\n", 
 						(s->flags & SUB_SUBLET_FAIL_THIRD) ? 3 : (s->flags & SUB_SUBLET_FAIL_SECOND ? 2 : 1), s->ref);
-					subUtilLogWarn("%s\n", (char *)lua_tostring(state, -1));
+					subUtilLogWarn("%s\n", (char *)lua_tostring(subletstate, -1));
 
 					if(s->flags & SUB_SUBLET_FAIL_THIRD) subSubletDelete(s);
 					else
@@ -452,13 +452,13 @@ subLuaCall(SubSublet *s)
 					return;
 				}
 
-			switch(lua_type(state, -1))
+			switch(lua_type(subletstate, -1))
 				{
 					case LUA_TSTRING:
 						if(s->string) free(s->string);
-						s->string = strdup((char *)lua_tostring(state, -1));
+						s->string = strdup((char *)lua_tostring(subletstate, -1));
 						break;
-					case LUA_TNUMBER: s->number = (int)lua_tonumber(state, -1);	break;
+					case LUA_TNUMBER: s->number = (int)lua_tonumber(subletstate, -1);	break;
 					case LUA_TNIL: 		
 						subUtilLogWarn("Sublet #%d returns no usuable value\n", s->ref);	
 
@@ -470,8 +470,8 @@ subLuaCall(SubSublet *s)
 							}
 						break;
 					default:
-						subUtilLogDebug("Sublet #%d returned unkown type %s\n", s->ref, lua_typename(state, -1));
-						lua_pop(state, -1);
+						subUtilLogDebug("Sublet #%d returned unkown type %s\n", s->ref, lua_typename(subletstate, -1));
+						lua_pop(subletstate, -1);
 				}
 		}
 

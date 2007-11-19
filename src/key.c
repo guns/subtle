@@ -26,9 +26,9 @@ subKeyInit(void)
 			const int modmasks[] = { ShiftMask, LockMask, ControlMask, Mod1Mask, Mod2Mask, Mod3Mask, Mod4Mask, Mod5Mask };
 			const KeyCode num_lock = XKeysymToKeycode(d->disp, XK_Num_Lock);
 			const KeyCode scroll_lock = XKeysymToKeycode(d->disp, XK_Scroll_Lock);
-			int i, size = (sizeof(modmasks) / sizeof(int)) * modmap->max_keypermod;
+			int i, max = (sizeof(modmasks) / sizeof(int)) * modmap->max_keypermod;
 
-			for(i = 0; i < size; i++)
+			for(i = 0; i < max; i++)
 				if(!modmap->modifiermap[i]) continue;
 				else if(num_lock && (modmap->modifiermap[i] == num_lock)) num_lock_mask = modmasks[i / modmap->max_keypermod];
 				else if(scroll_lock && (modmap->modifiermap[i] == scroll_lock)) scroll_lock_mask = modmasks[i / modmap->max_keypermod];
