@@ -30,6 +30,7 @@
 #define ACTION_FIND			(1L << 3)		// Find client
 #define ACTION_VIEWS		(1L << 4)		// List views
 #define ACTION_SWITCH		(1L << 5)		// Switch view
+#define ACTION_SHADE		(1L << 6)		// Shade client
 
 static Display *disp = NULL;
 
@@ -73,7 +74,7 @@ Log(short type,
 }
 /* }}} */
 
-/* Print usage/version {{{ */
+/* Print usage {{{ */
 static void
 Usage(void)
 {
@@ -91,9 +92,11 @@ Usage(void)
 					"  -S, --shade=CLIENT      \t Toggle shade of a client\n" \
 					"  -V, --version           \t Show version info and exit\n" \
 					"Please report bugs to <%s>\n", 
-					PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_BUGREPORT);
+					PACKAGE_NAME, PACKAGE_BUGREPORT);
 }
+/* }}} */
 
+/* Print version {{{ */
 static void
 Version(void)
 {
@@ -184,9 +187,9 @@ GetProperty(Window win,
 			XFree(data);
 			return(NULL);
 		}
-	if(size) *size = (format / 8) * nitems;
+	if(size) *size = (unsigned long)(format / 8) * nitems;
 
-	return(data);
+	return((char *)data);
 }
 /* }}} */
 
@@ -280,6 +283,8 @@ FindClient(char *name)
 		}
 	free(clients);
 
+	Warn("Can't fint client `%s'\n", name);
+
 	return(0);
 }
 /* }}} */
@@ -288,7 +293,8 @@ FindClient(char *name)
 static void
 PrintClient(Window win)
 {
-	Window nil;
+	Window unused;
+	int x, y;
 	unsigned int width, height, border;
 	unsigned long *cv = NULL, *rv = NULL;
 	char *name = NULL, *class = NULL;
@@ -298,12 +304,12 @@ PrintClient(Window win)
 	name = GetClientName(win);
 	class = GetClientClass(win);
 
-	XGetGeometry(disp, win, &nil, &width, &height, &width, &height, &border, &border);
+	XGetGeometry(disp, win, &unused, &x, &y, &width, &height, &border, &border);
 
 	cv = (unsigned long*)GetProperty(win, XA_CARDINAL, "_NET_WM_DESKTOP", NULL);
 	rv = (unsigned long*)GetProperty(DefaultRootWindow(disp), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
 
-	printf("%#lx %c %d %dx%d %s (%s)\n", win, (*cv == *rv ? '*' : ' '), *cv, width, height, name, class);
+	printf("%#lx %c %ld %ux%u %s (%s)\n", win, (*cv == *rv ? '*' : ' '), *cv, width, height, name, class);
 
 	if(name) free(name);
 	if(class) free(class);
@@ -360,17 +366,15 @@ ActionActivateClient(char *name)
 	win = FindClient(name);
 	if(win)
 		{
-			unsigned long *cv = NULL, *rv = NULL;
+			unsigned long *cv = (unsigned long*)GetProperty(win, XA_CARDINAL, "_NET_WM_DESKTOP", NULL),
+				*rv = (unsigned long*)GetProperty(DefaultRootWindow(disp), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
 
-			cv = (unsigned long*)GetProperty(win, XA_CARDINAL, "_NET_WM_DESKTOP", NULL);
-			rv = (unsigned long*)GetProperty(DefaultRootWindow(disp), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
-
-			if(*cv != *rv) 
+			if(*cv && *rv && *cv != *rv) 
 				{
 					Debug("Switching: active=%d, view=%d\n", *rv, *cv);
 					SendMessage(DefaultRootWindow(disp), "_NET_CURRENT_DESKTOP", *cv, 0, 0, 0, 0);
 				}
-			else SendMessage(win, "_NET_ACTIVE_WINDOW", 0, 0, 0, 0, 0);
+			else SendMessage(DefaultRootWindow(disp), "_NET_ACTIVE_WINDOW", win, 0, 0, 0, 0);
 					
 			if(cv) free(cv);
 			if(rv) free(rv);
@@ -392,6 +396,18 @@ ActionSetView(int view)
 static void
 ActionGetViews(void)
 {
+}
+
+static void
+ActionShadeClient(char *name)
+{
+	Window win;
+
+	assert(name);
+	Debug("Action: ActionShadeClient\n");
+
+	win = FindClient(name);
+
 }
 
 int
@@ -449,6 +465,7 @@ main(int argc,
 #ifdef DEBUG					
 					case 'D': debug = 1;									break;
 #endif /* DEBUG */
+					case 'S': action	= ACTION_SHADE;			break;
 					case 'V': Version(); 									return(0);
 					case '?':
 						printf("Try `%sr --help for more information\n", PACKAGE_NAME);
@@ -481,6 +498,7 @@ main(int argc,
 			case ACTION_FIND:			ActionFindClient(string);				break;
 			case ACTION_VIEWS:		ActionGetViews();								break;
 			case ACTION_SWITCH:		ActionSetView(number);					break;
+			case ACTION_SHADE:		ActionShadeClient(string);			break;
 			default:
 				Warn("Action not implemented yet\n");
 		}
