@@ -112,7 +112,7 @@ subSubletNew(int type,
 	if(root != s) sublets[0]->next = s;
 	sublets[0] = s;
 
-	printf("Loading sublet %s (%d)\n", name, interval);
+	printf("Loading sublet %s (%d)\n", name, (int)interval);
 	subUtilLogDebug("Sublet: name=%s, ref=%d, interval=%d, watch=%s\n", name, ref, interval, watch);		
 }
 
@@ -182,7 +182,7 @@ subSubletRender(void)
 {
 	if(sublets)
 		{
-			int i, width = 3;
+			int width = 3;
 			SubSublet *s = root;
 
 			XClearWindow(d->disp, d->bar.sublets);
