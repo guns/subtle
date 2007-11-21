@@ -102,5 +102,7 @@ print
 print 'Debugging messages..: ' + debug
 print
 
-# Conscripts
+# SConscripts
+SConscript('config/SConscript', 'env', duplicate = 0)
+SConscript('subtle/SConscript', 'env', duplicate = 0)
 SConscript('src/SConscript', 'env', build_dir = 'build', duplicate = 0)
