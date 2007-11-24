@@ -204,14 +204,18 @@ static void
 HandleMap(XMapRequestEvent *ev)
 {
 	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
-	if(!w) subViewSift(ev->window);
+	if(!w) subViewMerge(ev->window);
 }
 
 static void
 HandleDestroy(XDestroyWindowEvent *ev)
 {
 	SubWin *w = (SubWin *)subUtilFind(ev->event, 1);
-	if(w && w->flags & SUB_WIN_TYPE_CLIENT) subWinDelete(w); 
+	if(w && w->flags & SUB_WIN_TYPE_CLIENT) 
+		{
+			w->flags |= SUB_WIN_STATE_DEAD;
+			subWinDelete(w); 
+		}
 }
 
 /* Some events don't propagate but we need them to do so */
@@ -384,7 +388,7 @@ subEventLoop(void)
 							s->time = current + s->interval;
 
 							subLuaCall(s);
-							subSubletSift(1);
+							subSubletMerge(1);
 
 							s = subSubletNext();
 						}
@@ -400,8 +404,9 @@ subEventLoop(void)
 					FD_SET(d->notify, &fdset);
 #endif /* HAVE_SYS_INOTIFY_H */
 
-					if(select(ConnectionNumber(d->disp) + 1, &fdset, NULL, NULL, &tv) == -1)
-						subUtilLogWarn("Can't select the set\n");
+					/* Forcefully ignore EINTR */
+					if(select(ConnectionNumber(d->disp) + 1, &fdset, NULL, NULL, &tv) == -1 && errno != EINTR)
+						subUtilLogDebug("%s\n", strerror(errno));
 
 #ifdef HAVE_SYS_INOTIFY_H
 					if(read(d->notify, buf, BUFLEN) > 0)
