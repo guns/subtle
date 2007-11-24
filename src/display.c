@@ -125,7 +125,7 @@ subDisplayScan(void)
 			XGetWindowAttributes(d->disp, wins[i], &attr);
 			if(wins[i] != d->bar.win && wins[i] != d->bar.views && 
 				wins[i] != d->bar.sublets && wins[i] != d->cv->w->frame && 
-				wins[i] != d->cv->button && attr.map_state == IsViewable) subViewSift(wins[i]);
+				wins[i] != d->cv->button && attr.map_state == IsViewable) subViewMerge(wins[i]);
 		}
 	
 	subTileConfigure(d->cv->w);
