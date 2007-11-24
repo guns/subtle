@@ -140,14 +140,14 @@ subViewDelete(SubView *v)
 }
 
  /**
-	* Sift window
+	* Merge window
 	* @param w A #SubWin
 	**/
 
 void
-subViewSift(Window win)
+subViewMerge(Window win)
 {
-	int sifted = 0;
+	int merged = 0;
 	SubView *v = NULL;
 	char *class = NULL;
 	long xid = 0;
@@ -160,7 +160,7 @@ subViewSift(Window win)
 	v = last;
 	while(v)
 		{
-			if((v == d->rv && !sifted) || (v->regex && !regexec(v->regex, class, 0, NULL, 0)))
+			if((v == d->rv && !merged) || (v->regex && !regexec(v->regex, class, 0, NULL, 0)))
 				{
 					SubWin *w = subClientNew(win);
 
@@ -178,7 +178,7 @@ subViewSift(Window win)
 					if(!v->w) TagView(v);
 					subTileAdd(v->w, w);
 					subTileConfigure(v->w);
-					sifted++;
+					merged++;
 
 					XSaveContext(d->disp, w->frame, 1, (void *)w);
 
