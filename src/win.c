@@ -50,13 +50,17 @@ subWinDelete(SubWin *w)
 
 	assert(w);
 
+	subWinUnmap(w);
+
+	/* Ignore further events */
+	XSelectInput(d->disp, w->frame, NoEventMask);
+
 	/* Check window flags */
 	if(w->flags & SUB_WIN_TYPE_TILE) subTileDelete(w);
 	else if(w->flags & SUB_WIN_TYPE_CLIENT) subClientDelete(w);	
 
 	p = w->parent;
-	subWinUnmap(w);
-	subWinCut(w);
+	subWinUnlink(w);
 	subWinDestroy(w);
 
 	if(p) subTileConfigure(p);
@@ -88,6 +92,9 @@ subWinRender(SubWin *w)
 {
 	assert(w);
 
+	/* Check if window was meanwhile destroyed */
+	if(w->flags & SUB_WIN_STATE_DEAD) return;
+
 	/* Check window flags */
 	if(w->flags & SUB_WIN_TYPE_VIEW) subViewRender();
 	else if(w->flags & SUB_WIN_TYPE_CLIENT) subClientRender(w);	
@@ -99,7 +106,7 @@ subWinRender(SubWin *w)
 	**/
 
 void
-subWinCut(SubWin *w)
+subWinUnlink(SubWin *w)
 {
 	assert(w);
 
@@ -351,7 +358,6 @@ subWinResize(SubWin *w)
 					XMoveResizeWindow(d->disp, w->client->bottom, 0, w->height - d->bw, w->width, d->bw);
 				}
 			else XMoveResizeWindow(d->disp, w->client->title, 0, 0, w->width, d->th);
-
 			if(!(w->flags & SUB_WIN_STATE_SHADE)) subClientConfigure(w);
 		}
 }
