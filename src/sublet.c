@@ -13,12 +13,12 @@ static SubSublet **sublets = NULL;
 static SubSublet *root = NULL;
 
  /**
-	* Sift the sublet through the queue
+	* Merge the sublet through the queue
 	* @param pos Position of the sublet in the queue
 	**/
 
 void
-subSubletSift(int pos)
+subSubletMerge(int pos)
 {
 	int left	= 2 * pos;
 	int right	= left + 1;
@@ -30,7 +30,7 @@ subSubletSift(int pos)
 			SubSublet *tmp	= sublets[pos];
 			sublets[pos]		= sublets[max];
 			sublets[max]		= tmp;
-			subSubletSift(max);
+			subSubletMerge(max);
 		}
 }
 
