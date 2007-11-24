@@ -15,24 +15,25 @@
 	**/
 
 SubWin *
-subTileNew(short mode)
+subTileNew(int mode)
 {
-	SubWin *t = subWinNew();
+	SubWin *t = NULL;
 
+	assert(mode == SUB_WIN_TILE_HORZ || mode == SUB_WIN_TILE_VERT);
+	subUtilLogDebug("type=%s\n", (mode & SUB_WIN_TILE_HORZ) ? "horz" : "vert");
+
+	t					= subWinNew();
 	t->flags	= SUB_WIN_TYPE_TILE|mode;
 	t->tile		= (SubTile *)subUtilAlloc(1, sizeof(SubTile));
 
 	XMapSubwindows(d->disp, t->frame);
-	XSaveContext(d->disp, t->frame, d->cv->xid, (void *)t);
-
-	subUtilLogDebug("Adding %s-tile: x=%d, y=%d, width=%d, height=%d\n", 
-		(t->flags & SUB_WIN_TILE_HORZ) ? "h" : "v", t->x, t->y, t->width, t->height);
+	XSaveContext(d->disp, t->frame, 1, (void *)t);
 
 	return(t);
 }
 
  /**
-	* Delete a tile window and all children 
+	* Delete tile window and all children 
 	* @param t A #SubWin
 	**/
 
@@ -42,33 +43,18 @@ subTileDelete(SubWin *t)
 	SubWin *c = NULL;
 
 	assert(t && t->flags & SUB_WIN_TYPE_TILE);
+	subUtilLogDebug("type=%s\n", (t->flags & SUB_WIN_TILE_HORZ) ? "horz" : "vert");
 
 	c = t->tile->first;
-
 	while(c)
 		{
 			SubWin *next = c->next;
 			subWinDelete(c);
 			c = next;
 		}
-
-	subUtilLogDebug("Deleting %s-tile\n", (t->flags & SUB_WIN_TILE_HORZ) ? "h" : "v");
-	subTileDestroy(t);
-}
-
- /**
-	* Destroy tile
-	* @param t A #SubWin
-	**/
-
-void
-subTileDestroy(SubWin *t)
-{
-	assert(t && t->flags & SUB_WIN_TYPE_TILE);
-
 	free(t->tile);
 }
-	
+
  /**
 	* Add window to tile 
 	* @param t A #SubWin
@@ -93,7 +79,8 @@ subTileAdd(SubWin *t,
 		}
 	else subWinAppend(t->tile->last, w);
 
-	subUtilLogDebug("Adding window: x=%d, y=%d, width=%d, height=%d\n", w->x, w->y, w->width, w->height);
+	subUtilLogDebug("type=%s, x=%d, y=%d, width=%d, height=%d\n", (t->flags & SUB_WIN_TILE_HORZ) ? "horz" : "vert",
+		w->x, w->y, w->width, w->height);
 }
 
  /**
@@ -105,8 +92,8 @@ void
 subTileConfigure(SubWin *t)
 {
 	SubWin *c = NULL;
-	int mw = 0, mh = 0, width = 0, height = 0;
-	unsigned int x = 0, y = 0, n = 0, size = 0, comp = 0, shaded = 0, resized = 0, full = 0, floated = 0;
+	unsigned int x = 0, y = 0, nclients = 0, ch = 0, cw = 0, width = 0, height = 0, size = 0, comp = 0,
+		shaded = 0, resized = 0, full = 0, floated = 0;
 
 	assert(t && t->flags & SUB_WIN_TYPE_TILE);
 
@@ -126,8 +113,8 @@ subTileConfigure(SubWin *t)
 					else if(c->flags & SUB_WIN_STATE_FLOAT) floated++;
 					else if(c->flags & SUB_WIN_STATE_RESIZE && c->resized > 0)
 						{
-							/* Prevent only resized windows */
-							if(!c->next && resized == n)
+							/* Prevent resized windows only */
+							if(!c->next && resized == nclients)
 								{
 									c->flags &= ~SUB_WIN_STATE_RESIZE;
 									c->resized = 0;
@@ -139,13 +126,13 @@ subTileConfigure(SubWin *t)
 								}
 						}
 					c = c->next;
-					n++;
+					nclients++;
 				}
 
 			/* Stacked window */
 			if(t->flags & SUB_WIN_STATE_STACK) 
 				{
-					shaded = n - 1;
+					shaded = nclients - 1;
 					resized	= 0;
 				}
 
@@ -157,13 +144,23 @@ subTileConfigure(SubWin *t)
 				}
 
 			 /* Prevent divide by zero */
-			n		= (n - shaded - resized - full - floated) > 0 ? n - shaded - resized - full - floated : 1;
-			mw	= (t->flags & SUB_WIN_TILE_HORZ) ? width / n : width;
-			mh	= (t->flags & SUB_WIN_TILE_VERT) ? (height - shaded * d->th) / n : height;
+			nclients	= (nclients - shaded - resized - full - floated) > 0 ? nclients - shaded - resized - full - floated : 1;
+			cw				= (t->flags & SUB_WIN_TILE_HORZ) ? width / nclients : width;
+			ch				= (t->flags & SUB_WIN_TILE_VERT) ? (height - shaded * d->th) / nclients : height;
+
+			if(t->tile->cw == cw && t->tile->ch == ch)
+				{
+					subUtilLogDebug("Break configure cycle\n");
+				}
+			else
+				{
+					t->tile->cw = cw;
+					t->tile->ch = ch;
+				}
 
 			/* Get compensation for bad rounding */
-			if(t->flags & SUB_WIN_TILE_HORZ) comp = abs(width - n * mw - shaded * d->th);
-			else comp = abs(height - n * mh - shaded * d->th);
+			if(t->flags & SUB_WIN_TILE_HORZ) comp = abs(width - nclients * cw - shaded * d->th);
+			else comp = abs(height - nclients * ch - shaded * d->th);
 
 			c = t->tile->first;
 			while(c)
@@ -196,13 +193,12 @@ subTileConfigure(SubWin *t)
 									XReparentWindow(d->disp, first->frame, first->parent->frame, 0, 0);
 
 									subTileDelete(c);
-									//subWinDestroy(c);
 
 									XDeleteContext(d->disp, c->frame, 1);
 									XDestroySubwindows(d->disp, c->frame);
 									XDestroyWindow(d->disp, c->frame);
 
-									printf("Removing dynamic tile %#lx\n", c->frame);
+									subUtilLogDebug("Removing dynamic tile %#lx\n", c->frame);
 
 									c = first;
 								}
@@ -210,8 +206,8 @@ subTileConfigure(SubWin *t)
 							c->parent	= t;
 							c->x			= t->flags & SUB_WIN_TYPE_VIEW ? d->th : 0;
 							c->y			= (c->flags & SUB_WIN_STATE_SHADE) ? y : shaded * d->th;
-							c->width	= mw;
-							c->height	= (c->flags & SUB_WIN_STATE_SHADE) ? d->th : mh;
+							c->width	= cw;
+							c->height	= (c->flags & SUB_WIN_STATE_SHADE) ? d->th : ch;
 
 							/* Adjust sizes according to the tile alignment */
 							if(t->flags & SUB_WIN_TILE_HORZ)
@@ -220,7 +216,7 @@ subTileConfigure(SubWin *t)
 									if(c->flags & SUB_WIN_STATE_SHADE) c->width = SUBWINWIDTH(t);
 									else if(c->flags & SUB_WIN_STATE_RESIZE) c->width = SUBWINWIDTH(t) * c->resized / 100;
 
-									if(shaded > 0) c->height = mh - shaded * d->th;
+									if(shaded > 0) c->height = ch - shaded * d->th;
 								}
 							else if(t->flags & SUB_WIN_TILE_VERT)
 								{
@@ -242,11 +238,6 @@ subTileConfigure(SubWin *t)
 									else x += c->width;
 								}
 							if(t->flags & SUB_WIN_TILE_VERT) y += c->height;
-
-							subUtilLogDebug("Configuring %s-window: x=%d, y=%d, width=%d, height=%d, resized=%d\n", 
-								(c->flags & SUB_WIN_STATE_SHADE) ? "c" : ((t->flags & SUB_WIN_STATE_RESIZE) ? "t" : 
-								((t->flags & SUB_WIN_STATE_FLOAT) ? "r" : "n")), c->x, c->y, c->width, c->height, c->resized);
-
 							subWinResize(c);
 
 							if(c->flags & SUB_WIN_TYPE_TILE) subTileConfigure(c);
@@ -254,7 +245,7 @@ subTileConfigure(SubWin *t)
 						}
 					c = c->next;
 				}
-
-			subUtilLogDebug("Configuring %s-tile: n=%d, mw=%d, mh=%d\n", (t->flags & SUB_WIN_TILE_HORZ) ? "h" : "v", n, mw, mh);
+			subUtilLogDebug("type=%s, nclients=%d, cw=%d, ch=%d\n", 
+				(t->flags & SUB_WIN_TILE_HORZ) ? "horz" : "vert", nclients, cw, ch);
 		}
 }
