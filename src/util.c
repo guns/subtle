@@ -11,7 +11,7 @@
 #include "subtle.h"
 
 #ifdef DEBUG
-static short debug = 0;
+static int debug = 0;
 
  /**
 	* Toggle debugging messages
@@ -28,15 +28,17 @@ subUtilLogToggle(void)
 	* Print messages depending on their type
 	* @param type Message type
 	* @param file File name
+	* @param func Function name
 	* @param line Line number
 	* @param format Message format
 	* @param ... Variadic arguments
 	**/
 
 void
-subUtilLog(short type,
+subUtilLog(int type,
 	const char *file,
-	short line,
+	const char *func,
+	int line,
 	const char *format,
 	...)
 {
@@ -54,10 +56,10 @@ subUtilLog(short type,
 	switch(type)
 		{
 #ifdef DEBUG
-			case 0: fprintf(stderr, "<DEBUG:%s:%d> %s", file, line, buf);	break;
+			case 0: fprintf(stderr, "<DEBUG:%s:%d> %s: %s", file, line, func, buf);	break;
 #endif /* DEBUG */
-			case 1: fprintf(stderr, "<ERROR> %s", buf); raise(SIGTERM);		break;
-			case 2: fprintf(stdout, "<WARNING> %s", buf);									break;
+			case 1: fprintf(stderr, "<ERROR> %s", buf); raise(SIGTERM);							break;
+			case 2: fprintf(stdout, "<WARNING> %s", buf);														break;
 		}
 }
 
