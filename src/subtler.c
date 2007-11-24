@@ -21,22 +21,21 @@
 #include <X11/Xutil.h>
 #include <X11/Xmd.h>
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
 
 #define ACTION_ACTIVATE	(1L << 1)		// Activate client
 #define ACTION_CLIENTS	(1L << 2)		// List clients
 #define ACTION_FIND			(1L << 3)		// Find client
 #define ACTION_VIEWS		(1L << 4)		// List views
-#define ACTION_SWITCH		(1L << 5)		// Switch view
-#define ACTION_SHADE		(1L << 6)		// Shade client
+#define ACTION_CLOSE		(1L << 5)		// Close client
+#define ACTION_SWITCH		(1L << 6)		// Switch view
+#define ACTION_SHADE		(1L << 7)		// Shade client
 
 static Display *disp = NULL;
 
 /* Print messages {{{ */
 #ifdef DEBUG
-static short debug = 0;
+static int debug = 0;
 #define Debug(...) Log(0, __FILE__, __LINE__, __VA_ARGS__);
 #else
 #define Debug(...)
@@ -46,9 +45,9 @@ static short debug = 0;
 #define Warn(...) Log(2, __FILE__, __LINE__, __VA_ARGS__);
 
 void
-Log(short type,
+Log(int type,
 	const char *file,
-	short line,
+	int line,
 	const char *format,
 	...)
 {
@@ -136,7 +135,7 @@ Alloc(size_t n,
 /* Send client message {{{ */
 static void
 SendMessage(Window win,
-	char *prop,
+	char *type,
 	unsigned long data0,
 	unsigned long data1,
 	unsigned long data2,
@@ -149,7 +148,7 @@ SendMessage(Window win,
 	ev.xclient.type					= ClientMessage;
 	ev.xclient.serial				= 0;
 	ev.xclient.send_event		= True;
-	ev.xclient.message_type	= XInternAtom(disp, prop, False);
+	ev.xclient.message_type	= XInternAtom(disp, type, False);
 	ev.xclient.window				= win;
 	ev.xclient.format				= 32;
 	ev.xclient.data.l[0]		= data0;
@@ -158,8 +157,8 @@ SendMessage(Window win,
 	ev.xclient.data.l[3]		= data3;
 	ev.xclient.data.l[4]		= data4;
 
-	if(!XSendEvent(disp, DefaultRootWindow(disp), False, mask, &ev)) printf("Can't send client message %s\n", prop);
-	Debug("Send: prop=%s, [0]=%ld [1]=%ld [2]=%ld [3]=%ld [4]=%ld\n", prop, data0, data1, data2, data3, data4);
+	if(!XSendEvent(disp, DefaultRootWindow(disp), False, mask, &ev)) printf("Can't send client message %s\n", type);
+	Debug("Send: type=%s, [0]=%#lx [1]=%#lx [2]=%#lx [3]=%#lx [4]=%#lx\n", type, data0, data1, data2, data3, data4);
 }
 /* }}} */
 
@@ -178,12 +177,12 @@ GetProperty(Window win,
 	if(XGetWindowProperty(disp, win, prop, 0L, 1024, False, type, &rtype, 
 		&format, &nitems, &bytes, &data) != Success)
 		{
-			printf("Failed to get property (%s)\n", name);
+			Warn("Failed to get property (%s)\n", name);
 			return(NULL);
 		}
 	if(type != rtype)
 		{
-			printf("Invalid type for property (%s)\n", name);
+			Warn("Invalid type for property (%s)\n", name);
 			XFree(data);
 			return(NULL);
 		}
@@ -206,7 +205,7 @@ GetClients(unsigned long *size)
 	else
 		{
 			*size = 0;
-			printf("Failed to get client list\n");
+			Warn("Failed to get client list\n");
 			return(NULL);
 		}
 }
@@ -283,7 +282,7 @@ FindClient(char *name)
 		}
 	free(clients);
 
-	Warn("Can't fint client `%s'\n", name);
+	Error("Can't fint client `%s'\n", name);
 
 	return(0);
 }
@@ -328,7 +327,6 @@ ActionGetClients(void)
 	Debug("Action: ActionGetClients\n");
 
 	clients = GetClients(&size);
-
 	if(clients)
 		{
 			int i;
@@ -341,44 +339,38 @@ ActionGetClients(void)
 
 /* Action: Find client {{{ */
 static void
-ActionFindClient(char *name)
+ActionFindClient(Window win)
 {
-	Window win;
+	assert(win);
 
-	assert(name);
 	Debug("Action: ActionFindClient\n");
 	
-	win = FindClient(name);
-	if(win) PrintClient(win);
-	else printf("Can't find window `%s'\n", name);
+	PrintClient(win);
 }
 /* }}} */
 
 /* Action: Activate client {{{ */
 static void
-ActionActivateClient(char *name)
+ActionActivateClient(Window win)
 {
-	Window win;
+	unsigned long *cv = NULL, *rv = NULL;
 
-	assert(name);
+	assert(win);
+
 	Debug("Action: ActionActivateClient\n");
 
-	win = FindClient(name);
-	if(win)
-		{
-			unsigned long *cv = (unsigned long*)GetProperty(win, XA_CARDINAL, "_NET_WM_DESKTOP", NULL),
-				*rv = (unsigned long*)GetProperty(DefaultRootWindow(disp), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+	cv = (unsigned long*)GetProperty(win, XA_CARDINAL, "_NET_WM_DESKTOP", NULL);
+	rv = (unsigned long*)GetProperty(DefaultRootWindow(disp), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
 
-			if(*cv && *rv && *cv != *rv) 
-				{
-					Debug("Switching: active=%d, view=%d\n", *rv, *cv);
-					SendMessage(DefaultRootWindow(disp), "_NET_CURRENT_DESKTOP", *cv, 0, 0, 0, 0);
-				}
-			else SendMessage(DefaultRootWindow(disp), "_NET_ACTIVE_WINDOW", win, 0, 0, 0, 0);
-					
-			if(cv) free(cv);
-			if(rv) free(rv);
+	if(*cv && *rv && *cv != *rv) 
+		{
+			Debug("Switching: active=%d, view=%d\n", *rv, *cv);
+			SendMessage(DefaultRootWindow(disp), "_NET_CURRENT_DESKTOP", *cv, 0, 0, 0, 0);
 		}
+	else SendMessage(DefaultRootWindow(disp), "_NET_ACTIVE_WINDOW", win, 0, 0, 0, 0);
+			
+	if(cv) free(cv);
+	if(rv) free(rv);
 }
 /* }}} */
 
@@ -396,24 +388,51 @@ ActionSetView(int view)
 static void
 ActionGetViews(void)
 {
+	unsigned long *nv = NULL, *cv = NULL, nviews = 0;
+	char *views = NULL;
+
+	Debug("Action: ActionGetViews\n");
+
+	nv = (unsigned long *)GetProperty(DefaultRootWindow(disp), XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
+	cv = (unsigned long *)GetProperty(DefaultRootWindow(disp), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+
+	views = GetProperty(DefaultRootWindow(disp), XA_STRING, "_NET_DESKTOP_NAMES", &nviews);
+
+	if(*nv && *cv && views)
+		{
+			printf("Views=%ld\n", *nv);
+		}
+
+	if(nv) free(nv);
+	if(cv) free(cv);
+	if(views) free(views);
 }
 
+/* Action: Close client {{{ */
 static void
-ActionShadeClient(char *name)
+ActionCloseClient(Window win)
 {
-	Window win;
+	assert(win);
 
-	assert(name);
+	Debug("Action: ActionCloseClient\n");
+
+	SendMessage(win, "_NET_CLOSE_WINDOW", 0, 0, 0, 0, 0);
+}
+/* }}} */
+
+static void
+ActionShadeClient(Window win)
+{
+	assert(win);
+
 	Debug("Action: ActionShadeClient\n");
-
-	win = FindClient(name);
-
 }
 
 int
 main(int argc,
 	char *argv[])
 {
+	Window win;
 	int c, action = 0, number = 0;
 	char *display = NULL, *string = NULL, buf[256];
 	struct sigaction act;
@@ -426,6 +445,7 @@ main(int argc,
 		{ "switch",			required_argument,		0,	's' },
 		{ "views",			no_argument,					0,	'v' },
 		{ "activate",		required_argument,		0,	'A' },
+		{ "close",			required_argument,		0,	'C'	},
 #ifdef DEBUG
 		{ "debug",			no_argument,					0,	'D' },
 #endif /* DEBUG */
@@ -435,7 +455,7 @@ main(int argc,
 		{ 0, 0, 0, 0}
 	};
 
-	while((c = getopt_long(argc, argv, "cd:hf:s:vA:DFS:V", long_options, NULL)) != -1)
+	while((c = getopt_long(argc, argv, "cd:hf:s:vA:C:DFS:V", long_options, NULL)) != -1)
 		{
 			if(optarg)
 				{
@@ -449,8 +469,8 @@ main(int argc,
 						}
 					else string = strdup(optarg);
 
-					/* Convert string to int if possible */
-					if(isdigit(string[0])) number = atoi(string);
+					/* Convert string to int */
+					if(string && isdigit(string[0])) number = atoi(string);
 				}
 
 			switch(c)
@@ -462,6 +482,7 @@ main(int argc,
 					case 's': action	= ACTION_SWITCH;		break;
 					case 'v':	action	= ACTION_VIEWS;			break;
 					case 'A': action	= ACTION_ACTIVATE;	break;
+					case 'C': action	= ACTION_CLOSE;			break;
 #ifdef DEBUG					
 					case 'D': debug = 1;									break;
 #endif /* DEBUG */
@@ -491,14 +512,17 @@ main(int argc,
 			return(-1);
 		}
 
+	if(string && !isdigit(string[0])) win = FindClient(string);
+
 	switch(action)
 		{
-			case ACTION_ACTIVATE:	ActionActivateClient(string);		break;
-			case ACTION_CLIENTS:	ActionGetClients();							break;
-			case ACTION_FIND:			ActionFindClient(string);				break;
-			case ACTION_VIEWS:		ActionGetViews();								break;
-			case ACTION_SWITCH:		ActionSetView(number);					break;
-			case ACTION_SHADE:		ActionShadeClient(string);			break;
+			case ACTION_CLIENTS:	ActionGetClients();						break;
+			case ACTION_FIND:			ActionFindClient(win);				break;
+			case ACTION_SWITCH:		ActionSetView(number);				break;
+			case ACTION_VIEWS:		ActionGetViews();							break;
+			case ACTION_ACTIVATE:	ActionActivateClient(win);		break;
+			case ACTION_CLOSE:		ActionCloseClient(win);				break;
+			case ACTION_SHADE:		ActionShadeClient(win);				break;
 			default:
 				Warn("Action not implemented yet\n");
 		}
