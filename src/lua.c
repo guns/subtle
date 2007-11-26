@@ -322,6 +322,12 @@ LuaAddWatch(lua_State *state)
 #endif /* HAVE_SYS_INOTIFY_H */
 }
 
+static int
+LuaAddHelper(lua_State *state)
+{
+	return(PrepareSublet(SUB_SUBLET_TYPE_HELPER, state));
+}
+
  /**
 	* Load sublets
 	* @param path Path to the sublets
@@ -376,6 +382,7 @@ subLuaLoadSublets(const char *path)
 	SetField(subletstate, "add_teaser",	LUA_TFUNCTION,	LuaAddTeaser);
 	SetField(subletstate, "add_meter",	LUA_TFUNCTION,	LuaAddMeter);
 	SetField(subletstate,	"add_watch",	LUA_TFUNCTION,	LuaAddWatch);
+	SetField(subletstate,	"add_helper",	LUA_TFUNCTION,	LuaAddHelper);
 
 	lua_setglobal(subletstate, PACKAGE_NAME);
 
@@ -421,58 +428,56 @@ subLuaKill(void)
 void
 subLuaCall(SubSublet *s)
 {
-	if(s)
+	assert(s);
+
+	lua_sethook(subletstate, CountHook, LUA_MASKCOUNT, 1000);
+	lua_settop(subletstate, 0);
+	lua_rawgeti(subletstate, LUA_REGISTRYINDEX, s->ref);
+
+	if(lua_pcall(subletstate, 0, 1, 0))
 		{
-			lua_sethook(subletstate, CountHook, LUA_MASKCOUNT, 1000);
+			/* Fail check */
+			if(s->flags & SUB_SUBLET_FAIL_SECOND) s->flags |= SUB_SUBLET_FAIL_THIRD;
+			else if(s->flags & SUB_SUBLET_FAIL_FIRST) s->flags |= SUB_SUBLET_FAIL_SECOND;
+			else s->flags |= SUB_SUBLET_FAIL_FIRST;
 
-			lua_settop(subletstate, 0);
-			lua_rawgeti(subletstate, LUA_REGISTRYINDEX, s->ref);
+			subUtilLogWarn("Error (%d/3) in sublet #%d:\n", 
+				(s->flags & SUB_SUBLET_FAIL_THIRD) ? 3 : (s->flags & SUB_SUBLET_FAIL_SECOND ? 2 : 1), s->ref);
+			subUtilLogWarn("%s\n", (char *)lua_tostring(subletstate, -1));
 
-			if(lua_pcall(subletstate, 0, 1, 0))
+			if(s->flags & SUB_SUBLET_FAIL_THIRD) subSubletDelete(s);
+			else
 				{
-					/* Fail check */
-					if(s->flags & SUB_SUBLET_FAIL_SECOND) s->flags |= SUB_SUBLET_FAIL_THIRD;
-					else if(s->flags & SUB_SUBLET_FAIL_FIRST) s->flags |= SUB_SUBLET_FAIL_SECOND;
-					else s->flags |= SUB_SUBLET_FAIL_FIRST;
-
-					subUtilLogWarn("Error (%d/3) in sublet #%d:\n", 
-						(s->flags & SUB_SUBLET_FAIL_THIRD) ? 3 : (s->flags & SUB_SUBLET_FAIL_SECOND ? 2 : 1), s->ref);
-					subUtilLogWarn("%s\n", (char *)lua_tostring(subletstate, -1));
-
-					if(s->flags & SUB_SUBLET_FAIL_THIRD) subSubletDelete(s);
+					if(s->flags & SUB_SUBLET_TYPE_METER) s->number = 0;
 					else
 						{
-							if(s->flags & SUB_SUBLET_TYPE_METER) s->number = 0;
-							else
-								{
-									if(s->string) free(s->string);
-									s->string = strdup("subtle");
-								}
+							if(s->string) free(s->string);
+							s->string = strdup("subtle");
 						}
-					return;
 				}
-
-			switch(lua_type(subletstate, -1))
-				{
-					case LUA_TSTRING:
-						if(s->string) free(s->string);
-						s->string = strdup((char *)lua_tostring(subletstate, -1));
-						break;
-					case LUA_TNUMBER: s->number = (int)lua_tonumber(subletstate, -1);	break;
-					case LUA_TNIL: 		
-						subUtilLogWarn("Sublet #%d returns no usuable value\n", s->ref);	
-
-						if(s->flags & SUB_SUBLET_TYPE_METER) s->number = 0;
-						else
-							{
-								if(s->string) free(s->string);
-								s->string = strdup("subtle");
-							}
-						break;
-					default:
-						subUtilLogDebug("Sublet #%d returned unkown type %s\n", s->ref, lua_typename(subletstate, -1));
-						lua_pop(subletstate, -1);
-				}
+			return;
 		}
+	if(s->flags & SUB_SUBLET_TYPE_HELPER) return;
 
+	switch(lua_type(subletstate, -1))
+		{
+			case LUA_TSTRING:
+				if(s->string) free(s->string);
+				s->string = strdup((char *)lua_tostring(subletstate, -1));
+				break;
+			case LUA_TNUMBER: s->number = (int)lua_tonumber(subletstate, -1);	break;
+			case LUA_TNIL: 		
+				subUtilLogWarn("Sublet #%d returned no usuable value\n", s->ref);	
+
+				if(s->flags & SUB_SUBLET_TYPE_METER) s->number = 0;
+				else
+					{
+						if(s->string) free(s->string);
+						s->string = strdup("subtle");
+					}
+				break;
+			default:
+				subUtilLogDebug("Sublet #%d returned unkown type %s\n", s->ref, lua_typename(subletstate, -1));
+				lua_pop(subletstate, -1);
+		}
 }
