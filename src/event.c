@@ -344,7 +344,7 @@ HandleFocus(XFocusInEvent *ev)
 					{
 						SubWin *f = d->focus;
 						d->focus = NULL;
-						if(f) subClientRender(f);
+						if(f && f->flags & SUB_WIN_TYPE_CLIENT) subClientRender(f);
 
 						subKeyUngrab(f);
 					}
