@@ -16,8 +16,14 @@ opts.AddOptions(
 env	= Environment(
 	options = opts,
 	CPPPATH = "..", 
-	CCFLAGS = " -Wall -Wpointer-arith -Wstrict-prototypes -Wunused -Wshadow -std=gnu99"
+	CCFLAGS = " -Wall -Wpointer-arith -Wstrict-prototypes -Wunused -Wshadow -std=gnu99",
+	CCCOMSTR = "CC $TARGET",
+	LINKCOMSTR = "LD $TARGET",
+	INSTALLSTR = "INSTALL $SOURCE"
 )
+
+if env.GetOption("clean") and os.path.isfile("config.h"):
+	os.remove("config.h")
 
 # Generate help
 env.Help(opts.GenerateHelpText(env))
@@ -71,7 +77,7 @@ def CheckFunctions(context, funcs):
 			Exit(1)
 
 # Configuration
-if not os.path.isfile("config.h"):
+if not os.path.isfile("config.h") and not env.GetOption("clean"):
 	conf = Configure(env,
 		custom_tests = {
 			"CheckPKGConfig": CheckPKGConfig,
@@ -94,15 +100,15 @@ if not os.path.isfile("config.h"):
 		sys/types.h
 	"""))
 
+	if conf.CheckCHeader("sys/inotify.h"):
+		defines["HAVE_SYS_INOTIFY_H"] = "true"
+
 	CheckFunctions(conf, Split("""
 		select
 		strdup
 		strcpy
 		strerror
 	"""))
-
-	if conf.CheckCHeader("sys/inotify.h"):
-		defines["HAVE_SYS_INOTIFY_H"] = "true"
 
 	conf.CheckPKGConfig("0.15")
 	conf.CheckPKG("lua", "5.1")

@@ -1,0 +1,11 @@
+# Environment
+Import("env")
+
+sublets = Split("""
+	battery.lua
+	clock.lua
+	loadavg.lua
+	notify.lua
+""")
+
+env.Alias("install", env.Install(env.subst("$sysconfdir" + "/subtle"), sublets))
