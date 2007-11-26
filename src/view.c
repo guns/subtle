@@ -232,7 +232,7 @@ subViewRender(void)
 void
 subViewConfigure(void)
 {
-	int xid = 0, i = 0, width = 0;
+	int i = 0, width = 0;
 	char **names = NULL;
 	Window *wins = NULL;
 	SubView *v = NULL;
