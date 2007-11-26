@@ -8,4 +8,4 @@ sublets = Split("""
 	notify.lua
 """)
 
-env.Alias("install", env.Install(env.subst("$sysconfdir" + "/subtle"), sublets))
+env.Alias("install", env.Install(env.subst("$datadir" + "/subtle"), sublets))
