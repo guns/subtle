@@ -8,7 +8,7 @@
 
 #include "subtle.h"
 
-static int size = 0;
+static int nsublets = 0;
 static SubSublet **sublets = NULL;
 static SubSublet *root = NULL;
 
@@ -22,9 +22,9 @@ subSubletMerge(int pos)
 {
 	int left	= 2 * pos;
 	int right	= left + 1;
-	int max 	= (left <= size && sublets[left]->time < sublets[pos]->time) ? left : pos;
+	int max 	= (left <= nsublets && sublets[left]->time < sublets[pos]->time) ? left : pos;
 
-	if(right <= size && sublets[right]->time < sublets[max]->time) max = right;
+	if(right <= nsublets && sublets[right]->time < sublets[max]->time) max = right;
 	if(max != pos)
 		{
 			SubSublet *tmp	= sublets[pos];
@@ -42,7 +42,7 @@ subSubletMerge(int pos)
 SubSublet *
 subSubletNext(void)
 {
-	return(size > 0 ? sublets[1] : NULL);
+	return(nsublets > 0 ? sublets[1] : NULL);
 }
 
  /**
@@ -77,17 +77,23 @@ subSubletNew(int type,
 	s->time			= subEventGetTime();
 
 #ifdef HAVE_SYS_INOTIFY_H
-	if(s->flags & SUB_SUBLET_TYPE_WATCH && ((s->interval = inotify_add_watch(d->notify, watch, IN_MODIFY)) < 0))
+	if(s->flags & SUB_SUBLET_TYPE_WATCH)
 		{
-			subUtilLogWarn("Can't load sublet %s:\n", name);
-			subUtilLogWarn("Watch file does not exist\n");
-			subUtilLogDebug("Inotify: %s\n", strerror(errno));
+			FILE *fd = NULL;
 
-			free(s);
+			/* Create the file before trying to add the watch */
+			if((fd = fopen(watch, "w"))) fclose(fd);
+			if((s->interval = inotify_add_watch(d->notify, watch, IN_MODIFY)) < 0)
+				{
+					subUtilLogWarn("Watch file `%s' does not exist\n", name);
+					subUtilLogDebug("%s\n", strerror(errno));
 
-			return;
+					free(s);
+
+					return;
+				}
+			else XSaveContext(d->disp, d->bar.sublets, s->interval, (void *)s);
 		}
-	else XSaveContext(d->disp, d->bar.sublets, s->interval, (void *)s);
 #endif /* HAVE_SYS_INOTIFY_H */
 
 	subLuaCall(s);
@@ -95,10 +101,8 @@ subSubletNew(int type,
   /* Don't add text and watch type sublets to the queue */
   if(type != SUB_SUBLET_TYPE_TEXT && type != SUB_SUBLET_TYPE_WATCH)
     {
-			sublets = (SubSublet **)realloc(sublets, sizeof(SubSublet *) * (size + 2));
-			if(!sublets) subUtilLogError("Can't alloc memory. Exhausted?\n");
-
-			i = ++size;
+			sublets = (SubSublet **)subUtilRealloc(sublets, sizeof(SubSublet *) * (nsublets + 2));
+			i = ++nsublets;
 
 			while(i > 1 && s->time < sublets[i / 2]->time)
 				{
@@ -113,7 +117,7 @@ subSubletNew(int type,
 	sublets[0] = s;
 
 	printf("Loading sublet %s (%d)\n", name, (int)interval);
-	subUtilLogDebug("Sublet: name=%s, ref=%d, interval=%d, watch=%s\n", name, ref, interval, watch);		
+	subUtilLogDebug("name=%s, ref=%d, interval=%d, watch=%s\n", name, ref, interval, watch);		
 }
 
  /**
@@ -135,16 +139,14 @@ subSubletDelete(SubSublet *s)
 			prev->next = s->next;
 		}
 
-	for(i = 1; i <= size; i++) 
-		if(sublets[i] == s)
-			for(j = i; j < size; j++) sublets[j] = sublets[j + 1],printf("%d - %d\n", i, j);;
+	for(i = 1; i <= nsublets; i++) 
+		if(sublets[i] == s) for(j = i; j < nsublets; j++) sublets[j] = sublets[j + 1];
 
-	sublets = (SubSublet **)realloc(sublets, sizeof(SubSublet *) * (size + 1));
-	if(!sublets) subUtilLogError("Can't alloc memory. Exhausted?\n");			
+	sublets = (SubSublet **)subUtilRealloc(sublets, sizeof(SubSublet *) * (nsublets + 1));
 	if(!(s->flags & SUB_SUBLET_TYPE_METER) && s->string) free(s->string);
 
 	printf("Unloading sublet #%d\n", s->ref);
-	size--;
+	nsublets--;
 	free(s);
 
 	subSubletConfigure();
@@ -166,7 +168,7 @@ subSubletConfigure(void)
 			while(s)
 				{
 					if(s->flags & SUB_SUBLET_TYPE_METER) width += 66;
-					else width += strlen(s->string) * d->fx + 12;
+					else if(!(s->flags & SUB_SUBLET_TYPE_HELPER)) width += strlen(s->string) * d->fx + 12;
 					s = s->next;
 				}
 			XMoveResizeWindow(d->disp, d->bar.sublets, DisplayWidth(d->disp, DefaultScreen(d->disp)) - width, 0, width, d->th);
