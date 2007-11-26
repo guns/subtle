@@ -139,7 +139,7 @@ subWinPrepend(SubWin *w1,
 	if(w1->parent && w1->parent->tile->first == w1) w1->parent->tile->first = w2;
 	w2->parent = w1->parent;
 
-	XReparentWindow(d->disp, w2->frame, w1->parent->frame, 0, w1->parent->flags & SUB_WIN_TYPE_VIEW ? d->th : 0); 
+	XReparentWindow(d->disp, w2->frame, w1->parent->frame, 0, 0); 
 }
 
  /**
@@ -161,7 +161,7 @@ subWinAppend(SubWin *w1,
 	if(w1->parent && w1->parent->tile->last == w1) w1->parent->tile->last = w2;
 	w2->parent = w1->parent;
 
-	XReparentWindow(d->disp, w2->frame, w1->parent->frame, 0, w1->parent->flags & SUB_WIN_TYPE_VIEW ? d->th : 0); 
+	XReparentWindow(d->disp, w2->frame, w1->parent->frame, 0, 0); 
 }
 
  /** 
