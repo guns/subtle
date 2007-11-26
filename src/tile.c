@@ -20,7 +20,6 @@ subTileNew(int mode)
 	SubWin *t = NULL;
 
 	assert(mode == SUB_WIN_TILE_HORZ || mode == SUB_WIN_TILE_VERT);
-	subUtilLogDebug("type=%s\n", (mode & SUB_WIN_TILE_HORZ) ? "horz" : "vert");
 
 	t					= subWinNew();
 	t->flags	= SUB_WIN_TYPE_TILE|mode;
@@ -28,6 +27,8 @@ subTileNew(int mode)
 
 	XMapSubwindows(d->disp, t->frame);
 	XSaveContext(d->disp, t->frame, 1, (void *)t);
+
+	subUtilLogDebug("type=%s\n", (mode & SUB_WIN_TILE_HORZ) ? "horz" : "vert");
 
 	return(t);
 }
@@ -43,7 +44,6 @@ subTileDelete(SubWin *t)
 	SubWin *c = NULL;
 
 	assert(t && t->flags & SUB_WIN_TYPE_TILE);
-	subUtilLogDebug("type=%s\n", (t->flags & SUB_WIN_TILE_HORZ) ? "horz" : "vert");
 
 	c = t->tile->first;
 	while(c)
@@ -52,6 +52,9 @@ subTileDelete(SubWin *t)
 			subWinDelete(c);
 			c = next;
 		}
+
+	subUtilLogDebug("type=%s\n", (t->flags & SUB_WIN_TILE_HORZ) ? "horz" : "vert");
+
 	free(t->tile);
 }
 
@@ -84,7 +87,7 @@ subTileAdd(SubWin *t,
 }
 
  /**
-	* Configure a tile and each child 
+	* Configure tile and children 
 	* @param t A #SubWin
 	**/
 
@@ -148,16 +151,6 @@ subTileConfigure(SubWin *t)
 			cw				= (t->flags & SUB_WIN_TILE_HORZ) ? width / nclients : width;
 			ch				= (t->flags & SUB_WIN_TILE_VERT) ? (height - shaded * d->th) / nclients : height;
 
-			if(t->tile->cw == cw && t->tile->ch == ch)
-				{
-					subUtilLogDebug("Break configure cycle\n");
-				}
-			else
-				{
-					t->tile->cw = cw;
-					t->tile->ch = ch;
-				}
-
 			/* Get compensation for bad rounding */
 			if(t->flags & SUB_WIN_TILE_HORZ) comp = abs(width - nclients * cw - shaded * d->th);
 			else comp = abs(height - nclients * ch - shaded * d->th);
@@ -204,10 +197,12 @@ subTileConfigure(SubWin *t)
 								}
 
 							c->parent	= t;
-							c->x			= t->flags & SUB_WIN_TYPE_VIEW ? d->th : 0;
+							c->x			= 0;
 							c->y			= (c->flags & SUB_WIN_STATE_SHADE) ? y : shaded * d->th;
-							c->width	= cw;
+							c->width	= (c->flags & SUB_WIN_STATE_SHADE) ? t->width : cw;
 							c->height	= (c->flags & SUB_WIN_STATE_SHADE) ? d->th : ch;
+
+							printf("x=%d, y=%d, width=%d, height=%d\n", c->x, c->y, c->width, c->height);
 
 							/* Adjust sizes according to the tile alignment */
 							if(t->flags & SUB_WIN_TILE_HORZ)
@@ -240,7 +235,7 @@ subTileConfigure(SubWin *t)
 							if(t->flags & SUB_WIN_TILE_VERT) y += c->height;
 							subWinResize(c);
 
-							if(c->flags & SUB_WIN_TYPE_TILE) subTileConfigure(c);
+							if(c->tile && c->flags & SUB_WIN_TYPE_TILE) subTileConfigure(c);
 							else if(c->flags & SUB_WIN_TYPE_CLIENT) subClientConfigure(c);
 						}
 					c = c->next;
