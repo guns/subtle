@@ -9,7 +9,7 @@
 loadavg = {}
 
 function loadavg:teaser()
-	f = io.input("/proc/loadavg")
+	local f = io.input("/proc/loadavg")
 	load1, load2, load3 = io.read("*number", "*number", "*number")
 	f:close()
 
