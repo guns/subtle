@@ -92,7 +92,6 @@ void subWinUnmap(SubWin *w);													// Unmap window
 /* tile.c {{{ */
 typedef struct subtile
 {
-	int cw, ch;																					// Calculated width/height
 	SubWin *pile, *first, *last;												// Pile top, first/last child
 } SubTile;
 
@@ -171,10 +170,11 @@ void subViewSwitch(SubView *v);												// Switch view
 #define SUB_SUBLET_TYPE_TEASER	(1L << 2)							// Teaser sublet
 #define SUB_SUBLET_TYPE_METER		(1L << 3)							// Meter sublet
 #define SUB_SUBLET_TYPE_WATCH		(1L << 4)							// Watch sublet
+#define SUB_SUBLET_TYPE_HELPER	(1L << 5)							// Helper sublet
 
-#define SUB_SUBLET_FAIL_FIRST		(1L << 5)							// Fail first time
-#define SUB_SUBLET_FAIL_SECOND	(1L << 6)							// Fail second time
-#define SUB_SUBLET_FAIL_THIRD		(1L << 7)							// Fail third time
+#define SUB_SUBLET_FAIL_FIRST		(1L << 6)							// Fail first time
+#define SUB_SUBLET_FAIL_SECOND	(1L << 7)							// Fail second time
+#define SUB_SUBLET_FAIL_THIRD		(1L << 8)							// Fail third time
 
 typedef struct subsublet
 {
