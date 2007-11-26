@@ -202,8 +202,6 @@ subTileConfigure(SubWin *t)
 							c->width	= (c->flags & SUB_WIN_STATE_SHADE) ? t->width : cw;
 							c->height	= (c->flags & SUB_WIN_STATE_SHADE) ? d->th : ch;
 
-							printf("x=%d, y=%d, width=%d, height=%d\n", c->x, c->y, c->width, c->height);
-
 							/* Adjust sizes according to the tile alignment */
 							if(t->flags & SUB_WIN_TILE_HORZ)
 								{
