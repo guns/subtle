@@ -30,7 +30,7 @@ subClientNew(Window win)
 	w->client = (SubClient *)subUtilAlloc(1, sizeof(SubClient));
 
 	w->client->win = win;
-	XSelectInput(d->disp, w->client->win, PropertyChangeMask);
+	XSelectInput(d->disp, w->client->win, PropertyChangeMask|StructureNotifyMask);
 	XSetWindowBorderWidth(d->disp, w->client->win, 0);
 	XReparentWindow(d->disp, w->client->win, w->frame, d->bw, d->th);
 	XAddToSaveSet(d->disp, w->client->win);
@@ -38,6 +38,7 @@ subClientNew(Window win)
 	/* Create windows */
 	attrs.border_pixel			= d->colors.border;
 	attrs.background_pixel	= d->colors.norm;
+
 	w->client->title		= SUBWINNEW(w->frame, 0, 0, w->width, d->th, 0, CWBackPixel);
 	w->client->caption	= SUBWINNEW(w->frame, 0, 0, 1, d->th, 0, CWBackPixel);
 	attrs.cursor				= d->cursors.horz;
