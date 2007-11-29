@@ -45,8 +45,7 @@ Keys = {
 	MoveToDesktop2		= "S-A-2",					-- Move window to desktop 2
 	MoveToDesktop3		= "S-A-3",					-- Move window to desktop 3
 	MoveToDesktop4		= "S-A-4",					-- Move window to desktop 4
-	["rxvt +sb"]			= "S-F1",						-- Exec a term
-	["xterm +sb"]			= "S-F2",						-- Exec a term
+	["xterm +sb"]			= "S-F1",						-- Exec a term
 	["firefox"] 			= "S-F4"
 }
 
