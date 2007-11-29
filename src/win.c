@@ -386,5 +386,6 @@ subWinUnmap(SubWin *w)
 {
 	assert(w);
 
+	XUnmapSubwindows(d->disp, w->frame);
 	XUnmapWindow(d->disp, w->frame);
 }
