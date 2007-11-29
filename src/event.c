@@ -201,7 +201,15 @@ HandleConfigure(XConfigureRequestEvent *ev)
 }
 
 static void
-HandleMap(XMapRequestEvent *ev)
+HandleMapNotify(XMappingEvent *ev)
+{
+	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
+	printf("%#lx\n", ev->window);
+	if(w && w->flags & SUB_WIN_TYPE_CLIENT) printf("frame=%#lx, win=%#lx\n", w->frame, w->client->win);
+}
+
+static void
+HandleMapRequest(XMapRequestEvent *ev)
 {
 	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
 	if(!w) subViewMerge(ev->window);
@@ -434,7 +442,8 @@ subEventLoop(void)
 							case ButtonPress:				HandleButtonPress(&ev.xbutton);					break;
 							case KeyPress:					HandleKeyPress(&ev.xkey);								break;
 							case ConfigureRequest:	HandleConfigure(&ev.xconfigurerequest);	break;
-							case MapRequest: 				HandleMap(&ev.xmaprequest); 						break;
+							case MapNotify:					HandleMapNotify(&ev.xmapping);					break;
+							case MapRequest: 				HandleMapRequest(&ev.xmaprequest); 			break;
 							case DestroyNotify: 		HandleDestroy(&ev.xdestroywindow);			break;
 							case ClientMessage: 		HandleMessage(&ev.xclient); 						break;
 							case ColormapNotify: 		HandleColormap(&ev.xcolormap); 					break;
