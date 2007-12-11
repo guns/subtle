@@ -36,8 +36,12 @@ if env.GetOption("clean"):
 	if os.path.isfile("config.log"):
 		os.remove("config.log")
 
+# Destdir for various packages systems
 if env["destdir"]:
 	env["prefix"] = env.subst("$destdir/$prefix")
+	env["bindir"] = env.subst("$destdir/$bindir")
+	env["datadir"] = env.subst("$destdir/$datadir")
+	env["sysconfdir"] = env.subst("$destdir/$sysconfdir")
 
 defines = {
 	"PACKAGE_NAME": "subtle",
