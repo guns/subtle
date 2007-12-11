@@ -1,16 +1,16 @@
 # SConscript file
 import os.path
 
-BuildDir("build", "src", duplicate = 0)
-
 # Options
-opts = Options()
+opts = Options("config.cache")
 opts.AddOptions(
-	("prefix", "prefix", "/usr/local"),
-	("bindir", "binary directory", "${prefix}/bin"),
-	("datadir", "data directory", "${prefix}/share"),
-	("sysconfdir", "config directory", "${prefix}/etc"),
-	PackageOption("debug", "enable debugging messages", "no"))
+	PathOption("prefix", "Set install prefix", "/usr/local", PathOption.PathAccept),
+	PathOption("bindir", "Set binary directory", "${prefix}/bin", PathOption.PathAccept),
+	PathOption("datadir", "Set data directory", "${prefix}/share", PathOption.PathAccept),
+	PathOption("sysconfdir", "Set config directory", "${prefix}/etc", PathOption.PathAccept),
+	PathOption("destdir", "Set intermediate install prefix", "/", PathOption.PathAccept),
+	BoolOption("debug", "Build with debugging messages", 0),
+)
 
 # Environment
 env	= Environment(
@@ -22,16 +22,27 @@ env	= Environment(
 	INSTALLSTR = "INSTALL $SOURCE"
 )
 
-if env.GetOption("clean") and os.path.isfile("config.h"):
-	os.remove("config.h")
-
-# Generate help
+env.SConsignFile()
 env.Help(opts.GenerateHelpText(env))
 
+opts.Save("config.cache", env)
+
+# Clean cache
+if env.GetOption("clean"):
+	if os.path.isfile("config.h"):
+		os.remove("config.h")
+	if os.path.isfile("config.cache"):
+		os.remove("config.cache")
+	if os.path.isfile("config.log"):
+		os.remove("config.log")
+
+if env["destdir"]:
+	env["prefix"] = env.subst("$destdir/$prefix")
+
 defines = {
-	"PACKAGE_NAME" : "subtle",
-	"PACKAGE_VERSION" : "0.7",
-	"PACKAGE_BUGREPORT" : "unexist@dorfelite.net"
+	"PACKAGE_NAME": "subtle",
+	"PACKAGE_VERSION": "0.7",
+	"PACKAGE_BUGREPORT": "unexist@dorfelite.net"
 }
 
 defines["CONFIG_DIR"] = env.subst("$sysconfdir/" + defines["PACKAGE_NAME"])
