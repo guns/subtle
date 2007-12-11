@@ -39,9 +39,9 @@ if env.GetOption("clean"):
 # Destdir for various packages systems
 if env["destdir"]:
 	env["prefix"] = env.subst("$destdir/$prefix")
-	env["bindir"] = env.subst("$destdir/$bindir")
-	env["datadir"] = env.subst("$destdir/$datadir")
-	env["sysconfdir"] = env.subst("$destdir/$sysconfdir")
+	env["bindir"] = env.subst("$destdir/$prefix/bin")
+	env["datadir"] = env.subst("$destdir/$prefix/share")
+	env["sysconfdir"] = env.subst("$destdir/$prefix/etc")
 
 defines = {
 	"PACKAGE_NAME": "subtle",
