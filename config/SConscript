@@ -1,4 +1,7 @@
 # Environment
+#
+# $Header$
+#
 Import("env")
 
 env.Alias("install", env.Install(env.subst("$sysconfdir" + "/subtle"), "config.lua"))

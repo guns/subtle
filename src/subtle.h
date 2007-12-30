@@ -1,3 +1,13 @@
+
+ /**
+	* subtle - window manager
+	* Copyright (c) 2005-2007 Christoph Kappel
+	*
+	* See the COPYING file for the license in the latest tarball.
+	*
+	* $Header$
+	**/
+
 #ifndef SUBTLE_H
 #define SUBTLE_H 1
 

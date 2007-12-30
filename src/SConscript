@@ -1,4 +1,5 @@
 # Environment
+# $Header$
 Import("env")
 
 source = Split("""
