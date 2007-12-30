@@ -10,7 +10,7 @@
 
 -- Options config
 Options = {
-	Version = 0.7,											-- Config version
+	Version = 0.7-r$Rev$,									-- Config version
 	Border	= 2													-- Border size of the windows
 }
 
