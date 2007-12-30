@@ -1,3 +1,13 @@
+
+ ----
+ -- subtle - window manager
+ -- Copyright (c) 2005-2007 Christoph Kappel
+ --
+ -- See the COPYING file for the license in the latest tarball.
+ --
+ -- $Header$
+ ----
+
 -- Options config
 Options = {
 	Version = 0.7,											-- Config version
