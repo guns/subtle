@@ -4,6 +4,7 @@
 -- Description: Show the content of a file
 -- Version: 0.1
 -- Date: Wed Sept 26 13:45 CET 2007
+-- $Header$
 ----
 
 notify = {
