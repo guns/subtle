@@ -1,4 +1,5 @@
 # SConscript file
+# $Header$
 import os.path
 
 # Options
@@ -24,24 +25,23 @@ env	= Environment(
 
 env.SConsignFile()
 env.Help(opts.GenerateHelpText(env))
-
+env.Clean("dest", ["config.h", "config.cache", "config.log"])
 opts.Save("config.cache", env)
 
-# Clean cache
-if env.GetOption("clean"):
-	if os.path.isfile("config.h"):
-		os.remove("config.h")
-	if os.path.isfile("config.cache"):
-		os.remove("config.cache")
-	if os.path.isfile("config.log"):
-		os.remove("config.log")
+#if env.GetOption("clean"):
+#	if os.path.isfile("config.h"):
+#		os.remove("config.h")
+#	if os.path.isfile("config.cache"):
+#		os.remove("config.cache")
+#	if os.path.isfile("config.log"):
+#		os.remove("config.log")
 
 # Destdir for various packages systems
 if env["destdir"]:
 	env["prefix"] = env.subst("$destdir/$prefix")
-	env["bindir"] = env.subst("$destdir/$prefix/bin")
-	env["datadir"] = env.subst("$destdir/$prefix/share")
-	env["sysconfdir"] = env.subst("$destdir/$prefix/etc")
+	env["bindir"] = env.subst("$prefix/bin")
+	env["datadir"] = env.subst("$prefix/share")
+	env["sysconfdir"] = env.subst("$prefix/etc")
 
 defines = {
 	"PACKAGE_NAME": "subtle",

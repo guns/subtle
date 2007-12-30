@@ -214,7 +214,8 @@ subLuaLoadConfig(const char *path)
 									if(!tags) tags = strdup((char *)lua_tostring(configstate, -1));
 									else
 										{
-											char *tag = (char *)lua_tostring(configstate, -1);
+											char *regex = (char *)lua_tostring(configstate, -2);
+											int width = (int)lua_tonumber(configstate, -1);
 
 											tags = (char *)subUtilRealloc(tags, sizeof(char) * (strlen(tags) + strlen(tag) + 2));
 											sprintf(tags, "%s|%s", tags, tag);

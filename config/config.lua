@@ -1,5 +1,6 @@
 -- Options config
 Options = {
+	Version = 0.7,											-- Config version
 	Border	= 2													-- Border size of the windows
 }
 
@@ -15,9 +16,9 @@ Colors = {
 	Font				= "#ffffff",						-- Color of the font
 	Border			= "#ffffff",						-- Color of the border/tiles
 	Normal			= "#9AA38A",						-- Color of the inactive windows
-	Focus				= "#A7E737",						-- Color of the focussed window
-	Collapse		= "#A0B67A",						-- Color of collapsed windows
-	Background	= "#9A9C95"							-- Color of the root background
+	Focus				= "#A7E737",						-- Color of the focus window
+	Shade				= "#A0B67A",						-- Color of shaded windows
+	Background	= "#9A9C95"							-- Color of root background
 }
 
 -- Key config
@@ -51,7 +52,9 @@ Keys = {
 
 -- Rules
 Rules = {
-	terms = { "[ur]+xvt", "[aex]+term", "foo" },
-	net = { "firefox", "kmail", "foo" },
+	work = { 
+		["gvim|opera|foo"] = 60,
+		["[mur]+xvt|[aex]+term"] = 40
+	},
 	gimp = { "gimp.*" }
 }
