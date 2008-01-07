@@ -1,7 +1,7 @@
 
  /**
 	* subtler - window manager remote
-	* Copyright (c) 2005-2007 Christoph Kappel
+	* Copyright (c) 2005-2008 Christoph Kappel
 	*
 	* See the COPYING file for the license in the latest tarball.
 	*
@@ -101,7 +101,7 @@ Usage(void)
 static void
 Version(void)
 {
-	printf("%sr %s - Copyright (c) 2005-2007 Christoph Kappel\n" \
+	printf("%sr %s - Copyright (c) 2005-2008 Christoph Kappel\n" \
 					"Released under the GNU General Public License\n" \
 					"Compiled for X%d\n", PACKAGE_NAME, PACKAGE_VERSION, X_PROTOCOL);
 }

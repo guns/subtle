@@ -1,7 +1,7 @@
 
  /**
 	* subtle - window manager
-	* Copyright (c) 2005-2007 Christoph Kappel
+	* Copyright (c) 2005-2008 Christoph Kappel
 	*
 	* See the COPYING file for the license in the latest tarball.
 	*
@@ -64,13 +64,11 @@ subViewFind(int xid)
  /**
 	* Create a view
 	* @param name Name of the view
-	* @param tags Tag list
 	* @return Returns a new #SubWin
 	**/
 
 SubView *
-subViewNew(char *name,
-	char *tags)
+subViewNew(char *name)
 {
 	SubView *v = NULL;
 
@@ -81,30 +79,6 @@ subViewNew(char *name,
 	v->width	=	strlen(v->name) * d->fx + 8;
 	v->xid		= ++nviews;
 
-	if(tags)
-		{
-			int errcode;
-			v->regex = (regex_t *)subUtilAlloc(1, sizeof(regex_t));
-
-			/* Thread safe error handling.. */
-			if((errcode = regcomp(v->regex, tags, REG_EXTENDED|REG_NOSUB|REG_ICASE)))
-				{
-					size_t errsize = regerror(errcode, v->regex, NULL, 0);
-					char *errbuf = (char *)subUtilAlloc(1, errsize);
-
-					regerror(errcode, v->regex, errbuf, errsize);
-
-					subUtilLogWarn("Can't compile regex `%s'\n", tags);
-					subUtilLogDebug("%s\n", errbuf);
-
-					free(errbuf);
-					regfree(v->regex);
-					free(v->regex);
-					free(v);
-
-					return(NULL);
-				}
-		}
 	if(!d->rv) 
 		{
 			d->rv = v;
