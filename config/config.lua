@@ -1,7 +1,7 @@
 
  ----
  -- subtle - window manager
- -- Copyright (c) 2005-2007 Christoph Kappel
+ -- Copyright (c) 2005-2008 Christoph Kappel
  --
  -- See the COPYING file for the license in the latest tarball.
  --
@@ -10,7 +10,7 @@
 
 -- Options config
 Options = {
-	Version = 0.7-r$Rev$,									-- Config version
+	Version = 0.7-r$Rev$,								-- Config version
 	Border	= 2													-- Border size of the windows
 }
 

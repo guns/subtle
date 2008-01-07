@@ -1,7 +1,7 @@
 
 	##
 	#	subtle - window manager
-	#	Copyright (c) 2005-2007 Christoph Kappel
+	#	Copyright (c) 2005-2008 Christoph Kappel
 	#
 	#	See the COPYING file for the license in the latest tarball.
 	#
@@ -36,13 +36,13 @@ env.Help(opts.GenerateHelpText(env))
 env.Clean("dest", ["config.h", "config.cache", "config.log"])
 opts.Save("config.cache", env)
 
-#if env.GetOption("clean"):
-#	if os.path.isfile("config.h"):
-#		os.remove("config.h")
-#	if os.path.isfile("config.cache"):
-#		os.remove("config.cache")
-#	if os.path.isfile("config.log"):
-#		os.remove("config.log")
+if env.GetOption("clean"):
+	if os.path.isfile("config.h"):
+		os.remove("config.h")
+	if os.path.isfile("config.cache"):
+		os.remove("config.cache")
+	if os.path.isfile("config.log"):
+		os.remove("config.log")
 
 # Destdir for various packages systems
 if env["destdir"]:
