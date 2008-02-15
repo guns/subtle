@@ -4,7 +4,7 @@
 #
 #	See the COPYING file for the license in the latest tarball.
 #
-#	$Header$
+#	$Id$
 #
 
 import os.path
@@ -46,9 +46,9 @@ if env.GetOption("clean"):
 # Destdir for various packages systems
 if env["destdir"]:
 	env["prefix"] = env.subst("$destdir/$prefix")
-	env["bindir"] = env.subst("$prefix/bin")
-	env["datadir"] = env.subst("$prefix/share")
-	env["sysconfdir"] = env.subst("$prefix/etc")
+	env["bindir"] = env.subst("$destdir/$bindir")
+	env["datadir"] = env.subst("$destdir/$datadir")
+	env["sysconfdir"] = env.subst("$destdir/$sysconfdir")
 
 defines = {
 	"PACKAGE_NAME": "subtle",
@@ -149,7 +149,7 @@ if not os.path.isfile("config.h") and not env.GetOption("clean"):
 	print("%s %s " % (defines["PACKAGE_NAME"], defines["PACKAGE_VERSION"]))
 	print("-----------------")
 	print("Install path........: %s" % env.subst("$prefix"))
-	print("Binary..............: %s" % env.subst("$prefix" + "/bin"))
+	print("Binary..............: %s" % env.subst("$bindir"))
 	print("Configuration.......: %s" % defines["CONFIG_DIR"])
 	print("Sublets.............: %s" % defines["SUBLET_DIR"])
 	print
