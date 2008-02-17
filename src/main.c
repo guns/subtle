@@ -5,7 +5,7 @@
 	*
 	* See the COPYING file for the license in the latest tarball.
 	*
-	* $Header$
+	* $Id$
 	**/
 
 #include <getopt.h>
@@ -15,8 +15,9 @@
 
 static char *config = NULL;
 
+/* ShowUsage {{{ */
 static void
-Usage(void)
+ShowUsage(void)
 {
 	printf("Usage: %s [OPTIONS]\n\n" \
 					"Options:\n" \
@@ -29,16 +30,20 @@ Usage(void)
 					"Please report bugs to <%s>\n", 
 					PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_BUGREPORT);
 }
+/* }}} */
 
+/* ShowVersion {{{ */
 static void
-Version(void)
+ShowVersion(void)
 {
 	printf("%s %s - Copyright (c) 2005-2008 Christoph Kappel\n" \
 					"Released under the GNU General Public License\n" \
 					"Compiled for X%d and %s\n", PACKAGE_NAME, PACKAGE_VERSION,
 					X_PROTOCOL, LUA_VERSION);
 }
+/* }}} */
 
+/* HandleSignal {{{ */
 static void
 HandleSignal(int signum)
 {
@@ -63,7 +68,9 @@ HandleSignal(int signum)
 				break;
 		}
 }
+/* }}} */
 
+/* main {{{ */
 int
 main(int argc,
 	char *argv[])
@@ -90,11 +97,11 @@ main(int argc,
 				{
 					case 'c': config	= optarg; 		break;
 					case 'd': display = optarg;			break;
-					case 'h': Usage(); 							return(0);
+					case 'h': ShowUsage(); 					return(0);
 					case 's': sublets	= optarg;			break;
-					case 'v': Version(); 						return(0);
+					case 'v': ShowVersion(); 				return(0);
 #ifdef DEBUG					
-					case 'D': subUtilLogToggle();		break;
+					case 'D': subUtilLogSetDebug();	break;
 #endif /* DEBUG */
 					case '?':
 						printf("Try `%s --help for more information\n", PACKAGE_NAME);
@@ -102,7 +109,7 @@ main(int argc,
 				}
 		}
 
-	Version();
+	ShowVersion();
 	act.sa_handler	= HandleSignal;
 	act.sa_flags		= 0;
 	memset(&act.sa_mask, 0, sizeof(sigset_t)); /* Avoid uninitialized values */
@@ -130,3 +137,4 @@ main(int argc,
 	
 	return(0);
 }
+/* }}} */
