@@ -5,7 +5,7 @@
 	*
 	* See the COPYING file for the license in the latest tarball.
 	*
-	* $Header$
+	* $Id$
 	**/
 
 #include "subtle.h"
@@ -14,7 +14,7 @@
 #define BUFLEN (sizeof(struct inotify_event))
 #endif
 
- /**
+ /** subEventGetTime {{{
 	* Get the current time in seconds 
 	* @return Returns the current time
 	**/
@@ -28,11 +28,13 @@ subEventGetTime(void)
 
   return(tv.tv_sec);
 }
+/* }}} */
 
+/* HandleButtonPress {{{ */
 static void
 HandleButtonPress(XButtonEvent *ev)
 {
-	SubWin *w = NULL;
+	SubClient *c = NULL;
 	static Time last_time = 0;
 
 	if(ev->window == d->bar.views)
@@ -43,8 +45,8 @@ HandleButtonPress(XButtonEvent *ev)
 			return;
 		}
 
-	w = (SubWin *)subUtilFind(ev->window, 1);
-	if(w && w->flags & SUB_WIN_TYPE_CLIENT)
+	c = (SubClient *)subUtilFind(ev->window, 1);
+	if(c)
 		{
 			switch(ev->button)
 				{
@@ -52,46 +54,45 @@ HandleButtonPress(XButtonEvent *ev)
 						if(last_time > 0 && ev->time - last_time <= 300) /* Double click */
 							{
 								subUtilLogDebug("Double click: win=%#lx\n", ev->window);
-								if((ev->subwindow == w->client->title && w->parent && w->parent->flags & SUB_WIN_TYPE_TILE) || w->flags & SUB_WIN_STATE_FLOAT) 
-									subClientToggle(SUB_WIN_STATE_SHADE, w);
+								if((ev->subwindow == c->client->title && c->tile && c->tile->flags & SUB_WIN_TYPE_TILE) || c->flags & SUB_CLIENT_STATE_FLOAT) 
+									subClientToggle(c, SUB_CLIENT_STATE_SHADE);
 								last_time = 0;
 							}						
 						else  /* Single click */
 							{
 								subUtilLogDebug("Single click: win=%#lx\n", ev->window);
-								if(!(w->flags & SUB_WIN_TYPE_VIEW))
+								if(c->flags & SUB_CLIENT_STATE_FLOAT) XRaiseWindow(d->disp, c->frame);
+								if(c->tile && c->tile->flags & SUB_CLIENT_STATE_STACK) 
 									{
-										if(w->flags & SUB_WIN_STATE_FLOAT) XRaiseWindow(d->disp, w->frame);
-										if(w->parent && w->parent->flags & SUB_WIN_STATE_STACK) 
-											{
-												w->parent->tile->pile = w;
-												if(w->flags & SUB_WIN_STATE_SHADE) w->flags &= ~SUB_WIN_STATE_SHADE;
-												subTileConfigure(w->parent);
-											}
-										if(ev->subwindow == w->client->left) 				subClientDrag(SUB_CLIENT_DRAG_LEFT, w);
-										else if(ev->subwindow == w->client->right)	subClientDrag(SUB_CLIENT_DRAG_RIGHT, w);
-										else if(ev->subwindow == w->client->bottom) subClientDrag(SUB_CLIENT_DRAG_BOTTOM, w);
-										else if(ev->subwindow == w->client->title || (w->flags & SUB_WIN_TYPE_CLIENT && ev->subwindow == w->client->caption))
-											{ 
-												/* Either drag and move or drag an swap windows */
-												subClientDrag((w->flags & SUB_WIN_STATE_FLOAT) ? SUB_CLIENT_DRAG_MOVE : SUB_CLIENT_DRAG_SWAP, w);
-												last_time = ev->time;
-											}
+										c->tile->tile->pile = c;
+										if(c->flags & SUB_CLIENT_STATE_SHADE) c->flags &= ~SUB_WIN_STATE_SHADE;
+										subTileConfigure(c->tile);
+									}
+								if(ev->subwindow == c->client->left) 				subClientDrag(c, SUB_CLIENT_DRAG_LEFT);
+								else if(ev->subwindow == c->client->right)	subClientDrag(c, SUB_CLIENT_DRAG_RIGHT);
+								else if(ev->subwindow == c->client->bottom) subClientDrag(c, SUB_CLIENT_DRAG_BOTTOM);
+								else if(ev->subwindow == c->client->title || (c->flags & SUB_WIN_TYPE_CLIENT && ev->subwindow == c->client->caption))
+									{ 
+										/* Either drag and move or drag an swap windows */
+										subClientDrag(c, (c->flags & SUB_CLIENT_STATE_FLOAT) ? SUB_CLIENT_DRAG_MOVE : SUB_CLIENT_DRAG_SWAP);
+										last_time = ev->time;
 									}
 							}
 						break;
 					case Button2:
-						if(ev->subwindow == w->client->title) subWinDelete(w);
+						if(ev->subwindow == c->client->title) subClientDelete(c);
 						break;
 					case Button3: 
-						if(ev->subwindow == w->client->title) subClientToggle(SUB_WIN_STATE_FLOAT, w); 
+						if(ev->subwindow == c->client->title) subClientToggle(c, SUB_CLIENT_STATE_FLOAT);
 						break;
 					case Button4: subViewSwitch(d->cv->next); break;
 					case Button5: if(d->cv->prev) subViewSwitch(d->cv->prev); break;
 				}
 		}
 }
+/* }}} */
 
+/* Exec {{{ */
 static void
 Exec(char *cmd)
 {
@@ -109,61 +110,40 @@ Exec(char *cmd)
 			case -1: subUtilLogWarn("Failed to fork.\n");
 		}
 }
+/* }}} */
 
+/* HandleKeyPress  {{{ */
 static void
 HandleKeyPress(XKeyEvent *ev)
 {
-	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
-	if(w)
+	SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
+	if(c)
 		{
 			SubKey *k = subKeyFind(ev->keycode, ev->state);
 			if(k) 
 				{
-					int mode = 0, type = SUB_WIN_TILE_HORZ;
+					int mode = 0, type = SUB_TILE_TYPE_HORZ;
 
 					switch(k->flags)
 						{
-							case SUB_KEY_ACTION_FOCUS_ABOVE: if(w->prev) subWinFocus(w->prev); break;
-							case SUB_KEY_ACTION_FOCUS_BELOW: if(w->next) subWinFocus(w->next); break;
-
-
-							case SUB_KEY_ACTION_DELETE_WIN: subWinDelete(w); break;
-							case SUB_KEY_ACTION_TOGGLE_COLLAPSE:	if(!mode) mode = SUB_WIN_STATE_SHADE;
-							case SUB_KEY_ACTION_TOGGLE_RAISE:			if(!mode) mode = SUB_WIN_STATE_FLOAT;
-							case SUB_KEY_ACTION_TOGGLE_FULL:			if(!mode) mode = SUB_WIN_STATE_FULL;
-								if(!(w->flags & SUB_WIN_TYPE_VIEW)) subClientToggle(mode, w);
+							case SUB_KEY_ACTION_DELETE_WIN: subClientDelete(c); break;
+							case SUB_KEY_ACTION_TOGGLE_COLLAPSE:	if(!mode) mode = SUB_CLIENT_STATE_SHADE;
+							case SUB_KEY_ACTION_TOGGLE_RAISE:			if(!mode) mode = SUB_CLIENT_STATE_FLOAT;
+							case SUB_KEY_ACTION_TOGGLE_FULL:			if(!mode) mode = SUB_CLIENT_STATE_FULL;
+								if(!(c->flags & SUB_WIN_TYPE_VIEW)) subClientToggle(c, mode);
 								break;									
-							case SUB_KEY_ACTION_TOGGLE_PILE: 
-								if(w->flags & SUB_WIN_TYPE_TILE) subClientToggle(SUB_WIN_STATE_STACK, w);		
-								else if(w->parent && w->parent->flags & SUB_WIN_STATE_STACK) 
-									subClientToggle(SUB_WIN_STATE_STACK, w->parent);
-								break;
 							case SUB_KEY_ACTION_TOGGLE_LAYOUT: 
-								if(w->flags & SUB_WIN_TYPE_TILE)
+								if(c->flags & SUB_WIN_TYPE_TILE)
 									{
-										type = (w->flags & SUB_WIN_TILE_HORZ) ? SUB_WIN_TILE_HORZ : SUB_WIN_TILE_VERT;
-										w->flags &= ~type;
-										w->flags |= (type == SUB_WIN_TILE_HORZ) ? SUB_WIN_TILE_VERT : SUB_WIN_TILE_HORZ;
-										subTileConfigure(w);
+										type = (c->flags & SUB_TILE_TYPE_HORZ) ? SUB_TILE_TYPE_HORZ : SUB_TILE_TYPE_VERT;
+										c->flags &= ~type;
+										c->flags |= (type == SUB_TILE_TYPE_HORZ) ? SUB_TILE_TYPE_VERT : SUB_TILE_TYPE_HORZ;
+										subTileConfigure(c->tile);
 									}			
 								break;
 							case SUB_KEY_ACTION_DESKTOP_NEXT: subViewSwitch(d->cv->next);	break;
 							case SUB_KEY_ACTION_DESKTOP_PREV: 
 								if(d->cv->prev) subViewSwitch(d->cv->prev);		
-								break;
-							case SUB_KEY_ACTION_DESKTOP_MOVE:
-#if 0
-								if(k->number && !(w->flags & SUB_WIN_TYPE_VIEW))
-									{
-										SubView *s = subViewGetPtr(k->number);
-										if(s)
-											{
-												SubWin *p = w->parent;
-												subTileAdd(s->w, w);
-												if(p) subTileConfigure(p);
-											}
-									} 
-#endif
 								break;
 							case SUB_KEY_ACTION_EXEC:	if(k->string) Exec(k->string); break;
 						}
@@ -172,20 +152,22 @@ HandleKeyPress(XKeyEvent *ev)
 				}
 		}
 }
+/* }}} */
 
+/* HandleConfigure {{{ */
 static void
 HandleConfigure(XConfigureRequestEvent *ev)
 {
 	XWindowChanges wc;
-	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
-	if(w)
+	SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
+	if(c)
 		{
-			if(ev->value_mask & CWX)			w->x			= ev->x;
-			if(ev->value_mask & CWY)			w->y 			= ev->y;
-			if(ev->value_mask & CWWidth)	w->width	= ev->width;
-			if(ev->value_mask & CWHeight)	w->height = ev->height;
+			if(ev->value_mask & CWX)			c->x			= ev->x;
+			if(ev->value_mask & CWY)			c->y 			= ev->y;
+			if(ev->value_mask & CWWidth)	c->width	= ev->width;
+			if(ev->value_mask & CWHeight)	c->height = ev->height;
 
-			subClientConfigure(w);
+			subClientConfigure(c);
 			wc.x = 0;
 			wc.y = d->th;
 		}
@@ -201,52 +183,59 @@ HandleConfigure(XConfigureRequestEvent *ev)
 	wc.stack_mode	= ev->detail;
 	XConfigureWindow(d->disp, ev->window, ev->value_mask, &wc);
 }
+/* }}} */
 
+/* HandleMapNotify {{{ */
 static void
 HandleMapNotify(XMappingEvent *ev)
 {
-	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
-	printf("%#lx\n", ev->window);
-	if(w && w->flags & SUB_WIN_TYPE_CLIENT) printf("frame=%#lx, win=%#lx\n", w->frame, w->client->win);
 }
+/* }}} */
 
+/* HandleMapRequest {{{ */
 static void
 HandleMapRequest(XMapRequestEvent *ev)
 {
-	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
-	if(!w) subViewMerge(ev->window);
+	SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
+	if(!c) subViewMerge(ev->window);
 }
+/* }}} */
 
+/* HandleDestroy {{{ */
 static void
 HandleDestroy(XDestroyWindowEvent *ev)
 {
-	SubWin *w = (SubWin *)subUtilFind(ev->event, 1);
-	if(w && w->flags & SUB_WIN_TYPE_CLIENT) 
+	SubClient *c = (SubClient *)subUtilFind(ev->event, 1);
+	if(c)
 		{
-			w->flags |= SUB_WIN_STATE_DEAD;
-			subWinDelete(w); 
+			c->flags |= SUB_CLIENT_STATE_DEAD;
+			subClientDelete(c); 
 		}
 }
+/* }}} */
 
-/* Some events don't propagate but we need them to do so */
+/* GetParent {{{ */
 static Window
 GetParent(Window win)
 {
-	unsigned int n;
+	unsigned int nwins;
 	Window parent, unused, *wins = NULL;
 
-	XQueryTree(d->disp, win, &unused, &parent, &wins, &n);
+	/* Some events don't propagate but we need them to do so */
+	XQueryTree(d->disp, win, &unused, &parent, &wins, &nwins);
 	XFree(wins);
 
 	return(parent);
 }
-	
+/* }}} */
+
+/* HandleMessage {{{ */
 static void
 HandleMessage(XClientMessageEvent *ev)
 {
-	SubWin *w = NULL;
+	SubClient *c = NULL;
 
-	subUtilLogDebug("ClientMesg: type=%ld\n", ev->message_type);
+	subUtilLogDebug("ClientMessage: type=%ld\n", ev->message_type);
 
 	if(ev->window == DefaultRootWindow(d->disp))
 		{
@@ -257,74 +246,81 @@ HandleMessage(XClientMessageEvent *ev)
 				}
 			else if(ev->message_type == subEwmhFind(SUB_EWMH_NET_ACTIVE_WINDOW))
 				{
-					SubWin *focus = (SubWin *)subUtilFind(GetParent(ev->data.l[0]), 1);
+					SubClient *focus = (SubClient *)subUtilFind(GetParent(ev->data.l[0]), 1);
 					if(focus) subWinFocus(focus);
 				}
 			return;
 		}
-	w = (SubWin *)subUtilFind(GetParent(ev->window), 1);
-	if(w && w->flags & SUB_WIN_TYPE_CLIENT && ev->format == 32)
+	c = (SubClient *)subUtilFind(GetParent(ev->window), 1);
+	if(c && ev->format == 32)
 		{
-			subUtilLogDebug("ClientMsg: [0]=%ld, [1]=%ld, [2]=%ld, [3]=%ld, [4]=%ld\n", 
+			subUtilLogDebug("ClientMessage: [0]=%ld, [1]=%ld, [2]=%ld, [3]=%ld, [4]=%ld\n", 
 				ev->data.l[0], ev->data.l[1], ev->data.l[2], ev->data.l[3], ev->data.l[4]);
 
 			if(ev->message_type == subEwmhFind(SUB_EWMH_NET_WM_STATE))
 				{
-					/* [0] => Remove = 0 / Add = 1 / Toggle = 2 - but we always toggle */
+					/* [0] => Remove = 0 / Add = 1 / Toggle = 2 -> we _always_ toggle */
 					if(ev->data.l[1] == (long)subEwmhFind(SUB_EWMH_NET_WM_STATE_FULLSCREEN))
 						{
-							subClientToggle(SUB_WIN_STATE_FULL, w);
+							subClientToggle(c, SUB_CLIENT_STATE_FULL);
 						}
 					else if(ev->data.l[1] == (long)subEwmhFind(SUB_EWMH_NET_WM_STATE_SHADED))
 						{
-							subClientToggle(SUB_WIN_STATE_SHADE, w);
+							subClientToggle(c, SUB_CLIENT_STATE_SHADE);
 						}
 				}
 		}
 }
+/* }}} */
 
+/* HandleColormap {{{ */
 static void
 HandleColormap(XColormapEvent *ev)
 {	
-	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
-	if(w && w->flags & SUB_WIN_TYPE_CLIENT && ev->new)
+	SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
+	if(c && ev->new)
 		{
-			w->client->cmap = ev->colormap;
-			XInstallColormap(d->disp, w->client->cmap);
+			c->cmap = ev->colormap;
+			XInstallColormap(d->disp, c->cmap);
 		}
 }
+/* }}} */
 
+/* HandleProperty {{{ */
 static void
 HandleProperty(XPropertyEvent *ev)
 {
-	/* Prevent expensive query tree if the atom isn't supported */
+	/* Prevent expensive query if the atom isn't supported */
 	if(ev->atom == XA_WM_NAME || ev->atom == subEwmhFind(SUB_EWMH_WM_NAME))
 		{
-			SubWin *w = (SubWin *)subUtilFind(GetParent(ev->window), d->cv->xid);
-			if(w && w->flags & SUB_WIN_TYPE_CLIENT) subClientFetchName(w);
+			SubClient *c = (SubClient *)subUtilFind(GetParent(ev->window), d->cv->xid);
+			if(c) subClientFetchName(c);
 		}
 }
+/* }}} */
 
+/* HandleCrossing {{{ */
 static void
 HandleCrossing(XCrossingEvent *ev)
 {
-	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
-	if(w)
+	SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
+	if(c)
 		{
 			XEvent event;
 		
-			if(d->focus != w) subWinFocus(w);
+			if(d->focus != c) subClientFocus(c);
 
 			/* Remove any other event of the same type and window */
 			while(XCheckTypedWindowEvent(d->disp, ev->window, ev->type, &event));			
 		}
 }
+/* }}} */
 
+/* HandleExpose {{{ */
 static void
 HandleExpose(XEvent *ev)
 {
 	XEvent event;
-	SubWin *w = NULL;
 
 	if(ev->xany.window == d->bar.win)
 		{
@@ -333,43 +329,46 @@ HandleExpose(XEvent *ev)
 		}
 	else
 		{
-  		w = (SubWin *)subUtilFind(ev->xany.window, 1);
-			if(w) subWinRender(w);
+  		SubClient *c = (SubClient *)subUtilFind(ev->xany.window, 1);
+			if(c) subWinRender(c);
 		}
 
 	/* Remove any other event of the same type and window */
 	while(XCheckTypedWindowEvent(d->disp, ev->xany.window, ev->type, &event));
 }
+/* }}} */
 
+/* HandleFocus {{{ */
 static void
 HandleFocus(XFocusInEvent *ev)
 {
-	SubWin *w = (SubWin *)subUtilFind(ev->window, 1);
-	if(w && w->flags & SUB_WIN_PREF_FOCUS)
+	SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
+	if(c && c->flags & SUB_WIN_PREF_FOCUS)
 		{
-			if(w != d->focus) 
+			if(c != d->focus) 
 				{
 					/* Remove focus from window */
 					if(d->focus) 
 					{
-						SubWin *f = d->focus;
+						SubClient *f = d->focus;
 						d->focus = NULL;
 						if(f && f->flags & SUB_WIN_TYPE_CLIENT) subClientRender(f);
 
 						subKeyUngrab(f);
 					}
 
-					d->focus = w;
-					subClientRender(w);
-					subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_ACTIVE_WINDOW, &w->frame, 1);
+					d->focus = c;
+					subClientRender(c);
+					subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_ACTIVE_WINDOW, &c->frame, 1);
 
-					subKeyGrab(w);					
+					subKeyGrab(c);	
 				}
 		}
 }
+/* }}} */
 
- /**
-	* Handle the X events 
+ /** subEventLoop {{{ 
+	* Handle all X events 
 	* @return Return zero on failure
 	**/
 
@@ -458,3 +457,4 @@ subEventLoop(void)
 				}
 		}
 }
+/* }}} */
