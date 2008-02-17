@@ -5,7 +5,7 @@
 	*
 	* See the COPYING file for the license in the latest tarball.
 	*
-	* $Header$
+	* $Id$
 	**/
 
 #include "subtle.h"
@@ -15,7 +15,7 @@ static SubKey **keys = NULL;
 static unsigned int num_lock_mask = 0;
 static unsigned int scroll_lock_mask = 0;
 
- /**
+ /** subKeyInit {{{
 	* Init keys and get modifiers
 	**/
 
@@ -37,11 +37,12 @@ subKeyInit(void)
 		}
 	if(modmap) XFreeModifiermap(modmap);
 }
+/* }}} */
 
- /**
+ /** subKeyFind {{{
 	* Find a key
-	* @param keycode A keycode
-	* @return Returns a #SubKey or NULL
+	* @param[in] keycode A keycode
+	* @return[in] Returns a #SubKey or NULL
 	**/
 
 SubKey *
@@ -54,11 +55,12 @@ subKeyFind(int keycode,
 		if(keys[i]->code == keycode && keys[i]->mod == (mod & ~(LockMask|num_lock_mask|scroll_lock_mask))) return(keys[i]);
 	return(NULL);
 }
+/* }}} */
 
- /**
+ /** subKeyNew {{{
 	* Create new key
-	* @key Key name
-	* @value Key action
+	* @param[in] key Key name
+	* @param[in] value Key action
 	**/
 
 void
@@ -145,8 +147,9 @@ subKeyNew(const char *key,
 			subUtilLogDebug("Key: name=%s, code=%d, mod=%d\n", key, k->code, k->mod);
 		}
 }
+/* }}} */
 
- /**
+ /** subKeyKill {{{
 	* Kill keys
 	**/
 
@@ -166,43 +169,47 @@ subKeyKill(void)
 			free(keys);
 		}
 }
+/* }}} */
 
- /**
+ /** subKeyGrab {{{
 	* Grab keys for a window
-	* @param  w A #SubWin
+	* @param  w A #SubClient
 	**/
 
 void
-subKeyGrab(SubWin *w)
+subKeyGrab(SubClient *w)
 {
 	if(w && keys)
 		{
 			int i;
 
+			/* XXX: Key handling should be redesigned.. */
 			for(i = 0; i < size; i++) 
 				{
-					XGrabKey(d->disp, keys[i]->code, keys[i]->mod, w->frame, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, keys[i]->code, keys[i]->mod | LockMask, w->frame, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, keys[i]->code, keys[i]->mod | num_lock_mask, w->frame, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, keys[i]->code, keys[i]->mod, c->frame, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, keys[i]->code, keys[i]->mod | LockMask, c->frame, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, keys[i]->code, keys[i]->mod | num_lock_mask, c->frame, True, GrabModeAsync, GrabModeAsync);
 					XGrabKey(d->disp, keys[i]->code, keys[i]->mod | LockMask | num_lock_mask, 
-						w->frame, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, keys[i]->code, keys[i]->mod | scroll_lock_mask, w->frame, True, GrabModeAsync, GrabModeAsync);
+						c->frame, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, keys[i]->code, keys[i]->mod | scroll_lock_mask, c->frame, True, GrabModeAsync, GrabModeAsync);
 					XGrabKey(d->disp, keys[i]->code, keys[i]->mod | scroll_lock_mask | LockMask, 
-						w->frame, True, GrabModeAsync, GrabModeAsync);
+						c->frame, True, GrabModeAsync, GrabModeAsync);
 					XGrabKey(d->disp, keys[i]->code, keys[i]->mod | scroll_lock_mask | num_lock_mask, 
-						w->frame, True, GrabModeAsync, GrabModeAsync);
+						c->frame, True, GrabModeAsync, GrabModeAsync);
 					XGrabKey(d->disp, keys[i]->code, keys[i]->mod | scroll_lock_mask | LockMask | num_lock_mask, 
-						w->frame, True, GrabModeAsync, GrabModeAsync);
+						c->frame, True, GrabModeAsync, GrabModeAsync);
 				}
 		}
 }
+/* }}} */
 
- /** 
+ /** subKeyUngrab {{{
 	* Ungrab keys for a window
 	**/
 
 void
-subKeyUngrab(SubWin *w)
+subKeyUngrab(SubClient *w)
 {
-	XUngrabKey(d->disp, AnyKey, AnyModifier, w->frame);
+	XUngrabKey(d->disp, AnyKey, AnyModifier, c->frame);
 }
+/* }}} */
