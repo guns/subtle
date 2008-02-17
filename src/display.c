@@ -5,13 +5,14 @@
 	*
 	* See the COPYING file for the license in the latest tarball.
 	*
-	* $Header$
+	* $Id$
 	**/
 
 #include "subtle.h"
 
 SubDisplay *d = NULL;
 
+/* HandleXError {{{ */
 static int
 HandleXError(Display *display,
 	XErrorEvent *ev)
@@ -28,10 +29,11 @@ HandleXError(Display *display,
 		}
 	return(0);
 }
+/* }}} */
 
- /**
-	* Create the display 
-	* @param display_string The display name as string
+ /** subDisplayNew {{{
+	* Open connection to X server and create display
+	* @param[in] display_string The display name as string
 	* @return Returns either nonzero on success or otherwise zero
 	**/
 
@@ -79,9 +81,10 @@ subDisplayNew(const char *display_string)
 
 	XSync(d->disp, False);
 }
+/* }}} */
 
- /**
-	* Kill the display
+ /** subDisplayKill {{{
+	* Close connection and kill display
 	**/
 
 void
@@ -107,8 +110,9 @@ subDisplayKill(void)
 		}
 	free(d);
 }
+/* }}} */
 
- /**
+ /** subDisplayScan {{{
 	* Scan root window for clients
 	**/
 
@@ -126,10 +130,11 @@ subDisplayScan(void)
 		{
 			XGetWindowAttributes(d->disp, wins[i], &attr);
 			if(wins[i] != d->bar.win && wins[i] != d->bar.views && 
-				wins[i] != d->bar.sublets && wins[i] != d->cv->w->frame && 
+				wins[i] != d->bar.sublets && wins[i] != d->cv->c->frame && 
 				wins[i] != d->cv->button && attr.map_state == IsViewable) subViewMerge(wins[i]);
 		}
 	
 	subTileConfigure(d->cv->w);
 	XFree(wins);
 }
+/* }}} */
