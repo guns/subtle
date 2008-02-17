@@ -5,7 +5,7 @@
 	*
 	* See the COPYING file for the license in the latest tarball.
 	*
-	* $Header$
+	* $Id$
 	**/
 
 #include "subtle.h"
@@ -14,8 +14,8 @@
 
 static Atom atoms[NATOMS];
 
- /**
-	* Init ewmh
+ /** subEwmhInit {{{
+	* Init and register ICCCM/EWMH atoms
 	**/
 
 void
@@ -67,11 +67,12 @@ subEwmhInit(void)
 	data[3] = atoms[SUB_EWMH_NET_WM_STATE_FULLSCREEN];
 	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_SUPPORTED, (long *)&data, 4);	
 }
+/* }}} */
 
- /**
-	* Find intern atom 
-	* @param hint Hint number
-	* @return The desired atom
+ /** subEwmhFind {{{
+	* Find intern atom and return it
+	* @param[in] hint Hint number
+	* @return The desired #Atom
 	**/
 
 Atom
@@ -80,13 +81,14 @@ subEwmhFind(int hint)
 	assert(hint <= NATOMS);
 	return(atoms[hint]);
 }
+/* }}} */
 
- /**
+ /** subEwmhGetProperty {{{
 	* Get property from window
-	* @param win Window
-	* @param type Atom type
-	* @param hint Hint number
-	* @param size Size of items
+	* @param[in] win Window
+	* @param[in] type Atom type
+	* @param[in] hint Hint number
+	* @param[out] size Size of items
 	* @return Return data associated with the property
 	**/
 
@@ -117,13 +119,14 @@ subEwmhGetProperty(Window win,
 
 	return((char *)data);
 }
+/* }}} */
 
- /**
+ /** subEwmhSetWindows {{{
 	* Change window property
-	* @param win Window
-	* @param hint Hint number
-	* @param values Window list
-	* @param size Size of the list
+	* @param[in] win Window
+	* @param[in] hint Hint number
+	* @param[in] values Window list
+	* @param[in] size Size of the list
 	**/
 
 void
@@ -134,13 +137,14 @@ subEwmhSetWindows(Window win,
 {
 	XChangeProperty(d->disp, win, atoms[hint], XA_WINDOW, 32, PropModeReplace, (unsigned char *)values, size);
 }
+/* }}} */
 
- /**
+ /** subEwmhSetCardinals {{{
 	* Change window property
-	* @param win Window
-	* @param hint Hint number
-	* @param values Cardinal list
-	* @param size Size of the list
+	* @param[in] win Window
+	* @param[in] hint Hint number
+	* @param[in] values Cardinal list
+	* @param[in] size Size of the list
 	**/
 
 void
@@ -151,12 +155,13 @@ subEwmhSetCardinals(Window win,
 {
 	XChangeProperty(d->disp, win, atoms[hint], XA_CARDINAL, 32, PropModeReplace, (unsigned char *)values, size);
 }
+/* }}} */
 
- /**
+ /** subEwmhSetString {{{
 	* Change window property
-	* @param win Window
-	* @param hint Hint number
-	* @param value String value
+	* @param[in] win Window
+	* @param[in] hint Hint number
+	* @param[in] value String value
 	**/
 
 void
@@ -167,13 +172,14 @@ subEwmhSetString(Window win,
 	XChangeProperty(d->disp, win, atoms[hint], atoms[SUB_EWMH_UTF8], 8, 
 		PropModeReplace, (unsigned char *)value, strlen(value));
 }
+/* }}} */
 
- /**
+ /** subEwmhSetStrings {{{
 	* Change window property
-	* @param win Window
-	* @param hint Hint number
-	* @param values String list
-	* @param size Size of the list
+	* @param[in] win Window
+	* @param[in] hint Hint number
+	* @param[in] values String list
+	* @param[in] size Size of the list
 	**/
 
 void
@@ -200,3 +206,4 @@ subEwmhSetStrings(Window win,
 	XChangeProperty(d->disp, win, atoms[hint], atoms[SUB_EWMH_UTF8], 8, PropModeReplace, (unsigned char *)str, pos);
 	free(str);
 }
+/* }}} */
