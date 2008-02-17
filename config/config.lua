@@ -1,16 +1,14 @@
-
- ----
- -- subtle - window manager
- -- Copyright (c) 2005-2008 Christoph Kappel
- --
- -- See the COPYING file for the license in the latest tarball.
- --
- -- $Header$
- ----
+--
+-- subtle - window manager
+-- Copyright (c) 2005-2008 Christoph Kappel
+--
+-- See the COPYING file for the license in the latest tarball.
+--
+-- $Id$
+--
 
 -- Options config
 Options = {
-	Version = 0.7-r$Rev$,						-- Config version
 	Border	= 2													-- Border size of the windows
 }
 
@@ -66,5 +64,5 @@ Rules = {
 		["gvim|opera|foo"] = 60,
 		["[mur]+xvt|[aex]+term"] = 40
 	},
-	gimp = { "gimp.*" }
+	gimp = "gimp.*"
 }
