@@ -13,9 +13,9 @@
 static int nclients = 0;
 static Window *clients = NULL;
 
- /**
-	* Create a new client
-	* @param win Window of the client
+ /** subClientNew {{{
+	* Create new client
+	* @param[in] win Main window of the new client
 	* @return Returns either a #SubClient on success or otherwise NULL
 	**/
 
@@ -100,10 +100,11 @@ subClientNew(Window win)
 
 	return(c);
 }
+/* }}} */
 
- /**
-	* Delete client
-	* @param c A #SubClient
+ /** subClientDelete {{{
+	* Send interested clients the close signal and delete it
+	* @param[in] c A #SubClient
 	**/
 
 void
@@ -130,7 +131,7 @@ subClientDelete(SubClient *c)
 	if(!(c->flags & SUB_CLIENT_STATE_DEAD))
 		{
 			/* Honor window preferences */
-			if(c->flags & SUB_WIN_PREF_CLOSE)
+			if(c->flags & SUB_CLIENT_PREF_CLOSE)
 				{
 					XEvent ev;
 
@@ -149,10 +150,11 @@ subClientDelete(SubClient *c)
 	if(c->name) XFree(c->name);
 	free(c);
 }
+/* }}} */
 
- /**
-	* Render client
-	* @param C A #SubClient
+ /** subClientRender {{{
+	* Render client and redraw titlebar and borders
+	* @param[in] C A #SubClient
 	**/
 
 void
@@ -185,10 +187,11 @@ subClientRender(SubClient *c)
 	XFillRectangle(d->disp, c->title, d->gcs.border, d->th + 1, 2, c->width - d->th - 4, d->th - 4);	
 	XDrawString(d->disp, c->caption, d->gcs.font, 5, d->fy - 1, c->name, strlen(c->name));
 }
+/* }}} */
 
- /**
-	* Focus client
-	* @param c A #SubClient
+ /** subClientFocus {{{
+	* Set or unset focus to client
+	* @param[in] c A #SubClient
 	**/
 
 void
@@ -229,13 +232,14 @@ subClientFocus(SubClient *c)
 			d->focus = c;
 			subClientRender(c);
 			subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_ACTIVE_WINDOW, &c->frame, 1);
-			subKeyGrab(w);
+			subKeyGrab(c);
 		}
 }
+/* }}} */
 
- /**
-  * Resize client
-  * @param c A #SubClient
+ /** subClientResize {{{
+  * Resize clients to the stored values
+  * @param[in] c A #SubClient
   **/
 
 void
@@ -248,17 +252,18 @@ subClientResize(SubClient *c)
 	if(c->flags & SUB_CLIENT_STATE_FULL) XMoveResizeWindow(d->disp, c->win, 0, 0, c->width, c->height);
 	else if(!(c->flags & SUB_CLIENT_STATE_SHADE))
 		{
-			XMoveResizeWindow(d->disp, c->client->win, d->bw, d->th, c->width - 2 * d->bw, c->height - d->th - d->bw);
-			XMoveResizeWindow(d->disp, c->client->right, c->width - d->bw, d->th, d->bw, c->height - d->th);
-			XMoveResizeWindow(d->disp, c->client->bottom, 0, c->height - d->bw, c->width, d->bw);
+			XMoveResizeWindow(d->disp, c->win, d->bw, d->th, c->width - 2 * d->bw, c->height - d->th - d->bw);
+			XMoveResizeWindow(d->disp, c->right, c->width - d->bw, d->th, d->bw, c->height - d->th);
+			XMoveResizeWindow(d->disp, c->bottom, 0, c->height - d->bw, c->width, d->bw);
 		}
-	else XMoveResizeWindow(d->disp, c->client->title, 0, 0, c->width, d->th);
-	if(!(c->flags & SUB_WIN_STATE_SHADE)) subClientConfigure(w);
+	else XMoveResizeWindow(d->disp, c->title, 0, 0, c->width, d->th);
+	if(!(c->flags & SUB_CLIENT_STATE_SHADE)) subClientConfigure(c);
 }
+/* }}} */
 
- /**
-	* Map client
-	* @param c A #SubClient
+ /** subClientMap {{{
+	* Map client with all subwindows to screen
+	* @param[in] c A #SubClient
 	**/
 
 void
@@ -269,10 +274,11 @@ subClientMap(SubClient *c)
 	XMapSubwindows(d->disp, c->frame);
 	XMapWindow(d->disp, c->frame);
 }
+/* }}} */
 
- /**
-	* Unmap client
-	* @param c A #SubClient
+ /** subClientUnmap {{{
+	* Unmap client with all subClientUnmap from screen
+	* @param[in] c A #SubClient
 	**/
 
 void
@@ -283,12 +289,15 @@ subClientUnmap(SubClient *c)
 	XUnmapSubwindows(d->disp, c->frame);
 	XUnmapWindow(d->disp, c->frame);
 }
+/* }}} */
 
+/* DrawMask {{{ */
 static void
 DrawMask(int type,
 	SubClient *c,
 	XRectangle *r)
 {
+	/* XXX: Put modifiers into a static table? */
 	switch(type)
 		{
 			case SUB_CLIENT_DRAG_STATE_START: 
@@ -324,41 +333,43 @@ DrawMask(int type,
 				break;
 		}
 }
+/* }}} */
 
+/* AdjustWeight {{{ */
 static void
 AdjustWeight(int mode,
 	SubClient *c,
 	XRectangle *r)
 {
-	if(c && c->parent)
+	if(c && c->tile)
 		{
-			if((c->parent->flags & SUB_WIN_TILE_HORZ && (mode == SUB_CLIENT_DRAG_LEFT || mode == SUB_CLIENT_DRAG_RIGHT)) ||
-				(c->parent->flags & SUB_WIN_TILE_VERT && mode == SUB_CLIENT_DRAG_BOTTOM))
+			if((c->tile->flags & SUB_TILE_TYPE_HORZ && (mode == SUB_CLIENT_DRAG_LEFT || mode == SUB_CLIENT_DRAG_RIGHT)) ||
+				(c->tile->flags & SUB_TILE_TYPE_VERT && mode == SUB_CLIENT_DRAG_BOTTOM))
 				{
-					if(c->parent->flags & SUB_WIN_TILE_HORZ) c->resized = r->width * 100 / SUBWINWIDTH(c->parent);
-					else if(c->parent->flags & SUB_WIN_TILE_VERT) c->resized = r->height * 100 / SUBWINHEIGHT(c->parent);
+					if(c->tile->flags & SUB_TILE_TYPE_HORZ) c->resized = r->width * 100 / SUBWINWIDTH(c->tile);
+					else if(c->tile->flags & SUB_TILE_TYPE_VERT) c->resized = r->height * 100 / SUBWINHEIGHT(c->tile);
 
 					if(c->resized >= 80) c->resized = 80;
-					if(!(c->flags & SUB_CLIENT_STATE_RESIZE)) c->flags |= SUB_WIN_STATE_RESIZE;
-					subTileConfigure(c->parent);
+					if(!(c->flags & SUB_CLIENT_STATE_RESIZE)) c->flags |= SUB_CLIENT_STATE_RESIZE;
+					subTileConfigure(c->tile);
 					return;
 				}
-			else if(((c->parent->flags & SUB_WIN_TILE_VERT && (mode == SUB_CLIENT_DRAG_LEFT || mode == SUB_CLIENT_DRAG_RIGHT)) ||
-				(c->parent->flags & SUB_WIN_TILE_HORZ && mode == SUB_CLIENT_DRAG_BOTTOM)) && c->parent->parent)
-				AdjustWeight(mode, c->parent->clients[0], r);
+/*			else if(((c->tile->flags & SUB_TILE_TYPE_VERT && (mode == SUB_CLIENT_DRAG_LEFT || mode == SUB_CLIENT_DRAG_RIGHT)) ||
+				(c->tile->flags & SUB_TILE_TYPE_HORZ && mode == SUB_CLIENT_DRAG_BOTTOM)) && c->tile->tile)
+				AdjustWeight(mode, c->tile->clients[0], r); */
 		}
 }
+/* }}} */
 
- /**
-	* Move/drag client
-	* @param mode Attach mode
-	* @param c A #SubClient
-	* @param bev A #XButtonEvent
+ /** subClientDrag {{{
+	* Move and/or drag client
+	* @param[in] c A #SubClient
+	* @param[in] mode Drag/move mode
 	**/
 
 void
-subClientDrag(int mode,
-	SubClient *c)
+subClientDrag(SubClient *c,
+	int mode)
 {
 	XEvent ev;
 	Cursor cursor;
@@ -367,7 +378,7 @@ subClientDrag(int mode,
 	int wx = 0, wy = 0, rx = 0, ry = 0, state = SUB_CLIENT_DRAG_STATE_START, last_state = SUB_CLIENT_DRAG_STATE_START;
 	XRectangle r;
 	SubClient *c2 = NULL, *last_c = NULL;
-	SubTile *p = NULL;
+	//SubTile *p = NULL;
 
 	assert(c);
 	
@@ -404,7 +415,7 @@ subClientDrag(int mode,
 					case MotionNotify:
 						if(mode <= SUB_CLIENT_DRAG_MOVE) 
 							{
-								DrawMask(SUB_CLIENT_DRAG_STATE_START, w, &r);
+								DrawMask(SUB_CLIENT_DRAG_STATE_START, c, &r);
 					
 								/* Calculate dimensions of the selection rect */
 								switch(mode)
@@ -424,7 +435,7 @@ subClientDrag(int mode,
 							}
 						else if(win != c->frame && mode == SUB_CLIENT_DRAG_SWAP)
 							{
-								if(!c2 || c2->frame != win) c2 = (SubWin *)subUtilFind(win, 1);
+								if(!c2 || c2->frame != win) c2 = (SubClient *)subUtilFind(win, 1);
 								if(c2)
 									{
 										XQueryPointer(d->disp, win, &unused, &unused, &rx, &ry, &wx, &wy, &mask);
@@ -471,14 +482,14 @@ subClientDrag(int mode,
 							{
 								DrawMask(state, c2, &r); /* Erase mask */
 #if 0 /* Drag actions {{{ */
-								if(c && c2 && c->parent && c2->parent)
+								if(c && c2 && c->tile && c2->parent)
 									{
 										if(state == SUB_CLIENT_DRAG_STATE_TOP || state == SUB_CLIENT_DRAG_STATE_BOTTOM ||
 											state == SUB_CLIENT_DRAG_STATE_LEFT || state == SUB_CLIENT_DRAG_STATE_RIGHT)
 											{
 												SubWin *t = subTileNew(state == SUB_CLIENT_DRAG_STATE_TOP || 
-													state == SUB_CLIENT_DRAG_STATE_BOTTOM ? SUB_WIN_TILE_VERT : SUB_WIN_TILE_HORZ);
-												p = c->parent;
+													state == SUB_CLIENT_DRAG_STATE_BOTTOM ? SUB_TILE_TYPE_VERT : SUB_TILE_TYPE_HORZ);
+												p = c->tile;
 
 												subWinReplace(w2, t);
 												subWinUnlink(w);
@@ -502,12 +513,12 @@ subClientDrag(int mode,
 										else if(state == SUB_CLIENT_DRAG_STATE_BEFORE || state == SUB_CLIENT_DRAG_STATE_AFTER ||
 											state == SUB_CLIENT_DRAG_STATE_ABOVE || state == SUB_CLIENT_DRAG_STATE_BELOW)
 											{
-												p = c->parent;
+												p = c->tile;
 
 												if((((state == SUB_CLIENT_DRAG_STATE_BEFORE || state == SUB_CLIENT_DRAG_STATE_AFTER) && 
-													c2->parent->flags & SUB_WIN_TILE_HORZ)) ||
+													c2->parent->flags & SUB_TILE_TYPE_HORZ)) ||
 													((state == SUB_CLIENT_DRAG_STATE_ABOVE || state == SUB_CLIENT_DRAG_STATE_BELOW) && 
-													c2->parent->flags & SUB_WIN_TILE_VERT))
+													c2->parent->flags & SUB_TILE_TYPE_VERT))
 													{
 														subWinUnlink(w);
 
@@ -515,14 +526,14 @@ subClientDrag(int mode,
 															subWinPrepend(w2, w);
 														else subWinAppend(w2, w);
 
-														subTileConfigure(c->parent);
-														if(c->parent != p) subTileConfigure(p); 
+														subTileConfigure(c->tile);
+														if(c->tile != p) subTileConfigure(p); 
 													}
 												else if(c2->parent->parent && 
 													(((state == SUB_CLIENT_DRAG_STATE_BEFORE || state == SUB_CLIENT_DRAG_STATE_AFTER) && 
-													c2->parent->flags & SUB_WIN_TILE_VERT) ||
+													c2->parent->flags & SUB_TILE_TYPE_VERT) ||
 													((state == SUB_CLIENT_DRAG_STATE_ABOVE || state == SUB_CLIENT_DRAG_STATE_BELOW) && 
-													c2->parent->flags & SUB_WIN_TILE_HORZ)))
+													c2->parent->flags & SUB_TILE_TYPE_HORZ)))
 													{
 														subWinUnlink(w);
 
@@ -530,7 +541,7 @@ subClientDrag(int mode,
 															subWinPrepend(c2->parent, w);
 														else subWinAppend(c2->parent, w);
 														
-														subTileConfigure(c->parent);
+														subTileConfigure(c->tile);
 														subTileConfigure(p); 
 													}
 											}
@@ -552,7 +563,7 @@ subClientDrag(int mode,
 
 										subClientResize(c);
 									}
-								else if(c->parent && mode <= SUB_CLIENT_DRAG_BOTTOM) AdjustWeight(mode, w, &r);
+								else if(c->tile && mode <= SUB_CLIENT_DRAG_BOTTOM) AdjustWeight(mode, c, &r);
 							}
 
 						XUngrabServer(d->disp);
@@ -561,19 +572,20 @@ subClientDrag(int mode,
 				}
 		}
 }
+/* }}} */
 
- /**
-	* Toggle states of clients 
-	* @param c A #SubWin
+ /** subClientToggle {{{
+	* Toggle various states of client
+	* @param[in] c A #SubClient
 	**/
 
 void
-subClientToggle(int type,
-	SubWin *w)
+subClientToggle(SubClient *c,
+int type)
 {
 	XEvent event;
 
-	assert(w && c->flags & SUB_WIN_TYPE_CLIENT);
+	assert(c);
 
 	if(c->flags & type)
 		{
@@ -581,29 +593,31 @@ subClientToggle(int type,
 			switch(type)
 				{
 					case SUB_CLIENT_STATE_SHADE:
-						subClientSetWMState(w, NormalState);
+						subClientSetWMState(c, NormalState);
 
 						/* Map most of the windows */
-						XMapWindow(d->disp, c->client->win);
-						XMapWindow(d->disp, c->client->left);
-						XMapWindow(d->disp, c->client->right);
-						XMapWindow(d->disp, c->client->bottom);
+						XMapWindow(d->disp, c->win);
+						XMapWindow(d->disp, c->left);
+						XMapWindow(d->disp, c->right);
+						XMapWindow(d->disp, c->bottom);
 
 						/* Resize frame */
 						XMoveResizeWindow(d->disp, c->frame, c->x, c->y, c->width, c->height);
 						break;
-					case SUB_CLIENT_STATE_FLOAT: XReparentWindow(d->disp, c->frame, c->parent->frame, c->x, c->y);	break;
+					case SUB_CLIENT_STATE_FLOAT: 
+						//XReparentWindow(d->disp, c->frame, c->tile->frame, c->x, c->y);	
+						break;
 					case SUB_CLIENT_STATE_FULL:
 						/* Map most of the windows */
-						XMapWindow(d->disp, c->client->title);
-						XMapWindow(d->disp, c->client->left);
-						XMapWindow(d->disp, c->client->right);
-						XMapWindow(d->disp, c->client->bottom);
-						XMapWindow(d->disp, c->client->caption);
+						XMapWindow(d->disp, c->title);
+						XMapWindow(d->disp, c->left);
+						XMapWindow(d->disp, c->right);
+						XMapWindow(d->disp, c->bottom);
+						XMapWindow(d->disp, c->caption);
 
-						subWinResize(w);
-						subTileAdd(c->parent, w);
-						subTileConfigure(c->parent);
+						subClientResize(c);
+						subTileAdd(c->tile, c);
+						subTileConfigure(c->tile);
 						break;								
 				}
 		}
@@ -616,13 +630,13 @@ subClientToggle(int type,
 			switch(type)
 				{
 					case SUB_CLIENT_STATE_SHADE:
-						subClientSetWMState(w, WithdrawnState);
+						subClientSetWMState(c, WithdrawnState);
 
 						/* Unmap most of the windows */
-						XUnmapWindow(d->disp, c->client->win);
-						XUnmapWindow(d->disp, c->client->left);
-						XUnmapWindow(d->disp, c->client->right);
-						XUnmapWindow(d->disp, c->client->bottom);
+						XUnmapWindow(d->disp, c->win);
+						XUnmapWindow(d->disp, c->left);
+						XUnmapWindow(d->disp, c->right);
+						XUnmapWindow(d->disp, c->bottom);
 
 						XMoveResizeWindow(d->disp, c->frame, c->x, c->y, c->width, d->th);
 						break;						
@@ -630,7 +644,7 @@ subClientToggle(int type,
 						/* Respect the user/program preferences */
 						hints = XAllocSizeHints();
 						if(!hints) subUtilLogError("Can't alloc memory. Exhausted?\n");
-						if(XGetWMNormalHints(d->disp, c->client->win, hints, &supplied))
+						if(XGetWMNormalHints(d->disp, c->win, hints, &supplied))
 							{
 								if(hints->flags & (USPosition|PPosition))
 									{
@@ -666,7 +680,7 @@ subClientToggle(int type,
 									}
 							}
 
-						subWinResize(w);
+						subClientResize(c);
 						XReparentWindow(d->disp, c->frame, DefaultRootWindow(d->disp), c->x, c->y);
 						XRaiseWindow(d->disp, c->frame);
 
@@ -674,11 +688,11 @@ subClientToggle(int type,
 						break;
 					case SUB_CLIENT_STATE_FULL:
 						/* Unmap some windows */
-						XUnmapWindow(d->disp, c->client->title);
-						XUnmapWindow(d->disp, c->client->left);
-						XUnmapWindow(d->disp, c->client->right);
-						XUnmapWindow(d->disp, c->client->bottom);								
-						XUnmapWindow(d->disp, c->client->caption);
+						XUnmapWindow(d->disp, c->title);
+						XUnmapWindow(d->disp, c->left);
+						XUnmapWindow(d->disp, c->right);
+						XUnmapWindow(d->disp, c->bottom);								
+						XUnmapWindow(d->disp, c->caption);
 
 						/* Resize to display resolution */
 						c->x			= 0;
@@ -687,101 +701,105 @@ subClientToggle(int type,
 						c->height	= DisplayHeight(d->disp, DefaultScreen(d->disp));
 
 						XReparentWindow(d->disp, c->frame, DefaultRootWindow(d->disp), 0, 0);
-						subWinResize(w);
+						subClientResize(c);
 				}
 		}
 	XUngrabServer(d->disp);
 	while(XCheckTypedEvent(d->disp, UnmapNotify, &event));
-	if(type != SUB_CLIENT_STATE_FULL) subTileConfigure(c->parent);
+	if(type != SUB_CLIENT_STATE_FULL) subTileConfigure(c->tile);
 }
+/* }}} */
 
- /**
-	* Send a configure request to the client
-	* @param w A #SubWin
+ /** subClientConfigure {{{
+	* Send a configure request to client
+	* @param[in] c A #SubClient
 	**/
 
 void
-subClientConfigure(SubWin *w)
+subClientConfigure(SubClient *c)
 {
 	XConfigureEvent ev;
 
-	assert(w && c->flags & SUB_WIN_TYPE_CLIENT);
+	assert(c);
 
 	ev.type								= ConfigureNotify;
-	ev.event							= c->client->win;
-	ev.window							= c->client->win;
+	ev.event							= c->win;
+	ev.window							= c->win;
 	ev.x									= c->x;
 	ev.y									= c->y;
-	ev.width							= (c->flags & SUB_CLIENT_STATE_FULL) ? c->width	: SUBWINWIDTH(w);
-	ev.height							= (c->flags & SUB_CLIENT_STATE_FULL) ? c->height : SUBWINHEIGHT(w);
+	ev.width							= (c->flags & SUB_CLIENT_STATE_FULL) ? c->width	: SUBWINWIDTH(c);
+	ev.height							= (c->flags & SUB_CLIENT_STATE_FULL) ? c->height : SUBWINHEIGHT(c);
 	ev.above							= None;
 	ev.border_width 			= 0;
 	ev.override_redirect	= 0;
 
-	XSendEvent(d->disp, c->client->win, False, StructureNotifyMask, (XEvent *)&ev);
+	XSendEvent(d->disp, c->win, False, StructureNotifyMask, (XEvent *)&ev);
 }
+/* }}} */
 
-	/**
-	 * Fetch client name
-	 * @param w A #SubWin
+	/** subClientFetchName {{{
+	 * Fetch client name and store it
+	 * @param[in] c A #SubClient
 	 **/
 
 void
-subClientFetchName(SubWin *w)
+subClientFetchName(SubClient *c)
 {
 	int width;
 
-	assert(w && c->flags & SUB_WIN_TYPE_CLIENT);
+	assert(c);
 
-	if(c->client->name) XFree(c->client->name);
-	XFetchName(d->disp, c->client->win, &c->client->name);
-	if(!c->client->name) c->client->name = strdup("subtle");
+	if(c->name) XFree(c->name);
+	XFetchName(d->disp, c->win, &c->name);
+	if(!c->name) c->name = strdup("subtle");
 
 	/* Check max length of the caption */
-	width = (strlen(c->client->name) + 1) * d->fx + 3;
+	width = (strlen(c->name) + 1) * d->fx + 3;
 	if(width > c->width - d->th - 4) width = c->width - d->th - 14;
-	XMoveResizeWindow(d->disp, c->client->caption, d->th, 0, width, d->th);
+	XMoveResizeWindow(d->disp, c->caption, d->th, 0, width, d->th);
 
-	subClientRender(w);
+	subClientRender(c);
 }
+/* }}} */
 
- /**
-	* Set the WM state for the client
-	* @param w A #SubWin
-	* @param state New state for the client
+ /** subClientSetWMState {{{
+	* Set WM state for client
+	* @param[in] w A #SubClient
+	* @param[in] state New state for the client
 	**/
 
 void
-subClientSetWMState(SubWin *w,
+subClientSetWMState(SubClient *c,
 	long state)
 {
 	CARD32 data[2];
 	data[0] = state;
 	data[1] = None; /* No icons */
 
-	assert(w && c->flags & SUB_WIN_TYPE_CLIENT);
+	assert(c);
 
-	XChangeProperty(d->disp, c->client->win, subEwmhFind(SUB_EWMH_WM_STATE), subEwmhFind(SUB_EWMH_WM_STATE),
+	XChangeProperty(d->disp, c->win, subEwmhFind(SUB_EWMH_WM_STATE), subEwmhFind(SUB_EWMH_WM_STATE),
 		32, PropModeReplace, (unsigned char *)data, 2);
 }
+/* }}} */
 
- /**
-	* Get the WM state of the client
-	* @param w A #SubWin
+ /** subClientGetWMState {{{
+	* Get WM state from client
+	* @param[in] c A #SubClient
 	* @return Returns the state of the client
 	**/
 
 long
-subClientGetWMState(SubWin *w)
+subClientGetWMState(SubClient *c)
 {
 	Atom type;
 	int format;
 	unsigned long unused, bytes;
 	long *data = NULL, state = WithdrawnState;
 
-	assert(w && c->flags & SUB_WIN_TYPE_CLIENT);
+	assert(c);
 
-	if(XGetWindowProperty(d->disp, c->client->win, subEwmhFind(SUB_EWMH_WM_STATE), 0L, 2L, False, 
+	if(XGetWindowProperty(d->disp, c->win, subEwmhFind(SUB_EWMH_WM_STATE), 0L, 2L, False, 
 			subEwmhFind(SUB_EWMH_WM_STATE), &type, &format, &bytes, &unused, (unsigned char **)&data) == Success && bytes)
 		{
 			state = *data;
@@ -789,3 +807,4 @@ subClientGetWMState(SubWin *w)
 		}
 	return(state);
 }
+/* }}} */
