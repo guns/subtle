@@ -5,7 +5,7 @@
 	*
 	* See the COPYING file for the license in the latest tarball.
 	*
-	* $Header$
+	* $Id$
 	**/
 
 #include "subtle.h"
@@ -14,9 +14,9 @@ static int nsublets = 0;
 static SubSublet **sublets = NULL;
 static SubSublet *root = NULL;
 
- /**
-	* Merge the sublet through the queue
-	* @param pos Position of the sublet in the queue
+ /** subSubletMerge {{{
+	* Merge into the views
+	* @param[in] pos Position of the sublet in the queue
 	**/
 
 void
@@ -35,8 +35,9 @@ subSubletMerge(int pos)
 			subSubletMerge(max);
 		}
 }
+/* }}} */
 
- /**
+ /** subSubletNext {{{
 	* Get next sublet 
 	* @return Return either the next #SubSublet or NULL if no sublets are loaded
 	**/
@@ -46,14 +47,15 @@ subSubletNext(void)
 {
 	return(nsublets > 0 ? sublets[1] : NULL);
 }
+/* }}} */
 
- /**
-	* Create a new sublet 
-	* @param type Type of the sublet
-	* @param name Name of the sublet
-	* @param ref Lua object reference
-	* @param interval Update interval
-	* @param watch Watch file
+ /** subSubletNew {{{
+	* Create new sublet 
+	* @param[in] type Type of the sublet
+	* @param[in] name Name of the sublet
+	* @param[in] ref Lua object reference
+	* @param[in] interval Update interval
+	* @param[in] watch Watch file
 	**/
 
 void
@@ -121,10 +123,11 @@ subSubletNew(int type,
 	printf("Loading sublet %s (%d)\n", name, (int)interval);
 	subUtilLogDebug("name=%s, ref=%d, interval=%d, watch=%s\n", name, ref, interval, watch);		
 }
+/* }}} */ 
 
- /**
+ /** subSubletDelete {{{
 	* Delete a sublet 
-	* @param w A #Sublet
+	* @param[in] s A #Sublet
 	**/
 
 void
@@ -154,8 +157,9 @@ subSubletDelete(SubSublet *s)
 	subSubletConfigure();
 	subSubletRender();
 }
+/* }}} */ 
 
- /**
+ /** subSubletConfigure {{{
 	* Configure sublet bar
 	**/
 
@@ -176,9 +180,10 @@ subSubletConfigure(void)
 			XMoveResizeWindow(d->disp, d->bar.sublets, DisplayWidth(d->disp, DefaultScreen(d->disp)) - width, 0, width, d->th);
 		}
 }
+/* }}} */
 
- /**
-	* Render the sublet s
+ /** subSubletRender {{{
+	* Render the sublets
 	**/
 
 void
@@ -209,8 +214,9 @@ subSubletRender(void)
 			XFlush(d->disp);
 		}
 }
+/* }}} */
 
- /**
+ /** subSubletKill {{{
 	* Kill all sublets 
 	**/
 
@@ -227,3 +233,4 @@ subSubletKill(void)
 		}
 	free(sublets);
 }
+/* }}} */
