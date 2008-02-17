@@ -4,7 +4,7 @@
 #
 #	See the COPYING file for the license in the latest tarball.
 #
-#	$Header$
+#	$Id$
 #
 
 Import("env")
@@ -22,7 +22,6 @@ source = Split("""
 	tile.c
 	util.c
 	view.c
-	win.c
 """)
 
 subtle = env.Program('subtle', source)
