@@ -5,7 +5,7 @@
 	*
 	* See the COPYING file for the license in the latest tarball.
 	*
-	* $Header$
+	* $Id$
 	**/
 
 #include <lua.h>
@@ -19,6 +19,7 @@
 
 static lua_State *subletstate = NULL;
 
+/* StateNew {{{ */
 static lua_State *
 StateNew(void)
 {
@@ -32,6 +33,7 @@ StateNew(void)
 
 	return(state);
 }
+/* }}} */
 
 #define GET_GLOBAL(configstate) do { \
 	lua_getglobal(configstate, table); \
@@ -42,6 +44,7 @@ StateNew(void)
 		} \
 } while(0)
 
+/* GetNum {{{ */
 static int
 GetNum(lua_State *configstate,
 	const char *table,
@@ -56,7 +59,9 @@ GetNum(lua_State *configstate,
 		}
 	return((int)lua_tonumber(configstate, -1));
 }
+/* }}} */
 
+/* GetString {{{ */
 static char *
 GetString(lua_State *configstate,
 	const char *table,
@@ -71,7 +76,9 @@ GetString(lua_State *configstate,
 		}
 	return((char *)lua_tostring(configstate, -1));
 }
+/* }}} */
 
+/* ParseColor {{{ */
 static double
 ParseColor(lua_State *configstate,
 	const char *field,
@@ -89,7 +96,9 @@ ParseColor(lua_State *configstate,
 		subUtilLogWarn("Can't alloc color '%s'.\n", name);
 	return(color.pixel);
 }
+/* }}} */
 
+/* CountHook {{{ */
 void
 CountHook(lua_State *state,
 	lua_Debug *ar)
@@ -101,10 +110,11 @@ CountHook(lua_State *state,
 			lua_error(state);
 		}
 }
+/* }}} */
 
- /**
-	* Load config file
-	* @param path Path to the config file
+ /** subLuaLoadConfig {{{
+	* Load config file from path
+	* @param[in] path Path to the config file
 	**/
 
 void
@@ -198,7 +208,7 @@ subLuaLoadConfig(const char *path)
 		}
 	
 	/* Rules */
-	d->cv = subViewNew("root", NULL);
+	d->cv = subViewNew("root");
 
 	lua_getglobal(configstate, "Rules");
 	if(lua_istable(configstate, -1)) 
@@ -208,31 +218,48 @@ subLuaLoadConfig(const char *path)
 				{
 					if(lua_istable(configstate, -1))
 						{ 
-							char *tags = NULL, *view = (char *)lua_tostring(configstate, -2);
+							SubView *v = NULL;
+							SubRule *r = NULL, *last = NULL;
+							char *regex = NULL, *view = (char *)lua_tostring(configstate, -2);
+
+							printf("table\n");
+
+							if(view) v = subViewNew(view);
 
 							lua_pushnil(configstate);
 							while(lua_next(configstate, -2))
 								{
-									if(!tags) tags = strdup((char *)lua_tostring(configstate, -1));
+									regex = (char *)lua_tostring(configstate, -2);
+									size	= (int)lua_tonumber(configstate, -1);
+
+									r = subRuleNew(regex, size);
+									if(!last) 
+										{
+											v->rules = r;
+											last = r;
+										}
 									else
 										{
-											char *regex = (char *)lua_tostring(configstate, -2);
-											int width = (int)lua_tonumber(configstate, -1);
-
-											tags = (char *)subUtilRealloc(tags, sizeof(char) * (strlen(tags) + strlen(tag) + 2));
-											sprintf(tags, "%s|%s", tags, tag);
+											last->next = r;
+											r->prev = last;
+											last = r;
 										}
+
 									lua_pop(configstate, 1);
 								}
-							if(tags) subViewNew(view, tags);;
-							free(tags);
+						}
+					else
+						{
+							printf("single\n");
 						}
 					lua_pop(configstate, 1);
 				}
 		}
 	lua_close(configstate);
 }
+/* }}} */
 
+/* SetField {{{ */
 static void
 SetField(lua_State *state,
   const char *key,
@@ -253,9 +280,11 @@ SetField(lua_State *state,
 	lua_settable(state, -3);
 	va_end(ap);
 }
+/* }}} */
 
+/* CreateSublet {{{ */
 static int
-PrepareSublet(int type, 
+CreateSublet(int type, 
 	lua_State *state)
 {
 	char *string = (char *)lua_tostring(state, 2), *watch = NULL;
@@ -295,45 +324,55 @@ PrepareSublet(int type,
 
 	return(1); /* Make the compiler happy */
 }
+/* }}} */
 
-/* Sublet functions */
+/* LuaAddText {{{ */
 static int
 LuaAddText(lua_State *state)
 {
-	return(PrepareSublet(SUB_SUBLET_TYPE_TEXT, state));
+	return(CreateSublet(SUB_SUBLET_TYPE_TEXT, state));
 }
+/* }}} */
 
+/* LuaAddTeaser {{{ */
 static int
 LuaAddTeaser(lua_State *state)
 {
-	return(PrepareSublet(SUB_SUBLET_TYPE_TEASER, state));
+	return(CreateSublet(SUB_SUBLET_TYPE_TEASER, state));
 }
+/* }}} */
 
+/* LuaAddMeter {{{ */
 static int
 LuaAddMeter(lua_State *state)
 {
-	return(PrepareSublet(SUB_SUBLET_TYPE_METER, state));
+	return(CreateSublet(SUB_SUBLET_TYPE_METER, state));
 }
+/* }}} */
 
+/* LuaAddWatch {{{ */
 static int
 LuaAddWatch(lua_State *state)
 {
 #ifdef HAVE_SYS_INOTIFY_H
-	return(PrepareSublet(SUB_SUBLET_TYPE_WATCH, state));
+	return(CreateSublet(SUB_SUBLET_TYPE_WATCH, state));
 #else
 	subUtilLogWarn("add_watch: Inotify is supported on this machine\n");
 #endif /* HAVE_SYS_INOTIFY_H */
 }
+/* }}} */
 
+/* LuaAddHelper {{{ */
 static int
 LuaAddHelper(lua_State *state)
 {
-	return(PrepareSublet(SUB_SUBLET_TYPE_HELPER, state));
+	return(CreateSublet(SUB_SUBLET_TYPE_HELPER, state));
 }
+/* }}} */
 
- /**
-	* Load sublets
-	* @param path Path to the sublets
+ /** subLuaLoadSublets {{{
+	* Load sublets from path
+	* @param[in] path Path to the sublets
 	**/
 
 void
@@ -407,8 +446,9 @@ subLuaLoadSublets(const char *path)
 		}
 	else subUtilLogWarn("Can't find any sublets to load\n");
 }
+/* }}} */
 
- /**
+ /** subLuaKill {{{
 	* Close Lua state
 	**/
 
@@ -422,10 +462,11 @@ subLuaKill(void)
 #endif /* HAVE_SYS_INOTIFY_H */
 
 }
+/* }}} */
 
- /**
-	* Call a Lua script
-	* @param w A #SubWin
+ /** subLuaCall {{{
+	* Carefully call a Lua script
+	* @param w A #SubClient
 	**/
 
 void
@@ -484,3 +525,4 @@ subLuaCall(SubSublet *s)
 				lua_pop(subletstate, -1);
 		}
 }
+/* }}} */
