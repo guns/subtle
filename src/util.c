@@ -5,7 +5,7 @@
 	*
 	* See the COPYING file for the license in the latest tarball.
 	*
-	* $Header$
+	* $Id$
 	**/
 
 #include <stdarg.h>
@@ -15,31 +15,30 @@
 #ifdef DEBUG
 static int debug = 0;
 
- /**
+ /** subUtilLogDebug {{{
 	* Toggle debugging messages
 	**/
 
 void
-subUtilLogToggle(void)
+subUtilLogSetDebug(void)
 {
 	debug = !debug;
 }
+/* }}} */
 #endif /* DEBUG */
 
- /**
-	* Print messages depending on their type
-	* @param type Message type
-	* @param file File name
-	* @param func Function name
-	* @param line Line number
-	* @param format Message format
-	* @param ... Variadic arguments
+ /** subUtilLog {{{
+	* Print messages depending on type
+	* @param[in] type Message type
+	* @param[in] file File name
+	* @param[in] line Line number
+	* @param[in] format Message format
+	* @param[in] ... Variadic arguments
 	**/
 
 void
 subUtilLog(int type,
 	const char *file,
-	const char *func,
 	int line,
 	const char *format,
 	...)
@@ -58,18 +57,20 @@ subUtilLog(int type,
 	switch(type)
 		{
 #ifdef DEBUG
-			case 0: fprintf(stderr, "<DEBUG:%s:%d> %s: %s", file, line, func, buf);	break;
+			case 0: fprintf(stderr, "<DEBUG:%s:%d> %s", file, line, buf);	break;
 #endif /* DEBUG */
-			case 1: fprintf(stderr, "<ERROR> %s", buf); raise(SIGTERM);							break;
-			case 2: fprintf(stdout, "<WARNING> %s", buf);														break;
+			case 1: fprintf(stderr, "<ERROR> %s", buf); raise(SIGTERM);		break;
+			case 2: fprintf(stdout, "<WARNING> %s", buf);									break;
 		}
 }
+/* }}} */
 
- /**
+ /** subUtilAlloc {{{
 	* Alloc memory and check for result
-	* @param n Number of elements
-	* @param size Size of the memory block
-	* @return 
+	* @param[in] n Number of elements
+	* @param[in] size Size of the memory block
+	* @return Success: Allocated memory block
+	* 				Failure: NULL
 	**/
 
 void *
@@ -80,28 +81,34 @@ subUtilAlloc(size_t n,
 	if(!mem) subUtilLogError("Can't alloc memory. Exhausted?\n");
 	return(mem);
 }
+/* }}} */
 
- /**
+ /** subUtilRealloc {{{
 	* Realloc memory and check for result
-	* @param mem Memory block
-	* @param size Size of the memory block
-	* @return 
+	* @param[in] mem Memory block
+	* @param[in] size Size of the memory block
+	*	@return Success: Allocated memory block
+	* 				Failure: NULL
 	**/
 
 void *
 subUtilRealloc(void *mem,
 	size_t size)
 {
+	assert(mem);
+
 	mem = realloc(mem, size);
 	if(!mem) subUtilLogError("Can't alloc memory. Exhausted?\n");
 	return(mem);
 }
+/* }}} */
 
- /**
+ /** subUtilFind {{{
 	* Find data with the context manager
-	* @param win A #Window
-	* @param id Context id
-	* @return Return the data associated with the window or NULL
+	* @param[in] win A #Window
+	* @param[in] id Context id
+	* @return Success: Found data
+	* 				Failure: NULL
 	**/
 
 XPointer *
@@ -113,3 +120,47 @@ subUtilFind(Window win,
 	assert(win && id);
 	return(XFindContext(d->disp, win, id, (XPointer *)&data) != XCNOENT ? data : NULL);
 }
+/* }}} */
+
+ /** subUtilArrayAppend {{{
+	* Append data to array
+	* @param[out] arr Array
+	* @param[in] narr Array size
+	* @param[in] elem New array element
+	**/
+
+void
+subUtilArrayAppend(void **arr,
+	int narr,
+	void *elem)
+{
+	assert(elem);
+
+	arr = (void **)subUtilRealloc(arr, narr + 1 * sizeof(void *));
+	arr[narr++] = elem;
+}
+/* }}} */
+
+ /** subUtilArraySwap {{{
+	* Swap elements a and b
+	* @param[in] arr Array
+	* @param[in] narr Array size
+	* @param[in] elem1 Element 1
+	* @param[in] elem2 Element 2
+	**/
+
+void
+subUtilArraySwap(void *arr,
+	int narr,
+	void *elem1,
+	void *elem2)
+{
+	int i;
+
+	assert(arr && narr >= 1);
+
+	for(i = 0; i < narr; i++) if(arr[i] == elem1) arr[i] = elem2;
+}
+/* }}} */
+
+
