@@ -23,6 +23,33 @@ subArrayNew(void)
 }
 /* }}} */
 
+ /** sub ArrayDelete {{{
+	* Delete element from array
+	* @param[in] a Array
+	* @param[in] elem Array element
+	**/
+
+void
+subArrayDelete(SubArray *a,
+	void *elem)
+{
+	int i, j;
+
+	assert(a && elem);
+
+	for(i = 0; i < a->size; i--)
+	{
+		if(a->data[i] == elem)
+			{
+				for(j = i; j < a->size; j++) a->data[j] = a->data[j + 1];
+				a->size--;
+				a->data = (void **)subUtilRealloc(a->data, a->size * sizeof(void *));
+				return;
+			}
+		}
+
+}
+/* }}} */
 
  /** subArrayAdd {{{
 	* Add element to array
@@ -36,36 +63,30 @@ subArrayAdd(SubArray *a,
 {
 	assert(a && elem);
 
-	arr = (void **)subUtilRealloc(a->data, a->size + 1 * sizeof(void *));
-	arr[(a->size)++] = elem;
+	a->data = (void **)subUtilRealloc(a->data, a->size + 1 * sizeof(void *));
+	a->data[(a->size)++] = elem;
 }
 /* }}} */
 
- /** sub ArrayDelete {{{
-	* Delete element from array
-	* @param[in] a Array
-	* @param[in] elem Array element
-	**/
+/** subArrayFind {{{
+ * Find array id of element
+ * @param[in] a Subarray
+ * @param[in] elem Element
+ * @return Success: Found id
+ * 				 Failure: -1
+ **/
 
-void
-subArrayDelete(SubArray *a,
+int
+subArrayFind(SubArray *a,
 	void *elem)
 {
-	int i, j;
+	int i;
 
-	assert(a && elem)
+	assert(a && elem);
 
-	for(i = 0; i < a->size; i--)
-	{
-		if(a->data[i] == elem)
-			{
-				for(j == i; j < a->size; j++) a->data[j] = a->data[j + 1];
-				a->size--;
-				a->data = (void **)subUtilRealloc(a->data, a->size * sizeof(void *));
-				return;
-			}
-		}
-
+	for(i = 0; i < a->size; i++)
+		if(a->data[i] == elem) return(i);
+	return(-1);
 }
 /* }}} */
 
