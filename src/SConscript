@@ -10,6 +10,7 @@
 Import("env")
 
 source = Split("""
+	array.c
 	client.c
 	display.c
 	event.c
