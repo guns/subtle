@@ -5,7 +5,7 @@
 	*
 	* See the COPYING file for the license in the latest tarball.
 	*
-	* $Header$
+	* $Id$
 	**/
 
 #include <stdio.h>
