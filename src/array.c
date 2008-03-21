@@ -12,7 +12,7 @@
 
  /** subArrayNew {{{
 	* Create new array and init it
-	* @return Success: A #SubArray
+	* @return Success: #SubArray
 	* 				Failure: NULL
 	**/
 
@@ -34,7 +34,7 @@ subArrayPush(SubArray *a,
 {
 	assert(a && elem);
 
-	a->data = (void **)subUtilRealloc(a->data, a->ndata + 1 * sizeof(void *));
+	a->data = (void **)subUtilRealloc(a->data, (a->ndata + 1) * sizeof(void *));
 	a->data[(a->ndata)++] = elem;
 } /* }}} */
 
@@ -102,11 +102,12 @@ subArraySwap(SubArray *a,
 
 	assert(a && a->ndata >= 1);
 
-	for(i = 0; i < a->ndata; i++) if(a->data[i] == elem1) a->data[i] = elem2;
+	for(i = 0; i < a->ndata; i++) 
+		if(a->data[i] == elem1) a->data[i] = elem2;
 } /* }}} */
 
  /** subArrayKill {{{
-	* Kill array and free it's data
+	* Kill array with all elements
 	* @param[in] a A #SubArray
 	**/
 
@@ -118,6 +119,16 @@ subArrayKill(SubArray *a)
 	assert(a);
 
 	for(i = 0; i < a->ndata; i++)
-		free(a->data[i]);
+		{
+			/* Check type and kill it */
+			SubArrayUndef *u = (SubArrayUndef *)a->data[i];
+
+			if(u->flags & SUB_TYPE_CLIENT) subClientKill((SubClient *)u);
+			else if(u->flags & SUB_TYPE_TILE) subTileKill((SubTile *)u);
+			else if(u->flags & SUB_TYPE_VIEW) subViewKill((SubView *)u);
+			else if(u->flags & SUB_TYPE_RULE) subRuleKill((SubRule *)u);
+			else if(u->flags & SUB_TYPE_SUBLET) subSubletKill((SubSublet *)u);
+			else free(a->data[i]); 
+		}
 	free(a);
 } /* }}} */
