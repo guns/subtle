@@ -10,10 +10,8 @@
 
 #include "subtle.h"
 
-static int size = 0;
-static SubKey **keys = NULL;
-static unsigned int num_lock_mask = 0;
-static unsigned int scroll_lock_mask = 0;
+static unsigned int nummask = 0;
+static unsigned int scrollmask = 0;
 
  /** subKeyInit {{{
 	* Init keys and get modifiers
@@ -32,17 +30,17 @@ subKeyInit(void)
 
 			for(i = 0; i < max; i++)
 				if(!modmap->modifiermap[i]) continue;
-				else if(num_lock && (modmap->modifiermap[i] == num_lock)) num_lock_mask = modmasks[i / modmap->max_keypermod];
-				else if(scroll_lock && (modmap->modifiermap[i] == scroll_lock)) scroll_lock_mask = modmasks[i / modmap->max_keypermod];
+				else if(num_lock && (modmap->modifiermap[i] == num_lock)) nummask = modmasks[i / modmap->max_keypermod];
+				else if(scroll_lock && (modmap->modifiermap[i] == scroll_lock)) scrollmask = modmasks[i / modmap->max_keypermod];
 		}
 	if(modmap) XFreeModifiermap(modmap);
-}
-/* }}} */
+} /* }}} */
 
  /** subKeyFind {{{
 	* Find a key
 	* @param[in] keycode A keycode
-	* @return[in] Returns a #SubKey or NULL
+	* @return Success: #SubKey
+	* 				Failure: NULL
 	**/
 
 SubKey *
@@ -51,11 +49,13 @@ subKeyFind(int keycode,
 {
 	int i;
 
-	for(i = 0; i < size; i++)
-		if(keys[i]->code == keycode && keys[i]->mod == (mod & ~(LockMask|num_lock_mask|scroll_lock_mask))) return(keys[i]);
+	for(i = 0; i < d->keys->ndata; i++)
+		{
+			SubKey *k = (SubKey *)d->keys->data[i];
+			if(k->code == keycode && k->mod == (mod & ~(LockMask|nummask|scrollmask))) return(k);
+		}
 	return(NULL);
-}
-/* }}} */
+} /* }}} */
 
  /** subKeyNew {{{
 	* Create new key
@@ -71,28 +71,29 @@ subKeyNew(const char *key,
 	KeySym sym;
 	char *tok = strtok((char *)value, "-");
 	SubKey *k = (SubKey *)subUtilAlloc(1, sizeof(SubKey));
+	k->flags |= SUB_TYPE_KEY;
 
-	/* FIXME: strncmp() is really slow.. */	
-	if(!strncmp(key, "FocusAbove", 10))						k->flags = SUB_KEY_ACTION_FOCUS_ABOVE;
-	else if(!strncmp(key, "FocusBelow", 10))			k->flags = SUB_KEY_ACTION_FOCUS_BELOW;
-	else if(!strncmp(key, "FocusNext", 9))				k->flags = SUB_KEY_ACTION_FOCUS_NEXT;
-	else if(!strncmp(key, "FocusPrev", 9))				k->flags = SUB_KEY_ACTION_FOCUS_PREV;
-	else if(!strncmp(key, "FocusAny", 8))					k->flags = SUB_KEY_ACTION_FOCUS_ANY;
-	else if(!strncmp(key, "DeleteWindow", 12))		k->flags = SUB_KEY_ACTION_DELETE_WIN;
-	else if(!strncmp(key, "ToggleCollapse", 14))	k->flags = SUB_KEY_ACTION_TOGGLE_COLLAPSE;
-	else if(!strncmp(key, "ToggleRaise", 11))			k->flags = SUB_KEY_ACTION_TOGGLE_RAISE;
-	else if(!strncmp(key, "ToggleFull", 10))			k->flags = SUB_KEY_ACTION_TOGGLE_FULL;
-	else if(!strncmp(key, "TogglePile", 10))			k->flags = SUB_KEY_ACTION_TOGGLE_PILE;
-	else if(!strncmp(key, "ToggleLayout", 12))		k->flags = SUB_KEY_ACTION_TOGGLE_LAYOUT;
-	else if(!strncmp(key, "NextDesktop", 11))			k->flags = SUB_KEY_ACTION_DESKTOP_NEXT;
-	else if(!strncmp(key, "PreviousDesktop", 11))	k->flags = SUB_KEY_ACTION_DESKTOP_PREV;
+	/* \todo Too slow? */	
+	if(!strncmp(key, "FocusAbove", 10))						k->flags |= SUB_KEY_FOCUS_ABOVE;
+	else if(!strncmp(key, "FocusBelow", 10))			k->flags |= SUB_KEY_FOCUS_BELOW;
+	else if(!strncmp(key, "FocusNext", 9))				k->flags |= SUB_KEY_FOCUS_NEXT;
+	else if(!strncmp(key, "FocusPrev", 9))				k->flags |= SUB_KEY_FOCUS_PREV;
+	else if(!strncmp(key, "FocusAny", 8))					k->flags |= SUB_KEY_FOCUS_ANY;
+	else if(!strncmp(key, "DeleteWindow", 12))		k->flags |= SUB_KEY_DELETE_WIN;
+	else if(!strncmp(key, "ToggleCollapse", 14))	k->flags |= SUB_KEY_TOGGLE_SHADE;
+	else if(!strncmp(key, "ToggleRaise", 11))			k->flags |= SUB_KEY_TOGGLE_RAISE;
+	else if(!strncmp(key, "ToggleFull", 10))			k->flags |= SUB_KEY_TOGGLE_FULL;
+	else if(!strncmp(key, "TogglePile", 10))			k->flags |= SUB_KEY_TOGGLE_PILE;
+	else if(!strncmp(key, "ToggleLayout", 12))		k->flags |= SUB_KEY_TOGGLE_LAYOUT;
+	else if(!strncmp(key, "NextDesktop", 11))			k->flags |= SUB_KEY_DESKTOP_NEXT;
+	else if(!strncmp(key, "PreviousDesktop", 11))	k->flags |= SUB_KEY_DESKTOP_PREV;
 	else if(!strncmp(key, "MoveToDesktop", 13))
 		{
 			char *desktop = (char *)key + 13;
 			if(desktop) 
 				{
 					k->number = atoi(desktop);
-					k->flags = SUB_KEY_ACTION_DESKTOP_MOVE;
+					k->flags |= SUB_KEY_DESKTOP_MOVE;
 				}
 			else 
 				{
@@ -102,7 +103,7 @@ subKeyNew(const char *key,
 		}
 	else
 		{
-			k->flags	= SUB_KEY_ACTION_EXEC;
+			k->flags	= SUB_KEY_EXEC;
 			k->string	= strdup(key);
 		}
 
@@ -118,6 +119,7 @@ subKeyNew(const char *key,
 					return;
 				}
 
+			/* Modifier mappings */
 			switch(sym)
 				{
 					case XK_A: mod = Mod1Mask;		break;
@@ -139,77 +141,61 @@ subKeyNew(const char *key,
 	
 	if(k->code && k->mod)
 		{
-			keys = (SubKey **)realloc(keys, sizeof(SubKey *) * (size + 1));
-			if(!keys) subUtilLogError("Can't alloc memory. Exhausted?\n");
-
-			keys[size++] = k;
-
+			subArrayPush(d->keys, (void *)k);
 			subUtilLogDebug("Key: name=%s, code=%d, mod=%d\n", key, k->code, k->mod);
 		}
-}
-/* }}} */
+} /* }}} */
 
  /** subKeyKill {{{
 	* Kill keys
+	* @param[in]
 	**/
 
 void
-subKeyKill(void)
+subKeyKill(SubKey *k)
 {
-	int i;
+	assert(k);
 
-	if(keys)
-		{
-			for(i = 0; i < size; i++) 
-				if(keys[i])
-					{
-						if(keys[i]->flags == SUB_KEY_ACTION_EXEC && keys[i]->string) free(keys[i]->string);
-						free(keys[i]);
-					}
-			free(keys);
-		}
-}
-/* }}} */
+	if(k->flags & SUB_KEY_EXEC && k->string) free(k->string);
+	free(k);
+} /* }}} */
 
  /** subKeyGrab {{{
 	* Grab keys for a window
-	* @param  w A #SubClient
+	* @param[in] c A #SubClient
 	**/
 
 void
-subKeyGrab(SubClient *w)
+subKeyGrab(SubClient *c)
 {
-	if(w && keys)
+	if(c && d->keys)
 		{
 			int i;
 
-			/* XXX: Key handling should be redesigned.. */
-			for(i = 0; i < size; i++) 
+			/* \todo Ugly key/modifier grabbing */
+			for(i = 0; i < d->keys->ndata; i++) 
 				{
-					XGrabKey(d->disp, keys[i]->code, keys[i]->mod, c->frame, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, keys[i]->code, keys[i]->mod | LockMask, c->frame, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, keys[i]->code, keys[i]->mod | num_lock_mask, c->frame, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, keys[i]->code, keys[i]->mod | LockMask | num_lock_mask, 
-						c->frame, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, keys[i]->code, keys[i]->mod | scroll_lock_mask, c->frame, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, keys[i]->code, keys[i]->mod | scroll_lock_mask | LockMask, 
-						c->frame, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, keys[i]->code, keys[i]->mod | scroll_lock_mask | num_lock_mask, 
-						c->frame, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, keys[i]->code, keys[i]->mod | scroll_lock_mask | LockMask | num_lock_mask, 
-						c->frame, True, GrabModeAsync, GrabModeAsync);
+					SubKey *k = (SubKey *)d->keys->data[i];
+
+					XGrabKey(d->disp, k->code, k->mod, c->frame, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, k->code, k->mod | LockMask, c->frame, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, k->code, k->mod | nummask, c->frame, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, k->code, k->mod | LockMask | nummask, c->frame, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, k->code, k->mod | scrollmask, c->frame, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, k->code, k->mod | scrollmask | LockMask, c->frame, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, k->code, k->mod | scrollmask | nummask, c->frame, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, k->code, k->mod | scrollmask | LockMask | nummask, c->frame, True, GrabModeAsync, GrabModeAsync);
 				}
 		}
-}
-/* }}} */
+} /* }}} */
 
  /** subKeyUngrab {{{
 	* Ungrab keys for a window
+	* @param[in] c A #SubClient
 	**/
 
 void
-subKeyUngrab(SubClient *w)
+subKeyUngrab(SubClient *c)
 {
 	XUngrabKey(d->disp, AnyKey, AnyModifier, c->frame);
-}
-/* }}} */
+} /* }}} */
