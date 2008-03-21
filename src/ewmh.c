@@ -66,13 +66,12 @@ subEwmhInit(void)
 	data[2] = atoms[SUB_EWMH_NET_WM_STATE_HIDDEN];
 	data[3] = atoms[SUB_EWMH_NET_WM_STATE_FULLSCREEN];
 	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_SUPPORTED, (long *)&data, 4);	
-}
-/* }}} */
+} /* }}} */
 
  /** subEwmhFind {{{
 	* Find intern atom and return it
 	* @param[in] hint Hint number
-	* @return The desired #Atom
+	* @return Success: #Atom
 	**/
 
 Atom
@@ -80,8 +79,7 @@ subEwmhFind(int hint)
 {
 	assert(hint <= NATOMS);
 	return(atoms[hint]);
-}
-/* }}} */
+} /* }}} */
 
  /** subEwmhGetProperty {{{
 	* Get property from window
@@ -89,7 +87,7 @@ subEwmhFind(int hint)
 	* @param[in] type Atom type
 	* @param[in] hint Hint number
 	* @param[out] size Size of items
-	* @return Return data associated with the property
+	* @return Success: data
 	**/
 
 char *
@@ -118,8 +116,7 @@ subEwmhGetProperty(Window win,
 	if(size) *size = (unsigned long)(format / 8) * nitems;
 
 	return((char *)data);
-}
-/* }}} */
+} /* }}} */
 
  /** subEwmhSetWindows {{{
 	* Change window property
@@ -136,8 +133,7 @@ subEwmhSetWindows(Window win,
 	int size)
 {
 	XChangeProperty(d->disp, win, atoms[hint], XA_WINDOW, 32, PropModeReplace, (unsigned char *)values, size);
-}
-/* }}} */
+} /* }}} */
 
  /** subEwmhSetCardinals {{{
 	* Change window property
@@ -154,8 +150,7 @@ subEwmhSetCardinals(Window win,
 	int size)
 {
 	XChangeProperty(d->disp, win, atoms[hint], XA_CARDINAL, 32, PropModeReplace, (unsigned char *)values, size);
-}
-/* }}} */
+} /* }}} */
 
  /** subEwmhSetString {{{
 	* Change window property
@@ -171,8 +166,7 @@ subEwmhSetString(Window win,
 {
 	XChangeProperty(d->disp, win, atoms[hint], atoms[SUB_EWMH_UTF8], 8, 
 		PropModeReplace, (unsigned char *)value, strlen(value));
-}
-/* }}} */
+} /* }}} */
 
  /** subEwmhSetStrings {{{
 	* Change window property
@@ -205,5 +199,4 @@ subEwmhSetStrings(Window win,
 
 	XChangeProperty(d->disp, win, atoms[hint], atoms[SUB_EWMH_UTF8], 8, PropModeReplace, (unsigned char *)str, pos);
 	free(str);
-}
-/* }}} */
+} /* }}} */
