@@ -7,19 +7,19 @@
 -- $Id$
 --
 
--- Options config
+-- Options config {{{
 Options = {
 	Border	= 2													-- Border size of the windows
-}
+} -- }}} 
 
--- Font config
+-- Font config {{{
 Font = {
 	Face	= "lucidatypewriter",					-- Font face for the text
 	Style	= "medium",										-- Font style (medium|bold|italic)
 	Size	= 12													-- Font size
-}
+} --- }}}
 
--- Color config
+-- Color config {{{
 Colors = {
 	Font				= "#ffffff",						-- Color of the font
 	Border			= "#ffffff",						-- Color of the border/tiles
@@ -27,9 +27,9 @@ Colors = {
 	Focus				= "#A7E737",						-- Color of the focus window
 	Shade				= "#A0B67A",						-- Color of shaded windows
 	Background	= "#9A9C95"							-- Color of root background
-}
+} -- }}}
 
--- Key config
+-- Key config {{{
 -- Modifier keys:
 -- A = Alt key
 -- S = Shift key
@@ -41,7 +41,6 @@ Keys = {
 	FocusBelow				=	"A-j",						-- Focus below window
 	FocusNext					= "A-n",						-- Focus next window
 	FocusPrev					= "A-p",						-- Focus prev window
---	DragWindow				= "A-d",						-- Drag window
 	DeleteWindow			= "A-S-d",					-- Delete a window
 	ToggleCollapse		= "A-c",						-- Toggle collapse
 	ToggleRaise				= "A-r",						-- Toggle raise
@@ -56,13 +55,13 @@ Keys = {
 	MoveToDesktop4		= "S-A-4",					-- Move window to desktop 4
 	["xterm +sb"]			= "S-F1",						-- Exec a term
 	["firefox"] 			= "S-F4"
-}
+} -- }}}
 
--- Rules
+-- Rules {{{
 Rules = {
 	work = { 
 		["gvim|opera|foo"] = 60,
 		["[mur]+xvt|[aex]+term"] = 40
 	},
 	gimp = "gimp.*"
-}
+} -- }}}
