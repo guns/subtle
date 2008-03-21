@@ -1,6 +1,6 @@
 ---- Notify
 -- Author: Christoph Kappel
--- Contact: unexist@hilflos.org
+-- Contact: unexist@dorfelite.net
 -- Description: Show the content of a file
 -- Version: 0.1
 -- Date: Wed Sept 26 13:45 CET 2007

@@ -1,6 +1,6 @@
 ------ Clock
 -- Author: Christoph Kappel
--- Contact: unexist@hilflos.org
+-- Contact: unexist@dorfelite.net
 -- Description: Show the clock
 -- Version: 0.1
 -- Date: Sat Mar 03 16:58 CET 2007
