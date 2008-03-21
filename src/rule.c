@@ -11,10 +11,11 @@
 #include "subtle.h"
 
  /** subRuleNew {{{
-	* Create rule
+	* Create new rule
 	* @params[in] size Rule tile size
 	* @params[in] tags Tag list
-	* @return Returns either a #SubRule on success or otherwise NULL
+	* @return Success: #SubRule 
+	* 				Error: NULL
 	**/
 
 SubRule *
@@ -28,6 +29,7 @@ subRuleNew(
 	assert(tags && (size >= 0 && size <= 100));
 
 	r = (SubRule *)subUtilAlloc(1, sizeof(SubRule));
+	r->flags	|= SUB_TYPE_RULE;
 	r->regex	= (regex_t *)subUtilAlloc(1, sizeof(regex_t));
 	r->size		= size;
 
@@ -53,22 +55,20 @@ subRuleNew(
 	printf("Adding rule (%s)\n", tags);
 
 	return(r);
-}
-/* }}} */
+} /* }}} */
 
- /** subRuleDelete {{{
+ /** subRuleKill {{{
 	* Delete rule
-	* @params r A #SubRule
+	* @params[in] r A #SubRule
 	**/
 
 void
-subRuleDelete(SubRule *r)
+subRuleKill(SubRule *r)
 {
 	assert(r);
 
 	regfree(r->regex);
 	free(r->regex);
-	if(r->w) subWinDelete(r->w);
+	if(r->tile) subTileKill(r->tile);
 	free(r);
-}
-/* }}} */
+} /* }}} */

@@ -10,12 +10,8 @@
 
 #include "subtle.h"
 
-static int nsublets = 0;
-static SubSublet **sublets = NULL;
-static SubSublet *root = NULL;
-
  /** subSubletMerge {{{
-	* Merge into the views
+	* Merge sublet into queue
 	* @param[in] pos Position of the sublet in the queue
 	**/
 
@@ -24,30 +20,31 @@ subSubletMerge(int pos)
 {
 	int left	= 2 * pos;
 	int right	= left + 1;
-	int max 	= (left <= nsublets && sublets[left]->time < sublets[pos]->time) ? left : pos;
+	int max 	= (left <= d->sublets->ndata &&
+		((SubSublet *)d->sublets->data[left])->time < ((SubSublet *)d->sublets->data[pos])->time) ? left : pos;
 
-	if(right <= nsublets && sublets[right]->time < sublets[max]->time) max = right;
+	if(right <= d->sublets->ndata && 
+		((SubSublet *)d->sublets->data[right])->time < ((SubSublet *)d->sublets->data[max])->time) max = right;
 	if(max != pos)
 		{
-			SubSublet *tmp	= sublets[pos];
-			sublets[pos]		= sublets[max];
-			sublets[max]		= tmp;
+			void *tmp	= d->sublets->data[pos];
+			d->sublets->data[pos]	= d->sublets->data[max];
+			d->sublets->data[max]	= tmp;
 			subSubletMerge(max);
 		}
-}
-/* }}} */
+} /* }}} */
 
  /** subSubletNext {{{
 	* Get next sublet 
-	* @return Return either the next #SubSublet or NULL if no sublets are loaded
+	* @return Success: #SubSublet
+	* 				Failure: NULL
 	**/
 
 SubSublet *
 subSubletNext(void)
 {
-	return(nsublets > 0 ? sublets[1] : NULL);
-}
-/* }}} */
+	return(d->sublets->ndata > 1 ? (SubSublet *)d->sublets->data[1] : NULL);
+} /* }}} */
 
  /** subSubletNew {{{
 	* Create new sublet 
@@ -65,28 +62,29 @@ subSubletNew(int type,
 	time_t interval,
 	char *watch)
 {
-	int i;
 	SubSublet *s = (SubSublet *)subUtilAlloc(1, sizeof(SubSublet));
 
-	if(!sublets) 
+	if(d->sublets->ndata == 0) 
 		{
-			root		= s;
-			sublets = (SubSublet **)subUtilAlloc(1, sizeof(SubSublet *));
+			/* Algorithm starts at [1] and we need to keep track of the first sublet */
+			subArrayPush(d->sublets, (void *)s);
+		}
+	else
+		{
+			/* Use of unused array index */
+			s->next = (SubSublet *)d->sublets->data[0];
+			d->sublets->data[0] = (void *)s;
 		}
 
 	/* Init the sublet */
-	s->flags		= type;
+	s->flags		= SUB_TYPE_SUBLET|type;
 	s->ref			= ref;
 	s->interval	= interval;
-	s->time			= subEventGetTime();
+	s->time			= subUtilTime();
 
 #ifdef HAVE_SYS_INOTIFY_H
 	if(s->flags & SUB_SUBLET_TYPE_WATCH)
 		{
-			FILE *fd = NULL;
-
-			/* Create the file before trying to add the watch */
-			if((fd = fopen(watch, "w"))) fclose(fd);
 			if((s->interval = inotify_add_watch(d->notify, watch, IN_MODIFY)) < 0)
 				{
 					subUtilLogWarn("Watch file `%s' does not exist\n", name);
@@ -102,62 +100,16 @@ subSubletNew(int type,
 
 	subLuaCall(s);
 
-  /* Don't add text and watch type sublets to the queue */
-  if(type != SUB_SUBLET_TYPE_TEXT && type != SUB_SUBLET_TYPE_WATCH)
+  /* Don't add text and watch sublets to queue */
+  if(!(type & SUB_SUBLET_TYPE_TEXT) && !(type & SUB_SUBLET_TYPE_WATCH))
     {
-			sublets = (SubSublet **)subUtilRealloc(sublets, sizeof(SubSublet *) * (nsublets + 2));
-			i = ++nsublets;
-
-			while(i > 1 && s->time < sublets[i / 2]->time)
-				{
-					sublets[i] = sublets[i / 2];
-					i /= 2;
-				}
-			sublets[i] = s;
+			subArrayPush(d->sublets, (void *)s);
+			subSubletMerge(d->sublets->ndata);
 		}
 	
-	/* Smart use of unused array index */
-	if(root != s) sublets[0]->next = s;
-	sublets[0] = s;
-
 	printf("Loading sublet %s (%d)\n", name, (int)interval);
 	subUtilLogDebug("name=%s, ref=%d, interval=%d, watch=%s\n", name, ref, interval, watch);		
-}
-/* }}} */ 
-
- /** subSubletDelete {{{
-	* Delete a sublet 
-	* @param[in] s A #Sublet
-	**/
-
-void
-subSubletDelete(SubSublet *s)
-{
-	int i, j;
-
-	if(root == s) root = s->next;
-	else
-		{
-			SubSublet *prev = root;
-
-			while(prev->next && prev->next != s) prev = prev->next;
-			prev->next = s->next;
-		}
-
-	for(i = 1; i <= nsublets; i++) 
-		if(sublets[i] == s) for(j = i; j < nsublets; j++) sublets[j] = sublets[j + 1];
-
-	sublets = (SubSublet **)subUtilRealloc(sublets, sizeof(SubSublet *) * (nsublets + 1));
-	if(!(s->flags & SUB_SUBLET_TYPE_METER) && s->string) free(s->string);
-
-	printf("Unloading sublet #%d\n", s->ref);
-	nsublets--;
-	free(s);
-
-	subSubletConfigure();
-	subSubletRender();
-}
-/* }}} */ 
+} /* }}} */ 
 
  /** subSubletConfigure {{{
 	* Configure sublet bar
@@ -166,10 +118,10 @@ subSubletDelete(SubSublet *s)
 void
 subSubletConfigure(void)
 {
-	if(sublets)
+	if(d->sublets)
 		{
 			int width = 3;
-			SubSublet *s = root;
+			SubSublet *s = (SubSublet *)d->sublets->data[0];
 
 			while(s)
 				{
@@ -179,8 +131,7 @@ subSubletConfigure(void)
 				}
 			XMoveResizeWindow(d->disp, d->bar.sublets, DisplayWidth(d->disp, DefaultScreen(d->disp)) - width, 0, width, d->th);
 		}
-}
-/* }}} */
+} /* }}} */
 
  /** subSubletRender {{{
 	* Render the sublets
@@ -189,10 +140,10 @@ subSubletConfigure(void)
 void
 subSubletRender(void)
 {
-	if(sublets)
+	if(d->sublets)
 		{
 			int width = 3;
-			SubSublet *s = root;
+			SubSublet *s = (SubSublet *)d->sublets->data[0];
 
 			XClearWindow(d->disp, d->bar.sublets);
 
@@ -213,24 +164,20 @@ subSubletRender(void)
 				}
 			XFlush(d->disp);
 		}
-}
-/* }}} */
+} /* }}} */
 
  /** subSubletKill {{{
-	* Kill all sublets 
+	* Kill sublet
+	* @param[in] s A #SubSublet
 	**/
 
 void
-subSubletKill(void)
+subSubletKill(SubSublet *s)
 {
-	SubSublet *s = root;
+	assert(s);
 
-	while(s)
-		{
-			if(!(s->flags & SUB_SUBLET_TYPE_METER) && s->string) free(s->string);
-			free(s);
-			s = s->next;
-		}
-	free(sublets);
-}
-/* }}} */
+	printf("Unloading sublet #%d\n", s->ref);
+
+	if(!(s->flags & SUB_SUBLET_TYPE_METER) && s->string) free(s->string);
+	free(s);
+} /* }}} */

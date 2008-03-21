@@ -19,6 +19,17 @@
 
 static lua_State *subletstate = NULL;
 
+/* Macros {{{ */
+#define GET_GLOBAL(configstate) do { \
+	lua_getglobal(configstate, table); \
+	if(lua_istable(configstate, -1)) \
+		{ \
+			lua_pushstring(configstate, field); \
+			lua_gettable(configstate, -2); \
+		} \
+} while(0)
+/* }}} */
+
 /* StateNew {{{ */
 static lua_State *
 StateNew(void)
@@ -32,17 +43,7 @@ StateNew(void)
 	luaL_openlibs(state);
 
 	return(state);
-}
-/* }}} */
-
-#define GET_GLOBAL(configstate) do { \
-	lua_getglobal(configstate, table); \
-	if(lua_istable(configstate, -1)) \
-		{ \
-			lua_pushstring(configstate, field); \
-			lua_gettable(configstate, -2); \
-		} \
-} while(0)
+} /* }}} */
 
 /* GetNum {{{ */
 static int
@@ -58,8 +59,7 @@ GetNum(lua_State *configstate,
 			return(fallback);
 		}
 	return((int)lua_tonumber(configstate, -1));
-}
-/* }}} */
+} /* }}} */
 
 /* GetString {{{ */
 static char *
@@ -75,8 +75,7 @@ GetString(lua_State *configstate,
 			return(fallback);
 		}
 	return((char *)lua_tostring(configstate, -1));
-}
-/* }}} */
+} /* }}} */
 
 /* ParseColor {{{ */
 static double
@@ -95,8 +94,7 @@ ParseColor(lua_State *configstate,
 	else if(!XAllocColor(d->disp, DefaultColormap(d->disp, DefaultScreen(d->disp)), &color))
 		subUtilLogWarn("Can't alloc color '%s'.\n", name);
 	return(color.pixel);
-}
-/* }}} */
+} /* }}} */
 
 /* CountHook {{{ */
 void
@@ -109,8 +107,7 @@ CountHook(lua_State *state,
 			lua_pushstring(state, "Maximum instructions reached");
 			lua_error(state);
 		}
-}
-/* }}} */
+} /* }}} */
 
  /** subLuaLoadConfig {{{
 	* Load config file from path
@@ -176,8 +173,23 @@ subLuaLoadConfig(const char *path)
 	d->colors.border	= ParseColor(configstate, "Border",			"#bdbabd");
 	d->colors.norm		= ParseColor(configstate, "Normal",			"#22aa99");
 	d->colors.focus		= ParseColor(configstate, "Focus",			"#ffa500");		
-	d->colors.cover		= ParseColor(configstate, "Collapse",		"#FFE6E6");
+	d->colors.cover		= ParseColor(configstate, "Shade",			"#FFE6E6");
 	d->colors.bg			= ParseColor(configstate, "Background",	"#336699");
+
+	/* View windows */
+	d->bar.win			= XCreateSimpleWindow(d->disp, DefaultRootWindow(d->disp), 0, 0, 
+		DisplayWidth(d->disp, DefaultScreen(d->disp)), d->th, 0, 0, d->colors.norm);
+	d->bar.views		= XCreateSimpleWindow(d->disp, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
+	d->bar.sublets	= XCreateSimpleWindow(d->disp, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
+
+	XSetWindowBackground(d->disp, d->bar.win, d->colors.norm);
+	XSetWindowBackground(d->disp, d->bar.views, d->colors.norm);
+	XSetWindowBackground(d->disp, d->bar.sublets, d->colors.norm);
+
+	XSelectInput(d->disp, d->bar.views, ButtonPressMask); 
+
+	XMapWindow(d->disp, d->bar.views);
+	XMapWindow(d->disp, d->bar.sublets);
 
 	/* Change GCs */
 	gvals.foreground	= d->colors.border;
@@ -219,45 +231,39 @@ subLuaLoadConfig(const char *path)
 					if(lua_istable(configstate, -1))
 						{ 
 							SubView *v = NULL;
-							SubRule *r = NULL, *last = NULL;
-							char *regex = NULL, *view = (char *)lua_tostring(configstate, -2);
+							SubRule *r = NULL;
+							char *name = (char *)lua_tostring(configstate, -2), *rule = NULL;
 
 							printf("table\n");
 
-							if(view) v = subViewNew(view);
+							v = subViewNew(name);
+							v->rules = subArrayNew();
 
 							lua_pushnil(configstate);
 							while(lua_next(configstate, -2))
 								{
-									regex = (char *)lua_tostring(configstate, -2);
+									rule	= (char *)lua_tostring(configstate, -2);
 									size	= (int)lua_tonumber(configstate, -1);
 
-									r = subRuleNew(regex, size);
-									if(!last) 
-										{
-											v->rules = r;
-											last = r;
-										}
-									else
-										{
-											last->next = r;
-											r->prev = last;
-											last = r;
-										}
+									r = subRuleNew(rule, size);
+									subArrayPush(v->rules, (void *)r);
 
 									lua_pop(configstate, 1);
 								}
+
+							subUtilLogDebug("type=table, name=%s, rules=%d\n", v->name, v->rules->ndata);
 						}
 					else
 						{
-							printf("single\n");
+							subUtilLogDebug("type=single\n");
 						}
 					lua_pop(configstate, 1);
 				}
 		}
+	subUtilLogDebug("No rules found\n");
+
 	lua_close(configstate);
-}
-/* }}} */
+} /* }}} */
 
 /* SetField {{{ */
 static void
@@ -279,8 +285,7 @@ SetField(lua_State *state,
 		}
 	lua_settable(state, -3);
 	va_end(ap);
-}
-/* }}} */
+} /* }}} */
 
 /* CreateSublet {{{ */
 static int
@@ -323,32 +328,28 @@ CreateSublet(int type,
 		}
 
 	return(1); /* Make the compiler happy */
-}
-/* }}} */
+} /* }}} */
 
 /* LuaAddText {{{ */
 static int
 LuaAddText(lua_State *state)
 {
 	return(CreateSublet(SUB_SUBLET_TYPE_TEXT, state));
-}
-/* }}} */
+} /* }}} */
 
 /* LuaAddTeaser {{{ */
 static int
 LuaAddTeaser(lua_State *state)
 {
 	return(CreateSublet(SUB_SUBLET_TYPE_TEASER, state));
-}
-/* }}} */
+} /* }}} */
 
 /* LuaAddMeter {{{ */
 static int
 LuaAddMeter(lua_State *state)
 {
 	return(CreateSublet(SUB_SUBLET_TYPE_METER, state));
-}
-/* }}} */
+} /* }}} */
 
 /* LuaAddWatch {{{ */
 static int
@@ -358,17 +359,15 @@ LuaAddWatch(lua_State *state)
 	return(CreateSublet(SUB_SUBLET_TYPE_WATCH, state));
 #else
 	subUtilLogWarn("add_watch: Inotify is supported on this machine\n");
-#endif /* HAVE_SYS_INOTIFY_H */
-}
-/* }}} */
+#endif /* HAVE_SYS_INOTIFY_H */ 
+} /* }}} */
 
 /* LuaAddHelper {{{ */
 static int
 LuaAddHelper(lua_State *state)
 {
 	return(CreateSublet(SUB_SUBLET_TYPE_HELPER, state));
-}
-/* }}} */
+} /* }}} */
 
  /** subLuaLoadSublets {{{
 	* Load sublets from path
@@ -402,21 +401,6 @@ subLuaLoadSublets(const char *path)
 		}
 	else snprintf(buf, sizeof(buf), "%s", path);
 
-	/* Bar windows */
-	d->bar.win			= XCreateSimpleWindow(d->disp, DefaultRootWindow(d->disp), 0, 0, 
-		DisplayWidth(d->disp, DefaultScreen(d->disp)), d->th, 0, 0, d->colors.norm);
-	d->bar.views		= XCreateSimpleWindow(d->disp, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
-	d->bar.sublets	= XCreateSimpleWindow(d->disp, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
-
-	XSetWindowBackground(d->disp, d->bar.win, d->colors.norm);
-	XSetWindowBackground(d->disp, d->bar.views, d->colors.norm);
-	XSetWindowBackground(d->disp, d->bar.sublets, d->colors.norm);
-
-	XSelectInput(d->disp, d->bar.views, ButtonPressMask); 
-
-	XMapWindow(d->disp, d->bar.views);
-	XMapWindow(d->disp, d->bar.sublets);
-
 	/* Push functions on the stack */
 	lua_newtable(subletstate);
 	SetField(subletstate, "version",		LUA_TSTRING,		PACKAGE_VERSION);
@@ -444,9 +428,8 @@ subLuaLoadSublets(const char *path)
 			subViewConfigure();
 			subSubletConfigure();
 		}
-	else subUtilLogWarn("Can't find any sublets to load\n");
-}
-/* }}} */
+	else subUtilLogWarn("Can't find any sublets to load\n"); 
+} /* }}} */
 
  /** subLuaKill {{{
 	* Close Lua state
@@ -460,9 +443,7 @@ subLuaKill(void)
 #ifdef HAVE_SYS_INOTIFY_H
 	if(d->notify) close(d->notify);
 #endif /* HAVE_SYS_INOTIFY_H */
-
-}
-/* }}} */
+} /* }}} */
 
  /** subLuaCall {{{
 	* Carefully call a Lua script
@@ -474,6 +455,7 @@ subLuaCall(SubSublet *s)
 {
 	assert(s);
 
+	/* Setup */
 	lua_sethook(subletstate, CountHook, LUA_MASKCOUNT, 1000);
 	lua_settop(subletstate, 0);
 	lua_rawgeti(subletstate, LUA_REGISTRYINDEX, s->ref);
@@ -489,7 +471,7 @@ subLuaCall(SubSublet *s)
 				(s->flags & SUB_SUBLET_FAIL_THIRD) ? 3 : (s->flags & SUB_SUBLET_FAIL_SECOND ? 2 : 1), s->ref);
 			subUtilLogWarn("%s\n", (char *)lua_tostring(subletstate, -1));
 
-			if(s->flags & SUB_SUBLET_FAIL_THIRD) subSubletDelete(s);
+			if(s->flags & SUB_SUBLET_FAIL_THIRD) subSubletKill(s);
 			else
 				{
 					if(s->flags & SUB_SUBLET_TYPE_METER) s->number = 0;
@@ -524,5 +506,4 @@ subLuaCall(SubSublet *s)
 				subUtilLogDebug("Sublet #%d returned unkown type %s\n", s->ref, lua_typename(subletstate, -1));
 				lua_pop(subletstate, -1);
 		}
-}
-/* }}} */
+} /* }}} */

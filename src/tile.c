@@ -5,137 +5,114 @@
 	*
 	* See the COPYING file for the license in the latest tarball.
 	*
-	* $Header$
+	* $Id$
 	**/
 
 #include "subtle.h"
 
- /**
+ /** subTileNew {{{
 	* Create new tile 
-	* @param mode Tile mode
-	* @return Return either a #SubWin on success or otherwise NULL.
+	* @param[in] mode Tile mode
+	* @return Success: #SubTile
+	* 				Error: NULL
 	**/
 
-SubWin *
+SubTile *
 subTileNew(int mode)
 {
-	SubWin *t = NULL;
+	SubTile *t = NULL;
 
-	assert(mode == SUB_WIN_TILE_HORZ || mode == SUB_WIN_TILE_VERT);
+	assert(mode == SUB_TYPE_HORZ || mode == SUB_TYPE_VERT);
 
-	t					= subWinNew();
-	t->flags	= SUB_WIN_TYPE_TILE|mode;
-	t->tile		= (SubTile *)subUtilAlloc(1, sizeof(SubTile));
+	t	= (SubTile *)subUtilAlloc(1, sizeof(SubTile));
+	t->flags = SUB_TYPE_TILE|mode;
 
-	XMapSubwindows(d->disp, t->frame);
-	XSaveContext(d->disp, t->frame, 1, (void *)t);
-
-	subUtilLogDebug("type=%s\n", (mode & SUB_WIN_TILE_HORZ) ? "horz" : "vert");
+	subUtilLogDebug("type=%s\n", (mode & SUB_TYPE_HORZ) ? "horz" : "vert");
 
 	return(t);
-}
+} /* }}} */
 
- /**
-	* Delete tile window and all children 
-	* @param t A #SubWin
+ /** subTilePush {{{
+	* Push clients to tile
+	* @param[in] t A #SubTile
+	* @param[in] c A clients
 	**/
 
 void
-subTileDelete(SubWin *t)
+subTilePush(SubTile *t,
+	void *c)
 {
-	SubWin *c = NULL;
+	assert(t && c);
 
-	assert(t && t->flags & SUB_WIN_TYPE_TILE);
+	subArrayPush(t->clients, (void *)c);
+	((SubClient *)c)->tile = t;
+} /* }}} */
 
-	c = t->tile->first;
-	while(c)
-		{
-			SubWin *next = c->next;
-			subWinDelete(c);
-			c = next;
-		}
-
-	subUtilLogDebug("type=%s\n", (t->flags & SUB_WIN_TILE_HORZ) ? "horz" : "vert");
-
-	free(t->tile);
-}
-
- /**
-	* Add window to tile 
-	* @param t A #SubWin
-	* @param w A #SubWin
+ /** subTilePop {{{
+	* Pop clients from tile
+	* @param[in] t A #SubTile
+	* @param[in] c A clients
 	**/
 
 void
-subTileAdd(SubWin *t,
-	SubWin *w)
+subTilePop(SubTile *t,
+	void *c)
 {
-	assert(t && t->flags & SUB_WIN_TYPE_TILE && w);
+	assert(t && c);
 
-	if(!t->tile->first)
-		{
-			t->tile->first = w;
-			t->tile->last = w;
-			w->next = NULL;
-			w->prev = NULL;
-			w->parent = t;
+	subArrayPop(t->clients, c);
+	((SubClient *)c)->tile = NULL;
+} /* }}} */
 
-			XReparentWindow(d->disp, w->frame, t->frame, 0, t->flags & SUB_WIN_TYPE_VIEW ? d->th : 0); 
-		}
-	else subWinAppend(t->tile->last, w);
-
-	subUtilLogDebug("type=%s, x=%d, y=%d, width=%d, height=%d\n", (t->flags & SUB_WIN_TILE_HORZ) ? "horz" : "vert",
-		w->x, w->y, w->width, w->height);
-}
-
- /**
-	* Configure tile and children 
-	* @param t A #SubWin
+ /** subTileConfigure {{{
+	* Configure tile and clients 
+	* @param[in] t A #SubTile
 	**/
 
 void
-subTileConfigure(SubWin *t)
+subTileConfigure(SubTile *t)
 {
-	SubWin *c = NULL;
-	unsigned int x = 0, y = 0, nclients = 0, ch = 0, cw = 0, width = 0, height = 0, size = 0, comp = 0,
-		shaded = 0, resized = 0, full = 0, floated = 0;
+	int i;
+	SubClient *c = NULL;
+	unsigned int x = 0, y = 0, ch = 0, cw = 0, width = 0, height = 0, size = 0, 
+		comp = 0, shaded = 0, resized = 0, full = 0, floated = 0, nclients = 0;
 
-	assert(t && t->flags & SUB_WIN_TYPE_TILE);
+	assert(t);
 
-	width		= t->width;
-	height	= t->height;
-	c				= t->tile->first;
+	width			= t->width;
+	height		= t->height;
+	nclients	= t->clients->ndata;
 
-	if(c)
+	if(nclients > 0)
 		{
-			size = (t->flags & SUB_WIN_TILE_HORZ) ? width : height;
+			size = (t->flags & SUB_TYPE_HORZ) ? width : height;
 
-			/* Find special windows */
-			while(c)
+			/* Find special clients */
+			for(i = 0; i < t->clients->ndata; i++)
 				{
-					if(c->flags & SUB_WIN_STATE_SHADE) shaded++;
-					else if(c->flags & SUB_WIN_STATE_FULL) full++;
-					else if(c->flags & SUB_WIN_STATE_FLOAT) floated++;
-					else if(c->flags & SUB_WIN_STATE_RESIZE && c->resized > 0)
+					c = (SubClient *)t->clients->data[i]; /* Both types have common fields */
+
+					if(c->flags & SUB_STATE_SHADE) shaded++;
+					else if(c->flags & SUB_STATE_FULL) full++;
+					else if(c->flags & SUB_STATE_FLOAT) floated++;
+					else if(c->flags & SUB_STATE_RESIZE && c->size > 0)
 						{
 							/* Prevent resized windows only */
-							if(!c->next && resized == nclients)
+							if(resized == nclients)
 								{
-									c->flags &= ~SUB_WIN_STATE_RESIZE;
-									c->resized = 0;
+									c->flags &= ~SUB_STATE_RESIZE;
+									c->size = 0;
 								}
 							else 
 								{
-									size -= width * c->resized / 100;
+									size -= width * c->size / 100;
 									resized++;
 								}
 						}
-					c = c->next;
-					nclients++;
 				}
 
 			/* Stacked window */
-			if(t->flags & SUB_WIN_STATE_STACK) 
+			if(t->flags & SUB_STATE_STACK) 
 				{
 					shaded = nclients - 1;
 					resized	= 0;
@@ -144,103 +121,105 @@ subTileConfigure(SubWin *t)
 			/* Weighted window */
 			if(resized > 0)
 				{
-					if(t->flags & SUB_WIN_TILE_HORZ) width = size;
-					else if(t->flags & SUB_WIN_TILE_VERT) height = size;
+					if(t->flags & SUB_TYPE_HORZ) width = size;
+					else if(t->flags & SUB_TYPE_VERT) height = size;
 				}
 
-			 /* Prevent divide by zero */
+			 /* Prevent division by zero */
 			nclients	= (nclients - shaded - resized - full - floated) > 0 ? nclients - shaded - resized - full - floated : 1;
-			cw				= (t->flags & SUB_WIN_TILE_HORZ) ? width / nclients : width;
-			ch				= (t->flags & SUB_WIN_TILE_VERT) ? (height - shaded * d->th) / nclients : height;
+			cw				= (t->flags & SUB_TYPE_HORZ) ? width / nclients : width;
+			ch				= (t->flags & SUB_TYPE_VERT) ? (height - shaded * d->th) / nclients : height;
 
-			/* Get compensation for bad rounding */
-			if(t->flags & SUB_WIN_TILE_HORZ) comp = abs(width - nclients * cw - shaded * d->th);
+			/* Get compensation for int rounding */
+			if(t->flags & SUB_TYPE_HORZ) comp = abs(width - nclients * cw - shaded * d->th);
 			else comp = abs(height - nclients * ch - shaded * d->th);
 
-			c = t->tile->first;
-			while(c)
+			for(i = 0; i < t->clients->ndata; i++)
 				{
-					if(!(c->flags & (SUB_WIN_STATE_TRANS|SUB_WIN_STATE_FLOAT|SUB_WIN_STATE_FULL)))
+					c = (SubClient *)t->clients->data[i]; /* Both types have common fields */
+					
+					if(!(c->flags & (SUB_STATE_TRANS|SUB_STATE_FLOAT|SUB_STATE_FULL)))
 						{
-							if(t->flags & SUB_WIN_STATE_STACK && t->tile->pile != c) c->flags |= SUB_WIN_STATE_SHADE;
+							/* Shade every client that is not on top */
+							if(t->flags & SUB_STATE_STACK && t->tile->top != c) 
+								c->flags |= SUB_STATE_SHADE;
 
-							/* Remove tiles with only one or less clients */
-							if(c->flags & SUB_WIN_TYPE_TILE && !(c->flags & SUB_WIN_TYPE_VIEW) && 
-								c->tile->first == c->tile->last)
+							/* Remove tiles with only one client */
+							if(c->flags & SUB_TYPE_TILE && ((SubTile *)c)->clients->ndata == 1)
 								{
-									SubWin *first = c->tile->first;
+									SubTile *tmp = (SubTile *)t->clients->data[i];
+									t->clients->data[i] = tmp->clients->data[0];
 
-									if(t->tile->first == c) t->tile->first	= first;
-									if(t->tile->last == c) t->tile->last		= first;
+									subUtilLogDebug("Removing dynamic tile %#lx\n", tmp);
 
-									first->prev		= c->prev;
-									first->next		= c->next;
-									first->parent	= c->parent;
-
-									if(first->prev) first->prev->next = first;
-									if(first->next) first->next->prev = first;
-
-									c->prev		= NULL;
-									c->next		= NULL;
-									c->parent = NULL;
-									c->tile->first = NULL;
-
-									XReparentWindow(d->disp, first->frame, first->parent->frame, 0, 0);
-
-									subTileDelete(c);
-
-									XDeleteContext(d->disp, c->frame, 1);
-									XDestroySubwindows(d->disp, c->frame);
-									XDestroyWindow(d->disp, c->frame);
-
-									subUtilLogDebug("Removing dynamic tile %#lx\n", c->frame);
-
-									c = first;
+									subTileKill(tmp);
 								}
 
-							c->parent	= t;
+							c->tile		= t;
 							c->x			= 0;
-							c->y			= (c->flags & SUB_WIN_STATE_SHADE) ? y : shaded * d->th;
-							c->width	= (c->flags & SUB_WIN_STATE_SHADE) ? t->width : cw;
-							c->height	= (c->flags & SUB_WIN_STATE_SHADE) ? d->th : ch;
+							c->y			= (c->flags & SUB_STATE_SHADE) ? y : shaded * d->th;
+							c->width	= (c->flags & SUB_STATE_SHADE) ? t->width : cw;
+							c->height	= (c->flags & SUB_STATE_SHADE) ? d->th : ch;
 
 							/* Adjust sizes according to the tile alignment */
-							if(t->flags & SUB_WIN_TILE_HORZ)
+							if(t->flags & SUB_TYPE_HORZ)
 								{
-									if(!(c->flags & SUB_WIN_STATE_SHADE)) c->x = x;
-									if(c->flags & SUB_WIN_STATE_SHADE) c->width = SUBWINWIDTH(t);
-									else if(c->flags & SUB_WIN_STATE_RESIZE) c->width = SUBWINWIDTH(t) * c->resized / 100;
+									if(!(c->flags & SUB_STATE_SHADE)) 
+										{
+											c->x = x;
+											x += c->width; /* Adjust x */
+										}
+									if(c->flags & SUB_STATE_SHADE) 
+										{
+											c->width = SUBWINWIDTH(t);
+											y += d->th; /* Adjust y */
+										}
+									else if(c->flags & SUB_STATE_RESIZE) c->width = t->width * c->size / 100;
 
 									if(shaded > 0) c->height = ch - shaded * d->th;
 								}
-							else if(t->flags & SUB_WIN_TILE_VERT)
+							else if(t->flags & SUB_TYPE_VERT)
 								{
 									c->y = y;
-									if(c->flags & SUB_WIN_STATE_RESIZE) c->height = SUBWINHEIGHT(t) * c->resized / 100;
+									y += c->height; /* Adjust y again */
+									if(c->flags & SUB_STATE_RESIZE) c->height = t->height * c->size / 100;
 								}
 
 							/* Add compensation to width or height */
-							if(t->tile->last == c) 
+							if(t->clients->ndata == i) 
 								{
-									if(t->flags & SUB_WIN_TILE_HORZ) c->width += comp; 
+									if(t->flags & SUB_TYPE_HORZ) c->width += comp; 
 									else c->height += comp;
 								}
 
-							/* Adjust size */
-							if(t->flags & SUB_WIN_TILE_HORZ) 
+							if(c->flags & SUB_TYPE_TILE) subTileConfigure((SubTile *)t->clients->data[i]);
+							else if(c->flags & SUB_TYPE_CLIENT) 
 								{
-									if(c->flags & SUB_WIN_STATE_SHADE) y += d->th;
-									else x += c->width;
+									subClientResize(c);
+									subClientConfigure(c);
 								}
-							if(t->flags & SUB_WIN_TILE_VERT) y += c->height;
-							subWinResize(c);
-
-							if(c->tile && c->flags & SUB_WIN_TYPE_TILE) subTileConfigure(c);
-							else if(c->flags & SUB_WIN_TYPE_CLIENT) subClientConfigure(c);
 						}
-					c = c->next;
 				}
 			subUtilLogDebug("type=%s, nclients=%d, cw=%d, ch=%d\n", 
-				(t->flags & SUB_WIN_TILE_HORZ) ? "horz" : "vert", nclients, cw, ch);
+				(t->flags & SUB_TYPE_HORZ) ? "horz" : "vert", nclients, cw, ch);
 		}
-}
+} /* }}} */
+
+ /** subTileKill {{{
+	* @param[in] t A #SubTile
+	**/
+
+void
+subTileKill(SubTile *t)
+{
+	int i;
+
+	for(i = 0; i < t->clients->ndata; i++)
+		{
+			if(((SubClient *)t->clients->data[i])->flags & SUB_TYPE_CLIENT) subClientKill((SubClient *)t->clients->data[i]);
+			else if(((SubClient *)t->clients->data[i])->flags & SUB_TYPE_TILE) subTileKill((SubTile *)t->clients->data[i]);
+		}
+	
+	subArrayKill(t->clients);
+	free(t);
+} /* }}} */

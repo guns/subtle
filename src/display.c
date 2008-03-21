@@ -28,8 +28,7 @@ HandleXError(Display *display,
 			subUtilLogDebug("%s: win=%#lx, request=%d\n", error, ev->resourceid, ev->request_code);
 		}
 	return(0);
-}
-/* }}} */
+} /* }}} */
 
  /** subDisplayNew {{{
 	* Open connection to X server and create display
@@ -76,12 +75,17 @@ subDisplayNew(const char *display_string)
 	d->cursors.vert		= XCreateFontCursor(d->disp, XC_sb_v_double_arrow);
 	d->cursors.resize	= XCreateFontCursor(d->disp, XC_sizing);
 
+	/* Init lists */
+	d->views		= subArrayNew();
+	d->clients	= subArrayNew();
+	d->sublets	= subArrayNew();
+	d->keys			= subArrayNew();
+
 	printf("Display (%s) is %dx%d\n", DisplayString(d->disp), DisplayWidth(d->disp, 
 		DefaultScreen(d->disp)), DisplayHeight(d->disp, DefaultScreen(d->disp)));
 
 	XSync(d->disp, False);
-}
-/* }}} */
+} /* }}} */
 
  /** subDisplayKill {{{
 	* Close connection and kill display
@@ -94,6 +98,7 @@ subDisplayKill(void)
 
 	if(d->disp)
 		{
+			/* Free cursors */
 			XFreeCursor(d->disp, d->cursors.square);
 			XFreeCursor(d->disp, d->cursors.move);
 			XFreeCursor(d->disp, d->cursors.arrow);
@@ -101,16 +106,21 @@ subDisplayKill(void)
 			XFreeCursor(d->disp, d->cursors.vert);
 			XFreeCursor(d->disp, d->cursors.resize);
 
+			/* Free GCs */
 			XFreeGC(d->disp, d->gcs.border);
 			XFreeGC(d->disp, d->gcs.font);
 			XFreeGC(d->disp, d->gcs.invert);
 			if(d->xfs) XFreeFont(d->disp, d->xfs);
 
+			/* Destroy view windows */
+			XDestroyWindow(d->disp, d->bar.win);
+			XDestroyWindow(d->disp, d->bar.views);
+			XDestroyWindow(d->disp, d->bar.sublets);
+
 			XCloseDisplay(d->disp);
 		}
 	free(d);
-}
-/* }}} */
+} /* }}} */
 
  /** subDisplayScan {{{
 	* Scan root window for clients
@@ -129,12 +139,10 @@ subDisplayScan(void)
 	for(i = 0; i < n; i++)
 		{
 			XGetWindowAttributes(d->disp, wins[i], &attr);
-			if(wins[i] != d->bar.win && wins[i] != d->bar.views && 
-				wins[i] != d->bar.sublets && wins[i] != d->cv->c->frame && 
+			if(wins[i] != d->bar.win && wins[i] != d->bar.views && wins[i] != d->bar.sublets && wins[i] && 
 				wins[i] != d->cv->button && attr.map_state == IsViewable) subViewMerge(wins[i]);
 		}
 	
-	subTileConfigure(d->cv->w);
+	//subTileConfigure(d->cv->w);
 	XFree(wins);
-}
-/* }}} */
+} /* }}} */

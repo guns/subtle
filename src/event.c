@@ -14,22 +14,6 @@
 #define BUFLEN (sizeof(struct inotify_event))
 #endif
 
- /** subEventGetTime {{{
-	* Get the current time in seconds 
-	* @return Returns the current time
-	**/
-
-time_t
-subEventGetTime(void)
-{
-  struct timeval tv;
-
-  gettimeofday(&tv, 0);
-
-  return(tv.tv_sec);
-}
-/* }}} */
-
 /* HandleButtonPress {{{ */
 static void
 HandleButtonPress(XButtonEvent *ev)
@@ -54,43 +38,45 @@ HandleButtonPress(XButtonEvent *ev)
 						if(last_time > 0 && ev->time - last_time <= 300) /* Double click */
 							{
 								subUtilLogDebug("Double click: win=%#lx\n", ev->window);
-								if((ev->subwindow == c->client->title && c->tile && c->tile->flags & SUB_WIN_TYPE_TILE) || c->flags & SUB_CLIENT_STATE_FLOAT) 
-									subClientToggle(c, SUB_CLIENT_STATE_SHADE);
+								if((ev->subwindow == c->title && c->tile && c->tile->flags & SUB_TYPE_TILE) || c->flags & SUB_STATE_FLOAT) 
+									subClientToggle(c, SUB_STATE_SHADE);
 								last_time = 0;
 							}						
 						else  /* Single click */
 							{
 								subUtilLogDebug("Single click: win=%#lx\n", ev->window);
-								if(c->flags & SUB_CLIENT_STATE_FLOAT) XRaiseWindow(d->disp, c->frame);
-								if(c->tile && c->tile->flags & SUB_CLIENT_STATE_STACK) 
+								if(c->flags & SUB_STATE_FLOAT) XRaiseWindow(d->disp, c->frame);
+								if(c->tile && c->tile->flags & SUB_STATE_STACK) 
 									{
-										c->tile->tile->pile = c;
-										if(c->flags & SUB_CLIENT_STATE_SHADE) c->flags &= ~SUB_WIN_STATE_SHADE;
+										c->tile->top = c;
+										if(c->flags & SUB_STATE_SHADE) c->flags &= ~SUB_STATE_SHADE;
 										subTileConfigure(c->tile);
 									}
-								if(ev->subwindow == c->client->left) 				subClientDrag(c, SUB_CLIENT_DRAG_LEFT);
-								else if(ev->subwindow == c->client->right)	subClientDrag(c, SUB_CLIENT_DRAG_RIGHT);
-								else if(ev->subwindow == c->client->bottom) subClientDrag(c, SUB_CLIENT_DRAG_BOTTOM);
-								else if(ev->subwindow == c->client->title || (c->flags & SUB_WIN_TYPE_CLIENT && ev->subwindow == c->client->caption))
+								if(ev->subwindow == c->left) 				subClientDrag(c, SUB_DRAG_LEFT);
+								else if(ev->subwindow == c->right)	subClientDrag(c, SUB_DRAG_RIGHT);
+								else if(ev->subwindow == c->bottom) subClientDrag(c, SUB_DRAG_BOTTOM);
+								else if(ev->subwindow == c->title || (c->flags & SUB_TYPE_CLIENT && ev->subwindow == c->caption))
 									{ 
 										/* Either drag and move or drag an swap windows */
-										subClientDrag(c, (c->flags & SUB_CLIENT_STATE_FLOAT) ? SUB_CLIENT_DRAG_MOVE : SUB_CLIENT_DRAG_SWAP);
+										subClientDrag(c, (c->flags & SUB_STATE_FLOAT) ? SUB_DRAG_MOVE : SUB_DRAG_SWAP);
 										last_time = ev->time;
 									}
 							}
 						break;
 					case Button2:
-						if(ev->subwindow == c->client->title) subClientDelete(c);
+						if(ev->subwindow == c->title) subClientKill(c);
 						break;
 					case Button3: 
-						if(ev->subwindow == c->client->title) subClientToggle(c, SUB_CLIENT_STATE_FLOAT);
+						if(ev->subwindow == c->title) subClientToggle(c, SUB_STATE_FLOAT);
 						break;
-					case Button4: subViewSwitch(d->cv->next); break;
-					case Button5: if(d->cv->prev) subViewSwitch(d->cv->prev); break;
+/*					case Button4: 
+					case Button5: 
+						
+						subViewSwitch(d->cv->next); break;
+						if(d->cv->prev) subViewSwitch(d->cv->prev); break; */
 				}
 		}
-}
-/* }}} */
+} /* }}} */
 
 /* Exec {{{ */
 static void
@@ -104,13 +90,12 @@ Exec(char *cmd)
 				setsid();
 				execlp("/bin/sh", "sh", "-c", cmd, NULL);
 
-				/* Never to be reached statement */
+				/* Never to be reached */
 				subUtilLogWarn("Can't exec command `%s'.\n", cmd);
 				exit(1);
 			case -1: subUtilLogWarn("Failed to fork.\n");
 		}
-}
-/* }}} */
+} /* }}} */
 
 /* HandleKeyPress  {{{ */
 static void
@@ -122,37 +107,36 @@ HandleKeyPress(XKeyEvent *ev)
 			SubKey *k = subKeyFind(ev->keycode, ev->state);
 			if(k) 
 				{
-					int mode = 0, type = SUB_TILE_TYPE_HORZ;
+					int mode = 0, type = SUB_TYPE_HORZ;
 
 					switch(k->flags)
 						{
-							case SUB_KEY_ACTION_DELETE_WIN: subClientDelete(c); break;
-							case SUB_KEY_ACTION_TOGGLE_COLLAPSE:	if(!mode) mode = SUB_CLIENT_STATE_SHADE;
-							case SUB_KEY_ACTION_TOGGLE_RAISE:			if(!mode) mode = SUB_CLIENT_STATE_FLOAT;
-							case SUB_KEY_ACTION_TOGGLE_FULL:			if(!mode) mode = SUB_CLIENT_STATE_FULL;
-								if(!(c->flags & SUB_WIN_TYPE_VIEW)) subClientToggle(c, mode);
+							case SUB_KEY_DELETE_WIN: subClientKill(c); break;
+							case SUB_KEY_TOGGLE_SHADE:	if(!mode) mode = SUB_STATE_SHADE;
+							case SUB_KEY_TOGGLE_RAISE:			if(!mode) mode = SUB_STATE_FLOAT;
+							case SUB_KEY_TOGGLE_FULL:			if(!mode) mode = SUB_STATE_FULL;
+								subClientToggle(c, mode);
 								break;									
-							case SUB_KEY_ACTION_TOGGLE_LAYOUT: 
-								if(c->flags & SUB_WIN_TYPE_TILE)
+							case SUB_KEY_TOGGLE_LAYOUT: 
+								if(c->flags & SUB_TYPE_TILE)
 									{
-										type = (c->flags & SUB_TILE_TYPE_HORZ) ? SUB_TILE_TYPE_HORZ : SUB_TILE_TYPE_VERT;
+										type = (c->flags & SUB_TYPE_HORZ) ? SUB_TYPE_HORZ : SUB_TYPE_VERT;
 										c->flags &= ~type;
-										c->flags |= (type == SUB_TILE_TYPE_HORZ) ? SUB_TILE_TYPE_VERT : SUB_TILE_TYPE_HORZ;
+										c->flags |= (type == SUB_TYPE_HORZ) ? SUB_TYPE_VERT : SUB_TYPE_HORZ;
 										subTileConfigure(c->tile);
 									}			
 								break;
-							case SUB_KEY_ACTION_DESKTOP_NEXT: subViewSwitch(d->cv->next);	break;
-							case SUB_KEY_ACTION_DESKTOP_PREV: 
+/*							case SUB_KEY_DESKTOP_NEXT: subViewSwitch(d->cv->next);	break;
+							case SUB_KEY_DESKTOP_PREV: 
 								if(d->cv->prev) subViewSwitch(d->cv->prev);		
-								break;
-							case SUB_KEY_ACTION_EXEC:	if(k->string) Exec(k->string); break;
+								break;*/
+							case SUB_KEY_EXEC:	if(k->string) Exec(k->string); break;
 						}
 
 					subUtilLogDebug("KeyPress: code=%d, mod=%d\n", k->code, k->mod);
 				}
 		}
-}
-/* }}} */
+} /* }}} */
 
 /* HandleConfigure {{{ */
 static void
@@ -182,15 +166,13 @@ HandleConfigure(XConfigureRequestEvent *ev)
 	wc.sibling		= ev->above;
 	wc.stack_mode	= ev->detail;
 	XConfigureWindow(d->disp, ev->window, ev->value_mask, &wc);
-}
-/* }}} */
+} /* }}} */
 
 /* HandleMapNotify {{{ */
 static void
 HandleMapNotify(XMappingEvent *ev)
 {
-}
-/* }}} */
+} /* }}} */
 
 /* HandleMapRequest {{{ */
 static void
@@ -198,8 +180,7 @@ HandleMapRequest(XMapRequestEvent *ev)
 {
 	SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
 	if(!c) subViewMerge(ev->window);
-}
-/* }}} */
+} /* }}} */
 
 /* HandleDestroy {{{ */
 static void
@@ -208,11 +189,10 @@ HandleDestroy(XDestroyWindowEvent *ev)
 	SubClient *c = (SubClient *)subUtilFind(ev->event, 1);
 	if(c)
 		{
-			c->flags |= SUB_CLIENT_STATE_DEAD;
-			subClientDelete(c); 
+			c->flags |= SUB_STATE_DEAD;
+			subClientKill(c); 
 		}
-}
-/* }}} */
+} /* }}} */
 
 /* GetParent {{{ */
 static Window
@@ -226,8 +206,7 @@ GetParent(Window win)
 	XFree(wins);
 
 	return(parent);
-}
-/* }}} */
+} /* }}} */
 
 /* HandleMessage {{{ */
 static void
@@ -241,13 +220,14 @@ HandleMessage(XClientMessageEvent *ev)
 		{
 			if(ev->message_type == subEwmhFind(SUB_EWMH_NET_CURRENT_DESKTOP))
 				{
-					SubView *v = subViewFind(ev->data.l[0]);
-					if(v) subViewSwitch(v);
+					/* Bound checking */
+					if(ev->data.l[0] > 0 && ev->data.l[0] < d->views->ndata)
+						subViewSwitch((SubView *)d->views->data[ev->data.l[0]]);
 				}
 			else if(ev->message_type == subEwmhFind(SUB_EWMH_NET_ACTIVE_WINDOW))
 				{
 					SubClient *focus = (SubClient *)subUtilFind(GetParent(ev->data.l[0]), 1);
-					if(focus) subWinFocus(focus);
+					if(focus) subClientFocus(focus);
 				}
 			return;
 		}
@@ -262,16 +242,15 @@ HandleMessage(XClientMessageEvent *ev)
 					/* [0] => Remove = 0 / Add = 1 / Toggle = 2 -> we _always_ toggle */
 					if(ev->data.l[1] == (long)subEwmhFind(SUB_EWMH_NET_WM_STATE_FULLSCREEN))
 						{
-							subClientToggle(c, SUB_CLIENT_STATE_FULL);
+							subClientToggle(c, SUB_STATE_FULL);
 						}
 					else if(ev->data.l[1] == (long)subEwmhFind(SUB_EWMH_NET_WM_STATE_SHADED))
 						{
-							subClientToggle(c, SUB_CLIENT_STATE_SHADE);
+							subClientToggle(c, SUB_STATE_SHADE);
 						}
 				}
 		}
-}
-/* }}} */
+} /* }}} */
 
 /* HandleColormap {{{ */
 static void
@@ -283,8 +262,7 @@ HandleColormap(XColormapEvent *ev)
 			c->cmap = ev->colormap;
 			XInstallColormap(d->disp, c->cmap);
 		}
-}
-/* }}} */
+} /* }}} */
 
 /* HandleProperty {{{ */
 static void
@@ -293,11 +271,10 @@ HandleProperty(XPropertyEvent *ev)
 	/* Prevent expensive query if the atom isn't supported */
 	if(ev->atom == XA_WM_NAME || ev->atom == subEwmhFind(SUB_EWMH_WM_NAME))
 		{
-			SubClient *c = (SubClient *)subUtilFind(GetParent(ev->window), d->cv->xid);
+			SubClient *c = (SubClient *)subUtilFind(GetParent(ev->window), 1);
 			if(c) subClientFetchName(c);
 		}
-}
-/* }}} */
+} /* }}} */
 
 /* HandleCrossing {{{ */
 static void
@@ -313,8 +290,7 @@ HandleCrossing(XCrossingEvent *ev)
 			/* Remove any other event of the same type and window */
 			while(XCheckTypedWindowEvent(d->disp, ev->window, ev->type, &event));			
 		}
-}
-/* }}} */
+} /* }}} */
 
 /* HandleExpose {{{ */
 static void
@@ -330,20 +306,19 @@ HandleExpose(XEvent *ev)
 	else
 		{
   		SubClient *c = (SubClient *)subUtilFind(ev->xany.window, 1);
-			if(c) subWinRender(c);
+			if(c) subClientRender(c);
 		}
 
 	/* Remove any other event of the same type and window */
 	while(XCheckTypedWindowEvent(d->disp, ev->xany.window, ev->type, &event));
-}
-/* }}} */
+} /* }}} */
 
 /* HandleFocus {{{ */
 static void
 HandleFocus(XFocusInEvent *ev)
 {
 	SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
-	if(c && c->flags & SUB_WIN_PREF_FOCUS)
+	if(c && c->flags & SUB_PREF_FOCUS)
 		{
 			if(c != d->focus) 
 				{
@@ -352,7 +327,7 @@ HandleFocus(XFocusInEvent *ev)
 					{
 						SubClient *f = d->focus;
 						d->focus = NULL;
-						if(f && f->flags & SUB_WIN_TYPE_CLIENT) subClientRender(f);
+						if(f && f->flags & SUB_TYPE_CLIENT) subClientRender(f);
 
 						subKeyUngrab(f);
 					}
@@ -364,8 +339,7 @@ HandleFocus(XFocusInEvent *ev)
 					subKeyGrab(c);	
 				}
 		}
-}
-/* }}} */
+} /* }}} */
 
  /** subEventLoop {{{ 
 	* Handle all X events 
@@ -390,7 +364,7 @@ subEventLoop(void)
 			if(s)
 				{
 					fd_set fdset;
-					current	= subEventGetTime();
+					current	= subUtilTime();
 
 					while(s->time <= current)
 						{
@@ -456,5 +430,4 @@ subEventLoop(void)
 						}
 				}
 		}
-}
-/* }}} */
+} /* }}} */
