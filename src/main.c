@@ -29,8 +29,7 @@ ShowUsage(void)
 					"  -D, --debug           \t Print debugging messages\n" \
 					"Please report bugs to <%s>\n", 
 					PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_BUGREPORT);
-}
-/* }}} */
+} /* }}} */
 
 /* ShowVersion {{{ */
 static void
@@ -40,8 +39,7 @@ ShowVersion(void)
 					"Released under the GNU General Public License\n" \
 					"Compiled for X%d and %s\n", PACKAGE_NAME, PACKAGE_VERSION,
 					X_PROTOCOL, LUA_VERSION);
-}
-/* }}} */
+} /* }}} */
 
 /* HandleSignal {{{ */
 static void
@@ -55,8 +53,11 @@ HandleSignal(int signum)
 				break;
 			case SIGTERM:
 			case SIGINT: 
-				subKeyKill();
-				subViewKill();
+				subArrayKill(d->views);
+				subArrayKill(d->clients);
+				subArrayKill(d->sublets);
+				subArrayKill(d->keys);
+
 				subLuaKill();
 				subDisplayKill();
 				exit(1);
@@ -67,8 +68,7 @@ HandleSignal(int signum)
 				wait(NULL);
 				break;
 		}
-}
-/* }}} */
+} /* }}} */
 
 /* main {{{ */
 int
@@ -136,5 +136,4 @@ main(int argc,
 	raise(SIGTERM);
 	
 	return(0);
-}
-/* }}} */
+} /* }}} */
