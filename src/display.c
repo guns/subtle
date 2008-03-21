@@ -132,17 +132,28 @@ subDisplayScan(void)
 	unsigned int i, n;
 	Window unused, *wins = NULL;
 	XWindowAttributes attr;
+#ifdef DEBUG
+	int merged = 0;
+#endif /* DEBUG */
 
 	assert(d);
 
 	XQueryTree(d->disp, DefaultRootWindow(d->disp), &unused, &unused, &wins, &n);
 	for(i = 0; i < n; i++)
 		{
-			XGetWindowAttributes(d->disp, wins[i], &attr);
-			if(wins[i] != d->bar.win && wins[i] != d->bar.views && wins[i] != d->bar.sublets && wins[i] && 
-				wins[i] != d->cv->button && attr.map_state == IsViewable) subViewMerge(wins[i]);
+			/* Skip own windows */
+			if(wins[i] && wins[i] != d->bar.win && wins[i] != d->cv->frame)
+				{
+#ifdef DEBUG
+					merged++;
+#endif /* DEBUG */					
+
+					XGetWindowAttributes(d->disp, wins[i], &attr);
+					if(attr.map_state == IsViewable) subViewMerge(wins[i]);
+				}
 		}
+	subUtilLogDebug("n=%d, merged=%d\n", n, merged);
 	
-	//subTileConfigure(d->cv->w);
+	//subTileConfigure(d->cv->tile);
 	XFree(wins);
 } /* }}} */
