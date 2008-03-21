@@ -23,8 +23,7 @@ void
 subUtilLogSetDebug(void)
 {
 	debug = !debug;
-}
-/* }}} */
+} /* }}} */
 #endif /* DEBUG */
 
  /** subUtilLog {{{
@@ -62,8 +61,7 @@ subUtilLog(int type,
 			case 1: fprintf(stderr, "<ERROR> %s", buf); raise(SIGTERM);		break;
 			case 2: fprintf(stdout, "<WARNING> %s", buf);									break;
 		}
-}
-/* }}} */
+} /* }}} */
 
  /** subUtilAlloc {{{
 	* Alloc memory and check for result
@@ -80,8 +78,7 @@ subUtilAlloc(size_t n,
 	void *mem = calloc(n, size);
 	if(!mem) subUtilLogError("Can't alloc memory. Exhausted?\n");
 	return(mem);
-}
-/* }}} */
+} /* }}} */
 
  /** subUtilRealloc {{{
 	* Realloc memory and check for result
@@ -95,13 +92,10 @@ void *
 subUtilRealloc(void *mem,
 	size_t size)
 {
-	assert(mem);
-
 	mem = realloc(mem, size);
 	if(!mem) subUtilLogError("Can't alloc memory. Exhausted?\n");
 	return(mem);
-}
-/* }}} */
+} /* }}} */
 
  /** subUtilFind {{{
 	* Find data with the context manager
@@ -119,5 +113,19 @@ subUtilFind(Window win,
 
 	assert(win && id);
 	return(XFindContext(d->disp, win, id, (XPointer *)&data) != XCNOENT ? data : NULL);
-}
-/* }}} */
+} /* }}} */
+
+ /** subUtilTime {{{
+	* Get the current time in seconds 
+	* @return Current time in seconds
+	**/
+
+time_t
+subUtilTime(void)
+{
+  struct timeval tv;
+
+  gettimeofday(&tv, 0);
+
+  return(tv.tv_sec);
+} /* }}} */
