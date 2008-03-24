@@ -33,7 +33,7 @@ subRuleNew(
 	r->regex	= (regex_t *)subUtilAlloc(1, sizeof(regex_t));
 	r->size		= size;
 
-	/* Thread safe error handling.. */
+	/* Thread safe error handling */
 	if((errcode = regcomp(r->regex, tags, REG_EXTENDED|REG_NOSUB|REG_ICASE)))
 		{
 			size_t errsize = regerror(errcode, r->regex, NULL, 0);
