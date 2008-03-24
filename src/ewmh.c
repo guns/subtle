@@ -11,7 +11,6 @@
 #include "subtle.h"
 
 #define NATOMS 40
-
 static Atom atoms[NATOMS];
 
  /** subEwmhInit {{{
