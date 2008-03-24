@@ -121,7 +121,7 @@ SubArray *subArrayNew(void);														// Create new array
 void subArrayPush(SubArray *a, void *elem);							// Push element to array
 void subArrayPop(SubArray *a, void *elem);							// Pop element from array
 int subArrayFind(SubArray *a, void *elem);							// Find array id of element
-void subArrayKill(SubArray *a);													// Kill array with all elements
+void subArrayKill(SubArray *a, int clean);							// Kill array with all elements
 /* }}} */
 
 /* client.c {{{ */
@@ -136,12 +136,11 @@ typedef struct subclient
 } SubClient;
 
 SubClient *subClientNew(Window win);										// Create new client
+void subClientConfigure(SubClient *c);									// Send configure request
 void subClientRender(SubClient *c);											// Render client
 void subClientFocus(SubClient *c);											// Focus client
-void subClientResize(SubClient *c);											// Resize client
 void subClientMap(SubClient *c);												// Map client	
 void subClientUnmap(SubClient *c);											// Unmap client
-void subClientConfigure(SubClient *c);									// Send configure request
 void subClientDrag(SubClient *c, int mode);							// Move/drag client
 void subClientToggle(SubClient *c, int type);						// Toggle client state
 void subClientFetchName(SubClient *c);									// Fetch client name
@@ -160,8 +159,6 @@ typedef struct subtile
 } SubTile;
 
 SubTile *subTileNew(int mode);													// Create new tile
-void subTilePush(SubTile *t, void *c);									// Push clients to tile
-void subTilePop(SubTile *t, void *c);										// Pop clients from tile
 void subTileConfigure(SubTile *t);											// Configure tile
 void subTileKill(SubTile *t);														// Kill tile
 /* }}} */
@@ -189,16 +186,12 @@ typedef struct subview
 	struct subarray *rules;																// View rules
 } SubView;
 
-SubView *subViewFind(int xid);													// Find view
 SubView *subViewNew(char *name);												// Create new view
-void subViewDelete(SubView *v);													// Delete view
-void subViewDestroy(SubView *v);												// Destroy view
-void subViewMerge(Window win);													// Merge window
-void subViewRender(void);																// Render views
 void subViewConfigure(void);														// Configure views
-void subViewSwitch(SubView *v);													// Switch view
-void subViewKill(SubView *v);														// Kill views
-
+void subViewRender(void);																// Render views
+void subViewMerge(Window win);													// Merge window
+void subViewSwitch(SubView *v);													// Switch to view
+void subViewKill(SubView *v);														// Kill view
 /* }}} */
 
 /* sublet.c {{{ */
@@ -218,13 +211,11 @@ typedef struct subsublet
 
 void subSubletNew(int type, char *name, int ref, 				// Create new sublet
 	time_t interval, char *watch);
-void subSubletDelete(SubSublet *s);											// Delete sublet
-void subSubletDestroy(SubSublet *s);										// Destroy sublet
-void subSubletRender(void);															// Render sublet
 void subSubletConfigure(void);													// Configure sublet bar
+void subSubletRender(void);															// Render sublet
 void subSubletMerge(int pos);														// Merge sublet
 SubSublet *subSubletNext(void);													// Get next sublet
-void subSubletKill(SubSublet *s);												// Delete sublets
+void subSubletKill(SubSublet *s);												// Kill sublet
 /* }}} */
 
 /* display.c {{{ */
@@ -288,12 +279,13 @@ typedef struct subkey
 } SubKey;
 
 void subKeyInit(void);																	// Init the keys
-SubKey *subKeyFind(int keycode, unsigned int mod);			// Find a key
 void subKeyNew(const char *key,
 	const char *value);																		// Create new key
-void subKeyGrab(SubClient *c);													// Grab keys for a window
-void subKeyUngrab(SubClient *c);												// Ungrab keys for a window
-void subKeyKill(SubKey *k);															// Delete all keys
+void subKeySort(void);																	// Sort keys
+SubKey *subKeyFind(int code, unsigned int mod);					// Find key
+void subKeyGrab(Window win);														// Grab keys for window
+void subKeyUngrab(Window win);													// Ungrab keys for window
+void subKeyKill(SubKey *k);															// Kill key
 /* }}} */
 
 /* lua.c {{{ */
@@ -304,7 +296,7 @@ void subLuaCall(SubSublet *s);													// Call Lua script
 /* }}} */
 
 /* event.c {{{ */
-int subEventLoop(void);																	// Event loop
+void subEventLoop(void);																	// Event loop
 /* }}} */
 
 /* util.c {{{ */
@@ -315,7 +307,7 @@ void subUtilLogSetDebug(void);
 #define subUtilLogDebug(...)
 #endif /* DEBUG */
 
-#define subUtilLogError(...)	subUtilLog(1, __FILE__, __LINE__, __VA_ARGS__);
+#define subUtilLogError(...)	subUtilLog(1, __FILE__, __LINE__,  __VA_ARGS__);
 #define subUtilLogWarn(...)		subUtilLog(2, __FILE__, __LINE__, __VA_ARGS__);
 
 void subUtilLog(int type, const char *file,
