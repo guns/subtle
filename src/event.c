@@ -14,6 +14,39 @@
 #define BUFLEN (sizeof(struct inotify_event))
 #endif
 
+/* Exec {{{ */
+static void
+Exec(char *cmd)
+{
+	pid_t pid = fork();
+
+	switch(pid)
+		{
+			case 0:
+				setsid();
+				execlp("/bin/sh", "sh", "-c", cmd, NULL);
+
+				/* Never to be reached */
+				subUtilLogWarn("Can't exec command `%s'.\n", cmd);
+				exit(1);
+			case -1: subUtilLogWarn("Failed to fork.\n");
+		}
+} /* }}} */
+
+/* GetParent {{{ */
+static Window
+GetParent(Window win)
+{
+	unsigned int nwins;
+	Window parent, unused, *wins = NULL;
+
+	/* Some events don't propagate but we need them to do so */
+	XQueryTree(d->disp, win, &unused, &parent, &wins, &nwins);
+	XFree(wins);
+
+	return(parent);
+} /* }}} */
+
 /* HandleButtonPress {{{ */
 static void
 HandleButtonPress(XButtonEvent *ev)
@@ -37,14 +70,14 @@ HandleButtonPress(XButtonEvent *ev)
 					case Button1:
 						if(last_time > 0 && ev->time - last_time <= 300) /* Double click */
 							{
-								subUtilLogDebug("Double click: win=%#lx\n", ev->window);
+								subUtilLogDebug("click=double, win=%#lx\n", ev->window);
 								if((ev->subwindow == c->title && c->tile && c->tile->flags & SUB_TYPE_TILE) || c->flags & SUB_STATE_FLOAT) 
 									subClientToggle(c, SUB_STATE_SHADE);
 								last_time = 0;
 							}						
 						else  /* Single click */
 							{
-								subUtilLogDebug("Single click: win=%#lx\n", ev->window);
+								subUtilLogDebug("click=single, win=%#lx\n", ev->window);
 								if(c->flags & SUB_STATE_FLOAT) XRaiseWindow(d->disp, c->frame);
 								if(c->tile && c->tile->flags & SUB_STATE_STACK) 
 									{
@@ -75,25 +108,6 @@ HandleButtonPress(XButtonEvent *ev)
 						subViewSwitch(d->cv->next); break;
 						if(d->cv->prev) subViewSwitch(d->cv->prev); break; */
 				}
-		}
-} /* }}} */
-
-/* Exec {{{ */
-static void
-Exec(char *cmd)
-{
-	pid_t pid = fork();
-
-	switch(pid)
-		{
-			case 0:
-				setsid();
-				execlp("/bin/sh", "sh", "-c", cmd, NULL);
-
-				/* Never to be reached */
-				subUtilLogWarn("Can't exec command `%s'.\n", cmd);
-				exit(1);
-			case -1: subUtilLogWarn("Failed to fork.\n");
 		}
 } /* }}} */
 
@@ -152,20 +166,18 @@ HandleConfigure(XConfigureRequestEvent *ev)
 			if(ev->value_mask & CWHeight)	c->height = ev->height;
 
 			subClientConfigure(c);
-			wc.x = 0;
-			wc.y = d->th;
 		}
 	else
 		{
-			wc.x = ev->x;
-			wc.y = ev->y;
-		}
+			wc.x					= ev->x;
+			wc.y					= ev->y;
+			wc.width			= ev->width;
+			wc.height			= ev->height;
+			wc.sibling		= ev->above;
+			wc.stack_mode	= ev->detail;
 
-	wc.width			= ev->width;
-	wc.height			= ev->height;
-	wc.sibling		= ev->above;
-	wc.stack_mode	= ev->detail;
-	XConfigureWindow(d->disp, ev->window, ev->value_mask, &wc);
+			XConfigureWindow(d->disp, ev->window, ev->value_mask, &wc);
+		}
 } /* }}} */
 
 /* HandleMapNotify {{{ */
@@ -191,21 +203,8 @@ HandleDestroy(XDestroyWindowEvent *ev)
 		{
 			c->flags |= SUB_STATE_DEAD;
 			subClientKill(c); 
+			subArrayPop(d->clients, (void *)c);
 		}
-} /* }}} */
-
-/* GetParent {{{ */
-static Window
-GetParent(Window win)
-{
-	unsigned int nwins;
-	Window parent, unused, *wins = NULL;
-
-	/* Some events don't propagate but we need them to do so */
-	XQueryTree(d->disp, win, &unused, &parent, &wins, &nwins);
-	XFree(wins);
-
-	return(parent);
 } /* }}} */
 
 /* HandleMessage {{{ */
@@ -329,16 +328,18 @@ HandleFocus(XFocusInEvent *ev)
 						d->focus = NULL;
 						if(f && f->flags & SUB_TYPE_CLIENT) subClientRender(f);
 
-						subKeyUngrab(f);
+						subKeyUngrab(f->frame);
 					}
 
 					d->focus = c;
 					subClientRender(c);
 					subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_ACTIVE_WINDOW, &c->frame, 1);
 
-					subKeyGrab(c);	
+					subKeyGrab(c->frame);	
 				}
 		}
+	else if(ev->window == d->cv->frame) subKeyGrab(ev->window);
+
 } /* }}} */
 
  /** subEventLoop {{{ 
@@ -346,7 +347,7 @@ HandleFocus(XFocusInEvent *ev)
 	* @return Return zero on failure
 	**/
 
-int 
+void
 subEventLoop(void)
 {
 	time_t current;
@@ -409,25 +410,22 @@ subEventLoop(void)
 #endif /* HAVE_SYS_INOTIFY_H */
 				}
 
-			while(XPending(d->disp))
+			XNextEvent(d->disp, &ev);
+			switch(ev.type)
 				{
-					XNextEvent(d->disp, &ev);
-					switch(ev.type)
-						{
-							case ButtonPress:				HandleButtonPress(&ev.xbutton);					break;
-							case KeyPress:					HandleKeyPress(&ev.xkey);								break;
-							case ConfigureRequest:	HandleConfigure(&ev.xconfigurerequest);	break;
-							case MapNotify:					HandleMapNotify(&ev.xmapping);					break;
-							case MapRequest: 				HandleMapRequest(&ev.xmaprequest); 			break;
-							case DestroyNotify: 		HandleDestroy(&ev.xdestroywindow);			break;
-							case ClientMessage: 		HandleMessage(&ev.xclient); 						break;
-							case ColormapNotify: 		HandleColormap(&ev.xcolormap); 					break;
-							case PropertyNotify: 		HandleProperty(&ev.xproperty); 					break;
-							case EnterNotify:				HandleCrossing(&ev.xcrossing);					break;
-							case VisibilityNotify:	
-							case Expose:						HandleExpose(&ev);											break;
-							case FocusIn:						HandleFocus(&ev.xfocus);								break;
-						}
+					case ButtonPress:				HandleButtonPress(&ev.xbutton);					break;
+					case KeyPress:					HandleKeyPress(&ev.xkey);								break;
+					case ConfigureRequest:	HandleConfigure(&ev.xconfigurerequest);	break;
+					case MapNotify:					HandleMapNotify(&ev.xmapping);					break;
+					case MapRequest: 				HandleMapRequest(&ev.xmaprequest); 			break;
+					case DestroyNotify: 		HandleDestroy(&ev.xdestroywindow);			break;
+					case ClientMessage: 		HandleMessage(&ev.xclient); 						break;
+					case ColormapNotify: 		HandleColormap(&ev.xcolormap); 					break;
+					case PropertyNotify: 		HandleProperty(&ev.xproperty); 					break;
+					case EnterNotify:				HandleCrossing(&ev.xcrossing);					break;
+					case VisibilityNotify:	
+					case Expose:						HandleExpose(&ev);											break;
+					case FocusIn:						HandleFocus(&ev.xfocus);								break;
 				}
 		}
 } /* }}} */
