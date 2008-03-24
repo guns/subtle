@@ -109,162 +109,6 @@ CountHook(lua_State *state,
 		}
 } /* }}} */
 
- /** subLuaLoadConfig {{{
-	* Load config file from path
-	* @param[in] path Path to the config file
-	**/
-
-void
-subLuaLoadConfig(const char *path)
-{
-	int size;
-	char buf[100], *face = NULL, *style = NULL;
-	DIR *dir = NULL;
-	XGCValues gvals;
-	XSetWindowAttributes attrs;
-	lua_State *configstate = StateNew();
-
-	/* Check path */
-	if(!path)
-		{
-			snprintf(buf, sizeof(buf), "%s/.%s", getenv("HOME"), PACKAGE_NAME);
-			if((dir = opendir(buf))) 
-				{
-					snprintf(buf, sizeof(buf), "%s/.%s/config.lua", getenv("HOME"), PACKAGE_NAME);
-					closedir(dir);
-				}
-			else snprintf(buf, sizeof(buf), "%s/config.lua", CONFIG_DIR);
-		}
-	else snprintf(buf, sizeof(buf), "%s/config.lua", path);
-
-	lua_sethook(configstate, CountHook, LUA_MASKCOUNT, 1000);
-
-	subUtilLogDebug("Reading `%s'\n", buf);
-	if(luaL_loadfile(configstate, buf) || lua_pcall(configstate, 0, 0, 0))
-		{
-			subUtilLogWarn("%s\n", (char *)lua_tostring(configstate, -1));
-			lua_close(configstate);
-			subUtilLogError("Can't parse config file\n");
-		}
-
-	/* Parse and load the font */
-	face	= GetString(configstate, "Font", "Face", "fixed");
-	style	= GetString(configstate, "Font", "Style", "medium");
-	size	= GetNum(configstate, "Font", "Size", 12);
-
-	snprintf(buf, sizeof(buf), "-*-%s-%s-*-*-*-%d-*-*-*-*-*-*-*", face, style, size);
-	if(!(d->xfs = XLoadQueryFont(d->disp, buf)))
-		{
-			subUtilLogWarn("Can't load font `%s', using fixed instead.\n", face);
-			subUtilLogDebug("Font: %s\n", buf);
-			d->xfs = XLoadQueryFont(d->disp, "-*-fixed-medium-*-*-*-12-*-*-*-*-*-*-*");
-			if(!d->xfs) subUtilLogError("Can't load font `fixed`.\n");
-		}
-
-	/* Font metrics */
-	d->fx	= (d->xfs->min_bounds.width + d->xfs->max_bounds.width) / 2;
-	d->fy	= d->xfs->max_bounds.ascent + d->xfs->max_bounds.descent;
-
-	d->th	= d->xfs->ascent + d->xfs->descent + 2;
-	d->bw	= GetNum(configstate, "Options", "Border",	2);
-
-	/* Read colors from config */
-	d->colors.font		= ParseColor(configstate, "Font",				"#000000"); 	
-	d->colors.border	= ParseColor(configstate, "Border",			"#bdbabd");
-	d->colors.norm		= ParseColor(configstate, "Normal",			"#22aa99");
-	d->colors.focus		= ParseColor(configstate, "Focus",			"#ffa500");		
-	d->colors.cover		= ParseColor(configstate, "Shade",			"#FFE6E6");
-	d->colors.bg			= ParseColor(configstate, "Background",	"#336699");
-
-	/* View windows */
-	d->bar.win			= XCreateSimpleWindow(d->disp, DefaultRootWindow(d->disp), 0, 0, 
-		DisplayWidth(d->disp, DefaultScreen(d->disp)), d->th, 0, 0, d->colors.norm);
-	d->bar.views		= XCreateSimpleWindow(d->disp, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
-	d->bar.sublets	= XCreateSimpleWindow(d->disp, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
-
-	XSetWindowBackground(d->disp, d->bar.win, d->colors.norm);
-	XSetWindowBackground(d->disp, d->bar.views, d->colors.norm);
-	XSetWindowBackground(d->disp, d->bar.sublets, d->colors.norm);
-
-	XSelectInput(d->disp, d->bar.views, ButtonPressMask); 
-
-	XMapWindow(d->disp, d->bar.views);
-	XMapWindow(d->disp, d->bar.sublets);
-
-	/* Change GCs */
-	gvals.foreground	= d->colors.border;
-	gvals.line_width	= d->bw;
-	XChangeGC(d->disp, d->gcs.border, GCForeground|GCLineWidth, &gvals);
-
-	gvals.foreground	= d->colors.font;
-	gvals.font				= d->xfs->fid;
-	XChangeGC(d->disp, d->gcs.font, GCForeground|GCFont, &gvals);
-
-	/* Adjust root window */
-	attrs.cursor						= d->cursors.arrow;
-	attrs.background_pixel	= d->colors.bg;
-	attrs.event_mask				= SubstructureRedirectMask|SubstructureNotifyMask|PropertyChangeMask;
-	XChangeWindowAttributes(d->disp, DefaultRootWindow(d->disp), CWCursor|CWBackPixel|CWEventMask, &attrs);
-	XClearWindow(d->disp, DefaultRootWindow(d->disp));
-
-	/* Keys */
-	lua_getglobal(configstate, "Keys");
-	if(lua_istable(configstate, -1)) 
-		{ 
-			lua_pushnil(configstate);
-			while(lua_next(configstate, -2))
-				{
-					subKeyNew(lua_tostring(configstate, -2), lua_tostring(configstate, -1)); 
-					lua_pop(configstate, 1);
-				}
-		}
-	
-	/* Rules */
-	d->cv = subViewNew("root");
-
-	lua_getglobal(configstate, "Rules");
-	if(lua_istable(configstate, -1)) 
-		{ 
-			lua_pushnil(configstate);
-			while(lua_next(configstate, -2))
-				{
-					if(lua_istable(configstate, -1))
-						{ 
-							SubView *v = NULL;
-							SubRule *r = NULL;
-							char *name = (char *)lua_tostring(configstate, -2), *rule = NULL;
-
-							printf("table\n");
-
-							v = subViewNew(name);
-							v->rules = subArrayNew();
-
-							lua_pushnil(configstate);
-							while(lua_next(configstate, -2))
-								{
-									rule	= (char *)lua_tostring(configstate, -2);
-									size	= (int)lua_tonumber(configstate, -1);
-
-									r = subRuleNew(rule, size);
-									subArrayPush(v->rules, (void *)r);
-
-									lua_pop(configstate, 1);
-								}
-
-							subUtilLogDebug("type=table, name=%s, rules=%d\n", v->name, v->rules->ndata);
-						}
-					else
-						{
-							subUtilLogDebug("type=single\n");
-						}
-					lua_pop(configstate, 1);
-				}
-		}
-	subUtilLogDebug("No rules found\n");
-
-	lua_close(configstate);
-} /* }}} */
-
 /* SetField {{{ */
 static void
 SetField(lua_State *state,
@@ -369,6 +213,168 @@ LuaAddHelper(lua_State *state)
 	return(CreateSublet(SUB_SUBLET_TYPE_HELPER, state));
 } /* }}} */
 
+ /** subLuaLoadConfig {{{
+	* Load config file from path
+	* @param[in] path Path to the config file
+	**/
+
+void
+subLuaLoadConfig(const char *path)
+{
+	int size;
+	char buf[100], *face = NULL, *style = NULL;
+	DIR *dir = NULL;
+	SubView *v = NULL;
+	SubRule *r = NULL;
+	XGCValues gvals;
+	XSetWindowAttributes attrs;
+	lua_State *configstate = StateNew();
+
+	/* Check path */
+	if(!path)
+		{
+			snprintf(buf, sizeof(buf), "%s/.%s", getenv("HOME"), PACKAGE_NAME);
+			if((dir = opendir(buf))) 
+				{
+					snprintf(buf, sizeof(buf), "%s/.%s/config.lua", getenv("HOME"), PACKAGE_NAME);
+					closedir(dir);
+				}
+			else snprintf(buf, sizeof(buf), "%s/config.lua", CONFIG_DIR);
+		}
+	else snprintf(buf, sizeof(buf), "%s/config.lua", path);
+
+	lua_sethook(configstate, CountHook, LUA_MASKCOUNT, 1000);
+
+	subUtilLogDebug("config=%s\n", buf);
+	if(luaL_loadfile(configstate, buf) || lua_pcall(configstate, 0, 0, 0))
+		{
+			subUtilLogWarn("%s\n", (char *)lua_tostring(configstate, -1));
+			lua_close(configstate);
+			subUtilLogError("Can't parse config file\n");
+		}
+
+	/* Parse and load the font */
+	face	= GetString(configstate, "Font", "Face", "fixed");
+	style	= GetString(configstate, "Font", "Style", "medium");
+	size	= GetNum(configstate, "Font", "Size", 12);
+
+	snprintf(buf, sizeof(buf), "-*-%s-%s-*-*-*-%d-*-*-*-*-*-*-*", face, style, size);
+	if(!(d->xfs = XLoadQueryFont(d->disp, buf)))
+		{
+			subUtilLogWarn("Can't load font `%s', using fixed instead.\n", face);
+			subUtilLogDebug("Font: %s\n", buf);
+			d->xfs = XLoadQueryFont(d->disp, "-*-fixed-medium-*-*-*-12-*-*-*-*-*-*-*");
+			if(!d->xfs) subUtilLogError("Can't load font `fixed`.\n");
+		}
+
+	/* Font metrics */
+	d->fx	= (d->xfs->min_bounds.width + d->xfs->max_bounds.width) / 2;
+	d->fy	= d->xfs->max_bounds.ascent + d->xfs->max_bounds.descent;
+
+	d->th	= d->xfs->ascent + d->xfs->descent + 2;
+	d->bw	= GetNum(configstate, "Options", "Border",	2);
+
+	/* Read colors from config */
+	d->colors.font		= ParseColor(configstate, "Font",				"#000000"); 	
+	d->colors.border	= ParseColor(configstate, "Border",			"#bdbabd");
+	d->colors.norm		= ParseColor(configstate, "Normal",			"#22aa99");
+	d->colors.focus		= ParseColor(configstate, "Focus",			"#ffa500");		
+	d->colors.cover		= ParseColor(configstate, "Shade",			"#FFE6E6");
+	d->colors.bg			= ParseColor(configstate, "Background",	"#336699");
+
+	/* View windows */
+	d->bar.win			= XCreateSimpleWindow(d->disp, DefaultRootWindow(d->disp), 0, 0, 
+		DisplayWidth(d->disp, DefaultScreen(d->disp)), d->th, 0, 0, d->colors.norm);
+	d->bar.views		= XCreateSimpleWindow(d->disp, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
+	d->bar.sublets	= XCreateSimpleWindow(d->disp, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
+
+	XSelectInput(d->disp, d->bar.views, ButtonPressMask); 
+
+	XMapWindow(d->disp, d->bar.views);
+	XMapWindow(d->disp, d->bar.sublets);
+
+	/* Change GCs */
+	gvals.foreground	= d->colors.border;
+	gvals.line_width	= d->bw;
+	XChangeGC(d->disp, d->gcs.border, GCForeground|GCLineWidth, &gvals);
+
+	gvals.foreground	= d->colors.font;
+	gvals.font				= d->xfs->fid;
+	XChangeGC(d->disp, d->gcs.font, GCForeground|GCFont, &gvals);
+
+	/* Adjust root window */
+	attrs.cursor						= d->cursors.arrow;
+	attrs.background_pixel	= d->colors.bg;
+	attrs.event_mask				= SubstructureRedirectMask|SubstructureNotifyMask|PropertyChangeMask;
+	XChangeWindowAttributes(d->disp, DefaultRootWindow(d->disp), CWCursor|CWBackPixel|CWEventMask, &attrs);
+	XClearWindow(d->disp, DefaultRootWindow(d->disp));
+
+	/* Keys */
+	lua_getglobal(configstate, "Keys");
+	if(lua_istable(configstate, -1)) 
+		{ 
+			lua_pushnil(configstate);
+			while(lua_next(configstate, -2))
+				{
+					subKeyNew(lua_tostring(configstate, -2), lua_tostring(configstate, -1)); 
+					lua_pop(configstate, 1);
+				}
+		}
+	subKeySort();
+
+	/* Rules */
+	lua_getglobal(configstate, "Rules");
+	if(lua_istable(configstate, -1)) 
+		{ 
+			lua_pushnil(configstate);
+			while(lua_next(configstate, -2))
+				{
+					if(lua_istable(configstate, -1))
+						{ 
+							char *name = (char *)lua_tostring(configstate, -2), *rule = NULL;
+
+							v = subViewNew(name);
+							v->rules = subArrayNew();
+
+							lua_pushnil(configstate);
+							while(lua_next(configstate, -2))
+								{
+									rule	= (char *)lua_tostring(configstate, -2);
+									size	= (int)lua_tonumber(configstate, -1);
+
+									r = subRuleNew(rule, size);
+									subArrayPush(v->rules, (void *)r);
+
+									lua_pop(configstate, 1);
+								}
+
+							subArrayPush(d->views, (void *)v);
+							subUtilLogDebug("type=table, name=%s, rules=%d\n", v->name, v->rules->ndata);
+						}
+					else if(lua_isstring(configstate, -1))
+						{
+							char *name = (char *)lua_tostring(configstate, -2), *rule = (char *)lua_tostring(configstate, -1);
+
+							v = subViewNew(name);
+							v->rules = subArrayNew();
+							subArrayPush(d->views, (void *)v);
+
+							r = subRuleNew(rule, 0);
+							subArrayPush(v->rules, (void *)r);
+
+
+							subUtilLogDebug("type=single, name=%s, rule=%s\n", name, rule);
+						}
+					else subUtilLogDebug("type=%s\n", lua_typename(configstate, -1));
+
+					lua_pop(configstate, 1);
+				}
+		}
+	else subUtilLogDebug("No rules found\n");
+
+	lua_close(configstate);
+} /* }}} */
+
  /** subLuaLoadSublets {{{
 	* Load sublets from path
 	* @param[in] path Path to the sublets
@@ -401,6 +407,8 @@ subLuaLoadSublets(const char *path)
 		}
 	else snprintf(buf, sizeof(buf), "%s", path);
 
+	subUtilLogDebug("path=%s\n", buf);
+
 	/* Push functions on the stack */
 	lua_newtable(subletstate);
 	SetField(subletstate, "version",		LUA_TSTRING,		PACKAGE_VERSION);
@@ -418,6 +426,7 @@ subLuaLoadSublets(const char *path)
 				{
 					if(!fnmatch("*.lua", entry->d_name, FNM_PATHNAME))
 						{
+						printf("name=%s\n",entry->d_name);
 							snprintf(buf, sizeof(buf), "%s/.%s/sublets/%s", getenv("HOME"), PACKAGE_NAME, entry->d_name);
 							luaL_loadfile(subletstate, buf);
 							lua_pcall(subletstate, 0, 0, 0);
@@ -428,21 +437,7 @@ subLuaLoadSublets(const char *path)
 			subViewConfigure();
 			subSubletConfigure();
 		}
-	else subUtilLogWarn("Can't find any sublets to load\n"); 
-} /* }}} */
-
- /** subLuaKill {{{
-	* Close Lua state
-	**/
-
-void
-subLuaKill(void)
-{
-	if(subletstate) lua_close(subletstate);
-
-#ifdef HAVE_SYS_INOTIFY_H
-	if(d->notify) close(d->notify);
-#endif /* HAVE_SYS_INOTIFY_H */
+	else subUtilLogWarn("Can't find any loadable sublets\n"); 
 } /* }}} */
 
  /** subLuaCall {{{
@@ -506,4 +501,18 @@ subLuaCall(SubSublet *s)
 				subUtilLogDebug("Sublet #%d returned unkown type %s\n", s->ref, lua_typename(subletstate, -1));
 				lua_pop(subletstate, -1);
 		}
+} /* }}} */
+
+ /** subLuaKill {{{
+	* Close Lua state
+	**/
+
+void
+subLuaKill(void)
+{
+	if(subletstate) lua_close(subletstate);
+
+#ifdef HAVE_SYS_INOTIFY_H
+	if(d->notify) close(d->notify);
+#endif /* HAVE_SYS_INOTIFY_H */
 } /* }}} */
