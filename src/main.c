@@ -53,10 +53,10 @@ HandleSignal(int signum)
 				break;
 			case SIGTERM:
 			case SIGINT: 
-				subArrayKill(d->views);
-				subArrayKill(d->clients);
-				subArrayKill(d->sublets);
-				subArrayKill(d->keys);
+				subArrayKill(d->views, True);
+				subArrayKill(d->clients, False);
+				subArrayKill(d->sublets, True);
+				subArrayKill(d->keys, False);
 
 				subLuaKill();
 				subDisplayKill();
@@ -127,7 +127,7 @@ main(int argc,
 	subLuaLoadConfig(config);
 	subLuaLoadSublets(sublets);
 
-	subViewSwitch(d->cv);
+	subViewSwitch((SubView *)d->views->data[0]);
 
 	subDisplayScan();
 
