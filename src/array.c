@@ -109,26 +109,31 @@ subArraySwap(SubArray *a,
  /** subArrayKill {{{
 	* Kill array with all elements
 	* @param[in] a A #SubArray
+	* @param[in] clean Free elements or not
 	**/
 
 void
-subArrayKill(SubArray *a)
+subArrayKill(SubArray *a,
+	int clean)
 {
 	int i;
 
 	assert(a);
 
-	for(i = 0; i < a->ndata; i++)
+	if(clean)
 		{
-			/* Check type and kill it */
-			SubArrayUndef *u = (SubArrayUndef *)a->data[i];
+			for(i = 0; i < a->ndata; i++)
+				{
+						/* Check type and kill it */
+						SubArrayUndef *u = (SubArrayUndef *)a->data[i];
 
-			if(u->flags & SUB_TYPE_CLIENT) subClientKill((SubClient *)u);
-			else if(u->flags & SUB_TYPE_TILE) subTileKill((SubTile *)u);
-			else if(u->flags & SUB_TYPE_VIEW) subViewKill((SubView *)u);
-			else if(u->flags & SUB_TYPE_RULE) subRuleKill((SubRule *)u);
-			else if(u->flags & SUB_TYPE_SUBLET) subSubletKill((SubSublet *)u);
-			else free(a->data[i]); 
+						if(u->flags & SUB_TYPE_CLIENT) subClientKill((SubClient *)u);
+						else if(u->flags & SUB_TYPE_TILE) subTileKill((SubTile *)u);
+						else if(u->flags & SUB_TYPE_VIEW) subViewKill((SubView *)u);
+						else if(u->flags & SUB_TYPE_RULE) subRuleKill((SubRule *)u);
+						else if(u->flags & SUB_TYPE_SUBLET) subSubletKill((SubSublet *)u);
+						else free(a->data[i]); 
+				}
 		}
 	free(a);
 } /* }}} */
