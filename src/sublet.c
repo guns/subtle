@@ -10,42 +10,6 @@
 
 #include "subtle.h"
 
- /** subSubletMerge {{{
-	* Merge sublet into queue
-	* @param[in] pos Position of the sublet in the queue
-	**/
-
-void
-subSubletMerge(int pos)
-{
-	int left	= 2 * pos;
-	int right	= left + 1;
-	int max 	= (left <= d->sublets->ndata &&
-		((SubSublet *)d->sublets->data[left])->time < ((SubSublet *)d->sublets->data[pos])->time) ? left : pos;
-
-	if(right <= d->sublets->ndata && 
-		((SubSublet *)d->sublets->data[right])->time < ((SubSublet *)d->sublets->data[max])->time) max = right;
-	if(max != pos)
-		{
-			void *tmp	= d->sublets->data[pos];
-			d->sublets->data[pos]	= d->sublets->data[max];
-			d->sublets->data[max]	= tmp;
-			subSubletMerge(max);
-		}
-} /* }}} */
-
- /** subSubletNext {{{
-	* Get next sublet 
-	* @return Success: #SubSublet
-	* 				Failure: NULL
-	**/
-
-SubSublet *
-subSubletNext(void)
-{
-	return(d->sublets->ndata > 1 ? (SubSublet *)d->sublets->data[1] : NULL);
-} /* }}} */
-
  /** subSubletNew {{{
 	* Create new sublet 
 	* @param[in] type Type of the sublet
@@ -108,7 +72,7 @@ subSubletNew(int type,
 		}
 	
 	printf("Loading sublet %s (%d)\n", name, (int)interval);
-	subUtilLogDebug("name=%s, ref=%d, interval=%d, watch=%s\n", name, ref, interval, watch);		
+	subUtilLogDebug("new=sublet, name=%s, ref=%d, interval=%d, watch=%s\n", name, ref, interval, watch);		
 } /* }}} */ 
 
  /** subSubletConfigure {{{
@@ -166,6 +130,42 @@ subSubletRender(void)
 		}
 } /* }}} */
 
+ /** subSubletMerge {{{
+	* Merge sublet into queue
+	* @param[in] pos Position of the sublet in the queue
+	**/
+
+void
+subSubletMerge(int pos)
+{
+	int left	= 2 * pos;
+	int right	= left + 1;
+	int max 	= (left <= d->sublets->ndata &&
+		((SubSublet *)d->sublets->data[left])->time < ((SubSublet *)d->sublets->data[pos])->time) ? left : pos;
+
+	if(right <= d->sublets->ndata && 
+		((SubSublet *)d->sublets->data[right])->time < ((SubSublet *)d->sublets->data[max])->time) max = right;
+	if(max != pos)
+		{
+			void *tmp	= d->sublets->data[pos];
+			d->sublets->data[pos]	= d->sublets->data[max];
+			d->sublets->data[max]	= tmp;
+			subSubletMerge(max);
+		}
+} /* }}} */
+
+ /** subSubletNext {{{
+	* Get next sublet 
+	* @return Success: #SubSublet
+	* 				Failure: NULL
+	**/
+
+SubSublet *
+subSubletNext(void)
+{
+	return(d->sublets->ndata > 1 ? (SubSublet *)d->sublets->data[1] : NULL);
+} /* }}} */
+
  /** subSubletKill {{{
 	* Kill sublet
 	* @param[in] s A #SubSublet
@@ -180,4 +180,6 @@ subSubletKill(SubSublet *s)
 
 	if(!(s->flags & SUB_SUBLET_TYPE_METER) && s->string) free(s->string);
 	free(s);
+
+	subUtilLogDebug("kill=sublet\n");
 } /* }}} */

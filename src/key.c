@@ -13,6 +13,19 @@
 static unsigned int nummask = 0;
 static unsigned int scrollmask = 0;
 
+/* Compare {{{ */
+static int
+Compare(const void *a,
+	const void *b)
+{
+	SubKey *k1 = *(SubKey **)a, *k2 = *(SubKey **)b;
+
+	assert(a && b);
+
+	/* < -1, = 0, > 1 */
+	return(k1->code + k1->mod < k2->code + k2->mod ? -1 : (k1->code + k1->mod == k2->code + k2->mod ? 0 : 1));
+} /* }}} */
+
  /** subKeyInit {{{
 	* Init keys and get modifiers
 	**/
@@ -34,27 +47,6 @@ subKeyInit(void)
 				else if(scroll_lock && (modmap->modifiermap[i] == scroll_lock)) scrollmask = modmasks[i / modmap->max_keypermod];
 		}
 	if(modmap) XFreeModifiermap(modmap);
-} /* }}} */
-
- /** subKeyFind {{{
-	* Find a key
-	* @param[in] keycode A keycode
-	* @return Success: #SubKey
-	* 				Failure: NULL
-	**/
-
-SubKey *
-subKeyFind(int keycode,
-	unsigned int mod)
-{
-	int i;
-
-	for(i = 0; i < d->keys->ndata; i++)
-		{
-			SubKey *k = (SubKey *)d->keys->data[i];
-			if(k->code == keycode && k->mod == (mod & ~(LockMask|nummask|scrollmask))) return(k);
-		}
-	return(NULL);
 } /* }}} */
 
  /** subKeyNew {{{
@@ -142,8 +134,86 @@ subKeyNew(const char *key,
 	if(k->code && k->mod)
 		{
 			subArrayPush(d->keys, (void *)k);
-			subUtilLogDebug("Key: name=%s, code=%d, mod=%d\n", key, k->code, k->mod);
+			subUtilLogDebug("code=%03d, mod=%02d, key=%s\n", k->code, k->mod, key);
 		}
+} /* }}} */
+
+	/** subKeySort {{{ 
+	 * Sort keys
+	 **/
+
+void
+subKeySort(void)
+{
+	assert(d->keys && d->keys->ndata > 0);
+
+	qsort(d->keys->data, d->keys->ndata, sizeof(SubKey *), Compare);
+
+	subUtilLogDebug("sort=%d\n", d->keys->ndata);
+} /* }}} */
+
+ /** subKeyFind {{{
+	* Find key
+	* @param[in] code A keycode
+	* @param[in] mod A modmask
+	* @return Success: #SubKey
+	* 				Failure: NULL
+	**/
+
+SubKey *
+subKeyFind(int code,
+	unsigned int mod)
+{
+	SubKey *res, *k = (SubKey *)subUtilAlloc(1, sizeof(SubKey));
+	
+	k->code = code;
+	k->mod	= (mod & ~(LockMask|nummask|scrollmask));
+
+	res = *(SubKey **)bsearch(&k, d->keys->data, d->keys->ndata, sizeof(SubKey *), Compare);
+
+	free(k);
+
+	return(res);
+} /* }}} */
+
+ /** subKeyGrab {{{
+	* Grab keys for a window
+	* @param[in] win A #Window
+	**/
+
+void
+subKeyGrab(Window win)
+{
+	if(win && d->keys)
+		{
+			int i;
+
+			/* \todo Ugly key/modifier grabbing */
+			for(i = 0; i < d->keys->ndata; i++) 
+				{
+					SubKey *k = (SubKey *)d->keys->data[i];
+
+					XGrabKey(d->disp, k->code, k->mod, win, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, k->code, k->mod | LockMask, win, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, k->code, k->mod | nummask, win, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, k->code, k->mod | LockMask | nummask, win, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, k->code, k->mod | scrollmask, win, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, k->code, k->mod | scrollmask | LockMask, win, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, k->code, k->mod | scrollmask | nummask, win, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, k->code, k->mod | scrollmask | LockMask | nummask, win, True, GrabModeAsync, GrabModeAsync);
+				}
+		}
+} /* }}} */
+
+ /** subKeyUngrab {{{
+	* Ungrab keys for a window
+	* @param[in] win A #Window
+	**/
+
+void
+subKeyUngrab(Window win)
+{
+	XUngrabKey(d->disp, AnyKey, AnyModifier, win);
 } /* }}} */
 
  /** subKeyKill {{{
@@ -158,44 +228,4 @@ subKeyKill(SubKey *k)
 
 	if(k->flags & SUB_KEY_EXEC && k->string) free(k->string);
 	free(k);
-} /* }}} */
-
- /** subKeyGrab {{{
-	* Grab keys for a window
-	* @param[in] c A #SubClient
-	**/
-
-void
-subKeyGrab(SubClient *c)
-{
-	if(c && d->keys)
-		{
-			int i;
-
-			/* \todo Ugly key/modifier grabbing */
-			for(i = 0; i < d->keys->ndata; i++) 
-				{
-					SubKey *k = (SubKey *)d->keys->data[i];
-
-					XGrabKey(d->disp, k->code, k->mod, c->frame, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, k->code, k->mod | LockMask, c->frame, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, k->code, k->mod | nummask, c->frame, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, k->code, k->mod | LockMask | nummask, c->frame, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, k->code, k->mod | scrollmask, c->frame, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, k->code, k->mod | scrollmask | LockMask, c->frame, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, k->code, k->mod | scrollmask | nummask, c->frame, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, k->code, k->mod | scrollmask | LockMask | nummask, c->frame, True, GrabModeAsync, GrabModeAsync);
-				}
-		}
-} /* }}} */
-
- /** subKeyUngrab {{{
-	* Ungrab keys for a window
-	* @param[in] c A #SubClient
-	**/
-
-void
-subKeyUngrab(SubClient *c)
-{
-	XUngrabKey(d->disp, AnyKey, AnyModifier, c->frame);
 } /* }}} */
