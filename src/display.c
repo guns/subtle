@@ -87,6 +87,41 @@ subDisplayNew(const char *display_string)
 	XSync(d->disp, False);
 } /* }}} */
 
+ /** subDisplayScan {{{
+	* Scan root window for clients
+	**/
+
+void
+subDisplayScan(void)
+{
+	unsigned int i, n;
+	Window unused, *wins = NULL;
+	XWindowAttributes attr;
+#ifdef DEBUG
+	int merged = 0;
+#endif /* DEBUG */
+
+	assert(d);
+
+	XQueryTree(d->disp, DefaultRootWindow(d->disp), &unused, &unused, &wins, &n);
+	for(i = 0; i < n; i++)
+		{
+			/* Skip own windows */
+			if(wins[i] && wins[i] != d->bar.win && wins[i] != d->cv->frame)
+				{
+#ifdef DEBUG
+					merged++;
+#endif /* DEBUG */					
+
+					XGetWindowAttributes(d->disp, wins[i], &attr);
+					if(attr.map_state == IsViewable) subViewMerge(wins[i]);
+				}
+		}
+	XFree(wins);
+
+	subUtilLogDebug("wins=%d, merged=%d\n", n, merged);
+} /* }}} */
+
  /** subDisplayKill {{{
 	* Close connection and kill display
 	**/
@@ -120,40 +155,4 @@ subDisplayKill(void)
 			XCloseDisplay(d->disp);
 		}
 	free(d);
-} /* }}} */
-
- /** subDisplayScan {{{
-	* Scan root window for clients
-	**/
-
-void
-subDisplayScan(void)
-{
-	unsigned int i, n;
-	Window unused, *wins = NULL;
-	XWindowAttributes attr;
-#ifdef DEBUG
-	int merged = 0;
-#endif /* DEBUG */
-
-	assert(d);
-
-	XQueryTree(d->disp, DefaultRootWindow(d->disp), &unused, &unused, &wins, &n);
-	for(i = 0; i < n; i++)
-		{
-			/* Skip own windows */
-			if(wins[i] && wins[i] != d->bar.win && wins[i] != d->cv->frame)
-				{
-#ifdef DEBUG
-					merged++;
-#endif /* DEBUG */					
-
-					XGetWindowAttributes(d->disp, wins[i], &attr);
-					if(attr.map_state == IsViewable) subViewMerge(wins[i]);
-				}
-		}
-	subUtilLogDebug("n=%d, merged=%d\n", n, merged);
-	
-	//subTileConfigure(d->cv->tile);
-	XFree(wins);
 } /* }}} */
