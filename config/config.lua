@@ -60,8 +60,12 @@ Keys = {
 -- Rules {{{
 Rules = {
 	work = { 
-		["gvim|opera|foo"] = 60,
-		["[mur]+xvt|[aex]+term"] = 40
+		["foo"] = 30,
+		["[ur]+xvt|xterm"] = 40
 	},
-	gimp = "gimp.*"
+	other = {
+		["bar"] = 100
+	},
+	gimp = "gimp.*",
+	subtle = "baz"
 } -- }}}
