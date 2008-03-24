@@ -15,7 +15,7 @@
 #ifdef DEBUG
 static int debug = 0;
 
- /** subUtilLogDebug {{{
+ /** subUtilLogSetDebug {{{
 	* Toggle debugging messages
 	**/
 
@@ -56,10 +56,10 @@ subUtilLog(int type,
 	switch(type)
 		{
 #ifdef DEBUG
-			case 0: fprintf(stderr, "<DEBUG:%s:%d> %s", file, line, buf);	break;
+			case 0: fprintf(stderr, "<DEBUG> %s:%d: %s", file, line, buf);	break;
 #endif /* DEBUG */
-			case 1: fprintf(stderr, "<ERROR> %s", buf); raise(SIGTERM);		break;
-			case 2: fprintf(stdout, "<WARNING> %s", buf);									break;
+			case 1: fprintf(stderr, "<ERROR> %s", buf); raise(SIGTERM);			break;
+			case 2: fprintf(stdout, "<WARNING> %s", buf);										break;
 		}
 } /* }}} */
 
