@@ -82,7 +82,7 @@ subSubletNew(int type,
 void
 subSubletConfigure(void)
 {
-	if(d->sublets)
+	if(d->sublets->ndata > 0)
 		{
 			int width = 3;
 			SubSublet *s = (SubSublet *)d->sublets->data[0];
@@ -104,7 +104,7 @@ subSubletConfigure(void)
 void
 subSubletRender(void)
 {
-	if(d->sublets)
+	if(d->sublets->ndata > 0)
 		{
 			int width = 3;
 			SubSublet *s = (SubSublet *)d->sublets->data[0];
