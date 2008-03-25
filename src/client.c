@@ -105,7 +105,6 @@ subClientNew(Window win)
 	c->height	= DisplayHeight(d->disp, DefaultScreen(d->disp)) - d->th;
 	c->win		= win;
 
-
 	/* Create windows */
 	attrs.border_pixel			= d->colors.border;
 	attrs.background_pixel	= d->colors.norm;
@@ -343,10 +342,9 @@ subClientDrag(SubClient *c,
 	Cursor cursor;
 	Window win, unused;
 	unsigned int mask;
-	int wx = 0, wy = 0, rx = 0, ry = 0, state = SUB_DRAG_START, last_state = SUB_DRAG_START;
+	int wx = 0, wy = 0, rx = 0, ry = 0, state = SUB_DRAG_START, lstate = SUB_DRAG_START;
 	XRectangle r;
-	SubClient *c2 = NULL, *last_c = NULL;
-	//SubTile *p = NULL;
+	SubClient *c2 = NULL, *lc = NULL;
 
 	assert(c);
 	
@@ -434,13 +432,13 @@ subClientDrag(SubClient *c,
 													state = SUB_DRAG_AFTER;
 											}
 
-										if(last_state != state || last_c != c2) 
+										if(lstate != state || lc != c2) 
 											{
-												if(last_state != SUB_DRAG_START) DrawMask(last_state, last_c, &r);
+												if(lstate != SUB_DRAG_START) DrawMask(lstate, lc, &r);
 												DrawMask(state, c2, &r);
 
-												last_c		 = c2;
-												last_state = state;
+												lc		 = c2;
+												lstate = state;
 											}
 										}
 								}
@@ -449,35 +447,39 @@ subClientDrag(SubClient *c,
 						if(win != c->frame && mode > SUB_DRAG_MOVE)
 							{
 								DrawMask(state, c2, &r); /* Erase mask */
-#if 0 /* Drag actions {{{ */
-								if(c && c2 && c->tile && c2->parent)
+								if(c && c2 && c->tile && c2->tile)
 									{
 										if(state == SUB_DRAG_TOP || state == SUB_DRAG_BOTTOM ||
 											state == SUB_DRAG_LEFT || state == SUB_DRAG_RIGHT)
 											{
-												SubClient *t = subTileNew(state == SUB_DRAG_TOP || 
+												SubTile *t = subTileNew(state == SUB_DRAG_TOP || 
 													state == SUB_DRAG_BOTTOM ? SUB_TYPE_VERT : SUB_TYPE_HORZ);
-												p = c->tile;
+												int idx = subArrayFind(c2->tile->clients, (void *)c2);
 
-												subWinReplace(w2, t);
-												subWinUnlink(w);
+												//subArraySwap(c2->tile->clients, (void *)c2, (void *)t);
+												subArraySet(c2->tile->clients, idx, (void *)t);
+												subArrayPop(c->tile->clients, (void *)c);
 
 												/* Check resizeded windows */
 												if(c2->flags & SUB_STATE_RESIZE)
 													{
-														t->flags 		|= SUB_STATE_RESIZE;
-														t->resized		= c2->resized;
-														c2->flags		&= ~SUB_STATE_RESIZE;
-														c2->resized	= 0;
+														t->flags 	|= SUB_STATE_RESIZE;
+														t->size		= c2->size;
+														c2->flags	&= ~SUB_STATE_RESIZE;
+														c2->size	= 0;
 													}
 
-												subTileAdd(t, state == SUB_DRAG_TOP || state == SUB_DRAG_LEFT ? w : w2);
-												subTileAdd(t, state == SUB_DRAG_TOP || state == SUB_DRAG_LEFT ? w2 : w);
-												subWinMap(t);
+												subArrayPush(t->clients, (void *)(state == SUB_DRAG_TOP || state == SUB_DRAG_LEFT ? c : c2));
+												subArrayPush(t->clients, (void *)(state == SUB_DRAG_TOP || state == SUB_DRAG_LEFT ? c2 : c));
 
-												subTileConfigure(t->parent);
-												subTileConfigure(p);
+												subTileConfigure(c->tile);
+												subTileConfigure(c2->tile);
+
+												t->tile 	= c2->tile;
+												c->tile 	= t;
+												c2->tile	= t;
 											}
+#if 0											
 										else if(state == SUB_DRAG_BEFORE || state == SUB_DRAG_AFTER ||
 											state == SUB_DRAG_ABOVE || state == SUB_DRAG_BELOW)
 											{
@@ -514,8 +516,8 @@ subClientDrag(SubClient *c,
 													}
 											}
 										else if(state == SUB_DRAG_SWAP) subWinSwap(w, w2);
+#endif										
 									}
-#endif /* }}} */	
 							}
 						else /* Resize */
 							{
@@ -544,6 +546,7 @@ subClientDrag(SubClient *c,
  /** subClientToggle {{{
 	* Toggle various states of client
 	* @param[in] c A #SubClient
+	* @param[in] type Toggle type
 	**/
 
 void
