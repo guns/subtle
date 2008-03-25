@@ -67,5 +67,5 @@ Rules = {
 		["bar"] = 100
 	},
 	gimp = "gimp.*",
-	subtle = "baz"
+	subtle = ".*"
 } -- }}}
