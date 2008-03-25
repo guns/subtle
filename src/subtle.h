@@ -61,10 +61,11 @@
 #define SUB_STATE_STACK					(1L << 13)							// Stacked tiling window
 #define SUB_STATE_TRANS					(1L << 14)							// Transient window
 #define SUB_STATE_DEAD					(1L << 15)							// Dead window
+#define SUB_STATE_MULTI					(1L << 16)							// Multi tagged
 
-#define SUB_PREF_INPUT					(1L << 16)							// Active/passive focus-model
-#define SUB_PREF_FOCUS					(1L << 17)							// Send focus message
-#define SUB_PREF_CLOSE					(1L << 18)							// Send close message
+#define SUB_PREF_INPUT					(1L << 17)							// Active/passive focus-model
+#define SUB_PREF_FOCUS					(1L << 18)							// Send focus message
+#define SUB_PREF_CLOSE					(1L << 19)							// Send close message
 
 #define SUB_DRAG_START					(1L << 1)								// Drag start
 #define SUB_DRAG_ABOVE					(1L << 2)								// Drag above
@@ -118,9 +119,11 @@ typedef struct subarrayundef
 } SubArrayUndef;
 
 SubArray *subArrayNew(void);														// Create new array
-void subArrayPush(SubArray *a, void *elem);							// Push element to array
-void subArrayPop(SubArray *a, void *elem);							// Pop element from array
-int subArrayFind(SubArray *a, void *elem);							// Find array id of element
+void subArrayPush(SubArray *a, void *e);								// Push element to array
+void subArrayPop(SubArray *a, void *e);									// Pop element from array
+void subArraySet(SubArray *a, int idx, void *e);				// Set array index
+int subArrayFind(SubArray *a, void *e);									// Find array id of element
+void subArraySwap(SubArray *a, void *e1, void *e2);			// Swap both elements
 void subArrayKill(SubArray *a, int clean);							// Kill array with all elements
 /* }}} */
 
@@ -160,6 +163,7 @@ typedef struct subtile
 
 SubTile *subTileNew(int mode);													// Create new tile
 void subTileConfigure(SubTile *t);											// Configure tile
+void subTileRemap(SubTile *t);													// Remap tile
 void subTileKill(SubTile *t);														// Kill tile
 /* }}} */
 
@@ -190,7 +194,7 @@ SubView *subViewNew(char *name);												// Create new view
 void subViewConfigure(void);														// Configure views
 void subViewRender(void);																// Render views
 void subViewMerge(Window win);													// Merge window
-void subViewSwitch(SubView *v);													// Switch to view
+void subViewJump(SubView *v);														// Jump to view
 void subViewKill(SubView *v);														// Kill view
 /* }}} */
 
