@@ -107,7 +107,7 @@ subDisplayScan(void)
 	for(i = 0; i < n; i++)
 		{
 			/* Skip own windows */
-			if(wins[i] && wins[i] != d->bar.win && wins[i] != d->cv->frame)
+			if(wins[i] && wins[i] != d->bar.win && wins[i] != (d->cv ? d->cv->frame : 0))
 				{
 #ifdef DEBUG
 					merged++;
@@ -117,6 +117,11 @@ subDisplayScan(void)
 					if(attr.map_state == IsViewable) subViewMerge(wins[i]);
 				}
 		}
+
+	XMapRaised(d->disp, d->bar.win);
+	subViewConfigure();
+	subViewRender();
+
 	XFree(wins);
 
 	subUtilLogDebug("wins=%d, merged=%d\n", n, merged);
