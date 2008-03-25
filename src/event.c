@@ -57,7 +57,7 @@ HandleButtonPress(XButtonEvent *ev)
 	if(ev->window == d->bar.views)
 		{
 			SubView *v = (SubView *)subUtilFind(ev->subwindow, 1);
-			if(v) subViewSwitch(v);
+			if(v) subViewJump(v);
 
 			return;
 		}
@@ -105,8 +105,8 @@ HandleButtonPress(XButtonEvent *ev)
 /*					case Button4: 
 					case Button5: 
 						
-						subViewSwitch(d->cv->next); break;
-						if(d->cv->prev) subViewSwitch(d->cv->prev); break; */
+						subViewJump(d->cv->next); break;
+						if(d->cv->prev) subViewJump(d->cv->prev); break; */
 				}
 		}
 } /* }}} */
@@ -140,9 +140,9 @@ HandleKeyPress(XKeyEvent *ev)
 										subTileConfigure(c->tile);
 									}			
 								break;
-/*							case SUB_KEY_DESKTOP_NEXT: subViewSwitch(d->cv->next);	break;
+/*							case SUB_KEY_DESKTOP_NEXT: subViewJump(d->cv->next);	break;
 							case SUB_KEY_DESKTOP_PREV: 
-								if(d->cv->prev) subViewSwitch(d->cv->prev);		
+								if(d->cv->prev) subViewJump(d->cv->prev);		
 								break;*/
 							case SUB_KEY_EXEC:	if(k->string) Exec(k->string); break;
 						}
@@ -221,7 +221,7 @@ HandleMessage(XClientMessageEvent *ev)
 				{
 					/* Bound checking */
 					if(ev->data.l[0] > 0 && ev->data.l[0] < d->views->ndata)
-						subViewSwitch((SubView *)d->views->data[ev->data.l[0]]);
+						subViewJump((SubView *)d->views->data[ev->data.l[0]]);
 				}
 			else if(ev->message_type == subEwmhFind(SUB_EWMH_NET_ACTIVE_WINDOW))
 				{
@@ -301,6 +301,7 @@ HandleExpose(XEvent *ev)
 		{
 			subSubletConfigure();
 			subSubletRender();
+			subViewRender();
 		}
 	else
 		{
