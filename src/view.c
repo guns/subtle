@@ -74,38 +74,41 @@ subViewNew(char *name)
 void
 subViewConfigure(void)
 {
-	int i = 0, width = 0, nv = 0;
-	char **names = NULL;
-	Window *wins = NULL;
-
-	assert(d->cv);
-
-	wins	= (Window *)subUtilAlloc(d->views->ndata, sizeof(Window));
-	names = (char **)subUtilAlloc(d->views->ndata, sizeof(char *));
-
-	for(i = 0; i < d->views->ndata; i++)
+	if(d->views->ndata > 0)
 		{
-			SubView *v = (SubView *)d->views->data[i];
+			int i = 0, width = 0, nv = 0;
+			char **names = NULL;
+			Window *wins = NULL;
 
-			if(v->tile)
+			assert(d->views->ndata > 0);
+
+			wins	= (Window *)subUtilAlloc(d->views->ndata, sizeof(Window));
+			names = (char **)subUtilAlloc(d->views->ndata, sizeof(char *));
+
+			for(i = 0; i < d->views->ndata; i++)
 				{
-					XMoveResizeWindow(d->disp, v->button, width, 0, v->width, d->th);
-					width			+= v->width;
-					wins[nv]		= v->frame;
-					names[nv++]	= v->name;
+					SubView *v = (SubView *)d->views->data[i];
+
+					if(v->tile)
+						{
+							XMoveResizeWindow(d->disp, v->button, width, 0, v->width, d->th);
+							width			+= v->width;
+							wins[nv]		= v->frame;
+							names[nv++]	= v->name;
+						}
 				}
-		}
-	XMoveResizeWindow(d->disp, d->bar.views, 0, 0, width, d->th);
+			XMoveResizeWindow(d->disp, d->bar.views, 0, 0, width, d->th);
 
-	/* EWMH: Virtual roots */
-	subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_VIRTUAL_ROOTS, wins, nv);
+			/* EWMH: Virtual roots */
+			subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_VIRTUAL_ROOTS, wins, nv);
 
-	/* EWMH: Desktops */
-	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_NUMBER_OF_DESKTOPS, (long *)&nv, 1);
-	subEwmhSetStrings(DefaultRootWindow(d->disp), SUB_EWMH_NET_DESKTOP_NAMES, names, nv);
+			/* EWMH: Desktops */
+			subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_NUMBER_OF_DESKTOPS, (long *)&nv, 1);
+			subEwmhSetStrings(DefaultRootWindow(d->disp), SUB_EWMH_NET_DESKTOP_NAMES, names, nv);
 
-	free(wins);
-	free(names);
+			free(wins);
+			free(names);
+	}
 } /* }}} */
 
  /** subViewRender {{{ 
@@ -116,22 +119,22 @@ subViewConfigure(void)
 void
 subViewRender(void)
 {
-	int i;
-	
-	assert(d->views);
-
-	XClearWindow(d->disp, d->bar.win);
-	XFillRectangle(d->disp, d->bar.win, d->gcs.border, 0, 2, DisplayWidth(d->disp, DefaultScreen(d->disp)), d->th - 4);	
-
-	for(i = 0; i < d->views->ndata; i++)
+	if(d->views->ndata > 0)
 		{
-			SubView *v = (SubView *)d->views->data[i];
+			int i;
+			XClearWindow(d->disp, d->bar.win);
+			XFillRectangle(d->disp, d->bar.win, d->gcs.border, 0, 2, DisplayWidth(d->disp, DefaultScreen(d->disp)), d->th - 4);	
 
-			if(v->tile)
+			for(i = 0; i < d->views->ndata; i++)
 				{
-					XSetWindowBackground(d->disp, v->button, (d->cv == v) ? d->colors.focus : d->colors.norm);
-					XClearWindow(d->disp, v->button);
-					XDrawString(d->disp, v->button, d->gcs.font, 3, d->fy - 1, v->name, strlen(v->name));
+					SubView *v = (SubView *)d->views->data[i];
+
+					if(v->tile)
+						{
+							XSetWindowBackground(d->disp, v->button, (d->cv == v) ? d->colors.focus : d->colors.norm);
+							XClearWindow(d->disp, v->button);
+							XDrawString(d->disp, v->button, d->gcs.font, 3, d->fy - 1, v->name, strlen(v->name));
+						}
 				}
 		}
 } /* }}} */
@@ -144,9 +147,11 @@ subViewRender(void)
 void
 subViewMerge(Window win)
 {
-	int i, j;
+	int i, j, merged = 0;
 	long vid = 0;
 	char *class = NULL;
+	SubView *cv = NULL;
+	SubClient *lc = NULL;
 
 	assert(d->views && win);
 
@@ -171,27 +176,39 @@ subViewMerge(Window win)
 									subClientToggle(c, SUB_STATE_FLOAT);
 								}
 
-							/* EWMH: Desktop */
-							vid = subArrayFind(d->views, (void *)d->cv);
-							subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
-
 							if(!v->tile) ViewNew(v);
 							if(!r->tile)
 								{
+									/* Create new rule */
 									r->tile = subTileNew(SUB_TYPE_VERT);
 									//r->tile->flags	|= SUB_TYPE_RULE|SUB_STATE_RESIZE;
 									r->tile->flags	|= SUB_TYPE_RULE;
 									r->tile->size		= r->size > 0 ? r->size : 100;
+									r->tile->tile		= v->tile;
 
 									subArrayPush(v->tile->clients, (void *)r->tile);
 								}
 
 							subArrayPush(r->tile->clients, (void *)c);
 							XReparentWindow(d->disp, c->frame, v->frame, 0, 0);
+							c->tile = r->tile;
+
+							/* EWMH: Desktop */
+							vid = subArrayFind(d->views, (void *)v);
+							subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
 							/* Map only if view is the current view */
 							if(d->cv == v) subClientMap(c);
 							else XMapSubwindows(d->disp, c->frame);
+							cv = v;
+
+							/* Mark clients as multi */
+							if(++merged >= 2) 
+								{
+									c->flags	|= SUB_STATE_MULTI;
+									lc->flags	|= SUB_STATE_MULTI;
+								}
+							lc = c;
 
 							subTileConfigure(v->tile);
 							printf("Adding client %s (%s/%d)\n", c->name, v->name, j);
@@ -201,17 +218,18 @@ subViewMerge(Window win)
 	
 	subViewConfigure();
 	subViewRender();
+	subViewJump(cv);
 
 	XFree(class);
 } /* }}} */
 
- /** subViewSwitch {{{
-	* Switch view
+ /** subViewJump {{{
+	* Jump to view
 	* @param[in] v A #SubView
 	**/
 
 void
-subViewSwitch(SubView *v)
+subViewJump(SubView *v)
 {
 	long vid = 0;
 
@@ -228,6 +246,8 @@ subViewSwitch(SubView *v)
 	XMapWindow(d->disp, d->cv->frame);
 	XMapSubwindows(d->disp, d->cv->frame);
 	XMapRaised(d->disp, d->bar.win);
+
+	subTileRemap(v->tile);
 
 	/* EWMH: Desktops */
 	vid = subArrayFind(d->views, v) + 1;
