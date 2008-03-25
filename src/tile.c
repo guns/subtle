@@ -172,12 +172,35 @@ subTileConfigure(SubTile *t)
 								}
 							else y += c->height;
 
-							subUtilLogDebug("[%p] type=%c, x=%03d, y=%03d, w=%03d, h=%03d\n", &c, c->flags & SUB_TYPE_CLIENT ? 'c' : 't', 
-								c->x, c->y, c->width, c->height);
-
 							if(c->flags & SUB_TYPE_TILE) subTileConfigure((SubTile *)t->clients->data[i]);
 							else if(c->flags & SUB_TYPE_CLIENT) subClientConfigure(c);
 						}
+				}
+		}
+} /* }}} */
+
+ /** subTileRemap {{{ 
+	* Remap clients on multi views
+	* @param[in] t A #SubTile
+	**/
+
+void
+subTileRemap(SubTile *t)
+{
+	int i;
+
+	assert(t);
+
+	for(i = 0; i < t->clients->ndata; i++)
+		{
+			SubClient *c = (SubClient *)t->clients->data[i];
+
+			if(c->flags & SUB_TYPE_TILE) subTileRemap((SubTile *)t->clients->data[i]);
+			else if(c->flags & SUB_STATE_MULTI)
+				{
+					XReparentWindow(d->disp, c->win, c->frame, d->bw, d->th);
+					XMapWindow(d->disp, c->win);
+					subClientConfigure(c);
 				}
 		}
 } /* }}} */
