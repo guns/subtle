@@ -25,85 +25,107 @@ subArrayNew(void)
  /** subArrayPush {{{
 	* Push element to array
 	* @param[in] a A #SubArray
-	* @param[in] elem New element
+	* @param[in] e New element
 	**/
 
 void
 subArrayPush(SubArray *a,
-	void *elem)
+	void *e)
 {
-	assert(a && elem);
+	assert(a && e);
 
 	a->data = (void **)subUtilRealloc(a->data, (a->ndata + 1) * sizeof(void *));
-	a->data[(a->ndata)++] = elem;
+	a->data[(a->ndata)++] = e;
 } /* }}} */
 
  /** subArrayPop {{{
 	* Pop element from array
 	* @param[in] a #SubArray
-	* @param[in] elem Array element
+	* @param[in] e Array element
 	**/
 
 void
 subArrayPop(SubArray *a,
-	void *elem)
+	void *e)
 {
 	int i, j;
 
-	assert(a && elem);
+	assert(a && e);
 
-	for(i = 0; i < a->ndata; i--)
-	{
-		if(a->data[i] == elem)
-			{
-				for(j = i; j < a->ndata; j++) a->data[j] = a->data[j + 1];
-				a->ndata--;
-				a->data = (void **)subUtilRealloc(a->data, a->ndata * sizeof(void *));
-				return;
-			}
+	for(i = 0; i < a->ndata; i++)
+		{
+			if(a->data[i] == e)
+				{
+					for(j = i; j < a->ndata; j++) a->data[j] = a->data[j + 1];
+					a->ndata--;
+					a->data = (void **)subUtilRealloc(a->data, a->ndata * sizeof(void *));
+					return;
+				}
 		}
-
 } /* }}} */
 
-/** subArrayFind {{{
- * Find array id of element
- * @param[in] a A #SubArray
- * @param[in] elem Element
- * @return Success: Found id
- * 				 Failure: -1
- **/
-
-int
-subArrayFind(SubArray *a,
-	void *elem)
+ /** subArraySet {{{
+	* Set array pos
+	* @param[in] a A #SubArray
+	* @param[in] idx Array index
+	* @param[in] e Element
+	**/
+ 
+void
+subArraySet(SubArray *a,
+	int idx,
+	void *e)
 {
 	int i;
 
-	assert(a && elem);
+	assert(a && idx >= 0 && idx <= a->ndata && e);
+
+	a->ndata++;
+	a->data = (void **)subUtilRealloc(a->data, a->ndata * sizeof(void *));
+
+	for(i = idx; i < a->ndata; i++) a->data[i + 1] = a->data[i];
+	a->data[idx] = e;
+} /* }}} */
+
+ /** subArrayFind {{{
+	* Find array id of element
+	* @param[in] a A #SubArray
+	* @param[in] e Element
+	* @return Success: Found id
+	* 				 Failure: -1
+	**/
+
+int
+subArrayFind(SubArray *a,
+	void *e)
+{
+	int i;
+
+	assert(a && e);
 
 	for(i = 0; i < a->ndata; i++)
-		if(a->data[i] == elem) return(i);
+		if(a->data[i] == e) return(i);
 	return(-1);
 } /* }}} */
 
  /** subArraySwap {{{
 	* Swap elements a and b
 	* @param[in] arr A #SubArray
-	* @param[in] elem1 Element 1
-	* @param[in] elem2 Element 2
+	* @param[in] e1 Element 1
+	* @param[in] e2 Element 2
 	**/
 
 void
 subArraySwap(SubArray *a,
-	void *elem1,
-	void *elem2)
+	void *e1,
+	void *e2)
 {
 	int i;
 
-	assert(a && a->ndata >= 1);
+	assert(a && a->ndata >= 1 && e1 && e2);
 
 	for(i = 0; i < a->ndata; i++) 
-		if(a->data[i] == elem1) a->data[i] = elem2;
+		if(a->data[i] == e1) a->data[i] = e2;
 } /* }}} */
 
  /** subArrayKill {{{
