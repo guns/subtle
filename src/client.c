@@ -454,10 +454,8 @@ subClientDrag(SubClient *c,
 											{
 												SubTile *t = subTileNew(state == SUB_DRAG_TOP || 
 													state == SUB_DRAG_BOTTOM ? SUB_TYPE_VERT : SUB_TYPE_HORZ);
-												int idx = subArrayFind(c2->tile->clients, (void *)c2);
 
-												//subArraySwap(c2->tile->clients, (void *)c2, (void *)t);
-												subArraySet(c2->tile->clients, idx, (void *)t);
+												subArraySwap(c2->tile->clients, (void *)c2, (void *)t);
 												subArrayPop(c->tile->clients, (void *)c);
 
 												/* Check resizeded windows */
