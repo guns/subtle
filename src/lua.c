@@ -283,8 +283,12 @@ subLuaLoadConfig(const char *path)
 	d->colors.bg			= ParseColor(configstate, "Background",	"#336699");
 
 	/* View windows */
-	d->bar.win			= XCreateSimpleWindow(d->disp, DefaultRootWindow(d->disp), 0, 0, 
-		DisplayWidth(d->disp, DefaultScreen(d->disp)), d->th, 0, 0, d->colors.norm);
+	attrs.background_pixel	= d->colors.norm;
+	attrs.save_under				= False;
+	attrs.event_mask				= ButtonPressMask|ExposureMask|VisibilityChangeMask;
+
+	d->bar.win			= SUBWINNEW(DefaultRootWindow(d->disp), 0, 0, DisplayWidth(d->disp, DefaultScreen(d->disp)), d->th, 0,
+		CWBackPixel|CWSaveUnder|CWEventMask);
 	d->bar.views		= XCreateSimpleWindow(d->disp, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
 	d->bar.sublets	= XCreateSimpleWindow(d->disp, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
 
