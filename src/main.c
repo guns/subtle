@@ -127,8 +127,6 @@ main(int argc,
 	subLuaLoadConfig(config);
 	subLuaLoadSublets(sublets);
 
-	subViewSwitch((SubView *)d->views->data[0]);
-
 	subDisplayScan();
 
 	subEventLoop();
