@@ -1,19 +1,19 @@
 
  /**
-	* subtle - window manager
-	* Copyright (c) 2005-2008 Christoph Kappel
+	* @package subtle
+	*
+	* @file Array functions
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @version $Id$
 	*
 	* See the COPYING file for the license in the latest tarball.
-	*
-	* $Id$
 	**/
 
 #include "subtle.h"
 
  /** subArrayNew {{{
-	* Create new array and init it
-	* @return Success: #SubArray
-	* 				Failure: NULL
+	* @brief Create new array and init it
+	* @return A #SubArray or \p NULL
 	**/
 
 SubArray *
@@ -23,7 +23,7 @@ subArrayNew(void)
 } /* }}} */
 
  /** subArrayPush {{{
-	* Push element to array
+	* @brief Push element to array
 	* @param[in] a A #SubArray
 	* @param[in] e New element
 	**/
@@ -39,7 +39,7 @@ subArrayPush(SubArray *a,
 } /* }}} */
 
  /** subArrayPop {{{
-	* Pop element from array
+	* @brief Pop element from array
 	* @param[in] a #SubArray
 	* @param[in] e Array element
 	**/
@@ -48,51 +48,29 @@ void
 subArrayPop(SubArray *a,
 	void *e)
 {
-	int i, j;
+	int idx, i;
 
 	assert(a && e);
 
-	for(i = 0; i < a->ndata; i++)
+	idx = subArrayFind(a, e);
+	if(idx >= 0)
 		{
-			if(a->data[i] == e)
+			for(i = idx; i < a->ndata - 1; i++) 
 				{
-					for(j = i; j < a->ndata; j++) a->data[j] = a->data[j + 1];
-					a->ndata--;
-					a->data = (void **)subUtilRealloc(a->data, a->ndata * sizeof(void *));
-					return;
+					printf("i=%d, idx=%d\n", i, idx);
+					a->data[i] = a->data[i + 1];
 				}
+
+			a->ndata--;
+			a->data = (void **)subUtilRealloc(a->data, a->ndata * sizeof(void *));
 		}
 } /* }}} */
 
- /** subArraySet {{{
-	* Set array pos
-	* @param[in] a A #SubArray
-	* @param[in] idx Array index
-	* @param[in] e Element
-	**/
- 
-void
-subArraySet(SubArray *a,
-	int idx,
-	void *e)
-{
-	int i;
-
-	assert(a && idx >= 0 && idx <= a->ndata && e);
-
-	a->ndata++;
-	a->data = (void **)subUtilRealloc(a->data, a->ndata * sizeof(void *));
-
-	for(i = idx; i < a->ndata; i++) a->data[i + 1] = a->data[i];
-	a->data[idx] = e;
-} /* }}} */
-
  /** subArrayFind {{{
-	* Find array id of element
+	* @brief Find array id of element
 	* @param[in] a A #SubArray
 	* @param[in] e Element
-	* @return Success: Found id
-	* 				 Failure: -1
+	* @return Found idx or \p -1
 	**/
 
 int
@@ -108,28 +86,34 @@ subArrayFind(SubArray *a,
 	return(-1);
 } /* }}} */
 
- /** subArraySwap {{{
-	* Swap elements a and b
-	* @param[in] arr A #SubArray
-	* @param[in] e1 Element 1
-	* @param[in] e2 Element 2
+ /** subArraySplice {{{
+	* @brief Splice array at idx with len
+	* @params[in] a A #SubArray
+	* @params[in] idx Array index
+	* @params[in] len Length
 	**/
 
 void
-subArraySwap(SubArray *a,
-	void *e1,
-	void *e2)
+subArraySplice(SubArray *a,
+	int idx,
+	int len)
 {
 	int i;
+	assert(a && idx >= 0 && idx <= a->ndata && len > 0);
 
-	assert(a && a->ndata >= 1 && e1 && e2);
+printf("size=%d\n", a->ndata * sizeof(void *));
+	a->ndata += len;
+	a->data = (void **)subUtilRealloc(a->data, (a->ndata + 1) * sizeof(void *));
 
-	for(i = 0; i < a->ndata; i++) 
-		if(a->data[i] == e1) a->data[i] = e2;
+	for(i = a->ndata; i > idx; i--)
+		{
+			printf("i=%d, ndata=%d, len=%d, i-len=%d\n", i, a->ndata, len, i - len);
+			a->data[i] = a->data[i - len];
+		}
 } /* }}} */
 
  /** subArrayKill {{{
-	* Kill array with all elements
+	* @brief Kill array with all elements
 	* @param[in] a A #SubArray
 	* @param[in] clean Free elements or not
 	**/
@@ -146,15 +130,15 @@ subArrayKill(SubArray *a,
 		{
 			for(i = 0; i < a->ndata; i++)
 				{
-						/* Check type and kill it */
-						SubArrayUndef *u = (SubArrayUndef *)a->data[i];
+					/* Check type and kill it */
+					SubClient *c = CLIENT(a->data[i]);
 
-						if(u->flags & SUB_TYPE_CLIENT) subClientKill((SubClient *)u);
-						else if(u->flags & SUB_TYPE_TILE) subTileKill((SubTile *)u);
-						else if(u->flags & SUB_TYPE_VIEW) subViewKill((SubView *)u);
-						else if(u->flags & SUB_TYPE_RULE) subRuleKill((SubRule *)u);
-						else if(u->flags & SUB_TYPE_SUBLET) subSubletKill((SubSublet *)u);
-						else free(a->data[i]); 
+					if(c->flags & SUB_TYPE_VIEW) subViewKill(VIEW(c));
+					else if(c->flags & SUB_TYPE_RULE) subRuleKill(RULE(c), True);
+					else if(c->flags & SUB_TYPE_CLIENT) subClientKill(CLIENT(c));
+					else if(c->flags & SUB_TYPE_TILE) subTileKill(TILE(c), True);
+					else if(c->flags & SUB_TYPE_SUBLET) subSubletKill(SUBLET(c));
+					else free(a->data[i]); 
 				}
 		}
 	free(a);
