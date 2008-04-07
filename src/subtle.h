@@ -1,11 +1,12 @@
 
  /**
-	* subtle - window manager
-	* Copyright (c) 2005-2008 Christoph Kappel
+	* @package subtle
+	*
+	* @file Header file
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @version $Id$
 	*
 	* See the COPYING file for the license in the latest tarball.
-	*
-	* $Id$
 	**/
 
 #ifndef SUBTLE_H
@@ -36,12 +37,19 @@
 /* }}} */
 
 /* Macros {{{ */
-#define SUBWINNEW(parent,x,y,width,height,border,mask) \
+#define WINNEW(parent,x,y,width,height,border,mask) \
 	XCreateWindow(d->disp, parent, x, y, width, height, border, CopyFromParent, \
 		InputOutput, CopyFromParent, mask, &attrs);					// Shortcut
 
-#define SUBWINWIDTH(w)	(w->width - 2 * d->bw)					// Get real window width
-#define SUBWINHEIGHT(w)	(w->height - d->th - d->bw)			// Get real window height
+#define WINWIDTH(w)		(w->width - 2 * d->bw)						// Get real window width
+#define WINHEIGHT(w)	(w->height - d->th - d->bw)				// Get real window height
+
+#define ARRAY(a)	((SubArray *)a)												// Cast to SubArray
+#define VIEW(v)		((SubView *)v)												// Cast to SubView
+#define TILE(t)		((SubTile *)t)												// Cast to SubTile
+#define CLIENT(c)	((SubClient *)c)											// Cast to SubClient
+#define RULE(r)		((SubRule *)r)												// Cast to SubRule
+#define SUBLET(s)	((SubSublet *)s)											// Cast to SubSublet
 /* }}} */
 
 /* Flags {{{ */
@@ -113,17 +121,11 @@ typedef struct subarray
 	void	**data;																					// Array data
 } SubArray;
 
-typedef struct subarrayundef
-{
-	int flags;																						// Undef flags
-} SubArrayUndef;
-
 SubArray *subArrayNew(void);														// Create new array
 void subArrayPush(SubArray *a, void *e);								// Push element to array
 void subArrayPop(SubArray *a, void *e);									// Pop element from array
-void subArraySet(SubArray *a, int idx, void *e);				// Set array index
 int subArrayFind(SubArray *a, void *e);									// Find array id of element
-void subArraySwap(SubArray *a, void *e1, void *e2);			// Swap both elements
+void subArraySplice(SubArray *a, int idx, int len);			// Splice array at idx with len
 void subArrayKill(SubArray *a, int clean);							// Kill array with all elements
 /* }}} */
 
@@ -159,12 +161,13 @@ typedef struct subtile
 	struct subtile		*tile;															// Tile parent
 	struct subclient	*top;																// Tile stack top
 	struct subarray		*clients;														// Tile clients
+	void 							*sup;																// Tile superior
 } SubTile;
 
-SubTile *subTileNew(int mode);													// Create new tile
+SubTile *subTileNew(int mode, void *sup);								// Create new tile
 void subTileConfigure(SubTile *t);											// Configure tile
 void subTileRemap(SubTile *t);													// Remap tile
-void subTileKill(SubTile *t);														// Kill tile
+void subTileKill(SubTile *t, int clean);								// Kill tile
 /* }}} */
 
 /* rule.c {{{ */
@@ -176,7 +179,7 @@ typedef struct subrule
 } SubRule;
 
 SubRule *subRuleNew(char *tags, int size);							// Create rule
-void subRuleKill(SubRule *r);														// Delete rule
+void subRuleKill(SubRule *r, int clean);								// Delete rule
 
 /* }}} */
 
@@ -213,7 +216,7 @@ typedef struct subsublet
 	};
 } SubSublet;
 
-void subSubletNew(int type, char *name, int ref, 				// Create new sublet
+SubSublet *subSubletNew(int type, char *name, int ref, 	// Create new sublet
 	time_t interval, char *watch);
 void subSubletConfigure(void);													// Configure sublet bar
 void subSubletRender(void);															// Render sublet
@@ -264,7 +267,7 @@ typedef struct subdisplay
 
 extern SubDisplay *d;
 
-void subDisplayNew(const char *display_string);					// Create new display
+SubDisplay *subDisplayNew(const char *display_string);	// Create new display
 void subDisplayKill(void);															// Delete display
 void subDisplayScan(void);															// Scan root window
 /* }}} */
@@ -283,8 +286,8 @@ typedef struct subkey
 } SubKey;
 
 void subKeyInit(void);																	// Init the keys
-void subKeyNew(const char *key,
-	const char *value);																		// Create new key
+SubKey *subKeyNew(const char *key,											// Create new key
+	const char *value);
 void subKeySort(void);																	// Sort keys
 SubKey *subKeyFind(int code, unsigned int mod);					// Find key
 void subKeyGrab(Window win);														// Grab keys for window
@@ -316,8 +319,8 @@ void subUtilLogSetDebug(void);
 
 void subUtilLog(int type, const char *file,
 	int line, const char *format, ...);										// Print messages
-void *subUtilRealloc(void *mem, size_t size);						// Reallocate memory
 void *subUtilAlloc(size_t n, size_t size);							// Allocate memory
+void *subUtilRealloc(void *mem, size_t size);						// Reallocate memory
 XPointer *subUtilFind(Window win, XContext id);					// Find window data
 time_t subUtilTime(void);																// Get the current time
 /* }}} */
