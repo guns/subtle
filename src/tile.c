@@ -1,24 +1,26 @@
 
  /**
-	* subtle - window manager
-	* Copyright (c) 2005-2008 Christoph Kappel
+	* @package subtle
+	*
+	* @file Tile functions
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @version $Id$
 	*
 	* See the COPYING file for the license in the latest tarball.
-	*
-	* $Id$
 	**/
 
 #include "subtle.h"
 
  /** subTileNew {{{
-	* Create new tile 
+	* @brief Create new tile 
 	* @param[in] mode Tile mode
-	* @return Success: #SubTile
-	* 				Error: NULL
+	* @param[in] sub Tile superior
+	* @return A #SubTile or @p NULL
 	**/
 
 SubTile *
-subTileNew(int mode)
+subTileNew(int mode,
+	void *sup)
 {
 	SubTile *t = NULL;
 
@@ -27,6 +29,7 @@ subTileNew(int mode)
 	t	= (SubTile *)subUtilAlloc(1, sizeof(SubTile));
 	t->flags		= SUB_TYPE_TILE|mode;
 	t->clients	= subArrayNew();
+	t->sup			= sup;
 
 	/* Start values */
 	t->width	= DisplayWidth(d->disp, DefaultScreen(d->disp));
@@ -38,7 +41,7 @@ subTileNew(int mode)
 } /* }}} */
 
  /** subTileConfigure {{{
-	* Configure tile and clients 
+	* @brief Configure tile and clients 
 	* @param[in] t A #SubTile
 	**/
 
@@ -59,7 +62,7 @@ subTileConfigure(SubTile *t)
 			height= t->height;
 			size	= (t->flags & SUB_TYPE_HORZ) ? width : height;
 
-		/* Find special clients */
+			/* Find special clients */
 			for(i = 0; i < t->clients->ndata; i++)
 				{
 					c = (SubClient *)t->clients->data[i]; /* Both types have common fields */
@@ -83,8 +86,8 @@ subTileConfigure(SubTile *t)
 						}
 				}
 
-			subUtilLogDebug("type=%s, n=%d, sha=%d, ful=%d, flo=%d, res=%d\n", (t->flags & SUB_TYPE_HORZ) ? "horz" : "vert",
-				n, shaded, full, floated, resized);
+			subUtilLogDebug("type=%s, n=%d, sha=%d, ful=%d, flo=%d, res=%d\n", 
+				(t->flags & SUB_TYPE_HORZ) ? "horz" : "vert", n, shaded, full, floated, resized);
 
 			/* Stacked window */
 			if(t->flags & SUB_STATE_STACK) 
@@ -105,30 +108,48 @@ subTileConfigure(SubTile *t)
 			cw	= (t->flags & SUB_TYPE_HORZ) ? width / n : width;
 			ch	= (t->flags & SUB_TYPE_VERT) ? (height - shaded * d->th) / n : height;
 
-			assert(cw > 0 && ch > 0);
-
 			/* Get compensation for int rounding */
 			if(t->flags & SUB_TYPE_HORZ) comp = abs(width - n * cw - shaded * d->th);
 			else comp = abs(height - n * ch - shaded * d->th);
 
 			for(i = 0; i < t->clients->ndata; i++)
 				{
-					c = (SubClient *)t->clients->data[i]; /* Both types have common fields */
+					c = CLIENT(t->clients->data[i]); /* Both types have common fields */
 
 					if(!(c->flags & (SUB_STATE_TRANS|SUB_STATE_FLOAT|SUB_STATE_FULL)))
 						{
 							/* Shade every client that is not on top */
 							if(t->flags & SUB_STATE_STACK && t->tile->top != c) c->flags |= SUB_STATE_SHADE;
 
-							/* Remove tiles with only one client */
-							if(c->flags & SUB_TYPE_TILE && !(c->flags & SUB_TYPE_RULE) && ((SubTile *)c)->clients->ndata == 1)
+							/* Sanitize tree */
+							if(c->flags & SUB_TYPE_TILE)
 								{
-									SubTile *tmp = (SubTile *)t->clients->data[i];
-									t->clients->data[i] = tmp->clients->data[0];
+									SubTile *tmp = TILE(t->clients->data[i]);
+									
+									if(tmp->flags & SUB_TYPE_RULE)
+										{
+											if(tmp->clients->ndata <= 0)
+												{
+													SubRule *r = RULE(tmp->sup);
 
-									subUtilLogDebug("Removing dynamic tile %#lx\n", tmp);
+													printf("Removing rule tile %p\n", t->clients->data[i]);
 
-									subTileKill(tmp);
+													subArrayPop(t->clients, t->clients->data[i]);
+													subTileKill(tmp, False);
+													subTileConfigure(t);
+													r->tile = NULL;
+													return;
+												}
+										}
+									else if(tmp->clients->ndata == 1)
+										{
+											printf("Removing dynamic tile %p\n", tmp);
+											t->clients->data[i] = tmp->clients->data[0];
+											c = CLIENT(tmp->clients->data[0]);
+											c->tile = t;
+
+											subTileKill(tmp, False);
+										}
 								}
 
 							c->tile		= t;
@@ -180,7 +201,7 @@ subTileConfigure(SubTile *t)
 } /* }}} */
 
  /** subTileRemap {{{ 
-	* Remap clients on multi views
+	* @brief Remap clients on multi views
 	* @param[in] t A #SubTile
 	**/
 
@@ -206,13 +227,16 @@ subTileRemap(SubTile *t)
 } /* }}} */
 
  /** subTileKill {{{
+	* @brief Kill tile
 	* @param[in] t A #SubTile
+	* @param[in] clean Free elements or not
 	**/
 
 void
-subTileKill(SubTile *t)
+subTileKill(SubTile *t,
+	int clean)
 {
-	subArrayKill(t->clients, True);
+	subArrayKill(t->clients, clean);
 	free(t);
 
 	subUtilLogDebug("kill=tile\n");
