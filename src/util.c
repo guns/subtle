@@ -1,11 +1,12 @@
 
  /**
-	* subtle - window manager
-	* Copyright (c) 2005-2008 Christoph Kappel
+	* @package subtle
+	*
+	* @file Utility functions
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @version $Id$
 	*
 	* See the COPYING file for the license in the latest tarball.
-	*
-	* $Id$
 	**/
 
 #include <stdarg.h>
@@ -16,7 +17,7 @@
 static int debug = 0;
 
  /** subUtilLogSetDebug {{{
-	* Toggle debugging messages
+	* @brief Enable debugging messages
 	**/
 
 void
@@ -27,7 +28,7 @@ subUtilLogSetDebug(void)
 #endif /* DEBUG */
 
  /** subUtilLog {{{
-	* Print messages depending on type
+	* @brief Print messages depending on type
 	* @param[in] type Message type
 	* @param[in] file File name
 	* @param[in] line Line number
@@ -64,11 +65,10 @@ subUtilLog(int type,
 } /* }}} */
 
  /** subUtilAlloc {{{
-	* Alloc memory and check for result
+	* @brief Alloc memory and check result
 	* @param[in] n Number of elements
 	* @param[in] size Size of the memory block
-	* @return Success: Allocated memory block
-	* 				Failure: NULL
+	* @return New memory block or \p NULL
 	**/
 
 void *
@@ -81,11 +81,10 @@ subUtilAlloc(size_t n,
 } /* }}} */
 
  /** subUtilRealloc {{{
-	* Realloc memory and check for result
+	* @brief Realloc memory and check result
 	* @param[in] mem Memory block
 	* @param[in] size Size of the memory block
-	*	@return Success: Allocated memory block
-	* 				Failure: NULL
+	* @return New memory block or \p NULL
 	**/
 
 void *
@@ -93,16 +92,15 @@ subUtilRealloc(void *mem,
 	size_t size)
 {
 	mem = realloc(mem, size);
-	if(!mem) subUtilLogError("Can't alloc memory. Exhausted?\n");
+	if(!mem) subUtilLogDebug("Memory has been freed. Expected?\n");
 	return(mem);
 } /* }}} */
 
  /** subUtilFind {{{
-	* Find data with the context manager
+	* @brief Find data with the context manager
 	* @param[in] win A #Window
 	* @param[in] id Context id
-	* @return Success: Found data
-	* 				Failure: NULL
+	* @return Found data pointer or \p NULL
 	**/
 
 XPointer *
@@ -116,7 +114,7 @@ subUtilFind(Window win,
 } /* }}} */
 
  /** subUtilTime {{{
-	* Get the current time in seconds 
+	* @brief Get the current time in seconds 
 	* @return Current time in seconds
 	**/
 

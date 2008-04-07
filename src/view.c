@@ -1,11 +1,12 @@
 
  /**
-	* subtle - window manager
-	* Copyright (c) 2005-2008 Christoph Kappel
+	* @package subtle
+	*
+	* @file View functions
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @version $Id$
 	*
 	* See the COPYING file for the license in the latest tarball.
-	*
-	* $Id$
 	**/
 
 #include "subtle.h"
@@ -16,7 +17,8 @@ ViewNew(SubView *v)
 {
 	assert(v);
 
-	v->tile = subTileNew(SUB_TYPE_HORZ);
+	v->tile = subTileNew(SUB_TYPE_HORZ, (void *)v);
+	v->tile->flags |= SUB_TYPE_VIEW;
 	v->frame	= XCreateSimpleWindow(d->disp, DefaultRootWindow(d->disp), 0, d->th, 
 		DisplayWidth(d->disp, DefaultScreen(d->disp)), DisplayHeight(d->disp, DefaultScreen(d->disp)), 0, 
 		d->colors.border, d->colors.norm);
@@ -38,15 +40,14 @@ ViewDelete(SubView *v)
 	XDestroyWindow(d->disp, v->frame);
 	XDestroyWindow(d->disp, v->button);
 
-	subTileKill(v->tile);
+	subTileKill(v->tile, True);
 	v->tile = NULL;
 } /* }}} */
 
  /** subViewNew {{{
-	* Create a view
+	* @brief Create a view
 	* @param[in] name Name of the view
-	* @return Success: #SubClient
-	* 				Error: Exit
+	* @return A #SubClient or \p NULL
 	**/
 
 SubView *
@@ -68,7 +69,7 @@ subViewNew(char *name)
 } /* }}} */
 
  /** subViewConfigure {{{
-	* Configure views
+	* @brief Configure all views
 	**/
 
 void
@@ -87,12 +88,12 @@ subViewConfigure(void)
 
 			for(i = 0; i < d->views->ndata; i++)
 				{
-					SubView *v = (SubView *)d->views->data[i];
+					SubView *v = VIEW(d->views->data[i]);
 
 					if(v->tile)
 						{
 							XMoveResizeWindow(d->disp, v->button, width, 0, v->width, d->th);
-							width			+= v->width;
+							width				+= v->width;
 							wins[nv]		= v->frame;
 							names[nv++]	= v->name;
 						}
@@ -112,7 +113,7 @@ subViewConfigure(void)
 } /* }}} */
 
  /** subViewRender {{{ 
-	* Render views
+	* @brief Render all views
 	* @param[in] v A #SubView
 	**/
 
@@ -140,7 +141,7 @@ subViewRender(void)
 } /* }}} */
 
  /** subViewMerge {{{
-	* Merge window
+	* @brief Merge window into views
 	* @param[in] win A #Window
 	**/
 
@@ -160,11 +161,11 @@ subViewMerge(Window win)
 	/* Loop through each view and rule */
 	for(i = 0; i < d->views->ndata; i++)
 		{
-			SubView *v = (SubView *)d->views->data[i];
+			SubView *v = VIEW(d->views->data[i]);
 
 			for(j = 0; j < v->rules->ndata; j++)
 				{
-					SubRule *r = (SubRule *)v->rules->data[j];
+					SubRule *r = RULE(v->rules->data[j]);
 
 					if(r->regex && !regexec(r->regex, class, 0, NULL, 0))
 						{
@@ -180,7 +181,7 @@ subViewMerge(Window win)
 							if(!r->tile)
 								{
 									/* Create new rule */
-									r->tile = subTileNew(SUB_TYPE_VERT);
+									r->tile = subTileNew(SUB_TYPE_VERT, (void *)r);
 									//r->tile->flags	|= SUB_TYPE_RULE|SUB_STATE_RESIZE;
 									r->tile->flags	|= SUB_TYPE_RULE;
 									r->tile->size		= r->size > 0 ? r->size : 100;
@@ -202,7 +203,7 @@ subViewMerge(Window win)
 							else XMapSubwindows(d->disp, c->frame);
 							cv = v;
 
-							/* Mark clients as multi */
+							/* Mark current and previus client as multi */
 							if(++merged >= 2) 
 								{
 									c->flags	|= SUB_STATE_MULTI;
@@ -211,7 +212,7 @@ subViewMerge(Window win)
 							lc = c;
 
 							subTileConfigure(v->tile);
-							printf("Adding client %s (%s/%d)\n", c->name, v->name, j);
+							printf("Adding client %s (%s:%d)\n", c->name, v->name, j);
 						}
 				}
 		}
@@ -224,7 +225,7 @@ subViewMerge(Window win)
 } /* }}} */
 
  /** subViewJump {{{
-	* Jump to view
+	* @brief Jump to view
 	* @param[in] v A #SubView
 	**/
 
@@ -260,7 +261,7 @@ subViewJump(SubView *v)
 } /* }}} */
 
  /** subViewKill {{{
-	* Kill view 
+	* @brief Kill view 
 	* @param[in] v A #SubView
 	**/
 
@@ -277,7 +278,7 @@ subViewKill(SubView *v)
 
 	if(v->tile)
 		{
-			subTileKill(v->tile);
+			subTileKill(v->tile, True);
 			XDeleteContext(d->disp, v->frame, 1);
 			XDestroyWindow(d->disp, v->frame);
 		}

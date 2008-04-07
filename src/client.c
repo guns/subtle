@@ -1,14 +1,56 @@
 
  /**
-	* subtle - window manager
-	* Copyright (c) 2005-2008 Christoph Kappel
+	* @package subtle
+	*
+	* @file Client functions
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @version $Id$
 	*
 	* See the COPYING file for the license in the latest tarball.
-	*
-	* $Id$
 	**/
 
 #include "subtle.h"
+
+/* DrawDepth {{{ */
+inline void
+DrawDepth(int depth)
+{
+	int i;
+	for(i = 0; i < depth; i++) printf("  ");
+} /* }}} */
+
+/* DrawTree {{{ */
+void
+DrawTree(SubTile *t)
+{
+	int i;
+	static int depth = 0;
+
+	DrawDepth(depth);
+	printf("tile=%p, rule=%c, n=%d, o=%c, tile=%p, idx=%d\n", t, t->flags & SUB_TYPE_RULE ? 'y' : 'n', 
+		t->clients->ndata, t->flags & SUB_TYPE_VERT ? 'v' : 'h', 
+		t->tile, t->tile ? subArrayFind(t->tile->clients, (void *)t) : -1);
+
+	depth++;
+
+	for(i = 0; i < t->clients->ndata; i++)
+		{
+			SubClient *c = t->clients->data[i];
+
+			if(c->flags & SUB_TYPE_TILE) DrawTree((SubTile *)c);
+			else 
+				{
+					DrawDepth(depth);
+					printf("client=%p, name=%s, tile=%p, idx=%d\n", c, c->name, c->tile, 
+						subArrayFind(c->tile->clients, (void *)c));
+				}
+		}
+	
+	depth--;
+
+	DrawDepth(depth);
+	printf("end=%p\n", t);
+} /* }}} */
 
 /* DrawMask {{{ */
 static void
@@ -64,8 +106,8 @@ AdjustWeight(int mode,
 			if((c->tile->flags & SUB_TYPE_HORZ && (mode == SUB_DRAG_LEFT || mode == SUB_DRAG_RIGHT)) ||
 				(c->tile->flags & SUB_TYPE_VERT && mode == SUB_DRAG_BOTTOM))
 				{
-					if(c->tile->flags & SUB_TYPE_HORZ) c->size = r->width * 100 / SUBWINWIDTH(c->tile);
-					else if(c->tile->flags & SUB_TYPE_VERT) c->size = r->height * 100 / SUBWINHEIGHT(c->tile);
+					if(c->tile->flags & SUB_TYPE_HORZ) c->size = r->width * 100 / WINWIDTH(c->tile);
+					else if(c->tile->flags & SUB_TYPE_VERT) c->size = r->height * 100 / WINHEIGHT(c->tile);
 
 					if(c->size >= 80) c->size = 80;
 					if(!(c->flags & SUB_STATE_RESIZE)) c->flags |= SUB_STATE_RESIZE;
@@ -79,10 +121,9 @@ AdjustWeight(int mode,
 } /* }}} */
 
  /** subClientNew {{{
-	* Create new client
+	* @brief Create new client
 	* @param[in] win Main window of the new client
-	* @return Success: #SubClient
-	* 				Failure: NULL
+	* @return A #SubClient or \p NULL
 	**/
 
 SubClient *
@@ -113,15 +154,15 @@ subClientNew(Window win)
 	attrs.event_mask				= KeyPressMask|ButtonPressMask|EnterWindowMask|LeaveWindowMask|ExposureMask|
 		VisibilityChangeMask|FocusChangeMask|SubstructureRedirectMask|SubstructureNotifyMask;
 
-	c->frame			= SUBWINNEW(DefaultRootWindow(d->disp), c->x, c->y, c->width, c->height, 0, 
+	c->frame			= WINNEW(DefaultRootWindow(d->disp), c->x, c->y, c->width, c->height, 0, 
 		CWBackPixmap|CWSaveUnder|CWEventMask);
-	c->title			= SUBWINNEW(c->frame, 0, 0, c->width, d->th, 0, CWBackPixel);
-	c->caption		= SUBWINNEW(c->frame, 0, 1, 1, d->th - 2, 0, CWBackPixel);
+	c->title			= WINNEW(c->frame, 0, 0, c->width, d->th, 0, CWBackPixel);
+	c->caption		= WINNEW(c->frame, 0, 1, 1, d->th - 2, 0, CWBackPixel);
 	attrs.cursor	= d->cursors.horz;
-	c->left				= SUBWINNEW(c->frame, 0, d->th, d->bw, c->height - d->th, 0, CWBackPixel|CWCursor);
-	c->right			= SUBWINNEW(c->frame, c->width - d->bw, d->th, d->bw, c->height - d->th, 0, CWBackPixel|CWCursor);
+	c->left				= WINNEW(c->frame, 0, d->th, d->bw, c->height - d->th, 0, CWBackPixel|CWCursor);
+	c->right			= WINNEW(c->frame, c->width - d->bw, d->th, d->bw, c->height - d->th, 0, CWBackPixel|CWCursor);
 	attrs.cursor	= d->cursors.vert;
-	c->bottom			= SUBWINNEW(c->frame, 0, c->height - d->bw, c->width, d->bw, 0, CWBackPixel|CWCursor);
+	c->bottom			= WINNEW(c->frame, 0, c->height - d->bw, c->width, d->bw, 0, CWBackPixel|CWCursor);
 
 	XSelectInput(d->disp, c->win, PropertyChangeMask|StructureNotifyMask);
 	XSetWindowBorderWidth(d->disp, c->win, 0);
@@ -175,7 +216,7 @@ subClientNew(Window win)
 } /* }}} */
 
  /** subClientConfigure {{{
-	* Send a configure request to client
+	* @brief Send a configure request to client
 	* @param[in] c A #SubClient
 	**/
 
@@ -207,8 +248,8 @@ subClientConfigure(SubClient *c)
 			ev.window							= c->win;
 			ev.x									= c->x;
 			ev.y									= c->y;
-			ev.width							= (c->flags & SUB_STATE_FULL) ? c->width	: SUBWINWIDTH(c);
-			ev.height							= (c->flags & SUB_STATE_FULL) ? c->height : SUBWINHEIGHT(c);
+			ev.width							= (c->flags & SUB_STATE_FULL) ? c->width	: WINWIDTH(c);
+			ev.height							= (c->flags & SUB_STATE_FULL) ? c->height : WINHEIGHT(c);
 			ev.above							= None;
 			ev.border_width 			= 0;
 			ev.override_redirect	= 0;
@@ -218,7 +259,7 @@ subClientConfigure(SubClient *c)
 } /* }}} */
 
  /** subClientRender {{{
-	* Render client and redraw titlebar and borders
+	* @brief Render client and redraw titlebar and borders
 	* @param[in] C A #SubClient
 	**/
 
@@ -254,7 +295,7 @@ subClientRender(SubClient *c)
 } /* }}} */
 
  /** subClientFocus {{{
-	* Set or unset focus to client
+	* @brief Set or unset focus to client
 	* @param[in] c A #SubClient
 	**/
 
@@ -301,7 +342,7 @@ subClientFocus(SubClient *c)
 } /* }}} */
 
  /** subClientMap {{{
-	* Map client with all subwindows to screen
+	* @brief Map client with all subwindows to screen
 	* @param[in] c A #SubClient
 	**/
 
@@ -315,7 +356,7 @@ subClientMap(SubClient *c)
 } /* }}} */
 
  /** subClientUnmap {{{
-	* Unmap client with all subClientUnmap from screen
+	* @brief Unmap client with all subClientUnmap from screen
 	* @param[in] c A #SubClient
 	**/
 
@@ -329,7 +370,7 @@ subClientUnmap(SubClient *c)
 } /* }}} */
 
  /** subClientDrag {{{
-	* Move and/or drag client
+	* @brief Move and/or drag client
 	* @param[in] c A #SubClient
 	* @param[in] mode Drag/move mode
 	**/
@@ -359,10 +400,10 @@ subClientDrag(SubClient *c,
 	switch(mode)
 		{
 			case SUB_DRAG_LEFT:		
-			case SUB_DRAG_RIGHT:		cursor = d->cursors.horz;		break;
+			case SUB_DRAG_RIGHT:	cursor = d->cursors.horz;		break;
 			case SUB_DRAG_BOTTOM:	cursor = d->cursors.vert;		break;
 			case SUB_DRAG_MOVE:		cursor = d->cursors.move;		break;
-			default:											cursor = d->cursors.square;	break;
+			default:							cursor = d->cursors.square;	break;
 		}
 
 	if(XGrabPointer(d->disp, c->frame, True, ButtonPressMask|ButtonReleaseMask|PointerMotionMask, 
@@ -371,6 +412,8 @@ subClientDrag(SubClient *c,
 	XGrabServer(d->disp);
 	if(mode <= SUB_DRAG_MOVE) DrawMask(SUB_DRAG_START, c, &r);
 
+	DrawTree(d->cv->tile);
+
 	for(;;)
 		{
 			XMaskEvent(d->disp, PointerMotionMask|ButtonReleaseMask|EnterWindowMask, &ev);
@@ -378,7 +421,7 @@ subClientDrag(SubClient *c,
 				{
 					/* Button release doesn't return our destination window */
 					case EnterNotify: win = ev.xcrossing.window; break;
-					case MotionNotify:
+					case MotionNotify: /* {{{ */
 						if(mode <= SUB_DRAG_MOVE) 
 							{
 								DrawMask(SUB_DRAG_START, c, &r);
@@ -442,79 +485,117 @@ subClientDrag(SubClient *c,
 											}
 										}
 								}
-						break;
-					case ButtonRelease:
+						break; /* }}} */
+					case ButtonRelease: /* {{{ */
 						if(win != c->frame && mode > SUB_DRAG_MOVE)
 							{
 								DrawMask(state, c2, &r); /* Erase mask */
 								if(c && c2 && c->tile && c2->tile)
 									{
-										if(state == SUB_DRAG_TOP || state == SUB_DRAG_BOTTOM ||
-											state == SUB_DRAG_LEFT || state == SUB_DRAG_RIGHT)
+										/* Drag: TOP|BOTTOM|LEFT|RIGHT {{{ */
+										if(state & (SUB_DRAG_TOP|SUB_DRAG_BOTTOM|SUB_DRAG_LEFT|SUB_DRAG_RIGHT))
 											{
-												SubTile *t = subTileNew(state == SUB_DRAG_TOP || 
-													state == SUB_DRAG_BOTTOM ? SUB_TYPE_VERT : SUB_TYPE_HORZ);
+												int tmode = (state & (SUB_DRAG_TOP|SUB_DRAG_BOTTOM) ? SUB_TYPE_VERT : SUB_TYPE_HORZ);
 
-												subArraySwap(c2->tile->clients, (void *)c2, (void *)t);
-												subArrayPop(c->tile->clients, (void *)c);
-
-												/* Check resizeded windows */
-												if(c2->flags & SUB_STATE_RESIZE)
+												if(TILE(c2->tile)->flags & tmode)
 													{
-														t->flags 	|= SUB_STATE_RESIZE;
-														t->size		= c2->size;
-														c2->flags	&= ~SUB_STATE_RESIZE;
-														c2->size	= 0;
+														int idx = subArrayFind(c2->tile->clients, (void *)c2);
+
+														printf("Same tiling mode!\n");
+
+														subArrayPop(c->tile->clients, (void *)c);
+														subArraySplice(c2->tile->clients, idx, 1);
+
+														c2->tile->clients->data[idx] = 
+															(void *)(state & (SUB_DRAG_TOP|SUB_DRAG_LEFT) ? c : c2);
+														c2->tile->clients->data[idx + 1] = 
+															(void *)(state & (SUB_DRAG_TOP|SUB_DRAG_LEFT) ? c2 : c);
+
+														c->tile	= c2->tile;
 													}
+												else
+													{
+														SubTile *t = subTileNew(tmode, (void *)d->cv);
+														int idx = subArrayFind(c2->tile->clients, (void *)c2);
 
-												subArrayPush(t->clients, (void *)(state == SUB_DRAG_TOP || state == SUB_DRAG_LEFT ? c : c2));
-												subArrayPush(t->clients, (void *)(state == SUB_DRAG_TOP || state == SUB_DRAG_LEFT ? c2 : c));
+														c2->tile->clients->data[idx] = (void *)t;
+														subArrayPop(c->tile->clients, (void *)c);
 
-												subTileConfigure(c->tile);
-												subTileConfigure(c2->tile);
+														/* Check resizeded windows */
+														if(c2->flags & SUB_STATE_RESIZE)
+															{
+																t->flags 	|= SUB_STATE_RESIZE;
+																t->size		= c2->size;
+																c2->flags	&= ~SUB_STATE_RESIZE;
+																c2->size	= 0;
+															}
 
-												t->tile 	= c2->tile;
-												c->tile 	= t;
-												c2->tile	= t;
-											}
-#if 0											
-										else if(state == SUB_DRAG_BEFORE || state == SUB_DRAG_AFTER ||
-											state == SUB_DRAG_ABOVE || state == SUB_DRAG_BELOW)
+														subArrayPush(t->clients, (void *)(state & (SUB_DRAG_TOP|SUB_DRAG_LEFT) ? c : c2));
+														subArrayPush(t->clients, (void *)(state & (SUB_DRAG_TOP|SUB_DRAG_LEFT) ? c2 : c));
+
+														t->tile 	= c2->tile;
+														c->tile 	= t;
+														c2->tile	= t;
+													}
+												subTileConfigure(d->cv->tile);
+											} /* }}} */
+										/* Drag: BEFORE|AFTER|ABOVE|BELOW {{{ */
+										else if(state & (SUB_DRAG_BEFORE|SUB_DRAG_AFTER|SUB_DRAG_ABOVE|SUB_DRAG_BELOW))
 											{
-												p = c->tile;
-
-												if((((state == SUB_DRAG_BEFORE || state == SUB_DRAG_AFTER) && 
-													c2->parent->flags & SUB_TYPE_HORZ)) ||
-													((state == SUB_DRAG_ABOVE || state == SUB_DRAG_BELOW) && 
-													c2->parent->flags & SUB_TYPE_VERT))
+												if((state & (SUB_DRAG_BEFORE|SUB_DRAG_AFTER) && c2->tile->flags & SUB_TYPE_HORZ) ||
+													(state & (SUB_DRAG_ABOVE|SUB_DRAG_BELOW) && c2->tile->flags & SUB_TYPE_VERT))
 													{
-														subWinUnlink(w);
+														int idx = subArrayFind(c2->tile->clients, (void *)c2);
 
-														if(state == SUB_DRAG_BEFORE || state == SUB_DRAG_ABOVE) 
-															subWinPrepend(w2, w);
-														else subWinAppend(w2, w);
+														subArrayPop(c->tile->clients, (void *)c);
+														subArraySplice(c2->tile->clients, idx, 1);
 
-														subTileConfigure(c->tile);
-														if(c->tile != p) subTileConfigure(p); 
+														c2->tile->clients->data[idx] = 
+															(void *)(state & (SUB_DRAG_BEFORE|SUB_DRAG_ABOVE) ? c : c2);
+														c2->tile->clients->data[idx + 1] = 
+															(void *)(state & (SUB_DRAG_BEFORE|SUB_DRAG_ABOVE) ? c2 : c);
+
+														c->tile = c2->tile;
 													}
-												else if(c2->parent->parent && 
-													(((state == SUB_DRAG_BEFORE || state == SUB_DRAG_AFTER) && 
-													c2->parent->flags & SUB_TYPE_VERT) ||
-													((state == SUB_DRAG_ABOVE || state == SUB_DRAG_BELOW) && 
-													c2->parent->flags & SUB_TYPE_HORZ)))
+												else if(c2->tile->tile && 
+													((state & (SUB_DRAG_BEFORE|SUB_DRAG_AFTER) && c2->tile->flags & SUB_TYPE_VERT) ||
+													(state & (SUB_DRAG_ABOVE|SUB_DRAG_BELOW) && c2->tile->flags & SUB_TYPE_HORZ)))
 													{
-														subWinUnlink(w);
+														int idx = subArrayFind(c2->tile->tile->clients, (void *)c2->tile);
 
-														if(state == SUB_DRAG_BEFORE || state == SUB_DRAG_ABOVE) 
-															subWinPrepend(c2->parent, w);
-														else subWinAppend(c2->parent, w);
-														
-														subTileConfigure(c->tile);
-														subTileConfigure(p); 
+														printf("idx=%d\n", idx);
+													
+														subArrayPop(c->tile->clients, (void *)c);
+														subArraySplice(c2->tile->tile->clients, idx, 1);
+
+														c2->tile->tile->clients->data[idx] = 
+															(void *)(state & (SUB_DRAG_BEFORE|SUB_DRAG_ABOVE) ? c : (void *)c2->tile);
+														c2->tile->tile->clients->data[idx + 1] = 
+															(void *)(state & (SUB_DRAG_BEFORE|SUB_DRAG_ABOVE) ? (void *)c2->tile : c);
+
+														c->tile = c2->tile;
 													}
-											}
-										else if(state == SUB_DRAG_SWAP) subWinSwap(w, w2);
-#endif										
+												subTileConfigure(d->cv->tile);
+											} /* }}} */
+										/* Drag: SWAP {{{ */
+										else if(state == SUB_DRAG_SWAP) 
+											{
+												SubTile *swap = NULL;
+												int idx1, idx2;
+												
+												idx1 = subArrayFind(c->tile->clients, (void *)c);
+												idx2 = subArrayFind(c2->tile->clients, (void *)c2);
+												printf("idx1=%d, idx2=%d\n", idx1, idx2);
+
+												c->tile->clients->data[idx1] = (void *)c2;
+												c2->tile->clients->data[idx2] = (void *)c;
+
+												swap = c->tile;
+												c->tile = c2->tile;
+												c2->tile = swap;
+
+												subTileConfigure(d->cv->tile);
+											} /* }}} */
 									}
 							}
 						else /* Resize */
@@ -536,13 +617,15 @@ subClientDrag(SubClient *c,
 
 						XUngrabServer(d->disp);
 						XUngrabPointer(d->disp, CurrentTime);
+
+						DrawTree(d->cv->tile);
 						return;
-				}
+				} /* }}} */
 		}
 } /* }}} */
 
  /** subClientToggle {{{
-	* Toggle various states of client
+	* @brief Toggle various states of client
 	* @param[in] c A #SubClient
 	* @param[in] type Toggle type
 	**/
@@ -678,7 +761,7 @@ int type)
 } /* }}} */
 
 	/** subClientFetchName {{{
-	 * Fetch client name and store it
+	 * @brief Fetch client name and store it
 	 * @param[in] c A #SubClient
 	 **/
 
@@ -702,7 +785,7 @@ subClientFetchName(SubClient *c)
 } /* }}} */
 
  /** subClientSetWMState {{{
-	* Set WM state for client
+	* @brief Set WM state for client
 	* @param[in] w A #SubClient
 	* @param[in] state New state for the client
 	**/
@@ -722,9 +805,9 @@ subClientSetWMState(SubClient *c,
 } /* }}} */
 
  /** subClientGetWMState {{{
-	* Get WM state from client
+	* @brief Get WM state from client
 	* @param[in] c A #SubClient
-	* @return Returns the state of the client
+	* @return Client WM state
 	**/
 
 long
@@ -747,7 +830,7 @@ subClientGetWMState(SubClient *c)
 } /* }}} */
 
  /** subClientKill {{{
-	* Send interested clients the close signal and delete it
+	* @brief Send interested clients the close signal and/or kill it
 	* @param[in] c A #SubClient
 	**/
 

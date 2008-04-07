@@ -1,11 +1,12 @@
 
  /**
-	* subtle - window manager
-	* Copyright (c) 2005-2008 Christoph Kappel
+	* @package subtle
+	*
+	* @file Main functions
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @version $Id$
 	*
 	* See the COPYING file for the license in the latest tarball.
-	*
-	* $Id$
 	**/
 
 #include <getopt.h>

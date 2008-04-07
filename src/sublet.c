@@ -1,25 +1,27 @@
 
  /**
-	* subtle - window manager
-	* Copyright (c) 2005-2008 Christoph Kappel
+	* @package subtle
+	*
+	* @file Sublet functions
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @version $Id$
 	*
 	* See the COPYING file for the license in the latest tarball.
-	*
-	* $Id$
 	**/
 
 #include "subtle.h"
 
  /** subSubletNew {{{
-	* Create new sublet 
+	* @brief Create new sublet 
 	* @param[in] type Type of the sublet
 	* @param[in] name Name of the sublet
 	* @param[in] ref Lua object reference
 	* @param[in] interval Update interval
 	* @param[in] watch Watch file
+	* @return A #SubSublet or \p NULL
 	**/
 
-void
+SubSublet *
 subSubletNew(int type,
 	char *name,
 	int ref,
@@ -56,7 +58,7 @@ subSubletNew(int type,
 
 					free(s);
 
-					return;
+					return(NULL);
 				}
 			else XSaveContext(d->disp, d->bar.sublets, s->interval, (void *)s);
 		}
@@ -73,10 +75,12 @@ subSubletNew(int type,
 	
 	printf("Loading sublet %s (%d)\n", name, (int)interval);
 	subUtilLogDebug("new=sublet, name=%s, ref=%d, interval=%d, watch=%s\n", name, ref, interval, watch);		
+
+	return(s);
 } /* }}} */ 
 
  /** subSubletConfigure {{{
-	* Configure sublet bar
+	* @brief Configure sublets bar
 	**/
 
 void
@@ -98,7 +102,7 @@ subSubletConfigure(void)
 } /* }}} */
 
  /** subSubletRender {{{
-	* Render the sublets
+	* @brief Render sublets
 	**/
 
 void
@@ -131,7 +135,7 @@ subSubletRender(void)
 } /* }}} */
 
  /** subSubletMerge {{{
-	* Merge sublet into queue
+	* @brief Merge sublet into queue
 	* @param[in] pos Position of the sublet in the queue
 	**/
 
@@ -155,9 +159,8 @@ subSubletMerge(int pos)
 } /* }}} */
 
  /** subSubletNext {{{
-	* Get next sublet 
-	* @return Success: #SubSublet
-	* 				Failure: NULL
+	* @brief Get next sublet 
+	* @return A #SubSublet or \p NULL
 	**/
 
 SubSublet *
@@ -167,7 +170,7 @@ subSubletNext(void)
 } /* }}} */
 
  /** subSubletKill {{{
-	* Kill sublet
+	* @brief Kill sublet
 	* @param[in] s A #SubSublet
 	**/
 

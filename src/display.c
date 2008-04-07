@@ -1,11 +1,12 @@
 
  /**
-	* subtle - window manager
-	* Copyright (c) 2005-2008 Christoph Kappel
+	* @package subtle
+	*
+	* @file Display functions
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @version $Id$
 	*
 	* See the COPYING file for the license in the latest tarball.
-	*
-	* $Id$
 	**/
 
 #include "subtle.h"
@@ -31,12 +32,12 @@ HandleXError(Display *display,
 } /* }}} */
 
  /** subDisplayNew {{{
-	* Open connection to X server and create display
+	* @Open connection to X server and create display
 	* @param[in] display_string The display name as string
-	* @return Returns either nonzero on success or otherwise zero
+	* @return A #SubDisplay or \p NULL
 	**/
 
-void
+SubDisplay *
 subDisplayNew(const char *display_string)
 {
 	XGCValues gvals;
@@ -85,10 +86,12 @@ subDisplayNew(const char *display_string)
 		DefaultScreen(d->disp)), DisplayHeight(d->disp, DefaultScreen(d->disp)));
 
 	XSync(d->disp, False);
+
+	return(d);
 } /* }}} */
 
  /** subDisplayScan {{{
-	* Scan root window for clients
+	* @brief Scan root window for clients
 	**/
 
 void
@@ -128,7 +131,7 @@ subDisplayScan(void)
 } /* }}} */
 
  /** subDisplayKill {{{
-	* Close connection and kill display
+	* @brief Close connection and kill display
 	**/
 
 void

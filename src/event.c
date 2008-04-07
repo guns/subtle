@@ -1,11 +1,12 @@
 
  /**
-	* subtle - window manager
-	* Copyright (c) 2005-2008 Christoph Kappel
+	* @package subtle
+	*
+	* @file Event functions
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @version $Id$
 	*
 	* See the COPYING file for the license in the latest tarball.
-	*
-	* $Id$
 	**/
 
 #include "subtle.h"
@@ -344,8 +345,7 @@ HandleFocus(XFocusInEvent *ev)
 } /* }}} */
 
  /** subEventLoop {{{ 
-	* Handle all X events 
-	* @return Return zero on failure
+	* @brief Handle all X events 
 	**/
 
 void

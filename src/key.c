@@ -1,11 +1,12 @@
 
  /**
-	* subtle - window manager
-	* Copyright (c) 2005-2008 Christoph Kappel
+	* @package subtle
+	*
+	* @file Key functions
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @version $Id$
 	*
 	* See the COPYING file for the license in the latest tarball.
-	*
-	* $Id$
 	**/
 
 #include "subtle.h"
@@ -27,7 +28,7 @@ Compare(const void *a,
 } /* }}} */
 
  /** subKeyInit {{{
-	* Init keys and get modifiers
+	* @brief Init keys and get modifiers
 	**/
 
 void
@@ -53,9 +54,10 @@ subKeyInit(void)
 	* Create new key
 	* @param[in] key Key name
 	* @param[in] value Key action
+	* @return A #SubKey or \p NULL
 	**/
 
-void
+SubKey *
 subKeyNew(const char *key,
 	const char *value)
 {
@@ -90,7 +92,7 @@ subKeyNew(const char *key,
 			else 
 				{
 					subUtilLogWarn("Can't assign keychain `%s'.\n", key);
-					return;
+					return(NULL);
 				}
 		}
 	else
@@ -108,7 +110,7 @@ subKeyNew(const char *key,
 					subUtilLogWarn("Can't assign keychain `%s'.\n", key);
 					if(k->string) free(k->string);
 					free(k);
-					return;
+					return(NULL);
 				}
 
 			/* Modifier mappings */
@@ -136,10 +138,12 @@ subKeyNew(const char *key,
 			subArrayPush(d->keys, (void *)k);
 			subUtilLogDebug("code=%03d, mod=%02d, key=%s\n", k->code, k->mod, key);
 		}
+	
+	return(k);
 } /* }}} */
 
 	/** subKeySort {{{ 
-	 * Sort keys
+	 * @brief Sort keys
 	 **/
 
 void
@@ -153,11 +157,10 @@ subKeySort(void)
 } /* }}} */
 
  /** subKeyFind {{{
-	* Find key
+	* @brief Find key
 	* @param[in] code A keycode
 	* @param[in] mod A modmask
-	* @return Success: #SubKey
-	* 				Failure: NULL
+	* @return A #SubKey or \p NULL
 	**/
 
 SubKey *
@@ -177,7 +180,7 @@ subKeyFind(int code,
 } /* }}} */
 
  /** subKeyGrab {{{
-	* Grab keys for a window
+	* @Grab keys for a window
 	* @param[in] win A #Window
 	**/
 
@@ -206,7 +209,7 @@ subKeyGrab(Window win)
 } /* }}} */
 
  /** subKeyUngrab {{{
-	* Ungrab keys for a window
+	* @brief Ungrab keys for a window
 	* @param[in] win A #Window
 	**/
 
@@ -217,7 +220,7 @@ subKeyUngrab(Window win)
 } /* }}} */
 
  /** subKeyKill {{{
-	* Kill keys
+	* @brief Kill key
 	* @param[in]
 	**/
 

@@ -1,11 +1,12 @@
 
  /**
-	* subtle - window manager
-	* Copyright (c) 2005-2008 Christoph Kappel
+	* @package subtle
+	*
+	* @file EWMH functions
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @version $Id$
 	*
 	* See the COPYING file for the license in the latest tarball.
-	*
-	* $Id$
 	**/
 
 #include "subtle.h"
@@ -14,7 +15,7 @@
 static Atom atoms[NATOMS];
 
  /** subEwmhInit {{{
-	* Init and register ICCCM/EWMH atoms
+	* @brief Init and register ICCCM/EWMH atoms
 	**/
 
 void
@@ -68,9 +69,9 @@ subEwmhInit(void)
 } /* }}} */
 
  /** subEwmhFind {{{
-	* Find intern atom and return it
+	* @brief Find intern atoms
 	* @param[in] hint Hint number
-	* @return Success: #Atom
+	* @return A #Atom
 	**/
 
 Atom
@@ -81,12 +82,12 @@ subEwmhFind(int hint)
 } /* }}} */
 
  /** subEwmhGetProperty {{{
-	* Get property from window
+	* @brief Get property from window
 	* @param[in] win Window
 	* @param[in] type Atom type
 	* @param[in] hint Hint number
 	* @param[out] size Size of items
-	* @return Success: data
+	* @return Property data
 	**/
 
 char *
@@ -118,7 +119,7 @@ subEwmhGetProperty(Window win,
 } /* }}} */
 
  /** subEwmhSetWindows {{{
-	* Change window property
+	* @brief Change window property
 	* @param[in] win Window
 	* @param[in] hint Hint number
 	* @param[in] values Window list
@@ -135,7 +136,7 @@ subEwmhSetWindows(Window win,
 } /* }}} */
 
  /** subEwmhSetCardinals {{{
-	* Change window property
+	* @brief Change window property
 	* @param[in] win Window
 	* @param[in] hint Hint number
 	* @param[in] values Cardinal list
@@ -152,7 +153,7 @@ subEwmhSetCardinals(Window win,
 } /* }}} */
 
  /** subEwmhSetString {{{
-	* Change window property
+	* @brief Change window property
 	* @param[in] win Window
 	* @param[in] hint Hint number
 	* @param[in] value String value
@@ -168,7 +169,7 @@ subEwmhSetString(Window win,
 } /* }}} */
 
  /** subEwmhSetStrings {{{
-	* Change window property
+	* @brief Change window property
 	* @param[in] win Window
 	* @param[in] hint Hint number
 	* @param[in] values String list

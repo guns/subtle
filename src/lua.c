@@ -1,11 +1,12 @@
 
  /**
-	* subtle - window manager
-	* Copyright (c) 2005-2008 Christoph Kappel
+	* @package subtle
+	*
+	* @file Lua functions
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @version $Id$
 	*
 	* See the COPYING file for the license in the latest tarball.
-	*
-	* $Id$
 	**/
 
 #include <lua.h>
@@ -214,7 +215,7 @@ LuaAddHelper(lua_State *state)
 } /* }}} */
 
  /** subLuaLoadConfig {{{
-	* Load config file from path
+	* @brief Load config file from path
 	* @param[in] path Path to the config file
 	**/
 
@@ -287,7 +288,7 @@ subLuaLoadConfig(const char *path)
 	attrs.save_under				= False;
 	attrs.event_mask				= ButtonPressMask|ExposureMask|VisibilityChangeMask;
 
-	d->bar.win			= SUBWINNEW(DefaultRootWindow(d->disp), 0, 0, DisplayWidth(d->disp, DefaultScreen(d->disp)), d->th, 0,
+	d->bar.win			= WINNEW(DefaultRootWindow(d->disp), 0, 0, DisplayWidth(d->disp, DefaultScreen(d->disp)), d->th, 0,
 		CWBackPixel|CWSaveUnder|CWEventMask);
 	d->bar.views		= XCreateSimpleWindow(d->disp, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
 	d->bar.sublets	= XCreateSimpleWindow(d->disp, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
@@ -380,7 +381,7 @@ subLuaLoadConfig(const char *path)
 } /* }}} */
 
  /** subLuaLoadSublets {{{
-	* Load sublets from path
+	* @brief Load sublets from path
 	* @param[in] path Path to the sublets
 	**/
 
@@ -445,7 +446,7 @@ subLuaLoadSublets(const char *path)
 } /* }}} */
 
  /** subLuaCall {{{
-	* Carefully call a Lua script
+	* @brief Carefully call a Lua script
 	* @param w A #SubClient
 	**/
 
@@ -508,7 +509,7 @@ subLuaCall(SubSublet *s)
 } /* }}} */
 
  /** subLuaKill {{{
-	* Close Lua state
+	* @brief Close Lua state
 	**/
 
 void

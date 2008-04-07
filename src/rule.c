@@ -1,21 +1,21 @@
 
  /**
-	* subtle - window manager
-	* Copyright (c) 2005-2008 Christoph Kappel
+	* @package subtle
+	*
+	* @file Rule functions
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @version $Id$
 	*
 	* See the COPYING file for the license in the latest tarball.
-	*
-	* $Id$
 	**/
 
 #include "subtle.h"
 
  /** subRuleNew {{{
-	* Create new rule
+	* @brief Create new rule
 	* @params[in] size Rule tile size
 	* @params[in] tags Tag list
-	* @return Success: #SubRule 
-	* 				Error: NULL
+	* @return A #SubRule or \p NULL
 	**/
 
 SubRule *
@@ -58,17 +58,19 @@ subRuleNew(
 } /* }}} */
 
  /** subRuleKill {{{
-	* Delete rule
+	* @brief Delete rule
 	* @params[in] r A #SubRule
+	* @param[in] clean Free elements or not
 	**/
 
 void
-subRuleKill(SubRule *r)
+subRuleKill(SubRule *r,
+	int clean)
 {
 	assert(r);
 
 	regfree(r->regex);
 	free(r->regex);
-	if(r->tile) subTileKill(r->tile);
+	if(r->tile) subTileKill(r->tile, clean);
 	free(r);
 } /* }}} */
