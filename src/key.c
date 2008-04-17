@@ -52,9 +52,9 @@ subKeyInit(void)
 
  /** subKeyNew {{{
 	* Create new key
-	* @param[in] key Key name
-	* @param[in] value Key action
-	* @return A #SubKey or \p NULL
+	* @param[in] key		Key name
+	* @param[in] value	Key action
+	* @return Returns a #SubKey or \p NULL
 	**/
 
 SubKey *
@@ -65,9 +65,9 @@ subKeyNew(const char *key,
 	KeySym sym;
 	char *tok = strtok((char *)value, "-");
 	SubKey *k = (SubKey *)subUtilAlloc(1, sizeof(SubKey));
-	k->flags |= SUB_TYPE_KEY;
+	k->flags	= SUB_TYPE_KEY;
 
-	/* \todo Too slow? */	
+	/* @todo Too slow? */	
 	if(!strncmp(key, "FocusAbove", 10))						k->flags |= SUB_KEY_FOCUS_ABOVE;
 	else if(!strncmp(key, "FocusBelow", 10))			k->flags |= SUB_KEY_FOCUS_BELOW;
 	else if(!strncmp(key, "FocusNext", 9))				k->flags |= SUB_KEY_FOCUS_NEXT;
@@ -83,7 +83,7 @@ subKeyNew(const char *key,
 	else if(!strncmp(key, "PreviousDesktop", 11))	k->flags |= SUB_KEY_DESKTOP_PREV;
 	else if(!strncmp(key, "MoveToDesktop", 13))
 		{
-			char *desktop = (char *)key + 13;
+			char *desktop = (char *)key + 13; ///< Get desktop number
 			if(desktop) 
 				{
 					k->number = atoi(desktop);
@@ -92,12 +92,13 @@ subKeyNew(const char *key,
 			else 
 				{
 					subUtilLogWarn("Can't assign keychain `%s'.\n", key);
+					free(k);
 					return(NULL);
 				}
 		}
 	else
 		{
-			k->flags	= SUB_KEY_EXEC;
+			k->flags	|= SUB_KEY_EXEC;
 			k->string	= strdup(key);
 		}
 
@@ -105,7 +106,7 @@ subKeyNew(const char *key,
 		{ 
 			/* Get key sym and modifier */
 			sym = XStringToKeysym(tok);
-			if(sym == NoSymbol) 
+			if(NoSymbol == sym)
 				{
 					subUtilLogWarn("Can't assign keychain `%s'.\n", key);
 					if(k->string) free(k->string);
@@ -133,11 +134,8 @@ subKeyNew(const char *key,
 			tok = strtok(NULL, "-");
 		}
 	
-	if(k->code && k->mod)
-		{
-			subArrayPush(d->keys, (void *)k);
-			subUtilLogDebug("code=%03d, mod=%02d, key=%s\n", k->code, k->mod, key);
-		}
+	subArrayPush(d->keys, (void *)k);
+	subUtilLogDebug("code=%03d, mod=%02d, key=%s\n", k->code, k->mod, key);
 	
 	return(k);
 } /* }}} */
@@ -158,9 +156,9 @@ subKeySort(void)
 
  /** subKeyFind {{{
 	* @brief Find key
-	* @param[in] code A keycode
-	* @param[in] mod A modmask
-	* @return A #SubKey or \p NULL
+	* @param[in] code	A keycode
+	* @param[in] mod	A modmask
+	* @return Returns a #SubKey or \p NULL
 	**/
 
 SubKey *
@@ -181,7 +179,7 @@ subKeyFind(int code,
 
  /** subKeyGrab {{{
 	* @Grab keys for a window
-	* @param[in] win A #Window
+	* @param[in] win	Window
 	**/
 
 void
@@ -210,7 +208,7 @@ subKeyGrab(Window win)
 
  /** subKeyUngrab {{{
 	* @brief Ungrab keys for a window
-	* @param[in] win A #Window
+	* @param[in] win	Window
 	**/
 
 void
@@ -221,7 +219,6 @@ subKeyUngrab(Window win)
 
  /** subKeyKill {{{
 	* @brief Kill key
-	* @param[in]
 	**/
 
 void
