@@ -33,8 +33,8 @@ HandleXError(Display *display,
 
  /** subDisplayNew {{{
 	* @Open connection to X server and create display
-	* @param[in] display_string The display name as string
-	* @return A #SubDisplay or \p NULL
+	* @param[in] display_string	The display name as string
+	* @return Returns a #SubDisplay or \p NULL
 	**/
 
 SubDisplay *
