@@ -57,7 +57,7 @@ HandleSignal(int signum)
 				subArrayKill(d->views, True);
 				subArrayKill(d->clients, False);
 				subArrayKill(d->sublets, True);
-				subArrayKill(d->keys, False);
+				subArrayKill(d->keys, True);
 
 				subLuaKill();
 				subDisplayKill();
