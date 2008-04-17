@@ -60,12 +60,16 @@ Keys = {
 -- Rules {{{
 Rules = {
 	work = { 
-		["foo"] = 30,
+		["a"] = 30,
 		["[ur]+xvt|xterm"] = 40
 	},
 	other = {
 		["bar"] = 100
 	},
 	gimp = "gimp.*",
-	subtle = ".*"
+	subtle = {
+		["a|b"] = 33,
+		["c|d"] = 33,
+		["e|f"] = 33
+	}
 } -- }}}
