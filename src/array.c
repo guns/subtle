@@ -13,7 +13,7 @@
 
  /** subArrayNew {{{
 	* @brief Create new array and init it
-	* @return A #SubArray or \p NULL
+	* @return Returns a #SubArray or \p NULL
 	**/
 
 SubArray *
@@ -24,8 +24,8 @@ subArrayNew(void)
 
  /** subArrayPush {{{
 	* @brief Push element to array
-	* @param[in] a A #SubArray
-	* @param[in] e New element
+	* @param[in] a	A #SubArray
+	* @param[in] e	New element
 	**/
 
 void
@@ -40,8 +40,8 @@ subArrayPush(SubArray *a,
 
  /** subArrayPop {{{
 	* @brief Pop element from array
-	* @param[in] a #SubArray
-	* @param[in] e Array element
+	* @param[in] a	#SubArray
+	* @param[in] e	Array element
 	**/
 
 void
@@ -56,21 +56,19 @@ subArrayPop(SubArray *a,
 	if(idx >= 0)
 		{
 			for(i = idx; i < a->ndata - 1; i++) 
-				{
-					printf("i=%d, idx=%d\n", i, idx);
-					a->data[i] = a->data[i + 1];
-				}
+				a->data[i] = a->data[i + 1];
 
 			a->ndata--;
+			printf("ndata=%d, size=%d\n", a->ndata, a->ndata * sizeof(void *));
 			a->data = (void **)subUtilRealloc(a->data, a->ndata * sizeof(void *));
 		}
 } /* }}} */
 
  /** subArrayFind {{{
 	* @brief Find array id of element
-	* @param[in] a A #SubArray
-	* @param[in] e Element
-	* @return Found idx or \p -1
+	* @param[in] a	A #SubArray
+	* @param[in] e	Element
+	* @return Returns found idx or \p -1
 	**/
 
 int
@@ -88,9 +86,9 @@ subArrayFind(SubArray *a,
 
  /** subArraySplice {{{
 	* @brief Splice array at idx with len
-	* @params[in] a A #SubArray
-	* @params[in] idx Array index
-	* @params[in] len Length
+	* @param[in] a 		A #SubArray
+	* @param[in] idx	Array index
+	* @param[in] len 	Length
 	**/
 
 void
@@ -101,21 +99,17 @@ subArraySplice(SubArray *a,
 	int i;
 	assert(a && idx >= 0 && idx <= a->ndata && len > 0);
 
-printf("size=%d\n", a->ndata * sizeof(void *));
 	a->ndata += len;
 	a->data = (void **)subUtilRealloc(a->data, (a->ndata + 1) * sizeof(void *));
 
 	for(i = a->ndata; i > idx; i--)
-		{
-			printf("i=%d, ndata=%d, len=%d, i-len=%d\n", i, a->ndata, len, i - len);
-			a->data[i] = a->data[i - len];
-		}
+		a->data[i] = a->data[i - len];
 } /* }}} */
 
  /** subArrayKill {{{
 	* @brief Kill array with all elements
-	* @param[in] a A #SubArray
-	* @param[in] clean Free elements or not
+	* @param[in] a			A #SubArray
+	* @param[in] clean	Free elements or not
 	**/
 
 void
@@ -133,11 +127,14 @@ subArrayKill(SubArray *a,
 					/* Check type and kill it */
 					SubClient *c = CLIENT(a->data[i]);
 
+					if(!c) continue; ///< Queue algorithm starts with the second element
+
 					if(c->flags & SUB_TYPE_VIEW) subViewKill(VIEW(c));
-					else if(c->flags & SUB_TYPE_RULE) subRuleKill(RULE(c), True);
+					else if(c->flags & SUB_TYPE_RULE && !(c->flags & SUB_TYPE_TILE)) subRuleKill(RULE(c), True);
 					else if(c->flags & SUB_TYPE_CLIENT) subClientKill(CLIENT(c));
 					else if(c->flags & SUB_TYPE_TILE) subTileKill(TILE(c), True);
 					else if(c->flags & SUB_TYPE_SUBLET) subSubletKill(SUBLET(c));
+					else if(c->flags & SUB_TYPE_KEY) subKeyKill(KEY(c));
 					else free(a->data[i]); 
 				}
 		}
