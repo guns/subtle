@@ -13,9 +13,9 @@
 
  /** subRuleNew {{{
 	* @brief Create new rule
-	* @params[in] size Rule tile size
-	* @params[in] tags Tag list
-	* @return A #SubRule or \p NULL
+	* @param[in] size	Rule tile size
+	* @param[in] tags	Tag list
+	* @return Returns a #SubRule or \p NULL
 	**/
 
 SubRule *
@@ -59,8 +59,8 @@ subRuleNew(
 
  /** subRuleKill {{{
 	* @brief Delete rule
-	* @params[in] r A #SubRule
-	* @param[in] clean Free elements or not
+	* @param[in] r			A #SubRule
+	* @param[in] clean	Free elements or not
 	**/
 
 void
@@ -69,8 +69,12 @@ subRuleKill(SubRule *r,
 {
 	assert(r);
 
-	regfree(r->regex);
-	free(r->regex);
-	if(r->tile) subTileKill(r->tile, clean);
+	if(r->regex)
+		{
+			regfree(r->regex);
+			free(r->regex);
+		}
+		printf("clean=%d\n", clean);
+	if(r->tile && clean) subTileKill(r->tile, clean);
 	free(r);
 } /* }}} */
