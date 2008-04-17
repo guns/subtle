@@ -26,13 +26,13 @@
 
 #include "config.h"
 
-#define ACTION_ACTIVATE	(1L << 1)		// Activate client
-#define ACTION_CLIENTS	(1L << 2)		// List clients
-#define ACTION_FIND			(1L << 3)		// Find client
-#define ACTION_VIEWS		(1L << 4)		// List views
-#define ACTION_CLOSE		(1L << 5)		// Close client
-#define ACTION_SWITCH		(1L << 6)		// Switch view
-#define ACTION_SHADE		(1L << 7)		// Shade client
+#define ACTION_ACTIVATE	(1L << 1)		///< Activate client
+#define ACTION_CLIENTS	(1L << 2)		///< List clients
+#define ACTION_FIND			(1L << 3)		///< Find client
+#define ACTION_VIEWS		(1L << 4)		///< List views
+#define ACTION_CLOSE		(1L << 5)		///< Close client
+#define ACTION_SWITCH		(1L << 6)		///< Switch view
+#define ACTION_SHADE		(1L << 7)		///< Shade client
 
 static Display *disp = NULL;
 

@@ -29,11 +29,11 @@ subUtilLogSetDebug(void)
 
  /** subUtilLog {{{
 	* @brief Print messages depending on type
-	* @param[in] type Message type
-	* @param[in] file File name
-	* @param[in] line Line number
+	* @param[in] type		Message type
+	* @param[in] file		File name
+	* @param[in] line		Line number
 	* @param[in] format Message format
-	* @param[in] ... Variadic arguments
+	* @param[in] ...		Variadic arguments
 	**/
 
 void
@@ -66,9 +66,9 @@ subUtilLog(int type,
 
  /** subUtilAlloc {{{
 	* @brief Alloc memory and check result
-	* @param[in] n Number of elements
+	* @param[in] n		Number of elements
 	* @param[in] size Size of the memory block
-	* @return New memory block or \p NULL
+	* @return Returns new memory block or \p NULL
 	**/
 
 void *
@@ -82,9 +82,9 @@ subUtilAlloc(size_t n,
 
  /** subUtilRealloc {{{
 	* @brief Realloc memory and check result
-	* @param[in] mem Memory block
+	* @param[in] mem	Memory block
 	* @param[in] size Size of the memory block
-	* @return New memory block or \p NULL
+	* @return Returns new memory block or \p NULL
 	**/
 
 void *
@@ -98,9 +98,9 @@ subUtilRealloc(void *mem,
 
  /** subUtilFind {{{
 	* @brief Find data with the context manager
-	* @param[in] win A #Window
-	* @param[in] id Context id
-	* @return Found data pointer or \p NULL
+	* @param[in] win	Window
+	* @param[in] id		Context id
+	* @return Returns found data pointer or \p NULL
 	**/
 
 XPointer *
@@ -115,7 +115,7 @@ subUtilFind(Window win,
 
  /** subUtilTime {{{
 	* @brief Get the current time in seconds 
-	* @return Current time in seconds
+	* @return Returns current time in seconds
 	**/
 
 time_t

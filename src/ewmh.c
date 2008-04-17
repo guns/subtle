@@ -70,8 +70,8 @@ subEwmhInit(void)
 
  /** subEwmhFind {{{
 	* @brief Find intern atoms
-	* @param[in] hint Hint number
-	* @return A #Atom
+	* @param[in] hint	Hint number
+	* @return Returns a #Atom
 	**/
 
 Atom
@@ -83,11 +83,11 @@ subEwmhFind(int hint)
 
  /** subEwmhGetProperty {{{
 	* @brief Get property from window
-	* @param[in] win Window
-	* @param[in] type Atom type
-	* @param[in] hint Hint number
-	* @param[out] size Size of items
-	* @return Property data
+	* @param[in] win		Window
+	* @param[in] type		Atom type
+	* @param[in] hint		Hint number
+	* @param[out] size	Size of items
+	* @return Returns property data
 	**/
 
 char *
@@ -120,10 +120,10 @@ subEwmhGetProperty(Window win,
 
  /** subEwmhSetWindows {{{
 	* @brief Change window property
-	* @param[in] win Window
-	* @param[in] hint Hint number
-	* @param[in] values Window list
-	* @param[in] size Size of the list
+	* @param[in] win		Window
+	* @param[in] hint		Hint number
+	* @param[in] values	Window list
+	* @param[in] size		Size of the list
 	**/
 
 void
@@ -137,10 +137,10 @@ subEwmhSetWindows(Window win,
 
  /** subEwmhSetCardinals {{{
 	* @brief Change window property
-	* @param[in] win Window
-	* @param[in] hint Hint number
-	* @param[in] values Cardinal list
-	* @param[in] size Size of the list
+	* @param[in] win		Window
+	* @param[in] hint		Hint number
+	* @param[in] values	Cardinal list
+	* @param[in] size		Size of the list
 	**/
 
 void
@@ -154,9 +154,9 @@ subEwmhSetCardinals(Window win,
 
  /** subEwmhSetString {{{
 	* @brief Change window property
-	* @param[in] win Window
-	* @param[in] hint Hint number
-	* @param[in] value String value
+	* @param[in] win		Window
+	* @param[in] hint		Hint number
+	* @param[in] value	String value
 	**/
 
 void
@@ -170,10 +170,10 @@ subEwmhSetString(Window win,
 
  /** subEwmhSetStrings {{{
 	* @brief Change window property
-	* @param[in] win Window
-	* @param[in] hint Hint number
-	* @param[in] values String list
-	* @param[in] size Size of the list
+	* @param[in] win		Window
+	* @param[in] hint		Hint number
+	* @param[in] values	String list
+	* @param[in] size		Size of the list
 	**/
 
 void

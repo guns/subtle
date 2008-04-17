@@ -216,7 +216,7 @@ LuaAddHelper(lua_State *state)
 
  /** subLuaLoadConfig {{{
 	* @brief Load config file from path
-	* @param[in] path Path to the config file
+	* @param[in] path	Path to the config file
 	**/
 
 void
@@ -382,7 +382,7 @@ subLuaLoadConfig(const char *path)
 
  /** subLuaLoadSublets {{{
 	* @brief Load sublets from path
-	* @param[in] path Path to the sublets
+	* @param[in] path	Path to the sublets
 	**/
 
 void
@@ -431,14 +431,16 @@ subLuaLoadSublets(const char *path)
 				{
 					if(!fnmatch("*.lua", entry->d_name, FNM_PATHNAME))
 						{
-						printf("name=%s\n",entry->d_name);
 							snprintf(buf, sizeof(buf), "%s/.%s/sublets/%s", getenv("HOME"), PACKAGE_NAME, entry->d_name);
 							luaL_loadfile(subletstate, buf);
 							lua_pcall(subletstate, 0, 0, 0);
 						}
 				}
 			closedir(dir);
-				
+			
+			/* Queue algorithm starts with the second element */
+			d->sublets->data[0] = NULL;
+
 			subViewConfigure();
 			subSubletConfigure();
 		}
@@ -447,7 +449,7 @@ subLuaLoadSublets(const char *path)
 
  /** subLuaCall {{{
 	* @brief Carefully call a Lua script
-	* @param w A #SubClient
+	* @param s	A #SubClient
 	**/
 
 void

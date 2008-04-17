@@ -46,8 +46,8 @@ ViewDelete(SubView *v)
 
  /** subViewNew {{{
 	* @brief Create a view
-	* @param[in] name Name of the view
-	* @return A #SubClient or \p NULL
+	* @param[in] name	Name of the view
+	* @return Returns a #SubClient or \p NULL
 	**/
 
 SubView *
@@ -114,7 +114,7 @@ subViewConfigure(void)
 
  /** subViewRender {{{ 
 	* @brief Render all views
-	* @param[in] v A #SubView
+	* @param[in] v	A #SubView
 	**/
 
 void
@@ -142,7 +142,7 @@ subViewRender(void)
 
  /** subViewMerge {{{
 	* @brief Merge window into views
-	* @param[in] win A #Window
+	* @param[in] win	Window
 	**/
 
 void
@@ -226,7 +226,7 @@ subViewMerge(Window win)
 
  /** subViewJump {{{
 	* @brief Jump to view
-	* @param[in] v A #SubView
+	* @param[in] v	A #SubView
 	**/
 
 void
@@ -251,7 +251,7 @@ subViewJump(SubView *v)
 	subTileRemap(v->tile);
 
 	/* EWMH: Desktops */
-	vid = subArrayFind(d->views, v) + 1;
+	vid = subArrayFind(d->views, (void *)v) + 1;
 	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_CURRENT_DESKTOP, &vid, 1);
 
 	subViewConfigure();
@@ -262,7 +262,7 @@ subViewJump(SubView *v)
 
  /** subViewKill {{{
 	* @brief Kill view 
-	* @param[in] v A #SubView
+	* @param[in] v	A #SubView
 	**/
 
 void
@@ -270,7 +270,7 @@ subViewKill(SubView *v)
 {
 	assert(v);
 
-	printf("Removing view (%s)\n", v->name);
+	printf("Killing view (%s)\n", v->name);
 
 	XUnmapWindow(d->disp, v->button);
 	XDeleteContext(d->disp, v->button, 1);
@@ -283,7 +283,7 @@ subViewKill(SubView *v)
 			XDestroyWindow(d->disp, v->frame);
 		}
 	
-	subArrayKill(v->rules, True);
+	subArrayKill(v->rules, False);
 
 	free(v->name);
 	free(v);					
