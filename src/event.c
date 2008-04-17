@@ -200,11 +200,11 @@ static void
 HandleDestroy(XDestroyWindowEvent *ev)
 {
 	SubClient *c = (SubClient *)subUtilFind(ev->event, 1);
-	if(c)
+	if(c) 
 		{
 			c->flags |= SUB_STATE_DEAD;
 			subClientKill(c); 
-			subArrayPop(d->clients, (void *)c);
+			subTileConfigure(d->cv->tile);
 		}
 } /* }}} */
 
@@ -281,7 +281,7 @@ static void
 HandleCrossing(XCrossingEvent *ev)
 {
 	SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
-	if(c)
+	if(c && !(c->flags & SUB_STATE_DEAD))
 		{
 			XEvent event;
 		
@@ -411,22 +411,25 @@ subEventLoop(void)
 #endif /* HAVE_SYS_INOTIFY_H */
 				}
 
-			XNextEvent(d->disp, &ev);
-			switch(ev.type)
+			while(XPending(d->disp))
 				{
-					case ButtonPress:				HandleButtonPress(&ev.xbutton);					break;
-					case KeyPress:					HandleKeyPress(&ev.xkey);								break;
-					case ConfigureRequest:	HandleConfigure(&ev.xconfigurerequest);	break;
-					case MapNotify:					HandleMapNotify(&ev.xmapping);					break;
-					case MapRequest: 				HandleMapRequest(&ev.xmaprequest); 			break;
-					case DestroyNotify: 		HandleDestroy(&ev.xdestroywindow);			break;
-					case ClientMessage: 		HandleMessage(&ev.xclient); 						break;
-					case ColormapNotify: 		HandleColormap(&ev.xcolormap); 					break;
-					case PropertyNotify: 		HandleProperty(&ev.xproperty); 					break;
-					case EnterNotify:				HandleCrossing(&ev.xcrossing);					break;
-					case VisibilityNotify:	
-					case Expose:						HandleExpose(&ev);											break;
-					case FocusIn:						HandleFocus(&ev.xfocus);								break;
+					XNextEvent(d->disp, &ev);
+					switch(ev.type)
+						{
+							case ButtonPress:				HandleButtonPress(&ev.xbutton);					break;
+							case KeyPress:					HandleKeyPress(&ev.xkey);								break;
+							case ConfigureRequest:	HandleConfigure(&ev.xconfigurerequest);	break;
+							case MapNotify:					HandleMapNotify(&ev.xmapping);					break;
+							case MapRequest: 				HandleMapRequest(&ev.xmaprequest); 			break;
+							case DestroyNotify: 		HandleDestroy(&ev.xdestroywindow);			break;
+							case ClientMessage: 		HandleMessage(&ev.xclient); 						break;
+							case ColormapNotify: 		HandleColormap(&ev.xcolormap); 					break;
+							case PropertyNotify: 		HandleProperty(&ev.xproperty); 					break;
+							case EnterNotify:				HandleCrossing(&ev.xcrossing);					break;
+							case VisibilityNotify:	
+							case Expose:						HandleExpose(&ev);											break;
+							case FocusIn:						HandleFocus(&ev.xfocus);								break;
+						}
 				}
 		}
 } /* }}} */
