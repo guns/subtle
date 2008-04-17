@@ -58,7 +58,7 @@ DrawMask(int type,
 	SubClient *c,
 	XRectangle *r)
 {
-	/* XXX: Put modifiers into a static table? */
+	/* @todo Put modifiers into a static table? */
 	switch(type)
 		{
 			case SUB_DRAG_START: 
@@ -122,8 +122,8 @@ AdjustWeight(int mode,
 
  /** subClientNew {{{
 	* @brief Create new client
-	* @param[in] win Main window of the new client
-	* @return A #SubClient or \p NULL
+	* @param[in] win	Main window of the new client
+	* @return Returns a #SubClient or \p NULL
 	**/
 
 SubClient *
@@ -217,7 +217,7 @@ subClientNew(Window win)
 
  /** subClientConfigure {{{
 	* @brief Send a configure request to client
-	* @param[in] c A #SubClient
+	* @param[in] c	A #SubClient
 	**/
 
 void
@@ -260,7 +260,7 @@ subClientConfigure(SubClient *c)
 
  /** subClientRender {{{
 	* @brief Render client and redraw titlebar and borders
-	* @param[in] C A #SubClient
+	* @param[in] c	A #SubClient
 	**/
 
 void
@@ -296,7 +296,7 @@ subClientRender(SubClient *c)
 
  /** subClientFocus {{{
 	* @brief Set or unset focus to client
-	* @param[in] c A #SubClient
+	* @param[in] c	A #SubClient
 	**/
 
 void
@@ -327,7 +327,7 @@ subClientFocus(SubClient *c)
 				{
 					SubClient *f = d->focus;
 					d->focus = NULL;
-					if(f) subClientRender(f);
+					if(f && !(f->flags & SUB_STATE_DEAD)) subClientRender(f);
           
 					subKeyUngrab(f->frame);
 				} 
@@ -343,7 +343,7 @@ subClientFocus(SubClient *c)
 
  /** subClientMap {{{
 	* @brief Map client with all subwindows to screen
-	* @param[in] c A #SubClient
+	* @param[in] c	A #SubClient
 	**/
 
 void
@@ -357,7 +357,7 @@ subClientMap(SubClient *c)
 
  /** subClientUnmap {{{
 	* @brief Unmap client with all subClientUnmap from screen
-	* @param[in] c A #SubClient
+	* @param[in] c	A #SubClient
 	**/
 
 void
@@ -371,8 +371,8 @@ subClientUnmap(SubClient *c)
 
  /** subClientDrag {{{
 	* @brief Move and/or drag client
-	* @param[in] c A #SubClient
-	* @param[in] mode Drag/move mode
+	* @param[in] c		A #SubClient
+	* @param[in] mode	Drag/move mode
 	**/
 
 void
@@ -563,8 +563,6 @@ subClientDrag(SubClient *c,
 													{
 														int idx = subArrayFind(c2->tile->tile->clients, (void *)c2->tile);
 
-														printf("idx=%d\n", idx);
-													
 														subArrayPop(c->tile->clients, (void *)c);
 														subArraySplice(c2->tile->tile->clients, idx, 1);
 
@@ -626,8 +624,8 @@ subClientDrag(SubClient *c,
 
  /** subClientToggle {{{
 	* @brief Toggle various states of client
-	* @param[in] c A #SubClient
-	* @param[in] type Toggle type
+	* @param[in] c		A #SubClient
+	* @param[in] type	Toggle type
 	**/
 
 void
@@ -762,7 +760,7 @@ int type)
 
 	/** subClientFetchName {{{
 	 * @brief Fetch client name and store it
-	 * @param[in] c A #SubClient
+	 * @param[in] c	A #SubClient
 	 **/
 
 void
@@ -786,8 +784,8 @@ subClientFetchName(SubClient *c)
 
  /** subClientSetWMState {{{
 	* @brief Set WM state for client
-	* @param[in] w A #SubClient
-	* @param[in] state New state for the client
+	* @param[in] c			A #SubClient
+	* @param[in] state	New state for the client
 	**/
 
 void
@@ -806,8 +804,8 @@ subClientSetWMState(SubClient *c,
 
  /** subClientGetWMState {{{
 	* @brief Get WM state from client
-	* @param[in] c A #SubClient
-	* @return Client WM state
+	* @param[in] c	A #SubClient
+	* @return Returns client WM state
 	**/
 
 long
@@ -831,13 +829,25 @@ subClientGetWMState(SubClient *c)
 
  /** subClientKill {{{
 	* @brief Send interested clients the close signal and/or kill it
-	* @param[in] c A #SubClient
+	* @param[in] c	A #SubClient
 	**/
 
 void
 subClientKill(SubClient *c)
 {
 	assert(c);
+
+	printf("Killing client %s\n", c->name);
+
+	/* Delete context and ignore further events */
+	XDeleteContext(d->disp, c->frame, 1);
+	XSelectInput(d->disp, c->frame, NoEventMask);
+
+	/* Unset focus */
+	if(d->focus == c) d->focus = NULL;
+
+	subArrayPop(d->clients, (void *)c->win);
+	subArrayPop(c->tile->clients, (void *)c);
 
 	/* EWMH: Update Client list and client list stacking */			
 	subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_CLIENT_LIST,
@@ -863,6 +873,9 @@ subClientKill(SubClient *c)
 				}
 			else XKillClient(d->disp, c->win);
 		}
+	
+	XDestroySubwindows(d->disp, c->frame);
+	XDestroyWindow(d->disp, c->frame);
 
 	if(c->name) XFree(c->name);
 	free(c);
