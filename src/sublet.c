@@ -13,12 +13,12 @@
 
  /** subSubletNew {{{
 	* @brief Create new sublet 
-	* @param[in] type Type of the sublet
-	* @param[in] name Name of the sublet
-	* @param[in] ref Lua object reference
+	* @param[in] type			Type of the sublet
+	* @param[in] name			Name of the sublet
+	* @param[in] ref			Lua object reference
 	* @param[in] interval Update interval
-	* @param[in] watch Watch file
-	* @return A #SubSublet or \p NULL
+	* @param[in] watch 		Watch file
+	* @return Returns a #SubSublet or \p NULL
 	**/
 
 SubSublet *
@@ -30,15 +30,12 @@ subSubletNew(int type,
 {
 	SubSublet *s = (SubSublet *)subUtilAlloc(1, sizeof(SubSublet));
 
-	if(d->sublets->ndata == 0) 
-		{
-			/* Algorithm starts at [1] and we need to keep track of the first sublet */
-			subArrayPush(d->sublets, (void *)s);
-		}
+	/* Algorithm needs an additional element */
+	if(d->sublets->ndata == 0) subArrayPush(d->sublets, (void *)s);
 	else
 		{
 			/* Use of unused array index */
-			s->next = (SubSublet *)d->sublets->data[0];
+			s->next = SUBLET(d->sublets->data[0]);
 			d->sublets->data[0] = (void *)s;
 		}
 
@@ -69,8 +66,16 @@ subSubletNew(int type,
   /* Don't add text and watch sublets to queue */
   if(!(type & SUB_SUBLET_TYPE_TEXT) && !(type & SUB_SUBLET_TYPE_WATCH))
     {
+			int i = d->sublets->ndata;
+
 			subArrayPush(d->sublets, (void *)s);
-			subSubletMerge(d->sublets->ndata);
+
+			while(i > 1 && s->time < SUBLET(d->sublets->data[i / 2])->time)
+				{
+					d->sublets->data[i] = d->sublets->data[i / 2];
+					i /= 2;
+				}
+			d->sublets->data[i] = s;
 		}
 	
 	printf("Loading sublet %s (%d)\n", name, (int)interval);
@@ -89,7 +94,7 @@ subSubletConfigure(void)
 	if(d->sublets->ndata > 0)
 		{
 			int width = 3;
-			SubSublet *s = (SubSublet *)d->sublets->data[0];
+			SubSublet *s = (SubSublet *)d->sublets->data[1]; ///> Queue algorithm starts with the second element
 
 			while(s)
 				{
@@ -111,7 +116,7 @@ subSubletRender(void)
 	if(d->sublets->ndata > 0)
 		{
 			int width = 3;
-			SubSublet *s = (SubSublet *)d->sublets->data[0];
+			SubSublet *s = (SubSublet *)d->sublets->data[1];  ///> Queue algorithm starts with the second element
 
 			XClearWindow(d->disp, d->bar.sublets);
 
@@ -121,7 +126,7 @@ subSubletRender(void)
 						{
 							XDrawRectangle(d->disp, d->bar.sublets, d->gcs.font, width, 2, 60, d->th - 5);
 							XFillRectangle(d->disp, d->bar.sublets, d->gcs.font, width + 2, 4, (56 * s->number) / 100, d->th - 8);
-							width += 63;
+							width += 63; ///< Magic number
 						}
 					else if(s->string) 
 						{
@@ -136,19 +141,17 @@ subSubletRender(void)
 
  /** subSubletMerge {{{
 	* @brief Merge sublet into queue
-	* @param[in] pos Position of the sublet in the queue
+	* @param[in] pos	Position of the sublet in the queue
 	**/
 
 void
 subSubletMerge(int pos)
 {
-	int left	= 2 * pos;
-	int right	= left + 1;
-	int max 	= (left <= d->sublets->ndata &&
-		((SubSublet *)d->sublets->data[left])->time < ((SubSublet *)d->sublets->data[pos])->time) ? left : pos;
+	int left = 2 * pos, right = left + 1, max = (left < d->sublets->ndata &&
+		SUBLET(d->sublets->data[left])->time < SUBLET(d->sublets->data[pos])->time) ? left : pos;
 
-	if(right <= d->sublets->ndata && 
-		((SubSublet *)d->sublets->data[right])->time < ((SubSublet *)d->sublets->data[max])->time) max = right;
+	if(right < d->sublets->ndata && 
+		SUBLET(d->sublets->data[right])->time < SUBLET(d->sublets->data[max])->time) max = right;
 	if(max != pos)
 		{
 			void *tmp	= d->sublets->data[pos];
@@ -160,18 +163,18 @@ subSubletMerge(int pos)
 
  /** subSubletNext {{{
 	* @brief Get next sublet 
-	* @return A #SubSublet or \p NULL
+	* @return Returns a #SubSublet or \p NULL
 	**/
 
 SubSublet *
 subSubletNext(void)
 {
-	return(d->sublets->ndata > 1 ? (SubSublet *)d->sublets->data[1] : NULL);
+	return(d->sublets->ndata > 1 ? SUBLET(d->sublets->data[1]) : NULL);
 } /* }}} */
 
  /** subSubletKill {{{
 	* @brief Kill sublet
-	* @param[in] s A #SubSublet
+	* @param[in] s	A #SubSublet
 	**/
 
 void
@@ -179,7 +182,7 @@ subSubletKill(SubSublet *s)
 {
 	assert(s);
 
-	printf("Unloading sublet #%d\n", s->ref);
+	printf("Killing sublet (#%d)\n", s->ref);
 
 	if(!(s->flags & SUB_SUBLET_TYPE_METER) && s->string) free(s->string);
 	free(s);

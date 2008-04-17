@@ -13,9 +13,9 @@
 
  /** subTileNew {{{
 	* @brief Create new tile 
-	* @param[in] mode Tile mode
-	* @param[in] sub Tile superior
-	* @return A #SubTile or @p NULL
+	* @param[in] mode	Tile mode
+	* @param[in] sub	Tile superior
+	* @return Returns a #SubTile or \p NULL
 	**/
 
 SubTile *
@@ -42,7 +42,7 @@ subTileNew(int mode,
 
  /** subTileConfigure {{{
 	* @brief Configure tile and clients 
-	* @param[in] t A #SubTile
+	* @param[in] t	A #SubTile
 	**/
 
 void
@@ -202,7 +202,7 @@ subTileConfigure(SubTile *t)
 
  /** subTileRemap {{{ 
 	* @brief Remap clients on multi views
-	* @param[in] t A #SubTile
+	* @param[in] t	A #SubTile
 	**/
 
 void
@@ -214,9 +214,9 @@ subTileRemap(SubTile *t)
 
 	for(i = 0; i < t->clients->ndata; i++)
 		{
-			SubClient *c = (SubClient *)t->clients->data[i];
+			SubClient *c = CLIENT(t->clients->data[i]);
 
-			if(c->flags & SUB_TYPE_TILE) subTileRemap((SubTile *)t->clients->data[i]);
+			if(c->flags & SUB_TYPE_TILE) subTileRemap(TILE(t->clients->data[i]));
 			else if(c->flags & SUB_STATE_MULTI)
 				{
 					XReparentWindow(d->disp, c->win, c->frame, d->bw, d->th);
@@ -228,15 +228,15 @@ subTileRemap(SubTile *t)
 
  /** subTileKill {{{
 	* @brief Kill tile
-	* @param[in] t A #SubTile
-	* @param[in] clean Free elements or not
+	* @param[in] t			A #SubTile
+	* @param[in] clean	Free elements or not
 	**/
 
 void
 subTileKill(SubTile *t,
 	int clean)
 {
-	subArrayKill(t->clients, clean);
+	if(clean) subArrayKill(t->clients, clean);
 	free(t);
 
 	subUtilLogDebug("kill=tile\n");
