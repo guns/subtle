@@ -58,9 +58,9 @@ subViewNew(char *name)
 	assert(name);
 	
 	v	= (SubView *)subUtilAlloc(1, sizeof(SubView));
-	v->flags	|= SUB_TYPE_VIEW;
+	v->flags	= SUB_TYPE_VIEW;
 	v->name		= strdup(name);
-	v->width	=	strlen(v->name) * d->fx + 8; /* Font offsets */
+	v->width	=	strlen(v->name) * d->fx + 8; ///< Font offset
 
 	printf("Adding view (%s)\n", v->name);
 	subUtilLogDebug("new=view, name=%s\n", name);
@@ -98,7 +98,8 @@ subViewConfigure(void)
 							names[nv++]	= v->name;
 						}
 				}
-			XMoveResizeWindow(d->disp, d->bar.views, 0, 0, width, d->th);
+
+			if(width > 0) XMoveResizeWindow(d->disp, d->bar.views, 0, 0, width, d->th);
 
 			/* EWMH: Virtual roots */
 			subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_VIRTUAL_ROOTS, wins, nv);
@@ -272,12 +273,12 @@ subViewKill(SubView *v)
 
 	printf("Killing view (%s)\n", v->name);
 
-	XUnmapWindow(d->disp, v->button);
-	XDeleteContext(d->disp, v->button, 1);
-	XDestroyWindow(d->disp, v->button);
-
+	/* Active views need more cleaning */
 	if(v->tile)
 		{
+			XDeleteContext(d->disp, v->button, 1);
+			XDestroyWindow(d->disp, v->button);
+
 			subTileKill(v->tile, True);
 			XDeleteContext(d->disp, v->frame, 1);
 			XDestroyWindow(d->disp, v->frame);
@@ -288,5 +289,5 @@ subViewKill(SubView *v)
 	free(v->name);
 	free(v);					
 
-	subUtilLogDebug("kill=tile\n");
+	subUtilLogDebug("kill=view\n");
 } /* }}} */
