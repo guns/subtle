@@ -59,7 +59,6 @@ subArrayPop(SubArray *a,
 				a->data[i] = a->data[i + 1];
 
 			a->ndata--;
-			printf("ndata=%d, size=%d\n", a->ndata, a->ndata * sizeof(void *));
 			a->data = (void **)subUtilRealloc(a->data, a->ndata * sizeof(void *));
 		}
 } /* }}} */
@@ -129,14 +128,15 @@ subArrayKill(SubArray *a,
 
 					if(!c) continue; ///< Queue algorithm starts with the second element
 
-					if(c->flags & SUB_TYPE_VIEW) subViewKill(VIEW(c));
-					else if(c->flags & SUB_TYPE_RULE && !(c->flags & SUB_TYPE_TILE)) subRuleKill(RULE(c), True);
+					if(c->flags & SUB_TYPE_TILE) subTileKill(TILE(c), True);
+					else if(c->flags & SUB_TYPE_VIEW) subViewKill(VIEW(c));
+					else if(c->flags & SUB_TYPE_RULE) subRuleKill(RULE(c), True);
 					else if(c->flags & SUB_TYPE_CLIENT) subClientKill(CLIENT(c));
-					else if(c->flags & SUB_TYPE_TILE) subTileKill(TILE(c), True);
 					else if(c->flags & SUB_TYPE_SUBLET) subSubletKill(SUBLET(c));
 					else if(c->flags & SUB_TYPE_KEY) subKeyKill(KEY(c));
 					else free(a->data[i]); 
 				}
 		}
+	if(a->data) free(a->data);
 	free(a);
 } /* }}} */
