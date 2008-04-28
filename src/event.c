@@ -98,7 +98,7 @@ HandleButtonPress(XButtonEvent *ev)
 							}
 						break;
 					case Button2:
-						if(ev->subwindow == c->title) subClientKill(c);
+						if(ev->subwindow == c->title) subClientKill(c, True);
 						break;
 					case Button3: 
 						if(ev->subwindow == c->title) subClientToggle(c, SUB_STATE_FLOAT);
@@ -126,7 +126,7 @@ HandleKeyPress(XKeyEvent *ev)
 
 					switch(k->flags)
 						{
-							case SUB_KEY_DELETE_WIN: subClientKill(c); break;
+							case SUB_KEY_DELETE_WIN: subClientKill(c, True); break;
 							case SUB_KEY_TOGGLE_SHADE:	if(!mode) mode = SUB_STATE_SHADE;
 							case SUB_KEY_TOGGLE_RAISE:			if(!mode) mode = SUB_STATE_FLOAT;
 							case SUB_KEY_TOGGLE_FULL:			if(!mode) mode = SUB_STATE_FULL;
@@ -203,7 +203,7 @@ HandleDestroy(XDestroyWindowEvent *ev)
 	if(c) 
 		{
 			c->flags |= SUB_STATE_DEAD;
-			subClientKill(c); 
+			subClientKill(c, True); 
 			subTileConfigure(d->cv->tile);
 		}
 } /* }}} */
@@ -351,8 +351,10 @@ HandleFocus(XFocusInEvent *ev)
 void
 subEventLoop(void)
 {
-	time_t current;
+	int ret;
+	time_t ctime;
 	XEvent ev;
+	fd_set rfds;
 	struct timeval tv;
 	SubSublet *s = NULL;
 
@@ -360,76 +362,102 @@ subEventLoop(void)
 	char buf[BUFLEN];
 #endif /* HAVE_SYS_INOTIFY_H */
 
+	s = SUBLET(d->sublets->data[0]);
+
+	/* Init timeout and assemble FD_SET */
+	tv.tv_sec		= 0;
+	tv.tv_usec	= 0;
+
+	FD_ZERO(&rfds);
+	FD_SET(ConnectionNumber(d->disp), &rfds);
+
+#ifdef HAVE_SYS_INOTIFY_H
+	FD_SET(d->notify, &rfds); ///< Add inotify socket to set
+#endif /* HAVE_SYS_INOTIFY_H */
+
 	while(1)
 		{
-			s = subSubletNext();
-			if(s)
+			ctime	= subUtilTime();
+			ret = select(ConnectionNumber(d->disp) + 1, &rfds, NULL, NULL, &tv);
+			if(-1 == ret) 
 				{
-					fd_set fdset;
-					current	= subUtilTime();
-
-					while(s->time <= current)
+					subUtilLogDebug("%s\n", strerror(errno)); ///< Ignore and print debugging message
+				}
+			else if(ret) ///< Data ready on any connection
+				{
+					if(FD_ISSET(ConnectionNumber(d->disp), &rfds)) ///< X connection
 						{
-							s->time = current + s->interval;
-
-							subLuaCall(s);
-							subSubletMerge(1);
-
-							s = subSubletNext();
-						}
-					subSubletRender();
-
-					tv.tv_sec		= s->interval;
-					tv.tv_usec	= 0;
-					FD_ZERO(&fdset);
-					FD_SET(ConnectionNumber(d->disp), &fdset);
-
-#ifdef HAVE_SYS_INOTIFY_H
-					/* Add inotify socket to the set */
-					FD_SET(d->notify, &fdset);
-#endif /* HAVE_SYS_INOTIFY_H */
-
-					/* Forcefully ignore EINTR */
-					if(select(ConnectionNumber(d->disp) + 1, &fdset, NULL, NULL, &tv) == -1 && errno != EINTR)
-						subUtilLogDebug("%s\n", strerror(errno));
-
-#ifdef HAVE_SYS_INOTIFY_H
-					if(read(d->notify, buf, BUFLEN) > 0)
-						{
-							struct inotify_event *event = (struct inotify_event *)&buf[0];
-							if(event)
+							/* Handle X events */
+							while(XPending(d->disp))
 								{
-									SubSublet *ws = (SubSublet *)subUtilFind(d->bar.sublets, event->wd);
-									if(ws)
+									XNextEvent(d->disp, &ev);
+									switch(ev.type)
 										{
-											subLuaCall(ws);
-											subSubletConfigure();
-											subSubletRender();
+											case ButtonPress:				HandleButtonPress(&ev.xbutton);					break;
+											case KeyPress:					HandleKeyPress(&ev.xkey);								break;
+											case ConfigureRequest:	HandleConfigure(&ev.xconfigurerequest);	break;
+											case MapNotify:					HandleMapNotify(&ev.xmapping);					break;
+											case MapRequest: 				HandleMapRequest(&ev.xmaprequest); 			break;
+											case DestroyNotify: 		HandleDestroy(&ev.xdestroywindow);			break;
+											case ClientMessage: 		HandleMessage(&ev.xclient); 						break;
+											case ColormapNotify: 		HandleColormap(&ev.xcolormap); 					break;
+											case PropertyNotify: 		HandleProperty(&ev.xproperty); 					break;
+											case EnterNotify:				HandleCrossing(&ev.xcrossing);					break;
+											case VisibilityNotify:	
+											case Expose:						HandleExpose(&ev);											break;
+											case FocusIn:						HandleFocus(&ev.xfocus);								break;
 										}
 								}
-						}
+							}
+#ifdef HAVE_SYS_INOTIFY_H
+						else if(FD_ISSET(d->notify, &rfds)) ///< Inotify descriptor
+							{
+								/* Handle inotify events */
+								if(read(d->notify, buf, BUFLEN) > 0)
+									{
+										struct inotify_event *event = (struct inotify_event *)&buf[0];
+										if(event)
+											{
+												SubSublet *ws = SUBLET(subUtilFind(d->bar.sublets, event->wd));
+												if(ws)
+													{
+														subLuaCall(ws);
+														subSubletConfigure();
+														subSubletRender();
+													}
+											}
+									}
+
+							}
 #endif /* HAVE_SYS_INOTIFY_H */
 				}
-
-			while(XPending(d->disp))
+			else ///< Timeout waiting for data
 				{
-					XNextEvent(d->disp, &ev);
-					switch(ev.type)
+					/* Update sublet data */
+					s = SUBLET(d->sublets->data[0]);
+					while(s && s->time <= ctime)
 						{
-							case ButtonPress:				HandleButtonPress(&ev.xbutton);					break;
-							case KeyPress:					HandleKeyPress(&ev.xkey);								break;
-							case ConfigureRequest:	HandleConfigure(&ev.xconfigurerequest);	break;
-							case MapNotify:					HandleMapNotify(&ev.xmapping);					break;
-							case MapRequest: 				HandleMapRequest(&ev.xmaprequest); 			break;
-							case DestroyNotify: 		HandleDestroy(&ev.xdestroywindow);			break;
-							case ClientMessage: 		HandleMessage(&ev.xclient); 						break;
-							case ColormapNotify: 		HandleColormap(&ev.xcolormap); 					break;
-							case PropertyNotify: 		HandleProperty(&ev.xproperty); 					break;
-							case EnterNotify:				HandleCrossing(&ev.xcrossing);					break;
-							case VisibilityNotify:	
-							case Expose:						HandleExpose(&ev);											break;
-							case FocusIn:						HandleFocus(&ev.xfocus);								break;
+							s->time = ctime + s->interval; ///< Adjust seconds
+							s->time -= s->time % s->interval;
+
+							subLuaCall(s);
+							subArraySort(d->sublets, subSubletCompare);
+
+							s = SUBLET(d->sublets->data[0]);
 						}
+					subSubletConfigure();
+					subSubletRender();
 				}
+
+			/* Set timeout and assemble FD_SET */
+			tv.tv_sec		= s ? abs(s->time - ctime) : 60;
+			tv.tv_usec	= 0;
+
+			FD_ZERO(&rfds);
+			FD_SET(ConnectionNumber(d->disp), &rfds);
+
+#ifdef HAVE_SYS_INOTIFY_H
+			FD_SET(d->notify, &rfds); ///< Add inotify socket to set
+#endif /* HAVE_SYS_INOTIFY_H */
 		}
 } /* }}} */
