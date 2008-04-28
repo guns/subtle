@@ -11,6 +11,7 @@
 
 #include "subtle.h"
 
+#ifdef DEBUG
 /* DrawDepth {{{ */
 inline void
 DrawDepth(int depth)
@@ -51,6 +52,7 @@ DrawTree(SubTile *t)
 	DrawDepth(depth);
 	printf("end=%p\n", t);
 } /* }}} */
+#endif /* DEBUG */
 
 /* DrawMask {{{ */
 static void
@@ -269,9 +271,6 @@ subClientRender(SubClient *c)
 	unsigned long col = 0;
 
 	assert(c);
-
-	/* Check if client was meanwhile destroyed */
-	if(c->flags & SUB_STATE_DEAD) return;
 
 	col = d->focus && d->focus == c ? d->colors.focus : (c->flags & SUB_STATE_SHADE ? d->colors.cover : d->colors.norm);
 
@@ -650,8 +649,9 @@ int type)
 						XMapWindow(d->disp, c->right);
 						XMapWindow(d->disp, c->bottom);
 
-						/* Resize frame */
+						/* Resize and redraw */
 						XMoveResizeWindow(d->disp, c->frame, c->x, c->y, c->width, c->height);
+						subClientRender(c);
 						break;
 					case SUB_STATE_FLOAT: 
 						//XReparentWindow(d->disp, c->frame, c->tile->frame, c->x, c->y);	
@@ -687,7 +687,9 @@ int type)
 						XUnmapWindow(d->disp, c->right);
 						XUnmapWindow(d->disp, c->bottom);
 
+						/* Resize and redraw */
 						XMoveResizeWindow(d->disp, c->frame, c->x, c->y, c->width, d->th);
+						subClientRender(c);
 						break;						
 					case SUB_STATE_FLOAT:
 						/* Respect the user/program preferences */
