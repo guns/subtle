@@ -14,19 +14,6 @@
 static unsigned int nummask = 0;
 static unsigned int scrollmask = 0;
 
-/* Compare {{{ */
-static int
-Compare(const void *a,
-	const void *b)
-{
-	SubKey *k1 = *(SubKey **)a, *k2 = *(SubKey **)b;
-
-	assert(a && b);
-
-	/* < -1, = 0, > 1 */
-	return(k1->code + k1->mod < k2->code + k2->mod ? -1 : (k1->code + k1->mod == k2->code + k2->mod ? 0 : 1));
-} /* }}} */
-
  /** subKeyInit {{{
 	* @brief Init keys and get modifiers
 	**/
@@ -140,20 +127,6 @@ subKeyNew(const char *key,
 	return(k);
 } /* }}} */
 
-	/** subKeySort {{{ 
-	 * @brief Sort keys
-	 **/
-
-void
-subKeySort(void)
-{
-	assert(d->keys && d->keys->ndata > 0);
-
-	qsort(d->keys->data, d->keys->ndata, sizeof(SubKey *), Compare);
-
-	subUtilLogDebug("sort=%d\n", d->keys->ndata);
-} /* }}} */
-
  /** subKeyFind {{{
 	* @brief Find key
 	* @param[in] code	A keycode
@@ -170,7 +143,7 @@ subKeyFind(int code,
 	k->code = code;
 	k->mod	= (mod & ~(LockMask|nummask|scrollmask));
 
-	res = *(SubKey **)bsearch(&k, d->keys->data, d->keys->ndata, sizeof(SubKey *), Compare);
+	res = *(SubKey **)bsearch(&k, d->keys->data, d->keys->ndata, sizeof(SubKey *), subKeyCompare);
 
 	free(k);
 
@@ -215,6 +188,27 @@ void
 subKeyUngrab(Window win)
 {
 	XUngrabKey(d->disp, AnyKey, AnyModifier, win);
+} /* }}} */
+
+ /** subKeyCompare {{{
+	* @brief Compare two keys
+	* @param[in] a	A #SubKey
+	* @param[in] b	A #SubKey
+	* @return Returns the result of the comparison of both keys
+	* @retval -1 a is smaller
+	* @retval 0	a and b are equal	
+	* @retval 1 a is greater
+	**/
+
+int
+subKeyCompare(const void *a,
+	const void *b)
+{
+	SubKey *k1 = *(SubKey **)a, *k2 = *(SubKey **)b;
+
+	assert(a && b);
+
+	return(k1->code + k1->mod < k2->code + k2->mod ? -1 : (k1->code + k1->mod == k2->code + k2->mod ? 0 : 1));
 } /* }}} */
 
  /** subKeyKill {{{

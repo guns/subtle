@@ -105,6 +105,23 @@ subArraySplice(SubArray *a,
 		a->data[i] = a->data[i - len];
 } /* }}} */
 
+	/** subArraySort {{{ 
+	 * @brief Sort array with given compare function
+	 * @param[in] a				A #SubArray
+	 * @param[in] compar	Compare function
+	 **/
+
+void
+subArraySort(SubArray *a,
+	int(*compar)(const void *a, const void *b))
+{
+	assert(a && a->ndata > 0 && compar);
+
+	qsort(a->data, a->ndata, sizeof(void *), compar);
+
+	subUtilLogDebug("sort=%d\n", a->ndata);
+} /* }}} */
+
  /** subArrayKill {{{
 	* @brief Kill array with all elements
 	* @param[in] a			A #SubArray
@@ -119,23 +136,20 @@ subArrayKill(SubArray *a,
 
 	assert(a);
 
-	if(clean)
+	for(i = 0; clean && i < a->ndata; i++)
 		{
-			for(i = 0; i < a->ndata; i++)
-				{
-					/* Check type and kill it */
-					SubClient *c = CLIENT(a->data[i]);
+			/* Check type and kill it */
+			SubClient *c = CLIENT(a->data[i]);
 
-					if(!c) continue; ///< Queue algorithm starts with the second element
+			if(!c) continue; ///< Queue algorithm starts with the second element
 
-					if(c->flags & SUB_TYPE_TILE) subTileKill(TILE(c), True);
-					else if(c->flags & SUB_TYPE_VIEW) subViewKill(VIEW(c));
-					else if(c->flags & SUB_TYPE_RULE) subRuleKill(RULE(c), True);
-					else if(c->flags & SUB_TYPE_CLIENT) subClientKill(CLIENT(c));
-					else if(c->flags & SUB_TYPE_SUBLET) subSubletKill(SUBLET(c));
-					else if(c->flags & SUB_TYPE_KEY) subKeyKill(KEY(c));
-					else free(a->data[i]); 
-				}
+			if(c->flags & SUB_TYPE_TILE) subTileKill(TILE(c), True);
+			else if(c->flags & SUB_TYPE_VIEW) subViewKill(VIEW(c));
+			else if(c->flags & SUB_TYPE_RULE) subRuleKill(RULE(c), False);
+			else if(c->flags & SUB_TYPE_CLIENT) subClientKill(CLIENT(c));
+			else if(c->flags & SUB_TYPE_SUBLET) subSubletKill(SUBLET(c));
+			else if(c->flags & SUB_TYPE_KEY) subKeyKill(KEY(c));
+			else free(a->data[i]); 
 		}
 	if(a->data) free(a->data);
 	free(a);
