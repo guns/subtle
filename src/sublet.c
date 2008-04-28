@@ -30,20 +30,13 @@ subSubletNew(int type,
 {
 	SubSublet *s = (SubSublet *)subUtilAlloc(1, sizeof(SubSublet));
 
-	/* Algorithm needs an additional element */
-	if(d->sublets->ndata == 0) subArrayPush(d->sublets, (void *)s);
-	else
-		{
-			/* Use of unused array index */
-			s->next = SUBLET(d->sublets->data[0]);
-			d->sublets->data[0] = (void *)s;
-		}
-
-	/* Init the sublet */
+	/* Init sublet */
 	s->flags		= SUB_TYPE_SUBLET|type;
 	s->ref			= ref;
 	s->interval	= interval;
 	s->time			= subUtilTime();
+
+	subArrayPush(d->sublets, (void *)s);
 
 #ifdef HAVE_SYS_INOTIFY_H
 	if(s->flags & SUB_SUBLET_TYPE_WATCH)
@@ -63,21 +56,6 @@ subSubletNew(int type,
 
 	subLuaCall(s);
 
-  /* Don't add text and watch sublets to queue */
-  if(!(type & SUB_SUBLET_TYPE_TEXT) && !(type & SUB_SUBLET_TYPE_WATCH))
-    {
-			int i = d->sublets->ndata;
-
-			subArrayPush(d->sublets, (void *)s);
-
-			while(i > 1 && s->time < SUBLET(d->sublets->data[i / 2])->time)
-				{
-					d->sublets->data[i] = d->sublets->data[i / 2];
-					i /= 2;
-				}
-			d->sublets->data[i] = s;
-		}
-	
 	printf("Loading sublet %s (%d)\n", name, (int)interval);
 	subUtilLogDebug("new=sublet, name=%s, ref=%d, interval=%d, watch=%s\n", name, ref, interval, watch);		
 
@@ -93,16 +71,13 @@ subSubletConfigure(void)
 {
 	if(d->sublets->ndata > 0)
 		{
-			int width = 3;
-			SubSublet *s = (SubSublet *)d->sublets->data[1]; ///> Queue algorithm starts with the second element
+			int i, width = 3;
 
-			while(s)
-				{
-					if(s->flags & SUB_SUBLET_TYPE_METER) width += 66;
-					else if(!(s->flags & SUB_SUBLET_TYPE_HELPER)) width += strlen(s->string) * d->fx + 12;
-					s = s->next;
-				}
-			XMoveResizeWindow(d->disp, d->bar.sublets, DisplayWidth(d->disp, DefaultScreen(d->disp)) - width, 0, width, d->th);
+			/* Calc window width */
+			for(i = 0; i < d->sublets->ndata; i++) width += SUBLET(d->sublets->data[i])->width;
+
+			XMoveResizeWindow(d->disp, d->bar.sublets, DisplayWidth(d->disp, 
+				DefaultScreen(d->disp)) - width, 0, width, d->th);
 		}
 } /* }}} */
 
@@ -116,7 +91,7 @@ subSubletRender(void)
 	if(d->sublets->ndata > 0)
 		{
 			int width = 3;
-			SubSublet *s = (SubSublet *)d->sublets->data[1];  ///> Queue algorithm starts with the second element
+			SubSublet *s = SUBLET(d->sublet);
 
 			XClearWindow(d->disp, d->bar.sublets);
 
@@ -126,50 +101,36 @@ subSubletRender(void)
 						{
 							XDrawRectangle(d->disp, d->bar.sublets, d->gcs.font, width, 2, 60, d->th - 5);
 							XFillRectangle(d->disp, d->bar.sublets, d->gcs.font, width + 2, 4, (56 * s->number) / 100, d->th - 8);
-							width += 63; ///< Magic number
 						}
 					else if(s->string) 
-						{
-							XDrawString(d->disp, d->bar.sublets, d->gcs.font, width, d->fy - 1, s->string, strlen(s->string));
-							width += strlen(s->string) * d->fx + 6;
-						}
+						XDrawString(d->disp, d->bar.sublets, d->gcs.font, width, d->fy - 1, s->string, strlen(s->string));
+
+					width += s->width;
 					s = s->next;
 				}
 			XFlush(d->disp);
 		}
 } /* }}} */
 
- /** subSubletMerge {{{
-	* @brief Merge sublet into queue
-	* @param[in] pos	Position of the sublet in the queue
+ /** subSubletCompare {{{
+	* @brief Compare two sublets
+	* @param[in] a	A #SubSublet
+	* @param[in] b	A #SubSublet
+	* @return Returns the result of the comparison of both sublets
+	* @retval -1 a is smaller
+	* @retval 0	a and b are equal	
+	* @retval 1 a is greater
 	**/
 
-void
-subSubletMerge(int pos)
+int
+subSubletCompare(const void *a,
+	const void *b)
 {
-	int left = 2 * pos, right = left + 1, max = (left < d->sublets->ndata &&
-		SUBLET(d->sublets->data[left])->time < SUBLET(d->sublets->data[pos])->time) ? left : pos;
+	SubSublet *s1 = *(SubSublet **)a, *s2 = *(SubSublet **)b;
 
-	if(right < d->sublets->ndata && 
-		SUBLET(d->sublets->data[right])->time < SUBLET(d->sublets->data[max])->time) max = right;
-	if(max != pos)
-		{
-			void *tmp	= d->sublets->data[pos];
-			d->sublets->data[pos]	= d->sublets->data[max];
-			d->sublets->data[max]	= tmp;
-			subSubletMerge(max);
-		}
-} /* }}} */
+	assert(a && b);
 
- /** subSubletNext {{{
-	* @brief Get next sublet 
-	* @return Returns a #SubSublet or \p NULL
-	**/
-
-SubSublet *
-subSubletNext(void)
-{
-	return(d->sublets->ndata > 1 ? SUBLET(d->sublets->data[1]) : NULL);
+	return(s1->time < s2->time ? -1 : (s1->time == s2->time ? 0 : 1));
 } /* }}} */
 
  /** subSubletKill {{{
