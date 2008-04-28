@@ -153,7 +153,7 @@ CreateSublet(int type,
 
 	if(string)
 		{
-			/* Check functions with a namespace */
+			/* Check functions with namespace */
 			if(index(string, ':'))
 				{
 					char *table = strtok(string, ":"), *func = strtok(NULL, ":");
@@ -168,11 +168,29 @@ CreateSublet(int type,
 				}
 			else lua_getglobal(state, string);
 
+			/* Use references insteaf of function names */
 			ref = luaL_ref(state, LUA_REGISTRYINDEX);
 			if(ref) subSubletNew(type, string, ref, interval, watch);
 		}
 
-	return(1); /* Make the compiler happy */
+	return(1); /* Make compiler happy */
+} /* }}} */
+
+/* SanitizeSublet {{{ */
+static void
+SanitizeSublet(SubSublet *s)
+{
+	if(s->flags & SUB_SUBLET_TYPE_METER) 
+		{
+			s->number = 0;
+			s->width	= 63; ///< Magic number
+		}
+	else
+		{
+			if(s->string) free(s->string);
+			s->string = strdup("subtle");
+			s->width	= strlen(s->string) * d->fx + 6;
+		}
 } /* }}} */
 
 /* LuaAddText {{{ */
@@ -244,7 +262,7 @@ subLuaLoadConfig(const char *path)
 		}
 	else snprintf(buf, sizeof(buf), "%s/config.lua", path);
 
-	lua_sethook(configstate, CountHook, LUA_MASKCOUNT, 1000);
+	lua_sethook(configstate, CountHook, LUA_MASKCOUNT, 1000); ///< Limit execution to 1000 calls
 
 	subUtilLogDebug("config=%s\n", buf);
 	if(luaL_loadfile(configstate, buf) || lua_pcall(configstate, 0, 0, 0))
@@ -297,6 +315,7 @@ subLuaLoadConfig(const char *path)
 
 	XMapWindow(d->disp, d->bar.views);
 	XMapWindow(d->disp, d->bar.sublets);
+	XMapRaised(d->disp, d->bar.win);
 
 	/* Change GCs */
 	gvals.foreground	= d->colors.border;
@@ -325,7 +344,7 @@ subLuaLoadConfig(const char *path)
 					lua_pop(configstate, 1);
 				}
 		}
-	subKeySort();
+	subArraySort(d->keys, subKeyCompare);
 
 	/* Rules */
 	lua_getglobal(configstate, "Rules");
@@ -388,6 +407,7 @@ subLuaLoadConfig(const char *path)
 void
 subLuaLoadSublets(const char *path)
 {
+	int i;
 	DIR *dir = NULL;
 	char buf[100];
 	struct dirent *entry = NULL;
@@ -438,10 +458,12 @@ subLuaLoadSublets(const char *path)
 				}
 			closedir(dir);
 			
-			/* Queue algorithm starts with the second element */
-			d->sublets->data[0] = NULL;
+			/* Preserve load order */
+			for(i = 0; i < d->sublets->ndata - 1; i++) 
+				SUBLET(d->sublets->data[i])->next = SUBLET(d->sublets->data[i + 1]);
+			d->sublet = SUBLET(d->sublets->data[0]);
 
-			subViewConfigure();
+			subArraySort(d->sublets, subSubletCompare);
 			subSubletConfigure();
 		}
 	else subUtilLogWarn("Can't find any loadable sublets\n"); 
@@ -457,8 +479,8 @@ subLuaCall(SubSublet *s)
 {
 	assert(s);
 
-	/* Setup */
-	lua_sethook(subletstate, CountHook, LUA_MASKCOUNT, 1000);
+	/* Setup environment */
+	lua_sethook(subletstate, CountHook, LUA_MASKCOUNT, 1000); ///< Limit execution to 1000 calls
 	lua_settop(subletstate, 0);
 	lua_rawgeti(subletstate, LUA_REGISTRYINDEX, s->ref);
 
@@ -474,15 +496,7 @@ subLuaCall(SubSublet *s)
 			subUtilLogWarn("%s\n", (char *)lua_tostring(subletstate, -1));
 
 			if(s->flags & SUB_SUBLET_FAIL_THIRD) subSubletKill(s);
-			else
-				{
-					if(s->flags & SUB_SUBLET_TYPE_METER) s->number = 0;
-					else
-						{
-							if(s->string) free(s->string);
-							s->string = strdup("subtle");
-						}
-				}
+			else SanitizeSublet(s);
 			return;
 		}
 	if(s->flags & SUB_SUBLET_TYPE_HELPER) return;
@@ -492,17 +506,15 @@ subLuaCall(SubSublet *s)
 			case LUA_TSTRING:
 				if(s->string) free(s->string);
 				s->string = strdup((char *)lua_tostring(subletstate, -1));
+				s->width	= strlen(s->string) * d->fx + 6;
 				break;
-			case LUA_TNUMBER: s->number = (int)lua_tonumber(subletstate, -1);	break;
+			case LUA_TNUMBER: 
+				s->number = (int)lua_tonumber(subletstate, -1);	
+				s->width	= 63; ///< Magic number
+				break;
 			case LUA_TNIL: 		
 				subUtilLogWarn("Sublet #%d returned no usuable value\n", s->ref);	
-
-				if(s->flags & SUB_SUBLET_TYPE_METER) s->number = 0;
-				else
-					{
-						if(s->string) free(s->string);
-						s->string = strdup("subtle");
-					}
+				SanitizeSublet(s);
 				break;
 			default:
 				subUtilLogDebug("Sublet #%d returned unkown type %s\n", s->ref, lua_typename(subletstate, -1));
@@ -522,4 +534,6 @@ subLuaKill(void)
 #ifdef HAVE_SYS_INOTIFY_H
 	if(d->notify) close(d->notify);
 #endif /* HAVE_SYS_INOTIFY_H */
+
+	subUtilLogDebug("kill=lua\n");
 } /* }}} */
