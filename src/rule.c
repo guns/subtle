@@ -29,7 +29,7 @@ subRuleNew(
 	assert(tags && (size >= 0 && size <= 100));
 
 	r = (SubRule *)subUtilAlloc(1, sizeof(SubRule));
-	r->flags	|= SUB_TYPE_RULE;
+	r->flags	= SUB_TYPE_RULE;
 	r->regex	= (regex_t *)subUtilAlloc(1, sizeof(regex_t));
 	r->size		= size;
 
@@ -74,7 +74,8 @@ subRuleKill(SubRule *r,
 			regfree(r->regex);
 			free(r->regex);
 		}
-		printf("clean=%d\n", clean);
 	if(r->tile && clean) subTileKill(r->tile, clean);
 	free(r);
+
+	subUtilLogDebug("kill=rule\n");
 } /* }}} */
