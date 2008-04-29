@@ -36,9 +36,9 @@ ShowUsage(void)
 static void
 ShowVersion(void)
 {
-	printf("%s %s - Copyright (c) 2005-2008 Christoph Kappel\n" \
+	printf("%s %s %s - Copyright (c) 2005-2008 Christoph Kappel\n" \
 					"Released under the GNU General Public License\n" \
-					"Compiled for X%d and %s\n", PACKAGE_NAME, PACKAGE_VERSION,
+					"Compiled for X%d and %s\n", PACKAGE_NAME, PACKAGE_VERSION, "$Rev$",
 					X_PROTOCOL, LUA_VERSION);
 } /* }}} */
 
@@ -113,7 +113,7 @@ main(int argc,
 	ShowVersion();
 	act.sa_handler	= HandleSignal;
 	act.sa_flags		= 0;
-	memset(&act.sa_mask, 0, sizeof(sigset_t)); /* Avoid uninitialized values */
+	memset(&act.sa_mask, 0, sizeof(sigset_t)); ///< Avoid uninitialized values
 	sigaction(SIGHUP, &act, NULL);
 	sigaction(SIGTERM, &act, NULL);
 	sigaction(SIGINT, &act, NULL);
@@ -129,7 +129,6 @@ main(int argc,
 	subLuaLoadSublets(sublets);
 
 	subDisplayScan();
-
 	subEventLoop();
 
 	raise(SIGTERM);
