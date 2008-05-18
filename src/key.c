@@ -138,16 +138,15 @@ SubKey *
 subKeyFind(int code,
 	unsigned int mod)
 {
-	SubKey *res, *k = (SubKey *)subUtilAlloc(1, sizeof(SubKey));
+	SubKey **ret = NULL, *kp = NULL, k;
 	
-	k->code = code;
-	k->mod	= (mod & ~(LockMask|nummask|scrollmask));
+	k.code	= code;
+	k.mod		= (mod & ~(LockMask|nummask|scrollmask));
+	kp 			= &k;
 
-	res = *(SubKey **)bsearch(&k, d->keys->data, d->keys->ndata, sizeof(SubKey *), subKeyCompare);
+	ret = (SubKey **)bsearch(&kp, d->keys->data, d->keys->ndata, sizeof(SubKey *), subKeyCompare);
 
-	free(k);
-
-	return(res);
+	return(ret ? *ret : NULL);
 } /* }}} */
 
  /** subKeyGrab {{{
@@ -162,19 +161,19 @@ subKeyGrab(Window win)
 		{
 			int i;
 
-			/* \todo Ugly key/modifier grabbing */
+			/* @todo Ugly key/modifier grabbing */
 			for(i = 0; i < d->keys->ndata; i++) 
 				{
-					SubKey *k = (SubKey *)d->keys->data[i];
+					SubKey *k = KEY(d->keys->data[i]);
 
 					XGrabKey(d->disp, k->code, k->mod, win, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, k->code, k->mod | LockMask, win, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, k->code, k->mod | nummask, win, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, k->code, k->mod | LockMask | nummask, win, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, k->code, k->mod | scrollmask, win, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, k->code, k->mod | scrollmask | LockMask, win, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, k->code, k->mod | scrollmask | nummask, win, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, k->code, k->mod | scrollmask | LockMask | nummask, win, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, k->code, k->mod|LockMask, win, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, k->code, k->mod|nummask, win, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, k->code, k->mod|LockMask|nummask, win, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, k->code, k->mod|scrollmask, win, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, k->code, k->mod|scrollmask|LockMask, win, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, k->code, k->mod|scrollmask|nummask, win, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(d->disp, k->code, k->mod|scrollmask|LockMask|nummask, win, True, GrabModeAsync, GrabModeAsync);
 				}
 		}
 } /* }}} */
@@ -195,20 +194,31 @@ subKeyUngrab(Window win)
 	* @param[in] a	A #SubKey
 	* @param[in] b	A #SubKey
 	* @return Returns the result of the comparison of both keys
-	* @retval -1 a is smaller
-	* @retval 0	a and b are equal	
-	* @retval 1 a is greater
+	* @retval -1 First is smaller
+	* @retval 0	Both are equal	
+	* @retval 1 First is greater
 	**/
 
 int
 subKeyCompare(const void *a,
 	const void *b)
 {
+	int ret;
 	SubKey *k1 = *(SubKey **)a, *k2 = *(SubKey **)b;
 
 	assert(a && b);
 
-	return(k1->code + k1->mod < k2->code + k2->mod ? -1 : (k1->code + k1->mod == k2->code + k2->mod ? 0 : 1));
+	/* \todo Complicated.. */
+	if(k1->code < k2->code) ret = -1;
+	else if(k1->code == k2->code)
+		{
+			if(k1->mod < k2->mod) ret = -1;
+			else if(k1->mod == k2->mod) ret = 0;
+			else ret = 1;
+		}
+	else if(k1->code > k2->code) ret = 1;
+
+	return(ret);
 } /* }}} */
 
  /** subKeyKill {{{
