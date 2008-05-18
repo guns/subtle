@@ -152,12 +152,12 @@ subClientNew(Window win)
 	attrs.border_pixel			= d->colors.border;
 	attrs.background_pixel	= d->colors.norm;
 	attrs.background_pixmap	= ParentRelative;
-	attrs.save_under				= False;
-	attrs.event_mask				= KeyPressMask|ButtonPressMask|EnterWindowMask|LeaveWindowMask|ExposureMask|
-		VisibilityChangeMask|FocusChangeMask|SubstructureRedirectMask|SubstructureNotifyMask;
+	attrs.override_redirect	= True;
+	attrs.event_mask				= SubstructureRedirectMask|SubstructureNotifyMask|ExposureMask|VisibilityChangeMask|
+		EnterWindowMask|FocusChangeMask|KeyPressMask|ButtonPressMask;
 
 	c->frame			= WINNEW(DefaultRootWindow(d->disp), c->x, c->y, c->width, c->height, 0, 
-		CWBackPixmap|CWSaveUnder|CWEventMask);
+		CWOverrideRedirect|CWBackPixmap|CWEventMask);
 	c->title			= WINNEW(c->frame, 0, 0, c->width, d->th, 0, CWBackPixel);
 	c->caption		= WINNEW(c->frame, 0, 1, 1, d->th - 2, 0, CWBackPixel);
 	attrs.cursor	= d->cursors.horz;
@@ -166,6 +166,7 @@ subClientNew(Window win)
 	attrs.cursor	= d->cursors.vert;
 	c->bottom			= WINNEW(c->frame, 0, c->height - d->bw, c->width, d->bw, 0, CWBackPixel|CWCursor);
 
+	/* Update client */
 	XSelectInput(d->disp, c->win, PropertyChangeMask|StructureNotifyMask);
 	XSetWindowBorderWidth(d->disp, c->win, 0);
 	XReparentWindow(d->disp, c->win, c->frame, d->bw, d->th);
@@ -831,7 +832,7 @@ subClientGetWMState(SubClient *c)
 
  /** subClientKill {{{
 	* @brief Send interested clients the close signal and/or kill it
-	* @param[in] c	A #SubClient
+	* @param[in] c			A #SubClient
 	**/
 
 void
@@ -841,24 +842,21 @@ subClientKill(SubClient *c)
 
 	printf("Killing client %s\n", c->name);
 
-	/* Delete context and ignore further events */
-	XDeleteContext(d->disp, c->frame, 1);
+	/* Ignore further events and delete context */
 	XSelectInput(d->disp, c->frame, NoEventMask);
+	XDeleteContext(d->disp, c->frame, 1);
 
-	/* Unset focus */
-	if(d->focus == c) d->focus = NULL;
-
-	subArrayPop(d->clients, (void *)c->win);
-	subArrayPop(c->tile->clients, (void *)c);
-
-	/* EWMH: Update Client list and client list stacking */			
-	subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_CLIENT_LIST,
-		(Window *)d->clients->data, d->clients->ndata);
-	subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_CLIENT_LIST_STACKING,
-		(Window *)d->clients->data, d->clients->ndata);
-
+	if(d->focus == c) d->focus = NULL; ///< Unset focus
 	if(!(c->flags & SUB_STATE_DEAD))
 		{
+			subArrayPop(d->clients, (void *)c->win);
+
+			/* EWMH: Update Client list and client list stacking */			
+			subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_CLIENT_LIST,
+				(Window *)d->clients->data, d->clients->ndata);
+			subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_CLIENT_LIST_STACKING,
+				(Window *)d->clients->data, d->clients->ndata);
+		
 			/* Honor window preferences */
 			if(c->flags & SUB_PREF_CLOSE)
 				{
@@ -878,6 +876,8 @@ subClientKill(SubClient *c)
 	
 	XDestroySubwindows(d->disp, c->frame);
 	XDestroyWindow(d->disp, c->frame);
+
+	subArrayPop(c->tile->clients, (void *)c);
 
 	if(c->name) XFree(c->name);
 	free(c);
