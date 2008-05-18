@@ -118,8 +118,6 @@ subArraySort(SubArray *a,
 	assert(a && a->ndata > 0 && compar);
 
 	qsort(a->data, a->ndata, sizeof(void *), compar);
-
-	subUtilLogDebug("sort=%d\n", a->ndata);
 } /* }}} */
 
  /** subArrayKill {{{
@@ -140,8 +138,6 @@ subArrayKill(SubArray *a,
 		{
 			/* Check type and kill it */
 			SubClient *c = CLIENT(a->data[i]);
-
-			if(!c) continue; ///< Queue algorithm starts with the second element
 
 			if(c->flags & SUB_TYPE_TILE) subTileKill(TILE(c), True);
 			else if(c->flags & SUB_TYPE_VIEW) subViewKill(VIEW(c));
