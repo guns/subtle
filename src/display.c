@@ -13,6 +13,7 @@
 
 SubDisplay *d = NULL;
 
+#if 0
 /* HandleXError {{{ */
 static int
 HandleXError(Display *display,
@@ -28,8 +29,9 @@ HandleXError(Display *display,
 			XGetErrorText(display, ev->error_code, error, sizeof(error));
 			subUtilLogDebug("%s: win=%#lx, request=%d\n", error, ev->resourceid, ev->request_code);
 		}
-	return(0);
+	return(0); 
 } /* }}} */
+#endif
 
  /** subDisplayNew {{{
 	* @Open connection to X server and create display
@@ -51,7 +53,7 @@ subDisplayNew(const char *display_string)
 	d = (SubDisplay *)subUtilAlloc(1, sizeof(SubDisplay));
 	d->disp = XOpenDisplay(display_string);
 	if(!d->disp) subUtilLogError("Can't open display `%s'.\n", (display_string) ? display_string : ":0.0");
-	XSetErrorHandler(HandleXError);
+	//XSetErrorHandler(HandleXError);
 
 	/* Create gcs */
 	gvals.function		= GXcopy;
@@ -97,12 +99,9 @@ subDisplayNew(const char *display_string)
 void
 subDisplayScan(void)
 {
-	unsigned int i, n;
+	unsigned int i, n = 0;
 	Window unused, *wins = NULL;
 	XWindowAttributes attr;
-#ifdef DEBUG
-	int merged = 0;
-#endif /* DEBUG */
 
 	assert(d);
 
@@ -110,24 +109,17 @@ subDisplayScan(void)
 	for(i = 0; i < n; i++)
 		{
 			/* Skip own windows */
-			if(wins[i] && wins[i] != d->bar.win && wins[i] != (d->cv ? d->cv->frame : 0))
+			if(wins[i] && wins[i] != d->bar.win)
 				{
-#ifdef DEBUG
-					merged++;
-#endif /* DEBUG */					
-
 					XGetWindowAttributes(d->disp, wins[i], &attr);
-					if(attr.map_state == IsViewable) subViewMerge(wins[i]);
+					if(attr.map_state == IsViewable)  subViewMerge(wins[i]);
 				}
 		}
-
-	XMapRaised(d->disp, d->bar.win);
-	subViewConfigure();
-	subViewRender();
-
 	XFree(wins);
 
-	subUtilLogDebug("wins=%d, merged=%d\n", n, merged);
+	subViewConfigure();
+	if(d->cv) subViewJump(d->cv); ///< Jump to current view
+	subViewRender();
 } /* }}} */
 
  /** subDisplayKill {{{
@@ -156,11 +148,12 @@ subDisplayKill(void)
 			if(d->xfs) XFreeFont(d->disp, d->xfs);
 
 			/* Destroy view windows */
+			XDestroySubwindows(d->disp, d->bar.win);
 			XDestroyWindow(d->disp, d->bar.win);
-			XDestroyWindow(d->disp, d->bar.views);
-			XDestroyWindow(d->disp, d->bar.sublets);
 
 			XCloseDisplay(d->disp);
 		}
 	free(d);
+
+	subUtilLogDebug("kill=display\n");
 } /* }}} */
