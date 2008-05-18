@@ -28,7 +28,7 @@ subRuleNew(
 
 	assert(tags && (size >= 0 && size <= 100));
 
-	r = (SubRule *)subUtilAlloc(1, sizeof(SubRule));
+	r = RULE(subUtilAlloc(1, sizeof(SubRule)));
 	r->flags	= SUB_TYPE_RULE;
 	r->regex	= (regex_t *)subUtilAlloc(1, sizeof(regex_t));
 	r->size		= size;
