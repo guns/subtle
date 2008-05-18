@@ -18,15 +18,14 @@ ViewNew(SubView *v)
 	assert(v);
 
 	v->tile = subTileNew(SUB_TYPE_HORZ, (void *)v);
-	v->tile->flags |= SUB_TYPE_VIEW;
+	v->tile->flags 		|= SUB_TYPE_VIEW;
+	v->tile->superior = (void *)v;
 	v->frame	= XCreateSimpleWindow(d->disp, DefaultRootWindow(d->disp), 0, d->th, 
 		DisplayWidth(d->disp, DefaultScreen(d->disp)), DisplayHeight(d->disp, DefaultScreen(d->disp)), 0, 
 		d->colors.border, d->colors.norm);
 	v->button	= XCreateSimpleWindow(d->disp, d->bar.views, 0, 0, 1, d->th, 0, d->colors.border, d->colors.norm);
 
 	XSaveContext(d->disp, v->button, 1, (void *)v);
-
-	XMapWindow(d->disp, v->frame);
 	XMapWindow(d->disp, v->button);
 } /* }}} */
 
@@ -43,6 +42,32 @@ ViewDelete(SubView *v)
 	subTileKill(v->tile, True);
 	v->tile = NULL;
 } /* }}} */
+
+/* ViewPush {{{ */
+void
+ViewPush(SubView *v,
+	SubRule *r,
+	SubClient *c)
+{
+	long vid = 0;
+
+	subArrayPush(r->tile->clients, (void *)c);
+	XReparentWindow(d->disp, c->frame, v->frame, 0, 0);
+	c->tile = r->tile;
+
+	/* EWMH: Desktop */
+	vid = subArrayFind(d->views, (void *)v);
+	subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
+
+	/* Map only if view is the current view */
+	if(!d->cv) d->cv = v;
+	if(d->cv == v) subClientMap(c);
+	else XMapSubwindows(d->disp, c->frame);
+
+	subTileConfigure(v->tile);
+	printf("Adding client %s (%s)\n", c->name, v->name);
+} /* }}} */
+
 
  /** subViewNew {{{
 	* @brief Create a view
@@ -75,7 +100,7 @@ subViewNew(char *name)
 void
 subViewConfigure(void)
 {
-	if(d->views->ndata > 0)
+	if(0 < d->views->ndata)
 		{
 			int i = 0, width = 0, nv = 0;
 			char **names = NULL;
@@ -90,6 +115,7 @@ subViewConfigure(void)
 				{
 					SubView *v = VIEW(d->views->data[i]);
 
+					/* Only views with tiles */
 					if(v->tile)
 						{
 							XMoveResizeWindow(d->disp, v->button, width, 0, v->width, d->th);
@@ -99,7 +125,7 @@ subViewConfigure(void)
 						}
 				}
 
-			if(width > 0) XMoveResizeWindow(d->disp, d->bar.views, 0, 0, width, d->th);
+			if(0 < width) XMoveResizeWindow(d->disp, d->bar.views, 0, 0, width, d->th); ///< Sanity
 
 			/* EWMH: Virtual roots */
 			subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_VIRTUAL_ROOTS, wins, nv);
@@ -121,7 +147,7 @@ subViewConfigure(void)
 void
 subViewRender(void)
 {
-	if(d->views->ndata > 0)
+	if(0 < d->views->ndata)
 		{
 			int i;
 			XClearWindow(d->disp, d->bar.win);
@@ -150,9 +176,8 @@ void
 subViewMerge(Window win)
 {
 	int i, j, merged = 0;
-	long vid = 0;
 	char *class = NULL;
-	SubView *cv = NULL;
+	SubView *lv = NULL;
 	SubClient *lc = NULL;
 
 	assert(d->views && win);
@@ -168,13 +193,14 @@ subViewMerge(Window win)
 				{
 					SubRule *r = RULE(v->rules->data[j]);
 
-					if(r->regex && !regexec(r->regex, class, 0, NULL, 0))
+					/* Regex match and permit multi tags only on different views */
+					if(r->regex && !regexec(r->regex, class, 0, NULL, 0) && lv != v) 
 						{
 							SubClient *c = subClientNew(win);
 
 							if(c->flags & SUB_STATE_TRANS) 
 								{
-									c->tile = d->cv->tile;
+									c->tile = v->tile;
 									subClientToggle(c, SUB_STATE_FLOAT);
 								}
 
@@ -185,43 +211,47 @@ subViewMerge(Window win)
 									r->tile = subTileNew(SUB_TYPE_VERT, (void *)r);
 									//r->tile->flags	|= SUB_TYPE_RULE|SUB_STATE_RESIZE;
 									r->tile->flags	|= SUB_TYPE_RULE;
-									r->tile->size		= r->size > 0 ? r->size : 100;
+									r->tile->size		= 0 < r->size? r->size : 100;
 									r->tile->tile		= v->tile;
 
 									subArrayPush(v->tile->clients, (void *)r->tile);
 								}
-
-							subArrayPush(r->tile->clients, (void *)c);
-							XReparentWindow(d->disp, c->frame, v->frame, 0, 0);
-							c->tile = r->tile;
-
-							/* EWMH: Desktop */
-							vid = subArrayFind(d->views, (void *)v);
-							subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
-
-							/* Map only if view is the current view */
-							if(d->cv == v) subClientMap(c);
-							else XMapSubwindows(d->disp, c->frame);
-							cv = v;
+							ViewPush(v, r, c);
 
 							/* Mark current and previus client as multi */
-							if(++merged >= 2) 
+							if(2 <= ++merged) 
 								{
 									c->flags	|= SUB_STATE_MULTI;
 									lc->flags	|= SUB_STATE_MULTI;
+
+									/* Store multi clients in array for reference */
+									if(!lc->multi) 
+										{
+											lc->multi = subArrayNew();
+											subArrayPush(lc->multi, (void *)lc);
+										}
+									subArrayPush(lc->multi, (void *)c);
+									c->multi = lc->multi;
 								}
 							lc = c;
-
-							subTileConfigure(v->tile);
-							printf("Adding client %s (%s:%d)\n", c->name, v->name, j);
+							lv = v;
 						}
 				}
 		}
-	
-	subViewConfigure();
-	subViewRender();
-	subViewJump(cv);
 
+	/* Handle untagged clients */
+	if(0 == merged)
+		{
+			SubView *v = subViewNew(PACKAGE_NAME);
+			SubRule *r = subRuleNew(".*", 100);
+			SubClient *c = subClientNew(win);
+
+			v->rules = subArrayNew();
+			subArrayPush(v->rules, (void *)r);
+			subArrayPush(v->tile->clients, (void *)r->tile);
+
+			ViewPush(v, r, c);
+		}
 	XFree(class);
 } /* }}} */
 
@@ -237,22 +267,21 @@ subViewJump(SubView *v)
 
 	assert(v);
 
-	if(d->cv == v) return; /* Just skip */
 	if(d->cv)
 		{
 			XUnmapWindow(d->disp, d->cv->frame);
-			if(d->cv != d->views->data[0] && d->cv->tile->clients->ndata == 0) ViewDelete(d->cv);
+			if(d->cv->tile->clients->ndata == 0) ViewDelete(d->cv); ///< Delete views without clients
 		}
 	d->cv = v;
 
 	XMapWindow(d->disp, d->cv->frame);
 	XMapSubwindows(d->disp, d->cv->frame);
-	XMapRaised(d->disp, d->bar.win);
+	XMapWindow(d->disp, d->bar.win);
 
-	subTileRemap(v->tile);
+	if(v->tile) subTileRemap(v->tile); ///< Remap multi clients
 
 	/* EWMH: Desktops */
-	vid = subArrayFind(d->views, (void *)v) + 1;
+	vid = subArrayFind(d->views, (void *)v) + 1; ///< Adjust desktop number
 	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_CURRENT_DESKTOP, &vid, 1);
 
 	subViewConfigure();
@@ -284,7 +313,7 @@ subViewKill(SubView *v)
 			XDestroyWindow(d->disp, v->frame);
 		}
 	
-	subArrayKill(v->rules, False);
+	subArrayKill(v->rules, True);
 
 	free(v->name);
 	free(v);					
