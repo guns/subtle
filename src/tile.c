@@ -13,23 +13,23 @@
 
  /** subTileNew {{{
 	* @brief Create new tile 
-	* @param[in] mode	Tile mode
-	* @param[in] sub	Tile superior
+	* @param[in] mode			Tile mode
+	* @param[in] superior	Tile superior
 	* @return Returns a #SubTile or \p NULL
 	**/
 
 SubTile *
 subTileNew(int mode,
-	void *sup)
+	void *superior)
 {
 	SubTile *t = NULL;
 
-	assert(mode == SUB_TYPE_HORZ || mode == SUB_TYPE_VERT);
+	assert(mode &= (SUB_TYPE_HORZ|SUB_TYPE_VERT));
 
 	t	= (SubTile *)subUtilAlloc(1, sizeof(SubTile));
 	t->flags		= SUB_TYPE_TILE|mode;
 	t->clients	= subArrayNew();
-	t->sup			= sup;
+	t->superior	= superior;
 
 	/* Start values */
 	t->width	= DisplayWidth(d->disp, DefaultScreen(d->disp));
@@ -55,7 +55,7 @@ subTileConfigure(SubTile *t)
 
 	assert(t);
 
-	if(t->clients->ndata > 0)
+	if(0 < t->clients->ndata)
 		{
 			n			= t->clients->ndata;
 			width	= t->width;
@@ -65,12 +65,12 @@ subTileConfigure(SubTile *t)
 			/* Find special clients */
 			for(i = 0; i < t->clients->ndata; i++)
 				{
-					c = (SubClient *)t->clients->data[i]; /* Both types have common fields */
+					c = CLIENT(t->clients->data[i]); /* Both types have common fields */
 
 					if(c->flags & SUB_STATE_SHADE) shaded++;
 					else if(c->flags & SUB_STATE_FULL) full++;
 					else if(c->flags & SUB_STATE_FLOAT) floated++;
-					else if(c->flags & SUB_STATE_RESIZE && c->size > 0)
+					else if(c->flags & SUB_STATE_RESIZE && 0 < c->size)
 						{
 							/* Prevent resized windows only */
 							if(resized == n)
@@ -92,12 +92,12 @@ subTileConfigure(SubTile *t)
 			/* Stacked window */
 			if(t->flags & SUB_STATE_STACK) 
 				{
-					shaded = n - 1;
+					shaded	= n - 1;
 					resized	= 0;
 				}
 
 			/* Weighted window */
-			if(resized > 0)
+			if(0 < resized)
 				{
 					if(t->flags & SUB_TYPE_HORZ) width = size;
 					else if(t->flags & SUB_TYPE_VERT) height = size;
@@ -128,9 +128,9 @@ subTileConfigure(SubTile *t)
 									
 									if(tmp->flags & SUB_TYPE_RULE)
 										{
-											if(tmp->clients->ndata <= 0)
+											if(0 >= tmp->clients->ndata)
 												{
-													SubRule *r = RULE(tmp->sup);
+													SubRule *r = RULE(tmp->superior);
 
 													printf("Removing rule tile %p\n", t->clients->data[i]);
 
@@ -141,7 +141,7 @@ subTileConfigure(SubTile *t)
 													return;
 												}
 										}
-									else if(tmp->clients->ndata == 1)
+									else if(1 == tmp->clients->ndata)
 										{
 											printf("Removing dynamic tile %p\n", tmp);
 											t->clients->data[i] = tmp->clients->data[0];
@@ -161,7 +161,7 @@ subTileConfigure(SubTile *t)
 							/* Adjust sizes according to the tile alignment */
 							if(t->flags & SUB_TYPE_HORZ)
 								{
-									if(shaded > 0) c->height = ch - shaded * d->th;
+									if(0 < shaded) c->height = ch - shaded * d->th;
 									if(!(c->flags & SUB_STATE_SHADE)) 
 										{
 											c->x = x;
@@ -199,6 +199,39 @@ subTileConfigure(SubTile *t)
 				}
 		}
 } /* }}} */
+#if 0
+void
+subTileSanitize(SubTile *t)
+{
+	assert(t);
+
+	if(t->flags & SUB_TYPE_RULE)
+		{
+			if(t->clients->ndata <= 0)
+				{
+					SubRule *r = RULE(t->sup);
+					SubTile *rt = r->tile;
+
+					printf("Removing rule tile %p\n", t);
+
+					subArrayPop(rt->clients, t);
+					subTileKill(t, False);
+					subTileConfigure(rt);
+					r->tile = NULL;
+					return;
+				}
+		}
+	else if(t->clients->ndata == 1)
+		{
+			printf("Removing dynamic tile %p\n", t);
+			t->clients->data[i] = t->clients->data[0];
+			c = CLIENT(t->clients->data[0]);
+			c->tile = t;
+
+			subTileKill(tmp, False);
+		}
+}
+#endif
 
  /** subTileRemap {{{ 
 	* @brief Remap clients on multi views
