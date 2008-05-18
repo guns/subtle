@@ -57,13 +57,12 @@ HandleButtonPress(XButtonEvent *ev)
 
 	if(ev->window == d->bar.views)
 		{
-			SubView *v = (SubView *)subUtilFind(ev->subwindow, 1);
-			if(v) subViewJump(v);
-
+			SubView *v = VIEW(subUtilFind(ev->subwindow, 1));
+			if(d->cv != v) subViewJump(v); ///< Prevent jumping to current view
 			return;
 		}
 
-	c = (SubClient *)subUtilFind(ev->window, 1);
+	c = CLIENT(subUtilFind(ev->window, 1));
 	if(c)
 		{
 			switch(ev->button)
@@ -98,7 +97,7 @@ HandleButtonPress(XButtonEvent *ev)
 							}
 						break;
 					case Button2:
-						if(ev->subwindow == c->title) subClientKill(c, True);
+						if(ev->subwindow == c->title) subClientKill(c);
 						break;
 					case Button3: 
 						if(ev->subwindow == c->title) subClientToggle(c, SUB_STATE_FLOAT);
@@ -117,6 +116,14 @@ static void
 HandleKeyPress(XKeyEvent *ev)
 {
 	SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
+
+printf("\n\nwindow=%#lx\n", ev->window);
+printf("subwindow=%#lx\n", ev->subwindow);
+printf("root=%#lx\n", ev->root);
+printf("parent=%#lx\n", GetParent(ev->subwindow));
+printf("root=%#lx\n", DefaultRootWindow(d->disp));
+printf("focus=%#lx\n\n", d->focus ? d->focus->frame : 0);
+
 	if(c)
 		{
 			SubKey *k = subKeyFind(ev->keycode, ev->state);
@@ -126,10 +133,10 @@ HandleKeyPress(XKeyEvent *ev)
 
 					switch(k->flags)
 						{
-							case SUB_KEY_DELETE_WIN: subClientKill(c, True); break;
+							case SUB_KEY_DELETE_WIN: 		subClientKill(c); break;
 							case SUB_KEY_TOGGLE_SHADE:	if(!mode) mode = SUB_STATE_SHADE;
-							case SUB_KEY_TOGGLE_RAISE:			if(!mode) mode = SUB_STATE_FLOAT;
-							case SUB_KEY_TOGGLE_FULL:			if(!mode) mode = SUB_STATE_FULL;
+							case SUB_KEY_TOGGLE_RAISE:	if(!mode) mode = SUB_STATE_FLOAT;
+							case SUB_KEY_TOGGLE_FULL:		if(!mode) mode = SUB_STATE_FULL;
 								subClientToggle(c, mode);
 								break;									
 							case SUB_KEY_TOGGLE_LAYOUT: 
@@ -181,18 +188,17 @@ HandleConfigure(XConfigureRequestEvent *ev)
 		}
 } /* }}} */
 
-/* HandleMapNotify {{{ */
-static void
-HandleMapNotify(XMappingEvent *ev)
-{
-} /* }}} */
-
 /* HandleMapRequest {{{ */
 static void
 HandleMapRequest(XMapRequestEvent *ev)
 {
 	SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
-	if(!c) subViewMerge(ev->window);
+	if(!c) 
+		{
+			subViewMerge(ev->window);
+			subViewConfigure();
+			subViewRender();
+		}
 } /* }}} */
 
 /* HandleDestroy {{{ */
@@ -202,9 +208,34 @@ HandleDestroy(XDestroyWindowEvent *ev)
 	SubClient *c = (SubClient *)subUtilFind(ev->event, 1);
 	if(c) 
 		{
-			c->flags |= SUB_STATE_DEAD;
-			subClientKill(c, True); 
+			/* Mark windows as dead */
+			if(c->flags & SUB_STATE_MULTI)
+				{
+					int i;
+
+					for(i = 0; i < c->multi->ndata; i++)
+						{
+							SubClient *mc = CLIENT(c->multi->data[i]);
+							
+							mc->flags |= SUB_STATE_DEAD;
+							subClientKill(mc);
+						}
+					subArrayKill(c->multi, False);
+
+					for(i = 0; i < d->views->ndata; i++)
+						{
+							SubView *v = VIEW(d->views->data[i]);
+							if(v->tile) subTileConfigure(v->tile);
+						}
+				}
+			else 
+				{
+					c->flags |= SUB_STATE_DEAD;
+					subClientKill(c); 
+				}
+
 			subTileConfigure(d->cv->tile);
+			subViewConfigure();
 		}
 } /* }}} */
 
@@ -300,9 +331,8 @@ HandleExpose(XEvent *ev)
 
 	if(ev->xany.window == d->bar.win)
 		{
-			subSubletConfigure();
-			subSubletRender();
 			subViewRender();
+			subSubletRender();
 		}
 	else
 		{
@@ -396,7 +426,6 @@ subEventLoop(void)
 											case ButtonPress:				HandleButtonPress(&ev.xbutton);					break;
 											case KeyPress:					HandleKeyPress(&ev.xkey);								break;
 											case ConfigureRequest:	HandleConfigure(&ev.xconfigurerequest);	break;
-											case MapNotify:					HandleMapNotify(&ev.xmapping);					break;
 											case MapRequest: 				HandleMapRequest(&ev.xmaprequest); 			break;
 											case DestroyNotify: 		HandleDestroy(&ev.xdestroywindow);			break;
 											case ClientMessage: 		HandleMessage(&ev.xclient); 						break;
