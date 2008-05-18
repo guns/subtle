@@ -36,9 +36,9 @@ ShowUsage(void)
 static void
 ShowVersion(void)
 {
-	printf("%s %s %s - Copyright (c) 2005-2008 Christoph Kappel\n" \
+	printf("%s %s - Copyright (c) 2005-2008 Christoph Kappel\n" \
 					"Released under the GNU General Public License\n" \
-					"Compiled for X%d and %s\n", PACKAGE_NAME, PACKAGE_VERSION, "$Rev$",
+					"Compiled for X%d and %s\n", PACKAGE_NAME, PACKAGE_VERSION,
 					X_PROTOCOL, LUA_VERSION);
 } /* }}} */
 
