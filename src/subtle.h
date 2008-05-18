@@ -127,18 +127,21 @@ void subArrayPush(SubArray *a, void *e);								///< Push element to array
 void subArrayPop(SubArray *a, void *e);									///< Pop element from array
 int subArrayFind(SubArray *a, void *e);									///< Find array id of element
 void subArraySplice(SubArray *a, int idx, int len);			///< Splice array at idx with len
+void subArraySort(SubArray *a,													///< Sort array with given compare function 
+	int(*compar)(const void *a, const void *b));
 void subArrayKill(SubArray *a, int clean);							///< Kill array with all elements
 /* }}} */
 
 /* client.c {{{ */
 typedef struct subclient
 {
-	int							flags, x, y, width, height, size;			///< Client flags and common properties
-	struct subtile 	*tile;																///< Client parent
-	char						*name;																///< Client name
-	Colormap				cmap;																	///< Client colormap	
-	Window					frame, caption, title, win;						///< Client decoration windows
-	Window					left, right, bottom;									///< Client border windows
+	int								flags, x, y, width, height, size;		///< Client flags and common properties
+	struct subtile 		*tile;															///< Client parent
+	char							*name;															///< Client name
+	Colormap					cmap;																///< Client colormap	
+	Window						frame, caption, title, win;					///< Client decoration windows
+	Window						left, right, bottom;								///< Client border windows
+	struct subarray		*multi;															///< Client multi
 } SubClient;
 
 SubClient *subClientNew(Window win);										///< Create new client
@@ -162,7 +165,7 @@ typedef struct subtile
 	struct subtile		*tile;															///< Tile parent
 	struct subclient	*top;																///< Tile stack top
 	struct subarray		*clients;														///< Tile clients
-	void 							*sup;																///< Tile superior
+	void 							*superior;													///< Tile superior
 } SubTile;
 
 SubTile *subTileNew(int mode, void *sup);								///< Create new tile
@@ -221,8 +224,7 @@ SubSublet *subSubletNew(int type, char *name, int ref, 	///< Create new sublet
 	time_t interval, char *watch);
 void subSubletConfigure(void);													///< Configure sublet bar
 void subSubletRender(void);															///< Render sublet
-void subSubletMerge(int pos);														///< Merge sublet
-SubSublet *subSubletNext(void);													///< Get next sublet
+int subSubletCompare(const void *a, const void *b);			///< Compare two sublets
 void subSubletKill(SubSublet *s);												///< Kill sublet
 /* }}} */
 
@@ -233,6 +235,7 @@ typedef struct subdisplay
 	int								th, bw, fx, fy;											///< Tab height, border widthm font metrics
 	XFontStruct				*xfs;																///< Font
 
+	struct subsublet	*sublet;														///< First sublet
 	struct subclient	*focus;															///< Focus window
 	struct subview		*cv;																///< Current view
 	
@@ -289,10 +292,10 @@ typedef struct subkey
 void subKeyInit(void);																	///< Init the keys
 SubKey *subKeyNew(const char *key,											///< Create new key
 	const char *value);
-void subKeySort(void);																	///< Sort keys
 SubKey *subKeyFind(int code, unsigned int mod);					///< Find key
 void subKeyGrab(Window win);														///< Grab keys for window
 void subKeyUngrab(Window win);													///< Ungrab keys for window
+int subKeyCompare(const void *a, const void *b);				///< Compare two keys
 void subKeyKill(SubKey *k);															///< Kill key
 /* }}} */
 
