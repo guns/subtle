@@ -13,26 +13,6 @@
 
 SubDisplay *d = NULL;
 
-#if 0
-/* HandleXError {{{ */
-static int
-HandleXError(Display *display,
-	XErrorEvent *ev)
-{
-	if(ev->error_code == BadAccess && ev->resourceid == DefaultRootWindow(display))
-		{
-			subUtilLogError("Seems there is another WM running. Exiting.\n");
-		}
-	else if(ev->request_code != 42) /* X_SetInputFocus */
-		{
-			char error[255];
-			XGetErrorText(display, ev->error_code, error, sizeof(error));
-			subUtilLogDebug("%s: win=%#lx, request=%d\n", error, ev->resourceid, ev->request_code);
-		}
-	return(0); 
-} /* }}} */
-#endif
-
  /** subDisplayNew {{{
 	* @Open connection to X server and create display
 	* @param[in] display_string	The display name as string
@@ -53,7 +33,7 @@ subDisplayNew(const char *display_string)
 	d = (SubDisplay *)subUtilAlloc(1, sizeof(SubDisplay));
 	d->disp = XOpenDisplay(display_string);
 	if(!d->disp) subUtilLogError("Can't open display `%s'.\n", (display_string) ? display_string : ":0.0");
-	//XSetErrorHandler(HandleXError);
+	XSetErrorHandler(subUtilLogXError);
 
 	/* Create gcs */
 	gvals.function		= GXcopy;

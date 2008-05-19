@@ -23,7 +23,7 @@ static int debug = 0;
 void
 subUtilLogSetDebug(void)
 {
-	debug = !debug;
+	debug++;
 } /* }}} */
 #endif /* DEBUG */
 
@@ -62,6 +62,34 @@ subUtilLog(int type,
 			case 1: fprintf(stderr, "<ERROR> %s", buf); raise(SIGTERM);			break;
 			case 2: fprintf(stdout, "<WARNING> %s", buf);										break;
 		}
+} /* }}} */
+
+ /** subUtilLogXError {{{
+	* @brief Print X error messages
+	* @params[in] display		Display
+	* @params[in] ev				#XErrorEvent
+	* @retval 0 Default return value
+	**/
+
+int
+subUtilLogXError(Display *disp,
+	XErrorEvent *ev)
+{
+#ifdef DEBUG
+	if(debug) return(0);
+#endif /* DEBUG */	
+
+	if(ev->error_code == BadAccess && ev->resourceid == DefaultRootWindow(disp))
+		{
+			subUtilLogError("Seems there is another WM running. Exiting.\n");
+		}
+	else if(ev->request_code != 42) /* X_SetInputFocus */
+		{
+			char error[255];
+			XGetErrorText(disp, ev->error_code, error, sizeof(error));
+			subUtilLogDebug("%s: win=%#lx, request=%d\n", error, ev->resourceid, ev->request_code);
+		}
+	return(0); 
 } /* }}} */
 
  /** subUtilAlloc {{{
