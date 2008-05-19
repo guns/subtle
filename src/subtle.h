@@ -81,12 +81,12 @@
 #define SUB_DRAG_BELOW					(1L << 3)								///< Drag below
 #define SUB_DRAG_BEFORE					(1L << 4)								///< Drag before
 #define SUB_DRAG_AFTER					(1L << 5)								///< Drag after
-#define SUB_DRAG_MOVE						(1L << 6)								///< Drag move
-#define SUB_DRAG_SWAP						(1L << 7)								///< Drag swap
-#define SUB_DRAG_TOP						(1L << 8)								///< Drag split horiz top
-#define SUB_DRAG_BOTTOM					(1L << 9)								///< Drag split horiz bottom
-#define SUB_DRAG_LEFT						(1L << 10)							///< Drag split vert left
-#define SUB_DRAG_RIGHT					(1L << 11)							///< Drag split vert right
+#define SUB_DRAG_TOP						(1L << 6)								///< Drag split horiz top
+#define SUB_DRAG_BOTTOM					(1L << 7)								///< Drag split horiz bottom
+#define SUB_DRAG_LEFT						(1L << 8)								///< Drag split vert left
+#define SUB_DRAG_RIGHT					(1L << 9)								///< Drag split vert right
+#define SUB_DRAG_MOVE						(1L << 10)							///< Drag move
+#define SUB_DRAG_SWAP						(1L << 11)							///< Drag swap
 
 #define SUB_KEY_FOCUS_ABOVE			(1L << 9)								///< Focus above window
 #define SUB_KEY_FOCUS_BELOW			(1L << 10)							///< Focus below window
