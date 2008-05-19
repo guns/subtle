@@ -11,49 +11,6 @@
 
 #include "subtle.h"
 
-#ifdef DEBUG
-/* DrawDepth {{{ */
-inline void
-DrawDepth(int depth)
-{
-	int i;
-	for(i = 0; i < depth; i++) printf("  ");
-} /* }}} */
-
-/* DrawTree {{{ */
-void
-DrawTree(SubTile *t)
-{
-	int i;
-	static int depth = 0;
-
-	DrawDepth(depth);
-	printf("tile=%p, rule=%c, n=%d, o=%c, tile=%p, idx=%d\n", t, t->flags & SUB_TYPE_RULE ? 'y' : 'n', 
-		t->clients->ndata, t->flags & SUB_TYPE_VERT ? 'v' : 'h', 
-		t->tile, t->tile ? subArrayFind(t->tile->clients, (void *)t) : -1);
-
-	depth++;
-
-	for(i = 0; i < t->clients->ndata; i++)
-		{
-			SubClient *c = t->clients->data[i];
-
-			if(c->flags & SUB_TYPE_TILE) DrawTree((SubTile *)c);
-			else 
-				{
-					DrawDepth(depth);
-					printf("client=%p, name=%s, tile=%p, idx=%d\n", c, c->name, c->tile, 
-						subArrayFind(c->tile->clients, (void *)c));
-				}
-		}
-	
-	depth--;
-
-	DrawDepth(depth);
-	printf("end=%p\n", t);
-} /* }}} */
-#endif /* DEBUG */
-
 /* DrawMask {{{ */
 static void
 DrawMask(int type,
@@ -105,6 +62,8 @@ AdjustWeight(int mode,
 {
 	if(c && c->tile)
 		{
+printf("%s,%d: %s\n", __FILE__, __LINE__, __func__);
+
 			if((c->tile->flags & SUB_TYPE_HORZ && (mode == SUB_DRAG_LEFT || mode == SUB_DRAG_RIGHT)) ||
 				(c->tile->flags & SUB_TYPE_VERT && mode == SUB_DRAG_BOTTOM))
 				{
@@ -410,9 +369,7 @@ subClientDrag(SubClient *c,
 		GrabModeAsync, GrabModeAsync, None, cursor, CurrentTime)) return;
 
 	XGrabServer(d->disp);
-	if(mode <= SUB_DRAG_MOVE) DrawMask(SUB_DRAG_START, c, &r);
-
-	DrawTree(d->cv->tile);
+	if(SUB_DRAG_MOVE >= mode) DrawMask(SUB_DRAG_START, c, &r);
 
 	for(;;)
 		{
@@ -422,7 +379,7 @@ subClientDrag(SubClient *c,
 					/* Button release doesn't return our destination window */
 					case EnterNotify: win = ev.xcrossing.window; break;
 					case MotionNotify: /* {{{ */
-						if(mode <= SUB_DRAG_MOVE) 
+						if(SUB_DRAG_MOVE >= mode) 
 							{
 								DrawMask(SUB_DRAG_START, c, &r);
 					
@@ -442,9 +399,9 @@ subClientDrag(SubClient *c,
 									}	
 								DrawMask(SUB_DRAG_START, c, &r);
 							}
-						else if(win != c->frame && mode == SUB_DRAG_SWAP)
+						else if(win != c->frame && SUB_DRAG_SWAP == mode)
 							{
-								if(!c2 || c2->frame != win) c2 = (SubClient *)subUtilFind(win, 1);
+								if(!c2 || c2->frame != win) c2 = CLIENT(subUtilFind(win, 1));
 								if(c2)
 									{
 										XQueryPointer(d->disp, win, &unused, &unused, &rx, &ry, &wx, &wy, &mask);
@@ -487,9 +444,9 @@ subClientDrag(SubClient *c,
 								}
 						break; /* }}} */
 					case ButtonRelease: /* {{{ */
-						if(win != c->frame && mode > SUB_DRAG_MOVE)
+						if(win != c->frame && SUB_DRAG_MOVE < mode)
 							{
-								DrawMask(state, c2, &r); /* Erase mask */
+								DrawMask(state, c2, &r); ///< Erase mask
 								if(c && c2 && c->tile && c2->tile)
 									{
 										/* Drag: TOP|BOTTOM|LEFT|RIGHT {{{ */
@@ -497,11 +454,10 @@ subClientDrag(SubClient *c,
 											{
 												int tmode = (state & (SUB_DRAG_TOP|SUB_DRAG_BOTTOM) ? SUB_TYPE_VERT : SUB_TYPE_HORZ);
 
+												/* Check for same tiling mode */
 												if(TILE(c2->tile)->flags & tmode)
 													{
 														int idx = subArrayFind(c2->tile->clients, (void *)c2);
-
-														printf("Same tiling mode!\n");
 
 														subArrayPop(c->tile->clients, (void *)c);
 														subArraySplice(c2->tile->clients, idx, 1);
@@ -576,7 +532,7 @@ subClientDrag(SubClient *c,
 												subTileConfigure(d->cv->tile);
 											} /* }}} */
 										/* Drag: SWAP {{{ */
-										else if(state == SUB_DRAG_SWAP) 
+										else if(SUB_DRAG_SWAP == state) 
 											{
 												SubTile *swap = NULL;
 												int idx1, idx2;
@@ -600,7 +556,8 @@ subClientDrag(SubClient *c,
 							{
 								XDrawRectangle(d->disp, DefaultRootWindow(d->disp), d->gcs.invert, r.x + 1, r.y + 1, 
 									r.width - 3, (c->flags & SUB_STATE_SHADE) ? d->th - 3 : r.height - 3);
-					
+					printf("%s,%d: %s\n", __FILE__, __LINE__, __func__);
+
 								if(c->flags & SUB_STATE_FLOAT) 
 									{
 										c->x			= r.x;
@@ -616,7 +573,6 @@ subClientDrag(SubClient *c,
 						XUngrabServer(d->disp);
 						XUngrabPointer(d->disp, CurrentTime);
 
-						DrawTree(d->cv->tile);
 						return;
 				} /* }}} */
 		}
