@@ -81,10 +81,10 @@
 #define SUB_DRAG_BELOW					(1L << 3)								///< Drag below
 #define SUB_DRAG_BEFORE					(1L << 4)								///< Drag before
 #define SUB_DRAG_AFTER					(1L << 5)								///< Drag after
-#define SUB_DRAG_TOP						(1L << 6)								///< Drag split horiz top
-#define SUB_DRAG_BOTTOM					(1L << 7)								///< Drag split horiz bottom
-#define SUB_DRAG_LEFT						(1L << 8)								///< Drag split vert left
-#define SUB_DRAG_RIGHT					(1L << 9)								///< Drag split vert right
+#define SUB_DRAG_LEFT						(1L << 6)								///< Drag left
+#define SUB_DRAG_RIGHT					(1L << 7)								///< Drag right
+#define SUB_DRAG_TOP						(1L << 8)								///< Drag top
+#define SUB_DRAG_BOTTOM					(1L << 9)								///< Drag bottom
 #define SUB_DRAG_MOVE						(1L << 10)							///< Drag move
 #define SUB_DRAG_SWAP						(1L << 11)							///< Drag swap
 
@@ -323,6 +323,7 @@ void subUtilLogSetDebug(void);
 
 void subUtilLog(int type, const char *file,
 	int line, const char *format, ...);										///< Print messages
+int subUtilLogXError(Display *disp, XErrorEvent *ev);		///< Print X error messages
 void *subUtilAlloc(size_t n, size_t size);							///< Allocate memory
 void *subUtilRealloc(void *mem, size_t size);						///< Reallocate memory
 XPointer *subUtilFind(Window win, XContext id);					///< Find window data
