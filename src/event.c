@@ -68,14 +68,14 @@ HandleButtonPress(XButtonEvent *ev)
 			switch(ev->button)
 				{
 					case Button1:
-						if(last_time > 0 && ev->time - last_time <= 300) /* Double click */
+						if(last_time > 0 && ev->time - last_time <= 300) ///< Double click
 							{
 								subUtilLogDebug("click=double, win=%#lx\n", ev->window);
 								if((ev->subwindow == c->title && c->tile && c->tile->flags & SUB_TYPE_TILE) || c->flags & SUB_STATE_FLOAT) 
 									subClientToggle(c, SUB_STATE_SHADE);
 								last_time = 0;
 							}						
-						else  /* Single click */
+						else ///< Single click
 							{
 								subUtilLogDebug("click=single, win=%#lx\n", ev->window);
 								if(c->flags & SUB_STATE_FLOAT) XRaiseWindow(d->disp, c->frame);
@@ -111,7 +111,7 @@ HandleButtonPress(XButtonEvent *ev)
 		}
 } /* }}} */
 
-/* HandleKeyPress  {{{ */
+/* HandleKeyPress {{{ */
 static void
 HandleKeyPress(XKeyEvent *ev)
 {
@@ -392,7 +392,7 @@ subEventLoop(void)
 	char buf[BUFLEN];
 #endif /* HAVE_SYS_INOTIFY_H */
 
-	s = SUBLET(d->sublets->data[0]);
+	s = 0 < d->sublets->ndata ? SUBLET(d->sublets->data[0]) : NULL;
 
 	/* Init timeout and assemble FD_SET */
 	tv.tv_sec		= 0;
@@ -463,7 +463,7 @@ subEventLoop(void)
 			else ///< Timeout waiting for data
 				{
 					/* Update sublet data */
-					s = SUBLET(d->sublets->data[0]);
+					s = 0 < d->sublets->ndata ? SUBLET(d->sublets->data[0]) : NULL;
 					while(s && s->time <= ctime)
 						{
 							s->time = ctime + s->interval; ///< Adjust seconds
