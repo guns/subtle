@@ -243,11 +243,10 @@ subLuaLoadConfig(const char *path)
 	int size;
 	char buf[100], *face = NULL, *style = NULL;
 	DIR *dir = NULL;
-	SubView *v = NULL;
-	SubRule *r = NULL;
 	XGCValues gvals;
 	XSetWindowAttributes attrs;
 	lua_State *configstate = StateNew();
+	SubTag *ct = NULL;
 
 	/* Check path */
 	if(!path)
@@ -340,61 +339,50 @@ subLuaLoadConfig(const char *path)
 			lua_pushnil(configstate);
 			while(lua_next(configstate, -2))
 				{
-					subKeyNew(lua_tostring(configstate, -2), lua_tostring(configstate, -1)); 
+					SubKey *k = subKeyNew(lua_tostring(configstate, -2), lua_tostring(configstate, -1)); 
+					subArrayPush(d->keys, (void *)k);
 					lua_pop(configstate, 1);
 				}
 		}
+	else subUtilLogDebug("No keys found\n");
 	subArraySort(d->keys, subKeyCompare);
 
-	/* Rules */
-	lua_getglobal(configstate, "Rules");
+	/* Default tag */
+	ct = subTagNew("default", NULL);
+	subArrayPush(d->tags, (void *)ct);
+
+	/* Tags */
+	lua_getglobal(configstate, "Tags");
 	if(lua_istable(configstate, -1)) 
 		{ 
 			lua_pushnil(configstate);
 			while(lua_next(configstate, -2))
 				{
-					if(lua_istable(configstate, -1))
-						{ 
-							char *name = (char *)lua_tostring(configstate, -2), *rule = NULL;
-
-							v = subViewNew(name);
-							v->rules = subArrayNew();
-
-							lua_pushnil(configstate);
-							while(lua_next(configstate, -2))
-								{
-									rule	= (char *)lua_tostring(configstate, -2);
-									size	= (int)lua_tonumber(configstate, -1);
-
-									r = subRuleNew(rule, size);
-									subArrayPush(v->rules, (void *)r);
-
-									lua_pop(configstate, 1);
-								}
-
-							subArrayPush(d->views, (void *)v);
-							subUtilLogDebug("type=table, name=%s, rules=%d\n", v->name, v->rules->ndata);
-						}
-					else if(lua_isstring(configstate, -1))
-						{
-							char *name = (char *)lua_tostring(configstate, -2), *rule = (char *)lua_tostring(configstate, -1);
-
-							v = subViewNew(name);
-							v->rules = subArrayNew();
-							subArrayPush(d->views, (void *)v);
-
-							r = subRuleNew(rule, 0);
-							subArrayPush(v->rules, (void *)r);
-
-
-							subUtilLogDebug("type=single, name=%s, rule=%s\n", name, rule);
-						}
-					else subUtilLogDebug("type=%s\n", lua_typename(configstate, -1));
-
+					SubTag *t = subTagNew((char *)lua_tostring(configstate, -2), (char *)lua_tostring(configstate, -1)); 
+					subArrayPush(d->tags, (void *)t);
 					lua_pop(configstate, 1);
 				}
 		}
-	else subUtilLogDebug("No rules found\n");
+	else subUtilLogDebug("No tags found\n");
+	subArraySort(d->tags, subTagCompare);
+
+	/* Default view */
+	d->cv = subViewNew("subtle", "default");
+	subArrayPush(d->views, (void *)d->cv);
+
+	/* Views */
+	lua_getglobal(configstate, "Views");
+	if(lua_istable(configstate, -1)) 
+		{ 
+			lua_pushnil(configstate);
+			while(lua_next(configstate, -2))
+				{
+					SubView *v = subViewNew((char *)lua_tostring(configstate, -2), (char *)lua_tostring(configstate, -1)); 
+					subArrayPush(d->views, (void *)v);
+					lua_pop(configstate, 1);
+				}
+		}
+	else subUtilLogDebug("No views found\n");
 
 	lua_close(configstate);
 } /* }}} */
@@ -451,8 +439,9 @@ subLuaLoadSublets(const char *path)
 				{
 					if(!fnmatch("*.lua", entry->d_name, FNM_PATHNAME))
 						{
-							snprintf(buf, sizeof(buf), "%s/.%s/sublets/%s", getenv("HOME"), PACKAGE_NAME, entry->d_name);
-							luaL_loadfile(subletstate, buf);
+							char file[150];
+							snprintf(file, sizeof(file), "%s/%s", buf, entry->d_name);
+							luaL_loadfile(subletstate, file);
 							lua_pcall(subletstate, 0, 0, 0);
 						}
 				}
