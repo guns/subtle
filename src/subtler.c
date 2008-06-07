@@ -77,7 +77,7 @@ static int debug = 0;
 #define Assert(cond,...) if(!cond) Log(3, __FILE__, __LINE__, __VA_ARGS__);
 /* }}} */
 
-/* subLog {{{ */
+/* Log {{{ */
 void
 Log(int type,
 	const char *file,
@@ -89,7 +89,7 @@ Log(int type,
 	char buf[255];
 
 #ifdef DEBUG
-	if(!debug) return;
+	if(!debug && !type) return;
 #endif /* DEBUG */
 
 	va_start(ap, format);
@@ -102,10 +102,28 @@ Log(int type,
 			case 0: fprintf(stderr, "<DEBUG> %s:%d: %s", file, line, buf);	break;
 #endif /* DEBUG */
 			case 1: fprintf(stderr, "<ERROR> %s", buf); raise(SIGTERM);			break;
-			case 2: fprintf(stderr, "<WARNING> %s", buf);										break;
+			case 2: fprintf(stdout, "<WARNING> %s", buf);										break;
 			case 3: fprintf(stderr, "%s", buf); raise(SIGTERM);							break;
 		}
 } /* }}} */
+
+int
+XError(Display *display,
+	XErrorEvent *ev)
+{
+#ifdef DEBUG
+	if(debug) return(0);
+#endif /* DEBUG */	
+
+	if(ev->request_code != 42) /* X_SetInputFocus */
+		{
+			char error[255];
+			XGetErrorText(display, ev->error_code, error, sizeof(error));
+			Debug("%s: win=%#lx, request=%d\n", error, ev->resourceid, ev->request_code);
+		}
+	return(0); 
+} /* }}} */
+
 
 /* Alloc {{{ */
 static void *
@@ -962,9 +980,9 @@ main(int argc,
 	static struct option long_options[] =
 	{
 		/* Groups */
-		{ "client",			no_argument,				0,	'c'	},
-		{ "tag",				no_argument,				0,	't'	},
-		{ "view",				no_argument,				0,	'v'	},
+		{ "clients",		no_argument,				0,	'c'	},
+		{ "tags",				no_argument,				0,	't'	},
+		{ "views",			no_argument,				0,	'v'	},
 
 		/* Actions */
 		{ "new",				no_argument,				0,	'n'	},	
@@ -974,7 +992,7 @@ main(int argc,
 		{ "focus",			no_argument,				0,	'F'	},
 		{ "jump",				no_argument,				0,	'j'	},
 		{ "shade",			no_argument,				0,	's'	},
-		{ "tag",				no_argument,				0,	't'	},
+		{ "tag",				no_argument,				0,	'T'	},
 		{ "untag",			no_argument,				0,	'u'	},
 		{ "tags",				no_argument,				0,	'g'	},
 
@@ -1051,6 +1069,7 @@ main(int argc,
 			printf("Can't open display `%s'.\n", (display) ? display : ":0.0");
 			return(-1);
 		}
+	XSetErrorHandler(XError);
 
 	/* Check command */
 	if(cmds[group][action]) cmds[group][action](arg1, arg2);
