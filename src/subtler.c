@@ -3,10 +3,11 @@
 	* @package subtle
 	*
 	* @file subtle remote client
-	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
 	* @version $Id$
 	*
-	* See the COPYING file for the license in the latest tarball.
+	* This program can be distributed under the terms of the GNU GPL.
+	* See the file COPYING.
 	**/
 
 #include <stdio.h>
@@ -26,17 +27,44 @@
 
 #include "config.h"
 
-#define ACTION_ACTIVATE	(1L << 1)		///< Activate client
-#define ACTION_CLIENTS	(1L << 2)		///< List clients
-#define ACTION_FIND			(1L << 3)		///< Find client
-#define ACTION_VIEWS		(1L << 4)		///< List views
-#define ACTION_CLOSE		(1L << 5)		///< Close client
-#define ACTION_SWITCH		(1L << 6)		///< Switch view
-#define ACTION_SHADE		(1L << 7)		///< Shade client
+#ifdef HAVE_EXECINFO_H
+#include <execinfo.h>
+#endif /* HAVE_EXECINFO_H */
 
 static Display *disp = NULL;
 
-/* Print messages {{{ */
+/* Typedefs {{{ */
+typedef union messagedata_t {
+	char b[20];
+	short s[10];
+	long l[5];
+} MessageData;
+
+typedef void(*Command)(char *, char *);
+/* }}} */
+
+/* Prototypes {{{ */
+void RegexKill(regex_t *preg);
+/* }}} */
+
+/* Macros  {{{ */
+/* Flags */
+#define GROUP_CLIENT			0		///< Group client
+#define GROUP_TAG					1		///< Group tag
+#define GROUP_VIEW				2		///< Group view
+
+#define ACTION_NEW				0		///< Action new
+#define ACTION_KILL				1		///< Action kill
+#define ACTION_LIST				2		///< Action list
+#define ACTION_FIND				3		///< Action find
+#define ACTION_FOCUS			4		///< Action focus
+#define ACTION_JUMP				5		///< Action jump
+#define ACTION_SHADE			6		///< Action shade
+#define ACTION_TAG				7		///< Action tag
+#define ACTION_UNTAG			8		///< Action untag
+#define ACTION_TAGS				9		///< Action tags
+
+/* Log */
 #ifdef DEBUG
 static int debug = 0;
 #define Debug(...) Log(0, __FILE__, __LINE__, __VA_ARGS__);
@@ -46,7 +74,10 @@ static int debug = 0;
 
 #define Error(...) Log(1, __FILE__, __LINE__, __VA_ARGS__);
 #define Warn(...) Log(2, __FILE__, __LINE__, __VA_ARGS__);
+#define Assert(cond,...) if(!cond) Log(3, __FILE__, __LINE__, __VA_ARGS__);
+/* }}} */
 
+/* subLog {{{ */
 void
 Log(int type,
 	const char *file,
@@ -68,64 +99,16 @@ Log(int type,
 	switch(type)
 		{
 #ifdef DEBUG
-			case 0: fprintf(stderr, "<DEBUG:%s:%d> %s", file, line, buf);	break;
+			case 0: fprintf(stderr, "<DEBUG> %s:%d: %s", file, line, buf);	break;
 #endif /* DEBUG */
-			case 1: fprintf(stderr, "<ERROR> %s", buf); raise(SIGTERM);		break;
-			case 2: fprintf(stdout, "<WARNING> %s", buf);									break;
+			case 1: fprintf(stderr, "<ERROR> %s", buf); raise(SIGTERM);			break;
+			case 2: fprintf(stderr, "<WARNING> %s", buf);										break;
+			case 3: fprintf(stderr, "%s", buf); raise(SIGTERM);							break;
 		}
-}
-/* }}} */
+} /* }}} */
 
-/* Print usage {{{ */
-static void
-Usage(void)
-{
-	printf("Usage: %s [OPTIONS]\n\n" \
-					"Options:\n" \
-					"  -c, --clients           \t List all clients managed by subtle\n" \
-					"  -d, --display=DISPLAY   \t Connect to DISPLAY (default: $DISPLAY)\n" \
-					"  -f, --find=CLIENT       \t Find client\n" \
-					"  -h, --help              \t Show this help and exit\n\n" \
-					"  -s, --switch=VIEW       \t Switch to view\n" \
-					"  -v, --views             \t List all views managed by subtle\n" \
-					"  -A, --active=CLIENT     \t Give focus to client\n" \
-					"  -D, --debug             \t Print debugging messages\n" \
-					"  -F, --float=CLIENT      \t Toggle float of a client\n" \
-					"  -S, --shade=CLIENT      \t Toggle shade of a client\n" \
-					"  -V, --version           \t Show version info and exit\n" \
-					"Please report bugs to <%s>\n", 
-					PACKAGE_NAME, PACKAGE_BUGREPORT);
-}
-/* }}} */
-
-/* Print version {{{ */
-static void
-Version(void)
-{
-	printf("%sr %s - Copyright (c) 2005-2008 Christoph Kappel\n" \
-					"Released under the GNU General Public License\n" \
-					"Compiled for X%d\n", PACKAGE_NAME, PACKAGE_VERSION, X_PROTOCOL);
-}
-/* }}} */
-
-/* Handle signals {{{ */
-static void
-HandleSignal(int signum)
-{
-	switch(signum)
-		{
-			case SIGTERM:
-			case SIGINT: 
-				exit(1);
-			case SIGSEGV: 
-				printf("Please report this bug to <%s>\n", PACKAGE_BUGREPORT);
-				abort();
-		}
-}
-/* }}} */
-
-/* Alloc memory {{{ */
-void *
+/* Alloc {{{ */
+static void *
 Alloc(size_t n,
 	size_t size)
 {
@@ -135,39 +118,86 @@ Alloc(size_t n,
 }
 /* }}} */
 
-/* Send client message {{{ */
-static void
-SendMessage(Window win,
-	char *type,
-	unsigned long data0,
-	unsigned long data1,
-	unsigned long data2,
-	unsigned long data3,
-	unsigned long data4)
+/* RegexNew {{{ */
+static regex_t *
+RegexNew(char *regex)
 {
+	int errcode;
+	regex_t *preg = NULL;
+
+	assert(regex);
+	
+	preg = (regex_t *)Alloc(1, sizeof(regex_t));
+
+	/* Thread safe error handling */
+	if((errcode = regcomp(preg, regex, REG_EXTENDED|REG_NOSUB|REG_ICASE)))
+		{
+			size_t errsize = regerror(errcode, preg, NULL, 0);
+			char *errbuf = (char *)Alloc(1, errsize);
+
+			regerror(errcode, preg, errbuf, errsize);
+
+			Warn("Can't compile preg `%s'\n", regex);
+			Debug("%s\n", errbuf);
+
+			free(errbuf);
+			RegexKill(preg);
+
+			return(NULL);
+		}
+	return(preg);
+} /* }}} */
+
+/* RegexMatch {{{ */
+static int
+RegexMatch(regex_t *preg,
+	char *string)
+{
+	assert(preg);
+
+	return(!regexec(preg, string, 0, NULL, 0));
+} /* }}} */
+
+/* RegexKill {{{ */
+void
+RegexKill(regex_t *preg)
+{
+	assert(preg);
+
+	regfree(preg);
+	free(preg);
+} /* }}} */
+
+/* Message {{{ */
+static void
+Message(Window win,
+	char *type,
+	MessageData data)
+{
+	int i;
 	XEvent ev;
 	long mask = SubstructureRedirectMask|SubstructureNotifyMask;
 
+	assert(win && type);
+
+	/* Assemble event */
 	ev.xclient.type					= ClientMessage;
 	ev.xclient.serial				= 0;
 	ev.xclient.send_event		= True;
 	ev.xclient.message_type	= XInternAtom(disp, type, False);
 	ev.xclient.window				= win;
 	ev.xclient.format				= 32;
-	ev.xclient.data.l[0]		= data0;
-	ev.xclient.data.l[1]		= data1;
-	ev.xclient.data.l[2]		= data2;
-	ev.xclient.data.l[3]		= data3;
-	ev.xclient.data.l[4]		= data4;
 
-	if(!XSendEvent(disp, DefaultRootWindow(disp), False, mask, &ev)) printf("Can't send client message %s\n", type);
-	Debug("Send: type=%s, [0]=%#lx [1]=%#lx [2]=%#lx [3]=%#lx [4]=%#lx\n", type, data0, data1, data2, data3, data4);
+	for(i = 0; i < 5; i++) ev.xclient.data.l[i] = data.l[i]; ///< Copy data
+
+	if(!XSendEvent(disp, DefaultRootWindow(disp), False, mask, &ev)) 
+		Warn("Can't send client message %s\n", type);
 }
 /* }}} */
 
-/* Get window propery {{{ */
+/* PropertyGet {{{ */
 static char *
-GetProperty(Window win,
+PropertyGet(Window win,
 	Atom type,
 	char *name,
 	unsigned long *size)
@@ -175,362 +205,860 @@ GetProperty(Window win,
 	unsigned long nitems, bytes;
 	unsigned char *data = NULL;
 	int format;
-	Atom rtype, prop = XInternAtom(disp, name, False);
+	Atom rettype, prop = XInternAtom(disp, name, False);
 
-	if(XGetWindowProperty(disp, win, prop, 0L, 1024, False, type, &rtype, 
+	assert(win && name);
+
+	if(XGetWindowProperty(disp, win, prop, 0L, 4096, False, type, &rettype, 
 		&format, &nitems, &bytes, &data) != Success)
 		{
-			Warn("Failed to get property (%s)\n", name);
-			return(NULL);
+			Error("Failed to get property (%s)\n", name);
 		}
-	if(type != rtype)
+	if(type != rettype)
 		{
-			Warn("Invalid type for property (%s)\n", name);
 			XFree(data);
-			return(NULL);
+			Error("Invalid type for property (%s)\n", name);
 		}
 	if(size) *size = (unsigned long)(format / 8) * nitems;
 
 	return((char *)data);
+} /* }}} */
+
+/* PropertyList {{{ */
+static char **
+PropertyList(char *name,
+	int *size)
+{
+	int i, id = 0;
+	char *string = NULL, **names = NULL;
+	unsigned long len;
+
+	assert(name && size);
+
+	/* Get data */
+	string = (char *)PropertyGet(DefaultRootWindow(disp), XInternAtom(disp, "UTF8_STRING", False), name, &len);
+
+	/* @todo Convert string to names list */
+	if(string)
+		{
+			/* Count \0 in string */
+			for(i = 0; i < len; i++) if(string[i] == '\0') (*size)++;
+
+			names	= (char **)Alloc(*size, sizeof(char *));
+			names[id++] = string;
+
+			for(i = 0; i < len; i++)
+				{
+					if(string[i] == '\0') 
+						{
+							if(id >= *size) break;
+							names[id++] = string + i + 1;
+						}
+				}
+		}
+	else Error("Failed to get propery (%s)\n", name);
+
+	return(names);
+} /* }}} */
+
+/* ClientName {{{ */
+static char *
+ClientName(Window win)
+{
+	assert(win);
+	
+	char *name = PropertyGet(win, XA_STRING, "WM_NAME", NULL);
+	return(name ? name : NULL);
 }
 /* }}} */
 
-/* Get clients {{{ */
-static Window *
-GetClients(unsigned long *size)
+/* ClientClass {{{ */
+static char *
+ClientClass(Window win)
 {
-	Window *clients = (Window *)GetProperty(DefaultRootWindow(disp), XA_WINDOW, "_NET_CLIENT_LIST", size);
+	assert(win);
+	
+	char *class = PropertyGet(win, XA_STRING, "WM_CLASS", NULL);
+	return(class ? class : NULL);
+}
+/* }}} */
+
+/* ClientList {{{ */
+static Window *
+ClientList(int *size)
+{
+	unsigned long len;
+
+	assert(size);
+
+	Window *clients = (Window *)PropertyGet(DefaultRootWindow(disp), XA_WINDOW, "_NET_CLIENT_LIST", &len);
 	if(clients)
 		{
-			*size = *size / sizeof(Window);
+			*size = len / sizeof(Window);
 			return(clients);
 		}
 	else
 		{
 			*size = 0;
-			Warn("Failed to get client list\n");
+			Error("Failed to get client list\n");
 			return(NULL);
 		}
-}
-/* }}} */
+} /* }}} */
 
-/* Get client name {{{ */
-static char *
-GetClientName(Window win)
+/* ClientFind {{{ */
+static int
+ClientFind(char *name,
+	Window *win)
 {
-	char *name = GetProperty(win, XA_STRING, "WM_NAME", NULL);
-	return(name ? name : NULL);
-}
-/* }}} */
+	int size = 0;
+	Window *clients = NULL;
 
-/* Get client class {{{ */
-static char *
-GetClientClass(Window win)
-{
-	char *class = GetProperty(win, XA_STRING, "WM_CLASS", NULL);
-	return(class ? class : NULL);
-}
-/* }}} */
-
-/* Find client {{{ */
-static Window
-FindClient(char *name)
-{
-	unsigned long size = 0;
-	Window *clients = GetClients(&size);
-
+	assert(name);
+	
+	clients = ClientList(&size);
 	if(clients)
 		{
-			int i, errcode;
-			regex_t *regex = (regex_t *)Alloc(1, sizeof(regex_t));
+			int i;
+			char *cname = NULL, buf[10];
+			regex_t *preg = RegexNew(name);
 
-			/* Thread safe error handling.. */
-			if((errcode = regcomp(regex, name, REG_EXTENDED|REG_NOSUB|REG_ICASE)))
-				{
-					size_t errsize = regerror(errcode, regex, NULL, 0);
-					char *errbuf = (char *)Alloc(1, errsize);
-
-					regerror(errcode, regex, errbuf, errsize);
-
-					Warn("Can't compile regex `%s'\n", name);
-					Debug("%s\n", errbuf);
-
-					free(errbuf);
-					regfree(regex);
-					free(regex);
-					free(clients);
-
-					return(0);
-				}
 			for(i = 0; i < size; i++)
 				{
-					char *clientname = GetClientName(clients[i]);
-					if(name && !regexec(regex, clientname, 0, NULL, 0)) 
+					cname = ClientName(clients[i]);
+					snprintf(buf, sizeof(buf), "%#lx", clients[i]);
+
+					/* Find client either by name or by window id */
+					if(RegexMatch(preg, cname) || RegexMatch(preg, buf))
 						{
-							Window win = clients[i];
+							Debug("Found: type=client, name=%s, win=%#lx, n=%d\n", name, clients[i], i);
 
-							Debug("Found: win=%#lx\n", win);
+							if(win) *win = clients[i];
 
-							regfree(regex);
-							free(regex);
+							RegexKill(preg);
 							free(clients);
-							free(clientname);
+							free(cname);
 
-							return(win);
+							return(i);
 						}
-					else if(clientname) free(clientname);
+					free(cname);
 				}
-			regfree(regex);
-			free(regex);
+			RegexKill(preg);
 		}
 	free(clients);
 
 	Error("Can't fint client `%s'\n", name);
 
-	return(0);
-}
-/* }}} */
+	return(-1); ///< Never reached
+} /* }}} */
 
-/* Print client info {{{ */
+/* ClientInfo {{{ */
 static void
-PrintClient(Window win)
+ClientInfo(Window win)
 {
 	Window unused;
 	int x, y;
 	unsigned int width, height, border;
-	unsigned long *cv = NULL, *rv = NULL;
-	char *name = NULL, *class = NULL;
+	unsigned long *nv = NULL, *cv = NULL, *rv = NULL;
+	char *name = NULL, *cc = NULL;
 
 	assert(win);
 
-	name = GetClientName(win);
-	class = GetClientClass(win);
+	name 	= ClientName(win);
+	cc 		= ClientClass(win);
 
 	XGetGeometry(disp, win, &unused, &x, &y, &width, &height, &border, &border);
 
-	cv = (unsigned long*)GetProperty(win, XA_CARDINAL, "_NET_WM_DESKTOP", NULL);
-	rv = (unsigned long*)GetProperty(DefaultRootWindow(disp), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+	nv = (unsigned long *)PropertyGet(DefaultRootWindow(disp), XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
+	cv = (unsigned long*)PropertyGet(win, XA_CARDINAL, "_NET_WM_DESKTOP", NULL);
+	rv = (unsigned long*)PropertyGet(DefaultRootWindow(disp), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
 
-	printf("%#lx %c %ld %ux%u %s (%s)\n", win, (*cv == *rv ? '*' : ' '), *cv, width, height, name, class);
+	printf("%#lx %c %ld %ux%u %s (%s)\n", win, (*cv == *rv ? '*' : '-'), 
+		(*cv > *nv ? -1 : *cv), width, height, name, cc);
 
 	if(name) free(name);
-	if(class) free(class);
+	if(cc) free(cc);
+	if(nv) free(nv);
 	if(cv) free(cv);
 	if(rv) free(rv);
 }
 /* }}} */
 
-/* Action: Get clients {{{ */
-static void
-ActionGetClients(void)
+/* TagFind {{{ */
+static int
+TagFind(char *name)
 {
-	unsigned long size = 0;
+	int i, size = 0, tag = 0;
+	char **tags = NULL;
+	regex_t *preg = NULL;
+
+	assert(name);
+
+	preg = RegexNew(name);
+	tags = PropertyList("SUBTLE_TAG_LIST", &size);
+
+	/* Find tag id */
+	for(i = 0; i < size; i++)
+		if(RegexMatch(preg, tags[i]))
+			{
+				tag = i + 1;
+
+				Debug("Found: type=tag, name=%s, n=%d\n", name, i);
+
+				RegexKill(preg);
+				free(tags);
+
+				return(i);
+			}
+
+	RegexKill(preg);
+	free(tags);
+
+	Error("Cannot find tag `%s'.\n", name);
+
+	return(-1); ///< Never reached
+} /* }}} */
+
+/* ViewFind {{{ */
+static int
+ViewFind(char *name,
+	Window *win)
+{
+	int size = 0;
+	Window *frames = NULL;
+	char **names = NULL;
+
+	assert(name);
+
+	frames	= (Window *)PropertyGet(DefaultRootWindow(disp), XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
+	names		= PropertyList("_NET_DESKTOP_NAMES", &size);	
+
+	if(names)
+		{
+			int i;
+			char buf[10];
+			regex_t *preg = RegexNew(name);
+
+			for(i = 0; i < size; i++)
+				{
+					snprintf(buf, sizeof(buf), "%#lx", frames[i]);
+
+					/* Find client either by name or by window id */
+					if(RegexMatch(preg, names[i]) || RegexMatch(preg, buf)) 
+						{
+							Debug("Found: type=view, name=%s win=%#lx, n=%d\n", name, frames[i], i);
+
+							if(win) *win = frames[i];
+
+							RegexKill(preg);
+							free(frames);
+							free(names);
+
+							return(i);
+						}
+				}
+			RegexKill(preg);
+		}
+
+	free(frames);
+	free(names);
+
+	Error("Can't fint view `%s'.\n", name);
+
+	return(-1); ///< Never reached
+} /* }}} */
+
+/* ActionClientList {{{ */
+static void
+ActionClientList(char *arg1,
+	char *arg2)
+{
+	int size = 0;
 	Window *clients = NULL;
 
-	Debug("Action: ActionGetClients\n");
+	Debug("%s\n", __func__);
 
-	clients = GetClients(&size);
+	clients = ClientList(&size);
 	if(clients)
 		{
 			int i;
 
-			for(i = 0; i < size; i++) PrintClient(clients[i]);
+			for(i = 0; i < size; i++) ClientInfo(clients[i]);
 			free(clients);
 		}
-}
-/* }}} */
+} /* }}} */
 
-/* Action: Find client {{{ */
+/* ActionClientFind {{{ */
 static void
-ActionFindClient(Window win)
+ActionClientFind(char *arg1,
+	char *arg2)
 {
-	assert(win);
+	Window win;
 
-	Debug("Action: ActionFindClient\n");
-	
-	PrintClient(win);
-}
-/* }}} */
+	Assert(arg1, "Usage: %sr -c -f PATTERN\n", PACKAGE_NAME);
+	Debug("%s\n", __func__);
 
-/* Action: Activate client {{{ */
+	ClientFind(arg1, &win);
+	ClientInfo(win);
+} /* }}} */
+
+/* ActionClientFocus {{{ */
 static void
-ActionActivateClient(Window win)
+ActionClientFocus(char *arg1,
+	char *arg2)
 {
+	Window win;
 	unsigned long *cv = NULL, *rv = NULL;
+	MessageData data = { { 0, 0, 0, 0, 0 } };
 
-	assert(win);
+	Assert(arg1, "Usage: %sr -c -F CLIENT\n", PACKAGE_NAME);
+	Debug("%s\n", __func__);
 
-	Debug("Action: ActionActivateClient\n");
-
-	cv = (unsigned long*)GetProperty(win, XA_CARDINAL, "_NET_WM_DESKTOP", NULL);
-	rv = (unsigned long*)GetProperty(DefaultRootWindow(disp), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+	ClientFind(arg1, &win);
+	cv	= (unsigned long*)PropertyGet(win, XA_CARDINAL, "_NET_WM_DESKTOP", NULL);
+	rv	= (unsigned long*)PropertyGet(DefaultRootWindow(disp), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
 
 	if(*cv && *rv && *cv != *rv) 
 		{
 			Debug("Switching: active=%d, view=%d\n", *rv, *cv);
-			SendMessage(DefaultRootWindow(disp), "_NET_CURRENT_DESKTOP", *cv, 0, 0, 0, 0);
+			data.l[0] = *cv;
+			Message(DefaultRootWindow(disp), "_NET_CURRENT_DESKTOP", data);
 		}
-	else SendMessage(DefaultRootWindow(disp), "_NET_ACTIVE_WINDOW", win, 0, 0, 0, 0);
-			
-	if(cv) free(cv);
-	if(rv) free(rv);
-}
-/* }}} */
-
-/* Action: Set view {{{ */
-static void
-ActionSetView(int view)
-{
-	assert(view >= 0);
-	Debug("Action: ActionSetView\n");
-
-	SendMessage(DefaultRootWindow(disp), "_NET_CURRENT_DESKTOP", (unsigned long)view, 0, 0, 0, 0);
-}
-/* }}} */
-
-static void
-ActionGetViews(void)
-{
-	unsigned long *nv = NULL, *cv = NULL, nviews = 0;
-	char *views = NULL;
-
-	Debug("Action: ActionGetViews\n");
-
-	nv = (unsigned long *)GetProperty(DefaultRootWindow(disp), XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
-	cv = (unsigned long *)GetProperty(DefaultRootWindow(disp), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
-
-	views = GetProperty(DefaultRootWindow(disp), XA_STRING, "_NET_DESKTOP_NAMES", &nviews);
-
-	if(*nv && *cv && views)
+	else 
 		{
-			printf("Views=%ld\n", *nv);
+			data.l[0] = win;
+			Message(DefaultRootWindow(disp), "_NET_ACTIVE_WINDOW", data);
 		}
+			
+	free(cv);
+	free(rv);
+} /* }}} */
 
-	if(nv) free(nv);
-	if(cv) free(cv);
-	if(views) free(views);
-}
-
-/* Action: Close client {{{ */
+/* ActionClientShade {{{ */
 static void
-ActionCloseClient(Window win)
+ActionClientShade(char *arg1,
+	char *arg2)
 {
-	assert(win);
+	Window win;
+	MessageData data = { { 0, 0, 0, 0, 0 } };
 
-	Debug("Action: ActionCloseClient\n");
+	Assert(arg1, "Usage: %sr -c -s PATTERN\n", PACKAGE_NAME);
+	Debug("%s\n", __func__);
 
-	SendMessage(win, "_NET_CLOSE_WINDOW", 0, 0, 0, 0, 0);
+	ClientFind(arg1, &win);
+	data.l[0] = win;
+
+	Message(DefaultRootWindow(disp), "_NET_WM_ACTION_SHADE", data);
+} /* }}} */
+
+/* ActionClientTag {{{ */
+static void
+ActionClientTag(char *arg1,
+	char *arg2)
+{
+	int tag = 0;
+	Window win;
+	MessageData data = { { 0, 0, 0, 0, 0 } };
+
+	Assert(arg1 && arg2, "Usage: %sr -c PATTERN -T PATTERN\n", PACKAGE_NAME);
+	Debug("%s\n", __func__);
+
+	ClientFind(arg1, &win);
+	tag = TagFind(arg2);
+
+	data.l[0] = win;
+	data.l[1] = tag + 1;
+
+	Message(DefaultRootWindow(disp), "SUBTLE_CLIENT_TAG", data);
+} /* }}} */
+
+/* ActionClientUntag {{{ */
+static void
+ActionClientUntag(char *arg1,
+	char *arg2)
+{
+	int tag = 0;
+	Window win;
+	MessageData data = { { 0, 0, 0, 0, 0 } };
+
+	Assert(arg1 && arg2, "Usage: %sr -c PATTERN -u PATTERN\n", PACKAGE_NAME);
+	Debug("%s\n", __func__);
+
+	ClientFind(arg1, &win);
+	tag = TagFind(arg2);
+
+	data.l[0] = win;
+	data.l[1] = tag + 1;
+
+	Message(DefaultRootWindow(disp), "SUBTLE_CLIENT_UNTAG", data);
+} /* }}} */
+
+/* ActionClientTags {{{ */
+static void
+ActionClientTags(char *arg1,
+	char *arg2)
+{
+	int i, size = 0;
+	Window win;
+	char **tags = NULL;
+	unsigned long *flags = NULL;
+
+	Assert(arg1, "Usage: %sr -c PATTERN -g\n", PACKAGE_NAME);
+	Debug("%s\n", __func__);
+
+	ClientFind(arg1, &win);
+	flags	= (unsigned long *)PropertyGet(win, XA_CARDINAL, "SUBTLE_CLIENT_TAGS", NULL);
+	tags	= PropertyList("SUBTLE_TAG_LIST", &size);
+
+	for(i = 0; i < size; i++)
+		if((int)*flags & (1L << (i + 1))) printf("%s\n", tags[i]);
+	
+	free(flags);
+	free(tags);
+} /* }}} */
+
+/* ActionClientKill {{{ */
+static void
+ActionClientKill(char *arg1,
+	char *arg2)
+{
+	Window win;
+	MessageData data = { { 0, 0, 0, 0, 0 } };
+
+	Assert(arg1, "Usage: %sr -c -k PATTERN\n", PACKAGE_NAME);
+	Debug("%s\n", __func__);
+
+	ClientFind(arg1, &win);
+	data.l[0] = win;
+
+	Message(win, "_NET_CLOSE_WINDOW", data);
+} /* }}} */
+
+/* ActionTagNew {{{ */
+static void
+ActionTagNew(char *arg1,
+	char *arg2)
+{
+	MessageData data = { { 0, 0, 0, 0, 0 } };
+
+	Assert(arg1, "Usage: %sr -t -n NAME\n", PACKAGE_NAME);
+	Debug("%s\n", __func__);
+
+	snprintf(data.b, sizeof(data.b), arg1);
+
+	Message(DefaultRootWindow(disp), "SUBTLE_TAG_NEW", data);
+} /* }}} */
+
+/* ActionTagList {{{ */
+static void
+ActionTagList(char *arg1,
+	char *arg2)
+{
+	int i, size = 0;
+	char **tags = NULL;
+
+	Debug("%s\n", __func__);
+
+	tags = PropertyList("SUBTLE_TAG_LIST", &size);
+
+	for(i = 0; i < size; i++)
+		printf("%s\n", tags[i]);
+
+	free(tags);
+} /* }}} */
+
+/* ActionTagKill {{{ */
+static void
+ActionTagKill(char *arg1,
+	char *arg2)
+{
+	MessageData data = { { 0, 0, 0, 0, 0 } };
+
+	Assert(arg1, "Usage: %sr -t -k PATTERN\n", PACKAGE_NAME);
+	Debug("%s\n", __func__);
+
+	snprintf(data.b, sizeof(data.b), arg1);
+
+	Message(DefaultRootWindow(disp), "SUBTLE_TAG_KILL", data);	
+} /* }}} */
+
+/* ActionViewNew {{{ */
+static void
+ActionViewNew(char *arg1,
+	char *arg2)
+{
+	MessageData data = { { 0, 0, 0, 0, 0 } };
+
+	Assert(arg1, "Usage: %sr -t -n PATTERN\n", PACKAGE_NAME);
+	Debug("%s\n", __func__);
+
+	snprintf(data.b, sizeof(data.b), arg1);
+
+	Message(DefaultRootWindow(disp), "SUBTLE_VIEW_NEW", data);
+} /* }}} */
+
+/* ActionViewList {{{ */
+static void
+ActionViewList(char *arg1,
+	char *arg2)
+{
+	int i, size = 0;
+	unsigned long *nv = NULL, *cv = NULL;
+	char **views = NULL;
+	Window *frames = NULL;
+
+	Debug("%s\n", __func__);
+
+	/* Collect data */
+	nv			= (unsigned long *)PropertyGet(DefaultRootWindow(disp), XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
+	cv			= (unsigned long *)PropertyGet(DefaultRootWindow(disp), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+	frames	= (Window *)PropertyGet(DefaultRootWindow(disp), XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
+	views		= PropertyList("_NET_DESKTOP_NAMES", &size);
+
+	for(i = 0; *nv && i < *nv; i++)
+		printf("%#lx %c %s\n", frames[i], (i == *cv ? '*' : '-'), views[i]);
+
+	free(nv);
+	free(cv);
+	free(frames);
+	free(views);
+} /* }}} */
+
+/* ActionViewJump {{{ */
+static void
+ActionViewJump(char *arg1,
+	char *arg2)
+{
+	int view = 0;
+	MessageData data = { { 0, 0, 0, 0, 0 } };
+
+	Assert(arg1, "Usage: %sr -v -j PATTERN\n", PACKAGE_NAME);
+	Debug("%s\n", __func__);
+
+	/* Try to convert arg1 to long or to find view */
+	if(!(view = atoi(arg1)))
+		view = ViewFind(arg1, NULL);
+
+	data.l[0] = view;
+
+	Message(DefaultRootWindow(disp), "_NET_CURRENT_DESKTOP", data);
+} /* }}} */
+
+/* ActionViewTag {{{ */
+static void
+ActionViewTag(char *arg1,
+	char *arg2)
+{
+	Window win;
+	int tag = 0;
+	MessageData data = { { 0, 0, 0, 0, 0 } };
+
+	Assert(arg1 && arg2, "Usage: %sr -v PATTERN -T PATTERN\n", PACKAGE_NAME);
+	Debug("%s\n", __func__);
+
+	ViewFind(arg1, &win);
+	tag	= TagFind(arg2);
+
+	data.l[0] = win;
+	data.l[1] = tag + 1;
+
+	Message(DefaultRootWindow(disp), "SUBTLE_VIEW_TAG", data);
+} /* }}} */
+
+/* ActionViewUntag {{{ */
+static void
+ActionViewUntag(char *arg1,
+	char *arg2)
+{
+	Window win;
+	int tag = 0;
+	MessageData data = { { 0, 0, 0, 0, 0 } };
+
+	Assert(arg1 && arg2, "Usage: %sr -v PATTERN -u PATTERN\n", PACKAGE_NAME);
+	Debug("%s\n", __func__);
+
+	ViewFind(arg1, &win);
+	tag	= TagFind(arg2);
+
+	data.l[0] = win;
+	data.l[1] = tag + 1;
+
+	Message(DefaultRootWindow(disp), "SUBTLE_VIEW_UNTAG", data);
+} /* }}} */
+
+/* ActionViewTags {{{ */
+static void
+ActionViewTags(char *arg1,
+	char *arg2)
+{
+	int i, size = 0;
+	Window win;
+	char **tags = NULL;
+	unsigned long *flags = NULL;
+
+	Assert(arg1, "Usage: %sr -v PATTERN -g\n", PACKAGE_NAME);
+	Debug("%s\n", __func__);
+
+	ViewFind(arg1, &win);
+	flags	= (unsigned long *)PropertyGet(win, XA_CARDINAL, "SUBTLE_VIEW_TAGS", NULL);
+	tags	= PropertyList("SUBTLE_TAG_LIST", &size);
+
+	for(i = 0; i < size; i++)
+		if((int)*flags & (1L << (i + 1))) printf("%s\n", tags[i]);
+	
+	free(flags);
+	free(tags);
+} /* }}} */
+
+/* ActionViewKill {{{ */
+static void
+ActionViewKill(char *arg1,
+	char *arg2)
+{
+	int view;
+	MessageData data = { { 0, 0, 0, 0, 0 } };
+
+	Assert(arg1, "Usage: %sr -v -k PATTERN\n", PACKAGE_NAME);
+	Debug("%s\n", __func__);
+
+	view = ViewFind(arg1, NULL);
+
+	data.l[0] = view;
+
+	Message(DefaultRootWindow(disp), "SUBTLE_VIEW_KILL", data);	
+} /* }}} */
+
+/* Usage {{{ */
+static void
+Usage(int group)
+{
+	printf("Usage: %sr [OPTIONS] [GROUP] [ACTION]\n", PACKAGE_NAME);
+
+	if(-1 == group)
+		{
+			printf("\nOptions:\n" \
+						 "  -d, --display=DISPLAY \t Connect to DISPLAY (default: $DISPLAY)\n" \
+						 "  -D, --debug           \t Print debugging messages\n" \
+						 "  -h, --help            \t Show this help and exit\n" \
+						 "  -V, --version         \t Show version info and exit\n" \
+						 "\nGroups:\n" \
+						 "  -c, --clients         \t Use clients group\n" \
+						 "  -t, --tags            \t Use tags group\n" \
+						 "  -v, --views 	        \t Use views group\n");
+		}
+	if(-1 == group || 0 == group)
+		{
+			printf("\nActions for clients:\n" \
+						 "  -l, --list            \t List all clients\n" \
+						 "  -f, --find=PATTERN    \t Find a client\n" \
+						 "  -F, --focus=PATTERN   \t Set focus to client\n" \
+						 "  -s, --shade=PATTERN   \t Shade client\n" \
+						 "  -t, --tag=PATTERN     \t Add tag to client\n" \
+						 "  -u, --untag=PATTERN   \t Remove tag from client\n" \
+						 "  -T, --tags            \t Show client tags\n" \
+						 "  -k, --kill=PATTERN    \t Kill a client\n");
+		}
+	if(-1 == group || 1 == group)
+		{
+			printf("\nActions for tags:\n" \
+						 "  -n, --new=NAME        \t Create new tag\n" \
+						 "  -l, --list            \t List all tags\n" \
+						 "  -k, --kill=PATTERN    \t Kill a tag\n");
+		}
+	if(-1 == group || 2 == group)
+		{
+			printf("\nActions for views:\n" \
+						 "  -n, --new=NAME        \t Create new view\n" \
+						 "  -l, --list            \t List all views\n" \
+						 "  -t, --tag=PATTERN     \t Add tag to view\n" \
+						 "  -u, --untag=PATTERN   \t Remove tag from view\n" \
+						 "  -T, --tags            \t Show view tags\n" \
+						 "  -k, --kill=VIEW       \t Kill a view\n");
+		}
+	
+	printf("\nPattern:\n" \
+				 "  Matching clients, tags and views works either via plain, regex\n" \
+				 "  (see regex(7)) or window id. If a pattern matches more than once\n" \
+				 "  ONLY the first match will be used.\n");
+
+	printf("\nFormat:\n" \
+				 "  Client list: <window id> [-*] <view> <geometry> <name> <class>\n" \
+				 "  Tag    list: <name>\n" \
+				 "  View   list: <window id> [-*] <name>\n");
+	
+	printf("\nExamples:\n" \
+				 "  %sr -c -l             \t List all clients\n" \
+				 "  %sr -t -a subtle      \t Add new tag 'subtle'\n" \
+				 "  %sr -v subtle -t rocks\t Tag view 'subtle' with tag 'rocks'\n" \
+				 "  %sr -c xterm -T       \t Show tags of client 'xterm'\n" \
+				 "\nPlease report bugs to <%s>\n",
+				 PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_BUGREPORT);
+} /* }}} */
+
+/* Version {{{ */
+static void
+Version(void)
+{
+	printf("%sr %s - Copyright (c) 2005-2008 Christoph Kappel\n" \
+					"Released under the GNU General Public License\n" \
+					"Compiled for X%d\n", PACKAGE_NAME, PACKAGE_VERSION, X_PROTOCOL);
 }
 /* }}} */
 
+/* Signal {{{ */
 static void
-ActionShadeClient(Window win)
+Signal(int signum)
 {
-	assert(win);
+#ifdef HAVE_EXECINFO_H
+	void *array[10];
+	size_t size;
+#endif /* HAVE_EXECINFO_H */
 
-	Debug("Action: ActionShadeClient\n");
-}
+	switch(signum)
+		{
+			case SIGTERM:
+			case SIGINT: 
+				exit(1);
+			case SIGSEGV: 
+#ifdef HAVE_EXECINFO_H
+				size = backtrace(array, 10);
 
+				printf("Last %zd stack frames:\n", size);
+				backtrace_symbols_fd(array, size, 0);
+#endif /* HAVE_EXECINFO_H */
+
+				printf("Please report this bug to <%s>\n", PACKAGE_BUGREPORT);
+				abort();
+		}
+} /* }}} */
+
+/* Pipe {{{ */
+static char *
+Pipe(char *string)
+{
+	char buf[256], *ret = NULL;
+
+	assert(string);
+
+	if(!strncmp(string, "-", 1)) 
+		{
+			if(!fgets(buf, sizeof(buf), stdin)) Error("Can't read from pipe\n");
+			ret = (char *)Alloc(strlen(buf), sizeof(char));
+			strncpy(ret, buf, strlen(buf) - 1);
+			Debug("Pipe: len=%d\n", strlen(buf));
+		}
+	else ret = strdup(string);
+	
+	return(ret);
+} /* }}} */
+
+/* main {{{ */
 int
 main(int argc,
 	char *argv[])
 {
-	Window win;
-	int c, action = 0, number = 0;
-	char *display = NULL, *string = NULL, buf[256];
+	int c, group = -1, action = -1;
+	char *display = NULL, *arg1 = NULL, *arg2 = NULL;
 	struct sigaction act;
 	static struct option long_options[] =
 	{
-		{ "clients",		no_argument,					0,	'c' },
-		{ "display",		required_argument,		0,	'd' },
-		{ "find",				required_argument,		0,	'f' },
-		{ "help",				no_argument,					0,	'h' },
-		{ "switch",			required_argument,		0,	's' },
-		{ "views",			no_argument,					0,	'v' },
-		{ "activate",		required_argument,		0,	'A' },
-		{ "close",			required_argument,		0,	'C'	},
+		/* Groups */
+		{ "client",			no_argument,				0,	'c'	},
+		{ "tag",				no_argument,				0,	't'	},
+		{ "view",				no_argument,				0,	'v'	},
+
+		/* Actions */
+		{ "new",				no_argument,				0,	'n'	},	
+		{ "kill",				no_argument,				0,	'k'	},
+		{ "list",				no_argument,				0,	'l'	},
+		{ "find",				no_argument,				0,	'f'	},
+		{ "focus",			no_argument,				0,	'F'	},
+		{ "jump",				no_argument,				0,	'j'	},
+		{ "shade",			no_argument,				0,	's'	},
+		{ "tag",				no_argument,				0,	't'	},
+		{ "untag",			no_argument,				0,	'u'	},
+		{ "tags",				no_argument,				0,	'g'	},
+
+		/* Default */
 #ifdef DEBUG
-		{ "debug",			no_argument,					0,	'D' },
+		{ "debug",			no_argument,				0,	'D'	},
 #endif /* DEBUG */
-		{ "float",			required_argument,		0,	'F' },
-		{ "shade",			required_argument,		0,	'S' },
-		{ "version",		no_argument,					0,	'V' },
+		{ "display",		required_argument,	0,	'd'	},
+		{ "help",				no_argument,				0,	'h'	},
+		{ "version",		no_argument,				0,	'V'	},
 		{ 0, 0, 0, 0}
 	};
 
-	while((c = getopt_long(argc, argv, "cd:hf:s:vA:C:DFS:V", long_options, NULL)) != -1)
+	/* Command table */
+	Command cmds[3][10] = { /* Client, Tag, View <=> New, Kill, List, Find, Focus, Jump, Shade, Tag, Untag, Tags */
+		{ NULL, ActionClientKill, ActionClientList, ActionClientFind, ActionClientFocus, NULL, ActionClientShade, ActionClientTag, ActionClientUntag, ActionClientTags },
+		{ ActionTagNew, ActionTagKill, ActionTagList, NULL, NULL, NULL, NULL, NULL, NULL, NULL },
+		{ ActionViewNew, ActionViewKill, ActionViewList, NULL, NULL, ActionViewJump, NULL, ActionViewTag, ActionViewUntag, ActionViewTags }
+	};
+
+	/* Set up signal handler */
+	act.sa_handler	= Signal;
+	act.sa_flags		= 0;
+	memset(&act.sa_mask, 0, sizeof(sigset_t)); ///< Avoid uninitialized values
+	sigaction(SIGTERM, &act, NULL);
+	sigaction(SIGINT, &act, NULL);
+	sigaction(SIGSEGV, &act, NULL);
+
+	while((c = getopt_long(argc, argv, "ctvnkfFjlsTugDd:hV", long_options, NULL)) != -1)
 		{
-			if(optarg)
-				{
-					/* Pipe or argument */
-					if(!strncmp(optarg, "-", 1)) 
-						{
-							if(!fgets(buf, sizeof(buf), stdin)) Error("Can't read from pipe\n");
-							string = (char *)Alloc(strlen(buf), sizeof(char));
-							strncpy(string, buf, strlen(buf) - 1);
-							Debug("Read: string=%s\n", string, strlen(string), buf, strlen(buf));
-						}
-					else string = strdup(optarg);
-
-					/* Convert string to int */
-					if(string && isdigit(string[0])) number = atoi(string);
-				}
-
 			switch(c)
 				{
-					case 'c':	action	= ACTION_CLIENTS;		break;
-					case 'd': display	= string;						break;
-					case 'f': action	= ACTION_FIND;			break;
-					case 'h': Usage(); 										return(0);
-					case 's': action	= ACTION_SWITCH;		break;
-					case 'v':	action	= ACTION_VIEWS;			break;
-					case 'A': action	= ACTION_ACTIVATE;	break;
-					case 'C': action	= ACTION_CLOSE;			break;
+					case 'c':		group		= GROUP_CLIENT;			break;
+					case 't':		group		= GROUP_TAG;				break;
+					case 'v':		group		= GROUP_VIEW;				break;
+
+					case 'n':		action	= ACTION_NEW;				break;
+					case 'k':		action	= ACTION_KILL;			break;
+					case 'l':		action	= ACTION_LIST;			break;
+					case 'f': 	action	= ACTION_FIND;			break;
+					case 'F': 	action	= ACTION_FOCUS;			break;
+					case 'j':		action	= ACTION_JUMP;			break;
+					case 's': 	action	= ACTION_SHADE;			break;
+					case 'T':		action	= ACTION_TAG;				break;
+					case 'u':		action	= ACTION_UNTAG;			break;
+					case 'g':		action	= ACTION_TAGS;			break;
+
+					case 'd':		display	= optarg; 					break;
+					case 'h':		Usage(group); 							return(0);
 #ifdef DEBUG					
-					case 'D': debug = 1;									break;
+					case 'D':		debug = 1;									break;
 #endif /* DEBUG */
-					case 'S': action	= ACTION_SHADE;			break;
-					case 'V': Version(); 									return(0);
+					case 'V':		Version(); 									return(0);
 					case '?':
 						printf("Try `%sr --help for more information\n", PACKAGE_NAME);
 						return(-1);
 				}
 		}
-	if(!action)
+
+	/* Check command */
+	if(-1 == group || -1 == action)
 		{
-			Usage();
+			Usage(group);
 			return(0);
 		}
+	
+	/* Get arguments */
+	if(argc > optind) arg1 = Pipe(argv[optind]);
+	if(argc > optind + 1) arg2 = Pipe(argv[optind + 1]);
 
-	act.sa_handler	= HandleSignal;
-	act.sa_flags		= 0;
-	memset(&act.sa_mask, 0, sizeof(sigset_t)); /* Avoid uninitialized values */
-	sigaction(SIGTERM, &act, NULL);
-	sigaction(SIGINT, &act, NULL);
-	sigaction(SIGSEGV, &act, NULL);
-
+	/* Open connection to server */
 	if(!(disp = XOpenDisplay(display)))
 		{
 			printf("Can't open display `%s'.\n", (display) ? display : ":0.0");
 			return(-1);
 		}
 
-	if(string && !isdigit(string[0])) win = FindClient(string);
-
-	switch(action)
-		{
-			case ACTION_CLIENTS:	ActionGetClients();						break;
-			case ACTION_FIND:			ActionFindClient(win);				break;
-			case ACTION_SWITCH:		ActionSetView(number);				break;
-			case ACTION_VIEWS:		ActionGetViews();							break;
-			case ACTION_ACTIVATE:	ActionActivateClient(win);		break;
-			case ACTION_CLOSE:		ActionCloseClient(win);				break;
-			case ACTION_SHADE:		ActionShadeClient(win);				break;
-			default:
-				Warn("Action not implemented yet\n");
-		}
+	/* Check command */
+	if(cmds[group][action]) cmds[group][action](arg1, arg2);
+	else Usage(group);
 
 	XCloseDisplay(disp);
+	if(arg1) free(arg1);
+	if(arg2) free(arg2);
 	
 	return(0);
-}
+} /* }}} */
