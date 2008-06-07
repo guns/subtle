@@ -3,10 +3,11 @@
 	* @package subtle
 	*
 	* @file Display functions
-	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
 	* @version $Id$
 	*
-	* See the COPYING file for the license in the latest tarball.
+	* This program can be distributed under the terms of the GNU GPL.
+	* See the file COPYING.
 	**/
 
 #include "subtle.h"
@@ -59,10 +60,11 @@ subDisplayNew(const char *display_string)
 	d->cursors.resize	= XCreateFontCursor(d->disp, XC_sizing);
 
 	/* Init lists */
+	d->keys			= subArrayNew();
+	d->tags			= subArrayNew();
 	d->views		= subArrayNew();
 	d->clients	= subArrayNew();
 	d->sublets	= subArrayNew();
-	d->keys			= subArrayNew();
 
 	printf("Display (%s) is %dx%d\n", DisplayString(d->disp), DisplayWidth(d->disp, 
 		DefaultScreen(d->disp)), DisplayHeight(d->disp, DefaultScreen(d->disp)));
@@ -92,13 +94,13 @@ subDisplayScan(void)
 			if(wins[i] && wins[i] != d->bar.win)
 				{
 					XGetWindowAttributes(d->disp, wins[i], &attr);
-					if(attr.map_state == IsViewable)  subViewMerge(wins[i]);
+					if(attr.map_state == IsViewable) subClientNew(wins[i]);
 				}
 		}
 	XFree(wins);
 
-	subViewConfigure();
-	if(d->cv) subViewJump(d->cv); ///< Jump to current view
+	subClientPublish();
+	subViewUpdate();
 	subViewRender();
 } /* }}} */
 
