@@ -3,10 +3,11 @@
 	* @package subtle
 	*
 	* @file Main functions
-	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
 	* @version $Id$
-	*
-	* See the COPYING file for the license in the latest tarball.
+	* 
+	* This program can be distributed under the terms of the GNU GPL.
+	* See the file COPYING.
 	**/
 
 #include <getopt.h>
@@ -14,11 +15,15 @@
 #include <sys/wait.h>
 #include "subtle.h"
 
+#ifdef HAVE_EXECINFO_H
+#include <execinfo.h>
+#endif /* HAVE_EXECINFO_H */
+
 static char *config = NULL;
 
-/* ShowUsage {{{ */
+/* Usage {{{ */
 static void
-ShowUsage(void)
+Usage(void)
 {
 	printf("Usage: %s [OPTIONS]\n\n" \
 					"Options:\n" \
@@ -32,9 +37,9 @@ ShowUsage(void)
 					PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_BUGREPORT);
 } /* }}} */
 
-/* ShowVersion {{{ */
+/* Version {{{ */
 static void
-ShowVersion(void)
+Version(void)
 {
 	printf("%s %s - Copyright (c) 2005-2008 Christoph Kappel\n" \
 					"Released under the GNU General Public License\n" \
@@ -42,10 +47,15 @@ ShowVersion(void)
 					X_PROTOCOL, LUA_VERSION);
 } /* }}} */
 
-/* HandleSignal {{{ */
+/* Signal {{{ */
 static void
-HandleSignal(int signum)
+Signal(int signum)
 {
+#ifdef HAVE_EXECINFO_H
+	void *array[10];
+	size_t size;
+#endif /* HAVE_EXECINFO_H */
+
 	switch(signum)
 		{
 			case SIGHUP:
@@ -54,6 +64,7 @@ HandleSignal(int signum)
 				break;
 			case SIGTERM:
 			case SIGINT: 
+				subArrayKill(d->tags, True);
 				subArrayKill(d->views, True);
 				subArrayKill(d->clients, False);
 				subArrayKill(d->sublets, True);
@@ -63,6 +74,13 @@ HandleSignal(int signum)
 				subDisplayKill();
 				exit(1);
 			case SIGSEGV: 
+#ifdef HAVE_EXECINFO_H
+				size = backtrace(array, 10);
+
+				printf("Last %zd stack frames:\n", size);
+				backtrace_symbols_fd(array, size, 0);
+#endif /* HAVE_EXECINFO_H */
+
 				printf("Please report this bug to <%s>\n", PACKAGE_BUGREPORT);
 				abort();
 			case SIGCHLD:
@@ -98,9 +116,9 @@ main(int argc,
 				{
 					case 'c': config	= optarg; 		break;
 					case 'd': display = optarg;			break;
-					case 'h': ShowUsage(); 					return(0);
+					case 'h': Usage(); 							return(0);
 					case 's': sublets	= optarg;			break;
-					case 'v': ShowVersion(); 				return(0);
+					case 'v': Version(); 						return(0);
 #ifdef DEBUG					
 					case 'D': subUtilLogSetDebug();	break;
 #endif /* DEBUG */
@@ -110,8 +128,8 @@ main(int argc,
 				}
 		}
 
-	ShowVersion();
-	act.sa_handler	= HandleSignal;
+	Version();
+	act.sa_handler	= Signal;
 	act.sa_flags		= 0;
 	memset(&act.sa_mask, 0, sizeof(sigset_t)); ///< Avoid uninitialized values
 	sigaction(SIGHUP, &act, NULL);
