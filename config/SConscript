@@ -1,10 +1,12 @@
 #
-#	subtle - window manager
-#	Copyright (c) 2005-2008 Christoph Kappel
+#	@package subtle - window manager
 #
-#	See the COPYING file for the license in the latest tarball.
+# @file SConscript file
+#	@copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
+#	@version $Id$
 #
-#	$Id$
+# This program can be distributed under the terms of the GNU GPL.
+# See the file COPYING.
 #
 
 Import("env")
