@@ -3,10 +3,11 @@
 	* @package subtle
 	*
 	* @file Key functions
-	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
 	* @version $Id$
 	*
-	* See the COPYING file for the license in the latest tarball.
+	* This program can be distributed under the terms of the GNU GPL.
+	* See the file COPYING.
 	**/
 
 #include "subtle.h"
@@ -120,8 +121,6 @@ subKeyNew(const char *key,
 
 			tok = strtok(NULL, "-");
 		}
-	
-	subArrayPush(d->keys, (void *)k);
 	subUtilLogDebug("code=%03d, mod=%02d, key=%s\n", k->code, k->mod, key);
 	
 	return(k);
