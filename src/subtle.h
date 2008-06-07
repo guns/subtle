@@ -3,10 +3,11 @@
 	* @package subtle
 	*
 	* @file Header file
-	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
 	* @version $Id$
 	*
-	* See the COPYING file for the license in the latest tarball.
+	* This program can be distributed under the terms of the GNU GPL.
+	* See the file COPYING.
 	**/
 
 #ifndef SUBTLE_H
@@ -41,41 +42,51 @@
 	XCreateWindow(d->disp, parent, x, y, width, height, border, CopyFromParent, \
 		InputOutput, CopyFromParent, mask, &attrs);					///< Shortcut
 
+#define FLAGS int																				///< Flags
+
 #define WINWIDTH(w)		(w->width - 2 * d->bw)						///< Get real window width
 #define WINHEIGHT(w)	(w->height - d->th - d->bw)				///< Get real window height
 
 #define ARRAY(a)	((SubArray *)a)												///< Cast to SubArray
 #define VIEW(v)		((SubView *)v)												///< Cast to SubView
-#define TILE(t)		((SubTile *)t)												///< Cast to SubTile
 #define CLIENT(c)	((SubClient *)c)											///< Cast to SubClient
-#define RULE(r)		((SubRule *)r)												///< Cast to SubRule
+#define TAG(t)		((SubTag *)t)													///< Cast to SubTag
 #define SUBLET(s)	((SubSublet *)s)											///< Cast to SubSublet
 #define KEY(k)		((SubKey *)k)													///< Cast to SubKey
 /* }}} */
 
 /* Flags {{{ */
+/* Data types */
 #define SUB_TYPE_CLIENT					(1L << 1)								///< Client
-#define SUB_TYPE_TILE						(1L << 2)								///< Tile
-#define SUB_TYPE_VERT						(1L << 3)								///< Vert tile
-#define SUB_TYPE_HORZ						(1L << 4)								///< Horiz tile
-#define SUB_TYPE_VIEW						(1L << 5)								///< View
-#define SUB_TYPE_SUBLET					(1L << 6)								///< Sublet
-#define SUB_TYPE_KEY						(1L << 7)								///< Key
-#define SUB_TYPE_RULE						(1L << 8)								///< Rule
+#define SUB_TYPE_TAG						(1L << 2)								///< Tag
+#define SUB_TYPE_VIEW						(1L << 3)								///< View
+#define SUB_TYPE_SUBLET					(1L << 4)								///< Sublet
+#define SUB_TYPE_KEY						(1L << 5)								///< Key
 
-#define SUB_STATE_SHADE					(1L << 9)								///< Shaded window
-#define SUB_STATE_FLOAT					(1L << 10)							///< Floated window
-#define SUB_STATE_FULL					(1L << 11)							///< Fullscreen window
-#define SUB_STATE_RESIZE				(1L << 12)							///< Resized window
-#define SUB_STATE_STACK					(1L << 13)							///< Stacked tiling window
-#define SUB_STATE_TRANS					(1L << 14)							///< Transient window
-#define SUB_STATE_DEAD					(1L << 15)							///< Dead window
-#define SUB_STATE_MULTI					(1L << 16)							///< Multi tagged
+/* Tile modes */
+#define SUB_TILE_VERT_START			(1L << 6)								///< Vert tile start
+#define SUB_TILE_VERT_MID				(1L << 7)								///< Vert tile middle
+#define SUB_TILE_VERT_END				(1L << 8)								///< Vert tile end
+#define SUB_TILE_HORZ_START			(1L << 9)								///< Horiz tile start
+#define SUB_TILE_HORZ_MID				(1L << 10)							///< Horiz tile middle
+#define SUB_TILE_HORZ_END				(1L << 11)							///< Horiz tile end
 
-#define SUB_PREF_INPUT					(1L << 17)							///< Active/passive focus-model
-#define SUB_PREF_FOCUS					(1L << 18)							///< Send focus message
-#define SUB_PREF_CLOSE					(1L << 19)							///< Send close message
+/* Client states */
+#define SUB_STATE_SHADE					(1L << 12)							///< Shaded window
+#define SUB_STATE_FLOAT					(1L << 13)							///< Floated window
+#define SUB_STATE_FULL					(1L << 14)							///< Fullscreen window
+#define SUB_STATE_RESIZE				(1L << 15)							///< Resized window
+#define SUB_STATE_STACK					(1L << 16)							///< Stacked tiling window
+#define SUB_STATE_TRANS					(1L << 17)							///< Transient window
+#define SUB_STATE_DEAD					(1L << 18)							///< Dead window
+#define SUB_STATE_MULTI					(1L << 19)							///< Multi tagged
 
+/* Client preferences */
+#define SUB_PREF_INPUT					(1L << 20)							///< Active/passive focus-model
+#define SUB_PREF_FOCUS					(1L << 21)							///< Send focus message
+#define SUB_PREF_CLOSE					(1L << 22)							///< Send close message
+
+/* Drag states */
 #define SUB_DRAG_START					(1L << 1)								///< Drag start
 #define SUB_DRAG_ABOVE					(1L << 2)								///< Drag above
 #define SUB_DRAG_BELOW					(1L << 3)								///< Drag below
@@ -88,31 +99,97 @@
 #define SUB_DRAG_MOVE						(1L << 10)							///< Drag move
 #define SUB_DRAG_SWAP						(1L << 11)							///< Drag swap
 
-#define SUB_KEY_FOCUS_ABOVE			(1L << 9)								///< Focus above window
-#define SUB_KEY_FOCUS_BELOW			(1L << 10)							///< Focus below window
-#define SUB_KEY_FOCUS_NEXT			(1L << 11)							///< Focus next window
-#define SUB_KEY_FOCUS_PREV			(1L << 12)							///< Focus prev window
-#define SUB_KEY_FOCUS_ANY				(1L << 13)							///< Focus any window
-#define SUB_KEY_DELETE_WIN			(1L << 14)							///< Delete win
-#define SUB_KEY_TOGGLE_SHADE		(1L << 15)							///< Toggle collapse
-#define SUB_KEY_TOGGLE_RAISE		(1L << 16)							///< Toggle raise
-#define SUB_KEY_TOGGLE_FULL			(1L << 17)							///< Toggle fullscreen
-#define SUB_KEY_TOGGLE_PILE			(1L << 18)							///< Toggle pile
-#define SUB_KEY_TOGGLE_LAYOUT		(1L << 19)							///< Toggle tile layout
-#define SUB_KEY_DESKTOP_NEXT		(1L << 20)							///< Switch to next desktop
-#define SUB_KEY_DESKTOP_PREV		(1L << 21)							///< Switch to previous desktop
-#define SUB_KEY_DESKTOP_MOVE		(1L << 22)							///< Move window to desktop
-#define SUB_KEY_EXEC						(1L << 23)							///< Exec an app
+/* Keys */
+#define SUB_KEY_FOCUS_ABOVE			(1L << 12)							///< Focus above window
+#define SUB_KEY_FOCUS_BELOW			(1L << 13)							///< Focus below window
+#define SUB_KEY_FOCUS_NEXT			(1L << 14)							///< Focus next window
+#define SUB_KEY_FOCUS_PREV			(1L << 15)							///< Focus prev window
+#define SUB_KEY_FOCUS_ANY				(1L << 16)							///< Focus any window
+#define SUB_KEY_DELETE_WIN			(1L << 17)							///< Delete win
+#define SUB_KEY_TOGGLE_SHADE		(1L << 18)							///< Toggle collapse
+#define SUB_KEY_TOGGLE_RAISE		(1L << 19)							///< Toggle raise
+#define SUB_KEY_TOGGLE_FULL			(1L << 20)							///< Toggle fullscreen
+#define SUB_KEY_TOGGLE_PILE			(1L << 21)							///< Toggle pile
+#define SUB_KEY_TOGGLE_LAYOUT		(1L << 22)							///< Toggle tile layout
+#define SUB_KEY_DESKTOP_NEXT		(1L << 23)							///< Switch to next desktop
+#define SUB_KEY_DESKTOP_PREV		(1L << 24)							///< Switch to previous desktop
+#define SUB_KEY_DESKTOP_MOVE		(1L << 25)							///< Move window to desktop
+#define SUB_KEY_EXEC						(1L << 26)							///< Exec an app
 
-#define SUB_SUBLET_TYPE_TEXT		(1L << 9)								///< Text sublet
-#define SUB_SUBLET_TYPE_TEASER	(1L << 10)							///< Teaser sublet
-#define SUB_SUBLET_TYPE_METER		(1L << 11)							///< Meter sublet
-#define SUB_SUBLET_TYPE_WATCH		(1L << 12)							///< Watch sublet
-#define SUB_SUBLET_TYPE_HELPER	(1L << 13)							///< Helper sublet
+/* Sublets */
+#define SUB_SUBLET_TYPE_TEXT		(1L << 12)							///< Text sublet
+#define SUB_SUBLET_TYPE_TEASER	(1L << 13)							///< Teaser sublet
+#define SUB_SUBLET_TYPE_METER		(1L << 14)							///< Meter sublet
+#define SUB_SUBLET_TYPE_WATCH		(1L << 15)							///< Watch sublet
+#define SUB_SUBLET_TYPE_HELPER	(1L << 16)							///< Helper sublet
 
-#define SUB_SUBLET_FAIL_FIRST		(1L << 14)							///< Fail first time
-#define SUB_SUBLET_FAIL_SECOND	(1L << 15)							///< Fail second time
-#define SUB_SUBLET_FAIL_THIRD		(1L << 16)							///< Fail third time
+#define SUB_SUBLET_FAIL_FIRST		(1L << 17)							///< Fail first time
+#define SUB_SUBLET_FAIL_SECOND	(1L << 18)							///< Fail second time
+#define SUB_SUBLET_FAIL_THIRD		(1L << 19)							///< Fail third time
+
+/* ICCCM */
+#define SUB_EWMH_WM_NAME												0				///< Name of window
+#define SUB_EWMH_WM_CLASS												1				///< Class of window
+#define SUB_EWMH_WM_STATE												2				///< Window state
+#define SUB_EWMH_WM_PROTOCOLS										3				///< Supported protocols 
+#define SUB_EWMH_WM_TAKE_FOCUS									4				///< Send focus messages
+#define SUB_EWMH_WM_DELETE_WINDOW								5				///< Send close messages
+#define SUB_EWMH_WM_NORMAL_HINTS								6				///< Window normal hints
+#define SUB_EWMH_WM_SIZE_HINTS									7				///< Window size hints
+
+/* EWMH */
+#define SUB_EWMH_NET_SUPPORTED									8				///< Supported states
+#define SUB_EWMH_NET_CLIENT_LIST								9				///< List of clients
+#define SUB_EWMH_NET_CLIENT_LIST_STACKING				10			///< List of clients
+#define SUB_EWMH_NET_NUMBER_OF_DESKTOPS					11			///< Total number of views
+#define SUB_EWMH_NET_DESKTOP_NAMES							12			///< Names of the views
+#define SUB_EWMH_NET_DESKTOP_GEOMETRY						13			///< Desktop geometry
+#define SUB_EWMH_NET_DESKTOP_VIEWPORT						14			///< Viewport of the view
+#define SUB_EWMH_NET_CURRENT_DESKTOP						15			///< Number of current view
+#define SUB_EWMH_NET_ACTIVE_WINDOW							16			///< Focus window
+#define SUB_EWMH_NET_WORKAREA										17			///< Workarea of the views
+#define SUB_EWMH_NET_SUPPORTING_WM_CHECK				18			///< Check for compliant window manager
+#define SUB_EWMH_NET_VIRTUAL_ROOTS							19			///< List of virtual destops
+#define SUB_EWMH_NET_CLOSE_WINDOW								20
+
+#define SUB_EWMH_NET_WM_PID											21			///< PID of client
+#define SUB_EWMH_NET_WM_DESKTOP									22			///< Desktop client is on
+
+#define SUB_EWMH_NET_WM_STATE										23			///< Window state
+#define SUB_EWMH_NET_WM_STATE_MODAL							24			///< Modal window
+#define SUB_EWMH_NET_WM_STATE_SHADED						25			///< Shaded window
+#define SUB_EWMH_NET_WM_STATE_HIDDEN						26			///< Hidden window
+#define SUB_EWMH_NET_WM_STATE_FULLSCREEN				27			///< Fullscreen window
+
+#define SUB_EWMH_NET_WM_WINDOW_TYPE							28
+#define SUB_EWMH_NET_WM_WINDOW_TYPE_DESKTOP			29
+#define SUB_EWMH_NET_WM_WINDOW_TYPE_NORMAL			30
+#define SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG			31
+
+#define SUB_EWMH_NET_WM_ALLOWED_ACTIONS					32
+#define SUB_EWMH_NET_WM_ACTION_MOVE							33
+#define SUB_EWMH_NET_WM_ACTION_RESIZE						34
+#define SUB_EWMH_NET_WM_ACTION_SHADE						35
+#define SUB_EWMH_NET_WM_ACTION_FULLSCREEN				36
+#define SUB_EWMH_NET_WM_ACTION_CHANGE_DESKTOP		37
+#define SUB_EWMH_NET_WM_ACTION_CLOSE						38
+
+/* Misc */
+#define SUB_EWMH_UTF8														39			///< String encoding
+
+/* subtle */
+#define SUB_EWMH_SUBTLE_CLIENT_TAG							40			///< subtle client tag
+#define SUB_EWMH_SUBTLE_CLIENT_UNTAG						41			///< subtle client untag
+#define SUB_EWMH_SUBTLE_CLIENT_TAGS							42			///< subtle client tags
+#define SUB_EWMH_SUBTLE_TAG_NEW									43			///< subtle tag new
+#define SUB_EWMH_SUBTLE_TAG_KILL								44			///< subtle tag kill
+#define SUB_EWMH_SUBTLE_TAG_LIST								45			///< subtle tag list
+#define SUB_EWMH_SUBTLE_VIEW_NEW								46			///< subtle view new
+#define SUB_EWMH_SUBTLE_VIEW_KILL								47			///< subtle view kill
+#define SUB_EWMH_SUBTLE_VIEW_LIST								48			///< subtle view list
+#define SUB_EWMH_SUBTLE_VIEW_TAG								49			///< subtle view tag
+#define SUB_EWMH_SUBTLE_VIEW_UNTAG							50			///< subtle view untag
+#define SUB_EWMH_SUBTLE_VIEW_TAGS								51			///< subtle view tags
 /* }}} */
 
 /* array.c {{{ */
@@ -135,13 +212,12 @@ void subArrayKill(SubArray *a, int clean);							///< Kill array with all elemen
 /* client.c {{{ */
 typedef struct subclient
 {
-	int								flags, x, y, width, height, size;		///< Client flags and common properties
-	struct subtile 		*tile;															///< Client parent
+	FLAGS							flags; 															///< Client flags
+	int								x, y, width, height, size, tags;		///< Client properties, tags
 	char							*name;															///< Client name
 	Colormap					cmap;																///< Client colormap	
 	Window						frame, caption, title, win;					///< Client decoration windows
 	Window						left, right, bottom;								///< Client border windows
-	struct subarray		*multi;															///< Client multi
 } SubClient;
 
 SubClient *subClientNew(Window win);										///< Create new client
@@ -155,60 +231,48 @@ void subClientToggle(SubClient *c, int type);						///< Toggle client state
 void subClientFetchName(SubClient *c);									///< Fetch client name
 void subClientSetWMState(SubClient *c, long state);			///< Set client WM state
 long subClientGetWMState(SubClient *c);									///< Get client WM state
+void subClientPublish(void);														///< Publish all clients
 void subClientKill(SubClient *c);												///< Kill client
 /* }}} */
 
-/* tile.c {{{ */
-typedef struct subtile
+/* tag.c {{{ */
+typedef struct subtag
 {
-	int								flags, x, y, width, height, size;		///< Tile flags and common properties
-	struct subtile		*tile;															///< Tile parent
-	struct subclient	*top;																///< Tile stack top
-	struct subarray		*clients;														///< Tile clients
-	void 							*superior;													///< Tile superior
-} SubTile;
+	FLAGS		flags;																				///< Tag flags
+	char		*name;																				///< Tag name
+	regex_t	*preg;																				///< Tag regex
+} SubTag;
 
-SubTile *subTileNew(int mode, void *sup);								///< Create new tile
-void subTileConfigure(SubTile *t);											///< Configure tile
-void subTileRemap(SubTile *t);													///< Remap tile
-void subTileKill(SubTile *t, int clean);								///< Kill tile
-/* }}} */
-
-/* rule.c {{{ */
-typedef struct subrule
-{
-	int							flags, size;													///< Rule flags, size
-	regex_t					*regex;																///< Rule regex
-	struct subtile	*tile;																///< Rule tile
-} SubRule;
-
-SubRule *subRuleNew(char *tags, int size);							///< Create rule
-void subRuleKill(SubRule *r, int clean);								///< Delete rule
-
+SubTag *subTagNew(char *name, char *regex);							///< Create tag
+SubTag * subTagFind(char *name, int *id);								///< Find tag
+int subTagMatch(char *string);													///< Match tags
+void subTagPublish(void);																///< Publish tags
+void subTagKill(SubTag *t);															///< Delete tag
 /* }}} */
 
 /* view.c {{{ */
 typedef struct subview
 {
-	int							flags, width;													///< View flags and button width
-	Window					frame, button;												///< View frame, button
-	char 						*name;																///< View name
-	struct subtile	*tile;																///< View tile
-	struct subarray *rules;																///< View rules
+	FLAGS			flags;																			///< View flags
+	int				tags, width, layout;												///< View tags, button width, layout
+	Window		frame, button;															///< View frame, button
+	char 			*name;																			///< View name
 } SubView;
 
-SubView *subViewNew(char *name);												///< Create new view
-void subViewConfigure(void);														///< Configure views
+SubView *subViewNew(char *name, char *tags);						///< Create new view
+void subViewConfigure(SubView *v);											///< Configure view
+void subViewUpdate(void);																///< Update views
 void subViewRender(void);																///< Render views
-void subViewMerge(Window win);													///< Merge window
 void subViewJump(SubView *v);														///< Jump to view
+void subViewPublish(void);															///< Publish views
 void subViewKill(SubView *v);														///< Kill view
 /* }}} */
 
 /* sublet.c {{{ */
 typedef struct subsublet
 {
-	int			flags, ref, width;														///< Sublet flags, object reference, width
+	FLAGS		flags;																				///< Sublet flags
+	int			ref, width;																		///< Sublet object reference, width
 	time_t	time, interval;																///< Sublet update time, interval time
 
 	struct subsublet *next;																///< Sublet next sibling
@@ -239,10 +303,11 @@ typedef struct subdisplay
 	struct subclient	*focus;															///< Focus window
 	struct subview		*cv;																///< Current view
 	
+	struct subarray		*keys;															///< Key list
+	struct subarray		*tags;															///< Tag list
 	struct subarray		*views;															///< View list
 	struct subarray		*clients;														///< Client list
 	struct subarray		*sublets;														///< Sublet list
-	struct subarray		*keys;															///< Key list
 
 #ifdef HAVE_SYS_INOTIFY_H
 	int								notify;															///< Inotify descriptor
@@ -279,8 +344,9 @@ void subDisplayScan(void);															///< Scan root window
 /* key.c {{{ */
 typedef struct subkey
 {
-	int flags, code;																			///< Key flags, code
-	unsigned int mod;																			///< Key modifier
+	FLAGS					flags;																	///< Key flags
+	int 					code;																		///< Key code
+	unsigned int	mod;																		///< Key modifier
 
 	union
 	{
@@ -290,12 +356,12 @@ typedef struct subkey
 } SubKey;
 
 void subKeyInit(void);																	///< Init the keys
-SubKey *subKeyNew(const char *key,											///< Create new key
+SubKey *subKeyNew(const char *key,											///< Create key
 	const char *value);
 SubKey *subKeyFind(int code, unsigned int mod);					///< Find key
 void subKeyGrab(Window win);														///< Grab keys for window
 void subKeyUngrab(Window win);													///< Ungrab keys for window
-int subKeyCompare(const void *a, const void *b);				///< Compare two keys
+int subKeyCompare(const void *a, const void *b);				///< Compare keys
 void subKeyKill(SubKey *k);															///< Kill key
 /* }}} */
 
@@ -328,66 +394,15 @@ void *subUtilAlloc(size_t n, size_t size);							///< Allocate memory
 void *subUtilRealloc(void *mem, size_t size);						///< Reallocate memory
 XPointer *subUtilFind(Window win, XContext id);					///< Find window data
 time_t subUtilTime(void);																///< Get the current time
+regex_t * subUtilRegexNew(char *regex);									///< Create new regex
+int subUtilRegexMatch(regex_t *preg, char *string);			///< Check if string matches preg
+void subUtilRegexKill(regex_t *preg);										///< Kill regex
 /* }}} */
 
 /* ewmh.c  {{{ */
-enum SubEwmhHints
-{
-	/* ICCCM */
-	SUB_EWMH_WM_NAME,																			///< Name of window
-	SUB_EWMH_WM_CLASS,																		///< Class of window
-	SUB_EWMH_WM_STATE,																		///< Window state
-	SUB_EWMH_WM_PROTOCOLS,																///< Supported protocols 
-	SUB_EWMH_WM_TAKE_FOCUS,																///< Send focus messages
-	SUB_EWMH_WM_DELETE_WINDOW,														///< Send close messages
-	SUB_EWMH_WM_NORMAL_HINTS,															///< Window normal hints
-	SUB_EWMH_WM_SIZE_HINTS,																///< Window size hints
-
-	/* EWMH */
-	SUB_EWMH_NET_SUPPORTED,																///< Supported states
-	SUB_EWMH_NET_CLIENT_LIST,															///< List of clients
-	SUB_EWMH_NET_CLIENT_LIST_STACKING,										///< List of clients
-	SUB_EWMH_NET_NUMBER_OF_DESKTOPS,											///< Total number of views
-	SUB_EWMH_NET_DESKTOP_NAMES,														///< Names of the views
-	SUB_EWMH_NET_DESKTOP_GEOMETRY,												///< Desktop geometry
-	SUB_EWMH_NET_DESKTOP_VIEWPORT,												///< Viewport of the view
-	SUB_EWMH_NET_CURRENT_DESKTOP,													///< Number of current view
-	SUB_EWMH_NET_ACTIVE_WINDOW,														///< Focus window
-	SUB_EWMH_NET_WORKAREA,																///< Workarea of the views
-	SUB_EWMH_NET_SUPPORTING_WM_CHECK,											///< Check for compliant window manager
-	SUB_EWMH_NET_VIRTUAL_ROOTS,														///< List of virtual destops
-	SUB_EWMH_NET_CLOSE_WINDOW,
-
-	SUB_EWMH_NET_WM_PID,																	///< PID of client
-	SUB_EWMH_NET_WM_DESKTOP,															///< Desktop client is on
-
-	SUB_EWMH_NET_WM_STATE,																///< Window state
-	SUB_EWMH_NET_WM_STATE_MODAL,													///< Modal window
-	SUB_EWMH_NET_WM_STATE_SHADED,													///< Shaded window
-	SUB_EWMH_NET_WM_STATE_HIDDEN,													///< Hidden window
-	SUB_EWMH_NET_WM_STATE_FULLSCREEN,											///< Fullscreen window
-
-	SUB_EWMH_NET_WM_WINDOW_TYPE,
-	SUB_EWMH_NET_WM_WINDOW_TYPE_DESKTOP,
-	SUB_EWMH_NET_WM_WINDOW_TYPE_NORMAL,
-	SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG,
-
-	SUB_EWMH_NET_WM_ALLOWED_ACTIONS,
-	SUB_EWMH_NET_WM_ACTION_MOVE,
-	SUB_EWMH_NET_WM_ACTION_RESIZE,
-	SUB_EWMH_NET_WM_ACTION_SHADE,
-	SUB_EWMH_NET_WM_ACTION_FULLSCREEN,
-	SUB_EWMH_NET_WM_ACTION_CHANGE_DESKTOP,
-	SUB_EWMH_NET_WM_ACTION_CLOSE,
-
-	/* Misc */
-	SUB_EWMH_UTF8
-};
-
 void subEwmhInit(void);																	///< Init atoms/hints
 Atom subEwmhFind(int hint);															///< Find atom
-
-char * subEwmhGetProperty(Window win, 
+char *subEwmhGetProperty(Window win, 
 	Atom type, int hint, unsigned long *size);						///< Get property
 void subEwmhSetWindows(Window win, int hint, 
 	Window *values, int size);														///< Set window properties
