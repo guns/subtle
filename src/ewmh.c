@@ -3,15 +3,16 @@
 	* @package subtle
 	*
 	* @file EWMH functions
-	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
 	* @version $Id$
 	*
-	* See the COPYING file for the license in the latest tarball.
+	*	This program can be distributed under the terms of the GNU GPL.
+	* See the file COPYING.
 	**/
 
 #include "subtle.h"
 
-#define NATOMS 40
+#define NATOMS 52
 static Atom atoms[NATOMS];
 
  /** subEwmhInit {{{
@@ -38,34 +39,43 @@ subEwmhInit(void)
 		"_NET_WM_ACTION_FULLSCREEN", "_NET_WM_ACTION_CHANGE_DESKTOP", "_NET_WM_ACTION_CLOSE",
 
 		/* Misc */
-		"UTF8_STRING"
+		"UTF8_STRING",
+
+		/* subtle */
+		"SUBTLE_CLIENT_TAG", "SUBTLE_CLIENT_UNTAG", "SUBTLE_CLIENT_TAGS",
+		"SUBTLE_TAG_NEW", "SUBTLE_TAG_KILL", "SUBTLE_TAG_LIST",
+		"SUBTLE_VIEW_NEW", "SUBTLE_VIEW_KILL", "SUBTLE_VIEW_LIST", "SUBTLE_VIEW_TAG", "SUBTLE_VIEW_UNTAG", "SUBTLE_VIEW_TAGS"
 	};
 	long data[4] = { 0, 0, 0, 0 }, pid = (long)getpid();
 
 	XInternAtoms(d->disp, names, n, 0, atoms);
 
-	/* Window manager information */
+	/* EWMH: Window manager information */
 	subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_SUPPORTING_WM_CHECK, &DefaultRootWindow(d->disp), 1);
 	subEwmhSetString(DefaultRootWindow(d->disp), SUB_EWMH_WM_NAME, PACKAGE_NAME);
 	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_WM_PID, &pid, 1);
 	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_DESKTOP_VIEWPORT, (long *)&data, 2);
 
-	/* Workarea size */
+	/* EWMH: Workarea size */
 	data[2] = DisplayWidth(d->disp, DefaultScreen(d->disp)); 
 	data[3] = DisplayHeight(d->disp, DefaultScreen(d->disp));
 	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_WORKAREA, (long *)&data, 4);
 
-	/* Desktop sizes */
+	/* EWMH: Desktop sizes */
 	data[0] = DisplayWidth(d->disp, DefaultScreen(d->disp));
 	data[1] = DisplayHeight(d->disp, DefaultScreen(d->disp));
 	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_DESKTOP_GEOMETRY, (long *)&data, 2);
 
-	/* Supported window states */
+	/* EWMH: Supported window states */
 	data[0] = atoms[SUB_EWMH_NET_WM_STATE_MODAL];
 	data[1] = atoms[SUB_EWMH_NET_WM_STATE_SHADED];
 	data[2] = atoms[SUB_EWMH_NET_WM_STATE_HIDDEN];
 	data[3] = atoms[SUB_EWMH_NET_WM_STATE_FULLSCREEN];
 	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_SUPPORTED, (long *)&data, 4);	
+
+	/* EWMH: Client list and client list stacking */
+	subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_CLIENT_LIST, NULL, 0);
+	subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_CLIENT_LIST_STACKING, NULL, 0);
 } /* }}} */
 
  /** subEwmhFind {{{
