@@ -3,10 +3,11 @@
 	* @package subtle
 	*
 	* @file Client functions
-	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
 	* @version $Id$
 	*
-	* See the COPYING file for the license in the latest tarball.
+	* This program can be distributed under the terms of the GNU GPL.
+	* See the file COPYING.
 	**/
 
 #include "subtle.h"
@@ -54,31 +55,31 @@ DrawMask(int type,
 		}
 } /* }}} */
 
-/* AdjustWeight {{{ */
+/* ClientResize {{{ */
 static void
-AdjustWeight(int mode,
+ClientResize(int mode,
 	SubClient *c,
 	XRectangle *r)
 {
+#if 0
 	if(c && c->tile)
 		{
-printf("%s,%d: %s\n", __FILE__, __LINE__, __func__);
-
 			if((c->tile->flags & SUB_TYPE_HORZ && (mode == SUB_DRAG_LEFT || mode == SUB_DRAG_RIGHT)) ||
 				(c->tile->flags & SUB_TYPE_VERT && mode == SUB_DRAG_BOTTOM))
 				{
+					/* Get client new size */
 					if(c->tile->flags & SUB_TYPE_HORZ) c->size = r->width * 100 / WINWIDTH(c->tile);
 					else if(c->tile->flags & SUB_TYPE_VERT) c->size = r->height * 100 / WINHEIGHT(c->tile);
 
-					if(c->size >= 80) c->size = 80;
+					if(80 > c->size) c->size = 80; ///< Limit client size to max 80%
 					if(!(c->flags & SUB_STATE_RESIZE)) c->flags |= SUB_STATE_RESIZE;
 					subTileConfigure(c->tile);
-					return;
 				}
-/*			else if(((c->tile->flags & SUB_TYPE_VERT && (mode == SUB_DRAG_LEFT || mode == SUB_DRAG_RIGHT)) ||
+			else if(((c->tile->flags & SUB_TYPE_VERT && (mode == SUB_DRAG_LEFT || mode == SUB_DRAG_RIGHT)) ||
 				(c->tile->flags & SUB_TYPE_HORZ && mode == SUB_DRAG_BOTTOM)) && c->tile->tile)
-				AdjustWeight(mode, c->tile->clients[0], r); */
+				ClientResize(mode, CLIENT(c->tile->clients->data[0]), r);
 		}
+#endif
 } /* }}} */
 
  /** subClientNew {{{
@@ -92,6 +93,8 @@ subClientNew(Window win)
 {
 	int i, n = 0;
 	Window unnused;
+	char *cc = NULL;
+	long vid = 1337;
 	XWMHints *hints = NULL;
 	XWindowAttributes attr;
 	XSetWindowAttributes attrs;
@@ -100,12 +103,14 @@ subClientNew(Window win)
 
 	assert(win);
 	
-	c	= (SubClient *)subUtilAlloc(1, sizeof(SubClient));
+	c	= CLIENT(subUtilAlloc(1, sizeof(SubClient)));
 	c->flags	= SUB_TYPE_CLIENT;
 	c->y 			= d->th;
 	c->width	= DisplayWidth(d->disp, DefaultScreen(d->disp));
 	c->height	= DisplayHeight(d->disp, DefaultScreen(d->disp)) - d->th;
 	c->win		= win;
+
+	subArrayPush(d->clients, (void *)c);
 
 	/* Create windows */
 	attrs.border_pixel			= d->colors.border;
@@ -130,19 +135,12 @@ subClientNew(Window win)
 	XSetWindowBorderWidth(d->disp, c->win, 0);
 	XReparentWindow(d->disp, c->win, c->frame, d->bw, d->th);
 	XAddToSaveSet(d->disp, c->win);
+	XSaveContext(d->disp, c->frame, 1, (void *)c);
 
 	/* Window attributes */
 	XGetWindowAttributes(d->disp, c->win, &attr);
 	c->cmap	= attr.colormap;
-
 	subClientFetchName(c);
-	subArrayPush(d->clients, (void *)win);
-
-	/* EWMH: Client list and client list stacking */
-	subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_CLIENT_LIST, 
-		(Window *)d->clients->data, d->clients->ndata);
-	subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_CLIENT_LIST_STACKING, 
-		(Window *)d->clients->data, d->clients->ndata);
 
 	/* Window manager hints */
 	hints = XGetWMHints(d->disp, win);
@@ -160,18 +158,26 @@ subClientNew(Window win)
 		{
 			for(i = 0; i < n; i++)
 				{
-					if(protos[i] == subEwmhFind(SUB_EWMH_WM_TAKE_FOCUS)) 		c->flags |= SUB_PREF_FOCUS;
-					if(protos[i] == subEwmhFind(SUB_EWMH_WM_DELETE_WINDOW))	c->flags |= SUB_PREF_CLOSE;
+					if(protos[i] == subEwmhFind(SUB_EWMH_WM_TAKE_FOCUS)) 					c->flags |= SUB_PREF_FOCUS;
+					else if(protos[i] == subEwmhFind(SUB_EWMH_WM_DELETE_WINDOW))	c->flags |= SUB_PREF_CLOSE;
 				}
 			XFree(protos);
 		}
+	
+	/* Tags */
+	cc = subEwmhGetProperty(win, XA_STRING, SUB_EWMH_WM_CLASS, NULL);
+	c->tags = subTagMatch(cc);
+	subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS, (long *)&c->tags, 1);
+	XFree(cc);	
+
+	/* EWMH: Desktop */
+	subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
 	/* Check for dialog windows etc. */
 	XGetTransientForHint(d->disp, win, &unnused);
 	if(unnused && !(c->flags & SUB_STATE_TRANS)) c->flags |= SUB_STATE_TRANS;
 
-	XSaveContext(d->disp, c->frame, 1, (void *)c);
-
+	printf("Adding client (%s)\n", c->name);
 	subUtilLogDebug("new=client, name=%s, win=%#lx\n", c->name, win);
 
 	return(c);
@@ -188,8 +194,6 @@ subClientConfigure(SubClient *c)
 	XConfigureEvent ev;
 
 	assert(c);
-
-	subUtilLogDebug("x=%d, y=%d, width=%d, height=%d\n", c->x, c->y, c->width, c->height);
 
 	/* Resize client windows */
 	XMoveResizeWindow(d->disp, c->frame, c->x, c->y, c->width, (c->flags & SUB_STATE_SHADE) ? d->th : c->height);
@@ -290,8 +294,7 @@ subClientFocus(SubClient *c)
           
 					subKeyUngrab(f->frame);
 				} 
-        
-			XSetInputFocus(d->disp, c->frame, RevertToNone, CurrentTime);
+			XSetInputFocus(d->disp, c->win, RevertToNone, CurrentTime);
       
 			d->focus = c;
 			subClientRender(c);
@@ -371,6 +374,7 @@ subClientDrag(SubClient *c,
 	XGrabServer(d->disp);
 	if(SUB_DRAG_MOVE >= mode) DrawMask(SUB_DRAG_START, c, &r);
 
+#if 0
 	for(;;)
 		{
 			XMaskEvent(d->disp, PointerMotionMask|ButtonReleaseMask|EnterWindowMask, &ev);
@@ -444,10 +448,10 @@ subClientDrag(SubClient *c,
 								}
 						break; /* }}} */
 					case ButtonRelease: /* {{{ */
-						if(win != c->frame && SUB_DRAG_MOVE < mode)
+						if(win != c->frame && c && c2)
 							{
 								DrawMask(state, c2, &r); ///< Erase mask
-								if(c && c2 && c->tile && c2->tile)
+								if(c->tile && c2->tile)
 									{
 										/* Drag: TOP|BOTTOM|LEFT|RIGHT {{{ */
 										if(state & (SUB_DRAG_TOP|SUB_DRAG_BOTTOM|SUB_DRAG_LEFT|SUB_DRAG_RIGHT))
@@ -471,7 +475,7 @@ subClientDrag(SubClient *c,
 													}
 												else
 													{
-														SubTile *t = subTileNew(tmode, (void *)d->cv);
+														SubTile *t = subTileNew(tmode);
 														int idx = subArrayFind(c2->tile->clients, (void *)c2);
 
 														c2->tile->clients->data[idx] = (void *)t;
@@ -492,6 +496,7 @@ subClientDrag(SubClient *c,
 														t->tile 	= c2->tile;
 														c->tile 	= t;
 														c2->tile	= t;
+
 													}
 												subTileConfigure(d->cv->tile);
 											} /* }}} */
@@ -556,7 +561,6 @@ subClientDrag(SubClient *c,
 							{
 								XDrawRectangle(d->disp, DefaultRootWindow(d->disp), d->gcs.invert, r.x + 1, r.y + 1, 
 									r.width - 3, (c->flags & SUB_STATE_SHADE) ? d->th - 3 : r.height - 3);
-					printf("%s,%d: %s\n", __FILE__, __LINE__, __func__);
 
 								if(c->flags & SUB_STATE_FLOAT) 
 									{
@@ -567,7 +571,7 @@ subClientDrag(SubClient *c,
 
 										subClientConfigure(c);
 									}
-								else if(c->tile && mode <= SUB_DRAG_BOTTOM) AdjustWeight(mode, c, &r);
+								else if(c->tile && SUB_DRAG_BOTTOM >= mode) ClientResize(mode, c, &r);
 							}
 
 						XUngrabServer(d->disp);
@@ -576,6 +580,7 @@ subClientDrag(SubClient *c,
 						return;
 				} /* }}} */
 		}
+#endif		
 } /* }}} */
 
  /** subClientToggle {{{
@@ -591,7 +596,7 @@ int type)
 	XEvent event;
 
 	assert(c);
-
+#if 0
 	if(c->flags & type)
 		{
 			c->flags &= ~type;
@@ -715,6 +720,7 @@ int type)
 	XUngrabServer(d->disp);
 	while(XCheckTypedEvent(d->disp, UnmapNotify, &event));
 	if(type != SUB_STATE_FULL) subTileConfigure(c->tile);
+#endif	
 } /* }}} */
 
 	/** subClientFetchName {{{
@@ -786,6 +792,31 @@ subClientGetWMState(SubClient *c)
 	return(state);
 } /* }}} */
 
+ /** subClientPublish {{{
+	* @brief Publish clients
+	**/
+
+void
+subClientPublish(void)
+{
+	if(0 < d->clients->ndata )
+		{
+			int i;
+			Window *wins = (Window *)subUtilAlloc(d->clients->ndata, sizeof(Window));
+
+			for(i = 0; i < d->clients->ndata; i++) 
+				wins[i] = CLIENT(d->clients->data[i])->win;
+
+			/* EWMH: Client list and client list stacking */
+			subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_CLIENT_LIST, wins, d->clients->ndata);
+			subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_CLIENT_LIST_STACKING, wins, d->clients->ndata);
+
+			subUtilLogDebug("publish=client, clients=%d\n", d->clients->ndata);
+
+			free(wins);
+		}
+} /* }}} */
+
  /** subClientKill {{{
 	* @brief Send interested clients the close signal and/or kill it
 	* @param[in] c			A #SubClient
@@ -829,11 +860,9 @@ subClientKill(SubClient *c)
 				}
 			else XKillClient(d->disp, c->win);
 		}
-	
 	XDestroySubwindows(d->disp, c->frame);
 	XDestroyWindow(d->disp, c->frame);
-
-	subArrayPop(c->tile->clients, (void *)c);
+	subArrayPop(d->clients, (void *)c);
 
 	if(c->name) XFree(c->name);
 	free(c);
