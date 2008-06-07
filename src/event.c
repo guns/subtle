@@ -3,10 +3,11 @@
 	* @package subtle
 	*
 	* @file Event functions
-	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
 	* @version $Id$
 	*
-	* See the COPYING file for the license in the latest tarball.
+	* This program can be distributed under the terms of the GNU GPL.
+	* See the file COPYING.
 	**/
 
 #include "subtle.h"
@@ -61,7 +62,7 @@ HandleButtonPress(XButtonEvent *ev)
 			if(d->cv != v) subViewJump(v); ///< Prevent jumping to current view
 			return;
 		}
-
+#if 0
 	c = CLIENT(subUtilFind(ev->window, 1));
 	if(c)
 		{
@@ -109,6 +110,7 @@ HandleButtonPress(XButtonEvent *ev)
 						if(d->cv->prev) subViewJump(d->cv->prev); break; */
 				}
 		}
+#endif		
 } /* }}} */
 
 /* HandleKeyPress {{{ */
@@ -117,19 +119,14 @@ HandleKeyPress(XKeyEvent *ev)
 {
 	SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
 
-printf("\n\nwindow=%#lx\n", ev->window);
-printf("subwindow=%#lx\n", ev->subwindow);
-printf("root=%#lx\n", ev->root);
-printf("parent=%#lx\n", GetParent(ev->subwindow));
-printf("root=%#lx\n", DefaultRootWindow(d->disp));
-printf("focus=%#lx\n\n", d->focus ? d->focus->frame : 0);
-
+#if 0
 	if(c)
 		{
 			SubKey *k = subKeyFind(ev->keycode, ev->state);
 			if(k) 
 				{
 					int mode = 0, type = SUB_TYPE_HORZ;
+printf("%s,%d: %s\n", __FILE__, __LINE__, __func__);
 
 					switch(k->flags)
 						{
@@ -158,6 +155,7 @@ printf("focus=%#lx\n\n", d->focus ? d->focus->frame : 0);
 					subUtilLogDebug("KeyPress: code=%d, mod=%d\n", k->code, k->mod);
 				}
 		}
+#endif		
 } /* }}} */
 
 /* HandleConfigure {{{ */
@@ -192,11 +190,12 @@ HandleConfigure(XConfigureRequestEvent *ev)
 static void
 HandleMapRequest(XMapRequestEvent *ev)
 {
-	SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
+	SubClient *c = CLIENT(subUtilFind(ev->window, 1));
 	if(!c) 
 		{
-			subViewMerge(ev->window);
-			subViewConfigure();
+			subClientNew(ev->window);
+			subClientPublish();
+			subViewUpdate();
 			subViewRender();
 		}
 } /* }}} */
@@ -208,34 +207,11 @@ HandleDestroy(XDestroyWindowEvent *ev)
 	SubClient *c = (SubClient *)subUtilFind(ev->event, 1);
 	if(c) 
 		{
-			/* Mark windows as dead */
-			if(c->flags & SUB_STATE_MULTI)
-				{
-					int i;
-
-					for(i = 0; i < c->multi->ndata; i++)
-						{
-							SubClient *mc = CLIENT(c->multi->data[i]);
-							
-							mc->flags |= SUB_STATE_DEAD;
-							subClientKill(mc);
-						}
-					subArrayKill(c->multi, False);
-
-					for(i = 0; i < d->views->ndata; i++)
-						{
-							SubView *v = VIEW(d->views->data[i]);
-							if(v->tile) subTileConfigure(v->tile);
-						}
-				}
-			else 
-				{
-					c->flags |= SUB_STATE_DEAD;
-					subClientKill(c); 
-				}
-
-			subTileConfigure(d->cv->tile);
-			subViewConfigure();
+			c->flags |= SUB_STATE_DEAD;
+			subClientKill(c); 
+			subClientPublish();
+			subViewConfigure(d->cv);
+			subViewUpdate();
 		}
 } /* }}} */
 
@@ -245,29 +221,122 @@ HandleMessage(XClientMessageEvent *ev)
 {
 	SubClient *c = NULL;
 
-	subUtilLogDebug("ClientMessage: type=%ld\n", ev->message_type);
+	subUtilLogDebug("ClientMessage: type=%ld, format=%d\n", ev->message_type, ev->format);
 
-	if(ev->window == DefaultRootWindow(d->disp))
+	/* ICC events */
+	if(DefaultRootWindow(d->disp) == ev->window && 32 == ev->format)
 		{
-			if(ev->message_type == subEwmhFind(SUB_EWMH_NET_CURRENT_DESKTOP))
+			if(ev->message_type == subEwmhFind(SUB_EWMH_NET_CURRENT_DESKTOP)) /* {{{ */
 				{
-					/* Bound checking */
-					if(ev->data.l[0] > 0 && ev->data.l[0] < d->views->ndata)
-						subViewJump((SubView *)d->views->data[ev->data.l[0]]);
-				}
-			else if(ev->message_type == subEwmhFind(SUB_EWMH_NET_ACTIVE_WINDOW))
+					if(0 <= ev->data.l[0] && ev->data.l[0] < d->views->ndata) ///< Bound checking
+						subViewJump(VIEW(d->views->data[ev->data.l[0]]));
+				} /* }}} */
+			else if(ev->message_type == subEwmhFind(SUB_EWMH_NET_ACTIVE_WINDOW)) /* {{{ */
 				{
-					SubClient *focus = (SubClient *)subUtilFind(GetParent(ev->data.l[0]), 1);
+					SubClient *focus = CLIENT(subUtilFind(GetParent(ev->data.l[0]), 1));
 					if(focus) subClientFocus(focus);
-				}
+				} /* }}} */
+			else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_CLIENT_TAG)) /* {{{ */
+				{
+					Window win = GetParent(ev->data.l[0]);
+
+					c = CLIENT(subUtilFind(win, 1));
+					if(c)
+						{
+							c->tags |= (1L << ev->data.l[1]);
+							subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS, (long *)&c->tags, 1);
+						}
+				} /* }}} */				
+			else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_CLIENT_UNTAG)) /* {{{ */
+				{
+					Window win = GetParent(ev->data.l[0]);
+
+					c = CLIENT(subUtilFind(win, 1));
+					if(c)
+						{
+							c->tags &= ~(1L << ev->data.l[1]);
+							subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS, (long *)&c->tags, 1);
+						}
+					if(d->cv->tags & (1L << ev->data.l[1])) subViewConfigure(d->cv);
+				} /* }}} */				
+			else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_TAG_NEW)) /* {{{ */
+				{
+					SubTag *t = subTagNew(ev->data.b, NULL); 
+					subArrayPush(d->tags, (void *)t);
+					subTagPublish();
+				} /* }}} */
+			else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_TAG_KILL)) /* {{{ */
+				{
+					int id;
+					SubTag *t = subTagFind(ev->data.b, &id);
+					if(t)
+						{
+							int i;
+
+							/* Find clients tagged with this tag */
+							for(i = 0; i < d->clients->ndata; i++)
+								{
+									c = CLIENT(d->clients->data[i]);
+
+									if(c->tags & id)
+										{
+											c->tags &= ~id;
+											subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS, (long *)&c->tags, 1);
+										}
+								}
+
+							subArrayPop(d->tags, (void *)t);
+							subTagPublish();
+							subViewConfigure(d->cv); ///< Re-configure current view
+						}
+				}	/* }}} */			
+			else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_VIEW_NEW)) /* {{{ */
+				{
+					if(ev->data.b)
+						{
+							SubView *v = subViewNew(ev->data.b, NULL); 
+							subArrayPush(d->views, (void *)v);
+							subViewUpdate();
+							subViewPublish();
+							subViewRender();
+						}
+				}	/* }}} */			
+			else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_VIEW_TAG)) /* {{{ */
+				{
+					SubView *v = VIEW(subUtilFind(ev->data.l[0], 1));
+					if(v)
+						{
+							v->tags |= (1L << ev->data.l[1]);
+							subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_VIEW_TAGS, (long *)&v->tags, 1);
+							if(d->cv == v) subViewConfigure(v);
+						}
+				} /* }}} */							
+			else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_VIEW_UNTAG)) /* {{{ */
+				{
+					SubView *v = VIEW(subUtilFind(ev->data.l[0], 1));
+					if(v)
+						{
+							v->tags &= ~(1L << ev->data.l[1]);
+							subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_VIEW_TAGS, (long *)&v->tags, 1);
+							if(d->cv == v) subViewConfigure(v);
+						}
+				} /* }}} */							
+			else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_VIEW_KILL)) /* {{{ */
+				{
+					SubTag *t = subTagFind(ev->data.b, NULL);
+
+					if(t)
+						{
+							subArrayPop(d->tags, (void *)t);
+							subTagPublish();
+						}
+				}	/* }}} */				
 			return;
 		}
-	c = (SubClient *)subUtilFind(GetParent(ev->window), 1);
-	if(c && ev->format == 32)
-		{
-			subUtilLogDebug("ClientMessage: [0]=%ld, [1]=%ld, [2]=%ld, [3]=%ld, [4]=%ld\n", 
-				ev->data.l[0], ev->data.l[1], ev->data.l[2], ev->data.l[3], ev->data.l[4]);
 
+	c = (SubClient *)subUtilFind(GetParent(ev->window), 1);
+	if(c && 32 == ev->format)
+		{
 			if(ev->message_type == subEwmhFind(SUB_EWMH_NET_WM_STATE))
 				{
 					/* [0] => Remove = 0 / Add = 1 / Toggle = 2 -> we _always_ toggle */
