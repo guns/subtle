@@ -1,10 +1,12 @@
 #
-#	subtle - window manager
-#	Copyright (c) 2005-2008 Christoph Kappel
+#	@package subtle - window manager
 #
-#	See the COPYING file for the license in the latest tarball.
+# @file SConstruct file
+#	@copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
+#	@version $Id$
 #
-#	$Id$
+# This program can be distributed under the terms of the GNU GPL.
+# See the file COPYING.
 #
 
 import os.path
@@ -108,6 +110,7 @@ if not os.path.isfile("config.h") and not env.GetOption("clean"):
 			"CheckFunctions":	CheckFunctions
 	})
 
+	# Check various header and function
 	CheckCHeaders(conf, Split("""
 		stdio.h
 		stdlib.h
@@ -124,6 +127,9 @@ if not os.path.isfile("config.h") and not env.GetOption("clean"):
 
 	if conf.CheckCHeader("sys/inotify.h"):
 		defines["HAVE_SYS_INOTIFY_H"] = "true"
+	
+	if conf.CheckCHeader("execinfo.h"):
+		defines["HAVE_EXECINFO_H"] = "true"
 
 	CheckFunctions(conf, Split("""
 		select
