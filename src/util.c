@@ -3,10 +3,11 @@
 	* @package subtle
 	*
 	* @file Utility functions
-	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
 	* @version $Id$
 	*
-	* See the COPYING file for the license in the latest tarball.
+	* This program can be distributed under the terms of the GNU GPL.
+	* See the file COPYING.
 	**/
 
 #include <stdarg.h>
@@ -155,3 +156,69 @@ subUtilTime(void)
 
   return(tv.tv_sec);
 } /* }}} */
+
+ /** subUtilRegexNew {{{ 
+	* @brief Create new regex
+	* @param[in] regex	Regex 
+	* @return Returns a #regex_t or \p NULL
+	**/
+
+regex_t *
+subUtilRegexNew(char *regex)
+{
+	int errcode;
+	regex_t *preg = NULL;
+
+	assert(regex);
+	
+	preg = (regex_t *)subUtilAlloc(1, sizeof(regex_t));
+
+	/* Thread safe error handling */
+	if((errcode = regcomp(preg, regex, REG_EXTENDED|REG_NOSUB|REG_ICASE)))
+		{
+			size_t errsize = regerror(errcode, preg, NULL, 0);
+			char *errbuf = (char *)subUtilAlloc(1, errsize);
+
+			regerror(errcode, preg, errbuf, errsize);
+
+			subUtilLogWarn("Can't compile preg `%s'\n", regex);
+			subUtilLogDebug("%s\n", errbuf);
+
+			free(errbuf);
+			subUtilRegexKill(preg);
+
+			return(NULL);
+		}
+	return(preg);
+} /* }}} */
+
+ /** subUtilRegexMatch {{{
+	* @brief Check if string match preg
+	* @param[in] preg			A #regex_t
+	* @param[in] string		String
+	* @retval 1 If string matches preg
+	* @retval 0 If string doesn't match
+	**/
+
+int
+subUtilRegexMatch(regex_t *preg,
+	char *string)
+{
+	assert(preg);
+
+	return(!regexec(preg, string, 0, NULL, 0));
+} /* }}} */
+
+ /** subUtilRegexKill {{{
+	* @brief Kill preg
+	* @param[in] preg	#regex_t
+	**/
+
+void
+subUtilRegexKill(regex_t *preg)
+{
+	assert(preg);
+
+	regfree(preg);
+	free(preg);
+}
