@@ -3,10 +3,11 @@
 	* @package subtle
 	*
 	* @file Array functions
-	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
 	* @version $Id$
 	*
-	* See the COPYING file for the license in the latest tarball.
+	* This program can be distributed under the terms of the GNU GPL.
+	* See the file COPYING.
 	**/
 
 #include "subtle.h"
@@ -78,8 +79,7 @@ subArrayFind(SubArray *a,
 
 	assert(a && e);
 
-	for(i = 0; i < a->ndata; i++)
-		if(a->data[i] == e) return(i);
+	for(i = 0; i < a->ndata; i++) if(a->data[i] == e) return(i);
 	return(-1);
 } /* }}} */
 
@@ -136,15 +136,14 @@ subArrayKill(SubArray *a,
 
 	for(i = 0; clean && i < a->ndata; i++)
 		{
-			/* Check type and kill it */
+			/* Check type and kill */
 			SubClient *c = CLIENT(a->data[i]);
 
-			if(c->flags & SUB_TYPE_TILE) subTileKill(TILE(c), True);
-			else if(c->flags & SUB_TYPE_VIEW) subViewKill(VIEW(c));
-			else if(c->flags & SUB_TYPE_RULE) subRuleKill(RULE(c), False);
+			if(c->flags & SUB_TYPE_TAG)					subTagKill(TAG(c));
+			else if(c->flags & SUB_TYPE_VIEW) 	subViewKill(VIEW(c));
 			else if(c->flags & SUB_TYPE_CLIENT) subClientKill(CLIENT(c));
 			else if(c->flags & SUB_TYPE_SUBLET) subSubletKill(SUBLET(c));
-			else if(c->flags & SUB_TYPE_KEY) subKeyKill(KEY(c));
+			else if(c->flags & SUB_TYPE_KEY) 		subKeyKill(KEY(c));
 			else free(a->data[i]); 
 		}
 	if(a->data) free(a->data);
