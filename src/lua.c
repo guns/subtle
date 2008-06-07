@@ -3,10 +3,11 @@
 	* @package subtle
 	*
 	* @file Lua functions
-	* @copyright Copyright (c) 2005-2008 Christoph Kappel
+	* @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
 	* @version $Id$
-	*
-	* See the COPYING file for the license in the latest tarball.
+	* 
+	* This program can be distributed under the terms of the GNU GPL.
+	* See the file COPYING.
 	**/
 
 #include <lua.h>
@@ -281,7 +282,7 @@ subLuaLoadConfig(const char *path)
 		{
 			subUtilLogWarn("Can't load font `%s', using fixed instead.\n", face);
 			subUtilLogDebug("Font: %s\n", buf);
-			d->xfs = XLoadQueryFont(d->disp, "-*-fixed-medium-*-*-*-12-*-*-*-*-*-*-*");
+			d->xfs = XLoadQueryFont(d->disp, "-*-fixed-medium-*-*-*-13-*-*-*-*-*-*-*");
 			if(!d->xfs) subUtilLogError("Can't load font `fixed`.\n");
 		}
 
@@ -343,9 +344,9 @@ subLuaLoadConfig(const char *path)
 					subArrayPush(d->keys, (void *)k);
 					lua_pop(configstate, 1);
 				}
+			subArraySort(d->keys, subKeyCompare);
 		}
-	else subUtilLogDebug("No keys found\n");
-	subArraySort(d->keys, subKeyCompare);
+	else printf("No keys found\n");
 
 	/* Default tag */
 	ct = subTagNew("default", NULL);
@@ -362,9 +363,9 @@ subLuaLoadConfig(const char *path)
 					subArrayPush(d->tags, (void *)t);
 					lua_pop(configstate, 1);
 				}
+			subTagPublish();
 		}
-	else subUtilLogDebug("No tags found\n");
-	subArraySort(d->tags, subTagCompare);
+	else printf("No tags found\n");
 
 	/* Default view */
 	d->cv = subViewNew("subtle", "default");
@@ -381,8 +382,9 @@ subLuaLoadConfig(const char *path)
 					subArrayPush(d->views, (void *)v);
 					lua_pop(configstate, 1);
 				}
+			subViewPublish();
 		}
-	else subUtilLogDebug("No views found\n");
+	else printf("No views found\n");
 
 	lua_close(configstate);
 } /* }}} */
