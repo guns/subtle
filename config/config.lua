@@ -1,8 +1,9 @@
 --
 -- subtle - window manager
--- Copyright (c) 2005-2008 Christoph Kappel
+-- Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
 --
--- See the COPYING file for the license in the latest tarball.
+-- This program can be distributed under the terms of the GNU GPL.
+-- See the file COPYING.
 --
 -- $Id$
 --
@@ -14,7 +15,7 @@ Options = {
 
 -- Font config {{{
 Font = {
-	Face	= "lucidatypewriter",					-- Font face for the text
+	Face	= "fixed",										-- Font face for the text
 	Style	= "medium",										-- Font style (medium|bold|italic)
 	Size	= 12													-- Font size
 } --- }}}
@@ -37,39 +38,36 @@ Colors = {
 -- W = Super (Windows key)
 -- M = Meta key
 Keys = {
-	FocusAbove				= "A-k",						-- Focus above window
-	FocusBelow				=	"A-j",						-- Focus below window
-	FocusNext					= "A-n",						-- Focus next window
-	FocusPrev					= "A-p",						-- Focus prev window
-	DeleteWindow			= "A-S-d",					-- Delete a window
-	ToggleCollapse		= "A-c",						-- Toggle collapse
-	ToggleRaise				= "A-r",						-- Toggle raise
-	ToggleFull				= "A-f",						-- Toggle fullscreen
-	TogglePile				= "S-A-p",					-- Toggle pile
-	ToggleLayout			= "S-A-l",					-- Toggle tile layout
-	NextDesktop				= "A-Right",				-- Switch to next desktop
-	PreviousDesktop		= "A-Left",					-- Switch to previous desktop
-	MoveToDesktop1		= "S-A-1",					-- Move window to desktop 1
-	MoveToDesktop2		= "S-A-2",					-- Move window to desktop 2
-	MoveToDesktop3		= "S-A-3",					-- Move window to desktop 3
-	MoveToDesktop4		= "S-A-4",					-- Move window to desktop 4
-	["xterm +sb"]			= "S-F1",						-- Exec a term
-	["firefox"] 			= "S-F4"
+	--FocusAbove				= "A-k",						-- Focus above window
+	--FocusBelow				=	"A-j",						-- Focus below window
+	--FocusNext					= "A-n",						-- Focus next window
+	--FocusPrev					= "A-p",						-- Focus prev window
+	--DeleteWindow			= "A-S-d",					-- Delete a window
+	--ToggleCollapse		= "A-c",						-- Toggle collapse
+	--ToggleRaise				= "A-r",						-- Toggle raise
+	--ToggleFull				= "A-f",						-- Toggle fullscreen
+	--TogglePile				= "S-A-p",					-- Toggle pile
+	--ToggleLayout			= "S-A-l",					-- Toggle tile layout
+	--NextDesktop				= "A-Right",				-- Switch to next desktop
+	--PreviousDesktop		= "A-Left",					-- Switch to previous desktop
+	--MoveToDesktop1		= "S-A-1",					-- Move window to desktop 1
+	--MoveToDesktop2		= "S-A-2",					-- Move window to desktop 2
+	--MoveToDesktop3		= "S-A-3",					-- Move window to desktop 3
+	--MoveToDesktop4		= "S-A-4",					-- Move window to desktop 4
+	["xterm +sb"]			= "S-F1"							-- Exec a term
+	--["firefox"] 			= "S-F4"
 } -- }}}
 
--- Rules {{{
-Rules = {
-	work = { 
-		["a"] = 30,
-		["[ur]+xvt|xterm"] = 40
-	},
-	other = {
-		["bar"] = 100
-	},
-	gimp = "gimp.*",
-	subtle = {
-		["a|b"] = 33,
-		["c|d"] = 33,
-		["e|f"] = 33
-	}
+-- Tags {{{
+Tags = {
+	terms		= "[ur]+xvt|xterm",
+	browser	= "firefox|opera",
+	editor	= "gvim|scite"
+} -- }}}
+
+-- Views {{{
+Views = {
+	work	= "browser|terms",
+	dev 	= "editor|terms",
+	web		= "browser",
 } -- }}}
