@@ -100,21 +100,9 @@
 #define SUB_DRAG_SWAP						(1L << 11)							///< Drag swap
 
 /* Keys */
-#define SUB_KEY_FOCUS_ABOVE			(1L << 12)							///< Focus above window
-#define SUB_KEY_FOCUS_BELOW			(1L << 13)							///< Focus below window
-#define SUB_KEY_FOCUS_NEXT			(1L << 14)							///< Focus next window
-#define SUB_KEY_FOCUS_PREV			(1L << 15)							///< Focus prev window
-#define SUB_KEY_FOCUS_ANY				(1L << 16)							///< Focus any window
-#define SUB_KEY_DELETE_WIN			(1L << 17)							///< Delete win
-#define SUB_KEY_TOGGLE_SHADE		(1L << 18)							///< Toggle collapse
-#define SUB_KEY_TOGGLE_RAISE		(1L << 19)							///< Toggle raise
-#define SUB_KEY_TOGGLE_FULL			(1L << 20)							///< Toggle fullscreen
-#define SUB_KEY_TOGGLE_PILE			(1L << 21)							///< Toggle pile
-#define SUB_KEY_TOGGLE_LAYOUT		(1L << 22)							///< Toggle tile layout
-#define SUB_KEY_DESKTOP_NEXT		(1L << 23)							///< Switch to next desktop
-#define SUB_KEY_DESKTOP_PREV		(1L << 24)							///< Switch to previous desktop
-#define SUB_KEY_DESKTOP_MOVE		(1L << 25)							///< Move window to desktop
-#define SUB_KEY_EXEC						(1L << 26)							///< Exec an app
+#define SUB_KEY_VIEW_JUMP				(1L << 12)							///< Jump to view
+#define SUB_KEY_VIEW_MNEMONIC		(1L << 13)							///< Jump to view
+#define SUB_KEY_EXEC						(1L << 14)							///< Exec an app
 
 /* Sublets */
 #define SUB_SUBLET_TYPE_TEXT		(1L << 12)							///< Text sublet
@@ -299,8 +287,9 @@ typedef struct subdisplay
 	int								th, bw, fx, fy;											///< Tab height, border widthm font metrics
 	XFontStruct				*xfs;																///< Font
 
+	Window						focus;															///< Focus window
+
 	struct subsublet	*sublet;														///< First sublet
-	struct subclient	*focus;															///< Focus window
 	struct subview		*cv;																///< Current view
 	
 	struct subarray		*keys;															///< Key list
@@ -358,6 +347,7 @@ typedef struct subkey
 void subKeyInit(void);																	///< Init the keys
 SubKey *subKeyNew(const char *key,											///< Create key
 	const char *value);
+KeySym subKeyGet(void);																	///< Get key
 SubKey *subKeyFind(int code, unsigned int mod);					///< Find key
 void subKeyGrab(Window win);														///< Grab keys for window
 void subKeyUngrab(Window win);													///< Ungrab keys for window
@@ -413,5 +403,4 @@ void subEwmhSetString(Window win, int hint,
 void subEwmhSetStrings(Window win, int hint,						///< Set string properties
 	char **values, int size);
 /* }}} */
-
 #endif /* SUBTLE_H */
