@@ -24,6 +24,7 @@
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
 #include <X11/Xmd.h>
+#include <X11/cursorfont.h>
 
 #include "config.h"
 
@@ -107,6 +108,7 @@ Log(int type,
 		}
 } /* }}} */
 
+/* XError {{{ */
 int
 XError(Display *display,
 	XErrorEvent *ev)
@@ -123,7 +125,6 @@ XError(Display *display,
 		}
 	return(0); 
 } /* }}} */
-
 
 /* Alloc {{{ */
 static void *
@@ -279,6 +280,67 @@ PropertyList(char *name,
 	return(names);
 } /* }}} */
 
+/* Select {{{ */
+static Window
+Select(void)
+{
+	int i, format, buttons = 0;
+	unsigned int n;
+	unsigned long *view = NULL, nitems, after;
+	unsigned char *data = NULL;
+	XEvent event;
+	Atom type = None;
+	Window win = None, frame = None, *frames = NULL, dummy, *wins = NULL;
+	Cursor cursor = XCreateFontCursor(disp, XC_dotbox);
+
+	/* Get view frame */
+	view		= (unsigned long *)PropertyGet(DefaultRootWindow(disp), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+	frames	= (Window *)PropertyGet(DefaultRootWindow(disp), XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
+	frame		= frames[*view];
+	free(view);
+	free(frames);
+
+	if(XGrabPointer(disp, frame, False, ButtonPressMask|ButtonReleaseMask, 
+		GrabModeSync, GrabModeAsync, frame, cursor, CurrentTime)) return(None);
+
+	/* Select a window */
+	while(win == None || buttons != 0)
+		{
+			XAllowEvents(disp, SyncPointer, CurrentTime);
+			XWindowEvent(disp, frame, ButtonPressMask|ButtonReleaseMask, &event);
+
+			switch(event.type)
+				{
+					case ButtonPress:
+						if(win == None) win = event.xbutton.subwindow ? event.xbutton.subwindow : frame; ///< Sanitize
+						buttons++;
+						break;
+					case ButtonRelease: if(0 < buttons) buttons--; break;
+				}
+			}
+
+	/* Find children with WM_STATE atom */
+	XQueryTree(disp, win, &dummy, &dummy, &wins, &n);
+	for(i = 0; i < n; i++)
+		{
+			data = NULL;
+			XGetWindowProperty(disp, wins[i], XInternAtom(disp, "WM_STATE", True), 0, 0, 
+				False, AnyPropertyType, &type, &format, &nitems, &after, &data);
+
+			if(data) XFree(data);
+			if(type) 
+				{
+					win = wins[i];
+					break;
+				}
+		}
+	XFree(wins);
+
+	XUngrabPointer(disp, CurrentTime);
+
+	return(win);
+} /* }}} */
+
 /* ClientName {{{ */
 static char *
 ClientName(Window win)
@@ -329,9 +391,11 @@ ClientFind(char *name,
 	Window *win)
 {
 	int size = 0;
-	Window *clients = NULL;
+	Window *clients = NULL, selwin = None;
 
 	assert(name);
+
+	if(!strncmp(name, "#", 1) && win) selwin = Select(); ///< Select window
 	
 	clients = ClientList(&size);
 	if(clients)
@@ -345,8 +409,8 @@ ClientFind(char *name,
 					cname = ClientName(clients[i]);
 					snprintf(buf, sizeof(buf), "%#lx", clients[i]);
 
-					/* Find client either by name or by window id */
-					if(RegexMatch(preg, cname) || RegexMatch(preg, buf))
+					/* Find client either by window, name or by window id */
+					if(clients[i] == selwin || RegexMatch(preg, cname) || RegexMatch(preg, buf))
 						{
 							Debug("Found: type=client, name=%s, win=%#lx, n=%d\n", name, clients[i], i);
 
@@ -896,7 +960,9 @@ Usage(int group)
 	printf("\nPattern:\n" \
 				 "  Matching clients, tags and views works either via plain, regex\n" \
 				 "  (see regex(7)) or window id. If a pattern matches more than once\n" \
-				 "  ONLY the first match will be used.\n");
+				 "  ONLY the first match will be used.\n\n" \
+				 "  Generally PATTERN can be '-' to read from stdin or '#' to interatively\n" \
+				 "  select a client window\n");
 
 	printf("\nFormat:\n" \
 				 "  Client list: <window id> [-*] <view> <geometry> <name> <class>\n" \
@@ -907,9 +973,10 @@ Usage(int group)
 				 "  %sr -c -l             \t List all clients\n" \
 				 "  %sr -t -a subtle      \t Add new tag 'subtle'\n" \
 				 "  %sr -v subtle -t rocks\t Tag view 'subtle' with tag 'rocks'\n" \
-				 "  %sr -c xterm -T       \t Show tags of client 'xterm'\n" \
+				 "  %sr -c xterm -g       \t Show tags of client 'xterm'\n" \
+				 "  %sr -c -f #           \t Select client and show info\n" \
 				 "\nPlease report bugs to <%s>\n",
-				 PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_BUGREPORT);
+				 PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_BUGREPORT);
 } /* }}} */
 
 /* Version {{{ */
