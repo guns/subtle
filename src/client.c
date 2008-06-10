@@ -236,7 +236,7 @@ subClientRender(SubClient *c)
 
 	assert(c);
 
-	col = d->focus && d->focus == c ? d->colors.focus : (c->flags & SUB_STATE_SHADE ? d->colors.cover : d->colors.norm);
+	col = d->focus == c->frame ? d->colors.focus : (c->flags & SUB_STATE_SHADE ? d->colors.cover : d->colors.norm);
 
 	/* Update color */
 	XSetWindowBackground(d->disp, c->title,		col);
@@ -285,21 +285,27 @@ subClientFocus(SubClient *c)
 		}   
 	else
 		{
-			/* Remove focus from client */
-			if(d->focus && d->focus != c) 
+			/* Remove focus from client if exists */
+			if(d->focus && d->focus != c->frame)
 				{
-					SubClient *f = d->focus;
-					d->focus = NULL;
-					if(f && !(f->flags & SUB_STATE_DEAD)) subClientRender(f);
-          
-					subKeyUngrab(f->frame);
+					Window win = d->focus;
+					SubClient *f = CLIENT(subUtilFind(win, 1));
+					if(f && f->flags & SUB_TYPE_CLIENT)
+						{
+							if(!(f->flags & SUB_STATE_DEAD)) 
+								{
+								printf("f=%p, win=%#lx, frame=%#lx\n", f, f->win, f->frame);
+									subKeyUngrab(f->frame);
+									subClientRender(f);
+								}
+						}
+					else subKeyUngrab(win);
 				} 
 			XSetInputFocus(d->disp, c->win, RevertToNone, CurrentTime);
       
-			d->focus = c;
-			subClientRender(c);
-			subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_ACTIVE_WINDOW, &c->frame, 1);
 			subKeyGrab(c->frame);
+			subClientRender(c);
+			subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_ACTIVE_WINDOW, &c->win, 1);
 		}
 } /* }}} */
 
@@ -833,7 +839,7 @@ subClientKill(SubClient *c)
 	XSelectInput(d->disp, c->frame, NoEventMask);
 	XDeleteContext(d->disp, c->frame, 1);
 
-	if(d->focus == c) d->focus = NULL; ///< Unset focus
+	if(d->focus == c->frame) d->focus = 0; ///< Unset focus
 	if(!(c->flags & SUB_STATE_DEAD))
 		{
 			subArrayPop(d->clients, (void *)c->win);
