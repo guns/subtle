@@ -82,16 +82,16 @@ void
 subDisplayScan(void)
 {
 	unsigned int i, n = 0;
-	Window unused, *wins = NULL;
+	Window dummy, *wins = NULL;
 	XWindowAttributes attr;
 
 	assert(d);
 
-	XQueryTree(d->disp, DefaultRootWindow(d->disp), &unused, &unused, &wins, &n);
+	XQueryTree(d->disp, DefaultRootWindow(d->disp), &dummy, &dummy, &wins, &n);
 	for(i = 0; i < n; i++)
 		{
 			/* Skip own windows */
-			if(wins[i] && wins[i] != d->bar.win)
+			if(wins[i] && wins[i] != d->bar.win && wins[i] != d->cv->frame)
 				{
 					XGetWindowAttributes(d->disp, wins[i], &attr);
 					if(attr.map_state == IsViewable) subClientNew(wins[i]);
@@ -101,6 +101,7 @@ subDisplayScan(void)
 
 	subClientPublish();
 	subViewUpdate();
+	subViewConfigure(d->cv);
 	subViewRender();
 } /* }}} */
 
