@@ -38,24 +38,17 @@ Colors = {
 -- W = Super (Windows key)
 -- M = Meta key
 Keys = {
-	--FocusAbove				= "A-k",						-- Focus above window
-	--FocusBelow				=	"A-j",						-- Focus below window
-	--FocusNext					= "A-n",						-- Focus next window
-	--FocusPrev					= "A-p",						-- Focus prev window
-	--DeleteWindow			= "A-S-d",					-- Delete a window
-	--ToggleCollapse		= "A-c",						-- Toggle collapse
-	--ToggleRaise				= "A-r",						-- Toggle raise
-	--ToggleFull				= "A-f",						-- Toggle fullscreen
-	--TogglePile				= "S-A-p",					-- Toggle pile
-	--ToggleLayout			= "S-A-l",					-- Toggle tile layout
-	--NextDesktop				= "A-Right",				-- Switch to next desktop
-	--PreviousDesktop		= "A-Left",					-- Switch to previous desktop
-	--MoveToDesktop1		= "S-A-1",					-- Move window to desktop 1
-	--MoveToDesktop2		= "S-A-2",					-- Move window to desktop 2
-	--MoveToDesktop3		= "S-A-3",					-- Move window to desktop 3
-	--MoveToDesktop4		= "S-A-4",					-- Move window to desktop 4
-	["xterm +sb"]			= "S-F1"							-- Exec a term
-	--["firefox"] 			= "S-F4"
+	ViewJump1							= "A-1", 							-- Jump to view 1
+	ViewJump2							= "A-2",  						-- Jump to view 2
+	ViewJump3							= "A-3", 							-- Jump to view 3
+	ViewJump4							= "A-4", 							-- Jump to view 4
+	ViewJump5							= "A-5",							-- Jump to view 5
+	ViewMnemonic					= "A-j",							-- Jump to view
+	["tagmenu.sh -c -t"]	= "A-S-c",						-- Exec tag menu (client/tag)
+	["tagmenu.sh -c -u"]	= "A-C-c",						-- Exec tag menu (client/untag)
+	["tagmenu.sh -v -t"]	= "A-S-v",						-- Exec tag menu (view/tag)
+	["tagmenu.sh -v -u"]	= "A-C-v",						-- Exec tag menu (view/untag)
+	["xterm +sb"]					= "S-F1"							-- Exec a term
 } -- }}}
 
 -- Tags {{{
