@@ -49,33 +49,19 @@ SubKey *
 subKeyNew(const char *key,
 	const char *value)
 {
-	int mod = 0;
 	KeySym sym;
 	char *tok = strtok((char *)value, "-");
 	SubKey *k = (SubKey *)subUtilAlloc(1, sizeof(SubKey));
 	k->flags	= SUB_TYPE_KEY;
 
 	/* @todo Too slow? */	
-	if(!strncmp(key, "FocusAbove", 10))						k->flags |= SUB_KEY_FOCUS_ABOVE;
-	else if(!strncmp(key, "FocusBelow", 10))			k->flags |= SUB_KEY_FOCUS_BELOW;
-	else if(!strncmp(key, "FocusNext", 9))				k->flags |= SUB_KEY_FOCUS_NEXT;
-	else if(!strncmp(key, "FocusPrev", 9))				k->flags |= SUB_KEY_FOCUS_PREV;
-	else if(!strncmp(key, "FocusAny", 8))					k->flags |= SUB_KEY_FOCUS_ANY;
-	else if(!strncmp(key, "DeleteWindow", 12))		k->flags |= SUB_KEY_DELETE_WIN;
-	else if(!strncmp(key, "ToggleCollapse", 14))	k->flags |= SUB_KEY_TOGGLE_SHADE;
-	else if(!strncmp(key, "ToggleRaise", 11))			k->flags |= SUB_KEY_TOGGLE_RAISE;
-	else if(!strncmp(key, "ToggleFull", 10))			k->flags |= SUB_KEY_TOGGLE_FULL;
-	else if(!strncmp(key, "TogglePile", 10))			k->flags |= SUB_KEY_TOGGLE_PILE;
-	else if(!strncmp(key, "ToggleLayout", 12))		k->flags |= SUB_KEY_TOGGLE_LAYOUT;
-	else if(!strncmp(key, "NextDesktop", 11))			k->flags |= SUB_KEY_DESKTOP_NEXT;
-	else if(!strncmp(key, "PreviousDesktop", 11))	k->flags |= SUB_KEY_DESKTOP_PREV;
-	else if(!strncmp(key, "MoveToDesktop", 13))
+	if(!strncmp(key, "ViewJump", 8))
 		{
-			char *desktop = (char *)key + 13; ///< Get desktop number
+			char *desktop = (char *)key + 8; ///< Get desktop number
 			if(desktop) 
 				{
-					k->number = atoi(desktop);
-					k->flags |= SUB_KEY_DESKTOP_MOVE;
+					k->number = atoi(desktop) - 1; ///< Decrease for array index
+					k->flags |= SUB_KEY_VIEW_JUMP;
 				}
 			else 
 				{
@@ -83,6 +69,10 @@ subKeyNew(const char *key,
 					free(k);
 					return(NULL);
 				}
+		}
+	else if(!strncmp(key, "ViewMnemonic", 12))
+		{
+			k->flags |= SUB_KEY_VIEW_MNEMONIC;
 		}
 	else
 		{
@@ -105,19 +95,14 @@ subKeyNew(const char *key,
 			/* Modifier mappings */
 			switch(sym)
 				{
-					case XK_A: mod = Mod1Mask;		break;
-					case XK_S: mod = ShiftMask;		break;
-					case XK_C: mod = ControlMask;	break;
-					case XK_W: mod = Mod4Mask;		break;
-					case XK_M: mod = Mod3Mask;		break;
+					case XK_A: k->mod |= Mod1Mask;			break;
+					case XK_S: k->mod |= ShiftMask;			break;
+					case XK_C: k->mod |= ControlMask;		break;
+					case XK_W: k->mod |= Mod4Mask;			break;
+					case XK_M: k->mod |= Mod3Mask;			break;
+					default:
+						k->code = XKeysymToKeycode(d->disp, sym);
 				}
-
-			if(mod) 
-				{
-					k->mod	|= mod;
-					mod			= 0;
-				}
-			else k->code = XKeysymToKeycode(d->disp, sym);
 
 			tok = strtok(NULL, "-");
 		}
@@ -148,8 +133,25 @@ subKeyFind(int code,
 	return(ret ? *ret : NULL);
 } /* }}} */
 
+ /** subKeyGet {{{
+	* @brief Get key
+	* @return Returns the keysym of the press key
+	**/
+
+KeySym
+subKeyGet(void)
+{
+	XEvent ev;
+	KeySym sym = None;
+
+	XMaskEvent(d->disp, KeyPressMask, &ev);
+	sym = XLookupKeysym(&ev.xkey, 0);
+
+	return(sym);
+} /* }}} */
+
  /** subKeyGrab {{{
-	* @Grab keys for a window
+	* @brief Grab keys for a window
 	* @param[in] win	Window
 	**/
 
@@ -174,6 +176,8 @@ subKeyGrab(Window win)
 					XGrabKey(d->disp, k->code, k->mod|scrollmask|nummask, win, True, GrabModeAsync, GrabModeAsync);
 					XGrabKey(d->disp, k->code, k->mod|scrollmask|LockMask|nummask, win, True, GrabModeAsync, GrabModeAsync);
 				}
+			if(d->cv->frame == win) XSetInputFocus(d->disp, win, RevertToNone, CurrentTime);
+			d->focus = win; ///< Update focus window
 		}
 } /* }}} */
 
@@ -186,6 +190,7 @@ void
 subKeyUngrab(Window win)
 {
 	XUngrabKey(d->disp, AnyKey, AnyModifier, win);
+	d->focus = 0; ///< Unset focus window
 } /* }}} */
 
  /** subKeyCompare {{{
