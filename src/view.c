@@ -23,7 +23,10 @@ SubView *
 subViewNew(char *name,
 	char *tags)
 {
+	char c;
+	int mnemonic = 0;
 	SubView *v = NULL;
+	XSetWindowAttributes attrs;
 
 	assert(name);
 	
@@ -32,13 +35,19 @@ subViewNew(char *name,
 	v->name			= strdup(name);
 	v->width		=	strlen(v->name) * d->fx + 8; ///< Font offset
 
-	/* View windows */
-	v->frame	= XCreateSimpleWindow(d->disp, DefaultRootWindow(d->disp), 0, d->th, 
-		DisplayWidth(d->disp, DefaultScreen(d->disp)), DisplayHeight(d->disp, DefaultScreen(d->disp)), 0, 
-		d->colors.border, d->colors.norm);
+	/* Create windows */
+	attrs.event_mask = KeyPressMask;
+
+	v->frame	= WINNEW(DefaultRootWindow(d->disp), 0, d->th, DisplayWidth(d->disp, DefaultScreen(d->disp)),
+		DisplayHeight(d->disp, DefaultScreen(d->disp)), 0, CWEventMask);	
 	v->button	= XCreateSimpleWindow(d->disp, d->bar.views, 0, 0, 1, d->th, 0, d->colors.border, d->colors.norm);
 
-	XSaveContext(d->disp, v->frame, 1, (void *)v);
+	/* Mnemonic */
+	c = name[0];
+	mnemonic = (int)XStringToKeysym(&c); ///< Convert char to keysym
+	XSaveContext(d->disp, d->bar.views, mnemonic, (void *)v);
+
+	XSaveContext(d->disp, v->frame, 2, (void *)v);
 	XSaveContext(d->disp, v->button, 1, (void *)v);
 	XMapWindow(d->disp, v->button);
 
@@ -157,7 +166,6 @@ subViewUpdate(void)
 					XMoveResizeWindow(d->disp, v->button, width, 0, v->width, d->th);
 					width	+= v->width;
 				}
-
 			if(0 < width) XMoveResizeWindow(d->disp, d->bar.views, 0, 0, width, d->th); ///< Sanity
 	}
 } /* }}} */
@@ -218,6 +226,7 @@ subViewJump(SubView *v)
 	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_CURRENT_DESKTOP, &vid, 1);
 
 	subViewRender();
+	subKeyGrab(d->cv->frame);
 
 	printf("Switching view (%s)\n", d->cv->name);
 } /* }}} */
@@ -272,13 +281,19 @@ subViewPublish(void)
 void
 subViewKill(SubView *v)
 {
+	int mnemonic = 0;
+
 	assert(v);
 
 	printf("Killing view (%s)\n", v->name);
 
-	XDeleteContext(d->disp, v->button, 1);
-	XDestroyWindow(d->disp, v->button);
+	mnemonic = (int)XStringToKeysym(&v->name[0]); ///< Convert char to keysym
+
 	XDeleteContext(d->disp, v->frame, 1);
+	XDeleteContext(d->disp, v->button, 1);
+	XDeleteContext(d->disp, d->bar.views, mnemonic);
+
+	XDestroyWindow(d->disp, v->button);
 	XDestroyWindow(d->disp, v->frame);
 
 	free(v->name);
