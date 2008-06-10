@@ -118,44 +118,29 @@ static void
 HandleKeyPress(XKeyEvent *ev)
 {
 	SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
+printf("%s,%d: %s\n", __FILE__, __LINE__, __func__);
 
-#if 0
-	if(c)
+	if(c || ev->window == d->cv->frame)
 		{
 			SubKey *k = subKeyFind(ev->keycode, ev->state);
 			if(k) 
 				{
-					int mode = 0, type = SUB_TYPE_HORZ;
-printf("%s,%d: %s\n", __FILE__, __LINE__, __func__);
-
-					switch(k->flags)
+					if(k->flags & SUB_KEY_EXEC && k->string) Exec(k->string); 
+					else if(k->flags & SUB_KEY_VIEW_JUMP) 
 						{
-							case SUB_KEY_DELETE_WIN: 		subClientKill(c); break;
-							case SUB_KEY_TOGGLE_SHADE:	if(!mode) mode = SUB_STATE_SHADE;
-							case SUB_KEY_TOGGLE_RAISE:	if(!mode) mode = SUB_STATE_FLOAT;
-							case SUB_KEY_TOGGLE_FULL:		if(!mode) mode = SUB_STATE_FULL;
-								subClientToggle(c, mode);
-								break;									
-							case SUB_KEY_TOGGLE_LAYOUT: 
-								if(c->flags & SUB_TYPE_TILE)
-									{
-										type = (c->flags & SUB_TYPE_HORZ) ? SUB_TYPE_HORZ : SUB_TYPE_VERT;
-										c->flags &= ~type;
-										c->flags |= (type == SUB_TYPE_HORZ) ? SUB_TYPE_VERT : SUB_TYPE_HORZ;
-										subTileConfigure(c->tile);
-									}			
-								break;
-/*							case SUB_KEY_DESKTOP_NEXT: subViewJump(d->cv->next);	break;
-							case SUB_KEY_DESKTOP_PREV: 
-								if(d->cv->prev) subViewJump(d->cv->prev);		
-								break;*/
-							case SUB_KEY_EXEC:	if(k->string) Exec(k->string); break;
+							if(0 <= k->number && k->number < d->views->ndata)
+								subViewJump(VIEW(d->views->data[k->number]));
+						}
+					else if(k->flags & SUB_KEY_VIEW_MNEMONIC)
+						{
+							KeySym sym = subKeyGet();
+							SubView *v = VIEW(subUtilFind(d->bar.views, (int)sym));
+							if(v) subViewJump(v);
 						}
 
 					subUtilLogDebug("KeyPress: code=%d, mod=%d\n", k->code, k->mod);
 				}
 		}
-#endif		
 } /* }}} */
 
 /* HandleConfigure {{{ */
@@ -193,8 +178,10 @@ HandleMapRequest(XMapRequestEvent *ev)
 	SubClient *c = CLIENT(subUtilFind(ev->window, 1));
 	if(!c) 
 		{
-			subClientNew(ev->window);
+			c = subClientNew(ev->window);
 			subClientPublish();
+
+			if(d->cv && d->cv->tags & c->tags) subViewConfigure(d->cv); ///< Configure current view if tags match
 			subViewUpdate();
 			subViewRender();
 		}
@@ -303,7 +290,7 @@ HandleMessage(XClientMessageEvent *ev)
 				}	/* }}} */			
 			else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_VIEW_TAG)) /* {{{ */
 				{
-					SubView *v = VIEW(subUtilFind(ev->data.l[0], 1));
+					SubView *v = VIEW(subUtilFind(ev->data.l[0], 2));
 					if(v)
 						{
 							v->tags |= (1L << ev->data.l[1]);
@@ -313,7 +300,7 @@ HandleMessage(XClientMessageEvent *ev)
 				} /* }}} */							
 			else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_VIEW_UNTAG)) /* {{{ */
 				{
-					SubView *v = VIEW(subUtilFind(ev->data.l[0], 1));
+					SubView *v = VIEW(subUtilFind(ev->data.l[0], 2));
 					if(v)
 						{
 							v->tags &= ~(1L << ev->data.l[1]);
@@ -380,12 +367,12 @@ HandleProperty(XPropertyEvent *ev)
 static void
 HandleCrossing(XCrossingEvent *ev)
 {
-	SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
+	SubClient *c = CLIENT(subUtilFind(ev->window, 1));
 	if(c && !(c->flags & SUB_STATE_DEAD))
 		{
 			XEvent event;
 		
-			if(d->focus != c) subClientFocus(c);
+			if(d->focus != c->frame) subClientFocus(c);
 
 			/* Remove any other event of the same type and window */
 			while(XCheckTypedWindowEvent(d->disp, ev->window, ev->type, &event));			
@@ -420,27 +407,26 @@ HandleFocus(XFocusInEvent *ev)
 	SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
 	if(c && c->flags & SUB_PREF_FOCUS)
 		{
-			if(c != d->focus) 
+			/* Remove focus from client */
+			if(d->focus != c->frame) 
 				{
-					/* Remove focus from window */
-					if(d->focus) 
-					{
-						SubClient *f = d->focus;
-						d->focus = NULL;
-						if(f && f->flags & SUB_TYPE_CLIENT) subClientRender(f);
-
-						subKeyUngrab(f->frame);
-					}
-
-					d->focus = c;
-					subClientRender(c);
-					subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_ACTIVE_WINDOW, &c->frame, 1);
+					Window win = d->focus;
+					SubClient *f = CLIENT(subUtilFind(win, 1));
+					if(f)
+						{
+							if(!(f->flags & SUB_STATE_DEAD)) 
+								{
+									subKeyUngrab(f->frame);
+									subClientRender(f);
+								}
+						}
+					else subKeyUngrab(win);
 
 					subKeyGrab(c->frame);	
+					subClientRender(c);
+					subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_ACTIVE_WINDOW, &c->win, 1);
 				}
 		}
-	else if(ev->window == d->cv->frame) subKeyGrab(ev->window);
-
 } /* }}} */
 
  /** subEventLoop {{{ 
