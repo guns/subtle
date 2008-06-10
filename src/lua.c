@@ -248,6 +248,7 @@ subLuaLoadConfig(const char *path)
 	XSetWindowAttributes attrs;
 	lua_State *configstate = StateNew();
 	SubTag *ct = NULL;
+	SubView *cv = NULL;
 
 	/* Check path */
 	if(!path)
@@ -368,8 +369,9 @@ subLuaLoadConfig(const char *path)
 	else printf("No tags found\n");
 
 	/* Default view */
-	d->cv = subViewNew("subtle", "default");
-	subArrayPush(d->views, (void *)d->cv);
+	cv = subViewNew("subtle", "default");
+	subArrayPush(d->views, (void *)cv);
+	subViewJump(cv);
 
 	/* Views */
 	lua_getglobal(configstate, "Views");
