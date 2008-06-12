@@ -934,9 +934,9 @@ Usage(int group)
 						 "  -f, --find=PATTERN    \t Find a client\n" \
 						 "  -F, --focus=PATTERN   \t Set focus to client\n" \
 						 "  -s, --shade=PATTERN   \t Shade client\n" \
-						 "  -t, --tag=PATTERN     \t Add tag to client\n" \
+						 "  -T, --tag=PATTERN     \t Add tag to client\n" \
 						 "  -u, --untag=PATTERN   \t Remove tag from client\n" \
-						 "  -T, --tags            \t Show client tags\n" \
+						 "  -g, --tags            \t Show client tags\n" \
 						 "  -k, --kill=PATTERN    \t Kill a client\n");
 		}
 	if(-1 == group || 1 == group)
@@ -951,9 +951,9 @@ Usage(int group)
 			printf("\nActions for views:\n" \
 						 "  -n, --new=NAME        \t Create new view\n" \
 						 "  -l, --list            \t List all views\n" \
-						 "  -t, --tag=PATTERN     \t Add tag to view\n" \
+						 "  -T, --tag=PATTERN     \t Add tag to view\n" \
 						 "  -u, --untag=PATTERN   \t Remove tag from view\n" \
-						 "  -T, --tags            \t Show view tags\n" \
+						 "  -g, --tags            \t Show view tags\n" \
 						 "  -k, --kill=VIEW       \t Kill a view\n");
 		}
 	
@@ -972,7 +972,7 @@ Usage(int group)
 	printf("\nExamples:\n" \
 				 "  %sr -c -l             \t List all clients\n" \
 				 "  %sr -t -a subtle      \t Add new tag 'subtle'\n" \
-				 "  %sr -v subtle -t rocks\t Tag view 'subtle' with tag 'rocks'\n" \
+				 "  %sr -v subtle -T rocks\t Tag view 'subtle' with tag 'rocks'\n" \
 				 "  %sr -c xterm -g       \t Show tags of client 'xterm'\n" \
 				 "  %sr -c -f #           \t Select client and show info\n" \
 				 "\nPlease report bugs to <%s>\n",
