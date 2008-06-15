@@ -166,6 +166,6 @@ env.ParseConfig("pkg-config --cflags --libs lua")
 env.ParseConfig("pkg-config --cflags --libs x11")
 
 # SConscripts
-SConscript("config/SConscript", "env", duplicate = 0)
+SConscript("data/SConscript", "env", duplicate = 0)
 SConscript("sublets/SConscript", "env", duplicate = 0)
 SConscript("src/SConscript", "env", build_dir = "build", duplicate = 0)
