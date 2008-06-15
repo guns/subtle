@@ -44,10 +44,10 @@ Keys = {
 	ViewJump4							= "A-4", 							-- Jump to view 4
 	ViewJump5							= "A-5",							-- Jump to view 5
 	ViewMnemonic					= "A-j",							-- Jump to view
-	["tagmenu.sh -c -t"]	= "A-S-c",						-- Exec tag menu (client/tag)
-	["tagmenu.sh -c -u"]	= "A-C-c",						-- Exec tag menu (client/untag)
-	["tagmenu.sh -v -t"]	= "A-S-v",						-- Exec tag menu (view/tag)
-	["tagmenu.sh -v -u"]	= "A-C-v",						-- Exec tag menu (view/untag)
+	["subtag.sh -c -t"]		= "A-S-c",						-- Exec tag menu (client/tag)
+	["subtag.sh -c -u"]		= "A-C-c",						-- Exec tag menu (client/untag)
+	["subtag.sh -v -t"]		= "A-S-v",						-- Exec tag menu (view/tag)
+	["subtag.sh -v -u"]		= "A-C-v",						-- Exec tag menu (view/untag)
 	["xterm +sb"]					= "S-F1"							-- Exec a term
 } -- }}}
 
