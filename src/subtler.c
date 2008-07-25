@@ -748,6 +748,54 @@ ActionTagList(char *arg1,
 	free(tags);
 } /* }}} */
 
+/* ActionTagFind {{{ */
+static void
+ActionTagFind(char *arg1,
+	char *arg2)
+{
+	int i, tag = -1, size_clients = 0, size_views = 0;
+	char **views = NULL;
+	Window *frames = NULL, *clients = NULL;
+	unsigned long *flags = NULL;
+
+	Debug("%s\n", __func__);
+
+	/* Collect data */
+	tag			= TagFind(arg1);
+	clients = ClientList(&size_clients);
+	views		= PropertyList("_NET_DESKTOP_NAMES", &size_views);
+	frames	= (Window *)PropertyGet(DefaultRootWindow(disp), XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
+
+	/* Views */
+	for(i = 0; i < size_views; i++)
+		{
+			flags = (unsigned long *)PropertyGet(frames[i], XA_CARDINAL, "SUBTLE_VIEW_TAGS", NULL);
+
+			if((int)*flags & (1L << (tag + 1))) printf("view   - %s\n", views[i]);
+
+			free(flags);
+		}
+
+	/* Clients */
+	for(i = 0; i < size_clients; i++)
+		{
+			char *name = NULL, *class = NULL;
+
+			flags = (unsigned long *)PropertyGet(clients[i], XA_CARDINAL, "SUBTLE_CLIENT_TAGS", NULL);
+			name	= ClientName(clients[i]);
+			class	= ClientClass(clients[i]);
+
+			if((int)*flags & (1L << (tag + 1))) printf("client - %s (%s)\n", name, class);
+
+			free(flags);
+			free(name);
+		}
+
+	free(clients);
+	free(frames);
+	free(views);
+} /* }}} */
+
 /* ActionTagKill {{{ */
 static void
 ActionTagKill(char *arg1,
@@ -944,6 +992,7 @@ Usage(int group)
 			printf("\nActions for tags:\n" \
 						 "  -n, --new=NAME        \t Create new tag\n" \
 						 "  -l, --list            \t List all tags\n" \
+						 "  -f, --find						\t Find all clients/views by tag\n" \
 						 "  -k, --kill=PATTERN    \t Kill a tag\n");
 		}
 	if(-1 == group || 2 == group)
@@ -975,8 +1024,9 @@ Usage(int group)
 				 "  %sr -v subtle -T rocks\t Tag view 'subtle' with tag 'rocks'\n" \
 				 "  %sr -c xterm -g       \t Show tags of client 'xterm'\n" \
 				 "  %sr -c -f #           \t Select client and show info\n" \
+				 "  %sr -t -f term        \t Show every client/view tagged with 'term'\n" \
 				 "\nPlease report bugs to <%s>\n",
-				 PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_BUGREPORT);
+				 PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_BUGREPORT);
 } /* }}} */
 
 /* Version {{{ */
@@ -1076,7 +1126,7 @@ main(int argc,
 	/* Command table */
 	Command cmds[3][10] = { /* Client, Tag, View <=> New, Kill, List, Find, Focus, Jump, Shade, Tag, Untag, Tags */
 		{ NULL, ActionClientKill, ActionClientList, ActionClientFind, ActionClientFocus, NULL, ActionClientShade, ActionClientTag, ActionClientUntag, ActionClientTags },
-		{ ActionTagNew, ActionTagKill, ActionTagList, NULL, NULL, NULL, NULL, NULL, NULL, NULL },
+		{ ActionTagNew, ActionTagKill, ActionTagList, ActionTagFind, NULL, NULL, NULL, NULL, NULL, NULL },
 		{ ActionViewNew, ActionViewKill, ActionViewList, NULL, NULL, ActionViewJump, NULL, ActionViewTag, ActionViewUntag, ActionViewTags }
 	};
 
