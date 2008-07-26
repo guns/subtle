@@ -140,12 +140,14 @@ subArrayKill(SubArray *a,
 			SubClient *c = CLIENT(a->data[i]);
 
 			if(c->flags & SUB_TYPE_TAG)					subTagKill(TAG(c));
+			else if(c->flags & SUB_TYPE_LAYOUT)	subLayoutKill(LAYOUT(c));
 			else if(c->flags & SUB_TYPE_VIEW) 	subViewKill(VIEW(c));
 			else if(c->flags & SUB_TYPE_CLIENT) subClientKill(CLIENT(c));
 			else if(c->flags & SUB_TYPE_SUBLET) subSubletKill(SUBLET(c));
 			else if(c->flags & SUB_TYPE_KEY) 		subKeyKill(KEY(c));
 			else free(a->data[i]); 
 		}
+
 	if(a->data) free(a->data);
 	free(a);
 } /* }}} */
