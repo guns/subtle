@@ -43,7 +43,7 @@ GetParent(Window win)
 	Window parent, unused, *wins = NULL;
 
 	/* Some events don't propagate but we need them to do so */
-	XQueryTree(d->disp, win, &unused, &parent, &wins, &nwins);
+	XQueryTree(subtle->disp, win, &unused, &parent, &wins, &nwins);
 	XFree(wins);
 
 	return(parent);
@@ -56,13 +56,13 @@ HandleButtonPress(XButtonEvent *ev)
 	SubClient *c = NULL;
 	static Time last_time = 0;
 
-	if(ev->window == d->bar.views)
+	if(ev->window == subtle->bar.views)
 		{
 			SubView *v = VIEW(subUtilFind(ev->subwindow, 1));
-			if(d->cv != v) subViewJump(v); ///< Prevent jumping to current view
+			if(subtle->cv != v) subViewJump(v); ///< Prevent jumping to current view
 			return;
 		}
-#if 0
+
 	c = CLIENT(subUtilFind(ev->window, 1));
 	if(c)
 		{
@@ -72,24 +72,19 @@ HandleButtonPress(XButtonEvent *ev)
 						if(last_time > 0 && ev->time - last_time <= 300) ///< Double click
 							{
 								subUtilLogDebug("click=double, win=%#lx\n", ev->window);
-								if((ev->subwindow == c->title && c->tile && c->tile->flags & SUB_TYPE_TILE) || c->flags & SUB_STATE_FLOAT) 
+								if(ev->subwindow == c->title && c->flags & SUB_STATE_FLOAT) 
 									subClientToggle(c, SUB_STATE_SHADE);
 								last_time = 0;
 							}						
 						else ///< Single click
 							{
 								subUtilLogDebug("click=single, win=%#lx\n", ev->window);
-								if(c->flags & SUB_STATE_FLOAT) XRaiseWindow(d->disp, c->frame);
-								if(c->tile && c->tile->flags & SUB_STATE_STACK) 
-									{
-										c->tile->top = c;
-										if(c->flags & SUB_STATE_SHADE) c->flags &= ~SUB_STATE_SHADE;
-										subTileConfigure(c->tile);
-									}
+								if(c->flags & SUB_STATE_FLOAT) XRaiseWindow(subtle->disp, c->frame);
+
 								if(ev->subwindow == c->left) 				subClientDrag(c, SUB_DRAG_LEFT);
 								else if(ev->subwindow == c->right)	subClientDrag(c, SUB_DRAG_RIGHT);
 								else if(ev->subwindow == c->bottom) subClientDrag(c, SUB_DRAG_BOTTOM);
-								else if(ev->subwindow == c->title || (c->flags & SUB_TYPE_CLIENT && ev->subwindow == c->caption))
+								else if(ev->subwindow == c->title || ev->subwindow == c->caption)
 									{ 
 										/* Either drag and move or drag an swap windows */
 										subClientDrag(c, (c->flags & SUB_STATE_FLOAT) ? SUB_DRAG_MOVE : SUB_DRAG_SWAP);
@@ -106,11 +101,10 @@ HandleButtonPress(XButtonEvent *ev)
 /*					case Button4: 
 					case Button5: 
 						
-						subViewJump(d->cv->next); break;
-						if(d->cv->prev) subViewJump(d->cv->prev); break; */
+						subViewJump(subtle->cv->next); break;
+						if(subtle->cv->prev) subViewJump(subtle->cv->prev); break; */
 				}
 		}
-#endif		
 } /* }}} */
 
 /* HandleKeyPress {{{ */
@@ -120,7 +114,7 @@ HandleKeyPress(XKeyEvent *ev)
 	SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
 printf("%s,%d: %s\n", __FILE__, __LINE__, __func__);
 
-	if(c || ev->window == d->cv->frame)
+	if(c || ev->window == subtle->cv->frame)
 		{
 			SubKey *k = subKeyFind(ev->keycode, ev->state);
 			if(k) 
@@ -128,13 +122,13 @@ printf("%s,%d: %s\n", __FILE__, __LINE__, __func__);
 					if(k->flags & SUB_KEY_EXEC && k->string) Exec(k->string); 
 					else if(k->flags & SUB_KEY_VIEW_JUMP) 
 						{
-							if(0 <= k->number && k->number < d->views->ndata)
-								subViewJump(VIEW(d->views->data[k->number]));
+							if(0 <= k->number && k->number < subtle->views->ndata)
+								subViewJump(VIEW(subtle->views->data[k->number]));
 						}
 					else if(k->flags & SUB_KEY_VIEW_MNEMONIC)
 						{
 							KeySym sym = subKeyGet();
-							SubView *v = VIEW(subUtilFind(d->bar.views, (int)sym));
+							SubView *v = VIEW(subUtilFind(subtle->bar.views, (int)sym));
 							if(v) subViewJump(v);
 						}
 
@@ -151,10 +145,10 @@ HandleConfigure(XConfigureRequestEvent *ev)
 	SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
 	if(c)
 		{
-			if(ev->value_mask & CWX)			c->x			= ev->x;
-			if(ev->value_mask & CWY)			c->y 			= ev->y;
-			if(ev->value_mask & CWWidth)	c->width	= ev->width;
-			if(ev->value_mask & CWHeight)	c->height = ev->height;
+			if(ev->value_mask & CWX)			c->rect.x				= ev->x;
+			if(ev->value_mask & CWY)			c->rect.y 			= ev->y;
+			if(ev->value_mask & CWWidth)	c->rect.width		= ev->width;
+			if(ev->value_mask & CWHeight)	c->rect.height	= ev->height;
 
 			subClientConfigure(c);
 		}
@@ -167,7 +161,7 @@ HandleConfigure(XConfigureRequestEvent *ev)
 			wc.sibling		= ev->above;
 			wc.stack_mode	= ev->detail;
 
-			XConfigureWindow(d->disp, ev->window, ev->value_mask, &wc);
+			XConfigureWindow(subtle->disp, ev->window, ev->value_mask, &wc);
 		}
 } /* }}} */
 
@@ -181,7 +175,7 @@ HandleMapRequest(XMapRequestEvent *ev)
 			c = subClientNew(ev->window);
 			subClientPublish();
 
-			if(d->cv && d->cv->tags & c->tags) subViewConfigure(d->cv); ///< Configure current view if tags match
+			if(subtle->cv && subtle->cv->tags & c->tags) subViewConfigure(subtle->cv); ///< Configure current view if tags match
 			subViewUpdate();
 			subViewRender();
 		}
@@ -197,7 +191,7 @@ HandleDestroy(XDestroyWindowEvent *ev)
 			c->flags |= SUB_STATE_DEAD;
 			subClientKill(c); 
 			subClientPublish();
-			subViewConfigure(d->cv);
+			subViewConfigure(subtle->cv);
 			subViewUpdate();
 		}
 } /* }}} */
@@ -211,12 +205,12 @@ HandleMessage(XClientMessageEvent *ev)
 	subUtilLogDebug("ClientMessage: type=%ld, format=%d\n", ev->message_type, ev->format);
 
 	/* ICC events */
-	if(DefaultRootWindow(d->disp) == ev->window && 32 == ev->format)
+	if(DefaultRootWindow(subtle->disp) == ev->window && 32 == ev->format)
 		{
 			if(ev->message_type == subEwmhFind(SUB_EWMH_NET_CURRENT_DESKTOP)) /* {{{ */
 				{
-					if(0 <= ev->data.l[0] && ev->data.l[0] < d->views->ndata) ///< Bound checking
-						subViewJump(VIEW(d->views->data[ev->data.l[0]]));
+					if(0 <= ev->data.l[0] && ev->data.l[0] < subtle->views->ndata) ///< Bound checking
+						subViewJump(VIEW(subtle->views->data[ev->data.l[0]]));
 				} /* }}} */
 			else if(ev->message_type == subEwmhFind(SUB_EWMH_NET_ACTIVE_WINDOW)) /* {{{ */
 				{
@@ -244,12 +238,12 @@ HandleMessage(XClientMessageEvent *ev)
 							c->tags &= ~(1L << ev->data.l[1]);
 							subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS, (long *)&c->tags, 1);
 						}
-					if(d->cv->tags & (1L << ev->data.l[1])) subViewConfigure(d->cv);
+					if(subtle->cv->tags & (1L << ev->data.l[1])) subViewConfigure(subtle->cv);
 				} /* }}} */				
 			else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_TAG_NEW)) /* {{{ */
 				{
 					SubTag *t = subTagNew(ev->data.b, NULL); 
-					subArrayPush(d->tags, (void *)t);
+					subArrayPush(subtle->tags, (void *)t);
 					subTagPublish();
 				} /* }}} */
 			else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_TAG_KILL)) /* {{{ */
@@ -261,9 +255,9 @@ HandleMessage(XClientMessageEvent *ev)
 							int i;
 
 							/* Find clients tagged with this tag */
-							for(i = 0; i < d->clients->ndata; i++)
+							for(i = 0; i < subtle->clients->ndata; i++)
 								{
-									c = CLIENT(d->clients->data[i]);
+									c = CLIENT(subtle->clients->data[i]);
 
 									if(c->tags & id)
 										{
@@ -272,9 +266,9 @@ HandleMessage(XClientMessageEvent *ev)
 										}
 								}
 
-							subArrayPop(d->tags, (void *)t);
+							subArrayPop(subtle->tags, (void *)t);
 							subTagPublish();
-							subViewConfigure(d->cv); ///< Re-configure current view
+							subViewConfigure(subtle->cv); ///< Re-configure current view
 						}
 				}	/* }}} */			
 			else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_VIEW_NEW)) /* {{{ */
@@ -282,7 +276,7 @@ HandleMessage(XClientMessageEvent *ev)
 					if(ev->data.b)
 						{
 							SubView *v = subViewNew(ev->data.b, NULL); 
-							subArrayPush(d->views, (void *)v);
+							subArrayPush(subtle->views, (void *)v);
 							subViewUpdate();
 							subViewPublish();
 							subViewRender();
@@ -295,7 +289,7 @@ HandleMessage(XClientMessageEvent *ev)
 						{
 							v->tags |= (1L << ev->data.l[1]);
 							subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_VIEW_TAGS, (long *)&v->tags, 1);
-							if(d->cv == v) subViewConfigure(v);
+							if(subtle->cv == v) subViewConfigure(v);
 						}
 				} /* }}} */							
 			else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_VIEW_UNTAG)) /* {{{ */
@@ -305,7 +299,7 @@ HandleMessage(XClientMessageEvent *ev)
 						{
 							v->tags &= ~(1L << ev->data.l[1]);
 							subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_VIEW_TAGS, (long *)&v->tags, 1);
-							if(d->cv == v) subViewConfigure(v);
+							if(subtle->cv == v) subViewConfigure(v);
 						}
 				} /* }}} */							
 			else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_VIEW_KILL)) /* {{{ */
@@ -314,7 +308,7 @@ HandleMessage(XClientMessageEvent *ev)
 
 					if(t)
 						{
-							subArrayPop(d->tags, (void *)t);
+							subArrayPop(subtle->tags, (void *)t);
 							subTagPublish();
 						}
 				}	/* }}} */				
@@ -347,7 +341,7 @@ HandleColormap(XColormapEvent *ev)
 	if(c && ev->new)
 		{
 			c->cmap = ev->colormap;
-			XInstallColormap(d->disp, c->cmap);
+			XInstallColormap(subtle->disp, c->cmap);
 		}
 } /* }}} */
 
@@ -372,10 +366,10 @@ HandleCrossing(XCrossingEvent *ev)
 		{
 			XEvent event;
 		
-			if(d->focus != c->frame) subClientFocus(c);
+			if(subtle->focus != c->frame) subClientFocus(c);
 
 			/* Remove any other event of the same type and window */
-			while(XCheckTypedWindowEvent(d->disp, ev->window, ev->type, &event));			
+			while(XCheckTypedWindowEvent(subtle->disp, ev->window, ev->type, &event));			
 		}
 } /* }}} */
 
@@ -385,7 +379,7 @@ HandleExpose(XEvent *ev)
 {
 	XEvent event;
 
-	if(ev->xany.window == d->bar.win)
+	if(ev->xany.window == subtle->bar.win)
 		{
 			subViewRender();
 			subSubletRender();
@@ -397,7 +391,7 @@ HandleExpose(XEvent *ev)
 		}
 
 	/* Remove any other event of the same type and window */
-	while(XCheckTypedWindowEvent(d->disp, ev->xany.window, ev->type, &event));
+	while(XCheckTypedWindowEvent(subtle->disp, ev->xany.window, ev->type, &event));
 } /* }}} */
 
 /* HandleFocus {{{ */
@@ -408,9 +402,9 @@ HandleFocus(XFocusInEvent *ev)
 	if(c && c->flags & SUB_PREF_FOCUS)
 		{
 			/* Remove focus from client */
-			if(d->focus != c->frame) 
+			if(subtle->focus != c->frame) 
 				{
-					Window win = d->focus;
+					Window win = subtle->focus;
 					SubClient *f = CLIENT(subUtilFind(win, 1));
 					if(f)
 						{
@@ -424,7 +418,7 @@ HandleFocus(XFocusInEvent *ev)
 
 					subKeyGrab(c->frame);	
 					subClientRender(c);
-					subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_ACTIVE_WINDOW, &c->win, 1);
+					subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_ACTIVE_WINDOW, &c->win, 1);
 				}
 		}
 } /* }}} */
@@ -447,35 +441,35 @@ subEventLoop(void)
 	char buf[BUFLEN];
 #endif /* HAVE_SYS_INOTIFY_H */
 
-	s = 0 < d->sublets->ndata ? SUBLET(d->sublets->data[0]) : NULL;
+	s = 0 < subtle->sublets->ndata ? SUBLET(subtle->sublets->data[0]) : NULL;
 
 	/* Init timeout and assemble FD_SET */
 	tv.tv_sec		= 0;
 	tv.tv_usec	= 0;
 
 	FD_ZERO(&rfds);
-	FD_SET(ConnectionNumber(d->disp), &rfds);
+	FD_SET(ConnectionNumber(subtle->disp), &rfds);
 
 #ifdef HAVE_SYS_INOTIFY_H
-	FD_SET(d->notify, &rfds); ///< Add inotify socket to set
+	FD_SET(subtle->notify, &rfds); ///< Add inotify socket to set
 #endif /* HAVE_SYS_INOTIFY_H */
 
 	while(1)
 		{
 			ctime	= subUtilTime();
-			ret = select(ConnectionNumber(d->disp) + 1, &rfds, NULL, NULL, &tv);
+			ret = select(ConnectionNumber(subtle->disp) + 1, &rfds, NULL, NULL, &tv);
 			if(-1 == ret) 
 				{
 					subUtilLogDebug("%s\n", strerror(errno)); ///< Ignore and print debugging message
 				}
 			else if(ret) ///< Data ready on any connection
 				{
-					if(FD_ISSET(ConnectionNumber(d->disp), &rfds)) ///< X connection
+					if(FD_ISSET(ConnectionNumber(subtle->disp), &rfds)) ///< X connection
 						{
 							/* Handle X events */
-							while(XPending(d->disp))
+							while(XPending(subtle->disp))
 								{
-									XNextEvent(d->disp, &ev);
+									XNextEvent(subtle->disp, &ev);
 									switch(ev.type)
 										{
 											case ButtonPress:				HandleButtonPress(&ev.xbutton);					break;
@@ -494,15 +488,15 @@ subEventLoop(void)
 								}
 							}
 #ifdef HAVE_SYS_INOTIFY_H
-						else if(FD_ISSET(d->notify, &rfds)) ///< Inotify descriptor
+						else if(FD_ISSET(subtle->notify, &rfds)) ///< Inotify descriptor
 							{
 								/* Handle inotify events */
-								if(read(d->notify, buf, BUFLEN) > 0)
+								if(read(subtle->notify, buf, BUFLEN) > 0)
 									{
 										struct inotify_event *event = (struct inotify_event *)&buf[0];
 										if(event)
 											{
-												SubSublet *ws = SUBLET(subUtilFind(d->bar.sublets, event->wd));
+												SubSublet *ws = SUBLET(subUtilFind(subtle->bar.sublets, event->wd));
 												if(ws)
 													{
 														subLuaCall(ws);
@@ -518,16 +512,16 @@ subEventLoop(void)
 			else ///< Timeout waiting for data
 				{
 					/* Update sublet data */
-					s = 0 < d->sublets->ndata ? SUBLET(d->sublets->data[0]) : NULL;
+					s = 0 < subtle->sublets->ndata ? SUBLET(subtle->sublets->data[0]) : NULL;
 					while(s && s->time <= ctime)
 						{
 							s->time = ctime + s->interval; ///< Adjust seconds
 							s->time -= s->time % s->interval;
 
 							subLuaCall(s);
-							subArraySort(d->sublets, subSubletCompare);
+							subArraySort(subtle->sublets, subSubletCompare);
 
-							s = SUBLET(d->sublets->data[0]);
+							s = SUBLET(subtle->sublets->data[0]);
 						}
 					subSubletConfigure();
 					subSubletRender();
@@ -538,10 +532,10 @@ subEventLoop(void)
 			tv.tv_usec	= 0;
 
 			FD_ZERO(&rfds);
-			FD_SET(ConnectionNumber(d->disp), &rfds);
+			FD_SET(ConnectionNumber(subtle->disp), &rfds);
 
 #ifdef HAVE_SYS_INOTIFY_H
-			FD_SET(d->notify, &rfds); ///< Add inotify socket to set
+			FD_SET(subtle->notify, &rfds); ///< Add inotify socket to set
 #endif /* HAVE_SYS_INOTIFY_H */
 		}
 } /* }}} */
