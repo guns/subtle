@@ -12,15 +12,12 @@
 
 #include "subtle.h"
 
-SubDisplay *d = NULL;
-
  /** subDisplayNew {{{
-	* @Open connection to X server and create display
+	* @brief Open connection to X server and create display
 	* @param[in] display_string	The display name as string
-	* @return Returns a #SubDisplay or \p NULL
 	**/
 
-SubDisplay *
+void
 subDisplayNew(const char *display_string)
 {
 	XGCValues gvals;
@@ -30,48 +27,45 @@ subDisplayNew(const char *display_string)
 		0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 0x49, 0x12		
 	};
 
-	/* Create display and setup error handler */
-	d = (SubDisplay *)subUtilAlloc(1, sizeof(SubDisplay));
-	d->disp = XOpenDisplay(display_string);
-	if(!d->disp) subUtilLogError("Can't open display `%s'.\n", (display_string) ? display_string : ":0.0");
+	/* Connect to display and setup error handler */
+	subtle->disp = XOpenDisplay(display_string);
+	if(!subtle->disp) subUtilLogError("Can't open display `%s'.\n", (display_string) ? display_string : ":0.0");
 	XSetErrorHandler(subUtilLogXError);
 
 	/* Create gcs */
-	gvals.function		= GXcopy;
-	gvals.fill_style	= FillStippled;
-	gvals.stipple			= XCreateBitmapFromData(d->disp, DefaultRootWindow(d->disp), stipple, 15, 16);
-	d->gcs.border			= XCreateGC(d->disp, DefaultRootWindow(d->disp),
+	gvals.function			= GXcopy;
+	gvals.fill_style		= FillStippled;
+	gvals.stipple				= XCreateBitmapFromData(subtle->disp, DefaultRootWindow(subtle->disp), stipple, 15, 16);
+	subtle->gcs.border	= XCreateGC(subtle->disp, DefaultRootWindow(subtle->disp),
 		GCFunction|GCFillStyle|GCStipple, &gvals);
 
-	d->gcs.font				= XCreateGC(d->disp, DefaultRootWindow(d->disp), GCFunction, &gvals);
+	subtle->gcs.font			= XCreateGC(subtle->disp, DefaultRootWindow(subtle->disp), GCFunction, &gvals);
 
 	gvals.function				= GXinvert;
 	gvals.subwindow_mode	= IncludeInferiors;
 	gvals.line_width			= 3;
-	d->gcs.invert 				= XCreateGC(d->disp, DefaultRootWindow(d->disp), 
+	subtle->gcs.invert 		= XCreateGC(subtle->disp, DefaultRootWindow(subtle->disp), 
 		GCFunction|GCSubwindowMode|GCLineWidth, &gvals);
 
 	/* Create cursors */
-	d->cursors.square	= XCreateFontCursor(d->disp, XC_dotbox);
-	d->cursors.move		= XCreateFontCursor(d->disp, XC_fleur);
-	d->cursors.arrow	= XCreateFontCursor(d->disp, XC_left_ptr);
-	d->cursors.horz		= XCreateFontCursor(d->disp, XC_sb_h_double_arrow);
-	d->cursors.vert		= XCreateFontCursor(d->disp, XC_sb_v_double_arrow);
-	d->cursors.resize	= XCreateFontCursor(d->disp, XC_sizing);
+	subtle->cursors.square	= XCreateFontCursor(subtle->disp, XC_dotbox);
+	subtle->cursors.move		= XCreateFontCursor(subtle->disp, XC_fleur);
+	subtle->cursors.arrow		= XCreateFontCursor(subtle->disp, XC_left_ptr);
+	subtle->cursors.horz		= XCreateFontCursor(subtle->disp, XC_sb_h_double_arrow);
+	subtle->cursors.vert		= XCreateFontCursor(subtle->disp, XC_sb_v_double_arrow);
+	subtle->cursors.resize	= XCreateFontCursor(subtle->disp, XC_sizing);
 
 	/* Init lists */
-	d->keys			= subArrayNew();
-	d->tags			= subArrayNew();
-	d->views		= subArrayNew();
-	d->clients	= subArrayNew();
-	d->sublets	= subArrayNew();
+	subtle->keys		= subArrayNew();
+	subtle->tags		= subArrayNew();
+	subtle->views		= subArrayNew();
+	subtle->clients	= subArrayNew();
+	subtle->sublets	= subArrayNew();
 
-	printf("Display (%s) is %dx%d\n", DisplayString(d->disp), DisplayWidth(d->disp, 
-		DefaultScreen(d->disp)), DisplayHeight(d->disp, DefaultScreen(d->disp)));
+	printf("Display (%s) is %dx%d\n", DisplayString(subtle->disp), DisplayWidth(subtle->disp, 
+		DefaultScreen(subtle->disp)), DisplayHeight(subtle->disp, DefaultScreen(subtle->disp)));
 
-	XSync(d->disp, False);
-
-	return(d);
+	XSync(subtle->disp, False);
 } /* }}} */
 
  /** subDisplayScan {{{
@@ -85,15 +79,15 @@ subDisplayScan(void)
 	Window dummy, *wins = NULL;
 	XWindowAttributes attr;
 
-	assert(d);
+	assert(subtle);
 
-	XQueryTree(d->disp, DefaultRootWindow(d->disp), &dummy, &dummy, &wins, &n);
+	XQueryTree(subtle->disp, DefaultRootWindow(subtle->disp), &dummy, &dummy, &wins, &n);
 	for(i = 0; i < n; i++)
 		{
 			/* Skip own windows */
-			if(wins[i] && wins[i] != d->bar.win && wins[i] != d->cv->frame)
+			if(wins[i] && wins[i] != subtle->bar.win && wins[i] != subtle->cv->frame)
 				{
-					XGetWindowAttributes(d->disp, wins[i], &attr);
+					XGetWindowAttributes(subtle->disp, wins[i], &attr);
 					if(attr.map_state == IsViewable) subClientNew(wins[i]);
 				}
 		}
@@ -101,7 +95,7 @@ subDisplayScan(void)
 
 	subClientPublish();
 	subViewUpdate();
-	subViewConfigure(d->cv);
+	subViewConfigure(subtle->cv);
 	subViewRender();
 } /* }}} */
 
@@ -112,31 +106,30 @@ subDisplayScan(void)
 void
 subDisplayKill(void)
 {
-	assert(d);
+	assert(subtle);
 
-	if(d->disp)
+	if(subtle->disp)
 		{
 			/* Free cursors */
-			XFreeCursor(d->disp, d->cursors.square);
-			XFreeCursor(d->disp, d->cursors.move);
-			XFreeCursor(d->disp, d->cursors.arrow);
-			XFreeCursor(d->disp, d->cursors.horz);
-			XFreeCursor(d->disp, d->cursors.vert);
-			XFreeCursor(d->disp, d->cursors.resize);
+			XFreeCursor(subtle->disp, subtle->cursors.square);
+			XFreeCursor(subtle->disp, subtle->cursors.move);
+			XFreeCursor(subtle->disp, subtle->cursors.arrow);
+			XFreeCursor(subtle->disp, subtle->cursors.horz);
+			XFreeCursor(subtle->disp, subtle->cursors.vert);
+			XFreeCursor(subtle->disp, subtle->cursors.resize);
 
 			/* Free GCs */
-			XFreeGC(d->disp, d->gcs.border);
-			XFreeGC(d->disp, d->gcs.font);
-			XFreeGC(d->disp, d->gcs.invert);
-			if(d->xfs) XFreeFont(d->disp, d->xfs);
+			XFreeGC(subtle->disp, subtle->gcs.border);
+			XFreeGC(subtle->disp, subtle->gcs.font);
+			XFreeGC(subtle->disp, subtle->gcs.invert);
+			if(subtle->xfs) XFreeFont(subtle->disp, subtle->xfs);
 
 			/* Destroy view windows */
-			XDestroySubwindows(d->disp, d->bar.win);
-			XDestroyWindow(d->disp, d->bar.win);
+			XDestroySubwindows(subtle->disp, subtle->bar.win);
+			XDestroyWindow(subtle->disp, subtle->bar.win);
 
-			XCloseDisplay(d->disp);
+			XCloseDisplay(subtle->disp);
 		}
-	free(d);
 
 	subUtilLogDebug("kill=display\n");
 } /* }}} */

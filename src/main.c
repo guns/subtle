@@ -20,6 +20,7 @@
 #endif /* HAVE_EXECINFO_H */
 
 static char *config = NULL;
+SubSubtle *subtle = NULL;
 
 /* Usage {{{ */
 static void
@@ -64,14 +65,16 @@ Signal(int signum)
 				break;
 			case SIGTERM:
 			case SIGINT: 
-				subArrayKill(d->tags, True);
-				subArrayKill(d->views, True);
-				subArrayKill(d->clients, False);
-				subArrayKill(d->sublets, True);
-				subArrayKill(d->keys, True);
+				subArrayKill(subtle->tags, True);
+				subArrayKill(subtle->views, True);
+				subArrayKill(subtle->clients, False);
+				subArrayKill(subtle->sublets, True);
+				subArrayKill(subtle->keys, True);
 
 				subLuaKill();
 				subDisplayKill();
+
+				free(subtle);
 				exit(1);
 			case SIGSEGV: 
 #ifdef HAVE_EXECINFO_H
@@ -137,6 +140,8 @@ main(int argc,
 	sigaction(SIGINT, &act, NULL);
 	sigaction(SIGSEGV, &act, NULL);
 	sigaction(SIGCHLD, &act, NULL);
+
+	subtle = (SubSubtle *)subUtilAlloc(1, sizeof(SubSubtle));
 
 	subDisplayNew(display);
 
