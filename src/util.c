@@ -139,7 +139,7 @@ subUtilFind(Window win,
 	XPointer *data = NULL;
 
 	assert(win && id);
-	return(XFindContext(d->disp, win, id, (XPointer *)&data) != XCNOENT ? data : NULL);
+	return(XFindContext(subtle->disp, win, id, (XPointer *)&data) != XCNOENT ? data : NULL);
 } /* }}} */
 
  /** subUtilTime {{{

@@ -22,12 +22,12 @@ static unsigned int scrollmask = 0;
 void
 subKeyInit(void)
 {
-	XModifierKeymap *modmap = XGetModifierMapping(d->disp);
+	XModifierKeymap *modmap = XGetModifierMapping(subtle->disp);
 	if(modmap && modmap->max_keypermod > 0)
 		{
 			const int modmasks[] = { ShiftMask, LockMask, ControlMask, Mod1Mask, Mod2Mask, Mod3Mask, Mod4Mask, Mod5Mask };
-			const KeyCode num_lock = XKeysymToKeycode(d->disp, XK_Num_Lock);
-			const KeyCode scroll_lock = XKeysymToKeycode(d->disp, XK_Scroll_Lock);
+			const KeyCode num_lock = XKeysymToKeycode(subtle->disp, XK_Num_Lock);
+			const KeyCode scroll_lock = XKeysymToKeycode(subtle->disp, XK_Scroll_Lock);
 			int i, max = (sizeof(modmasks) / sizeof(int)) * modmap->max_keypermod;
 
 			for(i = 0; i < max; i++)
@@ -101,7 +101,7 @@ subKeyNew(const char *key,
 					case XK_W: k->mod |= Mod4Mask;			break;
 					case XK_M: k->mod |= Mod3Mask;			break;
 					default:
-						k->code = XKeysymToKeycode(d->disp, sym);
+						k->code = XKeysymToKeycode(subtle->disp, sym);
 				}
 
 			tok = strtok(NULL, "-");
@@ -128,7 +128,7 @@ subKeyFind(int code,
 	k.mod		= (mod & ~(LockMask|nummask|scrollmask));
 	kp 			= &k;
 
-	ret = (SubKey **)bsearch(&kp, d->keys->data, d->keys->ndata, sizeof(SubKey *), subKeyCompare);
+	ret = (SubKey **)bsearch(&kp, subtle->keys->data, subtle->keys->ndata, sizeof(SubKey *), subKeyCompare);
 
 	return(ret ? *ret : NULL);
 } /* }}} */
@@ -144,7 +144,7 @@ subKeyGet(void)
 	XEvent ev;
 	KeySym sym = None;
 
-	XMaskEvent(d->disp, KeyPressMask, &ev);
+	XMaskEvent(subtle->disp, KeyPressMask, &ev);
 	sym = XLookupKeysym(&ev.xkey, 0);
 
 	return(sym);
@@ -158,26 +158,26 @@ subKeyGet(void)
 void
 subKeyGrab(Window win)
 {
-	if(win && d->keys)
+	if(win && subtle->keys)
 		{
 			int i;
 
 			/* @todo Ugly key/modifier grabbing */
-			for(i = 0; i < d->keys->ndata; i++) 
+			for(i = 0; i < subtle->keys->ndata; i++) 
 				{
-					SubKey *k = KEY(d->keys->data[i]);
+					SubKey *k = KEY(subtle->keys->data[i]);
 
-					XGrabKey(d->disp, k->code, k->mod, win, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, k->code, k->mod|LockMask, win, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, k->code, k->mod|nummask, win, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, k->code, k->mod|LockMask|nummask, win, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, k->code, k->mod|scrollmask, win, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, k->code, k->mod|scrollmask|LockMask, win, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, k->code, k->mod|scrollmask|nummask, win, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(d->disp, k->code, k->mod|scrollmask|LockMask|nummask, win, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(subtle->disp, k->code, k->mod, win, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(subtle->disp, k->code, k->mod|LockMask, win, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(subtle->disp, k->code, k->mod|nummask, win, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(subtle->disp, k->code, k->mod|LockMask|nummask, win, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(subtle->disp, k->code, k->mod|scrollmask, win, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(subtle->disp, k->code, k->mod|scrollmask|LockMask, win, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(subtle->disp, k->code, k->mod|scrollmask|nummask, win, True, GrabModeAsync, GrabModeAsync);
+					XGrabKey(subtle->disp, k->code, k->mod|scrollmask|LockMask|nummask, win, True, GrabModeAsync, GrabModeAsync);
 				}
-			if(d->cv->frame == win) XSetInputFocus(d->disp, win, RevertToNone, CurrentTime);
-			d->focus = win; ///< Update focus window
+			if(subtle->cv->frame == win) XSetInputFocus(subtle->disp, win, RevertToNone, CurrentTime);
+			subtle->focus = win; ///< Update focus window
 		}
 } /* }}} */
 
@@ -189,8 +189,8 @@ subKeyGrab(Window win)
 void
 subKeyUngrab(Window win)
 {
-	XUngrabKey(d->disp, AnyKey, AnyModifier, win);
-	d->focus = 0; ///< Unset focus window
+	XUngrabKey(subtle->disp, AnyKey, AnyModifier, win);
+	subtle->focus = 0; ///< Unset focus window
 } /* }}} */
 
  /** subKeyCompare {{{

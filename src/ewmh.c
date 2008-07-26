@@ -48,34 +48,34 @@ subEwmhInit(void)
 	};
 	long data[4] = { 0, 0, 0, 0 }, pid = (long)getpid();
 
-	XInternAtoms(d->disp, names, n, 0, atoms);
+	XInternAtoms(subtle->disp, names, n, 0, atoms);
 
 	/* EWMH: Window manager information */
-	subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_SUPPORTING_WM_CHECK, &DefaultRootWindow(d->disp), 1);
-	subEwmhSetString(DefaultRootWindow(d->disp), SUB_EWMH_WM_NAME, PACKAGE_NAME);
-	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_WM_PID, &pid, 1);
-	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_DESKTOP_VIEWPORT, (long *)&data, 2);
+	subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_SUPPORTING_WM_CHECK, &DefaultRootWindow(subtle->disp), 1);
+	subEwmhSetString(DefaultRootWindow(subtle->disp), SUB_EWMH_WM_NAME, PACKAGE_NAME);
+	subEwmhSetCardinals(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_WM_PID, &pid, 1);
+	subEwmhSetCardinals(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_DESKTOP_VIEWPORT, (long *)&data, 2);
 
 	/* EWMH: Workarea size */
-	data[2] = DisplayWidth(d->disp, DefaultScreen(d->disp)); 
-	data[3] = DisplayHeight(d->disp, DefaultScreen(d->disp));
-	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_WORKAREA, (long *)&data, 4);
+	data[2] = DisplayWidth(subtle->disp, DefaultScreen(subtle->disp)); 
+	data[3] = DisplayHeight(subtle->disp, DefaultScreen(subtle->disp));
+	subEwmhSetCardinals(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_WORKAREA, (long *)&data, 4);
 
 	/* EWMH: Desktop sizes */
-	data[0] = DisplayWidth(d->disp, DefaultScreen(d->disp));
-	data[1] = DisplayHeight(d->disp, DefaultScreen(d->disp));
-	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_DESKTOP_GEOMETRY, (long *)&data, 2);
+	data[0] = DisplayWidth(subtle->disp, DefaultScreen(subtle->disp));
+	data[1] = DisplayHeight(subtle->disp, DefaultScreen(subtle->disp));
+	subEwmhSetCardinals(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_DESKTOP_GEOMETRY, (long *)&data, 2);
 
 	/* EWMH: Supported window states */
 	data[0] = atoms[SUB_EWMH_NET_WM_STATE_MODAL];
 	data[1] = atoms[SUB_EWMH_NET_WM_STATE_SHADED];
 	data[2] = atoms[SUB_EWMH_NET_WM_STATE_HIDDEN];
 	data[3] = atoms[SUB_EWMH_NET_WM_STATE_FULLSCREEN];
-	subEwmhSetCardinals(DefaultRootWindow(d->disp), SUB_EWMH_NET_SUPPORTED, (long *)&data, 4);	
+	subEwmhSetCardinals(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_SUPPORTED, (long *)&data, 4);	
 
 	/* EWMH: Client list and client list stacking */
-	subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_CLIENT_LIST, NULL, 0);
-	subEwmhSetWindows(DefaultRootWindow(d->disp), SUB_EWMH_NET_CLIENT_LIST_STACKING, NULL, 0);
+	subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_CLIENT_LIST, NULL, 0);
+	subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_CLIENT_LIST_STACKING, NULL, 0);
 } /* }}} */
 
  /** subEwmhFind {{{
@@ -111,7 +111,7 @@ subEwmhGetProperty(Window win,
 	int format;
 	Atom rtype;
 
-	if(XGetWindowProperty(d->disp, win, atoms[hint], 0L, 1024, False, type, &rtype, 
+	if(XGetWindowProperty(subtle->disp, win, atoms[hint], 0L, 1024, False, type, &rtype, 
 		&format, &nitems, &bytes, &data) != Success)
 		{
 			subUtilLogDebug("Failed to get property (%d)\n", hint);
@@ -142,7 +142,7 @@ subEwmhSetWindows(Window win,
 	Window *values,
 	int size)
 {
-	XChangeProperty(d->disp, win, atoms[hint], XA_WINDOW, 32, PropModeReplace, (unsigned char *)values, size);
+	XChangeProperty(subtle->disp, win, atoms[hint], XA_WINDOW, 32, PropModeReplace, (unsigned char *)values, size);
 } /* }}} */
 
  /** subEwmhSetCardinals {{{
@@ -159,7 +159,7 @@ subEwmhSetCardinals(Window win,
 	long *values,
 	int size)
 {
-	XChangeProperty(d->disp, win, atoms[hint], XA_CARDINAL, 32, PropModeReplace, (unsigned char *)values, size);
+	XChangeProperty(subtle->disp, win, atoms[hint], XA_CARDINAL, 32, PropModeReplace, (unsigned char *)values, size);
 } /* }}} */
 
  /** subEwmhSetString {{{
@@ -174,7 +174,7 @@ subEwmhSetString(Window win,
 	int hint,
 	char *value)
 {
-	XChangeProperty(d->disp, win, atoms[hint], atoms[SUB_EWMH_UTF8], 8, 
+	XChangeProperty(subtle->disp, win, atoms[hint], atoms[SUB_EWMH_UTF8], 8, 
 		PropModeReplace, (unsigned char *)value, strlen(value));
 } /* }}} */
 
@@ -207,6 +207,6 @@ subEwmhSetStrings(Window win,
 			pos++;
 		}
 
-	XChangeProperty(d->disp, win, atoms[hint], atoms[SUB_EWMH_UTF8], 8, PropModeReplace, (unsigned char *)str, pos);
+	XChangeProperty(subtle->disp, win, atoms[hint], atoms[SUB_EWMH_UTF8], 8, PropModeReplace, (unsigned char *)str, pos);
 	free(str);
 } /* }}} */

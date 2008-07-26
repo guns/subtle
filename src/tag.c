@@ -53,9 +53,9 @@ subTagFind(char *name,
 	SubTag *t = NULL;
 
 	/* @todo Linear search.. */
-	for(i = 0; i < d->tags->ndata; i++)
+	for(i = 0; i < subtle->tags->ndata; i++)
 		{
-			t = TAG(d->tags->data[i]);
+			t = TAG(subtle->tags->data[i]);
 
 			if(!strncmp(t->name, name, strlen(t->name))) 
 				{
@@ -80,9 +80,9 @@ subTagMatch(char *string)
 
 	assert(string);
 
-	for(i = 0; i < d->tags->ndata; i++)
+	for(i = 0; i < subtle->tags->ndata; i++)
 		{
-			SubTag *t = TAG(d->tags->data[i]);
+			SubTag *t = TAG(subtle->tags->data[i]);
 			if(t->preg && subUtilRegexMatch(t->preg, string)) tags |= (1L << (i + 1));
 		}
 
@@ -107,13 +107,13 @@ subTagPublish(void)
 	int i;
 	char **names = NULL;
 
-	assert(0 < d->tags->ndata);
+	assert(0 < subtle->tags->ndata);
 
-	names = (char **)subUtilAlloc(d->tags->ndata, sizeof(char *));
-	for(i = 0; i < d->tags->ndata; i++) names[i] = TAG(d->tags->data[i])->name;
+	names = (char **)subUtilAlloc(subtle->tags->ndata, sizeof(char *));
+	for(i = 0; i < subtle->tags->ndata; i++) names[i] = TAG(subtle->tags->data[i])->name;
 
 	/* EWMH: Tag list */
-	subEwmhSetStrings(DefaultRootWindow(d->disp), SUB_EWMH_SUBTLE_TAG_LIST, names, i);
+	subEwmhSetStrings(DefaultRootWindow(subtle->disp), SUB_EWMH_SUBTLE_TAG_LIST, names, i);
 
 	subUtilLogDebug("publish=tags, n=%d\n", i);
 

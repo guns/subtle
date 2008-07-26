@@ -37,12 +37,12 @@ subSubletNew(int type,
 	s->interval	= interval;
 	s->time			= subUtilTime();
 
-	subArrayPush(d->sublets, (void *)s);
+	subArrayPush(subtle->sublets, (void *)s);
 
 #ifdef HAVE_SYS_INOTIFY_H
 	if(s->flags & SUB_SUBLET_TYPE_WATCH)
 		{
-			if((s->interval = inotify_add_watch(d->notify, watch, IN_MODIFY)) < 0)
+			if((s->interval = inotify_add_watch(subtle->notify, watch, IN_MODIFY)) < 0)
 				{
 					subUtilLogWarn("Watch file `%s' does not exist\n", name);
 					subUtilLogDebug("%s\n", strerror(errno));
@@ -51,7 +51,7 @@ subSubletNew(int type,
 
 					return(NULL);
 				}
-			else XSaveContext(d->disp, d->bar.sublets, s->interval, (void *)s);
+			else XSaveContext(subtle->disp, subtle->bar.sublets, s->interval, (void *)s);
 		}
 #endif /* HAVE_SYS_INOTIFY_H */
 
@@ -70,15 +70,15 @@ subSubletNew(int type,
 void
 subSubletConfigure(void)
 {
-	if(d->sublets->ndata > 0)
+	if(subtle->sublets->ndata > 0)
 		{
 			int i, width = 3;
 
 			/* Calc window width */
-			for(i = 0; i < d->sublets->ndata; i++) width += SUBLET(d->sublets->data[i])->width;
+			for(i = 0; i < subtle->sublets->ndata; i++) width += SUBLET(subtle->sublets->data[i])->width;
 
-			XMoveResizeWindow(d->disp, d->bar.sublets, DisplayWidth(d->disp, 
-				DefaultScreen(d->disp)) - width, 0, width, d->th);
+			XMoveResizeWindow(subtle->disp, subtle->bar.sublets, DisplayWidth(subtle->disp, 
+				DefaultScreen(subtle->disp)) - width, 0, width, subtle->th);
 		}
 } /* }}} */
 
@@ -89,27 +89,27 @@ subSubletConfigure(void)
 void
 subSubletRender(void)
 {
-	if(d->sublets->ndata > 0)
+	if(subtle->sublets->ndata > 0)
 		{
 			int width = 3;
-			SubSublet *s = SUBLET(d->sublet);
+			SubSublet *s = SUBLET(subtle->sublet);
 
-			XClearWindow(d->disp, d->bar.sublets);
+			XClearWindow(subtle->disp, subtle->bar.sublets);
 
 			while(s)
 				{
 					if(s->flags & SUB_SUBLET_TYPE_METER && s->number)
 						{
-							XDrawRectangle(d->disp, d->bar.sublets, d->gcs.font, width, 2, 60, d->th - 5);
-							XFillRectangle(d->disp, d->bar.sublets, d->gcs.font, width + 2, 4, (56 * s->number) / 100, d->th - 8);
+							XDrawRectangle(subtle->disp, subtle->bar.sublets, subtle->gcs.font, width, 2, 60, subtle->th - 5);
+							XFillRectangle(subtle->disp, subtle->bar.sublets, subtle->gcs.font, width + 2, 4, (56 * s->number) / 100, subtle->th - 8);
 						}
 					else if(s->string) 
-						XDrawString(d->disp, d->bar.sublets, d->gcs.font, width, d->fy - 1, s->string, strlen(s->string));
+						XDrawString(subtle->disp, subtle->bar.sublets, subtle->gcs.font, width, subtle->fy - 1, s->string, strlen(s->string));
 
 					width += s->width;
 					s = s->next;
 				}
-			XFlush(d->disp);
+			XFlush(subtle->disp);
 		}
 } /* }}} */
 
