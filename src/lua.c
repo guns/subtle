@@ -89,11 +89,11 @@ ParseColor(lua_State *configstate,
 	char *name = GetString(configstate, "Colors", field, fallback);
 	color.pixel = 0;
 
-	if(!XParseColor(d->disp, DefaultColormap(d->disp, DefaultScreen(d->disp)), name, &color))
+	if(!XParseColor(subtle->disp, DefaultColormap(subtle->disp, DefaultScreen(subtle->disp)), name, &color))
 		{
 			subUtilLogWarn("Can't load color '%s'.\n", name);
 		}
-	else if(!XAllocColor(d->disp, DefaultColormap(d->disp, DefaultScreen(d->disp)), &color))
+	else if(!XAllocColor(subtle->disp, DefaultColormap(subtle->disp, DefaultScreen(subtle->disp)), &color))
 		subUtilLogWarn("Can't alloc color '%s'.\n", name);
 	return(color.pixel);
 } /* }}} */
@@ -190,7 +190,7 @@ SanitizeSublet(SubSublet *s)
 		{
 			if(s->string) free(s->string);
 			s->string = strdup("subtle");
-			s->width	= strlen(s->string) * d->fx + 6;
+			s->width	= strlen(s->string) * subtle->fx + 6;
 		}
 } /* }}} */
 
@@ -248,7 +248,6 @@ subLuaLoadConfig(const char *path)
 	XSetWindowAttributes attrs;
 	lua_State *configstate = StateNew();
 	SubTag *ct = NULL;
-	SubView *cv = NULL;
 
 	/* Check path */
 	if(!path)
@@ -279,60 +278,60 @@ subLuaLoadConfig(const char *path)
 	size	= GetNum(configstate, "Font", "Size", 12);
 
 	snprintf(buf, sizeof(buf), "-*-%s-%s-*-*-*-%d-*-*-*-*-*-*-*", face, style, size);
-	if(!(d->xfs = XLoadQueryFont(d->disp, buf)))
+	if(!(subtle->xfs = XLoadQueryFont(subtle->disp, buf)))
 		{
 			subUtilLogWarn("Can't load font `%s', using fixed instead.\n", face);
 			subUtilLogDebug("Font: %s\n", buf);
-			d->xfs = XLoadQueryFont(d->disp, "-*-fixed-medium-*-*-*-13-*-*-*-*-*-*-*");
-			if(!d->xfs) subUtilLogError("Can't load font `fixed`.\n");
+			subtle->xfs = XLoadQueryFont(subtle->disp, "-*-fixed-medium-*-*-*-13-*-*-*-*-*-*-*");
+			if(!subtle->xfs) subUtilLogError("Can't load font `fixed`.\n");
 		}
 
 	/* Font metrics */
-	d->fx	= (d->xfs->min_bounds.width + d->xfs->max_bounds.width) / 2;
-	d->fy	= d->xfs->max_bounds.ascent + d->xfs->max_bounds.descent;
+	subtle->fx	= (subtle->xfs->min_bounds.width + subtle->xfs->max_bounds.width) / 2;
+	subtle->fy	= subtle->xfs->max_bounds.ascent + subtle->xfs->max_bounds.descent;
 
-	d->th	= d->xfs->ascent + d->xfs->descent + 2;
-	d->bw	= GetNum(configstate, "Options", "Border",	2);
+	subtle->th	= subtle->xfs->ascent + subtle->xfs->descent + 2;
+	subtle->bw	= GetNum(configstate, "Options", "Border",	2);
 
 	/* Read colors from config */
-	d->colors.font		= ParseColor(configstate, "Font",				"#000000"); 	
-	d->colors.border	= ParseColor(configstate, "Border",			"#bdbabd");
-	d->colors.norm		= ParseColor(configstate, "Normal",			"#22aa99");
-	d->colors.focus		= ParseColor(configstate, "Focus",			"#ffa500");		
-	d->colors.cover		= ParseColor(configstate, "Shade",			"#FFE6E6");
-	d->colors.bg			= ParseColor(configstate, "Background",	"#336699");
+	subtle->colors.font		= ParseColor(configstate, "Font",				"#000000"); 	
+	subtle->colors.border	= ParseColor(configstate, "Border",			"#bdbabd");
+	subtle->colors.norm		= ParseColor(configstate, "Normal",			"#22aa99");
+	subtle->colors.focus		= ParseColor(configstate, "Focus",			"#ffa500");		
+	subtle->colors.cover		= ParseColor(configstate, "Shade",			"#FFE6E6");
+	subtle->colors.bg			= ParseColor(configstate, "Background",	"#336699");
 
 	/* View windows */
-	attrs.background_pixel	= d->colors.norm;
+	attrs.background_pixel	= subtle->colors.norm;
 	attrs.save_under				= False;
 	attrs.event_mask				= ButtonPressMask|ExposureMask|VisibilityChangeMask;
 
-	d->bar.win			= WINNEW(DefaultRootWindow(d->disp), 0, 0, DisplayWidth(d->disp, DefaultScreen(d->disp)), d->th, 0,
+	subtle->bar.win			= WINNEW(DefaultRootWindow(subtle->disp), 0, 0, DisplayWidth(subtle->disp, DefaultScreen(subtle->disp)), subtle->th, 0,
 		CWBackPixel|CWSaveUnder|CWEventMask);
-	d->bar.views		= XCreateSimpleWindow(d->disp, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
-	d->bar.sublets	= XCreateSimpleWindow(d->disp, d->bar.win, 0, 0, 1, d->th, 0, 0, d->colors.norm);
+	subtle->bar.views		= XCreateSimpleWindow(subtle->disp, subtle->bar.win, 0, 0, 1, subtle->th, 0, 0, subtle->colors.norm);
+	subtle->bar.sublets	= XCreateSimpleWindow(subtle->disp, subtle->bar.win, 0, 0, 1, subtle->th, 0, 0, subtle->colors.norm);
 
-	XSelectInput(d->disp, d->bar.views, ButtonPressMask); 
+	XSelectInput(subtle->disp, subtle->bar.views, ButtonPressMask); 
 
-	XMapWindow(d->disp, d->bar.views);
-	XMapWindow(d->disp, d->bar.sublets);
-	XMapRaised(d->disp, d->bar.win);
+	XMapWindow(subtle->disp, subtle->bar.views);
+	XMapWindow(subtle->disp, subtle->bar.sublets);
+	XMapRaised(subtle->disp, subtle->bar.win);
 
 	/* Change GCs */
-	gvals.foreground	= d->colors.border;
-	gvals.line_width	= d->bw;
-	XChangeGC(d->disp, d->gcs.border, GCForeground|GCLineWidth, &gvals);
+	gvals.foreground	= subtle->colors.border;
+	gvals.line_width	= subtle->bw;
+	XChangeGC(subtle->disp, subtle->gcs.border, GCForeground|GCLineWidth, &gvals);
 
-	gvals.foreground	= d->colors.font;
-	gvals.font				= d->xfs->fid;
-	XChangeGC(d->disp, d->gcs.font, GCForeground|GCFont, &gvals);
+	gvals.foreground	= subtle->colors.font;
+	gvals.font				= subtle->xfs->fid;
+	XChangeGC(subtle->disp, subtle->gcs.font, GCForeground|GCFont, &gvals);
 
 	/* Adjust root window */
-	attrs.cursor						= d->cursors.arrow;
-	attrs.background_pixel	= d->colors.bg;
+	attrs.cursor						= subtle->cursors.arrow;
+	attrs.background_pixel	= subtle->colors.bg;
 	attrs.event_mask				= SubstructureRedirectMask|SubstructureNotifyMask|PropertyChangeMask;
-	XChangeWindowAttributes(d->disp, DefaultRootWindow(d->disp), CWCursor|CWBackPixel|CWEventMask, &attrs);
-	XClearWindow(d->disp, DefaultRootWindow(d->disp));
+	XChangeWindowAttributes(subtle->disp, DefaultRootWindow(subtle->disp), CWCursor|CWBackPixel|CWEventMask, &attrs);
+	XClearWindow(subtle->disp, DefaultRootWindow(subtle->disp));
 
 	/* Keys */
 	lua_getglobal(configstate, "Keys");
@@ -342,16 +341,16 @@ subLuaLoadConfig(const char *path)
 			while(lua_next(configstate, -2))
 				{
 					SubKey *k = subKeyNew(lua_tostring(configstate, -2), lua_tostring(configstate, -1)); 
-					subArrayPush(d->keys, (void *)k);
+					subArrayPush(subtle->keys, (void *)k);
 					lua_pop(configstate, 1);
 				}
-			subArraySort(d->keys, subKeyCompare);
+			subArraySort(subtle->keys, subKeyCompare);
 		}
 	else printf("No keys found\n");
 
 	/* Default tag */
 	ct = subTagNew("default", NULL);
-	subArrayPush(d->tags, (void *)ct);
+	subArrayPush(subtle->tags, (void *)ct);
 
 	/* Tags */
 	lua_getglobal(configstate, "Tags");
@@ -361,17 +360,12 @@ subLuaLoadConfig(const char *path)
 			while(lua_next(configstate, -2))
 				{
 					SubTag *t = subTagNew((char *)lua_tostring(configstate, -2), (char *)lua_tostring(configstate, -1)); 
-					subArrayPush(d->tags, (void *)t);
+					subArrayPush(subtle->tags, (void *)t);
 					lua_pop(configstate, 1);
 				}
 			subTagPublish();
 		}
 	else printf("No tags found\n");
-
-	/* Default view */
-	cv = subViewNew("subtle", "default");
-	subArrayPush(d->views, (void *)cv);
-	subViewJump(cv);
 
 	/* Views */
 	lua_getglobal(configstate, "Views");
@@ -381,12 +375,25 @@ subLuaLoadConfig(const char *path)
 			while(lua_next(configstate, -2))
 				{
 					SubView *v = subViewNew((char *)lua_tostring(configstate, -2), (char *)lua_tostring(configstate, -1)); 
-					subArrayPush(d->views, (void *)v);
+					subArrayPush(subtle->views, (void *)v);
 					lua_pop(configstate, 1);
 				}
+		}
+	else ///< Create default view
+		{
+			SubView *v = subViewNew("subtle", "default");
+			subArrayPush(subtle->views, (void *)v);
+			printf("No views found \n");
+		}
+
+	if(0 < subtle->views->ndata) 
+		{
+			SubView *v = VIEW(subtle->views->data[0]);
+			v->tags |= (1L << 1); ///< Add default tag to first view
+			subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_VIEW_TAGS, (long *)&v->tags, 1); 
+			subViewJump(VIEW(subtle->views->data[0])); ///< Jump to first view
 			subViewPublish();
 		}
-	else printf("No views found\n");
 
 	lua_close(configstate);
 } /* }}} */
@@ -407,12 +414,12 @@ subLuaLoadSublets(const char *path)
 	subletstate = StateNew();
 
 #ifdef HAVE_SYS_INOTIFY_H
-	if((d->notify = inotify_init()) < 0)
+	if((subtle->notify = inotify_init()) < 0)
 		{
 			subUtilLogWarn("Can't init inotify\n");
 			subUtilLogDebug("Inotify: %s\n", strerror(errno));
 		}
-	else fcntl(d->notify, F_SETFL, O_NONBLOCK);
+	else fcntl(subtle->notify, F_SETFL, O_NONBLOCK);
 #endif /* HAVE_SYS_INOTIFY_H */
 
 	/* Check path */
@@ -452,11 +459,11 @@ subLuaLoadSublets(const char *path)
 			closedir(dir);
 			
 			/* Preserve load order */
-			for(i = 0; i < d->sublets->ndata - 1; i++) 
-				SUBLET(d->sublets->data[i])->next = SUBLET(d->sublets->data[i + 1]);
-			d->sublet = SUBLET(d->sublets->data[0]);
+			for(i = 0; i < subtle->sublets->ndata - 1; i++) 
+				SUBLET(subtle->sublets->data[i])->next = SUBLET(subtle->sublets->data[i + 1]);
+			subtle->sublet = SUBLET(subtle->sublets->data[0]);
 
-			subArraySort(d->sublets, subSubletCompare);
+			subArraySort(subtle->sublets, subSubletCompare);
 			subSubletConfigure();
 		}
 	else subUtilLogWarn("Can't find any loadable sublets\n"); 
@@ -499,7 +506,7 @@ subLuaCall(SubSublet *s)
 			case LUA_TSTRING:
 				if(s->string) free(s->string);
 				s->string = strdup((char *)lua_tostring(subletstate, -1));
-				s->width	= strlen(s->string) * d->fx + 6;
+				s->width	= strlen(s->string) * subtle->fx + 6;
 				break;
 			case LUA_TNUMBER: 
 				s->number = (int)lua_tonumber(subletstate, -1);	
@@ -525,7 +532,7 @@ subLuaKill(void)
 	if(subletstate) lua_close(subletstate);
 
 #ifdef HAVE_SYS_INOTIFY_H
-	if(d->notify) close(d->notify);
+	if(subtle->notify) close(subtle->notify);
 #endif /* HAVE_SYS_INOTIFY_H */
 
 	subUtilLogDebug("kill=lua\n");
