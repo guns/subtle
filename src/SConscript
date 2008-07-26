@@ -18,6 +18,7 @@ source = Split("""
 	event.c
 	ewmh.c
 	key.c
+	layout.c
 	lua.c
 	main.c
 	sublet.c
