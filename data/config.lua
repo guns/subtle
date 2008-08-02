@@ -10,24 +10,24 @@
 
 -- Options config {{{
 Options = {
-	Border	= 2													-- Border size of the windows
+  Border = 2                                   -- Border size of the windows
 } -- }}} 
 
 -- Font config {{{
 Font = {
-	Face	= "fixed",										-- Font face for the text
-	Style	= "medium",										-- Font style (medium|bold|italic)
-	Size	= 12													-- Font size
+  Face  = "fixed",                             -- Font face for the text
+  Style = "medium",                            -- Font style (medium|bold|italic)
+  Size  = 12                                   -- Font size
 } --- }}}
 
 -- Color config {{{
 Colors = {
-	Font				= "#ffffff",						-- Color of the font
-	Border			= "#ffffff",						-- Color of the border/tiles
-	Normal			= "#9AA38A",						-- Color of the inactive windows
-	Focus				= "#A7E737",						-- Color of the focus window
-	Shade				= "#A0B67A",						-- Color of shaded windows
-	Background	= "#9A9C95"							-- Color of root background
+  Font        = "#ffffff",                     -- Color of the font
+  Border      = "#ffffff",                     -- Color of the border/tiles
+  Normal      = "#9AA38A",                     -- Color of the inactive windows
+  Focus       = "#A7E737",                     -- Color of the focus window
+  Shade       = "#A0B67A",                     -- Color of shaded windows
+  Background  = "#9A9C95"                      -- Color of root background
 } -- }}}
 
 -- Key config {{{
@@ -38,29 +38,29 @@ Colors = {
 -- W = Super (Windows key)
 -- M = Meta key
 Keys = {
-	ViewJump1							= "A-1", 							-- Jump to view 1
-	ViewJump2							= "A-2",  						-- Jump to view 2
-	ViewJump3							= "A-3", 							-- Jump to view 3
-	ViewJump4							= "A-4", 							-- Jump to view 4
-	ViewJump5							= "A-5",							-- Jump to view 5
-	ViewMnemonic					= "A-j",							-- Jump to view
-	["subtag.sh -c -t"]		= "A-S-c",						-- Exec tag menu (client/tag)
-	["subtag.sh -c -u"]		= "A-C-c",						-- Exec tag menu (client/untag)
-	["subtag.sh -v -t"]		= "A-S-v",						-- Exec tag menu (view/tag)
-	["subtag.sh -v -u"]		= "A-C-v",						-- Exec tag menu (view/untag)
-	["xterm +sb"]					= "S-F1"							-- Exec a term
+  ViewJump1              = "A-1",              -- Jump to view 1
+  ViewJump2              = "A-2",              -- Jump to view 2
+  ViewJump3              = "A-3",              -- Jump to view 3
+  ViewJump4              = "A-4",              -- Jump to view 4
+  ViewJump5              = "A-5",              -- Jump to view 5
+  ViewMnemonic           = "A-j",              -- Jump to view
+  ["subtag.sh -c -t"]    = "A-S-c",            -- Exec tag menu (client/tag)
+  ["subtag.sh -c -u"]    = "A-C-c",            -- Exec tag menu (client/untag)
+  ["subtag.sh -v -t"]    = "A-S-v",            -- Exec tag menu (view/tag)
+  ["subtag.sh -v -u"]    = "A-C-v",            -- Exec tag menu (view/untag)
+  ["xterm +sb"]          = "S-F1"              -- Exec a term
 } -- }}}
 
 -- Tags {{{
 Tags = {
-	terms		= "[ur]+xvt|xterm",
-	browser	= "firefox|opera",
-	editor	= "gvim|scite"
+  terms   = "[ur]+xvt|xterm",
+  browser = "firefox|opera",
+  editor  = "gvim|scite"
 } -- }}}
 
 -- Views {{{
 Views = {
-	work	= "browser|terms",
-	dev 	= "editor|terms",
-	web		= "browser",
+  work  = "browser|terms",
+  dev   = "editor|terms",
+  web   = "browser"
 } -- }}}
