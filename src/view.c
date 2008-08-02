@@ -105,8 +105,17 @@ subViewConfigure(SubView *v)
               if(c->flags & SUB_STATE_SHADE) shaded++;
               else if(c->flags & SUB_STATE_FULL) full++;
               else if(c->flags & SUB_STATE_FLOAT) floated++;
+              c->flags &= ~SUB_STATE_TILED;
               total++;
             }
+        }
+
+      /* Mark tiled clients */
+      for(i = 0; i < v->layout->ndata; i++)
+        {
+          SubLayout *l = LAYOUT(v->layout->data[i]);
+
+          if(!(l->flags & SUB_TILE_SWAP)) l->c2->flags |= SUB_STATE_TILED;
         }
 
       printf("total=%d, layouts=%d\n", total, v->layout->ndata);
@@ -114,9 +123,9 @@ subViewConfigure(SubView *v)
 
       /* Calculations */
       special = shaded + resized + full + floated;
-      total    = total > special ? total - special : 1; ///< Prevent division by zero
+      total   = total > special ? total - special : 1; ///< Prevent division by zero
       cw      = width / total;
-      comp     = abs(width - total * cw - shaded * subtle->th); ///< Compensation for int rounding
+      comp    = abs(width - total * cw - shaded * subtle->th); ///< Compensation for int rounding
 
       /* Set client stuff */
       for(i = 0; i < subtle->clients->ndata; i++)
@@ -136,8 +145,11 @@ subViewConfigure(SubView *v)
               subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);          
 
               subClientMap(c);
-              subClientConfigure(c);
-              x += cw;
+              if(!(c->flags & SUB_STATE_TILED)) 
+                {
+                  x += cw;
+                  subClientConfigure(c);
+                 }
             }
         }
 
@@ -151,6 +163,7 @@ subViewConfigure(SubView *v)
             {
               if(l->flags & SUB_TILE_VERT) 
                 {
+                    
                   l->c1->rect.height  = l->c1->rect.height / 2;
                   l->c2->rect.x       = l->c1->rect.x;
                   l->c2->rect.y       = l->c1->rect.y + l->c1->rect.height;
@@ -164,17 +177,44 @@ subViewConfigure(SubView *v)
                   l->c2->rect.y       = l->c1->rect.y;
                   l->c2->rect.width   = l->c1->rect.width;          
                   l->c2->rect.height  = l->c1->rect.height;
+
+                  if(l->c1->flags & SUB_STATE_RESIZE)
+                    {
+                      int size = l->c1->rect.width * l->c1->size / 100;
+
+                      l->c1->rect.width = size;
+                      l->c2->rect.x     = l->c1->rect.x + size;
+                      l->c2->rect.width = 2 * l->c2->rect.width - size;
+
+                      if(l->c2->flags & SUB_STATE_RESIZE)
+                        {
+                          l->c2->flags &= ~SUB_STATE_RESIZE;
+                          l->c2->size  = 0;
+                        }
+                    }
+                  else if(l->c2->flags & SUB_STATE_RESIZE)
+                    {
+                      int size = l->c2->rect.width * l->c2->size / 100;
+
+                      l->c2->rect.width = size;
+                      l->c1->rect.width = 2 * l->c1->rect.width - size;
+                      l->c2->rect.x     = l->c1->rect.width;
+                    }
+                    
                 }
               else if(l->flags & SUB_TILE_SWAP) 
                 {
                   XRectangle r = l->c1->rect;
 
+
                   l->c1->rect = l->c2->rect;
                   l->c2->rect = r;
                 }
 
-               printf("c1: x=%.2d, y=%.2d, width=%.2d, height=%.2d\n", l->c1->rect.x, l->c1->rect.y, l->c1->rect.width, l->c1->rect.height);
-               printf("c2: x=%.2d, y=%.2d, width=%.2d, height=%.2d\n", l->c2->rect.x, l->c2->rect.y, l->c2->rect.width, l->c2->rect.height);
+               printf("c1: x=%.3d, y=%.3d, width=%.3d, height=%.3d, size=%.3d\n", 
+                l->c1->rect.x, l->c1->rect.y, l->c1->rect.width, l->c1->rect.height, l->c1->size);
+               printf("c2: x=%.3d, y=%.3d, width=%.3d, height=%.3d, size=%.3d\n", 
+                l->c2->rect.x, l->c2->rect.y, l->c2->rect.width, l->c2->rect.height, l->c2->size);
 
               subClientConfigure(l->c1);
               subClientConfigure(l->c2);
@@ -182,6 +222,40 @@ subViewConfigure(SubView *v)
           else subArrayPop(v->layout, (void *)l); ///< Sanitize
         }
     }
+} /* }}} */
+
+ /** subViewArrange {{{
+  * @brief Remove old layouts and add new
+  * @param[in] v   A #SubView
+  * @param[in] c1  A #SubClient
+  * @param[in] c2  A #SubClient
+  **/
+
+void
+subViewArrange(SubView *v,
+  SubClient *c1,
+  SubClient *c2,
+  int mode)
+{
+  int i;
+  SubLayout *l = NULL;
+
+  assert(v && c1 && c2);
+
+  /* Remove old layouts */
+  for(i = 0; i < v->layout->ndata; i++)
+    {
+      l = LAYOUT(v->layout->data[i]);
+
+      if(!(l->flags & SUB_TILE_SWAP))
+        {
+          if(c1 == l->c1 || c2 == l->c1 || c1 == l->c2 || c2 == l->c2)
+            subArrayPop(v->layout, (void *)l);
+        }
+    }
+ 
+  l = subLayoutNew(c1, c2, mode);
+  subArrayPush(v->layout, (void *) l);
 } /* }}} */
 
  /** subViewUpdate {{{ 
