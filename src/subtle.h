@@ -79,11 +79,12 @@
 #define SUB_STATE_STACK        (1L << 16)                         ///< Stacked tiling window
 #define SUB_STATE_TRANS        (1L << 17)                         ///< Transient window
 #define SUB_STATE_DEAD         (1L << 18)                         ///< Dead window
+#define SUB_STATE_TILED        (1L << 19)                         ///< Tiled client
 
 /* Client preferences */
-#define SUB_PREF_INPUT         (1L << 19)                         ///< Active/passive focus-model
-#define SUB_PREF_FOCUS         (1L << 20)                         ///< Send focus message
-#define SUB_PREF_CLOSE         (1L << 21)                         ///< Send close message
+#define SUB_PREF_INPUT         (1L << 20)                         ///< Active/passive focus-model
+#define SUB_PREF_FOCUS         (1L << 21)                         ///< Send focus message
+#define SUB_PREF_CLOSE         (1L << 22)                         ///< Send close message
 
 /* Drag states */
 #define SUB_DRAG_START         (1L << 1)                          ///< Drag start
@@ -191,8 +192,6 @@ typedef struct subclient_t /* {{{ */
   Colormap           cmap;                                        ///< Client colormap
   Window             frame, caption, title, win;                  ///< Client decoration windows
   Window             left, right, bottom;                         ///< Client border windows
-  struct subclient_t *next;                                       ///< Client next sibling
-  struct subclient_t *down;                                       ///< Client down children
 } SubClient; /* }}} */
 
 typedef struct subtag_t /* {{{ */
@@ -340,6 +339,8 @@ void subLayoutKill(SubLayout *l);                                 ///< Kill layo
 /* view.c {{{ */
 SubView *subViewNew(char *name, char *tags);                      ///< Create new view
 void subViewConfigure(SubView *v);                                ///< Configure view
+void subViewArrange(SubView *v, SubClient *c1, 
+  SubClient *c2, int mode);                                       ///< Arrange view
 void subViewUpdate(void);                                         ///< Update views
 void subViewRender(void);                                         ///< Render views
 void subViewJump(SubView *v);                                     ///< Jump to view
