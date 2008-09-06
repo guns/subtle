@@ -1,3 +1,13 @@
+#
+# @package subtle
+# @file Rake build file
+# @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
+# @version $Id$
+#
+# This program can be distributed under the terms of the GNU GPL.
+# See the file COPYING.
+#
+
 require("rake/clean")
 require("mkmf")
 require("yaml")
@@ -6,7 +16,7 @@ require("yaml")
 # Settings
 #
 
-# Options / defines
+# Options / defines {{{
 @options = {
   "destdir"    => "/",
   "prefix"     => "/usr/local",
@@ -27,8 +37,9 @@ require("yaml")
   "DIR_CONFIG"        => "$(sysconfdir)/subtle",
   "DIR_SUBLET"        => "$(datadir)/subtle"
 }  
+# }}}
 
-# Lists
+# Lists {{{
 PG_WM    = "subtle"
 PG_RMT   = "subtler"
 
@@ -47,11 +58,13 @@ HEADER   = [
   "signal.h", "errno.h", "assert.h", "regex.h", "sys/time.h",
   "sys/types.h", "sys/inotify.h", "execinfo.h"
 ]
+# }}}
 
-# Configuration
-Logging.logfile("config.log") #< mkmf.rb log
+# Miscellaneous {{{
+Logging.logfile("config.log") #< mkmf log
 CLEAN.include(PG_WM, PG_RMT, OBJ_WM, OBJ_RMT, "config.h", "config.log", "config.yml")
 CLOBBER.include(@options["builddir"])
+# }}}
 
 #
 # Funcs
@@ -84,7 +97,6 @@ def make_header(header = "config.h")
   for line in $defs
     case line
     when /^-D([^=]+)(?:=(.*))?/
-    puts $2
       hdr << "#define #$1 #{$2 ? $2 : 1}\n"
     when /^-U(.*)/
       hdr << "#undef #$1\n"
@@ -223,14 +235,14 @@ end # }}}
 
 # Task: help {{{
 desc("Show help")
-task(:help => [:options]) do
+task(:help => [:config]) do
     puts <<EOF
-destdir=PATH       Set intermediare install prefix (default: #{@options["destdir"]})
-prefix=PATH        Set install prefix (default: #{@options["prefix"]})
-bindir=PATH        Set binary directory (default: #{@options["bindir"]})
-sysconfdir=PATH    Set config directory (default: #{@options["sysconfdir"]})
-datadir=PATH       Set data directory (default: #{@options["datadir"]})
-debug=yes          Build with debugging messages (default: #{@options["debug"]})
+destdir=PATH       Set intermediate install prefix (current: #{@options["destdir"]})
+prefix=PATH        Set install prefix (current: #{@options["prefix"]})
+bindir=PATH        Set binary directory (current: #{@options["bindir"]})
+sysconfdir=PATH    Set config directory (current: #{@options["sysconfdir"]})
+datadir=PATH       Set data directory (current: #{@options["datadir"]})
+debug=yes          Build with debugging messages (current: #{@options["debug"]})
 EOF
 end # }}}
 
