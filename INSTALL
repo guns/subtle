@@ -2,23 +2,24 @@ Install
 -------
 subtle has the following dependencies:
 
-1. Ruby[1] (>=1.8)
-3. X11[2] (>=6.8.2)
+ 1. Ruby[1] (>=1.8)
+ 2. Rake[2] (>=0.8)
+ 3. X11[2] (>=6.8.2)
 
 Currently there is no stable release of subtle available.
 If you like you can clone the Mercurial repository and install
 the developer version as followed:
 
-1. hg clone http://hg.scrapping.cc/subtle
-2. cd subtle
-3. rake
-4. rake install
+ 1. hg clone http://hg.scrapping.cc/subtle
+ 2. cd subtle
+ 3. rake [options]
+ 4. rake install
 
 Per default subtle will be installed with /usr/local as prefix.
-This can be easily changed. (See: rake help)
+This can be easily changed. (see: rake help)
 
 Therefore subtle will load the systemwide config and every sublets
-that is in the sublets path. (/usr/local/share/subtle/sublets)
+that is in the sublets path. (default: /usr/local/share/subtle/sublets)
 
 That may not be suitable for every user, so just create ~/.subtle
 and copy the latest config and the desired sublets into it.
@@ -27,4 +28,5 @@ Always compare your existing config with the one of the repository
 to get the latest options.
 
 [1] http://www.ruby-lang.org
+[2] http://rake.rubyforge.org/
 [2] http://xorg.freedesktop.org
