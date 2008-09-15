@@ -2,8 +2,8 @@
  /**
   * @package subtle
   *
-  * @file Main functions
-  * @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
+  * @file Main program
+  * @copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
   * @version $Id$
   * 
   * This program can be distributed under the terms of the GNU GPL.
@@ -11,7 +11,6 @@
   **/
 
 #include <getopt.h>
-#include <lua.h>
 #include <sys/wait.h>
 #include "subtle.h"
 
@@ -35,7 +34,7 @@ Usage(void)
           "  -v, --version         \t Show version info and exit\n" \
           "  -D, --debug           \t Print debugging messages\n" \
           "Please report bugs to <%s>\n", 
-          PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_BUGREPORT);
+          PKG_NAME, PKG_NAME, PKG_NAME, PKG_BUGREPORT);
 } /* }}} */
 
 /* Version {{{ */
@@ -44,8 +43,8 @@ Version(void)
 {
   printf("%s %s - Copyright (c) 2005-2008 Christoph Kappel\n" \
           "Released under the GNU General Public License\n" \
-          "Compiled for X%d and %s\n", PACKAGE_NAME, PACKAGE_VERSION,
-          X_PROTOCOL, LUA_VERSION);
+          "Compiled for X%dR%d and Ruby %s\n", PKG_NAME, PKG_VERSION,
+          X_PROTOCOL, X_PROTOCOL_REVISION, RUBY_VERSION);
 } /* }}} */
 
 /* Signal {{{ */
@@ -61,7 +60,7 @@ Signal(int signum)
     {
       case SIGHUP:
         printf("Reloading config..\n");
-        subLuaLoadConfig(config);
+        subRubyLoadConfig(config);
         break;
       case SIGTERM:
       case SIGINT: 
@@ -71,8 +70,8 @@ Signal(int signum)
         subArrayKill(subtle->sublets, True);
         subArrayKill(subtle->keys, True);
 
-        subLuaKill();
-        subDisplayKill();
+        subRubyFinish();
+        subDisplayFinish();
 
         free(subtle);
         exit(1);
@@ -84,7 +83,7 @@ Signal(int signum)
         backtrace_symbols_fd(array, size, 0);
 #endif /* HAVE_EXECINFO_H */
 
-        printf("Please report this bug to <%s>\n", PACKAGE_BUGREPORT);
+        printf("Please report this bug to <%s>\n", PKG_BUGREPORT);
         abort();
       case SIGCHLD:
         wait(NULL);
@@ -126,7 +125,7 @@ main(int argc,
           case 'D': subUtilLogSetDebug();  break;
 #endif /* DEBUG */
           case '?':
-            printf("Try `%s --help for more information\n", PACKAGE_NAME);
+            printf("Try `%s --help for more information\n", PKG_NAME);
             return(-1);
         }
     }
@@ -141,20 +140,22 @@ main(int argc,
   sigaction(SIGSEGV, &act, NULL);
   sigaction(SIGCHLD, &act, NULL);
 
-  subtle = (SubSubtle *)subUtilAlloc(1, sizeof(SubSubtle));
+  subtle = SUBTLE(subUtilAlloc(1, sizeof(SubSubtle)));
 
-  subDisplayNew(display);
-
+  /* Init */
+  subDisplayInit(display);
+  subRubyInit();
   subEwmhInit();
   subKeyInit();
 
-  subLuaLoadConfig(config);
-  subLuaLoadSublets(sublets);
+  /* Config */
+  subRubyLoadConfig(config);
+  subRubyLoadSublets(sublets);
 
   subDisplayScan();
   subEventLoop();
 
   raise(SIGTERM);
   
-  return(0);
+  return(0); ///< Make compiler happy
 } /* }}} */
