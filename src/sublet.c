@@ -3,7 +3,7 @@
   * @package subtle
   *
   * @file Sublet functions
-  * @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
+  * @copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
   * @version $Id$
   *
   * This program can be distributed under the terms of the GNU GPL.
@@ -14,25 +14,21 @@
 
  /** subSubletNew {{{
   * @brief Create a new sublet 
-  * @param[in] type      Type of the sublet
-  * @param[in] name      Name of the sublet
-  * @param[in] ref       Lua object reference
-  * @param[in] interval  Update interval
-  * @param[in] watch     Watch file
+  * @param[in]  ref       Ruby object reference
+  * @param[in]  interval  Update interval
+  * @param[in]  watch     Watch file
   * @return Returns a #SubSublet or \p NULL
   **/
 
 SubSublet *
-subSubletNew(int type,
-  char *name,
-  int ref,
+subSubletNew(unsigned long ref,
   time_t interval,
   char *watch)
 {
-  SubSublet *s = (SubSublet *)subUtilAlloc(1, sizeof(SubSublet));
+  SubSublet *s = SUBLET(subUtilAlloc(1, sizeof(SubSublet)));
 
   /* Init sublet */
-  s->flags    = SUB_TYPE_SUBLET|type;
+  s->flags    = SUB_TYPE_SUBLET;
   s->ref      = ref;
   s->interval = interval;
   s->time     = subUtilTime();
@@ -40,11 +36,11 @@ subSubletNew(int type,
   subArrayPush(subtle->sublets, (void *)s);
 
 #ifdef HAVE_SYS_INOTIFY_H
-  if(s->flags & SUB_SUBLET_TYPE_WATCH)
+  if(NULL != watch)
     {
       if((s->interval = inotify_add_watch(subtle->notify, watch, IN_MODIFY)) < 0)
         {
-          subUtilLogWarn("Watch file `%s' does not exist\n", name);
+          subUtilLogWarn("Watch file `%s' does not exist\n", watch);
           subUtilLogDebug("%s\n", strerror(errno));
 
           free(s);
@@ -55,10 +51,9 @@ subSubletNew(int type,
     }
 #endif /* HAVE_SYS_INOTIFY_H */
 
-  subLuaCall(s);
+  subRubyCall(s);
 
-  printf("Loading sublet %s (%d)\n", name, (int)interval);
-  subUtilLogDebug("new=sublet, name=%s, ref=%d, interval=%d, watch=%s\n", name, ref, interval, watch);    
+  subUtilLogDebug("new=sublet, ref=%ld, interval=%d, watch=%s\n", ref, interval, watch);    
 
   return(s);
 } /* }}} */ 
@@ -96,15 +91,16 @@ subSubletRender(void)
 
       XClearWindow(subtle->disp, subtle->bar.sublets);
 
+      /* Render every sublet */
       while(s)
         {
-          if(s->flags & SUB_SUBLET_TYPE_METER && s->number)
+          if(s->flags & SUB_DATA_FIXNUM && s->fixnum)
             {
               XDrawRectangle(subtle->disp, subtle->bar.sublets, subtle->gcs.font, width, 2, 60, subtle->th - 5);
               XFillRectangle(subtle->disp, subtle->bar.sublets, subtle->gcs.font, width + 2, 4, 
-                (56 * s->number) / 100, subtle->th - 8);
+                (56 * s->fixnum) / 100, subtle->th - 8);
             }
-          else if(s->string) 
+          else if(s->flags & SUB_DATA_STRING && s->string) 
             XDrawString(subtle->disp, subtle->bar.sublets, subtle->gcs.font, width, subtle->fy - 1, 
               s->string, s->width);
 
@@ -117,12 +113,12 @@ subSubletRender(void)
 
  /** subSubletCompare {{{
   * @brief Compare two sublets
-  * @param[in] a  A #SubSublet
-  * @param[in] b  A #SubSublet
+  * @param[in]  a  A #SubSublet
+  * @param[in]  b  A #SubSublet
   * @return Returns the result of the comparison of both sublets
-  * @retval -1 a is smaller
-  * @retval 0  a and b are equal  
-  * @retval 1  a is greater
+  * @retval  -1  a is smaller
+  * @retval  0   a and b are equal  
+  * @retval  1   a is greater
   **/
 
 int
@@ -138,7 +134,7 @@ subSubletCompare(const void *a,
 
  /** subSubletKill {{{
   * @brief Kill sublet
-  * @param[in] s  A #SubSublet
+  * @param[in]  s  A #SubSublet
   **/
 
 void
@@ -146,11 +142,12 @@ subSubletKill(SubSublet *s)
 {
   assert(s);
 
-  printf("Killing sublet (#%d)\n", s->ref);
+  printf("Killing sublet (#%ld)\n", s->ref);
 
-  if(subtle->sublet == s) subtle->sublet = s->next; ///< Update first node of linked list
+  /* Update linked list */
+  if(subtle->sublet == s) subtle->sublet = s->next;
 
-  if(!(s->flags & SUB_SUBLET_TYPE_METER) && s->string) free(s->string);
+  if(s->string) free(s->string);
   free(s);
 
   subUtilLogDebug("kill=sublet\n");
