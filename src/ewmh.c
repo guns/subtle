@@ -52,7 +52,7 @@ subEwmhInit(void)
 
   /* EWMH: Window manager information */
   subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_SUPPORTING_WM_CHECK, &DefaultRootWindow(subtle->disp), 1);
-  subEwmhSetString(DefaultRootWindow(subtle->disp), SUB_EWMH_WM_NAME, PACKAGE_NAME);
+  subEwmhSetString(DefaultRootWindow(subtle->disp), SUB_EWMH_WM_NAME, PKG_NAME);
   subEwmhSetCardinals(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_WM_PID, &pid, 1);
   subEwmhSetCardinals(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_DESKTOP_VIEWPORT, (long *)&data, 2);
 
@@ -80,7 +80,7 @@ subEwmhInit(void)
 
  /** subEwmhFind {{{
   * @brief Find intern atoms
-  * @param[in] hint  Hint number
+  * @param[in]  hint  Hint number
   * @return Returns a #Atom
   **/
 
@@ -93,10 +93,10 @@ subEwmhFind(int hint)
 
  /** subEwmhGetProperty {{{
   * @brief Get property from window
-  * @param[in] win    Window
-  * @param[in] type   Atom type
-  * @param[in] hint   Hint number
-  * @param[out] size  Size of items
+  * @param[in]   win   Window
+  * @param[in]   type  Atom type
+  * @param[in]   hint  Hint number
+  * @param[out]  size  Size of items
   * @return Returns property data
   **/
 
@@ -130,10 +130,10 @@ subEwmhGetProperty(Window win,
 
  /** subEwmhSetWindows {{{
   * @brief Change window property
-  * @param[in] win     Window
-  * @param[in] hint    Hint number
-  * @param[in] values  Window list
-  * @param[in] size    Size of the list
+  * @param[in]  win     Window
+  * @param[in]  hint    Hint number
+  * @param[in]  values  Window list
+  * @param[in]  size    Size of the list
   **/
 
 void
@@ -147,10 +147,10 @@ subEwmhSetWindows(Window win,
 
  /** subEwmhSetCardinals {{{
   * @brief Change window property
-  * @param[in] win     Window
-  * @param[in] hint    Hint number
-  * @param[in] values  Cardinal list
-  * @param[in] size    Size of the list
+  * @param[in]  win     Window
+  * @param[in]  hint    Hint number
+  * @param[in]  values  Cardinal list
+  * @param[in]  size    Size of the list
   **/
 
 void
@@ -164,9 +164,9 @@ subEwmhSetCardinals(Window win,
 
  /** subEwmhSetString {{{
   * @brief Change window property
-  * @param[in] win    Window
-  * @param[in] hint   Hint number
-  * @param[in] value  String value
+  * @param[in]  win    Window
+  * @param[in]  hint   Hint number
+  * @param[in]  value  String value
   **/
 
 void
@@ -180,10 +180,10 @@ subEwmhSetString(Window win,
 
  /** subEwmhSetStrings {{{
   * @brief Change window property
-  * @param[in] win     Window
-  * @param[in] hint    Hint number
-  * @param[in] values  String list
-  * @param[in] size    Size of the list
+  * @param[in]  win     Window
+  * @param[in]  hint    Hint number
+  * @param[in]  values  String list
+  * @param[in]  size    Size of the list
   **/
 
 void

@@ -3,7 +3,7 @@
   * @package subtle
   *
   * @file Event functions
-  * @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
+  * @copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
   * @version $Id$
   *
   * This program can be distributed under the terms of the GNU GPL.
@@ -498,7 +498,7 @@ subEventLoop(void)
                         SubSublet *ws = SUBLET(subUtilFind(subtle->bar.sublets, event->wd));
                         if(ws)
                           {
-                            subLuaCall(ws);
+                            subRubyCall(ws);
                             subSubletConfigure();
                             subSubletRender();
                           }
@@ -517,7 +517,7 @@ subEventLoop(void)
               s->time = ctime + s->interval; ///< Adjust seconds
               s->time -= s->time % s->interval;
 
-              subLuaCall(s);
+              subRubyCall(s);
               subArraySort(subtle->sublets, subSubletCompare);
 
               s = SUBLET(subtle->sublets->data[0]);

@@ -3,7 +3,7 @@
 	* @package subtle
 	*
 	* @file Key functions
-	* @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
+	* @copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
 	* @version $Id$
 	*
 	* This program can be distributed under the terms of the GNU GPL.
@@ -39,9 +39,9 @@ subKeyInit(void)
 } /* }}} */
 
  /** subKeyNew {{{
-	* Create new key
-	* @param[in] key		Key name
-	* @param[in] value	Key action
+	* @brief Create new key
+	* @param[in]  key	   Key name
+	* @param[in]  value	 Key action
 	* @return Returns a #SubKey or \p NULL
 	**/
 
@@ -113,8 +113,8 @@ subKeyNew(const char *key,
 
  /** subKeyFind {{{
 	* @brief Find key
-	* @param[in] code	A keycode
-	* @param[in] mod	A modmask
+	* @param[in]  code 	A keycode
+	* @param[in]  mod	  A modmask
 	* @return Returns a #SubKey or \p NULL
 	**/
 
@@ -152,7 +152,7 @@ subKeyGet(void)
 
  /** subKeyGrab {{{
 	* @brief Grab keys for a window
-	* @param[in] win	Window
+	* @param[in]  win	 Window
 	**/
 
 void
@@ -183,7 +183,7 @@ subKeyGrab(Window win)
 
  /** subKeyUngrab {{{
 	* @brief Ungrab keys for a window
-	* @param[in] win	Window
+	* @param[in]  win	Window
 	**/
 
 void
@@ -195,12 +195,12 @@ subKeyUngrab(Window win)
 
  /** subKeyCompare {{{
 	* @brief Compare two keys
-	* @param[in] a	A #SubKey
-	* @param[in] b	A #SubKey
+	* @param[in]  a	 A #SubKey
+	* @param[in]  b	 A #SubKey
 	* @return Returns the result of the comparison of both keys
-	* @retval -1 First is smaller
-	* @retval 0	Both are equal	
-	* @retval 1 First is greater
+	* @retval  -1  First is smaller
+	* @retval  0	 Both are equal	
+	* @retval  1   First is greater
 	**/
 
 int

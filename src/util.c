@@ -3,7 +3,7 @@
   * @package subtle
   *
   * @file Utility functions
-  * @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
+  * @copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
   * @version $Id$
   *
   * This program can be distributed under the terms of the GNU GPL.
@@ -30,11 +30,11 @@ subUtilLogSetDebug(void)
 
  /** subUtilLog {{{
   * @brief Print messages depending on type
-  * @param[in] type   Message type
-  * @param[in] file   File name
-  * @param[in] line   Line number
-  * @param[in] format Message format
-  * @param[in] ...    Variadic arguments
+  * @param[in]  type    Message type
+  * @param[in]  file    File name
+  * @param[in]  line    Line number
+  * @param[in]  format  Message format
+  * @param[in]  ...     Variadic arguments
   **/
 
 void
@@ -67,8 +67,8 @@ subUtilLog(int type,
 
  /** subUtilLogXError {{{
   * @brief Print X error messages
-  * @params[in] display    Display
-  * @params[in] ev        #XErrorEvent
+  * @params[in]  display  Display
+  * @params[in]  ev       #XErrorEvent
   * @retval 0 Default return value
   **/
 
@@ -95,8 +95,8 @@ subUtilLogXError(Display *disp,
 
  /** subUtilAlloc {{{
   * @brief Alloc memory and check result
-  * @param[in] n    Number of elements
-  * @param[in] size Size of the memory block
+  * @param[in]  n     Number of elements
+  * @param[in]  size  Size of the memory block
   * @return Returns new memory block or \p NULL
   **/
 
@@ -111,8 +111,8 @@ subUtilAlloc(size_t n,
 
  /** subUtilRealloc {{{
   * @brief Realloc memory and check result
-  * @param[in] mem  Memory block
-  * @param[in] size Size of the memory block
+  * @param[in]  mem   Memory block
+  * @param[in]  size  Size of the memory block
   * @return Returns new memory block or \p NULL
   **/
 
@@ -127,8 +127,8 @@ subUtilRealloc(void *mem,
 
  /** subUtilFind {{{
   * @brief Find data with the context manager
-  * @param[in] win   Window
-  * @param[in] id    Context id
+  * @param[in]  win  Window
+  * @param[in]  id   Context id
   * @return Returns found data pointer or \p NULL
   **/
 
@@ -159,7 +159,7 @@ subUtilTime(void)
 
  /** subUtilRegexNew {{{ 
   * @brief Create new regex
-  * @param[in] regex  Regex 
+  * @param[in]  regex  Regex 
   * @return Returns a #regex_t or \p NULL
   **/
 
@@ -194,10 +194,10 @@ subUtilRegexNew(char *regex)
 
  /** subUtilRegexMatch {{{
   * @brief Check if string match preg
-  * @param[in] preg      A #regex_t
-  * @param[in] string    String
-  * @retval 1 If string matches preg
-  * @retval 0 If string doesn't match
+  * @param[in]  preg      A #regex_t
+  * @param[in]  string    String
+  * @retval  1  If string matches preg
+  * @retval  0  If string doesn't match
   **/
 
 int
@@ -211,7 +211,7 @@ subUtilRegexMatch(regex_t *preg,
 
  /** subUtilRegexKill {{{
   * @brief Kill preg
-  * @param[in] preg  #regex_t
+  * @param[in]  preg  #regex_t
   **/
 
 void

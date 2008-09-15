@@ -3,7 +3,7 @@
   * @package subtle
   *
   * @file View functions
-  * @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
+  * @copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
   * @version $Id$
   *
   * This program can be distributed under the terms of the GNU GPL.
@@ -14,8 +14,8 @@
 
  /** subViewNew {{{
   * @brief Create a new view
-  * @param[in] name  Name of the view
-  * @param[in] tags  Tags for the view
+  * @param[in]  name  Name of the view
+  * @param[in]  tags  Tags for the view
   * @return Returns a #SubView or \p NULL
   **/
 
@@ -73,7 +73,7 @@ subViewNew(char *name,
 
  /** subViewConfigure {{{
   * @brief Calculate client sizes and tiling layout
-  * @param[in] v  A #SubView
+  * @param[in]  v  A #SubView
   **/
 
 void
@@ -226,9 +226,9 @@ subViewConfigure(SubView *v)
 
  /** subViewArrange {{{
   * @brief Remove old layouts and add new
-  * @param[in] v   A #SubView
-  * @param[in] c1  A #SubClient
-  * @param[in] c2  A #SubClient
+  * @param[in]  v   A #SubView
+  * @param[in]  c1  A #SubClient
+  * @param[in]  c2  A #SubClient
   **/
 
 void
@@ -282,7 +282,7 @@ subViewUpdate(void)
 
  /** subViewRender {{{ 
   * @brief Render view button bar
-  * @param[in] v  A #SubView
+  * @param[in]  v  A #SubView
   **/
 
 void
@@ -308,7 +308,7 @@ subViewRender(void)
 
  /** subViewJump {{{
   * @brief Jump to view
-  * @param[in] v  A #SubView
+  * @param[in]  v  A #SubView
   **/
 
 void
@@ -385,7 +385,7 @@ subViewPublish(void)
 
  /** subViewSanitize {{{
   * @brief Remove any layout for c
-  * @param[in] c  A #SubClient
+  * @param[in]  c  A #SubClient
   **/
 
 void
@@ -408,9 +408,9 @@ subViewSanitize(SubClient *c)
     }
 } /* }}} */
 
- /** subViewKill {{{
+ /** SubViewKill {{{
   * @brief Kill a view 
-  * @param[in] v  A #SubView
+  * @param[in]  v  A #SubView
   **/
 
 void

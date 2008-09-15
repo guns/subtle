@@ -3,7 +3,7 @@
   * @package subtle
   *
   * @file Array functions
-  * @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
+  * @copyright 2005-2008 Christoph Kappel <unexist@dorfelite.net>
   * @version $Id$
   *
   * This program can be distributed under the terms of the GNU GPL.
@@ -25,8 +25,8 @@ subArrayNew(void)
 
  /** subArrayPush {{{
   * @brief Push element to array
-  * @param[in] a  A #SubArray
-  * @param[in] e  New element
+  * @param[in]  a  A #SubArray
+  * @param[in]  e  New element
   **/
 
 void
@@ -41,8 +41,8 @@ subArrayPush(SubArray *a,
 
  /** subArrayPop {{{
   * @brief Pop element from array
-  * @param[in] a  A #SubArray
-  * @param[in] e  Array element
+  * @param[in]  a  A #SubArray
+  * @param[in]  e  Array element
   **/
 
 void
@@ -66,8 +66,8 @@ subArrayPop(SubArray *a,
 
  /** subArrayFind {{{
   * @brief Find array id of element
-  * @param[in] a  A #SubArray
-  * @param[in] e  Element
+  * @param[in]  a  A #SubArray
+  * @param[in]  e  Element
   * @return Returns found idx or \p -1
   **/
 
@@ -85,9 +85,9 @@ subArrayFind(SubArray *a,
 
  /** subArraySplice {{{
   * @brief Splice array at idx with len
-  * @param[in] a     A #SubArray
-  * @param[in] idx   Array index
-  * @param[in] len   Length
+  * @param[in]  a     A #SubArray
+  * @param[in]  idx   Array index
+  * @param[in]  len   Length
   **/
 
 void
@@ -107,8 +107,8 @@ subArraySplice(SubArray *a,
 
   /** subArraySort {{{ 
    * @brief Sort array with given compare function
-   * @param[in] a       A #SubArray
-   * @param[in] compar  Compare function
+   * @param[in]  a       A #SubArray
+   * @param[in]  compar  Compare function
    **/
 
 void
@@ -122,8 +122,8 @@ subArraySort(SubArray *a,
 
  /** subArrayKill {{{
   * @brief Kill array with all elements
-  * @param[in] a      A #SubArray
-  * @param[in] clean  Free elements or not
+  * @param[in]  a      A #SubArray
+  * @param[in]  clean  Free elements or not
   **/
 
 void

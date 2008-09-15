@@ -3,7 +3,7 @@
   * @package subtle
   *
   * @file Tag functions
-  * @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
+  * @copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
   * @version $Id$
   *
   * This program can be distributed under the terms of the GNU GPL.
@@ -14,8 +14,8 @@
 
  /** subTagNew {{{
   * @brief Create new tag
-  * @param[in] name   Name of the tag
-  * @param[in] regex  Regex
+  * @param[in]  name   Name of the tag
+  * @param[in]  regex  Regex
   * @return Returns a #SubTag or \p NULL
   **/
 
@@ -122,7 +122,7 @@ subTagPublish(void)
 
  /** subTagKill {{{
   * @brief Delete tag
-  * @param[in] t  A #SubTag
+  * @param[in]  t  A #SubTag
   **/
 
 void
