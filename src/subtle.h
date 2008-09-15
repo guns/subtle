@@ -47,6 +47,7 @@
 #define WINWIDTH(c)  (c->rect.width - 2 * subtle->bw)             ///< Get real width
 #define WINHEIGHT(c) (c->rect.height - subtle->th - subtle->bw)   ///< Get real height
 
+#define SUBTLE(s) ((SubSubtle *)s)                                ///< Cast to SubSubtle
 #define ARRAY(a)  ((SubArray *)a)                                 ///< Cast to SubArray
 #define VIEW(v)   ((SubView *)v)                                  ///< Cast to SubView
 #define LAYOUT(l) ((SubLayout *)l)                                ///< Cast to SubLayout
@@ -104,12 +105,10 @@
 #define SUB_KEY_VIEW_MNEMONIC  (1L << 11)                         ///< Jump to view
 #define SUB_KEY_EXEC           (1L << 12)                         ///< Exec an app
 
-/* Sublets */
-#define SUB_SUBLET_TYPE_TEXT   (1L << 10)                         ///< Text sublet
-#define SUB_SUBLET_TYPE_TEASER (1L << 11)                         ///< Teaser sublet
-#define SUB_SUBLET_TYPE_METER  (1L << 12)                         ///< Meter sublet
-#define SUB_SUBLET_TYPE_WATCH  (1L << 13)                         ///< Watch sublet
-#define SUB_SUBLET_TYPE_HELPER (1L << 14)                         ///< Helper sublet
+/* Data types */
+#define SUB_DATA_STRING        (1L << 10)                         ///< String data
+#define SUB_DATA_FIXNUM        (1L << 11)                         ///< Fixnum data
+#define SUB_DATA_NIL           (1L << 12)                         ///< Nil data
 
 /* ICCCM */
 #define SUB_EWMH_WM_NAME                       0                  ///< Name of window
@@ -177,74 +176,6 @@
 /* }}} */
 
 /* Typedefs {{{ */
-typedef struct subarray_t /* {{{ */
-{
-  int    ndata;                                                   ///< Array data count
-  void  **data;                                                   ///< Array data
-} SubArray; /* }}} */
-
-typedef struct subclient_t /* {{{ */
-{
-  FLAGS              flags;                                       ///< Client flags
-  XRectangle         rect;                                        ///< Client rect
-  int                size, tags;                                  ///< Client size, tags
-  char               *name;                                       ///< Client name
-  Colormap           cmap;                                        ///< Client colormap
-  Window             frame, caption, title, win;                  ///< Client decoration windows
-  Window             left, right, bottom;                         ///< Client border windows
-} SubClient; /* }}} */
-
-typedef struct subtag_t /* {{{ */
-{
-  FLAGS    flags;                                                 ///< Tag flags
-  char    *name;                                                  ///< Tag name
-  regex_t *preg;                                                  ///< Tag regex
-} SubTag; /* }}} */
-
-typedef struct sublayout_t /* {{{ */
-{
-  FLAGS  flags;                                                   ///< Layout flags
-  struct subclient_t *c1;                                         ///< Layout client1
-  struct subclient_t *c2;                                         ///< Layout client2
-} SubLayout; /* }}} */
-
-typedef struct subview_t /* {{{ */
-{
-  FLAGS             flags;                                        ///< View flags
-  int               tags, width;                                  ///< View tags, button width, layout
-  Window            frame, button;                                ///< View frame, button
-  char              *name;                                        ///< View name
-  struct subarray_t *layout;                                      ///< View layout
-} SubView; /* }}} */
-
-typedef struct subsublet_t /* {{{ */
-{
-  FLAGS  flags;                                                   ///< Sublet flags
-  int    ref, width;                                              ///< Sublet object reference, width
-  time_t time, interval;                                          ///< Sublet update time, interval time
-
-  struct subsublet_t *next;                                       ///< Sublet next sibling
-
-  union 
-  {
-    char *string;                                                 ///< Sublet data string
-    int  number;                                                  ///< Sublet data number
-  };
-} SubSublet; /* }}} */
-
-typedef struct subkey_t /* {{{ */
-{
-  FLAGS        flags;                                             ///< Key flags
-  int          code;                                              ///< Key code
-  unsigned int mod;                                               ///< Key modifier
-
-  union
-  {
-    char       *string;                                           ///< Key data string
-    int        number;                                            ///< Key data number
-  };
-} SubKey; /* }}} */
-
 typedef struct subsubtle_t /* {{{ */
 {
   Display            *disp;                                       ///< Subtle Xorg display
@@ -291,6 +222,76 @@ typedef struct subsubtle_t /* {{{ */
     int              click;
   } hooks;                            
 } SubSubtle; /* }}} */
+
+typedef struct subarray_t /* {{{ */
+{
+  int    ndata;                                                   ///< Array data count
+  void  **data;                                                   ///< Array data
+} SubArray; /* }}} */
+
+typedef struct subclient_t /* {{{ */
+{
+  FLAGS               flags;                                      ///< Client flags
+  XRectangle          rect;                                       ///< Client rect
+  int                 size, tags;                                 ///< Client size, tags
+  char                *name;                                      ///< Client name
+  Colormap            cmap;                                       ///< Client colormap
+  Window              frame, caption, title, win;                 ///< Client decoration windows
+  Window              left, right, bottom;                        ///< Client border windows
+  struct subclient_t  *prev, *next, *down;                        ///< Client prev/next/down siblings
+} SubClient; /* }}} */
+
+typedef struct subtag_t /* {{{ */
+{
+  FLAGS    flags;                                                 ///< Tag flags
+  char    *name;                                                  ///< Tag name
+  regex_t *preg;                                                  ///< Tag regex
+} SubTag; /* }}} */
+
+typedef struct sublayout_t /* {{{ */
+{
+  FLAGS  flags;                                                   ///< Layout flags
+  struct subclient_t *c1;                                         ///< Layout client1
+  struct subclient_t *c2;                                         ///< Layout client2
+} SubLayout; /* }}} */
+
+typedef struct subview_t /* {{{ */
+{
+  FLAGS             flags;                                        ///< View flags
+  int               tags, width;                                  ///< View tags, button width, layout
+  Window            frame, button;                                ///< View frame, button
+  char              *name;                                        ///< View name
+  struct subarray_t *layout;                                      ///< View layout
+} SubView; /* }}} */
+
+typedef struct subsublet_t /* {{{ */
+{
+  FLAGS         flags;                                            ///< Sublet flags
+  unsigned long ref;                                              ///< Sublet object reference 
+  int           width;                                            ///< Sublet width
+  time_t        time, interval;                                   ///< Sublet update time, interval time
+
+  struct        subsublet_t *next;                                ///< Sublet next sibling
+
+  union 
+  {
+    char *string;                                                 ///< Sublet data string
+    int  fixnum;                                                  ///< Sublet data fixnum
+  };
+} SubSublet; /* }}} */
+
+typedef struct subkey_t /* {{{ */
+{
+  FLAGS        flags;                                             ///< Key flags
+  int          code;                                              ///< Key code
+  unsigned int mod;                                               ///< Key modifier
+
+  union
+  {
+    char       *string;                                           ///< Key data string
+    int        number;                                            ///< Key data number
+  };
+} SubKey; /* }}} */
 
 extern SubSubtle *subtle;
 /* }}} */
@@ -350,8 +351,8 @@ void subViewKill(SubView *v);                                     ///< Kill view
 /* }}} */
 
 /* sublet.c {{{ */
-SubSublet *subSubletNew(int type, char *name, int ref,            ///< Create new sublet
-  time_t interval, char *watch);
+SubSublet *subSubletNew(unsigned long ref, time_t interval, 
+  char *watch);                                                   ///< Create new sublet
 void subSubletConfigure(void);                                    ///< Configure sublet bar
 void subSubletRender(void);                                       ///< Render sublet
 int subSubletCompare(const void *a, const void *b);               ///< Compare two sublets
@@ -359,13 +360,13 @@ void subSubletKill(SubSublet *s);                                 ///< Kill subl
 /* }}} */
 
 /* display.c {{{ */
-void subDisplayNew(const char *display_string);                   ///< Create new display
-void subDisplayKill(void);                                        ///< Delete display
+void subDisplayInit(const char *display);                         ///< Create new display
 void subDisplayScan(void);                                        ///< Scan root window
+void subDisplayFinish(void);                                      ///< Delete display
 /* }}} */
 
 /* key.c {{{ */
-void subKeyInit(void);                                            ///< Init the keys
+void subKeyInit(void);                                            ///< Init keymap
 SubKey *subKeyNew(const char *key,                                ///< Create key
   const char *value);
 KeySym subKeyGet(void);                                           ///< Get key
@@ -376,11 +377,12 @@ int subKeyCompare(const void *a, const void *b);                  ///< Compare k
 void subKeyKill(SubKey *k);                                       ///< Kill key
 /* }}} */
 
-/* lua.c {{{ */
-void subLuaLoadConfig(const char *path);                          ///< Load config file
-void subLuaLoadSublets(const char *path);                         ///< Load sublets
-void subLuaKill(void);                                            ///< Kill Lua state
-void subLuaCall(SubSublet *s);                                    ///< Call Lua script
+/* ruby.c {{{ */
+void subRubyInit(void);                                           ///< Init Ruby stack 
+void subRubyLoadConfig(const char *path);                         ///< Load config file
+void subRubyLoadSublets(const char *path);                        ///< Load sublets
+void subRubyCall(SubSublet *s);                                   ///< Call Ruby script
+void subRubyFinish(void);                                         ///< Kill Ruby stack
 /* }}} */
 
 /* event.c {{{ */
