@@ -3,7 +3,7 @@
   * @package subtle
   *
   * @file Display functions
-  * @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
+  * @copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
   * @version $Id$
   *
   * This program can be distributed under the terms of the GNU GPL.
@@ -12,13 +12,13 @@
 
 #include "subtle.h"
 
- /** subDisplayNew {{{
+ /** subDisplayInit {{{
   * @brief Open connection to X server and create display
-  * @param[in] display_string  The display name as string
+  * @param[in]  display  The display name as string
   **/
 
 void
-subDisplayNew(const char *display_string)
+subDisplayInit(const char *display)
 {
   XGCValues gvals;
   const char stipple[] = {
@@ -28,8 +28,8 @@ subDisplayNew(const char *display_string)
   };
 
   /* Connect to display and setup error handler */
-  subtle->disp = XOpenDisplay(display_string);
-  if(!subtle->disp) subUtilLogError("Can't open display `%s'.\n", (display_string) ? display_string : ":0.0");
+  subtle->disp = XOpenDisplay(display);
+  if(!subtle->disp) subUtilLogError("Can't open display `%s'.\n", (display) ? display : ":0.0");
   XSetErrorHandler(subUtilLogXError);
 
   /* Create gcs */
@@ -100,11 +100,11 @@ subDisplayScan(void)
 } /* }}} */
 
  /** subDisplayKill {{{
-  * @brief Close connection and kill display
+  * @brief Close connection
   **/
 
 void
-subDisplayKill(void)
+subDisplayFinish(void)
 {
   assert(subtle);
 
