@@ -80,7 +80,7 @@ WARN_LOGFILE           =
 #---------------------------------------------------------------------------
 INPUT                  = src config sublets
 INPUT_ENCODING         = UTF-8
-FILE_PATTERNS          = *.h *.c *.lua
+FILE_PATTERNS          = *.h *.c *.rb
 RECURSIVE              = YES
 EXCLUDE                = 
 EXCLUDE_SYMLINKS       = NO
