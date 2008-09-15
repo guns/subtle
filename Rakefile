@@ -31,9 +31,10 @@ require("yaml")
 }
 
 @defines = {
-  "PACKAGE_NAME"      => "subtle",
-  "PACKAGE_VERSION"   => "0.7",
-  "PACKAGE_BUGREPORT" => "unexist@dorfelite.net",
+  "PKG_NAME"      => "subtle",
+  "PKG_VERSION"   => "0.7",
+  "PKG_BUGREPORT" => "unexist@dorfelite.net",
+  "RUBY_VERSION"      => "$(MAJOR).$(MINOR).$(TEENY)",
   "DIR_CONFIG"        => "$(sysconfdir)/subtle",
   "DIR_SUBLET"        => "$(datadir)/subtle"
 }  
@@ -43,8 +44,8 @@ require("yaml")
 PG_WM    = "subtle"
 PG_RMT   = "subtler"
 
-SRC_WM   = FileList["src/*.c"]
 SRC_RMT  = ["src/subtler.c"]
+SRC_WM   = FileList["src/*.c"] - SRC_RMT
 
 OBJ_WM   = SRC_WM.collect { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
 OBJ_RMT  = SRC_RMT.collect { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
@@ -76,7 +77,7 @@ def silent_sh(cmd, msg, &block)
   rake_check_options(options, :noop, :verbose)
 
   # Hide raw messages?
-  if(!options[:verbose]) then
+  if(options[:verbose]) then
     rake_output_message(Array == cmd.class ? cmd.join(" ") : cmd) #< Check type
   else
     rake_output_message(msg)
@@ -157,7 +158,7 @@ task(:config) do
 
     # Expand defines
     @defines.each do |k, v|
-      @defines[k] = Config.expand(v, @options)
+      @defines[k] = Config.expand(v, @options.merge(CONFIG))
     end
    
     # Check header
@@ -204,7 +205,7 @@ task(:config) do
     # Dump info
     puts <<EOF
 
-#{@defines["PACKAGE_NAME"]} #{@defines["PACKAGE_VERSION"]}
+#{@defines["PKG_NAME"]} #{@defines["PKG_VERSION"]}
 -----------------
 Install path........: #{@options["prefix"]}
 Binary..............: #{@options["bindir"]}
@@ -262,15 +263,13 @@ end # }}}
 
 # Task: link {{{
 file(PG_WM => OBJ_WM) do
-  out = File.join(@options["builddir"], PG_WM)
-  silent_sh("gcc -o #{out} #{@options["ldflags"]} #{OBJ_WM}", "LD #{out}") do |ok, status|
+  silent_sh("gcc -o #{PG_WM} #{@options["ldflags"]} #{OBJ_WM}", "LD #{PG_WM}") do |ok, status|
     ok or fail("Linker failed with status #{status.exitstatus}")
   end
 end
 
 file(PG_RMT => OBJ_RMT) do
-  out = File.join(@options["builddir"], PG_RMT)
-  silent_sh("gcc -o #{out} #{OBJ_RMT} #{@options["ldflags"]}", "LD #{out}") do |ok, status|
+  silent_sh("gcc -o #{PG_RMT} #{OBJ_RMT} #{@options["ldflags"]}", "LD #{PG_RMT}") do |ok, status|
     ok or fail("Linker failed with status #{status.exitstatus}")
   end
 end # }}}
