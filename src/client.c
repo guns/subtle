@@ -3,7 +3,7 @@
   * @package subtle
   *
   * @file Client functions
-  * @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
+  * @copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
   * @version $Id$
   *
   * This program can be distributed under the terms of the GNU GPL.
@@ -66,7 +66,7 @@ ClientMask(int type,
 
  /** subClientNew {{{
   * @brief Create new client
-  * @param[in] win  Main window of the new client
+  * @param[in]  win  Main window of the new client
   * @return Returns a #SubClient or \p NULL
   **/
 
@@ -173,7 +173,7 @@ subClientNew(Window win)
 
  /** subClientConfigure {{{
   * @brief Send a configure request to client
-  * @param[in] c  A #SubClient
+  * @param[in]  c  A #SubClient
   **/
 
 void
@@ -214,7 +214,7 @@ subClientConfigure(SubClient *c)
 
  /** subClientRender {{{
   * @brief Render client and redraw titlebar and borders
-  * @param[in] c  A #SubClient
+  * @param[in]  c  A #SubClient
   **/
 
 void
@@ -249,7 +249,7 @@ subClientRender(SubClient *c)
 
  /** subClientFocus {{{
   * @brief Set or unset focus to client
-  * @param[in] c  A #SubClient
+  * @param[in]  c  A #SubClient
   **/
 
 void
@@ -300,7 +300,7 @@ subClientFocus(SubClient *c)
 
  /** subClientMap {{{
   * @brief Map client with all subwindows to screen
-  * @param[in] c  A #SubClient
+  * @param[in]  c  A #SubClient
   **/
 
 void
@@ -314,7 +314,7 @@ subClientMap(SubClient *c)
 
  /** subClientUnmap {{{
   * @brief Unmap client with all subClientUnmap from screen
-  * @param[in] c  A #SubClient
+  * @param[in]  c  A #SubClient
   **/
 
 void
@@ -328,8 +328,8 @@ subClientUnmap(SubClient *c)
 
  /** subClientDrag {{{
   * @brief Move and/or drag client
-  * @param[in] c     A #SubClient
-  * @param[in] mode  Drag/move mode
+  * @param[in]  c     A #SubClient
+  * @param[in]  mode  Drag/move mode
   **/
 
 void
@@ -491,8 +491,8 @@ subClientDrag(SubClient *c,
 
  /** subClientToggle {{{
   * @brief Toggle various states of client
-  * @param[in] c     A #SubClient
-  * @param[in] type  Toggle type
+  * @param[in]  c     A #SubClient
+  * @param[in]  type  Toggle type
   **/
 
 void
@@ -634,7 +634,7 @@ int type)
 
   /** subClientFetchName {{{
    * @brief Fetch client name and store it
-   * @param[in] c  A #SubClient
+   * @param[in]  c  A #SubClient
    **/
 
 void
@@ -658,8 +658,8 @@ subClientFetchName(SubClient *c)
 
  /** subClientSetWMState {{{
   * @brief Set WM state for client
-  * @param[in] c      A #SubClient
-  * @param[in] state  New state for the client
+  * @param[in]  c      A #SubClient
+  * @param[in]  state  New state for the client
   **/
 
 void
@@ -678,7 +678,7 @@ subClientSetWMState(SubClient *c,
 
  /** subClientGetWMState {{{
   * @brief Get WM state from client
-  * @param[in] c  A #SubClient
+  * @param[in]  c  A #SubClient
   * @return Returns client WM state
   **/
 
@@ -728,7 +728,7 @@ subClientPublish(void)
 
  /** subClientKill {{{
   * @brief Send interested clients the close signal and/or kill it
-  * @param[in] c  A #SubClient
+  * @param[in]  c  A #SubClient
   **/
 
 void

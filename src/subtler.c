@@ -3,7 +3,7 @@
   * @package subtle
   *
   * @file subtle remote client
-  * @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
+  * @copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
   * @version $Id$
   *
   * This program can be distributed under the terms of the GNU GPL.
@@ -576,7 +576,7 @@ ActionClientFind(char *arg1,
 {
   Window win;
 
-  Assert(arg1, "Usage: %sr -c -f PATTERN\n", PACKAGE_NAME);
+  Assert(arg1, "Usage: %sr -c -f PATTERN\n", PKG_NAME);
   Debug("%s\n", __func__);
 
   ClientFind(arg1, &win);
@@ -592,7 +592,7 @@ ActionClientFocus(char *arg1,
   unsigned long *cv = NULL, *rv = NULL;
   MessageData data = { { 0, 0, 0, 0, 0 } };
 
-  Assert(arg1, "Usage: %sr -c -F CLIENT\n", PACKAGE_NAME);
+  Assert(arg1, "Usage: %sr -c -F CLIENT\n", PKG_NAME);
   Debug("%s\n", __func__);
 
   ClientFind(arg1, &win);
@@ -623,7 +623,7 @@ ActionClientShade(char *arg1,
   Window win;
   MessageData data = { { 0, 0, 0, 0, 0 } };
 
-  Assert(arg1, "Usage: %sr -c -s PATTERN\n", PACKAGE_NAME);
+  Assert(arg1, "Usage: %sr -c -s PATTERN\n", PKG_NAME);
   Debug("%s\n", __func__);
 
   ClientFind(arg1, &win);
@@ -641,7 +641,7 @@ ActionClientTag(char *arg1,
   Window win;
   MessageData data = { { 0, 0, 0, 0, 0 } };
 
-  Assert(arg1 && arg2, "Usage: %sr -c PATTERN -T PATTERN\n", PACKAGE_NAME);
+  Assert(arg1 && arg2, "Usage: %sr -c PATTERN -T PATTERN\n", PKG_NAME);
   Debug("%s\n", __func__);
 
   ClientFind(arg1, &win);
@@ -662,7 +662,7 @@ ActionClientUntag(char *arg1,
   Window win;
   MessageData data = { { 0, 0, 0, 0, 0 } };
 
-  Assert(arg1 && arg2, "Usage: %sr -c PATTERN -u PATTERN\n", PACKAGE_NAME);
+  Assert(arg1 && arg2, "Usage: %sr -c PATTERN -u PATTERN\n", PKG_NAME);
   Debug("%s\n", __func__);
 
   ClientFind(arg1, &win);
@@ -684,7 +684,7 @@ ActionClientTags(char *arg1,
   char **tags = NULL;
   unsigned long *flags = NULL;
 
-  Assert(arg1, "Usage: %sr -c PATTERN -g\n", PACKAGE_NAME);
+  Assert(arg1, "Usage: %sr -c PATTERN -g\n", PKG_NAME);
   Debug("%s\n", __func__);
 
   ClientFind(arg1, &win);
@@ -706,7 +706,7 @@ ActionClientKill(char *arg1,
   Window win;
   MessageData data = { { 0, 0, 0, 0, 0 } };
 
-  Assert(arg1, "Usage: %sr -c -k PATTERN\n", PACKAGE_NAME);
+  Assert(arg1, "Usage: %sr -c -k PATTERN\n", PKG_NAME);
   Debug("%s\n", __func__);
 
   ClientFind(arg1, &win);
@@ -722,7 +722,7 @@ ActionTagNew(char *arg1,
 {
   MessageData data = { { 0, 0, 0, 0, 0 } };
 
-  Assert(arg1, "Usage: %sr -t -n NAME\n", PACKAGE_NAME);
+  Assert(arg1, "Usage: %sr -t -n NAME\n", PKG_NAME);
   Debug("%s\n", __func__);
 
   snprintf(data.b, sizeof(data.b), arg1);
@@ -803,7 +803,7 @@ ActionTagKill(char *arg1,
 {
   MessageData data = { { 0, 0, 0, 0, 0 } };
 
-  Assert(arg1, "Usage: %sr -t -k PATTERN\n", PACKAGE_NAME);
+  Assert(arg1, "Usage: %sr -t -k PATTERN\n", PKG_NAME);
   Debug("%s\n", __func__);
 
   snprintf(data.b, sizeof(data.b), arg1);
@@ -818,7 +818,7 @@ ActionViewNew(char *arg1,
 {
   MessageData data = { { 0, 0, 0, 0, 0 } };
 
-  Assert(arg1, "Usage: %sr -t -n PATTERN\n", PACKAGE_NAME);
+  Assert(arg1, "Usage: %sr -t -n PATTERN\n", PKG_NAME);
   Debug("%s\n", __func__);
 
   snprintf(data.b, sizeof(data.b), arg1);
@@ -861,7 +861,7 @@ ActionViewJump(char *arg1,
   int view = 0;
   MessageData data = { { 0, 0, 0, 0, 0 } };
 
-  Assert(arg1, "Usage: %sr -v -j PATTERN\n", PACKAGE_NAME);
+  Assert(arg1, "Usage: %sr -v -j PATTERN\n", PKG_NAME);
   Debug("%s\n", __func__);
 
   /* Try to convert arg1 to long or to find view */
@@ -882,7 +882,7 @@ ActionViewTag(char *arg1,
   int tag = 0;
   MessageData data = { { 0, 0, 0, 0, 0 } };
 
-  Assert(arg1 && arg2, "Usage: %sr -v PATTERN -T PATTERN\n", PACKAGE_NAME);
+  Assert(arg1 && arg2, "Usage: %sr -v PATTERN -T PATTERN\n", PKG_NAME);
   Debug("%s\n", __func__);
 
   ViewFind(arg1, &win);
@@ -903,7 +903,7 @@ ActionViewUntag(char *arg1,
   int tag = 0;
   MessageData data = { { 0, 0, 0, 0, 0 } };
 
-  Assert(arg1 && arg2, "Usage: %sr -v PATTERN -u PATTERN\n", PACKAGE_NAME);
+  Assert(arg1 && arg2, "Usage: %sr -v PATTERN -u PATTERN\n", PKG_NAME);
   Debug("%s\n", __func__);
 
   ViewFind(arg1, &win);
@@ -925,7 +925,7 @@ ActionViewTags(char *arg1,
   char **tags = NULL;
   unsigned long *flags = NULL;
 
-  Assert(arg1, "Usage: %sr -v PATTERN -g\n", PACKAGE_NAME);
+  Assert(arg1, "Usage: %sr -v PATTERN -g\n", PKG_NAME);
   Debug("%s\n", __func__);
 
   ViewFind(arg1, &win);
@@ -947,7 +947,7 @@ ActionViewKill(char *arg1,
   int view;
   MessageData data = { { 0, 0, 0, 0, 0 } };
 
-  Assert(arg1, "Usage: %sr -v -k PATTERN\n", PACKAGE_NAME);
+  Assert(arg1, "Usage: %sr -v -k PATTERN\n", PKG_NAME);
   Debug("%s\n", __func__);
 
   view = ViewFind(arg1, NULL);
@@ -961,7 +961,7 @@ ActionViewKill(char *arg1,
 static void
 Usage(int group)
 {
-  printf("Usage: %sr [OPTIONS] [GROUP] [ACTION]\n", PACKAGE_NAME);
+  printf("Usage: %sr [OPTIONS] [GROUP] [ACTION]\n", PKG_NAME);
 
   if(-1 == group)
     {
@@ -1026,7 +1026,7 @@ Usage(int group)
          "  %sr -c -f #           \t Select client and show info\n" \
          "  %sr -t -f term        \t Show every client/view tagged with 'term'\n" \
          "\nPlease report bugs to <%s>\n",
-         PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_NAME, PACKAGE_BUGREPORT);
+         PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_BUGREPORT);
 } /* }}} */
 
 /* Version {{{ */
@@ -1035,7 +1035,7 @@ Version(void)
 {
   printf("%sr %s - Copyright (c) 2005-2008 Christoph Kappel\n" \
           "Released under the GNU General Public License\n" \
-          "Compiled for X%d\n", PACKAGE_NAME, PACKAGE_VERSION, X_PROTOCOL);
+          "Compiled for X%d\n", PKG_NAME, PKG_VERSION, X_PROTOCOL);
 }
 /* }}} */
 
@@ -1061,7 +1061,7 @@ Signal(int signum)
         backtrace_symbols_fd(array, size, 0);
 #endif /* HAVE_EXECINFO_H */
 
-        printf("Please report this bug to <%s>\n", PACKAGE_BUGREPORT);
+        printf("Please report this bug to <%s>\n", PKG_BUGREPORT);
         abort();
     }
 } /* }}} */
@@ -1164,7 +1164,7 @@ main(int argc,
 #endif /* DEBUG */
           case 'V': Version();               return(0);
           case '?':
-            printf("Try `%sr --help for more information\n", PACKAGE_NAME);
+            printf("Try `%sr --help for more information\n", PKG_NAME);
             return(-1);
         }
     }
