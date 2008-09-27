@@ -14,14 +14,14 @@
 
  /** subSubletNew {{{
   * @brief Create a new sublet 
-  * @param[in]  ref       Ruby object reference
+  * @param[in]  recv      Ruby receiver
   * @param[in]  interval  Update interval
   * @param[in]  watch     Watch file
   * @return Returns a #SubSublet or \p NULL
   **/
 
 SubSublet *
-subSubletNew(unsigned long ref,
+subSubletNew(unsigned long recv,
   time_t interval,
   char *watch)
 {
@@ -29,21 +29,20 @@ subSubletNew(unsigned long ref,
 
   /* Init sublet */
   s->flags    = SUB_TYPE_SUBLET;
-  s->ref      = ref;
+  s->recv     = recv;
   s->interval = interval;
   s->time     = subUtilTime();
 
-  subArrayPush(subtle->sublets, (void *)s);
-
 #ifdef HAVE_SYS_INOTIFY_H
+  /* Create inotify watch */
   if(NULL != watch)
     {
-      if((s->interval = inotify_add_watch(subtle->notify, watch, IN_MODIFY)) < 0)
+      if(0 > (s->interval = inotify_add_watch(subtle->notify, watch, IN_MODIFY)))
         {
           subUtilLogWarn("Watch file `%s' does not exist\n", watch);
           subUtilLogDebug("%s\n", strerror(errno));
 
-          free(s);
+          subArrayPop(subtle->sublets, s);
 
           return(NULL);
         }
@@ -52,8 +51,7 @@ subSubletNew(unsigned long ref,
 #endif /* HAVE_SYS_INOTIFY_H */
 
   subRubyCall(s);
-
-  subUtilLogDebug("new=sublet, ref=%ld, interval=%d, watch=%s\n", ref, interval, watch);    
+  subUtilLogDebug("new=sublet, ref=%ld, interval=%d, watch=%s\n", recv, interval, watch);    
 
   return(s);
 } /* }}} */ 
@@ -70,7 +68,7 @@ subSubletConfigure(void)
       int i, width = 3;
 
       for(i = 0; i < subtle->sublets->ndata; i++) ///< Calculate window width
-        width += SUBLET(subtle->sublets->data[i])->width * subtle->fx + 6;
+        width += SUBLET(subtle->sublets->data[i])->width;
 
       XMoveResizeWindow(subtle->disp, subtle->bar.sublets, DisplayWidth(subtle->disp, 
         DefaultScreen(subtle->disp)) - width, 0, width, subtle->th);
@@ -102,10 +100,10 @@ subSubletRender(void)
             }
           else if(s->flags & SUB_DATA_STRING && s->string) 
             XDrawString(subtle->disp, subtle->bar.sublets, subtle->gcs.font, width, subtle->fy - 1, 
-              s->string, s->width);
+              s->string, strlen(s->string));
 
-          width += s->width * subtle->fx + 6;
-          s = s->next;
+          width += s->width;
+          s     = s->next;
         }
       XFlush(subtle->disp);
     }
@@ -142,7 +140,7 @@ subSubletKill(SubSublet *s)
 {
   assert(s);
 
-  printf("Killing sublet (#%ld)\n", s->ref);
+  printf("Killing sublet (#%ld)\n", s->recv);
 
   /* Update linked list */
   if(subtle->sublet == s) subtle->sublet = s->next;
