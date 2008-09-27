@@ -16,9 +16,13 @@ class Notify < Sublet
 
   def run
     begin
+      file = ""
+
       File.open(@interval, "r") do |f|
-        @data = f.read
+        file = f.read
       end
+
+      @data = file
     rescue => err
       p err
     end

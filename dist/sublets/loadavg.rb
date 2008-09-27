@@ -15,12 +15,14 @@ class Loadavg < Sublet
   end
 
   def run
+    file = ""
+
     begin
       File.open("/proc/loadavg", "r") do |f|
-        @data = f.read
+        file = f.read
       end
 
-      @data.slice!(0, 14)
+      @data = file.slice(0, 14)
     rescue => err
       p err
     end
