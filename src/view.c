@@ -50,7 +50,7 @@ subViewNew(char *name,
 
   XSaveContext(subtle->disp, v->frame, 2, (void *)v);
   XSaveContext(subtle->disp, v->button, 1, (void *)v);
-  XMapWindow(subtle->disp, v->button);
+  XMapRaised(subtle->disp, v->button);
 
   /* Tags */
   if(tags)
@@ -93,7 +93,7 @@ subViewConfigure(SubView *v)
        y      = subtle->th;
        width  = DisplayWidth(subtle->disp, DefaultScreen(subtle->disp));
        height = DisplayHeight(subtle->disp, DefaultScreen(subtle->disp)) - subtle->th;
-    
+
       /* Find clients and count special states*/
       for(i = 0; i < subtle->clients->ndata; i++)
         {
@@ -329,7 +329,6 @@ subViewJump(SubView *v)
 
   XMapWindow(subtle->disp, subtle->cv->frame);
   XMapSubwindows(subtle->disp, subtle->cv->frame);
-  XMapWindow(subtle->disp, subtle->bar.win);
 
   /* EWMH: Current desktops */
   vid = subArrayFind(subtle->views, (void *)v); ///< Get desktop number
