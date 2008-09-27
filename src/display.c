@@ -94,7 +94,6 @@ subDisplayScan(void)
   XFree(wins);
 
   subClientPublish();
-  subViewUpdate();
   subViewConfigure(subtle->cv);
   subViewRender();
 } /* }}} */
