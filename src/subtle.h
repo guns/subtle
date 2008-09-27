@@ -267,11 +267,11 @@ typedef struct subview_t /* {{{ */
 typedef struct subsublet_t /* {{{ */
 {
   FLAGS         flags;                                            ///< Sublet flags
-  unsigned long ref;                                              ///< Sublet object reference 
+  unsigned long recv;                                             ///< Sublet ruby receiver
   int           width;                                            ///< Sublet width
   time_t        time, interval;                                   ///< Sublet update time, interval time
 
-  struct        subsublet_t *next;                                ///< Sublet next sibling
+  struct subsublet_t *next;                                       ///< Sublet next sibling
 
   union 
   {
