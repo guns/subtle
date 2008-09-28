@@ -212,7 +212,7 @@ subKeyCompare(const void *a,
 
 	assert(a && b);
 
-	/* \todo Complicated.. */
+	/* @todo Complicated.. */
 	if(k1->code < k2->code) ret = -1;
 	else if(k1->code == k2->code)
 		{

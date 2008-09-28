@@ -14,7 +14,6 @@
 #include <dirent.h>
 #include <fnmatch.h>
 #include <fcntl.h>
-#include <ctype.h>
 #include <ruby.h>
 #include "subtle.h"
 
@@ -37,7 +36,7 @@ SubletInherited(VALUE self,
 {
   const char *name = rb_class2name((ID)recv);
 
-  rb_ary_push(sublets, recv); ///< Push onto ruby-intern sublet list
+  rb_ary_push(sublets, recv); ///< Add derived class name to sublet list
 
   printf("Loading sublet %s\n", name);
 
@@ -290,6 +289,13 @@ RubyParseConfig(VALUE path)
   return(Qnil);
 } /* }}} */
 
+/* RubyFilter {{{ */
+static inline int
+RubyFilter(const struct dirent *entry)
+{
+  return(!fnmatch("*.rb", entry->d_name, FNM_PATHNAME));
+} /* }}} */
+
  /** subRubyInit {{{
   * @brief Start ruby
   **/
@@ -391,10 +397,10 @@ subRubyLoadConfig(const char *path)
 void
 subRubyLoadSublets(const char *path)
 {
-  int i;
+  int i, num;
   DIR *dir = NULL;
   char buf[100];
-  struct dirent *entry = NULL;
+  struct dirent **entries = NULL;
 
   sublets = rb_ary_new();
 
@@ -417,20 +423,21 @@ subRubyLoadSublets(const char *path)
   else snprintf(buf, sizeof(buf), "%s", path);
   subUtilLogDebug("path=%s\n", buf);
 
-  /* Read directory */
-  if((dir = opendir(buf)))
+  /* Scan directory */
+  num = scandir(buf, &entries, RubyFilter, alphasort);
+  if(0 < num)
     {
-      while((entry = readdir(dir)))
+      for(i = 0; i < num; i++)
         {
-          if(!fnmatch("*.rb", entry->d_name, FNM_PATHNAME)) ///< Check file extension
-            {
-              char file[150];
+          char file[150];
 
-              snprintf(file, sizeof(file), "%s/%s", buf, entry->d_name);
-              rb_require(file);
-            }
+          snprintf(file, sizeof(file), "%s/%s", buf, entries[i]->d_name);
+          printf("%s\n", file);
+          rb_require(file); ///< Find subclass of Sublet
+
+          free(entries[i]);
         }
-      closedir(dir);
+      free(entries);
 
       rb_iterate(rb_each, sublets, RubyArrayIterate, Qnil); ///< Instantiate sublets
 
