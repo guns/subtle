@@ -326,7 +326,6 @@ void subClientKill(SubClient *c);                                 ///< Kill clie
 /* tag.c {{{ */
 SubTag *subTagNew(char *name, char *regex);                       ///< Create tag
 SubTag *subTagFind(char *name, int *id);                          ///< Find tag
-int subTagMatch(char *string);                                    ///< Match tags
 void subTagPublish(void);                                         ///< Publish tags
 void subTagKill(SubTag *t);                                       ///< Delete tag
 /* }}} */

@@ -75,7 +75,7 @@ subClientNew(Window win)
 {
   int i, n = 0;
   Window unnused;
-  char *cc = NULL;
+  char *wmclass = NULL;
   long vid = 1337;
   XWMHints *hints = NULL;
   XWindowAttributes attr;
@@ -94,8 +94,6 @@ subClientNew(Window win)
   c->rect.y       = subtle->th;
   c->rect.width   = DisplayWidth(subtle->disp, DefaultScreen(subtle->disp));
   c->rect.height  = DisplayHeight(subtle->disp, DefaultScreen(subtle->disp)) - subtle->th;
-
-  subArrayPush(subtle->clients, (void *)c);
 
   /* Create windows */
   attrs.border_pixel      = subtle->colors.border;
@@ -151,12 +149,27 @@ subClientNew(Window win)
         }
       XFree(protos);
     }
-  
+
   /* Tags */
-  cc = subEwmhGetProperty(win, XA_STRING, SUB_EWMH_WM_CLASS, NULL);
-  c->tags = subTagMatch(cc);
+  wmclass = subEwmhGetProperty(win, XA_STRING, SUB_EWMH_WM_CLASS, NULL);
+  if(wmclass)
+    {
+      for(i = 0; i < subtle->tags->ndata; i++)
+        {
+          SubTag *t = TAG(subtle->tags->data[i]);
+          if(t->preg && subUtilRegexMatch(t->preg, wmclass)) c->tags |= (1L << (i + 1));
+        }
+      XFree(wmclass);  
+    }
+
+  /* Ensure that there is at least one tag */
+  if(!c->tags) 
+    {
+      int id;
+      subTagFind("default", &id); ///< Just id of the tag
+      c->tags |= (1L << (id + 1));
+    }  
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS, (long *)&c->tags, 1);
-  XFree(cc);  
 
   /* EWMH: Desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);

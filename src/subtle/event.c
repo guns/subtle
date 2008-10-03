@@ -171,7 +171,9 @@ HandleMapRequest(XMapRequestEvent *ev)
   SubClient *c = CLIENT(subUtilFind(ev->window, 1));
   if(!c) 
     {
+      /* Create new client */
       c = subClientNew(ev->window);
+      subArrayPush(subtle->clients, c);
       subClientPublish();
 
       if(subtle->cv && subtle->cv->tags & c->tags) subViewConfigure(subtle->cv); ///< Configure current view if tags match

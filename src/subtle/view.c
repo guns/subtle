@@ -81,7 +81,7 @@ subViewConfigure(SubView *v)
 {
   int i;
   long vid = 0;
-  int x = 0, y = 0, width = 0, height = 0, cw = 0, comp = 0, total = 0,
+  int x = 0, y = 0, width = 0, height = 0, cw = 0, comp = 0, total = 0, tiled = 0,
     shaded = 0, resized = 0, full = 0, floated = 0, special = 0;
 
   assert(v);
@@ -110,16 +110,20 @@ subViewConfigure(SubView *v)
             }
         }
 
-      /* Mark tiled clients */
+      /* Mark clients in a tile */
       for(i = 0; i < v->layout->ndata; i++)
         {
           SubLayout *l = LAYOUT(v->layout->data[i]);
 
-          if(!(l->flags & SUB_TILE_SWAP)) l->c2->flags |= SUB_STATE_TILED;
+          if(!(l->flags & SUB_TILE_SWAP)) 
+            {
+              l->c2->flags |= SUB_STATE_TILED;
+              tiled++;
+            }
         }
 
-      printf("total=%d, layouts=%d\n", total, v->layout->ndata);
-      total -= v->layout->ndata;
+      printf("total=%d, layouts=%d, tiled=%d\n", total, v->layout->ndata, tiled);
+      total -= tiled;
 
       /* Calculations */
       special = shaded + resized + full + floated;
@@ -205,7 +209,6 @@ subViewConfigure(SubView *v)
               else if(l->flags & SUB_TILE_SWAP) 
                 {
                   XRectangle r = l->c1->rect;
-
 
                   l->c1->rect = l->c2->rect;
                   l->c2->rect = r;

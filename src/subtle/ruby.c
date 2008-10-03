@@ -181,6 +181,7 @@ RubyArrayIterate(VALUE elem,
             subUtilLogWarn("Failed to initialize sublet");
             return(Qnil);
         }
+      if(!s) return(Qnil); ///< Skip if sublet loading failed
 
       subRubyCall(s);
       subArrayPush(subtle->sublets, s);
@@ -432,7 +433,7 @@ subRubyLoadSublets(const char *path)
           char file[150];
 
           snprintf(file, sizeof(file), "%s/%s", buf, entries[i]->d_name);
-          printf("%s\n", file);
+          subUtilLogDebug("sublet=%s\n", file);
           rb_require(file); ///< Find subclass of Sublet
 
           free(entries[i]);

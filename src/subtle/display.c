@@ -88,7 +88,12 @@ subDisplayScan(void)
       if(wins[i] && wins[i] != subtle->bar.win && wins[i] != subtle->cv->frame)
         {
           XGetWindowAttributes(subtle->disp, wins[i], &attr);
-          if(attr.map_state == IsViewable) subClientNew(wins[i]);
+          if(attr.map_state == IsViewable) 
+            {
+              /* Create new client */
+              SubClient *c = subClientNew(wins[i]);
+              subArrayPush(subtle->clients, c);
+            }
         }
     }
   XFree(wins);

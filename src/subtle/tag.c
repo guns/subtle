@@ -67,36 +67,6 @@ subTagFind(char *name,
   return(NULL);
 } /* }}} */
 
- /** subTagMatch {{{
-  * @brief Get matching tags
-  * @param[in]  string  String to match
-  * @return Returns a bitfield with matching tags
-  **/
-
-int
-subTagMatch(char *string)
-{
-  int i, tags = 0;
-
-  assert(string);
-
-  for(i = 0; i < subtle->tags->ndata; i++)
-    {
-      SubTag *t = TAG(subtle->tags->data[i]);
-      if(t->preg && subUtilRegexMatch(t->preg, string)) tags |= (1L << (i + 1));
-    }
-
-  /* Add default tag if no tag matches */
-  if(!tags) 
-    {
-      int id;
-      subTagFind("default", &id);
-      tags |= (1L << (id + 1));
-    }
-  
-  return(tags);
-} /* }}} */
-
  /** subTagPublish {{{
   * @brief Publish tags
   **/
