@@ -25,36 +25,42 @@ require("yaml")
   "datadir"    => "$(prefix)/share",
   "debug"      => "no",
   "builddir"   => "build",
-  "ccflags"    => "-Wall -Wpointer-arith -Wstrict-prototypes -Wunused -Wshadow -std=gnu99",
-  "cpppath"    => "-I. -I$(builddir) -Isrc -idirafter$(archdir)",
-  "ldflags"    => "-L$(archdir) -l$(RUBY_SO_NAME)"
+  "cflags"     => "-Wall -Wpointer-arith -Wstrict-prototypes -Wunused -Wshadow -std=gnu99",
+  "cpppath"    => "-I. -I$(builddir) -Isrc -Isrc/shared -idirafter$(archdir)",
+  "ldflags"    => "-L$(archdir) -l$(RUBY_SO_NAME)",
+  "extflags"   => "$(LDFLAGS) $(LIBRUBYARG_SHARED)"
 }
 
 @defines = {
   "PKG_NAME"      => "subtle",
-  "PKG_VERSION"   => "0.7",
+  "PKG_VERSION"   => "0.8.%s" % ["$Rev$".delete("/[a-zA-Z$: ]/")], #< Get revision
   "PKG_BUGREPORT" => "unexist@dorfelite.net",
-  "RUBY_VERSION"      => "$(MAJOR).$(MINOR).$(TEENY)",
-  "DIR_CONFIG"        => "$(sysconfdir)/subtle",
-  "DIR_SUBLET"        => "$(datadir)/subtle"
+  "RUBY_VERSION"  => "$(MAJOR).$(MINOR).$(TEENY)",
+  "DIR_CONFIG"    => "$(sysconfdir)/subtle",
+  "DIR_SUBLET"    => "$(datadir)/subtle"
 }  
 # }}}
 
 # Lists {{{
-PG_WM    = "subtle"
-PG_RMT   = "subtler"
+PG_WM   = "subtle"
+PG_RMT  = "subtler"
+PG_RBE  = "subtlext"
 
-SRC_RMT  = ["src/subtler.c"]
-SRC_WM   = FileList["src/*.c"] - SRC_RMT
+SRC_WM  = FileList["src/subtle/*.c"]
+SRC_SHD = FileList["src/shared/*.c"]
+SRC_RMT = FileList["src/subtler/*.c"]
+SRC_RBE = FileList["src/subtlext/*.c"]
 
-OBJ_WM   = SRC_WM.collect { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
-OBJ_RMT  = SRC_RMT.collect { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
+OBJ_WM  = SRC_WM.collect  { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
+OBJ_SHD = SRC_SHD.collect { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
+OBJ_RMT = SRC_RMT.collect { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
+OBJ_RBE = SRC_RBE.collect { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
 
-SUBLETS  = FileList["sublets/*.rb"]
-CONF     = ["data/config.rb"]
+SUBLETS = FileList["sublets/*.rb"]
+CONF    = ["dist/config.yml"]
 
-FUNCS    = ["select"]
-HEADER   = [
+FUNCS   = ["select"]
+HEADER  = [
   "stdio.h", "stdlib.h", "stdarg.h", "string.h", "unistd.h",
   "signal.h", "errno.h", "assert.h", "regex.h", "sys/time.h",
   "sys/types.h", "sys/inotify.h", "execinfo.h"
@@ -63,7 +69,7 @@ HEADER   = [
 
 # Miscellaneous {{{
 Logging.logfile("config.log") #< mkmf log
-CLEAN.include(PG_WM, PG_RMT, OBJ_WM, OBJ_RMT, "config.h", "config.log", "config.yml")
+CLEAN.include(PG_WM, PG_RMT, "#{PG_RBE}.so", OBJ_WM, OBJ_SHD, OBJ_RMT, OBJ_RBE, "config.h", "config.log", "config.yml")
 CLOBBER.include(@options["builddir"])
 # }}}
 
@@ -73,17 +79,14 @@ CLOBBER.include(@options["builddir"])
 
 # Func: silent_sh {{{
 def silent_sh(cmd, msg, &block)
-  options = {}
-  rake_check_options(options, :noop, :verbose)
-
   # Hide raw messages?
-  if(options[:verbose]) then
+  if(true === RakeFileUtils.verbose_flag) then
     rake_output_message(Array == cmd.class ? cmd.join(" ") : cmd) #< Check type
   else
     rake_output_message(msg)
   end
 
-  unless options[:noop]
+  unless RakeFileUtils.nowrite_flag
     res = system(cmd)
     block.call(res, $?)
   end
@@ -143,7 +146,7 @@ task(:config) do
 
     # Debug
     if("yes" == @options["debug"]) then
-      @options["ccflags"] << " -g"
+      @options["cflags"] << " -g"
     end
 
     # Destdir
@@ -180,7 +183,11 @@ task(:config) do
     if(libs.nil?) then
       fail("x11 was not found")
     end
-    @options["ldflags"] << " #{libs}" #< We only need the lib part
+
+    # Update flags
+    @options["cflags"] << " %s" % [cflags]
+    @options["ldflags"] << " %s" % [libs]
+    @options["extflags"] << " %s" % [libs]
 
     # Defines
     @defines.each do |k, v|
@@ -219,13 +226,19 @@ EOF
 end # }}}
 
 # Task: build {{{
-desc("Build subtle")
-task(:build => [:config, PG_WM, PG_RMT])
+desc("Build all")
+task(:build => [:config, PG_WM, PG_RMT, PG_RBE])
 # }}}
 
-# Task: subtle/subtler {{{
+# Task: subtle/subtler/subtlext {{{
+desc("Build subtle")
 task(PG_WM => [:config])
-task(PG_RMT => [:config])
+
+desc("Build subtler")
+task(PG_RMT => [:config, OBJ_SHD])
+
+desc("Build subtlext")
+task(PG_RBE => [:config, OBJ_SHD])
 # }}}
 
 # Task: install {{{
@@ -252,10 +265,10 @@ end # }}}
 #
 
 # Task: compile {{{
-(SRC_WM | SRC_RMT).each do |src|
+(SRC_WM | SRC_SHD | SRC_RMT | SRC_RBE).each do |src|
   out = File.join(@options["builddir"], File.basename(src).ext("o"))
   file(out => src) do
-    silent_sh("gcc -o #{out} -c #{@options["ccflags"]} #{@options["cpppath"]} #{src}", "CC #{out}") do |ok, status|
+    silent_sh("gcc -o #{out} -c #{@options["cflags"]} #{@options["cpppath"]} #{src}", "CC #{out}") do |ok, status|
       ok or fail("Compiler failed with status #{status.exitstatus}")
     end
   end
@@ -269,7 +282,14 @@ file(PG_WM => OBJ_WM) do
 end
 
 file(PG_RMT => OBJ_RMT) do
-  silent_sh("gcc -o #{PG_RMT} #{OBJ_RMT} #{@options["ldflags"]}", "LD #{PG_RMT}") do |ok, status|
+  silent_sh("gcc -o #{PG_RMT} #{OBJ_SHD} #{OBJ_RMT} #{@options["ldflags"]}", "LD #{PG_RMT}") do |ok, status|
+    ok or fail("Linker failed with status #{status.exitstatus}")
+  end
+
+end
+
+file(PG_RBE => OBJ_RBE) do
+  silent_sh("gcc -o #{PG_RBE}.so #{OBJ_SHD} #{OBJ_RBE} -shared #{@options["extflags"]}", "LD #{PG_RBE}") do |ok, status|
     ok or fail("Linker failed with status #{status.exitstatus}")
   end
 end # }}}
