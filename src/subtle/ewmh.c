@@ -51,10 +51,11 @@ subEwmhInit(void)
   XInternAtoms(subtle->disp, names, n, 0, atoms);
 
   /* EWMH: Window manager information */
-  subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_SUPPORTING_WM_CHECK, &DefaultRootWindow(subtle->disp), 1);
   subEwmhSetString(DefaultRootWindow(subtle->disp), SUB_EWMH_WM_NAME, PKG_NAME);
   subEwmhSetCardinals(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_WM_PID, &pid, 1);
   subEwmhSetCardinals(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_DESKTOP_VIEWPORT, (long *)&data, 2);
+  subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_SUPPORTING_WM_CHECK, 
+    &DefaultRootWindow(subtle->disp), 1);
 
   /* EWMH: Workarea size */
   data[2] = DisplayWidth(subtle->disp, DefaultScreen(subtle->disp)); 
