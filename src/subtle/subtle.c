@@ -2,7 +2,7 @@
  /**
   * @package subtle
   *
-  * @file Main program
+  * @file subtle program
   * @copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
   * @version $Id$
   * 
@@ -26,15 +26,15 @@ static void
 Usage(void)
 {
   printf("Usage: %s [OPTIONS]\n\n" \
-          "Options:\n" \
-          "  -c, --configdir=DIR   \t Look for config in DIR (default: ~/.%s/\n" \
-          "  -d, --display=DISPLAY \t Connect to DISPLAY (default: $DISPLAY)\n" \
-          "  -h, --help            \t Show this help and exit\n\n" \
-          "  -s, --subletdir=DIR   \t Look for sublets in DIR (default: ~/.%s/sublets" \
-          "  -v, --version         \t Show version info and exit\n" \
-          "  -D, --debug           \t Print debugging messages\n" \
-          "Please report bugs to <%s>\n", 
-          PKG_NAME, PKG_NAME, PKG_NAME, PKG_BUGREPORT);
+         "Options:\n" \
+         "  -c, --config=CONFIG     Load config (default: ~/.%s/subtle.yml\n" \
+         "  -d, --display=DISPLAY   Connect to DISPLAY (default: $DISPLAY)\n" \
+         "  -h, --help              Show this help and exit\n" \
+         "  -s, --sublets=DIR       Load sublets from DIR (default: ~/.%s/sublets)\n" \
+         "  -v, --version           Show version info and exit\n" \
+         "  -D, --debug             Print debugging messages\n" \
+         "Please report bugs to <%s>\n", 
+         PKG_NAME, PKG_NAME, PKG_NAME, PKG_BUGREPORT);
 } /* }}} */
 
 /* Version {{{ */
@@ -42,9 +42,9 @@ static void
 Version(void)
 {
   printf("%s %s - Copyright (c) 2005-2008 Christoph Kappel\n" \
-          "Released under the GNU General Public License\n" \
-          "Compiled for X%dR%d and Ruby %s\n", PKG_NAME, PKG_VERSION,
-          X_PROTOCOL, X_PROTOCOL_REVISION, RUBY_VERSION);
+         "Released under the GNU General Public License\n" \
+         "Compiled for X%dR%d and Ruby %s\n", 
+         PKG_NAME, PKG_VERSION, X_PROTOCOL, X_PROTOCOL_REVISION, RUBY_VERSION);
 } /* }}} */
 
 /* Signal {{{ */
@@ -101,13 +101,13 @@ main(int argc,
   struct sigaction act;
   static struct option long_options[] =
   {
-    { "configdir",  required_argument,    0,  'c' },
-    { "display",    required_argument,    0,  'd' },
-    { "help",       no_argument,          0,  'h' },
-    { "subletdir",  required_argument,    0,  's' },
-    { "version",    no_argument,          0,  'v' },
+    { "config",  required_argument, 0, 'c' },
+    { "display", required_argument, 0, 'd' },
+    { "help",    no_argument,       0, 'h' },
+    { "sublets", required_argument, 0, 's' },
+    { "version", no_argument,       0, 'v' },
 #ifdef DEBUG
-    { "debug",      no_argument,          0,  'D' },
+    { "debug",   no_argument,       0, 'D' },
 #endif /* DEBUG */
     { 0, 0, 0, 0}
   };
