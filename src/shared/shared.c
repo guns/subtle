@@ -213,12 +213,13 @@ subSharedPropertyGet(Window win,
   if(XGetWindowProperty(display, win, prop, 0L, 4096, False, type, &rettype, 
     &format, &nitems, &bytes, &data) != Success)
     {
-      subSharedLogError("Failed to get property (%s)\n", name);
+      subSharedLogWarn("Failed to get property (%s)\n", name);
     }
   if(type != rettype)
     {
+      subSharedLogWarn("Invalid type for property (%s)\n", name);
       XFree(data);
-      subSharedLogError("Invalid type for property (%s)\n", name);
+      data = NULL;
     }
   if(size) *size = (unsigned long)(format / 8) * nitems;
 
