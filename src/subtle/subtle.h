@@ -378,7 +378,7 @@ void subKeyKill(SubKey *k);                                       ///< Kill key
 
 /* ruby.c {{{ */
 void subRubyInit(void);                                           ///< Init Ruby stack 
-void subRubyLoadConfig(const char *path);                         ///< Load config file
+void subRubyLoadConfig(const char *file);                         ///< Load config file
 void subRubyLoadSublets(const char *path);                        ///< Load sublets
 void subRubyCall(SubSublet *s);                                   ///< Call Ruby script
 void subRubyFinish(void);                                         ///< Kill Ruby stack
