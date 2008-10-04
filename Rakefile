@@ -35,6 +35,7 @@ require("yaml")
   "PKG_NAME"      => "subtle",
   "PKG_VERSION"   => "0.8.%s" % ["$Rev$".delete("/[a-zA-Z$: ]/")], #< Get revision
   "PKG_BUGREPORT" => "unexist@dorfelite.net",
+  "PKG_CONFIG"    => "subtle.yml",
   "RUBY_VERSION"  => "$(MAJOR).$(MINOR).$(TEENY)",
   "DIR_CONFIG"    => "$(sysconfdir)/subtle",
   "DIR_SUBLET"    => "$(datadir)/subtle"
@@ -55,9 +56,6 @@ OBJ_WM  = SRC_WM.collect  { |f| File.join(@options["builddir"], File.basename(f)
 OBJ_SHD = SRC_SHD.collect { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
 OBJ_RMT = SRC_RMT.collect { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
 OBJ_RBE = SRC_RBE.collect { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
-
-SUBLETS = FileList["sublets/*.rb"]
-CONF    = ["dist/config.yml"]
 
 FUNCS   = ["select"]
 HEADER  = [

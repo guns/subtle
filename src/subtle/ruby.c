@@ -326,30 +326,29 @@ subRubyInit(void)
 } /* }}} */
 
  /** subRubyLoadConfig {{{
-  * @brief Load config file from path
-  * @param[in]  path  Path of the config file
+  * @brief Load config file
+  * @param[in]  file  Config file
   **/
 
 void
-subRubyLoadConfig(const char *path)
+subRubyLoadConfig(const char *file)
 {
   int status;
   char config[100];
-  DIR *dir = NULL;
+  FILE *fd = NULL;
   SubTag *deftag = NULL;
 
   /* Check path */
-  if(!path)
+  if(!file)
     {
-      snprintf(config, sizeof(config), "%s/.%s", getenv("HOME"), PKG_NAME);
-      if((dir = opendir(config))) 
+      snprintf(config, sizeof(config), "%s/.%s/%s", getenv("HOME"), PKG_NAME, PKG_CONFIG);
+      if(!(fd = fopen(config, "r"))) 
         {
-          snprintf(config, sizeof(config), "%s/.%s/subtle.yml", getenv("HOME"), PKG_NAME);
-          closedir(dir);
+          snprintf(config, sizeof(config), "%s/%s", DIR_CONFIG, PKG_CONFIG);
         }
-      else snprintf(config, sizeof(config), "%s/subtle.yml", DIR_CONFIG);
+      else fclose(fd);
     }
-  else snprintf(config, sizeof(config), "%s/subtle.yml", path);
+  else snprintf(config, sizeof(config), "%s", file);
   subUtilLogDebug("config=%s\n", config);
 
   /* Safety first */
