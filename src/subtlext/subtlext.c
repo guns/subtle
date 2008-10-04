@@ -19,6 +19,7 @@ static int refs = 0;
 
 static void SubtleKill(void *data);
 
+/* SubtleNew {{{ */
 static VALUE
 SubtleNew(int argc,
   VALUE *argv,
@@ -35,11 +36,11 @@ SubtleNew(int argc,
       if(Qnil != disp) dispname = STR2CSTR(disp);
       if(!(display = XOpenDisplay(dispname)))
         {
-          printf("Can't open display `%s'.\n", (dispname) ? dispname : ":0.0");
+          subSharedLogError("Can't open display `%s'.\n", (dispname) ? dispname : ":0.0");
           return(Qnil);
         }
       XSetErrorHandler(subSharedLogXError);
-      printf("Connection open\n");
+      subSharedLogDebug("Connection opened (%s)\n", dispname);
     }
   refs++;
 
@@ -48,8 +49,24 @@ SubtleNew(int argc,
   rb_obj_call_init(data, 0, NULL);
 
   return(data);
+} /* }}} */
+
+static VALUE
+SubtleRunning(VALUE self)
+{
+  char *prop = subSharedPropertyGet(DefaultRootWindow(display), XA_STRING, "WM_NAME", NULL);
+
+  if(prop) 
+    {
+      printf("prop=%s\n", prop);
+      free(prop);
+      return(Qtrue);
+    }
+
+  return(Qfalse);
 }
 
+/* SubtleKill {{{ */
 static void
 SubtleKill(void *data)
 {
@@ -57,15 +74,23 @@ SubtleKill(void *data)
     {
       XCloseDisplay(display);
       display = NULL;
-      printf("Connection closed\n");
+      subSharedLogDebug("Connection closed\n");
     }
-}
+} /* }}} */
 
+/* SubtleVersion {{{ */
 VALUE 
 SubtleVersion(VALUE self)
 {
   return(rb_str_new2(PKG_VERSION));
-}
+} /* }}} */
+
+/* SubtleDisplay {{{ */
+VALUE 
+SubtleDisplay(VALUE self)
+{
+  return(rb_str_new2(DisplayString(display)));
+} /* }}} */
 
 void 
 Init_subtlext(void)
@@ -73,4 +98,8 @@ Init_subtlext(void)
 	subtle = rb_define_class("Subtle", rb_cObject);
   rb_define_singleton_method(subtle, "new", SubtleNew, -1);
 	rb_define_method(subtle, "version", SubtleVersion, 0);
+
+	rb_define_method(subtle, "display", SubtleDisplay, 0);
+	rb_define_method(subtle, "running?", SubtleRunning, 0);
+
 }
