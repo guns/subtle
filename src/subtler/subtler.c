@@ -501,44 +501,44 @@ Usage(int group)
   if(-1 == group)
     {
       printf("\nOptions:\n" \
-             "  -d, --display=DISPLAY \t Connect to DISPLAY (default: $DISPLAY)\n" \
-             "  -D, --debug           \t Print debugging messages\n" \
-             "  -h, --help            \t Show this help and exit\n" \
-             "  -V, --version         \t Show version info and exit\n" \
+             "  -d, --display=DISPLAY   Connect to DISPLAY (default: $DISPLAY)\n" \
+             "  -D, --debug             Print debugging messages\n" \
+             "  -h, --help              Show this help and exit\n" \
+             "  -V, --version           Show version info and exit\n" \
              "\nGroups:\n" \
-             "  -c, --clients         \t Use clients group\n" \
-             "  -t, --tags            \t Use tags group\n" \
-             "  -v, --views           \t Use views group\n");
+             "  -c, --clients           Use clients group\n" \
+             "  -t, --tags              Use tags group\n" \
+             "  -v, --views             Use views group\n");
     }
   if(-1 == group || 0 == group)
     {
       printf("\nActions for clients:\n" \
-             "  -l, --list            \t List all clients\n" \
-             "  -f, --find=PATTERN    \t Find a client\n" \
-             "  -F, --focus=PATTERN   \t Set focus to client\n" \
-             "  -s, --shade=PATTERN   \t Shade client\n" \
-             "  -T, --tag=PATTERN     \t Add tag to client\n" \
-             "  -u, --untag=PATTERN   \t Remove tag from client\n" \
-             "  -g, --tags            \t Show client tags\n" \
-             "  -k, --kill=PATTERN    \t Kill a client\n");
+             "  -l, --list              List all clients\n" \
+             "  -f, --find=PATTERN      Find a client\n" \
+             "  -F, --focus=PATTERN     Set focus to client\n" \
+             "  -s, --shade=PATTERN     Shade client\n" \
+             "  -T, --tag=PATTERN       Add tag to client\n" \
+             "  -u, --untag=PATTERN     Remove tag from client\n" \
+             "  -g, --tags              Show client tags\n" \
+             "  -k, --kill=PATTERN      Kill a client\n");
     }
   if(-1 == group || 1 == group)
     {
       printf("\nActions for tags:\n" \
-             "  -n, --new=NAME        \t Create new tag\n" \
-             "  -l, --list            \t List all tags\n" \
-             "  -f, --find            \t Find all clients/views by tag\n" \
-             "  -k, --kill=PATTERN    \t Kill a tag\n");
+             "  -n, --new=NAME          Create new tag\n" \
+             "  -l, --list              List all tags\n" \
+             "  -f, --find              Find all clients/views by tag\n" \
+             "  -k, --kill=PATTERN      Kill a tag\n");
     }
   if(-1 == group || 2 == group)
     {
       printf("\nActions for views:\n" \
-             "  -n, --new=NAME        \t Create new view\n" \
-             "  -l, --list            \t List all views\n" \
-             "  -T, --tag=PATTERN     \t Add tag to view\n" \
-             "  -u, --untag=PATTERN   \t Remove tag from view\n" \
-             "  -g, --tags            \t Show view tags\n" \
-             "  -k, --kill=VIEW       \t Kill a view\n");
+             "  -n, --new=NAME          Create new view\n" \
+             "  -l, --list              List all views\n" \
+             "  -T, --tag=PATTERN       Add tag to view\n" \
+             "  -u, --untag=PATTERN     Remove tag from view\n" \
+             "  -g, --tags              Show view tags\n" \
+             "  -k, --kill=VIEW         Kill a view\n");
     }
   
   printf("\nPattern:\n" \
@@ -554,12 +554,12 @@ Usage(int group)
          "  View   list: <window id> [-*] <name>\n");
   
   printf("\nExamples:\n" \
-         "  %sr -c -l             \t List all clients\n" \
-         "  %sr -t -a subtle      \t Add new tag 'subtle'\n" \
-         "  %sr -v subtle -T rocks\t Tag view 'subtle' with tag 'rocks'\n" \
-         "  %sr -c xterm -g       \t Show tags of client 'xterm'\n" \
-         "  %sr -c -f #           \t Select client and show info\n" \
-         "  %sr -t -f term        \t Show every client/view tagged with 'term'\n" \
+         "  %sr -c -l                List all clients\n" \
+         "  %sr -t -a subtle         Add new tag 'subtle'\n" \
+         "  %sr -v subtle -T rocks   Tag view 'subtle' with tag 'rocks'\n" \
+         "  %sr -c xterm -g          Show tags of client 'xterm'\n" \
+         "  %sr -c -f #              Select client and show info\n" \
+         "  %sr -t -f term           Show every client/view tagged with 'term'\n" \
          "\nPlease report bugs to <%s>\n",
          PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_BUGREPORT);
 } /* }}} */
