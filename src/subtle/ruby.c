@@ -26,7 +26,7 @@ SubletInit(VALUE self,
 {
   rb_ivar_set(self, data, rb_str_new2("n/a")); ///< Default value
 
-  return(self); ///< Dummy
+  return(self);
 } /* }}} */
 
 /* SubletInherited {{{ */
@@ -110,6 +110,7 @@ RubyCall(VALUE dummy)
         s->flags |= SUB_DATA_FIXNUM;
         s->fixnum = FIX2INT(result);
         s->width  = 63; ///< Magic number
+        break;
       case T_STRING: 
         if(s->string) free(s->string);
 
@@ -310,12 +311,12 @@ subRubyInit(void)
   ruby_init_loadpath();
   ruby_script("subtle");
 
-  /* Init sublet class */
+  /* Class: sublet */
   sublet = rb_define_class("Sublet", rb_cObject);
   rb_define_method(sublet, "initialize", SubletInit, 1);
   rb_define_singleton_method(sublet, "inherited", SubletInherited, 1);
 
-  /* Define attrs */
+  /* Attrs: sublet */
   rb_define_attr(sublet, "interval", 1, 1);
   rb_define_attr(sublet, "data", 1, 1);
 
