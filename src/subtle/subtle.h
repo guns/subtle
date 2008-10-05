@@ -56,6 +56,71 @@
 #define SUBLET(s) ((SubSublet *)s)                                ///< Cast to SubSublet
 #define KEY(k)    ((SubKey *)k)                                   ///< Cast to SubKey
 #define RECT(r)   ((XRectangle *)r)                               ///< Cast to XRectangle
+
+/* ICCCM */
+#define SUB_EWMH_WM_NAME                       0                  ///< Name of window
+#define SUB_EWMH_WM_CLASS                      1                  ///< Class of window
+#define SUB_EWMH_WM_STATE                      2                  ///< Window state
+#define SUB_EWMH_WM_PROTOCOLS                  3                  ///< Supported protocols 
+#define SUB_EWMH_WM_TAKE_FOCUS                 4                  ///< Send focus messages
+#define SUB_EWMH_WM_DELETE_WINDOW              5                  ///< Send close messages
+#define SUB_EWMH_WM_NORMAL_HINTS               6                  ///< Window normal hints
+#define SUB_EWMH_WM_SIZE_HINTS                 7                  ///< Window size hints
+
+/* EWMH */
+#define SUB_EWMH_NET_SUPPORTED                 8                  ///< Supported states
+#define SUB_EWMH_NET_CLIENT_LIST               9                  ///< List of clients
+#define SUB_EWMH_NET_CLIENT_LIST_STACKING     10                  ///< List of clients
+#define SUB_EWMH_NET_NUMBER_OF_DESKTOPS       11                  ///< Total number of views
+#define SUB_EWMH_NET_DESKTOP_NAMES            12                  ///< Names of the views
+#define SUB_EWMH_NET_DESKTOP_GEOMETRY         13                  ///< Desktop geometry
+#define SUB_EWMH_NET_DESKTOP_VIEWPORT         14                  ///< Viewport of the view
+#define SUB_EWMH_NET_CURRENT_DESKTOP          15                  ///< Number of current view
+#define SUB_EWMH_NET_ACTIVE_WINDOW            16                  ///< Focus window
+#define SUB_EWMH_NET_WORKAREA                 17                  ///< Workarea of the views
+#define SUB_EWMH_NET_SUPPORTING_WM_CHECK      18                  ///< Check for compliant window manager
+#define SUB_EWMH_NET_VIRTUAL_ROOTS            19                  ///< List of virtual destops
+#define SUB_EWMH_NET_CLOSE_WINDOW             20
+
+#define SUB_EWMH_NET_WM_NAME                  21
+#define SUB_EWMH_NET_WM_PID                   22                  ///< PID of client
+#define SUB_EWMH_NET_WM_DESKTOP               23                  ///< Desktop client is on
+
+#define SUB_EWMH_NET_WM_STATE                 24                  ///< Window state
+#define SUB_EWMH_NET_WM_STATE_MODAL           25                  ///< Modal window
+#define SUB_EWMH_NET_WM_STATE_SHADED          26                  ///< Shaded window
+#define SUB_EWMH_NET_WM_STATE_HIDDEN          27                  ///< Hidden window
+#define SUB_EWMH_NET_WM_STATE_FULLSCREEN      28                  ///< Fullscreen window
+
+#define SUB_EWMH_NET_WM_WINDOW_TYPE           29
+#define SUB_EWMH_NET_WM_WINDOW_TYPE_DESKTOP   30
+#define SUB_EWMH_NET_WM_WINDOW_TYPE_NORMAL    31
+#define SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG    32
+
+#define SUB_EWMH_NET_WM_ALLOWED_ACTIONS       33
+#define SUB_EWMH_NET_WM_ACTION_MOVE           34
+#define SUB_EWMH_NET_WM_ACTION_RESIZE         35
+#define SUB_EWMH_NET_WM_ACTION_SHADE          36
+#define SUB_EWMH_NET_WM_ACTION_FULLSCREEN     37
+#define SUB_EWMH_NET_WM_ACTION_CHANGE_DESKTOP 38
+#define SUB_EWMH_NET_WM_ACTION_CLOSE          39
+
+/* Misc */
+#define SUB_EWMH_UTF8                         40                  ///< String encoding
+
+/* subtle */
+#define SUB_EWMH_SUBTLE_CLIENT_TAG            41                  ///< subtle client tag
+#define SUB_EWMH_SUBTLE_CLIENT_UNTAG          42                  ///< subtle client untag
+#define SUB_EWMH_SUBTLE_CLIENT_TAGS           43                  ///< subtle client tags
+#define SUB_EWMH_SUBTLE_TAG_NEW               44                  ///< subtle tag new
+#define SUB_EWMH_SUBTLE_TAG_KILL              45                  ///< subtle tag kill
+#define SUB_EWMH_SUBTLE_TAG_LIST              46                  ///< subtle tag list
+#define SUB_EWMH_SUBTLE_VIEW_NEW              47                  ///< subtle view new
+#define SUB_EWMH_SUBTLE_VIEW_KILL             48                  ///< subtle view kill
+#define SUB_EWMH_SUBTLE_VIEW_LIST             49                  ///< subtle view list
+#define SUB_EWMH_SUBTLE_VIEW_TAG              50                  ///< subtle view tag
+#define SUB_EWMH_SUBTLE_VIEW_UNTAG            51                  ///< subtle view untag
+#define SUB_EWMH_SUBTLE_VIEW_TAGS             52                  ///< subtle view tags
 /* }}} */
 
 /* Flags {{{ */
@@ -109,70 +174,6 @@
 #define SUB_DATA_STRING        (1L << 10)                         ///< String data
 #define SUB_DATA_FIXNUM        (1L << 11)                         ///< Fixnum data
 #define SUB_DATA_NIL           (1L << 12)                         ///< Nil data
-
-/* ICCCM */
-#define SUB_EWMH_WM_NAME                       0                  ///< Name of window
-#define SUB_EWMH_WM_CLASS                      1                  ///< Class of window
-#define SUB_EWMH_WM_STATE                      2                  ///< Window state
-#define SUB_EWMH_WM_PROTOCOLS                  3                  ///< Supported protocols 
-#define SUB_EWMH_WM_TAKE_FOCUS                 4                  ///< Send focus messages
-#define SUB_EWMH_WM_DELETE_WINDOW              5                  ///< Send close messages
-#define SUB_EWMH_WM_NORMAL_HINTS               6                  ///< Window normal hints
-#define SUB_EWMH_WM_SIZE_HINTS                 7                  ///< Window size hints
-
-/* EWMH */
-#define SUB_EWMH_NET_SUPPORTED                 8                  ///< Supported states
-#define SUB_EWMH_NET_CLIENT_LIST               9                  ///< List of clients
-#define SUB_EWMH_NET_CLIENT_LIST_STACKING     10                  ///< List of clients
-#define SUB_EWMH_NET_NUMBER_OF_DESKTOPS       11                  ///< Total number of views
-#define SUB_EWMH_NET_DESKTOP_NAMES            12                  ///< Names of the views
-#define SUB_EWMH_NET_DESKTOP_GEOMETRY         13                  ///< Desktop geometry
-#define SUB_EWMH_NET_DESKTOP_VIEWPORT         14                  ///< Viewport of the view
-#define SUB_EWMH_NET_CURRENT_DESKTOP          15                  ///< Number of current view
-#define SUB_EWMH_NET_ACTIVE_WINDOW            16                  ///< Focus window
-#define SUB_EWMH_NET_WORKAREA                 17                  ///< Workarea of the views
-#define SUB_EWMH_NET_SUPPORTING_WM_CHECK      18                  ///< Check for compliant window manager
-#define SUB_EWMH_NET_VIRTUAL_ROOTS            19                  ///< List of virtual destops
-#define SUB_EWMH_NET_CLOSE_WINDOW             20
-
-#define SUB_EWMH_NET_WM_PID                   21                  ///< PID of client
-#define SUB_EWMH_NET_WM_DESKTOP               22                  ///< Desktop client is on
-
-#define SUB_EWMH_NET_WM_STATE                 23                  ///< Window state
-#define SUB_EWMH_NET_WM_STATE_MODAL           24                  ///< Modal window
-#define SUB_EWMH_NET_WM_STATE_SHADED          25                  ///< Shaded window
-#define SUB_EWMH_NET_WM_STATE_HIDDEN          26                  ///< Hidden window
-#define SUB_EWMH_NET_WM_STATE_FULLSCREEN      27                  ///< Fullscreen window
-
-#define SUB_EWMH_NET_WM_WINDOW_TYPE           28
-#define SUB_EWMH_NET_WM_WINDOW_TYPE_DESKTOP   29
-#define SUB_EWMH_NET_WM_WINDOW_TYPE_NORMAL    30
-#define SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG    31
-
-#define SUB_EWMH_NET_WM_ALLOWED_ACTIONS       32
-#define SUB_EWMH_NET_WM_ACTION_MOVE           33
-#define SUB_EWMH_NET_WM_ACTION_RESIZE         34
-#define SUB_EWMH_NET_WM_ACTION_SHADE          35
-#define SUB_EWMH_NET_WM_ACTION_FULLSCREEN     36
-#define SUB_EWMH_NET_WM_ACTION_CHANGE_DESKTOP 37
-#define SUB_EWMH_NET_WM_ACTION_CLOSE          38
-
-/* Misc */
-#define SUB_EWMH_UTF8                         39                  ///< String encoding
-
-/* subtle */
-#define SUB_EWMH_SUBTLE_CLIENT_TAG            40                  ///< subtle client tag
-#define SUB_EWMH_SUBTLE_CLIENT_UNTAG          41                  ///< subtle client untag
-#define SUB_EWMH_SUBTLE_CLIENT_TAGS           42                  ///< subtle client tags
-#define SUB_EWMH_SUBTLE_TAG_NEW               43                  ///< subtle tag new
-#define SUB_EWMH_SUBTLE_TAG_KILL              44                  ///< subtle tag kill
-#define SUB_EWMH_SUBTLE_TAG_LIST              45                  ///< subtle tag list
-#define SUB_EWMH_SUBTLE_VIEW_NEW              46                  ///< subtle view new
-#define SUB_EWMH_SUBTLE_VIEW_KILL             47                  ///< subtle view kill
-#define SUB_EWMH_SUBTLE_VIEW_LIST             48                  ///< subtle view list
-#define SUB_EWMH_SUBTLE_VIEW_TAG              49                  ///< subtle view tag
-#define SUB_EWMH_SUBTLE_VIEW_UNTAG            50                  ///< subtle view untag
-#define SUB_EWMH_SUBTLE_VIEW_TAGS             51                  ///< subtle view tags
 /* }}} */
 
 /* Typedefs {{{ */

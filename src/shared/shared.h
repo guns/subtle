@@ -39,6 +39,10 @@ typedef union submessagedata_t {
 } SubMessageData;
 
 extern Display *display;
+
+#ifdef DEBUG
+extern int debug;
+#endif /* DEBUG */
 /* }}} */
 
 /* Log {{{ */
@@ -78,10 +82,10 @@ char **subSharedPropertyList(Window win, char *name, int *size);
 char *subSharedWindowWMName(Window win);
 char *subSharedWindowWMClass(Window win);
 Window subSharedWindowSelect(void);
-Window * subSharedWindowList(int *size);
 /* }}} */
 
 /* Client {{{ */
+Window *subSharedClientList(int *size);
 int subSharedClientFind(char *name, Window *win);
 /* }}} */
 
