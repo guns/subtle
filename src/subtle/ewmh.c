@@ -12,7 +12,7 @@
 
 #include "subtle.h"
 
-#define NATOMS 52
+#define NATOMS 53
 static Atom atoms[NATOMS];
 
  /** subEwmhInit {{{
@@ -32,7 +32,7 @@ subEwmhInit(void)
     "_NET_SUPPORTED", "_NET_CLIENT_LIST", "_NET_CLIENT_LIST_STACKING", "_NET_NUMBER_OF_DESKTOPS",
     "_NET_DESKTOP_NAMES", "_NET_DESKTOP_GEOMETRY", "_NET_DESKTOP_VIEWPORT", "_NET_CURRENT_DESKTOP", "_NET_ACTIVE_WINDOW",
     "_NET_WORKAREA", "_NET_SUPPORTING_WM_CHECK", "_NET_VIRTUAL_ROOTS", "_NET_CLOSE_WINDOW",
-    "_NET_WM_PID", "_NET_WM_DESKTOP", 
+    "_NET_WM_NAME", "_NET_WM_PID", "_NET_WM_DESKTOP", 
     "_NET_WM_STATE", "_NET_WM_STATE_MODAL", "_NET_WM_STATE_SHADED", "_NET_WM_STATE_HIDDEN", "_NET_WM_STATE_FULLSCREEN",
     "_NET_WM_WINDOW_TYPE", "_NET_WM_WINDOW_TYPE_DESKTOP", "_NET_WM_WINDOW_TYPE_NORMAL", "_NET_WM_WINDOW_TYPE_DIALOG",
     "_NET_WM_ALLOWED_ACTIONS", "_NET_WM_ACTION_MOVE", "_NET_WM_ACTION_RESIZE", "_NET_WM_ACTION_SHADE",
@@ -51,7 +51,7 @@ subEwmhInit(void)
   XInternAtoms(subtle->disp, names, n, 0, atoms);
 
   /* EWMH: Window manager information */
-  subEwmhSetString(DefaultRootWindow(subtle->disp), SUB_EWMH_WM_NAME, PKG_NAME);
+  subEwmhSetString(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_WM_NAME, PKG_NAME);
   subEwmhSetCardinals(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_WM_PID, &pid, 1);
   subEwmhSetCardinals(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_DESKTOP_VIEWPORT, (long *)&data, 2);
   subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_SUPPORTING_WM_CHECK, 
