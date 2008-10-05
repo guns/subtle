@@ -218,6 +218,7 @@ subSharedPropertyGet(Window win,
   if(type != rettype)
     {
       subSharedLogWarn("Invalid type for property (%s)\n", name);
+      printf("type=%ld, rettype=%ld\n", type, rettype);
       XFree(data);
       data = NULL;
     }
@@ -266,7 +267,7 @@ subSharedPropertyList(Window win,
             }
         }
     }
-  else subSharedLogError("Failed to get propery (%s)\n", name);
+  else subSharedLogWarn("Failed to get propery (%s)\n", name);
 
   return(names);
 } /* }}} */
@@ -379,7 +380,7 @@ subSharedWindowSelect(void)
   **/
 
 Window *
-subSharedWindowList(int *size)
+subSharedClientList(int *size)
 {
   unsigned long len;
 
@@ -418,7 +419,7 @@ subSharedClientFind(char *name,
 
   if(!strncmp(name, "#", 1) && win) selwin = subSharedWindowSelect(); ///< Select window
   
-  clients = subSharedWindowList(&size);
+  clients = subSharedClientList(&size);
   if(clients)
     {
       int i;

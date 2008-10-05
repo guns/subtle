@@ -10,30 +10,22 @@
   * See the file COPYING.
   **/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
-#include <signal.h>
-#include <errno.h>
-#include <assert.h>
-#include <regex.h>
-#include <getopt.h>
-#include <ctype.h>
-#include <X11/Xlib.h>
-#include <X11/Xatom.h>
-#include <X11/Xutil.h>
-#include <X11/Xmd.h>
-#include <X11/cursorfont.h>
 #include "config.h"
-#include "util.h"
+#include "shared.h"
 
 #ifdef HAVE_EXECINFO_H
 #include <execinfo.h>
 #endif /* HAVE_EXECINFO_H */
 
+Display *display = NULL;
+int debug = 0;
+
 /* Typedefs {{{ */
-typedef void(*subCommonCommand)(char *, char *);
+typedef void(*Command)(char *, char *);
+/* }}} */
+
+/* Macros {{{ */
+#define Assert(cond,...) if(!cond) subSharedLog(3, __FILE__, __LINE__, __VA_ARGS__);
 /* }}} */
 
 /* Flags {{{ */
@@ -61,24 +53,24 @@ ClientInfo(Window win)
   int x, y;
   unsigned int width, height, border;
   unsigned long *nv = NULL, *cv = NULL, *rv = NULL;
-  char *name = NULL, *cc = NULL;
+  char *wmname = NULL, *wmclass = NULL;
 
   assert(win);
 
-  name = ClientName(win);
-  cc   = ClientClass(win);
+  wmname  = subSharedWindowWMName(win);
+  wmclass = subSharedWindowWMClass(win);
 
-  XGetGeometry(disp, win, &unused, &x, &y, &width, &height, &border, &border);
+  XGetGeometry(display, win, &unused, &x, &y, &width, &height, &border, &border);
 
-  nv = (unsigned long *)PropertyGet(DefaultRootWindow(disp), XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
-  cv = (unsigned long*)PropertyGet(win, XA_CARDINAL, "_NET_WM_DESKTOP", NULL);
-  rv = (unsigned long*)PropertyGet(DefaultRootWindow(disp), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+  nv = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display), XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
+  cv = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, "_NET_WM_DESKTOP", NULL);
+  rv = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
 
   printf("%#lx %c %ld %ux%u %s (%s)\n", win, (*cv == *rv ? '*' : '-'), 
-    (*cv > *nv ? -1 : *cv), width, height, name, cc);
+    (*cv > *nv ? -1 : *cv), width, height, wmname, wmclass);
 
-  if(name) free(name);
-  if(cc) free(cc);
+  if(wmname) free(wmname);
+  if(wmclass) free(wmclass);
   if(nv) free(nv);
   if(cv) free(cv);
   if(rv) free(rv);
@@ -92,9 +84,9 @@ ActionClientList(char *arg1,
   int size = 0;
   Window *clients = NULL;
 
-  Debug("%s\n", __func__);
+  subSharedLogDebug("%s\n", __func__);
 
-  clients = ClientList(&size);
+  clients = subSharedClientList(&size);
   if(clients)
     {
       int i;
@@ -112,9 +104,9 @@ ActionClientFind(char *arg1,
   Window win;
 
   Assert(arg1, "Usage: %sr -c -f PATTERN\n", PKG_NAME);
-  Debug("%s\n", __func__);
+  subSharedLogDebug("%s\n", __func__);
 
-  ClientFind(arg1, &win);
+  subSharedClientFind(arg1, &win);
   ClientInfo(win);
 } /* }}} */
 
@@ -125,25 +117,25 @@ ActionClientFocus(char *arg1,
 {
   Window win;
   unsigned long *cv = NULL, *rv = NULL;
-  MessageData data = { { 0, 0, 0, 0, 0 } };
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
   Assert(arg1, "Usage: %sr -c -F CLIENT\n", PKG_NAME);
-  Debug("%s\n", __func__);
+  subSharedLogDebug("%s\n", __func__);
 
-  ClientFind(arg1, &win);
-  cv = (unsigned long*)PropertyGet(win, XA_CARDINAL, "_NET_WM_DESKTOP", NULL);
-  rv = (unsigned long*)PropertyGet(DefaultRootWindow(disp), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+  subSharedClientFind(arg1, &win);
+  cv = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, "_NET_WM_DESKTOP", NULL);
+  rv = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
 
   if(*cv && *rv && *cv != *rv) 
     {
-      Debug("Switching: active=%d, view=%d\n", *rv, *cv);
+      subSharedLogDebug("Switching: active=%d, view=%d\n", *rv, *cv);
       data.l[0] = *cv;
-      Message(DefaultRootWindow(disp), "_NET_CURRENT_DESKTOP", data);
+      subSharedMessage(DefaultRootWindow(display), "_NET_CURRENT_DESKTOP", data);
     }
   else 
     {
       data.l[0] = win;
-      Message(DefaultRootWindow(disp), "_NET_ACTIVE_WINDOW", data);
+      subSharedMessage(DefaultRootWindow(display), "_NET_ACTIVE_WINDOW", data);
     }
       
   free(cv);
@@ -156,15 +148,15 @@ ActionClientShade(char *arg1,
   char *arg2)
 {
   Window win;
-  MessageData data = { { 0, 0, 0, 0, 0 } };
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
   Assert(arg1, "Usage: %sr -c -s PATTERN\n", PKG_NAME);
-  Debug("%s\n", __func__);
+  subSharedLogDebug("%s\n", __func__);
 
-  ClientFind(arg1, &win);
+  subSharedClientFind(arg1, &win);
   data.l[0] = win;
 
-  Message(DefaultRootWindow(disp), "_NET_WM_ACTION_SHADE", data);
+  subSharedMessage(DefaultRootWindow(display), "_NET_WM_ACTION_SHADE", data);
 } /* }}} */
 
 /* ActionClientTag {{{ */
@@ -174,18 +166,18 @@ ActionClientTag(char *arg1,
 {
   int tag = 0;
   Window win;
-  MessageData data = { { 0, 0, 0, 0, 0 } };
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
   Assert(arg1 && arg2, "Usage: %sr -c PATTERN -T PATTERN\n", PKG_NAME);
-  Debug("%s\n", __func__);
+  subSharedLogDebug("%s\n", __func__);
 
-  ClientFind(arg1, &win);
-  tag = TagFind(arg2);
+  subSharedClientFind(arg1, &win);
+  tag = subSharedTagFind(arg2);
 
   data.l[0] = win;
   data.l[1] = tag + 1;
 
-  Message(DefaultRootWindow(disp), "SUBTLE_CLIENT_TAG", data);
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_CLIENT_TAG", data);
 } /* }}} */
 
 /* ActionClientUntag {{{ */
@@ -195,18 +187,18 @@ ActionClientUntag(char *arg1,
 {
   int tag = 0;
   Window win;
-  MessageData data = { { 0, 0, 0, 0, 0 } };
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
   Assert(arg1 && arg2, "Usage: %sr -c PATTERN -u PATTERN\n", PKG_NAME);
-  Debug("%s\n", __func__);
+  subSharedLogDebug("%s\n", __func__);
 
-  ClientFind(arg1, &win);
-  tag = TagFind(arg2);
+  subSharedClientFind(arg1, &win);
+  tag = subSharedTagFind(arg2);
 
   data.l[0] = win;
   data.l[1] = tag + 1;
 
-  Message(DefaultRootWindow(disp), "SUBTLE_CLIENT_UNTAG", data);
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_CLIENT_UNTAG", data);
 } /* }}} */
 
 /* ActionClientTags {{{ */
@@ -220,11 +212,11 @@ ActionClientTags(char *arg1,
   unsigned long *flags = NULL;
 
   Assert(arg1, "Usage: %sr -c PATTERN -g\n", PKG_NAME);
-  Debug("%s\n", __func__);
+  subSharedLogDebug("%s\n", __func__);
 
-  ClientFind(arg1, &win);
-  flags = (unsigned long *)PropertyGet(win, XA_CARDINAL, "SUBTLE_CLIENT_TAGS", NULL);
-  tags  = PropertyList("SUBTLE_TAG_LIST", &size);
+  subSharedClientFind(arg1, &win);
+  flags = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, "SUBTLE_CLIENT_TAGS", NULL);
+  tags  = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
 
   for(i = 0; i < size; i++)
     if((int)*flags & (1L << (i + 1))) printf("%s\n", tags[i]);
@@ -239,15 +231,15 @@ ActionClientKill(char *arg1,
   char *arg2)
 {
   Window win;
-  MessageData data = { { 0, 0, 0, 0, 0 } };
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
   Assert(arg1, "Usage: %sr -c -k PATTERN\n", PKG_NAME);
-  Debug("%s\n", __func__);
+  subSharedLogDebug("%s\n", __func__);
 
-  ClientFind(arg1, &win);
+  subSharedClientFind(arg1, &win);
   data.l[0] = win;
 
-  Message(win, "_NET_CLOSE_WINDOW", data);
+  subSharedMessage(win, "_NET_CLOSE_WINDOW", data);
 } /* }}} */
 
 /* ActionTagNew {{{ */
@@ -255,14 +247,14 @@ static void
 ActionTagNew(char *arg1,
   char *arg2)
 {
-  MessageData data = { { 0, 0, 0, 0, 0 } };
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
   Assert(arg1, "Usage: %sr -t -n NAME\n", PKG_NAME);
-  Debug("%s\n", __func__);
+  subSharedLogDebug("%s\n", __func__);
 
   snprintf(data.b, sizeof(data.b), arg1);
 
-  Message(DefaultRootWindow(disp), "SUBTLE_TAG_NEW", data);
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_NEW", data);
 } /* }}} */
 
 /* ActionTagList {{{ */
@@ -273,9 +265,9 @@ ActionTagList(char *arg1,
   int i, size = 0;
   char **tags = NULL;
 
-  Debug("%s\n", __func__);
+  subSharedLogDebug("%s\n", __func__);
 
-  tags = PropertyList("SUBTLE_TAG_LIST", &size);
+  tags = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
 
   for(i = 0; i < size; i++)
     printf("%s\n", tags[i]);
@@ -293,18 +285,18 @@ ActionTagFind(char *arg1,
   Window *frames = NULL, *clients = NULL;
   unsigned long *flags = NULL;
 
-  Debug("%s\n", __func__);
+  subSharedLogDebug("%s\n", __func__);
 
   /* Collect data */
-  tag      = TagFind(arg1);
-  clients = ClientList(&size_clients);
-  views    = PropertyList("_NET_DESKTOP_NAMES", &size_views);
-  frames  = (Window *)PropertyGet(DefaultRootWindow(disp), XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
+  tag     = subSharedTagFind(arg1);
+  clients = subSharedClientList(&size_clients);
+  views   = subSharedPropertyList(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size_views);
+  frames  = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
 
   /* Views */
   for(i = 0; i < size_views; i++)
     {
-      flags = (unsigned long *)PropertyGet(frames[i], XA_CARDINAL, "SUBTLE_VIEW_TAGS", NULL);
+      flags = (unsigned long *)subSharedPropertyGet(frames[i], XA_CARDINAL, "SUBTLE_VIEW_TAGS", NULL);
 
       if((int)*flags & (1L << (tag + 1))) printf("view   - %s\n", views[i]);
 
@@ -314,16 +306,17 @@ ActionTagFind(char *arg1,
   /* Clients */
   for(i = 0; i < size_clients; i++)
     {
-      char *name = NULL, *class = NULL;
+      char *wmname = NULL, *wmclass = NULL;
 
-      flags = (unsigned long *)PropertyGet(clients[i], XA_CARDINAL, "SUBTLE_CLIENT_TAGS", NULL);
-      name  = ClientName(clients[i]);
-      class  = ClientClass(clients[i]);
+      flags   = (unsigned long *)subSharedPropertyGet(clients[i], XA_CARDINAL, "SUBTLE_CLIENT_TAGS", NULL);
+      wmname  = subSharedWindowWMName(clients[i]);
+      wmclass = subSharedWindowWMClass(clients[i]);
 
-      if((int)*flags & (1L << (tag + 1))) printf("client - %s (%s)\n", name, class);
+      if((int)*flags & (1L << (tag + 1))) printf("client - %s (%s)\n", wmname, wmclass);
 
       free(flags);
-      free(name);
+      free(wmname);
+      free(wmclass);
     }
 
   free(clients);
@@ -336,14 +329,14 @@ static void
 ActionTagKill(char *arg1,
   char *arg2)
 {
-  MessageData data = { { 0, 0, 0, 0, 0 } };
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
   Assert(arg1, "Usage: %sr -t -k PATTERN\n", PKG_NAME);
-  Debug("%s\n", __func__);
+  subSharedLogDebug("%s\n", __func__);
 
   snprintf(data.b, sizeof(data.b), arg1);
 
-  Message(DefaultRootWindow(disp), "SUBTLE_TAG_KILL", data);  
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_KILL", data);  
 } /* }}} */
 
 /* ActionViewNew {{{ */
@@ -351,14 +344,14 @@ static void
 ActionViewNew(char *arg1,
   char *arg2)
 {
-  MessageData data = { { 0, 0, 0, 0, 0 } };
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
   Assert(arg1, "Usage: %sr -t -n PATTERN\n", PKG_NAME);
-  Debug("%s\n", __func__);
+  subSharedLogDebug("%s\n", __func__);
 
   snprintf(data.b, sizeof(data.b), arg1);
 
-  Message(DefaultRootWindow(disp), "SUBTLE_VIEW_NEW", data);
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_NEW", data);
 } /* }}} */
 
 /* ActionViewList {{{ */
@@ -371,13 +364,13 @@ ActionViewList(char *arg1,
   char **views = NULL;
   Window *frames = NULL;
 
-  Debug("%s\n", __func__);
+  subSharedLogDebug("%s\n", __func__);
 
   /* Collect data */
-  nv     = (unsigned long *)PropertyGet(DefaultRootWindow(disp), XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
-  cv     = (unsigned long *)PropertyGet(DefaultRootWindow(disp), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
-  frames = (Window *)PropertyGet(DefaultRootWindow(disp), XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
-  views  = PropertyList("_NET_DESKTOP_NAMES", &size);
+  nv     = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display), XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
+  cv     = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+  frames = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
+  views  = subSharedPropertyList(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
 
   for(i = 0; *nv && i < *nv; i++)
     printf("%#lx %c %s\n", frames[i], (i == *cv ? '*' : '-'), views[i]);
@@ -394,18 +387,18 @@ ActionViewJump(char *arg1,
   char *arg2)
 {
   int view = 0;
-  MessageData data = { { 0, 0, 0, 0, 0 } };
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
   Assert(arg1, "Usage: %sr -v -j PATTERN\n", PKG_NAME);
-  Debug("%s\n", __func__);
+  subSharedLogDebug("%s\n", __func__);
 
   /* Try to convert arg1 to long or to find view */
   if(!(view = atoi(arg1)))
-    view = ViewFind(arg1, NULL);
+    view = subSharedViewFind(arg1, NULL);
 
   data.l[0] = view;
 
-  Message(DefaultRootWindow(disp), "_NET_CURRENT_DESKTOP", data);
+  subSharedMessage(DefaultRootWindow(display), "_NET_CURRENT_DESKTOP", data);
 } /* }}} */
 
 /* ActionViewTag {{{ */
@@ -415,18 +408,18 @@ ActionViewTag(char *arg1,
 {
   Window win;
   int tag = 0;
-  MessageData data = { { 0, 0, 0, 0, 0 } };
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
   Assert(arg1 && arg2, "Usage: %sr -v PATTERN -T PATTERN\n", PKG_NAME);
-  Debug("%s\n", __func__);
+  subSharedLogDebug("%s\n", __func__);
 
-  ViewFind(arg1, &win);
-  tag = TagFind(arg2);
+  subSharedViewFind(arg1, &win);
+  tag = subSharedTagFind(arg2);
 
   data.l[0] = win;
   data.l[1] = tag + 1;
 
-  Message(DefaultRootWindow(disp), "SUBTLE_VIEW_TAG", data);
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_TAG", data);
 } /* }}} */
 
 /* ActionViewUntag {{{ */
@@ -436,18 +429,18 @@ ActionViewUntag(char *arg1,
 {
   Window win;
   int tag = 0;
-  MessageData data = { { 0, 0, 0, 0, 0 } };
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
   Assert(arg1 && arg2, "Usage: %sr -v PATTERN -u PATTERN\n", PKG_NAME);
-  Debug("%s\n", __func__);
+  subSharedLogDebug("%s\n", __func__);
 
-  ViewFind(arg1, &win);
-  tag = TagFind(arg2);
+  subSharedViewFind(arg1, &win);
+  tag = subSharedTagFind(arg2);
 
   data.l[0] = win;
   data.l[1] = tag + 1;
 
-  Message(DefaultRootWindow(disp), "SUBTLE_VIEW_UNTAG", data);
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_UNTAG", data);
 } /* }}} */
 
 /* ActionViewTags {{{ */
@@ -461,11 +454,11 @@ ActionViewTags(char *arg1,
   unsigned long *flags = NULL;
 
   Assert(arg1, "Usage: %sr -v PATTERN -g\n", PKG_NAME);
-  Debug("%s\n", __func__);
+  subSharedLogDebug("%s\n", __func__);
 
-  ViewFind(arg1, &win);
-  flags = (unsigned long *)PropertyGet(win, XA_CARDINAL, "SUBTLE_VIEW_TAGS", NULL);
-  tags  = PropertyList("SUBTLE_TAG_LIST", &size);
+  subSharedViewFind(arg1, &win);
+  flags = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, "SUBTLE_VIEW_TAGS", NULL);
+  tags  = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
 
   for(i = 0; i < size; i++)
     if((int)*flags & (1L << (i + 1))) printf("%s\n", tags[i]);
@@ -480,16 +473,16 @@ ActionViewKill(char *arg1,
   char *arg2)
 {
   int view;
-  MessageData data = { { 0, 0, 0, 0, 0 } };
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
   Assert(arg1, "Usage: %sr -v -k PATTERN\n", PKG_NAME);
-  Debug("%s\n", __func__);
+  subSharedLogDebug("%s\n", __func__);
 
-  view = ViewFind(arg1, NULL);
+  view = subSharedViewFind(arg1, NULL);
 
   data.l[0] = view;
 
-  Message(DefaultRootWindow(disp), "SUBTLE_VIEW_KILL", data);  
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_KILL", data);  
 } /* }}} */
 
 /* Usage {{{ */
@@ -570,7 +563,8 @@ Version(void)
 {
   printf("%sr %s - Copyright (c) 2005-2008 Christoph Kappel\n" \
           "Released under the GNU General Public License\n" \
-          "Compiled for X%d\n", PKG_NAME, PKG_VERSION, X_PROTOCOL);
+          "Compiled for X%dR%d\n", 
+          PKG_NAME, PKG_VERSION, X_PROTOCOL, X_PROTOCOL_REVISION);
 }
 /* }}} */
 
@@ -611,10 +605,10 @@ Pipe(char *string)
 
   if(!strncmp(string, "-", 1)) 
     {
-      if(!fgets(buf, sizeof(buf), stdin)) Error("Can't read from pipe\n");
-      ret = (char *)Alloc(strlen(buf), sizeof(char));
+      if(!fgets(buf, sizeof(buf), stdin)) subSharedLogError("Can't read from pipe\n");
+      ret = (char *)subSharedAlloc(strlen(buf), sizeof(char));
       strncpy(ret, buf, strlen(buf) - 1);
-      Debug("Pipe: len=%d\n", strlen(buf));
+      subSharedLogDebug("Pipe: len=%d\n", strlen(buf));
     }
   else ret = strdup(string);
   
@@ -627,7 +621,7 @@ main(int argc,
   char *argv[])
 {
   int c, group = -1, action = -1;
-  char *display = NULL, *arg1 = NULL, *arg2 = NULL;
+  char *dispname = NULL, *arg1 = NULL, *arg2 = NULL;
   struct sigaction act;
   static struct option long_options[] =
   {
@@ -694,7 +688,7 @@ main(int argc,
           case 'u': action  = ACTION_UNTAG;  break;
           case 'g': action  = ACTION_TAGS;   break;
 
-          case 'd': display = optarg;        break;
+          case 'd': dispname = optarg;       break;
           case 'h': Usage(group);            return(0);
 #ifdef DEBUG          
           case 'D': debug = 1;               break;
@@ -718,18 +712,18 @@ main(int argc,
   if(argc > optind + 1) arg2 = Pipe(argv[optind + 1]);
 
   /* Open connection to server */
-  if(!(disp = XOpenDisplay(display)))
+  if(!(display = XOpenDisplay(dispname)))
     {
-      printf("Can't open display `%s'.\n", (display) ? display : ":0.0");
+      printf("Can't open display `%s'.\n", (dispname) ? dispname : ":0.0");
       return(-1);
     }
-  XSetErrorHandler(XError);
+  XSetErrorHandler(subSharedLogXError);
 
   /* Check command */
   if(cmds[group][action]) cmds[group][action](arg1, arg2);
   else Usage(group);
 
-  XCloseDisplay(disp);
+  XCloseDisplay(display);
   if(arg1) free(arg1);
   if(arg2) free(arg2);
   

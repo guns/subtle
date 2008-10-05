@@ -14,6 +14,8 @@
 #include "shared.h"
 
 Display *display = NULL;
+int debug = 0;
+
 static VALUE subtle = Qnil;
 static int refs = 0;
 
@@ -54,8 +56,10 @@ SubtleNew(int argc,
 static VALUE
 SubtleRunning(VALUE self)
 {
-  char *prop = subSharedPropertyGet(DefaultRootWindow(display), XA_STRING, "WM_NAME", NULL);
-
+  char *prop = NULL;
+  
+  prop = subSharedPropertyGet(DefaultRootWindow(display), XInternAtom(display, "UTF8_STRING", False),
+    "_NET_WM_NAME", NULL);
   if(prop) 
     {
       printf("prop=%s\n", prop);
