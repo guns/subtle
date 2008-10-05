@@ -210,17 +210,19 @@ subSharedPropertyGet(Window win,
 
   assert(win && name);
 
-  if(XGetWindowProperty(display, win, prop, 0L, 4096, False, type, &rettype, 
-    &format, &nitems, &bytes, &data) != Success)
+  if(Success != XGetWindowProperty(display, win, prop, 0L, 4096, False, type, &rettype, 
+    &format, &nitems, &bytes, &data))
     {
       subSharedLogWarn("Failed to get property (%s)\n", name);
     }
   if(type != rettype)
     {
       subSharedLogWarn("Invalid type for property (%s)\n", name);
-      printf("type=%ld, rettype=%ld\n", type, rettype);
+      printf("name=%s, type=%ld, rettype=%ld, intern: utf8==%ld\n", name, type, rettype, 
+        XInternAtom(display, "UTF8_STRING", False));
       XFree(data);
-      data = NULL;
+
+      return(NULL);
     }
   if(size) *size = (unsigned long)(format / 8) * nitems;
 
@@ -266,10 +268,12 @@ subSharedPropertyList(Window win,
               names[id++] = string + i + 1;
             }
         }
+      return(names);
     }
-  else subSharedLogWarn("Failed to get propery (%s)\n", name);
+  
+  subSharedLogWarn("Failed to get propery (%s)\n", name);
 
-  return(names);
+  return(NULL);
 } /* }}} */
 
  /** subSharedWindowWMName {{{
