@@ -94,6 +94,7 @@ ActionClientList(char *arg1,
       for(i = 0; i < size; i++) ClientInfo(clients[i]);
       free(clients);
     }
+  else subSharedLogWarn("Failed to list clients\n");
 } /* }}} */
 
 /* ActionClientFind {{{ */
