@@ -33,7 +33,7 @@ require("yaml")
 
 @defines = {
   "PKG_NAME"      => "subtle",
-  "PKG_VERSION"   => "0.8.%s" % ["$Rev$".delete("/[a-zA-Z$: ]/")], #< Get revision
+  "PKG_VERSION"   => "0.8.$(revision)",
   "PKG_BUGREPORT" => "unexist@dorfelite.net",
   "PKG_CONFIG"    => "subtle.yml",
   "RUBY_VERSION"  => "$(MAJOR).$(MINOR).$(TEENY)",
@@ -151,6 +151,13 @@ task(:config) do
     if(ENV["destdir"]) then
       @options["prefix"] = "$(destdir)/$(prefix)"
     end
+    
+    # Get revision
+    begin
+      @options["revision"] = `hg tip`.match(/changeset:\s*(\d+).*/)[1]
+    rescue
+      @options["revision"] = "99999"
+    end  
 
     # Expand options
     @options.each do |k, v|
