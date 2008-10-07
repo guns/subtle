@@ -63,7 +63,7 @@ subSharedLogXError(Display *disp,
   XErrorEvent *ev)
 {
 #ifdef DEBUG
-  if(debug) return(0);
+  if(debug) return 0;
 #endif /* DEBUG */  
 
   if(42 != ev->request_code) /* X_SetInputFocus */
@@ -72,7 +72,7 @@ subSharedLogXError(Display *disp,
       XGetErrorText(disp, ev->error_code, error, sizeof(error));
       subSharedLogDebug("%s: win=%#lx, request=%d\n", error, ev->resourceid, ev->request_code);
     }
-  return(0); 
+  return 0; 
 } /* }}} */
 
  /** subSharedAlloc {{{
@@ -88,7 +88,7 @@ subSharedAlloc(size_t n,
 {
   void *mem = calloc(n, size);
   if(!mem) subSharedLogError("Can't alloc memory. Exhausted?\n");
-  return(mem);
+  return mem;
 } /* }}} */
 
  /** subSharedRegexNew {{{ 
@@ -121,9 +121,9 @@ subSharedRegexNew(char *regex)
       free(errbuf);
       subSharedRegexKill(preg);
 
-      return(NULL);
+      return NULL;
     }
-  return(preg);
+  return preg;
 } /* }}} */
 
  /** subSharedRegexMatch {{{
@@ -140,7 +140,7 @@ subSharedRegexMatch(regex_t *preg,
 {
   assert(preg);
 
-  return(!regexec(preg, string, 0, NULL, 0));
+  return !regexec(preg, string, 0, NULL, 0);
 } /* }}} */
 
  /** subSharedRegexKill {{{
@@ -222,11 +222,11 @@ subSharedPropertyGet(Window win,
         XInternAtom(display, "UTF8_STRING", False));
       XFree(data);
 
-      return(NULL);
+      return NULL;
     }
   if(size) *size = (unsigned long)(format / 8) * nitems;
 
-  return((char *)data);
+  return (char *)data;
 } /* }}} */
 
  /** subSharedPropertyList {{{
@@ -268,12 +268,12 @@ subSharedPropertyList(Window win,
               names[id++] = string + i + 1;
             }
         }
-      return(names);
+      return names;
     }
   
   subSharedLogWarn("Failed to get propery (%s)\n", name);
 
-  return(NULL);
+  return NULL;
 } /* }}} */
 
  /** subSharedWindowWMName {{{
@@ -290,7 +290,7 @@ subSharedWindowWMName(Window win)
   assert(win);
   
   char *wmname = subSharedPropertyGet(win, XA_STRING, "WM_NAME", NULL);
-  return(wmname ? wmname : NULL);
+  return wmname ? wmname : NULL;
 } /* }}} */
 
  /** subSharedWindowWMClass {{{
@@ -307,7 +307,7 @@ subSharedWindowWMClass(Window win)
   assert(win);
   
   char *wmclass = subSharedPropertyGet(win, XA_STRING, "WM_CLASS", NULL);
-  return(wmclass ? wmclass : NULL);
+  return wmclass ? wmclass : NULL;
 } /* }}} */
 
  /** subSharedWindowSelect {{{
@@ -336,7 +336,7 @@ subSharedWindowSelect(void)
   free(frames);
 
   if(XGrabPointer(display, frame, False, ButtonPressMask|ButtonReleaseMask, 
-    GrabModeSync, GrabModeAsync, frame, cursor, CurrentTime)) return(None);
+    GrabModeSync, GrabModeAsync, frame, cursor, CurrentTime)) return None;
 
   /* Select a window */
   while(None == win || 0 != buttons)
@@ -373,7 +373,7 @@ subSharedWindowSelect(void)
 
   XUngrabPointer(display, CurrentTime);
 
-  return(win);
+  return win;
 } /* }}} */
 
  /** subSharedClientList {{{
@@ -394,13 +394,13 @@ subSharedClientList(int *size)
   if(clients)
     {
       *size = len / sizeof(Window);
-      return(clients);
+      return clients;
     }
   else
     {
       *size = 0;
       subSharedLogWarn("Failed to get client list\n");
-      return(NULL);
+      return NULL;
     }
 } /* }}} */
 
@@ -446,7 +446,7 @@ subSharedClientFind(char *name,
               free(clients);
               free(wmname);
 
-              return(i);
+              return i;
             }
           free(wmname);
         }
@@ -456,7 +456,7 @@ subSharedClientFind(char *name,
 
   subSharedLogWarn("Can't fint client `%s'\n", name);
 
-  return(-1);
+  return -1;
 } /* }}} */
 
  /** subSharedTagFind {{{
@@ -489,7 +489,7 @@ subSharedTagFind(char *name)
         subSharedRegexKill(preg);
         free(tags);
 
-        return(i);
+        return i;
       }
 
   subSharedRegexKill(preg);
@@ -497,7 +497,7 @@ subSharedTagFind(char *name)
 
   subSharedLogWarn("Cannot find tag `%s'.\n", name);
 
-  return(-1);
+  return -1;
 } /* }}} */
 
  /** subSharedViewFind {{{
@@ -542,7 +542,7 @@ subSharedViewFind(char *name,
               free(frames);
               free(names);
 
-              return(i);
+              return i;
             }
         }
       subSharedRegexKill(preg);
@@ -553,5 +553,5 @@ subSharedViewFind(char *name,
 
   subSharedLogWarn("Can't fint view `%s'.\n", name);
 
-  return(-1);
+  return -1;
 } /* }}} */
