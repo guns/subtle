@@ -96,28 +96,6 @@ SubtleDisplay(VALUE self)
   return rb_str_new2(DisplayString(display));
 } /* }}} */
 
-/* SubtleViews {{{ */
-static VALUE
-SubtleViews(VALUE self)
-{
-  int i, size = 0;
-  char **views = NULL;
-  VALUE array = Qnil, method = Qnil, klass = Qnil;
-  
-  method = rb_intern("new");
-  klass  = rb_const_get(rb_mKernel, rb_intern("View"));
-  views  = subSharedPropertyList(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
-  array  = rb_ary_new2(size);
-
-  for(i = 0; i < size; i++)
-    {
-      VALUE v = rb_funcall(klass, method, 1, rb_str_new2(views[i]));
-      rb_ary_push(array, v);
-    }
-
-  return array;
-} /* }}} */
-
 /* SubtleTags {{{ */
 static VALUE
 SubtleTags(VALUE self)
@@ -138,6 +116,29 @@ SubtleTags(VALUE self)
     }
 
   return array;
+} /* }}} */
+
+/* SubtleTagFind {{{ */
+static VALUE
+SubtleTagFind(VALUE self,
+  VALUE name)
+{
+  int id = 0, size = 0;
+  char **names = NULL;
+  VALUE klass  = Qnil, tag = Qnil;
+
+  if(RTEST(name) && (id = subSharedTagFind(STR2CSTR(name))))
+    {
+      names = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
+      klass = rb_const_get(rb_mKernel, rb_intern("Tag"));
+      tag   = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(names[id]));
+      rb_iv_set(tag, "@id", INT2FIX(id));
+      free(names);
+
+      return tag;
+    }
+
+  return Qnil;
 } /* }}} */
 
 /* SubtleClients {{{ */
@@ -177,13 +178,83 @@ SubtleClientFind(VALUE self,
   if(RTEST(name) && -1 != subSharedClientFind(STR2CSTR(name), &win))
     {
       char *wmname = subSharedWindowWMName(win);
+
       klass  = rb_const_get(rb_mKernel, rb_intern("Client"));
       client = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(wmname));
       free(wmname);
+
       return client;
     }
 
   return Qnil;
+} /* }}} */
+
+/* SubtleViews {{{ */
+static VALUE
+SubtleViews(VALUE self)
+{
+  int i, size = 0;
+  char **views = NULL;
+  VALUE array = Qnil, method = Qnil, klass = Qnil;
+  
+  method = rb_intern("new");
+  klass  = rb_const_get(rb_mKernel, rb_intern("View"));
+  views  = subSharedPropertyList(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
+  array  = rb_ary_new2(size);
+
+  for(i = 0; i < size; i++)
+    {
+      VALUE v = rb_funcall(klass, method, 1, rb_str_new2(views[i]));
+      rb_iv_set(v, "@id", INT2FIX(i));
+      rb_ary_push(array, v);
+    }
+
+  return array;
+} /* }}} */
+
+/* SubtleViewFind {{{ */
+static VALUE
+SubtleViewFind(VALUE self,
+  VALUE name)
+{
+  int id = 0, size = 0;
+  Window win = 0;
+  char **names = NULL;
+  VALUE klass = Qnil, view = Qnil;
+
+  if(RTEST(name) && (id == subSharedViewFind(STR2CSTR(name), &win)))
+    {
+      names = subSharedPropertyList(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
+      klass = rb_const_get(rb_mKernel, rb_intern("View"));
+      view  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(names[id]));
+      rb_iv_set(view, "@id", INT2FIX(id));
+      free(names);
+      
+      return view;
+    }
+
+  return Qnil;
+} /* }}} */
+
+/* SubtleViewCurrent {{{ */
+static VALUE
+SubtleViewCurrent(VALUE self)
+{
+  int size = 0;
+  char **names = NULL;
+  unsigned long *cv = NULL;
+  VALUE klass = Qnil, view = Qnil;
+  
+  names = subSharedPropertyList(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
+  klass = rb_const_get(rb_mKernel, rb_intern("View"));
+  cv    = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+  view  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(names[*cv]));
+
+  rb_iv_set(view, "@id", INT2FIX(*cv));
+  free(names);
+  free(cv);
+      
+  return view;
 } /* }}} */
 
 /* ViewInit {{{ */
@@ -191,9 +262,40 @@ static VALUE
 ViewInit(VALUE self,
   VALUE name)
 {
-  rb_ivar_set(self, rb_intern("@name"), name);
+  rb_iv_set(self, "@name", name);
 
   return self;
+} /* }}} */
+
+/* ViewJump {{{ */
+static VALUE
+ViewJump(VALUE self)
+{
+  VALUE id = rb_iv_get(self, "@id");
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  data.l[0] = FIX2INT(id);
+
+  subSharedMessage(DefaultRootWindow(display), "_NET_CURRENT_DESKTOP", data);
+
+  return Qnil;
+} /* }}} */
+
+/* ViewCurrent {{{ */
+static VALUE
+ViewCurrent(VALUE self)
+{
+  unsigned long *cv = NULL;
+  VALUE id = Qnil, ret = Qfalse;;
+  
+  id = rb_iv_get(self, "@id");
+  cv = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+
+  if(FIX2INT(id) == *cv) ret = Qtrue;
+
+  free(cv);
+      
+  return ret;
 } /* }}} */
 
 /* ViewToString {{{ */
@@ -210,7 +312,7 @@ static VALUE
 TagInit(VALUE self,
   VALUE name)
 {
-  rb_ivar_set(self, rb_intern("@name"), name);
+  rb_iv_set(self, "@name", name);
 
   return self;
 } /* }}} */
@@ -231,8 +333,8 @@ ClientInit(VALUE self,
 {
   char *wmname = subSharedWindowWMName(NUM2LONG(win));
 
-  rb_ivar_set(self, rb_intern("@win"), win);
-  rb_ivar_set(self, rb_intern("@name"), rb_str_new2(wmname));
+  rb_iv_set(self, "@win", win);
+  rb_iv_set(self, "@name", rb_str_new2(wmname));
 
   free(wmname);
 
@@ -298,17 +400,24 @@ Init_subtlext(void)
 	rb_define_method(klass, "views", SubtleViews, 0);
 	rb_define_method(klass, "tags", SubtleTags, 0);
 	rb_define_method(klass, "clients", SubtleClients, 0);
+  rb_define_method(klass, "find_view", SubtleViewFind, 1);
+  rb_define_method(klass, "find_tag", SubtleTagFind, 1);
   rb_define_method(klass, "find_client", SubtleClientFind, 1);
+  rb_define_method(klass, "current_view", SubtleViewCurrent, 0);
 	rb_define_method(klass, "running?", SubtleRunning, 0);
 
   /* Class: view */
   klass = rb_define_class("View", rb_cObject);
+  rb_define_attr(klass, "id", 1, 1);
   rb_define_attr(klass, "name", 1, 1);
   rb_define_method(klass, "initialize", ViewInit, 1);
+  rb_define_method(klass, "jump", ViewJump, 0);
+  rb_define_method(klass, "current?", ViewCurrent, 0);
   rb_define_method(klass, "to_s", ViewToString, 0);
 
   /* Class: tag */
   klass = rb_define_class("Tag", rb_cObject);
+  rb_define_attr(klass, "id", 1, 1);
   rb_define_attr(klass, "name", 1, 1);
   rb_define_method(klass, "initialize", TagInit, 1);
   rb_define_method(klass, "to_s", TagToString, 0);
