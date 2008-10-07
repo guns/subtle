@@ -81,7 +81,7 @@ static void
 ActionClientList(char *arg1,
   char *arg2)
 {
-  int size = 0;
+  int i, size = 0;
   Window *clients = NULL;
 
   subSharedLogDebug("%s\n", __func__);
@@ -89,8 +89,6 @@ ActionClientList(char *arg1,
   clients = subSharedClientList(&size);
   if(clients)
     {
-      int i;
-
       for(i = 0; i < size; i++) ClientInfo(clients[i]);
       free(clients);
     }
@@ -215,15 +213,17 @@ ActionClientTags(char *arg1,
   Assert(arg1, "Usage: %sr -c PATTERN -g\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  subSharedClientFind(arg1, &win);
-  flags = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, "SUBTLE_CLIENT_TAGS", NULL);
-  tags  = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
+  if(subSharedClientFind(arg1, &win))
+    {
+      flags = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, "SUBTLE_CLIENT_TAGS", NULL);
+      tags  = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
 
-  for(i = 0; i < size; i++)
-    if((int)*flags & (1L << (i + 1))) printf("%s\n", tags[i]);
-  
-  free(flags);
-  free(tags);
+      for(i = 0; i < size; i++)
+        if((int)*flags & (1L << (i + 1))) printf("%s\n", tags[i]);
+      
+      free(flags);
+      free(tags);
+    }
 } /* }}} */
 
 /* ActionClientKill {{{ */
@@ -613,7 +613,7 @@ Pipe(char *string)
     }
   else ret = strdup(string);
   
-  return(ret);
+  return ret;
 } /* }}} */
 
 /* main {{{ */
@@ -690,14 +690,14 @@ main(int argc,
           case 'g': action  = ACTION_TAGS;   break;
 
           case 'd': dispname = optarg;       break;
-          case 'h': Usage(group);            return(0);
+          case 'h': Usage(group);            return 0;
 #ifdef DEBUG          
           case 'D': debug = 1;               break;
 #endif /* DEBUG */
-          case 'V': Version();               return(0);
+          case 'V': Version();               return 0;
           case '?':
             printf("Try `%sr --help for more information\n", PKG_NAME);
-            return(-1);
+            return -1;
         }
     }
 
@@ -705,7 +705,7 @@ main(int argc,
   if(-1 == group || -1 == action)
     {
       Usage(group);
-      return(0);
+      return 0;
     }
   
   /* Get arguments */
@@ -716,7 +716,7 @@ main(int argc,
   if(!(display = XOpenDisplay(dispname)))
     {
       printf("Can't open display `%s'.\n", (dispname) ? dispname : ":0.0");
-      return(-1);
+      return -1;
     }
   XSetErrorHandler(subSharedLogXError);
 
@@ -728,5 +728,5 @@ main(int argc,
   if(arg1) free(arg1);
   if(arg2) free(arg2);
   
-  return(0);
+  return 0;
 } /* }}} */
