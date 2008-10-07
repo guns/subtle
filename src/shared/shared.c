@@ -454,7 +454,7 @@ subSharedClientFind(char *name,
     }
   free(clients);
 
-  subSharedLogWarn("Can't fint client `%s'\n", name);
+  subSharedLogWarn("Can't find client `%s'\n", name);
 
   return -1;
 } /* }}} */
@@ -551,7 +551,7 @@ subSharedViewFind(char *name,
   free(frames);
   free(names);
 
-  subSharedLogWarn("Can't fint view `%s'.\n", name);
+  subSharedLogWarn("Can't find view `%s'.\n", name);
 
   return -1;
 } /* }}} */
