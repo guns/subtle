@@ -68,7 +68,7 @@ subViewNew(char *name,
   printf("Adding view (%s)\n", v->name);
   subUtilLogDebug("new=view, name=%s\n", name);
 
-  return(v);
+  return v;
 } /* }}} */
 
  /** subViewConfigure {{{

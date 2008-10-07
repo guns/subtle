@@ -37,7 +37,7 @@ subLayoutNew(SubClient *c1,
   subUtilLogDebug("new=layout, c1=%lx, c2=%lx, mode=%s\n", c1->frame, c2->frame, 
     mode == SUB_TILE_HORZ ? "H" : (mode == SUB_TILE_VERT ? "V" : "S"));
 
-  return(l);
+  return l;
 } /* }}} */
 
  /** subLayoutKill {{{

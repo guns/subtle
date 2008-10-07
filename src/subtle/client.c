@@ -181,7 +181,7 @@ subClientNew(Window win)
   printf("Adding client (%s)\n", c->name);
   subUtilLogDebug("new=client, name=%s, win=%#lx\n", c->name, win);
 
-  return(c);
+  return c;
 } /* }}} */
 
  /** subClientConfigure {{{
@@ -711,7 +711,7 @@ subClientGetWMState(SubClient *c)
       state = *data;
       XFree(data);
     }
-  return(state);
+  return state;
 } /* }}} */
 
  /** subClientPublish {{{

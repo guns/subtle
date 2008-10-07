@@ -20,7 +20,7 @@
 SubArray *
 subArrayNew(void)
 {
-  return((SubArray *)subUtilAlloc(1, sizeof(SubArray)));
+  return (SubArray *)subUtilAlloc(1, sizeof(SubArray));
 } /* }}} */
 
  /** subArrayPush {{{
@@ -79,8 +79,8 @@ subArrayFind(SubArray *a,
 
   assert(a && e);
 
-  for(i = 0; i < a->ndata; i++) if(a->data[i] == e) return(i);
-  return(-1);
+  for(i = 0; i < a->ndata; i++) if(a->data[i] == e) return i;
+  return -1;
 } /* }}} */
 
  /** subArraySplice {{{

@@ -35,7 +35,7 @@ subTagNew(char *name,
   printf("Adding tag (%s)\n", name);
   subUtilLogDebug("new=tag, name=%s\n", name);
 
-  return(t);
+  return t;
 } /* }}} */
 
  /** subTagFind {{{
@@ -60,11 +60,11 @@ subTagFind(char *name,
       if(!strncmp(t->name, name, strlen(t->name))) 
         {
           if(id) *id = i;
-          return(t);
+          return t;
         }
     }
   
-  return(NULL);
+  return NULL;
 } /* }}} */
 
  /** subTagPublish {{{

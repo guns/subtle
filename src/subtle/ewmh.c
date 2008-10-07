@@ -89,7 +89,7 @@ Atom
 subEwmhFind(int hint)
 {
   assert(hint <= NATOMS);
-  return(atoms[hint]);
+  return atoms[hint];
 } /* }}} */
 
  /** subEwmhGetProperty {{{
@@ -116,17 +116,17 @@ subEwmhGetProperty(Window win,
     &format, &nitems, &bytes, &data) != Success)
     {
       subUtilLogDebug("Failed to get property (%d)\n", hint);
-      return(NULL);
+      return NULL;
     }
   if(type != rtype)
     {
       subUtilLogDebug("Invalid type for property (%d)\n", hint);
       XFree(data);
-      return(NULL);
+      return NULL;
     }
   if(size) *size = (unsigned long)(format / 8) * nitems;
 
-  return((char *)data);
+  return (char *)data;
 } /* }}} */
 
  /** subEwmhSetWindows {{{

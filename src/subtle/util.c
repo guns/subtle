@@ -77,7 +77,7 @@ subUtilLogXError(Display *disp,
   XErrorEvent *ev)
 {
 #ifdef DEBUG
-  if(debug) return(0);
+  if(debug) return 0;
 #endif /* DEBUG */  
 
   if(ev->error_code == BadAccess && ev->resourceid == DefaultRootWindow(disp))
@@ -90,7 +90,7 @@ subUtilLogXError(Display *disp,
       XGetErrorText(disp, ev->error_code, error, sizeof(error));
       subUtilLogDebug("%s: win=%#lx, request=%d\n", error, ev->resourceid, ev->request_code);
     }
-  return(0); 
+  return 0; 
 } /* }}} */
 
  /** subUtilAlloc {{{
@@ -106,7 +106,7 @@ subUtilAlloc(size_t n,
 {
   void *mem = calloc(n, size);
   if(!mem) subUtilLogError("Can't alloc memory. Exhausted?\n");
-  return(mem);
+  return mem;
 } /* }}} */
 
  /** subUtilRealloc {{{
@@ -122,7 +122,7 @@ subUtilRealloc(void *mem,
 {
   mem = realloc(mem, size);
   if(!mem) subUtilLogDebug("Memory has been freed. Expected?\n");
-  return(mem);
+  return mem;
 } /* }}} */
 
  /** subUtilFind {{{
@@ -139,7 +139,7 @@ subUtilFind(Window win,
   XPointer *data = NULL;
 
   assert(win && id);
-  return(XFindContext(subtle->disp, win, id, (XPointer *)&data) != XCNOENT ? data : NULL);
+  return XFindContext(subtle->disp, win, id, (XPointer *)&data) != XCNOENT ? data : NULL;
 } /* }}} */
 
  /** subUtilTime {{{
@@ -154,7 +154,7 @@ subUtilTime(void)
 
   gettimeofday(&tv, 0);
 
-  return(tv.tv_sec);
+  return tv.tv_sec;
 } /* }}} */
 
  /** subUtilRegexNew {{{ 
@@ -187,9 +187,9 @@ subUtilRegexNew(char *regex)
       free(errbuf);
       subUtilRegexKill(preg);
 
-      return(NULL);
+      return NULL;
     }
-  return(preg);
+  return preg;
 } /* }}} */
 
  /** subUtilRegexMatch {{{
@@ -206,7 +206,7 @@ subUtilRegexMatch(regex_t *preg,
 {
   assert(preg);
 
-  return(!regexec(preg, string, 0, NULL, 0));
+  return !regexec(preg, string, 0, NULL, 0);
 } /* }}} */
 
  /** subUtilRegexKill {{{

@@ -44,7 +44,7 @@ subSubletNew(unsigned long recv,
 
           subArrayPop(subtle->sublets, s);
 
-          return(NULL);
+          return NULL;
         }
       else XSaveContext(subtle->disp, subtle->bar.sublets, s->interval, (void *)s);
     }
@@ -53,7 +53,7 @@ subSubletNew(unsigned long recv,
   subRubyCall(s);
   subUtilLogDebug("new=sublet, ref=%ld, interval=%d, watch=%s\n", recv, interval, watch);    
 
-  return(s);
+  return s;
 } /* }}} */ 
 
  /** subSubletConfigure {{{
@@ -127,7 +127,7 @@ subSubletCompare(const void *a,
 
   assert(a && b);
 
-  return(s1->time < s2->time ? -1 : (s1->time == s2->time ? 0 : 1));
+  return s1->time < s2->time ? -1 : (s1->time == s2->time ? 0 : 1);
 } /* }}} */
 
  /** subSubletKill {{{

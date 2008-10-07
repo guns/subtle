@@ -118,15 +118,15 @@ main(int argc,
         {
           case 'c': config = optarg;       break;
           case 'd': display = optarg;      break;
-          case 'h': Usage();               return(0);
+          case 'h': Usage();               return 0;
           case 's': sublets = optarg;      break;
-          case 'v': Version();             return(0);
+          case 'v': Version();             return 0;
 #ifdef DEBUG          
           case 'D': subUtilLogSetDebug();  break;
 #endif /* DEBUG */
           case '?':
             printf("Try `%s --help for more information\n", PKG_NAME);
-            return(-1);
+            return -1;
         }
     }
 
@@ -157,5 +157,5 @@ main(int argc,
 
   raise(SIGTERM);
   
-  return(0); ///< Make compiler happy
+  return 0; ///< Make compiler happy
 } /* }}} */

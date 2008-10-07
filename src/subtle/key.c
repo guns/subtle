@@ -67,7 +67,7 @@ subKeyNew(const char *key,
 				{
 					subUtilLogWarn("Can't assign keychain `%s'.\n", key);
 					free(k);
-					return(NULL);
+					return NULL;
 				}
 		}
 	else if(!strncmp(key, "ViewMnemonic", 12))
@@ -89,7 +89,7 @@ subKeyNew(const char *key,
 					subUtilLogWarn("Can't assign keychain `%s'.\n", key);
 					if(k->string) free(k->string);
 					free(k);
-					return(NULL);
+					return NULL;
 				}
 
 			/* Modifier mappings */
@@ -108,7 +108,7 @@ subKeyNew(const char *key,
 		}
 	subUtilLogDebug("code=%03d, mod=%02d, key=%s\n", k->code, k->mod, key);
 	
-	return(k);
+	return k;
 } /* }}} */
 
  /** subKeyFind {{{
@@ -130,7 +130,7 @@ subKeyFind(int code,
 
 	ret = (SubKey **)bsearch(&kp, subtle->keys->data, subtle->keys->ndata, sizeof(SubKey *), subKeyCompare);
 
-	return(ret ? *ret : NULL);
+	return ret ? *ret : NULL;
 } /* }}} */
 
  /** subKeyGet {{{
@@ -147,7 +147,7 @@ subKeyGet(void)
 	XMaskEvent(subtle->disp, KeyPressMask, &ev);
 	sym = XLookupKeysym(&ev.xkey, 0);
 
-	return(sym);
+	return sym;
 } /* }}} */
 
  /** subKeyGrab {{{
@@ -222,7 +222,7 @@ subKeyCompare(const void *a,
 		}
 	else if(k1->code > k2->code) ret = 1;
 
-	return(ret);
+	return ret;
 } /* }}} */
 
  /** subKeyKill {{{

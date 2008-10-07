@@ -26,7 +26,7 @@ SubletInit(VALUE self,
 {
   rb_ivar_set(self, data, rb_str_new2("n/a")); ///< Default value
 
-  return(self);
+  return self;
 } /* }}} */
 
 /* SubletInherited {{{ */
@@ -40,7 +40,7 @@ SubletInherited(VALUE self,
 
   printf("Loading sublet %s\n", name);
 
-  return(Qnil);                                           
+  return Qnil;                                           
 } /* }}} */                                               
 
 /* RubyGetString {{{ */
@@ -51,9 +51,9 @@ RubyGetString(VALUE hash,
 {
   VALUE value = rb_funcall(hash, rb_intern("fetch"), 1, rb_str_new2(key));
  
-  if(T_STRING == rb_type(value)) return(STR2CSTR(value));
+  if(T_STRING == rb_type(value)) return STR2CSTR(value);
 
-  return(fallback);
+  return fallback;
 } /* }}} */
 
 /* RubyGetFixnum {{{ */
@@ -64,9 +64,9 @@ RubyGetFixnum(VALUE hash,
 {
   VALUE value = rb_funcall(hash, rb_intern("fetch"), 1, rb_str_new2(key));
 
-  if(T_FIXNUM == rb_type(value)) return(FIX2INT(value));
+  if(T_FIXNUM == rb_type(value)) return FIX2INT(value);
 
-  return(fallback);
+  return fallback;
 } /* }}} */
 
 /* RubyParseColor {{{ */
@@ -86,7 +86,7 @@ RubyParseColor(VALUE hash,
     }
   else if(!XAllocColor(subtle->disp, cmap, &color)) subUtilLogWarn("Can't alloc color '%s'.\n", key);
 
-  return(color.pixel);
+  return color.pixel;
 } /* }}} */
 
 /* RubyCall {{{ */
@@ -124,7 +124,7 @@ RubyCall(VALUE dummy)
         subUtilLogWarn("Unknown value type\n");
     }
 
-  return(Qnil);
+  return Qnil;
 } /* }}} */
 
 /* RubyHashIterate {{{ */
@@ -157,7 +157,7 @@ RubyHashIterate(VALUE key,
         subUtilLogDebug("Never to be reached?\n");
     }
 
-  return(Qnil);
+  return Qnil;
 } /* }}} */
 
 /* RubyArrayIterate {{{ */
@@ -180,15 +180,15 @@ RubyArrayIterate(VALUE elem,
           case T_STRING: s = subSubletNew(recv, 0, STR2CSTR(result));    break;
           default:
             subUtilLogWarn("Failed to initialize sublet");
-            return(Qnil);
+            return Qnil;
         }
-      if(!s) return(Qnil); ///< Skip if sublet loading failed
+      if(!s) return Qnil; ///< Skip if sublet loading failed
 
       subRubyCall(s);
       subArrayPush(subtle->sublets, s);
     }
 
-  return(Qnil);
+  return Qnil;
 } /* }}} */
 
 /* RubyParseConfig {{{ */
@@ -288,14 +288,14 @@ RubyParseConfig(VALUE path)
   config = rb_funcall(hash, fetch, 1, rb_str_new2("Views"));
   rb_hash_foreach(config, RubyHashIterate, type);
 
-  return(Qnil);
+  return Qnil;
 } /* }}} */
 
 /* RubyFilter {{{ */
 static inline int
 RubyFilter(const struct dirent *entry)
 {
-  return(!fnmatch("*.rb", entry->d_name, FNM_PATHNAME));
+  return !fnmatch("*.rb", entry->d_name, FNM_PATHNAME);
 } /* }}} */
 
  /** subRubyInit {{{
@@ -337,7 +337,7 @@ subRubyLoadConfig(const char *file)
   int status;
   char config[100];
   FILE *fd = NULL;
-  SubTag *deftag = NULL;
+  SubTag *t = NULL;
 
   /* Check path */
   if(!file)
@@ -365,8 +365,10 @@ subRubyLoadConfig(const char *file)
 
   /* Tags */
   if(0 == subtle->tags->ndata) subUtilLogWarn("No tags found\n");
-  deftag = subTagNew("default", NULL); ///< Default tag
-  subArrayPush(subtle->tags, (void *)deftag);
+  t = subTagNew("default", NULL); ///< Default tag
+  subArrayPush(subtle->tags, (void *)t);
+  t = subTagNew("float", NULL); ///< Float tag
+  subArrayPush(subtle->tags, (void *)t);
   subTagPublish();
 
   /* Views */

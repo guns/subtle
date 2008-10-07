@@ -46,7 +46,7 @@ GetParent(Window win)
   XQueryTree(subtle->disp, win, &unused, &parent, &wins, &nwins);
   XFree(wins);
 
-  return(parent);
+  return parent;
 } /* }}} */
 
 /* HandleButtonPress {{{ */
