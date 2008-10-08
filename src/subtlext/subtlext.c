@@ -17,7 +17,18 @@ Display *display = NULL;
 int debug = 0;
 static int refcount = 0;
 
-static void SubtleKill(void *data);
+/* Subtle {{{ */
+/* SubtleKill {{{ */
+static void
+SubtleKill(void *data)
+{
+  if(0 == --refcount) 
+    {
+      XCloseDisplay(display);
+      display = NULL;
+      subSharedLogDebug("Connection closed\n");
+    }
+} /* }}} */
 
 /* SubtleNew {{{ */
 static VALUE
@@ -51,6 +62,20 @@ SubtleNew(int argc,
   return data;
 } /* }}} */
 
+/* SubtleVersion {{{ */
+VALUE 
+SubtleVersion(VALUE self)
+{
+  return rb_str_new2(PKG_VERSION);
+} /* }}} */
+
+/* SubtleDisplay {{{ */
+VALUE 
+SubtleDisplay(VALUE self)
+{
+  return rb_str_new2(DisplayString(display));
+} /* }}} */
+
 /* SubtleRunning {{{ */
 static VALUE
 SubtleRunning(VALUE self)
@@ -70,35 +95,9 @@ SubtleRunning(VALUE self)
   return ret;
 } /* }}} */
 
-/* SubtleKill {{{ */
-static void
-SubtleKill(void *data)
-{
-  if(0 == --refcount) 
-    {
-      XCloseDisplay(display);
-      display = NULL;
-      subSharedLogDebug("Connection closed\n");
-    }
-} /* }}} */
-
-/* SubtleVersion {{{ */
-VALUE 
-SubtleVersion(VALUE self)
-{
-  return rb_str_new2(PKG_VERSION);
-} /* }}} */
-
-/* SubtleDisplay {{{ */
-VALUE 
-SubtleDisplay(VALUE self)
-{
-  return rb_str_new2(DisplayString(display));
-} /* }}} */
-
-/* SubtleTags {{{ */
+/* SubtleTagList {{{ */
 static VALUE
-SubtleTags(VALUE self)
+SubtleTagList(VALUE self)
 {
   int i, size = 0;
   char **tags = NULL;
@@ -141,9 +140,92 @@ SubtleTagFind(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* SubtleClients {{{ */
+/* SubtleTagAdd {{{ */
 static VALUE
-SubtleClients(VALUE self)
+SubtleTagAdd(VALUE self,
+  VALUE value)
+{
+  int id = 0, rtype = T_NIL;
+  VALUE klass  = Qnil, tag = Qnil, name = Qnil;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  klass = rb_const_get(rb_mKernel, rb_intern("Tag")); ///< Get Tag class
+  rtype = rb_type(value);
+
+  /* Check type */
+  switch(rtype)
+    {
+      case T_STRING: name = value; break;
+      case T_OBJECT:
+      case T_CLASS:
+        if(rb_obj_is_instance_of(name, klass))
+          {
+            name = rb_iv_get(value, "@name");
+            break;
+          }
+      default: 
+        rb_raise(rb_eArgError, "Unknown value type");
+        return Qnil;
+    }
+
+  /* Send data */
+  snprintf(data.b, sizeof(data.b), STR2CSTR(name));
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_NEW", data);
+
+  /* Check tag */
+  id = subSharedTagFind(STR2CSTR(name));
+  if(-1 != id)
+    {
+      if(T_STRING == rtype)
+        {
+          /* Create new tag */
+          tag = rb_funcall(klass, rb_intern("new"), 1, name);
+          rb_iv_set(tag, "@id", INT2FIX(id));
+
+          return tag;
+        }
+
+      return value;
+    }
+
+  return Qnil;
+} /* }}} */
+
+/* SubtleTagDel {{{ */
+static VALUE
+SubtleTagDel(VALUE self,
+  VALUE value)
+{
+  VALUE name = Qnil;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  /* Check type */
+  switch(rb_type(value))
+    {
+      case T_STRING: name = value; break;
+      case T_OBJECT:
+      case T_CLASS:
+        if(rb_obj_is_instance_of(name, 
+          rb_const_get(rb_mKernel, rb_intern("Tag"))))
+          {
+            name = rb_iv_get(value, "@name");
+            break;
+          }
+      default: 
+        rb_raise(rb_eArgError, "Unknown value type");
+        return Qnil;
+    }
+
+  /* Send data */
+  snprintf(data.b, sizeof(data.b), STR2CSTR(name));
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_KILL", data);
+
+  return Qnil;
+} /* }}} */
+
+/* SubtleClientList {{{ */
+static VALUE
+SubtleClientList(VALUE self)
 {
   int i, size = 0;
   Window *clients = NULL;
@@ -189,9 +271,9 @@ SubtleClientFind(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* SubtleViews {{{ */
+/* SubtleViewList {{{ */
 static VALUE
-SubtleViews(VALUE self)
+SubtleViewList(VALUE self)
 {
   int i, size = 0;
   char **views = NULL;
@@ -222,16 +304,105 @@ SubtleViewFind(VALUE self,
   char **names = NULL;
   VALUE klass = Qnil, view = Qnil;
 
-  if(RTEST(name) && (id == subSharedViewFind(STR2CSTR(name), &win)))
+  if(RTEST(name))
     {
-      names = subSharedPropertyList(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
-      klass = rb_const_get(rb_mKernel, rb_intern("View"));
-      view  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(names[id]));
-      rb_iv_set(view, "@id", INT2FIX(id));
-      free(names);
-      
-      return view;
+      id = subSharedViewFind(STR2CSTR(name), &win);
+      if(-1 != id)
+        {
+          names = subSharedPropertyList(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
+          klass = rb_const_get(rb_mKernel, rb_intern("View"));
+          view  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(names[id]));
+          rb_iv_set(view, "@id", INT2FIX(id));
+          free(names);
+          
+          return view;
+        }
     }
+
+  return Qnil;
+} /* }}} */
+
+/* SubtleViewAdd {{{ */
+static VALUE
+SubtleViewAdd(VALUE self,
+  VALUE value)
+{
+  Window win = 0;
+  int id = 0, rtype = T_NIL;
+  VALUE klass  = Qnil, view = Qnil, name = Qnil;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  klass = rb_const_get(rb_mKernel, rb_intern("View")); ///< Get View class
+  rtype = rb_type(value);
+
+  /* Check type */
+  switch(rtype)
+    {
+      case T_STRING: name = value; break;
+      case T_OBJECT:
+      case T_CLASS:
+        if(rb_obj_is_instance_of(name, klass))
+          {
+            name = rb_iv_get(value, "@name");
+            break;
+          }
+      default: 
+        rb_raise(rb_eArgError, "Unknown value type");
+        return Qnil;
+    }
+
+  /* Send data */
+  snprintf(data.b, sizeof(data.b), STR2CSTR(name));
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_NEW", data);
+
+  /* Check view */
+  id = subSharedViewFind(STR2CSTR(name), &win);
+  if(-1 != id)
+    {
+      if(T_STRING == rtype)
+        {
+          /* Create new view */
+          view = rb_funcall(klass, rb_intern("new"), 1, name);
+          rb_iv_set(view, "@id", INT2FIX(id));
+          rb_iv_set(view, "@win", NUM2LONG(win));
+
+          return view;
+        }
+
+      return value;
+    }
+
+  return Qnil;
+} /* }}} */
+
+/* SubtleViewDel {{{ */
+static VALUE
+SubtleViewDel(VALUE self,
+  VALUE value)
+{
+  VALUE name = Qnil;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  /* Check type */
+  switch(rb_type(value))
+    {
+      case T_STRING: name = value; break;
+      case T_OBJECT:
+      case T_CLASS:
+        if(rb_obj_is_instance_of(name, 
+          rb_const_get(rb_mKernel, rb_intern("View"))))
+          {
+            name = rb_iv_get(value, "@name");
+            break;
+          }
+      default: 
+        rb_raise(rb_eArgError, "Unknown value type");
+        return Qnil;
+    }
+
+  /* Send data */
+  snprintf(data.b, sizeof(data.b), STR2CSTR(name));
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_KILL", data);
 
   return Qnil;
 } /* }}} */
@@ -256,7 +427,9 @@ SubtleViewCurrent(VALUE self)
       
   return view;
 } /* }}} */
+/* }}} */
 
+/* View {{{ */
 /* ViewInit {{{ */
 static VALUE
 ViewInit(VALUE self,
@@ -265,6 +438,43 @@ ViewInit(VALUE self,
   rb_iv_set(self, "@name", name);
 
   return self;
+} /* }}} */
+
+/* ViewTags {{{ */
+static VALUE
+ViewTags(VALUE self)
+{
+  Window win = 0;
+  int i, size = 0;
+  char **tags = NULL;
+  unsigned long *flags = NULL;
+  VALUE array = Qnil, method = Qnil, klass = Qnil, name = Qnil;
+
+  name = rb_ivar_get(self, rb_intern("@name"));
+  if(RTEST(name) && -1 != subSharedClientFind(STR2CSTR(name), &win))
+    {
+      method = rb_intern("new");
+      klass  = rb_const_get(rb_mKernel, rb_intern("Tag"));
+      flags  = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, "SUBTLE_CLIENT_TAGS", NULL);
+      tags   = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
+      array  = rb_ary_new2(size);
+
+      for(i = 0; i < size; i++)
+        {
+          if((int)*flags & (1L << (i + 1)))
+            {
+              VALUE t = rb_funcall(klass, method, 1, rb_str_new2(tags[i]));
+              rb_ary_push(array, t);
+            }
+        }
+
+      free(flags);
+      free(tags);
+
+      return array;
+    }
+  
+  return Qnil;
 } /* }}} */
 
 /* ViewJump {{{ */
@@ -306,7 +516,9 @@ ViewToString(VALUE self)
 
   return RTEST(name) ? name : Qnil;
 } /* }}} */
+/* }}} */
 
+/* Tag {{{ */
 /* TagInit {{{ */
 static VALUE
 TagInit(VALUE self,
@@ -325,7 +537,9 @@ TagToString(VALUE self)
 
   return RTEST(name) ? name : Qnil;
 } /* }}} */
+/* }}} */
 
+/* Client {{{ */
 /* ClientInit {{{ */
 static VALUE
 ClientInit(VALUE self,
@@ -386,47 +600,69 @@ ClientToString(VALUE self)
 
   return RTEST(name) ? name : Qnil;
 } /* }}} */
+/* }}} */
+
+ /** Init_subtlext {{{
+  * @brief Extension entry point
+  **/
 
 void 
 Init_subtlext(void)
 {
   VALUE klass = Qnil;
 
-  /* Class: subtle */
+  /* Class: subtle {{{ */
 	klass = rb_define_class("Subtle", rb_cObject);
   rb_define_singleton_method(klass, "new", SubtleNew, -1);
 	rb_define_method(klass, "version", SubtleVersion, 0);
 	rb_define_method(klass, "display", SubtleDisplay, 0);
-	rb_define_method(klass, "views", SubtleViews, 0);
-	rb_define_method(klass, "tags", SubtleTags, 0);
-	rb_define_method(klass, "clients", SubtleClients, 0);
+	rb_define_method(klass, "views", SubtleViewList, 0);
+	rb_define_method(klass, "tags", SubtleTagList, 0);
+	rb_define_method(klass, "clients", SubtleClientList, 0);
   rb_define_method(klass, "find_view", SubtleViewFind, 1);
   rb_define_method(klass, "find_tag", SubtleTagFind, 1);
   rb_define_method(klass, "find_client", SubtleClientFind, 1);
+  rb_define_method(klass, "add_tag", SubtleTagAdd, 1);
+  rb_define_method(klass, "del_tag", SubtleTagDel, 1);
+  rb_define_method(klass, "add_view", SubtleViewAdd, 1);
+  rb_define_method(klass, "del_view", SubtleViewDel, 1);
   rb_define_method(klass, "current_view", SubtleViewCurrent, 0);
 	rb_define_method(klass, "running?", SubtleRunning, 0);
+  /* }}} */
 
-  /* Class: view */
+  /* Class: view {{{ */
   klass = rb_define_class("View", rb_cObject);
   rb_define_attr(klass, "id", 1, 1);
+  rb_define_attr(klass, "win", 1, 1);
   rb_define_attr(klass, "name", 1, 1);
   rb_define_method(klass, "initialize", ViewInit, 1);
+//  rb_define_method(klass, "add_tag", ViewTagAdd, 1);
+//  rb_define_method(klass, "del_tag", ViewTagDel, 1);
+  rb_define_method(klass, "tags", ViewTags, 0);
   rb_define_method(klass, "jump", ViewJump, 0);
   rb_define_method(klass, "current?", ViewCurrent, 0);
   rb_define_method(klass, "to_s", ViewToString, 0);
+  /* }}} */
 
-  /* Class: tag */
+  /* Class: tag {{{ */
   klass = rb_define_class("Tag", rb_cObject);
   rb_define_attr(klass, "id", 1, 1);
   rb_define_attr(klass, "name", 1, 1);
   rb_define_method(klass, "initialize", TagInit, 1);
   rb_define_method(klass, "to_s", TagToString, 0);
+  /* }}} */
 
-  /* Class: client */
+  /* Class: client {{{ */
   klass = rb_define_class("Client", rb_cObject);
+  rb_define_attr(klass, "id", 1, 1);
   rb_define_attr(klass, "win", 1, 1);
   rb_define_attr(klass, "name", 1, 1);
   rb_define_method(klass, "initialize", ClientInit, 1);
+//  rb_define_method(klass, "add_tag", ClientTagAdd, 1);
+//  rb_define_method(klass, "del_tag", ClientTagDel, 1);
+//  rb_define_method(klass, "focus", ClientFocus, 0);
   rb_define_method(klass, "tags", ClientTags, 0);
+//  rb_define_method(klass, "focus?", ClientFocus, 0);
   rb_define_method(klass, "to_s", ClientToString, 0);
-}
+  /* }}} */
+} /* }}} */
