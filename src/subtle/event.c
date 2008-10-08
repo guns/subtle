@@ -69,33 +69,16 @@ HandleButtonPress(XButtonEvent *ev)
       switch(ev->button)
         {
           case Button1:
-            if(last_time > 0 && ev->time - last_time <= 300) ///< Double click
-              {
-                subUtilLogDebug("click=double, win=%#lx\n", ev->window);
-                if(ev->subwindow == c->title) subClientToggle(c, SUB_STATE_SHADE);
-                last_time = 0;
-              }            
-            else ///< Single click
-              {
-                subUtilLogDebug("click=single, win=%#lx\n", ev->window);
-                if(c->flags & SUB_STATE_FLOAT) XRaiseWindow(subtle->disp, c->frame);
+            subUtilLogDebug("click=single, win=%#lx\n", ev->window);
+            if(c->flags & SUB_STATE_FLOAT) XRaiseWindow(subtle->disp, c->frame);
 
-                if(ev->subwindow == c->left)        subClientDrag(c, SUB_DRAG_LEFT);
-                else if(ev->subwindow == c->right)  subClientDrag(c, SUB_DRAG_RIGHT);
-                else if(ev->subwindow == c->bottom) subClientDrag(c, SUB_DRAG_BOTTOM);
-                else if(ev->subwindow == c->title)
-                  { 
-                    /* Either drag and move or drag an swap windows */
-                    subClientDrag(c, (c->flags & SUB_STATE_FLOAT) ? SUB_DRAG_MOVE : SUB_DRAG_SWAP);
-                    last_time = ev->time;
-                  }
-              }
+            /* Either drag and move or drag an swap windows */
+            subClientDrag(c, (c->flags & SUB_STATE_FLOAT) ? SUB_DRAG_MOVE : SUB_DRAG_SWAP);
+            last_time = ev->time;
             break;
           case Button2:
-            if(ev->subwindow == c->title) subClientKill(c);
             break;
           case Button3: 
-            if(ev->subwindow == c->title) subClientToggle(c, SUB_STATE_FLOAT);
             break;
 /*          case Button4: 
           case Button5: 
@@ -123,12 +106,6 @@ printf("%s,%d: %s\n", __FILE__, __LINE__, __func__);
             {
               if(0 <= k->number && k->number < subtle->views->ndata)
                 subViewJump(VIEW(subtle->views->data[k->number]));
-            }
-          else if(k->flags & SUB_KEY_VIEW_MNEMONIC)
-            {
-              KeySym sym = subKeyGet();
-              SubView *v = VIEW(subUtilFind(subtle->bar.views, (int)sym));
-              if(v) subViewJump(v);
             }
 
           subUtilLogDebug("KeyPress: code=%d, mod=%d\n", k->code, k->mod);
@@ -268,6 +245,7 @@ HandleMessage(XClientMessageEvent *ev)
                 }
 
               subArrayPop(subtle->tags, (void *)t);
+              subTagKill(t);
               subTagPublish();
               subViewConfigure(subtle->cv); ///< Re-configure current view
             }
@@ -305,12 +283,14 @@ HandleMessage(XClientMessageEvent *ev)
         } /* }}} */              
       else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_VIEW_KILL)) /* {{{ */
         {
-          SubTag *t = subTagFind(ev->data.b, NULL);
+          SubView *v = subViewFind(ev->data.b, NULL);
 
-          if(t)
+          if(v)
             {
-              subArrayPop(subtle->tags, (void *)t);
-              subTagPublish();
+              subArrayPop(subtle->views, (void *)v);
+              subViewKill(v);
+              subViewUpdate();
+              subViewPublish();
             }
         }  /* }}} */        
       return;
