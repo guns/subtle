@@ -337,7 +337,6 @@ subRubyLoadConfig(const char *file)
   int status;
   char config[100];
   FILE *fd = NULL;
-  SubTag *t = NULL;
 
   /* Check path */
   if(!file)
@@ -364,12 +363,11 @@ subRubyLoadConfig(const char *file)
   else subArraySort(subtle->keys, subKeyCompare);
 
   /* Tags */
-  if(0 == subtle->tags->ndata) subUtilLogWarn("No tags found\n");
-  t = subTagNew("default", NULL); ///< Default tag
-  subArrayPush(subtle->tags, (void *)t);
-  t = subTagNew("float", NULL); ///< Float tag
-  subArrayPush(subtle->tags, (void *)t);
-  subTagPublish();
+  if(2 == subtle->tags->ndata) 
+    {
+      subUtilLogWarn("No tags found\n");
+    }
+  else subTagPublish();
 
   /* Views */
   if(0 == subtle->views->ndata)
