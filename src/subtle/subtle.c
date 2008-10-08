@@ -147,6 +147,7 @@ main(int argc,
   subRubyInit();
   subEwmhInit();
   subKeyInit();
+  subTagInit();
 
   /* Config */
   subRubyLoadConfig(config);

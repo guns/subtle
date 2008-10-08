@@ -12,6 +12,22 @@
 
 #include "subtle.h"
 
+ /** subTagInit {{{
+  * @brief Init default tags
+  **/
+void
+subTagInit(void)
+{
+  SubTag *t = NULL;
+
+  /* Default tags */
+  t = subTagNew("default", NULL);
+  subArrayPush(subtle->tags, (void *)t);
+  t = subTagNew("float", NULL);
+  subArrayPush(subtle->tags, (void *)t);
+  subTagPublish();
+} /* }}} */
+
  /** subTagNew {{{
   * @brief Create new tag
   * @param[in]  name   Name of the tag
