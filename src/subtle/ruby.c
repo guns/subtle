@@ -248,12 +248,14 @@ RubyParseConfig(VALUE path)
 
   subtle->bar.win     = WINNEW(DefaultRootWindow(subtle->disp), 0, 0, 
     DisplayWidth(subtle->disp, DefaultScreen(subtle->disp)), subtle->th, 0, CWBackPixel|CWSaveUnder|CWEventMask);
+  subtle->bar.caption = XCreateSimpleWindow(subtle->disp, subtle->bar.win, 0, 0, 1, subtle->th, 0, 0, subtle->colors.norm);
   subtle->bar.views   = XCreateSimpleWindow(subtle->disp, subtle->bar.win, 0, 0, 1, subtle->th, 0, 0, subtle->colors.norm);
   subtle->bar.sublets = XCreateSimpleWindow(subtle->disp, subtle->bar.win, 0, 0, 1, subtle->th, 0, 0, subtle->colors.norm);
 
   XSelectInput(subtle->disp, subtle->bar.views, ButtonPressMask); 
 
   XMapWindow(subtle->disp, subtle->bar.views);
+  XMapWindow(subtle->disp, subtle->bar.caption);
   XMapWindow(subtle->disp, subtle->bar.sublets);
   XMapWindow(subtle->disp, subtle->bar.win);
 
