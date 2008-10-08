@@ -53,7 +53,7 @@ subArrayPop(SubArray *a,
 
   assert(a && e);
 
-  idx = subArrayFind(a, e);
+  idx = subArrayIndex(a, e);
   if(idx >= 0)
     {
       for(i = idx; i < a->ndata - 1; i++) 
@@ -64,7 +64,7 @@ subArrayPop(SubArray *a,
     }
 } /* }}} */
 
- /** subArrayFind {{{
+ /** subArrayIndex {{{
   * @brief Find array id of element
   * @param[in]  a  A #SubArray
   * @param[in]  e  Element
@@ -72,7 +72,7 @@ subArrayPop(SubArray *a,
   **/
 
 int
-subArrayFind(SubArray *a,
+subArrayIndex(SubArray *a,
   void *e)
 {
   int i;

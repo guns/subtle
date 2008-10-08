@@ -301,7 +301,7 @@ extern SubSubtle *subtle;
 SubArray *subArrayNew(void);                                      ///< Create new array
 void subArrayPush(SubArray *a, void *e);                          ///< Push element to array
 void subArrayPop(SubArray *a, void *e);                           ///< Pop element from array
-int subArrayFind(SubArray *a, void *e);                           ///< Find array id of element
+int subArrayIndex(SubArray *a, void *e);                           ///< Find array id of element
 void subArraySplice(SubArray *a, int idx, int len);               ///< Splice array at idx with len
 void subArraySort(SubArray *a,                                    ///< Sort array with given compare function 
   int(*compar)(const void *a, const void *b));
