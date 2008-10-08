@@ -70,10 +70,6 @@ subKeyNew(const char *key,
 					return NULL;
 				}
 		}
-	else if(!strncmp(key, "ViewMnemonic", 12))
-		{
-			k->flags |= SUB_KEY_VIEW_MNEMONIC;
-		}
 	else
 		{
 			k->flags	|= SUB_KEY_EXEC;

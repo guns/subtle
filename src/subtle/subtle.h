@@ -167,8 +167,7 @@
 
 /* Keys */
 #define SUB_KEY_VIEW_JUMP      (1L << 10)                         ///< Jump to view
-#define SUB_KEY_VIEW_MNEMONIC  (1L << 11)                         ///< Jump to view
-#define SUB_KEY_EXEC           (1L << 12)                         ///< Exec an app
+#define SUB_KEY_EXEC           (1L << 11)                         ///< Exec an app
 
 /* Data types */
 #define SUB_DATA_STRING        (1L << 10)                         ///< String data
@@ -346,6 +345,7 @@ void subViewArrange(SubView *v, SubClient *c1,
 void subViewUpdate(void);                                         ///< Update views
 void subViewRender(void);                                         ///< Render views
 void subViewJump(SubView *v);                                     ///< Jump to view
+SubView *subViewFind(char *name, int *id);                        ///< Find view
 void subViewPublish(void);                                        ///< Publish views
 void subViewSanitize(SubClient *c);                               ///< Sanitize views
 void subViewKill(SubView *v);                                     ///< Kill view

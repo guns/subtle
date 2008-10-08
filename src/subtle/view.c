@@ -24,7 +24,6 @@ subViewNew(char *name,
   char *tags)
 {
   char c;
-  int mnemonic = 0;
   SubView *v = NULL;
   XSetWindowAttributes attrs;
 
@@ -42,11 +41,6 @@ subViewNew(char *name,
   v->frame  = WINNEW(DefaultRootWindow(subtle->disp), 0, subtle->th, DisplayWidth(subtle->disp, DefaultScreen(subtle->disp)),
     DisplayHeight(subtle->disp, DefaultScreen(subtle->disp)), 0, CWEventMask);  
   v->button = XCreateSimpleWindow(subtle->disp, subtle->bar.views, 0, 0, 1, subtle->th, 0, subtle->colors.border, subtle->colors.norm);
-
-  /* Mnemonic */
-  c = name[0];
-  mnemonic = (int)XStringToKeysym(&c); ///< Convert char to keysym
-  XSaveContext(subtle->disp, subtle->bar.views, mnemonic, (void *)v);
 
   XSaveContext(subtle->disp, v->frame, 2, (void *)v);
   XSaveContext(subtle->disp, v->button, 1, (void *)v);
@@ -86,7 +80,7 @@ subViewConfigure(SubView *v)
 
   assert(v);
 
-  vid = subArrayFind(subtle->views, (void *)v);
+  vid = subArrayIndex(subtle->views, (void *)v);
 
   if(0 < subtle->clients->ndata)
     {
@@ -334,13 +328,42 @@ subViewJump(SubView *v)
   XMapSubwindows(subtle->disp, subtle->cv->frame);
 
   /* EWMH: Current desktops */
-  vid = subArrayFind(subtle->views, (void *)v); ///< Get desktop number
+  vid = subArrayIndex(subtle->views, (void *)v); ///< Get desktop number
   subEwmhSetCardinals(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_CURRENT_DESKTOP, &vid, 1);
 
   subViewRender();
   subKeyGrab(subtle->cv->frame);
 
   printf("Switching view (%s)\n", subtle->cv->name);
+} /* }}} */
+
+ /** subViewFind {{{
+  * @brief Find view
+  * @param[in]   name  Name of view
+  * @param[out]  id    View id
+  * @return Returns a #SubView or \p NULL
+  **/
+
+SubView *
+subViewFind(char *name,
+  int *id)
+{
+  int i;
+  SubTag *v = NULL;
+
+  /* @todo Linear search.. */
+  for(i = 0; i < subtle->views->ndata; i++)
+    {
+      v = VIEW(subtle->views->data[i]);
+
+      if(!strncmp(v->name, name, strlen(v->name))) 
+        {
+          if(id) *id = i;
+          return v;
+        }
+    }
+  
+  return NULL;
 } /* }}} */
 
  /** subViewPublish {{{
@@ -376,7 +399,7 @@ subViewPublish(void)
   subEwmhSetStrings(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_DESKTOP_NAMES, names, i);
 
   /* EWMH: Current desktop */
-  vid = subArrayFind(subtle->views, (void *)subtle->cv); ///< Get desktop number
+  vid = subArrayIndex(subtle->views, (void *)subtle->cv); ///< Get desktop number
   subEwmhSetCardinals(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_CURRENT_DESKTOP, &vid, 1);
 
   subUtilLogDebug("publish=views, n=%d\n", i);
@@ -418,17 +441,12 @@ subViewSanitize(SubClient *c)
 void
 subViewKill(SubView *v)
 {
-  int mnemonic = 0;
-
   assert(v);
 
   printf("Killing view (%s)\n", v->name);
 
-  mnemonic = (int)XStringToKeysym(&v->name[0]); ///< Convert char to keysym
-
   XDeleteContext(subtle->disp, v->frame, 1);
   XDeleteContext(subtle->disp, v->button, 1);
-  XDeleteContext(subtle->disp, subtle->bar.views, mnemonic);
 
   XDestroyWindow(subtle->disp, v->button);
   XDestroyWindow(subtle->disp, v->frame);
