@@ -23,7 +23,6 @@ SubView *
 subViewNew(char *name,
   char *tags)
 {
-  char c;
   SubView *v = NULL;
   XSetWindowAttributes attrs;
 
@@ -32,7 +31,7 @@ subViewNew(char *name,
   v  = VIEW(subUtilAlloc(1, sizeof(SubView)));
   v->flags  = SUB_TYPE_VIEW;
   v->name   = strdup(name);
-  v->width  =  strlen(v->name) * subtle->fx + 8; ///< Font offset
+  v->width  = strlen(v->name) * subtle->fx + 8; ///< Font offset
   v->layout = subArrayNew();
 
   /* Create windows */
@@ -274,6 +273,8 @@ subViewUpdate(void)
           width += v->width;
         }
       if(0 < width) XMoveResizeWindow(subtle->disp, subtle->bar.views, 0, 0, width, subtle->th); ///< Sanity
+      if(subtle->caption) XMoveResizeWindow(subtle->disp, subtle->bar.caption, width, 0, 
+        strlen(subtle->caption) * subtle->fx + 8, subtle->th); ///< Caption
   }
 } /* }}} */
 
@@ -288,10 +289,21 @@ subViewRender(void)
   if(0 < subtle->views->ndata)
     {
       int i;
+
       XClearWindow(subtle->disp, subtle->bar.win);
       XFillRectangle(subtle->disp, subtle->bar.win, subtle->gcs.border, 0, 2, 
         DisplayWidth(subtle->disp, DefaultScreen(subtle->disp)), subtle->th - 4);  
 
+      /* Caption */
+      if(subtle->caption)
+        {
+          XSetWindowBackground(subtle->disp, subtle->bar.caption, subtle->colors.focus);
+          XClearWindow(subtle->disp, subtle->bar.caption);
+          XDrawString(subtle->disp, subtle->bar.caption, subtle->gcs.font, 3, subtle->fy - 1, 
+            subtle->caption, strlen(subtle->caption));
+        }
+
+      /* View buttons */
       for(i = 0; i < subtle->views->ndata; i++)
         {
           SubView *v = VIEW(subtle->views->data[i]);
@@ -300,6 +312,8 @@ subViewRender(void)
           XClearWindow(subtle->disp, v->button);
           XDrawString(subtle->disp, v->button, subtle->gcs.font, 3, subtle->fy - 1, v->name, strlen(v->name));
         }
+
+
     }
 } /* }}} */
 
@@ -349,7 +363,7 @@ subViewFind(char *name,
   int *id)
 {
   int i;
-  SubTag *v = NULL;
+  SubView *v = NULL;
 
   /* @todo Linear search.. */
   for(i = 0; i < subtle->views->ndata; i++)

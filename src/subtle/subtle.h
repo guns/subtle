@@ -43,6 +43,7 @@
     InputOutput, CopyFromParent, mask, &attrs);                   ///< Shortcut
 
 #define FLAGS int                                                 ///< Flags
+#define TAGS int                                                  ///< Tags
 
 #define WINWIDTH(c)  (c->rect.width - 2 * subtle->bw)             ///< Get real width
 #define WINHEIGHT(c) (c->rect.height - subtle->th - subtle->bw)   ///< Get real height
@@ -182,7 +183,8 @@ typedef struct subsubtle_t /* {{{ */
   int                th, bw, fx, fy;                              ///< Subtle tab height, border width, font metrics
   XFontStruct        *xfs;                                        ///< Subtle font
 
-  Window             focus;                                       ///< Subtle focus window
+  Window             focus;                                       ///< Subtle focus
+  char               *caption;                                    ///< Subtle caption
 
   struct subsublet_t *sublet;                                     ///< Subtle first sublet
   struct subview_t   *cv;                                         ///< Subtle current view
@@ -199,7 +201,7 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    Window           win, views, sublets;                  
+    Window           win, views, caption, sublets; 
   } bar;                                                          ///< Subtle bar windows
 
   struct
@@ -232,13 +234,12 @@ typedef struct subarray_t /* {{{ */
 typedef struct subclient_t /* {{{ */
 {
   FLAGS               flags;                                      ///< Client flags
+  TAGS                tags;                                       ///< Client tags
   XRectangle          rect;                                       ///< Client rect
-  int                 size, tags;                                 ///< Client size, tags
+  int                 size;                                       ///< Client size, tags
   char                *name;                                      ///< Client name
   Colormap            cmap;                                       ///< Client colormap
-  Window              frame, caption, title, win;                 ///< Client decoration windows
-  Window              left, right, bottom;                        ///< Client border windows
-  struct subclient_t  *prev, *next, *down;                        ///< Client prev/next/down siblings
+  Window              frame, win;                                 ///< Client decoration windows
 } SubClient; /* }}} */
 
 typedef struct subtag_t /* {{{ */
@@ -258,7 +259,8 @@ typedef struct sublayout_t /* {{{ */
 typedef struct subview_t /* {{{ */
 {
   FLAGS             flags;                                        ///< View flags
-  int               tags, width;                                  ///< View tags, button width, layout
+  TAGS              tags;
+  int               width;                                        ///< View tags, button width, layout
   Window            frame, button;                                ///< View frame, button
   char              *name;                                        ///< View name
   struct subarray_t *layout;                                      ///< View layout
