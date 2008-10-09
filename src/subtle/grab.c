@@ -12,8 +12,7 @@
 
 #include "subtle.h"
 
-static unsigned int nummask = 0;
-static unsigned int scrollmask = 0;
+static unsigned int numlockmask = 0;
 
  /** subKeyInit {{{
 	* @brief Init keys and get modifiers
@@ -26,14 +25,12 @@ subKeyInit(void)
 	if(modmap && modmap->max_keypermod > 0)
 		{
 			const int modmasks[] = { ShiftMask, LockMask, ControlMask, Mod1Mask, Mod2Mask, Mod3Mask, Mod4Mask, Mod5Mask };
-			const KeyCode num_lock = XKeysymToKeycode(subtle->disp, XK_Num_Lock);
-			const KeyCode scroll_lock = XKeysymToKeycode(subtle->disp, XK_Scroll_Lock);
+			const KeyCode numlock = XKeysymToKeycode(subtle->disp, XK_Num_Lock);
 			int i, max = (sizeof(modmasks) / sizeof(int)) * modmap->max_keypermod;
 
 			for(i = 0; i < max; i++)
 				if(!modmap->modifiermap[i]) continue;
-				else if(num_lock && (modmap->modifiermap[i] == num_lock)) nummask = modmasks[i / modmap->max_keypermod];
-				else if(scroll_lock && (modmap->modifiermap[i] == scroll_lock)) scrollmask = modmasks[i / modmap->max_keypermod];
+				else if(numlock && (modmap->modifiermap[i] == numlock)) numlockmask = modmasks[i / modmap->max_keypermod];
 		}
 	if(modmap) XFreeModifiermap(modmap);
 } /* }}} */
@@ -70,6 +67,14 @@ subKeyNew(const char *key,
 					return NULL;
 				}
 		}
+  else if(!strncmp(key, "MouseMove", 9))
+    {
+      k->flags |= SUB_KEY_MOUSE_MOVE;
+    }
+  else if(!strncmp(key, "MouseResize", 11))
+    {
+      k->flags |= SUB_KEY_MOUSE_RESIZE;
+    }
 	else
 		{
 			k->flags	|= SUB_KEY_EXEC;
@@ -91,11 +96,11 @@ subKeyNew(const char *key,
 			/* Modifier mappings */
 			switch(sym)
 				{
-					case XK_A: k->mod |= Mod1Mask;			break;
-					case XK_S: k->mod |= ShiftMask;			break;
-					case XK_C: k->mod |= ControlMask;		break;
-					case XK_W: k->mod |= Mod4Mask;			break;
-					case XK_M: k->mod |= Mod3Mask;			break;
+					case XK_A: k->mod |= Mod1Mask;		break;
+					case XK_S: k->mod |= ShiftMask;		break;
+					case XK_C: k->mod |= ControlMask;	break;
+					case XK_W: k->mod |= Mod4Mask;		break;
+					case XK_M: k->mod |= Mod3Mask;		break;
 					default:
 						k->code = XKeysymToKeycode(subtle->disp, sym);
 				}
@@ -120,11 +125,10 @@ subKeyFind(int code,
 {
 	SubKey **ret = NULL, *kp = NULL, k;
 	
-	k.code	= code;
-	k.mod		= (mod & ~(LockMask|nummask|scrollmask));
-	kp 			= &k;
-
-	ret = (SubKey **)bsearch(&kp, subtle->keys->data, subtle->keys->ndata, sizeof(SubKey *), subKeyCompare);
+	k.code = code;
+	k.mod	 = (mod & ~(LockMask|numlockmask));
+	kp 		 = &k;
+	ret    = (SubKey **)bsearch(&kp, subtle->keys->data, subtle->keys->ndata, sizeof(SubKey *), subKeyCompare);
 
 	return ret ? *ret : NULL;
 } /* }}} */
@@ -156,24 +160,24 @@ subKeyGrab(Window win)
 {
 	if(win && subtle->keys)
 		{
-			int i;
+			int i, j;
+      unsigned int modifiers[4] = { 0, LockMask, numlockmask, numlockmask|LockMask };
 
 			/* @todo Ugly key/modifier grabbing */
 			for(i = 0; i < subtle->keys->ndata; i++) 
 				{
 					SubKey *k = KEY(subtle->keys->data[i]);
 
-					XGrabKey(subtle->disp, k->code, k->mod, win, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(subtle->disp, k->code, k->mod|LockMask, win, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(subtle->disp, k->code, k->mod|nummask, win, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(subtle->disp, k->code, k->mod|LockMask|nummask, win, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(subtle->disp, k->code, k->mod|scrollmask, win, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(subtle->disp, k->code, k->mod|scrollmask|LockMask, win, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(subtle->disp, k->code, k->mod|scrollmask|nummask, win, True, GrabModeAsync, GrabModeAsync);
-					XGrabKey(subtle->disp, k->code, k->mod|scrollmask|LockMask|nummask, win, True, GrabModeAsync, GrabModeAsync);
+          for(j = 0; 4 > j; j++)
+					  XGrabKey(subtle->disp, k->code, k->mod|modifiers[j], win, True, 
+              GrabModeAsync, GrabModeAsync);
 				}
-			if(subtle->cv->frame == win) XSetInputFocus(subtle->disp, win, RevertToNone, CurrentTime);
+			if(subtle->cv->frame == win) 
+        XSetInputFocus(subtle->disp, win, RevertToNone, CurrentTime);
 			subtle->focus = win; ///< Update focus window
+
+      XGrabButton(subtle->disp, AnyButton, AnyModifier, win, False,
+        ButtonPressMask|ButtonReleaseMask, GrabModeAsync, GrabModeSync, None, None);
 		}
 } /* }}} */
 
