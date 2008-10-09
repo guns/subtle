@@ -54,7 +54,6 @@ static void
 HandleButtonPress(XButtonEvent *ev)
 {
   SubClient *c = NULL;
-  static Time last_time = 0;
 
   if(ev->window == subtle->bar.views)
     {
@@ -63,18 +62,18 @@ HandleButtonPress(XButtonEvent *ev)
       return;
     }
 
+  subUtilLogDebug("click=single, win=%#lx, state=%d\n", ev->window, ev->state);
+
   c = CLIENT(subUtilFind(ev->window, 1));
   if(c)
     {
       switch(ev->button)
         {
           case Button1:
-            subUtilLogDebug("click=single, win=%#lx\n", ev->window);
-            if(c->flags & SUB_STATE_FLOAT) XRaiseWindow(subtle->disp, c->frame);
+            if(c->flags & SUB_STATE_FLOAT) XRaiseWindow(subtle->disp, c->win);
 
             /* Either drag and move or drag an swap windows */
             subClientDrag(c, (c->flags & SUB_STATE_FLOAT) ? SUB_DRAG_MOVE : SUB_DRAG_SWAP);
-            last_time = ev->time;
             break;
           case Button2:
             break;
@@ -94,8 +93,6 @@ static void
 HandleKeyPress(XKeyEvent *ev)
 {
   SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
-printf("%s,%d: %s\n", __FILE__, __LINE__, __func__);
-
   if(c || ev->window == subtle->cv->frame)
     {
       SubKey *k = subKeyFind(ev->keycode, ev->state);
@@ -347,7 +344,7 @@ HandleCrossing(XCrossingEvent *ev)
     {
       XEvent event;
     
-      if(subtle->focus != c->frame) subClientFocus(c);
+      if(subtle->focus != c->win) subClientFocus(c);
 
       /* Remove any other event of the same type and window */
       while(XCheckTypedWindowEvent(subtle->disp, ev->window, ev->type, &event));      
@@ -383,7 +380,7 @@ HandleFocus(XFocusInEvent *ev)
   if(c && c->flags & SUB_PREF_FOCUS)
     {
       /* Remove focus from client */
-      if(subtle->focus != c->frame) 
+      if(subtle->focus != c->win) 
         {
           Window win = subtle->focus;
           SubClient *f = CLIENT(subUtilFind(win, 1));
@@ -397,7 +394,7 @@ HandleFocus(XFocusInEvent *ev)
             }
           else subKeyUngrab(win);
 
-          subKeyGrab(c->frame);  
+          subKeyGrab(c->win);  
           subClientRender(c);
           subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_ACTIVE_WINDOW, &c->win, 1);
         }

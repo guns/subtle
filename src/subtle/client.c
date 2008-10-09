@@ -26,39 +26,39 @@ ClientMask(int type,
           r->width - 3, (c->flags & SUB_STATE_SHADE) ? subtle->th - subtle->bw : r->height - subtle->bw);
         break;
       case SUB_DRAG_TOP:
-        XFillRectangle(subtle->disp, c->frame, subtle->gcs.invert, 5, 5, c->rect.width - 10, 
+        XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, 5, 5, c->rect.width - 10, 
           c->rect.height * 0.5 - 5);
         break;
       case SUB_DRAG_BOTTOM:
-        XFillRectangle(subtle->disp, c->frame, subtle->gcs.invert, 5, c->rect.height * 0.5, 
+        XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, 5, c->rect.height * 0.5, 
           c->rect.width - 10, c->rect.height * 0.5 - 5);
         break;
       case SUB_DRAG_LEFT:
-        XFillRectangle(subtle->disp, c->frame, subtle->gcs.invert, 5, 5, c->rect.width * 0.5 - 5, 
+        XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, 5, 5, c->rect.width * 0.5 - 5, 
           c->rect.height - 10);
         break;
       case SUB_DRAG_RIGHT:
-        XFillRectangle(subtle->disp, c->frame, subtle->gcs.invert, c->rect.width * 0.5, 5, 
+        XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, c->rect.width * 0.5, 5, 
           c->rect.width * 0.5 - 5, c->rect.height - 10);
         break;
       case SUB_DRAG_SWAP:
-        XFillRectangle(subtle->disp, c->frame, subtle->gcs.invert, c->rect.width * 0.35, 
+        XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, c->rect.width * 0.35, 
           c->rect.height * 0.35, c->rect.width * 0.3, c->rect.height * 0.3);
         break;
       case SUB_DRAG_BEFORE:
-        XFillRectangle(subtle->disp, c->frame, subtle->gcs.invert, 5, 5, c->rect.width * 0.1 - 5, 
+        XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, 5, 5, c->rect.width * 0.1 - 5, 
           c->rect.height - 10);
         break;
       case SUB_DRAG_AFTER:
-        XFillRectangle(subtle->disp, c->frame, subtle->gcs.invert, c->rect.width * 0.9, 5, 
+        XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, c->rect.width * 0.9, 5, 
           c->rect.width * 0.1 - 5, c->rect.height - 10);
         break;
       case SUB_DRAG_ABOVE:
-        XFillRectangle(subtle->disp, c->frame, subtle->gcs.invert, 5, 5, c->rect.width - 10, 
+        XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, 5, 5, c->rect.width - 10, 
           c->rect.height * 0.1 - 5);
         break;
       case SUB_DRAG_BELOW:
-        XFillRectangle(subtle->disp, c->frame, subtle->gcs.invert, 5, c->rect.height * 0.9, 
+        XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, 5, c->rect.height * 0.9, 
           c->rect.width - 10, c->rect.height * 0.1 - 5);
         break;
     }
@@ -74,18 +74,17 @@ SubClient *
 subClientNew(Window win)
 {
   int i, n = 0;
-  Window unnused;
-  char *wmclass = NULL;
   long vid = 1337;
+  char *wmclass = NULL;
+  Window unnused;
   XWMHints *hints = NULL;
-  XWindowAttributes attr;
-  XSetWindowAttributes attrs;
+  XWindowAttributes attrs;
   Atom *protos = NULL;
   SubClient *c = NULL;
 
   assert(win);
   
-  c  = CLIENT(subUtilAlloc(1, sizeof(SubClient)));
+  c = CLIENT(subUtilAlloc(1, sizeof(SubClient)));
   c->flags = SUB_TYPE_CLIENT;
   c->win   = win;
 
@@ -95,27 +94,17 @@ subClientNew(Window win)
   c->rect.width  = DisplayWidth(subtle->disp, DefaultScreen(subtle->disp));
   c->rect.height = DisplayHeight(subtle->disp, DefaultScreen(subtle->disp)) - subtle->th;
 
-  /* Create frame */
-  attrs.border_pixel      = subtle->colors.border;
-  attrs.background_pixel  = subtle->colors.norm;
-  attrs.background_pixmap = ParentRelative;
-  attrs.override_redirect = True;
-  attrs.event_mask        = SubstructureRedirectMask|SubstructureNotifyMask|ExposureMask|VisibilityChangeMask|
-    EnterWindowMask|FocusChangeMask|KeyPressMask|ButtonPressMask;
-
-  c->frame = WINNEW(DefaultRootWindow(subtle->disp), 0, 0, c->rect.width, c->rect.height, 0, 
-    CWOverrideRedirect|CWBackPixmap|CWEventMask);
-
   /* Update client */
-  XSelectInput(subtle->disp, c->win, PropertyChangeMask|StructureNotifyMask);
-  XSetWindowBorderWidth(subtle->disp, c->win, 0);
-  XReparentWindow(subtle->disp, c->win, c->frame, subtle->bw, subtle->bw);
   XAddToSaveSet(subtle->disp, c->win);
-  XSaveContext(subtle->disp, c->frame, 1, (void *)c);
+  XSelectInput(subtle->disp, c->win, SubstructureRedirectMask|SubstructureNotifyMask|
+    ExposureMask|VisibilityChangeMask| EnterWindowMask|FocusChangeMask|
+    KeyPressMask|ButtonPressMask|PropertyChangeMask|StructureNotifyMask);
+  XSetWindowBorderWidth(subtle->disp, c->win, subtle->bw);
+  XSaveContext(subtle->disp, c->win, 1, (void *)c);
 
   /* Window attributes */
-  XGetWindowAttributes(subtle->disp, c->win, &attr);
-  c->cmap  = attr.colormap;
+  XGetWindowAttributes(subtle->disp, c->win, &attrs);
+  c->cmap = attrs.colormap;
   subClientFetchName(c);
 
   /* Window manager hints */
@@ -187,12 +176,12 @@ subClientConfigure(SubClient *c)
   assert(c);
 
   /* Resize client window */
-  XMoveResizeWindow(subtle->disp, c->frame, c->rect.x, c->rect.y, c->rect.width, (c->flags & SUB_STATE_SHADE) ? subtle->th : c->rect.height);
   if(c->flags & SUB_STATE_FULL) 
     {
       XMoveResizeWindow(subtle->disp, c->win, 0, 0, c->rect.width, c->rect.height);
     }
-  else XMoveResizeWindow(subtle->disp, c->win, subtle->bw, subtle->bw, c->rect.width - 2 * subtle->bw, c->rect.height - 2 * subtle->bw);
+  else XMoveResizeWindow(subtle->disp, c->win, c->rect.x, c->rect.y, 
+    c->rect.width - 2 * subtle->bw, c->rect.height - 2 * subtle->bw);
 
   /* Tell client new geometry */
   if(!(c->flags & SUB_STATE_SHADE))
@@ -202,8 +191,8 @@ subClientConfigure(SubClient *c)
       ev.window             = c->win;
       ev.x                  = c->rect.x;
       ev.y                  = c->rect.y;
-      ev.width              = (c->flags & SUB_STATE_FULL) ? c->rect.width  : WINWIDTH(c);
-      ev.height             = (c->flags & SUB_STATE_FULL) ? c->rect.height : WINHEIGHT(c);
+      ev.width              = c->rect.width;
+      ev.height             = c->rect.height;
       ev.above              = None;
       ev.border_width       = 0;
       ev.override_redirect  = 0;
@@ -221,17 +210,20 @@ void
 subClientRender(SubClient *c)
 {
   unsigned long col = 0;
+  XSetWindowAttributes attrs;
 
   assert(c);
 
-  col = subtle->focus == c->frame ? subtle->colors.focus : 
+  subtle->caption = c->name;
+  col = subtle->focus == c->win ? subtle->colors.focus : 
     (c->flags & SUB_STATE_SHADE ? subtle->colors.cover : subtle->colors.norm);
 
-  /* Update frame color */
-  XSetWindowBackground(subtle->disp, c->frame, col);
-  XClearWindow(subtle->disp, c->frame);
+  attrs.border_pixel = col;
+  XChangeWindowAttributes(subtle->disp, c->win, CWBorderPixel, &attrs);
 
   /* Update caption */
+  XResizeWindow(subtle->disp, subtle->bar.caption, strlen(c->name) * subtle->fx + 8, subtle->th);
+  XSetWindowBackground(subtle->disp, c->win, col);
   XClearWindow(subtle->disp, subtle->bar.caption);
   XDrawString(subtle->disp, subtle->bar.caption, subtle->gcs.font, 5, subtle->fy - 1, c->name, strlen(c->name));
 } /* }}} */
@@ -265,7 +257,7 @@ subClientFocus(SubClient *c)
   else
     {
       /* Remove focus from client if exists */
-      if(subtle->focus && subtle->focus != c->frame)
+      if(subtle->focus && subtle->focus != c->win)
         {
           Window win = subtle->focus;
           SubClient *f = CLIENT(subUtilFind(win, 1));
@@ -284,7 +276,7 @@ subClientFocus(SubClient *c)
       /* Caption */
       subtle->caption = c->name;
  
-      subKeyGrab(c->frame);
+      subKeyGrab(c->win);
       subClientRender(c);
       subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_ACTIVE_WINDOW, &c->win, 1);
       subViewUpdate();
@@ -301,8 +293,8 @@ subClientMap(SubClient *c)
 {
   assert(c);
 
-  XMapSubwindows(subtle->disp, c->frame);
-  XMapWindow(subtle->disp, c->frame);
+  XMapSubwindows(subtle->disp, c->win);
+  XMapWindow(subtle->disp, c->win);
 } /* }}} */
 
  /** subClientUnmap {{{
@@ -315,8 +307,8 @@ subClientUnmap(SubClient *c)
 {
   assert(c);
 
-  XUnmapSubwindows(subtle->disp, c->frame);
-  XUnmapWindow(subtle->disp, c->frame);
+  XUnmapSubwindows(subtle->disp, c->win);
+  XUnmapWindow(subtle->disp, c->win);
 } /* }}} */
 
  /** subClientDrag {{{
@@ -340,7 +332,7 @@ subClientDrag(SubClient *c,
   assert(c);
   
   /* Get window position on root window */
-  XQueryPointer(subtle->disp, c->frame, &win, &win, &rx, &ry, &wx, &wy, &mask);
+  XQueryPointer(subtle->disp, c->win, &win, &win, &rx, &ry, &wx, &wy, &mask);
   r.x        = rx - wx;
   r.y        = ry - wy;
   r.width   = c->rect.width;
@@ -356,7 +348,7 @@ subClientDrag(SubClient *c,
       default:              cursor = subtle->cursors.square;  break;
     }
 
-  if(XGrabPointer(subtle->disp, c->frame, True, ButtonPressMask|ButtonReleaseMask|PointerMotionMask, 
+  if(XGrabPointer(subtle->disp, c->win, True, ButtonPressMask|ButtonReleaseMask|PointerMotionMask, 
     GrabModeAsync, GrabModeAsync, None, cursor, CurrentTime)) return;
 
   XGrabServer(subtle->disp);
@@ -390,7 +382,7 @@ subClientDrag(SubClient *c,
                   }  
                 ClientMask(SUB_DRAG_START, c, &r);
               }
-            else if(win != c->frame && SUB_DRAG_SWAP == mode)
+            else if(win != c->win && SUB_DRAG_SWAP == mode)
               {
                 if(!c2 || c2->frame != win) c2 = CLIENT(subUtilFind(win, 1));
                 if(c2)
@@ -435,7 +427,7 @@ subClientDrag(SubClient *c,
                 }
             break; /* }}} */
           case ButtonRelease: /* {{{ */
-            if(win != c->frame && c && c2) ///< Except same window
+            if(win != c->win && c && c2) ///< Except same window
               {
                 ClientMask(state, c2, &r); ///< Erase mask
                 if(state & (SUB_DRAG_LEFT|SUB_DRAG_RIGHT)) 
@@ -506,11 +498,11 @@ int type)
 
             /* Map, resize and redraw */
             XMapWindow(subtle->disp, c->win);
-            XMoveResizeWindow(subtle->disp, c->frame, c->rect.x, c->rect.y, c->rect.width, c->rect.height);
+            XMoveResizeWindow(subtle->disp, c->win, c->rect.x, c->rect.y, c->rect.width, c->rect.height);
             subClientRender(c);
             break;
           case SUB_STATE_FLOAT: 
-            //XReparentWindow(subtle->disp, c->frame, c->tile->frame, c->rect.x, c->rect.y);  
+            //XReparentWindow(subtle->disp, c->win, c->tile->frame, c->rect.x, c->rect.y);  
             break;
 #if 0            
           case SUB_STATE_FULL:
@@ -541,7 +533,7 @@ int type)
 
             /* Unmap, resize and redraw */
             XUnmapWindow(subtle->disp, c->win);
-            XMoveResizeWindow(subtle->disp, c->frame, c->rect.x, c->rect.y, c->rect.width, subtle->th);
+            XMoveResizeWindow(subtle->disp, c->win, c->rect.x, c->rect.y, c->rect.width, subtle->th);
             subClientRender(c);
             break;
 #if 0            
@@ -586,8 +578,8 @@ int type)
               }
 
             subClientConfigure(c);
-            XReparentWindow(subtle->disp, c->frame, DefaultRootWindow(subtle->disp), c->rect.x, c->rect.y);
-            XRaiseWindow(subtle->disp, c->frame);
+            XReparentWindow(subtle->disp, c->win, DefaultRootWindow(subtle->disp), c->rect.x, c->rect.y);
+            XRaiseWindow(subtle->disp, c->win);
 
             XFree(hints);
             break;
@@ -605,7 +597,7 @@ int type)
             c->rect.width  = DisplayWidth(subtle->disp, DefaultScreen(subtle->disp));
             c->rect.height  = DisplayHeight(subtle->disp, DefaultScreen(subtle->disp));
 
-            XReparentWindow(subtle->disp, c->frame, DefaultRootWindow(subtle->disp), 0, 0);
+            XReparentWindow(subtle->disp, c->win, DefaultRootWindow(subtle->disp), 0, 0);
             subClientConfigure(c);
 #endif            
         }
@@ -721,10 +713,10 @@ subClientKill(SubClient *c)
   printf("Killing client %s\n", c->name);
 
   /* Ignore further events and delete context */
-  XSelectInput(subtle->disp, c->frame, NoEventMask);
-  XDeleteContext(subtle->disp, c->frame, 1);
+  XSelectInput(subtle->disp, c->win, NoEventMask);
+  XDeleteContext(subtle->disp, c->win, 1);
 
-  if(subtle->focus == c->frame) subtle->focus = 0; ///< Unset focus
+  if(subtle->focus == c->win) subtle->focus = 0; ///< Unset focus
   if(!(c->flags & SUB_STATE_DEAD))
     {
       subArrayPop(subtle->clients, (void *)c->win);
@@ -751,8 +743,7 @@ subClientKill(SubClient *c)
         }
       else XKillClient(subtle->disp, c->win);
     }
-  XDestroySubwindows(subtle->disp, c->frame);
-  XDestroyWindow(subtle->disp, c->frame);
+
   subViewSanitize(c);
   subArrayPop(subtle->clients, (void *)c);
 
