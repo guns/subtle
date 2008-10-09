@@ -14,12 +14,12 @@
 
 static unsigned int numlockmask = 0;
 
- /** subKeyInit {{{
-	* @brief Init keys and get modifiers
+ /** subGrabInit {{{
+	* @brief Init grabs and get modifiers
 	**/
 
 void
-subKeyInit(void)
+subGrabInit(void)
 {
 	XModifierKeymap *modmap = XGetModifierMapping(subtle->disp);
 	if(modmap && modmap->max_keypermod > 0)
@@ -35,21 +35,25 @@ subKeyInit(void)
 	if(modmap) XFreeModifiermap(modmap);
 } /* }}} */
 
- /** subKeyNew {{{
-	* @brief Create new key
+ /** subGrabNew {{{
+	* @brief Create new grab
 	* @param[in]  key	   Key name
 	* @param[in]  value	 Key action
-	* @return Returns a #SubKey or \p NULL
+	* @return Returns a #SubGrab or \p NULL
 	**/
 
-SubKey *
-subKeyNew(const char *key,
+SubGrab *
+subGrabNew(const char *key,
 	const char *value)
 {
 	KeySym sym;
 	char *tok = strtok((char *)value, "-");
-	SubKey *k = (SubKey *)subUtilAlloc(1, sizeof(SubKey));
-	k->flags	= SUB_TYPE_KEY;
+	SubGrab *g = NULL;
+
+  assert(key && value);
+  
+  g = GRAB(subUtilAlloc(1, sizeof(SubGrab)));
+	g->flags = SUB_TYPE_GRAB;
 
 	/* @todo Too slow? */	
 	if(!strncmp(key, "ViewJump", 8))
@@ -57,28 +61,28 @@ subKeyNew(const char *key,
 			char *desktop = (char *)key + 8; ///< Get desktop number
 			if(desktop) 
 				{
-					k->number = atoi(desktop) - 1; ///< Decrease for array index
-					k->flags |= SUB_KEY_VIEW_JUMP;
+					g->number = atoi(desktop) - 1; ///< Decrease for array index
+					g->flags |= SUB_GRAB_VIEW_JUMP;
 				}
 			else 
 				{
 					subUtilLogWarn("Can't assign keychain `%s'.\n", key);
-					free(k);
+					free(g);
 					return NULL;
 				}
 		}
   else if(!strncmp(key, "MouseMove", 9))
     {
-      k->flags |= SUB_KEY_MOUSE_MOVE;
+      g->flags |= SUB_GRAB_MOUSE_MOVE;
     }
   else if(!strncmp(key, "MouseResize", 11))
     {
-      k->flags |= SUB_KEY_MOUSE_RESIZE;
+      g->flags |= SUB_GRAB_MOUSE_RESIZE;
     }
 	else
 		{
-			k->flags	|= SUB_KEY_EXEC;
-			k->string	= strdup(key);
+			g->flags	|= SUB_GRAB_EXEC;
+			g->string	= strdup(key);
 		}
 
 	while(tok)
@@ -88,58 +92,58 @@ subKeyNew(const char *key,
 			if(NoSymbol == sym)
 				{
 					subUtilLogWarn("Can't assign keychain `%s'.\n", key);
-					if(k->string) free(k->string);
-					free(k);
+					if(g->string) free(g->string);
+					free(g);
 					return NULL;
 				}
 
 			/* Modifier mappings */
 			switch(sym)
 				{
-					case XK_A: k->mod |= Mod1Mask;		break;
-					case XK_S: k->mod |= ShiftMask;		break;
-					case XK_C: k->mod |= ControlMask;	break;
-					case XK_W: k->mod |= Mod4Mask;		break;
-					case XK_M: k->mod |= Mod3Mask;		break;
+					case XK_A: g->mod |= Mod1Mask;		break;
+					case XK_S: g->mod |= ShiftMask;		break;
+					case XK_C: g->mod |= ControlMask;	break;
+					case XK_W: g->mod |= Mod4Mask;		break;
+					case XK_M: g->mod |= Mod3Mask;		break;
 					default:
-						k->code = XKeysymToKeycode(subtle->disp, sym);
+						g->code = XKeysymToKeycode(subtle->disp, sym);
 				}
 
 			tok = strtok(NULL, "-");
 		}
-	subUtilLogDebug("code=%03d, mod=%02d, key=%s\n", k->code, k->mod, key);
+	subUtilLogDebug("code=%03d, mod=%02d, key=%s\n", g->code, g->mod, key);
 	
-	return k;
+	return g;
 } /* }}} */
 
- /** subKeyFind {{{
-	* @brief Find key
-	* @param[in]  code 	A keycode
+ /** subGrabFind {{{
+	* @brief Find grab
+	* @param[in]  code 	A code
 	* @param[in]  mod	  A modmask
-	* @return Returns a #SubKey or \p NULL
+	* @return Returns a #SubGrab or \p NULL
 	**/
 
-SubKey *
-subKeyFind(int code,
+SubGrab *
+subGrabFind(int code,
 	unsigned int mod)
 {
-	SubKey **ret = NULL, *kp = NULL, k;
+	SubGrab **ret = NULL, *gp = NULL, g;
 	
-	k.code = code;
-	k.mod	 = (mod & ~(LockMask|numlockmask));
-	kp 		 = &k;
-	ret    = (SubKey **)bsearch(&kp, subtle->keys->data, subtle->keys->ndata, sizeof(SubKey *), subKeyCompare);
+	g.code = code;
+	g.mod	 = (mod & ~(LockMask|numlockmask));
+	gp 		 = &g;
+	ret    = (SubGrab **)bsearch(&gp, subtle->grabs->data, subtle->grabs->ndata, sizeof(SubGrab *), subGrabCompare);
 
 	return ret ? *ret : NULL;
 } /* }}} */
 
- /** subKeyGet {{{
-	* @brief Get key
+ /** subGrabGet {{{
+	* @brief Get grab
 	* @return Returns the keysym of the press key
 	**/
 
 KeySym
-subKeyGet(void)
+subGrabGet(void)
 {
 	XEvent ev;
 	KeySym sym = None;
@@ -150,26 +154,26 @@ subKeyGet(void)
 	return sym;
 } /* }}} */
 
- /** subKeyGrab {{{
+ /** subGrabSet {{{
 	* @brief Grab keys for a window
 	* @param[in]  win	 Window
 	**/
 
 void
-subKeyGrab(Window win)
+subGrabSet(Window win)
 {
-	if(win && subtle->keys)
+	if(win && subtle->grabs)
 		{
 			int i, j;
       unsigned int modifiers[4] = { 0, LockMask, numlockmask, numlockmask|LockMask };
 
 			/* @todo Ugly key/modifier grabbing */
-			for(i = 0; i < subtle->keys->ndata; i++) 
+			for(i = 0; i < subtle->grabs->ndata; i++) 
 				{
-					SubKey *k = KEY(subtle->keys->data[i]);
+					SubGrab *g = GRAB(subtle->grabs->data[i]);
 
           for(j = 0; 4 > j; j++)
-					  XGrabKey(subtle->disp, k->code, k->mod|modifiers[j], win, True, 
+					  XGrabKey(subtle->disp, g->code, g->mod|modifiers[j], win, True, 
               GrabModeAsync, GrabModeAsync);
 				}
 			if(subtle->cv->frame == win) 
@@ -181,59 +185,59 @@ subKeyGrab(Window win)
 		}
 } /* }}} */
 
- /** subKeyUngrab {{{
+ /** subGrabUnset {{{
 	* @brief Ungrab keys for a window
 	* @param[in]  win	Window
 	**/
 
 void
-subKeyUngrab(Window win)
+subGrabUnset(Window win)
 {
 	XUngrabKey(subtle->disp, AnyKey, AnyModifier, win);
 	subtle->focus = 0; ///< Unset focus window
 } /* }}} */
 
- /** subKeyCompare {{{
-	* @brief Compare two keys
-	* @param[in]  a	 A #SubKey
-	* @param[in]  b	 A #SubKey
-	* @return Returns the result of the comparison of both keys
+ /** subGrabCompare {{{
+	* @brief Compare two grabs
+	* @param[in]  a	 A #SubGrab
+	* @param[in]  b	 A #SubGrab
+	* @return Returns the result of the comparison of both grabs
 	* @retval  -1  First is smaller
 	* @retval  0	 Both are equal	
 	* @retval  1   First is greater
 	**/
 
 int
-subKeyCompare(const void *a,
+subGrabCompare(const void *a,
 	const void *b)
 {
 	int ret;
-	SubKey *k1 = *(SubKey **)a, *k2 = *(SubKey **)b;
+	SubGrab *g1 = *(SubGrab **)a, *g2 = *(SubGrab **)b;
 
 	assert(a && b);
 
 	/* @todo Complicated.. */
-	if(k1->code < k2->code) ret = -1;
-	else if(k1->code == k2->code)
+	if(g1->code < g2->code) ret = -1;
+	else if(g1->code == g2->code)
 		{
-			if(k1->mod < k2->mod) ret = -1;
-			else if(k1->mod == k2->mod) ret = 0;
+			if(g1->mod < g2->mod) ret = -1;
+			else if(g1->mod == g2->mod) ret = 0;
 			else ret = 1;
 		}
-	else if(k1->code > k2->code) ret = 1;
+	else if(g1->code > g2->code) ret = 1;
 
 	return ret;
 } /* }}} */
 
- /** subKeyKill {{{
-	* @brief Kill key
+ /** subGrabKill {{{
+	* @brief Kill grab
 	**/
 
 void
-subKeyKill(SubKey *k)
+subGrabKill(SubGrab *g)
 {
-	assert(k);
+	assert(g);
 
-	if(k->flags & SUB_KEY_EXEC && k->string) free(k->string);
-	free(k);
+	if(g->flags & SUB_GRAB_EXEC && g->string) free(g->string);
+	free(g);
 } /* }}} */
