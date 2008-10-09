@@ -68,7 +68,7 @@ Signal(int signum)
         subArrayKill(subtle->views, True);
         subArrayKill(subtle->clients, False);
         subArrayKill(subtle->sublets, True);
-        subArrayKill(subtle->keys, True);
+        subArrayKill(subtle->grabs, True);
 
         subRubyFinish();
         subDisplayFinish();
@@ -96,7 +96,7 @@ int
 main(int argc,
   char *argv[])
 {
-  int c;
+  int c, debug = 0;
   char *sublets = NULL, *display = NULL;
   struct sigaction act;
   static struct option long_options[] =
@@ -122,7 +122,7 @@ main(int argc,
           case 's': sublets = optarg;      break;
           case 'v': Version();             return 0;
 #ifdef DEBUG          
-          case 'D': subtle->debug++;       break;
+          case 'D': debug++;               break;
 #endif /* DEBUG */
           case '?':
             printf("Try `%s --help for more information\n", PKG_NAME);
@@ -131,8 +131,8 @@ main(int argc,
     }
 
   Version();
-  act.sa_handler  = Signal;
-  act.sa_flags    = 0;
+  act.sa_handler = Signal;
+  act.sa_flags   = 0;
   memset(&act.sa_mask, 0, sizeof(sigset_t)); ///< Avoid uninitialized values
   sigaction(SIGHUP, &act, NULL);
   sigaction(SIGTERM, &act, NULL);
@@ -141,12 +141,13 @@ main(int argc,
   sigaction(SIGCHLD, &act, NULL);
 
   subtle = SUBTLE(subUtilAlloc(1, sizeof(SubSubtle)));
+  subtle->debug = debug; ///< Kind of cached
 
   /* Init */
   subDisplayInit(display);
   subRubyInit();
   subEwmhInit();
-  subKeyInit();
+  subGrabInit();
   subTagInit();
 
   /* Config */

@@ -36,10 +36,13 @@ subViewNew(char *name,
 
   /* Create windows */
   attrs.event_mask = KeyPressMask;
-
-  v->frame  = WINNEW(DefaultRootWindow(subtle->disp), 0, subtle->th, DisplayWidth(subtle->disp, DefaultScreen(subtle->disp)),
-    DisplayHeight(subtle->disp, DefaultScreen(subtle->disp)), 0, CWEventMask);  
-  v->button = XCreateSimpleWindow(subtle->disp, subtle->bar.views, 0, 0, 1, subtle->th, 0, subtle->colors.border, subtle->colors.norm);
+ 
+  v->frame  = XCreateWindow(subtle->disp, DefaultRootWindow(subtle->disp), 
+    0, subtle->th, DisplayWidth(subtle->disp, DefaultScreen(subtle->disp)), 
+    DisplayHeight(subtle->disp, DefaultScreen(subtle->disp)), 0,
+    CopyFromParent, InputOutput, CopyFromParent, CWEventMask, &attrs); 
+  v->button = XCreateSimpleWindow(subtle->disp, subtle->bar.views, 0, 0, 1, 
+    subtle->th, 0, subtle->colors.border, subtle->colors.norm);
 
   XSaveContext(subtle->disp, v->frame, 2, (void *)v);
   XSaveContext(subtle->disp, v->button, 1, (void *)v);
@@ -95,8 +98,7 @@ subViewConfigure(SubView *v)
           /* Find matching clients */
           if(v->tags & c->tags)
             {
-              if(c->flags & SUB_STATE_SHADE) shaded++;
-              else if(c->flags & SUB_STATE_FULL) full++;
+              if(c->flags & SUB_STATE_FULL) full++;
               else if(c->flags & SUB_STATE_FLOAT) floated++;
               c->flags &= ~SUB_STATE_TILED;
               total++;
@@ -131,12 +133,12 @@ subViewConfigure(SubView *v)
 
           if(v->tags & c->tags && !(c->flags & (SUB_STATE_TRANS|SUB_STATE_FLOAT|SUB_STATE_FULL)))
             {
-              XReparentWindow(subtle->disp, c->frame, v->frame, 0, 0);
+              XReparentWindow(subtle->disp, c->win, v->frame, 0, 0);
               
               c->rect.x      = x;
-              c->rect.y      = (c->flags & SUB_STATE_SHADE) ? y : shaded * subtle->th;
+              c->rect.y      = shaded * subtle->th;
               c->rect.width  = i == total - 1 ? cw + comp : cw; ///< Compensation
-              c->rect.height = (c->flags & SUB_STATE_SHADE) ? subtle->th : height;
+              c->rect.height = height;
 
               /* EWMH: Desktop */
               subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);          
@@ -346,7 +348,7 @@ subViewJump(SubView *v)
   subEwmhSetCardinals(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_CURRENT_DESKTOP, &vid, 1);
 
   subViewRender();
-  subKeyGrab(subtle->cv->frame);
+  subGrabSet(subtle->cv->frame);
 
   printf("Switching view (%s)\n", subtle->cv->name);
 } /* }}} */

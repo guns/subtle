@@ -55,14 +55,14 @@ HandleButtonPress(XButtonEvent *ev)
 {
   SubClient *c = NULL;
 
+  subUtilLogDebug("click=single, win=%#lx, state=%d\n", ev->window, ev->state);
+
   if(ev->window == subtle->bar.views)
     {
       SubView *v = VIEW(subUtilFind(ev->subwindow, 1));
       if(subtle->cv != v) subViewJump(v); ///< Prevent jumping to current view
       return;
     }
-
-  subUtilLogDebug("click=single, win=%#lx, state=%d\n", ev->window, ev->state);
 
   c = CLIENT(subUtilFind(ev->window, 1));
   if(c)
@@ -92,20 +92,20 @@ HandleButtonPress(XButtonEvent *ev)
 static void
 HandleKeyPress(XKeyEvent *ev)
 {
-  SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
+  SubClient *c = CLIENT(subUtilFind(ev->window, 1));
   if(c || ev->window == subtle->cv->frame)
     {
-      SubKey *k = subKeyFind(ev->keycode, ev->state);
-      if(k) 
+      SubGrab *g = subGrabFind(ev->keycode, ev->state);
+      if(g) 
         {
-          if(k->flags & SUB_KEY_EXEC && k->string) Exec(k->string); 
-          else if(k->flags & SUB_KEY_VIEW_JUMP) 
+          if(g->flags & SUB_GRAB_EXEC && g->string) Exec(g->string); 
+          else if(g->flags & SUB_GRAB_VIEW_JUMP) 
             {
-              if(0 <= k->number && k->number < subtle->views->ndata)
-                subViewJump(VIEW(subtle->views->data[k->number]));
+              if(0 <= g->number && g->number < subtle->views->ndata)
+                subViewJump(VIEW(subtle->views->data[g->number]));
             }
 
-          subUtilLogDebug("KeyPress: code=%d, mod=%d\n", k->code, k->mod);
+          subUtilLogDebug("KeyPress: code=%d, mod=%d\n", g->code, g->mod);
         }
     }
 } /* }}} */
@@ -388,13 +388,13 @@ HandleFocus(XFocusInEvent *ev)
             {
               if(!(f->flags & SUB_STATE_DEAD)) 
                 {
-                  subKeyUngrab(f->frame);
+                  subGrabUnset(f->frame);
                   subClientRender(f);
                 }
             }
-          else subKeyUngrab(win);
+          else subGrabUnset(win);
 
-          subKeyGrab(c->win);  
+          subGrabSet(c->win);  
           subClientRender(c);
           subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_ACTIVE_WINDOW, &c->win, 1);
         }

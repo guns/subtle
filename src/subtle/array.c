@@ -144,7 +144,7 @@ subArrayKill(SubArray *a,
       else if(c->flags & SUB_TYPE_VIEW)   subViewKill(VIEW(c));
       else if(c->flags & SUB_TYPE_CLIENT) subClientKill(CLIENT(c));
       else if(c->flags & SUB_TYPE_SUBLET) subSubletKill(SUBLET(c));
-      else if(c->flags & SUB_TYPE_KEY)    subKeyKill(KEY(c));
+      else if(c->flags & SUB_TYPE_GRAB)   subGrabKill(GRAB(c));
       else free(a->data[i]); 
     }
 

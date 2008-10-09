@@ -56,7 +56,7 @@ subDisplayInit(const char *display)
   subtle->cursors.resize  = XCreateFontCursor(subtle->disp, XC_sizing);
 
   /* Init lists */
-  subtle->keys    = subArrayNew();
+  subtle->grabs    = subArrayNew();
   subtle->tags    = subArrayNew();
   subtle->views   = subArrayNew();
   subtle->clients = subArrayNew();

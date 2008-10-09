@@ -51,7 +51,7 @@
 #define CLIENT(c) ((SubClient *)c)                                ///< Cast to SubClient
 #define TAG(t)    ((SubTag *)t)                                   ///< Cast to SubTag
 #define SUBLET(s) ((SubSublet *)s)                                ///< Cast to SubSublet
-#define KEY(k)    ((SubKey *)k)                                   ///< Cast to SubKey
+#define GRAB(g)   ((SubGrab *)g)                                  ///< Cast to SubGrab
 #define RECT(r)   ((XRectangle *)r)                               ///< Cast to XRectangle
 
 /* ICCCM */
@@ -127,7 +127,7 @@
 #define SUB_TYPE_VIEW          (1L << 3)                          ///< View
 #define SUB_TYPE_LAYOUT        (1L << 4)                          ///< Layout
 #define SUB_TYPE_SUBLET        (1L << 5)                          ///< Sublet
-#define SUB_TYPE_KEY           (1L << 6)                          ///< Key
+#define SUB_TYPE_GRAB           (1L << 6)                          ///< Key
 
 /* Tile modes */
 #define SUB_TILE_VERT          (1L << 7)                          ///< Tile vert
@@ -162,9 +162,11 @@
 #define SUB_DRAG_MOVE          (1L << 10)                         ///< Drag move
 #define SUB_DRAG_SWAP          (1L << 11)                         ///< Drag swap
 
-/* Keys */
-#define SUB_KEY_VIEW_JUMP      (1L << 10)                         ///< Jump to view
-#define SUB_KEY_EXEC           (1L << 11)                         ///< Exec an app
+/* Grabs */
+#define SUB_GRAB_VIEW_JUMP     (1L << 10)                         ///< Jump to view
+#define SUB_GRAB_EXEC          (1L << 11)                         ///< Exec an app
+#define SUB_GRAB_MOUSE_MOVE    (1L << 12)                         ///< Resize window
+#define SUB_GRAB_MOUSE_RESIZE  (1L << 13)                         ///< Move window
 
 /* Data types */
 #define SUB_DATA_STRING        (1L << 10)                         ///< String data
@@ -184,7 +186,7 @@ typedef struct subsubtle_t /* {{{ */
 
   struct subview_t   *cv;                                         ///< Subtle current view
   struct subsublet_t *sublet;                                     ///< Subtle first sublet
-  struct subarray_t  *keys;                                       ///< Subtle keys
+  struct subarray_t  *grabs;                                      ///< Subtle grabs
   struct subarray_t  *tags;                                       ///< Subtle tags
   struct subarray_t  *views;                                      ///< Subtle views
   struct subarray_t  *clients;                                    ///< Subtle clients
@@ -287,7 +289,7 @@ typedef struct subkey_t /* {{{ */
     char       *string;                                           ///< Key data string
     int        number;                                            ///< Key data number
   };
-} SubKey; /* }}} */
+} SubGrab; /* }}} */
 
 extern SubSubtle *subtle;
 /* }}} */
@@ -362,16 +364,16 @@ void subDisplayScan(void);                                        ///< Scan root
 void subDisplayFinish(void);                                      ///< Delete display
 /* }}} */
 
-/* key.c {{{ */
-void subKeyInit(void);                                            ///< Init keymap
-SubKey *subKeyNew(const char *key,                                ///< Create key
+/* grab.c {{{ */
+void subGrabInit(void);                                           ///< Init keymap
+SubGrab *subGrabNew(const char *name,                             ///< Create grab
   const char *value);
-KeySym subKeyGet(void);                                           ///< Get key
-SubKey *subKeyFind(int code, unsigned int mod);                   ///< Find key
-void subKeyGrab(Window win);                                      ///< Grab keys for window
-void subKeyUngrab(Window win);                                    ///< Ungrab keys for window
-int subKeyCompare(const void *a, const void *b);                  ///< Compare keys
-void subKeyKill(SubKey *k);                                       ///< Kill key
+KeySym subGrabGet(void);                                          ///< Get grab
+SubGrab *subGrabFind(int code, unsigned int mod);                 ///< Find grab
+void subGrabSet(Window win);                                      ///< Grab window
+void subGrabUnset(Window win);                                    ///< Ungrab window
+int subGrabCompare(const void *a, const void *b);                 ///< Compare grabs
+void subGrabKill(SubGrab *g);                                     ///< Kill grab
 /* }}} */
 
 /* ruby.c {{{ */

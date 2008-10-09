@@ -138,9 +138,9 @@ RubyHashIterate(VALUE key,
   /* Create various types */
   switch(extra)
     {
-      case SUB_TYPE_KEY:
-        entry = (void *)subKeyNew(STR2CSTR(key), STR2CSTR(value));
-        subArrayPush(subtle->keys, entry);
+      case SUB_TYPE_GRAB:
+        entry = (void *)subGrabNew(STR2CSTR(key), STR2CSTR(value));
+        subArrayPush(subtle->grabs, entry);
         break;
 
       case SUB_TYPE_TAG:
@@ -153,8 +153,7 @@ RubyHashIterate(VALUE key,
         subArrayPush(subtle->views, entry);
         break;
 
-      default: 
-        subUtilLogDebug("Never to be reached?\n");
+      default: subUtilLogDebug("Never to be reached?\n");
     }
 
   return Qnil;
@@ -246,11 +245,16 @@ RubyParseConfig(VALUE path)
   attrs.save_under       = False;
   attrs.event_mask       = ButtonPressMask|ExposureMask|VisibilityChangeMask;
 
-  subtle->bar.win     = WINNEW(DefaultRootWindow(subtle->disp), 0, 0, 
-    DisplayWidth(subtle->disp, DefaultScreen(subtle->disp)), subtle->th, 0, CWBackPixel|CWSaveUnder|CWEventMask);
-  subtle->bar.caption = XCreateSimpleWindow(subtle->disp, subtle->bar.win, 0, 0, 1, subtle->th, 0, 0, subtle->colors.norm);
-  subtle->bar.views   = XCreateSimpleWindow(subtle->disp, subtle->bar.win, 0, 0, 1, subtle->th, 0, 0, subtle->colors.norm);
-  subtle->bar.sublets = XCreateSimpleWindow(subtle->disp, subtle->bar.win, 0, 0, 1, subtle->th, 0, 0, subtle->colors.norm);
+  subtle->bar.win     = XCreateWindow(subtle->disp, DefaultRootWindow(subtle->disp), 
+    0, 0, DisplayWidth(subtle->disp, DefaultScreen(subtle->disp)), subtle->th, 
+    0, CopyFromParent, InputOutput, CopyFromParent, 
+    CWBackPixel|CWSaveUnder|CWEventMask, &attrs); 
+  subtle->bar.caption = XCreateSimpleWindow(subtle->disp, subtle->bar.win, 0, 0, 1,
+    subtle->th, 0, 0, subtle->colors.norm);
+  subtle->bar.views   = XCreateSimpleWindow(subtle->disp, subtle->bar.win, 0, 0, 1,
+    subtle->th, 0, 0, subtle->colors.norm);
+  subtle->bar.sublets = XCreateSimpleWindow(subtle->disp, subtle->bar.win, 0, 0, 1,
+    subtle->th, 0, 0, subtle->colors.norm);
 
   XSelectInput(subtle->disp, subtle->bar.views, ButtonPressMask); 
 
@@ -276,8 +280,13 @@ RubyParseConfig(VALUE path)
   XClearWindow(subtle->disp, DefaultRootWindow(subtle->disp));
 
   /* Config: Keys */
-  type   = SUB_TYPE_KEY;
+  type   = SUB_TYPE_GRAB;
   config = rb_funcall(hash, fetch, 1, rb_str_new2("Keys"));
+  rb_hash_foreach(config, RubyHashIterate, type);
+
+  /* Config: Mouse */
+  type   = SUB_TYPE_GRAB;
+  config = rb_funcall(hash, fetch, 1, rb_str_new2("Mouse"));
   rb_hash_foreach(config, RubyHashIterate, type);
 
   /* Config: Tags */
@@ -357,12 +366,12 @@ subRubyLoadConfig(const char *file)
   rb_protect(RubyParseConfig, rb_str_new2(config), &status);
   if(Qundef == status) subUtilLogError("Failed reading/parsing config\n");
 
-  /* Keys */
-  if(0 == subtle->keys->ndata) 
+  /* Grabs */
+  if(0 == subtle->grabs->ndata) 
     {
-      subUtilLogWarn("No keys found\n");
+      subUtilLogWarn("No grabs found\n");
     }
-  else subArraySort(subtle->keys, subKeyCompare);
+  else subArraySort(subtle->grabs, subGrabCompare);
 
   /* Tags */
   if(2 == subtle->tags->ndata) 

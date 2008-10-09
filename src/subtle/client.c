@@ -97,8 +97,8 @@ subClientNew(Window win)
   /* Update client */
   XAddToSaveSet(subtle->disp, c->win);
   XSelectInput(subtle->disp, c->win, SubstructureRedirectMask|SubstructureNotifyMask|
-    ExposureMask|VisibilityChangeMask| EnterWindowMask|FocusChangeMask|
-    KeyPressMask|ButtonPressMask|PropertyChangeMask|StructureNotifyMask);
+    ExposureMask|VisibilityChangeMask|EnterWindowMask|FocusChangeMask|
+    KeyPressMask|ButtonPressMask|ButtonReleaseMask|PropertyChangeMask);
   XSetWindowBorderWidth(subtle->disp, c->win, subtle->bw);
   XSaveContext(subtle->disp, c->win, 1, (void *)c);
 
@@ -123,8 +123,8 @@ subClientNew(Window win)
     {
       for(i = 0; i < n; i++)
         {
-          if(protos[i] == subEwmhFind(SUB_EWMH_WM_TAKE_FOCUS))          c->flags |= SUB_PREF_FOCUS;
-          else if(protos[i] == subEwmhFind(SUB_EWMH_WM_DELETE_WINDOW))  c->flags |= SUB_PREF_CLOSE;
+          if(protos[i] == subEwmhFind(SUB_EWMH_WM_TAKE_FOCUS))         c->flags |= SUB_PREF_FOCUS;
+          else if(protos[i] == subEwmhFind(SUB_EWMH_WM_DELETE_WINDOW)) c->flags |= SUB_PREF_CLOSE;
         }
       XFree(protos);
     }
@@ -265,18 +265,18 @@ subClientFocus(SubClient *c)
             {
               if(!(f->flags & SUB_STATE_DEAD)) 
                 {
-                  subKeyUngrab(f->frame);
+                  subGrabUnset(f->frame);
                   subClientRender(f);
                 }
             }
-          else subKeyUngrab(win);
+          else subGrabUnset(win);
         } 
       XSetInputFocus(subtle->disp, c->win, RevertToNone, CurrentTime);
 
       /* Caption */
       subtle->caption = c->name;
  
-      subKeyGrab(c->win);
+      subGrabSet(c->win);
       subClientRender(c);
       subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_ACTIVE_WINDOW, &c->win, 1);
       subViewUpdate();
