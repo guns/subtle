@@ -47,12 +47,22 @@ Keys:
   ViewJump3: "A-3"                # Jump to view 3
   ViewJump4: "A-4"                # Jump to view 4
   ViewJump5: "A-5"                # Jump to view 5
-  ViewMnemonic: "A-j"             # Jump to view
   "subtag.sh -c -t": "A-S-c"      # Exec tag menu (client/tag)
   "subtag.sh -c -u": "A-C-c"      # Exec tag menu (client/untag)
   "subtag.sh -v -t": "A-S-v"      # Exec tag menu (view/tag)
   "subtag.sh -v -u": "A-C-v"      # Exec tag menu (view/untag)
   "xterm +sb": "S-F1"             # Exec a term
+
+#
+# Mouse 
+#
+# Mouse buttons:
+# B1 = Button1   B2 = Button2
+# B3 = Button3
+#
+Mouse:
+  Move: "S-B1"                    # Move window
+  Resize: "S-B3"                  # Resize window
 
 #
 # Tags
