@@ -14,20 +14,6 @@
 #include <signal.h>
 #include "subtle.h"
 
-#ifdef DEBUG
-static int debug = 0;
-
- /** subUtilLogSetDebug {{{
-  * @brief Enable debugging messages
-  **/
-
-void
-subUtilLogSetDebug(void)
-{
-  debug++;
-} /* }}} */
-#endif /* DEBUG */
-
  /** subUtilLog {{{
   * @brief Print messages depending on type
   * @param[in]  type    Message type
@@ -48,7 +34,7 @@ subUtilLog(int type,
   char buf[255];
 
 #ifdef DEBUG
-  if(!debug && !type) return;
+  if(!subtle->debug && !type) return;
 #endif /* DEBUG */
 
   va_start(ap, format);
@@ -77,10 +63,10 @@ subUtilLogXError(Display *disp,
   XErrorEvent *ev)
 {
 #ifdef DEBUG
-  if(debug) return 0;
+  if(subtle->debug) return 0;
 #endif /* DEBUG */  
 
-  if(ev->error_code == BadAccess && ev->resourceid == DefaultRootWindow(disp))
+  if(BadAccess == ev->error_code && DefaultRootWindow(disp) == ev->resourceid)
     {
       subUtilLogError("Seems there is another WM running. Exiting.\n");
     }
@@ -139,6 +125,7 @@ subUtilFind(Window win,
   XPointer *data = NULL;
 
   assert(win && id);
+
   return XFindContext(subtle->disp, win, id, (XPointer *)&data) != XCNOENT ? data : NULL;
 } /* }}} */
 

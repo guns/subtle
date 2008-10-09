@@ -122,7 +122,7 @@ main(int argc,
           case 's': sublets = optarg;      break;
           case 'v': Version();             return 0;
 #ifdef DEBUG          
-          case 'D': subUtilLogSetDebug();  break;
+          case 'D': subtle->debug++;       break;
 #endif /* DEBUG */
           case '?':
             printf("Try `%s --help for more information\n", PKG_NAME);

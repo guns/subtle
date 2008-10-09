@@ -38,10 +38,6 @@
 /* }}} */
 
 /* Macros {{{ */
-#define WINNEW(parent,x,y,width,height,border,mask) \
-  XCreateWindow(subtle->disp, parent, x, y, width, height, border, CopyFromParent, \
-    InputOutput, CopyFromParent, mask, &attrs);                   ///< Shortcut
-
 #define FLAGS int                                                 ///< Flags
 #define TAGS int                                                  ///< Tags
 
@@ -179,25 +175,28 @@
 /* Typedefs {{{ */
 typedef struct subsubtle_t /* {{{ */
 {
-  Display            *disp;                                       ///< Subtle Xorg display
   int                th, bw, fx, fy;                              ///< Subtle tab height, border width, font metrics
-  XFontStruct        *xfs;                                        ///< Subtle font
-
-  Window             focus;                                       ///< Subtle focus
   char               *caption;                                    ///< Subtle caption
 
-  struct subsublet_t *sublet;                                     ///< Subtle first sublet
+  Display            *disp;                                       ///< Subtle Xorg display
+  Window             focus;                                       ///< Subtle focus
+  XFontStruct        *xfs;                                        ///< Subtle font
+
   struct subview_t   *cv;                                         ///< Subtle current view
-  
+  struct subsublet_t *sublet;                                     ///< Subtle first sublet
   struct subarray_t  *keys;                                       ///< Subtle keys
   struct subarray_t  *tags;                                       ///< Subtle tags
   struct subarray_t  *views;                                      ///< Subtle views
   struct subarray_t  *clients;                                    ///< Subtle clients
   struct subarray_t  *sublets;                                    ///< Subtle sublets
 
+#ifdef DEBUG
+  int                debug;                                       ///< Subtle debug
+#endif /* DEBUG */
+
 #ifdef HAVE_SYS_INOTIFY_H
   int                notify;                                      ///< Subtle inotify descriptor
-#endif
+#endif /* HAVE_SYS_INOTIFY_H */
 
   struct
   {
@@ -218,11 +217,6 @@ typedef struct subsubtle_t /* {{{ */
   {
     Cursor           square, move, arrow, horz, vert, resize;                                
   } cursors;                                                      ///< Subtle cursors
-
-  struct
-  {
-    int              click;
-  } hooks;                            
 } SubSubtle; /* }}} */
 
 typedef struct subarray_t /* {{{ */
@@ -394,7 +388,6 @@ void subEventLoop(void);                                          ///< Event loo
 
 /* util.c {{{ */
 #ifdef DEBUG
-void subUtilLogSetDebug(void);
 #define subUtilLogDebug(...)  subUtilLog(0, __FILE__, __LINE__, __VA_ARGS__);
 #else
 #define subUtilLogDebug(...)
