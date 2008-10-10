@@ -81,7 +81,7 @@ subGrabNew(const char *key,
     }
 	else
 		{
-			g->flags	|= SUB_GRAB_EXEC;
+			g->flags |= SUB_GRAB_EXEC;
 			g->string	= strdup(key);
 		}
 

@@ -140,17 +140,17 @@ RubyHashIterate(VALUE key,
     {
       case SUB_TYPE_GRAB:
         entry = (void *)subGrabNew(STR2CSTR(key), STR2CSTR(value));
-        subArrayPush(subtle->grabs, entry);
+        if(entry) subArrayPush(subtle->grabs, entry);
         break;
 
       case SUB_TYPE_TAG:
         entry = (void *)subTagNew(STR2CSTR(key), STR2CSTR(value));
-        subArrayPush(subtle->tags, entry);
+        if(entry) subArrayPush(subtle->tags, entry);
         break;
 
       case SUB_TYPE_VIEW:
         entry = (void *)subViewNew(STR2CSTR(key), STR2CSTR(value));
-        subArrayPush(subtle->views, entry);
+        if(entry) subArrayPush(subtle->views, entry);
         break;
 
       default: subUtilLogDebug("Never to be reached?\n");
