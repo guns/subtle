@@ -97,7 +97,7 @@ int
 main(int argc,
   char *argv[])
 {
-  int c, debug = 0;
+  int c;
   char *sublets = NULL, *display = NULL;
   struct sigaction act;
   static struct option long_options[] =
@@ -112,6 +112,10 @@ main(int argc,
 #endif /* DEBUG */
     { 0, 0, 0, 0}
   };
+
+#ifdef DEBUG
+  int debug = 0;
+#endif /* DEBUG */  
 
   while((c = getopt_long(argc, argv, "c:d:hs:vD", long_options, NULL)) != -1)
     {
