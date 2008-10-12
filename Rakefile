@@ -15,7 +15,6 @@ require("yaml")
 # 
 # Settings
 #
-
 # Options / defines {{{
 @options = {
   "destdir"    => "/",
@@ -74,17 +73,17 @@ CLOBBER.include(@options["builddir"])
 #
 # Funcs
 #
-
 # Func: silent_sh {{{
 def silent_sh(cmd, msg, &block)
   # Hide raw messages?
-  if(true === RakeFileUtils.verbose_flag) then
-    rake_output_message(Array == cmd.class ? cmd.join(" ") : cmd) #< Check type
-  else
+
+  if(:default == RakeFileUtils.verbose) then
     rake_output_message(msg)
+  else
+    rake_output_message(Array == cmd.class ? cmd.join(" ") : cmd) #< Check type
   end
 
-  unless RakeFileUtils.nowrite_flag
+  unless RakeFileUtils.nowrite
     res = system(cmd)
     block.call(res, $?)
   end
@@ -116,7 +115,6 @@ end # }}}
 # 
 # Tasks
 #
-
 # Task: default {{{
 desc("Configure and build subtle")
 task(:default => [:config, :build])
@@ -268,7 +266,6 @@ end # }}}
 #
 # File tasks
 #
-
 # Task: compile {{{
 (SRC_WM | SRC_SHD | SRC_RMT | SRC_RBE).each do |src|
   out = File.join(@options["builddir"], File.basename(src).ext("o"))
