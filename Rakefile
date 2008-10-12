@@ -66,8 +66,8 @@ HEADER  = [
 
 # Miscellaneous {{{
 Logging.logfile("config.log") #< mkmf log
-CLEAN.include(PG_WM, PG_RMT, "#{PG_RBE}.so", OBJ_WM, OBJ_SHD, OBJ_RMT, OBJ_RBE, "config.h", "config.log", "config.yml")
-CLOBBER.include(@options["builddir"])
+CLEAN.include(PG_WM, PG_RMT, "#{PG_RBE}.so", OBJ_WM, OBJ_SHD, OBJ_RMT, OBJ_RBE)
+CLOBBER.include(@options["builddir"], "config.h", "config.log", "config.yml")
 # }}}
 
 #
