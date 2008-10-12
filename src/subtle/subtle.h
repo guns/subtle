@@ -127,7 +127,7 @@
 #define SUB_TYPE_VIEW          (1L << 3)                          ///< View
 #define SUB_TYPE_LAYOUT        (1L << 4)                          ///< Layout
 #define SUB_TYPE_SUBLET        (1L << 5)                          ///< Sublet
-#define SUB_TYPE_GRAB           (1L << 6)                          ///< Key
+#define SUB_TYPE_GRAB          (1L << 6)                          ///< Grab
 
 /* Tile modes */
 #define SUB_TILE_VERT          (1L << 7)                          ///< Tile vert
@@ -140,9 +140,8 @@
 #define SUB_STATE_FULL         (1L << 14)                         ///< Fullscreen window
 #define SUB_STATE_RESIZE       (1L << 15)                         ///< Resized window
 #define SUB_STATE_STACK        (1L << 16)                         ///< Stacked tiling window
-#define SUB_STATE_TRANS        (1L << 17)                         ///< Transient window
-#define SUB_STATE_DEAD         (1L << 18)                         ///< Dead window
-#define SUB_STATE_TILED        (1L << 19)                         ///< Tiled client
+#define SUB_STATE_DEAD         (1L << 17)                         ///< Dead window
+#define SUB_STATE_TILED        (1L << 18)                         ///< Tiled client
 
 /* Client preferences */
 #define SUB_PREF_INPUT         (1L << 20)                         ///< Active/passive focus-model
@@ -163,10 +162,13 @@
 #define SUB_DRAG_SWAP          (1L << 11)                         ///< Drag swap
 
 /* Grabs */
-#define SUB_GRAB_VIEW_JUMP     (1L << 10)                         ///< Jump to view
-#define SUB_GRAB_EXEC          (1L << 11)                         ///< Exec an app
-#define SUB_GRAB_MOUSE_MOVE    (1L << 12)                         ///< Resize window
-#define SUB_GRAB_MOUSE_RESIZE  (1L << 13)                         ///< Move window
+#define SUB_GRAB_KEY           (1L << 10)                         ///< Key grab
+#define SUB_GRAB_MOUSE         (1L << 11)                         ///< Mouse grab  
+#define SUB_GRAB_VIEW_JUMP     (1L << 12)                         ///< Jump to view
+#define SUB_GRAB_EXEC          (1L << 13)                         ///< Exec an app
+#define SUB_GRAB_WINDOW_RAISE  (1L << 14)                         ///< Raise window
+#define SUB_GRAB_WINDOW_MOVE   (1L << 15)                         ///< Resize window
+#define SUB_GRAB_WINDOW_RESIZE (1L << 16)                         ///< Move window
 
 /* Data types */
 #define SUB_DATA_STRING        (1L << 10)                         ///< String data
@@ -310,8 +312,6 @@ SubClient *subClientNew(Window win);                              ///< Create ne
 void subClientConfigure(SubClient *c);                            ///< Send configure request
 void subClientRender(SubClient *c);                               ///< Render client
 void subClientFocus(SubClient *c);                                ///< Focus client
-void subClientMap(SubClient *c);                                  ///< Map client  
-void subClientUnmap(SubClient *c);                                ///< Unmap client
 void subClientDrag(SubClient *c, int mode);                       ///< Move/drag client
 void subClientToggle(SubClient *c, int type);                     ///< Toggle client state
 void subClientFetchName(SubClient *c);                            ///< Fetch client name
