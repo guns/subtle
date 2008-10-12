@@ -140,7 +140,7 @@ subSubletKill(SubSublet *s)
 {
   assert(s);
 
-  printf("Killing sublet (#%ld)\n", s->recv);
+  printf("Killing sublet\n");
 
   /* Update linked list */
   if(subtle->sublet == s) subtle->sublet = s->next;
