@@ -18,13 +18,14 @@ require("ftools")
 #
 # Options / defines {{{
 @options = {
-  "destdir"    => "/",
-  "prefix"     => "/usr/local",
+  "destdir"    => "",
+  "prefix"     => "$(destdir)/usr/local",
   "bindir"     => "$(prefix)/bin",
   "sysconfdir" => "$(prefix)/etc",
   "datadir"    => "$(prefix)/share",
   "debug"      => "no",
   "builddir"   => "build",
+  "archdir"    => "",
   "cflags"     => "-Wall -Wpointer-arith -Wstrict-prototypes -Wunused -Wshadow -std=gnu99",
   "cpppath"    => "-I. -I$(builddir) -Isrc -Isrc/shared -idirafter$(archdir)",
   "ldflags"    => "-L$(archdir) -l$(RUBY_SO_NAME)",
@@ -145,27 +146,20 @@ task(:config) do
     if("yes" == @options["debug"]) then
       @options["cflags"] << " -g"
     end
-
-    # Destdir
-    if(ENV["destdir"]) then
-      @options["prefix"] = "$(destdir)/$(prefix)"
-    end
     
     # Get revision
-    begin
-      @options["revision"] = `hg tip`.match(/changeset:\s*(\d+).*/)[1]
-    rescue
+    if((@hg = find_executable0("hg")))
+      @options["revision"] = `#{@hg} tip`.match(/changeset:\s*(\d+).*/)[1]
+    else
       @options["revision"] = "99999"
     end  
 
-    # Expand options
-    @options.each do |k, v|
-      @options[k] = Config.expand(v, @options.merge(CONFIG))
-    end
-
-    # Expand defines
-    @defines.each do |k, v|
-      @defines[k] = Config.expand(v, @options.merge(CONFIG))
+    # Expand options and defines
+    @options["archdir"] = Config.expand(CONFIG["archdir"]) #< Save before merging
+    [@options, @defines].each do |hash|
+      hash.each do |k, v|
+        @options[k] = Config.expand(v, CONFIG.merge(@options))
+      end
     end
    
     # Check header
@@ -218,8 +212,8 @@ task(:config) do
 
 #{@defines["PKG_NAME"]} #{@defines["PKG_VERSION"]}
 -----------------
-Install path........: #{@options["prefix"]}
-Binary..............: #{@options["bindir"]}
+Install prefix......: #{@options["prefix"]}
+Binaries............: #{@options["bindir"]}
 Configuration.......: #{@defines["DIR_CONFIG"]}
 Sublets.............: #{@defines["DIR_SUBLET"]}
 
@@ -248,6 +242,8 @@ task(PG_RBE => [:config, OBJ_SHD])
 # Task: install {{{
 desc("Install subtle")
 task(:install => [:config, :build]) do
+  File.makedirs '/usr/lib/ruby'
+# 644
   message("Not implemented yet!\n")
 end # }}}
 
