@@ -11,6 +11,8 @@
   **/
 
 #include <stdarg.h>
+#include <unistd.h>
+#include <sys/types.h>
 #include <dirent.h>
 #include <fnmatch.h>
 #include <fcntl.h>
@@ -84,7 +86,8 @@ RubyParseColor(VALUE hash,
     {
       subUtilLogWarn("Can't load color '%s'.\n", key);
     }
-  else if(!XAllocColor(subtle->disp, cmap, &color)) subUtilLogWarn("Can't alloc color '%s'.\n", key);
+  else if(!XAllocColor(subtle->disp, cmap, &color)) 
+    subUtilLogWarn("Can't alloc color '%s'.\n", key);
 
   return color.pixel;
 } /* }}} */
@@ -249,7 +252,7 @@ RubyConfigParse(VALUE path)
     0, CopyFromParent, InputOutput, CopyFromParent, 
     CWBackPixel|CWSaveUnder|CWEventMask, &attrs); 
   subtle->bar.caption = XCreateSimpleWindow(subtle->disp, subtle->bar.win, 0, 0, 1,
-    subtle->th, 0, 0, subtle->colors.norm);
+    subtle->th, 0, 0, subtle->colors.focus);
   subtle->bar.views   = XCreateSimpleWindow(subtle->disp, subtle->bar.win, 0, 0, 1,
     subtle->th, 0, 0, subtle->colors.norm);
   subtle->bar.sublets = XCreateSimpleWindow(subtle->disp, subtle->bar.win, 0, 0, 1,
@@ -267,15 +270,16 @@ RubyConfigParse(VALUE path)
   gvals.line_width = subtle->bw;
   XChangeGC(subtle->disp, subtle->gcs.border, GCForeground|GCLineWidth, &gvals);
 
-  gvals.foreground  = subtle->colors.font;
-  gvals.font        = subtle->xfs->fid;
+  gvals.foreground = subtle->colors.font;
+  gvals.font       = subtle->xfs->fid;
   XChangeGC(subtle->disp, subtle->gcs.font, GCForeground|GCFont, &gvals);
 
   /* Update root window */
   attrs.cursor           = subtle->cursors.arrow;
   attrs.background_pixel = subtle->colors.bg;
   attrs.event_mask       = SubstructureRedirectMask|SubstructureNotifyMask|PropertyChangeMask;
-  XChangeWindowAttributes(subtle->disp, DefaultRootWindow(subtle->disp), CWCursor|CWBackPixel|CWEventMask, &attrs);
+  XChangeWindowAttributes(subtle->disp, DefaultRootWindow(subtle->disp), 
+    CWCursor|CWBackPixel|CWEventMask, &attrs);
   XClearWindow(subtle->disp, DefaultRootWindow(subtle->disp));
 
   /* Config: Keys */
@@ -310,7 +314,7 @@ RubyFilter(const struct dirent *entry)
 void
 subRubyInit(void)
 {
-  VAULUE sublet = Qnil;
+  VALUE sublet = Qnil;
 
   RUBY_INIT_STACK;
   ruby_init();

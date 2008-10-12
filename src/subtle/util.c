@@ -12,6 +12,7 @@
 
 #include <stdarg.h>
 #include <signal.h>
+#include <sys/time.h>
 #include "subtle.h"
 
  /** subUtilLog {{{

@@ -10,6 +10,7 @@
   * See the file COPYING.
   **/
 
+#include <X11/Xatom.h>
 #include "subtle.h"
 
 /* ClientMask {{{ */

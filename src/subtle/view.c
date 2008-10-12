@@ -296,10 +296,11 @@ subViewRender(void)
       XFillRectangle(subtle->disp, subtle->bar.win, subtle->gcs.border, 0, 2, 
         DisplayWidth(subtle->disp, DefaultScreen(subtle->disp)), subtle->th - 4);  
 
+      if(subtle->cv) XClearWindow(subtle->disp, subtle->cv->frame); ///< Clear view frame
+
       /* Caption */
       if(subtle->caption)
         {
-          XSetWindowBackground(subtle->disp, subtle->bar.caption, subtle->colors.focus);
           XClearWindow(subtle->disp, subtle->bar.caption);
           XDrawString(subtle->disp, subtle->bar.caption, subtle->gcs.font, 3, subtle->fy - 1, 
             subtle->caption, strlen(subtle->caption));
@@ -310,9 +311,11 @@ subViewRender(void)
         {
           SubView *v = VIEW(subtle->views->data[i]);
 
-          XSetWindowBackground(subtle->disp, v->button, (subtle->cv == v) ? subtle->colors.focus : subtle->colors.norm);
+          XSetWindowBackground(subtle->disp, v->button, 
+            (subtle->cv == v) ? subtle->colors.focus : subtle->colors.norm);
           XClearWindow(subtle->disp, v->button);
-          XDrawString(subtle->disp, v->button, subtle->gcs.font, 3, subtle->fy - 1, v->name, strlen(v->name));
+          XDrawString(subtle->disp, v->button, subtle->gcs.font, 3, subtle->fy - 1, 
+            v->name, strlen(v->name));
         }
 
 

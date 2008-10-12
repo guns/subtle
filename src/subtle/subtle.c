@@ -12,6 +12,7 @@
 
 #include <getopt.h>
 #include <sys/wait.h>
+#include <signal.h>
 #include "subtle.h"
 
 #ifdef HAVE_EXECINFO_H
@@ -141,7 +142,10 @@ main(int argc,
   sigaction(SIGCHLD, &act, NULL);
 
   subtle = SUBTLE(subUtilAlloc(1, sizeof(SubSubtle)));
-  subtle->debug = debug; ///< Kind of cached
+
+#ifdef DEBUG
+  subtle->debug = debug;
+#endif /* DEBUG */
 
   /* Init */
   subDisplayInit(display);

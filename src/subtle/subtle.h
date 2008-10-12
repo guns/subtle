@@ -17,17 +17,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
 #include <errno.h>
 #include <assert.h>
 #include <regex.h>
-#include <unistd.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <X11/cursorfont.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-#include <X11/Xatom.h>
 #include <X11/Xmd.h>
 
 #include "config.h"
@@ -45,6 +39,7 @@
 #define WINW(c)   (c->rect.width - 2 * subtle->bw)                ///< Get real width
 #define WINH(c)   (c->rect.height - 2 * subtle->bw)               ///< Get real height
 
+/* Casts */
 #define ARRAY(a)  ((SubArray *)a)                                 ///< Cast to SubArray
 #define CLIENT(c) ((SubClient *)c)                                ///< Cast to SubClient
 #define GRAB(g)   ((SubGrab *)g)                                  ///< Cast to SubGrab

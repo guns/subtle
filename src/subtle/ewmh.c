@@ -10,6 +10,9 @@
   * See the file COPYING.
   **/
 
+#include <sys/types.h>
+#include <unistd.h>
+#include <X11/Xatom.h>
 #include "subtle.h"
 
 #define NATOMS 53

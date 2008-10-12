@@ -10,6 +10,8 @@
   * See the file COPYING.
   **/
 
+#include <unistd.h>
+#include <X11/Xatom.h>
 #include "subtle.h"
 
 #ifdef HAVE_SYS_INOTIFY_H

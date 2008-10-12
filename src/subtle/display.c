@@ -10,6 +10,7 @@
   * See the file COPYING.
   **/
 
+#include <X11/cursorfont.h>
 #include "subtle.h"
 
  /** subDisplayInit {{{
@@ -93,6 +94,7 @@ subDisplayScan(void)
               /* Create new client */
               SubClient *c = subClientNew(wins[i]);
               subArrayPush(subtle->clients, c);
+              XUnmapWindow(subtle->disp, wins[i]);
             }
         }
     }
