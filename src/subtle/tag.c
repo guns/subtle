@@ -43,9 +43,11 @@ subTagNew(char *name,
 
   assert(name);
 
+  if(subTagFind(name, NULL)) return;
+
   t = TAG(subUtilAlloc(1, sizeof(SubTag)));
-  t->name    = strdup(name);
-  t->flags  = SUB_TYPE_TAG;
+  t->name  = strdup(name);
+  t->flags = SUB_TYPE_TAG;
   if(regex) t->preg = subUtilRegexNew(regex);
 
   printf("Adding tag (%s)\n", name);
