@@ -34,35 +34,32 @@ Colors:
   Background: "#9A9C95"           # Color of root background
 
 #
-# Keys
+# Grabs
 #
 # Modifier keys:
-# A = Alt key       S = Shift key
-# C = Control key   W = Super (Windows key)
-# M = Meta key
+# A  = Alt key       S = Shift key
+# C  = Control key   W = Super (Windows key)
+# M  = Meta key
+
+# Mouse buttons:
+# B1 = Button1       B2 = Button2
+# B3 = Button3       B4 = Button4
+# B5 = Button5
 #
-Keys:
+Grabs:
   ViewJump1: "A-1"                # Jump to view 1
   ViewJump2: "A-2"                # Jump to view 2
   ViewJump3: "A-3"                # Jump to view 3
   ViewJump4: "A-4"                # Jump to view 4
   ViewJump5: "A-5"                # Jump to view 5
+  MouseRaise: "B1"                # Raise window
+  MouseMove: "S-B1"               # Move window
+  MouseResize: "S-B3"             # Resize window
   "subtag.sh -c -t": "A-S-c"      # Exec tag menu (client/tag)
   "subtag.sh -c -u": "A-C-c"      # Exec tag menu (client/untag)
   "subtag.sh -v -t": "A-S-v"      # Exec tag menu (view/tag)
   "subtag.sh -v -u": "A-C-v"      # Exec tag menu (view/untag)
   "xterm +sb": "S-F1"             # Exec a term
-
-#
-# Mouse 
-#
-# Mouse buttons:
-# B1 = Button1   B2 = Button2
-# B3 = Button3
-#
-Mouse:
-  Move: "S-B1"                    # Move window
-  Resize: "S-B3"                  # Resize window
 
 #
 # Tags
@@ -71,6 +68,7 @@ Tags:
   terms: "[ur]+xvt|xterm"
   browser: "firefox|opera"
   editor: "gvim|scite"
+  float: "mplayer"
 
 #
 # Views
