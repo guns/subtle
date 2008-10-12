@@ -56,46 +56,35 @@ subGrabNew(const char *name,
   g = GRAB(subUtilAlloc(1, sizeof(SubGrab)));
 	g->flags = SUB_TYPE_GRAB;
 
-  len = strlen(name);
   tok = strtok((char *)value, "-");
 
 	/* @todo Too slow? */	
-  switch(len)
+  if(!strncmp(name, "ViewJump", len - 1)) ///< Catch-all
     {
-      case 9: /* {{{ */
-        if(!strncmp(name, "ViewJump", len - 1)) ///< Catch-all
-          {
-            char *desktop = (char *)name + 8; ///< Get view number
-            if(desktop) 
-              {
-                g->number = atoi(desktop) - 1; ///< Decrease for array index
-                g->flags |= (SUB_GRAB_KEY|SUB_GRAB_VIEW_JUMP);
-              }
-            else 
-              {
-                subUtilLogWarn("Can't assign keychain `%s'.\n", name);
-                free(g);
+      char *desktop = (char *)name + 8; ///< Get view number
+      if(desktop) 
+        {
+          g->number = atoi(desktop) - 1; ///< Decrease for array index
+          g->flags |= (SUB_GRAB_KEY|SUB_GRAB_VIEW_JUMP);
+        }
+      else 
+        {
+          subUtilLogWarn("Can't assign keychain `%s'.\n", name);
+          free(g);
 
-                return NULL;
-              }
-          }
-        else if(!strncmp(name, "MouseMove", len))
-          g->flags |= (SUB_GRAB_MOUSE|SUB_GRAB_WINDOW_MOVE); 
-      break; /* }}} */
-
-      case 10: /* {{{ */
-        if(!strncmp(name, "MouseRaise", 10))
-          g->flags |= (SUB_GRAB_MOUSE|SUB_GRAB_WINDOW_RAISE);
-        break; /* }}} */
-
-      case 11: /* {{{ */
-        if(!strncmp(name, "MouseResize", 11))
-          g->flags |= (SUB_GRAB_MOUSE|SUB_GRAB_WINDOW_RESIZE);
-        break; /* }}} */
-
-      default: /* {{{ */
-			  g->flags |= (SUB_GRAB_KEY|SUB_GRAB_EXEC);
-  			g->string	= strdup(name); /* }}} */
+          return NULL;
+        }
+    }
+  else if(!strncmp(name, "WindowMove", len))
+    g->flags |= (SUB_GRAB_MOUSE|SUB_GRAB_WINDOW_MOVE); 
+  else if(!strncmp(name, "WindowRaise", 10))
+    g->flags |= (SUB_GRAB_MOUSE|SUB_GRAB_WINDOW_RAISE);
+  else if(!strncmp(name, "WindowResize", 11))
+    g->flags |= (SUB_GRAB_MOUSE|SUB_GRAB_WINDOW_RESIZE);
+  else
+    {
+      g->flags |= (SUB_GRAB_KEY|SUB_GRAB_EXEC);
+      g->string	= strdup(name); /* }}} */
     }
 
 	while(tok)
