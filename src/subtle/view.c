@@ -131,7 +131,7 @@ subViewConfigure(SubView *v)
         {
           SubClient *c = CLIENT(subtle->clients->data[i]);
 
-          if(v->tags & c->tags && !(c->flags & (SUB_STATE_TRANS|SUB_STATE_FLOAT|SUB_STATE_FULL)))
+          if(v->tags & c->tags && !(c->flags & (SUB_STATE_FLOAT|SUB_STATE_FULL)))
             {
               XReparentWindow(subtle->disp, c->win, v->frame, 0, 0);
               
@@ -143,7 +143,7 @@ subViewConfigure(SubView *v)
               /* EWMH: Desktop */
               subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);          
 
-              subClientMap(c);
+              XMapWindow(c->win);
               if(!(c->flags & SUB_STATE_TILED)) 
                 {
                   x += cw;
