@@ -11,6 +11,7 @@
 require("rake/clean")
 require("mkmf")
 require("yaml")
+require("ftools")
 
 # 
 # Settings
@@ -268,9 +269,12 @@ end # }}}
 #
 # Task: compile {{{
 (SRC_WM | SRC_SHD | SRC_RMT | SRC_RBE).each do |src|
-  out = File.join(@options["builddir"], File.basename(src).ext("o"))
+  out    = File.join(@options["builddir"], File.basename(src).ext("o"))
+  cflags = @options["cflags"]
+  cflags << " -fPIC" if("shared.c" == File.basename(src))
+
   file(out => src) do
-    silent_sh("gcc -o #{out} -c #{@options["cflags"]} #{@options["cpppath"]} #{src}", "CC #{out}") do |ok, status|
+    silent_sh("gcc -o #{out} -c #{cflags} #{@options["cpppath"]} #{src}", "CC #{out}") do |ok, status|
       ok or fail("Compiler failed with status #{status.exitstatus}")
     end
   end
