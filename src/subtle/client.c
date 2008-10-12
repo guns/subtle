@@ -114,7 +114,7 @@ subClientNew(Window win)
       if(hints->flags & StateHint) subClientSetWMState(c, hints->initial_state);
       else subClientSetWMState(c, NormalState);
       if(hints->input) c->flags |= SUB_PREF_INPUT;
-      if(hints->flags & XUrgencyHint) c->flags |= SUB_STATE_TRANS;
+      if(hints->flags & XUrgencyHint) c->flags |= SUB_STATE_FLOAT;
       XFree(hints);
     }
   
@@ -155,7 +155,7 @@ subClientNew(Window win)
 
   /* Check for dialog windows etc. */
   XGetTransientForHint(subtle->disp, win, &unnused);
-  if(unnused && !(c->flags & SUB_STATE_TRANS)) c->flags |= SUB_STATE_TRANS;
+  if(unnused && !(c->flags & SUB_STATE_FLOAT)) c->flags |= SUB_STATE_FLOAT;
 
   printf("Adding client (%s)\n", c->name);
   subUtilLogDebug("new=client, name=%s, win=%#lx\n", c->name, win);
@@ -281,34 +281,6 @@ subClientFocus(SubClient *c)
       subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_ACTIVE_WINDOW, &c->win, 1);
       subViewUpdate();
     }
-} /* }}} */
-
- /** subClientMap {{{
-  * @brief Map client with all subwindows to screen
-  * @param[in]  c  A #SubClient
-  **/
-
-void
-subClientMap(SubClient *c)
-{
-  assert(c);
-
-  XMapSubwindows(subtle->disp, c->win);
-  XMapWindow(subtle->disp, c->win);
-} /* }}} */
-
- /** subClientUnmap {{{
-  * @brief Unmap client with all subClientUnmap from screen
-  * @param[in]  c  A #SubClient
-  **/
-
-void
-subClientUnmap(SubClient *c)
-{
-  assert(c);
-
-  XUnmapSubwindows(subtle->disp, c->win);
-  XUnmapWindow(subtle->disp, c->win);
 } /* }}} */
 
  /** subClientDrag {{{
