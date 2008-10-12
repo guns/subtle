@@ -35,20 +35,6 @@ EventExec(char *cmd)
     }
 } /* }}} */
 
-/* GetParent {{{ */
-static Window
-GetParent(Window win)
-{
-  unsigned int nwins;
-  Window parent, unused, *wins = NULL;
-
-  /* Some events don't propagate but we need them to do so */
-  XQueryTree(subtle->disp, win, &unused, &parent, &wins, &nwins);
-  XFree(wins);
-
-  return parent;
-} /* }}} */
-
 /* HandleGrab {{{ */
 static void
 HandleGrab(XEvent *ev)
@@ -104,7 +90,7 @@ HandleGrab(XEvent *ev)
             printf("Not implemented yet!\n");
         }
 
-      subUtilLogDebug("Grab: code=%3d, mod=%3d\n", g->code, g->mod);
+      subUtilLogDebug("Grab: code=%03d, mod=%03d\n", g->code, g->mod);
     }
 } /* }}} */
 
@@ -187,12 +173,12 @@ HandleMessage(XClientMessageEvent *ev)
         } /* }}} */
       else if(ev->message_type == subEwmhFind(SUB_EWMH_NET_ACTIVE_WINDOW)) /* {{{ */
         {
-          SubClient *focus = CLIENT(subUtilFind(GetParent(ev->data.l[0]), 1));
+          SubClient *focus = CLIENT(subUtilFind(ev->data.l[0], 1));
           if(focus) subClientFocus(focus);
         } /* }}} */
       else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_CLIENT_TAG)) /* {{{ */
         {
-          Window win = GetParent(ev->data.l[0]);
+          Window win = ev->data.l[0];
 
           c = CLIENT(subUtilFind(win, 1));
           if(c)
@@ -203,7 +189,7 @@ HandleMessage(XClientMessageEvent *ev)
         } /* }}} */        
       else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_CLIENT_UNTAG)) /* {{{ */
         {
-          Window win = GetParent(ev->data.l[0]);
+          Window win = ev->data.l[0];
 
           c = CLIENT(subUtilFind(win, 1));
           if(c)
@@ -291,7 +277,7 @@ HandleMessage(XClientMessageEvent *ev)
       return;
     }
 
-  c = (SubClient *)subUtilFind(GetParent(ev->window), 1);
+  c = (SubClient *)subUtilFind(ev->window, 1);
   if(c && 32 == ev->format)
     {
       if(ev->message_type == subEwmhFind(SUB_EWMH_NET_WM_STATE))
@@ -328,7 +314,7 @@ HandleProperty(XPropertyEvent *ev)
   /* Prevent expensive query if the atom isn't supported */
   if(ev->atom == XA_WM_NAME || ev->atom == subEwmhFind(SUB_EWMH_WM_NAME))
     {
-      SubClient *c = (SubClient *)subUtilFind(GetParent(ev->window), 1);
+      SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
       if(c) subClientFetchName(c);
     }
 } /* }}} */

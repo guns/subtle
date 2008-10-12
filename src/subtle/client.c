@@ -22,8 +22,9 @@ ClientMask(int type,
   switch(type)
     {
       case SUB_DRAG_START: 
-        XDrawRectangle(subtle->disp, DefaultRootWindow(subtle->disp), subtle->gcs.invert, r->x + 1, r->y + 1, 
-          r->width - 3, (c->flags & SUB_STATE_SHADE) ? subtle->th - subtle->bw : r->height - subtle->bw);
+        XDrawRectangle(subtle->disp, DefaultRootWindow(subtle->disp), subtle->gcs.invert, 
+          r->x + 1, r->y + 1, r->width - 3, 
+          (c->flags & SUB_STATE_SHADE) ? subtle->th - subtle->bw : r->height - subtle->bw);
         break;
       case SUB_DRAG_TOP:
         XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, 5, 5, c->rect.width - 10, 
@@ -123,8 +124,10 @@ subClientNew(Window win)
     {
       for(i = 0; i < n; i++)
         {
-          if(protos[i] == subEwmhFind(SUB_EWMH_WM_TAKE_FOCUS))         c->flags |= SUB_PREF_FOCUS;
-          else if(protos[i] == subEwmhFind(SUB_EWMH_WM_DELETE_WINDOW)) c->flags |= SUB_PREF_CLOSE;
+          if(protos[i] == subEwmhFind(SUB_EWMH_WM_TAKE_FOCUS))   
+            c->flags |= SUB_PREF_FOCUS;
+          else if(protos[i] == subEwmhFind(SUB_EWMH_WM_DELETE_WINDOW)) 
+            c->flags |= SUB_PREF_CLOSE;
         }
       XFree(protos);
     }
@@ -215,17 +218,17 @@ subClientRender(SubClient *c)
   assert(c);
 
   subtle->caption = c->name;
-  col = subtle->focus == c->win ? subtle->colors.focus : 
-    (c->flags & SUB_STATE_SHADE ? subtle->colors.cover : subtle->colors.norm);
+  col = subtle->focus == c->win ? subtle->colors.focus : subtle->colors.norm;
 
   attrs.border_pixel = col;
   XChangeWindowAttributes(subtle->disp, c->win, CWBorderPixel, &attrs);
 
   /* Update caption */
-  XResizeWindow(subtle->disp, subtle->bar.caption, strlen(c->name) * subtle->fx + 8, subtle->th);
+  XResizeWindow(subtle->disp, subtle->bar.caption, TEXTW(c->name), subtle->th);
   XSetWindowBackground(subtle->disp, c->win, col);
   XClearWindow(subtle->disp, subtle->bar.caption);
-  XDrawString(subtle->disp, subtle->bar.caption, subtle->gcs.font, 5, subtle->fy - 1, c->name, strlen(c->name));
+  XDrawString(subtle->disp, subtle->bar.caption, subtle->gcs.font, 5, 
+    subtle->fy - 1, c->name, strlen(c->name));
 } /* }}} */
 
  /** subClientFocus {{{
@@ -320,8 +323,9 @@ subClientDrag(SubClient *c,
       default:              cursor = subtle->cursors.square;  break;
     }
 
-  if(XGrabPointer(subtle->disp, c->win, True, ButtonPressMask|ButtonReleaseMask|PointerMotionMask, 
-    GrabModeAsync, GrabModeAsync, None, cursor, CurrentTime)) return;
+  if(XGrabPointer(subtle->disp, c->win, True, 
+    ButtonPressMask|ButtonReleaseMask|PointerMotionMask, GrabModeAsync, 
+    GrabModeAsync, None, cursor, CurrentTime)) return;
 
   XGrabServer(subtle->disp);
   if(SUB_DRAG_MOVE >= mode) ClientMask(SUB_DRAG_START, c, &r);
@@ -345,8 +349,12 @@ subClientDrag(SubClient *c,
                       r.x     = (rx - wx) - (rx - ev.xmotion.x_root);  
                       r.width = c->rect.width + ((rx - wx ) - ev.xmotion.x_root);  
                       break;
-                    case SUB_DRAG_RIGHT:  r.width  = c->rect.width + (ev.xmotion.x_root - rx);  break;
-                    case SUB_DRAG_BOTTOM: r.height = c->rect.height + (ev.xmotion.y_root - ry); break;
+                    case SUB_DRAG_RIGHT:  
+                      r.width  = c->rect.width + (ev.xmotion.x_root - rx);
+                      break;
+                    case SUB_DRAG_BOTTOM: 
+                      r.height = c->rect.height + (ev.xmotion.y_root - ry); 
+                      break;
                     case SUB_DRAG_MOVE:
                       r.x = (rx - wx) - (rx - ev.xmotion.x_root);
                       r.y = (ry - wy) - (ry - ev.xmotion.y_root);
@@ -427,8 +435,8 @@ subClientDrag(SubClient *c,
                 else if(SUB_DRAG_BOTTOM >= mode) 
                   {
                     /* Get size ratios */
-                    if(SUB_DRAG_RIGHT == mode || SUB_DRAG_LEFT == mode) c->size = r.width * 100 / WINWIDTH(c);
-                    else c->size = r.height * 100 / WINHEIGHT(c);
+                    if(SUB_DRAG_RIGHT == mode || SUB_DRAG_LEFT == mode) c->size = r.width * 100 / WINW(c);
+                    else c->size = r.height * 100 / WINH(c);
 
                     if(90 > c->size) c->size = 90;      ///< Max. 90%
                     else if(10 > c->size) c->size = 10; ///< Min. 10%
@@ -587,17 +595,16 @@ int type)
 void
 subClientFetchName(SubClient *c)
 {
-  int width;
-
   assert(c);
 
-  if(c->name) XFree(c->name);
+  if(c->name) 
+    {
+      XFree(c->name);
+      c->name = NULL;
+    }
+
   XFetchName(subtle->disp, c->win, &c->name);
   if(!c->name) c->name = strdup("subtle");
-
-  /* Check max length of the caption */
-  width = (strlen(c->name) + 1) * subtle->fx + 3;
-  if(width > c->rect.width - subtle->th - 4) width = c->rect.width - subtle->th - 14;
 
   subClientRender(c);
 } /* }}} */
