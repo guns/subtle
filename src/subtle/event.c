@@ -54,6 +54,7 @@ static void
 HandleGrab(XEvent *ev)
 {
   SubGrab *g = NULL;
+  SubClient *c = NULL;
   unsigned int code = 0, state = 0;
 
   /* Distinct types */
@@ -87,7 +88,7 @@ HandleGrab(XEvent *ev)
           case SUB_GRAB_WINDOW_RAISE:
             c = CLIENT(subUtilFind(ev->xbutton.window, 1));
             if(c && c->flags & SUB_STATE_FLOAT)
-              XRaiseWindow(c->win);
+              XRaiseWindow(subtle->disp, c->win);
             break;
             
           case SUB_GRAB_EXEC:

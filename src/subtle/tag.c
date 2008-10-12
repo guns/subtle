@@ -43,7 +43,7 @@ subTagNew(char *name,
 
   assert(name);
 
-  if(subTagFind(name, NULL)) return;
+  if(subTagFind(name, NULL)) return NULL;
 
   t = TAG(subUtilAlloc(1, sizeof(SubTag)));
   t->name  = strdup(name);

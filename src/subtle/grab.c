@@ -80,17 +80,17 @@ subGrabNew(const char *name,
               }
           }
         else if(!strncmp(name, "MouseMove", len))
-          g->flags |= (SUB_GRAB_MOUSE|SUB_GRAB_MOUSE_MOVE); 
+          g->flags |= (SUB_GRAB_MOUSE|SUB_GRAB_WINDOW_MOVE); 
       break; /* }}} */
 
       case 10: /* {{{ */
         if(!strncmp(name, "MouseRaise", 10))
-          g->flags |= (SUB_GRAB_MOUSE|SUB_GRAB_MOUSE_MOVE);
+          g->flags |= (SUB_GRAB_MOUSE|SUB_GRAB_WINDOW_RAISE);
         break; /* }}} */
 
       case 11: /* {{{ */
         if(!strncmp(name, "MouseResize", 11))
-          g->flags |= (SUB_GRAB_MOUSE|SUB_GRAB_MOUSE_RESIZE);
+          g->flags |= (SUB_GRAB_MOUSE|SUB_GRAB_WINDOW_RESIZE);
         break; /* }}} */
 
       default: /* {{{ */
@@ -147,7 +147,7 @@ subGrabNew(const char *name,
 
 			tok = strtok(NULL, "-");
 		}
-	subUtilLogDebug("type=%s, name=%s, code=%03d, mod=%02d, key=%s\n", 
+	subUtilLogDebug("type=%s, name=%s, code=%03d, mod=%02d\n", 
     g->flags & SUB_GRAB_KEY ? "k" : "m", name, g->code, g->mod);
 	
 	return g;

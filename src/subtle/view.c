@@ -143,7 +143,7 @@ subViewConfigure(SubView *v)
               /* EWMH: Desktop */
               subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);          
 
-              XMapWindow(c->win);
+              XMapWindow(subtle->disp, c->win);
               if(!(c->flags & SUB_STATE_TILED)) 
                 {
                   x += cw;

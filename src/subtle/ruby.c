@@ -392,8 +392,6 @@ subRubyLoadConfig(const char *file)
   subViewUpdate();
   subViewJump(VIEW(subtle->views->data[0])); ///< Jump to first view
   subViewPublish();
-
-  rb_gc_start(); ///< Start GC to get rid of temp stuff
 } /* }}} */
 
  /** subRubyLoadSublets {{{
