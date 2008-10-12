@@ -281,12 +281,7 @@ RubyParseConfig(VALUE path)
 
   /* Config: Keys */
   type   = SUB_TYPE_GRAB;
-  config = rb_funcall(hash, fetch, 1, rb_str_new2("Keys"));
-  rb_hash_foreach(config, RubyHashIterate, type);
-
-  /* Config: Mouse */
-  type   = SUB_TYPE_GRAB;
-  config = rb_funcall(hash, fetch, 1, rb_str_new2("Mouse"));
+  config = rb_funcall(hash, fetch, 1, rb_str_new2("Grabs"));
   rb_hash_foreach(config, RubyHashIterate, type);
 
   /* Config: Tags */

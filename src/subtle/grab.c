@@ -37,53 +37,66 @@ subGrabInit(void)
 
  /** subGrabNew {{{
 	* @brief Create new grab
-	* @param[in]  key	   Key name
-	* @param[in]  value	 Key action
+	* @param[in]  name	 Grab name
+	* @param[in]  value	 Grab action
 	* @return Returns a #SubGrab or \p NULL
 	**/
 
 SubGrab *
-subGrabNew(const char *key,
+subGrabNew(const char *name,
 	const char *value)
 {
+  int len;
+	char *tok = NULL;
 	KeySym sym;
-	char *tok = strtok((char *)value, "-");
 	SubGrab *g = NULL;
 
-  assert(key && value);
+  assert(name && value);
   
   g = GRAB(subUtilAlloc(1, sizeof(SubGrab)));
 	g->flags = SUB_TYPE_GRAB;
 
+  len = strlen(name);
+  tok = strtok((char *)value, "-");
+
 	/* @todo Too slow? */	
-	if(!strncmp(key, "ViewJump", 8))
-		{
-			char *desktop = (char *)key + 8; ///< Get desktop number
-			if(desktop) 
-				{
-					g->number = atoi(desktop) - 1; ///< Decrease for array index
-					g->flags |= SUB_GRAB_VIEW_JUMP;
-				}
-			else 
-				{
-					subUtilLogWarn("Can't assign keychain `%s'.\n", key);
-					free(g);
-					return NULL;
-				}
-		}
-  else if(!strncmp(key, "MouseMove", 9))
+  switch(len)
     {
-      g->flags |= SUB_GRAB_MOUSE_MOVE;
+      case 9: /* {{{ */
+        if(!strncmp(name, "ViewJump", len - 1)) ///< Catch-all
+          {
+            char *desktop = (char *)name + 8; ///< Get view number
+            if(desktop) 
+              {
+                g->number = atoi(desktop) - 1; ///< Decrease for array index
+                g->flags |= (SUB_GRAB_KEY|SUB_GRAB_VIEW_JUMP);
+              }
+            else 
+              {
+                subUtilLogWarn("Can't assign keychain `%s'.\n", name);
+                free(g);
+
+                return NULL;
+              }
+          }
+        else if(!strncmp(name, "MouseMove", len))
+          g->flags |= (SUB_GRAB_MOUSE|SUB_GRAB_MOUSE_MOVE); 
+      break; /* }}} */
+
+      case 10: /* {{{ */
+        if(!strncmp(name, "MouseRaise", 10))
+          g->flags |= (SUB_GRAB_MOUSE|SUB_GRAB_MOUSE_MOVE);
+        break; /* }}} */
+
+      case 11: /* {{{ */
+        if(!strncmp(name, "MouseResize", 11))
+          g->flags |= (SUB_GRAB_MOUSE|SUB_GRAB_MOUSE_RESIZE);
+        break; /* }}} */
+
+      default: /* {{{ */
+			  g->flags |= (SUB_GRAB_KEY|SUB_GRAB_EXEC);
+  			g->string	= strdup(name); /* }}} */
     }
-  else if(!strncmp(key, "MouseResize", 11))
-    {
-      g->flags |= SUB_GRAB_MOUSE_RESIZE;
-    }
-	else
-		{
-			g->flags |= SUB_GRAB_EXEC;
-			g->string	= strdup(key);
-		}
 
 	while(tok)
 		{ 
@@ -91,27 +104,51 @@ subGrabNew(const char *key,
 			sym = XStringToKeysym(tok);
 			if(NoSymbol == sym)
 				{
-					subUtilLogWarn("Can't assign keychain `%s'.\n", key);
-					if(g->string) free(g->string);
-					free(g);
-					return NULL;
+          int i;
+          char *mouse[] = { "B1", "B2", "B3", "B4", "B5" };
+
+          for(i = 0; 5 > i; i++)
+            if(!strncmp(tok, mouse[i], 2))
+              {
+                sym = XK_Pointer_Button1 + i; ///< @todo Implementation independant?
+                break;
+              }
+
+    			if(NoSymbol == sym) ///< Check if there's still no symbol
+		    		{
+              subUtilLogWarn("Can't assign keychain `%s'.\n", name);
+              if(g->string) free(g->string);
+              free(g);
+              
+              return NULL;
+            }
 				}
 
 			/* Modifier mappings */
 			switch(sym)
 				{
+          /* Keys */
 					case XK_A: g->mod |= Mod1Mask;		break;
 					case XK_S: g->mod |= ShiftMask;		break;
 					case XK_C: g->mod |= ControlMask;	break;
 					case XK_W: g->mod |= Mod4Mask;		break;
 					case XK_M: g->mod |= Mod3Mask;		break;
-					default:
-						g->code = XKeysymToKeycode(subtle->disp, sym);
+
+          /* Mouse */
+          case XK_Pointer_Button1:
+          case XK_Pointer_Button2:
+          case XK_Pointer_Button3:
+          case XK_Pointer_Button4:
+          case XK_Pointer_Button5:
+            g->code = sym;
+            break;
+					default: g->code = XKeysymToKeycode(subtle->disp, sym);
 				}
 
 			tok = strtok(NULL, "-");
 		}
-	subUtilLogDebug("code=%03d, mod=%02d, key=%s\n", g->code, g->mod, key);
+	subUtilLogDebug("type=%s, name=%s, code=%03d, mod=%02d, key=%s\n", 
+    g->flags & SUB_GRAB_KEY ? "k" : "m", name, g->code, g->mod);
 	
 	return g;
 } /* }}} */

@@ -16,9 +16,9 @@
 #define BUFLEN (sizeof(struct inotify_event))
 #endif
 
-/* Exec {{{ */
+/* EventExec {{{ */
 static void
-Exec(char *cmd)
+EventExec(char *cmd)
 {
   pid_t pid = fork();
 
@@ -49,64 +49,61 @@ GetParent(Window win)
   return parent;
 } /* }}} */
 
-/* HandleButtonPress {{{ */
+/* HandleGrab {{{ */
 static void
-HandleButtonPress(XButtonEvent *ev)
+HandleGrab(XEvent *ev)
 {
-  SubClient *c = NULL;
+  SubGrab *g = NULL;
+  unsigned int code = 0, state = 0;
 
-  subUtilLogDebug("click=single, win=%#lx, state=%d\n", ev->window, ev->state);
-
-  if(ev->window == subtle->bar.views)
+  /* Distinct types */
+  switch(ev->type)
     {
-      SubView *v = VIEW(subUtilFind(ev->subwindow, 1));
-      if(subtle->cv != v) subViewJump(v); ///< Prevent jumping to current view
-      return;
+      case ButtonPress: 
+        if(ev->xany.window == subtle->bar.views) ///< View buttons
+          {
+            SubView *v = VIEW(subUtilFind(ev->xbutton.subwindow, 1));
+            if(subtle->cv != v) subViewJump(v); ///< Prevent jumping to current view
+
+            return;
+          }      
+
+        code  = XK_Pointer_Button1 + (ev->xbutton.button - 1);
+        state = ev->xbutton.state;
+        break;
+
+      case KeyPress:    
+        code  = ev->xkey.keycode;  
+        state = ev->xkey.state; 
+        break;
     }
 
-  c = CLIENT(subUtilFind(ev->window, 1));
-  if(c)
+  /* Grabs */
+  g = subGrabFind(code, state);
+  if(g) 
     {
-      switch(ev->button)
+      switch(g->flags & ~(SUB_TYPE_GRAB|SUB_GRAB_KEY|SUB_GRAB_MOUSE)) ///< Clear
         {
-          case Button1:
-            if(c->flags & SUB_STATE_FLOAT) XRaiseWindow(subtle->disp, c->win);
-
-            /* Either drag and move or drag an swap windows */
-            subClientDrag(c, (c->flags & SUB_STATE_FLOAT) ? SUB_DRAG_MOVE : SUB_DRAG_SWAP);
+          case SUB_GRAB_WINDOW_RAISE:
+            c = CLIENT(subUtilFind(ev->xbutton.window, 1));
+            if(c && c->flags & SUB_STATE_FLOAT)
+              XRaiseWindow(c->win);
             break;
-          case Button2:
-            break;
-          case Button3: 
-            break;
-/*          case Button4: 
-          case Button5: 
             
-            subViewJump(subtle->cv->next); break;
-            if(subtle->cv->prev) subViewJump(subtle->cv->prev); break; */
-        }
-    }
-} /* }}} */
+          case SUB_GRAB_EXEC:
+            if(g->string) EventExec(g->string);
+            break;
 
-/* HandleKeyPress {{{ */
-static void
-HandleKeyPress(XKeyEvent *ev)
-{
-  SubClient *c = CLIENT(subUtilFind(ev->window, 1));
-  if(c || ev->window == subtle->cv->frame)
-    {
-      SubGrab *g = subGrabFind(ev->keycode, ev->state);
-      if(g) 
-        {
-          if(g->flags & SUB_GRAB_EXEC && g->string) Exec(g->string); 
-          else if(g->flags & SUB_GRAB_VIEW_JUMP) 
-            {
-              if(0 <= g->number && g->number < subtle->views->ndata)
-                subViewJump(VIEW(subtle->views->data[g->number]));
-            }
+          case SUB_GRAB_VIEW_JUMP:
+            if(0 <= g->number && g->number < subtle->views->ndata)
+              subViewJump(VIEW(subtle->views->data[g->number]));
+            break;
 
-          subUtilLogDebug("KeyPress: code=%d, mod=%d\n", g->code, g->mod);
+          default:  
+            printf("Not implemented yet!\n");
         }
+
+      subUtilLogDebug("Grab: code=%3d, mod=%3d\n", g->code, g->mod);
     }
 } /* }}} */
 
@@ -450,8 +447,8 @@ subEventLoop(void)
                   XNextEvent(subtle->disp, &ev);
                   switch(ev.type)
                     {
-                      case ButtonPress:       HandleButtonPress(&ev.xbutton);          break;
-                      case KeyPress:          HandleKeyPress(&ev.xkey);                break;
+                      case ButtonPress:
+                      case KeyPress:          HandleGrab(&ev);                         break;
                       case ConfigureRequest:  HandleConfigure(&ev.xconfigurerequest);  break;
                       case MapRequest:        HandleMapRequest(&ev.xmaprequest);       break;
                       case DestroyNotify:     HandleDestroy(&ev.xdestroywindow);       break;
