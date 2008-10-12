@@ -17,11 +17,11 @@
 #include <ruby.h>
 #include "subtle.h"
 
-static VALUE sublet, sublets, run, interval, data; ///< Common used symbols
+static VALUE sublets, run, interval, data; ///< Common used symbols
 
-/* SubletInit {{{ */
+/* RubySubletInit {{{ */
 static VALUE
-SubletInit(VALUE self,
+RubySubletInit(VALUE self,
   VALUE value)
 {
   rb_ivar_set(self, data, rb_str_new2("n/a")); ///< Default value
@@ -29,9 +29,9 @@ SubletInit(VALUE self,
   return self;
 } /* }}} */
 
-/* SubletInherited {{{ */
+/* RubySubletInherited {{{ */
 static VALUE
-SubletInherited(VALUE self,
+RubySubletInherited(VALUE self,
   VALUE recv)
 {
   const char *name = rb_class2name((ID)recv);
@@ -127,38 +127,6 @@ RubyCall(VALUE dummy)
   return Qnil;
 } /* }}} */
 
-/* RubyHashIterate {{{ */
-static int
-RubyHashIterate(VALUE key,
-  VALUE value,
-  VALUE extra)
-{
-  void *entry = NULL;
-
-  /* Create various types */
-  switch(extra)
-    {
-      case SUB_TYPE_GRAB:
-        entry = (void *)subGrabNew(STR2CSTR(key), STR2CSTR(value));
-        if(entry) subArrayPush(subtle->grabs, entry);
-        break;
-
-      case SUB_TYPE_TAG:
-        entry = (void *)subTagNew(STR2CSTR(key), STR2CSTR(value));
-        if(entry) subArrayPush(subtle->tags, entry);
-        break;
-
-      case SUB_TYPE_VIEW:
-        entry = (void *)subViewNew(STR2CSTR(key), STR2CSTR(value));
-        if(entry) subArrayPush(subtle->views, entry);
-        break;
-
-      default: subUtilLogDebug("Never to be reached?\n");
-    }
-
-  return Qnil;
-} /* }}} */
-
 /* RubyArrayIterate {{{ */
 VALUE
 RubyArrayIterate(VALUE elem,
@@ -190,9 +158,41 @@ RubyArrayIterate(VALUE elem,
   return Qnil;
 } /* }}} */
 
-/* RubyParseConfig {{{ */
+/* RubyConfigIterate {{{ */
+static int
+RubyConfigIterate(VALUE key,
+  VALUE value,
+  VALUE extra)
+{
+  void *entry = NULL;
+
+  /* Create various types */
+  switch(extra)
+    {
+      case SUB_TYPE_GRAB:
+        entry = (void *)subGrabNew(STR2CSTR(key), STR2CSTR(value));
+        if(entry) subArrayPush(subtle->grabs, entry);
+        break;
+
+      case SUB_TYPE_TAG:
+        entry = (void *)subTagNew(STR2CSTR(key), STR2CSTR(value));
+        if(entry) subArrayPush(subtle->tags, entry);
+        break;
+
+      case SUB_TYPE_VIEW:
+        entry = (void *)subViewNew(STR2CSTR(key), STR2CSTR(value));
+        if(entry) subArrayPush(subtle->views, entry);
+        break;
+
+      default: subUtilLogDebug("Never to be reached?\n");
+    }
+
+  return Qnil;
+} /* }}} */
+
+/* RubyConfigParse {{{ */
 static VALUE
-RubyParseConfig(VALUE path)
+RubyConfigParse(VALUE path)
 {
   int size;
   char *face = NULL, *style = NULL, font[100]; 
@@ -222,7 +222,6 @@ RubyParseConfig(VALUE path)
   subtle->colors.border = RubyParseColor(config, "Border",     "#bdbabd");
   subtle->colors.norm   = RubyParseColor(config, "Normal",     "#22aa99");
   subtle->colors.focus  = RubyParseColor(config, "Focus",      "#ffa500");    
-  subtle->colors.cover  = RubyParseColor(config, "Shade",      "#FFE6E6");
   subtle->colors.bg     = RubyParseColor(config, "Background", "#336699");
 
   /* Load font */
@@ -282,17 +281,17 @@ RubyParseConfig(VALUE path)
   /* Config: Keys */
   type   = SUB_TYPE_GRAB;
   config = rb_funcall(hash, fetch, 1, rb_str_new2("Grabs"));
-  rb_hash_foreach(config, RubyHashIterate, type);
+  rb_hash_foreach(config, RubyConfigIterate, type);
 
   /* Config: Tags */
   type   = SUB_TYPE_TAG;
   config = rb_funcall(hash, fetch, 1, rb_str_new2("Tags"));
-  rb_hash_foreach(config, RubyHashIterate, type);
+  rb_hash_foreach(config, RubyConfigIterate, type);
 
   /* Config: Views */
   type   = SUB_TYPE_VIEW;
   config = rb_funcall(hash, fetch, 1, rb_str_new2("Views"));
-  rb_hash_foreach(config, RubyHashIterate, type);
+  rb_hash_foreach(config, RubyConfigIterate, type);
 
   return Qnil;
 } /* }}} */
@@ -305,13 +304,14 @@ RubyFilter(const struct dirent *entry)
 } /* }}} */
 
  /** subRubyInit {{{
-  * @brief Start ruby
+  * @brief Init ruby
   **/
 
 void
 subRubyInit(void)
 {
-  /* Init ruby */
+  VAULUE sublet = Qnil;
+
   RUBY_INIT_STACK;
   ruby_init();
   ruby_init_loadpath();
@@ -319,12 +319,10 @@ subRubyInit(void)
 
   /* Class: sublet */
   sublet = rb_define_class("Sublet", rb_cObject);
-  rb_define_method(sublet, "initialize", SubletInit, 1);
-  rb_define_singleton_method(sublet, "inherited", SubletInherited, 1);
-
-  /* Attrs: sublet */
   rb_define_attr(sublet, "interval", 1, 1);
   rb_define_attr(sublet, "data", 1, 1);
+  rb_define_method(sublet, "initialize", RubySubletInit, 1);
+  rb_define_singleton_method(sublet, "inherited", RubySubletInherited, 1);
 
   /* Comon used symbols */
   run      = rb_intern("run");
@@ -358,7 +356,7 @@ subRubyLoadConfig(const char *file)
   subUtilLogDebug("config=%s\n", config);
 
   /* Safety first */
-  rb_protect(RubyParseConfig, rb_str_new2(config), &status);
+  rb_protect(RubyConfigParse, rb_str_new2(config), &status);
   if(Qundef == status) subUtilLogError("Failed reading/parsing config\n");
 
   /* Grabs */
@@ -438,7 +436,7 @@ subRubyLoadSublets(const char *path)
 
           snprintf(file, sizeof(file), "%s/%s", buf, entries[i]->d_name);
           subUtilLogDebug("sublet=%s\n", file);
-          rb_require(file); ///< Find subclass of Sublet
+          rb_require(file); ///< Load subclass of Sublet
 
           free(entries[i]);
         }

@@ -30,7 +30,6 @@ Colors:
   Border: "#ffffff"               # Color of the border/tiles
   Normal: "#9AA38A"               # Color of the inactive windows
   Focus: "#A7E737"                # Color of the focus window
-  Shade: "#A0B67A"                # Color of shaded windows
   Background: "#9A9C95"           # Color of root background
 
 #

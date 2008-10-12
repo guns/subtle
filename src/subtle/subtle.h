@@ -38,21 +38,22 @@
 /* }}} */
 
 /* Macros {{{ */
-#define FLAGS int                                                 ///< Flags
-#define TAGS int                                                  ///< Tags
+#define FLAGS     int                                             ///< Flags
+#define TAGS      int                                             ///< Tags
 
-#define WINWIDTH(c)  (c->rect.width - 2 * subtle->bw)             ///< Get real width
-#define WINHEIGHT(c) (c->rect.height - subtle->th - subtle->bw)   ///< Get real height
+#define TEXTW(s)  (strlen(s) * subtle->fx + 8)                    ///< Textwidth in pixel
+#define WINW(c)   (c->rect.width - 2 * subtle->bw)                ///< Get real width
+#define WINH(c)   (c->rect.height - 2 * subtle->bw)               ///< Get real height
 
-#define SUBTLE(s) ((SubSubtle *)s)                                ///< Cast to SubSubtle
 #define ARRAY(a)  ((SubArray *)a)                                 ///< Cast to SubArray
-#define VIEW(v)   ((SubView *)v)                                  ///< Cast to SubView
-#define LAYOUT(l) ((SubLayout *)l)                                ///< Cast to SubLayout
 #define CLIENT(c) ((SubClient *)c)                                ///< Cast to SubClient
-#define TAG(t)    ((SubTag *)t)                                   ///< Cast to SubTag
-#define SUBLET(s) ((SubSublet *)s)                                ///< Cast to SubSublet
 #define GRAB(g)   ((SubGrab *)g)                                  ///< Cast to SubGrab
+#define LAYOUT(l) ((SubLayout *)l)                                ///< Cast to SubLayout
 #define RECT(r)   ((XRectangle *)r)                               ///< Cast to XRectangle
+#define SUBLET(s) ((SubSublet *)s)                                ///< Cast to SubSublet
+#define SUBTLE(s) ((SubSubtle *)s)                                ///< Cast to SubSubtle
+#define TAG(t)    ((SubTag *)t)                                   ///< Cast to SubTag
+#define VIEW(v)   ((SubView *)v)                                  ///< Cast to SubView
 
 /* ICCCM */
 #define SUB_EWMH_WM_NAME                       0                  ///< Name of window
@@ -177,6 +178,58 @@
 /* }}} */
 
 /* Typedefs {{{ */
+typedef struct subarray_t /* {{{ */
+{
+  int    ndata;                                                   ///< Array data count
+  void  **data;                                                   ///< Array data
+} SubArray; /* }}} */
+
+typedef struct subclient_t /* {{{ */
+{
+  FLAGS               flags;                                      ///< Client flags
+  TAGS                tags;                                       ///< Client tags
+  XRectangle          rect;                                       ///< Client rect
+  int                 size;                                       ///< Client size, tags
+  char                *name;                                      ///< Client name
+  Colormap            cmap;                                       ///< Client colormap
+  Window              frame, win;                                 ///< Client decoration windows
+} SubClient; /* }}} */
+
+typedef struct subgrab_t /* {{{ */
+{
+  FLAGS        flags;                                             ///< Grab flags
+  unsigned int code, mod;                                         ///< Grab coden modifier
+
+  union
+  {
+    char       *string;                                           ///< Grab data string
+    int        number;                                            ///< Grab data number
+  };
+} SubGrab; /* }}} */
+
+typedef struct sublayout_t /* {{{ */
+{
+  FLAGS  flags;                                                   ///< Layout flags
+  struct subclient_t *c1;                                         ///< Layout client1
+  struct subclient_t *c2;                                         ///< Layout client2
+} SubLayout; /* }}} */
+
+typedef struct subsublet_t /* {{{ */
+{
+  FLAGS         flags;                                            ///< Sublet flags
+  unsigned long recv;                                             ///< Sublet ruby receiver
+  int           width;                                            ///< Sublet width
+  time_t        time, interval;                                   ///< Sublet update time, interval time
+
+  struct subsublet_t *next;                                       ///< Sublet next sibling
+
+  union 
+  {
+    char *string;                                                 ///< Sublet data string
+    int  fixnum;                                                  ///< Sublet data fixnum
+  };
+} SubSublet; /* }}} */
+
 typedef struct subsubtle_t /* {{{ */
 {
   int                th, bw, fx, fy;                              ///< Subtle tab height, border width, font metrics
@@ -209,7 +262,7 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    unsigned long    font, border, norm, focus, cover, bg;                            
+    unsigned long    font, border, norm, focus, bg;                            
   } colors;                                                       ///< Subtle colors
 
   struct
@@ -223,36 +276,12 @@ typedef struct subsubtle_t /* {{{ */
   } cursors;                                                      ///< Subtle cursors
 } SubSubtle; /* }}} */
 
-typedef struct subarray_t /* {{{ */
-{
-  int    ndata;                                                   ///< Array data count
-  void  **data;                                                   ///< Array data
-} SubArray; /* }}} */
-
-typedef struct subclient_t /* {{{ */
-{
-  FLAGS               flags;                                      ///< Client flags
-  TAGS                tags;                                       ///< Client tags
-  XRectangle          rect;                                       ///< Client rect
-  int                 size;                                       ///< Client size, tags
-  char                *name;                                      ///< Client name
-  Colormap            cmap;                                       ///< Client colormap
-  Window              frame, win;                                 ///< Client decoration windows
-} SubClient; /* }}} */
-
 typedef struct subtag_t /* {{{ */
 {
   FLAGS    flags;                                                 ///< Tag flags
   char    *name;                                                  ///< Tag name
   regex_t *preg;                                                  ///< Tag regex
 } SubTag; /* }}} */
-
-typedef struct sublayout_t /* {{{ */
-{
-  FLAGS  flags;                                                   ///< Layout flags
-  struct subclient_t *c1;                                         ///< Layout client1
-  struct subclient_t *c2;                                         ///< Layout client2
-} SubLayout; /* }}} */
 
 typedef struct subview_t /* {{{ */
 {
@@ -263,35 +292,6 @@ typedef struct subview_t /* {{{ */
   char              *name;                                        ///< View name
   struct subarray_t *layout;                                      ///< View layout
 } SubView; /* }}} */
-
-typedef struct subsublet_t /* {{{ */
-{
-  FLAGS         flags;                                            ///< Sublet flags
-  unsigned long recv;                                             ///< Sublet ruby receiver
-  int           width;                                            ///< Sublet width
-  time_t        time, interval;                                   ///< Sublet update time, interval time
-
-  struct subsublet_t *next;                                       ///< Sublet next sibling
-
-  union 
-  {
-    char *string;                                                 ///< Sublet data string
-    int  fixnum;                                                  ///< Sublet data fixnum
-  };
-} SubSublet; /* }}} */
-
-typedef struct subkey_t /* {{{ */
-{
-  FLAGS        flags;                                             ///< Key flags
-  int          code;                                              ///< Key code
-  unsigned int mod;                                               ///< Key modifier
-
-  union
-  {
-    char       *string;                                           ///< Key data string
-    int        number;                                            ///< Key data number
-  };
-} SubGrab; /* }}} */
 
 extern SubSubtle *subtle;
 /* }}} */
@@ -321,47 +321,29 @@ void subClientPublish(void);                                      ///< Publish a
 void subClientKill(SubClient *c);                                 ///< Kill client
 /* }}} */
 
-/* tag.c {{{ */
-void subTagInit(void);                                            ///< Init tags
-SubTag *subTagNew(char *name, char *regex);                       ///< Create tag
-SubTag *subTagFind(char *name, int *id);                          ///< Find tag
-void subTagPublish(void);                                         ///< Publish tags
-void subTagKill(SubTag *t);                                       ///< Delete tag
-/* }}} */
-
-/* layout.c {{{ */
-SubLayout *subLayoutNew(SubClient *c1, SubClient *c2, 
-  int mode);                                                      ///< Create new layout
-void subLayoutKill(SubLayout *l);                                 ///< Kill layout
-/* }}} */
-
-/* view.c {{{ */
-SubView *subViewNew(char *name, char *tags);                      ///< Create new view
-void subViewConfigure(SubView *v);                                ///< Configure view
-void subViewArrange(SubView *v, SubClient *c1, 
-  SubClient *c2, int mode);                                       ///< Arrange view
-void subViewUpdate(void);                                         ///< Update views
-void subViewRender(void);                                         ///< Render views
-void subViewJump(SubView *v);                                     ///< Jump to view
-SubView *subViewFind(char *name, int *id);                        ///< Find view
-void subViewPublish(void);                                        ///< Publish views
-void subViewSanitize(SubClient *c);                               ///< Sanitize views
-void subViewKill(SubView *v);                                     ///< Kill view
-/* }}} */
-
-/* sublet.c {{{ */
-SubSublet *subSubletNew(unsigned long ref, time_t interval, 
-  char *watch);                                                   ///< Create new sublet
-void subSubletConfigure(void);                                    ///< Configure sublet bar
-void subSubletRender(void);                                       ///< Render sublet
-int subSubletCompare(const void *a, const void *b);               ///< Compare two sublets
-void subSubletKill(SubSublet *s);                                 ///< Kill sublet
-/* }}} */
-
 /* display.c {{{ */
 void subDisplayInit(const char *display);                         ///< Create new display
 void subDisplayScan(void);                                        ///< Scan root window
 void subDisplayFinish(void);                                      ///< Delete display
+/* }}} */
+
+/* event.c {{{ */
+void subEventLoop(void);                                          ///< Event loop
+/* }}} */
+
+/* ewmh.c  {{{ */
+void subEwmhInit(void);                                           ///< Init atoms/hints
+Atom subEwmhFind(int hint);                                       ///< Find atom
+char *subEwmhGetProperty(Window win, 
+  Atom type, int hint, unsigned long *size);                      ///< Get property
+void subEwmhSetWindows(Window win, int hint, 
+  Window *values, int size);                                      ///< Set window properties
+void subEwmhSetCardinals(Window win, int hint,
+  long *values, int size);                                        ///< Set cardinal properties
+void subEwmhSetString(Window win, int hint, 
+  char *value);                                                   ///< Set string property
+void subEwmhSetStrings(Window win, int hint,                      ///< Set string properties
+  char **values, int size);
 /* }}} */
 
 /* grab.c {{{ */
@@ -376,6 +358,12 @@ int subGrabCompare(const void *a, const void *b);                 ///< Compare g
 void subGrabKill(SubGrab *g);                                     ///< Kill grab
 /* }}} */
 
+/* layout.c {{{ */
+SubLayout *subLayoutNew(SubClient *c1, SubClient *c2, 
+  int mode);                                                      ///< Create new layout
+void subLayoutKill(SubLayout *l);                                 ///< Kill layout
+/* }}} */
+
 /* ruby.c {{{ */
 void subRubyInit(void);                                           ///< Init Ruby stack 
 void subRubyLoadConfig(const char *file);                         ///< Load config file
@@ -384,8 +372,21 @@ void subRubyCall(SubSublet *s);                                   ///< Call Ruby
 void subRubyFinish(void);                                         ///< Kill Ruby stack
 /* }}} */
 
-/* event.c {{{ */
-void subEventLoop(void);                                          ///< Event loop
+/* sublet.c {{{ */
+SubSublet *subSubletNew(unsigned long ref, time_t interval, 
+  char *watch);                                                   ///< Create new sublet
+void subSubletConfigure(void);                                    ///< Configure sublet bar
+void subSubletRender(void);                                       ///< Render sublet
+int subSubletCompare(const void *a, const void *b);               ///< Compare two sublets
+void subSubletKill(SubSublet *s);                                 ///< Kill sublet
+/* }}} */
+
+/* tag.c {{{ */
+void subTagInit(void);                                            ///< Init tags
+SubTag *subTagNew(char *name, char *regex);                       ///< Create tag
+SubTag *subTagFind(char *name, int *id);                          ///< Find tag
+void subTagPublish(void);                                         ///< Publish tags
+void subTagKill(SubTag *t);                                       ///< Delete tag
 /* }}} */
 
 /* util.c {{{ */
@@ -410,18 +411,18 @@ int subUtilRegexMatch(regex_t *preg, char *string);               ///< Check if 
 void subUtilRegexKill(regex_t *preg);                             ///< Kill regex
 /* }}} */
 
-/* ewmh.c  {{{ */
-void subEwmhInit(void);                                           ///< Init atoms/hints
-Atom subEwmhFind(int hint);                                       ///< Find atom
-char *subEwmhGetProperty(Window win, 
-  Atom type, int hint, unsigned long *size);                      ///< Get property
-void subEwmhSetWindows(Window win, int hint, 
-  Window *values, int size);                                      ///< Set window properties
-void subEwmhSetCardinals(Window win, int hint,
-  long *values, int size);                                        ///< Set cardinal properties
-void subEwmhSetString(Window win, int hint, 
-  char *value);                                                   ///< Set string property
-void subEwmhSetStrings(Window win, int hint,                      ///< Set string properties
-  char **values, int size);
+/* view.c {{{ */
+SubView *subViewNew(char *name, char *tags);                      ///< Create new view
+void subViewConfigure(SubView *v);                                ///< Configure view
+void subViewArrange(SubView *v, SubClient *c1, 
+  SubClient *c2, int mode);                                       ///< Arrange view
+void subViewUpdate(void);                                         ///< Update views
+void subViewRender(void);                                         ///< Render views
+void subViewJump(SubView *v);                                     ///< Jump to view
+SubView *subViewFind(char *name, int *id);                        ///< Find view
+void subViewPublish(void);                                        ///< Publish views
+void subViewSanitize(SubClient *c);                               ///< Sanitize views
+void subViewKill(SubView *v);                                     ///< Kill view
 /* }}} */
+
 #endif /* SUBTLE_H */
