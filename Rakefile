@@ -26,6 +26,7 @@ require("ftools")
   "debug"      => "no",
   "builddir"   => "build",
   "archdir"    => "",
+  "revision"   => "0",
   "cflags"     => "-Wall -Wpointer-arith -Wstrict-prototypes -Wunused -Wshadow -std=gnu99",
   "cpppath"    => "-I. -I$(builddir) -Isrc -Isrc/shared -idirafter$(archdir)",
   "ldflags"    => "-L$(archdir) -l$(RUBY_SO_NAME)",
@@ -38,8 +39,8 @@ require("ftools")
   "PKG_BUGREPORT" => "unexist@dorfelite.net",
   "PKG_CONFIG"    => "subtle.yml",
   "RUBY_VERSION"  => "$(MAJOR).$(MINOR).$(TEENY)",
-  "DIR_CONFIG"    => "$(sysconfdir)/subtle",
-  "DIR_SUBLET"    => "$(datadir)/subtle"
+  "DIR_CONFIG"    => "$(sysconfdir)/$(PKG_NAME)",
+  "DIR_SUBLET"    => "$(datadir)/$(PKG_NAME)"
 }  
 # }}}
 
@@ -125,13 +126,14 @@ task(:default => [:config, :build])
 # Task: config {{{
 desc("Configure subtle")
 task(:config) do
+
   #Check if build dir exists
   if(!File.exists?(@options["builddir"]))
     Dir.mkdir(@options["builddir"])
   end
 
-  # Check if options.yaml exists
-  if(File.exist?("config.yml"))
+  # Check if options.yaml exists or config is run per target
+  if((!ARGV.nil? && !ARGV.include?("config")) && File.exist?("config.yml"))
     yaml = YAML::load(File.open("config.yml"))
     @options, @defines = YAML::load(yaml)
   else
@@ -150,15 +152,13 @@ task(:config) do
     # Get revision
     if((@hg = find_executable0("hg")))
       @options["revision"] = `#{@hg} tip`.match(/changeset:\s*(\d+).*/)[1]
-    else
-      @options["revision"] = "99999"
     end  
 
     # Expand options and defines
     @options["archdir"] = Config.expand(CONFIG["archdir"]) #< Save before merging
     [@options, @defines].each do |hash|
       hash.each do |k, v|
-        @options[k] = Config.expand(v, CONFIG.merge(@options))
+        hash[k] = Config.expand(v, CONFIG.merge(@options.merge(@defines)))
       end
     end
    
@@ -242,9 +242,21 @@ task(PG_RBE => [:config, OBJ_SHD])
 # Task: install {{{
 desc("Install subtle")
 task(:install => [:config, :build]) do
-  File.makedirs '/usr/lib/ruby'
-# 644
-  message("Not implemented yet!\n")
+  File.makedirs(@options["bindir"])
+  File.makedirs(@options["sysconfdir"])
+  File.makedirs(@defines["DIR_CONFIG"])
+  File.makedirs(@defines["DIR_SUBLET"])
+
+  File.install(PG_WM, @options["bindir"], 644, true)
+  File.install(PG_RMT, @options["bindir"], 644, true)
+  #install(PG_RBE + ".so", to, 644, true)
+
+
+  FileList["dist/subtlets/*.rb"].each do |f|
+    File.install(f, @defines["DIR_SUBLET"], 644, true)
+  end
+
+  File.install("dist/" + PKG_CONFIG, @options["sysconfdir"], true)
 end # }}}
 
 # Task: help {{{
