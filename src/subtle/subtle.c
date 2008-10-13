@@ -28,7 +28,7 @@ Usage(void)
 {
   printf("Usage: %s [OPTIONS]\n\n" \
          "Options:\n" \
-         "  -c, --config=CONFIG     Load config (default: ~/.%s/subtle.yml\n" \
+         "  -c, --config=FILE       Load config (default: ~/.%s/subtle.yml)\n" \
          "  -d, --display=DISPLAY   Connect to DISPLAY (default: $DISPLAY)\n" \
          "  -h, --help              Show this help and exit\n" \
          "  -s, --sublets=DIR       Load sublets from DIR (default: ~/.%s/sublets)\n" \
