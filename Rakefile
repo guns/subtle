@@ -40,7 +40,8 @@ require("ftools")
   "PKG_CONFIG"    => "subtle.yml",
   "RUBY_VERSION"  => "$(MAJOR).$(MINOR).$(TEENY)",
   "DIR_CONFIG"    => "$(sysconfdir)/$(PKG_NAME)",
-  "DIR_SUBLET"    => "$(datadir)/$(PKG_NAME)"
+  "DIR_SUBLET"    => "$(datadir)/$(PKG_NAME)",
+  "DIR_EXT"       => "$(sitelibdir)/$(PKG_NAME)"
 }  
 # }}}
 
@@ -155,7 +156,8 @@ task(:config) do
     end  
 
     # Expand options and defines
-    @options["archdir"] = Config.expand(CONFIG["archdir"]) #< Save before merging
+    @options["archdir"]    = Config.expand(CONFIG["archdir"]) 
+    @options["sitelibdir"] = Config.expand(CONFIG["sitelibdir"])
     [@options, @defines].each do |hash|
       hash.each do |k, v|
         hash[k] = Config.expand(v, CONFIG.merge(@options.merge(@defines)))
@@ -216,6 +218,7 @@ Install prefix......: #{@options["prefix"]}
 Binaries............: #{@options["bindir"]}
 Configuration.......: #{@defines["DIR_CONFIG"]}
 Sublets.............: #{@defines["DIR_SUBLET"]}
+Extension...........: #{@defines["DIR_EXT"]}
 
 Debugging messages..: #{@options["debug"]}
 
@@ -242,21 +245,31 @@ task(PG_RBE => [:config, OBJ_SHD])
 # Task: install {{{
 desc("Install subtle")
 task(:install => [:config, :build]) do
-  File.makedirs(@options["bindir"])
-  File.makedirs(@options["sysconfdir"])
-  File.makedirs(@defines["DIR_CONFIG"])
-  File.makedirs(@defines["DIR_SUBLET"])
+  File.makedirs(
+    @options["bindir"],
+    @options["sysconfdir"],
+    @defines["DIR_CONFIG"],
+    @defines["DIR_SUBLET"],
+    @defines["DIR_EXT"]
+  )
 
-  File.install(PG_WM, @options["bindir"], 644, true)
-  File.install(PG_RMT, @options["bindir"], 644, true)
-  #install(PG_RBE + ".so", to, 644, true)
+  message("INSTALL %s\n" % [PG_WM])
+  File.install(PG_WM, @options["bindir"], 0755, false)
 
+  message("INSTALL %s\n" % [PG_RMT])
+  File.install(PG_RMT, @options["bindir"], 0755, false)
 
-  FileList["dist/subtlets/*.rb"].each do |f|
-    File.install(f, @defines["DIR_SUBLET"], 644, true)
+  message("INSTALL %s\n" % [PG_RBE])
+  File.install(PG_RBE + ".so", @defines["DIR_EXT"], 0644, false)
+
+  FileList["dist/sublets/*.rb"].collect do |f|
+    message("INSTALL %s\n" % [File.basename(f)])
+    File.install(f, @defines["DIR_SUBLET"], 0644, false)
   end
 
-  File.install("dist/" + PKG_CONFIG, @options["sysconfdir"], true)
+  message("INSTALL %s\n" % [@defines["PKG_CONFIG"]])
+  File.install("dist/" + @defines["PKG_CONFIG"], @defines["DIR_CONFIG"], 0644, false)
+
 end # }}}
 
 # Task: help {{{
