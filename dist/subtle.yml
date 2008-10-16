@@ -51,9 +51,9 @@ Grabs:
   ViewJump3: "A-3"                # Jump to view 3
   ViewJump4: "A-4"                # Jump to view 4
   ViewJump5: "A-5"                # Jump to view 5
-  WindowRaise: "B1"                # Raise window
-  WindowMove: "S-B1"               # Move window
-  WindowResize: "S-B3"             # Resize window
+  WindowRaise: "B1"               # Raise window
+  WindowMove: "S-B1"              # Move window
+  WindowResize: "S-B3"            # Resize window
   "subtag.sh -c -t": "A-S-c"      # Exec tag menu (client/tag)
   "subtag.sh -c -u": "A-C-c"      # Exec tag menu (client/untag)
   "subtag.sh -v -t": "A-S-v"      # Exec tag menu (view/tag)
@@ -64,15 +64,17 @@ Grabs:
 # Tags
 #
 Tags:
-  terms: "[ur]+xvt|xterm"
-  browser: "firefox|opera"
-  editor: "gvim|scite"
-  float: "mplayer"
+  terms: "urxvt|xterm"
+  browser: "firefox"
+  editor: "gvim"
+  video: "mplayer"
+  float: "xnest"
+  full: "gvim"
 
 #
 # Views
 #
 Views:
-  work: "browser|terms"
+  work: "browser|terms|video"
   dev: "editor|terms"
   web: "browser"
