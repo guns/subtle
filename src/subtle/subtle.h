@@ -119,25 +119,28 @@
 /* Flags {{{ */
 /* Data types */
 #define SUB_TYPE_CLIENT        (1L << 1)                          ///< Client
-#define SUB_TYPE_TAG           (1L << 2)                          ///< Tag
-#define SUB_TYPE_VIEW          (1L << 3)                          ///< View
-#define SUB_TYPE_LAYOUT        (1L << 4)                          ///< Layout
-#define SUB_TYPE_SUBLET        (1L << 5)                          ///< Sublet
-#define SUB_TYPE_GRAB          (1L << 6)                          ///< Grab
+#define SUB_TYPE_GRAB          (1L << 2)                          ///< Grab
+#define SUB_TYPE_LAYOUT        (1L << 3)                          ///< Layout
+#define SUB_TYPE_SUBLET        (1L << 4)                          ///< Sublet
+#define SUB_TYPE_TAG           (1L << 5)                          ///< Tag
+#define SUB_TYPE_VIEW          (1L << 6)                          ///< View
 
 /* Tile modes */
 #define SUB_TILE_VERT          (1L << 7)                          ///< Tile vert
 #define SUB_TILE_HORZ          (1L << 8)                          ///< Tile horz
 #define SUB_TILE_SWAP          (1L << 9)                          ///< Tile swap
 
+/* Data types */
+#define SUB_DATA_STRING        (1L << 10)                         ///< String data
+#define SUB_DATA_FIXNUM        (1L << 11)                         ///< Fixnum data
+#define SUB_DATA_NIL           (1L << 12)                         ///< Nil data
+
 /* Client states */
-#define SUB_STATE_SHADE        (1L << 12)                         ///< Shaded window
-#define SUB_STATE_FLOAT        (1L << 13)                         ///< Floated window
+#define SUB_STATE_FLOAT        (1L << 13)                         ///< Floating window
 #define SUB_STATE_FULL         (1L << 14)                         ///< Fullscreen window
 #define SUB_STATE_RESIZE       (1L << 15)                         ///< Resized window
-#define SUB_STATE_STACK        (1L << 16)                         ///< Stacked tiling window
-#define SUB_STATE_DEAD         (1L << 17)                         ///< Dead window
-#define SUB_STATE_TILED        (1L << 18)                         ///< Tiled client
+#define SUB_STATE_DEAD         (1L << 16)                         ///< Dead window
+#define SUB_STATE_TILED        (1L << 17)                         ///< Tiled client
 
 /* Client preferences */
 #define SUB_PREF_INPUT         (1L << 20)                         ///< Active/passive focus-model
@@ -166,10 +169,10 @@
 #define SUB_GRAB_WINDOW_MOVE   (1L << 15)                         ///< Resize window
 #define SUB_GRAB_WINDOW_RESIZE (1L << 16)                         ///< Move window
 
-/* Data types */
-#define SUB_DATA_STRING        (1L << 10)                         ///< String data
-#define SUB_DATA_FIXNUM        (1L << 11)                         ///< Fixnum data
-#define SUB_DATA_NIL           (1L << 12)                         ///< Nil data
+/* Fixed tags */
+#define SUB_TAG_DEFAULT        (1L << 1)                          ///< Default tag
+#define SUB_TAG_FLOAT          (1L << 2)                          ///< Float tag
+#define SUB_TAG_FULL           (1L << 3)                          ///< Full tag
 /* }}} */
 
 /* Typedefs {{{ */
