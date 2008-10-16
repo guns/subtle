@@ -165,7 +165,7 @@ subUtilRegexNew(char *regex)
   if((errcode = regcomp(preg, regex, REG_EXTENDED|REG_NOSUB|REG_ICASE)))
     {
       size_t errsize = regerror(errcode, preg, NULL, 0);
-      char *errbuf = (char *)subUtilAlloc(1, errsize);
+      char *errbuf   = (char *)subUtilAlloc(1, errsize);
 
       regerror(errcode, preg, errbuf, errsize);
 

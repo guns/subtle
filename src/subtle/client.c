@@ -24,8 +24,7 @@ ClientMask(int type,
     {
       case SUB_DRAG_START: 
         XDrawRectangle(subtle->disp, DefaultRootWindow(subtle->disp), subtle->gcs.invert, 
-          r->x + 1, r->y + 1, r->width - 3, 
-          (c->flags & SUB_STATE_SHADE) ? subtle->th - subtle->bw : r->height - subtle->bw);
+          r->x + 1, r->y + 1, r->width - 3, r->height - subtle->bw);
         break;
       case SUB_DRAG_TOP:
         XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, 5, 5, c->rect.width - 10, 
@@ -78,7 +77,7 @@ subClientNew(Window win)
   int i, n = 0;
   long vid = 1337;
   char *wmclass = NULL;
-  Window unnused;
+  Window propwin = 0;
   XWMHints *hints = NULL;
   XWindowAttributes attrs;
   Atom *protos = NULL;
@@ -145,21 +144,18 @@ subClientNew(Window win)
       XFree(wmclass);  
     }
 
-  /* Ensure that there is at least one tag */
-  if(!c->tags) 
-    {
-      int id;
-      subTagFind("default", &id); ///< Just id of the tag
-      c->tags |= (1L << (id + 1));
-    }  
+  if(!c->tags) c->tags |= SUB_TAG_DEFAULT; ///< Ensure that there's at least on tag
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS, (long *)&c->tags, 1);
+
+  /* Special tags */
+  XGetTransientForHint(subtle->disp, win, &propwin); ///< Check for dialogs
+  if(c->tags & SUB_TAG_FLOAT || propwin) c->flags |= SUB_STATE_FLOAT;
+  if(c->tags & SUB_TAG_FULL)             c->flags |= SUB_STATE_FULL;
 
   /* EWMH: Desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
   /* Check for dialog windows etc. */
-  XGetTransientForHint(subtle->disp, win, &unnused);
-  if(unnused && !(c->flags & SUB_STATE_FLOAT)) c->flags |= SUB_STATE_FLOAT;
 
   printf("Adding client (%s)\n", c->name);
   subUtilLogDebug("new=client, name=%s, win=%#lx\n", c->name, win);
@@ -188,21 +184,18 @@ subClientConfigure(SubClient *c)
     c->rect.width - 2 * subtle->bw, c->rect.height - 2 * subtle->bw);
 
   /* Tell client new geometry */
-  if(!(c->flags & SUB_STATE_SHADE))
-    {
-      ev.type               = ConfigureNotify;
-      ev.event              = c->win;
-      ev.window             = c->win;
-      ev.x                  = c->rect.x;
-      ev.y                  = c->rect.y;
-      ev.width              = c->rect.width;
-      ev.height             = c->rect.height;
-      ev.above              = None;
-      ev.border_width       = 0;
-      ev.override_redirect  = 0;
+  ev.type               = ConfigureNotify;
+  ev.event              = c->win;
+  ev.window             = c->win;
+  ev.x                  = c->rect.x;
+  ev.y                  = c->rect.y;
+  ev.width              = c->rect.width;
+  ev.height             = c->rect.height;
+  ev.above              = None;
+  ev.border_width       = 0;
+  ev.override_redirect  = 0;
 
-      XSendEvent(subtle->disp, c->win, False, StructureNotifyMask, (XEvent *)&ev);
-    }
+  XSendEvent(subtle->disp, c->win, False, StructureNotifyMask, (XEvent *)&ev);
 } /* }}} */
 
  /** subClientRender {{{
@@ -242,7 +235,7 @@ subClientFocus(SubClient *c)
 {
   assert(c);
 
-  if(c->flags & SUB_PREF_FOCUS && !(c->flags & SUB_STATE_SHADE))
+  if(c->flags & SUB_PREF_FOCUS)
     {
       XEvent ev;
   
@@ -430,7 +423,7 @@ subClientDrag(SubClient *c,
             else ///< Move/Resize
               {
                 XDrawRectangle(subtle->disp, DefaultRootWindow(subtle->disp), subtle->gcs.invert, 
-                  r.x + 1, r.y + 1, r.width - 3, (c->flags & SUB_STATE_SHADE) ? subtle->th - 3 : r.height - 3);
+                  r.x + 1, r.y + 1, r.width - 3, r.height - 3);
 
                 if(c->flags & SUB_STATE_FLOAT) subClientConfigure(c);
                 else if(SUB_DRAG_BOTTOM >= mode) 
@@ -474,14 +467,6 @@ int type)
       c->flags &= ~type;
       switch(type)
         {
-          case SUB_STATE_SHADE:
-            subClientSetWMState(c, NormalState);
-
-            /* Map, resize and redraw */
-            XMapWindow(subtle->disp, c->win);
-            XMoveResizeWindow(subtle->disp, c->win, c->rect.x, c->rect.y, c->rect.width, c->rect.height);
-            subClientRender(c);
-            break;
           case SUB_STATE_FLOAT: 
             //XReparentWindow(subtle->disp, c->win, c->tile->frame, c->rect.x, c->rect.y);  
             break;
@@ -509,14 +494,6 @@ int type)
 
       switch(type)
         {
-          case SUB_STATE_SHADE:
-            subClientSetWMState(c, WithdrawnState);
-
-            /* Unmap, resize and redraw */
-            XUnmapWindow(subtle->disp, c->win);
-            XMoveResizeWindow(subtle->disp, c->win, c->rect.x, c->rect.y, c->rect.width, subtle->th);
-            subClientRender(c);
-            break;
 #if 0            
           case SUB_STATE_FLOAT:
             /* Respect the user/program preferences */

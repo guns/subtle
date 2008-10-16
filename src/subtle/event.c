@@ -60,7 +60,6 @@ HandleGrab(XEvent *ev)
         code  = XK_Pointer_Button1 + (ev->xbutton.button - 1);
         state = ev->xbutton.state;
         break;
-
       case KeyPress:    
         code  = ev->xkey.keycode;  
         state = ev->xkey.state; 
@@ -78,18 +77,15 @@ HandleGrab(XEvent *ev)
             if(c && c->flags & SUB_STATE_FLOAT)
               XRaiseWindow(subtle->disp, c->win);
             break;
-            
           case SUB_GRAB_EXEC:
             if(g->string) EventExec(g->string);
             break;
-
           case SUB_GRAB_VIEW_JUMP:
             if(0 <= g->number && g->number < subtle->views->ndata)
               subViewJump(VIEW(subtle->views->data[g->number]));
             break;
-
           default:  
-            printf("Not implemented yet!\n");
+            printf("Grab not implemented yet!\n");
         }
 
       subUtilLogDebug("Grab: code=%03d, mod=%03d\n", g->code, g->mod);
@@ -288,10 +284,6 @@ HandleMessage(XClientMessageEvent *ev)
           if(ev->data.l[1] == (long)subEwmhFind(SUB_EWMH_NET_WM_STATE_FULLSCREEN))
             {
               subClientToggle(c, SUB_STATE_FULL);
-            }
-          else if(ev->data.l[1] == (long)subEwmhFind(SUB_EWMH_NET_WM_STATE_SHADED))
-            {
-              subClientToggle(c, SUB_STATE_SHADE);
             }
         }
     }

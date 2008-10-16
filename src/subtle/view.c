@@ -209,11 +209,6 @@ subViewConfigure(SubView *v)
                   l->c2->rect = r;
                 }
 
-               printf("c1: x=%.3d, y=%.3d, width=%.3d, height=%.3d, size=%.3d\n", 
-                l->c1->rect.x, l->c1->rect.y, l->c1->rect.width, l->c1->rect.height, l->c1->size);
-               printf("c2: x=%.3d, y=%.3d, width=%.3d, height=%.3d, size=%.3d\n", 
-                l->c2->rect.x, l->c2->rect.y, l->c2->rect.width, l->c2->rect.height, l->c2->size);
-
               subClientConfigure(l->c1);
               subClientConfigure(l->c2);
             }
