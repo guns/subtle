@@ -25,6 +25,8 @@ subTagInit(void)
   subArrayPush(subtle->tags, (void *)t);
   t = subTagNew("float", NULL);
   subArrayPush(subtle->tags, (void *)t);
+  t = subTagNew("full", NULL);
+  subArrayPush(subtle->tags, (void *)t);  
   subTagPublish();
 } /* }}} */
 
