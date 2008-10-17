@@ -45,7 +45,17 @@ subTagNew(char *name,
 
   assert(name);
 
-  if(subTagFind(name, NULL)) return NULL;
+  /* Check if tag already exists */
+  if((t = subTagFind(name, NULL)))
+    {
+      if(regex)
+        {
+          /* Update regex */
+          if(t->preg) subUtilRegexKill(t->preg);
+          t->preg = subUtilRegexNew(regex);
+        }
+      return NULL;
+    }
 
   t = TAG(subUtilAlloc(1, sizeof(SubTag)));
   t->name  = strdup(name);
