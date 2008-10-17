@@ -451,11 +451,11 @@ ViewTags(VALUE self)
   VALUE array = Qnil, method = Qnil, klass = Qnil, name = Qnil;
 
   name = rb_ivar_get(self, rb_intern("@name"));
-  if(RTEST(name) && -1 != subSharedClientFind(STR2CSTR(name), &win))
+  if(RTEST(name) && -1 != subSharedViewFind(STR2CSTR(name), &win))
     {
       method = rb_intern("new");
       klass  = rb_const_get(rb_mKernel, rb_intern("Tag"));
-      flags  = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, "SUBTLE_CLIENT_TAGS", NULL);
+      flags  = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, "SUBTLE_VIEW_TAGS", NULL);
       tags   = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
       array  = rb_ary_new2(size);
 
