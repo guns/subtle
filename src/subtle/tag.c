@@ -110,7 +110,8 @@ subTagPublish(void)
   assert(0 < subtle->tags->ndata);
 
   names = (char **)subUtilAlloc(subtle->tags->ndata, sizeof(char *));
-  for(i = 0; i < subtle->tags->ndata; i++) names[i] = TAG(subtle->tags->data[i])->name;
+  for(i = 0; i < subtle->tags->ndata; i++) 
+    names[i] = TAG(subtle->tags->data[i])->name;
 
   /* EWMH: Tag list */
   subEwmhSetStrings(DefaultRootWindow(subtle->disp), SUB_EWMH_SUBTLE_TAG_LIST, names, i);

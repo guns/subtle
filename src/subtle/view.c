@@ -390,7 +390,7 @@ subViewPublish(void)
   int i;
   long vid = 0;
   char **names = NULL;
-  Window *frames = NULL;
+  Window *frames = NULL, root = DefaultRootWindow(subtle->disp);
 
   assert(0 < subtle->views->ndata);
 
@@ -406,15 +406,15 @@ subViewPublish(void)
     }
 
   /* EWMH: Virtual roots */
-  subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_VIRTUAL_ROOTS, frames, i);
+  subEwmhSetWindows(root, SUB_EWMH_NET_VIRTUAL_ROOTS, frames, i);
 
   /* EWMH: Desktops */
-  subEwmhSetCardinals(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_NUMBER_OF_DESKTOPS, (long *)&i, 1);
-  subEwmhSetStrings(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_DESKTOP_NAMES, names, i);
+  subEwmhSetCardinals(root, SUB_EWMH_NET_NUMBER_OF_DESKTOPS, (long *)&i, 1);
+  subEwmhSetStrings(root, SUB_EWMH_NET_DESKTOP_NAMES, names, i);
 
   /* EWMH: Current desktop */
   vid = subArrayIndex(subtle->views, (void *)subtle->cv); ///< Get desktop number
-  subEwmhSetCardinals(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_CURRENT_DESKTOP, &vid, 1);
+  subEwmhSetCardinals(root, SUB_EWMH_NET_CURRENT_DESKTOP, &vid, 1);
 
   subUtilLogDebug("publish=views, n=%d\n", i);
 

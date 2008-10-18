@@ -161,7 +161,7 @@ HandleMessage(XClientMessageEvent *ev)
 
   subUtilLogDebug("ClientMessage: type=%ld, format=%d\n", ev->message_type, ev->format);
 
-  /* ICC events */
+  /* ICCM */
   if(DefaultRootWindow(subtle->disp) == ev->window && 32 == ev->format)
     {
       if(ev->message_type == subEwmhFind(SUB_EWMH_NET_CURRENT_DESKTOP)) /* {{{ */
