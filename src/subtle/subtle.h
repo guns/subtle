@@ -78,10 +78,10 @@
 #define SUB_EWMH_NET_WM_NAME                  21
 #define SUB_EWMH_NET_WM_PID                   22                  ///< PID of client
 #define SUB_EWMH_NET_WM_DESKTOP               23                  ///< Desktop client is on
+#define SUB_EWMH_NET_SHOWING_DESKTOP          24                  ///< Showing desktop mode 
 
-#define SUB_EWMH_NET_WM_STATE                 24                  ///< Window state
-#define SUB_EWMH_NET_WM_STATE_MODAL           25                  ///< Modal window
-#define SUB_EWMH_NET_WM_STATE_SHADED          26                  ///< Shaded window
+#define SUB_EWMH_NET_WM_STATE                 25                  ///< Window state
+#define SUB_EWMH_NET_WM_STATE_MODAL           26                  ///< Modal window
 #define SUB_EWMH_NET_WM_STATE_HIDDEN          27                  ///< Hidden window
 #define SUB_EWMH_NET_WM_STATE_FULLSCREEN      28                  ///< Fullscreen window
 
@@ -93,27 +93,26 @@
 #define SUB_EWMH_NET_WM_ALLOWED_ACTIONS       33
 #define SUB_EWMH_NET_WM_ACTION_MOVE           34
 #define SUB_EWMH_NET_WM_ACTION_RESIZE         35
-#define SUB_EWMH_NET_WM_ACTION_SHADE          36
-#define SUB_EWMH_NET_WM_ACTION_FULLSCREEN     37
-#define SUB_EWMH_NET_WM_ACTION_CHANGE_DESKTOP 38
-#define SUB_EWMH_NET_WM_ACTION_CLOSE          39
+#define SUB_EWMH_NET_WM_ACTION_FULLSCREEN     36
+#define SUB_EWMH_NET_WM_ACTION_CHANGE_DESKTOP 37
+#define SUB_EWMH_NET_WM_ACTION_CLOSE          38
 
 /* Misc */
-#define SUB_EWMH_UTF8                         40                  ///< String encoding
+#define SUB_EWMH_UTF8                         39                  ///< String encoding
 
 /* subtle */
-#define SUB_EWMH_SUBTLE_CLIENT_TAG            41                  ///< subtle client tag
-#define SUB_EWMH_SUBTLE_CLIENT_UNTAG          42                  ///< subtle client untag
-#define SUB_EWMH_SUBTLE_CLIENT_TAGS           43                  ///< subtle client tags
-#define SUB_EWMH_SUBTLE_TAG_NEW               44                  ///< subtle tag new
-#define SUB_EWMH_SUBTLE_TAG_KILL              45                  ///< subtle tag kill
-#define SUB_EWMH_SUBTLE_TAG_LIST              46                  ///< subtle tag list
-#define SUB_EWMH_SUBTLE_VIEW_NEW              47                  ///< subtle view new
-#define SUB_EWMH_SUBTLE_VIEW_KILL             48                  ///< subtle view kill
-#define SUB_EWMH_SUBTLE_VIEW_LIST             49                  ///< subtle view list
-#define SUB_EWMH_SUBTLE_VIEW_TAG              50                  ///< subtle view tag
-#define SUB_EWMH_SUBTLE_VIEW_UNTAG            51                  ///< subtle view untag
-#define SUB_EWMH_SUBTLE_VIEW_TAGS             52                  ///< subtle view tags
+#define SUB_EWMH_SUBTLE_CLIENT_TAG            40                  ///< subtle client tag
+#define SUB_EWMH_SUBTLE_CLIENT_UNTAG          41                  ///< subtle client untag
+#define SUB_EWMH_SUBTLE_CLIENT_TAGS           42                  ///< subtle client tags
+#define SUB_EWMH_SUBTLE_TAG_NEW               43                  ///< subtle tag new
+#define SUB_EWMH_SUBTLE_TAG_KILL              44                  ///< subtle tag kill
+#define SUB_EWMH_SUBTLE_TAG_LIST              45                  ///< subtle tag list
+#define SUB_EWMH_SUBTLE_VIEW_NEW              46                  ///< subtle view new
+#define SUB_EWMH_SUBTLE_VIEW_KILL             47                  ///< subtle view kill
+#define SUB_EWMH_SUBTLE_VIEW_LIST             48                  ///< subtle view list
+#define SUB_EWMH_SUBTLE_VIEW_TAG              49                  ///< subtle view tag
+#define SUB_EWMH_SUBTLE_VIEW_UNTAG            50                  ///< subtle view untag
+#define SUB_EWMH_SUBTLE_VIEW_TAGS             51                  ///< subtle view tags
 /* }}} */
 
 /* Flags {{{ */
@@ -322,6 +321,7 @@ void subClientKill(SubClient *c);                                 ///< Kill clie
 /* display.c {{{ */
 void subDisplayInit(const char *display);                         ///< Create new display
 void subDisplayScan(void);                                        ///< Scan root window
+void subDisplayPublish(void);                                     ///< Publish display
 void subDisplayFinish(void);                                      ///< Delete display
 /* }}} */
 
