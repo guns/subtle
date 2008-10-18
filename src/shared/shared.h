@@ -29,6 +29,8 @@
 #include <X11/Xutil.h>
 #include <X11/Xmd.h>
 #include <X11/cursorfont.h>
+
+#include "config.h"
 /* }}} */
 
 /* Typedefs {{{ */
@@ -97,4 +99,5 @@ int subSharedTagFind(char *name);
 /* View {{{ */
 int subSharedViewFind(char *name, Window *win);
 /* }}} */
+
 #endif /* SHARED_H */

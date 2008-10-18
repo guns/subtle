@@ -115,8 +115,7 @@ subSharedRegexNew(char *regex)
 
       regerror(errcode, preg, errbuf, errsize);
 
-      subSharedLogWarn("Can't compile preg `%s'\n", regex);
-      subSharedLogDebug("%s\n", errbuf);
+      subSharedLogDebug("Can't compile preg `%s': %s\n", regex, errbuf);
 
       free(errbuf);
       subSharedRegexKill(preg);
@@ -186,7 +185,7 @@ subSharedMessage(Window win,
   for(i = 0; i < 5; i++) ev.xclient.data.l[i] = data.l[i]; ///< Copy data
 
   if(!XSendEvent(display, DefaultRootWindow(display), False, mask, &ev)) 
-    subSharedLogWarn("Can't send client message %s\n", type);
+    subSharedLogDebug("Can't send client message `%s'\n", type);
 } /* }}} */
 
  /** subSharedPropertyGet {{{
@@ -213,11 +212,13 @@ subSharedPropertyGet(Window win,
   if(Success != XGetWindowProperty(display, win, prop, 0L, 4096, False, type, &rettype, 
     &format, &nitems, &bytes, &data))
     {
-      subSharedLogWarn("Failed to get property (%s)\n", name);
+      subSharedLogDebug("Failed to get property `%s'\n", name);
+
+      return NULL;
     }
   if(type != rettype)
     {
-      subSharedLogWarn("Invalid type for property (%s)\n", name);
+      subSharedLogDebug("Invalid type for property `%s'\n", name);
       XFree(data);
 
       return NULL;
@@ -269,7 +270,7 @@ subSharedPropertyList(Window win,
       return names;
     }
   
-  subSharedLogWarn("Failed to get propery (%s)\n", name);
+  subSharedLogDebug("Failed to get propery (%s)\n", name);
 
   return NULL;
 } /* }}} */
@@ -409,7 +410,7 @@ subSharedClientList(int *size)
   else
     {
       *size = 0;
-      subSharedLogWarn("Failed to get client list\n");
+      subSharedLogDebug("Failed to get client list\n");
     }
 
   return clients;
@@ -467,7 +468,7 @@ subSharedClientFind(char *name,
     }
   free(clients);
 
-  subSharedLogWarn("Can't find client `%s'\n", name);
+  subSharedLogDebug("Can't find client `%s'\n", name);
 
   return -1;
 } /* }}} */
@@ -508,7 +509,7 @@ subSharedTagFind(char *name)
   subSharedRegexKill(preg);
   free(tags);
 
-  subSharedLogWarn("Cannot find tag `%s'.\n", name);
+  subSharedLogDebug("Cannot find tag `%s'.\n", name);
 
   return -1;
 } /* }}} */
@@ -564,7 +565,7 @@ subSharedViewFind(char *name,
   free(frames);
   free(names);
 
-  subSharedLogWarn("Can't find view `%s'.\n", name);
+  subSharedLogDebug("Can't find view `%s'.\n", name);
 
   return -1;
 } /* }}} */

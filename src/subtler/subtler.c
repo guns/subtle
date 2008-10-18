@@ -10,7 +10,6 @@
   * See the file COPYING.
   **/
 
-#include "config.h"
 #include "shared.h"
 
 #ifdef HAVE_EXECINFO_H

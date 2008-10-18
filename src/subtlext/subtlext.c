@@ -10,12 +10,39 @@
   **/
 
 #include <ruby.h>
-#include "config.h"
 #include "shared.h"
 
 Display *display = NULL;
-int debug = 0;
 static int refcount = 0;
+
+#ifdef DEBUG
+int debug = 0;
+#endif /* DEBUG */
+
+/* SubtlextRunning {{{ */
+static VALUE
+SubtlextRunning(void)
+{
+  char *prop = NULL;
+  Window *wmcheck = NULL;
+  VALUE ret = Qfalse;
+
+  wmcheck = subSharedWindowWMCheck();
+  if(wmcheck)
+    {
+      prop = subSharedPropertyGet(*wmcheck, XInternAtom(display, "UTF8_STRING", False),
+        "_NET_WM_NAME", NULL);
+      if(prop) 
+        {
+          if(!strncmp(prop, PKG_NAME, strlen(prop))) ret = Qtrue;
+          subSharedLogDebug("wmname=%s\n", prop);
+          free(prop);
+        }
+      free(wmcheck);
+    }
+
+  return ret;
+} /* }}} */
 
 /* Client {{{ */
 /* ClientInit {{{ */
@@ -102,7 +129,15 @@ SubtleNew(int argc,
   char *dispname = NULL;
   VALUE disp = Qnil, data = Qnil;
 
+#ifdef DEBUG
+  VALUE dbg = Qfalse;
+
+  rb_scan_args(argc, argv, "02", &disp, &dbg);
+
+  if(Qtrue == dbg) debug++;
+#else
   rb_scan_args(argc, argv, "01", &disp);
+#endif /* DEBUG */ 
 
   /* Open connection to server */
   if(!display)
@@ -110,10 +145,23 @@ SubtleNew(int argc,
       if(RTEST(disp)) dispname = STR2CSTR(disp);
       if(!(display = XOpenDisplay(dispname)))
         {
-          subSharedLogError("Can't open display `%s'.\n", (dispname) ? dispname : ":0.0");
+          subSharedLogError("Can't open display `%s'\n", (dispname) ? dispname : ":0.0");
+
           return Qnil;
         }
       XSetErrorHandler(subSharedLogXError);
+
+      /* Check if subtle is running */
+      if(Qfalse == SubtlextRunning())
+        {
+          XCloseDisplay(display);
+          display = NULL;
+          
+          rb_raise(rb_eRuntimeError, "%s is not running", PKG_NAME);
+
+          return Qnil;
+        }
+
       subSharedLogDebug("Connection opened (%s)\n", dispname);
     }
   refcount++;
@@ -143,23 +191,7 @@ SubtleDisplay(VALUE self)
 static VALUE
 SubtleRunning(VALUE self)
 {
-  char *prop = NULL;
-  Window *wmcheck = NULL;
-  VALUE ret = Qfalse;
-  
-  wmcheck = subSharedWindowWMCheck();
-  prop    = subSharedPropertyGet(*wmcheck, XInternAtom(display, "UTF8_STRING", False),
-    "_NET_WM_NAME", NULL);
-  if(prop) 
-    {
-      if(!strncmp(prop, PKG_NAME, strlen(prop))) ret = Qtrue;
-      subSharedLogDebug("wmname=%s\n", prop);
-      free(prop);
-    }
-
-  free(wmcheck);
-
-  return ret;
+  return SubtlextRunning();
 } /* }}} */
 
 /* SubtleTagList {{{ */
