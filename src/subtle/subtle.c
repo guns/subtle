@@ -145,7 +145,13 @@ main(int argc,
   sigaction(SIGSEGV, &act, NULL);
   sigaction(SIGCHLD, &act, NULL);
 
+  /* Init subtle */
   subtle = SUBTLE(subUtilAlloc(1, sizeof(SubSubtle)));
+  subtle->clients = subArrayNew();
+  subtle->grabs   = subArrayNew();
+  subtle->sublets = subArrayNew();
+  subtle->tags    = subArrayNew();
+  subtle->views   = subArrayNew();
 
 #ifdef DEBUG
   subtle->debug = debug;
@@ -162,6 +168,7 @@ main(int argc,
   subRubyLoadConfig(config);
   subRubyLoadSublets(sublets);
 
+  subDisplayPublish();
   subDisplayScan();
   subEventLoop();
 
