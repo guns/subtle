@@ -57,7 +57,7 @@ HandleGrab(XEvent *ev)
             return;
           }      
 
-        code  = XK_Pointer_Button1 + (ev->xbutton.button - 1);
+        code  = XK_Pointer_Button1 + ev->xbutton.button;
         state = ev->xbutton.state;
         break;
       case KeyPress:    

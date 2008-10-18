@@ -84,7 +84,7 @@ subGrabNew(const char *name,
   else
     {
       g->flags |= (SUB_GRAB_KEY|SUB_GRAB_EXEC);
-      g->string	= strdup(name); /* }}} */
+      g->string	= strdup(name);
     }
 
 	while(tok)
@@ -99,7 +99,7 @@ subGrabNew(const char *name,
           for(i = 0; 5 > i; i++)
             if(!strncmp(tok, mouse[i], 2))
               {
-                sym = XK_Pointer_Button1 + i; ///< @todo Implementation independant?
+                sym = XK_Pointer_Button1 + i + 1; ///< @todo Implementation independent?
                 break;
               }
 
@@ -199,15 +199,23 @@ subGrabSet(Window win)
 					SubGrab *g = GRAB(subtle->grabs->data[i]);
 
           for(j = 0; 4 > j; j++)
-					  XGrabKey(subtle->disp, g->code, g->mod|modifiers[j], win, True, 
-              GrabModeAsync, GrabModeAsync);
+            {
+              if(g->flags & SUB_GRAB_KEY)
+                {
+      					  XGrabKey(subtle->disp, g->code, g->mod|modifiers[j], win, True, 
+                    GrabModeAsync, GrabModeAsync);
+                }
+              else if(g->flags & SUB_GRAB_MOUSE)
+                {
+                  XGrabButton(subtle->disp, g->code - XK_Pointer_Button1, 
+                    g->mod|modifiers[j], win, False, ButtonPressMask|ButtonReleaseMask,
+                    GrabModeAsync, GrabModeSync, None, None);
+                }
+            }
 				}
 			if(subtle->cv->frame == win) 
         XSetInputFocus(subtle->disp, win, RevertToNone, CurrentTime);
 			subtle->focus = win; ///< Update focus window
-
-      XGrabButton(subtle->disp, AnyButton, AnyModifier, win, False,
-        ButtonPressMask|ButtonReleaseMask, GrabModeAsync, GrabModeSync, None, None);
 		}
 } /* }}} */
 
@@ -220,6 +228,7 @@ void
 subGrabUnset(Window win)
 {
 	XUngrabKey(subtle->disp, AnyKey, AnyModifier, win);
+  XUngrabButton(subtle->disp, AnyButton, AnyModifier, win);
 	subtle->focus = 0; ///< Unset focus window
 } /* }}} */
 
