@@ -17,6 +17,69 @@ Display *display = NULL;
 int debug = 0;
 static int refcount = 0;
 
+/* Client {{{ */
+/* ClientInit {{{ */
+static VALUE
+ClientInit(VALUE self,
+  VALUE win)
+{
+  char *wmname = subSharedWindowWMName(NUM2LONG(win));
+
+  rb_iv_set(self, "@win", win);
+  rb_iv_set(self, "@name", rb_str_new2(wmname));
+
+  free(wmname);
+
+  return self;
+} /* }}} */
+
+/* ClientTags {{{ */
+static VALUE
+ClientTags(VALUE self)
+{
+  Window win = 0;
+  int i, size = 0;
+  char **tags = NULL;
+  unsigned long *flags = NULL;
+  VALUE array = Qnil, method = Qnil, klass = Qnil, name = Qnil;
+
+  name = rb_ivar_get(self, rb_intern("@name"));
+  if(RTEST(name) && -1 != subSharedClientFind(STR2CSTR(name), &win))
+    {
+      method = rb_intern("new");
+      klass  = rb_const_get(rb_mKernel, rb_intern("Tag"));
+      flags  = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, "SUBTLE_CLIENT_TAGS", NULL);
+      tags   = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
+      array  = rb_ary_new2(size);
+
+      for(i = 0; i < size; i++)
+        {
+          if((int)*flags & (1L << (i + 1)))
+            {
+              VALUE t = rb_funcall(klass, method, 1, rb_str_new2(tags[i]));
+              rb_ary_push(array, t);
+            }
+        }
+
+      free(flags);
+      free(tags);
+
+      return array;
+    }
+  
+  return Qnil;
+} /* }}} */
+
+/* ClientToString {{{ */
+static VALUE
+ClientToString(VALUE self)
+{
+  VALUE name = rb_ivar_get(self, rb_intern("@name"));
+
+  return RTEST(name) ? name : Qnil;
+} /* }}} */
+/* }}} */
+
 /* Subtle {{{ */
 /* SubtleKill {{{ */
 static void
@@ -81,9 +144,11 @@ static VALUE
 SubtleRunning(VALUE self)
 {
   char *prop = NULL;
+  Window *wmcheck = NULL;
   VALUE ret = Qfalse;
   
-  prop = subSharedPropertyGet(DefaultRootWindow(display), XInternAtom(display, "UTF8_STRING", False),
+  wmcheck = subSharedWindowWMCheck();
+  prop    = subSharedPropertyGet(*wmcheck, XInternAtom(display, "UTF8_STRING", False),
     "_NET_WM_NAME", NULL);
   if(prop) 
     {
@@ -91,6 +156,8 @@ SubtleRunning(VALUE self)
       subSharedLogDebug("wmname=%s\n", prop);
       free(prop);
     }
+
+  free(wmcheck);
 
   return ret;
 } /* }}} */
@@ -429,6 +496,27 @@ SubtleViewCurrent(VALUE self)
 } /* }}} */
 /* }}} */
 
+/* Tag {{{ */
+/* TagInit {{{ */
+static VALUE
+TagInit(VALUE self,
+  VALUE name)
+{
+  rb_iv_set(self, "@name", name);
+
+  return self;
+} /* }}} */
+
+/* TagToString {{{ */
+static VALUE
+TagToString(VALUE self)
+{
+  VALUE name = rb_ivar_get(self, rb_intern("@name"));
+
+  return RTEST(name) ? name : Qnil;
+} /* }}} */
+/* }}} */
+
 /* View {{{ */
 /* ViewInit {{{ */
 static VALUE
@@ -518,90 +606,6 @@ ViewToString(VALUE self)
 } /* }}} */
 /* }}} */
 
-/* Tag {{{ */
-/* TagInit {{{ */
-static VALUE
-TagInit(VALUE self,
-  VALUE name)
-{
-  rb_iv_set(self, "@name", name);
-
-  return self;
-} /* }}} */
-
-/* TagToString {{{ */
-static VALUE
-TagToString(VALUE self)
-{
-  VALUE name = rb_ivar_get(self, rb_intern("@name"));
-
-  return RTEST(name) ? name : Qnil;
-} /* }}} */
-/* }}} */
-
-/* Client {{{ */
-/* ClientInit {{{ */
-static VALUE
-ClientInit(VALUE self,
-  VALUE win)
-{
-  char *wmname = subSharedWindowWMName(NUM2LONG(win));
-
-  rb_iv_set(self, "@win", win);
-  rb_iv_set(self, "@name", rb_str_new2(wmname));
-
-  free(wmname);
-
-  return self;
-} /* }}} */
-
-/* ClientTags {{{ */
-static VALUE
-ClientTags(VALUE self)
-{
-  Window win = 0;
-  int i, size = 0;
-  char **tags = NULL;
-  unsigned long *flags = NULL;
-  VALUE array = Qnil, method = Qnil, klass = Qnil, name = Qnil;
-
-  name = rb_ivar_get(self, rb_intern("@name"));
-  if(RTEST(name) && -1 != subSharedClientFind(STR2CSTR(name), &win))
-    {
-      method = rb_intern("new");
-      klass  = rb_const_get(rb_mKernel, rb_intern("Tag"));
-      flags  = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, "SUBTLE_CLIENT_TAGS", NULL);
-      tags   = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
-      array  = rb_ary_new2(size);
-
-      for(i = 0; i < size; i++)
-        {
-          if((int)*flags & (1L << (i + 1)))
-            {
-              VALUE t = rb_funcall(klass, method, 1, rb_str_new2(tags[i]));
-              rb_ary_push(array, t);
-            }
-        }
-
-      free(flags);
-      free(tags);
-
-      return array;
-    }
-  
-  return Qnil;
-} /* }}} */
-
-/* ClientToString {{{ */
-static VALUE
-ClientToString(VALUE self)
-{
-  VALUE name = rb_ivar_get(self, rb_intern("@name"));
-
-  return RTEST(name) ? name : Qnil;
-} /* }}} */
-/* }}} */
-
  /** Init_subtlext {{{
   * @brief Extension entry point
   **/
@@ -610,6 +614,20 @@ void
 Init_subtlext(void)
 {
   VALUE klass = Qnil;
+
+  /* Class: client {{{ */
+  klass = rb_define_class("Client", rb_cObject);
+  rb_define_attr(klass, "id", 1, 1);
+  rb_define_attr(klass, "win", 1, 1);
+  rb_define_attr(klass, "name", 1, 1);
+  rb_define_method(klass, "initialize", ClientInit, 1);
+//  rb_define_method(klass, "add_tag", ClientTagAdd, 1);
+//  rb_define_method(klass, "del_tag", ClientTagDel, 1);
+//  rb_define_method(klass, "focus", ClientFocus, 0);
+  rb_define_method(klass, "tags", ClientTags, 0);
+//  rb_define_method(klass, "focus?", ClientFocus, 0);
+  rb_define_method(klass, "to_s", ClientToString, 0);
+  /* }}} */
 
   /* Class: subtle {{{ */
 	klass = rb_define_class("Subtle", rb_cObject);
@@ -630,6 +648,14 @@ Init_subtlext(void)
 	rb_define_method(klass, "running?", SubtleRunning, 0);
   /* }}} */
 
+  /* Class: tag {{{ */
+  klass = rb_define_class("Tag", rb_cObject);
+  rb_define_attr(klass, "id", 1, 1);
+  rb_define_attr(klass, "name", 1, 1);
+  rb_define_method(klass, "initialize", TagInit, 1);
+  rb_define_method(klass, "to_s", TagToString, 0);
+  /* }}} */
+
   /* Class: view {{{ */
   klass = rb_define_class("View", rb_cObject);
   rb_define_attr(klass, "id", 1, 1);
@@ -642,27 +668,5 @@ Init_subtlext(void)
   rb_define_method(klass, "jump", ViewJump, 0);
   rb_define_method(klass, "current?", ViewCurrent, 0);
   rb_define_method(klass, "to_s", ViewToString, 0);
-  /* }}} */
-
-  /* Class: tag {{{ */
-  klass = rb_define_class("Tag", rb_cObject);
-  rb_define_attr(klass, "id", 1, 1);
-  rb_define_attr(klass, "name", 1, 1);
-  rb_define_method(klass, "initialize", TagInit, 1);
-  rb_define_method(klass, "to_s", TagToString, 0);
-  /* }}} */
-
-  /* Class: client {{{ */
-  klass = rb_define_class("Client", rb_cObject);
-  rb_define_attr(klass, "id", 1, 1);
-  rb_define_attr(klass, "win", 1, 1);
-  rb_define_attr(klass, "name", 1, 1);
-  rb_define_method(klass, "initialize", ClientInit, 1);
-//  rb_define_method(klass, "add_tag", ClientTagAdd, 1);
-//  rb_define_method(klass, "del_tag", ClientTagDel, 1);
-//  rb_define_method(klass, "focus", ClientFocus, 0);
-  rb_define_method(klass, "tags", ClientTags, 0);
-//  rb_define_method(klass, "focus?", ClientFocus, 0);
-  rb_define_method(klass, "to_s", ClientToString, 0);
   /* }}} */
 } /* }}} */
