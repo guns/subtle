@@ -79,6 +79,7 @@ char **subSharedPropertyList(Window win, char *name, int *size);
 /* }}} */
 
 /* Window {{{ */
+Window *subSharedWindowWMCheck(void);
 char *subSharedWindowWMName(Window win);
 char *subSharedWindowWMClass(Window win);
 Window subSharedWindowSelect(void);

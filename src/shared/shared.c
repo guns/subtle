@@ -218,8 +218,6 @@ subSharedPropertyGet(Window win,
   if(type != rettype)
     {
       subSharedLogWarn("Invalid type for property (%s)\n", name);
-      printf("name=%s, type=%ld, rettype=%ld, intern: utf8==%ld\n", name, type, rettype, 
-        XInternAtom(display, "UTF8_STRING", False));
       XFree(data);
 
       return NULL;
@@ -274,6 +272,17 @@ subSharedPropertyList(Window win,
   subSharedLogWarn("Failed to get propery (%s)\n", name);
 
   return NULL;
+} /* }}} */
+
+ /** subSharedWindowWMCheck {{{
+  * @brief Get WM check window
+  **/
+
+Window *
+subSharedWindowWMCheck(void)
+{
+  return (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW, 
+    "_NET_SUPPORTING_WM_CHECK", NULL);
 } /* }}} */
 
  /** subSharedWindowWMName {{{
@@ -386,22 +395,24 @@ subSharedWindowSelect(void)
 Window *
 subSharedClientList(int *size)
 {
+  Window *clients = NULL;
   unsigned long len;
 
   assert(size);
 
-  Window *clients = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW, "_NET_CLIENT_LIST", &len);
+  clients = (Window *)subSharedPropertyGet(DefaultRootWindow(display), 
+    XA_WINDOW, "_NET_CLIENT_LIST", &len);
   if(clients)
     {
       *size = len / sizeof(Window);
-      return clients;
     }
   else
     {
       *size = 0;
       subSharedLogWarn("Failed to get client list\n");
-      return NULL;
     }
+
+  return clients;
 } /* }}} */
 
  /** subSharedClientFind {{{
@@ -436,9 +447,11 @@ subSharedClientFind(char *name,
           snprintf(buf, sizeof(buf), "%#lx", clients[i]);
 
           /* Find client either by window id or by wmname */
-          if(clients[i] == selwin || subSharedRegexMatch(preg, wmname) || subSharedRegexMatch(preg, buf))
+          if(clients[i] == selwin || subSharedRegexMatch(preg, wmname) || 
+            subSharedRegexMatch(preg, buf))
             {
-              subSharedLogDebug("Found: type=client, name=%s, win=%#lx, n=%d\n", name, clients[i], i);
+              subSharedLogDebug("Found: type=client, name=%s, win=%#lx, n=%d\n", name, 
+                clients[i], i);
 
               if(win) *win = clients[i];
 
@@ -475,8 +488,8 @@ subSharedTagFind(char *name)
 
   assert(name);
 
-  preg = subSharedRegexNew(name);
-  tags = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
+  preg    = subSharedRegexNew(name);
+  tags    = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
 
   /* Find tag id */
   for(i = 0; i < size; i++)
@@ -513,14 +526,13 @@ subSharedViewFind(char *name,
   Window *win)
 {
   int size = 0;
-  Window *frames = NULL;
+  Window *frames = NULL, root = DefaultRootWindow(display);
   char **names = NULL;
 
   assert(name);
 
-  frames = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
-  names  = subSharedPropertyList(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);  
-
+  frames = (Window *)subSharedPropertyGet(root, XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
+  names  = subSharedPropertyList(root, "_NET_DESKTOP_NAMES", &size);  
   if(names)
     {
       int i;
@@ -534,7 +546,8 @@ subSharedViewFind(char *name,
           /* Find client either by name or by window id */
           if(subSharedRegexMatch(preg, names[i]) || subSharedRegexMatch(preg, buf)) 
             {
-              subSharedLogDebug("Found: type=view, name=%s win=%#lx, n=%d\n", name, frames[i], i);
+              subSharedLogDebug("Found: type=view, name=%s win=%#lx, n=%d\n", 
+                name, frames[i], i);
 
               if(win) *win = frames[i];
 
