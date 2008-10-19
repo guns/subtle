@@ -51,7 +51,7 @@ Grabs:
   ViewJump3: "A-3"                # Jump to view 3
   ViewJump4: "A-4"                # Jump to view 4
   ViewJump5: "A-5"                # Jump to view 5
-  WindowRaise: "B1"               # Raise window
+  WindowRaise: "A-B1"             # Raise window
   WindowMove: "S-B1"              # Move window
   WindowResize: "S-B3"            # Resize window
   "subtag.sh -c -t": "A-S-c"      # Exec tag menu (client/tag)
@@ -68,7 +68,7 @@ Tags:
   browser: "firefox"
   editor: "gvim"
   video: "mplayer"
-  float: "xnest"
+  float: "xnest|urxvt"
   full: "gvim"
 
 #
