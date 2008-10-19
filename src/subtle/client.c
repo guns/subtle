@@ -429,51 +429,36 @@ int type)
 {
   XEvent event;
 
+
   assert(c);
 
   if(c->flags & type)
     {
       c->flags &= ~type;
-      switch(type)
-        {
-          case SUB_STATE_FLOAT: 
-            //XReparentWindow(subtle->disp, c->win, c->tile->frame, c->rect.x, c->rect.y);  
-            break;
-#if 0            
-          case SUB_STATE_FULL:
-            /* Map most of the windows */
-            XMapWindow(subtle->disp, c->title);
-            XMapWindow(subtle->disp, c->left);
-            XMapWindow(subtle->disp, c->right);
-            XMapWindow(subtle->disp, c->bottom);
-            XMapWindow(subtle->disp, c->caption);
-
-            subClientConfigure(c);
-            subArrayPush(c->tile->clients, (void *)c);
-            subTileConfigure(c->tile);
-            break;  
-#endif            
-        }
+      subViewConfigure(subtle->cv);
     }
   else 
     {
-      //long supplied = 0;
-      //XSizeHints *hints = NULL;
+      long supplied = 0;
+      XSizeHints *hints = NULL;
+      int width = DisplayWidth(subtle->disp, DefaultScreen(subtle->disp)),
+        height = DisplayHeight(subtle->disp, DefaultScreen(subtle->disp));      
+
       c->flags |= type;
 
       switch(type)
         {
-#if 0            
           case SUB_STATE_FLOAT:
             /* Respect the user/program preferences */
             hints = XAllocSizeHints();
             if(!hints) subUtilLogError("Can't alloc memory. Exhausted?\n");
+
             if(XGetWMNormalHints(subtle->disp, c->win, hints, &supplied))
               {
                 if(hints->flags & (USPosition|PPosition))
                   {
                     c->rect.x = hints->x + 2 * subtle->bw;
-                    c->rect.y = hints->y + subtle->th + subtle->bw;
+                    c->rect.y = hints->y + 2 * subtle->bw;
                   }
                 else if(hints->flags & PAspect)
                   {
@@ -483,55 +468,48 @@ int type)
                 if(hints->flags & (USSize|PSize))
                   {
                     c->rect.width  = hints->width + 2 * subtle->bw;
-                    c->rect.height  = hints->height + subtle->th + subtle->bw;
+                    c->rect.height = hints->height + 2 * subtle->bw;
                   }
                 else if(hints->flags & PBaseSize)
                   {
                     c->rect.width  = hints->base_width + 2 * subtle->bw;
-                    c->rect.height  = hints->base_height + subtle->th + subtle->bw;
+                    c->rect.height = hints->base_height + 2 * subtle->bw;
                   }
                 else
                   {
-                    /* Fallback for clients breaking the ICCCM (mostly Gtk+ stuff) */
-                    if(hints->base_width > 0 && hints->base_width <= DisplayWidth(subtle->disp, DefaultScreen(subtle->disp)) &&
-                      hints->base_height > 0 && hints->base_height <= DisplayHeight(subtle->disp, DefaultScreen(subtle->disp))) 
+                    /* Fallback for clients ignoring ICCCM specs (mostly Gtk+ stuff) */
+                    if(0 < hints->base_width && hints->base_width <= width &&
+                      0 < hints->base_height && hints->base_height <= height) 
                       {
                         c->rect.width  = hints->base_width + 2 * subtle->bw;
-                        c->rect.height  = hints->base_width + subtle->th + subtle->bw;
-                        c->rect.x      = (DisplayWidth(subtle->disp, DefaultScreen(subtle->disp)) - c->rect.width) / 2;
-                        c->rect.y      = (DisplayHeight(subtle->disp, DefaultScreen(subtle->disp)) - c->rect.height) / 2;
+                        c->rect.height = hints->base_height + 2 * subtle->bw;
+                        c->rect.x      = (width - c->rect.width) / 2;
+                        c->rect.y      = (height - c->rect.height) / 2;
                       }
                   }
               }
 
             subClientConfigure(c);
-            XReparentWindow(subtle->disp, c->win, DefaultRootWindow(subtle->disp), c->rect.x, c->rect.y);
             XRaiseWindow(subtle->disp, c->win);
 
             XFree(hints);
             break;
-          case SUB_STATE_FULL:
-            /* Unmap some windows */
-            XUnmapWindow(subtle->disp, c->title);
-            XUnmapWindow(subtle->disp, c->left);
-            XUnmapWindow(subtle->disp, c->right);
-            XUnmapWindow(subtle->disp, c->bottom);                
-            XUnmapWindow(subtle->disp, c->caption);
 
+          case SUB_STATE_FULL:
             /* Resize to display resolution */
             c->rect.x      = 0;
             c->rect.y      = 0;
-            c->rect.width  = DisplayWidth(subtle->disp, DefaultScreen(subtle->disp));
-            c->rect.height  = DisplayHeight(subtle->disp, DefaultScreen(subtle->disp));
+            c->rect.width  = width;
+            c->rect.height = height;
 
             XReparentWindow(subtle->disp, c->win, DefaultRootWindow(subtle->disp), 0, 0);
             subClientConfigure(c);
-#endif            
         }
     }
+
   XUngrabServer(subtle->disp);
   while(XCheckTypedEvent(subtle->disp, UnmapNotify, &event));
-  if(type != SUB_STATE_FULL) subViewConfigure(subtle->cv);
+  if(SUB_STATE_FULL != type) subViewConfigure(subtle->cv);
 } /* }}} */
 
   /** subClientFetchName {{{
