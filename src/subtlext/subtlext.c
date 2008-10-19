@@ -75,7 +75,8 @@ ClientTags(VALUE self)
     {
       method = rb_intern("new");
       klass  = rb_const_get(rb_mKernel, rb_intern("Tag"));
-      flags  = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, "SUBTLE_CLIENT_TAGS", NULL);
+      flags  = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, 
+        "SUBTLE_CLIENT_TAGS", NULL);
       tags   = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
       array  = rb_ary_new2(size);
 
@@ -84,6 +85,7 @@ ClientTags(VALUE self)
           if((int)*flags & (1L << (i + 1)))
             {
               VALUE t = rb_funcall(klass, method, 1, rb_str_new2(tags[i]));
+              rb_iv_set(t, "@id", INT2FIX(i));
               rb_ary_push(array, t);
             }
         }
@@ -575,7 +577,8 @@ ViewTags(VALUE self)
     {
       method = rb_intern("new");
       klass  = rb_const_get(rb_mKernel, rb_intern("Tag"));
-      flags  = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, "SUBTLE_VIEW_TAGS", NULL);
+      flags  = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, 
+        "SUBTLE_VIEW_TAGS", NULL);
       tags   = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
       array  = rb_ary_new2(size);
 
@@ -584,6 +587,7 @@ ViewTags(VALUE self)
           if((int)*flags & (1L << (i + 1)))
             {
               VALUE t = rb_funcall(klass, method, 1, rb_str_new2(tags[i]));
+              rb_iv_set(t, "@id", INT2FIX(i));
               rb_ary_push(array, t);
             }
         }
