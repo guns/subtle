@@ -232,7 +232,6 @@ typedef struct subsublet_t /* {{{ */
 typedef struct subsubtle_t /* {{{ */
 {
   int                th, bw, fx, fy;                              ///< Subtle tab height, border width, font metrics
-  char               *caption;                                    ///< Subtle caption
 
   Display            *disp;                                       ///< Subtle Xorg display
   Window             focus;                                       ///< Subtle focus

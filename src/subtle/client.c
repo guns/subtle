@@ -213,12 +213,10 @@ subClientRender(SubClient *c)
   attrs.border_pixel = subtle->focus == c->win ? subtle->colors.focus : subtle->colors.norm;
   XChangeWindowAttributes(subtle->disp, c->win, CWBorderPixel, &attrs);
 
-  /* Update caption */
-  XResizeWindow(subtle->disp, subtle->bar.caption, TEXTW(c->name), subtle->th);
-  XSetWindowBackground(subtle->disp, c->win, attrs.border_pixel);
+  /* Caption */
   XClearWindow(subtle->disp, subtle->bar.caption);
-  XDrawString(subtle->disp, subtle->bar.caption, subtle->gcs.font, 5, 
-    subtle->fy - 1, c->name, strlen(c->name));
+  XDrawString(subtle->disp, subtle->bar.caption, subtle->gcs.font, 3, subtle->fy - 1, 
+    c->name, strlen(c->name));
 } /* }}} */
 
  /** subClientFocus {{{

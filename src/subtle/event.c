@@ -362,24 +362,29 @@ HandleFocus(XFocusChangeEvent *ev)
             {
               SubClient *f = NULL;
               Window oldfocus = subtle->focus;
-              subtle->focus   = 0;
-              subtle->caption = NULL;
+              subtle->focus = 0;
 
               if((f = CLIENT(subUtilFind(oldfocus, CLIENTID))))
                 {
-                  if(!(f->flags & SUB_STATE_DEAD)) 
+                  if(!(f->flags & SUB_STATE_DEAD)) ///< Don't revive
                     {
                       subGrabUnset(oldfocus);
                       subClientRender(f);
                     }
                 }
               else subGrabUnset(oldfocus);
+              subViewRender();
             } 
         }
       else if(FocusIn == ev->type) ///< FocusIn event
         {
-          subtle->focus   = c->win;
-          subtle->caption = c->name;
+          /* Caption */
+          if(subtle->focus != c->win) 
+            {
+              subtle->focus = c->win;
+              XResizeWindow(subtle->disp, subtle->bar.caption, 
+                TEXTW(c->name), subtle->th);
+            }
 
           subGrabSet(c->win);
           subClientRender(c);

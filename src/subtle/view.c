@@ -269,10 +269,13 @@ subViewUpdate(void)
           XMoveResizeWindow(subtle->disp, v->button, width, 0, v->width, subtle->th);
           width += v->width;
         }
-      if(0 < width) XMoveResizeWindow(subtle->disp, subtle->bar.views, 0, 0, width, subtle->th); ///< Sanity
-      if(subtle->caption) XMoveResizeWindow(subtle->disp, subtle->bar.caption, width, 0, 
-        strlen(subtle->caption) * subtle->fx + 8, subtle->th); ///< Caption
-  }
+
+      if(0 < width) 
+        {
+          XResizeWindow(subtle->disp, subtle->bar.views, width, subtle->th);
+          XMoveWindow(subtle->disp, subtle->bar.caption, width, 0); 
+        }
+    }
 } /* }}} */
 
  /** subViewRender {{{ 
@@ -287,19 +290,10 @@ subViewRender(void)
     {
       int i;
 
+      /* Bar window */
       XClearWindow(subtle->disp, subtle->bar.win);
       XFillRectangle(subtle->disp, subtle->bar.win, subtle->gcs.border, 0, 2, 
         DisplayWidth(subtle->disp, DefaultScreen(subtle->disp)), subtle->th - 4);  
-
-      if(subtle->cv) XClearWindow(subtle->disp, subtle->cv->frame); ///< Clear view frame
-
-      /* Caption */
-      if(subtle->caption)
-        {
-          XClearWindow(subtle->disp, subtle->bar.caption);
-          XDrawString(subtle->disp, subtle->bar.caption, subtle->gcs.font, 3, subtle->fy - 1, 
-            subtle->caption, strlen(subtle->caption));
-        }
 
       /* View buttons */
       for(i = 0; i < subtle->views->ndata; i++)
@@ -312,8 +306,6 @@ subViewRender(void)
           XDrawString(subtle->disp, v->button, subtle->gcs.font, 3, subtle->fy - 1, 
             v->name, strlen(v->name));
         }
-
-
     }
 } /* }}} */
 
