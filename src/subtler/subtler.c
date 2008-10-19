@@ -212,9 +212,10 @@ ActionClientTags(char *arg1,
   Assert(arg1, "Usage: %sr -c PATTERN -g\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  if(subSharedClientFind(arg1, &win))
+  if(-1 != subSharedClientFind(arg1, &win))
     {
-      flags = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, "SUBTLE_CLIENT_TAGS", NULL);
+      flags = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, 
+        "SUBTLE_CLIENT_TAGS", NULL);
       tags  = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
 
       for(i = 0; i < size; i++)
@@ -290,13 +291,16 @@ ActionTagFind(char *arg1,
   /* Collect data */
   tag     = subSharedTagFind(arg1);
   clients = subSharedClientList(&size_clients);
-  views   = subSharedPropertyList(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size_views);
-  frames  = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
+  views   = subSharedPropertyList(DefaultRootWindow(display), 
+    "_NET_DESKTOP_NAMES", &size_views);
+  frames  = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW, 
+    "_NET_VIRTUAL_ROOTS", NULL);
 
   /* Views */
   for(i = 0; i < size_views; i++)
     {
-      flags = (unsigned long *)subSharedPropertyGet(frames[i], XA_CARDINAL, "SUBTLE_VIEW_TAGS", NULL);
+      flags = (unsigned long *)subSharedPropertyGet(frames[i], XA_CARDINAL, 
+        "SUBTLE_VIEW_TAGS", NULL);
 
       if((int)*flags & (1L << (tag + 1))) printf("view   - %s\n", views[i]);
 
@@ -308,7 +312,8 @@ ActionTagFind(char *arg1,
     {
       char *wmname = NULL, *wmclass = NULL;
 
-      flags   = (unsigned long *)subSharedPropertyGet(clients[i], XA_CARDINAL, "SUBTLE_CLIENT_TAGS", NULL);
+      flags   = (unsigned long *)subSharedPropertyGet(clients[i], XA_CARDINAL, 
+        "SUBTLE_CLIENT_TAGS", NULL);
       wmname  = subSharedWindowWMName(clients[i]);
       wmclass = subSharedWindowWMClass(clients[i]);
 
@@ -548,7 +553,7 @@ Usage(int group)
   
   printf("\nExamples:\n" \
          "  %sr -c -l                List all clients\n" \
-         "  %sr -t -a subtle         Add new tag 'subtle'\n" \
+         "  %sr -t -n subtle         Add new tag 'subtle'\n" \
          "  %sr -v subtle -T rocks   Tag view 'subtle' with tag 'rocks'\n" \
          "  %sr -c xterm -g          Show tags of client 'xterm'\n" \
          "  %sr -c -f #              Select client and show info\n" \
@@ -653,17 +658,19 @@ main(int argc,
   };
 
   /* Command table */
-  Command cmds[3][10] = { /* Client, Tag, View <=> New, Kill, List, Find, Focus, Jump, Shade, Tag, Untag, Tags */
+  Command cmds[3][10] = { 
+    /* Client, Tag, View <=> New, Kill, List, Find, Focus, Jump, Shade, Tag, Untag, Tags */
     { NULL, ActionClientKill, ActionClientList, ActionClientFind, ActionClientFocus, NULL, 
       ActionClientShade, ActionClientTag, ActionClientUntag, ActionClientTags },
-    { ActionTagNew, ActionTagKill, ActionTagList, ActionTagFind, NULL, NULL, NULL, NULL, NULL, NULL },
-    { ActionViewNew, ActionViewKill, ActionViewList, NULL, NULL, ActionViewJump, NULL, ActionViewTag, 
-      ActionViewUntag, ActionViewTags }
+    { ActionTagNew, ActionTagKill, ActionTagList, ActionTagFind, NULL, NULL, NULL, NULL, 
+      NULL, NULL },
+    { ActionViewNew, ActionViewKill, ActionViewList, NULL, NULL, ActionViewJump, NULL, 
+      ActionViewTag, ActionViewUntag, ActionViewTags }
   };
 
   /* Set up signal handler */
-  act.sa_handler  = Signal;
-  act.sa_flags    = 0;
+  act.sa_handler = Signal;
+  act.sa_flags   = 0;
   memset(&act.sa_mask, 0, sizeof(sigset_t)); ///< Avoid uninitialized values
   sigaction(SIGTERM, &act, NULL);
   sigaction(SIGINT, &act, NULL);
@@ -673,27 +680,27 @@ main(int argc,
     {
       switch(c)
         {
-          case 'c': group   = GROUP_CLIENT;  break;
-          case 't': group   = GROUP_TAG;     break;
-          case 'v': group   = GROUP_VIEW;    break;
+          case 'c': group = GROUP_CLIENT;   break;
+          case 't': group = GROUP_TAG;      break;
+          case 'v': group = GROUP_VIEW;     break;
 
-          case 'n': action  = ACTION_NEW;    break;
-          case 'k': action  = ACTION_KILL;   break;
-          case 'l': action  = ACTION_LIST;   break;
-          case 'f': action  = ACTION_FIND;   break;
-          case 'F': action  = ACTION_FOCUS;  break;
-          case 'j': action  = ACTION_JUMP;   break;
-          case 's': action  = ACTION_SHADE;  break;
-          case 'T': action  = ACTION_TAG;    break;
-          case 'u': action  = ACTION_UNTAG;  break;
-          case 'g': action  = ACTION_TAGS;   break;
+          case 'n': action = ACTION_NEW;    break;
+          case 'k': action = ACTION_KILL;   break;
+          case 'l': action = ACTION_LIST;   break;
+          case 'f': action = ACTION_FIND;   break;
+          case 'F': action = ACTION_FOCUS;  break;
+          case 'j': action = ACTION_JUMP;   break;
+          case 's': action = ACTION_SHADE;  break;
+          case 'T': action = ACTION_TAG;    break;
+          case 'u': action = ACTION_UNTAG;  break;
+          case 'g': action = ACTION_TAGS;   break;
 
-          case 'd': dispname = optarg;       break;
-          case 'h': Usage(group);            return 0;
+          case 'd': dispname = optarg;      break;
+          case 'h': Usage(group);           return 0;
 #ifdef DEBUG          
-          case 'D': debug = 1;               break;
+          case 'D': debug = 1;              break;
 #endif /* DEBUG */
-          case 'V': Version();               return 0;
+          case 'V': Version();              return 0;
           case '?':
             printf("Try `%sr --help for more information\n", PKG_NAME);
             return -1;
@@ -708,7 +715,7 @@ main(int argc,
     }
   
   /* Get arguments */
-  if(argc > optind) arg1 = Pipe(argv[optind]);
+  if(argc > optind)     arg1 = Pipe(argv[optind]);
   if(argc > optind + 1) arg2 = Pipe(argv[optind + 1]);
 
   /* Open connection to server */
