@@ -378,13 +378,7 @@ HandleFocus(XFocusChangeEvent *ev)
         }
       else if(FocusIn == ev->type) ///< FocusIn event
         {
-          /* Caption */
-          if(subtle->focus != c->win) 
-            {
-              subtle->focus = c->win;
-              XResizeWindow(subtle->disp, subtle->bar.caption, 
-                TEXTW(c->name), subtle->th);
-            }
+          subtle->focus = c->win;
 
           subGrabSet(c->win);
           subClientRender(c);

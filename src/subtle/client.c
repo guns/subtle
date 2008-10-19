@@ -180,20 +180,19 @@ subClientConfigure(SubClient *c)
     {
       XMoveResizeWindow(subtle->disp, c->win, 0, 0, c->rect.width, c->rect.height);
     }
-  else XMoveResizeWindow(subtle->disp, c->win, c->rect.x, c->rect.y, 
-    c->rect.width - 2 * subtle->bw, c->rect.height - 2 * subtle->bw);
+  else XMoveResizeWindow(subtle->disp, c->win, c->rect.x, c->rect.y, WINW(c), WINH(c));
 
   /* Tell client new geometry */
-  ev.type               = ConfigureNotify;
-  ev.event              = c->win;
-  ev.window             = c->win;
-  ev.x                  = c->rect.x;
-  ev.y                  = c->rect.y;
-  ev.width              = c->rect.width;
-  ev.height             = c->rect.height;
-  ev.above              = None;
-  ev.border_width       = 0;
-  ev.override_redirect  = 0;
+  ev.type              = ConfigureNotify;
+  ev.event             = c->win;
+  ev.window            = c->win;
+  ev.x                 = c->rect.x;
+  ev.y                 = c->rect.y;
+  ev.width             = c->rect.width;
+  ev.height            = c->rect.height;
+  ev.above             = None;
+  ev.border_width      = 0;
+  ev.override_redirect = 0;
 
   XSendEvent(subtle->disp, c->win, False, StructureNotifyMask, (XEvent *)&ev);
 } /* }}} */
@@ -214,6 +213,7 @@ subClientRender(SubClient *c)
   XChangeWindowAttributes(subtle->disp, c->win, CWBorderPixel, &attrs);
 
   /* Caption */
+  XResizeWindow(subtle->disp, subtle->bar.caption, TEXTW(c->name), subtle->th);  
   XClearWindow(subtle->disp, subtle->bar.caption);
   XDrawString(subtle->disp, subtle->bar.caption, subtle->gcs.font, 3, subtle->fy - 1, 
     c->name, strlen(c->name));
