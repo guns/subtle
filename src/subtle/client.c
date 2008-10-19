@@ -206,20 +206,16 @@ subClientConfigure(SubClient *c)
 void
 subClientRender(SubClient *c)
 {
-  unsigned long col = 0;
   XSetWindowAttributes attrs;
 
   assert(c);
 
-  subtle->caption = c->name;
-  col = subtle->focus == c->win ? subtle->colors.focus : subtle->colors.norm;
-
-  attrs.border_pixel = col;
+  attrs.border_pixel = subtle->focus == c->win ? subtle->colors.focus : subtle->colors.norm;
   XChangeWindowAttributes(subtle->disp, c->win, CWBorderPixel, &attrs);
 
   /* Update caption */
   XResizeWindow(subtle->disp, subtle->bar.caption, TEXTW(c->name), subtle->th);
-  XSetWindowBackground(subtle->disp, c->win, col);
+  XSetWindowBackground(subtle->disp, c->win, attrs.border_pixel);
   XClearWindow(subtle->disp, subtle->bar.caption);
   XDrawString(subtle->disp, subtle->bar.caption, subtle->gcs.font, 5, 
     subtle->fy - 1, c->name, strlen(c->name));
@@ -234,7 +230,8 @@ void
 subClientFocus(SubClient *c)
 {
   assert(c);
-
+  
+  /* Check if client wants to take focus by itself */
   if(c->flags & SUB_PREF_FOCUS)
     {
       XEvent ev;
@@ -251,33 +248,7 @@ subClientFocus(SubClient *c)
       subUtilLogDebug("Focus: win=%#lx, input=%d, send=%d\n", c->win,      
         !!(c->flags & SUB_PREF_INPUT), !!(c->flags & SUB_PREF_FOCUS));     
     }   
-  else
-    {
-      /* Remove focus from client if exists */
-      if(subtle->focus && subtle->focus != c->win)
-        {
-          Window win = subtle->focus;
-          SubClient *f = CLIENT(subUtilFind(win, 1));
-          if(f && f->flags & SUB_TYPE_CLIENT)
-            {
-              if(!(f->flags & SUB_STATE_DEAD)) 
-                {
-                  subGrabUnset(f->frame);
-                  subClientRender(f);
-                }
-            }
-          else subGrabUnset(win);
-        } 
-      XSetInputFocus(subtle->disp, c->win, RevertToNone, CurrentTime);
-
-      /* Caption */
-      subtle->caption = c->name;
- 
-      subGrabSet(c->win);
-      subClientRender(c);
-      subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_ACTIVE_WINDOW, &c->win, 1);
-      subViewUpdate();
-    }
+  else XSetInputFocus(subtle->disp, c->win, RevertToNone, CurrentTime);
 } /* }}} */
 
  /** subClientDrag {{{
@@ -358,7 +329,7 @@ subClientDrag(SubClient *c,
               }
             else if(win != c->win && SUB_DRAG_SWAP == mode)
               {
-                if(!c2 || c2->frame != win) c2 = CLIENT(subUtilFind(win, 1));
+                if(!c2 ) c2 = CLIENT(subUtilFind(win, 1));
                 if(c2)
                   {
                     XQueryPointer(subtle->disp, win, &unused, &unused, &rx, &ry, &wx, &wy, &mask);

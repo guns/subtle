@@ -16,7 +16,7 @@
 
 #ifdef HAVE_SYS_INOTIFY_H
 #define BUFLEN (sizeof(struct inotify_event))
-#endif
+#endif /* HAVE_SYS_INOTIFY_H */
 
 /* EventExec {{{ */
 static void
@@ -176,9 +176,7 @@ HandleMessage(XClientMessageEvent *ev)
         } /* }}} */
       else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_CLIENT_TAG)) /* {{{ */
         {
-          Window win = ev->data.l[0];
-
-          c = CLIENT(subUtilFind(win, 1));
+          c = CLIENT(subUtilFind(ev->data.l[0], 1));
           if(c)
             {
               c->tags |= (1L << ev->data.l[1]);
@@ -352,29 +350,42 @@ HandleExpose(XEvent *ev)
 
 /* HandleFocus {{{ */
 static void
-HandleFocus(XFocusInEvent *ev)
+HandleFocus(XFocusChangeEvent *ev)
 {
-  SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
-  if(c && c->flags & SUB_PREF_FOCUS)
-    {
-      /* Remove focus from client */
-      if(subtle->focus != c->win) 
+  SubClient *c = CLIENT(subUtilFind(ev->window, CLIENTID));
+  if(c)
+    { 
+      if(FocusOut == ev->type) ///< FocusOut event
         {
-          Window win = subtle->focus;
-          SubClient *f = CLIENT(subUtilFind(win, 1));
-          if(f)
+          /* Remove focus from client */
+          if(subtle->focus)
             {
-              if(!(f->flags & SUB_STATE_DEAD)) 
-                {
-                  subGrabUnset(f->frame);
-                  subClientRender(f);
-                }
-            }
-          else subGrabUnset(win);
+              SubClient *f = NULL;
+              Window oldfocus = subtle->focus;
+              subtle->focus   = 0;
+              subtle->caption = NULL;
 
-          subGrabSet(c->win);  
+              if((f = CLIENT(subUtilFind(oldfocus, CLIENTID))))
+                {
+                  if(!(f->flags & SUB_STATE_DEAD)) 
+                    {
+                      subGrabUnset(oldfocus);
+                      subClientRender(f);
+                    }
+                }
+              else subGrabUnset(oldfocus);
+            } 
+        }
+      else if(FocusIn == ev->type) ///< FocusIn event
+        {
+          subtle->focus   = c->win;
+          subtle->caption = c->name;
+
+          subGrabSet(c->win);
           subClientRender(c);
-          subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_ACTIVE_WINDOW, &c->win, 1);
+          subEwmhSetWindows(DefaultRootWindow(subtle->disp), 
+            SUB_EWMH_NET_ACTIVE_WINDOW, &c->win, 1);
+          subViewUpdate();
         }
     }
 } /* }}} */
@@ -428,8 +439,6 @@ subEventLoop(void)
                   XNextEvent(subtle->disp, &ev);
                   switch(ev.type)
                     {
-                      case ButtonPress:
-                      case KeyPress:          HandleGrab(&ev);                         break;
                       case ConfigureRequest:  HandleConfigure(&ev.xconfigurerequest);  break;
                       case MapRequest:        HandleMapRequest(&ev.xmaprequest);       break;
                       case DestroyNotify:     HandleDestroy(&ev.xdestroywindow);       break;
@@ -437,9 +446,13 @@ subEventLoop(void)
                       case ColormapNotify:    HandleColormap(&ev.xcolormap);           break;
                       case PropertyNotify:    HandleProperty(&ev.xproperty);           break;
                       case EnterNotify:       HandleCrossing(&ev.xcrossing);           break;
+
+                      case ButtonPress:
+                      case KeyPress:          HandleGrab(&ev);                         break;
                       case VisibilityNotify:  
                       case Expose:            HandleExpose(&ev);                       break;
-                      case FocusIn:           HandleFocus(&ev.xfocus);                 break;
+                      case FocusIn:           
+                      case FocusOut:          HandleFocus(&ev.xfocus);                 break;
                     }
                 }
               }
