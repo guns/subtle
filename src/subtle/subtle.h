@@ -38,6 +38,8 @@
 #define TEXTW(s)  (strlen(s) * subtle->fx + 8)                    ///< Textwidth in pixel
 #define WINW(c)   (c->rect.width - 2 * subtle->bw)                ///< Get real width
 #define WINH(c)   (c->rect.height - 2 * subtle->bw)               ///< Get real height
+#define CLIENTID  1                                               ///< Client data id
+#define VIEWID    2                                               ///< View data id
 
 /* Casts */
 #define ARRAY(a)  ((SubArray *)a)                                 ///< Cast to SubArray
@@ -189,7 +191,7 @@ typedef struct subclient_t /* {{{ */
   int                 size;                                       ///< Client size, tags
   char                *name;                                      ///< Client name
   Colormap            cmap;                                       ///< Client colormap
-  Window              frame, win;                                 ///< Client decoration windows
+  Window              win;                                        ///< Client window
 } SubClient; /* }}} */
 
 typedef struct subgrab_t /* {{{ */
