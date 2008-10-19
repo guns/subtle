@@ -337,9 +337,7 @@ subViewJump(SubView *v)
   subtle->cv = v;
 
   subViewConfigure(v);
-
   XMapWindow(subtle->disp, subtle->cv->frame);
-  XMapSubwindows(subtle->disp, subtle->cv->frame);
 
   /* EWMH: Current desktops */
   vid = subArrayIndex(subtle->views, (void *)v); ///< Get desktop number
@@ -394,8 +392,8 @@ subViewPublish(void)
 
   assert(0 < subtle->views->ndata);
 
-  frames  = (Window *)subUtilAlloc(subtle->views->ndata, sizeof(Window));
-  names   = (char **)subUtilAlloc(subtle->views->ndata, sizeof(char *));
+  frames = (Window *)subUtilAlloc(subtle->views->ndata, sizeof(Window));
+  names  = (char **)subUtilAlloc(subtle->views->ndata, sizeof(char *));
 
   for(i = 0; i < subtle->views->ndata; i++)
     {
