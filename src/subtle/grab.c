@@ -46,7 +46,6 @@ SubGrab *
 subGrabNew(const char *name,
 	const char *value)
 {
-  int len;
 	char *tok = NULL;
 	KeySym sym;
 	SubGrab *g = NULL;
@@ -59,7 +58,7 @@ subGrabNew(const char *name,
   tok = strtok((char *)value, "-");
 
 	/* @todo Too slow? */	
-  if(!strncmp(name, "ViewJump", len - 1)) ///< Catch-all
+  if(!strncmp(name, "ViewJump", 8)) ///< Catch-all
     {
       char *desktop = (char *)name + 8; ///< Get view number
       if(desktop) 
@@ -75,11 +74,11 @@ subGrabNew(const char *name,
           return NULL;
         }
     }
-  else if(!strncmp(name, "WindowMove", len))
+  else if(!strncmp(name, "WindowMove", 10))
     g->flags |= (SUB_GRAB_MOUSE|SUB_GRAB_WINDOW_MOVE); 
-  else if(!strncmp(name, "WindowRaise", 10))
+  else if(!strncmp(name, "WindowRaise", 11))
     g->flags |= (SUB_GRAB_MOUSE|SUB_GRAB_WINDOW_RAISE);
-  else if(!strncmp(name, "WindowResize", 11))
+  else if(!strncmp(name, "WindowResize", 12))
     g->flags |= (SUB_GRAB_MOUSE|SUB_GRAB_WINDOW_RESIZE);
   else
     {
