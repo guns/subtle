@@ -201,31 +201,27 @@ RubyConfigParse(VALUE path)
   char *face = NULL, *style = NULL, font[100]; 
   XGCValues gvals;
   XSetWindowAttributes attrs;
-  VALUE yaml = 0, hash = 0, fetch = 0, config = 0, type = 0;
+  VALUE config = 0;
 
-  /* Yaml */
-  rb_require("yaml");
-  yaml  = rb_const_get(rb_mKernel, rb_intern("YAML"));
-  hash  = rb_funcall(yaml, rb_intern("load_file"), 1, path);
-  fetch = rb_intern("fetch");
+  rb_require(STR2CSTR(path));
 
   /* Config: Options */
-  config     = rb_funcall(hash, fetch, 1, rb_str_new2("Options"));
-  subtle->bw = RubyGetFixnum(config, "Border",  2);
+  config = rb_const_get(rb_cObject, rb_intern("OPTIONS"));
+  subtle->bw = RubyGetFixnum(config, "border", 2);
 
   /* Config: Font */
-  config = rb_funcall(hash, fetch, 1, rb_str_new2("Font"));
-  face   = RubyGetString(config, "Face",  "fixed");
-  style  = RubyGetString(config, "Style", "medium");
-  size   = RubyGetFixnum(config, "Size",  12);
+  config = rb_const_get(rb_cObject, rb_intern("FONT"));
+  face   = RubyGetString(config, "face",  "fixed");
+  style  = RubyGetString(config, "style", "medium");
+  size   = RubyGetFixnum(config, "size",  12);
 
   /* Config: Colors */
-  config                = rb_funcall(hash, fetch, 1, rb_str_new2("Colors"));
-  subtle->colors.font   = RubyParseColor(config, "Font",       "#000000");   
-  subtle->colors.border = RubyParseColor(config, "Border",     "#bdbabd");
-  subtle->colors.norm   = RubyParseColor(config, "Normal",     "#22aa99");
-  subtle->colors.focus  = RubyParseColor(config, "Focus",      "#ffa500");    
-  subtle->colors.bg     = RubyParseColor(config, "Background", "#336699");
+  config                = rb_const_get(rb_cObject, rb_intern("COLORS"));
+  subtle->colors.font   = RubyParseColor(config, "font",       "#000000");   
+  subtle->colors.border = RubyParseColor(config, "border",     "#bdbabd");
+  subtle->colors.norm   = RubyParseColor(config, "normal",     "#22aa99");
+  subtle->colors.focus  = RubyParseColor(config, "focus",      "#ffa500");    
+  subtle->colors.bg     = RubyParseColor(config, "background", "#336699");
 
   /* Load font */
   snprintf(font, sizeof(font), "-*-%s-%s-*-*-*-%d-*-*-*-*-*-*-*", face, style, size);
@@ -283,19 +279,16 @@ RubyConfigParse(VALUE path)
   XClearWindow(subtle->disp, DefaultRootWindow(subtle->disp));
 
   /* Config: Keys */
-  type   = SUB_TYPE_GRAB;
-  config = rb_funcall(hash, fetch, 1, rb_str_new2("Grabs"));
-  rb_hash_foreach(config, RubyConfigIterate, type);
+  config = rb_const_get(rb_cObject, rb_intern("GRABS"));
+  rb_hash_foreach(config, RubyConfigIterate, SUB_TYPE_GRAB);
 
   /* Config: Tags */
-  type   = SUB_TYPE_TAG;
-  config = rb_funcall(hash, fetch, 1, rb_str_new2("Tags"));
-  rb_hash_foreach(config, RubyConfigIterate, type);
+  config = rb_const_get(rb_cObject, rb_intern("TAGS"));
+  rb_hash_foreach(config, RubyConfigIterate, SUB_TYPE_TAG);
 
   /* Config: Views */
-  type   = SUB_TYPE_VIEW;
-  config = rb_funcall(hash, fetch, 1, rb_str_new2("Views"));
-  rb_hash_foreach(config, RubyConfigIterate, type);
+  config = rb_const_get(rb_cObject, rb_intern("VIEWS"));
+  rb_hash_foreach(config, RubyConfigIterate, SUB_TYPE_VIEW);
 
   return Qnil;
 } /* }}} */
@@ -361,7 +354,7 @@ subRubyLoadConfig(const char *file)
 
   /* Safety first */
   rb_protect(RubyConfigParse, rb_str_new2(config), &status);
-  if(Qundef == status) subUtilLogError("Failed reading/parsing config\n");
+  if(Qundef == status) subUtilLogWarn("Failed reading/parsing config\n");
 
   /* Grabs */
   if(0 == subtle->grabs->ndata) 

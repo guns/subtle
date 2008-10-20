@@ -37,7 +37,7 @@ require("ftools")
   "PKG_NAME"      => "subtle",
   "PKG_VERSION"   => "0.8.$(revision)",
   "PKG_BUGREPORT" => "unexist@dorfelite.net",
-  "PKG_CONFIG"    => "subtle.yml",
+  "PKG_CONFIG"    => "subtle.rb",
   "RUBY_VERSION"  => "$(MAJOR).$(MINOR).$(TEENY)",
   "DIR_CONFIG"    => "$(sysconfdir)/$(PKG_NAME)",
   "DIR_SUBLET"    => "$(datadir)/$(PKG_NAME)",
