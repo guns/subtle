@@ -53,11 +53,8 @@ subDisplayInit(const char *display)
     GCFunction|GCSubwindowMode|GCLineWidth, &gvals);
 
   /* Create cursors */
-  subtle->cursors.square = XCreateFontCursor(subtle->disp, XC_dotbox);
-  subtle->cursors.move   = XCreateFontCursor(subtle->disp, XC_fleur);
   subtle->cursors.arrow  = XCreateFontCursor(subtle->disp, XC_left_ptr);
-  subtle->cursors.horz   = XCreateFontCursor(subtle->disp, XC_sb_h_double_arrow);
-  subtle->cursors.vert   = XCreateFontCursor(subtle->disp, XC_sb_v_double_arrow);
+  subtle->cursors.move   = XCreateFontCursor(subtle->disp, XC_dotbox);
   subtle->cursors.resize = XCreateFontCursor(subtle->disp, XC_sizing);
 
   printf("Display (%s) is %dx%d\n", DisplayString(subtle->disp), DisplayWidth(subtle->disp, 
@@ -152,11 +149,8 @@ subDisplayFinish(void)
   if(subtle->disp)
     {
       /* Free cursors */
-      XFreeCursor(subtle->disp, subtle->cursors.square);
-      XFreeCursor(subtle->disp, subtle->cursors.move);
       XFreeCursor(subtle->disp, subtle->cursors.arrow);
-      XFreeCursor(subtle->disp, subtle->cursors.horz);
-      XFreeCursor(subtle->disp, subtle->cursors.vert);
+      XFreeCursor(subtle->disp, subtle->cursors.move);
       XFreeCursor(subtle->disp, subtle->cursors.resize);
 
       /* Free GCs */
