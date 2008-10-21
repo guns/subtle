@@ -13,6 +13,9 @@
 #include <X11/Xatom.h>
 #include "subtle.h"
 
+#define MINW 100
+#define MINH 100
+
 /* ClientMask {{{ */
 static void
 ClientMask(int type,
@@ -149,13 +152,10 @@ subClientNew(Window win)
 
   /* Special tags */
   XGetTransientForHint(subtle->disp, win, &propwin); ///< Check for dialogs
-  if(c->tags & SUB_TAG_FLOAT || propwin) c->flags |= SUB_STATE_FLOAT;
-  if(c->tags & SUB_TAG_FULL)             c->flags |= SUB_STATE_FULL;
+  if(propwin) c->tags |= SUB_TAG_FLOAT;
 
   /* EWMH: Desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
-
-  /* Check for dialog windows etc. */
 
   printf("Adding client (%s)\n", c->name);
   subUtilLogDebug("new=client, name=%s, win=%#lx\n", c->name, win);
@@ -193,6 +193,9 @@ subClientConfigure(SubClient *c)
   ev.above             = None;
   ev.border_width      = 0;
   ev.override_redirect = 0;
+
+  subUtilLogDebug("client=%#lx, x=%3d, y=%3d, width=%3d, height=%3d\n", 
+    c->win, c->rect.x, c->rect.y, c->rect.width, c->rect.height);
 
   XSendEvent(subtle->disp, c->win, False, StructureNotifyMask, (XEvent *)&ev);
 } /* }}} */
@@ -260,7 +263,6 @@ subClientDrag(SubClient *c,
   int mode)
 {
   XEvent ev;
-  Cursor cursor;
   Window win, unused;
   unsigned int mask;
   int wx = 0, wy = 0, rx = 0, ry = 0, state = SUB_DRAG_START, lstate = SUB_DRAG_START;
@@ -268,27 +270,18 @@ subClientDrag(SubClient *c,
   SubClient *c2 = NULL, *lc = NULL;
 
   assert(c);
-  
+
   /* Get window position on root window */
   XQueryPointer(subtle->disp, c->win, &win, &win, &rx, &ry, &wx, &wy, &mask);
-  r.x        = rx - wx;
-  r.y        = ry - wy;
-  r.width   = c->rect.width;
-  r.height  = c->rect.height;
-
-  /* Select cursor */
-  switch(mode)
-    {
-      case SUB_DRAG_LEFT:    
-      case SUB_DRAG_RIGHT:  cursor = subtle->cursors.horz;    break;
-      case SUB_DRAG_BOTTOM: cursor = subtle->cursors.vert;    break;
-      case SUB_DRAG_MOVE:   cursor = subtle->cursors.move;    break;
-      default:              cursor = subtle->cursors.square;  break;
-    }
+  r.x      = rx - wx;
+  r.y      = ry - wy;
+  r.width  = c->rect.width;
+  r.height = c->rect.height;
 
   if(XGrabPointer(subtle->disp, c->win, True, 
-    ButtonPressMask|ButtonReleaseMask|PointerMotionMask, GrabModeAsync, 
-    GrabModeAsync, None, cursor, CurrentTime)) return;
+    ButtonPressMask|ButtonReleaseMask|PointerMotionMask, GrabModeAsync, GrabModeAsync, None, 
+    SUB_DRAG_MOVE == mode ? subtle->cursors.move : subtle->cursors.resize, 
+    CurrentTime)) return;
 
   XGrabServer(subtle->disp);
   if(SUB_DRAG_MOVE >= mode) ClientMask(SUB_DRAG_START, c, &r);
@@ -308,15 +301,8 @@ subClientDrag(SubClient *c,
                 /* Calculate dimensions of the selection rect */
                 switch(mode)
                   {
-                    case SUB_DRAG_LEFT:   
-                      r.x     = (rx - wx) - (rx - ev.xmotion.x_root);  
-                      r.width = c->rect.width + ((rx - wx ) - ev.xmotion.x_root);  
-                      break;
-                    case SUB_DRAG_RIGHT:  
+                    case SUB_DRAG_RESIZE: 
                       r.width  = c->rect.width + (ev.xmotion.x_root - rx);
-                      break;
-                    case SUB_DRAG_BOTTOM: 
-                      r.height = c->rect.height + (ev.xmotion.y_root - ry); 
                       break;
                     case SUB_DRAG_MOVE:
                       r.x = (rx - wx) - (rx - ev.xmotion.x_root);
@@ -391,10 +377,13 @@ subClientDrag(SubClient *c,
               }
             else ///< Move/Resize
               {
-                XDrawRectangle(subtle->disp, DefaultRootWindow(subtle->disp), subtle->gcs.invert, 
-                  r.x + 1, r.y + 1, r.width - 3, r.height - 3);
+                ClientMask(state, c2, &r); ///< Erase mask
 
-                if(c->flags & SUB_STATE_FLOAT) subClientConfigure(c);
+                if(c->flags & SUB_STATE_FLOAT || c->tags & SUB_TAG_FLOAT) 
+                  {
+                    c->rect = r;
+                    subClientConfigure(c);
+                  }
                 else if(SUB_DRAG_BOTTOM >= mode) 
                   {
                     /* Get size ratios */
@@ -419,23 +408,21 @@ subClientDrag(SubClient *c,
 
  /** subClientToggle {{{
   * @brief Toggle various states of client
-  * @param[in]  c     A #SubClient
-  * @param[in]  type  Toggle type
+  * @param[in]  c       A #SubClient
+  * @param[in]  type    Toggle type
+  * @param[in]  toggle  Toggle flag? 
   **/
 
 void
 subClientToggle(SubClient *c,
-int type)
+  int type,
+  int toggle)
 {
-  XEvent event;
-
-
   assert(c);
 
-  if(c->flags & type)
+  if(c->flags & type) 
     {
-      c->flags &= ~type;
-      subViewConfigure(subtle->cv);
+      if(True == toggle) c->flags &= ~type;
     }
   else 
     {
@@ -444,27 +431,17 @@ int type)
       int width = DisplayWidth(subtle->disp, DefaultScreen(subtle->disp)),
         height = DisplayHeight(subtle->disp, DefaultScreen(subtle->disp));      
 
-      c->flags |= type;
+      if(True == toggle) c->flags |= type;
 
       switch(type)
         {
           case SUB_STATE_FLOAT:
-            /* Respect the user/program preferences */
             hints = XAllocSizeHints();
             if(!hints) subUtilLogError("Can't alloc memory. Exhausted?\n");
 
+            /* Respect the user/program preferences */
             if(XGetWMNormalHints(subtle->disp, c->win, hints, &supplied))
               {
-                if(hints->flags & (USPosition|PPosition))
-                  {
-                    c->rect.x = hints->x + 2 * subtle->bw;
-                    c->rect.y = hints->y + 2 * subtle->bw;
-                  }
-                else if(hints->flags & PAspect)
-                  {
-                    c->rect.x = (hints->min_aspect.x - hints->max_aspect.x) / 2;
-                    c->rect.y = (hints->min_aspect.y - hints->max_aspect.y) / 2;
-                  }
                 if(hints->flags & (USSize|PSize))
                   {
                     c->rect.width  = hints->width + 2 * subtle->bw;
@@ -475,17 +452,25 @@ int type)
                     c->rect.width  = hints->base_width + 2 * subtle->bw;
                     c->rect.height = hints->base_height + 2 * subtle->bw;
                   }
+
+                /* Sanitize */
+                if(MINW > c->rect.width)  c->rect.width  = MINW + 2 * subtle->bw;
+                if(MINH > c->rect.height) c->rect.height = MINH + 2 * subtle->bw;
+
+                if(hints->flags & (USPosition|PPosition))
+                  {
+                    c->rect.x = hints->x + 2 * subtle->bw;
+                    c->rect.y = hints->y + 2 * subtle->bw;
+                  }
+                else if(hints->flags & PAspect)
+                  {
+                    c->rect.x = (hints->min_aspect.x - hints->max_aspect.x) / 2;
+                    c->rect.y = (hints->min_aspect.y - hints->max_aspect.y) / 2;
+                  }
                 else
                   {
-                    /* Fallback for clients ignoring ICCCM specs (mostly Gtk+ stuff) */
-                    if(0 < hints->base_width && hints->base_width <= width &&
-                      0 < hints->base_height && hints->base_height <= height) 
-                      {
-                        c->rect.width  = hints->base_width + 2 * subtle->bw;
-                        c->rect.height = hints->base_height + 2 * subtle->bw;
-                        c->rect.x      = (width - c->rect.width) / 2;
-                        c->rect.y      = (height - c->rect.height) / 2;
-                      }
+                    c->rect.x = (width - c->rect.width) / 2;
+                    c->rect.y = (height - c->rect.height) / 2;
                   }
               }
 
@@ -502,14 +487,9 @@ int type)
             c->rect.width  = width;
             c->rect.height = height;
 
-            XReparentWindow(subtle->disp, c->win, DefaultRootWindow(subtle->disp), 0, 0);
             subClientConfigure(c);
         }
     }
-
-  XUngrabServer(subtle->disp);
-  while(XCheckTypedEvent(subtle->disp, UnmapNotify, &event));
-  if(SUB_STATE_FULL != type) subViewConfigure(subtle->cv);
 } /* }}} */
 
   /** subClientFetchName {{{

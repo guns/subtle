@@ -99,7 +99,7 @@ subViewConfigure(SubView *v)
           if(v->tags & c->tags)
             {
               if(c->flags & SUB_STATE_FULL) full++;
-              else if(c->flags & SUB_STATE_FLOAT) floated++;
+              else if(c->flags & SUB_STATE_FLOAT || c->tags & SUB_TAG_FLOAT) floated++;
               c->flags &= ~SUB_STATE_TILED;
               total++;
             }
@@ -134,11 +134,12 @@ subViewConfigure(SubView *v)
           if(v->tags & c->tags)
             {
               XReparentWindow(subtle->disp, c->win, v->frame, 0, 0);
+              XMapWindow(subtle->disp, c->win);
 
-              if(c->flags & (SUB_STATE_FLOAT|SUB_STATE_FULL))
+              if(c->tags & (SUB_TAG_FLOAT|SUB_TAG_FULL))
                 {
-                  subClientToggle(c, SUB_STATE_FLOAT);
-                  break;
+                  subClientToggle(c, SUB_STATE_FLOAT, False);
+                  continue;
                 }
               
               c->rect.x      = x;
@@ -149,7 +150,6 @@ subViewConfigure(SubView *v)
               /* EWMH: Desktop */
               subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);          
 
-              XMapWindow(subtle->disp, c->win);
               if(!(c->flags & SUB_STATE_TILED)) 
                 {
                   x += cw;

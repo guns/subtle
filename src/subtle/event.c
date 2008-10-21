@@ -41,6 +41,7 @@ EventExec(char *cmd)
 static void
 HandleGrab(XEvent *ev)
 {
+  Window win = 0;
   SubGrab *g = NULL;
   SubClient *c = NULL;
   unsigned int code = 0, state = 0;
@@ -57,10 +58,12 @@ HandleGrab(XEvent *ev)
             return;
           }      
 
+        win   = ev->xbutton.subwindow;
         code  = XK_Pointer_Button1 + ev->xbutton.button;
         state = ev->xbutton.state;
         break;
       case KeyPress:    
+        win   = ev->xkey.subwindow;
         code  = ev->xkey.keycode;  
         state = ev->xkey.state; 
         break;
@@ -73,10 +76,15 @@ HandleGrab(XEvent *ev)
       switch(g->flags & ~(SUB_TYPE_GRAB|SUB_GRAB_KEY|SUB_GRAB_MOUSE)) ///< Clear
         {
           case SUB_GRAB_WINDOW_RAISE:
-            c = CLIENT(subUtilFind(ev->xbutton.window, 1));
-            if(c && c->flags & SUB_STATE_FLOAT)
+            c = CLIENT(subUtilFind(win, CLIENTID));
+            if(c && (c->flags & SUB_STATE_FLOAT || c->tags & SUB_TAG_FLOAT))
               XRaiseWindow(subtle->disp, c->win);
             break;
+          case SUB_GRAB_WINDOW_MOVE:
+            c = CLIENT(subUtilFind(win, CLIENTID));
+            if(c && (c->flags & SUB_STATE_FLOAT || c->tags & SUB_TAG_FLOAT))
+              subClientDrag(c, SUB_DRAG_MOVE);
+            break;            
           case SUB_GRAB_EXEC:
             if(g->string) EventExec(g->string);
             break;
@@ -281,7 +289,7 @@ HandleMessage(XClientMessageEvent *ev)
           /* [0] => Remove = 0 / Add = 1 / Toggle = 2 -> we _always_ toggle */
           if(ev->data.l[1] == (long)subEwmhFind(SUB_EWMH_NET_WM_STATE_FULLSCREEN))
             {
-              subClientToggle(c, SUB_STATE_FULL);
+              subClientToggle(c, SUB_STATE_FULL, True);
             }
         }
     }
