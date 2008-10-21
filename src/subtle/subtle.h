@@ -160,6 +160,7 @@
 #define SUB_DRAG_BOTTOM        (1L << 9)                          ///< Drag bottom
 #define SUB_DRAG_MOVE          (1L << 10)                         ///< Drag move
 #define SUB_DRAG_SWAP          (1L << 11)                         ///< Drag swap
+#define SUB_DRAG_RESIZE        (1L << 12)                         ///< Drag resize
 
 /* Grabs */
 #define SUB_GRAB_KEY           (1L << 10)                         ///< Key grab
@@ -270,7 +271,7 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    Cursor           square, move, arrow, horz, vert, resize;                                
+    Cursor           arrow, move, resize;                                
   } cursors;                                                      ///< Subtle cursors
 } SubSubtle; /* }}} */
 
@@ -311,7 +312,7 @@ void subClientConfigure(SubClient *c);                            ///< Send conf
 void subClientRender(SubClient *c);                               ///< Render client
 void subClientFocus(SubClient *c);                                ///< Focus client
 void subClientDrag(SubClient *c, int mode);                       ///< Move/drag client
-void subClientToggle(SubClient *c, int type);                     ///< Toggle client state
+void subClientToggle(SubClient *c, int type, int toggle);         ///< Toggle client state
 void subClientFetchName(SubClient *c);                            ///< Fetch client name
 void subClientSetWMState(SubClient *c, long state);               ///< Set client WM state
 long subClientGetWMState(SubClient *c);                           ///< Get client WM state
