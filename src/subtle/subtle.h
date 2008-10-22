@@ -170,6 +170,8 @@
 #define SUB_GRAB_WINDOW_RAISE  (1L << 14)                         ///< Raise window
 #define SUB_GRAB_WINDOW_MOVE   (1L << 15)                         ///< Resize window
 #define SUB_GRAB_WINDOW_RESIZE (1L << 16)                         ///< Move window
+#define SUB_GRAB_WINDOW_FLOAT  (1L << 17)                         ///< Float window
+#define SUB_GRAB_WINDOW_KILL   (1L << 18)                         ///< Kill window
 
 /* Fixed tags */
 #define SUB_TAG_DEFAULT        (1L << 1)                          ///< Default tag
