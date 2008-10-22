@@ -46,53 +46,68 @@ SubGrab *
 subGrabNew(const char *name,
 	const char *value)
 {
+  int i;
 	char *tok = NULL;
 	KeySym sym;
 	SubGrab *g = NULL;
 
+  struct
+  {
+    char *name;
+    FLAGS flags;
+  } grabs[] = { 
+    { "WindowMove",   SUB_GRAB_WINDOW_MOVE   },
+    { "WindowRaise",  SUB_GRAB_WINDOW_RAISE  },
+    { "WindowResize", SUB_GRAB_WINDOW_RESIZE },
+    { "WindowFloat",  SUB_GRAB_WINDOW_FLOAT  },
+    { "WindowKill",   SUB_GRAB_WINDOW_KILL   }
+  };
+
   assert(name && value);
   
   g = GRAB(subUtilAlloc(1, sizeof(SubGrab)));
-	g->flags = SUB_TYPE_GRAB;
+
+	/* Find grabs */	
+  for(i = 0; 5 > i; i++)
+    if(!strcmp(name, grabs[i].name))
+      {
+        g->flags |= (SUB_TYPE_GRAB|grabs[i].flags);
+        break; ///< Found
+      }
+
+  /* Special grabs */
+  if(!g->flags)
+    {
+      if(!strncmp(name, "ViewJump", 8))
+        {
+          char *desktop = (char *)name + 8; ///< Get view number
+          if(desktop) 
+            {
+              g->number = atoi(desktop) - 1; ///< Decrease for array index
+              g->flags |= (SUB_TYPE_GRAB|SUB_GRAB_VIEW_JUMP);
+            }
+          else 
+            {
+              subUtilLogWarn("Can't assign keychain `%s'.\n", name);
+              free(g);
+
+              return NULL;
+            }
+        }
+      else
+        {
+          g->flags |= (SUB_TYPE_GRAB|SUB_GRAB_EXEC);
+          g->string	= strdup(name);
+        }
+    }
 
   tok = strtok((char *)value, "-");
-
-	/* @todo Too slow? */	
-  if(!strncmp(name, "ViewJump", 8)) ///< Catch-all
-    {
-      char *desktop = (char *)name + 8; ///< Get view number
-      if(desktop) 
-        {
-          g->number = atoi(desktop) - 1; ///< Decrease for array index
-          g->flags |= (SUB_GRAB_KEY|SUB_GRAB_VIEW_JUMP);
-        }
-      else 
-        {
-          subUtilLogWarn("Can't assign keychain `%s'.\n", name);
-          free(g);
-
-          return NULL;
-        }
-    }
-  else if(!strncmp(name, "WindowMove", 10))
-    g->flags |= (SUB_GRAB_MOUSE|SUB_GRAB_WINDOW_MOVE); 
-  else if(!strncmp(name, "WindowRaise", 11))
-    g->flags |= (SUB_GRAB_MOUSE|SUB_GRAB_WINDOW_RAISE);
-  else if(!strncmp(name, "WindowResize", 12))
-    g->flags |= (SUB_GRAB_MOUSE|SUB_GRAB_WINDOW_RESIZE);
-  else
-    {
-      g->flags |= (SUB_GRAB_KEY|SUB_GRAB_EXEC);
-      g->string	= strdup(name);
-    }
-
 	while(tok)
 		{ 
 			/* Get key sym and modifier */
 			sym = XStringToKeysym(tok);
 			if(NoSymbol == sym)
 				{
-          int i;
           char *mouse[] = { "B1", "B2", "B3", "B4", "B5" };
 
           for(i = 0; 5 > i; i++)
@@ -128,9 +143,12 @@ subGrabNew(const char *name,
           case XK_Pointer_Button3:
           case XK_Pointer_Button4:
           case XK_Pointer_Button5:
-            g->code = sym;
+            g->flags |= SUB_GRAB_MOUSE;
+            g->code  = sym;
             break;
-					default: g->code = XKeysymToKeycode(subtle->disp, sym);
+					default: 
+            g->flags |= SUB_GRAB_KEY;
+            g->code  = XKeysymToKeycode(subtle->disp, sym);
 				}
 
 			tok = strtok(NULL, "-");

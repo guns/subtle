@@ -80,6 +80,19 @@ HandleGrab(XEvent *ev)
             if(c && (c->flags & SUB_STATE_FLOAT || c->tags & SUB_TAG_FLOAT))
               XRaiseWindow(subtle->disp, c->win);
             break;
+          case SUB_GRAB_WINDOW_FLOAT:
+            c = CLIENT(subUtilFind(win, CLIENTID));
+            if(c) subClientToggle(c, SUB_STATE_FLOAT, True);
+            break;            
+          case SUB_GRAB_WINDOW_KILL:
+            c = CLIENT(subUtilFind(win, CLIENTID));
+            if(c) 
+              { 
+                subArrayPop(subtle->clients, (void *)c);
+                subClientKill(c);
+                subClientPublish();
+              }
+            break;             
           case SUB_GRAB_WINDOW_MOVE:
             c = CLIENT(subUtilFind(win, CLIENTID));
             if(c && (c->flags & SUB_STATE_FLOAT || c->tags & SUB_TAG_FLOAT))

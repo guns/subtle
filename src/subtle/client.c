@@ -15,6 +15,7 @@
 
 #define MINW 100
 #define MINH 100
+#define STEP 5
 
 /* ClientMask {{{ */
 static void
@@ -27,7 +28,7 @@ ClientMask(int type,
     {
       case SUB_DRAG_START: 
         XDrawRectangle(subtle->disp, DefaultRootWindow(subtle->disp), subtle->gcs.invert, 
-          r->x + 1, r->y + 1, r->width - 3, r->height - subtle->bw);
+          r->x - subtle->bw, r->y - subtle->bw, r->width - 1, r->height - 1);
         break;
       case SUB_DRAG_TOP:
         XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, 5, 5, c->rect.width - 10, 
@@ -188,14 +189,14 @@ subClientConfigure(SubClient *c)
   ev.window            = c->win;
   ev.x                 = c->rect.x;
   ev.y                 = c->rect.y;
-  ev.width             = c->rect.width;
-  ev.height            = c->rect.height;
+  ev.width             = WINW(c);
+  ev.height            = WINH(c);
   ev.above             = None;
   ev.border_width      = 0;
   ev.override_redirect = 0;
 
-  subUtilLogDebug("client=%#lx, x=%3d, y=%3d, width=%3d, height=%3d\n", 
-    c->win, c->rect.x, c->rect.y, c->rect.width, c->rect.height);
+  subUtilLogDebug("client=%#lx, x=%03d, y=%03d, width=%03d, height=%03d\n", 
+    c->win, c->rect.x, c->rect.y, WINW(c), WINH(c));
 
   XSendEvent(subtle->disp, c->win, False, StructureNotifyMask, (XEvent *)&ev);
 } /* }}} */
@@ -265,7 +266,8 @@ subClientDrag(SubClient *c,
   XEvent ev;
   Window win, unused;
   unsigned int mask;
-  int wx = 0, wy = 0, rx = 0, ry = 0, state = SUB_DRAG_START, lstate = SUB_DRAG_START;
+  int loop = True, wx = 0, wy = 0, rx = 0, ry = 0, 
+    state = SUB_DRAG_START, lstate = SUB_DRAG_START;
   XRectangle r;
   SubClient *c2 = NULL, *lc = NULL;
 
@@ -286,13 +288,31 @@ subClientDrag(SubClient *c,
   XGrabServer(subtle->disp);
   if(SUB_DRAG_MOVE >= mode) ClientMask(SUB_DRAG_START, c, &r);
 
-  for(;;)
+  while(loop) ///< Event loop
     {
-      XMaskEvent(subtle->disp, PointerMotionMask|ButtonReleaseMask|EnterWindowMask, &ev);
+      XMaskEvent(subtle->disp, 
+        PointerMotionMask|ButtonReleaseMask|KeyPressMask|EnterWindowMask, &ev);
       switch(ev.type)
         {
-          /* Button release doesn't return our destination window */
-          case EnterNotify: win = ev.xcrossing.window; break;
+          case EnterNotify:   win = ev.xcrossing.window; break; ///< Find destination window
+          case ButtonRelease: loop = False;              break;
+          case KeyPress: /* {{{ */
+            if(SUB_DRAG_MOVE >= mode)
+              {
+                KeySym sym = XKeycodeToKeysym(subtle->disp, ev.xkey.keycode, 0);
+                ClientMask(SUB_DRAG_START, c, &r);
+
+                switch(sym)
+                  {
+                    case XK_Left:   r.x -= STEP;  break; 
+                    case XK_Right:  r.x += STEP;  break;
+                    case XK_Up:     r.y -= STEP;  break;
+                    case XK_Down:   r.y += STEP;  break;
+                    case XK_Return: loop = False; break;
+                  }
+                ClientMask(SUB_DRAG_START, c, &r);
+              }
+            break; /* }}} */
           case MotionNotify: /* {{{ */
             if(SUB_DRAG_MOVE >= mode) 
               {
@@ -355,55 +375,53 @@ subClientDrag(SubClient *c,
                     }
                 }
             break; /* }}} */
-          case ButtonRelease: /* {{{ */
-            if(win != c->win && c && c2) ///< Except same window
-              {
-                ClientMask(state, c2, &r); ///< Erase mask
-                if(state & (SUB_DRAG_LEFT|SUB_DRAG_RIGHT)) 
-                  {
-                    subViewArrange(subtle->cv, c, c2, SUB_TILE_HORZ);
-                    subViewConfigure(subtle->cv);
-                  }
-                else if(state & (SUB_DRAG_TOP|SUB_DRAG_BOTTOM)) 
-                  {
-                    subViewArrange(subtle->cv, c, c2, SUB_TILE_VERT);
-                    subViewConfigure(subtle->cv);
-                  }
-                else if(SUB_DRAG_SWAP == state) 
-                  {
-                    subViewArrange(subtle->cv, c, c2, SUB_TILE_SWAP);
-                    subViewConfigure(subtle->cv);
-                  }
-              }
-            else ///< Move/Resize
-              {
-                ClientMask(state, c2, &r); ///< Erase mask
-
-                if(c->flags & SUB_STATE_FLOAT || c->tags & SUB_TAG_FLOAT) 
-                  {
-                    c->rect = r;
-                    subClientConfigure(c);
-                  }
-                else if(SUB_DRAG_BOTTOM >= mode) 
-                  {
-                    /* Get size ratios */
-                    if(SUB_DRAG_RIGHT == mode || SUB_DRAG_LEFT == mode) c->size = r.width * 100 / WINW(c);
-                    else c->size = r.height * 100 / WINH(c);
-
-                    if(90 > c->size) c->size = 90;      ///< Max. 90%
-                    else if(10 > c->size) c->size = 10; ///< Min. 10%
-
-                    if(!(c->flags & SUB_STATE_RESIZE)) c->flags |= SUB_STATE_RESIZE;
-                    subViewConfigure(subtle->cv);                    
-                  }
-              }
-
-            XUngrabServer(subtle->disp);
-            XUngrabPointer(subtle->disp, CurrentTime);
-
-            return; /* }}} */
         }
     }
+
+  ClientMask(state, c2, &r); ///< Erase mask
+
+  if(win != c->win && c && c2) ///< Except same window
+    {
+      if(state & (SUB_DRAG_LEFT|SUB_DRAG_RIGHT)) 
+        {
+          subViewArrange(subtle->cv, c, c2, SUB_TILE_HORZ);
+          subViewConfigure(subtle->cv);
+        }
+      else if(state & (SUB_DRAG_TOP|SUB_DRAG_BOTTOM)) 
+        {
+          subViewArrange(subtle->cv, c, c2, SUB_TILE_VERT);
+          subViewConfigure(subtle->cv);
+        }
+      else if(SUB_DRAG_SWAP == state) 
+        {
+          subViewArrange(subtle->cv, c, c2, SUB_TILE_SWAP);
+          subViewConfigure(subtle->cv);
+        }
+    }
+  else ///< Move/Resize
+    {
+      if(c->flags & SUB_STATE_FLOAT || c->tags & SUB_TAG_FLOAT) 
+        {
+          c->rect = r;
+          subClientConfigure(c);
+        }
+      else if(SUB_DRAG_BOTTOM >= mode) 
+        {
+          /* Get size ratios */
+          if(SUB_DRAG_RIGHT == mode || SUB_DRAG_LEFT == mode) 
+            c->size = r.width * 100 / WINW(c);
+          else c->size = r.height * 100 / WINH(c);
+
+          if(90 > c->size) c->size = 90;      ///< Max. 90%
+          else if(10 > c->size) c->size = 10; ///< Min. 10%
+
+          if(!(c->flags & SUB_STATE_RESIZE)) c->flags |= SUB_STATE_RESIZE;
+          subViewConfigure(subtle->cv);                    
+        }
+    }
+
+  XUngrabPointer(subtle->disp, CurrentTime);
+  XUngrabServer(subtle->disp);
 } /* }}} */
 
  /** subClientToggle {{{
