@@ -438,7 +438,11 @@ subViewSanitize(SubClient *c)
         {
           SubLayout *l = LAYOUT(v->layout->data[j]);
 
-          if(l->c1 == c || l->c2 == c) subArrayPop(v->layout, (void *)l);
+          if(l->c1 == c || l->c2 == c) 
+            {
+              subArrayPop(v->layout, (void *)l);
+              subLayoutKill(l);
+            }
         }
     }
 } /* }}} */
