@@ -16,6 +16,7 @@
 #define MINW 100
 #define MINH 100
 #define STEP 5
+#define SNAP 10
 
 /* ClientMask {{{ */
 static void
@@ -28,7 +29,7 @@ ClientMask(int type,
     {
       case SUB_DRAG_START: 
         XDrawRectangle(subtle->disp, DefaultRootWindow(subtle->disp), subtle->gcs.invert, 
-          r->x - subtle->bw, r->y - subtle->bw, r->width - 1, r->height - 1);
+          r->x - 1, r->y - 1, r->width - 3, r->height - 3);
         break;
       case SUB_DRAG_TOP:
         XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, 5, 5, c->rect.width - 10, 
@@ -69,6 +70,21 @@ ClientMask(int type,
     }
 } /* }}} */
 
+/* ClientSnap {{{ */
+static void
+ClientSnap(SubClient *c,
+  XRectangle *r)
+{
+  assert(c && r);
+
+  if(SNAP > r->x) r->x = subtle->bw;
+  else if(r->x > (SCREENW - WINW(c) - SNAP)) 
+    r->x = SCREENW - c->rect.width + subtle->bw;
+  if(SNAP > r->y) r->y = subtle->bw;
+  else if(r->y > (SCREENH - WINH(c) - SNAP)) 
+    r->y = SCREENH - c->rect.height + subtle->bw;
+} /* }}} */
+
  /** subClientNew {{{
   * @brief Create new client
   * @param[in]  win  Main window of the new client
@@ -96,8 +112,8 @@ subClientNew(Window win)
   /* Dimensions */
   c->rect.x      = 0;
   c->rect.y      = subtle->th;
-  c->rect.width  = DisplayWidth(subtle->disp, DefaultScreen(subtle->disp));
-  c->rect.height = DisplayHeight(subtle->disp, DefaultScreen(subtle->disp)) - subtle->th;
+  c->rect.width  = SCREENW;
+  c->rect.height = SCREENH - subtle->th;
 
   /* Update client */
   XAddToSaveSet(subtle->disp, c->win);
@@ -286,7 +302,7 @@ subClientDrag(SubClient *c,
     CurrentTime)) return;
 
   XGrabServer(subtle->disp);
-  if(SUB_DRAG_MOVE >= mode) ClientMask(SUB_DRAG_START, c, &r);
+  if(SUB_DRAG_MOVE == mode) ClientMask(SUB_DRAG_START, c, &r);
 
   while(loop) ///< Event loop
     {
@@ -314,7 +330,7 @@ subClientDrag(SubClient *c,
               }
             break; /* }}} */
           case MotionNotify: /* {{{ */
-            if(SUB_DRAG_MOVE >= mode) 
+            if(SUB_DRAG_MOVE == mode) 
               {
                 ClientMask(SUB_DRAG_START, c, &r);
           
@@ -323,40 +339,51 @@ subClientDrag(SubClient *c,
                   {
                     case SUB_DRAG_RESIZE: 
                       r.width  = c->rect.width + (ev.xmotion.x_root - rx);
+                      r.height = c->rect.height + (ev.xmotion.y_root - ry);
                       break;
                     case SUB_DRAG_MOVE:
                       r.x = (rx - wx) - (rx - ev.xmotion.x_root);
                       r.y = (ry - wy) - (ry - ev.xmotion.y_root);
+
+                      ClientSnap(c, &r);
                       break;
                   }  
                 ClientMask(SUB_DRAG_START, c, &r);
               }
             else if(win != c->win && SUB_DRAG_SWAP == mode)
               {
-                if(!c2 ) c2 = CLIENT(subUtilFind(win, 1));
+                if(!c2 ) c2 = CLIENT(subUtilFind(win, CLIENTID));
                 if(c2)
                   {
-                    XQueryPointer(subtle->disp, win, &unused, &unused, &rx, &ry, &wx, &wy, &mask);
+                    XQueryPointer(subtle->disp, win, &unused, &unused, 
+                      &rx, &ry, &wx, &wy, &mask);
                     r.x = rx - wx;
                     r.y = ry - wy;
 
                     /* Change drag state */
                     if(wx > c2->rect.width * 0.35 && wx < c2->rect.width * 0.65)
                       {
-                        if(state != SUB_DRAG_TOP && wy > c2->rect.height * 0.1 && wy < c2->rect.height * 0.35)
+                        if(state != SUB_DRAG_TOP && wy > c2->rect.height * 0.1 && 
+                          wy < c2->rect.height * 0.35)
                           state = SUB_DRAG_TOP;
-                        else if(state != SUB_DRAG_BOTTOM && wy > c2->rect.height * 0.65 && wy < c2->rect.height * 0.9)
+                        else if(state != SUB_DRAG_BOTTOM && wy > c2->rect.height * 0.65 && 
+                          wy < c2->rect.height * 0.9)
                           state = SUB_DRAG_BOTTOM;
-                        else if(state != SUB_DRAG_SWAP && wy > c2->rect.height * 0.35 && wy < c2->rect.height * 0.65)
+                        else if(state != SUB_DRAG_SWAP && wy > c2->rect.height * 0.35 && 
+                          wy < c2->rect.height * 0.65)
                           state = SUB_DRAG_SWAP;
                       }
-                    if(state != SUB_DRAG_ABOVE && wy < c2->rect.height * 0.1) state = SUB_DRAG_ABOVE;
-                    else if(state != SUB_DRAG_BELOW && wy > c2->rect.height * 0.9) state = SUB_DRAG_BELOW;
+                    if(state != SUB_DRAG_ABOVE && wy < c2->rect.height * 0.1) 
+                      state = SUB_DRAG_ABOVE;
+                    else if(state != SUB_DRAG_BELOW && wy > c2->rect.height * 0.9) 
+                      state = SUB_DRAG_BELOW;
                     if(wy > c2->rect.height * 0.1 && wy < c2->rect.height * 0.9)
                       {
-                        if(state != SUB_DRAG_LEFT && wx > c2->rect.width * 0.1 && wx < c2->rect.width * 0.35)
+                        if(state != SUB_DRAG_LEFT && wx > c2->rect.width * 0.1 && 
+                          wx < c2->rect.width * 0.35)
                           state = SUB_DRAG_LEFT;
-                        else if(state != SUB_DRAG_RIGHT && wx > c2->rect.width * 0.65 && wx < c2->rect.width * 0.9)
+                        else if(state != SUB_DRAG_RIGHT && wx > c2->rect.width * 0.65 && 
+                          wx < c2->rect.width * 0.9)
                           state = SUB_DRAG_RIGHT;
                         else if(state != SUB_DRAG_BEFORE && wx < c2->rect.width * 0.1)
                           state = SUB_DRAG_BEFORE;
@@ -366,7 +393,7 @@ subClientDrag(SubClient *c,
 
                     if(lstate != state || lc != c2) 
                       {
-                        if(lstate != SUB_DRAG_START) ClientMask(lstate, lc, &r);
+                        if(SUB_DRAG_START != lstate) ClientMask(lstate, lc, &r);
                         ClientMask(state, c2, &r);
 
                         lc     = c2;
@@ -402,6 +429,8 @@ subClientDrag(SubClient *c,
     {
       if(c->flags & SUB_STATE_FLOAT || c->tags & SUB_TAG_FLOAT) 
         {
+          r.y -= (subtle->th + subtle->bw);
+          r.x -= subtle->bw;
           c->rect = r;
           subClientConfigure(c);
         }
