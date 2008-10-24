@@ -58,12 +58,14 @@ HandleGrab(XEvent *ev)
             return;
           }      
 
-        win   = ev->xbutton.subwindow;
+        win   = ev->xbutton.window == subtle->cv->frame ? 
+          ev->xbutton.subwindow : ev->xbutton.window;
         code  = XK_Pointer_Button1 + ev->xbutton.button;
         state = ev->xbutton.state;
         break;
       case KeyPress:    
-        win   = ev->xkey.subwindow;
+        win   = ev->xkey.window == subtle->cv->frame ? 
+          ev->xkey.subwindow : ev->xkey.window;
         code  = ev->xkey.keycode;  
         state = ev->xkey.state; 
         break;
@@ -82,7 +84,7 @@ HandleGrab(XEvent *ev)
             break;
           case SUB_GRAB_WINDOW_FLOAT:
             c = CLIENT(subUtilFind(win, CLIENTID));
-            if(c) subClientToggle(c, SUB_STATE_FLOAT, True);
+            if(c) subClientToggle(c, SUB_STATE_FLOAT);
             break;            
           case SUB_GRAB_WINDOW_KILL:
             c = CLIENT(subUtilFind(win, CLIENTID));
@@ -97,6 +99,11 @@ HandleGrab(XEvent *ev)
             c = CLIENT(subUtilFind(win, CLIENTID));
             if(c && (c->flags & SUB_STATE_FLOAT || c->tags & SUB_TAG_FLOAT))
               subClientDrag(c, SUB_DRAG_MOVE);
+            break;            
+          case SUB_GRAB_WINDOW_RESIZE:
+            c = CLIENT(subUtilFind(win, CLIENTID));
+            if(c && (c->flags & SUB_STATE_FLOAT || c->tags & SUB_TAG_FLOAT))
+              subClientDrag(c, SUB_DRAG_RESIZE);
             break;            
           case SUB_GRAB_EXEC:
             if(g->string) EventExec(g->string);
@@ -302,7 +309,7 @@ HandleMessage(XClientMessageEvent *ev)
           /* [0] => Remove = 0 / Add = 1 / Toggle = 2 -> we _always_ toggle */
           if(ev->data.l[1] == (long)subEwmhFind(SUB_EWMH_NET_WM_STATE_FULLSCREEN))
             {
-              subClientToggle(c, SUB_STATE_FULL, True);
+              subClientToggle(c, SUB_STATE_FULL);
             }
         }
     }

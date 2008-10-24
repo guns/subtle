@@ -119,9 +119,9 @@ subClientNew(Window win)
   XAddToSaveSet(subtle->disp, c->win);
   XSelectInput(subtle->disp, c->win, SubstructureRedirectMask|SubstructureNotifyMask|
     ExposureMask|VisibilityChangeMask|EnterWindowMask|FocusChangeMask|
-    KeyPressMask|ButtonPressMask|ButtonReleaseMask|PropertyChangeMask);
+    KeyPressMask|ButtonPressMask|PropertyChangeMask);
   XSetWindowBorderWidth(subtle->disp, c->win, subtle->bw);
-  XSaveContext(subtle->disp, c->win, 1, (void *)c);
+  XSaveContext(subtle->disp, c->win, CLIENTID, (void *)c);
 
   /* Window attributes */
   XGetWindowAttributes(subtle->disp, c->win, &attrs);
@@ -132,10 +132,9 @@ subClientNew(Window win)
   hints = XGetWMHints(subtle->disp, win);
   if(hints)
     {
-      if(hints->flags & StateHint) subClientSetWMState(c, hints->initial_state);
-      else subClientSetWMState(c, NormalState);
+      subClientSetWMState(c, NormalState);
       if(hints->input) c->flags |= SUB_PREF_INPUT;
-      if(hints->flags & XUrgencyHint) c->flags |= SUB_STATE_FLOAT;
+      if(hints->flags & XUrgencyHint) c->flags |= (SUB_STATE_URGENT|SUB_STATE_FLOAT);
       XFree(hints);
     }
   
@@ -302,7 +301,14 @@ subClientDrag(SubClient *c,
     CurrentTime)) return;
 
   XGrabServer(subtle->disp);
-  if(SUB_DRAG_MOVE == mode) ClientMask(SUB_DRAG_START, c, &r);
+  if(SUB_DRAG_MOVE == mode)
+    ClientMask(SUB_DRAG_START, c, &r);
+  if(SUB_DRAG_RESIZE == mode) 
+    {
+      ClientMask(SUB_DRAG_START, c, &r);
+      printf("lala\n");
+      XWarpPointer(subtle->disp, 0, c->win, 0, 0, 0, 0, c->rect.width, c->rect.height);
+    }
 
   while(loop) ///< Event loop
     {
@@ -337,15 +343,15 @@ subClientDrag(SubClient *c,
                 /* Calculate dimensions of the selection rect */
                 switch(mode)
                   {
-                    case SUB_DRAG_RESIZE: 
-                      r.width  = c->rect.width + (ev.xmotion.x_root - rx);
-                      r.height = c->rect.height + (ev.xmotion.y_root - ry);
-                      break;
                     case SUB_DRAG_MOVE:
                       r.x = (rx - wx) - (rx - ev.xmotion.x_root);
                       r.y = (ry - wy) - (ry - ev.xmotion.y_root);
 
                       ClientSnap(c, &r);
+                      break;
+                    case SUB_DRAG_RESIZE: 
+                      r.width  = c->rect.width + (ev.xmotion.x_root - rx);
+                      r.height = c->rect.height + (ev.xmotion.y_root - ry);
                       break;
                   }  
                 ClientMask(SUB_DRAG_START, c, &r);
@@ -455,30 +461,24 @@ subClientDrag(SubClient *c,
 
  /** subClientToggle {{{
   * @brief Toggle various states of client
-  * @param[in]  c       A #SubClient
-  * @param[in]  type    Toggle type
-  * @param[in]  toggle  Toggle flag? 
+  * @param[in]  c     A #SubClient
+  * @param[in]  type  Toggle type
   **/
 
 void
 subClientToggle(SubClient *c,
-  int type,
-  int toggle)
+  int type)
 {
   assert(c);
 
-  if(c->flags & type) 
-    {
-      if(True == toggle) c->flags &= ~type;
-    }
+  if(c->flags & type) c->flags &= ~type;
   else 
     {
       long supplied = 0;
       XSizeHints *hints = NULL;
-      int width = DisplayWidth(subtle->disp, DefaultScreen(subtle->disp)),
-        height = DisplayHeight(subtle->disp, DefaultScreen(subtle->disp));      
+      int width = SCREENW, height = SCREENH;
 
-      if(True == toggle) c->flags |= type;
+      c->flags |= type;
 
       switch(type)
         {
@@ -523,10 +523,7 @@ subClientToggle(SubClient *c,
 
             subClientConfigure(c);
             XRaiseWindow(subtle->disp, c->win);
-
-            XFree(hints);
             break;
-
           case SUB_STATE_FULL:
             /* Resize to display resolution */
             c->rect.x      = 0;
