@@ -78,7 +78,7 @@ subViewConfigure(SubView *v)
   int i;
   long vid = 0;
   int x = 0, y = 0, width = 0, height = 0, cw = 0, comp = 0, total = 0, tiled = 0,
-    shaded = 0, resized = 0, full = 0, floated = 0, special = 0;
+    resized = 0, full = 0, floated = 0, special = 0;
 
   assert(v);
 
@@ -87,8 +87,8 @@ subViewConfigure(SubView *v)
   if(0 < subtle->clients->ndata)
     {
        y      = subtle->th;
-       width  = DisplayWidth(subtle->disp, DefaultScreen(subtle->disp));
-       height = DisplayHeight(subtle->disp, DefaultScreen(subtle->disp)) - subtle->th;
+       width  = SCREENW;
+       height = SCREENH - subtle->th;
 
       /* Find clients and count special states*/
       for(i = 0; i < subtle->clients->ndata; i++)
@@ -121,10 +121,10 @@ subViewConfigure(SubView *v)
       total -= tiled;
 
       /* Calculations */
-      special = shaded + resized + full + floated;
+      special = resized + full + floated;
       total   = total > special ? total - special : 1; ///< Prevent division by zero
       cw      = width / total;
-      comp    = abs(width - total * cw - shaded * subtle->th); ///< Compensation for int rounding
+      comp    = abs(width - total * cw); ///< Compensation for int rounding
 
       /* Set client stuff */
       for(i = 0; i < subtle->clients->ndata; i++)
@@ -136,19 +136,20 @@ subViewConfigure(SubView *v)
               XReparentWindow(subtle->disp, c->win, v->frame, 0, 0);
               XMapWindow(subtle->disp, c->win);
 
+              /* EWMH: Desktop */
+              subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
+
               if(c->tags & (SUB_TAG_FLOAT|SUB_TAG_FULL))
                 {
-                  subClientToggle(c, SUB_STATE_FLOAT, False);
+                  if(!(c->flags & SUB_STATE_FLOAT)) subClientToggle(c, SUB_STATE_FLOAT);
+                  subClientConfigure(c);
                   continue;
                 }
               
               c->rect.x      = x;
-              c->rect.y      = shaded * subtle->th;
+              c->rect.y      = 0;
               c->rect.width  = i == total - 1 ? cw + comp : cw; ///< Compensation
               c->rect.height = height;
-
-              /* EWMH: Desktop */
-              subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);          
 
               if(!(c->flags & SUB_STATE_TILED)) 
                 {
