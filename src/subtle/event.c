@@ -359,9 +359,13 @@ HandleExpose(XEvent *ev)
       subViewRender();
       subSubletRender();
     }
+  else if(ev->xany.window == subtle->cv->frame)
+    {
+      subViewRender();
+    }
   else
     {
-      SubClient *c = (SubClient *)subUtilFind(ev->xany.window, 1);
+      SubClient *c = (SubClient *)subUtilFind(ev->xany.window, CLIENTID);
       if(c) subClientRender(c);
     }
 

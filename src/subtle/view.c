@@ -35,7 +35,7 @@ subViewNew(char *name,
   v->layout = subArrayNew();
 
   /* Create windows */
-  attrs.event_mask = KeyPressMask;
+  attrs.event_mask = ExposureMask|VisibilityChangeMask|KeyPressMask;
  
   v->frame  = XCreateWindow(subtle->disp, DefaultRootWindow(subtle->disp), 
     0, subtle->th, DisplayWidth(subtle->disp, DefaultScreen(subtle->disp)), 
@@ -312,6 +312,8 @@ subViewRender(void)
           XDrawString(subtle->disp, v->button, subtle->gcs.font, 3, subtle->fy - 1, 
             v->name, strlen(v->name));
         }
+
+      if(subtle->cv) XClearWindow(subtle->disp, subtle->cv->frame); ///< CV frame
     }
 } /* }}} */
 
