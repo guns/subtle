@@ -38,6 +38,10 @@
 #define TEXTW(s)  (strlen(s) * subtle->fx + 8)                    ///< Textwidth in pixel
 #define WINW(c)   (c->rect.width - 2 * subtle->bw)                ///< Get real width
 #define WINH(c)   (c->rect.height - 2 * subtle->bw)               ///< Get real height
+#define SCREENW \
+  DisplayWidth(subtle->disp, DefaultScreen(subtle->disp))         ///< Get screen width
+#define SCREENH \
+  DisplayHeight(subtle->disp, DefaultScreen(subtle->disp))        ///< Get screen height
 #define CLIENTID  1                                               ///< Client data id
 #define VIEWID    2                                               ///< View data id
 
