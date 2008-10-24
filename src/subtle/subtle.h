@@ -146,6 +146,7 @@
 #define SUB_STATE_RESIZE       (1L << 15)                         ///< Resized window
 #define SUB_STATE_DEAD         (1L << 16)                         ///< Dead window
 #define SUB_STATE_TILED        (1L << 17)                         ///< Tiled client
+#define SUB_STATE_URGENT       (1L << 18)                         ///< Urgent client
 
 /* Client preferences */
 #define SUB_PREF_INPUT         (1L << 20)                         ///< Active/passive focus-model
@@ -194,11 +195,11 @@ typedef struct subclient_t /* {{{ */
 {
   FLAGS               flags;                                      ///< Client flags
   TAGS                tags;                                       ///< Client tags
-  XRectangle          rect;                                       ///< Client rect
   int                 size;                                       ///< Client size, tags
   char                *name;                                      ///< Client name
   Colormap            cmap;                                       ///< Client colormap
   Window              win;                                        ///< Client window
+  XRectangle          rect;                                       ///< Client rect
 } SubClient; /* }}} */
 
 typedef struct subgrab_t /* {{{ */
@@ -318,7 +319,7 @@ void subClientConfigure(SubClient *c);                            ///< Send conf
 void subClientRender(SubClient *c);                               ///< Render client
 void subClientFocus(SubClient *c);                                ///< Focus client
 void subClientDrag(SubClient *c, int mode);                       ///< Move/drag client
-void subClientToggle(SubClient *c, int type, int toggle);         ///< Toggle client state
+void subClientToggle(SubClient *c, int type);                     ///< Toggle client state
 void subClientFetchName(SubClient *c);                            ///< Fetch client name
 void subClientSetWMState(SubClient *c, long state);               ///< Set client WM state
 long subClientGetWMState(SubClient *c);                           ///< Get client WM state
