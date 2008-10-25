@@ -90,7 +90,6 @@ HandleGrab(XEvent *ev)
             c = CLIENT(subUtilFind(win, CLIENTID));
             if(c) 
               { 
-                subArrayPop(subtle->clients, (void *)c);
                 subClientKill(c);
                 subClientPublish();
               }
