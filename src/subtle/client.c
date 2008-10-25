@@ -85,6 +85,15 @@ ClientSnap(SubClient *c,
     r->y = SCREENH - c->rect.height + subtle->bw;
 } /* }}} */
 
+/* ClientBetween {{{ */
+static inline short
+ClientBetween(short val,
+  int min,
+  int max)
+{
+  return(val < min ? min : val > max ? max : val);
+} /* }}} */
+
  /** subClientNew {{{
   * @brief Create new client
   * @param[in]  win  Main window of the new client
@@ -97,6 +106,7 @@ subClientNew(Window win)
   int i, n = 0;
   long vid = 1337;
   char *wmclass = NULL;
+  long supplied = 0;
   Window propwin = 0;
   XWMHints *hints = NULL;
   XWindowAttributes attrs;
@@ -127,6 +137,13 @@ subClientNew(Window win)
   XGetWindowAttributes(subtle->disp, c->win, &attrs);
   c->cmap = attrs.colormap;
   subClientFetchName(c);
+
+  /* Size hints */
+  c->hints = XAllocSizeHints();
+  if(!c->hints) subUtilLogError("Can't alloc memory. Exhausted?\n");
+  XGetWMNormalHints(subtle->disp, c->win, c->hints, &supplied);
+  if(0 < supplied) c->flags |= SUB_PREF_HINTS;
+  else XFree(c->hints);
 
   /* Window manager hints */
   hints = XGetWMHints(subtle->disp, win);
@@ -174,7 +191,7 @@ subClientNew(Window win)
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
   printf("Adding client (%s)\n", c->name);
-  subUtilLogDebug("new=client, name=%s, win=%#lx\n", c->name, win);
+  subUtilLogDebug("new=client, name=%s, win=%#lx, supplied=%ld\n", c->name, win, supplied);
 
   return c;
 } /* }}} */
@@ -281,19 +298,54 @@ subClientDrag(SubClient *c,
   XEvent ev;
   Window win, unused;
   unsigned int mask;
-  int loop = True, wx = 0, wy = 0, rx = 0, ry = 0, 
-    state = SUB_DRAG_START, lstate = SUB_DRAG_START;
+  int loop = True, wx = 0, wy = 0, rx = 0, ry = 0, state = 0, lstate = 0;
   XRectangle r;
   SubClient *c2 = NULL, *lc = NULL;
+  short *dirx = NULL, *diry = NULL, minx = 10, miny = 10, maxx = SCREENW, maxy = SCREENH,
+    stepx = subtle->step, stepy = subtle->step;
 
   assert(c);
-
+ 
   /* Get window position on root window */
   XQueryPointer(subtle->disp, c->win, &win, &win, &rx, &ry, &wx, &wy, &mask);
   r.x      = rx - wx;
   r.y      = ry - wy;
   r.width  = c->rect.width;
-  r.height = c->rect.height;
+  r.height = c->rect.height; 
+
+  /* Directions and steppings  {{{ */
+  switch(mode)
+    {
+      case SUB_DRAG_MOVE:
+        dirx = &r.x;
+        diry = &r.y;
+        break;
+      case SUB_DRAG_RESIZE:
+        dirx = (short *)&r.width;
+        diry = (short *)&r.height;
+
+        /* Respect size hints */
+        if(c->flags & SUB_PREF_HINTS)
+          {
+            if(c->hints->flags & PResizeInc) ///< Resize hints
+              {
+                stepx = c->hints->width_inc;
+                stepy = c->hints->height_inc;
+              }
+            if(c->hints->flags & PMinSize) ///< Min. size
+              {
+                minx = c->hints->min_width;
+                miny = c->hints->min_height;
+              }
+            if(c->hints->flags & PMaxSize) ///< Max. size
+              {
+                minx = c->hints->max_width;
+                miny = c->hints->max_height;
+              }
+         }
+    } /* }}} */
+
+  printf("minx=%d, miny=%d, stepx=%d, stepy=%d\n", minx, miny, stepx, stepy);
 
   if(XGrabPointer(subtle->disp, c->win, True, 
     ButtonPressMask|ButtonReleaseMask|PointerMotionMask, GrabModeAsync, GrabModeAsync, None, 
@@ -301,14 +353,7 @@ subClientDrag(SubClient *c,
     CurrentTime)) return;
 
   XGrabServer(subtle->disp);
-  if(SUB_DRAG_MOVE == mode)
-    ClientMask(SUB_DRAG_START, c, &r);
-  if(SUB_DRAG_RESIZE == mode) 
-    {
-      ClientMask(SUB_DRAG_START, c, &r);
-      printf("lala\n");
-      XWarpPointer(subtle->disp, 0, c->win, 0, 0, 0, 0, c->rect.width, c->rect.height);
-    }
+  if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE)) ClientMask(SUB_DRAG_START, c, &r);
 
   while(loop) ///< Event loop
     {
@@ -319,24 +364,28 @@ subClientDrag(SubClient *c,
           case EnterNotify:   win = ev.xcrossing.window; break; ///< Find destination window
           case ButtonRelease: loop = False;              break;
           case KeyPress: /* {{{ */
-            if(SUB_DRAG_MOVE >= mode)
+            if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE))
               {
                 KeySym sym = XKeycodeToKeysym(subtle->disp, ev.xkey.keycode, 0);
                 ClientMask(SUB_DRAG_START, c, &r);
 
                 switch(sym)
                   {
-                    case XK_Left:   r.x -= STEP;  break; 
-                    case XK_Right:  r.x += STEP;  break;
-                    case XK_Up:     r.y -= STEP;  break;
-                    case XK_Down:   r.y += STEP;  break;
-                    case XK_Return: loop = False; break;
+                    case XK_Left:   *dirx -= stepx; break; 
+                    case XK_Right:  *dirx += stepx; break;
+                    case XK_Up:     *diry -= stepy; break;
+                    case XK_Down:   *diry += stepy; break;
+                    case XK_Return: loop = False;   break;
                   }
+
+                *dirx = ClientBetween(*dirx, minx, maxx);
+                *diry = ClientBetween(*diry, miny, maxy);
+              
                 ClientMask(SUB_DRAG_START, c, &r);
               }
             break; /* }}} */
           case MotionNotify: /* {{{ */
-            if(SUB_DRAG_MOVE == mode) 
+            if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE)) 
               {
                 ClientMask(SUB_DRAG_START, c, &r);
           
@@ -352,8 +401,15 @@ subClientDrag(SubClient *c,
                     case SUB_DRAG_RESIZE: 
                       r.width  = c->rect.width + (ev.xmotion.x_root - rx);
                       r.height = c->rect.height + (ev.xmotion.y_root - ry);
+
+                      r.width  = ClientBetween(r.width, minx, maxx);
+                      r.height = ClientBetween(r.height, miny, maxy);
+
+                      r.width -= r.width % stepx;
+                      r.height -= r.height % stepy;
                       break;
                   }  
+
                 ClientMask(SUB_DRAG_START, c, &r);
               }
             else if(win != c->win && SUB_DRAG_SWAP == mode)
@@ -474,8 +530,6 @@ subClientToggle(SubClient *c,
   if(c->flags & type) c->flags &= ~type;
   else 
     {
-      long supplied = 0;
-      XSizeHints *hints = NULL;
       int width = SCREENW, height = SCREENH;
 
       c->flags |= type;
@@ -483,42 +537,50 @@ subClientToggle(SubClient *c,
       switch(type)
         {
           case SUB_STATE_FLOAT:
-            hints = XAllocSizeHints();
-            if(!hints) subUtilLogError("Can't alloc memory. Exhausted?\n");
-
-            /* Respect the user/program preferences */
-            if(XGetWMNormalHints(subtle->disp, c->win, hints, &supplied))
+            if(c->flags & SUB_PREF_HINTS)
               {
-                if(hints->flags & (USSize|PSize))
+                if(c->hints->flags & (USSize|PSize)) ///< User/program size
                   {
-                    c->rect.width  = hints->width + 2 * subtle->bw;
-                    c->rect.height = hints->height + 2 * subtle->bw;
+                    c->rect.width  = c->hints->width + 2 * subtle->bw;
+                    c->rect.height = c->hints->height + 2 * subtle->bw;
                   }
-                else if(hints->flags & PBaseSize)
+                else if(c->hints->flags & PBaseSize) ///< Base size
                   {
-                    c->rect.width  = hints->base_width + 2 * subtle->bw;
-                    c->rect.height = hints->base_height + 2 * subtle->bw;
+                    c->rect.width  = c->hints->base_width + 2 * subtle->bw;
+                    c->rect.height = c->hints->base_height + 2 * subtle->bw;
                   }
-
-                /* Sanitize */
-                if(MINW > c->rect.width)  c->rect.width  = MINW + 2 * subtle->bw;
-                if(MINH > c->rect.height) c->rect.height = MINH + 2 * subtle->bw;
-
-                if(hints->flags & (USPosition|PPosition))
+                else if(c->hints->flags & PMinSize) ///< Min size
                   {
-                    c->rect.x = hints->x + 2 * subtle->bw;
-                    c->rect.y = hints->y + 2 * subtle->bw;
+                    c->rect.width  = c->hints->min_width + 2 * subtle->bw;
+                    c->rect.height = c->hints->min_height + 2 * subtle->bw;
                   }
-                else if(hints->flags & PAspect)
+                else ///< Fallback
                   {
-                    c->rect.x = (hints->min_aspect.x - hints->max_aspect.x) / 2;
-                    c->rect.y = (hints->min_aspect.y - hints->max_aspect.y) / 2;
+                    c->rect.width  = MINW + 2 * subtle->bw;
+                    c->rect.height = MINH + 2 * subtle->bw;
                   }
-                else
+                if(c->hints && c->hints->flags & (USPosition|PPosition)) ///< User/program pos
+                  {
+                    c->rect.x = c->hints->x + 2 * subtle->bw;
+                    c->rect.y = c->hints->y + 2 * subtle->bw;
+                  }
+                else if(c->hints->flags & PAspect) ///< Aspect size
+                  {
+                    c->rect.x = (c->hints->min_aspect.x - c->hints->max_aspect.x) / 2;
+                    c->rect.y = (c->hints->min_aspect.y - c->hints->max_aspect.y) / 2;
+                  }
+                else ///< Fallback
                   {
                     c->rect.x = (width - c->rect.width) / 2;
                     c->rect.y = (height - c->rect.height) / 2;
                   }
+              }
+            else
+              {
+                c->rect.width  = MINW + 2 * subtle->bw;
+                c->rect.height = MINH + 2 * subtle->bw;
+                c->rect.x      = (width - c->rect.width) / 2;
+                c->rect.y      = (height - c->rect.height) / 2;
               }
 
             subClientConfigure(c);
@@ -677,6 +739,7 @@ subClientKill(SubClient *c)
   subViewSanitize(c);
   subArrayPop(subtle->clients, (void *)c);
 
+  if(c->flags & SUB_PREF_HINTS) XFree(c->hints);
   if(c->name) XFree(c->name);
   free(c);
 
