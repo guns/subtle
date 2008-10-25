@@ -207,7 +207,8 @@ RubyConfigParse(VALUE path)
 
   /* Config: Options */
   config = rb_const_get(rb_cObject, rb_intern("OPTIONS"));
-  subtle->bw = RubyGetFixnum(config, "border", 2);
+  subtle->bw   = RubyGetFixnum(config, "border", 2);
+  subtle->step = RubyGetFixnum(config, "step", 5);
 
   /* Config: Font */
   config = rb_const_get(rb_cObject, rb_intern("FONT"));

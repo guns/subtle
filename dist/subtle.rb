@@ -9,7 +9,8 @@
 # Options
 #
 OPTIONS = {
-  "border" => 2                     # Border size of the windows
+  "border" => 2,                    # Border size of the windows
+  "step"   => 5                     # Window move/resize key step
 }
 
 #
@@ -51,7 +52,7 @@ GRABS = {
   "ViewJump3"       => "A-3",       # Jump to view 3
   "ViewJump4"       => "A-4",       # Jump to view 4
   "ViewJump5"       => "A-5",       # Jump to view 5
-  "WindowRaise"     => "A-B1",      # Raise window
+  "WindowRaise"     => "S-A-B1",    # Raise window
   "WindowMove"      => "S-B1",      # Move window
   "WindowResize"    => "S-B3",      # Resize window
   "WindowFloat"     => "A-f",       # Float window

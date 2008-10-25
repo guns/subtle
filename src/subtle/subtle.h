@@ -152,6 +152,7 @@
 #define SUB_PREF_INPUT         (1L << 20)                         ///< Active/passive focus-model
 #define SUB_PREF_FOCUS         (1L << 21)                         ///< Send focus message
 #define SUB_PREF_CLOSE         (1L << 22)                         ///< Send close message
+#define SUB_PREF_HINTS         (1L << 23)                         ///< Size hints available
 
 /* Drag states */
 #define SUB_DRAG_START         (1L << 1)                          ///< Drag start
@@ -200,6 +201,7 @@ typedef struct subclient_t /* {{{ */
   Colormap            cmap;                                       ///< Client colormap
   Window              win;                                        ///< Client window
   XRectangle          rect;                                       ///< Client rect
+  XSizeHints          *hints;                                     ///< Client size hints
 } SubClient; /* }}} */
 
 typedef struct subgrab_t /* {{{ */
@@ -239,7 +241,7 @@ typedef struct subsublet_t /* {{{ */
 
 typedef struct subsubtle_t /* {{{ */
 {
-  int                th, bw, fx, fy;                              ///< Subtle tab height, border width, font metrics
+  int                th, bw, fx, fy, step;                        ///< Subtle tab height, border width, font metrics, step
 
   Display            *disp;                                       ///< Subtle Xorg display
   Window             focus;                                       ///< Subtle focus
