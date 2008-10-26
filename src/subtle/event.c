@@ -44,6 +44,7 @@ HandleGrab(XEvent *ev)
   Window win = 0;
   SubGrab *g = NULL;
   SubClient *c = NULL;
+  FLAGS flag = 0;
   unsigned int code = 0, state = 0;
 
   /* Distinct types */
@@ -75,13 +76,16 @@ HandleGrab(XEvent *ev)
   g = subGrabFind(code, state);
   if(g) 
     {
-      switch(g->flags & ~(SUB_TYPE_GRAB|SUB_GRAB_KEY|SUB_GRAB_MOUSE)) ///< Clear
+      flag = g->flags & ~(SUB_TYPE_GRAB|SUB_GRAB_KEY|SUB_GRAB_MOUSE); ///< Clear mask
+      switch(flag)
         {
           case SUB_GRAB_WINDOW_FLOAT:
+          case SUB_GRAB_WINDOW_FULL:
             c = CLIENT(subUtilFind(win, CLIENTID));
             if(c) 
               {
-                subClientToggle(c, SUB_STATE_FLOAT);
+                flag = SUB_GRAB_WINDOW_FLOAT == flag ? SUB_STATE_FLOAT : SUB_STATE_FULL;
+                subClientToggle(c, flag);
                 subViewConfigure(subtle->cv);
               }
             break;            
@@ -94,14 +98,13 @@ HandleGrab(XEvent *ev)
               }
             break;             
           case SUB_GRAB_WINDOW_MOVE:
-            c = CLIENT(subUtilFind(win, CLIENTID));
-            if(c && c->flags & SUB_STATE_FLOAT)
-              subClientDrag(c, SUB_DRAG_MOVE);
-            break;            
           case SUB_GRAB_WINDOW_RESIZE:
             c = CLIENT(subUtilFind(win, CLIENTID));
-            if(c && c->flags & SUB_STATE_FLOAT)
-              subClientDrag(c, SUB_DRAG_RESIZE);
+            if(c && c->flags & SUB_STATE_FLOAT && !(c->flags & SUB_STATE_FULL))
+              {
+                flag = SUB_GRAB_WINDOW_MOVE == flag ? SUB_DRAG_MOVE : SUB_DRAG_RESIZE;
+                subClientDrag(c, flag);
+              }
             break;            
           case SUB_GRAB_EXEC:
             if(g->string) EventExec(g->string);
@@ -123,13 +126,13 @@ static void
 HandleConfigure(XConfigureRequestEvent *ev)
 {
   XWindowChanges wc;
-  SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
+  SubClient *c = CLIENT(subUtilFind(ev->window, CLIENTID));
   if(c)
     {
-      if(ev->value_mask & CWX)      c->rect.x       = ev->x;
-      if(ev->value_mask & CWY)      c->rect.y       = ev->y;
-      if(ev->value_mask & CWWidth)  c->rect.width   = ev->width;
-      if(ev->value_mask & CWHeight)  c->rect.height = ev->height;
+      if(ev->value_mask & CWX)      c->rect.x      = ev->x;
+      if(ev->value_mask & CWY)      c->rect.y      = ev->y;
+      if(ev->value_mask & CWWidth)  c->rect.width  = ev->width;
+      if(ev->value_mask & CWHeight) c->rect.height = ev->height;
 
       subClientConfigure(c);
     }
