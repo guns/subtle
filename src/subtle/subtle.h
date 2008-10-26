@@ -181,10 +181,10 @@
 #define SUB_GRAB_MOUSE         (1L << 11)                         ///< Mouse grab  
 #define SUB_GRAB_VIEW_JUMP     (1L << 12)                         ///< Jump to view
 #define SUB_GRAB_EXEC          (1L << 13)                         ///< Exec an app
-#define SUB_GRAB_WINDOW_RAISE  (1L << 14)                         ///< Raise window
-#define SUB_GRAB_WINDOW_MOVE   (1L << 15)                         ///< Resize window
-#define SUB_GRAB_WINDOW_RESIZE (1L << 16)                         ///< Move window
-#define SUB_GRAB_WINDOW_FLOAT  (1L << 17)                         ///< Float window
+#define SUB_GRAB_WINDOW_MOVE   (1L << 14)                         ///< Resize window
+#define SUB_GRAB_WINDOW_RESIZE (1L << 15)                         ///< Move window
+#define SUB_GRAB_WINDOW_FLOAT  (1L << 16)                         ///< Toggle float
+#define SUB_GRAB_WINDOW_FULL   (1L << 17)                         ///< Toggle full
 #define SUB_GRAB_WINDOW_KILL   (1L << 18)                         ///< Kill window
 
 /* Fixed tags */
