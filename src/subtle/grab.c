@@ -57,9 +57,9 @@ subGrabNew(const char *name,
     FLAGS flags;
   } grabs[] = { 
     { "WindowMove",   SUB_GRAB_WINDOW_MOVE   },
-    { "WindowRaise",  SUB_GRAB_WINDOW_RAISE  },
     { "WindowResize", SUB_GRAB_WINDOW_RESIZE },
     { "WindowFloat",  SUB_GRAB_WINDOW_FLOAT  },
+    { "WindowFull",   SUB_GRAB_WINDOW_FULL   },
     { "WindowKill",   SUB_GRAB_WINDOW_KILL   }
   };
 

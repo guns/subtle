@@ -174,6 +174,7 @@ subClientNew(Window win)
   if(propwin) c->tags |= SUB_TAG_FLOAT;
 
   if(c->tags & SUB_TAG_FLOAT) subClientToggle(c, SUB_STATE_FLOAT);
+  if(c->tags & SUB_TAG_FULL)  subClientToggle(c, SUB_STATE_FULL);
 
   /* EWMH: Desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
@@ -192,33 +193,41 @@ subClientNew(Window win)
 void
 subClientConfigure(SubClient *c)
 {
+  XRectangle r = { 0 };
   XConfigureEvent ev;
 
   assert(c);
 
-  /* Resize client window */
+  /* Set client size */
+  r = c->rect;
+  r.width  = WINW(c);
+  r.height = WINH(c);
+
   if(c->flags & SUB_STATE_FULL) 
     {
-      XMoveResizeWindow(subtle->disp, c->win, 0, 0, c->rect.width, c->rect.height);
+      r.x      = 0;
+      r.y      = 0;
+      r.width  = SCREENW;
+      r.height = SCREENH;
     }
-  else XMoveResizeWindow(subtle->disp, c->win, c->rect.x, c->rect.y, WINW(c), WINH(c));
 
   /* Tell client new geometry */
   ev.type              = ConfigureNotify;
   ev.event             = c->win;
   ev.window            = c->win;
-  ev.x                 = c->rect.x;
-  ev.y                 = c->rect.y;
-  ev.width             = WINW(c);
-  ev.height            = WINH(c);
+  ev.x                 = r.x;
+  ev.y                 = r.y;
+  ev.width             = r.width;
+  ev.height            = r.height;
   ev.above             = None;
   ev.border_width      = 0;
   ev.override_redirect = 0;
 
-  subUtilLogDebug("client=%#lx, x=%03d, y=%03d, width=%03d, height=%03d\n", 
-    c->win, c->rect.x, c->rect.y, WINW(c), WINH(c));
-
+  XMoveResizeWindow(subtle->disp, c->win, r.x, r.y, r.width, r.height);
   XSendEvent(subtle->disp, c->win, False, StructureNotifyMask, (XEvent *)&ev);
+
+  subUtilLogDebug("client=%#lx, x=%03d, y=%03d, width=%03d, height=%03d\n", 
+    c->win, r.x, r.y, r.width, r.height);
 } /* }}} */
 
  /** subClientRender {{{
@@ -519,7 +528,16 @@ subClientToggle(SubClient *c,
 {
   assert(c);
 
-  if(c->flags & type) c->flags &= ~type;
+  if(c->flags & type) 
+    {
+      c->flags &= ~type;
+
+      switch(type)
+        {   
+          case SUB_STATE_FULL: 
+            XReparentWindow(subtle->disp, c->win, subtle->cv->frame, 0, 0);
+        }            
+    }
   else 
     {
       int width = SCREENW, height = SCREENH;
@@ -528,7 +546,7 @@ subClientToggle(SubClient *c,
 
       switch(type)
         {
-          case SUB_STATE_FLOAT:
+          case SUB_STATE_FLOAT: /* {{{ */
             if(c->flags & SUB_PREF_HINTS)
               {
                 if(c->hints->flags & (USSize|PSize)) ///< User/program size
@@ -574,13 +592,9 @@ subClientToggle(SubClient *c,
                 c->rect.x      = (width - c->rect.width) / 2;
                 c->rect.y      = (height - c->rect.height) / 2;
               }
-            break;
+            break; /* }}} */
           case SUB_STATE_FULL:
-            /* Resize to display resolution */
-            c->rect.x      = 0;
-            c->rect.y      = 0;
-            c->rect.width  = width;
-            c->rect.height = height;
+            XReparentWindow(subtle->disp, c->win, ROOT, 0, 0);
         }
 
       subClientConfigure(c);
