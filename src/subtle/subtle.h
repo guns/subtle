@@ -35,15 +35,23 @@
 #define FLAGS     int                                             ///< Flags
 #define TAGS      int                                             ///< Tags
 
+#define CLIENTID  1                                               ///< Client data id
+#define VIEWID    2                                               ///< View data id
+#define MINW      50                                              ///< Client min. width
+#define MINH      50                                              ///< Client min. height
+#define SNAP      10                                              ///< Snapping threshold
+
 #define TEXTW(s)  (strlen(s) * subtle->fx + 8)                    ///< Textwidth in pixel
 #define WINW(c)   (c->rect.width - 2 * subtle->bw)                ///< Get real width
 #define WINH(c)   (c->rect.height - 2 * subtle->bw)               ///< Get real height
+#define ROOT      DefaultRootWindow(subtle->disp)                 ///< Root window
+
 #define SCREENW \
   DisplayWidth(subtle->disp, DefaultScreen(subtle->disp))         ///< Get screen width
 #define SCREENH \
   DisplayHeight(subtle->disp, DefaultScreen(subtle->disp))        ///< Get screen height
-#define CLIENTID  1                                               ///< Client data id
-#define VIEWID    2                                               ///< View data id
+#define BETWEEN(val,min,max) \
+  (min && val < min ? min : max && val > max ? max : val)         ///< Value min/max
 
 /* Casts */
 #define ARRAY(a)  ((SubArray *)a)                                 ///< Cast to SubArray
