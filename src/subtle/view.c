@@ -99,7 +99,7 @@ subViewConfigure(SubView *v)
           if(v->tags & c->tags)
             {
               if(c->flags & SUB_STATE_FULL) full++;
-              else if(c->flags & SUB_STATE_FLOAT || c->tags & SUB_TAG_FLOAT) floated++;
+              else if(c->flags & SUB_STATE_FLOAT) floated++;
               c->flags &= ~SUB_STATE_TILED;
               total++;
             }
@@ -117,7 +117,7 @@ subViewConfigure(SubView *v)
             }
         }
 
-      printf("total=%d, layouts=%d, tiled=%d\n", total, v->layout->ndata, tiled);
+      subUtilLogDebug("total=%d, layouts=%d, tiled=%d\n", total, v->layout->ndata, tiled);
       total -= tiled;
 
       /* Calculations */
@@ -135,17 +135,19 @@ subViewConfigure(SubView *v)
             {
               XReparentWindow(subtle->disp, c->win, v->frame, 0, 0);
               XMapWindow(subtle->disp, c->win);
+              XLowerWindow(subtle->disp, c->win);
 
               /* EWMH: Desktop */
               subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
-              if(c->tags & (SUB_TAG_FLOAT|SUB_TAG_FULL))
+              /* Special flags */
+              if(c->flags & (SUB_STATE_FLOAT|SUB_STATE_FULL))
                 {
-                  if(!(c->flags & SUB_STATE_FLOAT)) subClientToggle(c, SUB_STATE_FLOAT);
+                  XRaiseWindow(subtle->disp, c->win);
                   subClientConfigure(c);
                   continue;
                 }
-              
+
               c->rect.x      = x;
               c->rect.y      = 0;
               c->rect.width  = i == total - 1 ? cw + comp : cw; ///< Compensation
