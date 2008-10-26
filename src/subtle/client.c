@@ -13,11 +13,6 @@
 #include <X11/Xatom.h>
 #include "subtle.h"
 
-#define MINW 100
-#define MINH 100
-#define STEP 5
-#define SNAP 10
-
 /* ClientMask {{{ */
 static void
 ClientMask(int type,
@@ -83,15 +78,6 @@ ClientSnap(SubClient *c,
   if(SNAP > r->y) r->y = subtle->bw;
   else if(r->y > (SCREENH - WINH(c) - SNAP)) 
     r->y = SCREENH - c->rect.height + subtle->bw;
-} /* }}} */
-
-/* ClientBetween {{{ */
-static inline short
-ClientBetween(short val,
-  int min,
-  int max)
-{
-  return(val < min ? min : val > max ? max : val);
 } /* }}} */
 
  /** subClientNew {{{
@@ -334,18 +320,18 @@ subClientDrag(SubClient *c,
               }
             if(c->hints->flags & PMinSize) ///< Min. size
               {
-                minx = c->hints->min_width;
-                miny = c->hints->min_height;
+                minx = BETWEEN(c->hints->min_width, MINW, 0);
+                miny = BETWEEN(c->hints->min_height, MINH, 0);
               }
             if(c->hints->flags & PMaxSize) ///< Max. size
               {
-                minx = c->hints->max_width;
-                miny = c->hints->max_height;
+                maxx = c->hints->max_width;
+                maxy = c->hints->max_height;
               }
          }
     } /* }}} */
 
-  printf("minx=%d, miny=%d, stepx=%d, stepy=%d\n", minx, miny, stepx, stepy);
+  subUtilLogDebug("minx=%02d, miny=%02d, stepx=%02d, stepy=%02d\n", minx, miny, stepx, stepy);
 
   if(XGrabPointer(subtle->disp, c->win, True, 
     ButtonPressMask|ButtonReleaseMask|PointerMotionMask, GrabModeAsync, GrabModeAsync, None, 
@@ -378,8 +364,8 @@ subClientDrag(SubClient *c,
                     case XK_Return: loop = False;   break;
                   }
 
-                *dirx = ClientBetween(*dirx, minx, maxx);
-                *diry = ClientBetween(*diry, miny, maxy);
+                *dirx = BETWEEN(*dirx, minx, maxx);
+                *diry = BETWEEN(*diry, miny, maxy);
               
                 ClientMask(SUB_DRAG_START, c, &r);
               }
@@ -402,8 +388,8 @@ subClientDrag(SubClient *c,
                       r.width  = c->rect.width + (ev.xmotion.x_root - rx);
                       r.height = c->rect.height + (ev.xmotion.y_root - ry);
 
-                      r.width  = ClientBetween(r.width, minx, maxx);
-                      r.height = ClientBetween(r.height, miny, maxy);
+                      r.width  = BETWEEN(r.width, minx, maxx);
+                      r.height = BETWEEN(r.height, miny, maxy);
 
                       r.width -= r.width % stepx;
                       r.height -= r.height % stepy;
@@ -491,7 +477,7 @@ subClientDrag(SubClient *c,
     {
       if(c->flags & SUB_STATE_FLOAT || c->tags & SUB_TAG_FLOAT) 
         {
-          r.y -= (subtle->th + subtle->bw);
+          r.y -= (subtle->th + subtle->bw); ///< Border and bar height
           r.x -= subtle->bw;
           c->rect = r;
           subClientConfigure(c);
@@ -541,18 +527,18 @@ subClientToggle(SubClient *c,
               {
                 if(c->hints->flags & (USSize|PSize)) ///< User/program size
                   {
-                    c->rect.width  = c->hints->width + 2 * subtle->bw;
-                    c->rect.height = c->hints->height + 2 * subtle->bw;
+                    c->rect.width  = BETWEEN(c->hints->width, MINW, 0) + 2 * subtle->bw;
+                    c->rect.height = BETWEEN(c->hints->height, MINW, 0) + 2 * subtle->bw;
                   }
                 else if(c->hints->flags & PBaseSize) ///< Base size
                   {
-                    c->rect.width  = c->hints->base_width + 2 * subtle->bw;
-                    c->rect.height = c->hints->base_height + 2 * subtle->bw;
+                    c->rect.width  = BETWEEN(c->hints->base_width, MINW, 0) + 2 * subtle->bw;
+                    c->rect.height = BETWEEN(c->hints->base_height, MINW, 0) + 2 * subtle->bw;
                   }
                 else if(c->hints->flags & PMinSize) ///< Min size
                   {
-                    c->rect.width  = c->hints->min_width + 2 * subtle->bw;
-                    c->rect.height = c->hints->min_height + 2 * subtle->bw;
+                    c->rect.width  = BETWEEN(c->hints->min_width, MINW, 0) + 2 * subtle->bw;
+                    c->rect.height = BETWEEN(c->hints->min_height, MINH, 0) + 2 * subtle->bw;
                   }
                 else ///< Fallback
                   {
