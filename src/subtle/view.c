@@ -35,12 +35,12 @@ subViewNew(char *name,
   v->layout = subArrayNew();
 
   /* Create windows */
-  attrs.event_mask = ExposureMask|VisibilityChangeMask|KeyPressMask;
+  attrs.event_mask        = ExposureMask|VisibilityChangeMask|KeyPressMask;
+  attrs.background_pixmap = CopyFromParent;
+  attrs.background_pixel  = subtle->colors.bg;
  
-  v->frame  = XCreateWindow(subtle->disp, DefaultRootWindow(subtle->disp), 
-    0, subtle->th, DisplayWidth(subtle->disp, DefaultScreen(subtle->disp)), 
-    DisplayHeight(subtle->disp, DefaultScreen(subtle->disp)), 0,
-    CopyFromParent, InputOutput, CopyFromParent, CWEventMask, &attrs); 
+  v->frame  = XCreateWindow(subtle->disp, ROOT, 0, subtle->th, SCREENW, SCREENH - subtle->th,
+    0, CopyFromParent, InputOutput, CopyFromParent, CWBackPixel|CWBackPixmap|CWEventMask, &attrs); 
   v->button = XCreateSimpleWindow(subtle->disp, subtle->bar.views, 0, 0, 1, 
     subtle->th, 0, subtle->colors.border, subtle->colors.norm);
 
@@ -313,8 +313,6 @@ subViewRender(void)
           XDrawString(subtle->disp, v->button, subtle->gcs.font, 3, subtle->fy - 1, 
             v->name, strlen(v->name));
         }
-
-      if(subtle->cv) XClearWindow(subtle->disp, subtle->cv->frame); ///< CV frame
     }
 } /* }}} */
 
