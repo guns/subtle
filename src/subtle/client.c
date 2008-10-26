@@ -173,6 +173,8 @@ subClientNew(Window win)
   XGetTransientForHint(subtle->disp, win, &propwin); ///< Check for dialogs
   if(propwin) c->tags |= SUB_TAG_FLOAT;
 
+  if(c->tags & SUB_TAG_FLOAT) subClientToggle(c, SUB_STATE_FLOAT);
+
   /* EWMH: Desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
@@ -375,7 +377,7 @@ subClientDrag(SubClient *c,
               {
                 ClientMask(SUB_DRAG_START, c, &r);
           
-                /* Calculate dimensions of the selection rect */
+                /* Calculate selection rect */
                 switch(mode)
                   {
                     case SUB_DRAG_MOVE:
@@ -385,14 +387,18 @@ subClientDrag(SubClient *c,
                       ClientSnap(c, &r);
                       break;
                     case SUB_DRAG_RESIZE: 
-                      r.width  = c->rect.width + (ev.xmotion.x_root - rx);
-                      r.height = c->rect.height + (ev.xmotion.y_root - ry);
-
-                      r.width  = BETWEEN(r.width, minx, maxx);
-                      r.height = BETWEEN(r.height, miny, maxy);
-
-                      r.width -= r.width % stepx;
-                      r.height -= r.height % stepy;
+                      if(c->rect.width + ev.xmotion.x_root >= rx)
+                        {
+                          r.width = BETWEEN(c->rect.width + (ev.xmotion.x_root - rx), 
+                            minx, maxx);
+                          r.width -= r.width % stepx;
+                        }
+                      if(c->rect.height + ev.xmotion.y_root >= ry)
+                        {
+                          r.height = BETWEEN(c->rect.height + (ev.xmotion.y_root - ry), 
+                            miny, maxy);
+                          r.height -= r.height % stepy;
+                        }
                       break;
                   }  
 
@@ -475,7 +481,7 @@ subClientDrag(SubClient *c,
     }
   else ///< Move/Resize
     {
-      if(c->flags & SUB_STATE_FLOAT || c->tags & SUB_TAG_FLOAT) 
+      if(c->flags & SUB_STATE_FLOAT) 
         {
           r.y -= (subtle->th + subtle->bw); ///< Border and bar height
           r.x -= subtle->bw;
@@ -568,9 +574,6 @@ subClientToggle(SubClient *c,
                 c->rect.x      = (width - c->rect.width) / 2;
                 c->rect.y      = (height - c->rect.height) / 2;
               }
-
-            subClientConfigure(c);
-            XRaiseWindow(subtle->disp, c->win);
             break;
           case SUB_STATE_FULL:
             /* Resize to display resolution */
@@ -578,9 +581,9 @@ subClientToggle(SubClient *c,
             c->rect.y      = 0;
             c->rect.width  = width;
             c->rect.height = height;
-
-            subClientConfigure(c);
         }
+
+      subClientConfigure(c);
     }
 } /* }}} */
 

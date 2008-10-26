@@ -77,14 +77,13 @@ HandleGrab(XEvent *ev)
     {
       switch(g->flags & ~(SUB_TYPE_GRAB|SUB_GRAB_KEY|SUB_GRAB_MOUSE)) ///< Clear
         {
-          case SUB_GRAB_WINDOW_RAISE:
-            c = CLIENT(subUtilFind(win, CLIENTID));
-            if(c && (c->flags & SUB_STATE_FLOAT || c->tags & SUB_TAG_FLOAT))
-              XRaiseWindow(subtle->disp, c->win);
-            break;
           case SUB_GRAB_WINDOW_FLOAT:
             c = CLIENT(subUtilFind(win, CLIENTID));
-            if(c) subClientToggle(c, SUB_STATE_FLOAT);
+            if(c) 
+              {
+                subClientToggle(c, SUB_STATE_FLOAT);
+                subViewConfigure(subtle->cv);
+              }
             break;            
           case SUB_GRAB_WINDOW_KILL:
             c = CLIENT(subUtilFind(win, CLIENTID));
@@ -96,12 +95,12 @@ HandleGrab(XEvent *ev)
             break;             
           case SUB_GRAB_WINDOW_MOVE:
             c = CLIENT(subUtilFind(win, CLIENTID));
-            if(c && (c->flags & SUB_STATE_FLOAT || c->tags & SUB_TAG_FLOAT))
+            if(c && c->flags & SUB_STATE_FLOAT)
               subClientDrag(c, SUB_DRAG_MOVE);
             break;            
           case SUB_GRAB_WINDOW_RESIZE:
             c = CLIENT(subUtilFind(win, CLIENTID));
-            if(c && (c->flags & SUB_STATE_FLOAT || c->tags & SUB_TAG_FLOAT))
+            if(c && c->flags & SUB_STATE_FLOAT)
               subClientDrag(c, SUB_DRAG_RESIZE);
             break;            
           case SUB_GRAB_EXEC:
@@ -151,15 +150,17 @@ HandleConfigure(XConfigureRequestEvent *ev)
 static void
 HandleMapRequest(XMapRequestEvent *ev)
 {
-  SubClient *c = CLIENT(subUtilFind(ev->window, 1));
+  SubClient *c = CLIENT(subUtilFind(ev->window, CLIENTID));
   if(!c) 
     {
       /* Create new client */
       c = subClientNew(ev->window);
-      subArrayPush(subtle->clients, c);
+      subArrayPush(subtle->clients, (void *)c);
       subClientPublish();
 
-      if(subtle->cv && subtle->cv->tags & c->tags) subViewConfigure(subtle->cv); ///< Configure current view if tags match
+      if(subtle->cv && subtle->cv->tags & c->tags) 
+        subViewConfigure(subtle->cv); ///< Configure current view if tags match
+
       subViewUpdate();
       subViewRender();
     }
