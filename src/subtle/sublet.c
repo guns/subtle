@@ -14,54 +14,29 @@
 
  /** subSubletNew {{{
   * @brief Create a new sublet 
-  * @param[in]  recv      Ruby receiver
-  * @param[in]  interval  Update interval
-  * @param[in]  watch     Watch file
   * @return Returns a #SubSublet or \p NULL
   **/
 
 SubSublet *
-subSubletNew(unsigned long recv,
-  time_t interval,
-  char *watch)
+subSubletNew(void)
 {
   SubSublet *s = SUBLET(subUtilAlloc(1, sizeof(SubSublet)));
 
   /* Init sublet */
-  s->flags    = SUB_TYPE_SUBLET;
-  s->recv     = recv;
-  s->interval = interval;
-  s->time     = subUtilTime();
+  s->flags = SUB_TYPE_SUBLET;
+  s->time  = subUtilTime();
 
-#ifdef HAVE_SYS_INOTIFY_H
-  /* Create inotify watch */
-  if(NULL != watch)
-    {
-      if(0 > (s->interval = inotify_add_watch(subtle->notify, watch, IN_MODIFY)))
-        {
-          subUtilLogWarn("Watch file `%s' does not exist\n", watch);
-          subUtilLogDebug("%s\n", strerror(errno));
-
-          subArrayPop(subtle->sublets, s);
-
-          return NULL;
-        }
-      else XSaveContext(subtle->disp, subtle->bar.sublets, s->interval, (void *)s);
-    }
-#endif /* HAVE_SYS_INOTIFY_H */
-
-  subRubyCall(s);
-  subUtilLogDebug("new=sublet, ref=%ld, interval=%d, watch=%s\n", recv, interval, watch);    
+  subUtilLogDebug("new=sublet\n");    
 
   return s;
 } /* }}} */ 
 
- /** subSubletConfigure {{{
-  * @brief Calculate and update sublet bar
+ /** subSubletUpdate {{{
+  * @brief Update sublet bar
   **/
 
 void
-subSubletConfigure(void)
+subSubletUpdate(void)
 {
   if(0 < subtle->sublets->ndata)
     {

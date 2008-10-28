@@ -502,8 +502,8 @@ subEventLoop(void)
                         SubSublet *ws = SUBLET(subUtilFind(subtle->bar.sublets, event->wd));
                         if(ws)
                           {
-                            subRubyCall(ws);
-                            subSubletConfigure();
+                            subRubyRun(ws);
+                            subSubletUpdate();
                             subSubletRender();
                           }
                       }
@@ -521,12 +521,12 @@ subEventLoop(void)
               s->time = ctime + s->interval; ///< Adjust seconds
               s->time -= s->time % s->interval;
 
-              subRubyCall(s);
+              subRubyRun(s);
               subArraySort(subtle->sublets, subSubletCompare);
 
               s = SUBLET(subtle->sublets->data[0]);
             }
-          subSubletConfigure();
+          subSubletUpdate();
           subSubletRender();
         }
 

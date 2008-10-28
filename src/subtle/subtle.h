@@ -385,14 +385,13 @@ void subLayoutKill(SubLayout *l);                                 ///< Kill layo
 void subRubyInit(void);                                           ///< Init Ruby stack 
 void subRubyLoadConfig(const char *file);                         ///< Load config file
 void subRubyLoadSublets(const char *path);                        ///< Load sublets
-void subRubyCall(SubSublet *s);                                   ///< Call Ruby script
+void subRubyRun(SubSublet *s);                                    ///< Run Ruby script
 void subRubyFinish(void);                                         ///< Kill Ruby stack
 /* }}} */
 
 /* sublet.c {{{ */
-SubSublet *subSubletNew(unsigned long ref, time_t interval, 
-  char *watch);                                                   ///< Create new sublet
-void subSubletConfigure(void);                                    ///< Configure sublet bar
+SubSublet *subSubletNew(void);                                    ///< Create new sublet
+void subSubletUpdate(void);                                       ///< Update sublet bar
 void subSubletRender(void);                                       ///< Render sublet
 int subSubletCompare(const void *a, const void *b);               ///< Compare two sublets
 void subSubletKill(SubSublet *s);                                 ///< Kill sublet
