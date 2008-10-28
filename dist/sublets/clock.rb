@@ -15,8 +15,6 @@ class Clock < Sublet
   end
 
   def run
-    puts self.interval
-    puts self.data
     self.data = Time.now().strftime("%d%m%y%H%M")
   end
 end
