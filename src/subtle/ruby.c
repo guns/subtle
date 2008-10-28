@@ -19,15 +19,7 @@
 #include <ruby.h>
 #include "subtle.h"
 
-static VALUE shelter, sublets; ///< GC shelter, sublet list
-
-/* RubySubletKill {{{ */
-static void
-RubySubletKill(void *data)
-{
-  subArrayPop(subtle->sublets, data);
-  subSubletKill(SUBLET(data));
-} /* }}} */
+static VALUE sublets; ///< Sublet list
 
 /* RubySubletNew {{{ */
 static VALUE
@@ -38,7 +30,7 @@ RubySubletNew(VALUE self)
 
   /* Create sublet */
   s = subSubletNew();
-  data    = Data_Wrap_Struct(self, 0, RubySubletKill, (void *)s);
+  data    = Data_Wrap_Struct(self, 0, NULL, (void *)s); ///< We omit the finalizer
   s->recv = data; ///< Assign recv
   rb_obj_call_init(data, 0, NULL); ///< Call initialize
 
@@ -386,10 +378,6 @@ subRubyInit(void)
   ruby_init_loadpath();
   ruby_script("subtle");
 
-  /* Shelter from GC mass destruction */
-  shelter = rb_ary_new();
-  rb_gc_register_address(&shelter);
-
   /* Class: sublet */
   klass = rb_define_class("Sublet", rb_cObject);
   rb_define_singleton_method(klass, "new", RubySubletNew, 0);
@@ -398,7 +386,6 @@ subRubyInit(void)
   rb_define_method(klass, "interval=", RubySubletIntervalSet, 1);
   rb_define_method(klass, "data", RubySubletData, 0);
   rb_define_method(klass, "data=", RubySubletDataSet, 1);
-  rb_ary_push(shelter, klass);
 } /* }}} */
 
  /** subRubyLoadConfig {{{
@@ -558,8 +545,6 @@ subRubyRun(SubSublet *s)
 void
 subRubyFinish(void)
 {
-  rb_gc_unregister_address(&shelter); ///< Unregister shelter
-
   ruby_finalize();
   rb_exit(0);
 
