@@ -17,8 +17,8 @@ class Battery < Sublet
   @state     = ""
 
   def initialize
-    @interval = 60
-    @path     = Dir["/proc/acpi/battery/*"][0] #< Get battery slot
+    self.interval = 60
+    @path         = Dir["/proc/acpi/battery/*"][0] #< Get battery slot
 
     begin
       file = ""
@@ -58,7 +58,7 @@ class Battery < Sublet
           ac = "CHG"
       end
   
-      @data = "%d%%/%s" % [(@remaining * 100 / @capacity).floor, ac]
+      self.data = "%d%%/%s" % [(@remaining * 100 / @capacity).floor, ac]
     rescue => err
       p err
     end

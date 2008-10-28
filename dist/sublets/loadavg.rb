@@ -11,7 +11,7 @@
 
 class Loadavg < Sublet
   def initialize
-    @interval = 10
+    self.interval = 10
   end
 
   def run
@@ -22,7 +22,7 @@ class Loadavg < Sublet
         file = f.read
       end
 
-      @data = file.slice(0, 14)
+      self.data = file.slice(0, 14)
     rescue => err
       p err
     end

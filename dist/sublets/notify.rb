@@ -11,7 +11,7 @@
 
 class Notify < Sublet
   def initialize
-    @interval = "/tmp/watch"
+    self.interval = "/tmp/watch"
   end
 
   def run
@@ -22,7 +22,7 @@ class Notify < Sublet
         file = f.read
       end
 
-      @data = file
+      self.data = file
     rescue => err
       p err
     end

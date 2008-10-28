@@ -11,10 +11,12 @@
 
 class Clock < Sublet
   def initialize
-    @interval = 60
+    self.interval = 60
   end
 
   def run
-    @data = Time.now().strftime("%d%m%y%H%M")
+    puts self.interval
+    puts self.data
+    self.data = Time.now().strftime("%d%m%y%H%M")
   end
 end
