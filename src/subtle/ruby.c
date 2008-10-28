@@ -19,16 +19,35 @@
 #include <ruby.h>
 #include "subtle.h"
 
-static VALUE sublets, run, interval, data; ///< Common used symbols
+static VALUE shelter, sublets; ///< GC shelter, sublet list
 
-/* RubySubletInit {{{ */
-static VALUE
-RubySubletInit(VALUE self,
-  VALUE value)
+/* RubySubletKill {{{ */
+static void
+RubySubletKill(void *data)
 {
-  rb_ivar_set(self, data, rb_str_new2("n/a")); ///< Default value
+  subArrayPop(subtle->sublets, data);
+  subSubletKill(SUBLET(data));
+} /* }}} */
 
-  return self;
+/* RubySubletNew {{{ */
+static VALUE
+RubySubletNew(VALUE self)
+{
+  SubSublet *s = NULL;
+  VALUE data = Qnil;
+
+  /* Create sublet */
+  s = subSubletNew();
+  data    = Data_Wrap_Struct(self, 0, RubySubletKill, (void *)s);
+  s->recv = data; ///< Assign recv
+  rb_obj_call_init(data, 0, NULL); ///< Call initialize
+
+  if(0 == s->interval) s->interval = 60; ///< Sanitize
+
+  subArrayPush(subtle->sublets, s);
+  subRubyRun(s);
+
+  return data;
 } /* }}} */
 
 /* RubySubletInherited {{{ */
@@ -44,6 +63,101 @@ RubySubletInherited(VALUE self,
 
   return Qnil;                                           
 } /* }}} */                                               
+
+/* RubySubletInterval {{{ */
+static VALUE
+RubySubletInterval(VALUE self)
+{
+  SubSublet *s = NULL;
+  Data_Get_Struct(self, SubSublet, s);
+
+  return INT2FIX(s->interval);
+} /* }}} */
+
+/* RubySubletIntervalSet {{{ */
+static VALUE
+RubySubletIntervalSet(VALUE self,
+  VALUE value)
+{
+  SubSublet *s = NULL;
+  Data_Get_Struct(self, SubSublet, s);
+
+  switch(rb_type(value))
+    {
+      case T_FIXNUM: 
+        s->interval = FIX2INT(value);          
+        break;
+      case T_STRING: 
+#ifdef HAVE_SYS_INOTIFY_H
+        /* Create inotify watch */
+        if(value)
+        {
+          char *watch = STR2CSTR(value);
+
+          if(0 > (s->interval = inotify_add_watch(subtle->notify, watch, IN_MODIFY)))
+            {
+              subUtilLogWarn("Watch file `%s' error: %s\n", watch, strerror(errno));
+
+              return Qfalse;
+            }
+          else XSaveContext(subtle->disp, subtle->bar.sublets, s->interval, (void *)s);
+        }
+#endif /* HAVE_SYS_INOTIFY_H */
+        break;
+      default:
+        subUtilLogWarn("Unknown value type\n");
+        return Qfalse;
+    }
+
+  return Qtrue;
+} /* }}} */
+
+/* RubySubletData {{{ */
+static VALUE
+RubySubletData(VALUE self)
+{
+  SubSublet *s = NULL;
+  Data_Get_Struct(self, SubSublet, s);
+
+  if(s->flags & SUB_DATA_FIXNUM)
+    return INT2FIX(s->fixnum);
+  else if(s->flags & SUB_DATA_STRING)
+    return rb_str_new2(s->string);
+
+  return Qnil;
+} /* }}} */
+
+/* RubySubletDataSet {{{ */
+static VALUE
+RubySubletDataSet(VALUE self,
+  VALUE value)
+{
+  SubSublet *s = NULL;
+  Data_Get_Struct(self, SubSublet, s);
+
+  s->flags &= ~(SUB_DATA_FIXNUM|SUB_DATA_STRING|SUB_DATA_NIL); ///< Clear some flags
+
+  switch(rb_type(value))
+    {
+      case T_FIXNUM: 
+        s->flags |= SUB_DATA_FIXNUM;
+        s->fixnum = FIX2INT(value);
+        s->width  = 63; ///< Magic number
+        break;
+      case T_STRING: 
+        if(s->string) free(s->string);
+        s->flags |= SUB_DATA_STRING;
+        s->string = strdup(RSTRING_PTR(value));
+        s->width  = RSTRING_LEN(value) * subtle->fx + 6;
+        break;
+      default:
+        s->flags |= SUB_DATA_NIL;
+        subUtilLogWarn("Unknown value type\n");
+        return Qfalse;
+    }
+
+  return Qtrue;
+} /* }}} */
 
 /* RubyGetString {{{ */
 static char *
@@ -92,70 +206,27 @@ RubyParseColor(VALUE hash,
   return color.pixel;
 } /* }}} */
 
-/* RubyCall {{{ */
-VALUE
-RubyCall(VALUE dummy)
+/* RubyProtectedRun {{{ */
+static VALUE
+RubyProtectedRun(VALUE recv)
 {
-  VALUE result = 0;
-  SubSublet *s = SUBLET(dummy);
-
-  s->flags &= ~(SUB_DATA_FIXNUM|SUB_DATA_STRING|SUB_DATA_NIL); ///< Remove
-  rb_funcall(s->recv, run, 0, NULL);
-
-  /* Fetch data */
-  result = rb_ivar_get(s->recv, interval);
-  if(T_FIXNUM == rb_type(result)) s->interval = FIX2INT(result);
-
-  result = rb_ivar_get(s->recv, data);
-  switch(rb_type(result))
-    {
-      case T_FIXNUM: 
-        s->flags |= SUB_DATA_FIXNUM;
-        s->fixnum = FIX2INT(result);
-        s->width  = 63; ///< Magic number
-        break;
-      case T_STRING: 
-        if(s->string) free(s->string);
-
-        s->flags |= SUB_DATA_STRING;
-
-        s->string = RSTRING_PTR(result);
-        s->width  = RSTRING_LEN(result) * subtle->fx + 6;
-        break;
-      default:
-        s->flags |= SUB_DATA_NIL;
-        subUtilLogWarn("Unknown value type\n");
-    }
+  rb_funcall(recv, rb_intern("run"), 0, NULL);
 
   return Qnil;
 } /* }}} */
 
 /* RubyArrayIterate {{{ */
-VALUE
+static VALUE
 RubyArrayIterate(VALUE elem,
   VALUE *obj)
 {
-  VALUE recv = 0, result = 0;
-  SubSublet *s = NULL;
+  VALUE status = 0;
   
   /* Create new class instance */
-  recv = rb_funcall(elem, rb_intern("new"), 0, NULL);
-  if(recv)
+  status = rb_funcall(elem, rb_intern("new"), 0, NULL);
+  if(!status)
     {
-      /* Fetch data */
-      result = rb_ivar_get(recv, interval);
-      switch(rb_type(result))
-        {
-          case T_FIXNUM: s = subSubletNew(recv, FIX2INT(result), NULL); break;
-          case T_STRING: s = subSubletNew(recv, 0, STR2CSTR(result));    break;
-          default:
-            subUtilLogWarn("Failed to initialize sublet");
-            return Qnil;
-        }
-      if(!s) return Qnil; ///< Skip if sublet loading failed
-
-      subRubyCall(s);
-      subArrayPush(subtle->sublets, s);
+      subUtilLogWarn("Failed running sublet\n");
     }
 
   return Qnil;
@@ -308,24 +379,26 @@ RubyFilter(const struct dirent *entry)
 void
 subRubyInit(void)
 {
-  VALUE sublet = Qnil;
+  VALUE klass = Qnil;
 
   RUBY_INIT_STACK;
   ruby_init();
   ruby_init_loadpath();
   ruby_script("subtle");
 
-  /* Class: sublet */
-  sublet = rb_define_class("Sublet", rb_cObject);
-  rb_define_attr(sublet, "interval", 1, 1);
-  rb_define_attr(sublet, "data", 1, 1);
-  rb_define_method(sublet, "initialize", RubySubletInit, 1);
-  rb_define_singleton_method(sublet, "inherited", RubySubletInherited, 1);
+  /* Shelter from GC mass destruction */
+  shelter = rb_ary_new();
+  rb_gc_register_address(&shelter);
 
-  /* Comon used symbols */
-  run      = rb_intern("run");
-  interval = rb_intern("@interval");
-  data     = rb_intern("@data");
+  /* Class: sublet */
+  klass = rb_define_class("Sublet", rb_cObject);
+  rb_define_singleton_method(klass, "new", RubySubletNew, 0);
+  rb_define_singleton_method(klass, "inherited", RubySubletInherited, 1);
+  rb_define_method(klass, "interval", RubySubletInterval, 0);
+  rb_define_method(klass, "interval=", RubySubletIntervalSet, 1);
+  rb_define_method(klass, "data", RubySubletData, 0);
+  rb_define_method(klass, "data=", RubySubletDataSet, 1);
+  rb_ary_push(shelter, klass);
 } /* }}} */
 
  /** subRubyLoadConfig {{{
@@ -451,28 +524,29 @@ subRubyLoadSublets(const char *path)
           
           /* Sort and configure */
           subArraySort(subtle->sublets, subSubletCompare);
-          subSubletConfigure();
+          subSubletUpdate();
         }
     }
   else subUtilLogWarn("No sublets found\n"); 
 } /* }}} */
 
- /** subRubyCall {{{
-  * @brief Call ruby script
-  * @param[in]  s  Call a ruby script
+ /** subRubyRun {{{
+  * @brief Safely run ruby script
+  * @param[in]  s  A #SubSublet
   **/
 
 void
-subRubyCall(SubSublet *s)
+subRubyRun(SubSublet *s)
 {
   int status;
 
   assert(s);
 
-  rb_protect(RubyCall, (VALUE)s, &status);
+  rb_protect(RubyProtectedRun, s->recv, &status);
   if(Qundef == status)
     {
       subUtilLogWarn("Failed running sublet\n");
+      subArrayPop(subtle->sublets, (void *)s);
       subSubletKill(s);
     }
 } /* }}} */
@@ -484,6 +558,9 @@ subRubyCall(SubSublet *s)
 void
 subRubyFinish(void)
 {
+  rb_gc_unregister_address(&shelter); ///< Unregister shelter
+
+  ruby_finalize();
   rb_exit(0);
 
 #ifdef HAVE_SYS_INOTIFY_H
