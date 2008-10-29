@@ -37,6 +37,7 @@
 
 #define CLIENTID  1                                               ///< Client data id
 #define VIEWID    2                                               ///< View data id
+#define BUTTONID  1                                               ///< Button data id
 #define MINW      50                                              ///< Client min. width
 #define MINH      50                                              ///< Client min. height
 #define SNAP      10                                              ///< Snapping threshold
