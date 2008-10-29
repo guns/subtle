@@ -126,6 +126,7 @@ static void
 HandleConfigure(XConfigureRequestEvent *ev)
 {
   XWindowChanges wc;
+
   SubClient *c = CLIENT(subUtilFind(ev->window, CLIENTID));
   if(c)
     {
@@ -372,11 +373,6 @@ HandleExpose(XEvent *ev)
   else if(ev->xany.window == subtle->cv->frame)
     {
       subViewRender();
-    }
-  else
-    {
-      SubClient *c = (SubClient *)subUtilFind(ev->xany.window, CLIENTID);
-      if(c) subClientRender(c);
     }
 
   /* Remove any other event of the same type and window */

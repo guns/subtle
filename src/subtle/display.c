@@ -76,7 +76,7 @@ subDisplayScan(void)
 
   assert(subtle);
 
-  XQueryTree(subtle->disp, DefaultRootWindow(subtle->disp), &dummy, &dummy, &wins, &n);
+  XQueryTree(subtle->disp, ROOT, &dummy, &dummy, &wins, &n);
   for(i = 0; i < n; i++)
     {
       /* Skip own windows */

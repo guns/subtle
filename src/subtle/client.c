@@ -114,8 +114,8 @@ subClientNew(Window win)
   /* Update client */
   XAddToSaveSet(subtle->disp, c->win);
   XSelectInput(subtle->disp, c->win, SubstructureRedirectMask|SubstructureNotifyMask|
-    ExposureMask|VisibilityChangeMask|EnterWindowMask|FocusChangeMask|
-    KeyPressMask|ButtonPressMask|PropertyChangeMask);
+    EnterWindowMask|FocusChangeMask|KeyPressMask|ButtonPressMask|PropertyChangeMask);
+
   XSetWindowBorderWidth(subtle->disp, c->win, subtle->bw);
   XSaveContext(subtle->disp, c->win, CLIENTID, (void *)c);
 
@@ -198,7 +198,7 @@ subClientConfigure(SubClient *c)
 
   assert(c);
 
-  /* Set client size */
+  /* Client size */
   r = c->rect;
   r.width  = WINW(c);
   r.height = WINH(c);
@@ -220,14 +220,15 @@ subClientConfigure(SubClient *c)
   ev.width             = r.width;
   ev.height            = r.height;
   ev.above             = None;
-  ev.border_width      = 0;
   ev.override_redirect = 0;
+  ev.border_width      = 0;
 
   XMoveResizeWindow(subtle->disp, c->win, r.x, r.y, r.width, r.height);
   XSendEvent(subtle->disp, c->win, False, StructureNotifyMask, (XEvent *)&ev);
 
-  subUtilLogDebug("client=%#lx, x=%03d, y=%03d, width=%03d, height=%03d\n", 
-    c->win, r.x, r.y, r.width, r.height);
+  subUtilLogDebug("client=%#lx, state=%c, x=%03d, y=%03d, width=%03d, height=%03d\n", 
+    c->win, c->flags & SUB_STATE_FLOAT ? 'f' : c->flags & SUB_STATE_FULL ? 'u' : 'n',
+    r.x, r.y, r.width, r.height);
 } /* }}} */
 
  /** subClientRender {{{
@@ -535,6 +536,7 @@ subClientToggle(SubClient *c,
       switch(type)
         {   
           case SUB_STATE_FULL: 
+            XSetWindowBorderWidth(subtle->disp, c->win, subtle->bw);
             XReparentWindow(subtle->disp, c->win, subtle->cv->frame, 0, 0);
         }            
     }
@@ -593,8 +595,10 @@ subClientToggle(SubClient *c,
                 c->rect.y      = (height - c->rect.height) / 2;
               }
             break; /* }}} */
-          case SUB_STATE_FULL:
+          case SUB_STATE_FULL: /* {{{ */
+            XSetWindowBorderWidth(subtle->disp, c->win, 0);
             XReparentWindow(subtle->disp, c->win, ROOT, 0, 0);
+          break; /* }}} */
         }
 
       subClientConfigure(c);
