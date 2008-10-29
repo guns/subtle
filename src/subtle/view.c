@@ -40,12 +40,13 @@ subViewNew(char *name,
   attrs.background_pixel  = subtle->colors.bg;
  
   v->frame  = XCreateWindow(subtle->disp, ROOT, 0, subtle->th, SCREENW, SCREENH - subtle->th,
-    0, CopyFromParent, InputOutput, CopyFromParent, CWBackPixel|CWBackPixmap|CWEventMask, &attrs); 
+    0, CopyFromParent, InputOutput, CopyFromParent, CWBackPixel|CWBackPixmap|CWEventMask, 
+    &attrs); 
   v->button = XCreateSimpleWindow(subtle->disp, subtle->bar.views, 0, 0, 1, 
     subtle->th, 0, subtle->colors.border, subtle->colors.norm);
 
-  XSaveContext(subtle->disp, v->frame, 2, (void *)v);
-  XSaveContext(subtle->disp, v->button, 1, (void *)v);
+  XSaveContext(subtle->disp, v->frame, VIEWID, (void *)v);
+  XSaveContext(subtle->disp, v->button, BUTTONID, (void *)v);
   XMapRaised(subtle->disp, v->button);
 
   /* Tags */
@@ -133,7 +134,9 @@ subViewConfigure(SubView *v)
 
           if(v->tags & c->tags)
             {
-              XReparentWindow(subtle->disp, c->win, v->frame, 0, 0);
+              if(!(c->flags & SUB_STATE_FULL)) ///< Don't overwrite root
+                XReparentWindow(subtle->disp, c->win, v->frame, 0, 0);
+
               XMapWindow(subtle->disp, c->win);
               XLowerWindow(subtle->disp, c->win);
 
@@ -261,7 +264,7 @@ subViewArrange(SubView *v,
 } /* }}} */
 
  /** subViewUpdate {{{ 
-  * @brief Update view button bar
+  * @brief Update view bar
   **/
 
 void
@@ -302,7 +305,7 @@ subViewRender(void)
       /* Bar window */
       XClearWindow(subtle->disp, subtle->bar.win);
       XFillRectangle(subtle->disp, subtle->bar.win, subtle->gcs.border, 0, 2, 
-        DisplayWidth(subtle->disp, DefaultScreen(subtle->disp)), subtle->th - 4);  
+        SCREENW, subtle->th - 4);  
 
       /* View buttons */
       for(i = 0; i < subtle->views->ndata; i++)
@@ -342,7 +345,7 @@ subViewJump(SubView *v)
 
   /* EWMH: Current desktops */
   vid = subArrayIndex(subtle->views, (void *)v); ///< Get desktop number
-  subEwmhSetCardinals(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_CURRENT_DESKTOP, &vid, 1);
+  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP, &vid, 1);
 
   subViewRender();
   subGrabSet(subtle->cv->frame);
@@ -389,7 +392,7 @@ subViewPublish(void)
   int i;
   long vid = 0;
   char **names = NULL;
-  Window *frames = NULL, root = DefaultRootWindow(subtle->disp);
+  Window *frames = NULL;
 
   assert(0 < subtle->views->ndata);
 
@@ -405,15 +408,15 @@ subViewPublish(void)
     }
 
   /* EWMH: Virtual roots */
-  subEwmhSetWindows(root, SUB_EWMH_NET_VIRTUAL_ROOTS, frames, i);
+  subEwmhSetWindows(ROOT, SUB_EWMH_NET_VIRTUAL_ROOTS, frames, i);
 
   /* EWMH: Desktops */
-  subEwmhSetCardinals(root, SUB_EWMH_NET_NUMBER_OF_DESKTOPS, (long *)&i, 1);
-  subEwmhSetStrings(root, SUB_EWMH_NET_DESKTOP_NAMES, names, i);
+  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_NUMBER_OF_DESKTOPS, (long *)&i, 1);
+  subEwmhSetStrings(ROOT, SUB_EWMH_NET_DESKTOP_NAMES, names, i);
 
   /* EWMH: Current desktop */
   vid = subArrayIndex(subtle->views, (void *)subtle->cv); ///< Get desktop number
-  subEwmhSetCardinals(root, SUB_EWMH_NET_CURRENT_DESKTOP, &vid, 1);
+  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP, &vid, 1);
 
   subUtilLogDebug("publish=views, n=%d\n", i);
 
