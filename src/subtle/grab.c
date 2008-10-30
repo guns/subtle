@@ -208,14 +208,14 @@ subGrabSet(Window win)
 	if(win && subtle->grabs)
 		{
 			int i, j;
-      unsigned int modifiers[4] = { 0, LockMask, numlockmask, numlockmask|LockMask };
+      unsigned int modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
 
 			/* @todo Ugly key/modifier grabbing */
 			for(i = 0; i < subtle->grabs->ndata; i++) 
 				{
 					SubGrab *g = GRAB(subtle->grabs->data[i]);
 
-          for(j = 0; 4 > j; j++)
+          for(j = 0; LENGTH(modifiers) > j; j++)
             {
               if(g->flags & SUB_GRAB_KEY)
                 {

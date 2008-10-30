@@ -23,7 +23,6 @@ static Atom atoms[NATOMS];
 void
 subEwmhInit(void)
 {
-  int n = NATOMS;
   char *names[] =
   {
     /* ICCCM */
@@ -48,7 +47,7 @@ subEwmhInit(void)
     "SUBTLE_VIEW_NEW", "SUBTLE_VIEW_KILL", "SUBTLE_VIEW_LIST", "SUBTLE_VIEW_TAG", "SUBTLE_VIEW_UNTAG", "SUBTLE_VIEW_TAGS"
   };
 
-  XInternAtoms(subtle->disp, names, n, 0, atoms);
+  XInternAtoms(subtle->disp, names, NATOMS, 0, atoms);
 } /* }}} */
 
  /** subEwmhFind {{{
