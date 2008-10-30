@@ -97,7 +97,7 @@ subViewConfigure(SubView *v)
           SubClient *c = CLIENT(subtle->clients->data[i]);
 
           /* Find matching clients */
-          if(v->tags & c->tags)
+          if(v->tags & c->tags || c->flags & SUB_STATE_URGENT)
             {
               if(c->flags & SUB_STATE_FULL) full++;
               else if(c->flags & SUB_STATE_FLOAT) floated++;
@@ -132,7 +132,7 @@ subViewConfigure(SubView *v)
         {
           SubClient *c = CLIENT(subtle->clients->data[i]);
 
-          if(v->tags & c->tags)
+          if(v->tags & c->tags || c->flags & SUB_STATE_URGENT)
             {
               if(!(c->flags & SUB_STATE_FULL)) ///< Don't overwrite root
                 XReparentWindow(subtle->disp, c->win, v->frame, 0, 0);
