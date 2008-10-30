@@ -42,6 +42,7 @@
 #define MINH      50                                              ///< Client min. height
 #define SNAP      10                                              ///< Snapping threshold
 
+#define LENGTH(a) (sizeof(a) / sizeof(a[0]))                      ///< Array length
 #define TEXTW(s)  (strlen(s) * subtle->fx + 8)                    ///< Textwidth in pixel
 #define WINW(c)   (c->rect.width - 2 * subtle->bw)                ///< Get real width
 #define WINH(c)   (c->rect.height - 2 * subtle->bw)               ///< Get real height
@@ -192,6 +193,7 @@
 #define SUB_TAG_DEFAULT        (1L << 1)                          ///< Default tag
 #define SUB_TAG_FLOAT          (1L << 2)                          ///< Float tag
 #define SUB_TAG_FULL           (1L << 3)                          ///< Full tag
+#define SUB_TAG_URGENT         (1L << 4)                          ///< Urgent tag
 /* }}} */
 
 /* Typedefs {{{ */

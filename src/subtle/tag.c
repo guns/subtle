@@ -18,15 +18,15 @@
 void
 subTagInit(void)
 {
-  SubTag *t = NULL;
+  int i;
+  char *tags[] = { "default", "float", "full", "urgent" };
 
-  /* Default tags */
-  t = subTagNew("default", NULL);
-  subArrayPush(subtle->tags, (void *)t);
-  t = subTagNew("float", NULL);
-  subArrayPush(subtle->tags, (void *)t);
-  t = subTagNew("full", NULL);
-  subArrayPush(subtle->tags, (void *)t);  
+  for(i = 0; LENGTH(tags) > i; i++)
+    {
+      SubTag *t = subTagNew(tags[i], NULL);
+      subArrayPush(subtle->tags, (void *)t);
+    }
+
   subTagPublish();
 } /* }}} */
 

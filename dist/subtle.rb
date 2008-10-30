@@ -71,16 +71,17 @@ TAGS = {
   "terms"   => "urxvt|xterm",
   "browser" => "firefox",
   "editor"  => "gvim",
-  "video"   => "mplayer",
+  "video"   => "x11",
   "float"   => "xnest|urxvt",
-  "full"    => "gvim"
+  "full"    => "gvim",
+  "urgent"  => "xlogo|x11"
 }  
 
 #
 # Views
 #
 VIEWS = {
-  "work" => "browser|terms|video",
+  "work" => "browser|terms",
   "dev"  => "editor|terms",
   "web"  => "browser"
 }
