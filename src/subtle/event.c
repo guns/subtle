@@ -100,7 +100,8 @@ HandleGrab(XEvent *ev)
           case SUB_GRAB_WINDOW_MOVE:
           case SUB_GRAB_WINDOW_RESIZE:
             c = CLIENT(subUtilFind(win, CLIENTID));
-            if(c && c->flags & SUB_STATE_FLOAT && !(c->flags & SUB_STATE_FULL))
+            if(c && c->flags & (SUB_STATE_FLOAT|SUB_STATE_URGENT) &&
+              !(c->flags & SUB_STATE_FULL))
               {
                 flag = SUB_GRAB_WINDOW_MOVE == flag ? SUB_DRAG_MOVE : SUB_DRAG_RESIZE;
                 subClientDrag(c, flag);
@@ -162,7 +163,7 @@ HandleMapRequest(XMapRequestEvent *ev)
       subArrayPush(subtle->clients, (void *)c);
       subClientPublish();
 
-      if(subtle->cv && subtle->cv->tags & c->tags) 
+      if(subtle->cv && (subtle->cv->tags & c->tags || c->flags & SUB_STATE_URGENT))
         subViewConfigure(subtle->cv); ///< Configure current view if tags match
 
       subViewUpdate();
@@ -174,7 +175,7 @@ HandleMapRequest(XMapRequestEvent *ev)
 static void
 HandleDestroy(XDestroyWindowEvent *ev)
 {
-  SubClient *c = (SubClient *)subUtilFind(ev->event, 1);
+  SubClient *c = CLIENT(subUtilFind(ev->event, 1));
   if(c) 
     {
       c->flags |= SUB_STATE_DEAD;
@@ -413,8 +414,7 @@ HandleFocus(XFocusChangeEvent *ev)
 
           subGrabSet(c->win);
           subClientRender(c);
-          subEwmhSetWindows(DefaultRootWindow(subtle->disp), 
-            SUB_EWMH_NET_ACTIVE_WINDOW, &c->win, 1);
+          subEwmhSetWindows(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW, &c->win, 1);
           subViewUpdate();
         }
     }

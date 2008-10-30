@@ -23,8 +23,8 @@ ClientMask(int type,
   switch(type)
     {
       case SUB_DRAG_START: 
-        XDrawRectangle(subtle->disp, DefaultRootWindow(subtle->disp), subtle->gcs.invert, 
-          r->x - 1, r->y - 1, r->width - 3, r->height - 3);
+        XDrawRectangle(subtle->disp, ROOT, subtle->gcs.invert, r->x - 1, r->y - 1,
+          r->width - 3, r->height - 3);
         break;
       case SUB_DRAG_TOP:
         XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, 5, 5, c->rect.width - 10, 
@@ -132,12 +132,12 @@ subClientNew(Window win)
   else XFree(c->hints);
 
   /* Window manager hints */
-  hints = XGetWMHints(subtle->disp, win);
+  hints = XGetWMHints(subtle->disp, c->win);
   if(hints)
     {
       subClientSetWMState(c, NormalState);
       if(hints->input) c->flags |= SUB_PREF_INPUT;
-      if(hints->flags & XUrgencyHint) c->flags |= (SUB_STATE_URGENT|SUB_STATE_FLOAT);
+      if(hints->flags & XUrgencyHint) c->tags |= SUB_TAG_URGENT;
       XFree(hints);
     }
   
@@ -166,17 +166,15 @@ subClientNew(Window win)
       XFree(wmclass);  
     }
 
-  if(!c->tags) c->tags |= SUB_TAG_DEFAULT; ///< Ensure that there's at least on tag
-  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS, (long *)&c->tags, 1);
-
   /* Special tags */
   XGetTransientForHint(subtle->disp, win, &propwin); ///< Check for dialogs
-  if(propwin) c->tags |= SUB_TAG_FLOAT;
-
   if(c->tags & SUB_TAG_FLOAT) subClientToggle(c, SUB_STATE_FLOAT);
   if(c->tags & SUB_TAG_FULL)  subClientToggle(c, SUB_STATE_FULL);
+  if(c->tags & SUB_TAG_URGENT || propwin) subClientToggle(c, SUB_STATE_URGENT);
+  if(!c->tags) c->tags |= SUB_TAG_DEFAULT; ///< Ensure that there's at least on tag
 
-  /* EWMH: Desktop */
+  /* EWMH: Tags and desktop */
+  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS, (long *)&c->tags, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
   printf("Adding client (%s)\n", c->name);
@@ -491,14 +489,15 @@ subClientDrag(SubClient *c,
     }
   else ///< Move/Resize
     {
-      if(c->flags & SUB_STATE_FLOAT) 
+      if(c->flags & (SUB_STATE_FLOAT|SUB_STATE_URGENT)) 
         {
           r.y -= (subtle->th + subtle->bw); ///< Border and bar height
           r.x -= subtle->bw;
           c->rect = r;
+
           subClientConfigure(c);
         }
-      else if(SUB_DRAG_BOTTOM >= mode) 
+      else if(SUB_DRAG_RESIZE >= mode) 
         {
           /* Get size ratios */
           if(SUB_DRAG_RIGHT == mode || SUB_DRAG_LEFT == mode) 
@@ -509,7 +508,7 @@ subClientDrag(SubClient *c,
           else if(10 > c->size) c->size = 10; ///< Min. 10%
 
           if(!(c->flags & SUB_STATE_RESIZE)) c->flags |= SUB_STATE_RESIZE;
-          subViewConfigure(subtle->cv);                    
+          subViewConfigure(subtle->cv);        
         }
     }
 
@@ -548,6 +547,7 @@ subClientToggle(SubClient *c,
 
       switch(type)
         {
+          case SUB_STATE_URGENT:
           case SUB_STATE_FLOAT: /* {{{ */
             if(c->flags & SUB_PREF_HINTS)
               {
@@ -713,7 +713,7 @@ subClientKill(SubClient *c)
 
   /* Ignore further events and delete context */
   XSelectInput(subtle->disp, c->win, NoEventMask);
-  XDeleteContext(subtle->disp, c->win, 1);
+  XDeleteContext(subtle->disp, c->win, CLIENTID);
 
   if(subtle->focus == c->win) subtle->focus = 0; ///< Unset focus
   if(!(c->flags & SUB_STATE_DEAD))

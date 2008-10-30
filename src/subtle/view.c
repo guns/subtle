@@ -100,7 +100,7 @@ subViewConfigure(SubView *v)
           if(v->tags & c->tags || c->flags & SUB_STATE_URGENT)
             {
               if(c->flags & SUB_STATE_FULL) full++;
-              else if(c->flags & SUB_STATE_FLOAT) floated++;
+              else if(c->flags & (SUB_STATE_FLOAT|SUB_STATE_URGENT)) floated++;
               c->flags &= ~SUB_STATE_TILED;
               total++;
             }
@@ -136,20 +136,19 @@ subViewConfigure(SubView *v)
             {
               if(!(c->flags & SUB_STATE_FULL)) ///< Don't overwrite root
                 XReparentWindow(subtle->disp, c->win, v->frame, 0, 0);
-
               XMapWindow(subtle->disp, c->win);
-              XLowerWindow(subtle->disp, c->win);
 
               /* EWMH: Desktop */
               subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
               /* Special flags */
-              if(c->flags & (SUB_STATE_FLOAT|SUB_STATE_FULL))
+              if(c->flags & (SUB_STATE_FLOAT|SUB_STATE_FULL|SUB_STATE_URGENT))
                 {
                   XRaiseWindow(subtle->disp, c->win);
                   subClientConfigure(c);
                   continue;
                 }
+              else XLowerWindow(subtle->disp, c->win);
 
               c->rect.x      = x;
               c->rect.y      = 0;
