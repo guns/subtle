@@ -155,15 +155,13 @@ subClientNew(Window win)
     }
 
   /* Tags */
-  wmclass = subEwmhGetProperty(win, XA_STRING, SUB_EWMH_WM_CLASS, NULL);
-  if(wmclass)
+  if(c->name)
     {
       for(i = 0; i < subtle->tags->ndata; i++)
         {
           SubTag *t = TAG(subtle->tags->data[i]);
-          if(t->preg && subUtilRegexMatch(t->preg, wmclass)) c->tags |= (1L << (i + 1));
+          if(t->preg && subUtilRegexMatch(t->preg, c->name)) c->tags |= (1L << (i + 1));
         }
-      XFree(wmclass);  
     }
 
   /* Special tags */
