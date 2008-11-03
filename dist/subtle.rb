@@ -69,12 +69,12 @@ GRABS = {
 #
 TAGS = {
   "terms"   => "urxvt|xterm",
-  "browser" => "firefox",
+  "browser" => "gran paradiso",
   "editor"  => "gvim",
-  "video"   => "x11",
+  "video"   => "mplayer",
   "float"   => "xnest|urxvt",
   "full"    => "gvim",
-  "urgent"  => "xlogo|x11"
+  "urgent"  => "xlogo"
 }  
 
 #
@@ -83,5 +83,5 @@ TAGS = {
 VIEWS = {
   "work" => "browser|terms",
   "dev"  => "editor|terms",
-  "web"  => "browser"
+  "web"  => "browser|video"
 }
