@@ -157,7 +157,7 @@ subViewConfigure(SubView *v)
 
               if(!(c->flags & SUB_STATE_TILED)) 
                 {
-                  x += cw;
+                  x += c->rect.width;
                   subClientConfigure(c);
                  }
             }
