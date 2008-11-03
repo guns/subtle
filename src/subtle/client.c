@@ -91,7 +91,6 @@ subClientNew(Window win)
 {
   int i, n = 0;
   long vid = 1337;
-  char *wmclass = NULL;
   long supplied = 0;
   Window propwin = 0;
   XWMHints *hints = NULL;
@@ -156,13 +155,12 @@ subClientNew(Window win)
 
   /* Tags */
   if(c->name)
-    {
-      for(i = 0; i < subtle->tags->ndata; i++)
-        {
-          SubTag *t = TAG(subtle->tags->data[i]);
-          if(t->preg && subUtilRegexMatch(t->preg, c->name)) c->tags |= (1L << (i + 1));
-        }
-    }
+    for(i = 0; i < subtle->tags->ndata; i++)
+      {
+        SubTag *t = TAG(subtle->tags->data[i]);
+
+        if(t->preg && subUtilRegexMatch(t->preg, c->name)) c->tags |= (1L << (i + 1));
+      }
 
   /* Special tags */
   XGetTransientForHint(subtle->disp, win, &propwin); ///< Check for dialogs
@@ -750,3 +748,4 @@ subClientKill(SubClient *c)
 
   subUtilLogDebug("kill=client\n");
 } /* }}} */
+

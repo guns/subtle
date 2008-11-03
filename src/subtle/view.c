@@ -76,12 +76,17 @@ subViewNew(char *name,
 void
 subViewConfigure(SubView *v)
 {
+
+  XEvent e;
   int i;
   long vid = 0;
   int x = 0, y = 0, width = 0, height = 0, cw = 0, comp = 0, total = 0, tiled = 0,
     resized = 0, full = 0, floated = 0, special = 0;
 
   assert(v);
+ printf("queued=%d\n", QLength(subtle->disp));
+
+  XGrabServer(subtle->disp);
 
   vid = subArrayIndex(subtle->views, (void *)v);
 
@@ -91,7 +96,7 @@ subViewConfigure(SubView *v)
        width  = SCREENW;
        height = SCREENH - subtle->th;
 
-      /* Find clients and count special states*/
+      /* Find clients and count special states {{{ */
       for(i = 0; i < subtle->clients->ndata; i++)
         {
           SubClient *c = CLIENT(subtle->clients->data[i]);
@@ -104,9 +109,9 @@ subViewConfigure(SubView *v)
               c->flags &= ~SUB_STATE_TILED;
               total++;
             }
-        }
+        } /* }}} */
 
-      /* Mark clients in a tile */
+      /* Mark clients in a tile {{{ */
       for(i = 0; i < v->layout->ndata; i++)
         {
           SubLayout *l = LAYOUT(v->layout->data[i]);
@@ -116,7 +121,7 @@ subViewConfigure(SubView *v)
               l->c2->flags |= SUB_STATE_TILED;
               tiled++;
             }
-        }
+        } /* }}} */
 
       subUtilLogDebug("total=%d, layouts=%d, tiled=%d\n", total, v->layout->ndata, tiled);
       total -= tiled;
@@ -127,7 +132,7 @@ subViewConfigure(SubView *v)
       cw      = width / total;
       comp    = abs(width - total * cw); ///< Compensation for int rounding
 
-      /* Set client stuff */
+      /* Set client stuff {{{ */
       for(i = 0; i < subtle->clients->ndata; i++)
         {
           SubClient *c = CLIENT(subtle->clients->data[i]);
@@ -161,9 +166,9 @@ subViewConfigure(SubView *v)
                   subClientConfigure(c);
                  }
             }
-        }
+        } /* }}} */
 
-      /* Make layout */
+      /* Make layout {{{ */
       for(i = 0; i < v->layout->ndata; i++)
         {
           SubLayout *l  = LAYOUT(v->layout->data[i]);
@@ -225,7 +230,18 @@ subViewConfigure(SubView *v)
             }
           else subArrayPop(v->layout, (void *)l); ///< Sanitize
         }
+    } /* }}} */
+ 
+ printf("queued=%d\n", QLength(subtle->disp));
+
+  while(XCheckMaskEvent(subtle->disp, FocusChangeMask, &e))
+    {
+      printf("Discarded EnterWindow event\n");
     }
+
+  XUngrabServer(subtle->disp);
+ printf("queued=%d\n", QLength(subtle->disp));
+
 } /* }}} */
 
  /** subViewArrange {{{

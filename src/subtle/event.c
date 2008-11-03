@@ -348,7 +348,7 @@ HandleProperty(XPropertyEvent *ev)
 static void
 HandleCrossing(XCrossingEvent *ev)
 {
-  SubClient *c = CLIENT(subUtilFind(ev->window, 1));
+  SubClient *c = CLIENT(subUtilFind(ev->window, CLIENTID));
   if(c && !(c->flags & SUB_STATE_DEAD))
     {
       XEvent event;
@@ -389,6 +389,8 @@ HandleFocus(XFocusChangeEvent *ev)
     { 
       if(FocusOut == ev->type) ///< FocusOut event
         {
+printf("Debug:%s:%d\n", __FILE__, __LINE__);
+
           /* Remove focus from client */
           if(subtle->focus)
             {
