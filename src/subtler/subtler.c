@@ -61,11 +61,13 @@ ClientInfo(Window win)
 
   XGetGeometry(display, win, &unused, &x, &y, &width, &height, &border, &border);
 
-  nv = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display), XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
+  nv = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
+    XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
   cv = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, "_NET_WM_DESKTOP", NULL);
-  rv = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+  rv = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display),
+    XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
 
-  printf("%#lx %c %ld %ux%u %s (%s)\n", win, (*cv == *rv ? '*' : '-'), 
+  printf("%#lx %c %ld %ux%u %s (%s)\n", win, (*cv == *rv ? '*' : '-'),
     (*cv > *nv ? -1 : *cv), width, height, wmname, wmclass);
 
   if(wmname) free(wmname);
@@ -122,7 +124,8 @@ ActionClientFocus(char *arg1,
 
   subSharedClientFind(arg1, &win);
   cv = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, "_NET_WM_DESKTOP", NULL);
-  rv = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+  rv = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display), 
+    XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
 
   if(*cv && *rv && *cv != *rv) 
     {
@@ -135,7 +138,7 @@ ActionClientFocus(char *arg1,
       data.l[0] = win;
       subSharedMessage(DefaultRootWindow(display), "_NET_ACTIVE_WINDOW", data);
     }
-      
+
   free(cv);
   free(rv);
 } /* }}} */
@@ -214,7 +217,7 @@ ActionClientTags(char *arg1,
 
   if(-1 != subSharedClientFind(arg1, &win))
     {
-      flags = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, 
+      flags = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL,
         "SUBTLE_CLIENT_TAGS", NULL);
       tags  = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
 
@@ -291,15 +294,15 @@ ActionTagFind(char *arg1,
   /* Collect data */
   tag     = subSharedTagFind(arg1);
   clients = subSharedClientList(&size_clients);
-  views   = subSharedPropertyList(DefaultRootWindow(display), 
+  views   = subSharedPropertyList(DefaultRootWindow(display),
     "_NET_DESKTOP_NAMES", &size_views);
-  frames  = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW, 
+  frames  = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW,
     "_NET_VIRTUAL_ROOTS", NULL);
 
   /* Views */
   for(i = 0; i < size_views; i++)
     {
-      flags = (unsigned long *)subSharedPropertyGet(frames[i], XA_CARDINAL, 
+      flags = (unsigned long *)subSharedPropertyGet(frames[i], XA_CARDINAL,
         "SUBTLE_VIEW_TAGS", NULL);
 
       if((int)*flags & (1L << (tag + 1))) printf("view   - %s\n", views[i]);
@@ -312,7 +315,7 @@ ActionTagFind(char *arg1,
     {
       char *wmname = NULL, *wmclass = NULL;
 
-      flags   = (unsigned long *)subSharedPropertyGet(clients[i], XA_CARDINAL, 
+      flags   = (unsigned long *)subSharedPropertyGet(clients[i], XA_CARDINAL,
         "SUBTLE_CLIENT_TAGS", NULL);
       wmname  = subSharedWindowWMName(clients[i]);
       wmclass = subSharedWindowWMClass(clients[i]);
@@ -341,7 +344,7 @@ ActionTagKill(char *arg1,
 
   snprintf(data.b, sizeof(data.b), arg1);
 
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_KILL", data);  
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_KILL", data);
 } /* }}} */
 
 /* ActionViewNew {{{ */
@@ -372,9 +375,12 @@ ActionViewList(char *arg1,
   subSharedLogDebug("%s\n", __func__);
 
   /* Collect data */
-  nv     = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display), XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
-  cv     = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
-  frames = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
+  nv     = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
+    XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
+  cv     = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
+    XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+  frames = (Window *)subSharedPropertyGet(DefaultRootWindow(display),
+    XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
   views  = subSharedPropertyList(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
 
   for(i = 0; *nv && i < *nv; i++)
@@ -487,7 +493,7 @@ ActionViewKill(char *arg1,
 
   data.l[0] = view;
 
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_KILL", data);  
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_KILL", data);
 } /* }}} */
 
 /* Usage {{{ */
@@ -636,7 +642,7 @@ main(int argc,
     { "views",      no_argument,        0,  'v'  },
 
     /* Actions */
-    { "new",        no_argument,        0,  'n'  },  
+    { "new",        no_argument,        0,  'n'  },
     { "kill",       no_argument,        0,  'k'  },
     { "list",       no_argument,        0,  'l'  },
     { "find",       no_argument,        0,  'f'  },
@@ -660,11 +666,11 @@ main(int argc,
   /* Command table */
   Command cmds[3][10] = { 
     /* Client, Tag, View <=> New, Kill, List, Find, Focus, Jump, Shade, Tag, Untag, Tags */
-    { NULL, ActionClientKill, ActionClientList, ActionClientFind, ActionClientFocus, NULL, 
+    { NULL, ActionClientKill, ActionClientList, ActionClientFind, ActionClientFocus, NULL,
       ActionClientShade, ActionClientTag, ActionClientUntag, ActionClientTags },
-    { ActionTagNew, ActionTagKill, ActionTagList, ActionTagFind, NULL, NULL, NULL, NULL, 
+    { ActionTagNew, ActionTagKill, ActionTagList, ActionTagFind, NULL, NULL, NULL, NULL,
       NULL, NULL },
-    { ActionViewNew, ActionViewKill, ActionViewList, NULL, NULL, ActionViewJump, NULL, 
+    { ActionViewNew, ActionViewKill, ActionViewList, NULL, NULL, ActionViewJump, NULL,
       ActionViewTag, ActionViewUntag, ActionViewTags }
   };
 

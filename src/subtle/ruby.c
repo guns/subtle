@@ -53,8 +53,8 @@ RubySubletInherited(VALUE self,
 
   printf("Loading sublet %s\n", name);
 
-  return Qnil;                                           
-} /* }}} */                                               
+  return Qnil;
+} /* }}} */
 
 /* RubySubletInterval {{{ */
 static VALUE
@@ -77,7 +77,7 @@ RubySubletIntervalSet(VALUE self,
   switch(rb_type(value))
     {
       case T_FIXNUM: 
-        s->interval = FIX2INT(value);          
+        s->interval = FIX2INT(value);
         break;
       case T_STRING: 
 #ifdef HAVE_SYS_INOTIFY_H
@@ -188,11 +188,11 @@ RubyParseColor(VALUE hash,
   char *name = RubyGetString(hash, key, fallback);
   
   /* Parse and allow color */
-  if(!XParseColor(subtle->disp, cmap, name, &color)) 
+  if(!XParseColor(subtle->disp, cmap, name, &color))
     {
       subUtilLogWarn("Can't load color '%s'.\n", key);
     }
-  else if(!XAllocColor(subtle->disp, cmap, &color)) 
+  else if(!XAllocColor(subtle->disp, cmap, &color))
     subUtilLogWarn("Can't alloc color '%s'.\n", key);
 
   return color.pixel;
@@ -261,7 +261,7 @@ static VALUE
 RubyConfigParse(VALUE path)
 {
   int size;
-  char *face = NULL, *style = NULL, font[100]; 
+  char *face = NULL, *style = NULL, font[100];
   XGCValues gvals;
   XSetWindowAttributes attrs;
   VALUE config = 0;
@@ -281,10 +281,10 @@ RubyConfigParse(VALUE path)
 
   /* Config: Colors */
   config                = rb_const_get(rb_cObject, rb_intern("COLORS"));
-  subtle->colors.font   = RubyParseColor(config, "font",       "#000000");   
+  subtle->colors.font   = RubyParseColor(config, "font",       "#000000");
   subtle->colors.border = RubyParseColor(config, "border",     "#bdbabd");
   subtle->colors.norm   = RubyParseColor(config, "normal",     "#22aa99");
-  subtle->colors.focus  = RubyParseColor(config, "focus",      "#ffa500");    
+  subtle->colors.focus  = RubyParseColor(config, "focus",      "#ffa500");
   subtle->colors.bg     = RubyParseColor(config, "background", "#336699");
 
   /* Load font */
@@ -307,7 +307,7 @@ RubyConfigParse(VALUE path)
   attrs.save_under       = False;
   attrs.event_mask       = ButtonPressMask|ExposureMask|VisibilityChangeMask;
 
-  subtle->bar.win     = XCreateWindow(subtle->disp, DefaultRootWindow(subtle->disp), 
+  subtle->bar.win     = XCreateWindow(subtle->disp, DefaultRootWindow(subtle->disp),
     0, 0, DisplayWidth(subtle->disp, DefaultScreen(subtle->disp)), subtle->th, 
     0, CopyFromParent, InputOutput, CopyFromParent, 
     CWBackPixel|CWSaveUnder|CWEventMask, &attrs); 
@@ -442,7 +442,7 @@ subRubyLoadConfig(const char *file)
     {
       SubView *v = VIEW(subtle->views->data[0]);
       v->tags |= (1L << 1); ///< Add default tag to first view
-      subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_VIEW_TAGS, (long *)&v->tags, 1); 
+      subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_VIEW_TAGS, (long *)&v->tags, 1);
     }
 
   subViewUpdate();
@@ -514,7 +514,7 @@ subRubyLoadSublets(const char *path)
           subSubletUpdate();
         }
     }
-  else subUtilLogWarn("No sublets found\n"); 
+  else subUtilLogWarn("No sublets found\n");
 } /* }}} */
 
  /** subRubyRun {{{

@@ -25,9 +25,9 @@ subDisplayInit(const char *display)
 {
   XGCValues gvals;
   const char stipple[] = {
-    0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 
     0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 0x49, 0x12, 0x24, 0x49, 0x92, 0x24,
-    0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 0x49, 0x12    
+    0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 0x49, 0x12, 0x24, 0x49, 0x92, 0x24,
+    0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 0x49, 0x12
   };
 
   /* Connect to display and setup error handler */
@@ -38,18 +38,18 @@ subDisplayInit(const char *display)
   /* Create gcs */
   gvals.function      = GXcopy;
   gvals.fill_style    = FillStippled;
-  gvals.stipple       = XCreateBitmapFromData(subtle->disp, DefaultRootWindow(subtle->disp), 
+  gvals.stipple       = XCreateBitmapFromData(subtle->disp, DefaultRootWindow(subtle->disp),
     stipple, 15, 16);
   subtle->gcs.border  = XCreateGC(subtle->disp, DefaultRootWindow(subtle->disp),
     GCFunction|GCFillStyle|GCStipple, &gvals);
 
-  subtle->gcs.font = XCreateGC(subtle->disp, DefaultRootWindow(subtle->disp), 
+  subtle->gcs.font = XCreateGC(subtle->disp, DefaultRootWindow(subtle->disp),
     GCFunction, &gvals);
 
   gvals.function       = GXinvert;
   gvals.subwindow_mode = IncludeInferiors;
   gvals.line_width     = 3;
-  subtle->gcs.invert   = XCreateGC(subtle->disp, DefaultRootWindow(subtle->disp), 
+  subtle->gcs.invert   = XCreateGC(subtle->disp, DefaultRootWindow(subtle->disp),
     GCFunction|GCSubwindowMode|GCLineWidth, &gvals);
 
   /* Create cursors */
@@ -57,7 +57,7 @@ subDisplayInit(const char *display)
   subtle->cursors.move   = XCreateFontCursor(subtle->disp, XC_dotbox);
   subtle->cursors.resize = XCreateFontCursor(subtle->disp, XC_sizing);
 
-  printf("Display (%s) is %dx%d\n", DisplayString(subtle->disp), DisplayWidth(subtle->disp, 
+  printf("Display (%s) is %dx%d\n", DisplayString(subtle->disp), DisplayWidth(subtle->disp,
     DefaultScreen(subtle->disp)), DisplayHeight(subtle->disp, DefaultScreen(subtle->disp)));
 
   XSync(subtle->disp, False);

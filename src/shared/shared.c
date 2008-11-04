@@ -64,7 +64,7 @@ subSharedLogXError(Display *disp,
 {
 #ifdef DEBUG
   if(debug) return 0;
-#endif /* DEBUG */  
+#endif /* DEBUG */
 
   if(42 != ev->request_code) /* X_SetInputFocus */
     {
@@ -184,7 +184,7 @@ subSharedMessage(Window win,
 
   for(i = 0; i < 5; i++) ev.xclient.data.l[i] = data.l[i]; ///< Copy data
 
-  if(!XSendEvent(display, DefaultRootWindow(display), False, mask, &ev)) 
+  if(!XSendEvent(display, DefaultRootWindow(display), False, mask, &ev))
     subSharedLogDebug("Can't send client message `%s'\n", type);
 } /* }}} */
 
@@ -209,7 +209,7 @@ subSharedPropertyGet(Window win,
 
   assert(win && name);
 
-  if(Success != XGetWindowProperty(display, win, prop, 0L, 4096, False, type, &rettype, 
+  if(Success != XGetWindowProperty(display, win, prop, 0L, 4096, False, type, &rettype,
     &format, &nitems, &bytes, &data))
     {
       subSharedLogDebug("Failed to get property `%s'\n", name);
@@ -248,7 +248,8 @@ subSharedPropertyList(Window win,
   assert(name && size);
 
   /* Get data */
-  string = (char *)subSharedPropertyGet(win, XInternAtom(display, "UTF8_STRING", False), name, &len);
+  string = (char *)subSharedPropertyGet(win, 
+    XInternAtom(display, "UTF8_STRING", False), name, &len);
 
   /* @todo Convert string to names list */
   if(string)
@@ -282,7 +283,7 @@ subSharedPropertyList(Window win,
 Window *
 subSharedWindowWMCheck(void)
 {
-  return (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW, 
+  return (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW,
     "_NET_SUPPORTING_WM_CHECK", NULL);
 } /* }}} */
 
@@ -339,8 +340,10 @@ subSharedWindowSelect(void)
   Cursor cursor = XCreateFontCursor(display, XC_dotbox);
 
   /* Get view frame */
-  view   = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
-  frames = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
+  view   = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display), 
+    XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+  frames = (Window *)subSharedPropertyGet(DefaultRootWindow(display), 
+    XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
   frame  = frames[*view];
   free(view);
   free(frames);
@@ -357,7 +360,8 @@ subSharedWindowSelect(void)
       switch(event.type)
         {
           case ButtonPress:
-            if(win == None) win = event.xbutton.subwindow ? event.xbutton.subwindow : frame; ///< Sanitize
+            if(win == None) win = event.xbutton.subwindow ? 
+              event.xbutton.subwindow : frame; ///< Sanitize
             buttons++;
             break;
           case ButtonRelease: if(0 < buttons) buttons--; break;
@@ -369,7 +373,7 @@ subSharedWindowSelect(void)
   for(i = 0; i < n; i++)
     {
       data = NULL;
-      XGetWindowProperty(display, wins[i], XInternAtom(display, "WM_STATE", True), 0, 0, 
+      XGetWindowProperty(display, wins[i], XInternAtom(display, "WM_STATE", True), 0, 0,
         False, AnyPropertyType, &type, &format, &nitems, &after, &data);
 
       if(data) XFree(data);
@@ -401,7 +405,7 @@ subSharedClientList(int *size)
 
   assert(size);
 
-  clients = (Window *)subSharedPropertyGet(DefaultRootWindow(display), 
+  clients = (Window *)subSharedPropertyGet(DefaultRootWindow(display),
     XA_WINDOW, "_NET_CLIENT_LIST", &len);
   if(clients)
     {
@@ -448,10 +452,10 @@ subSharedClientFind(char *name,
           snprintf(buf, sizeof(buf), "%#lx", clients[i]);
 
           /* Find client either by window id or by wmname */
-          if(clients[i] == selwin || subSharedRegexMatch(preg, wmname) || 
+          if(clients[i] == selwin || subSharedRegexMatch(preg, wmname) ||
             subSharedRegexMatch(preg, buf))
             {
-              subSharedLogDebug("Found: type=client, name=%s, win=%#lx, n=%d\n", name, 
+              subSharedLogDebug("Found: type=client, name=%s, win=%#lx, n=%d\n", name,
                 clients[i], i);
 
               if(win) *win = clients[i];
@@ -545,9 +549,9 @@ subSharedViewFind(char *name,
           snprintf(buf, sizeof(buf), "%#lx", frames[i]);
 
           /* Find client either by name or by window id */
-          if(subSharedRegexMatch(preg, names[i]) || subSharedRegexMatch(preg, buf)) 
+          if(subSharedRegexMatch(preg, names[i]) || subSharedRegexMatch(preg, buf))
             {
-              subSharedLogDebug("Found: type=view, name=%s win=%#lx, n=%d\n", 
+              subSharedLogDebug("Found: type=view, name=%s win=%#lx, n=%d\n",
                 name, frames[i], i);
 
               if(win) *win = frames[i];

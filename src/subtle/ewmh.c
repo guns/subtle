@@ -84,7 +84,7 @@ subEwmhGetProperty(Window win,
   int format;
   Atom rtype;
 
-  if(XGetWindowProperty(subtle->disp, win, atoms[hint], 0L, 1024, False, type, &rtype, 
+  if(XGetWindowProperty(subtle->disp, win, atoms[hint], 0L, 1024, False, type, &rtype,
     &format, &nitems, &bytes, &data) != Success)
     {
       subUtilLogDebug("Failed to get property (%d)\n", hint);
@@ -115,7 +115,8 @@ subEwmhSetWindows(Window win,
   Window *values,
   int size)
 {
-  XChangeProperty(subtle->disp, win, atoms[hint], XA_WINDOW, 32, PropModeReplace, (unsigned char *)values, size);
+  XChangeProperty(subtle->disp, win, atoms[hint], XA_WINDOW, 32, PropModeReplace,
+    (unsigned char *)values, size);
 } /* }}} */
 
  /** subEwmhSetCardinals {{{
@@ -132,7 +133,8 @@ subEwmhSetCardinals(Window win,
   long *values,
   int size)
 {
-  XChangeProperty(subtle->disp, win, atoms[hint], XA_CARDINAL, 32, PropModeReplace, (unsigned char *)values, size);
+  XChangeProperty(subtle->disp, win, atoms[hint], XA_CARDINAL, 32, PropModeReplace,
+    (unsigned char *)values, size);
 } /* }}} */
 
  /** subEwmhSetString {{{
@@ -147,7 +149,7 @@ subEwmhSetString(Window win,
   int hint,
   char *value)
 {
-  XChangeProperty(subtle->disp, win, atoms[hint], atoms[SUB_EWMH_UTF8], 8, 
+  XChangeProperty(subtle->disp, win, atoms[hint], atoms[SUB_EWMH_UTF8], 8,
     PropModeReplace, (unsigned char *)value, strlen(value));
 } /* }}} */
 
@@ -180,6 +182,7 @@ subEwmhSetStrings(Window win,
       pos++;
     }
 
-  XChangeProperty(subtle->disp, win, atoms[hint], atoms[SUB_EWMH_UTF8], 8, PropModeReplace, (unsigned char *)str, pos);
+  XChangeProperty(subtle->disp, win, atoms[hint], atoms[SUB_EWMH_UTF8], 8,
+    PropModeReplace, (unsigned char *)str, pos);
   free(str);
 } /* }}} */

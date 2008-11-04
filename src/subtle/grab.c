@@ -1,55 +1,57 @@
 
  /**
-	* @package subtle
-	*
-	* @file Key functions
-	* @copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
-	* @version $Id$
-	*
-	* This program can be distributed under the terms of the GNU GPL.
-	* See the file COPYING.
-	**/
+  * @package subtle
+  *
+  * @file Key functions
+  * @copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
+  * @version $Id$
+  *
+  * This program can be distributed under the terms of the GNU GPL.
+  * See the file COPYING.
+  **/
 
 #include "subtle.h"
 
 static unsigned int numlockmask = 0;
 
  /** subGrabInit {{{
-	* @brief Init grabs and get modifiers
-	**/
+  * @brief Init grabs and get modifiers
+  **/
 
 void
 subGrabInit(void)
 {
-	XModifierKeymap *modmap = XGetModifierMapping(subtle->disp);
-	if(modmap && modmap->max_keypermod > 0)
-		{
-			const int modmasks[] = { ShiftMask, LockMask, ControlMask, Mod1Mask, Mod2Mask, Mod3Mask, Mod4Mask, Mod5Mask };
-			const KeyCode numlock = XKeysymToKeycode(subtle->disp, XK_Num_Lock);
-			int i, max = (sizeof(modmasks) / sizeof(int)) * modmap->max_keypermod;
+  XModifierKeymap *modmap = XGetModifierMapping(subtle->disp);
+  if(modmap && modmap->max_keypermod > 0)
+    {
+      const int modmasks[] = { ShiftMask, LockMask, ControlMask, Mod1Mask, Mod2Mask,
+        Mod3Mask, Mod4Mask, Mod5Mask };
+      const KeyCode numlock = XKeysymToKeycode(subtle->disp, XK_Num_Lock);
+      int i, max = (sizeof(modmasks) / sizeof(int)) * modmap->max_keypermod;
 
-			for(i = 0; i < max; i++)
-				if(!modmap->modifiermap[i]) continue;
-				else if(numlock && (modmap->modifiermap[i] == numlock)) numlockmask = modmasks[i / modmap->max_keypermod];
-		}
-	if(modmap) XFreeModifiermap(modmap);
+      for(i = 0; i < max; i++)
+        if(!modmap->modifiermap[i]) continue;
+        else if(numlock && (modmap->modifiermap[i] == numlock))
+          numlockmask = modmasks[i / modmap->max_keypermod];
+    }
+  if(modmap) XFreeModifiermap(modmap);
 } /* }}} */
 
  /** subGrabNew {{{
-	* @brief Create new grab
-	* @param[in]  name	 Grab name
-	* @param[in]  value	 Grab action
-	* @return Returns a #SubGrab or \p NULL
-	**/
+  * @brief Create new grab
+  * @param[in]  name   Grab name
+  * @param[in]  value   Grab action
+  * @return Returns a #SubGrab or \p NULL
+  **/
 
 SubGrab *
 subGrabNew(const char *name,
-	const char *value)
+  const char *value)
 {
   int i;
-	char *tok = NULL;
-	KeySym sym;
-	SubGrab *g = NULL;
+  char *tok = NULL;
+  KeySym sym;
+  SubGrab *g = NULL;
 
   struct
   {
@@ -67,7 +69,7 @@ subGrabNew(const char *name,
   
   g = GRAB(subUtilAlloc(1, sizeof(SubGrab)));
 
-	/* Find grabs */	
+  /* Find grabs */  
   for(i = 0; 5 > i; i++)
     if(!strcmp(name, grabs[i].name))
       {
@@ -97,17 +99,17 @@ subGrabNew(const char *name,
       else
         {
           g->flags |= (SUB_TYPE_GRAB|SUB_GRAB_EXEC);
-          g->string	= strdup(name);
+          g->string  = strdup(name);
         }
     }
 
   tok = strtok((char *)value, "-");
-	while(tok)
-		{ 
-			/* Get key sym and modifier */
-			sym = XStringToKeysym(tok);
-			if(NoSymbol == sym)
-				{
+  while(tok)
+    { 
+      /* Get key sym and modifier */
+      sym = XStringToKeysym(tok);
+      if(NoSymbol == sym)
+        {
           char *mouse[] = { "B1", "B2", "B3", "B4", "B5" };
 
           for(i = 0; 5 > i; i++)
@@ -117,25 +119,25 @@ subGrabNew(const char *name,
                 break;
               }
 
-    			if(NoSymbol == sym) ///< Check if there's still no symbol
-		    		{
+          if(NoSymbol == sym) ///< Check if there's still no symbol
+            {
               subUtilLogWarn("Can't assign keychain `%s'.\n", name);
               if(g->string) free(g->string);
               free(g);
               
               return NULL;
             }
-				}
+        }
 
-			/* Modifier mappings */
-			switch(sym)
-				{
+      /* Modifier mappings */
+      switch(sym)
+        {
           /* Keys */
-					case XK_A: g->mod |= Mod1Mask;		break;
-					case XK_S: g->mod |= ShiftMask;		break;
-					case XK_C: g->mod |= ControlMask;	break;
-					case XK_W: g->mod |= Mod4Mask;		break;
-					case XK_M: g->mod |= Mod3Mask;		break;
+          case XK_A: g->mod |= Mod1Mask;    break;
+          case XK_S: g->mod |= ShiftMask;    break;
+          case XK_C: g->mod |= ControlMask;  break;
+          case XK_W: g->mod |= Mod4Mask;    break;
+          case XK_M: g->mod |= Mod3Mask;    break;
 
           /* Mouse */
           case XK_Pointer_Button1:
@@ -146,150 +148,151 @@ subGrabNew(const char *name,
             g->flags |= SUB_GRAB_MOUSE;
             g->code  = sym;
             break;
-					default: 
+          default: 
             g->flags |= SUB_GRAB_KEY;
             g->code  = XKeysymToKeycode(subtle->disp, sym);
-				}
+        }
 
-			tok = strtok(NULL, "-");
-		}
-	subUtilLogDebug("type=%s, name=%s, code=%03d, mod=%02d\n", 
+      tok = strtok(NULL, "-");
+    }
+  subUtilLogDebug("type=%s, name=%s, code=%03d, mod=%02d\n",
     g->flags & SUB_GRAB_KEY ? "k" : "m", name, g->code, g->mod);
-	
-	return g;
+  
+  return g;
 } /* }}} */
 
  /** subGrabFind {{{
-	* @brief Find grab
-	* @param[in]  code 	A code
-	* @param[in]  mod	  A modmask
-	* @return Returns a #SubGrab or \p NULL
-	**/
+  * @brief Find grab
+  * @param[in]  code   A code
+  * @param[in]  mod    A modmask
+  * @return Returns a #SubGrab or \p NULL
+  **/
 
 SubGrab *
 subGrabFind(int code,
-	unsigned int mod)
+  unsigned int mod)
 {
-	SubGrab **ret = NULL, *gp = NULL, g;
-	
-	g.code = code;
-	g.mod	 = (mod & ~(LockMask|numlockmask));
-	gp 		 = &g;
-	ret    = (SubGrab **)bsearch(&gp, subtle->grabs->data, subtle->grabs->ndata, sizeof(SubGrab *), subGrabCompare);
+  SubGrab **ret = NULL, *gp = NULL, g;
+  
+  g.code = code;
+  g.mod   = (mod & ~(LockMask|numlockmask));
+  gp      = &g;
+  ret    = (SubGrab **)bsearch(&gp, subtle->grabs->data, subtle->grabs->ndata,
+    sizeof(SubGrab *), subGrabCompare);
 
-	return ret ? *ret : NULL;
+  return ret ? *ret : NULL;
 } /* }}} */
 
  /** subGrabGet {{{
-	* @brief Get grab
-	* @return Returns the keysym of the press key
-	**/
+  * @brief Get grab
+  * @return Returns the keysym of the press key
+  **/
 
 KeySym
 subGrabGet(void)
 {
-	XEvent ev;
-	KeySym sym = None;
+  XEvent ev;
+  KeySym sym = None;
 
-	XMaskEvent(subtle->disp, KeyPressMask, &ev);
-	sym = XLookupKeysym(&ev.xkey, 0);
+  XMaskEvent(subtle->disp, KeyPressMask, &ev);
+  sym = XLookupKeysym(&ev.xkey, 0);
 
-	return sym;
+  return sym;
 } /* }}} */
 
  /** subGrabSet {{{
-	* @brief Grab keys for a window
-	* @param[in]  win	 Window
-	**/
+  * @brief Grab keys for a window
+  * @param[in]  win   Window
+  **/
 
 void
 subGrabSet(Window win)
 {
-	if(win && subtle->grabs)
-		{
-			int i, j;
+  if(win && subtle->grabs)
+    {
+      int i, j;
       unsigned int modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
 
-			/* @todo Ugly key/modifier grabbing */
-			for(i = 0; i < subtle->grabs->ndata; i++) 
-				{
-					SubGrab *g = GRAB(subtle->grabs->data[i]);
+      /* @todo Ugly key/modifier grabbing */
+      for(i = 0; i < subtle->grabs->ndata; i++) 
+        {
+          SubGrab *g = GRAB(subtle->grabs->data[i]);
 
           for(j = 0; LENGTH(modifiers) > j; j++)
             {
               if(g->flags & SUB_GRAB_KEY)
                 {
-      					  XGrabKey(subtle->disp, g->code, g->mod|modifiers[j], win, True, 
+                  XGrabKey(subtle->disp, g->code, g->mod|modifiers[j], win, True,
                     GrabModeAsync, GrabModeAsync);
                 }
               else if(g->flags & SUB_GRAB_MOUSE)
                 {
-                  XGrabButton(subtle->disp, g->code - XK_Pointer_Button1, 
+                  XGrabButton(subtle->disp, g->code - XK_Pointer_Button1,
                     g->mod|modifiers[j], win, False, ButtonPressMask|ButtonReleaseMask,
                     GrabModeAsync, GrabModeSync, None, None);
                 }
             }
-				}
-			if(subtle->cv->frame == win) 
+        }
+      if(subtle->cv->frame == win) 
         XSetInputFocus(subtle->disp, win, RevertToNone, CurrentTime);
-			subtle->focus = win; ///< Update focus window
-		}
+      subtle->focus = win; ///< Update focus window
+    }
 } /* }}} */
 
  /** subGrabUnset {{{
-	* @brief Ungrab keys for a window
-	* @param[in]  win	Window
-	**/
+  * @brief Ungrab keys for a window
+  * @param[in]  win  Window
+  **/
 
 void
 subGrabUnset(Window win)
 {
-	XUngrabKey(subtle->disp, AnyKey, AnyModifier, win);
+  XUngrabKey(subtle->disp, AnyKey, AnyModifier, win);
   XUngrabButton(subtle->disp, AnyButton, AnyModifier, win);
-	subtle->focus = 0; ///< Unset focus window
+  subtle->focus = 0; ///< Unset focus window
 } /* }}} */
 
  /** subGrabCompare {{{
-	* @brief Compare two grabs
-	* @param[in]  a	 A #SubGrab
-	* @param[in]  b	 A #SubGrab
-	* @return Returns the result of the comparison of both grabs
-	* @retval  -1  First is smaller
-	* @retval  0	 Both are equal	
-	* @retval  1   First is greater
-	**/
+  * @brief Compare two grabs
+  * @param[in]  a   A #SubGrab
+  * @param[in]  b   A #SubGrab
+  * @return Returns the result of the comparison of both grabs
+  * @retval  -1  First is smaller
+  * @retval  0   Both are equal  
+  * @retval  1   First is greater
+  **/
 
 int
 subGrabCompare(const void *a,
-	const void *b)
+  const void *b)
 {
-	int ret;
-	SubGrab *g1 = *(SubGrab **)a, *g2 = *(SubGrab **)b;
+  int ret;
+  SubGrab *g1 = *(SubGrab **)a, *g2 = *(SubGrab **)b;
 
-	assert(a && b);
+  assert(a && b);
 
-	/* @todo Complicated.. */
-	if(g1->code < g2->code) ret = -1;
-	else if(g1->code == g2->code)
-		{
-			if(g1->mod < g2->mod) ret = -1;
-			else if(g1->mod == g2->mod) ret = 0;
-			else ret = 1;
-		}
-	else if(g1->code > g2->code) ret = 1;
+  /* @todo Complicated.. */
+  if(g1->code < g2->code) ret = -1;
+  else if(g1->code == g2->code)
+    {
+      if(g1->mod < g2->mod) ret = -1;
+      else if(g1->mod == g2->mod) ret = 0;
+      else ret = 1;
+    }
+  else if(g1->code > g2->code) ret = 1;
 
-	return ret;
+  return ret;
 } /* }}} */
 
  /** subGrabKill {{{
-	* @brief Kill grab
-	**/
+  * @brief Kill grab
+  **/
 
 void
 subGrabKill(SubGrab *g)
 {
-	assert(g);
+  assert(g);
 
-	if(g->flags & SUB_GRAB_EXEC && g->string) free(g->string);
-	free(g);
+  if(g->flags & SUB_GRAB_EXEC && g->string) free(g->string);
+  free(g);
 } /* }}} */

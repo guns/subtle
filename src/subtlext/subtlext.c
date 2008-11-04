@@ -1,3 +1,4 @@
+
  /**
   * @package subtle
   *
@@ -410,7 +411,8 @@ SubtleViewFind(VALUE self,
       id = subSharedViewFind(STR2CSTR(name), &win);
       if(-1 != id)
         {
-          names = subSharedPropertyList(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
+          names = subSharedPropertyList(DefaultRootWindow(display), 
+            "_NET_DESKTOP_NAMES", &size);
           klass = rb_const_get(rb_mKernel, rb_intern("View"));
           view  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(names[id]));
           rb_iv_set(view, "@id", INT2FIX(id));
@@ -519,7 +521,8 @@ SubtleViewCurrent(VALUE self)
   
   names = subSharedPropertyList(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
   klass = rb_const_get(rb_mKernel, rb_intern("View"));
-  cv    = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+  cv    = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
+    XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
   view  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(names[*cv]));
 
   rb_iv_set(view, "@id", INT2FIX(*cv));
@@ -623,7 +626,8 @@ ViewCurrent(VALUE self)
   VALUE id = Qnil, ret = Qfalse;;
   
   id = rb_iv_get(self, "@id");
-  cv = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display), XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+  cv = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
+    XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
 
   if(FIX2INT(id) == *cv) ret = Qtrue;
 
@@ -666,13 +670,13 @@ Init_subtlext(void)
   /* }}} */
 
   /* Class: subtle {{{ */
-	klass = rb_define_class("Subtle", rb_cObject);
+  klass = rb_define_class("Subtle", rb_cObject);
   rb_define_singleton_method(klass, "new", SubtleNew, -1);
-	rb_define_method(klass, "version", SubtleVersion, 0);
-	rb_define_method(klass, "display", SubtleDisplay, 0);
-	rb_define_method(klass, "views", SubtleViewList, 0);
-	rb_define_method(klass, "tags", SubtleTagList, 0);
-	rb_define_method(klass, "clients", SubtleClientList, 0);
+  rb_define_method(klass, "version", SubtleVersion, 0);
+  rb_define_method(klass, "display", SubtleDisplay, 0);
+  rb_define_method(klass, "views", SubtleViewList, 0);
+  rb_define_method(klass, "tags", SubtleTagList, 0);
+  rb_define_method(klass, "clients", SubtleClientList, 0);
   rb_define_method(klass, "find_view", SubtleViewFind, 1);
   rb_define_method(klass, "find_tag", SubtleTagFind, 1);
   rb_define_method(klass, "find_client", SubtleClientFind, 1);
@@ -681,7 +685,7 @@ Init_subtlext(void)
   rb_define_method(klass, "add_view", SubtleViewAdd, 1);
   rb_define_method(klass, "del_view", SubtleViewDel, 1);
   rb_define_method(klass, "current_view", SubtleViewCurrent, 0);
-	rb_define_method(klass, "running?", SubtleRunning, 0);
+  rb_define_method(klass, "running?", SubtleRunning, 0);
   /* }}} */
 
   /* Class: tag {{{ */

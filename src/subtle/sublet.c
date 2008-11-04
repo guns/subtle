@@ -26,7 +26,7 @@ subSubletNew(void)
   s->flags = SUB_TYPE_SUBLET;
   s->time  = subUtilTime();
 
-  subUtilLogDebug("new=sublet\n");    
+  subUtilLogDebug("new=sublet\n");
 
   return s;
 } /* }}} */ 
@@ -45,7 +45,7 @@ subSubletUpdate(void)
       for(i = 0; i < subtle->sublets->ndata; i++) ///< Calculate window width
         width += SUBLET(subtle->sublets->data[i])->width;
 
-      XMoveResizeWindow(subtle->disp, subtle->bar.sublets, DisplayWidth(subtle->disp, 
+      XMoveResizeWindow(subtle->disp, subtle->bar.sublets, DisplayWidth(subtle->disp,
         DefaultScreen(subtle->disp)) - width, 0, width, subtle->th);
     }
 } /* }}} */
@@ -69,12 +69,14 @@ subSubletRender(void)
         {
           if(s->flags & SUB_DATA_FIXNUM && s->fixnum)
             {
-              XDrawRectangle(subtle->disp, subtle->bar.sublets, subtle->gcs.font, width, 2, 60, subtle->th - 5);
-              XFillRectangle(subtle->disp, subtle->bar.sublets, subtle->gcs.font, width + 2, 4, 
-                (56 * s->fixnum) / 100, subtle->th - 8);
+              XDrawRectangle(subtle->disp, subtle->bar.sublets, subtle->gcs.font,
+                width, 2, 60, subtle->th - 5);
+              XFillRectangle(subtle->disp, subtle->bar.sublets, subtle->gcs.font,
+                width + 2, 4, (56 * s->fixnum) / 100, subtle->th - 8);
             }
           else if(s->flags & SUB_DATA_STRING && s->string) 
-            XDrawString(subtle->disp, subtle->bar.sublets, subtle->gcs.font, width, subtle->fy - 1, 
+            XDrawString(subtle->disp, subtle->bar.sublets, subtle->gcs.font, width,
+              subtle->fy - 1, 
               s->string, strlen(s->string));
 
           width += s->width;

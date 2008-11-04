@@ -47,7 +47,7 @@ ClientMask(int type,
           c->rect.height * 0.35, c->rect.width * 0.3, c->rect.height * 0.3);
         break;
       case SUB_DRAG_BEFORE:
-        XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, 5, 5, c->rect.width * 0.1 - 5, 
+        XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, 5, 5, c->rect.width * 0.1 - 5,
           c->rect.height - 10);
         break;
       case SUB_DRAG_AFTER:
@@ -73,10 +73,10 @@ ClientSnap(SubClient *c,
   assert(c && r);
 
   if(SNAP > r->x) r->x = subtle->bw;
-  else if(r->x > (SCREENW - WINW(c) - SNAP)) 
+  else if(r->x > (SCREENW - WINW(c) - SNAP))
     r->x = SCREENW - c->rect.width + subtle->bw;
   if(SNAP > r->y) r->y = subtle->bw;
-  else if(r->y > (SCREENH - WINH(c) - SNAP)) 
+  else if(r->y > (SCREENH - WINH(c) - SNAP))
     r->y = SCREENH - c->rect.height + subtle->bw;
 } /* }}} */
 
@@ -145,9 +145,9 @@ subClientNew(Window win)
     {
       for(i = 0; i < n; i++)
         {
-          if(protos[i] == subEwmhFind(SUB_EWMH_WM_TAKE_FOCUS))   
+          if(protos[i] == subEwmhFind(SUB_EWMH_WM_TAKE_FOCUS))
             c->flags |= SUB_PREF_FOCUS;
-          else if(protos[i] == subEwmhFind(SUB_EWMH_WM_DELETE_WINDOW)) 
+          else if(protos[i] == subEwmhFind(SUB_EWMH_WM_DELETE_WINDOW))
             c->flags |= SUB_PREF_CLOSE;
         }
       XFree(protos);
@@ -220,7 +220,7 @@ subClientConfigure(SubClient *c)
   XMoveResizeWindow(subtle->disp, c->win, r.x, r.y, r.width, r.height);
   XSendEvent(subtle->disp, c->win, False, StructureNotifyMask, (XEvent *)&ev);
 
-  subUtilLogDebug("client=%#lx, state=%c, x=%03d, y=%03d, width=%03d, height=%03d\n", 
+  subUtilLogDebug("client=%#lx, state=%c, x=%03d, y=%03d, width=%03d, height=%03d\n",
     c->win, c->flags & SUB_STATE_FLOAT ? 'f' : c->flags & SUB_STATE_FULL ? 'u' : 'n',
     r.x, r.y, r.width, r.height);
 } /* }}} */
@@ -241,9 +241,9 @@ subClientRender(SubClient *c)
   XChangeWindowAttributes(subtle->disp, c->win, CWBorderPixel, &attrs);
 
   /* Caption */
-  XResizeWindow(subtle->disp, subtle->bar.caption, TEXTW(c->name), subtle->th);  
+  XResizeWindow(subtle->disp, subtle->bar.caption, TEXTW(c->name), subtle->th);
   XClearWindow(subtle->disp, subtle->bar.caption);
-  XDrawString(subtle->disp, subtle->bar.caption, subtle->gcs.font, 3, subtle->fy - 1, 
+  XDrawString(subtle->disp, subtle->bar.caption, subtle->gcs.font, 3, subtle->fy - 1,
     c->name, strlen(c->name));
 } /* }}} */
 
@@ -271,8 +271,8 @@ subClientFocus(SubClient *c)
       
       XSendEvent(subtle->disp, c->win, False, NoEventMask, &ev);
       
-      subUtilLogDebug("Focus: win=%#lx, input=%d, send=%d\n", c->win,      
-        !!(c->flags & SUB_PREF_INPUT), !!(c->flags & SUB_PREF_FOCUS));     
+      subUtilLogDebug("Focus: win=%#lx, input=%d, send=%d\n", c->win,
+        !!(c->flags & SUB_PREF_INPUT), !!(c->flags & SUB_PREF_FOCUS));
     }   
   else XSetInputFocus(subtle->disp, c->win, RevertToNone, CurrentTime);
 } /* }}} */
@@ -340,7 +340,7 @@ subClientDrag(SubClient *c,
   subUtilLogDebug("minx=%02d, miny=%02d, stepx=%02d, stepy=%02d\n", minx, miny, stepx, stepy);
 
   if(XGrabPointer(subtle->disp, c->win, True, 
-    ButtonPressMask|ButtonReleaseMask|PointerMotionMask, GrabModeAsync, GrabModeAsync, None, 
+    ButtonPressMask|ButtonReleaseMask|PointerMotionMask, GrabModeAsync, GrabModeAsync, None,
     SUB_DRAG_MOVE == mode ? subtle->cursors.move : subtle->cursors.resize, 
     CurrentTime)) return;
 
@@ -363,7 +363,7 @@ subClientDrag(SubClient *c,
 
                 switch(sym)
                   {
-                    case XK_Left:   *dirx -= stepx; break; 
+                    case XK_Left:   *dirx -= stepx; break;
                     case XK_Right:  *dirx += stepx; break;
                     case XK_Up:     *diry -= stepy; break;
                     case XK_Down:   *diry += stepy; break;
@@ -377,7 +377,7 @@ subClientDrag(SubClient *c,
               }
             break; /* }}} */
           case MotionNotify: /* {{{ */
-            if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE)) 
+            if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE))
               {
                 ClientMask(SUB_DRAG_START, c, &r);
           
@@ -393,13 +393,13 @@ subClientDrag(SubClient *c,
                     case SUB_DRAG_RESIZE: 
                       if(c->rect.width + ev.xmotion.x_root >= rx)
                         {
-                          r.width = BETWEEN(c->rect.width + (ev.xmotion.x_root - rx), 
+                          r.width = BETWEEN(c->rect.width + (ev.xmotion.x_root - rx),
                             minx, maxx);
                           r.width -= r.width % stepx;
                         }
                       if(c->rect.height + ev.xmotion.y_root >= ry)
                         {
-                          r.height = BETWEEN(c->rect.height + (ev.xmotion.y_root - ry), 
+                          r.height = BETWEEN(c->rect.height + (ev.xmotion.y_root - ry),
                             miny, maxy);
                           r.height -= r.height % stepy;
                         }
@@ -413,7 +413,7 @@ subClientDrag(SubClient *c,
                 if(!c2 ) c2 = CLIENT(subUtilFind(win, CLIENTID));
                 if(c2)
                   {
-                    XQueryPointer(subtle->disp, win, &unused, &unused, 
+                    XQueryPointer(subtle->disp, win, &unused, &unused,
                       &rx, &ry, &wx, &wy, &mask);
                     r.x = rx - wx;
                     r.y = ry - wy;
@@ -421,26 +421,26 @@ subClientDrag(SubClient *c,
                     /* Change drag state */
                     if(wx > c2->rect.width * 0.35 && wx < c2->rect.width * 0.65)
                       {
-                        if(state != SUB_DRAG_TOP && wy > c2->rect.height * 0.1 && 
+                        if(state != SUB_DRAG_TOP && wy > c2->rect.height * 0.1 &&
                           wy < c2->rect.height * 0.35)
                           state = SUB_DRAG_TOP;
-                        else if(state != SUB_DRAG_BOTTOM && wy > c2->rect.height * 0.65 && 
+                        else if(state != SUB_DRAG_BOTTOM && wy > c2->rect.height * 0.65 &&
                           wy < c2->rect.height * 0.9)
                           state = SUB_DRAG_BOTTOM;
-                        else if(state != SUB_DRAG_SWAP && wy > c2->rect.height * 0.35 && 
+                        else if(state != SUB_DRAG_SWAP && wy > c2->rect.height * 0.35 &&
                           wy < c2->rect.height * 0.65)
                           state = SUB_DRAG_SWAP;
                       }
-                    if(state != SUB_DRAG_ABOVE && wy < c2->rect.height * 0.1) 
+                    if(state != SUB_DRAG_ABOVE && wy < c2->rect.height * 0.1)
                       state = SUB_DRAG_ABOVE;
-                    else if(state != SUB_DRAG_BELOW && wy > c2->rect.height * 0.9) 
+                    else if(state != SUB_DRAG_BELOW && wy > c2->rect.height * 0.9)
                       state = SUB_DRAG_BELOW;
                     if(wy > c2->rect.height * 0.1 && wy < c2->rect.height * 0.9)
                       {
-                        if(state != SUB_DRAG_LEFT && wx > c2->rect.width * 0.1 && 
+                        if(state != SUB_DRAG_LEFT && wx > c2->rect.width * 0.1 &&
                           wx < c2->rect.width * 0.35)
                           state = SUB_DRAG_LEFT;
-                        else if(state != SUB_DRAG_RIGHT && wx > c2->rect.width * 0.65 && 
+                        else if(state != SUB_DRAG_RIGHT && wx > c2->rect.width * 0.65 &&
                           wx < c2->rect.width * 0.9)
                           state = SUB_DRAG_RIGHT;
                         else if(state != SUB_DRAG_BEFORE && wx < c2->rect.width * 0.1)
@@ -467,17 +467,17 @@ subClientDrag(SubClient *c,
 
   if(win != c->win && c && c2) ///< Except same window
     {
-      if(state & (SUB_DRAG_LEFT|SUB_DRAG_RIGHT)) 
+      if(state & (SUB_DRAG_LEFT|SUB_DRAG_RIGHT))
         {
           subViewArrange(subtle->cv, c, c2, SUB_TILE_HORZ);
           subViewConfigure(subtle->cv);
         }
-      else if(state & (SUB_DRAG_TOP|SUB_DRAG_BOTTOM)) 
+      else if(state & (SUB_DRAG_TOP|SUB_DRAG_BOTTOM))
         {
           subViewArrange(subtle->cv, c, c2, SUB_TILE_VERT);
           subViewConfigure(subtle->cv);
         }
-      else if(SUB_DRAG_SWAP == state) 
+      else if(SUB_DRAG_SWAP == state)
         {
           subViewArrange(subtle->cv, c, c2, SUB_TILE_SWAP);
           subViewConfigure(subtle->cv);
@@ -493,10 +493,10 @@ subClientDrag(SubClient *c,
 
           subClientConfigure(c);
         }
-      else if(SUB_DRAG_RESIZE >= mode) 
+      else if(SUB_DRAG_RESIZE >= mode)
         {
           /* Get size ratios */
-          if(SUB_DRAG_RIGHT == mode || SUB_DRAG_LEFT == mode) 
+          if(SUB_DRAG_RIGHT == mode || SUB_DRAG_LEFT == mode)
             c->size = r.width * 100 / WINW(c);
           else c->size = r.height * 100 / WINH(c);
 
@@ -639,8 +639,8 @@ subClientSetWMState(SubClient *c,
 
   assert(c);
 
-  XChangeProperty(subtle->disp, c->win, subEwmhFind(SUB_EWMH_WM_STATE), subEwmhFind(SUB_EWMH_WM_STATE),
-    32, PropModeReplace, (unsigned char *)data, 2);
+  XChangeProperty(subtle->disp, c->win, subEwmhFind(SUB_EWMH_WM_STATE), 
+    subEwmhFind(SUB_EWMH_WM_STATE), 32, PropModeReplace, (unsigned char *)data, 2);
 } /* }}} */
 
  /** subClientGetWMState {{{
@@ -659,8 +659,9 @@ subClientGetWMState(SubClient *c)
 
   assert(c);
 
-  if(XGetWindowProperty(subtle->disp, c->win, subEwmhFind(SUB_EWMH_WM_STATE), 0L, 2L, False, 
-      subEwmhFind(SUB_EWMH_WM_STATE), &type, &format, &bytes, &unused, (unsigned char **)&data) == Success && bytes)
+  if(XGetWindowProperty(subtle->disp, c->win, subEwmhFind(SUB_EWMH_WM_STATE), 0L, 2L, False,
+      subEwmhFind(SUB_EWMH_WM_STATE), 
+      &type, &format, &bytes, &unused, (unsigned char **)&data)== Success && bytes)
     {
       state = *data;
       XFree(data);
@@ -684,9 +685,9 @@ subClientPublish(void)
         wins[i] = CLIENT(subtle->clients->data[i])->win;
 
       /* EWMH: Client list and client list stacking */
-      subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_CLIENT_LIST, 
+      subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_CLIENT_LIST,
         wins, subtle->clients->ndata);
-      subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_CLIENT_LIST_STACKING, 
+      subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_CLIENT_LIST_STACKING,
         wins, subtle->clients->ndata);
 
       subUtilLogDebug("publish=client, clients=%d\n", subtle->clients->ndata);
@@ -716,7 +717,7 @@ subClientKill(SubClient *c)
     {
       subArrayPop(subtle->clients, (void *)c->win);
 
-      /* EWMH: Update Client list and client list stacking */      
+      /* EWMH: Update Client list and client list stacking */
       subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_CLIENT_LIST,
         (Window *)subtle->clients->data, subtle->clients->ndata);
       subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_CLIENT_LIST_STACKING,

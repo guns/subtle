@@ -87,7 +87,7 @@ subTagFind(char *name,
     {
       t = TAG(subtle->tags->data[i]);
 
-      if(!strncmp(t->name, name, strlen(t->name))) 
+      if(!strncmp(t->name, name, strlen(t->name)))
         {
           if(id) *id = i;
           return t;

@@ -40,9 +40,9 @@ subViewNew(char *name,
   attrs.background_pixel  = subtle->colors.bg;
  
   v->frame  = XCreateWindow(subtle->disp, ROOT, 0, subtle->th, SCREENW, SCREENH - subtle->th,
-    0, CopyFromParent, InputOutput, CopyFromParent, CWBackPixel|CWBackPixmap|CWEventMask, 
+    0, CopyFromParent, InputOutput, CopyFromParent, CWBackPixel|CWBackPixmap|CWEventMask,
     &attrs); 
-  v->button = XCreateSimpleWindow(subtle->disp, subtle->bar.views, 0, 0, 1, 
+  v->button = XCreateSimpleWindow(subtle->disp, subtle->bar.views, 0, 0, 1,
     subtle->th, 0, subtle->colors.border, subtle->colors.norm);
 
   XSaveContext(subtle->disp, v->frame, VIEWID, (void *)v);
@@ -56,7 +56,8 @@ subViewNew(char *name,
       regex_t *preg = subUtilRegexNew(tags);
 
       for(i = 0; i < subtle->tags->ndata; i++)
-        if(subUtilRegexMatch(preg, TAG(subtle->tags->data[i])->name)) v->tags |= (1L << (i + 1));
+        if(subUtilRegexMatch(preg, TAG(subtle->tags->data[i])->name)) 
+          v->tags |= (1L << (i + 1));
 
       subUtilRegexKill(preg);
       subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_VIEW_TAGS, (long *)&v->tags, 1);
@@ -190,7 +191,7 @@ subViewConfigure(SubView *v)
                   l->c1->rect.width   = l->c1->rect.width / 2;
                   l->c2->rect.x       = l->c1->rect.width;
                   l->c2->rect.y       = l->c1->rect.y;
-                  l->c2->rect.width   = l->c1->rect.width;          
+                  l->c2->rect.width   = l->c1->rect.width;
                   l->c2->rect.height  = l->c1->rect.height;
 
                   if(l->c1->flags & SUB_STATE_RESIZE)
@@ -319,7 +320,7 @@ subViewRender(void)
 
       /* Bar window */
       XClearWindow(subtle->disp, subtle->bar.win);
-      XFillRectangle(subtle->disp, subtle->bar.win, subtle->gcs.border, 0, 2, 
+      XFillRectangle(subtle->disp, subtle->bar.win, subtle->gcs.border, 0, 2,
         SCREENW, subtle->th - 4);  
 
       /* View buttons */
@@ -330,7 +331,7 @@ subViewRender(void)
           XSetWindowBackground(subtle->disp, v->button, 
             (subtle->cv == v) ? subtle->colors.focus : subtle->colors.norm);
           XClearWindow(subtle->disp, v->button);
-          XDrawString(subtle->disp, v->button, subtle->gcs.font, 3, subtle->fy - 1, 
+          XDrawString(subtle->disp, v->button, subtle->gcs.font, 3, subtle->fy - 1,
             v->name, strlen(v->name));
         }
     }
@@ -387,7 +388,7 @@ subViewFind(char *name,
     {
       v = VIEW(subtle->views->data[i]);
 
-      if(!strncmp(v->name, name, strlen(v->name))) 
+      if(!strncmp(v->name, name, strlen(v->name)))
         {
           if(id) *id = i;
           return v;
