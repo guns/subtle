@@ -349,11 +349,17 @@ static void
 HandleCrossing(XCrossingEvent *ev)
 {
   SubClient *c = CLIENT(subUtilFind(ev->window, CLIENTID));
+
   if(c && !(c->flags & SUB_STATE_DEAD))
     {
       XEvent event;
-    
-      if(subtle->focus != c->win) subClientFocus(c);
+      Window win = 0, root = 0;
+      int rx = 0, ry = 0, wx = 0, wy = 0;
+      unsigned int mask = 0;
+
+      /* Ensure that only the pointer window can get focus */
+      XQueryPointer(subtle->disp, c->win, &root, &win, &rx, &ry, &wx, &wy, &mask);
+      if(ev->subwindow == win) subClientFocus(c);
 
       /* Remove any other event of the same type and window */
       while(XCheckTypedWindowEvent(subtle->disp, ev->window, ev->type, &event));
@@ -389,8 +395,6 @@ HandleFocus(XFocusChangeEvent *ev)
     { 
       if(FocusOut == ev->type) ///< FocusOut event
         {
-printf("Debug:%s:%d\n", __FILE__, __LINE__);
-
           /* Remove focus from client */
           if(subtle->focus)
             {
@@ -416,7 +420,10 @@ printf("Debug:%s:%d\n", __FILE__, __LINE__);
 
           subGrabSet(c->win);
           subClientRender(c);
+
+          /* EWMH: Active window */
           subEwmhSetWindows(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW, &c->win, 1);
+
           subViewUpdate();
         }
     }

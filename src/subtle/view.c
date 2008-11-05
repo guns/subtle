@@ -77,17 +77,12 @@ subViewNew(char *name,
 void
 subViewConfigure(SubView *v)
 {
-
-  XEvent e;
   int i;
   long vid = 0;
   int x = 0, y = 0, width = 0, height = 0, cw = 0, comp = 0, total = 0, tiled = 0,
     resized = 0, full = 0, floated = 0, special = 0;
 
   assert(v);
- printf("queued=%d\n", QLength(subtle->disp));
-
-  XGrabServer(subtle->disp);
 
   vid = subArrayIndex(subtle->views, (void *)v);
 
@@ -232,17 +227,6 @@ subViewConfigure(SubView *v)
           else subArrayPop(v->layout, (void *)l); ///< Sanitize
         }
     } /* }}} */
- 
- printf("queued=%d\n", QLength(subtle->disp));
-
-  while(XCheckMaskEvent(subtle->disp, FocusChangeMask, &e))
-    {
-      printf("Discarded EnterWindow event\n");
-    }
-
-  XUngrabServer(subtle->disp);
- printf("queued=%d\n", QLength(subtle->disp));
-
 } /* }}} */
 
  /** subViewArrange {{{

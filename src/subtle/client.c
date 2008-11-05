@@ -256,7 +256,7 @@ void
 subClientFocus(SubClient *c)
 {
   assert(c);
-  
+
   /* Check if client wants to take focus by itself */
   if(c->flags & SUB_PREF_FOCUS)
     {
@@ -289,7 +289,7 @@ subClientDrag(SubClient *c,
 {
   XEvent ev;
   Window win, unused;
-  unsigned int mask;
+  unsigned int mask = 0;
   int loop = True, wx = 0, wy = 0, rx = 0, ry = 0, state = 0, lstate = 0;
   XRectangle r;
   SubClient *c2 = NULL, *lc = NULL;
@@ -599,6 +599,8 @@ subClientToggle(SubClient *c,
 
       subClientConfigure(c);
     }
+
+  subClientFocus(c);
 } /* }}} */
 
   /** subClientFetchName {{{
