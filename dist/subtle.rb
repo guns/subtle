@@ -17,9 +17,9 @@ OPTIONS = {
 # Font
 #
 FONT = { 
-  "face"  => "fixed",               # Font face for the text
-  "style" => "medium",              # Font style (medium|bold|italic)
-  "size"  => 12                     # Font size
+  "family" => "Bitstream Vera Sans Mono",               # Font family for the text
+  "style"  => "medium",              # Font style (medium|bold|italic)
+  "size"   => 7                     # Font size
 }
 
 #
