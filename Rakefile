@@ -178,16 +178,26 @@ task(:config) do
       end
     end
 
-    # Check pkg-config of x11
+    # Check pkg-config for X11
     cflags, ldflags, libs = pkg_config("x11")
     if(libs.nil?) then
-      fail("x11 was not found")
+      fail("X11 was not found")
     end
-
+    
     # Update flags
     @options["cflags"] << " %s" % [cflags]
     @options["ldflags"] << " %s" % [libs]
     @options["extflags"] << " %s" % [libs]
+
+    # Check pkg-config for Xft
+    cflags, ldflags, libs = pkg_config("xft")
+    if(libs.nil?) then
+      fail("Xft was not found")
+    end
+
+    # Update flags
+    @options["cpppath"] << " %s" % [cflags]
+    @options["ldflags"] << " %s" % [libs]
 
     # Defines
     @defines.each do |k, v|
