@@ -9,28 +9,28 @@
 # Options
 #
 OPTIONS = {
-  "border" => 2,                    # Border size of the windows
-  "step"   => 5                     # Window move/resize key step
+  "border" => 2,   # Border size of the windows
+  "step"   => 5    # Window move/resize key step
 }
 
 #
 # Font
 #
 FONT = { 
-  "family" => "Bitstream Vera Sans Mono",               # Font family for the text
-  "style"  => "medium",              # Font style (medium|bold|italic)
-  "size"   => 7                     # Font size
+  "family" => "Bitstream Vera Sans Mono",   # Font family for the text
+  "style"  => "medium",                     # Font style (medium|bold|italic)
+  "size"   => 7                             # Font size
 }
 
 #
 # Colors
 # 
 COLORS = { 
-  "font"       => "#ffffff",        # Color of the font
-  "border"     => "#ffffff",        # Color of the border
-  "normal"     => "#9AA38A",        # Color of the inactive windows
-  "focus"      => "#A7E737",        # Color of the focus window
-  "background" => "#9A9C95"         # Color of root background
+  "font"       => "#ffffff",   # Color of the font
+  "border"     => "#ffffff",   # Color of the border
+  "normal"     => "#9AA38A",   # Color of the inactive windows
+  "focus"      => "#A7E737",   # Color of the focus window
+  "background" => "#9A9C95"    # Color of root background
 }
 
 #
