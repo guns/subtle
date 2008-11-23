@@ -42,8 +42,11 @@ subViewNew(char *name,
   v->frame  = XCreateWindow(subtle->disp, ROOT, 0, subtle->th, SCREENW, SCREENH - subtle->th,
     0, CopyFromParent, InputOutput, CopyFromParent, CWBackPixel|CWBackPixmap|CWEventMask,
     &attrs); 
-  v->button = XCreateSimpleWindow(subtle->disp, subtle->bar.views, 0, 0, 1,
+  v->button = XCreateSimpleWindow(subtle->disp, subtle->windows.views, 0, 0, 1,
     subtle->th, 0, subtle->colors.border, subtle->colors.norm);
+
+  /* Create Xft draw */
+  v->draw = XftDrawCreate(subtle->disp, v->button, VISUAL, COLORMAP);
 
   XSaveContext(subtle->disp, v->frame, VIEWID, (void *)v);
   XSaveContext(subtle->disp, v->button, BUTTONID, (void *)v);
@@ -284,8 +287,8 @@ subViewUpdate(void)
 
       if(0 < width) 
         {
-          XResizeWindow(subtle->disp, subtle->bar.views, width, subtle->th);
-          XMoveWindow(subtle->disp, subtle->bar.caption, width, 0); 
+          XResizeWindow(subtle->disp, subtle->windows.views, width, subtle->th);
+          XMoveWindow(subtle->disp, subtle->windows.caption, width, 0); 
         }
     }
 } /* }}} */
@@ -303,8 +306,8 @@ subViewRender(void)
       int i;
 
       /* Bar window */
-      XClearWindow(subtle->disp, subtle->bar.win);
-      XFillRectangle(subtle->disp, subtle->bar.win, subtle->gcs.border, 0, 2,
+      XClearWindow(subtle->disp, subtle->windows.bar);
+      XFillRectangle(subtle->disp, subtle->windows.bar, subtle->gcs.stipple, 0, 2,
         SCREENW, subtle->th - 4);  
 
       /* View buttons */
@@ -315,8 +318,8 @@ subViewRender(void)
           XSetWindowBackground(subtle->disp, v->button, 
             (subtle->cv == v) ? subtle->colors.focus : subtle->colors.norm);
           XClearWindow(subtle->disp, v->button);
-          XDrawString(subtle->disp, v->button, subtle->gcs.font, 3, subtle->fy - 1,
-            v->name, strlen(v->name));
+          XftDrawString8(v->draw, &subtle->colors.xft, subtle->xft, 3, subtle->fy - 1,
+            (XftChar8 *)v->name, strlen(v->name));        
         }
     }
 } /* }}} */
@@ -470,6 +473,8 @@ subViewKill(SubView *v)
 
   XDestroyWindow(subtle->disp, v->button);
   XDestroyWindow(subtle->disp, v->frame);
+
+  XftDrawDestroy(v->draw);
 
   subArrayKill(v->layout, True);
 

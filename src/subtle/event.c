@@ -51,7 +51,7 @@ HandleGrab(XEvent *ev)
   switch(ev->type)
     {
       case ButtonPress: 
-        if(ev->xany.window == subtle->bar.views) ///< View buttons
+        if(ev->xany.window == subtle->windows.views) ///< View buttons
           {
             SubView *v = VIEW(subUtilFind(ev->xbutton.subwindow, 1));
             if(subtle->cv != v) subViewJump(v); ///< Prevent jumping to current view
@@ -372,7 +372,7 @@ HandleExpose(XEvent *ev)
 {
   XEvent event;
 
-  if(ev->xany.window == subtle->bar.win)
+  if(ev->xany.window == subtle->windows.bar)
     {
       subViewRender();
       subSubletRender();
@@ -396,11 +396,11 @@ HandleFocus(XFocusChangeEvent *ev)
       if(FocusOut == ev->type) ///< FocusOut event
         {
           /* Remove focus from client */
-          if(subtle->focus)
+          if(subtle->windows.focus)
             {
               SubClient *f = NULL;
-              Window oldfocus = subtle->focus;
-              subtle->focus = 0;
+              Window oldfocus = subtle->windows.focus;
+              subtle->windows.focus = 0;
 
               if((f = CLIENT(subUtilFind(oldfocus, CLIENTID))))
                 {
@@ -416,7 +416,7 @@ HandleFocus(XFocusChangeEvent *ev)
         }
       else if(FocusIn == ev->type) ///< FocusIn event
         {
-          subtle->focus = c->win;
+          subtle->windows.focus = c->win;
 
           subGrabSet(c->win);
           subClientRender(c);
@@ -504,7 +504,7 @@ subEventLoop(void)
                     struct inotify_event *event = (struct inotify_event *)&buf[0];
                     if(event)
                       {
-                        SubSublet *ws = SUBLET(subUtilFind(subtle->bar.sublets, event->wd));
+                        SubSublet *ws = SUBLET(subUtilFind(subtle->windows.sublets, event->wd));
                         if(ws)
                           {
                             subRubyRun(ws);

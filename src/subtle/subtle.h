@@ -23,6 +23,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xmd.h>
+#include <X11/Xft/Xft.h>
 
 #include "config.h"
 
@@ -46,7 +47,12 @@
 #define TEXTW(s)  (strlen(s) * subtle->fx + 8)                    ///< Textwidth in pixel
 #define WINW(c)   (c->rect.width - 2 * subtle->bw)                ///< Get real width
 #define WINH(c)   (c->rect.height - 2 * subtle->bw)               ///< Get real height
+
 #define ROOT      DefaultRootWindow(subtle->disp)                 ///< Root window
+#define VISUAL \
+  DefaultVisual(subtle->disp, DefaultScreen(subtle->disp))        ///< Default visual
+#define COLORMAP \
+  DefaultColormap(subtle->disp, DefaultScreen(subtle->disp))      ///< Default colormap
 
 #define SCREENW \
   DisplayWidth(subtle->disp, DefaultScreen(subtle->disp))         ///< Get screen width
@@ -255,8 +261,7 @@ typedef struct subsubtle_t /* {{{ */
   int                th, bw, fx, fy, step;                        ///< Subtle tab height, border width, font metrics, step
 
   Display            *disp;                                       ///< Subtle Xorg display
-  Window             focus;                                       ///< Subtle focus
-  XFontStruct        *xfs;                                        ///< Subtle font
+  XftFont            *xft;                                        ///< Subtle font
 
   struct subview_t   *cv;                                         ///< Subtle current view
   struct subsublet_t *sublet;                                     ///< Subtle first sublet
@@ -276,17 +281,23 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    Window           win, views, caption, sublets; 
-  } bar;                                                          ///< Subtle bar windows
+    Window           bar, views, caption, sublets, focus; 
+  } windows;                                                      ///< Subtle windows
+
+  struct
+  {
+    XftDraw          *caption, *sublets;
+  } draws;                                                        ///< Subtle xft draws
 
   struct
   {
     unsigned long    font, border, norm, focus, bg;                            
+    XftColor         xft;
   } colors;                                                       ///< Subtle colors
 
   struct
   {
-    GC               font, border, invert;                  
+    GC               stipple, invert;                  
   } gcs;                                                          ///< Subtle graphic contexts
 
   struct
@@ -308,6 +319,7 @@ typedef struct subview_t /* {{{ */
   TAGS              tags;
   int               width;                                        ///< View tags, button width, layout
   Window            frame, button;                                ///< View frame, button
+  XftDraw           *draw;                                        ///< View Xft draw
   char              *name;                                        ///< View name
   struct subarray_t *layout;                                      ///< View layout
 } SubView; /* }}} */
@@ -443,5 +455,4 @@ void subViewPublish(void);                                        ///< Publish v
 void subViewSanitize(SubClient *c);                               ///< Sanitize views
 void subViewKill(SubView *v);                                     ///< Kill view
 /* }}} */
-
 #endif /* SUBTLE_H */

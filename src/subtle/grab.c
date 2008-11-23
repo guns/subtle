@@ -235,7 +235,7 @@ subGrabSet(Window win)
         }
       if(subtle->cv->frame == win) 
         XSetInputFocus(subtle->disp, win, RevertToNone, CurrentTime);
-      subtle->focus = win; ///< Update focus window
+      subtle->windows.focus = win; ///< Update focus window
     }
 } /* }}} */
 
@@ -249,7 +249,7 @@ subGrabUnset(Window win)
 {
   XUngrabKey(subtle->disp, AnyKey, AnyModifier, win);
   XUngrabButton(subtle->disp, AnyButton, AnyModifier, win);
-  subtle->focus = 0; ///< Unset focus window
+  subtle->windows.focus = 0; ///< Unset focus window
 } /* }}} */
 
  /** subGrabCompare {{{

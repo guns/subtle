@@ -45,7 +45,7 @@ subSubletUpdate(void)
       for(i = 0; i < subtle->sublets->ndata; i++) ///< Calculate window width
         width += SUBLET(subtle->sublets->data[i])->width;
 
-      XMoveResizeWindow(subtle->disp, subtle->bar.sublets, DisplayWidth(subtle->disp,
+      XMoveResizeWindow(subtle->disp, subtle->windows.sublets, DisplayWidth(subtle->disp,
         DefaultScreen(subtle->disp)) - width, 0, width, subtle->th);
     }
 } /* }}} */
@@ -62,22 +62,23 @@ subSubletRender(void)
       int width = 3;
       SubSublet *s = SUBLET(subtle->sublet);
 
-      XClearWindow(subtle->disp, subtle->bar.sublets);
+      XClearWindow(subtle->disp, subtle->windows.sublets);
 
       /* Render every sublet */
       while(s)
         {
           if(s->flags & SUB_DATA_FIXNUM && s->fixnum)
             {
-              XDrawRectangle(subtle->disp, subtle->bar.sublets, subtle->gcs.font,
+#if 0           
+              XDrawRectangle(subtle->disp, subtle->windows.sublets, subtle->gcs.font,
                 width, 2, 60, subtle->th - 5);
-              XFillRectangle(subtle->disp, subtle->bar.sublets, subtle->gcs.font,
+              XFillRectangle(subtle->disp, subtle->windows.sublets, subtle->gcs.font,
                 width + 2, 4, (56 * s->fixnum) / 100, subtle->th - 8);
+#endif                
             }
           else if(s->flags & SUB_DATA_STRING && s->string) 
-            XDrawString(subtle->disp, subtle->bar.sublets, subtle->gcs.font, width,
-              subtle->fy - 1, 
-              s->string, strlen(s->string));
+            XftDrawString8(subtle->draws.sublets, &subtle->colors.xft, subtle->xft, 
+              width, subtle->fy - 1, (XftChar8 *)s->string, strlen(s->string));  
 
           width += s->width;
           s     = s->next;

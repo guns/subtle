@@ -237,14 +237,14 @@ subClientRender(SubClient *c)
 
   assert(c);
 
-  attrs.border_pixel = subtle->focus == c->win ? subtle->colors.focus : subtle->colors.norm;
+  attrs.border_pixel = subtle->windows.focus == c->win ? subtle->colors.focus : subtle->colors.norm;
   XChangeWindowAttributes(subtle->disp, c->win, CWBorderPixel, &attrs);
 
   /* Caption */
-  XResizeWindow(subtle->disp, subtle->bar.caption, TEXTW(c->name), subtle->th);
-  XClearWindow(subtle->disp, subtle->bar.caption);
-  XDrawString(subtle->disp, subtle->bar.caption, subtle->gcs.font, 3, subtle->fy - 1,
-    c->name, strlen(c->name));
+  XResizeWindow(subtle->disp, subtle->windows.caption, TEXTW(c->name), subtle->th);
+  XClearWindow(subtle->disp, subtle->windows.caption);
+  XftDrawString8(subtle->draws.caption, &subtle->colors.xft, subtle->xft, 3, subtle->fy - 1,
+    (XftChar8 *)c->name, strlen(c->name));
 } /* }}} */
 
  /** subClientFocus {{{
@@ -708,13 +708,13 @@ subClientKill(SubClient *c)
 {
   assert(c);
 
-  printf("Killing client %s\n", c->name);
+  printf("Killing client (%s)\n", c->name);
 
   /* Ignore further events and delete context */
   XSelectInput(subtle->disp, c->win, NoEventMask);
   XDeleteContext(subtle->disp, c->win, CLIENTID);
 
-  if(subtle->focus == c->win) subtle->focus = 0; ///< Unset focus
+  if(subtle->windows.focus == c->win) subtle->windows.focus = 0; ///< Unset focus
   if(!(c->flags & SUB_STATE_DEAD))
     {
       subArrayPop(subtle->clients, (void *)c->win);

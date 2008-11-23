@@ -40,11 +40,8 @@ subDisplayInit(const char *display)
   gvals.fill_style    = FillStippled;
   gvals.stipple       = XCreateBitmapFromData(subtle->disp, DefaultRootWindow(subtle->disp),
     stipple, 15, 16);
-  subtle->gcs.border  = XCreateGC(subtle->disp, DefaultRootWindow(subtle->disp),
+  subtle->gcs.stipple  = XCreateGC(subtle->disp, DefaultRootWindow(subtle->disp),
     GCFunction|GCFillStyle|GCStipple, &gvals);
-
-  subtle->gcs.font = XCreateGC(subtle->disp, DefaultRootWindow(subtle->disp),
-    GCFunction, &gvals);
 
   gvals.function       = GXinvert;
   gvals.subwindow_mode = IncludeInferiors;
@@ -80,7 +77,7 @@ subDisplayScan(void)
   for(i = 0; i < n; i++)
     {
       /* Skip own windows */
-      if(wins[i] && wins[i] != subtle->bar.win && wins[i] != subtle->cv->frame)
+      if(wins[i] && wins[i] != subtle->windows.bar && wins[i] != subtle->cv->frame)
         {
           XGetWindowAttributes(subtle->disp, wins[i], &attr);
           if(attr.map_state == IsViewable) 
@@ -109,9 +106,9 @@ subDisplayPublish(void)
   long data[4] = { 0, 0, 0, 0 }, pid = (long)getpid();
 
   /* EWMH: Window manager information */
-  subEwmhSetWindows(root, SUB_EWMH_NET_SUPPORTING_WM_CHECK, &subtle->bar.win, 1);
-  subEwmhSetString(subtle->bar.win, SUB_EWMH_NET_WM_NAME, PKG_NAME);
-  subEwmhSetCardinals(subtle->bar.win, SUB_EWMH_NET_WM_PID, &pid, 1);
+  subEwmhSetWindows(root, SUB_EWMH_NET_SUPPORTING_WM_CHECK, &subtle->windows.bar, 1);
+  subEwmhSetString(subtle->windows.bar, SUB_EWMH_NET_WM_NAME, PKG_NAME);
+  subEwmhSetCardinals(subtle->windows.bar, SUB_EWMH_NET_WM_PID, &pid, 1);
   subEwmhSetCardinals(root, SUB_EWMH_NET_DESKTOP_VIEWPORT, (long *)&data, 2);
   subEwmhSetCardinals(root, SUB_EWMH_NET_SHOWING_DESKTOP, (long *)&data, 1);
 
@@ -153,14 +150,17 @@ subDisplayFinish(void)
       XFreeCursor(subtle->disp, subtle->cursors.resize);
 
       /* Free GCs */
-      XFreeGC(subtle->disp, subtle->gcs.border);
-      XFreeGC(subtle->disp, subtle->gcs.font);
+      XFreeGC(subtle->disp, subtle->gcs.stipple);
       XFreeGC(subtle->disp, subtle->gcs.invert);
-      if(subtle->xfs) XFreeFont(subtle->disp, subtle->xfs);
+      if(subtle->xft) XftFontClose(subtle->disp, subtle->xft);
+
+      /* Free draws */
+      XftDrawDestroy(subtle->draws.caption);
+      XftDrawDestroy(subtle->draws.sublets);
 
       /* Destroy view windows */
-      XDestroySubwindows(subtle->disp, subtle->bar.win);
-      XDestroyWindow(subtle->disp, subtle->bar.win);
+      XDestroySubwindows(subtle->disp, subtle->windows.bar);
+      XDestroyWindow(subtle->disp, subtle->windows.bar);
 
       XCloseDisplay(subtle->disp);
     }
