@@ -300,8 +300,6 @@ end # }}}
 #
 # Task: compile {{{
 (SRC_WM | SRC_SHD | SRC_RMT | SRC_RBE).each do |src|
-
-puts @options["cflags"]
   out  = File.join(@options["builddir"], File.basename(src).ext("o"))
 
   file(out => src) do
