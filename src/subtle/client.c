@@ -243,7 +243,7 @@ subClientRender(SubClient *c)
   /* Caption */
   XResizeWindow(subtle->disp, subtle->windows.caption, TEXTW(c->name), subtle->th);
   XClearWindow(subtle->disp, subtle->windows.caption);
-  XftDrawString8(subtle->draws.caption, &subtle->colors.xft, subtle->xft, 3, subtle->fy - 1,
+  XftDrawString8(subtle->draws.caption, &subtle->colors.font, subtle->xft, 3, subtle->fy - 1,
     (XftChar8 *)c->name, strlen(c->name));
 } /* }}} */
 

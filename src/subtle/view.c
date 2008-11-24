@@ -44,9 +44,7 @@ subViewNew(char *name,
     &attrs); 
   v->button = XCreateSimpleWindow(subtle->disp, subtle->windows.views, 0, 0, 1,
     subtle->th, 0, subtle->colors.border, subtle->colors.norm);
-
-  /* Create Xft draw */
-  v->draw = XftDrawCreate(subtle->disp, v->button, VISUAL, COLORMAP);
+  v->draw   = XftDrawCreate(subtle->disp, v->button, VISUAL, COLORMAP); ///< Xft draw
 
   XSaveContext(subtle->disp, v->frame, VIEWID, (void *)v);
   XSaveContext(subtle->disp, v->button, BUTTONID, (void *)v);
@@ -318,7 +316,7 @@ subViewRender(void)
           XSetWindowBackground(subtle->disp, v->button, 
             (subtle->cv == v) ? subtle->colors.focus : subtle->colors.norm);
           XClearWindow(subtle->disp, v->button);
-          XftDrawString8(v->draw, &subtle->colors.xft, subtle->xft, 3, subtle->fy - 1,
+          XftDrawString8(v->draw, &subtle->colors.font, subtle->xft, 3, subtle->fy - 1,
             (XftChar8 *)v->name, strlen(v->name));        
         }
     }

@@ -291,8 +291,8 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    unsigned long    font, border, norm, focus, bg;                            
-    XftColor         xft;
+    unsigned long    border, norm, focus, bg;                            
+    XftColor         font;
   } colors;                                                       ///< Subtle colors
 
   struct

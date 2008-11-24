@@ -51,7 +51,7 @@ RubySubletInherited(VALUE self,
 
   rb_ary_push(sublets, recv); ///< Add derived class name to sublet list
 
-  printf("Loading sublet %s\n", name);
+  printf("Loading sublet (%s)\n", name);
 
   return Qnil;
 } /* }}} */
@@ -292,11 +292,11 @@ RubyConfigParse(VALUE path)
 
   /* Config: Colors */
   config                = rb_const_get(rb_cObject, rb_intern("COLORS"));
-  subtle->colors.font   = RubyParseColor(config, "font",       "#000000", &subtle->colors.xft);
   subtle->colors.border = RubyParseColor(config, "border",     "#bdbabd", NULL);
   subtle->colors.norm   = RubyParseColor(config, "normal",     "#22aa99", NULL);
   subtle->colors.focus  = RubyParseColor(config, "focus",      "#ffa500", NULL);
   subtle->colors.bg     = RubyParseColor(config, "background", "#336699", NULL);
+  RubyParseColor(config, "font", "#000000", &subtle->colors.font);
 
   /* Open font */
   subtle->xft = XftFontOpen(subtle->disp, DefaultScreen(subtle->disp),

@@ -77,7 +77,7 @@ subSubletRender(void)
 #endif                
             }
           else if(s->flags & SUB_DATA_STRING && s->string) 
-            XftDrawString8(subtle->draws.sublets, &subtle->colors.xft, subtle->xft, 
+            XftDrawString8(subtle->draws.sublets, &subtle->colors.font, subtle->xft, 
               width, subtle->fy - 1, (XftChar8 *)s->string, strlen(s->string));  
 
           width += s->width;
