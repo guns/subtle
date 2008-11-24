@@ -15,54 +15,70 @@
 
 /* ClientMask {{{ */
 static void
-ClientMask(int type,
+ClientMask(int state,
   SubClient *c,
   XRectangle *r)
 {
-  /* @todo Put modifiers into a static table? */
-  switch(type)
+  XRectangle rect = { 0, 0, 0, 0 };
+  
+  /* Init rect */
+  if(c)
+    {
+      rect        = c->rect;
+      rect.width  = WINW(c);
+      rect.height = WINH(c);
+    }
+
+  /* Draw rectangles */
+  switch(state)
     {
       case SUB_DRAG_START: 
         XDrawRectangle(subtle->disp, ROOT, subtle->gcs.invert, r->x - 1, r->y - 1,
           r->width - 3, r->height - 3);
-        break;
+        return;
       case SUB_DRAG_TOP:
-        XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, 5, 5, c->rect.width - 10, 
-          c->rect.height * 0.5 - 5);
+        rect.x = 5;                          rect.y = 5;
+        rect.width -= 10;                    rect.height = rect.height * 0.5 - 10;
         break;
       case SUB_DRAG_BOTTOM:
-        XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, 5, c->rect.height * 0.5, 
-          c->rect.width - 10, c->rect.height * 0.5 - 5);
+        rect.x = 5;                          rect.y = rect.height * 0.5; 
+        rect.width -= 10;                    rect.height = rect.height * 0.5 - 5; 
         break;
       case SUB_DRAG_LEFT:
-        XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, 5, 5, c->rect.width * 0.5 - 5, 
-          c->rect.height - 10);
+        rect.x = 5;                          rect.y = 5; 
+        rect.width = rect.width * 0.5 - 5;  rect.height -= 10; 
         break;
       case SUB_DRAG_RIGHT:
-        XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, c->rect.width * 0.5, 5, 
-          c->rect.width * 0.5 - 5, c->rect.height - 10);
+        rect.x = rect.width * 0.5;           rect.y = 5; 
+        rect.width = rect.width * 0.5 - 5;  rect.height -= 10; 
         break;
-      case SUB_DRAG_SWAP:
-        XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, c->rect.width * 0.35, 
-          c->rect.height * 0.35, c->rect.width * 0.3, c->rect.height * 0.3);
+      case SUB_DRAG_TILE:
+        rect.x = rect.width * 0.35;          rect.y = rect.height * 0.35; 
+        rect.width = rect.width * 0.3;       rect.height *= 0.3; 
         break;
       case SUB_DRAG_BEFORE:
-        XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, 5, 5, c->rect.width * 0.1 - 5,
-          c->rect.height - 10);
+        rect.x = 5;                          rect.y = 5;
+        rect.width = rect.width * 0.1 - 10;  rect.height -= 10; 
         break;
       case SUB_DRAG_AFTER:
-        XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, c->rect.width * 0.9, 5, 
-          c->rect.width * 0.1 - 5, c->rect.height - 10);
+        rect.x = rect.width * 0.9;           rect.y = 5; 
+        rect.width = rect.width * 0.1 - 10;  rect.height -= 10; 
         break;
       case SUB_DRAG_ABOVE:
-        XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, 5, 5, c->rect.width - 10, 
-          c->rect.height * 0.1 - 5);
+        rect.x = 5;                          rect.y = 5; 
+        rect.width -= 10;                    rect.height = rect.height * 0.1 - 5; 
         break;
       case SUB_DRAG_BELOW:
-        XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, 5, c->rect.height * 0.9, 
-          c->rect.width - 10, c->rect.height * 0.1 - 5);
+        rect.x = 5;                          rect.y = rect.height * 0.9; 
+        rect.width -= 10;                    rect.height = rect.height * 0.1 - 5; 
         break;
+      default: 
+        printf("foo\n");
+        return;
     }
+
+  XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, rect.x, rect.y, 
+    rect.width, rect.height);
 } /* }}} */
 
 /* ClientSnap {{{ */
@@ -73,11 +89,9 @@ ClientSnap(SubClient *c,
   assert(c && r);
 
   if(SNAP > r->x) r->x = subtle->bw;
-  else if(r->x > (SCREENW - WINW(c) - SNAP))
-    r->x = SCREENW - c->rect.width + subtle->bw;
-  if(SNAP > r->y) r->y = subtle->bw;
-  else if(r->y > (SCREENH - WINH(c) - SNAP))
-    r->y = SCREENH - c->rect.height + subtle->bw;
+  else if(r->x > (SCREENW - WINW(c) - SNAP)) r->x = SCREENW - c->rect.width + subtle->bw;
+  if(SNAP + subtle->th > r->y) r->y = subtle->bw + subtle->th;
+  else if(r->y > (SCREENH - WINH(c) - SNAP)) r->y = SCREENH - c->rect.height + subtle->bw;
 } /* }}} */
 
  /** subClientNew {{{
@@ -337,12 +351,9 @@ subClientDrag(SubClient *c,
          }
     } /* }}} */
 
-  subUtilLogDebug("minx=%02d, miny=%02d, stepx=%02d, stepy=%02d\n", minx, miny, stepx, stepy);
-
   if(XGrabPointer(subtle->disp, c->win, True, 
     ButtonPressMask|ButtonReleaseMask|PointerMotionMask, GrabModeAsync, GrabModeAsync, None,
-    SUB_DRAG_MOVE == mode ? subtle->cursors.move : subtle->cursors.resize, 
-    CurrentTime)) return;
+    SUB_DRAG_RESIZE == mode ? subtle->cursors.resize : subtle->cursors.move, CurrentTime)) return;
 
   XGrabServer(subtle->disp);
   if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE)) ClientMask(SUB_DRAG_START, c, &r);
@@ -377,7 +388,7 @@ subClientDrag(SubClient *c,
               }
             break; /* }}} */
           case MotionNotify: /* {{{ */
-            if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE))
+            if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE)) /* Move/Resize {{{ */
               {
                 ClientMask(SUB_DRAG_START, c, &r);
           
@@ -407,8 +418,8 @@ subClientDrag(SubClient *c,
                   }  
 
                 ClientMask(SUB_DRAG_START, c, &r);
-              }
-            else if(win != c->win && SUB_DRAG_SWAP == mode)
+              } /* }}} */
+            else if(SUB_DRAG_TILE == mode && win != c->win) /* Tile {{{ */
               {
                 if(!c2 ) c2 = CLIENT(subUtilFind(win, CLIENTID));
                 if(c2)
@@ -427,9 +438,9 @@ subClientDrag(SubClient *c,
                         else if(state != SUB_DRAG_BOTTOM && wy > c2->rect.height * 0.65 &&
                           wy < c2->rect.height * 0.9)
                           state = SUB_DRAG_BOTTOM;
-                        else if(state != SUB_DRAG_SWAP && wy > c2->rect.height * 0.35 &&
+                        else if(state != SUB_DRAG_TILE && wy > c2->rect.height * 0.35 &&
                           wy < c2->rect.height * 0.65)
-                          state = SUB_DRAG_SWAP;
+                          state = SUB_DRAG_TILE;
                       }
                     if(state != SUB_DRAG_ABOVE && wy < c2->rect.height * 0.1)
                       state = SUB_DRAG_ABOVE;
@@ -458,7 +469,7 @@ subClientDrag(SubClient *c,
                         lstate = state;
                       }
                     }
-                }
+                } /* }}} */
             break; /* }}} */
         }
     }
@@ -477,7 +488,7 @@ subClientDrag(SubClient *c,
           subViewArrange(subtle->cv, c, c2, SUB_TILE_VERT);
           subViewConfigure(subtle->cv);
         }
-      else if(SUB_DRAG_SWAP == state)
+      else if(SUB_DRAG_TILE == state)
         {
           subViewArrange(subtle->cv, c, c2, SUB_TILE_SWAP);
           subViewConfigure(subtle->cv);
@@ -507,7 +518,7 @@ subClientDrag(SubClient *c,
           subViewConfigure(subtle->cv);        
         }
     }
-
+  
   XUngrabPointer(subtle->disp, CurrentTime);
   XUngrabServer(subtle->disp);
 } /* }}} */

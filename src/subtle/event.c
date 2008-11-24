@@ -53,9 +53,8 @@ HandleGrab(XEvent *ev)
       case ButtonPress: 
         if(ev->xany.window == subtle->windows.views) ///< View buttons
           {
-            SubView *v = VIEW(subUtilFind(ev->xbutton.subwindow, 1));
+            SubView *v = VIEW(subUtilFind(ev->xbutton.subwindow, BUTTONID));
             if(subtle->cv != v) subViewJump(v); ///< Prevent jumping to current view
-
             return;
           }      
 
@@ -72,7 +71,7 @@ HandleGrab(XEvent *ev)
         break;
     }
 
-  /* Grabs */
+  /* Find grab */
   g = subGrabFind(code, state);
   if(g) 
     {
@@ -100,10 +99,12 @@ HandleGrab(XEvent *ev)
           case SUB_GRAB_WINDOW_MOVE:
           case SUB_GRAB_WINDOW_RESIZE:
             c = CLIENT(subUtilFind(win, CLIENTID));
-            if(c && c->flags & (SUB_STATE_FLOAT|SUB_STATE_URGENT) &&
-              !(c->flags & SUB_STATE_FULL))
+            if(c && !(c->flags & SUB_STATE_FULL))
               {
-                flag = SUB_GRAB_WINDOW_MOVE == flag ? SUB_DRAG_MOVE : SUB_DRAG_RESIZE;
+                if(c->flags & (SUB_STATE_FLOAT|SUB_STATE_URGENT))
+                  flag = SUB_GRAB_WINDOW_MOVE == flag ? SUB_DRAG_MOVE : SUB_DRAG_RESIZE;
+                else flag = SUB_DRAG_TILE;
+
                 subClientDrag(c, flag);
               }
             break;            

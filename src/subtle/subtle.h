@@ -181,7 +181,7 @@
 #define SUB_DRAG_TOP           (1L << 8)                          ///< Drag top
 #define SUB_DRAG_BOTTOM        (1L << 9)                          ///< Drag bottom
 #define SUB_DRAG_MOVE          (1L << 10)                         ///< Drag move
-#define SUB_DRAG_SWAP          (1L << 11)                         ///< Drag swap
+#define SUB_DRAG_TILE          (1L << 11)                         ///< Drag swap
 #define SUB_DRAG_RESIZE        (1L << 12)                         ///< Drag resize
 
 /* Grabs */
@@ -213,7 +213,7 @@ typedef struct subclient_t /* {{{ */
 {
   FLAGS               flags;                                      ///< Client flags
   TAGS                tags;                                       ///< Client tags
-  int                 size;                                       ///< Client size, tags
+  int                 size;                                       ///< Client size
   char                *name;                                      ///< Client name
   Colormap            cmap;                                       ///< Client colormap
   Window              win;                                        ///< Client window
