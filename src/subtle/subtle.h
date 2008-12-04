@@ -38,7 +38,9 @@
 
 #define CLIENTID  1                                               ///< Client data id
 #define VIEWID    2                                               ///< View data id
-#define BUTTONID  1                                               ///< Button data id
+#define TRAYID    3                                               ///< tray data id
+#define BUTTONID  4                                               ///< Button data id
+
 #define MINW      50                                              ///< Client min. width
 #define MINH      50                                              ///< Client min. height
 #define SNAP      10                                              ///< Snapping threshold
@@ -49,6 +51,7 @@
 #define WINH(c)   (c->rect.height - 2 * subtle->bw)               ///< Get real height
 
 #define ROOT      DefaultRootWindow(subtle->disp)                 ///< Root window
+#define SCREEN    DefaultScreen(subtle->disp)                     ///< Default screen
 #define VISUAL \
   DefaultVisual(subtle->disp, DefaultScreen(subtle->disp))        ///< Default visual
 #define COLORMAP \
@@ -70,71 +73,8 @@
 #define SUBLET(s) ((SubSublet *)s)                                ///< Cast to SubSublet
 #define SUBTLE(s) ((SubSubtle *)s)                                ///< Cast to SubSubtle
 #define TAG(t)    ((SubTag *)t)                                   ///< Cast to SubTag
+#define TRAY(t)   ((SubTray *)t)                                  ///< Cast to SubTray
 #define VIEW(v)   ((SubView *)v)                                  ///< Cast to SubView
-
-/* ICCCM */
-#define SUB_EWMH_WM_NAME                       0                  ///< Name of window
-#define SUB_EWMH_WM_CLASS                      1                  ///< Class of window
-#define SUB_EWMH_WM_STATE                      2                  ///< Window state
-#define SUB_EWMH_WM_PROTOCOLS                  3                  ///< Supported protocols 
-#define SUB_EWMH_WM_TAKE_FOCUS                 4                  ///< Send focus messages
-#define SUB_EWMH_WM_DELETE_WINDOW              5                  ///< Send close messages
-#define SUB_EWMH_WM_NORMAL_HINTS               6                  ///< Window normal hints
-#define SUB_EWMH_WM_SIZE_HINTS                 7                  ///< Window size hints
-
-/* EWMH */
-#define SUB_EWMH_NET_SUPPORTED                 8                  ///< Supported states
-#define SUB_EWMH_NET_CLIENT_LIST               9                  ///< List of clients
-#define SUB_EWMH_NET_CLIENT_LIST_STACKING     10                  ///< List of clients
-#define SUB_EWMH_NET_NUMBER_OF_DESKTOPS       11                  ///< Total number of views
-#define SUB_EWMH_NET_DESKTOP_NAMES            12                  ///< Names of the views
-#define SUB_EWMH_NET_DESKTOP_GEOMETRY         13                  ///< Desktop geometry
-#define SUB_EWMH_NET_DESKTOP_VIEWPORT         14                  ///< Viewport of the view
-#define SUB_EWMH_NET_CURRENT_DESKTOP          15                  ///< Number of current view
-#define SUB_EWMH_NET_ACTIVE_WINDOW            16                  ///< Focus window
-#define SUB_EWMH_NET_WORKAREA                 17                  ///< Workarea of the views
-#define SUB_EWMH_NET_SUPPORTING_WM_CHECK      18                  ///< Check for compliant window manager
-#define SUB_EWMH_NET_VIRTUAL_ROOTS            19                  ///< List of virtual destops
-#define SUB_EWMH_NET_CLOSE_WINDOW             20
-
-#define SUB_EWMH_NET_WM_NAME                  21
-#define SUB_EWMH_NET_WM_PID                   22                  ///< PID of client
-#define SUB_EWMH_NET_WM_DESKTOP               23                  ///< Desktop client is on
-#define SUB_EWMH_NET_SHOWING_DESKTOP          24                  ///< Showing desktop mode 
-
-#define SUB_EWMH_NET_WM_STATE                 25                  ///< Window state
-#define SUB_EWMH_NET_WM_STATE_MODAL           26                  ///< Modal window
-#define SUB_EWMH_NET_WM_STATE_HIDDEN          27                  ///< Hidden window
-#define SUB_EWMH_NET_WM_STATE_FULLSCREEN      28                  ///< Fullscreen window
-
-#define SUB_EWMH_NET_WM_WINDOW_TYPE           29
-#define SUB_EWMH_NET_WM_WINDOW_TYPE_DESKTOP   30
-#define SUB_EWMH_NET_WM_WINDOW_TYPE_NORMAL    31
-#define SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG    32
-
-#define SUB_EWMH_NET_WM_ALLOWED_ACTIONS       33
-#define SUB_EWMH_NET_WM_ACTION_MOVE           34
-#define SUB_EWMH_NET_WM_ACTION_RESIZE         35
-#define SUB_EWMH_NET_WM_ACTION_FULLSCREEN     36
-#define SUB_EWMH_NET_WM_ACTION_CHANGE_DESKTOP 37
-#define SUB_EWMH_NET_WM_ACTION_CLOSE          38
-
-/* Misc */
-#define SUB_EWMH_UTF8                         39                  ///< String encoding
-
-/* subtle */
-#define SUB_EWMH_SUBTLE_CLIENT_TAG            40                  ///< subtle client tag
-#define SUB_EWMH_SUBTLE_CLIENT_UNTAG          41                  ///< subtle client untag
-#define SUB_EWMH_SUBTLE_CLIENT_TAGS           42                  ///< subtle client tags
-#define SUB_EWMH_SUBTLE_TAG_NEW               43                  ///< subtle tag new
-#define SUB_EWMH_SUBTLE_TAG_KILL              44                  ///< subtle tag kill
-#define SUB_EWMH_SUBTLE_TAG_LIST              45                  ///< subtle tag list
-#define SUB_EWMH_SUBTLE_VIEW_NEW              46                  ///< subtle view new
-#define SUB_EWMH_SUBTLE_VIEW_KILL             47                  ///< subtle view kill
-#define SUB_EWMH_SUBTLE_VIEW_LIST             48                  ///< subtle view list
-#define SUB_EWMH_SUBTLE_VIEW_TAG              49                  ///< subtle view tag
-#define SUB_EWMH_SUBTLE_VIEW_UNTAG            50                  ///< subtle view untag
-#define SUB_EWMH_SUBTLE_VIEW_TAGS             51                  ///< subtle view tags
 /* }}} */
 
 /* Flags {{{ */
@@ -144,25 +84,26 @@
 #define SUB_TYPE_LAYOUT        (1L << 3)                          ///< Layout
 #define SUB_TYPE_SUBLET        (1L << 4)                          ///< Sublet
 #define SUB_TYPE_TAG           (1L << 5)                          ///< Tag
-#define SUB_TYPE_VIEW          (1L << 6)                          ///< View
+#define SUB_TYPE_TRAY          (1L << 6)                          ///< Tray
+#define SUB_TYPE_VIEW          (1L << 7)                          ///< View
 
 /* Tile modes */
-#define SUB_TILE_VERT          (1L << 7)                          ///< Tile vert
-#define SUB_TILE_HORZ          (1L << 8)                          ///< Tile horz
-#define SUB_TILE_SWAP          (1L << 9)                          ///< Tile swap
+#define SUB_TILE_VERT          (1L << 8)                          ///< Tile vert
+#define SUB_TILE_HORZ          (1L << 9)                          ///< Tile horz
+#define SUB_TILE_SWAP          (1L << 10)                          ///< Tile swap
 
 /* Data types */
-#define SUB_DATA_STRING        (1L << 10)                         ///< String data
-#define SUB_DATA_FIXNUM        (1L << 11)                         ///< Fixnum data
-#define SUB_DATA_NIL           (1L << 12)                         ///< Nil data
+#define SUB_DATA_STRING        (1L << 11)                         ///< String data
+#define SUB_DATA_FIXNUM        (1L << 12)                         ///< Fixnum data
+#define SUB_DATA_NIL           (1L << 13)                         ///< Nil data
 
 /* Client states */
-#define SUB_STATE_FLOAT        (1L << 13)                         ///< Floating window
-#define SUB_STATE_FULL         (1L << 14)                         ///< Fullscreen window
-#define SUB_STATE_RESIZE       (1L << 15)                         ///< Resized window
-#define SUB_STATE_DEAD         (1L << 16)                         ///< Dead window
-#define SUB_STATE_TILED        (1L << 17)                         ///< Tiled client
-#define SUB_STATE_URGENT       (1L << 18)                         ///< Urgent client
+#define SUB_STATE_FLOAT        (1L << 14)                         ///< Floating window
+#define SUB_STATE_FULL         (1L << 15)                         ///< Fullscreen window
+#define SUB_STATE_RESIZE       (1L << 16)                         ///< Resized window
+#define SUB_STATE_DEAD         (1L << 17)                         ///< Dead window
+#define SUB_STATE_TILED        (1L << 18)                         ///< Tiled client
+#define SUB_STATE_URGENT       (1L << 19)                         ///< Urgent client
 
 /* Client preferences */
 #define SUB_PREF_INPUT         (1L << 20)                         ///< Active/passive focus-model
@@ -221,6 +162,84 @@ typedef struct subclient_t /* {{{ */
   XSizeHints          *hints;                                     ///< Client size hints
 } SubClient; /* }}} */
 
+typedef enum subewmh_t /* {{{ */
+{
+  /* ICCCM */
+  SUB_EWMH_WM_NAME,                                               ///< Name of window
+  SUB_EWMH_WM_CLASS,                                              ///< Class of window
+  SUB_EWMH_WM_STATE,                                              ///< Window state
+  SUB_EWMH_WM_PROTOCOLS,                                          ///< Supported protocols 
+  SUB_EWMH_WM_TAKE_FOCUS,                                         ///< Send focus messages
+  SUB_EWMH_WM_DELETE_WINDOW,                                      ///< Send close messages
+  SUB_EWMH_WM_NORMAL_HINTS,                                       ///< Window normal hints
+  SUB_EWMH_WM_SIZE_HINTS,                                         ///< Window size hints
+
+  /* EWMH */
+  SUB_EWMH_NET_SUPPORTED,                                         ///< Supported states
+  SUB_EWMH_NET_CLIENT_LIST,                                       ///< List of clients
+  SUB_EWMH_NET_CLIENT_LIST_STACKING,                              ///< List of clients
+  SUB_EWMH_NET_NUMBER_OF_DESKTOPS,                                ///< Total number of views
+  SUB_EWMH_NET_DESKTOP_NAMES,                                     ///< Names of the views
+  SUB_EWMH_NET_DESKTOP_GEOMETRY,                                  ///< Desktop geometry
+  SUB_EWMH_NET_DESKTOP_VIEWPORT,                                  ///< Viewport of the view
+  SUB_EWMH_NET_CURRENT_DESKTOP,                                   ///< Number of current view
+  SUB_EWMH_NET_ACTIVE_WINDOW,                                     ///< Focus window
+  SUB_EWMH_NET_WORKAREA,                                          ///< Workarea of the views
+  SUB_EWMH_NET_SUPPORTING_WM_CHECK,                               ///< Check for compliant window manager
+  SUB_EWMH_NET_VIRTUAL_ROOTS,                                     ///< List of virtual destops
+  SUB_EWMH_NET_CLOSE_WINDOW,               
+
+  SUB_EWMH_NET_WM_NAME,                            
+  SUB_EWMH_NET_WM_PID,                                            ///< PID of client
+  SUB_EWMH_NET_WM_DESKTOP,                                        ///< Desktop client is on
+  SUB_EWMH_NET_SHOWING_DESKTOP,                                   ///< Showing desktop mode 
+
+  SUB_EWMH_NET_WM_STATE,                                          ///< Window state
+  SUB_EWMH_NET_WM_STATE_MODAL,                                    ///< Modal window
+  SUB_EWMH_NET_WM_STATE_HIDDEN,                                   ///< Hidden window
+  SUB_EWMH_NET_WM_STATE_FULLSCREEN,                               ///< Fullscreen window
+
+  SUB_EWMH_NET_WM_WINDOW_TYPE,
+  SUB_EWMH_NET_WM_WINDOW_TYPE_DESKTOP,
+  SUB_EWMH_NET_WM_WINDOW_TYPE_NORMAL,
+  SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG,
+
+  SUB_EWMH_NET_WM_ALLOWED_ACTIONS,
+  SUB_EWMH_NET_WM_ACTION_MOVE,
+  SUB_EWMH_NET_WM_ACTION_RESIZE,
+  SUB_EWMH_NET_WM_ACTION_FULLSCREEN,
+  SUB_EWMH_NET_WM_ACTION_CHANGE_DESKTOP,
+  SUB_EWMH_NET_WM_ACTION_CLOSE,
+
+  /* Tray */
+  SUB_EWMH_NET_SYSTEM_TRAY_OPCODE,                                ///< Tray messages
+  SUB_EWMH_NET_SYSTEM_TRAY_MESSAGE_DATA,                          ///< Tray message data
+  SUB_EWMH_NET_SYSTEM_TRAY_SELECTION,                             ///< Tray selection
+
+  /* Misc */
+  SUB_EWMH_UTF8,                                                  ///< String encoding
+
+  /* XEmbed */
+  SUB_EWMH_XEMBED,                                                ///< XEmbed
+  SUB_EWMH_XEMBED_INFO,                                           ///< XEmbed info
+
+  /* subtle */
+  SUB_EWMH_SUBTLE_CLIENT_TAG,                                     ///< subtle client tag
+  SUB_EWMH_SUBTLE_CLIENT_UNTAG,                                   ///< subtle client untag
+  SUB_EWMH_SUBTLE_CLIENT_TAGS,                                    ///< subtle client tags
+  SUB_EWMH_SUBTLE_TAG_NEW,                                        ///< subtle tag new
+  SUB_EWMH_SUBTLE_TAG_KILL,                                       ///< subtle tag kill
+  SUB_EWMH_SUBTLE_TAG_LIST,                                       ///< subtle tag list
+  SUB_EWMH_SUBTLE_VIEW_NEW,                                       ///< subtle view new
+  SUB_EWMH_SUBTLE_VIEW_KILL,                                      ///< subtle view kill
+  SUB_EWMH_SUBTLE_VIEW_LIST,                                      ///< subtle view list
+  SUB_EWMH_SUBTLE_VIEW_TAG,                                       ///< subtle view tag
+  SUB_EWMH_SUBTLE_VIEW_UNTAG,                                     ///< subtle view untag
+  SUB_EWMH_SUBTLE_VIEW_TAGS,                                      ///< subtle view tags
+
+  SUB_EWMH_TOTAL
+} SubEwmh; /* }}} */
+
 typedef struct subgrab_t /* {{{ */
 {
   FLAGS        flags;                                             ///< Grab flags
@@ -265,6 +284,7 @@ typedef struct subsubtle_t /* {{{ */
 
   struct subview_t   *cv;                                         ///< Subtle current view
   struct subsublet_t *sublet;                                     ///< Subtle first sublet
+
   struct subarray_t  *grabs;                                      ///< Subtle grabs
   struct subarray_t  *tags;                                       ///< Subtle tags
   struct subarray_t  *views;                                      ///< Subtle views
@@ -281,7 +301,7 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    Window           bar, views, caption, sublets, focus; 
+    Window           bar, views, caption, tray, sublets, focus; 
   } windows;                                                      ///< Subtle windows
 
   struct
@@ -313,6 +333,12 @@ typedef struct subtag_t /* {{{ */
   regex_t *preg;                                                  ///< Tag regex
 } SubTag; /* }}} */
 
+typedef struct subtray_t /* {{{ */
+{
+  FLAGS   flags;                                                  ///< Tray flags
+  Window  win;                                                    ///< Tray window
+} SubTray; /* }}} */
+
 typedef struct subview_t /* {{{ */
 {
   FLAGS             flags;                                        ///< View flags
@@ -328,7 +354,7 @@ extern SubSubtle *subtle;
 /* }}} */
 
 /* array.c {{{ */
-SubArray *subArrayNew(void);                                      ///< Create new array
+SubArray *subArrayNew(void);                                      ///< Create array
 void subArrayPush(SubArray *a, void *e);                          ///< Push element to array
 void subArrayPop(SubArray *a, void *e);                           ///< Pop element from array
 int subArrayIndex(SubArray *a, void *e);                           ///< Find array id of element
@@ -339,7 +365,7 @@ void subArrayKill(SubArray *a, int clean);                        ///< Kill arra
 /* }}} */
 
 /* client.c {{{ */
-SubClient *subClientNew(Window win);                              ///< Create new client
+SubClient *subClientNew(Window win);                              ///< Create client
 void subClientConfigure(SubClient *c);                            ///< Send configure request
 void subClientRender(SubClient *c);                               ///< Render client
 void subClientFocus(SubClient *c);                                ///< Focus client
@@ -353,10 +379,10 @@ void subClientKill(SubClient *c);                                 ///< Kill clie
 /* }}} */
 
 /* display.c {{{ */
-void subDisplayInit(const char *display);                         ///< Create new display
+void subDisplayInit(const char *display);                         ///< Create display
 void subDisplayScan(void);                                        ///< Scan root window
 void subDisplayPublish(void);                                     ///< Publish display
-void subDisplayFinish(void);                                      ///< Delete display
+void subDisplayFinish(void);                                      ///< Kill display
 /* }}} */
 
 /* event.c {{{ */
@@ -365,16 +391,17 @@ void subEventLoop(void);                                          ///< Event loo
 
 /* ewmh.c  {{{ */
 void subEwmhInit(void);                                           ///< Init atoms/hints
-Atom subEwmhFind(int hint);                                       ///< Find atom
+Atom subEwmhGet(SubEwmh e);                                       ///< Get atom
+SubEwmh subEwmhFind(Atom atom);                                   ///< Find atom id
 char *subEwmhGetProperty(Window win, 
-  Atom type, int hint, unsigned long *size);                      ///< Get property
-void subEwmhSetWindows(Window win, int hint, 
+  Atom type, SubEwmh e, unsigned long *size);                     ///< Get property
+void subEwmhSetWindows(Window win, SubEwmh e, 
   Window *values, int size);                                      ///< Set window properties
-void subEwmhSetCardinals(Window win, int hint,
+void subEwmhSetCardinals(Window win, SubEwmh e,
   long *values, int size);                                        ///< Set cardinal properties
-void subEwmhSetString(Window win, int hint, 
+void subEwmhSetString(Window win, SubEwmh e, 
   char *value);                                                   ///< Set string property
-void subEwmhSetStrings(Window win, int hint,                      ///< Set string properties
+void subEwmhSetStrings(Window win, SubEwmh e,                     ///< Set string properties
   char **values, int size);
 /* }}} */
 
@@ -392,7 +419,7 @@ void subGrabKill(SubGrab *g);                                     ///< Kill grab
 
 /* layout.c {{{ */
 SubLayout *subLayoutNew(SubClient *c1, SubClient *c2, 
-  int mode);                                                      ///< Create new layout
+  int mode);                                                      ///< Create layout
 void subLayoutKill(SubLayout *l);                                 ///< Kill layout
 /* }}} */
 
@@ -405,7 +432,7 @@ void subRubyFinish(void);                                         ///< Kill Ruby
 /* }}} */
 
 /* sublet.c {{{ */
-SubSublet *subSubletNew(void);                                    ///< Create new sublet
+SubSublet *subSubletNew(void);                                    ///< Create sublet
 void subSubletUpdate(void);                                       ///< Update sublet bar
 void subSubletRender(void);                                       ///< Render sublet
 int subSubletCompare(const void *a, const void *b);               ///< Compare two sublets
@@ -418,6 +445,12 @@ SubTag *subTagNew(char *name, char *regex);                       ///< Create ta
 SubTag *subTagFind(char *name, int *id);                          ///< Find tag
 void subTagPublish(void);                                         ///< Publish tags
 void subTagKill(SubTag *t);                                       ///< Delete tag
+/* }}} */
+
+/* tray.c {{{ */
+SubTray *subTrayNew(Window win);                                  ///< Create tray 
+void subTraySelect(void);                                         ///< Get selection
+void subTrayKill(SubTray *t);                                     ///< Delete tray
 /* }}} */
 
 /* util.c {{{ */
@@ -443,7 +476,7 @@ void subUtilRegexKill(regex_t *preg);                             ///< Kill rege
 /* }}} */
 
 /* view.c {{{ */
-SubView *subViewNew(char *name, char *tags);                      ///< Create new view
+SubView *subViewNew(char *name, char *tags);                      ///< Create view
 void subViewConfigure(SubView *v);                                ///< Configure view
 void subViewArrange(SubView *v, SubClient *c1, 
   SubClient *c2, int mode);                                       ///< Arrange view
