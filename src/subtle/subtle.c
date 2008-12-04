@@ -22,9 +22,9 @@
 static char *config = NULL;
 SubSubtle *subtle = NULL;
 
-/* Usage {{{ */
+/* SubtleUsage {{{ */
 static void
-Usage(void)
+SubtleUsage(void)
 {
   printf("Usage: %s [OPTIONS]\n\n" \
          "Options:\n" \
@@ -38,9 +38,9 @@ Usage(void)
          PKG_NAME, PKG_NAME, PKG_NAME, PKG_BUGREPORT);
 } /* }}} */
 
-/* Version {{{ */
+/* SubtleVersion {{{ */
 static void
-Version(void)
+SubtleVersion(void)
 {
   printf("%s %s - Copyright (c) 2005-2008 Christoph Kappel\n" \
          "Released under the GNU General Public License\n" \
@@ -48,9 +48,9 @@ Version(void)
          PKG_NAME, PKG_VERSION, X_PROTOCOL, X_PROTOCOL_REVISION, RUBY_VERSION);
 } /* }}} */
 
-/* Signal {{{ */
+/* SubtleSignal {{{ */
 static void
-Signal(int signum)
+SubtleSignal(int signum)
 {
 #ifdef HAVE_EXECINFO_H
   void *array[10];
@@ -65,11 +65,12 @@ Signal(int signum)
         break;
       case SIGTERM:
       case SIGINT: 
-        subArrayKill(subtle->tags, True);
-        subArrayKill(subtle->views, True);
         subArrayKill(subtle->clients, False);
-        subArrayKill(subtle->sublets, True);
         subArrayKill(subtle->grabs, True);
+        subArrayKill(subtle->sublets, True);
+        subArrayKill(subtle->tags, True);
+        subArrayKill(subtle->tray, True);
+        subArrayKill(subtle->views, True);
 
         subRubyFinish();
         subDisplayFinish();
@@ -123,9 +124,9 @@ main(int argc,
         {
           case 'c': config = optarg;       break;
           case 'd': display = optarg;      break;
-          case 'h': Usage();               return 0;
+          case 'h': SubtleUsage();         return 0;
           case 's': sublets = optarg;      break;
-          case 'v': Version();             return 0;
+          case 'v': SubtleVersion();       return 0;
 #ifdef DEBUG          
           case 'D': debug++;               break;
 #endif /* DEBUG */
@@ -135,13 +136,13 @@ main(int argc,
         }
     }
 
-  Version();
-  act.sa_handler = Signal;
+  SubtleVersion();
+  act.sa_handler = SubtleSignal;
   act.sa_flags   = 0;
   memset(&act.sa_mask, 0, sizeof(sigset_t)); ///< Avoid uninitialized values
-  sigaction(SIGHUP, &act, NULL);
+  sigaction(SIGHUP,  &act, NULL);
   sigaction(SIGTERM, &act, NULL);
-  sigaction(SIGINT, &act, NULL);
+  sigaction(SIGINT,  &act, NULL);
   sigaction(SIGSEGV, &act, NULL);
   sigaction(SIGCHLD, &act, NULL);
 
@@ -151,6 +152,7 @@ main(int argc,
   subtle->grabs   = subArrayNew();
   subtle->sublets = subArrayNew();
   subtle->tags    = subArrayNew();
+  subtle->tray    = subArrayNew();
   subtle->views   = subArrayNew();
 
 #ifdef DEBUG
