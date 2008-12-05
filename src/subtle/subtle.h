@@ -23,7 +23,6 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xmd.h>
-#include <X11/Xft/Xft.h>
 
 #include "config.h"
 
@@ -332,12 +331,11 @@ typedef struct subsubtle_t /* {{{ */
   struct
   {
     unsigned long    font, border, norm, focus, bg;                            
-    XftColor         font;
   } colors;                                                       ///< Subtle colors
 
   struct
   {
-    GC               stipple, invert;                  
+    GC               font, stipple, invert;                  
   } gcs;                                                          ///< Subtle graphic contexts
 
   struct
@@ -365,7 +363,6 @@ typedef struct subview_t /* {{{ */
   TAGS              tags;
   int               width;                                        ///< View tags, button width, layout
   Window            frame, button;                                ///< View frame, button
-  XftDraw           *draw;                                        ///< View Xft draw
   char              *name;                                        ///< View name
   struct subarray_t *layout;                                      ///< View layout
 } SubView; /* }}} */

@@ -43,6 +43,9 @@ subDisplayInit(const char *display)
   subtle->gcs.stipple  = XCreateGC(subtle->disp, DefaultRootWindow(subtle->disp),
     GCFunction|GCFillStyle|GCStipple, &gvals);
 
+  subtle->gcs.font = XCreateGC(subtle->disp, DefaultRootWindow(subtle->disp),
+    GCFunction, &gvals);
+
   gvals.function       = GXinvert;
   gvals.subwindow_mode = IncludeInferiors;
   gvals.line_width     = 3;
@@ -123,9 +126,9 @@ subDisplayPublish(void)
   subEwmhSetCardinals(root, SUB_EWMH_NET_DESKTOP_GEOMETRY, (long *)&data, 2);
 
   /* EWMH: Supported window states */
-  data[0] = subEwmhFind(SUB_EWMH_NET_WM_STATE_MODAL);
-  data[1] = subEwmhFind(SUB_EWMH_NET_WM_STATE_HIDDEN);
-  data[2] = subEwmhFind(SUB_EWMH_NET_WM_STATE_FULLSCREEN);
+  data[0] = subEwmhGet(SUB_EWMH_NET_WM_STATE_MODAL);
+  data[1] = subEwmhGet(SUB_EWMH_NET_WM_STATE_HIDDEN);
+  data[2] = subEwmhGet(SUB_EWMH_NET_WM_STATE_FULLSCREEN);
   subEwmhSetCardinals(root, SUB_EWMH_NET_SUPPORTED, (long *)&data, 3);
 
   /* EWMH: Client list and client list stacking */
@@ -133,7 +136,7 @@ subDisplayPublish(void)
   subEwmhSetWindows(root, SUB_EWMH_NET_CLIENT_LIST_STACKING, NULL, 0);
 }  /* }}} */
 
- /** subDisplayKill {{{
+ /** subDisplayFinish {{{
   * @brief Close connection
   **/
 
@@ -151,12 +154,9 @@ subDisplayFinish(void)
 
       /* Free GCs */
       XFreeGC(subtle->disp, subtle->gcs.stipple);
+      XFreeGC(subtle->disp, subtle->gcs.font);
       XFreeGC(subtle->disp, subtle->gcs.invert);
-      if(subtle->xft) XftFontClose(subtle->disp, subtle->xft);
-
-      /* Free draws */
-      XftDrawDestroy(subtle->draws.caption);
-      XftDrawDestroy(subtle->draws.sublets);
+      if(subtle->xfs) XFreeFont(subtle->disp, subtle->xfs);
 
       /* Destroy view windows */
       XDestroySubwindows(subtle->disp, subtle->windows.bar);

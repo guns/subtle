@@ -97,7 +97,7 @@ ClientSnap(SubClient *c,
  /** subClientNew {{{
   * @brief Create new client
   * @param[in]  win  Main window of the new client
-  * @return Returns a #SubClient or \p NULL
+  * @return Returns a new #SubClient or \p NULL
   **/
 
 SubClient *
@@ -159,9 +159,9 @@ subClientNew(Window win)
     {
       for(i = 0; i < n; i++)
         {
-          if(protos[i] == subEwmhFind(SUB_EWMH_WM_TAKE_FOCUS))
+          if(protos[i] == subEwmhGet(SUB_EWMH_WM_TAKE_FOCUS))
             c->flags |= SUB_PREF_FOCUS;
-          else if(protos[i] == subEwmhFind(SUB_EWMH_WM_DELETE_WINDOW))
+          else if(protos[i] == subEwmhGet(SUB_EWMH_WM_DELETE_WINDOW))
             c->flags |= SUB_PREF_CLOSE;
         }
       XFree(protos);
@@ -257,8 +257,8 @@ subClientRender(SubClient *c)
   /* Caption */
   XResizeWindow(subtle->disp, subtle->windows.caption, TEXTW(c->name), subtle->th);
   XClearWindow(subtle->disp, subtle->windows.caption);
-  XftDrawString8(subtle->draws.caption, &subtle->colors.font, subtle->xft, 3, subtle->fy - 1,
-    (XftChar8 *)c->name, strlen(c->name));
+  XDrawString(subtle->disp, subtle->windows.caption, subtle->gcs.font, 3, subtle->fy - 1,
+    c->name, strlen(c->name));
 } /* }}} */
 
  /** subClientFocus {{{
@@ -278,9 +278,9 @@ subClientFocus(SubClient *c)
   
       ev.type                 = ClientMessage;
       ev.xclient.window       = c->win;
-      ev.xclient.message_type = subEwmhFind(SUB_EWMH_WM_PROTOCOLS);
+      ev.xclient.message_type = subEwmhGet(SUB_EWMH_WM_PROTOCOLS);
       ev.xclient.format       = 32;
-      ev.xclient.data.l[0]    = subEwmhFind(SUB_EWMH_WM_TAKE_FOCUS);
+      ev.xclient.data.l[0]    = subEwmhGet(SUB_EWMH_WM_TAKE_FOCUS);
       ev.xclient.data.l[1]    = CurrentTime;
       
       XSendEvent(subtle->disp, c->win, False, NoEventMask, &ev);
@@ -652,8 +652,8 @@ subClientSetWMState(SubClient *c,
 
   assert(c);
 
-  XChangeProperty(subtle->disp, c->win, subEwmhFind(SUB_EWMH_WM_STATE), 
-    subEwmhFind(SUB_EWMH_WM_STATE), 32, PropModeReplace, (unsigned char *)data, 2);
+  XChangeProperty(subtle->disp, c->win, subEwmhGet(SUB_EWMH_WM_STATE), 
+    subEwmhGet(SUB_EWMH_WM_STATE), 32, PropModeReplace, (unsigned char *)data, 2);
 } /* }}} */
 
  /** subClientGetWMState {{{
@@ -672,8 +672,8 @@ subClientGetWMState(SubClient *c)
 
   assert(c);
 
-  if(XGetWindowProperty(subtle->disp, c->win, subEwmhFind(SUB_EWMH_WM_STATE), 0L, 2L, False,
-      subEwmhFind(SUB_EWMH_WM_STATE), 
+  if(XGetWindowProperty(subtle->disp, c->win, subEwmhGet(SUB_EWMH_WM_STATE), 0L, 2L, False,
+      subEwmhGet(SUB_EWMH_WM_STATE), 
       &type, &format, &bytes, &unused, (unsigned char **)&data)== Success && bytes)
     {
       state = *data;
@@ -743,9 +743,9 @@ subClientKill(SubClient *c)
 
           ev.type                 = ClientMessage;
           ev.xclient.window       = c->win;
-          ev.xclient.message_type = subEwmhFind(SUB_EWMH_WM_PROTOCOLS);
+          ev.xclient.message_type = subEwmhGet(SUB_EWMH_WM_PROTOCOLS);
           ev.xclient.format       = 32;
-          ev.xclient.data.l[0]    = subEwmhFind(SUB_EWMH_WM_DELETE_WINDOW);
+          ev.xclient.data.l[0]    = subEwmhGet(SUB_EWMH_WM_DELETE_WINDOW);
           ev.xclient.data.l[1]    = CurrentTime;
 
           XSendEvent(subtle->disp, c->win, False, NoEventMask, &ev);

@@ -181,8 +181,7 @@ RubyGetFixnum(VALUE hash,
 static unsigned long
 RubyParseColor(VALUE hash,
   char *key,
-  char *fallback,
-  XftColor *xftcol)
+  char *fallback)
 { 
   XColor color = { 0, 0, 0, 0, '0', '0' };
   Colormap cmap = DefaultColormap(subtle->disp, DefaultScreen(subtle->disp));
@@ -195,16 +194,6 @@ RubyParseColor(VALUE hash,
     }
   else if(!XAllocColor(subtle->disp, cmap, &color))
     subUtilLogWarn("Can't alloc color '%s'.\n", key);
-
-  /* Xft color */
-  if(xftcol)
-    {
-      xftcol->pixel       = color.pixel;
-      xftcol->color.red   = color.red;
-      xftcol->color.green = color.green;
-      xftcol->color.blue  = color.blue;
-      xftcol->color.alpha = 0xFFFF;
-    }
 
   return color.pixel;
 } /* }}} */
@@ -272,7 +261,7 @@ static VALUE
 RubyConfigParse(VALUE path)
 {
   int size;
-  char *family = NULL, *style = NULL;
+  char *family = NULL, *style = NULL, font[100];
   XGCValues gvals;
   XSetWindowAttributes attrs;
   VALUE config = 0;
@@ -292,32 +281,26 @@ RubyConfigParse(VALUE path)
 
   /* Config: Colors */
   config                = rb_const_get(rb_cObject, rb_intern("COLORS"));
-  subtle->colors.border = RubyParseColor(config, "border",     "#bdbabd", NULL);
-  subtle->colors.norm   = RubyParseColor(config, "normal",     "#22aa99", NULL);
-  subtle->colors.focus  = RubyParseColor(config, "focus",      "#ffa500", NULL);
-  subtle->colors.bg     = RubyParseColor(config, "background", "#336699", NULL);
-  RubyParseColor(config, "font", "#000000", &subtle->colors.font);
+  subtle->colors.border = RubyParseColor(config, "border",     "#bdbabd");
+  subtle->colors.norm   = RubyParseColor(config, "normal",     "#22aa99");
+  subtle->colors.focus  = RubyParseColor(config, "focus",      "#ffa500");
+  subtle->colors.bg     = RubyParseColor(config, "background", "#336699");
+  subtle->colors.font   = RubyParseColor(config, "font",       "#000000");
 
-  /* Open font */
-  subtle->xft = XftFontOpen(subtle->disp, DefaultScreen(subtle->disp),
-    XFT_FAMILY, XftTypeString,  family,
-    XFT_STYLE,  XftTypeString,  style,
-    XFT_SIZE,   XftTypeInteger, size,
-    NULL);
-  if(!subtle->xft)
+  /* Load font */
+  snprintf(font, sizeof(font), "-*-%s-%s-*-*-*-%d-*-*-*-*-*-*-*", family, style, size);
+  if(!(subtle->xfs = XLoadQueryFont(subtle->disp, font)))
     {
       subUtilLogWarn("Can't load font `%s', using fixed instead.\n", family);
-      subtle->xft = XftFontOpen(subtle->disp, DefaultScreen(subtle->disp),
-        XFT_FAMILY, XftTypeString,  "fixed",
-        XFT_STYLE,  XftTypeString,  "medium",
-        XFT_SIZE,   XftTypeInteger, "10",
-        NULL);
+      subUtilLogDebug("Font: %s\n", font);
+      subtle->xfs = XLoadQueryFont(subtle->disp, "-*-fixed-medium-*-*-*-13-*-*-*-*-*-*-*");
+      if(!subtle->xfs) subUtilLogError("Can't load font `fixed`.\n");
     }
 
   /* Font metrics */
-  subtle->fx = subtle->xft->max_advance_width;
-  subtle->fy = subtle->xft->ascent + subtle->xft->descent;
-  subtle->th = subtle->fy + 2;
+  subtle->fx = (subtle->xfs->min_bounds.width + subtle->xfs->max_bounds.width) / 2;
+  subtle->fy = subtle->xfs->max_bounds.ascent + subtle->xfs->max_bounds.descent;
+  subtle->th = subtle->xfs->ascent + subtle->xfs->descent + 2;
 
   /* View windows */
   attrs.background_pixel = subtle->colors.norm;
@@ -331,24 +314,31 @@ RubyConfigParse(VALUE path)
     subtle->th, 0, 0, subtle->colors.focus);
   subtle->windows.views   = XCreateSimpleWindow(subtle->disp, subtle->windows.bar, 0, 0, 1,
     subtle->th, 0, 0, subtle->colors.norm);
+  subtle->windows.tray    = XCreateSimpleWindow(subtle->disp, subtle->windows.bar, 200, 0, 1,
+    subtle->th, 0, 0, subtle->colors.norm);    
   subtle->windows.sublets = XCreateSimpleWindow(subtle->disp, subtle->windows.bar, 0, 0, 1,
     subtle->th, 0, 0, subtle->colors.norm);
 
-  /* Create Xft draw */
-  subtle->draws.caption = XftDrawCreate(subtle->disp, subtle->windows.caption, VISUAL, COLORMAP);
-  subtle->draws.sublets = XftDrawCreate(subtle->disp, subtle->windows.sublets, VISUAL, COLORMAP);
-
-  XSelectInput(subtle->disp, subtle->windows.views, ButtonPressMask); 
-
+  /* Map windows */
   XMapWindow(subtle->disp, subtle->windows.views);
   XMapWindow(subtle->disp, subtle->windows.caption);
   XMapWindow(subtle->disp, subtle->windows.sublets);
+  XMapWindow(subtle->disp, subtle->windows.tray);
   XMapWindow(subtle->disp, subtle->windows.bar);
+
+  /* Select input */
+  XSelectInput(subtle->disp, subtle->windows.views, ButtonPressMask); 
+  XSelectInput(subtle->disp, subtle->windows.tray, KeyPressMask|ButtonPressMask); 
+  subTraySelect(); ///< Get tray selection
 
   /* Update GCs */
   gvals.foreground = subtle->colors.border;
   gvals.line_width = subtle->bw;
   XChangeGC(subtle->disp, subtle->gcs.stipple, GCForeground|GCLineWidth, &gvals);
+
+  gvals.foreground = subtle->colors.font;
+  gvals.font       = subtle->xfs->fid;
+  XChangeGC(subtle->disp, subtle->gcs.font, GCForeground|GCFont, &gvals);
 
   /* Update root window */
   attrs.cursor           = subtle->cursors.arrow;

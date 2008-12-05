@@ -69,16 +69,14 @@ subSubletRender(void)
         {
           if(s->flags & SUB_DATA_FIXNUM && s->fixnum)
             {
-#if 0           
               XDrawRectangle(subtle->disp, subtle->windows.sublets, subtle->gcs.font,
                 width, 2, 60, subtle->th - 5);
               XFillRectangle(subtle->disp, subtle->windows.sublets, subtle->gcs.font,
                 width + 2, 4, (56 * s->fixnum) / 100, subtle->th - 8);
-#endif                
             }
           else if(s->flags & SUB_DATA_STRING && s->string) 
-            XftDrawString8(subtle->draws.sublets, &subtle->colors.font, subtle->xft, 
-              width, subtle->fy - 1, (XftChar8 *)s->string, strlen(s->string));  
+            XDrawString(subtle->disp, subtle->windows.sublets, subtle->gcs.font, width,
+              subtle->fy - 1, s->string, strlen(s->string));
 
           width += s->width;
           s     = s->next;
