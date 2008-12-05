@@ -75,6 +75,29 @@
 #define TAG(t)    ((SubTag *)t)                                   ///< Cast to SubTag
 #define TRAY(t)   ((SubTray *)t)                                  ///< Cast to SubTray
 #define VIEW(v)   ((SubView *)v)                                  ///< Cast to SubView
+
+/* XEMBED messages */
+#define XEMBED_EMBEDDED_NOTIFY         0
+#define XEMBED_WINDOW_ACTIVATE         1
+#define XEMBED_WINDOW_DEACTIVATE       2
+#define XEMBED_REQUEST_FOCUS           3
+#define XEMBED_FOCUS_IN                4
+#define XEMBED_FOCUS_OUT               5
+#define XEMBED_FOCUS_NEXT              6
+#define XEMBED_FOCUS_PREV              7
+#define XEMBED_MODALITY_ON             10
+#define XEMBED_MODALITY_OFF            11
+#define XEMBED_REGISTER_ACCELERATOR    12
+#define XEMBED_UNREGISTER_ACCELERATOR  13
+#define XEMBED_ACTIVATE_ACCELERATOR    14
+
+/* Details for  XEMBED_FOCUS_IN: */
+#define XEMBED_FOCUS_CURRENT           0
+#define XEMBED_FOCUS_FIRST             1
+#define XEMBED_FOCUS_LAST              2
+
+/* Flags for _XEMBED_INFO */
+#define XEMBED_MAPPED                  (1 << 0)
 /* }}} */
 
 /* Flags {{{ */
@@ -218,6 +241,7 @@ typedef enum subewmh_t /* {{{ */
 
   /* Misc */
   SUB_EWMH_UTF8,                                                  ///< String encoding
+  SUB_EWMH_MANAGER,                                               ///< Selection manager
 
   /* XEmbed */
   SUB_EWMH_XEMBED,                                                ///< XEmbed
@@ -280,16 +304,17 @@ typedef struct subsubtle_t /* {{{ */
   int                th, bw, fx, fy, step;                        ///< Subtle tab height, border width, font metrics, step
 
   Display            *disp;                                       ///< Subtle Xorg display
-  XftFont            *xft;                                        ///< Subtle font
+  XFontStruct        *xfs;                                        ///< Subtle font
 
   struct subview_t   *cv;                                         ///< Subtle current view
   struct subsublet_t *sublet;                                     ///< Subtle first sublet
 
-  struct subarray_t  *grabs;                                      ///< Subtle grabs
-  struct subarray_t  *tags;                                       ///< Subtle tags
-  struct subarray_t  *views;                                      ///< Subtle views
   struct subarray_t  *clients;                                    ///< Subtle clients
+  struct subarray_t  *grabs;                                      ///< Subtle grabs
   struct subarray_t  *sublets;                                    ///< Subtle sublets
+  struct subarray_t  *tags;                                       ///< Subtle tags
+  struct subarray_t  *trays;                                      ///< Subtle trays
+  struct subarray_t  *views;                                      ///< Subtle views
 
 #ifdef DEBUG
   int                debug;                                       ///< Subtle debug
@@ -306,12 +331,7 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    XftDraw          *caption, *sublets;
-  } draws;                                                        ///< Subtle xft draws
-
-  struct
-  {
-    unsigned long    border, norm, focus, bg;                            
+    unsigned long    font, border, norm, focus, bg;                            
     XftColor         font;
   } colors;                                                       ///< Subtle colors
 
@@ -403,6 +423,9 @@ void subEwmhSetString(Window win, SubEwmh e,
   char *value);                                                   ///< Set string property
 void subEwmhSetStrings(Window win, SubEwmh e,                     ///< Set string properties
   char **values, int size);
+int subEwmhMessage(Window dst, Window win, SubEwmh e, 
+  long data0, long data1, long data2, long data3, 
+  long data4);                                                    ///< Send message
 /* }}} */
 
 /* grab.c {{{ */
@@ -449,6 +472,7 @@ void subTagKill(SubTag *t);                                       ///< Delete ta
 
 /* tray.c {{{ */
 SubTray *subTrayNew(Window win);                                  ///< Create tray 
+void subTrayUpdate(void);                                         ///< Update tray bar
 void subTraySelect(void);                                         ///< Get selection
 void subTrayKill(SubTray *t);                                     ///< Delete tray
 /* }}} */
