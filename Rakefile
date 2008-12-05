@@ -189,16 +189,6 @@ task(:config) do
     @options["ldflags"] << " %s" % [libs]
     @options["extflags"] << " %s" % [libs]
 
-    # Check pkg-config for Xft
-    cflags, ldflags, libs = pkg_config("xft")
-    if(libs.nil?) then
-      fail("Xft was not found")
-    end
-
-    # Update flags
-    @options["cpppath"] << " %s" % [cflags]
-    @options["ldflags"] << " %s" % [libs]
-
     # Defines
     @defines.each do |k, v|
       $defs.push(format('-D%s="%s"', k, v))
