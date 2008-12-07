@@ -210,3 +210,5 @@ subUtilRegexKill(regex_t *preg)
   regfree(preg);
   free(preg);
 } /* }}} */
+
+// vim:ts=2:bs=2:sw=2:et:fdm=marker
