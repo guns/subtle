@@ -82,18 +82,28 @@ subDisplayScan(void)
       /* Skip own windows */
       if(wins[i] && wins[i] != subtle->windows.bar && wins[i] != subtle->cv->frame)
         {
+          SubClient *c = NULL;
+          SubTray *t = NULL;
+
           XGetWindowAttributes(subtle->disp, wins[i], &attr);
-          if(attr.map_state == IsViewable) 
+
+          switch(attr.map_state)
             {
-              /* Create new client */
-              SubClient *c = subClientNew(wins[i]);
-              subArrayPush(subtle->clients, c);
+              case IsViewable: ///< Client
+                c = subClientNew(wins[i]);
+                subArrayPush(subtle->clients, (void *)c);
+                break;
+              case IsUnmapped: ///< Tray
+                t = subTrayNew(wins[i]);
+                subArrayPush(subtle->trays, (void *)t);
+                break;
             }
         }
     }
   XFree(wins);
 
   subClientPublish();
+  subTrayUpdate();
   subViewConfigure(subtle->cv);
   subViewRender();
 } /* }}} */
@@ -167,3 +177,5 @@ subDisplayFinish(void)
 
   subUtilLogDebug("kill=display\n");
 } /* }}} */
+
+// vim:ts=2:bs=2:sw=2:et:fdm=marker
