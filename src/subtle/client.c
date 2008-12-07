@@ -46,11 +46,11 @@ ClientMask(int state,
         break;
       case SUB_DRAG_LEFT:
         rect.x = 5;                          rect.y = 5; 
-        rect.width = rect.width * 0.5 - 5;  rect.height -= 10; 
+        rect.width = rect.width * 0.5 - 5;   rect.height -= 10; 
         break;
       case SUB_DRAG_RIGHT:
         rect.x = rect.width * 0.5;           rect.y = 5; 
-        rect.width = rect.width * 0.5 - 5;  rect.height -= 10; 
+        rect.width = rect.width * 0.5 - 5;   rect.height -= 10; 
         break;
       case SUB_DRAG_TILE:
         rect.x = rect.width * 0.35;          rect.y = rect.height * 0.35; 
@@ -274,16 +274,8 @@ subClientFocus(SubClient *c)
   /* Check if client wants to take focus by itself */
   if(c->flags & SUB_PREF_FOCUS)
     {
-      XEvent ev;
-  
-      ev.type                 = ClientMessage;
-      ev.xclient.window       = c->win;
-      ev.xclient.message_type = subEwmhGet(SUB_EWMH_WM_PROTOCOLS);
-      ev.xclient.format       = 32;
-      ev.xclient.data.l[0]    = subEwmhGet(SUB_EWMH_WM_TAKE_FOCUS);
-      ev.xclient.data.l[1]    = CurrentTime;
-      
-      XSendEvent(subtle->disp, c->win, False, NoEventMask, &ev);
+      subEwmhMessage(c->win, c->win, SUB_EWMH_WM_PROTOCOLS, 
+        subEwmhGet(SUB_EWMH_WM_TAKE_FOCUS), CurrentTime, 0, 0, 0);
       
       subUtilLogDebug("Focus: win=%#lx, input=%d, send=%d\n", c->win,
         !!(c->flags & SUB_PREF_INPUT), !!(c->flags & SUB_PREF_FOCUS));
@@ -340,8 +332,8 @@ subClientDrag(SubClient *c,
               }
             if(c->hints->flags & PMinSize) ///< Min. size
               {
-                minx = BETWEEN(c->hints->min_width, MINW, 0);
-                miny = BETWEEN(c->hints->min_height, MINH, 0);
+                minx = MINMAX(c->hints->min_width, MINW, 0);
+                miny = MINMAX(c->hints->min_height, MINH, 0);
               }
             if(c->hints->flags & PMaxSize) ///< Max. size
               {
@@ -381,8 +373,8 @@ subClientDrag(SubClient *c,
                     case XK_Return: loop = False;   break;
                   }
 
-                *dirx = BETWEEN(*dirx, minx, maxx);
-                *diry = BETWEEN(*diry, miny, maxy);
+                *dirx = MINMAX(*dirx, minx, maxx);
+                *diry = MINMAX(*diry, miny, maxy);
               
                 ClientMask(SUB_DRAG_START, c, &r);
               }
@@ -404,13 +396,13 @@ subClientDrag(SubClient *c,
                     case SUB_DRAG_RESIZE: 
                       if(c->rect.width + ev.xmotion.x_root >= rx)
                         {
-                          r.width = BETWEEN(c->rect.width + (ev.xmotion.x_root - rx),
+                          r.width = MINMAX(c->rect.width + (ev.xmotion.x_root - rx),
                             minx, maxx);
                           r.width -= r.width % stepx;
                         }
                       if(c->rect.height + ev.xmotion.y_root >= ry)
                         {
-                          r.height = BETWEEN(c->rect.height + (ev.xmotion.y_root - ry),
+                          r.height = MINMAX(c->rect.height + (ev.xmotion.y_root - ry),
                             miny, maxy);
                           r.height -= r.height % stepy;
                         }
@@ -560,18 +552,18 @@ subClientToggle(SubClient *c,
               {
                 if(c->hints->flags & (USSize|PSize)) ///< User/program size
                   {
-                    c->rect.width  = BETWEEN(c->hints->width, MINW, 0) + 2 * subtle->bw;
-                    c->rect.height = BETWEEN(c->hints->height, MINW, 0) + 2 * subtle->bw;
+                    c->rect.width  = MINMAX(c->hints->width, MINW, 0) + 2 * subtle->bw;
+                    c->rect.height = MINMAX(c->hints->height, MINW, 0) + 2 * subtle->bw;
                   }
                 else if(c->hints->flags & PBaseSize) ///< Base size
                   {
-                    c->rect.width  = BETWEEN(c->hints->base_width, MINW, 0) + 2 * subtle->bw;
-                    c->rect.height = BETWEEN(c->hints->base_height, MINW, 0) + 2 * subtle->bw;
+                    c->rect.width  = MINMAX(c->hints->base_width, MINW, 0) + 2 * subtle->bw;
+                    c->rect.height = MINMAX(c->hints->base_height, MINW, 0) + 2 * subtle->bw;
                   }
                 else if(c->hints->flags & PMinSize) ///< Min size
                   {
-                    c->rect.width  = BETWEEN(c->hints->min_width, MINW, 0) + 2 * subtle->bw;
-                    c->rect.height = BETWEEN(c->hints->min_height, MINH, 0) + 2 * subtle->bw;
+                    c->rect.width  = MINMAX(c->hints->min_width, MINW, 0) + 2 * subtle->bw;
+                    c->rect.height = MINMAX(c->hints->min_height, MINH, 0) + 2 * subtle->bw;
                   }
                 else ///< Fallback
                   {
@@ -631,7 +623,7 @@ subClientFetchName(SubClient *c)
     }
 
   XFetchName(subtle->disp, c->win, &c->name);
-  if(!c->name) c->name = strdup("subtle");
+  if(!c->name) c->name = strdup(PKG_NAME);
 
   subClientRender(c);
 } /* }}} */
@@ -739,16 +731,8 @@ subClientKill(SubClient *c)
       /* Honor window preferences */
       if(c->flags & SUB_PREF_CLOSE)
         {
-          XEvent ev;
-
-          ev.type                 = ClientMessage;
-          ev.xclient.window       = c->win;
-          ev.xclient.message_type = subEwmhGet(SUB_EWMH_WM_PROTOCOLS);
-          ev.xclient.format       = 32;
-          ev.xclient.data.l[0]    = subEwmhGet(SUB_EWMH_WM_DELETE_WINDOW);
-          ev.xclient.data.l[1]    = CurrentTime;
-
-          XSendEvent(subtle->disp, c->win, False, NoEventMask, &ev);
+          subEwmhMessage(c->win, c->win, SUB_EWMH_WM_PROTOCOLS, 
+            subEwmhGet(SUB_EWMH_WM_DELETE_WINDOW), CurrentTime, 0, 0, 0);
         }
       else XKillClient(subtle->disp, c->win);
     }
@@ -763,3 +747,4 @@ subClientKill(SubClient *c)
   subUtilLogDebug("kill=client\n");
 } /* }}} */
 
+// vim:ts=2:bs=2:sw=2:et:fdm=marker
