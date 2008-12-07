@@ -37,9 +37,316 @@ EventExec(char *cmd)
     }
 } /* }}} */
 
-/* HandleGrab {{{ */
+/* EventConfigure {{{ */
 static void
-HandleGrab(XEvent *ev)
+EventConfigure(XConfigureRequestEvent *ev)
+{
+  XWindowChanges wc;
+  SubClient *c = CLIENT(subUtilFind(ev->window, CLIENTID));
+
+  if(c)
+    {
+      if(ev->value_mask & CWX)      c->rect.x      = ev->x;
+      if(ev->value_mask & CWY)      c->rect.y      = ev->y;
+      if(ev->value_mask & CWWidth)  c->rect.width  = ev->width;
+      if(ev->value_mask & CWHeight) c->rect.height = ev->height;
+
+      subClientConfigure(c);
+    }
+  else
+    {
+      wc.x          = ev->x;
+      wc.y          = ev->y;
+      wc.width      = ev->width;
+      wc.height     = ev->height;
+      wc.sibling    = ev->above;
+      wc.stack_mode = ev->detail;
+
+      XConfigureWindow(subtle->disp, ev->window, ev->value_mask, &wc);
+    }
+} /* }}} */
+
+/* EventMapRequest {{{ */
+static void
+EventMapRequest(XMapRequestEvent *ev)
+{
+  SubClient *c = CLIENT(subUtilFind(ev->window, CLIENTID));
+  if(!c) 
+    {
+      /* Create new client */
+      c = subClientNew(ev->window);
+      subArrayPush(subtle->clients, (void *)c);
+      subClientPublish();
+
+      /* Configure/render current view if tags match or client is urgent */
+      if(subtle->cv && (subtle->cv->tags & c->tags || c->flags & SUB_STATE_URGENT))
+        {
+          subViewConfigure(subtle->cv); 
+          subViewRender();
+        }
+    }
+} /* }}} */
+
+/* EventDestroy {{{ */
+static void
+EventDestroy(XDestroyWindowEvent *ev)
+{
+  SubClient *c = NULL;
+  SubTray *t = NULL;
+  
+  if((c = CLIENT(subUtilFind(ev->event, CLIENTID))))
+    {
+      c->flags |= SUB_STATE_DEAD;
+      subClientKill(c); 
+      subClientPublish();
+      subViewConfigure(subtle->cv);
+      subViewUpdate();
+    }
+  else if((t = TRAY(subUtilFind(ev->event, TRAYID))))
+    {
+      subArrayPop(subtle->trays, (void *)t);
+      subTrayKill(t);
+      subTrayUpdate();
+    }
+} /* }}} */
+
+/* EventMessage {{{ */
+static void
+EventMessage(XClientMessageEvent *ev)
+{
+  SubClient *c = NULL;
+
+#ifdef DEBUG
+  char *name = XGetAtomName(subtle->disp, ev->message_type);
+
+  printf("ClientMessage: name=%s, type=%ld, format=%d, win=%#lx\n", 
+    name ? name : "n/a", ev->message_type, ev->format, ev->window);
+  if(name) XFree(name);
+#endif /* DEBUG */
+
+  if(32 != ev->format) return; ///< Forget about it
+
+  /* Messages for root window {{{ */
+  if(ROOT == ev->window)
+    {
+      int id = subEwmhFind(ev->message_type);
+      SubView *v = NULL;
+      SubTag *t = NULL;
+
+      switch(id)
+        {
+          case SUB_EWMH_NET_CURRENT_DESKTOP: /* {{{ */
+            if(0 <= ev->data.l[0] && ev->data.l[0] < subtle->views->ndata) ///< Bound checking
+              subViewJump(VIEW(subtle->views->data[ev->data.l[0]]));
+            break; /* }}} */
+          case SUB_EWMH_NET_ACTIVE_WINDOW: /* {{{ */
+            if((c = CLIENT(subUtilFind(ev->data.l[0], CLIENTID))))
+              subClientFocus(c);
+            break; /* }}} */
+          case SUB_EWMH_SUBTLE_CLIENT_TAG: /* {{{ */
+            if((c = CLIENT(subUtilFind(ev->data.l[0], CLIENTID))))
+              {
+                c->tags |= (1L << ev->data.l[1]);
+                subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS, (long *)&c->tags, 1);
+              }
+            break; /* }}} */
+          case SUB_EWMH_SUBTLE_CLIENT_UNTAG: /* {{{ */
+            if((c = CLIENT(subUtilFind(ev->data.l[0], CLIENTID))))
+              {
+                c->tags &= ~(1L << ev->data.l[1]);
+                subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS, (long *)&c->tags, 1);
+              }
+            if(subtle->cv->tags & (1L << ev->data.l[1])) subViewConfigure(subtle->cv);
+            break; /* }}} */
+          case SUB_EWMH_SUBTLE_TAG_NEW: /* {{{ */
+            t = subTagNew(ev->data.b, NULL); 
+            subArrayPush(subtle->tags, (void *)t);
+            subTagPublish();
+            break; /* }}} */
+          case SUB_EWMH_SUBTLE_TAG_KILL: /* {{{ */
+            if((t = subTagFind(ev->data.b, &id)))
+              {
+                int i;
+
+                /* Find clients tagged with this tag */
+                for(i = 0; i < subtle->clients->ndata; i++)
+                  {
+                    c = CLIENT(subtle->clients->data[i]);
+
+                    if(c->tags & id)
+                      {
+                        c->tags &= ~id;
+                        subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS, (long *)&c->tags, 1);
+                      }
+                  }
+
+                subArrayPop(subtle->tags, (void *)t);
+                subTagKill(t);
+                subTagPublish();
+                subViewConfigure(subtle->cv); ///< Re-configure current view
+              }
+            break; /* }}} */
+          case SUB_EWMH_SUBTLE_VIEW_NEW: /* {{{ */
+            if(ev->data.b)
+              {
+                v = subViewNew(ev->data.b, NULL); 
+                subArrayPush(subtle->views, (void *)v);
+                subViewUpdate();
+                subViewPublish();
+                subViewRender();
+              }
+            break; /* }}} */
+          case SUB_EWMH_SUBTLE_VIEW_TAG: /* {{{ */
+            if((v = VIEW(subUtilFind(ev->data.l[0], VIEWID))))
+              {
+                v->tags |= (1L << ev->data.l[1]);
+                subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_VIEW_TAGS, (long *)&v->tags, 1);
+                if(subtle->cv == v) subViewConfigure(v);
+              }
+            break; /* }}} */
+          case SUB_EWMH_SUBTLE_VIEW_UNTAG: /* {{{ */
+            if((v = VIEW(subUtilFind(ev->data.l[0], VIEWID))))
+              {
+                v->tags &= ~(1L << ev->data.l[1]);
+                subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_VIEW_TAGS, (long *)&v->tags, 1);
+                if(subtle->cv == v) subViewConfigure(v);
+              }
+            break; /* }}} */
+          case SUB_EWMH_SUBTLE_VIEW_KILL: /* {{{ */
+            if((v = subViewFind(ev->data.b, NULL)))
+              {
+                subArrayPop(subtle->views, (void *)v);
+                subViewKill(v);
+                subViewUpdate();
+                subViewPublish();
+              }
+            break; /* }}} */
+        }
+      return;
+    } /* }}} */
+  /* Messages for tray window {{{ */
+  else if(ev->window == subtle->windows.tray)
+    {
+      int id = subEwmhFind(ev->message_type);
+      SubTray *t = NULL;
+
+      printf("[0]=%#lx, [1]=%#lx, [2]=%#lx, [3]=%#lx, [4]=%#lx\n", 
+        ev->data.l[0], ev->data.l[1], ev->data.l[2], ev->data.l[3], ev->data.l[4]);
+
+      switch(id)
+        {
+          case SUB_EWMH_NET_SYSTEM_TRAY_OPCODE: /* {{{ */
+            switch(ev->data.l[1])
+              {
+                case XEMBED_EMBEDDED_NOTIFY:
+                  if(!(t = TRAY(subUtilFind(ev->window, TRAYID))))
+                    {
+                      t = subTrayNew(ev->data.l[2]);
+                      subArrayPush(subtle->trays, (void *)t);
+                      subTrayUpdate();
+                    }
+                  break;
+                default:
+                  printf("Tray: data=%ld\n", ev->data.l[1]);
+              }
+            break; /* }}} */
+        }
+      return;
+    } /* }}} */
+  /* Messages for client windows {{{ */
+  else if((c = CLIENT(subUtilFind(ev->window, CLIENTID))));
+    {
+      /* States */
+      if(subEwmhGet(SUB_EWMH_NET_WM_STATE) == ev->message_type)
+        {
+          /* [0] => Remove = 0 / Add = 1 / Toggle = 2 -> we _always_ toggle */
+          if(ev->data.l[1] == (long)subEwmhGet(SUB_EWMH_NET_WM_STATE_FULLSCREEN))
+            {
+              subClientToggle(c, SUB_STATE_FULL);
+            }
+        }
+    } /* }}} */
+} /* }}} */
+
+/* EventColormap {{{ */
+static void
+EventColormap(XColormapEvent *ev)
+{  
+  SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
+  if(c && ev->new)
+    {
+      c->cmap = ev->colormap;
+      XInstallColormap(subtle->disp, c->cmap);
+    }
+} /* }}} */
+
+/* EventProperty {{{ */
+static void
+EventProperty(XPropertyEvent *ev)
+{
+#ifdef DEBUG
+  char *name = XGetAtomName(subtle->disp, ev->atom);
+
+  subUtilLogDebug("Property: name=%s, type=%ld, win=%#lx\n", 
+    name ? name : "n/a", ev->atom, ev->window);
+  if(name) XFree(name);
+#endif /* DEBUG */
+
+  /* Supported properties */
+  if(XA_WM_NAME == ev->atom || subEwmhGet(SUB_EWMH_WM_NAME) == ev->atom) ///< Client
+    {
+      SubClient *c = CLIENT(subUtilFind(ev->window, CLIENTID));
+      if(c) subClientFetchName(c);
+    }
+  else if(subEwmhGet(SUB_EWMH_XEMBED_INFO) == ev->atom || 
+    subEwmhGet(SUB_EWMH_WM_NORMAL_HINTS) == ev->atom) ///< Tray
+    {
+      SubTray *t = TRAY(subUtilFind(ev->window, TRAYID));
+      if(t)
+        {
+          subTraySetState(t);
+          subTrayUpdate();
+        }
+    }
+} /* }}} */
+
+/* EventCrossing {{{ */
+static void
+EventCrossing(XCrossingEvent *ev)
+{
+  SubClient *c = CLIENT(subUtilFind(ev->window, CLIENTID));
+
+  if(c && !(c->flags & SUB_STATE_DEAD))
+    {
+      XEvent event;
+      Window win = 0, root = 0;
+      int rx = 0, ry = 0, wx = 0, wy = 0;
+      unsigned int mask = 0;
+
+      /* Ensure that only the pointer window can get focus */
+      XQueryPointer(subtle->disp, c->win, &root, &win, &rx, &ry, &wx, &wy, &mask);
+      if(ev->subwindow == win) subClientFocus(c);
+
+      /* Remove any other event of the same type and window */
+      while(XCheckTypedWindowEvent(subtle->disp, ev->window, ev->type, &event));
+    }
+} /* }}} */
+
+/* EventSelectClear {{{ */
+void
+EventSelectionClear(XSelectionClearEvent *ev)
+{
+  if(subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION) == ev->selection)
+    if(ev->window == subtle->windows.tray)
+      {
+        printf("We lost the selection?!\n");
+        subTraySelect();
+      }
+} /* }}} */
+
+/* EventGrab {{{ */
+static void
+EventGrab(XEvent *ev)
 {
   Window win = 0;
   SubGrab *g = NULL;
@@ -123,253 +430,9 @@ HandleGrab(XEvent *ev)
     }
 } /* }}} */
 
-/* HandleConfigure {{{ */
+/* EventExpose {{{ */
 static void
-HandleConfigure(XConfigureRequestEvent *ev)
-{
-  XWindowChanges wc;
-
-  SubClient *c = CLIENT(subUtilFind(ev->window, CLIENTID));
-  if(c)
-    {
-      if(ev->value_mask & CWX)      c->rect.x      = ev->x;
-      if(ev->value_mask & CWY)      c->rect.y      = ev->y;
-      if(ev->value_mask & CWWidth)  c->rect.width  = ev->width;
-      if(ev->value_mask & CWHeight) c->rect.height = ev->height;
-
-      subClientConfigure(c);
-    }
-  else
-    {
-      wc.x          = ev->x;
-      wc.y          = ev->y;
-      wc.width      = ev->width;
-      wc.height     = ev->height;
-      wc.sibling    = ev->above;
-      wc.stack_mode = ev->detail;
-
-      XConfigureWindow(subtle->disp, ev->window, ev->value_mask, &wc);
-    }
-} /* }}} */
-
-/* HandleMapRequest {{{ */
-static void
-HandleMapRequest(XMapRequestEvent *ev)
-{
-  SubClient *c = CLIENT(subUtilFind(ev->window, CLIENTID));
-  if(!c) 
-    {
-      /* Create new client */
-      c = subClientNew(ev->window);
-      subArrayPush(subtle->clients, (void *)c);
-      subClientPublish();
-
-      if(subtle->cv && (subtle->cv->tags & c->tags || c->flags & SUB_STATE_URGENT))
-        subViewConfigure(subtle->cv); ///< Configure current view if tags match
-
-      subViewUpdate();
-      subViewRender();
-    }
-} /* }}} */
-
-/* HandleDestroy {{{ */
-static void
-HandleDestroy(XDestroyWindowEvent *ev)
-{
-  SubClient *c = CLIENT(subUtilFind(ev->event, 1));
-  if(c) 
-    {
-      c->flags |= SUB_STATE_DEAD;
-      subClientKill(c); 
-      subClientPublish();
-      subViewConfigure(subtle->cv);
-      subViewUpdate();
-    }
-} /* }}} */
-
-/* HandleMessage {{{ */
-static void
-HandleMessage(XClientMessageEvent *ev)
-{
-  SubClient *c = NULL;
-
-  subUtilLogDebug("ClientMessage: type=%ld, format=%d\n", ev->message_type, ev->format);
-
-  /* ICCM */
-  if(DefaultRootWindow(subtle->disp) == ev->window && 32 == ev->format)
-    {
-      if(ev->message_type == subEwmhFind(SUB_EWMH_NET_CURRENT_DESKTOP)) /* {{{ */
-        {
-          if(0 <= ev->data.l[0] && ev->data.l[0] < subtle->views->ndata) ///< Bound checking
-            subViewJump(VIEW(subtle->views->data[ev->data.l[0]]));
-        } /* }}} */
-      else if(ev->message_type == subEwmhFind(SUB_EWMH_NET_ACTIVE_WINDOW)) /* {{{ */
-        {
-          SubClient *focus = CLIENT(subUtilFind(ev->data.l[0], 1));
-          if(focus) subClientFocus(focus);
-        } /* }}} */
-      else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_CLIENT_TAG)) /* {{{ */
-        {
-          c = CLIENT(subUtilFind(ev->data.l[0], 1));
-          if(c)
-            {
-              c->tags |= (1L << ev->data.l[1]);
-              subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS, (long *)&c->tags, 1);
-            }
-        } /* }}} */
-      else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_CLIENT_UNTAG)) /* {{{ */
-        {
-          Window win = ev->data.l[0];
-
-          c = CLIENT(subUtilFind(win, 1));
-          if(c)
-            {
-              c->tags &= ~(1L << ev->data.l[1]);
-              subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS, (long *)&c->tags, 1);
-            }
-          if(subtle->cv->tags & (1L << ev->data.l[1])) subViewConfigure(subtle->cv);
-        } /* }}} */
-      else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_TAG_NEW)) /* {{{ */
-        {
-          SubTag *t = subTagNew(ev->data.b, NULL); 
-          subArrayPush(subtle->tags, (void *)t);
-          subTagPublish();
-        } /* }}} */
-      else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_TAG_KILL)) /* {{{ */
-        {
-          int id;
-          SubTag *t = subTagFind(ev->data.b, &id);
-          if(t)
-            {
-              int i;
-
-              /* Find clients tagged with this tag */
-              for(i = 0; i < subtle->clients->ndata; i++)
-                {
-                  c = CLIENT(subtle->clients->data[i]);
-
-                  if(c->tags & id)
-                    {
-                      c->tags &= ~id;
-                      subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS, (long *)&c->tags, 1);
-                    }
-                }
-
-              subArrayPop(subtle->tags, (void *)t);
-              subTagKill(t);
-              subTagPublish();
-              subViewConfigure(subtle->cv); ///< Re-configure current view
-            }
-        }  /* }}} */
-      else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_VIEW_NEW)) /* {{{ */
-        {
-          if(ev->data.b)
-            {
-              SubView *v = subViewNew(ev->data.b, NULL); 
-              subArrayPush(subtle->views, (void *)v);
-              subViewUpdate();
-              subViewPublish();
-              subViewRender();
-            }
-        }  /* }}} */
-      else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_VIEW_TAG)) /* {{{ */
-        {
-          SubView *v = VIEW(subUtilFind(ev->data.l[0], 2));
-          if(v)
-            {
-              v->tags |= (1L << ev->data.l[1]);
-              subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_VIEW_TAGS, (long *)&v->tags, 1);
-              if(subtle->cv == v) subViewConfigure(v);
-            }
-        } /* }}} */
-      else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_VIEW_UNTAG)) /* {{{ */
-        {
-          SubView *v = VIEW(subUtilFind(ev->data.l[0], 2));
-          if(v)
-            {
-              v->tags &= ~(1L << ev->data.l[1]);
-              subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_VIEW_TAGS, (long *)&v->tags, 1);
-              if(subtle->cv == v) subViewConfigure(v);
-            }
-        } /* }}} */
-      else if(ev->message_type == subEwmhFind(SUB_EWMH_SUBTLE_VIEW_KILL)) /* {{{ */
-        {
-          SubView *v = subViewFind(ev->data.b, NULL);
-
-          if(v)
-            {
-              subArrayPop(subtle->views, (void *)v);
-              subViewKill(v);
-              subViewUpdate();
-              subViewPublish();
-            }
-        }  /* }}} */
-      return;
-    }
-
-  c = (SubClient *)subUtilFind(ev->window, 1);
-  if(c && 32 == ev->format)
-    {
-      if(ev->message_type == subEwmhFind(SUB_EWMH_NET_WM_STATE))
-        {
-          /* [0] => Remove = 0 / Add = 1 / Toggle = 2 -> we _always_ toggle */
-          if(ev->data.l[1] == (long)subEwmhFind(SUB_EWMH_NET_WM_STATE_FULLSCREEN))
-            {
-              subClientToggle(c, SUB_STATE_FULL);
-            }
-        }
-    }
-} /* }}} */
-
-/* HandleColormap {{{ */
-static void
-HandleColormap(XColormapEvent *ev)
-{  
-  SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
-  if(c && ev->new)
-    {
-      c->cmap = ev->colormap;
-      XInstallColormap(subtle->disp, c->cmap);
-    }
-} /* }}} */
-
-/* HandleProperty {{{ */
-static void
-HandleProperty(XPropertyEvent *ev)
-{
-  /* Prevent expensive query if the atom isn't supported */
-  if(ev->atom == XA_WM_NAME || ev->atom == subEwmhFind(SUB_EWMH_WM_NAME))
-    {
-      SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
-      if(c) subClientFetchName(c);
-    }
-} /* }}} */
-
-/* HandleCrossing {{{ */
-static void
-HandleCrossing(XCrossingEvent *ev)
-{
-  SubClient *c = CLIENT(subUtilFind(ev->window, CLIENTID));
-
-  if(c && !(c->flags & SUB_STATE_DEAD))
-    {
-      XEvent event;
-      Window win = 0, root = 0;
-      int rx = 0, ry = 0, wx = 0, wy = 0;
-      unsigned int mask = 0;
-
-      /* Ensure that only the pointer window can get focus */
-      XQueryPointer(subtle->disp, c->win, &root, &win, &rx, &ry, &wx, &wy, &mask);
-      if(ev->subwindow == win) subClientFocus(c);
-
-      /* Remove any other event of the same type and window */
-      while(XCheckTypedWindowEvent(subtle->disp, ev->window, ev->type, &event));
-    }
-} /* }}} */
-
-/* HandleExpose {{{ */
-static void
-HandleExpose(XEvent *ev)
+EventExpose(XEvent *ev)
 {
   XEvent event;
 
@@ -387,9 +450,9 @@ HandleExpose(XEvent *ev)
   while(XCheckTypedWindowEvent(subtle->disp, ev->xany.window, ev->type, &event));
 } /* }}} */
 
-/* HandleFocus {{{ */
+/* EventFocus {{{ */
 static void
-HandleFocus(XFocusChangeEvent *ev)
+EventFocus(XFocusChangeEvent *ev)
 {
   SubClient *c = CLIENT(subUtilFind(ev->window, CLIENTID));
   if(c)
@@ -431,7 +494,7 @@ HandleFocus(XFocusChangeEvent *ev)
 } /* }}} */
 
  /** subEventLoop {{{ 
-  * @brief Handle all X events
+  * @brief Event all X events
   **/
 
 void
@@ -473,26 +536,27 @@ subEventLoop(void)
         {
           if(FD_ISSET(ConnectionNumber(subtle->disp), &rfds)) ///< X connection
             {
-              /* Handle X events */
+              /* Event X events */
               while(XPending(subtle->disp))
                 {
                   XNextEvent(subtle->disp, &ev);
                   switch(ev.type)
                     {
-                      case ConfigureRequest:  HandleConfigure(&ev.xconfigurerequest);  break;
-                      case MapRequest:        HandleMapRequest(&ev.xmaprequest);       break;
-                      case DestroyNotify:     HandleDestroy(&ev.xdestroywindow);       break;
-                      case ClientMessage:     HandleMessage(&ev.xclient);              break;
-                      case ColormapNotify:    HandleColormap(&ev.xcolormap);           break;
-                      case PropertyNotify:    HandleProperty(&ev.xproperty);           break;
-                      case EnterNotify:       HandleCrossing(&ev.xcrossing);           break;
+                      case ConfigureRequest:  EventConfigure(&ev.xconfigurerequest);     break;
+                      case MapRequest:        EventMapRequest(&ev.xmaprequest);          break;
+                      case DestroyNotify:     EventDestroy(&ev.xdestroywindow);          break;
+                      case ClientMessage:     EventMessage(&ev.xclient);                 break;
+                      case ColormapNotify:    EventColormap(&ev.xcolormap);              break;
+                      case PropertyNotify:    EventProperty(&ev.xproperty);              break;
+                      case EnterNotify:       EventCrossing(&ev.xcrossing);              break;
+                      case SelectionClear:    EventSelectionClear(&ev.xselectionclear);  break;
 
                       case ButtonPress:
-                      case KeyPress:          HandleGrab(&ev);                         break;
+                      case KeyPress:          EventGrab(&ev);                            break;
                       case VisibilityNotify:  
-                      case Expose:            HandleExpose(&ev);                       break;
+                      case Expose:            EventExpose(&ev);                          break;
                       case FocusIn:           
-                      case FocusOut:          HandleFocus(&ev.xfocus);                 break;
+                      case FocusOut:          EventFocus(&ev.xfocus);                    break;
                     }
                 }
               }
@@ -548,3 +612,5 @@ subEventLoop(void)
 #endif /* HAVE_SYS_INOTIFY_H */
     }
 } /* }}} */
+
+// vim:ts=2:bs=2:sw=2:et:fdm=marker
