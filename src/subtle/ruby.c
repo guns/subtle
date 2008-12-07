@@ -314,7 +314,7 @@ RubyConfigParse(VALUE path)
     subtle->th, 0, 0, subtle->colors.focus);
   subtle->windows.views   = XCreateSimpleWindow(subtle->disp, subtle->windows.bar, 0, 0, 1,
     subtle->th, 0, 0, subtle->colors.norm);
-  subtle->windows.tray    = XCreateSimpleWindow(subtle->disp, subtle->windows.bar, 200, 0, 1,
+  subtle->windows.tray    = XCreateSimpleWindow(subtle->disp, subtle->windows.bar, 0, 0, 1,
     subtle->th, 0, 0, subtle->colors.norm);    
   subtle->windows.sublets = XCreateSimpleWindow(subtle->disp, subtle->windows.bar, 0, 0, 1,
     subtle->th, 0, 0, subtle->colors.norm);
@@ -328,7 +328,7 @@ RubyConfigParse(VALUE path)
 
   /* Select input */
   XSelectInput(subtle->disp, subtle->windows.views, ButtonPressMask); 
-  XSelectInput(subtle->disp, subtle->windows.tray, KeyPressMask|ButtonPressMask); 
+  XSelectInput(subtle->disp, subtle->windows.tray, FocusChangeMask|KeyPressMask|ButtonPressMask); 
   subTraySelect(); ///< Get tray selection
 
   /* Update GCs */
@@ -559,3 +559,5 @@ subRubyFinish(void)
 
   subUtilLogDebug("kill=ruby\n");
 } /* }}} */
+
+// vim:ts=2:bs=2:sw=2:et:fdm=marker

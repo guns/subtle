@@ -17,9 +17,9 @@ OPTIONS = {
 # Font
 #
 FONT = { 
-  "family" => "Bitstream Vera Sans Mono",   # Font family for the text
-  "style"  => "medium",                     # Font style (medium|bold|italic)
-  "size"   => 7                             # Font size
+  "family" => "lucidatypewriter",   # Font family for the text
+  "style"  => "medium",             # Font style (medium|bold|italic)
+  "size"   => 11                    # Font size
 }
 
 #
@@ -83,5 +83,7 @@ TAGS = {
 VIEWS = {
   "work" => "browser|terms",
   "dev"  => "editor|terms",
-  "web"  => "browser|video"
+  "web"  => "browser|video|terms"
 }
+
+# vim:ts=2:bs=2:sw=2:et:fdm=marker

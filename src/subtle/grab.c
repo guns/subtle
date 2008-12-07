@@ -175,8 +175,8 @@ subGrabFind(int code,
   SubGrab **ret = NULL, *gp = NULL, g;
   
   g.code = code;
-  g.mod   = (mod & ~(LockMask|numlockmask));
-  gp      = &g;
+  g.mod  = (mod & ~(LockMask|numlockmask));
+  gp     = &g;
   ret    = (SubGrab **)bsearch(&gp, subtle->grabs->data, subtle->grabs->ndata,
     sizeof(SubGrab *), subGrabCompare);
 
@@ -296,3 +296,5 @@ subGrabKill(SubGrab *g)
   if(g->flags & SUB_GRAB_EXEC && g->string) free(g->string);
   free(g);
 } /* }}} */
+
+// vim:ts=2:bs=2:sw=2:et:fdm=marker

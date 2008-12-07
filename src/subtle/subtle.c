@@ -69,7 +69,7 @@ SubtleSignal(int signum)
         subArrayKill(subtle->grabs, True);
         subArrayKill(subtle->sublets, True);
         subArrayKill(subtle->tags, True);
-        subArrayKill(subtle->tray, True);
+        subArrayKill(subtle->trays, True);
         subArrayKill(subtle->views, True);
 
         subRubyFinish();
@@ -152,7 +152,7 @@ main(int argc,
   subtle->grabs   = subArrayNew();
   subtle->sublets = subArrayNew();
   subtle->tags    = subArrayNew();
-  subtle->tray    = subArrayNew();
+  subtle->trays   = subArrayNew();
   subtle->views   = subArrayNew();
 
 #ifdef DEBUG
@@ -178,3 +178,5 @@ main(int argc,
   
   return 0; ///< Make compiler happy
 } /* }}} */
+
+// vim:ts=2:bs=2:sw=2:et:fdm=marker

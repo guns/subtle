@@ -1,7 +1,7 @@
 #
 # @package subtle
 # @file Rake build file
-# @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
+# @copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
 # @version $Id$
 #
 # This program can be distributed under the terms of the GNU GPL.
@@ -319,3 +319,5 @@ file(PG_RBE => OBJ_RBE) do
     ok or fail("Linker failed with status #{status.exitstatus}")
   end
 end # }}}
+
+# vim:ts=2:bs=2:sw=2:et:fdm=marker

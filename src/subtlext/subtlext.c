@@ -710,3 +710,5 @@ Init_subtlext(void)
   rb_define_method(klass, "to_s", ViewToString, 0);
   /* }}} */
 } /* }}} */
+
+// vim:ts=2:bs=2:sw=2:et:fdm=marker

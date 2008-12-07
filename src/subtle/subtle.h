@@ -60,7 +60,7 @@
   DisplayWidth(subtle->disp, DefaultScreen(subtle->disp))         ///< Get screen width
 #define SCREENH \
   DisplayHeight(subtle->disp, DefaultScreen(subtle->disp))        ///< Get screen height
-#define BETWEEN(val,min,max) \
+#define MINMAX(val,min,max) \
   (min && val < min ? min : max && val > max ? max : val)         ///< Value min/max
 
 /* Casts */
@@ -75,7 +75,7 @@
 #define TRAY(t)   ((SubTray *)t)                                  ///< Cast to SubTray
 #define VIEW(v)   ((SubView *)v)                                  ///< Cast to SubView
 
-/* XEMBED messages */
+/* XEmbed messages */
 #define XEMBED_EMBEDDED_NOTIFY         0
 #define XEMBED_WINDOW_ACTIVATE         1
 #define XEMBED_WINDOW_DEACTIVATE       2
@@ -90,7 +90,7 @@
 #define XEMBED_UNREGISTER_ACCELERATOR  13
 #define XEMBED_ACTIVATE_ACCELERATOR    14
 
-/* Details for  XEMBED_FOCUS_IN: */
+/* Details for XEMBED_FOCUS_IN */
 #define XEMBED_FOCUS_CURRENT           0
 #define XEMBED_FOCUS_FIRST             1
 #define XEMBED_FOCUS_LAST              2
@@ -354,6 +354,8 @@ typedef struct subtag_t /* {{{ */
 typedef struct subtray_t /* {{{ */
 {
   FLAGS   flags;                                                  ///< Tray flags
+  char    *name;                                                  ///< Tray name
+  int     width;                                                  ///< Tray win width
   Window  win;                                                    ///< Tray window
 } SubTray; /* }}} */
 
@@ -471,6 +473,8 @@ void subTagKill(SubTag *t);                                       ///< Delete ta
 SubTray *subTrayNew(Window win);                                  ///< Create tray 
 void subTrayUpdate(void);                                         ///< Update tray bar
 void subTraySelect(void);                                         ///< Get selection
+void subTraySetState(SubTray *t);                                 ///< Set state
+void subTrayGetSize(SubTray *t);                                  ///< Get size
 void subTrayKill(SubTray *t);                                     ///< Delete tray
 /* }}} */
 
@@ -510,3 +514,5 @@ void subViewSanitize(SubClient *c);                               ///< Sanitize 
 void subViewKill(SubView *v);                                     ///< Kill view
 /* }}} */
 #endif /* SUBTLE_H */
+
+// vim:ts=2:bs=2:sw=2:et:fdm=marker

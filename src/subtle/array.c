@@ -33,10 +33,13 @@ void
 subArrayPush(SubArray *a,
   void *e)
 {
-  assert(a && e);
+  assert(a);
 
-  a->data = (void **)subUtilRealloc(a->data, (a->ndata + 1) * sizeof(void *));
-  a->data[(a->ndata)++] = e;
+  if(e)
+    {
+      a->data = (void **)subUtilRealloc(a->data, (a->ndata + 1) * sizeof(void *));
+      a->data[(a->ndata)++] = e;
+    }
 } /* }}} */
 
  /** subArrayPop {{{
@@ -152,4 +155,6 @@ subArrayKill(SubArray *a,
 
   if(a->data) free(a->data);
   free(a);
-} /* }}} */#define LENGTH(a) (sizeof(a) / sizeof(a[0])) 
+} /* }}} */
+
+// vim:ts=2:bs=2:sw=2:et:fdm=marker
