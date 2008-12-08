@@ -328,7 +328,7 @@ RubyConfigParse(VALUE path)
 
   /* Select input */
   XSelectInput(subtle->disp, subtle->windows.views, ButtonPressMask); 
-  XSelectInput(subtle->disp, subtle->windows.tray, FocusChangeMask|KeyPressMask|ButtonPressMask); 
+  XSelectInput(subtle->disp, subtle->windows.tray, KeyPressMask|ButtonPressMask); 
   subTraySelect(); ///< Get tray selection
 
   /* Update GCs */
