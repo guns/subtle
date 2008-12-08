@@ -298,8 +298,7 @@ EventProperty(XPropertyEvent *ev)
       SubClient *c = CLIENT(subUtilFind(ev->window, CLIENTID));
       if(c) subClientFetchName(c);
     }
-  else if(subEwmhGet(SUB_EWMH_XEMBED_INFO) == ev->atom || 
-    subEwmhGet(SUB_EWMH_WM_NORMAL_HINTS) == ev->atom) ///< Tray
+  else if(subEwmhGet(SUB_EWMH_XEMBED_INFO) == ev->atom) ///< Tray
     {
       SubTray *t = TRAY(subUtilFind(ev->window, TRAYID));
       if(t)
@@ -308,38 +307,56 @@ EventProperty(XPropertyEvent *ev)
           subTrayUpdate();
         }
     }
+  else if(subEwmhGet(SUB_EWMH_WM_NORMAL_HINTS) == ev->atom) ///< Tray
+    {
+      SubTray *t = TRAY(subUtilFind(ev->window, TRAYID));
+      if(t)
+        {
+          subTrayConfigure(t);
+          subTrayUpdate();
+        }
+    }    
 } /* }}} */
 
 /* EventCrossing {{{ */
 static void
 EventCrossing(XCrossingEvent *ev)
 {
-  SubClient *c = CLIENT(subUtilFind(ev->window, CLIENTID));
+  XEvent event;
+  SubClient *c = NULL;
+  SubTray *t = NULL;
 
-  if(c && !(c->flags & SUB_STATE_DEAD))
+  if((c = CLIENT(subUtilFind(ev->window, CLIENTID))))
     {
-      XEvent event;
-      Window win = 0, root = 0;
-      int rx = 0, ry = 0, wx = 0, wy = 0;
-      unsigned int mask = 0;
+      if(!(c->flags & SUB_STATE_DEAD))
+        {
+          Window win = 0, root = 0;
+          int rx = 0, ry = 0, wx = 0, wy = 0;
+          unsigned int mask = 0;
 
-      /* Ensure that only the pointer window can get focus */
-      XQueryPointer(subtle->disp, c->win, &root, &win, &rx, &ry, &wx, &wy, &mask);
-      if(ev->subwindow == win) subClientFocus(c);
+          /* Ensure that only the pointer window can get focus */
+          XQueryPointer(subtle->disp, c->win, &root, &win, &rx, &ry, &wx, &wy, &mask);
+          if(ev->subwindow == win) subClientFocus(c);
 
-      /* Remove any other event of the same type and window */
-      while(XCheckTypedWindowEvent(subtle->disp, ev->window, ev->type, &event));
+        }
+     }
+  else if((t = TRAY(subUtilFind(ev->window, TRAYID))))
+    {
+printf("name=%s\n", t->name);
     }
+
+  /* Remove any other event of the same type and window */
+  while(XCheckTypedWindowEvent(subtle->disp, ev->window, ev->type, &event));    
 } /* }}} */
 
-/* EventSelectClear {{{ */
+/* EventSelectionClear {{{ */
 void
 EventSelectionClear(XSelectionClearEvent *ev)
 {
   if(subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION) == ev->selection)
     if(ev->window == subtle->windows.tray)
       {
-        printf("We lost the selection?!\n");
+        subUtilLogDebug("We lost the selection? Renew it!\n");
         subTraySelect();
       }
 } /* }}} */
