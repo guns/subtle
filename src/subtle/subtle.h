@@ -355,7 +355,7 @@ typedef struct subtray_t /* {{{ */
 {
   FLAGS   flags;                                                  ///< Tray flags
   char    *name;                                                  ///< Tray name
-  int     width;                                                  ///< Tray win width
+  int     width;                                                  ///< Tray width
   Window  win;                                                    ///< Tray window
 } SubTray; /* }}} */
 
@@ -391,8 +391,6 @@ void subClientFocus(SubClient *c);                                ///< Focus cli
 void subClientDrag(SubClient *c, int mode);                       ///< Move/drag client
 void subClientToggle(SubClient *c, int type);                     ///< Toggle client state
 void subClientFetchName(SubClient *c);                            ///< Fetch client name
-void subClientSetWMState(SubClient *c, long state);               ///< Set client WM state
-long subClientGetWMState(SubClient *c);                           ///< Get client WM state
 void subClientPublish(void);                                      ///< Publish all clients
 void subClientKill(SubClient *c);                                 ///< Kill client
 /* }}} */
@@ -414,6 +412,7 @@ Atom subEwmhGet(SubEwmh e);                                       ///< Get atom
 SubEwmh subEwmhFind(Atom atom);                                   ///< Find atom id
 char *subEwmhGetProperty(Window win, 
   Atom type, SubEwmh e, unsigned long *size);                     ///< Get property
+long subEwmhGetWMState(Window win);                               ///< Get window WM state
 void subEwmhSetWindows(Window win, SubEwmh e, 
   Window *values, int size);                                      ///< Set window properties
 void subEwmhSetCardinals(Window win, SubEwmh e,
@@ -422,6 +421,7 @@ void subEwmhSetString(Window win, SubEwmh e,
   char *value);                                                   ///< Set string property
 void subEwmhSetStrings(Window win, SubEwmh e,                     ///< Set string properties
   char **values, int size);
+void subEwmhSetWMState(Window win, long state);                   ///< Set window WM state
 int subEwmhMessage(Window dst, Window win, SubEwmh e, 
   long data0, long data1, long data2, long data3, 
   long data4);                                                    ///< Send message
@@ -471,10 +471,11 @@ void subTagKill(SubTag *t);                                       ///< Delete ta
 
 /* tray.c {{{ */
 SubTray *subTrayNew(Window win);                                  ///< Create tray 
+void subTrayConfigure(SubTray *t);                                ///< Configure tray
 void subTrayUpdate(void);                                         ///< Update tray bar
 void subTraySelect(void);                                         ///< Get selection
 void subTraySetState(SubTray *t);                                 ///< Set state
-void subTrayGetSize(SubTray *t);                                  ///< Get size
+void subTraySetSize(SubTray *t);                                  ///< Set size
 void subTrayKill(SubTray *t);                                     ///< Delete tray
 /* }}} */
 

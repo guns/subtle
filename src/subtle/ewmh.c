@@ -135,6 +135,33 @@ subEwmhGetProperty(Window win,
   return (char *)data;
 } /* }}} */
 
+ /** subEwmhGetWMState {{{
+  * @brief Get WM state from window
+  * @param[in]  win  A window
+  * @return Returns window WM state
+  **/
+
+long
+subEwmhGetWMState(Window win)
+{
+  Atom type;
+  int format;
+  unsigned long unused, bytes;
+  long *data = NULL, state = WithdrawnState;
+
+  assert(win);
+
+  if(Success == XGetWindowProperty(subtle->disp, win, atoms[SUB_EWMH_WM_STATE], 0L, 2L, False,
+      atoms[SUB_EWMH_WM_STATE], &type, &format, &bytes, &unused, 
+      (unsigned char **)&data) && bytes)
+    {
+      state = *data;
+      XFree(data);
+    }
+
+  return state;
+} /* }}} */
+
  /** subEwmhSetWindows {{{
   * @brief Change window property
   * @param[in]  win     Window
@@ -219,6 +246,26 @@ subEwmhSetStrings(Window win,
   XChangeProperty(subtle->disp, win, atoms[e], atoms[SUB_EWMH_UTF8], 8,
     PropModeReplace, (unsigned char *)str, pos);
   free(str);
+} /* }}} */
+
+ /** subEwmhSetWMState {{{
+  * @brief Set WM state for window
+  * @param[in]  win    A window
+  * @param[in]  state  New state for the window
+  **/
+
+void
+subEwmhSetWMState(Window win,
+  long state)
+{
+  CARD32 data[2];
+  data[0] = state;
+  data[1] = None; /* No icons */
+
+  assert(win);
+
+  XChangeProperty(subtle->disp, win, atoms[SUB_EWMH_WM_STATE], 
+    atoms[SUB_EWMH_WM_STATE], 32, PropModeReplace, (unsigned char *)data, 2);
 } /* }}} */
 
  /** subEwmhMessage {{{

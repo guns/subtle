@@ -148,7 +148,7 @@ subClientNew(Window win)
   hints = XGetWMHints(subtle->disp, c->win);
   if(hints)
     {
-      subClientSetWMState(c, NormalState);
+      subEwmhSetWMState(c->win, NormalState);
       if(hints->input) c->flags |= SUB_PREF_INPUT;
       if(hints->flags & XUrgencyHint) c->tags |= SUB_TAG_URGENT;
       XFree(hints);
@@ -626,52 +626,6 @@ subClientFetchName(SubClient *c)
   if(!c->name) c->name = strdup(PKG_NAME);
 
   subClientRender(c);
-} /* }}} */
-
- /** subClientSetWMState {{{
-  * @brief Set WM state for client
-  * @param[in]  c      A #SubClient
-  * @param[in]  state  New state for the client
-  **/
-
-void
-subClientSetWMState(SubClient *c,
-  long state)
-{
-  CARD32 data[2];
-  data[0] = state;
-  data[1] = None; /* No icons */
-
-  assert(c);
-
-  XChangeProperty(subtle->disp, c->win, subEwmhGet(SUB_EWMH_WM_STATE), 
-    subEwmhGet(SUB_EWMH_WM_STATE), 32, PropModeReplace, (unsigned char *)data, 2);
-} /* }}} */
-
- /** subClientGetWMState {{{
-  * @brief Get WM state from client
-  * @param[in]  c  A #SubClient
-  * @return Returns client WM state
-  **/
-
-long
-subClientGetWMState(SubClient *c)
-{
-  Atom type;
-  int format;
-  unsigned long unused, bytes;
-  long *data = NULL, state = WithdrawnState;
-
-  assert(c);
-
-  if(XGetWindowProperty(subtle->disp, c->win, subEwmhGet(SUB_EWMH_WM_STATE), 0L, 2L, False,
-      subEwmhGet(SUB_EWMH_WM_STATE), 
-      &type, &format, &bytes, &unused, (unsigned char **)&data)== Success && bytes)
-    {
-      state = *data;
-      XFree(data);
-    }
-  return state;
 } /* }}} */
 
  /** subClientPublish {{{
