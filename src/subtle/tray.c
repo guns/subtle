@@ -45,14 +45,14 @@ subTrayNew(Window win)
       XFetchName(subtle->disp, t->win, &t->name);
       if(!t->name) t->name = strdup(PKG_NAME);
 
-      /* Update tray window */
-      XAddToSaveSet(subtle->disp, t->win);
-      XSelectInput(subtle->disp, t->win, StructureNotifyMask|PropertyChangeMask);
-      XReparentWindow(subtle->disp, t->win, subtle->windows.tray, 0, 0);
-      XSaveContext(subtle->disp, t->win, TRAYID, (void *)t);
-
       subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime, XEMBED_EMBEDDED_NOTIFY,
         0, subtle->windows.tray, 0);
+
+      /* Update tray window */
+      XAddToSaveSet(subtle->disp, t->win);
+      XSelectInput(subtle->disp, t->win, EnterWindowMask|StructureNotifyMask|PropertyChangeMask);
+      XReparentWindow(subtle->disp, t->win, subtle->windows.tray, 0, 0);
+      XSaveContext(subtle->disp, t->win, TRAYID, (void *)t);
 
       subTraySetState(t); ///< @todo Overhead for getting property twice
 
@@ -65,6 +65,51 @@ subTrayNew(Window win)
   return t;
 } /* }}} */
 
+ /** subTrayConfigure {{{
+  * @brief Configure tray
+  * @param[in]  t  A #SubTray
+  **/
+
+void
+subTrayConfigure(SubTray *t)
+{
+  long supplied = 0;
+  XSizeHints *hints = NULL;
+
+  assert(t);
+  
+  hints = XAllocSizeHints();
+  if(!hints) subUtilLogError("Can't alloc memory. Exhausted?\n");
+
+  XGetWMNormalHints(subtle->disp, t->win, hints, &supplied);
+  if(0 < supplied)
+    {
+      if(hints->flags & (USSize|PSize)) ///< User/program size
+        t->width = MINMAX(hints->width, subtle->th, 2 * subtle->th);
+      else if(hints->flags & PBaseSize) ///< Base size
+        t->width = MINMAX(hints->base_width, subtle->th, 2 * subtle->th);
+      else if(hints->flags & PMinSize) ///< Min size
+        t->width = MINMAX(hints->min_width, subtle->th, 2 * subtle->th);
+
+    }
+  XFree(hints);
+
+  subUtilLogDebug("Tray: width=%d, supplied=%ld\n", t->width, supplied);
+} /* }}} */
+
+ /** subTrayFocus {{{
+  * @brief Set or unset focus to tray
+  * @param[in]  t  A #SubTray
+  **/
+
+void
+subTrayFocus(SubTray *t)
+{
+  assert(t);
+
+  XSetInputFocus(subtle->disp, t->win, RevertToNone, CurrentTime);
+} /* }}} */
+
  /** subTrayUpdate {{{
   * @brief Update tray bar
   **/
@@ -74,7 +119,7 @@ subTrayUpdate(void)
 {
   if(0 < subtle->trays->ndata)
     {
-      int i, width = 0;
+      int i, width = 3;
       XWindowAttributes attrs;
 
       XGetWindowAttributes(subtle->disp, subtle->windows.sublets, &attrs);
@@ -130,49 +175,24 @@ subTraySetState(SubTray *t)
   if((info = (XEmbedInfo *)subEwmhGetProperty(t->win, subEwmhGet(SUB_EWMH_XEMBED_INFO), 
     SUB_EWMH_XEMBED_INFO, NULL)))
     {
+      int opcode = 0;
+
        if(info->flags & XEMBED_MAPPED) ///< Map if wanted
         {
-          subTrayGetSize(t);
+          opcode = XEMBED_WINDOW_ACTIVATE;
           XMapRaised(subtle->disp, t->win); 
         }
-      else XUnmapWindow(subtle->disp, t->win);
+      else 
+        {
+          opcode = XEMBED_WINDOW_DEACTIVATE;
+          XUnmapWindow(subtle->disp, t->win);
+        }
 
-      printf("XEmbedInfo: version=%ld, flags=%ld, mapped=%ld\n", info->version, info->flags,
-        info->flags & XEMBED_MAPPED);
+      subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime, opcode, 0, 0, 0);
+      subUtilLogDebug("XEmbedInfo: version=%ld, flags=%ld, mapped=%ld\n", info->version,
+        info->flags, info->flags & XEMBED_MAPPED);
     }
   XFree(info);
-} /* }}} */
-
- /** subTrayGetSize {{{
-  * @brief Get window size
-  * @param[in]  t  A #SubTray
-  **/
-
-void
-subTrayGetSize(SubTray *t)
-{
-  long supplied = 0;
-  XSizeHints *hints = NULL;
-
-  assert(t);
-  
-  hints = XAllocSizeHints();
-  if(!hints) subUtilLogError("Can't alloc memory. Exhausted?\n");
-
-  XGetWMNormalHints(subtle->disp, t->win, hints, &supplied);
-  if(0 < supplied)
-    {
-      if(hints->flags & (USSize|PSize)) ///< User/program size
-        t->width = MINMAX(hints->width, subtle->th, subtle->th * 2);
-      else if(hints->flags & PBaseSize) ///< Base size
-        t->width = MINMAX(hints->base_width, subtle->th, subtle->th * 2);
-      else if(hints->flags & PMinSize) ///< Min size
-        t->width = MINMAX(hints->min_width, subtle->th, subtle->th * 2);
-
-    }
-  XFree(hints);
-
-  printf("Tray: width=%d, supplied=%ld\n", t->width, supplied);
 } /* }}} */
 
  /** subTrayKill {{{

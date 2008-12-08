@@ -472,6 +472,7 @@ void subTagKill(SubTag *t);                                       ///< Delete ta
 /* tray.c {{{ */
 SubTray *subTrayNew(Window win);                                  ///< Create tray 
 void subTrayConfigure(SubTray *t);                                ///< Configure tray
+void subTrayFocus(SubTray * t);                                   ///< Focus tray
 void subTrayUpdate(void);                                         ///< Update tray bar
 void subTraySelect(void);                                         ///< Get selection
 void subTraySetState(SubTray *t);                                 ///< Set state
