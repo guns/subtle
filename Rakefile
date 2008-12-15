@@ -293,7 +293,7 @@ end # }}}
   out  = File.join(@options["builddir"], File.basename(src).ext("o"))
 
   file(out => src) do
-    fpic = "shared.c" == File.basename(src) ? "-fPIC" : ""
+    fpic = ["shared.c", "subtlext.c"].include?(File.basename(src)) ? "-fPIC" : ""
     silent_sh("gcc -o #{out} -c #{@options["cflags"]} #{fpic} #{@options["cpppath"]} #{src}", "CC #{out}") do |ok, status|
       ok or fail("Compiler failed with status #{status.exitstatus}")
     end
