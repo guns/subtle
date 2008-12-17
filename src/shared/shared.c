@@ -161,14 +161,15 @@ subSharedRegexKill(regex_t *preg)
   * @param[in]  win   Client window
   * @param[in]  type  Message type 
   * @param[in]  data  A #SubMessageData
+  * @param[in]  sync  Sync connection
   **/
 
 void
 subSharedMessage(Window win,
   char *type,
-  SubMessageData data)
+  SubMessageData data,
+  int sync)
 {
-  int i;
   XEvent ev;
   long mask = SubstructureRedirectMask|SubstructureNotifyMask;
 
@@ -182,10 +183,17 @@ subSharedMessage(Window win,
   ev.xclient.window       = win;
   ev.xclient.format       = 32;
 
-  for(i = 0; i < 5; i++) ev.xclient.data.l[i] = data.l[i]; ///< Copy data
+  /* Data */
+  ev.xclient.data.l[0]    = data.l[0];
+  ev.xclient.data.l[1]    = data.l[1];
+  ev.xclient.data.l[2]    = data.l[2];
+  ev.xclient.data.l[3]    = data.l[3];
+  ev.xclient.data.l[4]    = data.l[4];
 
   if(!XSendEvent(display, DefaultRootWindow(display), False, mask, &ev))
     subSharedLogDebug("Can't send client message `%s'\n", type);
+ 
+  if(True == sync) XSync(display, False);
 } /* }}} */
 
  /** subSharedPropertyGet {{{
@@ -487,21 +495,19 @@ subSharedClientFind(char *name,
 int
 subSharedTagFind(char *name)
 {
-  int i, size = 0, tag = 0;
+  int i, size = 0;
   char **tags = NULL;
   regex_t *preg = NULL;
 
   assert(name);
 
-  preg    = subSharedRegexNew(name);
-  tags    = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
+  preg = subSharedRegexNew(name);
+  tags = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
 
   /* Find tag id */
   for(i = 0; i < size; i++)
     if(subSharedRegexMatch(preg, tags[i]))
       {
-        tag = i + 1;
-
         subSharedLogDebug("Found: type=tag, name=%s, n=%d\n", name, i);
 
         subSharedRegexKill(preg);
@@ -548,7 +554,7 @@ subSharedViewFind(char *name,
         {
           snprintf(buf, sizeof(buf), "%#lx", frames[i]);
 
-          /* Find client either by name or by window id */
+          /* Find view either by name or by window id */
           if(subSharedRegexMatch(preg, names[i]) || subSharedRegexMatch(preg, buf))
             {
               subSharedLogDebug("Found: type=view, name=%s win=%#lx, n=%d\n",

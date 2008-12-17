@@ -72,7 +72,7 @@ void subSharedRegexKill(regex_t *preg);
 /* }}} */
 
 /* Message {{{ */
-void subSharedMessage(Window win, char *type, SubMessageData data);
+void subSharedMessage(Window win, char *type, SubMessageData data, int sync);
 /* }}} */
 
 /* Property {{{ */
