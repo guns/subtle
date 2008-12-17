@@ -67,6 +67,25 @@ subArrayPop(SubArray *a,
     }
 } /* }}} */
 
+ /** subArrayGet {{{
+  * @brief Get idx after boundary check
+  * @param[in]  a    A #SubArray
+  * @param[in]  idx  Array index
+  * @return Returns an element or \p NULL
+  **/
+
+void *
+subArrayGet(SubArray *a,
+  int idx)
+{
+  assert(a);
+
+  if(0 <= idx && idx <= a->ndata)
+    return a->data[idx];
+
+  return NULL;
+} /* }}} */
+
  /** subArrayIndex {{{
   * @brief Find array id of element
   * @param[in]  a  A #SubArray
