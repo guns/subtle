@@ -174,20 +174,15 @@ subViewConfigure(SubView *v)
             {
               if(l->flags & SUB_TILE_VERT) 
                 {
-                    
-                  l->c1->rect.height  = l->c1->rect.height / 2;
-                  l->c2->rect.x       = l->c1->rect.x;
-                  l->c2->rect.y       = l->c1->rect.y + l->c1->rect.height;
-                  l->c2->rect.width   = l->c1->rect.width;
-                  l->c2->rect.height  = l->c1->rect.height;
+                  l->c1->rect.height = l->c1->rect.height / 2;
+                  l->c2->rect        = l->c1->rect;
+                  l->c2->rect.y      = l->c1->rect.y + l->c1->rect.height;
                 }
               else if(l->flags & SUB_TILE_HORZ) 
                 {
-                  l->c1->rect.width   = l->c1->rect.width / 2;
-                  l->c2->rect.x       = l->c1->rect.width;
-                  l->c2->rect.y       = l->c1->rect.y;
-                  l->c2->rect.width   = l->c1->rect.width;
-                  l->c2->rect.height  = l->c1->rect.height;
+                  l->c1->rect.width = l->c1->rect.width / 2;
+                  l->c2->rect       = l->c1->rect;
+                  l->c2->rect.x     = l->c1->rect.width;
 
                   if(l->c1->flags & SUB_STATE_RESIZE)
                     {
