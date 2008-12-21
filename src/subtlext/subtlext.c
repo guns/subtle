@@ -45,7 +45,8 @@ SubtlextRunning(void)
 
 /* SubtlextTagFind {{{ */
 static VALUE
-SubtlextTagFind(VALUE value)
+SubtlextTagFind(VALUE value,
+  int create)
 {
   int id = -1;
   VALUE klass = Qnil, tag = Qnil, name = Qnil;
@@ -57,32 +58,33 @@ SubtlextTagFind(VALUE value)
   switch(rb_type(value))
     {
       case T_STRING:
-        if(-1 == (id = subSharedTagFind(STR2CSTR(value)))) ///< Check tag existance
+        if(-1 == (id = subSharedTagFind(STR2CSTR(value))) && True == create) ///< Find tag
           {
             /* Send tag to subtle */
             snprintf(data.b, sizeof(data.b), "%s", STR2CSTR(value));
             subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_NEW", data, True);
           }
 
-        if(-1 != id || -1 != (id = subSharedTagFind(STR2CSTR(value)))) ///< Check tag existance
+        if(-1 != id || -1 != (id = subSharedTagFind(STR2CSTR(value)))) ///< Get tag id
           {
-            /* Create new tag */
+            /* Create new tag instance */
             tag = rb_funcall(klass, rb_intern("new"), 1, value);
             rb_iv_set(tag, "@id", INT2FIX(id));
             rb_iv_set(tag, "@name", value);
 
+            subSharedLogDebug("Tag: name=%s, id=%d\n", STR2CSTR(value), id);
+
             return tag;
           }
-          printf("id=%d, name=%s\n", id, STR2CSTR(value));
 
-          rb_raise(rb_eArgError, "Unknown value type");
+          rb_raise(rb_eStandardError, "Tag cannot be found");
           return Qnil;
         break;
       case T_OBJECT:
       case T_CLASS:
         if(rb_obj_is_instance_of(value, klass)) ///< Check object instance
           {
-            if(-1 == (id = rb_iv_get(value, "@id")))
+            if(-1 == (id = rb_iv_get(value, "@id")) && True == create)
               {
                 name = rb_iv_get(value, "@name");
 
@@ -90,9 +92,9 @@ SubtlextTagFind(VALUE value)
                 snprintf(data.b, sizeof(data.b), "%s", STR2CSTR(name));
                 subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_NEW", data, True);
 
-                if(-1 == (id = subSharedTagFind(STR2CSTR(name)))) ///< Check tag existance
+                if(-1 == (id = subSharedTagFind(STR2CSTR(name)))) ///< Find tag
                   {
-                    rb_raise(rb_eArgError, "Unknown value type");
+                    rb_raise(rb_eStandardError, "Tag cannot be updated");
                     return Qnil;
                   }                
 
@@ -167,21 +169,24 @@ static VALUE
 SubtlextClientTag(VALUE self,
   VALUE value)
 {
-  VALUE klass = Qnil, tag = Qnil, id = Qnil, win = Qnil;
-  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+  VALUE tag = Qnil;
 
-  klass = rb_const_get(rb_mKernel, rb_intern("Tag")); ///< Get Tag class
-  tag   = SubtlextTagFind(value); ///< Find or create tag
-  id    = rb_iv_get(tag,  "@id");
-  win   = rb_iv_get(self, "@win");
+  if(Qnil != (tag = SubtlextTagFind(value, True)))
+    {
+      VALUE id = Qnil, win = Qnil;
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  /* Send data */
-  data.l[0] = FIX2LONG(id);
-  data.l[1] = FIX2LONG(win);
+      id  = rb_iv_get(tag,  "@id");
+      win = rb_iv_get(self, "@win");
 
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_CLIENT_TAG", data, True);
+      /* Send data */
+      data.l[0] = FIX2LONG(id);
+      data.l[1] = FIX2LONG(win);
 
-  return Qnil;
+      subSharedMessage(DefaultRootWindow(display), "SUBTLE_CLIENT_TAG", data, True);
+    }
+
+  return tag;
 } /* }}} */
 
 /* SubtlextClientUntag {{{ */
@@ -189,6 +194,23 @@ static VALUE
 SubtlextClientUntag(VALUE self,
   VALUE value)
 {  
+  VALUE tag = Qnil;
+
+  if(Qnil != (tag = SubtlextTagFind(value, False)))
+    {
+      VALUE id = Qnil, win = Qnil;
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+      id  = rb_iv_get(tag,  "@id");
+      win = rb_iv_get(self, "@win");
+
+      /* Send data */
+      data.l[0] = FIX2LONG(id);
+      data.l[1] = FIX2LONG(win);
+
+      subSharedMessage(DefaultRootWindow(display), "SUBTLE_CLIENT_UNTAG", data, True);      
+    }
+
   return Qnil;
 } /* }}} */
 
@@ -339,50 +361,7 @@ static VALUE
 SubtlextSubtleTagAdd(VALUE self,
   VALUE value)
 {
-  int id = 0, rtype = T_NIL;
-  VALUE klass  = Qnil, tag = Qnil, name = Qnil;
-  SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-  klass = rb_const_get(rb_mKernel, rb_intern("Tag")); ///< Get Tag class
-  rtype = rb_type(value);
-
-  /* Check type */
-  switch(rtype)
-    {
-      case T_STRING: name = value; break;
-      case T_OBJECT:
-      case T_CLASS:
-        if(rb_obj_is_instance_of(name, klass))
-          {
-            name = rb_iv_get(value, "@name");
-            break;
-          }
-      default: 
-        rb_raise(rb_eArgError, "Unknown value type");
-        return Qnil;
-    }
-
-  /* Send data */
-  snprintf(data.b, sizeof(data.b), STR2CSTR(name));
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_NEW", data, True);
-
-  /* Check tag */
-  id = subSharedTagFind(STR2CSTR(name));
-  if(-1 != id)
-    {
-      if(T_STRING == rtype)
-        {
-          /* Create new tag */
-          tag = rb_funcall(klass, rb_intern("new"), 1, name);
-          rb_iv_set(tag, "@id", INT2FIX(id));
-
-          return tag;
-        }
-
-      return value;
-    }
-
-  return Qnil;
+  return SubtlextTagFind(value, True); ///< Find or create tag
 } /* }}} */
 
 /* SubtlextSubtleTagDel {{{ */
@@ -390,29 +369,20 @@ static VALUE
 SubtlextSubtleTagDel(VALUE self,
   VALUE value)
 {
-  VALUE name = Qnil;
-  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+  VALUE tag = Qnil;
 
-  /* Check type */
-  switch(rb_type(value))
+  if(Qnil != (tag = SubtlextTagFind(value, False)))
     {
-      case T_STRING: name = value; break;
-      case T_OBJECT:
-      case T_CLASS:
-        if(rb_obj_is_instance_of(name, 
-          rb_const_get(rb_mKernel, rb_intern("Tag"))))
-          {
-            name = rb_iv_get(value, "@name");
-            break;
-          }
-      default: 
-        rb_raise(rb_eArgError, "Unknown value type");
-        return Qnil;
-    }
+      VALUE id = Qnil;
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  /* Send data */
-  snprintf(data.b, sizeof(data.b), STR2CSTR(name));
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_KILL", data, True);
+      id = rb_iv_get(tag, "@id");
+
+      /* Send data */
+      data.l[0] = FIX2LONG(id);
+
+      subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_KILL", data, True);  
+    }
 
   return Qnil;
 } /* }}} */

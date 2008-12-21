@@ -136,23 +136,23 @@ EventMessage(XClientMessageEvent *ev)
       switch(id)
         {
           case SUB_EWMH_NET_CURRENT_DESKTOP: /* {{{ */
-            if((v = VIEW(subArrayGet(ev->data.l[0])))) subViewJump(v);
+            if((v = VIEW(subArrayGet(subtle->views, ev->data.l[0])))) subViewJump(v);
             break; /* }}} */
           case SUB_EWMH_NET_ACTIVE_WINDOW: /* {{{ */
             if((c = CLIENT(subUtilFind(ev->data.l[0], CLIENTID))))
               subClientFocus(c);
             break; /* }}} */
           case SUB_EWMH_SUBTLE_CLIENT_TAG: /* {{{ */
-            if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0], CLIENTID))))
+            if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0]))))
               {
-                c->tags |= (1L << ev->data.l[1] + 1);
+                c->tags |= (1L << (ev->data.l[1] + 1));
                 subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS, (long *)&c->tags, 1);
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_CLIENT_UNTAG: /* {{{ */
-            if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0], CLIENTID))))
+            if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0]))))
               {
-                c->tags &= ~(1L << ev->data.l[1] + 1);
+                c->tags &= ~(1L << (ev->data.l[1] + 1));
                 subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS, (long *)&c->tags, 1);
               }
             if(subtle->cv->tags & (1L << ev->data.l[1])) subViewConfigure(subtle->cv);
@@ -165,9 +165,10 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_SUBTLE_TAG_KILL: /* {{{ */
             if((t = TAG(subArrayGet(subtle->tags, (int)ev->data.l[0]))))
               {
-                int i, id = ev->data.l[0] - 1;
-
+                int i;
+                
                 /* Views */
+                id = ev->data.l[0] - 1;
                 for(i = 0; i < subtle->views->ndata; i++)
                   {
                     v = VIEW(subtle->views->data[i]);
@@ -175,7 +176,7 @@ EventMessage(XClientMessageEvent *ev)
                     if(v->tags & id)
                       {
                         v->tags &= ~id;
-                        subEwmhSetCardinals(v->win, SUB_EWMH_SUBTLE_VIEW_TAGS,
+                        subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_VIEW_TAGS,
                           (long *)&v->tags, 1);
                       }
                   }
@@ -214,21 +215,21 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_SUBTLE_VIEW_TAG: /* {{{ */
             if((v = VIEW(subArrayGet(subtle->views, (int)ev->data.l[0]))))
               {
-                v->tags |= (1L << ev->data.l[1] + 1);
+                v->tags |= (1L << (ev->data.l[1] + 1));
                 subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_VIEW_TAGS, (long *)&v->tags, 1);
                 if(subtle->cv == v) subViewConfigure(v);
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_VIEW_UNTAG: /* {{{ */
-            if((v = VIEW(subArrayGet(subtle->view, (int)ev->data.l[0]))))
+            if((v = VIEW(subArrayGet(subtle->views, (int)ev->data.l[0]))))
               {
-                v->tags &= ~(1L << ev->data.l[1] + 1);
+                v->tags &= ~(1L << (ev->data.l[1] + 1));
                 subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_VIEW_TAGS, (long *)&v->tags, 1);
                 if(subtle->cv == v) subViewConfigure(v);
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_VIEW_KILL: /* {{{ */
-            if((v = VIEW(subArrayGet(subtle->view, (int)ev->data.l[0]))))
+            if((v = VIEW(subArrayGet(subtle->views, (int)ev->data.l[0]))))
               {
                 subArrayPop(subtle->views, (void *)v);
                 subViewKill(v);
