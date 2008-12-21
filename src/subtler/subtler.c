@@ -499,7 +499,7 @@ SubtlerUsage(int group)
     }
   if(-1 == group || 0 == group)
     {
-      printf("\nSubtlers for clients:\n" \
+      printf("\nOptions for clients:\n" \
              "  -l, --list              List all clients\n" \
              "  -f, --find=PATTERN      Find a client\n" \
              "  -F, --focus=PATTERN     Set focus to client\n" \
@@ -511,7 +511,7 @@ SubtlerUsage(int group)
     }
   if(-1 == group || 1 == group)
     {
-      printf("\nSubtlers for tags:\n" \
+      printf("\nOptions for tags:\n" \
              "  -n, --new=NAME          Create new tag\n" \
              "  -l, --list              List all tags\n" \
              "  -f, --find              Find all clients/views by tag\n" \
@@ -519,7 +519,7 @@ SubtlerUsage(int group)
     }
   if(-1 == group || 2 == group)
     {
-      printf("\nSubtlers for views:\n" \
+      printf("\nOptions for views:\n" \
              "  -n, --new=NAME          Create new view\n" \
              "  -l, --list              List all views\n" \
              "  -T, --tag=PATTERN       Add tag to view\n" \
