@@ -166,18 +166,13 @@ static void
 SubtlerClientTag(char *arg1,
   char *arg2)
 {
-  int tag = 0;
-  Window win;
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
   Assert(arg1 && arg2, "Usage: %sr -c PATTERN -T PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  subSharedClientFind(arg1, &win);
-  tag = subSharedTagFind(arg2);
-
-  data.l[0] = win;
-  data.l[1] = tag + 1;
+  data.l[0] = subSharedClientFind(arg1, NULL);
+  data.l[1] = subSharedTagFind(arg2);
 
   subSharedMessage(DefaultRootWindow(display), "SUBTLE_CLIENT_TAG", data, False);
 } /* }}} */
