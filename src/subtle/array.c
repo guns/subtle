@@ -68,21 +68,54 @@ subArrayPop(SubArray *a,
 } /* }}} */
 
  /** subArrayGet {{{
-  * @brief Get idx after boundary check
+  * @brief Get id after boundary check
   * @param[in]  a    A #SubArray
-  * @param[in]  idx  Array index
+  * @param[in]  id   Array index
   * @return Returns an element or \p NULL
   **/
 
 void *
 subArrayGet(SubArray *a,
-  int idx)
+  int id)
 {
   assert(a);
 
-  if(0 <= idx && idx <= a->ndata)
-    return a->data[idx];
+  if(0 <= id && id <= a->ndata)
+    return a->data[id];
 
+  return NULL;
+} /* }}} */
+
+ /** subArrayFind {{{
+  * @brief Find element
+  * @param[in]   a     A #SubArray
+  * @param[in]   name  Name of element
+  * @param[out]  id    Array id
+  * @return Returns an element or \p NULL
+  **/
+
+void *
+subArrayFind(SubArray *a,
+  char *name,
+  int *id)
+{
+  int i;
+  SubClient *c = NULL;
+
+  assert(a);
+
+  /* @todo Linear search.. */
+  for(i = 0; i < a->ndata; i++)
+    {
+      c = CLIENT(a->data[i]);
+
+      if(!strncmp(c->name, name, strlen(c->name)))
+        {
+          if(id) *id = i;
+          return c;
+        }
+    }
+  
   return NULL;
 } /* }}} */
 
