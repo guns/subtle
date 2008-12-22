@@ -106,6 +106,30 @@ subSubletCompare(const void *a,
   return s1->time < s2->time ? -1 : (s1->time == s2->time ? 0 : 1);
 } /* }}} */
 
+ /** subSubletPublish {{{
+  * @brief Publish sublets
+  **/
+
+void
+subSubletPublish(void)
+{
+  int i;
+  char **names = NULL;
+
+  assert(0 < subtle->tags->ndata);
+
+  names = (char **)subUtilAlloc(subtle->sublets->ndata, sizeof(char *));
+  for(i = 0; i < subtle->sublets->ndata; i++) 
+    names[i] = SUBLET(subtle->sublets->data[i])->name;
+
+  /* EWMH: Sublet list */
+  subEwmhSetStrings(ROOT, SUB_EWMH_SUBTLE_SUBLET_LIST, names, i);
+
+  subUtilLogDebug("publish=sublet, n=%d\n", i);
+
+  free(names);
+} /* }}} */
+
  /** subSubletKill {{{
   * @brief Kill sublet
   * @param[in]  s  A #SubSublet
@@ -116,11 +140,12 @@ subSubletKill(SubSublet *s)
 {
   assert(s);
 
-  printf("Killing sublet\n");
+  printf("Killing sublet (%s)\n", s->name);
 
   /* Update linked list */
   if(subtle->sublet == s) subtle->sublet = s->next;
 
+  if(s->name)   free(s->name);
   if(s->string) free(s->string);
   free(s);
 
