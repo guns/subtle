@@ -175,9 +175,10 @@ typedef struct subarray_t /* {{{ */
 typedef struct subclient_t /* {{{ */
 {
   FLAGS               flags;                                      ///< Client flags
+  char                *name;                                      ///< Client name
+
   TAGS                tags;                                       ///< Client tags
   int                 size;                                       ///< Client size
-  char                *name;                                      ///< Client name
   Colormap            cmap;                                       ///< Client colormap
   Window              win;                                        ///< Client window
   XRectangle          rect;                                       ///< Client rect
@@ -259,6 +260,8 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_VIEW_TAG,                                       ///< subtle view tag
   SUB_EWMH_SUBTLE_VIEW_UNTAG,                                     ///< subtle view untag
   SUB_EWMH_SUBTLE_VIEW_TAGS,                                      ///< subtle view tags
+  SUB_EWMH_SUBTLE_SUBLET_LIST,                                    ///< subtle sublet list
+  SUB_EWMH_SUBTLE_SUBLET_KILL,                                    ///< subtle sublet kill
 
   SUB_EWMH_TOTAL
 } SubEwmh; /* }}} */
@@ -285,6 +288,8 @@ typedef struct sublayout_t /* {{{ */
 typedef struct subsublet_t /* {{{ */
 {
   FLAGS         flags;                                            ///< Sublet flags
+  char          *name;                                            ///< Sublet name
+
   unsigned long recv;                                             ///< Sublet ruby receiver
   int           width;                                            ///< Sublet width
   time_t        time, interval;                                   ///< Sublet update time, interval time
@@ -355,6 +360,7 @@ typedef struct subtray_t /* {{{ */
 {
   FLAGS   flags;                                                  ///< Tray flags
   char    *name;                                                  ///< Tray name
+
   int     width;                                                  ///< Tray width
   Window  win;                                                    ///< Tray window
 } SubTray; /* }}} */
@@ -362,10 +368,11 @@ typedef struct subtray_t /* {{{ */
 typedef struct subview_t /* {{{ */
 {
   FLAGS             flags;                                        ///< View flags
-  TAGS              tags;
+  char              *name;                                        ///< View name
+
+  TAGS              tags;                                         ///< View tags
   int               width;                                        ///< View tags, button width, layout
   Window            frame, button;                                ///< View frame, button
-  char              *name;                                        ///< View name
   struct subarray_t *layout;                                      ///< View layout
 } SubView; /* }}} */
 
@@ -377,6 +384,7 @@ SubArray *subArrayNew(void);                                      ///< Create ar
 void subArrayPush(SubArray *a, void *e);                          ///< Push element to array
 void subArrayPop(SubArray *a, void *e);                           ///< Pop element from array
 void *subArrayGet(SubArray *a, int idx);                          ///< Get element
+void *subArrayFind(SubArray *a, char *name, int *id);             ///< Find element
 int subArrayIndex(SubArray *a, void *e);                          ///< Find array id of element
 void subArraySplice(SubArray *a, int idx, int len);               ///< Splice array at idx with len
 void subArraySort(SubArray *a,                                    ///< Sort array with given compare function 
@@ -459,13 +467,13 @@ SubSublet *subSubletNew(void);                                    ///< Create su
 void subSubletUpdate(void);                                       ///< Update sublet bar
 void subSubletRender(void);                                       ///< Render sublet
 int subSubletCompare(const void *a, const void *b);               ///< Compare two sublets
+void subSubletPublish(void);                                      ///< Publish sublets
 void subSubletKill(SubSublet *s);                                 ///< Kill sublet
 /* }}} */
 
 /* tag.c {{{ */
 void subTagInit(void);                                            ///< Init tags
 SubTag *subTagNew(char *name, char *regex);                       ///< Create tag
-SubTag *subTagFind(char *name, int *id);                          ///< Find tag
 void subTagPublish(void);                                         ///< Publish tags
 void subTagKill(SubTag *t);                                       ///< Delete tag
 /* }}} */
@@ -511,7 +519,6 @@ void subViewArrange(SubView *v, SubClient *c1,
 void subViewUpdate(void);                                         ///< Update views
 void subViewRender(void);                                         ///< Render views
 void subViewJump(SubView *v);                                     ///< Jump to view
-SubView *subViewFind(char *name, int *id);                        ///< Find view
 void subViewPublish(void);                                        ///< Publish views
 void subViewSanitize(SubClient *c);                               ///< Sanitize views
 void subViewKill(SubView *v);                                     ///< Kill view
