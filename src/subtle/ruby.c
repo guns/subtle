@@ -31,9 +31,10 @@ RubySubletNew(VALUE self)
   /* Create sublet */
   s = subSubletNew();
   data    = Data_Wrap_Struct(self, 0, NULL, (void *)s); ///< We omit the finalizer
-  s->recv = data; ///< Assign recv
-  rb_obj_call_init(data, 0, NULL); ///< Call initialize
+  s->recv = data; 
+  s->name = strdup(rb_class2name(self));
 
+  rb_obj_call_init(data, 0, NULL); ///< Call initialize
   if(0 == s->interval) s->interval = 60; ///< Sanitize
 
   subArrayPush(subtle->sublets, s);
@@ -517,6 +518,7 @@ subRubyLoadSublets(const char *path)
           /* Sort and configure */
           subArraySort(subtle->sublets, subSubletCompare);
           subSubletUpdate();
+          subSubletPublish();
         }
     }
   else subUtilLogWarn("No sublets found\n");
