@@ -62,22 +62,26 @@ SubtlerClientInfo(Window win)
   wmname  = subSharedWindowWMName(win);
   wmclass = subSharedWindowWMClass(win);
 
-  XGetGeometry(display, win, &unused, &x, &y, &width, &height, &border, &border);
-
+  /* Get properties */
   nv = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
     XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
   cv = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, "_NET_WM_DESKTOP", NULL);
   rv = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display),
     XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
 
-  printf("%#lx %c %ld %ux%u %s (%s)\n", win, (*cv == *rv ? '*' : '-'),
-    (*cv > *nv ? -1 : *cv), width, height, wmname, wmclass);
+  if(wmname && wmclass && nv && cv && rv && 
+    !XGetGeometry(display, win, &unused, &x, &y, &width, &height, &border, &border))
+    {
+      printf("%#lx %c %ld %ux%u %s (%s)\n", win, (*cv == *rv ? '*' : '-'),
+        (*cv > *nv ? -1 : *cv), width, height, wmname, wmclass);
 
-  if(wmname) free(wmname);
-  if(wmclass) free(wmclass);
-  if(nv) free(nv);
-  if(cv) free(cv);
-  if(rv) free(rv);
+      free(wmname);
+      free(wmclass);
+      free(nv);
+      free(cv);
+      free(rv);
+    }
+  else subSharedLogWarn("Failed to fetch client infos!\n");
 } /* }}} */
 
 /* SubtlerClientList {{{ */
@@ -90,13 +94,12 @@ SubtlerClientList(char *arg1,
 
   subSharedLogDebug("%s\n", __func__);
 
-  clients = subSharedClientList(&size);
-  if(clients)
+  if((clients = subSharedClientList(&size)))
     {
       for(i = 0; i < size; i++) SubtlerClientInfo(clients[i]);
       free(clients);
     }
-  else subSharedLogWarn("Failed to list clients\n");
+  else subSharedLogWarn("Failed to get client list!\n");
 } /* }}} */
 
 /* SubtlerClientFind {{{ */
@@ -109,8 +112,8 @@ SubtlerClientFind(char *arg1,
   Assert(arg1, "Usage: %sr -c -f PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  subSharedClientFind(arg1, &win);
-  SubtlerClientInfo(win);
+  if(-1 != subSharedClientFind(arg1, &win)) SubtlerClientInfo(win);
+  else subSharedLogWarn("Failed to find client\n");
 } /* }}} */
 
 /* SubtlerClientFocus {{{ */
@@ -125,25 +128,29 @@ SubtlerClientFocus(char *arg1,
   Assert(arg1, "Usage: %sr -c -F CLIENT\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  subSharedClientFind(arg1, &win);
-  cv = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, "_NET_WM_DESKTOP", NULL);
-  rv = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display), 
-    XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
-
-  if(*cv && *rv && *cv != *rv) 
+  if(-1 != subSharedClientFind(arg1, &win))
     {
-      subSharedLogDebug("Switching: active=%d, view=%d\n", *rv, *cv);
-      data.l[0] = *cv;
-      subSharedMessage(DefaultRootWindow(display), "_NET_CURRENT_DESKTOP", data, False);
-    }
-  else 
-    {
-      data.l[0] = win;
-      subSharedMessage(DefaultRootWindow(display), "_NET_ACTIVE_WINDOW", data, False);
-    }
+      /* Fetch data */
+      cv = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, "_NET_WM_DESKTOP", NULL);
+      rv = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display), 
+        XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
 
-  free(cv);
-  free(rv);
+      if(*cv && *rv && *cv != *rv) ///< Switch to client desktop if neccessary
+        {
+          subSharedLogDebug("Switching: active=%d, view=%d\n", *rv, *cv);
+          data.l[0] = *cv;
+          subSharedMessage(DefaultRootWindow(display), "_NET_CURRENT_DESKTOP", data, False);
+        }
+      else ///< Focus client
+        {
+          data.l[0] = win;
+          subSharedMessage(DefaultRootWindow(display), "_NET_ACTIVE_WINDOW", data, False);
+        }
+
+      free(cv);
+      free(rv);
+    }
+  else subSharedLogWarn("Failed to find client\n");
 } /* }}} */
 
 /* SubtlerClientTag {{{ */
@@ -159,7 +166,9 @@ SubtlerClientTag(char *arg1,
   data.l[0] = subSharedClientFind(arg1, NULL);
   data.l[1] = subSharedTagFind(arg2);
 
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_CLIENT_TAG", data, False);
+  if(data.l[0] && data.l[1])
+    subSharedMessage(DefaultRootWindow(display), "SUBTLE_CLIENT_TAG", data, False);
+  else subSharedLogWarn("Failed to tag client\n");
 } /* }}} */
 
 /* SubtlerClientUntag {{{ */
@@ -175,7 +184,9 @@ SubtlerClientUntag(char *arg1,
   data.l[0] = subSharedClientFind(arg1, NULL);
   data.l[1] = subSharedTagFind(arg2);
 
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_CLIENT_UNTAG", data, False);
+  if(data.l[0] && data.l[1])
+    subSharedMessage(DefaultRootWindow(display), "SUBTLE_CLIENT_UNTAG", data, False);
+  else subSharedLogWarn("Failed to untag client\n");
 } /* }}} */
 
 /* SubtlerClientTags {{{ */
@@ -183,19 +194,17 @@ static void
 SubtlerClientTags(char *arg1,
   char *arg2)
 {
-  int i, size = 0;
   Window win;
-  char **tags = NULL;
-  unsigned long *flags = NULL;
 
   Assert(arg1, "Usage: %sr -c PATTERN -g\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 != subSharedClientFind(arg1, &win))
     {
-      flags = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL,
+      int i, size = 0;
+      unsigned long *flags = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL,
         "SUBTLE_CLIENT_TAGS", NULL);
-      tags  = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
+      char **tags = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
 
       for(i = 0; i < size; i++)
         if((int)*flags & (1L << (i + 1))) printf("%s\n", tags[i]);
@@ -203,6 +212,7 @@ SubtlerClientTags(char *arg1,
       free(flags);
       free(tags);
     }
+  else subSharedLogWarn("Failed to fetch client tags\n");
 } /* }}} */
 
 /* SubtlerClientKill {{{ */
@@ -216,10 +226,13 @@ SubtlerClientKill(char *arg1,
   Assert(arg1, "Usage: %sr -c -k PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  subSharedClientFind(arg1, &win);
-  data.l[0] = win;
+  if(-1 != subSharedClientFind(arg1, &win))
+    {
+      data.l[0] = win;
 
-  subSharedMessage(win, "_NET_CLOSE_WINDOW", data, False);
+      subSharedMessage(win, "_NET_CLOSE_WINDOW", data, False);
+    }
+  else subSharedLogWarn("Failed to kill client\n");
 } /* }}} */
 
 /* SubtlerTagNew {{{ */
@@ -233,8 +246,9 @@ SubtlerTagNew(char *arg1,
   subSharedLogDebug("%s\n", __func__);
 
   snprintf(data.b, sizeof(data.b), "%s", arg1);
-
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_NEW", data, False);
+  
+  if(!subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_NEW", data, False))
+    subSharedLogWarn("Failed to create tag\n");
 } /* }}} */
 
 /* SubtlerTagList {{{ */
@@ -247,12 +261,13 @@ SubtlerTagList(char *arg1,
 
   subSharedLogDebug("%s\n", __func__);
 
-  tags = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
+  if((tags = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size)))
+    {
+      for(i = 0; i < size; i++) printf("%s\n", tags[i]);
 
-  for(i = 0; i < size; i++)
-    printf("%s\n", tags[i]);
-
-  free(tags);
+      free(tags);
+    }
+  else subSharedLogWarn("Failed to get tag list\n");
 } /* }}} */
 
 /* SubtlerTagFind {{{ */
@@ -263,49 +278,59 @@ SubtlerTagFind(char *arg1,
   int i, tag = -1, size_clients = 0, size_views = 0;
   char **views = NULL;
   Window *frames = NULL, *clients = NULL;
-  unsigned long *flags = NULL;
 
   subSharedLogDebug("%s\n", __func__);
 
   /* Collect data */
   tag     = subSharedTagFind(arg1);
-  clients = subSharedClientList(&size_clients);
   views   = subSharedPropertyList(DefaultRootWindow(display),
     "_NET_DESKTOP_NAMES", &size_views);
   frames  = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW,
     "_NET_VIRTUAL_ROOTS", NULL);
+  clients = subSharedClientList(&size_clients);
 
   /* Views */
-  for(i = 0; i < size_views; i++)
+  if(tag && views && frames)
     {
-      flags = (unsigned long *)subSharedPropertyGet(frames[i], XA_CARDINAL,
-        "SUBTLE_VIEW_TAGS", NULL);
+      for(i = 0; i < size_views; i++)
+        {
+          unsigned long *flags = (unsigned long *)subSharedPropertyGet(frames[i], XA_CARDINAL,
+            "SUBTLE_VIEW_TAGS", NULL);
 
-      if((int)*flags & (1L << (tag + 1))) printf("view   - %s\n", views[i]);
+          if((int)*flags & (1L << (tag + 1))) 
+            printf("view   - %s\n", views[i]);
 
-      free(flags);
+          free(flags);
+        }
+
+      free(frames);
+      free(views);
     }
+  else subSharedLogWarn("Failed to get view list\n");
 
   /* Clients */
-  for(i = 0; i < size_clients; i++)
+  if(tag && clients)
     {
-      char *wmname = NULL, *wmclass = NULL;
+      for(i = 0; i < size_clients; i++)
+        {
+          char *wmname = NULL, *wmclass = NULL;
+          unsigned long *flags   = (unsigned long *)subSharedPropertyGet(clients[i], XA_CARDINAL,
+            "SUBTLE_CLIENT_TAGS", NULL);
 
-      flags   = (unsigned long *)subSharedPropertyGet(clients[i], XA_CARDINAL,
-        "SUBTLE_CLIENT_TAGS", NULL);
-      wmname  = subSharedWindowWMName(clients[i]);
-      wmclass = subSharedWindowWMClass(clients[i]);
+          wmname  = subSharedWindowWMName(clients[i]);
+          wmclass = subSharedWindowWMClass(clients[i]);
 
-      if((int)*flags & (1L << (tag + 1))) printf("client - %s (%s)\n", wmname, wmclass);
+          if((int)*flags & (1L << (tag + 1))) 
+            printf("client - %s (%s)\n", wmname, wmclass);
 
-      free(flags);
-      free(wmname);
-      free(wmclass);
+          free(flags);
+          free(wmname);
+          free(wmclass);
+        }
+
+      free(clients);
     }
-
-  free(clients);
-  free(frames);
-  free(views);
+  else subSharedLogWarn("Failed to get clients list\n");
 } /* }}} */
 
 /* SubtlerTagKill {{{ */
@@ -318,9 +343,9 @@ SubtlerTagKill(char *arg1,
   Assert(arg1, "Usage: %sr -t -k PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  data.l[0] = subSharedTagFind(arg2);
-
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_KILL", data, False);
+  if((data.l[0] = subSharedTagFind(arg2)))
+    subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_KILL", data, False);
+  else subSharedLogWarn("Failed to kill tag\n");
 } /* }}} */
 
 /* SubtlerSubletList {{{ */
@@ -333,12 +358,14 @@ SubtlerSubletList(char *arg1,
 
   subSharedLogDebug("%s\n", __func__);
 
-  sublets = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_SUBLET_LIST", &size);
+  if((sublets = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_SUBLET_LIST", &size)))
+    {
+      for(i = 0; i < size; i++)
+        printf("%s\n", sublets[i]);
 
-  for(i = 0; i < size; i++)
-    printf("%s\n", sublets[i]);
-
-  free(sublets);
+      free(sublets);
+    }
+  else subSharedLogWarn("Failed to get sublet list\n");
 } /* }}} */
 
 /* SubtlerSubletKill {{{ */
@@ -351,9 +378,9 @@ SubtlerSubletKill(char *arg1,
   Assert(arg1, "Usage: %sr -s -k PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  data.l[0] = subSharedSubletFind(arg2);
-
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_KILL", data, False);
+  if((data.l[0] = subSharedSubletFind(arg2)))
+    subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_KILL", data, False);
+  else subSharedLogWarn("Failed to kill sublet\n");
 } /* }}} */
 
 /* SubtlerViewNew {{{ */
@@ -368,7 +395,8 @@ SubtlerViewNew(char *arg1,
 
   snprintf(data.b, sizeof(data.b), "%s", arg1);
 
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_NEW", data, False);
+  if(!subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_NEW", data, False))
+    subSharedLogWarn("Failed to create view\n");
 } /* }}} */
 
 /* SubtlerViewList {{{ */
@@ -392,13 +420,17 @@ SubtlerViewList(char *arg1,
     XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
   views  = subSharedPropertyList(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
 
-  for(i = 0; *nv && i < *nv; i++)
-    printf("%#lx %c %s\n", frames[i], (i == *cv ? '*' : '-'), views[i]);
+  if(nv && cv && frames && views)
+    {
+      for(i = 0; *nv && i < *nv; i++)
+        printf("%#lx %c %s\n", frames[i], (i == *cv ? '*' : '-'), views[i]);
 
-  free(nv);
-  free(cv);
-  free(frames);
-  free(views);
+      free(nv);
+      free(cv);
+      free(frames);
+      free(views);
+    }
+  else subSharedLogWarn("Failed to get view list\n");
 } /* }}} */
 
 /* SubtlerViewJump {{{ */
@@ -413,12 +445,13 @@ SubtlerViewJump(char *arg1,
   subSharedLogDebug("%s\n", __func__);
 
   /* Try to convert arg1 to long or to find view */
-  if(!(view = atoi(arg1)))
-    view = subSharedViewFind(arg1, NULL);
+  if((view = atoi(arg1)) || (( view = subSharedViewFind(arg1, NULL))))
+    {
+      data.l[0] = view;
 
-  data.l[0] = view;
-
-  subSharedMessage(DefaultRootWindow(display), "_NET_CURRENT_DESKTOP", data, False);
+      subSharedMessage(DefaultRootWindow(display), "_NET_CURRENT_DESKTOP", data, False);
+    }
+  else subSharedLogWarn("Failed to jump to view\n");
 } /* }}} */
 
 /* SubtlerViewTag {{{ */
@@ -434,7 +467,9 @@ SubtlerViewTag(char *arg1,
   data.l[0] = subSharedViewFind(arg1, NULL);
   data.l[1] = subSharedTagFind(arg2);
 
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_TAG", data, False);
+  if(data.l[0] && data.l[1])
+    subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_TAG", data, False);
+  else subSharedLogWarn("Failed to tag view\n");
 } /* }}} */
 
 /* SubtlerViewUntag {{{ */
@@ -450,7 +485,9 @@ SubtlerViewUntag(char *arg1,
   data.l[0] = subSharedViewFind(arg1, NULL);
   data.l[1] = subSharedTagFind(arg2);
 
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_UNTAG", data, False);
+  if(data.l[0] && data.l[1])
+    subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_UNTAG", data, False);
+  else subSharedLogWarn("Failed to untag view\n");
 } /* }}} */
 
 /* SubtlerViewTags {{{ */
@@ -466,15 +503,18 @@ SubtlerViewTags(char *arg1,
   Assert(arg1, "Usage: %sr -v PATTERN -g\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  subSharedViewFind(arg1, &win);
-  flags = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, "SUBTLE_VIEW_TAGS", NULL);
-  tags  = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
+  if(-1 == subSharedViewFind(arg1, &win))
+    {
+      flags = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, "SUBTLE_VIEW_TAGS", NULL);
+      tags  = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
 
-  for(i = 0; i < size; i++)
-    if((int)*flags & (1L << (i + 1))) printf("%s\n", tags[i]);
-  
-  free(flags);
-  free(tags);
+      for(i = 0; i < size; i++)
+        if((int)*flags & (1L << (i + 1))) printf("%s\n", tags[i]);
+      
+      free(flags);
+      free(tags);
+    }
+  else subSharedLogWarn("Failed to find view\n");
 } /* }}} */
 
 /* SubtlerViewKill {{{ */
@@ -487,9 +527,9 @@ SubtlerViewKill(char *arg1,
   Assert(arg1, "Usage: %sr -v -k PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  data.l[0] = subSharedViewFind(arg1, NULL);
-
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_KILL", data, False);
+  if((data.l[0] = subSharedViewFind(arg1, NULL)))
+    subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_KILL", data, False);
+  else subSharedLogWarn("Failed to kill view\n");
 } /* }}} */
 
 /* SubtlerUsage {{{ */
