@@ -29,19 +29,21 @@ typedef void(*SubCommand)(char *, char *);
 
 /* Flags {{{ */
 #define SUB_GROUP_CLIENT 0    ///< Group client
-#define SUB_GROUP_TAG    1    ///< Group tag
-#define SUB_GROUP_VIEW   2    ///< Group view
+#define SUB_GROUP_SUBLET 1    ///< Group sublet
+#define SUB_GROUP_TAG    2    ///< Group tag
+#define SUB_GROUP_VIEW   3    ///< Group view
+#define SUB_GROUP_TOTAL  4    ///< Group total
 
-#define SUB_ACTION_NEW   0    ///< Subtler new
-#define SUB_ACTION_KILL  1    ///< Subtler kill
-#define SUB_ACTION_LIST  2    ///< Subtler list
-#define SUB_ACTION_FIND  3    ///< Subtler find
-#define SUB_ACTION_FOCUS 4    ///< Subtler focus
-#define SUB_ACTION_JUMP  5    ///< Subtler jump
-#define SUB_ACTION_SHADE 6    ///< Subtler shade
-#define SUB_ACTION_TAG   7    ///< Subtler tag
-#define SUB_ACTION_UNTAG 8    ///< Subtler untag
-#define SUB_ACTION_TAGS  9    ///< Subtler tags
+#define SUB_ACTION_NEW   0    ///< Action new
+#define SUB_ACTION_KILL  1    ///< Action kill
+#define SUB_ACTION_LIST  2    ///< Action list
+#define SUB_ACTION_FIND  3    ///< Action find
+#define SUB_ACTION_FOCUS 4    ///< Action focus
+#define SUB_ACTION_JUMP  5    ///< Action jump
+#define SUB_ACTION_TAG   6    ///< Action tag
+#define SUB_ACTION_UNTAG 7    ///< Action untag
+#define SUB_ACTION_TAGS  8    ///< Action tags
+#define SUB_ACTION_TOTAL 9    ///< Action total
 /* }}} */
 
 /* SubtlerClientInfo {{{ */
@@ -142,23 +144,6 @@ SubtlerClientFocus(char *arg1,
 
   free(cv);
   free(rv);
-} /* }}} */
-
-/* SubtlerClientShade {{{ */
-static void
-SubtlerClientShade(char *arg1,
-  char *arg2)
-{
-  Window win;
-  SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-  Assert(arg1, "Usage: %sr -c -s PATTERN\n", PKG_NAME);
-  subSharedLogDebug("%s\n", __func__);
-
-  subSharedClientFind(arg1, &win);
-  data.l[0] = win;
-
-  subSharedMessage(DefaultRootWindow(display), "_NET_WM_ACTION_SHADE", data, False);
 } /* }}} */
 
 /* SubtlerClientTag {{{ */
@@ -338,6 +323,39 @@ SubtlerTagKill(char *arg1,
   subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_KILL", data, False);
 } /* }}} */
 
+/* SubtlerSubletList {{{ */
+static void
+SubtlerSubletList(char *arg1,
+  char *arg2)
+{
+  int i, size = 0;
+  char **sublets = NULL;
+
+  subSharedLogDebug("%s\n", __func__);
+
+  sublets = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_SUBLET_LIST", &size);
+
+  for(i = 0; i < size; i++)
+    printf("%s\n", sublets[i]);
+
+  free(sublets);
+} /* }}} */
+
+/* SubtlerSubletKill {{{ */
+static void
+SubtlerSubletKill(char *arg1,
+  char *arg2)
+{
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  Assert(arg1, "Usage: %sr -s -k PATTERN\n", PKG_NAME);
+  subSharedLogDebug("%s\n", __func__);
+
+  data.l[0] = subSharedSubletFind(arg2);
+
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_KILL", data, False);
+} /* }}} */
+
 /* SubtlerViewNew {{{ */
 static void
 SubtlerViewNew(char *arg1,
@@ -492,19 +510,24 @@ SubtlerUsage(int group)
              "  -t, --tags              Use tags group\n" \
              "  -v, --views             Use views group\n");
     }
-  if(-1 == group || 0 == group)
+  if(-1 == group || SUB_GROUP_CLIENT == group)
     {
       printf("\nOptions for clients:\n" \
              "  -l, --list              List all clients\n" \
              "  -f, --find=PATTERN      Find a client\n" \
              "  -F, --focus=PATTERN     Set focus to client\n" \
-             "  -s, --shade=PATTERN     Shade client\n" \
              "  -T, --tag=PATTERN       Add tag to client\n" \
              "  -u, --untag=PATTERN     Remove tag from client\n" \
              "  -g, --tags              Show client tags\n" \
              "  -k, --kill=PATTERN      Kill a client\n");
     }
-  if(-1 == group || 1 == group)
+  if(-1 == group || SUB_GROUP_SUBLET == group)
+    {
+      printf("\nOptions for sublets:\n" \
+             "  -l, --list              List all sublets\n" \
+             "  -k, --kill=PATTERN      Kill a sublet\n");
+    }    
+  if(-1 == group || SUB_GROUP_TAG == group)
     {
       printf("\nOptions for tags:\n" \
              "  -n, --new=NAME          Create new tag\n" \
@@ -512,7 +535,7 @@ SubtlerUsage(int group)
              "  -f, --find              Find all clients/views by tag\n" \
              "  -k, --kill=PATTERN      Kill a tag\n");
     }
-  if(-1 == group || 2 == group)
+  if(-1 == group || SUB_GROUP_VIEW == group)
     {
       printf("\nOptions for views:\n" \
              "  -n, --new=NAME          Create new view\n" \
@@ -617,6 +640,7 @@ main(int argc,
   {
     /* Groups */
     { "clients",    no_argument,        0,  'c'  },
+    { "sublet",     no_argument,        0,  's'  },
     { "tags",       no_argument,        0,  't'  },
     { "views",      no_argument,        0,  'v'  },
 
@@ -627,7 +651,6 @@ main(int argc,
     { "find",       no_argument,        0,  'f'  },
     { "focus",      no_argument,        0,  'F'  },
     { "jump",       no_argument,        0,  'j'  },
-    { "shade",      no_argument,        0,  's'  },
     { "tag",        no_argument,        0,  'T'  },
     { "untag",      no_argument,        0,  'u'  },
     { "tags",       no_argument,        0,  'g'  },
@@ -643,13 +666,14 @@ main(int argc,
   };
 
   /* Command table */
-  SubCommand cmds[3][10] = { 
-    /* Client, Tag, View <=> New, Kill, List, Find, Focus, Jump, Shade, Tag, Untag, Tags */
+  SubCommand cmds[SUB_GROUP_TOTAL][SUB_ACTION_TOTAL] = { 
+    /* Client, Sublet, Tag, View <=> New, Kill, List, Find, Focus, Jump, Tag, Untag, Tags */
     { NULL, SubtlerClientKill, SubtlerClientList, SubtlerClientFind, SubtlerClientFocus, NULL,
-      SubtlerClientShade, SubtlerClientTag, SubtlerClientUntag, SubtlerClientTags },
-    { SubtlerTagNew, SubtlerTagKill, SubtlerTagList, SubtlerTagFind, NULL, NULL, NULL, NULL,
+      SubtlerClientTag, SubtlerClientUntag, SubtlerClientTags },
+    { NULL, SubtlerSubletKill, SubtlerSubletList, NULL, NULL, NULL, NULL, NULL, NULL },
+    { SubtlerTagNew, SubtlerTagKill, SubtlerTagList, SubtlerTagFind, NULL, NULL, NULL,
       NULL, NULL },
-    { SubtlerViewNew, SubtlerViewKill, SubtlerViewList, NULL, NULL, SubtlerViewJump, NULL,
+    { SubtlerViewNew, SubtlerViewKill, SubtlerViewList, NULL, NULL, SubtlerViewJump,
       SubtlerViewTag, SubtlerViewUntag, SubtlerViewTags }
   };
 
@@ -661,11 +685,12 @@ main(int argc,
   sigaction(SIGINT, &act, NULL);
   sigaction(SIGSEGV, &act, NULL);
 
-  while((c = getopt_long(argc, argv, "ctvnkfFjlsTugDd:hV", long_options, NULL)) != -1)
+  while((c = getopt_long(argc, argv, "cstvnkfFjlTugDd:hV", long_options, NULL)) != -1)
     {
       switch(c)
         {
           case 'c': group = SUB_GROUP_CLIENT;   break;
+          case 's': group = SUB_GROUP_SUBLET;   break;
           case 't': group = SUB_GROUP_TAG;      break;
           case 'v': group = SUB_GROUP_VIEW;     break;
 
@@ -675,7 +700,6 @@ main(int argc,
           case 'f': action = SUB_ACTION_FIND;   break;
           case 'F': action = SUB_ACTION_FOCUS;  break;
           case 'j': action = SUB_ACTION_JUMP;   break;
-          case 's': action = SUB_ACTION_SHADE;  break;
           case 'T': action = SUB_ACTION_TAG;    break;
           case 'u': action = SUB_ACTION_UNTAG;  break;
           case 'g': action = SUB_ACTION_TAGS;   break;
