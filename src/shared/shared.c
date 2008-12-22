@@ -580,4 +580,43 @@ subSharedViewFind(char *name,
   return -1;
 } /* }}} */
 
+ /** subSharedSubletFind {{{
+  * @brief Find sublet
+  * @param[in]   name  Sublet name
+  * @return Returns the sublet list id
+  * @retval  -1   Sublet not found
+  **/
+
+int
+subSharedSubletFind(char *name)
+{
+  int i, size = 0;
+  char **sublets = NULL;
+  regex_t *preg = NULL;
+
+  assert(name);
+
+  preg    = subSharedRegexNew(name);
+  sublets = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_SUBLET_LIST", &size);
+
+  /* Find sublet id */
+  for(i = 0; i < size; i++)
+    if(subSharedRegexMatch(preg, sublets[i]))
+      {
+        subSharedLogDebug("Found: type=sublet, name=%s, n=%d\n", name, i);
+
+        subSharedRegexKill(preg);
+        free(sublets);
+
+        return i;
+      }
+
+  subSharedRegexKill(preg);
+  free(sublets);
+
+  subSharedLogDebug("Cannot find sublet `%s'.\n", name);
+
+  return -1;
+} /* }}} */
+
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
