@@ -173,6 +173,41 @@ __END__
 %h1{:style => "font-size: 14px"}
   %a{:href => "/"}= $subtle
 
+.clients
+  %h2{:style => "font-size: 12px"} Clients
+  %form{:action => "/clients/tags", :method => "post"}
+    %select{:name => "clients[name]", :tabindex => "1"}
+
+      -$subtle.clients.each do |c|
+        %option{:value => c.name}= c.name
+
+    %input{:type => "submit", :value => "tags", :onclick => "this.form.action = '/clients/tags'", :tabindex => "2"}
+    %input{:type => "submit", :value => "delete", :onclick => "this.form.action = '/clients/delete'", :tabindex => "3"}
+
+  %form{:action => "/clients/tag", :method => "post"}
+    %select{:name => "clients[name]", :tabindex => "1"}
+
+      -$subtle.clients.each do |c|
+        %option{:value => c.name}= c.name
+
+    %select{:name => "clients[tag]", :tabindex => "2"}
+
+      -$subtle.tags.each do |t|
+        %option{:value => t.name}= t.name
+
+    %input{:type => "submit", :value => "tag", :onclick => "this.form.action = '/clients/tag'", :tabindex => "3"}
+    %input{:type => "submit", :value => "untag", :onclick => "this.form.action = '/clients/untag'", :tabindex => "4"}
+
+.sublets
+  %h2{:style => "font-size: 12px"} Sublets
+  %form{:action => "/sublets/kill", :method => "post"}
+    %select{:name => "sublets[name]", :tabindex => "1"}
+
+      -$subtle.sublets.each do |s|
+        %option{:value => s.name}= s.name
+
+    %input{:type => "submit", :value => "delete", :tabindex => "2"}
+ 
 .tags
   %h2{:style => "font-size: 12px"} Tags
   %form{:action => "/tags/new", :method => "post"}
@@ -217,27 +252,4 @@ __END__
     %input{:type => "submit", :value => "tag", :onclick => "this.form.action = '/views/tag'", :tabindex => "3"}
     %input{:type => "submit", :value => "untag", :onclick => "this.form.action = '/views/untag'", :tabindex => "4"}
 
-.clients
-  %h2{:style => "font-size: 12px"} Clients
-  %form{:action => "/clients/tags", :method => "post"}
-    %select{:name => "clients[name]", :tabindex => "1"}
-
-      -$subtle.clients.each do |c|
-        %option{:value => c.name}= c.name
-
-    %input{:type => "submit", :value => "tags", :onclick => "this.form.action = '/clients/tags'", :tabindex => "2"}
-    %input{:type => "submit", :value => "delete", :onclick => "this.form.action = '/clients/delete'", :tabindex => "3"}
-
-  %form{:action => "/clients/tag", :method => "post"}
-    %select{:name => "clients[name]", :tabindex => "1"}
-
-      -$subtle.clients.each do |c|
-        %option{:value => c.name}= c.name
-
-    %select{:name => "clients[tag]", :tabindex => "2"}
-
-      -$subtle.tags.each do |t|
-        %option{:value => t.name}= t.name
-
-    %input{:type => "submit", :value => "tag", :onclick => "this.form.action = '/clients/tag'", :tabindex => "3"}
-    %input{:type => "submit", :value => "untag", :onclick => "this.form.action = '/clients/untag'", :tabindex => "4"}
+   
