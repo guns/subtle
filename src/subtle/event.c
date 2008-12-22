@@ -132,6 +132,7 @@ EventMessage(XClientMessageEvent *ev)
       int id = subEwmhFind(ev->message_type);
       SubView *v = NULL;
       SubTag *t = NULL;
+      SubSublet *s = NULL;
 
       switch(id)
         {
@@ -235,6 +236,15 @@ EventMessage(XClientMessageEvent *ev)
                 subViewKill(v);
                 subViewUpdate();
                 subViewPublish();
+              }
+            break; /* }}} */
+          case SUB_EWMH_SUBTLE_SUBLET_KILL: /* {{{ */
+            if((s = SUBLET(subArrayGet(subtle->sublets, (int)ev->data.l[0]))))
+              {
+                subArrayPop(subtle->sublets, (void *)s);
+                subSubletKill(s);
+                subSubletUpdate();
+                subSubletPublish();
               }
             break; /* }}} */
         }
