@@ -46,7 +46,7 @@ subTagNew(char *name,
   assert(name);
 
   /* Check if tag already exists */
-  if((t = subTagFind(name, NULL)))
+  if((t = TAG(subArrayFind(subtle->tags, name, NULL))))
     {
       if(regex)
         {
@@ -66,35 +66,6 @@ subTagNew(char *name,
   subUtilLogDebug("new=tag, name=%s\n", name);
 
   return t;
-} /* }}} */
-
- /** subTagFind {{{
-  * @brief Find tag
-  * @param[in]   name  Name of tag
-  * @param[out]  id    Tag id
-  * @return Returns a #SubTag or \p NULL
-  **/
-
-SubTag *
-subTagFind(char *name,
-  int *id)
-{
-  int i;
-  SubTag *t = NULL;
-
-  /* @todo Linear search.. */
-  for(i = 0; i < subtle->tags->ndata; i++)
-    {
-      t = TAG(subtle->tags->data[i]);
-
-      if(!strncmp(t->name, name, strlen(t->name)))
-        {
-          if(id) *id = i;
-          return t;
-        }
-    }
-  
-  return NULL;
 } /* }}} */
 
  /** subTagPublish {{{

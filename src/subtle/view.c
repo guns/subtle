@@ -348,35 +348,6 @@ subViewJump(SubView *v)
   printf("Switching view (%s)\n", subtle->cv->name);
 } /* }}} */
 
- /** subViewFind {{{
-  * @brief Find view
-  * @param[in]   name  Name of view
-  * @param[out]  id    View id
-  * @return Returns a #SubView or \p NULL
-  **/
-
-SubView *
-subViewFind(char *name,
-  int *id)
-{
-  int i;
-  SubView *v = NULL;
-
-  /* @todo Linear search.. */
-  for(i = 0; i < subtle->views->ndata; i++)
-    {
-      v = VIEW(subtle->views->data[i]);
-
-      if(!strncmp(v->name, name, strlen(v->name)))
-        {
-          if(id) *id = i;
-          return v;
-        }
-    }
-  
-  return NULL;
-} /* }}} */
-
  /** subViewPublish {{{
   * @brief Update EWMH infos
   **/
