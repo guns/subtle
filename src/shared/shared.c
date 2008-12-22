@@ -162,14 +162,16 @@ subSharedRegexKill(regex_t *preg)
   * @param[in]  type  Message type 
   * @param[in]  data  A #SubMessageData
   * @param[in]  sync  Sync connection
+  * @returns
   **/
 
-void
+int
 subSharedMessage(Window win,
   char *type,
   SubMessageData data,
   int sync)
 {
+  int status = 0;
   XEvent ev;
   long mask = SubstructureRedirectMask|SubstructureNotifyMask;
 
@@ -184,16 +186,18 @@ subSharedMessage(Window win,
   ev.xclient.format       = 32;
 
   /* Data */
-  ev.xclient.data.l[0]    = data.l[0];
-  ev.xclient.data.l[1]    = data.l[1];
-  ev.xclient.data.l[2]    = data.l[2];
-  ev.xclient.data.l[3]    = data.l[3];
-  ev.xclient.data.l[4]    = data.l[4];
+  ev.xclient.data.l[0] = data.l[0];
+  ev.xclient.data.l[1] = data.l[1];
+  ev.xclient.data.l[2] = data.l[2];
+  ev.xclient.data.l[3] = data.l[3];
+  ev.xclient.data.l[4] = data.l[4];
 
-  if(!XSendEvent(display, DefaultRootWindow(display), False, mask, &ev))
+  if(!((status = XSendEvent(display, DefaultRootWindow(display), False, mask, &ev))))
     subSharedLogDebug("Can't send client message `%s'\n", type);
  
   if(True == sync) XSync(display, False);
+
+  return status;
 } /* }}} */
 
  /** subSharedPropertyGet {{{
