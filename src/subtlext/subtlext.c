@@ -25,29 +25,6 @@ int debug = 0;
 #define SUB_TYPE_VIEW 1   ///< View
 /* }}} */
 
-/* SubtlextRunning {{{ */
-static VALUE
-SubtlextRunning(void)
-{
-  Window *wmcheck = NULL;
-  VALUE ret = Qfalse;
-
-  if((wmcheck = subSharedWindowWMCheck()))
-    {
-      char *prop = subSharedPropertyGet(*wmcheck, XInternAtom(display, "UTF8_STRING", False),
-        "_NET_WM_NAME", NULL);
-      if(prop) 
-        {
-          if(!strncmp(prop, PKG_NAME, strlen(prop))) ret = Qtrue;
-          subSharedLogDebug("wmname=%s\n", prop);
-          free(prop);
-        }
-      free(wmcheck);
-    }
-
-  return ret;
-} /* }}} */
-
 /* SubtlextFind {{{ */
 static VALUE
 SubtlextFind(int type,
@@ -269,20 +246,20 @@ SubtlextSubtleNew(int argc,
   rb_scan_args(argc, argv, "01", &disp);
 #endif /* DEBUG */ 
 
-  /* Open connection to server */
+  /* Open display */
   if(!display)
     {
       if(RTEST(disp)) dispname = STR2CSTR(disp);
       if(!(display = XOpenDisplay(dispname)))
         {
-          subSharedLogError("Can't open display `%s'\n", (dispname) ? dispname : ":0.0");
+          subSharedLogError("Failed to open display `%s'\n", (dispname) ? dispname : ":0.0");
 
           return Qnil;
         }
       XSetErrorHandler(subSharedLogXError);
 
       /* Check if subtle is running */
-      if(Qfalse == SubtlextRunning())
+      if(True != subSharedSubtleRunning())
         {
           XCloseDisplay(display);
           display = NULL;
@@ -321,7 +298,7 @@ SubtlextSubtleDisplay(VALUE self)
 static VALUE
 SubtlextSubtleRunning(VALUE self)
 {
-  return SubtlextRunning();
+  return subSharedSubtleRunning() ? Qtrue : Qfalse;
 } /* }}} */
 
 /* SubtlextSubtleTagList {{{ */

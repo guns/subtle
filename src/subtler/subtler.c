@@ -770,10 +770,21 @@ main(int argc,
   /* Open connection to server */
   if(!(display = XOpenDisplay(dispname)))
     {
-      printf("Can't open display `%s'.\n", (dispname) ? dispname : ":0.0");
+      printf("Failed to open display `%s'.\n", (dispname) ? dispname : ":0.0");
       return -1;
     }
   XSetErrorHandler(subSharedLogXError);
+
+  /* Check if subtle is running */
+  if(True != subSharedSubtleRunning())
+    {
+      XCloseDisplay(display);
+      display = NULL;
+      
+      subSharedLogError("%s is not running\n", PKG_NAME);
+
+      return -1;
+    }
 
   /* Select command */
   if(cmds[group][action]) cmds[group][action](arg1, arg2);
