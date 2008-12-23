@@ -641,10 +641,9 @@ subClientPublish(void)
         wins[i] = CLIENT(subtle->clients->data[i])->win;
 
       /* EWMH: Client list and client list stacking */
-      subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_CLIENT_LIST,
-        wins, subtle->clients->ndata);
-      subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_CLIENT_LIST_STACKING,
-        wins, subtle->clients->ndata);
+      subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST, wins, subtle->clients->ndata);
+      subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST_STACKING, wins, 
+        subtle->clients->ndata);
 
       subUtilLogDebug("publish=client, clients=%d\n", subtle->clients->ndata);
 
