@@ -623,4 +623,39 @@ subSharedSubletFind(char *name)
   return -1;
 } /* }}} */
 
+ /** subSharedSubtleRunning {{{
+  * @brief Check if subtle is running
+  * @return Returns if subtle is running
+  * @retval  1  subtle is running
+  * @retval  0  subtle is not running
+  **/
+
+int
+subSharedSubtleRunning(void)
+{
+  char *prop = NULL;
+  Window *check = NULL;
+  int ret = False;
+
+  /* Get supporting window */
+  if((check = subSharedWindowWMCheck()))
+    {
+      subSharedLogDebug("Support: win=%#lx\n", *check);
+
+      /* Get property */
+      if((prop = subSharedPropertyGet(*check, XInternAtom(display, "UTF8_STRING", False),
+        "_NET_WM_NAME", NULL)))
+        {
+          if(!strncmp(prop, PKG_NAME, strlen(prop))) ret = True;
+          subSharedLogDebug("Running: wmname=%s\n", prop);
+
+          free(prop);
+        }
+
+      free(check);
+    }
+
+  return ret;
+} /* }}} */
+
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
