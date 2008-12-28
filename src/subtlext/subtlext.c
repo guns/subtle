@@ -55,6 +55,8 @@ SubtlextFind(int type,
 
             if(SUB_TYPE_TAG == type) id = subSharedTagFind(STR2CSTR(value));
             else id = subSharedViewFind(STR2CSTR(value), &win);
+
+            return id;
           }
 
         if(-1 != id)

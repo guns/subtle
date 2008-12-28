@@ -87,6 +87,7 @@ subSharedLogXError(Display *disp,
       XGetErrorText(disp, ev->error_code, error, sizeof(error));
       subSharedLogDebug("%s: win=%#lx, request=%d\n", error, ev->resourceid, ev->request_code);
     }
+
   return 0; 
 } /* }}} */
 
