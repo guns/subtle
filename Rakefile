@@ -28,9 +28,10 @@ require("ftools")
   "archdir"    => "",
   "revision"   => "0",
   "cflags"     => "-Wall -Wpointer-arith -Wstrict-prototypes -Wunused -Wshadow -std=gnu99",
-  "cpppath"    => "-I. -I$(builddir) -Isrc -Isrc/shared -idirafter$(archdir)",
+  "cpppath"    => "-I. -I$(builddir) -Isrc -Isrc/shared -Isrc/subtle -idirafter$(archdir)",
   "ldflags"    => "-L$(archdir) -l$(RUBY_SO_NAME)",
-  "extflags"   => "$(LDFLAGS) $(LIBRUBYARG_SHARED)"
+  "extflags"   => "$(LDFLAGS) $(LIBRUBYARG_SHARED)",
+  "extra"      => ""
 }
 
 @defines = {
@@ -50,21 +51,20 @@ PG_WM   = "subtle"
 PG_RMT  = "subtler"
 PG_RBE  = "subtlext"
 
-SRC_WM  = FileList["src/subtle/*.c"]
 SRC_SHD = FileList["src/shared/*.c"]
+SRC_WM  = FileList["src/subtle/*.c"]
 SRC_RMT = FileList["src/subtler/*.c"]
 SRC_RBE = FileList["src/subtlext/*.c"]
 
-OBJ_WM  = SRC_WM.collect  { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
 OBJ_SHD = SRC_SHD.collect { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
+OBJ_WM  = SRC_WM.collect  { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
 OBJ_RMT = SRC_RMT.collect { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
 OBJ_RBE = SRC_RBE.collect { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
 
 FUNCS   = ["select"]
 HEADER  = [
-  "stdio.h", "stdlib.h", "stdarg.h", "string.h", "unistd.h",
-  "signal.h", "errno.h", "assert.h", "regex.h", "sys/time.h",
-  "sys/types.h", "sys/inotify.h", "execinfo.h"
+  "stdio.h", "stdlib.h", "stdarg.h", "string.h", "unistd.h", "signal.h", "errno.h", 
+  "assert.h", "regex.h", "sys/time.h", "sys/types.h", "sys/inotify.h", "execinfo.h"
 ]
 # }}}
 
@@ -116,6 +116,17 @@ def make_header(header = "config.h")
   end
 end # }}}
 
+# Func: compile {{{
+def compile(src)
+  out = File.join(@options["builddir"], File.basename(src).ext("o"))
+  @options["extra"] << (["shared.c", "subtlext.c"].include?(File.basename(src)) ? " -fPIC" : "")
+
+  silent_sh("gcc -o #{out} -c #{@options["cflags"]} #{@options["extra"]} #{@options["cpppath"]} #{src}",
+    "CC #{out}") do |ok, status|
+      ok or fail("Compiler failed with status #{status.exitstatus}")
+  end
+end # }}}
+
 # 
 # Tasks
 #
@@ -127,7 +138,6 @@ task(:default => [:config, :build])
 # Task: config {{{
 desc("Configure subtle")
 task(:config) do
-
   #Check if build dir exists
   if(!File.exists?(@options["builddir"]))
     Dir.mkdir(@options["builddir"])
@@ -231,15 +241,36 @@ desc("Build all")
 task(:build => [:config, PG_WM, PG_RMT, PG_RBE])
 # }}}
 
+# Task: shared {{{
+task(:shared_wm) do
+  if(File.exists?(OBJ_SHD.to_s))
+    File.unlink(OBJ_SHD.to_s)
+  end
+
+  @options["extra"] = "-DWM"
+
+  compile(SRC_SHD.to_s)
+end
+
+task(:shared) do
+  if(File.exists?(OBJ_SHD.to_s))
+    File.unlink(OBJ_SHD.to_s)
+  end
+
+  @options["extra"] = ""
+  compile(SRC_SHD.to_s)
+end
+# }}}
+
 # Task: subtle/subtler/subtlext {{{
 desc("Build subtle")
-task(PG_WM => [:config])
+task(PG_WM => [:config, :shared_wm])
 
 desc("Build subtler")
-task(PG_RMT => [:config, OBJ_SHD])
+task(PG_RMT => [:config, :shared])
 
 desc("Build subtlext")
-task(PG_RBE => [:config, OBJ_SHD])
+task(PG_RBE => [:config, :shared])
 # }}}
 
 # Task: install {{{
@@ -269,7 +300,6 @@ task(:install => [:config, :build]) do
 
   message("INSTALL %s\n" % [@defines["PKG_CONFIG"]])
   File.install("dist/" + @defines["PKG_CONFIG"], @defines["DIR_CONFIG"], 0644, false)
-
 end # }}}
 
 # Task: help {{{
@@ -289,34 +319,34 @@ end # }}}
 # File tasks
 #
 # Task: compile {{{
-(SRC_WM | SRC_SHD | SRC_RMT | SRC_RBE).each do |src|
-  out  = File.join(@options["builddir"], File.basename(src).ext("o"))
+(SRC_SHD | SRC_WM | SRC_RMT | SRC_RBE).each do |src|
+  out = File.join(@options["builddir"], File.basename(src).ext("o"))
 
   file(out => src) do
-    fpic = ["shared.c", "subtlext.c"].include?(File.basename(src)) ? "-fPIC" : ""
-    silent_sh("gcc -o #{out} -c #{@options["cflags"]} #{fpic} #{@options["cpppath"]} #{src}", "CC #{out}") do |ok, status|
-      ok or fail("Compiler failed with status #{status.exitstatus}")
-    end
+    compile(src)
   end
 end # }}}
 
 # Task: link {{{
 file(PG_WM => OBJ_WM) do
-  silent_sh("gcc -o #{PG_WM} #{@options["ldflags"]} #{OBJ_WM}", "LD #{PG_WM}") do |ok, status|
-    ok or fail("Linker failed with status #{status.exitstatus}")
+  silent_sh("gcc -o #{PG_WM} #{OBJ_SHD} #{OBJ_WM} #{@options["ldflags"]}", 
+    "LD #{PG_WM}") do |ok, status|
+      ok or fail("Linker failed with status #{status.exitstatus}")
   end
 end
 
 file(PG_RMT => OBJ_RMT) do
-  silent_sh("gcc -o #{PG_RMT} #{OBJ_SHD} #{OBJ_RMT} #{@options["ldflags"]}", "LD #{PG_RMT}") do |ok, status|
-    ok or fail("Linker failed with status #{status.exitstatus}")
+  silent_sh("gcc -o #{PG_RMT} #{OBJ_SHD} #{OBJ_RMT} #{@options["ldflags"]}", 
+    "LD #{PG_RMT}") do |ok, status|
+      ok or fail("Linker failed with status #{status.exitstatus}")
   end
 
 end
 
 file(PG_RBE => OBJ_RBE) do
-  silent_sh("gcc -o #{PG_RBE}.so #{OBJ_SHD} #{OBJ_RBE} -shared #{@options["extflags"]}", "LD #{PG_RBE}") do |ok, status|
-    ok or fail("Linker failed with status #{status.exitstatus}")
+  silent_sh("gcc -o #{PG_RBE}.so #{OBJ_SHD} #{OBJ_RBE} -shared #{@options["extflags"]}", 
+    "LD #{PG_RBE}") do |ok, status|
+      ok or fail("Linker failed with status #{status.exitstatus}")
   end
 end # }}}
 
