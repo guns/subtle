@@ -20,7 +20,7 @@
 SubArray *
 subArrayNew(void)
 {
-  return (SubArray *)subUtilAlloc(1, sizeof(SubArray));
+  return (SubArray *)subSharedMemoryAlloc(1, sizeof(SubArray));
 } /* }}} */
 
  /** subArrayPush {{{
@@ -37,7 +37,7 @@ subArrayPush(SubArray *a,
 
   if(e)
     {
-      a->data = (void **)subUtilRealloc(a->data, (a->ndata + 1) * sizeof(void *));
+      a->data = (void **)subSharedMemoryRealloc(a->data, (a->ndata + 1) * sizeof(void *));
       a->data[(a->ndata)++] = e;
     }
 } /* }}} */
@@ -63,7 +63,7 @@ subArrayPop(SubArray *a,
         a->data[i] = a->data[i + 1];
 
       a->ndata--;
-      a->data = (void **)subUtilRealloc(a->data, a->ndata * sizeof(void *));
+      a->data = (void **)subSharedMemoryRealloc(a->data, a->ndata * sizeof(void *));
     }
 } /* }}} */
 
@@ -154,7 +154,7 @@ subArraySplice(SubArray *a,
   assert(a && idx >= 0 && idx <= a->ndata && len > 0);
 
   a->ndata += len;
-  a->data = (void **)subUtilRealloc(a->data, (a->ndata + 1) * sizeof(void *));
+  a->data = (void **)subSharedMemoryRealloc(a->data, (a->ndata + 1) * sizeof(void *));
 
   for(i = a->ndata; i > idx; i--)
     a->data[i] = a->data[i - len];

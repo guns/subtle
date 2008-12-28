@@ -67,7 +67,7 @@ subGrabNew(const char *name,
 
   assert(name && value);
   
-  g = GRAB(subUtilAlloc(1, sizeof(SubGrab)));
+  g = GRAB(subSharedMemoryAlloc(1, sizeof(SubGrab)));
 
   /* Find grabs */  
   for(i = 0; 5 > i; i++)
@@ -90,7 +90,7 @@ subGrabNew(const char *name,
             }
           else 
             {
-              subUtilLogWarn("Can't assign keychain `%s'.\n", name);
+              subSharedLogWarn("Can't assign keychain `%s'.\n", name);
               free(g);
 
               return NULL;
@@ -121,7 +121,7 @@ subGrabNew(const char *name,
 
           if(NoSymbol == sym) ///< Check if there's still no symbol
             {
-              subUtilLogWarn("Can't assign keychain `%s'.\n", name);
+              subSharedLogWarn("Can't assign keychain `%s'.\n", name);
               if(g->string) free(g->string);
               free(g);
               
@@ -155,7 +155,7 @@ subGrabNew(const char *name,
 
       tok = strtok(NULL, "-");
     }
-  subUtilLogDebug("type=%s, name=%s, code=%03d, mod=%02d\n",
+  subSharedLogDebug("type=%s, name=%s, code=%03d, mod=%02d\n",
     g->flags & SUB_GRAB_KEY ? "k" : "m", name, g->code, g->mod);
   
   return g;

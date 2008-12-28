@@ -20,13 +20,13 @@
 SubSublet *
 subSubletNew(void)
 {
-  SubSublet *s = SUBLET(subUtilAlloc(1, sizeof(SubSublet)));
+  SubSublet *s = SUBLET(subSharedMemoryAlloc(1, sizeof(SubSublet)));
 
   /* Init sublet */
   s->flags = SUB_TYPE_SUBLET;
-  s->time  = subUtilTime();
+  s->time  = subSharedTime();
 
-  subUtilLogDebug("new=sublet\n");
+  subSharedLogDebug("new=sublet\n");
 
   return s;
 } /* }}} */ 
@@ -118,14 +118,14 @@ subSubletPublish(void)
 
   assert(0 < subtle->tags->ndata);
 
-  names = (char **)subUtilAlloc(subtle->sublets->ndata, sizeof(char *));
+  names = (char **)subSharedMemoryAlloc(subtle->sublets->ndata, sizeof(char *));
   for(i = 0; i < subtle->sublets->ndata; i++) 
     names[i] = SUBLET(subtle->sublets->data[i])->name;
 
   /* EWMH: Sublet list */
   subEwmhSetStrings(ROOT, SUB_EWMH_SUBTLE_SUBLET_LIST, names, i);
 
-  subUtilLogDebug("publish=sublet, n=%d\n", i);
+  subSharedLogDebug("publish=sublet, n=%d\n", i);
 
   free(names);
 } /* }}} */
@@ -149,7 +149,7 @@ subSubletKill(SubSublet *s)
   if(s->string) free(s->string);
   free(s);
 
-  subUtilLogDebug("kill=sublet\n");
+  subSharedLogDebug("kill=sublet\n");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

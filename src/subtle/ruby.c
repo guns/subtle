@@ -89,7 +89,7 @@ RubySubletIntervalSet(VALUE self,
 
           if(0 > (s->interval = inotify_add_watch(subtle->notify, watch, IN_MODIFY)))
             {
-              subUtilLogWarn("Watch file `%s' error: %s\n", watch, strerror(errno));
+              subSharedLogWarn("Watch file `%s' error: %s\n", watch, strerror(errno));
 
               return Qfalse;
             }
@@ -98,7 +98,7 @@ RubySubletIntervalSet(VALUE self,
 #endif /* HAVE_SYS_INOTIFY_H */
         break;
       default:
-        subUtilLogWarn("Unknown value type\n");
+        subSharedLogWarn("Unknown value type\n");
         return Qfalse;
     }
 
@@ -145,7 +145,7 @@ RubySubletDataSet(VALUE self,
         break;
       default:
         s->flags |= SUB_DATA_NIL;
-        subUtilLogWarn("Unknown value type\n");
+        subSharedLogWarn("Unknown value type\n");
         return Qfalse;
     }
 
@@ -191,10 +191,10 @@ RubyParseColor(VALUE hash,
   /* Parse and allow color */
   if(!XParseColor(subtle->disp, cmap, name, &color))
     {
-      subUtilLogWarn("Can't load color '%s'.\n", key);
+      subSharedLogWarn("Can't load color '%s'.\n", key);
     }
   else if(!XAllocColor(subtle->disp, cmap, &color))
-    subUtilLogWarn("Can't alloc color '%s'.\n", key);
+    subSharedLogWarn("Can't alloc color '%s'.\n", key);
 
   return color.pixel;
 } /* }}} */
@@ -219,7 +219,7 @@ RubyArrayIterate(VALUE elem,
   status = rb_funcall(elem, rb_intern("new"), 0, NULL);
   if(!status)
     {
-      subUtilLogWarn("Failed running sublet\n");
+      subSharedLogWarn("Failed running sublet\n");
     }
 
   return Qnil;
@@ -251,7 +251,7 @@ RubyConfigIterate(VALUE key,
         if(entry) subArrayPush(subtle->views, entry);
         break;
 
-      default: subUtilLogDebug("Never to be reached?\n");
+      default: subSharedLogDebug("Never to be reached?\n");
     }
 
   return Qnil;
@@ -292,10 +292,10 @@ RubyConfigParse(VALUE path)
   snprintf(font, sizeof(font), "-*-%s-%s-*-*-*-%d-*-*-*-*-*-*-*", family, style, size);
   if(!(subtle->xfs = XLoadQueryFont(subtle->disp, font)))
     {
-      subUtilLogWarn("Can't load font `%s', using fixed instead.\n", family);
-      subUtilLogDebug("Font: %s\n", font);
+      subSharedLogWarn("Can't load font `%s', using fixed instead.\n", family);
+      subSharedLogDebug("Font: %s\n", font);
       subtle->xfs = XLoadQueryFont(subtle->disp, "-*-fixed-medium-*-*-*-13-*-*-*-*-*-*-*");
-      if(!subtle->xfs) subUtilLogError("Can't load font `fixed`.\n");
+      if(!subtle->xfs) subSharedLogError("Can't load font `fixed`.\n");
     }
 
   /* Font metrics */
@@ -417,23 +417,23 @@ subRubyLoadConfig(const char *file)
       else fclose(fd);
     }
   else snprintf(config, sizeof(config), "%s", file);
-  subUtilLogDebug("config=%s\n", config);
+  subSharedLogDebug("config=%s\n", config);
 
   /* Safety first */
   rb_protect(RubyConfigParse, rb_str_new2(config), &status);
-  if(Qundef == status) subUtilLogWarn("Failed reading/parsing config\n");
+  if(Qundef == status) subSharedLogWarn("Failed reading/parsing config\n");
 
   /* Grabs */
   if(0 == subtle->grabs->ndata) 
     {
-      subUtilLogWarn("No grabs found\n");
+      subSharedLogWarn("No grabs found\n");
     }
   else subArraySort(subtle->grabs, subGrabCompare);
 
   /* Tags */
   if(2 == subtle->tags->ndata) 
     {
-      subUtilLogWarn("No tags found\n");
+      subSharedLogWarn("No tags found\n");
     }
   else subTagPublish();
 
@@ -442,7 +442,7 @@ subRubyLoadConfig(const char *file)
     {
       SubView *v = subViewNew("subtle", "default");
       subArrayPush(subtle->views, (void *)v);
-      subUtilLogWarn("No views found\n");
+      subSharedLogWarn("No views found\n");
     }
   else
     {
@@ -474,8 +474,8 @@ subRubyLoadSublets(const char *path)
 #ifdef HAVE_SYS_INOTIFY_H
   if((subtle->notify = inotify_init()) < 0)
     {
-      subUtilLogWarn("Failed initing inotify\n");
-      subUtilLogDebug("Inotify: %s\n", strerror(errno));
+      subSharedLogWarn("Failed initing inotify\n");
+      subSharedLogDebug("Inotify: %s\n", strerror(errno));
     }
   else fcntl(subtle->notify, F_SETFL, O_NONBLOCK);
 #endif /* HAVE_SYS_INOTIFY_H */
@@ -488,7 +488,7 @@ subRubyLoadSublets(const char *path)
       else snprintf(buf, sizeof(buf), "%s", DIR_SUBLET);
     }
   else snprintf(buf, sizeof(buf), "%s", path);
-  subUtilLogDebug("path=%s\n", buf);
+  subSharedLogDebug("path=%s\n", buf);
 
   /* Scan directory */
   num = scandir(buf, &entries, RubyFilter, alphasort);
@@ -499,7 +499,7 @@ subRubyLoadSublets(const char *path)
           char file[150];
 
           snprintf(file, sizeof(file), "%s/%s", buf, entries[i]->d_name);
-          subUtilLogDebug("sublet=%s\n", file);
+          subSharedLogDebug("sublet=%s\n", file);
           rb_require(file); ///< Load subclass of Sublet
 
           free(entries[i]);
@@ -521,7 +521,7 @@ subRubyLoadSublets(const char *path)
           subSubletPublish();
         }
     }
-  else subUtilLogWarn("No sublets found\n");
+  else subSharedLogWarn("No sublets found\n");
 } /* }}} */
 
  /** subRubyRun {{{
@@ -539,7 +539,7 @@ subRubyRun(SubSublet *s)
   rb_protect(RubyProtectedRun, s->recv, &status);
   if(Qundef == status)
     {
-      subUtilLogWarn("Failed running sublet\n");
+      subSharedLogWarn("Failed running sublet\n");
       subArrayPop(subtle->sublets, (void *)s);
       subSubletKill(s);
     }
@@ -559,7 +559,7 @@ subRubyFinish(void)
   if(subtle->notify) close(subtle->notify);
 #endif /* HAVE_SYS_INOTIFY_H */
 
-  subUtilLogDebug("kill=ruby\n");
+  subSharedLogDebug("kill=ruby\n");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

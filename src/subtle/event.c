@@ -31,9 +31,9 @@ EventExec(char *cmd)
         execlp("/bin/sh", "sh", "-c", cmd, NULL);
 
         /* Never to be reached */
-        subUtilLogWarn("Can't exec command `%s'.\n", cmd);
+        subSharedLogWarn("Can't exec command `%s'.\n", cmd);
         exit(1);
-      case -1: subUtilLogWarn("Failed to fork.\n");
+      case -1: subSharedLogWarn("Failed to fork.\n");
     }
 } /* }}} */
 
@@ -42,7 +42,7 @@ static void
 EventConfigure(XConfigureRequestEvent *ev)
 {
   XWindowChanges wc;
-  SubClient *c = CLIENT(subUtilFind(ev->window, CLIENTID));
+  SubClient *c = CLIENT(subSharedFind(ev->window, CLIENTID));
 
   if(c)
     {
@@ -70,7 +70,7 @@ EventConfigure(XConfigureRequestEvent *ev)
 static void
 EventMapRequest(XMapRequestEvent *ev)
 {
-  SubClient *c = CLIENT(subUtilFind(ev->window, CLIENTID));
+  SubClient *c = CLIENT(subSharedFind(ev->window, CLIENTID));
   if(!c) 
     {
       /* Create new client */
@@ -94,7 +94,7 @@ EventDestroy(XDestroyWindowEvent *ev)
   SubClient *c = NULL;
   SubTray *t = NULL;
   
-  if((c = CLIENT(subUtilFind(ev->event, CLIENTID))))
+  if((c = CLIENT(subSharedFind(ev->event, CLIENTID))))
     {
       c->flags |= SUB_STATE_DEAD;
       subClientKill(c); 
@@ -102,7 +102,7 @@ EventDestroy(XDestroyWindowEvent *ev)
       subViewConfigure(subtle->cv);
       subViewUpdate();
     }
-  else if((t = TRAY(subUtilFind(ev->event, TRAYID))))
+  else if((t = TRAY(subSharedFind(ev->event, TRAYID))))
     {
       subArrayPop(subtle->trays, (void *)t);
       subTrayKill(t);
@@ -140,7 +140,7 @@ EventMessage(XClientMessageEvent *ev)
             if((v = VIEW(subArrayGet(subtle->views, ev->data.l[0])))) subViewJump(v);
             break; /* }}} */
           case SUB_EWMH_NET_ACTIVE_WINDOW: /* {{{ */
-            if((c = CLIENT(subUtilFind(ev->data.l[0], CLIENTID))))
+            if((c = CLIENT(subSharedFind(ev->data.l[0], CLIENTID))))
               subClientFocus(c);
             break; /* }}} */
           case SUB_EWMH_SUBTLE_CLIENT_TAG: /* {{{ */
@@ -265,7 +265,7 @@ EventMessage(XClientMessageEvent *ev)
             switch(ev->data.l[1])
               {
                 case XEMBED_EMBEDDED_NOTIFY:
-                  if(!(t = TRAY(subUtilFind(ev->window, TRAYID))))
+                  if(!(t = TRAY(subSharedFind(ev->window, TRAYID))))
                     {
                       t = subTrayNew(ev->data.l[2]);
                       subArrayPush(subtle->trays, (void *)t);
@@ -280,7 +280,7 @@ EventMessage(XClientMessageEvent *ev)
       return;
     } /* }}} */
   /* Messages for client windows {{{ */
-  else if((c = CLIENT(subUtilFind(ev->window, CLIENTID))));
+  else if((c = CLIENT(subSharedFind(ev->window, CLIENTID))));
     {
       /* States */
       if(subEwmhGet(SUB_EWMH_NET_WM_STATE) == ev->message_type)
@@ -298,7 +298,7 @@ EventMessage(XClientMessageEvent *ev)
 static void
 EventColormap(XColormapEvent *ev)
 {  
-  SubClient *c = (SubClient *)subUtilFind(ev->window, 1);
+  SubClient *c = (SubClient *)subSharedFind(ev->window, 1);
   if(c && ev->new)
     {
       c->cmap = ev->colormap;
@@ -313,7 +313,7 @@ EventProperty(XPropertyEvent *ev)
 #ifdef DEBUG
   char *name = XGetAtomName(subtle->disp, ev->atom);
 
-  subUtilLogDebug("Property: name=%s, type=%ld, win=%#lx\n", 
+  subSharedLogDebug("Property: name=%s, type=%ld, win=%#lx\n", 
     name ? name : "n/a", ev->atom, ev->window);
   if(name) XFree(name);
 #endif /* DEBUG */
@@ -321,12 +321,12 @@ EventProperty(XPropertyEvent *ev)
   /* Supported properties */
   if(XA_WM_NAME == ev->atom || subEwmhGet(SUB_EWMH_WM_NAME) == ev->atom) ///< Client
     {
-      SubClient *c = CLIENT(subUtilFind(ev->window, CLIENTID));
+      SubClient *c = CLIENT(subSharedFind(ev->window, CLIENTID));
       if(c) subClientFetchName(c);
     }
   else if(subEwmhGet(SUB_EWMH_XEMBED_INFO) == ev->atom) ///< Tray
     {
-      SubTray *t = TRAY(subUtilFind(ev->window, TRAYID));
+      SubTray *t = TRAY(subSharedFind(ev->window, TRAYID));
       if(t)
         {
           subTraySetState(t);
@@ -335,7 +335,7 @@ EventProperty(XPropertyEvent *ev)
     }
   else if(subEwmhGet(SUB_EWMH_WM_NORMAL_HINTS) == ev->atom) ///< Tray
     {
-      SubTray *t = TRAY(subUtilFind(ev->window, TRAYID));
+      SubTray *t = TRAY(subSharedFind(ev->window, TRAYID));
       if(t)
         {
           subTrayConfigure(t);
@@ -352,7 +352,7 @@ EventCrossing(XCrossingEvent *ev)
   SubClient *c = NULL;
   SubTray *t = NULL;
 
-  if((c = CLIENT(subUtilFind(ev->window, CLIENTID))))
+  if((c = CLIENT(subSharedFind(ev->window, CLIENTID))))
     {
       if(!(c->flags & SUB_STATE_DEAD))
         {
@@ -366,7 +366,7 @@ EventCrossing(XCrossingEvent *ev)
 
         }
      }
-  else if((t = TRAY(subUtilFind(ev->window, TRAYID))))
+  else if((t = TRAY(subSharedFind(ev->window, TRAYID))))
     {
 printf("name=%s\n", t->name);
     }
@@ -382,7 +382,7 @@ EventSelectionClear(XSelectionClearEvent *ev)
   if(subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION) == ev->selection)
     if(ev->window == subtle->windows.tray)
       {
-        subUtilLogDebug("We lost the selection? Renew it!\n");
+        subSharedLogDebug("We lost the selection? Renew it!\n");
         subTraySelect();
       }
 } /* }}} */
@@ -403,7 +403,7 @@ EventGrab(XEvent *ev)
       case ButtonPress: 
         if(ev->xany.window == subtle->windows.views) ///< View buttons
           {
-            SubView *v = VIEW(subUtilFind(ev->xbutton.subwindow, BUTTONID));
+            SubView *v = VIEW(subSharedFind(ev->xbutton.subwindow, BUTTONID));
             if(subtle->cv != v) subViewJump(v); ///< Prevent jumping to current view
             return;
           }      
@@ -430,7 +430,7 @@ EventGrab(XEvent *ev)
         {
           case SUB_GRAB_WINDOW_FLOAT:
           case SUB_GRAB_WINDOW_FULL:
-            c = CLIENT(subUtilFind(win, CLIENTID));
+            c = CLIENT(subSharedFind(win, CLIENTID));
             if(c) 
               {
                 flag = SUB_GRAB_WINDOW_FLOAT == flag ? SUB_STATE_FLOAT : SUB_STATE_FULL;
@@ -439,7 +439,7 @@ EventGrab(XEvent *ev)
               }
             break;            
           case SUB_GRAB_WINDOW_KILL:
-            c = CLIENT(subUtilFind(win, CLIENTID));
+            c = CLIENT(subSharedFind(win, CLIENTID));
             if(c) 
               { 
                 subClientKill(c);
@@ -448,7 +448,7 @@ EventGrab(XEvent *ev)
             break;             
           case SUB_GRAB_WINDOW_MOVE:
           case SUB_GRAB_WINDOW_RESIZE:
-            c = CLIENT(subUtilFind(win, CLIENTID));
+            c = CLIENT(subSharedFind(win, CLIENTID));
             if(c && !(c->flags & SUB_STATE_FULL))
               {
                 if(c->flags & (SUB_STATE_FLOAT|SUB_STATE_URGENT))
@@ -469,7 +469,7 @@ EventGrab(XEvent *ev)
             printf("Grab not implemented yet!\n");
         }
 
-      subUtilLogDebug("Grab: code=%03d, mod=%03d\n", g->code, g->mod);
+      subSharedLogDebug("Grab: code=%03d, mod=%03d\n", g->code, g->mod);
     }
 } /* }}} */
 
@@ -497,7 +497,7 @@ EventExpose(XEvent *ev)
 static void
 EventFocus(XFocusChangeEvent *ev)
 {
-  SubClient *c = CLIENT(subUtilFind(ev->window, CLIENTID));
+  SubClient *c = CLIENT(subSharedFind(ev->window, CLIENTID));
   if(c)
     { 
       if(FocusOut == ev->type) ///< FocusOut event
@@ -509,7 +509,7 @@ EventFocus(XFocusChangeEvent *ev)
               Window oldfocus = subtle->windows.focus;
               subtle->windows.focus = 0;
 
-              if((f = CLIENT(subUtilFind(oldfocus, CLIENTID))))
+              if((f = CLIENT(subSharedFind(oldfocus, CLIENTID))))
                 {
                   if(!(f->flags & SUB_STATE_DEAD)) ///< Don't revive
                     {
@@ -569,11 +569,11 @@ subEventLoop(void)
 
   while(1)
     {
-      ctime  = subUtilTime();
+      ctime  = subSharedTime();
       ret = select(ConnectionNumber(subtle->disp) + 1, &rfds, NULL, NULL, &tv);
       if(-1 == ret) 
         {
-          subUtilLogDebug("%s\n", strerror(errno)); ///< Ignore and print debugging message
+          subSharedLogDebug("%s\n", strerror(errno)); ///< Ignore and print debugging message
         }
       else if(ret) ///< Data ready on any connection
         {
@@ -612,7 +612,7 @@ subEventLoop(void)
                     struct inotify_event *event = (struct inotify_event *)&buf[0];
                     if(event)
                       {
-                        SubSublet *ws = SUBLET(subUtilFind(subtle->windows.sublets, event->wd));
+                        SubSublet *ws = SUBLET(subSharedFind(subtle->windows.sublets, event->wd));
                         if(ws)
                           {
                             subRubyRun(ws);

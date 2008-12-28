@@ -111,7 +111,7 @@ subClientNew(Window win)
 
   assert(win);
   
-  c = CLIENT(subUtilAlloc(1, sizeof(SubClient)));
+  c = CLIENT(subSharedMemoryAlloc(1, sizeof(SubClient)));
   c->flags = SUB_TYPE_CLIENT;
   c->win   = win;
 
@@ -136,7 +136,7 @@ subClientNew(Window win)
 
   /* Size hints */
   c->hints = XAllocSizeHints();
-  if(!c->hints) subUtilLogError("Can't alloc memory. Exhausted?\n");
+  if(!c->hints) subSharedLogError("Can't alloc memory. Exhausted?\n");
   XGetWMNormalHints(subtle->disp, c->win, c->hints, &supplied);
   if(0 < supplied) c->flags |= SUB_PREF_HINTS;
   else XFree(c->hints);
@@ -170,7 +170,7 @@ subClientNew(Window win)
       {
         SubTag *t = TAG(subtle->tags->data[i]);
 
-        if(t->preg && subUtilRegexMatch(t->preg, c->name)) c->tags |= (1L << (i + 1));
+        if(t->preg && subSharedRegexMatch(t->preg, c->name)) c->tags |= (1L << (i + 1));
       }
 
   /* Special tags */
@@ -185,7 +185,7 @@ subClientNew(Window win)
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
   printf("Adding client (%s)\n", c->name);
-  subUtilLogDebug("new=client, name=%s, win=%#lx, supplied=%ld\n", c->name, win, supplied);
+  subSharedLogDebug("new=client, name=%s, win=%#lx, supplied=%ld\n", c->name, win, supplied);
 
   return c;
 } /* }}} */
@@ -231,7 +231,7 @@ subClientConfigure(SubClient *c)
   XMoveResizeWindow(subtle->disp, c->win, r.x, r.y, r.width, r.height);
   XSendEvent(subtle->disp, c->win, False, StructureNotifyMask, (XEvent *)&ev);
 
-  subUtilLogDebug("client=%#lx, state=%c, x=%03d, y=%03d, width=%03d, height=%03d\n",
+  subSharedLogDebug("client=%#lx, state=%c, x=%03d, y=%03d, width=%03d, height=%03d\n",
     c->win, c->flags & SUB_STATE_FLOAT ? 'f' : c->flags & SUB_STATE_FULL ? 'u' : 'n',
     r.x, r.y, r.width, r.height);
 } /* }}} */
@@ -274,7 +274,7 @@ subClientFocus(SubClient *c)
       subEwmhMessage(c->win, c->win, SUB_EWMH_WM_PROTOCOLS, 
         subEwmhGet(SUB_EWMH_WM_TAKE_FOCUS), CurrentTime, 0, 0, 0);
       
-      subUtilLogDebug("Focus: win=%#lx, input=%d, send=%d\n", c->win,
+      subSharedLogDebug("Focus: win=%#lx, input=%d, send=%d\n", c->win,
         !!(c->flags & SUB_PREF_INPUT), !!(c->flags & SUB_PREF_FOCUS));
     }   
   else XSetInputFocus(subtle->disp, c->win, RevertToNone, CurrentTime);
@@ -410,7 +410,7 @@ subClientDrag(SubClient *c,
               } /* }}} */
             else if(SUB_DRAG_TILE == mode && win != c->win) /* Tile {{{ */
               {
-                if(!c2 ) c2 = CLIENT(subUtilFind(win, CLIENTID));
+                if(!c2 ) c2 = CLIENT(subSharedFind(win, CLIENTID));
                 if(c2)
                   {
                     XQueryPointer(subtle->disp, win, &unused, &unused,
@@ -635,7 +635,7 @@ subClientPublish(void)
   if(0 < subtle->clients->ndata )
     {
       int i;
-      Window *wins = (Window *)subUtilAlloc(subtle->clients->ndata, sizeof(Window));
+      Window *wins = (Window *)subSharedMemoryAlloc(subtle->clients->ndata, sizeof(Window));
 
       for(i = 0; i < subtle->clients->ndata; i++) 
         wins[i] = CLIENT(subtle->clients->data[i])->win;
@@ -645,7 +645,7 @@ subClientPublish(void)
       subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST_STACKING, wins, 
         subtle->clients->ndata);
 
-      subUtilLogDebug("publish=client, clients=%d\n", subtle->clients->ndata);
+      subSharedLogDebug("publish=client, clients=%d\n", subtle->clients->ndata);
 
       free(wins);
     }
@@ -694,7 +694,7 @@ subClientKill(SubClient *c)
   if(c->name) XFree(c->name);
   free(c);
 
-  subUtilLogDebug("kill=client\n");
+  subSharedLogDebug("kill=client\n");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

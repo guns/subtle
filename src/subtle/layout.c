@@ -29,12 +29,12 @@ subLayoutNew(SubClient *c1,
 
   assert(c1 && c2);
 
-  l = LAYOUT(subUtilAlloc(1, sizeof(SubLayout)));
+  l = LAYOUT(subSharedMemoryAlloc(1, sizeof(SubLayout)));
   l->c1    = c1;
   l->c2    = c2;
   l->flags = SUB_TYPE_LAYOUT|mode;
 
-  subUtilLogDebug("new=layout, c1=%lx, c2=%lx, mode=%s\n", c1->win, c2->win,
+  subSharedLogDebug("new=layout, c1=%lx, c2=%lx, mode=%s\n", c1->win, c2->win,
     mode == SUB_TILE_HORZ ? "H" : (mode == SUB_TILE_VERT ? "V" : "S"));
 
   return l;
@@ -52,7 +52,7 @@ subLayoutKill(SubLayout *l)
 
   free(l);
 
-  subUtilLogDebug("kill=layout\n");
+  subSharedLogDebug("kill=layout\n");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

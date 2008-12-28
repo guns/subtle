@@ -659,7 +659,7 @@ SubtlerPipe(char *string)
     {
       /* Open pipe */
       if(!fgets(buf, sizeof(buf), stdin)) subSharedLogError("Can't read from pipe\n");
-      ret = (char *)subSharedAlloc(strlen(buf), sizeof(char));
+      ret = (char *)subSharedMemoryAlloc(strlen(buf), sizeof(char));
       strncpy(ret, buf, strlen(buf) - 1);
       subSharedLogDebug("Pipe: len=%d\n", strlen(buf));
     }

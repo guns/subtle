@@ -147,7 +147,7 @@ main(int argc,
   sigaction(SIGCHLD, &act, NULL);
 
   /* Init subtle */
-  subtle = SUBTLE(subUtilAlloc(1, sizeof(SubSubtle)));
+  subtle = SUBTLE(subSharedMemoryAlloc(1, sizeof(SubSubtle)));
   subtle->clients = subArrayNew();
   subtle->grabs   = subArrayNew();
   subtle->sublets = subArrayNew();

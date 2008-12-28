@@ -54,7 +54,7 @@ subEwmhInit(void)
 
   /* Tray selection */
   len       = strlen(names[SUB_EWMH_NET_SYSTEM_TRAY_SELECTION]) + 5; ///< @todo For high screen counts
-  selection = (char *)subUtilAlloc(len, sizeof(char)); 
+  selection = (char *)subSharedMemoryAlloc(len, sizeof(char)); 
 
   snprintf(selection, len, "%s%u", names[SUB_EWMH_NET_SYSTEM_TRAY_SELECTION], SCREEN);
   printf("Selection: len=%d, name=%s\n", len, selection);
@@ -122,12 +122,12 @@ subEwmhGetProperty(Window win,
   if(XGetWindowProperty(subtle->disp, win, atoms[e], 0L, 1024, False, type, &rtype,
     &format, &nitems, &bytes, &data) != Success)
     {
-      subUtilLogDebug("Failed to get property (%d)\n", e);
+      subSharedLogDebug("Failed to get property (%d)\n", e);
       return NULL;
     }
   if(type != rtype)
     {
-      subUtilLogDebug("Invalid type for property (%d <=> %d)\n", type, rtype);
+      subSharedLogDebug("Invalid type for property (%d <=> %d)\n", type, rtype);
       XFree(data);
       return NULL;
     }
@@ -234,7 +234,7 @@ subEwmhSetStrings(Window win,
 
   for(i = 0; i < size; i++) len += strlen(values[i]);
 
-  str = (char *)subUtilAlloc(len + i + 1, sizeof(char *));
+  str = (char *)subSharedMemoryAlloc(len + i + 1, sizeof(char *));
 
   for(i = 0; i < size; i++)
     {

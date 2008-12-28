@@ -36,7 +36,7 @@ subTrayNew(Window win)
   if((info = (XEmbedInfo *)subEwmhGetProperty(win, subEwmhGet(SUB_EWMH_XEMBED_INFO), 
     SUB_EWMH_XEMBED_INFO, NULL)))
     {
-      t = TRAY(subUtilAlloc(1, sizeof(SubTray)));
+      t = TRAY(subSharedMemoryAlloc(1, sizeof(SubTray)));
       t->flags = SUB_TYPE_TRAY;
       t->win   = win;
       t->width = subtle->th; ///< Default width
@@ -57,7 +57,7 @@ subTrayNew(Window win)
       subTraySetState(t); ///< @todo Overhead for getting property twice
 
       printf("Adding tray (%s)\n", t->name);
-      subUtilLogDebug("new=tray, name=%s, win=%#lx\n", t->name, win);
+      subSharedLogDebug("new=tray, name=%s, win=%#lx\n", t->name, win);
 
       free(info);
     }
@@ -79,7 +79,7 @@ subTrayConfigure(SubTray *t)
   assert(t);
   
   hints = XAllocSizeHints();
-  if(!hints) subUtilLogError("Can't alloc memory. Exhausted?\n");
+  if(!hints) subSharedLogError("Can't alloc memory. Exhausted?\n");
 
   XGetWMNormalHints(subtle->disp, t->win, hints, &supplied);
   if(0 < supplied)
@@ -94,7 +94,7 @@ subTrayConfigure(SubTray *t)
     }
   XFree(hints);
 
-  subUtilLogDebug("Tray: width=%d, supplied=%ld\n", t->width, supplied);
+  subSharedLogDebug("Tray: width=%d, supplied=%ld\n", t->width, supplied);
 } /* }}} */
 
  /** subTrayFocus {{{
@@ -150,9 +150,9 @@ subTraySelect(void)
   XSetSelectionOwner(subtle->disp, sel, subtle->windows.tray, CurrentTime);
   if(XGetSelectionOwner(subtle->disp, sel) == subtle->windows.tray)
     {
-      subUtilLogDebug("Selection: type=%ld\n", sel);
+      subSharedLogDebug("Selection: type=%ld\n", sel);
     }
-  else subUtilLogError("Failed to get tray selection\n");
+  else subSharedLogError("Failed to get tray selection\n");
 
   /* Send manager info */
   subEwmhMessage(ROOT, ROOT, SUB_EWMH_MANAGER, CurrentTime, 
@@ -189,7 +189,7 @@ subTraySetState(SubTray *t)
         }
 
       subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime, opcode, 0, 0, 0);
-      subUtilLogDebug("XEmbedInfo: version=%ld, flags=%ld, mapped=%ld\n", info->version,
+      subSharedLogDebug("XEmbedInfo: version=%ld, flags=%ld, mapped=%ld\n", info->version,
         info->flags, info->flags & XEMBED_MAPPED);
     }
   XFree(info);
@@ -214,7 +214,7 @@ subTrayKill(SubTray *t)
   if(t->name) XFree(t->name);
   free(t);
 
-  subUtilLogDebug("kill=tray\n");
+  subSharedLogDebug("kill=tray\n");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

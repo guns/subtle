@@ -28,7 +28,7 @@ subViewNew(char *name,
 
   assert(name);
   
-  v  = VIEW(subUtilAlloc(1, sizeof(SubView)));
+  v  = VIEW(subSharedMemoryAlloc(1, sizeof(SubView)));
   v->flags  = SUB_TYPE_VIEW;
   v->name   = strdup(name);
   v->width  = strlen(v->name) * subtle->fx + 8; ///< Font offset
@@ -53,18 +53,18 @@ subViewNew(char *name,
   if(tags)
     {
       int i;
-      regex_t *preg = subUtilRegexNew(tags);
+      regex_t *preg = subSharedRegexNew(tags);
 
       for(i = 0; i < subtle->tags->ndata; i++)
-        if(subUtilRegexMatch(preg, TAG(subtle->tags->data[i])->name)) 
+        if(subSharedRegexMatch(preg, TAG(subtle->tags->data[i])->name)) 
           v->tags |= (1L << (i + 1));
 
-      subUtilRegexKill(preg);
+      subSharedRegexKill(preg);
       subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_VIEW_TAGS, (long *)&v->tags, 1);
     }
 
   printf("Adding view (%s)\n", v->name);
-  subUtilLogDebug("new=view, name=%s\n", name);
+  subSharedLogDebug("new=view, name=%s\n", name);
 
   return v;
 } /* }}} */
@@ -119,7 +119,7 @@ subViewConfigure(SubView *v)
             }
         } /* }}} */
 
-      subUtilLogDebug("total=%d, layouts=%d, tiled=%d\n", total, v->layout->ndata, tiled);
+      subSharedLogDebug("total=%d, layouts=%d, tiled=%d\n", total, v->layout->ndata, tiled);
       total -= tiled;
 
       /* Calculations */
@@ -362,8 +362,8 @@ subViewPublish(void)
 
   assert(0 < subtle->views->ndata);
 
-  frames = (Window *)subUtilAlloc(subtle->views->ndata, sizeof(Window));
-  names  = (char **)subUtilAlloc(subtle->views->ndata, sizeof(char *));
+  frames = (Window *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(Window));
+  names  = (char **)subSharedMemoryAlloc(subtle->views->ndata, sizeof(char *));
 
   for(i = 0; i < subtle->views->ndata; i++)
     {
@@ -384,7 +384,7 @@ subViewPublish(void)
   vid = subArrayIndex(subtle->views, (void *)subtle->cv); ///< Get desktop number
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP, &vid, 1);
 
-  subUtilLogDebug("publish=views, n=%d\n", i);
+  subSharedLogDebug("publish=views, n=%d\n", i);
 
   free(frames);
   free(names);
@@ -442,7 +442,7 @@ subViewKill(SubView *v)
   free(v->name);
   free(v);          
 
-  subUtilLogDebug("kill=view\n");
+  subSharedLogDebug("kill=view\n");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

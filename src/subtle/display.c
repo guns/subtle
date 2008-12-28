@@ -32,8 +32,8 @@ subDisplayInit(const char *display)
 
   /* Connect to display and setup error handler */
   subtle->disp = XOpenDisplay(display);
-  if(!subtle->disp) subUtilLogError("Can't open display `%s'.\n", (display) ? display : ":0.0");
-  XSetErrorHandler(subUtilLogXError);
+  if(!subtle->disp) subSharedLogError("Can't open display `%s'.\n", (display) ? display : ":0.0");
+  XSetErrorHandler(subSharedLogXError);
 
   /* Create gcs */
   gvals.function      = GXcopy;
@@ -175,7 +175,7 @@ subDisplayFinish(void)
       XCloseDisplay(subtle->disp);
     }
 
-  subUtilLogDebug("kill=display\n");
+  subSharedLogDebug("kill=display\n");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

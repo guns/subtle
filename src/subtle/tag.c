@@ -51,19 +51,19 @@ subTagNew(char *name,
       if(regex)
         {
           /* Update regex */
-          if(t->preg) subUtilRegexKill(t->preg);
-          t->preg = subUtilRegexNew(regex);
+          if(t->preg) subSharedRegexKill(t->preg);
+          t->preg = subSharedRegexNew(regex);
         }
       return NULL;
     }
 
-  t = TAG(subUtilAlloc(1, sizeof(SubTag)));
+  t = TAG(subSharedMemoryAlloc(1, sizeof(SubTag)));
   t->name  = strdup(name);
   t->flags = SUB_TYPE_TAG;
-  if(regex) t->preg = subUtilRegexNew(regex);
+  if(regex) t->preg = subSharedRegexNew(regex);
 
   printf("Adding tag (%s)\n", name);
-  subUtilLogDebug("new=tag, name=%s\n", name);
+  subSharedLogDebug("new=tag, name=%s\n", name);
 
   return t;
 } /* }}} */
@@ -80,7 +80,7 @@ subTagPublish(void)
 
   assert(0 < subtle->tags->ndata);
 
-  names = (char **)subUtilAlloc(subtle->tags->ndata, sizeof(char *));
+  names = (char **)subSharedMemoryAlloc(subtle->tags->ndata, sizeof(char *));
 
   for(i = 0; i < subtle->tags->ndata; i++) 
     names[i] = TAG(subtle->tags->data[i])->name;
@@ -88,7 +88,7 @@ subTagPublish(void)
   /* EWMH: Tag list */
   subEwmhSetStrings(ROOT, SUB_EWMH_SUBTLE_TAG_LIST, names, i);
 
-  subUtilLogDebug("publish=tags, n=%d\n", i);
+  subSharedLogDebug("publish=tags, n=%d\n", i);
 
   free(names);
 } /* }}} */
@@ -105,11 +105,11 @@ subTagKill(SubTag *t)
 
   printf("Killing tag (%s)\n", t->name);
 
-  if(t->preg) subUtilRegexKill(t->preg);
+  if(t->preg) subSharedRegexKill(t->preg);
   free(t->name);
   free(t);
 
-  subUtilLogDebug("kill=tag\n");
+  subSharedLogDebug("kill=tag\n");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
