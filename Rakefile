@@ -30,8 +30,7 @@ require("ftools")
   "cflags"     => "-Wall -Wpointer-arith -Wstrict-prototypes -Wunused -Wshadow -std=gnu99",
   "cpppath"    => "-I. -I$(builddir) -Isrc -Isrc/shared -Isrc/subtle -idirafter$(archdir)",
   "ldflags"    => "-L$(archdir) -l$(RUBY_SO_NAME)",
-  "extflags"   => "$(LDFLAGS) $(LIBRUBYARG_SHARED)",
-  "extra"      => ""
+  "extflags"   => "$(LDFLAGS) $(LIBRUBYARG_SHARED)"
 }
 
 @defines = {
@@ -51,15 +50,16 @@ PG_WM   = "subtle"
 PG_RMT  = "subtler"
 PG_RBE  = "subtlext"
 
-SRC_SHD = FileList["src/shared/*.c"]
 SRC_WM  = FileList["src/subtle/*.c"]
 SRC_RMT = FileList["src/subtler/*.c"]
 SRC_RBE = FileList["src/subtlext/*.c"]
+SRC_SHD = FileList["src/shared/*.c"]
 
-OBJ_SHD = SRC_SHD.collect { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
 OBJ_WM  = SRC_WM.collect  { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
 OBJ_RMT = SRC_RMT.collect { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
 OBJ_RBE = SRC_RBE.collect { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
+OBJ_SHD = SRC_SHD.collect { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
+OBJ_SHW = SRC_SHD.collect { |f| File.join(@options["builddir"], File.basename(f).ext("wm.o")) }
 
 FUNCS   = ["select"]
 HEADER  = [
@@ -70,7 +70,7 @@ HEADER  = [
 
 # Miscellaneous {{{
 Logging.logfile("config.log") #< mkmf log
-CLEAN.include(PG_WM, PG_RMT, "#{PG_RBE}.so", OBJ_WM, OBJ_SHD, OBJ_RMT, OBJ_RBE)
+CLEAN.include(PG_WM, PG_RMT, "#{PG_RBE}.so", OBJ_WM, OBJ_SHD, OBJ_SHW, OBJ_RMT, OBJ_RBE)
 CLOBBER.include(@options["builddir"], "config.h", "config.log", "config.yml")
 # }}}
 
@@ -117,11 +117,12 @@ def make_header(header = "config.h")
 end # }}}
 
 # Func: compile {{{
-def compile(src)
-  out = File.join(@options["builddir"], File.basename(src).ext("o"))
-  @options["extra"] << (["shared.c", "subtlext.c"].include?(File.basename(src)) ? " -fPIC" : "")
+def compile(src, out = nil, options = "")
+  out = File.join(@options["builddir"], File.basename(src).ext("o")) unless(!out.nil?)
+  opt = ["shared.c", "shared.wm.c", "subtlext.c"].include?(File.basename(src)) ? " -fPIC " : ""
+  opt << options
 
-  silent_sh("gcc -o #{out} -c #{@options["cflags"]} #{@options["extra"]} #{@options["cpppath"]} #{src}",
+  silent_sh("gcc -o #{out} -c #{@options["cflags"]} #{opt} #{@options["cpppath"]} #{src}",
     "CC #{out}") do |ok, status|
       ok or fail("Compiler failed with status #{status.exitstatus}")
   end
@@ -241,36 +242,15 @@ desc("Build all")
 task(:build => [:config, PG_WM, PG_RMT, PG_RBE])
 # }}}
 
-# Task: shared {{{
-task(:shared_wm) do
-  if(File.exists?(OBJ_SHD.to_s))
-    File.unlink(OBJ_SHD.to_s)
-  end
-
-  @options["extra"] = "-DWM"
-
-  compile(SRC_SHD.to_s)
-end
-
-task(:shared) do
-  if(File.exists?(OBJ_SHD.to_s))
-    File.unlink(OBJ_SHD.to_s)
-  end
-
-  @options["extra"] = ""
-  compile(SRC_SHD.to_s)
-end
-# }}}
-
 # Task: subtle/subtler/subtlext {{{
 desc("Build subtle")
-task(PG_WM => [:config, :shared_wm])
+task(PG_WM => [:config, OBJ_SHW])
 
 desc("Build subtler")
-task(PG_RMT => [:config, :shared])
+task(PG_RMT => [:config, OBJ_SHD])
 
 desc("Build subtlext")
-task(PG_RBE => [:config, :shared])
+task(PG_RBE => [:config, OBJ_SHD])
 # }}}
 
 # Task: install {{{
@@ -319,17 +299,27 @@ end # }}}
 # File tasks
 #
 # Task: compile {{{
-(SRC_SHD | SRC_WM | SRC_RMT | SRC_RBE).each do |src|
+(SRC_SHD | SRC_WM).each do |src|
+  ext = SRC_SHD.include?(src) ? "wm.o" : "o"
+  out = File.join(@options["builddir"], File.basename(src).ext(ext))
+
+  file(out => src) do
+    compile(src, out, "-DWM")
+  end
+end 
+
+(SRC_SHD | SRC_RMT | SRC_RBE).each do |src|
   out = File.join(@options["builddir"], File.basename(src).ext("o"))
 
   file(out => src) do
-    compile(src)
+    compile(src, out)
   end
-end # }}}
+end 
+# }}}
 
 # Task: link {{{
 file(PG_WM => OBJ_WM) do
-  silent_sh("gcc -o #{PG_WM} #{OBJ_SHD} #{OBJ_WM} #{@options["ldflags"]}", 
+  silent_sh("gcc -o #{PG_WM} #{OBJ_SHW} #{OBJ_WM} #{@options["ldflags"]}", 
     "LD #{PG_WM}") do |ok, status|
       ok or fail("Linker failed with status #{status.exitstatus}")
   end
