@@ -10,6 +10,9 @@
   * See the file COPYING.
   **/
 
+#include <stdarg.h>
+#include <signal.h>
+#include <sys/time.h>
 #include "shared.h"
 
  /** subSharedLog {{{
@@ -32,7 +35,11 @@ subSharedLog(int type,
   char buf[255];
 
 #ifdef DEBUG
+#ifdef WM
+  if(!subtle->debug && !type) return;
+#else  /* WM */
   if(!debug && !type) return;
+#endif /* WM */
 #endif /* DEBUG */
 
   va_start(ap, format);
@@ -63,7 +70,15 @@ subSharedLogXError(Display *disp,
   XErrorEvent *ev)
 {
 #ifdef DEBUG
+#ifdef WM
+  if(subtle->debug) return 0;
+  if(BadAccess == ev->error_code && DefaultRootWindow(disp) == ev->resourceid)
+    {
+      subSharedLogError("Seems there is another WM running. Exiting.\n");
+    }
+#else /* WM */
   if(debug) return 0;
+#endif /* WM */
 #endif /* DEBUG */
 
   if(42 != ev->request_code) /* X_SetInputFocus */
@@ -75,7 +90,7 @@ subSharedLogXError(Display *disp,
   return 0; 
 } /* }}} */
 
- /** subSharedAlloc {{{
+ /** subSharedMemoryAlloc {{{
   * @brief Alloc memory and check result
   * @param[in]  n     Number of elements
   * @param[in]  size  Size of the memory block
@@ -83,11 +98,27 @@ subSharedLogXError(Display *disp,
   **/
 
 void *
-subSharedAlloc(size_t n,
+subSharedMemoryAlloc(size_t n,
   size_t size)
 {
   void *mem = calloc(n, size);
   if(!mem) subSharedLogError("Can't alloc memory. Exhausted?\n");
+  return mem;
+} /* }}} */
+
+ /** subSharedMemoryRealloc {{{
+  * @brief Realloc memory and check result
+  * @param[in]  mem   Memory block
+  * @param[in]  size  Size of the memory block
+  * @return Returns new memory block or \p NULL
+  **/
+
+void *
+subSharedMemoryRealloc(void *mem,
+  size_t size)
+{
+  mem = realloc(mem, size);
+  if(!mem) subSharedLogDebug("Memory has been freed. Expected?\n");
   return mem;
 } /* }}} */
 
@@ -105,13 +136,13 @@ subSharedRegexNew(char *regex)
 
   assert(regex);
   
-  preg = (regex_t *)subSharedAlloc(1, sizeof(regex_t));
+  preg = (regex_t *)subSharedMemoryAlloc(1, sizeof(regex_t));
 
   /* Thread safe error handling */
   if((errcode = regcomp(preg, regex, REG_EXTENDED|REG_NOSUB|REG_ICASE)))
     {
       size_t errsize = regerror(errcode, preg, NULL, 0);
-      char *errbuf = (char *)subSharedAlloc(1, errsize);
+      char *errbuf = (char *)subSharedMemoryAlloc(1, errsize);
 
       regerror(errcode, preg, errbuf, errsize);
 
@@ -156,6 +187,42 @@ subSharedRegexKill(regex_t *preg)
   free(preg);
 } /* }}} */
 
+#ifdef WM
+ /** subSharedFind {{{
+  * @brief Find data with the context manager
+  * @param[in]  win  Window
+  * @param[in]  id   Context id
+  * @return Returns found data pointer or \p NULL
+  **/
+
+XPointer *
+subSharedFind(Window win,
+  XContext id)
+{
+  XPointer *data = NULL;
+
+  assert(win && id);
+
+  return XFindContext(subtle->disp, win, id, (XPointer *)&data) != XCNOENT ? data : NULL;
+} /* }}} */
+
+ /** subSharedTime {{{
+  * @brief Get the current time in seconds 
+  * @return Returns time in seconds
+  **/
+
+time_t
+subSharedTime(void)
+{
+  struct timeval tv;
+
+  gettimeofday(&tv, 0);
+
+  return tv.tv_sec;
+} /* }}} */
+#endif /* WM */
+
+#ifndef WM
  /** subSharedMessage {{{
   * @brief Send client message to window
   * @param[in]  win   Client window
@@ -201,7 +268,7 @@ subSharedMessage(Window win,
 } /* }}} */
 
  /** subSharedPropertyGet {{{
-  * @brief Send client message to window
+  * @brief Get window property
   * @param[in]  win   Client window
   * @param[in]  type  Property type 
   * @param[in]  size  Size of the property
@@ -269,7 +336,7 @@ subSharedPropertyList(Window win,
       /* Count \0 in string */
       for(i = 0; i < len; i++) if(string[i] == '\0') (*size)++;
 
-      names  = (char **)subSharedAlloc(*size, sizeof(char *));
+      names  = (char **)subSharedMemoryAlloc(*size, sizeof(char *));
       names[id++] = string;
 
       for(i = 0; i < len; i++)
@@ -433,7 +500,7 @@ subSharedClientList(int *size)
 } /* }}} */
 
  /** subSharedClientFind {{{
-  * @brief Find client window
+  * @brief Find client id
   * @param[in]   name  Client name
   * @param[out]  win   Client window
   * @return Returns the client window list id
@@ -490,7 +557,7 @@ subSharedClientFind(char *name,
 } /* }}} */
 
  /** subSharedTagFind {{{
-  * @brief Find tag
+  * @brief Find tag id
   * @param[in]   name  Tag name
   * @return Returns the tag list id
   * @retval  -1   Tag not found
@@ -506,7 +573,7 @@ subSharedTagFind(char *name)
   assert(name);
 
   preg = subSharedRegexNew(name);
-  tags = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
+  tags = subSharedPropertyList(DefaultRootWindow(display), "WM_TAG_LIST", &size);
 
   /* Find tag id */
   for(i = 0; i < size; i++)
@@ -529,7 +596,7 @@ subSharedTagFind(char *name)
 } /* }}} */
 
  /** subSharedViewFind {{{
-  * @brief Find view
+  * @brief Find view id
   * @param[in]   name  View name
   * @param[out]  win   View window
   * @return Returns the view list id
@@ -601,7 +668,7 @@ subSharedSubletFind(char *name)
   assert(name);
 
   preg    = subSharedRegexNew(name);
-  sublets = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_SUBLET_LIST", &size);
+  sublets = subSharedPropertyList(DefaultRootWindow(display), "WM_SUBLET_LIST", &size);
 
   /* Find sublet id */
   for(i = 0; i < size; i++)
@@ -657,5 +724,6 @@ subSharedSubtleRunning(void)
 
   return ret;
 } /* }}} */
+#endif /* WM */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

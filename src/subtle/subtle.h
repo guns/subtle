@@ -25,6 +25,7 @@
 #include <X11/Xmd.h>
 
 #include "config.h"
+#include "shared.h"
 
 #ifdef HAVE_SYS_INOTIFY_H
 #include <sys/inotify.h>
@@ -487,28 +488,6 @@ void subTraySelect(void);                                         ///< Get selec
 void subTraySetState(SubTray *t);                                 ///< Set state
 void subTraySetSize(SubTray *t);                                  ///< Set size
 void subTrayKill(SubTray *t);                                     ///< Delete tray
-/* }}} */
-
-/* util.c {{{ */
-#ifdef DEBUG
-#define subUtilLogDebug(...)  subUtilLog(0, __FILE__, __LINE__, __VA_ARGS__);
-#else
-#define subUtilLogDebug(...)
-#endif /* DEBUG */
-
-#define subUtilLogError(...)  subUtilLog(1, __FILE__, __LINE__,  __VA_ARGS__);
-#define subUtilLogWarn(...)    subUtilLog(2, __FILE__, __LINE__, __VA_ARGS__);
-
-void subUtilLog(int type, const char *file,
-  int line, const char *format, ...);                             ///< Print messages
-int subUtilLogXError(Display *disp, XErrorEvent *ev);             ///< Print X error messages
-void *subUtilAlloc(size_t n, size_t size);                        ///< Allocate memory
-void *subUtilRealloc(void *mem, size_t size);                     ///< Reallocate memory
-XPointer *subUtilFind(Window win, XContext id);                   ///< Find window data
-time_t subUtilTime(void);                                         ///< Get the current time
-regex_t * subUtilRegexNew(char *regex);                           ///< Create new regex
-int subUtilRegexMatch(regex_t *preg, char *string);               ///< Check if string matches preg
-void subUtilRegexKill(regex_t *preg);                             ///< Kill regex
 /* }}} */
 
 /* view.c {{{ */
