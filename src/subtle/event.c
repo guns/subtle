@@ -282,14 +282,25 @@ EventMessage(XClientMessageEvent *ev)
   /* Messages for client windows {{{ */
   else if((c = CLIENT(subSharedFind(ev->window, CLIENTID))));
     {
-      /* States */
+      /* Actions: 0 = remove / 1 = add / 2 = toggle - we always toggle */
       if(subEwmhGet(SUB_EWMH_NET_WM_STATE) == ev->message_type)
         {
-          /* [0] => Remove = 0 / Add = 1 / Toggle = 2 -> we _always_ toggle */
-          if(ev->data.l[1] == (long)subEwmhGet(SUB_EWMH_NET_WM_STATE_FULLSCREEN))
+          int id = subEwmhFind(ev->data.l[1]); ///< Only the first property
+
+          switch(id)
             {
-              subClientToggle(c, SUB_STATE_FULL);
+              case SUB_EWMH_NET_WM_STATE_FULLSCREEN:
+                subClientToggle(c, SUB_STATE_FULL);
+                break;
+              case SUB_EWMH_NET_WM_STATE_ABOVE:
+                subClientToggle(c, SUB_STATE_FLOAT);
+                break;
+              case SUB_EWMH_NET_WM_STATE_STICKY:
+                subClientToggle(c, SUB_STATE_URGENT);
+                break;
             }
+
+          if(subtle->cv->tags & c->tags) subViewConfigure(subtle->cv);
         }
     } /* }}} */
 } /* }}} */

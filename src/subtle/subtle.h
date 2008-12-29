@@ -219,9 +219,10 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_NET_SHOWING_DESKTOP,                                   ///< Showing desktop mode 
 
   SUB_EWMH_NET_WM_STATE,                                          ///< Window state
-  SUB_EWMH_NET_WM_STATE_MODAL,                                    ///< Modal window
   SUB_EWMH_NET_WM_STATE_HIDDEN,                                   ///< Hidden window
   SUB_EWMH_NET_WM_STATE_FULLSCREEN,                               ///< Fullscreen window
+  SUB_EWMH_NET_WM_STATE_ABOVE,                                    ///< Floating window
+  SUB_EWMH_NET_WM_STATE_STICKY,                                   ///< Urgent window
 
   SUB_EWMH_NET_WM_WINDOW_TYPE,
   SUB_EWMH_NET_WM_WINDOW_TYPE_DESKTOP,
