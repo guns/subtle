@@ -227,7 +227,7 @@ button.signal_connect("clicked") do
     name   = combo_c3name.active_text
     action = combo_c3action.active_text
 
-    if(!name.nil? && !tag.nil?)
+    if(!name.nil? && !action.nil?)
       $subtle.find_client(name).send("toggle_" + action)
       label_action.set_markup("<b>Toggled #{action} of client #{name}</b>")
     end
