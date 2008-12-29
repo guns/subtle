@@ -22,11 +22,11 @@ before do
   end
 end
 
-get("/") do
+get("/") do # {{{
   haml(:index)
-end
+end # }}}
 
-post("/clients/tags") do
+post("/clients/tags") do # {{{
   name = params["clients[name]"] || nil
 
   if(!name.nil?)
@@ -35,9 +35,9 @@ post("/clients/tags") do
   end
 
   haml(:index)
-end
+end # }}}
 
-post("/clients/tag") do
+post("/clients/tag") do # {{{
   name = params["clients[name]"] || nil
   tag  = params["clients[tag]"] || nil
 
@@ -47,9 +47,9 @@ post("/clients/tag") do
   end
 
   haml(:index)
-end
+end # }}}
 
-post("/clients/untag") do
+post("/clients/untag") do # {{{
   name = params["clients[name]"] || nil
   tag  = params["clients[tag]"] || nil
 
@@ -59,9 +59,21 @@ post("/clients/untag") do
   end
 
   haml(:index)
-end
+end # }}}
 
-post("/tags/new") do
+post("/clients/toggle") do # {{{
+  name   = params["clients[name]"] || nil
+  action = params["clients[action]"] || nil
+
+  if(!name.nil? && !action.nil?)
+    $subtle.find_client(name).send("toggle_" + action)
+    @action = "Toggled #{action} of client #{name}"
+  end
+
+  haml(:index)
+end # }}}
+
+post("/tags/new") do # {{{
   name = params["tags[name]"] || nil
 
   if(!name.nil?)
@@ -70,9 +82,9 @@ post("/tags/new") do
   end
 
   haml(:index)
-end
+end # }}}
 
-post("/tags/delete") do
+post("/tags/delete") do # {{{
   name = params["tags[name]"] || nil
 
   if(!name.nil?)
@@ -81,9 +93,9 @@ post("/tags/delete") do
   end
 
   haml(:index)
-end
+end # }}}
 
-post("/views/new") do
+post("/views/new") do # {{{
   name = params["views[name]"] || nil
 
   if(!name.nil?)
@@ -92,9 +104,9 @@ post("/views/new") do
   end
 
   haml(:index)
-end
+end # }}}
 
-post("/views/jump") do
+post("/views/jump") do # {{{
   name = params["views[name]"] || nil
 
   if(!name.nil?)
@@ -103,9 +115,9 @@ post("/views/jump") do
   end
 
   haml(:index)
-end
+end # }}}
 
-post("/views/tags") do
+post("/views/tags") do # {{{
   name = params["views[name]"] || nil
 
   if(!name.nil?)
@@ -114,9 +126,9 @@ post("/views/tags") do
   end
 
   haml(:index)
-end
+end # }}}
 
-post("/views/tag") do
+post("/views/tag") do # {{{
   name = params["views[name]"] || nil
   tag  = params["views[tag]"] || nil
 
@@ -126,9 +138,9 @@ post("/views/tag") do
   end
 
   haml(:index)
-end
+end # }}}
 
-post("/views/untag") do
+post("/views/untag") do # {{{
   name = params["views[name]"] || nil
   tag  = params["views[tag]"] || nil
 
@@ -138,9 +150,9 @@ post("/views/untag") do
   end
 
   haml(:index)
-end
+end # }}}
 
-post("/views/delete") do
+post("/views/delete") do # {{{
   name = params["views[name]"] || nil
 
   if(!name.nil?)
@@ -149,7 +161,7 @@ post("/views/delete") do
   end
 
   haml(:index)
-end
+end # }}}
 
 use_in_file_templates!
 
@@ -173,7 +185,8 @@ __END__
 %h1{:style => "font-size: 14px"}
   %a{:href => "/"}= $subtle
 
-.clients
+-# Clients {{{
+.clients 
   %h2{:style => "font-size: 12px"} Clients
   %form{:action => "/clients/tags", :method => "post"}
     %select{:name => "clients[name]", :tabindex => "1"}
@@ -198,7 +211,22 @@ __END__
     %input{:type => "submit", :value => "tag", :onclick => "this.form.action = '/clients/tag'", :tabindex => "3"}
     %input{:type => "submit", :value => "untag", :onclick => "this.form.action = '/clients/untag'", :tabindex => "4"}
 
-.sublets
+  %form{:action => "/clients/toggle", :method => "post"}
+    %select{:name => "clients[name]", :tabindex => "1"}
+
+      -$subtle.clients.each do |c|
+        %option{:value => c.name}= c.name
+  
+    %select{:name => "clients[action]", :tabindex => "2"}
+      %option{:value => "full"} full
+      %option{:value => "float"} float
+      %option{:value => "urgent"} urgent
+
+    %input{:type => "submit", :value => "toggle", :tabindex => "3"}
+-#}}}
+
+-# Sublets {{{
+.sublets 
   %h2{:style => "font-size: 12px"} Sublets
   %form{:action => "/sublets/kill", :method => "post"}
     %select{:name => "sublets[name]", :tabindex => "1"}
@@ -207,7 +235,9 @@ __END__
         %option{:value => s.name}= s.name
 
     %input{:type => "submit", :value => "delete", :tabindex => "2"}
- 
+-# }}} 
+
+-# Tags {{{
 .tags
   %h2{:style => "font-size: 12px"} Tags
   %form{:action => "/tags/new", :method => "post"}
@@ -221,8 +251,10 @@ __END__
         %option{:value => t.name}= t.name
 
     %input{:type => "submit", :value => "delete", :tabindex => "2"}
+-# }}}
 
-.views
+-# Views {{{
+.views 
   %h2{:style => "font-size: 12px"} Views
   %form{:action => "/views/new", :method => "post"}
     %input{:type => "text", :name => "views[name]", :tabindex => "1"}
@@ -251,5 +283,4 @@ __END__
 
     %input{:type => "submit", :value => "tag", :onclick => "this.form.action = '/views/tag'", :tabindex => "3"}
     %input{:type => "submit", :value => "untag", :onclick => "this.form.action = '/views/untag'", :tabindex => "4"}
-
-   
+-# }}}
