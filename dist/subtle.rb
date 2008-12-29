@@ -26,11 +26,11 @@ FONT = {
 # Colors
 # 
 COLORS = { 
-  "font"       => "#ffffff",   # Color of the font
-  "border"     => "#ffffff",   # Color of the border
-  "normal"     => "#9AA38A",   # Color of the inactive windows
-  "focus"      => "#A7E737",   # Color of the focus window
-  "background" => "#9A9C95"    # Color of root background
+  "font"       => "#ffffff",   # Color of font
+  "border"     => "#e1e1e1",   # Color of border
+  "normal"     => "#5d5d5d",   # Color of inactive windows
+  "focus"      => "#ff00a8",   # Color of focus window
+  "background" => "#3d3d3d"    # Color of root background
 }
 
 #
