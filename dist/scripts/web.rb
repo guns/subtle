@@ -122,7 +122,7 @@ post("/views/tags") do # {{{
 
   if(!name.nil?)
     v = $subtle.find_view(name)
-    @action = "Tags of client #{name}: " + v.tags.join(", ")
+    @action = "Tags of view #{name}: " + v.tags.join(", ")
   end
 
   haml(:index)
