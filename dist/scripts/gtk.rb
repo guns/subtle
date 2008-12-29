@@ -116,19 +116,24 @@ end
 label_action = Gtk::Label.new("", true)
 # }}}
 
+# Table {{{
+table = Gtk::Table.new(4, 13)
+vbox.pack_start(table)
+# }}}
+
 # Clients {{{
+# Row1 {{{
 label = Gtk::Label.new("", true)
 label.set_markup("<b>Clients</b>")
 label.set_alignment(0, 0)
-vbox.pack_start(label)
+label.set_padding(0, 3)
+table.attach_defaults(label, 0, 4, 0, 1)
+# }}}
 
-table = Gtk::Table.new(4, 3)
-vbox.pack_start(table)
-
-# Row1 {{{
+# Row2 {{{
 combo_c1name = Gtk::ComboBox.new()
 combo_c1name.model = @list_clients
-table.attach_defaults(combo_c1name, 0, 1, 0, 1)
+table.attach_defaults(combo_c1name, 0, 2, 1, 2)
 
 button = Gtk::Button.new("tags")
 button.signal_connect("clicked") do
@@ -143,7 +148,7 @@ button.signal_connect("clicked") do
     GtkMessage($!)
   end
 end
-table.attach_defaults(button, 1, 2, 0, 1)
+table.attach_defaults(button, 2, 3, 1, 2)
 
 button = Gtk::Button.new("delete")
 button.signal_connect("clicked") do
@@ -159,17 +164,17 @@ button.signal_connect("clicked") do
     GtkMessage($!)
   end
 end
-table.attach_defaults(button, 2, 3, 0, 1)
+table.attach_defaults(button, 3, 4, 1, 2)
 # }}}
 
-# Row2 {{{
+# Row3 {{{
 combo_c2name = Gtk::ComboBox.new()
 combo_c2name.model = @list_clients
-table.attach_defaults(combo_c2name, 0, 1, 1, 2)
+table.attach_defaults(combo_c2name, 0, 1, 2, 3)
 
 combo_c2tag = Gtk::ComboBox.new()
 combo_c2tag.model = @list_tags
-table.attach_defaults(combo_c2tag, 1, 2, 1, 2)
+table.attach_defaults(combo_c2tag, 1, 2, 2, 3)
 
 button = Gtk::Button.new("tag")
 button.signal_connect("clicked") do
@@ -185,7 +190,7 @@ button.signal_connect("clicked") do
     GtkMessage($!)
   end
 end
-table.attach_defaults(button, 2, 3, 1, 2)
+table.attach_defaults(button, 2, 3, 2, 3)
 
 button = Gtk::Button.new("untag")
 button.signal_connect("clicked") do
@@ -201,20 +206,20 @@ button.signal_connect("clicked") do
     GtkMessage($!)
   end
 end
-table.attach_defaults(button, 3, 4, 1, 2)
+table.attach_defaults(button, 3, 4, 2, 3)
 # }}}
 
-# Row3 {{{
+# Row4 {{{
 combo_c3name = Gtk::ComboBox.new()
 combo_c3name.model = @list_clients
-table.attach_defaults(combo_c3name, 0, 1, 2, 3)
+table.attach_defaults(combo_c3name, 0, 1, 3, 4)
 
 combo_c3action = Gtk::ComboBox.new()
 ["full", "float", "urgent"].each do |name|
   combo_c3action.append_text(name)
 end
 combo_c3action.active = 0
-table.attach_defaults(combo_c3action , 1, 2, 2, 3)
+table.attach_defaults(combo_c3action, 1, 2, 3, 4)
 
 button = Gtk::Button.new("toggle")
 button.signal_connect("clicked") do
@@ -230,23 +235,23 @@ button.signal_connect("clicked") do
     GtkMessage($!)
   end
 end
-table.attach_defaults(button, 2, 3, 2, 3)
+table.attach_defaults(button, 2, 4, 3, 4)
 # }}}
 # }}}
 
 # Sublets {{{
+# Row1 {{{
 label = Gtk::Label.new("", true)
 label.set_markup("<b>Sublets</b>")
 label.set_alignment(0, 0)
-vbox.pack_start(label)
+label.set_padding(0, 3)
+table.attach_defaults(label, 0, 4, 4, 5)
+# }}}
 
-table = Gtk::Table.new(1, 1)
-vbox.pack_start(table)
-
-# Row1 {{{
+# Row2 {{{
 combo_s1name = Gtk::ComboBox.new()
 combo_s1name.model = @list_sublets
-table.attach_defaults(combo_s1name, 0, 1, 0, 1)
+table.attach_defaults(combo_s1name, 0, 2, 5, 6)
 
 button = Gtk::Button.new("delete")
 button.signal_connect("clicked") do
@@ -262,22 +267,22 @@ button.signal_connect("clicked") do
     GtkMessage($!)
   end
 end
-table.attach_defaults(button, 1, 2, 0, 1)
+table.attach_defaults(button, 2, 4, 5, 6)
 # }}}
 # }}}
 
 # Tags {{{
+# Row1 {{{
 label = Gtk::Label.new("", true)
 label.set_markup("<b>Tags</b>")
 label.set_alignment(0, 0)
-vbox.pack_start(label)
+label.set_padding(0, 3)
+table.attach_defaults(label, 0, 4, 6, 7)
+# }}}
 
-table = Gtk::Table.new(2, 2)
-vbox.pack_start(table)
-
-# Row1 {{{
+# Row2 {{{
 entry_t1name = Gtk::Entry.new()
-table.attach_defaults(entry_t1name, 0, 1, 0, 1)
+table.attach_defaults(entry_t1name, 0, 2, 7, 8)
 
 button = Gtk::Button.new("create")
 button.signal_connect("clicked") do
@@ -293,13 +298,13 @@ button.signal_connect("clicked") do
     GtkMessage($!)
   end
 end
-table.attach_defaults(button, 1, 2, 0, 1)
+table.attach_defaults(button, 2, 4, 7, 8)
 # }}}
 
-# Row2 {{{
+# Row3 {{{
 combo_t2name = Gtk::ComboBox.new()
 combo_t2name.model = @list_tags
-table.attach_defaults(combo_t2name, 0, 1, 1, 2)
+table.attach_defaults(combo_t2name, 0, 2, 8, 9)
 
 button = Gtk::Button.new("delete")
 button.signal_connect("clicked") do
@@ -315,22 +320,22 @@ button.signal_connect("clicked") do
     GtkMessage($!)
   end
 end
-table.attach_defaults(button, 1, 2, 1, 2)
+table.attach_defaults(button, 2, 4, 8, 9)
 # }}}
 # }}}
 
 # Views {{{
+# Row1 {{{
 label = Gtk::Label.new("", true)
 label.set_markup("<b>Views</b>")
 label.set_alignment(0, 0)
-vbox.pack_start(label)
+label.set_padding(0, 3)
+table.attach_defaults(label, 0, 4, 9, 10)
+# }}}
 
-table = Gtk::Table.new(3, 4)
-vbox.pack_start(table)
-
-# Row1 {{{
+# Row2 {{{
 entry_v1name = Gtk::Entry.new()
-table.attach_defaults(entry_v1name, 0, 1, 0, 1)
+table.attach_defaults(entry_v1name, 0, 2, 10, 11)
 
 button = Gtk::Button.new("create")
 button.signal_connect("clicked") do
@@ -347,13 +352,13 @@ button.signal_connect("clicked") do
     GtkMessage($!)
   end
 end
-table.attach_defaults(button, 1, 2, 0, 1)
+table.attach_defaults(button, 2, 4, 10, 11)
 # }}}
 
-# Row2 {{{
+# Row3 {{{
 combo_v2name = Gtk::ComboBox.new()
 combo_v2name.model = @list_views
-table.attach_defaults(combo_v2name, 0, 1, 1, 2)
+table.attach_defaults(combo_v2name, 0, 1, 11, 12)
 
 button = Gtk::Button.new("jump")
 button.signal_connect("clicked") do
@@ -368,7 +373,7 @@ button.signal_connect("clicked") do
     GtkMessage($!)
   end
 end
-table.attach_defaults(button, 1, 2, 1, 2)
+table.attach_defaults(button, 1, 2, 11, 12)
 
 button = Gtk::Button.new("tags")
 button.signal_connect("clicked") do
@@ -383,7 +388,7 @@ button.signal_connect("clicked") do
     GtkMessage($!)
   end
 end
-table.attach_defaults(button, 2, 3, 1, 2)
+table.attach_defaults(button, 2, 3, 11, 12)
 
 button = Gtk::Button.new("delete")
 button.signal_connect("clicked") do
@@ -399,17 +404,17 @@ button.signal_connect("clicked") do
     GtkMessage($!)
   end
 end
-table.attach_defaults(button, 3, 4, 1, 2)
+table.attach_defaults(button, 3, 4, 11, 12)
 # }}}
 
-# Row3 {{{
+# Row4 {{{
 combo_v3name = Gtk::ComboBox.new()
 combo_v3name.model = @list_views
-table.attach_defaults(combo_v3name, 0, 1, 2, 3)
+table.attach_defaults(combo_v3name, 0, 1, 12, 13)
 
 combo_v3tag = Gtk::ComboBox.new()
 combo_v3tag.model = @list_tags
-table.attach_defaults(combo_v3tag, 1, 2, 2, 3)
+table.attach_defaults(combo_v3tag, 1, 2, 12, 13)
 
 button = Gtk::Button.new("tag")
 button.signal_connect("clicked") do
@@ -425,7 +430,7 @@ button.signal_connect("clicked") do
     GtkMessage($!)
   end
 end
-table.attach_defaults(button, 2, 3, 2, 3)
+table.attach_defaults(button, 2, 3, 12, 13)
 
 button = Gtk::Button.new("untag")
 button.signal_connect("clicked") do
@@ -441,7 +446,7 @@ button.signal_connect("clicked") do
     GtkMessage($!)
   end
 end
-table.attach_defaults(button, 3, 4, 2, 3)
+table.attach_defaults(button, 3, 4, 12, 13)
 # }}}
 # }}}
 
