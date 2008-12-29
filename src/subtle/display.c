@@ -136,10 +136,12 @@ subDisplayPublish(void)
   subEwmhSetCardinals(root, SUB_EWMH_NET_DESKTOP_GEOMETRY, (long *)&data, 2);
 
   /* EWMH: Supported window states */
-  data[0] = subEwmhGet(SUB_EWMH_NET_WM_STATE_MODAL);
-  data[1] = subEwmhGet(SUB_EWMH_NET_WM_STATE_HIDDEN);
-  data[2] = subEwmhGet(SUB_EWMH_NET_WM_STATE_FULLSCREEN);
-  subEwmhSetCardinals(root, SUB_EWMH_NET_SUPPORTED, (long *)&data, 3);
+  data[0] = subEwmhGet(SUB_EWMH_NET_WM_STATE_HIDDEN);
+  data[1] = subEwmhGet(SUB_EWMH_NET_WM_STATE_FULLSCREEN);
+  data[2] = subEwmhGet(SUB_EWMH_NET_WM_STATE_ABOVE);
+  data[3] = subEwmhGet(SUB_EWMH_NET_WM_STATE_STICKY);
+
+  subEwmhSetCardinals(root, SUB_EWMH_NET_SUPPORTED, (long *)&data, LENGTH(data));
 
   /* EWMH: Client list and client list stacking */
   subEwmhSetWindows(root, SUB_EWMH_NET_CLIENT_LIST, NULL, 0);
