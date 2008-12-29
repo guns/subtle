@@ -574,7 +574,7 @@ subSharedTagFind(char *name)
   assert(name);
 
   preg = subSharedRegexNew(name);
-  tags = subSharedPropertyList(DefaultRootWindow(display), "WM_TAG_LIST", &size);
+  tags = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
 
   /* Find tag id */
   for(i = 0; i < size; i++)
