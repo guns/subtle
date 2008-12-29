@@ -208,6 +208,46 @@ SubtlextClientTagDel(VALUE self,
   return Qnil;
 } /* }}} */
 
+/* SubtlextClientToggle {{{ */
+static VALUE
+SubtlextClientToggle(VALUE self,
+  char *type)
+{
+  Window win = 0;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  if((win = NUM2LONG(rb_iv_get(self, "@win"))))
+    {
+      data.l[1] = XInternAtom(display, type, False);
+
+      subSharedMessage(win, "_NET_WM_STATE", data, True);
+    }
+  else rb_raise(rb_eStandardError, "Client has no active window");
+
+  return Qnil;
+} /* }}} */
+
+/* SubtlextClientToggleFull {{{ */
+static VALUE
+SubtlextClientToggleFull(VALUE self)
+{
+  return SubtlextClientToggle(self, "_NET_WM_STATE_FULLSCREEN");
+} /* }}} */
+
+/* SubtlextClientToggleFloat {{{ */
+static VALUE
+SubtlextClientToggleFloat(VALUE self)
+{
+  return SubtlextClientToggle(self, "_NET_WM_STATE_ABOVE");
+} /* }}} */
+
+/* SubtlextClientToggleUrgent {{{ */
+static VALUE
+SubtlextClientToggleUrgent(VALUE self)
+{
+  return SubtlextClientToggle(self, "_NET_WM_STATE_STICKY");
+} /* }}} */
+
 /* SubtlextClientToString {{{ */
 static VALUE
 SubtlextClientToString(VALUE self)
@@ -266,7 +306,7 @@ SubtlextSubtleNew(int argc,
           XCloseDisplay(display);
           display = NULL;
           
-          rb_raise(rb_eRuntimeError, "%s is not running", PKG_NAME);
+          rb_raise(rb_eStandardError, "%s is not running", PKG_NAME);
 
           return Qnil;
         }
@@ -764,7 +804,9 @@ Init_subtlext(void)
   rb_define_method(klass, "tags",          SubtlextClientTagList, 0);
   rb_define_method(klass, "tag",           SubtlextClientTagAdd, 1);
   rb_define_method(klass, "untag",         SubtlextClientTagDel, 1);
-//  rb_define_method(klass, "toggle",        SubtlextClientToggle, 1);
+  rb_define_method(klass, "toggle_full",   SubtlextClientToggleFull, 0);
+  rb_define_method(klass, "toggle_float",  SubtlextClientToggleFloat, 0);
+  rb_define_method(klass, "toggle_urgent", SubtlextClientToggleUrgent, 0);
 
 //  rb_define_method(klass, "focus",       SubtlextClientFocus, 0);
 //  rb_define_method(klass, "focus?",      SubtlextClientFocus, 0);
