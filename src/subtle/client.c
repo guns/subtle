@@ -72,6 +72,8 @@ ClientMask(int state,
         rect.x = 5;                          rect.y = rect.height * 0.9; 
         rect.width -= 10;                    rect.height = rect.height * 0.1 - 5; 
         break;
+      default:
+        return;
     }
 
   XFillRectangle(subtle->disp, c->win, subtle->gcs.invert, rect.x, rect.y, 
