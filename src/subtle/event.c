@@ -282,25 +282,32 @@ EventMessage(XClientMessageEvent *ev)
   /* Messages for client windows {{{ */
   else if((c = CLIENT(subSharedFind(ev->window, CLIENTID))));
     {
-      /* Actions: 0 = remove / 1 = add / 2 = toggle - we always toggle */
-      if(subEwmhGet(SUB_EWMH_NET_WM_STATE) == ev->message_type)
+      int id = subEwmhFind(ev->message_type);
+
+      switch(id)
         {
-          int id = subEwmhFind(ev->data.l[1]); ///< Only the first property
+          /* Actions: 0 = remove / 1 = add / 2 = toggle - we always toggle */
+          case SUB_EWMH_NET_WM_STATE: /* {{{ */
+            id = subEwmhFind(ev->data.l[1]); ///< Only the first property
 
-          switch(id)
-            {
-              case SUB_EWMH_NET_WM_STATE_FULLSCREEN:
-                subClientToggle(c, SUB_STATE_FULL);
-                break;
-              case SUB_EWMH_NET_WM_STATE_ABOVE:
-                subClientToggle(c, SUB_STATE_FLOAT);
-                break;
-              case SUB_EWMH_NET_WM_STATE_STICKY:
-                subClientToggle(c, SUB_STATE_URGENT);
-                break;
-            }
+            switch(id)
+              {
+                case SUB_EWMH_NET_WM_STATE_FULLSCREEN:
+                  subClientToggle(c, SUB_STATE_FULL);
+                  break;
+                case SUB_EWMH_NET_WM_STATE_ABOVE:
+                  subClientToggle(c, SUB_STATE_FLOAT);
+                  break;
+                case SUB_EWMH_NET_WM_STATE_STICKY:
+                  subClientToggle(c, SUB_STATE_URGENT);
+                  break;
+              }
 
-          if(subtle->cv->tags & c->tags) subViewConfigure(subtle->cv);
+            if(subtle->cv->tags & c->tags) subViewConfigure(subtle->cv);
+            break; /* }}} */
+          case SUB_EWMH_NET_CLOSE_WINDOW: /* {{{ */
+            subClientKill(c);               
+            break; /* }}} */
         }
     } /* }}} */
 } /* }}} */
