@@ -539,8 +539,6 @@ subClientToggle(SubClient *c,
     }
   else 
     {
-      int width = SCREENW, height = SCREENH;
-
       c->flags |= type;
 
       switch(type)
@@ -551,28 +549,34 @@ subClientToggle(SubClient *c,
               {
                 if(c->hints->flags & (USSize|PSize)) ///< User/program size
                   {
-                    c->rect.width  = MINMAX(c->hints->width, MINW, 0) + 2 * subtle->bw;
-                    c->rect.height = MINMAX(c->hints->height, MINW, 0) + 2 * subtle->bw;
+                    c->rect.width  = c->hints->width;
+                    c->rect.height = c->hints->height;
                   }
                 else if(c->hints->flags & PBaseSize) ///< Base size
                   {
-                    c->rect.width  = MINMAX(c->hints->base_width, MINW, 0) + 2 * subtle->bw;
-                    c->rect.height = MINMAX(c->hints->base_height, MINW, 0) + 2 * subtle->bw;
+                    c->rect.width  = c->hints->base_width;
+                    c->rect.height = c->hints->base_height;
                   }
                 else if(c->hints->flags & PMinSize) ///< Min size
                   {
-                    c->rect.width  = MINMAX(c->hints->min_width, MINW, 0) + 2 * subtle->bw;
-                    c->rect.height = MINMAX(c->hints->min_height, MINH, 0) + 2 * subtle->bw;
+                    c->rect.width  = c->hints->min_width;
+                    c->rect.height = c->hints->min_height;
                   }
                 else ///< Fallback
                   {
-                    c->rect.width  = MINW + 2 * subtle->bw;
-                    c->rect.height = MINH + 2 * subtle->bw;
+                    c->rect.width  = MINW;
+                    c->rect.height = MINH;
                   }
+
+                /* Limit width/height to max. screen size*/
+                c->rect.width  = MINMAX(c->rect.width, MINW, SCREENW) + 2 * subtle->bw;
+                c->rect.height = MINMAX(c->rect.height, MINH, SCREENH - 
+                  (subtle->th + 2 * subtle->bw)) + 2 * subtle->bw;
+
                 if(c->hints && c->hints->flags & (USPosition|PPosition)) ///< User/program pos
                   {
-                    c->rect.x = c->hints->x + 2 * subtle->bw;
-                    c->rect.y = c->hints->y + 2 * subtle->bw;
+                    c->rect.x = c->hints->x;
+                    c->rect.y = c->hints->y;
                   }
                 else if(c->hints->flags & PAspect) ///< Aspect size
                   {
@@ -581,16 +585,16 @@ subClientToggle(SubClient *c,
                   }
                 else ///< Fallback
                   {
-                    c->rect.x = (width - c->rect.width) / 2;
-                    c->rect.y = (height - c->rect.height) / 2;
+                    c->rect.x = (SCREENW - c->rect.width) / 2;
+                    c->rect.y = (SCREENH - c->rect.height) / 2;
                   }
               }
-            else
+            else ///< Fallback
               {
                 c->rect.width  = MINW + 2 * subtle->bw;
                 c->rect.height = MINH + 2 * subtle->bw;
-                c->rect.x      = (width - c->rect.width) / 2;
-                c->rect.y      = (height - c->rect.height) / 2;
+                c->rect.x      = (SCREENW - c->rect.width) / 2;
+                c->rect.y      = (SCREENH - c->rect.height) / 2;
               }
             break; /* }}} */
           case SUB_STATE_FULL: /* {{{ */
