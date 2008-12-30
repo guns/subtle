@@ -460,6 +460,27 @@ SubtlextSubtleClientFind(VALUE self,
   return Qnil;
 } /* }}} */
 
+/* SubtlextSubtleClientDel {{{ */
+static VALUE
+SubtlextSubtleClientDel(VALUE self,
+  VALUE name)
+{
+  int id = -1;
+  Window win = 0;
+
+  if(RTEST(name) && -1 != ((id = subSharedClientFind(STR2CSTR(name), &win))))
+    {
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+      /* Send data */
+      data.l[0] = CurrentTime;
+
+      subSharedMessage(win, "_NET_CLOSE_WINDOW", data, True);       
+    }
+
+  return Qnil;
+} /* }}} */
+
 /* SubtlextSubtleSubletList {{{ */
 static VALUE
 SubtlextSubtleSubletList(VALUE self)
@@ -825,6 +846,7 @@ Init_subtlext(void)
   rb_define_method(klass, "find_tag",      SubtlextSubtleTagFind, 1);
   rb_define_method(klass, "find_client",   SubtlextSubtleClientFind, 1);
   rb_define_method(klass, "find_sublet",   SubtlextSubtleSubletFind, 1);
+  rb_define_method(klass, "del_client",    SubtlextSubtleClientDel, 1);
   rb_define_method(klass, "add_tag",       SubtlextSubtleTagAdd, 1);
   rb_define_method(klass, "del_tag",       SubtlextSubtleTagDel, 1);
   rb_define_method(klass, "add_view",      SubtlextSubtleViewAdd, 1);
