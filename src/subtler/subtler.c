@@ -228,7 +228,7 @@ SubtlerClientKill(char *arg1,
 
   if(-1 != subSharedClientFind(arg1, &win))
     {
-      data.l[0] = win;
+      data.l[0] = CurrentTime;
 
       subSharedMessage(win, "_NET_CLOSE_WINDOW", data, False);
     }
@@ -684,7 +684,7 @@ main(int argc,
     { "tags",       no_argument,        0,  't'  },
     { "views",      no_argument,        0,  'v'  },
 
-    /* Subtlers */
+    /* Actions */
     { "new",        no_argument,        0,  'n'  },
     { "kill",       no_argument,        0,  'k'  },
     { "list",       no_argument,        0,  'l'  },
