@@ -70,7 +70,7 @@ subGrabNew(const char *name,
   g = GRAB(subSharedMemoryAlloc(1, sizeof(SubGrab)));
 
   /* Find grabs */  
-  for(i = 0; 5 > i; i++)
+  for(i = 0; LENGTH(grabs) > i; i++)
     if(!strcmp(name, grabs[i].name))
       {
         g->flags |= (SUB_TYPE_GRAB|grabs[i].flags);
@@ -134,8 +134,8 @@ subGrabNew(const char *name,
         {
           /* Keys */
           case XK_A: g->mod |= Mod1Mask;    break;
-          case XK_S: g->mod |= ShiftMask;    break;
-          case XK_C: g->mod |= ControlMask;  break;
+          case XK_S: g->mod |= ShiftMask;   break;
+          case XK_C: g->mod |= ControlMask; break;
           case XK_W: g->mod |= Mod4Mask;    break;
           case XK_M: g->mod |= Mod3Mask;    break;
 

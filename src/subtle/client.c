@@ -149,7 +149,7 @@ subClientNew(Window win)
     {
       subEwmhSetWMState(c->win, NormalState);
       if(hints->input) c->flags |= SUB_PREF_INPUT;
-      if(hints->flags & XUrgencyHint) c->tags |= SUB_TAG_URGENT;
+      if(hints->flags & XUrgencyHint) c->tags |= SUB_TAG_STICK;
       XFree(hints);
     }
   
@@ -176,11 +176,14 @@ subClientNew(Window win)
       }
 
   /* Special tags */
-  XGetTransientForHint(subtle->disp, win, &propwin); ///< Check for dialogs
-  if(c->tags & SUB_TAG_FLOAT) subClientToggle(c, SUB_STATE_FLOAT);
-  if(c->tags & SUB_TAG_FULL)  subClientToggle(c, SUB_STATE_FULL);
-  if(c->tags & SUB_TAG_URGENT || propwin) subClientToggle(c, SUB_STATE_URGENT);
   if(!c->tags) c->tags |= SUB_TAG_DEFAULT; ///< Ensure that there's at least on tag
+  else
+    {
+      XGetTransientForHint(subtle->disp, win, &propwin); ///< Check for dialogs
+      if(c->tags & SUB_TAG_FLOAT) subClientToggle(c, SUB_STATE_FLOAT);
+      if(c->tags & SUB_TAG_FULL)  subClientToggle(c, SUB_STATE_FULL);
+      if(c->tags & SUB_TAG_STICK || propwin) subClientToggle(c, SUB_STATE_STICK|SUB_STATE_FLOAT);
+    }
 
   /* EWMH: Tags and desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS, (long *)&c->tags, 1);
@@ -487,7 +490,7 @@ subClientDrag(SubClient *c,
     }
   else ///< Move/Resize
     {
-      if(c->flags & (SUB_STATE_FLOAT|SUB_STATE_URGENT)) 
+      if(c->flags & (SUB_STATE_FLOAT|SUB_STATE_STICK)) 
         {
           r.y -= (subtle->th + subtle->bw); ///< Border and bar height
           r.x -= subtle->bw;
@@ -530,78 +533,75 @@ subClientToggle(SubClient *c,
     {
       c->flags &= ~type;
 
-      switch(type)
-        {   
-          case SUB_STATE_FULL: 
-            XSetWindowBorderWidth(subtle->disp, c->win, subtle->bw);
-            XReparentWindow(subtle->disp, c->win, subtle->cv->frame, 0, 0);
-        }            
+      if(type & SUB_STATE_FULL) /* {{{ */
+        {
+          XSetWindowBorderWidth(subtle->disp, c->win, subtle->bw);
+          XReparentWindow(subtle->disp, c->win, subtle->cv->frame, 0, 0);
+        } /* }}} */
     }
   else 
     {
       c->flags |= type;
 
-      switch(type)
+      if(type & SUB_STATE_FLOAT) /* {{{ */
         {
-          case SUB_STATE_URGENT:
-          case SUB_STATE_FLOAT: /* {{{ */
-            if(c->flags & SUB_PREF_HINTS)
-              {
-                if(c->hints->flags & (USSize|PSize)) ///< User/program size
-                  {
-                    c->rect.width  = c->hints->width;
-                    c->rect.height = c->hints->height;
-                  }
-                else if(c->hints->flags & PBaseSize) ///< Base size
-                  {
-                    c->rect.width  = c->hints->base_width;
-                    c->rect.height = c->hints->base_height;
-                  }
-                else if(c->hints->flags & PMinSize) ///< Min size
-                  {
-                    c->rect.width  = c->hints->min_width;
-                    c->rect.height = c->hints->min_height;
-                  }
-                else ///< Fallback
-                  {
-                    c->rect.width  = MINW;
-                    c->rect.height = MINH;
-                  }
+          if(c->flags & SUB_PREF_HINTS)
+            {
+              if(c->hints->flags & (USSize|PSize)) ///< User/program size
+                {
+                  c->rect.width  = c->hints->width;
+                  c->rect.height = c->hints->height;
+                }
+              else if(c->hints->flags & PBaseSize) ///< Base size
+                {
+                  c->rect.width  = c->hints->base_width;
+                  c->rect.height = c->hints->base_height;
+                }
+              else if(c->hints->flags & PMinSize) ///< Min size
+                {
+                  c->rect.width  = c->hints->min_width;
+                  c->rect.height = c->hints->min_height;
+                }
+              else ///< Fallback
+                {
+                  c->rect.width  = MINW;
+                  c->rect.height = MINH;
+                }
 
-                /* Limit width/height to max. screen size*/
-                c->rect.width  = MINMAX(c->rect.width, MINW, SCREENW) + 2 * subtle->bw;
-                c->rect.height = MINMAX(c->rect.height, MINH, SCREENH - 
-                  (subtle->th + 2 * subtle->bw)) + 2 * subtle->bw;
+              /* Limit width/height to max. screen size*/
+              c->rect.width  = MINMAX(c->rect.width, MINW, SCREENW) + 2 * subtle->bw;
+              c->rect.height = MINMAX(c->rect.height, MINH, SCREENH - 
+                (subtle->th + 2 * subtle->bw)) + 2 * subtle->bw;
 
-                if(c->hints && c->hints->flags & (USPosition|PPosition)) ///< User/program pos
-                  {
-                    c->rect.x = c->hints->x;
-                    c->rect.y = c->hints->y;
-                  }
-                else if(c->hints->flags & PAspect) ///< Aspect size
-                  {
-                    c->rect.x = (c->hints->min_aspect.x - c->hints->max_aspect.x) / 2;
-                    c->rect.y = (c->hints->min_aspect.y - c->hints->max_aspect.y) / 2;
-                  }
-                else ///< Fallback
-                  {
-                    c->rect.x = (SCREENW - c->rect.width) / 2;
-                    c->rect.y = (SCREENH - c->rect.height) / 2;
-                  }
-              }
-            else ///< Fallback
-              {
-                c->rect.width  = MINW + 2 * subtle->bw;
-                c->rect.height = MINH + 2 * subtle->bw;
-                c->rect.x      = (SCREENW - c->rect.width) / 2;
-                c->rect.y      = (SCREENH - c->rect.height) / 2;
-              }
-            break; /* }}} */
-          case SUB_STATE_FULL: /* {{{ */
-            XSetWindowBorderWidth(subtle->disp, c->win, 0);
-            XReparentWindow(subtle->disp, c->win, ROOT, 0, 0);
-          break; /* }}} */
-        }
+              if(c->hints && c->hints->flags & (USPosition|PPosition)) ///< User/program pos
+                {
+                  c->rect.x = c->hints->x;
+                  c->rect.y = c->hints->y;
+                }
+              else if(c->hints->flags & PAspect) ///< Aspect size
+                {
+                  c->rect.x = (c->hints->min_aspect.x - c->hints->max_aspect.x) / 2;
+                  c->rect.y = (c->hints->min_aspect.y - c->hints->max_aspect.y) / 2;
+                }
+              else ///< Fallback
+                {
+                  c->rect.x = (SCREENW - c->rect.width) / 2;
+                  c->rect.y = (SCREENH - c->rect.height) / 2;
+                }
+            }
+          else ///< Fallback
+            {
+              c->rect.width  = MINW + 2 * subtle->bw;
+              c->rect.height = MINH + 2 * subtle->bw;
+              c->rect.x      = (SCREENW - c->rect.width) / 2;
+              c->rect.y      = (SCREENH - c->rect.height) / 2;
+            }        
+        } /* }}} */
+      if(type & SUB_STATE_FULL) /* {{{ */
+        {
+          XSetWindowBorderWidth(subtle->disp, c->win, 0);
+          XReparentWindow(subtle->disp, c->win, ROOT, 0, 0);
+        } /* }}} */
 
       subClientConfigure(c);
     }

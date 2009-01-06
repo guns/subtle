@@ -220,7 +220,7 @@ __END__
     %select{:name => "clients[action]", :tabindex => "2"}
       %option{:value => "full"} full
       %option{:value => "float"} float
-      %option{:value => "urgent"} urgent
+      %option{:value => "stick"} stick
 
     %input{:type => "submit", :value => "toggle", :tabindex => "3"}
 -#}}}

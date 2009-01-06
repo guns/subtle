@@ -19,7 +19,7 @@ void
 subTagInit(void)
 {
   int i;
-  char *tags[] = { "default", "float", "full", "urgent" };
+  char *tags[] = { "default", "float", "full", "stick" };
 
   for(i = 0; LENGTH(tags) > i; i++)
     {

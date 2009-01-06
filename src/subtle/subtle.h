@@ -126,7 +126,7 @@
 #define SUB_STATE_RESIZE       (1L << 16)                         ///< Resized window
 #define SUB_STATE_DEAD         (1L << 17)                         ///< Dead window
 #define SUB_STATE_TILED        (1L << 18)                         ///< Tiled client
-#define SUB_STATE_URGENT       (1L << 19)                         ///< Urgent client
+#define SUB_STATE_STICK       (1L << 19)                         ///< Urgent client
 
 /* Client preferences */
 #define SUB_PREF_INPUT         (1L << 20)                         ///< Active/passive focus-model
@@ -163,7 +163,7 @@
 #define SUB_TAG_DEFAULT        (1L << 1)                          ///< Default tag
 #define SUB_TAG_FLOAT          (1L << 2)                          ///< Float tag
 #define SUB_TAG_FULL           (1L << 3)                          ///< Full tag
-#define SUB_TAG_URGENT         (1L << 4)                          ///< Urgent tag
+#define SUB_TAG_STICK         (1L << 4)                          ///< Urgent tag
 /* }}} */
 
 /* Typedefs {{{ */

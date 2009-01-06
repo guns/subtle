@@ -215,7 +215,7 @@ combo_c3name.model = @list_clients
 table.attach_defaults(combo_c3name, 0, 1, 3, 4)
 
 combo_c3action = Gtk::ComboBox.new()
-["full", "float", "urgent"].each do |name|
+["full", "float", "stick"].each do |name|
   combo_c3action.append_text(name)
 end
 combo_c3action.active = 0

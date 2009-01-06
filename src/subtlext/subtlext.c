@@ -241,9 +241,9 @@ SubtlextClientToggleFloat(VALUE self)
   return SubtlextClientToggle(self, "_NET_WM_STATE_ABOVE");
 } /* }}} */
 
-/* SubtlextClientToggleUrgent {{{ */
+/* SubtlextClientToggleStick {{{ */
 static VALUE
-SubtlextClientToggleUrgent(VALUE self)
+SubtlextClientToggleStick(VALUE self)
 {
   return SubtlextClientToggle(self, "_NET_WM_STATE_STICKY");
 } /* }}} */
@@ -827,7 +827,7 @@ Init_subtlext(void)
   rb_define_method(klass, "untag",         SubtlextClientTagDel, 1);
   rb_define_method(klass, "toggle_full",   SubtlextClientToggleFull, 0);
   rb_define_method(klass, "toggle_float",  SubtlextClientToggleFloat, 0);
-  rb_define_method(klass, "toggle_urgent", SubtlextClientToggleUrgent, 0);
+  rb_define_method(klass, "toggle_stick",  SubtlextClientToggleStick, 0);
 
 //  rb_define_method(klass, "focus",       SubtlextClientFocus, 0);
 //  rb_define_method(klass, "focus?",      SubtlextClientFocus, 0);

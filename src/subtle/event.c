@@ -79,7 +79,7 @@ EventMapRequest(XMapRequestEvent *ev)
       subClientPublish();
 
       /* Configure/render current view if tags match or client is urgent */
-      if(subtle->cv && (subtle->cv->tags & c->tags || c->flags & SUB_STATE_URGENT))
+      if(subtle->cv && (subtle->cv->tags & c->tags || c->flags & SUB_STATE_STICK))
         {
           subViewConfigure(subtle->cv); 
           subViewRender();
@@ -299,7 +299,7 @@ EventMessage(XClientMessageEvent *ev)
                   subClientToggle(c, SUB_STATE_FLOAT);
                   break;
                 case SUB_EWMH_NET_WM_STATE_STICKY:
-                  subClientToggle(c, SUB_STATE_URGENT);
+                  subClientToggle(c, SUB_STATE_STICK);
                   break;
               }
 
@@ -469,7 +469,7 @@ EventGrab(XEvent *ev)
             c = CLIENT(subSharedFind(win, CLIENTID));
             if(c && !(c->flags & SUB_STATE_FULL))
               {
-                if(c->flags & (SUB_STATE_FLOAT|SUB_STATE_URGENT))
+                if(c->flags & (SUB_STATE_FLOAT|SUB_STATE_STICK))
                   flag = SUB_GRAB_WINDOW_MOVE == flag ? SUB_DRAG_MOVE : SUB_DRAG_RESIZE;
                 else flag = SUB_DRAG_TILE;
 
