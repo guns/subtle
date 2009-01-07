@@ -557,6 +557,51 @@ subSharedClientFind(char *name,
   return -1;
 } /* }}} */
 
+ /** subSharedClientFocus {{{
+  * @brief Find and focus client
+  * @param[in]   name  Client name
+  * @param[out]  win   Client window
+  * @return Returns the client window list id
+  * @retval  -1   Client not found
+  **/
+
+int
+subSharedClientFocus(char *name,
+  Window *win)
+{
+  int id;
+  Window focus;
+  unsigned long *cv = NULL, *rv = NULL;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  if(-1 != ((id = subSharedClientFind(name, &focus))))
+    {
+      /* Fetch data */
+      cv = (unsigned long*)subSharedPropertyGet(focus, XA_CARDINAL, "_NET_WM_DESKTOP", NULL);
+      rv = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display), 
+        XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+
+      if(*cv && *rv && *cv != *rv) ///< Switch to client desktop if neccessary
+        {
+          subSharedLogDebug("Switching: active=%d, view=%d\n", *rv, *cv);
+          data.l[0] = *cv;
+          subSharedMessage(DefaultRootWindow(display), "_NET_CURRENT_DESKTOP", data, False);
+        }
+      else ///< Focus client
+        {
+          data.l[0] = focus;
+          subSharedMessage(DefaultRootWindow(display), "_NET_ACTIVE_WINDOW", data, False);
+        }
+
+      if(win) *win = focus;
+
+      free(cv);
+      free(rv);
+    }
+
+  return id;
+} /* }}} */
+
  /** subSharedTagFind {{{
   * @brief Find tag id
   * @param[in]   name  Tag name

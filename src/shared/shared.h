@@ -110,6 +110,7 @@ Window subSharedWindowSelect(void);                               ///< Select a 
 /* Client {{{ */
 Window *subSharedClientList(int *size);                           ///< Get client list
 int subSharedClientFind(char *name, Window *win);                 ///< Find client id
+int subSharedClientFocus(char *name, Window *win);                ///< Focus client
 /* }}} */
 
 /* Tag {{{ */
