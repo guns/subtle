@@ -148,6 +148,7 @@ EventMessage(XClientMessageEvent *ev)
               {
                 c->tags |= (1L << (ev->data.l[1] + 1));
                 subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS, (long *)&c->tags, 1);
+                if(subtle->cv->tags & c->tags) subViewConfigure(subtle->cv);
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_CLIENT_UNTAG: /* {{{ */
@@ -156,7 +157,7 @@ EventMessage(XClientMessageEvent *ev)
                 c->tags &= ~(1L << (ev->data.l[1] + 1));
                 subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS, (long *)&c->tags, 1);
               }
-            if(subtle->cv->tags & (1L << ev->data.l[1])) subViewConfigure(subtle->cv);
+            if(subtle->cv->tags & c->tags) subViewConfigure(subtle->cv);
             break; /* }}} */
           case SUB_EWMH_SUBTLE_TAG_NEW: /* {{{ */
             t = subTagNew(ev->data.b, NULL); 
@@ -537,11 +538,15 @@ EventFocus(XFocusChangeEvent *ev)
                 }
               else subGrabUnset(oldfocus);
               subViewRender();
+
+              XUnmapWindow(subtle->disp, subtle->windows.caption);
             } 
         }
       else if(FocusIn == ev->type) ///< FocusIn event
         {
           subtle->windows.focus = c->win;
+
+          XMapWindow(subtle->disp, subtle->windows.caption);
 
           subGrabSet(c->win);
           subClientRender(c);
