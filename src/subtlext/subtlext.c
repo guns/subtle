@@ -70,7 +70,7 @@ SubtlextFind(int type,
             return obj;
           }
 
-        rb_raise(rb_eStandardError, "Object cannot be found");
+        rb_raise(rb_eStandardError, "Failed to find object");
         return Qnil;
       case T_OBJECT:
       case T_CLASS:
@@ -90,7 +90,7 @@ SubtlextFind(int type,
                 else id = subSharedViewFind(STR2CSTR(value), &win);
                 if(-1 == id)
                   {
-                    rb_raise(rb_eStandardError, "Object cannot be updated");
+                    rb_raise(rb_eStandardError, "Failed to update object");
                     return Qnil;
                   }                
 
@@ -222,7 +222,7 @@ SubtlextClientToggle(VALUE self,
 
       subSharedMessage(win, "_NET_WM_STATE", data, True);
     }
-  else rb_raise(rb_eStandardError, "Client has no active window");
+  else rb_raise(rb_eStandardError, "Failed to toggle client");
 
   return Qnil;
 } /* }}} */
@@ -246,6 +246,38 @@ static VALUE
 SubtlextClientToggleStick(VALUE self)
 {
   return SubtlextClientToggle(self, "_NET_WM_STATE_STICKY");
+} /* }}} */
+
+/* SubtlextClientFocus {{{ */
+static VALUE
+SubtlextClientFocus(VALUE self)
+{
+  VALUE name = rb_iv_get(self, "@name");
+
+  if(RTEST(name) || -1 == subSharedClientFocus(STR2CSTR(name), NULL)) 
+    rb_raise(rb_eStandardError, "Failed to set focus");
+
+  return Qnil;
+} /* }}} */
+
+/* SubtlextClientFocusHas {{{ */
+static VALUE
+SubtlextClientFocusHas(VALUE self)
+{
+  VALUE ret = Qfalse;
+  Window win = 0, *focus = NULL;
+
+  win = NUM2LONG(rb_iv_get(self, "@win"));
+  focus = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
+    XA_CARDINAL, "_NET_ACTIVE_WINDOW", NULL);
+
+  if(win && *focus)
+    {
+      if(*focus == win) ret = Qtrue;
+      free(focus);
+    }
+
+  return ret;
 } /* }}} */
 
 /* SubtlextClientToString {{{ */
@@ -306,7 +338,7 @@ SubtlextSubtleNew(int argc,
           XCloseDisplay(display);
           display = NULL;
           
-          rb_raise(rb_eStandardError, "%s is not running", PKG_NAME);
+          rb_raise(rb_eStandardError, "Failed to find running %s", PKG_NAME);
 
           return Qnil;
         }
@@ -457,6 +489,34 @@ SubtlextSubtleClientFind(VALUE self,
       return client;
     }
 
+  rb_raise(rb_eStandardError, "Failed to find client");
+  return Qnil;
+} /* }}} */
+
+/* SubtlextSubtleClientFocus {{{ */
+static VALUE
+SubtlextSubtleClientFocus(VALUE self,
+  VALUE name)
+{
+  int id = -1;
+  Window win = 0;
+  VALUE klass = Qnil, client = Qnil;
+
+  if(RTEST(name) && -1 != ((id = subSharedClientFocus(STR2CSTR(name), &win))))
+    {
+      char *wmname = subSharedWindowWMName(win);
+
+      klass  = rb_const_get(rb_mKernel, rb_intern("Client"));
+      client = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(wmname));
+
+      rb_iv_set(client, "@id",  INT2FIX(id));
+      rb_iv_set(client, "@win", LONG2NUM(win));
+      free(wmname);
+
+      return client;
+    }
+
+  rb_raise(rb_eStandardError, "Failed to set focus");
   return Qnil;
 } /* }}} */
 
@@ -524,6 +584,7 @@ SubtlextSubtleSubletFind(VALUE self,
       return sublet;
     }
 
+  rb_raise(rb_eStandardError, "Failed to find sublet");
   return Qnil;
 } /* }}} */
 
@@ -828,9 +889,8 @@ Init_subtlext(void)
   rb_define_method(klass, "toggle_full",   SubtlextClientToggleFull, 0);
   rb_define_method(klass, "toggle_float",  SubtlextClientToggleFloat, 0);
   rb_define_method(klass, "toggle_stick",  SubtlextClientToggleStick, 0);
-
-//  rb_define_method(klass, "focus",       SubtlextClientFocus, 0);
-//  rb_define_method(klass, "focus?",      SubtlextClientFocus, 0);
+  rb_define_method(klass, "focus",         SubtlextClientFocus, 0);
+  rb_define_method(klass, "focus?",        SubtlextClientFocusHas, 0);
   rb_define_method(klass, "to_s",          SubtlextClientToString, 0);
 
   /* Class: subtle */
@@ -846,6 +906,7 @@ Init_subtlext(void)
   rb_define_method(klass, "find_tag",      SubtlextSubtleTagFind, 1);
   rb_define_method(klass, "find_client",   SubtlextSubtleClientFind, 1);
   rb_define_method(klass, "find_sublet",   SubtlextSubtleSubletFind, 1);
+  rb_define_method(klass, "focus_client",  SubtlextSubtleClientFocus, 1);
   rb_define_method(klass, "del_client",    SubtlextSubtleClientDel, 1);
   rb_define_method(klass, "add_tag",       SubtlextSubtleTagAdd, 1);
   rb_define_method(klass, "del_tag",       SubtlextSubtleTagDel, 1);

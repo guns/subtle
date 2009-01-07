@@ -235,7 +235,22 @@ button.signal_connect("clicked") do
     GtkMessage($!)
   end
 end
-table.attach_defaults(button, 2, 4, 3, 4)
+table.attach_defaults(button, 2, 3, 3, 4)
+
+button = Gtk::Button.new("focus")
+button.signal_connect("clicked") do
+  begin
+    name = combo_c3name.active_text
+
+    if(!name.nil?)
+      $subtle.focus_client(name)
+      label_action.set_markup("<b>Set focus to client #{name}</b>")
+    end
+  rescue
+    GtkMessage($!)
+  end
+end
+table.attach_defaults(button, 3, 4, 3, 4)
 # }}}
 # }}}
 

@@ -121,36 +121,11 @@ static void
 SubtlerClientFocus(char *arg1,
   char *arg2)
 {
-  Window win;
-  unsigned long *cv = NULL, *rv = NULL;
-  SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
   Assert(arg1, "Usage: %sr -c -F CLIENT\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  if(-1 != subSharedClientFind(arg1, &win))
-    {
-      /* Fetch data */
-      cv = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, "_NET_WM_DESKTOP", NULL);
-      rv = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display), 
-        XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
-
-      if(*cv && *rv && *cv != *rv) ///< Switch to client desktop if neccessary
-        {
-          subSharedLogDebug("Switching: active=%d, view=%d\n", *rv, *cv);
-          data.l[0] = *cv;
-          subSharedMessage(DefaultRootWindow(display), "_NET_CURRENT_DESKTOP", data, False);
-        }
-      else ///< Focus client
-        {
-          data.l[0] = win;
-          subSharedMessage(DefaultRootWindow(display), "_NET_ACTIVE_WINDOW", data, False);
-        }
-
-      free(cv);
-      free(rv);
-    }
-  else subSharedLogWarn("Failed to find client\n");
+  if(-1 == subSharedClientFocus(arg1, NULL))
+    subSharedLogWarn("Failed to find client\n");
 } /* }}} */
 
 /* SubtlerClientTag {{{ */

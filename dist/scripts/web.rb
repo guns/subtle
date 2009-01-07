@@ -73,6 +73,17 @@ post("/clients/toggle") do # {{{
   haml(:index)
 end # }}}
 
+post("/clients/focus") do # {{{
+  name = params["clients[name]"] || nil
+
+  if(!name.nil?)
+    $subtle.find_client(name)
+    @action = "Set focus to client #{name}"
+  end
+
+  haml(:index)
+end # }}}
+
 post("/tags/new") do # {{{
   name = params["tags[name]"] || nil
 
@@ -218,11 +229,13 @@ __END__
         %option{:value => c.name}= c.name
   
     %select{:name => "clients[action]", :tabindex => "2"}
-      %option{:value => "full"} full
-      %option{:value => "float"} float
-      %option{:value => "stick"} stick
 
-    %input{:type => "submit", :value => "toggle", :tabindex => "3"}
+      -["full", "float", "stick"].each do |action|
+        %option{:value => action}= action
+
+    %input{:type => "submit", :value => "toggle", :onclick => "this.form.action = '/clients/toggle'", :tabindex => "3"}
+    %input{:type => "submit", :value => "focus", :onclick => "this.form.action = '/clients/focus'", :tabindex => "4"}
+
 -#}}}
 
 -# Sublets {{{
