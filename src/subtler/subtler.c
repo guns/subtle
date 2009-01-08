@@ -121,11 +121,18 @@ static void
 SubtlerClientFocus(char *arg1,
   char *arg2)
 {
+  Window win;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
   Assert(arg1, "Usage: %sr -c -F CLIENT\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  if(-1 == subSharedClientFocus(arg1, NULL))
-    subSharedLogWarn("Failed to find client\n");
+  if(-1 != subSharedClientFind(arg1, &win))
+    {
+      data.l[0] = win;
+      subSharedMessage(DefaultRootWindow(display), "_NET_ACTIVE_WINDOW", data, False);
+    }
+  else subSharedLogWarn("Failed to find client\n");
 } /* }}} */
 
 /* SubtlerClientTag {{{ */
