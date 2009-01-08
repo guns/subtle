@@ -68,20 +68,20 @@ GRABS = {
 # Tags
 #
 TAGS = {
-  "terms"   => "urxvt|xterm",
+  "terms"   => "xterm",
   "browser" => "gran paradiso",
   "editor"  => "gvim",
   "video"   => "mplayer",
-  "float"   => "xnest|urxvt",
+  "float"   => "urxvt",
   "full"    => "gvim",
-  "urgent"  => "xlogo"
+  "stick"   => "xlogo"
 }  
 
 #
 # Views
 #
 VIEWS = {
-  "work" => "browser|terms",
+  "work" => "float",
   "dev"  => "editor|terms",
   "web"  => "browser|video|terms"
 }
