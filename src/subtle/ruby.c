@@ -322,7 +322,6 @@ RubyConfigParse(VALUE path)
 
   /* Map windows */
   XMapWindow(subtle->disp, subtle->windows.views);
-  XMapWindow(subtle->disp, subtle->windows.caption);
   XMapWindow(subtle->disp, subtle->windows.sublets);
   XMapWindow(subtle->disp, subtle->windows.tray);
   XMapWindow(subtle->disp, subtle->windows.bar);
