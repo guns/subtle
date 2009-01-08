@@ -141,7 +141,21 @@ EventMessage(XClientMessageEvent *ev)
             break; /* }}} */
           case SUB_EWMH_NET_ACTIVE_WINDOW: /* {{{ */
             if((c = CLIENT(subSharedFind(ev->data.l[0], CLIENTID))))
-              subClientFocus(c);
+              {
+                if(!(subtle->cv->tags & c->tags)) ///< Client is on current view?
+                  {
+                    int i;
+
+                    /* Find matching view */
+                    for(i = 0; i < subtle->views->ndata; i++)
+                      if(VIEW(subtle->views->data[i])->tags & c->tags)
+                        {
+                          subViewJump(VIEW(subtle->views->data[i]));
+                          break;
+                        }
+                  }
+                subClientFocus(c);
+              }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_CLIENT_TAG: /* {{{ */
             if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0]))))
@@ -539,7 +553,8 @@ EventFocus(XFocusChangeEvent *ev)
               else subGrabUnset(oldfocus);
               subViewRender();
 
-              XUnmapWindow(subtle->disp, subtle->windows.caption);
+              if(!f || !(subtle->cv->tags & f->tags)) ///< Unmap caption if window is not on view
+                XUnmapWindow(subtle->disp, subtle->windows.caption);
             } 
         }
       else if(FocusIn == ev->type) ///< FocusIn event
