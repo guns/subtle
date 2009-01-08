@@ -107,6 +107,25 @@ SubtlextFind(int type,
   return Qnil;
 } /* }}} */
 
+/* SubtlextToggle {{{ */
+static VALUE
+SubtlextToggle(VALUE self,
+  char *type)
+{
+  Window win = 0;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  if((win = NUM2LONG(rb_iv_get(self, "@win"))))
+    {
+      data.l[1] = XInternAtom(display, type, False);
+
+      subSharedMessage(win, "_NET_WM_STATE", data, True);
+    }
+  else rb_raise(rb_eStandardError, "Failed to toggle client");
+
+  return Qnil;
+} /* }}} */
+
 /* SubtlextClientInit {{{ */
 static VALUE
 SubtlextClientInit(VALUE self,
@@ -208,54 +227,40 @@ SubtlextClientTagDel(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* SubtlextClientToggle {{{ */
-static VALUE
-SubtlextClientToggle(VALUE self,
-  char *type)
-{
-  Window win = 0;
-  SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-  if((win = NUM2LONG(rb_iv_get(self, "@win"))))
-    {
-      data.l[1] = XInternAtom(display, type, False);
-
-      subSharedMessage(win, "_NET_WM_STATE", data, True);
-    }
-  else rb_raise(rb_eStandardError, "Failed to toggle client");
-
-  return Qnil;
-} /* }}} */
-
 /* SubtlextClientToggleFull {{{ */
 static VALUE
 SubtlextClientToggleFull(VALUE self)
 {
-  return SubtlextClientToggle(self, "_NET_WM_STATE_FULLSCREEN");
+  return SubtlextToggle(self, "_NET_WM_STATE_FULLSCREEN");
 } /* }}} */
 
 /* SubtlextClientToggleFloat {{{ */
 static VALUE
 SubtlextClientToggleFloat(VALUE self)
 {
-  return SubtlextClientToggle(self, "_NET_WM_STATE_ABOVE");
+  return SubtlextToggle(self, "_NET_WM_STATE_ABOVE");
 } /* }}} */
 
 /* SubtlextClientToggleStick {{{ */
 static VALUE
 SubtlextClientToggleStick(VALUE self)
 {
-  return SubtlextClientToggle(self, "_NET_WM_STATE_STICKY");
+  return SubtlextToggle(self, "_NET_WM_STATE_STICKY");
 } /* }}} */
 
 /* SubtlextClientFocus {{{ */
 static VALUE
 SubtlextClientFocus(VALUE self)
 {
-  VALUE name = rb_iv_get(self, "@name");
+  VALUE win = rb_iv_get(self, "@win");
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  if(RTEST(name) || -1 == subSharedClientFocus(STR2CSTR(name), NULL)) 
-    rb_raise(rb_eStandardError, "Failed to set focus");
+  if(RTEST(win))
+    {
+      data.l[0] = NUM2LONG(win);
+      subSharedMessage(DefaultRootWindow(display), "_NET_ACTIVE_WINDOW", data, True);
+    }
+  else rb_raise(rb_eStandardError, "Failed to set focus");
 
   return Qnil;
 } /* }}} */
@@ -264,16 +269,17 @@ SubtlextClientFocus(VALUE self)
 static VALUE
 SubtlextClientFocusHas(VALUE self)
 {
-  VALUE ret = Qfalse;
-  Window win = 0, *focus = NULL;
+  VALUE ret = Qfalse, win = Qnil;
+  unsigned long *focus = NULL;
 
-  win = NUM2LONG(rb_iv_get(self, "@win"));
+  /* Fetch data */
+  win   = rb_iv_get(self, "@win");
   focus = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-    XA_CARDINAL, "_NET_ACTIVE_WINDOW", NULL);
+    XA_WINDOW, "_NET_ACTIVE_WINDOW", NULL);
 
-  if(win && *focus)
+  if(RTEST(win) && focus)
     {
-      if(*focus == win) ret = Qtrue;
+      if(*focus == NUM2LONG(win)) ret = Qtrue;
       free(focus);
     }
 
@@ -384,13 +390,15 @@ SubtlextSubtleTagList(VALUE self)
   VALUE array = Qnil, method = Qnil, klass = Qnil;
   
   method = rb_intern("new");
-  klass  = rb_const_get(rb_mKernel, rb_intern("View"));
+  klass  = rb_const_get(rb_mKernel, rb_intern("Tag"));
   tags   = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
   array  = rb_ary_new2(size);
 
   for(i = 0; i < size; i++)
     {
       VALUE t = rb_funcall(klass, method, 1, rb_str_new2(tags[i]));
+
+      rb_iv_set(t, "@id",  INT2FIX(i));
       rb_ary_push(array, t);
     }
 
@@ -456,6 +464,8 @@ SubtlextSubtleClientList(VALUE self)
           char *wmname = subSharedWindowWMName(clients[i]);
           VALUE c = rb_funcall(klass, method, 1, rb_str_new2(wmname));
 
+          rb_iv_set(c, "@id",  INT2FIX(i));
+          rb_iv_set(c, "@win", LONG2NUM(clients[i]));
           rb_ary_push(array, c);
 
           free(wmname);
@@ -502,10 +512,15 @@ SubtlextSubtleClientFocus(VALUE self,
   Window win = 0;
   VALUE klass = Qnil, client = Qnil;
 
-  if(RTEST(name) && -1 != ((id = subSharedClientFocus(STR2CSTR(name), &win))))
+  if(RTEST(name) && -1 != ((id = subSharedClientFind(STR2CSTR(name), &win))))
     {
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
       char *wmname = subSharedWindowWMName(win);
 
+      data.l[0] = win;
+      subSharedMessage(DefaultRootWindow(display), "_NET_ACTIVE_WINDOW", data, True);
+
+      /* Create new client instance */
       klass  = rb_const_get(rb_mKernel, rb_intern("Client"));
       client = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(wmname));
 
