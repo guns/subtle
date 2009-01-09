@@ -44,9 +44,9 @@ class Battery < Sublet
         file = f.read
       end
 
-      @remaining = file.match(/remaining capacity:\s*(\d+).*/)[1].to_i
-      @rate      = file.match(/present rate:\s*(\d+).*/)[1].to_i
-      @state     = file.match(/charging state:\s*(\w+).*/)[1]
+      @remaining = file.match(/remaining capacity:\s*(.+).*/)[1].to_i || 1
+      @rate      = file.match(/present rate:\s*(.+).*/)[1].to_i || 1
+      @state     = file.match(/charging state:\s*(.+).*/)[1]
 
       case @state
         when "charged" then 
