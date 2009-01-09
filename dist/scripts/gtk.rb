@@ -9,7 +9,7 @@
 #
 
 require("gtk2")
-require("/home/unexist/projects/subtle/subtlext")
+require("subtle/subtlext")
 
 # Variables {{{
 $subtle       = nil

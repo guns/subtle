@@ -10,7 +10,7 @@
 
 require("rubygems")
 require("sinatra")
-require("/home/unexist/projects/subtle/subtlext")
+require("subtle/subtlext")
 
 $subtle = nil
 

@@ -8,7 +8,7 @@
 # $Id$
 #
 
-require "subtlext"
+require("subtle/subtlext")
 
 subtle = Subtle.new(":2")
 
