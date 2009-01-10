@@ -463,11 +463,13 @@ EventGrab(XEvent *ev)
         {
           case SUB_GRAB_WINDOW_FLOAT:
           case SUB_GRAB_WINDOW_FULL:
+          case SUB_GRAB_WINDOW_STICK:
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               {
-                flag = SUB_GRAB_WINDOW_FLOAT == flag ? SUB_STATE_FLOAT : SUB_STATE_FULL;
+                flag = SUB_GRAB_WINDOW_FLOAT == flag ? SUB_STATE_FLOAT : 
+                  (SUB_GRAB_WINDOW_FULL == flag ? SUB_STATE_FULL : SUB_STATE_STICK);
                 subClientToggle(c, flag);
-                subViewConfigure(subtle->cv);
+                if(subtle->cv->tags & c->tags) subViewConfigure(subtle->cv);
               }
             break;            
           case SUB_GRAB_WINDOW_KILL:

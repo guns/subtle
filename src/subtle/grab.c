@@ -62,6 +62,7 @@ subGrabNew(const char *name,
     { "WindowResize", SUB_GRAB_WINDOW_RESIZE },
     { "WindowFloat",  SUB_GRAB_WINDOW_FLOAT  },
     { "WindowFull",   SUB_GRAB_WINDOW_FULL   },
+    { "WindowStick",  SUB_GRAB_WINDOW_STICK  },
     { "WindowKill",   SUB_GRAB_WINDOW_KILL   }
   };
 

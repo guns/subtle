@@ -157,7 +157,8 @@
 #define SUB_GRAB_WINDOW_RESIZE (1L << 15)                         ///< Move window
 #define SUB_GRAB_WINDOW_FLOAT  (1L << 16)                         ///< Toggle float
 #define SUB_GRAB_WINDOW_FULL   (1L << 17)                         ///< Toggle full
-#define SUB_GRAB_WINDOW_KILL   (1L << 18)                         ///< Kill window
+#define SUB_GRAB_WINDOW_STICK  (1L << 18)                         ///< Toggle stock
+#define SUB_GRAB_WINDOW_KILL   (1L << 19)                         ///< Kill window
 
 /* Fixed tags */
 #define SUB_TAG_DEFAULT        (1L << 1)                          ///< Default tag
