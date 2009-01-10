@@ -753,6 +753,50 @@ SubtlextViewInit(VALUE self,
   return self;
 } /* }}} */
 
+/* SubtlextSubtleClientList {{{ */
+static VALUE
+SubtlextViewClientList(VALUE self)
+{
+  int i, size = 0;
+  Window *clients = NULL;
+  VALUE win = Qnil, array = Qnil, method = Qnil, klass = Qnil;
+  unsigned long *flags1 = NULL;
+  
+  method  = rb_intern("new");
+  klass   = rb_const_get(rb_mKernel, rb_intern("Client"));
+  clients = subSharedClientList(&size);
+  array   = rb_ary_new2(size);
+  win     = rb_iv_get(self, "@win");
+  flags1  = (unsigned long *)subSharedPropertyGet(NUM2LONG(win), XA_CARDINAL, 
+    "SUBTLE_VIEW_TAGS", NULL);
+
+  if(clients)
+    {
+      for(i = 0; i < size; i++)
+        {
+          unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(clients[i], XA_CARDINAL, 
+            "SUBTLE_CLIENT_TAGS", NULL);
+
+          if(*flags1 & *flags2) ///< Check if there are common tags
+            {
+              char *wmname = subSharedWindowWMName(clients[i]);
+              VALUE c      = rb_funcall(klass, method, 1, rb_str_new2(wmname));
+
+              rb_iv_set(c, "@id",  INT2FIX(i));
+              rb_iv_set(c, "@win", LONG2NUM(clients[i]));
+              rb_ary_push(array, c);
+
+              free(wmname);
+            }
+
+          free(flags2);
+        }
+      free(clients);
+    }
+
+  return array;
+} /* }}} */
+
 /* SubtlextViewTagList {{{ */
 static VALUE
 SubtlextViewTagList(VALUE self)
@@ -950,6 +994,7 @@ Init_subtlext(void)
   rb_define_attr(klass,   "win", 1, 1);
   rb_define_attr(klass,   "name", 1, 1);
   rb_define_method(klass, "initialize",    SubtlextViewInit, 1);
+  rb_define_method(klass, "clients",       SubtlextViewClientList, 0);
   rb_define_method(klass, "tags",          SubtlextViewTagList, 0);
   rb_define_method(klass, "tag",           SubtlextViewTagAdd, 1);
   rb_define_method(klass, "untag",         SubtlextViewTagDel, 1);
