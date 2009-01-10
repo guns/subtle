@@ -463,8 +463,7 @@ EventGrab(XEvent *ev)
         {
           case SUB_GRAB_WINDOW_FLOAT:
           case SUB_GRAB_WINDOW_FULL:
-            c = CLIENT(subSharedFind(win, CLIENTID));
-            if(c) 
+            if((c = CLIENT(subSharedFind(win, CLIENTID))))
               {
                 flag = SUB_GRAB_WINDOW_FLOAT == flag ? SUB_STATE_FLOAT : SUB_STATE_FULL;
                 subClientToggle(c, flag);
@@ -472,8 +471,7 @@ EventGrab(XEvent *ev)
               }
             break;            
           case SUB_GRAB_WINDOW_KILL:
-            c = CLIENT(subSharedFind(win, CLIENTID));
-            if(c) 
+            if((c = CLIENT(subSharedFind(win, CLIENTID))))
               { 
                 subClientKill(c);
                 subClientPublish();
@@ -481,11 +479,11 @@ EventGrab(XEvent *ev)
             break;             
           case SUB_GRAB_WINDOW_MOVE:
           case SUB_GRAB_WINDOW_RESIZE:
-            c = CLIENT(subSharedFind(win, CLIENTID));
-            if(c && !(c->flags & SUB_STATE_FULL))
+            if((c = CLIENT(subSharedFind(win, CLIENTID))) && !(c->flags & SUB_STATE_FULL))
               {
                 if(c->flags & (SUB_STATE_FLOAT|SUB_STATE_STICK))
                   flag = SUB_GRAB_WINDOW_MOVE == flag ? SUB_DRAG_MOVE : SUB_DRAG_RESIZE;
+                else if(SUB_GRAB_WINDOW_RESIZE == flag) flag = SUB_DRAG_RESIZE;
                 else flag = SUB_DRAG_TILE;
 
                 subClientDrag(c, flag);
