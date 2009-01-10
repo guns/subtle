@@ -258,34 +258,34 @@ SubtlerTagFind(char *arg1,
   char *arg2)
 {
   int i, tag = -1, size_clients = 0, size_views = 0;
-  char **views = NULL;
-  Window *frames = NULL, *clients = NULL;
+  char **names = NULL;
+  Window *views = NULL, *clients = NULL;
 
   subSharedLogDebug("%s\n", __func__);
 
   /* Collect data */
   tag     = subSharedTagFind(arg1);
-  views   = subSharedPropertyList(DefaultRootWindow(display),
+  names   = subSharedPropertyList(DefaultRootWindow(display),
     "_NET_DESKTOP_NAMES", &size_views);
-  frames  = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW,
+  views  = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW,
     "_NET_VIRTUAL_ROOTS", NULL);
   clients = subSharedClientList(&size_clients);
 
   /* Views */
-  if(tag && views && frames)
+  if(tag && names && views)
     {
       for(i = 0; i < size_views; i++)
         {
-          unsigned long *flags = (unsigned long *)subSharedPropertyGet(frames[i], XA_CARDINAL,
+          unsigned long *flags = (unsigned long *)subSharedPropertyGet(views[i], XA_CARDINAL,
             "SUBTLE_VIEW_TAGS", NULL);
 
           if((int)*flags & (1L << (tag + 1))) 
-            printf("view   - %s\n", views[i]);
+            printf("view   - %s\n", names[i]);
 
           free(flags);
         }
 
-      free(frames);
+      free(names);
       free(views);
     }
   else subSharedLogWarn("Failed to get view list\n");
@@ -388,8 +388,8 @@ SubtlerViewList(char *arg1,
 {
   int i, size = 0;
   unsigned long *nv = NULL, *cv = NULL;
-  char **views = NULL;
-  Window *frames = NULL;
+  char **names = NULL;
+  Window *views = NULL;
 
   subSharedLogDebug("%s\n", __func__);
 
@@ -398,18 +398,19 @@ SubtlerViewList(char *arg1,
     XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
   cv     = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
     XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
-  frames = (Window *)subSharedPropertyGet(DefaultRootWindow(display),
+  names  = subSharedPropertyList(DefaultRootWindow(display), 
+    "_NET_DESKTOP_NAMES", &size);
+  views = (Window *)subSharedPropertyGet(DefaultRootWindow(display),
     XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
-  views  = subSharedPropertyList(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
 
-  if(nv && cv && frames && views)
+  if(nv && cv && names && views)
     {
       for(i = 0; *nv && i < *nv; i++)
-        printf("%#lx %c %s\n", frames[i], (i == *cv ? '*' : '-'), views[i]);
+        printf("%#lx %c %s\n", views[i], (i == *cv ? '*' : '-'), names[i]);
 
       free(nv);
       free(cv);
-      free(frames);
+      free(names);
       free(views);
     }
   else subSharedLogWarn("Failed to get view list\n");

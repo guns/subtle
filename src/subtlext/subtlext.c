@@ -138,6 +138,52 @@ SubtlextClientInit(VALUE self,
   return self;
 } /* }}} */
 
+/* SubtlextClientViewList {{{ */
+static VALUE
+SubtlextClientViewList(VALUE self)
+{
+  int i, size = 0;
+  char **names = NULL;
+  Window *views = NULL;
+  VALUE win = Qnil, array = Qnil, method = Qnil, klass = Qnil;
+  unsigned long *flags1 = NULL;
+  
+  win     = rb_iv_get(self, "@win");
+  method  = rb_intern("new");
+  klass   = rb_const_get(rb_mKernel, rb_intern("View"));
+  array   = rb_ary_new2(size);
+  names   = subSharedPropertyList(DefaultRootWindow(display), 
+    "_NET_DESKTOP_NAMES", &size);
+  views   = (Window *)subSharedPropertyGet(DefaultRootWindow(display), 
+    XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
+  flags1  = (unsigned long *)subSharedPropertyGet(NUM2LONG(win), XA_CARDINAL, 
+    "SUBTLE_CLIENT_TAGS", NULL);
+
+  if(names && views)
+    {
+      for(i = 0; i < size; i++)
+        {
+          unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(views[i], 
+            XA_CARDINAL, "SUBTLE_VIEW_TAGS", NULL);
+
+          if(*flags1 & *flags2) ///< Check if there are common tags
+            {
+              VALUE v = rb_funcall(klass, method, 1, rb_str_new2(names[i]));
+
+              rb_iv_set(v, "@id",  INT2FIX(i));
+              rb_iv_set(v, "@win", LONG2NUM(views[i]));
+              rb_ary_push(array, v);
+            }
+
+          free(flags2);
+        }
+      free(names);
+      free(views);
+    }
+
+  return array;
+} /* }}} */
+
 /* SubtlextClientTagList {{{ */
 static VALUE
 SubtlextClientTagList(VALUE self)
@@ -608,19 +654,32 @@ static VALUE
 SubtlextSubtleViewList(VALUE self)
 {
   int i, size = 0;
-  char **views = NULL;
+  char **names = NULL;
+  Window *views = NULL;
   VALUE array = Qnil, method = Qnil, klass = Qnil;
   
+  /* Collect data */
   method = rb_intern("new");
   klass  = rb_const_get(rb_mKernel, rb_intern("View"));
-  views  = subSharedPropertyList(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
+  names  = subSharedPropertyList(DefaultRootWindow(display), 
+    "_NET_DESKTOP_NAMES", &size);
+  views   = (Window *)subSharedPropertyGet(DefaultRootWindow(display), 
+    XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);  
   array  = rb_ary_new2(size);
 
-  for(i = 0; i < size; i++)
+  if(names && views)
     {
-      VALUE v = rb_funcall(klass, method, 1, rb_str_new2(views[i]));
-      rb_iv_set(v, "@id", INT2FIX(i));
-      rb_ary_push(array, v);
+      for(i = 0; i < size; i++)
+        {
+          VALUE v = rb_funcall(klass, method, 1, rb_str_new2(names[i]));
+
+          rb_iv_set(v, "@id",  INT2FIX(i));
+          rb_iv_set(v, "@win", LONG2NUM(views[i]));
+          rb_ary_push(array, v);
+        }
+
+      free(names);
+      free(views);
     }
 
   return array;
@@ -753,7 +812,7 @@ SubtlextViewInit(VALUE self,
   return self;
 } /* }}} */
 
-/* SubtlextSubtleClientList {{{ */
+/* SubtlextViewClientList {{{ */
 static VALUE
 SubtlextViewClientList(VALUE self)
 {
@@ -762,11 +821,11 @@ SubtlextViewClientList(VALUE self)
   VALUE win = Qnil, array = Qnil, method = Qnil, klass = Qnil;
   unsigned long *flags1 = NULL;
   
+  win     = rb_iv_get(self, "@win");
   method  = rb_intern("new");
   klass   = rb_const_get(rb_mKernel, rb_intern("Client"));
-  clients = subSharedClientList(&size);
   array   = rb_ary_new2(size);
-  win     = rb_iv_get(self, "@win");
+  clients = subSharedClientList(&size);
   flags1  = (unsigned long *)subSharedPropertyGet(NUM2LONG(win), XA_CARDINAL, 
     "SUBTLE_VIEW_TAGS", NULL);
 
@@ -942,6 +1001,7 @@ Init_subtlext(void)
   rb_define_attr(klass,   "win", 1, 1);
   rb_define_attr(klass,   "name", 1, 1);
   rb_define_method(klass, "initialize",    SubtlextClientInit, 1);
+  rb_define_method(klass, "views",         SubtlextClientViewList, 0);
   rb_define_method(klass, "tags",          SubtlextClientTagList, 0);
   rb_define_method(klass, "tag",           SubtlextClientTagAdd, 1);
   rb_define_method(klass, "untag",         SubtlextClientTagDel, 1);
