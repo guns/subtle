@@ -79,8 +79,8 @@ subViewConfigure(SubView *v)
 {
   int i;
   long vid = 0;
-  int x = 0, y = 0, width = 0, height = 0, cw = 0, comp = 0, total = 0, tiled = 0,
-    resized = 0, full = 0, floated = 0, special = 0;
+  int cw = 0, comp = 0, total = 0, tiled = 0;
+  XRectangle rect = { 0 };
 
   assert(v);
 
@@ -88,9 +88,8 @@ subViewConfigure(SubView *v)
 
   if(0 < subtle->clients->ndata)
     {
-       y      = subtle->th;
-       width  = SCREENW;
-       height = SCREENH - subtle->th;
+       rect.width  = SCREENW;
+       rect.height = SCREENH - subtle->th;
 
       /* Find clients and count special states {{{ */
       for(i = 0; i < subtle->clients->ndata; i++)
@@ -100,13 +99,12 @@ subViewConfigure(SubView *v)
           /* Find matching clients */
           if(v->tags & c->tags || c->flags & SUB_STATE_STICK)
             {
-              if(c->flags & SUB_STATE_FULL) full++;
-              else if(c->flags & (SUB_STATE_FLOAT)) floated++;
+              if(!(c->flags & (SUB_STATE_FULL|SUB_STATE_FLOAT))) total++;
               c->flags &= ~SUB_STATE_TILED;
-              total++;
             }
         } /* }}} */
 
+#if 0
       /* Mark clients in a tile {{{ */
       for(i = 0; i < v->layout->ndata; i++)
         {
@@ -118,15 +116,15 @@ subViewConfigure(SubView *v)
               tiled++;
             }
         } /* }}} */
+#endif
 
       subSharedLogDebug("total=%d, layouts=%d, tiled=%d\n", total, v->layout->ndata, tiled);
       total -= tiled;
 
       /* Calculations */
-      special = resized + full + floated;
-      total   = total > special ? total - special : 1; ///< Prevent division by zero
-      cw      = width / total;
-      comp    = abs(width - total * cw); ///< Compensation for int rounding
+      total   = 0 < total ? total : 1; ///< Prevent division by zero
+      cw      = rect.width / total;
+      comp    = abs(rect.width - total * cw); ///< Compensation for int rounding
 
       /* Set client stuff {{{ */
       for(i = 0; i < subtle->clients->ndata; i++)
@@ -151,14 +149,12 @@ subViewConfigure(SubView *v)
                 }
               else XLowerWindow(subtle->disp, c->win);
 
-              c->rect.x      = x;
-              c->rect.y      = 0;
-              c->rect.width  = i == total - 1 ? cw + comp : cw; ///< Compensation
-              c->rect.height = height;
+              c->rect       = rect;
+              c->rect.width = i == total - 1 ? cw + comp : cw; ///< Compensation
 
               if(!(c->flags & SUB_STATE_TILED)) 
                 {
-                  x += c->rect.width;
+                  rect.x += c->rect.width;
                   subClientConfigure(c);
                  }
             }
@@ -167,7 +163,7 @@ subViewConfigure(SubView *v)
       /* Make layout {{{ */
       for(i = 0; i < v->layout->ndata; i++)
         {
-          SubLayout *l  = LAYOUT(v->layout->data[i]);
+          SubLayout *l = LAYOUT(v->layout->data[i]);
 
           /* Check if both clients are on this view */
           if(v->tags & l->c1->tags && v->tags & l->c2->tags)
@@ -183,7 +179,7 @@ subViewConfigure(SubView *v)
                   l->c1->rect.width = l->c1->rect.width / 2;
                   l->c2->rect       = l->c1->rect;
                   l->c2->rect.x     = l->c1->rect.width;
-
+#if 0
                   if(l->c1->flags & SUB_STATE_RESIZE)
                     {
                       int size = l->c1->rect.width * l->c1->size / 100;
@@ -206,7 +202,7 @@ subViewConfigure(SubView *v)
                       l->c1->rect.width = 2 * l->c1->rect.width - size;
                       l->c2->rect.x     = l->c1->rect.width;
                     }
-                    
+#endif                    
                 }
               else if(l->flags & SUB_TILE_SWAP) 
                 {
@@ -242,6 +238,7 @@ subViewArrange(SubView *v,
 
   assert(v && c1 && c2);
 
+#if 0
   /* Remove old layouts */
   for(i = 0; i < v->layout->ndata; i++)
     {
@@ -253,9 +250,10 @@ subViewArrange(SubView *v,
             subArrayPop(v->layout, (void *)l);
         }
     }
- 
+#endif
+
   l = subLayoutNew(c1, c2, mode);
-  subArrayPush(v->layout, (void *) l);
+  subArrayPush(v->layout, (void *)l);
 } /* }}} */
 
  /** subViewUpdate {{{ 
