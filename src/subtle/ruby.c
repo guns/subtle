@@ -184,17 +184,17 @@ RubyParseColor(VALUE hash,
   char *key,
   char *fallback)
 { 
-  XColor color = { 0, 0, 0, 0, '0', '0' };
+  XColor color = { 0 };
   Colormap cmap = DefaultColormap(subtle->disp, DefaultScreen(subtle->disp));
   char *name = RubyGetString(hash, key, fallback);
   
   /* Parse and allow color */
   if(!XParseColor(subtle->disp, cmap, name, &color))
     {
-      subSharedLogWarn("Can't load color '%s'.\n", key);
+      subSharedLogWarn("Failed to load color '%s'.\n", key);
     }
   else if(!XAllocColor(subtle->disp, cmap, &color))
-    subSharedLogWarn("Can't alloc color '%s'.\n", key);
+    subSharedLogWarn("Failed to alloc color '%s'.\n", key);
 
   return color.pixel;
 } /* }}} */
