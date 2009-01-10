@@ -388,7 +388,6 @@ void subArrayPop(SubArray *a, void *e);                           ///< Pop eleme
 void *subArrayGet(SubArray *a, int idx);                          ///< Get element
 void *subArrayFind(SubArray *a, char *name, int *id);             ///< Find element
 int subArrayIndex(SubArray *a, void *e);                          ///< Find array id of element
-void subArraySplice(SubArray *a, int idx, int len);               ///< Splice array at idx with len
 void subArraySort(SubArray *a,                                    ///< Sort array with given compare function 
   int(*compar)(const void *a, const void *b));
 void subArrayKill(SubArray *a, int clean);                        ///< Kill array with all elements

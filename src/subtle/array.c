@@ -134,30 +134,9 @@ subArrayIndex(SubArray *a,
 
   assert(a && e);
 
-  for(i = 0; i < a->ndata; i++) if(a->data[i] == e) return i;
+  for(i = 0; i < a->ndata; i++) 
+    if(a->data[i] == e) return i;
   return -1;
-} /* }}} */
-
- /** subArraySplice {{{
-  * @brief Splice array at idx with len
-  * @param[in]  a     A #SubArray
-  * @param[in]  idx   Array index
-  * @param[in]  len   Length
-  **/
-
-void
-subArraySplice(SubArray *a,
-  int idx,
-  int len)
-{
-  int i;
-  assert(a && idx >= 0 && idx <= a->ndata && len > 0);
-
-  a->ndata += len;
-  a->data = (void **)subSharedMemoryRealloc(a->data, (a->ndata + 1) * sizeof(void *));
-
-  for(i = a->ndata; i > idx; i--)
-    a->data[i] = a->data[i - len];
 } /* }}} */
 
   /** subArraySort {{{ 
