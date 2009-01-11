@@ -301,8 +301,7 @@ subClientDrag(SubClient *c,
   int loop = True, wx = 0, wy = 0, rx = 0, ry = 0, state = 0, lstate = 0;
   XRectangle r;
   SubClient *c2 = NULL, *lc = NULL;
-  short *dirx = NULL, *diry = NULL, minx = 10, miny = 10, maxx = SCREENW, maxy = SCREENH,
-    stepx = subtle->step, stepy = subtle->step;
+  short *dirx = NULL, *diry = NULL, minx = 10, miny = 10, maxx = SCREENW, maxy = SCREENH;
 
   assert(c);
  
@@ -320,7 +319,8 @@ subClientDrag(SubClient *c,
         dirx = &r.x;
         diry = &r.y;
         break;
-      case SUB_DRAG_RESIZE:
+      case SUB_DRAG_RESIZE_LEFT:
+      case SUB_DRAG_RESIZE_RIGHT:
         dirx = (short *)&r.width;
         diry = (short *)&r.height;
 
@@ -329,8 +329,8 @@ subClientDrag(SubClient *c,
           {
             if(c->hints->flags & PResizeInc) ///< Resize hints
               {
-                stepx = c->hints->width_inc;
-                stepy = c->hints->height_inc;
+                subtle->step = c->hints->width_inc;
+                subtle->step = c->hints->height_inc;
               }
             if(c->hints->flags & PMinSize) ///< Min. size
               {
@@ -347,10 +347,12 @@ subClientDrag(SubClient *c,
 
   if(XGrabPointer(subtle->disp, c->win, True, 
     ButtonPressMask|ButtonReleaseMask|PointerMotionMask, GrabModeAsync, GrabModeAsync, None,
-    SUB_DRAG_RESIZE == mode ? subtle->cursors.resize : subtle->cursors.move, CurrentTime)) return;
+    mode & (SUB_DRAG_RESIZE_LEFT|SUB_DRAG_RESIZE_RIGHT) ? subtle->cursors.resize : 
+    subtle->cursors.move, CurrentTime)) return;
 
   XGrabServer(subtle->disp);
-  if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE)) ClientMask(SUB_DRAG_START, c, &r);
+  if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE_LEFT|SUB_DRAG_RESIZE_RIGHT)) 
+    ClientMask(SUB_DRAG_START, c, &r);
 
   while(loop) ///< Event loop
     {
@@ -361,17 +363,17 @@ subClientDrag(SubClient *c,
           case EnterNotify:   win = ev.xcrossing.window; break; ///< Find destination window
           case ButtonRelease: loop = False;              break;
           case KeyPress: /* {{{ */
-            if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE))
+            if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE_LEFT|SUB_DRAG_RESIZE_RIGHT))
               {
                 KeySym sym = XKeycodeToKeysym(subtle->disp, ev.xkey.keycode, 0);
                 ClientMask(SUB_DRAG_START, c, &r);
 
                 switch(sym)
                   {
-                    case XK_Left:   *dirx -= stepx; break;
-                    case XK_Right:  *dirx += stepx; break;
-                    case XK_Up:     *diry -= stepy; break;
-                    case XK_Down:   *diry += stepy; break;
+                    case XK_Left:   *dirx -= subtle->step; break;
+                    case XK_Right:  *dirx += subtle->step; break;
+                    case XK_Up:     *diry -= subtle->step; break;
+                    case XK_Down:   *diry += subtle->step; break;
                     case XK_Return: loop = False;   break;
                   }
 
@@ -382,7 +384,7 @@ subClientDrag(SubClient *c,
               }
             break; /* }}} */
           case MotionNotify: /* {{{ */
-            if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE)) /* Move/Resize {{{ */
+            if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE_LEFT|SUB_DRAG_RESIZE_RIGHT)) /* Move/Resize {{{ */
               {
                 ClientMask(SUB_DRAG_START, c, &r);
           
@@ -395,18 +397,35 @@ subClientDrag(SubClient *c,
 
                       ClientSnap(c, &r);
                       break;
-                    case SUB_DRAG_RESIZE: 
+                    case SUB_DRAG_RESIZE_LEFT: 
+                    case SUB_DRAG_RESIZE_RIGHT:
+                      /* Stepping and snapping */
                       if(c->rect.width + ev.xmotion.x_root >= rx)
                         {
-                          r.width = MINMAX(c->rect.width + (ev.xmotion.x_root - rx),
-                            minx, maxx);
-                          r.width -= r.width % stepx;
+                          if(SUB_DRAG_RESIZE_LEFT == mode)
+                            {
+                              int rxmot = rx - ev.xmotion.x_root, rxstep = 0;
+
+                              r.x     = MINMAX((rx - wx) - rxmot, 0, 
+                                c->rect.x + c->rect.width - minx);
+                              rxstep  = r.x % subtle->step;
+
+                              r.width = MINMAX(c->rect.width + rxmot + rxstep, 
+                                minx + rxstep, maxx);
+                              r.x    -= rxstep;
+                            }
+                          else
+                            {
+                              r.width = MINMAX(c->rect.width + (ev.xmotion.x_root - rx),
+                                minx, maxx);
+                              r.width -= r.width % subtle->step;
+                            }
                         }
                       if(c->rect.height + ev.xmotion.y_root >= ry)
                         {
                           r.height = MINMAX(c->rect.height + (ev.xmotion.y_root - ry),
                             miny, maxy);
-                          r.height -= r.height % stepy;
+                          r.height -= r.height % subtle->step;
                         }
                       break;
                   }  
@@ -498,7 +517,7 @@ subClientDrag(SubClient *c,
 
           subClientConfigure(c);
         }
-      else if(SUB_DRAG_RESIZE >= mode)
+      else if(SUB_DRAG_RESIZE_LEFT >= mode)
         {
           /* Get size ratios */
           if(SUB_DRAG_RIGHT == mode || SUB_DRAG_LEFT == mode)

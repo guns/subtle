@@ -146,7 +146,8 @@
 #define SUB_DRAG_BOTTOM        (1L << 9)                          ///< Drag bottom
 #define SUB_DRAG_MOVE          (1L << 10)                         ///< Drag move
 #define SUB_DRAG_TILE          (1L << 11)                         ///< Drag swap
-#define SUB_DRAG_RESIZE        (1L << 12)                         ///< Drag resize
+#define SUB_DRAG_RESIZE_LEFT   (1L << 12)                         ///< Drag resize left
+#define SUB_DRAG_RESIZE_RIGHT  (1L << 13)                         ///< Drag resize right
 
 /* Grabs */
 #define SUB_GRAB_KEY           (1L << 10)                         ///< Key grab

@@ -424,11 +424,12 @@ EventSelectionClear(XSelectionClearEvent *ev)
 static void
 EventGrab(XEvent *ev)
 {
-  Window win = 0;
+  Window win = 0, dummy = 0;
   SubGrab *g = NULL;
   SubClient *c = NULL;
   FLAGS flag = 0;
-  unsigned int code = 0, state = 0;
+  int rx = 0, ry = 0, wx = 0, wy = 0;
+  unsigned int code = 0, state = 0, mask = 0;
 
   /* Distinct types */
   switch(ev->type)
@@ -453,6 +454,8 @@ EventGrab(XEvent *ev)
         state = ev->xkey.state;
         break;
     }
+
+  XQueryPointer(subtle->disp, win, &dummy, &dummy, &rx, &ry, &wx, &wy, &mask); ///< Ask pointer
 
   /* Find grab */
   g = subGrabFind(code, state);
@@ -483,9 +486,12 @@ EventGrab(XEvent *ev)
           case SUB_GRAB_WINDOW_RESIZE:
             if((c = CLIENT(subSharedFind(win, CLIENTID))) && !(c->flags & SUB_STATE_FULL))
               {
-                if(c->flags & (SUB_STATE_FLOAT|SUB_STATE_STICK))
-                  flag = SUB_GRAB_WINDOW_MOVE == flag ? SUB_DRAG_MOVE : SUB_DRAG_RESIZE;
-                else if(SUB_GRAB_WINDOW_RESIZE == flag) flag = SUB_DRAG_RESIZE;
+                if(SUB_GRAB_WINDOW_MOVE == flag && c->flags & (SUB_STATE_FLOAT|SUB_STATE_STICK))
+                  flag = SUB_DRAG_MOVE;
+                else if(SUB_GRAB_WINDOW_RESIZE == flag) 
+                  {
+                    flag = wx < c->rect.width / 2 ? SUB_DRAG_RESIZE_LEFT : SUB_DRAG_RESIZE_RIGHT;
+                  }
                 else flag = SUB_DRAG_TILE;
 
                 subClientDrag(c, flag);
