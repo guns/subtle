@@ -24,7 +24,7 @@ typedef void(*SubCommand)(char *, char *);
 /* }}} */
 
 /* Macros {{{ */
-#define Assert(cond,...) if(!cond) subSharedLog(3, __FILE__, __LINE__, __VA_ARGS__);
+#define SubtlerAssert(cond,...) if(!cond) subSharedLog(3, __FILE__, __LINE__, __VA_ARGS__);
 /* }}} */
 
 /* Flags {{{ */
@@ -39,12 +39,32 @@ typedef void(*SubCommand)(char *, char *);
 #define SUB_ACTION_LIST  2    ///< Action list
 #define SUB_ACTION_FIND  3    ///< Action find
 #define SUB_ACTION_FOCUS 4    ///< Action focus
-#define SUB_ACTION_JUMP  5    ///< Action jump
-#define SUB_ACTION_TAG   6    ///< Action tag
-#define SUB_ACTION_UNTAG 7    ///< Action untag
-#define SUB_ACTION_TAGS  8    ///< Action tags
-#define SUB_ACTION_TOTAL 9    ///< Action total
+#define SUB_ACTION_FULL  5    ///< Action full
+#define SUB_ACTION_FLOAT 6    ///< Action float
+#define SUB_ACTION_STICK 7    ///< Action stick
+#define SUB_ACTION_JUMP  8    ///< Action jump
+#define SUB_ACTION_TAG   9    ///< Action tag
+#define SUB_ACTION_UNTAG 10   ///< Action untag
+#define SUB_ACTION_TAGS  11   ///< Action tags
+#define SUB_ACTION_TOTAL 12   ///< Action total
 /* }}} */
+
+/* SubtlerToggle {{{ */
+static void
+SubtlerToggle(char *name,
+  char *type)
+{
+  Window win = 0;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  if(-1 != subSharedClientFind(name, &win))  
+    {
+      data.l[1] = XInternAtom(display, type, False);
+
+      subSharedMessage(win, "_NET_WM_STATE", data, True);
+    }
+  else subSharedLogWarn("Failed to find client\n");
+} /* }}} */
 
 /* SubtlerClientInfo {{{ */
 static void
@@ -109,7 +129,7 @@ SubtlerClientFind(char *arg1,
 {
   Window win;
 
-  Assert(arg1, "Usage: %sr -c -f PATTERN\n", PKG_NAME);
+  SubtlerAssert(arg1, "Usage: %sr -c -f PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 != subSharedClientFind(arg1, &win)) SubtlerClientInfo(win);
@@ -124,7 +144,7 @@ SubtlerClientFocus(char *arg1,
   Window win;
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  Assert(arg1, "Usage: %sr -c -F CLIENT\n", PKG_NAME);
+  SubtlerAssert(arg1, "Usage: %sr -c -F CLIENT\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 != subSharedClientFind(arg1, &win))
@@ -135,6 +155,36 @@ SubtlerClientFocus(char *arg1,
   else subSharedLogWarn("Failed to find client\n");
 } /* }}} */
 
+/* SubtlerClientToggleFull {{{ */
+static void
+SubtlerClientToggleFull(char *arg1,
+  char *arg2)
+{
+  SubtlerAssert(arg1, "Usage: %sr -c -U CLIENT\n", PKG_NAME);
+
+  SubtlerToggle(arg1, "_NET_WM_STATE_FULLSCREEN");
+} /* }}} */
+
+/* SubtlerClientToggleFloat {{{ */
+static void
+SubtlerClientToggleFloat(char *arg1,
+  char *arg2)
+{
+  SubtlerAssert(arg1, "Usage: %sr -c -L CLIENT\n", PKG_NAME);
+
+  SubtlerToggle(arg1, "_NET_WM_STATE_ABOVE");
+} /* }}} */
+
+/* SubtlerClientToggleStick {{{ */
+static void
+SubtlerClientToggleStick(char *arg1,
+  char *arg2)
+{
+  SubtlerAssert(arg1, "Usage: %sr -c -S CLIENT\n", PKG_NAME);
+
+  SubtlerToggle(arg1, "_NET_WM_STATE_STICKY");
+} /* }}} */
+
 /* SubtlerClientTag {{{ */
 static void
 SubtlerClientTag(char *arg1,
@@ -142,7 +192,7 @@ SubtlerClientTag(char *arg1,
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  Assert(arg1 && arg2, "Usage: %sr -c PATTERN -T PATTERN\n", PKG_NAME);
+  SubtlerAssert(arg1 && arg2, "Usage: %sr -c PATTERN -T PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   data.l[0] = subSharedClientFind(arg1, NULL);
@@ -160,7 +210,7 @@ SubtlerClientUntag(char *arg1,
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  Assert(arg1 && arg2, "Usage: %sr -c PATTERN -u PATTERN\n", PKG_NAME);
+  SubtlerAssert(arg1 && arg2, "Usage: %sr -c PATTERN -u PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   data.l[0] = subSharedClientFind(arg1, NULL);
@@ -178,7 +228,7 @@ SubtlerClientTags(char *arg1,
 {
   Window win;
 
-  Assert(arg1, "Usage: %sr -c PATTERN -g\n", PKG_NAME);
+  SubtlerAssert(arg1, "Usage: %sr -c PATTERN -g\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 != subSharedClientFind(arg1, &win))
@@ -205,7 +255,7 @@ SubtlerClientKill(char *arg1,
   Window win;
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  Assert(arg1, "Usage: %sr -c -k PATTERN\n", PKG_NAME);
+  SubtlerAssert(arg1, "Usage: %sr -c -k PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 != subSharedClientFind(arg1, &win))
@@ -224,7 +274,7 @@ SubtlerTagNew(char *arg1,
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  Assert(arg1, "Usage: %sr -t -n NAME\n", PKG_NAME);
+  SubtlerAssert(arg1, "Usage: %sr -t -n NAME\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   snprintf(data.b, sizeof(data.b), "%s", arg1);
@@ -322,7 +372,7 @@ SubtlerTagKill(char *arg1,
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  Assert(arg1, "Usage: %sr -t -k PATTERN\n", PKG_NAME);
+  SubtlerAssert(arg1, "Usage: %sr -t -k PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if((data.l[0] = subSharedTagFind(arg2)))
@@ -357,7 +407,7 @@ SubtlerSubletKill(char *arg1,
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  Assert(arg1, "Usage: %sr -s -k PATTERN\n", PKG_NAME);
+  SubtlerAssert(arg1, "Usage: %sr -s -k PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if((data.l[0] = subSharedSubletFind(arg2)))
@@ -372,7 +422,7 @@ SubtlerViewNew(char *arg1,
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  Assert(arg1, "Usage: %sr -t -n PATTERN\n", PKG_NAME);
+  SubtlerAssert(arg1, "Usage: %sr -t -n PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   snprintf(data.b, sizeof(data.b), "%s", arg1);
@@ -424,7 +474,7 @@ SubtlerViewJump(char *arg1,
   int view = 0;
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  Assert(arg1, "Usage: %sr -v -j PATTERN\n", PKG_NAME);
+  SubtlerAssert(arg1, "Usage: %sr -v -j PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   /* Try to convert arg1 to long or to find view */
@@ -444,7 +494,7 @@ SubtlerViewTag(char *arg1,
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  Assert(arg1 && arg2, "Usage: %sr -v PATTERN -T PATTERN\n", PKG_NAME);
+  SubtlerAssert(arg1 && arg2, "Usage: %sr -v PATTERN -T PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   data.l[0] = subSharedViewFind(arg1, NULL);
@@ -462,7 +512,7 @@ SubtlerViewUntag(char *arg1,
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  Assert(arg1 && arg2, "Usage: %sr -v PATTERN -u PATTERN\n", PKG_NAME);
+  SubtlerAssert(arg1 && arg2, "Usage: %sr -v PATTERN -u PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   data.l[0] = subSharedViewFind(arg1, NULL);
@@ -483,7 +533,7 @@ SubtlerViewTags(char *arg1,
   char **tags = NULL;
   unsigned long *flags = NULL;
 
-  Assert(arg1, "Usage: %sr -v PATTERN -g\n", PKG_NAME);
+  SubtlerAssert(arg1, "Usage: %sr -v PATTERN -g\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 == subSharedViewFind(arg1, &win))
@@ -507,7 +557,7 @@ SubtlerViewKill(char *arg1,
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  Assert(arg1, "Usage: %sr -v -k PATTERN\n", PKG_NAME);
+  SubtlerAssert(arg1, "Usage: %sr -v -k PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if((data.l[0] = subSharedViewFind(arg1, NULL)))
@@ -539,6 +589,9 @@ SubtlerUsage(int group)
              "  -l, --list              List all clients\n" \
              "  -f, --find=PATTERN      Find a client\n" \
              "  -F, --focus=PATTERN     Set focus to client\n" \
+             "  -U, --full              Toggle full\n" \
+             "  -L, --float             Toggle float\n" \
+             "  -i, --stick             Toggle stick\n" \
              "  -T, --tag=PATTERN       Add tag to client\n" \
              "  -u, --untag=PATTERN     Remove tag from client\n" \
              "  -g, --tags              Show client tags\n" \
@@ -673,6 +726,9 @@ main(int argc,
     { "list",       no_argument,        0,  'l'  },
     { "find",       no_argument,        0,  'f'  },
     { "focus",      no_argument,        0,  'F'  },
+    { "full",       no_argument,        0,  'U'  },
+    { "float",      no_argument,        0,  'L'  },
+    { "stick",      no_argument,        0,  'S'  },
     { "jump",       no_argument,        0,  'j'  },
     { "tag",        no_argument,        0,  'T'  },
     { "untag",      no_argument,        0,  'u'  },
@@ -690,14 +746,17 @@ main(int argc,
 
   /* Command table */
   SubCommand cmds[SUB_GROUP_TOTAL][SUB_ACTION_TOTAL] = { 
-    /* Client, Sublet, Tag, View <=> New, Kill, List, Find, Focus, Jump, Tag, Untag, Tags */
-    { NULL, SubtlerClientKill, SubtlerClientList, SubtlerClientFind, SubtlerClientFocus, NULL,
+    /* Client, Sublet, Tag, View <=> New, Kill, List, Find, Focus, Full, Float, Stick, 
+       Jump, Tag, Untag, Tags */
+    { NULL, SubtlerClientKill, SubtlerClientList, SubtlerClientFind, SubtlerClientFocus, 
+      SubtlerClientToggleFull, SubtlerClientToggleFloat, SubtlerClientToggleStick, NULL,
       SubtlerClientTag, SubtlerClientUntag, SubtlerClientTags },
-    { NULL, SubtlerSubletKill, SubtlerSubletList, NULL, NULL, NULL, NULL, NULL, NULL },
-    { SubtlerTagNew, SubtlerTagKill, SubtlerTagList, SubtlerTagFind, NULL, NULL, NULL,
-      NULL, NULL },
-    { SubtlerViewNew, SubtlerViewKill, SubtlerViewList, NULL, NULL, SubtlerViewJump,
-      SubtlerViewTag, SubtlerViewUntag, SubtlerViewTags }
+    { NULL, SubtlerSubletKill, SubtlerSubletList, NULL, NULL, NULL, NULL, NULL, NULL, 
+      NULL, NULL, NULL },
+    { SubtlerTagNew, SubtlerTagKill, SubtlerTagList, SubtlerTagFind, NULL, NULL, NULL, 
+      NULL, NULL, NULL, NULL, NULL },
+    { SubtlerViewNew, SubtlerViewKill, SubtlerViewList, NULL, NULL, NULL, NULL, NULL,
+      SubtlerViewJump, SubtlerViewTag, SubtlerViewUntag, SubtlerViewTags }
   };
 
   /* Set up signal handler */
@@ -708,7 +767,7 @@ main(int argc,
   sigaction(SIGINT, &act, NULL);
   sigaction(SIGSEGV, &act, NULL);
 
-  while((c = getopt_long(argc, argv, "cstvnkfFjlTugDd:hV", long_options, NULL)) != -1)
+  while((c = getopt_long(argc, argv, "cstvnkfFULSjlTugDd:hV", long_options, NULL)) != -1)
     {
       switch(c)
         {
@@ -722,6 +781,9 @@ main(int argc,
           case 'l': action = SUB_ACTION_LIST;   break;
           case 'f': action = SUB_ACTION_FIND;   break;
           case 'F': action = SUB_ACTION_FOCUS;  break;
+          case 'U': action = SUB_ACTION_FULL;   break;
+          case 'L': action = SUB_ACTION_FLOAT;  break;
+          case 'S': action = SUB_ACTION_STICK;  break;
           case 'j': action = SUB_ACTION_JUMP;   break;
           case 'T': action = SUB_ACTION_TAG;    break;
           case 'u': action = SUB_ACTION_UNTAG;  break;
