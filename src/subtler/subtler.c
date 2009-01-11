@@ -70,7 +70,7 @@ SubtlerClientInfo(Window win)
     XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
 
   if(wmname && wmclass && nv && cv && rv && 
-    !XGetGeometry(display, win, &unused, &x, &y, &width, &height, &border, &border))
+    XGetGeometry(display, win, &unused, &x, &y, &width, &height, &border, &border))
     {
       printf("%#lx %c %ld %ux%u %s (%s)\n", win, (*cv == *rv ? '*' : '-'),
         (*cv > *nv ? -1 : *cv), width, height, wmname, wmclass);
