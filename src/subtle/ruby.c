@@ -430,7 +430,7 @@ subRubyLoadConfig(const char *file)
   else subArraySort(subtle->grabs, subGrabCompare);
 
   /* Tags */
-  if(2 == subtle->tags->ndata) 
+  if(4 == subtle->tags->ndata) 
     {
       subSharedLogWarn("No tags found\n");
     }
@@ -453,6 +453,8 @@ subRubyLoadConfig(const char *file)
   subViewUpdate();
   subViewJump(VIEW(subtle->views->data[0])); ///< Jump to first view
   subViewPublish();
+
+  rb_gc_start();
 } /* }}} */
 
  /** subRubyLoadSublets {{{
