@@ -460,7 +460,7 @@ void subLayoutKill(SubLayout *l);                                 ///< Kill layo
 /* ruby.c {{{ */
 void subRubyInit(void);                                           ///< Init Ruby stack 
 void subRubyLoadConfig(const char *file);                         ///< Load config file
-void subRubyLoadSublets(const char *path);                        ///< Load sublets
+void subRubyLoadSublets(void);                                    ///< Load sublets
 void subRubyRun(SubSublet *s);                                    ///< Run Ruby script
 void subRubyFinish(void);                                         ///< Kill Ruby stack
 /* }}} */

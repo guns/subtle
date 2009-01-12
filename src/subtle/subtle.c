@@ -99,14 +99,13 @@ main(int argc,
   char *argv[])
 {
   int c;
-  char *sublets = NULL, *display = NULL;
+  char *display = NULL;
   struct sigaction act;
   static struct option long_options[] =
   {
     { "config",  required_argument, 0, 'c' },
     { "display", required_argument, 0, 'd' },
     { "help",    no_argument,       0, 'h' },
-    { "sublets", required_argument, 0, 's' },
     { "version", no_argument,       0, 'v' },
 #ifdef DEBUG
     { "debug",   no_argument,       0, 'D' },
@@ -118,14 +117,13 @@ main(int argc,
   int debug = 0;
 #endif /* DEBUG */  
 
-  while((c = getopt_long(argc, argv, "c:d:hs:vD", long_options, NULL)) != -1)
+  while((c = getopt_long(argc, argv, "c:d:h:vD", long_options, NULL)) != -1)
     {
       switch(c)
         {
           case 'c': config = optarg;       break;
           case 'd': display = optarg;      break;
           case 'h': SubtleUsage();         return 0;
-          case 's': sublets = optarg;      break;
           case 'v': SubtleVersion();       return 0;
 #ifdef DEBUG          
           case 'D': debug++;               break;
@@ -168,7 +166,7 @@ main(int argc,
 
   /* Config */
   subRubyLoadConfig(config);
-  subRubyLoadSublets(sublets);
+  subRubyLoadSublets();
 
   subDisplayPublish();
   subDisplayScan();

@@ -459,11 +459,10 @@ subRubyLoadConfig(const char *file)
 
  /** subRubyLoadSublets {{{
   * @brief Load sublets from path
-  * @param[in]  path  Path of the sublets
   **/
 
 void
-subRubyLoadSublets(const char *path)
+subRubyLoadSublets(void)
 {
   int i, num;
   DIR *dir = NULL;
@@ -481,14 +480,8 @@ subRubyLoadSublets(const char *path)
   else fcntl(subtle->notify, F_SETFL, O_NONBLOCK);
 #endif /* HAVE_SYS_INOTIFY_H */
 
-  /* Check path */
-  if(!path)
-    {
-      snprintf(buf, sizeof(buf), "%s/.%s/sublets", getenv("HOME"), PKG_NAME);
-      if((dir = opendir(buf))) closedir(dir);
-      else snprintf(buf, sizeof(buf), "%s", DIR_SUBLET);
-    }
-  else snprintf(buf, sizeof(buf), "%s", path);
+  /* Build path */
+  snprintf(buf, sizeof(buf), "%s/.%s/sublets", getenv("HOME"), PKG_NAME);
   subSharedLogDebug("path=%s\n", buf);
 
   /* Scan directory */
