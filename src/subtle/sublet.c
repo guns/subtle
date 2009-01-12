@@ -144,6 +144,18 @@ subSubletKill(SubSublet *s)
 
   /* Update linked list */
   if(subtle->sublet == s) subtle->sublet = s->next;
+  else
+    {
+      int i;
+      SubSublet *prev = NULL;
+
+      for(i = 0; i < subtle->sublets->ndata; i++)
+        if((prev = SUBLET(subtle->sublets->data[i])) && prev->next == s)
+          {
+            prev->next = s->next;
+            break;
+          }
+    }
 
   if(s->name)   free(s->name);
   if(s->string) free(s->string);
