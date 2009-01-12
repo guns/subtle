@@ -59,7 +59,8 @@ class Battery < Sublet
       end
   
       self.data = "%d%%/%s" % [(@remaining * 100 / @capacity).floor, ac]
-    rescue => err
+    rescue => err # Sanitize to prevent unloading
+      self.data = "subtle"
       p err
     end
   end

@@ -15,16 +15,14 @@ class Notify < Sublet
   end
 
   def run
-    begin
-      file = ""
+    file = ""
 
-      File.open(@interval, "r") do |f|
-        file = f.read
-      end
-
-      self.data = file
-    rescue => err
-      p err
+    # We never begin/rescue here to unload the
+    # sublet if the watch file doesn't exist
+    File.open(self.interval, "r") do |f|
+      file = f.read
     end
+
+    self.data = file || "subtle"
   end
 end

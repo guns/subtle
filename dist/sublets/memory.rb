@@ -29,7 +29,8 @@ class Memory < Sublet
       @active = file.match(/Active:\s*(\d+)\s*kB/)[1].to_i / 1024 || 0
 
       self.data = "%dM/%dM" % [@active.floor, @total.floor]
-    rescue => err
+    rescue => err # Sanitize to prevent unloading
+      self.data = "subtle"
       p err
     end
   end
