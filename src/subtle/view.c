@@ -104,7 +104,6 @@ subViewConfigure(SubView *v)
             }
         } /* }}} */
 
-#if 0
       /* Mark clients in a tile {{{ */
       for(i = 0; i < v->layout->ndata; i++)
         {
@@ -116,7 +115,6 @@ subViewConfigure(SubView *v)
               tiled++;
             }
         } /* }}} */
-#endif
 
       subSharedLogDebug("total=%d, layouts=%d, tiled=%d\n", total, v->layout->ndata, tiled);
       total -= tiled;
@@ -238,7 +236,6 @@ subViewArrange(SubView *v,
 
   assert(v && c1 && c2);
 
-#if 0
   /* Remove old layouts */
   for(i = 0; i < v->layout->ndata; i++)
     {
@@ -250,7 +247,6 @@ subViewArrange(SubView *v,
             subArrayPop(v->layout, (void *)l);
         }
     }
-#endif
 
   l = subLayoutNew(c1, c2, mode);
   subArrayPush(v->layout, (void *)l);
