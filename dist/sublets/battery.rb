@@ -46,6 +46,7 @@ class Battery < Sublet
 
       @remaining = file.match(/remaining capacity:\s*(.+).*/)[1].to_i || 1
       @rate      = file.match(/present rate:\s*(.+).*/)[1].to_i || 1
+      @rate      = 1 if(0 == @rate) #< Rate can be unkown
       @state     = file.match(/charging state:\s*(.+).*/)[1]
 
       case @state
@@ -53,7 +54,7 @@ class Battery < Sublet
           ac = "AC"
         when "discharging" then
           remain = @remaining / @rate * 60 #< Get remaining time
-          ac     = "%d:%d" % [remain / 60, Math.floor(remain % 60)]
+          ac     = "%d:%d" % [(remain / 60).floor, remain % 60]
         when "charging" then
           ac = "CHG"
       end
