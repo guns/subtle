@@ -118,21 +118,22 @@
 /* Data types */
 #define SUB_DATA_STRING        (1L << 11)                         ///< String data
 #define SUB_DATA_FIXNUM        (1L << 12)                         ///< Fixnum data
-#define SUB_DATA_NIL           (1L << 13)                         ///< Nil data
+#define SUB_DATA_INOTIFY       (1L << 13)                         ///< Inotify data
+#define SUB_DATA_NIL           (1L << 14)                         ///< Nil data
 
 /* Client states */
-#define SUB_STATE_FLOAT        (1L << 14)                         ///< Floating window
 #define SUB_STATE_FULL         (1L << 15)                         ///< Fullscreen window
-#define SUB_STATE_RESIZE       (1L << 16)                         ///< Resized window
-#define SUB_STATE_DEAD         (1L << 17)                         ///< Dead window
-#define SUB_STATE_TILED        (1L << 18)                         ///< Tiled client
-#define SUB_STATE_STICK       (1L << 19)                         ///< Urgent client
+#define SUB_STATE_FLOAT        (1L << 16)                         ///< Floating window
+#define SUB_STATE_STICK        (1L << 17)                         ///< Stick window
+#define SUB_STATE_RESIZE       (1L << 18)                         ///< Resized window
+#define SUB_STATE_DEAD         (1L << 19)                         ///< Dead window
+#define SUB_STATE_TILED        (1L << 20)                         ///< Tiled client
 
 /* Client preferences */
-#define SUB_PREF_INPUT         (1L << 20)                         ///< Active/passive focus-model
-#define SUB_PREF_FOCUS         (1L << 21)                         ///< Send focus message
-#define SUB_PREF_CLOSE         (1L << 22)                         ///< Send close message
-#define SUB_PREF_HINTS         (1L << 23)                         ///< Size hints available
+#define SUB_PREF_INPUT         (1L << 21)                         ///< Active/passive focus-model
+#define SUB_PREF_FOCUS         (1L << 22)                         ///< Send focus message
+#define SUB_PREF_CLOSE         (1L << 23)                         ///< Send close message
+#define SUB_PREF_HINTS         (1L << 24)                         ///< Size hints available
 
 /* Drag states */
 #define SUB_DRAG_START         (1L << 1)                          ///< Drag start
@@ -165,7 +166,7 @@
 #define SUB_TAG_DEFAULT        (1L << 1)                          ///< Default tag
 #define SUB_TAG_FLOAT          (1L << 2)                          ///< Float tag
 #define SUB_TAG_FULL           (1L << 3)                          ///< Full tag
-#define SUB_TAG_STICK         (1L << 4)                          ///< Urgent tag
+#define SUB_TAG_STICK          (1L << 4)                          ///< Urgent tag
 /* }}} */
 
 /* Typedefs {{{ */
@@ -291,12 +292,16 @@ typedef struct sublayout_t /* {{{ */
 
 typedef struct subsublet_t /* {{{ */
 {
-  FLAGS         flags;                                            ///< Sublet flags
-  char          *name;                                            ///< Sublet name
+  FLAGS              flags;                                       ///< Sublet flags
+  char               *name;                                       ///< Sublet name
 
-  unsigned long recv;                                             ///< Sublet ruby receiver
-  int           width;                                            ///< Sublet width
-  time_t        time, interval;                                   ///< Sublet update time, interval time
+#ifdef HAVE_SYS_INOTIFY_H
+  char               *path;                                       ///< Sublet inotify path
+#endif /* HAVE_SYS_INOTIFY */  
+
+  unsigned long      recv;                                        ///< Sublet ruby receiver
+  int                width;                                       ///< Sublet width
+  time_t             time, interval;                              ///< Sublet update time, interval time
 
   struct subsublet_t *next;                                       ///< Sublet next sibling
 
