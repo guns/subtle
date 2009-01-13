@@ -587,7 +587,7 @@ EventFocus(XFocusChangeEvent *ev)
 void
 subEventLoop(void)
 {
-  int ret;
+  int ret, nfds;
   time_t ctime;
   XEvent ev;
   fd_set rfds;
@@ -600,24 +600,25 @@ subEventLoop(void)
 
   s = 0 < subtle->sublets->ndata ? SUBLET(subtle->sublets->data[0]) : NULL;
 
-  /* Init timeout and assemble FD_SET */
-  tv.tv_sec    = 0;
-  tv.tv_usec  = 0;
+  tv.tv_sec  = 0; 
+  tv.tv_usec = 0;
+  nfds       = ConnectionNumber(subtle->disp) + 1;
 
   FD_ZERO(&rfds);
   FD_SET(ConnectionNumber(subtle->disp), &rfds);
 
 #ifdef HAVE_SYS_INOTIFY_H
   FD_SET(subtle->notify, &rfds); ///< Add inotify socket to set
+  nfds = nfds < subtle->notify + 1 ? subtle->notify + 1: nfds; ///< Find biggest fd number
 #endif /* HAVE_SYS_INOTIFY_H */
 
   while(1)
     {
       ctime  = subSharedTime();
-      ret = select(ConnectionNumber(subtle->disp) + 1, &rfds, NULL, NULL, &tv);
+      ret = select(nfds, &rfds, NULL, NULL, &tv);
       if(-1 == ret) 
         {
-          subSharedLogDebug("%s\n", strerror(errno)); ///< Ignore and print debugging message
+          subSharedLogDebug("Select: %s\n", strerror(errno)); ///< Ignore and print debugging message
         }
       else if(ret) ///< Data ready on any connection
         {
@@ -648,10 +649,10 @@ subEventLoop(void)
                 }
               }
 #ifdef HAVE_SYS_INOTIFY_H
-            else if(FD_ISSET(subtle->notify, &rfds)) ///< Inotify descriptor
+            if(FD_ISSET(subtle->notify, &rfds)) ///< Inotify descriptor
               {
                 /* Handle inotify events */
-                if(read(subtle->notify, buf, BUFLEN) > 0)
+                if(0 < read(subtle->notify, buf, BUFLEN))
                   {
                     struct inotify_event *event = (struct inotify_event *)&buf[0];
                     if(event)
@@ -665,7 +666,6 @@ subEventLoop(void)
                           }
                       }
                   }
-
               }
 #endif /* HAVE_SYS_INOTIFY_H */
         }
@@ -678,7 +678,7 @@ subEventLoop(void)
               s->time = ctime + s->interval; ///< Adjust seconds
               s->time -= s->time % s->interval;
 
-              subRubyRun(s);
+              if(!(s->flags & SUB_DATA_INOTIFY)) subRubyRun(s);
               subArraySort(subtle->sublets, subSubletCompare);
 
               s = SUBLET(subtle->sublets->data[0]);
@@ -688,8 +688,8 @@ subEventLoop(void)
         }
 
       /* Set timeout and assemble FD_SET */
-      tv.tv_sec   = s ? abs(s->time - ctime) : 60;
-      tv.tv_usec  = 0;
+      tv.tv_sec  = s ? abs(s->time - ctime) : 60;
+      tv.tv_usec = 0;
 
       FD_ZERO(&rfds);
       FD_SET(ConnectionNumber(subtle->disp), &rfds);
