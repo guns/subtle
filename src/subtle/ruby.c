@@ -38,7 +38,7 @@ RubySubletNew(VALUE self)
   if(0 == s->interval) s->interval = 60; ///< Sanitize
 
   subArrayPush(subtle->sublets, s);
-  subRubyRun(s);
+  subRubyRun(s); ///< Init data
 
   return data;
 } /* }}} */
@@ -64,7 +64,7 @@ RubySubletInterval(VALUE self)
   SubSublet *s = NULL;
   Data_Get_Struct(self, SubSublet, s);
 
-  return INT2FIX(s->interval);
+  return s ? INT2FIX(s->interval) : Qnil;
 } /* }}} */
 
 /* RubySubletIntervalSet {{{ */
@@ -75,35 +75,66 @@ RubySubletIntervalSet(VALUE self,
   SubSublet *s = NULL;
   Data_Get_Struct(self, SubSublet, s);
 
-  switch(rb_type(value))
+  if(s)
     {
-      case T_FIXNUM: 
-        s->interval = FIX2INT(value);
-        break;
-      case T_STRING: 
-#ifdef HAVE_SYS_INOTIFY_H
-        /* Create inotify watch */
-        if(value)
+      switch(rb_type(value))
         {
-          char *watch = STR2CSTR(value);
-
-          if(0 > (s->interval = inotify_add_watch(subtle->notify, watch, IN_MODIFY)))
-            {
-              subSharedLogWarn("Watch file `%s' error: %s\n", watch, strerror(errno));
-
-              return Qfalse;
-            }
-          else XSaveContext(subtle->disp, subtle->windows.sublets, s->interval, (void *)s);
+          case T_FIXNUM: s->interval = FIX2INT(value); return Qtrue;
+          default: subSharedLogWarn("Unknown value type\n");
         }
-#endif /* HAVE_SYS_INOTIFY_H */
-        break;
-      default:
-        subSharedLogWarn("Unknown value type\n");
-        return Qfalse;
     }
 
-  return Qtrue;
+  return Qfalse;
 } /* }}} */
+
+#ifdef HAVE_SYS_INOTIFY_H
+/* RubySubletPath {{{ */
+static VALUE
+RubySubletPath(VALUE self)
+{
+  SubSublet *s = NULL;
+  Data_Get_Struct(self, SubSublet, s);
+
+  return s ? rb_str_new2(s->path) : Qnil;
+} /* }}} */
+
+/* RubySubletPathSet {{{ */
+static VALUE
+RubySubletPathSet(VALUE self,
+  VALUE value)
+{
+  SubSublet *s = NULL;
+  Data_Get_Struct(self, SubSublet, s);
+
+  if(s)
+    {
+      switch(rb_type(value))
+        {
+          case T_STRING: 
+            if(RTEST(value))
+              {
+                char *watch = STR2CSTR(value);
+
+                /* Create inotify watch */
+                if(0 < (s->interval = inotify_add_watch(subtle->notify, watch, IN_MODIFY)))
+                  {
+                    s->flags |= SUB_DATA_INOTIFY;
+                    s->path   = strdup(watch);
+                    XSaveContext(subtle->disp, subtle->windows.sublets, s->interval, (void *)s);
+
+                    return Qtrue;
+                  }
+
+                subSharedLogWarn("Failed to watch file `%s': %s\n", watch, strerror(errno));
+              }
+            break;
+          default: subSharedLogWarn("Unknown value type\n");
+        }
+    }
+
+  return Qfalse;
+} /* }}} */
+#endif /* HAVE_SYS_INOTIFY_H */
 
 /* RubySubletData {{{ */
 static VALUE
@@ -112,10 +143,11 @@ RubySubletData(VALUE self)
   SubSublet *s = NULL;
   Data_Get_Struct(self, SubSublet, s);
 
-  if(s->flags & SUB_DATA_FIXNUM)
-    return INT2FIX(s->fixnum);
-  else if(s->flags & SUB_DATA_STRING)
-    return rb_str_new2(s->string);
+  if(s)
+    {
+      if(s->flags & SUB_DATA_FIXNUM)      return INT2FIX(s->fixnum);
+      else if(s->flags & SUB_DATA_STRING) return rb_str_new2(s->string);
+    }
 
   return Qnil;
 } /* }}} */
@@ -128,28 +160,30 @@ RubySubletDataSet(VALUE self,
   SubSublet *s = NULL;
   Data_Get_Struct(self, SubSublet, s);
 
-  s->flags &= ~(SUB_DATA_FIXNUM|SUB_DATA_STRING|SUB_DATA_NIL); ///< Clear some flags
-
-  switch(rb_type(value))
+  if(s)
     {
-      case T_FIXNUM: 
-        s->flags |= SUB_DATA_FIXNUM;
-        s->fixnum = FIX2INT(value);
-        s->width  = 63; ///< Magic number
-        break;
-      case T_STRING: 
-        if(s->string) free(s->string);
-        s->flags |= SUB_DATA_STRING;
-        s->string = strdup(RSTRING_PTR(value));
-        s->width  = RSTRING_LEN(value) * subtle->fx + 6;
-        break;
-      default:
-        s->flags |= SUB_DATA_NIL;
-        subSharedLogWarn("Unknown value type\n");
-        return Qfalse;
+      s->flags &= ~(SUB_DATA_FIXNUM|SUB_DATA_STRING|SUB_DATA_NIL); ///< Clear flags
+
+      switch(rb_type(value))
+        {
+          case T_FIXNUM: 
+            s->flags  |= SUB_DATA_FIXNUM;
+            s->fixnum  = FIX2INT(value);
+            s->width   = 63; ///< Magic number
+            return Qtrue;
+          case T_STRING: 
+            if(s->string) free(s->string);
+            s->flags  |= SUB_DATA_STRING;
+            s->string  = strdup(RSTRING_PTR(value));
+            s->width   = RSTRING_LEN(value) * subtle->fx + 6;
+            return Qtrue;
+          default:
+            s->flags |= SUB_DATA_NIL;
+            subSharedLogWarn("Unknown value type\n");
+        }
     }
 
-  return Qtrue;
+  return Qfalse;
 } /* }}} */
 
 /* RubyGetString {{{ */
@@ -382,12 +416,18 @@ subRubyInit(void)
 
   /* Class: sublet */
   klass = rb_define_class("Sublet", rb_cObject);
-  rb_define_singleton_method(klass, "new", RubySubletNew, 0);
+  rb_define_singleton_method(klass, "new",       RubySubletNew, 0);
   rb_define_singleton_method(klass, "inherited", RubySubletInherited, 1);
-  rb_define_method(klass, "interval", RubySubletInterval, 0);
-  rb_define_method(klass, "interval=", RubySubletIntervalSet, 1);
-  rb_define_method(klass, "data", RubySubletData, 0);
-  rb_define_method(klass, "data=", RubySubletDataSet, 1);
+  rb_define_method(klass, "interval",   RubySubletInterval, 0);
+  rb_define_method(klass, "interval=",  RubySubletIntervalSet, 1);
+
+#ifdef HAVE_SYS_INOTIFY_H
+  rb_define_method(klass, "path",       RubySubletPath, 0);
+  rb_define_method(klass, "path=",      RubySubletPathSet, 1);
+#endif /* HAVE_SYS_INOTIFY */  
+  
+  rb_define_method(klass, "data",       RubySubletData, 0);
+  rb_define_method(klass, "data=",      RubySubletDataSet, 1);
 } /* }}} */
 
  /** subRubyLoadConfig {{{
@@ -470,11 +510,10 @@ subRubyLoadSublets(const char *path)
   sublets = rb_ary_new();
 
 #ifdef HAVE_SYS_INOTIFY_H
-  if((subtle->notify = inotify_init()) < 0)
+  if(0 > (subtle->notify = inotify_init()))
     {
       subSharedLogWarn("Failed initing inotify\n");
       subSharedLogDebug("Inotify: %s\n", strerror(errno));
-      return;
     }
   else fcntl(subtle->notify, F_SETFL, O_NONBLOCK);
 #endif /* HAVE_SYS_INOTIFY_H */
@@ -543,9 +582,9 @@ subRubyRun(SubSublet *s)
       /* Get last error message */
       lasterr = rb_gv_get("$!");
       message = rb_obj_as_string(lasterr);
+      if(RTEST(message)) subSharedLogDebug("Ruby: %s\n", RSTRING(message)->ptr);
 
       subSharedLogWarn("Failed running sublet\n");
-      if(RTEST(message)) subSharedLogDebug("%s\n", RSTRING(message)->ptr);
       subArrayPop(subtle->sublets, (void *)s);
       subSubletKill(s);
     }
