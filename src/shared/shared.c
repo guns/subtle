@@ -285,20 +285,20 @@ subSharedPropertyGet(Window win,
   unsigned long nitems, bytes;
   unsigned char *data = NULL;
   int format;
-  Atom rettype, prop = XInternAtom(display, name, False);
+  Atom rtype, prop = XInternAtom(display, name, False);
 
   assert(win && name);
 
-  if(Success != XGetWindowProperty(display, win, prop, 0L, 4096, False, type, &rettype,
+  if(Success != XGetWindowProperty(display, win, prop, 0L, 4096, False, type, &rtype,
     &format, &nitems, &bytes, &data))
     {
       subSharedLogDebug("Failed to get property `%s'\n", name);
 
       return NULL;
     }
-  if(type != rettype)
+  if(type != rtype)
     {
-      subSharedLogDebug("Invalid type (%ld) for property `%s'\n", rettype, name);
+      subSharedLogDebug("Invalid type (%ld) for property `%s'\n", rtype, name);
       XFree(data);
 
       return NULL;
