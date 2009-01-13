@@ -122,12 +122,17 @@ subEwmhGetProperty(Window win,
   if(XGetWindowProperty(subtle->disp, win, atoms[e], 0L, 1024, False, type, &rtype,
     &format, &nitems, &bytes, &data) != Success)
     {
-      subSharedLogDebug("Failed to get property (%d)\n", e);
+      char *name = XGetAtomName(subtle->disp, atoms[e]); 
+      subSharedLogDebug("Failed to get property `%s'\n", name);
+      XFree(name);
+
       return NULL;
     }
   if(type != rtype)
     {
-      subSharedLogDebug("Invalid type for property (%d <=> %d)\n", type, rtype);
+      char *name = XGetAtomName(subtle->disp, atoms[e]); 
+      subSharedLogDebug("Invalid type (%ld) for property `%s'\n", rtype, name);
+      XFree(name);
       XFree(data);
       return NULL;
     }
