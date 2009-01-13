@@ -11,7 +11,7 @@
 
 class Notify < Sublet
   def initialize
-    self.interval = "/tmp/watch"
+    self.path = "/tmp/watch"
   end
 
   def run
@@ -19,10 +19,10 @@ class Notify < Sublet
 
     # We never begin/rescue here to unload the
     # sublet if the watch file doesn't exist
-    File.open(self.interval, "r") do |f|
+    File.open(self.path, "r") do |f|
       file = f.read
     end
 
-    self.data = file || "subtle"
+    self.data = file.chop || "subtle"
   end
 end
