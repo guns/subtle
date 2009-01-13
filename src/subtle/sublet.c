@@ -157,6 +157,13 @@ subSubletKill(SubSublet *s)
           }
     }
 
+#ifdef HAVE_SYS_INOTIFY_H
+  /* Tidy up inotify */
+  inotify_rm_watch(subtle->notify, s->interval);
+
+  if(s->path)   free(s->path);
+#endif /* HAVE_SYS_INOTIFY_H */ 
+
   if(s->name)   free(s->name);
   if(s->string) free(s->string);
   free(s);
