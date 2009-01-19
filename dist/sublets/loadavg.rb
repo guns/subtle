@@ -11,7 +11,7 @@
 
 class Loadavg < Sublet
   def initialize
-    self.interval = 10
+    self.interval = 30
   end
 
   def run
