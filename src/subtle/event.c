@@ -587,7 +587,7 @@ EventFocus(XFocusChangeEvent *ev)
 void
 subEventLoop(void)
 {
-  int ret, nfds;
+  int nfds;
   time_t ctime;
   XEvent ev;
   fd_set rfds;
@@ -598,11 +598,10 @@ subEventLoop(void)
   char buf[BUFLEN];
 #endif /* HAVE_SYS_INOTIFY_H */
 
-  s = 0 < subtle->sublets->ndata ? SUBLET(subtle->sublets->data[0]) : NULL;
-
   tv.tv_sec  = 0; 
   tv.tv_usec = 0;
   nfds       = ConnectionNumber(subtle->disp) + 1;
+  s          = 0 < subtle->sublets->ndata ? SUBLET(subtle->sublets->data[0]) : NULL;
 
   FD_ZERO(&rfds);
   FD_SET(ConnectionNumber(subtle->disp), &rfds);
@@ -614,18 +613,12 @@ subEventLoop(void)
 
   while(1)
     {
-      ctime  = subSharedTime();
-      ret = select(nfds, &rfds, NULL, NULL, &tv);
-      if(-1 == ret) 
-        {
-          subSharedLogDebug("Select: %s\n", strerror(errno)); ///< Ignore and print debugging message
-        }
-      else if(ret) ///< Data ready on any connection
+      ctime = subSharedTime();
+      if(select(nfds, &rfds, NULL, NULL, &tv)) ///< Data ready on any connection
         {
           if(FD_ISSET(ConnectionNumber(subtle->disp), &rfds)) ///< X connection
             {
-              /* Event X events */
-              while(XPending(subtle->disp))
+              while(XPending(subtle->disp)) ///< X events
                 {
                   XNextEvent(subtle->disp, &ev);
                   switch(ev.type)
@@ -638,7 +631,6 @@ subEventLoop(void)
                       case PropertyNotify:    EventProperty(&ev.xproperty);              break;
                       case EnterNotify:       EventCrossing(&ev.xcrossing);              break;
                       case SelectionClear:    EventSelectionClear(&ev.xselectionclear);  break;
-
                       case ButtonPress:
                       case KeyPress:          EventGrab(&ev);                            break;
                       case VisibilityNotify:  
@@ -651,31 +643,27 @@ subEventLoop(void)
 #ifdef HAVE_SYS_INOTIFY_H
             if(FD_ISSET(subtle->notify, &rfds)) ///< Inotify descriptor
               {
-                /* Handle inotify events */
-                if(0 < read(subtle->notify, buf, BUFLEN))
+                if(0 < read(subtle->notify, buf, BUFLEN)) ///< Inotify events
                   {
                     struct inotify_event *event = (struct inotify_event *)&buf[0];
-                    if(event)
+
+                    if(event && (s = SUBLET(subSharedFind(subtle->windows.sublets, event->wd))))
                       {
-                        SubSublet *ws = SUBLET(subSharedFind(subtle->windows.sublets, event->wd));
-                        if(ws)
-                          {
-                            subRubyRun(ws);
-                            subSubletUpdate();
-                            subSubletRender();
-                          }
+                        subRubyRun(s);
+                        subSubletUpdate();
+                        subSubletRender();
                       }
                   }
               }
 #endif /* HAVE_SYS_INOTIFY_H */
         }
-      else ///< Timeout waiting for data
+      else ///< Timeout waiting for data or error
         {
           /* Update sublet data */
           s = 0 < subtle->sublets->ndata ? SUBLET(subtle->sublets->data[0]) : NULL;
           while(s && s->time <= ctime)
             {
-              s->time = ctime + s->interval; ///< Adjust seconds
+              s->time  = ctime + s->interval; ///< Adjust seconds
               s->time -= s->time % s->interval;
 
               if(!(s->flags & SUB_DATA_INOTIFY)) subRubyRun(s);
