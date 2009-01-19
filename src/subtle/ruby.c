@@ -418,16 +418,15 @@ subRubyInit(void)
   klass = rb_define_class("Sublet", rb_cObject);
   rb_define_singleton_method(klass, "new",       RubySubletNew, 0);
   rb_define_singleton_method(klass, "inherited", RubySubletInherited, 1);
-  rb_define_method(klass, "interval",   RubySubletInterval, 0);
-  rb_define_method(klass, "interval=",  RubySubletIntervalSet, 1);
+  rb_define_method(klass, "interval",  RubySubletInterval, 0);
+  rb_define_method(klass, "interval=", RubySubletIntervalSet, 1);
+  rb_define_method(klass, "data",      RubySubletData, 0);
+  rb_define_method(klass, "data=",     RubySubletDataSet, 1);
 
 #ifdef HAVE_SYS_INOTIFY_H
-  rb_define_method(klass, "path",       RubySubletPath, 0);
-  rb_define_method(klass, "path=",      RubySubletPathSet, 1);
+  rb_define_method(klass, "path",      RubySubletPath, 0);
+  rb_define_method(klass, "path=",     RubySubletPathSet, 1);
 #endif /* HAVE_SYS_INOTIFY */  
-  
-  rb_define_method(klass, "data",       RubySubletData, 0);
-  rb_define_method(klass, "data=",      RubySubletDataSet, 1);
 } /* }}} */
 
  /** subRubyLoadConfig {{{

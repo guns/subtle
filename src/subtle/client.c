@@ -489,27 +489,26 @@ subClientDrag(SubClient *c,
 
   ClientMask(state, c2, &r); ///< Erase mask
 
-  if(win != c->win && c && c2) ///< Except same window
+  if(c && c2 && win != c->win) ///< Skip same window
     {
       if(state & (SUB_DRAG_LEFT|SUB_DRAG_RIGHT))
         {
           subViewArrange(subtle->cv, c, c2, SUB_TILE_HORZ);
-          subViewConfigure(subtle->cv);
         }
       else if(state & (SUB_DRAG_TOP|SUB_DRAG_BOTTOM))
         {
           subViewArrange(subtle->cv, c, c2, SUB_TILE_VERT);
-          subViewConfigure(subtle->cv);
         }
       else if(SUB_DRAG_TILE == state)
         {
           subViewArrange(subtle->cv, c, c2, SUB_TILE_SWAP);
-          subViewConfigure(subtle->cv);
         }
+          
+      subViewConfigure(subtle->cv);
     }
   else ///< Move/Resize
     {
-      if(c->flags & (SUB_STATE_FLOAT|SUB_STATE_STICK)) 
+      if(c->flags & SUB_STATE_FLOAT) 
         {
           r.y -= (subtle->th + subtle->bw); ///< Border and bar height
           r.x -= subtle->bw;
@@ -517,15 +516,13 @@ subClientDrag(SubClient *c,
 
           subClientConfigure(c);
         }
-      else if(SUB_DRAG_RESIZE_LEFT >= mode)
+      else if(mode & (SUB_DRAG_RESIZE_LEFT|SUB_DRAG_RESIZE_RIGHT))
         {
           /* Get size ratios */
-          if(SUB_DRAG_RIGHT == mode || SUB_DRAG_LEFT == mode)
+          if(state & (SUB_DRAG_LEFT|SUB_DRAG_RIGHT))
             c->size = r.width * 100 / WINW(c);
           else c->size = r.height * 100 / WINH(c);
-
-          if(90 > c->size) c->size = 90;      ///< Max. 90%
-          else if(10 > c->size) c->size = 10; ///< Min. 10%
+          c->size = MINMAX(c->size, 10, 90); ///< Min 10%, Max 90%
 
           if(!(c->flags & SUB_STATE_RESIZE)) c->flags |= SUB_STATE_RESIZE;
           subViewConfigure(subtle->cv);        

@@ -177,7 +177,7 @@ subViewConfigure(SubView *v)
                   l->c1->rect.width = l->c1->rect.width / 2;
                   l->c2->rect       = l->c1->rect;
                   l->c2->rect.x     = l->c1->rect.width;
-#if 0
+
                   if(l->c1->flags & SUB_STATE_RESIZE)
                     {
                       int size = l->c1->rect.width * l->c1->size / 100;
@@ -200,7 +200,6 @@ subViewConfigure(SubView *v)
                       l->c1->rect.width = 2 * l->c1->rect.width - size;
                       l->c2->rect.x     = l->c1->rect.width;
                     }
-#endif                    
                 }
               else if(l->flags & SUB_TILE_SWAP) 
                 {
