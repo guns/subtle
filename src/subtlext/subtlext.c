@@ -76,7 +76,7 @@ SubtlextFind(int type,
       case T_CLASS:
         if(rb_obj_is_instance_of(value, klass)) ///< Check object instance
           {
-            if(-1 == (id = rb_iv_get(value, "@id")) && True == create)
+            if(Qnil == rb_iv_get(value, "@id") && True == create)
               {
                 name = rb_iv_get(value, "@name");
 
@@ -86,8 +86,8 @@ SubtlextFind(int type,
                   SUB_TYPE_TAG == type ? "SUBTLE_TAG_NEW" : "SUBTLE_VIEW_NEW", data, True);
 
                 /* Check if object exists */
-                if(SUB_TYPE_TAG == type) id = subSharedTagFind(STR2CSTR(value));
-                else id = subSharedViewFind(STR2CSTR(value), &win);
+                if(SUB_TYPE_TAG == type) id = subSharedTagFind(STR2CSTR(name));
+                else id = subSharedViewFind(STR2CSTR(name), &win);
                 if(-1 == id)
                   {
                     rb_raise(rb_eStandardError, "Failed to update object");
@@ -96,7 +96,7 @@ SubtlextFind(int type,
 
                 /* Update object */
                 rb_iv_set(value, "@id", INT2FIX(id)); 
-                if(SUB_TYPE_VIEW == type) rb_iv_set(obj, "@win", LONG2NUM(win));
+                if(SUB_TYPE_VIEW == type) rb_iv_set(value, "@win", LONG2NUM(win));
               }
 
             return value;
@@ -124,6 +124,47 @@ SubtlextToggle(VALUE self,
   else rb_raise(rb_eStandardError, "Failed to toggle client");
 
   return Qnil;
+} /* }}} */
+
+/* SubtlextTag {{{ */
+static VALUE
+SubtlextTag(VALUE self,
+  VALUE value,
+  char *type,
+  char *atom)
+{
+  VALUE klass = Qnil;
+
+  klass = rb_const_get(rb_mKernel, rb_intern(type));
+
+  /* Check object */
+  switch(rb_type(value))
+    {
+      case T_OBJECT:
+      case T_CLASS:
+        if(rb_obj_is_instance_of(value, klass)) ///< Check object instance
+          {
+            VALUE tid = Qnil, oid = Qnil;
+            
+            tid = rb_iv_get(value, "@id");
+            oid = rb_iv_get(self, "@id");
+
+            if(Qnil != tid && Qnil != oid)
+              {
+                SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+                data.l[0] = FIX2LONG(oid);
+                data.l[1] = FIX2LONG(tid);
+
+                subSharedMessage(DefaultRootWindow(display), atom, data, True);
+
+                return Qtrue;
+              }
+          }
+    }
+
+  rb_raise(rb_eArgError, "Unknown value type");
+  return Qfalse;
 } /* }}} */
 
 /* SubtlextClientInit {{{ */
@@ -204,6 +245,7 @@ SubtlextClientTagList(VALUE self)
       tags   = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
       array  = rb_ary_new2(size);
 
+      /* Build tag array */
       for(i = 0; i < size; i++)
         {
           if((int)*flags & (1L << (i + 1)))
@@ -341,43 +383,21 @@ SubtlextClientToString(VALUE self)
   return RTEST(name) ? name : Qnil;
 } /* }}} */
 
+/* SubtlextClientOperatorPlus {{{ */
 static VALUE
 SubtlextClientOperatorPlus(VALUE self,
   VALUE value)
 {
-  VALUE klass = Qnil;
+  return SubtlextTag(self, value, "Tag", "SUBTLE_CLIENT_TAG");
+} /* }}} */
 
-  klass = rb_const_get(rb_mKernel, rb_intern("Tag"));
-
-  /* Check object */
-  switch(rb_type(value))
-    {
-      case T_OBJECT:
-      case T_CLASS:
-        if(rb_obj_is_instance_of(value, klass)) ///< Check object instance
-          {
-            VALUE tid = Qnil, cid = Qnil;
-            
-            tid = rb_iv_get(value, "@id");
-            cid = rb_iv_get(self, "@id");
-
-            if(Qnil != tid && Qnil != cid)
-              {
-                SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-                data.l[0] = FIX2LONG(cid);
-                data.l[1] = FIX2LONG(tid);
-
-                subSharedMessage(DefaultRootWindow(display), "SUBTLE_CLIENT_TAG", data, True);
-
-                return Qtrue;
-              }
-          }
-    }
-
-  rb_raise(rb_eArgError, "Unknown value type");
-  return Qfalse;
-}
+/* SubtlextClientOperatorMinus {{{ */
+static VALUE
+SubtlextClientOperatorMinus(VALUE self,
+  VALUE value)
+{
+  return SubtlextTag(self, value, "Tag", "SUBTLE_CLIENT_UNTAG");
+} /* }}} */
 
 /* SubtlextSubtleKill {{{ */
 static void
@@ -829,6 +849,13 @@ SubtlextTagInit(VALUE self,
   return self;
 } /* }}} */
 
+/* SubtlextTagSave {{{ */
+static VALUE
+SubtlextTagSave(VALUE self)
+{
+  return Qnil != SubtlextFind(SUB_TYPE_TAG, self, True) ? Qtrue : Qfalse;
+} /* }}} */
+
 /* SubtlextTagTagggings {{{ */
 static VALUE
 SubtlextTagTaggings(VALUE self)
@@ -988,6 +1015,7 @@ SubtlextViewTagList(VALUE self)
       tags   = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
       array  = rb_ary_new2(size);
 
+      /* Build tag array */
       for(i = 0; i < size; i++)
         {
           if((int)*flags & (1L << (i + 1)))
@@ -1089,6 +1117,13 @@ SubtlextViewCurrent(VALUE self)
   return ret;
 } /* }}} */
 
+/* SubtlextViewSave {{{ */
+static VALUE
+SubtlextViewSave(VALUE self)
+{
+  return Qnil != SubtlextFind(SUB_TYPE_VIEW, self, True) ? Qtrue : Qfalse;
+} /* }}} */
+
 /* SubtlextViewToString {{{ */
 static VALUE
 SubtlextViewToString(VALUE self)
@@ -1096,6 +1131,22 @@ SubtlextViewToString(VALUE self)
   VALUE name = rb_iv_get(self, "@name");
 
   return RTEST(name) ? name : Qnil;
+} /* }}} */
+
+/* SubtlextViewOperatorPlus {{{ */
+static VALUE
+SubtlextViewOperatorPlus(VALUE self,
+  VALUE value)
+{
+  return SubtlextTag(self, value, "Tag", "SUBTLE_VIEW_TAG");
+} /* }}} */
+
+/* SubtlextViewOperatorMinus {{{ */
+static VALUE
+SubtlextViewOperatorMinus(VALUE self,
+  VALUE value)
+{
+  return SubtlextTag(self, value, "Tag", "SUBTLE_VIEW_UNTAG");
 } /* }}} */
 
  /** Init_subtlext {{{
@@ -1124,6 +1175,7 @@ Init_subtlext(void)
   rb_define_method(klass, "focus?",        SubtlextClientFocusHas, 0);
   rb_define_method(klass, "to_s",          SubtlextClientToString, 0);
   rb_define_method(klass, "+",             SubtlextClientOperatorPlus, 1);
+  rb_define_method(klass, "-",             SubtlextClientOperatorMinus, 1);
 
   /* Class: subtle */
   klass = rb_define_class("Subtle", rb_cObject);
@@ -1160,6 +1212,7 @@ Init_subtlext(void)
   rb_define_attr(klass,   "name", 1, 0);
   rb_define_method(klass, "initialize",    SubtlextTagInit, 1);
   rb_define_method(klass, "taggings",      SubtlextTagTaggings, 0);
+  rb_define_method(klass, "save",          SubtlextTagSave, 0);
   rb_define_method(klass, "to_s",          SubtlextTagToString, 0);
 
   /* Class: view */
@@ -1174,7 +1227,10 @@ Init_subtlext(void)
   rb_define_method(klass, "untag",         SubtlextViewTagDel, 1);
   rb_define_method(klass, "jump",          SubtlextViewJump, 0);
   rb_define_method(klass, "current?",      SubtlextViewCurrent, 0);
+  rb_define_method(klass, "save",          SubtlextViewSave, 0);
   rb_define_method(klass, "to_s",          SubtlextViewToString, 0);
+  rb_define_method(klass, "+",             SubtlextViewOperatorPlus, 1);
+  rb_define_method(klass, "-",             SubtlextViewOperatorMinus, 1);
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
