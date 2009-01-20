@@ -375,7 +375,7 @@ SubtlerTagKill(char *arg1,
   SubtlerAssert(arg1, "Usage: %sr -t -k PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  if((data.l[0] = subSharedTagFind(arg2)))
+  if((data.l[0] = subSharedTagFind(arg1)))
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_KILL", data, False);
   else subSharedLogWarn("Failed to kill tag\n");
 } /* }}} */
