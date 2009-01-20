@@ -341,6 +341,44 @@ SubtlextClientToString(VALUE self)
   return RTEST(name) ? name : Qnil;
 } /* }}} */
 
+static VALUE
+SubtlextClientOperatorPlus(VALUE self,
+  VALUE value)
+{
+  VALUE klass = Qnil;
+
+  klass = rb_const_get(rb_mKernel, rb_intern("Tag"));
+
+  /* Check object */
+  switch(rb_type(value))
+    {
+      case T_OBJECT:
+      case T_CLASS:
+        if(rb_obj_is_instance_of(value, klass)) ///< Check object instance
+          {
+            VALUE tid = Qnil, cid = Qnil;
+            
+            tid = rb_iv_get(value, "@id");
+            cid = rb_iv_get(self, "@id");
+
+            if(Qnil != tid && Qnil != cid)
+              {
+                SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+                data.l[0] = FIX2LONG(cid);
+                data.l[1] = FIX2LONG(tid);
+
+                subSharedMessage(DefaultRootWindow(display), "SUBTLE_CLIENT_TAG", data, True);
+
+                return Qtrue;
+              }
+          }
+    }
+
+  rb_raise(rb_eArgError, "Unknown value type");
+  return Qfalse;
+}
+
 /* SubtlextSubtleKill {{{ */
 static void
 SubtlextSubtleKill(void *data)
@@ -1085,6 +1123,7 @@ Init_subtlext(void)
   rb_define_method(klass, "focus",         SubtlextClientFocus, 0);
   rb_define_method(klass, "focus?",        SubtlextClientFocusHas, 0);
   rb_define_method(klass, "to_s",          SubtlextClientToString, 0);
+  rb_define_method(klass, "+",             SubtlextClientOperatorPlus, 1);
 
   /* Class: subtle */
   klass = rb_define_class("Subtle", rb_cObject);
