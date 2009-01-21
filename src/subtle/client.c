@@ -435,7 +435,7 @@ subClientDrag(SubClient *c,
             else if(SUB_DRAG_TILE == mode && win != c->win) /* Tile {{{ */
               {
                 if(!c2 ) c2 = CLIENT(subSharedFind(win, CLIENTID));
-                if(c2)
+                if(c2 && !(c2->flags & SUB_STATE_FLOAT))
                   {
                     XQueryPointer(subtle->disp, win, &unused, &unused,
                       &rx, &ry, &wx, &wy, &mask);
@@ -489,7 +489,7 @@ subClientDrag(SubClient *c,
 
   ClientMask(state, c2, &r); ///< Erase mask
 
-  if(c && c2 && win != c->win) ///< Skip same window
+  if(c && c2 && win != c->win) ///< Arrange {{{
     {
       if(state & (SUB_DRAG_LEFT|SUB_DRAG_RIGHT))
         {
@@ -505,23 +505,21 @@ subClientDrag(SubClient *c,
         }
           
       subViewConfigure(subtle->cv);
-    }
+    } /* }}} */
   else ///< Move/Resize
     {
       if(c->flags & SUB_STATE_FLOAT) 
         {
-          r.y -= (subtle->th + subtle->bw); ///< Border and bar height
-          r.x -= subtle->bw;
-          c->rect = r;
+          r.y     -= (subtle->th + subtle->bw); ///< Border and bar height
+          r.x     -= subtle->bw;
+          c->rect  = r;
 
           subClientConfigure(c);
         }
       else if(mode & (SUB_DRAG_RESIZE_LEFT|SUB_DRAG_RESIZE_RIGHT))
         {
           /* Get size ratios */
-          if(state & (SUB_DRAG_LEFT|SUB_DRAG_RIGHT))
-            c->size = r.width * 100 / WINW(c);
-          else c->size = r.height * 100 / WINH(c);
+          c->size = r.width * 100 / SCREENW;
           c->size = MINMAX(c->size, 10, 90); ///< Min 10%, Max 90%
 
           if(!(c->flags & SUB_STATE_RESIZE)) c->flags |= SUB_STATE_RESIZE;
