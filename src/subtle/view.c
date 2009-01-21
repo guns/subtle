@@ -102,6 +102,7 @@ subViewConfigure(SubView *v)
               if(!(c->flags & (SUB_STATE_FULL|SUB_STATE_FLOAT))) total++;
               c->flags &= ~SUB_STATE_TILED;
             }
+          else XUnmapWindow(subtle->disp, c->win);
         } /* }}} */
 
       /* Mark clients in a tile {{{ */
