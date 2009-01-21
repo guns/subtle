@@ -168,10 +168,12 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_SUBTLE_CLIENT_UNTAG: /* {{{ */
             if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0]))))
               {
-                c->tags &= ~(1L << (ev->data.l[1] + 1));
+                int tag = (1L << (ev->data.l[1] + 1));
+
+                c->tags &= ~tag;
                 subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS, (long *)&c->tags, 1);
+                if(subtle->cv->tags & tag) subViewConfigure(subtle->cv);
               }
-            if(subtle->cv->tags & c->tags) subViewConfigure(subtle->cv);
             break; /* }}} */
           case SUB_EWMH_SUBTLE_TAG_NEW: /* {{{ */
             t = subTagNew(ev->data.b, NULL); 
