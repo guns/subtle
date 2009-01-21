@@ -398,12 +398,11 @@ EventCrossing(XCrossingEvent *ev)
           /* Ensure that only the pointer window can get focus */
           XQueryPointer(subtle->disp, c->win, &root, &win, &rx, &ry, &wx, &wy, &mask);
           if(ev->subwindow == win) subClientFocus(c);
-
         }
      }
   else if((t = TRAY(subSharedFind(ev->window, TRAYID))))
     {
-printf("name=%s\n", t->name);
+      subSharedLogDebug("Tray: name=%s\n", t->name);
     }
 
   /* Remove any other event of the same type and window */
