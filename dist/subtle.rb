@@ -40,7 +40,7 @@ COLORS = {
 # A  = Alt key       S = Shift key
 # C  = Control key   W = Super (Windows key)
 # M  = Meta key
-
+#
 # Mouse buttons:
 # B1 = Button1       B2 = Button2
 # B3 = Button3       B4 = Button4

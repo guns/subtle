@@ -84,10 +84,9 @@ subViewConfigure(SubView *v)
 
   assert(v);
 
-  vid = subArrayIndex(subtle->views, (void *)v);
-
   if(0 < subtle->clients->ndata)
     {
+       vid         = subArrayIndex(subtle->views, (void *)v);
        rect.width  = SCREENW;
        rect.height = SCREENH - subtle->th;
 
