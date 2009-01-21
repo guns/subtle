@@ -853,7 +853,7 @@ SubtlextTagInit(VALUE self,
 static VALUE
 SubtlextTagSave(VALUE self)
 {
-  return Qnil != SubtlextFind(SUB_TYPE_TAG, self, True) ? Qtrue : Qfalse;
+  return SubtlextFind(SUB_TYPE_TAG, self, True);
 } /* }}} */
 
 /* SubtlextTagTagggings {{{ */
@@ -1121,7 +1121,7 @@ SubtlextViewCurrent(VALUE self)
 static VALUE
 SubtlextViewSave(VALUE self)
 {
-  return Qnil != SubtlextFind(SUB_TYPE_VIEW, self, True) ? Qtrue : Qfalse;
+  return SubtlextFind(SUB_TYPE_VIEW, self, True);
 } /* }}} */
 
 /* SubtlextViewToString {{{ */
