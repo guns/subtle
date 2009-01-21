@@ -459,8 +459,7 @@ EventGrab(XEvent *ev)
   XQueryPointer(subtle->disp, win, &dummy, &dummy, &rx, &ry, &wx, &wy, &mask); ///< Ask pointer
 
   /* Find grab */
-  g = subGrabFind(code, state);
-  if(g) 
+  if((g = subGrabFind(code, state)))
     {
       flag = g->flags & ~(SUB_TYPE_GRAB|SUB_GRAB_KEY|SUB_GRAB_MOUSE); ///< Clear mask
       switch(flag)
@@ -473,7 +472,8 @@ EventGrab(XEvent *ev)
                 flag = SUB_GRAB_WINDOW_FLOAT == flag ? SUB_STATE_FLOAT : 
                   (SUB_GRAB_WINDOW_FULL == flag ? SUB_STATE_FULL : SUB_STATE_STICK);
                 subClientToggle(c, flag);
-                if(subtle->cv->tags & c->tags) subViewConfigure(subtle->cv);
+                if(subtle->cv->tags & c->tags || c->flags & SUB_STATE_STICK) 
+                  subViewConfigure(subtle->cv);
               }
             break;            
           case SUB_GRAB_WINDOW_KILL:
