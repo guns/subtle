@@ -49,6 +49,7 @@
 #define TEXTW(s)  (strlen(s) * subtle->fx + 8)                    ///< Textwidth in pixel
 #define WINW(c)   (c->rect.width - 2 * subtle->bw)                ///< Get real width
 #define WINH(c)   (c->rect.height - 2 * subtle->bw)               ///< Get real height
+#define ZERO(n)   (0 < n ? n : 1)                                 ///< Prevent zero
 
 #define ROOT      DefaultRootWindow(subtle->disp)                 ///< Root window
 #define SCREEN    DefaultScreen(subtle->disp)                     ///< Default screen
@@ -182,7 +183,7 @@ typedef struct subclient_t /* {{{ */
   char                *name;                                      ///< Client name
 
   TAGS                tags;                                       ///< Client tags
-  int                 size;                                       ///< Client size
+  int                 r, c, size;                                 ///< Client row, col, size
   Colormap            cmap;                                       ///< Client colormap
   Window              win;                                        ///< Client window
   XRectangle          rect;                                       ///< Client rect
@@ -329,6 +330,8 @@ typedef struct subsubtle_t /* {{{ */
   struct subarray_t  *trays;                                      ///< Subtle trays
   struct subarray_t  *views;                                      ///< Subtle views
 
+  int *perrow, *percol;                                           ///< Subtle perrow, percol
+
 #ifdef DEBUG
   int                debug;                                       ///< Subtle debug
 #endif /* DEBUG */
@@ -380,7 +383,7 @@ typedef struct subview_t /* {{{ */
   char              *name;                                        ///< View name
 
   TAGS              tags;                                         ///< View tags
-  int               width;                                        ///< View tags, button width, layout
+  int               width;                                        ///< View width
   Window            frame, button;                                ///< View frame, button
   struct subarray_t *layout;                                      ///< View layout
 } SubView; /* }}} */
@@ -476,7 +479,7 @@ void subSubletUpdate(void);                                       ///< Update su
 void subSubletRender(void);                                       ///< Render sublet
 int subSubletCompare(const void *a, const void *b);               ///< Compare two sublets
 void subSubletPublish(void);                                      ///< Publish sublets
-void subSubletKill(SubSublet *s);                                 ///< Kill sublet
+void subSubletKill(SubSublet *s, int unlink);                     ///< Kill sublet
 /* }}} */
 
 /* tag.c {{{ */

@@ -585,7 +585,7 @@ subRubyRun(SubSublet *s)
 
       subSharedLogWarn("Failed running sublet\n");
       subArrayPop(subtle->sublets, (void *)s);
-      subSubletKill(s);
+      subSubletKill(s, True);
     }
 } /* }}} */
 

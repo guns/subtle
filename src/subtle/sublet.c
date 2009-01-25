@@ -132,39 +132,44 @@ subSubletPublish(void)
 
  /** subSubletKill {{{
   * @brief Kill sublet
-  * @param[in]  s  A #SubSublet
+  * @param[in]  s       A #SubSublet
+  * @param[in]  unlink  Unlink sublets
   **/
 
 void
-subSubletKill(SubSublet *s)
+subSubletKill(SubSublet *s,
+  int unlink)
 {
   assert(s);
 
   printf("Killing sublet (%s)\n", s->name);
 
   /* Update linked list */
-  if(subtle->sublet == s) subtle->sublet = s->next;
-  else
+  if(unlink)
     {
-      int i;
-      SubSublet *prev = NULL;
+      if(subtle->sublet == s) subtle->sublet = s->next;
+      else
+        {
+          int i;
+          SubSublet *prev = NULL;
 
-      for(i = 0; i < subtle->sublets->ndata; i++)
-        if((prev = SUBLET(subtle->sublets->data[i])) && prev->next == s)
-          {
-            prev->next = s->next;
-            break;
-          }
+          for(i = 0; i < subtle->sublets->ndata; i++)
+            if((prev = SUBLET(subtle->sublets->data[i])) && prev->next == s)
+              {
+                prev->next = s->next;
+                break;
+              }
+        }
     }
 
 #ifdef HAVE_SYS_INOTIFY_H
   /* Tidy up inotify */
   inotify_rm_watch(subtle->notify, s->interval);
 
-  if(s->path)   free(s->path);
+  if(s->path) free(s->path);
 #endif /* HAVE_SYS_INOTIFY_H */ 
 
-  if(s->name)   free(s->name);
+  if(s->name) free(s->name);
   if(s->string) free(s->string);
   free(s);
 
