@@ -259,7 +259,7 @@ EventMessage(XClientMessageEvent *ev)
             if((s = SUBLET(subArrayGet(subtle->sublets, (int)ev->data.l[0]))))
               {
                 subArrayPop(subtle->sublets, (void *)s);
-                subSubletKill(s);
+                subSubletKill(s, True);
                 subSubletUpdate();
                 subSubletPublish();
               }
@@ -493,7 +493,7 @@ EventGrab(XEvent *ev)
                   {
                     flag = wx < c->rect.width / 2 ? SUB_DRAG_RESIZE_LEFT : SUB_DRAG_RESIZE_RIGHT;
                   }
-                else flag = SUB_DRAG_TILE;
+                else flag = SUB_DRAG_SWAP;
 
                 subClientDrag(c, flag);
               }

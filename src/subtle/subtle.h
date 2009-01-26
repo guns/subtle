@@ -112,44 +112,42 @@
 #define SUB_TYPE_VIEW          (1L << 7)                          ///< View
 
 /* Tile modes */
-#define SUB_TILE_VERT          (1L << 8)                          ///< Tile vert
-#define SUB_TILE_HORZ          (1L << 9)                          ///< Tile horz
-#define SUB_TILE_SWAP          (1L << 10)                          ///< Tile swap
+#define SUB_TILE_TOP           (1L << 8)                          ///< Tile top
+#define SUB_TILE_BOTTOM        (1L << 9)                          ///< Tile bottom
+#define SUB_TILE_LEFT          (1L << 10)                         ///< Tile vert
+#define SUB_TILE_RIGHT         (1L << 11)                         ///< Tile horz
+#define SUB_TILE_SWAP          (1L << 12)                         ///< Tile swap
 
 /* Data types */
-#define SUB_DATA_STRING        (1L << 11)                         ///< String data
-#define SUB_DATA_FIXNUM        (1L << 12)                         ///< Fixnum data
-#define SUB_DATA_INOTIFY       (1L << 13)                         ///< Inotify data
-#define SUB_DATA_NIL           (1L << 14)                         ///< Nil data
+#define SUB_DATA_STRING        (1L << 13)                         ///< String data
+#define SUB_DATA_FIXNUM        (1L << 14)                         ///< Fixnum data
+#define SUB_DATA_INOTIFY       (1L << 15)                         ///< Inotify data
+#define SUB_DATA_NIL           (1L << 16)                         ///< Nil data
 
 /* Client states */
-#define SUB_STATE_FULL         (1L << 15)                         ///< Fullscreen window
-#define SUB_STATE_FLOAT        (1L << 16)                         ///< Floating window
-#define SUB_STATE_STICK        (1L << 17)                         ///< Stick window
-#define SUB_STATE_RESIZE       (1L << 18)                         ///< Resized window
-#define SUB_STATE_DEAD         (1L << 19)                         ///< Dead window
-#define SUB_STATE_TILED        (1L << 20)                         ///< Tiled client
+#define SUB_STATE_FULL         (1L << 17)                         ///< Fullscreen window
+#define SUB_STATE_FLOAT        (1L << 18)                         ///< Floating window
+#define SUB_STATE_STICK        (1L << 19)                         ///< Stick window
+#define SUB_STATE_RESIZE       (1L << 20)                         ///< Resized window
+#define SUB_STATE_DEAD         (1L << 21)                         ///< Dead window
+#define SUB_STATE_TILED        (1L << 22)                         ///< Tiled client
 
 /* Client preferences */
-#define SUB_PREF_INPUT         (1L << 21)                         ///< Active/passive focus-model
-#define SUB_PREF_FOCUS         (1L << 22)                         ///< Send focus message
-#define SUB_PREF_CLOSE         (1L << 23)                         ///< Send close message
-#define SUB_PREF_HINTS         (1L << 24)                         ///< Size hints available
+#define SUB_PREF_INPUT         (1L << 23)                         ///< Active/passive focus-model
+#define SUB_PREF_FOCUS         (1L << 24)                         ///< Send focus message
+#define SUB_PREF_CLOSE         (1L << 25)                         ///< Send close message
+#define SUB_PREF_HINTS         (1L << 26)                         ///< Size hints available
 
 /* Drag states */
 #define SUB_DRAG_START         (1L << 1)                          ///< Drag start
-#define SUB_DRAG_ABOVE         (1L << 2)                          ///< Drag above
-#define SUB_DRAG_BELOW         (1L << 3)                          ///< Drag below
-#define SUB_DRAG_BEFORE        (1L << 4)                          ///< Drag before
-#define SUB_DRAG_AFTER         (1L << 5)                          ///< Drag after
-#define SUB_DRAG_LEFT          (1L << 6)                          ///< Drag left
-#define SUB_DRAG_RIGHT         (1L << 7)                          ///< Drag right
-#define SUB_DRAG_TOP           (1L << 8)                          ///< Drag top
-#define SUB_DRAG_BOTTOM        (1L << 9)                          ///< Drag bottom
-#define SUB_DRAG_MOVE          (1L << 10)                         ///< Drag move
-#define SUB_DRAG_TILE          (1L << 11)                         ///< Drag swap
-#define SUB_DRAG_RESIZE_LEFT   (1L << 12)                         ///< Drag resize left
-#define SUB_DRAG_RESIZE_RIGHT  (1L << 13)                         ///< Drag resize right
+#define SUB_DRAG_TOP           (1L << 2)                          ///< Drag above
+#define SUB_DRAG_BOTTOM        (1L << 3)                          ///< Drag below
+#define SUB_DRAG_LEFT          (1L << 4)                          ///< Drag left
+#define SUB_DRAG_RIGHT         (1L << 5)                          ///< Drag right
+#define SUB_DRAG_MOVE          (1L << 6)                          ///< Drag move
+#define SUB_DRAG_SWAP          (1L << 7)                          ///< Drag swap
+#define SUB_DRAG_RESIZE_LEFT   (1L << 8)                          ///< Drag resize left
+#define SUB_DRAG_RESIZE_RIGHT  (1L << 9)                          ///< Drag resize right
 
 /* Grabs */
 #define SUB_GRAB_KEY           (1L << 10)                         ///< Key grab
