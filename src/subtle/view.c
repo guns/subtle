@@ -77,144 +77,101 @@ subViewNew(char *name,
 void
 subViewConfigure(SubView *v)
 {
-  int i;
   long vid = 0;
-  int cw = 0, comp = 0, total = 0, tiled = 0;
-  XRectangle rect = { 0 };
+  int i, j, swap, total = 0, width = 0, height = 0;
 
   assert(v);
 
   if(0 < subtle->clients->ndata)
     {
-       vid         = subArrayIndex(subtle->views, (void *)v);
-       rect.width  = SCREENW;
-       rect.height = SCREENH - subtle->th;
+      vid = subArrayIndex(subtle->views, (void *)v);
 
-      /* Find clients and count special states {{{ */
-      for(i = 0; i < subtle->clients->ndata; i++)
+      /* Clients {{{ */
+      for(i = 0, j = 0; i < subtle->clients->ndata; i++)
         {
           SubClient *c = CLIENT(subtle->clients->data[i]);
 
           /* Find matching clients */
           if(v->tags & c->tags || c->flags & SUB_STATE_STICK)
             {
-              if(!(c->flags & (SUB_STATE_FULL|SUB_STATE_FLOAT))) total++;
-              c->flags &= ~SUB_STATE_TILED;
-            }
-          else XUnmapWindow(subtle->disp, c->win);
-        } /* }}} */
+              if(!(c->flags & SUB_STATE_FULL)) ///< Don't overwrite root
+                XReparentWindow(subtle->disp, c->win, v->frame, 0, 0);
 
-      /* Mark clients in a tile {{{ */
+              if(!(c->flags & (SUB_STATE_FULL|SUB_STATE_FLOAT))) 
+                {
+                  c->r = 0;
+                  c->c = j;
+                  total++;
+
+                  XMapWindow(subtle->disp, c->win);
+                  XLowerWindow(subtle->disp, c->win);
+
+                  /* EWMH: Desktop */
+                  subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
+
+                  subtle->percol[j++] = 1;
+                }
+              else ///< Special flags
+                {
+                  XMapRaised(subtle->disp, c->win);
+                  subClientConfigure(c);
+                }
+            }
+          else XUnmapWindow(subtle->disp, c->win); ///< Unmap other windows
+        }
+      subtle->perrow[0] = j; 
+      /* }}} */
+
+      /* Layout {{{ */
       for(i = 0; i < v->layout->ndata; i++)
         {
           SubLayout *l = LAYOUT(v->layout->data[i]);
 
-          if(!(l->flags & SUB_TILE_SWAP)) 
+          switch(l->flags & ~SUB_TYPE_LAYOUT)
             {
-              l->c2->flags |= SUB_STATE_TILED;
-              tiled++;
+              case SUB_TILE_BOTTOM:
+                subtle->perrow[l->c2->r]--;
+                subtle->percol[l->c2->c]--;
+
+                l->c2->r = l->c1->r + 1;
+                l->c2->c = l->c1->c;
+
+                subtle->perrow[l->c2->r]++;
+                subtle->percol[l->c2->c]++;
+                break;
+              case SUB_TILE_SWAP:
+                swap     = l->c1->r;
+                l->c1->r = l->c2->r;
+                l->c2->r = swap;
+
+                swap     = l->c1->c;
+                l->c1->c = l->c2->c;
+                l->c2->c = swap;
+                break;
             }
         } /* }}} */
 
-      subSharedLogDebug("total=%d, layouts=%d, tiled=%d\n", total, v->layout->ndata, tiled);
-      total -= tiled;
-
-      /* Calculations */
-      total   = 0 < total ? total : 1; ///< Prevent division by zero
-      cw      = rect.width / total;
-      comp    = abs(rect.width - total * cw); ///< Compensation for int rounding
-
-      /* Set client stuff {{{ */
+      /* Calculations {{{ */
       for(i = 0; i < subtle->clients->ndata; i++)
         {
           SubClient *c = CLIENT(subtle->clients->data[i]);
 
           if(v->tags & c->tags || c->flags & SUB_STATE_STICK)
-            {
-              if(!(c->flags & SUB_STATE_FULL)) ///< Don't overwrite root
-                XReparentWindow(subtle->disp, c->win, v->frame, 0, 0);
-              XMapWindow(subtle->disp, c->win);
-
-              /* EWMH: Desktop */
-              subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
-
-              /* Special flags */
-              if(c->flags & (SUB_STATE_FLOAT|SUB_STATE_FULL))
+            {      
+              if(!(c->flags & (SUB_STATE_FULL|SUB_STATE_FLOAT))) 
                 {
-                  XRaiseWindow(subtle->disp, c->win);
+                  width          = SCREENW / ZERO(subtle->perrow[c->r]);
+                  height         = (SCREENH - subtle->th) / ZERO(subtle->percol[c->c]);
+                  c->rect.x      = c->c * width;
+                  c->rect.y      = c->r * height;
+                  c->rect.width  = width;
+                  c->rect.height = height;
+
                   subClientConfigure(c);
-                  continue;
                 }
-              else XLowerWindow(subtle->disp, c->win);
-
-              c->rect       = rect;
-              c->rect.width = i == total - 1 ? cw + comp : cw; ///< Compensation
-
-              if(!(c->flags & SUB_STATE_TILED)) 
-                {
-                  rect.x += c->rect.width;
-                  subClientConfigure(c);
-                 }
             }
         } /* }}} */
-
-      /* Make layout {{{ */
-      for(i = 0; i < v->layout->ndata; i++)
-        {
-          SubLayout *l = LAYOUT(v->layout->data[i]);
-
-          /* Check if both clients are on this view */
-          if(v->tags & l->c1->tags && v->tags & l->c2->tags)
-            {
-              if(l->flags & SUB_TILE_VERT) 
-                {
-                  l->c1->rect.height = l->c1->rect.height / 2;
-                  l->c2->rect        = l->c1->rect;
-                  l->c2->rect.y      = l->c1->rect.y + l->c1->rect.height;
-                }
-              else if(l->flags & SUB_TILE_HORZ) 
-                {
-                  l->c1->rect.width = l->c1->rect.width / 2;
-                  l->c2->rect       = l->c1->rect;
-                  l->c2->rect.x     = l->c1->rect.width;
-
-                  if(l->c1->flags & SUB_STATE_RESIZE)
-                    {
-                      int size = l->c1->rect.width * l->c1->size / 100;
-
-                      l->c1->rect.width = size;
-                      l->c2->rect.x     = l->c1->rect.x + size;
-                      l->c2->rect.width = 2 * l->c2->rect.width - size;
-
-                      if(l->c2->flags & SUB_STATE_RESIZE)
-                        {
-                          l->c2->flags &= ~SUB_STATE_RESIZE;
-                          l->c2->size  = 0;
-                        }
-                    }
-                  else if(l->c2->flags & SUB_STATE_RESIZE)
-                    {
-                      int size = l->c2->rect.width * l->c2->size / 100;
-
-                      l->c2->rect.width = size;
-                      l->c1->rect.width = 2 * l->c1->rect.width - size;
-                      l->c2->rect.x     = l->c1->rect.width;
-                    }
-                }
-              else if(l->flags & SUB_TILE_SWAP) 
-                {
-                  XRectangle r = l->c1->rect;
-
-                  l->c1->rect = l->c2->rect;
-                  l->c2->rect = r;
-                }
-
-              subClientConfigure(l->c1);
-              subClientConfigure(l->c2);
-            }
-          else subArrayPop(v->layout, (void *)l); ///< Sanitize
-        }
-    } /* }}} */
+    }
 } /* }}} */
 
  /** subViewArrange {{{
@@ -230,22 +187,9 @@ subViewArrange(SubView *v,
   SubClient *c2,
   int mode)
 {
-  int i;
   SubLayout *l = NULL;
 
   assert(v && c1 && c2);
-
-  /* Remove old layouts */
-  for(i = 0; i < v->layout->ndata; i++)
-    {
-      l = LAYOUT(v->layout->data[i]);
-
-      if(!(l->flags & SUB_TILE_SWAP))
-        {
-          if(c1 == l->c1 || c2 == l->c1 || c1 == l->c2 || c2 == l->c2)
-            subArrayPop(v->layout, (void *)l);
-        }
-    }
 
   l = subLayoutNew(c1, c2, mode);
   subArrayPush(v->layout, (void *)l);
