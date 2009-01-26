@@ -38,39 +38,23 @@ ClientMask(int state,
         return;
       case SUB_DRAG_TOP:
         rect.x = 5;                          rect.y = 5;
-        rect.width -= 10;                    rect.height = rect.height * 0.5 - 10;
+        rect.width -= 10;                    rect.height = rect.height * 0.35 - 10;
         break;
       case SUB_DRAG_BOTTOM:
-        rect.x = 5;                          rect.y = rect.height * 0.5; 
-        rect.width -= 10;                    rect.height = rect.height * 0.5 - 5; 
+        rect.x = 5;                          rect.y = rect.height * 0.65; 
+        rect.width -= 10;                    rect.height = rect.height * 0.35 - 5; 
         break;
       case SUB_DRAG_LEFT:
         rect.x = 5;                          rect.y = 5; 
-        rect.width = rect.width * 0.5 - 5;   rect.height -= 10; 
+        rect.width = rect.width * 0.35 - 5;  rect.height -= 10; 
         break;
       case SUB_DRAG_RIGHT:
-        rect.x = rect.width * 0.5;           rect.y = 5; 
-        rect.width = rect.width * 0.5 - 5;   rect.height -= 10; 
+        rect.x = rect.width * 0.65;          rect.y = 5; 
+        rect.width = rect.width * 0.35 - 5;  rect.height -= 10; 
         break;
-      case SUB_DRAG_TILE:
+      case SUB_DRAG_SWAP:
         rect.x = rect.width * 0.35;          rect.y = rect.height * 0.35; 
         rect.width = rect.width * 0.3;       rect.height *= 0.3; 
-        break;
-      case SUB_DRAG_BEFORE:
-        rect.x = 5;                          rect.y = 5;
-        rect.width = rect.width * 0.1 - 10;  rect.height -= 10; 
-        break;
-      case SUB_DRAG_AFTER:
-        rect.x = rect.width * 0.9;           rect.y = 5; 
-        rect.width = rect.width * 0.1 - 10;  rect.height -= 10; 
-        break;
-      case SUB_DRAG_ABOVE:
-        rect.x = 5;                          rect.y = 5; 
-        rect.width -= 10;                    rect.height = rect.height * 0.1 - 5; 
-        break;
-      case SUB_DRAG_BELOW:
-        rect.x = 5;                          rect.y = rect.height * 0.9; 
-        rect.width -= 10;                    rect.height = rect.height * 0.1 - 5; 
         break;
       default:
         return;
@@ -432,7 +416,7 @@ subClientDrag(SubClient *c,
 
                 ClientMask(SUB_DRAG_START, c, &r);
               } /* }}} */
-            else if(SUB_DRAG_TILE == mode && win != c->win) /* Tile {{{ */
+            else if(SUB_DRAG_SWAP == mode && win != c->win) /* Tile {{{ */
               {
                 if(!c2 ) c2 = CLIENT(subSharedFind(win, CLIENTID));
                 if(c2 && !(c2->flags & SUB_STATE_FLOAT))
@@ -445,33 +429,20 @@ subClientDrag(SubClient *c,
                     /* Change drag state */
                     if(wx > c2->rect.width * 0.35 && wx < c2->rect.width * 0.65)
                       {
-                        if(state != SUB_DRAG_TOP && wy > c2->rect.height * 0.1 &&
-                          wy < c2->rect.height * 0.35)
-                          state = SUB_DRAG_TOP;
-                        else if(state != SUB_DRAG_BOTTOM && wy > c2->rect.height * 0.65 &&
-                          wy < c2->rect.height * 0.9)
-                          state = SUB_DRAG_BOTTOM;
-                        else if(state != SUB_DRAG_TILE && wy > c2->rect.height * 0.35 &&
+                        if(SUB_DRAG_SWAP != state && wy > c2->rect.height * 0.35 &&
                           wy < c2->rect.height * 0.65)
-                          state = SUB_DRAG_TILE;
+                          state = SUB_DRAG_SWAP;
                       }
-                    if(state != SUB_DRAG_ABOVE && wy < c2->rect.height * 0.1)
-                      state = SUB_DRAG_ABOVE;
-                    else if(state != SUB_DRAG_BELOW && wy > c2->rect.height * 0.9)
-                      state = SUB_DRAG_BELOW;
-                    if(wy > c2->rect.height * 0.1 && wy < c2->rect.height * 0.9)
-                      {
-                        if(state != SUB_DRAG_LEFT && wx > c2->rect.width * 0.1 &&
-                          wx < c2->rect.width * 0.35)
-                          state = SUB_DRAG_LEFT;
-                        else if(state != SUB_DRAG_RIGHT && wx > c2->rect.width * 0.65 &&
-                          wx < c2->rect.width * 0.9)
-                          state = SUB_DRAG_RIGHT;
-                        else if(state != SUB_DRAG_BEFORE && wx < c2->rect.width * 0.1)
-                          state = SUB_DRAG_BEFORE;
-                        else if(state != SUB_DRAG_AFTER && wx > c2->rect.width * 0.9)
-                          state = SUB_DRAG_AFTER;
-                      }
+                      
+                    if(SUB_DRAG_TOP != state && wy < c2->rect.height * 0.35)
+                      state = SUB_DRAG_TOP;
+                    else if(SUB_DRAG_BOTTOM != state && wy > c2->rect.height * 0.65)
+                      state = SUB_DRAG_BOTTOM;
+
+                    if(SUB_DRAG_LEFT != state && wx < c2->rect.width * 0.35)
+                      state = SUB_DRAG_LEFT;
+                    else if(SUB_DRAG_RIGHT != state && wx > c2->rect.width * 0.65)
+                      state = SUB_DRAG_RIGHT;
 
                     if(lstate != state || lc != c2) 
                       {
@@ -491,19 +462,16 @@ subClientDrag(SubClient *c,
 
   if(c && c2 && win != c->win) ///< Arrange {{{
     {
-      if(state & (SUB_DRAG_LEFT|SUB_DRAG_RIGHT))
+      switch(state) ///< State translation
         {
-          subViewArrange(subtle->cv, c, c2, SUB_TILE_HORZ);
-        }
-      else if(state & (SUB_DRAG_TOP|SUB_DRAG_BOTTOM))
-        {
-          subViewArrange(subtle->cv, c, c2, SUB_TILE_VERT);
-        }
-      else if(SUB_DRAG_TILE == state)
-        {
-          subViewArrange(subtle->cv, c, c2, SUB_TILE_SWAP);
+          case SUB_DRAG_TOP:    state = SUB_TILE_TOP;    break;
+          case SUB_DRAG_BOTTOM: state = SUB_TILE_BOTTOM; break;
+          case SUB_DRAG_LEFT:   state = SUB_TILE_LEFT;   break;
+          case SUB_DRAG_RIGHT:  state = SUB_TILE_RIGHT;  break;
+          case SUB_DRAG_SWAP:   state = SUB_TILE_SWAP;   break;
         }
           
+      subViewArrange(subtle->cv, c, c2, state);
       subViewConfigure(subtle->cv);
     } /* }}} */
   else ///< Move/Resize
@@ -664,6 +632,12 @@ subClientPublish(void)
       subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST, wins, subtle->clients->ndata);
       subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST_STACKING, wins, 
         subtle->clients->ndata);
+
+      /* Perrow / percol */
+      subtle->perrow = (int *)subSharedMemoryRealloc(subtle->perrow, 
+        subtle->clients->ndata * sizeof(int));
+      subtle->percol = (int *)subSharedMemoryRealloc(subtle->percol, 
+        subtle->clients->ndata * sizeof(int));
 
       subSharedLogDebug("publish=client, clients=%d\n", subtle->clients->ndata);
 
