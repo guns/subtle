@@ -34,8 +34,8 @@ subLayoutNew(SubClient *c1,
   l->c2    = c2;
   l->flags = SUB_TYPE_LAYOUT|mode;
 
-  subSharedLogDebug("new=layout, c1=%lx, c2=%lx, mode=%s\n", c1->win, c2->win,
-    mode == SUB_TILE_HORZ ? "H" : (mode == SUB_TILE_VERT ? "V" : "S"));
+  subSharedLogDebug("new=layout, c1=%lx, c2=%lx, mode=%d\n", 
+    c1->win, c2->win, mode);
 
   return l;
 } /* }}} */
