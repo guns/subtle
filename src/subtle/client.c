@@ -160,7 +160,8 @@ subClientNew(Window win)
       }
 
   /* Special tags */
-  if(!c->tags) c->tags |= SUB_TAG_DEFAULT; ///< Ensure that there's at least on tag
+  if(!(c->tags & ~(SUB_TAG_FLOAT|SUB_TAG_FULL|SUB_TAG_STICK)))
+    c->tags |= SUB_TAG_DEFAULT; ///< Ensure that there's at least on tag
   else
     {
       XGetTransientForHint(subtle->disp, win, &propwin); ///< Check for dialogs
