@@ -74,17 +74,42 @@ EventMapRequest(XMapRequestEvent *ev)
   if(!c) 
     {
       /* Create new client */
-      c = subClientNew(ev->window);
-      subArrayPush(subtle->clients, (void *)c);
-      subClientPublish();
-
-      /* Configure/render current view if tags match or client is urgent */
-      if(subtle->cv && (subtle->cv->tags & c->tags || c->flags & SUB_STATE_STICK))
+      if((c = subClientNew(ev->window)) && c->flags & SUB_STATE_ALIVE)
         {
-          subViewConfigure(subtle->cv); 
-          subViewRender();
+          subArrayPush(subtle->clients, (void *)c);
+          subClientPublish();
+
+          /* Configure/render current view if tags match or client is urgent */
+          if(subtle->cv && (subtle->cv->tags & c->tags || c->flags & SUB_STATE_STICK))
+            {
+              subViewConfigure(subtle->cv); 
+              subViewRender();
+            }
         }
+      else subClientKill(c);
     }
+} /* }}} */
+
+/* EventMap {{{ */
+static void
+EventMap(XMapEvent *ev)
+{
+  SubClient *c = NULL;
+
+  if(ev->window != ev->event && ev->send_event != True) return;
+  if((c = CLIENT(subSharedFind(ev->window, CLIENTID))))
+    subEwmhSetWMState(c->win, NormalState);
+} /* }}} */
+
+/* EventUnmap {{{ */
+static void
+EventUnmap(XUnmapEvent *ev)
+{
+  SubClient *c = NULL;
+
+  if(ev->window != ev->event && ev->send_event != True) return;
+  if((c = CLIENT(subSharedFind(ev->window, CLIENTID))))
+    subEwmhSetWMState(c->win, WithdrawnState);
 } /* }}} */
 
 /* EventDestroy {{{ */
@@ -115,14 +140,6 @@ static void
 EventMessage(XClientMessageEvent *ev)
 {
   SubClient *c = NULL;
-
-#ifdef DEBUG
-  char *name = XGetAtomName(subtle->disp, ev->message_type);
-
-  printf("ClientMessage: name=%s, type=%ld, format=%d, win=%#lx\n", 
-    name ? name : "n/a", ev->message_type, ev->format, ev->window);
-  if(name) XFree(name);
-#endif /* DEBUG */
 
   if(32 != ev->format) return; ///< Forget about it
 
@@ -273,7 +290,7 @@ EventMessage(XClientMessageEvent *ev)
       int id = subEwmhFind(ev->message_type);
       SubTray *t = NULL;
 
-      printf("[0]=%#lx, [1]=%#lx, [2]=%#lx, [3]=%#lx, [4]=%#lx\n", 
+      subSharedLogDebug("[0]=%#lx, [1]=%#lx, [2]=%#lx, [3]=%#lx, [4]=%#lx\n", 
         ev->data.l[0], ev->data.l[1], ev->data.l[2], ev->data.l[3], ev->data.l[4]);
 
       switch(id)
@@ -327,6 +344,16 @@ EventMessage(XClientMessageEvent *ev)
             break; /* }}} */
         }
     } /* }}} */
+
+#ifdef DEBUG
+  {
+    char *name = XGetAtomName(subtle->disp, ev->message_type);
+
+    subSharedLogDebug("ClientMessage: name=%s, type=%ld, format=%d, win=%#lx\n", 
+      name ? name : "n/a", ev->message_type, ev->format, ev->window);
+    if(name) XFree(name);
+  }
+#endif /* DEBUG */    
 } /* }}} */
 
 /* EventColormap {{{ */
@@ -345,37 +372,43 @@ EventColormap(XColormapEvent *ev)
 static void
 EventProperty(XPropertyEvent *ev)
 {
-#ifdef DEBUG
-  char *name = XGetAtomName(subtle->disp, ev->atom);
+  SubClient *c = NULL;
+  SubTray *t = NULL;
+  int id = subEwmhFind(ev->atom);
 
-  subSharedLogDebug("Property: name=%s, type=%ld, win=%#lx\n", 
-    name ? name : "n/a", ev->atom, ev->window);
-  if(name) XFree(name);
-#endif /* DEBUG */
+  if(XA_WM_NAME == ev->atom) id = SUB_EWMH_WM_NAME;
 
   /* Supported properties */
-  if(XA_WM_NAME == ev->atom || subEwmhGet(SUB_EWMH_WM_NAME) == ev->atom) ///< Client
+  switch(id)
     {
-      SubClient *c = CLIENT(subSharedFind(ev->window, CLIENTID));
-      if(c) subClientFetchName(c);
-    }
-  else if(subEwmhGet(SUB_EWMH_XEMBED_INFO) == ev->atom) ///< Tray
-    {
-      SubTray *t = TRAY(subSharedFind(ev->window, TRAYID));
-      if(t)
+      case SUB_EWMH_WM_NAME: ///< Client
+        if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) 
+          subClientFetchName(c);
+        break;
+      case SUB_EWMH_XEMBED_INFO: ///< Tray
+        if((t = TRAY(subSharedFind(ev->window, TRAYID))))
+          {
+            subTraySetState(t);
+            subTrayUpdate();
+          }
+        break;
+      case SUB_EWMH_WM_NORMAL_HINTS: ///< Tray
+        if((t = TRAY(subSharedFind(ev->window, TRAYID))))
+          {
+            subTrayConfigure(t);
+            subTrayUpdate();
+          }
+        break;
+#ifdef DEBUG
+      default:
         {
-          subTraySetState(t);
-          subTrayUpdate();
+          char *name = XGetAtomName(subtle->disp, ev->atom);
+
+          subSharedLogDebug("Property: name=%s, type=%ld, win=%#lx\n", 
+            name ? name : "n/a", ev->atom, ev->window);
+          if(name) XFree(name);
         }
-    }
-  else if(subEwmhGet(SUB_EWMH_WM_NORMAL_HINTS) == ev->atom) ///< Tray
-    {
-      SubTray *t = TRAY(subSharedFind(ev->window, TRAYID));
-      if(t)
-        {
-          subTrayConfigure(t);
-          subTrayUpdate();
-        }
+#endif /* DEBUG */
     }    
 } /* }}} */
 
@@ -626,6 +659,8 @@ subEventLoop(void)
                     {
                       case ConfigureRequest:  EventConfigure(&ev.xconfigurerequest);     break;
                       case MapRequest:        EventMapRequest(&ev.xmaprequest);          break;
+                      case MapNotify:         EventMap(&ev.xmap);                        break;
+                      case UnmapNotify:       EventUnmap(&ev.xunmap);                    break;
                       case DestroyNotify:     EventDestroy(&ev.xdestroywindow);          break;
                       case ClientMessage:     EventMessage(&ev.xclient);                 break;
                       case ColormapNotify:    EventColormap(&ev.xcolormap);              break;
