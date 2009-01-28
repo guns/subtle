@@ -89,7 +89,7 @@ subClientNew(Window win)
   int i, n = 0;
   long vid = 1337;
   long supplied = 0;
-  Window propwin = 0;
+  Window trans = 0;
   XWMHints *hints = NULL;
   XWindowAttributes attrs;
   Atom *protos = NULL;
@@ -109,8 +109,8 @@ subClientNew(Window win)
 
   /* Update client */
   XAddToSaveSet(subtle->disp, c->win);
-  XSelectInput(subtle->disp, c->win, SubstructureRedirectMask|SubstructureNotifyMask|
-    EnterWindowMask|FocusChangeMask|KeyPressMask|ButtonPressMask|PropertyChangeMask);
+  XSelectInput(subtle->disp, c->win, StructureNotifyMask|EnterWindowMask|
+    FocusChangeMask|KeyPressMask|ButtonPressMask|PropertyChangeMask);
 
   XSetWindowBorderWidth(subtle->disp, c->win, subtle->bw);
   XSaveContext(subtle->disp, c->win, CLIENTID, (void *)c);
@@ -121,15 +121,14 @@ subClientNew(Window win)
   subClientFetchName(c);
 
   /* Size hints */
-  c->hints = XAllocSizeHints();
-  if(!c->hints) subSharedLogError("Can't alloc memory. Exhausted?\n");
+  if(!(c->hints = XAllocSizeHints()))
+    subSharedLogError("Can't alloc memory. Exhausted?\n");
   XGetWMNormalHints(subtle->disp, c->win, c->hints, &supplied);
   if(0 < supplied) c->flags |= SUB_PREF_HINTS;
   else XFree(c->hints);
 
   /* Window manager hints */
-  hints = XGetWMHints(subtle->disp, c->win);
-  if(hints)
+  if((hints = XGetWMHints(subtle->disp, c->win)))
     {
       subEwmhSetWMState(c->win, NormalState);
       if(hints->input) c->flags |= SUB_PREF_INPUT;
@@ -142,10 +141,22 @@ subClientNew(Window win)
     {
       for(i = 0; i < n; i++)
         {
-          if(protos[i] == subEwmhGet(SUB_EWMH_WM_TAKE_FOCUS))
-            c->flags |= SUB_PREF_FOCUS;
-          else if(protos[i] == subEwmhGet(SUB_EWMH_WM_DELETE_WINDOW))
-            c->flags |= SUB_PREF_CLOSE;
+          int id = subEwmhFind(protos[i]);
+
+          switch(id)
+            {
+              case SUB_EWMH_WM_TAKE_FOCUS:    c->flags |= SUB_PREF_FOCUS; break;
+              case SUB_EWMH_WM_DELETE_WINDOW: c->flags |= SUB_PREF_CLOSE; break;
+#ifdef DEBUG              
+              default: 
+                {
+                  char *name = XGetAtomName(subtle->disp, protos[i]);
+
+                  subSharedLogDebug("Protocols: name=%s, type=%ld\n", name, protos[i]);
+                  if(name) XFree(name);
+                }
+#endif /* DEBG */     
+            }
         }
       XFree(protos);
     }
@@ -164,10 +175,21 @@ subClientNew(Window win)
     c->tags |= SUB_TAG_DEFAULT; ///< Ensure that there's at least on tag
   else
     {
-      XGetTransientForHint(subtle->disp, win, &propwin); ///< Check for dialogs
       if(c->tags & SUB_TAG_FLOAT) subClientToggle(c, SUB_STATE_FLOAT);
       if(c->tags & SUB_TAG_FULL)  subClientToggle(c, SUB_STATE_FULL);
-      if(c->tags & SUB_TAG_STICK || propwin) subClientToggle(c, SUB_STATE_STICK|SUB_STATE_FLOAT);
+      if(c->tags & SUB_TAG_STICK) subClientToggle(c, SUB_STATE_STICK|SUB_STATE_FLOAT);
+    }
+
+  /* Check for transient windows */
+  XGetTransientForHint(subtle->disp, win, &trans); 
+  if(trans)
+    {
+      SubClient *t = CLIENT(subSharedFind(trans, CLIENTID));
+      if(t)
+        {
+          c->flags = t->flags;
+          subClientToggle(c, SUB_STATE_STICK|SUB_STATE_FLOAT);
+        }
     }
 
   /* EWMH: Tags and desktop */
@@ -176,6 +198,8 @@ subClientNew(Window win)
 
   printf("Adding client (%s)\n", c->name);
   subSharedLogDebug("new=client, name=%s, win=%#lx, supplied=%ld\n", c->name, win, supplied);
+
+  c->flags |= SUB_STATE_ALIVE;
 
   return c;
 } /* }}} */
