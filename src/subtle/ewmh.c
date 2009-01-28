@@ -57,7 +57,7 @@ subEwmhInit(void)
   selection = (char *)subSharedMemoryAlloc(len, sizeof(char)); 
 
   snprintf(selection, len, "%s%u", names[SUB_EWMH_NET_SYSTEM_TRAY_SELECTION], SCREEN);
-  printf("Selection: len=%d, name=%s\n", len, selection);
+  subSharedLogDebug("Selection: len=%d, name=%s\n", len, selection);
   names[SUB_EWMH_NET_SYSTEM_TRAY_SELECTION] = selection;
 
   XInternAtoms(subtle->disp, names, SUB_EWMH_TOTAL, 0, atoms);
