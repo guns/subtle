@@ -204,7 +204,7 @@ subSharedFind(Window win,
 
   assert(win && id);
 
-  return XFindContext(subtle->disp, win, id, (XPointer *)&data) != XCNOENT ? data : NULL;
+  return XCNOENT != XFindContext(subtle->disp, win, id, (XPointer *)&data) ? data : NULL;
 } /* }}} */
 
  /** subSharedTime {{{

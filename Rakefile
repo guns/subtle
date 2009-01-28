@@ -42,8 +42,7 @@ require("ftools")
   "DIR_CONFIG"    => "$(sysconfdir)/$(PKG_NAME)",
   "DIR_SUBLET"    => "$(datadir)/$(PKG_NAME)",
   "DIR_EXT"       => "$(sitelibdir)/$(PKG_NAME)"
-}  
-# }}}
+}  # }}}
 
 # Lists {{{
 PG_WM   = "subtle"
@@ -330,7 +329,6 @@ file(PG_RMT => OBJ_RMT) do
     "LD #{PG_RMT}") do |ok, status|
       ok or fail("Linker failed with status #{status.exitstatus}")
   end
-
 end
 
 file(PG_RBE => OBJ_RBE) do

@@ -129,14 +129,15 @@
 #define SUB_STATE_FLOAT        (1L << 18)                         ///< Floating window
 #define SUB_STATE_STICK        (1L << 19)                         ///< Stick window
 #define SUB_STATE_RESIZE       (1L << 20)                         ///< Resized window
-#define SUB_STATE_DEAD         (1L << 21)                         ///< Dead window
-#define SUB_STATE_TILED        (1L << 22)                         ///< Tiled client
+#define SUB_STATE_ALIVE        (1L << 21)                         ///< Alive window
+#define SUB_STATE_DEAD         (1L << 22)                         ///< Dead window
+#define SUB_STATE_TILED        (1L << 23)                         ///< Tiled client
 
 /* Client preferences */
-#define SUB_PREF_INPUT         (1L << 23)                         ///< Active/passive focus-model
-#define SUB_PREF_FOCUS         (1L << 24)                         ///< Send focus message
-#define SUB_PREF_CLOSE         (1L << 25)                         ///< Send close message
-#define SUB_PREF_HINTS         (1L << 26)                         ///< Size hints available
+#define SUB_PREF_INPUT         (1L << 24)                         ///< Active/passive focus-model
+#define SUB_PREF_FOCUS         (1L << 25)                         ///< Send focus message
+#define SUB_PREF_CLOSE         (1L << 26)                         ///< Send close message
+#define SUB_PREF_HINTS         (1L << 27)                         ///< Size hints available
 
 /* Drag states */
 #define SUB_DRAG_START         (1L << 1)                          ///< Drag start
