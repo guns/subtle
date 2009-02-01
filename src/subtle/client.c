@@ -97,6 +97,7 @@ subClientNew(Window win)
 
   assert(win);
   
+  /* Create client */
   c = CLIENT(subSharedMemoryAlloc(1, sizeof(SubClient)));
   c->flags = SUB_TYPE_CLIENT;
   c->win   = win;
@@ -109,9 +110,8 @@ subClientNew(Window win)
 
   /* Update client */
   XAddToSaveSet(subtle->disp, c->win);
-  XSelectInput(subtle->disp, c->win, StructureNotifyMask|EnterWindowMask|
-    FocusChangeMask|KeyPressMask|ButtonPressMask|PropertyChangeMask);
-
+  XSelectInput(subtle->disp, c->win, StructureNotifyMask|PropertyChangeMask|
+    EnterWindowMask|FocusChangeMask|KeyPressMask|ButtonPressMask);
   XSetWindowBorderWidth(subtle->disp, c->win, subtle->bw);
   XSaveContext(subtle->disp, c->win, CLIENTID, (void *)c);
 
@@ -123,6 +123,7 @@ subClientNew(Window win)
   /* Size hints */
   if(!(c->hints = XAllocSizeHints()))
     subSharedLogError("Can't alloc memory. Exhausted?\n");
+
   XGetWMNormalHints(subtle->disp, c->win, c->hints, &supplied);
   if(0 < supplied) c->flags |= SUB_PREF_HINTS;
   else XFree(c->hints);
