@@ -32,35 +32,28 @@ subTrayNew(Window win)
 
   assert(win);
 
-  /* Check xembed data */
-  if((info = (XEmbedInfo *)subEwmhGetProperty(win, subEwmhGet(SUB_EWMH_XEMBED_INFO), 
-    SUB_EWMH_XEMBED_INFO, NULL)))
-    {
-      t = TRAY(subSharedMemoryAlloc(1, sizeof(SubTray)));
-      t->flags = SUB_TYPE_TRAY;
-      t->win   = win;
-      t->width = subtle->th; ///< Default width
+  t = TRAY(subSharedMemoryAlloc(1, sizeof(SubTray)));
+  t->flags = SUB_TYPE_TRAY;
+  t->win   = win;
+  t->width = subtle->th; ///< Default width
 
-      /* Fetch name */
-      XFetchName(subtle->disp, t->win, &t->name);
-      if(!t->name) t->name = strdup(PKG_NAME);
+  /* Fetch name */
+  XFetchName(subtle->disp, t->win, &t->name);
+  if(!t->name) t->name = strdup(PKG_NAME);
 
-      subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime, XEMBED_EMBEDDED_NOTIFY,
-        0, subtle->windows.tray, 0);
+  subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime, XEMBED_EMBEDDED_NOTIFY,
+    0, subtle->windows.tray, 0); ///< Tell client that it has been embedded
 
-      /* Update tray window */
-      XAddToSaveSet(subtle->disp, t->win);
-      XSelectInput(subtle->disp, t->win, EnterWindowMask|StructureNotifyMask|PropertyChangeMask);
-      XReparentWindow(subtle->disp, t->win, subtle->windows.tray, 0, 0);
-      XSaveContext(subtle->disp, t->win, TRAYID, (void *)t);
+  /* Update tray window */
+  XAddToSaveSet(subtle->disp, t->win);
+  XSelectInput(subtle->disp, t->win, EnterWindowMask|StructureNotifyMask|PropertyChangeMask);
+  XReparentWindow(subtle->disp, t->win, subtle->windows.tray, 0, 0);
+  XSaveContext(subtle->disp, t->win, TRAYID, (void *)t);
 
-      subTraySetState(t); ///< @todo Overhead for getting property twice
+  subTraySetState(t); ///< Set window state
 
-      printf("Adding tray (%s)\n", t->name);
-      subSharedLogDebug("new=tray, name=%s, win=%#lx\n", t->name, win);
-
-      free(info);
-    }
+  printf("Adding tray (%s)\n", t->name);
+  subSharedLogDebug("new=tray, name=%s, win=%#lx\n", t->name, win);
 
   return t;
 } /* }}} */
@@ -78,8 +71,9 @@ subTrayConfigure(SubTray *t)
 
   assert(t);
   
-  hints = XAllocSizeHints();
-  if(!hints) subSharedLogError("Can't alloc memory. Exhausted?\n");
+  /* Size hints */
+  if(!(hints = XAllocSizeHints())) 
+    subSharedLogError("Can't alloc memory. Exhausted?\n");
 
   XGetWMNormalHints(subtle->disp, t->win, hints, &supplied);
   if(0 < supplied)
@@ -90,7 +84,6 @@ subTrayConfigure(SubTray *t)
         t->width = MINMAX(hints->base_width, subtle->th, 2 * subtle->th);
       else if(hints->flags & PMinSize) ///< Min size
         t->width = MINMAX(hints->min_width, subtle->th, 2 * subtle->th);
-
     }
   XFree(hints);
 
@@ -122,6 +115,7 @@ subTrayUpdate(void)
       int i, width = 3;
       XWindowAttributes attrs;
 
+      XMapRaised(subtle->disp, subtle->windows.tray);
       XGetWindowAttributes(subtle->disp, subtle->windows.sublets, &attrs);
 
       /* Resize every tray client */
@@ -135,6 +129,7 @@ subTrayUpdate(void)
 
       XMoveResizeWindow(subtle->disp, subtle->windows.tray, attrs.x - width, 0, width, subtle->th);
     }
+  else XUnmapWindow(subtle->disp, subtle->windows.tray); ///< Unmap when tray is empty
 } /* }}} */
 
  /** subTraySelect {{{
@@ -181,11 +176,13 @@ subTraySetState(SubTray *t)
         {
           opcode = XEMBED_WINDOW_ACTIVATE;
           XMapRaised(subtle->disp, t->win); 
+          subEwmhSetWMState(t->win, NormalState);
         }
       else 
         {
           opcode = XEMBED_WINDOW_DEACTIVATE;
           XUnmapWindow(subtle->disp, t->win);
+          subEwmhSetWMState(t->win, WithdrawnState);
         }
 
       subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime, opcode, 0, 0, 0);

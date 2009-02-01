@@ -30,8 +30,7 @@ EventExec(char *cmd)
         setsid();
         execlp("/bin/sh", "sh", "-c", cmd, NULL);
 
-        /* Never to be reached */
-        subSharedLogWarn("Can't exec command `%s'.\n", cmd);
+        subSharedLogWarn("Failed to exec command `%s'.\n", cmd); ///< Never to be reached
         exit(1);
       case -1: subSharedLogWarn("Failed to fork.\n");
     }
@@ -86,7 +85,6 @@ EventMapRequest(XMapRequestEvent *ev)
               subViewRender();
             }
         }
-      else subClientKill(c);
     }
 } /* }}} */
 
@@ -283,7 +281,6 @@ EventMessage(XClientMessageEvent *ev)
               }
             break; /* }}} */
         }
-      return;
     } /* }}} */
   /* Messages for tray window {{{ */
   else if(ev->window == subtle->windows.tray)
@@ -302,12 +299,10 @@ EventMessage(XClientMessageEvent *ev)
                       t = subTrayNew(ev->data.l[2]);
                       subArrayPush(subtle->trays, (void *)t);
                       subTrayUpdate();
-                    }
-                  break;
+                    } 
               }
             break; /* }}} */
         }
-      return;
     } /* }}} */
   /* Messages for client windows {{{ */
   else if((c = CLIENT(subSharedFind(ev->window, CLIENTID))));
