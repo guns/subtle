@@ -80,7 +80,7 @@ EventMapRequest(XMapRequestEvent *ev)
           subClientPublish();
 
           /* Configure/render current view if tags match or client is urgent */
-          if(subtle->cv && (subtle->cv->tags & c->tags || c->flags & SUB_STATE_STICK))
+          if(subtle->cv->tags & c->tags || c->flags & SUB_STATE_STICK)
             {
               subViewConfigure(subtle->cv); 
               subViewRender();
@@ -141,12 +141,13 @@ EventMessage(XClientMessageEvent *ev)
 {
   SubClient *c = NULL;
 
-  if(32 != ev->format) return; ///< Forget about it
+  if(32 != ev->format) return; ///< Just skip
 
   /* Messages for root window {{{ */
   if(ROOT == ev->window)
     {
       int id = subEwmhFind(ev->message_type);
+
       SubView *v = NULL;
       SubTag *t = NULL;
       SubSublet *s = NULL;
@@ -287,11 +288,8 @@ EventMessage(XClientMessageEvent *ev)
   /* Messages for tray window {{{ */
   else if(ev->window == subtle->windows.tray)
     {
-      int id = subEwmhFind(ev->message_type);
       SubTray *t = NULL;
-
-      subSharedLogDebug("[0]=%#lx, [1]=%#lx, [2]=%#lx, [3]=%#lx, [4]=%#lx\n", 
-        ev->data.l[0], ev->data.l[1], ev->data.l[2], ev->data.l[3], ev->data.l[4]);
+      int id = subEwmhFind(ev->message_type);
 
       switch(id)
         {
@@ -306,8 +304,6 @@ EventMessage(XClientMessageEvent *ev)
                       subTrayUpdate();
                     }
                   break;
-                default:
-                  printf("Tray: data=%ld\n", ev->data.l[1]);
               }
             break; /* }}} */
         }
@@ -351,6 +347,9 @@ EventMessage(XClientMessageEvent *ev)
 
     subSharedLogDebug("ClientMessage: name=%s, type=%ld, format=%d, win=%#lx\n", 
       name ? name : "n/a", ev->message_type, ev->format, ev->window);
+    subSharedLogDebug("ClientMessage: [0]=%#lx, [1]=%#lx, [2]=%#lx, [3]=%#lx, [4]=%#lx\n", 
+      ev->data.l[0], ev->data.l[1], ev->data.l[2], ev->data.l[3], ev->data.l[4]);
+
     if(name) XFree(name);
   }
 #endif /* DEBUG */    
