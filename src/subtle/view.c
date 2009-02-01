@@ -38,10 +38,11 @@ subViewNew(char *name,
   attrs.event_mask        = ExposureMask|VisibilityChangeMask|KeyPressMask;
   attrs.background_pixmap = CopyFromParent;
   attrs.background_pixel  = subtle->colors.bg;
+  attrs.override_redirect = True;
  
   v->frame  = XCreateWindow(subtle->disp, ROOT, 0, subtle->th, SCREENW, SCREENH - subtle->th,
-    0, CopyFromParent, InputOutput, CopyFromParent, CWBackPixel|CWBackPixmap|CWEventMask,
-    &attrs); 
+    0, CopyFromParent, InputOutput, CopyFromParent, 
+    CWBackPixel|CWBackPixmap|CWEventMask|CWOverrideRedirect, &attrs); 
   v->button = XCreateSimpleWindow(subtle->disp, subtle->windows.views, 0, 0, 1,
     subtle->th, 0, subtle->colors.border, subtle->colors.norm);
 

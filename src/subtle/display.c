@@ -74,28 +74,24 @@ subDisplayScan(void)
   Window dummy, *wins = NULL;
   XWindowAttributes attr;
 
-  assert(subtle);
-
   XQueryTree(subtle->disp, ROOT, &dummy, &dummy, &wins, &n);
   for(i = 0; i < n; i++)
     {
-      /* Skip own windows */
-      if(wins[i] && wins[i] != subtle->windows.bar && wins[i] != subtle->cv->frame)
+      SubClient *c = NULL;
+      SubTray *t = NULL;
+
+      XGetWindowAttributes(subtle->disp, wins[i], &attr);
+      if(False == attr.override_redirect) ///< Skip own windows 
         {
-          SubClient *c = NULL;
-          SubTray *t = NULL;
-
-          XGetWindowAttributes(subtle->disp, wins[i], &attr);
-
           switch(attr.map_state)
             {
               case IsViewable: ///< Client
-                c = subClientNew(wins[i]);
-                subArrayPush(subtle->clients, (void *)c);
+                if((c = subClientNew(wins[i])))
+                  subArrayPush(subtle->clients, (void *)c);
                 break;
               case IsUnmapped: ///< Tray
-                t = subTrayNew(wins[i]);
-                subArrayPush(subtle->trays, (void *)t);
+                if((t = subTrayNew(wins[i])))
+                  subArrayPush(subtle->trays, (void *)t);
                 break;
             }
         }

@@ -335,13 +335,14 @@ RubyConfigParse(VALUE path)
   subtle->th = subtle->xfs->ascent + subtle->xfs->descent + 2;
 
   /* View windows */
-  attrs.background_pixel = subtle->colors.norm;
-  attrs.save_under       = False;
-  attrs.event_mask       = ButtonPressMask|ExposureMask|VisibilityChangeMask;
+  attrs.background_pixel  = subtle->colors.norm;
+  attrs.save_under        = False;
+  attrs.event_mask        = ButtonPressMask|ExposureMask|VisibilityChangeMask;
+  attrs.override_redirect = True;
 
   subtle->windows.bar     = XCreateWindow(subtle->disp, DefaultRootWindow(subtle->disp),
     0, 0, SCREENW, subtle->th, 0, CopyFromParent, InputOutput, CopyFromParent, 
-    CWBackPixel|CWSaveUnder|CWEventMask, &attrs); 
+    CWBackPixel|CWSaveUnder|CWEventMask|CWOverrideRedirect, &attrs); 
   subtle->windows.caption = XCreateSimpleWindow(subtle->disp, subtle->windows.bar, 0, 0, 1,
     subtle->th, 0, 0, subtle->colors.focus);
   subtle->windows.views   = XCreateSimpleWindow(subtle->disp, subtle->windows.bar, 0, 0, 1,
@@ -528,15 +529,14 @@ subRubyLoadSublets(const char *path)
   subSharedLogDebug("path=%s\n", buf);
 
   /* Scan directory */
-  num = scandir(buf, &entries, RubyFilter, alphasort);
-  if(0 < num)
+  if(0 < ((num = scandir(buf, &entries, RubyFilter, alphasort))))
     {
       for(i = 0; i < num; i++)
         {
           char file[150];
 
           snprintf(file, sizeof(file), "%s/%s", buf, entries[i]->d_name);
-          subSharedLogDebug("sublet=%s\n", file);
+          subSharedLogDebug("path=%s\n", file);
           rb_require(file); ///< Load subclass of Sublet
 
           free(entries[i]);
