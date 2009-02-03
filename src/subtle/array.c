@@ -174,7 +174,7 @@ subArrayKill(SubArray *a,
       SubClient *c = CLIENT(a->data[i]);
 
       /* Common types first */
-      if(c->flags & SUB_TYPE_CLIENT)      subClientKill(CLIENT(c));
+      if(c->flags & SUB_TYPE_CLIENT)      subClientKill(CLIENT(c), False);
       else if(c->flags & SUB_TYPE_TAG)    subTagKill(TAG(c));
       else if(c->flags & SUB_TYPE_VIEW)   subViewKill(VIEW(c));
       else if(c->flags & SUB_TYPE_LAYOUT) subLayoutKill(LAYOUT(c));

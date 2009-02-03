@@ -57,7 +57,8 @@
   DefaultVisual(subtle->disp, DefaultScreen(subtle->disp))        ///< Default visual
 #define COLORMAP \
   DefaultColormap(subtle->disp, DefaultScreen(subtle->disp))      ///< Default colormap
-
+#define VISIBLE(v,c) \
+  (v->tags & c->tags || c->flags & SUB_STATE_STICK)               ///< Visible on view
 #define SCREENW \
   DisplayWidth(subtle->disp, DefaultScreen(subtle->disp))         ///< Get screen width
 #define SCREENH \
@@ -129,7 +130,7 @@
 #define SUB_STATE_FLOAT        (1L << 18)                         ///< Floating window
 #define SUB_STATE_STICK        (1L << 19)                         ///< Stick window
 #define SUB_STATE_RESIZE       (1L << 20)                         ///< Resized window
-#define SUB_STATE_ALIVE        (1L << 21)                         ///< Alive window
+#define SUB_STATE_UNMAP        (1L << 21)                         ///< Unmapped window
 #define SUB_STATE_DEAD         (1L << 22)                         ///< Dead window
 #define SUB_STATE_TILED        (1L << 23)                         ///< Tiled client
 
@@ -410,8 +411,9 @@ void subClientFocus(SubClient *c);                                ///< Focus cli
 void subClientDrag(SubClient *c, int mode);                       ///< Move/drag client
 void subClientToggle(SubClient *c, int type);                     ///< Toggle client state
 void subClientFetchName(SubClient *c);                            ///< Fetch client name
+void subClientUnmap(SubClient *c);                                ///< Unmap client
 void subClientPublish(void);                                      ///< Publish all clients
-void subClientKill(SubClient *c);                                 ///< Kill client
+void subClientKill(SubClient *c, int close);                      ///< Kill client
 /* }}} */
 
 /* display.c {{{ */

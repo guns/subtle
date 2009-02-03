@@ -114,6 +114,7 @@ subClientNew(Window win)
     EnterWindowMask|FocusChangeMask|KeyPressMask|ButtonPressMask);
   XSetWindowBorderWidth(subtle->disp, c->win, subtle->bw);
   XSaveContext(subtle->disp, c->win, CLIENTID, (void *)c);
+  subEwmhSetWMState(c->win, WithdrawnState);
 
   /* Window attributes */
   XGetWindowAttributes(subtle->disp, c->win, &attrs);
@@ -131,7 +132,6 @@ subClientNew(Window win)
   /* Window manager hints */
   if((hints = XGetWMHints(subtle->disp, c->win)))
     {
-      subEwmhSetWMState(c->win, NormalState);
       if(hints->input) c->flags |= SUB_PREF_INPUT;
       if(hints->flags & XUrgencyHint) c->tags |= SUB_TAG_STICK;
       XFree(hints);
@@ -199,8 +199,6 @@ subClientNew(Window win)
 
   printf("Adding client (%s)\n", c->name);
   subSharedLogDebug("new=client, name=%s, win=%#lx, supplied=%ld\n", c->name, win, supplied);
-
-  c->flags |= SUB_STATE_ALIVE;
 
   return c;
 } /* }}} */
@@ -617,10 +615,10 @@ subClientToggle(SubClient *c,
   subClientFocus(c);
 } /* }}} */
 
-  /** subClientFetchName {{{
-   * @brief Fetch client name and store it
-   * @param[in]  c  A #SubClient
-   **/
+ /** subClientFetchName {{{
+  * @brief Fetch client name and store it
+  * @param[in]  c  A #SubClient
+  **/
 
 void
 subClientFetchName(SubClient *c)
@@ -673,11 +671,13 @@ subClientPublish(void)
 
  /** subClientKill {{{
   * @brief Send interested clients the close signal and/or kill it
-  * @param[in]  c  A #SubClient
+  * @param[in]  c      A #SubClient
+  * @param[in]  close  Close window
   **/
 
 void
-subClientKill(SubClient *c)
+subClientKill(SubClient *c,
+  int close)
 {
   assert(c);
 
@@ -686,20 +686,12 @@ subClientKill(SubClient *c)
   /* Ignore further events and delete context */
   XSelectInput(subtle->disp, c->win, NoEventMask);
   XDeleteContext(subtle->disp, c->win, CLIENTID);
-
   if(subtle->windows.focus == c->win) subtle->windows.focus = 0; ///< Unset focus
-  if(!(c->flags & SUB_STATE_DEAD))
-    {
-      subArrayPop(subtle->clients, (void *)c->win);
 
-      /* EWMH: Update Client list and client list stacking */
-      subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_CLIENT_LIST,
-        (Window *)subtle->clients->data, subtle->clients->ndata);
-      subEwmhSetWindows(DefaultRootWindow(subtle->disp), SUB_EWMH_NET_CLIENT_LIST_STACKING,
-        (Window *)subtle->clients->data, subtle->clients->ndata);
-    
-      /* Honor window preferences */
-      if(c->flags & SUB_PREF_CLOSE)
+  /* Close window */
+  if(close && !(c->flags & SUB_STATE_DEAD))
+    {
+      if(c->flags & SUB_PREF_CLOSE) ///< Honor window preferences
         {
           subEwmhMessage(c->win, c->win, SUB_EWMH_WM_PROTOCOLS, 
             subEwmhGet(SUB_EWMH_WM_DELETE_WINDOW), CurrentTime, 0, 0, 0);
@@ -707,10 +699,7 @@ subClientKill(SubClient *c)
       else XKillClient(subtle->disp, c->win);
     }
 
-  subViewSanitize(c);
-  subArrayPop(subtle->clients, (void *)c);
-
-  if(c->flags & SUB_PREF_HINTS) XFree(c->hints);
+  if(c->hints) XFree(c->hints);
   if(c->name) XFree(c->name);
   free(c);
 
