@@ -93,7 +93,7 @@ subViewConfigure(SubView *v)
           SubClient *c = CLIENT(subtle->clients->data[i]);
 
           /* Find matching clients */
-          if(v->tags & c->tags || c->flags & SUB_STATE_STICK)
+          if(VISIBLE(v, c))
             {
               if(!(c->flags & SUB_STATE_FULL)) ///< Don't overwrite root
                 XReparentWindow(subtle->disp, c->win, v->frame, 0, 0);
@@ -118,7 +118,11 @@ subViewConfigure(SubView *v)
                   subClientConfigure(c);
                 }
             }
-          else XUnmapWindow(subtle->disp, c->win); ///< Unmap other windows
+          else ///< Unmap other windows
+            {
+              c->flags |= SUB_STATE_UNMAP; ///< Skip next unmap event
+              XUnmapWindow(subtle->disp, c->win); 
+            }
         }
       subtle->perrow[0] = j; 
       /* }}} */
@@ -157,7 +161,7 @@ subViewConfigure(SubView *v)
         {
           SubClient *c = CLIENT(subtle->clients->data[i]);
 
-          if(v->tags & c->tags || c->flags & SUB_STATE_STICK)
+          if(VISIBLE(v, c))
             {      
               if(!(c->flags & (SUB_STATE_FULL|SUB_STATE_FLOAT))) 
                 {
@@ -269,7 +273,7 @@ subViewJump(SubView *v)
   if(subtle->cv) 
     {
       XUnmapWindow(subtle->disp, subtle->cv->frame);
-      XUnmapSubwindows(subtle->disp, subtle->cv->frame);
+      //XUnmapSubwindows(subtle->disp, subtle->cv->frame);
     }
   subtle->cv = v;
 
