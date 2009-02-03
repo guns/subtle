@@ -28,7 +28,6 @@ SubTray *
 subTrayNew(Window win)
 {
   SubTray *t = NULL;
-  XEmbedInfo *info = NULL;
 
   assert(win);
 
