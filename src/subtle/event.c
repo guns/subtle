@@ -73,13 +73,13 @@ EventMapRequest(XMapRequestEvent *ev)
   if(!c) 
     {
       /* Create new client */
-      if((c = subClientNew(ev->window)) && c->flags & SUB_STATE_ALIVE)
+      if((c = subClientNew(ev->window)))
         {
           subArrayPush(subtle->clients, (void *)c);
           subClientPublish();
 
           /* Configure/render current view if tags match or client is urgent */
-          if(subtle->cv->tags & c->tags || c->flags & SUB_STATE_STICK)
+          if(VISIBLE(subtle->cv, c))
             {
               subViewConfigure(subtle->cv); 
               subViewRender();
@@ -94,9 +94,11 @@ EventMap(XMapEvent *ev)
 {
   SubClient *c = NULL;
 
-  if(ev->window != ev->event && ev->send_event != True) return;
   if((c = CLIENT(subSharedFind(ev->window, CLIENTID))))
-    subEwmhSetWMState(c->win, NormalState);
+    {
+      if(ev->window != ev->event && ev->send_event != True) return;
+      subEwmhSetWMState(c->win, NormalState);
+    }
 } /* }}} */
 
 /* EventUnmap {{{ */
@@ -104,10 +106,24 @@ static void
 EventUnmap(XUnmapEvent *ev)
 {
   SubClient *c = NULL;
+  SubTray *t = NULL;
 
-  if(ev->window != ev->event && ev->send_event != True) return;
+  if(True != ev->send_event) return;
+
   if((c = CLIENT(subSharedFind(ev->window, CLIENTID))))
-    subEwmhSetWMState(c->win, WithdrawnState);
+    {
+      subEwmhSetWMState(c->win, WithdrawnState);
+      subArrayPop(subtle->clients, (void *)c);
+      subClientPublish();
+      if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
+      subClientKill(c, False);
+    }
+  else if((t = TRAY(subSharedFind(ev->window, TRAYID))))
+    {
+      subArrayPop(subtle->trays, (void *)t);
+      subTrayKill(t);
+      subTrayUpdate();
+    }    
 } /* }}} */
 
 /* EventDestroy {{{ */
@@ -116,13 +132,14 @@ EventDestroy(XDestroyWindowEvent *ev)
 {
   SubClient *c = NULL;
   SubTray *t = NULL;
-  
+
   if((c = CLIENT(subSharedFind(ev->event, CLIENTID))))
     {
       c->flags |= SUB_STATE_DEAD;
-      subClientKill(c); 
+      subArrayPop(subtle->clients, (void *)c);
       subClientPublish();
-      subViewConfigure(subtle->cv);
+      if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
+      subClientKill(c, True); 
       subViewUpdate();
     }
   else if((t = TRAY(subSharedFind(ev->event, TRAYID))))
@@ -158,13 +175,13 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_NET_ACTIVE_WINDOW: /* {{{ */
             if((c = CLIENT(subSharedFind(ev->data.l[0], CLIENTID))))
               {
-                if(!(subtle->cv->tags & c->tags)) ///< Client is on current view?
+                if(!(VISIBLE(subtle->cv, c))) ///< Client is on current view?
                   {
                     int i;
 
                     /* Find matching view */
                     for(i = 0; i < subtle->views->ndata; i++)
-                      if(VIEW(subtle->views->data[i])->tags & c->tags)
+                      if(VISIBLE(VIEW(subtle->views->data[i]), c))
                         {
                           subViewJump(VIEW(subtle->views->data[i]));
                           break;
@@ -178,7 +195,7 @@ EventMessage(XClientMessageEvent *ev)
               {
                 c->tags |= (1L << (ev->data.l[1] + 1));
                 subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS, (long *)&c->tags, 1);
-                if(subtle->cv->tags & c->tags) subViewConfigure(subtle->cv);
+                if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_CLIENT_UNTAG: /* {{{ */
@@ -328,10 +345,10 @@ EventMessage(XClientMessageEvent *ev)
                   break;
               }
 
-            if(subtle->cv->tags & c->tags) subViewConfigure(subtle->cv);
+            if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
             break; /* }}} */
           case SUB_EWMH_NET_CLOSE_WINDOW: /* {{{ */
-            subClientKill(c);               
+            subClientKill(c, True);               
             break; /* }}} */
         }
     } /* }}} */
@@ -499,15 +516,16 @@ EventGrab(XEvent *ev)
                 flag = SUB_GRAB_WINDOW_FLOAT == flag ? SUB_STATE_FLOAT : 
                   (SUB_GRAB_WINDOW_FULL == flag ? SUB_STATE_FULL : SUB_STATE_STICK);
                 subClientToggle(c, flag);
-                if(subtle->cv->tags & c->tags || c->flags & SUB_STATE_STICK) 
-                  subViewConfigure(subtle->cv);
+                if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
               }
             break;            
           case SUB_GRAB_WINDOW_KILL:
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               { 
-                subClientKill(c);
+                subArrayPop(subtle->clients, (void *)c);
                 subClientPublish();
+                if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
+                subClientKill(c, True);
               }
             break;             
           case SUB_GRAB_WINDOW_MOVE:
