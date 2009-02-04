@@ -410,7 +410,6 @@ void subClientRender(SubClient *c);                               ///< Render cl
 void subClientFocus(SubClient *c);                                ///< Focus client
 void subClientDrag(SubClient *c, int mode);                       ///< Move/drag client
 void subClientToggle(SubClient *c, int type);                     ///< Toggle client state
-void subClientFetchName(SubClient *c);                            ///< Fetch client name
 void subClientUnmap(SubClient *c);                                ///< Unmap client
 void subClientPublish(void);                                      ///< Publish all clients
 void subClientKill(SubClient *c, int close);                      ///< Kill client

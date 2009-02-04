@@ -37,8 +37,12 @@ subTrayNew(Window win)
   t->width = subtle->th; ///< Default width
 
   /* Fetch name */
-  XFetchName(subtle->disp, t->win, &t->name);
-  if(!t->name) t->name = strdup(PKG_NAME);
+  if(!XFetchName(subtle->disp, t->win, &t->name))
+    {
+      free(t);
+
+      return NULL;
+    }
 
   subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime, XEMBED_EMBEDDED_NOTIFY,
     0, subtle->windows.tray, 0); ///< Tell client that it has been embedded

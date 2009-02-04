@@ -394,7 +394,17 @@ EventProperty(XPropertyEvent *ev)
     {
       case SUB_EWMH_WM_NAME: ///< Client
         if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) 
-          subClientFetchName(c);
+          {
+            char *name = NULL;
+
+            if(XFetchName(subtle->disp, c->win, &name))
+              {
+                if(c->name) free(c->name);
+                c->name = name;
+
+                subClientRender(c);
+              }
+          }
         break;
       case SUB_EWMH_XEMBED_INFO: ///< Tray
         if((t = TRAY(subSharedFind(ev->window, TRAYID))))
@@ -430,6 +440,7 @@ EventCrossing(XCrossingEvent *ev)
   XEvent event;
   SubClient *c = NULL;
   SubTray *t = NULL;
+printf("Crossing: win=%#lx\n", ev->window);
 
   if((c = CLIENT(subSharedFind(ev->window, CLIENTID))))
     {

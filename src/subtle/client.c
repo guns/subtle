@@ -108,6 +108,14 @@ subClientNew(Window win)
   c->rect.width  = SCREENW;
   c->rect.height = SCREENH - subtle->th;
 
+  /* Fetch name */
+  if(!XFetchName(subtle->disp, c->win, &c->name))
+    {
+      free(c);
+
+      return NULL;
+    }
+
   /* Update client */
   XAddToSaveSet(subtle->disp, c->win);
   XSelectInput(subtle->disp, c->win, StructureNotifyMask|PropertyChangeMask|
@@ -119,7 +127,6 @@ subClientNew(Window win)
   /* Window attributes */
   XGetWindowAttributes(subtle->disp, c->win, &attrs);
   c->cmap = attrs.colormap;
-  subClientFetchName(c);
 
   /* Size hints */
   if(!(c->hints = XAllocSizeHints()))
@@ -280,15 +287,15 @@ void
 subClientFocus(SubClient *c)
 {
   assert(c);
+     
+  subSharedLogDebug("Focus: win=%#lx, input=%d, focus=%d\n", c->win,
+    !!(c->flags & SUB_PREF_INPUT), !!(c->flags & SUB_PREF_FOCUS));
 
   /* Check if client wants to take focus by itself */
   if(c->flags & SUB_PREF_FOCUS)
     {
       subEwmhMessage(c->win, c->win, SUB_EWMH_WM_PROTOCOLS, 
         subEwmhGet(SUB_EWMH_WM_TAKE_FOCUS), CurrentTime, 0, 0, 0);
-      
-      subSharedLogDebug("Focus: win=%#lx, input=%d, send=%d\n", c->win,
-        !!(c->flags & SUB_PREF_INPUT), !!(c->flags & SUB_PREF_FOCUS));
     }   
   else XSetInputFocus(subtle->disp, c->win, RevertToNone, CurrentTime);
 } /* }}} */
@@ -613,28 +620,6 @@ subClientToggle(SubClient *c,
     }
 
   subClientFocus(c);
-} /* }}} */
-
- /** subClientFetchName {{{
-  * @brief Fetch client name and store it
-  * @param[in]  c  A #SubClient
-  **/
-
-void
-subClientFetchName(SubClient *c)
-{
-  assert(c);
-
-  if(c->name) 
-    {
-      XFree(c->name);
-      c->name = NULL;
-    }
-
-  XFetchName(subtle->disp, c->win, &c->name);
-  if(!c->name) c->name = strdup(PKG_NAME);
-
-  subClientRender(c);
 } /* }}} */
 
  /** subClientPublish {{{
