@@ -199,7 +199,7 @@ SubtlerClientTag(char *arg1,
   data.l[1] = subSharedTagFind(arg2);
 
   if(data.l[0] && data.l[1])
-    subSharedMessage(DefaultRootWindow(display), "SUBTLE_CLIENT_TAG", data, False);
+    subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_TAG", data, False);
   else subSharedLogWarn("Failed to tag client\n");
 } /* }}} */
 
@@ -217,7 +217,7 @@ SubtlerClientUntag(char *arg1,
   data.l[1] = subSharedTagFind(arg2);
 
   if(data.l[0] && data.l[1])
-    subSharedMessage(DefaultRootWindow(display), "SUBTLE_CLIENT_UNTAG", data, False);
+    subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_UNTAG", data, False);
   else subSharedLogWarn("Failed to untag client\n");
 } /* }}} */
 
@@ -235,7 +235,7 @@ SubtlerClientTags(char *arg1,
     {
       int i, size = 0;
       unsigned long *flags = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL,
-        "SUBTLE_CLIENT_TAGS", NULL);
+        "SUBTLE_WINDOW_TAGS", NULL);
       char **tags = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
 
       for(i = 0; i < size; i++)
@@ -501,7 +501,7 @@ SubtlerViewTag(char *arg1,
   data.l[1] = subSharedTagFind(arg2);
 
   if(data.l[0] && data.l[1])
-    subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_TAG", data, False);
+    subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_TAG", data, False);
   else subSharedLogWarn("Failed to tag view\n");
 } /* }}} */
 
@@ -519,7 +519,7 @@ SubtlerViewUntag(char *arg1,
   data.l[1] = subSharedTagFind(arg2);
 
   if(data.l[0] && data.l[1])
-    subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_UNTAG", data, False);
+    subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_UNTAG", data, False);
   else subSharedLogWarn("Failed to untag view\n");
 } /* }}} */
 
@@ -536,9 +536,9 @@ SubtlerViewTags(char *arg1,
   SubtlerAssert(arg1, "Usage: %sr -v PATTERN -g\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  if(-1 == subSharedViewFind(arg1, &win))
+  if(-1 != subSharedViewFind(arg1, &win))
     {
-      flags = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, "SUBTLE_VIEW_TAGS", NULL);
+      flags = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, "SUBTLE_WINDOW_TAGS", NULL);
       tags  = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
 
       for(i = 0; i < size; i++)
