@@ -484,7 +484,7 @@ subRubyLoadConfig(const char *file)
     {
       SubView *v = VIEW(subtle->views->data[0]);
       v->tags |= (1L << 1); ///< Add default tag to first view
-      subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_VIEW_TAGS, (long *)&v->tags, 1);
+      subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&v->tags, 1);
     }
 
   subViewUpdate();

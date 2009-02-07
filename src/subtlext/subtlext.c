@@ -46,17 +46,16 @@ SubtlextFind(int type,
       case T_STRING:
         if(SUB_TYPE_TAG == type) id = subSharedTagFind(STR2CSTR(value));
         else id = subSharedViewFind(STR2CSTR(value), &win);
+
+        /* Create and find again */
         if(-1 == id && True == create)
           {
-            /* Create and find again */
             snprintf(data.b, sizeof(data.b), "%s", STR2CSTR(value));
             subSharedMessage(DefaultRootWindow(display), 
               SUB_TYPE_TAG == type ? "SUBTLE_TAG_NEW" : "SUBTLE_VIEW_NEW", data, True);
 
             if(SUB_TYPE_TAG == type) id = subSharedTagFind(STR2CSTR(value));
             else id = subSharedViewFind(STR2CSTR(value), &win);
-
-            return id;
           }
 
         if(-1 != id)
@@ -130,37 +129,29 @@ SubtlextToggle(VALUE self,
 static VALUE
 SubtlextTag(VALUE self,
   VALUE value,
-  char *type,
   char *atom)
 {
-  VALUE klass = Qnil;
+  VALUE tag = Qnil;
 
-  klass = rb_const_get(rb_mKernel, rb_intern(type));
+  /* Find tag */
+  if(Qnil != (tag = SubtlextFind(SUB_TYPE_TAG, value, True)))
+    {            
+      VALUE oid = Qnil, tid = Qnil;
 
-  /* Check object */
-  switch(rb_type(value))
-    {
-      case T_OBJECT:
-      case T_CLASS:
-        if(rb_obj_is_instance_of(value, klass)) ///< Check object instance
-          {
-            VALUE tid = Qnil, oid = Qnil;
-            
-            tid = rb_iv_get(value, "@id");
-            oid = rb_iv_get(self, "@id");
+      oid = rb_iv_get(self, "@id");
+      tid = rb_iv_get(tag, "@id");
 
-            if(Qnil != tid && Qnil != oid)
-              {
-                SubMessageData data = { { 0, 0, 0, 0, 0 } };
+      if(Qnil != oid && Qnil != tid)
+        {
+          SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-                data.l[0] = FIX2LONG(oid);
-                data.l[1] = FIX2LONG(tid);
+          data.l[0] = FIX2LONG(oid);
+          data.l[1] = FIX2LONG(tid);
 
-                subSharedMessage(DefaultRootWindow(display), atom, data, True);
+          subSharedMessage(DefaultRootWindow(display), atom, data, True);
 
-                return Qtrue;
-              }
-          }
+          return Qtrue;
+        }
     }
 
   rb_raise(rb_eArgError, "Unknown value type");
@@ -198,14 +189,14 @@ SubtlextClientViewList(VALUE self)
   views   = (Window *)subSharedPropertyGet(DefaultRootWindow(display), 
     XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
   flags1  = (unsigned long *)subSharedPropertyGet(NUM2LONG(win), XA_CARDINAL, 
-    "SUBTLE_CLIENT_TAGS", NULL);
+    "SUBTLE_WINDOW_TAGS", NULL);
 
   if(names && views)
     {
       for(i = 0; i < size; i++)
         {
           unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(views[i], 
-            XA_CARDINAL, "SUBTLE_VIEW_TAGS", NULL);
+            XA_CARDINAL, "SUBTLE_WINDOW_TAGS", NULL);
 
           if(*flags1 & *flags2) ///< Check if there are common tags
             {
@@ -241,7 +232,7 @@ SubtlextClientTagList(VALUE self)
       method = rb_intern("new");
       klass  = rb_const_get(rb_mKernel, rb_intern("Tag"));
       flags  = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, 
-        "SUBTLE_CLIENT_TAGS", NULL);
+        "SUBTLE_WINDOW_TAGS", NULL);
       tags   = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
       array  = rb_ary_new2(size);
 
@@ -270,24 +261,7 @@ static VALUE
 SubtlextClientTagAdd(VALUE self,
   VALUE value)
 {
-  VALUE tag = Qnil;
-
-  if(Qnil != (tag = SubtlextFind(SUB_TYPE_TAG, value, True)))
-    {
-      VALUE cid = Qnil, tid = Qnil;
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-      cid = rb_iv_get(self, "@id");
-      tid = rb_iv_get(tag,  "@id");
-
-      /* Send data */
-      data.l[0] = FIX2LONG(cid);
-      data.l[1] = FIX2LONG(tid);
-
-      subSharedMessage(DefaultRootWindow(display), "SUBTLE_CLIENT_TAG", data, True);
-    }
-
-  return tag;
+  return SubtlextTag(self, value, "SUBTLE_WINDOW_TAG");
 } /* }}} */
 
 /* SubtlextClientTagDel {{{ */
@@ -295,24 +269,7 @@ static VALUE
 SubtlextClientTagDel(VALUE self,
   VALUE value)
 {  
-  VALUE tag = Qnil;
-
-  if(Qnil != (tag = SubtlextFind(SUB_TYPE_TAG, value, False)))
-    {
-      VALUE cid = Qnil, tid = Qnil;
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-      cid = rb_iv_get(self, "@id");
-      tid = rb_iv_get(tag,  "@id");
-
-      /* Send data */
-      data.l[0] = FIX2LONG(cid);
-      data.l[1] = FIX2LONG(tid);
-
-      subSharedMessage(DefaultRootWindow(display), "SUBTLE_CLIENT_UNTAG", data, True);      
-    }
-
-  return Qnil;
+  return SubtlextTag(self, value, "SUBTLE_WINDOW_UNTAG");
 } /* }}} */
 
 /* SubtlextClientToggleFull {{{ */
@@ -388,7 +345,7 @@ static VALUE
 SubtlextClientOperatorPlus(VALUE self,
   VALUE value)
 {
-  return SubtlextTag(self, value, "Tag", "SUBTLE_CLIENT_TAG");
+  return SubtlextTag(self, value, "SUBTLE_WINDOW_TAG");
 } /* }}} */
 
 /* SubtlextClientOperatorMinus {{{ */
@@ -396,7 +353,7 @@ static VALUE
 SubtlextClientOperatorMinus(VALUE self,
   VALUE value)
 {
-  return SubtlextTag(self, value, "Tag", "SUBTLE_CLIENT_UNTAG");
+  return SubtlextTag(self, value, "SUBTLE_WINDOW_UNTAG");
 } /* }}} */
 
 /* SubtlextSubtleKill {{{ */
@@ -883,7 +840,7 @@ SubtlextTagTaggings(VALUE self)
       for(i = 0; i < size_clients; i++)
         {
           unsigned long *flags = (unsigned long *)subSharedPropertyGet(clients[i], XA_CARDINAL, 
-            "SUBTLE_CLIENT_TAGS", NULL);
+            "SUBTLE_WINDOW_TAGS", NULL);
 
           if((int)*flags & (1L << (id + 1))) ///< Check if tag id matches
             {
@@ -910,7 +867,7 @@ SubtlextTagTaggings(VALUE self)
       for(i = 0; i < size_views; i++)
         {
           unsigned long *flags = (unsigned long *)subSharedPropertyGet(views[i], XA_CARDINAL, 
-            "SUBTLE_VIEW_TAGS", NULL);
+            "SUBTLE_WINDOW_TAGS", NULL);
 
           if((int)*flags & (1L << (id + 1))) ///< Check if tag id matches
             {
@@ -966,14 +923,14 @@ SubtlextViewClientList(VALUE self)
   array   = rb_ary_new2(size);
   clients = subSharedClientList(&size);
   flags1  = (unsigned long *)subSharedPropertyGet(NUM2LONG(win), XA_CARDINAL, 
-    "SUBTLE_VIEW_TAGS", NULL);
+    "SUBTLE_WINDOW_TAGS", NULL);
 
   if(clients)
     {
       for(i = 0; i < size; i++)
         {
           unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(clients[i], XA_CARDINAL, 
-            "SUBTLE_CLIENT_TAGS", NULL);
+            "SUBTLE_WINDOW_TAGS", NULL);
 
           if(*flags1 & *flags2) ///< Check if there are common tags
             {
@@ -1011,7 +968,7 @@ SubtlextViewTagList(VALUE self)
       method = rb_intern("new");
       klass  = rb_const_get(rb_mKernel, rb_intern("Tag"));
       flags  = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, 
-        "SUBTLE_VIEW_TAGS", NULL);
+        "SUBTLE_WINDOW_TAGS", NULL);
       tags   = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
       array  = rb_ary_new2(size);
 
@@ -1040,24 +997,7 @@ static VALUE
 SubtlextViewTagAdd(VALUE self,
   VALUE value)
 {
-  VALUE tag = Qnil;
-
-  if(Qnil != (tag = SubtlextFind(SUB_TYPE_TAG, value, True)))
-    {
-      VALUE vid = Qnil, tid = Qnil;
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-      vid = rb_iv_get(self, "@id");
-      tid = rb_iv_get(tag,  "@id");
-
-      /* Send data */
-      data.l[0] = FIX2LONG(vid);
-      data.l[1] = FIX2LONG(tid);
-
-      subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_TAG", data, True);
-    }
-
-  return tag;
+  return SubtlextTag(self, value, "SUBTLE_WINDOW_TAG");
 } /* }}} */
 
 /* SubtlextViewTagDel {{{ */
@@ -1065,24 +1005,7 @@ static VALUE
 SubtlextViewTagDel(VALUE self,
   VALUE value)
 {  
-  VALUE tag = Qnil;
-
-  if(Qnil != (tag = SubtlextFind(SUB_TYPE_TAG, value, False)))
-    {
-      VALUE vid = Qnil, tid = Qnil;
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-      vid = rb_iv_get(self, "@id");
-      tid = rb_iv_get(tag,  "@id");
-
-      /* Send data */
-      data.l[0] = FIX2LONG(vid);
-      data.l[1] = FIX2LONG(tid);
-
-      subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_UNTAG", data, True);      
-    }
-
-  return Qnil;
+  return SubtlextTag(self, value, "SUBTLE_WINDOW_UNTAG");
 } /* }}} */
 
 /* SubtlextViewJump {{{ */
@@ -1138,7 +1061,7 @@ static VALUE
 SubtlextViewOperatorPlus(VALUE self,
   VALUE value)
 {
-  return SubtlextTag(self, value, "Tag", "SUBTLE_VIEW_TAG");
+  return SubtlextTag(self, value, "SUBTLE_WINDOW_TAG");
 } /* }}} */
 
 /* SubtlextViewOperatorMinus {{{ */
@@ -1146,7 +1069,7 @@ static VALUE
 SubtlextViewOperatorMinus(VALUE self,
   VALUE value)
 {
-  return SubtlextTag(self, value, "Tag", "SUBTLE_VIEW_UNTAG");
+  return SubtlextTag(self, value, "SUBTLE_WINDOW_UNTAG");
 } /* }}} */
 
  /** Init_subtlext {{{

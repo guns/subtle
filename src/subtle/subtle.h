@@ -254,18 +254,15 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_XEMBED_INFO,                                           ///< XEmbed info
 
   /* subtle */
-  SUB_EWMH_SUBTLE_CLIENT_TAG,                                     ///< subtle client tag
-  SUB_EWMH_SUBTLE_CLIENT_UNTAG,                                   ///< subtle client untag
-  SUB_EWMH_SUBTLE_CLIENT_TAGS,                                    ///< subtle client tags
+  SUB_EWMH_SUBTLE_WINDOW_TAG,                                     ///< subtle window tag
+  SUB_EWMH_SUBTLE_WINDOW_UNTAG,                                   ///< subtle window untag
+  SUB_EWMH_SUBTLE_WINDOW_TAGS,                                    ///< subtle window tags
   SUB_EWMH_SUBTLE_TAG_NEW,                                        ///< subtle tag new
   SUB_EWMH_SUBTLE_TAG_KILL,                                       ///< subtle tag kill
   SUB_EWMH_SUBTLE_TAG_LIST,                                       ///< subtle tag list
   SUB_EWMH_SUBTLE_VIEW_NEW,                                       ///< subtle view new
   SUB_EWMH_SUBTLE_VIEW_KILL,                                      ///< subtle view kill
   SUB_EWMH_SUBTLE_VIEW_LIST,                                      ///< subtle view list
-  SUB_EWMH_SUBTLE_VIEW_TAG,                                       ///< subtle view tag
-  SUB_EWMH_SUBTLE_VIEW_UNTAG,                                     ///< subtle view untag
-  SUB_EWMH_SUBTLE_VIEW_TAGS,                                      ///< subtle view tags
   SUB_EWMH_SUBTLE_SUBLET_LIST,                                    ///< subtle sublet list
   SUB_EWMH_SUBTLE_SUBLET_KILL,                                    ///< subtle sublet kill
 

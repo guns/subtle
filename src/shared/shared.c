@@ -535,7 +535,7 @@ subSharedClientFind(char *name,
           if(clients[i] == selwin || subSharedRegexMatch(preg, wmname) ||
             subSharedRegexMatch(preg, buf))
             {
-              subSharedLogDebug("Found: type=client, name=%s, win=%#lx, n=%d\n", name,
+              subSharedLogDebug("Found: type=client, name=%s, win=%#lx, id=%d\n", name,
                 clients[i], i);
 
               if(win) *win = clients[i];
@@ -580,7 +580,7 @@ subSharedTagFind(char *name)
   for(i = 0; i < size; i++)
     if(subSharedRegexMatch(preg, tags[i]))
       {
-        subSharedLogDebug("Found: type=tag, name=%s, n=%d\n", name, i);
+        subSharedLogDebug("Found: type=tag, name=%s, id=%d\n", name, i);
 
         subSharedRegexKill(preg);
         free(tags);
@@ -629,7 +629,7 @@ subSharedViewFind(char *name,
           /* Find view either by name or by window id */
           if(subSharedRegexMatch(preg, names[i]) || subSharedRegexMatch(preg, buf))
             {
-              subSharedLogDebug("Found: type=view, name=%s win=%#lx, n=%d\n",
+              subSharedLogDebug("Found: type=view, name=%s win=%#lx, id=%d\n",
                 name, frames[i], i);
 
               if(win) *win = frames[i];
@@ -675,7 +675,7 @@ subSharedSubletFind(char *name)
   for(i = 0; i < size; i++)
     if(subSharedRegexMatch(preg, sublets[i]))
       {
-        subSharedLogDebug("Found: type=sublet, name=%s, n=%d\n", name, i);
+        subSharedLogDebug("Found: type=sublet, name=%s, id=%d\n", name, i);
 
         subSharedRegexKill(preg);
         free(sublets);

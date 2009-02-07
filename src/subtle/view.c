@@ -62,7 +62,7 @@ subViewNew(char *name,
 
       subSharedRegexKill(preg);
     }
-  subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_VIEW_TAGS, (long *)&v->tags, 1); ///< Init 
+  subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&v->tags, 1); ///< Init 
 
   printf("Adding view (%s)\n", v->name);
   subSharedLogDebug("new=view, name=%s\n", name);

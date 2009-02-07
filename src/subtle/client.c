@@ -89,7 +89,7 @@ subClientNew(Window win)
   int i, n = 0;
   long vid = 1337;
   long supplied = 0;
-  Window trans = 0;
+  Window group = 0;
   XWMHints *hints = NULL;
   XWindowAttributes attrs;
   Atom *protos = NULL;
@@ -136,14 +136,6 @@ subClientNew(Window win)
   if(0 < supplied) c->flags |= SUB_PREF_HINTS;
   else XFree(c->hints);
 
-  /* Window manager hints */
-  if((hints = XGetWMHints(subtle->disp, c->win)))
-    {
-      if(hints->input) c->flags |= SUB_PREF_INPUT;
-      if(hints->flags & XUrgencyHint) c->tags |= SUB_TAG_STICK;
-      XFree(hints);
-    }
-  
   /* Protocols */
   if(XGetWMProtocols(subtle->disp, c->win, &protos, &n))
     {
@@ -169,6 +161,26 @@ subClientNew(Window win)
       XFree(protos);
     }
 
+  /* Window manager hints */
+  if((hints = XGetWMHints(subtle->disp, c->win)))
+    {
+      if(hints->flags & XUrgencyHint) c->tags |= SUB_TAG_STICK;
+      if(hints->flags & WindowGroupHint) group = hints->window_group;
+      if(hints->flags & InputHint && hints->input) c->flags |= SUB_PREF_INPUT;
+      XFree(hints);
+    }
+
+  /* Check for group/transient windows */
+  if(group || XGetTransientForHint(subtle->disp, c->win, &group))
+    {
+      SubClient *g = CLIENT(subSharedFind(group, CLIENTID));
+      if(g)
+        {
+          c->tags = g->tags; ///< Copy tags
+          subClientToggle(c, SUB_STATE_STICK|SUB_STATE_FLOAT);
+        }
+    } 
+
   /* Tags */
   if(c->name)
     for(i = 0; i < subtle->tags->ndata; i++)
@@ -188,24 +200,15 @@ subClientNew(Window win)
       if(c->tags & SUB_TAG_STICK) subClientToggle(c, SUB_STATE_STICK|SUB_STATE_FLOAT);
     }
 
-  /* Check for transient windows */
-  XGetTransientForHint(subtle->disp, win, &trans); 
-  if(trans)
-    {
-      SubClient *t = CLIENT(subSharedFind(trans, CLIENTID));
-      if(t)
-        {
-          c->flags = t->flags;
-          subClientToggle(c, SUB_STATE_STICK|SUB_STATE_FLOAT);
-        }
-    }
-
   /* EWMH: Tags and desktop */
-  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS, (long *)&c->tags, 1);
+  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&c->tags, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
   printf("Adding client (%s)\n", c->name);
   subSharedLogDebug("new=client, name=%s, win=%#lx, supplied=%ld\n", c->name, win, supplied);
+
+  printf("Focus: win=%#lx, input=%d, focus=%d\n", c->win,
+    !!(c->flags & SUB_PREF_INPUT), !!(c->flags & SUB_PREF_FOCUS));
 
   return c;
 } /* }}} */
@@ -671,7 +674,13 @@ subClientKill(SubClient *c,
   /* Ignore further events and delete context */
   XSelectInput(subtle->disp, c->win, NoEventMask);
   XDeleteContext(subtle->disp, c->win, CLIENTID);
-  if(subtle->windows.focus == c->win) subtle->windows.focus = 0; ///< Unset focus
+
+  /* Focus stuff */
+  if(subtle->windows.focus == c->win) 
+    {
+      XUnmapWindow(subtle->disp, subtle->windows.caption);
+      subtle->windows.focus = 0;
+    }
 
   /* Close window */
   if(close && !(c->flags & SUB_STATE_DEAD))
