@@ -111,7 +111,6 @@ EventUnmap(XUnmapEvent *ev)
   SubTray *t = NULL;
 
   if(True != ev->send_event) return;
-printf("Unmap: win=%#lx\n", ev->window);
 
   if((c = CLIENT(subSharedFind(ev->window, CLIENTID))))
     {
@@ -439,7 +438,6 @@ EventCrossing(XCrossingEvent *ev)
   XEvent event;
   SubClient *c = NULL;
   SubTray *t = NULL;
-printf("Crossing: win=%#lx\n", ev->window);
 
   if((c = CLIENT(subSharedFind(ev->window, CLIENTID))))
     {

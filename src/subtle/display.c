@@ -72,13 +72,13 @@ subDisplayScan(void)
 {
   unsigned int i, n = 0;
   Window dummy, *wins = NULL;
-  XWindowAttributes attr;
 
   XQueryTree(subtle->disp, ROOT, &dummy, &dummy, &wins, &n);
   for(i = 0; i < n; i++)
     {
       SubClient *c = NULL;
       SubTray *t = NULL;
+      XWindowAttributes attr;
 
       XGetWindowAttributes(subtle->disp, wins[i], &attr);
       if(False == attr.override_redirect) ///< Skip own windows 
