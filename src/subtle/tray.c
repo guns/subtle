@@ -44,16 +44,15 @@ subTrayNew(Window win)
       return NULL;
     }
 
-  subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime, XEMBED_EMBEDDED_NOTIFY,
-    0, subtle->windows.tray, 0); ///< Tell client that it has been embedded
-
   /* Update tray window */
   XAddToSaveSet(subtle->disp, t->win);
-  XSelectInput(subtle->disp, t->win, EnterWindowMask|StructureNotifyMask|PropertyChangeMask);
+  XSelectInput(subtle->disp, t->win, EVENTMASK);
   XReparentWindow(subtle->disp, t->win, subtle->windows.tray, 0, 0);
   XSaveContext(subtle->disp, t->win, TRAYID, (void *)t);
+  subEwmhSetWMState(t->win, WithdrawnState);
 
-  subTraySetState(t); ///< Set window state
+  subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime, XEMBED_EMBEDDED_NOTIFY,
+    0, subtle->windows.tray, 0); ///< Start embedding life cycle 
 
   printf("Adding tray (%s)\n", t->name);
   subSharedLogDebug("new=tray, name=%s, win=%#lx\n", t->name, win);
@@ -165,6 +164,7 @@ subTraySelect(void)
 void
 subTraySetState(SubTray *t)
 {
+  int opcode = 0;
   XEmbedInfo *info = NULL;
 
   assert(t);
@@ -173,9 +173,7 @@ subTraySetState(SubTray *t)
   if((info = (XEmbedInfo *)subEwmhGetProperty(t->win, subEwmhGet(SUB_EWMH_XEMBED_INFO), 
     SUB_EWMH_XEMBED_INFO, NULL)))
     {
-      int opcode = 0;
-
-       if(info->flags & XEMBED_MAPPED) ///< Map if wanted
+      if(info->flags & XEMBED_MAPPED) ///< Map if wanted
         {
           opcode = XEMBED_WINDOW_ACTIVATE;
           XMapRaised(subtle->disp, t->win); 
@@ -191,8 +189,9 @@ subTraySetState(SubTray *t)
       subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime, opcode, 0, 0, 0);
       subSharedLogDebug("XEmbedInfo: version=%ld, flags=%ld, mapped=%ld\n", info->version,
         info->flags, info->flags & XEMBED_MAPPED);
+
+      XFree(info);
     }
-  XFree(info);
 } /* }}} */
 
  /** subTrayKill {{{

@@ -118,8 +118,9 @@ subClientNew(Window win)
 
   /* Update client */
   XAddToSaveSet(subtle->disp, c->win);
-  XSelectInput(subtle->disp, c->win, StructureNotifyMask|PropertyChangeMask|
-    EnterWindowMask|FocusChangeMask|KeyPressMask|ButtonPressMask);
+  XSelectInput(subtle->disp, c->win, EVENTMASK|FocusChangeMask);
+ //FocusChangeMask|KeyPressMask|ButtonPressMask
+
   XSetWindowBorderWidth(subtle->disp, c->win, subtle->bw);
   XSaveContext(subtle->disp, c->win, CLIENTID, (void *)c);
   subEwmhSetWMState(c->win, WithdrawnState);
@@ -167,6 +168,11 @@ subClientNew(Window win)
       if(hints->flags & XUrgencyHint) c->tags |= SUB_TAG_STICK;
       if(hints->flags & WindowGroupHint) group = hints->window_group;
       if(hints->flags & InputHint && hints->input) c->flags |= SUB_PREF_INPUT;
+      if(hints->flags & StateHint)
+        {
+          printf("StateHint: win=%#lx, state=%d\n", c->win, hints->initial_state);
+        }
+
       XFree(hints);
     }
 
@@ -294,8 +300,17 @@ subClientFocus(SubClient *c)
   subSharedLogDebug("Focus: win=%#lx, input=%d, focus=%d\n", c->win,
     !!(c->flags & SUB_PREF_INPUT), !!(c->flags & SUB_PREF_FOCUS));
 
-  /* Check if client wants to take focus by itself */
-  if(c->flags & SUB_PREF_FOCUS)
+  /**
+   * Input | Focus | Type                | Input
+   * ------+-------+---------------------+------------------------
+   * 0     | 0     | No Input            | Never
+   * 1     | 0     | Passive             | Set by wm (PointerRoot)
+   * 1     | 1     | Locally active      | Set by wm (PointerRoot)
+   * 0     | 1     | Globally active     | Sets the focus by itself
+   **/
+
+  /* Check client input focus type */
+  if(!(c->flags & SUB_PREF_INPUT) && c->flags & SUB_PREF_FOCUS)
     {
       subEwmhMessage(c->win, c->win, SUB_EWMH_WM_PROTOCOLS, 
         subEwmhGet(SUB_EWMH_WM_TAKE_FOCUS), CurrentTime, 0, 0, 0);
