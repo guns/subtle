@@ -86,8 +86,6 @@ EventMapRequest(XMapRequestEvent *ev)
             }
         }
     }
-
-  printf("MapRequest: win=%#lx\n", ev->window);
 } /* }}} */
 
 /* EventMap {{{ */
@@ -477,48 +475,49 @@ EventSelectionClear(XSelectionClearEvent *ev)
 static void
 EventGrab(XEvent *ev)
 {
-  Window win = 0, dummy = 0;
   SubGrab *g = NULL;
-  SubClient *c = NULL;
-  FLAGS flag = 0;
-  int rx = 0, ry = 0, wx = 0, wy = 0;
-  unsigned int code = 0, state = 0, mask = 0;
+  unsigned int code = 0, state = 0;
 
   /* Distinct types */
   switch(ev->type)
     {
       case ButtonPress: 
-        if(ev->xany.window == subtle->windows.views) ///< View buttons
+        if(ev->xbutton.window == subtle->windows.views) ///< View buttons
           {
             SubView *v = VIEW(subSharedFind(ev->xbutton.subwindow, BUTTONID));
             if(subtle->cv != v) subViewJump(v); ///< Prevent jumping to current view
             return;
           }      
 
-        win   = ev->xbutton.window == subtle->cv->frame ?
-          ev->xbutton.subwindow : ev->xbutton.window;
         code  = XK_Pointer_Button1 + ev->xbutton.button;
         state = ev->xbutton.state;
         break;
       case KeyPress:    
-        win   = ev->xkey.window == subtle->cv->frame ?
-          ev->xkey.subwindow : ev->xkey.window;
         code  = ev->xkey.keycode;
         state = ev->xkey.state;
         break;
     }
 
-  XQueryPointer(subtle->disp, win, &dummy, &dummy, &rx, &ry, &wx, &wy, &mask); ///< Ask pointer
-
   /* Find grab */
   if((g = subGrabFind(code, state)))
     {
+      Window win = 0;
+      SubClient *c = NULL;
+      FLAGS flag = 0;
+      int wx = 0, wy = 0;
+
+      /* Use similarity of both events */
+      win = ev->xbutton.window == subtle->cv->frame ? ev->xbutton.subwindow : ev->xbutton.window;
+      wx  = ev->xbutton.x;
+      wy  = ev->xbutton.y + subtle->th;
+
+
       flag = g->flags & ~(SUB_TYPE_GRAB|SUB_GRAB_KEY|SUB_GRAB_MOUSE); ///< Clear mask
       switch(flag)
         {
           case SUB_GRAB_WINDOW_FLOAT:
           case SUB_GRAB_WINDOW_FULL:
-          case SUB_GRAB_WINDOW_STICK:
+          case SUB_GRAB_WINDOW_STICK: /* {{{ */
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               {
                 flag = SUB_GRAB_WINDOW_FLOAT == flag ? SUB_STATE_FLOAT : 
@@ -526,8 +525,8 @@ EventGrab(XEvent *ev)
                 subClientToggle(c, flag);
                 if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
               }
-            break;            
-          case SUB_GRAB_WINDOW_KILL:
+            break; /* }}} */
+          case SUB_GRAB_WINDOW_KILL: /* {{{ */
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               { 
                 subArrayPop(subtle->clients, (void *)c);
@@ -535,9 +534,9 @@ EventGrab(XEvent *ev)
                 if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
                 subClientKill(c, True);
               }
-            break;             
+            break; /* }}} */
           case SUB_GRAB_WINDOW_MOVE:
-          case SUB_GRAB_WINDOW_RESIZE:
+          case SUB_GRAB_WINDOW_RESIZE: /* {{{ */
             if((c = CLIENT(subSharedFind(win, CLIENTID))) && !(c->flags & SUB_STATE_FULL))
               {
                 if(SUB_GRAB_WINDOW_MOVE == flag && c->flags & (SUB_STATE_FLOAT|SUB_STATE_STICK))
@@ -550,14 +549,14 @@ EventGrab(XEvent *ev)
 
                 subClientDrag(c, flag);
               }
-            break;            
-          case SUB_GRAB_EXEC:
+            break; /* }}} */
+          case SUB_GRAB_EXEC: /* {{{ */
             if(g->string) EventExec(g->string);
-            break;
-          case SUB_GRAB_VIEW_JUMP:
+            break; /* }}} */
+          case SUB_GRAB_VIEW_JUMP: /* {{{ */
             if(0 <= g->number && g->number < subtle->views->ndata)
               subViewJump(VIEW(subtle->views->data[g->number]));
-            break;
+            break; /* }}} */
           default:  
             printf("Grab not implemented yet!\n");
         }

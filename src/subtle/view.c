@@ -134,7 +134,7 @@ subViewConfigure(SubView *v)
 
           switch(l->flags & ~SUB_TYPE_LAYOUT)
             {
-              case SUB_TILE_BOTTOM:
+              case SUB_DRAG_BOTTOM:
                 subtle->perrow[l->c2->r]--;
                 subtle->percol[l->c2->c]--;
 
@@ -144,7 +144,7 @@ subViewConfigure(SubView *v)
                 subtle->perrow[l->c2->r]++;
                 subtle->percol[l->c2->c]++;
                 break;
-              case SUB_TILE_SWAP:
+              case SUB_DRAG_SWAP:
                 swap     = l->c1->r;
                 l->c1->r = l->c2->r;
                 l->c2->r = swap;
