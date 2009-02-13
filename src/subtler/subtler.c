@@ -3,7 +3,7 @@
   * @package subtle
   *
   * @file subtle remote client
-  * @copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
+  * @copyright (c) 2005-2009 Christoph Kappel <unexist@dorfelite.net>
   * @version $Id$
   *
   * This program can be distributed under the terms of the GNU GPL.
@@ -24,7 +24,7 @@ typedef void(*SubCommand)(char *, char *);
 /* }}} */
 
 /* Macros {{{ */
-#define SubtlerAssert(cond,...) if(!cond) subSharedLog(3, __FILE__, __LINE__, __VA_ARGS__);
+#define CHECK(cond,...) if(!cond) subSharedLog(3, __FILE__, __LINE__, __VA_ARGS__);
 /* }}} */
 
 /* Flags {{{ */
@@ -129,7 +129,7 @@ SubtlerClientFind(char *arg1,
 {
   Window win;
 
-  SubtlerAssert(arg1, "Usage: %sr -c -f PATTERN\n", PKG_NAME);
+  CHECK(arg1, "Usage: %sr -c -f PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 != subSharedClientFind(arg1, &win)) SubtlerClientInfo(win);
@@ -144,7 +144,7 @@ SubtlerClientFocus(char *arg1,
   Window win;
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  SubtlerAssert(arg1, "Usage: %sr -c -F CLIENT\n", PKG_NAME);
+  CHECK(arg1, "Usage: %sr -c -F CLIENT\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 != subSharedClientFind(arg1, &win))
@@ -160,7 +160,7 @@ static void
 SubtlerClientToggleFull(char *arg1,
   char *arg2)
 {
-  SubtlerAssert(arg1, "Usage: %sr -c -U CLIENT\n", PKG_NAME);
+  CHECK(arg1, "Usage: %sr -c -U CLIENT\n", PKG_NAME);
 
   SubtlerToggle(arg1, "_NET_WM_STATE_FULLSCREEN");
 } /* }}} */
@@ -170,7 +170,7 @@ static void
 SubtlerClientToggleFloat(char *arg1,
   char *arg2)
 {
-  SubtlerAssert(arg1, "Usage: %sr -c -L CLIENT\n", PKG_NAME);
+  CHECK(arg1, "Usage: %sr -c -L CLIENT\n", PKG_NAME);
 
   SubtlerToggle(arg1, "_NET_WM_STATE_ABOVE");
 } /* }}} */
@@ -180,7 +180,7 @@ static void
 SubtlerClientToggleStick(char *arg1,
   char *arg2)
 {
-  SubtlerAssert(arg1, "Usage: %sr -c -S CLIENT\n", PKG_NAME);
+  CHECK(arg1, "Usage: %sr -c -S CLIENT\n", PKG_NAME);
 
   SubtlerToggle(arg1, "_NET_WM_STATE_STICKY");
 } /* }}} */
@@ -192,7 +192,7 @@ SubtlerClientTag(char *arg1,
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  SubtlerAssert(arg1 && arg2, "Usage: %sr -c PATTERN -T PATTERN\n", PKG_NAME);
+  CHECK(arg1 && arg2, "Usage: %sr -c PATTERN -T PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   data.l[0] = subSharedClientFind(arg1, NULL);
@@ -210,7 +210,7 @@ SubtlerClientUntag(char *arg1,
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  SubtlerAssert(arg1 && arg2, "Usage: %sr -c PATTERN -u PATTERN\n", PKG_NAME);
+  CHECK(arg1 && arg2, "Usage: %sr -c PATTERN -u PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   data.l[0] = subSharedClientFind(arg1, NULL);
@@ -228,7 +228,7 @@ SubtlerClientTags(char *arg1,
 {
   Window win;
 
-  SubtlerAssert(arg1, "Usage: %sr -c PATTERN -g\n", PKG_NAME);
+  CHECK(arg1, "Usage: %sr -c PATTERN -g\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 != subSharedClientFind(arg1, &win))
@@ -255,7 +255,7 @@ SubtlerClientKill(char *arg1,
   Window win;
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  SubtlerAssert(arg1, "Usage: %sr -c -k PATTERN\n", PKG_NAME);
+  CHECK(arg1, "Usage: %sr -c -k PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 != subSharedClientFind(arg1, &win))
@@ -274,7 +274,7 @@ SubtlerTagNew(char *arg1,
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  SubtlerAssert(arg1, "Usage: %sr -t -n NAME\n", PKG_NAME);
+  CHECK(arg1, "Usage: %sr -t -n NAME\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   snprintf(data.b, sizeof(data.b), "%s", arg1);
@@ -372,7 +372,7 @@ SubtlerTagKill(char *arg1,
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  SubtlerAssert(arg1, "Usage: %sr -t -k PATTERN\n", PKG_NAME);
+  CHECK(arg1, "Usage: %sr -t -k PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if((data.l[0] = subSharedTagFind(arg1)))
@@ -407,7 +407,7 @@ SubtlerSubletKill(char *arg1,
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  SubtlerAssert(arg1, "Usage: %sr -s -k PATTERN\n", PKG_NAME);
+  CHECK(arg1, "Usage: %sr -s -k PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if((data.l[0] = subSharedSubletFind(arg2)))
@@ -422,7 +422,7 @@ SubtlerViewNew(char *arg1,
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  SubtlerAssert(arg1, "Usage: %sr -t -n PATTERN\n", PKG_NAME);
+  CHECK(arg1, "Usage: %sr -t -n PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   snprintf(data.b, sizeof(data.b), "%s", arg1);
@@ -474,7 +474,7 @@ SubtlerViewJump(char *arg1,
   int view = 0;
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  SubtlerAssert(arg1, "Usage: %sr -v -j PATTERN\n", PKG_NAME);
+  CHECK(arg1, "Usage: %sr -v -j PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   /* Try to convert arg1 to long or to find view */
@@ -494,7 +494,7 @@ SubtlerViewTag(char *arg1,
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  SubtlerAssert(arg1 && arg2, "Usage: %sr -v PATTERN -T PATTERN\n", PKG_NAME);
+  CHECK(arg1 && arg2, "Usage: %sr -v PATTERN -T PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   data.l[0] = subSharedViewFind(arg1, NULL);
@@ -512,7 +512,7 @@ SubtlerViewUntag(char *arg1,
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  SubtlerAssert(arg1 && arg2, "Usage: %sr -v PATTERN -u PATTERN\n", PKG_NAME);
+  CHECK(arg1 && arg2, "Usage: %sr -v PATTERN -u PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   data.l[0] = subSharedViewFind(arg1, NULL);
@@ -533,7 +533,7 @@ SubtlerViewTags(char *arg1,
   char **tags = NULL;
   unsigned long *flags = NULL;
 
-  SubtlerAssert(arg1, "Usage: %sr -v PATTERN -g\n", PKG_NAME);
+  CHECK(arg1, "Usage: %sr -v PATTERN -g\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 != subSharedViewFind(arg1, &win))
@@ -557,7 +557,7 @@ SubtlerViewKill(char *arg1,
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  SubtlerAssert(arg1, "Usage: %sr -v -k PATTERN\n", PKG_NAME);
+  CHECK(arg1, "Usage: %sr -v -k PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if((data.l[0] = subSharedViewFind(arg1, NULL)))
@@ -649,7 +649,7 @@ SubtlerUsage(int group)
 static void
 SubtlerVersion(void)
 {
-  printf("%sr %s - Copyright (c) 2005-2008 Christoph Kappel\n" \
+  printf("%sr %s - Copyright (c) 2005-2009 Christoph Kappel\n" \
           "Released under the GNU General Public License\n" \
           "Compiled for X%dR%d\n", 
           PKG_NAME, PKG_VERSION, X_PROTOCOL, X_PROTOCOL_REVISION);
