@@ -3,7 +3,7 @@
   * @package subtle
   *
   * @file Header file
-  * @copyright Copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
+  * @copyright Copyright (c) 2005-2009 Christoph Kappel <unexist@dorfelite.net>
   * @version $Id$
   *
   * This program can be distributed under the terms of the GNU GPL.
