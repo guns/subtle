@@ -117,13 +117,11 @@ subClientNew(Window win)
     }
 
   /* Update client */
-  XAddToSaveSet(subtle->disp, c->win);
-  XSelectInput(subtle->disp, c->win, EVENTMASK|FocusChangeMask);
- //FocusChangeMask|KeyPressMask|ButtonPressMask
-
-  XSetWindowBorderWidth(subtle->disp, c->win, subtle->bw);
-  XSaveContext(subtle->disp, c->win, CLIENTID, (void *)c);
   subEwmhSetWMState(c->win, WithdrawnState);
+  XSelectInput(subtle->disp, c->win, EVENTMASK|FocusChangeMask);
+  XSetWindowBorderWidth(subtle->disp, c->win, subtle->bw);
+  XAddToSaveSet(subtle->disp, c->win);
+  XSaveContext(subtle->disp, c->win, CLIENTID, (void *)c);
 
   /* Window attributes */
   XGetWindowAttributes(subtle->disp, c->win, &attrs);
@@ -168,10 +166,6 @@ subClientNew(Window win)
       if(hints->flags & XUrgencyHint) c->tags |= SUB_TAG_STICK;
       if(hints->flags & WindowGroupHint) group = hints->window_group;
       if(hints->flags & InputHint && hints->input) c->flags |= SUB_PREF_INPUT;
-      if(hints->flags & StateHint)
-        {
-          printf("StateHint: win=%#lx, state=%d\n", c->win, hints->initial_state);
-        }
 
       XFree(hints);
     }
@@ -212,9 +206,6 @@ subClientNew(Window win)
 
   printf("Adding client (%s)\n", c->name);
   subSharedLogDebug("new=client, name=%s, win=%#lx, supplied=%ld\n", c->name, win, supplied);
-
-  printf("Focus: win=%#lx, input=%d, focus=%d\n", c->win,
-    !!(c->flags & SUB_PREF_INPUT), !!(c->flags & SUB_PREF_FOCUS));
 
   return c;
 } /* }}} */
@@ -393,7 +384,8 @@ subClientDrag(SubClient *c,
         PointerMotionMask|ButtonReleaseMask|KeyPressMask|EnterWindowMask, &ev);
       switch(ev.type)
         {
-          case EnterNotify:   win = ev.xcrossing.window; break; ///< Find destination window
+          case EnterNotify:   win = ev.xcrossing.window; printf("Crossing: win=%#lx\n", win);
+          break; ///< Find destination window
           case ButtonRelease: loop = False;              break;
           case KeyPress: /* {{{ */
             if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE_LEFT|SUB_DRAG_RESIZE_RIGHT))
@@ -511,15 +503,6 @@ subClientDrag(SubClient *c,
 
   if(c && c2 && win != c->win) ///< Arrange {{{
     {
-      switch(state) ///< State translation
-        {
-          case SUB_DRAG_TOP:    state = SUB_TILE_TOP;    break;
-          case SUB_DRAG_BOTTOM: state = SUB_TILE_BOTTOM; break;
-          case SUB_DRAG_LEFT:   state = SUB_TILE_LEFT;   break;
-          case SUB_DRAG_RIGHT:  state = SUB_TILE_RIGHT;  break;
-          case SUB_DRAG_SWAP:   state = SUB_TILE_SWAP;   break;
-        }
-          
       subViewArrange(subtle->cv, c, c2, state);
       subViewConfigure(subtle->cv);
     } /* }}} */
