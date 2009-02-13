@@ -45,14 +45,14 @@ subTrayNew(Window win)
     }
 
   /* Update tray window */
-  XAddToSaveSet(subtle->disp, t->win);
+  subEwmhSetWMState(t->win, WithdrawnState);
   XSelectInput(subtle->disp, t->win, EVENTMASK);
   XReparentWindow(subtle->disp, t->win, subtle->windows.tray, 0, 0);
+  XAddToSaveSet(subtle->disp, t->win);
   XSaveContext(subtle->disp, t->win, TRAYID, (void *)t);
-  subEwmhSetWMState(t->win, WithdrawnState);
 
   subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime, XEMBED_EMBEDDED_NOTIFY,
-    0, subtle->windows.tray, 0); ///< Start embedding life cycle 
+    subtle->windows.tray, 0, 0); ///< Start embedding life cycle 
 
   printf("Adding tray (%s)\n", t->name);
   subSharedLogDebug("new=tray, name=%s, win=%#lx\n", t->name, win);
