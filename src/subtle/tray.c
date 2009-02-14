@@ -46,7 +46,7 @@ subTrayNew(Window win)
 
   /* Update tray window */
   subEwmhSetWMState(t->win, WithdrawnState);
-  XSelectInput(subtle->disp, t->win, EVENTMASK);
+  XSelectInput(subtle->disp, t->win, EVENTMASK|FocusChangeMask);
   XReparentWindow(subtle->disp, t->win, subtle->windows.tray, 0, 0);
   XAddToSaveSet(subtle->disp, t->win);
   XSaveContext(subtle->disp, t->win, TRAYID, (void *)t);

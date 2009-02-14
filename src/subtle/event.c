@@ -453,6 +453,7 @@ EventCrossing(XCrossingEvent *ev)
   else if((t = TRAY(subSharedFind(ev->window, TRAYID))))
     {
       subSharedLogDebug("Tray: name=%s\n", t->name);
+      XSetInputFocus(subtle->disp, t->win, RevertToNone, CurrentTime);
     }
 
   /* Remove any other event of the same type and window */
@@ -589,34 +590,12 @@ EventExpose(XEvent *ev)
 static void
 EventFocus(XFocusChangeEvent *ev)
 {
-  SubClient *c = CLIENT(subSharedFind(ev->window, CLIENTID));
-  if(c)
+  SubClient *c = NULL;
+  SubTray *t = NULL;
+
+  if((c = CLIENT(subSharedFind(ev->window, CLIENTID))))
     { 
-      if(FocusOut == ev->type) ///< FocusOut event
-        {
-          /* Remove focus from client */
-          if(subtle->windows.focus)
-            {
-              SubClient *f = NULL;
-              Window oldfocus = subtle->windows.focus;
-              subtle->windows.focus = 0;
-
-              if((f = CLIENT(subSharedFind(oldfocus, CLIENTID))))
-                {
-                  if(!(f->flags & SUB_STATE_DEAD)) ///< Don't revive
-                    {
-                      subGrabUnset(oldfocus);
-                      subClientRender(f);
-                    }
-                }
-              else subGrabUnset(oldfocus);
-              subViewRender();
-
-              if(!f || !(subtle->cv->tags & f->tags)) ///< Unmap caption if window is not on view
-                XUnmapWindow(subtle->disp, subtle->windows.caption);
-            } 
-        }
-      else if(FocusIn == ev->type) ///< FocusIn event
+      if(FocusIn == ev->type) ///< FocusIn event
         {
           subtle->windows.focus = c->win;
 
@@ -628,8 +607,41 @@ EventFocus(XFocusChangeEvent *ev)
           /* EWMH: Active window */
           subEwmhSetWindows(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW, &c->win, 1);
 
-          subViewUpdate();
+          subViewUpdate();        
         }
+      else if(FocusOut == ev->type) ///< FocusOut event
+        {
+          if(!(c->flags & SUB_STATE_DEAD)) ///< Don't revive
+            {
+              Window focus = subtle->windows.focus;
+
+              subtle->windows.focus = 0;
+              
+              subGrabUnset(focus);
+              subClientRender(c);
+            }
+            
+          if(!(VISIBLE(subtle->cv, c))) ///< Unmap caption if window is not on view
+            XUnmapWindow(subtle->disp, subtle->windows.caption); 
+
+          subViewRender();
+        }
+    }
+  else if((t = TRAY(subSharedFind(ev->window, TRAYID))))
+    {
+      int opcode = XEMBED_FOCUS_OUT, detail = 0;
+
+      if(FocusIn == ev->type) 
+        {
+          opcode = XEMBED_FOCUS_IN;
+          detail = XEMBED_FOCUS_FIRST;
+
+          /* EWMH: Active window */
+          subEwmhSetWindows(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW, &t->win, 1);
+        }
+
+      subEwmhMessage(ev->window, ev->window, SUB_EWMH_XEMBED, CurrentTime, 
+        opcode, detail, 0, 0);
     }
 } /* }}} */
 
