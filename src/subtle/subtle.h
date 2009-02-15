@@ -52,7 +52,7 @@
 #define ZERO(n)   (0 < n ? n : 1)                                 ///< Prevent zero
 
 #define EVENTMASK StructureNotifyMask|PropertyChangeMask| \
-  EnterWindowMask                                                 ///< Default event mask
+  EnterWindowMask|FocusChangeMask                                 ///< Default event mask
 #define ROOT      DefaultRootWindow(subtle->disp)                 ///< Root window
 #define SCREEN    DefaultScreen(subtle->disp)                     ///< Default screen
 #define VISUAL \
@@ -486,7 +486,8 @@ void subTrayConfigure(SubTray *t);                                ///< Configure
 void subTrayFocus(SubTray * t);                                   ///< Focus tray
 void subTrayUpdate(void);                                         ///< Update tray bar
 void subTraySelect(void);                                         ///< Get selection
-void subTraySetState(SubTray *t);                                  ///< Set state
+void subTrayFocus(SubTray *t);                                    ///< Focus tray
+void subTraySetState(SubTray *t);                                 ///< Set state
 void subTrayKill(SubTray *t);                                     ///< Delete tray
 /* }}} */
 

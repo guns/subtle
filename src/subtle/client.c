@@ -118,7 +118,7 @@ subClientNew(Window win)
 
   /* Update client */
   subEwmhSetWMState(c->win, WithdrawnState);
-  XSelectInput(subtle->disp, c->win, EVENTMASK|FocusChangeMask);
+  XSelectInput(subtle->disp, c->win, EVENTMASK);
   XSetWindowBorderWidth(subtle->disp, c->win, subtle->bw);
   XAddToSaveSet(subtle->disp, c->win);
   XSaveContext(subtle->disp, c->win, CLIENTID, (void *)c);
@@ -279,7 +279,7 @@ subClientRender(SubClient *c)
 } /* }}} */
 
  /** subClientFocus {{{
-  * @brief Set or unset focus to client
+  * @brief Set focus to client
   * @param[in]  c  A #SubClient
   **/
 
@@ -288,9 +288,6 @@ subClientFocus(SubClient *c)
 {
   assert(c);
      
-  subSharedLogDebug("Focus: win=%#lx, input=%d, focus=%d\n", c->win,
-    !!(c->flags & SUB_PREF_INPUT), !!(c->flags & SUB_PREF_FOCUS));
-
   /**
    * Input | Focus | Type                | Input
    * ------+-------+---------------------+------------------------
@@ -307,6 +304,9 @@ subClientFocus(SubClient *c)
         subEwmhGet(SUB_EWMH_WM_TAKE_FOCUS), CurrentTime, 0, 0, 0);
     }   
   else XSetInputFocus(subtle->disp, c->win, RevertToNone, CurrentTime);
+
+  subSharedLogDebug("Focus: win=%#lx, input=%d, focus=%d\n", c->win,
+    !!(c->flags & SUB_PREF_INPUT), !!(c->flags & SUB_PREF_FOCUS));
 } /* }}} */
 
  /** subClientDrag {{{
