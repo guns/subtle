@@ -46,13 +46,13 @@ subTrayNew(Window win)
 
   /* Update tray window */
   subEwmhSetWMState(t->win, WithdrawnState);
-  XSelectInput(subtle->disp, t->win, EVENTMASK|FocusChangeMask);
+  XSelectInput(subtle->disp, t->win, EVENTMASK);
   XReparentWindow(subtle->disp, t->win, subtle->windows.tray, 0, 0);
   XAddToSaveSet(subtle->disp, t->win);
   XSaveContext(subtle->disp, t->win, TRAYID, (void *)t);
 
   subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime, XEMBED_EMBEDDED_NOTIFY,
-    subtle->windows.tray, 0, 0); ///< Start embedding life cycle 
+    0, subtle->windows.tray, 0); ///< Start embedding life cycle 
 
   printf("Adding tray (%s)\n", t->name);
   subSharedLogDebug("new=tray, name=%s, win=%#lx\n", t->name, win);
@@ -90,19 +90,6 @@ subTrayConfigure(SubTray *t)
   XFree(hints);
 
   subSharedLogDebug("Tray: width=%d, supplied=%ld\n", t->width, supplied);
-} /* }}} */
-
- /** subTrayFocus {{{
-  * @brief Set or unset focus to tray
-  * @param[in]  t  A #SubTray
-  **/
-
-void
-subTrayFocus(SubTray *t)
-{
-  assert(t);
-
-  XSetInputFocus(subtle->disp, t->win, RevertToNone, CurrentTime);
 } /* }}} */
 
  /** subTrayUpdate {{{
@@ -156,6 +143,21 @@ subTraySelect(void)
     subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION), subtle->windows.tray, 0, 0);
 } /* }}} */
 
+ /** subTrayFocus {{{
+  * @brief Set focus to tray
+  * @param[in]  t  A #SubTray
+  **/
+
+void
+subTrayFocus(SubTray *t)
+{
+  assert(t);
+
+  XSetInputFocus(subtle->disp, t->win, RevertToNone, CurrentTime);
+
+  subSharedLogDebug("Focus: win=%#lx\n", t->win);
+} /* }}} */
+  
  /** subTraySetState {{{
   * @brief Set window state and map/unmap accordingly
   * @param[in]  t  A #SubTray

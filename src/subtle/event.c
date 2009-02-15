@@ -93,11 +93,19 @@ static void
 EventMap(XMapEvent *ev)
 {
   SubClient *c = NULL;
+  SubTray *t = NULL;
+
+  if(ev->window != ev->event && ev->send_event != True) return;
 
   if((c = CLIENT(subSharedFind(ev->window, CLIENTID))))
     {
-      if(ev->window != ev->event && ev->send_event != True) return;
       subEwmhSetWMState(c->win, NormalState);
+    }
+  else if((t = TRAY(subSharedFind(ev->window, TRAYID))))
+    {
+      subEwmhSetWMState(t->win, NormalState);
+      subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime, 
+        XEMBED_WINDOW_ACTIVATE, 0, 0, 0);
     }
 } /* }}} */
 
@@ -120,6 +128,7 @@ EventUnmap(XUnmapEvent *ev)
     }
   else if((t = TRAY(subSharedFind(ev->window, TRAYID))))
     {
+      subEwmhSetWMState(t->win, WithdrawnState);
       subArrayPop(subtle->trays, (void *)t);
       subTrayKill(t);
       subTrayUpdate();
@@ -303,6 +312,9 @@ EventMessage(XClientMessageEvent *ev)
 
       switch(id)
         {
+          case SUB_EWMH_XEMBED:
+            printf("XEmbed: win=%#lx\n", ev->window);
+            break;
           case SUB_EWMH_NET_SYSTEM_TRAY_OPCODE: /* {{{ */
             switch(ev->data.l[1])
               {
@@ -313,6 +325,12 @@ EventMessage(XClientMessageEvent *ev)
                       subArrayPush(subtle->trays, (void *)t);
                       subTrayUpdate();
                     } 
+                  break;
+                case XEMBED_REQUEST_FOCUS:
+                  if((t = TRAY(subSharedFind(ev->window, TRAYID))))
+                    {
+                    }
+                  
               }
             break; /* }}} */
         }
@@ -440,21 +458,9 @@ EventCrossing(XCrossingEvent *ev)
   if((c = CLIENT(subSharedFind(ev->window, CLIENTID))))
     {
       if(!(c->flags & SUB_STATE_DEAD))
-        {
-          Window win = 0, root = 0;
-          int rx = 0, ry = 0, wx = 0, wy = 0;
-          unsigned int mask = 0;
-
-          /* Ensure that only the pointer window can get focus */
-          XQueryPointer(subtle->disp, c->win, &root, &win, &rx, &ry, &wx, &wy, &mask);
-          if(ev->subwindow == win) subClientFocus(c);
-        }
+          subClientFocus(c);
      }
-  else if((t = TRAY(subSharedFind(ev->window, TRAYID))))
-    {
-      subSharedLogDebug("Tray: name=%s\n", t->name);
-      XSetInputFocus(subtle->disp, t->win, RevertToNone, CurrentTime);
-    }
+  else if((t = TRAY(subSharedFind(ev->window, TRAYID)))) subTrayFocus(t);
 
   /* Remove any other event of the same type and window */
   while(XCheckTypedWindowEvent(subtle->disp, ev->window, ev->type, &event));    
@@ -511,7 +517,6 @@ EventGrab(XEvent *ev)
       win = ev->xbutton.window == subtle->cv->frame ? ev->xbutton.subwindow : ev->xbutton.window;
       wx  = ev->xbutton.x;
       wy  = ev->xbutton.y + subtle->th;
-
 
       flag = g->flags & ~(SUB_TYPE_GRAB|SUB_GRAB_KEY|SUB_GRAB_MOUSE); ///< Clear mask
       switch(flag)
@@ -629,19 +634,18 @@ EventFocus(XFocusChangeEvent *ev)
     }
   else if((t = TRAY(subSharedFind(ev->window, TRAYID))))
     {
-      int opcode = XEMBED_FOCUS_OUT, detail = 0;
+      int opcode = XEMBED_WINDOW_DEACTIVATE;
 
       if(FocusIn == ev->type) 
         {
-          opcode = XEMBED_FOCUS_IN;
-          detail = XEMBED_FOCUS_FIRST;
+          opcode = XEMBED_WINDOW_ACTIVATE;
 
           /* EWMH: Active window */
           subEwmhSetWindows(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW, &t->win, 1);
         }
 
       subEwmhMessage(ev->window, ev->window, SUB_EWMH_XEMBED, CurrentTime, 
-        opcode, detail, 0, 0);
+        opcode, 0, 0, 0);
     }
 } /* }}} */
 
