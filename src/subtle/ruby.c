@@ -445,7 +445,8 @@ subRubyLoadConfig(const char *file)
   /* Check path */
   if(!file)
     {
-      snprintf(config, sizeof(config), "%s/.%s/%s", getenv("HOME"), PKG_NAME, PKG_CONFIG);
+      snprintf(config, sizeof(config), "%s/%s/%s", 
+        getenv("XDG_CONFIG_HOME"), PKG_NAME, PKG_CONFIG);
       if(!(fd = fopen(config, "r"))) 
         {
           snprintf(config, sizeof(config), "%s/%s", DIR_CONFIG, PKG_CONFIG);
@@ -521,7 +522,7 @@ subRubyLoadSublets(const char *path)
   /* Check path */
   if(!path)
     {
-      snprintf(buf, sizeof(buf), "%s/.%s/sublets", getenv("HOME"), PKG_NAME);
+      snprintf(buf, sizeof(buf), "%s/%s/sublets", getenv("XDG_DATA_HOME"), PKG_NAME);
       if((dir = opendir(buf))) closedir(dir);
       else snprintf(buf, sizeof(buf), "%s", DIR_SUBLET);
     }

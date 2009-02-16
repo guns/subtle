@@ -15,14 +15,19 @@ the developer version as followed:
  3. rake [options]
  4. rake install
 
-Per default subtle will be installed with /usr/local as prefix.
-This can be easily changed. (see: rake help)
+The installer will copy the files to following (XDG) default path:
 
-Therefore subtle will load the systemwide config and every sublets
-that is in the sublets path. (default: /usr/local/share/subtle/sublets)
+ Binaries   -> /usr/bin
+ Configs    -> /etc/xdg/subtle
+ Sublets    -> /usr/share/subtle
+ Extension  -> (Ruby Dir)/subtle
 
-That may not be suitable for every user, so just create ~/.subtle
-and copy the latest config and the desired sublets into it.
+The path can be easily changed (see: rake help) and are printed
+after config has finished.
+
+On start subtle will check if a config file and sublets are available
+in the typical XDG path and fall back to the systemwide files.
+(see: $XDG_DATA_HOME, $XDG_CONFIG_HOME)
 
 Always compare your existing config with the one of the repository
 to get the latest options.

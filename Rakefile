@@ -16,13 +16,17 @@ require("ftools")
 # 
 # Settings
 #
+# XDG paths {{{
+@xdg_config = ENV["XDG_CONFIG_DIRS"] ? ENV["XDG_CONFIG_DIRS"].split(":").first : "/etc/xdg"
+@xdg_data   = ENV["XDG_DATA_DIRS"]   ? ENV["XDG_DATA_DIRS"].split(":").first   : "$(prefix)/share"
+# }}}
+
 # Options / defines {{{
 @options = {
   "destdir"    => "",
-  "prefix"     => "$(destdir)/usr/local",
-  "bindir"     => "$(prefix)/bin",
-  "sysconfdir" => "$(prefix)/etc",
-  "datadir"    => "$(prefix)/share",
+  "bindir"     => "$(destdir)/usr/bin",
+  "sysconfdir" => "$(destdir)" + @xdg_config,
+  "datadir"    => "$(destdir)" + @xdg_data,
   "debug"      => "no",
   "builddir"   => "build",
   "archdir"    => "",
@@ -40,7 +44,7 @@ require("ftools")
   "PKG_CONFIG"    => "subtle.rb",
   "RUBY_VERSION"  => "$(MAJOR).$(MINOR).$(TEENY)",
   "DIR_CONFIG"    => "$(sysconfdir)/$(PKG_NAME)",
-  "DIR_SUBLET"    => "$(datadir)/$(PKG_NAME)",
+  "DIR_SUBLET"    => "$(datadir)/$(PKG_NAME)/sublets",
   "DIR_EXT"       => "$(sitelibdir)/$(PKG_NAME)"
 }  # }}}
 
@@ -224,7 +228,6 @@ task(:config) do
 
 #{@defines["PKG_NAME"]} #{@defines["PKG_VERSION"]}
 -----------------
-Install prefix......: #{@options["prefix"]}
 Binaries............: #{@options["bindir"]}
 Configuration.......: #{@defines["DIR_CONFIG"]}
 Sublets.............: #{@defines["DIR_SUBLET"]}
