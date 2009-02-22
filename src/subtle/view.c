@@ -12,6 +12,34 @@
 
 #include "subtle.h"
 
+/* ViewEmptyCols {{{ */
+static void
+ViewEmptyCols(void)
+{
+  int i, j;
+
+  for(i = 0; i < subtle->clients->ndata; i++)
+    {
+      if(0 == subtle->percol[i]) ///< Col empty
+        {
+          for(j = 0; j < subtle->clients->ndata; j++)
+            {
+              SubClient *c = CLIENT(subtle->clients->data[j]);
+
+              if(c->c == i + 1)
+                {
+                  c->c = i;
+                }
+            }
+          for(j = i; j < subtle->clients->ndata - 1; j++)
+            {
+              subtle->percol[j] = subtle->percol[j + 1];
+            }
+        }
+    }
+  
+} /* }}} */
+
  /** subViewNew {{{
   * @brief Create a new view
   * @param[in]  name  Name of the view
@@ -79,7 +107,7 @@ void
 subViewConfigure(SubView *v)
 {
   long vid = 0;
-  int i, j, swap, total = 0, width = 0, height = 0;
+  int i, j, k, once, swap, total = 0;
 
   assert(v);
 
@@ -91,6 +119,10 @@ subViewConfigure(SubView *v)
       for(i = 0, j = 0; i < subtle->clients->ndata; i++)
         {
           SubClient *c = CLIENT(subtle->clients->data[i]);
+
+          /* Reset perrow/percol */
+          subtle->perrow[i] = 0;
+          subtle->percol[i] = 0;
 
           /* Find matching clients */
           if(VISIBLE(v, c))
@@ -123,6 +155,9 @@ subViewConfigure(SubView *v)
               c->flags |= SUB_STATE_UNMAP; ///< Skip next unmap event
               XUnmapWindow(subtle->disp, c->win); 
             }
+
+          subtle->chkrow[i] = 0;
+          subtle->chkcol[i] = 0;
         }
       subtle->perrow[0] = j; 
       /* }}} */
@@ -130,6 +165,7 @@ subViewConfigure(SubView *v)
       /* Layout {{{ */
       for(i = 0; i < v->layout->ndata; i++)
         {
+          int col = 0;
           SubLayout *l = LAYOUT(v->layout->data[i]);
 
           switch(l->flags & ~SUB_TYPE_LAYOUT)
@@ -137,12 +173,15 @@ subViewConfigure(SubView *v)
               case SUB_DRAG_BOTTOM:
                 subtle->perrow[l->c2->r]--;
                 subtle->percol[l->c2->c]--;
+                subtle->percol[l->c1->c]--;
 
+                col      = MIN(l->c1->c, l->c2->c);
                 l->c2->r = l->c1->r + 1;
-                l->c2->c = l->c1->c;
+                l->c1->c = col;
+                l->c2->c = col;
 
                 subtle->perrow[l->c2->r]++;
-                subtle->percol[l->c2->c]++;
+                subtle->percol[l->c2->c] += 2;
                 break;
               case SUB_DRAG_SWAP:
                 swap     = l->c1->r;
@@ -156,6 +195,43 @@ subViewConfigure(SubView *v)
             }
         } /* }}} */
 
+//ViewEmptyCols();
+
+/* Table {{{ */
+printf("\n  ");
+for(i = 0; i < subtle->clients->ndata; i++)
+  {
+    printf("%d ", subtle->percol[i]);
+  }
+printf("\n");
+for(i = 0; i < subtle->clients->ndata; i++) ///< Row
+  {
+    printf("%d ", subtle->perrow[i]);
+
+    for(j = 0; j < subtle->clients->ndata; j++) ///< Col
+      { 
+        once = 0;
+        for(k = 0; k < subtle->clients->ndata; k++) ///< Clients
+          {
+            SubClient *d = CLIENT(subtle->clients->data[k]);
+
+            if(VISIBLE(v, d) && d->r == i && d->c == j)
+              {
+                printf("x ");
+                once++;
+              }
+          }
+        if(0 == once) printf("  ");
+      }
+    printf("%d\n", i);
+  } 
+printf("  ");
+for(i = 0; i < subtle->clients->ndata; i++)
+  {
+    printf("%d ", i);
+  }  
+printf("\n\n"); /* }}} */
+
       /* Calculations {{{ */
       for(i = 0; i < subtle->clients->ndata; i++)
         {
@@ -165,17 +241,33 @@ subViewConfigure(SubView *v)
             {      
               if(!(c->flags & (SUB_STATE_FULL|SUB_STATE_FLOAT))) 
                 {
-                  width          = SCREENW / ZERO(subtle->perrow[c->r]);
-                  height         = (SCREENH - subtle->th) / ZERO(subtle->percol[c->c]);
-                  c->rect.x      = c->c * width;
-                  c->rect.y      = c->r * height;
-                  c->rect.width  = width;
-                  c->rect.height = height;
+                  c->rect.width  = SCREENW / ZERO(subtle->perrow[c->r]);
+                  c->rect.height = (SCREENH - subtle->th) / ZERO(subtle->percol[c->c]);
+                  c->rect.x      = c->c * c->rect.width;
+                  c->rect.y      = c->r * c->rect.height;
+
+                  subtle->chkcol[c->c]++;
+                  subtle->chkrow[c->r]++;
+
+                  /* Compensation for int rounding */
+                  if(subtle->perrow[c->r] == c->c + 1) 
+                    c->rect.width += abs(SCREENW - subtle->perrow[c->r] * c->rect.width); 
+                  if(subtle->percol[c->c] == c->r + 1) 
+                    c->rect.height += 
+                      abs((SCREENH - subtle->th) - subtle->percol[c->c] * c->rect.height); 
 
                   subClientConfigure(c);
                 }
             }
         } /* }}} */
+
+printf("r c   x   y width height\n");
+for(i = 0; i < subtle->clients->ndata; i++)
+  {
+    SubClient *e = CLIENT(subtle->clients->data[i]);
+    printf("%d %d %3d %3d %6d %6d\n", 
+      e->r, e->c, e->rect.x, e->rect.y, e->rect.width, e->rect.height);
+  }        
     }
 } /* }}} */
 

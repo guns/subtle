@@ -384,8 +384,7 @@ subClientDrag(SubClient *c,
         PointerMotionMask|ButtonReleaseMask|KeyPressMask|EnterWindowMask, &ev);
       switch(ev.type)
         {
-          case EnterNotify:   win = ev.xcrossing.window; printf("Crossing: win=%#lx\n", win);
-          break; ///< Find destination window
+          case EnterNotify:   win = ev.xcrossing.window; break; ///< Find destination window
           case ButtonRelease: loop = False;              break;
           case KeyPress: /* {{{ */
             if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE_LEFT|SUB_DRAG_RESIZE_RIGHT))
@@ -501,11 +500,11 @@ subClientDrag(SubClient *c,
 
   ClientMask(state, c2, &r); ///< Erase mask
 
-  if(c && c2 && win != c->win) ///< Arrange {{{
+  if(c && c2 && win != c->win)
     {
       subViewArrange(subtle->cv, c, c2, state);
       subViewConfigure(subtle->cv);
-    } /* }}} */
+    }
   else ///< Move/Resize
     {
       if(c->flags & SUB_STATE_FLOAT) 
