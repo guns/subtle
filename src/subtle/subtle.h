@@ -50,6 +50,7 @@
 #define WINW(c)   (c->rect.width - 2 * subtle->bw)                ///< Get real width
 #define WINH(c)   (c->rect.height - 2 * subtle->bw)               ///< Get real height
 #define ZERO(n)   (0 < n ? n : 1)                                 ///< Prevent zero
+#define MIN(a,b)  (a >= b ? b : a)                                ///< Minimum
 
 #define EVENTMASK StructureNotifyMask|PropertyChangeMask| \
   EnterWindowMask|FocusChangeMask                                 ///< Default event mask
@@ -135,15 +136,15 @@
 #define SUB_PREF_HINTS         (1L << 21)                         ///< Size hints available
 
 /* Drag states */
-#define SUB_DRAG_START         (1L << 1)                          ///< Drag start
-#define SUB_DRAG_TOP           (1L << 2)                          ///< Drag above
-#define SUB_DRAG_BOTTOM        (1L << 3)                          ///< Drag below
-#define SUB_DRAG_LEFT          (1L << 4)                          ///< Drag left
-#define SUB_DRAG_RIGHT         (1L << 5)                          ///< Drag right
-#define SUB_DRAG_MOVE          (1L << 6)                          ///< Drag move
-#define SUB_DRAG_SWAP          (1L << 7)                          ///< Drag swap
-#define SUB_DRAG_RESIZE_LEFT   (1L << 8)                          ///< Drag resize left
-#define SUB_DRAG_RESIZE_RIGHT  (1L << 9)                          ///< Drag resize right
+#define SUB_DRAG_START         (1L << 10)                         ///< Drag start
+#define SUB_DRAG_TOP           (1L << 11)                         ///< Drag above
+#define SUB_DRAG_BOTTOM        (1L << 13)                         ///< Drag below
+#define SUB_DRAG_LEFT          (1L << 14)                         ///< Drag left
+#define SUB_DRAG_RIGHT         (1L << 15)                         ///< Drag right
+#define SUB_DRAG_MOVE          (1L << 16)                         ///< Drag move
+#define SUB_DRAG_SWAP          (1L << 17)                         ///< Drag swap
+#define SUB_DRAG_RESIZE_LEFT   (1L << 18)                         ///< Drag resize left
+#define SUB_DRAG_RESIZE_RIGHT  (1L << 19)                         ///< Drag resize right
 
 /* Grabs */
 #define SUB_GRAB_KEY           (1L << 10)                         ///< Key grab
@@ -252,11 +253,11 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_WINDOW_UNTAG,                                   ///< subtle window untag
   SUB_EWMH_SUBTLE_WINDOW_TAGS,                                    ///< subtle window tags
   SUB_EWMH_SUBTLE_TAG_NEW,                                        ///< subtle tag new
-  SUB_EWMH_SUBTLE_TAG_KILL,                                       ///< subtle tag kill
   SUB_EWMH_SUBTLE_TAG_LIST,                                       ///< subtle tag list
+  SUB_EWMH_SUBTLE_TAG_KILL,                                       ///< subtle tag kill
   SUB_EWMH_SUBTLE_VIEW_NEW,                                       ///< subtle view new
   SUB_EWMH_SUBTLE_VIEW_KILL,                                      ///< subtle view kill
-  SUB_EWMH_SUBTLE_VIEW_LIST,                                      ///< subtle view list
+  SUB_EWMH_SUBTLE_SUBLET_UPDATE,                                  ///< subtle sublet update
   SUB_EWMH_SUBTLE_SUBLET_LIST,                                    ///< subtle sublet list
   SUB_EWMH_SUBTLE_SUBLET_KILL,                                    ///< subtle sublet kill
 

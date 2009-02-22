@@ -170,7 +170,7 @@ EventMessage(XClientMessageEvent *ev)
   /* Messages for root window {{{ */
   if(ROOT == ev->window)
     {
-      int id = subEwmhFind(ev->message_type);
+      int tag, id = subEwmhFind(ev->message_type);
 
       SubView *v = NULL;
       SubTag *t = NULL;
@@ -199,35 +199,32 @@ EventMessage(XClientMessageEvent *ev)
                 subClientFocus(c);
               }
             break; /* }}} */
-          case SUB_EWMH_SUBTLE_WINDOW_TAG: /* {{{ */
-            if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0])))) ///< Clients
-              {
-                c->tags |= (1L << (ev->data.l[1] + 1));
-                subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&c->tags, 1);
-                if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
-              }
-            else if((v = VIEW(subArrayGet(subtle->views, (int)ev->data.l[0])))) ///< Views
-              {
-                v->tags |= (1L << (ev->data.l[1] + 1));
-                subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&v->tags, 1);
-                if(subtle->cv == v) subViewConfigure(v);
-              }              
-            break; /* }}} */
+          case SUB_EWMH_SUBTLE_WINDOW_TAG:
           case SUB_EWMH_SUBTLE_WINDOW_UNTAG: /* {{{ */
-            if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0])))) ///< Clients
-              {
-                int tag = (1L << (ev->data.l[1] + 1));
+            tag = (1L << (ev->data.l[1] + 1));
 
-                c->tags &= ~tag;
-                subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&c->tags, 1);
-                if(subtle->cv->tags & tag) subViewConfigure(subtle->cv);
-              }
-            else if((v = VIEW(subArrayGet(subtle->views, (int)ev->data.l[0])))) ///< Views
+            switch(ev->data.l[2]) ///< Type
               {
-                v->tags &= ~(1L << (ev->data.l[1] + 1));
-                subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&v->tags, 1);
-                if(subtle->cv == v) subViewConfigure(v);
-              }              
+                case 0:          
+                  if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0])))) ///< Clients
+                    {
+                      if(SUB_EWMH_SUBTLE_WINDOW_TAG == id) c->tags |= tag; ///< Action
+                      else c->tags &= ~tag;
+
+                      subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&c->tags, 1);
+                      if(subtle->cv->tags & tag) subViewConfigure(subtle->cv);
+                    }
+                  break;
+                case 1:
+                  if((v = VIEW(subArrayGet(subtle->views, (int)ev->data.l[0])))) ///< Views
+                    {
+                      if(SUB_EWMH_SUBTLE_WINDOW_TAG == id) v->tags |= tag; ///< Action
+                      else v->tags &= ~tag;
+                    
+                      subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&v->tags, 1);
+                      if(subtle->cv == v) subViewConfigure(v);
+                    } 
+              }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_TAG_NEW: /* {{{ */
             t = subTagNew(ev->data.b, NULL); 
