@@ -198,7 +198,7 @@ SubtlerClientTag(char *arg1,
   data.l[0] = subSharedClientFind(arg1, NULL);
   data.l[1] = subSharedTagFind(arg2);
 
-  if(data.l[0] && data.l[1])
+  if(-1 != data.l[0] && -1 != data.l[1])
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_TAG", data, False);
   else subSharedLogWarn("Failed to tag client\n");
 } /* }}} */
@@ -216,7 +216,7 @@ SubtlerClientUntag(char *arg1,
   data.l[0] = subSharedClientFind(arg1, NULL);
   data.l[1] = subSharedTagFind(arg2);
 
-  if(data.l[0] && data.l[1])
+  if(-1 != data.l[0] && -1 != data.l[1])
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_UNTAG", data, False);
   else subSharedLogWarn("Failed to untag client\n");
 } /* }}} */
@@ -499,8 +499,9 @@ SubtlerViewTag(char *arg1,
 
   data.l[0] = subSharedViewFind(arg1, NULL);
   data.l[1] = subSharedTagFind(arg2);
+  data.l[2] = 1;
 
-  if(data.l[0] && data.l[1])
+  if(-1 != data.l[0] && -1 != data.l[1])
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_TAG", data, False);
   else subSharedLogWarn("Failed to tag view\n");
 } /* }}} */
@@ -517,8 +518,9 @@ SubtlerViewUntag(char *arg1,
 
   data.l[0] = subSharedViewFind(arg1, NULL);
   data.l[1] = subSharedTagFind(arg2);
+  data.l[2] = 1;
 
-  if(data.l[0] && data.l[1])
+  if(-1 != data.l[0] && -1 != data.l[1])
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_UNTAG", data, False);
   else subSharedLogWarn("Failed to untag view\n");
 } /* }}} */

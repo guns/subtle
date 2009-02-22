@@ -21,8 +21,12 @@ int debug = 0;
 #endif /* DEBUG */
 
 /* Flags {{{ */
-#define SUB_TYPE_TAG  0   ///< Tag
-#define SUB_TYPE_VIEW 1   ///< View
+#define SUB_TYPE_CLIENT  0   ///< Client
+#define SUB_TYPE_VIEW    1   ///< View
+#define SUB_TYPE_TAG     2   ///< Tag
+
+#define SUB_ACTION_TAG   0   ///< Tag
+#define SUB_ACTION_UNTAG 1   ///< Untag
 /* }}} */
 
 /* SubtlextFind {{{ */
@@ -129,7 +133,8 @@ SubtlextToggle(VALUE self,
 static VALUE
 SubtlextTag(VALUE self,
   VALUE value,
-  char *atom)
+  int action,
+  int type)
 {
   VALUE tag = Qnil;
 
@@ -147,8 +152,11 @@ SubtlextTag(VALUE self,
 
           data.l[0] = FIX2LONG(oid);
           data.l[1] = FIX2LONG(tid);
+          data.l[2] = type;
 
-          subSharedMessage(DefaultRootWindow(display), atom, data, True);
+          subSharedMessage(DefaultRootWindow(display), 
+            SUB_ACTION_TAG == action ? "SUBTLE_WINDOW_TAG" : "SUBTLE_WINDOW_UNTAG", 
+            data, True);
 
           return Qtrue;
         }
@@ -261,7 +269,7 @@ static VALUE
 SubtlextClientTagAdd(VALUE self,
   VALUE value)
 {
-  return SubtlextTag(self, value, "SUBTLE_WINDOW_TAG");
+  return SubtlextTag(self, value, SUB_ACTION_TAG, SUB_TYPE_CLIENT);
 } /* }}} */
 
 /* SubtlextClientTagDel {{{ */
@@ -269,7 +277,7 @@ static VALUE
 SubtlextClientTagDel(VALUE self,
   VALUE value)
 {  
-  return SubtlextTag(self, value, "SUBTLE_WINDOW_UNTAG");
+  return SubtlextTag(self, value, SUB_ACTION_UNTAG, SUB_TYPE_CLIENT);
 } /* }}} */
 
 /* SubtlextClientToggleFull {{{ */
@@ -345,7 +353,7 @@ static VALUE
 SubtlextClientOperatorPlus(VALUE self,
   VALUE value)
 {
-  return SubtlextTag(self, value, "SUBTLE_WINDOW_TAG");
+  return SubtlextTag(self, value, SUB_ACTION_TAG, SUB_TYPE_CLIENT);
 } /* }}} */
 
 /* SubtlextClientOperatorMinus {{{ */
@@ -353,7 +361,7 @@ static VALUE
 SubtlextClientOperatorMinus(VALUE self,
   VALUE value)
 {
-  return SubtlextTag(self, value, "SUBTLE_WINDOW_UNTAG");
+  return SubtlextTag(self, value, SUB_ACTION_UNTAG, SUB_TYPE_CLIENT);
 } /* }}} */
 
 /* SubtlextSubtleKill {{{ */
@@ -997,7 +1005,7 @@ static VALUE
 SubtlextViewTagAdd(VALUE self,
   VALUE value)
 {
-  return SubtlextTag(self, value, "SUBTLE_WINDOW_TAG");
+  return SubtlextTag(self, value, SUB_ACTION_TAG, SUB_TYPE_VIEW);
 } /* }}} */
 
 /* SubtlextViewTagDel {{{ */
@@ -1005,7 +1013,7 @@ static VALUE
 SubtlextViewTagDel(VALUE self,
   VALUE value)
 {  
-  return SubtlextTag(self, value, "SUBTLE_WINDOW_UNTAG");
+  return SubtlextTag(self, value, SUB_ACTION_UNTAG, SUB_TYPE_VIEW);
 } /* }}} */
 
 /* SubtlextViewJump {{{ */
@@ -1061,7 +1069,7 @@ static VALUE
 SubtlextViewOperatorPlus(VALUE self,
   VALUE value)
 {
-  return SubtlextTag(self, value, "SUBTLE_WINDOW_TAG");
+  return SubtlextTag(self, value, SUB_ACTION_TAG, SUB_TYPE_VIEW);
 } /* }}} */
 
 /* SubtlextViewOperatorMinus {{{ */
@@ -1069,7 +1077,7 @@ static VALUE
 SubtlextViewOperatorMinus(VALUE self,
   VALUE value)
 {
-  return SubtlextTag(self, value, "SUBTLE_WINDOW_UNTAG");
+  return SubtlextTag(self, value, SUB_ACTION_UNTAG, SUB_TYPE_VIEW);
 } /* }}} */
 
  /** Init_subtlext {{{
