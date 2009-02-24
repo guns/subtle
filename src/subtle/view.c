@@ -12,34 +12,6 @@
 
 #include "subtle.h"
 
-/* ViewEmptyCols {{{ */
-static void
-ViewEmptyCols(void)
-{
-  int i, j;
-
-  for(i = 0; i < subtle->clients->ndata; i++)
-    {
-      if(0 == subtle->percol[i]) ///< Col empty
-        {
-          for(j = 0; j < subtle->clients->ndata; j++)
-            {
-              SubClient *c = CLIENT(subtle->clients->data[j]);
-
-              if(c->c == i + 1)
-                {
-                  c->c = i;
-                }
-            }
-          for(j = i; j < subtle->clients->ndata - 1; j++)
-            {
-              subtle->percol[j] = subtle->percol[j + 1];
-            }
-        }
-    }
-  
-} /* }}} */
-
  /** subViewNew {{{
   * @brief Create a new view
   * @param[in]  name  Name of the view
@@ -155,9 +127,6 @@ subViewConfigure(SubView *v)
               c->flags |= SUB_STATE_UNMAP; ///< Skip next unmap event
               XUnmapWindow(subtle->disp, c->win); 
             }
-
-          subtle->chkrow[i] = 0;
-          subtle->chkcol[i] = 0;
         }
       subtle->perrow[0] = j; 
       /* }}} */
@@ -194,8 +163,6 @@ subViewConfigure(SubView *v)
                 break;
             }
         } /* }}} */
-
-//ViewEmptyCols();
 
 /* Table {{{ */
 printf("\n  ");
@@ -245,9 +212,6 @@ printf("\n\n"); /* }}} */
                   c->rect.height = (SCREENH - subtle->th) / ZERO(subtle->percol[c->c]);
                   c->rect.x      = c->c * c->rect.width;
                   c->rect.y      = c->r * c->rect.height;
-
-                  subtle->chkcol[c->c]++;
-                  subtle->chkrow[c->r]++;
 
                   /* Compensation for int rounding */
                   if(subtle->perrow[c->r] == c->c + 1) 
