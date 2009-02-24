@@ -290,6 +290,14 @@ EventMessage(XClientMessageEvent *ev)
                 subViewPublish();
               }
             break; /* }}} */
+          case SUB_EWMH_SUBTLE_SUBLET_UPDATE: /* {{{ */
+            if((s = SUBLET(subArrayGet(subtle->sublets, (int)ev->data.l[0]))))
+              {
+                subRubyRun(s);
+                subSubletUpdate();
+                subSubletRender();                
+              }
+            break; /* }}} */
           case SUB_EWMH_SUBTLE_SUBLET_KILL: /* {{{ */
             if((s = SUBLET(subArrayGet(subtle->sublets, (int)ev->data.l[0]))))
               {
@@ -309,9 +317,6 @@ EventMessage(XClientMessageEvent *ev)
 
       switch(id)
         {
-          case SUB_EWMH_XEMBED:
-            printf("XEmbed: win=%#lx\n", ev->window);
-            break;
           case SUB_EWMH_NET_SYSTEM_TRAY_OPCODE: /* {{{ */
             switch(ev->data.l[1])
               {

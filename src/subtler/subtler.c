@@ -28,25 +28,26 @@ typedef void(*SubCommand)(char *, char *);
 /* }}} */
 
 /* Flags {{{ */
-#define SUB_GROUP_CLIENT 0    ///< Group client
-#define SUB_GROUP_SUBLET 1    ///< Group sublet
-#define SUB_GROUP_TAG    2    ///< Group tag
-#define SUB_GROUP_VIEW   3    ///< Group view
-#define SUB_GROUP_TOTAL  4    ///< Group total
+#define SUB_GROUP_CLIENT  0    ///< Group client
+#define SUB_GROUP_SUBLET  1    ///< Group sublet
+#define SUB_GROUP_TAG     2    ///< Group tag
+#define SUB_GROUP_VIEW    3    ///< Group view
+#define SUB_GROUP_TOTAL   4    ///< Group total
 
-#define SUB_ACTION_NEW   0    ///< Action new
-#define SUB_ACTION_KILL  1    ///< Action kill
-#define SUB_ACTION_LIST  2    ///< Action list
-#define SUB_ACTION_FIND  3    ///< Action find
-#define SUB_ACTION_FOCUS 4    ///< Action focus
-#define SUB_ACTION_FULL  5    ///< Action full
-#define SUB_ACTION_FLOAT 6    ///< Action float
-#define SUB_ACTION_STICK 7    ///< Action stick
-#define SUB_ACTION_JUMP  8    ///< Action jump
-#define SUB_ACTION_TAG   9    ///< Action tag
-#define SUB_ACTION_UNTAG 10   ///< Action untag
-#define SUB_ACTION_TAGS  11   ///< Action tags
-#define SUB_ACTION_TOTAL 12   ///< Action total
+#define SUB_ACTION_NEW    0    ///< Action new
+#define SUB_ACTION_KILL   1    ///< Action kill
+#define SUB_ACTION_UPDATE 2    ///< Action update
+#define SUB_ACTION_LIST   3    ///< Action list
+#define SUB_ACTION_FIND   4    ///< Action find
+#define SUB_ACTION_FOCUS  5    ///< Action focus
+#define SUB_ACTION_FULL   6    ///< Action full
+#define SUB_ACTION_FLOAT  7    ///< Action float
+#define SUB_ACTION_STICK  8    ///< Action stick
+#define SUB_ACTION_JUMP   9    ///< Action jump
+#define SUB_ACTION_TAG    10   ///< Action tag
+#define SUB_ACTION_UNTAG  11   ///< Action untag
+#define SUB_ACTION_TAGS   12   ///< Action tags
+#define SUB_ACTION_TOTAL  13   ///< Action total
 /* }}} */
 
 /* SubtlerToggle {{{ */
@@ -267,6 +268,56 @@ SubtlerClientKill(char *arg1,
   else subSharedLogWarn("Failed to kill client\n");
 } /* }}} */
 
+/* SubtlerSubletUpdate {{{ */
+static void
+SubtlerSubletUpdate(char *arg1,
+  char *arg2)
+{
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  CHECK(arg1, "Usage: %sr -s -p PATTERN\n", PKG_NAME);
+  subSharedLogDebug("%s\n", __func__);
+
+  if(-1 != (data.l[0] = subSharedSubletFind(arg1)))
+    subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_UPDATE", data, False);
+  else subSharedLogWarn("Failed to update sublet\n");
+} /* }}} */
+
+/* SubtlerSubletList {{{ */
+static void
+SubtlerSubletList(char *arg1,
+  char *arg2)
+{
+  int i, size = 0;
+  char **sublets = NULL;
+
+  subSharedLogDebug("%s\n", __func__);
+
+  if((sublets = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_SUBLET_LIST", &size)))
+    {
+      for(i = 0; i < size; i++)
+        printf("%s\n", sublets[i]);
+
+      free(sublets);
+    }
+  else subSharedLogWarn("Failed to get sublet list\n");
+} /* }}} */
+
+/* SubtlerSubletKill {{{ */
+static void
+SubtlerSubletKill(char *arg1,
+  char *arg2)
+{
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  CHECK(arg1, "Usage: %sr -s -k PATTERN\n", PKG_NAME);
+  subSharedLogDebug("%s\n", __func__);
+
+  if(-1 != (data.l[0] = subSharedSubletFind(arg2)))
+    subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_KILL", data, False);
+  else subSharedLogWarn("Failed to kill sublet\n");
+} /* }}} */
+
 /* SubtlerTagNew {{{ */
 static void
 SubtlerTagNew(char *arg1,
@@ -375,44 +426,9 @@ SubtlerTagKill(char *arg1,
   CHECK(arg1, "Usage: %sr -t -k PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  if((data.l[0] = subSharedTagFind(arg1)))
+  if(-1 != (data.l[0] = subSharedTagFind(arg1)))
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_KILL", data, False);
   else subSharedLogWarn("Failed to kill tag\n");
-} /* }}} */
-
-/* SubtlerSubletList {{{ */
-static void
-SubtlerSubletList(char *arg1,
-  char *arg2)
-{
-  int i, size = 0;
-  char **sublets = NULL;
-
-  subSharedLogDebug("%s\n", __func__);
-
-  if((sublets = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_SUBLET_LIST", &size)))
-    {
-      for(i = 0; i < size; i++)
-        printf("%s\n", sublets[i]);
-
-      free(sublets);
-    }
-  else subSharedLogWarn("Failed to get sublet list\n");
-} /* }}} */
-
-/* SubtlerSubletKill {{{ */
-static void
-SubtlerSubletKill(char *arg1,
-  char *arg2)
-{
-  SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-  CHECK(arg1, "Usage: %sr -s -k PATTERN\n", PKG_NAME);
-  subSharedLogDebug("%s\n", __func__);
-
-  if((data.l[0] = subSharedSubletFind(arg2)))
-    subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_KILL", data, False);
-  else subSharedLogWarn("Failed to kill sublet\n");
 } /* }}} */
 
 /* SubtlerViewNew {{{ */
@@ -582,6 +598,7 @@ SubtlerUsage(int group)
              "  -V, --version           Show version info and exit\n" \
              "\nGroups:\n" \
              "  -c, --clients           Use clients group\n" \
+             "  -s, --sublets           Use sublets group\n" \
              "  -t, --tags              Use tags group\n" \
              "  -v, --views             Use views group\n");
     }
@@ -602,6 +619,7 @@ SubtlerUsage(int group)
   if(-1 == group || SUB_GROUP_SUBLET == group)
     {
       printf("\nOptions for sublets:\n" \
+             "  -p, --update            Update sublet\n" \
              "  -l, --list              List all sublets\n" \
              "  -k, --kill=PATTERN      Kill a sublet\n");
     }    
@@ -718,7 +736,7 @@ main(int argc,
   {
     /* Groups */
     { "clients",    no_argument,        0,  'c'  },
-    { "sublet",     no_argument,        0,  's'  },
+    { "sublets",    no_argument,        0,  's'  },
     { "tags",       no_argument,        0,  't'  },
     { "views",      no_argument,        0,  'v'  },
 
@@ -735,6 +753,7 @@ main(int argc,
     { "tag",        no_argument,        0,  'T'  },
     { "untag",      no_argument,        0,  'u'  },
     { "tags",       no_argument,        0,  'g'  },
+    { "update",     no_argument,        0,  'p'  },
 
     /* Default */
 #ifdef DEBUG
@@ -748,16 +767,16 @@ main(int argc,
 
   /* Command table */
   SubCommand cmds[SUB_GROUP_TOTAL][SUB_ACTION_TOTAL] = { 
-    /* Client, Sublet, Tag, View <=> New, Kill, List, Find, Focus, Full, Float, Stick, 
-       Jump, Tag, Untag, Tags */
-    { NULL, SubtlerClientKill, SubtlerClientList, SubtlerClientFind, SubtlerClientFocus, 
-      SubtlerClientToggleFull, SubtlerClientToggleFloat, SubtlerClientToggleStick, NULL,
-      SubtlerClientTag, SubtlerClientUntag, SubtlerClientTags },
-    { NULL, SubtlerSubletKill, SubtlerSubletList, NULL, NULL, NULL, NULL, NULL, NULL, 
-      NULL, NULL, NULL },
+    /* Client, Sublet, Tag, View <=> New, Kill, Update, List, Find, Focus, Full, Float, 
+       Stick, Jump, Tag, Untag, Tags */
+    { NULL, SubtlerClientKill, NULL, SubtlerClientList, SubtlerClientFind, 
+      SubtlerClientFocus, SubtlerClientToggleFull, SubtlerClientToggleFloat, 
+      SubtlerClientToggleStick, NULL, SubtlerClientTag, SubtlerClientUntag, SubtlerClientTags },
+    { NULL, SubtlerSubletKill, SubtlerSubletUpdate, SubtlerSubletList, NULL, NULL, NULL,
+      NULL, NULL, NULL, NULL, NULL, NULL },
     { SubtlerTagNew, SubtlerTagKill, SubtlerTagList, SubtlerTagFind, NULL, NULL, NULL, 
-      NULL, NULL, NULL, NULL, NULL },
-    { SubtlerViewNew, SubtlerViewKill, SubtlerViewList, NULL, NULL, NULL, NULL, NULL,
+      NULL, NULL, NULL, NULL, NULL, NULL },
+    { SubtlerViewNew, SubtlerViewKill, NULL, SubtlerViewList, NULL, NULL, NULL, NULL, NULL,
       SubtlerViewJump, SubtlerViewTag, SubtlerViewUntag, SubtlerViewTags }
   };
 
@@ -769,7 +788,7 @@ main(int argc,
   sigaction(SIGINT, &act, NULL);
   sigaction(SIGSEGV, &act, NULL);
 
-  while((c = getopt_long(argc, argv, "cstvnkfFULSjlTugDd:hV", long_options, NULL)) != -1)
+  while((c = getopt_long(argc, argv, "cstvnkpfFULSjlTugDd:hV", long_options, NULL)) != -1)
     {
       switch(c)
         {
@@ -780,6 +799,7 @@ main(int argc,
 
           case 'n': action = SUB_ACTION_NEW;    break;
           case 'k': action = SUB_ACTION_KILL;   break;
+          case 'p': action = SUB_ACTION_UPDATE; break;
           case 'l': action = SUB_ACTION_LIST;   break;
           case 'f': action = SUB_ACTION_FIND;   break;
           case 'F': action = SUB_ACTION_FOCUS;  break;
