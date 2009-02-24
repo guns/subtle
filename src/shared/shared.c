@@ -669,7 +669,7 @@ subSharedSubletFind(char *name)
   assert(name);
 
   preg    = subSharedRegexNew(name);
-  sublets = subSharedPropertyList(DefaultRootWindow(display), "WM_SUBLET_LIST", &size);
+  sublets = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_SUBLET_LIST", &size);
 
   /* Find sublet id */
   for(i = 0; i < size; i++)
