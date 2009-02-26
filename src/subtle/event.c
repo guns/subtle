@@ -18,6 +18,26 @@
 #define BUFLEN (sizeof(struct inotify_event))
 #endif /* HAVE_SYS_INOTIFY_H */
 
+/* EventUntag {{{ */
+static void
+EventUntag(SubClient *c,
+  int id)
+{
+  int i, tag;
+
+  for(i = id; i < (sizeof(TAGS) * 8) - 1; i++)
+    {
+      tag = (1L << (i + 1));
+
+      if(c->tags & (1L << (i + 2))) ///< Next bit
+        c->tags |= tag;
+      else
+        c->tags &= ~tag;
+    }
+
+  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&c->tags, 1);
+} /* }}} */
+
 /* EventExec {{{ */
 static void
 EventExec(char *cmd)
@@ -221,7 +241,7 @@ EventMessage(XClientMessageEvent *ev)
                       if(SUB_EWMH_SUBTLE_WINDOW_TAG == id) v->tags |= tag; ///< Action
                       else v->tags &= ~tag;
                     
-                      subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&v->tags, 1);
+                      subEwmhSetCardinals(v->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&v->tags, 1);
                       if(subtle->cv == v) subViewConfigure(v);
                     } 
               }
@@ -234,41 +254,21 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_SUBTLE_TAG_KILL: /* {{{ */
             if((t = TAG(subArrayGet(subtle->tags, (int)ev->data.l[0]))))
               {
-                int i;
-                
-                /* Views */
-                id = ev->data.l[0] - 1;
-                for(i = 0; i < subtle->views->ndata; i++)
-                  {
-                    v = VIEW(subtle->views->data[i]);
+                int i, reconf = subtle->cv->tags & (1L << ((int)ev->data.l[0] + 1));
 
-                    if(v->tags & id)
-                      {
-                        v->tags &= ~id;
-                        subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_WINDOW_TAGS,
-                          (long *)&v->tags, 1);
-                      }
-                  }
+                /* Views */
+                for(i = 0; i < subtle->views->ndata; i++)
+                  EventUntag(CLIENT(subtle->views->data[i]), (int)ev->data.l[0]);
 
                 /* Clients */
                 for(i = 0; i < subtle->clients->ndata; i++)
-                  {
-                    c = CLIENT(subtle->clients->data[i]);
-
-                    if(c->tags & id)
-                      {
-                        c->tags &= ~id;
-                        subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, 
-                          (long *)&c->tags, 1);
-                      }
-                  }
-
+                  EventUntag(CLIENT(subtle->clients->data[i]), (int)ev->data.l[0]);
+              
                 subArrayPop(subtle->tags, (void *)t);
                 subTagKill(t);
                 subTagPublish();
                 
-                if(subtle->cv->tags & id)
-                  subViewConfigure(subtle->cv); ///< Re-configure current view if needed
+                if(reconf) subViewConfigure(subtle->cv);
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_VIEW_NEW: /* {{{ */
@@ -516,7 +516,7 @@ EventGrab(XEvent *ev)
       int wx = 0, wy = 0;
 
       /* Use similarity of both events */
-      win = ev->xbutton.window == subtle->cv->frame ? ev->xbutton.subwindow : ev->xbutton.window;
+      win = ev->xbutton.window == subtle->cv->win ? ev->xbutton.subwindow : ev->xbutton.window;
       wx  = ev->xbutton.x;
       wy  = ev->xbutton.y + subtle->th;
 
@@ -584,7 +584,7 @@ EventExpose(XEvent *ev)
       subViewRender();
       subSubletRender();
     }
-  else if(ev->xany.window == subtle->cv->frame)
+  else if(ev->xany.window == subtle->cv->win)
     {
       subViewRender();
     }

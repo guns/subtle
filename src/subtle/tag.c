@@ -12,26 +12,6 @@
 
 #include "subtle.h"
 
-/* TagUntag {{{ */
-static void
-TagUntag(SubClient *c,
-  int id)
-{
-  int i, tag;
-
-  for(i = id; i < (sizeof(FLAGS) * 8) - 1; i++)
-    {
-      tag = (1L << i);
-
-      if(c->tags & (1L << (i + 1))) ///< Next bit
-        c->tags |= tag;
-      else
-        c->tags &= ~tag;
-    }
-
-  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&c->tags, 1);
-} /* }}} */
-
  /** subTagInit {{{
   * @brief Init default tags
   **/
@@ -121,21 +101,9 @@ subTagPublish(void)
 void
 subTagKill(SubTag *t)
 {
-  int i, id;
-
   assert(t);
 
   printf("Killing tag (%s)\n", t->name);
-
-  id = subArrayIndex(subtle->tags, (void *)t);
-
-  /* Views */
-  for(i = 0; i < subtle->views->ndata; i++)
-    TagUntag(CLIENT(subtle->views->data[i]), id);
-
-  /* Clients */
-  for(i = 0; i < subtle->clients->ndata; i++)
-    TagUntag(CLIENT(subtle->clients->data[i]), id);
 
   if(t->preg) subSharedRegexKill(t->preg);
   free(t->name);
