@@ -40,13 +40,13 @@ subViewNew(char *name,
   attrs.background_pixel  = subtle->colors.bg;
   attrs.override_redirect = True;
  
-  v->frame  = XCreateWindow(subtle->disp, ROOT, 0, subtle->th, SCREENW, SCREENH - subtle->th,
+  v->win  = XCreateWindow(subtle->disp, ROOT, 0, subtle->th, SCREENW, SCREENH - subtle->th,
     0, CopyFromParent, InputOutput, CopyFromParent, 
     CWBackPixel|CWBackPixmap|CWEventMask|CWOverrideRedirect, &attrs); 
   v->button = XCreateSimpleWindow(subtle->disp, subtle->windows.views, 0, 0, 1,
     subtle->th, 0, subtle->colors.border, subtle->colors.norm);
 
-  XSaveContext(subtle->disp, v->frame, VIEWID, (void *)v);
+  XSaveContext(subtle->disp, v->win, VIEWID, (void *)v);
   XSaveContext(subtle->disp, v->button, BUTTONID, (void *)v);
   XMapRaised(subtle->disp, v->button);
 
@@ -62,7 +62,7 @@ subViewNew(char *name,
 
       subSharedRegexKill(preg);
     }
-  subEwmhSetCardinals(v->frame, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&v->tags, 1); ///< Init 
+  subEwmhSetCardinals(v->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&v->tags, 1); ///< Init 
 
   printf("Adding view (%s)\n", v->name);
   subSharedLogDebug("new=view, name=%s\n", name);
@@ -100,7 +100,7 @@ subViewConfigure(SubView *v)
           if(VISIBLE(v, c))
             {
               if(!(c->flags & SUB_STATE_FULL)) ///< Don't overwrite root
-                XReparentWindow(subtle->disp, c->win, v->frame, 0, 0);
+                XReparentWindow(subtle->disp, c->win, v->win, 0, 0);
 
               if(!(c->flags & (SUB_STATE_FULL|SUB_STATE_FLOAT))) 
                 {
@@ -328,20 +328,19 @@ subViewJump(SubView *v)
 
   if(subtle->cv) 
     {
-      XUnmapWindow(subtle->disp, subtle->cv->frame);
-      //XUnmapSubwindows(subtle->disp, subtle->cv->frame);
+      XUnmapWindow(subtle->disp, subtle->cv->win);
     }
   subtle->cv = v;
 
   subViewConfigure(v);
-  XMapWindow(subtle->disp, subtle->cv->frame);
+  XMapWindow(subtle->disp, subtle->cv->win);
 
   /* EWMH: Current desktops */
   vid = subArrayIndex(subtle->views, (void *)v); ///< Get desktop number
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP, &vid, 1);
 
   subViewRender();
-  subGrabSet(subtle->cv->frame);
+  subGrabSet(subtle->cv->win);
 
   printf("Switching view (%s)\n", subtle->cv->name);
 } /* }}} */
@@ -356,23 +355,23 @@ subViewPublish(void)
   int i;
   long vid = 0;
   char **names = NULL;
-  Window *frames = NULL;
+  Window *views = NULL;
 
   assert(0 < subtle->views->ndata);
 
-  frames = (Window *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(Window));
-  names  = (char **)subSharedMemoryAlloc(subtle->views->ndata, sizeof(char *));
+  views = (Window *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(Window));
+  names = (char **)subSharedMemoryAlloc(subtle->views->ndata, sizeof(char *));
 
   for(i = 0; i < subtle->views->ndata; i++)
     {
       SubView *v = VIEW(subtle->views->data[i]);
 
-      frames[i] = v->frame;
-      names[i]  = v->name;
+      views[i] = v->win;
+      names[i] = v->name;
     }
 
   /* EWMH: Virtual roots */
-  subEwmhSetWindows(ROOT, SUB_EWMH_NET_VIRTUAL_ROOTS, frames, i);
+  subEwmhSetWindows(ROOT, SUB_EWMH_NET_VIRTUAL_ROOTS, views, i);
 
   /* EWMH: Desktops */
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_NUMBER_OF_DESKTOPS, (long *)&i, 1);
@@ -384,7 +383,7 @@ subViewPublish(void)
 
   subSharedLogDebug("publish=views, n=%d\n", i);
 
-  free(frames);
+  free(views);
   free(names);
 } /* }}} */
 
@@ -429,11 +428,11 @@ subViewKill(SubView *v)
 
   printf("Killing view (%s)\n", v->name);
 
-  XDeleteContext(subtle->disp, v->frame, 1);
+  XDeleteContext(subtle->disp, v->win, 1);
   XDeleteContext(subtle->disp, v->button, 1);
 
   XDestroyWindow(subtle->disp, v->button);
-  XDestroyWindow(subtle->disp, v->frame);
+  XDestroyWindow(subtle->disp, v->win);
 
   subArrayKill(v->layout, True);
 

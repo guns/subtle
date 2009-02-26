@@ -412,36 +412,36 @@ subSharedWindowSelect(void)
 {
   int i, format, buttons = 0;
   unsigned int n;
-  unsigned long *view = NULL, nitems, after;
+  unsigned long *cur = NULL, nitems, after;
   unsigned char *data = NULL;
   XEvent event;
   Atom type = None;
-  Window win = None, frame = None, *frames = NULL, dummy, *wins = NULL;
+  Window win = None, view = None, *views = NULL, dummy, *wins = NULL;
   Cursor cursor = XCreateFontCursor(display, XC_dotbox);
 
-  /* Get view frame */
-  view   = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display), 
+  /* Get views */
+  cur   = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display), 
     XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
-  frames = (Window *)subSharedPropertyGet(DefaultRootWindow(display), 
+  views = (Window *)subSharedPropertyGet(DefaultRootWindow(display), 
     XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
-  frame  = frames[*view];
-  free(view);
-  free(frames);
+  view  = views[*cur];
+  free(cur);
+  free(views);
 
-  if(XGrabPointer(display, frame, False, ButtonPressMask|ButtonReleaseMask, 
-    GrabModeSync, GrabModeAsync, frame, cursor, CurrentTime)) return None;
+  if(XGrabPointer(display, view, False, ButtonPressMask|ButtonReleaseMask, 
+    GrabModeSync, GrabModeAsync, view, cursor, CurrentTime)) return None;
 
   /* Select a window */
   while(None == win || 0 != buttons)
     {
       XAllowEvents(display, SyncPointer, CurrentTime);
-      XWindowEvent(display, frame, ButtonPressMask|ButtonReleaseMask, &event);
+      XWindowEvent(display, view, ButtonPressMask|ButtonReleaseMask, &event);
 
       switch(event.type)
         {
           case ButtonPress:
             if(win == None) win = event.xbutton.subwindow ? 
-              event.xbutton.subwindow : frame; ///< Sanitize
+              event.xbutton.subwindow : view; ///< Sanitize
             buttons++;
             break;
           case ButtonRelease: if(0 < buttons) buttons--; break;
@@ -609,13 +609,13 @@ subSharedViewFind(char *name,
   Window *win)
 {
   int size = 0;
-  Window *frames = NULL, root = DefaultRootWindow(display);
+  Window *views = NULL, root = DefaultRootWindow(display);
   char **names = NULL;
 
   assert(name);
 
-  frames = (Window *)subSharedPropertyGet(root, XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
-  names  = subSharedPropertyList(root, "_NET_DESKTOP_NAMES", &size);  
+  views = (Window *)subSharedPropertyGet(root, XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
+  names = subSharedPropertyList(root, "_NET_DESKTOP_NAMES", &size);  
   if(names)
     {
       int i;
@@ -624,18 +624,18 @@ subSharedViewFind(char *name,
 
       for(i = 0; i < size; i++)
         {
-          snprintf(buf, sizeof(buf), "%#lx", frames[i]);
+          snprintf(buf, sizeof(buf), "%#lx", views[i]);
 
           /* Find view either by name or by window id */
           if(subSharedRegexMatch(preg, names[i]) || subSharedRegexMatch(preg, buf))
             {
               subSharedLogDebug("Found: type=view, name=%s win=%#lx, id=%d\n",
-                name, frames[i], i);
+                name, views[i], i);
 
-              if(win) *win = frames[i];
+              if(win) *win = views[i];
 
               subSharedRegexKill(preg);
-              free(frames);
+              free(views);
               free(names);
 
               return i;
@@ -644,7 +644,7 @@ subSharedViewFind(char *name,
       subSharedRegexKill(preg);
     }
 
-  free(frames);
+  free(views);
   free(names);
 
   subSharedLogDebug("Can't find view `%s'.\n", name);

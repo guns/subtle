@@ -178,9 +178,9 @@ typedef struct subclient_t /* {{{ */
   char                *name;                                      ///< Client name
 
   TAGS                tags;                                       ///< Client tags
+  Window              win;                                        ///< Client window
   int                 r, c, size;                                 ///< Client row, col, size
   Colormap            cmap;                                       ///< Client colormap
-  Window              win;                                        ///< Client window
   XRectangle          rect;                                       ///< Client rect
   XSizeHints          *hints;                                     ///< Client size hints
 } SubClient; /* }}} */
@@ -375,8 +375,8 @@ typedef struct subview_t /* {{{ */
   char              *name;                                        ///< View name
 
   TAGS              tags;                                         ///< View tags
+  Window            win, button;                                  ///< View win, button
   int               width;                                        ///< View width
-  Window            frame, button;                                ///< View frame, button
   struct subarray_t *layout;                                      ///< View layout
 } SubView; /* }}} */
 

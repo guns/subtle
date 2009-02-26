@@ -234,7 +234,7 @@ subGrabSet(Window win)
                 }
             }
         }
-      if(subtle->cv->frame == win) 
+      if(subtle->cv->win == win) 
         XSetInputFocus(subtle->disp, win, RevertToNone, CurrentTime);
       subtle->windows.focus = win; ///< Update focus window
     }

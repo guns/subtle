@@ -549,7 +549,7 @@ subClientToggle(SubClient *c,
       if(type & SUB_STATE_FULL) /* {{{ */
         {
           XSetWindowBorderWidth(subtle->disp, c->win, subtle->bw);
-          XReparentWindow(subtle->disp, c->win, subtle->cv->frame, 0, 0);
+          XReparentWindow(subtle->disp, c->win, subtle->cv->win, 0, 0);
         } /* }}} */
     }
   else 
