@@ -324,7 +324,7 @@ table.attach_defaults(combo_t2name, 0, 2, 8, 9)
 button = Gtk::Button.new("delete")
 button.signal_connect("clicked") do
   begin
-    name = combo_t2name.text
+    name = combo_t2name.active_text
 
     if(!name.nil?)
       $subtle.del_tag(name)
