@@ -186,11 +186,11 @@ __END__
 
   %body= yield()
 
-  .footer{:style => "margin: 10px 0px 10px 0px; font-size: 11px"}
-    %a{:href => "http://unexist.scrapping.cc/projects/show/subtle"}= "subtle (#{$subtle.version})"
-    %a{:href => "http://sinatra.rubyforge.org"}= "Sinatra (#{VERSION})"
+    .footer{:style => "margin: 10px 0px 10px 0px; font-size: 11px"}
+      %a{:href => "http://unexist.scrapping.cc/projects/show/subtle"}= "subtle (#{$subtle.version})"
+      %a{:href => "http://sinatra.rubyforge.org"}= "Sinatra (#{VERSION})"
 
-  .action{:style => "margin-top: 10px; font-weight: bold"}= @action if(!@action.nil?)
+    .action{:style => "margin-top: 10px; font-weight: bold"}= @action if(!@action.nil?)
 
 @@ index
 %h1{:style => "font-size: 14px"}

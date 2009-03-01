@@ -178,7 +178,7 @@ typedef struct subclient_t /* {{{ */
   char                *name;                                      ///< Client name
 
   TAGS                tags;                                       ///< Client tags
-  Window              win;                                        ///< Client window
+  Window              win, group;                                 ///< Client window, group
   int                 r, c, size;                                 ///< Client row, col, size
   Colormap            cmap;                                       ///< Client colormap
   XRectangle          rect;                                       ///< Client rect

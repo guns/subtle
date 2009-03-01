@@ -89,7 +89,7 @@ subClientNew(Window win)
   int i, n = 0;
   long vid = 1337;
   long supplied = 0;
-  Window group = 0;
+  Window trans = 0;
   XWMHints *hints = NULL;
   XWindowAttributes attrs;
   Atom *protos = NULL;
@@ -164,19 +164,19 @@ subClientNew(Window win)
   if((hints = XGetWMHints(subtle->disp, c->win)))
     {
       if(hints->flags & XUrgencyHint) c->tags |= SUB_TAG_STICK;
-      if(hints->flags & WindowGroupHint) group = hints->window_group;
       if(hints->flags & InputHint && hints->input) c->flags |= SUB_PREF_INPUT;
+      if(hints->flags & WindowGroupHint) c->group = hints->window_group;
 
       XFree(hints);
     }
 
-  /* Check for group/transient windows */
-  if(group || XGetTransientForHint(subtle->disp, c->win, &group))
+  /* Check for transient windows */
+  if(XGetTransientForHint(subtle->disp, c->win, &trans))
     {
-      SubClient *g = CLIENT(subSharedFind(group, CLIENTID));
-      if(g)
+      SubClient *t = CLIENT(subSharedFind(trans, CLIENTID));
+      if(t)
         {
-          c->tags = g->tags; ///< Copy tags
+          c->tags = t->tags; ///< Copy tags
           subClientToggle(c, SUB_STATE_STICK|SUB_STATE_FLOAT);
         }
     } 
