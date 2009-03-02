@@ -106,6 +106,7 @@ subViewConfigure(SubView *v)
                 {
                   c->r = 0;
                   c->c = j;
+                  subtle->percol[j++] = 1;
                   total++;
 
                   XMapWindow(subtle->disp, c->win);
@@ -113,8 +114,6 @@ subViewConfigure(SubView *v)
 
                   /* EWMH: Desktop */
                   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
-
-                  subtle->percol[j++] = 1;
                 }
               else ///< Special flags
                 {
@@ -122,11 +121,7 @@ subViewConfigure(SubView *v)
                   subClientConfigure(c);
                 }
             }
-          else ///< Unmap other windows
-            {
-              c->flags |= SUB_STATE_UNMAP; ///< Skip next unmap event
-              XUnmapWindow(subtle->disp, c->win); 
-            }
+          else XUnmapWindow(subtle->disp, c->win); ///< Unmap other windows
         }
       subtle->perrow[0] = j; 
       /* }}} */
@@ -164,41 +159,6 @@ subViewConfigure(SubView *v)
             }
         } /* }}} */
 
-/* Table {{{ */
-printf("\n  ");
-for(i = 0; i < subtle->clients->ndata; i++)
-  {
-    printf("%d ", subtle->percol[i]);
-  }
-printf("\n");
-for(i = 0; i < subtle->clients->ndata; i++) ///< Row
-  {
-    printf("%d ", subtle->perrow[i]);
-
-    for(j = 0; j < subtle->clients->ndata; j++) ///< Col
-      { 
-        once = 0;
-        for(k = 0; k < subtle->clients->ndata; k++) ///< Clients
-          {
-            SubClient *d = CLIENT(subtle->clients->data[k]);
-
-            if(VISIBLE(v, d) && d->r == i && d->c == j)
-              {
-                printf("x ");
-                once++;
-              }
-          }
-        if(0 == once) printf("  ");
-      }
-    printf("%d\n", i);
-  } 
-printf("  ");
-for(i = 0; i < subtle->clients->ndata; i++)
-  {
-    printf("%d ", i);
-  }  
-printf("\n\n"); /* }}} */
-
       /* Calculations {{{ */
       for(i = 0; i < subtle->clients->ndata; i++)
         {
@@ -225,13 +185,51 @@ printf("\n\n"); /* }}} */
             }
         } /* }}} */
 
-printf("r c   x   y width height\n");
-for(i = 0; i < subtle->clients->ndata; i++)
-  {
-    SubClient *e = CLIENT(subtle->clients->data[i]);
-    printf("%d %d %3d %3d %6d %6d\n", 
-      e->r, e->c, e->rect.x, e->rect.y, e->rect.width, e->rect.height);
-  }        
+#ifdef DEBUG /* {{{ */
+      /* Table */
+      printf("\n  ");
+      for(i = 0; i < subtle->clients->ndata; i++)
+        {
+          printf("%d ", subtle->percol[i]);
+        }
+      printf("\n");
+      for(i = 0; i < subtle->clients->ndata; i++) ///< Row
+        {
+          printf("%d ", subtle->perrow[i]);
+
+          for(j = 0; j < subtle->clients->ndata; j++) ///< Col
+            { 
+              once = 0;
+              for(k = 0; k < subtle->clients->ndata; k++) ///< Clients
+                {
+                  SubClient *d = CLIENT(subtle->clients->data[k]);
+
+                  if(VISIBLE(v, d) && d->r == i && d->c == j)
+                    {
+                      printf("x ");
+                      once++;
+                    }
+                }
+              if(0 == once) printf("  ");
+            }
+          printf("%d\n", i);
+        } 
+      printf("  ");
+      for(i = 0; i < subtle->clients->ndata; i++)
+        {
+          printf("%d ", i);
+        }  
+      printf("\n\n");
+
+      /* Output */
+      printf("r c   x   y width height\n");
+      for(i = 0; i < subtle->clients->ndata; i++)
+        {
+          SubClient *e = CLIENT(subtle->clients->data[i]);
+          printf("%d %d %3d %3d %6d %6d\n", 
+            e->r, e->c, e->rect.x, e->rect.y, e->rect.width, e->rect.height);
+        }      
+#endif /* DEBUG }}} */  
     }
 } /* }}} */
 

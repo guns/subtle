@@ -177,7 +177,7 @@ subClientNew(Window win)
       if(t)
         {
           c->tags = t->tags; ///< Copy tags
-          subClientToggle(c, SUB_STATE_STICK|SUB_STATE_FLOAT);
+          c->flags |= (SUB_STATE_STICK|SUB_STATE_FLOAT);
         }
     } 
 
