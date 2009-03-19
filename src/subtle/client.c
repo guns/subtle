@@ -146,15 +146,6 @@ subClientNew(Window win)
             {
               case SUB_EWMH_WM_TAKE_FOCUS:    c->flags |= SUB_PREF_FOCUS; break;
               case SUB_EWMH_WM_DELETE_WINDOW: c->flags |= SUB_PREF_CLOSE; break;
-#ifdef DEBUG              
-              default: 
-                {
-                  char *name = XGetAtomName(subtle->disp, protos[i]);
-
-                  subSharedLogDebug("Protocols: name=%s, type=%ld\n", name, protos[i]);
-                  if(name) XFree(name);
-                }
-#endif /* DEBG */     
             }
         }
       XFree(protos);
@@ -177,7 +168,7 @@ subClientNew(Window win)
       if(t)
         {
           c->tags = t->tags; ///< Copy tags
-          c->flags |= (SUB_STATE_STICK|SUB_STATE_FLOAT);
+          subClientToggle(c, SUB_STATE_STICK|SUB_STATE_FLOAT);
         }
     } 
 
@@ -560,25 +551,24 @@ subClientToggle(SubClient *c,
         {
           if(c->flags & SUB_PREF_HINTS)
             {
-              if(c->hints->flags & (USSize|PSize)) ///< User/program size
-                {
-                  c->rect.width  = c->hints->width;
-                  c->rect.height = c->hints->height;
-                }
-              else if(c->hints->flags & PBaseSize) ///< Base size
-                {
-                  c->rect.width  = c->hints->base_width;
-                  c->rect.height = c->hints->base_height;
-                }
-              else if(c->hints->flags & PMinSize) ///< Min size
+              /* Default values */
+              c->rect.width  = MINW; 
+              c->rect.height = MINH;
+
+              if(c->hints->flags & PMinSize) ///< Min size
                 {
                   c->rect.width  = c->hints->min_width;
                   c->rect.height = c->hints->min_height;
                 }
-              else ///< Fallback
+              if(c->hints->flags & PBaseSize) ///< Base size
                 {
-                  c->rect.width  = MINW;
-                  c->rect.height = MINH;
+                  c->rect.width  = c->hints->base_width;
+                  c->rect.height = c->hints->base_height;
+                }
+              if(c->hints->flags & (USSize|PSize)) ///< User/program size
+                {
+                  c->rect.width  = c->hints->width;
+                  c->rect.height = c->hints->height;
                 }
 
               /* Limit width/height to max. screen size*/
@@ -591,12 +581,7 @@ subClientToggle(SubClient *c,
                   c->rect.x = c->hints->x;
                   c->rect.y = c->hints->y;
                 }
-              else if(c->hints->flags & PAspect) ///< Aspect size
-                {
-                  c->rect.x = (c->hints->min_aspect.x - c->hints->max_aspect.x) / 2;
-                  c->rect.y = (c->hints->min_aspect.y - c->hints->max_aspect.y) / 2;
-                }
-              else ///< Fallback
+              else
                 {
                   c->rect.x = (SCREENW - c->rect.width) / 2;
                   c->rect.y = (SCREENH - c->rect.height) / 2;
