@@ -73,7 +73,6 @@
 #define ARRAY(a)  ((SubArray *)a)                                 ///< Cast to SubArray
 #define CLIENT(c) ((SubClient *)c)                                ///< Cast to SubClient
 #define GRAB(g)   ((SubGrab *)g)                                  ///< Cast to SubGrab
-#define LAYOUT(l) ((SubLayout *)l)                                ///< Cast to SubLayout
 #define RECT(r)   ((XRectangle *)r)                               ///< Cast to XRectangle
 #define SUBLET(s) ((SubSublet *)s)                                ///< Cast to SubSublet
 #define SUBTLE(s) ((SubSubtle *)s)                                ///< Cast to SubSubtle
@@ -276,12 +275,20 @@ typedef struct subgrab_t /* {{{ */
   };
 } SubGrab; /* }}} */
 
-typedef struct sublayout_t /* {{{ */
+typedef enum subgrid_t /* {{{ */
 {
-  FLAGS  flags;                                                   ///< Layout flags
-  struct subclient_t *c1;                                         ///< Layout client1
-  struct subclient_t *c2;                                         ///< Layout client2
-} SubLayout; /* }}} */
+  SUB_GRID_UNKNOWN,
+  SUB_GRID_BOTTOM,
+  SUB_GRID_BOTTOM_LEFT,
+  SUB_GRID_BOTTOM_RIGHT,
+  SUB_GRID_LEFT,
+  SUB_GRID_CENTER,
+  SUB_GRID_RIGHT,
+  SUB_GRID_TOP,
+  SUB_GRID_TOP_LEFT,
+  SUB_GRID_TOP_RIGHT,
+  SUB_GRID_TOTAL
+} SubGrid; /* }}} */
 
 typedef struct subsublet_t /* {{{ */
 {
@@ -451,10 +458,7 @@ int subGrabCompare(const void *a, const void *b);                 ///< Compare g
 void subGrabKill(SubGrab *g);                                     ///< Kill grab
 /* }}} */
 
-/* layout.c {{{ */
-SubLayout *subLayoutNew(SubClient *c1, SubClient *c2, 
-  int mode);                                                      ///< Create layout
-void subLayoutKill(SubLayout *l);                                 ///< Kill layout
+/* grid.c {{{ */
 /* }}} */
 
 /* ruby.c {{{ */
