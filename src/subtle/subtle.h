@@ -108,31 +108,52 @@
 /* Data types */
 #define SUB_TYPE_CLIENT        (1L << 1)                          ///< Client
 #define SUB_TYPE_GRAB          (1L << 2)                          ///< Grab
-#define SUB_TYPE_LAYOUT        (1L << 3)                          ///< Layout
-#define SUB_TYPE_SUBLET        (1L << 4)                          ///< Sublet
-#define SUB_TYPE_TAG           (1L << 5)                          ///< Tag
-#define SUB_TYPE_TRAY          (1L << 6)                          ///< Tray
-#define SUB_TYPE_VIEW          (1L << 7)                          ///< View
-
-/* Data types */
-#define SUB_DATA_STRING        (1L << 8)                          ///< String data
-#define SUB_DATA_FIXNUM        (1L << 9)                          ///< Fixnum data
-#define SUB_DATA_INOTIFY       (1L << 10)                         ///< Inotify data
-#define SUB_DATA_NIL           (1L << 11)                         ///< Nil data
+#define SUB_TYPE_SUBLET        (1L << 3)                          ///< Sublet
+#define SUB_TYPE_TAG           (1L << 4)                          ///< Tag
+#define SUB_TYPE_TRAY          (1L << 5)                          ///< Tray
+#define SUB_TYPE_VIEW          (1L << 6)                          ///< View
 
 /* Client states */
-#define SUB_STATE_FULL         (1L << 12)                         ///< Fullscreen window
-#define SUB_STATE_FLOAT        (1L << 13)                         ///< Floating window
-#define SUB_STATE_STICK        (1L << 14)                         ///< Stick window
-#define SUB_STATE_RESIZE       (1L << 15)                         ///< Resized window
-#define SUB_STATE_UNMAP        (1L << 16)                         ///< Unmapped window
-#define SUB_STATE_DEAD         (1L << 17)                         ///< Dead window
+#define SUB_STATE_FULL         (1L << 10)                         ///< Fullscreen window
+#define SUB_STATE_FLOAT        (1L << 11)                         ///< Floating window
+#define SUB_STATE_STICK        (1L << 12)                         ///< Stick window
+#define SUB_STATE_RESIZE       (1L << 13)                         ///< Resized window
+#define SUB_STATE_DEAD         (1L << 14)                         ///< Dead window
 
 /* Client preferences */
-#define SUB_PREF_INPUT         (1L << 18)                         ///< Active/passive focus-model
-#define SUB_PREF_FOCUS         (1L << 19)                         ///< Send focus message
-#define SUB_PREF_CLOSE         (1L << 20)                         ///< Send close message
-#define SUB_PREF_HINTS         (1L << 21)                         ///< Size hints available
+#define SUB_PREF_INPUT         (1L << 15)                         ///< Active/passive focus-model
+#define SUB_PREF_FOCUS         (1L << 16)                         ///< Send focus message
+#define SUB_PREF_CLOSE         (1L << 17)                         ///< Send close message
+#define SUB_PREF_HINTS         (1L << 18)                         ///< Size hints available
+
+/* Grid types */
+#define SUB_GRID_BOTTOM        (1L << 20)                         ///< Grid bottom position
+#define SUB_GRID_BOTTOM_LEFT   (1L << 21)                         ///< Grid bottom left position
+#define SUB_GRID_BOTTOM_RIGHT  (1L << 22)                         ///< Grid bottom right position
+#define SUB_GRID_LEFT          (1L << 23)                         ///< Grid left position
+#define SUB_GRID_CENTER        (1L << 24)                         ///< Grid center position
+#define SUB_GRID_RIGHT         (1L << 25)                         ///< Grid right position
+#define SUB_GRID_TOP           (1L << 26)                         ///< Grid top position
+#define SUB_GRID_TOP_LEFT      (1L << 27)                         ///< Grid top left position
+#define SUB_GRID_TOP_RIGHT     (1L << 28)                         ///< Grid top right position
+
+/* Data types */
+#define SUB_DATA_STRING        (1L << 10)                         ///< String data
+#define SUB_DATA_FIXNUM        (1L << 11)                         ///< Fixnum data
+#define SUB_DATA_INOTIFY       (1L << 12)                         ///< Inotify data
+#define SUB_DATA_NIL           (1L << 13)                         ///< Nil data
+
+/* Grab types */
+#define SUB_GRAB_KEY           (1L << 10)                         ///< Key grab
+#define SUB_GRAB_MOUSE         (1L << 11)                         ///< Mouse grab  
+#define SUB_GRAB_VIEW_JUMP     (1L << 12)                         ///< Jump to view
+#define SUB_GRAB_EXEC          (1L << 13)                         ///< Exec an app
+#define SUB_GRAB_WINDOW_MOVE   (1L << 14)                         ///< Resize window
+#define SUB_GRAB_WINDOW_RESIZE (1L << 15)                         ///< Move window
+#define SUB_GRAB_WINDOW_FLOAT  (1L << 16)                         ///< Toggle float
+#define SUB_GRAB_WINDOW_FULL   (1L << 17)                         ///< Toggle full
+#define SUB_GRAB_WINDOW_STICK  (1L << 18)                         ///< Toggle stock
+#define SUB_GRAB_WINDOW_KILL   (1L << 19)                         ///< Kill window
 
 /* Drag states */
 #define SUB_DRAG_START         (1L << 10)                         ///< Drag start
@@ -144,18 +165,6 @@
 #define SUB_DRAG_SWAP          (1L << 17)                         ///< Drag swap
 #define SUB_DRAG_RESIZE_LEFT   (1L << 18)                         ///< Drag resize left
 #define SUB_DRAG_RESIZE_RIGHT  (1L << 19)                         ///< Drag resize right
-
-/* Grabs */
-#define SUB_GRAB_KEY           (1L << 10)                         ///< Key grab
-#define SUB_GRAB_MOUSE         (1L << 11)                         ///< Mouse grab  
-#define SUB_GRAB_VIEW_JUMP     (1L << 12)                         ///< Jump to view
-#define SUB_GRAB_EXEC          (1L << 13)                         ///< Exec an app
-#define SUB_GRAB_WINDOW_MOVE   (1L << 14)                         ///< Resize window
-#define SUB_GRAB_WINDOW_RESIZE (1L << 15)                         ///< Move window
-#define SUB_GRAB_WINDOW_FLOAT  (1L << 16)                         ///< Toggle float
-#define SUB_GRAB_WINDOW_FULL   (1L << 17)                         ///< Toggle full
-#define SUB_GRAB_WINDOW_STICK  (1L << 18)                         ///< Toggle stock
-#define SUB_GRAB_WINDOW_KILL   (1L << 19)                         ///< Kill window
 
 /* Fixed tags */
 #define SUB_TAG_DEFAULT        (1L << 1)                          ///< Default tag
@@ -274,21 +283,6 @@ typedef struct subgrab_t /* {{{ */
     int        number;                                            ///< Grab data number
   };
 } SubGrab; /* }}} */
-
-typedef enum subgrid_t /* {{{ */
-{
-  SUB_GRID_UNKNOWN,
-  SUB_GRID_BOTTOM,
-  SUB_GRID_BOTTOM_LEFT,
-  SUB_GRID_BOTTOM_RIGHT,
-  SUB_GRID_LEFT,
-  SUB_GRID_CENTER,
-  SUB_GRID_RIGHT,
-  SUB_GRID_TOP,
-  SUB_GRID_TOP_LEFT,
-  SUB_GRID_TOP_RIGHT,
-  SUB_GRID_TOTAL
-} SubGrid; /* }}} */
 
 typedef struct subsublet_t /* {{{ */
 {
@@ -459,6 +453,7 @@ void subGrabKill(SubGrab *g);                                     ///< Kill grab
 /* }}} */
 
 /* grid.c {{{ */
+void SubGridCalc(XRectangle *r, int type);                        ///< Calc rect in grid
 /* }}} */
 
 /* ruby.c {{{ */
@@ -499,13 +494,10 @@ void subTrayKill(SubTray *t);                                     ///< Delete tr
 /* view.c {{{ */
 SubView *subViewNew(char *name, char *tags);                      ///< Create view
 void subViewConfigure(SubView *v);                                ///< Configure view
-void subViewArrange(SubView *v, SubClient *c1, 
-  SubClient *c2, int mode);                                       ///< Arrange view
 void subViewUpdate(void);                                         ///< Update views
 void subViewRender(void);                                         ///< Render views
 void subViewJump(SubView *v);                                     ///< Jump to view
 void subViewPublish(void);                                        ///< Publish views
-void subViewSanitize(SubClient *c);                               ///< Sanitize views
 void subViewKill(SubView *v);                                     ///< Kill view
 /* }}} */
 #endif /* SUBTLE_H */
