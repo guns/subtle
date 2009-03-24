@@ -106,71 +106,78 @@
 
 /* Flags {{{ */
 /* Data types */
-#define SUB_TYPE_CLIENT        (1L << 1)                          ///< Client
-#define SUB_TYPE_GRAB          (1L << 2)                          ///< Grab
-#define SUB_TYPE_SUBLET        (1L << 3)                          ///< Sublet
-#define SUB_TYPE_TAG           (1L << 4)                          ///< Tag
-#define SUB_TYPE_TRAY          (1L << 5)                          ///< Tray
-#define SUB_TYPE_VIEW          (1L << 6)                          ///< View
+#define SUB_TYPE_CLIENT               (1L << 1)                   ///< Client
+#define SUB_TYPE_GRAB                 (1L << 2)                   ///< Grab
+#define SUB_TYPE_SUBLET               (1L << 3)                   ///< Sublet
+#define SUB_TYPE_TAG                  (1L << 4)                   ///< Tag
+#define SUB_TYPE_TRAY                 (1L << 5)                   ///< Tray
+#define SUB_TYPE_VIEW                 (1L << 6)                   ///< View
 
 /* Client states */
-#define SUB_STATE_FULL         (1L << 10)                         ///< Fullscreen window
-#define SUB_STATE_FLOAT        (1L << 11)                         ///< Floating window
-#define SUB_STATE_STICK        (1L << 12)                         ///< Stick window
-#define SUB_STATE_RESIZE       (1L << 13)                         ///< Resized window
-#define SUB_STATE_DEAD         (1L << 14)                         ///< Dead window
+#define SUB_STATE_FULL                (1L << 10)                  ///< Fullscreen window
+#define SUB_STATE_FLOAT               (1L << 11)                  ///< Floating window
+#define SUB_STATE_STICK               (1L << 12)                  ///< Stick window
+#define SUB_STATE_RESIZE              (1L << 13)                  ///< Resized window
+#define SUB_STATE_DEAD                (1L << 14)                  ///< Dead window
 
 /* Client preferences */
-#define SUB_PREF_INPUT         (1L << 15)                         ///< Active/passive focus-model
-#define SUB_PREF_FOCUS         (1L << 16)                         ///< Send focus message
-#define SUB_PREF_CLOSE         (1L << 17)                         ///< Send close message
-#define SUB_PREF_HINTS         (1L << 18)                         ///< Size hints available
+#define SUB_PREF_INPUT                (1L << 15)                  ///< Active/passive focus-model
+#define SUB_PREF_FOCUS                (1L << 16)                  ///< Send focus message
+#define SUB_PREF_CLOSE                (1L << 17)                  ///< Send close message
+#define SUB_PREF_HINTS                (1L << 18)                  ///< Size hints available
 
-/* Grid types */
-#define SUB_GRID_BOTTOM        (1L << 20)                         ///< Grid bottom position
-#define SUB_GRID_BOTTOM_LEFT   (1L << 21)                         ///< Grid bottom left position
-#define SUB_GRID_BOTTOM_RIGHT  (1L << 22)                         ///< Grid bottom right position
-#define SUB_GRID_LEFT          (1L << 23)                         ///< Grid left position
-#define SUB_GRID_CENTER        (1L << 24)                         ///< Grid center position
-#define SUB_GRID_RIGHT         (1L << 25)                         ///< Grid right position
-#define SUB_GRID_TOP           (1L << 26)                         ///< Grid top position
-#define SUB_GRID_TOP_LEFT      (1L << 27)                         ///< Grid top left position
-#define SUB_GRID_TOP_RIGHT     (1L << 28)                         ///< Grid top right position
+/* Gravity types */
+#define SUB_GRAVITY_UNKNOWN           (1L << 20)                  ///< Gravity unknown
+#define SUB_GRAVITY_BOTTOM_LEFT       (1L << 21)                  ///< Gravity bottom left
+#define SUB_GRAVITY_BOTTOM            (1L << 22)                  ///< Gravity bottom
+#define SUB_GRAVITY_BOTTOM_RIGHT      (1L << 23)                  ///< Gravity bottom right
+#define SUB_GRAVITY_LEFT              (1L << 24)                  ///< Gravity left
+#define SUB_GRAVITY_CENTER            (1L << 25)                  ///< Gravity center
+#define SUB_GRAVITY_RIGHT             (1L << 26)                  ///< Gravity right
+#define SUB_GRAVITY_TOP_LEFT          (1L << 27)                  ///< Gravity top left
+#define SUB_GRAVITY_TOP               (1L << 28)                  ///< Gravity top
+#define SUB_GRAVITY_TOP_RIGHT         (1L << 29)                  ///< Gravity top
 
 /* Data types */
-#define SUB_DATA_STRING        (1L << 10)                         ///< String data
-#define SUB_DATA_FIXNUM        (1L << 11)                         ///< Fixnum data
-#define SUB_DATA_INOTIFY       (1L << 12)                         ///< Inotify data
-#define SUB_DATA_NIL           (1L << 13)                         ///< Nil data
+#define SUB_DATA_STRING               (1L << 10)                  ///< String data
+#define SUB_DATA_FIXNUM               (1L << 11)                  ///< Fixnum data
+#define SUB_DATA_INOTIFY              (1L << 12)                  ///< Inotify data
+#define SUB_DATA_NIL                  (1L << 13)                  ///< Nil data
 
 /* Grab types */
-#define SUB_GRAB_KEY           (1L << 10)                         ///< Key grab
-#define SUB_GRAB_MOUSE         (1L << 11)                         ///< Mouse grab  
-#define SUB_GRAB_VIEW_JUMP     (1L << 12)                         ///< Jump to view
-#define SUB_GRAB_EXEC          (1L << 13)                         ///< Exec an app
-#define SUB_GRAB_WINDOW_MOVE   (1L << 14)                         ///< Resize window
-#define SUB_GRAB_WINDOW_RESIZE (1L << 15)                         ///< Move window
-#define SUB_GRAB_WINDOW_FLOAT  (1L << 16)                         ///< Toggle float
-#define SUB_GRAB_WINDOW_FULL   (1L << 17)                         ///< Toggle full
-#define SUB_GRAB_WINDOW_STICK  (1L << 18)                         ///< Toggle stock
-#define SUB_GRAB_WINDOW_KILL   (1L << 19)                         ///< Kill window
+#define SUB_GRAB_KEY                  (1L << 10)                  ///< Key grab
+#define SUB_GRAB_MOUSE                (1L << 11)                  ///< Mouse grab  
+#define SUB_GRAB_VIEW_JUMP            (1L << 12)                  ///< Jump to view
+#define SUB_GRAB_EXEC                 (1L << 13)                  ///< Exec an app
+#define SUB_GRAB_WINDOW_MOVE          (1L << 14)                  ///< Resize window
+#define SUB_GRAB_WINDOW_RESIZE        (1L << 15)                  ///< Move window
+#define SUB_GRAB_WINDOW_FLOAT         (1L << 16)                  ///< Toggle float
+#define SUB_GRAB_WINDOW_FULL          (1L << 17)                  ///< Toggle full
+#define SUB_GRAB_WINDOW_STICK         (1L << 18)                  ///< Toggle stock
+#define SUB_GRAB_WINDOW_KILL          (1L << 19)                  ///< Kill window
+#define SUB_GRAB_GRAVITY              (1L << 20)                  ///< Gravity type
 
 /* Drag states */
-#define SUB_DRAG_START         (1L << 10)                         ///< Drag start
-#define SUB_DRAG_TOP           (1L << 11)                         ///< Drag above
-#define SUB_DRAG_BOTTOM        (1L << 13)                         ///< Drag below
-#define SUB_DRAG_LEFT          (1L << 14)                         ///< Drag left
-#define SUB_DRAG_RIGHT         (1L << 15)                         ///< Drag right
-#define SUB_DRAG_MOVE          (1L << 16)                         ///< Drag move
-#define SUB_DRAG_SWAP          (1L << 17)                         ///< Drag swap
-#define SUB_DRAG_RESIZE_LEFT   (1L << 18)                         ///< Drag resize left
-#define SUB_DRAG_RESIZE_RIGHT  (1L << 19)                         ///< Drag resize right
+#define SUB_DRAG_START                (1L << 10)                  ///< Drag start
+#define SUB_DRAG_TOP                  (1L << 11)                  ///< Drag above
+#define SUB_DRAG_BOTTOM               (1L << 13)                  ///< Drag below
+#define SUB_DRAG_LEFT                 (1L << 14)                  ///< Drag left
+#define SUB_DRAG_RIGHT                (1L << 15)                  ///< Drag right
+#define SUB_DRAG_MOVE                 (1L << 16)                  ///< Drag move
+#define SUB_DRAG_SWAP                 (1L << 17)                  ///< Drag swap
+#define SUB_DRAG_RESIZE_LEFT          (1L << 18)                  ///< Drag resize left
+#define SUB_DRAG_RESIZE_RIGHT         (1L << 19)                  ///< Drag resize right
 
 /* Fixed tags */
-#define SUB_TAG_DEFAULT        (1L << 1)                          ///< Default tag
-#define SUB_TAG_FLOAT          (1L << 2)                          ///< Float tag
-#define SUB_TAG_FULL           (1L << 3)                          ///< Full tag
-#define SUB_TAG_STICK          (1L << 4)                          ///< Urgent tag
+#define SUB_TAG_DEFAULT               (1L << 1)                   ///< Default tag
+#define SUB_TAG_FLOAT                 (1L << 2)                   ///< Float tag
+#define SUB_TAG_FULL                  (1L << 3)                   ///< Full tag
+#define SUB_TAG_STICK                 (1L << 4)                   ///< Stick tag
+#define SUB_TAG_TOP                   (1L << 5)                   ///< Top tag
+#define SUB_TAG_BOTTOM                (1L << 6)                   ///< Bottom tag
+#define SUB_TAG_LEFT                  (1L << 7)                   ///< Left tag
+#define SUB_TAG_RIGHT                 (1L << 8)                   ///< Right tag
+#define SUB_TAG_CENTER                (1L << 9)                   ///< Center tag
 /* }}} */
 
 /* Typedefs {{{ */
@@ -187,7 +194,7 @@ typedef struct subclient_t /* {{{ */
 
   TAGS                tags;                                       ///< Client tags
   Window              win, group;                                 ///< Client window, group
-  int                 r, c, size;                                 ///< Client row, col, size
+  int                 gravity;                                    ///< Client row, col, size
   Colormap            cmap;                                       ///< Client colormap
   XRectangle          rect;                                       ///< Client rect
   XSizeHints          *hints;                                     ///< Client size hints
@@ -452,8 +459,8 @@ int subGrabCompare(const void *a, const void *b);                 ///< Compare g
 void subGrabKill(SubGrab *g);                                     ///< Kill grab
 /* }}} */
 
-/* grid.c {{{ */
-void SubGridCalc(XRectangle *r, int type);                        ///< Calc rect in grid
+/* gravity.c {{{ */
+void subGravityCalc(XRectangle *r, int type);                     ///< Calc gravity
 /* }}} */
 
 /* ruby.c {{{ */

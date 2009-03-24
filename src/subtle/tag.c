@@ -19,7 +19,10 @@ void
 subTagInit(void)
 {
   int i;
-  char *tags[] = { "default", "float", "full", "stick" };
+  char *tags[] = { 
+    "default", "float", "full", "stick",        ///< Properties
+    "top", "bottom", "left", "right", "center"  ///< Gravities
+  };
 
   for(i = 0; LENGTH(tags) > i; i++)
     {
