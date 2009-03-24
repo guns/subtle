@@ -558,6 +558,13 @@ EventGrab(XEvent *ev)
                 subClientDrag(c, flag);
               }
             break; /* }}} */
+          case SUB_GRAB_GRID:
+            if((c = CLIENT(subSharedFind(win, CLIENTID))))
+              {
+                subGridCalc(&c->rect, g->number);
+                subClientConfigure(c);
+              }
+            break;
           case SUB_GRAB_EXEC: /* {{{ */
             if(g->string) EventExec(g->string);
             break; /* }}} */

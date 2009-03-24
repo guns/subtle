@@ -49,15 +49,17 @@ subGrabNew(const char *name,
   const char *value)
 {
   int i;
-  char *tok = NULL;
+  char *suffix = NULL, *tok = NULL;
   KeySym sym;
   SubGrab *g = NULL;
 
-  struct
+  typedef struct grabtable_t
   {
     char *name;
     FLAGS flags;
-  } grabs[] = { 
+  } GrabTable;
+  
+  GrabTable grabs[] = { 
     { "WindowMove",   SUB_GRAB_WINDOW_MOVE   },
     { "WindowResize", SUB_GRAB_WINDOW_RESIZE },
     { "WindowFloat",  SUB_GRAB_WINDOW_FLOAT  },
@@ -66,42 +68,57 @@ subGrabNew(const char *name,
     { "WindowKill",   SUB_GRAB_WINDOW_KILL   }
   };
 
+  GrabTable gravities[] = {
+    { "Unknown",     SUB_GRAVITY_UNKNOWN      },
+    { "BottomLeft",  SUB_GRAVITY_BOTTOM_LEFT  },
+    { "Bottom",      SUB_GRAVITY_BOTTOM       },
+    { "BottomRight", SUB_GRAVITY_BOTTOM_RIGHT },
+    { "Left",        SUB_GRAVITY_LEFT         },
+    { "Center",      SUB_GRAVITY_CENTER       },
+    { "Right",       SUB_GRAVITY_RIGHT        },
+    { "TopLeft",     SUB_GRAVITY_TOP_LEFT     },
+    { "Top",         SUB_GRAVITY_TOP          },
+    { "TopRight",    SUB_GRAVITY_TOP_RIGHT    }
+  };
+
   assert(name && value);
   
   g = GRAB(subSharedMemoryAlloc(1, sizeof(SubGrab)));
 
   /* Find grabs */  
-  for(i = 0; LENGTH(grabs) > i; i++)
+  if(!strncmp(name, "ViewJump", 8))
+    {
+      if((suffix = (char *)name + 8)) ///< Get view number
+        {
+          g->number = atoi(suffix) - 1; ///< Decrease for array index
+          g->flags |= (SUB_TYPE_GRAB|SUB_GRAB_VIEW_JUMP);
+        }
+    }
+  else if(!strncmp(name, "Gravity", 7))
+    {
+      if((suffix = (char *)name + 7)) ///< Get gravity type
+        {
+          for(i = 0; 0 == g->flags && LENGTH(gravities) > i; i++)
+            if(!strcmp(suffix, gravities[i].name))
+              {
+                g->number = i;
+                g->flags |= (SUB_TYPE_GRAB|SUB_GRAB_GRAVITY);
+              }
+        }
+    } 
+
+  /* Find more grabs */
+  for(i = 0; 0 == g->flags && LENGTH(grabs) > i; i++)
     if(!strcmp(name, grabs[i].name))
       {
         g->flags |= (SUB_TYPE_GRAB|grabs[i].flags);
-        break; ///< Found
       }
 
-  /* Special grabs */
-  if(!g->flags)
+  /* Treat rest as exec */
+  if(0 == g->flags)
     {
-      if(!strncmp(name, "ViewJump", 8))
-        {
-          char *desktop = (char *)name + 8; ///< Get view number
-          if(desktop) 
-            {
-              g->number = atoi(desktop) - 1; ///< Decrease for array index
-              g->flags |= (SUB_TYPE_GRAB|SUB_GRAB_VIEW_JUMP);
-            }
-          else 
-            {
-              subSharedLogWarn("Can't assign keychain `%s'.\n", name);
-              free(g);
-
-              return NULL;
-            }
-        }
-      else
-        {
-          g->flags |= (SUB_TYPE_GRAB|SUB_GRAB_EXEC);
-          g->string  = strdup(name);
-        }
+      g->flags |= (SUB_TYPE_GRAB|SUB_GRAB_EXEC);
+      g->string  = strdup(name);
     }
 
   tok = strtok((char *)value, "-");
