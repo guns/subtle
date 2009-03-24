@@ -2,7 +2,7 @@
  /**
   * @package subtle
   *
-  * @file Array functions
+  * @file Gravity functions
   * @copyright 2005-2009 Christoph Kappel <unexist@dorfelite.net>
   * @version $Id$
   *
@@ -13,15 +13,15 @@
 #include "subtle.h"
 
 /* Typedef {{{ */
-typedef struct gridprops_t
+typedef struct gravity_t
 {
   int grav_right;
   int grav_down;
   int cells_x;
   int cells_y;
-} GridProps;
+} GravityProps;
 
-static const GridProps gridprops[] =
+static const Gravity gridprops[] =
 {
   {0,1, 1,1},
 
@@ -38,9 +38,9 @@ static const GridProps gridprops[] =
   {1,0, 2,2},
 }; /* }}} */
 
-/* GridSlotToRect {{{ */
+/* GravitySlotToRect {{{ */
 static void
-GridSlotToRect(XRectangle *r,
+GravitySlotToRect(XRectangle *r,
   XRectangle *slot,
   XRectangle *rect)
 {
@@ -50,9 +50,9 @@ GridSlotToRect(XRectangle *r,
   rect->height = slot->height; // slot->height - (w->input.top + w->input.bottom);
 } /* }}} */
 
-/* GridConstrainSize {{{ */
+/* GravityConstrainSize {{{ */
 static void
-GridConstrainSize(XRectangle *r,
+GravityConstrainSize(XRectangle *r,
   XRectangle *slot,
   XRectangle *rect)
 {
@@ -60,7 +60,7 @@ GridConstrainSize(XRectangle *r,
   //Rect workarea = { 0, 0, WIDTH, HEIGHT };
   XRectangle sr;
 
-  SlotToRect(r, slot, &sr);
+  GravitySlotToRect(r, slot, &sr);
 
 #if 0
   if(constrainNewWindowSize(w, r.width, r.height, &cw, &ch))
@@ -82,30 +82,30 @@ GridConstrainSize(XRectangle *r,
   *rect = sr;
 } /* }}} */
 
-  /** SubGridCommon {{{ 
-   * @brief Place rect in grid
+  /** subGravityCalc {{{ 
+   * @brief Calc rect in grid
    * @param[in]  r     A #XRectangle
-   * @param[in]  type  A #SubGrid
+   * @param[in]  type  A #SubGravity
    **/
 
 void
-SubGrid(XRectangle *r,
-  SubGrid type)
+subGravityCalc(XRectangle *r,
+  int type)
 {
-  XRectangle workarea = { 0, subtle->th, SCREENW, SCREENH - subtle->th };
+  XRectangle workarea = { 0, 0, SCREENW, SCREENH - subtle->th };
   XRectangle desiredSlot = { 0 }, desiredRect = { 0 }, currentRect = { 0 };
-  GridProps props = gridprops[type];
+  GravityProps props = gridprops[type];
 
   assert(r);
-
+printf("DEBUG\n");
   /* slice and dice to get desired slot - including decorations */
-  desiredSlot.y      = workarea.y + props.grav_down * (workarea.height / props.xells_y);
+  desiredSlot.y      = workarea.y + props.grav_down * (workarea.height / props.cells_y);
   desiredSlot.height = workarea.height / props.cells_y;
   desiredSlot.x      = workarea.x + props.grav_right * (workarea.width / props.cells_x);
   desiredSlot.width  = workarea.width / props.cells_x;
 
   /* Adjust for constraints and decorations */
-  GridConstrainSize(r, &desiredSlot, &desiredRect);
+  GravityConstrainSize(r, &desiredSlot, &desiredRect);
 
   /* Get current rect not including decorations */
   currentRect.x      = r->x; 
@@ -120,39 +120,35 @@ SubGrid(XRectangle *r,
 
       printf("Multi!\n");
 
-	    if(props.numCellsX == 2) /* keys (1, 4, 7, 3, 6, 9) */
+	    if(props.cells_x == 2)
 	      {
 	       if(currentRect.width == desiredRect.width && currentRect.x == desiredRect.x)
 	         {
 	           desiredSlot.width = slotWidth66;
-	           desiredSlot.x = workarea.x + props.gravityRight * slotWidth33;
+	           desiredSlot.x = workarea.x + props.grav_right * slotWidth33;
         		}
       		else
         		{
-              Rect rect33, rect66, slot33, slot66;
+              XRectangle rect33, rect66, slot33, slot66;
 
               slot33       = desiredSlot;
-              slot33.x     = workarea.x + props.gravityRight * slotWidth66;
+              slot33.x     = workarea.x + props.grav_right * slotWidth66;
               slot33.width = slotWidth33;
-              ConstrainSize(r, &slot33, &rect33);
-              DEBUG_RECT(slot33);
-              DEBUG_RECT(rect33);
+              GravityConstrainSize(r, &slot33, &rect33);
 
               slot66       = desiredSlot;
-              slot66.x     = workarea.x + props.gravityRight * slotWidth33;
+              slot66.x     = workarea.x + props.grav_right * slotWidth33;
               slot66.width = slotWidth66;
-              ConstrainSize(r, &slot66, &rect66);
-              DEBUG_RECT(slot66);
-              DEBUG_RECT(rect66);
+              GravityConstrainSize(r, &slot66, &rect66);
 
               if(currentRect.width == rect66.width && currentRect.x == rect66.x)
                 {
                   desiredSlot.width = slotWidth33;
-                  desiredSlot.x = workarea.x + props.gravityRight * slotWidth66;
+                  desiredSlot.x = workarea.x + props.grav_right * slotWidth66;
 	             }
 	         }
 	      }
-	    else /* keys (2, 5, 8) */
+	    else
 	      {
           if(currentRect.width == desiredRect.width && currentRect.x == desiredRect.x)
             {
@@ -161,8 +157,7 @@ SubGrid(XRectangle *r,
             }
         }
 
-      ConstrainSize(r, &desiredSlot, &desiredRect);
-      DEBUG_RECT(desiredRect);
+      GravityConstrainSize(r, &desiredSlot, &desiredRect);
     }
 
   r->x      = desiredRect.x;
