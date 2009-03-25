@@ -80,6 +80,18 @@
 #define TRAY(t)   ((SubTray *)t)                                  ///< Cast to SubTray
 #define VIEW(v)   ((SubView *)v)                                  ///< Cast to SubView
 
+/* Gravities */
+#define SUB_GRAVITY_UNKNOWN            0                          ///< Gravity unknown
+#define SUB_GRAVITY_BOTTOM_LEFT        1                          ///< Gravity bottom left
+#define SUB_GRAVITY_BOTTOM             2                          ///< Gravity bottom
+#define SUB_GRAVITY_BOTTOM_RIGHT       3                          ///< Gravity bottom right
+#define SUB_GRAVITY_LEFT               4                          ///< Gravity left
+#define SUB_GRAVITY_CENTER             5                          ///< Gravity center
+#define SUB_GRAVITY_RIGHT              6                          ///< Gravity right
+#define SUB_GRAVITY_TOP_LEFT           7                          ///< Gravity top left
+#define SUB_GRAVITY_TOP                8                          ///< Gravity top
+#define SUB_GRAVITY_TOP_RIGHT          9                          ///< Gravity top right
+
 /* XEmbed messages */
 #define XEMBED_EMBEDDED_NOTIFY         0
 #define XEMBED_WINDOW_ACTIVATE         1
@@ -125,18 +137,6 @@
 #define SUB_PREF_FOCUS                (1L << 16)                  ///< Send focus message
 #define SUB_PREF_CLOSE                (1L << 17)                  ///< Send close message
 #define SUB_PREF_HINTS                (1L << 18)                  ///< Size hints available
-
-/* Gravity types */
-#define SUB_GRAVITY_UNKNOWN           (1L << 20)                  ///< Gravity unknown
-#define SUB_GRAVITY_BOTTOM_LEFT       (1L << 21)                  ///< Gravity bottom left
-#define SUB_GRAVITY_BOTTOM            (1L << 22)                  ///< Gravity bottom
-#define SUB_GRAVITY_BOTTOM_RIGHT      (1L << 23)                  ///< Gravity bottom right
-#define SUB_GRAVITY_LEFT              (1L << 24)                  ///< Gravity left
-#define SUB_GRAVITY_CENTER            (1L << 25)                  ///< Gravity center
-#define SUB_GRAVITY_RIGHT             (1L << 26)                  ///< Gravity right
-#define SUB_GRAVITY_TOP_LEFT          (1L << 27)                  ///< Gravity top left
-#define SUB_GRAVITY_TOP               (1L << 28)                  ///< Gravity top
-#define SUB_GRAVITY_TOP_RIGHT         (1L << 29)                  ///< Gravity top
 
 /* Data types */
 #define SUB_DATA_STRING               (1L << 10)                  ///< String data
