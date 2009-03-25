@@ -183,12 +183,34 @@ subClientNew(Window win)
 
   /* Special tags */
   if(!(c->tags & ~(SUB_TAG_FLOAT|SUB_TAG_FULL|SUB_TAG_STICK)))
-    c->tags |= SUB_TAG_DEFAULT; ///< Ensure that there's at least on tag
+    c->tags |= SUB_TAG_DEFAULT; ///< Ensure that there's at least one tag
   else
     {
+      int gravity = SUB_GRAVITY_UNKNOWN;
+
+      /* Properties */
       if(c->tags & SUB_TAG_FLOAT) subClientToggle(c, SUB_STATE_FLOAT);
       if(c->tags & SUB_TAG_FULL)  subClientToggle(c, SUB_STATE_FULL);
       if(c->tags & SUB_TAG_STICK) subClientToggle(c, SUB_STATE_STICK|SUB_STATE_FLOAT);
+
+      /* Gravities */
+      if(c->tags & SUB_TAG_TOP)
+        {
+          if(c->tags & SUB_TAG_LEFT)       gravity = SUB_GRAVITY_TOP_LEFT;
+          else if(c->tags & SUB_TAG_RIGHT) gravity = SUB_GRAVITY_TOP_RIGHT;
+          else                             gravity = SUB_GRAVITY_TOP;
+        }
+      else if(c->tags & SUB_TAG_BOTTOM)
+        {
+          if(c->tags & SUB_TAG_LEFT)       gravity = SUB_GRAVITY_BOTTOM_LEFT;
+          else if(c->tags & SUB_TAG_RIGHT) gravity = SUB_GRAVITY_BOTTOM_RIGHT;
+          else                             gravity = SUB_GRAVITY_BOTTOM;
+        }
+      else if(c->tags & SUB_TAG_LEFT)      gravity = SUB_GRAVITY_LEFT;
+      else if(c->tags & SUB_TAG_RIGHT)     gravity = SUB_GRAVITY_RIGHT;
+      else if(c->tags & SUB_TAG_CENTER)    gravity = SUB_GRAVITY_CENTER;
+
+      subGravityCalc(&c->rect, gravity);
     }
 
   /* EWMH: Tags and desktop */
@@ -493,7 +515,14 @@ subClientDrag(SubClient *c,
 
   if(c && c2 && win != c->win)
     {
-      subViewArrange(subtle->cv, c, c2, state);
+      switch(state)
+        {
+          case SUB_DRAG_TOP:    subGravityCalc(&c->rect, SUB_GRAVITY_TOP);    break;
+          case SUB_DRAG_BOTTOM: subGravityCalc(&c->rect, SUB_GRAVITY_BOTTOM); break;
+          case SUB_DRAG_LEFT:   subGravityCalc(&c->rect, SUB_GRAVITY_LEFT);   break;
+          case SUB_DRAG_RIGHT:  subGravityCalc(&c->rect, SUB_GRAVITY_RIGHT);  break;
+        }
+          
       subViewConfigure(subtle->cv);
     }
   else ///< Move/Resize
@@ -509,8 +538,8 @@ subClientDrag(SubClient *c,
       else if(mode & (SUB_DRAG_RESIZE_LEFT|SUB_DRAG_RESIZE_RIGHT))
         {
           /* Get size ratios */
-          c->size = r.width * 100 / SCREENW;
-          c->size = MINMAX(c->size, 10, 90); ///< Min 10%, Max 90%
+          //c->size = r.width * 100 / SCREENW;
+          //c->size = MINMAX(c->size, 10, 90); ///< Min 10%, Max 90%
 
           if(!(c->flags & SUB_STATE_RESIZE)) c->flags |= SUB_STATE_RESIZE;
           subViewConfigure(subtle->cv);        
