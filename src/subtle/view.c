@@ -79,7 +79,7 @@ void
 subViewConfigure(SubView *v)
 {
   long vid = 0;
-  int i, j, k, once, swap, total = 0;
+  int i;
 
   assert(v);
 
@@ -87,14 +87,10 @@ subViewConfigure(SubView *v)
     {
       vid = subArrayIndex(subtle->views, (void *)v);
 
-      /* Clients {{{ */
-      for(i = 0, j = 0; i < subtle->clients->ndata; i++)
+      /* Clients */
+      for(i = 0; i < subtle->clients->ndata; i++)
         {
           SubClient *c = CLIENT(subtle->clients->data[i]);
-
-          /* Reset perrow/percol */
-          subtle->perrow[i] = 0;
-          subtle->percol[i] = 0;
 
           /* Find matching clients */
           if(VISIBLE(v, c))
@@ -104,13 +100,8 @@ subViewConfigure(SubView *v)
 
               if(!(c->flags & (SUB_STATE_FULL|SUB_STATE_FLOAT))) 
                 {
-                  c->r = 0;
-                  c->c = j;
-                  subtle->percol[j++] = 1;
-                  total++;
-
                   XMapWindow(subtle->disp, c->win);
-                  XLowerWindow(subtle->disp, c->win);
+                  //XLowerWindow(subtle->disp, c->win);
 
                   /* EWMH: Desktop */
                   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
@@ -118,140 +109,13 @@ subViewConfigure(SubView *v)
               else ///< Special flags
                 {
                   XMapRaised(subtle->disp, c->win);
-                  subClientConfigure(c);
                 }
+
+              subClientConfigure(c);
             }
           else XUnmapWindow(subtle->disp, c->win); ///< Unmap other windows
         }
-      subtle->perrow[0] = j; 
-      /* }}} */
-
-      /* Layout {{{ */
-      for(i = 0; i < v->layout->ndata; i++)
-        {
-          int col = 0;
-          SubLayout *l = LAYOUT(v->layout->data[i]);
-
-          switch(l->flags & ~SUB_TYPE_LAYOUT)
-            {
-              case SUB_DRAG_BOTTOM:
-                subtle->perrow[l->c2->r]--;
-                subtle->percol[l->c2->c]--;
-                subtle->percol[l->c1->c]--;
-
-                col      = MIN(l->c1->c, l->c2->c);
-                l->c2->r = l->c1->r + 1;
-                l->c1->c = col;
-                l->c2->c = col;
-
-                subtle->perrow[l->c2->r]++;
-                subtle->percol[l->c2->c] += 2;
-                break;
-              case SUB_DRAG_SWAP:
-                swap     = l->c1->r;
-                l->c1->r = l->c2->r;
-                l->c2->r = swap;
-
-                swap     = l->c1->c;
-                l->c1->c = l->c2->c;
-                l->c2->c = swap;
-                break;
-            }
-        } /* }}} */
-
-      /* Calculations {{{ */
-      for(i = 0; i < subtle->clients->ndata; i++)
-        {
-          SubClient *c = CLIENT(subtle->clients->data[i]);
-
-          if(VISIBLE(v, c))
-            {      
-              if(!(c->flags & (SUB_STATE_FULL|SUB_STATE_FLOAT))) 
-                {
-                  c->rect.width  = SCREENW / ZERO(subtle->perrow[c->r]);
-                  c->rect.height = (SCREENH - subtle->th) / ZERO(subtle->percol[c->c]);
-                  c->rect.x      = c->c * c->rect.width;
-                  c->rect.y      = c->r * c->rect.height;
-
-                  /* Compensation for int rounding */
-                  if(subtle->perrow[c->r] == c->c + 1) 
-                    c->rect.width += abs(SCREENW - subtle->perrow[c->r] * c->rect.width); 
-                  if(subtle->percol[c->c] == c->r + 1) 
-                    c->rect.height += 
-                      abs((SCREENH - subtle->th) - subtle->percol[c->c] * c->rect.height); 
-
-                  subClientConfigure(c);
-                }
-            }
-        } /* }}} */
-
-#ifdef DEBUG /* {{{ */
-      /* Table */
-      printf("\n  ");
-      for(i = 0; i < subtle->clients->ndata; i++)
-        {
-          printf("%d ", subtle->percol[i]);
-        }
-      printf("\n");
-      for(i = 0; i < subtle->clients->ndata; i++) ///< Row
-        {
-          printf("%d ", subtle->perrow[i]);
-
-          for(j = 0; j < subtle->clients->ndata; j++) ///< Col
-            { 
-              once = 0;
-              for(k = 0; k < subtle->clients->ndata; k++) ///< Clients
-                {
-                  SubClient *d = CLIENT(subtle->clients->data[k]);
-
-                  if(VISIBLE(v, d) && d->r == i && d->c == j)
-                    {
-                      printf("x ");
-                      once++;
-                    }
-                }
-              if(0 == once) printf("  ");
-            }
-          printf("%d\n", i);
-        } 
-      printf("  ");
-      for(i = 0; i < subtle->clients->ndata; i++)
-        {
-          printf("%d ", i);
-        }  
-      printf("\n\n");
-
-      /* Output */
-      printf("r c   x   y width height\n");
-      for(i = 0; i < subtle->clients->ndata; i++)
-        {
-          SubClient *e = CLIENT(subtle->clients->data[i]);
-          printf("%d %d %3d %3d %6d %6d\n", 
-            e->r, e->c, e->rect.x, e->rect.y, e->rect.width, e->rect.height);
-        }      
-#endif /* DEBUG }}} */  
     }
-} /* }}} */
-
- /** subViewArrange {{{
-  * @brief Remove old layouts and add new
-  * @param[in]  v   A #SubView
-  * @param[in]  c1  A #SubClient
-  * @param[in]  c2  A #SubClient
-  **/
-
-void
-subViewArrange(SubView *v,
-  SubClient *c1,
-  SubClient *c2,
-  int mode)
-{
-  SubLayout *l = NULL;
-
-  assert(v && c1 && c2);
-
-  l = subLayoutNew(c1, c2, mode);
-  subArrayPush(v->layout, (void *)l);
 } /* }}} */
 
  /** subViewUpdate {{{ 
@@ -383,35 +247,6 @@ subViewPublish(void)
 
   free(views);
   free(names);
-} /* }}} */
-
- /** subViewSanitize {{{
-  * @brief Remove any layout for c
-  * @param[in]  c  A #SubClient
-  **/
-
-void
-subViewSanitize(SubClient *c)
-{
-  int i, j;
-
-  assert(c);
-
-  for(i = 0; i < subtle->views->ndata; i++)
-    {
-      SubView *v = VIEW(subtle->views->data[i]);
-
-      for(j = 0; j < v->layout->ndata; j++)
-        {
-          SubLayout *l = LAYOUT(v->layout->data[j]);
-
-          if(l->c1 == c || l->c2 == c) 
-            {
-              subArrayPop(v->layout, (void *)l);
-              subLayoutKill(l);
-            }
-        }
-    }
 } /* }}} */
 
  /** SubViewKill {{{
