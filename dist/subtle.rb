@@ -47,43 +47,50 @@ COLORS = {
 # B5 = Button5
 #
 GRABS = {
-  "ViewJump1"       => "A-1",       # Jump to view 1
-  "ViewJump2"       => "A-2",       # Jump to view 2
-  "ViewJump3"       => "A-3",       # Jump to view 3
-  "ViewJump4"       => "A-4",       # Jump to view 4
-  "ViewJump5"       => "A-5",       # Jump to view 5
-  "WindowMove"      => "S-B1",      # Move window
-  "WindowResize"    => "S-B3",      # Resize window
-  "WindowFloat"     => "A-f",       # Toggle float
-  "WindowFull"      => "A-space",   # Toggle full,
-  "WindowStick"     => "A-s",       # Toggle stick
-  "WindowKill"      => "A-k",       # Kill window
-  "subtag.sh -c -t" => "A-S-c",     # Exec tag menu (client/tag)
-  "subtag.sh -c -u" => "A-C-c",     # Exec tag menu (client/untag)
-  "subtag.sh -v -t" => "A-S-v",     # Exec tag menu (view/tag)
-  "subtag.sh -v -u" => "A-C-v",     # Exec tag menu (view/untag)
-  "xterm +sb"       => "S-F1"       # Exec a term
+  "ViewJump1"          => "A-1",       # Jump to view 1
+  "ViewJump2"          => "A-2",       # Jump to view 2
+  "ViewJump3"          => "A-3",       # Jump to view 3
+  "ViewJump4"          => "A-4",       # Jump to view 4
+  "ViewJump5"          => "A-5",       # Jump to view 5
+  "WindowMove"         => "S-B1",      # Move window
+  "WindowResize"       => "S-B3",      # Resize window
+  "WindowFloat"        => "A-f",       # Toggle float
+  "WindowFull"         => "A-space",   # Toggle full,
+  "WindowStick"        => "A-s",       # Toggle stick
+  "WindowKill"         => "A-k",       # Kill window
+  "GravityTopLeft"     => "S-KP_7",    # Set left gravity
+  "GravityTop"         => "S-KP_8",    # Set top gravity
+  "GravityTopRight"    => "S-KP_9",    # Set right gravity
+  "GravityLeft"        => "S-KP_4",    # Set left gravity
+  "GravityCenter"      => "S-KP_5",    # Set center gravity
+  "GravityRight"       => "S-KP_6",    # Set right gravity
+  "GravityBottomLeft"  => "S-KP_1",    # Set bottom-left gravity
+  "GravityBottom"      => "S-KP_2",    # Set bottom gravity
+  "GravityBottomRight" => "S-KP_3",    # Set bottom-right gravity
+  "xterm +sb"          => "A-Return"   # Exec a term
 }
 
 #
 # Tags
 #
 TAGS = {
-  "terms"   => "xterm",
-  "browser" => "gran paradiso",
+  "terms"   => "xterm|urxvt",
+  "browser" => "opera",
   "editor"  => "gvim",
   "video"   => "mplayer",
-  "float"   => "urxvt",
+  "float"   => "mplayer",
   "full"    => "gvim",
-  "stick"   => "xlogo"
+  "stick"   => "xlogo",
+  "left"    => "xterm",
+  "right"   => "urxvt"
 }  
 
 #
 # Views
 #
 VIEWS = {
-  "work" => "float",
-  "dev"  => "editor|terms",
+  "work" => "terms",
+  "dev"  => "editor",
   "web"  => "browser|video|terms"
 }
 
