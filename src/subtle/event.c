@@ -558,10 +558,10 @@ EventGrab(XEvent *ev)
                 subClientDrag(c, flag);
               }
             break; /* }}} */
-          case SUB_GRAB_GRID:
+          case SUB_GRAB_GRAVITY:
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               {
-                subGridCalc(&c->rect, g->number);
+                subGravityCalc(&c->rect, g->number);
                 subClientConfigure(c);
               }
             break;

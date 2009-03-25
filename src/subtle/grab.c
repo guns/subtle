@@ -14,6 +14,14 @@
 
 static unsigned int numlockmask = 0;
 
+/* Typedef {{{ */
+typedef struct grabtable_t
+{
+  char *name;
+  FLAGS flags;
+} GrabTable;
+/* }}} */
+
  /** subGrabInit {{{
   * @brief Init grabs and get modifiers
   **/
@@ -52,14 +60,8 @@ subGrabNew(const char *name,
   char *suffix = NULL, *tok = NULL;
   KeySym sym;
   SubGrab *g = NULL;
-
-  typedef struct grabtable_t
-  {
-    char *name;
-    FLAGS flags;
-  } GrabTable;
   
-  GrabTable grabs[] = { 
+  static const GrabTable grabs[] = { 
     { "WindowMove",   SUB_GRAB_WINDOW_MOVE   },
     { "WindowResize", SUB_GRAB_WINDOW_RESIZE },
     { "WindowFloat",  SUB_GRAB_WINDOW_FLOAT  },
@@ -68,7 +70,7 @@ subGrabNew(const char *name,
     { "WindowKill",   SUB_GRAB_WINDOW_KILL   }
   };
 
-  GrabTable gravities[] = {
+  static const GrabTable gravities[] = {
     { "Unknown",     SUB_GRAVITY_UNKNOWN      },
     { "BottomLeft",  SUB_GRAVITY_BOTTOM_LEFT  },
     { "Bottom",      SUB_GRAVITY_BOTTOM       },
@@ -101,7 +103,7 @@ subGrabNew(const char *name,
           for(i = 0; 0 == g->flags && LENGTH(gravities) > i; i++)
             if(!strcmp(suffix, gravities[i].name))
               {
-                g->number = i;
+                g->number = gravities[i].flags;
                 g->flags |= (SUB_TYPE_GRAB|SUB_GRAB_GRAVITY);
               }
         }
@@ -128,7 +130,7 @@ subGrabNew(const char *name,
       sym = XStringToKeysym(tok);
       if(NoSymbol == sym)
         {
-          char *mouse[] = { "B1", "B2", "B3", "B4", "B5" };
+          static const char *mouse[] = { "B1", "B2", "B3", "B4", "B5" };
 
           for(i = 0; 5 > i; i++)
             if(!strncmp(tok, mouse[i], 2))
