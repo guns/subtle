@@ -563,6 +563,7 @@ EventGrab(XEvent *ev)
               {
                 vid = subArrayIndex(subtle->views, (void *)subtle->cv);
 
+                c->gravity = -1; ///< Force 
                 c->gravities[vid] = g->number;
 
                 if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
