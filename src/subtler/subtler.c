@@ -774,8 +774,8 @@ main(int argc,
       SubtlerClientToggleStick, NULL, SubtlerClientTag, SubtlerClientUntag, SubtlerClientTags },
     { NULL, SubtlerSubletKill, SubtlerSubletUpdate, SubtlerSubletList, NULL, NULL, NULL,
       NULL, NULL, NULL, NULL, NULL, NULL },
-    { SubtlerTagNew, SubtlerTagKill, SubtlerTagList, SubtlerTagFind, NULL, NULL, NULL, 
-      NULL, NULL, NULL, NULL, NULL, NULL },
+    { SubtlerTagNew, SubtlerTagKill, NULL, SubtlerTagList, SubtlerTagFind, NULL, NULL, NULL, 
+      NULL, NULL, NULL, NULL, NULL },
     { SubtlerViewNew, SubtlerViewKill, NULL, SubtlerViewList, NULL, NULL, NULL, NULL, NULL,
       SubtlerViewJump, SubtlerViewTag, SubtlerViewUntag, SubtlerViewTags }
   };
