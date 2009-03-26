@@ -101,7 +101,14 @@ subViewConfigure(SubView *v)
               if(!(c->flags & (SUB_STATE_FULL|SUB_STATE_FLOAT))) 
                 {
                   XMapWindow(subtle->disp, c->win);
-                  //XLowerWindow(subtle->disp, c->win);
+
+                  /* Check current gravity */
+                  if(c->gravity != c->gravities[vid]) 
+                    {
+                      c->gravity = c->gravities[vid];
+                      subGravityCalc(&c->rect, c->gravities[vid]);
+                    }
+                  subClientConfigure(c);
 
                   /* EWMH: Desktop */
                   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
@@ -111,7 +118,6 @@ subViewConfigure(SubView *v)
                   XMapRaised(subtle->disp, c->win);
                 }
 
-              subClientConfigure(c);
             }
           else XUnmapWindow(subtle->disp, c->win); ///< Unmap other windows
         }

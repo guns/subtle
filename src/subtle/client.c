@@ -86,9 +86,8 @@ ClientSnap(SubClient *c,
 SubClient *
 subClientNew(Window win)
 {
-  int i, n = 0;
-  long vid = 1337;
-  long supplied = 0;
+  int i, n = 0, gravity = SUB_GRAVITY_CENTER;
+  long vid = 1337, supplied = 0;
   Window trans = 0;
   XWMHints *hints = NULL;
   XWindowAttributes attrs;
@@ -186,8 +185,6 @@ subClientNew(Window win)
     c->tags |= SUB_TAG_DEFAULT; ///< Ensure that there's at least one tag
   else
     {
-      int gravity = SUB_GRAVITY_UNKNOWN;
-
       /* Properties */
       if(c->tags & SUB_TAG_FLOAT) subClientToggle(c, SUB_STATE_FLOAT);
       if(c->tags & SUB_TAG_FULL)  subClientToggle(c, SUB_STATE_FULL);
@@ -209,9 +206,12 @@ subClientNew(Window win)
       else if(c->tags & SUB_TAG_LEFT)      gravity = SUB_GRAVITY_LEFT;
       else if(c->tags & SUB_TAG_RIGHT)     gravity = SUB_GRAVITY_RIGHT;
       else if(c->tags & SUB_TAG_CENTER)    gravity = SUB_GRAVITY_CENTER;
-
-      subGravityCalc(&c->rect, gravity);
     }
+
+  /* Gravities */
+  c->gravities = (int *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(int));
+  for(i = 0; i < subtle->views->ndata; i++)
+    c->gravities[i] = gravity;
 
   /* EWMH: Tags and desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&c->tags, 1);
@@ -540,8 +540,7 @@ subClientDrag(SubClient *c,
           /* Get size ratios */
           //c->size = r.width * 100 / SCREENW;
           //c->size = MINMAX(c->size, 10, 90); ///< Min 10%, Max 90%
-
-          if(!(c->flags & SUB_STATE_RESIZE)) c->flags |= SUB_STATE_RESIZE;
+          //if(!(c->flags & SUB_STATE_RESIZE)) c->flags |= SUB_STATE_RESIZE;
           subViewConfigure(subtle->cv);        
         }
     }
@@ -704,6 +703,7 @@ subClientKill(SubClient *c,
       else XKillClient(subtle->disp, c->win);
     }
 
+  if(c->gravities) free(c->gravities);
   if(c->hints) XFree(c->hints);
   if(c->name) XFree(c->name);
   free(c);

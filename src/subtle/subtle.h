@@ -129,8 +129,8 @@
 #define SUB_STATE_FULL                (1L << 10)                  ///< Fullscreen window
 #define SUB_STATE_FLOAT               (1L << 11)                  ///< Floating window
 #define SUB_STATE_STICK               (1L << 12)                  ///< Stick window
-#define SUB_STATE_RESIZE              (1L << 13)                  ///< Resized window
-#define SUB_STATE_DEAD                (1L << 14)                  ///< Dead window
+#define SUB_STATE_DEAD                (1L << 13)                  ///< Dead window
+#define SUB_STATE_GRAVITY             (1L << 14)                  ///< Gravity force
 
 /* Client preferences */
 #define SUB_PREF_INPUT                (1L << 15)                  ///< Active/passive focus-model
@@ -194,7 +194,7 @@ typedef struct subclient_t /* {{{ */
 
   TAGS                tags;                                       ///< Client tags
   Window              win, group;                                 ///< Client window, group
-  int                 gravity;                                    ///< Client row, col, size
+  int                 gravity, *gravities;                        ///< Client gravity/gravities
   Colormap            cmap;                                       ///< Client colormap
   XRectangle          rect;                                       ///< Client rect
   XSizeHints          *hints;                                     ///< Client size hints

@@ -513,7 +513,7 @@ EventGrab(XEvent *ev)
       Window win = 0;
       SubClient *c = NULL;
       FLAGS flag = 0;
-      int wx = 0, wy = 0;
+      int wx = 0, wy = 0, vid = 0;
 
       /* Use similarity of both events */
       win = ev->xbutton.window == subtle->cv->win ? ev->xbutton.subwindow : ev->xbutton.window;
@@ -561,8 +561,11 @@ EventGrab(XEvent *ev)
           case SUB_GRAB_GRAVITY:
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               {
-                subGravityCalc(&c->rect, g->number);
-                subClientConfigure(c);
+                vid = subArrayIndex(subtle->views, (void *)subtle->cv);
+
+                c->gravities[vid] = g->number;
+
+                if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
               }
             break;
           case SUB_GRAB_EXEC: /* {{{ */
