@@ -378,7 +378,7 @@ SubtlerTagFind(char *arg1,
       for(i = 0; i < size_views; i++)
         {
           unsigned long *flags = (unsigned long *)subSharedPropertyGet(views[i], XA_CARDINAL,
-            "SUBTLE_VIEW_TAGS", NULL);
+            "SUBTLE_WINDOW_TAGS", NULL);
 
           if((int)*flags & (1L << (tag + 1))) 
             printf("view   - %s\n", names[i]);
@@ -398,7 +398,7 @@ SubtlerTagFind(char *arg1,
         {
           char *wmname = NULL, *wmclass = NULL;
           unsigned long *flags   = (unsigned long *)subSharedPropertyGet(clients[i], XA_CARDINAL,
-            "SUBTLE_CLIENT_TAGS", NULL);
+            "SUBTLE_WINDOW_TAGS", NULL);
 
           wmname  = subSharedWindowWMName(clients[i]);
           wmclass = subSharedWindowWMClass(clients[i]);
