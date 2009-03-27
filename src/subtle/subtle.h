@@ -155,18 +155,15 @@
 #define SUB_GRAB_WINDOW_FULL          (1L << 17)                  ///< Toggle full
 #define SUB_GRAB_WINDOW_STICK         (1L << 18)                  ///< Toggle stock
 #define SUB_GRAB_WINDOW_KILL          (1L << 19)                  ///< Kill window
-#define SUB_GRAB_GRAVITY              (1L << 20)                  ///< Gravity type
+#define SUB_GRAB_WINDOW_SWAP          (1L << 20)                  ///< Swap window
+#define SUB_GRAB_GRAVITY              (1L << 21)                  ///< Gravity type
 
 /* Drag states */
 #define SUB_DRAG_START                (1L << 10)                  ///< Drag start
-#define SUB_DRAG_TOP                  (1L << 11)                  ///< Drag above
-#define SUB_DRAG_BOTTOM               (1L << 13)                  ///< Drag below
-#define SUB_DRAG_LEFT                 (1L << 14)                  ///< Drag left
-#define SUB_DRAG_RIGHT                (1L << 15)                  ///< Drag right
-#define SUB_DRAG_MOVE                 (1L << 16)                  ///< Drag move
-#define SUB_DRAG_SWAP                 (1L << 17)                  ///< Drag swap
-#define SUB_DRAG_RESIZE_LEFT          (1L << 18)                  ///< Drag resize left
-#define SUB_DRAG_RESIZE_RIGHT         (1L << 19)                  ///< Drag resize right
+#define SUB_DRAG_MOVE                 (1L << 11)                  ///< Drag move
+#define SUB_DRAG_SWAP                 (1L << 12)                  ///< Drag swap
+#define SUB_DRAG_RESIZE_LEFT          (1L << 13)                  ///< Drag resize left
+#define SUB_DRAG_RESIZE_RIGHT         (1L << 14)                  ///< Drag resize right
 
 /* Fixed tags */
 #define SUB_TAG_DEFAULT               (1L << 1)                   ///< Default tag
