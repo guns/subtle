@@ -60,49 +60,49 @@ subGravityCalc(XRectangle *r,
   desired = slot;
   current = *r;
 
-	if(desired.y == current.y && desired.height == current.height)
+	if(desired.x == current.x && desired.width == current.width)
 	  {
-	    int width33 = workarea.width / 3;
-	    int width66 = workarea.width - width33;
-      int comp    = abs(workarea.width - 3 * width33); ///< Int rounding
+	    int height33 = workarea.height / 3;
+	    int height66 = workarea.height - height33;
+      int comp    = abs(workarea.height - 3 * height33); ///< Int rounding
 
-	    if(props[type].cells_x == 2)
+	    if(2 == props[type].cells_y)
 	      {
-	       if(current.width == desired.width && current.x == desired.x)
+	       if(current.height == desired.height && current.y == desired.y)
 	         {
-	           slot.x     = workarea.x + props[type].grav_right * width33;
-	           slot.width = width66;
+	           slot.y     = workarea.y + props[type].grav_down * height33;
+	           slot.height = height66;
         		}
       		else
         		{
               XRectangle rect33, rect66;
 
               rect33       = slot;
-              rect33.x     = workarea.x + props[type].grav_right * width66;
-              rect33.width = width33;
+              rect33.y     = workarea.y + props[type].grav_down * height66;
+              rect33.height = height33;
 
               rect66       = slot;
-              rect66.x     = workarea.x + props[type].grav_right * width33;
-              rect66.width = width66;
+              rect66.y     = workarea.y + props[type].grav_down * height33;
+              rect66.height = height66;
 
-              if(current.width == rect66.width && current.x == rect66.x)
+              if(current.height == rect66.height && current.y == rect66.y)
                 {
-                  slot.width = width33;
-                  slot.x     = workarea.x + props[type].grav_right * width66;
+                  slot.height = height33;
+                  slot.y     = workarea.y + props[type].grav_down * height66;
 	             }
 	         }
 	      }
 	    else
 	      {
-          if(current.width == desired.width && current.x == desired.x)
+          if(current.height == desired.height && current.y == desired.y)
             {
-              slot.x     = workarea.x + width33;
-              slot.width = width33 + comp;
+              slot.y     = workarea.y + height33;
+              slot.height = height33 + comp;
             }
         }
 
       desired = slot;
-    }
+    }    
 
   r->x      = desired.x;
   r->y      = desired.y;
