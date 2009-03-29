@@ -309,10 +309,10 @@ subSharedPropertyGet(Window win,
 } /* }}} */
 
  /** subSharedPropertyList {{{
-  * @brief Get property List
-  * @param[in]  win   Client window
-  * @param[in]  name  Property name
-  * @param[in]  size  Size of the property
+  * @brief Get property list
+  * @param[in]    win   Client window
+  * @param[in]    name  Property name
+  * @param[inout]  size  Size of the property list
   * return Returns the property list
   **/
 
@@ -321,7 +321,7 @@ subSharedPropertyList(Window win,
   char *name,
   int *size)
 {
-  int i, id = 0;
+  int i, pos = 0, idx = 0;
   char *string = NULL, **names = NULL;
   unsigned long len;
 
@@ -335,25 +335,54 @@ subSharedPropertyList(Window win,
   if(string)
     {
       /* Count \0 in string */
-      for(i = 0; i < len; i++) if(string[i] == '\0') (*size)++;
+      for(i = 0; i < len; i++) 
+        if(string[i] == '\0') (*size)++;
 
-      names  = (char **)subSharedMemoryAlloc(*size, sizeof(char *));
-      names[id++] = string;
+      names = (char **)subSharedMemoryAlloc(*size, sizeof(char *));
 
       for(i = 0; i < len; i++)
         {
           if(string[i] == '\0') 
             {
-              if(id >= *size) break;
-              names[id++] = string + i + 1;
+              if(idx >= *size) break;
+
+              names[idx] = (char *)subSharedMemoryAlloc(i + 1 - pos, sizeof(char));
+              strncpy(names[idx], string + pos, i + 1 - pos);
+
+              idx++;
+              pos = i + 1;
             }
         }
+
+      free(string);
+
       return names;
     }
   
   subSharedLogDebug("Failed to get propery (%s)\n", name);
 
   return NULL;
+} /* }}} */
+
+ /** subSharedPropertyListFree {{{
+  * @brief Free property list
+  * @param[inout]  list  Property list
+  * @param[in]     size  Size of the property list
+  * return Returns the property list
+  **/
+
+void
+subSharedPropertyListFree(char **list,
+  int size)
+{
+  int i;
+
+  assert(list && 0 < size);
+
+  for(i = 0; i < size; i++)
+    free(list[i]);
+
+  free(list);
 } /* }}} */
 
  /** subSharedWindowWMCheck {{{
@@ -472,7 +501,7 @@ subSharedWindowSelect(void)
 
  /** subSharedClientList {{{
   * @brief Get client list
-  * @param[out]  size  Size of the window list
+  * @param[inout]  size  Size of the window list
   * @return Returns the window list
   * @retval  NULL  No clients found
   **/
@@ -583,13 +612,13 @@ subSharedTagFind(char *name)
         subSharedLogDebug("Found: type=tag, name=%s, id=%d\n", name, i);
 
         subSharedRegexKill(preg);
-        free(tags);
+        subSharedPropertyListFree(tags, size);
 
         return i;
       }
 
   subSharedRegexKill(preg);
-  free(tags);
+  subSharedPropertyListFree(tags, size);
 
   subSharedLogDebug("Cannot find tag `%s'.\n", name);
 
@@ -616,6 +645,7 @@ subSharedViewFind(char *name,
 
   views = (Window *)subSharedPropertyGet(root, XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
   names = subSharedPropertyList(root, "_NET_DESKTOP_NAMES", &size);  
+
   if(names)
     {
       int i;
@@ -635,8 +665,8 @@ subSharedViewFind(char *name,
               if(win) *win = views[i];
 
               subSharedRegexKill(preg);
+              subSharedPropertyListFree(names, size);
               free(views);
-              free(names);
 
               return i;
             }
@@ -644,8 +674,8 @@ subSharedViewFind(char *name,
       subSharedRegexKill(preg);
     }
 
+  subSharedPropertyListFree(names, size);
   free(views);
-  free(names);
 
   subSharedLogDebug("Can't find view `%s'.\n", name);
 
@@ -684,7 +714,7 @@ subSharedSubletFind(char *name)
       }
 
   subSharedRegexKill(preg);
-  free(sublets);
+  subSharedPropertyListFree(sublets, size);
 
   subSharedLogDebug("Cannot find sublet `%s'.\n", name);
 

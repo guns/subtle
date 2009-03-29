@@ -98,6 +98,7 @@ char *subSharedPropertyGet(Window win, Atom type,
   char *name, unsigned long *size);                               ///< Get window property
 char **subSharedPropertyList(Window win, char *name,
   int *size);                                                     ///< Get property list
+void subSharedPropertyListFree(char **list, int size);            ///< Free property list
 /* }}} */
 
 /* Window {{{ */
