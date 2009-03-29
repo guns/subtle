@@ -171,9 +171,10 @@ static VALUE
 SubtlextClientInit(VALUE self,
   VALUE name)
 {
-  rb_iv_set(self, "@id",   Qnil);
-  rb_iv_set(self, "@win",  Qnil);
-  rb_iv_set(self, "@name", name);
+  rb_iv_set(self, "@id",      Qnil);
+  rb_iv_set(self, "@win",     Qnil);
+  rb_iv_set(self, "@name",    name);
+  rb_iv_set(self, "@gravity", Qnil);
 
   return self;
 } /* }}} */
@@ -217,7 +218,8 @@ SubtlextClientViewList(VALUE self)
 
           free(flags2);
         }
-      free(names);
+
+      subSharedPropertyListFree(names, size);
       free(views);
     }
 
@@ -255,8 +257,8 @@ SubtlextClientTagList(VALUE self)
             }
         }
 
+      subSharedPropertyListFree(tags, size);
       free(flags);
-      free(tags);
 
       return array;
     }
@@ -346,6 +348,41 @@ SubtlextClientToString(VALUE self)
   VALUE name = rb_iv_get(self, "@name");
 
   return RTEST(name) ? name : Qnil;
+} /* }}} */
+
+/* SubtlextClientGravitySet {{{ */
+static VALUE
+SubtlextClientGravitySet(VALUE self,
+  VALUE value)
+{
+  if(T_FIXNUM == rb_type(value))
+    {
+      int gravity = FIX2INT(value);
+
+      if(0 <= gravity && 9 >= gravity)
+        {
+          SubMessageData data = { { 0, 0, 0, 0, 0 } };
+          VALUE id = rb_iv_get(self, "@id");
+
+          data.l[0] = NUM2LONG(id);
+          data.l[1] = -1;
+          data.l[2] = FIX2LONG(value);
+
+          subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_GRAVITY", data, True);  
+
+          rb_iv_set(self, "@gravity", value);
+
+          return Qtrue;
+        }
+      else 
+        {
+          rb_raise(rb_eStandardError, "Failed to set client gravity");
+          return Qnil;
+        }
+    }
+  
+  rb_raise(rb_eArgError, "Unknown value type");
+  return Qnil;
 } /* }}} */
 
 /* SubtlextClientOperatorPlus {{{ */
@@ -471,6 +508,8 @@ SubtlextSubtleTagList(VALUE self)
       rb_ary_push(array, t);
     }
 
+  subSharedPropertyListFree(tags, size);
+
   return array;
 } /* }}} */
 
@@ -559,14 +598,20 @@ SubtlextSubtleClientFind(VALUE self,
 
   if(RTEST(name) && -1 != ((id = subSharedClientFind(STR2CSTR(name), &win))))
     {
-      char *wmname = subSharedWindowWMName(win);
-
-      klass  = rb_const_get(rb_mKernel, rb_intern("Client"));
-      client = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(wmname));
+      int *gravity = NULL;
+      char *wmname = NULL;
+      
+      wmname  = subSharedWindowWMName(win);
+      klass   = rb_const_get(rb_mKernel, rb_intern("Client"));
+      client  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(wmname));
+      gravity = (int *)subSharedPropertyGet(win, XA_CARDINAL, "SUBTLE_WINDOW_GRAVITY", NULL);
 
       rb_iv_set(client, "@id",  INT2FIX(id));
       rb_iv_set(client, "@win", LONG2NUM(win));
+      rb_iv_set(client, "@gravity", INT2FIX(*gravity));
+
       free(wmname);
+      free(gravity);
 
       return client;
     }
@@ -675,7 +720,8 @@ SubtlextSubtleSubletList(VALUE self)
           rb_iv_set(s, "@id", INT2FIX(i));
           rb_ary_push(array, s);
         }
-      free(sublets);
+
+      subSharedPropertyListFree(sublets, size);
     }
 
   return array;
@@ -732,7 +778,7 @@ SubtlextSubtleViewList(VALUE self)
           rb_ary_push(array, v);
         }
 
-      free(names);
+      subSharedPropertyListFree(names, size); 
       free(views);
     }
 
@@ -794,7 +840,7 @@ SubtlextSubtleViewCurrent(VALUE self)
   view  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(names[*cv]));
 
   rb_iv_set(view, "@id", INT2FIX(*cv));
-  free(names);
+  subSharedPropertyListFree(names, size);
   free(cv);
       
   return view;
@@ -942,7 +988,8 @@ SubtlextTagTaggings(VALUE self)
 
           free(flags);
         }
-      free(names);
+
+      subSharedPropertyListFree(names, size_views);
       free(views);
     }
 
@@ -1045,7 +1092,7 @@ SubtlextViewTagList(VALUE self)
             }
         }
 
-      free(flags);
+      subSharedPropertyListFree(tags, size);
       free(tags);
 
       return array;
@@ -1144,78 +1191,96 @@ Init_subtlext(void)
 
   /* Class: client */
   klass = rb_define_class("Client", rb_cObject);
-  rb_define_attr(klass,   "id", 1, 0);
-  rb_define_attr(klass,   "win", 1, 0);
-  rb_define_attr(klass,   "name", 1, 0);
-  rb_define_method(klass, "initialize",    SubtlextClientInit, 1);
-  rb_define_method(klass, "views",         SubtlextClientViewList, 0);
-  rb_define_method(klass, "tags",          SubtlextClientTagList, 0);
-  rb_define_method(klass, "tag",           SubtlextClientTagAdd, 1);
-  rb_define_method(klass, "untag",         SubtlextClientTagDel, 1);
-  rb_define_method(klass, "toggle_full",   SubtlextClientToggleFull, 0);
-  rb_define_method(klass, "toggle_float",  SubtlextClientToggleFloat, 0);
-  rb_define_method(klass, "toggle_stick",  SubtlextClientToggleStick, 0);
-  rb_define_method(klass, "focus",         SubtlextClientFocus, 0);
-  rb_define_method(klass, "focus?",        SubtlextClientFocusHas, 0);
-  rb_define_method(klass, "to_s",          SubtlextClientToString, 0);
-  rb_define_method(klass, "+",             SubtlextClientOperatorPlus, 1);
+  rb_define_attr(klass,   "id",      1, 0);
+  rb_define_attr(klass,   "win",     1, 0);
+  rb_define_attr(klass,   "name",    1, 0);
+  rb_define_attr(klass,   "gravity", 1, 0);
+
+  rb_define_const(klass,  "GRAVITY_UNKNOWN",      INT2FIX(0));
+  rb_define_const(klass,  "GRAVITY_BOTTOM_LEFT",  INT2FIX(1));
+  rb_define_const(klass,  "GRAVITY_BOTTOM",       INT2FIX(2));
+  rb_define_const(klass,  "GRAVITY_BOTTOM_RIGHT", INT2FIX(3));
+  rb_define_const(klass,  "GRAVITY_LEFT",         INT2FIX(4));
+  rb_define_const(klass,  "GRAVITY_CENTER",       INT2FIX(5));
+  rb_define_const(klass,  "GRAVITY_RIGHT",        INT2FIX(6));
+  rb_define_const(klass,  "GRAVITY_TOP_LEFT",     INT2FIX(7));
+  rb_define_const(klass,  "GRAVITY_TOP",          INT2FIX(8));
+  rb_define_const(klass,  "GRAVITY_TOP_RIGHT",    INT2FIX(9));
+
+  rb_define_method(klass, "initialize",    SubtlextClientInit,          1);
+  rb_define_method(klass, "views",         SubtlextClientViewList,      0);
+  rb_define_method(klass, "tags",          SubtlextClientTagList,       0);
+  rb_define_method(klass, "tag",           SubtlextClientTagAdd,        1);
+  rb_define_method(klass, "untag",         SubtlextClientTagDel,        1);
+  rb_define_method(klass, "toggle_full",   SubtlextClientToggleFull,    0);
+  rb_define_method(klass, "toggle_float",  SubtlextClientToggleFloat,   0);
+  rb_define_method(klass, "toggle_stick",  SubtlextClientToggleStick,   0);
+  rb_define_method(klass, "focus",         SubtlextClientFocus,         0);
+  rb_define_method(klass, "focus?",        SubtlextClientFocusHas,      0);
+  rb_define_method(klass, "to_s",          SubtlextClientToString,      0);
+  rb_define_method(klass, "gravity=",      SubtlextClientGravitySet,    1);
+  rb_define_method(klass, "+",             SubtlextClientOperatorPlus,  1);
   rb_define_method(klass, "-",             SubtlextClientOperatorMinus, 1);
 
   /* Class: subtle */
   klass = rb_define_class("Subtle", rb_cObject);
   rb_define_singleton_method(klass, "new", SubtlextSubtleNew, -1);
-  rb_define_method(klass, "version",       SubtlextSubtleVersion, 0);
-  rb_define_method(klass, "display",       SubtlextSubtleDisplay, 0);
-  rb_define_method(klass, "views",         SubtlextSubtleViewList, 0);
-  rb_define_method(klass, "tags",          SubtlextSubtleTagList, 0);
-  rb_define_method(klass, "sublets",       SubtlextSubtleSubletList, 0);
-  rb_define_method(klass, "clients",       SubtlextSubtleClientList, 0);
-  rb_define_method(klass, "find_view",     SubtlextSubtleViewFind, 1);
-  rb_define_method(klass, "find_tag",      SubtlextSubtleTagFind, 1);
-  rb_define_method(klass, "find_client",   SubtlextSubtleClientFind, 1);
-  rb_define_method(klass, "find_sublet",   SubtlextSubtleSubletFind, 1);
+
+  rb_define_method(klass, "version",       SubtlextSubtleVersion,     0);
+  rb_define_method(klass, "display",       SubtlextSubtleDisplay,     0);
+  rb_define_method(klass, "views",         SubtlextSubtleViewList,    0);
+  rb_define_method(klass, "tags",          SubtlextSubtleTagList,     0);
+  rb_define_method(klass, "sublets",       SubtlextSubtleSubletList,  0);
+  rb_define_method(klass, "clients",       SubtlextSubtleClientList,  0);
+  rb_define_method(klass, "find_view",     SubtlextSubtleViewFind,    1);
+  rb_define_method(klass, "find_tag",      SubtlextSubtleTagFind,     1);
+  rb_define_method(klass, "find_client",   SubtlextSubtleClientFind,  1);
+  rb_define_method(klass, "find_sublet",   SubtlextSubtleSubletFind,  1);
   rb_define_method(klass, "focus_client",  SubtlextSubtleClientFocus, 1);
-  rb_define_method(klass, "add_tag",       SubtlextSubtleTagAdd, 1);
-  rb_define_method(klass, "add_view",      SubtlextSubtleViewAdd, 1);
-  rb_define_method(klass, "del_client",    SubtlextSubtleClientDel, 1);
-  rb_define_method(klass, "del_sublet",    SubtlextSubtleSubletDel, 1);
-  rb_define_method(klass, "del_tag",       SubtlextSubtleTagDel, 1);
-  rb_define_method(klass, "del_view",      SubtlextSubtleViewDel, 1);
+  rb_define_method(klass, "add_tag",       SubtlextSubtleTagAdd,      1);
+  rb_define_method(klass, "add_view",      SubtlextSubtleViewAdd,     1);
+  rb_define_method(klass, "del_client",    SubtlextSubtleClientDel,   1);
+  rb_define_method(klass, "del_sublet",    SubtlextSubtleSubletDel,   1);
+  rb_define_method(klass, "del_tag",       SubtlextSubtleTagDel,      1);
+  rb_define_method(klass, "del_view",      SubtlextSubtleViewDel,     1);
   rb_define_method(klass, "current_view",  SubtlextSubtleViewCurrent, 0);
-  rb_define_method(klass, "running?",      SubtlextSubtleRunning, 0);
-  rb_define_method(klass, "to_s",          SubtlextSubtleToString, 0);
+  rb_define_method(klass, "running?",      SubtlextSubtleRunning,     0);
+  rb_define_method(klass, "to_s",          SubtlextSubtleToString,    0);
 
   /* Class: sublets */
   klass = rb_define_class("Sublet", rb_cObject);
   rb_define_attr(klass,   "name", 1, 0);
-  rb_define_method(klass, "initialize",    SubtlextSubletInit, 1);
-  rb_define_method(klass, "update",        SubtlextSubletUpdate, 0);
+
+  rb_define_method(klass, "initialize",    SubtlextSubletInit,     1);
+  rb_define_method(klass, "update",        SubtlextSubletUpdate,   0);
   rb_define_method(klass, "to_s",          SubtlextSubletToString, 0);
 
   /* Class: tag */
   klass = rb_define_class("Tag", rb_cObject);
-  rb_define_attr(klass,   "id", 1, 0);
+  rb_define_attr(klass,   "id",   1, 0);
   rb_define_attr(klass,   "name", 1, 0);
-  rb_define_method(klass, "initialize",    SubtlextTagInit, 1);
+
+  rb_define_method(klass, "initialize",    SubtlextTagInit,     1);
   rb_define_method(klass, "taggings",      SubtlextTagTaggings, 0);
-  rb_define_method(klass, "save",          SubtlextTagSave, 0);
+  rb_define_method(klass, "save",          SubtlextTagSave,     0);
   rb_define_method(klass, "to_s",          SubtlextTagToString, 0);
 
   /* Class: view */
   klass = rb_define_class("View", rb_cObject);
-  rb_define_attr(klass,   "id", 1, 0);
-  rb_define_attr(klass,   "win", 1, 0);
+  rb_define_attr(klass,   "id",   1, 0);
+  rb_define_attr(klass,   "win",  1, 0);
   rb_define_attr(klass,   "name", 1, 0);
-  rb_define_method(klass, "initialize",    SubtlextViewInit, 1);
-  rb_define_method(klass, "clients",       SubtlextViewClientList, 0);
-  rb_define_method(klass, "tags",          SubtlextViewTagList, 0);
-  rb_define_method(klass, "tag",           SubtlextViewTagAdd, 1);
-  rb_define_method(klass, "untag",         SubtlextViewTagDel, 1);
-  rb_define_method(klass, "jump",          SubtlextViewJump, 0);
-  rb_define_method(klass, "current?",      SubtlextViewCurrent, 0);
-  rb_define_method(klass, "save",          SubtlextViewSave, 0);
-  rb_define_method(klass, "to_s",          SubtlextViewToString, 0);
-  rb_define_method(klass, "+",             SubtlextViewOperatorPlus, 1);
+
+  rb_define_method(klass, "initialize",    SubtlextViewInit,          1);
+  rb_define_method(klass, "clients",       SubtlextViewClientList,    0);
+  rb_define_method(klass, "tags",          SubtlextViewTagList,       0);
+  rb_define_method(klass, "tag",           SubtlextViewTagAdd,        1);
+  rb_define_method(klass, "untag",         SubtlextViewTagDel,        1);
+  rb_define_method(klass, "jump",          SubtlextViewJump,          0);
+  rb_define_method(klass, "current?",      SubtlextViewCurrent,       0);
+  rb_define_method(klass, "save",          SubtlextViewSave,          0);
+  rb_define_method(klass, "to_s",          SubtlextViewToString,      0);
+  rb_define_method(klass, "+",             SubtlextViewOperatorPlus,  1);
   rb_define_method(klass, "-",             SubtlextViewOperatorMinus, 1);
 } /* }}} */
 

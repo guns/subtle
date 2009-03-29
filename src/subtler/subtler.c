@@ -28,26 +28,27 @@ typedef void(*SubCommand)(char *, char *);
 /* }}} */
 
 /* Flags {{{ */
-#define SUB_GROUP_CLIENT  0    ///< Group client
-#define SUB_GROUP_SUBLET  1    ///< Group sublet
-#define SUB_GROUP_TAG     2    ///< Group tag
-#define SUB_GROUP_VIEW    3    ///< Group view
-#define SUB_GROUP_TOTAL   4    ///< Group total
+#define SUB_GROUP_CLIENT   0   ///< Group client
+#define SUB_GROUP_SUBLET   1   ///< Group sublet
+#define SUB_GROUP_TAG      2   ///< Group tag
+#define SUB_GROUP_VIEW     3   ///< Group view
+#define SUB_GROUP_TOTAL    4   ///< Group total
 
-#define SUB_ACTION_NEW    0    ///< Action new
-#define SUB_ACTION_KILL   1    ///< Action kill
-#define SUB_ACTION_UPDATE 2    ///< Action update
-#define SUB_ACTION_LIST   3    ///< Action list
-#define SUB_ACTION_FIND   4    ///< Action find
-#define SUB_ACTION_FOCUS  5    ///< Action focus
-#define SUB_ACTION_FULL   6    ///< Action full
-#define SUB_ACTION_FLOAT  7    ///< Action float
-#define SUB_ACTION_STICK  8    ///< Action stick
-#define SUB_ACTION_JUMP   9    ///< Action jump
-#define SUB_ACTION_TAG    10   ///< Action tag
-#define SUB_ACTION_UNTAG  11   ///< Action untag
-#define SUB_ACTION_TAGS   12   ///< Action tags
-#define SUB_ACTION_TOTAL  13   ///< Action total
+#define SUB_ACTION_NEW     0   ///< Action new
+#define SUB_ACTION_KILL    1   ///< Action kill
+#define SUB_ACTION_FIND    2   ///< Action find
+#define SUB_ACTION_FOCUS   3   ///< Action focus
+#define SUB_ACTION_FULL    4   ///< Action full
+#define SUB_ACTION_FLOAT   5   ///< Action float
+#define SUB_ACTION_STICK   6   ///< Action stick
+#define SUB_ACTION_JUMP    7   ///< Action jump
+#define SUB_ACTION_LIST    8   ///< Action list
+#define SUB_ACTION_TAG     9   ///< Action tag
+#define SUB_ACTION_UNTAG   10  ///< Action untag
+#define SUB_ACTION_TAGS    11  ///< Action tags
+#define SUB_ACTION_UPDATE  12  ///< Action update
+#define SUB_ACTION_GRAVITY 13  ///< Action gravity
+#define SUB_ACTION_TOTAL   14  ///< Action total
 /* }}} */
 
 /* SubtlerToggle {{{ */
@@ -67,62 +68,6 @@ SubtlerToggle(char *name,
   else subSharedLogWarn("Failed to find client\n");
 } /* }}} */
 
-/* SubtlerClientInfo {{{ */
-static void
-SubtlerClientInfo(Window win)
-{
-  Window unused;
-  int x, y;
-  unsigned int width, height, border;
-  unsigned long *nv = NULL, *cv = NULL, *rv = NULL;
-  char *wmname = NULL, *wmclass = NULL;
-
-  assert(win);
-
-  /* Gather data */
-  wmname  = subSharedWindowWMName(win);
-  wmclass = subSharedWindowWMClass(win);
-
-  /* Get properties */
-  nv = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-    XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
-  cv = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, "_NET_WM_DESKTOP", NULL);
-  rv = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display),
-    XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
-
-  if(wmname && wmclass && nv && cv && rv && 
-    XGetGeometry(display, win, &unused, &x, &y, &width, &height, &border, &border))
-    {
-      printf("%#lx %c %ld %ux%u %s (%s)\n", win, (*cv == *rv ? '*' : '-'),
-        (*cv > *nv ? -1 : *cv), width, height, wmname, wmclass);
-
-      free(wmname);
-      free(wmclass);
-      free(nv);
-      free(cv);
-      free(rv);
-    }
-  else subSharedLogWarn("Failed to fetch client infos!\n");
-} /* }}} */
-
-/* SubtlerClientList {{{ */
-static void
-SubtlerClientList(char *arg1,
-  char *arg2)
-{
-  int i, size = 0;
-  Window *clients = NULL;
-
-  subSharedLogDebug("%s\n", __func__);
-
-  if((clients = subSharedClientList(&size)))
-    {
-      for(i = 0; i < size; i++) SubtlerClientInfo(clients[i]);
-      free(clients);
-    }
-  else subSharedLogWarn("Failed to get client list!\n");
-} /* }}} */
-
 /* SubtlerClientFind {{{ */
 static void
 SubtlerClientFind(char *arg1,
@@ -133,7 +78,38 @@ SubtlerClientFind(char *arg1,
   CHECK(arg1, "Usage: %sr -c -f PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  if(-1 != subSharedClientFind(arg1, &win)) SubtlerClientInfo(win);
+  if(-1 != subSharedClientFind(arg1, &win))
+    {
+      int x, y;
+      Window unused;
+      char *wmname = NULL, *wmclass = NULL;
+      unsigned int width, height, border;
+      unsigned long *nv = NULL, *rv = NULL, *cv = NULL, *gravity = NULL;
+
+      /* Collect data */
+      wmname  = subSharedWindowWMName(win);
+      wmclass = subSharedWindowWMClass(win);
+      nv      = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
+        XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
+      rv      = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display),
+        XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+      cv      = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, 
+        "_NET_WM_DESKTOP", NULL);
+      gravity = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, 
+        "SUBTLE_WINDOW_GRAVITY", NULL);
+
+      XGetGeometry(display, win, &unused, &x, &y, &width, &height, &border, &border);
+
+      printf("%#lx %c %ld %ux%u %ld %s (%s)\n", win, (*cv == *rv ? '*' : '-'),
+        (*cv > *nv ? -1 : *cv), width, height, *gravity, wmname, wmclass);
+
+      free(wmname);
+      free(wmclass);
+      free(nv);
+      free(rv);
+      free(cv);
+      free(gravity);
+    }
   else subSharedLogWarn("Failed to find client\n");
 } /* }}} */
 
@@ -186,6 +162,60 @@ SubtlerClientToggleStick(char *arg1,
   SubtlerToggle(arg1, "_NET_WM_STATE_STICKY");
 } /* }}} */
 
+/* SubtlerClientList {{{ */
+static void
+SubtlerClientList(char *arg1,
+  char *arg2)
+{
+  int i, size = 0;
+  Window *clients = NULL;
+
+  subSharedLogDebug("%s\n", __func__);
+
+  if((clients = subSharedClientList(&size)))
+    {
+      unsigned long *nv = NULL, *rv = NULL;
+
+      /* Collect data */
+      nv = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
+        XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
+      rv = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display),
+        XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+
+      for(i = 0; i < size; i++) 
+        {
+          int x, y;
+          Window unused;
+          char *wmname = NULL, *wmclass = NULL;
+          unsigned int width, height, border;
+          unsigned long *cv = NULL, *gravity = NULL;
+
+          /* Collect client data */
+          wmname  = subSharedWindowWMName(clients[i]);
+          wmclass = subSharedWindowWMClass(clients[i]);
+          cv      = (unsigned long*)subSharedPropertyGet(clients[i], XA_CARDINAL, 
+            "_NET_WM_DESKTOP", NULL);
+          gravity = (unsigned long*)subSharedPropertyGet(clients[i], XA_CARDINAL, 
+            "SUBTLE_WINDOW_GRAVITY", NULL);
+
+          XGetGeometry(display, clients[i], &unused, &x, &y, &width, &height, &border, &border);
+
+          printf("%#lx %c %ld %ux%u %ld %s (%s)\n", clients[i], (*cv == *rv ? '*' : '-'),
+            (*cv > *nv ? -1 : *cv), width, height, *gravity, wmname, wmclass);
+
+          free(wmname);
+          free(wmclass);
+          free(cv);
+          free(gravity);
+        }
+
+      free(clients);
+      free(nv);
+      free(rv);
+    }
+  else subSharedLogWarn("Failed to get client list!\n");
+} /* }}} */
+
 /* SubtlerClientTag {{{ */
 static void
 SubtlerClientTag(char *arg1,
@@ -222,6 +252,25 @@ SubtlerClientUntag(char *arg1,
   else subSharedLogWarn("Failed to untag client\n");
 } /* }}} */
 
+/* SubtlerClientGravity {{{ */
+static void
+SubtlerClientGravity(char *arg1,
+  char *arg2)
+{
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  CHECK(arg1 && arg2, "Usage: %sr -c PATTERN -G NUMBER\n", PKG_NAME);
+  subSharedLogDebug("%s\n", __func__);
+
+  data.l[0] = subSharedClientFind(arg1, NULL);
+  data.l[2] = -1;
+  data.l[3] = atoi(arg2);
+
+  if(-1 != data.l[0])
+    subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_GRAVITY", data, False);
+  else subSharedLogWarn("Failed to set client gravity\n");
+} /* }}} */
+
 /* SubtlerClientTags {{{ */
 static void
 SubtlerClientTags(char *arg1,
@@ -241,9 +290,9 @@ SubtlerClientTags(char *arg1,
 
       for(i = 0; i < size; i++)
         if((int)*flags & (1L << (i + 1))) printf("%s\n", tags[i]);
-      
+     
+      subSharedPropertyListFree(tags, size);
       free(flags);
-      free(tags);
     }
   else subSharedLogWarn("Failed to fetch client tags\n");
 } /* }}} */
@@ -268,21 +317,6 @@ SubtlerClientKill(char *arg1,
   else subSharedLogWarn("Failed to kill client\n");
 } /* }}} */
 
-/* SubtlerSubletUpdate {{{ */
-static void
-SubtlerSubletUpdate(char *arg1,
-  char *arg2)
-{
-  SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-  CHECK(arg1, "Usage: %sr -s -p PATTERN\n", PKG_NAME);
-  subSharedLogDebug("%s\n", __func__);
-
-  if(-1 != (data.l[0] = subSharedSubletFind(arg1)))
-    subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_UPDATE", data, False);
-  else subSharedLogWarn("Failed to update sublet\n");
-} /* }}} */
-
 /* SubtlerSubletList {{{ */
 static void
 SubtlerSubletList(char *arg1,
@@ -298,9 +332,24 @@ SubtlerSubletList(char *arg1,
       for(i = 0; i < size; i++)
         printf("%s\n", sublets[i]);
 
-      free(sublets);
+      subSharedPropertyListFree(sublets, size);
     }
   else subSharedLogWarn("Failed to get sublet list\n");
+} /* }}} */
+
+/* SubtlerSubletUpdate {{{ */
+static void
+SubtlerSubletUpdate(char *arg1,
+  char *arg2)
+{
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  CHECK(arg1, "Usage: %sr -s -p PATTERN\n", PKG_NAME);
+  subSharedLogDebug("%s\n", __func__);
+
+  if(-1 != (data.l[0] = subSharedSubletFind(arg1)))
+    subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_UPDATE", data, False);
+  else subSharedLogWarn("Failed to update sublet\n");
 } /* }}} */
 
 /* SubtlerSubletKill {{{ */
@@ -334,25 +383,6 @@ SubtlerTagNew(char *arg1,
     subSharedLogWarn("Failed to create tag\n");
 } /* }}} */
 
-/* SubtlerTagList {{{ */
-static void
-SubtlerTagList(char *arg1,
-  char *arg2)
-{
-  int i, size = 0;
-  char **tags = NULL;
-
-  subSharedLogDebug("%s\n", __func__);
-
-  if((tags = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size)))
-    {
-      for(i = 0; i < size; i++) printf("%s\n", tags[i]);
-
-      free(tags);
-    }
-  else subSharedLogWarn("Failed to get tag list\n");
-} /* }}} */
-
 /* SubtlerTagFind {{{ */
 static void
 SubtlerTagFind(char *arg1,
@@ -381,12 +411,12 @@ SubtlerTagFind(char *arg1,
             "SUBTLE_WINDOW_TAGS", NULL);
 
           if((int)*flags & (1L << (tag + 1))) 
-            printf("view   - %s\n", names[i]);
+            printf("%#lx %s [view]\n", views[i], names[i]);
 
           free(flags);
         }
 
-      free(names);
+      subSharedPropertyListFree(names, size_views);
       free(views);
     }
   else subSharedLogWarn("Failed to get view list\n");
@@ -404,7 +434,7 @@ SubtlerTagFind(char *arg1,
           wmclass = subSharedWindowWMClass(clients[i]);
 
           if((int)*flags & (1L << (tag + 1))) 
-            printf("client - %s (%s)\n", wmname, wmclass);
+            printf("%#lx %s (%s) [client]\n", clients[i], wmname, wmclass);
 
           free(flags);
           free(wmname);
@@ -414,6 +444,25 @@ SubtlerTagFind(char *arg1,
       free(clients);
     }
   else subSharedLogWarn("Failed to get clients list\n");
+} /* }}} */
+
+/* SubtlerTagList {{{ */
+static void
+SubtlerTagList(char *arg1,
+  char *arg2)
+{
+  int i, size = 0;
+  char **tags = NULL;
+
+  subSharedLogDebug("%s\n", __func__);
+
+  if((tags = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size)))
+    {
+      for(i = 0; i < size; i++) printf("%s\n", tags[i]);
+
+      subSharedPropertyListFree(tags, size);
+    }
+  else subSharedLogWarn("Failed to get tag list\n");
 } /* }}} */
 
 /* SubtlerTagKill {{{ */
@@ -447,6 +496,60 @@ SubtlerViewNew(char *arg1,
     subSharedLogWarn("Failed to create view\n");
 } /* }}} */
 
+/* SubtlerClientFind {{{ */
+static void
+SubtlerViewFind(char *arg1,
+  char *arg2)
+{
+  int id;
+  Window win;
+
+  CHECK(arg1, "Usage: %sr -v -f PATTERN\n", PKG_NAME);
+  subSharedLogDebug("%s\n", __func__);
+
+  if(-1 != (id = subSharedViewFind(arg1, &win)) )
+    {
+      int size = 0;
+      char **names = NULL;
+      unsigned long *cv = NULL, *rv = NULL;
+
+      /* Collect data */
+      names   = subSharedPropertyList(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
+      cv      = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
+        XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+      rv      = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display),
+        XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);        
+
+      printf("%#lx %c %s\n", win, (*cv == *rv ? '*' : '-'), names[id]);
+
+      subSharedPropertyListFree(names, size);
+      free(cv);
+      free(rv);
+    }
+  else subSharedLogWarn("Failed to find view\n");
+} /* }}} */
+
+/* SubtlerViewJump {{{ */
+static void
+SubtlerViewJump(char *arg1,
+  char *arg2)
+{
+  int view = 0;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  CHECK(arg1, "Usage: %sr -v -j PATTERN\n", PKG_NAME);
+  subSharedLogDebug("%s\n", __func__);
+
+  /* Try to convert arg1 to long or to find view */
+  if((view = atoi(arg1)) || (( view = subSharedViewFind(arg1, NULL))))
+    {
+      data.l[0] = view;
+
+      subSharedMessage(DefaultRootWindow(display), "_NET_CURRENT_DESKTOP", data, False);
+    }
+  else subSharedLogWarn("Failed to jump to view\n");
+} /* }}} */
+
 /* SubtlerViewList {{{ */
 static void
 SubtlerViewList(char *arg1,
@@ -474,33 +577,12 @@ SubtlerViewList(char *arg1,
       for(i = 0; *nv && i < *nv; i++)
         printf("%#lx %c %s\n", views[i], (i == *cv ? '*' : '-'), names[i]);
 
+      subSharedPropertyListFree(names, size);
       free(nv);
       free(cv);
-      free(names);
       free(views);
     }
   else subSharedLogWarn("Failed to get view list\n");
-} /* }}} */
-
-/* SubtlerViewJump {{{ */
-static void
-SubtlerViewJump(char *arg1,
-  char *arg2)
-{
-  int view = 0;
-  SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-  CHECK(arg1, "Usage: %sr -v -j PATTERN\n", PKG_NAME);
-  subSharedLogDebug("%s\n", __func__);
-
-  /* Try to convert arg1 to long or to find view */
-  if((view = atoi(arg1)) || (( view = subSharedViewFind(arg1, NULL))))
-    {
-      data.l[0] = view;
-
-      subSharedMessage(DefaultRootWindow(display), "_NET_CURRENT_DESKTOP", data, False);
-    }
-  else subSharedLogWarn("Failed to jump to view\n");
 } /* }}} */
 
 /* SubtlerViewTag {{{ */
@@ -562,8 +644,8 @@ SubtlerViewTags(char *arg1,
       for(i = 0; i < size; i++)
         if((int)*flags & (1L << (i + 1))) printf("%s\n", tags[i]);
       
+      subSharedPropertyListFree(tags, size);
       free(flags);
-      free(tags);
     }
   else subSharedLogWarn("Failed to find view\n");
 } /* }}} */
@@ -605,36 +687,38 @@ SubtlerUsage(int group)
   if(-1 == group || SUB_GROUP_CLIENT == group)
     {
       printf("\nOptions for clients:\n" \
-             "  -l, --list              List all clients\n" \
              "  -f, --find=PATTERN      Find a client\n" \
              "  -F, --focus=PATTERN     Set focus to client\n" \
              "  -U, --full              Toggle full\n" \
              "  -L, --float             Toggle float\n" \
-             "  -i, --stick             Toggle stick\n" \
+             "  -S, --stick             Toggle stick\n" \
+             "  -l, --list              List all clients\n" \
              "  -T, --tag=PATTERN       Add tag to client\n" \
              "  -u, --untag=PATTERN     Remove tag from client\n" \
              "  -g, --tags              Show client tags\n" \
+             "  -G, --gravity           Set client gravity\n" \
              "  -k, --kill=PATTERN      Kill a client\n");
     }
   if(-1 == group || SUB_GROUP_SUBLET == group)
     {
       printf("\nOptions for sublets:\n" \
-             "  -p, --update            Update sublet\n" \
              "  -l, --list              List all sublets\n" \
+             "  -p, --update            Update sublet\n" \
              "  -k, --kill=PATTERN      Kill a sublet\n");
     }    
   if(-1 == group || SUB_GROUP_TAG == group)
     {
       printf("\nOptions for tags:\n" \
              "  -n, --new=NAME          Create new tag\n" \
-             "  -l, --list              List all tags\n" \
              "  -f, --find              Find all clients/views by tag\n" \
+             "  -l, --list              List all tags\n" \
              "  -k, --kill=PATTERN      Kill a tag\n");
     }
   if(-1 == group || SUB_GROUP_VIEW == group)
     {
       printf("\nOptions for views:\n" \
              "  -n, --new=NAME          Create new view\n" \
+             "  -f, --find=PATTERN      Find a view\n" \
              "  -l, --list              List all views\n" \
              "  -T, --tag=PATTERN       Add tag to view\n" \
              "  -u, --untag=PATTERN     Remove tag from view\n" \
@@ -650,9 +734,21 @@ SubtlerUsage(int group)
          "  select a client window\n");
 
   printf("\nFormat:\n" \
-         "  Client list: <window id> [-*] <view> <geometry> <name> <class>\n" \
+         "  Client list: <window id> [-*] <view> <geometry> <gravity> <name> <class>\n" \
          "  Tag    list: <name>\n" \
          "  View   list: <window id> [-*] <name>\n");
+
+  printf("\nGravities:\n" \
+         "  GRAVITY_UNKNOWN      = 0\n" \
+         "  GRAVITY_BOTTOM_LEFT  = 1\n" \
+         "  GRAVITY_BOTTOM       = 2\n" \
+         "  GRAVITY_BOTTOM_RIGHT = 3\n" \
+         "  GRAVITY_LEFT         = 4\n" \
+         "  GRAVITY_CENTER       = 5\n" \
+         "  GRAVITY_RIGHT        = 6\n" \
+         "  GRAVITY_TOP_LEFT     = 7\n" \
+         "  GRAVITY_TOP          = 8\n" \
+         "  GRAVITY_RIGHT        = 9\n");
   
   printf("\nExamples:\n" \
          "  %sr -c -l                List all clients\n" \
@@ -754,6 +850,7 @@ main(int argc,
     { "untag",      no_argument,        0,  'u'  },
     { "tags",       no_argument,        0,  'g'  },
     { "update",     no_argument,        0,  'p'  },
+    { "gravity",    no_argument,        0,  'G'  },
 
     /* Default */
 #ifdef DEBUG
@@ -767,17 +864,19 @@ main(int argc,
 
   /* Command table */
   SubCommand cmds[SUB_GROUP_TOTAL][SUB_ACTION_TOTAL] = { 
-    /* Client, Sublet, Tag, View <=> New, Kill, Update, List, Find, Focus, Full, Float, 
-       Stick, Jump, Tag, Untag, Tags */
-    { NULL, SubtlerClientKill, NULL, SubtlerClientList, SubtlerClientFind, 
-      SubtlerClientFocus, SubtlerClientToggleFull, SubtlerClientToggleFloat, 
-      SubtlerClientToggleStick, NULL, SubtlerClientTag, SubtlerClientUntag, SubtlerClientTags },
-    { NULL, SubtlerSubletKill, SubtlerSubletUpdate, SubtlerSubletList, NULL, NULL, NULL,
-      NULL, NULL, NULL, NULL, NULL, NULL },
-    { SubtlerTagNew, SubtlerTagKill, NULL, SubtlerTagList, SubtlerTagFind, NULL, NULL, NULL, 
-      NULL, NULL, NULL, NULL, NULL },
-    { SubtlerViewNew, SubtlerViewKill, NULL, SubtlerViewList, NULL, NULL, NULL, NULL, NULL,
-      SubtlerViewJump, SubtlerViewTag, SubtlerViewUntag, SubtlerViewTags }
+    /* Client, Sublet, Tag, View <=> New, Kill, Find, Focus, Full, Float, 
+       Stick, Jump, List, Tag, Untag, Tags, Update, Gravity */
+    { NULL, SubtlerClientKill, SubtlerClientFind,  SubtlerClientFocus, 
+      SubtlerClientToggleFull, SubtlerClientToggleFloat, SubtlerClientToggleStick, 
+      NULL, SubtlerClientList, SubtlerClientTag, SubtlerClientUntag, 
+      SubtlerClientTags, NULL, SubtlerClientGravity },
+    { NULL, SubtlerSubletKill, NULL, NULL, NULL, NULL, NULL, NULL, SubtlerSubletList, 
+      NULL, NULL, NULL, SubtlerSubletUpdate, NULL },
+    { SubtlerTagNew, SubtlerTagKill, SubtlerTagFind, NULL, NULL, NULL, 
+      NULL, NULL, SubtlerTagList, NULL, NULL, NULL, NULL, NULL },
+    { SubtlerViewNew, SubtlerViewKill, SubtlerViewFind, NULL, NULL, NULL, NULL,
+      SubtlerViewJump, SubtlerViewList, SubtlerViewTag, SubtlerViewUntag, SubtlerViewTags, 
+      NULL, NULL }
   };
 
   /* Set up signal handler */
@@ -788,28 +887,29 @@ main(int argc,
   sigaction(SIGINT, &act, NULL);
   sigaction(SIGSEGV, &act, NULL);
 
-  while((c = getopt_long(argc, argv, "cstvnkpfFULSjlTugDd:hV", long_options, NULL)) != -1)
+  while((c = getopt_long(argc, argv, "cstvnkfFULSjlTugpGDd:hV", long_options, NULL)) != -1)
     {
       switch(c)
         {
-          case 'c': group = SUB_GROUP_CLIENT;   break;
-          case 's': group = SUB_GROUP_SUBLET;   break;
-          case 't': group = SUB_GROUP_TAG;      break;
-          case 'v': group = SUB_GROUP_VIEW;     break;
+          case 'c': group = SUB_GROUP_CLIENT;    break;
+          case 's': group = SUB_GROUP_SUBLET;    break;
+          case 't': group = SUB_GROUP_TAG;       break;
+          case 'v': group = SUB_GROUP_VIEW;      break;
 
-          case 'n': action = SUB_ACTION_NEW;    break;
-          case 'k': action = SUB_ACTION_KILL;   break;
-          case 'p': action = SUB_ACTION_UPDATE; break;
-          case 'l': action = SUB_ACTION_LIST;   break;
-          case 'f': action = SUB_ACTION_FIND;   break;
-          case 'F': action = SUB_ACTION_FOCUS;  break;
-          case 'U': action = SUB_ACTION_FULL;   break;
-          case 'L': action = SUB_ACTION_FLOAT;  break;
-          case 'S': action = SUB_ACTION_STICK;  break;
-          case 'j': action = SUB_ACTION_JUMP;   break;
-          case 'T': action = SUB_ACTION_TAG;    break;
-          case 'u': action = SUB_ACTION_UNTAG;  break;
-          case 'g': action = SUB_ACTION_TAGS;   break;
+          case 'n': action = SUB_ACTION_NEW;     break;
+          case 'k': action = SUB_ACTION_KILL;    break;
+          case 'f': action = SUB_ACTION_FIND;    break;
+          case 'F': action = SUB_ACTION_FOCUS;   break;
+          case 'U': action = SUB_ACTION_FULL;    break;
+          case 'L': action = SUB_ACTION_FLOAT;   break;
+          case 'S': action = SUB_ACTION_STICK;   break;
+          case 'j': action = SUB_ACTION_JUMP;    break;
+          case 'l': action = SUB_ACTION_LIST;    break;
+          case 'T': action = SUB_ACTION_TAG;     break;
+          case 'u': action = SUB_ACTION_UNTAG;   break;
+          case 'g': action = SUB_ACTION_TAGS;    break;
+          case 'p': action = SUB_ACTION_UPDATE;  break;
+          case 'G': action = SUB_ACTION_GRAVITY; break;
 
           case 'd': dispname = optarg;          break;
           case 'h': SubtlerUsage(group);        return 0;
