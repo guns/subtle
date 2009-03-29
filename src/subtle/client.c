@@ -13,6 +13,16 @@
 #include <X11/Xatom.h>
 #include "subtle.h"
 
+/* Typedef {{{ */
+typedef struct clientgravity_t
+{
+  int grav_right;
+  int grav_down;
+  int cells_x;
+  int cells_y;
+} ClientGravity;
+/* }}} */
+
 /* ClientMask {{{ */
 static void
 ClientMask(SubClient *c,
@@ -181,8 +191,9 @@ subClientNew(Window win)
   for(i = 0; i < subtle->views->ndata; i++)
     c->gravities[i] = gravity;
 
-  /* EWMH: Tags and desktop */
+  /* EWMH: Tags, gravity and desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&c->tags, 1);
+  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
   printf("Adding client (%s)\n", c->name);
@@ -456,6 +467,99 @@ subClientDrag(SubClient *c,
   XUngrabServer(subtle->disp);
 } /* }}} */
 
+  /** subClientGravitate {{{ 
+   * @brief Calc rect in grid
+   * @param[in]  c     A #SubClient
+   * @param[in]  type  A #SubGravity
+   **/
+
+void
+subClientGravitate(SubClient *c,
+  int type)
+{
+  XRectangle workarea = { 0, 0, SCREENW, SCREENH - subtle->th };
+  XRectangle slot = { 0 }, desired = { 0 }, current = { 0 };
+
+  static const ClientGravity props[] =
+  {
+    { 0, 1, 1, 1 }, ///< Gravity unknown
+    { 0, 1, 2, 2 }, ///< Gravity bottom left
+    { 0, 1, 1, 2 }, ///< Gravity bottom
+    { 1, 1, 2, 2 }, ///< Gravity bottom right
+    { 0, 0, 2, 1 }, ///< Gravity left
+    { 0, 0, 1, 1 }, ///< Gravity center
+    { 1, 0, 2, 1 }, ///< Gravity right
+    { 0, 0, 2, 2 }, ///< Gravity top left
+    { 0, 0, 1, 2 }, ///< Gravity top
+    { 1, 0, 2, 2 }, ///< Gravity top right
+  }; 
+
+  assert(c);
+
+  /* Compute slot */
+  slot.x      = workarea.x + props[type].grav_right * (workarea.width / props[type].cells_x);
+  slot.y      = workarea.y + props[type].grav_down * (workarea.height / props[type].cells_y);
+  slot.height = workarea.height / props[type].cells_y;
+  slot.width  = workarea.width / props[type].cells_x;
+
+  desired = slot;
+  current = c->rect;
+
+	if(desired.x == current.x && desired.width == current.width)
+	  {
+	    int height33 = workarea.height / 3;
+	    int height66 = workarea.height - height33;
+      int comp     = abs(workarea.height - 3 * height33); ///< Int rounding fix
+
+	    if(2 == props[type].cells_y)
+	      {
+	       if(current.height == desired.height && current.y == desired.y)
+	         {
+	           slot.y      = workarea.y + props[type].grav_down * height33;
+	           slot.height = height66;
+        		}
+      		else
+        		{
+              XRectangle rect33, rect66;
+
+              rect33        = slot;
+              rect33.y      = workarea.y + props[type].grav_down * height66;
+              rect33.height = height33;
+
+              rect66        = slot;
+              rect66.y      = workarea.y + props[type].grav_down * height33;
+              rect66.height = height66;
+
+              if(current.height == rect66.height && current.y == rect66.y)
+                {
+                  slot.height = height33;
+                  slot.y      = workarea.y + props[type].grav_down * height66;
+	             }
+	         }
+	      }
+	    else
+	      {
+          if(current.height == desired.height && current.y == desired.y)
+            {
+              slot.y      = workarea.y + height33;
+              slot.height = height33 + comp;
+            }
+        }
+
+      desired = slot;
+    }    
+
+  /* Update client rect */
+  c->rect.x      = desired.x;
+  c->rect.y      = desired.y;
+  c->rect.width  = desired.width;
+  c->rect.height = desired.height;
+  c->gravity     = type;
+
+  /* EWMH: Gravity */
+  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
+} /* }}} */
+
  /** subClientToggle {{{
   * @brief Toggle various states of client
   * @param[in]  c     A #SubClient
@@ -562,12 +666,6 @@ subClientPublish(void)
       subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST, wins, subtle->clients->ndata);
       subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST_STACKING, wins, 
         subtle->clients->ndata);
-
-      /* Perrow / percol */
-      subtle->perrow = (int *)subSharedMemoryRealloc(subtle->perrow, 
-        subtle->clients->ndata * sizeof(int));
-      subtle->percol = (int *)subSharedMemoryRealloc(subtle->percol, 
-        subtle->clients->ndata * sizeof(int));
 
       subSharedLogDebug("publish=client, clients=%d\n", subtle->clients->ndata);
 

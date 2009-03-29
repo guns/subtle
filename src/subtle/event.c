@@ -246,6 +246,20 @@ EventMessage(XClientMessageEvent *ev)
                     } 
               }
             break; /* }}} */
+          case SUB_EWMH_SUBTLE_WINDOW_GRAVITY: /* {{{ */  
+            if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0]))))
+              {
+                int vid = ev->data.l[1];
+
+                if(-1 == vid)
+                  vid = subArrayIndex(subtle->views, (void *)subtle->cv);
+
+                c->gravity        = -1; ///< Force 
+                c->gravities[vid] = ev->data.l[2];
+
+                if(subtle->cv->tags & tag) subViewConfigure(subtle->cv);
+              }
+            break; /* }}} */
           case SUB_EWMH_SUBTLE_TAG_NEW: /* {{{ */
             t = subTagNew(ev->data.b, NULL); 
             subArrayPush(subtle->tags, (void *)t);
@@ -550,25 +564,22 @@ EventGrab(XEvent *ev)
                 if(SUB_GRAB_WINDOW_MOVE == flag && c->flags & (SUB_STATE_FLOAT|SUB_STATE_STICK))
                   flag = SUB_DRAG_MOVE;
                 else if(SUB_GRAB_WINDOW_RESIZE == flag) 
-                  {
-                    flag = wx < c->rect.width / 2 ? SUB_DRAG_RESIZE_LEFT : SUB_DRAG_RESIZE_RIGHT;
-                  }
-                else flag = SUB_DRAG_SWAP;
+                  flag = wx < c->rect.width / 2 ? SUB_DRAG_RESIZE_LEFT : SUB_DRAG_RESIZE_RIGHT;
 
                 subClientDrag(c, flag);
               }
             break; /* }}} */
-          case SUB_GRAB_GRAVITY:
+          case SUB_GRAB_GRAVITY: /* {{{ */
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               {
                 vid = subArrayIndex(subtle->views, (void *)subtle->cv);
 
-                c->gravity = -1; ///< Force 
+                c->gravity        = -1; ///< Force 
                 c->gravities[vid] = g->number;
 
                 if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
               }
-            break;
+            break; /* }}} */
           case SUB_GRAB_EXEC: /* {{{ */
             if(g->string) EventExec(g->string);
             break; /* }}} */

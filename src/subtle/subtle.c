@@ -75,8 +75,6 @@ SubtleSignal(int signum)
         subRubyFinish();
         subDisplayFinish();
 
-        free(subtle->perrow);
-        free(subtle->percol);
         free(subtle);
         exit(1);
       case SIGSEGV: 

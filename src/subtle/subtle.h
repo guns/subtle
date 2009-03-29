@@ -264,6 +264,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_WINDOW_TAG,                                     ///< subtle window tag
   SUB_EWMH_SUBTLE_WINDOW_UNTAG,                                   ///< subtle window untag
   SUB_EWMH_SUBTLE_WINDOW_TAGS,                                    ///< subtle window tags
+  SUB_EWMH_SUBTLE_WINDOW_GRAVITY,                                 ///< subtle window gravity
   SUB_EWMH_SUBTLE_TAG_NEW,                                        ///< subtle tag new
   SUB_EWMH_SUBTLE_TAG_LIST,                                       ///< subtle tag list
   SUB_EWMH_SUBTLE_TAG_KILL,                                       ///< subtle tag kill
@@ -326,8 +327,6 @@ typedef struct subsubtle_t /* {{{ */
   struct subarray_t  *tags;                                       ///< Subtle tags
   struct subarray_t  *trays;                                      ///< Subtle trays
   struct subarray_t  *views;                                      ///< Subtle views
-
-  int *perrow, *percol;                                           ///< Subtle perrow, percol
 
 #ifdef DEBUG
   int                debug;                                       ///< Subtle debug
@@ -406,6 +405,7 @@ void subClientConfigure(SubClient *c);                            ///< Send conf
 void subClientRender(SubClient *c);                               ///< Render client
 void subClientFocus(SubClient *c);                                ///< Focus client
 void subClientDrag(SubClient *c, int mode);                       ///< Move/drag client
+void subClientGravitate(SubClient *c, int type);                  ///< Gravitate client
 void subClientToggle(SubClient *c, int type);                     ///< Toggle client state
 void subClientUnmap(SubClient *c);                                ///< Unmap client
 void subClientPublish(void);                                      ///< Publish all clients
@@ -454,10 +454,6 @@ void subGrabSet(Window win);                                      ///< Grab wind
 void subGrabUnset(Window win);                                    ///< Ungrab window
 int subGrabCompare(const void *a, const void *b);                 ///< Compare grabs
 void subGrabKill(SubGrab *g);                                     ///< Kill grab
-/* }}} */
-
-/* gravity.c {{{ */
-void subGravityCalc(XRectangle *r, int type);                     ///< Calc gravity
 /* }}} */
 
 /* ruby.c {{{ */

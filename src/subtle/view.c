@@ -106,7 +106,7 @@ subViewConfigure(SubView *v)
                   if(c->gravity != c->gravities[vid]) 
                     {
                       c->gravity = c->gravities[vid];
-                      subGravityCalc(&c->rect, c->gravities[vid]);
+                      subClientGravitate(c, c->gravities[vid]);
                     }
                   subClientConfigure(c);
 
