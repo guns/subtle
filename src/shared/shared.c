@@ -328,11 +328,8 @@ subSharedPropertyList(Window win,
   assert(name && size);
 
   /* Get data */
-  string = (char *)subSharedPropertyGet(win, 
-    XInternAtom(display, "UTF8_STRING", False), name, &len);
-
-  /* @todo Convert string to names list */
-  if(string)
+  if((string = (char *)subSharedPropertyGet(win, 
+    XInternAtom(display, "UTF8_STRING", False), name, &len)))
     {
       /* Count \0 in string */
       for(i = 0; i < len; i++) 

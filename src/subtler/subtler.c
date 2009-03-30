@@ -263,8 +263,8 @@ SubtlerClientGravity(char *arg1,
   subSharedLogDebug("%s\n", __func__);
 
   data.l[0] = subSharedClientFind(arg1, NULL);
-  data.l[2] = -1;
-  data.l[3] = atoi(arg2);
+  data.l[1] = -1;
+  data.l[2] = atoi(arg2);
 
   if(-1 != data.l[0])
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_GRAVITY", data, False);
