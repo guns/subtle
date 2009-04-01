@@ -20,6 +20,10 @@ static int refcount = 0;
 int debug = 0;
 #endif /* DEBUG */
 
+/* Prototypes {{{ */
+static VALUE SubtlextFixnumToGrav(VALUE self);
+/* }}} */
+
 /* Flags {{{ */
 #define SUB_TYPE_CLIENT  0   ///< Client
 #define SUB_TYPE_VIEW    1   ///< View
@@ -350,6 +354,15 @@ SubtlextClientToString(VALUE self)
   return RTEST(name) ? name : Qnil;
 } /* }}} */
 
+/* SubtlextClientGravity {{{ */
+static VALUE
+SubtlextClientGravity(VALUE self)
+{
+  VALUE gravity = rb_iv_get(self, "@gravity");
+
+  return RTEST(gravity) ? SubtlextFixnumToGrav(gravity) : Qnil;
+} /* }}} */
+
 /* SubtlextClientGravitySet {{{ */
 static VALUE
 SubtlextClientGravitySet(VALUE self,
@@ -372,7 +385,7 @@ SubtlextClientGravitySet(VALUE self,
 
           rb_iv_set(self, "@gravity", value);
 
-          return Qtrue;
+          return SubtlextFixnumToGrav(value);
         }
       else 
         {
@@ -399,6 +412,35 @@ SubtlextClientOperatorMinus(VALUE self,
   VALUE value)
 {
   return SubtlextTag(self, value, SUB_ACTION_UNTAG, SUB_TYPE_CLIENT);
+} /* }}} */
+
+/* SubtlextFixnumToGrav {{{ */
+static VALUE
+SubtlextFixnumToGrav(VALUE self)
+{
+  static const char *gravities[] = { 
+    "UNKNOWN",
+    "BOTTOM_LEFT",
+    "BOTTOM",
+    "BOTTOM_RIGHT",
+    "LEFT",
+    "CENTER",
+    "RIGHT",
+    "TOP_LEFT",
+    "TOP",
+    "TOP_RIGHT"
+  };
+      
+  return rb_str_new2(gravities[FIX2INT(self)]);
+} /* }}} */
+
+/* SubtlextGravityToString {{{ */
+static VALUE
+SubtlextGravityToString(VALUE self)
+{
+  VALUE name = rb_iv_get(self, "@name");
+
+  return RTEST(name) ? name : Qnil;
 } /* }}} */
 
 /* SubtlextSubtleKill {{{ */
@@ -572,14 +614,23 @@ SubtlextSubtleClientList(VALUE self)
     {
       for(i = 0; i < size; i++)
         {
-          char *wmname = subSharedWindowWMName(clients[i]);
-          VALUE c = rb_funcall(klass, method, 1, rb_str_new2(wmname));
+          int *gravity = NULL;
+          char *wmname = NULL;        
+          VALUE client = Qnil;
 
-          rb_iv_set(c, "@id",  INT2FIX(i));
-          rb_iv_set(c, "@win", LONG2NUM(clients[i]));
-          rb_ary_push(array, c);
+          wmname  = subSharedWindowWMName(clients[i]);
+          client  = rb_funcall(klass, method, 1, rb_str_new2(wmname));
+          gravity = (int *)subSharedPropertyGet(clients[i], XA_CARDINAL, 
+            "SUBTLE_WINDOW_GRAVITY", NULL);
+
+          rb_iv_set(client, "@id",  INT2FIX(i));
+          rb_iv_set(client, "@win", LONG2NUM(clients[i]));
+          rb_iv_set(client, "@gravity", INT2FIX(*gravity));
+          
+          rb_ary_push(array, client);
 
           free(wmname);
+          free(gravity);
         }
       free(clients);
     }
@@ -1194,18 +1245,7 @@ Init_subtlext(void)
   rb_define_attr(klass,   "id",      1, 0);
   rb_define_attr(klass,   "win",     1, 0);
   rb_define_attr(klass,   "name",    1, 0);
-  rb_define_attr(klass,   "gravity", 1, 0);
-
-  rb_define_const(klass,  "GRAVITY_UNKNOWN",      INT2FIX(0));
-  rb_define_const(klass,  "GRAVITY_BOTTOM_LEFT",  INT2FIX(1));
-  rb_define_const(klass,  "GRAVITY_BOTTOM",       INT2FIX(2));
-  rb_define_const(klass,  "GRAVITY_BOTTOM_RIGHT", INT2FIX(3));
-  rb_define_const(klass,  "GRAVITY_LEFT",         INT2FIX(4));
-  rb_define_const(klass,  "GRAVITY_CENTER",       INT2FIX(5));
-  rb_define_const(klass,  "GRAVITY_RIGHT",        INT2FIX(6));
-  rb_define_const(klass,  "GRAVITY_TOP_LEFT",     INT2FIX(7));
-  rb_define_const(klass,  "GRAVITY_TOP",          INT2FIX(8));
-  rb_define_const(klass,  "GRAVITY_TOP_RIGHT",    INT2FIX(9));
+  //rb_define_attr(klass,   "gravity", 1, 0);
 
   rb_define_method(klass, "initialize",    SubtlextClientInit,          1);
   rb_define_method(klass, "views",         SubtlextClientViewList,      0);
@@ -1218,9 +1258,29 @@ Init_subtlext(void)
   rb_define_method(klass, "focus",         SubtlextClientFocus,         0);
   rb_define_method(klass, "focus?",        SubtlextClientFocusHas,      0);
   rb_define_method(klass, "to_s",          SubtlextClientToString,      0);
+  rb_define_method(klass, "gravity",       SubtlextClientGravity,       0);
   rb_define_method(klass, "gravity=",      SubtlextClientGravitySet,    1);
   rb_define_method(klass, "+",             SubtlextClientOperatorPlus,  1);
   rb_define_method(klass, "-",             SubtlextClientOperatorMinus, 1);
+
+  /* Class: gravity */
+  klass = rb_define_class("Gravity", rb_cObject);
+  rb_define_const(klass,  "UNKNOWN",      INT2FIX(0));
+  rb_define_const(klass,  "BOTTOM_LEFT",  INT2FIX(1));
+  rb_define_const(klass,  "BOTTOM",       INT2FIX(2));
+  rb_define_const(klass,  "BOTTOM_RIGHT", INT2FIX(3));
+  rb_define_const(klass,  "LEFT",         INT2FIX(4));
+  rb_define_const(klass,  "CENTER",       INT2FIX(5));
+  rb_define_const(klass,  "RIGHT",        INT2FIX(6));
+  rb_define_const(klass,  "TOP_LEFT",     INT2FIX(7));
+  rb_define_const(klass,  "TOP",          INT2FIX(8));
+  rb_define_const(klass,  "TOP_RIGHT",    INT2FIX(9));  
+
+  rb_define_method(klass, "to_s",          SubtlextGravityToString,   1);
+
+  /* Class: fixnum */
+  klass = rb_const_get(rb_mKernel, rb_intern("Fixnum"));
+  rb_define_method(klass, "to_grav",       SubtlextFixnumToGrav,      0);
 
   /* Class: subtle */
   klass = rb_define_class("Subtle", rb_cObject);
