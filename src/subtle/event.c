@@ -474,7 +474,7 @@ EventCrossing(XCrossingEvent *ev)
   if((c = CLIENT(subSharedFind(ev->window, CLIENTID))))
     {
       if(!(c->flags & SUB_STATE_DEAD))
-          subClientFocus(c);
+        subClientFocus(c);
      }
   else if((t = TRAY(subSharedFind(ev->window, TRAYID)))) subTrayFocus(t);
 
@@ -622,7 +622,7 @@ EventFocus(XFocusChangeEvent *ev)
   SubClient *c = NULL;
   SubTray *t = NULL;
 
-  if((c = CLIENT(subSharedFind(ev->window, CLIENTID))))
+  if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) ///< Clients
     { 
       if(FocusIn == ev->type) ///< FocusIn event
         {
@@ -656,7 +656,7 @@ EventFocus(XFocusChangeEvent *ev)
           subViewRender();
         }
     }
-  else if((t = TRAY(subSharedFind(ev->window, TRAYID))))
+  else if((t = TRAY(subSharedFind(ev->window, TRAYID)))) ///< Tray
     {
       int opcode = XEMBED_WINDOW_DEACTIVATE;
 

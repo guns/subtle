@@ -78,14 +78,12 @@ subViewNew(char *name,
 void
 subViewConfigure(SubView *v)
 {
-  long vid = 0;
-  int i;
-
   assert(v);
 
   if(0 < subtle->clients->ndata)
     {
-      vid = subArrayIndex(subtle->views, (void *)v);
+      int i;
+      long vid = subArrayIndex(subtle->views, (void *)v);
 
       /* Clients */
       for(i = 0; i < subtle->clients->ndata; i++)
@@ -95,13 +93,10 @@ subViewConfigure(SubView *v)
           /* Find matching clients */
           if(VISIBLE(v, c))
             {
-              if(!(c->flags & SUB_STATE_FULL)) ///< Don't overwrite root
-                XReparentWindow(subtle->disp, c->win, v->win, 0, 0);
+              XMapRaised(subtle->disp, c->win);
 
               if(!(c->flags & (SUB_STATE_FULL|SUB_STATE_FLOAT))) 
                 {
-                  XMapWindow(subtle->disp, c->win);
-
                   /* Check current gravity */
                   if(c->gravity != c->gravities[vid]) 
                     {
@@ -113,11 +108,6 @@ subViewConfigure(SubView *v)
                   /* EWMH: Desktop */
                   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
                 }
-              else ///< Special flags
-                {
-                  XMapRaised(subtle->disp, c->win);
-                }
-
             }
           else XUnmapWindow(subtle->disp, c->win); ///< Unmap other windows
         }
@@ -194,10 +184,7 @@ subViewJump(SubView *v)
 
   assert(v);
 
-  if(subtle->cv) 
-    {
-      XUnmapWindow(subtle->disp, subtle->cv->win);
-    }
+  if(subtle->cv) XUnmapWindow(subtle->disp, subtle->cv->win);
   subtle->cv = v;
 
   subViewConfigure(v);
