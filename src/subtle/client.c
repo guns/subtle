@@ -217,6 +217,7 @@ subClientConfigure(SubClient *c)
 
   /* Client size */
   r = c->rect;
+  r.y     += subtle->th;
   r.width  = WINW(c);
   r.height = WINH(c);
 
