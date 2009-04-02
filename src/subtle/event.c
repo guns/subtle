@@ -241,7 +241,7 @@ EventMessage(XClientMessageEvent *ev)
                       if(SUB_EWMH_SUBTLE_WINDOW_TAG == id) v->tags |= tag; ///< Action
                       else v->tags &= ~tag;
                     
-                      subEwmhSetCardinals(v->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&v->tags, 1);
+                      subEwmhSetCardinals(v->button, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&v->tags, 1);
                       if(subtle->cv == v) subViewConfigure(v);
                     } 
               }

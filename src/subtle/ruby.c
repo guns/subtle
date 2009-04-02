@@ -479,14 +479,16 @@ subRubyLoadConfig(const char *file)
   if(0 == subtle->views->ndata)
     {
       SubView *v = subViewNew("subtle", "default");
+
       subArrayPush(subtle->views, (void *)v);
       subSharedLogWarn("No views found\n");
     }
   else
     {
       SubView *v = VIEW(subtle->views->data[0]);
+
       v->tags |= (1L << 1); ///< Add default tag to first view
-      subEwmhSetCardinals(v->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&v->tags, 1);
+      subEwmhSetCardinals(v->button, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&v->tags, 1);
     }
 
   subViewUpdate();

@@ -24,29 +24,18 @@ subViewNew(char *name,
   char *tags)
 {
   SubView *v = NULL;
-  XSetWindowAttributes attrs;
 
   assert(name);
   
   v  = VIEW(subSharedMemoryAlloc(1, sizeof(SubView)));
-  v->flags  = SUB_TYPE_VIEW;
-  v->name   = strdup(name);
-  v->width  = strlen(v->name) * subtle->fx + 8; ///< Font offset
-  v->layout = subArrayNew();
+  v->flags = SUB_TYPE_VIEW;
+  v->name  = strdup(name);
+  v->width = strlen(v->name) * subtle->fx + 8; ///< Font offset
 
-  /* Create windows */
-  attrs.event_mask        = ExposureMask|VisibilityChangeMask|KeyPressMask;
-  attrs.background_pixmap = CopyFromParent;
-  attrs.background_pixel  = subtle->colors.bg;
-  attrs.override_redirect = True;
- 
-  v->win  = XCreateWindow(subtle->disp, ROOT, 0, subtle->th, SCREENW, SCREENH - subtle->th,
-    0, CopyFromParent, InputOutput, CopyFromParent, 
-    CWBackPixel|CWBackPixmap|CWEventMask|CWOverrideRedirect, &attrs); 
+  /* Create button */
   v->button = XCreateSimpleWindow(subtle->disp, subtle->windows.views, 0, 0, 1,
     subtle->th, 0, subtle->colors.border, subtle->colors.norm);
 
-  XSaveContext(subtle->disp, v->win, VIEWID, (void *)v);
   XSaveContext(subtle->disp, v->button, BUTTONID, (void *)v);
   XMapRaised(subtle->disp, v->button);
 
@@ -62,7 +51,7 @@ subViewNew(char *name,
 
       subSharedRegexKill(preg);
     }
-  subEwmhSetCardinals(v->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&v->tags, 1); ///< Init 
+  subEwmhSetCardinals(v->button, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&v->tags, 1); ///< Init 
 
   printf("Adding view (%s)\n", v->name);
   subSharedLogDebug("new=view, name=%s\n", name);
@@ -184,18 +173,16 @@ subViewJump(SubView *v)
 
   assert(v);
 
-  if(subtle->cv) XUnmapWindow(subtle->disp, subtle->cv->win);
   subtle->cv = v;
 
   subViewConfigure(v);
-  XMapWindow(subtle->disp, subtle->cv->win);
 
   /* EWMH: Current desktops */
   vid = subArrayIndex(subtle->views, (void *)v); ///< Get desktop number
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP, &vid, 1);
 
   subViewRender();
-  subGrabSet(subtle->cv->win);
+  subGrabSet(ROOT);
 
   printf("Switching view (%s)\n", subtle->cv->name);
 } /* }}} */
@@ -221,7 +208,7 @@ subViewPublish(void)
     {
       SubView *v = VIEW(subtle->views->data[i]);
 
-      views[i] = v->win;
+      views[i] = v->button;
       names[i] = v->name;
     }
 
@@ -254,13 +241,8 @@ subViewKill(SubView *v)
 
   printf("Killing view (%s)\n", v->name);
 
-  XDeleteContext(subtle->disp, v->win, 1);
   XDeleteContext(subtle->disp, v->button, 1);
-
   XDestroyWindow(subtle->disp, v->button);
-  XDestroyWindow(subtle->disp, v->win);
-
-  subArrayKill(v->layout, True);
 
   free(v->name);
   free(v);          

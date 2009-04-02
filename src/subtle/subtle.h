@@ -381,7 +381,6 @@ typedef struct subview_t /* {{{ */
   TAGS              tags;                                         ///< View tags
   Window            win, button;                                  ///< View win, button
   int               width;                                        ///< View width
-  struct subarray_t *layout;                                      ///< View layout
 } SubView; /* }}} */
 
 extern SubSubtle *subtle;
