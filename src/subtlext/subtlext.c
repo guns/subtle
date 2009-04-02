@@ -1138,13 +1138,13 @@ SubtlextViewTagList(VALUE self)
           if((int)*flags & (1L << (i + 1)))
             {
               VALUE t = rb_funcall(klass, method, 1, rb_str_new2(tags[i]));
+
               rb_iv_set(t, "@id", INT2FIX(i));
               rb_ary_push(array, t);
             }
         }
 
       subSharedPropertyListFree(tags, size);
-      free(tags);
 
       return array;
     }
