@@ -6,7 +6,7 @@
 # 
 
 require("test/unit")
-require("subtle/subtlext")
+require("subtlext")
 
 class TestSubtlext < Test::Unit::TestCase
   def test_subtle # {{{

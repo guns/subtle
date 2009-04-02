@@ -297,6 +297,12 @@ debug=yes          Build with debugging messages (current: #{@options["debug"]})
 EOF
 end # }}}
 
+# Task: test {{{
+desc("Test subtlext")
+task(:test => [:build]) do
+  require("dist/tests/test_subtlext.rb")
+end # }}}
+
 #
 # File tasks
 #
