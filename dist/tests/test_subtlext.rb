@@ -9,12 +9,17 @@ require("test/unit")
 require("subtlext")
 
 class TestSubtlext < Test::Unit::TestCase
-  def test_subtle # {{{
+  def setup # {{{
     # Test: Connection
     @subtle = Subtle.new(":2")
     assert_not_nil(@subtle)
     assert_instance_of(Subtle, @subtle)
+  end # }}}
 
+  def teardown # {{{
+  end # }}}
+
+  def test_subtle # {{{
     # Test: Info
     @version = @subtle.version
     assert_not_nil(@version)
@@ -39,6 +44,10 @@ class TestSubtlext < Test::Unit::TestCase
       @clients = @subtle.clients
       assert_not_nil(@clients)
       assert_instance_of(Array, @clients)
+
+      @client = @subtle.current_client
+      assert_not_nil(@client)
+      assert_instance_of(Client, @client)
     else
       puts "Clients tests can only be run if one or more 'xterm' is running."
     end
@@ -84,11 +93,6 @@ class TestSubtlext < Test::Unit::TestCase
   end # }}}
 
   def test_client # {{{
-    # Test: Connection
-    @subtle = Subtle.new(":2")
-    assert_not_nil(@subtle)
-    assert_instance_of(Subtle, @subtle)
-
     # Test: Instance
     @client = @subtle.find_client("xterm")
 
@@ -177,11 +181,6 @@ class TestSubtlext < Test::Unit::TestCase
   end # }}}
 
   def test_tag # {{{
-    # Test: Connection
-    @subtle = Subtle.new(":2")
-    assert_not_nil(@subtle)
-    assert_instance_of(Subtle, @subtle)
-
     # Test: Instance
     @tag = Tag.new("test")
     assert_not_nil(@tag)
@@ -208,11 +207,6 @@ class TestSubtlext < Test::Unit::TestCase
   end # }}}
 
   def test_view # {{{
-    # Test: Connection
-    @subtle = Subtle.new(":2")
-    assert_not_nil(@subtle)
-    assert_instance_of(Subtle, @subtle)
-
     # Test: Instance
     @view = View.new("test")
     assert_not_nil(@view)
