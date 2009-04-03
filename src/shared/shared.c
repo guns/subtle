@@ -545,8 +545,7 @@ subSharedClientFind(char *name,
 
   if(!strncmp(name, "#", 1) && win) selwin = subSharedWindowSelect(); ///< Select window
   
-  clients = subSharedClientList(&size);
-  if(clients)
+  if((clients = subSharedClientList(&size)))
     {
       int i;
       char *wmname = NULL, buf[10];

@@ -379,7 +379,7 @@ typedef struct subview_t /* {{{ */
   char              *name;                                        ///< View name
 
   TAGS              tags;                                         ///< View tags
-  Window            win, button;                                  ///< View win, button
+  Window            button;                                       ///< View win, button
   int               width;                                        ///< View width
 } SubView; /* }}} */
 

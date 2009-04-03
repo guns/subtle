@@ -52,12 +52,11 @@ void
 subArrayPop(SubArray *a,
   void *e)
 {
-  int idx, i;
+  int i, idx;
 
   assert(a && e);
 
-  idx = subArrayIndex(a, e);
-  if(idx >= 0)
+  if(0 <= (idx = subArrayIndex(a, e)))
     {
       for(i = idx; i < a->ndata - 1; i++) 
         a->data[i] = a->data[i + 1];
