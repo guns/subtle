@@ -38,6 +38,23 @@ EventUntag(SubClient *c,
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&c->tags, 1);
 } /* }}} */
 
+/* EventGravities {{{ */
+static void
+EventGravities(SubClient *c,
+  int vid)
+{
+  int i;
+
+  /* Shift gravities if necessary */
+  for(i = vid; -1 < vid && i < subtle->views->ndata - 1; i++)
+    c->gravities[i] = c->gravities[i + 1];
+
+  c->gravities = (int *)subSharedMemoryRealloc((void *)c->gravities, 
+    subtle->views->ndata * sizeof(int));
+
+  if(-1 == vid) c->gravities[subtle->views->ndata - 1] = SUB_GRAVITY_CENTER; ///< Initialise
+} /* }}} */
+
 /* EventExec {{{ */
 static void
 EventExec(char *cmd)
@@ -270,12 +287,10 @@ EventMessage(XClientMessageEvent *ev)
               {
                 int i, reconf = subtle->cv->tags & (1L << ((int)ev->data.l[0] + 1));
 
-                /* Views */
-                for(i = 0; i < subtle->views->ndata; i++)
+                for(i = 0; i < subtle->views->ndata; i++) ///< Views
                   EventUntag(CLIENT(subtle->views->data[i]), (int)ev->data.l[0]);
 
-                /* Clients */
-                for(i = 0; i < subtle->clients->ndata; i++)
+                for(i = 0; i < subtle->clients->ndata; i++) ///< Clients
                   EventUntag(CLIENT(subtle->clients->data[i]), (int)ev->data.l[0]);
               
                 subArrayPop(subtle->tags, (void *)t);
@@ -287,21 +302,33 @@ EventMessage(XClientMessageEvent *ev)
             break; /* }}} */
           case SUB_EWMH_SUBTLE_VIEW_NEW: /* {{{ */
             if(ev->data.b)
-              {
+              { 
+                int i;
+
                 v = subViewNew(ev->data.b, NULL); 
                 subArrayPush(subtle->views, (void *)v);
                 subViewUpdate();
                 subViewPublish();
                 subViewRender();
+
+                for(i = 0; i < subtle->clients->ndata; i++)
+                  EventGravities(CLIENT(subtle->clients->data[i]), -1); ///< Grow
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_VIEW_KILL: /* {{{ */
             if((v = VIEW(subArrayGet(subtle->views, (int)ev->data.l[0]))))
               {
+                int i, vid = subArrayIndex(subtle->views, (void *)v);
+
                 subArrayPop(subtle->views, (void *)v);
                 subViewKill(v);
                 subViewUpdate();
                 subViewPublish();
+
+                for(i = 0; i < subtle->clients->ndata; i++)
+                  EventGravities(CLIENT(subtle->clients->data[i]), vid); ///< Shrink
+
+                subViewJump(VIEW(subtle->views->data[0]));
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_SUBLET_UPDATE: /* {{{ */
@@ -512,6 +539,9 @@ EventGrab(XEvent *ev)
             return;
           }      
 
+        if(ev->xbutton.window != subtle->windows.focus) ///< Update focus
+          XSetInputFocus(subtle->disp, ev->xbutton.window, RevertToNone, CurrentTime);
+
         code  = XK_Pointer_Button1 + ev->xbutton.button;
         state = ev->xbutton.state;
         break;
@@ -530,7 +560,7 @@ EventGrab(XEvent *ev)
       int wx = 0, wy = 0, vid = 0;
 
       /* Use similarity of both events */
-      win = ev->xbutton.window == subtle->cv->win ? ev->xbutton.subwindow : ev->xbutton.window;
+      win = ev->xbutton.window == ROOT ? ev->xbutton.subwindow : ev->xbutton.window;
       wx  = ev->xbutton.x;
       wy  = ev->xbutton.y + subtle->th;
 
@@ -606,7 +636,7 @@ EventExpose(XEvent *ev)
       subViewRender();
       subSubletRender();
     }
-  else if(ev->xany.window == subtle->cv->win)
+  else if(ev->xany.window == ROOT)
     {
       subViewRender();
     }
