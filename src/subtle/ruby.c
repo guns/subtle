@@ -19,7 +19,14 @@
 #include <ruby.h>
 #include "subtle.h"
 
-static VALUE sublets; ///< Sublet list
+static VALUE shelter = Qnil; ///< Shelter for sweeped objects
+
+/* RubySubletMark {{{ */
+static void
+RubySubletMark(SubSublet *s)
+{
+  rb_gc_mark(s->recv);
+} /* }}} */
 
 /* RubySubletNew {{{ */
 static VALUE
@@ -30,15 +37,15 @@ RubySubletNew(VALUE self)
 
   /* Create sublet */
   s = subSubletNew();
-  data    = Data_Wrap_Struct(self, 0, NULL, (void *)s); ///< We omit the finalizer
+  data    = Data_Wrap_Struct(self, RubySubletMark, NULL, (void *)s);
   s->recv = data; 
   s->name = strdup(rb_class2name(self));
 
   rb_obj_call_init(data, 0, NULL); ///< Call initialize
+  rb_ary_push(shelter, data); ///< Protect from garbage collector
   if(0 == s->interval) s->interval = 60; ///< Sanitize
 
   subArrayPush(subtle->sublets, s);
-  subRubyRun(s); ///< Init data
 
   return data;
 } /* }}} */
@@ -48,11 +55,14 @@ static VALUE
 RubySubletInherited(VALUE self,
   VALUE recv)
 {
-  const char *name = rb_class2name((ID)recv);
+  char *name = (char *)rb_class2name((ID)recv);
 
-  rb_ary_push(sublets, recv); ///< Add derived class name to sublet list
-
-  printf("Loading sublet (%s)\n", name);
+  /* Instantiate sublets */
+  if(!rb_funcall(recv, rb_intern("new"), 0, NULL))
+    {
+      subSharedLogWarn("Failed loading sublet `%s'\n", name);
+    }
+  else printf("Loading sublet (%s)\n", name);
 
   return Qnil;
 } /* }}} */
@@ -242,20 +252,6 @@ RubyProtectedRun(VALUE recv)
   return Qnil;
 } /* }}} */
 
-/* RubyArrayIterate {{{ */
-static VALUE
-RubyArrayIterate(VALUE elem,
-  VALUE *obj)
-{
-  VALUE status = 0;
-  
-  /* Create new class instance */
-  if(!(status = rb_funcall(elem, rb_intern("new"), 0, NULL)))
-    subSharedLogWarn("Failed running sublet\n");
-
-  return Qnil;
-} /* }}} */
-
 /* RubyConfigIterate {{{ */
 static int
 RubyConfigIterate(VALUE key,
@@ -271,17 +267,14 @@ RubyConfigIterate(VALUE key,
         entry = (void *)subGrabNew(STR2CSTR(key), STR2CSTR(value));
         if(entry) subArrayPush(subtle->grabs, entry);
         break;
-
       case SUB_TYPE_TAG:
         entry = (void *)subTagNew(STR2CSTR(key), STR2CSTR(value));
         if(entry) subArrayPush(subtle->tags, entry);
         break;
-
       case SUB_TYPE_VIEW:
         entry = (void *)subViewNew(STR2CSTR(key), STR2CSTR(value));
         if(entry) subArrayPush(subtle->views, entry);
         break;
-
       default: subSharedLogDebug("Never to be reached?\n");
     }
 
@@ -429,6 +422,10 @@ subRubyInit(void)
   rb_define_method(klass, "path",      RubySubletPath,    0);
   rb_define_method(klass, "path=",     RubySubletPathSet, 1);
 #endif /* HAVE_SYS_INOTIFY */  
+
+  /* Bypassing garbage collection */
+  shelter = rb_ary_new();
+  rb_gc_register_address(&shelter);
 } /* }}} */
 
  /** subRubyLoadConfig {{{
@@ -511,8 +508,6 @@ subRubyLoadSublets(const char *path)
   char buf[100];
   struct dirent **entries = NULL;
 
-  sublets = rb_ary_new();
-
 #ifdef HAVE_SYS_INOTIFY_H
   if(0 > (subtle->notify = inotify_init()))
     {
@@ -547,13 +542,14 @@ subRubyLoadSublets(const char *path)
         }
       free(entries);
 
-      rb_iterate(rb_each, sublets, RubyArrayIterate, Qnil); ///< Instantiate sublets
-
       if(0 < subtle->sublets->ndata)
         {
           /* Preserve load order */
           for(i = 0; i < subtle->sublets->ndata - 1; i++) 
-            SUBLET(subtle->sublets->data[i])->next = SUBLET(subtle->sublets->data[i + 1]);
+            {
+              SUBLET(subtle->sublets->data[i])->next = SUBLET(subtle->sublets->data[i + 1]);
+              subRubyRun(SUBLET(subtle->sublets->data[i])); ///< First run
+            }
           subtle->sublet = SUBLET(subtle->sublets->data[0]);
           
           /* Sort and configure */
