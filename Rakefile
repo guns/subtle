@@ -300,7 +300,7 @@ end # }}}
 # Task: test {{{
 desc("Test subtlext")
 task(:test => [:build]) do
-  require("dist/tests/test_subtlext.rb")
+  require("test/subtlext_suite.rb")
 end # }}}
 
 #
