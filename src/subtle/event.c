@@ -801,8 +801,9 @@ subEventLoop(void)
         }
 
       /* Set timeout and assemble FD_SET */
-      tv.tv_sec  = s ? abs(s->time - ctime) : 60;
+      tv.tv_sec  = s ? (s->time - ctime) : 60;
       tv.tv_usec = 0;
+      if(0 > tv.tv_sec) tv.tv_sec = 0; ///< Sanitize
 
       FD_ZERO(&rfds);
       FD_SET(ConnectionNumber(subtle->disp), &rfds);
