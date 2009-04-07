@@ -161,12 +161,19 @@ task(:config) do
 
     # Debug
     if("yes" == @options["debug"]) then
-      @options["cflags"] << " -g"
+      @options["cflags"] << " -g -DDEBUG"
+    else
+      @options["cflags"] << " -g -DNDEBUG"
     end
+
     
     # Get revision
     if((@hg = find_executable0("hg")))
-      @options["revision"] = `#{@hg} tip`.match(/changeset:\s*(\d+).*/)[1]
+      if(File.exists?(".hg"))
+        @options["revision"] = `#{@hg} tip`.match(/changeset:\s*(\d+).*/)[1]
+      else
+        @options["revision"] = "UNKNOWN"
+      end
     end  
 
     # Expand options and defines
@@ -206,11 +213,6 @@ task(:config) do
     # Defines
     @defines.each do |k, v|
       $defs.push(format('-D%s="%s"', k, v))
-    end
-
-    # Debug
-    if("yes" == @options["debug"]) then
-      $defs.push("-DDEBUG")
     end
 
     # Dump options to file
