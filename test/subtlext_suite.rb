@@ -5,7 +5,7 @@
 # $Id$
 # 
 
-require("../subtlext")
+require("subtlext")
 require("test/unit")
 
 class Test::Unit::TestCase
@@ -14,12 +14,12 @@ class Test::Unit::TestCase
     @subtle = Subtle.new(":2")
     assert_not_nil(@subtle)
     assert_instance_of(Subtle, @subtle)
-  end # }}]
+  end # }}}
 end
 
-require("unit/sublet_test")
-require("unit/client_test")
-require("unit/fixnum_test")
-require("unit/gravity_test")
-require("unit/tag_test")
-require("unit/view_test")
+require("test/unit/subtle_test")
+require("test/unit/client_test")
+require("test/unit/fixnum_test")
+require("test/unit/gravity_test")
+require("test/unit/tag_test")
+require("test/unit/view_test")

@@ -298,9 +298,14 @@ EOF
 end # }}}
 
 # Task: test {{{
-desc("Test subtlext")
+desc("Run tests")
 task(:test => [:build]) do
-  require("test/subtlext_suite.rb")
+  if(!ENV["sublet"].nil?)
+    require("test/unit/sublet_test")
+    require(ENV["sublet"])
+  else
+    require("test/subtlext_suite")
+  end
 end # }}}
 
 #
