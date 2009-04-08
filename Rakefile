@@ -45,7 +45,7 @@ require("ftools")
   "RUBY_VERSION"  => "$(MAJOR).$(MINOR).$(TEENY)",
   "DIR_CONFIG"    => "$(sysconfdir)/$(PKG_NAME)",
   "DIR_SUBLET"    => "$(datadir)/$(PKG_NAME)/sublets",
-  "DIR_EXT"       => "$(sitelibdir)/$(PKG_NAME)"
+  "DIR_EXT"       => "$(destdir)/$(sitelibdir)/$(PKG_NAME)"
 }  # }}}
 
 # Lists {{{
@@ -165,7 +165,6 @@ task(:config) do
     else
       @options["cflags"] << " -g -DNDEBUG"
     end
-
     
     # Get revision
     if((@hg = find_executable0("hg")))
