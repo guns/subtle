@@ -918,7 +918,7 @@ main(int argc,
 #endif /* DEBUG */
           case 'V': SubtlerVersion();           return 0;
           case '?':
-            printf("Try `%sr --help for more information\n", PKG_NAME);
+            printf("Try `%sr --help' for more information\n", PKG_NAME);
             return -1;
         }
     }

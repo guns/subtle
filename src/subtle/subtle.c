@@ -118,7 +118,7 @@ main(int argc,
   int debug = 0;
 #endif /* DEBUG */  
 
-  while((c = getopt_long(argc, argv, "c:d:hs:vD", long_options, NULL)) != -1)
+  while(-1 != (c = getopt_long(argc, argv, "c:d:hs:vD", long_options, NULL)))
     {
       switch(c)
         {
@@ -131,7 +131,7 @@ main(int argc,
           case 'D': debug++;               break;
 #endif /* DEBUG */
           case '?':
-            printf("Try `%s --help for more information\n", PKG_NAME);
+            printf("Try `%s --help' for more information\n", PKG_NAME);
             return -1;
         }
     }
