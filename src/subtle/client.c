@@ -57,7 +57,7 @@ ClientSnap(SubClient *c,
 
  /** subClientNew {{{
   * @brief Create new client
-  * @param[in]  win  Main window of the new client
+  * @param[in]  win  Client window
   * @return Returns a new #SubClient or \p NULL
   **/
 
@@ -79,7 +79,7 @@ subClientNew(Window win)
   c->flags = SUB_TYPE_CLIENT;
   c->win   = win;
 
-  /* Dimensions */
+  /* Geometry */
   c->rect.x      = 0;
   c->rect.y      = subtle->th;
   c->rect.width  = SCREENW;
@@ -166,7 +166,7 @@ subClientNew(Window win)
       /* Properties */
       if(c->tags & SUB_TAG_FLOAT) subClientToggle(c, SUB_STATE_FLOAT);
       if(c->tags & SUB_TAG_FULL)  subClientToggle(c, SUB_STATE_FULL);
-      if(c->tags & SUB_TAG_STICK) subClientToggle(c, SUB_STATE_STICK|SUB_STATE_FLOAT);
+      if(c->tags & SUB_TAG_STICK) subClientToggle(c, SUB_STATE_STICK);
 
       /* Gravities */
       if(c->tags & SUB_TAG_TOP)
@@ -633,11 +633,7 @@ subClientToggle(SubClient *c,
               c->rect.y      = (SCREENH - c->rect.height) / 2;
             }        
         } /* }}} */
-      if(type & SUB_STATE_FULL) /* {{{ */
-        {
-          XSetWindowBorderWidth(subtle->disp, c->win, 0);
-          XReparentWindow(subtle->disp, c->win, ROOT, 0, 0);
-        } /* }}} */
+      if(type & SUB_STATE_FULL) XSetWindowBorderWidth(subtle->disp, c->win, 0);
 
       subClientConfigure(c);
     }
