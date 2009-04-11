@@ -82,7 +82,7 @@ subViewConfigure(SubView *v)
           /* Find matching clients */
           if(VISIBLE(v, c))
             {
-              XMapRaised(subtle->disp, c->win);
+              XMapWindow(subtle->disp, c->win);
 
               if(!(c->flags & (SUB_STATE_FULL|SUB_STATE_FLOAT))) 
                 {
@@ -97,6 +97,7 @@ subViewConfigure(SubView *v)
                   /* EWMH: Desktop */
                   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
                 }
+              else XMapRaised(subtle->disp, c->win);
             }
           else XUnmapWindow(subtle->disp, c->win); ///< Unmap other windows
         }
