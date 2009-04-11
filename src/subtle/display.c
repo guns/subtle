@@ -36,9 +36,9 @@ subDisplayInit(const char *display)
   XSetErrorHandler(subSharedLogXError);
 
   /* Create gcs */
-  gvals.function      = GXcopy;
-  gvals.fill_style    = FillStippled;
-  gvals.stipple       = XCreateBitmapFromData(subtle->disp, DefaultRootWindow(subtle->disp),
+  gvals.function       = GXcopy;
+  gvals.fill_style     = FillStippled;
+  gvals.stipple        = XCreateBitmapFromData(subtle->disp, DefaultRootWindow(subtle->disp),
     stipple, 15, 16);
   subtle->gcs.stipple  = XCreateGC(subtle->disp, DefaultRootWindow(subtle->disp),
     GCFunction|GCFillStyle|GCStipple, &gvals);

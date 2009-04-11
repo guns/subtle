@@ -16,10 +16,7 @@
 /* Typedef {{{ */
 typedef struct clientgravity_t
 {
-  int grav_right;
-  int grav_down;
-  int cells_x;
-  int cells_y;
+  int grav_right, grav_down, cells_x, cells_y;
 } ClientGravity;
 /* }}} */
 
@@ -95,7 +92,7 @@ subClientNew(Window win)
 
   /* Update client */
   subEwmhSetWMState(c->win, WithdrawnState);
-  XSelectInput(subtle->disp, c->win, EVENTMASK);
+  XSelectInput(subtle->disp, c->win, SubstructureRedirectMask|SubstructureNotifyMask|EVENTMASK);
   XSetWindowBorderWidth(subtle->disp, c->win, subtle->bw);
   XAddToSaveSet(subtle->disp, c->win);
   XSaveContext(subtle->disp, c->win, CLIENTID, (void *)c);
@@ -215,11 +212,11 @@ subClientConfigure(SubClient *c)
 
   assert(c);
 
-  /* Client size */
+  /* Apply size */
   r = c->rect;
   r.y     += subtle->th;
   r.width  = WINW(c);
-  r.height = WINH(c);
+  r.height = WINH(c) - subtle->th;
 
   if(c->flags & SUB_STATE_FULL) 
     {
@@ -241,12 +238,13 @@ subClientConfigure(SubClient *c)
   ev.override_redirect = 0;
   ev.border_width      = 0;
 
+  /* Resize the client and inform it - no arguments! */
   XMoveResizeWindow(subtle->disp, c->win, r.x, r.y, r.width, r.height);
   XSendEvent(subtle->disp, c->win, False, StructureNotifyMask, (XEvent *)&ev);
 
   subSharedLogDebug("client=%#lx, state=%c, x=%03d, y=%03d, width=%03d, height=%03d\n",
     c->win, c->flags & SUB_STATE_FLOAT ? 'f' : c->flags & SUB_STATE_FULL ? 'u' : 'n',
-    r.x, r.y, r.width, r.height);
+    c->rect.x, c->rect.y, c->rect.width, c->rect.height);
 } /* }}} */
 
  /** subClientRender {{{
@@ -257,6 +255,8 @@ subClientConfigure(SubClient *c)
 void
 subClientRender(SubClient *c)
 {
+  int pos;
+  char status;
   XSetWindowAttributes attrs;
 
   assert(c);
@@ -264,10 +264,14 @@ subClientRender(SubClient *c)
   attrs.border_pixel = subtle->windows.focus == c->win ? subtle->colors.focus : subtle->colors.norm;
   XChangeWindowAttributes(subtle->disp, c->win, CWBorderPixel, &attrs);
 
+  status = c->flags & SUB_STATE_STICK ? '*' : (c->flags & SUB_STATE_FLOAT ? '^' : ' ');
+  pos    = ' ' != status ? 6 : 0; ///< Client name pos
+
   /* Caption */
-  XResizeWindow(subtle->disp, subtle->windows.caption, TEXTW(c->name), subtle->th);
+  XResizeWindow(subtle->disp, subtle->windows.caption, TEXTW(c->name) + pos, subtle->th);
   XClearWindow(subtle->disp, subtle->windows.caption);
-  XDrawString(subtle->disp, subtle->windows.caption, subtle->gcs.font, 3, subtle->fy - 1,
+  if(' ' != status) XDrawString(subtle->disp, subtle->windows.caption, subtle->gcs.font, 3, subtle->fy - 1, &status, 1);
+  XDrawString(subtle->disp, subtle->windows.caption, subtle->gcs.font, 3 + pos, subtle->fy - 1,
     c->name, strlen(c->name));
 } /* }}} */
 
@@ -478,7 +482,7 @@ void
 subClientGravitate(SubClient *c,
   int type)
 {
-  XRectangle workarea = { 0, 0, SCREENW, SCREENH - subtle->th };
+  XRectangle workarea = { 0, 0, SCREENW, SCREENH };
   XRectangle slot = { 0 }, desired = { 0 }, current = { 0 };
 
   static const ClientGravity props[] =
@@ -576,10 +580,12 @@ subClientToggle(SubClient *c,
   if(c->flags & type) 
     {
       c->flags  &= ~type;
-      c->gravity = -1;
 
       if(type & SUB_STATE_FULL)
         XSetWindowBorderWidth(subtle->disp, c->win, subtle->bw);
+
+      if(type & (SUB_STATE_FLOAT|SUB_STATE_FULL))
+        c->gravity = -1; ///< Updating gravity
     }
   else 
     {
@@ -633,12 +639,14 @@ subClientToggle(SubClient *c,
               c->rect.y      = (SCREENH - c->rect.height) / 2;
             }        
         } /* }}} */
-      if(type & SUB_STATE_FULL) XSetWindowBorderWidth(subtle->disp, c->win, 0);
+      else if(type & SUB_STATE_FULL) 
+        XSetWindowBorderWidth(subtle->disp, c->win, 0);
 
       subClientConfigure(c);
     }
 
   subClientFocus(c);
+  subClientRender(c);
 } /* }}} */
 
  /** subClientPublish {{{

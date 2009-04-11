@@ -77,10 +77,10 @@ EventExec(char *cmd)
 static void
 EventConfigure(XConfigureRequestEvent *ev)
 {
-  XWindowChanges wc;
-  SubClient *c = CLIENT(subSharedFind(ev->window, CLIENTID));
+  SubClient *c = NULL;
 
-  if(c)
+  /* Ignore requests of non-floating clients */
+  if((c = CLIENT(subSharedFind(ev->window, CLIENTID))) && c->flags & SUB_STATE_FLOAT)
     {
       if(ev->value_mask & CWX)      c->rect.x      = ev->x;
       if(ev->value_mask & CWY)      c->rect.y      = ev->y;
@@ -89,8 +89,10 @@ EventConfigure(XConfigureRequestEvent *ev)
 
       subClientConfigure(c);
     }
-  else
+  else /* Unmanaged windows */
     {
+      XWindowChanges wc;
+
       wc.x          = ev->x;
       wc.y          = ev->y;
       wc.width      = ev->width;
@@ -541,6 +543,7 @@ EventGrab(XEvent *ev)
 
         if(ev->xbutton.window != subtle->windows.focus) ///< Update focus
           XSetInputFocus(subtle->disp, ev->xbutton.window, RevertToNone, CurrentTime);
+        XMapRaised(subtle->disp, ev->xbutton.window);
 
         code  = XK_Pointer_Button1 + ev->xbutton.button;
         state = ev->xbutton.state;
