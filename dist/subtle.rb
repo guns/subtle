@@ -47,27 +47,30 @@ COLORS = {
 # B5 = Button5
 #
 GRABS = {
-  "ViewJump1"          => "A-1",       # Jump to view 1
-  "ViewJump2"          => "A-2",       # Jump to view 2
-  "ViewJump3"          => "A-3",       # Jump to view 3
-  "ViewJump4"          => "A-4",       # Jump to view 4
-  "ViewJump5"          => "A-5",       # Jump to view 5
-  "WindowMove"         => "S-B1",      # Move window
-  "WindowResize"       => "S-B3",      # Resize window
-  "WindowFloat"        => "A-f",       # Toggle float
-  "WindowFull"         => "A-space",   # Toggle full,
-  "WindowStick"        => "A-s",       # Toggle stick
-  "WindowKill"         => "A-k",       # Kill window
-  "GravityTopLeft"     => "S-KP_7",    # Set left gravity
-  "GravityTop"         => "S-KP_8",    # Set top gravity
-  "GravityTopRight"    => "S-KP_9",    # Set right gravity
-  "GravityLeft"        => "S-KP_4",    # Set left gravity
-  "GravityCenter"      => "S-KP_5",    # Set center gravity
-  "GravityRight"       => "S-KP_6",    # Set right gravity
-  "GravityBottomLeft"  => "S-KP_1",    # Set bottom-left gravity
-  "GravityBottom"      => "S-KP_2",    # Set bottom gravity
-  "GravityBottomRight" => "S-KP_3",    # Set bottom-right gravity
-  "xterm +sb"          => "A-Return"   # Exec a term
+  "W-1"     => Subtle::Grab::Jump1,                 # Jump to view 1
+  "W-2"     => Subtle::Grab::Jump2,                 # Jump to view 2
+  "W-3"     => Subtle::Grab::Jump3,                 # Jump to view 3 
+  "W-4"     => Subtle::Grab::Jump4,                 # Jump to view 4
+  "S-B1"    => Subtle::Grab::WindowMove,            # Move window
+  "S-B3"    => Subtle::Grab::WindowResize,          # Resize window
+  "A-f"     => Subtle::Grab::WindowFloat,           # Toggle float
+  "A-space" => Subtle::Grab::WindowFull,            # Toggle full
+  "A-s"     => Subtle::Grab::WindowStick,           # Toggle stic
+  "A-k"     => Subtle::Grab::WindowKill,            # Kill window
+  "S-KP_7"  => Subtle::Grab::GravityTopLeft,        # Set top left gravity
+  "S-KP_8"  => Subtle::Grab::GravityTop,            # Set top gravity
+  "S-KP_9"  => Subtle::Grab::GravityTopRight,       # Set top right gravity
+  "S-KP_4"  => Subtle::Grab::GravityLeft,           # Set left gravity
+  "S-KP_5"  => Subtle::Grab::GravityCenter,         # Set center gravity
+  "S-KP_6"  => Subtle::Grab::GravityRight,          # Set right gravity
+  "S-KP_1"  => Subtle::Grab::GravityBottomLeft,     # Set bottom left gravity
+  "S-KP_2"  => Subtle::Grab::GravityBottom,         # Set bottom gravity
+  "S-KP_3"  => Subtle::Grab::GravityBottomRight,    # Set bottom right gravity
+
+  "S-F1"    => "xterm +sb",                         # Exec a term
+
+  "S-F2"    => lambda { |c| puts c.name      },     # Print client name
+  "S-F3"    => lambda { |c| puts $subtle.version }  # Print subtle version
 }
 
 #
@@ -77,12 +80,8 @@ TAGS = {
   "terms"   => "xterm|urxvt",
   "browser" => "opera",
   "editor"  => "gvim",
-  "video"   => "mplayer",
-  "float"   => "mplayer",
-  "full"    => "gvim",
-  "stick"   => "xlogo",
-  "left"    => "xterm",
-  "right"   => "urxvt"
+  "stick"   => "mplayer",
+  "float"   => "mplayer|display|gimp"
 }  
 
 #
@@ -90,8 +89,8 @@ TAGS = {
 #
 VIEWS = {
   "work" => "terms",
-  "dev"  => "editor",
-  "web"  => "browser|video|terms"
+  "dev"  => "editor|terms",
+  "web"  => "browser"
 }
 
 # vim:ts=2:bs=2:sw=2:et:fdm=marker
