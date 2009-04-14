@@ -9,7 +9,7 @@
 # $Id$
 #
 
-class Loadavg < Sublet
+class Loadavg < Subtle::Sublet
   def initialize
     self.interval = 30
   end

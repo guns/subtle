@@ -9,7 +9,7 @@
 # $Id$
 #
 
-class Memory < Sublet
+class Memory < Subtle::Sublet
   @total  = 0
   @active = 0
 

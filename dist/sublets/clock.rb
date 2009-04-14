@@ -9,7 +9,7 @@
 # $Id$
 #
 
-class Clock < Sublet
+class Clock < Subtle::Sublet
   def initialize
     self.interval = 60
   end

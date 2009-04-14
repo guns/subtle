@@ -9,7 +9,7 @@
 # $Id$
 #
 
-class Battery < Sublet
+class Battery < Subtle::Sublet
   @path      = 0
   @capacity  = 0
   @remaining = 0

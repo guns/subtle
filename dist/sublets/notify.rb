@@ -9,7 +9,7 @@
 # $Id$
 #
 
-class Notify < Sublet
+class Notify < Subtle::Sublet
   def initialize
     self.path = "/tmp/watch"
   end
