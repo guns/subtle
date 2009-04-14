@@ -15,6 +15,7 @@
 
 Display *display = NULL;
 static int refcount = 0;
+VALUE mod = Qnil;
 
 #ifdef DEBUG
 int debug = 0;
@@ -46,7 +47,7 @@ SubtlextFind(int type,
 
   assert(SUB_TYPE_TAG == type || SUB_TYPE_VIEW == type);
 
-  klass = rb_const_get(rb_mKernel, rb_intern(SUB_TYPE_TAG == type ? "Tag" : "View")); 
+  klass = rb_const_get(mod, rb_intern(SUB_TYPE_TAG == type ? "Tag" : "View")); 
 
   /* Check object */
   switch(rb_type(value))
@@ -77,7 +78,7 @@ SubtlextFind(int type,
             return obj;
           }
 
-        rb_raise(rb_eStandardError, "Failed to find object");
+        rb_raise(rb_eStandardError, "Failed finding %s", SUB_TYPE_TAG == type ? "tag" : "view");
         return Qnil;
       case T_OBJECT:
       case T_CLASS:
@@ -97,7 +98,8 @@ SubtlextFind(int type,
                 else id = subSharedViewFind(STR2CSTR(name), &win);
                 if(-1 == id)
                   {
-                    rb_raise(rb_eStandardError, "Failed to update object");
+                    rb_raise(rb_eStandardError, "Failed updating %s", 
+                      SUB_TYPE_TAG == type ? "tag" : "view");
                     return Qnil;
                   }                
 
@@ -128,7 +130,7 @@ SubtlextToggle(VALUE self,
 
       subSharedMessage(win, "_NET_WM_STATE", data, True);
     }
-  else rb_raise(rb_eStandardError, "Failed to toggle client");
+  else rb_raise(rb_eStandardError, "Failed toggling client");
 
   return Qnil;
 } /* }}} */
@@ -195,7 +197,7 @@ SubtlextClientViewList(VALUE self)
   
   win     = rb_iv_get(self, "@win");
   method  = rb_intern("new");
-  klass   = rb_const_get(rb_mKernel, rb_intern("View"));
+  klass   = rb_const_get(mod, rb_intern("View"));
   array   = rb_ary_new2(size);
   names   = subSharedPropertyList(DefaultRootWindow(display), 
     "_NET_DESKTOP_NAMES", &size);
@@ -244,7 +246,7 @@ SubtlextClientTagList(VALUE self)
   if(RTEST(name) && -1 != subSharedClientFind(STR2CSTR(name), &win))
     {
       method = rb_intern("new");
-      klass  = rb_const_get(rb_mKernel, rb_intern("Tag"));
+      klass  = rb_const_get(mod, rb_intern("Tag"));
       flags  = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, 
         "SUBTLE_WINDOW_TAGS", NULL);
       tags   = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
@@ -319,7 +321,7 @@ SubtlextClientFocus(VALUE self)
       data.l[0] = NUM2LONG(win);
       subSharedMessage(DefaultRootWindow(display), "_NET_ACTIVE_WINDOW", data, True);
     }
-  else rb_raise(rb_eStandardError, "Failed to set focus");
+  else rb_raise(rb_eStandardError, "Failed setting focus");
 
   return Qnil;
 } /* }}} */
@@ -343,6 +345,23 @@ SubtlextClientFocusHas(VALUE self)
     }
 
   return ret;
+} /* }}} */
+
+/* SubtlextClientKill {{{ */
+static VALUE
+SubtlextClientKill(VALUE self)
+{
+  VALUE win = rb_iv_get(self, "@win");
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  if(RTEST(win))
+    {
+      data.l[0] = NUM2LONG(win);
+      subSharedMessage(DefaultRootWindow(display), "_NET_CLOSE_WINDOW", data, True);
+    }
+  else rb_raise(rb_eStandardError, "Failed killing client");
+
+  return Qnil;
 } /* }}} */
 
 /* SubtlextClientToString {{{ */
@@ -389,7 +408,7 @@ SubtlextClientGravitySet(VALUE self,
         }
       else 
         {
-          rb_raise(rb_eStandardError, "Failed to set client gravity");
+          rb_raise(rb_eStandardError, "Failed setting client gravity");
           return Qnil;
         }
     }
@@ -480,7 +499,7 @@ SubtlextSubtleNew(int argc,
       if(RTEST(disp)) dispname = STR2CSTR(disp);
       if(!(display = XOpenDisplay(dispname)))
         {
-          subSharedLogError("Failed to open display `%s'\n", (dispname) ? dispname : ":0.0");
+          subSharedLogError("Failed opening display `%s'\n", (dispname) ? dispname : ":0.0");
 
           return Qnil;
         }
@@ -492,7 +511,7 @@ SubtlextSubtleNew(int argc,
           XCloseDisplay(display);
           display = NULL;
           
-          rb_raise(rb_eStandardError, "Failed to find running %s", PKG_NAME);
+          rb_raise(rb_eStandardError, "Failed finding running %s", PKG_NAME);
 
           return Qnil;
         }
@@ -538,7 +557,7 @@ SubtlextSubtleTagList(VALUE self)
   VALUE array = Qnil, method = Qnil, klass = Qnil;
   
   method = rb_intern("new");
-  klass  = rb_const_get(rb_mKernel, rb_intern("Tag"));
+  klass  = rb_const_get(mod, rb_intern("Tag"));
   tags   = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
   array  = rb_ary_new2(size);
 
@@ -593,7 +612,7 @@ SubtlextSubtleTagDel(VALUE self,
       return Qnil;
     }
 
-  rb_raise(rb_eStandardError, "Failed to find tag");
+  rb_raise(rb_eStandardError, "Failed finding tag");
   return Qnil;
 } /* }}} */
 
@@ -613,7 +632,7 @@ SubtlextSubtleClientList(VALUE self)
       VALUE method = Qnil, klass = Qnil;
       
       method = rb_intern("new");
-      klass  = rb_const_get(rb_mKernel, rb_intern("Client"));
+      klass  = rb_const_get(mod, rb_intern("Client"));
 
       for(i = 0; i < size; i++)
         {
@@ -626,8 +645,8 @@ SubtlextSubtleClientList(VALUE self)
           gravity = (int *)subSharedPropertyGet(clients[i], XA_CARDINAL, 
             "SUBTLE_WINDOW_GRAVITY", NULL);
 
-          rb_iv_set(client, "@id",  INT2FIX(i));
-          rb_iv_set(client, "@win", LONG2NUM(clients[i]));
+          rb_iv_set(client, "@id",      INT2FIX(i));
+          rb_iv_set(client, "@win",     LONG2NUM(clients[i]));
           rb_iv_set(client, "@gravity", INT2FIX(*gravity));
           
           rb_ary_push(array, client);
@@ -656,12 +675,12 @@ SubtlextSubtleClientFind(VALUE self,
       char *wmname = NULL;
       
       wmname  = subSharedWindowWMName(win);
-      klass   = rb_const_get(rb_mKernel, rb_intern("Client"));
+      klass   = rb_const_get(mod, rb_intern("Client"));
       client  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(wmname));
       gravity = (int *)subSharedPropertyGet(win, XA_CARDINAL, "SUBTLE_WINDOW_GRAVITY", NULL);
 
-      rb_iv_set(client, "@id",  INT2FIX(id));
-      rb_iv_set(client, "@win", LONG2NUM(win));
+      rb_iv_set(client, "@id",      INT2FIX(id));
+      rb_iv_set(client, "@win",     LONG2NUM(win));
       rb_iv_set(client, "@gravity", INT2FIX(*gravity));
 
       free(wmname);
@@ -670,7 +689,7 @@ SubtlextSubtleClientFind(VALUE self,
       return client;
     }
 
-  rb_raise(rb_eStandardError, "Failed to find client");
+  rb_raise(rb_eStandardError, "Failed finding client");
   return Qnil;
 } /* }}} */
 
@@ -692,7 +711,7 @@ SubtlextSubtleClientFocus(VALUE self,
       subSharedMessage(DefaultRootWindow(display), "_NET_ACTIVE_WINDOW", data, True);
 
       /* Create new client instance */
-      klass  = rb_const_get(rb_mKernel, rb_intern("Client"));
+      klass  = rb_const_get(mod, rb_intern("Client"));
       client = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(wmname));
 
       rb_iv_set(client, "@id",  INT2FIX(id));
@@ -702,7 +721,7 @@ SubtlextSubtleClientFocus(VALUE self,
       return client;
     }
 
-  rb_raise(rb_eStandardError, "Failed to set focus");
+  rb_raise(rb_eStandardError, "Failed setting focus");
   return Qnil;
 } /* }}} */
 
@@ -726,7 +745,7 @@ SubtlextSubtleClientDel(VALUE self,
       return Qnil;
     }
 
-  rb_raise(rb_eStandardError, "Failed to find client");
+  rb_raise(rb_eStandardError, "Failed finding client");
   return Qnil;
 } /* }}} */
 
@@ -745,14 +764,14 @@ SubtlextSubtleClientCurrent(VALUE self)
 
       /* Create new client instance */
       wmname  = subSharedWindowWMName(*focus);
-      klass   = rb_const_get(rb_mKernel, rb_intern("Client"));
+      klass   = rb_const_get(mod, rb_intern("Client"));
       client  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(wmname));
       id      = subSharedClientFind(wmname, NULL);
       gravity = (int *)subSharedPropertyGet(*focus, XA_CARDINAL, 
             "SUBTLE_WINDOW_GRAVITY", NULL);
 
-      rb_iv_set(client, "@id",  INT2FIX(id));
-      rb_iv_set(client, "@win", LONG2NUM(*focus));
+      rb_iv_set(client, "@id",      INT2FIX(id));
+      rb_iv_set(client, "@win",     LONG2NUM(*focus));
       rb_iv_set(client, "@gravity", INT2FIX(*gravity));
 
       free(focus);
@@ -762,7 +781,7 @@ SubtlextSubtleClientCurrent(VALUE self)
       return client;
     }
 
-  rb_raise(rb_eStandardError, "Failed to get current client");
+  rb_raise(rb_eStandardError, "Failed getting current client");
   return Qnil;
 } /* }}} */
 
@@ -785,7 +804,7 @@ SubtlextSubtleSubletDel(VALUE self,
       return Qnil;
     }
 
-  rb_raise(rb_eStandardError, "Failed to find sublet");
+  rb_raise(rb_eStandardError, "Failed finding sublet");
   return Qnil;
 } /* }}} */
 
@@ -798,7 +817,7 @@ SubtlextSubtleSubletList(VALUE self)
   VALUE array = Qnil, method = Qnil, klass = Qnil;
   
   method  = rb_intern("new");
-  klass   = rb_const_get(rb_mKernel, rb_intern("Sublet"));
+  klass   = rb_const_get(mod, rb_intern("Sublet"));
   sublets = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_SUBLET_LIST", &size);
   array   = rb_ary_new2(size);
 
@@ -807,6 +826,7 @@ SubtlextSubtleSubletList(VALUE self)
       for(i = 0; i < size; i++)
         {
           VALUE s = rb_funcall(klass, method, 1, rb_str_new2(sublets[i]));
+
           rb_iv_set(s, "@id", INT2FIX(i));
           rb_ary_push(array, s);
         }
@@ -827,7 +847,7 @@ SubtlextSubtleSubletFind(VALUE self,
 
   if(RTEST(name) && -1 != ((id = subSharedSubletFind(STR2CSTR(name)))))
     {
-      klass  = rb_const_get(rb_mKernel, rb_intern("Sublet"));
+      klass  = rb_const_get(mod, rb_intern("Sublet"));
       sublet = rb_funcall(klass, rb_intern("new"), 1, name);
 
       rb_iv_set(sublet, "@id", INT2FIX(id));
@@ -835,7 +855,7 @@ SubtlextSubtleSubletFind(VALUE self,
       return sublet;
     }
 
-  rb_raise(rb_eStandardError, "Failed to find sublet");
+  rb_raise(rb_eStandardError, "Failed finding sublet");
   return Qnil;
 } /* }}} */
 
@@ -850,7 +870,7 @@ SubtlextSubtleViewList(VALUE self)
   
   /* Collect data */
   method = rb_intern("new");
-  klass  = rb_const_get(rb_mKernel, rb_intern("View"));
+  klass  = rb_const_get(mod, rb_intern("View"));
   names  = subSharedPropertyList(DefaultRootWindow(display), 
     "_NET_DESKTOP_NAMES", &size);
   views   = (Window *)subSharedPropertyGet(DefaultRootWindow(display), 
@@ -923,7 +943,7 @@ SubtlextSubtleViewCurrent(VALUE self)
   unsigned long *cv = NULL;
   VALUE klass = Qnil, view = Qnil;
   
-  klass = rb_const_get(rb_mKernel, rb_intern("View"));
+  klass = rb_const_get(mod, rb_intern("View"));
   names = subSharedPropertyList(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
   cv    = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
     XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
@@ -981,7 +1001,7 @@ SubtlextSubletUpdate(VALUE self)
       return Qnil;
     }
 
-  rb_raise(rb_eStandardError, "Failed to find sublet");
+  rb_raise(rb_eStandardError, "Failed finding sublet");
   return Qnil;
 } /* }}} */
 
@@ -1034,7 +1054,7 @@ SubtlextTagTaggings(VALUE self)
   /* Clients */
   if(clients)
     {
-      klass = rb_const_get(rb_mKernel, rb_intern("Client"));
+      klass = rb_const_get(mod, rb_intern("Client"));
 
       for(i = 0; i < size_clients; i++)
         {
@@ -1061,7 +1081,7 @@ SubtlextTagTaggings(VALUE self)
   /* Views */
   if(names && views)
     {
-      klass = rb_const_get(rb_mKernel, rb_intern("View"));
+      klass = rb_const_get(mod, rb_intern("View"));
 
       for(i = 0; i < size_views; i++)
         {
@@ -1119,7 +1139,7 @@ SubtlextViewClientList(VALUE self)
   
   win     = rb_iv_get(self, "@win");
   method  = rb_intern("new");
-  klass   = rb_const_get(rb_mKernel, rb_intern("Client"));
+  klass   = rb_const_get(mod, rb_intern("Client"));
   array   = rb_ary_new2(size);
   clients = subSharedClientList(&size);
   flags1  = (unsigned long *)subSharedPropertyGet(NUM2LONG(win), XA_CARDINAL, 
@@ -1143,8 +1163,8 @@ SubtlextViewClientList(VALUE self)
               gravity = (int *)subSharedPropertyGet(clients[i], XA_CARDINAL, 
                 "SUBTLE_WINDOW_GRAVITY", NULL);
 
-              rb_iv_set(client, "@id",  INT2FIX(i));
-              rb_iv_set(client, "@win", LONG2NUM(clients[i]));
+              rb_iv_set(client, "@id",      INT2FIX(i));
+              rb_iv_set(client, "@win",     LONG2NUM(clients[i]));
               rb_iv_set(client, "@gravity", INT2FIX(*gravity));
 
               rb_ary_push(array, client);
@@ -1175,7 +1195,7 @@ SubtlextViewTagList(VALUE self)
   if(RTEST(name) && -1 != subSharedViewFind(STR2CSTR(name), &win))
     {
       method = rb_intern("new");
-      klass  = rb_const_get(rb_mKernel, rb_intern("Tag"));
+      klass  = rb_const_get(mod, rb_intern("Tag"));
       flags  = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, 
         "SUBTLE_WINDOW_TAGS", NULL);
       tags   = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
@@ -1289,8 +1309,11 @@ Init_subtlext(void)
 {
   VALUE klass = Qnil;
 
+  /* Module: sublext */
+  mod = rb_define_module("Subtlext");
+
   /* Class: client */
-  klass = rb_define_class("Client", rb_cObject);
+  klass = rb_define_class_under(mod, "Client", rb_cObject);
   rb_define_attr(klass,   "id",      1, 0);
   rb_define_attr(klass,   "win",     1, 0);
   rb_define_attr(klass,   "name",    1, 0);
@@ -1305,6 +1328,7 @@ Init_subtlext(void)
   rb_define_method(klass, "toggle_stick", SubtlextClientToggleStick,   0);
   rb_define_method(klass, "focus",        SubtlextClientFocus,         0);
   rb_define_method(klass, "focus?",       SubtlextClientFocusHas,      0);
+  rb_define_method(klass, "kill",         SubtlextClientKill,          0);
   rb_define_method(klass, "to_s",         SubtlextClientToString,      0);
   rb_define_method(klass, "gravity",      SubtlextClientGravity,       0);
   rb_define_method(klass, "gravity=",     SubtlextClientGravitySet,    1);
@@ -1312,7 +1336,7 @@ Init_subtlext(void)
   rb_define_method(klass, "-",            SubtlextClientOperatorMinus, 1);
 
   /* Class: gravity */
-  klass = rb_define_class("Gravity", rb_cObject);
+  klass = rb_define_class_under(mod, "Gravity", rb_cObject);
   rb_define_const(klass,  "UNKNOWN",      INT2FIX(0));
   rb_define_const(klass,  "BOTTOM_LEFT",  INT2FIX(1));
   rb_define_const(klass,  "BOTTOM",       INT2FIX(2));
@@ -1331,7 +1355,7 @@ Init_subtlext(void)
   rb_define_method(klass, "to_grav", SubtlextFixnumToGrav, 0);
 
   /* Class: subtle */
-  klass = rb_define_class("Subtle", rb_cObject);
+  klass = rb_define_class_under(mod, "Subtle", rb_cObject);
   rb_define_singleton_method(klass, "new", SubtlextSubtleNew, -1);
 
   rb_define_method(klass, "version",        SubtlextSubtleVersion,       0);
@@ -1356,8 +1380,8 @@ Init_subtlext(void)
   rb_define_method(klass, "running?",       SubtlextSubtleRunning,       0);
   rb_define_method(klass, "to_s",           SubtlextSubtleToString,      0);
 
-  /* Class: sublets */
-  klass = rb_define_class("Sublet", rb_cObject);
+  /* Class: sublet */
+  klass = rb_define_class_under(mod, "Sublet", rb_cObject);
   rb_define_attr(klass,   "name", 1, 0);
 
   rb_define_method(klass, "initialize", SubtlextSubletInit,     1);
@@ -1365,7 +1389,7 @@ Init_subtlext(void)
   rb_define_method(klass, "to_s",       SubtlextSubletToString, 0);
 
   /* Class: tag */
-  klass = rb_define_class("Tag", rb_cObject);
+  klass = rb_define_class_under(mod, "Tag", rb_cObject);
   rb_define_attr(klass,   "id",   1, 0);
   rb_define_attr(klass,   "name", 1, 0);
 
@@ -1375,7 +1399,7 @@ Init_subtlext(void)
   rb_define_method(klass, "to_s",       SubtlextTagToString, 0);
 
   /* Class: view */
-  klass = rb_define_class("View", rb_cObject);
+  klass = rb_define_class_under(mod, "View", rb_cObject);
   rb_define_attr(klass,   "id",   1, 0);
   rb_define_attr(klass,   "win",  1, 0);
   rb_define_attr(klass,   "name", 1, 0);
