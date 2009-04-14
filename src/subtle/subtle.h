@@ -45,6 +45,9 @@
 #define MINH      50                                              ///< Client min. height
 #define SNAP      10                                              ///< Snapping threshold
 
+#define RNGVIEW   1000                                            ///< Jump index range
+#define RNGGRAV   2000                                            ///< Gravity index range
+
 #define LENGTH(a) (sizeof(a) / sizeof(a[0]))                      ///< Array length
 #define TEXTW(s)  (strlen(s) * subtle->fx + 8)                    ///< Textwidth in pixel
 #define WINW(c)   (c->rect.width - 2 * subtle->bw)                ///< Get real width
@@ -72,6 +75,7 @@
 /* Casts */
 #define ARRAY(a)  ((SubArray *)a)                                 ///< Cast to SubArray
 #define CLIENT(c) ((SubClient *)c)                                ///< Cast to SubClient
+#define DATA(d)   ((SubData)d)                                    ///< Cast to SubData
 #define GRAB(g)   ((SubGrab *)g)                                  ///< Cast to SubGrab
 #define RECT(r)   ((XRectangle *)r)                               ///< Cast to XRectangle
 #define SUBLET(s) ((SubSublet *)s)                                ///< Cast to SubSublet
@@ -130,7 +134,6 @@
 #define SUB_STATE_FLOAT               (1L << 11)                  ///< Floating window
 #define SUB_STATE_STICK               (1L << 12)                  ///< Stick window
 #define SUB_STATE_DEAD                (1L << 13)                  ///< Dead window
-#define SUB_STATE_GRAVITY             (1L << 14)                  ///< Gravity force
 
 /* Client preferences */
 #define SUB_PREF_INPUT                (1L << 15)                  ///< Active/passive focus-model
@@ -140,23 +143,23 @@
 
 /* Data types */
 #define SUB_DATA_STRING               (1L << 10)                  ///< String data
-#define SUB_DATA_FIXNUM               (1L << 11)                  ///< Fixnum data
-#define SUB_DATA_INOTIFY              (1L << 12)                  ///< Inotify data
-#define SUB_DATA_NIL                  (1L << 13)                  ///< Nil data
+#define SUB_DATA_NUM                  (1L << 11)                  ///< Num data
+#define SUB_DATA_NIL                  (1L << 12)                  ///< Nil data
+#define SUB_DATA_INOTIFY              (1L << 13)                  ///< Inotify data
 
 /* Grab types */
-#define SUB_GRAB_KEY                  (1L << 10)                  ///< Key grab
-#define SUB_GRAB_MOUSE                (1L << 11)                  ///< Mouse grab  
-#define SUB_GRAB_VIEW_JUMP            (1L << 12)                  ///< Jump to view
-#define SUB_GRAB_EXEC                 (1L << 13)                  ///< Exec an app
-#define SUB_GRAB_WINDOW_MOVE          (1L << 14)                  ///< Resize window
-#define SUB_GRAB_WINDOW_RESIZE        (1L << 15)                  ///< Move window
-#define SUB_GRAB_WINDOW_FLOAT         (1L << 16)                  ///< Toggle float
-#define SUB_GRAB_WINDOW_FULL          (1L << 17)                  ///< Toggle full
-#define SUB_GRAB_WINDOW_STICK         (1L << 18)                  ///< Toggle stock
-#define SUB_GRAB_WINDOW_KILL          (1L << 19)                  ///< Kill window
-#define SUB_GRAB_WINDOW_SWAP          (1L << 20)                  ///< Swap window
-#define SUB_GRAB_GRAVITY              (1L << 21)                  ///< Gravity type
+#define SUB_GRAB_KEY                  (1L << 15)                  ///< Key grab
+#define SUB_GRAB_MOUSE                (1L << 16)                  ///< Mouse grab  
+#define SUB_GRAB_EXEC                 (1L << 17)                  ///< Exec an app
+#define SUB_GRAB_PROC                 (1L << 18)                  ///< Grab with proc
+#define SUB_GRAB_JUMP                 (1L << 19)                  ///< Jump to view
+#define SUB_GRAB_GRAVITY              (1L << 20)                  ///< Gravity type
+#define SUB_GRAB_WINDOW_MOVE          (1L << 21)                  ///< Resize window
+#define SUB_GRAB_WINDOW_RESIZE        (1L << 22)                  ///< Move window
+#define SUB_GRAB_WINDOW_FLOAT         (1L << 23)                  ///< Toggle float
+#define SUB_GRAB_WINDOW_FULL          (1L << 24)                  ///< Toggle full
+#define SUB_GRAB_WINDOW_STICK         (1L << 25)                  ///< Toggle stock
+#define SUB_GRAB_WINDOW_KILL          (1L << 26)                  ///< Kill window
 
 /* Drag states */
 #define SUB_DRAG_START                (1L << 10)                  ///< Drag start
@@ -180,21 +183,21 @@
 /* Typedefs {{{ */
 typedef struct subarray_t /* {{{ */
 {
-  int    ndata;                                                   ///< Array data count
-  void  **data;                                                   ///< Array data
+  int   ndata;                                                    ///< Array data count
+  void **data;                                                    ///< Array data
 } SubArray; /* }}} */
 
 typedef struct subclient_t /* {{{ */
 {
-  FLAGS               flags;                                      ///< Client flags
-  char                *name;                                      ///< Client name
+  FLAGS      flags;                                               ///< Client flags
+  char       *name;                                               ///< Client name
 
-  TAGS                tags;                                       ///< Client tags
-  Window              win, group;                                 ///< Client window, group
-  int                 gravity, *gravities;                        ///< Client gravity/gravities
-  Colormap            cmap;                                       ///< Client colormap
-  XRectangle          rect;                                       ///< Client rect
-  XSizeHints          *hints;                                     ///< Client size hints
+  TAGS       tags;                                                ///< Client tags
+  Window     win, group;                                          ///< Client window, group
+  int        gravity, *gravities;                                 ///< Client gravity/gravities
+  Colormap   cmap;                                                ///< Client colormap
+  XRectangle rect;                                                ///< Client rect
+  XSizeHints *hints;                                              ///< Client size hints
 } SubClient; /* }}} */
 
 typedef enum subewmh_t /* {{{ */
@@ -277,16 +280,18 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_TOTAL
 } SubEwmh; /* }}} */
 
+typedef union subdata_t /* {{{ */
+{
+  unsigned long num;                                              ///< Data num
+  char          *string;                                          ///< Data string
+} SubData; /* }}} */
+
 typedef struct subgrab_t /* {{{ */
 {
-  FLAGS        flags;                                             ///< Grab flags
-  unsigned int code, mod;                                         ///< Grab coden modifier
+  FLAGS           flags;                                          ///< Grab flags
+  unsigned int    code, mod;                                      ///< Grab code modifier
 
-  union
-  {
-    char       *string;                                           ///< Grab data string
-    int        number;                                            ///< Grab data number
-  };
+  union subdata_t data;                                           ///< Grab data
 } SubGrab; /* }}} */
 
 typedef struct subsublet_t /* {{{ */
@@ -298,17 +303,12 @@ typedef struct subsublet_t /* {{{ */
   char               *path;                                       ///< Sublet inotify path
 #endif /* HAVE_SYS_INOTIFY */  
 
-  unsigned long      recv;                                        ///< Sublet ruby receiver
+  unsigned long      recv;                                        ///< Sublet Ruby receiver
   int                width;                                       ///< Sublet width
   time_t             time, interval;                              ///< Sublet update time, interval time
 
   struct subsublet_t *next;                                       ///< Sublet next sibling
-
-  union 
-  {
-    char *string;                                                 ///< Sublet data string
-    int  fixnum;                                                  ///< Sublet data fixnum
-  };
+  union  subdata_t   data;                                        ///< Sublet data
 } SubSublet; /* }}} */
 
 typedef struct subsubtle_t /* {{{ */
@@ -319,6 +319,8 @@ typedef struct subsubtle_t /* {{{ */
   XFontStruct        *xfs;                                        ///< Subtle font
 
   struct subview_t   *cv;                                         ///< Subtle current view
+  struct subclient_t *cc;                                         ///< Subtle current client
+
   struct subsublet_t *sublet;                                     ///< Subtle first sublet
 
   struct subarray_t  *clients;                                    ///< Subtle clients
@@ -366,21 +368,21 @@ typedef struct subtag_t /* {{{ */
 
 typedef struct subtray_t /* {{{ */
 {
-  FLAGS   flags;                                                  ///< Tray flags
-  char    *name;                                                  ///< Tray name
+  FLAGS  flags;                                                   ///< Tray flags
+  char   *name;                                                   ///< Tray name
 
-  int     width;                                                  ///< Tray width
-  Window  win;                                                    ///< Tray window
+  int    width;                                                   ///< Tray width
+  Window win;                                                     ///< Tray window
 } SubTray; /* }}} */
 
 typedef struct subview_t /* {{{ */
 {
-  FLAGS             flags;                                        ///< View flags
-  char              *name;                                        ///< View name
+  FLAGS           flags;                                          ///< View flags
+  char            *name;                                          ///< View name
 
-  TAGS              tags;                                         ///< View tags
-  Window            button;                                       ///< View win, button
-  int               width;                                        ///< View width
+  TAGS            tags;                                           ///< View tags
+  Window          button;                                         ///< View win, button
+  int             width;                                          ///< View width
 } SubView; /* }}} */
 
 extern SubSubtle *subtle;
@@ -445,8 +447,8 @@ int subEwmhMessage(Window dst, Window win, SubEwmh e,
 
 /* grab.c {{{ */
 void subGrabInit(void);                                           ///< Init keymap
-SubGrab *subGrabNew(const char *name,                             ///< Create grab
-  const char *value);
+SubGrab *subGrabNew(const char *chain, int type,                  ///< Create grab
+  SubData data);
 KeySym subGrabGet(void);                                          ///< Get grab
 SubGrab *subGrabFind(int code, unsigned int mod);                 ///< Find grab
 void subGrabSet(Window win);                                      ///< Grab window
@@ -459,7 +461,8 @@ void subGrabKill(SubGrab *g);                                     ///< Kill grab
 void subRubyInit(void);                                           ///< Init Ruby stack 
 void subRubyLoadConfig(const char *file);                         ///< Load config file
 void subRubyLoadSublets(const char *path);                        ///< Load sublets
-void subRubyRun(SubSublet *s);                                    ///< Run Ruby script
+void subRubyLoadSublext(void);                                    ///< Load sublext
+void subRubyRun(void *script);                                    ///< Run Ruby script
 void subRubyFinish(void);                                         ///< Kill Ruby stack
 /* }}} */
 

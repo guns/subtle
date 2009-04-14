@@ -67,9 +67,9 @@ EventExec(char *cmd)
         setsid();
         execlp("/bin/sh", "sh", "-c", cmd, NULL);
 
-        subSharedLogWarn("Failed to exec command `%s'.\n", cmd); ///< Never to be reached
+        subSharedLogWarn("Failed executing command `%s'\n", cmd); ///< Never to be reached
         exit(1);
-      case -1: subSharedLogWarn("Failed to fork.\n");
+      case -1: subSharedLogWarn("Failed forking `%s'\n", cmd);
     }
 } /* }}} */
 
@@ -276,7 +276,7 @@ EventMessage(XClientMessageEvent *ev)
                 c->gravity        = -1; ///< Force 
                 c->gravities[vid] = ev->data.l[2];
 
-                if(subtle->cv->tags & tag) subViewConfigure(subtle->cv);
+                if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_TAG_NEW: /* {{{ */
@@ -570,6 +570,40 @@ EventGrab(XEvent *ev)
       flag = g->flags & ~(SUB_TYPE_GRAB|SUB_GRAB_KEY|SUB_GRAB_MOUSE); ///< Clear mask
       switch(flag)
         {
+          case SUB_GRAB_EXEC: /* {{{ */
+            if(g->data.string) EventExec(g->data.string);
+            break; /* }}} */
+          case SUB_GRAB_PROC: /* {{{ */
+            if((subtle->cc = CLIENT(subSharedFind(win, CLIENTID))))
+              subRubyRun((void *)g);
+            break; /* }}} */
+          case SUB_GRAB_JUMP: /* {{{ */
+            if(0 <= g->data.num && g->data.num < subtle->views->ndata)
+              subViewJump(VIEW(subtle->views->data[g->data.num]));
+            break; /* }}} */
+          case SUB_GRAB_GRAVITY: /* {{{ */
+            if((c = CLIENT(subSharedFind(win, CLIENTID))))
+              {
+                vid = subArrayIndex(subtle->views, (void *)subtle->cv);
+
+                c->gravity        = -1; ///< Force 
+                c->gravities[vid] = g->data.num;
+
+                if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
+              }
+            break; /* }}} */
+          case SUB_GRAB_WINDOW_MOVE:
+          case SUB_GRAB_WINDOW_RESIZE: /* {{{ */
+            if((c = CLIENT(subSharedFind(win, CLIENTID))) && !(c->flags & SUB_STATE_FULL))
+              {
+                if(SUB_GRAB_WINDOW_MOVE == flag && c->flags & (SUB_STATE_FLOAT|SUB_STATE_STICK))
+                  flag = SUB_DRAG_MOVE;
+                else if(SUB_GRAB_WINDOW_RESIZE == flag) 
+                  flag = wx < c->rect.width / 2 ? SUB_DRAG_RESIZE_LEFT : SUB_DRAG_RESIZE_RIGHT;
+
+                subClientDrag(c, flag);
+              }
+            break; /* }}} */
           case SUB_GRAB_WINDOW_FLOAT:
           case SUB_GRAB_WINDOW_FULL:
           case SUB_GRAB_WINDOW_STICK: /* {{{ */
@@ -589,36 +623,6 @@ EventGrab(XEvent *ev)
                 if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
                 subClientKill(c, True);
               }
-            break; /* }}} */
-          case SUB_GRAB_WINDOW_MOVE:
-          case SUB_GRAB_WINDOW_RESIZE: /* {{{ */
-            if((c = CLIENT(subSharedFind(win, CLIENTID))) && !(c->flags & SUB_STATE_FULL))
-              {
-                if(SUB_GRAB_WINDOW_MOVE == flag && c->flags & (SUB_STATE_FLOAT|SUB_STATE_STICK))
-                  flag = SUB_DRAG_MOVE;
-                else if(SUB_GRAB_WINDOW_RESIZE == flag) 
-                  flag = wx < c->rect.width / 2 ? SUB_DRAG_RESIZE_LEFT : SUB_DRAG_RESIZE_RIGHT;
-
-                subClientDrag(c, flag);
-              }
-            break; /* }}} */
-          case SUB_GRAB_GRAVITY: /* {{{ */
-            if((c = CLIENT(subSharedFind(win, CLIENTID))))
-              {
-                vid = subArrayIndex(subtle->views, (void *)subtle->cv);
-
-                c->gravity        = -1; ///< Force 
-                c->gravities[vid] = g->number;
-
-                if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
-              }
-            break; /* }}} */
-          case SUB_GRAB_EXEC: /* {{{ */
-            if(g->string) EventExec(g->string);
-            break; /* }}} */
-          case SUB_GRAB_VIEW_JUMP: /* {{{ */
-            if(0 <= g->number && g->number < subtle->views->ndata)
-              subViewJump(VIEW(subtle->views->data[g->number]));
             break; /* }}} */
           default:  
             printf("Grab not implemented yet!\n");
@@ -817,4 +821,4 @@ subEventLoop(void)
     }
 } /* }}} */
 
-// vim:ts=2:bs=2:sw=2:et:fdm=marker
+// vim:ts=2:bs=2:sw=2:et:fdm=markerIrssi: --- Script: Unloaded script ori

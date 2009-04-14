@@ -14,14 +14,6 @@
 
 static unsigned int numlockmask = 0;
 
-/* Typedef {{{ */
-typedef struct grabtable_t
-{
-  char *name;
-  FLAGS flags;
-} GrabTable;
-/* }}} */
-
  /** subGrabInit {{{
   * @brief Init grabs and get modifiers
   **/
@@ -47,92 +39,38 @@ subGrabInit(void)
 
  /** subGrabNew {{{
   * @brief Create new grab
-  * @param[in]  name   Grab name
-  * @param[in]  value   Grab action
+  * @param[in]  chain  Key chain
+  * @param[in]  type   Type
+  * @param[in]  data   Data
   * @return Returns a #SubGrab or \p NULL
   **/
 
 SubGrab *
-subGrabNew(const char *name,
-  const char *value)
+subGrabNew(const char *chain,
+  int type,
+  SubData data)
 {
   int i;
-  char *suffix = NULL, *tok = NULL;
+  char *tok = NULL;
   KeySym sym;
   SubGrab *g = NULL;
   
-  static const GrabTable grabs[] = { 
-    { "WindowMove",   SUB_GRAB_WINDOW_MOVE   },
-    { "WindowResize", SUB_GRAB_WINDOW_RESIZE },
-    { "WindowFloat",  SUB_GRAB_WINDOW_FLOAT  },
-    { "WindowFull",   SUB_GRAB_WINDOW_FULL   },
-    { "WindowStick",  SUB_GRAB_WINDOW_STICK  },
-    { "WindowKill",   SUB_GRAB_WINDOW_KILL   }
-  };
+  assert(chain);
 
-  static const GrabTable gravities[] = {
-    { "Unknown",     SUB_GRAVITY_UNKNOWN      },
-    { "BottomLeft",  SUB_GRAVITY_BOTTOM_LEFT  },
-    { "Bottom",      SUB_GRAVITY_BOTTOM       },
-    { "BottomRight", SUB_GRAVITY_BOTTOM_RIGHT },
-    { "Left",        SUB_GRAVITY_LEFT         },
-    { "Center",      SUB_GRAVITY_CENTER       },
-    { "Right",       SUB_GRAVITY_RIGHT        },
-    { "TopLeft",     SUB_GRAVITY_TOP_LEFT     },
-    { "Top",         SUB_GRAVITY_TOP          },
-    { "TopRight",    SUB_GRAVITY_TOP_RIGHT    }
-  };
-
-  assert(name && value);
-  
   g = GRAB(subSharedMemoryAlloc(1, sizeof(SubGrab)));
+  g->flags |= (SUB_TYPE_GRAB|type);
+  g->data   = data;
 
-  /* Find grabs */  
-  if(!strncmp(name, "ViewJump", 8))
-    {
-      if((suffix = (char *)name + 8)) ///< Get view number
-        {
-          g->number = atoi(suffix) - 1; ///< Decrease for array index
-          g->flags |= (SUB_TYPE_GRAB|SUB_GRAB_VIEW_JUMP);
-        }
-    }
-  else if(!strncmp(name, "Gravity", 7))
-    {
-      if((suffix = (char *)name + 7)) ///< Get gravity type
-        {
-          for(i = 0; 0 == g->flags && LENGTH(gravities) > i; i++)
-            if(!strcmp(suffix, gravities[i].name))
-              {
-                g->number = gravities[i].flags;
-                g->flags |= (SUB_TYPE_GRAB|SUB_GRAB_GRAVITY);
-              }
-        }
-    } 
-
-  /* Find more grabs */
-  for(i = 0; 0 == g->flags && LENGTH(grabs) > i; i++)
-    if(!strcmp(name, grabs[i].name))
-      {
-        g->flags |= (SUB_TYPE_GRAB|grabs[i].flags);
-      }
-
-  /* Treat rest as exec */
-  if(0 == g->flags)
-    {
-      g->flags |= (SUB_TYPE_GRAB|SUB_GRAB_EXEC);
-      g->string  = strdup(name);
-    }
-
-  tok = strtok((char *)value, "-");
+  /* Parse keys */
+  tok = strtok((char *)chain, "-");
   while(tok)
     { 
       /* Get key sym and modifier */
-      sym = XStringToKeysym(tok);
-      if(NoSymbol == sym)
+      if(NoSymbol == ((sym = XStringToKeysym(tok))))
         {
           static const char *mouse[] = { "B1", "B2", "B3", "B4", "B5" };
 
-          for(i = 0; 5 > i; i++)
+          for(i = 0; i < LENGTH(mouse); i++)
             if(!strncmp(tok, mouse[i], 2))
               {
                 sym = XK_Pointer_Button1 + i + 1; ///< @todo Implementation independent?
@@ -141,8 +79,8 @@ subGrabNew(const char *name,
 
           if(NoSymbol == sym) ///< Check if there's still no symbol
             {
-              subSharedLogWarn("Can't assign keychain `%s'.\n", name);
-              if(g->string) free(g->string);
+              subSharedLogWarn("Failed assigning keychain `%s'\n", chain);
+              if(g->data.string) free(g->data.string);
               free(g);
               
               return NULL;
@@ -166,17 +104,18 @@ subGrabNew(const char *name,
           case XK_Pointer_Button4:
           case XK_Pointer_Button5:
             g->flags |= SUB_GRAB_MOUSE;
-            g->code  = sym;
+            g->code   = sym;
             break;
           default: 
             g->flags |= SUB_GRAB_KEY;
-            g->code  = XKeysymToKeycode(subtle->disp, sym);
+            g->code   = XKeysymToKeycode(subtle->disp, sym);
         }
 
       tok = strtok(NULL, "-");
     }
-  subSharedLogDebug("type=%s, name=%s, code=%03d, mod=%02d\n",
-    g->flags & SUB_GRAB_KEY ? "k" : "m", name, g->code, g->mod);
+
+  subSharedLogDebug("type=%s, chain=%s, code=%03d, mod=%02d\n",
+    g->flags & SUB_GRAB_KEY ? "k" : "m", chain, g->code, g->mod);
   
   return g;
 } /* }}} */
@@ -203,23 +142,6 @@ subGrabFind(int code,
   return ret ? *ret : NULL;
 } /* }}} */
 
- /** subGrabGet {{{
-  * @brief Get grab
-  * @return Returns the keysym of the press key
-  **/
-
-KeySym
-subGrabGet(void)
-{
-  XEvent ev;
-  KeySym sym = None;
-
-  XMaskEvent(subtle->disp, KeyPressMask, &ev);
-  sym = XLookupKeysym(&ev.xkey, 0);
-
-  return sym;
-} /* }}} */
-
  /** subGrabSet {{{
   * @brief Grab keys for a window
   * @param[in]  win   Window
@@ -228,17 +150,17 @@ subGrabGet(void)
 void
 subGrabSet(Window win)
 {
-  if(win && subtle->grabs)
+  if(win && 0 < subtle->grabs->ndata)
     {
       int i, j;
-      unsigned int modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
+      const unsigned int modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
 
       /* @todo Ugly key/modifier grabbing */
       for(i = 0; i < subtle->grabs->ndata; i++) 
         {
           SubGrab *g = GRAB(subtle->grabs->data[i]);
 
-          for(j = 0; LENGTH(modifiers) > j; j++)
+          for(j = 0; j < LENGTH(modifiers); j++)
             {
               if(g->flags & SUB_GRAB_KEY)
                 {
@@ -313,7 +235,7 @@ subGrabKill(SubGrab *g)
 {
   assert(g);
 
-  if(g->flags & SUB_GRAB_EXEC && g->string) free(g->string);
+  if(g->flags & SUB_GRAB_EXEC && g->data.string) free(g->data.string);
   free(g);
 } /* }}} */
 

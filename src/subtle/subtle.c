@@ -122,13 +122,17 @@ main(int argc,
     {
       switch(c)
         {
-          case 'c': config = optarg;       break;
-          case 'd': display = optarg;      break;
-          case 'h': SubtleUsage();         return 0;
-          case 's': sublets = optarg;      break;
-          case 'v': SubtleVersion();       return 0;
+          case 'c': config  = optarg; break;
+          case 'd': display = optarg; break;
+          case 'h': SubtleUsage();    return 0;
+          case 's': sublets = optarg; break;
+          case 'v': SubtleVersion();  return 0;
 #ifdef DEBUG          
-          case 'D': debug++;               break;
+          case 'D': debug++;          break;
+#else /* DEBUG */
+          case 'D': 
+            printf("Compile with `debug=yes' first\n"); 
+            return 0;
 #endif /* DEBUG */
           case '?':
             printf("Try `%s --help' for more information\n", PKG_NAME);
@@ -146,7 +150,7 @@ main(int argc,
   sigaction(SIGSEGV, &act, NULL);
   sigaction(SIGCHLD, &act, NULL);
 
-  /* Init subtle */
+  /* Alloc */
   subtle = SUBTLE(subSharedMemoryAlloc(1, sizeof(SubSubtle)));
   subtle->clients = subArrayNew();
   subtle->grabs   = subArrayNew();
@@ -166,11 +170,13 @@ main(int argc,
   subGrabInit();
   subTagInit();
 
-  /* Config */
+  /* Load */
   subRubyLoadConfig(config);
   subRubyLoadSublets(sublets);
 
   subDisplayPublish();
+  subRubyLoadSublext();
+
   subDisplayScan();
   subEventLoop();
 

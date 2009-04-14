@@ -19,7 +19,7 @@
 #include <ruby.h>
 #include "subtle.h"
 
-static VALUE shelter = Qnil; ///< Shelter for sweeped objects
+static VALUE shelter = Qnil, subtlext = Qnil; ///< Shelter for sweeped objects
 
 /* RubySubletMark {{{ */
 static void
@@ -42,7 +42,7 @@ RubySubletNew(VALUE self)
   s->name = strdup(rb_class2name(self));
 
   rb_obj_call_init(data, 0, NULL); ///< Call initialize
-  rb_ary_push(shelter, data); ///< Protect from garbage collector
+  rb_ary_push(shelter, data); ///< Protect from GC
   if(0 == s->interval) s->interval = 60; ///< Sanitize
 
   subArrayPush(subtle->sublets, s);
@@ -118,7 +118,7 @@ RubySubletPathSet(VALUE self,
 
   if(s)
     {
-      switch(rb_type(value))
+      switch(rb_type(value)) ///< Check value type
         {
           case T_STRING: 
             if(RTEST(value))
@@ -135,10 +135,10 @@ RubySubletPathSet(VALUE self,
                     return Qtrue;
                   }
 
-                subSharedLogWarn("Failed to watch file `%s': %s\n", watch, strerror(errno));
+                subSharedLogWarn("Failed watching file `%s': %s\n", watch, strerror(errno));
               }
             break;
-          default: subSharedLogWarn("Unknown value type\n");
+          default: subSharedLogWarn("Failed handling unknown value type\n");
         }
     }
 
@@ -155,8 +155,8 @@ RubySubletData(VALUE self)
 
   if(s)
     {
-      if(s->flags & SUB_DATA_FIXNUM)      return INT2FIX(s->fixnum);
-      else if(s->flags & SUB_DATA_STRING) return rb_str_new2(s->string);
+      if(s->flags & SUB_DATA_NUM)      return INT2FIX(s->data.num);
+      else if(s->flags & SUB_DATA_STRING) return rb_str_new2(s->data.string);
     }
 
   return Qnil;
@@ -172,20 +172,20 @@ RubySubletDataSet(VALUE self,
 
   if(s)
     {
-      s->flags &= ~(SUB_DATA_FIXNUM|SUB_DATA_STRING|SUB_DATA_NIL); ///< Clear flags
+      s->flags &= ~(SUB_DATA_NUM|SUB_DATA_STRING|SUB_DATA_NIL); ///< Clear flags
 
       switch(rb_type(value))
         {
           case T_FIXNUM: 
-            s->flags  |= SUB_DATA_FIXNUM;
-            s->fixnum  = FIX2INT(value);
-            s->width   = 63; ///< Magic number
+            s->flags    |= SUB_DATA_NUM;
+            s->data.num  = FIX2INT(value);
+            s->width     = 63; ///< Magic number
             return Qtrue;
           case T_STRING: 
-            if(s->string) free(s->string);
-            s->flags  |= SUB_DATA_STRING;
-            s->string  = strdup(RSTRING_PTR(value));
-            s->width   = RSTRING_LEN(value) * subtle->fx + 6;
+            if(s->data.string) free(s->data.string);
+            s->flags       |= SUB_DATA_STRING;
+            s->data.string  = strdup(RSTRING_PTR(value));
+            s->width        = RSTRING_LEN(value) * subtle->fx + 6;
             return Qtrue;
           default:
             s->flags |= SUB_DATA_NIL;
@@ -235,47 +235,70 @@ RubyParseColor(VALUE hash,
   /* Parse and allow color */
   if(!XParseColor(subtle->disp, cmap, name, &color))
     {
-      subSharedLogWarn("Failed to load color '%s'.\n", key);
+      subSharedLogWarn("Failed loading color '%s'.\n", key);
     }
   else if(!XAllocColor(subtle->disp, cmap, &color))
-    subSharedLogWarn("Failed to alloc color '%s'.\n", key);
+    subSharedLogWarn("Failed allocating color '%s'.\n", key);
 
   return color.pixel;
 } /* }}} */
 
-/* RubyProtectedRun {{{ */
-static VALUE
-RubyProtectedRun(VALUE recv)
-{
-  rb_funcall(recv, rb_intern("run"), 0, NULL);
-
-  return Qnil;
-} /* }}} */
-
-/* RubyConfigIterate {{{ */
+/* RubyConfigForeach {{{ */
 static int
-RubyConfigIterate(VALUE key,
+RubyConfigForeach(VALUE key,
   VALUE value,
   VALUE extra)
 {
+  int type = -1;
   void *entry = NULL;
+  SubData data;
 
   /* Create various types */
   switch(extra)
     {
       case SUB_TYPE_GRAB:
-        entry = (void *)subGrabNew(STR2CSTR(key), STR2CSTR(value));
-        if(entry) subArrayPush(subtle->grabs, entry);
+        switch(rb_type(value)) ///< Check value type
+          {
+            case T_STRING: ///< Exec
+              type = SUB_GRAB_EXEC;
+              data = DATA(strdup(STR2CSTR(value)));
+              break;
+            case T_FIXNUM: ///< Specific
+              type = FIX2INT(value);
+
+              if(RNGVIEW <= type && RNGVIEW + 100 >= type) ///< Jump
+                {
+                  type = SUB_GRAB_JUMP;
+                  data = DATA((unsigned long)(type - RNGVIEW));
+                }
+              else if(RNGGRAV <= type && RNGGRAV + 100 >= type) ///< Gravity
+                {
+                  type = SUB_GRAB_GRAVITY;
+                  data = DATA((unsigned long)(type - RNGGRAV));
+                }
+              break;
+            case T_DATA: ///< Proc   
+              type = SUB_GRAB_PROC;
+              data = DATA(value);
+              rb_ary_push(shelter, value); ///< Protect from GC
+              break;
+            default:
+              subSharedLogWarn("Failed parding grab `%s'\n", STR2CSTR(key));
+              return Qnil;
+          }
+
+        if((entry = (void *)subGrabNew(STR2CSTR(key), type, data)) && -1 != type)
+          subArrayPush(subtle->grabs, entry);
         break;
       case SUB_TYPE_TAG:
-        entry = (void *)subTagNew(STR2CSTR(key), STR2CSTR(value));
-        if(entry) subArrayPush(subtle->tags, entry);
+        if((entry = (void *)subTagNew(STR2CSTR(key), STR2CSTR(value))))
+          subArrayPush(subtle->tags, entry);
         break;
       case SUB_TYPE_VIEW:
-        entry = (void *)subViewNew(STR2CSTR(key), STR2CSTR(value));
-        if(entry) subArrayPush(subtle->views, entry);
+        if((entry = (void *)subViewNew(STR2CSTR(key), STR2CSTR(value))))
+          subArrayPush(subtle->views, entry);
         break;
-      default: subSharedLogDebug("Never to be reached?\n");
+      default: subSharedLogDebug("Never to be reached?!\n");
     }
 
   return Qnil;
@@ -372,17 +395,33 @@ RubyConfigParse(VALUE path)
   XChangeWindowAttributes(subtle->disp, ROOT, CWCursor|CWBackPixel|CWEventMask, &attrs);
   XClearWindow(subtle->disp, ROOT);
 
-  /* Config: Keys */
+  /* Config: Grabs */
   config = rb_const_get(rb_cObject, rb_intern("GRABS"));
-  rb_hash_foreach(config, RubyConfigIterate, SUB_TYPE_GRAB);
+  rb_hash_foreach(config, RubyConfigForeach, SUB_TYPE_GRAB);
 
   /* Config: Tags */
   config = rb_const_get(rb_cObject, rb_intern("TAGS"));
-  rb_hash_foreach(config, RubyConfigIterate, SUB_TYPE_TAG);
+  rb_hash_foreach(config, RubyConfigForeach, SUB_TYPE_TAG);
 
   /* Config: Views */
   config = rb_const_get(rb_cObject, rb_intern("VIEWS"));
-  rb_hash_foreach(config, RubyConfigIterate, SUB_TYPE_VIEW);
+  rb_hash_foreach(config, RubyConfigForeach, SUB_TYPE_VIEW);
+
+  return Qnil;
+} /* }}} */
+
+/* RubyPerror {{{ */
+static VALUE
+RubyPerror(const char *msg)
+{
+  VALUE lasterr = Qnil, message = Qnil;
+  
+  /* Get last error message */
+  lasterr = rb_gv_get("$!");
+  message = rb_obj_as_string(lasterr);
+
+  if(RTEST(message)) 
+    subSharedLogWarn("%s: %s\n", msg, RSTRING(message)->ptr);
 
   return Qnil;
 } /* }}} */
@@ -394,6 +433,89 @@ RubyFilter(const struct dirent *entry)
   return !fnmatch("*.rb", entry->d_name, FNM_PATHNAME);
 } /* }}} */
 
+/* RubyProtect {{{ */
+static VALUE
+RubyProtect(VALUE script)
+{
+  SubSublet *s = NULL;
+
+  assert(script);
+
+  s = SUBLET(script);
+
+  if(s->flags & SUB_TYPE_SUBLET)
+    return rb_funcall(SUBLET(s)->recv, rb_intern("run"), 0, NULL);
+  else if(s->flags & SUB_TYPE_GRAB)
+    {
+      int id = 0;
+      VALUE mod = Qnil, klass = Qnil, client = Qnil;
+
+      if(subtle->cc)
+        {
+          /* Create client */
+          id     = subArrayIndex(subtle->clients, (void *)subtle->cc);
+          mod    = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
+          klass  = rb_const_get(mod, rb_intern("Client"));
+          client = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(subtle->cc->name));
+
+          rb_iv_set(client, "@id",      INT2FIX(id));
+          rb_iv_set(client, "@win",     LONG2NUM(subtle->cc->win));
+          rb_iv_set(client, "@gravity", INT2FIX(subtle->cc->gravity));    
+
+          return rb_funcall(GRAB(s)->data.num, rb_intern("call"), 1, client);
+        }
+    }      
+
+  return Qnil;
+} /* }}} */
+
+/* RubyRequire {{{ */
+static VALUE
+RubyRequire(VALUE path)
+{
+  rb_require(STR2CSTR(path)); 
+
+  return Qnil;
+} /* }}} */
+
+/* RubyConst {{{ */
+static VALUE  
+RubyConst(int argc, 
+  VALUE *argv, 
+  VALUE self)
+{  
+  char *name = NULL, *suffix = NULL;
+  VALUE missing = Qnil, args = Qnil;     
+
+  rb_scan_args(argc, argv, "1*", &missing, &args);  
+  name = (char *)rb_id2name(SYM2ID(missing));  
+
+  subSharedLogDebug("Missing: name=%s\n", name);
+
+  /* Parse missing constants */  
+  if(!strncmp(name, "Jump", 4)) ///< Jump
+    {
+      if((suffix = (char *)name + 4))
+        return INT2FIX(RNGVIEW + atoi(suffix));
+    }
+  else if(!strncmp(name, "Gravity", 7)) ///< Gravity
+    {
+      if((suffix = (char *)name + 7))
+        {
+          VALUE mod = Qnil, submod = Qnil, value = Qnil;
+
+          mod    = rb_const_get(rb_mKernel, rb_intern("Subtle"));
+          submod = rb_const_get(mod, rb_intern("Gravity"));
+          
+          if(Qnil != ((value  = rb_const_get(submod, rb_intern(suffix)))))
+            return INT2FIX(RNGGRAV + FIX2INT(value));
+        }
+    }
+
+  rb_raise(rb_eStandardError, "Failed finding constant `%s'", name);
+  return Qnil;  
+} /* }}} */
+
  /** subRubyInit {{{
   * @brief Init ruby
   **/
@@ -401,15 +523,45 @@ RubyFilter(const struct dirent *entry)
 void
 subRubyInit(void)
 {
-  VALUE klass = Qnil;
+  VALUE mod = Qnil, submod = Qnil, klass = Qnil;
 
   RUBY_INIT_STACK;
   ruby_init();
   ruby_init_loadpath();
   ruby_script("subtle");
 
+  /* Module: subtle */
+  mod = rb_define_module("Subtle");
+
+  /* Module: grab */
+  submod = rb_define_module_under(mod, "Grab");
+  rb_define_singleton_method(submod, "const_missing", RubyConst, -1);
+
+  rb_define_const(submod, "WindowMove",   INT2FIX(SUB_GRAB_WINDOW_MOVE));
+  rb_define_const(submod, "WindowResize", INT2FIX(SUB_GRAB_WINDOW_RESIZE));
+  rb_define_const(submod, "WindowFloat",  INT2FIX(SUB_GRAB_WINDOW_FLOAT));
+  rb_define_const(submod, "WindowFull",   INT2FIX(SUB_GRAB_WINDOW_FULL));
+  rb_define_const(submod, "WindowStick",  INT2FIX(SUB_GRAB_WINDOW_STICK));
+  rb_define_const(submod, "WindowKill",   INT2FIX(SUB_GRAB_WINDOW_KILL));
+
+  /* Module: gravity */
+  submod = rb_define_module_under(mod, "Gravity");
+  rb_define_const(submod, "TopLeft",     INT2FIX(SUB_GRAVITY_TOP_LEFT));
+  rb_define_const(submod, "Top",         INT2FIX(SUB_GRAVITY_TOP));
+  rb_define_const(submod, "TopRight",    INT2FIX(SUB_GRAVITY_TOP_RIGHT));
+  rb_define_const(submod, "Left",        INT2FIX(SUB_GRAVITY_LEFT));
+  rb_define_const(submod, "Center",      INT2FIX(SUB_GRAVITY_CENTER));
+  rb_define_const(submod, "Right",       INT2FIX(SUB_GRAVITY_RIGHT));
+  rb_define_const(submod, "BottomLeft",  INT2FIX(SUB_GRAVITY_BOTTOM_LEFT));
+  rb_define_const(submod, "Bottom",      INT2FIX(SUB_GRAVITY_BOTTOM));
+  rb_define_const(submod, "BottomRight", INT2FIX(SUB_GRAVITY_BOTTOM_RIGHT));
+
+  /* Subtlext */
+  rb_require("subtle/subtlext");
+  rb_define_variable("subtle", &subtlext);
+
   /* Class: sublet */
-  klass = rb_define_class("Sublet", rb_cObject);
+  klass = rb_define_class_under(mod, "Sublet", rb_cObject);
   rb_define_singleton_method(klass, "new",       RubySubletNew,       0);
   rb_define_singleton_method(klass, "inherited", RubySubletInherited, 1);
 
@@ -436,7 +588,7 @@ subRubyInit(void)
 void
 subRubyLoadConfig(const char *file)
 {
-  int status;
+  int error = 0;
   char config[100];
   FILE *fd = NULL;
 
@@ -455,8 +607,12 @@ subRubyLoadConfig(const char *file)
   subSharedLogDebug("config=%s\n", config);
 
   /* Safety first */
-  rb_protect(RubyConfigParse, rb_str_new2(config), &status);
-  if(Qundef == status) subSharedLogWarn("Failed reading/parsing config\n");
+  rb_protect(RubyConfigParse, rb_str_new2(config), &error);
+  if(error) 
+    {
+      RubyPerror("Failed reading config");
+      subSharedLogError("Exiting\n");
+    }
 
   /* Grabs */
   if(0 == subtle->grabs->ndata) 
@@ -492,7 +648,7 @@ subRubyLoadConfig(const char *file)
   subViewJump(VIEW(subtle->views->data[0])); ///< Jump to first view
   subViewPublish();
 
-  rb_gc_start();
+  //rb_gc_start();
 } /* }}} */
 
  /** subRubyLoadSublets {{{
@@ -532,11 +688,15 @@ subRubyLoadSublets(const char *path)
     {
       for(i = 0; i < num; i++)
         {
+          int error = 0;
           char file[150];
 
           snprintf(file, sizeof(file), "%s/%s", buf, entries[i]->d_name);
           subSharedLogDebug("path=%s\n", file);
-          rb_require(file); ///< Load subclass of Sublet
+
+          /* Safety first */
+          rb_protect(RubyRequire, rb_str_new2(file), &error); ///< Load sublet
+          if(error) RubyPerror("Failed loading sublet `%s'", entries[i]->d_name);
 
           free(entries[i]);
         }
@@ -561,31 +721,53 @@ subRubyLoadSublets(const char *path)
   else subSharedLogWarn("No sublets found\n");
 } /* }}} */
 
- /** subRubyRun {{{
-  * @brief Safely run ruby script
-  * @param[in]  s  A #SubSublet
+ /** subRubyLoadSublext {{{
+  * @brief Load sublext
   **/
 
 void
-subRubyRun(SubSublet *s)
+subRubyLoadSublext(void)
 {
-  int status;
+  VALUE mod = Qnil, klass = Qnil;
+  long *win = NULL;
 
-  assert(s);
+  /* Module: subtlext */
+  mod = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
 
-  rb_protect(RubyProtectedRun, s->recv, &status);
-  if(Qundef == status)
+  /* ??? */
+  win = (long *)subEwmhGetProperty(ROOT, XA_WINDOW, SUB_EWMH_NET_SUPPORTING_WM_CHECK, NULL);
+  free(win);
+
+  /* Class: subtle */
+  klass = rb_const_get(mod, rb_intern("Subtle"));
+  subtlext  = rb_funcall(klass, rb_intern("new"), 0);
+} /* }}} */
+
+ /** subRubyRun {{{
+  * @brief Safely run ruby script
+  * @param[in]  script  A #SubSublet
+  **/
+
+void
+subRubyRun(void *script)
+{
+  int error = 0;
+
+  assert(script);
+
+  /* Safety first */
+  rb_protect(RubyProtect, (VALUE)script, &error); ///< Load sublet
+  if(error) 
     {
-      VALUE lasterr = Qnil, message = Qnil;
-      
-      /* Get last error message */
-      lasterr = rb_gv_get("$!");
-      message = rb_obj_as_string(lasterr);
-      if(RTEST(message)) subSharedLogDebug("Ruby: %s\n", RSTRING(message)->ptr);
+      SubSublet *s = SUBLET(script);
 
-      subSharedLogWarn("Failed running sublet\n");
-      subArrayPop(subtle->sublets, (void *)s);
-      subSubletKill(s, True);
+      if(s->flags & SUB_TYPE_SUBLET) ///< Sublet
+        {
+          RubyPerror("Sublet");
+          subArrayPop(subtle->sublets, script);
+          subSubletKill(s, True);
+        }
+      else RubyPerror("Grab"); ///< Grab
     }
 } /* }}} */
 
