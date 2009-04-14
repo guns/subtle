@@ -123,7 +123,7 @@ subEwmhGetProperty(Window win,
     &format, &nitems, &bytes, &data) != Success)
     {
       char *name = XGetAtomName(subtle->disp, atoms[e]); 
-      subSharedLogDebug("Failed to get property `%s'\n", name);
+      subSharedLogDebug("Failed getting property `%s'\n", name);
       XFree(name);
 
       return NULL;
@@ -131,7 +131,7 @@ subEwmhGetProperty(Window win,
   if(type != rtype)
     {
       char *name = XGetAtomName(subtle->disp, atoms[e]); 
-      subSharedLogDebug("Invalid type (%ld) for property `%s'\n", rtype, name);
+      subSharedLogDebug("Property: %s => %ld != %ld'\n", name, type, rtype);
       XFree(name);
       XFree(data);
       return NULL;

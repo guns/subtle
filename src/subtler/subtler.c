@@ -65,7 +65,7 @@ SubtlerToggle(char *name,
 
       subSharedMessage(win, "_NET_WM_STATE", data, True);
     }
-  else subSharedLogWarn("Failed to find client\n");
+  else subSharedLogWarn("Failed finding client\n");
 } /* }}} */
 
 /* SubtlerClientFind {{{ */
@@ -110,7 +110,7 @@ SubtlerClientFind(char *arg1,
       free(cv);
       free(gravity);
     }
-  else subSharedLogWarn("Failed to find client\n");
+  else subSharedLogWarn("Failed finding client\n");
 } /* }}} */
 
 /* SubtlerClientFocus {{{ */
@@ -129,7 +129,7 @@ SubtlerClientFocus(char *arg1,
       data.l[0] = win;
       subSharedMessage(DefaultRootWindow(display), "_NET_ACTIVE_WINDOW", data, False);
     }
-  else subSharedLogWarn("Failed to find client\n");
+  else subSharedLogWarn("Failed finding client\n");
 } /* }}} */
 
 /* SubtlerClientToggleFull {{{ */
@@ -213,7 +213,7 @@ SubtlerClientList(char *arg1,
       free(nv);
       free(rv);
     }
-  else subSharedLogWarn("Failed to get client list!\n");
+  else subSharedLogWarn("Failed getting client list!\n");
 } /* }}} */
 
 /* SubtlerClientTag {{{ */
@@ -231,7 +231,7 @@ SubtlerClientTag(char *arg1,
 
   if(-1 != data.l[0] && -1 != data.l[1])
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_TAG", data, False);
-  else subSharedLogWarn("Failed to tag client\n");
+  else subSharedLogWarn("Failed tagging client\n");
 } /* }}} */
 
 /* SubtlerClientUntag {{{ */
@@ -249,7 +249,7 @@ SubtlerClientUntag(char *arg1,
 
   if(-1 != data.l[0] && -1 != data.l[1])
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_UNTAG", data, False);
-  else subSharedLogWarn("Failed to untag client\n");
+  else subSharedLogWarn("Failed untagging client\n");
 } /* }}} */
 
 /* SubtlerClientGravity {{{ */
@@ -268,7 +268,7 @@ SubtlerClientGravity(char *arg1,
 
   if(-1 != data.l[0])
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_GRAVITY", data, False);
-  else subSharedLogWarn("Failed to set client gravity\n");
+  else subSharedLogWarn("Failed setting client gravity\n");
 } /* }}} */
 
 /* SubtlerClientTags {{{ */
@@ -294,7 +294,7 @@ SubtlerClientTags(char *arg1,
       subSharedPropertyListFree(tags, size);
       free(flags);
     }
-  else subSharedLogWarn("Failed to fetch client tags\n");
+  else subSharedLogWarn("Failed fetching client tags\n");
 } /* }}} */
 
 /* SubtlerClientKill {{{ */
@@ -314,7 +314,7 @@ SubtlerClientKill(char *arg1,
 
       subSharedMessage(win, "_NET_CLOSE_WINDOW", data, False);
     }
-  else subSharedLogWarn("Failed to kill client\n");
+  else subSharedLogWarn("Failed killing client\n");
 } /* }}} */
 
 /* SubtlerSubletList {{{ */
@@ -334,7 +334,7 @@ SubtlerSubletList(char *arg1,
 
       subSharedPropertyListFree(sublets, size);
     }
-  else subSharedLogWarn("Failed to get sublet list\n");
+  else subSharedLogWarn("Failed getting sublet list\n");
 } /* }}} */
 
 /* SubtlerSubletUpdate {{{ */
@@ -349,7 +349,7 @@ SubtlerSubletUpdate(char *arg1,
 
   if(-1 != (data.l[0] = subSharedSubletFind(arg1)))
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_UPDATE", data, False);
-  else subSharedLogWarn("Failed to update sublet\n");
+  else subSharedLogWarn("Failed updating sublet\n");
 } /* }}} */
 
 /* SubtlerSubletKill {{{ */
@@ -364,7 +364,7 @@ SubtlerSubletKill(char *arg1,
 
   if(-1 != (data.l[0] = subSharedSubletFind(arg2)))
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_KILL", data, False);
-  else subSharedLogWarn("Failed to kill sublet\n");
+  else subSharedLogWarn("Failed killing sublet\n");
 } /* }}} */
 
 /* SubtlerTagNew {{{ */
@@ -380,7 +380,7 @@ SubtlerTagNew(char *arg1,
   snprintf(data.b, sizeof(data.b), "%s", arg1);
   
   if(!subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_NEW", data, False))
-    subSharedLogWarn("Failed to create tag\n");
+    subSharedLogWarn("Failed creating tag\n");
 } /* }}} */
 
 /* SubtlerTagFind {{{ */
@@ -419,7 +419,7 @@ SubtlerTagFind(char *arg1,
       subSharedPropertyListFree(names, size_views);
       free(views);
     }
-  else subSharedLogWarn("Failed to get view list\n");
+  else subSharedLogWarn("Failed getting view list\n");
 
   /* Clients */
   if(tag && clients)
@@ -443,7 +443,7 @@ SubtlerTagFind(char *arg1,
 
       free(clients);
     }
-  else subSharedLogWarn("Failed to get clients list\n");
+  else subSharedLogWarn("Failed getting client list\n");
 } /* }}} */
 
 /* SubtlerTagList {{{ */
@@ -462,7 +462,7 @@ SubtlerTagList(char *arg1,
 
       subSharedPropertyListFree(tags, size);
     }
-  else subSharedLogWarn("Failed to get tag list\n");
+  else subSharedLogWarn("Failed getting tag list\n");
 } /* }}} */
 
 /* SubtlerTagKill {{{ */
@@ -477,7 +477,7 @@ SubtlerTagKill(char *arg1,
 
   if(-1 != (data.l[0] = subSharedTagFind(arg1)))
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_KILL", data, False);
-  else subSharedLogWarn("Failed to kill tag\n");
+  else subSharedLogWarn("Failed killing tag\n");
 } /* }}} */
 
 /* SubtlerViewNew {{{ */
@@ -493,7 +493,7 @@ SubtlerViewNew(char *arg1,
   snprintf(data.b, sizeof(data.b), "%s", arg1);
 
   if(!subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_NEW", data, False))
-    subSharedLogWarn("Failed to create view\n");
+    subSharedLogWarn("Failed creating view\n");
 } /* }}} */
 
 /* SubtlerClientFind {{{ */
@@ -526,7 +526,7 @@ SubtlerViewFind(char *arg1,
       free(cv);
       free(rv);
     }
-  else subSharedLogWarn("Failed to find view\n");
+  else subSharedLogWarn("Failed finding view\n");
 } /* }}} */
 
 /* SubtlerViewJump {{{ */
@@ -547,7 +547,7 @@ SubtlerViewJump(char *arg1,
 
       subSharedMessage(DefaultRootWindow(display), "_NET_CURRENT_DESKTOP", data, False);
     }
-  else subSharedLogWarn("Failed to jump to view\n");
+  else subSharedLogWarn("Failed jumping to view\n");
 } /* }}} */
 
 /* SubtlerViewList {{{ */
@@ -582,7 +582,7 @@ SubtlerViewList(char *arg1,
       free(cv);
       free(views);
     }
-  else subSharedLogWarn("Failed to get view list\n");
+  else subSharedLogWarn("Failed getting view list\n");
 } /* }}} */
 
 /* SubtlerViewTag {{{ */
@@ -601,7 +601,7 @@ SubtlerViewTag(char *arg1,
 
   if(-1 != data.l[0] && -1 != data.l[1])
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_TAG", data, False);
-  else subSharedLogWarn("Failed to tag view\n");
+  else subSharedLogWarn("Failed tagging view\n");
 } /* }}} */
 
 /* SubtlerViewUntag {{{ */
@@ -620,7 +620,7 @@ SubtlerViewUntag(char *arg1,
 
   if(-1 != data.l[0] && -1 != data.l[1])
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_UNTAG", data, False);
-  else subSharedLogWarn("Failed to untag view\n");
+  else subSharedLogWarn("Failed untagging view\n");
 } /* }}} */
 
 /* SubtlerViewTags {{{ */
@@ -647,7 +647,7 @@ SubtlerViewTags(char *arg1,
       subSharedPropertyListFree(tags, size);
       free(flags);
     }
-  else subSharedLogWarn("Failed to find view\n");
+  else subSharedLogWarn("Failed finding view\n");
 } /* }}} */
 
 /* SubtlerViewKill {{{ */
@@ -662,7 +662,7 @@ SubtlerViewKill(char *arg1,
 
   if((data.l[0] = subSharedViewFind(arg1, NULL)))
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_KILL", data, False);
-  else subSharedLogWarn("Failed to kill view\n");
+  else subSharedLogWarn("Failed killing view\n");
 } /* }}} */
 
 /* SubtlerUsage {{{ */
@@ -937,7 +937,7 @@ main(int argc,
   /* Open connection to server */
   if(!(display = XOpenDisplay(dispname)))
     {
-      printf("Failed to open display `%s'.\n", (dispname) ? dispname : ":0.0");
+      printf("Failed opening display `%s'.\n", (dispname) ? dispname : ":0.0");
       return -1;
     }
   XSetErrorHandler(subSharedLogXError);
@@ -948,7 +948,7 @@ main(int argc,
       XCloseDisplay(display);
       display = NULL;
       
-      subSharedLogError("%s is not running\n", PKG_NAME);
+      subSharedLogError("Failed finding running %s\n", PKG_NAME);
 
       return -1;
     }

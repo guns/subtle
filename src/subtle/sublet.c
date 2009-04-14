@@ -67,19 +67,19 @@ subSubletRender(void)
       /* Render every sublet */
       while(s)
         {
-          if(s->flags & SUB_DATA_FIXNUM && s->fixnum)
+          if(s->flags & SUB_DATA_NUM && s->data.num)
             {
               XDrawRectangle(subtle->disp, subtle->windows.sublets, subtle->gcs.font,
                 width, 2, 60, subtle->th - 5);
               XFillRectangle(subtle->disp, subtle->windows.sublets, subtle->gcs.font,
-                width + 2, 4, (56 * s->fixnum) / 100, subtle->th - 8);
+                width + 2, 4, (56 * s->data.num) / 100, subtle->th - 8);
             }
-          else if(s->flags & SUB_DATA_STRING && s->string) 
+          else if(s->flags & SUB_DATA_STRING && s->data.string) 
             XDrawString(subtle->disp, subtle->windows.sublets, subtle->gcs.font, width,
-              subtle->fy - 1, s->string, strlen(s->string));
+              subtle->fy - 1, s->data.string, strlen(s->data.string));
 
           width += s->width;
-          s     = s->next;
+          s      = s->next;
         }
       XFlush(subtle->disp);
     }
@@ -170,7 +170,7 @@ subSubletKill(SubSublet *s,
 #endif /* HAVE_SYS_INOTIFY_H */ 
 
   if(s->name) free(s->name);
-  if(s->string) free(s->string);
+  if(s->flags & SUB_DATA_STRING && s->data.string) free(s->data.string);
   free(s);
 
   subSharedLogDebug("kill=sublet\n");

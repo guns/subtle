@@ -136,7 +136,7 @@ subTraySelect(void)
     {
       subSharedLogDebug("Selection: type=%ld\n", sel);
     }
-  else subSharedLogError("Failed to get tray selection\n");
+  else subSharedLogError("Failed getting tray selection\n");
 
   /* Send manager info */
   subEwmhMessage(ROOT, ROOT, SUB_EWMH_MANAGER, CurrentTime, 
