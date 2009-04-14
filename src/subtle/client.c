@@ -265,12 +265,15 @@ subClientRender(SubClient *c)
   XChangeWindowAttributes(subtle->disp, c->win, CWBorderPixel, &attrs);
 
   status = c->flags & SUB_STATE_STICK ? '*' : (c->flags & SUB_STATE_FLOAT ? '^' : ' ');
-  pos    = ' ' != status ? 6 : 0; ///< Client name pos
+  pos    = ' ' != status ? 7 : 0; ///< Client name pos
 
   /* Caption */
   XResizeWindow(subtle->disp, subtle->windows.caption, TEXTW(c->name) + pos, subtle->th);
   XClearWindow(subtle->disp, subtle->windows.caption);
-  if(' ' != status) XDrawString(subtle->disp, subtle->windows.caption, subtle->gcs.font, 3, subtle->fy - 1, &status, 1);
+
+  if(' ' != status) 
+    XDrawString(subtle->disp, subtle->windows.caption, subtle->gcs.font, 
+      3, subtle->fy - 1, &status, 1);
   XDrawString(subtle->disp, subtle->windows.caption, subtle->gcs.font, 3 + pos, subtle->fy - 1,
     c->name, strlen(c->name));
 } /* }}} */
@@ -285,15 +288,6 @@ subClientFocus(SubClient *c)
 {
   assert(c);
      
-  /**
-   * Input | Focus | Type                | Input
-   * ------+-------+---------------------+------------------------
-   * 0     | 0     | No Input            | Never
-   * 1     | 0     | Passive             | Set by wm (PointerRoot)
-   * 1     | 1     | Locally active      | Set by wm (PointerRoot)
-   * 0     | 1     | Globally active     | Sets the focus by itself
-   **/
-
   /* Check client input focus type */
   if(!(c->flags & SUB_PREF_INPUT) && c->flags & SUB_PREF_FOCUS)
     {

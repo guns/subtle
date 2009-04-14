@@ -173,7 +173,7 @@ subArrayKill(SubArray *a,
       SubClient *c = CLIENT(a->data[i]);
 
       /* Common types first */
-      if(c->flags & SUB_TYPE_CLIENT)      subClientKill(CLIENT(c), False);
+      if(c->flags & SUB_TYPE_CLIENT)      subClientKill(c, False);
       else if(c->flags & SUB_TYPE_GRAB)   subGrabKill(GRAB(c));
       else if(c->flags & SUB_TYPE_SUBLET) subSubletKill(SUBLET(c), False);
       else if(c->flags & SUB_TYPE_TAG)    subTagKill(TAG(c));

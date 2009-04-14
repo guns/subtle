@@ -74,7 +74,7 @@ subSharedLogXError(Display *disp,
   if(subtle->debug) return 0;
   if(BadAccess == ev->error_code && DefaultRootWindow(disp) == ev->resourceid)
     {
-      subSharedLogError("Seems there is another WM running. Exiting.\n");
+      subSharedLogError("Failed taking over display. Another WM running - exiting.\n");
     }
 #else /* WM */
   if(debug) return 0;
@@ -261,7 +261,7 @@ subSharedMessage(Window win,
   ev.xclient.data.l[4] = data.l[4];
 
   if(!((status = XSendEvent(display, DefaultRootWindow(display), False, mask, &ev))))
-    subSharedLogDebug("Can't send client message `%s'\n", type);
+    subSharedLogWarn("Failed sending client message `%s'\n", type);
  
   if(True == sync) XSync(display, False);
 
@@ -292,13 +292,13 @@ subSharedPropertyGet(Window win,
   if(Success != XGetWindowProperty(display, win, prop, 0L, 4096, False, type, &rtype,
     &format, &nitems, &bytes, &data))
     {
-      subSharedLogDebug("Failed to get property `%s'\n", name);
+      subSharedLogDebug("Failed getting property `%s'\n", name);
 
       return NULL;
     }
   if(type != rtype)
     {
-      subSharedLogDebug("Invalid type (%ld) for property `%s'\n", rtype, name);
+      subSharedLogDebug("Property: %s => %ld != %ld'\n", name, type, rtype);
       XFree(data);
 
       return NULL;
@@ -356,7 +356,7 @@ subSharedPropertyList(Window win,
       return names;
     }
   
-  subSharedLogDebug("Failed to get propery (%s)\n", name);
+  subSharedLogDebug("Failed getting propery (%s)\n", name);
 
   return NULL;
 } /* }}} */
@@ -520,7 +520,7 @@ subSharedClientList(int *size)
   else
     {
       *size = 0;
-      subSharedLogDebug("Failed to get client list\n");
+      subSharedLogDebug("Failed getting client list\n");
     }
 
   return clients;
