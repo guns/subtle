@@ -280,10 +280,11 @@ RubyConfigForeach(VALUE key,
             case T_DATA: ///< Proc   
               type = SUB_GRAB_PROC;
               data = DATA(value);
+
               rb_ary_push(shelter, value); ///< Protect from GC
               break;
             default:
-              subSharedLogWarn("Failed parding grab `%s'\n", STR2CSTR(key));
+              subSharedLogWarn("Failed parsing grab `%s'\n", STR2CSTR(key));
               return Qnil;
           }
 
@@ -490,7 +491,7 @@ RubyConst(int argc,
   rb_scan_args(argc, argv, "1*", &missing, &args);  
   name = (char *)rb_id2name(SYM2ID(missing));  
 
-  subSharedLogDebug("Missing: name=%s\n", name);
+  subSharedLogDebug("Missing: const=%s\n", name);
 
   /* Parse missing constants */  
   if(!strncmp(name, "Jump", 4)) ///< Jump
@@ -504,7 +505,7 @@ RubyConst(int argc,
         {
           VALUE mod = Qnil, submod = Qnil, value = Qnil;
 
-          mod    = rb_const_get(rb_mKernel, rb_intern("Subtle"));
+          mod    = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
           submod = rb_const_get(mod, rb_intern("Gravity"));
           
           if(Qnil != ((value  = rb_const_get(submod, rb_intern(suffix)))))
@@ -513,6 +514,27 @@ RubyConst(int argc,
     }
 
   rb_raise(rb_eStandardError, "Failed finding constant `%s'", name);
+  return Qnil;  
+} /* }}} */
+
+/* RubyMethod {{{ */
+static VALUE  
+RubyMethod(int argc, 
+  VALUE *argv, 
+  VALUE self)
+{  
+  char *name = NULL;
+  VALUE missing = Qnil, args = Qnil;     
+
+  rb_scan_args(argc, argv, "1*", &missing, &args);  
+  name = (char *)rb_id2name(SYM2ID(missing));  
+
+  subSharedLogDebug("Missing: method=%s\n", name);
+
+  if(rb_respond_to(subtlext, rb_to_id(missing)))
+    return rb_funcall2(subtlext, rb_to_id(missing), --argc, ++argv);
+  
+  rb_raise(rb_eStandardError, "Failed finding method `%s'", name);
   return Qnil;  
 } /* }}} */
 
@@ -530,6 +552,8 @@ subRubyInit(void)
   ruby_init_loadpath();
   ruby_script("subtle");
 
+  rb_define_method(rb_mKernel, "method_missing", RubyMethod, -1); ///< Subtlext wrapper
+
   /* Module: subtle */
   mod = rb_define_module("Subtle");
 
@@ -544,21 +568,8 @@ subRubyInit(void)
   rb_define_const(submod, "WindowStick",  INT2FIX(SUB_GRAB_WINDOW_STICK));
   rb_define_const(submod, "WindowKill",   INT2FIX(SUB_GRAB_WINDOW_KILL));
 
-  /* Module: gravity */
-  submod = rb_define_module_under(mod, "Gravity");
-  rb_define_const(submod, "TopLeft",     INT2FIX(SUB_GRAVITY_TOP_LEFT));
-  rb_define_const(submod, "Top",         INT2FIX(SUB_GRAVITY_TOP));
-  rb_define_const(submod, "TopRight",    INT2FIX(SUB_GRAVITY_TOP_RIGHT));
-  rb_define_const(submod, "Left",        INT2FIX(SUB_GRAVITY_LEFT));
-  rb_define_const(submod, "Center",      INT2FIX(SUB_GRAVITY_CENTER));
-  rb_define_const(submod, "Right",       INT2FIX(SUB_GRAVITY_RIGHT));
-  rb_define_const(submod, "BottomLeft",  INT2FIX(SUB_GRAVITY_BOTTOM_LEFT));
-  rb_define_const(submod, "Bottom",      INT2FIX(SUB_GRAVITY_BOTTOM));
-  rb_define_const(submod, "BottomRight", INT2FIX(SUB_GRAVITY_BOTTOM_RIGHT));
-
   /* Subtlext */
   rb_require("subtle/subtlext");
-  rb_define_variable("subtle", &subtlext);
 
   /* Class: sublet */
   klass = rb_define_class_under(mod, "Sublet", rb_cObject);
@@ -696,7 +707,7 @@ subRubyLoadSublets(const char *path)
 
           /* Safety first */
           rb_protect(RubyRequire, rb_str_new2(file), &error); ///< Load sublet
-          if(error) RubyPerror("Failed loading sublet `%s'", entries[i]->d_name);
+          if(error) RubyPerror("Failed loading sublet");
 
           free(entries[i]);
         }
@@ -731,16 +742,19 @@ subRubyLoadSublext(void)
   VALUE mod = Qnil, klass = Qnil;
   long *win = NULL;
 
-  /* Module: subtlext */
-  mod = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
 
   /* ??? */
   win = (long *)subEwmhGetProperty(ROOT, XA_WINDOW, SUB_EWMH_NET_SUPPORTING_WM_CHECK, NULL);
   free(win);
 
+  /* Module: subtlext */
+  mod = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
+
   /* Class: subtle */
-  klass = rb_const_get(mod, rb_intern("Subtle"));
-  subtlext  = rb_funcall(klass, rb_intern("new"), 0);
+  klass    = rb_const_get(mod, rb_intern("Subtle"));
+  subtlext = rb_funcall(klass, rb_intern("new"), 0);
+
+  rb_ary_push(shelter, subtlext); ///< Protect from GC
 } /* }}} */
 
  /** subRubyRun {{{

@@ -26,12 +26,23 @@ static VALUE SubtlextFixnumToGrav(VALUE self);
 /* }}} */
 
 /* Flags {{{ */
-#define SUB_TYPE_CLIENT  0   ///< Client
-#define SUB_TYPE_VIEW    1   ///< View
-#define SUB_TYPE_TAG     2   ///< Tag
+#define SUB_TYPE_CLIENT  0           ///< Client
+#define SUB_TYPE_VIEW    1           ///< View
+#define SUB_TYPE_TAG     2           ///< Tag
 
-#define SUB_ACTION_TAG   0   ///< Tag
-#define SUB_ACTION_UNTAG 1   ///< Untag
+#define SUB_ACTION_TAG   0           ///< Tag
+#define SUB_ACTION_UNTAG 1           ///< Untag
+
+#define SUB_GRAVITY_UNKNOWN       0  ///< Gravity unknown
+#define SUB_GRAVITY_BOTTOM_LEFT   1  ///< Gravity bottom left
+#define SUB_GRAVITY_BOTTOM        2  ///< Gravity bottom
+#define SUB_GRAVITY_BOTTOM_RIGHT  3  ///< Gravity bottom right
+#define SUB_GRAVITY_LEFT          4  ///< Gravity left
+#define SUB_GRAVITY_CENTER        5  ///< Gravity center
+#define SUB_GRAVITY_RIGHT         6  ///< Gravity right
+#define SUB_GRAVITY_TOP_LEFT      7  ///< Gravity top left
+#define SUB_GRAVITY_TOP           8  ///< Gravity top
+#define SUB_GRAVITY_TOP_RIGHT     9  ///< Gravity top right
 /* }}} */
 
 /* SubtlextFind {{{ */
@@ -1337,16 +1348,15 @@ Init_subtlext(void)
 
   /* Class: gravity */
   klass = rb_define_class_under(mod, "Gravity", rb_cObject);
-  rb_define_const(klass,  "UNKNOWN",      INT2FIX(0));
-  rb_define_const(klass,  "BOTTOM_LEFT",  INT2FIX(1));
-  rb_define_const(klass,  "BOTTOM",       INT2FIX(2));
-  rb_define_const(klass,  "BOTTOM_RIGHT", INT2FIX(3));
-  rb_define_const(klass,  "LEFT",         INT2FIX(4));
-  rb_define_const(klass,  "CENTER",       INT2FIX(5));
-  rb_define_const(klass,  "RIGHT",        INT2FIX(6));
-  rb_define_const(klass,  "TOP_LEFT",     INT2FIX(7));
-  rb_define_const(klass,  "TOP",          INT2FIX(8));
-  rb_define_const(klass,  "TOP_RIGHT",    INT2FIX(9));  
+  rb_define_const(klass, "TopLeft",     INT2FIX(SUB_GRAVITY_TOP_LEFT));
+  rb_define_const(klass, "Top",         INT2FIX(SUB_GRAVITY_TOP));
+  rb_define_const(klass, "TopRight",    INT2FIX(SUB_GRAVITY_TOP_RIGHT));
+  rb_define_const(klass, "Left",        INT2FIX(SUB_GRAVITY_LEFT));
+  rb_define_const(klass, "Center",      INT2FIX(SUB_GRAVITY_CENTER));
+  rb_define_const(klass, "Right",       INT2FIX(SUB_GRAVITY_RIGHT));
+  rb_define_const(klass, "BottomLeft",  INT2FIX(SUB_GRAVITY_BOTTOM_LEFT));
+  rb_define_const(klass, "Bottom",      INT2FIX(SUB_GRAVITY_BOTTOM));
+  rb_define_const(klass, "BottomRight", INT2FIX(SUB_GRAVITY_BOTTOM_RIGHT));  
 
   rb_define_method(klass, "to_s", SubtlextGravityToString, 1);
 

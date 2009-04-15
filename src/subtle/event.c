@@ -589,6 +589,8 @@ EventGrab(XEvent *ev)
                 c->gravity        = -1; ///< Force 
                 c->gravities[vid] = g->data.num;
 
+                printf("gravity=%ld\n", g->data.num);
+
                 if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
               }
             break; /* }}} */
@@ -821,4 +823,4 @@ subEventLoop(void)
     }
 } /* }}} */
 
-// vim:ts=2:bs=2:sw=2:et:fdm=markerIrssi: --- Script: Unloaded script ori
+// vim:ts=2:bs=2:sw=2:et:fdm=marker
