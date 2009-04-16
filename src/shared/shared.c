@@ -103,7 +103,7 @@ subSharedMemoryAlloc(size_t n,
   size_t size)
 {
   void *mem = calloc(n, size);
-  if(!mem) subSharedLogError("Can't alloc memory. Exhausted?\n");
+  if(!mem) subSharedLogError("Failed allocating memory\n");
   return mem;
 } /* }}} */
 
@@ -262,7 +262,7 @@ subSharedMessage(Window win,
 
   if(!((status = XSendEvent(display, DefaultRootWindow(display), False, mask, &ev))))
     subSharedLogWarn("Failed sending client message `%s'\n", type);
- 
+
   if(True == sync) XSync(display, False);
 
   return status;
@@ -577,7 +577,7 @@ subSharedClientFind(char *name,
     }
   free(clients);
 
-  subSharedLogDebug("Can't find client `%s'\n", name);
+  subSharedLogDebug("Failed finding client `%s'\n", name);
 
   return -1;
 } /* }}} */
@@ -616,7 +616,7 @@ subSharedTagFind(char *name)
   subSharedRegexKill(preg);
   subSharedPropertyListFree(tags, size);
 
-  subSharedLogDebug("Cannot find tag `%s'.\n", name);
+  subSharedLogDebug("Failed finding tag `%s'\n", name);
 
   return -1;
 } /* }}} */
@@ -673,7 +673,7 @@ subSharedViewFind(char *name,
   subSharedPropertyListFree(names, size);
   free(views);
 
-  subSharedLogDebug("Can't find view `%s'.\n", name);
+  subSharedLogDebug("Failed finding view `%s'\n", name);
 
   return -1;
 } /* }}} */
@@ -712,7 +712,7 @@ subSharedSubletFind(char *name)
   subSharedRegexKill(preg);
   subSharedPropertyListFree(sublets, size);
 
-  subSharedLogDebug("Cannot find sublet `%s'.\n", name);
+  subSharedLogDebug("Failed finding sublet `%s'\n", name);
 
   return -1;
 } /* }}} */

@@ -424,7 +424,7 @@ SubtlextClientGravitySet(VALUE self,
         }
     }
   
-  rb_raise(rb_eArgError, "Unknown value type");
+  rb_raise(rb_eArgError, "Failed setting value type `%d'", rb_type(value));
   return Qnil;
 } /* }}} */
 
@@ -491,7 +491,7 @@ SubtlextSubtleNew(int argc,
   VALUE *argv,
   VALUE self)
 {
-  char *dispname = NULL;
+  char *name = NULL;
   VALUE disp = Qnil, data = Qnil;
 
 #ifdef DEBUG
@@ -505,12 +505,12 @@ SubtlextSubtleNew(int argc,
 #endif /* DEBUG */ 
 
   /* Open display */
-  if(!display)
+  if(!display) ///< Establish new connection
     {
-      if(RTEST(disp)) dispname = STR2CSTR(disp);
-      if(!(display = XOpenDisplay(dispname)))
+      if(RTEST(disp)) name = STR2CSTR(disp);
+      if(!(display = XOpenDisplay(name)))
         {
-          subSharedLogError("Failed opening display `%s'\n", (dispname) ? dispname : ":0.0");
+          subSharedLogError("Failed opening display `%s'\n", (name) ? name : ":0.0");
 
           return Qnil;
         }
@@ -527,7 +527,7 @@ SubtlextSubtleNew(int argc,
           return Qnil;
         }
 
-      subSharedLogDebug("Connection opened (%s)\n", dispname);
+      subSharedLogDebug("Connection opened (%s)\n", name);
     }
   refcount++;
 

@@ -200,34 +200,37 @@ subViewPublish(void)
   char **names = NULL;
   Window *views = NULL;
 
-  assert(0 < subtle->views->ndata);
-
-  views = (Window *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(Window));
-  names = (char **)subSharedMemoryAlloc(subtle->views->ndata, sizeof(char *));
-
-  for(i = 0; i < subtle->views->ndata; i++)
+  if(0 < subtle->views->ndata)
     {
-      SubView *v = VIEW(subtle->views->data[i]);
+      views = (Window *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(Window));
+      names = (char **)subSharedMemoryAlloc(subtle->views->ndata, sizeof(char *));
 
-      views[i] = v->button;
-      names[i] = v->name;
+      for(i = 0; i < subtle->views->ndata; i++)
+        {
+          SubView *v = VIEW(subtle->views->data[i]);
+
+          views[i] = v->button;
+          names[i] = v->name;
+        }
+
+      /* EWMH: Virtual roots */
+      subEwmhSetWindows(ROOT, SUB_EWMH_NET_VIRTUAL_ROOTS, views, i);
+
+      /* EWMH: Desktops */
+      subEwmhSetCardinals(ROOT, SUB_EWMH_NET_NUMBER_OF_DESKTOPS, (long *)&i, 1);
+      subEwmhSetStrings(ROOT, SUB_EWMH_NET_DESKTOP_NAMES, names, i);
+
+      /* EWMH: Current desktop */
+      vid = subArrayIndex(subtle->views, (void *)subtle->cv); ///< Get desktop number
+      subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP, &vid, 1);
+
+      subSharedLogDebug("publish=views, n=%d\n", i);
+
+      free(views);
+      free(names);
+
+      XSync(subtle->disp, False);
     }
-
-  /* EWMH: Virtual roots */
-  subEwmhSetWindows(ROOT, SUB_EWMH_NET_VIRTUAL_ROOTS, views, i);
-
-  /* EWMH: Desktops */
-  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_NUMBER_OF_DESKTOPS, (long *)&i, 1);
-  subEwmhSetStrings(ROOT, SUB_EWMH_NET_DESKTOP_NAMES, names, i);
-
-  /* EWMH: Current desktop */
-  vid = subArrayIndex(subtle->views, (void *)subtle->cv); ///< Get desktop number
-  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP, &vid, 1);
-
-  subSharedLogDebug("publish=views, n=%d\n", i);
-
-  free(views);
-  free(names);
 } /* }}} */
 
  /** SubViewKill {{{

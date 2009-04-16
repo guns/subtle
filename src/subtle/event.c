@@ -589,8 +589,6 @@ EventGrab(XEvent *ev)
                 c->gravity        = -1; ///< Force 
                 c->gravities[vid] = g->data.num;
 
-                printf("gravity=%ld\n", g->data.num);
-
                 if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
               }
             break; /* }}} */
@@ -720,7 +718,7 @@ void
 subEventLoop(void)
 {
   int nfds;
-  time_t ctime;
+  time_t now;
   XEvent ev;
   fd_set rfds;
   struct timeval tv;
@@ -745,7 +743,7 @@ subEventLoop(void)
 
   while(1)
     {
-      ctime = subSharedTime();
+      now = subSharedTime();
       if(select(nfds, &rfds, NULL, NULL, &tv)) ///< Data ready on any connection
         {
           if(FD_ISSET(ConnectionNumber(subtle->disp), &rfds)) ///< X connection
@@ -783,7 +781,7 @@ subEventLoop(void)
 
                     if(event && (s = SUBLET(subSharedFind(subtle->windows.sublets, event->wd))))
                       {
-                        subRubyRun(s);
+                        subRubyRun((void *)s);
                         subSubletUpdate();
                         subSubletRender();
                       }
@@ -795,12 +793,12 @@ subEventLoop(void)
         {
           /* Update sublet data */
           s = 0 < subtle->sublets->ndata ? SUBLET(subtle->sublets->data[0]) : NULL;
-          while(s && s->time <= ctime)
+          while(s && s->time <= now)
             {
-              s->time  = ctime + s->interval; ///< Adjust seconds
+              s->time  = now + s->interval; ///< Adjust seconds
               s->time -= s->time % s->interval;
 
-              if(!(s->flags & SUB_DATA_INOTIFY)) subRubyRun(s);
+              if(!(s->flags & SUB_DATA_INOTIFY)) subRubyRun((void *)s);
               subArraySort(subtle->sublets, subSubletCompare);
 
               s = SUBLET(subtle->sublets->data[0]);
@@ -810,7 +808,7 @@ subEventLoop(void)
         }
 
       /* Set timeout and assemble FD_SET */
-      tv.tv_sec  = s ? (s->time - ctime) : 60;
+      tv.tv_sec  = s ? (s->time - now) : 60;
       tv.tv_usec = 0;
       if(0 > tv.tv_sec) tv.tv_sec = 0; ///< Sanitize
 
