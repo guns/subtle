@@ -260,31 +260,31 @@ RubyConfigForeach(VALUE key,
         switch(rb_type(value)) ///< Check value type
           {
             case T_STRING: ///< Exec
-              type = SUB_GRAB_EXEC;
               data = DATA(strdup(STR2CSTR(value)));
+              type = SUB_GRAB_EXEC;
               break;
             case T_FIXNUM: ///< Specific
               type = FIX2INT(value);
 
               if(RNGVIEW <= type && RNGVIEW + 100 >= type) ///< Jump
                 {
-                  type = SUB_GRAB_JUMP;
                   data = DATA((unsigned long)(type - RNGVIEW));
+                  type = SUB_GRAB_JUMP;
                 }
               else if(RNGGRAV <= type && RNGGRAV + 100 >= type) ///< Gravity
                 {
-                  type = SUB_GRAB_GRAVITY;
                   data = DATA((unsigned long)(type - RNGGRAV));
+                  type = SUB_GRAB_GRAVITY;
                 }
               break;
             case T_DATA: ///< Proc   
-              type = SUB_GRAB_PROC;
               data = DATA(value);
+              type = SUB_GRAB_PROC;
 
               rb_ary_push(shelter, value); ///< Protect from GC
               break;
             default:
-              subSharedLogWarn("Failed parsing grab `%s'\n", STR2CSTR(key));
+              subSharedLogWarn("Failed executing block `%s'\n", STR2CSTR(key));
               return Qnil;
           }
 
@@ -741,7 +741,6 @@ subRubyLoadSublext(void)
 {
   VALUE mod = Qnil, klass = Qnil;
   long *win = NULL;
-
 
   /* ??? */
   win = (long *)subEwmhGetProperty(ROOT, XA_WINDOW, SUB_EWMH_NET_SUPPORTING_WM_CHECK, NULL);
