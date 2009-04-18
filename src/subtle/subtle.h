@@ -313,7 +313,7 @@ typedef struct subsublet_t /* {{{ */
 
 typedef struct subsubtle_t /* {{{ */
 {
-  int                th, bw, fx, fy, step;                        ///< Subtle tab height, border width, font metrics, step
+  int                th, bw, fx, fy, step;                        ///< Subtle properties
 
   Display            *disp;                                       ///< Subtle Xorg display
   XFontStruct        *xfs;                                        ///< Subtle font
@@ -415,6 +415,7 @@ void subClientKill(SubClient *c, int close);                      ///< Kill clie
 
 /* display.c {{{ */
 void subDisplayInit(const char *display);                         ///< Create display
+void subDisplayConfigure(void);                                   ///< Configure display
 void subDisplayScan(void);                                        ///< Scan root window
 void subDisplayPublish(void);                                     ///< Publish display
 void subDisplayFinish(void);                                      ///< Kill display

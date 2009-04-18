@@ -28,14 +28,16 @@ SubtleUsage(void)
 {
   printf("Usage: %s [OPTIONS]\n\n" \
          "Options:\n" \
-         "  -c, --config=FILE       Load config (default: ~/.%s/subtle.yml)\n" \
-         "  -d, --display=DISPLAY   Connect to DISPLAY (default: $DISPLAY)\n" \
+         "  -c, --config=FILE       Load config (default: %s/%s/%s)\n" \
+         "  -d, --display=DISPLAY   Connect to DISPLAY (default: %s)\n" \
          "  -h, --help              Show this help and exit\n" \
-         "  -s, --sublets=DIR       Load sublets from DIR (default: ~/.%s/sublets)\n" \
+         "  -k, --check             Check config syntax\n" \
+         "  -s, --sublets=DIR       Load sublets from DIR (default: %s/%s/sublets)\n" \
          "  -v, --version           Show version info and exit\n" \
          "  -D, --debug             Print debugging messages\n" \
          "Please report bugs to <%s>\n", 
-         PKG_NAME, PKG_NAME, PKG_NAME, PKG_BUGREPORT);
+         PKG_NAME, getenv("XDG_CONFIG_HOME"), PKG_NAME, PKG_CONFIG, getenv("DISPLAY"), 
+         getenv("XDG_DATA_HOME"), PKG_NAME, PKG_BUGREPORT);
 } /* }}} */
 
 /* SubtleVersion {{{ */
@@ -61,22 +63,28 @@ SubtleSignal(int signum)
     {
       case SIGHUP:
         printf("Reloading config..\n");
+        subArrayKill(subtle->tags,    True);
+        subArrayKill(subtle->views,   True);
         subRubyLoadConfig(config);
+        subDisplayConfigure();
         break;
       case SIGTERM:
       case SIGINT: 
+        /* Tidy up */
         subArrayKill(subtle->clients, False);
-        subArrayKill(subtle->grabs, True);
+        subArrayKill(subtle->grabs,   True);
         subArrayKill(subtle->sublets, True);
-        subArrayKill(subtle->tags, True);
-        subArrayKill(subtle->trays, True);
-        subArrayKill(subtle->views, True);
+        subArrayKill(subtle->tags,    True);
+        subArrayKill(subtle->trays,   True);
+        subArrayKill(subtle->views,   True);
 
-        subRubyFinish();
         subDisplayFinish();
+        subRubyFinish();
 
         free(subtle);
-        exit(1);
+       
+        exit(-1);
+        break;
       case SIGSEGV: 
 #ifdef HAVE_EXECINFO_H
         size = backtrace(array, 10);
@@ -98,14 +106,15 @@ int
 main(int argc,
   char *argv[])
 {
-  int c;
+  int c, check = 0;
   char *sublets = NULL, *display = NULL;
   struct sigaction act;
-  static struct option long_options[] =
+  const struct option long_options[] =
   {
     { "config",  required_argument, 0, 'c' },
     { "display", required_argument, 0, 'd' },
     { "help",    no_argument,       0, 'h' },
+    { "check",   no_argument,       0, 'k' },
     { "sublets", required_argument, 0, 's' },
     { "version", no_argument,       0, 'v' },
 #ifdef DEBUG
@@ -118,20 +127,21 @@ main(int argc,
   int debug = 0;
 #endif /* DEBUG */  
 
-  while(-1 != (c = getopt_long(argc, argv, "c:d:hs:vD", long_options, NULL)))
+  while(-1 != (c = getopt_long(argc, argv, "c:d:hks:vD", long_options, NULL)))
     {
       switch(c)
         {
           case 'c': config  = optarg; break;
           case 'd': display = optarg; break;
           case 'h': SubtleUsage();    return 0;
+          case 'k': check++;          break;
           case 's': sublets = optarg; break;
           case 'v': SubtleVersion();  return 0;
 #ifdef DEBUG          
           case 'D': debug++;          break;
 #else /* DEBUG */
           case 'D': 
-            printf("Compile with `debug=yes' first\n"); 
+            printf("Please recompile %s with `debug=yes'\n", PKG_NAME); 
             return 0;
 #endif /* DEBUG */
           case '?':
@@ -140,7 +150,6 @@ main(int argc,
         }
     }
 
-  SubtleVersion();
   act.sa_handler = SubtleSignal;
   act.sa_flags   = 0;
   memset(&act.sa_mask, 0, sizeof(sigset_t)); ///< Avoid uninitialized values
@@ -150,8 +159,21 @@ main(int argc,
   sigaction(SIGSEGV, &act, NULL);
   sigaction(SIGCHLD, &act, NULL);
 
-  /* Alloc */
   subtle = SUBTLE(subSharedMemoryAlloc(1, sizeof(SubSubtle)));
+  if(check) ///< Load and check config
+    {
+      subRubyInit();
+      subRubyLoadConfig(config);
+      subRubyFinish();
+
+      free(subtle);
+
+      printf("Config OK\n");
+
+      return 0;
+    }
+
+  /* Alloc */
   subtle->clients = subArrayNew();
   subtle->grabs   = subArrayNew();
   subtle->sublets = subArrayNew();
@@ -164,6 +186,7 @@ main(int argc,
 #endif /* DEBUG */
 
   /* Init */
+  SubtleVersion();
   subDisplayInit(display);
   subRubyInit();
   subEwmhInit();
@@ -173,14 +196,14 @@ main(int argc,
   /* Load */
   subRubyLoadConfig(config);
   subRubyLoadSublets(sublets);
-
-  subDisplayPublish();
   subRubyLoadSublext();
 
+  /* Display */
+  subDisplayConfigure();
+  subDisplayPublish();
   subDisplayScan();
-  subEventLoop();
 
-  raise(SIGTERM);
+  subEventLoop();
   
   return 0; ///< Make compiler happy
 } /* }}} */
