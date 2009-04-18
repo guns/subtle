@@ -19,7 +19,7 @@
 #include <ruby.h>
 #include "subtle.h"
 
-static VALUE shelter = Qnil, subtlext = Qnil; ///< Shelter for sweeped objects
+static VALUE shelter = Qnil, sublets = Qnil, subtlext = Qnil; ///< Shelter for sweeped objects
 
 /* RubySubletMark {{{ */
 static void
@@ -55,14 +55,7 @@ static VALUE
 RubySubletInherited(VALUE self,
   VALUE recv)
 {
-  char *name = (char *)rb_class2name((ID)recv);
-
-  /* Instantiate sublets */
-  if(!rb_funcall(recv, rb_intern("new"), 0, NULL))
-    {
-      subSharedLogWarn("Failed loading sublet `%s'\n", name);
-    }
-  else printf("Loading sublet (%s)\n", name);
+  rb_ary_push(sublets, recv); ///< Save the sublet
 
   return Qnil;
 } /* }}} */
@@ -235,10 +228,10 @@ RubyParseColor(VALUE hash,
   /* Parse and allow color */
   if(!XParseColor(subtle->disp, cmap, name, &color))
     {
-      subSharedLogWarn("Failed loading color '%s'.\n", key);
+      subSharedLogWarn("Failed loading color `%s'\n", key);
     }
   else if(!XAllocColor(subtle->disp, cmap, &color))
-    subSharedLogWarn("Failed allocating color '%s'.\n", key);
+    subSharedLogWarn("Failed allocating color `%s'\n", key);
 
   return color.pixel;
 } /* }}} */
@@ -311,11 +304,11 @@ RubyConfigParse(VALUE path)
 {
   int size;
   char *family = NULL, *style = NULL, font[100];
-  XGCValues gvals;
-  XSetWindowAttributes attrs;
   VALUE config = 0;
 
   rb_require(STR2CSTR(path));
+
+  if(!subtle->disp) return Qnil;
 
   /* Config: Options */
   config = rb_const_get(rb_cObject, rb_intern("OPTIONS"));
@@ -336,65 +329,19 @@ RubyConfigParse(VALUE path)
   subtle->colors.bg     = RubyParseColor(config, "background", "#336699");
   subtle->colors.font   = RubyParseColor(config, "font",       "#000000");
 
-  /* Load font */
+  /* Config: Font */
   snprintf(font, sizeof(font), "-*-%s-%s-*-*-*-%d-*-*-*-*-*-*-*", family, style, size);
   if(!(subtle->xfs = XLoadQueryFont(subtle->disp, font)))
     {
-      subSharedLogWarn("Can't load font `%s', using fixed instead.\n", family);
+      subSharedLogWarn("Failed loading font `%s' - falling back to fixed\n", family);
       subSharedLogDebug("Font: %s\n", font);
       subtle->xfs = XLoadQueryFont(subtle->disp, "-*-fixed-medium-*-*-*-13-*-*-*-*-*-*-*");
-      if(!subtle->xfs) subSharedLogError("Can't load font `fixed`.\n");
+      if(!subtle->xfs) subSharedLogError("Failed loading font `fixed`\n");
     }
 
-  /* Font metrics */
   subtle->fx = (subtle->xfs->min_bounds.width + subtle->xfs->max_bounds.width) / 2;
   subtle->fy = subtle->xfs->max_bounds.ascent + subtle->xfs->max_bounds.descent;
   subtle->th = subtle->xfs->ascent + subtle->xfs->descent + 2;
-
-  /* View windows */
-  attrs.background_pixel  = subtle->colors.norm;
-  attrs.save_under        = False;
-  attrs.event_mask        = ButtonPressMask|ExposureMask|VisibilityChangeMask;
-  attrs.override_redirect = True;
-
-  subtle->windows.bar     = XCreateWindow(subtle->disp, DefaultRootWindow(subtle->disp),
-    0, 0, SCREENW, subtle->th, 0, CopyFromParent, InputOutput, CopyFromParent, 
-    CWBackPixel|CWSaveUnder|CWEventMask|CWOverrideRedirect, &attrs); 
-  subtle->windows.caption = XCreateSimpleWindow(subtle->disp, subtle->windows.bar, 0, 0, 1,
-    subtle->th, 0, 0, subtle->colors.focus);
-  subtle->windows.views   = XCreateSimpleWindow(subtle->disp, subtle->windows.bar, 0, 0, 1,
-    subtle->th, 0, 0, subtle->colors.norm);
-  subtle->windows.tray    = XCreateSimpleWindow(subtle->disp, subtle->windows.bar, 0, 0, 1,
-    subtle->th, 0, 0, subtle->colors.norm);    
-  subtle->windows.sublets = XCreateSimpleWindow(subtle->disp, subtle->windows.bar, 0, 0, 1,
-    subtle->th, 0, 0, subtle->colors.norm);
-
-  /* Map windows */
-  XMapWindow(subtle->disp, subtle->windows.views);
-  XMapWindow(subtle->disp, subtle->windows.sublets);
-  XMapWindow(subtle->disp, subtle->windows.tray);
-  XMapWindow(subtle->disp, subtle->windows.bar);
-
-  /* Select input */
-  XSelectInput(subtle->disp, subtle->windows.views, ButtonPressMask); 
-  XSelectInput(subtle->disp, subtle->windows.tray, KeyPressMask|ButtonPressMask); 
-  subTraySelect(); ///< Get tray selection
-
-  /* Update GCs */
-  gvals.foreground = subtle->colors.border;
-  gvals.line_width = subtle->bw;
-  XChangeGC(subtle->disp, subtle->gcs.stipple, GCForeground|GCLineWidth, &gvals);
-
-  gvals.foreground = subtle->colors.font;
-  gvals.font       = subtle->xfs->fid;
-  XChangeGC(subtle->disp, subtle->gcs.font, GCForeground|GCFont, &gvals);
-
-  /* Update root window */
-  attrs.cursor           = subtle->cursors.arrow;
-  attrs.background_pixel = subtle->colors.bg;
-  attrs.event_mask       = SubstructureRedirectMask|SubstructureNotifyMask|PropertyChangeMask;
-  XChangeWindowAttributes(subtle->disp, ROOT, CWCursor|CWBackPixel|CWEventMask, &attrs);
-  XClearWindow(subtle->disp, ROOT);
 
   /* Config: Grabs */
   config = rb_const_get(rb_cObject, rb_intern("GRABS"));
@@ -413,7 +360,8 @@ RubyConfigParse(VALUE path)
 
 /* RubyPerror {{{ */
 static VALUE
-RubyPerror(const char *msg)
+RubyPerror(const char *msg,
+  int fatal)
 {
   VALUE lasterr = Qnil, message = Qnil;
   
@@ -422,7 +370,13 @@ RubyPerror(const char *msg)
   message = rb_obj_as_string(lasterr);
 
   if(RTEST(message)) 
-    subSharedLogWarn("%s: %s\n", msg, RSTRING(message)->ptr);
+    {
+      if(True == fatal)
+        {
+          subSharedLogError("%s: %s\n", msg, RSTRING(message)->ptr);
+        }
+      else subSharedLogWarn("%s: %s\n", msg, RSTRING(message)->ptr);
+    }
 
   return Qnil;
 } /* }}} */
@@ -538,6 +492,24 @@ RubyMethod(int argc,
   return Qnil;  
 } /* }}} */
 
+/* RubyEach {{{ */
+static VALUE
+RubyEach(VALUE idx,
+  VALUE *obj)
+{
+  char *name = NULL;
+  
+  /* Instantiate sublets */
+  name = (char *)rb_class2name((ID)idx);
+  if(!rb_funcall(idx, rb_intern("new"), 0, NULL))
+    {
+      subSharedLogWarn("Failed loading sublet `%s'\n", name);
+    }
+  else printf("Loading sublet (%s)\n", name);
+
+  return Qnil;
+} /* }}} */
+
  /** subRubyInit {{{
   * @brief Init ruby
   **/
@@ -545,6 +517,7 @@ RubyMethod(int argc,
 void
 subRubyInit(void)
 {
+  int error = 0;
   VALUE mod = Qnil, submod = Qnil, klass = Qnil;
 
   RUBY_INIT_STACK;
@@ -568,8 +541,9 @@ subRubyInit(void)
   rb_define_const(submod, "WindowStick",  INT2FIX(SUB_GRAB_WINDOW_STICK));
   rb_define_const(submod, "WindowKill",   INT2FIX(SUB_GRAB_WINDOW_KILL));
 
-  /* Subtlext */
-  rb_require("subtle/subtlext");
+  /* Load subtlext */
+  rb_protect(RubyRequire, rb_str_new2("subtle/subtlext"), &error);
+  if(error) RubyPerror("Failed loading sublext", True);
 
   /* Class: sublet */
   klass = rb_define_class_under(mod, "Sublet", rb_cObject);
@@ -619,11 +593,9 @@ subRubyLoadConfig(const char *file)
 
   /* Safety first */
   rb_protect(RubyConfigParse, rb_str_new2(config), &error);
-  if(error) 
-    {
-      RubyPerror("Failed reading config");
-      subSharedLogError("Exiting\n");
-    }
+  if(error) RubyPerror("Failed reading config", True);
+
+  if(!subtle->disp) return;
 
   /* Grabs */
   if(0 == subtle->grabs->ndata) 
@@ -694,6 +666,8 @@ subRubyLoadSublets(const char *path)
   else snprintf(buf, sizeof(buf), "%s", path);
   subSharedLogDebug("path=%s\n", buf);
 
+  sublets = rb_ary_new();
+
   /* Scan directory */
   if(0 < ((num = scandir(buf, &entries, RubyFilter, alphasort))))
     {
@@ -707,11 +681,13 @@ subRubyLoadSublets(const char *path)
 
           /* Safety first */
           rb_protect(RubyRequire, rb_str_new2(file), &error); ///< Load sublet
-          if(error) RubyPerror("Failed loading sublet");
+          if(error) RubyPerror("Failed loading sublet", False);
 
           free(entries[i]);
         }
       free(entries);
+
+      rb_iterate(rb_each, sublets, RubyEach, Qnil); ///< Instantiate sublets
 
       if(0 < subtle->sublets->ndata)
         {
@@ -740,18 +716,13 @@ void
 subRubyLoadSublext(void)
 {
   VALUE mod = Qnil, klass = Qnil;
-  long *win = NULL;
-
-  /* ??? */
-  win = (long *)subEwmhGetProperty(ROOT, XA_WINDOW, SUB_EWMH_NET_SUPPORTING_WM_CHECK, NULL);
-  free(win);
 
   /* Module: subtlext */
   mod = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
 
   /* Class: subtle */
   klass    = rb_const_get(mod, rb_intern("Subtle"));
-  subtlext = rb_funcall(klass, rb_intern("new"), 0);
+  subtlext = rb_funcall(klass, rb_intern("new2"), 1, (VALUE)subtle->disp);
 
   rb_ary_push(shelter, subtlext); ///< Protect from GC
 } /* }}} */
@@ -776,11 +747,11 @@ subRubyRun(void *script)
 
       if(s->flags & SUB_TYPE_SUBLET) ///< Sublet
         {
-          RubyPerror("Sublet");
+          RubyPerror("Sublet", False);
           subArrayPop(subtle->sublets, script);
           subSubletKill(s, True);
         }
-      else RubyPerror("Grab"); ///< Grab
+      else RubyPerror("Grab", False); ///< Grab
     }
 } /* }}} */
 
@@ -792,7 +763,6 @@ void
 subRubyFinish(void)
 {
   ruby_finalize();
-  rb_exit(0);
 
 #ifdef HAVE_SYS_INOTIFY_H
   if(subtle->notify) close(subtle->notify);
