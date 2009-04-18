@@ -538,6 +538,23 @@ SubtlextSubtleNew(int argc,
   return data;
 } /* }}} */
 
+/* SubtlextSubtleNew2 {{{ */
+static VALUE
+SubtlextSubtleNew2(VALUE self,
+  VALUE disp)
+{
+  VALUE data = Qnil;
+
+  display = (Display *)disp;
+  refcount++;
+
+  /* Create instance */
+  data = Data_Wrap_Struct(self, 0, NULL, display);
+  rb_obj_call_init(data, 0, NULL);
+
+  return data;
+} /* }}} */
+
 /* SubtlextSubtleVersion {{{ */
 VALUE 
 SubtlextSubtleVersion(VALUE self)
@@ -1366,7 +1383,8 @@ Init_subtlext(void)
 
   /* Class: subtle */
   klass = rb_define_class_under(mod, "Subtle", rb_cObject);
-  rb_define_singleton_method(klass, "new", SubtlextSubtleNew, -1);
+  rb_define_singleton_method(klass, "new", SubtlextSubtleNew,  -1);
+  rb_define_singleton_method(klass, "new2", SubtlextSubtleNew2, 1);
 
   rb_define_method(klass, "version",        SubtlextSubtleVersion,       0);
   rb_define_method(klass, "display",        SubtlextSubtleDisplay,       0);
