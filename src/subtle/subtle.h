@@ -276,6 +276,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_SUBLET_UPDATE,                                  ///< subtle sublet update
   SUB_EWMH_SUBTLE_SUBLET_LIST,                                    ///< subtle sublet list
   SUB_EWMH_SUBTLE_SUBLET_KILL,                                    ///< subtle sublet kill
+  SUB_EWMH_SUBTLE_RELOAD,                                         ///< subtle reload config
 
   SUB_EWMH_TOTAL
 } SubEwmh; /* }}} */
@@ -391,12 +392,12 @@ extern SubSubtle *subtle;
 /* array.c {{{ */
 SubArray *subArrayNew(void);                                      ///< Create array
 void subArrayPush(SubArray *a, void *e);                          ///< Push element to array
-void subArrayPop(SubArray *a, void *e);                           ///< Pop element from array
+void subArrayRemove(SubArray *a, void *e);                        ///< Remove element from array
 void *subArrayGet(SubArray *a, int idx);                          ///< Get element
-void *subArrayFind(SubArray *a, char *name, int *id);             ///< Find element
 int subArrayIndex(SubArray *a, void *e);                          ///< Find array id of element
 void subArraySort(SubArray *a,                                    ///< Sort array with given compare function 
   int(*compar)(const void *a, const void *b));
+void subArrayClear(SubArray *a, int clean);                       ///< Delete all elements
 void subArrayKill(SubArray *a, int clean);                        ///< Kill array with all elements
 /* }}} */
 

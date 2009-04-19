@@ -79,5 +79,7 @@ class TestSubtle < Test::Unit::TestCase
     assert_instance_of(View, @view2)
 
     @subtle.del_view("test")    
+
+    @subtle.reload  
   end # }}}
 end

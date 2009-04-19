@@ -160,7 +160,7 @@ EventUnmap(XUnmapEvent *ev)
   if((c = CLIENT(subSharedFind(ev->window, CLIENTID))))
     {
       subEwmhSetWMState(c->win, WithdrawnState);
-      subArrayPop(subtle->clients, (void *)c);
+      subArrayRemove(subtle->clients, (void *)c);
       subClientPublish();
       if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
       subClientKill(c, False);
@@ -168,7 +168,7 @@ EventUnmap(XUnmapEvent *ev)
   else if((t = TRAY(subSharedFind(ev->window, TRAYID))))
     {
       subEwmhSetWMState(t->win, WithdrawnState);
-      subArrayPop(subtle->trays, (void *)t);
+      subArrayRemove(subtle->trays, (void *)t);
       subTrayKill(t);
       subTrayUpdate();
     }    
@@ -184,7 +184,7 @@ EventDestroy(XDestroyWindowEvent *ev)
   if((c = CLIENT(subSharedFind(ev->event, CLIENTID))))
     {
       c->flags |= SUB_STATE_DEAD;
-      subArrayPop(subtle->clients, (void *)c);
+      subArrayRemove(subtle->clients, (void *)c);
       subClientPublish();
       if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
       subClientKill(c, True); 
@@ -192,7 +192,7 @@ EventDestroy(XDestroyWindowEvent *ev)
     }
   else if((t = TRAY(subSharedFind(ev->event, TRAYID))))
     {
-      subArrayPop(subtle->trays, (void *)t);
+      subArrayRemove(subtle->trays, (void *)t);
       subTrayKill(t);
       subTrayUpdate();
     }
@@ -295,7 +295,7 @@ EventMessage(XClientMessageEvent *ev)
                 for(i = 0; i < subtle->clients->ndata; i++) ///< Clients
                   EventUntag(CLIENT(subtle->clients->data[i]), (int)ev->data.l[0]);
               
-                subArrayPop(subtle->tags, (void *)t);
+                subArrayRemove(subtle->tags, (void *)t);
                 subTagKill(t);
                 subTagPublish();
                 
@@ -322,7 +322,7 @@ EventMessage(XClientMessageEvent *ev)
               {
                 int i, vid = subArrayIndex(subtle->views, (void *)v);
 
-                subArrayPop(subtle->views, (void *)v);
+                subArrayRemove(subtle->views, (void *)v);
                 subViewKill(v);
                 subViewUpdate();
                 subViewPublish();
@@ -344,11 +344,14 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_SUBTLE_SUBLET_KILL: /* {{{ */
             if((s = SUBLET(subArrayGet(subtle->sublets, (int)ev->data.l[0]))))
               {
-                subArrayPop(subtle->sublets, (void *)s);
+                subArrayRemove(subtle->sublets, (void *)s);
                 subSubletKill(s, True);
                 subSubletUpdate();
                 subSubletPublish();
               }
+            break; /* }}} */
+          case SUB_EWMH_SUBTLE_RELOAD: /* {{{ */
+            raise(SIGHUP);
             break; /* }}} */
         }
     } /* }}} */
@@ -618,7 +621,7 @@ EventGrab(XEvent *ev)
           case SUB_GRAB_WINDOW_KILL: /* {{{ */
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               { 
-                subArrayPop(subtle->clients, (void *)c);
+                subArrayRemove(subtle->clients, (void *)c);
                 subClientPublish();
                 if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
                 subClientKill(c, True);

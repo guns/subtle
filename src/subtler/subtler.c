@@ -30,9 +30,10 @@ typedef void(*SubCommand)(char *, char *);
 /* Flags {{{ */
 #define SUB_GROUP_CLIENT   0   ///< Group client
 #define SUB_GROUP_SUBLET   1   ///< Group sublet
-#define SUB_GROUP_TAG      2   ///< Group tag
-#define SUB_GROUP_VIEW     3   ///< Group view
-#define SUB_GROUP_TOTAL    4   ///< Group total
+#define SUB_GROUP_SUBTLE   2   ///< Group subtle
+#define SUB_GROUP_TAG      3   ///< Group tag
+#define SUB_GROUP_VIEW     4   ///< Group view
+#define SUB_GROUP_TOTAL    5   ///< Group total
 
 #define SUB_ACTION_NEW     0   ///< Action new
 #define SUB_ACTION_KILL    1   ///< Action kill
@@ -48,7 +49,8 @@ typedef void(*SubCommand)(char *, char *);
 #define SUB_ACTION_TAGS    11  ///< Action tags
 #define SUB_ACTION_UPDATE  12  ///< Action update
 #define SUB_ACTION_GRAVITY 13  ///< Action gravity
-#define SUB_ACTION_TOTAL   14  ///< Action total
+#define SUB_ACTION_RELOAD  14  ///< Action reload
+#define SUB_ACTION_TOTAL   15  ///< Action total
 /* }}} */
 
 /* SubtlerToggle {{{ */
@@ -367,6 +369,16 @@ SubtlerSubletKill(char *arg1,
   else subSharedLogWarn("Failed killing sublet\n");
 } /* }}} */
 
+/* SubtlerSubtleReload {{{ */
+static void
+SubtlerSubtleReload(char *arg1,
+  char *arg2)
+{
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_RELOAD", data, False);
+} /* }}} */
+
 /* SubtlerTagNew {{{ */
 static void
 SubtlerTagNew(char *arg1,
@@ -674,15 +686,17 @@ SubtlerUsage(int group)
   if(-1 == group)
     {
       printf("\nOptions:\n" \
-             "  -d, --display=DISPLAY   Connect to DISPLAY (default: $DISPLAY)\n" \
+             "  -d, --display=DISPLAY   Connect to DISPLAY (default: %s)\n" \
              "  -D, --debug             Print debugging messages\n" \
              "  -h, --help              Show this help and exit\n" \
+             "  -r, --reload            Reload %s\n" \
              "  -V, --version           Show version info and exit\n" \
              "\nGroups:\n" \
              "  -c, --clients           Use clients group\n" \
              "  -s, --sublets           Use sublets group\n" \
              "  -t, --tags              Use tags group\n" \
-             "  -v, --views             Use views group\n");
+             "  -v, --views             Use views group\n", 
+             getenv("DISPLAY"), PKG_NAME);
     }
   if(-1 == group || SUB_GROUP_CLIENT == group)
     {
@@ -706,6 +720,11 @@ SubtlerUsage(int group)
              "  -p, --update            Update sublet\n" \
              "  -k, --kill=PATTERN      Kill a sublet\n");
     }    
+  if(-1 == group || SUB_GROUP_SUBTLE == group)
+    {
+      printf("\nOptions for subtle:\n" \
+             "  -r, --reload            Kill a sublet\n");
+    }        
   if(-1 == group || SUB_GROUP_TAG == group)
     {
       printf("\nOptions for tags:\n" \
@@ -833,6 +852,7 @@ main(int argc,
     /* Groups */
     { "clients",    no_argument,        0,  'c'  },
     { "sublets",    no_argument,        0,  's'  },
+    { "subtle",     no_argument,        0,  'S'  },
     { "tags",       no_argument,        0,  't'  },
     { "views",      no_argument,        0,  'v'  },
 
@@ -851,6 +871,7 @@ main(int argc,
     { "tags",       no_argument,        0,  'g'  },
     { "update",     no_argument,        0,  'p'  },
     { "gravity",    no_argument,        0,  'G'  },
+    { "reload",     no_argument,        0,  'r'  },
 
     /* Default */
 #ifdef DEBUG
@@ -865,18 +886,20 @@ main(int argc,
   /* Command table */
   SubCommand cmds[SUB_GROUP_TOTAL][SUB_ACTION_TOTAL] = { 
     /* Client, Sublet, Tag, View <=> New, Kill, Find, Focus, Full, Float, 
-       Stick, Jump, List, Tag, Untag, Tags, Update, Gravity */
+       Stick, Jump, List, Tag, Untag, Tags, Update, Gravity, Reload */
     { NULL, SubtlerClientKill, SubtlerClientFind,  SubtlerClientFocus, 
       SubtlerClientToggleFull, SubtlerClientToggleFloat, SubtlerClientToggleStick, 
       NULL, SubtlerClientList, SubtlerClientTag, SubtlerClientUntag, 
-      SubtlerClientTags, NULL, SubtlerClientGravity },
+      SubtlerClientTags, NULL, SubtlerClientGravity, NULL },
     { NULL, SubtlerSubletKill, NULL, NULL, NULL, NULL, NULL, NULL, SubtlerSubletList, 
-      NULL, NULL, NULL, SubtlerSubletUpdate, NULL },
+      NULL, NULL, NULL, SubtlerSubletUpdate, NULL, NULL },
+    { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+      NULL, SubtlerSubtleReload },
     { SubtlerTagNew, SubtlerTagKill, SubtlerTagFind, NULL, NULL, NULL, 
-      NULL, NULL, SubtlerTagList, NULL, NULL, NULL, NULL, NULL },
+      NULL, NULL, SubtlerTagList, NULL, NULL, NULL, NULL, NULL, NULL },
     { SubtlerViewNew, SubtlerViewKill, SubtlerViewFind, NULL, NULL, NULL, NULL,
       SubtlerViewJump, SubtlerViewList, SubtlerViewTag, SubtlerViewUntag, SubtlerViewTags, 
-      NULL, NULL }
+      NULL, NULL, NULL }
   };
 
   /* Set up signal handler */
@@ -887,12 +910,13 @@ main(int argc,
   sigaction(SIGINT, &act, NULL);
   sigaction(SIGSEGV, &act, NULL);
 
-  while((c = getopt_long(argc, argv, "cstvnkfFULSjlTugpGDd:hV", long_options, NULL)) != -1)
+  while((c = getopt_long(argc, argv, "csStvnkfFULijlTugpGDd:hrV", long_options, NULL)) != -1)
     {
       switch(c)
         {
           case 'c': group = SUB_GROUP_CLIENT;    break;
           case 's': group = SUB_GROUP_SUBLET;    break;
+          case 'S': group = SUB_GROUP_SUBTLE;    break;
           case 't': group = SUB_GROUP_TAG;       break;
           case 'v': group = SUB_GROUP_VIEW;      break;
 
@@ -902,7 +926,7 @@ main(int argc,
           case 'F': action = SUB_ACTION_FOCUS;   break;
           case 'U': action = SUB_ACTION_FULL;    break;
           case 'L': action = SUB_ACTION_FLOAT;   break;
-          case 'S': action = SUB_ACTION_STICK;   break;
+          case 'i': action = SUB_ACTION_STICK;   break;
           case 'j': action = SUB_ACTION_JUMP;    break;
           case 'l': action = SUB_ACTION_LIST;    break;
           case 'T': action = SUB_ACTION_TAG;     break;
@@ -910,13 +934,14 @@ main(int argc,
           case 'g': action = SUB_ACTION_TAGS;    break;
           case 'p': action = SUB_ACTION_UPDATE;  break;
           case 'G': action = SUB_ACTION_GRAVITY; break;
+          case 'r': action = SUB_ACTION_RELOAD;  break;
 
-          case 'd': dispname = optarg;          break;
-          case 'h': SubtlerUsage(group);        return 0;
+          case 'd': dispname = optarg;           break;
+          case 'h': SubtlerUsage(group);         return 0;
 #ifdef DEBUG          
-          case 'D': debug = 1;                  break;
+          case 'D': debug = 1;                   break;
 #endif /* DEBUG */
-          case 'V': SubtlerVersion();           return 0;
+          case 'V': SubtlerVersion();            return 0;
           case '?':
             printf("Try `%sr --help' for more information\n", PKG_NAME);
             return -1;
