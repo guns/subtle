@@ -216,7 +216,7 @@ subClientConfigure(SubClient *c)
   r = c->rect;
   r.y     += subtle->th;
   r.width  = WINW(c);
-  r.height = WINH(c) - subtle->th;
+  r.height = WINH(c);
 
   if(c->flags & SUB_STATE_FULL) 
     {
@@ -476,7 +476,7 @@ void
 subClientGravitate(SubClient *c,
   int type)
 {
-  XRectangle workarea = { 0, 0, SCREENW, SCREENH };
+  XRectangle workarea = { 0, 0, SCREENW, SCREENH - subtle->th};
   XRectangle slot = { 0 }, desired = { 0 }, current = { 0 };
 
   static const ClientGravity props[] =
@@ -607,6 +607,12 @@ subClientToggle(SubClient *c,
                 {
                   c->rect.width  = c->hints->width;
                   c->rect.height = c->hints->height;
+                }
+              if(c->hints->flags & PAspect)
+                {
+                  printf("min_aspct: x=%d, y=%d, max_aspect: x=%d, y=%d\n", 
+                    c->hints->max_aspect.x, c->hints->max_aspect.y, 
+                    c->hints->min_aspect.x, c->hints->min_aspect.y);
                 }
 
               /* Limit width/height to max. screen size*/
