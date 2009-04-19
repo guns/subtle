@@ -694,6 +694,7 @@ SubtlerUsage(int group)
              "\nGroups:\n" \
              "  -c, --clients           Use clients group\n" \
              "  -s, --sublets           Use sublets group\n" \
+             "  -S, --subtle            Use subtle group\n" \
              "  -t, --tags              Use tags group\n" \
              "  -v, --views             Use views group\n", 
              getenv("DISPLAY"), PKG_NAME);
@@ -723,7 +724,7 @@ SubtlerUsage(int group)
   if(-1 == group || SUB_GROUP_SUBTLE == group)
     {
       printf("\nOptions for subtle:\n" \
-             "  -r, --reload            Kill a sublet\n");
+             "  -r, --reload            Reload config\n");
     }        
   if(-1 == group || SUB_GROUP_TAG == group)
     {
