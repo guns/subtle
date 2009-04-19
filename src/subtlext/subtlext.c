@@ -980,17 +980,22 @@ SubtlextSubtleViewCurrent(VALUE self)
   int size = 0;
   char **names = NULL;
   unsigned long *cv = NULL;
+  Window *views = NULL;
   VALUE klass = Qnil, view = Qnil;
   
   klass = rb_const_get(mod, rb_intern("View"));
   names = subSharedPropertyList(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
   cv    = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
     XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+  views = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW, 
+    "_NET_VIRTUAL_ROOTS", NULL);
   view  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(names[*cv]));
 
-  rb_iv_set(view, "@id", INT2FIX(*cv));
+  rb_iv_set(view, "@id",  INT2FIX(*cv));
+  rb_iv_set(view, "@win", LONG2NUM(views[*cv]));
 
   subSharedPropertyListFree(names, size);
+  free(views);
   free(cv);
       
   return view;
