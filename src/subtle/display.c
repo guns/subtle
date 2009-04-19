@@ -213,6 +213,9 @@ subDisplayPublish(void)
   /* EWMH: Client list and client list stacking */
   subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST, NULL, 0);
   subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST_STACKING, NULL, 0);
+
+  /* EWMH: Tray */
+  subTraySelect();
 }  /* }}} */
 
  /** subDisplayFinish {{{

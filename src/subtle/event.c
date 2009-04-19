@@ -205,15 +205,15 @@ EventMessage(XClientMessageEvent *ev)
   SubClient *c = NULL;
 
   if(32 != ev->format) return; ///< Just skip
-
+  
   /* Messages for root window {{{ */
   if(ROOT == ev->window)
     {
       int tag, id = subEwmhFind(ev->message_type);
 
-      SubView *v = NULL;
-      SubTag *t = NULL;
       SubSublet *s = NULL;
+      SubTag *t = NULL;
+      SubView *v = NULL;
 
       switch(id)
         {
@@ -374,11 +374,6 @@ EventMessage(XClientMessageEvent *ev)
                       subTrayUpdate();
                     } 
                   break;
-                case XEMBED_REQUEST_FOCUS:
-                  if((t = TRAY(subSharedFind(ev->window, TRAYID))))
-                    {
-                    }
-                  
               }
             break; /* }}} */
         }
