@@ -116,8 +116,6 @@ subSubletPublish(void)
   int i;
   char **names = NULL;
 
-  assert(0 < subtle->tags->ndata);
-
   names = (char **)subSharedMemoryAlloc(subtle->sublets->ndata, sizeof(char *));
   for(i = 0; i < subtle->sublets->ndata; i++) 
     names[i] = SUBLET(subtle->sublets->data[i])->name;

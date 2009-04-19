@@ -656,23 +656,20 @@ subClientToggle(SubClient *c,
 void
 subClientPublish(void)
 {
-  if(0 < subtle->clients->ndata )
-    {
-      int i;
-      Window *wins = (Window *)subSharedMemoryAlloc(subtle->clients->ndata, sizeof(Window));
+  int i;
+  Window *wins = (Window *)subSharedMemoryAlloc(subtle->clients->ndata, sizeof(Window));
 
-      for(i = 0; i < subtle->clients->ndata; i++) 
-        wins[i] = CLIENT(subtle->clients->data[i])->win;
+  for(i = 0; i < subtle->clients->ndata; i++) 
+    wins[i] = CLIENT(subtle->clients->data[i])->win;
 
-      /* EWMH: Client list and client list stacking */
-      subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST, wins, subtle->clients->ndata);
-      subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST_STACKING, wins, 
-        subtle->clients->ndata);
+  /* EWMH: Client list and client list stacking */
+  subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST, wins, subtle->clients->ndata);
+  subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST_STACKING, wins, 
+    subtle->clients->ndata);
 
-      subSharedLogDebug("publish=client, clients=%d\n", subtle->clients->ndata);
+  subSharedLogDebug("publish=client, clients=%d\n", subtle->clients->ndata);
 
-      free(wins);
-    }
+  free(wins);
 } /* }}} */
 
  /** subClientKill {{{

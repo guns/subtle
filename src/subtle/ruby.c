@@ -261,7 +261,7 @@ RubyConfigForeach(VALUE key,
 
               if(RNGVIEW <= type && RNGVIEW + 100 >= type) ///< Jump
                 {
-                  data = DATA((unsigned long)(type - RNGVIEW));
+                  data = DATA((unsigned long)(type - RNGVIEW - 1)); ///< Update for index
                   type = SUB_GRAB_JUMP;
                 }
               else if(RNGGRAV <= type && RNGGRAV + 100 >= type) ///< Gravity
@@ -666,8 +666,12 @@ subRubyLoadSublets(const char *path)
   if(!path)
     {
       snprintf(buf, sizeof(buf), "%s/%s/sublets", getenv("XDG_DATA_HOME"), PKG_NAME);
-      if((dir = opendir(buf))) closedir(dir);
-      else snprintf(buf, sizeof(buf), "%s", DIR_SUBLET);
+      if(!(dir = opendir(buf))) 
+        {
+          subSharedLogWarn("No sublets found\n");
+          return;
+        }
+      closedir(dir);
     }
   else snprintf(buf, sizeof(buf), "%s", path);
   subSharedLogDebug("path=%s\n", buf);
@@ -704,14 +708,13 @@ subRubyLoadSublets(const char *path)
               subRubyRun(SUBLET(subtle->sublets->data[i])); ///< First run
             }
           subtle->sublet = SUBLET(subtle->sublets->data[0]);
-          
-          /* Sort and configure */
-          subArraySort(subtle->sublets, subSubletCompare);
-          subSubletUpdate();
-          subSubletPublish();
+          subArraySort(subtle->sublets, subSubletCompare); ///< Initially sort
         }
     }
   else subSharedLogWarn("No sublets found\n");
+
+  subSubletUpdate();
+  subSubletPublish();
 } /* }}} */
 
  /** subRubyLoadSublext {{{
