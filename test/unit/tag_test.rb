@@ -10,9 +10,9 @@ require("test/unit")
 class TestTag < Test::Unit::TestCase
   def test_tag # {{{
     # Test: Instance
-    @tag = Tag.new("test")
+    @tag = Subtlext::Tag.new("test")
     assert_not_nil(@tag)
-    assert_instance_of(Tag, @tag)
+    assert_instance_of(Subtlext::Tag, @tag)
 
     @tag.save
 

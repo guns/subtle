@@ -36,7 +36,7 @@ class TestSubtle < Test::Unit::TestCase
 
       @client = @subtle.current_client
       assert_not_nil(@client)
-      assert_instance_of(Client, @client)
+      assert_instance_of(Subtlext::Client, @client)
     else
       puts "Clients tests can only be run if one or more 'xterm' is running."
     end
@@ -48,11 +48,11 @@ class TestSubtle < Test::Unit::TestCase
 
     @tag1 = @subtle.add_tag("test")
     assert_not_nil(@tag1)
-    assert_instance_of(Tag, @tag1)
+    assert_instance_of(Subtlext::Tag, @tag1)
 
     @tag2 = @subtle.find_tag("test")
     assert_not_nil(@tag2)
-    assert_instance_of(Tag, @tag2)
+    assert_instance_of(Subtlext::Tag, @tag2)
 
     @subtle.del_tag("test")
 
@@ -68,15 +68,15 @@ class TestSubtle < Test::Unit::TestCase
 
     @cv = @subtle.current_view
     assert_not_nil(@cv)
-    assert_instance_of(View, @cv)
+    assert_instance_of(Subtlext::View, @cv)
 
     @view1 = @subtle.add_view("test")
     assert_not_nil(@view1)
-    assert_instance_of(View, @view1)
+    assert_instance_of(Subtlext::View, @view1)
 
     @view2 = @subtle.find_view("test")
     assert_not_nil(@view2)
-    assert_instance_of(View, @view2)
+    assert_instance_of(Subtlext::View, @view2)
 
     @subtle.del_view("test")    
 

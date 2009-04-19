@@ -16,7 +16,7 @@ class TestGravity < Test::Unit::TestCase
     ]
 
     0.times do |i|
-      assert(Gravity.get_const(gravities[i]) == i)
+      assert(Subtlext::Gravity.get_const(gravities[i]) == i)
     end
   end # }}}
 end

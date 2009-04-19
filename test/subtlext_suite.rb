@@ -11,9 +11,9 @@ require("test/unit")
 class Test::Unit::TestCase
   def setup # {{{
     # Test: Connection
-    @subtle = Subtle.new
+    @subtle = Subtlext::Subtle.new
     assert_not_nil(@subtle)
-    assert_instance_of(Subtle, @subtle)
+    assert_instance_of(Subtlext::Subtle, @subtle)
   end # }}}
 end
 

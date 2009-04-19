@@ -17,7 +17,7 @@ class TestClient < Test::Unit::TestCase
     end
 
     assert_not_nil(@client)
-    assert_instance_of(Client, @client)
+    assert_instance_of(Subtlext::Client, @client)
 
     # Test: Properties
     @id = @client.id
@@ -36,7 +36,7 @@ class TestClient < Test::Unit::TestCase
     assert_not_nil(@gravity)
     assert_instance_of(String, @gravity)
 
-    @client.gravity = Gravity::CENTER
+    @client.gravity = Subtlext::Gravity::Center
 
     # Test: Focus
     @focus = @client.focus?
@@ -60,7 +60,7 @@ class TestClient < Test::Unit::TestCase
     # Test: Tagging
     @tag = @subtle.add_tag("test")
     assert_not_nil(@tag)
-    assert_instance_of(Tag, @tag)
+    assert_instance_of(Subtlext::Tag, @tag)
 
     @client.tag(@tag)
     @client.untag(@tag)

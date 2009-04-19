@@ -10,9 +10,9 @@ require("test/unit")
 class TestView < Test::Unit::TestCase
   def test_view # {{{
     # Test: Instance
-    @view = View.new("test")
+    @view = Subtlext::View.new("test")
     assert_not_nil(@view)
-    assert_instance_of(View, @view)
+    assert_instance_of(Subtlext::View, @view)
 
     @view.save
     @view.jump
@@ -42,7 +42,7 @@ class TestView < Test::Unit::TestCase
     # Test: Tagging
     @tag = @subtle.add_tag("test")
     assert_not_nil(@tag)
-    assert_instance_of(Tag, @tag)
+    assert_instance_of(Subtlext::Tag, @tag)
 
     @view.tag(@tag)
     @view.untag(@tag)

@@ -12,13 +12,13 @@ require("test/unit")
 class Sublet
   attr_accessor(:interval, :path, :data)
 
-  def self.inherited(recv)
+  def self.inherited(recv) # {{{
     @@sublets.push(recv)
-  end
+  end # }}}
 end
 
 class TestSublet < Test::Unit::TestCase
-  def test_sublet
+  def test_sublet # {{{
     assert(!@@sublets.empty?, "Failed to find sublet")
 
     @@sublets.each do |klass|
@@ -32,6 +32,6 @@ class TestSublet < Test::Unit::TestCase
 
         true
       end
-    end
+    end # }}}
   end
 end
