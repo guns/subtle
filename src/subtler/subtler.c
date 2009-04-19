@@ -553,7 +553,7 @@ SubtlerViewJump(char *arg1,
   subSharedLogDebug("%s\n", __func__);
 
   /* Try to convert arg1 to long or to find view */
-  if((view = atoi(arg1)) || (( view = subSharedViewFind(arg1, NULL))))
+  if((view = atoi(arg1)) || (-1 != (view = subSharedViewFind(arg1, NULL))))
     {
       data.l[0] = view;
 
