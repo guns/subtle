@@ -42,14 +42,14 @@ subArrayPush(SubArray *a,
     }
 } /* }}} */
 
- /** subArrayPop {{{
-  * @brief Pop element from array
+ /** subArrayRemove {{{
+  * @brief Remove element from array
   * @param[in]  a  A #SubArray
   * @param[in]  e  Array element
   **/
 
 void
-subArrayPop(SubArray *a,
+subArrayRemove(SubArray *a,
   void *e)
 {
   int i, idx;
@@ -85,39 +85,6 @@ subArrayGet(SubArray *a,
   return NULL;
 } /* }}} */
 
- /** subArrayFind {{{
-  * @brief Find element
-  * @param[in]   a     A #SubArray
-  * @param[in]   name  Name of element
-  * @param[out]  id    Array id
-  * @return Returns an element or \p NULL
-  **/
-
-void *
-subArrayFind(SubArray *a,
-  char *name,
-  int *id)
-{
-  int i;
-  SubClient *c = NULL;
-
-  assert(a);
-
-  /* @todo Linear search.. */
-  for(i = 0; i < a->ndata; i++)
-    {
-      c = CLIENT(a->data[i]);
-
-      if(!strncmp(c->name, name, strlen(c->name)))
-        {
-          if(id) *id = i;
-          return c;
-        }
-    }
-  
-  return NULL;
-} /* }}} */
-
  /** subArrayIndex {{{
   * @brief Find array id of element
   * @param[in]  a  A #SubArray
@@ -135,6 +102,7 @@ subArrayIndex(SubArray *a,
 
   for(i = 0; i < a->ndata; i++) 
     if(a->data[i] == e) return i;
+
   return -1;
 } /* }}} */
 
@@ -153,14 +121,14 @@ subArraySort(SubArray *a,
   qsort(a->data, a->ndata, sizeof(void *), compar);
 } /* }}} */
 
- /** subArrayKill {{{
-  * @brief Kill array with all elements
+ /** subArrayClear {{{
+  * @brief Delete all elements
   * @param[in]  a      A #SubArray
   * @param[in]  clean  Free elements or not
   **/
 
 void
-subArrayKill(SubArray *a,
+subArrayClear(SubArray *a,
   int clean)
 {
   int i;
@@ -183,6 +151,25 @@ subArrayKill(SubArray *a,
     }
 
   if(a->data) free(a->data);
+
+  a->data  = NULL;
+  a->ndata = 0;
+} /* }}} */
+
+ /** subArrayKill {{{
+  * @brief Kill array with all elements
+  * @param[in]  a      A #SubArray
+  * @param[in]  clean  Free elements or not
+  **/
+
+void
+subArrayKill(SubArray *a,
+  int clean)
+{
+  assert(a);
+
+  subArrayClear(a, clean);
+
   free(a);
 } /* }}} */
 

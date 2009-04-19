@@ -12,6 +12,27 @@
 
 #include "subtle.h"
 
+/* TagFind {{{ */
+SubTag *
+TagFind(char *name)
+{
+  int i;
+  SubTag *t = NULL;
+
+  assert(name);
+
+  /* @todo Linear search.. */
+  for(i = 0; i < subtle->tags->ndata; i++)
+    {
+      t = TAG(subtle->tags->data[i]);
+
+      if(!strncmp(t->name, name, strlen(t->name)))
+        return t;
+    }
+  
+  return NULL;
+} /* }}} */
+
  /** subTagInit {{{
   * @brief Init default tags
   **/
@@ -49,7 +70,7 @@ subTagNew(char *name,
   assert(name);
 
   /* Check if tag already exists */
-  if((t = TAG(subArrayFind(subtle->tags, name, NULL))))
+  if((t = TagFind(name)))
     {
       if(regex)
         {

@@ -330,6 +330,12 @@ RubyConfigParse(VALUE path)
   subtle->colors.font   = RubyParseColor(config, "font",       "#000000");
 
   /* Config: Font */
+  if(subtle->xfs) 
+    {
+      XFreeFont(subtle->disp, subtle->xfs);
+      subtle->xfs = NULL;
+    }
+
   snprintf(font, sizeof(font), "-*-%s-%s-*-*-*-%d-*-*-*-*-*-*-*", family, style, size);
   if(!(subtle->xfs = XLoadQueryFont(subtle->disp, font)))
     {
@@ -748,7 +754,7 @@ subRubyRun(void *script)
       if(s->flags & SUB_TYPE_SUBLET) ///< Sublet
         {
           RubyPerror("Sublet", False);
-          subArrayPop(subtle->sublets, script);
+          subArrayRemove(subtle->sublets, script);
           subSubletKill(s, True);
         }
       else RubyPerror("Grab", False); ///< Grab

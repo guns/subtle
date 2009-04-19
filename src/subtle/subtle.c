@@ -61,17 +61,22 @@ SubtleSignal(int signum)
 
   switch(signum)
     {
-      case SIGHUP:
-        printf("Reloading config..\n");
-        subArrayKill(subtle->tags,    True);
-        subArrayKill(subtle->views,   True);
+      case SIGHUP: ///< Reload config
+        subArrayClear(subtle->tags,  True);
+        subArrayClear(subtle->views, True); 
+
         subRubyLoadConfig(config);
         subDisplayConfigure();
+
+        subViewConfigure(subtle->cv);
+        subViewRender();
+        subSubletRender();
+
+        printf("Reloaded config\n");
         break;
       case SIGTERM:
-      case SIGINT: 
-        /* Tidy up */
-        subArrayKill(subtle->clients, False);
+      case SIGINT: ///< Tidy up
+        subArrayKill(subtle->clients, True);
         subArrayKill(subtle->grabs,   True);
         subArrayKill(subtle->sublets, True);
         subArrayKill(subtle->tags,    True);
