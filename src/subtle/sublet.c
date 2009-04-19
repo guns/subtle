@@ -48,6 +48,7 @@ subSubletUpdate(void)
       XMoveResizeWindow(subtle->disp, subtle->windows.sublets, DisplayWidth(subtle->disp,
         DefaultScreen(subtle->disp)) - width, 0, width, subtle->th);
     }
+  else XUnmapWindow(subtle->disp, subtle->windows.sublets);
 } /* }}} */
 
  /** subSubletRender {{{
