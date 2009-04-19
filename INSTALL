@@ -1,37 +1,48 @@
 Install
 -------
-subtle has the following dependencies:
+h1. Install
+
+[[subtle]] has the following dependencies:
 
  1. Ruby[1] (>=1.8)
  2. Rake[2] (>=0.8)
- 3. X11[2] (>=6.8.2)
+ 3. X11[3] (>=6.8.2)
 
-Currently there is no stable release of subtle available.
-If you like you can clone the Mercurial repository and install
-the developer version as followed:
+Stable releases can be found here[4]. If you like you can clone the Mercurial[5] repository
+and install the developer version as followed:
 
  1. hg clone http://hg.scrapping.cc/subtle
  2. cd subtle
  3. rake [options]
  4. rake install
 
-The installer will copy the files to following (XDG) default path:
+The installer will copy the files to following XDG[6] default path: (see: rake help)
 
- Binaries   -> /usr/bin
- Configs    -> /etc/xdg/subtle
- Sublets    -> /usr/share/subtle
- Extension  -> (Ruby Dir)/subtle
+ * Binaries   -> _/usr/bin_
+ * Configs    -> _/etc/xdg/subtle_
+ * Sublets    -> _/usr/share/subtle_
+ * Extension  -> _(Ruby Dir)/subtle_
 
-The path can be easily changed (see: rake help) and are printed
-after config has finished.
+The path can be easily changed (see: rake help) and are printed after config has finished.
+	
+On start subtle[7] will check if a config file is available in the typical XDG paths and
+use it. A local config is preferred over a system wide. (see: _$XDG_CONFIG_HOME_) Then it will 
+have a look for sublets[8] in the XDG paths too and load them accordingly. (see _$XDG_DATA_HOME)
 
-On start subtle will check if a config file and sublets are available
-in the typical XDG path and fall back to the systemwide files.
-(see: $XDG_DATA_HOME, $XDG_CONFIG_HOME)
+_No system wide sublets[8] will be loaded per default.
 
-Always compare your existing config with the one of the repository
-to get the latest options.
+ * To create a user config just create '$XDG_CONFIG_HOME/subtle' and copy the latest config from 
+   the 'dist' folder into it.
+ * To enable sublets[8] create '$XDG_DATA_HOME/subtle/sublets' and create symlinks to the sublets[8].
+   (Load order is alphabetically)
+
+Always compare your existing config with the one of the repository/tarball to get the latest options.
 
 [1] http://www.ruby-lang.org
-[2] http://rake.rubyforge.org/
-[2] http://xorg.freedesktop.org
+[2] http://rake.rubyforge.org
+[3] http://xorg.freedesktop.org
+[4] http://unexist.scrapping.cc/projects/list_files/subtle
+[5] http://www.selenic.com/mercurial
+[6] http://standards.freedesktop.org/basedir-spec/latest/
+[7] http://unexist.scrapping.cc/wiki/subtle/Subtle
+[8] http://unexist.scrapping.cc/wiki/subtle/Sublets
