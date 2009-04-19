@@ -10,7 +10,7 @@
 
 require("subtle/subtlext")
 
-subtle = Subtle.new(":2")
+subtle = Subtlext::Subtle.new(":2")
 
 puts "subtle %s on %s" % 
   [subtle.version, subtle.running? ? subtle.display : "none"]

@@ -16,7 +16,7 @@ $subtle = nil
 
 before do
   begin
-    $subtle = Subtle.new(":2")
+    $subtle = Subtlext::Subtle.new(":2")
   rescue
     throw(:halt, [401, "subtle is not running"])
   end
