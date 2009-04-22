@@ -603,7 +603,7 @@ subClientToggle(SubClient *c,
                   c->rect.width  = c->hints->base_width;
                   c->rect.height = c->hints->base_height;
                 }
-              if(c->hints->flags & (USSize|PSize)) ///< User/program size
+              if(c->hints->flags & (USSize)) ///< User size
                 {
                   c->rect.width  = c->hints->width;
                   c->rect.height = c->hints->height;
@@ -615,12 +615,12 @@ subClientToggle(SubClient *c,
                     c->hints->min_aspect.x, c->hints->min_aspect.y);
                 }
 
-              /* Limit width/height to max. screen size*/
+              /* Limit width/height to min/max size*/
               c->rect.width  = MINMAX(c->rect.width, MINW, SCREENW) + 2 * subtle->bw;
               c->rect.height = MINMAX(c->rect.height, MINH, SCREENH - 
                 (subtle->th + 2 * subtle->bw)) + 2 * subtle->bw;
 
-              if(c->hints && c->hints->flags & (USPosition|PPosition)) ///< User/program pos
+              if(c->hints && c->hints->flags & (USPosition)) ///< User/program pos
                 {
                   c->rect.x = c->hints->x;
                   c->rect.y = c->hints->y;
@@ -689,16 +689,16 @@ subClientKill(SubClient *c,
 
   printf("Killing client (%s)\n", c->klass ? c->klass : c->name);
 
-  /* Ignore further events and delete context */
-  XSelectInput(subtle->disp, c->win, NoEventMask);
-  XDeleteContext(subtle->disp, c->win, CLIENTID);
-
   /* Focus stuff */
   if(subtle->windows.focus == c->win) 
     {
       XUnmapWindow(subtle->disp, subtle->windows.caption);
       subtle->windows.focus = 0;
     }
+
+  /* Ignore further events and delete context */
+  XSelectInput(subtle->disp, c->win, NoEventMask);
+  XDeleteContext(subtle->disp, c->win, CLIENTID);
 
   /* Close window */
   if(close && !(c->flags & SUB_STATE_DEAD))

@@ -41,8 +41,8 @@
 #define TRAYID    3                                               ///< tray data id
 #define BUTTONID  4                                               ///< Button data id
 
-#define MINW      50                                              ///< Client min. width
-#define MINH      50                                              ///< Client min. height
+#define MINW      100                                             ///< Client min. width
+#define MINH      100                                             ///< Client min. height
 #define SNAP      10                                              ///< Snapping threshold
 
 #define RNGVIEW   1000                                            ///< Jump index range
