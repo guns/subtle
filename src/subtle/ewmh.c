@@ -82,7 +82,7 @@ subEwmhGet(SubEwmh e)
 
  /** subEwmhFind {{{
   * @brief Find id for intern atom
-  * @param[in]  e  #SubEwmh
+  * @param[in]  e  A #SubEwmh
   * @retval  >=0  Found index
   * @retval  -1   Atom was not found
   **/

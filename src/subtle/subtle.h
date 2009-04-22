@@ -48,17 +48,20 @@
 #define RNGVIEW   1000                                            ///< Jump index range
 #define RNGGRAV   2000                                            ///< Gravity index range
 
-#define LENGTH(a) (sizeof(a) / sizeof(a[0]))                      ///< Array length
-#define TEXTW(s)  (strlen(s) * subtle->fx + 8)                    ///< Textwidth in pixel
-#define WINW(c)   (c->rect.width - 2 * subtle->bw)                ///< Get real width
-#define WINH(c)   (c->rect.height - 2 * subtle->bw)               ///< Get real height
-#define ZERO(n)   (0 < n ? n : 1)                                 ///< Prevent zero
-#define MIN(a,b)  (a >= b ? b : a)                                ///< Minimum
+#define LENGTH(a)  (sizeof(a) / sizeof(a[0]))                      ///< Array length
+#define TEXTW(s)   (strlen(s) * subtle->fx + 8)                    ///< Textwidth in pixel
+#define WINW(c)    (c->rect.width - 2 * subtle->bw)                ///< Get real width
+#define WINH(c)    (c->rect.height - 2 * subtle->bw)               ///< Get real height
+#define ZERO(n)    (0 < n ? n : 1)                                 ///< Prevent zero
+#define MIN(a,b)   (a >= b ? b : a)                                ///< Minimum
 
-#define EVENTMASK StructureNotifyMask|PropertyChangeMask| \
-  EnterWindowMask|FocusChangeMask                                 ///< Default event mask
-#define ROOT      DefaultRootWindow(subtle->disp)                 ///< Root window
-#define SCREEN    DefaultScreen(subtle->disp)                     ///< Default screen
+#define EVENTMASK \
+  (StructureNotifyMask|PropertyChangeMask|EnterWindowMask|FocusChangeMask)
+#define MOTIONMASK \
+  (PointerMotionMask|ButtonReleaseMask|KeyPressMask|EnterWindowMask)
+
+#define ROOT       DefaultRootWindow(subtle->disp)                 ///< Root window
+#define SCREEN     DefaultScreen(subtle->disp)                     ///< Default screen
 #define VISUAL \
   DefaultVisual(subtle->disp, DefaultScreen(subtle->disp))        ///< Default visual
 #define COLORMAP \
@@ -178,6 +181,10 @@
 #define SUB_TAG_LEFT                  (1L << 7)                   ///< Left tag
 #define SUB_TAG_RIGHT                 (1L << 8)                   ///< Right tag
 #define SUB_TAG_CENTER                (1L << 9)                   ///< Center tag
+
+/* Clear masks */
+#define SUB_TAG_CLEAR                  9                          ///< Clear mask
+#define SUB_GRAB_CLEAR                 14                         ///< Clear mask
 /* }}} */
 
 /* Typedefs {{{ */
@@ -190,10 +197,10 @@ typedef struct subarray_t /* {{{ */
 typedef struct subclient_t /* {{{ */
 {
   FLAGS      flags;                                               ///< Client flags
-  char       *name;                                               ///< Client name
+  char       *name, *klass;                                       ///< Client name, wmclass
 
   TAGS       tags;                                                ///< Client tags
-  Window     win, group;                                          ///< Client window, group
+  Window     win;                                                 ///< Client window
   int        gravity, *gravities;                                 ///< Client gravity/gravities
   Colormap   cmap;                                                ///< Client colormap
   XRectangle rect;                                                ///< Client rect
