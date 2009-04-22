@@ -117,8 +117,7 @@ EventMapRequest(XMapRequestEvent *ev)
           subArrayPush(subtle->clients, (void *)c);
           subClientPublish();
 
-          /* Configure/render current view if tags match or client is urgent */
-          if(VISIBLE(subtle->cv, c))
+          if(VISIBLE(subtle->cv, c)) ///< Check visibility first
             {
               subViewConfigure(subtle->cv); 
               subViewRender();
@@ -459,7 +458,7 @@ EventProperty(XPropertyEvent *ev)
                 if(c->name) free(c->name);
                 c->name = name;
 
-                subClientRender(c);
+                if(subtle->windows.focus == c->win) subClientRender(c);
               }
           }
         break;
@@ -659,7 +658,7 @@ EventFocus(XFocusChangeEvent *ev)
 
   if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) ///< Clients
     { 
-      if(FocusIn == ev->type) ///< FocusIn event
+      if(FocusIn == ev->type && VISIBLE(subtle->cv, c)) ///< FocusIn event
         {
           subtle->windows.focus = c->win;
 
