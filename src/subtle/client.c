@@ -61,7 +61,7 @@ ClientSnap(SubClient *c,
 SubClient *
 subClientNew(Window win)
 {
-  int i, n = 0, gravity = SUB_GRAVITY_CENTER;
+  int i, n;
   long vid = 1337, supplied = 0;
   Window trans = 0;
   XWMHints *hints = NULL;
@@ -73,8 +73,11 @@ subClientNew(Window win)
   
   /* Create client */
   c = CLIENT(subSharedMemoryAlloc(1, sizeof(SubClient)));
-  c->flags = SUB_TYPE_CLIENT;
-  c->win   = win;
+  c->gravity = SUB_GRAVITY_CENTER;
+  c->flags   = SUB_TYPE_CLIENT;
+  c->tags    = SUB_TAG_DEFAULT;
+  c->klass   = subEwmhGetProperty(win, XA_STRING, SUB_EWMH_WM_CLASS, NULL);
+  c->win     = win;
 
   /* Geometry */
   c->rect.x      = 0;
@@ -85,6 +88,7 @@ subClientNew(Window win)
   /* Fetch name */
   if(!XFetchName(subtle->disp, c->win, &c->name))
     {
+      if(c->klass) XFree(c->klass);
       free(c);
 
       return NULL;
@@ -92,7 +96,7 @@ subClientNew(Window win)
 
   /* Update client */
   subEwmhSetWMState(c->win, WithdrawnState);
-  XSelectInput(subtle->disp, c->win, SubstructureRedirectMask|SubstructureNotifyMask|EVENTMASK);
+  XSelectInput(subtle->disp, c->win, EVENTMASK);
   XSetWindowBorderWidth(subtle->disp, c->win, subtle->bw);
   XAddToSaveSet(subtle->disp, c->win);
   XSaveContext(subtle->disp, c->win, CLIENTID, (void *)c);
@@ -113,15 +117,15 @@ subClientNew(Window win)
   if(XGetWMProtocols(subtle->disp, c->win, &protos, &n))
     {
       for(i = 0; i < n; i++)
-        {
-          int id = subEwmhFind(protos[i]);
+      {
+        switch(subEwmhFind(protos[i]))
+          {
+            case SUB_EWMH_WM_TAKE_FOCUS:    c->flags |= SUB_PREF_FOCUS; break;
+            case SUB_EWMH_WM_DELETE_WINDOW: c->flags |= SUB_PREF_CLOSE; break;
+            default: break;
+          }
+       }
 
-          switch(id)
-            {
-              case SUB_EWMH_WM_TAKE_FOCUS:    c->flags |= SUB_PREF_FOCUS; break;
-              case SUB_EWMH_WM_DELETE_WINDOW: c->flags |= SUB_PREF_CLOSE; break;
-            }
-        }
       XFree(protos);
     }
 
@@ -130,7 +134,6 @@ subClientNew(Window win)
     {
       if(hints->flags & XUrgencyHint) c->tags |= SUB_TAG_STICK;
       if(hints->flags & InputHint && hints->input) c->flags |= SUB_PREF_INPUT;
-      if(hints->flags & WindowGroupHint) c->group = hints->window_group;
 
       XFree(hints);
     }
@@ -147,53 +150,49 @@ subClientNew(Window win)
     } 
 
   /* Tags */
-  if(c->name)
-    for(i = 0; i < subtle->tags->ndata; i++)
-      {
-        SubTag *t = TAG(subtle->tags->data[i]);
-
-        if(t->preg && subSharedRegexMatch(t->preg, c->name)) c->tags |= (1L << (i + 1));
-      }
-
-  /* Special tags */
-  if(!(c->tags & ~(SUB_TAG_FLOAT|SUB_TAG_FULL|SUB_TAG_STICK)))
-    c->tags |= SUB_TAG_DEFAULT; ///< Ensure that there's at least one tag
-  else
+  for(i = 0; (c->name || c->klass) && i < subtle->tags->ndata; i++)
     {
-      /* Properties */
-      if(c->tags & SUB_TAG_FLOAT) subClientToggle(c, SUB_STATE_FLOAT);
-      if(c->tags & SUB_TAG_FULL)  subClientToggle(c, SUB_STATE_FULL);
-      if(c->tags & SUB_TAG_STICK) subClientToggle(c, SUB_STATE_STICK);
+      SubTag *t = TAG(subtle->tags->data[i]);
 
-      /* Gravities */
-      if(c->tags & SUB_TAG_TOP)
-        {
-          if(c->tags & SUB_TAG_LEFT)       gravity = SUB_GRAVITY_TOP_LEFT;
-          else if(c->tags & SUB_TAG_RIGHT) gravity = SUB_GRAVITY_TOP_RIGHT;
-          else                             gravity = SUB_GRAVITY_TOP;
-        }
-      else if(c->tags & SUB_TAG_BOTTOM)
-        {
-          if(c->tags & SUB_TAG_LEFT)       gravity = SUB_GRAVITY_BOTTOM_LEFT;
-          else if(c->tags & SUB_TAG_RIGHT) gravity = SUB_GRAVITY_BOTTOM_RIGHT;
-          else                             gravity = SUB_GRAVITY_BOTTOM;
-        }
-      else if(c->tags & SUB_TAG_LEFT)      gravity = SUB_GRAVITY_LEFT;
-      else if(c->tags & SUB_TAG_RIGHT)     gravity = SUB_GRAVITY_RIGHT;
-      else if(c->tags & SUB_TAG_CENTER)    gravity = SUB_GRAVITY_CENTER;
+      if(t->preg && ((c->name && subSharedRegexMatch(t->preg, c->name)) || 
+        (c->klass && subSharedRegexMatch(t->preg, c->klass))))
+          c->tags |= (1L << (i + 1));
     }
+  if(1 < (c->tags >> SUB_TAG_CLEAR)) c->tags &= ~SUB_TAG_DEFAULT;
+
+  /* Properties */
+  if(c->tags & SUB_TAG_FLOAT) subClientToggle(c, SUB_STATE_FLOAT);
+  if(c->tags & SUB_TAG_FULL)  subClientToggle(c, SUB_STATE_FULL);
+  if(c->tags & SUB_TAG_STICK) subClientToggle(c, SUB_STATE_STICK);
 
   /* Gravities */
+  if(c->tags & SUB_TAG_TOP)
+    {
+      c->gravity = SUB_GRAVITY_TOP;
+      if(c->tags & SUB_TAG_LEFT)       c->gravity = SUB_GRAVITY_TOP_LEFT;
+      else if(c->tags & SUB_TAG_RIGHT) c->gravity = SUB_GRAVITY_TOP_LEFT;
+    }
+  else if(c->tags & SUB_TAG_BOTTOM) 
+    {
+      c->gravity = SUB_GRAVITY_BOTTOM;
+      if(c->tags & SUB_TAG_LEFT)       c->gravity = SUB_GRAVITY_BOTTOM_LEFT;
+      else if(c->tags & SUB_TAG_RIGHT) c->gravity = SUB_GRAVITY_BOTTOM_LEFT;
+    }  
+  else if(c->tags & SUB_TAG_LEFT)  c->gravity = SUB_GRAVITY_LEFT;
+  else if(c->tags & SUB_TAG_RIGHT) c->gravity = SUB_GRAVITY_RIGHT;
+
   c->gravities = (int *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(int));
+
   for(i = 0; i < subtle->views->ndata; i++)
-    c->gravities[i] = gravity;
+    c->gravities[i] = c->gravity;
+  c->gravity = -1;
 
   /* EWMH: Tags, gravity and desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&c->tags, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
-  printf("Adding client (%s)\n", c->name);
+  printf("Adding client (%s)\n", c->klass ? c->klass : c->name);
   subSharedLogDebug("new=client, name=%s, win=%#lx, supplied=%ld\n", c->name, win, supplied);
 
   return c;
@@ -264,6 +263,7 @@ subClientRender(SubClient *c)
   attrs.border_pixel = subtle->windows.focus == c->win ? subtle->colors.focus : subtle->colors.norm;
   XChangeWindowAttributes(subtle->disp, c->win, CWBorderPixel, &attrs);
 
+  /* Client property marker */
   status = c->flags & SUB_STATE_STICK ? '*' : (c->flags & SUB_STATE_FLOAT ? '^' : ' ');
   pos    = ' ' != status ? 7 : 0; ///< Client name pos
 
@@ -272,8 +272,9 @@ subClientRender(SubClient *c)
   XClearWindow(subtle->disp, subtle->windows.caption);
 
   if(' ' != status) 
-    XDrawString(subtle->disp, subtle->windows.caption, subtle->gcs.font, 
-      3, subtle->fy - 1, &status, 1);
+    XDrawString(subtle->disp, subtle->windows.caption, subtle->gcs.font, 3, 
+      subtle->fy - 1, &status, 1);
+
   XDrawString(subtle->disp, subtle->windows.caption, subtle->gcs.font, 3 + pos, subtle->fy - 1,
     c->name, strlen(c->name));
 } /* }}} */
@@ -314,9 +315,9 @@ subClientDrag(SubClient *c,
   Window win;
   unsigned int mask = 0;
   int loop = True, wx = 0, wy = 0, rx = 0, ry = 0;
+  short *dirx = NULL, *diry = NULL, minx = 10, miny = 10, maxx = SCREENW, maxy = SCREENH;
   XRectangle r;
   SubClient *c2 = NULL;
-  short *dirx = NULL, *diry = NULL, minx = 10, miny = 10, maxx = SCREENW, maxy = SCREENH;
 
   assert(c);
  
@@ -371,8 +372,7 @@ subClientDrag(SubClient *c,
 
   while(loop) ///< Event loop
     {
-      XMaskEvent(subtle->disp, 
-        PointerMotionMask|ButtonReleaseMask|KeyPressMask|EnterWindowMask, &ev);
+      XMaskEvent(subtle->disp, MOTIONMASK, &ev);
       switch(ev.type)
         {
           case EnterNotify:   win = ev.xcrossing.window; break; ///< Find destination window
@@ -644,9 +644,12 @@ subClientToggle(SubClient *c,
 
       subClientConfigure(c);
     }
-
-  subClientFocus(c);
-  subClientRender(c);
+  
+  if(VISIBLE(subtle->cv, c)) ///< Check visibility first
+    {
+      subClientFocus(c);
+      subClientRender(c);
+    }
 } /* }}} */
 
  /** subClientPublish {{{
@@ -684,7 +687,7 @@ subClientKill(SubClient *c,
 {
   assert(c);
 
-  printf("Killing client (%s)\n", c->name);
+  printf("Killing client (%s)\n", c->klass ? c->klass : c->name);
 
   /* Ignore further events and delete context */
   XSelectInput(subtle->disp, c->win, NoEventMask);
@@ -710,7 +713,8 @@ subClientKill(SubClient *c,
 
   if(c->gravities) free(c->gravities);
   if(c->hints) XFree(c->hints);
-  if(c->name) XFree(c->name);
+  if(c->klass) XFree(c->klass);
+  if(c->name)  XFree(c->name);
   free(c);
 
   subSharedLogDebug("kill=client\n");
