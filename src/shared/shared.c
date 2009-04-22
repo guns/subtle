@@ -548,17 +548,18 @@ subSharedClientFind(char *name,
   if((clients = subSharedClientList(&size)))
     {
       int i;
-      char *wmname = NULL, buf[10];
+      char *wmname = NULL, *wmclass = NULL, buf[10];
       regex_t *preg = subSharedRegexNew(name);
 
       for(i = 0; i < size; i++)
         {
-          wmname = subSharedWindowWMName(clients[i]);
+          wmname  = subSharedWindowWMName(clients[i]);
+          wmclass = subSharedWindowWMClass(clients[i]);
           snprintf(buf, sizeof(buf), "%#lx", clients[i]);
 
           /* Find client either by window id or by wmname */
-          if(clients[i] == selwin || subSharedRegexMatch(preg, wmname) ||
-            subSharedRegexMatch(preg, buf))
+          if(clients[i] == selwin || (wmname && subSharedRegexMatch(preg, wmname)) ||
+            (wmclass && subSharedRegexMatch(preg, wmclass)) || subSharedRegexMatch(preg, buf))
             {
               subSharedLogDebug("Found: type=client, name=%s, win=%#lx, id=%d\n", name,
                 clients[i], i);
@@ -568,10 +569,12 @@ subSharedClientFind(char *name,
               subSharedRegexKill(preg);
               free(clients);
               free(wmname);
+              free(wmclass);
 
               return i;
             }
           free(wmname);
+          free(wmclass);
         }
       subSharedRegexKill(preg);
     }
