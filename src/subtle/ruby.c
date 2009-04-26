@@ -364,6 +364,74 @@ RubyConfigParse(VALUE path)
   return Qnil;
 } /* }}} */
 
+/* RubySubtleTagAdd {{{ */
+static VALUE
+RubySubtleTagAdd(VALUE self,
+  VALUE value)
+{
+  VALUE tag = Qnil;
+
+  if(T_STRING == rb_type(value))
+    {
+      int tid = -1;
+      SubTag *t = NULL;
+      VALUE mod = Qnil, klass = Qnil;
+
+      /* Create new tag */
+      t = subTagNew(STR2CSTR(value), NULL);
+      subArrayPush(subtle->tags, (void *)t);
+      subTagPublish();
+
+      /* Create new instance */
+      tid   = subArrayIndex(subtle->tags, (void *)t);
+      mod   = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
+      klass = rb_const_get(mod, rb_intern("Tag"));
+      tag   = rb_funcall(klass, rb_intern("new"), 1, value);
+
+      rb_iv_set(tag, "@id",   INT2FIX(tid));
+      rb_iv_set(tag, "@name", rb_str_new2(t->name));
+    }
+  else rb_raise(rb_eArgError, "Unknown value type");
+
+  return tag;
+} /* }}} */
+
+/* RubySubtleViewAdd {{{ */
+static VALUE
+RubySubtleViewAdd(VALUE self,
+  VALUE value)
+{
+  VALUE view = Qnil;
+
+  if(T_STRING == rb_type(value))
+    {
+      int vid = -1;
+      SubView *v = NULL;
+      VALUE mod = Qnil, klass = Qnil;
+      
+      /* Create new view */
+      v = subViewNew(STR2CSTR(value), NULL);
+      subArrayPush(subtle->views, (void *)v);
+      subClientGravityUpdate(-1); ///< Grow
+      subViewUpdate();
+      subViewPublish();
+      subViewRender();    
+
+      /* Create new instance */
+      vid   = subArrayIndex(subtle->views, (void *)v);
+      mod   = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
+      klass = rb_const_get(mod, rb_intern("View"));
+      view  = rb_funcall(klass, rb_intern("new"), 1, value);
+
+      rb_iv_set(view, "@id",   INT2FIX(vid));
+      rb_iv_set(view, "@name", rb_str_new2(v->name));
+      rb_iv_set(view, "@win",  LONG2NUM(v->button));      
+    }
+  else rb_raise(rb_eArgError, "Unknown value type");
+
+  return view;
+} /* }}} */
+
 /* RubyPerror {{{ */
 static VALUE
 RubyPerror(const char *msg,
@@ -413,7 +481,7 @@ RubyProtect(VALUE script)
 
       if(subtle->cc)
         {
-          /* Create client */
+          /* Create client instance */
           id     = subArrayIndex(subtle->clients, (void *)subtle->cc);
           mod    = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
           klass  = rb_const_get(mod, rb_intern("Client"));
@@ -491,7 +559,7 @@ RubyMethod(int argc,
 
   subSharedLogDebug("Missing: method=%s\n", name);
 
-  if(rb_respond_to(subtlext, rb_to_id(missing)))
+  if(rb_respond_to(subtlext, rb_to_id(missing))) ///< Dispatch method calls
     return rb_funcall2(subtlext, rb_to_id(missing), --argc, ++argv);
   
   rb_raise(rb_eStandardError, "Failed finding method `%s'", name);
@@ -732,6 +800,10 @@ subRubyLoadSublext(void)
   /* Class: subtle */
   klass    = rb_const_get(mod, rb_intern("Subtle"));
   subtlext = rb_funcall(klass, rb_intern("new2"), 1, (VALUE)subtle->disp);
+
+  /* @todo Overwrite methods to bypass timing problems */
+  rb_define_method(klass, "add_tag",  RubySubtleTagAdd,  1);
+  rb_define_method(klass, "add_view", RubySubtleViewAdd, 1);
 
   rb_ary_push(shelter, subtlext); ///< Protect from GC
 } /* }}} */

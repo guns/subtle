@@ -390,7 +390,7 @@ SubtlextClientGravity(VALUE self)
 {
   VALUE gravity = rb_iv_get(self, "@gravity");
 
-  return RTEST(gravity) ? SubtlextFixnumToGrav(gravity) : Qnil;
+  return RTEST(gravity) ? gravity : Qnil;
 } /* }}} */
 
 /* SubtlextClientGravitySet {{{ */
@@ -415,7 +415,7 @@ SubtlextClientGravitySet(VALUE self,
 
           rb_iv_set(self, "@gravity", value);
 
-          return SubtlextFixnumToGrav(value);
+          return value;
         }
       else 
         {
@@ -449,16 +449,16 @@ static VALUE
 SubtlextFixnumToGrav(VALUE self)
 {
   static const char *gravities[] = { 
-    "UNKNOWN",
-    "BOTTOM_LEFT",
-    "BOTTOM",
-    "BOTTOM_RIGHT",
-    "LEFT",
-    "CENTER",
-    "RIGHT",
-    "TOP_LEFT",
-    "TOP",
-    "TOP_RIGHT"
+    "Unknown",
+    "BottomLeft",
+    "Bottom",
+    "Bottom_Right",
+    "Left",
+    "Center",
+    "Right",
+    "TopLeft",
+    "Top",
+    "TopRight"
   };
       
   return rb_str_new2(gravities[FIX2INT(self)]);
