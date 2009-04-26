@@ -414,9 +414,9 @@ void subClientConfigure(SubClient *c);                            ///< Send conf
 void subClientRender(SubClient *c);                               ///< Render client
 void subClientFocus(SubClient *c);                                ///< Focus client
 void subClientDrag(SubClient *c, int mode);                       ///< Move/drag client
-void subClientGravitate(SubClient *c, int type);                  ///< Gravitate client
+void subClientGravityUpdate(int vid);                             ///< Update gravity array
+void subClientGravitySet(SubClient *c, int type);                 ///< Set client gravity
 void subClientToggle(SubClient *c, int type);                     ///< Toggle client state
-void subClientUnmap(SubClient *c);                                ///< Unmap client
 void subClientPublish(void);                                      ///< Publish all clients
 void subClientKill(SubClient *c, int close);                      ///< Kill client
 /* }}} */

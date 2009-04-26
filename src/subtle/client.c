@@ -466,14 +466,39 @@ subClientDrag(SubClient *c,
   XUngrabServer(subtle->disp);
 } /* }}} */
 
-  /** subClientGravitate {{{ 
-   * @brief Calc rect in grid
+  /** subClientGravityUpdate {{{ 
+   * @brief Update gravity array
+   * @param[in]  vid  View index
+   **/
+
+void
+subClientGravityUpdate(int vid)
+{
+  int i, j;
+
+  for(i = 0; i < subtle->clients->ndata; i++)
+    {
+      SubClient *c = CLIENT(subtle->clients->data[i]);
+
+      /* Shift gravities if necessary */
+      for(j = vid; -1 < vid && j < subtle->views->ndata - 1; j++)
+        c->gravities[j] = c->gravities[j + 1];
+
+      c->gravities = (int *)subSharedMemoryRealloc((void *)c->gravities, 
+        subtle->views->ndata * sizeof(int));
+
+      if(-1 == vid) c->gravities[subtle->views->ndata - 1] = SUB_GRAVITY_CENTER; ///< Initialise 
+    }
+} /* }}} */
+
+  /** subClientGravitySet {{{ 
+   * @brief Set and calc client gravity
    * @param[in]  c     A #SubClient
    * @param[in]  type  A #SubGravity
    **/
 
 void
-subClientGravitate(SubClient *c,
+subClientGravitySet(SubClient *c,
   int type)
 {
   XRectangle workarea = { 0, 0, SCREENW, SCREENH - subtle->th};
@@ -536,13 +561,10 @@ subClientGravitate(SubClient *c,
 	             }
 	         }
 	      }
-	    else
-	      {
-          if(current.height == desired.height && current.y == desired.y)
-            {
-              slot.y      = workarea.y + height33;
-              slot.height = height33 + comp;
-            }
+	    else if(current.height == desired.height && current.y == desired.y)
+        {
+          slot.y      = workarea.y + height33;
+          slot.height = height33 + comp;
         }
 
       desired = slot;
@@ -580,6 +602,9 @@ subClientToggle(SubClient *c,
 
       if(type & (SUB_STATE_FLOAT|SUB_STATE_FULL))
         c->gravity = -1; ///< Updating gravity
+
+      if(type & SUB_STATE_STICK)
+        subViewConfigure(subtle->cv);
     }
   else 
     {
@@ -639,7 +664,8 @@ subClientToggle(SubClient *c,
               c->rect.y      = (SCREENH - c->rect.height) / 2;
             }        
         } /* }}} */
-      else if(type & SUB_STATE_FULL) 
+
+      if(type & SUB_STATE_FULL) 
         XSetWindowBorderWidth(subtle->disp, c->win, 0);
 
       subClientConfigure(c);
