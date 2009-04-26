@@ -62,6 +62,7 @@ SubtleSignal(int signum)
   switch(signum)
     {
       case SIGHUP: ///< Reload config
+        subArrayClear(subtle->grabs, True);
         subArrayClear(subtle->tags,  True);
         subArrayClear(subtle->views, True); 
 
