@@ -70,7 +70,7 @@ GRABS = {
   "S-F1"    => "xterm +sb",                         # Exec a term
 
   "S-F2"    => lambda { |c| puts c.name  },         # Print client name
-  "S-F3"    => lambda { |c| puts version }          # Print subtle version
+  "S-F3"    => lambda { |c| puts version },         # Print subtle version
   "S-F4"    => lambda { |c|                         # Show client on view test
     v = add_view("test")
     t = add_tag("test")
