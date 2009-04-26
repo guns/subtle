@@ -51,6 +51,8 @@ subViewNew(char *name,
 
       subSharedRegexKill(preg);
     }
+
+  /* EWMH: Tags */
   subEwmhSetCardinals(v->button, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&v->tags, 1); ///< Init 
 
   printf("Adding view (%s)\n", v->name);
@@ -90,7 +92,8 @@ subViewConfigure(SubView *v)
                   if(c->gravity != c->gravities[vid]) 
                     {
                       c->gravity = c->gravities[vid];
-                      subClientGravitate(c, c->gravities[vid]);
+                      subClientGravitySet(c, c->gravities[vid]);
+                      XMapRaised(subtle->disp, c->win);
                     }
                   subClientConfigure(c);
 
@@ -178,7 +181,7 @@ subViewJump(SubView *v)
 
   subViewConfigure(v);
 
-  /* EWMH: Current desktops */
+  /* EWMH: Current desktop */
   vid = subArrayIndex(subtle->views, (void *)v); ///< Get desktop number
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP, &vid, 1);
 

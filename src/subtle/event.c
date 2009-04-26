@@ -25,7 +25,7 @@ EventUntag(SubClient *c,
 {
   int i, tag;
 
-  for(i = id; i < (sizeof(TAGS) * 8) - 1; i++)
+  for(i = id; i < subtle->tags->ndata - 1; i++)
     {
       tag = (1L << (i + 1));
 
@@ -35,24 +35,9 @@ EventUntag(SubClient *c,
         c->tags &= ~tag;
     }
 
-  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&c->tags, 1);
-} /* }}} */
-
-/* EventGravities {{{ */
-static void
-EventGravities(SubClient *c,
-  int vid)
-{
-  int i;
-
-  /* Shift gravities if necessary */
-  for(i = vid; -1 < vid && i < subtle->views->ndata - 1; i++)
-    c->gravities[i] = c->gravities[i + 1];
-
-  c->gravities = (int *)subSharedMemoryRealloc((void *)c->gravities, 
-    subtle->views->ndata * sizeof(int));
-
-  if(-1 == vid) c->gravities[subtle->views->ndata - 1] = SUB_GRAVITY_CENTER; ///< Initialise
+  /* EWMH: Tags */
+  subEwmhSetCardinals(c->flags & SUB_TYPE_VIEW ? VIEW(c)->button : c->win, 
+    SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&c->tags, 1);
 } /* }}} */
 
 /* EventExec {{{ */
@@ -304,32 +289,26 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_SUBTLE_VIEW_NEW: /* {{{ */
             if(ev->data.b)
               { 
-                int i;
-
                 v = subViewNew(ev->data.b, NULL); 
                 subArrayPush(subtle->views, (void *)v);
+                subClientGravityUpdate(-1); ///< Grow
                 subViewUpdate();
                 subViewPublish();
                 subViewRender();
-
-                for(i = 0; i < subtle->clients->ndata; i++)
-                  EventGravities(CLIENT(subtle->clients->data[i]), -1); ///< Grow
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_VIEW_KILL: /* {{{ */
             if((v = VIEW(subArrayGet(subtle->views, (int)ev->data.l[0]))))
               {
-                int i, vid = subArrayIndex(subtle->views, (void *)v);
+                int vid = subArrayIndex(subtle->views, (void *)v);
 
                 subArrayRemove(subtle->views, (void *)v);
+                subClientGravityUpdate(vid); ///< Shrink
                 subViewKill(v);
                 subViewUpdate();
                 subViewPublish();
 
-                for(i = 0; i < subtle->clients->ndata; i++)
-                  EventGravities(CLIENT(subtle->clients->data[i]), vid); ///< Shrink
-
-                subViewJump(VIEW(subtle->views->data[0]));
+                if(subtle->cv == v) subViewJump(VIEW(subtle->views->data[0])); 
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_SUBLET_UPDATE: /* {{{ */
@@ -508,9 +487,9 @@ EventCrossing(XCrossingEvent *ev)
   while(XCheckTypedWindowEvent(subtle->disp, ev->window, ev->type, &event));    
 } /* }}} */
 
-/* EventSelectionClear {{{ */
+/* EventSelection {{{ */
 void
-EventSelectionClear(XSelectionClearEvent *ev)
+EventSelection(XSelectionClearEvent *ev)
 {
   if(subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION) == ev->selection)
     if(ev->window == subtle->windows.tray)
@@ -540,7 +519,6 @@ EventGrab(XEvent *ev)
 
         if(ev->xbutton.window != subtle->windows.focus) ///< Update focus
           XSetInputFocus(subtle->disp, ev->xbutton.window, RevertToNone, CurrentTime);
-        XMapRaised(subtle->disp, ev->xbutton.window);
 
         code  = XK_Pointer_Button1 + ev->xbutton.button;
         state = ev->xbutton.state;
@@ -640,10 +618,7 @@ EventExpose(XEvent *ev)
       subViewRender();
       subSubletRender();
     }
-  else if(ev->xany.window == ROOT)
-    {
-      subViewRender();
-    }
+  else if(ev->xany.window == ROOT) subViewRender();
 
   /* Remove any other event of the same type and window */
   while(XCheckTypedWindowEvent(subtle->disp, ev->xany.window, ev->type, &event));
@@ -750,22 +725,22 @@ subEventLoop(void)
                   XNextEvent(subtle->disp, &ev);
                   switch(ev.type)
                     {
-                      case ConfigureRequest:  EventConfigure(&ev.xconfigurerequest);     break;
-                      case MapRequest:        EventMapRequest(&ev.xmaprequest);          break;
-                      case MapNotify:         EventMap(&ev.xmap);                        break;
-                      case UnmapNotify:       EventUnmap(&ev.xunmap);                    break;
-                      case DestroyNotify:     EventDestroy(&ev.xdestroywindow);          break;
-                      case ClientMessage:     EventMessage(&ev.xclient);                 break;
-                      case ColormapNotify:    EventColormap(&ev.xcolormap);              break;
-                      case PropertyNotify:    EventProperty(&ev.xproperty);              break;
-                      case EnterNotify:       EventCrossing(&ev.xcrossing);              break;
-                      case SelectionClear:    EventSelectionClear(&ev.xselectionclear);  break;
+                      case ConfigureRequest:  EventConfigure(&ev.xconfigurerequest); break;
+                      case MapRequest:        EventMapRequest(&ev.xmaprequest);      break;
+                      case MapNotify:         EventMap(&ev.xmap);                    break;
+                      case UnmapNotify:       EventUnmap(&ev.xunmap);                break;
+                      case DestroyNotify:     EventDestroy(&ev.xdestroywindow);      break;
+                      case ClientMessage:     EventMessage(&ev.xclient);             break;
+                      case ColormapNotify:    EventColormap(&ev.xcolormap);          break;
+                      case PropertyNotify:    EventProperty(&ev.xproperty);          break;
+                      case EnterNotify:       EventCrossing(&ev.xcrossing);          break;
+                      case SelectionClear:    EventSelection(&ev.xselectionclear);   break;
                       case ButtonPress:
-                      case KeyPress:          EventGrab(&ev);                            break;
+                      case KeyPress:          EventGrab(&ev);                        break;
                       case VisibilityNotify:  
-                      case Expose:            EventExpose(&ev);                          break;
+                      case Expose:            EventExpose(&ev);                      break;
                       case FocusIn:           
-                      case FocusOut:          EventFocus(&ev.xfocus);                    break;
+                      case FocusOut:          EventFocus(&ev.xfocus);                break;
                     }
                 }
               }
