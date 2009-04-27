@@ -244,6 +244,9 @@ subDisplayFinish(void)
       XDestroySubwindows(subtle->disp, subtle->windows.bar);
       XDestroyWindow(subtle->disp, subtle->windows.bar);
 
+      XInstallColormap(subtle->disp, DefaultColormap(subtle->disp, SCREEN));
+      XSetInputFocus(subtle->disp, PointerRoot, RevertToPointerRoot, CurrentTime);
+
       XCloseDisplay(subtle->disp);
     }
 

@@ -737,6 +737,10 @@ subRubyLoadSublets(const char *path)
       if(!(dir = opendir(buf))) 
         {
           subSharedLogWarn("No sublets found\n");
+
+          subSubletUpdate();
+          subSubletPublish();
+
           return;
         }
       closedir(dir);
@@ -744,11 +748,11 @@ subRubyLoadSublets(const char *path)
   else snprintf(buf, sizeof(buf), "%s", path);
   subSharedLogDebug("path=%s\n", buf);
 
-  sublets = rb_ary_new();
-
   /* Scan directory */
   if(0 < ((num = scandir(buf, &entries, RubyFilter, alphasort))))
     {
+      sublets = rb_ary_new();
+
       for(i = 0; i < num; i++)
         {
           int error = 0;
