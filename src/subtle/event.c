@@ -690,8 +690,8 @@ void
 subEventLoop(void)
 {
   int nfds;
-  time_t now;
   XEvent ev;
+  time_t now;
   fd_set rfds;
   struct timeval tv;
   SubSublet *s = NULL;
@@ -713,12 +713,14 @@ subEventLoop(void)
   nfds = nfds < subtle->notify + 1 ? subtle->notify + 1: nfds; ///< Find biggest fd number
 #endif /* HAVE_SYS_INOTIFY_H */
 
+  XSync(subtle->disp, False); ///< Sync before waiting for data
+
   while(1)
     {
       now = subSharedTime();
-      if(select(nfds, &rfds, NULL, NULL, &tv)) ///< Data ready on any connection
+      if(select(nfds, &rfds, NULL, NULL, s ? &tv : NULL)) ///< Data ready on any connection
         {
-          if(FD_ISSET(ConnectionNumber(subtle->disp), &rfds)) ///< X connection
+          if(FD_ISSET(ConnectionNumber(subtle->disp), &rfds)) ///< X connection {{{
             {
               while(XPending(subtle->disp)) ///< X events
                 {
@@ -742,23 +744,23 @@ subEventLoop(void)
                       case FocusIn:           
                       case FocusOut:          EventFocus(&ev.xfocus);                break;
                     }
-                }
-              }
+                }            
+            } /* }}} */
 #ifdef HAVE_SYS_INOTIFY_H
-            if(FD_ISSET(subtle->notify, &rfds)) ///< Inotify descriptor
-              {
-                if(0 < read(subtle->notify, buf, BUFLEN)) ///< Inotify events
-                  {
-                    struct inotify_event *event = (struct inotify_event *)&buf[0];
+          if(FD_ISSET(subtle->notify, &rfds)) ///< Inotify {{{
+            {
+              if(0 < read(subtle->notify, buf, BUFLEN)) ///< Inotify events
+                {
+                  struct inotify_event *event = (struct inotify_event *)&buf[0];
 
-                    if(event && (s = SUBLET(subSharedFind(subtle->windows.sublets, event->wd))))
-                      {
-                        subRubyRun((void *)s);
-                        subSubletUpdate();
-                        subSubletRender();
-                      }
-                  }
-              }
+                  if(event && (s = SUBLET(subSharedFind(subtle->windows.sublets, event->wd))))
+                    {
+                      subRubyRun((void *)s);
+                      subSubletUpdate();
+                      subSubletRender();
+                    }
+                }
+            } /* }}} */
 #endif /* HAVE_SYS_INOTIFY_H */
         }
       else ///< Timeout waiting for data or error
