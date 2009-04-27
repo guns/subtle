@@ -89,7 +89,7 @@ SubtleSignal(int signum)
 
         free(subtle);
        
-        exit(-1);
+        exit(0);
         break;
       case SIGSEGV: 
 #ifdef HAVE_EXECINFO_H
