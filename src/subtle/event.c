@@ -64,17 +64,8 @@ EventConfigure(XConfigureRequestEvent *ev)
 {
   SubClient *c = NULL;
 
-  /* Ignore requests of non-floating clients */
-  if((c = CLIENT(subSharedFind(ev->window, CLIENTID))) && c->flags & SUB_STATE_FLOAT)
-    {
-      if(ev->value_mask & CWX)      c->rect.x      = ev->x;
-      if(ev->value_mask & CWY)      c->rect.y      = ev->y;
-      if(ev->value_mask & CWWidth)  c->rect.width  = ev->width;
-      if(ev->value_mask & CWHeight) c->rect.height = ev->height;
-
-      subClientConfigure(c);
-    }
-  else /* Unmanaged windows */
+  /* Ignore our clients - we tile no matter what */
+  if(!(c = CLIENT(subSharedFind(ev->window, CLIENTID))))
     {
       XWindowChanges wc;
 
@@ -84,8 +75,8 @@ EventConfigure(XConfigureRequestEvent *ev)
       wc.height     = ev->height;
       wc.sibling    = ev->above;
       wc.stack_mode = ev->detail;
-
-      XConfigureWindow(subtle->disp, ev->window, ev->value_mask, &wc);
+    
+      XConfigureWindow(subtle->disp, ev->window, ev->value_mask, &wc); 
     }
 } /* }}} */
 
