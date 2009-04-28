@@ -62,22 +62,16 @@ EventExec(char *cmd)
 static void
 EventConfigure(XConfigureRequestEvent *ev)
 {
-  SubClient *c = NULL;
+  XWindowChanges wc;
 
-  /* Ignore our clients - we tile no matter what */
-  if(!(c = CLIENT(subSharedFind(ev->window, CLIENTID))))
-    {
-      XWindowChanges wc;
+  wc.x          = ev->x;
+  wc.y          = ev->y;
+  wc.width      = ev->width;
+  wc.height     = ev->height;
+  wc.sibling    = ev->above;
+  wc.stack_mode = ev->detail;
 
-      wc.x          = ev->x;
-      wc.y          = ev->y;
-      wc.width      = ev->width;
-      wc.height     = ev->height;
-      wc.sibling    = ev->above;
-      wc.stack_mode = ev->detail;
-    
-      XConfigureWindow(subtle->disp, ev->window, ev->value_mask, &wc); 
-    }
+  XConfigureWindow(subtle->disp, ev->window, ev->value_mask, &wc); 
 } /* }}} */
 
 /* EventMapRequest {{{ */
@@ -650,8 +644,7 @@ EventFocus(XFocusChangeEvent *ev)
               subClientRender(c);
             }
             
-          if(!(VISIBLE(subtle->cv, c))) ///< Unmap caption if window is not on view
-            XUnmapWindow(subtle->disp, subtle->windows.caption); 
+          XUnmapWindow(subtle->disp, subtle->windows.caption); 
 
           subViewRender();
         }
