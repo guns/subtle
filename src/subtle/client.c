@@ -47,9 +47,12 @@ ClientSnap(SubClient *c,
   assert(c && r);
 
   if(SNAP > r->x) r->x = subtle->bw;
-  else if(r->x > (SCREENW - WINW(c) - SNAP)) r->x = SCREENW - c->rect.width + subtle->bw;
+  else if(r->x > (SCREENW - WINW(c) - SNAP)) 
+    r->x = SCREENW - c->rect.width + subtle->bw;
+
   if(SNAP + subtle->th > r->y) r->y = subtle->bw + subtle->th;
-  else if(r->y > (SCREENH - WINH(c) - SNAP)) r->y = SCREENH - c->rect.height + subtle->bw;
+  else if(r->y > (SCREENH - WINH(c) - SNAP)) 
+    r->y = SCREENH - c->rect.height + subtle->bw;
 } /* }}} */
 
  /** subClientNew {{{
@@ -315,7 +318,8 @@ subClientDrag(SubClient *c,
   Window win;
   unsigned int mask = 0;
   int loop = True, wx = 0, wy = 0, rx = 0, ry = 0;
-  short *dirx = NULL, *diry = NULL, minx = 10, miny = 10, maxx = SCREENW, maxy = SCREENH;
+  short *dirx = NULL, *diry = NULL;
+  short minw = MINW, minh = MINH, maxx = SCREENW, maxh = SCREENH, incw = 1, inch = 1;
   XRectangle r;
   SubClient *c2 = NULL;
 
@@ -345,18 +349,18 @@ subClientDrag(SubClient *c,
           {
             if(c->hints->flags & PResizeInc) ///< Resize hints
               {
-                subtle->step = c->hints->width_inc;
-                subtle->step = c->hints->height_inc;
+                incw = c->hints->width_inc;
+                inch = c->hints->height_inc;
               }
             if(c->hints->flags & PMinSize) ///< Min. size
               {
-                minx = MINMAX(c->hints->min_width, MINW, 0);
-                miny = MINMAX(c->hints->min_height, MINH, 0);
+                minw = c->hints->min_width;
+                minh = c->hints->min_height;
               }
             if(c->hints->flags & PMaxSize) ///< Max. size
               {
                 maxx = c->hints->max_width;
-                maxy = c->hints->max_height;
+                maxh = c->hints->max_height;
               }
          }
     } /* }}} */
@@ -372,11 +376,13 @@ subClientDrag(SubClient *c,
 
   while(loop) ///< Event loop
     {
-      XMaskEvent(subtle->disp, MOTIONMASK, &ev);
+      XMaskEvent(subtle->disp, MOTIONMASK|FocusChangeMask, &ev);
       switch(ev.type)
         {
           case EnterNotify:   win = ev.xcrossing.window; break; ///< Find destination window
           case ButtonRelease: loop = False;              break;
+          case FocusIn:
+          case FocusOut:                                 break; ///< Ignore focus change
           case KeyPress: /* {{{ */
             if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE_LEFT|SUB_DRAG_RESIZE_RIGHT))
               {
@@ -392,8 +398,8 @@ subClientDrag(SubClient *c,
                     case XK_Return: loop = False;   break;
                   }
 
-                *dirx = MINMAX(*dirx, minx, maxx);
-                *diry = MINMAX(*diry, miny, maxy);
+                *dirx = MINMAX(*dirx, minw, maxx);
+                *diry = MINMAX(*diry, minh, maxh);
               
                 ClientMask(c, &r);
               }
@@ -422,25 +428,25 @@ subClientDrag(SubClient *c,
                               int rxmot = rx - ev.xmotion.x_root, rxstep = 0;
 
                               r.x     = MINMAX((rx - wx) - rxmot, 0, 
-                                c->rect.x + c->rect.width - minx);
-                              rxstep  = r.x % subtle->step;
+                                c->rect.x + c->rect.width - minw);
+                              rxstep  = r.x % incw;
 
                               r.width = MINMAX(c->rect.width + rxmot + rxstep, 
-                                minx + rxstep, maxx);
+                                minw + rxstep, maxx);
                               r.x    -= rxstep;
                             }
                           else
                             {
                               r.width = MINMAX(c->rect.width + (ev.xmotion.x_root - rx),
-                                minx, maxx);
-                              r.width -= r.width % subtle->step;
+                                minw, maxx);
+                              r.width -= r.width % inch;
                             }
                         }
                       if(c->rect.height + ev.xmotion.y_root >= ry)
                         {
                           r.height = MINMAX(c->rect.height + (ev.xmotion.y_root - ry),
-                            miny, maxy);
-                          r.height -= r.height % subtle->step;
+                            minh, maxh);
+                          r.height -= r.height % inch;
                         }
                       break;
                   }  
@@ -614,38 +620,43 @@ subClientToggle(SubClient *c,
         {
           if(c->flags & SUB_PREF_HINTS)
             {
-              /* Default values */
-              c->rect.width  = MINW; 
-              c->rect.height = MINH;
+              int minw = MINW, minh = MINH; ///< subtle min
 
-              if(c->hints->flags & PMinSize) ///< Min size
+              if(c->hints->flags & PMinSize) ///< User/program min size
                 {
-                  c->rect.width  = c->hints->min_width;
-                  c->rect.height = c->hints->min_height;
+                  minw = c->hints->min_width;
+                  minh = c->hints->min_height;
                 }
-              if(c->hints->flags & PBaseSize) ///< Base size
-                {
-                  c->rect.width  = c->hints->base_width;
-                  c->rect.height = c->hints->base_height;
-                }
-              if(c->hints->flags & (USSize)) ///< User size
+              if(c->hints->flags & (USSize|PSize)) ///< User/program size
                 {
                   c->rect.width  = c->hints->width;
                   c->rect.height = c->hints->height;
                 }
-              if(c->hints->flags & PAspect)
-                {
-                  printf("min_aspct: x=%d, y=%d, max_aspect: x=%d, y=%d\n", 
-                    c->hints->max_aspect.x, c->hints->max_aspect.y, 
-                    c->hints->min_aspect.x, c->hints->min_aspect.y);
-                }
 
               /* Limit width/height to min/max size*/
-              c->rect.width  = MINMAX(c->rect.width, MINW, SCREENW) + 2 * subtle->bw;
-              c->rect.height = MINMAX(c->rect.height, MINH, SCREENH - 
-                (subtle->th + 2 * subtle->bw)) + 2 * subtle->bw;
+              if(c->rect.width < minw)  c->rect.width  = minw;
+              if(c->rect.height < minh) c->rect.height = minh;
 
-              if(c->hints && c->hints->flags & (USPosition)) ///< User/program pos
+              if(c->rect.width > SCREENW || c->rect.height > SCREENH) 
+                {
+                  int incw = 1, inch = 1; ///< Default incs
+
+                  if(c->hints->flags & PResizeInc)
+                    {
+                      incw = c->hints->width_inc;
+                      inch = c->hints->height_inc;
+                    }
+
+                  c->rect.width   = SCREENW - 2 * subtle->bw;
+                  c->rect.width  -= c->rect.width % incw;
+                  c->rect.height  = SCREENH - subtle->th - 2 * subtle->bw;
+                  c->rect.height -= c->rect.width % inch;
+                }
+                
+              c->rect.width  += 2 * subtle->bw;
+              c->rect.height += 2 * subtle->bw;
+
+              if(c->hints && c->hints->flags & (USPosition|PPosition)) ///< User/program pos
                 {
                   c->rect.x = c->hints->x;
                   c->rect.y = c->hints->y;
