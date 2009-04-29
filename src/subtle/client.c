@@ -347,11 +347,6 @@ subClientDrag(SubClient *c,
         /* Respect size hints */
         if(c->flags & SUB_PREF_HINTS)
           {
-            if(c->hints->flags & PResizeInc) ///< Resize hints
-              {
-                incw = c->hints->width_inc;
-                inch = c->hints->height_inc;
-              }
             if(c->hints->flags & PMinSize) ///< Min. size
               {
                 minw = c->hints->min_width;
@@ -361,6 +356,11 @@ subClientDrag(SubClient *c,
               {
                 maxx = c->hints->max_width;
                 maxh = c->hints->max_height;
+              }
+            if(c->hints->flags & PResizeInc) ///< Resize increments
+              {
+                incw = MIN(c->hints->width_inc, 1);
+                inch = MIN(c->hints->height_inc, 1);
               }
          }
     } /* }}} */
@@ -618,62 +618,56 @@ subClientToggle(SubClient *c,
 
       if(type & SUB_STATE_FLOAT) /* {{{ */
         {
+          XWindowAttributes attrs;
+          
+          /* Get width and height from client */
+          XGetWindowAttributes(subtle->disp, c->win, &attrs);
+
+          c->rect.x      = 0;
+          c->rect.y      = 0;
+          c->rect.width  = attrs.width + 2 * subtle->bw;
+          c->rect.height = attrs.height + 2 * subtle->bw; 
+
           if(c->flags & SUB_PREF_HINTS)
             {
-              int minw = MINW, minh = MINH; ///< subtle min
+              int minw = MINW, minh = MINH;
+              int maxw = SCREENW - 2 * subtle->bw, maxh = SCREENH - subtle->th - 2 * subtle->bw;
 
-              if(c->hints->flags & PMinSize) ///< User/program min size
+              if(c->hints->flags & PMinSize) ///< Program min size
                 {
-                  minw = c->hints->min_width;
-                  minh = c->hints->min_height;
+                  minw = MAX(c->hints->min_width, minw);
+                  minh = MAX(c->hints->min_height, minh);
                 }
-              if(c->hints->flags & (USSize|PSize)) ///< User/program size
+              if(c->hints->flags & PMaxSize) ///< Program max size
                 {
-                  c->rect.width  = c->hints->width;
-                  c->rect.height = c->hints->height;
+                  maxw = MIN(c->hints->max_width, maxw);
+                  maxh = MIN(c->hints->max_height, maxh);
                 }
 
-              /* Limit width/height to min/max size*/
-              if(c->rect.width < minw)  c->rect.width  = minw;
-              if(c->rect.height < minh) c->rect.height = minh;
+              /* Honor size hints */
+              if(c->rect.width < minw || c->rect.width > maxw) 
+                c->rect.width = (minw + maxw) / 2;
+              if(c->rect.height < minh || c->rect.height > maxh) 
+                c->rect.width = (minh + maxh) / 2;
 
-              if(c->rect.width > SCREENW || c->rect.height > SCREENH) 
+              if(c->hints->flags & PResizeInc) ///< Resize increments
                 {
-                  int incw = 1, inch = 1; ///< Default incs
-
-                  if(c->hints->flags & PResizeInc)
-                    {
-                      incw = c->hints->width_inc;
-                      inch = c->hints->height_inc;
-                    }
-
-                  c->rect.width   = SCREENW - 2 * subtle->bw;
-                  c->rect.width  -= c->rect.width % incw;
-                  c->rect.height  = SCREENH - subtle->th - 2 * subtle->bw;
-                  c->rect.height -= c->rect.width % inch;
+                  c->rect.width  -= c->rect.width % MIN(c->hints->width_inc, 1);
+                  c->rect.height -= c->rect.height % MIN(c->hints->height_inc, 1);
                 }
                 
-              c->rect.width  += 2 * subtle->bw;
-              c->rect.height += 2 * subtle->bw;
-
               if(c->hints && c->hints->flags & (USPosition|PPosition)) ///< User/program pos
                 {
                   c->rect.x = c->hints->x;
                   c->rect.y = c->hints->y;
                 }
-              else
-                {
-                  c->rect.x = (SCREENW - c->rect.width) / 2;
-                  c->rect.y = (SCREENH - c->rect.height) / 2;
-                }
             }
-          else ///< Fallback
+
+          if(0 == c->rect.x && 0 == c->rect.y) ///< Center
             {
-              c->rect.width  = MINW + 2 * subtle->bw;
-              c->rect.height = MINH + 2 * subtle->bw;
-              c->rect.x      = (SCREENW - c->rect.width) / 2;
-              c->rect.y      = (SCREENH - c->rect.height) / 2;
-            }        
+              c->rect.x = (SCREENW - c->rect.width) / 2;
+              c->rect.y = (SCREENH - c->rect.height) / 2;
+            }            
         } /* }}} */
 
       if(type & SUB_STATE_FULL) 
