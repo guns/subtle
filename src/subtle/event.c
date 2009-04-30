@@ -466,7 +466,8 @@ EventCrossing(XCrossingEvent *ev)
       if(!(c->flags & SUB_STATE_DEAD))
         subClientFocus(c);
      }
-  else if((t = TRAY(subSharedFind(ev->window, TRAYID)))) subTrayFocus(t);
+  else if((t = TRAY(subSharedFind(ev->window, TRAYID)))) 
+    subTrayFocus(t);
 
   /* Remove any other event of the same type and window */
   while(XCheckTypedWindowEvent(subtle->disp, ev->window, ev->type, &event));    
@@ -603,7 +604,7 @@ EventExpose(XEvent *ev)
       subViewRender();
       subSubletRender();
     }
-  else if(ev->xany.window == ROOT) subViewRender();
+  else if(ROOT == ev->xany.window) subViewRender();
 
   /* Remove any other event of the same type and window */
   while(XCheckTypedWindowEvent(subtle->disp, ev->xany.window, ev->type, &event));

@@ -48,13 +48,13 @@
 #define RNGVIEW   1000                                            ///< Jump index range
 #define RNGGRAV   2000                                            ///< Gravity index range
 
-#define LENGTH(a)  (sizeof(a) / sizeof(a[0]))                      ///< Array length
-#define TEXTW(s)   (strlen(s) * subtle->fx + 8)                    ///< Textwidth in pixel
-#define WINW(c)    (c->rect.width - 2 * subtle->bw)                ///< Get real width
-#define WINH(c)    (c->rect.height - 2 * subtle->bw)               ///< Get real height
-#define ZERO(n)    (0 < n ? n : 1)                                 ///< Prevent zero
-#define MIN(a,b)   (a >= b ? b : a)                                ///< Minimum
-#define MAX(a,b)   (a >= b ? a : b)                                ///< Maximum
+#define LENGTH(a)  (sizeof(a) / sizeof(a[0]))                     ///< Array length
+#define TEXTW(s)   (strlen(s) * subtle->fx + 8)                   ///< Textwidth in pixel
+#define WINW(c)    (c->rect.width - 2 * subtle->bw)               ///< Get real width
+#define WINH(c)    (c->rect.height - 2 * subtle->bw)              ///< Get real height
+#define ZERO(n)    (0 < n ? n : 1)                                ///< Prevent zero
+#define MIN(a,b)   (a >= b ? b : a)                               ///< Minimum
+#define MAX(a,b)   (a >= b ? a : b)                               ///< Maximum
 
 #define MINMAX(val,min,max) \
   (min && val < min ? min : max && val > max ? max : val)         ///< Value min/max
@@ -64,8 +64,6 @@
 #define MOTIONMASK \
   (PointerMotionMask|ButtonReleaseMask|KeyPressMask|EnterWindowMask)
 
-#define ROOT       DefaultRootWindow(subtle->disp)                 ///< Root window
-#define SCREEN     DefaultScreen(subtle->disp)                     ///< Default screen
 #define VISUAL \
   DefaultVisual(subtle->disp, DefaultScreen(subtle->disp))        ///< Default visual
 #define COLORMAP \
@@ -76,6 +74,9 @@
   DisplayWidth(subtle->disp, DefaultScreen(subtle->disp))         ///< Get screen width
 #define SCREENH \
   DisplayHeight(subtle->disp, DefaultScreen(subtle->disp))        ///< Get screen height
+
+#define ROOT       DefaultRootWindow(subtle->disp)                ///< Root window
+#define SCREEN     DefaultScreen(subtle->disp)                    ///< Default screen
 
 /* Casts */
 #define ARRAY(a)  ((SubArray *)a)                                 ///< Cast to SubArray
