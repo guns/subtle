@@ -585,6 +585,8 @@ subClientGravitySet(SubClient *c,
 
   /* EWMH: Gravity */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
+
+  printf("%d\n", XWarpPointer(subtle->disp, c->win, None, 0, 0, 0, 0, 10, 10));
 } /* }}} */
 
  /** subClientToggle {{{
@@ -643,6 +645,12 @@ subClientToggle(SubClient *c,
                   maxw = MIN(c->hints->max_width, maxw);
                   maxh = MIN(c->hints->max_height, maxh);
                 }
+              if(c->hints->flags & (USSize|PSize)) ///< User/program size
+                {
+                  c->rect.width  = MIN(c->hints->width, c->rect.width);
+                  c->rect.height = MIN(c->hints->height, c->rect.height);
+                }
+
 
               /* Honor size hints */
               if(c->rect.width < minw || c->rect.width > maxw) 
@@ -752,3 +760,4 @@ subClientKill(SubClient *c,
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
+
