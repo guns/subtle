@@ -620,43 +620,50 @@ subClientToggle(SubClient *c,
 
       if(type & SUB_STATE_FLOAT) /* {{{ */
         {
-          XWindowAttributes attrs;
+          int vieww = SCREENW - 2 * subtle->bw, viewh = SCREENH - 2 * subtle->bw;
           
-          /* Get width and height from client */
-          XGetWindowAttributes(subtle->disp, c->win, &attrs);
 
           c->rect.x      = 0;
           c->rect.y      = 0;
-          c->rect.width  = attrs.width + 2 * subtle->bw;
-          c->rect.height = attrs.height + 2 * subtle->bw; 
 
           if(c->flags & SUB_PREF_HINTS)
             {
-              int minw = MINW, minh = MINH;
-              int maxw = SCREENW - 2 * subtle->bw, maxh = SCREENH - subtle->th - 2 * subtle->bw;
+              int minw = MINW, minh = MINH, maxw = vieww, maxh = viewh;
 
               if(c->hints->flags & PMinSize) ///< Program min size
                 {
-                  minw = MAX(c->hints->min_width, minw);
-                  minh = MAX(c->hints->min_height, minh);
+                  minw = c->hints->min_width;
+                  minh = c->hints->min_height;
                 }
+
               if(c->hints->flags & PMaxSize) ///< Program max size
                 {
-                  maxw = MIN(c->hints->max_width, maxw);
-                  maxh = MIN(c->hints->max_height, maxh);
+                  maxw = c->hints->max_width;
+                  maxh = c->hints->max_height;
                 }
-              if(c->hints->flags & (USSize|PSize)) ///< User/program size
+
+              if(c->hints->flags & (USSize|PSize) && 
+                c->hints->width > 0 && c->hints->height > 0) ///< User/program sane?
                 {
-                  c->rect.width  = MIN(c->hints->width, c->rect.width);
-                  c->rect.height = MIN(c->hints->height, c->rect.height);
+                  c->rect.width  = c->hints->width;
+                  c->rect.height = c->hints->height;
                 }
+              else
+                {
+                  XWindowAttributes attrs;
 
+                  /* Get width and height from client */
+                  XGetWindowAttributes(subtle->disp, c->win, &attrs);
 
-              /* Honor size hints */
-              if(c->rect.width < minw || c->rect.width > maxw) 
-                c->rect.width = (minw + maxw) / 2;
-              if(c->rect.height < minh || c->rect.height > maxh) 
-                c->rect.width = (minh + maxh) / 2;
+                  minw = c->rect.width  = attrs.width;
+                  minh = c->rect.height = attrs.height; 
+                }                  
+
+              /* Check sizes */
+              if(c->rect.width < minw || c->rect.width > maxw || c->rect.width > vieww) 
+                c->rect.width = MIN((minw + maxw) / 2, vieww);
+              if(c->rect.height < minh || c->rect.height > maxh || c->rect.height > viewh)
+                c->rect.height = MIN((minh + maxh) / 2, viewh);
 
               if(c->hints->flags & PResizeInc) ///< Resize increments
                 {
@@ -673,8 +680,8 @@ subClientToggle(SubClient *c,
 
           if(0 == c->rect.x && 0 == c->rect.y) ///< Center
             {
-              c->rect.x = (SCREENW - c->rect.width) / 2;
-              c->rect.y = (SCREENH - c->rect.height) / 2;
+              c->rect.x = (vieww - c->rect.width) / 2;
+              c->rect.y = (viewh - c->rect.height) / 2;
             }            
         } /* }}} */
 
