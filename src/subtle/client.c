@@ -586,7 +586,7 @@ subClientGravitySet(SubClient *c,
   /* EWMH: Gravity */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
 
-  printf("%d\n", XWarpPointer(subtle->disp, c->win, None, 0, 0, 0, 0, 10, 10));
+  printf("WarpPointer: %d\n", XWarpPointer(subtle->disp, c->win, None, 0, 0, 0, 0, 10, 10));
 } /* }}} */
 
  /** subClientToggle {{{
@@ -608,7 +608,7 @@ subClientToggle(SubClient *c,
       if(type & SUB_STATE_FULL)
         XSetWindowBorderWidth(subtle->disp, c->win, subtle->bw);
 
-      if(type & (SUB_STATE_FLOAT|SUB_STATE_FULL))
+      if(type & SUB_STATE_FLOAT)
         c->gravity = -1; ///< Updating gravity
 
       if(type & SUB_STATE_STICK)
@@ -622,9 +622,8 @@ subClientToggle(SubClient *c,
         {
           int vieww = SCREENW - 2 * subtle->bw, viewh = SCREENH - 2 * subtle->bw;
           
-
-          c->rect.x      = 0;
-          c->rect.y      = 0;
+          c->rect.x = 0;
+          c->rect.y = 0;
 
           if(c->flags & SUB_PREF_HINTS)
             {
@@ -643,20 +642,19 @@ subClientToggle(SubClient *c,
                 }
 
               if(c->hints->flags & (USSize|PSize) && 
-                c->hints->width > 0 && c->hints->height > 0) ///< User/program sane?
+                c->hints->width > minw && c->hints->height > minh) ///< Sane user/program size?
                 {
                   c->rect.width  = c->hints->width;
                   c->rect.height = c->hints->height;
                 }
-              else
+              else ///< Fall back to client old size
                 {
                   XWindowAttributes attrs;
 
-                  /* Get width and height from client */
                   XGetWindowAttributes(subtle->disp, c->win, &attrs);
 
-                  minw = c->rect.width  = attrs.width;
-                  minh = c->rect.height = attrs.height; 
+                  c->rect.width  = attrs.width;
+                  c->rect.height = attrs.height; 
                 }                  
 
               /* Check sizes */
@@ -665,13 +663,14 @@ subClientToggle(SubClient *c,
               if(c->rect.height < minh || c->rect.height > maxh || c->rect.height > viewh)
                 c->rect.height = MIN((minh + maxh) / 2, viewh);
 
-              if(c->hints->flags & PResizeInc) ///< Resize increments
+              if(c->hints->flags & PResizeInc) ///< Sanitize size if needed
                 {
                   c->rect.width  -= c->rect.width % MIN(c->hints->width_inc, 1);
                   c->rect.height -= c->rect.height % MIN(c->hints->height_inc, 1);
                 }
                 
-              if(c->hints && c->hints->flags & (USPosition|PPosition)) ///< User/program pos
+              if(c->hints && c->hints->flags & (USPosition|PPosition) &&
+                c->hints->x >= 0 && c->hints->y >= subtle->th) ///< Sane user/program pos?
                 {
                   c->rect.x = c->hints->x;
                   c->rect.y = c->hints->y;
@@ -687,9 +686,9 @@ subClientToggle(SubClient *c,
 
       if(type & SUB_STATE_FULL) 
         XSetWindowBorderWidth(subtle->disp, c->win, 0);
-
-      subClientConfigure(c);
     }
+
+  subClientConfigure(c);
   
   if(VISIBLE(subtle->cv, c)) ///< Check visibility first
     {
