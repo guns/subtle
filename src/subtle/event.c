@@ -62,16 +62,21 @@ EventExec(char *cmd)
 static void
 EventConfigure(XConfigureRequestEvent *ev)
 {
-  XWindowChanges wc;
+  SubClient *c = NULL;
 
-  wc.x          = ev->x;
-  wc.y          = ev->y;
-  wc.width      = ev->width;
-  wc.height     = ev->height;
-  wc.sibling    = ev->above;
-  wc.stack_mode = ev->detail;
+  if(!(c = CLIENT(subSharedFind(ev->window, CLIENTID))))
+    {
+      XWindowChanges wc;
 
-  XConfigureWindow(subtle->disp, ev->window, ev->value_mask, &wc); 
+      wc.x          = ev->x;
+      wc.y          = ev->y;
+      wc.width      = ev->width;
+      wc.height     = ev->height;
+      wc.sibling    = ev->above;
+      wc.stack_mode = ev->detail;
+
+      XConfigureWindow(subtle->disp, ev->window, ev->value_mask, &wc); 
+    }
 } /* }}} */
 
 /* EventMapRequest {{{ */
@@ -645,6 +650,7 @@ EventFocus(XFocusChangeEvent *ev)
               subClientRender(c);
             }
             
+          subGrabSet(ROOT);
           XUnmapWindow(subtle->disp, subtle->windows.caption); 
 
           subViewRender();

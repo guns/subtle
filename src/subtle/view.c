@@ -73,7 +73,7 @@ subViewConfigure(SubView *v)
 
   if(0 < subtle->clients->ndata)
     {
-      int i, total = 0;
+      int i;
       long vid = subArrayIndex(subtle->views, (void *)v);
 
       /* Clients */
@@ -101,12 +101,9 @@ subViewConfigure(SubView *v)
                   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
                 }
               else XMapRaised(subtle->disp, c->win);
-
-              total++;
             }
           else XUnmapWindow(subtle->disp, c->win); ///< Unmap other windows
         }
-      if(0 == total) subGrabSet(ROOT); ///< Set grabs
     }
 } /* }}} */
 

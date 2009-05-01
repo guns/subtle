@@ -140,11 +140,11 @@ main(int argc,
           case 'c': config  = optarg; break;
           case 'd': display = optarg; break;
           case 'h': SubtleUsage();    return 0;
-          case 'k': check++;          break;
+          case 'k': check = 1;        break;
           case 's': sublets = optarg; break;
           case 'v': SubtleVersion();  return 0;
 #ifdef DEBUG          
-          case 'D': debug++;          break;
+          case 'D': debug = 1;        break;
 #else /* DEBUG */
           case 'D': 
             printf("Please recompile %s with `debug=yes'\n", PKG_NAME); 
