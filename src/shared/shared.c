@@ -280,17 +280,19 @@ subSharedPropertyGet(Window win,
   char *name,
   unsigned long *size)
 {
-  unsigned long nitems, bytes;
+  unsigned long nitems = 0, bytes = 0;
   unsigned char *data = NULL;
-  int format;
-  Atom rtype, prop = XInternAtom(display, name, False);
+  int format = 0;
+  Atom rtype = None, prop = None;
 
   assert(win && name);
+
+  prop = XInternAtom(display, name, False);
 
   if(Success != XGetWindowProperty(display, win, prop, 0L, 4096, False, type, &rtype,
     &format, &nitems, &bytes, &data))
     {
-      subSharedLogDebug("Failed getting property `%s'\n", name);
+      subSharedLogWarn("Failed getting property `%s'\n", name);
 
       return NULL;
     }
@@ -434,38 +436,38 @@ subSharedWindowWMClass(Window win)
 Window
 subSharedWindowSelect(void)
 {
-  int i, format, buttons = 0;
+  int i, format = 0, buttons = 0;
   unsigned int n;
-  unsigned long *cur = NULL, nitems, after;
+  unsigned long nitems = 0, bytes = 0;
   unsigned char *data = NULL;
   XEvent event;
-  Atom type = None;
-  Window win = None, view = None, *views = NULL, dummy, *wins = NULL;
-  Cursor cursor = XCreateFontCursor(display, XC_dotbox);
+  Atom type = None, rtype = None;
+  Window win = None, dummy = None, root = None, *wins = NULL;
+  Cursor cursor = None;
 
-  /* Get views */
-  cur   = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display), 
-    XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
-  views = (Window *)subSharedPropertyGet(DefaultRootWindow(display), 
-    XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
-  view  = views[*cur];
-  free(cur);
-  free(views);
+  root   = DefaultRootWindow(display);
+  cursor = XCreateFontCursor(display, XC_cross);
+  type   = XInternAtom(display, "WM_STATE", True);
 
-  if(XGrabPointer(display, view, False, ButtonPressMask|ButtonReleaseMask, 
-    GrabModeSync, GrabModeAsync, view, cursor, CurrentTime)) return None;
+  if(XGrabPointer(display, root, False, ButtonPressMask|ButtonReleaseMask, 
+    GrabModeSync, GrabModeAsync, root, cursor, CurrentTime))
+    {
+      XFreeCursor(display, cursor);
+
+      return None;
+    }
 
   /* Select a window */
   while(None == win || 0 != buttons)
     {
       XAllowEvents(display, SyncPointer, CurrentTime);
-      XWindowEvent(display, view, ButtonPressMask|ButtonReleaseMask, &event);
+      XWindowEvent(display, root, ButtonPressMask|ButtonReleaseMask, &event);
 
       switch(event.type)
         {
           case ButtonPress:
-            if(win == None) win = event.xbutton.subwindow ? 
-              event.xbutton.subwindow : view; ///< Sanitize
+            if(None == win) 
+              win = event.xbutton.subwindow ? event.xbutton.subwindow : root; ///< Sanitize
             buttons++;
             break;
           case ButtonRelease: if(0 < buttons) buttons--; break;
@@ -475,20 +477,23 @@ subSharedWindowSelect(void)
   /* Find children with WM_STATE atom */
   XQueryTree(display, win, &dummy, &dummy, &wins, &n);
   for(i = 0; i < n; i++)
-    {
-      data = NULL;
-      XGetWindowProperty(display, wins[i], XInternAtom(display, "WM_STATE", True), 0, 0,
-        False, AnyPropertyType, &type, &format, &nitems, &after, &data);
+    if(Success == XGetWindowProperty(display, wins[i], type, 0, 0, False, 
+      AnyPropertyType, &rtype, &format, &nitems, &bytes, &data))
+      {
+        if(data) 
+          {
+            XFree(data);
+            data = NULL;
+          }
+        if(type == rtype) 
+          {
+            win = wins[i];
+            break;
+          }
+      }
 
-      if(data) XFree(data);
-      if(type) 
-        {
-          win = wins[i];
-          break;
-        }
-    }
   XFree(wins);
-
+  XFreeCursor(display, cursor);
   XUngrabPointer(display, CurrentTime);
 
   return win;
