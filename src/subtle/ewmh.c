@@ -115,13 +115,13 @@ subEwmhGetProperty(Window win,
   SubEwmh e,
   unsigned long *size)
 {
-  unsigned long nitems, bytes;
+  unsigned long nitems = 0, bytes = 0;
   unsigned char *data = NULL;
-  int format;
-  Atom rtype;
+  int format = 0;
+  Atom rtype = None;
 
-  if(XGetWindowProperty(subtle->disp, win, atoms[e], 0L, 1024, False, type, &rtype,
-    &format, &nitems, &bytes, &data) != Success)
+  if(Success != XGetWindowProperty(subtle->disp, win, atoms[e], 0L, 1024, False, type, &rtype,
+    &format, &nitems, &bytes, &data))
     {
       char *name = XGetAtomName(subtle->disp, atoms[e]); 
       subSharedLogDebug("Failed getting property `%s'\n", name);
@@ -151,8 +151,8 @@ subEwmhGetProperty(Window win,
 long
 subEwmhGetWMState(Window win)
 {
-  Atom type;
-  int format;
+  Atom type = None;
+  int format = 0;
   unsigned long unused, bytes;
   long *data = NULL, state = WithdrawnState;
 
@@ -252,6 +252,7 @@ subEwmhSetStrings(Window win,
 
   XChangeProperty(subtle->disp, win, atoms[e], atoms[SUB_EWMH_UTF8], 8,
     PropModeReplace, (unsigned char *)str, pos);
+
   free(str);
 } /* }}} */
 

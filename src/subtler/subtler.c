@@ -30,16 +30,15 @@ typedef void(*SubCommand)(char *, char *);
 /* Flags {{{ */
 #define SUB_GROUP_CLIENT   0   ///< Group client
 #define SUB_GROUP_SUBLET   1   ///< Group sublet
-#define SUB_GROUP_SUBTLE   2   ///< Group subtle
-#define SUB_GROUP_TAG      3   ///< Group tag
-#define SUB_GROUP_VIEW     4   ///< Group view
-#define SUB_GROUP_TOTAL    5   ///< Group total
+#define SUB_GROUP_TAG      2   ///< Group tag
+#define SUB_GROUP_VIEW     3   ///< Group view
+#define SUB_GROUP_TOTAL    4   ///< Group total
 
-#define SUB_ACTION_NEW     0   ///< Action new
+#define SUB_ACTION_ADD     0   ///< Action add
 #define SUB_ACTION_KILL    1   ///< Action kill
 #define SUB_ACTION_FIND    2   ///< Action find
 #define SUB_ACTION_FOCUS   3   ///< Action focus
-#define SUB_ACTION_FULL    4   ///< Action full
+#define SUB_ACTION_MAX     4   ///< Action max
 #define SUB_ACTION_FLOAT   5   ///< Action float
 #define SUB_ACTION_STICK   6   ///< Action stick
 #define SUB_ACTION_JUMP    7   ///< Action jump
@@ -49,8 +48,7 @@ typedef void(*SubCommand)(char *, char *);
 #define SUB_ACTION_TAGS    11  ///< Action tags
 #define SUB_ACTION_UPDATE  12  ///< Action update
 #define SUB_ACTION_GRAVITY 13  ///< Action gravity
-#define SUB_ACTION_RELOAD  14  ///< Action reload
-#define SUB_ACTION_TOTAL   15  ///< Action total
+#define SUB_ACTION_TOTAL   14  ///< Action total
 /* }}} */
 
 /* SubtlerToggle {{{ */
@@ -369,16 +367,6 @@ SubtlerSubletKill(char *arg1,
   else subSharedLogWarn("Failed killing sublet\n");
 } /* }}} */
 
-/* SubtlerSubtleReload {{{ */
-static void
-SubtlerSubtleReload(char *arg1,
-  char *arg2)
-{
-  SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_RELOAD", data, False);
-} /* }}} */
-
 /* SubtlerTagNew {{{ */
 static void
 SubtlerTagNew(char *arg1,
@@ -694,7 +682,6 @@ SubtlerUsage(int group)
              "\nGroups:\n" \
              "  -c, --clients           Use clients group\n" \
              "  -s, --sublets           Use sublets group\n" \
-             "  -S, --subtle            Use subtle group\n" \
              "  -t, --tags              Use tags group\n" \
              "  -v, --views             Use views group\n", 
              getenv("DISPLAY"), PKG_NAME);
@@ -703,33 +690,28 @@ SubtlerUsage(int group)
     {
       printf("\nOptions for clients:\n" \
              "  -f, --find=PATTERN      Find a client\n" \
-             "  -F, --focus=PATTERN     Set focus to client\n" \
-             "  -U, --full              Toggle full\n" \
+             "  -o, --focus=PATTERN     Set focus to client\n" \
+             "  -F, --full              Toggle full\n" \
              "  -L, --float             Toggle float\n" \
              "  -S, --stick             Toggle stick\n" \
              "  -l, --list              List all clients\n" \
              "  -T, --tag=PATTERN       Add tag to client\n" \
-             "  -u, --untag=PATTERN     Remove tag from client\n" \
-             "  -g, --tags              Show client tags\n" \
-             "  -G, --gravity           Set client gravity\n" \
+             "  -U, --untag=PATTERN     Remove tag from client\n" \
+             "  -G, --tags              Show client tags\n" \
+             "  -g, --gravity           Set client gravity\n" \
              "  -k, --kill=PATTERN      Kill a client\n");
     }
   if(-1 == group || SUB_GROUP_SUBLET == group)
     {
       printf("\nOptions for sublets:\n" \
              "  -l, --list              List all sublets\n" \
-             "  -p, --update            Update sublet\n" \
+             "  -u, --update            Update sublet\n" \
              "  -k, --kill=PATTERN      Kill a sublet\n");
     }    
-  if(-1 == group || SUB_GROUP_SUBTLE == group)
-    {
-      printf("\nOptions for subtle:\n" \
-             "  -r, --reload            Reload config\n");
-    }        
   if(-1 == group || SUB_GROUP_TAG == group)
     {
       printf("\nOptions for tags:\n" \
-             "  -n, --new=NAME          Create new tag\n" \
+             "  -a, --add=NAME          Create new tag\n" \
              "  -f, --find              Find all clients/views by tag\n" \
              "  -l, --list              List all tags\n" \
              "  -k, --kill=PATTERN      Kill a tag\n");
@@ -737,12 +719,12 @@ SubtlerUsage(int group)
   if(-1 == group || SUB_GROUP_VIEW == group)
     {
       printf("\nOptions for views:\n" \
-             "  -n, --new=NAME          Create new view\n" \
+             "  -a, --add=NAME          Create new view\n" \
              "  -f, --find=PATTERN      Find a view\n" \
              "  -l, --list              List all views\n" \
              "  -T, --tag=PATTERN       Add tag to view\n" \
-             "  -u, --untag=PATTERN     Remove tag from view\n" \
-             "  -g, --tags              Show view tags\n" \
+             "  -U, --untag=PATTERN     Remove tag from view\n" \
+             "  -G, --tags              Show view tags\n" \
              "  -k, --kill=VIEW         Kill a view\n");
     }
   
@@ -759,22 +741,22 @@ SubtlerUsage(int group)
          "  View   list: <window id> [-*] <name>\n");
 
   printf("\nGravities:\n" \
-         "  GRAVITY_UNKNOWN      = 0\n" \
-         "  GRAVITY_BOTTOM_LEFT  = 1\n" \
-         "  GRAVITY_BOTTOM       = 2\n" \
-         "  GRAVITY_BOTTOM_RIGHT = 3\n" \
-         "  GRAVITY_LEFT         = 4\n" \
-         "  GRAVITY_CENTER       = 5\n" \
-         "  GRAVITY_RIGHT        = 6\n" \
-         "  GRAVITY_TOP_LEFT     = 7\n" \
-         "  GRAVITY_TOP          = 8\n" \
-         "  GRAVITY_RIGHT        = 9\n");
+         "  GravityUnknown     = 0\n" \
+         "  GravityBottomLeft  = 1\n" \
+         "  GravityBottom      = 2\n" \
+         "  GravityBottomRight = 3\n" \
+         "  GravityLeft        = 4\n" \
+         "  GravityCenter      = 5\n" \
+         "  GravityRight       = 6\n" \
+         "  GravityTop_Left    = 7\n" \
+         "  GravityTop         = 8\n" \
+         "  GravityRight       = 9\n");
   
   printf("\nExamples:\n" \
          "  %sr -c -l                List all clients\n" \
-         "  %sr -t -n subtle         Add new tag 'subtle'\n" \
+         "  %sr -t -a subtle         Add new tag 'subtle'\n" \
          "  %sr -v subtle -T rocks   Tag view 'subtle' with tag 'rocks'\n" \
-         "  %sr -c xterm -g          Show tags of client 'xterm'\n" \
+         "  %sr -c xterm -G          Show tags of client 'xterm'\n" \
          "  %sr -c -f #              Select client and show info\n" \
          "  %sr -t -f term           Show every client/view tagged with 'term'\n" \
          "\nPlease report bugs to <%s>\n",
@@ -819,25 +801,43 @@ SubtlerSignal(int signum)
     }
 } /* }}} */
 
-/* SubtlerPipe {{{ */
+/* SubtlerParse {{{ */
 static char *
-SubtlerPipe(char *string)
+SubtlerParse(char *string)
 {
   char buf[256], *ret = NULL;
 
   assert(string);
 
-  if(!strncmp(string, "-", 1)) 
+  if(!strncmp(string, "-", 1)) ///< Read pipe
     {
-      /* Open pipe */
-      if(!fgets(buf, sizeof(buf), stdin)) subSharedLogError("Can't read from pipe\n");
+      if(!fgets(buf, sizeof(buf), stdin)) 
+        subSharedLogError("Failed reading from pipe\n");
+
       ret = (char *)subSharedMemoryAlloc(strlen(buf), sizeof(char));
       strncpy(ret, buf, strlen(buf) - 1);
-      subSharedLogDebug("Pipe: len=%d\n", strlen(buf));
+
+      subSharedLogDebug("Parse: len=%d\n", strlen(buf));
+    }
+  else if(!strncmp(string, "#", 1)) ///< Select win
+    {
+      Window win = None;
+      
+      if(None != (win = subSharedWindowSelect()))
+        ret = subSharedWindowWMClass(win);
     }
   else ret = strdup(string);
   
   return ret;
+} /* }}} */
+
+/* SubtlerReload {{{ */
+static void
+SubtlerReload(void)
+{
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_RELOAD", data, False);
 } /* }}} */
 
 /* main {{{ */
@@ -845,62 +845,59 @@ int
 main(int argc,
   char *argv[])
 {
-  int c, group = -1, action = -1;
+  int c, group = -1, action = -1, reload = 0;
   char *dispname = NULL, *arg1 = NULL, *arg2 = NULL;
   struct sigaction act;
-  static struct option long_options[] =
+  const struct option long_options[] =
   {
     /* Groups */
     { "clients",    no_argument,        0,  'c'  },
     { "sublets",    no_argument,        0,  's'  },
-    { "subtle",     no_argument,        0,  'S'  },
     { "tags",       no_argument,        0,  't'  },
     { "views",      no_argument,        0,  'v'  },
 
     /* Actions */
-    { "new",        no_argument,        0,  'n'  },
+    { "add",        no_argument,        0,  'a'  },
     { "kill",       no_argument,        0,  'k'  },
-    { "list",       no_argument,        0,  'l'  },
     { "find",       no_argument,        0,  'f'  },
-    { "focus",      no_argument,        0,  'F'  },
-    { "full",       no_argument,        0,  'U'  },
+    { "focus",      no_argument,        0,  'o'  },
+    { "full",       no_argument,        0,  'F'  },
     { "float",      no_argument,        0,  'L'  },
     { "stick",      no_argument,        0,  'S'  },
     { "jump",       no_argument,        0,  'j'  },
+    { "list",       no_argument,        0,  'l'  },
     { "tag",        no_argument,        0,  'T'  },
-    { "untag",      no_argument,        0,  'u'  },
-    { "tags",       no_argument,        0,  'g'  },
-    { "update",     no_argument,        0,  'p'  },
-    { "gravity",    no_argument,        0,  'G'  },
-    { "reload",     no_argument,        0,  'r'  },
+    { "untag",      no_argument,        0,  'U'  },
+    { "tags",       no_argument,        0,  'G'  },
+    { "update",     no_argument,        0,  'u'  },
+    { "gravity",    no_argument,        0,  'g'  },
 
-    /* Default */
+    /* Other */
 #ifdef DEBUG
     { "debug",      no_argument,        0,  'D'  },
 #endif /* DEBUG */
     { "display",    required_argument,  0,  'd'  },
     { "help",       no_argument,        0,  'h'  },
+    { "reload",     no_argument,        0,  'r'  },
     { "version",    no_argument,        0,  'V'  },
     { 0, 0, 0, 0}
   };
 
   /* Command table */
-  SubCommand cmds[SUB_GROUP_TOTAL][SUB_ACTION_TOTAL] = { 
-    /* Client, Sublet, Tag, View <=> New, Kill, Find, Focus, Full, Float, 
-       Stick, Jump, List, Tag, Untag, Tags, Update, Gravity, Reload */
+  const SubCommand cmds[SUB_GROUP_TOTAL][SUB_ACTION_TOTAL] = { 
+    /* Client, Sublet, Tag, View <=> Add, Kill, Find, Focus, Full, Float, 
+       Stick, Jump, List, Tag, Untag, Tags, Update, Gravity */
     { NULL, SubtlerClientKill, SubtlerClientFind,  SubtlerClientFocus, 
       SubtlerClientToggleFull, SubtlerClientToggleFloat, SubtlerClientToggleStick, 
       NULL, SubtlerClientList, SubtlerClientTag, SubtlerClientUntag, 
-      SubtlerClientTags, NULL, SubtlerClientGravity, NULL },
+      SubtlerClientTags, NULL, SubtlerClientGravity },
     { NULL, SubtlerSubletKill, NULL, NULL, NULL, NULL, NULL, NULL, SubtlerSubletList, 
-      NULL, NULL, NULL, SubtlerSubletUpdate, NULL, NULL },
-    { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-      NULL, SubtlerSubtleReload },
+      NULL, NULL, NULL, SubtlerSubletUpdate, NULL },
     { SubtlerTagNew, SubtlerTagKill, SubtlerTagFind, NULL, NULL, NULL, 
-      NULL, NULL, SubtlerTagList, NULL, NULL, NULL, NULL, NULL, NULL },
+      NULL, NULL, SubtlerTagList, NULL, NULL, NULL, NULL, NULL },
     { SubtlerViewNew, SubtlerViewKill, SubtlerViewFind, NULL, NULL, NULL, NULL,
       SubtlerViewJump, SubtlerViewList, SubtlerViewTag, SubtlerViewUntag, SubtlerViewTags, 
-      NULL, NULL, NULL }
+      NULL, NULL }
   };
 
   /* Set up signal handler */
@@ -911,37 +908,43 @@ main(int argc,
   sigaction(SIGINT, &act, NULL);
   sigaction(SIGSEGV, &act, NULL);
 
-  while((c = getopt_long(argc, argv, "csStvnkfFULijlTugpGDd:hrV", long_options, NULL)) != -1)
+  while((c = getopt_long(argc, argv, "cstvakfoFLSjlTUGugDd:hrV", long_options, NULL)) != -1)
     {
       switch(c)
         {
+          /* Groups */
           case 'c': group = SUB_GROUP_CLIENT;    break;
           case 's': group = SUB_GROUP_SUBLET;    break;
-          case 'S': group = SUB_GROUP_SUBTLE;    break;
           case 't': group = SUB_GROUP_TAG;       break;
           case 'v': group = SUB_GROUP_VIEW;      break;
 
-          case 'n': action = SUB_ACTION_NEW;     break;
+          /* Actions */
+          case 'a': action = SUB_ACTION_ADD;     break;
           case 'k': action = SUB_ACTION_KILL;    break;
           case 'f': action = SUB_ACTION_FIND;    break;
-          case 'F': action = SUB_ACTION_FOCUS;   break;
-          case 'U': action = SUB_ACTION_FULL;    break;
-          case 'L': action = SUB_ACTION_FLOAT;   break;
-          case 'i': action = SUB_ACTION_STICK;   break;
+          case 'o': action = SUB_ACTION_FOCUS;   break;
+          case 'M': action = SUB_ACTION_MAX;     break;
+          case 'F': action = SUB_ACTION_FLOAT;   break;
+          case 'S': action = SUB_ACTION_STICK;   break;
           case 'j': action = SUB_ACTION_JUMP;    break;
           case 'l': action = SUB_ACTION_LIST;    break;
           case 'T': action = SUB_ACTION_TAG;     break;
-          case 'u': action = SUB_ACTION_UNTAG;   break;
-          case 'g': action = SUB_ACTION_TAGS;    break;
-          case 'p': action = SUB_ACTION_UPDATE;  break;
-          case 'G': action = SUB_ACTION_GRAVITY; break;
-          case 'r': action = SUB_ACTION_RELOAD;  break;
+          case 'U': action = SUB_ACTION_UNTAG;   break;
+          case 'G': action = SUB_ACTION_TAGS;    break;
+          case 'u': action = SUB_ACTION_UPDATE;  break;
+          case 'g': action = SUB_ACTION_GRAVITY; break;
 
+          /* Other */
           case 'd': dispname = optarg;           break;
           case 'h': SubtlerUsage(group);         return 0;
 #ifdef DEBUG          
           case 'D': debug = 1;                   break;
+#else /* DEBUG */
+          case 'D': 
+            printf("Please recompile %sr with `debug=yes'\n", PKG_NAME); 
+            return 0;          
 #endif /* DEBUG */
+          case 'r': reload = 1;                  break;
           case 'V': SubtlerVersion();            return 0;
           case '?':
             printf("Try `%sr --help' for more information\n", PKG_NAME);
@@ -955,11 +958,7 @@ main(int argc,
       SubtlerUsage(group);
       return 0;
     }
-  
-  /* Get arguments */
-  if(argc > optind)     arg1 = SubtlerPipe(argv[optind]);
-  if(argc > optind + 1) arg2 = SubtlerPipe(argv[optind + 1]);
-
+ 
   /* Open connection to server */
   if(!(display = XOpenDisplay(dispname)))
     {
@@ -978,9 +977,17 @@ main(int argc,
 
       return -1;
     }
+ 
+  /* Parse arguments */
+  if(argc > optind)     arg1 = SubtlerParse(argv[optind]);
+  if(argc > optind + 1) arg2 = SubtlerParse(argv[optind + 1]);
 
   /* Select command */
-  if(cmds[group][action]) cmds[group][action](arg1, arg2);
+  if(cmds[group][action]) 
+    {
+      if(reload) SubtlerReload(); ///< Reload config
+      cmds[group][action](arg1, arg2);
+    }
   else SubtlerUsage(group);
 
   XCloseDisplay(display);
