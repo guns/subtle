@@ -175,9 +175,11 @@ subGrabSet(Window win)
                 }
             }
         }
+
       if(ROOT == win)
         XSetInputFocus(subtle->disp, win, RevertToNone, CurrentTime);
-      subtle->windows.focus = win; ///< Update focus window
+      else
+        subtle->windows.focus = win; ///< Update focus window
     }
 } /* }}} */
 

@@ -466,7 +466,12 @@ EventCrossing(XCrossingEvent *ev)
   SubClient *c = NULL;
   SubTray *t = NULL;
 
-  if((c = CLIENT(subSharedFind(ev->window, CLIENTID))))
+  if(ROOT == ev->window)
+    {
+      subGrabSet(ROOT);
+      printf("DEBUG %s:%d\n", __func__, __LINE__);
+    }
+  else if((c = CLIENT(subSharedFind(ev->window, CLIENTID))))
     {
       if(!(c->flags & SUB_STATE_DEAD))
         subClientFocus(c);
@@ -650,7 +655,6 @@ EventFocus(XFocusChangeEvent *ev)
               subClientRender(c);
             }
             
-          subGrabSet(ROOT);
           XUnmapWindow(subtle->disp, subtle->windows.caption); 
 
           subViewRender();

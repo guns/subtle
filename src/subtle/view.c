@@ -69,42 +69,44 @@ subViewNew(char *name,
 void
 subViewConfigure(SubView *v)
 {
+  long vid = 0;
+  int i, visible = 0;
+
   assert(v);
 
-  if(0 < subtle->clients->ndata)
+  vid = subArrayIndex(subtle->views, (void *)v);
+
+  /* Clients */
+  for(i = 0; i < subtle->clients->ndata; i++)
     {
-      int i;
-      long vid = subArrayIndex(subtle->views, (void *)v);
+      SubClient *c = CLIENT(subtle->clients->data[i]);
 
-      /* Clients */
-      for(i = 0; i < subtle->clients->ndata; i++)
+      /* Find matching clients */
+      if(VISIBLE(v, c))
         {
-          SubClient *c = CLIENT(subtle->clients->data[i]);
+          visible++;
+          XMapWindow(subtle->disp, c->win);
 
-          /* Find matching clients */
-          if(VISIBLE(v, c))
+          if(!(c->flags & (SUB_STATE_FULL|SUB_STATE_FLOAT))) 
             {
-              XMapWindow(subtle->disp, c->win);
-
-              if(!(c->flags & (SUB_STATE_FULL|SUB_STATE_FLOAT))) 
+              /* Check current gravity */
+              if(c->gravity != c->gravities[vid]) 
                 {
-                  /* Check current gravity */
-                  if(c->gravity != c->gravities[vid]) 
-                    {
-                      c->gravity = c->gravities[vid];
-                      subClientGravitySet(c, c->gravities[vid]);
-                      XMapRaised(subtle->disp, c->win);
-                    }
-                  subClientConfigure(c);
-
-                  /* EWMH: Desktop */
-                  subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
+                  c->gravity = c->gravities[vid];
+                  subClientGravitySet(c, c->gravities[vid]);
+                  XMapRaised(subtle->disp, c->win);
                 }
-              else XMapRaised(subtle->disp, c->win);
+              subClientConfigure(c);
+
+              /* EWMH: Desktop */
+              subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
             }
-          else XUnmapWindow(subtle->disp, c->win); ///< Unmap other windows
+          else XMapRaised(subtle->disp, c->win);
         }
+      else XUnmapWindow(subtle->disp, c->win); ///< Unmap other windows
     }
+
+  if(0 == visible) subGrabSet(ROOT); ///< Enable grabs on root
 } /* }}} */
 
  /** subViewUpdate {{{ 
@@ -186,7 +188,6 @@ subViewJump(SubView *v)
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP, &vid, 1);
 
   subViewRender();
-  subGrabSet(ROOT);
 
   printf("Switching view (%s)\n", subtle->cv->name);
 } /* }}} */
