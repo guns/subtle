@@ -24,9 +24,12 @@ require("ftools")
 # Options / defines {{{
 @options = {
   "destdir"    => "",
+  "xdg_config" => @xdg_config + "/$(PKG_NAME)",
+  "xdg_data"   => @xdg_data + "/$(PKG_NAME)/sublets",
   "bindir"     => "$(destdir)/usr/bin",
-  "sysconfdir" => "$(destdir)" + @xdg_config,
-  "datadir"    => "$(destdir)" + @xdg_data,
+  "sysconfdir" => "$(destdir)/$(xdg_config)",
+  "datadir"    => "$(destdir)/$(xdg_data)",
+  "extdir"     => "$(destdir)/$(sitelibdir)/$(PKG_NAME)",
   "debug"      => "no",
   "builddir"   => "build",
   "archdir"    => "",
@@ -43,9 +46,8 @@ require("ftools")
   "PKG_BUGREPORT" => "unexist@dorfelite.net",
   "PKG_CONFIG"    => "subtle.rb",
   "RUBY_VERSION"  => "$(MAJOR).$(MINOR).$(TEENY)",
-  "DIR_CONFIG"    => "$(sysconfdir)/$(PKG_NAME)",
-  "DIR_SUBLET"    => "$(datadir)/$(PKG_NAME)/sublets",
-  "DIR_EXT"       => "$(destdir)/$(sitelibdir)/$(PKG_NAME)"
+  "DIR_CONFIG"    => "$(xdg_config)",
+  "DIR_SUBLET"    => "$(xdg_data)"
 }  # }}}
 
 # Lists {{{
@@ -230,9 +232,9 @@ task(:config) do
 #{@defines["PKG_NAME"]} #{@defines["PKG_VERSION"]}
 -----------------
 Binaries............: #{@options["bindir"]}
-Configuration.......: #{@defines["DIR_CONFIG"]}
-Sublets.............: #{@defines["DIR_SUBLET"]}
-Extension...........: #{@defines["DIR_EXT"]}
+Configuration.......: #{@options["sysconfdir"]}
+Sublets.............: #{@options["datadir"]}
+Extension...........: #{@options["extdir"]}
 
 Debugging messages..: #{@options["debug"]}
 
@@ -262,9 +264,8 @@ task(:install => [:config, :build]) do
   File.makedirs(
     @options["bindir"],
     @options["sysconfdir"],
-    @defines["DIR_CONFIG"],
-    @defines["DIR_SUBLET"],
-    @defines["DIR_EXT"]
+    @options["datadir"],
+    @options["extdir"]
   )
 
   message("INSTALL %s\n" % [PG_WM])
@@ -274,15 +275,15 @@ task(:install => [:config, :build]) do
   File.install(PG_RMT, @options["bindir"], 0755, false)
 
   message("INSTALL %s\n" % [PG_RBE])
-  File.install(PG_RBE + ".so", @defines["DIR_EXT"], 0644, false)
+  File.install(PG_RBE + ".so", @options["extdir"], 0644, false)
 
   FileList["dist/sublets/*.rb"].collect do |f|
     message("INSTALL %s\n" % [File.basename(f)])
-    File.install(f, @defines["DIR_SUBLET"], 0644, false)
+    File.install(f, @options["datadir"], 0644, false)
   end
 
   message("INSTALL %s\n" % [@defines["PKG_CONFIG"]])
-  File.install("dist/" + @defines["PKG_CONFIG"], @defines["DIR_CONFIG"], 0644, false)
+  File.install("dist/" + @defines["PKG_CONFIG"], @options["sysconfdir"], 0644, false)
 end # }}}
 
 # Task: help {{{
