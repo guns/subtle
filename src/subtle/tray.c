@@ -101,11 +101,17 @@ subTrayUpdate(void)
 {
   if(0 < subtle->trays->ndata)
     {
-      int i, width = 3;
-      XWindowAttributes attrs;
+      int i, width = 3, x = SCREENW;
 
-      XMapRaised(subtle->disp, subtle->windows.tray);
-      XGetWindowAttributes(subtle->disp, subtle->windows.sublets, &attrs);
+      /* Get position of sublet window */ 
+      if(0 < subtle->sublets->ndata)
+        {
+          XWindowAttributes attrs;
+
+          XGetWindowAttributes(subtle->disp, subtle->windows.sublets, &attrs);
+
+          x = attrs.x;
+        }
 
       /* Resize every tray client */
       for(i = 0; i < subtle->trays->ndata; i++)
@@ -116,7 +122,8 @@ subTrayUpdate(void)
           width += t->width;
         }
 
-      XMoveResizeWindow(subtle->disp, subtle->windows.tray, attrs.x - width, 0, width, subtle->th);
+      XMapRaised(subtle->disp, subtle->windows.tray);
+      XMoveResizeWindow(subtle->disp, subtle->windows.tray, x - width, 0, width, subtle->th);
     }
   else XUnmapWindow(subtle->disp, subtle->windows.tray); ///< Unmap when tray is empty
 } /* }}} */
