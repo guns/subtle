@@ -362,7 +362,7 @@ SubtlerSubletKill(char *arg1,
   CHECK(arg1, "Usage: %sr -s -k PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  if(-1 != (data.l[0] = subSharedSubletFind(arg2)))
+  if(-1 != (data.l[0] = subSharedSubletFind(arg1)))
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_KILL", data, False);
   else subSharedLogWarn("Failed killing sublet\n");
 } /* }}} */
