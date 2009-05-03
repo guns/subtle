@@ -114,17 +114,24 @@ subSubletCompare(const void *a,
 void
 subSubletPublish(void)
 {
-  int i;
+  int i = 0;
   char **names = NULL;
-
+  SubSublet *iter = NULL;
+  
+  iter  = subtle->sublet;
   names = (char **)subSharedMemoryAlloc(subtle->sublets->ndata, sizeof(char *));
-  for(i = 0; i < subtle->sublets->ndata; i++) 
-    names[i] = SUBLET(subtle->sublets->data[i])->name;
+
+  /* Get list in order */
+  while(iter)
+    {
+      names[i++] = iter->name;
+      iter       = iter->next;
+    }
 
   /* EWMH: Sublet list */
-  subEwmhSetStrings(ROOT, SUB_EWMH_SUBTLE_SUBLET_LIST, names, i);
+  subEwmhSetStrings(ROOT, SUB_EWMH_SUBTLE_SUBLET_LIST, names, subtle->sublets->ndata);
 
-  subSharedLogDebug("publish=sublet, n=%d\n", i);
+  subSharedLogDebug("publish=sublet, n=%d\n", subtle->sublets->ndata);
 
   free(names);
 } /* }}} */
@@ -143,21 +150,22 @@ subSubletKill(SubSublet *s,
 
   printf("Killing sublet (%s)\n", s->name);
 
-  /* Update linked list */
   if(unlink)
     {
+      /* Update linked list */
       if(subtle->sublet == s) subtle->sublet = s->next;
       else
         {
-          int i;
-          SubSublet *prev = NULL;
-
-          for(i = 0; i < subtle->sublets->ndata; i++)
-            if((prev = SUBLET(subtle->sublets->data[i])) && prev->next == s)
-              {
-                prev->next = s->next;
-                break;
-              }
+          SubSublet *iter = subtle->sublet;
+          while(iter)
+            {
+              if(iter->next == s)
+                {
+                  iter->next = s->next;
+                  break;
+                }
+              iter = iter->next;
+            }
         }
     }
 

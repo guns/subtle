@@ -18,6 +18,22 @@
 #define BUFLEN (sizeof(struct inotify_event))
 #endif /* HAVE_SYS_INOTIFY_H */
 
+/* EventFindSublet {{{ */
+static SubSublet *
+EventFindSublet(int id)
+{
+  int i = 0;
+  SubSublet *iter = subtle->sublet;
+
+  while(iter)
+    {
+      if(i++ == id) break;
+      iter = iter->next;
+    }
+
+  return iter;
+} /* }}} */
+
 /* EventUntag {{{ */
 static void
 EventUntag(SubClient *c,
@@ -302,7 +318,7 @@ EventMessage(XClientMessageEvent *ev)
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_SUBLET_UPDATE: /* {{{ */
-            if((s = SUBLET(subArrayGet(subtle->sublets, (int)ev->data.l[0]))))
+            if((s = EventFindSublet((int)ev->data.l[0])))
               {
                 subRubyRun(s);
                 subSubletUpdate();
@@ -310,12 +326,13 @@ EventMessage(XClientMessageEvent *ev)
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_SUBLET_KILL: /* {{{ */
-            if((s = SUBLET(subArrayGet(subtle->sublets, (int)ev->data.l[0]))))
+            if((s = EventFindSublet((int)ev->data.l[0])))
               {
                 subArrayRemove(subtle->sublets, (void *)s);
                 subSubletKill(s, True);
                 subSubletUpdate();
                 subSubletPublish();
+                subTrayUpdate();
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_RELOAD: /* {{{ */
@@ -450,7 +467,7 @@ EventProperty(XPropertyEvent *ev)
         {
           char *name = XGetAtomName(subtle->disp, ev->atom);
 
-          subSharedLogDebug("Property: name=%s, type=%ld, win=%#lx\n", 
+          printf("Property: name=%s, type=%ld, win=%#lx\n", 
             name ? name : "n/a", ev->atom, ev->window);
           if(name) XFree(name);
         }
