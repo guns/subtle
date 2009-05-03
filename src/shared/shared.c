@@ -374,7 +374,7 @@ subSharedPropertyListFree(char **list,
 {
   int i;
 
-  assert(list && 0 < size);
+  assert(list);
 
   for(i = 0; i < size; i++)
     free(list[i]);
