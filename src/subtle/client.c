@@ -586,20 +586,20 @@ subClientSetSize(SubClient *c)
     {
       if(size->flags & PMinSize) ///< Program min size
         {
-          c->minw = MAX(size->min_width, 1);
-          c->minh = MAX(size->min_height, 1);
+          if(size->min_width)  c->minw = size->min_width;
+          if(size->min_height) c->minh = size->min_height;
         }
 
       if(size->flags & PMaxSize) ///< Program max size
         {
-          c->maxw = MIN(size->max_width, SCREENW);
-          c->maxh = MIN(size->max_height, SCREENH - subtle->th);
+          if(size->max_width)  c->maxw = MIN(size->max_width, SCREENW);
+          if(size->max_height) c->maxh = MIN(size->max_height, SCREENH - subtle->th);
         }
 
       if(size->flags & PBaseSize) ///< Program max size
         {
-          c->basew = MIN(size->base_width, SCREENW);
-          c->baseh = MIN(size->base_height, SCREENH - subtle->th);
+          if(size->base_width)  c->basew = MIN(size->base_width, SCREENW);
+          if(size->base_height) c->baseh = MIN(size->base_height, SCREENH - subtle->th);
         }
 
       if(size->flags & PAspect) ///< Aspect
@@ -610,8 +610,8 @@ subClientSetSize(SubClient *c)
 
       if(size->flags & PResizeInc) ///< Resize inc
         {
-          c->incw = MIN(size->width_inc, 1);
-          c->inch = MIN(size->height_inc, 1);
+          if(size->width_inc)  c->incw = size->width_inc;
+          if(size->height_inc) c->inch = size->height_inc;
         }
 
       XFree(size);
@@ -656,7 +656,7 @@ subClientToggle(SubClient *c,
         {
           /* Ignore values if they are garbage */
           if(c->minw > c->rect.width || c->minh > c->rect.width || 
-            c->maxw > c->rect.width || c->maxh > c->rect.height)
+            c->maxw < c->rect.width || c->maxh < c->rect.height)
             {
               c->rect.width  = c->minw;
               c->rect.height = c->minh;
