@@ -412,7 +412,7 @@ RubySubtleViewAdd(VALUE self,
       /* Create new view */
       v = subViewNew(STR2CSTR(value), NULL);
       subArrayPush(subtle->views, (void *)v);
-      subClientGravityUpdate(-1); ///< Grow
+      subClientUpdate(-1); ///< Grow
       subViewUpdate();
       subViewPublish();
       subViewRender();    

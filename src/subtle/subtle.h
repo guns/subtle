@@ -61,8 +61,10 @@
 
 #define EVENTMASK \
   (StructureNotifyMask|PropertyChangeMask|EnterWindowMask|FocusChangeMask)
-#define MOTIONMASK \
-  (PointerMotionMask|ButtonReleaseMask|KeyPressMask|EnterWindowMask)
+#define DRAGMASK \
+  (PointerMotionMask|ButtonReleaseMask|KeyPressMask|EnterWindowMask|FocusChangeMask)
+#define GRABMASK \
+  (ButtonPressMask|ButtonReleaseMask|PointerMotionMask)
 
 #define VISUAL \
   DefaultVisual(subtle->disp, DefaultScreen(subtle->disp))        ///< Default visual
@@ -145,7 +147,8 @@
 #define SUB_PREF_INPUT                (1L << 15)                  ///< Active/passive focus-model
 #define SUB_PREF_FOCUS                (1L << 16)                  ///< Send focus message
 #define SUB_PREF_CLOSE                (1L << 17)                  ///< Send close message
-#define SUB_PREF_HINTS                (1L << 18)                  ///< Size hints available
+#define SUB_PREF_POS                  (1L << 18)                  ///< Client position
+#define SUB_PREF_SIZE                 (1L << 19)                  ///< Client size
 
 /* Data types */
 #define SUB_DATA_STRING               (1L << 10)                  ///< String data
@@ -171,8 +174,7 @@
 #define SUB_DRAG_START                (1L << 10)                  ///< Drag start
 #define SUB_DRAG_MOVE                 (1L << 11)                  ///< Drag move
 #define SUB_DRAG_SWAP                 (1L << 12)                  ///< Drag swap
-#define SUB_DRAG_RESIZE_LEFT          (1L << 13)                  ///< Drag resize left
-#define SUB_DRAG_RESIZE_RIGHT         (1L << 14)                  ///< Drag resize right
+#define SUB_DRAG_RESIZE               (1L << 13)                  ///< Drag resize
 
 /* Fixed tags */
 #define SUB_TAG_DEFAULT               (1L << 1)                   ///< Default tag
@@ -204,10 +206,12 @@ typedef struct subclient_t /* {{{ */
 
   TAGS       tags;                                                ///< Client tags
   Window     win;                                                 ///< Client window
-  int        gravity, *gravities;                                 ///< Client gravity/gravities
   Colormap   cmap;                                                ///< Client colormap
   XRectangle rect;                                                ///< Client rect
-  XSizeHints *hints;                                              ///< Client size hints
+
+  float      minr, maxr;                                          ///< Client ratios
+  int        basew, baseh, minw, minh, maxw, maxh, incw, inch;    ///< Client sizes
+  int        gravity, *gravities;                                 ///< Client gravities
 } SubClient; /* }}} */
 
 typedef enum subewmh_t /* {{{ */
@@ -382,18 +386,18 @@ typedef struct subtray_t /* {{{ */
   FLAGS  flags;                                                   ///< Tray flags
   char   *name;                                                   ///< Tray name
 
-  int    width;                                                   ///< Tray width
   Window win;                                                     ///< Tray window
+  int    width;                                                   ///< Tray width
 } SubTray; /* }}} */
 
 typedef struct subview_t /* {{{ */
 {
-  FLAGS           flags;                                          ///< View flags
-  char            *name;                                          ///< View name
+  FLAGS  flags;                                                   ///< View flags
+  char   *name;                                                   ///< View name
+  TAGS   tags;                                                    ///< View tags
 
-  TAGS            tags;                                           ///< View tags
-  Window          button;                                         ///< View win, button
-  int             width;                                          ///< View width
+  Window button;                                                  ///< View button
+  int    width;                                                   ///< View width
 } SubView; /* }}} */
 
 extern SubSubtle *subtle;
@@ -417,8 +421,9 @@ void subClientConfigure(SubClient *c);                            ///< Send conf
 void subClientRender(SubClient *c);                               ///< Render client
 void subClientFocus(SubClient *c);                                ///< Focus client
 void subClientDrag(SubClient *c, int mode);                       ///< Move/drag client
-void subClientGravityUpdate(int vid);                             ///< Update gravity array
-void subClientGravitySet(SubClient *c, int type);                 ///< Set client gravity
+void subClientUpdate(int vid);                                    ///< Update clients
+void subClientSetGravity(SubClient *c, int type);                 ///< Set client gravity
+void subClientSetSize(SubClient *c);                              ///< Set client site
 void subClientToggle(SubClient *c, int type);                     ///< Toggle client state
 void subClientPublish(void);                                      ///< Publish all clients
 void subClientKill(SubClient *c, int close);                      ///< Kill client
