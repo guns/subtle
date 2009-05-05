@@ -78,21 +78,16 @@ EventExec(char *cmd)
 static void
 EventConfigure(XConfigureRequestEvent *ev)
 {
-  SubClient *c = NULL;
+  XWindowChanges wc;
 
-  if(!(c = CLIENT(subSharedFind(ev->window, CLIENTID))))
-    {
-      XWindowChanges wc;
+  wc.x          = ev->x;
+  wc.y          = ev->y;
+  wc.width      = ev->width;
+  wc.height     = ev->height;
+  wc.sibling    = ev->above;
+  wc.stack_mode = ev->detail;
 
-      wc.x          = ev->x;
-      wc.y          = ev->y;
-      wc.width      = ev->width;
-      wc.height     = ev->height;
-      wc.sibling    = ev->above;
-      wc.stack_mode = ev->detail;
-
-      XConfigureWindow(subtle->disp, ev->window, ev->value_mask, &wc); 
-    }
+  XConfigureWindow(subtle->disp, ev->window, ev->value_mask, &wc); 
 } /* }}} */
 
 /* EventMapRequest {{{ */
@@ -297,7 +292,7 @@ EventMessage(XClientMessageEvent *ev)
               { 
                 v = subViewNew(ev->data.b, NULL); 
                 subArrayPush(subtle->views, (void *)v);
-                subClientGravityUpdate(-1); ///< Grow
+                subClientUpdate(-1); ///< Grow
                 subViewUpdate();
                 subViewPublish();
                 subViewRender();
@@ -309,7 +304,7 @@ EventMessage(XClientMessageEvent *ev)
                 int vid = subArrayIndex(subtle->views, (void *)v);
 
                 subArrayRemove(subtle->views, (void *)v);
-                subClientGravityUpdate(vid); ///< Shrink
+                subClientUpdate(vid); ///< Shrink
                 subViewKill(v);
                 subViewUpdate();
                 subViewPublish();
@@ -448,17 +443,22 @@ EventProperty(XPropertyEvent *ev)
               }
           }
         break;
+      case SUB_EWMH_WM_NORMAL_HINTS: ///< Client/Tray
+        if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) 
+          {
+            subClientSetSize(c);
+            subSharedLogDebug("Hints: Updated normal hints\n");
+          }       
+        else if((t = TRAY(subSharedFind(ev->window, TRAYID))))
+          {
+            subTrayConfigure(t);
+            subTrayUpdate();
+          }          
+        break;
       case SUB_EWMH_XEMBED_INFO: ///< Tray
         if((t = TRAY(subSharedFind(ev->window, TRAYID))))
           {
             subTraySetState(t);
-            subTrayUpdate();
-          }
-        break;
-      case SUB_EWMH_WM_NORMAL_HINTS: ///< Tray
-        if((t = TRAY(subSharedFind(ev->window, TRAYID))))
-          {
-            subTrayConfigure(t);
             subTrayUpdate();
           }
         break;
@@ -467,7 +467,7 @@ EventProperty(XPropertyEvent *ev)
         {
           char *name = XGetAtomName(subtle->disp, ev->atom);
 
-          printf("Property: name=%s, type=%ld, win=%#lx\n", 
+          subSharedLogDebug("Property: name=%s, type=%ld, win=%#lx\n", 
             name ? name : "n/a", ev->atom, ev->window);
           if(name) XFree(name);
         }
@@ -548,14 +548,11 @@ EventGrab(XEvent *ev)
       Window win = 0;
       SubClient *c = NULL;
       FLAGS flag = 0;
-      int wx = 0, wy = 0, vid = 0;
+      int vid = 0;
 
-      /* Use similarity of both events */
-      win = ev->xbutton.window == ROOT ? ev->xbutton.subwindow : ev->xbutton.window;
-      wx  = ev->xbutton.x;
-      wy  = ev->xbutton.y + subtle->th;
-
+      win  = ev->xbutton.window == ROOT ? ev->xbutton.subwindow : ev->xbutton.window;
       flag = g->flags & ~(SUB_TYPE_GRAB|SUB_GRAB_KEY|SUB_GRAB_MOUSE); ///< Clear mask
+
       switch(flag)
         {
           case SUB_GRAB_EXEC: /* {{{ */
@@ -582,12 +579,11 @@ EventGrab(XEvent *ev)
             break; /* }}} */
           case SUB_GRAB_WINDOW_MOVE:
           case SUB_GRAB_WINDOW_RESIZE: /* {{{ */
-            if((c = CLIENT(subSharedFind(win, CLIENTID))) && !(c->flags & SUB_STATE_FULL))
+            if((c = CLIENT(subSharedFind(win, CLIENTID))) && c->flags & SUB_STATE_FLOAT && 
+              !(c->flags & SUB_STATE_FULL))
               {
-                if(SUB_GRAB_WINDOW_MOVE == flag && c->flags & (SUB_STATE_FLOAT|SUB_STATE_STICK))
-                  flag = SUB_DRAG_MOVE;
-                else if(SUB_GRAB_WINDOW_RESIZE == flag) 
-                  flag = wx < c->rect.width / 2 ? SUB_DRAG_RESIZE_LEFT : SUB_DRAG_RESIZE_RIGHT;
+                if(SUB_GRAB_WINDOW_MOVE == flag) flag = SUB_DRAG_MOVE;
+                else if(SUB_GRAB_WINDOW_RESIZE == flag) flag = SUB_DRAG_RESIZE;
 
                 subClientDrag(c, flag);
               }
