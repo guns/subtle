@@ -52,6 +52,10 @@ class TestClient < Test::Unit::TestCase
       @client.send(t)
     end
 
+    # Test: Restack
+    @client.raise
+    @client.lower
+
     # Test: Info
     @string = @client.to_s
     assert_not_nil(@string)
