@@ -168,7 +168,11 @@
 #define SUB_GRAB_WINDOW_FLOAT         (1L << 23)                  ///< Toggle float
 #define SUB_GRAB_WINDOW_FULL          (1L << 24)                  ///< Toggle full
 #define SUB_GRAB_WINDOW_STICK         (1L << 25)                  ///< Toggle stock
-#define SUB_GRAB_WINDOW_KILL          (1L << 26)                  ///< Kill window
+#define SUB_GRAB_WINDOW_RAISE         (1L << 26)                  ///< Raise window
+#define SUB_GRAB_WINDOW_LOWER         (1L << 27)                  ///< Lower window
+#define SUB_GRAB_WINDOW_NEXT          (1L << 28)                  ///< Focus next window
+#define SUB_GRAB_WINDOW_PREV          (1L << 29)                  ///< Focus prev window
+#define SUB_GRAB_WINDOW_KILL          (1L << 30)                  ///< Kill window
 
 /* Drag states */
 #define SUB_DRAG_START                (1L << 10)                  ///< Drag start
@@ -239,7 +243,8 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_NET_WORKAREA,                                          ///< Workarea of the views
   SUB_EWMH_NET_SUPPORTING_WM_CHECK,                               ///< Check for compliant window manager
   SUB_EWMH_NET_VIRTUAL_ROOTS,                                     ///< List of virtual destops
-  SUB_EWMH_NET_CLOSE_WINDOW,               
+  SUB_EWMH_NET_CLOSE_WINDOW,                                      ///< Close window             
+  SUB_EWMH_NET_RESTACK_WINDOW,                                    ///< Change window stacking
 
   SUB_EWMH_NET_WM_NAME,                            
   SUB_EWMH_NET_WM_PID,                                            ///< PID of client
