@@ -146,6 +146,27 @@ SubtlextToggle(VALUE self,
   return Qnil;
 } /* }}} */
 
+/* SubtlextRestack {{{ */
+static VALUE
+SubtlextRestack(VALUE self,
+  int detail)
+{
+  VALUE win = rb_iv_get(self, "@win");
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  if(RTEST(win))
+    {
+      data.l[0] = 2; ///< Claim to be a pager
+      data.l[1] = NUM2LONG(win);
+      data.l[2] = detail; 
+
+      subSharedMessage(DefaultRootWindow(display), "_NET_RESTACK_WINDOW", data, True);
+    }
+  else rb_raise(rb_eStandardError, "Failed restacking client");  
+
+  return Qnil;
+} /* }}} */
+
 /* SubtlextTag {{{ */
 static VALUE
 SubtlextTag(VALUE self,
@@ -320,6 +341,20 @@ SubtlextClientToggleStick(VALUE self)
   return SubtlextToggle(self, "_NET_WM_STATE_STICKY");
 } /* }}} */
 
+/* SubtlextClientRestackRaise {{{ */
+static VALUE
+SubtlextClientRestackRaise(VALUE self)
+{
+  return SubtlextRestack(self, Above);
+} /* }}} */
+
+/* SubtlextClientRestackLower {{{ */
+static VALUE
+SubtlextClientRestackLower(VALUE self)
+{
+  return SubtlextRestack(self, Below);
+} /* }}} */
+
 /* SubtlextClientFocus {{{ */
 static VALUE
 SubtlextClientFocus(VALUE self)
@@ -367,8 +402,10 @@ SubtlextClientKill(VALUE self)
 
   if(RTEST(win))
     {
-      data.l[0] = NUM2LONG(win);
-      subSharedMessage(DefaultRootWindow(display), "_NET_CLOSE_WINDOW", data, True);
+      data.l[0] = CurrentTime;
+      data.l[1] = 2; ///< Claim to be a pager
+
+      subSharedMessage(NUM2LONG(win), "_NET_CLOSE_WINDOW", data, True);
     }
   else rb_raise(rb_eStandardError, "Failed killing client");
 
@@ -647,11 +684,9 @@ SubtlextSubtleTagDel(VALUE self,
       data.l[0] = FIX2LONG(id);
 
       subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_KILL", data, True);  
-
-      return Qnil;
     }
+  else rb_raise(rb_eStandardError, "Failed finding tag");
 
-  rb_raise(rb_eStandardError, "Failed finding tag");
   return Qnil;
 } /* }}} */
 
@@ -724,12 +759,10 @@ SubtlextSubtleClientFind(VALUE self,
 
       free(wmname);
       free(gravity);
-
-      return client;
     }
+  else rb_raise(rb_eStandardError, "Failed finding client");
 
-  rb_raise(rb_eStandardError, "Failed finding client");
-  return Qnil;
+  return client ;
 } /* }}} */
 
 /* SubtlextSubtleClientFocus {{{ */
@@ -756,12 +789,10 @@ SubtlextSubtleClientFocus(VALUE self,
       rb_iv_set(client, "@id",  INT2FIX(id));
       rb_iv_set(client, "@win", LONG2NUM(win));
       free(wmname);
-
-      return client;
     }
+  else rb_raise(rb_eStandardError, "Failed setting focus");
 
-  rb_raise(rb_eStandardError, "Failed setting focus");
-  return Qnil;
+  return client;
 } /* }}} */
 
 /* SubtlextSubtleClientDel {{{ */
@@ -778,13 +809,12 @@ SubtlextSubtleClientDel(VALUE self,
 
       /* Send data */
       data.l[0] = CurrentTime;
+      data.l[1] = 2; ///< Claim to be a pager
 
       subSharedMessage(win, "_NET_CLOSE_WINDOW", data, True);       
-
-      return Qnil;
     }
+  else rb_raise(rb_eStandardError, "Failed finding client");
 
-  rb_raise(rb_eStandardError, "Failed finding client");
   return Qnil;
 } /* }}} */
 
@@ -792,6 +822,7 @@ SubtlextSubtleClientDel(VALUE self,
 static VALUE
 SubtlextSubtleClientCurrent(VALUE self)
 {
+  VALUE client = Qnil;
   unsigned long *focus = NULL;
 
   if((focus = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
@@ -799,7 +830,7 @@ SubtlextSubtleClientCurrent(VALUE self)
     {
       int id = -1, *gravity = NULL;
       char *wmname = NULL;
-      VALUE klass = Qnil, client = Qnil;
+      VALUE klass = Qnil;
 
       /* Create new client instance */
       wmname  = subSharedWindowWMName(*focus);
@@ -816,12 +847,10 @@ SubtlextSubtleClientCurrent(VALUE self)
       free(focus);
       free(wmname);
       free(gravity);
-
-      return client;
     }
+  else rb_raise(rb_eStandardError, "Failed getting current client");
 
-  rb_raise(rb_eStandardError, "Failed getting current client");
-  return Qnil;
+  return client;
 } /* }}} */
 
 /* SubtlextSubtleSubletDel {{{ */
@@ -839,11 +868,9 @@ SubtlextSubtleSubletDel(VALUE self,
       data.l[0] = id;
 
       subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_KILL", data, True);       
-
-      return Qnil;
     }
+  else rb_raise(rb_eStandardError, "Failed finding sublet");
 
-  rb_raise(rb_eStandardError, "Failed finding sublet");
   return Qnil;
 } /* }}} */
 
@@ -893,9 +920,9 @@ SubtlextSubtleSubletFind(VALUE self,
 
       return sublet;
     }
+  else rb_raise(rb_eStandardError, "Failed finding sublet");
 
-  rb_raise(rb_eStandardError, "Failed finding sublet");
-  return Qnil;
+  return sublet;
 } /* }}} */
 
 /* SubtlextSubtleViewList {{{ */
@@ -1041,11 +1068,9 @@ SubtlextSubletUpdate(VALUE self)
       data.l[0] = id;
 
       subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_UPDATE", data, True);
-
-      return Qnil;
     }
+  else rb_raise(rb_eStandardError, "Failed finding sublet");
 
-  rb_raise(rb_eStandardError, "Failed finding sublet");
   return Qnil;
 } /* }}} */
 
@@ -1370,6 +1395,8 @@ Init_subtlext(void)
   rb_define_method(klass, "toggle_full",  SubtlextClientToggleFull,    0);
   rb_define_method(klass, "toggle_float", SubtlextClientToggleFloat,   0);
   rb_define_method(klass, "toggle_stick", SubtlextClientToggleStick,   0);
+  rb_define_method(klass, "raise",        SubtlextClientRestackRaise,  0);
+  rb_define_method(klass, "lower",        SubtlextClientRestackLower,  0);
   rb_define_method(klass, "focus",        SubtlextClientFocus,         0);
   rb_define_method(klass, "focus?",       SubtlextClientFocusHas,      0);
   rb_define_method(klass, "kill",         SubtlextClientKill,          0);
