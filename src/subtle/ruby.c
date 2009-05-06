@@ -613,6 +613,10 @@ subRubyInit(void)
   rb_define_const(submod, "WindowFloat",  INT2FIX(SUB_GRAB_WINDOW_FLOAT));
   rb_define_const(submod, "WindowFull",   INT2FIX(SUB_GRAB_WINDOW_FULL));
   rb_define_const(submod, "WindowStick",  INT2FIX(SUB_GRAB_WINDOW_STICK));
+  rb_define_const(submod, "WindowRaise",  INT2FIX(SUB_GRAB_WINDOW_RAISE));
+  rb_define_const(submod, "WindowLower",  INT2FIX(SUB_GRAB_WINDOW_LOWER));
+  rb_define_const(submod, "WindowNext",   INT2FIX(SUB_GRAB_WINDOW_NEXT));
+  rb_define_const(submod, "WindowPrev",   INT2FIX(SUB_GRAB_WINDOW_PREV));
   rb_define_const(submod, "WindowKill",   INT2FIX(SUB_GRAB_WINDOW_KILL));
 
   /* Load subtlext */

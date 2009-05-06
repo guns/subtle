@@ -223,6 +223,18 @@ EventMessage(XClientMessageEvent *ev)
                 subClientFocus(c);
               }
             break; /* }}} */
+          case SUB_EWMH_NET_RESTACK_WINDOW: /* {{{ */
+            if((c = CLIENT(subSharedFind(ev->data.l[1], CLIENTID))))
+              {        
+                switch(ev->data.l[2])
+                  {
+                    case Above: XRaiseWindow(subtle->disp, c->win); break;
+                    case Below: XLowerWindow(subtle->disp, c->win); break;
+                    default:
+                      subSharedLogDebug("Restack: Ignored restack event (%d)\n", ev->data.l[2]);
+                  }
+              }
+            break; /* }}} */            
           case SUB_EWMH_SUBTLE_WINDOW_TAG:
           case SUB_EWMH_SUBTLE_WINDOW_UNTAG: /* {{{ */
             tag = (1L << (ev->data.l[1] + 1));
@@ -385,7 +397,11 @@ EventMessage(XClientMessageEvent *ev)
             if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
             break; /* }}} */
           case SUB_EWMH_NET_CLOSE_WINDOW: /* {{{ */
-            subClientKill(c, True);               
+            subArrayRemove(subtle->clients, (void *)c);
+            subClientPublish();
+            if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
+            subClientKill(c, True);
+            subViewUpdate();
             break; /* }}} */
         }
     } /* }}} */
@@ -599,6 +615,17 @@ EventGrab(XEvent *ev)
                 if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
               }
             break; /* }}} */
+          case SUB_GRAB_WINDOW_RAISE:
+          case SUB_GRAB_WINDOW_LOWER: /* {{{ */
+            if((c = CLIENT(subSharedFind(win, CLIENTID))))
+              {
+                if(VISIBLE(subtle->cv, c)) 
+                  {
+                    if(SUB_GRAB_WINDOW_RAISE == flag) XRaiseWindow(subtle->disp, c->win);
+                    else XLowerWindow(subtle->disp, c->win);
+                  }
+              }
+            break; /* }}} */            
           case SUB_GRAB_WINDOW_KILL: /* {{{ */
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               { 
