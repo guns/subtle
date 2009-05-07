@@ -590,7 +590,13 @@ EventGrab(XEvent *ev)
                 c->gravity        = -1; ///< Force 
                 c->gravities[vid] = g->data.num;
 
-                if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
+                if(VISIBLE(subtle->cv, c)) 
+                  {
+                    subViewConfigure(subtle->cv);
+                    
+                    XWarpPointer(subtle->disp, None, ROOT, 0, 0, 0, 0, 
+                      c->rect.x + c->rect.width / 2, c->rect.y + c->rect.height / 2);
+                  }
               }
             break; /* }}} */
           case SUB_GRAB_WINDOW_MOVE:

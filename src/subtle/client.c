@@ -140,6 +140,9 @@ subClientNew(Window win)
         {
           c->tags = t->tags; ///< Copy tags
           subClientToggle(c, SUB_STATE_STICK|SUB_STATE_FLOAT);
+
+          XWarpPointer(subtle->disp, None, ROOT, 0, 0, 0, 0, 
+            c->rect.x + c->rect.width / 2, c->rect.y + c->rect.height / 2);
         }
     } 
 
@@ -547,9 +550,6 @@ subClientSetGravity(SubClient *c,
 
   /* EWMH: Gravity */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
-
-  XWarpPointer(subtle->disp, None, ROOT, 0, 0, 0, 0, 
-    c->rect.x + c->rect.width / 2, c->rect.y + c->rect.height / 2);
 } /* }}} */
 
   /** subClientSetSize {{{ 
