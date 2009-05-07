@@ -818,10 +818,11 @@ subEventLoop(void)
           s = 0 < subtle->sublets->ndata ? SUBLET(subtle->sublets->data[0]) : NULL;
           while(s && s->time <= now)
             {
+              if(!(s->flags & SUB_DATA_INOTIFY)) subRubyRun((void *)s);
+
               s->time  = now + s->interval; ///< Adjust seconds
               s->time -= s->time % s->interval;
 
-              if(!(s->flags & SUB_DATA_INOTIFY)) subRubyRun((void *)s);
               subArraySort(subtle->sublets, subSubletCompare);
 
               s = SUBLET(subtle->sublets->data[0]);
