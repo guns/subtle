@@ -673,6 +673,14 @@ EventFocus(XFocusChangeEvent *ev)
   SubClient *c = NULL;
   SubTray *t = NULL;
 
+  /* Check if we are interested in this event */
+  if(NotifyNormal != ev->mode)
+    {
+      subSharedLogDebug("Ignored focus: mode=%d, detail=%d\n", ev->mode, ev->detail);
+      return;
+    }
+
+  /* Handle other focus event */
   if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) ///< Clients
     { 
       if(FocusIn == ev->type && VISIBLE(subtle->cv, c)) ///< FocusIn event
