@@ -141,8 +141,9 @@ subClientNew(Window win)
           c->tags = t->tags; ///< Copy tags
           subClientToggle(c, SUB_STATE_STICK|SUB_STATE_FLOAT);
 
-          XWarpPointer(subtle->disp, None, ROOT, 0, 0, 0, 0, 
-            c->rect.x + c->rect.width / 2, c->rect.y + c->rect.height / 2);
+          if(subtle->windows.focus != c->win) ///< Move pointer to transient
+            XWarpPointer(subtle->disp, None, ROOT, 0, 0, 0, 0, 
+              c->rect.x + c->rect.width / 2, c->rect.y + c->rect.height / 2);
         }
     } 
 
@@ -390,7 +391,7 @@ subClientDrag(SubClient *c,
                       r.x = (rx - wx) - (rx - ev.xmotion.x_root);
                       r.y = (ry - wy) - (ry - ev.xmotion.y_root);
 
-                      ClientSnap(c, &r);
+                      ClientSnap(c, &r); ///< Snap to border
                       break;
                     case SUB_DRAG_RESIZE: 
                       if(c->rect.width + ev.xmotion.x_root >= rx)
@@ -405,6 +406,7 @@ subClientDrag(SubClient *c,
                               if(left) r.x = c->rect.x + c->rect.width - r.width;
                             }
                         }
+
                       if(c->rect.height + ev.xmotion.y_root >= ry)
                         {
                           int height = c->rect.height - (ry - ev.xmotion.y_root);
@@ -413,6 +415,14 @@ subClientDrag(SubClient *c,
                             c->rect.y + height < SCREENH - subtle->bw) ///< Limit size
                             r.height = height - (height % c->inch);
                         }
+
+                      /* Check aspect ratios */
+                      if(c->minr && r.height * c->minr > r.width)
+                        r.width = (int)(r.height * c->minr);
+
+                      if(c->maxr && r.height * c->maxr < r.width)
+                        r.width = (int)(r.height * c->maxr);
+                        
                       break;
                   }  
 
@@ -424,7 +434,7 @@ subClientDrag(SubClient *c,
 
   ClientMask(c2, &r); ///< Erase mask
 
-  if(c->flags & SUB_STATE_FLOAT) 
+  if(c->flags & SUB_STATE_FLOAT) ///< Resize client
     {
       r.y     -= (subtle->th + subtle->bw); ///< Border and bar height
       r.x     -= subtle->bw;
