@@ -157,22 +157,22 @@
 #define SUB_DATA_INOTIFY              (1L << 13)                  ///< Inotify data
 
 /* Grab types */
-#define SUB_GRAB_KEY                  (1L << 15)                  ///< Key grab
-#define SUB_GRAB_MOUSE                (1L << 16)                  ///< Mouse grab  
-#define SUB_GRAB_EXEC                 (1L << 17)                  ///< Exec an app
-#define SUB_GRAB_PROC                 (1L << 18)                  ///< Grab with proc
-#define SUB_GRAB_JUMP                 (1L << 19)                  ///< Jump to view
-#define SUB_GRAB_GRAVITY              (1L << 20)                  ///< Gravity type
-#define SUB_GRAB_WINDOW_MOVE          (1L << 21)                  ///< Resize window
-#define SUB_GRAB_WINDOW_RESIZE        (1L << 22)                  ///< Move window
-#define SUB_GRAB_WINDOW_FLOAT         (1L << 23)                  ///< Toggle float
-#define SUB_GRAB_WINDOW_FULL          (1L << 24)                  ///< Toggle full
-#define SUB_GRAB_WINDOW_STICK         (1L << 25)                  ///< Toggle stock
-#define SUB_GRAB_WINDOW_RAISE         (1L << 26)                  ///< Raise window
-#define SUB_GRAB_WINDOW_LOWER         (1L << 27)                  ///< Lower window
-#define SUB_GRAB_WINDOW_NEXT          (1L << 28)                  ///< Focus next window
-#define SUB_GRAB_WINDOW_PREV          (1L << 29)                  ///< Focus prev window
-#define SUB_GRAB_WINDOW_KILL          (1L << 30)                  ///< Kill window
+#define SUB_GRAB_KEY                  (1L << 10)                  ///< Key grab
+#define SUB_GRAB_MOUSE                (1L << 11)                  ///< Mouse grab  
+#define SUB_GRAB_EXEC                 (1L << 12)                  ///< Exec an app
+#define SUB_GRAB_PROC                 (1L << 13)                  ///< Grab with proc
+#define SUB_GRAB_JUMP                 (1L << 14)                  ///< Jump to view
+#define SUB_GRAB_GRAVITY              (1L << 15)                  ///< Gravity type
+#define SUB_GRAB_WINDOW_MOVE          (1L << 16)                  ///< Resize window
+#define SUB_GRAB_WINDOW_RESIZE        (1L << 17)                  ///< Move window
+#define SUB_GRAB_WINDOW_FLOAT         (1L << 18)                  ///< Toggle float
+#define SUB_GRAB_WINDOW_FULL          (1L << 19)                  ///< Toggle full
+#define SUB_GRAB_WINDOW_STICK         (1L << 20)                  ///< Toggle stock
+#define SUB_GRAB_WINDOW_RAISE         (1L << 21)                  ///< Raise window
+#define SUB_GRAB_WINDOW_LOWER         (1L << 22)                  ///< Lower window
+#define SUB_GRAB_WINDOW_NEXT          (1L << 23)                  ///< Focus next window
+#define SUB_GRAB_WINDOW_PREV          (1L << 24)                  ///< Focus prev window
+#define SUB_GRAB_WINDOW_KILL          (1L << 25)                  ///< Kill window
 
 /* Drag states */
 #define SUB_DRAG_START                (1L << 10)                  ///< Drag start
