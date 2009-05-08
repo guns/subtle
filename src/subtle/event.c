@@ -823,11 +823,15 @@ subEventLoop(void)
               s->time  = now + s->interval; ///< Adjust seconds
               s->time -= s->time % s->interval;
 
+              printf("time=%d, now=%d, interval=%d\n", s->time, now, s->interval);
+
               subArraySort(subtle->sublets, subSubletCompare);
 
               s = SUBLET(subtle->sublets->data[0]);
             }
+
           subSubletUpdate();
+          subTrayUpdate();
           subSubletRender();
         }
 
