@@ -188,6 +188,7 @@ subDisplayPublish(void)
   /* EWMH: Window manager information */
   subEwmhSetWindows(ROOT, SUB_EWMH_NET_SUPPORTING_WM_CHECK, &subtle->windows.bar, 1);
   subEwmhSetString(subtle->windows.bar, SUB_EWMH_NET_WM_NAME, PKG_NAME);
+  subEwmhSetString(subtle->windows.bar, SUB_EWMH_WM_CLASS, PKG_NAME);
   subEwmhSetCardinals(subtle->windows.bar, SUB_EWMH_NET_WM_PID, &pid, 1);
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_DESKTOP_VIEWPORT, (long *)&data, 2);
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_SHOWING_DESKTOP, (long *)&data, 1);
