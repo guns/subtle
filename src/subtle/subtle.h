@@ -425,6 +425,7 @@ SubClient *subClientNew(Window win);                              ///< Create cl
 void subClientConfigure(SubClient *c);                            ///< Send configure request
 void subClientRender(SubClient *c);                               ///< Render client
 void subClientFocus(SubClient *c);                                ///< Focus client
+void subClientWarp(SubClient *c);                                 ///< Warp to client
 void subClientDrag(SubClient *c, int mode);                       ///< Move/drag client
 void subClientUpdate(int vid);                                    ///< Update clients
 void subClientSetGravity(SubClient *c, int type);                 ///< Set client gravity

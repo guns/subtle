@@ -142,8 +142,7 @@ subClientNew(Window win)
           subClientToggle(c, SUB_STATE_STICK|SUB_STATE_FLOAT);
 
           if(subtle->windows.focus != c->win) ///< Move pointer to transient
-            XWarpPointer(subtle->disp, None, ROOT, 0, 0, 0, 0, 
-              c->rect.x + c->rect.width / 2, c->rect.y + c->rect.height / 2);
+            subClientWarp(c);
         }
     } 
 
@@ -168,13 +167,13 @@ subClientNew(Window win)
     {
       c->gravity = SUB_GRAVITY_TOP;
       if(c->tags & SUB_TAG_LEFT)       c->gravity = SUB_GRAVITY_TOP_LEFT;
-      else if(c->tags & SUB_TAG_RIGHT) c->gravity = SUB_GRAVITY_TOP_LEFT;
+      else if(c->tags & SUB_TAG_RIGHT) c->gravity = SUB_GRAVITY_TOP_RIGHT;
     }
   else if(c->tags & SUB_TAG_BOTTOM) 
     {
       c->gravity = SUB_GRAVITY_BOTTOM;
       if(c->tags & SUB_TAG_LEFT)       c->gravity = SUB_GRAVITY_BOTTOM_LEFT;
-      else if(c->tags & SUB_TAG_RIGHT) c->gravity = SUB_GRAVITY_BOTTOM_LEFT;
+      else if(c->tags & SUB_TAG_RIGHT) c->gravity = SUB_GRAVITY_BOTTOM_RIGHT;
     }  
   else if(c->tags & SUB_TAG_LEFT)  c->gravity = SUB_GRAVITY_LEFT;
   else if(c->tags & SUB_TAG_RIGHT) c->gravity = SUB_GRAVITY_RIGHT;
@@ -298,6 +297,20 @@ subClientFocus(SubClient *c)
 
   subSharedLogDebug("Focus: win=%#lx, input=%d, focus=%d\n", c->win,
     !!(c->flags & SUB_PREF_INPUT), !!(c->flags & SUB_PREF_FOCUS));
+} /* }}} */
+
+ /** subClientWarp {{{
+  * @brief Warp pointer to window center
+  * @param[in]  c  A #SubClient
+  **/
+
+void
+subClientWarp(SubClient *c)
+{
+  assert(c);
+
+  XWarpPointer(subtle->disp, None, ROOT, 0, 0, 0, 0, 
+    c->rect.x + c->rect.width / 2, c->rect.y + c->rect.height / 2);
 } /* }}} */
 
  /** subClientDrag {{{
