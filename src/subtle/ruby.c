@@ -467,35 +467,49 @@ static VALUE
 RubyProtect(VALUE script)
 {
   SubSublet *s = NULL;
+  VALUE result = Qnil;
 
   assert(script);
 
   s = SUBLET(script);
 
-  if(s->flags & SUB_TYPE_SUBLET)
-    return rb_funcall(SUBLET(s)->recv, rb_intern("run"), 0, NULL);
+  if(s->flags & SUB_TYPE_SUBLET) 
+    result = rb_funcall(SUBLET(s)->recv, rb_intern("run"), 0, NULL);
   else if(s->flags & SUB_TYPE_GRAB)
     {
-      int id = 0;
+      int id = 0, arity = 0;
       VALUE mod = Qnil, klass = Qnil, client = Qnil;
 
-      if(subtle->cc)
+      /* Catch arity errors */
+      switch((arity = FIX2INT(rb_funcall(GRAB(s)->data.num, rb_intern("arity"), 0, NULL))))
         {
-          /* Create client instance */
-          id     = subArrayIndex(subtle->clients, (void *)subtle->cc);
-          mod    = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
-          klass  = rb_const_get(mod, rb_intern("Client"));
-          client = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(subtle->cc->name));
+          case 0:
+          case -1: ///< No optional arguments 
+            result = rb_funcall(GRAB(s)->data.num, rb_intern("call"), 0, NULL);
+            break;        
+          case 1:
+            if(subtle->cc)
+              {
+                /* Create client instance */
+                id     = subArrayIndex(subtle->clients, (void *)subtle->cc);
+                mod    = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
+                klass  = rb_const_get(mod, rb_intern("Client"));
+                client = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(subtle->cc->name));
 
-          rb_iv_set(client, "@id",      INT2FIX(id));
-          rb_iv_set(client, "@win",     LONG2NUM(subtle->cc->win));
-          rb_iv_set(client, "@gravity", INT2FIX(subtle->cc->gravity));    
+                rb_iv_set(client, "@id",      INT2FIX(id));
+                rb_iv_set(client, "@win",     LONG2NUM(subtle->cc->win));
+                rb_iv_set(client, "@gravity", INT2FIX(subtle->cc->gravity));    
 
-          return rb_funcall(GRAB(s)->data.num, rb_intern("call"), 1, client);
+                result = rb_funcall(GRAB(s)->data.num, rb_intern("call"), 1, client);
+                break;
+              } ///< Fall through
+          default:
+            rb_raise(rb_eStandardError, "Failed calling proc with `%d' argument(s)", arity);
         }
+      subSharedLogDebug("Proc: arity=%d\n", arity);
     }      
 
-  return Qnil;
+  return result;
 } /* }}} */
 
 /* RubyRequire {{{ */
