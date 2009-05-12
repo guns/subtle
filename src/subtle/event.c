@@ -637,7 +637,7 @@ EventGrab(XEvent *ev)
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               {
                 int i;
-                SubClient *found1 = NULL, *found2 = NULL, *found3 = NULL;
+                SubClient *found = NULL;
 
 #define TOP (1L << SUB_GRAVITY_TOP_LEFT|1L << SUB_GRAVITY_TOP|1L << SUB_GRAVITY_TOP_RIGHT)
 #define MID (1L << SUB_GRAVITY_LEFT|1L << SUB_GRAVITY_CENTER|1L << SUB_GRAVITY_RIGHT)
@@ -654,9 +654,9 @@ EventGrab(XEvent *ev)
                         switch(flag)
                           {
                             case SUB_GRAB_WINDOW_UP:
-                              if(((1L << c->gravity) & MID) && ((1L << iter->gravity) & TOP)) found1 = iter;
-                              if(((1L << c->gravity) & BOT) && ((1L << iter->gravity) & MID)) found2 = iter;
-                              if(((1L << c->gravity) & BOT) && ((1L << iter->gravity) & TOP)) found3 = iter;
+                              if(((1L << c->gravity) & MID) && ((1L << iter->gravity) & TOP)) found = iter;
+                              if(((1L << c->gravity) & BOT) && ((1L << iter->gravity) & MID)) found = iter;
+                              if(((1L << c->gravity) & BOT) && ((1L << iter->gravity) & TOP)) found = iter;
                               break; 
                             case SUB_GRAB_WINDOW_LEFT:
                               if(((1L << c->gravity) & RIG) && ((1L << iter->gravity) & LEF)) found = iter;
