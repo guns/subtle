@@ -170,9 +170,11 @@
 #define SUB_GRAB_WINDOW_STICK         (1L << 20)                  ///< Toggle stock
 #define SUB_GRAB_WINDOW_RAISE         (1L << 21)                  ///< Raise window
 #define SUB_GRAB_WINDOW_LOWER         (1L << 22)                  ///< Lower window
-#define SUB_GRAB_WINDOW_NEXT          (1L << 23)                  ///< Focus next window
-#define SUB_GRAB_WINDOW_PREV          (1L << 24)                  ///< Focus prev window
-#define SUB_GRAB_WINDOW_KILL          (1L << 25)                  ///< Kill window
+#define SUB_GRAB_WINDOW_UP            (1L << 23)                  ///< Focus window up
+#define SUB_GRAB_WINDOW_LEFT          (1L << 24)                  ///< Focus window left
+#define SUB_GRAB_WINDOW_RIGHT         (1L << 25)                  ///< Focus window right
+#define SUB_GRAB_WINDOW_DOWN          (1L << 26)                  ///< Focus window down
+#define SUB_GRAB_WINDOW_KILL          (1L << 27)                  ///< Kill window
 
 /* Drag states */
 #define SUB_DRAG_START                (1L << 10)                  ///< Drag start
