@@ -18,22 +18,6 @@
 #define BUFLEN (sizeof(struct inotify_event))
 #endif /* HAVE_SYS_INOTIFY_H */
 
-/* EventFindSublet {{{ */
-static SubSublet *
-EventFindSublet(int id)
-{
-  int i = 0;
-  SubSublet *iter = subtle->sublet;
-
-  while(iter)
-    {
-      if(i++ == id) break;
-      iter = iter->next;
-    }
-
-  return iter;
-} /* }}} */
-
 /* EventUntag {{{ */
 static void
 EventUntag(SubClient *c,
@@ -72,6 +56,22 @@ EventExec(char *cmd)
         exit(1);
       case -1: subSharedLogWarn("Failed forking `%s'\n", cmd);
     }
+} /* }}} */
+
+/* EventFindSublet {{{ */
+static SubSublet *
+EventFindSublet(int id)
+{
+  int i = 0;
+  SubSublet *iter = subtle->sublet;
+
+  while(iter)
+    {
+      if(i++ == id) break;
+      iter = iter->next;
+    }
+
+  return iter;
 } /* }}} */
 
 /* EventConfigure {{{ */
@@ -220,7 +220,9 @@ EventMessage(XClientMessageEvent *ev)
                           break;
                         }
                   }
+
                 subClientFocus(c);
+                subClientWarp(c);
               }
             break; /* }}} */
           case SUB_EWMH_NET_RESTACK_WINDOW: /* {{{ */
@@ -455,7 +457,11 @@ EventProperty(XPropertyEvent *ev)
                 if(c->name) free(c->name);
                 c->name = name;
 
-                if(subtle->windows.focus == c->win) subClientRender(c);
+                if(subtle->windows.focus == c->win) ///< Redraw when needed
+                  {
+                    subClientRender(c);
+                    subViewRender();
+                  }
               }
           }
         break;
@@ -636,48 +642,32 @@ EventGrab(XEvent *ev)
           case SUB_GRAB_WINDOW_DOWN: /* {{{ */
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               {
-                int i;
-                SubClient *found = NULL;
+                int i, type = 0, match = 0;
+                Window found = None;
 
-#define TOP (1L << SUB_GRAVITY_TOP_LEFT|1L << SUB_GRAVITY_TOP|1L << SUB_GRAVITY_TOP_RIGHT)
-#define MID (1L << SUB_GRAVITY_LEFT|1L << SUB_GRAVITY_CENTER|1L << SUB_GRAVITY_RIGHT)
-#define BOT (1L << SUB_GRAVITY_BOTTOM_LEFT|1L << SUB_GRAVITY_BOTTOM|1L << SUB_GRAVITY_BOTTOM_RIGHT)
-#define LEF (1L << SUB_GRAVITY_TOP_LEFT|1L << SUB_GRAVITY_LEFT|1L << SUB_GRAVITY_BOTTOM_LEFT)
-#define RIG (1L << SUB_GRAVITY_TOP_RIGHT|1L << SUB_GRAVITY_RIGHT|1L << SUB_GRAVITY_BOTTOM_RIGHT)
+                switch(flag) ///< Translate grabs
+                  {
+                    case SUB_GRAB_WINDOW_UP:    type = SUB_WINDOW_UP;    break;
+                    case SUB_GRAB_WINDOW_LEFT:  type = SUB_WINDOW_LEFT;  break;
+                    case SUB_GRAB_WINDOW_RIGHT: type = SUB_WINDOW_RIGHT; break;
+                    case SUB_GRAB_WINDOW_DOWN:  type = SUB_WINDOW_DOWN;  break;
+                  }
 
-                for(i = 0; i < subtle->clients->ndata; i++)
+                /* Iterate once to find a client score-based */
+                for(i = 0; 100 != match && i < subtle->clients->ndata; i++)
                   {
                     SubClient *iter = CLIENT(subtle->clients->data[i]);
 
                     if(c != iter && VISIBLE(subtle->cv, iter))
-                      {
-                        switch(flag)
-                          {
-                            case SUB_GRAB_WINDOW_UP:
-                              if(((1L << c->gravity) & MID) && ((1L << iter->gravity) & TOP)) found = iter;
-                              if(((1L << c->gravity) & BOT) && ((1L << iter->gravity) & MID)) found = iter;
-                              if(((1L << c->gravity) & BOT) && ((1L << iter->gravity) & TOP)) found = iter;
-                              break; 
-                            case SUB_GRAB_WINDOW_LEFT:
-                              if(((1L << c->gravity) & RIG) && ((1L << iter->gravity) & LEF)) found = iter;
-                              break;
-                            case SUB_GRAB_WINDOW_RIGHT:
-                              if(((1L << c->gravity) & LEF) && ((1L << iter->gravity) & RIG)) found = iter;
-                              break;
-                            case SUB_GRAB_WINDOW_DOWN:
-                              if(((1L << c->gravity) & MID) && ((1L << iter->gravity) & BOT)) found = iter;
-                              if(((1L << c->gravity) & TOP) && ((1L << iter->gravity) & MID)) found = iter;
-                              if(((1L << c->gravity) & TOP) && ((1L << iter->gravity) & BOT)) found = iter;
-                              break; 
-                          }
+                      subSharedMatch(type, iter->win, 
+                        c->gravity, iter->gravity, &match, &found);
+                  }
 
-                        if(found)
-                          {
-                            subClientFocus(found);
-                            subClientWarp(found);
-                            return;
-                          }
-                      }
+                if(found && (c = CLIENT(subSharedFind(found, CLIENTID))))
+                  {
+                    subClientFocus(c);
+                    subClientWarp(c);
+                    subSharedLogDebug("Match: win=%#lx, score=%d, iterations=%d\n", found, match, i);
                   }
               }
             break; /* }}} */
@@ -691,7 +681,7 @@ EventGrab(XEvent *ev)
               }
             break; /* }}} */
           default:  
-            printf("Grab not implemented yet!\n");
+            subSharedLogWarn("Failed finding grab!\n");
         }
 
       subSharedLogDebug("Grab: code=%03d, mod=%03d\n", g->code, g->mod);
