@@ -37,6 +37,24 @@
 #include "config.h"
 /* }}} */
 
+/* Flags {{{ */
+#define SUB_GRAVITY_UNKNOWN       0  ///< Gravity unknown
+#define SUB_GRAVITY_BOTTOM_LEFT   1  ///< Gravity bottom left
+#define SUB_GRAVITY_BOTTOM        2  ///< Gravity bottom
+#define SUB_GRAVITY_BOTTOM_RIGHT  3  ///< Gravity bottom right
+#define SUB_GRAVITY_LEFT          4  ///< Gravity left
+#define SUB_GRAVITY_CENTER        5  ///< Gravity center
+#define SUB_GRAVITY_RIGHT         6  ///< Gravity right
+#define SUB_GRAVITY_TOP_LEFT      7  ///< Gravity top left
+#define SUB_GRAVITY_TOP           8  ///< Gravity top
+#define SUB_GRAVITY_TOP_RIGHT     9  ///< Gravity top right
+
+#define SUB_WINDOW_UP             0  ///< Window above
+#define SUB_WINDOW_LEFT           1  ///< Window left
+#define SUB_WINDOW_RIGHT          2  ///< Window right
+#define SUB_WINDOW_DOWN           3  ///< Window down
+/* }}} */
+
 /* Typedefs {{{ */
 #ifndef WM
 typedef union submessagedata_t {
@@ -78,6 +96,11 @@ void *subSharedMemoryRealloc(void *mem, size_t size);             ///< Reallocat
 regex_t *subSharedRegexNew(char *regex);                          ///< Create new regex
 int subSharedRegexMatch(regex_t *preg, char *string);             ///< Check if string matches preg
 void subSharedRegexKill(regex_t *preg);                           ///< Kill regex
+/* }}} */
+
+/* Match {{{ */
+void subSharedMatch(int type, Window win, int gravity1, 
+  int gravity2, int *match, Window *found);                       ///< Match window
 /* }}} */
 
 #ifdef WM

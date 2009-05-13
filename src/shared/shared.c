@@ -188,6 +188,115 @@ subSharedRegexKill(regex_t *preg)
   free(preg);
 } /* }}} */
 
+#define MATCH(win,gravity1,gravity2,score,match,found) \
+  if(gravity1 == gravity2 && score > *match) \
+    { \
+      *match = score; \
+      *found = win; \
+    } \
+
+ /** subSharedMatch {{{
+  * @brief Match a window based on neighbourship
+  * @param[in]     type      Type of neighbourship
+  * @param[in]     win       Window
+  * @param[in]     gravity1  Gravity 1
+  * @param[in]     gravity2  Gravity 2
+  * @param[inout]  match     Match score
+  * @param[inout]  found     Found window
+  **/
+
+void
+subSharedMatch(int type,
+  Window win,
+  int gravity1,
+  int gravity2,
+  int *match,
+  Window *found)
+{
+  switch(type)
+    {
+      case SUB_WINDOW_UP: /* {{{ */
+        switch(gravity1)
+          {
+            case SUB_GRAVITY_BOTTOM:
+              MATCH(win, gravity2, SUB_GRAVITY_TOP, 100, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_TOP_LEFT, 75, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_TOP_RIGHT, 75, match, found);
+              break;
+            case SUB_GRAVITY_BOTTOM_LEFT:
+              MATCH(win, gravity2, SUB_GRAVITY_TOP, 100, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_TOP_LEFT, 75, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_TOP_RIGHT, 50, match, found);
+              break;
+            case SUB_GRAVITY_BOTTOM_RIGHT:
+              MATCH(win, gravity2, SUB_GRAVITY_TOP, 100, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_TOP_LEFT, 50, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_TOP_RIGHT, 75, match, found);
+              break;
+          }
+        break; /* }}} */
+      case SUB_WINDOW_LEFT: /* {{{ */
+        switch(gravity1)
+          {
+            case SUB_GRAVITY_TOP_RIGHT:
+              MATCH(win, gravity2, SUB_GRAVITY_LEFT, 100, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_TOP_LEFT, 75, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_LEFT, 50, match, found);
+              break;
+            case SUB_GRAVITY_BOTTOM_RIGHT:
+              MATCH(win, gravity2, SUB_GRAVITY_LEFT, 100, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_LEFT, 75, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_TOP_LEFT, 50, match, found);
+              break;
+            case SUB_GRAVITY_RIGHT:
+              MATCH(win, gravity2, SUB_GRAVITY_LEFT, 100, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_TOP_LEFT, 75, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_LEFT, 50, match, found);
+              break;                                    
+          }
+        break; /* }}} */
+      case SUB_WINDOW_RIGHT: /* {{{ */
+        switch(gravity1)
+          {
+            case SUB_GRAVITY_TOP_LEFT:
+              MATCH(win, gravity2, SUB_GRAVITY_RIGHT, 100, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_TOP_RIGHT, 75, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_RIGHT, 50, match, found);
+              break;
+            case SUB_GRAVITY_BOTTOM_LEFT:
+              MATCH(win, gravity2, SUB_GRAVITY_RIGHT, 100, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_RIGHT, 75, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_TOP_RIGHT, 50, match, found);
+              break;
+            case SUB_GRAVITY_LEFT:
+              MATCH(win, gravity2, SUB_GRAVITY_RIGHT, 100, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_TOP_RIGHT, 75, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_RIGHT, 50, match, found);
+              break;
+          }
+        break; /* }}} */
+      case SUB_WINDOW_DOWN: /* {{{ */
+        switch(gravity1)
+          {
+            case SUB_GRAVITY_TOP:
+              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_LEFT, 100, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_RIGHT, 50, match, found);
+              break;
+            case SUB_GRAVITY_TOP_LEFT:
+              MATCH(win, gravity2, SUB_GRAVITY_TOP, 100, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_LEFT, 100, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_RIGHT, 50, match, found);
+              break;
+            case SUB_GRAVITY_TOP_RIGHT:
+              MATCH(win, gravity2, SUB_GRAVITY_TOP, 100, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_LEFT, 50, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_RIGHT, 100, match, found);
+              break;
+          }
+        break; /* }}} */                        
+    }
+} /* }}} */
+
 #ifdef WM
  /** subSharedFind {{{
   * @brief Find data with the context manager
