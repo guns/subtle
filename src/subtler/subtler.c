@@ -50,7 +50,12 @@ typedef void(*SubCommand)(char *, char *);
 #define SUB_ACTION_GRAVITY 13  ///< Action gravity
 #define SUB_ACTION_RAISE   14  ///< Action raise
 #define SUB_ACTION_LOWER   15  ///< Action lower
-#define SUB_ACTION_TOTAL   16  ///< Action total
+#define SUB_ACTION_UP      16  ///< Action up
+#define SUB_ACTION_LEFT    17  ///< Action left
+#define SUB_ACTION_RIGHT   18  ///< Action right
+#define SUB_ACTION_DOWN    19  ///< Action down
+#define SUB_ACTION_RELOAD  20  ///< Action reload
+#define SUB_ACTION_TOTAL   21  ///< Action total
 /* }}} */
 
 /* SubtlerToggle {{{ */
@@ -87,6 +92,94 @@ SubtlerRestack(char *name,
       subSharedMessage(DefaultRootWindow(display), "_NET_RESTACK_WINDOW", data, False);
     }
   else subSharedLogWarn("Failed restacking client");  
+} /* }}} */
+
+/* SubtlerMatch {{{ */
+static void
+SubtlerMatch(char *name,
+  int type)
+{
+  int i, size = 0, match = 0, *gravity1 = NULL;
+  Window win = None, found = None, *clients = NULL, *views = NULL;
+  unsigned long *cv = NULL, *flags1 = NULL;
+
+  if(-1 != subSharedClientFind(name, &win))  
+    {
+      clients = subSharedClientList(&size);
+      views   = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW, 
+        "_NET_VIRTUAL_ROOTS", NULL);
+      cv      = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
+        XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+
+      if(clients && cv)
+        {
+          flags1   = (unsigned long *)subSharedPropertyGet(views[*cv], XA_CARDINAL, 
+            "SUBTLE_WINDOW_TAGS", NULL);
+          gravity1 = (int *)subSharedPropertyGet(win, XA_CARDINAL, 
+            "SUBTLE_WINDOW_GRAVITY", NULL);
+
+          /* Iterate once to find a client score-based */
+          for(i = 0; 100 != match && i < size; i++)
+            {
+              unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(clients[i], XA_CARDINAL, 
+                "SUBTLE_WINDOW_TAGS", NULL);
+
+              if(win != clients[i] && *flags1 & *flags2) ///< Check if there are common tags
+                {
+                  int *gravity2 = (int *)subSharedPropertyGet(clients[i], XA_CARDINAL, 
+                    "SUBTLE_WINDOW_GRAVITY", NULL);
+
+                  subSharedMatch(type, clients[i], *gravity1, *gravity2, &match, &found);
+
+                  free(gravity2);
+                }
+
+              free(flags2);
+            }
+          
+          if(found)
+            {
+              SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+              data.l[0] = found;
+              subSharedMessage(DefaultRootWindow(display), "_NET_ACTIVE_WINDOW", data, True);
+            }
+
+          free(flags1);
+          free(gravity1);
+          free(clients);
+          free(cv);
+        }
+    }
+} /* }}} */
+
+/* SubtlerFocus {{{ */
+static char *
+SubtlerFocus(void)
+{
+  char *ret = NULL;
+  unsigned long *focus = NULL;
+
+  if((focus = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
+    XA_WINDOW, "_NET_ACTIVE_WINDOW", NULL)))
+    {
+      ret = subSharedWindowWMName(*focus);
+
+      free(focus);
+    }
+
+  return ret;
+} /* }}} */
+
+/* SubtlerFocusMatch {{{ */
+static void
+SubtlerFocusMatch(int type)
+{
+  char *focus = SubtlerFocus();
+
+  SubtlerMatch(focus, type);
+
+  free(focus);
 } /* }}} */
 
 /* SubtlerClientFind {{{ */
@@ -168,7 +261,7 @@ static void
 SubtlerClientToggleFloat(char *arg1,
   char *arg2)
 {
-  CHECK(arg1, "Usage: %sr -c -L CLIENT\n", PKG_NAME);
+  CHECK(arg1, "Usage: %sr -c -O CLIENT\n", PKG_NAME);
 
   SubtlerToggle(arg1, "_NET_WM_STATE_ABOVE");
 } /* }}} */
@@ -201,6 +294,46 @@ SubtlerClientRestackLower(char *arg1,
   CHECK(arg1, "Usage: %sr -c -B CLIENT\n", PKG_NAME);
 
   SubtlerRestack(arg1, Below);
+} /* }}} */
+
+/* SubtlerClientMatchLeft {{{ */
+static void
+SubtlerClientMatchLeft(char *arg1,
+  char *arg2)
+{
+  CHECK(arg1, "Usage: %sr -c -H CLIENT\n", PKG_NAME);
+
+  SubtlerMatch(arg1, SUB_WINDOW_LEFT);
+} /* }}} */
+
+/* SubtlerClientMatchDown {{{ */
+static void
+SubtlerClientMatchDown(char *arg1,
+  char *arg2)
+{
+  CHECK(arg1, "Usage: %sr -c -J CLIENT\n", PKG_NAME);
+
+  SubtlerMatch(arg1, SUB_WINDOW_DOWN);
+} /* }}} */
+
+/* SubtlerClientMatchUp {{{ */
+static void
+SubtlerClientMatchUp(char *arg1,
+  char *arg2)
+{
+  CHECK(arg1, "Usage: %sr -c -K CLIENT\n", PKG_NAME);
+
+  SubtlerMatch(arg1, SUB_WINDOW_UP);
+} /* }}} */
+
+/* SubtlerClientMatchRight {{{ */
+static void
+SubtlerClientMatchRight(char *arg1,
+  char *arg2)
+{
+  CHECK(arg1, "Usage: %sr -c -L CLIENT\n", PKG_NAME);
+
+  SubtlerMatch(arg1, SUB_WINDOW_RIGHT);
 } /* }}} */
 
 /* SubtlerClientList {{{ */
@@ -719,6 +852,10 @@ SubtlerUsage(int group)
              "  -d, --display=DISPLAY   Connect to DISPLAY (default: %s)\n" \
              "  -D, --debug             Print debugging messages\n" \
              "  -h, --help              Show this help and exit\n" \
+             "  -H, --left              Select window left\n" \
+             "  -J, --down              Select window below\n" \
+             "  -K, --up                Select window above\n" \
+             "  -L, --right             Select window right\n" \
              "  -r, --reload            Reload %s\n" \
              "  -V, --version           Show version info and exit\n" \
              "\nGroups:\n" \
@@ -734,7 +871,7 @@ SubtlerUsage(int group)
              "  -f, --find=PATTERN      Find a client\n" \
              "  -o, --focus=PATTERN     Set focus to client\n" \
              "  -F, --full              Toggle full\n" \
-             "  -L, --float             Toggle float\n" \
+             "  -O, --float             Toggle float\n" \
              "  -S, --stick             Toggle stick\n" \
              "  -l, --list              List all clients\n" \
              "  -T, --tag=PATTERN       Add tag to client\n" \
@@ -743,6 +880,10 @@ SubtlerUsage(int group)
              "  -g, --gravity           Set client gravity\n" \
              "  -A, --raise             Raise client window (A as in Above)\n" \
              "  -B, --lower             Lower client window (B as in Below)\n" \
+             "  -H, --left              Select window left\n" \
+             "  -J, --down              Select window below\n" \
+             "  -K, --up                Select window above\n" \
+             "  -L, --right             Select window right\n" \
              "  -k, --kill=PATTERN      Kill a client\n");
     }
   if(-1 == group || SUB_GROUP_SUBLET == group)
@@ -776,8 +917,8 @@ SubtlerUsage(int group)
          "  Matching clients, tags and views works either via plain, regex\n" \
          "  (see regex(7)) or window id. If a pattern matches more than once\n" \
          "  ONLY the first match will be used.\n\n" \
-         "  Generally PATTERN can be '-' to read from stdin or '#' to interatively\n" \
-         "  select a client window\n");
+         "  Generally PATTERN can be '-' to read from stdin, '.' to select focus win\n" \
+         "  or '#' to interatively select a client window\n");
 
   printf("\nFormat:\n" \
          "  Client list: <window id> [-*] <view> <geometry> <gravity> <name> <class>\n" \
@@ -785,16 +926,19 @@ SubtlerUsage(int group)
          "  View   list: <window id> [-*] <name>\n");
 
   printf("\nGravities:\n" \
-         "  GravityUnknown     = 0\n" \
-         "  GravityBottomLeft  = 1\n" \
-         "  GravityBottom      = 2\n" \
-         "  GravityBottomRight = 3\n" \
-         "  GravityLeft        = 4\n" \
-         "  GravityCenter      = 5\n" \
-         "  GravityRight       = 6\n" \
-         "  GravityTop_Left    = 7\n" \
-         "  GravityTop         = 8\n" \
-         "  GravityRight       = 9\n");
+         "  GravityUnknown     = %d\n" \
+         "  GravityBottomLeft  = %d\n" \
+         "  GravityBottom      = %d\n" \
+         "  GravityBottomRight = %d\n" \
+         "  GravityLeft        = %d\n" \
+         "  GravityCenter      = %d\n" \
+         "  GravityRight       = %d\n" \
+         "  GravityTop_Left    = %d\n" \
+         "  GravityTop         = %d\n" \
+         "  GravityRight       = %d\n",
+         SUB_GRAVITY_UNKNOWN, SUB_GRAVITY_BOTTOM_LEFT, SUB_GRAVITY_BOTTOM, SUB_GRAVITY_BOTTOM_RIGHT,
+         SUB_GRAVITY_LEFT, SUB_GRAVITY_CENTER, SUB_GRAVITY_RIGHT, SUB_GRAVITY_TOP_LEFT,
+         SUB_GRAVITY_TOP, SUB_GRAVITY_TOP_RIGHT);
   
   printf("\nExamples:\n" \
          "  %sr -c -l                List all clients\n" \
@@ -863,6 +1007,10 @@ SubtlerParse(char *string)
 
       subSharedLogDebug("Parse: len=%d\n", strlen(buf));
     }
+  else if(!strncmp(string, ".", 1)) ///< Select focus win
+    {
+      ret = SubtlerFocus();
+    }
   else if(!strncmp(string, "#", 1)) ///< Select win
     {
       Window win = None;
@@ -889,10 +1037,10 @@ int
 main(int argc,
   char *argv[])
 {
-  int c, group = -1, action = -1, reload = 0;
+  int c, group = -1, action = -1;
   char *dispname = NULL, *arg1 = NULL, *arg2 = NULL;
   struct sigaction act;
-  const struct option long_options[] =
+  const struct option long_options[] = /* {{{ */
   {
     /* Groups */
     { "clients",    no_argument,        0,  'c'  },
@@ -906,7 +1054,7 @@ main(int argc,
     { "find",       no_argument,        0,  'f'  },
     { "focus",      no_argument,        0,  'o'  },
     { "full",       no_argument,        0,  'F'  },
-    { "float",      no_argument,        0,  'L'  },
+    { "float",      no_argument,        0,  'O'  },
     { "stick",      no_argument,        0,  'S'  },
     { "jump",       no_argument,        0,  'j'  },
     { "list",       no_argument,        0,  'l'  },
@@ -917,6 +1065,10 @@ main(int argc,
     { "gravity",    no_argument,        0,  'g'  },
     { "raise",      no_argument,        0,  'A'  },
     { "lower",      no_argument,        0,  'B'  },
+    { "left",       no_argument,        0,  'H'  },
+    { "down",       no_argument,        0,  'J'  },
+    { "up",         no_argument,        0,  'K'  },
+    { "right",      no_argument,        0,  'L'  },
 
     /* Other */
 #ifdef DEBUG
@@ -927,25 +1079,27 @@ main(int argc,
     { "reload",     no_argument,        0,  'r'  },
     { "version",    no_argument,        0,  'V'  },
     { 0, 0, 0, 0}
-  };
+  }; /* }}} */
 
-  /* Command table */
+  /* Command table {{{ */
   const SubCommand cmds[SUB_GROUP_TOTAL][SUB_ACTION_TOTAL] = { 
     /* Client, Sublet, Tag, View <=> Add, Kill, Find, Focus, Full, Float, 
-       Stick, Jump, List, Tag, Untag, Tags, Update, Gravity */
+       Stick, Jump, List, Tag, Untag, Tags, Update, Gravity, Left, Down, Up, Right, Reload */
     { NULL, SubtlerClientKill, SubtlerClientFind,  SubtlerClientFocus, 
       SubtlerClientToggleFull, SubtlerClientToggleFloat, SubtlerClientToggleStick, 
       NULL, SubtlerClientList, SubtlerClientTag, SubtlerClientUntag, 
       SubtlerClientTags, NULL, SubtlerClientGravity, SubtlerClientRestackRaise,
-      SubtlerClientRestackLower },
+      SubtlerClientRestackLower, SubtlerClientMatchLeft, SubtlerClientMatchDown,
+      SubtlerClientMatchUp, SubtlerClientMatchRight, NULL },
     { NULL, SubtlerSubletKill, NULL, NULL, NULL, NULL, NULL, NULL, SubtlerSubletList, 
-      NULL, NULL, NULL, SubtlerSubletUpdate, NULL, NULL, NULL },
+      NULL, NULL, NULL, SubtlerSubletUpdate, NULL, NULL, NULL, NULL, NULL, NULL, NULL },
     { SubtlerTagNew, SubtlerTagKill, SubtlerTagFind, NULL, NULL, NULL, 
-      NULL, NULL, SubtlerTagList, NULL, NULL, NULL, NULL, NULL, NULL, NULL },
+      NULL, NULL, SubtlerTagList, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 
+      NULL, NULL, NULL },
     { SubtlerViewNew, SubtlerViewKill, SubtlerViewFind, NULL, NULL, NULL, NULL,
       SubtlerViewJump, SubtlerViewList, SubtlerViewTag, SubtlerViewUntag, SubtlerViewTags, 
-      NULL, NULL, NULL, NULL }
-  };
+      NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL }
+  }; /* }}} */
 
   /* Set up signal handler */
   act.sa_handler = SubtlerSignal;
@@ -955,7 +1109,7 @@ main(int argc,
   sigaction(SIGINT, &act, NULL);
   sigaction(SIGSEGV, &act, NULL);
 
-  while((c = getopt_long(argc, argv, "cstvakfoFLSjlTUGugABDd:hrV", long_options, NULL)) != -1)
+  while((c = getopt_long(argc, argv, "cstvakfoFOSjlTUGugABHJKLDd:hrV", long_options, NULL)) != -1)
     {
       switch(c)
         {
@@ -971,7 +1125,7 @@ main(int argc,
           case 'f': action = SUB_ACTION_FIND;    break;
           case 'o': action = SUB_ACTION_FOCUS;   break;
           case 'F': action = SUB_ACTION_FULL;    break;
-          case 'L': action = SUB_ACTION_FLOAT;   break;
+          case 'O': action = SUB_ACTION_FLOAT;   break;
           case 'S': action = SUB_ACTION_STICK;   break;
           case 'j': action = SUB_ACTION_JUMP;    break;
           case 'l': action = SUB_ACTION_LIST;    break;
@@ -982,6 +1136,11 @@ main(int argc,
           case 'g': action = SUB_ACTION_GRAVITY; break;
           case 'A': action = SUB_ACTION_RAISE;   break;
           case 'B': action = SUB_ACTION_LOWER;   break;
+          case 'H': action = SUB_ACTION_LEFT;    break;
+          case 'J': action = SUB_ACTION_DOWN;    break;
+          case 'K': action = SUB_ACTION_UP;      break;
+          case 'L': action = SUB_ACTION_RIGHT;   break;
+          case 'r': action = SUB_ACTION_RELOAD;  break;
 
           /* Other */
           case 'd': dispname = optarg;           break;
@@ -993,7 +1152,6 @@ main(int argc,
             printf("Please recompile %sr with `debug=yes'\n", PKG_NAME); 
             return 0;          
 #endif /* DEBUG */
-          case 'r': reload = 1;                  break;
           case 'V': SubtlerVersion();            return 0;
           case '?':
             printf("Try `%sr --help' for more information\n", PKG_NAME);
@@ -1002,7 +1160,7 @@ main(int argc,
     }
 
   /* Check command */
-  if(-1 == group || -1 == action)
+  if(-1 == action)
     {
       SubtlerUsage(group);
       return 0;
@@ -1012,6 +1170,7 @@ main(int argc,
   if(!(display = XOpenDisplay(dispname)))
     {
       printf("Failed opening display `%s'.\n", (dispname) ? dispname : ":0.0");
+
       return -1;
     }
   XSetErrorHandler(subSharedLogXError);
@@ -1032,9 +1191,20 @@ main(int argc,
   if(argc > optind + 1) arg2 = SubtlerParse(argv[optind + 1]);
 
   /* Select command */
-  if(cmds[group][action]) 
+  if(-1 == group && 0 < action)
     {
-      if(reload) SubtlerReload(); ///< Reload config
+      switch(action)
+        {
+          case SUB_ACTION_RELOAD: SubtlerReload();                     break;
+          case SUB_ACTION_LEFT:   SubtlerFocusMatch(SUB_WINDOW_LEFT);  break;
+          case SUB_ACTION_DOWN:   SubtlerFocusMatch(SUB_WINDOW_DOWN);  break;
+          case SUB_ACTION_UP:     SubtlerFocusMatch(SUB_WINDOW_UP);    break;
+          case SUB_ACTION_RIGHT:  SubtlerFocusMatch(SUB_WINDOW_RIGHT); break;
+          default: SubtlerUsage(group);
+        }
+    }
+  else if(cmds[group][action]) 
+    {
       cmds[group][action](arg1, arg2);
     }
   else SubtlerUsage(group);

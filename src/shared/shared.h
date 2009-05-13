@@ -49,10 +49,10 @@
 #define SUB_GRAVITY_TOP           8  ///< Gravity top
 #define SUB_GRAVITY_TOP_RIGHT     9  ///< Gravity top right
 
-#define SUB_WINDOW_UP             0  ///< Window above
-#define SUB_WINDOW_LEFT           1  ///< Window left
-#define SUB_WINDOW_RIGHT          2  ///< Window right
-#define SUB_WINDOW_DOWN           3  ///< Window down
+#define SUB_WINDOW_LEFT           0  ///< Window left
+#define SUB_WINDOW_DOWN           1  ///< Window down
+#define SUB_WINDOW_UP             2  ///< Window above
+#define SUB_WINDOW_RIGHT          3  ///< Window right
 /* }}} */
 
 /* Typedefs {{{ */
