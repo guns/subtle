@@ -60,7 +60,8 @@ subDisplayInit(const char *display)
 
   /* Update root window */
   attrs.cursor     = subtle->cursors.arrow;
-  attrs.event_mask = SubstructureRedirectMask|SubstructureNotifyMask|PropertyChangeMask;
+  attrs.event_mask = SubstructureRedirectMask|SubstructureNotifyMask|
+    FocusChangeMask|PropertyChangeMask;
   XChangeWindowAttributes(subtle->disp, ROOT, CWCursor|CWEventMask, &attrs);
 
   /* Create windows */
@@ -127,7 +128,9 @@ subDisplayConfigure(void)
   XMoveResizeWindow(subtle->disp, subtle->windows.bar, 0, 0, SCREENW, subtle->th);
 
   /* Map windows */
-  XMapSubwindows(subtle->disp, subtle->windows.bar);
+  XMapWindow(subtle->disp, subtle->windows.views);
+  XMapWindow(subtle->disp, subtle->windows.tray);
+  XMapWindow(subtle->disp, subtle->windows.sublets);  
   XMapRaised(subtle->disp, subtle->windows.bar);
 } /* }}} */
 
@@ -147,7 +150,6 @@ subDisplayScan(void)
   for(i = 0; i < n; i++)
     {
       SubClient *c = NULL;
-      SubTray *t = NULL;
       XWindowAttributes attr;
 
       XGetWindowAttributes(subtle->disp, wins[i], &attr);
@@ -159,10 +161,6 @@ subDisplayScan(void)
                 if((c = subClientNew(wins[i])))
                   subArrayPush(subtle->clients, (void *)c);
                 break;
-              case IsUnmapped: ///< Tray
-                if((t = subTrayNew(wins[i])))
-                  subArrayPush(subtle->trays, (void *)t);
-                break;
             }
         }
     }
@@ -170,8 +168,11 @@ subDisplayScan(void)
 
   subClientPublish();
   subTrayUpdate();
-  subViewConfigure(subtle->cv);
-  subViewRender();
+
+  /* Activate first view */
+  subViewJump(VIEW(subtle->views->data[0]));
+  subtle->windows.focus = ROOT;
+  subGrabSet(ROOT);
 } /* }}} */
 
  /** subDisplayPublish {{{
