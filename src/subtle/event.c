@@ -221,8 +221,8 @@ EventMessage(XClientMessageEvent *ev)
                         }
                   }
 
-                subClientFocus(c);
                 subClientWarp(c);
+                subClientFocus(c);
               }
             break; /* }}} */
           case SUB_EWMH_NET_RESTACK_WINDOW: /* {{{ */
@@ -665,8 +665,8 @@ EventGrab(XEvent *ev)
 
                 if(found && (c = CLIENT(subSharedFind(found, CLIENTID))))
                   {
-                    subClientFocus(c);
                     subClientWarp(c);
+                    subClientFocus(c);
                     subSharedLogDebug("Match: win=%#lx, score=%d, iterations=%d\n", found, match, i);
                   }
               }
@@ -713,10 +713,11 @@ EventFocus(XFocusChangeEvent *ev)
   SubTray *t = NULL;
 
   /* Check if we are interested in this event */
-  if(NotifyNormal != ev->mode || NotifyInferior == ev->detail)
+  if((NotifyNormal != ev->mode || NotifyInferior == ev->detail) &&
+    !(NotifyWhileGrabbed == ev->mode && NotifyNonlinear == ev->detail))
     {
-      subSharedLogDebug("Focus ignore: type=%s, mode=%d, detail=%d\n", 
-        FocusIn == ev->type ? "in" : "out", ev->mode, ev->detail);
+      subSharedLogDebug("Focus ignore: type=%s, mode=%d, detail=%d, send_event=%d\n", 
+        FocusIn == ev->type ? "in" : "out", ev->mode, ev->detail, ev->send_event);
       return;
     }
 

@@ -286,7 +286,7 @@ void
 subClientFocus(SubClient *c)
 {
   assert(c);
-     
+
   /* Check client input focus type */
   if(!(c->flags & SUB_PREF_INPUT) && c->flags & SUB_PREF_FOCUS)
     {
