@@ -714,7 +714,8 @@ EventFocus(XFocusChangeEvent *ev)
 
   /* Check if we are interested in this event */
   if((NotifyNormal != ev->mode || NotifyInferior == ev->detail) &&
-    !(NotifyWhileGrabbed == ev->mode && NotifyNonlinear == ev->detail))
+    !(NotifyWhileGrabbed == ev->mode && 
+    (NotifyNonlinear == ev->detail || NotifyAncestor == ev->detail)))
     {
       subSharedLogDebug("Focus ignore: type=%s, mode=%d, detail=%d, send_event=%d\n", 
         FocusIn == ev->type ? "in" : "out", ev->mode, ev->detail, ev->send_event);
@@ -722,7 +723,20 @@ EventFocus(XFocusChangeEvent *ev)
     }
 
   /* Handle other focus event */
-  if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) ///< Clients
+  if(ROOT == ev->window)
+    {
+      if(FocusIn == ev->type) 
+        {
+          subtle->windows.focus = ROOT;
+          subGrabSet(ROOT);
+        }
+      else if(FocusOut == ev->type)
+        {
+          subtle->windows.focus = 0;
+          subGrabUnset(ROOT);
+        }
+    }
+  else if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) ///< Clients
     { 
       if(FocusIn == ev->type && VISIBLE(subtle->cv, c)) ///< FocusIn event
         {
@@ -738,7 +752,7 @@ EventFocus(XFocusChangeEvent *ev)
 
           subViewUpdate();        
         }
-      else if(FocusOut == ev->type) ///< FocusOut event
+      else if(FocusOut == ev->type && !(c->flags & SUB_STATE_FULL)) ///< FocusOut event
         {
           if(!(c->flags & SUB_STATE_DEAD)) ///< Don't revive
             {

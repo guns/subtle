@@ -96,6 +96,7 @@ subViewConfigure(SubView *v)
                   subClientSetGravity(c, c->gravities[vid]);
                   XMapRaised(subtle->disp, c->win);
                 }
+
               subClientConfigure(c);
 
               /* EWMH: Desktop */
@@ -105,8 +106,6 @@ subViewConfigure(SubView *v)
         }
       else XUnmapWindow(subtle->disp, c->win); ///< Unmap other windows
     }
-
-  if(0 == visible) subGrabSet(ROOT); ///< Enable grabs on root
 } /* }}} */
 
  /** subViewUpdate {{{ 
@@ -187,6 +186,8 @@ subViewJump(SubView *v)
   vid = subArrayIndex(subtle->views, (void *)v); ///< Get desktop number
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP, &vid, 1);
 
+  XSetInputFocus(subtle->disp, ROOT, RevertToNone, CurrentTime);
+
   subViewRender();
 
   printf("Switching view (%s)\n", subtle->cv->name);
@@ -225,7 +226,6 @@ subViewPublish(void)
       subEwmhSetStrings(ROOT, SUB_EWMH_NET_DESKTOP_NAMES, names, i);
 
       /* EWMH: Current desktop */
-      vid = subArrayIndex(subtle->views, (void *)subtle->cv); ///< Get desktop number
       subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP, &vid, 1);
 
       subSharedLogDebug("publish=views, n=%d\n", i);
