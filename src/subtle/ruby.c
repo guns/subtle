@@ -215,6 +215,24 @@ RubyGetFixnum(VALUE hash,
   return fallback;
 } /* }}} */
 
+/* RubyGetArray {{{ */
+static int
+RubyGetArray(VALUE hash,
+  char *key,
+  int idx,
+  int fallback)
+{
+  VALUE ary = rb_funcall(hash, rb_intern("fetch"), 1, rb_str_new2(key));
+
+  if(T_ARRAY == rb_type(ary)) 
+    if(idx <= FIX2INT(rb_funcall(ary, rb_intern("length"), 0, Qnil)) - 1)
+      {
+        return FIX2INT(rb_funcall(ary, rb_intern("at"), 1, INT2FIX(idx)));
+      }
+
+  return fallback;
+} /* }}} */
+
 /* RubyParseColor {{{ */
 static unsigned long
 RubyParseColor(VALUE hash,
@@ -312,8 +330,12 @@ RubyConfigParse(VALUE path)
 
   /* Config: Options */
   config = rb_const_get(rb_cObject, rb_intern("OPTIONS"));
-  subtle->bw   = RubyGetFixnum(config, "border", 2);
-  subtle->step = RubyGetFixnum(config, "step", 5);
+  subtle->bw           = RubyGetFixnum(config, "border", 2);
+  subtle->step         = RubyGetFixnum(config, "step", 5);
+  subtle->strut.x      = RubyGetArray(config, "padding", 0, 0);
+  subtle->strut.y      = RubyGetArray(config, "padding", 1, 0);
+  subtle->strut.width  = RubyGetArray(config, "padding", 2, 0);
+  subtle->strut.height = RubyGetArray(config, "padding", 3, 0);
 
   /* Config: Font */
   config = rb_const_get(rb_cObject, rb_intern("FONT"));
