@@ -209,7 +209,6 @@ subClientConfigure(SubClient *c)
   assert(c);
 
   r = c->rect;
-  r.y += subtle->th;
 
   if(c->flags & SUB_STATE_FULL) 
     {
@@ -218,7 +217,11 @@ subClientConfigure(SubClient *c)
       r.width  = SCREENW;
       r.height = SCREENH;
     }
-  else if(!(c->flags & SUB_STATE_FLOAT)) ///< Updated sizes
+  if(c->flags & SUB_STATE_FLOAT)
+    {
+      r.y += subtle->th;
+    }
+  else ///< Border
     {
       r.width  -= 2 * subtle->bw;
       r.height -= 2 * subtle->bw;
@@ -495,7 +498,6 @@ void
 subClientSetGravity(SubClient *c,
   int type)
 {
-  XRectangle workarea = { 0, 0, SCREENW, SCREENH - subtle->th};
   XRectangle slot = { 0 }, desired = { 0 }, current = { 0 };
 
   static const ClientGravity props[] =
@@ -515,25 +517,25 @@ subClientSetGravity(SubClient *c,
   assert(c);
 
   /* Compute slot */
-  slot.x      = workarea.x + props[type].grav_right * (workarea.width / props[type].cells_x);
-  slot.y      = workarea.y + props[type].grav_down * (workarea.height / props[type].cells_y);
-  slot.height = workarea.height / props[type].cells_y;
-  slot.width  = workarea.width / props[type].cells_x;
+  slot.x      = subtle->strut.x + props[type].grav_right * (subtle->strut.width / props[type].cells_x);
+  slot.y      = subtle->strut.y + props[type].grav_down * (subtle->strut.height / props[type].cells_y);
+  slot.height = subtle->strut.height / props[type].cells_y;
+  slot.width  = subtle->strut.width / props[type].cells_x;
 
   desired = slot;
   current = c->rect;
 
 	if(desired.x == current.x && desired.width == current.width)
 	  {
-	    int height33 = workarea.height / 3;
-	    int height66 = workarea.height - height33;
-      int comp     = abs(workarea.height - 3 * height33); ///< Int rounding fix
+	    int height33 = subtle->strut.height / 3;
+	    int height66 = subtle->strut.height - height33;
+      int comp     = abs(subtle->strut.height - 3 * height33); ///< Int rounding fix
 
 	    if(2 == props[type].cells_y)
 	      {
 	       if(current.height == desired.height && current.y == desired.y)
 	         {
-	           slot.y      = workarea.y + props[type].grav_down * height33;
+	           slot.y      = subtle->strut.y + props[type].grav_down * height33;
 	           slot.height = height66;
         		}
       		else
@@ -541,23 +543,23 @@ subClientSetGravity(SubClient *c,
               XRectangle rect33, rect66;
 
               rect33        = slot;
-              rect33.y      = workarea.y + props[type].grav_down * height66;
+              rect33.y      = subtle->strut.y + props[type].grav_down * height66;
               rect33.height = height33;
 
               rect66        = slot;
-              rect66.y      = workarea.y + props[type].grav_down * height33;
+              rect66.y      = subtle->strut.y + props[type].grav_down * height33;
               rect66.height = height66;
 
               if(current.height == rect66.height && current.y == rect66.y)
                 {
                   slot.height = height33;
-                  slot.y      = workarea.y + props[type].grav_down * height66;
+                  slot.y      = subtle->strut.y + props[type].grav_down * height66;
 	             }
 	         }
 	      }
 	    else if(current.height == desired.height && current.y == desired.y)
         {
-          slot.y      = workarea.y + height33;
+          slot.y      = subtle->strut.y + height33;
           slot.height = height33 + comp;
         }
 

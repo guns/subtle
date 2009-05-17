@@ -110,6 +110,11 @@ subDisplayConfigure(void)
   gvals.font       = subtle->xfs->fid;
   XChangeGC(subtle->disp, subtle->gcs.font, GCForeground|GCFont, &gvals);
 
+  /* Update strut */
+  subtle->strut.y      += subtle->th;
+  subtle->strut.width   = SCREENW - subtle->strut.width;
+  subtle->strut.height  = SCREENH - subtle->strut.height - subtle->th;
+
   /* Update windows */
   XSetWindowBackground(subtle->disp,  subtle->windows.bar,     subtle->colors.norm);
   XSetWindowBackground(subtle->disp,  subtle->windows.caption, subtle->colors.focus);
@@ -182,7 +187,7 @@ subDisplayScan(void)
 void
 subDisplayPublish(void)
 {
-  long data[4] = { 0, 0, 0, 0 }, pid = (long)getpid();
+  long data[3] = { 0, 0, 0 }, pid = (long)getpid();
 
   assert(subtle);
 
@@ -205,10 +210,9 @@ subDisplayPublish(void)
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_DESKTOP_GEOMETRY, (long *)&data, 2);
 
   /* EWMH: Supported window states */
-  data[0] = subEwmhGet(SUB_EWMH_NET_WM_STATE_HIDDEN);
-  data[1] = subEwmhGet(SUB_EWMH_NET_WM_STATE_FULLSCREEN);
-  data[2] = subEwmhGet(SUB_EWMH_NET_WM_STATE_ABOVE);
-  data[3] = subEwmhGet(SUB_EWMH_NET_WM_STATE_STICKY);
+  data[0] = subEwmhGet(SUB_EWMH_NET_WM_STATE_FULLSCREEN);
+  data[1] = subEwmhGet(SUB_EWMH_NET_WM_STATE_ABOVE);
+  data[2] = subEwmhGet(SUB_EWMH_NET_WM_STATE_STICKY);
 
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_SUPPORTED, (long *)&data, LENGTH(data));
 
