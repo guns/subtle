@@ -251,10 +251,10 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_NET_WM_NAME,                            
   SUB_EWMH_NET_WM_PID,                                            ///< PID of client
   SUB_EWMH_NET_WM_DESKTOP,                                        ///< Desktop client is on
+  SUB_EWMH_NET_WM_STRUT,                                          ///< Screen strut
   SUB_EWMH_NET_SHOWING_DESKTOP,                                   ///< Showing desktop mode 
 
   SUB_EWMH_NET_WM_STATE,                                          ///< Window state
-  SUB_EWMH_NET_WM_STATE_HIDDEN,                                   ///< Hidden window
   SUB_EWMH_NET_WM_STATE_FULLSCREEN,                               ///< Fullscreen window
   SUB_EWMH_NET_WM_STATE_ABOVE,                                    ///< Floating window
   SUB_EWMH_NET_WM_STATE_STICKY,                                   ///< Urgent window
@@ -339,6 +339,8 @@ typedef struct subsubtle_t /* {{{ */
 
   Display            *disp;                                       ///< Subtle Xorg display
   XFontStruct        *xfs;                                        ///< Subtle font
+
+  XRectangle         strut;                                       ///< Subtle strut
 
   struct subview_t   *cv;                                         ///< Subtle current view
   struct subclient_t *cc;                                         ///< Subtle current client
