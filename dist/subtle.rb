@@ -10,7 +10,7 @@
 #
 OPTIONS = {
   "border"  => 2,               # Border size of the windows
-  "step"    => 5                # Window move/resize key step
+  "step"    => 5,               # Window move/resize key step
   "padding" => [ 0, 0, 0, 0 ]   # Screen padding (left, right, top, bottom)
 }
 
