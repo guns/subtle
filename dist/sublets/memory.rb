@@ -26,9 +26,9 @@ class Memory < Subtle::Sublet
       end
 
       @total  = file.match(/MemTotal:\s*(\d+)\s*kB/)[1].to_i / 1024 || 0
-      @active = file.match(/Active:\s*(\d+)\s*kB/)[1].to_i / 1024 || 0
+      @active = file.match(/Cached:\s*(\d+)\s*kB/)[1].to_i / 1024 || 0
 
-      self.data = "%dM/%dM" % [@active.floor, @total.floor]
+      self.data = color("#e1e1e1") + "Memory:" + color("#0dd2e5") +  @active.floor.to_s + "/" + @total.floor.to_s
     rescue => err # Sanitize to prevent unloading
       self.data = "subtle"
       p err
