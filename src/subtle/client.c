@@ -210,13 +210,6 @@ subClientConfigure(SubClient *c)
 
   r = c->rect;
 
-  if(c->flags & SUB_STATE_FULL) 
-    {
-      r.x      = 0;
-      r.y      = 0;
-      r.width  = SCREENW;
-      r.height = SCREENH;
-    }
   if(c->flags & SUB_STATE_FLOAT)
     {
       r.y += subtle->th;
@@ -225,6 +218,14 @@ subClientConfigure(SubClient *c)
     {
       r.width  -= 2 * subtle->bw;
       r.height -= 2 * subtle->bw;
+    }
+
+  if(c->flags & SUB_STATE_FULL) 
+    {
+      r.x      = 0;
+      r.y      = 0;
+      r.width  = SCREENW;
+      r.height = SCREENH;
     }
 
   /* Tell client new geometry */
