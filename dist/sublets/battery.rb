@@ -6,7 +6,7 @@
 # Description: Show the battery state
 # Version: 0.1
 # Date: Sat Sep 13 19:00 CET 2008
-# $Id$
+# $Id: dist/sublets/battery.rb,v 1002 2009/04/14 21:22:58 unexist $
 #
 
 class Battery < Subtle::Sublet
@@ -59,7 +59,7 @@ class Battery < Subtle::Sublet
           ac = "CHG"
       end
   
-      self.data = "%d%%/%s" % [(@remaining * 100 / @capacity).floor, ac]
+      self.data = color("#e1e1e1") + "Bat:" + color("#0dd2e5") + "%d%%/%s" % [(@remaining * 100 / @capacity).floor, ac]
     rescue => err # Sanitize to prevent unloading
       self.data = "subtle"
       p err
