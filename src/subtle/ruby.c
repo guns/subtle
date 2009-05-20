@@ -19,7 +19,7 @@
 #include <ruby.h>
 #include "subtle.h"
 
-static VALUE shelter = Qnil, sublets = Qnil, subtlext = Qnil; ///< Shelter for sweeped objects
+static VALUE shelter = Qnil, sublets = Qnil, subtlext = Qnil;
 
 /* RubySubletMark {{{ */
 static void
@@ -58,6 +58,18 @@ RubySubletInherited(VALUE self,
   rb_ary_push(sublets, recv); ///< Save the sublet
 
   return Qnil;
+} /* }}} */
+
+/* RubySubletColor {{{ */
+static VALUE
+RubySubletColor(VALUE self,
+  VALUE color)
+{
+  char buf[12];
+
+  snprintf(buf, sizeof(buf), "<>%s<>", STR2CSTR(color));
+
+  return rb_str_new2(buf);
 } /* }}} */
 
 /* RubySubletInterval {{{ */
@@ -121,7 +133,7 @@ RubySubletPathSet(VALUE self,
                 /* Create inotify watch */
                 if(0 < (s->interval = inotify_add_watch(subtle->notify, watch, IN_MODIFY)))
                   {
-                    s->flags |= SUB_DATA_INOTIFY;
+                    s->flags |= SUB_SUBLET_INOTIFY;
                     s->path   = strdup(watch);
                     XSaveContext(subtle->disp, subtle->windows.sublets, s->interval, (void *)s);
 
@@ -138,56 +150,6 @@ RubySubletPathSet(VALUE self,
   return Qfalse;
 } /* }}} */
 #endif /* HAVE_SYS_INOTIFY_H */
-
-/* RubySubletData {{{ */
-static VALUE
-RubySubletData(VALUE self)
-{
-  SubSublet *s = NULL;
-  Data_Get_Struct(self, SubSublet, s);
-
-  if(s)
-    {
-      if(s->flags & SUB_DATA_NUM)      return INT2FIX(s->data.num);
-      else if(s->flags & SUB_DATA_STRING) return rb_str_new2(s->data.string);
-    }
-
-  return Qnil;
-} /* }}} */
-
-/* RubySubletDataSet {{{ */
-static VALUE
-RubySubletDataSet(VALUE self,
-  VALUE value)
-{
-  SubSublet *s = NULL;
-  Data_Get_Struct(self, SubSublet, s);
-
-  if(s)
-    {
-      s->flags &= ~(SUB_DATA_NUM|SUB_DATA_STRING|SUB_DATA_NIL); ///< Clear flags
-
-      switch(rb_type(value))
-        {
-          case T_FIXNUM: 
-            s->flags    |= SUB_DATA_NUM;
-            s->data.num  = FIX2INT(value);
-            s->width     = 63; ///< Magic number
-            return Qtrue;
-          case T_STRING: 
-            if(s->data.string) free(s->data.string);
-            s->flags       |= SUB_DATA_STRING;
-            s->data.string  = strdup(RSTRING_PTR(value));
-            s->width        = RSTRING_LEN(value) * subtle->fx + 6;
-            return Qtrue;
-          default:
-            s->flags |= SUB_DATA_NIL;
-            subSharedLogWarn("Unknown value type\n");
-        }
-    }
-
-  return Qfalse;
-} /* }}} */
 
 /* RubyGetString {{{ */
 static char *
@@ -231,27 +193,6 @@ RubyGetArray(VALUE hash,
       }
 
   return fallback;
-} /* }}} */
-
-/* RubyParseColor {{{ */
-static unsigned long
-RubyParseColor(VALUE hash,
-  char *key,
-  char *fallback)
-{ 
-  XColor color = { 0 };
-  Colormap cmap = DefaultColormap(subtle->disp, DefaultScreen(subtle->disp));
-  char *name = RubyGetString(hash, key, fallback);
-  
-  /* Parse and allow color */
-  if(!XParseColor(subtle->disp, cmap, name, &color))
-    {
-      subSharedLogWarn("Failed loading color `%s'\n", key);
-    }
-  else if(!XAllocColor(subtle->disp, cmap, &color))
-    subSharedLogWarn("Failed allocating color `%s'\n", key);
-
-  return color.pixel;
 } /* }}} */
 
 /* RubyConfigForeach {{{ */
@@ -316,17 +257,34 @@ RubyConfigForeach(VALUE key,
   return Qnil;
 } /* }}} */
 
-/* RubyConfigParse {{{ */
+/* RubyParseColor {{{ */
+static unsigned long
+RubyParseColor(char *name)
+{ 
+  XColor color = { subtle->colors.font }; ///< Default color
+  
+  /* Parse and store color */
+  if(!XParseColor(subtle->disp, COLORMAP, name, &color))
+    {
+      subSharedLogWarn("Failed loading color `%s'\n", name);
+    }
+  else if(!XAllocColor(subtle->disp, COLORMAP, &color))
+    subSharedLogWarn("Failed allocating color `%s'\n", name);
+
+  return color.pixel;
+} /* }}} */
+
+/* RubyParseConfig {{{ */
 static VALUE
-RubyConfigParse(VALUE path)
+RubyParseConfig(VALUE path)
 {
   int size;
   char *family = NULL, *style = NULL, font[100];
   VALUE config = 0;
 
-  rb_require(STR2CSTR(path));
-
   if(!subtle->disp) return Qnil;
+
+  rb_require(STR2CSTR(path)); ///< Load config
 
   /* Config: Options */
   config = rb_const_get(rb_cObject, rb_intern("OPTIONS"));
@@ -345,11 +303,11 @@ RubyConfigParse(VALUE path)
 
   /* Config: Colors */
   config                = rb_const_get(rb_cObject, rb_intern("COLORS"));
-  subtle->colors.border = RubyParseColor(config, "border",     "#bdbabd");
-  subtle->colors.norm   = RubyParseColor(config, "normal",     "#22aa99");
-  subtle->colors.focus  = RubyParseColor(config, "focus",      "#ffa500");
-  subtle->colors.bg     = RubyParseColor(config, "background", "#336699");
-  subtle->colors.font   = RubyParseColor(config, "font",       "#000000");
+  subtle->colors.border = RubyParseColor(RubyGetString(config, "border",     "#bdbabd"));
+  subtle->colors.norm   = RubyParseColor(RubyGetString(config, "normal",     "#22aa99"));
+  subtle->colors.focus  = RubyParseColor(RubyGetString(config, "focus",      "#ffa500"));
+  subtle->colors.bg     = RubyParseColor(RubyGetString(config, "background", "#336699"));
+  subtle->colors.font   = RubyParseColor(RubyGetString(config, "font",       "#000000"));
 
   /* Config: Font */
   if(subtle->xfs) 
@@ -384,6 +342,95 @@ RubyConfigParse(VALUE path)
   rb_hash_foreach(config, RubyConfigForeach, SUB_TYPE_VIEW);
 
   return Qnil;
+} /* }}} */
+
+/* RubyParseText {{{ */
+static void
+RubyParseText(char *string,
+  SubArray *ary,
+  int *width)
+{
+  int i = 0;
+  SubText *t = NULL;
+  unsigned long color = 0;
+  char *tok = strtok(string, SEPARTOR);
+  *width = 0;
+
+  while(tok)
+    {
+      if(!strncmp(tok, "#", 1)) ///< Color
+        {
+          color = RubyParseColor(tok);
+        }
+      else ///< Recycle or re-use item to save allocs
+        {
+          if(i < ary->ndata)
+            {
+              t = TEXT(ary->data[i++]);
+
+              if(t->flags & SUB_DATA_STRING && t->data.string) free(t->data.string);
+            }
+          else if((t = TEXT(subSharedMemoryAlloc(1, sizeof(SubText)))))
+            subArrayPush(ary, t);
+
+          t->flags        = SUB_TYPE_TEXT|SUB_DATA_STRING;
+          t->data.string  = strdup(tok);
+          t->width        = strlen(tok) * subtle->fx + 6;
+          t->color        = color;
+          *width          += t->width;
+        }
+
+      tok = strtok(NULL, SEPARTOR);
+    }
+} /* }}} */
+
+/* RubySubletData {{{ */
+static VALUE
+RubySubletData(VALUE self)
+{
+  int i;
+  VALUE string = Qnil;
+  SubSublet *s = NULL;
+  Data_Get_Struct(self, SubSublet, s);
+  
+  /* Concat string */
+  if(s && 0 < s->text->ndata) 
+    {
+      for(i = 0; i < s->text->ndata; i++)
+        {
+          SubText *t = TEXT(s->text->data[i]);
+
+          if(Qnil == string) rb_str_new2(t->data.string);
+          else rb_str_cat(string, t->data.string, strlen(t->data.string));
+        }
+    }
+
+  return string;
+} /* }}} */
+
+/* RubySubletDataSet {{{ */
+static VALUE
+RubySubletDataSet(VALUE self,
+  VALUE value)
+{
+  VALUE ret = Qfalse;
+  SubSublet *s = NULL;
+  Data_Get_Struct(self, SubSublet, s);
+
+  if(s)
+    {
+      switch(rb_type(value)) ///< Check value type
+        {
+          case T_STRING: 
+            RubyParseText(RSTRING_PTR(value), s->text, &s->width); 
+            ret = Qtrue;
+            break;
+          default:
+            rb_raise(rb_eArgError, "Unknown value type");
+        }
+    }
+
+  return ret;
 } /* }}} */
 
 /* RubySubtleTagAdd {{{ */
@@ -666,6 +713,7 @@ subRubyInit(void)
   rb_define_singleton_method(klass, "new",       RubySubletNew,       0);
   rb_define_singleton_method(klass, "inherited", RubySubletInherited, 1);
 
+  rb_define_method(klass, "color",     RubySubletColor,       1);
   rb_define_method(klass, "interval",  RubySubletInterval,    0);
   rb_define_method(klass, "interval=", RubySubletIntervalSet, 1);
   rb_define_method(klass, "data",      RubySubletData,        0);
@@ -708,7 +756,7 @@ subRubyLoadConfig(const char *file)
   subSharedLogDebug("config=%s\n", config);
 
   /* Safety first */
-  rb_protect(RubyConfigParse, rb_str_new2(config), &error);
+  rb_protect(RubyParseConfig, rb_str_new2(config), &error);
   if(error) RubyPerror("Failed reading config", True);
 
   if(!subtle->disp) return;

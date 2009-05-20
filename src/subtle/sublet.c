@@ -25,6 +25,7 @@ subSubletNew(void)
   /* Init sublet */
   s->flags = SUB_TYPE_SUBLET;
   s->time  = subSharedTime();
+  s->text  = subArrayNew();
 
   subSharedLogDebug("new=sublet\n");
 
@@ -60,28 +61,38 @@ subSubletRender(void)
 {
   if(0 < subtle->sublets->ndata)
     {
-      int width = 3;
+      int i, width = 3;
+      XGCValues gvals;
       SubSublet *s = SUBLET(subtle->sublet);
+      SubText *t = NULL;
 
       XClearWindow(subtle->disp, subtle->windows.sublets);
 
       /* Render every sublet */
       while(s)
         {
-          if(s->flags & SUB_DATA_NUM && s->data.num)
+          for(i = 0; i < s->text->ndata; i++)
             {
-              XDrawRectangle(subtle->disp, subtle->windows.sublets, subtle->gcs.font,
-                width, 2, 60, subtle->th - 5);
-              XFillRectangle(subtle->disp, subtle->windows.sublets, subtle->gcs.font,
-                width + 2, 4, (56 * s->data.num) / 100, subtle->th - 8);
-            }
-          else if(s->flags & SUB_DATA_STRING && s->data.string) 
-            XDrawString(subtle->disp, subtle->windows.sublets, subtle->gcs.font, width,
-              subtle->fy - 1, s->data.string, strlen(s->data.string));
+              if((t = TEXT(s->text->data[i])) && t->flags & SUB_DATA_STRING)
+                {
+                  /* Update GC */
+                  gvals.foreground = t->color;
+                  XChangeGC(subtle->disp, subtle->gcs.font, GCForeground, &gvals);
 
-          width += s->width;
-          s      = s->next;
+                  XDrawString(subtle->disp, subtle->windows.sublets, subtle->gcs.font, width,
+                    subtle->fy - 1, t->data.string, strlen(t->data.string));
+
+                  width += t->width;
+                }
+            }
+
+          s = s->next;
         }
+
+      /* Reset GC */
+      gvals.foreground = subtle->colors.font;
+      XChangeGC(subtle->disp, subtle->gcs.font, GCForeground, &gvals);
+
       XFlush(subtle->disp);
     }
 } /* }}} */
@@ -177,7 +188,7 @@ subSubletKill(SubSublet *s,
 #endif /* HAVE_SYS_INOTIFY_H */ 
 
   if(s->name) free(s->name);
-  if(s->flags & SUB_DATA_STRING && s->data.string) free(s->data.string);
+  subArrayKill(s->text, True);
   free(s);
 
   subSharedLogDebug("kill=sublet\n");
