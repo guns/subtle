@@ -147,6 +147,16 @@ subArrayClear(SubArray *a,
       else if(c->flags & SUB_TYPE_TAG)    subTagKill(TAG(c));
       else if(c->flags & SUB_TYPE_TRAY)   subTrayKill(TRAY(c));
       else if(c->flags & SUB_TYPE_VIEW)   subViewKill(VIEW(c));
+      else if(c->flags & SUB_TYPE_TEXT)
+        {
+          SubText *t = TEXT(c);
+
+          if(t->flags & SUB_DATA_STRING && t->data.string) 
+            {
+              free(t->data.string); ///< Special case
+              free(t);
+            }
+        }
       else free(a->data[i]); 
     }
 

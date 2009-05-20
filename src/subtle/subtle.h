@@ -47,6 +47,7 @@
 
 #define RNGVIEW   1000                                            ///< Jump index range
 #define RNGGRAV   2000                                            ///< Gravity index range
+#define SEPARTOR  "<>"                                            ///< Color separator
 
 #define LENGTH(a)  (sizeof(a) / sizeof(a[0]))                     ///< Array length
 #define TEXTW(s)   (strlen(s) * subtle->fx + 8)                   ///< Textwidth in pixel
@@ -88,6 +89,7 @@
 #define RECT(r)   ((XRectangle *)r)                               ///< Cast to XRectangle
 #define SUBLET(s) ((SubSublet *)s)                                ///< Cast to SubSublet
 #define SUBTLE(s) ((SubSubtle *)s)                                ///< Cast to SubSubtle
+#define TEXT(t)   ((SubText *)t)                                  ///< Cast to SubText
 #define TAG(t)    ((SubTag *)t)                                   ///< Cast to SubTag
 #define TRAY(t)   ((SubTray *)t)                                  ///< Cast to SubTray
 #define VIEW(v)   ((SubView *)v)                                  ///< Cast to SubView
@@ -134,8 +136,9 @@
 #define SUB_TYPE_GRAB                 (1L << 2)                   ///< Grab
 #define SUB_TYPE_SUBLET               (1L << 3)                   ///< Sublet
 #define SUB_TYPE_TAG                  (1L << 4)                   ///< Tag
-#define SUB_TYPE_TRAY                 (1L << 5)                   ///< Tray
-#define SUB_TYPE_VIEW                 (1L << 6)                   ///< View
+#define SUB_TYPE_TEXT                 (1L << 5)                   ///< Text
+#define SUB_TYPE_TRAY                 (1L << 6)                   ///< Tray
+#define SUB_TYPE_VIEW                 (1L << 7)                   ///< View
 
 /* Client states */
 #define SUB_STATE_FULL                (1L << 10)                  ///< Fullscreen window
@@ -150,11 +153,13 @@
 #define SUB_PREF_POS                  (1L << 18)                  ///< Client position
 #define SUB_PREF_SIZE                 (1L << 19)                  ///< Client size
 
+/* Sublet types */
+#define SUB_SUBLET_INOTIFY            (1L << 10)                  ///< Inotify sublet
+
 /* Data types */
-#define SUB_DATA_STRING               (1L << 10)                  ///< String data
-#define SUB_DATA_NUM                  (1L << 11)                  ///< Num data
-#define SUB_DATA_NIL                  (1L << 12)                  ///< Nil data
-#define SUB_DATA_INOTIFY              (1L << 13)                  ///< Inotify data
+#define SUB_DATA_STRING               (1L << 15)                  ///< String data
+#define SUB_DATA_NUM                  (1L << 16)                  ///< Num data
+#define SUB_DATA_NIL                  (1L << 17)                  ///< Nil data
 
 /* Grab types */
 #define SUB_GRAB_KEY                  (1L << 10)                  ///< Key grab
@@ -308,6 +313,16 @@ typedef union subdata_t /* {{{ */
   char          *string;                                          ///< Data string
 } SubData; /* }}} */
 
+typedef struct subtext_t /* {{{ */
+{
+  FLAGS              flags;                                       ///< Text flags
+  
+  int             width;                                          ///< Text width
+  unsigned long   color;                                          ///< Text color
+
+  union subdata_t data;                                           ///< Text data
+} SubText; /* }}} */
+
 typedef struct subgrab_t /* {{{ */
 {
   FLAGS           flags;                                          ///< Grab flags
@@ -325,12 +340,12 @@ typedef struct subsublet_t /* {{{ */
   char               *path;                                       ///< Sublet inotify path
 #endif /* HAVE_SYS_INOTIFY */  
 
-  unsigned long      recv;                                        ///< Sublet Ruby receiver
   int                width;                                       ///< Sublet width
-  time_t             time, interval;                              ///< Sublet update time, interval time
+  unsigned long      recv;                                        ///< Sublet Ruby receiver
+  time_t             time, interval;                              ///< Sublet update/interval time
 
   struct subsublet_t *next;                                       ///< Sublet next sibling
-  union  subdata_t   data;                                        ///< Sublet data
+  struct subarray_t  *text;                                       ///< Sublet text
 } SubSublet; /* }}} */
 
 typedef struct subsubtle_t /* {{{ */
