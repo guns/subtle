@@ -352,7 +352,7 @@ RubyParseText(char *string,
 {
   int i = 0;
   SubText *t = NULL;
-  unsigned long color = 0;
+  unsigned long color = subtle->colors.font;
   char *tok = strtok(string, SEPARTOR);
   *width = 0;
 
