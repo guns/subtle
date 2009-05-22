@@ -6,7 +6,7 @@
 # Description: Show the battery state
 # Version: 0.1
 # Date: Sat Sep 13 19:00 CET 2008
-# $Id: dist/sublets/battery.rb,v 1002 2009/04/14 21:22:58 unexist $
+# $Id$
 #
 
 class Battery < Subtle::Sublet
