@@ -222,16 +222,16 @@ subSharedMatch(int type,
               MATCH(win, gravity2, SUB_GRAVITY_TOP, 100, match, found);
               MATCH(win, gravity2, SUB_GRAVITY_TOP_LEFT, 75, match, found);
               MATCH(win, gravity2, SUB_GRAVITY_TOP_RIGHT, 75, match, found);
-              break;
+              break;            
             case SUB_GRAVITY_BOTTOM_LEFT:
               MATCH(win, gravity2, SUB_GRAVITY_TOP, 100, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_TOP_LEFT, 75, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_TOP_RIGHT, 50, match, found);
-              break;
+              MATCH(win, gravity2, SUB_GRAVITY_TOP_LEFT, 100, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_TOP_RIGHT, 75, match, found);
+              break;            
             case SUB_GRAVITY_BOTTOM_RIGHT:
               MATCH(win, gravity2, SUB_GRAVITY_TOP, 100, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_TOP_LEFT, 50, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_TOP_RIGHT, 75, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_TOP_LEFT, 75, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_TOP_RIGHT, 100, match, found);
               break;
           }
         break; /* }}} */
@@ -279,17 +279,18 @@ subSharedMatch(int type,
         switch(gravity1)
           {
             case SUB_GRAVITY_TOP:
-              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_LEFT, 100, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_RIGHT, 50, match, found);
-              break;
+              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM, 100, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_LEFT, 75, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_RIGHT, 75, match, found);
+              break;            
             case SUB_GRAVITY_TOP_LEFT:
-              MATCH(win, gravity2, SUB_GRAVITY_TOP, 100, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM, 100, match, found);
               MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_LEFT, 100, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_RIGHT, 50, match, found);
-              break;
+              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_RIGHT, 75, match, found);
+              break;            
             case SUB_GRAVITY_TOP_RIGHT:
-              MATCH(win, gravity2, SUB_GRAVITY_TOP, 100, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_LEFT, 50, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM, 100, match, found);
+              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_LEFT, 75, match, found);
               MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_RIGHT, 100, match, found);
               break;
           }
