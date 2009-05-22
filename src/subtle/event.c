@@ -166,16 +166,19 @@ EventDestroy(XDestroyWindowEvent *ev)
   SubClient *c = NULL;
   SubTray *t = NULL;
 
-  if((c = CLIENT(subSharedFind(ev->event, CLIENTID))))
+  if((c = CLIENT(subSharedFind(ev->event, CLIENTID)))) ///< Client
     {
       c->flags |= SUB_STATE_DEAD;
+
       subArrayRemove(subtle->clients, (void *)c);
       subClientPublish();
       if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
       subClientKill(c, True); 
       subViewUpdate();
+
+      XSetInputFocus(subtle->disp, ROOT, RevertToNone, CurrentTime); ///< Activate grabs
     }
-  else if((t = TRAY(subSharedFind(ev->event, TRAYID))))
+  else if((t = TRAY(subSharedFind(ev->event, TRAYID)))) ///< Tray
     {
       subArrayRemove(subtle->trays, (void *)t);
       subTrayKill(t);

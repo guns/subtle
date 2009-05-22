@@ -751,8 +751,9 @@ subClientKill(SubClient *c,
   /* Focus stuff */
   if(subtle->windows.focus == c->win) 
     {
-      XUnmapWindow(subtle->disp, subtle->windows.caption);
       subtle->windows.focus = 0;
+      XUnmapWindow(subtle->disp, subtle->windows.caption);
+      XSetInputFocus(subtle->disp, ROOT, RevertToNone, CurrentTime); ///< Activate grabs
     }
 
   /* Ignore further events and delete context */
