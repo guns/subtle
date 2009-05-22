@@ -769,26 +769,39 @@ subRubyLoadConfig(const char *file)
   else subArraySort(subtle->grabs, subGrabCompare);
 
   /* Tags */
-  if(4 == subtle->tags->ndata) 
+  if(SUB_TAG_CLEAR == subtle->tags->ndata) 
     {
       subSharedLogWarn("No tags found\n");
     }
   else subTagPublish();
 
   /* Views */
-  if(0 == subtle->views->ndata)
+  if(0 == subtle->views->ndata) ///< Create default view
     {
       SubView *v = subViewNew("subtle", "default");
 
       subArrayPush(subtle->views, (void *)v);
       subSharedLogWarn("No views found\n");
     }
-  else
+  else ///< Check default tag
     {
-      SubView *v = VIEW(subtle->views->data[0]);
+      int i, def = -1;
+      SubView *v = NULL;
 
-      v->tags |= (1L << 1); ///< Add default tag to first view
-      subEwmhSetCardinals(v->button, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&v->tags, 1);
+      for(i = 0; i < subtle->views->ndata; i++)
+        if((v = VIEW(subtle->views->data[i])) && v->tags & SUB_TAG_DEFAULT)
+          {
+            def = i;
+            subSharedLogDebug("Default view: id=%d\n", i);
+            break;
+          }
+
+      if(-1 == def) ///< Add default tag to first view
+        {
+          v = VIEW(subtle->views->data[0]);
+          v->tags |= SUB_TAG_DEFAULT; 
+          subEwmhSetCardinals(v->button, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&v->tags, 1);
+        }
     }
 
   subViewUpdate();
