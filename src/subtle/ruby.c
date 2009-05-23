@@ -19,7 +19,16 @@
 #include <ruby.h>
 #include "subtle.h"
 
-static VALUE shelter = Qnil, sublets = Qnil, subtlext = Qnil;
+static VALUE shelter = Qnil, sublets = Qnil, subtlext = Qnil; ///< Globals
+
+/* Typedef {{{ */
+typedef struct rubytable_t
+{
+  char *key;
+  int value;
+  unsigned long extra;
+} RubyTable;
+/* }}} */
 
 /* RubySubletMark {{{ */
 static void
@@ -201,9 +210,35 @@ RubyConfigForeach(VALUE key,
   VALUE value,
   VALUE extra)
 {
-  int type = -1;
+  int i, type = -1;
   void *entry = NULL;
-  SubData data;
+  char *name = NULL;
+  SubData data = { None };
+
+  static const RubyTable table[] = /* {{{ */
+  {
+    { "WindowMove",         SUB_GRAB_WINDOW_MOVE,    None                     }, ///< 0
+    { "WindowResize",       SUB_GRAB_WINDOW_RESIZE,  None                     }, 
+    { "WindowFloat",        SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_FLOAT          }, 
+    { "WindowFull",         SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_FLOAT          }, 
+    { "WindowStick",        SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_STICK          }, 
+    { "WindowRaise",        SUB_GRAB_WINDOW_STACK,   Above                    }, 
+    { "WindowLower",        SUB_GRAB_WINDOW_STACK,   Below                    }, 
+    { "WindowUp",           SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_UP            }, 
+    { "WindowLeft",         SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_LEFT          }, 
+    { "WindowRight",        SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_RIGHT         }, 
+    { "WindowDown",         SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_DOWN          }, 
+    { "WindowKill",         SUB_GRAB_WINDOW_KILL,    None                     }, ///< 11
+    { "GravityTopLeft",     SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP_LEFT     }, 
+    { "GravityTop",         SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP          }, 
+    { "GravityTopRight",    SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP_RIGHT    }, 
+    { "GravityLeft",        SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_LEFT         }, 
+    { "GravityCenter",      SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_CENTER       }, 
+    { "GravityRight",       SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_RIGHT        }, 
+    { "GravityBottomLeft",  SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM_LEFT  }, 
+    { "GravityBottom",      SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM       }, 
+    { "GravityBottomRight", SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM_RIGHT }  ///< 20
+  }; /* }}} */  
 
   /* Create various types */
   switch(extra)
@@ -211,27 +246,45 @@ RubyConfigForeach(VALUE key,
       case SUB_TYPE_GRAB:
         switch(rb_type(value)) ///< Check value type
           {
-            case T_STRING: ///< Exec
-              data = DATA(strdup(STR2CSTR(value)));
-              type = SUB_GRAB_EXEC;
-              break;
-            case T_FIXNUM: ///< Specific
-              type = FIX2INT(value);
+            case T_STRING:
+              name = STR2CSTR(value);
 
-              if(RNGVIEW <= type && RNGVIEW + 100 >= type) ///< Jump
+              if(!strncmp(name, "ViewJump", 8)) ///< ViewJump
                 {
-                  data = DATA((unsigned long)(type - RNGVIEW - 1)); ///< Update for index
-                  type = SUB_GRAB_JUMP;
+                  if((name = (char *)name + 8))
+                    {
+                      type = SUB_GRAB_JUMP;
+                      data = DATA((unsigned long)(atol(name) - 1));
+                    }
                 }
-              else if(RNGGRAV <= type && RNGGRAV + 100 >= type) ///< Gravity
+              else if(!strncmp(name, "Window", 6)) ///< Window
                 {
-                  data = DATA((unsigned long)(type - RNGGRAV));
-                  type = SUB_GRAB_GRAVITY;
+                  for(i = 0; i <= 11; i++)
+                    if(!strcmp((char *)name, table[i].key))
+                      {
+                        type = table[i].value;
+                        data = DATA(table[i].extra);
+                      }
+                }    
+              else if(!strncmp(name, "Gravity", 7)) ///< Gravity
+                {
+                  for(i = 12; i <= 20; i++)
+                    if(!strcmp((char *)name, table[i].key))
+                      {
+                        type = table[i].value;
+                        data = DATA(table[i].extra);
+                      }
                 }
+              else ///< Exec
+                {
+                  type = SUB_GRAB_EXEC;
+                  data = DATA(strdup(name));
+                }
+
               break;
             case T_DATA: ///< Proc   
-              data = DATA(value);
               type = SUB_GRAB_PROC;
+              data = DATA(value);
 
               rb_ary_push(shelter, value); ///< Protect from GC
               break;
@@ -559,6 +612,8 @@ RubyProtect(VALUE script)
           case 1:
             if(subtle->cc)
               {
+                if(Qnil == subtlext) subRubyLoadSubtlext(); ///< Load on demand
+                
                 /* Create client instance */
                 id     = subArrayIndex(subtle->clients, (void *)subtle->cc);
                 mod    = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
@@ -590,47 +645,9 @@ RubyRequire(VALUE path)
   return Qnil;
 } /* }}} */
 
-/* RubyConst {{{ */
+/* RubyDispatcher {{{ */
 static VALUE  
-RubyConst(int argc, 
-  VALUE *argv, 
-  VALUE self)
-{  
-  char *name = NULL, *suffix = NULL;
-  VALUE missing = Qnil, args = Qnil;     
-
-  rb_scan_args(argc, argv, "1*", &missing, &args);  
-  name = (char *)rb_id2name(SYM2ID(missing));  
-
-  subSharedLogDebug("Missing: const=%s\n", name);
-
-  /* Parse missing constants */  
-  if(!strncmp(name, "Jump", 4)) ///< Jump
-    {
-      if((suffix = (char *)name + 4))
-        return INT2FIX(RNGVIEW + atoi(suffix));
-    }
-  else if(!strncmp(name, "Gravity", 7)) ///< Gravity
-    {
-      if((suffix = (char *)name + 7))
-        {
-          VALUE mod = Qnil, submod = Qnil, value = Qnil;
-
-          mod    = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
-          submod = rb_const_get(mod, rb_intern("Gravity"));
-          
-          if(Qnil != ((value  = rb_const_get(submod, rb_intern(suffix)))))
-            return INT2FIX(RNGGRAV + FIX2INT(value));
-        }
-    }
-
-  rb_raise(rb_eStandardError, "Failed finding constant `%s'", name);
-  return Qnil;  
-} /* }}} */
-
-/* RubyMethod {{{ */
-static VALUE  
-RubyMethod(int argc, 
+RubyDispatcher(int argc, 
   VALUE *argv, 
   VALUE self)
 {  
@@ -641,6 +658,8 @@ RubyMethod(int argc,
   name = (char *)rb_id2name(SYM2ID(missing));  
 
   subSharedLogDebug("Missing: method=%s\n", name);
+
+  if(Qnil == subtlext) subRubyLoadSubtlext(); ///< Load on demand
 
   if(rb_respond_to(subtlext, rb_to_id(missing))) ///< Dispatch method calls
     return rb_funcall2(subtlext, rb_to_id(missing), --argc, ++argv);
@@ -674,39 +693,17 @@ RubyEach(VALUE idx,
 void
 subRubyInit(void)
 {
-  int error = 0;
-  VALUE mod = Qnil, submod = Qnil, klass = Qnil;
+  VALUE mod = Qnil, klass = Qnil;
 
   RUBY_INIT_STACK;
   ruby_init();
   ruby_init_loadpath();
   ruby_script("subtle");
 
-  rb_define_method(rb_mKernel, "method_missing", RubyMethod, -1); ///< Subtlext wrapper
+  rb_define_method(rb_mKernel, "method_missing", RubyDispatcher, -1); ///< Subtlext dispatcher
 
   /* Module: subtle */
   mod = rb_define_module("Subtle");
-
-  /* Module: grab */
-  submod = rb_define_module_under(mod, "Grab");
-  rb_define_singleton_method(submod, "const_missing", RubyConst, -1);
-
-  rb_define_const(submod, "WindowMove",   INT2FIX(SUB_GRAB_WINDOW_MOVE));
-  rb_define_const(submod, "WindowResize", INT2FIX(SUB_GRAB_WINDOW_RESIZE));
-  rb_define_const(submod, "WindowFloat",  INT2FIX(SUB_GRAB_WINDOW_FLOAT));
-  rb_define_const(submod, "WindowFull",   INT2FIX(SUB_GRAB_WINDOW_FULL));
-  rb_define_const(submod, "WindowStick",  INT2FIX(SUB_GRAB_WINDOW_STICK));
-  rb_define_const(submod, "WindowRaise",  INT2FIX(SUB_GRAB_WINDOW_RAISE));
-  rb_define_const(submod, "WindowLower",  INT2FIX(SUB_GRAB_WINDOW_LOWER));
-  rb_define_const(submod, "WindowUp",     INT2FIX(SUB_GRAB_WINDOW_UP));
-  rb_define_const(submod, "WindowLeft",   INT2FIX(SUB_GRAB_WINDOW_LEFT));
-  rb_define_const(submod, "WindowRight",  INT2FIX(SUB_GRAB_WINDOW_RIGHT));
-  rb_define_const(submod, "WindowDown",   INT2FIX(SUB_GRAB_WINDOW_DOWN));
-  rb_define_const(submod, "WindowKill",   INT2FIX(SUB_GRAB_WINDOW_KILL));
-
-  /* Load subtlext */
-  rb_protect(RubyRequire, rb_str_new2("subtle/subtlext"), &error);
-  if(error) RubyPerror("Failed loading sublext", True);
 
   /* Class: sublet */
   klass = rb_define_class_under(mod, "Sublet", rb_cObject);
@@ -889,14 +886,21 @@ subRubyLoadSublets(const char *path)
   subSubletPublish();
 } /* }}} */
 
- /** subRubyLoadSublext {{{
-  * @brief Load sublext
+ /** subRubyLoadSubtlext {{{
+  * @brief Load subtlext
   **/
 
 void
-subRubyLoadSublext(void)
+subRubyLoadSubtlext(void)
 {
+  int error = 0;
   VALUE mod = Qnil, klass = Qnil;
+
+  printf("Loading subtlext\n");
+
+  /* Load subtlext */
+  rb_protect(RubyRequire, rb_str_new2("subtle/subtlext"), &error);
+  if(error) RubyPerror("Failed loading subtlext", True);
 
   /* Module: subtlext */
   mod = rb_const_get(rb_mKernel, rb_intern("Subtlext"));

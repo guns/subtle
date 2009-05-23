@@ -591,7 +591,8 @@ EventGrab(XEvent *ev)
             if(0 <= g->data.num && g->data.num < subtle->views->ndata)
               subViewJump(VIEW(subtle->views->data[g->data.num]));
             break; /* }}} */
-          case SUB_GRAB_GRAVITY: /* {{{ */
+          case SUB_GRAB_WINDOW_GRAVITY: /* {{{ */
+          printf("DEBUG %s:%d\n", __func__, __LINE__);
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               {
                 vid = subArrayIndex(subtle->views, (void *)subtle->cv);
@@ -617,44 +618,25 @@ EventGrab(XEvent *ev)
                 subClientDrag(c, flag);
               }
             break; /* }}} */
-          case SUB_GRAB_WINDOW_FLOAT:
-          case SUB_GRAB_WINDOW_FULL:
-          case SUB_GRAB_WINDOW_STICK: /* {{{ */
+          case SUB_GRAB_WINDOW_TOGGLE: /* {{{ */
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               {
-                flag = SUB_GRAB_WINDOW_FLOAT == flag ? SUB_STATE_FLOAT : 
-                  (SUB_GRAB_WINDOW_FULL == flag ? SUB_STATE_FULL : SUB_STATE_STICK);
-                subClientToggle(c, flag);
+                subClientToggle(c, g->data.num);
                 if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
               }
             break; /* }}} */
-          case SUB_GRAB_WINDOW_RAISE:
-          case SUB_GRAB_WINDOW_LOWER: /* {{{ */
-            if((c = CLIENT(subSharedFind(win, CLIENTID))))
+          case SUB_GRAB_WINDOW_STACK: /* {{{ */
+            if((c = CLIENT(subSharedFind(win, CLIENTID))) && VISIBLE(subtle->cv, c)) 
               {
-                if(VISIBLE(subtle->cv, c)) 
-                  {
-                    if(SUB_GRAB_WINDOW_RAISE == flag) XRaiseWindow(subtle->disp, c->win);
-                    else XLowerWindow(subtle->disp, c->win);
-                  }
+                if(Above == g->data.num)      XRaiseWindow(subtle->disp, c->win);
+                else if(Below == g->data.num) XLowerWindow(subtle->disp, c->win);
               }
             break; /* }}} */            
-          case SUB_GRAB_WINDOW_UP:
-          case SUB_GRAB_WINDOW_LEFT:
-          case SUB_GRAB_WINDOW_RIGHT:
-          case SUB_GRAB_WINDOW_DOWN: /* {{{ */
+          case SUB_GRAB_WINDOW_SELECT: /* {{{ */
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               {
-                int i, type = 0, match = 0;
+                int i, match = 0;
                 Window found = None;
-
-                switch(flag) ///< Translate grabs
-                  {
-                    case SUB_GRAB_WINDOW_UP:    type = SUB_WINDOW_UP;    break;
-                    case SUB_GRAB_WINDOW_LEFT:  type = SUB_WINDOW_LEFT;  break;
-                    case SUB_GRAB_WINDOW_RIGHT: type = SUB_WINDOW_RIGHT; break;
-                    case SUB_GRAB_WINDOW_DOWN:  type = SUB_WINDOW_DOWN;  break;
-                  }
 
                 /* Iterate once to find a client score-based */
                 for(i = 0; 100 != match && i < subtle->clients->ndata; i++)
@@ -662,7 +644,7 @@ EventGrab(XEvent *ev)
                     SubClient *iter = CLIENT(subtle->clients->data[i]);
 
                     if(c != iter && VISIBLE(subtle->cv, iter))
-                      subSharedMatch(type, iter->win, 
+                      subSharedMatch(g->data.num, iter->win, 
                         c->gravity, iter->gravity, &match, &found);
                   }
 
@@ -889,6 +871,7 @@ subEventLoop(void)
           subSubletUpdate();
           subTrayUpdate();
           subSubletRender();
+          subViewRender();
         }
 
       /* Set timeout and assemble FD_SET */

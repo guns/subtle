@@ -44,9 +44,6 @@
 #define MINW      100                                             ///< Client min. width
 #define MINH      100                                             ///< Client min. height
 #define SNAP      10                                              ///< Snapping threshold
-
-#define RNGVIEW   1000                                            ///< Jump index range
-#define RNGGRAV   2000                                            ///< Gravity index range
 #define SEPARTOR  "<>"                                            ///< Color separator
 
 #define LENGTH(a)  (sizeof(a) / sizeof(a[0]))                     ///< Array length
@@ -93,18 +90,6 @@
 #define TAG(t)    ((SubTag *)t)                                   ///< Cast to SubTag
 #define TRAY(t)   ((SubTray *)t)                                  ///< Cast to SubTray
 #define VIEW(v)   ((SubView *)v)                                  ///< Cast to SubView
-
-/* Gravities */
-#define SUB_GRAVITY_UNKNOWN            0                          ///< Gravity unknown
-#define SUB_GRAVITY_BOTTOM_LEFT        1                          ///< Gravity bottom left
-#define SUB_GRAVITY_BOTTOM             2                          ///< Gravity bottom
-#define SUB_GRAVITY_BOTTOM_RIGHT       3                          ///< Gravity bottom right
-#define SUB_GRAVITY_LEFT               4                          ///< Gravity left
-#define SUB_GRAVITY_CENTER             5                          ///< Gravity center
-#define SUB_GRAVITY_RIGHT              6                          ///< Gravity right
-#define SUB_GRAVITY_TOP_LEFT           7                          ///< Gravity top left
-#define SUB_GRAVITY_TOP                8                          ///< Gravity top
-#define SUB_GRAVITY_TOP_RIGHT          9                          ///< Gravity top right
 
 /* XEmbed messages */
 #define XEMBED_EMBEDDED_NOTIFY         0
@@ -167,19 +152,13 @@
 #define SUB_GRAB_EXEC                 (1L << 12)                  ///< Exec an app
 #define SUB_GRAB_PROC                 (1L << 13)                  ///< Grab with proc
 #define SUB_GRAB_JUMP                 (1L << 14)                  ///< Jump to view
-#define SUB_GRAB_GRAVITY              (1L << 15)                  ///< Gravity type
-#define SUB_GRAB_WINDOW_MOVE          (1L << 16)                  ///< Resize window
-#define SUB_GRAB_WINDOW_RESIZE        (1L << 17)                  ///< Move window
-#define SUB_GRAB_WINDOW_FLOAT         (1L << 18)                  ///< Toggle float
-#define SUB_GRAB_WINDOW_FULL          (1L << 19)                  ///< Toggle full
-#define SUB_GRAB_WINDOW_STICK         (1L << 20)                  ///< Toggle stock
-#define SUB_GRAB_WINDOW_RAISE         (1L << 21)                  ///< Raise window
-#define SUB_GRAB_WINDOW_LOWER         (1L << 22)                  ///< Lower window
-#define SUB_GRAB_WINDOW_UP            (1L << 23)                  ///< Focus window up
-#define SUB_GRAB_WINDOW_LEFT          (1L << 24)                  ///< Focus window left
-#define SUB_GRAB_WINDOW_RIGHT         (1L << 25)                  ///< Focus window right
-#define SUB_GRAB_WINDOW_DOWN          (1L << 26)                  ///< Focus window down
-#define SUB_GRAB_WINDOW_KILL          (1L << 27)                  ///< Kill window
+#define SUB_GRAB_WINDOW_MOVE          (1L << 15)                  ///< Resize window
+#define SUB_GRAB_WINDOW_RESIZE        (1L << 16)                  ///< Move window
+#define SUB_GRAB_WINDOW_TOGGLE        (1L << 17)                  ///< Toggle window
+#define SUB_GRAB_WINDOW_STACK         (1L << 18)                  ///< Stack window
+#define SUB_GRAB_WINDOW_SELECT        (1L << 19)                  ///< Select window
+#define SUB_GRAB_WINDOW_GRAVITY       (1L << 20)                  ///< Set gravity of window
+#define SUB_GRAB_WINDOW_KILL          (1L << 21)                  ///< Kill window
 
 /* Drag states */
 #define SUB_DRAG_START                (1L << 10)                  ///< Drag start
@@ -503,7 +482,7 @@ void subGrabKill(SubGrab *g);                                     ///< Kill grab
 void subRubyInit(void);                                           ///< Init Ruby stack 
 void subRubyLoadConfig(const char *file);                         ///< Load config file
 void subRubyLoadSublets(const char *path);                        ///< Load sublets
-void subRubyLoadSublext(void);                                    ///< Load sublext
+void subRubyLoadSubtlext(void);                                   ///< Load subtlext
 void subRubyRun(void *script);                                    ///< Run Ruby script
 void subRubyFinish(void);                                         ///< Kill Ruby stack
 /* }}} */
