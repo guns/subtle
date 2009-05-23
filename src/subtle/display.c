@@ -111,7 +111,7 @@ subDisplayConfigure(void)
   XChangeGC(subtle->disp, subtle->gcs.font, GCForeground|GCFont, &gvals);
 
   /* Update strut */
-  subtle->strut.y      += subtle->th;
+  subtle->strut.y      += subtle->bar ? 0 : subtle->th;
   subtle->strut.width   = SCREENW - subtle->strut.width;
   subtle->strut.height  = SCREENH - subtle->strut.height - subtle->th;
 
@@ -130,7 +130,9 @@ subDisplayConfigure(void)
   XClearWindow(subtle->disp, subtle->windows.sublets);
   XClearWindow(subtle->disp, ROOT);
 
-  XMoveResizeWindow(subtle->disp, subtle->windows.bar, 0, 0, SCREENW, subtle->th);
+  /* Bar position */
+  XMoveResizeWindow(subtle->disp, subtle->windows.bar, 0, 
+    subtle->bar ? SCREENH - subtle->th : 0, SCREENW, subtle->th);
 
   /* Map windows */
   XMapWindow(subtle->disp, subtle->windows.views);

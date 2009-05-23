@@ -343,6 +343,7 @@ RubyParseConfig(VALUE path)
   config = rb_const_get(rb_cObject, rb_intern("OPTIONS"));
   subtle->bw           = RubyGetFixnum(config, "border", 2);
   subtle->step         = RubyGetFixnum(config, "step", 5);
+  subtle->bar          = RubyGetFixnum(config, "bar", 0);
   subtle->strut.x      = RubyGetArray(config, "padding", 0, 0);
   subtle->strut.y      = RubyGetArray(config, "padding", 1, 0);
   subtle->strut.width  = RubyGetArray(config, "padding", 2, 0);

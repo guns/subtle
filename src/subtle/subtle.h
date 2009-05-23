@@ -46,6 +46,9 @@
 #define SNAP      10                                              ///< Snapping threshold
 #define SEPARTOR  "<>"                                            ///< Color separator
 
+#define P33       (1 << 1)
+#define P66       (1 << 2)
+
 #define LENGTH(a)  (sizeof(a) / sizeof(a[0]))                     ///< Array length
 #define TEXTW(s)   (strlen(s) * subtle->fx + 8)                   ///< Textwidth in pixel
 #define WINW(c)    (c->rect.width - 2 * subtle->bw)               ///< Get real width
@@ -329,7 +332,7 @@ typedef struct subsublet_t /* {{{ */
 
 typedef struct subsubtle_t /* {{{ */
 {
-  int                th, bw, fx, fy, step;                        ///< Subtle properties
+  int                th, bw, fx, fy, step, bar;                   ///< Subtle properties
 
   Display            *disp;                                       ///< Subtle Xorg display
   XFontStruct        *xfs;                                        ///< Subtle font
