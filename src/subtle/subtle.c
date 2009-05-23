@@ -202,7 +202,6 @@ main(int argc,
   /* Load */
   subRubyLoadConfig(config);
   subRubyLoadSublets(sublets);
-  subRubyLoadSublext();
 
   /* Display */
   subDisplayConfigure();
