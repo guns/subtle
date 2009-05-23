@@ -22,7 +22,7 @@ class Loadavg < Subtle::Sublet
         file = f.read
       end
 
-      self.data = color("#e1e1e1") + "Load:" + color("#0dd2e5") + file.slice(0, 14)
+      self.data = file.slice(0, 14) + color(COLORS["focus"]) + "//"
     rescue => err # Sanitize to prevent unloading
       self.data = "subtle"
       p err
