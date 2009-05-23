@@ -501,19 +501,19 @@ subClientSetGravity(SubClient *c,
 {
   XRectangle slot = { 0 }, desired = { 0 }, current = { 0 };
 
-  static const ClientGravity props[] =
+  static const ClientGravity props[] = /* {{{ */
   {
     { 0, 1, 1, 1 }, ///< Gravity unknown
-    { 0, 1, 2, 2 }, ///< Gravity bottom left
-    { 0, 1, 1, 2 }, ///< Gravity bottom
-    { 1, 1, 2, 2 }, ///< Gravity bottom right
-    { 0, 0, 2, 1 }, ///< Gravity left
-    { 0, 0, 1, 1 }, ///< Gravity center
-    { 1, 0, 2, 1 }, ///< Gravity right
     { 0, 0, 2, 2 }, ///< Gravity top left
     { 0, 0, 1, 2 }, ///< Gravity top
     { 1, 0, 2, 2 }, ///< Gravity top right
-  }; 
+    { 0, 0, 2, 1 }, ///< Gravity left
+    { 0, 0, 1, 1 }, ///< Gravity center
+    { 1, 0, 2, 1 }, ///< Gravity right
+    { 0, 1, 2, 2 }, ///< Gravity bottom left
+    { 0, 1, 1, 2 }, ///< Gravity bottom
+    { 1, 1, 2, 2 }, ///< Gravity bottom right
+  }; /* }}} */
 
   assert(c);
 
