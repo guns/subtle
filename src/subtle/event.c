@@ -547,13 +547,13 @@ EventGrab(XEvent *ev)
   /* Distinct types */
   switch(ev->type)
     {
-      case ButtonPress: 
+      case ButtonPress:
         if(ev->xbutton.window == subtle->windows.views) ///< View buttons
           {
             SubView *v = VIEW(subSharedFind(ev->xbutton.subwindow, BUTTONID));
             if(subtle->cv != v) subViewJump(v); ///< Prevent jumping to current view
             return;
-          }      
+          }
 
         if(ev->xbutton.window != subtle->windows.focus) ///< Update focus
           XSetInputFocus(subtle->disp, ev->xbutton.window, RevertToNone, CurrentTime);
@@ -561,7 +561,7 @@ EventGrab(XEvent *ev)
         code  = XK_Pointer_Button1 + ev->xbutton.button;
         state = ev->xbutton.state;
         break;
-      case KeyPress:    
+      case KeyPress:
         code  = ev->xkey.keycode;
         state = ev->xkey.state;
         break;
@@ -643,8 +643,8 @@ EventGrab(XEvent *ev)
                     SubClient *iter = CLIENT(subtle->clients->data[i]);
 
                     if(c != iter && VISIBLE(subtle->cv, iter))
-                      subSharedMatch(g->data.num, iter->win, 
-                        c->gravity, iter->gravity, &match, &found);
+                      subSharedMatch(g->data.num, iter->win,
+                        GRAV2INT(c->gravity), GRAV2INT(iter->gravity), &match, &found);
                   }
 
                 if(found && (c = CLIENT(subSharedFind(found, CLIENTID))))
@@ -664,7 +664,7 @@ EventGrab(XEvent *ev)
                 subClientKill(c, True);
               }
             break; /* }}} */
-          default:  
+          default:
             subSharedLogWarn("Failed finding grab!\n");
         }
 
