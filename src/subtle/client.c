@@ -181,7 +181,7 @@ subClientNew(Window win)
   c->gravities = (int *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(int));
 
   for(i = 0; i < subtle->views->ndata; i++)
-    c->gravities[i] = c->gravity;
+    c->gravities[i] = INT2GRAV(c->gravity);
   c->gravity = -1;
 
   /* EWMH: Tags, gravity and desktop */
@@ -499,7 +499,8 @@ void
 subClientSetGravity(SubClient *c,
   int type)
 {
-  XRectangle slot = { 0 }, desired = { 0 }, current = { 0 };
+  int third = 0, grav = 0;
+  XRectangle slot = { 0 }, desired = { 0 };
 
   static const ClientGravity props[] = /* {{{ */
   {
@@ -517,51 +518,56 @@ subClientSetGravity(SubClient *c,
 
   assert(c);
 
+  third = type & P66 ? P66 : (type & P33 ? P33 : 0);
+  grav  = GRAV2INT(type);
+
   /* Compute slot */
-  slot.x      = subtle->strut.x + props[type].grav_right * (subtle->strut.width / props[type].cells_x);
-  slot.y      = subtle->strut.y + props[type].grav_down * (subtle->strut.height / props[type].cells_y);
-  slot.height = subtle->strut.height / props[type].cells_y;
-  slot.width  = subtle->strut.width / props[type].cells_x;
+  slot.x      = subtle->strut.x + props[grav].grav_right * (subtle->strut.width / props[grav].cells_x);
+  slot.y      = subtle->strut.y + props[grav].grav_down * (subtle->strut.height / props[grav].cells_y);
+  slot.height = subtle->strut.height / props[grav].cells_y;
+  slot.width  = subtle->strut.width / props[grav].cells_x;
+  desired     = slot;
 
-  desired = slot;
-  current = c->rect;
-
-	if(desired.x == current.x && desired.width == current.width)
+  /* Toggle between normal/33/66 mode */
+	if(0 < third || (desired.x == c->rect.x && desired.width == c->rect.width))
 	  {
 	    int height33 = subtle->strut.height / 3;
 	    int height66 = subtle->strut.height - height33;
       int comp     = abs(subtle->strut.height - 3 * height33); ///< Int rounding fix
 
-	    if(2 == props[type].cells_y)
+	    if(2 == props[grav].cells_y)
 	      {
-	       if(current.height == desired.height && current.y == desired.y)
+	       if(P66 == third || (c->rect.height == desired.height && c->rect.y == desired.y))
 	         {
-	           slot.y      = subtle->strut.y + props[type].grav_down * height33;
+	           slot.y      = subtle->strut.y + props[grav].grav_down * height33;
 	           slot.height = height66;
+             third       = P66;
         		}
       		else
         		{
               XRectangle rect33, rect66;
 
               rect33        = slot;
-              rect33.y      = subtle->strut.y + props[type].grav_down * height66;
+              rect33.y      = subtle->strut.y + props[grav].grav_down * height66;
               rect33.height = height33;
 
               rect66        = slot;
-              rect66.y      = subtle->strut.y + props[type].grav_down * height33;
+              rect66.y      = subtle->strut.y + props[grav].grav_down * height33;
               rect66.height = height66;
 
-              if(current.height == rect66.height && current.y == rect66.y)
+              if(P33 == third || (c->rect.height == rect66.height && c->rect.y == rect66.y))
                 {
                   slot.height = height33;
-                  slot.y      = subtle->strut.y + props[type].grav_down * height66;
+                  slot.y      = subtle->strut.y + props[grav].grav_down * height66;
+                  third       = P33;
 	             }
 	         }
 	      }
-	    else if(current.height == desired.height && current.y == desired.y)
+	    else if(P33 == third || (c->rect.height == desired.height && c->rect.y == desired.y))
         {
           slot.y      = subtle->strut.y + height33;
           slot.height = height33 + comp;
+          third       = P33;
         }
 
       desired = slot;
@@ -572,10 +578,10 @@ subClientSetGravity(SubClient *c,
   c->rect.y      = desired.y;
   c->rect.width  = desired.width;
   c->rect.height = desired.height;
-  c->gravity     = type;
+  c->gravity     = INT2GRAV(grav) | third;
 
   /* EWMH: Gravity */
-  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
+  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&grav, 1);
 } /* }}} */
 
   /** subClientSetSize {{{ 

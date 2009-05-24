@@ -92,8 +92,9 @@ subViewConfigure(SubView *v)
               /* Check current gravity */
               if(c->gravity != c->gravities[vid]) 
                 {
-                  c->gravity = c->gravities[vid];
                   subClientSetGravity(c, c->gravities[vid]);
+                  c->gravities[vid] = c->gravity;
+
                   XMapRaised(subtle->disp, c->win);
                 }
 

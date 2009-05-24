@@ -276,7 +276,7 @@ EventMessage(XClientMessageEvent *ev)
                   vid = subArrayIndex(subtle->views, (void *)subtle->cv);
 
                 c->gravity        = -1; ///< Force 
-                c->gravities[vid] = ev->data.l[2];
+                c->gravities[vid] = INT2GRAV(ev->data.l[2]);
 
                 if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
               }
@@ -592,13 +592,12 @@ EventGrab(XEvent *ev)
               subViewJump(VIEW(subtle->views->data[g->data.num]));
             break; /* }}} */
           case SUB_GRAB_WINDOW_GRAVITY: /* {{{ */
-          printf("DEBUG %s:%d\n", __func__, __LINE__);
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               {
                 vid = subArrayIndex(subtle->views, (void *)subtle->cv);
 
                 c->gravity        = -1; ///< Force 
-                c->gravities[vid] = g->data.num;
+                c->gravities[vid] = INT2GRAV(g->data.num);
 
                 if(VISIBLE(subtle->cv, c)) 
                   {

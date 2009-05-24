@@ -33,29 +33,31 @@
 /* }}} */
 
 /* Macros {{{ */
-#define FLAGS     int                                             ///< Flags
-#define TAGS      int                                             ///< Tags
+#define FLAGS        int                                          ///< Flags
+#define TAGS         int                                          ///< Tags
 
-#define CLIENTID  1                                               ///< Client data id
-#define VIEWID    2                                               ///< View data id
-#define TRAYID    3                                               ///< tray data id
-#define BUTTONID  4                                               ///< Button data id
+#define CLIENTID     1                                            ///< Client data id
+#define VIEWID       2                                            ///< View data id
+#define TRAYID       3                                            ///< tray data id
+#define BUTTONID     4                                            ///< Button data id
 
-#define MINW      100                                             ///< Client min. width
-#define MINH      100                                             ///< Client min. height
-#define SNAP      10                                              ///< Snapping threshold
-#define SEPARTOR  "<>"                                            ///< Color separator
+#define MINW         100                                          ///< Client min width
+#define MINH         100                                          ///< Client min height
+#define SNAP         10                                           ///< Snapping threshold
+#define SEPARTOR     "<>"                                         ///< Color separator
 
-#define P33       (1 << 1)
-#define P66       (1 << 2)
+#define P33          (1 << 1)                                     ///< 33% mode flag
+#define P66          (1 << 2)                                     ///< 66% mode flag
+#define INT2GRAV(i)  (i << 4)                                     ///< Convert int to grav
+#define GRAV2INT(i)  (i >> 4)                                     ///< Convert grav to int
 
-#define LENGTH(a)  (sizeof(a) / sizeof(a[0]))                     ///< Array length
-#define TEXTW(s)   (strlen(s) * subtle->fx + 8)                   ///< Textwidth in pixel
-#define WINW(c)    (c->rect.width - 2 * subtle->bw)               ///< Get real width
-#define WINH(c)    (c->rect.height - 2 * subtle->bw)              ///< Get real height
-#define ZERO(n)    (0 < n ? n : 1)                                ///< Prevent zero
-#define MIN(a,b)   (a >= b ? b : a)                               ///< Minimum
-#define MAX(a,b)   (a >= b ? a : b)                               ///< Maximum
+#define LENGTH(a)    (sizeof(a) / sizeof(a[0]))                   ///< Array length
+#define TEXTW(s)     (strlen(s) * subtle->fx + 8)                 ///< Textwidth in pixel
+#define WINW(c)      (c->rect.width - 2 * subtle->bw)             ///< Get real width
+#define WINH(c)      (c->rect.height - 2 * subtle->bw)            ///< Get real height
+#define ZERO(n)      (0 < n ? n : 1)                              ///< Prevent zero
+#define MIN(a,b)     (a >= b ? b : a)                             ///< Minimum
+#define MAX(a,b)     (a >= b ? a : b)                             ///< Maximum
 
 #define MINMAX(val,min,max) \
   (min && val < min ? min : max && val > max ? max : val)         ///< Value min/max
