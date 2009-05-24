@@ -499,7 +499,7 @@ void
 subClientSetGravity(SubClient *c,
   int type)
 {
-  int third = 0, grav = 0;
+  int mode = 0, grav = 0;
   XRectangle slot = { 0 }, desired = { 0 };
 
   static const ClientGravity props[] = /* {{{ */
@@ -518,7 +518,7 @@ subClientSetGravity(SubClient *c,
 
   assert(c);
 
-  third = type & P66 ? P66 : (type & P33 ? P33 : 0);
+  mode = type & P66 ? P66 : (type & P33 ? P33 : 0);
   grav  = GRAV2INT(type);
 
   /* Compute slot */
@@ -529,22 +529,22 @@ subClientSetGravity(SubClient *c,
   desired     = slot;
 
   /* Toggle between normal/33/66 mode */
-	if(0 < third || (desired.x == c->rect.x && desired.width == c->rect.width))
-	  {
-	    int height33 = subtle->strut.height / 3;
-	    int height66 = subtle->strut.height - height33;
+  if(0 < mode || (0 == mode && desired.x == c->rect.x && desired.width == c->rect.width))
+    {
+      int height33 = subtle->strut.height / 3;
+      int height66 = subtle->strut.height - height33;
       int comp     = abs(subtle->strut.height - 3 * height33); ///< Int rounding fix
 
-	    if(2 == props[grav].cells_y)
-	      {
-	       if(P66 == third || (c->rect.height == desired.height && c->rect.y == desired.y))
-	         {
-	           slot.y      = subtle->strut.y + props[grav].grav_down * height33;
-	           slot.height = height66;
-             third       = P66;
-        		}
-      		else
-        		{
+      if(2 == props[grav].cells_y)
+        {
+         if(P66 == mode || (0 == mode && c->rect.height == desired.height && c->rect.y == desired.y))
+           {
+             slot.y      = subtle->strut.y + props[grav].grav_down * height33;
+             slot.height = height66;
+             mode        = P66;
+            }
+          else
+            {
               XRectangle rect33, rect66;
 
               rect33        = slot;
@@ -555,30 +555,30 @@ subClientSetGravity(SubClient *c,
               rect66.y      = subtle->strut.y + props[grav].grav_down * height33;
               rect66.height = height66;
 
-              if(P33 == third || (c->rect.height == rect66.height && c->rect.y == rect66.y))
+              if(P33 == mode || (0 == mode && c->rect.height == rect66.height && c->rect.y == rect66.y))
                 {
                   slot.height = height33;
                   slot.y      = subtle->strut.y + props[grav].grav_down * height66;
-                  third       = P33;
-	             }
-	         }
-	      }
-	    else if(P33 == third || (c->rect.height == desired.height && c->rect.y == desired.y))
+                  mode        = P33;
+               }
+           }
+        }
+      else if(P33 == mode || (0 == mode && c->rect.height == desired.height && c->rect.y == desired.y))
         {
           slot.y      = subtle->strut.y + height33;
           slot.height = height33 + comp;
-          third       = P33;
+          mode        = P33;
         }
 
       desired = slot;
-    }    
+    }
 
   /* Update client rect */
   c->rect.x      = desired.x;
   c->rect.y      = desired.y;
   c->rect.width  = desired.width;
   c->rect.height = desired.height;
-  c->gravity     = INT2GRAV(grav) | third;
+  c->gravity     = INT2GRAV(grav) | mode;
 
   /* EWMH: Gravity */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&grav, 1);
@@ -651,8 +651,8 @@ subClientSetSize(SubClient *c)
     }
 
   subSharedLogDebug("Size: x=%d, y=%d, width=%d, height=%d, minw=%d, minh=%d, " \
-    "maxw=%d, maxh=%d, basew=%d, baseh=%d, minr=%f, maxr=%f\n", 
-    c->rect.x, c->rect.y, c->rect.width, c->rect.height, 
+    "maxw=%d, maxh=%d, basew=%d, baseh=%d, minr=%f, maxr=%f\n",
+    c->rect.x, c->rect.y, c->rect.width, c->rect.height,
     c->minw, c->minh, c->maxw, c->maxh, c->basew, c->basew, c->minr, c->maxr);
 } /* }}} */
 
@@ -668,7 +668,7 @@ subClientToggle(SubClient *c,
 {
   assert(c);
 
-  if(c->flags & type) 
+  if(c->flags & type)
     {
       c->flags  &= ~type;
 
@@ -681,14 +681,14 @@ subClientToggle(SubClient *c,
       if(type & SUB_STATE_STICK)
         subViewConfigure(subtle->cv);
     }
-  else 
+  else
     {
       c->flags |= type;
 
       if(type & SUB_STATE_FLOAT)
         {
           /* Ignore values if they are garbage */
-          if(c->minw > c->rect.width || c->minh > c->rect.width || 
+          if(c->minw > c->rect.width || c->minh > c->rect.width ||
             c->maxw < c->rect.width || c->maxh < c->rect.height)
             {
               c->rect.width  = c->minw;
@@ -696,7 +696,7 @@ subClientToggle(SubClient *c,
             }
 
           if(0 < c->rect.x || 0 < c->rect.y ||
-            c->rect.x + c->rect.width > SCREENW || 
+            c->rect.x + c->rect.width > SCREENW ||
             c->rect.y + c->rect.height > SCREENH - subtle->th) ///< Center
             {
               c->rect.x = (SCREENW - c->rect.width) / 2;
@@ -704,12 +704,12 @@ subClientToggle(SubClient *c,
             }
         }
 
-      if(type & SUB_STATE_FULL) 
+      if(type & SUB_STATE_FULL)
         XSetWindowBorderWidth(subtle->disp, c->win, 0);
     }
 
   subClientConfigure(c);
-  
+
   if(VISIBLE(subtle->cv, c)) ///< Check visibility first
     {
       subClientFocus(c);
@@ -727,12 +727,12 @@ subClientPublish(void)
   int i;
   Window *wins = (Window *)subSharedMemoryAlloc(subtle->clients->ndata, sizeof(Window));
 
-  for(i = 0; i < subtle->clients->ndata; i++) 
+  for(i = 0; i < subtle->clients->ndata; i++)
     wins[i] = CLIENT(subtle->clients->data[i])->win;
 
   /* EWMH: Client list and client list stacking */
   subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST, wins, subtle->clients->ndata);
-  subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST_STACKING, wins, 
+  subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST_STACKING, wins,
     subtle->clients->ndata);
 
   subSharedLogDebug("publish=client, clients=%d\n", subtle->clients->ndata);
@@ -755,7 +755,7 @@ subClientKill(SubClient *c,
   printf("Killing client (%s)\n", c->klass ? c->klass : c->name);
 
   /* Focus stuff */
-  if(subtle->windows.focus == c->win) 
+  if(subtle->windows.focus == c->win)
     {
       subtle->windows.focus = 0;
       XUnmapWindow(subtle->disp, subtle->windows.caption);
@@ -771,7 +771,7 @@ subClientKill(SubClient *c,
     {
       if(c->flags & SUB_PREF_CLOSE) ///< Honor window preferences
         {
-          subEwmhMessage(c->win, c->win, SUB_EWMH_WM_PROTOCOLS, 
+          subEwmhMessage(c->win, c->win, SUB_EWMH_WM_PROTOCOLS,
             subEwmhGet(SUB_EWMH_WM_DELETE_WINDOW), CurrentTime, 0, 0, 0);
         }
       else XKillClient(subtle->disp, c->win);

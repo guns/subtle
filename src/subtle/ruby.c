@@ -755,7 +755,7 @@ subRubyLoadConfig(const char *file)
 
   /* Safety first */
   rb_protect(RubyParseConfig, rb_str_new2(config), &error);
-  if(error) RubyPerror("Failed reading config", True);
+  if(error) RubyPerror("Failed reading config\n", True);
 
   if(!subtle->disp) return;
 
