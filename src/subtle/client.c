@@ -73,7 +73,7 @@ subClientNew(Window win)
   SubClient *c = NULL;
 
   assert(win);
-  
+
   /* Create client */
   c = CLIENT(subSharedMemoryAlloc(1, sizeof(SubClient)));
   c->gravity = SUB_GRAVITY_CENTER;
@@ -144,14 +144,14 @@ subClientNew(Window win)
           if(subtle->windows.focus != c->win) ///< Move pointer to transient
             subClientWarp(c);
         }
-    } 
+    }
 
   /* Tags */
   for(i = 0; (c->name || c->klass) && i < subtle->tags->ndata; i++)
     {
       SubTag *t = TAG(subtle->tags->data[i]);
 
-      if(t->preg && ((c->name && subSharedRegexMatch(t->preg, c->name)) || 
+      if(t->preg && ((c->name && subSharedRegexMatch(t->preg, c->name)) ||
         (c->klass && subSharedRegexMatch(t->preg, c->klass))))
           c->tags |= (1L << (i + 1));
     }
@@ -169,12 +169,12 @@ subClientNew(Window win)
       if(c->tags & SUB_TAG_LEFT)       c->gravity = SUB_GRAVITY_TOP_LEFT;
       else if(c->tags & SUB_TAG_RIGHT) c->gravity = SUB_GRAVITY_TOP_RIGHT;
     }
-  else if(c->tags & SUB_TAG_BOTTOM) 
+  else if(c->tags & SUB_TAG_BOTTOM)
     {
       c->gravity = SUB_GRAVITY_BOTTOM;
       if(c->tags & SUB_TAG_LEFT)       c->gravity = SUB_GRAVITY_BOTTOM_LEFT;
       else if(c->tags & SUB_TAG_RIGHT) c->gravity = SUB_GRAVITY_BOTTOM_RIGHT;
-    }  
+    }
   else if(c->tags & SUB_TAG_LEFT)  c->gravity = SUB_GRAVITY_LEFT;
   else if(c->tags & SUB_TAG_RIGHT) c->gravity = SUB_GRAVITY_RIGHT;
 
@@ -313,7 +313,7 @@ subClientWarp(SubClient *c)
 {
   assert(c);
 
-  XWarpPointer(subtle->disp, None, ROOT, 0, 0, 0, 0, 
+  XWarpPointer(subtle->disp, None, ROOT, 0, 0, 0, 0,
     c->rect.x + c->rect.width / 2, c->rect.y + c->rect.height / 2);
 } /* }}} */
 
@@ -505,15 +505,15 @@ subClientSetGravity(SubClient *c,
   static const ClientGravity props[] = /* {{{ */
   {
     { 0, 1, 1, 1 }, ///< Gravity unknown
-    { 0, 0, 2, 2 }, ///< Gravity top left
-    { 0, 0, 1, 2 }, ///< Gravity top
-    { 1, 0, 2, 2 }, ///< Gravity top right
-    { 0, 0, 2, 1 }, ///< Gravity left
-    { 0, 0, 1, 1 }, ///< Gravity center
-    { 1, 0, 2, 1 }, ///< Gravity right
     { 0, 1, 2, 2 }, ///< Gravity bottom left
     { 0, 1, 1, 2 }, ///< Gravity bottom
     { 1, 1, 2, 2 }, ///< Gravity bottom right
+    { 0, 0, 2, 1 }, ///< Gravity left
+    { 0, 0, 1, 1 }, ///< Gravity center
+    { 1, 0, 2, 1 }, ///< Gravity right
+    { 0, 0, 2, 2 }, ///< Gravity top left
+    { 0, 0, 1, 2 }, ///< Gravity top
+    { 1, 0, 2, 2 }, ///< Gravity top right
   }; /* }}} */
 
   assert(c);

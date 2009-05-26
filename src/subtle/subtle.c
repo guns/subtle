@@ -209,7 +209,7 @@ main(int argc,
   subDisplayScan();
 
   subEventLoop();
-  
+
   return 0; ///< Make compiler happy
 } /* }}} */
 

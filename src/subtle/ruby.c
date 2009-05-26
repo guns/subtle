@@ -561,12 +561,12 @@ RubyPerror(const char *msg,
   int fatal)
 {
   VALUE lasterr = Qnil, message = Qnil;
-  
+
   /* Get last error message */
   lasterr = rb_gv_get("$!");
   message = rb_obj_as_string(lasterr);
 
-  if(RTEST(message)) 
+  if(RTEST(message))
     {
       if(True == fatal)
         {
@@ -596,7 +596,7 @@ RubyProtect(VALUE script)
 
   s = SUBLET(script);
 
-  if(s->flags & SUB_TYPE_SUBLET) 
+  if(s->flags & SUB_TYPE_SUBLET)
     result = rb_funcall(SUBLET(s)->recv, rb_intern("run"), 0, NULL);
   else if(s->flags & SUB_TYPE_GRAB)
     {
@@ -609,12 +609,12 @@ RubyProtect(VALUE script)
           case 0:
           case -1: ///< No optional arguments 
             result = rb_funcall(GRAB(s)->data.num, rb_intern("call"), 0, NULL);
-            break;        
+            break;
           case 1:
             if(subtle->cc)
               {
                 if(Qnil == subtlext) subRubyLoadSubtlext(); ///< Load on demand
-                
+
                 /* Create client instance */
                 id     = subArrayIndex(subtle->clients, (void *)subtle->cc);
                 mod    = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
@@ -623,7 +623,7 @@ RubyProtect(VALUE script)
 
                 rb_iv_set(client, "@id",      INT2FIX(id));
                 rb_iv_set(client, "@win",     LONG2NUM(subtle->cc->win));
-                rb_iv_set(client, "@gravity", INT2FIX(subtle->cc->gravity));    
+                rb_iv_set(client, "@gravity", INT2FIX(GRAV2INT(subtle->cc->gravity)));
 
                 result = rb_funcall(GRAB(s)->data.num, rb_intern("call"), 1, client);
                 break;
@@ -632,7 +632,7 @@ RubyProtect(VALUE script)
             rb_raise(rb_eStandardError, "Failed calling proc with `%d' argument(s)", arity);
         }
       subSharedLogDebug("Proc: arity=%d\n", arity);
-    }      
+    }
 
   return result;
 } /* }}} */
@@ -755,7 +755,7 @@ subRubyLoadConfig(const char *file)
 
   /* Safety first */
   rb_protect(RubyParseConfig, rb_str_new2(config), &error);
-  if(error) RubyPerror("Failed reading config\n", True);
+  if(error) RubyPerror("Failed reading config", True);
 
   if(!subtle->disp) return;
 
@@ -931,7 +931,7 @@ subRubyRun(void *script)
 
   /* Safety first */
   rb_protect(RubyProtect, (VALUE)script, &error); ///< Load sublet
-  if(error) 
+  if(error)
     {
       SubSublet *s = SUBLET(script);
 

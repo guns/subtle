@@ -159,37 +159,37 @@ SubtlextRestack(VALUE self,
 
 /* SubtlextMatch {{{ */
 static VALUE
-SubtlextMatch(VALUE self, 
+SubtlextMatch(VALUE self,
   int type)
 {
   int i, id = 0, size = 0, match = 0, *gravity1 = NULL;
   Window *clients = NULL, *views = NULL, found = None;
   VALUE win = Qnil, client = Qnil;
   unsigned long *cv = NULL, *flags1 = NULL;
-  
+
   win     = rb_iv_get(self, "@win");
   clients = subSharedClientList(&size);
-  views   = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW, 
+  views   = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW,
     "_NET_VIRTUAL_ROOTS", NULL);
   cv      = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
     XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
 
   if(clients && cv)
     {
-      flags1   = (unsigned long *)subSharedPropertyGet(views[*cv], XA_CARDINAL, 
+      flags1   = (unsigned long *)subSharedPropertyGet(views[*cv], XA_CARDINAL,
         "SUBTLE_WINDOW_TAGS", NULL);
-      gravity1 = (int *)subSharedPropertyGet(NUM2LONG(win), XA_CARDINAL, 
+      gravity1 = (int *)subSharedPropertyGet(NUM2LONG(win), XA_CARDINAL,
         "SUBTLE_WINDOW_GRAVITY", NULL);
 
       /* Iterate once to find a client score-based */
       for(i = 0; 100 != match && i < size; i++)
         {
-          unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(clients[i], XA_CARDINAL, 
+          unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(clients[i], XA_CARDINAL,
             "SUBTLE_WINDOW_TAGS", NULL);
 
           if(win != clients[i] && *flags1 & *flags2) ///< Check if there are common tags
             {
-              int *gravity2 = (int *)subSharedPropertyGet(clients[i], XA_CARDINAL, 
+              int *gravity2 = (int *)subSharedPropertyGet(clients[i], XA_CARDINAL,
                 "SUBTLE_WINDOW_GRAVITY", NULL);
 
               subSharedMatch(type, clients[i], *gravity1, *gravity2, &match, &found);
@@ -201,7 +201,7 @@ SubtlextMatch(VALUE self,
 
           free(flags2);
         }
-      
+
       if(found)
         {
           char *wmname = NULL;
@@ -212,7 +212,7 @@ SubtlextMatch(VALUE self,
           klass   = rb_const_get(mod, rb_intern("Client"));
           wmname  = subSharedWindowWMName(found);
           client  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(wmname));
-          gravity = (int *)subSharedPropertyGet(found, XA_CARDINAL, 
+          gravity = (int *)subSharedPropertyGet(found, XA_CARDINAL,
             "SUBTLE_WINDOW_GRAVITY", NULL);
 
           rb_iv_set(client, "@id",      INT2FIX(id));
@@ -229,7 +229,7 @@ SubtlextMatch(VALUE self,
       free(cv);
     }
 
-  return client;  
+  return client;
 } /* }}} */
 
 /* SubtlextTag {{{ */
@@ -243,7 +243,7 @@ SubtlextTag(VALUE self,
 
   /* Find tag */
   if(Qnil != (tag = SubtlextFind(SUB_TYPE_TAG, value, True)))
-    {            
+    {
       VALUE oid = Qnil, tid = Qnil;
 
       oid = rb_iv_get(self, "@id");
@@ -257,8 +257,8 @@ SubtlextTag(VALUE self,
           data.l[1] = FIX2LONG(tid);
           data.l[2] = type;
 
-          subSharedMessage(DefaultRootWindow(display), 
-            SUB_ACTION_TAG == action ? "SUBTLE_WINDOW_TAG" : "SUBTLE_WINDOW_UNTAG", 
+          subSharedMessage(DefaultRootWindow(display),
+            SUB_ACTION_TAG == action ? "SUBTLE_WINDOW_TAG" : "SUBTLE_WINDOW_UNTAG",
             data, True);
 
           return Qtrue;
@@ -541,19 +541,19 @@ SubtlextClientGravitySet(VALUE self,
           data.l[1] = -1;
           data.l[2] = FIX2LONG(value);
 
-          subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_GRAVITY", data, True);  
+          subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_GRAVITY", data, True);
 
           rb_iv_set(self, "@gravity", value);
 
           return value;
         }
-      else 
+      else
         {
           rb_raise(rb_eStandardError, "Failed setting client gravity");
           return Qnil;
         }
     }
-  
+
   rb_raise(rb_eArgError, "Failed setting value type `%d'", rb_type(value));
   return Qnil;
 } /* }}} */

@@ -39,15 +39,15 @@
 
 /* Flags {{{ */
 #define SUB_GRAVITY_UNKNOWN       0  ///< Gravity unknown
-#define SUB_GRAVITY_TOP_LEFT      1  ///< Gravity top left
-#define SUB_GRAVITY_TOP           2  ///< Gravity top
-#define SUB_GRAVITY_TOP_RIGHT     3  ///< Gravity top right
+#define SUB_GRAVITY_BOTTOM_LEFT   1  ///< Gravity bottom left
+#define SUB_GRAVITY_BOTTOM        2  ///< Gravity bottom
+#define SUB_GRAVITY_BOTTOM_RIGHT  3  ///< Gravity bottom right
 #define SUB_GRAVITY_LEFT          4  ///< Gravity left
 #define SUB_GRAVITY_CENTER        5  ///< Gravity center
 #define SUB_GRAVITY_RIGHT         6  ///< Gravity right
-#define SUB_GRAVITY_BOTTOM_LEFT   7  ///< Gravity bottom left
-#define SUB_GRAVITY_BOTTOM        8  ///< Gravity bottom
-#define SUB_GRAVITY_BOTTOM_RIGHT  9  ///< Gravity bottom right
+#define SUB_GRAVITY_TOP_LEFT      7  ///< Gravity top left
+#define SUB_GRAVITY_TOP           8  ///< Gravity top
+#define SUB_GRAVITY_TOP_RIGHT     9  ///< Gravity top right
 
 #define SUB_WINDOW_LEFT           0  ///< Window left
 #define SUB_WINDOW_DOWN           1  ///< Window down
