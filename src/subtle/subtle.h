@@ -46,11 +46,6 @@
 #define SNAP         10                                           ///< Snapping threshold
 #define SEPARTOR     "<>"                                         ///< Color separator
 
-#define P33          (1 << 1)                                     ///< 33% mode flag
-#define P66          (1 << 2)                                     ///< 66% mode flag
-#define INT2GRAV(i)  (i << 4)                                     ///< Convert int to grav
-#define GRAV2INT(i)  (i >> 4)                                     ///< Convert grav to int
-
 #define LENGTH(a)    (sizeof(a) / sizeof(a[0]))                   ///< Array length
 #define TEXTW(s)     (strlen(s) * subtle->fx + 8)                 ///< Textwidth in pixel
 #define WINW(c)      (c->rect.width - 2 * subtle->bw)             ///< Get real width

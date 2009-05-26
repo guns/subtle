@@ -530,9 +530,9 @@ SubtlextClientGravitySet(VALUE self,
 {
   if(T_FIXNUM == rb_type(value))
     {
-      int gravity = FIX2INT(value);
+      int gravity = FIX2INT(value) & ~(SUB_GRAVITY_MODE33|SUB_GRAVITY_MODE66); ///< Strip mode flags
 
-      if(0 <= gravity && 9 >= gravity)
+      if(1 <= gravity && 9 >= gravity)
         {
           SubMessageData data = { { 0, 0, 0, 0, 0 } };
           VALUE id = rb_iv_get(self, "@id");

@@ -193,7 +193,7 @@ EventMessage(XClientMessageEvent *ev)
   SubClient *c = NULL;
 
   if(32 != ev->format) return; ///< Just skip
-  
+
   /* Messages for root window {{{ */
   if(ROOT == ev->window)
     {
@@ -267,7 +267,7 @@ EventMessage(XClientMessageEvent *ev)
                     } 
               }
             break; /* }}} */
-          case SUB_EWMH_SUBTLE_WINDOW_GRAVITY: /* {{{ */  
+          case SUB_EWMH_SUBTLE_WINDOW_GRAVITY: /* {{{ */
             if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0]))))
               {
                 int vid = ev->data.l[1];
@@ -276,7 +276,7 @@ EventMessage(XClientMessageEvent *ev)
                   vid = subArrayIndex(subtle->views, (void *)subtle->cv);
 
                 c->gravity        = -1; ///< Force 
-                c->gravities[vid] = INT2GRAV(ev->data.l[2]);
+                c->gravities[vid] = ev->data.l[2];
 
                 if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
               }
@@ -597,9 +597,9 @@ EventGrab(XEvent *ev)
                 vid = subArrayIndex(subtle->views, (void *)subtle->cv);
 
                 c->gravity        = -1; ///< Force 
-                c->gravities[vid] = INT2GRAV(g->data.num);
+                c->gravities[vid] = g->data.num;
 
-                if(VISIBLE(subtle->cv, c)) 
+                if(VISIBLE(subtle->cv, c))
                   {
                     subViewConfigure(subtle->cv);
                     subClientWarp(c);
@@ -644,7 +644,7 @@ EventGrab(XEvent *ev)
 
                     if(c != iter && VISIBLE(subtle->cv, iter))
                       subSharedMatch(g->data.num, iter->win,
-                        GRAV2INT(c->gravity), GRAV2INT(iter->gravity), &match, &found);
+                        c->gravity, iter->gravity, &match, &found);
                   }
 
                 if(found && (c = CLIENT(subSharedFind(found, CLIENTID))))

@@ -623,7 +623,7 @@ RubyProtect(VALUE script)
 
                 rb_iv_set(client, "@id",      INT2FIX(id));
                 rb_iv_set(client, "@win",     LONG2NUM(subtle->cc->win));
-                rb_iv_set(client, "@gravity", INT2FIX(GRAV2INT(subtle->cc->gravity)));
+                rb_iv_set(client, "@gravity", INT2FIX(subtle->cc->gravity));
 
                 result = rb_funcall(GRAB(s)->data.num, rb_intern("call"), 1, client);
                 break;

@@ -87,10 +87,10 @@ subViewConfigure(SubView *v)
           visible++;
           XMapWindow(subtle->disp, c->win);
 
-          if(!(c->flags & (SUB_STATE_FULL|SUB_STATE_FLOAT))) 
+          if(!(c->flags & (SUB_STATE_FULL|SUB_STATE_FLOAT)))
             {
               /* Check current gravity */
-              if(c->gravity != c->gravities[vid]) 
+              if(c->gravity != c->gravities[vid])
                 {
                   subClientSetGravity(c, c->gravities[vid]);
                   c->gravities[vid] = c->gravity;

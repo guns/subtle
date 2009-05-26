@@ -431,6 +431,7 @@ static void
 SubtlerClientGravity(char *arg1,
   char *arg2)
 {
+  int gravity;
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
   CHECK(arg1 && arg2, "Usage: %sr -c PATTERN -g NUMBER\n", PKG_NAME);
@@ -439,8 +440,9 @@ SubtlerClientGravity(char *arg1,
   data.l[0] = subSharedClientFind(arg1, NULL);
   data.l[1] = -1;
   data.l[2] = atoi(arg2);
+  gravity   = data.l[2] & ~(SUB_GRAVITY_MODE33|SUB_GRAVITY_MODE66); ///< Strip mode flags
 
-  if(-1 != data.l[0])
+  if(-1 != data.l[0] && 1 <= gravity && 9 >= gravity)
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_GRAVITY", data, False);
   else subSharedLogWarn("Failed setting client gravity\n");
 } /* }}} */

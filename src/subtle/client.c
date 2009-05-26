@@ -181,7 +181,7 @@ subClientNew(Window win)
   c->gravities = (int *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(int));
 
   for(i = 0; i < subtle->views->ndata; i++)
-    c->gravities[i] = INT2GRAV(c->gravity);
+    c->gravities[i] = c->gravity;
   c->gravity = -1;
 
   /* EWMH: Tags, gravity and desktop */
@@ -518,8 +518,10 @@ subClientSetGravity(SubClient *c,
 
   assert(c);
 
-  mode = type & P66 ? P66 : (type & P33 ? P33 : 0);
-  grav  = GRAV2INT(type);
+  /* Modes */
+  mode = type & SUB_GRAVITY_MODE66 ? SUB_GRAVITY_MODE66 :
+    (type & SUB_GRAVITY_MODE33 ? SUB_GRAVITY_MODE33 : 0);
+  grav = type & ~(SUB_GRAVITY_MODE33|SUB_GRAVITY_MODE66);
 
   /* Compute slot */
   slot.x      = subtle->strut.x + props[grav].grav_right * (subtle->strut.width / props[grav].cells_x);
@@ -537,11 +539,11 @@ subClientSetGravity(SubClient *c,
 
       if(2 == props[grav].cells_y)
         {
-         if(P66 == mode || (0 == mode && c->rect.height == desired.height && c->rect.y == desired.y))
+         if(SUB_GRAVITY_MODE66 == mode || (0 == mode && c->rect.height == desired.height && c->rect.y == desired.y))
            {
              slot.y      = subtle->strut.y + props[grav].grav_down * height33;
              slot.height = height66;
-             mode        = P66;
+             mode        = SUB_GRAVITY_MODE66;
             }
           else
             {
@@ -555,19 +557,19 @@ subClientSetGravity(SubClient *c,
               rect66.y      = subtle->strut.y + props[grav].grav_down * height33;
               rect66.height = height66;
 
-              if(P33 == mode || (0 == mode && c->rect.height == rect66.height && c->rect.y == rect66.y))
+              if(SUB_GRAVITY_MODE33 == mode || (0 == mode && c->rect.height == rect66.height && c->rect.y == rect66.y))
                 {
                   slot.height = height33;
                   slot.y      = subtle->strut.y + props[grav].grav_down * height66;
-                  mode        = P33;
+                  mode        = SUB_GRAVITY_MODE33;
                }
            }
         }
-      else if(P33 == mode || (0 == mode && c->rect.height == desired.height && c->rect.y == desired.y))
+      else if(SUB_GRAVITY_MODE33 == mode || (0 == mode && c->rect.height == desired.height && c->rect.y == desired.y))
         {
           slot.y      = subtle->strut.y + height33;
           slot.height = height33 + comp;
-          mode        = P33;
+          mode        = SUB_GRAVITY_MODE33;
         }
 
       desired = slot;
@@ -578,10 +580,10 @@ subClientSetGravity(SubClient *c,
   c->rect.y      = desired.y;
   c->rect.width  = desired.width;
   c->rect.height = desired.height;
-  c->gravity     = INT2GRAV(grav) | mode;
+  c->gravity     = grav | mode;
 
   /* EWMH: Gravity */
-  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&grav, 1);
+  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
 } /* }}} */
 
   /** subClientSetSize {{{ 
