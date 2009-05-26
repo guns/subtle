@@ -64,7 +64,7 @@ SubtleSignal(int signum)
       case SIGHUP: ///< Reload config
         subArrayClear(subtle->grabs, True);
         subArrayClear(subtle->tags,  True);
-        subArrayClear(subtle->views, True); 
+        subArrayClear(subtle->views, True);
 
         subRubyLoadConfig(config);
         subDisplayConfigure();
@@ -77,21 +77,25 @@ SubtleSignal(int signum)
         break;
       case SIGTERM:
       case SIGINT: ///< Tidy up
-        subArrayKill(subtle->clients, True);
-        subArrayKill(subtle->grabs,   True);
-        subArrayKill(subtle->sublets, True);
-        subArrayKill(subtle->tags,    True);
-        subArrayKill(subtle->trays,   True);
-        subArrayKill(subtle->views,   True);
+        if(subtle)
+          {
+            subArrayKill(subtle->clients, True);
+            subArrayKill(subtle->grabs,   True);
+            subArrayKill(subtle->sublets, True);
+            subArrayKill(subtle->tags,    True);
+            subArrayKill(subtle->trays,   True);
+            subArrayKill(subtle->views,   True);
 
-        subDisplayFinish();
+            subDisplayFinish();
+          }
+
         subRubyFinish();
 
-        free(subtle);
-       
+        if(subtle) free(subtle);
+
         exit(0);
         break;
-      case SIGSEGV: 
+      case SIGSEGV:
 #ifdef HAVE_EXECINFO_H
         size = backtrace(array, 10);
 
@@ -131,7 +135,7 @@ main(int argc,
 
 #ifdef DEBUG
   int debug = 0;
-#endif /* DEBUG */  
+#endif /* DEBUG */
 
   while(-1 != (c = getopt_long(argc, argv, "c:d:hks:vD", long_options, NULL)))
     {
@@ -146,8 +150,8 @@ main(int argc,
 #ifdef DEBUG          
           case 'D': debug = 1;        break;
 #else /* DEBUG */
-          case 'D': 
-            printf("Please recompile %s with `debug=yes'\n", PKG_NAME); 
+          case 'D':
+            printf("Please recompile %s with `debug=yes'\n", PKG_NAME);
             return 0;
 #endif /* DEBUG */
           case '?':
@@ -165,14 +169,11 @@ main(int argc,
   sigaction(SIGSEGV, &act, NULL);
   sigaction(SIGCHLD, &act, NULL);
 
-  subtle = SUBTLE(subSharedMemoryAlloc(1, sizeof(SubSubtle)));
   if(check) ///< Load and check config
     {
       subRubyInit();
       subRubyLoadConfig(config);
       subRubyFinish();
-
-      free(subtle);
 
       printf("Config OK\n");
 
@@ -180,6 +181,7 @@ main(int argc,
     }
 
   /* Alloc */
+  subtle = SUBTLE(subSharedMemoryAlloc(1, sizeof(SubSubtle)));
   subtle->clients = subArrayNew();
   subtle->grabs   = subArrayNew();
   subtle->sublets = subArrayNew();

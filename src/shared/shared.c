@@ -36,7 +36,7 @@ subSharedLog(int type,
 
 #ifdef DEBUG
 #ifdef WM
-  if(!subtle->debug && !type) return;
+  if((!subtle && !type) || (subtle && !subtle->debug && !type)) return;
 #else  /* WM */
   if(!debug && !type) return;
 #endif /* WM */

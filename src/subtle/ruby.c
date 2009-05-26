@@ -313,9 +313,9 @@ RubyConfigForeach(VALUE key,
 /* RubyParseColor {{{ */
 static unsigned long
 RubyParseColor(char *name)
-{ 
+{
   XColor color = { subtle->colors.font }; ///< Default color
-  
+
   /* Parse and store color */
   if(!XParseColor(subtle->disp, COLORMAP, name, &color))
     {
@@ -335,9 +335,9 @@ RubyParseConfig(VALUE path)
   char *family = NULL, *style = NULL, font[100];
   VALUE config = 0;
 
-  if(!subtle->disp) return Qnil;
-
   rb_require(STR2CSTR(path)); ///< Load config
+
+  if(!subtle || !subtle->disp) return Qnil; ///< Exit after config check
 
   /* Config: Options */
   config = rb_const_get(rb_cObject, rb_intern("OPTIONS"));
@@ -364,7 +364,7 @@ RubyParseConfig(VALUE path)
   subtle->colors.font   = RubyParseColor(RubyGetString(config, "font",       "#000000"));
 
   /* Config: Font */
-  if(subtle->xfs) 
+  if(subtle->xfs)
     {
       XFreeFont(subtle->disp, subtle->xfs);
       subtle->xfs = NULL;
@@ -570,7 +570,7 @@ RubyPerror(const char *msg,
     {
       if(True == fatal)
         {
-          subSharedLogError("%s: %s\n", msg, RSTRING(message)->ptr);
+          subSharedLogError("%s:\n %s\n", msg, RSTRING(message)->ptr);
         }
       else subSharedLogWarn("%s: %s\n", msg, RSTRING(message)->ptr);
     }
@@ -720,7 +720,7 @@ subRubyInit(void)
 #ifdef HAVE_SYS_INOTIFY_H
   rb_define_method(klass, "path",      RubySubletPath,    0);
   rb_define_method(klass, "path=",     RubySubletPathSet, 1);
-#endif /* HAVE_SYS_INOTIFY */  
+#endif /* HAVE_SYS_INOTIFY */
 
   /* Bypassing garbage collection */
   shelter = rb_ary_new();
@@ -742,9 +742,9 @@ subRubyLoadConfig(const char *file)
   /* Check path */
   if(!file)
     {
-      snprintf(config, sizeof(config), "%s/%s/%s", 
+      snprintf(config, sizeof(config), "%s/%s/%s",
         getenv("XDG_CONFIG_HOME"), PKG_NAME, PKG_CONFIG);
-      if(!(fd = fopen(config, "r"))) 
+      if(!(fd = fopen(config, "r")))
         {
           snprintf(config, sizeof(config), "%s/%s", DIR_CONFIG, PKG_CONFIG);
         }
@@ -757,17 +757,17 @@ subRubyLoadConfig(const char *file)
   rb_protect(RubyParseConfig, rb_str_new2(config), &error);
   if(error) RubyPerror("Failed reading config", True);
 
-  if(!subtle->disp) return;
+  if(!subtle || !subtle->disp) return; ///< Exit after config check
 
   /* Grabs */
-  if(0 == subtle->grabs->ndata) 
+  if(0 == subtle->grabs->ndata)
     {
       subSharedLogWarn("No grabs found\n");
     }
   else subArraySort(subtle->grabs, subGrabCompare);
 
   /* Tags */
-  if(SUB_TAG_CLEAR == subtle->tags->ndata) 
+  if(SUB_TAG_CLEAR == subtle->tags->ndata)
     {
       subSharedLogWarn("No tags found\n");
     }
@@ -786,6 +786,7 @@ subRubyLoadConfig(const char *file)
       int i, def = -1;
       SubView *v = NULL;
 
+      /* Check for view with default tag */
       for(i = 0; i < subtle->views->ndata; i++)
         if((v = VIEW(subtle->views->data[i])) && v->tags & SUB_TAG_DEFAULT)
           {
@@ -797,7 +798,7 @@ subRubyLoadConfig(const char *file)
       if(-1 == def) ///< Add default tag to first view
         {
           v = VIEW(subtle->views->data[0]);
-          v->tags |= SUB_TAG_DEFAULT; 
+          v->tags |= SUB_TAG_DEFAULT;
           subEwmhSetCardinals(v->button, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&v->tags, 1);
         }
     }
@@ -872,7 +873,7 @@ subRubyLoadSublets(const char *path)
       if(0 < subtle->sublets->ndata)
         {
           /* Preserve load order */
-          for(i = 0; i < subtle->sublets->ndata - 1; i++) 
+          for(i = 0; i < subtle->sublets->ndata - 1; i++)
             {
               SUBLET(subtle->sublets->data[i])->next = SUBLET(subtle->sublets->data[i + 1]);
               subRubyRun(SUBLET(subtle->sublets->data[i])); ///< First run
@@ -955,7 +956,7 @@ subRubyFinish(void)
   ruby_finalize();
 
 #ifdef HAVE_SYS_INOTIFY_H
-  if(subtle->notify) close(subtle->notify);
+  if(subtle && subtle->notify) close(subtle->notify);
 #endif /* HAVE_SYS_INOTIFY_H */
 
   subSharedLogDebug("kill=ruby\n");
