@@ -269,6 +269,14 @@ SubtlextTag(VALUE self,
   return Qfalse;
 } /* }}} */
 
+/* SubtlextMode {{{ */
+static VALUE
+SubtlextMode(VALUE num,
+  int mode)
+{
+  return INT2FIX(FIX2INT(num) | mode);
+} /* }}} */
+
 /* SubtlextClientInit {{{ */
 static VALUE
 SubtlextClientInit(VALUE self,
@@ -530,7 +538,7 @@ SubtlextClientGravitySet(VALUE self,
 {
   if(T_FIXNUM == rb_type(value))
     {
-      int gravity = FIX2INT(value) & ~(SUB_GRAVITY_MODE33|SUB_GRAVITY_MODE66); ///< Strip mode flags
+      int gravity = FIX2INT(value) & ~SUB_GRAVITY_ALL; ///< Strip mode flags
 
       if(1 <= gravity && 9 >= gravity)
         {
@@ -1163,6 +1171,38 @@ SubtlextSubtleToString(VALUE self)
   return rb_str_new2(buf);
 } /* }}} */
 
+/* SubtlextSubtleModeHorz {{{ */
+static VALUE
+SubtlextSubtleModeHorz(VALUE self,
+  VALUE num)
+{
+  return SubtlextMode(num, SUB_GRAVITY_HORZ);
+} /* }}} */
+
+/* SubtlextSubtleModeVert {{{ */
+static VALUE
+SubtlextSubtleModeVert(VALUE self,
+  VALUE num)
+{
+  return SubtlextMode(num, SUB_GRAVITY_VERT);
+} /* }}} */
+
+/* SubtlextSubtleMode33 {{{ */
+static VALUE
+SubtlextSubtleMode33(VALUE self,
+  VALUE num)
+{
+  return SubtlextMode(num, SUB_GRAVITY_MODE33);
+} /* }}} */
+
+/* SubtlextSubtleMode66 {{{ */
+static VALUE
+SubtlextSubtleMode66(VALUE self,
+  VALUE num)
+{
+  return SubtlextMode(num, SUB_GRAVITY_MODE66);
+} /* }}} */
+
 /* SubtlextSubletInit {{{ */
 static VALUE
 SubtlextSubletInit(VALUE self,
@@ -1580,6 +1620,11 @@ Init_subtlext(void)
   rb_define_method(klass, "running?",       SubtlextSubtleRunning,          0);
   rb_define_method(klass, "reload",         SubtlextSubtleReload,           0);
   rb_define_method(klass, "to_s",           SubtlextSubtleToString,         0);
+
+  rb_define_method(klass, "vert",           SubtlextSubtleModeVert,         1);
+  rb_define_method(klass, "horz",           SubtlextSubtleModeHorz,         1);
+  rb_define_method(klass, "mode33",         SubtlextSubtleMode33,           1);
+  rb_define_method(klass, "mode66",         SubtlextSubtleMode66,           1);
 
   /* Class: sublet */
   klass = rb_define_class_under(mod, "Sublet", rb_cObject);

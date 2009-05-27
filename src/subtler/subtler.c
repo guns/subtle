@@ -440,7 +440,7 @@ SubtlerClientGravity(char *arg1,
   data.l[0] = subSharedClientFind(arg1, NULL);
   data.l[1] = -1;
   data.l[2] = atoi(arg2);
-  gravity   = data.l[2] & ~(SUB_GRAVITY_MODE33|SUB_GRAVITY_MODE66); ///< Strip mode flags
+  gravity   = data.l[2] & ~SUB_GRAVITY_ALL; ///< Strip mode flags
 
   if(-1 != data.l[0] && 1 <= gravity && 9 >= gravity)
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_GRAVITY", data, False);

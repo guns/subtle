@@ -499,9 +499,9 @@ void
 subClientSetGravity(SubClient *c,
   int type)
 {
-  int mode = 0, grav = 0;
-  XRectangle slot = { 0 }, desired = { 0 };
-
+  int grav = 0, compw = 0, comph = 0;
+  int width33 = 0, width66, height33 = 0, height66 = 0;
+  XRectangle slot = { 0 };
   static const ClientGravity props[] = /* {{{ */
   {
     { 0, 1, 1, 1 }, ///< Gravity unknown
@@ -519,68 +519,67 @@ subClientSetGravity(SubClient *c,
   assert(c);
 
   /* Modes */
-  mode = type & SUB_GRAVITY_MODE66 ? SUB_GRAVITY_MODE66 :
-    (type & SUB_GRAVITY_MODE33 ? SUB_GRAVITY_MODE33 : 0);
-  grav = type & ~(SUB_GRAVITY_MODE33|SUB_GRAVITY_MODE66);
+  grav = type & ~SUB_GRAVITY_ALL;
 
   /* Compute slot */
-  slot.x      = subtle->strut.x + props[grav].grav_right * (subtle->strut.width / props[grav].cells_x);
-  slot.y      = subtle->strut.y + props[grav].grav_down * (subtle->strut.height / props[grav].cells_y);
   slot.height = subtle->strut.height / props[grav].cells_y;
   slot.width  = subtle->strut.width / props[grav].cells_x;
-  desired     = slot;
+  slot.x      = subtle->strut.x + props[grav].grav_right * slot.width;
+  slot.y      = subtle->strut.y + props[grav].grav_down * slot.height;
 
-  /* Toggle between normal/33/66 mode */
-  if(0 < mode || (0 == mode && desired.x == c->rect.x && desired.width == c->rect.width))
+  /* Compute sizes */
+  width33  = subtle->strut.width / 3;
+  width66  = subtle->strut.width - width33;
+  compw    = abs(subtle->strut.width - 3 * width33); ///< Int rounding fix
+
+  height33 = subtle->strut.height / 3;
+  height66 = subtle->strut.height - height33;
+  comph    = abs(subtle->strut.height - 3 * height33); ///< Int rounding fix
+
+  /* Toggle between modes */
+  if(type & SUB_GRAVITY_HORZ && 2 == props[grav].cells_x)
     {
-      int height33 = subtle->strut.height / 3;
-      int height66 = subtle->strut.height - height33;
-      int comp     = abs(subtle->strut.height - 3 * height33); ///< Int rounding fix
+      int x = subtle->strut.x + props[grav].grav_right * width33;
 
-      if(2 == props[grav].cells_y)
+      if(type & SUB_GRAVITY_MODE33 ||
+        (type & ~SUB_GRAVITY_MODES && c->rect.width == slot.width && c->rect.x == slot.x)) ///< 33%
         {
-         if(SUB_GRAVITY_MODE66 == mode || (0 == mode && c->rect.height == desired.height && c->rect.y == desired.y))
-           {
-             slot.y      = subtle->strut.y + props[grav].grav_down * height33;
-             slot.height = height66;
-             mode        = SUB_GRAVITY_MODE66;
-            }
-          else
-            {
-              XRectangle rect33, rect66;
-
-              rect33        = slot;
-              rect33.y      = subtle->strut.y + props[grav].grav_down * height66;
-              rect33.height = height33;
-
-              rect66        = slot;
-              rect66.y      = subtle->strut.y + props[grav].grav_down * height33;
-              rect66.height = height66;
-
-              if(SUB_GRAVITY_MODE33 == mode || (0 == mode && c->rect.height == rect66.height && c->rect.y == rect66.y))
-                {
-                  slot.height = height33;
-                  slot.y      = subtle->strut.y + props[grav].grav_down * height66;
-                  mode        = SUB_GRAVITY_MODE33;
-               }
-           }
+          slot.x      = x;
+          slot.width  = width66;
+          type       |= SUB_GRAVITY_MODE33;
         }
-      else if(SUB_GRAVITY_MODE33 == mode || (0 == mode && c->rect.height == desired.height && c->rect.y == desired.y))
+      else if(type & SUB_GRAVITY_MODE66 ||
+        (type & ~SUB_GRAVITY_MODES && c->rect.width == width66 && c->rect.x == x)) ///< 66%
         {
-          slot.y      = subtle->strut.y + height33;
-          slot.height = height33 + comp;
-          mode        = SUB_GRAVITY_MODE33;
+          slot.x      = subtle->strut.x + props[grav].grav_right * width66;
+          slot.width  = width33;
+          type       |= SUB_GRAVITY_MODE66;
         }
+    }  
+  else if(type & SUB_GRAVITY_VERT && 2 == props[grav].cells_y)
+    {
+      int y = subtle->strut.y + props[grav].grav_down * height33;
 
-      desired = slot;
+      if(type & SUB_GRAVITY_MODE33 || 
+        (type & ~SUB_GRAVITY_MODES && c->rect.height == slot.height && c->rect.y == slot.y)) ///< 33%
+        {
+          slot.y       = y;
+          slot.height  = height66;
+          type        |= SUB_GRAVITY_MODE33;
+
+        }
+      else if(type & SUB_GRAVITY_MODE66 ||
+        (type & ~SUB_GRAVITY_MODES && c->rect.height == height66 && c->rect.y == y)) ///< 66%
+        {
+          slot.y       = subtle->strut.y + props[grav].grav_down * height66;
+          slot.height  = height33;
+          type        |= SUB_GRAVITY_MODE66;
+        }
     }
 
   /* Update client rect */
-  c->rect.x      = desired.x;
-  c->rect.y      = desired.y;
-  c->rect.width  = desired.width;
-  c->rect.height = desired.height;
-  c->gravity     = grav | mode;
+  c->rect    = slot;
+  c->gravity = type;
 
   /* EWMH: Gravity */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);

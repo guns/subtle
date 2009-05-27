@@ -217,27 +217,27 @@ RubyConfigForeach(VALUE key,
 
   static const RubyTable table[] = /* {{{ */
   {
-    { "WindowMove",         SUB_GRAB_WINDOW_MOVE,    None                     }, ///< 0
-    { "WindowResize",       SUB_GRAB_WINDOW_RESIZE,  None                     }, 
-    { "WindowFloat",        SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_FLOAT          }, 
-    { "WindowFull",         SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_FLOAT          }, 
-    { "WindowStick",        SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_STICK          }, 
-    { "WindowRaise",        SUB_GRAB_WINDOW_STACK,   Above                    }, 
-    { "WindowLower",        SUB_GRAB_WINDOW_STACK,   Below                    }, 
-    { "WindowUp",           SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_UP            }, 
-    { "WindowLeft",         SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_LEFT          }, 
-    { "WindowRight",        SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_RIGHT         }, 
-    { "WindowDown",         SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_DOWN          }, 
-    { "WindowKill",         SUB_GRAB_WINDOW_KILL,    None                     }, ///< 11
-    { "GravityTopLeft",     SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP_LEFT     }, 
-    { "GravityTop",         SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP          }, 
-    { "GravityTopRight",    SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP_RIGHT    }, 
-    { "GravityLeft",        SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_LEFT         }, 
-    { "GravityCenter",      SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_CENTER       }, 
-    { "GravityRight",       SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_RIGHT        }, 
-    { "GravityBottomLeft",  SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM_LEFT  }, 
-    { "GravityBottom",      SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM       }, 
-    { "GravityBottomRight", SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM_RIGHT }  ///< 20
+    { "WindowMove",         SUB_GRAB_WINDOW_MOVE,    None                                        }, ///< 0
+    { "WindowResize",       SUB_GRAB_WINDOW_RESIZE,  None                                        }, 
+    { "WindowFloat",        SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_FLOAT                             }, 
+    { "WindowFull",         SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_FLOAT                             }, 
+    { "WindowStick",        SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_STICK                             }, 
+    { "WindowRaise",        SUB_GRAB_WINDOW_STACK,   Above                                       }, 
+    { "WindowLower",        SUB_GRAB_WINDOW_STACK,   Below                                       }, 
+    { "WindowUp",           SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_UP                               }, 
+    { "WindowLeft",         SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_LEFT                             }, 
+    { "WindowRight",        SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_RIGHT                            }, 
+    { "WindowDown",         SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_DOWN                             }, 
+    { "WindowKill",         SUB_GRAB_WINDOW_KILL,    None                                        }, ///< 11
+    { "GravityTopLeft",     SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP_LEFT     | SUB_GRAVITY_VERT }, 
+    { "GravityTop",         SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP          | SUB_GRAVITY_VERT }, 
+    { "GravityTopRight",    SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP_RIGHT    | SUB_GRAVITY_VERT }, 
+    { "GravityLeft",        SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_LEFT         | SUB_GRAVITY_VERT }, 
+    { "GravityCenter",      SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_CENTER       | SUB_GRAVITY_VERT }, 
+    { "GravityRight",       SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_RIGHT        | SUB_GRAVITY_VERT }, 
+    { "GravityBottomLeft",  SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM_LEFT  | SUB_GRAVITY_VERT }, 
+    { "GravityBottom",      SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM       | SUB_GRAVITY_VERT }, 
+    { "GravityBottomRight", SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM_RIGHT | SUB_GRAVITY_VERT }  ///< 20
   }; /* }}} */  
 
   /* Create various types */

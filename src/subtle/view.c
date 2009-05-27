@@ -70,7 +70,7 @@ void
 subViewConfigure(SubView *v)
 {
   long vid = 0;
-  int i, visible = 0;
+  int i;
 
   assert(v);
 
@@ -84,7 +84,6 @@ subViewConfigure(SubView *v)
       /* Find matching clients */
       if(VISIBLE(v, c))
         {
-          visible++;
           XMapWindow(subtle->disp, c->win);
 
           if(!(c->flags & (SUB_STATE_FULL|SUB_STATE_FLOAT)))
