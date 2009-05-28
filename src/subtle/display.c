@@ -25,6 +25,7 @@ subDisplayInit(const char *display)
 {
   XGCValues gvals;
   XSetWindowAttributes attrs;
+  unsigned long mask = 0;
   const char stipple[] = {
     0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 0x49, 0x12, 0x24, 0x49, 0x92, 0x24,
     0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 0x49, 0x12, 0x24, 0x49, 0x92, 0x24,
@@ -42,16 +43,16 @@ subDisplayInit(const char *display)
   gvals.function      = GXcopy;
   gvals.fill_style    = FillStippled;
   gvals.stipple       = XCreateBitmapFromData(subtle->disp, ROOT, stipple, 15, 16);
-  subtle->gcs.stipple = XCreateGC(subtle->disp, ROOT,
-    GCFunction|GCFillStyle|GCStipple, &gvals);
+  mask                = GCFunction|GCFillStyle|GCStipple;
+  subtle->gcs.stipple = XCreateGC(subtle->disp, ROOT, mask, &gvals);
 
   subtle->gcs.font = XCreateGC(subtle->disp, ROOT, GCFunction, &gvals);
 
   gvals.function       = GXinvert;
   gvals.subwindow_mode = IncludeInferiors;
   gvals.line_width     = 3;
-  subtle->gcs.invert   = XCreateGC(subtle->disp, ROOT, 
-    GCFunction|GCSubwindowMode|GCLineWidth, &gvals);
+  mask                 = GCFunction|GCSubwindowMode|GCLineWidth;
+  subtle->gcs.invert   = XCreateGC(subtle->disp, ROOT, mask, &gvals);
 
   /* Create cursors */
   subtle->cursors.arrow  = XCreateFontCursor(subtle->disp, XC_left_ptr);
@@ -60,18 +61,18 @@ subDisplayInit(const char *display)
 
   /* Update root window */
   attrs.cursor     = subtle->cursors.arrow;
-  attrs.event_mask = SubstructureRedirectMask|SubstructureNotifyMask|
-    FocusChangeMask|PropertyChangeMask;
+  attrs.event_mask = ROOTMASK;
   XChangeWindowAttributes(subtle->disp, ROOT, CWCursor|CWEventMask, &attrs);
 
   /* Create windows */
-  attrs.save_under        = False;
+  attrs.save_under        = True;
+  attrs.backing_store     = Always;
   attrs.event_mask        = ButtonPressMask|ExposureMask|VisibilityChangeMask;
   attrs.override_redirect = True;
+  mask                    = CWSaveUnder|CWBackingStore;
 
-  subtle->windows.bar     = XCreateWindow(subtle->disp, ROOT, 0, 0, SCREENW, 
-    1, 0, CopyFromParent, InputOutput, CopyFromParent, 
-    CWSaveUnder|CWEventMask|CWOverrideRedirect, &attrs); 
+  subtle->windows.bar     = XCreateWindow(subtle->disp, ROOT, 0, 0, SCREENW, 1, 0, 
+    CopyFromParent, InputOutput, CopyFromParent, CWEventMask|CWOverrideRedirect, &attrs); 
   subtle->windows.caption = XCreateSimpleWindow(subtle->disp, subtle->windows.bar, 
     0, 0, 1, 1, 0, 0, attrs.background_pixel);
   subtle->windows.views   = XCreateSimpleWindow(subtle->disp, subtle->windows.bar, 
@@ -80,6 +81,11 @@ subDisplayInit(const char *display)
     0, 0, 1, 1, 0, 0, attrs.background_pixel);    
   subtle->windows.sublets = XCreateSimpleWindow(subtle->disp, subtle->windows.bar, 
     0, 0, 1, 1, 0, 0, attrs.background_pixel);
+
+  XChangeWindowAttributes(subtle->disp, subtle->windows.caption, mask, &attrs);
+  XChangeWindowAttributes(subtle->disp, subtle->windows.views, mask, &attrs);
+  XChangeWindowAttributes(subtle->disp, subtle->windows.tray, mask, &attrs);
+  XChangeWindowAttributes(subtle->disp, subtle->windows.sublets, mask, &attrs);
 
   /* Select input */
   XSelectInput(subtle->disp, subtle->windows.views, ButtonPressMask); 

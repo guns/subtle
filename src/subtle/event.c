@@ -464,11 +464,7 @@ EventProperty(XPropertyEvent *ev)
                 if(c->name) free(c->name);
                 c->name = name;
 
-                if(subtle->windows.focus == c->win) ///< Redraw when needed
-                  {
-                    subClientRender(c);
-                    subViewRender();
-                  }
+                if(subtle->windows.focus == c->win) subClientRender(c);
               }
           }
         break;
@@ -874,7 +870,6 @@ subEventLoop(void)
           subSubletUpdate();
           subTrayUpdate();
           subSubletRender();
-          subViewRender();
         }
 
       /* Set timeout and assemble FD_SET */
