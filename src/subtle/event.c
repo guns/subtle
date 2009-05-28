@@ -278,7 +278,11 @@ EventMessage(XClientMessageEvent *ev)
                 c->gravity        = -1; ///< Force 
                 c->gravities[vid] = ev->data.l[2];
 
-                if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
+                if(VISIBLE(subtle->cv, c)) 
+                  {
+                    subViewConfigure(subtle->cv);
+                    subClientWarp(c);
+                  }
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_TAG_NEW: /* {{{ */
@@ -599,7 +603,7 @@ EventGrab(XEvent *ev)
                 c->gravity        = -1; ///< Force 
                 c->gravities[vid] = g->data.num;
 
-                if(VISIBLE(subtle->cv, c))
+                if(VISIBLE(subtle->cv, c)) 
                   {
                     subViewConfigure(subtle->cv);
                     subClientWarp(c);

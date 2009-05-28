@@ -84,8 +84,6 @@ subViewConfigure(SubView *v)
       /* Find matching clients */
       if(VISIBLE(v, c))
         {
-          XMapWindow(subtle->disp, c->win);
-
           if(!(c->flags & (SUB_STATE_FULL|SUB_STATE_FLOAT)))
             {
               /* Check current gravity */
@@ -96,6 +94,7 @@ subViewConfigure(SubView *v)
 
                   XMapRaised(subtle->disp, c->win);
                 }
+              else XMapWindow(subtle->disp, c->win);
 
               subClientConfigure(c);
 
