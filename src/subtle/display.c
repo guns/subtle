@@ -82,6 +82,7 @@ subDisplayInit(const char *display)
   subtle->windows.sublets = XCreateSimpleWindow(subtle->disp, subtle->windows.bar, 
     0, 0, 1, 1, 0, 0, attrs.background_pixel);
 
+  /* Set save under/backing store */
   XChangeWindowAttributes(subtle->disp, subtle->windows.caption, mask, &attrs);
   XChangeWindowAttributes(subtle->disp, subtle->windows.views, mask, &attrs);
   XChangeWindowAttributes(subtle->disp, subtle->windows.tray, mask, &attrs);

@@ -217,27 +217,28 @@ RubyConfigForeach(VALUE key,
 
   static const RubyTable table[] = /* {{{ */
   {
-    { "WindowMove",         SUB_GRAB_WINDOW_MOVE,    None                                        }, ///< 0
-    { "WindowResize",       SUB_GRAB_WINDOW_RESIZE,  None                                        }, 
-    { "WindowFloat",        SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_FLOAT                             }, 
-    { "WindowFull",         SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_FLOAT                             }, 
-    { "WindowStick",        SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_STICK                             }, 
-    { "WindowRaise",        SUB_GRAB_WINDOW_STACK,   Above                                       }, 
-    { "WindowLower",        SUB_GRAB_WINDOW_STACK,   Below                                       }, 
-    { "WindowUp",           SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_UP                               }, 
-    { "WindowLeft",         SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_LEFT                             }, 
-    { "WindowRight",        SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_RIGHT                            }, 
-    { "WindowDown",         SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_DOWN                             }, 
-    { "WindowKill",         SUB_GRAB_WINDOW_KILL,    None                                        }, ///< 11
-    { "GravityTopLeft",     SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP_LEFT     | SUB_GRAVITY_VERT }, 
-    { "GravityTop",         SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP          | SUB_GRAVITY_VERT }, 
-    { "GravityTopRight",    SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP_RIGHT    | SUB_GRAVITY_VERT }, 
-    { "GravityLeft",        SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_LEFT         | SUB_GRAVITY_VERT }, 
-    { "GravityCenter",      SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_CENTER       | SUB_GRAVITY_VERT }, 
-    { "GravityRight",       SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_RIGHT        | SUB_GRAVITY_VERT }, 
-    { "GravityBottomLeft",  SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM_LEFT  | SUB_GRAVITY_VERT }, 
-    { "GravityBottom",      SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM       | SUB_GRAVITY_VERT }, 
-    { "GravityBottomRight", SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM_RIGHT | SUB_GRAVITY_VERT }  ///< 20
+    { "WindowMove",         SUB_GRAB_WINDOW_MOVE,    None                     }, ///< 0
+    { "WindowResize",       SUB_GRAB_WINDOW_RESIZE,  None                     }, 
+    { "WindowFloat",        SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_FLOAT          }, 
+    { "WindowFull",         SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_FLOAT          }, 
+    { "WindowStick",        SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_STICK          }, 
+    { "WindowRaise",        SUB_GRAB_WINDOW_STACK,   Above                    }, 
+    { "WindowLower",        SUB_GRAB_WINDOW_STACK,   Below                    }, 
+    { "WindowUp",           SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_UP            }, 
+    { "WindowLeft",         SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_LEFT          }, 
+    { "WindowRight",        SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_RIGHT         }, 
+    { "WindowDown",         SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_DOWN          }, 
+    { "WindowKill",         SUB_GRAB_WINDOW_KILL,    None                     }, ///< 11
+    { "GravityTopLeft",     SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP_LEFT     }, 
+    { "GravityTopRight",    SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP_RIGHT    }, 
+    { "GravityTop",         SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP          }, 
+    { "GravityLeft",        SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_LEFT         }, 
+    { "GravityCenter",      SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_CENTER       }, 
+    { "GravityRight",       SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_RIGHT        }, 
+    { "GravityBottomLeft",  SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM_LEFT  }, 
+    { "GravityBottomRight", SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM_RIGHT },
+    { "GravityBottom",      SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM       }   ///< 20
+
   }; /* }}} */  
 
   /* Create various types */
@@ -268,11 +269,19 @@ RubyConfigForeach(VALUE key,
                 }    
               else if(!strncmp(name, "Gravity", 7)) ///< Gravity
                 {
+                  size_t len = strlen(name) - 4;
+
                   for(i = 12; i <= 20; i++)
-                    if(!strcmp((char *)name, table[i].key))
+                    if(!strncmp((char *)name, table[i].key, len))
                       {
+                        char *kind = name + len; ///< Get suffix
+
                         type = table[i].value;
                         data = DATA(table[i].extra);
+
+                        /* Check horz/vert */
+                        if(!strcmp(kind, "Horz")) data.num |= SUB_GRAVITY_HORZ;
+                        else if(!strcmp(kind, "Vert")) data.num |= SUB_GRAVITY_VERT;
                       }
                 }
               else ///< Exec
