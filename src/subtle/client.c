@@ -526,12 +526,9 @@ subClientSetGravity(SubClient *c,
   slot.x      = subtle->strut.x + props[grav].grav_right * slot.width;
   slot.y      = subtle->strut.y + props[grav].grav_down * slot.height;
 
-  printf("vert=%d, horz=%d, 33=%d, 66=%d\n", 
-    type & SUB_GRAVITY_VERT, type & SUB_GRAVITY_HORZ, 
-    type & SUB_GRAVITY_MODE33, type & SUB_GRAVITY_MODE66);
-
   /* Toggle between modes */
-  if(type & SUB_GRAVITY_HORZ)
+  if(type & SUB_GRAVITY_HORZ &&
+    (type & SUB_GRAVITY_MODES || (c->rect.y == slot.y && c->rect.height == slot.height)))
     {
       int width33 = subtle->strut.width / 3;
       int width66 = subtle->strut.width - width33;
@@ -541,19 +538,19 @@ subClientSetGravity(SubClient *c,
         {
           int x = subtle->strut.x + props[grav].grav_right * width33;
 
-          if(type & SUB_GRAVITY_MODE33 ||
+          if(type & SUB_GRAVITY_MODE66 ||
             (!(type & SUB_GRAVITY_MODES) && c->rect.width == slot.width && c->rect.x == slot.x)) ///< 33%
             {
               slot.x     = x;
               slot.width = width66;
-              mode       = SUB_GRAVITY_HORZ|SUB_GRAVITY_MODE33;
+              mode       = SUB_GRAVITY_HORZ|SUB_GRAVITY_MODE66;
             }
-          else if(type & SUB_GRAVITY_MODE66 ||
+          else if(type & SUB_GRAVITY_MODE33 ||
             (!(type & SUB_GRAVITY_MODES) && c->rect.width == width66 && c->rect.x == x)) ///< 66%
             {
               slot.x     = subtle->strut.x + props[grav].grav_right * width66;
               slot.width = width33;
-              mode       = SUB_GRAVITY_HORZ|SUB_GRAVITY_MODE66;
+              mode       = SUB_GRAVITY_HORZ|SUB_GRAVITY_MODE33;
             }
         }
       else if(type & SUB_GRAVITY_MODE33 ||
@@ -564,7 +561,8 @@ subClientSetGravity(SubClient *c,
           mode       = SUB_GRAVITY_HORZ|SUB_GRAVITY_MODE33;
         }
     }  
-  else if(type & SUB_GRAVITY_VERT)
+  else if(type & SUB_GRAVITY_VERT && 
+    (type & SUB_GRAVITY_MODES || (c->rect.x == slot.x && c->rect.width == slot.width)))
     {
       int height33 = subtle->strut.height / 3;
       int height66 = subtle->strut.height - height33;
@@ -574,19 +572,19 @@ subClientSetGravity(SubClient *c,
         {
           int y = subtle->strut.y + props[grav].grav_down * height33;
 
-          if(type & SUB_GRAVITY_MODE33 || 
+          if(type & SUB_GRAVITY_MODE66 || 
             (!(type & SUB_GRAVITY_MODES) && c->rect.height == slot.height && c->rect.y == slot.y)) ///< 33%
             {
               slot.y      = y;
               slot.height = height66;
-              mode        = SUB_GRAVITY_VERT|SUB_GRAVITY_MODE33;
+              mode        = SUB_GRAVITY_VERT|SUB_GRAVITY_MODE66;
             }
-          else if(type & SUB_GRAVITY_MODE66 ||
+          else if(type & SUB_GRAVITY_MODE33 ||
             (!(type & SUB_GRAVITY_MODES) && c->rect.height == height66 && c->rect.y == y)) ///< 66%
             {
               slot.y      = subtle->strut.y + props[grav].grav_down * height66;
               slot.height = height33;
-              mode        = SUB_GRAVITY_VERT|SUB_GRAVITY_MODE66;
+              mode        = SUB_GRAVITY_VERT|SUB_GRAVITY_MODE33;
             }
         }
       else if(type & SUB_GRAVITY_MODE33 ||
@@ -601,10 +599,6 @@ subClientSetGravity(SubClient *c,
   /* Update client rect */
   c->rect    = slot;
   c->gravity = grav | mode;
-
-  printf("vert=%d, horz=%d, 33=%d, 66=%d\n", 
-    c->gravity & SUB_GRAVITY_VERT, c->gravity & SUB_GRAVITY_HORZ, 
-    c->gravity & SUB_GRAVITY_MODE33, c->gravity & SUB_GRAVITY_MODE66);
 
   /* EWMH: Gravity */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
