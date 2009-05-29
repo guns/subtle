@@ -680,8 +680,8 @@ EventExpose(XEvent *ev)
 
   if(ev->xany.window == subtle->windows.bar)
     {
-      subViewRender();
       subSubletRender();
+      subViewRender();
     }
   else if(ROOT == ev->xany.window) subViewRender();
 
@@ -870,6 +870,8 @@ subEventLoop(void)
           subSubletUpdate();
           subTrayUpdate();
           subSubletRender();
+
+          XFlush(subtle->disp);
         }
 
       /* Set timeout and assemble FD_SET */
