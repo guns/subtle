@@ -69,13 +69,13 @@ subDisplayInit(const char *display)
   attrs.backing_store     = Always;
   attrs.event_mask        = ButtonPressMask|ExposureMask|VisibilityChangeMask;
   attrs.override_redirect = True;
-  mask                    = CWSaveUnder|CWBackingStore;
+  mask                    = CWSaveUnder|CWBackingStore|CWOverrideRedirect;
 
   subtle->windows.bar     = XCreateWindow(subtle->disp, ROOT, 0, 0, SCREENW, 1, 0, 
     CopyFromParent, InputOutput, CopyFromParent, CWEventMask|CWOverrideRedirect, &attrs); 
-  subtle->windows.caption = XCreateSimpleWindow(subtle->disp, subtle->windows.bar, 
-    0, 0, 1, 1, 0, 0, attrs.background_pixel);
   subtle->windows.views   = XCreateSimpleWindow(subtle->disp, subtle->windows.bar, 
+    0, 0, 1, 1, 0, 0, attrs.background_pixel);
+  subtle->windows.caption = XCreateSimpleWindow(subtle->disp, subtle->windows.bar, 
     0, 0, 1, 1, 0, 0, attrs.background_pixel);
   subtle->windows.tray    = XCreateSimpleWindow(subtle->disp, subtle->windows.bar, 
     0, 0, 1, 1, 0, 0, attrs.background_pixel);    
@@ -83,8 +83,9 @@ subDisplayInit(const char *display)
     0, 0, 1, 1, 0, 0, attrs.background_pixel);
 
   /* Set save under/backing store */
-  XChangeWindowAttributes(subtle->disp, subtle->windows.caption, mask, &attrs);
+  XChangeWindowAttributes(subtle->disp, subtle->windows.bar, CWBackingStore, &attrs);
   XChangeWindowAttributes(subtle->disp, subtle->windows.views, mask, &attrs);
+  XChangeWindowAttributes(subtle->disp, subtle->windows.caption, mask, &attrs);
   XChangeWindowAttributes(subtle->disp, subtle->windows.tray, mask, &attrs);
   XChangeWindowAttributes(subtle->disp, subtle->windows.sublets, mask, &attrs);
 
