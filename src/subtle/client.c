@@ -90,6 +90,7 @@ subClientNew(Window win)
 
       return NULL;
     }
+  c->width = XTextWidth(subtle->xfs, c->name, strlen(c->name)) + 6; ///< Font offset
 
   /* Update client */
   subEwmhSetWMState(c->win, WithdrawnState);
@@ -256,8 +257,8 @@ subClientConfigure(SubClient *c)
 void
 subClientRender(SubClient *c)
 {
-  int pos;
-  char status;
+  int pos = 0;
+  char buf[255];
   XSetWindowAttributes attrs;
 
   assert(c);
@@ -265,20 +266,19 @@ subClientRender(SubClient *c)
   attrs.border_pixel = subtle->windows.focus == c->win ? subtle->colors.focus : subtle->colors.norm;
   XChangeWindowAttributes(subtle->disp, c->win, CWBorderPixel, &attrs);
 
-  /* Client property marker */
-  status = c->flags & SUB_STATE_STICK ? '*' : (c->flags & SUB_STATE_FLOAT ? '^' : ' ');
-  pos    = ' ' != status ? 7 : 0; ///< Client name pos
-
   /* Caption */
-  XResizeWindow(subtle->disp, subtle->windows.caption, TEXTW(c->name) + pos, subtle->th);
+  if(c->flags & (SUB_STATE_STICK|SUB_STATE_FLOAT))
+    {
+      snprintf(buf, sizeof(buf), "%c%s", c->flags & SUB_STATE_STICK ? '*' : '^', c->name);
+      pos = (subtle->xfs->min_bounds.width + subtle->xfs->max_bounds.width) / 2; ///< Width of char
+    }
+  else snprintf(buf, sizeof(buf), "%s", c->name);
+
+  XResizeWindow(subtle->disp, subtle->windows.caption, c->width + pos, subtle->th);
   XClearWindow(subtle->disp, subtle->windows.caption);
 
-  if(' ' != status) 
-    XDrawString(subtle->disp, subtle->windows.caption, subtle->gcs.font, 3, 
-      subtle->fy - 1, &status, 1);
-
-  XDrawString(subtle->disp, subtle->windows.caption, subtle->gcs.font, 3 + pos, subtle->fy - 1,
-    c->name, strlen(c->name));
+  XDrawString(subtle->disp, subtle->windows.caption, subtle->gcs.font, 3, subtle->fy - 1,
+    buf, strlen(buf));
 } /* }}} */
 
  /** subClientFocus {{{
@@ -725,7 +725,10 @@ subClientToggle(SubClient *c,
         }
 
       if(type & SUB_STATE_FULL)
-        XSetWindowBorderWidth(subtle->disp, c->win, 0);
+        {
+          XSetWindowBorderWidth(subtle->disp, c->win, 0);
+          subClientFocus(c);
+        }
     }
 
   subClientConfigure(c);
@@ -773,14 +776,6 @@ subClientKill(SubClient *c,
   assert(c);
 
   printf("Killing client (%s)\n", c->klass ? c->klass : c->name);
-
-  /* Focus stuff */
-  if(subtle->windows.focus == c->win)
-    {
-      subtle->windows.focus = 0;
-      XUnmapWindow(subtle->disp, subtle->windows.caption);
-      XSetInputFocus(subtle->disp, ROOT, RevertToNone, CurrentTime); ///< Activate grabs
-    }
 
   /* Ignore further events and delete context */
   XSelectInput(subtle->disp, c->win, NoEventMask);

@@ -220,7 +220,7 @@ RubyConfigForeach(VALUE key,
     { "WindowMove",         SUB_GRAB_WINDOW_MOVE,    None                     }, ///< 0
     { "WindowResize",       SUB_GRAB_WINDOW_RESIZE,  None                     }, 
     { "WindowFloat",        SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_FLOAT          }, 
-    { "WindowFull",         SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_FLOAT          }, 
+    { "WindowFull",         SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_FULL           }, 
     { "WindowStick",        SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_STICK          }, 
     { "WindowRaise",        SUB_GRAB_WINDOW_STACK,   Above                    }, 
     { "WindowLower",        SUB_GRAB_WINDOW_STACK,   Below                    }, 
@@ -388,9 +388,8 @@ RubyParseConfig(VALUE path)
       if(!subtle->xfs) subSharedLogError("Failed loading font `fixed`\n");
     }
 
-  subtle->fx = (subtle->xfs->min_bounds.width + subtle->xfs->max_bounds.width) / 2;
   subtle->fy = subtle->xfs->max_bounds.ascent + subtle->xfs->max_bounds.descent;
-  subtle->th = subtle->xfs->ascent + subtle->xfs->descent + 2;
+  subtle->th = subtle->fy + 2;
 
   /* Config: Grabs */
   config = rb_const_get(rb_cObject, rb_intern("GRABS"));
@@ -438,7 +437,7 @@ RubyParseText(char *string,
 
           t->flags        = SUB_TYPE_TEXT|SUB_DATA_STRING;
           t->data.string  = strdup(tok);
-          t->width        = strlen(tok) * subtle->fx + 6;
+          t->width        = XTextWidth(subtle->xfs, tok, strlen(tok)) + 6; ///< Font offset
           t->color        = color;
           *width          += t->width;
         }

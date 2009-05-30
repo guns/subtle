@@ -174,9 +174,8 @@ EventDestroy(XDestroyWindowEvent *ev)
       subClientPublish();
       if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
       subClientKill(c, True); 
-      subViewUpdate();
 
-      XSetInputFocus(subtle->disp, ROOT, RevertToNone, CurrentTime); ///< Activate grabs
+      subSharedFocus(); ///< Focus
     }
   else if((t = TRAY(subSharedFind(ev->event, TRAYID)))) ///< Tray
     {
@@ -278,11 +277,7 @@ EventMessage(XClientMessageEvent *ev)
                 c->gravity        = -1; ///< Force 
                 c->gravities[vid] = ev->data.l[2];
 
-                if(VISIBLE(subtle->cv, c)) 
-                  {
-                    subViewConfigure(subtle->cv);
-                    subClientWarp(c);
-                  }
+                if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_TAG_NEW: /* {{{ */
@@ -462,7 +457,8 @@ EventProperty(XPropertyEvent *ev)
             if(XFetchName(subtle->disp, c->win, &name))
               {
                 if(c->name) free(c->name);
-                c->name = name;
+                c->name  = name;
+                c->width = XTextWidth(subtle->xfs, c->name, strlen(c->name)) + 6; ///< Font offset
 
                 if(subtle->windows.focus == c->win) subClientRender(c);
               }
@@ -511,7 +507,6 @@ EventCrossing(XCrossingEvent *ev)
   if(ROOT == ev->window)
     {
       subGrabSet(ROOT);
-      printf("DEBUG %s:%d\n", __func__, __LINE__);
     }
   else if((c = CLIENT(subSharedFind(ev->window, CLIENTID))))
     {
@@ -712,11 +707,13 @@ EventFocus(XFocusChangeEvent *ev)
       if(FocusIn == ev->type) 
         {
           subtle->windows.focus = ROOT;
+
           subGrabSet(ROOT);
         }
       else if(FocusOut == ev->type)
         {
-          subtle->windows.focus = 0;
+          subtle->windows.focus  = 0;
+
           subGrabUnset(ROOT);
         }
     }
@@ -733,24 +730,18 @@ EventFocus(XFocusChangeEvent *ev)
 
           /* EWMH: Active window */
           subEwmhSetWindows(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW, &c->win, 1);
-
-          subViewUpdate();        
         }
       else if(FocusOut == ev->type && !(c->flags & SUB_STATE_FULL)) ///< FocusOut event
         {
           if(!(c->flags & SUB_STATE_DEAD)) ///< Don't revive
             {
-              Window focus = subtle->windows.focus;
-
-              subtle->windows.focus = 0;
+              subtle->windows.focus  = 0;
               
-              subGrabUnset(focus);
+              subGrabUnset(c->win);
               subClientRender(c);
             }
             
           XUnmapWindow(subtle->disp, subtle->windows.caption); 
-
-          subViewRender();
         }
     }
   else if((t = TRAY(subSharedFind(ev->window, TRAYID)))) ///< Tray

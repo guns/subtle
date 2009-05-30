@@ -71,6 +71,7 @@ subSubletRender(void)
       /* Render every sublet */
       while(s)
         {
+          /* Render text part */
           for(i = 0; i < s->text->ndata; i++)
             {
               if((t = TEXT(s->text->data[i])) && t->flags & SUB_DATA_STRING)

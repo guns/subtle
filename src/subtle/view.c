@@ -30,7 +30,7 @@ subViewNew(char *name,
   v  = VIEW(subSharedMemoryAlloc(1, sizeof(SubView)));
   v->flags = SUB_TYPE_VIEW;
   v->name  = strdup(name);
-  v->width = strlen(v->name) * subtle->fx + 8; ///< Font offset
+  v->width = XTextWidth(subtle->xfs, v->name, strlen(v->name)) + 6; ///< Font offset
 
   /* Create button */
   v->button = XCreateSimpleWindow(subtle->disp, subtle->windows.views, 0, 0, 1,
@@ -185,8 +185,7 @@ subViewJump(SubView *v)
   vid = subArrayIndex(subtle->views, (void *)v); ///< Get desktop number
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP, &vid, 1);
 
-  XSetInputFocus(subtle->disp, ROOT, RevertToNone, CurrentTime);
-
+  subSharedFocus();
   subViewRender();
 
   printf("Switching view (%s)\n", subtle->cv->name);

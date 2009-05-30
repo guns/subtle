@@ -47,7 +47,6 @@
 #define SEPARTOR     "<>"                                         ///< Color separator
 
 #define LENGTH(a)    (sizeof(a) / sizeof(a[0]))                   ///< Array length
-#define TEXTW(s)     (strlen(s) * subtle->fx + 8)                 ///< Textwidth in pixel
 #define WINW(c)      (c->rect.width - 2 * subtle->bw)             ///< Get real width
 #define WINH(c)      (c->rect.height - 2 * subtle->bw)            ///< Get real height
 #define ZERO(n)      (0 < n ? n : 1)                              ///< Prevent zero
@@ -203,7 +202,7 @@ typedef struct subclient_t /* {{{ */
 
   float      minr, maxr;                                          ///< Client ratios
   int        basew, baseh, minw, minh, maxw, maxh, incw, inch;    ///< Client sizes
-  int        gravity, *gravities;                                 ///< Client gravities
+  int        width, gravity, *gravities;                          ///< Client width, gravities
 } SubClient; /* }}} */
 
 typedef enum subewmh_t /* {{{ */
@@ -296,8 +295,8 @@ typedef union subdata_t /* {{{ */
 
 typedef struct subtext_t /* {{{ */
 {
-  FLAGS              flags;                                       ///< Text flags
-  
+  FLAGS           flags;                                          ///< Text flags
+
   int             width;                                          ///< Text width
   unsigned long   color;                                          ///< Text color
 
@@ -331,7 +330,7 @@ typedef struct subsublet_t /* {{{ */
 
 typedef struct subsubtle_t /* {{{ */
 {
-  int                th, bw, fx, fy, step, bar;                   ///< Subtle properties
+  int                th, bw, fy, step, bar;                       ///< Subtle properties
 
   Display            *disp;                                       ///< Subtle Xorg display
   XFontStruct        *xfs;                                        ///< Subtle font
@@ -360,22 +359,22 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    Window           bar, views, caption, tray, sublets, focus; 
+    Window           bar, views, caption, tray, sublets, focus;
   } windows;                                                      ///< Subtle windows
 
   struct
   {
-    unsigned long    font, border, norm, focus, bg;                            
+    unsigned long    font, border, norm, focus, bg;
   } colors;                                                       ///< Subtle colors
 
   struct
   {
-    GC               font, stipple, invert;                  
+    GC               font, stipple, invert;
   } gcs;                                                          ///< Subtle graphic contexts
 
   struct
   {
-    Cursor           arrow, move, resize;                                
+    Cursor           arrow, move, resize;
   } cursors;                                                      ///< Subtle cursors
 } SubSubtle; /* }}} */
 
