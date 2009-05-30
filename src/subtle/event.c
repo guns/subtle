@@ -649,6 +649,22 @@ EventGrab(XEvent *ev)
                     subSharedLogDebug("Match: win=%#lx, score=%d, iterations=%d\n", found, match, i);
                   }
               }
+            else ///< Select the first if no client has focus
+              {
+                int i;
+
+                for(i = 0; i < subtle->clients->ndata; i++)
+                  {
+                    SubClient *iter = CLIENT(subtle->clients->data[i]);
+
+                    if(VISIBLE(subtle->cv, iter)) 
+                      {
+                        subClientFocus(iter);
+                        subClientWarp(iter);
+                        break;
+                      }
+                  }
+              }
             break; /* }}} */
           case SUB_GRAB_WINDOW_KILL: /* {{{ */
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
