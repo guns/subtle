@@ -376,7 +376,7 @@ SubtlerClientList(char *arg1,
           XGetGeometry(display, clients[i], &unused, &x, &y, &width, &height, &border, &border);
 
           printf("%#lx %c %ld %ux%u %ld %s (%s)\n", clients[i], (*cv == *rv ? '*' : '-'),
-            (*cv > *nv ? -1 : *cv), width, height, *gravity, wmname, wmclass);
+            (*cv > *nv ? -1 : *cv), width, height, *gravity & ~SUB_GRAVITY_ALL, wmname, wmclass);
 
           free(wmname);
           free(wmclass);
