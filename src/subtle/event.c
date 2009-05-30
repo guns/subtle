@@ -638,8 +638,8 @@ EventGrab(XEvent *ev)
                     SubClient *iter = CLIENT(subtle->clients->data[i]);
 
                     if(c != iter && VISIBLE(subtle->cv, iter))
-                      subSharedMatch(g->data.num, iter->win,
-                        c->gravity, iter->gravity, &match, &found);
+                      subSharedMatch(g->data.num, iter->win, (c->gravity & ~SUB_GRAVITY_ALL),
+                        (iter->gravity & ~SUB_GRAVITY_ALL), &match, &found);
                   }
 
                 if(found && (c = CLIENT(subSharedFind(found, CLIENTID))))

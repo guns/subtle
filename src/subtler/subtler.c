@@ -129,7 +129,8 @@ SubtlerMatch(char *name,
                   int *gravity2 = (int *)subSharedPropertyGet(clients[i], XA_CARDINAL, 
                     "SUBTLE_WINDOW_GRAVITY", NULL);
 
-                  subSharedMatch(type, clients[i], *gravity1, *gravity2, &match, &found);
+                  subSharedMatch(type, clients[i], (*gravity1 & ~SUB_GRAVITY_ALL), 
+                    (*gravity2 & ~SUB_GRAVITY_ALL), &match, &found);
 
                   free(gravity2);
                 }
