@@ -329,6 +329,25 @@ subSharedTime(void)
 
   return tv.tv_sec;
 } /* }}} */
+
+ /** subSharedFocus {{{
+  * @brief Get pointer window and focus it
+  **/
+
+void
+subSharedFocus(void)
+{
+  int dummy;
+  Window win;
+  SubClient *c = NULL;
+
+   /* Focus */
+  XQueryPointer(subtle->disp, ROOT, (Window *)&dummy, &win,
+    &dummy, &dummy, &dummy, &dummy, (unsigned int *)&dummy);
+
+  if((c = CLIENT(subSharedFind(win, CLIENTID)))) subClientFocus(c);
+  else XSetInputFocus(subtle->disp, ROOT, RevertToNone, CurrentTime);
+} /* }}} */
 #endif /* WM */
 
 #ifndef WM

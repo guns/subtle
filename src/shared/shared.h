@@ -115,6 +115,7 @@ void subSharedMatch(int type, Window win, int gravity1,
 /* Subtle {{{ */
 XPointer * subSharedFind(Window win, XContext id);                ///< Find data with context manager
 time_t subSharedTime(void);                                       ///< Get current time 
+void subSharedFocus(void);                                        ///< Get pointer window and focus it
 /* }}} */
 #endif /* WM */
 
