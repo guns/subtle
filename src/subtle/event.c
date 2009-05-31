@@ -349,6 +349,9 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_SUBTLE_RELOAD: /* {{{ */
             raise(SIGHUP);
             break; /* }}} */
+          case SUB_EWMH_SUBTLE_QUIT: /* {{{ */
+            raise(SIGTERM);
+            break; /* }}} */            
         }
     } /* }}} */
   /* Messages for tray window {{{ */
@@ -586,20 +589,11 @@ EventGrab(XEvent *ev)
             if(0 <= g->data.num && g->data.num < subtle->views->ndata)
               subViewJump(VIEW(subtle->views->data[g->data.num]));
             break; /* }}} */
-          case SUB_GRAB_WINDOW_GRAVITY: /* {{{ */
-            if((c = CLIENT(subSharedFind(win, CLIENTID))))
-              {
-                vid = subArrayIndex(subtle->views, (void *)subtle->cv);
-
-                c->gravity        = -1; ///< Force 
-                c->gravities[vid] = g->data.num;
-
-                if(VISIBLE(subtle->cv, c)) 
-                  {
-                    subViewConfigure(subtle->cv);
-                    subClientWarp(c);
-                  }
-              }
+          case SUB_GRAB_SUBTLE_RELOAD: /* {{{ */
+            raise(SIGHUP);
+            break; /* }}} */
+          case SUB_GRAB_SUBTLE_QUIT: /* {{{ */
+            raise(SIGTERM);
             break; /* }}} */
           case SUB_GRAB_WINDOW_MOVE:
           case SUB_GRAB_WINDOW_RESIZE: /* {{{ */
@@ -663,6 +657,21 @@ EventGrab(XEvent *ev)
                         subClientWarp(iter);
                         break;
                       }
+                  }
+              }
+            break; /* }}} */
+          case SUB_GRAB_WINDOW_GRAVITY: /* {{{ */
+            if((c = CLIENT(subSharedFind(win, CLIENTID))))
+              {
+                vid = subArrayIndex(subtle->views, (void *)subtle->cv);
+
+                c->gravity        = -1; ///< Force 
+                c->gravities[vid] = g->data.num;
+
+                if(VISIBLE(subtle->cv, c)) 
+                  {
+                    subViewConfigure(subtle->cv);
+                    subClientWarp(c);
                   }
               }
             break; /* }}} */
