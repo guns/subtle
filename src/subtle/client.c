@@ -99,6 +99,7 @@ subClientNew(Window win)
   XAddToSaveSet(subtle->disp, c->win);
   XSaveContext(subtle->disp, c->win, CLIENTID, (void *)c);
   subClientSetSize(c);
+  subClientSetTags(c);
 
   /* Window attributes */
   XGetWindowAttributes(subtle->disp, c->win, &attrs);
@@ -146,17 +147,6 @@ subClientNew(Window win)
             subClientWarp(c);
         }
     }
-
-  /* Tags */
-  for(i = 0; (c->name || c->klass) && i < subtle->tags->ndata; i++)
-    {
-      SubTag *t = TAG(subtle->tags->data[i]);
-
-      if(t->preg && ((c->name && subSharedRegexMatch(t->preg, c->name)) ||
-        (c->klass && subSharedRegexMatch(t->preg, c->klass))))
-          c->tags |= (1L << (i + 1));
-    }
-  if(1 < (c->tags >> SUB_TAG_CLEAR)) c->tags &= ~SUB_TAG_DEFAULT;
 
   /* Properties */
   if(c->tags & SUB_TAG_FLOAT) subClientToggle(c, SUB_STATE_FLOAT);
@@ -490,7 +480,7 @@ subClientUpdate(int vid)
 } /* }}} */
 
   /** subClientSetGravity {{{ 
-   * @brief Set and calc client gravity
+   * @brief Set client gravity
    * @param[in]  c     A #SubClient
    * @param[in]  type  A #SubGravity
    **/
@@ -605,7 +595,7 @@ subClientSetGravity(SubClient *c,
 } /* }}} */
 
   /** subClientSetSize {{{ 
-   * @brief Set sizes
+   * @brief Set client size
    * @param[in]  c  A #SubClient
    **/
 
@@ -674,6 +664,28 @@ subClientSetSize(SubClient *c)
     "maxw=%d, maxh=%d, basew=%d, baseh=%d, minr=%f, maxr=%f\n",
     c->rect.x, c->rect.y, c->rect.width, c->rect.height,
     c->minw, c->minh, c->maxw, c->maxh, c->basew, c->basew, c->minr, c->maxr);
+} /* }}} */
+
+ /** subClientToggle {{{
+  * @brief Set client tags
+  * @param[in]  c  A #SubClient
+  **/
+
+void
+subClientSetTags(SubClient *c)
+{
+  int i;
+
+  /* Tags */
+  for(i = 0; (c->name || c->klass) && i < subtle->tags->ndata; i++)
+    {
+      SubTag *t = TAG(subtle->tags->data[i]);
+
+      if(t->preg && ((c->name && subSharedRegexMatch(t->preg, c->name)) ||
+        (c->klass && subSharedRegexMatch(t->preg, c->klass))))
+          c->tags |= (1L << (i + 1));
+    }
+  if(1 < (c->tags >> SUB_TAG_CLEAR)) c->tags &= ~SUB_TAG_DEFAULT;  
 } /* }}} */
 
  /** subClientToggle {{{

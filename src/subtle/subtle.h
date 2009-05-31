@@ -431,7 +431,8 @@ void subClientWarp(SubClient *c);                                 ///< Warp to c
 void subClientDrag(SubClient *c, int mode);                       ///< Move/drag client
 void subClientUpdate(int vid);                                    ///< Update clients
 void subClientSetGravity(SubClient *c, int type);                 ///< Set client gravity
-void subClientSetSize(SubClient *c);                              ///< Set client site
+void subClientSetSize(SubClient *c);                              ///< Set client sizes
+void subClientSetTags(SubClient *c);                              ///< Set client tags
 void subClientToggle(SubClient *c, int type);                     ///< Toggle client state
 void subClientPublish(void);                                      ///< Publish all clients
 void subClientKill(SubClient *c, int close);                      ///< Kill client

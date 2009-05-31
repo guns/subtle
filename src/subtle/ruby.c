@@ -260,7 +260,7 @@ RubyConfigForeach(VALUE key,
                       data = DATA((unsigned long)(atol(name) - 1));
                     }
                 }
-              if(!strncmp(name, "Subtle", 6)) ///< ViewJump
+              else if(!strncmp(name, "Subtle", 6)) ///< ViewJump
                 {
                   for(i = 0; i < 2; i++)
                     if(!strcmp((char *)name, table[i].key))

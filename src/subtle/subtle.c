@@ -54,6 +54,7 @@ SubtleVersion(void)
 static void
 SubtleSignal(int signum)
 {
+  int i;
 #ifdef HAVE_EXECINFO_H
   void *array[10];
   size_t size;
@@ -62,6 +63,8 @@ SubtleSignal(int signum)
   switch(signum)
     {
       case SIGHUP: ///< Reload config
+        printf("Reloading config\n");
+
         subArrayClear(subtle->grabs, True);
         subArrayClear(subtle->tags,  True);
         subArrayClear(subtle->views, True);
@@ -69,11 +72,16 @@ SubtleSignal(int signum)
         subRubyLoadConfig(config);
         subDisplayConfigure();
 
-        subViewConfigure(subtle->cv);
-        subViewRender();
-        subSubletRender();
+        /* Update client tags */
+        for(i = 0; i < subtle->clients->ndata; i++)
+          {
+            SubClient *c = CLIENT(subtle->clients->data[i]);
 
-        printf("Reloaded config\n");
+            subClientSetTags(c);
+          }
+
+        subViewJump(subtle->views->data[0]);
+        subSubletRender();
         break;
       case SIGTERM:
       case SIGINT: ///< Tidy up
