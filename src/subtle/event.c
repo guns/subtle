@@ -174,8 +174,6 @@ EventDestroy(XDestroyWindowEvent *ev)
       subClientPublish();
       if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
       subClientKill(c, True); 
-
-      subSharedFocus(); ///< Focus
     }
   else if((t = TRAY(subSharedFind(ev->event, TRAYID)))) ///< Tray
     {
@@ -682,8 +680,6 @@ EventGrab(XEvent *ev)
                 subClientPublish();
                 if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
                 subClientKill(c, True);
-
-                subSharedFocus(); ///< Focus
               }
             break; /* }}} */
           default:

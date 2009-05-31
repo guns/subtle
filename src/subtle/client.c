@@ -804,6 +804,8 @@ subClientKill(SubClient *c,
       else XKillClient(subtle->disp, c->win);
     }
 
+  subSharedFocus(); ///< Focus
+
   if(c->gravities) free(c->gravities);
   if(c->klass) XFree(c->klass);
   if(c->name)  XFree(c->name);

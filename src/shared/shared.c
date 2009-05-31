@@ -341,6 +341,8 @@ subSharedFocus(void)
   Window win;
   SubClient *c = NULL;
 
+  XUnmapWindow(subtle->disp, subtle->windows.caption); 
+
    /* Focus */
   XQueryPointer(subtle->disp, ROOT, (Window *)&dummy, &win,
     &dummy, &dummy, &dummy, &dummy, (unsigned int *)&dummy);
