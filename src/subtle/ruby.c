@@ -217,7 +217,9 @@ RubyConfigForeach(VALUE key,
 
   static const RubyTable table[] = /* {{{ */
   {
-    { "WindowMove",         SUB_GRAB_WINDOW_MOVE,    None                     }, ///< 0
+    { "SubtleReload",       SUB_GRAB_SUBTLE_RELOAD,  None                     }, ///< 0
+    { "SubtleQuit",         SUB_GRAB_SUBTLE_QUIT,    None                     }, 
+    { "WindowMove",         SUB_GRAB_WINDOW_MOVE,    None                     }, ///< 2
     { "WindowResize",       SUB_GRAB_WINDOW_RESIZE,  None                     }, 
     { "WindowFloat",        SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_FLOAT          }, 
     { "WindowFull",         SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_FULL           }, 
@@ -228,7 +230,7 @@ RubyConfigForeach(VALUE key,
     { "WindowLeft",         SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_LEFT          }, 
     { "WindowRight",        SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_RIGHT         }, 
     { "WindowDown",         SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_DOWN          }, 
-    { "WindowKill",         SUB_GRAB_WINDOW_KILL,    None                     }, ///< 11
+    { "WindowKill",         SUB_GRAB_WINDOW_KILL,    None                     }, ///< 13
     { "GravityTopLeft",     SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP_LEFT     }, 
     { "GravityTopRight",    SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP_RIGHT    }, 
     { "GravityTop",         SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP          }, 
@@ -237,7 +239,7 @@ RubyConfigForeach(VALUE key,
     { "GravityRight",       SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_RIGHT        }, 
     { "GravityBottomLeft",  SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM_LEFT  }, 
     { "GravityBottomRight", SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM_RIGHT },
-    { "GravityBottom",      SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM       }   ///< 20
+    { "GravityBottom",      SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM       }   ///< 22
 
   }; /* }}} */  
 
@@ -258,9 +260,18 @@ RubyConfigForeach(VALUE key,
                       data = DATA((unsigned long)(atol(name) - 1));
                     }
                 }
+              if(!strncmp(name, "Subtle", 6)) ///< ViewJump
+                {
+                  for(i = 0; i < 2; i++)
+                    if(!strcmp((char *)name, table[i].key))
+                      {
+                        type = table[i].value;
+                        data = DATA(table[i].extra);
+                      }
+                }
               else if(!strncmp(name, "Window", 6)) ///< Window
                 {
-                  for(i = 0; i <= 11; i++)
+                  for(i = 2; i <= 13; i++)
                     if(!strcmp((char *)name, table[i].key))
                       {
                         type = table[i].value;
@@ -271,7 +282,7 @@ RubyConfigForeach(VALUE key,
                 {
                   size_t len = strlen(name) - 4;
 
-                  for(i = 12; i <= 20; i++)
+                  for(i = 14; i <= 22; i++)
                     if(!strncmp((char *)name, table[i].key, len))
                       {
                         char *kind = name + len; ///< Get suffix

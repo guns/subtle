@@ -153,13 +153,15 @@
 #define SUB_GRAB_EXEC                 (1L << 12)                  ///< Exec an app
 #define SUB_GRAB_PROC                 (1L << 13)                  ///< Grab with proc
 #define SUB_GRAB_JUMP                 (1L << 14)                  ///< Jump to view
-#define SUB_GRAB_WINDOW_MOVE          (1L << 15)                  ///< Resize window
-#define SUB_GRAB_WINDOW_RESIZE        (1L << 16)                  ///< Move window
-#define SUB_GRAB_WINDOW_TOGGLE        (1L << 17)                  ///< Toggle window
-#define SUB_GRAB_WINDOW_STACK         (1L << 18)                  ///< Stack window
-#define SUB_GRAB_WINDOW_SELECT        (1L << 19)                  ///< Select window
-#define SUB_GRAB_WINDOW_GRAVITY       (1L << 20)                  ///< Set gravity of window
-#define SUB_GRAB_WINDOW_KILL          (1L << 21)                  ///< Kill window
+#define SUB_GRAB_SUBTLE_RELOAD        (1L << 15)                  ///< Reload subtle
+#define SUB_GRAB_SUBTLE_QUIT          (1L << 16)                  ///< Quit subtle
+#define SUB_GRAB_WINDOW_MOVE          (1L << 17)                  ///< Resize window
+#define SUB_GRAB_WINDOW_RESIZE        (1L << 18)                  ///< Move window
+#define SUB_GRAB_WINDOW_TOGGLE        (1L << 19)                  ///< Toggle window
+#define SUB_GRAB_WINDOW_STACK         (1L << 20)                  ///< Stack window
+#define SUB_GRAB_WINDOW_SELECT        (1L << 21)                  ///< Select window
+#define SUB_GRAB_WINDOW_GRAVITY       (1L << 22)                  ///< Set gravity of window
+#define SUB_GRAB_WINDOW_KILL          (1L << 23)                  ///< Kill window
 
 /* Drag states */
 #define SUB_DRAG_START                (1L << 10)                  ///< Drag start
@@ -233,7 +235,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_NET_CLOSE_WINDOW,                                      ///< Close window             
   SUB_EWMH_NET_RESTACK_WINDOW,                                    ///< Change window stacking
 
-  SUB_EWMH_NET_WM_NAME,                            
+  SUB_EWMH_NET_WM_NAME,                                           ///< Name of client
   SUB_EWMH_NET_WM_PID,                                            ///< PID of client
   SUB_EWMH_NET_WM_DESKTOP,                                        ///< Desktop client is on
   SUB_EWMH_NET_WM_STRUT,                                          ///< Screen strut
@@ -283,6 +285,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_SUBLET_LIST,                                    ///< subtle sublet list
   SUB_EWMH_SUBTLE_SUBLET_KILL,                                    ///< subtle sublet kill
   SUB_EWMH_SUBTLE_RELOAD,                                         ///< subtle reload config
+  SUB_EWMH_SUBTLE_QUIT,                                           ///< subtle quit wm
 
   SUB_EWMH_TOTAL
 } SubEwmh; /* }}} */

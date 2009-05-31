@@ -55,7 +55,8 @@ typedef void(*SubCommand)(char *, char *);
 #define SUB_ACTION_RIGHT   18  ///< Action right
 #define SUB_ACTION_DOWN    19  ///< Action down
 #define SUB_ACTION_RELOAD  20  ///< Action reload
-#define SUB_ACTION_TOTAL   21  ///< Action total
+#define SUB_ACTION_QUIT    21  ///< Action quit
+#define SUB_ACTION_TOTAL   22  ///< Action total
 /* }}} */
 
 /* SubtlerToggle {{{ */
@@ -860,13 +861,14 @@ SubtlerUsage(int group)
              "  -K, --up                Select window above\n" \
              "  -L, --right             Select window right\n" \
              "  -r, --reload            Reload %s\n" \
+             "  -q, --quit              Quit %s\n" \
              "  -V, --version           Show version info and exit\n" \
              "\nGroups:\n" \
              "  -c, --clients           Use clients group\n" \
              "  -s, --sublets           Use sublets group\n" \
              "  -t, --tags              Use tags group\n" \
              "  -v, --views             Use views group\n", 
-             getenv("DISPLAY"), PKG_NAME);
+             getenv("DISPLAY"), PKG_NAME, PKG_NAME);
     }
   if(-1 == group || SUB_GROUP_CLIENT == group)
     {
@@ -1035,6 +1037,15 @@ SubtlerReload(void)
   subSharedMessage(DefaultRootWindow(display), "SUBTLE_RELOAD", data, False);
 } /* }}} */
 
+/* SubtlerQuit {{{ */
+static void
+SubtlerQuit(void)
+{
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_QUIT", data, False);
+} /* }}} */
+
 /* main {{{ */
 int
 main(int argc,
@@ -1080,6 +1091,7 @@ main(int argc,
     { "display",    required_argument,  0,  'd'  },
     { "help",       no_argument,        0,  'h'  },
     { "reload",     no_argument,        0,  'r'  },
+    { "quit",       no_argument,        0,  'q'  },
     { "version",    no_argument,        0,  'V'  },
     { 0, 0, 0, 0}
   }; /* }}} */
@@ -1087,21 +1099,21 @@ main(int argc,
   /* Command table {{{ */
   const SubCommand cmds[SUB_GROUP_TOTAL][SUB_ACTION_TOTAL] = { 
     /* Client, Sublet, Tag, View <=> Add, Kill, Find, Focus, Full, Float, 
-       Stick, Jump, List, Tag, Untag, Tags, Update, Gravity, Left, Down, Up, Right, Reload */
+       Stick, Jump, List, Tag, Untag, Tags, Update, Gravity, Left, Down, Up, Right, Reload, Quit */
     { NULL, SubtlerClientKill, SubtlerClientFind,  SubtlerClientFocus, 
       SubtlerClientToggleFull, SubtlerClientToggleFloat, SubtlerClientToggleStick, 
       NULL, SubtlerClientList, SubtlerClientTag, SubtlerClientUntag, 
       SubtlerClientTags, NULL, SubtlerClientGravity, SubtlerClientRestackRaise,
       SubtlerClientRestackLower, SubtlerClientMatchLeft, SubtlerClientMatchDown,
-      SubtlerClientMatchUp, SubtlerClientMatchRight, NULL },
+      SubtlerClientMatchUp, SubtlerClientMatchRight, NULL, NULL },
     { NULL, SubtlerSubletKill, NULL, NULL, NULL, NULL, NULL, NULL, SubtlerSubletList, 
-      NULL, NULL, NULL, SubtlerSubletUpdate, NULL, NULL, NULL, NULL, NULL, NULL, NULL },
+      NULL, NULL, NULL, SubtlerSubletUpdate, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL },
     { SubtlerTagNew, SubtlerTagKill, SubtlerTagFind, NULL, NULL, NULL, 
       NULL, NULL, SubtlerTagList, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 
-      NULL, NULL, NULL },
+      NULL, NULL, NULL, NULL },
     { SubtlerViewNew, SubtlerViewKill, SubtlerViewFind, NULL, NULL, NULL, NULL,
       SubtlerViewJump, SubtlerViewList, SubtlerViewTag, SubtlerViewUntag, SubtlerViewTags, 
-      NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL }
+      NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL }
   }; /* }}} */
 
   /* Set up signal handler */
@@ -1112,7 +1124,7 @@ main(int argc,
   sigaction(SIGINT, &act, NULL);
   sigaction(SIGSEGV, &act, NULL);
 
-  while((c = getopt_long(argc, argv, "cstvakfoFOSjlTUGugABHJKLDd:hrV", long_options, NULL)) != -1)
+  while((c = getopt_long(argc, argv, "cstvakfoFOSjlTUGugABHJKLDd:hrqV", long_options, NULL)) != -1)
     {
       switch(c)
         {
@@ -1144,6 +1156,7 @@ main(int argc,
           case 'K': action = SUB_ACTION_UP;      break;
           case 'L': action = SUB_ACTION_RIGHT;   break;
           case 'r': action = SUB_ACTION_RELOAD;  break;
+          case 'q': action = SUB_ACTION_QUIT;    break;
 
           /* Other */
           case 'd': dispname = optarg;           break;
@@ -1199,6 +1212,7 @@ main(int argc,
       switch(action)
         {
           case SUB_ACTION_RELOAD: SubtlerReload();                     break;
+          case SUB_ACTION_QUIT:   SubtlerQuit();                       break;
           case SUB_ACTION_LEFT:   SubtlerFocusMatch(SUB_WINDOW_LEFT);  break;
           case SUB_ACTION_DOWN:   SubtlerFocusMatch(SUB_WINDOW_DOWN);  break;
           case SUB_ACTION_UP:     SubtlerFocusMatch(SUB_WINDOW_UP);    break;

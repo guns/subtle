@@ -760,6 +760,17 @@ SubtlextSubtleReload(VALUE self)
   return Qnil;
 } /* }}} */
 
+/* SubtlextSubtleQuit {{{ */
+static VALUE
+SubtlextSubtleQuit(VALUE self)
+{
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_QUIT", data, True);
+
+  return Qnil;
+} /* }}} */
+
 /* SubtlextSubtleTagList {{{ */
 static VALUE
 SubtlextSubtleTagList(VALUE self)
@@ -1552,6 +1563,7 @@ Init_subtlext(void)
   rb_define_method(klass, "current_client", SubtlextSubtleClientCurrent,    0);
   rb_define_method(klass, "running?",       SubtlextSubtleRunning,          0);
   rb_define_method(klass, "reload",         SubtlextSubtleReload,           0);
+  rb_define_method(klass, "quit",           SubtlextSubtleQuit,             0);
   rb_define_method(klass, "to_s",           SubtlextSubtleToString,         0);
 
   /* Class: sublet */
