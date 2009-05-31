@@ -682,6 +682,8 @@ EventGrab(XEvent *ev)
                 subClientPublish();
                 if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
                 subClientKill(c, True);
+
+                subSharedFocus(); ///< Focus
               }
             break; /* }}} */
           default:
