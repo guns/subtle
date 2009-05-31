@@ -347,76 +347,6 @@ RubyParseColor(char *name)
   return color.pixel;
 } /* }}} */
 
-/* RubyParseConfig {{{ */
-static VALUE
-RubyParseConfig(VALUE path)
-{
-  int size;
-  char *family = NULL, *style = NULL, font[100];
-  VALUE config = 0;
-
-  rb_require(STR2CSTR(path)); ///< Load config
-
-  if(!subtle || !subtle->disp) return Qnil; ///< Exit after config check
-
-  /* Config: Options */
-  config = rb_const_get(rb_cObject, rb_intern("OPTIONS"));
-  subtle->bw           = RubyGetFixnum(config, "border", 2);
-  subtle->step         = RubyGetFixnum(config, "step", 5);
-  subtle->bar          = RubyGetFixnum(config, "bar", 0);
-  subtle->strut.x      = RubyGetArray(config, "padding", 0, 0);
-  subtle->strut.y      = RubyGetArray(config, "padding", 1, 0);
-  subtle->strut.width  = RubyGetArray(config, "padding", 2, 0);
-  subtle->strut.height = RubyGetArray(config, "padding", 3, 0);
-
-  /* Config: Font */
-  config = rb_const_get(rb_cObject, rb_intern("FONT"));
-  family = RubyGetString(config, "family",  "fixed");
-  style  = RubyGetString(config, "style", "medium");
-  size   = RubyGetFixnum(config, "size",  12);
-
-  /* Config: Colors */
-  config                = rb_const_get(rb_cObject, rb_intern("COLORS"));
-  subtle->colors.border = RubyParseColor(RubyGetString(config, "border",     "#bdbabd"));
-  subtle->colors.norm   = RubyParseColor(RubyGetString(config, "normal",     "#22aa99"));
-  subtle->colors.focus  = RubyParseColor(RubyGetString(config, "focus",      "#ffa500"));
-  subtle->colors.bg     = RubyParseColor(RubyGetString(config, "background", "#336699"));
-  subtle->colors.font   = RubyParseColor(RubyGetString(config, "font",       "#000000"));
-
-  /* Config: Font */
-  if(subtle->xfs)
-    {
-      XFreeFont(subtle->disp, subtle->xfs);
-      subtle->xfs = NULL;
-    }
-
-  snprintf(font, sizeof(font), "-*-%s-%s-*-*-*-%d-*-*-*-*-*-*-*", family, style, size);
-  if(!(subtle->xfs = XLoadQueryFont(subtle->disp, font)))
-    {
-      subSharedLogWarn("Failed loading font `%s' - falling back to fixed\n", family);
-      subSharedLogDebug("Font: %s\n", font);
-      subtle->xfs = XLoadQueryFont(subtle->disp, "-*-fixed-medium-*-*-*-13-*-*-*-*-*-*-*");
-      if(!subtle->xfs) subSharedLogError("Failed loading font `fixed`\n");
-    }
-
-  subtle->fy = subtle->xfs->max_bounds.ascent + subtle->xfs->max_bounds.descent;
-  subtle->th = subtle->fy + 2;
-
-  /* Config: Grabs */
-  config = rb_const_get(rb_cObject, rb_intern("GRABS"));
-  rb_hash_foreach(config, RubyConfigForeach, SUB_TYPE_GRAB);
-
-  /* Config: Tags */
-  config = rb_const_get(rb_cObject, rb_intern("TAGS"));
-  rb_hash_foreach(config, RubyConfigForeach, SUB_TYPE_TAG);
-
-  /* Config: Views */
-  config = rb_const_get(rb_cObject, rb_intern("VIEWS"));
-  rb_hash_foreach(config, RubyConfigForeach, SUB_TYPE_VIEW);
-
-  return Qnil;
-} /* }}} */
-
 /* RubyParseText {{{ */
 static void
 RubyParseText(char *string,
@@ -754,43 +684,98 @@ subRubyInit(void)
 void
 subRubyLoadConfig(const char *file)
 {
-  int error = 0;
-  char config[100];
+  int state = 0, size = 0;
+  char *family = NULL, *style = NULL, buf[100];
+  VALUE config = Qnil;
   FILE *fd = NULL;
 
   /* Check path */
   if(!file)
     {
-      snprintf(config, sizeof(config), "%s/%s/%s",
+      snprintf(buf, sizeof(buf), "%s/%s/%s",
         getenv("XDG_CONFIG_HOME"), PKG_NAME, PKG_CONFIG);
-      if(!(fd = fopen(config, "r")))
+      if(!(fd = fopen(buf, "r")))
         {
-          snprintf(config, sizeof(config), "%s/%s", DIR_CONFIG, PKG_CONFIG);
+          snprintf(buf, sizeof(buf), "%s/%s", DIR_CONFIG, PKG_CONFIG);
         }
       else fclose(fd);
     }
-  else snprintf(config, sizeof(config), "%s", file);
-  subSharedLogDebug("config=%s\n", config);
+  else snprintf(buf, sizeof(buf), "%s", file);
+  subSharedLogDebug("config=%s\n", buf);
 
   /* Safety first */
-  rb_protect(RubyParseConfig, rb_str_new2(config), &error);
-  if(error) RubyPerror("Failed reading config", True);
+  rb_load_protect(rb_str_new2(buf), 0, &state);
+  if(state) RubyPerror("Failed reading config", True);
 
   if(!subtle || !subtle->disp) return; ///< Exit after config check
 
-  /* Grabs */
+  /* Config: Options */
+  config = rb_const_get(rb_cObject, rb_intern("OPTIONS"));
+  subtle->bw           = RubyGetFixnum(config, "border", 2);
+  subtle->step         = RubyGetFixnum(config, "step", 5);
+  subtle->bar          = RubyGetFixnum(config, "bar", 0);
+  subtle->strut.x      = RubyGetArray(config, "padding", 0, 0);
+  subtle->strut.y      = RubyGetArray(config, "padding", 1, 0);
+  subtle->strut.width  = RubyGetArray(config, "padding", 2, 0);
+  subtle->strut.height = RubyGetArray(config, "padding", 3, 0);
+
+  /* Config: Font */
+  config = rb_const_get(rb_cObject, rb_intern("FONT"));
+  family = RubyGetString(config, "family",  "fixed");
+  style  = RubyGetString(config, "style", "medium");
+  size   = RubyGetFixnum(config, "size",  12);
+
+  /* Config: Colors */
+  config                = rb_const_get(rb_cObject, rb_intern("COLORS"));
+  subtle->colors.border = RubyParseColor(RubyGetString(config, "border",     "#bdbabd"));
+  subtle->colors.norm   = RubyParseColor(RubyGetString(config, "normal",     "#22aa99"));
+  subtle->colors.focus  = RubyParseColor(RubyGetString(config, "focus",      "#ffa500"));
+  subtle->colors.bg     = RubyParseColor(RubyGetString(config, "background", "#336699"));
+  subtle->colors.font   = RubyParseColor(RubyGetString(config, "font",       "#000000"));
+
+  /* Config: Font */
+  if(subtle->xfs) ///< Free in case of reload
+    {
+      XFreeFont(subtle->disp, subtle->xfs);
+      subtle->xfs = NULL;
+    }
+
+  snprintf(buf, sizeof(buf), "-*-%s-%s-*-*-*-%d-*-*-*-*-*-*-*", family, style, size);
+  if(!(subtle->xfs = XLoadQueryFont(subtle->disp, buf)))
+    {
+      subSharedLogWarn("Failed loading font `%s' - falling back to fixed\n", family);
+      subSharedLogDebug("Font: %s\n", buf);
+
+      subtle->xfs = XLoadQueryFont(subtle->disp, "-*-fixed-medium-*-*-*-13-*-*-*-*-*-*-*");
+      if(!subtle->xfs) subSharedLogError("Failed loading font `fixed`\n");
+    }
+
+  subtle->fy = subtle->xfs->max_bounds.ascent + subtle->xfs->max_bounds.descent;
+  subtle->th = subtle->fy + 2;
+
+  /* Config: Grabs */
+  config = rb_const_get(rb_cObject, rb_intern("GRABS"));
+  rb_hash_foreach(config, RubyConfigForeach, SUB_TYPE_GRAB);
+
   if(0 == subtle->grabs->ndata)
     {
       subSharedLogWarn("No grabs found\n");
     }
   else subArraySort(subtle->grabs, subGrabCompare);
 
-  /* Tags */
+  /* Config: Tags */
+  config = rb_const_get(rb_cObject, rb_intern("TAGS"));
+  rb_hash_foreach(config, RubyConfigForeach, SUB_TYPE_TAG);
+
   if(SUB_TAG_CLEAR == subtle->tags->ndata)
     {
       subSharedLogWarn("No tags found\n");
     }
   else subTagPublish();
+
+  /* Config: Views */
+  config = rb_const_get(rb_cObject, rb_intern("VIEWS"));
+  rb_hash_foreach(config, RubyConfigForeach, SUB_TYPE_VIEW);
 
   /* Views */
   if(0 == subtle->views->ndata) ///< Create default view
@@ -873,15 +858,15 @@ subRubyLoadSublets(const char *path)
 
       for(i = 0; i < num; i++)
         {
-          int error = 0;
+          int state = 0;
           char file[150];
 
           snprintf(file, sizeof(file), "%s/%s", buf, entries[i]->d_name);
           subSharedLogDebug("path=%s\n", file);
 
           /* Safety first */
-          rb_protect(RubyRequire, rb_str_new2(file), &error); ///< Load sublet
-          if(error) RubyPerror("Failed loading sublet", False);
+          rb_load_protect(rb_str_new2(file), 0, &state); ///< Load sublet
+          if(state) RubyPerror("Failed loading sublet", False);
 
           free(entries[i]);
         }
@@ -914,14 +899,14 @@ subRubyLoadSublets(const char *path)
 void
 subRubyLoadSubtlext(void)
 {
-  int error = 0;
+  int state = 0;
   VALUE mod = Qnil, klass = Qnil;
 
   printf("Loading subtlext\n");
 
   /* Load subtlext */
-  rb_protect(RubyRequire, rb_str_new2("subtle/subtlext"), &error);
-  if(error) RubyPerror("Failed loading subtlext", True);
+  rb_protect(RubyRequire, rb_str_new2("subtle/subtlext"), &state);
+  if(state) RubyPerror("Failed loading subtlext", True);
 
   /* Module: subtlext */
   mod = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
