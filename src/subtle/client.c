@@ -85,10 +85,13 @@ subClientNew(Window win)
   /* Fetch name */
   if(!XFetchName(subtle->disp, c->win, &c->name))
     {
-      if(c->klass) XFree(c->klass);
-      free(c);
-
-      return NULL;
+      /* Fallback for clients without WM_NAME like skype.. */
+      if(c->klass) c->name = strdup(c->klass);
+      else
+        {
+          c->name  = strdup("subtle");
+          c->klass = NULL;
+        }
     }
   c->width = XTextWidth(subtle->xfs, c->name, strlen(c->name)) + 6; ///< Font offset
 
