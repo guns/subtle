@@ -197,7 +197,7 @@ subDisplayScan(void)
 void
 subDisplayPublish(void)
 {
-  long data[3] = { 0, 0, 0 }, pid = (long)getpid();
+  long data[4] = { 0, 0, 0, 0 }, pid = (long)getpid();
 
   assert(subtle);
 
