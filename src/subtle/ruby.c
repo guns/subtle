@@ -877,9 +877,10 @@ subRubyLoadSublets(const char *path)
       if(0 < subtle->sublets->ndata)
         {
           /* Preserve load order */
-          for(i = 0; i < subtle->sublets->ndata - 1; i++)
+          for(i = 0; i < subtle->sublets->ndata; i++)
             {
-              SUBLET(subtle->sublets->data[i])->next = SUBLET(subtle->sublets->data[i + 1]);
+              if(i < subtle->sublets->ndata - 1) ///< Range check
+                SUBLET(subtle->sublets->data[i])->next = SUBLET(subtle->sublets->data[i + 1]);
               subRubyRun(SUBLET(subtle->sublets->data[i])); ///< First run
             }
           subtle->sublet = SUBLET(subtle->sublets->data[0]);
