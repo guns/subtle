@@ -94,11 +94,11 @@ EventConfigure(XConfigureRequestEvent *ev)
 static void
 EventMapRequest(XMapRequestEvent *ev)
 {
-  SubClient *c = CLIENT(subSharedFind(ev->window, CLIENTID));
-  if(!c) 
+  SubClient *c = NULL;
+
+  if(!(c = CLIENT(subSharedFind(ev->window, CLIENTID))))
     {
-      /* Create new client */
-      if((c = subClientNew(ev->window)))
+      if((c = subClientNew(ev->window))) ///< Create new client
         {
           subArrayPush(subtle->clients, (void *)c);
           subClientPublish();
@@ -370,6 +370,10 @@ EventMessage(XClientMessageEvent *ev)
                       subArrayPush(subtle->trays, (void *)t);
                       subTrayUpdate();
                     } 
+                  break;
+                case XEMBED_REQUEST_FOCUS:
+                  subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime, 
+                    XEMBED_FOCUS_IN, XEMBED_FOCUS_CURRENT, 0, 0);                 
                   break;
               }
             break; /* }}} */
@@ -769,18 +773,22 @@ EventFocus(XFocusChangeEvent *ev)
     }
   else if((t = TRAY(subSharedFind(ev->window, TRAYID)))) ///< Tray
     {
-      int opcode = XEMBED_WINDOW_DEACTIVATE;
+      int opcodes[3] = { XEMBED_WINDOW_DEACTIVATE, XEMBED_FOCUS_OUT, 0 };
 
       if(FocusIn == ev->type) 
         {
-          opcode = XEMBED_WINDOW_ACTIVATE;
+          opcodes[0] = XEMBED_WINDOW_ACTIVATE;
+          opcodes[1] = XEMBED_FOCUS_IN;
+          opcodes[2] = XEMBED_FOCUS_CURRENT;
 
           /* EWMH: Active window */
           subEwmhSetWindows(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW, &t->win, 1);
         }
 
       subEwmhMessage(ev->window, ev->window, SUB_EWMH_XEMBED, CurrentTime, 
-        opcode, 0, 0, 0);
+        opcodes[0], 0, 0, 0);
+      subEwmhMessage(ev->window, ev->window, SUB_EWMH_XEMBED, CurrentTime, 
+        opcodes[1], opcodes[2], 0, 0);          
     }
 } /* }}} */
 
