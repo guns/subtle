@@ -73,7 +73,7 @@ subGrabNew(const char *chain,
           for(i = 0; i < LENGTH(mouse); i++)
             if(!strncmp(tok, mouse[i], 2))
               {
-                sym = XK_Pointer_Button1 + i; ///< @todo Implementation independent?
+                sym = XK_Pointer_Button1 + i + 1; ///< @todo Implementation independent?
                 break;
               }
 
@@ -174,8 +174,8 @@ subGrabSet(Window win)
                 }
               else if(g->flags & SUB_GRAB_MOUSE)
                 {
-                  XGrabButton(subtle->disp, g->code - XK_Pointer_Button1,
-                    g->mod|modifiers[j], win, False, ButtonPressMask|ButtonReleaseMask,
+                  XGrabButton(subtle->disp, g->code - XK_Pointer_Button1, 
+                    g->mod|modifiers[j], win, False, ButtonPressMask|ButtonReleaseMask, 
                     GrabModeAsync, GrabModeSync, None, None);
                 }
             }
