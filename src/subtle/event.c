@@ -543,6 +543,7 @@ EventGrab(XEvent *ev)
 {
   SubGrab *g = NULL;
   unsigned int code = 0, state = 0;
+  KeySym sym;
 
   /* Distinct types */
   switch(ev->type)
@@ -562,13 +563,15 @@ EventGrab(XEvent *ev)
         state = ev->xbutton.state;
         break;
       case KeyPress:
+        sym   = XKeycodeToKeysym(subtle->disp, ev->xkey.keycode, 0);
         code  = ev->xkey.keycode;
         state = ev->xkey.state;
+
         break;
     }
 
   /* Find grab */
-  if((g = subGrabFind(code, state)))
+  if((g = subGrabFind(code, sym, state)))
     {
       Window win = 0;
       SubClient *c = NULL;

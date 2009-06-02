@@ -73,7 +73,7 @@ subGrabNew(const char *chain,
           for(i = 0; i < LENGTH(mouse); i++)
             if(!strncmp(tok, mouse[i], 2))
               {
-                sym = XK_Pointer_Button1 + i + 1; ///< @todo Implementation independent?
+                sym = XK_Pointer_Button1 + i; ///< @todo Implementation independent?
                 break;
               }
 
@@ -105,10 +105,12 @@ subGrabNew(const char *chain,
           case XK_Pointer_Button5:
             g->flags |= SUB_GRAB_MOUSE;
             g->code   = sym;
+            g->sym    = sym;
             break;
           default: 
             g->flags |= SUB_GRAB_KEY;
             g->code   = XKeysymToKeycode(subtle->disp, sym);
+            g->sym    = sym;
         }
 
       tok = strtok(NULL, "-");
@@ -123,17 +125,20 @@ subGrabNew(const char *chain,
  /** subGrabFind {{{
   * @brief Find grab
   * @param[in]  code   A code
+  * @param[in]  sym    A KeySym
   * @param[in]  mod    A modmask
   * @return Returns a #SubGrab or \p NULL
   **/
 
 SubGrab *
 subGrabFind(int code,
+  KeySym sym,
   unsigned int mod)
 {
   SubGrab **ret = NULL, *gp = NULL, g;
   
   g.code = code;
+  g.sym  = sym;
   g.mod  = (mod & ~(LockMask|numlockmask));
   gp     = &g;
   ret    = (SubGrab **)bsearch(&gp, subtle->grabs->data, subtle->grabs->ndata,
@@ -213,11 +218,11 @@ subGrabCompare(const void *a,
   /* @todo Complicated.. */
   if(g1->code < g2->code) ret = -1;
   else if(g1->code == g2->code)
-    {
-      if(g1->mod < g2->mod) ret = -1;
-      else if(g1->mod == g2->mod) ret = 0;
-      else ret = 1;
-    }
+  {
+    if(g1->mod < g2->mod) ret = -1;
+    else if(g1->mod == g2->mod) ret = 0;
+    else ret = 1;
+  }
   else if(g1->code > g2->code) ret = 1;
 
   return ret;

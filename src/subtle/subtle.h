@@ -309,7 +309,9 @@ typedef struct subtext_t /* {{{ */
 typedef struct subgrab_t /* {{{ */
 {
   FLAGS           flags;                                          ///< Grab flags
-  unsigned int    code, mod;                                      ///< Grab code modifier
+
+  KeySym          sym;                                            ///< Grab sym
+  unsigned int    code, mod;                                      ///< Grab code, modifier
 
   union subdata_t data;                                           ///< Grab data
 } SubGrab; /* }}} */
@@ -476,7 +478,7 @@ void subGrabInit(void);                                           ///< Init keym
 SubGrab *subGrabNew(const char *chain, int type,                  ///< Create grab
   SubData data);
 KeySym subGrabGet(void);                                          ///< Get grab
-SubGrab *subGrabFind(int code, unsigned int mod);                 ///< Find grab
+SubGrab *subGrabFind(int code, KeySym sym, unsigned int mod);                 ///< Find grab
 void subGrabSet(Window win);                                      ///< Grab window
 void subGrabUnset(Window win);                                    ///< Ungrab window
 int subGrabCompare(const void *a, const void *b);                 ///< Compare grabs
