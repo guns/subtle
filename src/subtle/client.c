@@ -669,7 +669,7 @@ subClientSetSize(SubClient *c)
     c->minw, c->minh, c->maxw, c->maxh, c->basew, c->basew, c->minr, c->maxr);
 } /* }}} */
 
- /** subClientToggle {{{
+ /** subClientSetTags {{{
   * @brief Set client tags
   * @param[in]  c  A #SubClient
   **/

@@ -602,9 +602,10 @@ EventGrab(XEvent *ev)
             break; /* }}} */
           case SUB_GRAB_WINDOW_MOVE:
           case SUB_GRAB_WINDOW_RESIZE: /* {{{ */
-            if((c = CLIENT(subSharedFind(win, CLIENTID))) && c->flags & SUB_STATE_FLOAT && 
-              !(c->flags & SUB_STATE_FULL))
+            if((c = CLIENT(subSharedFind(win, CLIENTID))) && !(c->flags & SUB_STATE_FULL))
               {
+                if(!(c->flags & SUB_STATE_FLOAT)) subClientToggle(c, SUB_STATE_FLOAT);
+
                 if(SUB_GRAB_WINDOW_MOVE == flag) flag = SUB_DRAG_MOVE;
                 else if(SUB_GRAB_WINDOW_RESIZE == flag) flag = SUB_DRAG_RESIZE;
 
@@ -668,8 +669,10 @@ EventGrab(XEvent *ev)
           case SUB_GRAB_WINDOW_GRAVITY: /* {{{ */
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               {
-                vid = subArrayIndex(subtle->views, (void *)subtle->cv);
-
+                if(c->flags & SUB_STATE_FLOAT) subClientToggle(c, SUB_STATE_FLOAT);
+                if(c->flags & SUB_STATE_FULL) subClientToggle(c, SUB_STATE_FULL);
+                
+                vid               = subArrayIndex(subtle->views, (void *)subtle->cv);
                 c->gravity        = -1; ///< Force 
                 c->gravities[vid] = g->data.num;
 
