@@ -186,7 +186,6 @@ subClientNew(Window win)
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
-  printf("Adding client (%s)\n", c->klass ? c->klass : c->name);
   subSharedLogDebug("new=client, name=%s, win=%#lx\n", c->name, win);
 
   return c;
@@ -785,8 +784,6 @@ subClientKill(SubClient *c,
   int close)
 {
   assert(c);
-
-  printf("Killing client (%s)\n", c->klass ? c->klass : c->name);
 
   /* Ignore further events and delete context */
   XSelectInput(subtle->disp, c->win, NoEventMask);

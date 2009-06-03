@@ -86,7 +86,6 @@ subTagNew(char *name,
   t->flags = SUB_TYPE_TAG;
   if(regex) t->preg = subSharedRegexNew(regex);
 
-  printf("Adding tag (%s)\n", name);
   subSharedLogDebug("new=tag, name=%s\n", name);
 
   return t;
@@ -126,8 +125,6 @@ void
 subTagKill(SubTag *t)
 {
   assert(t);
-
-  printf("Killing tag (%s)\n", t->name);
 
   if(t->preg) subSharedRegexKill(t->preg);
   free(t->name);

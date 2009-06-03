@@ -55,7 +55,6 @@ subViewNew(char *name,
   /* EWMH: Tags */
   subEwmhSetCardinals(v->button, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&v->tags, 1); ///< Init 
 
-  printf("Adding view (%s)\n", v->name);
   subSharedLogDebug("new=view, name=%s\n", name);
 
   return v;
@@ -187,8 +186,6 @@ subViewJump(SubView *v)
 
   subSharedFocus();
   subViewRender();
-
-  printf("Switching view (%s)\n", subtle->cv->name);
 } /* }}} */
 
  /** subViewPublish {{{
@@ -244,8 +241,6 @@ void
 subViewKill(SubView *v)
 {
   assert(v);
-
-  printf("Killing view (%s)\n", v->name);
 
   XDeleteContext(subtle->disp, v->button, 1);
   XDestroyWindow(subtle->disp, v->button);

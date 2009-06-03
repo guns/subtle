@@ -160,8 +160,6 @@ subSubletKill(SubSublet *s,
 {
   assert(s);
 
-  printf("Killing sublet (%s)\n", s->name);
-
   if(unlink)
     {
       /* Update linked list */

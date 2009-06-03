@@ -63,8 +63,6 @@ SubtleSignal(int signum)
   switch(signum)
     {
       case SIGHUP: ///< Reload config
-        printf("Reloading config\n");
-
         subArrayClear(subtle->grabs, True);
         subArrayClear(subtle->tags,  True);
         subArrayClear(subtle->views, True);
@@ -82,6 +80,8 @@ SubtleSignal(int signum)
 
         subViewJump(subtle->views->data[0]);
         subSubletRender();
+
+        printf("Reloaded config\n");
         break;
       case SIGTERM:
       case SIGINT: ///< Tidy up
@@ -100,6 +100,8 @@ SubtleSignal(int signum)
         subRubyFinish();
 
         if(subtle) free(subtle);
+
+        printf("Exit\n");
 
         exit(0);
         break;
