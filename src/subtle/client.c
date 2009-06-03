@@ -70,17 +70,16 @@ subClientNew(Window win)
   XWMHints *hints = NULL;
   XWindowAttributes attrs;
   Atom *protos = NULL;
-  SubClient *c = NULL;
+  SubClient *c = NULL, *k = NULL;
 
   assert(win);
 
   /* Create client */
   c = CLIENT(subSharedMemoryAlloc(1, sizeof(SubClient)));
-  c->gravity = SUB_GRAVITY_CENTER;
-  c->flags   = SUB_TYPE_CLIENT;
-  c->tags    = SUB_TAG_DEFAULT;
-  c->klass   = subEwmhGetProperty(win, XA_STRING, SUB_EWMH_WM_CLASS, NULL);
-  c->win     = win;
+  c->flags = SUB_TYPE_CLIENT;
+  c->tags  = SUB_TAG_DEFAULT;
+  c->klass = subEwmhGetProperty(win, XA_STRING, SUB_EWMH_WM_CLASS, NULL);
+  c->win   = win;
 
   /* Fetch name */
   if(!XFetchName(subtle->disp, c->win, &c->name))
@@ -131,7 +130,7 @@ subClientNew(Window win)
   /* Window manager hints */
   if((hints = XGetWMHints(subtle->disp, c->win)))
     {
-      if(hints->flags & XUrgencyHint) c->tags |= SUB_TAG_STICK;
+      if(hints->flags & XUrgencyHint)              c->tags  |= SUB_TAG_STICK;
       if(hints->flags & InputHint && hints->input) c->flags |= SUB_PREF_INPUT;
 
       XFree(hints);
@@ -139,44 +138,48 @@ subClientNew(Window win)
 
   /* Check for transient windows */
   if(XGetTransientForHint(subtle->disp, c->win, &trans))
-    {
-      SubClient *t = CLIENT(subSharedFind(trans, CLIENTID));
-      if(t)
-        {
-          c->tags = t->tags; ///< Copy tags
-          subClientToggle(c, SUB_STATE_STICK|SUB_STATE_FLOAT);
+    if((k = CLIENT(subSharedFind(trans, CLIENTID))))
+      {
+        c->tags = k->tags; ///< Copy tags
+        subClientToggle(c, SUB_STATE_STICK|SUB_STATE_FLOAT);
 
-          if(subtle->windows.focus != c->win) ///< Move pointer to transient
-            subClientWarp(c);
-        }
-    }
+        if(subtle->windows.focus != c->win) ///< Move pointer to transient
+          subClientWarp(c);
+      }
 
   /* Properties */
   if(c->tags & SUB_TAG_FLOAT) subClientToggle(c, SUB_STATE_FLOAT);
   if(c->tags & SUB_TAG_FULL)  subClientToggle(c, SUB_STATE_FULL);
   if(c->tags & SUB_TAG_STICK) subClientToggle(c, SUB_STATE_STICK);
 
-  /* Gravities */
+  /* Gravity */
   if(c->tags & SUB_TAG_TOP)
     {
-      c->gravity = SUB_GRAVITY_TOP;
       if(c->tags & SUB_TAG_LEFT)       c->gravity = SUB_GRAVITY_TOP_LEFT;
       else if(c->tags & SUB_TAG_RIGHT) c->gravity = SUB_GRAVITY_TOP_RIGHT;
+      else                             c->gravity = SUB_GRAVITY_TOP;
     }
   else if(c->tags & SUB_TAG_BOTTOM)
     {
-      c->gravity = SUB_GRAVITY_BOTTOM;
       if(c->tags & SUB_TAG_LEFT)       c->gravity = SUB_GRAVITY_BOTTOM_LEFT;
       else if(c->tags & SUB_TAG_RIGHT) c->gravity = SUB_GRAVITY_BOTTOM_RIGHT;
+      else                             c->gravity = SUB_GRAVITY_BOTTOM;
     }
-  else if(c->tags & SUB_TAG_LEFT)  c->gravity = SUB_GRAVITY_LEFT;
-  else if(c->tags & SUB_TAG_RIGHT) c->gravity = SUB_GRAVITY_RIGHT;
+  else if(c->tags & SUB_TAG_LEFT)      c->gravity = SUB_GRAVITY_LEFT;
+  else if(c->tags & SUB_TAG_RIGHT)     c->gravity = SUB_GRAVITY_RIGHT;
+  else if(0 < subtle->gravity)         c->gravity = subtle->gravity;
+  else 
+    {
+      if((k = CLIENT(subSharedFind(subtle->windows.focus, CLIENTID))))
+        c->gravity = k->gravity;
+      else c->gravity = SUB_GRAVITY_CENTER;
+    }
 
   c->gravities = (int *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(int));
 
   for(i = 0; i < subtle->views->ndata; i++)
     c->gravities[i] = c->gravity;
-  c->gravity = -1;
+  c->gravity = -1; ///< Force update
 
   /* EWMH: Tags, gravity and desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&c->tags, 1);
@@ -679,7 +682,6 @@ subClientSetTags(SubClient *c)
 {
   int i;
 
-  /* Tags */
   for(i = 0; (c->name || c->klass) && i < subtle->tags->ndata; i++)
     {
       SubTag *t = TAG(subtle->tags->data[i]);
@@ -710,11 +712,8 @@ subClientToggle(SubClient *c,
       if(type & SUB_STATE_FULL)
         XSetWindowBorderWidth(subtle->disp, c->win, subtle->bw);
 
-      if(type & SUB_STATE_FLOAT)
-        c->gravity = -1; ///< Updating gravity
-
-      if(type & SUB_STATE_STICK)
-        subViewConfigure(subtle->cv);
+      if(type & SUB_STATE_FLOAT) c->gravity = -1; ///< Updating gravity
+      if(type & SUB_STATE_STICK) subViewConfigure(subtle->cv);
     }
   else
     {
@@ -740,10 +739,7 @@ subClientToggle(SubClient *c,
         }
 
       if(type & SUB_STATE_FULL)
-        {
-          XSetWindowBorderWidth(subtle->disp, c->win, 0);
-          subClientFocus(c);
-        }
+        XSetWindowBorderWidth(subtle->disp, c->win, 0);
     }
 
   subClientConfigure(c);

@@ -618,9 +618,9 @@ RubyDispatcher(int argc,
   return Qnil;  
 } /* }}} */
 
-/* RubyEach {{{ */
+/* RubyInstantiate {{{ */
 static VALUE
-RubyEach(VALUE idx,
+RubyInstantiate(VALUE idx,
   VALUE *obj)
 {
   char *name = NULL;
@@ -711,9 +711,10 @@ subRubyLoadConfig(const char *file)
 
   /* Config: Options */
   config = rb_const_get(rb_cObject, rb_intern("OPTIONS"));
-  subtle->bw           = RubyGetFixnum(config, "border", 2);
-  subtle->step         = RubyGetFixnum(config, "step", 5);
-  subtle->bar          = RubyGetFixnum(config, "bar", 0);
+  subtle->bw           = RubyGetFixnum(config, "border",  2);
+  subtle->step         = RubyGetFixnum(config, "step",    5);
+  subtle->bar          = RubyGetFixnum(config, "bar",     0);
+  subtle->gravity      = RubyGetFixnum(config, "gravity", 5);
   subtle->strut.x      = RubyGetArray(config, "padding", 0, 0);
   subtle->strut.y      = RubyGetArray(config, "padding", 1, 0);
   subtle->strut.width  = RubyGetArray(config, "padding", 2, 0);
@@ -722,8 +723,8 @@ subRubyLoadConfig(const char *file)
   /* Config: Font */
   config = rb_const_get(rb_cObject, rb_intern("FONT"));
   family = RubyGetString(config, "family",  "fixed");
-  style  = RubyGetString(config, "style", "medium");
-  size   = RubyGetFixnum(config, "size",  12);
+  style  = RubyGetString(config, "style",   "medium");
+  size   = RubyGetFixnum(config, "size",    12);
 
   /* Config: Colors */
   config                = rb_const_get(rb_cObject, rb_intern("COLORS"));
@@ -872,7 +873,7 @@ subRubyLoadSublets(const char *path)
         }
       free(entries);
 
-      rb_iterate(rb_each, sublets, RubyEach, Qnil); ///< Instantiate sublets
+      rb_iterate(rb_each, sublets, RubyInstantiate, Qnil); ///< Instantiate sublets
 
       if(0 < subtle->sublets->ndata)
         {

@@ -335,7 +335,7 @@ typedef struct subsublet_t /* {{{ */
 
 typedef struct subsubtle_t /* {{{ */
 {
-  int                th, bw, fy, step, bar;                       ///< Subtle properties
+  int                th, bw, fy, step, bar, gravity;              ///< Subtle properties
 
   Display            *disp;                                       ///< Subtle Xorg display
   XFontStruct        *xfs;                                        ///< Subtle font

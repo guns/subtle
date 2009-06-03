@@ -272,7 +272,7 @@ EventMessage(XClientMessageEvent *ev)
                 if(-1 == vid)
                   vid = subArrayIndex(subtle->views, (void *)subtle->cv);
 
-                c->gravity        = -1; ///< Force 
+                c->gravity        = -1; ///< Force update
                 c->gravities[vid] = ev->data.l[2];
 
                 if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
