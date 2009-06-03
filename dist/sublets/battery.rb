@@ -59,7 +59,7 @@ class Battery < Subtle::Sublet
           ac = "CHG"
       end
   
-      self.data = color("#e1e1e1") + "Bat:" + color("#0dd2e5") + "%d%%/%s" % [(@remaining * 100 / @capacity).floor, ac]
+      self.data = "%d%%/%s" % [(@remaining * 100 / @capacity).floor, ac] + color(COLORS["focus"]) + "//"
     rescue => err # Sanitize to prevent unloading
       self.data = "subtle"
       p err
