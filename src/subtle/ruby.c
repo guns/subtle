@@ -37,6 +37,37 @@ RubySubletMark(SubSublet *s)
   rb_gc_mark(s->recv);
 } /* }}} */
 
+/* RubyPerror {{{ */
+static VALUE
+RubyPerror(int fatal, 
+  const char *format,
+  ...)
+{
+  va_list ap;
+  char buf[255];
+  VALUE lineno = Qnil;
+
+#ifdef DEBUG  
+  VALUE lasterr = Qnil, message = Qnil;
+
+  lasterr = rb_gv_get("$!");
+  message = rb_obj_as_string(lasterr);
+
+  if(RTEST(message)) subSharedLogDebug("Ruby: %s\n", RSTRING(message)->ptr);
+#endif /* DEBUG */ 
+
+  lineno = rb_gv_get("$.");
+
+  va_start(ap, format);
+  vsnprintf(buf, sizeof(buf), format, ap);
+  va_end(ap);
+
+  if(True == fatal) subSharedLogError("%s at line %d\n", buf, FIX2INT(lineno));
+  subSharedLogWarn("%s at line %d\n", buf, FIX2INT(lineno));
+
+  return Qnil;
+} /* }}} */
+
 /* RubySubletNew {{{ */
 static VALUE
 RubySubletNew(VALUE self)
@@ -166,11 +197,12 @@ RubyGetString(VALUE hash,
   char *key,
   char *fallback)
 {
-  VALUE value = rb_funcall(hash, rb_intern("fetch"), 1, rb_str_new2(key));
- 
-  if(T_STRING == rb_type(value)) return STR2CSTR(value);
+  VALUE value = Qundef;
+  
+  if(Qundef == (value = rb_funcall_rescue(hash, rb_intern("fetch"), 
+    1, rb_str_new2(key)))) RubyPerror(True, "Failed fetching config key `%s'", key);
 
-  return fallback;
+  return T_STRING == rb_type(value) ? STR2CSTR(value) : fallback;
 } /* }}} */
 
 /* RubyGetFixnum {{{ */
@@ -179,29 +211,40 @@ RubyGetFixnum(VALUE hash,
   char *key,
   int fallback)
 {
-  VALUE value = rb_funcall(hash, rb_intern("fetch"), 1, rb_str_new2(key));
+  VALUE value = Qundef;
+  
+  if(Qundef == (value = rb_funcall_rescue(hash, rb_intern("fetch"), 
+    1, rb_str_new2(key)))) RubyPerror(True, "Failed fetching config key `%s'", key);
 
-  if(T_FIXNUM == rb_type(value)) return FIX2INT(value);
-
-  return fallback;
+  return T_FIXNUM == rb_type(value) ? FIX2INT(value) : fallback;
 } /* }}} */
 
-/* RubyGetArray {{{ */
-static int
-RubyGetArray(VALUE hash,
+/* RubyGetRect {{{ */
+static void
+RubyGetRect(VALUE hash,
   char *key,
-  int idx,
-  int fallback)
+  XRectangle *strut)
 {
-  VALUE ary = rb_funcall(hash, rb_intern("fetch"), 1, rb_str_new2(key));
+  int i, data[4] = { 0 };
+  VALUE ary = Qundef, value = Qundef;
+  
+  if(Qundef == (ary = rb_funcall_rescue(hash, rb_intern("fetch"), 
+    1, rb_str_new2(key)))) RubyPerror(True, "Failed fetching config key `%s'", key);
 
   if(T_ARRAY == rb_type(ary)) 
-    if(idx <= FIX2INT(rb_funcall(ary, rb_intern("length"), 0, Qnil)) - 1)
-      {
-        return FIX2INT(rb_funcall(ary, rb_intern("at"), 1, INT2FIX(idx)));
-      }
+    {
+      for(i = 0; i < 4; i++) ///< Safely fetching array values
+        {
+          if(Qundef != (value = rb_funcall_rescue(ary, rb_intern("at"), 1, INT2FIX(i))) && 
+            Qnil != value) data[i] = FIX2INT(value);
+          else RubyPerror(True, "Failed fetching array index `%d'", i + 1);
+        }
+    }
 
-  return fallback;
+  strut->x      = data[0];
+  strut->y      = data[1];
+  strut->width  = data[2];
+  strut->height = data[3];
 } /* }}} */
 
 /* RubyConfigForeach {{{ */
@@ -504,86 +547,11 @@ RubySubtleViewAdd(VALUE self,
   return view;
 } /* }}} */
 
-/* RubyPerror {{{ */
-static VALUE
-RubyPerror(const char *msg,
-  int fatal)
-{
-  VALUE lasterr = Qnil, message = Qnil;
-
-  /* Get last error message */
-  lasterr = rb_gv_get("$!");
-  message = rb_obj_as_string(lasterr);
-
-  if(RTEST(message))
-    {
-      if(True == fatal)
-        {
-          subSharedLogError("%s:\n %s\n", msg, RSTRING(message)->ptr);
-        }
-      else subSharedLogWarn("%s: %s\n", msg, RSTRING(message)->ptr);
-    }
-
-  return Qnil;
-} /* }}} */
-
 /* RubyFilter {{{ */
 static inline int
 RubyFilter(const struct dirent *entry)
 {
   return !fnmatch("*.rb", entry->d_name, FNM_PATHNAME);
-} /* }}} */
-
-/* RubyProtect {{{ */
-static VALUE
-RubyProtect(VALUE script)
-{
-  SubSublet *s = NULL;
-  VALUE result = Qnil;
-
-  assert(script);
-
-  s = SUBLET(script);
-
-  if(s->flags & SUB_TYPE_SUBLET)
-    result = rb_funcall(SUBLET(s)->recv, rb_intern("run"), 0, NULL);
-  else if(s->flags & SUB_TYPE_GRAB)
-    {
-      int id = 0, arity = 0;
-      VALUE mod = Qnil, klass = Qnil, client = Qnil;
-
-      /* Catch arity errors */
-      switch((arity = FIX2INT(rb_funcall(GRAB(s)->data.num, rb_intern("arity"), 0, NULL))))
-        {
-          case 0:
-          case -1: ///< No optional arguments 
-            result = rb_funcall(GRAB(s)->data.num, rb_intern("call"), 0, NULL);
-            break;
-          case 1:
-            if(subtle->cc)
-              {
-                if(Qnil == subtlext) subRubyLoadSubtlext(); ///< Load on demand
-
-                /* Create client instance */
-                id     = subArrayIndex(subtle->clients, (void *)subtle->cc);
-                mod    = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
-                klass  = rb_const_get(mod, rb_intern("Client"));
-                client = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(subtle->cc->name));
-
-                rb_iv_set(client, "@id",      INT2FIX(id));
-                rb_iv_set(client, "@win",     LONG2NUM(subtle->cc->win));
-                rb_iv_set(client, "@gravity", INT2FIX(subtle->cc->gravity));
-
-                result = rb_funcall(GRAB(s)->data.num, rb_intern("call"), 1, client);
-                break;
-              } ///< Fall through
-          default:
-            rb_raise(rb_eStandardError, "Failed calling proc with `%d' argument(s)", arity);
-        }
-      subSharedLogDebug("Proc: arity=%d\n", arity);
-    }
-
-  return result;
 } /* }}} */
 
 /* RubyRequire {{{ */
@@ -631,7 +599,7 @@ RubyInstantiate(VALUE idx,
     {
       subSharedLogWarn("Failed loading sublet `%s'\n", name);
     }
-  else printf("Loading sublet (%s)\n", name);
+  else printf("Loaded sublet (%s)\n", name);
 
   return Qnil;
 } /* }}} */
@@ -705,20 +673,17 @@ subRubyLoadConfig(const char *file)
 
   /* Safety first */
   rb_load_protect(rb_str_new2(buf), 0, &state);
-  if(state) RubyPerror("Failed reading config", True);
+  if(state) RubyPerror(True, "Failed reading config `%s'", buf);
 
   if(!subtle || !subtle->disp) return; ///< Exit after config check
 
   /* Config: Options */
   config = rb_const_get(rb_cObject, rb_intern("OPTIONS"));
-  subtle->bw           = RubyGetFixnum(config, "border",  2);
-  subtle->step         = RubyGetFixnum(config, "step",    5);
-  subtle->bar          = RubyGetFixnum(config, "bar",     0);
-  subtle->gravity      = RubyGetFixnum(config, "gravity", 5);
-  subtle->strut.x      = RubyGetArray(config, "padding", 0, 0);
-  subtle->strut.y      = RubyGetArray(config, "padding", 1, 0);
-  subtle->strut.width  = RubyGetArray(config, "padding", 2, 0);
-  subtle->strut.height = RubyGetArray(config, "padding", 3, 0);
+  subtle->bw      = RubyGetFixnum(config, "border",  2);
+  subtle->step    = RubyGetFixnum(config, "step",    5);
+  subtle->bar     = RubyGetFixnum(config, "bar",     0);
+  subtle->gravity = RubyGetFixnum(config, "gravity", 5);
+  RubyGetRect(config, "padding", &subtle->strut);
 
   /* Config: Font */
   config = rb_const_get(rb_cObject, rb_intern("FONT"));
@@ -867,7 +832,7 @@ subRubyLoadSublets(const char *path)
 
           /* Safety first */
           rb_load_protect(rb_str_new2(file), 0, &state); ///< Load sublet
-          if(state) RubyPerror("Failed loading sublet", False);
+          if(state) RubyPerror(False, "Failed loading sublet `%s'", entries[i]->d_name);
 
           free(entries[i]);
         }
@@ -904,11 +869,9 @@ subRubyLoadSubtlext(void)
   int state = 0;
   VALUE mod = Qnil, klass = Qnil;
 
-  printf("Loading subtlext\n");
-
   /* Load subtlext */
   rb_protect(RubyRequire, rb_str_new2("subtle/subtlext"), &state);
-  if(state) RubyPerror("Failed loading subtlext", True);
+  if(state) RubyPerror(True, "Failed loading subtlext");
 
   /* Module: subtlext */
   mod = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
@@ -922,6 +885,8 @@ subRubyLoadSubtlext(void)
   rb_define_method(klass, "add_view", RubySubtleViewAdd, 1);
 
   rb_ary_push(shelter, subtlext); ///< Protect from GC
+
+  printf("Loaded subtlext\n");
 } /* }}} */
 
  /** subRubyRun {{{
@@ -930,25 +895,65 @@ subRubyLoadSubtlext(void)
   **/
 
 void
-subRubyRun(void *script)
+subRubyRun(void *runnable)
 {
-  int error = 0;
+  SubSublet *s = NULL;
+  VALUE value = Qundef;
 
-  assert(script);
+  assert(runnable);
 
-  /* Safety first */
-  rb_protect(RubyProtect, (VALUE)script, &error); ///< Load sublet
-  if(error)
+  s = SUBLET(runnable);
+
+  if(s->flags & SUB_TYPE_SUBLET) ///< Sublets
     {
-      SubSublet *s = SUBLET(script);
-
-      if(s->flags & SUB_TYPE_SUBLET) ///< Sublet
+      if(Qundef == (value = rb_funcall_rescue(s->recv, rb_intern("run"), 0, NULL))) 
         {
-          RubyPerror("Sublet", False);
-          subArrayRemove(subtle->sublets, script);
+          RubyPerror(False, "Failed running sublet `%s'", s->name);
+          subArrayRemove(subtle->sublets, (void *)s);
           subSubletKill(s, True);
         }
-      else RubyPerror("Grab", False); ///< Grab
+    }
+  else if(s->flags & SUB_TYPE_GRAB) ///< Grabs
+    {
+      int id = 0, arity = 0;
+      VALUE mod = Qnil, klass = Qnil, client = Qnil;
+      SubGrab *g = GRAB(s);
+
+      if(Qundef == (value = rb_funcall_rescue(g->data.num, rb_intern("arity"), 0, NULL))) 
+        RubyPerror(False, "Failed running grab");
+      arity = FIX2INT(value);
+
+      /* Check proc arity */
+      switch(arity)
+        {
+          case 0:
+          case -1: ///< No optional arguments 
+            if(Qundef == (value = rb_funcall_rescue(g->data.num, rb_intern("call"), 0, NULL))) 
+              RubyPerror(False, "Failed running grab");
+            break;
+          case 1:
+            if(subtle->cc)
+              {
+                if(Qnil == subtlext) subRubyLoadSubtlext(); ///< Load on demand
+
+                /* Create client instance */
+                id     = subArrayIndex(subtle->clients, (void *)subtle->cc);
+                mod    = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
+                klass  = rb_const_get(mod, rb_intern("Client"));
+                client = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(subtle->cc->name));
+
+                rb_iv_set(client, "@id",      INT2FIX(id));
+                rb_iv_set(client, "@win",     LONG2NUM(subtle->cc->win));
+                rb_iv_set(client, "@gravity", INT2FIX(subtle->cc->gravity));
+
+                if(Qundef == (value = rb_funcall_rescue(g->data.num, rb_intern("call"), 1, client))) 
+                  RubyPerror(False, "Failed running grab");
+                break;
+              } ///< Fall through
+          default:
+            rb_raise(rb_eStandardError, "Failed calling proc with `%d' argument(s)", arity);
+        }
+      subSharedLogDebug("Proc: arity=%d\n", arity);
     }
 } /* }}} */
 
