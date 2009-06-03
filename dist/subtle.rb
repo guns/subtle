@@ -12,6 +12,7 @@ OPTIONS = {
   "border"  => 2,               # Border size of the windows
   "step"    => 5,               # Window move/resize key step
   "bar"     => 0,               # Bar position (0 = top, 1 = bottom)
+  "gravity" => 5,               # Default gravity (0 = gravity of active window)
   "padding" => [ 0, 0, 0, 0 ]   # Screen padding (left, right, top, bottom)
 }
 
