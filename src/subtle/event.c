@@ -465,7 +465,11 @@ EventProperty(XPropertyEvent *ev)
                 c->name  = name;
                 c->width = XTextWidth(subtle->xfs, c->name, strlen(c->name)) + 6; ///< Font offset
 
-                if(subtle->windows.focus == c->win) subClientRender(c);
+                if(subtle->windows.focus == c->win) 
+                  {
+                    subClientRender(c);
+                    subViewRender();
+                  }
               }
           }
         break;
@@ -479,6 +483,7 @@ EventProperty(XPropertyEvent *ev)
           {
             subTrayConfigure(t);
             subTrayUpdate();
+            subViewRender();
           }          
         break;
       case SUB_EWMH_XEMBED_INFO: ///< Tray
@@ -486,6 +491,7 @@ EventProperty(XPropertyEvent *ev)
           {
             subTraySetState(t);
             subTrayUpdate();
+            subViewRender();
           }
         break;
 #ifdef DEBUG
@@ -898,6 +904,7 @@ subEventLoop(void)
           subSubletUpdate();
           subTrayUpdate();
           subSubletRender();
+          subViewRender();
 
           XFlush(subtle->disp);
         }
