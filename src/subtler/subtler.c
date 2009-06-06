@@ -931,16 +931,16 @@ SubtlerUsage(int group)
          "  View   list: <window id> [-*] <name>\n");
 
   printf("\nGravities:\n" \
-         "  GravityUnknown     = %d\n" \
-         "  GravityBottomLeft  = %d\n" \
-         "  GravityBottom      = %d\n" \
-         "  GravityBottomRight = %d\n" \
-         "  GravityLeft        = %d\n" \
-         "  GravityCenter      = %d\n" \
-         "  GravityRight       = %d\n" \
-         "  GravityTop_Left    = %d\n" \
-         "  GravityTop         = %d\n" \
-         "  GravityRight       = %d\n",
+         "  GravityUnknown     = %ld\n" \
+         "  GravityBottomLeft  = %ld\n" \
+         "  GravityBottom      = %ld\n" \
+         "  GravityBottomRight = %ld\n" \
+         "  GravityLeft        = %ld\n" \
+         "  GravityCenter      = %ld\n" \
+         "  GravityRight       = %ld\n" \
+         "  GravityTop_Left    = %ld\n" \
+         "  GravityTop         = %ld\n" \
+         "  GravityRight       = %ld\n",
          SUB_GRAVITY_UNKNOWN, SUB_GRAVITY_BOTTOM_LEFT, SUB_GRAVITY_BOTTOM, SUB_GRAVITY_BOTTOM_RIGHT,
          SUB_GRAVITY_LEFT, SUB_GRAVITY_CENTER, SUB_GRAVITY_RIGHT, SUB_GRAVITY_TOP_LEFT,
          SUB_GRAVITY_TOP, SUB_GRAVITY_TOP_RIGHT);
