@@ -54,7 +54,6 @@ subTrayNew(Window win)
   subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime, XEMBED_EMBEDDED_NOTIFY,
     0, subtle->windows.tray, 0); ///< Start embedding life cycle 
 
-  printf("Adding tray (%s)\n", t->name);
   subSharedLogDebug("new=tray, name=%s, win=%#lx\n", t->name, win);
 
   return t;
@@ -212,8 +211,6 @@ void
 subTrayKill(SubTray *t)
 {
   assert(t);
-
-  printf("Killing tray (%s)\n", t->name);
 
   /* Ignore further events and delete context */
   XSelectInput(subtle->disp, t->win, NoEventMask);
