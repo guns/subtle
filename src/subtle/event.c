@@ -597,7 +597,7 @@ EventGrab(XEvent *ev)
             subRubyRun((void *)g);
             break; /* }}} */
           case SUB_GRAB_JUMP: /* {{{ */
-            if(0 <= g->data.num && g->data.num < subtle->views->ndata)
+            if(g->data.num < subtle->views->ndata)
               subViewJump(VIEW(subtle->views->data[g->data.num]));
             break; /* }}} */
           case SUB_GRAB_SUBTLE_RELOAD: /* {{{ */
