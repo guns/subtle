@@ -46,21 +46,21 @@
 #define SUB_GRAVITY_ALL   (SUB_GRAVITY_HORZ|SUB_GRAVITY_VERT|SUB_GRAVITY_MODE33|SUB_GRAVITY_MODE66)
 #define SUB_GRAVITY_MODES (SUB_GRAVITY_MODE33|SUB_GRAVITY_MODE66)
 
-#define SUB_GRAVITY_UNKNOWN       0         ///< Gravity unknown
-#define SUB_GRAVITY_BOTTOM_LEFT   1         ///< Gravity bottom left
-#define SUB_GRAVITY_BOTTOM        2         ///< Gravity bottom
-#define SUB_GRAVITY_BOTTOM_RIGHT  3         ///< Gravity bottom right
-#define SUB_GRAVITY_LEFT          4         ///< Gravity left
-#define SUB_GRAVITY_CENTER        5         ///< Gravity center
-#define SUB_GRAVITY_RIGHT         6         ///< Gravity right
-#define SUB_GRAVITY_TOP_LEFT      7         ///< Gravity top left
-#define SUB_GRAVITY_TOP           8         ///< Gravity top
-#define SUB_GRAVITY_TOP_RIGHT     9         ///< Gravity top right
+#define SUB_GRAVITY_UNKNOWN       0L        ///< Gravity unknown
+#define SUB_GRAVITY_BOTTOM_LEFT   1L        ///< Gravity bottom left
+#define SUB_GRAVITY_BOTTOM        2L        ///< Gravity bottom
+#define SUB_GRAVITY_BOTTOM_RIGHT  3L        ///< Gravity bottom right
+#define SUB_GRAVITY_LEFT          4L        ///< Gravity left
+#define SUB_GRAVITY_CENTER        5L        ///< Gravity center
+#define SUB_GRAVITY_RIGHT         6L        ///< Gravity right
+#define SUB_GRAVITY_TOP_LEFT      7L        ///< Gravity top left
+#define SUB_GRAVITY_TOP           8L        ///< Gravity top
+#define SUB_GRAVITY_TOP_RIGHT     9L        ///< Gravity top right
 
-#define SUB_WINDOW_LEFT           0         ///< Window left
-#define SUB_WINDOW_DOWN           1         ///< Window down
-#define SUB_WINDOW_UP             2         ///< Window above
-#define SUB_WINDOW_RIGHT          3         ///< Window right
+#define SUB_WINDOW_LEFT           0L        ///< Window left
+#define SUB_WINDOW_DOWN           1L        ///< Window down
+#define SUB_WINDOW_UP             2L        ///< Window above
+#define SUB_WINDOW_RIGHT          3L        ///< Window right
 /* }}} */
 
 /* Typedefs {{{ */
@@ -107,7 +107,7 @@ void subSharedRegexKill(regex_t *preg);                           ///< Kill rege
 /* }}} */
 
 /* Match {{{ */
-void subSharedMatch(int type, Window win, int gravity1, 
+void subSharedMatch(int type, Window win, int gravity1,
   int gravity2, int *match, Window *found);                       ///< Match window
 /* }}} */
 

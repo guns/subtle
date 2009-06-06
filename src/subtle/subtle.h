@@ -36,14 +36,14 @@
 #define FLAGS        int                                          ///< Flags
 #define TAGS         int                                          ///< Tags
 
-#define CLIENTID     1                                            ///< Client data id
-#define VIEWID       2                                            ///< View data id
-#define TRAYID       3                                            ///< tray data id
-#define BUTTONID     4                                            ///< Button data id
+#define CLIENTID     1L                                           ///< Client data id
+#define VIEWID       2L                                           ///< View data id
+#define TRAYID       3L                                           ///< tray data id
+#define BUTTONID     4L                                           ///< Button data id
 
-#define MINW         100                                          ///< Client min width
-#define MINH         100                                          ///< Client min height
-#define SNAP         10                                           ///< Snapping threshold
+#define MINW         100L                                         ///< Client min width
+#define MINH         100L                                         ///< Client min height
+#define SNAP         10L                                          ///< Snapping threshold
 #define SEPARTOR     "<>"                                         ///< Color separator
 
 #define LENGTH(a)    (sizeof(a) / sizeof(a[0]))                   ///< Array length
@@ -93,27 +93,27 @@
 #define VIEW(v)   ((SubView *)v)                                  ///< Cast to SubView
 
 /* XEmbed messages */
-#define XEMBED_EMBEDDED_NOTIFY         0
-#define XEMBED_WINDOW_ACTIVATE         1
-#define XEMBED_WINDOW_DEACTIVATE       2
-#define XEMBED_REQUEST_FOCUS           3
-#define XEMBED_FOCUS_IN                4
-#define XEMBED_FOCUS_OUT               5
-#define XEMBED_FOCUS_NEXT              6
-#define XEMBED_FOCUS_PREV              7
-#define XEMBED_MODALITY_ON             10
-#define XEMBED_MODALITY_OFF            11
-#define XEMBED_REGISTER_ACCELERATOR    12
-#define XEMBED_UNREGISTER_ACCELERATOR  13
-#define XEMBED_ACTIVATE_ACCELERATOR    14
+#define XEMBED_EMBEDDED_NOTIFY         0L
+#define XEMBED_WINDOW_ACTIVATE         1L
+#define XEMBED_WINDOW_DEACTIVATE       2L
+#define XEMBED_REQUEST_FOCUS           3L
+#define XEMBED_FOCUS_IN                4L
+#define XEMBED_FOCUS_OUT               5L
+#define XEMBED_FOCUS_NEXT              6L
+#define XEMBED_FOCUS_PREV              7L
+#define XEMBED_MODALITY_ON             10L
+#define XEMBED_MODALITY_OFF            11L
+#define XEMBED_REGISTER_ACCELERATOR    12L
+#define XEMBED_UNREGISTER_ACCELERATOR  13L
+#define XEMBED_ACTIVATE_ACCELERATOR    14L
 
 /* Details for XEMBED_FOCUS_IN */
-#define XEMBED_FOCUS_CURRENT           0
-#define XEMBED_FOCUS_FIRST             1
-#define XEMBED_FOCUS_LAST              2
+#define XEMBED_FOCUS_CURRENT           0L
+#define XEMBED_FOCUS_FIRST             1L
+#define XEMBED_FOCUS_LAST              2L
 
 /* Flags for _XEMBED_INFO */
-#define XEMBED_MAPPED                  (1 << 0)
+#define XEMBED_MAPPED                  (1L << 0)
 /* }}} */
 
 /* Flags {{{ */
@@ -181,8 +181,8 @@
 #define SUB_TAG_CENTER                (1L << 9)                   ///< Center tag
 
 /* Clear masks */
-#define SUB_TAG_CLEAR                  9                          ///< Clear mask
-#define SUB_GRAB_CLEAR                 14                         ///< Clear mask
+#define SUB_TAG_CLEAR                  9L                         ///< Clear mask
+#define SUB_GRAB_CLEAR                 14L                        ///< Clear mask
 /* }}} */
 
 /* Typedefs {{{ */
