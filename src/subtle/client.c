@@ -186,6 +186,9 @@ subClientNew(Window win)
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
+  if(subtle->hooks.create) ///< Create hook
+    subRubyCall(SUB_TYPE_HOOK, subtle->hooks.create, c);
+
   subSharedLogDebug("new=client, name=%s, win=%#lx\n", c->name, win);
 
   return c;
@@ -286,6 +289,7 @@ subClientFocus(SubClient *c)
 {
   assert(c);
 
+
   /* Check client input focus type */
   if(!(c->flags & SUB_PREF_INPUT) && c->flags & SUB_PREF_FOCUS)
     {
@@ -293,6 +297,9 @@ subClientFocus(SubClient *c)
         subEwmhGet(SUB_EWMH_WM_TAKE_FOCUS), CurrentTime, 0, 0, 0);
     }   
   else XSetInputFocus(subtle->disp, c->win, RevertToNone, CurrentTime);
+
+  if(subtle->hooks.focus) ///< Focus hook
+    subRubyCall(SUB_TYPE_HOOK, subtle->hooks.focus, (void *)c);
 
   subSharedLogDebug("Focus: win=%#lx, input=%d, focus=%d\n", c->win,
     !!(c->flags & SUB_PREF_INPUT), !!(c->flags & SUB_PREF_FOCUS));
@@ -597,6 +604,9 @@ subClientSetGravity(SubClient *c,
 
   /* EWMH: Gravity */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
+
+  if(subtle->hooks.gravity) ///< Gravity hook
+    subRubyCall(SUB_TYPE_HOOK, subtle->hooks.gravity, (void *)c);
 } /* }}} */
 
   /** subClientSetSize {{{ 

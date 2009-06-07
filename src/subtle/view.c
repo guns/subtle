@@ -186,6 +186,9 @@ subViewJump(SubView *v)
 
   subSharedFocus();
   subViewRender();
+
+  if(subtle->hooks.jump) ///< Jump hook
+    subRubyCall(SUB_TYPE_HOOK, subtle->hooks.jump, (void *)v);
 } /* }}} */
 
  /** subViewPublish {{{

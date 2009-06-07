@@ -329,7 +329,7 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_SUBTLE_SUBLET_UPDATE: /* {{{ */
             if((s = EventFindSublet((int)ev->data.l[0])))
               {
-                subRubyRun(s);
+                subRubyCall(SUB_TYPE_SUBLET, s->recv, NULL);
                 subSubletUpdate();
                 subSubletRender();                
               }
@@ -593,8 +593,7 @@ EventGrab(XEvent *ev)
             if(g->data.string) EventExec(g->data.string);
             break; /* }}} */
           case SUB_GRAB_PROC: /* {{{ */
-            subtle->cc = CLIENT(subSharedFind(win, CLIENTID)); ///< Set current client
-            subRubyRun((void *)g);
+            subRubyCall(SUB_TYPE_GRAB, g->data.num, CLIENT(subSharedFind(win, CLIENTID)));
             break; /* }}} */
           case SUB_GRAB_JUMP: /* {{{ */
             if(g->data.num < subtle->views->ndata)
@@ -877,7 +876,7 @@ subEventLoop(void)
 
                   if(event && (s = SUBLET(subSharedFind(subtle->windows.sublets, event->wd))))
                     {
-                      subRubyRun((void *)s);
+                      subRubyCall(SUB_TYPE_SUBLET, s->recv, NULL);
                       subSubletUpdate();
                       subSubletRender();
                     }
@@ -891,7 +890,8 @@ subEventLoop(void)
           s = 0 < subtle->sublets->ndata ? SUBLET(subtle->sublets->data[0]) : NULL;
           while(s && s->time <= now)
             {
-              if(!(s->flags & SUB_SUBLET_INOTIFY)) subRubyRun((void *)s);
+              if(!(s->flags & SUB_SUBLET_INOTIFY)) 
+                subRubyCall(SUB_TYPE_SUBLET, s->recv, NULL);
 
               s->time  = now + s->interval; ///< Adjust seconds
               s->time -= s->time % s->interval;

@@ -22,12 +22,18 @@
 static VALUE shelter = Qnil, sublets = Qnil, subtlext = Qnil; ///< Globals
 
 /* Typedef {{{ */
-typedef struct rubytable_t
+typedef struct rubygrabs_t
 {
-  char *key;
-  int value;
+  char          *key;
+  int           value;
   unsigned long extra;
-} RubyTable;
+} RubyGrabs;
+
+typedef struct rubyhooks_t
+{
+  char          *key;
+  unsigned long *hook;
+} RubyHooks;
 /* }}} */
 
 /* RubySubletMark {{{ */
@@ -258,7 +264,7 @@ RubyConfigForeach(VALUE key,
   char *name = NULL;
   SubData data = { None };
 
-  static const RubyTable table[] = /* {{{ */
+  static const RubyGrabs grabs[] = /* {{{ */
   {
     { "SubtleReload",       SUB_GRAB_SUBTLE_RELOAD,  None                     }, ///< 0
     { "SubtleQuit",         SUB_GRAB_SUBTLE_QUIT,    None                     }, 
@@ -282,14 +288,20 @@ RubyConfigForeach(VALUE key,
     { "GravityRight",       SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_RIGHT        }, 
     { "GravityBottomLeft",  SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM_LEFT  }, 
     { "GravityBottomRight", SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM_RIGHT },
-    { "GravityBottom",      SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM       }   ///< 22
+    { "GravityBottom",      SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM       } ///< 22
+  }; /* }}} */
 
-  }; /* }}} */  
+  RubyHooks hooks[] = /* {{{ */
+  {
+    { "HookJump",   &subtle->hooks.jump   }, ///< 0
+    { "HookCreate", &subtle->hooks.create },
+    { "HookFocus",  &subtle->hooks.focus  }  ///< 2
+  }; /* }}} */
 
   /* Create various types */
   switch(extra)
     {
-      case SUB_TYPE_GRAB:
+      case SUB_TYPE_GRAB: /* {{{ */
         switch(rb_type(value)) ///< Check value type
           {
             case T_STRING:
@@ -303,22 +315,22 @@ RubyConfigForeach(VALUE key,
                       data = DATA((unsigned long)(atol(name) - 1));
                     }
                 }
-              else if(!strncmp(name, "Subtle", 6)) ///< ViewJump
+              else if(!strncmp(name, "Subtle", 6)) ///< Subtle
                 {
                   for(i = 0; i < 2; i++)
-                    if(!strcmp((char *)name, table[i].key))
+                    if(!strcmp((char *)name, grabs[i].key))
                       {
-                        type = table[i].value;
-                        data = DATA(table[i].extra);
+                        type = grabs[i].value;
+                        data = DATA(grabs[i].extra);
                       }
                 }
               else if(!strncmp(name, "Window", 6)) ///< Window
                 {
                   for(i = 2; i <= 13; i++)
-                    if(!strcmp((char *)name, table[i].key))
+                    if(!strcmp((char *)name, grabs[i].key))
                       {
-                        type = table[i].value;
-                        data = DATA(table[i].extra);
+                        type = grabs[i].value;
+                        data = DATA(grabs[i].extra);
                       }
                 }    
               else if(!strncmp(name, "Gravity", 7)) ///< Gravity
@@ -326,12 +338,12 @@ RubyConfigForeach(VALUE key,
                   size_t len = strlen(name) - 4;
 
                   for(i = 14; i <= 22; i++)
-                    if(!strncmp((char *)name, table[i].key, len))
+                    if(!strncmp((char *)name, grabs[i].key, len))
                       {
                         char *kind = name + len; ///< Get suffix
 
-                        type = table[i].value;
-                        data = DATA(table[i].extra);
+                        type = grabs[i].value;
+                        data = DATA(grabs[i].extra);
 
                         /* Check horz/vert */
                         if(!strcmp(kind, "Horz")) data.num |= SUB_GRAVITY_HORZ;
@@ -343,7 +355,6 @@ RubyConfigForeach(VALUE key,
                   type = SUB_GRAB_EXEC;
                   data = DATA(strdup(name));
                 }
-
               break;
             case T_DATA: ///< Proc   
               type = SUB_GRAB_PROC;
@@ -358,15 +369,32 @@ RubyConfigForeach(VALUE key,
 
         if((entry = (void *)subGrabNew(STR2CSTR(key), type, data)) && -1 != type)
           subArrayPush(subtle->grabs, entry);
-        break;
-      case SUB_TYPE_TAG:
+        break; /* }}} */
+      case SUB_TYPE_HOOK: /* {{{ */
+        if(T_STRING == rb_type(key) && T_DATA == rb_type(value)) ///< Check value types
+          {
+            name = STR2CSTR(key);
+            if(!strncmp(name, "Hook", 4))
+              {
+                for(i = 0; i < LENGTH(hooks); i++)
+                  if(!strcmp((char *)name, hooks[i].key))
+                    {
+                      *hooks[i].hook = value; ///< Store proc
+                      rb_ary_push(shelter, value); ///< Protect from GC
+                      
+                      subSharedLogDebug("hook=%s\n", hooks[i].key);
+                    }
+              }        
+          }
+        break; /* }}} */
+      case SUB_TYPE_TAG: /* {{{ */
         if((entry = (void *)subTagNew(STR2CSTR(key), STR2CSTR(value))))
           subArrayPush(subtle->tags, entry);
-        break;
-      case SUB_TYPE_VIEW:
+        break; /* }}} */
+      case SUB_TYPE_VIEW: /* {{{ */
         if((entry = (void *)subViewNew(STR2CSTR(key), STR2CSTR(value))))
           subArrayPush(subtle->views, entry);
-        break;
+        break; /* }}} */
       default: subSharedLogDebug("Never to be reached?!\n");
     }
 
@@ -577,7 +605,7 @@ RubyDispatcher(int argc,
 
   subSharedLogDebug("Missing: method=%s\n", name);
 
-  if(Qnil == subtlext) subRubyLoadSubtlext(); ///< Load on demand
+  if(Qnil == subtlext) subRubyLoadSubtlext(); ///< Load subtlext on demand
 
   if(rb_respond_to(subtlext, rb_to_id(missing))) ///< Dispatch method calls
     return rb_funcall2(subtlext, rb_to_id(missing), --argc, ++argv);
@@ -775,6 +803,10 @@ subRubyLoadConfig(const char *file)
 
   subViewUpdate();
   subViewPublish();
+
+  /* Config: Hooks */
+  config = rb_const_get(rb_cObject, rb_intern("HOOKS"));
+  rb_hash_foreach(config, RubyConfigForeach, SUB_TYPE_HOOK);
 } /* }}} */
 
  /** subRubyLoadSublets {{{
@@ -847,8 +879,9 @@ subRubyLoadSublets(const char *path)
             {
               if(i < subtle->sublets->ndata - 1) ///< Range check
                 SUBLET(subtle->sublets->data[i])->next = SUBLET(subtle->sublets->data[i + 1]);
-              subRubyRun(SUBLET(subtle->sublets->data[i])); ///< First run
+              subRubyCall(SUB_TYPE_SUBLET, SUBLET(subtle->sublets->data[i])->recv, NULL); ///< First run
             }
+
           subtle->sublet = SUBLET(subtle->sublets->data[0]);
           subArraySort(subtle->sublets, subSubletCompare); ///< Initially sort
         }
@@ -889,38 +922,35 @@ subRubyLoadSubtlext(void)
   printf("Loaded subtlext\n");
 } /* }}} */
 
- /** subRubyRun {{{
-  * @brief Safely run ruby script
-  * @param[in]  script  A #SubSublet
+ /** subRubyCall {{{
+  * @brief Safely call ruby script
+  * @param[in]  type   Script type
+  * @param[in]  recv   Script receiver
+  * @param[in]  extra  Extra argument
+  * @retval  0  Calling script failed
+  * @retval  1  Calling script succeed
   **/
 
-void
-subRubyRun(void *runnable)
+int
+subRubyCall(int type,
+  unsigned long recv,
+  void *extra)
 {
-  SubSublet *s = NULL;
   VALUE value = Qundef;
 
-  assert(runnable);
-
-  s = SUBLET(runnable);
-
-  if(s->flags & SUB_TYPE_SUBLET) ///< Sublets
+  if(type & SUB_TYPE_SUBLET) /* {{{ */
     {
-      if(Qundef == (value = rb_funcall_rescue(s->recv, rb_intern("run"), 0, NULL))) 
-        {
-          RubyPerror(False, "Failed running sublet `%s'", s->name);
-          subArrayRemove(subtle->sublets, (void *)s);
-          subSubletKill(s, True);
-        }
-    }
-  else if(s->flags & SUB_TYPE_GRAB) ///< Grabs
+      if(Qundef == (value = rb_funcall_rescue(recv, rb_intern("run"), 0, NULL))) 
+        RubyPerror(False, "Failed calling sublet");
+    } /* }}} */
+  else if(type & (SUB_TYPE_GRAB|SUB_TYPE_HOOK)) /* {{{ */
     {
       int id = 0, arity = 0;
-      VALUE mod = Qnil, klass = Qnil, client = Qnil;
-      SubGrab *g = GRAB(s);
 
-      if(Qundef == (value = rb_funcall_rescue(g->data.num, rb_intern("arity"), 0, NULL))) 
-        RubyPerror(False, "Failed running grab");
+      /* Get arity of proc */
+      if(Qundef == (value = rb_funcall_rescue(recv, rb_intern("arity"), 0, NULL))) 
+        RubyPerror(False, "Failed running proc");
+
       arity = FIX2INT(value);
 
       /* Check proc arity */
@@ -928,33 +958,53 @@ subRubyRun(void *runnable)
         {
           case 0:
           case -1: ///< No optional arguments 
-            if(Qundef == (value = rb_funcall_rescue(g->data.num, rb_intern("call"), 0, NULL))) 
-              RubyPerror(False, "Failed running grab");
+            if(Qundef == (value = rb_funcall_rescue(recv, rb_intern("call"), 0, NULL))) 
+              RubyPerror(False, "Failed calling proc");
             break;
           case 1:
-            if(subtle->cc)
+            if(extra)
               {
-                if(Qnil == subtlext) subRubyLoadSubtlext(); ///< Load on demand
+                SubClient *c = CLIENT(extra);
+                VALUE mod = Qnil, klass = Qnil, inst = Qnil;
 
-                /* Create client instance */
-                id     = subArrayIndex(subtle->clients, (void *)subtle->cc);
-                mod    = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
-                klass  = rb_const_get(mod, rb_intern("Client"));
-                client = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(subtle->cc->name));
+                if(Qnil == subtlext) subRubyLoadSubtlext(); ///< Load subtlext on demand
+                mod = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
 
-                rb_iv_set(client, "@id",      INT2FIX(id));
-                rb_iv_set(client, "@win",     LONG2NUM(subtle->cc->win));
-                rb_iv_set(client, "@gravity", INT2FIX(subtle->cc->gravity));
+                if(c->flags & SUB_TYPE_CLIENT)
+                  {
+                    /* Create client instance */
+                    id    = subArrayIndex(subtle->clients, (void *)c);
+                    klass = rb_const_get(mod, rb_intern("Client"));
+                    inst  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(c->name));
 
-                if(Qundef == (value = rb_funcall_rescue(g->data.num, rb_intern("call"), 1, client))) 
-                  RubyPerror(False, "Failed running grab");
+                    rb_iv_set(inst, "@id",      INT2FIX(id));
+                    rb_iv_set(inst, "@win",     LONG2NUM(c->win));
+                    rb_iv_set(inst, "@gravity", INT2FIX(c->gravity));
+                  }
+                else if(c->flags & SUB_TYPE_VIEW)
+                  {
+                    SubView *v = VIEW(c);
+
+                    /* Create view instance */
+                    id    = subArrayIndex(subtle->views, (void *)v);
+                    klass = rb_const_get(mod, rb_intern("View"));
+                    inst  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(v->name));
+
+                    rb_iv_set(inst, "@id",  INT2FIX(id));
+                    rb_iv_set(inst, "@win", LONG2NUM(v->button));
+                  }
+
+                if(Qundef == (value = rb_funcall_rescue(recv, rb_intern("call"), 1, inst))) 
+                  RubyPerror(False, "Failed calling proc");
                 break;
               } ///< Fall through
           default:
             rb_raise(rb_eStandardError, "Failed calling proc with `%d' argument(s)", arity);
         }
-      subSharedLogDebug("Proc: arity=%d\n", arity);
+      subSharedLogDebug("Proc: arity=%d\n", arity);      
     }
+
+  return 0;
 } /* }}} */
 
  /** subRubyFinish {{{

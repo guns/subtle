@@ -120,11 +120,12 @@
 /* Data types */
 #define SUB_TYPE_CLIENT               (1L << 1)                   ///< Client
 #define SUB_TYPE_GRAB                 (1L << 2)                   ///< Grab
-#define SUB_TYPE_SUBLET               (1L << 3)                   ///< Sublet
-#define SUB_TYPE_TAG                  (1L << 4)                   ///< Tag
-#define SUB_TYPE_TEXT                 (1L << 5)                   ///< Text
-#define SUB_TYPE_TRAY                 (1L << 6)                   ///< Tray
-#define SUB_TYPE_VIEW                 (1L << 7)                   ///< View
+#define SUB_TYPE_HOOK                 (1L << 3)                   ///< Hook
+#define SUB_TYPE_SUBLET               (1L << 4)                   ///< Sublet
+#define SUB_TYPE_TAG                  (1L << 5)                   ///< Tag
+#define SUB_TYPE_TEXT                 (1L << 6)                   ///< Text
+#define SUB_TYPE_TRAY                 (1L << 7)                   ///< Tray
+#define SUB_TYPE_VIEW                 (1L << 8)                   ///< View
 
 /* Client states */
 #define SUB_STATE_FULL                (1L << 10)                  ///< Fullscreen window
@@ -343,7 +344,6 @@ typedef struct subsubtle_t /* {{{ */
   XRectangle         strut;                                       ///< Subtle strut
 
   struct subview_t   *cv;                                         ///< Subtle current view
-  struct subclient_t *cc;                                         ///< Subtle current client
 
   struct subsublet_t *sublet;                                     ///< Subtle first sublet
 
@@ -381,6 +381,11 @@ typedef struct subsubtle_t /* {{{ */
   {
     Cursor           arrow, move, resize;
   } cursors;                                                      ///< Subtle cursors
+
+  struct
+  {
+    unsigned long    jump, create, focus, gravity;                ///< Subtle hooks
+  } hooks;
 } SubSubtle; /* }}} */
 
 typedef struct subtag_t /* {{{ */
@@ -490,7 +495,7 @@ void subRubyInit(void);                                           ///< Init Ruby
 void subRubyLoadConfig(const char *file);                         ///< Load config file
 void subRubyLoadSublets(const char *path);                        ///< Load sublets
 void subRubyLoadSubtlext(void);                                   ///< Load subtlext
-void subRubyRun(void *script);                                    ///< Run Ruby script
+int subRubyCall(int type, unsigned long recv, void *extra);       ///< Call Ruby script
 void subRubyFinish(void);                                         ///< Kill Ruby stack
 /* }}} */
 
