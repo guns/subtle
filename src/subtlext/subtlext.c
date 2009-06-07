@@ -71,6 +71,7 @@ SubtlextFind(int type,
           {
             /* Create new instance */
             obj = rb_funcall(klass, rb_intern("new"), 1, value);
+
             rb_iv_set(obj, "@id",   INT2FIX(id));
             rb_iv_set(obj, "@name", value);
             if(SUB_TYPE_VIEW == type) rb_iv_set(obj, "@win", LONG2NUM(win));

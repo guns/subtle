@@ -116,7 +116,7 @@ subGrabNew(const char *chain,
       tok = strtok(NULL, "-");
     }
 
-  subSharedLogDebug("type=%s, chain=%s, code=%03d, mod=%02d\n",
+  subSharedLogDebug("new=grab, type=%s, chain=%s, code=%03d, mod=%02d\n",
     g->flags & SUB_GRAB_KEY ? "k" : "m", chain, g->code, g->mod);
   
   return g;
@@ -239,6 +239,8 @@ subGrabKill(SubGrab *g)
 
   if(g->flags & SUB_GRAB_EXEC && g->data.string) free(g->data.string);
   free(g);
+
+  subSharedLogDebug("kill=grab\n");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
