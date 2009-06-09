@@ -45,6 +45,7 @@
 #define MINH         100L                                         ///< Client min height
 #define SNAP         10L                                          ///< Snapping threshold
 #define SEPARTOR     "<>"                                         ///< Color separator
+#define EXECTIME     1                                            ///< Max execution time
 
 #define LENGTH(a)    (sizeof(a) / sizeof(a[0]))                   ///< Array length
 #define WINW(c)      (c->rect.width - 2 * subtle->bw)             ///< Get real width
