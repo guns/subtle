@@ -12,12 +12,6 @@
 
 #include "subtle.h"
 
-/* Typedef {{{ */
-typedef struct xembedinfo_t
-{
-  CARD32 version, flags;
-} XEmbedInfo; /* }}} */
-
  /** subTrayNew {{{
   * @brief Create new tray
   * @param[in]  win  Tray window
@@ -148,7 +142,7 @@ subTraySelect(void)
   subEwmhMessage(ROOT, ROOT, SUB_EWMH_MANAGER, CurrentTime, 
     subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION), subtle->windows.tray, 0, 0);
 } /* }}} */
-
+  
  /** subTrayFocus {{{
   * @brief Set focus to tray
   * @param[in]  t  A #SubTray
@@ -173,15 +167,14 @@ void
 subTraySetState(SubTray *t)
 {
   int opcode = 0;
-  XEmbedInfo *info = NULL;
+  long flags = 0;
 
   assert(t);
 
   /* Get xembed data */
-  if((info = (XEmbedInfo *)subEwmhGetProperty(t->win, subEwmhGet(SUB_EWMH_XEMBED_INFO), 
-    SUB_EWMH_XEMBED_INFO, NULL)))
+  if((flags = subEwmhGetXEmbedState(t->win)))
     {
-      if(info->flags & XEMBED_MAPPED) ///< Map if wanted
+      if(flags & XEMBED_MAPPED) ///< Map if wanted
         {
           opcode = XEMBED_WINDOW_ACTIVATE;
           XMapRaised(subtle->disp, t->win); 
@@ -195,10 +188,6 @@ subTraySetState(SubTray *t)
         }
 
       subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime, opcode, 0, 0, 0);
-      subSharedLogDebug("XEmbedInfo: version=%ld, flags=%ld, mapped=%ld\n", info->version,
-        info->flags, info->flags & XEMBED_MAPPED);
-
-      XFree(info);
     }
 } /* }}} */
 

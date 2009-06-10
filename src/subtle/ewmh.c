@@ -15,6 +15,12 @@
 
 static Atom atoms[SUB_EWMH_TOTAL];
 
+/* Typedef {{{ */
+typedef struct xembedinfo_t
+{
+  CARD32 version, flags;
+} XEmbedInfo; /* }}} */
+
  /** subEwmhInit {{{
   * @brief Init and register ICCCM/EWMH atoms
   **/
@@ -174,6 +180,32 @@ subEwmhGetWMState(Window win)
     }
 
   return state;
+} /* }}} */
+
+ /** subEwmhGetXEmbedState {{{
+  * @brief Get window Xembed state
+  * @param[in]  win  A window
+  **/
+
+long
+subEwmhGetXEmbedState(Window win)
+{
+  long flags = 0;
+  XEmbedInfo *info = NULL;
+
+  /* Get xembed data */
+  if((info = (XEmbedInfo *)subEwmhGetProperty(win, subEwmhGet(SUB_EWMH_XEMBED_INFO), 
+    SUB_EWMH_XEMBED_INFO, NULL))) 
+    {
+      flags = (long)info->flags;
+
+      subSharedLogDebug("XEmbedInfo: win=%#lx, version=%ld, flags=%ld, mapped=%ld\n", 
+        win, info->version, info->flags, info->flags & XEMBED_MAPPED);
+      
+      XFree(info);
+    }
+
+  return flags;
 } /* }}} */
 
  /** subEwmhSetWindows {{{

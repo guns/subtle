@@ -135,11 +135,12 @@
 #define SUB_STATE_DEAD                (1L << 13)                  ///< Dead window
 
 /* Client preferences */
-#define SUB_PREF_INPUT                (1L << 15)                  ///< Active/passive focus-model
-#define SUB_PREF_FOCUS                (1L << 16)                  ///< Send focus message
-#define SUB_PREF_CLOSE                (1L << 17)                  ///< Send close message
-#define SUB_PREF_POS                  (1L << 18)                  ///< Client position
-#define SUB_PREF_SIZE                 (1L << 19)                  ///< Client size
+#define SUB_PREF_FOCUS                (1L << 15)                  ///< Send focus message
+#define SUB_PREF_CLOSE                (1L << 16)                  ///< Send close message
+#define SUB_PREF_INPUT                (1L << 17)                  ///< Active/passive focus-model
+#define SUB_PREF_GROUP                (1L << 18)                  ///< Window group
+#define SUB_PREF_POS                  (1L << 19)                  ///< Client position
+#define SUB_PREF_SIZE                 (1L << 20)                  ///< Client size
 
 /* Sublet types */
 #define SUB_SUBLET_INOTIFY            (1L << 10)                  ///< Inotify sublet
@@ -200,7 +201,7 @@ typedef struct subclient_t /* {{{ */
   char       *name, *klass;                                       ///< Client name, wmclass
 
   TAGS       tags;                                                ///< Client tags
-  Window     win;                                                 ///< Client window
+  Window     win, group;                                          ///< Client window
   Colormap   cmap;                                                ///< Client colormap
   XRectangle rect;                                                ///< Client rect
 
@@ -462,20 +463,21 @@ void subEventLoop(void);                                          ///< Event loo
 void subEwmhInit(void);                                           ///< Init atoms/hints
 Atom subEwmhGet(SubEwmh e);                                       ///< Get atom
 SubEwmh subEwmhFind(Atom atom);                                   ///< Find atom id
-char *subEwmhGetProperty(Window win, 
+char *subEwmhGetProperty(Window win,
   Atom type, SubEwmh e, unsigned long *size);                     ///< Get property
 long subEwmhGetWMState(Window win);                               ///< Get window WM state
-void subEwmhSetWindows(Window win, SubEwmh e, 
+long subEwmhGetXEmbedState(Window win);                           ///< Get window XEmbed state
+void subEwmhSetWindows(Window win, SubEwmh e,
   Window *values, int size);                                      ///< Set window properties
 void subEwmhSetCardinals(Window win, SubEwmh e,
   long *values, int size);                                        ///< Set cardinal properties
-void subEwmhSetString(Window win, SubEwmh e, 
+void subEwmhSetString(Window win, SubEwmh e,
   char *value);                                                   ///< Set string property
 void subEwmhSetStrings(Window win, SubEwmh e,                     ///< Set string properties
   char **values, int size);
 void subEwmhSetWMState(Window win, long state);                   ///< Set window WM state
-int subEwmhMessage(Window dst, Window win, SubEwmh e, 
-  long data0, long data1, long data2, long data3, 
+int subEwmhMessage(Window dst, Window win, SubEwmh e,
+  long data0, long data1, long data2, long data3,
   long data4);                                                    ///< Send message
 /* }}} */
 
