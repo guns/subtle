@@ -241,7 +241,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_NET_WM_NAME,                                           ///< Name of client
   SUB_EWMH_NET_WM_PID,                                            ///< PID of client
   SUB_EWMH_NET_WM_DESKTOP,                                        ///< Desktop client is on
-  SUB_EWMH_NET_WM_STRUT,                                          ///< Screen strut
+  SUB_EWMH_NET_WM_STRUT,                                          ///< Strut
   SUB_EWMH_NET_SHOWING_DESKTOP,                                   ///< Showing desktop mode 
 
   SUB_EWMH_NET_WM_STATE,                                          ///< Window state

@@ -728,10 +728,10 @@ subClientSetStrut(SubClient *c)
       if(4 == size)
         {
           /* Take the bigger struts */
-          subtle->strut.x      = MAX(subtle->strut.x, strut[0]);
-          subtle->strut.y      = MAX(subtle->strut.y, strut[1]);
-          subtle->strut.width  = MAX(subtle->strut.width, strut[2]);
-          subtle->strut.height = MAX(subtle->strut.height, strut[3]);
+          subtle->strut.x      = MAX(subtle->strut.x, strut[0]);      ///< Left
+          subtle->strut.y      = MAX(subtle->strut.y, strut[1]);      ///< Right
+          subtle->strut.width  = MAX(subtle->strut.width, strut[2]);  ///< Top
+          subtle->strut.height = MAX(subtle->strut.height, strut[3]); ///< Bottom
 
           subSharedLogDebug("Strut: x=%ld, y=%d, width=%d, height=%d\n", subtle->strut.x,
             subtle->strut.y, subtle->strut.width, subtle->strut.height);

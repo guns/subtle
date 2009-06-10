@@ -192,9 +192,11 @@ subDisplayScan(void)
 void
 subDisplaySetStrut(void)
 {
-  subtle->screen.y      += subtle->bar ? 0 : subtle->th;
-  subtle->screen.width   = SCREENW - subtle->strut.width;
-  subtle->screen.height  = SCREENH - subtle->strut.height - subtle->th;
+  /* x => left, y => right, width => top, height => bottom */
+  subtle->screen.x      = subtle->strut.x;
+  subtle->screen.y      = (subtle->bar ? 0 : subtle->th) + subtle->strut.width;
+  subtle->screen.width  = SCREENW - subtle->strut.x - subtle->strut.y;
+  subtle->screen.height = SCREENH - subtle->th - subtle->strut.height - subtle->strut.width;
 } /* }}} */
 
  /** subDisplayPublish {{{

@@ -242,10 +242,10 @@ RubyGetRect(VALUE hash,
         }
     }
 
-  strut->x      = data[0];
-  strut->y      = data[1];
-  strut->width  = data[2];
-  strut->height = data[3];
+  strut->x      = data[0]; ///< Left
+  strut->y      = data[1]; ///< Right
+  strut->width  = data[2]; ///< Top
+  strut->height = data[3]; ///< Bottom
 } /* }}} */
 
 /* RubyConfigForeach {{{ */
