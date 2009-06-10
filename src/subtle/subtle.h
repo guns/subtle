@@ -343,7 +343,7 @@ typedef struct subsubtle_t /* {{{ */
   Display            *disp;                                       ///< Subtle Xorg display
   XFontStruct        *xfs;                                        ///< Subtle font
 
-  XRectangle         strut;                                       ///< Subtle strut
+  XRectangle         strut, screen;                               ///< Subtle strut, screen
 
   struct subview_t   *cv;                                         ///< Subtle current view
 
@@ -442,6 +442,7 @@ void subClientUpdate(int vid);                                    ///< Update cl
 void subClientSetGravity(SubClient *c, int type);                 ///< Set client gravity
 void subClientSetSize(SubClient *c);                              ///< Set client sizes
 void subClientSetTags(SubClient *c);                              ///< Set client tags
+void subClientSetStrut(SubClient *c);                             ///< Set client strut
 void subClientToggle(SubClient *c, int type);                     ///< Toggle client state
 void subClientPublish(void);                                      ///< Publish all clients
 void subClientKill(SubClient *c, int close);                      ///< Kill client
@@ -451,6 +452,7 @@ void subClientKill(SubClient *c, int close);                      ///< Kill clie
 void subDisplayInit(const char *display);                         ///< Create display
 void subDisplayConfigure(void);                                   ///< Configure display
 void subDisplayScan(void);                                        ///< Scan root window
+void subDisplaySetStrut(void);                                    ///< Set strut size
 void subDisplayPublish(void);                                     ///< Publish display
 void subDisplayFinish(void);                                      ///< Kill display
 /* }}} */

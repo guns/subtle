@@ -116,11 +116,6 @@ subDisplayConfigure(void)
   gvals.font       = subtle->xfs->fid;
   XChangeGC(subtle->disp, subtle->gcs.font, GCForeground|GCFont, &gvals);
 
-  /* Update strut */
-  subtle->strut.y      += subtle->bar ? 0 : subtle->th;
-  subtle->strut.width   = SCREENW - subtle->strut.width;
-  subtle->strut.height  = SCREENH - subtle->strut.height - subtle->th;
-
   /* Update windows */
   XSetWindowBackground(subtle->disp,  subtle->windows.bar,     subtle->colors.norm);
   XSetWindowBackground(subtle->disp,  subtle->windows.caption, subtle->colors.focus);
@@ -145,6 +140,8 @@ subDisplayConfigure(void)
   XMapWindow(subtle->disp, subtle->windows.tray);
   XMapWindow(subtle->disp, subtle->windows.sublets);  
   XMapRaised(subtle->disp, subtle->windows.bar);
+
+  subDisplaySetStrut(); ///< Update strut
 } /* }}} */
 
  /** subDisplayScan {{{
@@ -186,6 +183,18 @@ subDisplayScan(void)
   subViewJump(VIEW(subtle->views->data[0]));
   subtle->windows.focus = ROOT;
   subGrabSet(ROOT);
+} /* }}} */
+
+ /** subDisplaySetStrut {{{
+  * @brief Update strut size
+  **/
+
+void
+subDisplaySetStrut(void)
+{
+  subtle->screen.y      += subtle->bar ? 0 : subtle->th;
+  subtle->screen.width   = SCREENW - subtle->strut.width;
+  subtle->screen.height  = SCREENH - subtle->strut.height - subtle->th;
 } /* }}} */
 
  /** subDisplayPublish {{{

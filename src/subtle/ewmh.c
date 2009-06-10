@@ -142,7 +142,8 @@ subEwmhGetProperty(Window win,
 
       return NULL;
     }
-  if(type != rtype)
+
+  if(type != rtype) ///< Compare types
     {
       char *name = XGetAtomName(subtle->disp, atoms[e]); 
       subSharedLogDebug("Property: %s => %ld != %ld'\n", name, type, rtype);
@@ -150,6 +151,7 @@ subEwmhGetProperty(Window win,
       XFree(data);
       return NULL;
     }
+
   if(size) *size = (unsigned long)(format / 8) * nitems;
 
   return (char *)data;

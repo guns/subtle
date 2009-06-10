@@ -102,6 +102,7 @@ subClientNew(Window win)
   XSaveContext(subtle->disp, c->win, CLIENTID, (void *)c);
   subClientSetSize(c);
   subClientSetTags(c);
+  subClientSetStrut(c);
 
   /* Window attributes */
   XGetWindowAttributes(subtle->disp, c->win, &attrs);
@@ -132,6 +133,11 @@ subClientNew(Window win)
     {
       if(hints->flags & XUrgencyHint)              c->tags  |= SUB_TAG_STICK;
       if(hints->flags & InputHint && hints->input) c->flags |= SUB_PREF_INPUT;
+      if(hints->flags & WindowGroupHint)           
+        {
+          c->flags |= SUB_PREF_GROUP;
+          c->group  = hints->window_group;
+        }
 
       XFree(hints);
     }
@@ -523,22 +529,22 @@ subClientSetGravity(SubClient *c,
   grav = type & ~SUB_GRAVITY_ALL;
 
   /* Compute slot */
-  slot.height = subtle->strut.height / props[grav].cells_y;
-  slot.width  = subtle->strut.width / props[grav].cells_x;
-  slot.x      = subtle->strut.x + props[grav].grav_right * slot.width;
-  slot.y      = subtle->strut.y + props[grav].grav_down * slot.height;
+  slot.height = subtle->screen.height / props[grav].cells_y;
+  slot.width  = subtle->screen.width / props[grav].cells_x;
+  slot.x      = subtle->screen.x + props[grav].grav_right * slot.width;
+  slot.y      = subtle->screen.y + props[grav].grav_down * slot.height;
 
   /* Toggle between modes */
   if(type & SUB_GRAVITY_HORZ &&
     (type & SUB_GRAVITY_MODES || (c->rect.y == slot.y && c->rect.height == slot.height)))
     {
-      int width33 = subtle->strut.width / 3;
-      int width66 = subtle->strut.width - width33;
-      int compw   = abs(subtle->strut.width - 3 * width33); ///< Int rounding fix
+      int width33 = subtle->screen.width / 3;
+      int width66 = subtle->screen.width - width33;
+      int compw   = abs(subtle->screen.width - 3 * width33); ///< Int rounding fix
 
       if(2 == props[grav].cells_x)
         {
-          int x = subtle->strut.x + props[grav].grav_right * width33;
+          int x = subtle->screen.x + props[grav].grav_right * width33;
 
           if(type & SUB_GRAVITY_MODE66 ||
             (!(type & SUB_GRAVITY_MODES) && c->rect.width == slot.width && c->rect.x == slot.x)) ///< 33%
@@ -550,7 +556,7 @@ subClientSetGravity(SubClient *c,
           else if(type & SUB_GRAVITY_MODE33 ||
             (!(type & SUB_GRAVITY_MODES) && c->rect.width == width66 && c->rect.x == x)) ///< 66%
             {
-              slot.x     = subtle->strut.x + props[grav].grav_right * width66;
+              slot.x     = subtle->screen.x + props[grav].grav_right * width66;
               slot.width = width33;
               mode       = SUB_GRAVITY_HORZ|SUB_GRAVITY_MODE33;
             }
@@ -558,7 +564,7 @@ subClientSetGravity(SubClient *c,
       else if(type & SUB_GRAVITY_MODE33 ||
         (!(type & SUB_GRAVITY_MODES) && c->rect.width == slot.width && c->rect.x == slot.x))
         {
-          slot.x     = subtle->strut.x + width33;
+          slot.x     = subtle->screen.x + width33;
           slot.width = width33 + compw;
           mode       = SUB_GRAVITY_HORZ|SUB_GRAVITY_MODE33;
         }
@@ -566,13 +572,13 @@ subClientSetGravity(SubClient *c,
   else if(type & SUB_GRAVITY_VERT && 
     (type & SUB_GRAVITY_MODES || (c->rect.x == slot.x && c->rect.width == slot.width)))
     {
-      int height33 = subtle->strut.height / 3;
-      int height66 = subtle->strut.height - height33;
-      int comph    = abs(subtle->strut.height - 3 * height33); ///< Int rounding fix
+      int height33 = subtle->screen.height / 3;
+      int height66 = subtle->screen.height - height33;
+      int comph    = abs(subtle->screen.height - 3 * height33); ///< Int rounding fix
 
       if(2 == props[grav].cells_y)
         {
-          int y = subtle->strut.y + props[grav].grav_down * height33;
+          int y = subtle->screen.y + props[grav].grav_down * height33;
 
           if(type & SUB_GRAVITY_MODE66 || 
             (!(type & SUB_GRAVITY_MODES) && c->rect.height == slot.height && c->rect.y == slot.y)) ///< 33%
@@ -584,7 +590,7 @@ subClientSetGravity(SubClient *c,
           else if(type & SUB_GRAVITY_MODE33 ||
             (!(type & SUB_GRAVITY_MODES) && c->rect.height == height66 && c->rect.y == y)) ///< 66%
             {
-              slot.y      = subtle->strut.y + props[grav].grav_down * height66;
+              slot.y      = subtle->screen.y + props[grav].grav_down * height66;
               slot.height = height33;
               mode        = SUB_GRAVITY_VERT|SUB_GRAVITY_MODE33;
             }
@@ -592,7 +598,7 @@ subClientSetGravity(SubClient *c,
       else if(type & SUB_GRAVITY_MODE33 ||
         (!(type & SUB_GRAVITY_MODES) && c->rect.height == slot.height && c->rect.y == slot.y))
         {
-          slot.y      = subtle->strut.y + height33;
+          slot.y      = subtle->screen.y + height33;
           slot.height = height33 + comph;
           mode        = SUB_GRAVITY_VERT|SUB_GRAVITY_MODE33;
         }
@@ -700,6 +706,39 @@ subClientSetTags(SubClient *c)
           c->tags |= (1L << (i + 1));
     }
   if(1 < (c->tags >> SUB_TAG_CLEAR)) c->tags &= ~SUB_TAG_DEFAULT;  
+} /* }}} */
+
+  /** subClientSetStrut {{{ 
+   * @brief Set client strut
+   * @param[in]  c  A #SubClient
+   **/
+
+void
+subClientSetStrut(SubClient *c)
+{
+  unsigned long size = 0;
+  long *strut = NULL;
+
+  assert(c);
+
+  /* Get strut property */
+  if((strut = (long *)subEwmhGetProperty(c->win, XA_CARDINAL, 
+    SUB_EWMH_NET_WM_STRUT, &size)))
+    {
+      if(4 == size)
+        {
+          /* Take the bigger struts */
+          subtle->strut.x      = MAX(subtle->strut.x, strut[0]);
+          subtle->strut.y      = MAX(subtle->strut.y, strut[1]);
+          subtle->strut.width  = MAX(subtle->strut.width, strut[2]);
+          subtle->strut.height = MAX(subtle->strut.height, strut[3]);
+
+          subSharedLogDebug("Strut: x=%ld, y=%d, width=%d, height=%d\n", subtle->strut.x,
+            subtle->strut.y, subtle->strut.width, subtle->strut.height);
+        }
+
+      XFree(strut);
+    }
 } /* }}} */
 
  /** subClientToggle {{{
@@ -814,7 +853,7 @@ subClientKill(SubClient *c,
 
   if(c->gravities) free(c->gravities);
   if(c->klass) XFree(c->klass);
-  if(c->name)  XFree(c->name);
+  if(c->name) XFree(c->name);
   free(c);
 
   subSharedLogDebug("kill=client\n");
