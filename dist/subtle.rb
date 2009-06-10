@@ -136,11 +136,6 @@ VIEWS = {
 #
 # Hooks
 #
-HOOKS = {
-  "HookJump"    => lambda { |v| puts v.name + " can haz jump?"    },
-  "HookCreate"  => lambda { |c| puts c.name + " can haz create?"  },
-  "HookFocus"   => lambda { |c| puts c.name + " can haz focus?"   },
-  "HookGravity" => lambda { |c| puts c.name + " can hat gravity?" }
-}
+HOOKS = { }
 
 # vim:ts=2:bs=2:sw=2:et:fdm=marker
