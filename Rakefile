@@ -25,10 +25,12 @@ require("ftools")
 @options = {
   "destdir"    => "",
   "xdg_config" => @xdg_config + "/$(PKG_NAME)",
-  "xdg_data"   => @xdg_data + "/$(PKG_NAME)/sublets",
+  "xdg_data"   => @xdg_data + "/$(PKG_NAME)",
   "bindir"     => "$(destdir)/usr/bin",
   "sysconfdir" => "$(destdir)/$(xdg_config)",
   "datadir"    => "$(destdir)/$(xdg_data)",
+  "subletdir"  => "$(destdir)/$(xdg_data)/sublets",
+  "scriptdir"  => "$(destdir)/$(xdg_data)/scripts",
   "extdir"     => "$(destdir)/$(sitelibdir)/$(PKG_NAME)",
   "debug"      => "no",
   "builddir"   => "build",
@@ -47,7 +49,7 @@ require("ftools")
   "PKG_CONFIG"    => "subtle.rb",
   "RUBY_VERSION"  => "$(MAJOR).$(MINOR).$(TEENY)",
   "DIR_CONFIG"    => "$(xdg_config)",
-  "DIR_SUBLET"    => "$(xdg_data)"
+  "DIR_SUBLET"    => "$(xdg_data)/sublets"
 }  # }}}
 
 # Lists {{{
@@ -265,6 +267,8 @@ task(:install => [:config, :build]) do
     @options["bindir"],
     @options["sysconfdir"],
     @options["datadir"],
+    @options["subletdir"],
+    @options["scriptdir"],
     @options["extdir"]
   )
 
@@ -277,9 +281,14 @@ task(:install => [:config, :build]) do
   message("INSTALL %s\n" % [PG_RBE])
   File.install(PG_RBE + ".so", @options["extdir"], 0644, false)
 
+  FileList["dist/scripts/*.*"].collect do |f|
+    message("INSTALL %s\n" % [File.basename(f)])
+    File.install(f, @options["scriptdir"], 0644, false)
+  end
+
   FileList["dist/sublets/*.rb"].collect do |f|
     message("INSTALL %s\n" % [File.basename(f)])
-    File.install(f, @options["datadir"], 0644, false)
+    File.install(f, @options["subletdir"], 0644, false)
   end
 
   message("INSTALL %s\n" % [@defines["PKG_CONFIG"]])
