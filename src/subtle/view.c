@@ -34,7 +34,7 @@ subViewNew(char *name,
 
   /* Create button */
   v->button = XCreateSimpleWindow(subtle->disp, subtle->windows.views, 0, 0, 1,
-    subtle->th, 0, subtle->colors.border, subtle->colors.norm);
+    subtle->th, 0, subtle->colors.norm, subtle->colors.norm);
 
   XSaveContext(subtle->disp, v->button, BUTTONID, (void *)v);
   XMapRaised(subtle->disp, v->button);
@@ -144,6 +144,7 @@ subViewRender(void)
   if(0 < subtle->views->ndata)
     {
       int i;
+      XGCValues gvals;
 
       /* Bar window */
       XClearWindow(subtle->disp, subtle->windows.bar);
@@ -155,8 +156,20 @@ subViewRender(void)
         {
           SubView *v = VIEW(subtle->views->data[i]);
 
-          XSetWindowBackground(subtle->disp, v->button, 
-            (subtle->cv == v) ? subtle->colors.focus : subtle->colors.norm);
+          /* Select color pair */
+          if(subtle->cv == v)
+            {
+              gvals.foreground = subtle->colors.fg_focus;
+              gvals.background = subtle->colors.bg_focus;
+            }
+          else
+            {
+              gvals.foreground = subtle->colors.fg_bar;
+              gvals.background = subtle->colors.bg_bar;
+            }
+
+          XChangeGC(subtle->disp, subtle->gcs.font, GCForeground, &gvals);
+          XSetWindowBackground(subtle->disp, v->button, gvals.background); 
           XClearWindow(subtle->disp, v->button);
           XDrawString(subtle->disp, v->button, subtle->gcs.font, 3, subtle->fy - 1,
             v->name, strlen(v->name));
@@ -176,6 +189,9 @@ subViewJump(SubView *v)
 
   assert(v);
 
+  if(subtle->hooks.jump) ///< Jump hook
+    subRubyCall(SUB_TYPE_HOOK, subtle->hooks.jump, (void *)v);
+
   subtle->cv = v;
 
   subViewConfigure(v);
@@ -187,8 +203,6 @@ subViewJump(SubView *v)
   subSharedFocus();
   subViewRender();
 
-  if(subtle->hooks.jump) ///< Jump hook
-    subRubyCall(SUB_TYPE_HOOK, subtle->hooks.jump, (void *)v);
 } /* }}} */
 
  /** subViewPublish {{{

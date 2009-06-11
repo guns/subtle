@@ -44,7 +44,7 @@
 #define MINW         100L                                         ///< Client min width
 #define MINH         100L                                         ///< Client min height
 #define SNAP         10L                                          ///< Snapping threshold
-#define SEPARTOR     "<>"                                         ///< Color separator
+#define SEPARATOR    "<>"                                         ///< Color separator
 #define EXECTIME     1                                            ///< Max execution time
 
 #define LENGTH(a)    (sizeof(a) / sizeof(a[0]))                   ///< Array length
@@ -371,7 +371,7 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    unsigned long    font, border, norm, focus, bg;
+    unsigned long    fg_bar,  bg_bar, fg_focus, bg_focus, norm, bg;
   } colors;                                                       ///< Subtle colors
 
   struct

@@ -68,6 +68,10 @@ subSubletRender(void)
 
       XClearWindow(subtle->disp, subtle->windows.sublets);
 
+      /* Init GC */
+      gvals.foreground = subtle->colors.fg_bar;
+      XChangeGC(subtle->disp, subtle->gcs.font, GCForeground, &gvals);
+
       /* Render every sublet */
       while(s)
         {
@@ -89,10 +93,6 @@ subSubletRender(void)
 
           s = s->next;
         }
-
-      /* Reset GC */
-      gvals.foreground = subtle->colors.font;
-      XChangeGC(subtle->disp, subtle->gcs.font, GCForeground, &gvals);
 
       XFlush(subtle->disp);
     }

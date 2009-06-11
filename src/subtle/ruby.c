@@ -288,9 +288,10 @@ RubyConfigForeach(VALUE key,
 
   RubyHooks hooks[] = /* {{{ */
   {
-    { "HookJump",   &subtle->hooks.jump   }, ///< 0
-    { "HookCreate", &subtle->hooks.create },
-    { "HookFocus",  &subtle->hooks.focus  }  ///< 2
+    { "HookJump",    &subtle->hooks.jump    }, ///< 0
+    { "HookCreate",  &subtle->hooks.create  },
+    { "HookFocus",   &subtle->hooks.focus   },
+    { "HookGravity", &subtle->hooks.gravity } ///< 3
   }; /* }}} */
 
   /* Create various types */
@@ -400,7 +401,7 @@ RubyConfigForeach(VALUE key,
 static unsigned long
 RubyParseColor(char *name)
 {
-  XColor color = { subtle->colors.font }; ///< Default color
+  XColor color = { subtle->colors.norm }; ///< Default color
 
   /* Parse and store color */
   if(!XParseColor(subtle->disp, COLORMAP, name, &color))
@@ -421,8 +422,8 @@ RubyParseText(char *string,
 {
   int i = 0;
   SubText *t = NULL;
-  unsigned long color = subtle->colors.font;
-  char *tok = strtok(string, SEPARTOR);
+  unsigned long color = subtle->colors.fg_bar;
+  char *tok = strtok(string, SEPARATOR);
   *width = 0;
 
   while(tok)
@@ -449,7 +450,7 @@ RubyParseText(char *string,
           *width          += t->width;
         }
 
-      tok = strtok(NULL, SEPARTOR);
+      tok = strtok(NULL, SEPARATOR);
     }
 } /* }}} */
 
@@ -726,11 +727,12 @@ subRubyLoadConfig(const char *file)
 
   /* Config: Colors */
   config                = rb_const_get(rb_cObject, rb_intern("COLORS"));
-  subtle->colors.border = RubyParseColor(RubyGetString(config, "border",     "#bdbabd"));
-  subtle->colors.norm   = RubyParseColor(RubyGetString(config, "normal",     "#22aa99"));
-  subtle->colors.focus  = RubyParseColor(RubyGetString(config, "focus",      "#ffa500"));
-  subtle->colors.bg     = RubyParseColor(RubyGetString(config, "background", "#336699"));
-  subtle->colors.font   = RubyParseColor(RubyGetString(config, "font",       "#000000"));
+  subtle->colors.fg_bar   = RubyParseColor(RubyGetString(config, "fg_bar",     "#e2e2e5"));
+  subtle->colors.bg_bar   = RubyParseColor(RubyGetString(config, "bg_bar",     "#444444"));
+  subtle->colors.fg_focus = RubyParseColor(RubyGetString(config, "fg_focus",   "#000000"));
+  subtle->colors.bg_focus = RubyParseColor(RubyGetString(config, "bg_focus",   "#bdbabd"));
+  subtle->colors.norm     = RubyParseColor(RubyGetString(config, "normal",     "#22aa99"));
+  subtle->colors.bg       = RubyParseColor(RubyGetString(config, "background", "#336699"));
 
   /* Config: Font */
   if(subtle->xfs) ///< Free in case of reload

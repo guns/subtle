@@ -108,20 +108,20 @@ subDisplayConfigure(void)
   assert(subtle);
 
   /* Update GCs */
-  gvals.foreground = subtle->colors.border;
+  gvals.foreground = subtle->colors.fg_bar;
   gvals.line_width = subtle->bw;
   XChangeGC(subtle->disp, subtle->gcs.stipple, GCForeground|GCLineWidth, &gvals);
 
-  gvals.foreground = subtle->colors.font;
+  gvals.foreground = subtle->colors.fg_bar;
   gvals.font       = subtle->xfs->fid;
   XChangeGC(subtle->disp, subtle->gcs.font, GCForeground|GCFont, &gvals);
 
   /* Update windows */
-  XSetWindowBackground(subtle->disp,  subtle->windows.bar,     subtle->colors.norm);
-  XSetWindowBackground(subtle->disp,  subtle->windows.caption, subtle->colors.focus);
-  XSetWindowBackground(subtle->disp,  subtle->windows.views,   subtle->colors.norm);
-  XSetWindowBackground(subtle->disp,  subtle->windows.tray,    subtle->colors.norm);
-  XSetWindowBackground(subtle->disp,  subtle->windows.sublets, subtle->colors.norm);
+  XSetWindowBackground(subtle->disp,  subtle->windows.bar,     subtle->colors.bg_bar);
+  XSetWindowBackground(subtle->disp,  subtle->windows.caption, subtle->colors.bg_focus);
+  XSetWindowBackground(subtle->disp,  subtle->windows.views,   subtle->colors.bg_bar);
+  XSetWindowBackground(subtle->disp,  subtle->windows.tray,    subtle->colors.bg_bar);
+  XSetWindowBackground(subtle->disp,  subtle->windows.sublets, subtle->colors.bg_bar);
   XSetWindowBackground(subtle->disp,  ROOT,                    subtle->colors.bg);
 
   XClearWindow(subtle->disp, subtle->windows.bar);

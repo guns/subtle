@@ -264,10 +264,11 @@ subClientRender(SubClient *c)
   int pos = 0;
   char buf[255];
   XSetWindowAttributes attrs;
+  XGCValues gvals;
 
   assert(c);
 
-  attrs.border_pixel = subtle->windows.focus == c->win ? subtle->colors.focus : subtle->colors.norm;
+  attrs.border_pixel = subtle->windows.focus == c->win ? subtle->colors.bg_focus : subtle->colors.norm;
   XChangeWindowAttributes(subtle->disp, c->win, CWBorderPixel, &attrs);
 
   /* Caption */
@@ -277,6 +278,10 @@ subClientRender(SubClient *c)
       pos = (subtle->xfs->min_bounds.width + subtle->xfs->max_bounds.width) / 2; ///< Width of char
     }
   else snprintf(buf, sizeof(buf), "%s", c->name);
+
+  /* Caption title */
+  gvals.foreground = subtle->colors.fg_focus;
+  XChangeGC(subtle->disp, subtle->gcs.font, GCForeground, &gvals);
 
   XResizeWindow(subtle->disp, subtle->windows.caption, c->width + pos, subtle->th);
   XClearWindow(subtle->disp, subtle->windows.caption);
