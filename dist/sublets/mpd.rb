@@ -39,7 +39,7 @@ class Mpd < Subtle::Sublet
       if(!matches.nil?)
         title, state, ctime, ttime = matches.captures
 
-        self.data     = shorten(title)
+        self.data     = shorten(title) + color(COLORS["bg_focus"]) + "//"
         #self.interval = seconds(ttime) - seconds(ctime) #< Recalc interval
       else
         self.data = "mpd stopped/not running"

@@ -27,7 +27,7 @@ class Freq < Subtle::Sublet
 
       @freq = file.match(/cpu MHz\s+:\s+([0-9.]+)/).captures.first.to_i.floor.to_s
 
-      self.data = @freq + " Mhz" + color(COLORS["focus"]) + "//"
+      self.data = @freq + " Mhz" + color(COLORS["bg_focus"]) + "//"
     rescue => err # Sanitize to prevent unloading
       self.data = "subtle"
       p err
