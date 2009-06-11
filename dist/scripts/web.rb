@@ -1,6 +1,6 @@
 #
-# subtle - test script
-# Copyright (c) 2005-2008 Christoph Kappel
+# web - subtlext test script with sinatra
+# Copyright (c) 2005-2009 Christoph Kappel
 #
 # This program can be distributed under the terms of the GNU GPL.
 # See the file COPYING.
