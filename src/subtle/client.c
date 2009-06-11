@@ -725,12 +725,11 @@ subClientSetStrut(SubClient *c)
   if((strut = (long *)subEwmhGetProperty(c->win, XA_CARDINAL, 
     SUB_EWMH_NET_WM_STRUT, &size)))
     {
-      if(4 == size)
+      if(4 == size) ///< Only complete struts
         {
-          /* Take the bigger struts */
-          subtle->strut.x      = MAX(subtle->strut.x, strut[0]);      ///< Left
-          subtle->strut.y      = MAX(subtle->strut.y, strut[1]);      ///< Right
-          subtle->strut.width  = MAX(subtle->strut.width, strut[2]);  ///< Top
+          subtle->strut.x      = MAX(subtle->strut.x,      strut[0]); ///< Left
+          subtle->strut.y      = MAX(subtle->strut.y,      strut[1]); ///< Right
+          subtle->strut.width  = MAX(subtle->strut.width,  strut[2]); ///< Top
           subtle->strut.height = MAX(subtle->strut.height, strut[3]); ///< Bottom
 
           subSharedLogDebug("Strut: x=%ld, y=%d, width=%d, height=%d\n", subtle->strut.x,

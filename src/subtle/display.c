@@ -151,7 +151,7 @@ subDisplayConfigure(void)
 void
 subDisplayScan(void)
 {
-  unsigned int i, n = 0;
+  unsigned int i, n = 0, flags = 0;
   Window dummy, *wins = NULL;
 
   assert(subtle);
@@ -160,22 +160,31 @@ subDisplayScan(void)
   for(i = 0; i < n; i++)
     {
       SubClient *c = NULL;
+      SubTray *t = NULL;
       XWindowAttributes attr;
 
       XGetWindowAttributes(subtle->disp, wins[i], &attr);
-      if(False == attr.override_redirect) ///< Skip own windows 
+      if(False == attr.override_redirect) ///< Skip some windows
         {
           switch(attr.map_state)
             {
-              case IsViewable: ///< Client
-                if((c = subClientNew(wins[i])))
-                  subArrayPush(subtle->clients, (void *)c);
+              case IsViewable:
+                if((flags = subEwmhGetXEmbedState(wins[i])) && ///< Tray
+                  (t = subTrayNew(wins[i])))
+                  {
+                    subArrayPush(subtle->trays, (void *)t);
+                  }
+                else if((c = subClientNew(wins[i]))) ///< Clients
+                  {
+                    subArrayPush(subtle->clients, (void *)c);
+                  }
                 break;
             }
         }
     }
   XFree(wins);
 
+  subDisplaySetStrut();
   subClientPublish();
   subTrayUpdate();
 
@@ -192,6 +201,8 @@ subDisplayScan(void)
 void
 subDisplaySetStrut(void)
 {
+  assert(subtle);
+
   /* x => left, y => right, width => top, height => bottom */
   subtle->screen.x      = subtle->strut.x;
   subtle->screen.y      = (subtle->bar ? 0 : subtle->th) + subtle->strut.width;

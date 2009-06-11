@@ -1129,6 +1129,7 @@ SubtlextSubtleViewCurrent(VALUE self)
   Window *views = NULL;
   VALUE klass = Qnil, view = Qnil;
   
+  /* Create view instance */
   klass = rb_const_get(mod, rb_intern("View"));
   names = subSharedPropertyList(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
   cv    = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
