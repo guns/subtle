@@ -71,7 +71,7 @@
 #define COLORMAP \
   DefaultColormap(subtle->disp, DefaultScreen(subtle->disp))      ///< Default colormap
 #define VISIBLE(v,c) \
-  (v->tags & c->tags || c->flags & SUB_STATE_STICK)               ///< Visible on view
+  (v && c && (v->tags & c->tags || c->flags & SUB_STATE_STICK))   ///< Visible on view
 #define SCREENW \
   DisplayWidth(subtle->disp, DefaultScreen(subtle->disp))         ///< Get screen width
 #define SCREENH \

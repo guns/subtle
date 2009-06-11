@@ -100,7 +100,7 @@ subViewConfigure(SubView *v)
               /* EWMH: Desktop */
               subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
             }
-          else XMapRaised(subtle->disp, c->win);
+          else XMapRaised(subtle->disp, c->win); ///< Float/full
         }
       else XUnmapWindow(subtle->disp, c->win); ///< Unmap other windows
     }
