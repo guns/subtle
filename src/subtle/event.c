@@ -382,15 +382,11 @@ EventMessage(XClientMessageEvent *ev)
   /* Messages for client windows {{{ */
   else if((c = CLIENT(subSharedFind(ev->window, CLIENTID))));
     {
-      int id = subEwmhFind(ev->message_type);
-
-      switch(id)
+      switch(subEwmhFind(ev->message_type))
         {
           /* Actions: 0 = remove / 1 = add / 2 = toggle - we always toggle */
           case SUB_EWMH_NET_WM_STATE: /* {{{ */
-            id = subEwmhFind(ev->data.l[1]); ///< Only the first property
-
-            switch(id)
+            switch(subEwmhFind(ev->data.l[1])) ///< Only the first property
               {
                 case SUB_EWMH_NET_WM_STATE_FULLSCREEN:
                   subClientToggle(c, SUB_STATE_FULL);
@@ -401,6 +397,7 @@ EventMessage(XClientMessageEvent *ev)
                 case SUB_EWMH_NET_WM_STATE_STICKY:
                   subClientToggle(c, SUB_STATE_STICK);
                   break;
+                default: break;
               }
 
             if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
@@ -412,6 +409,7 @@ EventMessage(XClientMessageEvent *ev)
             subClientKill(c, True);
             subViewUpdate();
             break; /* }}} */
+          default: break;
         }
     } /* }}} */
 
@@ -478,13 +476,21 @@ EventProperty(XPropertyEvent *ev)
           {
             subClientSetSize(c);
             subSharedLogDebug("Hints: Updated normal hints\n");
-          }       
+          }
         else if((t = TRAY(subSharedFind(ev->window, TRAYID))))
           {
             subTrayConfigure(t);
             subTrayUpdate();
             subViewRender();
           }          
+        break;
+      case SUB_EWMH_NET_WM_STRUT: ///< Client
+         if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) 
+          {
+            subClientSetStrut(c);
+            subDisplaySetStrut();
+            subSharedLogDebug("Hints: Updated strut hints\n");
+          }
         break;
       case SUB_EWMH_XEMBED_INFO: ///< Tray
         if((t = TRAY(subSharedFind(ev->window, TRAYID))))
