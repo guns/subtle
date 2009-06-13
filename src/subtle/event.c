@@ -717,12 +717,15 @@ EventExpose(XEvent *ev)
 {
   XEvent event;
 
-  if(ev->xany.window == subtle->windows.bar)
+  if(ev->xany.window == subtle->windows.bar || ROOT == ev->xany.window)
     {
+      SubClient *c = CLIENT(subSharedFind(subtle->windows.focus, CLIENTID));
+      
       subSubletRender();
       subViewRender();
+
+      if(c) subClientRender(c); ///< Render caption
     }
-  else if(ROOT == ev->xany.window) subViewRender();
 
   /* Remove any other event of the same type and window */
   while(XCheckTypedWindowEvent(subtle->disp, ev->xany.window, ev->type, &event));
