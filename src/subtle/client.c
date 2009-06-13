@@ -212,6 +212,7 @@ subClientConfigure(SubClient *c)
   XConfigureEvent ev;
 
   assert(c);
+  DEAD(c);
 
   r = c->rect;
 
@@ -266,6 +267,7 @@ subClientRender(SubClient *c)
   XSetWindowAttributes attrs;
   XGCValues gvals;
 
+  DEAD(c);
   assert(c);
 
   attrs.border_pixel = subtle->windows.focus == c->win ? subtle->colors.bg_focus : subtle->colors.norm;
@@ -298,8 +300,8 @@ subClientRender(SubClient *c)
 void
 subClientFocus(SubClient *c)
 {
+  DEAD(c);
   assert(c);
-
 
   /* Check client input focus type */
   if(!(c->flags & SUB_PREF_INPUT) && c->flags & SUB_PREF_FOCUS)
@@ -324,6 +326,7 @@ subClientFocus(SubClient *c)
 void
 subClientWarp(SubClient *c)
 {
+  DEAD(c);
   assert(c);
 
   XWarpPointer(subtle->disp, None, ROOT, 0, 0, 0, 0,
@@ -349,6 +352,7 @@ subClientDrag(SubClient *c,
   Cursor cursor;
   SubClient *c2 = NULL;
 
+  DEAD(c);
   assert(c);
  
   /* Init {{{ */
@@ -528,6 +532,7 @@ subClientSetGravity(SubClient *c,
     { 1, 0, 2, 2 }, ///< Gravity top right
   }; /* }}} */
 
+  DEAD(c);
   assert(c);
 
   /* Modes */
@@ -631,6 +636,7 @@ subClientSetSize(SubClient *c)
   long supplied = 0;
   XSizeHints *size = NULL;
 
+  DEAD(c);
   assert(c);
 
   if(!(size = XAllocSizeHints()))
@@ -724,6 +730,7 @@ subClientSetStrut(SubClient *c)
   unsigned long size = 0;
   long *strut = NULL;
 
+  DEAD(c);
   assert(c);
 
   /* Get strut property */
@@ -755,6 +762,7 @@ void
 subClientToggle(SubClient *c,
   int type)
 {
+  DEAD(c);
   assert(c);
 
   if(c->flags & type)

@@ -796,7 +796,7 @@ subRubyLoadConfig(const char *file)
         if((v = VIEW(subtle->views->data[i])) && v->tags & SUB_TAG_DEFAULT)
           {
             def = i;
-            subSharedLogDebug("Default view: id=%d\n", i);
+            subSharedLogDebug("Default view: name=%s, id=%d\n", v->name, def);
             break;
           }
 

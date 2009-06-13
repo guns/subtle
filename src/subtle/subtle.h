@@ -54,6 +54,9 @@
 #define MIN(a,b)     (a >= b ? b : a)                             ///< Minimum
 #define MAX(a,b)     (a >= b ? a : b)                             ///< Maximum
 
+#define DEAD(c) \
+  if(!c || c->flags & SUB_STATE_DEAD) return;                     ///< Check dead clients
+
 #define MINMAX(val,min,max) \
   (min && val < min ? min : max && val > max ? max : val)         ///< Value min/max
 
