@@ -54,18 +54,18 @@ done
 
 # Listing format differs
 if [ $GROUP == "-c" ] ; then
-  FIELD="6 | tr -d '()'" #< Remove brackets from WM_CLASS
+  FIELD="6"
 fi
 
 # Fetch client/view name
 if [ $CURRENT -eq 0 ] ; then
-  NAME="`$SUBTLER $GROUP -l | cut -d ' ' -f $FIELD | $DMENU -p "Select name: "`"
+  NAME="`$SUBTLER $GROUP -l | cut -d ' ' -f $FIELD | tr -d '()' | $DMENU -p 'Select name: '`"
 else
   NAME="`$SUBTLER $GROUP -C`"
 fi
 
 # Select tag
-TAG="`$SUBTLER -t -l | $DMENU -p "Select tag for $NAME: "`"
+TAG="`$SUBTLER -t -l | $DMENU -p 'Select tag for $NAME: '`"
 
 # Assemble commandline
 $SUBTLER $GROUP $NAME $ACTION $TAG
