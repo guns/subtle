@@ -38,6 +38,15 @@ COLORS = {
 }
 
 #
+# Dmenu settings
+#
+@dmenu = "dmenu_run -fn '%s-%d' -nb '%s' -nf '%s' -sb '%s' -sf '%s' -p 'Select:'" % [
+  FONT["family"], FONT["size"],
+  COLORS["bg_bar"], COLORS["fg_bar"], 
+  COLORS["bg_focus"], COLORS["fg_focus"]
+]
+
+#
 # Grabs
 #
 # Modifier keys:
@@ -99,19 +108,11 @@ GRABS = {
 
   # Exec
   "W-Return" => "xterm",                       # Exec a term
+  "W-x"      => @dmenu,                        # Exec dmenu
 
   # Ruby lambdas
   "S-F2"     => lambda { |c| puts c.name  },   # Print client name
   "S-F3"     => lambda { puts version },       # Print subtlext version
-  "S-F4"     => lambda { |c|                   # Show client on view test
-    v = add_view("test")
-    t = add_tag("test")
-
-    c + t
-    v + t
-
-    v.jump
-  }  
 }
 
 #
