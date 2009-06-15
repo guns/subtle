@@ -73,6 +73,15 @@ subViewConfigure(SubView *v)
 
   assert(v);
 
+  /* Hook: Jump */
+  if(subtle->hooks.configure &&
+    0 == subRubyCall(SUB_TYPE_HOOK, subtle->hooks.configure, (void *)v))
+    {
+      subSharedLogDebug("Hook: name=configure, view=%#lx, state=ignored\n", v->button);
+
+      return;
+    }
+
   vid = subArrayIndex(subtle->views, (void *)v);
 
   /* Clients */
@@ -189,8 +198,14 @@ subViewJump(SubView *v)
 
   assert(v);
 
-  if(subtle->hooks.jump) ///< Jump hook
-    subRubyCall(SUB_TYPE_HOOK, subtle->hooks.jump, (void *)v);
+  /* Hook: Jump */
+  if(subtle->hooks.jump &&
+    0 == subRubyCall(SUB_TYPE_HOOK, subtle->hooks.jump, (void *)v))
+    {
+      subSharedLogDebug("Hook: name=jump, view=%#lx, state=ignored\n", v->button);
+
+      return;
+    }
 
   subtle->cv = v;
 

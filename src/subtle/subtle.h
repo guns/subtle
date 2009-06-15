@@ -389,7 +389,7 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    unsigned long    jump, create, focus, gravity;                ///< Subtle hooks
+    unsigned long    jump, configure, create, focus, gravity;     ///< Subtle hooks
   } hooks;
 } SubSubtle; /* }}} */
 
