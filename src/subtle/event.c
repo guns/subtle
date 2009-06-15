@@ -274,7 +274,7 @@ EventMessage(XClientMessageEvent *ev)
 
                 c->gravity        = -1; ///< Force update
                 c->gravities[vid] = ev->data.l[2];
-printf("DEBUG %s:%d\n", __func__, __LINE__);
+
                 if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
               }
             break; /* }}} */
