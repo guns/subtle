@@ -288,10 +288,11 @@ RubyConfigForeach(VALUE key,
 
   RubyHooks hooks[] = /* {{{ */
   {
-    { "HookJump",    &subtle->hooks.jump    }, ///< 0
-    { "HookCreate",  &subtle->hooks.create  },
-    { "HookFocus",   &subtle->hooks.focus   },
-    { "HookGravity", &subtle->hooks.gravity } ///< 3
+    { "HookJump",      &subtle->hooks.jump      }, ///< 0
+    { "HookConfigure", &subtle->hooks.configure },
+    { "HookCreate",    &subtle->hooks.create    },
+    { "HookFocus",     &subtle->hooks.focus     },
+    { "HookGravity",   &subtle->hooks.gravity   }  ///< 4
   }; /* }}} */
 
   /* Create various types */
@@ -934,8 +935,9 @@ subRubyLoadSubtlext(void)
   * @param[in]  type   Script type
   * @param[in]  recv   Script receiver
   * @param[in]  extra  Extra argument
-  * @retval  0  Calling script failed
-  * @retval  1  Calling script succeed
+  * @retval   0  Called script returned false
+  * @retval   1  Called script returned true
+  * @retval  -1  Calling script failed
   **/
 
 int
@@ -943,6 +945,7 @@ subRubyCall(int type,
   unsigned long recv,
   void *extra)
 {
+  int ret = 1;
   VALUE value = Qundef;
 
   signal(SIGALRM, RubySignal); ///< Limit execution time
@@ -953,7 +956,7 @@ subRubyCall(int type,
       if(Qundef == (value = rb_funcall_rescue(recv, rb_intern("run"), 0, NULL))) 
         {
           RubyPerror(True, False, "Failed calling sublet");
-          return 0;
+          ret = - 1;
         }
     } /* }}} */
   else if(type & (SUB_TYPE_GRAB|SUB_TYPE_HOOK)) /* {{{ */
@@ -963,10 +966,7 @@ subRubyCall(int type,
 
       /* Get arity of proc */
       if(Qundef == (value = rb_funcall_rescue(recv, rb_intern("arity"), 0, NULL))) 
-        {
-          RubyPerror(True, False, "Failed running %s", kind);
-          return 0;
-        }
+        RubyPerror(True, True, "Failed running %s", kind);
 
       arity = FIX2INT(value);
 
@@ -978,7 +978,7 @@ subRubyCall(int type,
             if(Qundef == (value = rb_funcall_rescue(recv, rb_intern("call"), 0, NULL))) 
               {
                 RubyPerror(True, False, "Failed calling %s", kind);
-                return 0;
+                ret = -1;
               }
             break;
           case 1: ///< One argument
@@ -1017,21 +1017,22 @@ subRubyCall(int type,
                 if(Qundef == (value = rb_funcall_rescue(recv, rb_intern("call"), 1, inst)))
                   {
                     RubyPerror(True, False, "Failed calling %s", kind);
-                    return 0;
+                    ret = -1;
                   }
+                else ret = Qfalse == value ? 0 : 1; ///< Check return value
 
                 break;
               } ///< Fall through
           default:
             rb_raise(rb_eStandardError, "Failed calling proc with `%d' argument(s)", arity);
-            return 0;
+            ret = -1;
         }
       subSharedLogDebug("Proc: arity=%d\n", arity);      
     } /* }}} */
 
   alarm(0);
 
-  return 1;
+  return ret;
 } /* }}} */
 
  /** subRubyFinish {{{
