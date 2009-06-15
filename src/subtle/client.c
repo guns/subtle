@@ -131,9 +131,9 @@ subClientNew(Window win)
   /* Window manager hints */
   if((hints = XGetWMHints(subtle->disp, c->win)))
     {
-      if(hints->flags & XUrgencyHint)              c->tags  |= SUB_TAG_STICK;
+      if(hints->flags & XUrgencyHint)              c->tags  |= (SUB_TAG_FLOAT|SUB_TAG_STICK);
       if(hints->flags & InputHint && hints->input) c->flags |= SUB_PREF_INPUT;
-      if(hints->flags & WindowGroupHint)           
+      if(hints->flags & WindowGroupHint) ///< Handle window groups
         {
           c->flags |= SUB_PREF_GROUP;
           c->group  = hints->window_group;
@@ -303,6 +303,15 @@ subClientFocus(SubClient *c)
   DEAD(c);
   assert(c);
 
+  /* Hook: Focus */
+  if(subtle->hooks.focus && 
+    0 == subRubyCall(SUB_TYPE_HOOK, subtle->hooks.focus, (void *)c))
+    {
+      subSharedLogDebug("Hook: name=focus, client=%#lx, state=ignored\n", c->win);
+
+      return;
+    }
+
   /* Check client input focus type */
   if(!(c->flags & SUB_PREF_INPUT) && c->flags & SUB_PREF_FOCUS)
     {
@@ -310,9 +319,6 @@ subClientFocus(SubClient *c)
         subEwmhGet(SUB_EWMH_WM_TAKE_FOCUS), CurrentTime, 0, 0, 0);
     }   
   else XSetInputFocus(subtle->disp, c->win, RevertToNone, CurrentTime);
-
-  if(subtle->hooks.focus) ///< Focus hook
-    subRubyCall(SUB_TYPE_HOOK, subtle->hooks.focus, (void *)c);
 
   subSharedLogDebug("Focus: win=%#lx, input=%d, focus=%d\n", c->win,
     !!(c->flags & SUB_PREF_INPUT), !!(c->flags & SUB_PREF_FOCUS));
@@ -535,6 +541,15 @@ subClientSetGravity(SubClient *c,
   DEAD(c);
   assert(c);
 
+  /* Hook: Gravity */
+  if(subtle->hooks.gravity && 
+    0 == subRubyCall(SUB_TYPE_HOOK, subtle->hooks.gravity, (void *)c))
+    {
+      subSharedLogDebug("Hook: name=gravity, client=%#lx, state=ignored\n", c->win);
+
+      return;
+    }
+
   /* Modes */
   grav = type & ~SUB_GRAVITY_ALL;
 
@@ -620,9 +635,6 @@ subClientSetGravity(SubClient *c,
 
   /* EWMH: Gravity */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
-
-  if(subtle->hooks.gravity) ///< Gravity hook
-    subRubyCall(SUB_TYPE_HOOK, subtle->hooks.gravity, (void *)c);
 } /* }}} */
 
   /** subClientSetSize {{{ 
@@ -708,13 +720,12 @@ subClientSetTags(SubClient *c)
 {
   int i;
 
-  for(i = 0; (c->name || c->klass) && i < subtle->tags->ndata; i++)
+  for(i = 0; c->klass && i < subtle->tags->ndata; i++)
     {
       SubTag *t = TAG(subtle->tags->data[i]);
 
-      if(t->preg && ((c->name && subSharedRegexMatch(t->preg, c->name)) ||
-        (c->klass && subSharedRegexMatch(t->preg, c->klass))))
-          c->tags |= (1L << (i + 1));
+      if(t->preg && (c->klass && subSharedRegexMatch(t->preg, c->klass)))
+        c->tags |= (1L << (i + 1));
     }
   if(1 < (c->tags >> SUB_TAG_CLEAR)) c->tags &= ~SUB_TAG_DEFAULT;  
 } /* }}} */
