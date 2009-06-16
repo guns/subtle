@@ -633,6 +633,8 @@ subClientSetGravity(SubClient *c,
   c->rect    = slot;
   c->gravity = grav | mode;
 
+  subClientConfigure(c);
+
   /* EWMH: Gravity */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
 } /* }}} */
