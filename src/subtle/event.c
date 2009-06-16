@@ -267,15 +267,22 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_SUBTLE_WINDOW_GRAVITY: /* {{{ */
             if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0]))))
               {
-                int vid = ev->data.l[1];
-
-                if(-1 == vid)
-                  vid = subArrayIndex(subtle->views, (void *)subtle->cv);
+                int vid = -1 != ev->data.l[1] ? ev->data.l[1] :
+                  subArrayIndex(subtle->views, (void *)subtle->cv);
 
                 c->gravity        = -1; ///< Force update
                 c->gravities[vid] = ev->data.l[2];
 
-                if(VISIBLE(subtle->cv, c)) subViewConfigure(subtle->cv);
+                if(VISIBLE(subtle->cv, c)) 
+                  {
+                    subClientSetGravity(c, ev->data.l[2]);
+
+                    vid               = subArrayIndex(subtle->views, (void *)subtle->cv);
+                    c->gravities[vid] = c->gravity;
+
+                    subClientWarp(c);
+                    XRaiseWindow(subtle->disp, c->win);                
+                  }
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_TAG_NEW: /* {{{ */
@@ -682,16 +689,14 @@ EventGrab(XEvent *ev)
               {
                 if(c->flags & SUB_STATE_FLOAT) subClientToggle(c, SUB_STATE_FLOAT);
                 if(c->flags & SUB_STATE_FULL) subClientToggle(c, SUB_STATE_FULL);
-                
-                vid               = subArrayIndex(subtle->views, (void *)subtle->cv);
-                c->gravity        = -1; ///< Force 
-                c->gravities[vid] = g->data.num;
 
-                if(VISIBLE(subtle->cv, c)) 
-                  {
-                    subViewConfigure(subtle->cv);
-                    subClientWarp(c);
-                  }
+                subClientSetGravity(c, g->data.num);
+
+                vid               = subArrayIndex(subtle->views, (void *)subtle->cv);
+                c->gravities[vid] = c->gravity;
+
+                subClientWarp(c);
+                XRaiseWindow(subtle->disp, c->win);
               }
             break; /* }}} */
           case SUB_GRAB_WINDOW_KILL: /* {{{ */
