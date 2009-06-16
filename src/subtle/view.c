@@ -99,12 +99,10 @@ subViewConfigure(SubView *v)
                 {
                   subClientSetGravity(c, c->gravities[vid]);
                   c->gravities[vid] = c->gravity;
-
-                  XMapRaised(subtle->disp, c->win);
                 }
-              else XMapWindow(subtle->disp, c->win);
+              else subClientConfigure(c);
 
-              subClientConfigure(c);
+              XMapWindow(subtle->disp, c->win);
 
               /* EWMH: Desktop */
               subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
