@@ -382,7 +382,9 @@ subSharedPropertyList(Window win,
   unsigned long len;
 
 #ifdef WM
+#ifdef DEBUG
   char *name = "subtle";
+#endif /* DEBUG */
 #endif /* WM */
 
   assert(win && size);
