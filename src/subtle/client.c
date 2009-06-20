@@ -78,20 +78,12 @@ subClientNew(Window win)
   c = CLIENT(subSharedMemoryAlloc(1, sizeof(SubClient)));
   c->flags = SUB_TYPE_CLIENT;
   c->tags  = SUB_TAG_DEFAULT;
-  c->klass = subEwmhGetProperty(win, XA_STRING, SUB_EWMH_WM_CLASS, NULL);
   c->win   = win;
 
-  /* Fetch name */
-  if(!XFetchName(subtle->disp, c->win, &c->name))
-    {
-      /* Fallback for clients without WM_NAME like skype.. */
-      if(c->klass) c->name = strdup(c->klass);
-      else
-        {
-          c->name  = strdup("subtle");
-          c->klass = NULL;
-        }
-    }
+  /* Fetch name and class */
+  XFetchName(subtle->disp, c->win, &c->name);
+  c->klass = subSharedWindowClass(c->win);
+  if(!c->name && c->klass) c->name = strdup(c->klass); ///< Fallback for e.g. Skype
   c->width = XTextWidth(subtle->xfs, c->name, strlen(c->name)) + 6; ///< Font offset
 
   /* Update client */
@@ -747,7 +739,7 @@ subClientSetStrut(SubClient *c)
   assert(c);
 
   /* Get strut property */
-  if((strut = (long *)subEwmhGetProperty(c->win, XA_CARDINAL, 
+  if((strut = (long *)subSharedPropertyGet(c->win, XA_CARDINAL, 
     SUB_EWMH_NET_WM_STRUT, &size)))
     {
       if(4 == size) ///< Only complete struts

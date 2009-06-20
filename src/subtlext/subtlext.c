@@ -162,15 +162,15 @@ static VALUE
 SubtlextClientFromWin(Window win)
 {
   int id = 0;
-  char *wmname = NULL;
+  char *wmklass = NULL;
   int *gravity = NULL;
   VALUE klass = Qnil, client = Qnil;
 
   /* Create new instance */
   klass   = rb_const_get(mod, rb_intern("Client"));
-  wmname  = subSharedWindowWMName(win);
-  id      = subSharedClientFind(wmname, NULL);
-  client  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(wmname));
+  wmklass = subSharedWindowClass(win);
+  id      = subSharedClientFind(wmklass, NULL);
+  client  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(wmklass));
   gravity = (int *)subSharedPropertyGet(win, XA_CARDINAL,
     "SUBTLE_WINDOW_GRAVITY", NULL);
 
@@ -178,7 +178,7 @@ SubtlextClientFromWin(Window win)
   rb_iv_set(client, "@win",     LONG2NUM(win));
   rb_iv_set(client, "@gravity", INT2FIX(*gravity));
 
-  free(wmname);
+  free(wmklass);
   free(gravity);  
 
   return client;
@@ -1252,14 +1252,14 @@ SubtlextTagTaggings(VALUE self)
 
           if((int)*flags & (1L << (id + 1))) ///< Check if tag id matches
             {
-              char *wmname = subSharedWindowWMName(clients[i]);
-              VALUE c      = rb_funcall(klass, method, 1, rb_str_new2(wmname));
+              char *wmklass = subSharedWindowClass(clients[i]);
+              VALUE c       = rb_funcall(klass, method, 1, rb_str_new2(wmklass));
 
               rb_iv_set(c, "@id",  INT2FIX(i));
               rb_iv_set(c, "@win", LONG2NUM(clients[i]));
               rb_ary_push(array, c);
 
-              free(wmname);
+              free(wmklass);
             }
 
           free(flags);

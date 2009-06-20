@@ -147,7 +147,7 @@ SubtlerMatch(int type)
               free(flags2);
             }
           
-          if(found) ret = subSharedWindowWMName(found); ///< Get WM_NAME of found win
+          if(found) ret = subSharedWindowClass(found); ///< Get WM_CLASS of found win
 
           free(focus);
           free(flags1);
@@ -170,7 +170,7 @@ SubtlerCurrentClient(void)
   if((focus = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
     XA_WINDOW, "_NET_ACTIVE_WINDOW", NULL)))
     {
-      ret = subSharedWindowWMName(*focus);
+      ret = subSharedWindowClass(*focus);
 
       free(focus);
     }
@@ -212,13 +212,12 @@ SubtlerClientFind(char *arg1,
     {
       int x, y;
       Window unused;
-      char *wmname = NULL, *wmclass = NULL;
+      char *klass = NULL;
       unsigned int width, height, border;
       unsigned long *nv = NULL, *rv = NULL, *cv = NULL, *gravity = NULL;
 
       /* Collect data */
-      wmname  = subSharedWindowWMName(win);
-      wmclass = subSharedWindowWMClass(win);
+      klass = subSharedWindowClass(win);
       nv      = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
         XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
       rv      = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display),
@@ -230,11 +229,10 @@ SubtlerClientFind(char *arg1,
 
       XGetGeometry(display, win, &unused, &x, &y, &width, &height, &border, &border);
 
-      printf("%#lx %c %ld %ux%u %ld %s (%s)\n", win, (*cv == *rv ? '*' : '-'),
-        (*cv > *nv ? -1 : *cv), width, height, *gravity, wmname, wmclass);
+      printf("%#lx %c %ld %ux%u %ld %s\n", win, (*cv == *rv ? '*' : '-'),
+        (*cv > *nv ? -1 : *cv), width, height, *gravity, klass);
 
-      free(wmname);
-      free(wmclass);
+      free(klass);
       free(nv);
       free(rv);
       free(cv);
@@ -336,13 +334,12 @@ SubtlerClientList(char *arg1,
         {
           int x, y;
           Window unused;
-          char *wmname = NULL, *wmclass = NULL;
+          char *klass = NULL;
           unsigned int width, height, border;
           unsigned long *cv = NULL, *gravity = NULL;
 
           /* Collect client data */
-          wmname  = subSharedWindowWMName(clients[i]);
-          wmclass = subSharedWindowWMClass(clients[i]);
+          klass = subSharedWindowClass(clients[i]);
           cv      = (unsigned long*)subSharedPropertyGet(clients[i], XA_CARDINAL, 
             "_NET_WM_DESKTOP", NULL);
           gravity = (unsigned long*)subSharedPropertyGet(clients[i], XA_CARDINAL, 
@@ -350,11 +347,10 @@ SubtlerClientList(char *arg1,
 
           XGetGeometry(display, clients[i], &unused, &x, &y, &width, &height, &border, &border);
 
-          printf("%#lx %c %ld %ux%u %ld %s (%s)\n", clients[i], (*cv == *rv ? '*' : '-'),
-            (*cv > *nv ? -1 : *cv), width, height, *gravity & ~SUB_GRAVITY_ALL, wmname, wmclass);
+          printf("%#lx %c %ld %ux%u %ld %s\n", clients[i], (*cv == *rv ? '*' : '-'),
+            (*cv > *nv ? -1 : *cv), width, height, *gravity & ~SUB_GRAVITY_ALL, klass);
 
-          free(wmname);
-          free(wmclass);
+          free(klass);
           free(cv);
           free(gravity);
         }
@@ -560,8 +556,8 @@ SubtlerTagFind(char *arg1,
     {
       for(i = 0; i < size_views; i++)
         {
-          unsigned long *flags = (unsigned long *)subSharedPropertyGet(views[i], XA_CARDINAL,
-            "SUBTLE_WINDOW_TAGS", NULL);
+          unsigned long *flags = (unsigned long *)subSharedPropertyGet(views[i], 
+            XA_CARDINAL, "SUBTLE_WINDOW_TAGS", NULL);
 
           if((int)*flags & (1L << (tag + 1))) 
             printf("%#lx %s [view]\n", views[i], names[i]);
@@ -579,19 +575,17 @@ SubtlerTagFind(char *arg1,
     {
       for(i = 0; i < size_clients; i++)
         {
-          char *wmname = NULL, *wmclass = NULL;
-          unsigned long *flags   = (unsigned long *)subSharedPropertyGet(clients[i], XA_CARDINAL,
-            "SUBTLE_WINDOW_TAGS", NULL);
+          char *klass = NULL;
+          unsigned long *flags   = (unsigned long *)subSharedPropertyGet(clients[i], 
+            XA_CARDINAL, "SUBTLE_WINDOW_TAGS", NULL);
 
-          wmname  = subSharedWindowWMName(clients[i]);
-          wmclass = subSharedWindowWMClass(clients[i]);
+          klass = subSharedWindowClass(clients[i]);
 
           if((int)*flags & (1L << (tag + 1))) 
-            printf("%#lx %s (%s) [client]\n", clients[i], wmname, wmclass);
+            printf("%#lx %s [client]\n", clients[i], klass);
 
           free(flags);
-          free(wmname);
-          free(wmclass);
+          free(klass);
         }
 
       free(clients);
@@ -898,7 +892,7 @@ SubtlerUsage(int group)
          "  If the PATTERN is '-' %sr will read from stdin.\n", PKG_NAME);
 
   printf("\nFormat:\n" \
-         "  Client list: <window id> [-*] <view> <geometry> <gravity> <name> <class>\n" \
+         "  Client list: <window id> [-*] <view> <geometry> <gravity> <name>\n" \
          "  Tag    list: <name>\n" \
          "  View   list: <window id> [-*] <name>\n");
 
@@ -1183,7 +1177,7 @@ main(int argc,
         break;
       case SUB_MOD_SELECT:
         if(None != (win = subSharedWindowSelect()))
-          arg1 = subSharedWindowWMClass(win);
+          arg1 = subSharedWindowClass(win);
         break;
       default:
         if(argc > optind)     arg1 = SubtlerParse(argv[optind]);
