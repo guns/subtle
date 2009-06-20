@@ -25,7 +25,6 @@
 #include <X11/Xmd.h>
 
 #include "config.h"
-#include "shared.h"
 
 #ifdef HAVE_SYS_INOTIFY_H
 #include <sys/inotify.h>
@@ -468,8 +467,6 @@ void subEventLoop(void);                                          ///< Event loo
 void subEwmhInit(void);                                           ///< Init atoms/hints
 Atom subEwmhGet(SubEwmh e);                                       ///< Get atom
 SubEwmh subEwmhFind(Atom atom);                                   ///< Find atom id
-char *subEwmhGetProperty(Window win,
-  Atom type, SubEwmh e, unsigned long *size);                     ///< Get property
 long subEwmhGetWMState(Window win);                               ///< Get window WM state
 long subEwmhGetXEmbedState(Window win);                           ///< Get window XEmbed state
 void subEwmhSetWindows(Window win, SubEwmh e,
@@ -543,6 +540,9 @@ void subViewJump(SubView *v);                                     ///< Jump to v
 void subViewPublish(void);                                        ///< Publish views
 void subViewKill(SubView *v);                                     ///< Kill view
 /* }}} */
+
+#include "shared.h" ///< After typedefs and prototypes
+
 #endif /* SUBTLE_H */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

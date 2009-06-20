@@ -113,50 +113,6 @@ subEwmhFind(Atom atom)
   return -1;
 } /* }}} */
 
- /** subEwmhGetProperty {{{
-  * @brief Get property from window
-  * @param[in]   win   Window
-  * @param[in]   type  Atom type
-  * @param[in]   e     A #SubEwmh
-  * @param[out]  size  Size of items
-  * @return Returns property data
-  **/
-
-char *
-subEwmhGetProperty(Window win,
-  Atom type,
-  SubEwmh e,
-  unsigned long *size)
-{
-  unsigned long nitems = 0, bytes = 0;
-  unsigned char *data = NULL;
-  int format = 0;
-  Atom rtype = None;
-
-  if(Success != XGetWindowProperty(subtle->disp, win, atoms[e], 0L, 1024, False, type, &rtype,
-    &format, &nitems, &bytes, &data))
-    {
-      char *name = XGetAtomName(subtle->disp, atoms[e]); 
-      subSharedLogDebug("Failed getting property `%s'\n", name);
-      XFree(name);
-
-      return NULL;
-    }
-
-  if(type != rtype) ///< Compare types
-    {
-      char *name = XGetAtomName(subtle->disp, atoms[e]); 
-      subSharedLogDebug("Property: %s => %ld != %ld'\n", name, type, rtype);
-      XFree(name);
-      XFree(data);
-      return NULL;
-    }
-
-  if(size) *size = (unsigned long)(format / 8) * nitems;
-
-  return (char *)data;
-} /* }}} */
-
  /** subEwmhGetWMState {{{
   * @brief Get WM state from window
   * @param[in]  win  A window
@@ -196,7 +152,7 @@ subEwmhGetXEmbedState(Window win)
   XEmbedInfo *info = NULL;
 
   /* Get xembed data */
-  if((info = (XEmbedInfo *)subEwmhGetProperty(win, subEwmhGet(SUB_EWMH_XEMBED_INFO), 
+  if((info = (XEmbedInfo *)subSharedPropertyGet(win, subEwmhGet(SUB_EWMH_XEMBED_INFO), 
     SUB_EWMH_XEMBED_INFO, NULL))) 
     {
       flags = (long)info->flags;

@@ -111,32 +111,38 @@ void subSharedMatch(int type, Window win, int gravity1,
   int gravity2, int *match, Window *found);                       ///< Match window
 /* }}} */
 
+/* Property {{{ */
+#if WM
+char *subSharedPropertyGet(Window win, Atom type,
+  SubEwmh e, unsigned long *size);                                ///< Get window property
+char **subSharedPropertyList(Window win,
+  SubEwmh e, int *size);                                          ///< Get window property list
+#else
+char *subSharedPropertyGet(Window win, Atom type,
+  char *name, unsigned long *size);                               ///< Get window property
+char **subSharedPropertyList(Window win,
+  char *name, int *size);                                         ///< Get window property list
+#endif /* WM */
+
+void subSharedPropertyListFree(char **list, int size);            ///< Free property list
+/* }}} */
+
+char *subSharedWindowClass(Window win);                           ///< Get WM class
+
 #ifdef WM
 /* Subtle {{{ */
 XPointer * subSharedFind(Window win, XContext id);                ///< Find data with context manager
 time_t subSharedTime(void);                                       ///< Get current time 
 void subSharedFocus(void);                                        ///< Get pointer window and focus it
 /* }}} */
-#endif /* WM */
-
-#ifndef WM
+#else /* WM */
 /* Message {{{ */
-int subSharedMessage(Window win, char *type,                      
+int subSharedMessage(Window win, char *type,
   SubMessageData data, int sync);                                 ///< Send client message
-/* }}} */
-
-/* Property {{{ */
-char *subSharedPropertyGet(Window win, Atom type, 
-  char *name, unsigned long *size);                               ///< Get window property
-char **subSharedPropertyList(Window win, char *name,
-  int *size);                                                     ///< Get property list
-void subSharedPropertyListFree(char **list, int size);            ///< Free property list
 /* }}} */
 
 /* Window {{{ */
 Window *subSharedWindowWMCheck(void);                             ///< Get WM check window
-char *subSharedWindowWMName(Window win);                          ///< Get WM name
-char *subSharedWindowWMClass(Window win);                         ///< Get wM class
 Window subSharedWindowSelect(void);                               ///< Select a window
 /* }}} */
 

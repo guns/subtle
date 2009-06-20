@@ -298,6 +298,193 @@ subSharedMatch(int type,
     }
 } /* }}} */
 
+ /** subSharedPropertyGet {{{
+  * @brief Get window property
+  * @param[in]  win   Client window
+  * @param[in]  type  Property type 
+  * @param[in]  name  Property name
+  * @param[in]  e     A #SubEwmh
+  * @param[in]  size  Size of the property
+  * return Returns the property
+  **/
+
+char *
+subSharedPropertyGet(Window win,
+  Atom type,
+#ifdef WM
+  SubEwmh e,
+#else /* WM */
+  char *name,
+#endif /* WM */
+  unsigned long *size)
+{
+  unsigned long nitems = 0, bytes = 0;
+  unsigned char *data = NULL;
+  int format = 0;
+  Atom rtype = None, prop = None;
+  Display *disp = NULL;
+
+#ifdef WM
+  char *name = "subtle";
+#endif /* WM */
+
+  assert(win);
+
+#ifdef WM
+  disp = subtle->disp; 
+  prop = subEwmhGet(e);
+#else /* WM */
+  disp = display;
+  prop = XInternAtom(display, name, False);
+#endif /* WM */
+
+  if(Success != XGetWindowProperty(disp, win, prop, 0L, 4096, 
+    False, type, &rtype, &format, &nitems, &bytes, &data))
+    {
+      subSharedLogWarn("Failed getting property `%s'\n", name);
+
+      return NULL;
+    }
+
+  if(type != rtype)
+    {
+      subSharedLogDebug("Property: %s => %ld != %ld'\n", name, type, rtype);
+      XFree(data);
+
+      return NULL;
+    }
+
+  if(size) *size = (unsigned long)(format / 8) * nitems;
+
+  return (char *)data;
+} /* }}} */
+
+ /** subSharedPropertyList {{{
+  * @brief Get property list
+  * @param[in]     win   Client window
+  * @param[in]     name  Property name
+  * @param[in]     e     A #SubEwmh
+  * @param[inout]  size  Size of the property list
+  * return Returns the property list
+  **/
+
+char **
+subSharedPropertyList(Window win,
+#ifdef WM
+  SubEwmh e,
+#else /* WM */
+  char *name,
+#endif /* WM */
+  int *size)
+{
+  int i, pos = 0, idx = 0;
+  char *string = NULL, **names = NULL;
+  unsigned long len;
+
+#ifdef WM
+  char *name = "subtle";
+#endif /* WM */
+
+  assert(win && size);
+
+  /* Check UTF8 and XA_STRING */
+#ifdef WM
+  if(!(string = (char *)subSharedPropertyGet(win, 
+    subEwmhGet(SUB_EWMH_UTF8), e, &len)))
+      string = (char *)subSharedPropertyGet(win, XA_STRING, e, &len);
+#else /* WM */
+  if(!(string = (char *)subSharedPropertyGet(win, 
+    XInternAtom(display, "UTF8_STRING", False), name, &len)))
+      string = (char *)subSharedPropertyGet(win, XA_STRING, name, &len);
+#endif /* WM */ 
+  
+  /* Fetch data */
+  if(string)
+    {
+      for(i = 0; i < len; i++) ////< Count \0 in string
+        if('\0' == string[i]) (*size)++;
+
+      names = (char **)subSharedMemoryAlloc(*size, sizeof(char *));
+
+      /* Split strings separated by \0 */
+      for(i = 0; i < len; i++)
+        {
+          if('\0' == string[i]) 
+            {
+              if(idx >= *size) break;
+
+              names[idx] = (char *)subSharedMemoryAlloc(i + 1 - pos, sizeof(char));
+              strncpy(names[idx], string + pos, i + 1 - pos);
+
+              idx++;
+              pos = i + 1;
+            }
+        }
+
+      free(string);
+
+      return names;
+    }
+  
+  subSharedLogDebug("Failed getting propery (%s)\n", name);
+
+  return NULL;
+} /* }}} */
+
+ /** subSharedPropertyListFree {{{
+  * @brief Free property list
+  * @param[inout]  list  Property list
+  * @param[in]     size  Size of the property list
+  * return Returns the property list
+  **/
+
+void
+subSharedPropertyListFree(char **list,
+  int size)
+{
+  int i;
+
+  assert(list);
+
+  for(i = 0; i < size; i++)
+    free(list[i]);
+
+  free(list);
+} /* }}} */
+
+ /** subSharedWindowClass {{{
+  * @brief Get window class
+  * @warning Must be free'd
+  * @param[in]  win   Client window
+  * return Returns the class of the window
+  * @retval  NULL  Property not found
+  **/
+
+char *
+subSharedWindowClass(Window win)
+{
+  int size = 0;
+  char **klass = NULL, *ret = NULL;
+
+  assert(win);
+
+  if((klass = subSharedPropertyList(win, 
+#ifdef WM
+    SUB_EWMH_WM_CLASS,
+#else /* WM */    
+    "WM_CLASS",
+#endif /* WM */    
+    &size)))
+    {
+      ret = klass[1]; ///< Class name
+
+      free(klass[0]); ///< Instance name
+      free(klass);
+    }  
+
+  return ret;
+} /* }}} */
+
 #ifdef WM
  /** subSharedFind {{{
   * @brief Find data with the context manager
@@ -350,9 +537,7 @@ subSharedFocus(void)
   if((c = CLIENT(subSharedFind(win, CLIENTID)))) subClientFocus(c);
   else XSetInputFocus(subtle->disp, ROOT, RevertToNone, CurrentTime);
 } /* }}} */
-#endif /* WM */
-
-#ifndef WM
+#else
  /** subSharedMessage {{{
   * @brief Send client message to window
   * @param[in]  win   Client window
@@ -372,7 +557,7 @@ subSharedMessage(Window win,
   XEvent ev;
   long mask = SubstructureRedirectMask|SubstructureNotifyMask;
 
-  assert(win && type);
+  assert(win);
 
   /* Assemble event */
   ev.xclient.type         = ClientMessage;
@@ -397,122 +582,6 @@ subSharedMessage(Window win,
   return status;
 } /* }}} */
 
- /** subSharedPropertyGet {{{
-  * @brief Get window property
-  * @param[in]  win   Client window
-  * @param[in]  type  Property type 
-  * @param[in]  size  Size of the property
-  * return Returns the property
-  **/
-
-char *
-subSharedPropertyGet(Window win,
-  Atom type,
-  char *name,
-  unsigned long *size)
-{
-  unsigned long nitems = 0, bytes = 0;
-  unsigned char *data = NULL;
-  int format = 0;
-  Atom rtype = None, prop = None;
-
-  assert(win && name);
-
-  prop = XInternAtom(display, name, False);
-
-  if(Success != XGetWindowProperty(display, win, prop, 0L, 4096, False, type, &rtype,
-    &format, &nitems, &bytes, &data))
-    {
-      subSharedLogWarn("Failed getting property `%s'\n", name);
-
-      return NULL;
-    }
-  if(type != rtype)
-    {
-      subSharedLogDebug("Property: %s => %ld != %ld'\n", name, type, rtype);
-      XFree(data);
-
-      return NULL;
-    }
-  if(size) *size = (unsigned long)(format / 8) * nitems;
-
-  return (char *)data;
-} /* }}} */
-
- /** subSharedPropertyList {{{
-  * @brief Get property list
-  * @param[in]    win   Client window
-  * @param[in]    name  Property name
-  * @param[inout]  size  Size of the property list
-  * return Returns the property list
-  **/
-
-char **
-subSharedPropertyList(Window win,
-  char *name,
-  int *size)
-{
-  int i, pos = 0, idx = 0;
-  char *string = NULL, **names = NULL;
-  unsigned long len;
-
-  assert(name && size);
-
-  /* Get data */
-  if((string = (char *)subSharedPropertyGet(win, 
-    XInternAtom(display, "UTF8_STRING", False), name, &len)))
-    {
-      /* Count \0 in string */
-      for(i = 0; i < len; i++) 
-        if(string[i] == '\0') (*size)++;
-
-      names = (char **)subSharedMemoryAlloc(*size, sizeof(char *));
-
-      for(i = 0; i < len; i++)
-        {
-          if(string[i] == '\0') 
-            {
-              if(idx >= *size) break;
-
-              names[idx] = (char *)subSharedMemoryAlloc(i + 1 - pos, sizeof(char));
-              strncpy(names[idx], string + pos, i + 1 - pos);
-
-              idx++;
-              pos = i + 1;
-            }
-        }
-
-      free(string);
-
-      return names;
-    }
-  
-  subSharedLogDebug("Failed getting propery (%s)\n", name);
-
-  return NULL;
-} /* }}} */
-
- /** subSharedPropertyListFree {{{
-  * @brief Free property list
-  * @param[inout]  list  Property list
-  * @param[in]     size  Size of the property list
-  * return Returns the property list
-  **/
-
-void
-subSharedPropertyListFree(char **list,
-  int size)
-{
-  int i;
-
-  assert(list);
-
-  for(i = 0; i < size; i++)
-    free(list[i]);
-
-  free(list);
-} /* }}} */
-
  /** subSharedWindowWMCheck {{{
   * @brief Get WM check window
   **/
@@ -522,40 +591,6 @@ subSharedWindowWMCheck(void)
 {
   return (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW,
     "_NET_SUPPORTING_WM_CHECK", NULL);
-} /* }}} */
-
- /** subSharedWindowWMName {{{
-  * @brief Get window name
-  * @warning Must be free'd
-  * @param[in]  win   Client window
-  * return Returns the name of the window
-  * @retval  NULL  Property not found
-  **/
-
-char *
-subSharedWindowWMName(Window win)
-{
-  assert(win);
-  
-  char *wmname = subSharedPropertyGet(win, XA_STRING, "WM_NAME", NULL);
-  return wmname ? wmname : NULL;
-} /* }}} */
-
- /** subSharedWindowWMClass {{{
-  * @brief Get window class
-  * @warning Must be free'd
-  * @param[in]  win   Client window
-  * return Returns the class of the window
-  * @retval  NULL  Property not found
-  **/
-
-char *
-subSharedWindowWMClass(Window win)
-{
-  assert(win);
-  
-  char *wmclass = subSharedPropertyGet(win, XA_STRING, "WM_CLASS", NULL);
-  return wmclass ? wmclass : NULL;
 } /* }}} */
 
  /** subSharedWindowSelect {{{
@@ -682,18 +717,17 @@ subSharedClientFind(char *name,
   if((clients = subSharedClientList(&size)))
     {
       int i;
-      char *wmname = NULL, *wmclass = NULL, buf[10];
+      char *klass = NULL, buf[10];
       regex_t *preg = subSharedRegexNew(name);
 
       for(i = 0; i < size; i++)
         {
-          wmname  = subSharedWindowWMName(clients[i]);
-          wmclass = subSharedWindowWMClass(clients[i]);
+          klass = subSharedWindowClass(clients[i]);
           snprintf(buf, sizeof(buf), "%#lx", clients[i]);
 
-          /* Find client either by window id or by wmname */
-          if(clients[i] == selwin || (wmname && subSharedRegexMatch(preg, wmname)) ||
-            (wmclass && subSharedRegexMatch(preg, wmclass)) || subSharedRegexMatch(preg, buf))
+          /* Find client either by window id or by wmclass */
+          if(clients[i] == selwin || (klass && subSharedRegexMatch(preg, klass))
+            || subSharedRegexMatch(preg, buf))
             {
               subSharedLogDebug("Found: type=client, name=%s, win=%#lx, id=%d\n", name,
                 clients[i], i);
@@ -701,14 +735,12 @@ subSharedClientFind(char *name,
               if(win) *win = clients[i];
 
               subSharedRegexKill(preg);
+              free(klass);
               free(clients);
-              free(wmname);
-              free(wmclass);
 
               return i;
             }
-          free(wmname);
-          free(wmclass);
+          free(klass);
         }
       subSharedRegexKill(preg);
     }
