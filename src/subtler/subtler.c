@@ -147,7 +147,7 @@ SubtlerMatch(int type)
               free(flags2);
             }
           
-          if(found) ret = subSharedWindowClass(found); ///< Get WM_CLASS of found win
+          if(found) subSharedPropertyClass(found, NULL, &ret); ///< Get WM_CLASS of found win
 
           free(focus);
           free(flags1);
@@ -170,7 +170,7 @@ SubtlerCurrentClient(void)
   if((focus = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
     XA_WINDOW, "_NET_ACTIVE_WINDOW", NULL)))
     {
-      ret = subSharedWindowClass(*focus);
+      subSharedPropertyClass(*focus, NULL, &ret);
 
       free(focus);
     }
@@ -212,12 +212,12 @@ SubtlerClientFind(char *arg1,
     {
       int x, y;
       Window unused;
-      char *klass = NULL;
+      char *inst = NULL, *klass = NULL;
       unsigned int width, height, border;
       unsigned long *nv = NULL, *rv = NULL, *cv = NULL, *gravity = NULL;
 
       /* Collect data */
-      klass = subSharedWindowClass(win);
+      subSharedPropertyClass(win, &inst, &klass);
       nv      = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
         XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
       rv      = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display),
@@ -229,9 +229,10 @@ SubtlerClientFind(char *arg1,
 
       XGetGeometry(display, win, &unused, &x, &y, &width, &height, &border, &border);
 
-      printf("%#lx %c %ld %ux%u %ld %s\n", win, (*cv == *rv ? '*' : '-'),
-        (*cv > *nv ? -1 : *cv), width, height, *gravity, klass);
+      printf("%#lx %c %ld %ux%u %ld %s (%s)\n", win, (*cv == *rv ? '*' : '-'),
+        (*cv > *nv ? -1 : *cv), width, height, *gravity, inst, klass);
 
+      free(inst);
       free(klass);
       free(nv);
       free(rv);
@@ -334,12 +335,12 @@ SubtlerClientList(char *arg1,
         {
           int x, y;
           Window unused;
-          char *klass = NULL;
+          char *inst = NULL, *klass = NULL;
           unsigned int width, height, border;
           unsigned long *cv = NULL, *gravity = NULL;
 
           /* Collect client data */
-          klass = subSharedWindowClass(clients[i]);
+          subSharedPropertyClass(clients[i], &inst, &klass);
           cv      = (unsigned long*)subSharedPropertyGet(clients[i], XA_CARDINAL, 
             "_NET_WM_DESKTOP", NULL);
           gravity = (unsigned long*)subSharedPropertyGet(clients[i], XA_CARDINAL, 
@@ -347,9 +348,10 @@ SubtlerClientList(char *arg1,
 
           XGetGeometry(display, clients[i], &unused, &x, &y, &width, &height, &border, &border);
 
-          printf("%#lx %c %ld %ux%u %ld %s\n", clients[i], (*cv == *rv ? '*' : '-'),
-            (*cv > *nv ? -1 : *cv), width, height, *gravity & ~SUB_GRAVITY_ALL, klass);
+          printf("%#lx %c %ld %ux%u %ld %s (%s)\n", clients[i], (*cv == *rv ? '*' : '-'),
+            (*cv > *nv ? -1 : *cv), width, height, *gravity & ~SUB_GRAVITY_ALL, inst, klass);
 
+          free(inst);
           free(klass);
           free(cv);
           free(gravity);
@@ -579,7 +581,7 @@ SubtlerTagFind(char *arg1,
           unsigned long *flags   = (unsigned long *)subSharedPropertyGet(clients[i], 
             XA_CARDINAL, "SUBTLE_WINDOW_TAGS", NULL);
 
-          klass = subSharedWindowClass(clients[i]);
+          subSharedPropertyClass(clients[i], NULL, &klass);
 
           if((int)*flags & (1L << (tag + 1))) 
             printf("%#lx %s [client]\n", clients[i], klass);
@@ -892,7 +894,7 @@ SubtlerUsage(int group)
          "  If the PATTERN is '-' %sr will read from stdin.\n", PKG_NAME);
 
   printf("\nFormat:\n" \
-         "  Client list: <window id> [-*] <view> <geometry> <gravity> <name>\n" \
+         "  Client list: <window id> [-*] <view> <geometry> <gravity> <name> (<class>)\n" \
          "  Tag    list: <name>\n" \
          "  View   list: <window id> [-*] <name>\n");
 
@@ -1177,7 +1179,7 @@ main(int argc,
         break;
       case SUB_MOD_SELECT:
         if(None != (win = subSharedWindowSelect()))
-          arg1 = subSharedWindowClass(win);
+          subSharedPropertyClass(win, NULL, &arg1);
         break;
       default:
         if(argc > optind)     arg1 = SubtlerParse(argv[optind]);

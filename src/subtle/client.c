@@ -81,10 +81,10 @@ subClientNew(Window win)
   c->win   = win;
 
   /* Fetch name and class */
-  XFetchName(subtle->disp, c->win, &c->name);
-  c->klass = subSharedWindowClass(c->win);
-  if(!c->name && c->klass) c->name = strdup(c->klass); ///< Fallback for e.g. Skype
-  c->width = XTextWidth(subtle->xfs, c->name, strlen(c->name)) + 6; ///< Font offset
+  XFetchName(subtle->disp, c->win, &c->caption);
+  subSharedPropertyClass(c->win, &c->name, &c->klass);
+  if(!c->caption && c->name) c->caption = strdup(c->name); ///< Fallback for e.g. Skype
+  c->width = XTextWidth(subtle->xfs, c->caption, strlen(c->caption)) + 6; ///< Font offset
 
   /* Update client */
   subEwmhSetWMState(c->win, WithdrawnState);
@@ -187,7 +187,7 @@ subClientNew(Window win)
   if(subtle->hooks.create) ///< Create hook
     subRubyCall(SUB_TYPE_HOOK, subtle->hooks.create, c);
 
-  subSharedLogDebug("new=client, name=%s, win=%#lx\n", c->name, win);
+  subSharedLogDebug("new=client, name=%s, klass=%s, win=%#lx\n", c->name, c->klass, win);
 
   return c;
 } /* }}} */
@@ -262,16 +262,17 @@ subClientRender(SubClient *c)
   DEAD(c);
   assert(c);
 
-  attrs.border_pixel = subtle->windows.focus == c->win ? subtle->colors.bg_focus : subtle->colors.norm;
+  attrs.border_pixel = subtle->windows.focus == c->win ? subtle->colors.bg_focus : 
+    subtle->colors.norm;
   XChangeWindowAttributes(subtle->disp, c->win, CWBorderPixel, &attrs);
 
   /* Caption */
   if(c->flags & (SUB_STATE_STICK|SUB_STATE_FLOAT))
     {
-      snprintf(buf, sizeof(buf), "%c%s", c->flags & SUB_STATE_STICK ? '*' : '^', c->name);
+      snprintf(buf, sizeof(buf), "%c%s", c->flags & SUB_STATE_STICK ? '*' : '^', c->caption);
       pos = (subtle->xfs->min_bounds.width + subtle->xfs->max_bounds.width) / 2; ///< Width of char
     }
-  else snprintf(buf, sizeof(buf), "%s", c->name);
+  else snprintf(buf, sizeof(buf), "%s", c->caption);
 
   /* Caption title */
   gvals.foreground = subtle->colors.fg_focus;
@@ -710,7 +711,8 @@ subClientSetTags(SubClient *c)
     {
       SubTag *t = TAG(subtle->tags->data[i]);
 
-      if(t->preg && (c->klass && subSharedRegexMatch(t->preg, c->klass)))
+      if(t->preg && ((c->name && subSharedRegexMatch(t->preg, c->name)) || 
+        (c->klass && subSharedRegexMatch(t->preg, c->klass))))
         c->tags |= (1L << (i + 1));
     }
   if(1 < (c->tags >> SUB_TAG_CLEAR)) c->tags &= ~SUB_TAG_DEFAULT;  
@@ -861,8 +863,9 @@ subClientKill(SubClient *c,
   subSharedFocus(); ///< Focus
 
   if(c->gravities) free(c->gravities);
-  if(c->klass) XFree(c->klass);
+  if(c->caption) XFree(c->caption);
   if(c->name) XFree(c->name);
+  if(c->klass) XFree(c->klass);
   free(c);
 
   subSharedLogDebug("kill=client\n");

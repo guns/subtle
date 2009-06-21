@@ -454,23 +454,25 @@ subSharedPropertyListFree(char **list,
   free(list);
 } /* }}} */
 
- /** subSharedWindowClass {{{
+ /** subSharedPropertyClass {{{
   * @brief Get window class
   * @warning Must be free'd
-  * @param[in]  win   Client window
-  * return Returns the class of the window
-  * @retval  NULL  Property not found
+  * @param[in]     win    Client window
+  * @param[inout]  inst   Client instance name
+  * @param[inout]  klass  Client class name
   **/
 
-char *
-subSharedWindowClass(Window win)
+void
+subSharedPropertyClass(Window win,
+  char **inst,
+  char **klass)
 {
   int size = 0;
-  char **klass = NULL, *ret = NULL;
+  char **klasses = NULL;
 
   assert(win);
 
-  if((klass = subSharedPropertyList(win, 
+  if((klasses = subSharedPropertyList(win, 
 #ifdef WM
     SUB_EWMH_WM_CLASS,
 #else /* WM */    
@@ -478,13 +480,16 @@ subSharedWindowClass(Window win)
 #endif /* WM */    
     &size)))
     {
-      ret = klass[1]; ///< Class name
+      /* Instance name */
+      if(inst) *inst = klasses[0];
+      else free(klasses[0]);
 
-      free(klass[0]); ///< Instance name
-      free(klass);
+      /* Class name */
+      if(klass) *klass = klasses[1];
+      else free(klasses[1]);
+
+      free(klasses);
     }  
-
-  return ret;
 } /* }}} */
 
 #ifdef WM
@@ -539,7 +544,7 @@ subSharedFocus(void)
   if((c = CLIENT(subSharedFind(win, CLIENTID)))) subClientFocus(c);
   else XSetInputFocus(subtle->disp, ROOT, RevertToNone, CurrentTime);
 } /* }}} */
-#else
+#else /* WM */
  /** subSharedMessage {{{
   * @brief Send client message to window
   * @param[in]  win   Client window
@@ -719,16 +724,17 @@ subSharedClientFind(char *name,
   if((clients = subSharedClientList(&size)))
     {
       int i;
-      char *klass = NULL, buf[10];
+      char *inst = NULL, *klass = NULL, buf[10];
       regex_t *preg = subSharedRegexNew(name);
 
       for(i = 0; i < size; i++)
         {
-          klass = subSharedWindowClass(clients[i]);
+          subSharedPropertyClass(clients[i], &inst, &klass);
           snprintf(buf, sizeof(buf), "%#lx", clients[i]);
 
-          /* Find client either by window id or by wmclass */
-          if(clients[i] == selwin || (klass && subSharedRegexMatch(preg, klass))
+          /* Find client either by window id or by inst/class */
+          if(clients[i] == selwin || (inst && subSharedRegexMatch(preg, inst)) ||
+            (klass && subSharedRegexMatch(preg, klass))
             || subSharedRegexMatch(preg, buf))
             {
               subSharedLogDebug("Found: type=client, name=%s, win=%#lx, id=%d\n", name,
@@ -737,11 +743,13 @@ subSharedClientFind(char *name,
               if(win) *win = clients[i];
 
               subSharedRegexKill(preg);
+              free(inst);
               free(klass);
               free(clients);
 
               return i;
             }
+          free(inst);
           free(klass);
         }
       subSharedRegexKill(preg);

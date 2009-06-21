@@ -125,9 +125,9 @@ char **subSharedPropertyList(Window win,
 #endif /* WM */
 
 void subSharedPropertyListFree(char **list, int size);            ///< Free property list
+void subSharedPropertyClass(Window win, char **inst,
+  char **klass);                                                  ///< Get WM class
 /* }}} */
-
-char *subSharedWindowClass(Window win);                           ///< Get WM class
 
 #ifdef WM
 /* Subtle {{{ */
