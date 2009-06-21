@@ -236,7 +236,9 @@ RubyGetRect(VALUE hash,
     {
       for(i = 0; i < 4; i++) ///< Safely fetching array values
         {
-          if(Qundef != (value = rb_funcall_rescue(ary, rb_intern("at"), 1, INT2FIX(i))) && 
+          VALUE meth = rb_intern("at");
+
+          if(Qundef != (value = rb_funcall_rescue(ary, meth, 1, INT2FIX(i))) && 
             Qnil != value) data[i] = FIX2INT(value);
           else RubyPerror(False, True, "Failed fetching array index `%d'", i + 1);
         }
@@ -999,6 +1001,11 @@ subRubyCall(int type,
 
                     rb_iv_set(inst, "@id",      INT2FIX(id));
                     rb_iv_set(inst, "@win",     LONG2NUM(c->win));
+                    rb_iv_set(inst, "@klass",   rb_str_new2(c->klass));
+                    rb_iv_set(inst, "@x",       INT2FIX(c->rect.x));
+                    rb_iv_set(inst, "@y",       INT2FIX(c->rect.y));
+                    rb_iv_set(inst, "@width",   INT2FIX(c->rect.width));
+                    rb_iv_set(inst, "@height",  INT2FIX(c->rect.height));
                     rb_iv_set(inst, "@gravity", INT2FIX(c->gravity));
                   }
                 else if(c->flags & SUB_TYPE_VIEW)
