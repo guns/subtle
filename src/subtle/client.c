@@ -22,37 +22,25 @@ typedef struct clientgravity_t
 
 /* ClientMask {{{ */
 static void
-ClientMask(SubClient *c,
-  XRectangle *r)
+ClientMask(SubClient *c)
 {
-  XRectangle rect = { 0, 0, 0, 0 };
-  
-  /* Init rect */
-  if(c)
-    {
-      rect        = c->rect;
-      rect.width  = WINW(c);
-      rect.height = WINH(c);
-    }
-
-  XDrawRectangle(subtle->disp, ROOT, subtle->gcs.invert, r->x - 1, r->y - 1,
-    r->width - 3, r->height - 3);
+  XDrawRectangle(subtle->disp, ROOT, subtle->gcs.invert, c->rect.x - 1, c->rect.y - 1,
+    c->rect.width + 1, c->rect.height + 1);
 } /* }}} */
 
 /* ClientSnap {{{ */
 static void
-ClientSnap(SubClient *c,
-  XRectangle *r)
+ClientSnap(SubClient *c)
 {
-  assert(c && r);
+  assert(c);
 
-  if(SNAP > r->x) r->x = subtle->bw;
-  else if(r->x > (SCREENW - WINW(c) - SNAP)) 
-    r->x = SCREENW - c->rect.width + subtle->bw;
+  if(SNAP > c->rect.x) c->rect.x = subtle->bw;
+  else if(c->rect.x > (SCREENW - WINW(c) - SNAP)) 
+    c->rect.x = SCREENW - c->rect.width - subtle->bw;
 
-  if(SNAP + subtle->th > r->y) r->y = subtle->bw + subtle->th;
-  else if(r->y > (SCREENH - WINH(c) - SNAP)) 
-    r->y = SCREENH - c->rect.height + subtle->bw;
+  if(SNAP + subtle->th > c->rect.y) c->rect.y = subtle->bw + subtle->th;
+  else if(c->rect.y > (SCREENH - WINH(c) - SNAP)) 
+    c->rect.y = SCREENH - c->rect.height - subtle->bw;
 } /* }}} */
 
  /** subClientNew {{{
@@ -92,7 +80,7 @@ subClientNew(Window win)
   XSetWindowBorderWidth(subtle->disp, c->win, subtle->bw);
   XAddToSaveSet(subtle->disp, c->win);
   XSaveContext(subtle->disp, c->win, CLIENTID, (void *)c);
-  subClientSetSize(c);
+  subClientSetHints(c);
   subClientSetTags(c);
   subClientSetStrut(c);
 
@@ -103,6 +91,8 @@ subClientNew(Window win)
   c->rect.y      = attrs.y;
   c->rect.width  = attrs.width;
   c->rect.height = attrs.height;
+  c->basew       = attrs.width;
+  c->baseh       = attrs.height;
 
   /* Protocols */
   if(XGetWMProtocols(subtle->disp, c->win, &protos, &n))
@@ -345,32 +335,30 @@ subClientDrag(SubClient *c,
   XEvent ev;
   Window win;
   unsigned int mask = 0;
-  int loop = True, left = False, wx = 0, wy = 0, rx = 0, ry = 0;
+  int loop = True, left = False, wx = 0, wy = 0, ww = 0, wh = 0, rx = 0, ry = 0;
   short *dirx = NULL, *diry = NULL;
-  XRectangle r;
   Cursor cursor;
-  SubClient *c2 = NULL;
 
   DEAD(c);
   assert(c);
  
   /* Init {{{ */
   XQueryPointer(subtle->disp, c->win, &win, &win, &rx, &ry, &wx, &wy, &mask);
-  r.x      = rx - wx;
-  r.y      = ry - wy;
-  r.width  = c->rect.width;
-  r.height = c->rect.height; 
+  c->rect.x = rx - wx;
+  c->rect.y = ry - wy;
+  ww        = c->rect.width;
+  wh        = c->rect.height;
 
   switch(mode)
     {
       case SUB_DRAG_MOVE:
-        dirx   = &r.x;
-        diry   = &r.y;
+        dirx   = &c->rect.x;
+        diry   = &c->rect.y;
         cursor = subtle->cursors.move;
         break;
       case SUB_DRAG_RESIZE:
-        dirx   = (short *)&r.width;
-        diry   = (short *)&r.height;
+        dirx   = (short *)&c->rect.width;
+        diry   = (short *)&c->rect.height;
         cursor = subtle->cursors.resize;
         left   = wx < c->rect.width / 2; ///< Resize from left
         break;
@@ -380,7 +368,7 @@ subClientDrag(SubClient *c,
     cursor, CurrentTime)) return;
 
   XGrabServer(subtle->disp);
-  if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE)) ClientMask(c, &r);
+  if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE)) ClientMask(c);
 
   while(loop) ///< Event loop
     {
@@ -395,7 +383,7 @@ subClientDrag(SubClient *c,
             if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE))
               {
                 KeySym sym = XKeycodeToKeysym(subtle->disp, ev.xkey.keycode, 0);
-                ClientMask(c, &r);
+                ClientMask(c);
 
                 switch(sym)
                   {
@@ -409,69 +397,49 @@ subClientDrag(SubClient *c,
                 *dirx = MINMAX(*dirx, c->minw, c->maxw);
                 *diry = MINMAX(*diry, c->minh, c->maxh);
               
-                ClientMask(c, &r);
+                ClientMask(c);
               }
             break; /* }}} */
           case MotionNotify: /* {{{ */
             if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE))
               {
-                ClientMask(c, &r);
+                ClientMask(c);
           
                 /* Calculate selection rect */
                 switch(mode)
                   {
                     case SUB_DRAG_MOVE:
-                      r.x = (rx - wx) - (rx - ev.xmotion.x_root);
-                      r.y = (ry - wy) - (ry - ev.xmotion.y_root);
+                      c->rect.x = (rx - wx) - (rx - ev.xmotion.x_root);
+                      c->rect.y = (ry - wy) - (ry - ev.xmotion.y_root);
 
-                      ClientSnap(c, &r); ///< Snap to border
+                      ClientSnap(c); ///< Snap to border
                       break;
                     case SUB_DRAG_RESIZE: 
-                      if(c->rect.width + ev.xmotion.x_root >= rx)
+                      if(left) 
                         {
-                          int width = left ? c->rect.width + (rx - ev.xmotion.x_root) : 
-                            c->rect.width - (rx - ev.xmotion.x_root);
-
-                          if(width >= c->minw && width <= c->maxw && 
-                            c->rect.x + width < SCREENW) ///< Limit size
-                            {
-                              r.width = width - (width % c->incw); 
-                              if(left) r.x = c->rect.x + c->rect.width - r.width;
-                            }
+                          c->rect.width = ww + (rx - ev.xmotion.x_root);
+                          c->rect.x     = wx + ww - c->rect.width;
                         }
+                      else c->rect.width = ww - (rx - ev.xmotion.x_root);
 
-                      if(c->rect.height + ev.xmotion.y_root >= ry)
-                        {
-                          int height = c->rect.height - (ry - ev.xmotion.y_root);
+                      c->rect.height = wh - (ry - ev.xmotion.y_root);
 
-                          if(height >= c->minh && height <= c->maxh &&
-                            c->rect.y + height < SCREENH - subtle->bw) ///< Limit size
-                            r.height = height - (height % c->inch);
-                        }
-
-                      /* Check aspect ratios */
-                      if(c->minr && r.height * c->minr > r.width)
-                        r.width = (int)(r.height * c->minr);
-
-                      if(c->maxr && r.height * c->maxr < r.width)
-                        r.width = (int)(r.height * c->maxr);
-                        
+                      subClientSetSize(c);
                       break;
                   }  
 
-                ClientMask(c, &r);
+                ClientMask(c);
               }
             break; /* }}} */
         }
     }
 
-  ClientMask(c2, &r); ///< Erase mask
+  ClientMask(c); ///< Erase mask
 
   if(c->flags & SUB_STATE_FLOAT) ///< Resize client
     {
-      r.y     -= (subtle->th + subtle->bw); ///< Border and bar height
-      r.x     -= subtle->bw;
-      c->rect  = r;
+      c->rect.y -= (subtle->th + subtle->bw); ///< Border and bar height
+      c->rect.x -= subtle->bw;
 
       subClientConfigure(c);
     }
@@ -480,7 +448,7 @@ subClientDrag(SubClient *c,
   XUngrabServer(subtle->disp);
 } /* }}} */
 
-  /** subClientUpdate {{{ 
+ /** subClientUpdate {{{ 
    * @brief Update gravity array
    * @param[in]  vid  View index
    **/
@@ -633,12 +601,47 @@ subClientSetGravity(SubClient *c,
 } /* }}} */
 
   /** subClientSetSize {{{ 
-   * @brief Set client size
+   * @brief Set client size according to client hints
    * @param[in]  c  A #SubClient
    **/
 
 void
 subClientSetSize(SubClient *c)
+{
+  DEAD(c);
+  assert(c);
+
+  /* Limit width */
+  if(c->rect.width < c->minw) c->rect.width = c->minw;
+  if(c->rect.x + c->rect.width > SCREENW) 
+    c->rect.width = SCREENW - c->rect.x;
+  else if(c->rect.width > c->maxw) c->rect.width = c->minw;
+
+  /* Limit height */
+  if(c->rect.height < c->minh) c->rect.height = c->minh;
+  if(c->rect.y + c->rect.height > SCREENH - subtle->bw)
+    c->rect.height = SCREENH - c->rect.y;
+  else if(c->rect.height > c->maxh) c->rect.height = c->minh;
+
+  /* Check incs */
+  c->rect.width  -= c->rect.width % c->incw; 
+  c->rect.height -= c->rect.height % c->inch;
+
+  /* Check aspect ratios */
+  if(c->minr && c->rect.height * c->minr > c->rect.width)
+    c->rect.width = (int)(c->rect.height * c->minr);
+
+  if(c->maxr && c->rect.height * c->maxr < c->rect.width)
+    c->rect.width = (int)(c->rect.height * c->maxr); 
+} /* }}} */
+
+  /** subClientSetHints {{{ 
+   * @brief Set client hints
+   * @param[in]  c  A #SubClient
+   **/
+
+void
+subClientSetHints(SubClient *c)
 {
   long supplied = 0;
   XSizeHints *size = NULL;
@@ -652,10 +655,10 @@ subClientSetSize(SubClient *c)
   /* Default values {{{ */
   c->flags &= ~SUB_PREF_POS;
   c->flags &= ~SUB_PREF_SIZE;
-  c->minw   = MAX(c->rect.width, MINW);
-  c->minh   = MAX(c->rect.height, MINH);
-  c->maxw   = SCREENW;
-  c->maxh   = SCREENH - subtle->th;
+  c->minw   = MINW;
+  c->minh   = MINH;
+  c->maxw   = SCREENW - 2 * subtle->bw;
+  c->maxh   = SCREENH - subtle->th - 2 * subtle->bw;
   c->minr   = 0.0f;
   c->maxr   = 0.0f;
   c->incw   = 1;
@@ -692,9 +695,9 @@ subClientSetSize(SubClient *c)
     }
 
   subSharedLogDebug("Size: x=%d, y=%d, width=%d, height=%d, minw=%d, minh=%d, " \
-    "maxw=%d, maxh=%d, basew=%d, baseh=%d, minr=%f, maxr=%f\n",
-    c->rect.x, c->rect.y, c->rect.width, c->rect.height,
-    c->minw, c->minh, c->maxw, c->maxh, c->basew, c->basew, c->minr, c->maxr);
+    "maxw=%d, maxh=%d, minr=%f, maxr=%f\n",
+    c->rect.x, c->rect.y, c->rect.width, c->rect.height, c->minw, c->minh, c->maxw,
+    c->maxh, c->minr, c->maxr);
 } /* }}} */
 
  /** subClientSetTags {{{
@@ -780,17 +783,12 @@ subClientToggle(SubClient *c,
 
       if(type & SUB_STATE_FLOAT)
         {
-          /* Ignore values if they are garbage */
-          if(c->minw > c->rect.width || c->minh > c->rect.width ||
-            c->maxw < c->rect.width || c->maxh < c->rect.height)
-            {
-              c->rect.width  = c->minw;
-              c->rect.height = c->minh;
-            }
+          c->rect.width  = c->basew;
+          c->rect.height = c->baseh;
 
-          if(0 <= c->rect.x || 0 <= c->rect.y ||
-            c->rect.x + c->rect.width > SCREENW ||
-            c->rect.y + c->rect.height > SCREENH - subtle->th) ///< Center
+          subClientSetSize(c);
+
+          if(0 <= c->rect.x || 0 <= c->rect.y) ///< Center
             {
               c->rect.x = (SCREENW - c->rect.width) / 2;
               c->rect.y = ((SCREENH - subtle->th) - c->rect.height) / 2;
