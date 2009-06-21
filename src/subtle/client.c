@@ -651,12 +651,10 @@ subClientSetSize(SubClient *c)
   /* Default values {{{ */
   c->flags &= ~SUB_PREF_POS;
   c->flags &= ~SUB_PREF_SIZE;
-  c->minw   = MINW;
-  c->minh   = MINH;
+  c->minw   = MAX(c->rect.width, MINW);
+  c->minh   = MAX(c->rect.height, MINH);
   c->maxw   = SCREENW;
   c->maxh   = SCREENH - subtle->th;
-  c->basew  = 0;
-  c->baseh  = 0;
   c->minr   = 0.0f;
   c->maxr   = 0.0f;
   c->incw   = 1;
@@ -675,12 +673,6 @@ subClientSetSize(SubClient *c)
         {
           if(size->max_width)  c->maxw = MIN(size->max_width, SCREENW);
           if(size->max_height) c->maxh = MIN(size->max_height, SCREENH - subtle->th);
-        }
-
-      if(size->flags & PBaseSize) ///< Program max size
-        {
-          if(size->base_width)  c->basew = MIN(size->base_width, SCREENW);
-          if(size->base_height) c->baseh = MIN(size->base_height, SCREENH - subtle->th);
         }
 
       if(size->flags & PAspect) ///< Aspect
@@ -794,7 +786,7 @@ subClientToggle(SubClient *c,
               c->rect.height = c->minh;
             }
 
-          if(0 < c->rect.x || 0 < c->rect.y ||
+          if(0 <= c->rect.x || 0 <= c->rect.y ||
             c->rect.x + c->rect.width > SCREENW ||
             c->rect.y + c->rect.height > SCREENH - subtle->th) ///< Center
             {
