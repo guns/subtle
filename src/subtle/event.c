@@ -416,6 +416,17 @@ EventMessage(XClientMessageEvent *ev)
             subClientKill(c, True);
             subViewUpdate();
             break; /* }}} */
+          case SUB_EWMH_NET_MOVERESIZE_WINDOW: /* {{{ */
+            if(!(c->flags & SUB_STATE_FLOAT)) subClientToggle(c, SUB_STATE_FLOAT);
+
+            c->rect.x      = ev->data.l[1];
+            c->rect.y      = ev->data.l[2];
+            c->rect.width  = ev->data.l[3];
+            c->rect.height = ev->data.l[4];
+
+            subClientSetSize(c);
+            subClientConfigure(c);
+            break; /* }}} */
           default: break;
         }
     } /* }}} */
@@ -459,16 +470,16 @@ EventProperty(XPropertyEvent *ev)
   /* Supported properties */
   switch(id)
     {
-      case SUB_EWMH_WM_NAME: ///< Client
+      case SUB_EWMH_WM_NAME: /* {{{ */
         if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) 
           {
-            char *name = NULL;
+            char *caption = NULL;
 
-            if(XFetchName(subtle->disp, c->win, &name))
+            if(XFetchName(subtle->disp, c->win, &caption))
               {
-                if(c->name) free(c->name);
-                c->name  = name;
-                c->width = XTextWidth(subtle->xfs, c->name, strlen(c->name)) + 6; ///< Font offset
+                if(c->caption) free(c->caption);
+                c->caption = caption;
+                c->width   = XTextWidth(subtle->xfs, c->caption, strlen(c->caption)) + 6; ///< Font offset
 
                 if(subtle->windows.focus == c->win) 
                   {
@@ -477,11 +488,11 @@ EventProperty(XPropertyEvent *ev)
                   }
               }
           }
-        break;
-      case SUB_EWMH_WM_NORMAL_HINTS: ///< Client/Tray
+        break; /* }}} */
+      case SUB_EWMH_WM_NORMAL_HINTS: /* {{{ */
         if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) 
           {
-            subClientSetSize(c);
+            subClientSetHints(c);
             subSharedLogDebug("Hints: Updated normal hints\n");
           }
         else if((t = TRAY(subSharedFind(ev->window, TRAYID))))
@@ -490,23 +501,23 @@ EventProperty(XPropertyEvent *ev)
             subTrayUpdate();
             subViewRender();
           }          
-        break;
-      case SUB_EWMH_NET_WM_STRUT: ///< Client
+        break; /* }}} */
+      case SUB_EWMH_NET_WM_STRUT: /* {{{ */
          if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) 
           {
             subClientSetStrut(c);
             subDisplaySetStrut();
             subSharedLogDebug("Hints: Updated strut hints\n");
           }
-        break;
-      case SUB_EWMH_XEMBED_INFO: ///< Tray
+        break; /* }}} */
+      case SUB_EWMH_XEMBED_INFO: /* {{{ */
         if((t = TRAY(subSharedFind(ev->window, TRAYID))))
           {
             subTraySetState(t);
             subTrayUpdate();
             subViewRender();
           }
-        break;
+        break; /* }}} */
 #ifdef DEBUG
       default:
         {

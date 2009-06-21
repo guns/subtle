@@ -162,22 +162,31 @@ static VALUE
 SubtlextClientFromWin(Window win)
 {
   int id = 0;
-  char *wmklass = NULL;
+  char *wmname = NULL, *wmklass = NULL;
   int *gravity = NULL;
+  XWindowAttributes attrs;
   VALUE klass = Qnil, client = Qnil;
 
   /* Create new instance */
+  subSharedPropertyClass(win, &wmname, &wmklass);
   klass   = rb_const_get(mod, rb_intern("Client"));
-  wmklass = subSharedWindowClass(win);
   id      = subSharedClientFind(wmklass, NULL);
-  client  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(wmklass));
+  client  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(wmname));
   gravity = (int *)subSharedPropertyGet(win, XA_CARDINAL,
     "SUBTLE_WINDOW_GRAVITY", NULL);
 
+  XGetWindowAttributes(display, win, &attrs);
+
   rb_iv_set(client, "@id",      INT2FIX(id));
   rb_iv_set(client, "@win",     LONG2NUM(win));
+  rb_iv_set(client, "@klass",   rb_str_new2(wmklass));
+  rb_iv_set(client, "@x",       INT2FIX(attrs.x));
+  rb_iv_set(client, "@y",       INT2FIX(attrs.y));
+  rb_iv_set(client, "@width",   INT2FIX(attrs.width));
+  rb_iv_set(client, "@height",  INT2FIX(attrs.height));
   rb_iv_set(client, "@gravity", INT2FIX(*gravity));
 
+  free(wmname);
   free(wmklass);
   free(gravity);  
 
@@ -286,6 +295,11 @@ SubtlextClientInit(VALUE self,
   rb_iv_set(self, "@id",      Qnil);
   rb_iv_set(self, "@win",     Qnil);
   rb_iv_set(self, "@name",    name);
+  rb_iv_set(self, "@klass",   Qnil);
+  rb_iv_set(self, "@x",       Qnil);
+  rb_iv_set(self, "@y",       Qnil); 
+  rb_iv_set(self, "@width",   Qnil); 
+  rb_iv_set(self, "@height",  Qnil); 
   rb_iv_set(self, "@gravity", Qnil);
 
   return self;
@@ -564,6 +578,52 @@ SubtlextClientGravitySet(VALUE self,
     }
 
   rb_raise(rb_eArgError, "Failed setting value type `%d'", rb_type(value));
+  return Qnil;
+} /* }}} */
+
+/* SubtlextClientSize {{{ */
+static VALUE
+SubtlextClientSize(VALUE self)
+{
+  VALUE ary = rb_ary_new2(4);
+
+  /* Push sizes */
+  rb_ary_push(ary,  rb_iv_get(self, "@x"));
+  rb_ary_push(ary,  rb_iv_get(self, "@y"));
+  rb_ary_push(ary,  rb_iv_get(self, "@width"));
+  rb_ary_push(ary,  rb_iv_get(self, "@height"));
+
+  return ary;
+} /* }}} */
+
+/* SubtlextClientSizeSet {{{ */
+static VALUE
+SubtlextClientSizeSet(VALUE self,
+  VALUE value)
+{
+  int len = 0;
+
+  /* Check object */
+  switch(rb_type(value))
+    {
+      case T_ARRAY:
+        if(4 == (len = FIX2INT(rb_funcall(value, rb_intern("length"), 0, NULL))))
+          {
+            int i;
+            VALUE win = rb_iv_get(self, "@win"), meth = rb_intern("at");
+            SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+            /* Get sizes */
+            for(i = 1; i < 5; i++)
+              data.l[i] = FIX2INT(rb_funcall(value, meth, 1, INT2FIX(i - 1)));
+
+            subSharedMessage(NUM2LONG(win), "_NET_MOVERESIZE_WINDOW", data, True);
+          }
+        else rb_raise(rb_eArgError, "Missing arguments");
+        break;
+      default: rb_raise(rb_eArgError, "Unknown value type");
+    }
+
   return Qnil;
 } /* }}} */
 
@@ -1252,8 +1312,12 @@ SubtlextTagTaggings(VALUE self)
 
           if((int)*flags & (1L << (id + 1))) ///< Check if tag id matches
             {
-              char *wmklass = subSharedWindowClass(clients[i]);
-              VALUE c       = rb_funcall(klass, method, 1, rb_str_new2(wmklass));
+              VALUE c = Qnil;
+              char *wmklass = NULL;
+              
+              /* Create client instance */
+              subSharedPropertyClass(clients[i], NULL, &wmklass);
+              c = rb_funcall(klass, method, 1, rb_str_new2(wmklass));
 
               rb_iv_set(c, "@id",  INT2FIX(i));
               rb_iv_set(c, "@win", LONG2NUM(clients[i]));
@@ -1487,6 +1551,11 @@ Init_subtlext(void)
   klass = rb_define_class_under(mod, "Client", rb_cObject);
   rb_define_attr(klass,   "id",      1, 0);
   rb_define_attr(klass,   "win",     1, 0);
+  rb_define_attr(klass,   "klass",   1, 0);
+  rb_define_attr(klass,   "x",       1, 0);
+  rb_define_attr(klass,   "y",       1, 0);
+  rb_define_attr(klass,   "width",   1, 0);
+  rb_define_attr(klass,   "height",  1, 0);
   rb_define_attr(klass,   "name",    1, 0);
 
   rb_define_method(klass, "initialize",   SubtlextClientInit,          1);
@@ -1509,6 +1578,8 @@ Init_subtlext(void)
   rb_define_method(klass, "to_s",         SubtlextClientToString,      0);
   rb_define_method(klass, "gravity",      SubtlextClientGravity,       0);
   rb_define_method(klass, "gravity=",     SubtlextClientGravitySet,    1);
+  rb_define_method(klass, "size",         SubtlextClientSize,          0);
+  rb_define_method(klass, "size=",        SubtlextClientSizeSet,       1);
   rb_define_method(klass, "horz?",        SubtlextClientModeHorzHas,   0);
   rb_define_method(klass, "vert?",        SubtlextClientModeVertHas,   0);
   rb_define_method(klass, "mode33?",      SubtlextClientMode33Has,     0);

@@ -200,7 +200,7 @@ typedef struct subarray_t /* {{{ */
 typedef struct subclient_t /* {{{ */
 {
   FLAGS      flags;                                               ///< Client flags
-  char       *name, *klass;                                       ///< Client name, wmclass
+  char       *name, *klass, *caption;                             ///< Client name, klass, caption
 
   TAGS       tags;                                                ///< Client tags
   Window     win, group;                                          ///< Client window
@@ -208,7 +208,7 @@ typedef struct subclient_t /* {{{ */
   XRectangle rect;                                                ///< Client rect
 
   float      minr, maxr;                                          ///< Client ratios
-  int        minw, minh, maxw, maxh, incw, inch;                  ///< Client sizes
+  int        minw, minh, maxw, maxh, basew, baseh, incw, inch;    ///< Client sizes
   int        width, gravity, *gravities;                          ///< Client width, gravities
 } SubClient; /* }}} */
 
@@ -239,6 +239,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_NET_VIRTUAL_ROOTS,                                     ///< List of virtual destops
   SUB_EWMH_NET_CLOSE_WINDOW,                                      ///< Close window             
   SUB_EWMH_NET_RESTACK_WINDOW,                                    ///< Change window stacking
+  SUB_EWMH_NET_MOVERESIZE_WINDOW,                                 ///< Resize window
 
   SUB_EWMH_NET_WM_NAME,                                           ///< Name of client
   SUB_EWMH_NET_WM_PID,                                            ///< PID of client
@@ -443,6 +444,7 @@ void subClientDrag(SubClient *c, int mode);                       ///< Move/drag
 void subClientUpdate(int vid);                                    ///< Update clients
 void subClientSetGravity(SubClient *c, int type);                 ///< Set client gravity
 void subClientSetSize(SubClient *c);                              ///< Set client sizes
+void subClientSetHints(SubClient *c);                             ///< Set client hints
 void subClientSetTags(SubClient *c);                              ///< Set client tags
 void subClientSetStrut(SubClient *c);                             ///< Set client strut
 void subClientToggle(SubClient *c, int type);                     ///< Toggle client state
