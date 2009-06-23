@@ -417,10 +417,11 @@ subClientDrag(SubClient *c,
                     case SUB_DRAG_RESIZE: 
                       if(left) 
                         {
-                          c->rect.width = ww + (rx - ev.xmotion.x_root);
-                          c->rect.x     = wx + ww - c->rect.width;
+                          c->rect.width  = ww + (rx - ev.xmotion.x_root);
+                          c->rect.width -= (c->rect.width % c->incw);
+                          c->rect.x      = (rx - wx) + ww - c->rect.width;
                         }
-                      else c->rect.width = ww - (rx - ev.xmotion.x_root);
+                      else c->rect.width  = ww - (rx - ev.xmotion.x_root);
 
                       c->rect.height = wh - (ry - ev.xmotion.y_root);
 
@@ -613,15 +614,15 @@ subClientSetSize(SubClient *c)
 
   /* Limit width */
   if(c->rect.width < c->minw) c->rect.width = c->minw;
+  if(c->rect.width > c->maxw) c->rect.width = c->maxw;
   if(c->rect.x + c->rect.width > SCREENW) 
     c->rect.width = SCREENW - c->rect.x;
-  else if(c->rect.width > c->maxw) c->rect.width = c->minw;
 
   /* Limit height */
   if(c->rect.height < c->minh) c->rect.height = c->minh;
+  if(c->rect.height > c->maxh) c->rect.height = c->maxh;
   if(c->rect.y + c->rect.height > SCREENH - subtle->bw)
     c->rect.height = SCREENH - c->rect.y;
-  else if(c->rect.height > c->maxh) c->rect.height = c->minh;
 
   /* Check incs */
   c->rect.width  -= c->rect.width % c->incw; 
