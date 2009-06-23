@@ -846,6 +846,7 @@ subClientKill(SubClient *c,
   /* Ignore further events and delete context */
   XSelectInput(subtle->disp, c->win, NoEventMask);
   XDeleteContext(subtle->disp, c->win, CLIENTID);
+  XUnmapWindow(subtle->disp, c->win);
 
   /* Close window */
   if(close && !(c->flags & SUB_STATE_DEAD))
