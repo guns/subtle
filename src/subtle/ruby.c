@@ -47,6 +47,7 @@ RubyPerror(int verbose,
   char buf[255];
   VALUE lineno = Qnil, lasterr = Qnil, message = Qnil;
 
+  /* Fetch infos */
   lineno  = rb_gv_get("$.");
   lasterr = rb_gv_get("$!");
   message = rb_obj_as_string(lasterr);

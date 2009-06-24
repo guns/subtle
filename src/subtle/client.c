@@ -397,6 +397,7 @@ subClientDrag(SubClient *c,
                 *dirx = MINMAX(*dirx, c->minw, c->maxw);
                 *diry = MINMAX(*diry, c->minh, c->maxh);
               
+                subClientSetSize(c);
                 ClientMask(c);
               }
             break; /* }}} */
