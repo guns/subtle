@@ -10,9 +10,6 @@
 #
 
 class Memory < Subtle::Sublet
-  @total  = 0
-  @active = 0
-
   def initialize
     self.interval = 30
   end
@@ -25,10 +22,16 @@ class Memory < Subtle::Sublet
         file = f.read
       end
 
-      @total  = file.match(/MemTotal:\s*(\d+)\s*kB/)[1].to_i / 1024 || 0
-      @active = file.match(/Cached:\s*(\d+)\s*kB/)[1].to_i / 1024 || 0
+      # Collect data
+      @total   = file.match(/MemTotal:\s*(\d+)\s*kB/)[1].to_i || 0
+      @free    = file.match(/MemFree:\s*(\d+)\s*kB/)[1].to_i || 0
+      @buffers = file.match(/Buffers:\s*(\d+)\s*kB/)[1].to_i || 0
+      @cached  = file.match(/Cached:\s*(\d+)\s*kB/)[1].to_i || 0
 
-      self.data = @active.floor.to_s + "/" + @total.floor.to_s + color(COLORS["bg_focus"]) + "//"
+      @used    = (@total - (@free + @buffers + @cached)) / 1024
+      @total   = @total / 1024
+
+      self.data = @used.to_s + "/" + @total.to_s + color(COLORS["bg_focus"]) + "//"
     rescue => err # Sanitize to prevent unloading
       self.data = "subtle"
       p err
