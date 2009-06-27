@@ -354,7 +354,11 @@ subSharedPropertyGet(Window win,
       return NULL;
     }
 
+#ifdef __LP64__
+  if(size) *size = (unsigned long)(format / 4) * nitems;
+#else /* LP64 */
   if(size) *size = (unsigned long)(format / 8) * nitems;
+#endif /* LP64 */
 
   return (char *)data;
 } /* }}} */
@@ -687,9 +691,8 @@ subSharedClientList(int *size)
 
   assert(size);
 
-  clients = (Window *)subSharedPropertyGet(DefaultRootWindow(display),
-    XA_WINDOW, "_NET_CLIENT_LIST", &len);
-  if(clients)
+  if((clients = (Window *)subSharedPropertyGet(DefaultRootWindow(display),
+    XA_WINDOW, "_NET_CLIENT_LIST", &len)))
     {
       *size = len / sizeof(Window);
     }
