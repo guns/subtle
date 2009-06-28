@@ -75,7 +75,8 @@ subEwmhInit(void)
 
   /* EWMH: Supported hints */
   XInternAtoms(subtle->disp, names, SUB_EWMH_TOTAL, 0, atoms);
-  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_SUPPORTED, (long *)&atoms, SUB_EWMH_TOTAL);
+  XChangeProperty(subtle->disp, ROOT, atoms[SUB_EWMH_NET_SUPPORTED], XA_ATOM, 32, 
+    PropModeReplace, (unsigned char *)&atoms, SUB_EWMH_TOTAL);
 
   /* EWMH: Window manager information */
   subEwmhSetWindows(ROOT, SUB_EWMH_NET_SUPPORTING_WM_CHECK, &subtle->windows.bar, 1);
