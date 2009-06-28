@@ -125,11 +125,13 @@ subClientNew(Window win)
 
   /* Check for transient windows */
   if(XGetTransientForHint(subtle->disp, c->win, &trans))
-    if((k = CLIENT(subSharedFind(trans, CLIENTID))))
-      {
-        c->flags |= SUB_PREF_TRANS;
-        c->tags   = (k->tags|SUB_TAG_FLOAT|SUB_TAG_STICK); ///< Copy tags
-      }
+    {
+      c->flags |= SUB_PREF_TRANS;
+      c->tags   = (SUB_TAG_FLOAT|SUB_TAG_STICK); ///< Copy tags
+
+      if((k = CLIENT(subSharedFind(trans, CLIENTID))))
+        c->tags |= k->tags;
+     }
 
   /* Properties */
   if(c->tags & SUB_TAG_FLOAT) subClientToggle(c, SUB_STATE_FLOAT);
@@ -693,7 +695,7 @@ subClientSetHints(SubClient *c)
       XFree(size);
     }
 
-  subSharedLogDebug("Size: x=%d, y=%d, width=%d, height=%d, minw=%d, minh=%d, " \
+  subSharedLogDebug("Normal hints: x=%d, y=%d, width=%d, height=%d, minw=%d, minh=%d, " \
     "maxw=%d, maxh=%d, minr=%f, maxr=%f\n",
     c->geom.x, c->geom.y, c->geom.width, c->geom.height, c->minw, c->minh, c->maxw,
     c->maxh, c->minr, c->maxr);
