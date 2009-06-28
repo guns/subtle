@@ -493,7 +493,6 @@ EventProperty(XPropertyEvent *ev)
         if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) 
           {
             subClientSetHints(c);
-            subSharedLogDebug("Hints: Updated normal hints\n");
           }
         else if((t = TRAY(subSharedFind(ev->window, TRAYID))))
           {
@@ -547,7 +546,7 @@ EventCrossing(XCrossingEvent *ev)
     {
       if(!(c->flags & SUB_STATE_DEAD))
         subClientFocus(c);
-     }
+    }
   else if((t = TRAY(subSharedFind(ev->window, TRAYID)))) 
     subTrayFocus(t);
 
@@ -754,15 +753,7 @@ EventFocus(XFocusChangeEvent *ev)
   SubClient *c = NULL;
   SubTray *t = NULL;
 
-  /* Check if we are interested in this event */
-  if((NotifyNormal != ev->mode || NotifyInferior == ev->detail) &&
-    !(NotifyWhileGrabbed == ev->mode && 
-    (NotifyNonlinear == ev->detail || NotifyAncestor == ev->detail)))
-    {
-      subSharedLogDebug("Focus ignore: type=%s, mode=%d, detail=%d, send_event=%d\n", 
-        FocusIn == ev->type ? "in" : "out", ev->mode, ev->detail, ev->send_event);
-      return;
-    }
+  if(NotifyGrab == ev->mode || NotifyUngrab == ev->mode) return;
 
   /* Handle other focus event */
   if(ROOT == ev->window)
