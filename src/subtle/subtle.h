@@ -251,18 +251,6 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_NET_WM_STATE_ABOVE,                                    ///< Floating window
   SUB_EWMH_NET_WM_STATE_STICKY,                                   ///< Urgent window
 
-  SUB_EWMH_NET_WM_WINDOW_TYPE,
-  SUB_EWMH_NET_WM_WINDOW_TYPE_DESKTOP,
-  SUB_EWMH_NET_WM_WINDOW_TYPE_NORMAL,
-  SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG,
-
-  SUB_EWMH_NET_WM_ALLOWED_ACTIONS,
-  SUB_EWMH_NET_WM_ACTION_MOVE,
-  SUB_EWMH_NET_WM_ACTION_RESIZE,
-  SUB_EWMH_NET_WM_ACTION_FULLSCREEN,
-  SUB_EWMH_NET_WM_ACTION_CHANGE_DESKTOP,
-  SUB_EWMH_NET_WM_ACTION_CLOSE,
-
   /* Tray */
   SUB_EWMH_NET_SYSTEM_TRAY_OPCODE,                                ///< Tray messages
   SUB_EWMH_NET_SYSTEM_TRAY_MESSAGE_DATA,                          ///< Tray message data
