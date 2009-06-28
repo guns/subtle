@@ -47,8 +47,8 @@
 #define EXECTIME     1                                            ///< Max execution time
 
 #define LENGTH(a)    (sizeof(a) / sizeof(a[0]))                   ///< Array length
-#define WINW(c)      (c->rect.width - 2 * subtle->bw)             ///< Get real width
-#define WINH(c)      (c->rect.height - 2 * subtle->bw)            ///< Get real height
+#define WINW(c)      (c->geom.width - 2 * subtle->bw)             ///< Get real width
+#define WINH(c)      (c->geom.height - 2 * subtle->bw)            ///< Get real height
 #define ZERO(n)      (0 < n ? n : 1)                              ///< Prevent zero
 #define MIN(a,b)     (a >= b ? b : a)                             ///< Minimum
 #define MAX(a,b)     (a >= b ? a : b)                             ///< Maximum
@@ -141,8 +141,7 @@
 #define SUB_PREF_CLOSE                (1L << 16)                  ///< Send close message
 #define SUB_PREF_INPUT                (1L << 17)                  ///< Active/passive focus-model
 #define SUB_PREF_GROUP                (1L << 18)                  ///< Window group
-#define SUB_PREF_POS                  (1L << 19)                  ///< Client position
-#define SUB_PREF_SIZE                 (1L << 20)                  ///< Client size
+#define SUB_PREF_TRANS                (1L << 19)                  ///< Transient window
 
 /* Sublet types */
 #define SUB_SUBLET_INOTIFY            (1L << 10)                  ///< Inotify sublet
@@ -205,10 +204,10 @@ typedef struct subclient_t /* {{{ */
   TAGS       tags;                                                ///< Client tags
   Window     win, group;                                          ///< Client window
   Colormap   cmap;                                                ///< Client colormap
-  XRectangle rect;                                                ///< Client rect
+  XRectangle geom, base;                                          ///< Client geom, base
 
   float      minr, maxr;                                          ///< Client ratios
-  int        minw, minh, maxw, maxh, basew, baseh, incw, inch;    ///< Client sizes
+  int        minw, minh, maxw, maxh, incw, inch;                  ///< Client sizes
   int        width, gravity, *gravities;                          ///< Client width, gravities
 } SubClient; /* }}} */
 

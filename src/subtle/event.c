@@ -419,10 +419,10 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_NET_MOVERESIZE_WINDOW: /* {{{ */
             if(!(c->flags & SUB_STATE_FLOAT)) subClientToggle(c, SUB_STATE_FLOAT);
 
-            c->rect.x      = ev->data.l[1];
-            c->rect.y      = ev->data.l[2];
-            c->rect.width  = ev->data.l[3];
-            c->rect.height = ev->data.l[4];
+            c->geom.x      = ev->data.l[1];
+            c->geom.y      = ev->data.l[2];
+            c->geom.width  = ev->data.l[3];
+            c->geom.height = ev->data.l[4];
 
             subClientSetSize(c);
             subClientConfigure(c);
@@ -635,7 +635,7 @@ EventGrab(XEvent *ev)
               {
                 if(!(c->flags & SUB_STATE_FLOAT)) subClientToggle(c, SUB_STATE_FLOAT);
 
-                if(SUB_GRAB_WINDOW_MOVE == flag) flag = SUB_DRAG_MOVE;
+                if(SUB_GRAB_WINDOW_MOVE == flag)        flag = SUB_DRAG_MOVE;
                 else if(SUB_GRAB_WINDOW_RESIZE == flag) flag = SUB_DRAG_RESIZE;
 
                 subClientDrag(c, flag);

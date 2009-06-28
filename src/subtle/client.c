@@ -24,8 +24,8 @@ typedef struct clientgravity_t
 static void
 ClientMask(SubClient *c)
 {
-  XDrawRectangle(subtle->disp, ROOT, subtle->gcs.invert, c->rect.x - 1, c->rect.y - 1,
-    c->rect.width + 1, c->rect.height + 1);
+  XDrawRectangle(subtle->disp, ROOT, subtle->gcs.invert, c->geom.x - 1, c->geom.y - 1,
+    c->geom.width + 1, c->geom.height + 1);
 } /* }}} */
 
 /* ClientSnap {{{ */
@@ -34,13 +34,13 @@ ClientSnap(SubClient *c)
 {
   assert(c);
 
-  if(SNAP > c->rect.x) c->rect.x = subtle->bw;
-  else if(c->rect.x > (SCREENW - WINW(c) - SNAP)) 
-    c->rect.x = SCREENW - c->rect.width - subtle->bw;
+  if(SNAP > c->geom.x) c->geom.x = subtle->bw;
+  else if(c->geom.x > (SCREENW - WINW(c) - SNAP)) 
+    c->geom.x = SCREENW - c->geom.width - subtle->bw;
 
-  if(SNAP + subtle->th > c->rect.y) c->rect.y = subtle->bw + subtle->th;
-  else if(c->rect.y > (SCREENH - WINH(c) - SNAP)) 
-    c->rect.y = SCREENH - c->rect.height - subtle->bw;
+  if(SNAP + subtle->th > c->geom.y) c->geom.y = subtle->bw + subtle->th;
+  else if(c->geom.y > (SCREENH - WINH(c) - SNAP)) 
+    c->geom.y = SCREENH - c->geom.height - subtle->bw;
 } /* }}} */
 
  /** subClientNew {{{
@@ -87,13 +87,12 @@ subClientNew(Window win)
   /* Window attributes */
   XGetWindowAttributes(subtle->disp, c->win, &attrs);
   c->cmap        = attrs.colormap;
-  c->rect.x      = attrs.x;
-  c->rect.y      = attrs.y;
-  c->rect.width  = attrs.width;
-  c->rect.height = attrs.height;
-  c->basew       = attrs.width;
-  c->baseh       = attrs.height;
-
+  c->geom.x      = attrs.x;
+  c->geom.y      = attrs.y;
+  c->geom.width  = attrs.width;
+  c->geom.height = attrs.height;
+  c->base        = c->geom;
+ 
   /* Protocols */
   if(XGetWMProtocols(subtle->disp, c->win, &protos, &n))
     {
@@ -128,11 +127,8 @@ subClientNew(Window win)
   if(XGetTransientForHint(subtle->disp, c->win, &trans))
     if((k = CLIENT(subSharedFind(trans, CLIENTID))))
       {
-        c->tags = k->tags; ///< Copy tags
-        subClientToggle(c, SUB_STATE_STICK|SUB_STATE_FLOAT);
-
-        if(subtle->windows.focus != c->win) ///< Move pointer to transient
-          subClientWarp(c);
+        c->flags |= SUB_PREF_TRANS;
+        c->tags   = (k->tags|SUB_TAG_FLOAT|SUB_TAG_STICK); ///< Copy tags
       }
 
   /* Properties */
@@ -159,7 +155,7 @@ subClientNew(Window win)
   else 
     {
       if((k = CLIENT(subSharedFind(subtle->windows.focus, CLIENTID))))
-        c->gravity = k->gravity;
+        c->gravity = k->gravity; ///< Copy gravity
       else c->gravity = SUB_GRAVITY_CENTER;
     }
 
@@ -173,6 +169,9 @@ subClientNew(Window win)
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&c->tags, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
+
+  if(c->flags & SUB_PREF_TRANS && subtle->windows.focus != c->win) ///< Move pointer to transient
+    subClientWarp(c);
 
   if(subtle->hooks.create) ///< Create hook
     subRubyCall(SUB_TYPE_HOOK, subtle->hooks.create, c);
@@ -196,7 +195,7 @@ subClientConfigure(SubClient *c)
   assert(c);
   DEAD(c);
 
-  r = c->rect;
+  r = c->geom;
 
   if(c->flags & SUB_STATE_FLOAT)
     {
@@ -233,7 +232,7 @@ subClientConfigure(SubClient *c)
 
   subSharedLogDebug("client=%#lx, state=%c, x=%03d, y=%03d, width=%03d, height=%03d\n",
     c->win, c->flags & SUB_STATE_FLOAT ? 'f' : c->flags & SUB_STATE_FULL ? 'u' : 'n',
-    c->rect.x, c->rect.y, c->rect.width, c->rect.height);
+    c->geom.x, c->geom.y, c->geom.width, c->geom.height);
 } /* }}} */
 
  /** subClientRender {{{
@@ -319,7 +318,7 @@ subClientWarp(SubClient *c)
   assert(c);
 
   XWarpPointer(subtle->disp, None, ROOT, 0, 0, 0, 0,
-    c->rect.x + c->rect.width / 2, c->rect.y + c->rect.height / 2);
+    c->geom.x + c->geom.width / 2, c->geom.y + c->geom.height / 2);
 } /* }}} */
 
  /** subClientDrag {{{
@@ -344,23 +343,23 @@ subClientDrag(SubClient *c,
  
   /* Init {{{ */
   XQueryPointer(subtle->disp, c->win, &win, &win, &rx, &ry, &wx, &wy, &mask);
-  c->rect.x = rx - wx;
-  c->rect.y = ry - wy;
-  ww        = c->rect.width;
-  wh        = c->rect.height;
+  c->geom.x = rx - wx;
+  c->geom.y = ry - wy;
+  ww        = c->geom.width;
+  wh        = c->geom.height;
 
   switch(mode)
     {
       case SUB_DRAG_MOVE:
-        dirx   = &c->rect.x;
-        diry   = &c->rect.y;
+        dirx   = &c->geom.x;
+        diry   = &c->geom.y;
         cursor = subtle->cursors.move;
         break;
       case SUB_DRAG_RESIZE:
-        dirx   = (short *)&c->rect.width;
-        diry   = (short *)&c->rect.height;
+        dirx   = (short *)&c->geom.width;
+        diry   = (short *)&c->geom.height;
         cursor = subtle->cursors.resize;
-        left   = wx < c->rect.width / 2; ///< Resize from left
+        left   = wx < c->geom.width / 2; ///< Resize from left
         break;
     } /* }}} */
 
@@ -410,21 +409,21 @@ subClientDrag(SubClient *c,
                 switch(mode)
                   {
                     case SUB_DRAG_MOVE:
-                      c->rect.x = (rx - wx) - (rx - ev.xmotion.x_root);
-                      c->rect.y = (ry - wy) - (ry - ev.xmotion.y_root);
+                      c->geom.x = (rx - wx) - (rx - ev.xmotion.x_root);
+                      c->geom.y = (ry - wy) - (ry - ev.xmotion.y_root);
 
                       ClientSnap(c); ///< Snap to border
                       break;
                     case SUB_DRAG_RESIZE: 
                       if(left) 
                         {
-                          c->rect.width  = ww + (rx - ev.xmotion.x_root);
-                          c->rect.width -= (c->rect.width % c->incw);
-                          c->rect.x      = (rx - wx) + ww - c->rect.width;
+                          c->geom.width  = ww + (rx - ev.xmotion.x_root);
+                          c->geom.width -= (c->geom.width % c->incw);
+                          c->geom.x      = (rx - wx) + ww - c->geom.width;
                         }
-                      else c->rect.width  = ww - (rx - ev.xmotion.x_root);
+                      else c->geom.width  = ww - (rx - ev.xmotion.x_root);
 
-                      c->rect.height = wh - (ry - ev.xmotion.y_root);
+                      c->geom.height = wh - (ry - ev.xmotion.y_root);
 
                       subClientSetSize(c);
                       break;
@@ -440,8 +439,8 @@ subClientDrag(SubClient *c,
 
   if(c->flags & SUB_STATE_FLOAT) ///< Resize client
     {
-      c->rect.y -= (subtle->th + subtle->bw); ///< Border and bar height
-      c->rect.x -= subtle->bw;
+      c->geom.y -= (subtle->th + subtle->bw); ///< Border and bar height
+      c->geom.x -= subtle->bw;
 
       subClientConfigure(c);
     }
@@ -524,7 +523,7 @@ subClientSetGravity(SubClient *c,
 
   /* Toggle between modes */
   if(type & SUB_GRAVITY_HORZ &&
-    (type & SUB_GRAVITY_MODES || (c->rect.y == slot.y && c->rect.height == slot.height)))
+    (type & SUB_GRAVITY_MODES || (c->geom.y == slot.y && c->geom.height == slot.height)))
     {
       int width33 = subtle->screen.width / 3;
       int width66 = subtle->screen.width - width33;
@@ -535,14 +534,14 @@ subClientSetGravity(SubClient *c,
           int x = subtle->screen.x + props[grav].grav_right * width33;
 
           if(type & SUB_GRAVITY_MODE66 ||
-            (!(type & SUB_GRAVITY_MODES) && c->rect.width == slot.width && c->rect.x == slot.x)) ///< 33%
+            (!(type & SUB_GRAVITY_MODES) && c->geom.width == slot.width && c->geom.x == slot.x)) ///< 33%
             {
               slot.x     = x;
               slot.width = width66;
               mode       = SUB_GRAVITY_HORZ|SUB_GRAVITY_MODE66;
             }
           else if(type & SUB_GRAVITY_MODE33 ||
-            (!(type & SUB_GRAVITY_MODES) && c->rect.width == width66 && c->rect.x == x)) ///< 66%
+            (!(type & SUB_GRAVITY_MODES) && c->geom.width == width66 && c->geom.x == x)) ///< 66%
             {
               slot.x     = subtle->screen.x + props[grav].grav_right * width66;
               slot.width = width33;
@@ -550,7 +549,7 @@ subClientSetGravity(SubClient *c,
             }
         }
       else if(type & SUB_GRAVITY_MODE33 ||
-        (!(type & SUB_GRAVITY_MODES) && c->rect.width == slot.width && c->rect.x == slot.x))
+        (!(type & SUB_GRAVITY_MODES) && c->geom.width == slot.width && c->geom.x == slot.x))
         {
           slot.x     = subtle->screen.x + width33;
           slot.width = width33 + compw;
@@ -558,7 +557,7 @@ subClientSetGravity(SubClient *c,
         }
     }  
   else if(type & SUB_GRAVITY_VERT && 
-    (type & SUB_GRAVITY_MODES || (c->rect.x == slot.x && c->rect.width == slot.width)))
+    (type & SUB_GRAVITY_MODES || (c->geom.x == slot.x && c->geom.width == slot.width)))
     {
       int height33 = subtle->screen.height / 3;
       int height66 = subtle->screen.height - height33;
@@ -569,14 +568,14 @@ subClientSetGravity(SubClient *c,
           int y = subtle->screen.y + props[grav].grav_down * height33;
 
           if(type & SUB_GRAVITY_MODE66 || 
-            (!(type & SUB_GRAVITY_MODES) && c->rect.height == slot.height && c->rect.y == slot.y)) ///< 33%
+            (!(type & SUB_GRAVITY_MODES) && c->geom.height == slot.height && c->geom.y == slot.y)) ///< 33%
             {
               slot.y      = y;
               slot.height = height66;
               mode        = SUB_GRAVITY_VERT|SUB_GRAVITY_MODE66;
             }
           else if(type & SUB_GRAVITY_MODE33 ||
-            (!(type & SUB_GRAVITY_MODES) && c->rect.height == height66 && c->rect.y == y)) ///< 66%
+            (!(type & SUB_GRAVITY_MODES) && c->geom.height == height66 && c->geom.y == y)) ///< 66%
             {
               slot.y      = subtle->screen.y + props[grav].grav_down * height66;
               slot.height = height33;
@@ -584,7 +583,7 @@ subClientSetGravity(SubClient *c,
             }
         }
       else if(type & SUB_GRAVITY_MODE33 ||
-        (!(type & SUB_GRAVITY_MODES) && c->rect.height == slot.height && c->rect.y == slot.y))
+        (!(type & SUB_GRAVITY_MODES) && c->geom.height == slot.height && c->geom.y == slot.y))
         {
           slot.y      = subtle->screen.y + height33;
           slot.height = height33 + comph;
@@ -593,7 +592,7 @@ subClientSetGravity(SubClient *c,
     }
 
   /* Update client rect */
-  c->rect    = slot;
+  c->geom    = slot;
   c->gravity = grav | mode;
 
   subClientConfigure(c);
@@ -614,27 +613,27 @@ subClientSetSize(SubClient *c)
   assert(c);
 
   /* Limit width */
-  if(c->rect.width < c->minw) c->rect.width = c->minw;
-  if(c->rect.width > c->maxw) c->rect.width = c->maxw;
-  if(c->rect.x + c->rect.width > SCREENW) 
-    c->rect.width = SCREENW - c->rect.x;
+  if(c->geom.width < c->minw) c->geom.width = c->minw;
+  if(c->geom.width > c->maxw) c->geom.width = c->maxw;
+  if(c->geom.x + c->geom.width > SCREENW) 
+    c->geom.width = SCREENW - c->geom.x;
 
   /* Limit height */
-  if(c->rect.height < c->minh) c->rect.height = c->minh;
-  if(c->rect.height > c->maxh) c->rect.height = c->maxh;
-  if(c->rect.y + c->rect.height > SCREENH - subtle->bw)
-    c->rect.height = SCREENH - c->rect.y;
+  if(c->geom.height < c->minh) c->geom.height = c->minh;
+  if(c->geom.height > c->maxh) c->geom.height = c->maxh;
+  if(c->geom.y + c->geom.height > SCREENH - subtle->bw)
+    c->geom.height = SCREENH - c->geom.y;
 
   /* Check incs */
-  c->rect.width  -= c->rect.width % c->incw; 
-  c->rect.height -= c->rect.height % c->inch;
+  c->geom.width  -= c->geom.width % c->incw; 
+  c->geom.height -= c->geom.height % c->inch;
 
   /* Check aspect ratios */
-  if(c->minr && c->rect.height * c->minr > c->rect.width)
-    c->rect.width = (int)(c->rect.height * c->minr);
+  if(c->minr && c->geom.height * c->minr > c->geom.width)
+    c->geom.width = (int)(c->geom.height * c->minr);
 
-  if(c->maxr && c->rect.height * c->maxr < c->rect.width)
-    c->rect.width = (int)(c->rect.height * c->maxr); 
+  if(c->maxr && c->geom.height * c->maxr < c->geom.width)
+    c->geom.width = (int)(c->geom.height * c->maxr); 
 } /* }}} */
 
   /** subClientSetHints {{{ 
@@ -655,8 +654,6 @@ subClientSetHints(SubClient *c)
     subSharedLogError("Can't alloc memory. Exhausted?\n");
 
   /* Default values {{{ */
-  c->flags &= ~SUB_PREF_POS;
-  c->flags &= ~SUB_PREF_SIZE;
   c->minw   = MINW;
   c->minh   = MINH;
   c->maxw   = SCREENW - 2 * subtle->bw;
@@ -698,7 +695,7 @@ subClientSetHints(SubClient *c)
 
   subSharedLogDebug("Size: x=%d, y=%d, width=%d, height=%d, minw=%d, minh=%d, " \
     "maxw=%d, maxh=%d, minr=%f, maxr=%f\n",
-    c->rect.x, c->rect.y, c->rect.width, c->rect.height, c->minw, c->minh, c->maxw,
+    c->geom.x, c->geom.y, c->geom.width, c->geom.height, c->minw, c->minh, c->maxw,
     c->maxh, c->minr, c->maxr);
 } /* }}} */
 
@@ -769,31 +766,35 @@ subClientToggle(SubClient *c,
   DEAD(c);
   assert(c);
 
-  if(c->flags & type)
+  if(c->flags & type) ///< Unset flags
     {
       c->flags  &= ~type;
 
       if(type & SUB_STATE_FULL)
         XSetWindowBorderWidth(subtle->disp, c->win, subtle->bw);
 
-      if(type & SUB_STATE_FLOAT) c->gravity = -1; ///< Updating gravity
+      if(type & SUB_STATE_FLOAT) 
+        {
+          c->base    = c->geom;
+          c->gravity = -1; ///< Updating gravity
+        }
+
       if(type & SUB_STATE_STICK) subViewConfigure(subtle->cv);
     }
-  else
+  else ///< Set flags
     {
       c->flags |= type;
 
       if(type & SUB_STATE_FLOAT)
         {
-          c->rect.width  = c->basew;
-          c->rect.height = c->baseh;
+          c->geom = c->base;
 
           subClientSetSize(c);
 
-          if(0 <= c->rect.x || 0 <= c->rect.y) ///< Center
+          if(0 >= c->geom.x || 0 >= c->geom.y) ///< Center
             {
-              c->rect.x = (SCREENW - c->rect.width) / 2;
-              c->rect.y = ((SCREENH - subtle->th) - c->rect.height) / 2;
+              c->geom.x = (SCREENW - c->geom.width) / 2;
+              c->geom.y = ((SCREENH - subtle->th) - c->geom.height) / 2;
             }
         }
 

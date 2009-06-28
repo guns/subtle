@@ -1003,10 +1003,10 @@ subRubyCall(int type,
                     rb_iv_set(inst, "@id",      INT2FIX(id));
                     rb_iv_set(inst, "@win",     LONG2NUM(c->win));
                     rb_iv_set(inst, "@klass",   rb_str_new2(c->klass));
-                    rb_iv_set(inst, "@x",       INT2FIX(c->rect.x));
-                    rb_iv_set(inst, "@y",       INT2FIX(c->rect.y));
-                    rb_iv_set(inst, "@width",   INT2FIX(c->rect.width));
-                    rb_iv_set(inst, "@height",  INT2FIX(c->rect.height));
+                    rb_iv_set(inst, "@x",       INT2FIX(c->geom.x));
+                    rb_iv_set(inst, "@y",       INT2FIX(c->geom.y));
+                    rb_iv_set(inst, "@width",   INT2FIX(c->geom.width));
+                    rb_iv_set(inst, "@height",  INT2FIX(c->geom.height));
                     rb_iv_set(inst, "@gravity", INT2FIX(c->gravity));
                   }
                 else if(c->flags & SUB_TYPE_VIEW)
