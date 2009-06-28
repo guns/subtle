@@ -10,8 +10,6 @@
   * See the file COPYING.
   **/
 
-#include <sys/types.h>
-#include <unistd.h>
 #include <X11/cursorfont.h>
 #include "subtle.h"
 
@@ -209,50 +207,6 @@ subDisplaySetStrut(void)
   subtle->screen.width  = SCREENW - subtle->strut.x - subtle->strut.y;
   subtle->screen.height = SCREENH - subtle->th - subtle->strut.height - subtle->strut.width;
 } /* }}} */
-
- /** subDisplayPublish {{{
-  * @brief Publish display
-  **/
-
-void
-subDisplayPublish(void)
-{
-  long data[4] = { 0, 0, 0, 0 }, pid = (long)getpid();
-
-  assert(subtle);
-
-  /* EWMH: Window manager information */
-  subEwmhSetWindows(ROOT, SUB_EWMH_NET_SUPPORTING_WM_CHECK, &subtle->windows.bar, 1);
-  subEwmhSetString(subtle->windows.bar, SUB_EWMH_NET_WM_NAME, PKG_NAME);
-  subEwmhSetString(subtle->windows.bar, SUB_EWMH_WM_CLASS, PKG_NAME);
-  subEwmhSetCardinals(subtle->windows.bar, SUB_EWMH_NET_WM_PID, &pid, 1);
-  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_DESKTOP_VIEWPORT, (long *)&data, 2);
-  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_SHOWING_DESKTOP, (long *)&data, 1);
-
-  /* EWMH: Workarea size */
-  data[2] = DisplayWidth(subtle->disp, DefaultScreen(subtle->disp)); 
-  data[3] = DisplayHeight(subtle->disp, DefaultScreen(subtle->disp));
-  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_WORKAREA, (long *)&data, 4);
-
-  /* EWMH: Desktop sizes */
-  data[0] = DisplayWidth(subtle->disp, DefaultScreen(subtle->disp));
-  data[1] = DisplayHeight(subtle->disp, DefaultScreen(subtle->disp));
-  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_DESKTOP_GEOMETRY, (long *)&data, 2);
-
-  /* EWMH: Supported window states */
-  data[0] = subEwmhGet(SUB_EWMH_NET_WM_STATE_FULLSCREEN);
-  data[1] = subEwmhGet(SUB_EWMH_NET_WM_STATE_ABOVE);
-  data[2] = subEwmhGet(SUB_EWMH_NET_WM_STATE_STICKY);
-
-  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_SUPPORTED, (long *)&data, LENGTH(data));
-
-  /* EWMH: Client list and client list stacking */
-  subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST, NULL, 0);
-  subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST_STACKING, NULL, 0);
-
-  /* EWMH: Tray */
-  subTraySelect();
-}  /* }}} */
 
  /** subDisplayFinish {{{
   * @brief Close connection

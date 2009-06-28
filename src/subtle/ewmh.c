@@ -10,6 +10,8 @@
   * See the file COPYING.
   **/
 
+#include <sys/types.h>
+#include <unistd.h>
 #include <X11/Xatom.h>
 #include "subtle.h"
 
@@ -29,6 +31,7 @@ void
 subEwmhInit(void)
 {
   int len = 0;
+  long data[4] = { 0, 0, 0, 0 }, pid = (long)getpid();
   char *selection = NULL, *names[] =
   {
     /* ICCCM */
@@ -62,15 +65,41 @@ subEwmhInit(void)
     "SUBTLE_RELOAD", "SUBTLE_QUIT"
   };
 
-  /* Tray selection */
-  len       = strlen(names[SUB_EWMH_NET_SYSTEM_TRAY_SELECTION]) + 5; ///< @todo For high screen counts
+  /* EWMH: Tray selection */
+  len       = strlen(names[SUB_EWMH_NET_SYSTEM_TRAY_SELECTION]) + 5; ///< For high screen counts
   selection = (char *)subSharedMemoryAlloc(len, sizeof(char)); 
 
   snprintf(selection, len, "%s%u", names[SUB_EWMH_NET_SYSTEM_TRAY_SELECTION], SCREEN);
   subSharedLogDebug("Selection: len=%d, name=%s\n", len, selection);
   names[SUB_EWMH_NET_SYSTEM_TRAY_SELECTION] = selection;
 
+  /* EWMH: Supported hints */
   XInternAtoms(subtle->disp, names, SUB_EWMH_TOTAL, 0, atoms);
+  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_SUPPORTED, (long *)&atoms, SUB_EWMH_TOTAL);
+
+  /* EWMH: Window manager information */
+  subEwmhSetWindows(ROOT, SUB_EWMH_NET_SUPPORTING_WM_CHECK, &subtle->windows.bar, 1);
+  subEwmhSetString(subtle->windows.bar, SUB_EWMH_NET_WM_NAME, PKG_NAME);
+  subEwmhSetString(subtle->windows.bar, SUB_EWMH_WM_CLASS, PKG_NAME);
+  subEwmhSetCardinals(subtle->windows.bar, SUB_EWMH_NET_WM_PID, &pid, 1);
+  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_DESKTOP_VIEWPORT, (long *)&data, 2);
+  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_SHOWING_DESKTOP, (long *)&data, 1);
+
+  /* EWMH: Workarea size */
+  data[2] = DisplayWidth(subtle->disp, DefaultScreen(subtle->disp)); 
+  data[3] = DisplayHeight(subtle->disp, DefaultScreen(subtle->disp));
+  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_WORKAREA, (long *)&data, 4);
+
+  /* EWMH: Desktop sizes */
+  data[0] = DisplayWidth(subtle->disp, DefaultScreen(subtle->disp));
+  data[1] = DisplayHeight(subtle->disp, DefaultScreen(subtle->disp));
+  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_DESKTOP_GEOMETRY, (long *)&data, 2);
+
+  /* EWMH: Client list and client list stacking */
+  subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST, NULL, 0);
+  subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST_STACKING, NULL, 0);  
+
+  subTraySelect(); ///< Finally select
 
   free(selection);
 } /* }}} */

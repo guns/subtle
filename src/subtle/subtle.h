@@ -444,7 +444,6 @@ void subDisplayInit(const char *display);                         ///< Create di
 void subDisplayConfigure(void);                                   ///< Configure display
 void subDisplayScan(void);                                        ///< Scan root window
 void subDisplaySetStrut(void);                                    ///< Set strut size
-void subDisplayPublish(void);                                     ///< Publish display
 void subDisplayFinish(void);                                      ///< Kill display
 /* }}} */
 

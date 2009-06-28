@@ -217,7 +217,6 @@ main(int argc,
 
   /* Display */
   subDisplayConfigure();
-  subDisplayPublish();
   subDisplayScan();
 
   subEventLoop();
