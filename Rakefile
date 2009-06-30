@@ -36,7 +36,7 @@ require("fileutils")
   "builddir"   => "build",
   "archdir"    => "",
   "revision"   => "0",
-  "cflags"     => "-Wall -Werror -Wuninitialized -Wtype-limits -Wpointer-arith -Wstrict-prototypes -Wunused -Wshadow -std=gnu99",
+  "cflags"     => "-Wall -Werror -Wtype-limits -Wpointer-arith -Wstrict-prototypes -Wunused -Wshadow -std=gnu99",
   "cpppath"    => "-I. -I$(builddir) -Isrc -Isrc/shared -Isrc/subtle -idirafter$(archdir)",
   "ldflags"    => "-L$(archdir) -l$(RUBY_SO_NAME)",
   "extflags"   => "$(LDFLAGS) $(LIBRUBYARG_SHARED)"
