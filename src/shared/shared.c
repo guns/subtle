@@ -363,7 +363,7 @@ subSharedPropertyGet(Window win,
   return (char *)data;
 } /* }}} */
 
- /** subSharedPropertyList {{{
+ /** subSharedPropertyStrings {{{
   * @brief Get property list
   * @param[in]     win   Client window
   * @param[in]     name  Property name
@@ -373,7 +373,7 @@ subSharedPropertyGet(Window win,
   **/
 
 char **
-subSharedPropertyList(Window win,
+subSharedPropertyStrings(Window win,
 #ifdef WM
   SubEwmh e,
 #else /* WM */
@@ -381,81 +381,31 @@ subSharedPropertyList(Window win,
 #endif /* WM */
   int *size)
 {
-  int i, pos = 0, idx = 0;
-  char *string = NULL, **names = NULL;
-  unsigned long len;
-
-#ifdef WM
-#ifdef DEBUG
-  char *name = "subtle";
-#endif /* DEBUG */
-#endif /* WM */
+  Atom atom;
+  char **list = NULL;
+  XTextProperty text;
+  Display *disp = NULL;
 
   assert(win && size);
 
   /* Check UTF8 and XA_STRING */
 #ifdef WM
-  if(!(string = (char *)subSharedPropertyGet(win, 
-    subEwmhGet(SUB_EWMH_UTF8), e, &len)))
-      string = (char *)subSharedPropertyGet(win, XA_STRING, e, &len);
+  disp = subtle->disp;
+  atom = subEwmhGet(e);
 #else /* WM */
-  if(!(string = (char *)subSharedPropertyGet(win, 
-    XInternAtom(display, "UTF8_STRING", False), name, &len)))
-      string = (char *)subSharedPropertyGet(win, XA_STRING, name, &len);
+  disp = display;
+  atom = XInternAtom(display, name, False);
 #endif /* WM */ 
-  
-  /* Fetch data */
-  if(string)
+ 
+  if((XGetTextProperty(disp, win, &text, atom) || 
+    XGetTextProperty(disp, win, &text, XA_STRING)) && text.nitems)
     {
-      for(i = 0; i < len; i++) ////< Count \0 in string
-        if('\0' == string[i]) (*size)++;
+      XTextPropertyToStringList(&text, &list, size);
 
-      names = (char **)subSharedMemoryAlloc(*size, sizeof(char *));
-
-      /* Split strings separated by \0 */
-      for(i = 0; i < len; i++)
-        {
-          if('\0' == string[i]) 
-            {
-              if(idx >= *size) break;
-
-              names[idx] = (char *)subSharedMemoryAlloc(i + 1 - pos, sizeof(char));
-              strncpy(names[idx], string + pos, i + 1 - pos);
-
-              idx++;
-              pos = i + 1;
-            }
-        }
-
-      free(string);
-
-      return names;
+      XFree(text.value);
     }
-  
-  subSharedLogDebug("Failed getting propery (%s)\n", name);
 
-  return NULL;
-} /* }}} */
-
- /** subSharedPropertyListFree {{{
-  * @brief Free property list
-  * @param[inout]  list  Property list
-  * @param[in]     size  Size of the property list
-  * return Returns the property list
-  **/
-
-void
-subSharedPropertyListFree(char **list,
-  int size)
-{
-  int i;
-
-  assert(list);
-
-  for(i = 0; i < size; i++)
-    free(list[i]);
-
-  free(list);
+  return list;
 } /* }}} */
 
  /** subSharedPropertyClass {{{
@@ -476,7 +426,7 @@ subSharedPropertyClass(Window win,
 
   assert(win);
 
-  if((klasses = subSharedPropertyList(win, 
+  if((klasses = subSharedPropertyStrings(win, 
 #ifdef WM
     SUB_EWMH_WM_CLASS,
 #else /* WM */    
@@ -484,15 +434,11 @@ subSharedPropertyClass(Window win,
 #endif /* WM */    
     &size)))
     {
-      /* Instance name */
-      if(inst) *inst = klasses[0];
-      else free(klasses[0]);
+      /* Instance/class name */
+      if(inst)  *inst  = strdup(klasses[0]);
+      if(klass) *klass = strdup(klasses[1]);
 
-      /* Class name */
-      if(klass) *klass = klasses[1];
-      else free(klasses[1]);
-
-      free(klasses);
+      XFreeStringList(klasses);
     }  
 } /* }}} */
 
@@ -781,7 +727,7 @@ subSharedTagFind(char *name)
   assert(name);
 
   preg = subSharedRegexNew(name);
-  tags = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
+  tags = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
 
   /* Find tag id */
   for(i = 0; i < size; i++)
@@ -790,13 +736,13 @@ subSharedTagFind(char *name)
         subSharedLogDebug("Found: type=tag, name=%s, id=%d\n", name, i);
 
         subSharedRegexKill(preg);
-        subSharedPropertyListFree(tags, size);
+        XFreeStringList(tags);
 
         return i;
       }
 
   subSharedRegexKill(preg);
-  subSharedPropertyListFree(tags, size);
+  XFreeStringList(tags);
 
   subSharedLogDebug("Failed finding tag `%s'\n", name);
 
@@ -822,7 +768,7 @@ subSharedViewFind(char *name,
   assert(name);
 
   views = (Window *)subSharedPropertyGet(root, XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
-  names = subSharedPropertyList(root, "_NET_DESKTOP_NAMES", &size);  
+  names = subSharedPropertyStrings(root, "_NET_DESKTOP_NAMES", &size);  
 
   if(names)
     {
@@ -843,7 +789,7 @@ subSharedViewFind(char *name,
               if(win) *win = views[i];
 
               subSharedRegexKill(preg);
-              subSharedPropertyListFree(names, size);
+              XFreeStringList(names);
               free(views);
 
               return i;
@@ -852,7 +798,7 @@ subSharedViewFind(char *name,
       subSharedRegexKill(preg);
     }
 
-  subSharedPropertyListFree(names, size);
+  XFreeStringList(names);
   free(views);
 
   subSharedLogDebug("Failed finding view `%s'\n", name);
@@ -877,7 +823,7 @@ subSharedSubletFind(char *name)
   assert(name);
 
   preg    = subSharedRegexNew(name);
-  sublets = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_SUBLET_LIST", &size);
+  sublets = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_SUBLET_LIST", &size);
 
   /* Find sublet id */
   for(i = 0; i < size; i++)
@@ -892,7 +838,7 @@ subSharedSubletFind(char *name)
       }
 
   subSharedRegexKill(preg);
-  subSharedPropertyListFree(sublets, size);
+  XFreeStringList(sublets);
 
   subSharedLogDebug("Failed finding sublet `%s'\n", name);
 

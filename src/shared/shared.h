@@ -115,16 +115,15 @@ void subSharedMatch(int type, Window win, int gravity1,
 #if WM
 char *subSharedPropertyGet(Window win, Atom type,
   SubEwmh e, unsigned long *size);                                ///< Get window property
-char **subSharedPropertyList(Window win,
+char **subSharedPropertyStrings(Window win,
   SubEwmh e, int *size);                                          ///< Get window property list
 #else
 char *subSharedPropertyGet(Window win, Atom type,
   char *name, unsigned long *size);                               ///< Get window property
-char **subSharedPropertyList(Window win,
+char **subSharedPropertyStrings(Window win,
   char *name, int *size);                                         ///< Get window property list
 #endif /* WM */
 
-void subSharedPropertyListFree(char **list, int size);            ///< Free property list
 void subSharedPropertyClass(Window win, char **inst,
   char **klass);                                                  ///< Get WM class
 /* }}} */
