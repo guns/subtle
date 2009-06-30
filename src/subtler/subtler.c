@@ -186,13 +186,13 @@ SubtlerCurrentView(void)
   char **names = NULL, *ret = NULL;
   unsigned long *cv = NULL;
   
-  names = subSharedPropertyList(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
+  names = subSharedPropertyStrings(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
   cv    = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
     XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
 
   ret = strdup(names[*cv]);
 
-  subSharedPropertyListFree(names, size);
+  XFreeStringList(names);
   free(cv);
 
   return ret;
@@ -436,12 +436,12 @@ SubtlerClientTags(char *arg1,
       int i, size = 0;
       unsigned long *flags = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL,
         "SUBTLE_WINDOW_TAGS", NULL);
-      char **tags = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
+      char **tags = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
 
       for(i = 0; i < size; i++)
         if((int)*flags & (1L << (i + 1))) printf("%s\n", tags[i]);
      
-      subSharedPropertyListFree(tags, size);
+      XFreeStringList(tags);
       free(flags);
     }
   else subSharedLogWarn("Failed fetching client tags\n");
@@ -478,12 +478,12 @@ SubtlerSubletList(char *arg1,
 
   subSharedLogDebug("%s\n", __func__);
 
-  if((sublets = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_SUBLET_LIST", &size)))
+  if((sublets = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_SUBLET_LIST", &size)))
     {
       for(i = 0; i < size; i++)
         printf("%s\n", sublets[i]);
 
-      subSharedPropertyListFree(sublets, size);
+      XFreeStringList(sublets);
     }
   else subSharedLogWarn("Failed getting sublet list\n");
 } /* }}} */
@@ -547,7 +547,7 @@ SubtlerTagFind(char *arg1,
 
   /* Collect data */
   tag     = subSharedTagFind(arg1);
-  names   = subSharedPropertyList(DefaultRootWindow(display),
+  names   = subSharedPropertyStrings(DefaultRootWindow(display),
     "_NET_DESKTOP_NAMES", &size_views);
   views  = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW,
     "_NET_VIRTUAL_ROOTS", NULL);
@@ -567,7 +567,7 @@ SubtlerTagFind(char *arg1,
           free(flags);
         }
 
-      subSharedPropertyListFree(names, size_views);
+      XFreeStringList(names);
       free(views);
     }
   else subSharedLogWarn("Failed getting view list\n");
@@ -605,11 +605,11 @@ SubtlerTagList(char *arg1,
 
   subSharedLogDebug("%s\n", __func__);
 
-  if((tags = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size)))
+  if((tags = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size)))
     {
       for(i = 0; i < size; i++) printf("%s\n", tags[i]);
 
-      subSharedPropertyListFree(tags, size);
+      XFreeStringList(tags);
     }
   else subSharedLogWarn("Failed getting tag list\n");
 } /* }}} */
@@ -663,7 +663,7 @@ SubtlerViewFind(char *arg1,
       unsigned long *cv = NULL, *rv = NULL;
 
       /* Collect data */
-      names   = subSharedPropertyList(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
+      names   = subSharedPropertyStrings(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
       cv      = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
         XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
       rv      = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display),
@@ -671,7 +671,7 @@ SubtlerViewFind(char *arg1,
 
       printf("%#lx %c %s\n", win, (*cv == *rv ? '*' : '-'), names[id]);
 
-      subSharedPropertyListFree(names, size);
+      XFreeStringList(names);
       free(cv);
       free(rv);
     }
@@ -716,17 +716,19 @@ SubtlerViewList(char *arg1,
     XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
   cv     = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
     XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
-  names  = subSharedPropertyList(DefaultRootWindow(display), 
+  names  = subSharedPropertyStrings(DefaultRootWindow(display), 
     "_NET_DESKTOP_NAMES", &size);
   views = (Window *)subSharedPropertyGet(DefaultRootWindow(display),
     XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
+
+  printf("size=%d\n", size);
 
   if(nv && cv && names && views)
     {
       for(i = 0; *nv && i < *nv; i++)
         printf("%#lx %c %s\n", views[i], (i == *cv ? '*' : '-'), names[i]);
 
-      subSharedPropertyListFree(names, size);
+      XFreeStringList(names);
       free(nv);
       free(cv);
       free(views);
@@ -788,12 +790,12 @@ SubtlerViewTags(char *arg1,
   if(-1 != subSharedViewFind(arg1, &win))
     {
       flags = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, "SUBTLE_WINDOW_TAGS", NULL);
-      tags  = subSharedPropertyList(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
+      tags  = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
 
       for(i = 0; i < size; i++)
         if((int)*flags & (1L << (i + 1))) printf("%s\n", tags[i]);
       
-      subSharedPropertyListFree(tags, size);
+      XFreeStringList(tags);
       free(flags);
     }
   else subSharedLogWarn("Failed finding view\n");
