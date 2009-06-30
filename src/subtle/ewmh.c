@@ -258,25 +258,12 @@ subEwmhSetStrings(Window win,
   char **values,
   int size)
 {
-  int i, len = 0, pos = 0;
-  char *str = NULL;
+  XTextProperty text;
 
-  for(i = 0; i < size; i++) len += strlen(values[i]);
+  XStringListToTextProperty(values, size, &text);
+  XSetTextProperty(subtle->disp, win, &text, atoms[e]);
 
-  str = (char *)subSharedMemoryAlloc(len + i + 1, sizeof(char *));
-
-  for(i = 0; i < size; i++)
-    {
-      strncpy(str + pos, values[i], strlen(values[i]));
-      pos += strlen(values[i]);
-      str[pos] = '\0';
-      pos++;
-    }
-
-  XChangeProperty(subtle->disp, win, atoms[e], atoms[SUB_EWMH_UTF8], 8,
-    PropModeReplace, (unsigned char *)str, pos);
-
-  free(str);
+  XFree (text.value);
 } /* }}} */
 
  /** subEwmhSetWMState {{{
