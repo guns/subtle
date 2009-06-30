@@ -721,8 +721,6 @@ SubtlerViewList(char *arg1,
   views = (Window *)subSharedPropertyGet(DefaultRootWindow(display),
     XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
 
-  printf("size=%d\n", size);
-
   if(nv && cv && names && views)
     {
       for(i = 0; *nv && i < *nv; i++)
