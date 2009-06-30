@@ -27,16 +27,42 @@ class TestClient < Test::Unit::TestCase
     @win = @client.win
     assert_not_nil(@id)
     assert_instance_of(Fixnum, @win)
+    @klass = @client.klass
+    assert_not_nil(@klass)
+    assert_instance_of(String, @klass)
+
+    @x = @client.x
+    assert_not_nil(@x)
+    assert_instance_of(Fixnum, @x)
+
+    @x = @client.x
+    assert_not_nil(@x)
+    assert_instance_of(Fixnum, @x)
+
+    @width = @client.width
+    assert_not_nil(@width)
+    assert_instance_of(Fixnum, @width)
+
+    @height = @client.height
+    assert_not_nil(@height)
+    assert_instance_of(Fixnum, @height)
+ 
+    @gravity = @client.gravity
+    assert_not_nil(@gravity)
+    assert_instance_of(Fixnum, @gravity)
 
     @name = @client.name
     assert_not_nil(@name)
     assert_instance_of(String, @name)
 
-    @gravity = @client.gravity
-    assert_not_nil(@gravity)
-    assert_instance_of(String, @gravity)
-
     @client.gravity = Subtlext::Gravity::Center
+
+    # Test: Size
+    @size = @client.size
+    assert_not_nil(@size)
+    assert_instance_of(Array, @size)
+
+    @client.size = [ 10, 10, 200, 200 ]
 
     # Test: Focus
     @focus = @client.focus?
