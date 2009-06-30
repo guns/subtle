@@ -11,7 +11,7 @@
 require("rake/clean")
 require("mkmf")
 require("yaml")
-require("ftools")
+require("fileutils")
 
 # 
 # Settings
@@ -263,36 +263,38 @@ task(PG_RBE => [:config, OBJ_SHD])
 # Task: install {{{
 desc("Install subtle")
 task(:install => [:config, :build]) do
-  File.makedirs(
-    @options["bindir"],
-    @options["sysconfdir"],
-    @options["datadir"],
-    @options["subletdir"],
-    @options["scriptdir"],
-    @options["extdir"]
+  FileUtils.mkdir_p( 
+    [
+      @options["bindir"],
+      @options["sysconfdir"],
+      @options["datadir"],
+      @options["subletdir"],
+      @options["scriptdir"],
+      @options["extdir"]
+    ]
   )
 
   message("INSTALL %s\n" % [PG_WM])
-  File.install(PG_WM, @options["bindir"], 0755, false)
+  FileUtils.install(PG_WM, @options["bindir"], :mode => 0755, :verbose => false)
 
   message("INSTALL %s\n" % [PG_RMT])
-  File.install(PG_RMT, @options["bindir"], 0755, false)
+  FileUtils.install(PG_RMT, @options["bindir"], :mode => 0755, :verbose => false)
 
   message("INSTALL %s\n" % [PG_RBE])
-  File.install(PG_RBE + ".so", @options["extdir"], 0644, false)
+  FileUtils.install(PG_RBE + ".so", @options["extdir"], :mode => 0644, :verbose => false)
 
   FileList["dist/scripts/*.*"].collect do |f|
     message("INSTALL %s\n" % [File.basename(f)])
-    File.install(f, @options["scriptdir"], 0644, false)
+    FileUtils.install(f, @options["scriptdir"], :mode => 0644, :verbose => false)
   end
 
   FileList["dist/sublets/*.rb"].collect do |f|
     message("INSTALL %s\n" % [File.basename(f)])
-    File.install(f, @options["subletdir"], 0644, false)
+    FileUtils.install(f, @options["subletdir"], :mode => 0644, :verbose => false)
   end
 
   message("INSTALL %s\n" % [@defines["PKG_CONFIG"]])
-  File.install("dist/" + @defines["PKG_CONFIG"], @options["sysconfdir"], 0644, false)
+  FileUtils.install("dist/" + @defines["PKG_CONFIG"], @options["sysconfdir"], :mode => 0644, :verbose => false)
 end # }}}
 
 # Task: help {{{
