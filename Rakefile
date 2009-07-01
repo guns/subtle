@@ -34,10 +34,11 @@ require("fileutils")
   "extdir"     => "$(destdir)/$(sitelibdir)/$(PKG_NAME)",
   "debug"      => "no",
   "builddir"   => "build",
+  "hdrdir"     => "",
   "archdir"    => "",
   "revision"   => "0",
   "cflags"     => "-Wall -Werror -Wtype-limits -Wpointer-arith -Wstrict-prototypes -Wunused -Wshadow -std=gnu99",
-  "cpppath"    => "-I. -I$(builddir) -Isrc -Isrc/shared -Isrc/subtle -idirafter$(archdir)",
+  "cpppath"    => "-I. -I$(builddir) -Isrc -Isrc/shared -Isrc/subtle -idirafter$(hdrdir) -idirafter$(archdir)",
   "ldflags"    => "-L$(archdir) -l$(RUBY_SO_NAME)",
   "extflags"   => "$(LDFLAGS) $(LIBRUBYARG_SHARED)"
 }
@@ -179,8 +180,19 @@ task(:config) do
       end
     end  
 
+    # Get header dir
+    if(CONFIG["rubyhdrdir"].nil?)
+      @options["hdrdir"]  = Config.expand(CONFIG["archdir"]) 
+    else
+      @options["hdrdir"]  = Config.expand(CONFIG["rubyhdrdir"]) 
+    end
+
+    @options["archdir"] = File.join(
+      @options["hdrdir"], 
+      Config.expand(CONFIG["arch"])
+    )
+
     # Expand options and defines
-    @options["archdir"]    = Config.expand(CONFIG["archdir"]) 
     @options["sitelibdir"] = Config.expand(CONFIG["sitelibdir"])
     [@options, @defines].each do |hash|
       hash.each do |k, v|
