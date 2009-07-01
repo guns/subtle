@@ -719,7 +719,7 @@ RubyWrapLoadConfig(VALUE data)
   FILE *fd = NULL;
 
   /* Check path */
-  if(!(file = RSTRING_PTR(data)))
+  if(!RTEST(data) || !(file = RSTRING_PTR(data)))
     {
       snprintf(buf, sizeof(buf), "%s/%s/%s",
         getenv("XDG_CONFIG_HOME"), PKG_NAME, PKG_CONFIG);
@@ -918,7 +918,7 @@ subRubyLoadConfig(const char *file)
 {
   int state = 0;
 
-  rb_protect(RubyWrapLoadConfig, rb_str_new2(file), &state);
+  rb_protect(RubyWrapLoadConfig, file ? rb_str_new2(file) : Qnil, &state);
 
   if(state) RubyPerror(True, True, "Failed loading config %s", file);
 } /* }}} */
