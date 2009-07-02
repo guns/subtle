@@ -84,7 +84,7 @@ subTagNew(char *name,
   t = TAG(subSharedMemoryAlloc(1, sizeof(SubTag)));
   t->name  = strdup(name);
   t->flags = SUB_TYPE_TAG;
-  if(regex) t->preg = subSharedRegexNew(regex);
+  if(regex && strncmp("", regex, 1)) t->preg = subSharedRegexNew(regex);
 
   subSharedLogDebug("new=tag, name=%s\n", name);
 

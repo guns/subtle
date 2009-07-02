@@ -40,7 +40,7 @@ subViewNew(char *name,
   XMapRaised(subtle->disp, v->button);
 
   /* Tags */
-  if(tags)
+  if(tags && strncmp("", tags, 1))
     {
       int i;
       regex_t *preg = subSharedRegexNew(tags);
