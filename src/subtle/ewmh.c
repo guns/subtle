@@ -46,7 +46,7 @@ subEwmhInit(void)
 
     "_NET_WM_NAME", "_NET_WM_PID", "_NET_WM_DESKTOP", "_NET_WM_STRUT", "_NET_SHOWING_DESKTOP",
 
-    "_NET_WM_STATE", "_NET_WM_STATE_FULLSCREEN", "_NET_WM_STATE_ABOVE", "_NET_WM_STATE_STICKY",
+    "_NET_WM_STATE", "_NET_WM_STATE_FULLSCRN", "_NET_WM_STATE_ABOVE", "_NET_WM_STATE_STICKY",
 
     /* Tray */
     "_NET_SYSTEM_TRAY_OPCODE", "_NET_SYSTEM_TRAY_MESSAGE_DATA", "_NET_SYSTEM_TRAY_S",
@@ -59,6 +59,7 @@ subEwmhInit(void)
 
     /* subtle */
     "SUBTLE_WINDOW_TAG", "SUBTLE_WINDOW_UNTAG", "SUBTLE_WINDOW_TAGS", "SUBTLE_WINDOW_GRAVITY",
+    "SUBTLE_WINDOW_SCREEN",
     "SUBTLE_TAG_NEW", "SUBTLE_TAG_LIST", "SUBTLE_TAG_KILL",
     "SUBTLE_VIEW_NEW", "SUBTLE_VIEW_KILL",
     "SUBTLE_SUBLET_UPDATE", "SUBTLE_SUBLET_LIST", "SUBTLE_SUBLET_KILL",
@@ -69,13 +70,13 @@ subEwmhInit(void)
   len       = strlen(names[SUB_EWMH_NET_SYSTEM_TRAY_SELECTION]) + 5; ///< For high screen counts
   selection = (char *)subSharedMemoryAlloc(len, sizeof(char)); 
 
-  snprintf(selection, len, "%s%u", names[SUB_EWMH_NET_SYSTEM_TRAY_SELECTION], SCREEN);
+  snprintf(selection, len, "%s%u", names[SUB_EWMH_NET_SYSTEM_TRAY_SELECTION], SCRN);
   subSharedLogDebug("Selection: len=%d, name=%s\n", len, selection);
   names[SUB_EWMH_NET_SYSTEM_TRAY_SELECTION] = selection;
 
   /* EWMH: Supported hints */
-  XInternAtoms(subtle->disp, names, SUB_EWMH_TOTAL, 0, atoms);
-  XChangeProperty(subtle->disp, ROOT, atoms[SUB_EWMH_NET_SUPPORTED], XA_ATOM, 32, 
+  XInternAtoms(subtle->dpy, names, SUB_EWMH_TOTAL, 0, atoms);
+  XChangeProperty(subtle->dpy, ROOT, atoms[SUB_EWMH_NET_SUPPORTED], XA_ATOM, 32, 
     PropModeReplace, (unsigned char *)&atoms, SUB_EWMH_TOTAL);
 
   /* EWMH: Window manager information */
@@ -87,13 +88,13 @@ subEwmhInit(void)
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_SHOWING_DESKTOP, (long *)&data, 1);
 
   /* EWMH: Workarea size */
-  data[2] = DisplayWidth(subtle->disp, DefaultScreen(subtle->disp)); 
-  data[3] = DisplayHeight(subtle->disp, DefaultScreen(subtle->disp));
+  data[2] = DisplayWidth(subtle->dpy, DefaultScreen(subtle->dpy)); 
+  data[3] = DisplayHeight(subtle->dpy, DefaultScreen(subtle->dpy));
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_WORKAREA, (long *)&data, 4);
 
   /* EWMH: Desktop sizes */
-  data[0] = DisplayWidth(subtle->disp, DefaultScreen(subtle->disp));
-  data[1] = DisplayHeight(subtle->disp, DefaultScreen(subtle->disp));
+  data[0] = DisplayWidth(subtle->dpy, DefaultScreen(subtle->dpy));
+  data[1] = DisplayHeight(subtle->dpy, DefaultScreen(subtle->dpy));
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_DESKTOP_GEOMETRY, (long *)&data, 2);
 
   /* EWMH: Client list and client list stacking */
@@ -155,7 +156,7 @@ subEwmhGetWMState(Window win)
 
   assert(win);
 
-  if(Success == XGetWindowProperty(subtle->disp, win, atoms[SUB_EWMH_WM_STATE], 0L, 2L, False,
+  if(Success == XGetWindowProperty(subtle->dpy, win, atoms[SUB_EWMH_WM_STATE], 0L, 2L, False,
       atoms[SUB_EWMH_WM_STATE], &type, &format, &bytes, &unused, 
       (unsigned char **)&data) && bytes)
     {
@@ -206,7 +207,7 @@ subEwmhSetWindows(Window win,
   Window *values,
   int size)
 {
-  XChangeProperty(subtle->disp, win, atoms[e], XA_WINDOW, 32, PropModeReplace,
+  XChangeProperty(subtle->dpy, win, atoms[e], XA_WINDOW, 32, PropModeReplace,
     (unsigned char *)values, size);
 } /* }}} */
 
@@ -224,7 +225,7 @@ subEwmhSetCardinals(Window win,
   long *values,
   int size)
 {
-  XChangeProperty(subtle->disp, win, atoms[e], XA_CARDINAL, 32, PropModeReplace,
+  XChangeProperty(subtle->dpy, win, atoms[e], XA_CARDINAL, 32, PropModeReplace,
     (unsigned char *)values, size);
 } /* }}} */
 
@@ -240,7 +241,7 @@ subEwmhSetString(Window win,
   SubEwmh e,
   char *value)
 {
-  XChangeProperty(subtle->disp, win, atoms[e], atoms[SUB_EWMH_UTF8], 8,
+  XChangeProperty(subtle->dpy, win, atoms[e], atoms[SUB_EWMH_UTF8], 8,
     PropModeReplace, (unsigned char *)value, strlen(value));
 } /* }}} */
 
@@ -261,7 +262,7 @@ subEwmhSetStrings(Window win,
   XTextProperty text;
 
   XStringListToTextProperty(values, size, &text);
-  XSetTextProperty(subtle->disp, win, &text, atoms[e]);
+  XSetTextProperty(subtle->dpy, win, &text, atoms[e]);
 
   XFree (text.value);
 } /* }}} */
@@ -282,7 +283,7 @@ subEwmhSetWMState(Window win,
 
   assert(win);
 
-  XChangeProperty(subtle->disp, win, atoms[SUB_EWMH_WM_STATE], 
+  XChangeProperty(subtle->dpy, win, atoms[SUB_EWMH_WM_STATE], 
     atoms[SUB_EWMH_WM_STATE], 32, PropModeReplace, (unsigned char *)data, 2);
 } /* }}} */
 
@@ -323,7 +324,7 @@ subEwmhMessage(Window dst,
   ev.data.l[3]    = data3;
   ev.data.l[4]    = data4;
 
-  return XSendEvent(subtle->disp, dst, False, NoEventMask, (XEvent *)&ev);
+  return XSendEvent(subtle->dpy, dst, False, NoEventMask, (XEvent *)&ev);
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

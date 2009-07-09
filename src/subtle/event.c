@@ -87,7 +87,7 @@ EventConfigure(XConfigureRequestEvent *ev)
   wc.sibling    = ev->above;
   wc.stack_mode = ev->detail;
 
-  XConfigureWindow(subtle->disp, ev->window, ev->value_mask, &wc); 
+  XConfigureWindow(subtle->dpy, ev->window, ev->value_mask, &wc); 
 } /* }}} */
 
 /* EventMapRequest {{{ */
@@ -230,8 +230,8 @@ EventMessage(XClientMessageEvent *ev)
               {        
                 switch(ev->data.l[2])
                   {
-                    case Above: XRaiseWindow(subtle->disp, c->win); break;
-                    case Below: XLowerWindow(subtle->disp, c->win); break;
+                    case Above: XRaiseWindow(subtle->dpy, c->win); break;
+                    case Below: XLowerWindow(subtle->dpy, c->win); break;
                     default:
                       subSharedLogDebug("Restack: Ignored restack event (%d)\n", ev->data.l[2]);
                   }
@@ -281,12 +281,12 @@ EventMessage(XClientMessageEvent *ev)
                     c->gravities[vid] = c->gravity;
 
                     subClientWarp(c);
-                    XRaiseWindow(subtle->disp, c->win);                
+                    XRaiseWindow(subtle->dpy, c->win);                
                   }
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_TAG_NEW: /* {{{ */
-            t = subTagNew(ev->data.b, NULL); 
+            t = subTagNew(ev->data.b, NULL, 0, 0, 0); 
             subArrayPush(subtle->tags, (void *)t);
             subTagPublish();
             break; /* }}} */
@@ -395,7 +395,7 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_NET_WM_STATE: /* {{{ */
             switch(subEwmhFind(ev->data.l[1])) ///< Only the first property
               {
-                case SUB_EWMH_NET_WM_STATE_FULLSCREEN:
+                case SUB_EWMH_NET_WM_STATE_FULLSCRN:
                   subClientToggle(c, SUB_STATE_FULL);
                   break;
                 case SUB_EWMH_NET_WM_STATE_ABOVE:
@@ -433,7 +433,7 @@ EventMessage(XClientMessageEvent *ev)
 
 #ifdef DEBUG
   {
-    char *name = XGetAtomName(subtle->disp, ev->message_type);
+    char *name = XGetAtomName(subtle->dpy, ev->message_type);
 
     subSharedLogDebug("ClientMessage: name=%s, type=%ld, format=%d, win=%#lx\n", 
       name ? name : "n/a", ev->message_type, ev->format, ev->window);
@@ -453,7 +453,7 @@ EventColormap(XColormapEvent *ev)
   if(c && ev->new)
     {
       c->cmap = ev->colormap;
-      XInstallColormap(subtle->disp, c->cmap);
+      XInstallColormap(subtle->dpy, c->cmap);
     }
 } /* }}} */
 
@@ -475,7 +475,7 @@ EventProperty(XPropertyEvent *ev)
           {
             char *caption = NULL;
 
-            if(XFetchName(subtle->disp, c->win, &caption))
+            if(XFetchName(subtle->dpy, c->win, &caption))
               {
                 if(c->caption) free(c->caption);
                 c->caption = caption;
@@ -520,7 +520,7 @@ EventProperty(XPropertyEvent *ev)
 #ifdef DEBUG
       default:
         {
-          char *name = XGetAtomName(subtle->disp, ev->atom);
+          char *name = XGetAtomName(subtle->dpy, ev->atom);
 
           subSharedLogDebug("Property: name=%s, type=%ld, win=%#lx\n", 
             name ? name : "n/a", ev->atom, ev->window);
@@ -551,7 +551,7 @@ EventCrossing(XCrossingEvent *ev)
     subTrayFocus(t);
 
   /* Remove any other event of the same type and window */
-  while(XCheckTypedWindowEvent(subtle->disp, ev->window, ev->type, &event));    
+  while(XCheckTypedWindowEvent(subtle->dpy, ev->window, ev->type, &event));    
 } /* }}} */
 
 /* EventSelection {{{ */
@@ -586,13 +586,13 @@ EventGrab(XEvent *ev)
           }
 
         if(ev->xbutton.window != subtle->windows.focus) ///< Update focus
-          XSetInputFocus(subtle->disp, ev->xbutton.window, RevertToNone, CurrentTime);
+          XSetInputFocus(subtle->dpy, ev->xbutton.window, RevertToNone, CurrentTime);
 
         code  = XK_Pointer_Button1 + ev->xbutton.button;
         state = ev->xbutton.state;
         break;
       case KeyPress:
-        sym   = XKeycodeToKeysym(subtle->disp, ev->xkey.keycode, 0);
+        sym   = XKeycodeToKeysym(subtle->dpy, ev->xkey.keycode, 0);
         code  = ev->xkey.keycode;
         state = ev->xkey.state;
 
@@ -618,9 +618,13 @@ EventGrab(XEvent *ev)
           case SUB_GRAB_PROC: /* {{{ */
             subRubyCall(SUB_TYPE_GRAB, g->data.num, CLIENT(subSharedFind(win, CLIENTID)));
             break; /* }}} */
-          case SUB_GRAB_JUMP: /* {{{ */
+          case SUB_GRAB_VIEW_JUMP: /* {{{ */
             if(g->data.num < subtle->views->ndata)
               subViewJump(VIEW(subtle->views->data[g->data.num]));
+            break; /* }}} */
+          case SUB_GRAB_SCREEN_JUMP: /* {{{ */
+            if(g->data.num < subtle->screens->ndata)
+              subScreenJump(SCREEN(subtle->screens->data[g->data.num]));
             break; /* }}} */
           case SUB_GRAB_SUBTLE_RELOAD: /* {{{ */
             raise(SIGHUP);
@@ -650,8 +654,8 @@ EventGrab(XEvent *ev)
           case SUB_GRAB_WINDOW_STACK: /* {{{ */
             if((c = CLIENT(subSharedFind(win, CLIENTID))) && VISIBLE(subtle->cv, c)) 
               {
-                if(Above == g->data.num)      XRaiseWindow(subtle->disp, c->win);
-                else if(Below == g->data.num) XLowerWindow(subtle->disp, c->win);
+                if(Above == g->data.num)      XRaiseWindow(subtle->dpy, c->win);
+                else if(Below == g->data.num) XLowerWindow(subtle->dpy, c->win);
               }
             break; /* }}} */            
           case SUB_GRAB_WINDOW_SELECT: /* {{{ */
@@ -666,8 +670,8 @@ EventGrab(XEvent *ev)
                     SubClient *iter = CLIENT(subtle->clients->data[i]);
 
                     if(c != iter && VISIBLE(subtle->cv, iter))
-                      subSharedMatch(g->data.num, iter->win, (c->gravity & ~SUB_GRAVITY_ALL),
-                        (iter->gravity & ~SUB_GRAVITY_ALL), &match, &found);
+                      subSharedMatch(g->data.num, iter->win, c->gravity, 
+                        iter->gravity, &match, &found);
                   }
 
                 if(found && (c = CLIENT(subSharedFind(found, CLIENTID))))
@@ -698,7 +702,7 @@ EventGrab(XEvent *ev)
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               {
                 if(c->flags & SUB_STATE_FLOAT) subClientToggle(c, SUB_STATE_FLOAT);
-                if(c->flags & SUB_STATE_FULL) subClientToggle(c, SUB_STATE_FULL);
+                if(c->flags & SUB_STATE_FULL)  subClientToggle(c, SUB_STATE_FULL);
 
                 subClientSetGravity(c, g->data.num);
 
@@ -706,7 +710,7 @@ EventGrab(XEvent *ev)
                 c->gravities[vid] = c->gravity;
 
                 subClientWarp(c);
-                XRaiseWindow(subtle->disp, c->win);
+                XRaiseWindow(subtle->dpy, c->win);
               }
             break; /* }}} */
           case SUB_GRAB_WINDOW_KILL: /* {{{ */
@@ -743,7 +747,7 @@ EventExpose(XEvent *ev)
     }
 
   /* Remove any other event of the same type and window */
-  while(XCheckTypedWindowEvent(subtle->disp, ev->xany.window, ev->type, &event));
+  while(XCheckTypedWindowEvent(subtle->dpy, ev->xany.window, ev->type, &event));
 } /* }}} */
 
 /* EventFocus {{{ */
@@ -777,7 +781,7 @@ EventFocus(XFocusChangeEvent *ev)
         {
           subtle->windows.focus = c->win;
 
-          XMapWindow(subtle->disp, subtle->windows.caption);
+          XMapWindow(subtle->dpy, subtle->windows.caption);
 
           subGrabSet(c->win);
           subClientRender(c);
@@ -795,7 +799,7 @@ EventFocus(XFocusChangeEvent *ev)
               subClientRender(c);
             }
             
-          XUnmapWindow(subtle->disp, subtle->windows.caption); 
+          XUnmapWindow(subtle->dpy, subtle->windows.caption); 
         }
     }
   else if((t = TRAY(subSharedFind(ev->window, TRAYID)))) ///< Tray
@@ -839,29 +843,29 @@ subEventLoop(void)
 
   tv.tv_sec  = 0; 
   tv.tv_usec = 0;
-  nfds       = ConnectionNumber(subtle->disp) + 1;
+  nfds       = ConnectionNumber(subtle->dpy) + 1;
   s          = 0 < subtle->sublets->ndata ? SUBLET(subtle->sublets->data[0]) : NULL;
 
   FD_ZERO(&rfds);
-  FD_SET(ConnectionNumber(subtle->disp), &rfds);
+  FD_SET(ConnectionNumber(subtle->dpy), &rfds);
 
 #ifdef HAVE_SYS_INOTIFY_H
   FD_SET(subtle->notify, &rfds); ///< Add inotify socket to set
   nfds = nfds < subtle->notify + 1 ? subtle->notify + 1: nfds; ///< Find biggest fd number
 #endif /* HAVE_SYS_INOTIFY_H */
 
-  XSync(subtle->disp, False); ///< Sync before waiting for data
+  XSync(subtle->dpy, False); ///< Sync before waiting for data
 
   while(1)
     {
       now = subSharedTime();
       if(select(nfds, &rfds, NULL, NULL, s ? &tv : NULL)) ///< Data ready on any connection
         {
-          if(FD_ISSET(ConnectionNumber(subtle->disp), &rfds)) ///< X connection {{{
+          if(FD_ISSET(ConnectionNumber(subtle->dpy), &rfds)) ///< X connection {{{
             {
-              while(XPending(subtle->disp)) ///< X events
+              while(XPending(subtle->dpy)) ///< X events
                 {
-                  XNextEvent(subtle->disp, &ev);
+                  XNextEvent(subtle->dpy, &ev);
                   switch(ev.type)
                     {
                       case ConfigureRequest:  EventConfigure(&ev.xconfigurerequest); break;
@@ -922,7 +926,7 @@ subEventLoop(void)
           subSubletRender();
           subViewRender();
 
-          XFlush(subtle->disp);
+          XFlush(subtle->dpy);
         }
 
       /* Set timeout and assemble FD_SET */
@@ -931,7 +935,7 @@ subEventLoop(void)
       if(0 > tv.tv_sec) tv.tv_sec = 0; ///< Sanitize
 
       FD_ZERO(&rfds);
-      FD_SET(ConnectionNumber(subtle->disp), &rfds);
+      FD_SET(ConnectionNumber(subtle->dpy), &rfds);
 
 #ifdef HAVE_SYS_INOTIFY_H
       FD_SET(subtle->notify, &rfds); ///< Add inotify socket to set
