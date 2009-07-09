@@ -331,7 +331,7 @@ subSharedPropertyGet(Window win,
   assert(win);
 
 #ifdef WM
-  disp = subtle->disp; 
+  disp = subtle->dpy; 
   prop = subEwmhGet(e);
 #else /* WM */
   disp = display;
@@ -390,7 +390,7 @@ subSharedPropertyStrings(Window win,
 
   /* Check UTF8 and XA_STRING */
 #ifdef WM
-  disp = subtle->disp;
+  disp = subtle->dpy;
   atom = subEwmhGet(e);
 #else /* WM */
   disp = display;
@@ -456,7 +456,7 @@ subSharedFind(Window win,
 {
   XPointer *data = NULL;
 
-  return XCNOENT != XFindContext(subtle->disp, win, id, (XPointer *)&data) ? data : NULL;
+  return XCNOENT != XFindContext(subtle->dpy, win, id, (XPointer *)&data) ? data : NULL;
 } /* }}} */
 
  /** subSharedTime {{{
@@ -485,14 +485,14 @@ subSharedFocus(void)
   Window win;
   SubClient *c = NULL;
 
-  XUnmapWindow(subtle->disp, subtle->windows.caption); 
+  XUnmapWindow(subtle->dpy, subtle->windows.caption); 
 
    /* Focus */
-  XQueryPointer(subtle->disp, ROOT, (Window *)&dummy, &win,
+  XQueryPointer(subtle->dpy, ROOT, (Window *)&dummy, &win,
     &dummy, &dummy, &dummy, &dummy, (unsigned int *)&dummy);
 
   if((c = CLIENT(subSharedFind(win, CLIENTID)))) subClientFocus(c);
-  else XSetInputFocus(subtle->disp, ROOT, RevertToNone, CurrentTime);
+  else XSetInputFocus(subtle->dpy, ROOT, RevertToNone, CurrentTime);
 } /* }}} */
 #else /* WM */
  /** subSharedMessage {{{

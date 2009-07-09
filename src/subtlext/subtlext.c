@@ -228,8 +228,7 @@ SubtlextMatch(VALUE self,
               int *gravity2 = (int *)subSharedPropertyGet(clients[i], XA_CARDINAL,
                 "SUBTLE_WINDOW_GRAVITY", NULL);
 
-              subSharedMatch(type, clients[i], (*gravity1 & ~SUB_GRAVITY_ALL), 
-                (*gravity2 & ~SUB_GRAVITY_ALL), &match, &found);
+              subSharedMatch(type, clients[i], *gravity1, *gravity2, &match, &found);
 
               if(found == clients[i]) id = i;
 
@@ -543,7 +542,7 @@ SubtlextClientGravity(VALUE self)
 {
   VALUE gravity = rb_iv_get(self, "@gravity");
 
-  return RTEST(gravity) ? INT2FIX(FIX2INT(gravity) & ~SUB_GRAVITY_ALL) : Qnil;
+  return RTEST(gravity) ? gravity : Qnil;
 } /* }}} */
 
 /* SubtlextClientGravitySet {{{ */
@@ -553,7 +552,7 @@ SubtlextClientGravitySet(VALUE self,
 {
   if(T_FIXNUM == rb_type(value))
     {
-      int gravity = FIX2INT(value) & ~SUB_GRAVITY_ALL; ///< Strip mode flags
+      int gravity = FIX2INT(value);
 
       if(1 <= gravity && 9 >= gravity)
         {
@@ -627,42 +626,6 @@ SubtlextClientSizeSet(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* SubtlextClientModeHorzHas {{{ */
-static VALUE
-SubtlextClientModeHorzHas(VALUE self)
-{
-  VALUE gravity = rb_iv_get(self, "@gravity");
-
-  return RTEST(gravity) && (FIX2INT(gravity) & SUB_GRAVITY_HORZ) ? Qtrue : Qfalse;
-} /* }}} */
-
-/* SubtlextClientModeVertHas {{{ */
-static VALUE
-SubtlextClientModeVertHas(VALUE self)
-{
-  VALUE gravity = rb_iv_get(self, "@gravity");
-
-  return RTEST(gravity) && (FIX2INT(gravity) & SUB_GRAVITY_VERT) ? Qtrue : Qfalse;
-} /* }}} */
-
-/* SubtlextClientMode33Has {{{ */
-static VALUE
-SubtlextClientMode33Has(VALUE self)
-{
-  VALUE gravity = rb_iv_get(self, "@gravity");
-
-  return RTEST(gravity) && (FIX2INT(gravity) & SUB_GRAVITY_MODE33) ? Qtrue : Qfalse;
-} /* }}} */
-
-/* SubtlextClientMode66Has {{{ */
-static VALUE
-SubtlextClientMode66Has(VALUE self)
-{
-  VALUE gravity = rb_iv_get(self, "@gravity");
-
-  return RTEST(gravity) && (FIX2INT(gravity) & SUB_GRAVITY_MODE66) ? Qtrue : Qfalse;
-} /* }}} */
-
 /* SubtlextClientOperatorPlus {{{ */
 static VALUE
 SubtlextClientOperatorPlus(VALUE self,
@@ -677,34 +640,6 @@ SubtlextClientOperatorMinus(VALUE self,
   VALUE value)
 {
   return SubtlextTag(self, value, SUB_ACTION_UNTAG, SUB_TYPE_CLIENT);
-} /* }}} */
-
-/* SubtlextFixnumToHorz {{{ */
-static VALUE
-SubtlextFixnumToHorz(VALUE self)
-{
-  return INT2FIX(FIX2INT(self) | SUB_GRAVITY_HORZ);
-} /* }}} */
-
-/* SubtlextFixnumToVert {{{ */
-static VALUE
-SubtlextFixnumToVert(VALUE self)
-{
-  return INT2FIX(FIX2INT(self) | SUB_GRAVITY_VERT);
-} /* }}} */
-
-/* SubtlextFixnumToMode33 {{{ */
-static VALUE
-SubtlextFixnumToMode33(VALUE self)
-{
-  return INT2FIX(FIX2INT(self) | SUB_GRAVITY_MODE33);
-} /* }}} */
-
-/* SubtlextFixnumToMode66 {{{ */
-static VALUE
-SubtlextFixnumToMode66(VALUE self)
-{
-  return INT2FIX(FIX2INT(self) | SUB_GRAVITY_MODE66);
 } /* }}} */
 
 /* SubtlextSubtleKill {{{ */
@@ -1580,10 +1515,6 @@ Init_subtlext(void)
   rb_define_method(klass, "gravity=",     SubtlextClientGravitySet,    1);
   rb_define_method(klass, "size",         SubtlextClientSize,          0);
   rb_define_method(klass, "size=",        SubtlextClientSizeSet,       1);
-  rb_define_method(klass, "horz?",        SubtlextClientModeHorzHas,   0);
-  rb_define_method(klass, "vert?",        SubtlextClientModeVertHas,   0);
-  rb_define_method(klass, "mode33?",      SubtlextClientMode33Has,     0);
-  rb_define_method(klass, "mode66?",      SubtlextClientMode66Has,     0);
   rb_define_method(klass, "+",            SubtlextClientOperatorPlus,  1);
   rb_define_method(klass, "-",            SubtlextClientOperatorMinus, 1);
 
@@ -1598,13 +1529,6 @@ Init_subtlext(void)
   rb_define_const(klass, "BottomLeft",  INT2FIX(SUB_GRAVITY_BOTTOM_LEFT));
   rb_define_const(klass, "Bottom",      INT2FIX(SUB_GRAVITY_BOTTOM));
   rb_define_const(klass, "BottomRight", INT2FIX(SUB_GRAVITY_BOTTOM_RIGHT));  
-
-  /* Class: fixnum */
-  klass = rb_const_get(rb_mKernel, rb_intern("Fixnum"));
-  rb_define_method(klass, "to_horz",   SubtlextFixnumToHorz,   0);
-  rb_define_method(klass, "to_vert",   SubtlextFixnumToVert,   0);
-  rb_define_method(klass, "to_mode33", SubtlextFixnumToMode33, 0);
-  rb_define_method(klass, "to_mode66", SubtlextFixnumToMode66, 0);
 
   /* Class: subtle */
   klass = rb_define_class_under(mod, "Subtle", rb_cObject);

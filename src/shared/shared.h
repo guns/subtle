@@ -38,14 +38,6 @@
 /* }}} */
 
 /* Flags {{{ */
-#define SUB_GRAVITY_HORZ        (1 << 5)    ///< Horz mode flag
-#define SUB_GRAVITY_VERT        (1 << 6)    ///< Vert mode flag
-#define SUB_GRAVITY_MODE33      (1 << 7)    ///< 33% mode flag
-#define SUB_GRAVITY_MODE66      (1 << 8)    ///< 66% mode flag
-
-#define SUB_GRAVITY_ALL   (SUB_GRAVITY_HORZ|SUB_GRAVITY_VERT|SUB_GRAVITY_MODE33|SUB_GRAVITY_MODE66)
-#define SUB_GRAVITY_MODES (SUB_GRAVITY_MODE33|SUB_GRAVITY_MODE66)
-
 #define SUB_GRAVITY_UNKNOWN       0L        ///< Gravity unknown
 #define SUB_GRAVITY_BOTTOM_LEFT   1L        ///< Gravity bottom left
 #define SUB_GRAVITY_BOTTOM        2L        ///< Gravity bottom

@@ -138,8 +138,7 @@ SubtlerMatch(int type)
                   int *gravity2 = (int *)subSharedPropertyGet(clients[i], XA_CARDINAL, 
                     "SUBTLE_WINDOW_GRAVITY", NULL);
 
-                  subSharedMatch(type, clients[i], (*gravity1 & ~SUB_GRAVITY_ALL), 
-                    (*gravity2 & ~SUB_GRAVITY_ALL), &match, &found);
+                  subSharedMatch(type, clients[i], *gravity1, *gravity2, &match, &found);
 
                   free(gravity2);
                 }
@@ -349,7 +348,7 @@ SubtlerClientList(char *arg1,
           XGetGeometry(display, clients[i], &unused, &x, &y, &width, &height, &border, &border);
 
           printf("%#lx %c %ld %ux%u %ld %s (%s)\n", clients[i], (*cv == *rv ? '*' : '-'),
-            (*cv > *nv ? -1 : *cv), width, height, *gravity & ~SUB_GRAVITY_ALL, inst, klass);
+            (*cv > *nv ? -1 : *cv), width, height, *gravity, inst, klass);
 
           free(inst);
           free(klass);
@@ -405,7 +404,6 @@ static void
 SubtlerClientGravity(char *arg1,
   char *arg2)
 {
-  int gravity;
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
   CHECK(arg1 && arg2, "Usage: %sr -c PATTERN -g NUMBER\n", PKG_NAME);
@@ -414,9 +412,8 @@ SubtlerClientGravity(char *arg1,
   data.l[0] = subSharedClientFind(arg1, NULL);
   data.l[1] = -1;
   data.l[2] = atoi(arg2);
-  gravity   = data.l[2] & ~SUB_GRAVITY_ALL; ///< Strip mode flags
 
-  if(-1 != data.l[0] && 1 <= gravity && 9 >= gravity)
+  if(-1 != data.l[0] && 1 <= data.l[2] && 9 >= data.l[2])
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_GRAVITY", data, False);
   else subSharedLogWarn("Failed setting client gravity\n");
 } /* }}} */
