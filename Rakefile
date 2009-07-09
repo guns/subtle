@@ -172,9 +172,11 @@ task(:config) do
     end
     
     # Get revision
-    if((@hg = find_executable0("hg")))
-      if(File.exists?(".hg"))
-        @options["revision"] = `#{@hg} tip`.match(/changeset:\s*(\d+).*/)[1]
+    if(File.exists?(".hg") && (hg = find_executable0("hg")))
+      match = `#{hg} tip`.match(/changeset:\s*(\d+).*/)
+
+      if(!match.nil? && 2 == match.size )
+        @options["revision"] = match[1]
       else
         @options["revision"] = "UNKNOWN"
       end
@@ -218,6 +220,11 @@ task(:config) do
     cflags, ldflags, libs = pkg_config("x11")
     if(libs.nil?) then
       fail("X11 was not found")
+    end
+
+    # Xinerama
+    if(have_header("X11/extensions/Xinerama.h"))
+      @options["ldflags"] << " -lXinerama"
     end
     
     # Update flags
