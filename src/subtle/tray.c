@@ -31,7 +31,7 @@ subTrayNew(Window win)
   t->width = subtle->th; ///< Default width
 
   /* Fetch name */
-  if(!XFetchName(subtle->disp, t->win, &t->name))
+  if(!XFetchName(subtle->dpy, t->win, &t->name))
     {
       free(t);
 
@@ -40,10 +40,10 @@ subTrayNew(Window win)
 
   /* Update tray window */
   subEwmhSetWMState(t->win, WithdrawnState);
-  XSelectInput(subtle->disp, t->win, EVENTMASK);
-  XReparentWindow(subtle->disp, t->win, subtle->windows.tray, 0, 0);
-  XAddToSaveSet(subtle->disp, t->win);
-  XSaveContext(subtle->disp, t->win, TRAYID, (void *)t);
+  XSelectInput(subtle->dpy, t->win, EVENTMASK);
+  XReparentWindow(subtle->dpy, t->win, subtle->windows.tray, 0, 0);
+  XAddToSaveSet(subtle->dpy, t->win);
+  XSaveContext(subtle->dpy, t->win, TRAYID, (void *)t);
 
   subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime, XEMBED_EMBEDDED_NOTIFY,
     0, subtle->windows.tray, 0); ///< Start embedding life cycle 
@@ -70,7 +70,7 @@ subTrayConfigure(SubTray *t)
   if(!(hints = XAllocSizeHints())) 
     subSharedLogError("Can't alloc memory. Exhausted?\n");
 
-  XGetWMNormalHints(subtle->disp, t->win, hints, &supplied);
+  XGetWMNormalHints(subtle->dpy, t->win, hints, &supplied);
   if(0 < supplied)
     {
       if(hints->flags & (USSize|PSize)) ///< User/program size
@@ -101,7 +101,7 @@ subTrayUpdate(void)
         {
           XWindowAttributes attrs;
 
-          XGetWindowAttributes(subtle->disp, subtle->windows.sublets, &attrs);
+          XGetWindowAttributes(subtle->dpy, subtle->windows.sublets, &attrs);
 
           x = attrs.x;
         }
@@ -111,14 +111,14 @@ subTrayUpdate(void)
         {
           SubTray *t = TRAY(subtle->trays->data[i]);
 
-          XMoveResizeWindow(subtle->disp, t->win, width, 0, t->width, subtle->th);
+          XMoveResizeWindow(subtle->dpy, t->win, width, 0, t->width, subtle->th);
           width += t->width;
         }
 
-      XMapRaised(subtle->disp, subtle->windows.tray);
-      XMoveResizeWindow(subtle->disp, subtle->windows.tray, x - width, 0, width, subtle->th);
+      XMapRaised(subtle->dpy, subtle->windows.tray);
+      XMoveResizeWindow(subtle->dpy, subtle->windows.tray, x - width, 0, width, subtle->th);
     }
-  else XUnmapWindow(subtle->disp, subtle->windows.tray); ///< Unmap when tray is empty
+  else XUnmapWindow(subtle->dpy, subtle->windows.tray); ///< Unmap when tray is empty
 } /* }}} */
 
  /** subTraySelect {{{
@@ -131,8 +131,8 @@ subTraySelect(void)
   Atom sel = subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION);
 
   /* Tray selection */
-  XSetSelectionOwner(subtle->disp, sel, subtle->windows.tray, CurrentTime);
-  if(XGetSelectionOwner(subtle->disp, sel) == subtle->windows.tray)
+  XSetSelectionOwner(subtle->dpy, sel, subtle->windows.tray, CurrentTime);
+  if(XGetSelectionOwner(subtle->dpy, sel) == subtle->windows.tray)
     {
       subSharedLogDebug("Selection: type=%ld\n", sel);
     }
@@ -153,7 +153,7 @@ subTrayFocus(SubTray *t)
 {
   assert(t);
 
-  XSetInputFocus(subtle->disp, t->win, RevertToNone, CurrentTime);
+  XSetInputFocus(subtle->dpy, t->win, RevertToNone, CurrentTime);
 
   subSharedLogDebug("Focus: win=%#lx\n", t->win);
 } /* }}} */
@@ -177,13 +177,13 @@ subTraySetState(SubTray *t)
       if(flags & XEMBED_MAPPED) ///< Map if wanted
         {
           opcode = XEMBED_WINDOW_ACTIVATE;
-          XMapRaised(subtle->disp, t->win); 
+          XMapRaised(subtle->dpy, t->win); 
           subEwmhSetWMState(t->win, NormalState);
         }
       else 
         {
           opcode = XEMBED_WINDOW_DEACTIVATE;
-          XUnmapWindow(subtle->disp, t->win);
+          XUnmapWindow(subtle->dpy, t->win);
           subEwmhSetWMState(t->win, WithdrawnState);
         }
 
@@ -202,8 +202,8 @@ subTrayKill(SubTray *t)
   assert(t);
 
   /* Ignore further events and delete context */
-  XSelectInput(subtle->disp, t->win, NoEventMask);
-  XDeleteContext(subtle->disp, t->win, TRAYID);
+  XSelectInput(subtle->dpy, t->win, NoEventMask);
+  XDeleteContext(subtle->dpy, t->win, TRAYID);
 
   if(t->name) XFree(t->name);
   free(t);

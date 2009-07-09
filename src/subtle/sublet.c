@@ -46,10 +46,10 @@ subSubletUpdate(void)
       for(i = 0; i < subtle->sublets->ndata; i++) ///< Calculate window width
         width += SUBLET(subtle->sublets->data[i])->width;
 
-      XMoveResizeWindow(subtle->disp, subtle->windows.sublets, DisplayWidth(subtle->disp,
-        DefaultScreen(subtle->disp)) - width, 0, width, subtle->th);
+      XMoveResizeWindow(subtle->dpy, subtle->windows.sublets, DisplayWidth(subtle->dpy,
+        DefaultScreen(subtle->dpy)) - width, 0, width, subtle->th);
     }
-  else XUnmapWindow(subtle->disp, subtle->windows.sublets);
+  else XUnmapWindow(subtle->dpy, subtle->windows.sublets);
 } /* }}} */
 
  /** subSubletRender {{{
@@ -66,11 +66,11 @@ subSubletRender(void)
       SubSublet *s = SUBLET(subtle->sublet);
       SubText *t = NULL;
 
-      XClearWindow(subtle->disp, subtle->windows.sublets);
+      XClearWindow(subtle->dpy, subtle->windows.sublets);
 
       /* Init GC */
       gvals.foreground = subtle->colors.fg_bar;
-      XChangeGC(subtle->disp, subtle->gcs.font, GCForeground, &gvals);
+      XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
 
       /* Render every sublet */
       while(s)
@@ -82,9 +82,9 @@ subSubletRender(void)
                 {
                   /* Update GC */
                   gvals.foreground = t->color;
-                  XChangeGC(subtle->disp, subtle->gcs.font, GCForeground, &gvals);
+                  XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
 
-                  XDrawString(subtle->disp, subtle->windows.sublets, subtle->gcs.font, width,
+                  XDrawString(subtle->dpy, subtle->windows.sublets, subtle->gcs.font, width,
                     subtle->fy - 1, t->data.string, strlen(t->data.string));
 
                   width += t->width;
@@ -94,7 +94,7 @@ subSubletRender(void)
           s = s->next;
         }
 
-      XFlush(subtle->disp);
+      XFlush(subtle->dpy);
     }
 } /* }}} */
 

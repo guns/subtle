@@ -33,11 +33,11 @@ subViewNew(char *name,
   v->width = XTextWidth(subtle->xfs, v->name, strlen(v->name)) + 6; ///< Font offset
 
   /* Create button */
-  v->button = XCreateSimpleWindow(subtle->disp, subtle->windows.views, 0, 0, 1,
+  v->button = XCreateSimpleWindow(subtle->dpy, subtle->windows.views, 0, 0, 1,
     subtle->th, 0, subtle->colors.norm, subtle->colors.norm);
 
-  XSaveContext(subtle->disp, v->button, BUTTONID, (void *)v);
-  XMapRaised(subtle->disp, v->button);
+  XSaveContext(subtle->dpy, v->button, BUTTONID, (void *)v);
+  XMapRaised(subtle->dpy, v->button);
 
   /* Tags */
   if(tags && strncmp("", tags, 1))
@@ -102,14 +102,14 @@ subViewConfigure(SubView *v)
                 }
               else subClientConfigure(c);
 
-              XMapWindow(subtle->disp, c->win);
+              XMapWindow(subtle->dpy, c->win);
 
               /* EWMH: Desktop */
               subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
             }
-          else XMapRaised(subtle->disp, c->win); ///< Float/full
+          else XMapRaised(subtle->dpy, c->win); ///< Float/full
         }
-      else XUnmapWindow(subtle->disp, c->win); ///< Unmap other windows
+      else XUnmapWindow(subtle->dpy, c->win); ///< Unmap other windows
     }
 } /* }}} */
 
@@ -128,14 +128,14 @@ subViewUpdate(void)
         {
           SubView *v = VIEW(subtle->views->data[i]);
 
-          XMoveResizeWindow(subtle->disp, v->button, width, 0, v->width, subtle->th);
+          XMoveResizeWindow(subtle->dpy, v->button, width, 0, v->width, subtle->th);
           width += v->width;
         }
 
       if(0 < width) 
         {
-          XResizeWindow(subtle->disp, subtle->windows.views, width, subtle->th);
-          XMoveWindow(subtle->disp, subtle->windows.caption, width, 0); 
+          XResizeWindow(subtle->dpy, subtle->windows.views, width, subtle->th);
+          XMoveWindow(subtle->dpy, subtle->windows.caption, width, 0); 
         }
     }
 } /* }}} */
@@ -154,8 +154,8 @@ subViewRender(void)
       XGCValues gvals;
 
       /* Bar window */
-      XClearWindow(subtle->disp, subtle->windows.bar);
-      XFillRectangle(subtle->disp, subtle->windows.bar, subtle->gcs.stipple, 0, 2,
+      XClearWindow(subtle->dpy, subtle->windows.bar);
+      XFillRectangle(subtle->dpy, subtle->windows.bar, subtle->gcs.stipple, 0, 2,
         SCREENW, subtle->th - 4);  
 
       /* View buttons */
@@ -175,10 +175,10 @@ subViewRender(void)
               gvals.background = subtle->colors.bg_bar;
             }
 
-          XChangeGC(subtle->disp, subtle->gcs.font, GCForeground, &gvals);
-          XSetWindowBackground(subtle->disp, v->button, gvals.background); 
-          XClearWindow(subtle->disp, v->button);
-          XDrawString(subtle->disp, v->button, subtle->gcs.font, 3, subtle->fy - 1,
+          XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
+          XSetWindowBackground(subtle->dpy, v->button, gvals.background); 
+          XClearWindow(subtle->dpy, v->button);
+          XDrawString(subtle->dpy, v->button, subtle->gcs.font, 3, subtle->fy - 1,
             v->name, strlen(v->name));
         }
     }
@@ -215,7 +215,6 @@ subViewJump(SubView *v)
 
   subSharedFocus();
   subViewRender();
-
 } /* }}} */
 
  /** subViewPublish {{{
@@ -258,7 +257,7 @@ subViewPublish(void)
       free(views);
       free(names);
 
-      XSync(subtle->disp, False);
+      XSync(subtle->dpy, False);
     }
 } /* }}} */
 
@@ -272,8 +271,8 @@ subViewKill(SubView *v)
 {
   assert(v);
 
-  XDeleteContext(subtle->disp, v->button, 1);
-  XDestroyWindow(subtle->disp, v->button);
+  XDeleteContext(subtle->dpy, v->button, 1);
+  XDestroyWindow(subtle->dpy, v->button);
 
   free(v->name);
   free(v);          
