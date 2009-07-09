@@ -24,7 +24,7 @@ typedef struct clientgravity_t
 static void
 ClientMask(SubClient *c)
 {
-  XDrawRectangle(subtle->disp, ROOT, subtle->gcs.invert, c->geom.x - 1, c->geom.y - 1,
+  XDrawRectangle(subtle->dpy, ROOT, subtle->gcs.invert, c->geom.x - 1, c->geom.y - 1,
     c->geom.width + 1, c->geom.height + 1);
 } /* }}} */
 
@@ -64,37 +64,38 @@ subClientNew(Window win)
 
   /* Create client */
   c = CLIENT(subSharedMemoryAlloc(1, sizeof(SubClient)));
-  c->flags = SUB_TYPE_CLIENT;
-  c->tags  = SUB_TAG_DEFAULT;
-  c->win   = win;
+  c->gravities = (int *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(int));
+  c->flags     = SUB_TYPE_CLIENT;
+  c->tags      = SUB_TAG_DEFAULT;
+  c->win       = win;
 
   /* Fetch name and class */
-  XFetchName(subtle->disp, c->win, &c->caption);
+  XFetchName(subtle->dpy, c->win, &c->caption);
   subSharedPropertyClass(c->win, &c->name, &c->klass);
   if(!c->caption && c->name) c->caption = strdup(c->name); ///< Fallback for e.g. Skype
   c->width = XTextWidth(subtle->xfs, c->caption, strlen(c->caption)) + 6; ///< Font offset
 
   /* Update client */
   subEwmhSetWMState(c->win, WithdrawnState);
-  XSelectInput(subtle->disp, c->win, EVENTMASK);
-  XSetWindowBorderWidth(subtle->disp, c->win, subtle->bw);
-  XAddToSaveSet(subtle->disp, c->win);
-  XSaveContext(subtle->disp, c->win, CLIENTID, (void *)c);
+  XSelectInput(subtle->dpy, c->win, EVENTMASK);
+  XSetWindowBorderWidth(subtle->dpy, c->win, subtle->bw);
+  XAddToSaveSet(subtle->dpy, c->win);
+  XSaveContext(subtle->dpy, c->win, CLIENTID, (void *)c);
   subClientSetHints(c);
   subClientSetTags(c);
   subClientSetStrut(c);
 
   /* Window attributes */
-  XGetWindowAttributes(subtle->disp, c->win, &attrs);
+  XGetWindowAttributes(subtle->dpy, c->win, &attrs);
   c->cmap        = attrs.colormap;
   c->geom.x      = attrs.x;
   c->geom.y      = attrs.y;
   c->geom.width  = attrs.width;
   c->geom.height = attrs.height;
-  c->base        = c->geom;
+  c->base        = c->geom; ///< Backup size
  
-  /* Protocols */
-  if(XGetWMProtocols(subtle->disp, c->win, &protos, &n))
+  /* Window manager protocols */
+  if(XGetWMProtocols(subtle->dpy, c->win, &protos, &n))
     {
       for(i = 0; i < n; i++)
         {
@@ -110,70 +111,49 @@ subClientNew(Window win)
     }
 
   /* Window manager hints */
-  if((hints = XGetWMHints(subtle->disp, c->win)))
+  if((hints = XGetWMHints(subtle->dpy, c->win)))
     {
-      if(hints->flags & XUrgencyHint)              c->tags  |= (SUB_TAG_FLOAT|SUB_TAG_STICK);
+      if(hints->flags & XUrgencyHint)              c->tags  |= SUB_PREF_URGENT;
       if(hints->flags & InputHint && hints->input) c->flags |= SUB_PREF_INPUT;
-      if(hints->flags & WindowGroupHint) ///< Handle window groups
-        {
-          c->flags |= SUB_PREF_GROUP;
-          c->group  = hints->window_group;
-        }
 
       XFree(hints);
     }
 
   /* Check for transient windows */
-  if(XGetTransientForHint(subtle->disp, c->win, &trans))
+  if(XGetTransientForHint(subtle->dpy, c->win, &trans))
     {
-      c->flags |= SUB_PREF_TRANS;
-      c->tags   = (SUB_TAG_FLOAT|SUB_TAG_STICK); ///< Copy tags
+      c->flags |= SUB_PREF_URGENT;
 
       if((k = CLIENT(subSharedFind(trans, CLIENTID))))
-        c->tags |= k->tags;
+        c->tags |= k->tags; ///< Copy tags
      }
 
-  /* Properties */
-  if(c->tags & SUB_TAG_FLOAT) subClientToggle(c, SUB_STATE_FLOAT);
-  if(c->tags & SUB_TAG_FULL)  subClientToggle(c, SUB_STATE_FULL);
-  if(c->tags & SUB_TAG_STICK) subClientToggle(c, SUB_STATE_STICK);
+  /* Urgent windows */
+  if(c->flags & SUB_PREF_URGENT)
+    {
+      subClientToggle(c, (c->flags & ~(SUB_STATE_FLOAT|SUB_STATE_STICK)));
+      subClientWarp(c);
+    }
 
   /* Gravity */
-  if(c->tags & SUB_TAG_TOP)
+  if(0 == c->gravity)
     {
-      if(c->tags & SUB_TAG_LEFT)       c->gravity = SUB_GRAVITY_TOP_LEFT;
-      else if(c->tags & SUB_TAG_RIGHT) c->gravity = SUB_GRAVITY_TOP_RIGHT;
-      else                             c->gravity = SUB_GRAVITY_TOP;
-    }
-  else if(c->tags & SUB_TAG_BOTTOM)
-    {
-      if(c->tags & SUB_TAG_LEFT)       c->gravity = SUB_GRAVITY_BOTTOM_LEFT;
-      else if(c->tags & SUB_TAG_RIGHT) c->gravity = SUB_GRAVITY_BOTTOM_RIGHT;
-      else                             c->gravity = SUB_GRAVITY_BOTTOM;
-    }
-  else if(c->tags & SUB_TAG_LEFT)      c->gravity = SUB_GRAVITY_LEFT;
-  else if(c->tags & SUB_TAG_RIGHT)     c->gravity = SUB_GRAVITY_RIGHT;
-  else if(0 < subtle->gravity)         c->gravity = subtle->gravity;
-  else 
-    {
-      if((k = CLIENT(subSharedFind(subtle->windows.focus, CLIENTID))))
+      if(0 == subtle->gravity && (k = CLIENT(subSharedFind(subtle->windows.focus, CLIENTID))))
         c->gravity = k->gravity; ///< Copy gravity
-      else c->gravity = SUB_GRAVITY_CENTER;
+      else
+        c->gravity = 5; ///< Set default
     }
-
-  c->gravities = (int *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(int));
 
   for(i = 0; i < subtle->views->ndata; i++)
     c->gravities[i] = c->gravity;
   c->gravity = -1; ///< Force update
 
-  /* EWMH: Tags, gravity and desktop */
+  /* EWMH: Tags, gravity, screen and desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&c->tags, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
+  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_SCREEN, (long *)&c->screen, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
-  if(c->flags & SUB_PREF_TRANS && subtle->windows.focus != c->win) ///< Move pointer to transient
-    subClientWarp(c);
 
   if(subtle->hooks.create) ///< Create hook
     subRubyCall(SUB_TYPE_HOOK, subtle->hooks.create, c);
@@ -229,8 +209,8 @@ subClientConfigure(SubClient *c)
   ev.override_redirect = 0;
   ev.border_width      = 0;
 
-  XMoveResizeWindow(subtle->disp, c->win, r.x, r.y, r.width, r.height);
-  XSendEvent(subtle->disp, c->win, False, StructureNotifyMask, (XEvent *)&ev);
+  XMoveResizeWindow(subtle->dpy, c->win, r.x, r.y, r.width, r.height);
+  XSendEvent(subtle->dpy, c->win, False, StructureNotifyMask, (XEvent *)&ev);
 
   subSharedLogDebug("client=%#lx, state=%c, x=%03d, y=%03d, width=%03d, height=%03d\n",
     c->win, c->flags & SUB_STATE_FLOAT ? 'f' : c->flags & SUB_STATE_FULL ? 'u' : 'n',
@@ -255,7 +235,7 @@ subClientRender(SubClient *c)
 
   attrs.border_pixel = subtle->windows.focus == c->win ? subtle->colors.bg_focus : 
     subtle->colors.norm;
-  XChangeWindowAttributes(subtle->disp, c->win, CWBorderPixel, &attrs);
+  XChangeWindowAttributes(subtle->dpy, c->win, CWBorderPixel, &attrs);
 
   /* Caption */
   if(c->flags & (SUB_STATE_STICK|SUB_STATE_FLOAT))
@@ -267,12 +247,12 @@ subClientRender(SubClient *c)
 
   /* Caption title */
   gvals.foreground = subtle->colors.fg_focus;
-  XChangeGC(subtle->disp, subtle->gcs.font, GCForeground, &gvals);
+  XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
 
-  XResizeWindow(subtle->disp, subtle->windows.caption, c->width + pos, subtle->th);
-  XClearWindow(subtle->disp, subtle->windows.caption);
+  XResizeWindow(subtle->dpy, subtle->windows.caption, c->width + pos, subtle->th);
+  XClearWindow(subtle->dpy, subtle->windows.caption);
 
-  XDrawString(subtle->disp, subtle->windows.caption, subtle->gcs.font, 3, subtle->fy - 1,
+  XDrawString(subtle->dpy, subtle->windows.caption, subtle->gcs.font, 3, subtle->fy - 1,
     buf, strlen(buf));
 } /* }}} */
 
@@ -302,7 +282,7 @@ subClientFocus(SubClient *c)
       subEwmhMessage(c->win, c->win, SUB_EWMH_WM_PROTOCOLS, 
         subEwmhGet(SUB_EWMH_WM_TAKE_FOCUS), CurrentTime, 0, 0, 0);
     }   
-  else XSetInputFocus(subtle->disp, c->win, RevertToNone, CurrentTime);
+  else XSetInputFocus(subtle->dpy, c->win, RevertToNone, CurrentTime);
 
   subSharedLogDebug("Focus: win=%#lx, input=%d, focus=%d\n", c->win,
     !!(c->flags & SUB_PREF_INPUT), !!(c->flags & SUB_PREF_FOCUS));
@@ -319,7 +299,7 @@ subClientWarp(SubClient *c)
   DEAD(c);
   assert(c);
 
-  XWarpPointer(subtle->disp, None, ROOT, 0, 0, 0, 0,
+  XWarpPointer(subtle->dpy, None, ROOT, 0, 0, 0, 0,
     c->geom.x + c->geom.width / 2, c->geom.y + c->geom.height / 2);
 } /* }}} */
 
@@ -344,7 +324,7 @@ subClientDrag(SubClient *c,
   assert(c);
  
   /* Init {{{ */
-  XQueryPointer(subtle->disp, c->win, &win, &win, &rx, &ry, &wx, &wy, &mask);
+  XQueryPointer(subtle->dpy, c->win, &win, &win, &rx, &ry, &wx, &wy, &mask);
   c->geom.x = rx - wx;
   c->geom.y = ry - wy;
   ww        = c->geom.width;
@@ -365,15 +345,15 @@ subClientDrag(SubClient *c,
         break;
     } /* }}} */
 
-  if(XGrabPointer(subtle->disp, c->win, True, GRABMASK, GrabModeAsync, GrabModeAsync, None,
+  if(XGrabPointer(subtle->dpy, c->win, True, GRABMASK, GrabModeAsync, GrabModeAsync, None,
     cursor, CurrentTime)) return;
 
-  XGrabServer(subtle->disp);
+  XGrabServer(subtle->dpy);
   if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE)) ClientMask(c);
 
   while(loop) ///< Event loop
     {
-      XMaskEvent(subtle->disp, DRAGMASK, &ev);
+      XMaskEvent(subtle->dpy, DRAGMASK, &ev);
       switch(ev.type)
         {
           case EnterNotify:   win = ev.xcrossing.window; break; ///< Find destination window
@@ -383,7 +363,7 @@ subClientDrag(SubClient *c,
           case KeyPress: /* {{{ */
             if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE))
               {
-                KeySym sym = XKeycodeToKeysym(subtle->disp, ev.xkey.keycode, 0);
+                KeySym sym = XKeycodeToKeysym(subtle->dpy, ev.xkey.keycode, 0);
                 ClientMask(c);
 
                 switch(sym)
@@ -447,8 +427,8 @@ subClientDrag(SubClient *c,
       subClientConfigure(c);
     }
   
-  XUngrabPointer(subtle->disp, CurrentTime);
-  XUngrabServer(subtle->disp);
+  XUngrabPointer(subtle->dpy, CurrentTime);
+  XUngrabServer(subtle->dpy);
 } /* }}} */
 
  /** subClientUpdate {{{ 
@@ -484,9 +464,9 @@ subClientUpdate(int vid)
 
 void
 subClientSetGravity(SubClient *c,
-  int type)
+  int grav)
 {
-  int grav = 0, mode = 0;
+  SubScreen *s = NULL;
   XRectangle slot = { 0 };
   static const ClientGravity props[] = /* {{{ */
   {
@@ -514,88 +494,45 @@ subClientSetGravity(SubClient *c,
       return;
     }
 
-  /* Modes */
-  grav = type & ~SUB_GRAVITY_ALL;
-
   /* Compute slot */
-  slot.height = subtle->screen.height / props[grav].cells_y;
-  slot.width  = subtle->screen.width / props[grav].cells_x;
-  slot.x      = subtle->screen.x + props[grav].grav_right * slot.width;
-  slot.y      = subtle->screen.y + props[grav].grav_down * slot.height;
+  s = SCREEN(subtle->screens->data[c->screen]);
+  slot.height = s->geom.height / props[grav].cells_y;
+  slot.width  = s->geom.width / props[grav].cells_x;
+  slot.x      = s->geom.x + props[grav].grav_right * slot.width;
+  slot.y      = s->geom.y + props[grav].grav_down * slot.height;
 
   /* Toggle between modes */
-  if(type & SUB_GRAVITY_HORZ &&
-    (type & SUB_GRAVITY_MODES || (c->geom.y == slot.y && c->geom.height == slot.height)))
+  if(c->geom.x == slot.x && c->geom.width == slot.width)
     {
-      int width33 = subtle->screen.width / 3;
-      int width66 = subtle->screen.width - width33;
-      int compw   = abs(subtle->screen.width - 3 * width33); ///< Int rounding fix
-
-      if(2 == props[grav].cells_x)
-        {
-          int x = subtle->screen.x + props[grav].grav_right * width33;
-
-          if(type & SUB_GRAVITY_MODE66 ||
-            (!(type & SUB_GRAVITY_MODES) && c->geom.width == slot.width && c->geom.x == slot.x)) ///< 33%
-            {
-              slot.x     = x;
-              slot.width = width66;
-              mode       = SUB_GRAVITY_HORZ|SUB_GRAVITY_MODE66;
-            }
-          else if(type & SUB_GRAVITY_MODE33 ||
-            (!(type & SUB_GRAVITY_MODES) && c->geom.width == width66 && c->geom.x == x)) ///< 66%
-            {
-              slot.x     = subtle->screen.x + props[grav].grav_right * width66;
-              slot.width = width33;
-              mode       = SUB_GRAVITY_HORZ|SUB_GRAVITY_MODE33;
-            }
-        }
-      else if(type & SUB_GRAVITY_MODE33 ||
-        (!(type & SUB_GRAVITY_MODES) && c->geom.width == slot.width && c->geom.x == slot.x))
-        {
-          slot.x     = subtle->screen.x + width33;
-          slot.width = width33 + compw;
-          mode       = SUB_GRAVITY_HORZ|SUB_GRAVITY_MODE33;
-        }
-    }  
-  else if(type & SUB_GRAVITY_VERT && 
-    (type & SUB_GRAVITY_MODES || (c->geom.x == slot.x && c->geom.width == slot.width)))
-    {
-      int height33 = subtle->screen.height / 3;
-      int height66 = subtle->screen.height - height33;
-      int comph    = abs(subtle->screen.height - 3 * height33); ///< Int rounding fix
+      int height33 = s->geom.height / 3;
+      int height66 = s->geom.height - height33;
+      int comph    = abs(s->geom.height - 3 * height33); ///< Int rounding fix
 
       if(2 == props[grav].cells_y)
         {
-          int y = subtle->screen.y + props[grav].grav_down * height33;
+          int y = s->geom.y + props[grav].grav_down * height33;
 
-          if(type & SUB_GRAVITY_MODE66 || 
-            (!(type & SUB_GRAVITY_MODES) && c->geom.height == slot.height && c->geom.y == slot.y)) ///< 33%
+          if(c->geom.height == slot.height && c->geom.y == slot.y) ///< 33%
             {
               slot.y      = y;
               slot.height = height66;
-              mode        = SUB_GRAVITY_VERT|SUB_GRAVITY_MODE66;
             }
-          else if(type & SUB_GRAVITY_MODE33 ||
-            (!(type & SUB_GRAVITY_MODES) && c->geom.height == height66 && c->geom.y == y)) ///< 66%
+          else if(c->geom.height == height66 && c->geom.y == y) ///< 66%
             {
-              slot.y      = subtle->screen.y + props[grav].grav_down * height66;
+              slot.y      = s->geom.y + props[grav].grav_down * height66;
               slot.height = height33;
-              mode        = SUB_GRAVITY_VERT|SUB_GRAVITY_MODE33;
             }
         }
-      else if(type & SUB_GRAVITY_MODE33 ||
-        (!(type & SUB_GRAVITY_MODES) && c->geom.height == slot.height && c->geom.y == slot.y))
+      else if(c->geom.height == slot.height && c->geom.y == slot.y)
         {
-          slot.y      = subtle->screen.y + height33;
+          slot.y      = s->geom.y + height33;
           slot.height = height33 + comph;
-          mode        = SUB_GRAVITY_VERT|SUB_GRAVITY_MODE33;
         }
-    }
+    }  
 
   /* Update client rect */
   c->geom    = slot;
-  c->gravity = grav | mode;
+  c->gravity = grav;
 
   subClientConfigure(c);
 
@@ -666,7 +603,7 @@ subClientSetHints(SubClient *c)
   c->inch   = 1; /* }}} */
 
   /* Size hints */
-  if(XGetWMNormalHints(subtle->disp, c->win, size, &supplied))
+  if(XGetWMNormalHints(subtle->dpy, c->win, size, &supplied))
     {
       if(size->flags & PMinSize) ///< Program min size
         {
@@ -709,17 +646,30 @@ subClientSetHints(SubClient *c)
 void
 subClientSetTags(SubClient *c)
 {
-  int i;
+  int i, flags = 0;
+
+  DEAD(c);
+  assert(c);
 
   for(i = 0; c->klass && i < subtle->tags->ndata; i++)
     {
       SubTag *t = TAG(subtle->tags->data[i]);
 
+      /* Match client */
       if(t->preg && ((c->name && subSharedRegexMatch(t->preg, c->name)) || 
         (c->klass && subSharedRegexMatch(t->preg, c->klass))))
-        c->tags |= (1L << (i + 1));
+        {
+          /* Update flags and tags */
+          flags    |= (t->flags & (SUB_TAG_FULL|SUB_TAG_FLOAT|SUB_TAG_STICK));
+          c->tags  |= (1L << (i + 1));
+
+          if(t->flags & SUB_TAG_GRAVITY) c->gravity = t->gravity;
+          if(t->flags & SUB_TAG_SCREEN)  c->screen  = t->screen;
+        }
     }
-  if(1 < (c->tags >> SUB_TAG_CLEAR)) c->tags &= ~SUB_TAG_DEFAULT;  
+  if(SUB_TAG_DEFAULT < c->tags) c->tags &= ~SUB_TAG_DEFAULT; ///< Remove default tag
+
+  subClientToggle(c, flags); ///< Toggle flags
 } /* }}} */
 
   /** subClientSetStrut {{{ 
@@ -773,7 +723,7 @@ subClientToggle(SubClient *c,
       c->flags  &= ~type;
 
       if(type & SUB_STATE_FULL)
-        XSetWindowBorderWidth(subtle->disp, c->win, subtle->bw);
+        XSetWindowBorderWidth(subtle->dpy, c->win, subtle->bw);
 
       if(type & SUB_STATE_FLOAT) 
         {
@@ -801,7 +751,7 @@ subClientToggle(SubClient *c,
         }
 
       if(type & SUB_STATE_FULL)
-        XSetWindowBorderWidth(subtle->disp, c->win, 0);
+        XSetWindowBorderWidth(subtle->dpy, c->win, 0);
     }
 
   subClientConfigure(c);
@@ -849,9 +799,9 @@ subClientKill(SubClient *c,
   assert(c);
 
   /* Ignore further events and delete context */
-  XSelectInput(subtle->disp, c->win, NoEventMask);
-  XDeleteContext(subtle->disp, c->win, CLIENTID);
-  XUnmapWindow(subtle->disp, c->win);
+  XSelectInput(subtle->dpy, c->win, NoEventMask);
+  XDeleteContext(subtle->dpy, c->win, CLIENTID);
+  XUnmapWindow(subtle->dpy, c->win);
 
   /* Close window */
   if(close && !(c->flags & SUB_STATE_DEAD))
@@ -861,7 +811,7 @@ subClientKill(SubClient *c,
           subEwmhMessage(c->win, c->win, SUB_EWMH_WM_PROTOCOLS,
             subEwmhGet(SUB_EWMH_WM_DELETE_WINDOW), CurrentTime, 0, 0, 0);
         }
-      else XKillClient(subtle->disp, c->win);
+      else XKillClient(subtle->dpy, c->win);
     }
 
   subSharedFocus(); ///< Focus
