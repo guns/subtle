@@ -175,7 +175,7 @@ task(:config) do
     if(File.exists?(".hg") && (hg = find_executable0("hg")))
       match = `#{hg} tip`.match(/changeset:\s*(\d+).*/)
 
-      if(!match.nil? && 2 == match.size )
+      if(!match.nil? && 2 == match.size)
         @options["revision"] = match[1]
       else
         @options["revision"] = "UNKNOWN"
