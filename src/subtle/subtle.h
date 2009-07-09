@@ -69,25 +69,31 @@
   (ButtonPressMask|ButtonReleaseMask|PointerMotionMask)
 
 #define VISUAL \
-  DefaultVisual(subtle->disp, DefaultScreen(subtle->disp))        ///< Default visual
+  DefaultVisual(subtle->dpy, DefaultScreen(subtle->dpy))        ///< Default visual
 #define COLORMAP \
-  DefaultColormap(subtle->disp, DefaultScreen(subtle->disp))      ///< Default colormap
+  DefaultColormap(subtle->dpy, DefaultScreen(subtle->dpy))      ///< Default colormap
 #define VISIBLE(v,c) \
   (v && c && (v->tags & c->tags || c->flags & SUB_STATE_STICK))   ///< Visible on view
 #define SCREENW \
-  DisplayWidth(subtle->disp, DefaultScreen(subtle->disp))         ///< Get screen width
+  DisplayWidth(subtle->dpy, DefaultScreen(subtle->dpy))         ///< Get screen width
 #define SCREENH \
-  DisplayHeight(subtle->disp, DefaultScreen(subtle->disp))        ///< Get screen height
+  DisplayHeight(subtle->dpy, DefaultScreen(subtle->dpy))        ///< Get screen height
 
-#define ROOT       DefaultRootWindow(subtle->disp)                ///< Root window
-#define SCREEN     DefaultScreen(subtle->disp)                    ///< Default screen
+#define ROOT       DefaultRootWindow(subtle->dpy)                ///< Root window
+#define SCRN       DefaultScreen(subtle->dpy)                    ///< Default screen
+
+#define SETRECT(r,a,b,c,d) \
+  r.x      = a; \
+  r.y      = b; \
+  r.width  = c; \
+  r.height = d;                                                   ///< Set rect values
 
 /* Casts */
 #define ARRAY(a)  ((SubArray *)a)                                 ///< Cast to SubArray
 #define CLIENT(c) ((SubClient *)c)                                ///< Cast to SubClient
 #define DATA(d)   ((SubData)d)                                    ///< Cast to SubData
 #define GRAB(g)   ((SubGrab *)g)                                  ///< Cast to SubGrab
-#define RECT(r)   ((XRectangle *)r)                               ///< Cast to XRectangle
+#define SCREEN(s) ((SubScreen *)s)                                ///< Cast to SubScreen
 #define SUBLET(s) ((SubSublet *)s)                                ///< Cast to SubSublet
 #define SUBTLE(s) ((SubSubtle *)s)                                ///< Cast to SubSubtle
 #define TEXT(t)   ((SubText *)t)                                  ///< Cast to SubText
@@ -124,11 +130,12 @@
 #define SUB_TYPE_CLIENT               (1L << 1)                   ///< Client
 #define SUB_TYPE_GRAB                 (1L << 2)                   ///< Grab
 #define SUB_TYPE_HOOK                 (1L << 3)                   ///< Hook
-#define SUB_TYPE_SUBLET               (1L << 4)                   ///< Sublet
-#define SUB_TYPE_TAG                  (1L << 5)                   ///< Tag
-#define SUB_TYPE_TEXT                 (1L << 6)                   ///< Text
-#define SUB_TYPE_TRAY                 (1L << 7)                   ///< Tray
-#define SUB_TYPE_VIEW                 (1L << 8)                   ///< View
+#define SUB_TYPE_SCREEN               (1L << 4)                   ///< Screen
+#define SUB_TYPE_SUBLET               (1L << 5)                   ///< Sublet
+#define SUB_TYPE_TAG                  (1L << 6)                   ///< Tag
+#define SUB_TYPE_TEXT                 (1L << 7)                   ///< Text
+#define SUB_TYPE_TRAY                 (1L << 8)                   ///< Tray
+#define SUB_TYPE_VIEW                 (1L << 9)                   ///< View
 
 /* Client states */
 #define SUB_STATE_FULL                (1L << 10)                  ///< Fullscreen window
@@ -140,8 +147,7 @@
 #define SUB_PREF_FOCUS                (1L << 15)                  ///< Send focus message
 #define SUB_PREF_CLOSE                (1L << 16)                  ///< Send close message
 #define SUB_PREF_INPUT                (1L << 17)                  ///< Active/passive focus-model
-#define SUB_PREF_GROUP                (1L << 18)                  ///< Window group
-#define SUB_PREF_TRANS                (1L << 19)                  ///< Transient window
+#define SUB_PREF_URGENT               (1L << 18)                  ///< Urgent window
 
 /* Sublet types */
 #define SUB_SUBLET_INOTIFY            (1L << 10)                  ///< Inotify sublet
@@ -156,16 +162,18 @@
 #define SUB_GRAB_MOUSE                (1L << 11)                  ///< Mouse grab  
 #define SUB_GRAB_EXEC                 (1L << 12)                  ///< Exec an app
 #define SUB_GRAB_PROC                 (1L << 13)                  ///< Grab with proc
-#define SUB_GRAB_JUMP                 (1L << 14)                  ///< Jump to view
-#define SUB_GRAB_SUBTLE_RELOAD        (1L << 15)                  ///< Reload subtle
-#define SUB_GRAB_SUBTLE_QUIT          (1L << 16)                  ///< Quit subtle
-#define SUB_GRAB_WINDOW_MOVE          (1L << 17)                  ///< Resize window
-#define SUB_GRAB_WINDOW_RESIZE        (1L << 18)                  ///< Move window
-#define SUB_GRAB_WINDOW_TOGGLE        (1L << 19)                  ///< Toggle window
-#define SUB_GRAB_WINDOW_STACK         (1L << 20)                  ///< Stack window
-#define SUB_GRAB_WINDOW_SELECT        (1L << 21)                  ///< Select window
-#define SUB_GRAB_WINDOW_GRAVITY       (1L << 22)                  ///< Set gravity of window
-#define SUB_GRAB_WINDOW_KILL          (1L << 23)                  ///< Kill window
+#define SUB_GRAB_VIEW_JUMP            (1L << 14)                  ///< Jump to view
+#define SUB_GRAB_SCREEN_JUMP          (1L << 15)                  ///< Jump to screen
+#define SUB_GRAB_SUBTLE_RELOAD        (1L << 16)                  ///< Reload subtle
+#define SUB_GRAB_SUBTLE_QUIT          (1L << 17)                  ///< Quit subtle
+#define SUB_GRAB_WINDOW_MOVE          (1L << 18)                  ///< Resize window
+#define SUB_GRAB_WINDOW_RESIZE        (1L << 19)                  ///< Move window
+#define SUB_GRAB_WINDOW_TOGGLE        (1L << 20)                  ///< Toggle window
+#define SUB_GRAB_WINDOW_STACK         (1L << 21)                  ///< Stack window
+#define SUB_GRAB_WINDOW_SELECT        (1L << 22)                  ///< Select window
+#define SUB_GRAB_WINDOW_GRAVITY       (1L << 23)                  ///< Set gravity of window
+#define SUB_GRAB_WINDOW_SCREEN        (1L << 24)                  ///< Set screen of window
+#define SUB_GRAB_WINDOW_KILL          (1L << 25)                  ///< Kill window
 
 /* Drag states */
 #define SUB_DRAG_START                (1L << 10)                  ///< Drag start
@@ -173,20 +181,13 @@
 #define SUB_DRAG_SWAP                 (1L << 12)                  ///< Drag swap
 #define SUB_DRAG_RESIZE               (1L << 13)                  ///< Drag resize
 
-/* Fixed tags */
-#define SUB_TAG_DEFAULT               (1L << 1)                   ///< Default tag
-#define SUB_TAG_FLOAT                 (1L << 2)                   ///< Float tag
-#define SUB_TAG_FULL                  (1L << 3)                   ///< Full tag
-#define SUB_TAG_STICK                 (1L << 4)                   ///< Stick tag
-#define SUB_TAG_TOP                   (1L << 5)                   ///< Top tag
-#define SUB_TAG_BOTTOM                (1L << 6)                   ///< Bottom tag
-#define SUB_TAG_LEFT                  (1L << 7)                   ///< Left tag
-#define SUB_TAG_RIGHT                 (1L << 8)                   ///< Right tag
-#define SUB_TAG_CENTER                (1L << 9)                   ///< Center tag
-
-/* Clear masks */
-#define SUB_TAG_CLEAR                  9L                         ///< Clear mask
-#define SUB_GRAB_CLEAR                 14L                        ///< Clear mask
+/* Tag types */
+#define SUB_TAG_DEFAULT               (1L << 1)                    ///< Default tag
+#define SUB_TAG_FULL                  (1L << 10)                   ///< Fullscreen tag
+#define SUB_TAG_FLOAT                 (1L << 11)                   ///< Float tag
+#define SUB_TAG_STICK                 (1L << 12)                   ///< Stick tag
+#define SUB_TAG_GRAVITY               (1L << 13)                   ///< Gravity tag
+#define SUB_TAG_SCREEN                (1L << 14)                   ///< Screen tag
 /* }}} */
 
 /* Typedefs {{{ */
@@ -202,13 +203,14 @@ typedef struct subclient_t /* {{{ */
   char       *name, *klass, *caption;                             ///< Client name, klass, caption
 
   TAGS       tags;                                                ///< Client tags
-  Window     win, group;                                          ///< Client window
+  Window     win;                                                 ///< Client window
   Colormap   cmap;                                                ///< Client colormap
   XRectangle geom, base;                                          ///< Client geom, base
 
   float      minr, maxr;                                          ///< Client ratios
   int        minw, minh, maxw, maxh, incw, inch;                  ///< Client sizes
-  int        width, gravity, *gravities;                          ///< Client width, gravities
+  int        width, gravity, screen;                              ///< Client informations
+  int        *gravities;                                          ///< Client view gravities
 } SubClient; /* }}} */
 
 typedef enum subewmh_t /* {{{ */
@@ -247,7 +249,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_NET_SHOWING_DESKTOP,                                   ///< Showing desktop mode 
 
   SUB_EWMH_NET_WM_STATE,                                          ///< Window state
-  SUB_EWMH_NET_WM_STATE_FULLSCREEN,                               ///< Fullscreen window
+  SUB_EWMH_NET_WM_STATE_FULLSCRN,                               ///< Fullscreen window
   SUB_EWMH_NET_WM_STATE_ABOVE,                                    ///< Floating window
   SUB_EWMH_NET_WM_STATE_STICKY,                                   ///< Urgent window
 
@@ -265,20 +267,21 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_XEMBED_INFO,                                           ///< XEmbed info
 
   /* subtle */
-  SUB_EWMH_SUBTLE_WINDOW_TAG,                                     ///< subtle window tag
-  SUB_EWMH_SUBTLE_WINDOW_UNTAG,                                   ///< subtle window untag
-  SUB_EWMH_SUBTLE_WINDOW_TAGS,                                    ///< subtle window tags
-  SUB_EWMH_SUBTLE_WINDOW_GRAVITY,                                 ///< subtle window gravity
-  SUB_EWMH_SUBTLE_TAG_NEW,                                        ///< subtle tag new
-  SUB_EWMH_SUBTLE_TAG_LIST,                                       ///< subtle tag list
-  SUB_EWMH_SUBTLE_TAG_KILL,                                       ///< subtle tag kill
-  SUB_EWMH_SUBTLE_VIEW_NEW,                                       ///< subtle view new
-  SUB_EWMH_SUBTLE_VIEW_KILL,                                      ///< subtle view kill
-  SUB_EWMH_SUBTLE_SUBLET_UPDATE,                                  ///< subtle sublet update
-  SUB_EWMH_SUBTLE_SUBLET_LIST,                                    ///< subtle sublet list
-  SUB_EWMH_SUBTLE_SUBLET_KILL,                                    ///< subtle sublet kill
-  SUB_EWMH_SUBTLE_RELOAD,                                         ///< subtle reload config
-  SUB_EWMH_SUBTLE_QUIT,                                           ///< subtle quit wm
+  SUB_EWMH_SUBTLE_WINDOW_TAG,                                     ///< Subtle window tag
+  SUB_EWMH_SUBTLE_WINDOW_UNTAG,                                   ///< Subtle window untag
+  SUB_EWMH_SUBTLE_WINDOW_TAGS,                                    ///< Subtle window tags
+  SUB_EWMH_SUBTLE_WINDOW_GRAVITY,                                 ///< Subtle window gravity
+  SUB_EWMH_SUBTLE_WINDOW_SCREEN,                                  ///< Subtle window screen
+  SUB_EWMH_SUBTLE_TAG_NEW,                                        ///< Subtle tag new
+  SUB_EWMH_SUBTLE_TAG_LIST,                                       ///< Subtle tag list
+  SUB_EWMH_SUBTLE_TAG_KILL,                                       ///< Subtle tag kill
+  SUB_EWMH_SUBTLE_VIEW_NEW,                                       ///< Subtle view new
+  SUB_EWMH_SUBTLE_VIEW_KILL,                                      ///< Subtle view kill
+  SUB_EWMH_SUBTLE_SUBLET_UPDATE,                                  ///< Subtle sublet update
+  SUB_EWMH_SUBTLE_SUBLET_LIST,                                    ///< Subtle sublet list
+  SUB_EWMH_SUBTLE_SUBLET_KILL,                                    ///< Subtle sublet kill
+  SUB_EWMH_SUBTLE_RELOAD,                                         ///< Subtle reload config
+  SUB_EWMH_SUBTLE_QUIT,                                           ///< Subtle quit
 
   SUB_EWMH_TOTAL
 } SubEwmh; /* }}} */
@@ -309,6 +312,13 @@ typedef struct subgrab_t /* {{{ */
   union subdata_t data;                                           ///< Grab data
 } SubGrab; /* }}} */
 
+typedef struct subscreen_t /* {{{ */
+{
+  FLAGS        flags;                                             ///< Screen flags
+
+  XRectangle geom, base;                                          ///< Screen geom, base
+} SubScreen; /* }}} */
+
 typedef struct subsublet_t /* {{{ */
 {
   FLAGS              flags;                                       ///< Sublet flags
@@ -316,7 +326,7 @@ typedef struct subsublet_t /* {{{ */
 
 #ifdef HAVE_SYS_INOTIFY_H
   char               *path;                                       ///< Sublet inotify path
-#endif /* HAVE_SYS_INOTIFY */  
+#endif /* HAVE_SYS_INOTIFY */
 
   int                width;                                       ///< Sublet width
   unsigned long      recv;                                        ///< Sublet Ruby receiver
@@ -328,12 +338,12 @@ typedef struct subsublet_t /* {{{ */
 
 typedef struct subsubtle_t /* {{{ */
 {
-  int                th, bw, fy, step, bar, gravity;              ///< Subtle properties
+  int                th, bw, fy, step, bar, gravity, screen;      ///< Subtle properties
 
-  Display            *disp;                                       ///< Subtle Xorg display
+  Display            *dpy;                                        ///< Subtle Xorg display
   XFontStruct        *xfs;                                        ///< Subtle font
 
-  XRectangle         strut, screen;                               ///< Subtle strut, screen
+  XRectangle         strut;                                       ///< Subtle strut, screen
 
   struct subview_t   *cv;                                         ///< Subtle current view
 
@@ -341,6 +351,7 @@ typedef struct subsubtle_t /* {{{ */
 
   struct subarray_t  *clients;                                    ///< Subtle clients
   struct subarray_t  *grabs;                                      ///< Subtle grabs
+  struct subarray_t  *screens;                                    ///< Subtle screens
   struct subarray_t  *sublets;                                    ///< Subtle sublets
   struct subarray_t  *tags;                                       ///< Subtle tags
   struct subarray_t  *trays;                                      ///< Subtle trays
@@ -385,6 +396,7 @@ typedef struct subtag_t /* {{{ */
   FLAGS    flags;                                                 ///< Tag flags
   char    *name;                                                  ///< Tag name
   regex_t *preg;                                                  ///< Tag regex
+  int     gravity, screen;                                        ///< Tag gravity, screen
 } SubTag; /* }}} */
 
 typedef struct subtray_t /* {{{ */
@@ -492,6 +504,13 @@ int subRubyCall(int type, unsigned long recv, void *extra);       ///< Call Ruby
 void subRubyFinish(void);                                         ///< Kill Ruby stack
 /* }}} */
 
+/* screen.c {{{ */
+SubScreen *subScreenNew(int x, int y, unsigned int width,
+  unsigned int height);                                           ///< Create screen
+void subScreenJump(SubScreen *s);                                 ///< Jump to screen
+void subScreenKill(SubScreen *s);                                 ///< Kill screen
+/* }}} */
+
 /* sublet.c {{{ */
 SubSublet *subSubletNew(void);                                    ///< Create sublet
 void subSubletUpdate(void);                                       ///< Update sublet bar
@@ -503,7 +522,8 @@ void subSubletKill(SubSublet *s, int unlink);                     ///< Kill subl
 
 /* tag.c {{{ */
 void subTagInit(void);                                            ///< Init tags
-SubTag *subTagNew(char *name, char *regex);                       ///< Create tag
+SubTag *subTagNew(char *name, char *regex, int flags,
+  int gravity, int screen);                                       ///< Create tag
 void subTagPublish(void);                                         ///< Publish tags
 void subTagKill(SubTag *t);                                       ///< Delete tag
 /* }}} */
