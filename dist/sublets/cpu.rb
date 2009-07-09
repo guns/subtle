@@ -46,7 +46,7 @@ class Cpu < Subtle::Sublet
       @sum   = sum
       @load  = (@use * 100.0).ceil % 100
 
-      self.data = @load.to_s + "%" + color(COLORS["bg_focus"]) + "//"
+      self.data = @load.to_s + "%" + color(COLORS[:bg_focus]) + "//"
     rescue => err # Sanitize to prevent unloading
       self.data = "subtle"
       p err

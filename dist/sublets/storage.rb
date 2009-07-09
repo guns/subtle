@@ -24,7 +24,7 @@ class Storage < Subtle::Sublet
       report = `df -h`
       @total, @left = report.match(/([0-9.]+.)\s+[0-9.]+.\s+([0-9.]+.)\s+[0-9.]+%\s+\/\s+/).captures
 
-      self.data = @left + "/" + @total + color(COLORS["bg_focus"]) + "//"
+      self.data = @left + "/" + @total + color(COLORS[:bg_focus]) + "//"
     rescue => err # Sanitize to prevent unloading
       self.data = "subtle"
       p err
