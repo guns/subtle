@@ -21,12 +21,12 @@ static unsigned int numlockmask = 0;
 void
 subGrabInit(void)
 {
-  XModifierKeymap *modmap = XGetModifierMapping(subtle->disp);
+  XModifierKeymap *modmap = XGetModifierMapping(subtle->dpy);
   if(modmap && modmap->max_keypermod > 0)
     {
       const int modmasks[] = { ShiftMask, LockMask, ControlMask, Mod1Mask, Mod2Mask,
         Mod3Mask, Mod4Mask, Mod5Mask };
-      const KeyCode numlock = XKeysymToKeycode(subtle->disp, XK_Num_Lock);
+      const KeyCode numlock = XKeysymToKeycode(subtle->dpy, XK_Num_Lock);
       int i, max = (sizeof(modmasks) / sizeof(int)) * modmap->max_keypermod;
 
       for(i = 0; i < max; i++)
@@ -109,7 +109,7 @@ subGrabNew(const char *chain,
             break;
           default: 
             g->flags |= SUB_GRAB_KEY;
-            g->code   = XKeysymToKeycode(subtle->disp, sym);
+            g->code   = XKeysymToKeycode(subtle->dpy, sym);
             g->sym    = sym;
         }
 
@@ -169,12 +169,12 @@ subGrabSet(Window win)
             {
               if(g->flags & SUB_GRAB_KEY)
                 {
-                  XGrabKey(subtle->disp, g->code, g->mod|modifiers[j], win, True,
+                  XGrabKey(subtle->dpy, g->code, g->mod|modifiers[j], win, True,
                     GrabModeAsync, GrabModeAsync);
                 }
               else if(g->flags & SUB_GRAB_MOUSE)
                 {
-                  XGrabButton(subtle->disp, g->code - XK_Pointer_Button1, 
+                  XGrabButton(subtle->dpy, g->code - XK_Pointer_Button1, 
                     g->mod|modifiers[j], win, False, ButtonPressMask|ButtonReleaseMask, 
                     GrabModeAsync, GrabModeSync, None, None);
                 }
@@ -191,8 +191,8 @@ subGrabSet(Window win)
 void
 subGrabUnset(Window win)
 {
-  XUngrabKey(subtle->disp, AnyKey, AnyModifier, win);
-  XUngrabButton(subtle->disp, AnyButton, AnyModifier, win);
+  XUngrabKey(subtle->dpy, AnyKey, AnyModifier, win);
+  XUngrabButton(subtle->dpy, AnyButton, AnyModifier, win);
   subtle->windows.focus = 0; ///< Unset focus window
 } /* }}} */
 
