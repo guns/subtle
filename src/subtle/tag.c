@@ -39,31 +39,28 @@ TagFind(char *name)
 void
 subTagInit(void)
 {
-  int i;
-  char *tags[] = { 
-    "default", "float", "full", "stick",        ///< Properties
-    "top", "bottom", "left", "right", "center"  ///< Gravities
-  };
-
-  for(i = 0; LENGTH(tags) > i; i++)
-    {
-      SubTag *t = subTagNew(tags[i], NULL);
-      subArrayPush(subtle->tags, (void *)t);
-    }
+  SubTag *t = subTagNew("default", NULL, 0, 0, 0);
+  subArrayPush(subtle->tags, (void *)t);
 
   subTagPublish();
 } /* }}} */
 
  /** subTagNew {{{
   * @brief Create new tag
-  * @param[in]  name   Name of the tag
-  * @param[in]  regex  Regex
+  * @param[in]  name     Name of the tag
+  * @param[in]  regex    Regex
+  * @param[in]  flags    Flags
+  * @param[in]  gravity  Gravity
+  * @param[in]  screen   Screen
   * @return Returns a #SubTag or \p NULL
   **/
 
 SubTag *
 subTagNew(char *name,
-  char *regex)
+  char *regex,
+  int flags,
+  int gravity,
+  int screen)
 {
   SubTag *t = NULL;
 
@@ -72,21 +69,23 @@ subTagNew(char *name,
   /* Check if tag already exists */
   if((t = TagFind(name)))
     {
-      if(regex)
-        {
-          /* Update regex */
-          if(t->preg) subSharedRegexKill(t->preg);
-          t->preg = subSharedRegexNew(regex);
-        }
+      subSharedLogWarn("Multiple defition of tag `%s'\n", name);
+
       return NULL;
     }
 
   t = TAG(subSharedMemoryAlloc(1, sizeof(SubTag)));
   t->name  = strdup(name);
-  t->flags = SUB_TYPE_TAG;
+  t->flags = (SUB_TYPE_TAG|flags);
+
+  /* Properties */
+  if(flags & SUB_TAG_GRAVITY) t->gravity = gravity;
+  if(flags & SUB_TAG_SCREEN)  t->screen  = screen;
+
   if(regex && strncmp("", regex, 1)) t->preg = subSharedRegexNew(regex);
 
-  subSharedLogDebug("new=tag, name=%s\n", name);
+  subSharedLogDebug("new=tag, name=%s, flags=%d, screen=%d, gravity=%d\n", 
+    name, flags, screen, gravity);
 
   return t;
 } /* }}} */

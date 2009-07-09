@@ -19,19 +19,22 @@
 #include <ruby.h>
 #include "subtle.h"
 
+#define CHAR2SYM(name) ID2SYM(rb_intern(name))
+#define SYM2CHAR(sym)  rb_id2name(SYM2ID(sym))
+
 static VALUE shelter = Qnil, sublets = Qnil, subtlext = Qnil; ///< Globals
 
 /* Typedef {{{ */
 typedef struct rubygrabs_t
 {
-  char          *key;
+  VALUE         sym;
   int           value;
   unsigned long extra;
 } RubyGrabs;
 
 typedef struct rubyhooks_t
 {
-  char          *key;
+  VALUE         sym;
   unsigned long *hook;
 } RubyHooks;
 /* }}} */
@@ -177,7 +180,7 @@ RubySubletPathSet(VALUE self,
                   {
                     s->flags |= SUB_SUBLET_INOTIFY;
                     s->path   = strdup(watch);
-                    XSaveContext(subtle->disp, subtle->windows.sublets, s->interval, (void *)s);
+                    XSaveContext(subtle->dpy, subtle->windows.sublets, s->interval, (void *)s);
 
                     return Qtrue;
                   }
@@ -199,10 +202,10 @@ RubyGetString(VALUE hash,
   char *key,
   char *fallback)
 {
-  VALUE value = Qundef;
+  VALUE value = Qundef, sym = CHAR2SYM(key);
   
-  if(RTEST(hash) && key)
-    value = rb_funcall(hash, rb_intern("fetch"), 1, rb_str_new2(key));
+  if(RTEST(hash) && Qtrue == rb_funcall(hash, rb_intern("has_key?"), 1, sym))
+    value = rb_funcall(hash, rb_intern("fetch"), 1, sym);
 
   return T_STRING == rb_type(value) ? STR2CSTR(value) : fallback;
 } /* }}} */
@@ -213,12 +216,25 @@ RubyGetFixnum(VALUE hash,
   char *key,
   int fallback)
 {
-  VALUE value = Qundef;
+  VALUE value = Qundef, sym = CHAR2SYM(key);
   
-  if(RTEST(hash) && key)
-    value = rb_funcall(hash, rb_intern("fetch"), 1, rb_str_new2(key));
+  if(RTEST(hash) && Qtrue == rb_funcall(hash, rb_intern("has_key?"), 1, sym))
+    value = rb_funcall(hash, rb_intern("fetch"), 1, sym);
 
   return T_FIXNUM == rb_type(value) ? FIX2INT(value) : fallback;
+} /* }}} */
+
+/* RubyGetBool {{{ */
+static int
+RubyGetBool(VALUE hash,
+  char *key)
+{
+  VALUE value = Qundef, sym = CHAR2SYM(key);
+  
+  if(RTEST(hash) && Qtrue == rb_funcall(hash, rb_intern("has_key?"), 1, sym))
+    value = rb_funcall(hash, rb_intern("fetch"), 1, sym);
+
+  return Qtrue == value ? True : False;
 } /* }}} */
 
 /* RubyGetRect {{{ */
@@ -228,10 +244,10 @@ RubyGetRect(VALUE hash,
   XRectangle *strut)
 {
   int i, data[4] = { 0 };
-  VALUE ary = Qundef, value = Qundef;
+  VALUE ary = Qundef, value = Qundef, id = CHAR2SYM(key);
 
-  if(RTEST(hash) && key)
-    ary = rb_funcall(hash, rb_intern("fetch"), 1, rb_str_new2(key));
+  if(RTEST(hash) && Qtrue == rb_funcall(hash, rb_intern("has_key?"), 1, id))
+    ary = rb_funcall(hash, rb_intern("fetch"), 1, id);
 
   if(T_ARRAY == rb_type(ary)) 
     {
@@ -258,43 +274,42 @@ RubyConfigForeach(VALUE key,
 {
   int i, type = -1;
   void *entry = NULL;
-  char *name = NULL;
   SubData data = { None };
 
-  static const RubyGrabs grabs[] = /* {{{ */
+  RubyGrabs grabs[] = /* {{{ */
   {
-    { "SubtleReload",       SUB_GRAB_SUBTLE_RELOAD,  None                     }, ///< 0
-    { "SubtleQuit",         SUB_GRAB_SUBTLE_QUIT,    None                     }, 
-    { "WindowMove",         SUB_GRAB_WINDOW_MOVE,    None                     }, ///< 2
-    { "WindowResize",       SUB_GRAB_WINDOW_RESIZE,  None                     }, 
-    { "WindowFloat",        SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_FLOAT          }, 
-    { "WindowFull",         SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_FULL           }, 
-    { "WindowStick",        SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_STICK          }, 
-    { "WindowRaise",        SUB_GRAB_WINDOW_STACK,   Above                    }, 
-    { "WindowLower",        SUB_GRAB_WINDOW_STACK,   Below                    }, 
-    { "WindowLeft",         SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_LEFT          }, 
-    { "WindowDown",         SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_DOWN          }, 
-    { "WindowUp",           SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_UP            }, 
-    { "WindowRight",        SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_RIGHT         }, 
-    { "WindowKill",         SUB_GRAB_WINDOW_KILL,    None                     }, ///< 13
-    { "GravityTopLeft",     SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP_LEFT     }, 
-    { "GravityTopRight",    SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP_RIGHT    }, 
-    { "GravityTop",         SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP          }, 
-    { "GravityLeft",        SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_LEFT         }, 
-    { "GravityCenter",      SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_CENTER       }, 
-    { "GravityRight",       SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_RIGHT        }, 
-    { "GravityBottomLeft",  SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM_LEFT  }, 
-    { "GravityBottomRight", SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM_RIGHT },
-    { "GravityBottom",      SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM       } ///< 22
+    { CHAR2SYM("SubtleReload"),       SUB_GRAB_SUBTLE_RELOAD,  None                     },
+    { CHAR2SYM("SubtleQuit"),         SUB_GRAB_SUBTLE_QUIT,    None                     }, 
+    { CHAR2SYM("WindowMove"),         SUB_GRAB_WINDOW_MOVE,    None                     },
+    { CHAR2SYM("WindowResize"),       SUB_GRAB_WINDOW_RESIZE,  None                     }, 
+    { CHAR2SYM("WindowFloat"),        SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_FLOAT          }, 
+    { CHAR2SYM("WindowFull"),         SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_FULL           }, 
+    { CHAR2SYM("WindowStick"),        SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_STICK          }, 
+    { CHAR2SYM("WindowRaise"),        SUB_GRAB_WINDOW_STACK,   Above                    }, 
+    { CHAR2SYM("WindowLower"),        SUB_GRAB_WINDOW_STACK,   Below                    }, 
+    { CHAR2SYM("WindowLeft"),         SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_LEFT          }, 
+    { CHAR2SYM("WindowDown"),         SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_DOWN          }, 
+    { CHAR2SYM("WindowUp"),           SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_UP            }, 
+    { CHAR2SYM("WindowRight"),        SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_RIGHT         }, 
+    { CHAR2SYM("WindowKill"),         SUB_GRAB_WINDOW_KILL,    None                     },
+    { CHAR2SYM("GravityTopLeft"),     SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP_LEFT     }, 
+    { CHAR2SYM("GravityTopRight"),    SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP_RIGHT    }, 
+    { CHAR2SYM("GravityTop"),         SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP          }, 
+    { CHAR2SYM("GravityLeft"),        SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_LEFT         }, 
+    { CHAR2SYM("GravityCenter"),      SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_CENTER       }, 
+    { CHAR2SYM("GravityRight"),       SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_RIGHT        }, 
+    { CHAR2SYM("GravityBottomLeft"),  SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM_LEFT  }, 
+    { CHAR2SYM("GravityBottomRight"), SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM_RIGHT },
+    { CHAR2SYM("GravityBottom"),      SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM       }
   }; /* }}} */
 
   RubyHooks hooks[] = /* {{{ */
   {
-    { "HookJump",      &subtle->hooks.jump      }, ///< 0
-    { "HookConfigure", &subtle->hooks.configure },
-    { "HookCreate",    &subtle->hooks.create    },
-    { "HookFocus",     &subtle->hooks.focus     },
-    { "HookGravity",   &subtle->hooks.gravity   }  ///< 4
+    { CHAR2SYM("HookJump"),      &subtle->hooks.jump      },
+    { CHAR2SYM("HookConfigure"), &subtle->hooks.configure },
+    { CHAR2SYM("HookCreate"),    &subtle->hooks.create    },
+    { CHAR2SYM("HookFocus"),     &subtle->hooks.focus     },
+    { CHAR2SYM("HookGravity"),   &subtle->hooks.gravity   }
   }; /* }}} */
 
   /* Create various types */
@@ -303,57 +318,42 @@ RubyConfigForeach(VALUE key,
       case SUB_TYPE_GRAB: /* {{{ */
         switch(rb_type(value)) ///< Check value type
           {
-            case T_STRING:
-              name = STR2CSTR(value);
-
-              if(!strncmp(name, "ViewJump", 8)) ///< ViewJump
+            case T_STRING: ///< String
+              type = SUB_GRAB_EXEC;
+              data = DATA(strdup(STR2CSTR(value)));
+              break;
+            case T_SYMBOL: ///< Symbol
+              for(i = 0; i < LENGTH(grabs); i++)
                 {
-                  if((name = (char *)name + 8))
+                  if(value == grabs[i].sym)
                     {
-                      type = SUB_GRAB_JUMP;
-                      data = DATA((unsigned long)(atol(name) - 1));
+                      type = grabs[i].value;
+                      data = DATA(grabs[i].extra);
+                      break;
                     }
                 }
-              else if(!strncmp(name, "Subtle", 6)) ///< Subtle
-                {
-                  for(i = 0; i < 2; i++)
-                    if(!strcmp((char *)name, grabs[i].key))
-                      {
-                        type = grabs[i].value;
-                        data = DATA(grabs[i].extra);
-                      }
-                }
-              else if(!strncmp(name, "Window", 6)) ///< Window
-                {
-                  for(i = 2; i <= 13; i++)
-                    if(!strcmp((char *)name, grabs[i].key))
-                      {
-                        type = grabs[i].value;
-                        data = DATA(grabs[i].extra);
-                      }
-                }    
-              else if(!strncmp(name, "Gravity", 7)) ///< Gravity
-                {
-                  size_t len = strlen(name) - 4;
 
-                  for(i = 14; i <= 22; i++)
-                    if(!strncmp((char *)name, grabs[i].key, len))
-                      {
-                        char *kind = name + len; ///< Get suffix
-
-                        type = grabs[i].value;
-                        data = DATA(grabs[i].extra);
-
-                        /* Check horz/vert */
-                        if(!strcmp(kind, "Horz")) data.num |= SUB_GRAVITY_HORZ;
-                        else if(!strcmp(kind, "Vert")) data.num |= SUB_GRAVITY_VERT;
-                      }
-                }
-              else ///< Exec
+              if(-1 == type) ///< Symbols with parameters
                 {
-                  type = SUB_GRAB_EXEC;
-                  data = DATA(strdup(name));
-                }
+                  const char *name = SYM2CHAR(value);
+
+                  if(!strncmp(name, "ViewJump", 8)) ///< View jump
+                    {
+                      if((name = (char *)name + 8))
+                        {
+                          type = SUB_GRAB_VIEW_JUMP;
+                          data = DATA((unsigned long)(atol(name) - 1));
+                        }
+                    }
+                  else if(!strncmp(name, "ScreenJump", 10)) ///< Screen jump
+                    {
+                      if((name = (char *)name + 10))
+                        {
+                          type = SUB_GRAB_SCREEN_JUMP;
+                          data = DATA((unsigned long)(atol(name) - 1));
+                        }
+                    }
+                } 
               break;
             case T_DATA: ///< Proc   
               type = SUB_GRAB_PROC;
@@ -362,33 +362,63 @@ RubyConfigForeach(VALUE key,
               rb_ary_push(shelter, value); ///< Protect from GC
               break;
             default:
-              subSharedLogWarn("Failed executing block `%s'\n", STR2CSTR(key));
+              subSharedLogWarn("Failed parsing grab `%s'\n", STR2CSTR(key));
               return Qnil;
           }
 
-        if((entry = (void *)subGrabNew(STR2CSTR(key), type, data)) && -1 != type)
+        if(-1 != type && (entry = (void *)subGrabNew(STR2CSTR(key), type, data)))
           subArrayPush(subtle->grabs, entry);
         break; /* }}} */
       case SUB_TYPE_HOOK: /* {{{ */
-        if(T_STRING == rb_type(key) && T_DATA == rb_type(value)) ///< Check value types
+        if(T_SYMBOL == rb_type(key) && T_DATA == rb_type(value)) ///< Check value types
           {
-            name = STR2CSTR(key);
-            if(!strncmp(name, "Hook", 4))
-              {
-                for(i = 0; i < LENGTH(hooks); i++)
-                  if(!strcmp((char *)name, hooks[i].key))
-                    {
-                      *hooks[i].hook = value; ///< Store proc
-                      rb_ary_push(shelter, value); ///< Protect from GC
-                      
-                      subSharedLogDebug("hook=%s\n", hooks[i].key);
-                    }
-              }        
+            for(i = 0; i < LENGTH(hooks); i++)
+              if(key == hooks[i].sym)
+                {
+                  *hooks[i].hook = value; ///< Store proc
+                  rb_ary_push(shelter, value); ///< Protect from GC
+                  
+                  subSharedLogDebug("hook=%s\n", SYM2CHAR(hooks[i].sym));
+                  break;
+                }
           }
         break; /* }}} */
       case SUB_TYPE_TAG: /* {{{ */
-        if((entry = (void *)subTagNew(STR2CSTR(key), STR2CSTR(value))))
-          subArrayPush(subtle->tags, entry);
+        switch(rb_type(value)) ///< Check value type
+          {
+            case T_STRING:
+              if((entry = (void *)subTagNew(STR2CSTR(key), STR2CSTR(value), 0, 0, 0)))
+                subArrayPush(subtle->tags, entry);
+              break;
+            case T_HASH:
+              {
+                int flags = 0, gravity = -1, screen = -1;
+                char *regex = NULL;
+
+                /* Fetch values */
+                regex   = RubyGetString(value, "regex", NULL);
+                gravity = RubyGetFixnum(value, "gravity", -1);
+                screen  = RubyGetFixnum(value, "screen", -1);
+
+                /* Sanity */
+                if(1 <= gravity && 9 >= gravity) flags |= SUB_TAG_GRAVITY;
+                if(1 <= screen && subtle->screens->ndata >= screen--)
+                  flags |= SUB_TAG_SCREEN;
+
+                /* Set property flags */
+                if(True == RubyGetBool(value, "full"))  flags |= SUB_TAG_FULL;
+                if(True == RubyGetBool(value, "float")) flags |= SUB_TAG_FLOAT;
+                if(True == RubyGetBool(value, "stick")) flags |= SUB_TAG_STICK;
+
+                if((entry = (void *)subTagNew(STR2CSTR(key), regex, flags, gravity, screen)))
+                  subArrayPush(subtle->tags, entry);
+                break;
+              }
+            default:
+              subSharedLogWarn("Failed parsing tag `%s'\n", SYM2CHAR(key));
+              return Qnil;
+          }
+
         break; /* }}} */
       case SUB_TYPE_VIEW: /* {{{ */
         if((entry = (void *)subViewNew(STR2CSTR(key), STR2CSTR(value))))
@@ -407,11 +437,11 @@ RubyParseColor(char *name)
   XColor color = { subtle->colors.norm }; ///< Default color
 
   /* Parse and store color */
-  if(!XParseColor(subtle->disp, COLORMAP, name, &color))
+  if(!XParseColor(subtle->dpy, COLORMAP, name, &color))
     {
       subSharedLogWarn("Failed loading color `%s'\n", name);
     }
-  else if(!XAllocColor(subtle->disp, COLORMAP, &color))
+  else if(!XAllocColor(subtle->dpy, COLORMAP, &color))
     subSharedLogWarn("Failed allocating color `%s'\n", name);
 
   return color.pixel;
@@ -520,7 +550,7 @@ RubySubtleTagAdd(VALUE self,
       VALUE mod = Qnil, klass = Qnil;
 
       /* Create new tag */
-      t = subTagNew(STR2CSTR(value), NULL);
+      t = subTagNew(STR2CSTR(value), NULL, 0, 0, 0);
       subArrayPush(subtle->tags, (void *)t);
       subTagPublish();
 
@@ -734,7 +764,7 @@ RubyWrapLoadConfig(VALUE data)
 
   rb_require(buf); ///< Load config
 
-  if(!subtle || !subtle->disp) return Qnil; ///< Exit after config check
+  if(!subtle || !subtle->dpy) return Qnil; ///< Exit after config check
 
   /* Config: Options */
   config          = rb_const_get(rb_cObject, rb_intern("OPTIONS"));
@@ -762,17 +792,17 @@ RubyWrapLoadConfig(VALUE data)
   /* Config: Font */
   if(subtle->xfs) ///< Free in case of reload
     {
-      XFreeFont(subtle->disp, subtle->xfs);
+      XFreeFont(subtle->dpy, subtle->xfs);
       subtle->xfs = NULL;
     }
 
   snprintf(buf, sizeof(buf), "-*-%s-%s-*-*-*-%d-*-*-*-*-*-*-*", family, style, size);
-  if(!(subtle->xfs = XLoadQueryFont(subtle->disp, buf)))
+  if(!(subtle->xfs = XLoadQueryFont(subtle->dpy, buf)))
     {
       subSharedLogWarn("Failed loading font `%s' - falling back to fixed\n", family);
       subSharedLogDebug("Font: %s\n", buf);
 
-      subtle->xfs = XLoadQueryFont(subtle->disp, "-*-fixed-medium-*-*-*-13-*-*-*-*-*-*-*");
+      subtle->xfs = XLoadQueryFont(subtle->dpy, "-*-fixed-medium-*-*-*-13-*-*-*-*-*-*-*");
       if(!subtle->xfs) subSharedLogError("Failed loading font `fixed`\n");
     }
 
@@ -793,7 +823,7 @@ RubyWrapLoadConfig(VALUE data)
   config = rb_const_get(rb_cObject, rb_intern("TAGS"));
   rb_hash_foreach(config, RubyConfigForeach, SUB_TYPE_TAG);
 
-  if(SUB_TAG_CLEAR == subtle->tags->ndata)
+  if(1 == subtle->tags->ndata) ///< Excluding default tag
     {
       subSharedLogWarn("No tags found\n");
     }
@@ -855,7 +885,7 @@ RubyWrapLoadSubtlext(VALUE data)
 
   /* Class: subtle */
   klass    = rb_const_get(mod, rb_intern("Subtle"));
-  subtlext = rb_funcall(klass, rb_intern("new2"), 1, (VALUE)subtle->disp);
+  subtlext = rb_funcall(klass, rb_intern("new2"), 1, (VALUE)subtle->dpy);
 
   /* @todo Overwrite methods to bypass timing problems */
   rb_define_method(klass, "add_tag",  RubySubtleTagAdd,  1);
@@ -1050,6 +1080,8 @@ subRubyCall(int type,
       RubyPerror(True, False, "Failed calling %s",
         type & SUB_TYPE_SUBLET ? "sublet" : (type & SUB_TYPE_GRAB ? "grab" : "hook"));
       result = Qnil;
+
+      alarm(0); ///< Reset alarm
     }
 
   return Qtrue == result ? 1 : (Qfalse == result ? 0 : -1);
