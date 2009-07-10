@@ -50,9 +50,10 @@ typedef void(*SubtlerCommand)(char *, char *);
 #define SUB_ACTION_TAGS    11  ///< Action tags
 #define SUB_ACTION_UPDATE  12  ///< Action update
 #define SUB_ACTION_GRAVITY 13  ///< Action gravity
-#define SUB_ACTION_RAISE   14  ///< Action raise
-#define SUB_ACTION_LOWER   15  ///< Action lower
-#define SUB_ACTION_TOTAL   16  ///< Action total
+#define SUB_ACTION_SCREEN  14  ///< Action screen
+#define SUB_ACTION_RAISE   15  ///< Action raise
+#define SUB_ACTION_LOWER   16  ///< Action lower
+#define SUB_ACTION_TOTAL   17  ///< Action total
 
 /* Modifier */
 #define SUB_MOD_LEFT       0   ///< Mod left
@@ -213,7 +214,7 @@ SubtlerClientFind(char *arg1,
       Window unused;
       char *inst = NULL, *klass = NULL;
       unsigned int width, height, border;
-      unsigned long *nv = NULL, *rv = NULL, *cv = NULL, *gravity = NULL;
+      unsigned long *nv = NULL, *rv = NULL, *cv = NULL, *gravity = NULL, *screen = NULL;
 
       /* Collect data */
       subSharedPropertyClass(win, &inst, &klass);
@@ -225,11 +226,13 @@ SubtlerClientFind(char *arg1,
         "_NET_WM_DESKTOP", NULL);
       gravity = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, 
         "SUBTLE_WINDOW_GRAVITY", NULL);
+      screen = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, 
+        "SUBTLE_WINDOW_SCREEN", NULL);
 
       XGetGeometry(display, win, &unused, &x, &y, &width, &height, &border, &border);
 
-      printf("%#lx %c %ld %ux%u %ld %s (%s)\n", win, (*cv == *rv ? '*' : '-'),
-        (*cv > *nv ? -1 : *cv), width, height, *gravity, inst, klass);
+      printf("%#lx %c %ld %ux%u %ld %ld %s (%s)\n", win, (*cv == *rv ? '*' : '-'),
+        (*cv > *nv ? -1 : *cv + 1), width, height, *gravity, *screen + 1, inst, klass);
 
       free(inst);
       free(klass);
@@ -237,6 +240,7 @@ SubtlerClientFind(char *arg1,
       free(rv);
       free(cv);
       free(gravity);
+      free(screen);
     }
   else subSharedLogWarn("Failed finding client\n");
 } /* }}} */
@@ -336,7 +340,7 @@ SubtlerClientList(char *arg1,
           Window unused;
           char *inst = NULL, *klass = NULL;
           unsigned int width, height, border;
-          unsigned long *cv = NULL, *gravity = NULL;
+          unsigned long *cv = NULL, *gravity = NULL, *screen = NULL;
 
           /* Collect client data */
           subSharedPropertyClass(clients[i], &inst, &klass);
@@ -344,16 +348,19 @@ SubtlerClientList(char *arg1,
             "_NET_WM_DESKTOP", NULL);
           gravity = (unsigned long*)subSharedPropertyGet(clients[i], XA_CARDINAL, 
             "SUBTLE_WINDOW_GRAVITY", NULL);
+          screen = (unsigned long*)subSharedPropertyGet(clients[i], XA_CARDINAL, 
+            "SUBTLE_WINDOW_SCREEN", NULL);
 
           XGetGeometry(display, clients[i], &unused, &x, &y, &width, &height, &border, &border);
 
-          printf("%#lx %c %ld %ux%u %ld %s (%s)\n", clients[i], (*cv == *rv ? '*' : '-'),
-            (*cv > *nv ? -1 : *cv), width, height, *gravity, inst, klass);
+          printf("%#lx %c %ld %ux%u %ld %ld %s (%s)\n", clients[i], (*cv == *rv ? '*' : '-'),
+            (*cv > *nv ? -1 : *cv + 1), width, height, *gravity, *screen + 1, inst, klass);
 
           free(inst);
           free(klass);
           free(cv);
           free(gravity);
+          free(screen);
         }
 
       free(clients);
@@ -416,6 +423,24 @@ SubtlerClientGravity(char *arg1,
   if(-1 != data.l[0] && 1 <= data.l[2] && 9 >= data.l[2])
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_GRAVITY", data, False);
   else subSharedLogWarn("Failed setting client gravity\n");
+} /* }}} */
+
+/* SubtlerClientScreen {{{ */
+static void
+SubtlerClientScreen(char *arg1,
+  char *arg2)
+{
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  CHECK(arg1 && arg2, "Usage: %sr -c PATTERN -n NUMBER\n", PKG_NAME);
+  subSharedLogDebug("%s\n", __func__);
+
+  data.l[0] = subSharedClientFind(arg1, NULL);
+  data.l[1] = atoi(arg2);
+
+  if(-1 != data.l[0] && 1 <= data.l[1])
+    subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_SCREEN", data, False);
+  else subSharedLogWarn("Failed setting client screen\n");
 } /* }}} */
 
 /* SubtlerClientTags {{{ */
@@ -853,6 +878,7 @@ SubtlerUsage(int group)
              "  -U, --untag=PATTERN     Remove tag from client\n" \
              "  -G, --tags              Show client tags\n" \
              "  -g, --gravity           Set client gravity\n" \
+             "  -n, --screen            Set client screen\n" \
              "  -A, --raise             Raise client window (A as in Above)\n" \
              "  -B, --lower             Lower client window (B as in Below)\n" \
              "  -k, --kill=PATTERN      Kill a client\n");
@@ -891,9 +917,9 @@ SubtlerUsage(int group)
          "  If the PATTERN is '-' %sr will read from stdin.\n", PKG_NAME);
 
   printf("\nFormat:\n" \
-         "  Client list: <window id> [-*] <view> <geometry> <gravity> <name> (<class>)\n" \
-         "  Tag    list: <name>\n" \
-         "  View   list: <window id> [-*] <name>\n");
+         "  Client listing: <window id> [-*] <view> <geometry> <gravity> <screen> <name> (<class>)\n" \
+         "  Tag listing:    <name>\n" \
+         "  View listing:   <window id> [-*] <name>\n");
 
   printf("\nGravities:\n" \
          "  GravityBottomLeft  = %ld\n" \
@@ -1058,18 +1084,19 @@ main(int argc,
   /* Command table {{{ */
   const SubtlerCommand cmds[SUB_GROUP_TOTAL][SUB_ACTION_TOTAL] = { 
     /* Client, Sublet, Tag, View <=> Add, Kill, Find, Focus, Full, Float, 
-       Stick, Jump, List, Tag, Untag, Tags, Update, Gravity, Raise, Lower */
+       Stick, Jump, List, Tag, Untag, Tags, Update, Gravity, Screen, Raise, Lower */
     { NULL, SubtlerClientKill, SubtlerClientFind,  SubtlerClientFocus, 
-      SubtlerClientToggleFull, SubtlerClientToggleFloat, SubtlerClientToggleStick, 
-      NULL, SubtlerClientList, SubtlerClientTag, SubtlerClientUntag, SubtlerClientTags,
-      NULL, SubtlerClientGravity, SubtlerClientRestackRaise, SubtlerClientRestackLower },
+      SubtlerClientToggleFull, SubtlerClientToggleFloat, SubtlerClientToggleStick, NULL,
+      SubtlerClientList, SubtlerClientTag, SubtlerClientUntag, SubtlerClientTags, NULL, 
+      SubtlerClientGravity, SubtlerClientScreen, SubtlerClientRestackRaise, 
+      SubtlerClientRestackLower },
     { NULL, SubtlerSubletKill, NULL, NULL, NULL, NULL, NULL, NULL, SubtlerSubletList, 
-      NULL, NULL, NULL, SubtlerSubletUpdate, NULL, NULL, NULL },
+      NULL, NULL, NULL, SubtlerSubletUpdate, NULL, NULL, NULL, NULL },
     { SubtlerTagNew, SubtlerTagKill, SubtlerTagFind, NULL, NULL, NULL, 
-      NULL, NULL, SubtlerTagList, NULL, NULL, NULL, NULL, NULL, NULL, NULL },
+      NULL, NULL, SubtlerTagList, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL },
     { SubtlerViewNew, SubtlerViewKill, SubtlerViewFind, NULL, NULL, NULL, NULL,
       SubtlerViewJump, SubtlerViewList, SubtlerViewTag, SubtlerViewUntag, SubtlerViewTags, 
-      NULL, NULL, NULL, NULL }
+      NULL, NULL, NULL, NULL, NULL }
   }; /* }}} */
 
   /* Set up signal handler */
@@ -1080,7 +1107,7 @@ main(int argc,
   sigaction(SIGINT, &act, NULL);
   sigaction(SIGSEGV, &act, NULL);
 
-  while((c = getopt_long(argc, argv, "cstvakfoFOSjlTUGugABrqHJKLDd:hCxV", long_options, NULL)) != -1)
+  while((c = getopt_long(argc, argv, "cstvakfoFOSjlTUGugnABrqHJKLDd:hCxV", long_options, NULL)) != -1)
     {
       switch(c)
         {
@@ -1105,6 +1132,7 @@ main(int argc,
           case 'G': action = SUB_ACTION_TAGS;    break;
           case 'u': action = SUB_ACTION_UPDATE;  break;
           case 'g': action = SUB_ACTION_GRAVITY; break;
+          case 'n': action = SUB_ACTION_SCREEN;  break;
           case 'A': action = SUB_ACTION_RAISE;   break;
           case 'B': action = SUB_ACTION_LOWER;   break;
 

@@ -275,16 +275,35 @@ EventMessage(XClientMessageEvent *ev)
 
                 if(VISIBLE(subtle->cv, c)) 
                   {
-                    subClientSetGravity(c, ev->data.l[2]);
+                    if(1 <= ev->data.l[2] && 9 >= ev->data.l[2]) ///< Check values
+                      {
+                        subClientSetGravity(c, ev->data.l[2]);
 
-                    vid               = subArrayIndex(subtle->views, (void *)subtle->cv);
-                    c->gravities[vid] = c->gravity;
+                        vid               = subArrayIndex(subtle->views, (void *)subtle->cv);
+                        c->gravities[vid] = c->gravity;
 
-                    subClientWarp(c);
-                    XRaiseWindow(subtle->dpy, c->win);                
+                        subClientWarp(c);
+                        XRaiseWindow(subtle->dpy, c->win);                
+                      }
                   }
               }
             break; /* }}} */
+          case SUB_EWMH_SUBTLE_WINDOW_SCREEN: /* {{{ */
+            if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0]))))
+              {
+                if(1 <= ev->data.l[1] && subtle->screens->ndata >= ev->data.l[1]) ///< Check values
+                  {
+                    c->screen  = ev->data.l[1] - 1;
+                    c->gravity = -1; ///< Force update
+
+                    /* EWMH: Screen */
+                    subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_SCREEN, (long *)&c->screen, 1);
+
+                    if(VISIBLE(subtle->cv, c)) 
+                      subViewConfigure(subtle->cv);
+                  }
+              }
+            break; /* }}} */            
           case SUB_EWMH_SUBTLE_TAG_NEW: /* {{{ */
             t = subTagNew(ev->data.b, NULL, 0, 0, 0); 
             subArrayPush(subtle->tags, (void *)t);

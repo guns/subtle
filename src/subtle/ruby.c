@@ -710,6 +710,7 @@ RubyWrapCall(VALUE data)
                     rb_iv_set(inst, "@width",   INT2FIX(c->geom.width));
                     rb_iv_set(inst, "@height",  INT2FIX(c->geom.height));
                     rb_iv_set(inst, "@gravity", INT2FIX(c->gravity));
+                    rb_iv_set(inst, "@screen",  INT2FIX(c->screen + 1));
                   }
                 else if(c->flags & SUB_TYPE_VIEW)
                   {

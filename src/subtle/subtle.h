@@ -81,6 +81,8 @@
 
 #define ROOT       DefaultRootWindow(subtle->dpy)                ///< Root window
 #define SCRN       DefaultScreen(subtle->dpy)                    ///< Default screen
+#define RINT(r) printf("%s: x=%d, y=%d, width=%d, height=%d\n", \
+  #r, r.x, r.x, r.width, r.height);
 
 #define SETRECT(r,a,b,c,d) \
   r.x      = a; \

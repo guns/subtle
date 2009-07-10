@@ -163,7 +163,7 @@ SubtlextClientFromWin(Window win)
 {
   int id = 0;
   char *wmname = NULL, *wmklass = NULL;
-  int *gravity = NULL;
+  int *gravity = NULL, *screen = NULL;
   XWindowAttributes attrs;
   VALUE klass = Qnil, client = Qnil;
 
@@ -174,6 +174,8 @@ SubtlextClientFromWin(Window win)
   client  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(wmname));
   gravity = (int *)subSharedPropertyGet(win, XA_CARDINAL,
     "SUBTLE_WINDOW_GRAVITY", NULL);
+  screen = (int *)subSharedPropertyGet(win, XA_CARDINAL,
+    "SUBTLE_WINDOW_SCREEN", NULL);
 
   XGetWindowAttributes(display, win, &attrs);
 
@@ -185,10 +187,12 @@ SubtlextClientFromWin(Window win)
   rb_iv_set(client, "@width",   INT2FIX(attrs.width));
   rb_iv_set(client, "@height",  INT2FIX(attrs.height));
   rb_iv_set(client, "@gravity", INT2FIX(*gravity));
+  rb_iv_set(client, "@screen",  INT2FIX(*screen + 1));
 
   free(wmname);
   free(wmklass);
-  free(gravity);  
+  free(gravity);
+  free(screen);
 
   return client;
 } /* }}} */
@@ -300,6 +304,7 @@ SubtlextClientInit(VALUE self,
   rb_iv_set(self, "@width",   Qnil); 
   rb_iv_set(self, "@height",  Qnil); 
   rb_iv_set(self, "@gravity", Qnil);
+  rb_iv_set(self, "@screen", Qnil);
 
   return self;
 } /* }}} */
@@ -572,6 +577,49 @@ SubtlextClientGravitySet(VALUE self,
       else
         {
           rb_raise(rb_eStandardError, "Failed setting client gravity");
+          return Qnil;
+        }
+    }
+
+  rb_raise(rb_eArgError, "Failed setting value type `%d'", rb_type(value));
+  return Qnil;
+} /* }}} */
+
+/* SubtlextClientScreen {{{ */
+static VALUE
+SubtlextClientScreen(VALUE self)
+{
+  VALUE screen = rb_iv_get(self, "@screen");
+
+  return RTEST(screen) ? screen : Qnil;
+} /* }}} */
+
+/* SubtlextClientScreenSet {{{ */
+static VALUE
+SubtlextClientScreenSet(VALUE self,
+  VALUE value)
+{
+  if(T_FIXNUM == rb_type(value))
+    {
+      int screen = FIX2INT(value);
+
+      if(1 <= screen)
+        {
+          SubMessageData data = { { 0, 0, 0, 0, 0 } };
+          VALUE id = rb_iv_get(self, "@id");
+
+          data.l[0] = NUM2LONG(id);
+          data.l[1] = FIX2LONG(value);
+
+          subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_SCREEN", data, True);
+
+          rb_iv_set(self, "@screen", value);
+
+          return value;
+        }
+      else
+        {
+          rb_raise(rb_eStandardError, "Failed setting client screen");
           return Qnil;
         }
     }
@@ -1513,6 +1561,8 @@ Init_subtlext(void)
   rb_define_method(klass, "to_s",         SubtlextClientToString,      0);
   rb_define_method(klass, "gravity",      SubtlextClientGravity,       0);
   rb_define_method(klass, "gravity=",     SubtlextClientGravitySet,    1);
+  rb_define_method(klass, "screen",       SubtlextClientScreen,        0);
+  rb_define_method(klass, "screen=",      SubtlextClientScreenSet,     1);  
   rb_define_method(klass, "size",         SubtlextClientSize,          0);
   rb_define_method(klass, "size=",        SubtlextClientSizeSet,       1);
   rb_define_method(klass, "+",            SubtlextClientOperatorPlus,  1);
