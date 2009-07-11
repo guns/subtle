@@ -32,15 +32,19 @@ ClientMask(SubClient *c)
 static void
 ClientSnap(SubClient *c)
 {
+  SubScreen *s = NULL;
+
   assert(c);
 
+  s = SCREEN(subtle->screens->data[c->screen]);
+
   if(SNAP > c->geom.x) c->geom.x = subtle->bw;
-  else if(c->geom.x > (SCREENW - WINW(c) - SNAP)) 
-    c->geom.x = SCREENW - c->geom.width - subtle->bw;
+  else if(c->geom.x > (s->base.width - WINW(c) - SNAP)) 
+    c->geom.x = s->base.width - c->geom.width - subtle->bw;
 
   if(SNAP + subtle->th > c->geom.y) c->geom.y = subtle->bw + subtle->th;
-  else if(c->geom.y > (SCREENH - WINH(c) - SNAP)) 
-    c->geom.y = SCREENH - c->geom.height - subtle->bw;
+  else if(c->geom.y > (s->base.height - WINH(c) - SNAP)) 
+    c->geom.y = s->base.height - c->geom.height - subtle->bw;
 } /* }}} */
 
  /** subClientNew {{{
@@ -53,7 +57,7 @@ SubClient *
 subClientNew(Window win)
 {
   int i, n;
-  long vid = 1337;
+  long vid = 0;
   Window trans = 0;
   XWMHints *hints = NULL;
   XWindowAttributes attrs;
@@ -75,25 +79,28 @@ subClientNew(Window win)
   if(!c->caption && c->name) c->caption = strdup(c->name); ///< Fallback for e.g. Skype
   c->width = XTextWidth(subtle->xfs, c->caption, strlen(c->caption)) + 6; ///< Font offset
 
-  /* Update client */
-  subEwmhSetWMState(c->win, WithdrawnState);
+  /* X related properties */
   XSelectInput(subtle->dpy, c->win, EVENTMASK);
   XSetWindowBorderWidth(subtle->dpy, c->win, subtle->bw);
   XAddToSaveSet(subtle->dpy, c->win);
   XSaveContext(subtle->dpy, c->win, CLIENTID, (void *)c);
-  subClientSetHints(c);
-  subClientSetTags(c);
-  subClientSetStrut(c);
 
   /* Window attributes */
   XGetWindowAttributes(subtle->dpy, c->win, &attrs);
   c->cmap        = attrs.colormap;
   c->geom.x      = attrs.x;
   c->geom.y      = attrs.y;
-  c->geom.width  = attrs.width;
-  c->geom.height = attrs.height;
+  c->geom.width  = MAX(MINW, attrs.width);
+  c->geom.height = MAX(MINH, attrs.height);
   c->base        = c->geom; ///< Backup size
- 
+
+  /* Update client */
+  subEwmhSetWMState(c->win, WithdrawnState);
+  subClientSetHints(c);
+  subClientSetStrut(c);
+  subClientSetSize(c);
+  subClientSetTags(c);
+
   /* Window manager protocols */
   if(XGetWMProtocols(subtle->dpy, c->win, &protos, &n))
     {
@@ -131,7 +138,7 @@ subClientNew(Window win)
   /* Urgent windows */
   if(c->flags & SUB_PREF_URGENT)
     {
-      subClientToggle(c, (c->flags & ~(SUB_STATE_FLOAT|SUB_STATE_STICK)));
+      subClientToggle(c, (c->flags ^ (SUB_STATE_FLOAT|SUB_STATE_STICK)));
       subClientWarp(c);
     }
 
@@ -153,7 +160,6 @@ subClientNew(Window win)
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_SCREEN, (long *)&c->screen, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
-
 
   if(subtle->hooks.create) ///< Create hook
     subRubyCall(SUB_TYPE_HOOK, subtle->hooks.create, c);
@@ -190,12 +196,7 @@ subClientConfigure(SubClient *c)
     }
 
   if(c->flags & SUB_STATE_FULL) 
-    {
-      r.x      = 0;
-      r.y      = 0;
-      r.width  = SCREENW;
-      r.height = SCREENH;
-    }
+    r = SCREEN(subtle->screens->data[c->screen])->base;
 
   /* Tell client new geometry */
   ev.type              = ConfigureNotify;
@@ -212,8 +213,8 @@ subClientConfigure(SubClient *c)
   XMoveResizeWindow(subtle->dpy, c->win, r.x, r.y, r.width, r.height);
   XSendEvent(subtle->dpy, c->win, False, StructureNotifyMask, (XEvent *)&ev);
 
-  subSharedLogDebug("client=%#lx, state=%c, x=%03d, y=%03d, width=%03d, height=%03d\n",
-    c->win, c->flags & SUB_STATE_FLOAT ? 'f' : c->flags & SUB_STATE_FULL ? 'u' : 'n',
+  subSharedLogDebug("configure=client, win=%#lx, name=%s, state=%c, x=%03d, y=%03d, width=%03d, height=%03d\n",
+    c->win, c->klass, c->flags & SUB_STATE_FLOAT ? 'f' : c->flags & SUB_STATE_FULL ? 'u' : 'n',
     c->geom.x, c->geom.y, c->geom.width, c->geom.height);
 } /* }}} */
 
@@ -319,16 +320,18 @@ subClientDrag(SubClient *c,
   int loop = True, left = False, wx = 0, wy = 0, ww = 0, wh = 0, rx = 0, ry = 0;
   short *dirx = NULL, *diry = NULL;
   Cursor cursor;
+  XWindowAttributes attr;
 
   DEAD(c);
   assert(c);
  
   /* Init {{{ */
   XQueryPointer(subtle->dpy, c->win, &win, &win, &rx, &ry, &wx, &wy, &mask);
+  XGetWindowAttributes(subtle->dpy, c->win, &attr);
   c->geom.x = rx - wx;
   c->geom.y = ry - wy;
-  ww        = c->geom.width;
-  wh        = c->geom.height;
+  ww        = attr.width;
+  wh        = attr.height;
 
   switch(mode)
     {
@@ -548,20 +551,32 @@ subClientSetGravity(SubClient *c,
 void
 subClientSetSize(SubClient *c)
 {
+  SubScreen *s = NULL;
+
   DEAD(c);
   assert(c);
+
+  s = SCREEN(subtle->screens->data[c->screen]);
+
+  /* Limit base width */
+  if(c->base.width < c->minw) c->base.width = c->minw;
+  if(c->base.width > c->maxw) c->base.width = c->maxw;
+
+  /* Limit base height */
+  if(c->base.height < c->minh) c->base.height = c->minh;
+  if(c->base.height > c->maxh) c->base.height = c->maxh;
 
   /* Limit width */
   if(c->geom.width < c->minw) c->geom.width = c->minw;
   if(c->geom.width > c->maxw) c->geom.width = c->maxw;
-  if(c->geom.x + c->geom.width > SCREENW) 
-    c->geom.width = SCREENW - c->geom.x;
+  if(c->geom.x + c->geom.width > s->base.width) 
+    c->geom.width = s->base.width - (s->base.x - c->geom.x);
 
   /* Limit height */
   if(c->geom.height < c->minh) c->geom.height = c->minh;
   if(c->geom.height > c->maxh) c->geom.height = c->maxh;
-  if(c->geom.y + c->geom.height > SCREENH - subtle->bw)
-    c->geom.height = SCREENH - c->geom.y;
+  if(c->geom.y + c->geom.height > s->base.height - subtle->bw)
+    c->geom.height = s->base.height - (s->base.y - c->geom.y);
 
   /* Check incs */
   c->geom.width  -= c->geom.width % c->incw; 
@@ -575,7 +590,7 @@ subClientSetSize(SubClient *c)
     c->geom.width = (int)(c->geom.height * c->maxr); 
 } /* }}} */
 
-  /** subClientSetHints {{{ 
+  /** subClientSetHints {{{
    * @brief Set client hints
    * @param[in]  c  A #SubClient
    **/
@@ -585,6 +600,7 @@ subClientSetHints(SubClient *c)
 {
   long supplied = 0;
   XSizeHints *size = NULL;
+  SubScreen *s = NULL;
 
   DEAD(c);
   assert(c);
@@ -592,11 +608,13 @@ subClientSetHints(SubClient *c)
   if(!(size = XAllocSizeHints()))
     subSharedLogError("Can't alloc memory. Exhausted?\n");
 
+  s = SCREEN(subtle->screens->data[c->screen]);
+
   /* Default values {{{ */
   c->minw   = MINW;
   c->minh   = MINH;
-  c->maxw   = SCREENW - 2 * subtle->bw;
-  c->maxh   = SCREENH - subtle->th - 2 * subtle->bw;
+  c->maxw   = s->base.width - 2 * subtle->bw;
+  c->maxh   = s->base.height - subtle->th - 2 * subtle->bw;
   c->minr   = 0.0f;
   c->maxr   = 0.0f;
   c->incw   = 1;
@@ -607,14 +625,18 @@ subClientSetHints(SubClient *c)
     {
       if(size->flags & PMinSize) ///< Program min size
         {
-          if(size->min_width)  c->minw = size->min_width;
-          if(size->min_height) c->minh = size->min_height;
+          if(size->min_width)  c->minw = MIN(MINW, size->min_width);
+          if(size->min_height) c->minh = MIN(MINH, size->min_height);
         }
 
       if(size->flags & PMaxSize) ///< Program max size
         {
-          if(size->max_width)  c->maxw = MIN(size->max_width, SCREENW);
-          if(size->max_height) c->maxh = MIN(size->max_height, SCREENH - subtle->th);
+          if(size->max_width)
+            c->maxw = size->max_width > s->base.width ? 
+              s->base.width : size->max_width;
+          if(size->max_height)
+            c->maxh = size->max_height > s->base.height - subtle->th ? 
+              s->base.height - subtle->th : size->max_height;
         }
 
       if(size->flags & PAspect) ///< Aspect
@@ -628,9 +650,9 @@ subClientSetHints(SubClient *c)
           if(size->width_inc)  c->incw = size->width_inc;
           if(size->height_inc) c->inch = size->height_inc;
         }
-
-      XFree(size);
     }
+
+  XFree(size);
 
   subSharedLogDebug("Normal hints: x=%d, y=%d, width=%d, height=%d, minw=%d, minh=%d, " \
     "maxw=%d, maxh=%d, minr=%f, maxr=%f\n",
@@ -739,14 +761,16 @@ subClientToggle(SubClient *c,
 
       if(type & SUB_STATE_FLOAT)
         {
+          SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
+
           c->geom = c->base;
 
-          subClientSetSize(c);
+          subClientSetSize(c); ///< Sanitize
 
-          if(0 >= c->geom.x || 0 >= c->geom.y) ///< Center
+          if(s->base.x >= c->geom.x || s->base.y >= c->geom.y) ///< Center
             {
-              c->geom.x = (SCREENW - c->geom.width) / 2;
-              c->geom.y = ((SCREENH - subtle->th) - c->geom.height) / 2;
+              c->geom.x = s->base.x + (s->base.width - c->geom.width) / 2;
+              c->geom.y = s->base.y + ((s->base.height - subtle->th) - c->geom.height) / 2;
             }
         }
 
