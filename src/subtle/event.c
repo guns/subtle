@@ -296,6 +296,8 @@ EventMessage(XClientMessageEvent *ev)
                     c->screen  = ev->data.l[1] - 1;
                     c->gravity = -1; ///< Force update
 
+                    subClientSetSize(c);
+
                     /* EWMH: Screen */
                     subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_SCREEN, (long *)&c->screen, 1);
 
