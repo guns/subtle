@@ -285,7 +285,11 @@ subClientFocus(SubClient *c)
       subEwmhMessage(c->win, c->win, SUB_EWMH_WM_PROTOCOLS, 
         subEwmhGet(SUB_EWMH_WM_TAKE_FOCUS), CurrentTime, 0, 0, 0);
     }   
-  else XSetInputFocus(subtle->dpy, c->win, RevertToNone, CurrentTime);
+  else 
+    {
+      XMapWindow(subtle->dpy, subtle->windows.caption); ///< Map before event happens
+      XSetInputFocus(subtle->dpy, c->win, RevertToNone, CurrentTime);
+    }
 
   subSharedLogDebug("Focus: win=%#lx, input=%d, focus=%d\n", c->win,
     !!(c->flags & SUB_PREF_INPUT), !!(c->flags & SUB_PREF_FOCUS));
