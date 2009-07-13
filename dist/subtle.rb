@@ -29,12 +29,12 @@ FONT = {
 # Colors
 # 
 COLORS = { 
-  :fg_bar     => "#ffffff",   # Foreground color of the bar
-  :bg_bar     => "#5d5d5d",   # Background color of the bar
-  :fg_focus   => "#ffffff",   # Foreground color of focus windows
-  :bg_focus   => "#ff00a8",   # Background color of focus windows
-  :normal     => "#5d5d5d",   # Color of windows without focus
-  :background => "#3d3d3d"    # Color of root background
+  :fg_bar     => "#e2e2e5",   # Foreground color of normal windows
+  :bg_bar     => "#444444",   # Background color of normal windows
+  :fg_focus   => "#000000",   # Foreground color of focus windows
+  :bg_focus   => "#b1d631",   # Background color of focus windows
+  :normal     => "#5d5d5d",   # Color of border
+  :background => "#3d3d3d"    # Color of root background  
 }
 
 #
