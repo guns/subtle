@@ -203,7 +203,12 @@ EventMessage(XClientMessageEvent *ev)
       switch(id)
         {
           case SUB_EWMH_NET_CURRENT_DESKTOP: /* {{{ */
-            if((v = VIEW(subArrayGet(subtle->views, ev->data.l[0])))) subViewJump(v);
+            if(0 <= ev->data.l[0] && ev->data.l[0] < subtle->views->ndata)
+              {
+                v = VIEW(subtle->views->data[ev->data.l[0]]);
+
+                if(subtle->cv != v) subViewJump(v);
+              }
             break; /* }}} */
           case SUB_EWMH_NET_ACTIVE_WINDOW: /* {{{ */
             if((c = CLIENT(subSharedFind(ev->data.l[0], CLIENTID))))
@@ -602,7 +607,9 @@ EventGrab(XEvent *ev)
         if(ev->xbutton.window == subtle->windows.views) ///< View buttons
           {
             SubView *v = VIEW(subSharedFind(ev->xbutton.subwindow, BUTTONID));
+
             if(subtle->cv != v) subViewJump(v); ///< Prevent jumping to current view
+
             return;
           }
 
@@ -641,7 +648,11 @@ EventGrab(XEvent *ev)
             break; /* }}} */
           case SUB_GRAB_VIEW_JUMP: /* {{{ */
             if(g->data.num < subtle->views->ndata)
-              subViewJump(VIEW(subtle->views->data[g->data.num]));
+              {
+                SubView *v = VIEW(subtle->views->data[g->data.num]);
+
+                if(subtle->cv != v) subViewJump(v);
+              }
             break; /* }}} */
           case SUB_GRAB_SCREEN_JUMP: /* {{{ */
             if(g->data.num < subtle->screens->ndata)
