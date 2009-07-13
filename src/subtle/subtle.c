@@ -75,6 +75,8 @@ SubtleSignal(int signum)
           {
             SubClient *c = CLIENT(subtle->clients->data[i]);
 
+            c->tags = SUB_TAG_DEFAULT; ///< Reset default tag
+
             subClientSetTags(c);
           }
 

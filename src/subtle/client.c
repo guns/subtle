@@ -302,6 +302,7 @@ subClientWarp(SubClient *c)
   DEAD(c);
   assert(c);
 
+  XRaiseWindow(subtle->dpy, c->win);
   XWarpPointer(subtle->dpy, None, ROOT, 0, 0, 0, 0,
     c->geom.x + c->geom.width / 2, c->geom.y + c->geom.height / 2);
 } /* }}} */
@@ -693,7 +694,7 @@ subClientSetTags(SubClient *c)
     }
   if(SUB_TAG_DEFAULT < c->tags) c->tags &= ~SUB_TAG_DEFAULT; ///< Remove default tag
 
-  subClientToggle(c, flags); ///< Toggle flags
+  subClientToggle(c, flags & ~c->flags); ///< Toggle flags
 } /* }}} */
 
   /** subClientSetStrut {{{ 
