@@ -253,8 +253,19 @@ subDisplaySetStrut(void)
     {
       s = SCREEN(subtle->screens->data[i]);
 
-      s->geom.y      = s->base.y + (subtle->bar ? 0 : subtle->th) + subtle->strut.width;
-      s->geom.height = s->base.height - subtle->th - subtle->strut.height - subtle->strut.width;    
+      /* Adjusting sizes */
+      if(0 < s->base.y)
+        {
+          s->geom.y = s->base.y + subtle->strut.width;
+          s->geom.height = s->base.height - (subtle->bar ? subtle->th : 0) - 
+            subtle->strut.height - subtle->strut.width;    
+        }
+      else
+        {
+          s->geom.y = s->base.y + (subtle->bar ? 0 : subtle->th) + subtle->strut.width;
+          s->geom.height = s->base.height - subtle->th - 
+            subtle->strut.height - subtle->strut.width;    
+        }
     }
 
   s->geom.width = s->base.width - subtle->strut.y; ///< Only last screen

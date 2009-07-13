@@ -139,13 +139,13 @@ subGrabFind(int code,
   KeySym sym,
   unsigned int mod)
 {
-  SubGrab **ret = NULL, *gp = NULL, g;
+  SubGrab **ret = NULL, *gptr = NULL, g;
   
   g.code = code;
   g.sym  = sym;
   g.mod  = (mod & ~(LockMask|numlockmask));
-  gp     = &g;
-  ret    = (SubGrab **)bsearch(&gp, subtle->grabs->data, subtle->grabs->ndata,
+  gptr   = &g;
+  ret    = (SubGrab **)bsearch(&gptr, subtle->grabs->data, subtle->grabs->ndata,
     sizeof(SubGrab *), subGrabCompare);
 
   return ret ? *ret : NULL;
