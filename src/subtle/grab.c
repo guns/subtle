@@ -51,7 +51,7 @@ subGrabNew(const char *chain,
   SubData data)
 {
   int i;
-  char *tok = NULL;
+  char *tokens = NULL, *tok = NULL;
   KeySym sym;
   SubGrab *g = NULL;
   
@@ -60,9 +60,10 @@ subGrabNew(const char *chain,
   g = GRAB(subSharedMemoryAlloc(1, sizeof(SubGrab)));
   g->flags |= (SUB_TYPE_GRAB|type);
   g->data   = data;
+  tokens    = strdup(chain);
 
   /* Parse keys */
-  tok = strtok((char *)chain, "-");
+  tok = strtok((char *)tokens, "-");
   while(tok)
     { 
       /* Get key sym and modifier */
@@ -80,8 +81,9 @@ subGrabNew(const char *chain,
           if(NoSymbol == sym) ///< Check if there's still no symbol
             {
               subSharedLogWarn("Failed assigning keychain `%s'\n", chain);
-              if(g->data.string) free(g->data.string);
+              if(g->flags & SUB_GRAB_EXEC && g->data.string) free(g->data.string);
               free(g);
+              free(tokens);
               
               return NULL;
             }
@@ -118,6 +120,8 @@ subGrabNew(const char *chain,
 
   subSharedLogDebug("new=grab, type=%s, chain=%s, code=%03d, mod=%02d\n",
     g->flags & SUB_GRAB_KEY ? "k" : "m", chain, g->code, g->mod);
+
+  free(tokens);
   
   return g;
 } /* }}} */
