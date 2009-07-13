@@ -38,13 +38,15 @@ ClientSnap(SubClient *c)
 
   s = SCREEN(subtle->screens->data[c->screen]);
 
-  if(SNAP > c->geom.x) c->geom.x = subtle->bw;
-  else if(c->geom.x > (s->base.width - WINW(c) - SNAP)) 
-    c->geom.x = s->base.width - c->geom.width - subtle->bw;
+  if(s->base.x + SNAP > c->geom.x) 
+    c->geom.x = s->base.x + subtle->bw;
+  else if(c->geom.x > (s->base.x + s->base.width - WINW(c) - SNAP)) 
+    c->geom.x = s->base.x + s->base.width - c->geom.width - subtle->bw;
 
-  if(SNAP + subtle->th > c->geom.y) c->geom.y = subtle->bw + subtle->th;
-  else if(c->geom.y > (s->base.height - WINH(c) - SNAP)) 
-    c->geom.y = s->base.height - c->geom.height - subtle->bw;
+  if(s->base.y + SNAP + (0 < s->base.y ? 0 : subtle->th) > c->geom.y)
+    c->geom.y = s->base.y + subtle->bw + (0 < s->base.y ? 0 : subtle->th);
+  else if(c->geom.y > (s->base.y + s->base.height - WINH(c) - SNAP)) 
+    c->geom.y = s->base.y + s->base.height - c->geom.height - subtle->bw;
 } /* }}} */
 
  /** subClientNew {{{
@@ -569,13 +571,13 @@ subClientSetSize(SubClient *c)
   /* Limit width */
   if(c->geom.width < c->minw) c->geom.width = c->minw;
   if(c->geom.width > c->maxw) c->geom.width = c->maxw;
-  if(c->geom.x + c->geom.width > s->base.width) 
+  if(c->geom.x + c->geom.width > s->base.x + s->base.width) 
     c->geom.width = s->base.width - (s->base.x - c->geom.x);
 
   /* Limit height */
   if(c->geom.height < c->minh) c->geom.height = c->minh;
   if(c->geom.height > c->maxh) c->geom.height = c->maxh;
-  if(c->geom.y + c->geom.height > s->base.height - subtle->bw)
+  if(c->geom.y + c->geom.height > s->base.y + s->base.height - subtle->bw)
     c->geom.height = s->base.height - (s->base.y - c->geom.y);
 
   /* Check incs */
