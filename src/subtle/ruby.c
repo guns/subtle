@@ -744,7 +744,7 @@ RubyWrapCall(VALUE data)
 static VALUE
 RubyWrapLoadConfig(VALUE data)
 {
-  int size = 0;
+  int size = 0, state = 0;
   char *file = NULL, *family = NULL, *style = NULL, buf[100];
   VALUE config = Qnil;
   FILE *fd = NULL;
@@ -763,7 +763,8 @@ RubyWrapLoadConfig(VALUE data)
   else snprintf(buf, sizeof(buf), "%s", file);
   subSharedLogDebug("config=%s\n", buf);
 
-  rb_require(buf); ///< Load config
+  rb_load_protect(rb_str_new2(buf), 0, &state); ///< Load config
+  if(state) RubyPerror(True, True, "Failed reading config `%s'", buf);
 
   if(!subtle || !subtle->dpy) return Qnil; ///< Exit after config check
 
