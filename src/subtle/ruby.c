@@ -744,9 +744,9 @@ RubyWrapCall(VALUE data)
 static VALUE
 RubyWrapLoadConfig(VALUE data)
 {
-  int size = 0, state = 0;
+  int i, size = 0, state = 0;
   char *file = NULL, *family = NULL, *style = NULL, buf[100];
-  VALUE config = Qnil;
+  VALUE config = Qnil, entry = Qnil;
   FILE *fd = NULL;
 
   /* Check path */
@@ -833,7 +833,19 @@ RubyWrapLoadConfig(VALUE data)
 
   /* Config: Views */
   config = rb_const_get(rb_cObject, rb_intern("VIEWS"));
-  rb_hash_foreach(config, RubyConfigForeach, SUB_TYPE_VIEW);
+  switch(rb_type(config)) ///< Allow hashes or arrays for ordering
+    {
+      case T_HASH: rb_hash_foreach(config, RubyConfigForeach, SUB_TYPE_VIEW); break;
+      case T_ARRAY:
+        for(i = 0; Qnil != (entry = rb_ary_entry(config, i)); ++i)
+          {
+            if(T_HASH == rb_type(entry))
+              rb_hash_foreach(entry, RubyConfigForeach, SUB_TYPE_VIEW);
+            else subSharedLogWarn("Failed parsing view entry %d\n", i);
+          }
+        break;
+      default: break;
+    }
 
   /* Views */
   if(0 == subtle->views->ndata) ///< Create default view
@@ -845,7 +857,7 @@ RubyWrapLoadConfig(VALUE data)
     }
   else ///< Check default tag
     {
-      int i, def = -1;
+      int def = -1;
       SubView *v = NULL;
 
       /* Check for view with default tag */
