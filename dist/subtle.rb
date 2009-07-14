@@ -124,11 +124,11 @@ TAGS = {
 #
 # Views
 #
-VIEWS = {
-  "work" => "terms",
-  "dev"  => "editor|terms",
-  "web"  => "browser"
-}
+VIEWS = [
+  { "work" => "terms" },
+  { "dev"  => "editor|terms" },
+  { "web"  => "browser" }
+]
 
 #
 # Hooks
