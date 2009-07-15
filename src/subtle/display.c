@@ -26,7 +26,7 @@ void
 subDisplayInit(const char *display)
 {
   XGCValues gvals;
-  XSetWindowAttributes attrs;
+  XSetWindowAttributes sattrs;
   SubScreen *s = NULL;
   unsigned long mask = 0;
   const char stipple[] = {
@@ -68,32 +68,33 @@ subDisplayInit(const char *display)
   subtle->cursors.resize = XCreateFontCursor(subtle->dpy, XC_sizing);
 
   /* Update root window */
-  attrs.cursor     = subtle->cursors.arrow;
-  attrs.event_mask = ROOTMASK;
-  XChangeWindowAttributes(subtle->dpy, ROOT, CWCursor|CWEventMask, &attrs);
+  sattrs.cursor     = subtle->cursors.arrow;
+  sattrs.event_mask = ROOTMASK;
+  XChangeWindowAttributes(subtle->dpy, ROOT, CWCursor|CWEventMask, &sattrs);
 
   /* Create windows */
-  attrs.event_mask        = ButtonPressMask|ExposureMask|VisibilityChangeMask;
-  attrs.override_redirect = True;
-  mask                    = CWOverrideRedirect;
+  sattrs.event_mask        = ButtonPressMask|ExposureMask|VisibilityChangeMask;
+  sattrs.override_redirect = True;
+  sattrs.background_pixel  = subtle->colors.bg_bar;
+  mask                     = CWOverrideRedirect;
 
-  subtle->windows.bar     = XCreateWindow(subtle->dpy, ROOT, 0, 0, SCREENW, 1, 0, 
-    CopyFromParent, InputOutput, CopyFromParent, CWEventMask|CWOverrideRedirect, &attrs); 
+  subtle->windows.bar     = XCreateWindow(subtle->dpy, ROOT, 0, 0, SCREENW, 1, 0, CopyFromParent, 
+    InputOutput, CopyFromParent, CWEventMask|CWOverrideRedirect|CWBackPixel, &sattrs); 
   subtle->windows.views   = XCreateSimpleWindow(subtle->dpy, subtle->windows.bar, 
-    0, 0, 1, 1, 0, 0, attrs.background_pixel);
+    0, 0, 1, 1, 0, 0, sattrs.background_pixel);
   subtle->windows.caption = XCreateSimpleWindow(subtle->dpy, subtle->windows.bar, 
-    0, 0, 1, 1, 0, 0, attrs.background_pixel);
+    0, 0, 1, 1, 0, 0, sattrs.background_pixel);
   subtle->windows.tray    = XCreateSimpleWindow(subtle->dpy, subtle->windows.bar, 
-    0, 0, 1, 1, 0, 0, attrs.background_pixel);    
+    0, 0, 1, 1, 0, 0, sattrs.background_pixel);    
   subtle->windows.sublets = XCreateSimpleWindow(subtle->dpy, subtle->windows.bar, 
-    0, 0, 1, 1, 0, 0, attrs.background_pixel);
+    0, 0, 1, 1, 0, 0, sattrs.background_pixel);
 
   /* Set override redirect */
-  XChangeWindowAttributes(subtle->dpy, subtle->windows.bar, mask, &attrs);
-  XChangeWindowAttributes(subtle->dpy, subtle->windows.views, mask, &attrs);
-  XChangeWindowAttributes(subtle->dpy, subtle->windows.caption, mask, &attrs);
-  XChangeWindowAttributes(subtle->dpy, subtle->windows.tray, mask, &attrs);
-  XChangeWindowAttributes(subtle->dpy, subtle->windows.sublets, mask, &attrs);
+  XChangeWindowAttributes(subtle->dpy, subtle->windows.bar, mask, &sattrs);
+  XChangeWindowAttributes(subtle->dpy, subtle->windows.views, mask, &sattrs);
+  XChangeWindowAttributes(subtle->dpy, subtle->windows.caption, mask, &sattrs);
+  XChangeWindowAttributes(subtle->dpy, subtle->windows.tray, mask, &sattrs);
+  XChangeWindowAttributes(subtle->dpy, subtle->windows.sublets, mask, &sattrs);
 
   /* Select input */
   XSelectInput(subtle->dpy, subtle->windows.views, ButtonPressMask); 
@@ -156,7 +157,7 @@ subDisplayConfigure(void)
   /* Update windows */
   XSetWindowBackground(subtle->dpy,  subtle->windows.bar,     subtle->colors.bg_bar);
   XSetWindowBackground(subtle->dpy,  subtle->windows.caption, subtle->colors.bg_focus);
-  XSetWindowBackground(subtle->dpy,  subtle->windows.views,   subtle->colors.bg_bar);
+  XSetWindowBackground(subtle->dpy,  subtle->windows.views,   subtle->colors.bg_views);
   XSetWindowBackground(subtle->dpy,  subtle->windows.tray,    subtle->colors.bg_bar);
   XSetWindowBackground(subtle->dpy,  subtle->windows.sublets, subtle->colors.bg_bar);
   XSetWindowBackground(subtle->dpy,  ROOT,                    subtle->colors.bg);
@@ -170,7 +171,7 @@ subDisplayConfigure(void)
 
   /* Bar position */
   XMoveResizeWindow(subtle->dpy, subtle->windows.bar, 0, 
-    subtle->bar ? SCREENH - subtle->th : 0, SCREENW, subtle->th);
+    subtle->bottom ? SCREENH - subtle->th : 0, SCREENW, subtle->th);
 
   /* Map windows */
   XMapWindow(subtle->dpy, subtle->windows.views);
@@ -178,7 +179,7 @@ subDisplayConfigure(void)
   XMapWindow(subtle->dpy, subtle->windows.sublets);  
   XMapRaised(subtle->dpy, subtle->windows.bar);
 
-  subDisplaySetStrut(); ///< Update strut
+  subScreenUpdate(); ///< Update strut
 } /* }}} */
 
  /** subDisplayScan {{{
@@ -221,54 +222,14 @@ subDisplayScan(void)
     }
   XFree(wins);
 
-  subDisplaySetStrut();
   subClientPublish();
+  subScreenUpdate();
   subTrayUpdate();
 
   /* Activate first view */
   subViewJump(VIEW(subtle->views->data[0]));
   subtle->windows.focus = ROOT;
   subGrabSet(ROOT);
-} /* }}} */
-
- /** subDisplaySetStrut {{{
-  * @brief Update strut size
-  **/
-
-void
-subDisplaySetStrut(void)
-{
-  int i;
-  SubScreen *s = NULL;
-
-  assert(subtle);
-
-  s = SCREEN(subtle->screens->data[0]); 
-
-  /* x => left, y => right, width => top, height => bottom */
-  s->geom.x     = s->base.x + subtle->strut.x; ///< Only first screen
-  s->geom.width = s->base.width - subtle->strut.x;
-
-  for(i = 0; i < subtle->screens->ndata; i++)
-    {
-      s = SCREEN(subtle->screens->data[i]);
-
-      /* Adjusting sizes */
-      if(0 < s->base.y)
-        {
-          s->geom.y = s->base.y + subtle->strut.width;
-          s->geom.height = s->base.height - (subtle->bar ? subtle->th : 0) - 
-            subtle->strut.height - subtle->strut.width;    
-        }
-      else
-        {
-          s->geom.y = s->base.y + (subtle->bar ? 0 : subtle->th) + subtle->strut.width;
-          s->geom.height = s->base.height - subtle->th - 
-            subtle->strut.height - subtle->strut.width;    
-        }
-    }
-
-  s->geom.width = s->base.width - subtle->strut.y; ///< Only last screen
 } /* }}} */
 
  /** subDisplayFinish {{{

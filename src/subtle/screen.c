@@ -43,6 +43,46 @@ subScreenNew(int x,
   return s;
 } /* }}} */
 
+ /** subScreenUpdate {{{
+  * @brief Update screens
+  **/
+
+void
+subScreenUpdate(void)
+{
+  int i;
+  SubScreen *s = NULL;
+
+  assert(subtle);
+
+  s = SCREEN(subtle->screens->data[0]); 
+
+  /* x => left, y => right, width => top, height => bottom */
+  s->geom.x     = s->base.x + subtle->strut.x; ///< Only first screen
+  s->geom.width = s->base.width - subtle->strut.x;
+
+  for(i = 0; i < subtle->screens->ndata; i++)
+    {
+      s = SCREEN(subtle->screens->data[i]);
+
+      /* Adjusting sizes */
+      if(0 < s->base.y)
+        {
+          s->geom.y = s->base.y + subtle->strut.width;
+          s->geom.height = s->base.height - (subtle->bottom ? subtle->th : 0) - 
+            subtle->strut.height - subtle->strut.width;    
+        }
+      else
+        {
+          s->geom.y = s->base.y + (subtle->bottom ? 0 : subtle->th) + subtle->strut.width;
+          s->geom.height = s->base.height - subtle->th - 
+            subtle->strut.height - subtle->strut.width;    
+        }
+    }
+
+  s->geom.width = s->base.width - subtle->strut.y; ///< Only last screen
+} /* }}} */
+
  /** subScreenJump {{{
   * @brief Jump to screen
   * @param[in]  s  A #SubScreen
