@@ -34,7 +34,7 @@ subViewNew(char *name,
 
   /* Create button */
   v->button = XCreateSimpleWindow(subtle->dpy, subtle->windows.views, 0, 0, 1,
-    subtle->th, 0, subtle->colors.norm, subtle->colors.norm);
+    subtle->th, 0, 0, subtle->colors.bg_views);
 
   XSaveContext(subtle->dpy, v->button, BUTTONID, (void *)v);
   XMapRaised(subtle->dpy, v->button);
@@ -155,8 +155,9 @@ subViewRender(void)
 
       /* Bar window */
       XClearWindow(subtle->dpy, subtle->windows.bar);
-      XFillRectangle(subtle->dpy, subtle->windows.bar, subtle->gcs.stipple, 0, 2,
-        SCREENW, subtle->th - 4);  
+      if(subtle->stipple) ///< Draw stipple
+        XFillRectangle(subtle->dpy, subtle->windows.bar, subtle->gcs.stipple, 0, 2,
+          SCREENW, subtle->th - 4);  
 
       /* View buttons */
       for(i = 0; i < subtle->views->ndata; i++)
@@ -171,8 +172,8 @@ subViewRender(void)
             }
           else
             {
-              gvals.foreground = subtle->colors.fg_bar;
-              gvals.background = subtle->colors.bg_bar;
+              gvals.foreground = subtle->colors.fg_views;
+              gvals.background = subtle->colors.bg_views;
             }
 
           XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
