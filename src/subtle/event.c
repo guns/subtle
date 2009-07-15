@@ -531,7 +531,7 @@ EventProperty(XPropertyEvent *ev)
          if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) 
           {
             subClientSetStrut(c);
-            subDisplaySetStrut();
+            subScreenUpdate();
             subSharedLogDebug("Hints: Updated strut hints\n");
           }
         break; /* }}} */

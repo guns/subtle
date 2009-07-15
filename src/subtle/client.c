@@ -63,6 +63,7 @@ subClientNew(Window win)
   Window trans = 0;
   XWMHints *hints = NULL;
   XWindowAttributes attrs;
+  XSetWindowAttributes sattrs;
   Atom *protos = NULL;
   SubClient *c = NULL, *k = NULL;
 
@@ -82,6 +83,8 @@ subClientNew(Window win)
   c->width = XTextWidth(subtle->xfs, c->caption, strlen(c->caption)) + 6; ///< Font offset
 
   /* X related properties */
+  sattrs.border_pixel = subtle->colors.bo_normal;
+  XChangeWindowAttributes(subtle->dpy, c->win, CWBorderPixel, &sattrs);
   XSelectInput(subtle->dpy, c->win, EVENTMASK);
   XSetWindowBorderWidth(subtle->dpy, c->win, subtle->bw);
   XAddToSaveSet(subtle->dpy, c->win);
@@ -230,15 +233,15 @@ subClientRender(SubClient *c)
 {
   int pos = 0;
   char buf[255];
-  XSetWindowAttributes attrs;
+  XSetWindowAttributes sattrs;
   XGCValues gvals;
 
   DEAD(c);
   assert(c);
 
-  attrs.border_pixel = subtle->windows.focus == c->win ? subtle->colors.bg_focus : 
-    subtle->colors.norm;
-  XChangeWindowAttributes(subtle->dpy, c->win, CWBorderPixel, &attrs);
+  sattrs.border_pixel = subtle->windows.focus == c->win ? subtle->colors.bo_focus : 
+    subtle->colors.bo_normal;
+  XChangeWindowAttributes(subtle->dpy, c->win, CWBorderPixel, &sattrs);
 
   /* Caption */
   if(c->flags & (SUB_STATE_STICK|SUB_STATE_FLOAT))
@@ -568,10 +571,14 @@ subClientSetSize(SubClient *c)
   /* Limit base width */
   if(c->base.width < c->minw) c->base.width = c->minw;
   if(c->base.width > c->maxw) c->base.width = c->maxw;
+  if(c->base.x + c->base.width > s->base.x + s->base.width) 
+    c->base.width = s->base.width - (s->base.x - c->base.x);
 
   /* Limit base height */
   if(c->base.height < c->minh) c->base.height = c->minh;
   if(c->base.height > c->maxh) c->base.height = c->maxh;
+  if(c->base.y + c->base.height > s->base.y + s->base.height - subtle->bw)
+    c->base.height = s->base.height - (s->base.y - c->base.y);
 
   /* Limit width */
   if(c->geom.width < c->minw) c->geom.width = c->minw;

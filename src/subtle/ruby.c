@@ -199,29 +199,27 @@ RubySubletPathSet(VALUE self,
 /* RubyGetString {{{ */
 static char *
 RubyGetString(VALUE hash,
-  char *key,
-  char *fallback)
+  char *key)
 {
   VALUE value = Qundef, sym = CHAR2SYM(key);
   
   if(RTEST(hash) && Qtrue == rb_funcall(hash, rb_intern("has_key?"), 1, sym))
     value = rb_funcall(hash, rb_intern("fetch"), 1, sym);
 
-  return T_STRING == rb_type(value) ? STR2CSTR(value) : fallback;
+  return T_STRING == rb_type(value) ? STR2CSTR(value) : NULL;
 } /* }}} */
 
 /* RubyGetFixnum {{{ */
 static int
 RubyGetFixnum(VALUE hash,
-  char *key,
-  int fallback)
+  char *key)
 {
   VALUE value = Qundef, sym = CHAR2SYM(key);
   
   if(RTEST(hash) && Qtrue == rb_funcall(hash, rb_intern("has_key?"), 1, sym))
     value = rb_funcall(hash, rb_intern("fetch"), 1, sym);
 
-  return T_FIXNUM == rb_type(value) ? FIX2INT(value) : fallback;
+  return T_FIXNUM == rb_type(value) ? FIX2INT(value) : 0;
 } /* }}} */
 
 /* RubyGetBool {{{ */
@@ -392,17 +390,17 @@ RubyConfigForeach(VALUE key,
               break;
             case T_HASH:
               {
-                int flags = 0, gravity = -1, screen = -1;
+                int flags = 0, gravity = 0, screen = 0;
                 char *regex = NULL;
 
                 /* Fetch values */
-                regex   = RubyGetString(value, "regex", NULL);
-                gravity = RubyGetFixnum(value, "gravity", -1);
-                screen  = RubyGetFixnum(value, "screen", -1);
+                regex   = RubyGetString(value, "regex");
+                gravity = RubyGetFixnum(value, "gravity");
+                screen  = RubyGetFixnum(value, "screen");
 
                 /* Sanity */
                 if(1 <= gravity && 9 >= gravity) flags |= SUB_TAG_GRAVITY;
-                if(1 <= screen && subtle->screens->ndata >= screen--)
+                if(1 <= screen && screen <= subtle->screens->ndata)
                   flags |= SUB_TAG_SCREEN;
 
                 /* Set property flags */
@@ -434,7 +432,7 @@ RubyConfigForeach(VALUE key,
 static unsigned long
 RubyParseColor(char *name)
 {
-  XColor color = { subtle->colors.norm }; ///< Default color
+  XColor color = { 0 }; ///< Default color
 
   /* Parse and store color */
   if(!XParseColor(subtle->dpy, COLORMAP, name, &color))
@@ -770,26 +768,30 @@ RubyWrapLoadConfig(VALUE data)
 
   /* Config: Options */
   config          = rb_const_get(rb_cObject, rb_intern("OPTIONS"));
-  subtle->bw      = RubyGetFixnum(config, "border",  2);
-  subtle->step    = RubyGetFixnum(config, "step",    5);
-  subtle->bar     = RubyGetFixnum(config, "bar",     0);
-  subtle->gravity = RubyGetFixnum(config, "gravity", 5);
+  subtle->bw      = RubyGetFixnum(config, "border");
+  subtle->step    = RubyGetFixnum(config, "step");
+  subtle->gravity = RubyGetFixnum(config, "gravity");
+  subtle->bottom  = RubyGetBool(config, "bottom");
+  subtle->stipple = RubyGetBool(config, "stipple");
   RubyGetRect(config, "padding", &subtle->strut);
 
   /* Config: Font */
   config = rb_const_get(rb_cObject, rb_intern("FONT"));
-  family = RubyGetString(config, "family",  "fixed");
-  style  = RubyGetString(config, "style",   "medium");
-  size   = RubyGetFixnum(config, "size",    12);
+  family = RubyGetString(config, "family");
+  style  = RubyGetString(config, "style");
+  size   = RubyGetFixnum(config, "size");
 
   /* Config: Colors */
-  config                  = rb_const_get(rb_cObject, rb_intern("COLORS"));
-  subtle->colors.fg_bar   = RubyParseColor(RubyGetString(config, "fg_bar",     "#e2e2e5"));
-  subtle->colors.bg_bar   = RubyParseColor(RubyGetString(config, "bg_bar",     "#444444"));
-  subtle->colors.fg_focus = RubyParseColor(RubyGetString(config, "fg_focus",   "#000000"));
-  subtle->colors.bg_focus = RubyParseColor(RubyGetString(config, "bg_focus",   "#bdbabd"));
-  subtle->colors.norm     = RubyParseColor(RubyGetString(config, "normal",     "#22aa99"));
-  subtle->colors.bg       = RubyParseColor(RubyGetString(config, "background", "#336699"));
+  config                   = rb_const_get(rb_cObject, rb_intern("COLORS"));
+  subtle->colors.fg_bar    = RubyParseColor(RubyGetString(config, "fg_bar"));
+  subtle->colors.fg_views  = RubyParseColor(RubyGetString(config, "fg_views"));
+  subtle->colors.fg_focus  = RubyParseColor(RubyGetString(config, "fg_focus"));
+  subtle->colors.bg_bar    = RubyParseColor(RubyGetString(config, "bg_bar"));
+  subtle->colors.bg_views  = RubyParseColor(RubyGetString(config, "bg_views"));
+  subtle->colors.bg_focus  = RubyParseColor(RubyGetString(config, "bg_focus"));
+  subtle->colors.bo_focus  = RubyParseColor(RubyGetString(config, "border_focus"));
+  subtle->colors.bo_normal = RubyParseColor(RubyGetString(config, "border_normal"));
+  subtle->colors.bg        = RubyParseColor(RubyGetString(config, "background"));
 
   /* Config: Font */
   if(subtle->xfs) ///< Free in case of reload

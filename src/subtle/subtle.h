@@ -340,15 +340,15 @@ typedef struct subsublet_t /* {{{ */
 
 typedef struct subsubtle_t /* {{{ */
 {
-  int                th, bw, fy, step, bar, gravity, screen;      ///< Subtle properties
+  int                th, bw, fy, step, screen,
+                     gravity, bottom, stipple;                    ///< Subtle properties
 
   Display            *dpy;                                        ///< Subtle Xorg display
   XFontStruct        *xfs;                                        ///< Subtle font
 
-  XRectangle         strut;                                       ///< Subtle strut, screen
+  XRectangle         strut;                                       ///< Subtle strut
 
   struct subview_t   *cv;                                         ///< Subtle current view
-
   struct subsublet_t *sublet;                                     ///< Subtle first sublet
 
   struct subarray_t  *clients;                                    ///< Subtle clients
@@ -374,7 +374,8 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    unsigned long    fg_bar,  bg_bar, fg_focus, bg_focus, norm, bg;
+    unsigned long    fg_bar, fg_views, fg_focus, bg_bar, bg_views, bg_focus,
+                     bo_focus, bo_normal, bg;
   } colors;                                                       ///< Subtle colors
 
   struct
@@ -457,7 +458,6 @@ void subClientKill(SubClient *c, int close);                      ///< Kill clie
 void subDisplayInit(const char *display);                         ///< Create display
 void subDisplayConfigure(void);                                   ///< Configure display
 void subDisplayScan(void);                                        ///< Scan root window
-void subDisplaySetStrut(void);                                    ///< Set strut size
 void subDisplayFinish(void);                                      ///< Kill display
 /* }}} */
 
@@ -509,6 +509,7 @@ void subRubyFinish(void);                                         ///< Kill Ruby
 /* screen.c {{{ */
 SubScreen *subScreenNew(int x, int y, unsigned int width,
   unsigned int height);                                           ///< Create screen
+void subScreenUpdate(void);                                       ///< Update screens
 void subScreenJump(SubScreen *s);                                 ///< Jump to screen
 void subScreenKill(SubScreen *s);                                 ///< Kill screen
 /* }}} */

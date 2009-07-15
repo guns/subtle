@@ -80,6 +80,7 @@ SubtleSignal(int signum)
             subClientSetTags(c);
           }
 
+        subScreenUpdate();
         subViewJump(subtle->views->data[0]);
         subSubletRender();
 
