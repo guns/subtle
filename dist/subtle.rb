@@ -11,8 +11,9 @@
 OPTIONS = {
   :border  => 2,               # Border size of the windows
   :step    => 5,               # Window move/resize key step
-  :bar     => 0,               # Bar position (0 = top, 1 = bottom)
-  :gravity => 5,               # Default gravity (0 = gravity of active window)
+  :gravity => 5,               # Default gravity (0 = copy gravity of focus window)
+  :bottom  => false,           # Bar at bottom?
+  :stipple => true,            # Draw stipple on bar  
   :padding => [ 0, 0, 0, 0 ]   # Screen padding (left, right, top, bottom)
 }
 
@@ -29,12 +30,18 @@ FONT = {
 # Colors
 # 
 COLORS = { 
-  :fg_bar     => "#e2e2e5",   # Foreground color of normal windows
-  :bg_bar     => "#444444",   # Background color of normal windows
-  :fg_focus   => "#000000",   # Foreground color of focus windows
-  :bg_focus   => "#b1d631",   # Background color of focus windows
-  :normal     => "#5d5d5d",   # Color of border
-  :background => "#3d3d3d"    # Color of root background  
+  :fg_bar        => "#e2e2e5",  # Foreground color of bar
+  :fg_views      => "#CF6171",  # Foreground color of view button
+  :fg_focus      => "#000000",  # Foreground color of focus window title and view
+
+  :bg_bar        => "#444444",  # Background color of bar
+  :bg_views      => "#3d3d3d",  # Background color of view button
+  :bg_focus      => "#CF6171",  # Background color of focus window title and view
+
+  :border_focus  => "#CF6171",  # Border color of focus windows
+  :border_normal => "#5d5d5d",  # Border color of normal windows
+  
+  :background    => "#3d3d3d"   # Background color of root background
 }
 
 #
