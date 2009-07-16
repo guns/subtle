@@ -22,7 +22,7 @@
 #define CHAR2SYM(name) ID2SYM(rb_intern(name))
 #define SYM2CHAR(sym)  rb_id2name(SYM2ID(sym))
 
-static VALUE shelter = Qnil, sublets = Qnil, subtlext = Qnil; ///< Globals
+static VALUE shelter = Qnil, sublet = Qnil, subtlext = Qnil; ///< Globals
 
 /* Typedef {{{ */
 typedef struct rubygrabs_t
@@ -100,7 +100,7 @@ static VALUE
 RubySubletInherited(VALUE self,
   VALUE recv)
 {
-  rb_ary_push(sublets, recv); ///< Save the sublet
+  sublet = recv; ///< Store inherited sublet
 
   return Qnil;
 } /* }}} */
@@ -643,24 +643,6 @@ RubyDispatcher(int argc,
   return Qnil;  
 } /* }}} */
 
-/* RubyInstantiate {{{ */
-static VALUE
-RubyInstantiate(VALUE idx,
-  VALUE *obj)
-{
-  char *name = NULL;
-  
-  /* Instantiate sublets */
-  name = (char *)rb_class2name((ID)idx);
-  if(!rb_funcall(idx, rb_intern("new"), 0, NULL))
-    {
-      subSharedLogWarn("Failed loading sublet `%s'\n", name);
-    }
-  else printf("Loaded sublet (%s)\n", name);
-
-  return Qnil;
-} /* }}} */
-
 /* RubySignal {{{ */
 static void
 RubySignal(int signum)
@@ -671,95 +653,17 @@ RubySignal(int signum)
     }
 } /* }}} */
 
-/* RubyWrapCall {{{ */
-static VALUE
-RubyWrapCall(VALUE data)
-{
-  VALUE ret = Qfalse, *rargs = (VALUE *)data;
-
-  signal(SIGALRM, RubySignal); ///< Limit execution time
-  alarm(EXECTIME);
-
-  if((int)rargs[1] & SUB_TYPE_SUBLET) /* {{{ */
-    {
-      ret = rb_funcall(rargs[0], rb_intern("run"), 0, NULL) ;
-    } /* }}} */
-  else if((int)rargs[1] & (SUB_TYPE_GRAB|SUB_TYPE_HOOK)) /* {{{ */
-    {
-      int id = 0, arity = 0;
-
-      /* Check proc arity */
-      switch((arity = FIX2INT(rb_funcall(rargs[0], rb_intern("arity"), 0, NULL))))
-        {
-          case 0:
-          case -1: ///< No optional arguments 
-            ret = rb_funcall(rargs[0], rb_intern("call"), 0, NULL);
-            break;
-          case 1: ///< One argument
-            if(rargs[2])
-              {
-                SubClient *c = CLIENT(rargs[2]);
-                VALUE mod = Qnil, klass = Qnil, inst = Qnil;
-
-                if(Qnil == subtlext) subRubyLoadSubtlext(); ///< Load subtlext on demand
-                mod = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
-
-                if(c->flags & SUB_TYPE_CLIENT)
-                  {
-                    /* Create client instance */
-                    id    = subArrayIndex(subtle->clients, (void *)c);
-                    klass = rb_const_get(mod, rb_intern("Client"));
-                    inst  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(c->name));
-
-                    rb_iv_set(inst, "@id",      INT2FIX(id));
-                    rb_iv_set(inst, "@win",     LONG2NUM(c->win));
-                    rb_iv_set(inst, "@klass",   rb_str_new2(c->klass));
-                    rb_iv_set(inst, "@x",       INT2FIX(c->geom.x));
-                    rb_iv_set(inst, "@y",       INT2FIX(c->geom.y));
-                    rb_iv_set(inst, "@width",   INT2FIX(c->geom.width));
-                    rb_iv_set(inst, "@height",  INT2FIX(c->geom.height));
-                    rb_iv_set(inst, "@gravity", INT2FIX(c->gravity));
-                    rb_iv_set(inst, "@screen",  INT2FIX(c->screen + 1));
-                  }
-                else if(c->flags & SUB_TYPE_VIEW)
-                  {
-                    SubView *v = VIEW(c);
-
-                    /* Create view instance */
-                    id    = subArrayIndex(subtle->views, (void *)v);
-                    klass = rb_const_get(mod, rb_intern("View"));
-                    inst  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(v->name));
-
-                    rb_iv_set(inst, "@id",  INT2FIX(id));
-                    rb_iv_set(inst, "@win", LONG2NUM(v->button));
-                  }
-
-                ret = rb_funcall(rargs[0], rb_intern("call"), 1, inst);
-                break;
-              } ///< Fall through
-          default:
-            rb_raise(rb_eStandardError, "Failed calling proc with `%d' argument(s)", arity);
-            ret = Qfalse;
-        }
-      subSharedLogDebug("Proc: arity=%d\n", arity);      
-    } /* }}} */
-
-  alarm(0);
-
-  return ret;
-} /* }}} */
-
 /* RubyWrapLoadConfig {{{ */
 static VALUE
 RubyWrapLoadConfig(VALUE data)
 {
   int i, size = 0, state = 0;
-  char *file = NULL, *family = NULL, *style = NULL, buf[100];
+  char *path = NULL, *family = NULL, *style = NULL, buf[100];
   VALUE config = Qnil, entry = Qnil;
   FILE *fd = NULL;
 
   /* Check path */
-  if(!RTEST(data) || !(file = RSTRING_PTR(data)))
+  if(!RTEST(data) || !(path = RSTRING_PTR(data)))
     {
       snprintf(buf, sizeof(buf), "%s/%s/%s",
         getenv("XDG_CONFIG_HOME"), PKG_NAME, PKG_CONFIG);
@@ -769,7 +673,7 @@ RubyWrapLoadConfig(VALUE data)
         }
       else fclose(fd);
     }
-  else snprintf(buf, sizeof(buf), "%s", file);
+  else snprintf(buf, sizeof(buf), "%s", path);
   subSharedLogDebug("config=%s\n", buf);
 
   rb_load_protect(rb_str_new2(buf), 0, &state); ///< Load config
@@ -925,6 +829,84 @@ RubyWrapLoadSubtlext(VALUE data)
   return Qnil;
 }/* }}} */
 
+/* RubyWrapCall {{{ */
+static VALUE
+RubyWrapCall(VALUE data)
+{
+  VALUE ret = Qfalse, *rargs = (VALUE *)data;
+
+  signal(SIGALRM, RubySignal); ///< Limit execution time
+  alarm(EXECTIME);
+
+  if((int)rargs[1] & SUB_TYPE_SUBLET) /* {{{ */
+    {
+      ret = rb_funcall(rargs[0], rb_intern("run"), 0, NULL) ;
+    } /* }}} */
+  else if((int)rargs[1] & (SUB_TYPE_GRAB|SUB_TYPE_HOOK)) /* {{{ */
+    {
+      int id = 0, arity = 0;
+
+      /* Check proc arity */
+      switch((arity = FIX2INT(rb_funcall(rargs[0], rb_intern("arity"), 0, NULL))))
+        {
+          case 0:
+          case -1: ///< No optional arguments 
+            ret = rb_funcall(rargs[0], rb_intern("call"), 0, NULL);
+            break;
+          case 1: ///< One argument
+            if(rargs[2])
+              {
+                SubClient *c = CLIENT(rargs[2]);
+                VALUE mod = Qnil, klass = Qnil, inst = Qnil;
+
+                if(Qnil == subtlext) subRubyLoadSubtlext(); ///< Load subtlext on demand
+                mod = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
+
+                if(c->flags & SUB_TYPE_CLIENT)
+                  {
+                    /* Create client instance */
+                    id    = subArrayIndex(subtle->clients, (void *)c);
+                    klass = rb_const_get(mod, rb_intern("Client"));
+                    inst  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(c->name));
+
+                    rb_iv_set(inst, "@id",      INT2FIX(id));
+                    rb_iv_set(inst, "@win",     LONG2NUM(c->win));
+                    rb_iv_set(inst, "@klass",   rb_str_new2(c->klass));
+                    rb_iv_set(inst, "@x",       INT2FIX(c->geom.x));
+                    rb_iv_set(inst, "@y",       INT2FIX(c->geom.y));
+                    rb_iv_set(inst, "@width",   INT2FIX(c->geom.width));
+                    rb_iv_set(inst, "@height",  INT2FIX(c->geom.height));
+                    rb_iv_set(inst, "@gravity", INT2FIX(c->gravity));
+                    rb_iv_set(inst, "@screen",  INT2FIX(c->screen + 1));
+                  }
+                else if(c->flags & SUB_TYPE_VIEW)
+                  {
+                    SubView *v = VIEW(c);
+
+                    /* Create view instance */
+                    id    = subArrayIndex(subtle->views, (void *)v);
+                    klass = rb_const_get(mod, rb_intern("View"));
+                    inst  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(v->name));
+
+                    rb_iv_set(inst, "@id",  INT2FIX(id));
+                    rb_iv_set(inst, "@win", LONG2NUM(v->button));
+                  }
+
+                ret = rb_funcall(rargs[0], rb_intern("call"), 1, inst);
+                break;
+              } ///< Fall through
+          default:
+            rb_raise(rb_eStandardError, "Failed calling proc with `%d' argument(s)", arity);
+            ret = Qfalse;
+        }
+      subSharedLogDebug("Proc: arity=%d\n", arity);      
+    } /* }}} */
+
+  alarm(0);
+
+  return ret;
+} /* }}} */
+
  /** subRubyInit {{{
   * @brief Init ruby
   **/
@@ -967,17 +949,45 @@ subRubyInit(void)
 
  /** subRubyLoadConfig {{{
   * @brief Load config file
-  * @param[in]  file  Config file
+  * @param[in]  path  Path to config file
   **/
 
 void
-subRubyLoadConfig(const char *file)
+subRubyLoadConfig(const char *path)
 {
   int state = 0;
 
-  rb_protect(RubyWrapLoadConfig, file ? rb_str_new2(file) : Qnil, &state);
+  rb_protect(RubyWrapLoadConfig, path ? rb_str_new2(path) : Qnil, &state);
 
-  if(state) RubyPerror(True, True, "Failed loading config %s", file);
+  if(state) RubyPerror(True, True, "Failed loading config %s", path);
+} /* }}} */
+
+ /** subRubyLoadSublets {{{
+  * @brief Load sublets from path
+  * @param[in]  path  Path of the sublets
+  **/
+
+void
+subRubyLoadSublet(const char *path)
+{
+  int state = 0;
+
+  /* Load and instantiate sublet */
+  rb_load_protect(rb_str_new2(path), 0, &state); ///< Load sublet
+
+  if(0 == state && Qnil != sublet)
+    {
+      char *name = (char *)rb_class2name((ID)sublet);
+
+      if(!rb_funcall(sublet, rb_intern("new"), 0, NULL))
+        {
+          subSharedLogWarn("Failed loading sublet `%s'\n", name);
+        }
+      else printf("Loaded sublet (%s)\n", name);
+
+      sublet = Qnil;
+    }
+  else RubyPerror(True, False, "Failed loading sublet `%s'", path);
 } /* }}} */
 
  /** subRubyLoadSublets {{{
@@ -1023,25 +1033,18 @@ subRubyLoadSublets(const char *path)
   /* Scan directory */
   if(0 < ((num = scandir(buf, &entries, RubyFilter, alphasort))))
     {
-      sublets = rb_ary_new();
-
       for(i = 0; i < num; i++)
         {
-          int state = 0;
           char file[150];
 
           snprintf(file, sizeof(file), "%s/%s", buf, entries[i]->d_name);
           subSharedLogDebug("path=%s\n", file);
 
-          /* Safety first */
-          rb_load_protect(rb_str_new2(file), 0, &state); ///< Load sublet
-          if(state) RubyPerror(True, False, "Failed loading sublet `%s'", entries[i]->d_name);
+          subRubyLoadSublet(file);
 
           free(entries[i]);
         }
       free(entries);
-
-      rb_iterate(rb_each, sublets, RubyInstantiate, Qnil); ///< Instantiate sublets
 
       if(0 < subtle->sublets->ndata)
         {

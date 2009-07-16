@@ -499,7 +499,8 @@ void subGrabKill(SubGrab *g);                                     ///< Kill grab
 
 /* ruby.c {{{ */
 void subRubyInit(void);                                           ///< Init Ruby stack 
-void subRubyLoadConfig(const char *file);                         ///< Load config file
+void subRubyLoadConfig(const char *path);                         ///< Load config file
+void subRubyLoadSublet(const char *path);                         ///< Load sublet
 void subRubyLoadSublets(const char *path);                        ///< Load sublets
 void subRubyLoadSubtlext(void);                                   ///< Load subtlext
 int subRubyCall(int type, unsigned long recv, void *extra);       ///< Call Ruby script
