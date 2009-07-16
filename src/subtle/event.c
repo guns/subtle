@@ -767,16 +767,11 @@ static void
 EventExpose(XEvent *ev)
 {
   XEvent event;
+  SubClient *c = CLIENT(subSharedFind(subtle->windows.focus, CLIENTID));
 
-  if(ev->xany.window == subtle->windows.bar || ROOT == ev->xany.window)
-    {
-      SubClient *c = CLIENT(subSharedFind(subtle->windows.focus, CLIENTID));
-      
-      subSubletRender();
-      subViewRender();
-
-      if(c) subClientRender(c); ///< Render caption
-    }
+  if(c) subClientRender(c); ///< Render caption
+  subSubletRender();
+  subViewRender();
 
   /* Remove any other event of the same type and window */
   while(XCheckTypedWindowEvent(subtle->dpy, ev->xany.window, ev->type, &event));
@@ -876,7 +871,14 @@ subEventLoop(void)
   tv.tv_sec  = 0; 
   tv.tv_usec = 0;
   nfds       = ConnectionNumber(subtle->dpy) + 1;
-  s          = 0 < subtle->sublets->ndata ? SUBLET(subtle->sublets->data[0]) : NULL;
+
+  /* Get first sublet */
+  if(0 < subtle->sublets->ndata)
+    {
+      if(!(SUBLET(subtle->sublets->data[0])->flags & SUB_SUBLET_INOTIFY))
+          s = SUBLET(subtle->sublets->data[0]);
+      else subSubletRender(); ///< Render first time
+    }
 
   FD_ZERO(&rfds);
   FD_SET(ConnectionNumber(subtle->dpy), &rfds);
@@ -940,26 +942,29 @@ subEventLoop(void)
         }
       else ///< Timeout waiting for data or error
         {
-          if(0 < subtle->sublets->ndata && ///< Skip inotify sublets
-            !(SUBLET(subtle->sublets->data[0])->flags & SUB_SUBLET_INOTIFY))
+          if(0 < subtle->sublets->ndata)
             {
               s = SUBLET(subtle->sublets->data[0]);
-              while(s && s->time <= now)
+
+              if(!(s->flags & SUB_SUBLET_INOTIFY))
                 {
-                  subRubyCall(SUB_TYPE_SUBLET, s->recv, NULL);
+                  while(s && s->time <= now)
+                    {
+                      subRubyCall(SUB_TYPE_SUBLET, s->recv, NULL);
 
-                  s->time  = now + s->interval; ///< Adjust seconds
-                  s->time -= s->time % s->interval;
+                      s->time  = now + s->interval; ///< Adjust seconds
+                      s->time -= s->time % s->interval;
 
-                  subArraySort(subtle->sublets, subSubletCompare);
+                      subArraySort(subtle->sublets, subSubletCompare);
 
-                  s = SUBLET(subtle->sublets->data[0]);
+                      s = SUBLET(subtle->sublets->data[0]);
+                    }
                 }
 
+              subViewRender();
               subSubletUpdate();
               subTrayUpdate();
               subSubletRender();
-              subViewRender();
 
               XFlush(subtle->dpy);
             }
