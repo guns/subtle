@@ -196,30 +196,45 @@ RubySubletPathSet(VALUE self,
 } /* }}} */
 #endif /* HAVE_SYS_INOTIFY_H */
 
+/* RubyGetValue {{{ */
+static VALUE
+RubyGetValue(VALUE hash,
+  char *key,
+  int type,
+  int optional)
+{
+  VALUE value = Qundef, sym = CHAR2SYM(key);
+
+  assert(key);
+
+  /* Check for key */
+  if(RTEST(hash) && Qtrue == rb_funcall(hash, rb_intern("has_key?"), 1, sym))
+      value = rb_funcall(hash, rb_intern("fetch"), 1, sym);
+  else if(!optional) subSharedLogWarn("Failed reading key `%s'\n", key);
+
+  return rb_type(value) == type ? value : Qnil;
+} /* }}} */
+
 /* RubyGetString {{{ */
 static char *
 RubyGetString(VALUE hash,
-  char *key)
+  char *key,
+  char *fallback)
 {
-  VALUE value = Qundef, sym = CHAR2SYM(key);
+  VALUE value = RubyGetValue(hash, key, T_STRING, NULL == fallback);
   
-  if(RTEST(hash) && Qtrue == rb_funcall(hash, rb_intern("has_key?"), 1, sym))
-    value = rb_funcall(hash, rb_intern("fetch"), 1, sym);
-
-  return T_STRING == rb_type(value) ? STR2CSTR(value) : NULL;
+  return Qnil != value ? STR2CSTR(value) : fallback;
 } /* }}} */
 
 /* RubyGetFixnum {{{ */
 static int
 RubyGetFixnum(VALUE hash,
-  char *key)
+  char *key,
+  int fallback)
 {
-  VALUE value = Qundef, sym = CHAR2SYM(key);
+  VALUE value = RubyGetValue(hash, key, T_FIXNUM, 0 == fallback);
   
-  if(RTEST(hash) && Qtrue == rb_funcall(hash, rb_intern("has_key?"), 1, sym))
-    value = rb_funcall(hash, rb_intern("fetch"), 1, sym);
-
-  return T_FIXNUM == rb_type(value) ? FIX2INT(value) : 0;
+  return Qnil != value ? FIX2INT(value) : fallback;
 } /* }}} */
 
 /* RubyGetBool {{{ */
@@ -227,29 +242,24 @@ static int
 RubyGetBool(VALUE hash,
   char *key)
 {
-  VALUE value = Qundef, sym = CHAR2SYM(key);
+  VALUE value = RubyGetValue(hash, key, T_TRUE, True);
   
-  if(RTEST(hash) && Qtrue == rb_funcall(hash, rb_intern("has_key?"), 1, sym))
-    value = rb_funcall(hash, rb_intern("fetch"), 1, sym);
-
-  return Qtrue == value ? True : False;
+  return Qtrue == value ? True : False; ///< We skip the fallback stuff here
 } /* }}} */
 
 /* RubyGetRect {{{ */
 static void
 RubyGetRect(VALUE hash,
   char *key,
-  XRectangle *strut)
+  XRectangle *r)
 {
-  int i, data[4] = { 0 };
-  VALUE ary = Qundef, value = Qundef, id = CHAR2SYM(key);
+  int data[4] = { 0 };
+  VALUE ary = Qnil;
 
-  if(RTEST(hash) && Qtrue == rb_funcall(hash, rb_intern("has_key?"), 1, id))
-    ary = rb_funcall(hash, rb_intern("fetch"), 1, id);
-
-  if(T_ARRAY == rb_type(ary)) 
+  if(Qnil != (ary = RubyGetValue(hash, key, T_ARRAY, False)))
     {
-      VALUE meth = rb_intern("at");
+      int i;
+      VALUE value = Qnil, meth = rb_intern("at");
 
       for(i = 0; i < 4; i++) ///< Safely fetching array values
         {
@@ -258,10 +268,11 @@ RubyGetRect(VALUE hash,
         }
     }
 
-  strut->x      = data[0]; ///< Left
-  strut->y      = data[1]; ///< Right
-  strut->width  = data[2]; ///< Top
-  strut->height = data[3]; ///< Bottom
+  /* Assign data to rect */
+  r->x      = data[0]; ///< Left
+  r->y      = data[1]; ///< Right
+  r->width  = data[2]; ///< Top
+  r->height = data[3]; ///< Bottom
 } /* }}} */
 
 /* RubyConfigForeach {{{ */
@@ -394,9 +405,9 @@ RubyConfigForeach(VALUE key,
                 char *regex = NULL;
 
                 /* Fetch values */
-                regex   = RubyGetString(value, "regex");
-                gravity = RubyGetFixnum(value, "gravity");
-                screen  = RubyGetFixnum(value, "screen");
+                regex   = RubyGetString(value, "regex",   NULL);
+                gravity = RubyGetFixnum(value, "gravity", 0);
+                screen  = RubyGetFixnum(value, "screen",  0);
 
                 /* Sanity */
                 if(1 <= gravity && 9 >= gravity) flags |= SUB_TAG_GRAVITY;
@@ -768,30 +779,30 @@ RubyWrapLoadConfig(VALUE data)
 
   /* Config: Options */
   config          = rb_const_get(rb_cObject, rb_intern("OPTIONS"));
-  subtle->bw      = RubyGetFixnum(config, "border");
-  subtle->step    = RubyGetFixnum(config, "step");
-  subtle->gravity = RubyGetFixnum(config, "gravity");
+  subtle->bw      = RubyGetFixnum(config, "border",  2);
+  subtle->step    = RubyGetFixnum(config, "step",    5);
+  subtle->gravity = RubyGetFixnum(config, "gravity", 5);
   subtle->bottom  = RubyGetBool(config, "bottom");
   subtle->stipple = RubyGetBool(config, "stipple");
   RubyGetRect(config, "padding", &subtle->strut);
 
   /* Config: Font */
   config = rb_const_get(rb_cObject, rb_intern("FONT"));
-  family = RubyGetString(config, "family");
-  style  = RubyGetString(config, "style");
-  size   = RubyGetFixnum(config, "size");
+  family = RubyGetString(config, "family", "fixed");
+  style  = RubyGetString(config, "style",  "medium");
+  size   = RubyGetFixnum(config, "size",    10);
 
   /* Config: Colors */
   config                   = rb_const_get(rb_cObject, rb_intern("COLORS"));
-  subtle->colors.fg_bar    = RubyParseColor(RubyGetString(config, "fg_bar"));
-  subtle->colors.fg_views  = RubyParseColor(RubyGetString(config, "fg_views"));
-  subtle->colors.fg_focus  = RubyParseColor(RubyGetString(config, "fg_focus"));
-  subtle->colors.bg_bar    = RubyParseColor(RubyGetString(config, "bg_bar"));
-  subtle->colors.bg_views  = RubyParseColor(RubyGetString(config, "bg_views"));
-  subtle->colors.bg_focus  = RubyParseColor(RubyGetString(config, "bg_focus"));
-  subtle->colors.bo_focus  = RubyParseColor(RubyGetString(config, "border_focus"));
-  subtle->colors.bo_normal = RubyParseColor(RubyGetString(config, "border_normal"));
-  subtle->colors.bg        = RubyParseColor(RubyGetString(config, "background"));
+  subtle->colors.fg_bar    = RubyParseColor(RubyGetString(config, "fg_bar",        "#e2e2e5"));
+  subtle->colors.fg_views  = RubyParseColor(RubyGetString(config, "fg_views",      "#CF6171"));
+  subtle->colors.fg_focus  = RubyParseColor(RubyGetString(config, "fg_focus",      "#000000"));
+  subtle->colors.bg_bar    = RubyParseColor(RubyGetString(config, "bg_bar",        "#444444"));
+  subtle->colors.bg_views  = RubyParseColor(RubyGetString(config, "bg_views",      "#3d3d3d"));
+  subtle->colors.bg_focus  = RubyParseColor(RubyGetString(config, "bg_focus",      "#CF6171"));
+  subtle->colors.bo_focus  = RubyParseColor(RubyGetString(config, "border_focus",  "#CF6171"));
+  subtle->colors.bo_normal = RubyParseColor(RubyGetString(config, "border_normal", "#CF6171"));
+  subtle->colors.bg        = RubyParseColor(RubyGetString(config, "background",    "#3d3d3d3"));
 
   /* Config: Font */
   if(subtle->xfs) ///< Free in case of reload
