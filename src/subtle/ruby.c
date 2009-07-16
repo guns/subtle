@@ -79,18 +79,19 @@ RubySubletNew(VALUE self)
 {
   SubSublet *s = NULL;
   VALUE data = Qnil;
+  char *name = (char *)rb_class2name(self);
 
   /* Create sublet */
   s = subSubletNew();
   data    = Data_Wrap_Struct(self, RubySubletMark, NULL, (void *)s);
   s->recv = data; 
-  s->name = strdup(rb_class2name(self));
+  s->name = strdup(name);
 
   rb_obj_call_init(data, 0, NULL); ///< Call initialize
-  rb_ary_push(shelter, data); ///< Protect from GC
   if(0 == s->interval) s->interval = 60; ///< Sanitize
 
   subArrayPush(subtle->sublets, s);
+  rb_ary_push(shelter, data); ///< Protect from GC
 
   return data;
 } /* }}} */
@@ -164,6 +165,7 @@ RubySubletPathSet(VALUE self,
   VALUE value)
 {
   SubSublet *s = NULL;
+  char *watch = NULL;
   Data_Get_Struct(self, SubSublet, s);
 
   if(s)
@@ -171,22 +173,22 @@ RubySubletPathSet(VALUE self,
       switch(rb_type(value)) ///< Check value type
         {
           case T_STRING: 
-            if(RTEST(value))
+            watch     = STR2CSTR(value);
+            s->flags |= SUB_SUBLET_INOTIFY;
+            s->path   = strdup(watch);
+
+            /* Create inotify watch */
+            if(0 < (s->interval = inotify_add_watch(subtle->notify, watch, IN_MODIFY)))
               {
-                char *watch = STR2CSTR(value);
+                XSaveContext(subtle->dpy, subtle->windows.sublets, s->interval, (void *)s);
 
-                /* Create inotify watch */
-                if(0 < (s->interval = inotify_add_watch(subtle->notify, watch, IN_MODIFY)))
-                  {
-                    s->flags |= SUB_SUBLET_INOTIFY;
-                    s->path   = strdup(watch);
-                    XSaveContext(subtle->dpy, subtle->windows.sublets, s->interval, (void *)s);
+                subSharedLogDebug("Inotify: Adding watch on %s\n", watch); 
 
-                    return Qtrue;
-                  }
-
-                subSharedLogWarn("Failed watching file `%s': %s\n", watch, strerror(errno));
+                return Qtrue;
               }
+
+            subSharedLogWarn("Failed adding watch on file `%s': %s\n", 
+              watch, strerror(errno));
             break;
           default: subSharedLogWarn("Failed handling unknown value type\n");
         }
@@ -962,7 +964,7 @@ subRubyLoadConfig(const char *path)
   if(state) RubyPerror(True, True, "Failed loading config %s", path);
 } /* }}} */
 
- /** subRubyLoadSublets {{{
+ /** subRubyLoadSublet {{{
   * @brief Load sublets from path
   * @param[in]  path  Path of the sublets
   **/
@@ -1046,14 +1048,17 @@ subRubyLoadSublets(const char *path)
         }
       free(entries);
 
+      /* Preserve load order of sublets */
       if(0 < subtle->sublets->ndata)
         {
-          /* Preserve load order */
           for(i = 0; i < subtle->sublets->ndata; i++)
             {
-              if(i < subtle->sublets->ndata - 1) ///< Range check
-                SUBLET(subtle->sublets->data[i])->next = SUBLET(subtle->sublets->data[i + 1]);
-              subRubyCall(SUB_TYPE_SUBLET, SUBLET(subtle->sublets->data[i])->recv, NULL); ///< First run
+              SubSublet *s = SUBLET(subtle->sublets->data[i]);
+
+              if(i < subtle->sublets->ndata - 1)
+                s->next = SUBLET(subtle->sublets->data[i + 1]);
+
+              subRubyCall(SUB_TYPE_SUBLET, s->recv, NULL); ///< First run
             }
 
           subtle->sublet = SUBLET(subtle->sublets->data[0]);

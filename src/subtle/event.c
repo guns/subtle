@@ -930,7 +930,9 @@ subEventLoop(void)
                     {
                       subRubyCall(SUB_TYPE_SUBLET, s->recv, NULL);
                       subSubletUpdate();
+                      subTrayUpdate();
                       subSubletRender();
+                      subViewRender();
                     }
                 }
             } /* }}} */
@@ -938,33 +940,35 @@ subEventLoop(void)
         }
       else ///< Timeout waiting for data or error
         {
-          /* Update sublet data */
-          s = 0 < subtle->sublets->ndata ? SUBLET(subtle->sublets->data[0]) : NULL;
-          while(s && s->time <= now)
+          if(0 < subtle->sublets->ndata && ///< Skip inotify sublets
+            !(SUBLET(subtle->sublets->data[0])->flags & SUB_SUBLET_INOTIFY))
             {
-              if(!(s->flags & SUB_SUBLET_INOTIFY)) 
-                subRubyCall(SUB_TYPE_SUBLET, s->recv, NULL);
-
-              s->time  = now + s->interval; ///< Adjust seconds
-              s->time -= s->time % s->interval;
-
-              subArraySort(subtle->sublets, subSubletCompare);
-
               s = SUBLET(subtle->sublets->data[0]);
+              while(s && s->time <= now)
+                {
+                  subRubyCall(SUB_TYPE_SUBLET, s->recv, NULL);
+
+                  s->time  = now + s->interval; ///< Adjust seconds
+                  s->time -= s->time % s->interval;
+
+                  subArraySort(subtle->sublets, subSubletCompare);
+
+                  s = SUBLET(subtle->sublets->data[0]);
+                }
+
+              subSubletUpdate();
+              subTrayUpdate();
+              subSubletRender();
+              subViewRender();
+
+              XFlush(subtle->dpy);
             }
-
-          subSubletUpdate();
-          subTrayUpdate();
-          subSubletRender();
-          subViewRender();
-
-          XFlush(subtle->dpy);
+          else s = NULL;
         }
 
       /* Set timeout and assemble FD_SET */
-      tv.tv_sec  = s ? (s->time - now) : 60;
+      tv.tv_sec  = s ? abs(s->time - now) : 60;
       tv.tv_usec = 0;
-      if(0 > tv.tv_sec) tv.tv_sec = 0; ///< Sanitize
 
       FD_ZERO(&rfds);
       FD_SET(ConnectionNumber(subtle->dpy), &rfds);

@@ -116,7 +116,8 @@ subSubletCompare(const void *a,
 
   assert(a && b);
 
-  return s1->time < s2->time ? -1 : (s1->time == s2->time ? 0 : 1);
+  return s1->time < s2->time && !(s1->flags & SUB_SUBLET_INOTIFY) ? -1 : 
+    (s1->time == s2->time ? 0 : 1);
 } /* }}} */
 
  /** subSubletPublish {{{
