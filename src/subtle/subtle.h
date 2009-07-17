@@ -184,12 +184,18 @@
 #define SUB_DRAG_RESIZE               (1L << 13)                  ///< Drag resize
 
 /* Tag types */
-#define SUB_TAG_DEFAULT               (1L << 1)                    ///< Default tag
-#define SUB_TAG_FULL                  (1L << 10)                   ///< Fullscreen tag
-#define SUB_TAG_FLOAT                 (1L << 11)                   ///< Float tag
-#define SUB_TAG_STICK                 (1L << 12)                   ///< Stick tag
-#define SUB_TAG_GRAVITY               (1L << 13)                   ///< Gravity tag
-#define SUB_TAG_SCREEN                (1L << 14)                   ///< Screen tag
+#define SUB_TAG_DEFAULT               (1L << 1)                   ///< Default tag
+#define SUB_TAG_FULL                  (1L << 10)                  ///< Fullscreen tag
+#define SUB_TAG_FLOAT                 (1L << 11)                  ///< Float tag
+#define SUB_TAG_STICK                 (1L << 12)                  ///< Stick tag
+#define SUB_TAG_GRAVITY               (1L << 13)                  ///< Gravity tag
+#define SUB_TAG_SCREEN                (1L << 14)                  ///< Screen tag
+
+/* Gravity types */
+#define SUB_GRAVITY_MODE33            (1L << 5)                   ///< 33% mode flag
+#define SUB_GRAVITY_MODE66            (1L << 6)                   ///< 66% mode flag
+#define SUB_GRAVITY_MODES \
+  (SUB_GRAVITY_MODE33|SUB_GRAVITY_MODE66)                         ///< All modes
 /* }}} */
 
 /* Typedefs {{{ */
