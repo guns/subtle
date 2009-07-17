@@ -175,8 +175,6 @@ subDisplayConfigure(void)
 
   /* Map windows */
   XMapWindow(subtle->dpy, subtle->windows.views);
-  XMapWindow(subtle->dpy, subtle->windows.tray);
-  XMapWindow(subtle->dpy, subtle->windows.sublets);  
   XMapRaised(subtle->dpy, subtle->windows.bar);
 
   subScreenUpdate(); ///< Update strut
