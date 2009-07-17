@@ -41,14 +41,23 @@ subSubletUpdate(void)
 {
   if(0 < subtle->sublets->ndata)
     {
-      int i, width = 3;
+      int i, width = 3, x = SCREENW;
+
+      /* Get position of tray window */ 
+      if(0 < subtle->trays->ndata)
+        {
+          XWindowAttributes attrs;
+
+          XGetWindowAttributes(subtle->dpy, subtle->windows.tray, &attrs);
+
+          x = attrs.x;
+        }
 
       for(i = 0; i < subtle->sublets->ndata; i++) ///< Calculate window width
         width += SUBLET(subtle->sublets->data[i])->width;
 
       XMapRaised(subtle->dpy, subtle->windows.sublets);
-      XMoveResizeWindow(subtle->dpy, subtle->windows.sublets, DisplayWidth(subtle->dpy,
-        DefaultScreen(subtle->dpy)) - width, 0, width, subtle->th);
+      XMoveResizeWindow(subtle->dpy, subtle->windows.sublets, x - width, 0, width, subtle->th);
     }
   else XUnmapWindow(subtle->dpy, subtle->windows.sublets);
 } /* }}} */

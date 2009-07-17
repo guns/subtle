@@ -156,6 +156,7 @@ EventUnmap(XUnmapEvent *ev)
       subArrayRemove(subtle->trays, (void *)t);
       subTrayKill(t);
       subTrayUpdate();
+      subSubletUpdate();
     }    
 } /* }}} */
 
@@ -180,6 +181,7 @@ EventDestroy(XDestroyWindowEvent *ev)
       subArrayRemove(subtle->trays, (void *)t);
       subTrayKill(t);
       subTrayUpdate();
+      subSubletUpdate();
     }
 } /* }}} */
 
@@ -414,6 +416,8 @@ EventMessage(XClientMessageEvent *ev)
                       t = subTrayNew(ev->data.l[2]);
                       subArrayPush(subtle->trays, (void *)t);
                       subTrayUpdate();
+                      subSubletUpdate();
+                      subSubletRender();
                     } 
                   break;
                 case XEMBED_REQUEST_FOCUS:
@@ -713,8 +717,6 @@ EventGrab(XEvent *ev)
                   {
                     SubClient *iter = CLIENT(subtle->clients->data[i]);
 
-                    printf("name=%s\n", c->name);
-
                     if(c != iter && VISIBLE(subtle->cv, iter))
                       subSharedMatch(g->data.num, iter->win, c->gravity, 
                         iter->gravity, &match, &found);
@@ -952,7 +954,6 @@ subEventLoop(void)
                         {
                           subRubyCall(SUB_TYPE_SUBLET, s->recv, NULL);
                           subSubletUpdate();
-                          subTrayUpdate();
                           subSubletRender();
                           subViewRender();
                         }
@@ -982,7 +983,6 @@ subEventLoop(void)
 
               subViewRender();
               subSubletUpdate();
-              subTrayUpdate();
               subSubletRender();
 
               XFlush(subtle->dpy);
