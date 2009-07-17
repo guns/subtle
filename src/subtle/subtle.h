@@ -279,6 +279,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_TAG_KILL,                                       ///< Subtle tag kill
   SUB_EWMH_SUBTLE_VIEW_NEW,                                       ///< Subtle view new
   SUB_EWMH_SUBTLE_VIEW_KILL,                                      ///< Subtle view kill
+  SUB_EWMH_SUBTLE_SUBLET_NEW,                                     ///< Subtle sublet new
   SUB_EWMH_SUBTLE_SUBLET_UPDATE,                                  ///< Subtle sublet update
   SUB_EWMH_SUBTLE_SUBLET_LIST,                                    ///< Subtle sublet list
   SUB_EWMH_SUBTLE_SUBLET_KILL,                                    ///< Subtle sublet kill
@@ -366,6 +367,11 @@ typedef struct subsubtle_t /* {{{ */
 #ifdef HAVE_SYS_INOTIFY_H
   int                notify;                                      ///< Subtle inotify descriptor
 #endif /* HAVE_SYS_INOTIFY_H */
+
+  struct
+  {
+    char             *config, *sublets;                           ///< Sublet paths
+  } paths;
 
   struct
   {
@@ -499,11 +505,12 @@ void subGrabKill(SubGrab *g);                                     ///< Kill grab
 
 /* ruby.c {{{ */
 void subRubyInit(void);                                           ///< Init Ruby stack 
-void subRubyLoadConfig(const char *path);                         ///< Load config file
-void subRubyLoadSublet(const char *path);                         ///< Load sublet
-void subRubyLoadSublets(const char *path);                        ///< Load sublets
+void subRubyLoadConfig(void);                                     ///< Load config file
+void subRubyLoadSublet(const char *file);                         ///< Load sublet
+void subRubyLoadSublets(void);                                    ///< Load sublets
 void subRubyLoadSubtlext(void);                                   ///< Load subtlext
 int subRubyCall(int type, unsigned long recv, void *extra);       ///< Call Ruby script
+int subRubyRemove(char *name);                                    ///< Remove constant
 void subRubyFinish(void);                                         ///< Kill Ruby stack
 /* }}} */
 
