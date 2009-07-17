@@ -12,7 +12,8 @@ OPTIONS = {
   :border  => 2,               # Border size of the windows
   :step    => 5,               # Window move/resize key step
   :gravity => 5,               # Default gravity (0 = copy gravity of focus window)
-  :bottom  => false,           # Bar at bottom?
+  :swap    => false,           # Bar at bottom?
+  :panel   => false,           # Show sublets in an own panel?
   :stipple => true,            # Draw stipple on bar  
   :padding => [ 0, 0, 0, 0 ]   # Screen padding (left, right, top, bottom)
 }
