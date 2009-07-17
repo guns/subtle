@@ -359,6 +359,17 @@ EventMessage(XClientMessageEvent *ev)
                 if(subtle->cv == v) subViewJump(VIEW(subtle->views->data[0])); 
               }
             break; /* }}} */
+          case SUB_EWMH_SUBTLE_SUBLET_NEW: /* {{{ */
+            if(ev->data.b)
+              {
+                subRubyLoadSublet(ev->data.b);
+                subArraySort(subtle->sublets, subSubletCompare);
+                subSubletUpdate();
+                subSubletPublish();
+                subTrayUpdate();
+                subSubletRender(); 
+              }
+            break; /* }}} */            
           case SUB_EWMH_SUBTLE_SUBLET_UPDATE: /* {{{ */
             if((s = EventFindSublet((int)ev->data.l[0])))
               {
@@ -371,6 +382,7 @@ EventMessage(XClientMessageEvent *ev)
             if((s = EventFindSublet((int)ev->data.l[0])))
               {
                 subArrayRemove(subtle->sublets, (void *)s);
+                subArraySort(subtle->sublets, subSubletCompare);
                 subSubletKill(s, True);
                 subSubletUpdate();
                 subSubletPublish();
@@ -862,7 +874,6 @@ subEventLoop(void)
   time_t now;
   fd_set rfds;
   struct timeval tv;
-  SubSublet *s = NULL;
 
 #ifdef HAVE_SYS_INOTIFY_H
   char buf[BUFLEN];
@@ -872,13 +883,7 @@ subEventLoop(void)
   tv.tv_usec = 0;
   nfds       = ConnectionNumber(subtle->dpy) + 1;
 
-  /* Get first sublet */
-  if(0 < subtle->sublets->ndata)
-    {
-      if(!(SUBLET(subtle->sublets->data[0])->flags & SUB_SUBLET_INOTIFY))
-          s = SUBLET(subtle->sublets->data[0]);
-      else subSubletRender(); ///< Render first time
-    }
+  subSubletRender(); ///< Render first time
 
   FD_ZERO(&rfds);
   FD_SET(ConnectionNumber(subtle->dpy), &rfds);
@@ -893,7 +898,7 @@ subEventLoop(void)
   while(1)
     {
       now = subSharedTime();
-      if(select(nfds, &rfds, NULL, NULL, s ? &tv : NULL)) ///< Data ready on any connection
+      if(select(nfds, &rfds, NULL, NULL, &tv)) ///< Data ready on any connection
         {
           if(FD_ISSET(ConnectionNumber(subtle->dpy), &rfds)) ///< X connection {{{
             {
@@ -928,23 +933,28 @@ subEventLoop(void)
                 {
                   struct inotify_event *event = (struct inotify_event *)&buf[0];
 
-                  if(event && (s = SUBLET(subSharedFind(subtle->windows.sublets, event->wd))))
+                  if(event && IN_IGNORED != event->mask) ///< Skip unwatch events
                     {
-                      subRubyCall(SUB_TYPE_SUBLET, s->recv, NULL);
-                      subSubletUpdate();
-                      subTrayUpdate();
-                      subSubletRender();
-                      subViewRender();
+                      SubSublet *s = NULL;
+
+                      if((s = SUBLET(subSharedFind(subtle->windows.sublets, event->wd))))
+                        {
+                          subRubyCall(SUB_TYPE_SUBLET, s->recv, NULL);
+                          subSubletUpdate();
+                          subTrayUpdate();
+                          subSubletRender();
+                          subViewRender();
+                        }
                     }
                 }
             } /* }}} */
 #endif /* HAVE_SYS_INOTIFY_H */
         }
-      else ///< Timeout waiting for data or error
+      else ///< Timeout waiting for data or error {{{
         {
           if(0 < subtle->sublets->ndata)
             {
-              s = SUBLET(subtle->sublets->data[0]);
+              SubSublet *s = SUBLET(subtle->sublets->data[0]);
 
               if(!(s->flags & SUB_SUBLET_INOTIFY))
                 {
@@ -956,8 +966,6 @@ subEventLoop(void)
                       s->time -= s->time % s->interval;
 
                       subArraySort(subtle->sublets, subSubletCompare);
-
-                      s = SUBLET(subtle->sublets->data[0]);
                     }
                 }
 
@@ -968,11 +976,13 @@ subEventLoop(void)
 
               XFlush(subtle->dpy);
             }
-          else s = NULL;
-        }
+        } /* }}} */
 
-      /* Set timeout and assemble FD_SET */
-      tv.tv_sec  = s ? abs(s->time - now) : 60;
+      /* Set timeout */
+      if(0 < subtle->sublets->ndata && 
+        SUBLET(subtle->sublets->data[0])->flags & SUB_SUBLET_INOTIFY)
+        tv.tv_sec = abs(SUBLET(subtle->sublets->data[0])->time - now);
+      else tv.tv_sec = 60; 
       tv.tv_usec = 0;
 
       FD_ZERO(&rfds);
