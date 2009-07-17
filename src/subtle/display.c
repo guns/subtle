@@ -169,9 +169,12 @@ subDisplayConfigure(void)
   XClearWindow(subtle->dpy, subtle->windows.sublets);
   XClearWindow(subtle->dpy, ROOT);
 
-  /* Bar position */
+  /* Bar and panel */
+  if(subtle->panel)
+    XReparentWindow(subtle->dpy, subtle->windows.sublets, ROOT, 0, 0);
+
   XMoveResizeWindow(subtle->dpy, subtle->windows.bar, 0, 
-    subtle->bottom ? SCREENH - subtle->th : 0, SCREENW, subtle->th);
+    subtle->swap ? SCREENH - subtle->th : 0, SCREENW, subtle->th);
 
   /* Map windows */
   XMapWindow(subtle->dpy, subtle->windows.views);
@@ -223,6 +226,7 @@ subDisplayScan(void)
   subClientPublish();
   subScreenUpdate();
   subTrayUpdate();
+  subSubletUpdate();
 
   /* Activate first view */
   subViewJump(VIEW(subtle->views->data[0]));

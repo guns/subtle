@@ -41,23 +41,34 @@ subSubletUpdate(void)
 {
   if(0 < subtle->sublets->ndata)
     {
-      int i, width = 3, x = SCREENW;
+      SubScreen *s = NULL;
+      int i, width = 3, x = 0;
 
-      /* Get position of tray window */ 
-      if(0 < subtle->trays->ndata)
+      s = SCREEN(subtle->screens->data[0]);
+      x = s->geom.width;
+
+      if(!subtle->panel)
         {
-          XWindowAttributes attrs;
+          /* Get position of tray window */ 
+          if(0 < subtle->trays->ndata)
+            {
+              XWindowAttributes attrs;
 
-          XGetWindowAttributes(subtle->dpy, subtle->windows.tray, &attrs);
+              XGetWindowAttributes(subtle->dpy, subtle->windows.tray, &attrs);
 
-          x = attrs.x;
+              x = attrs.x;
+            }
+
+          for(i = 0; i < subtle->sublets->ndata; i++) ///< Calculate window width
+            width += SUBLET(subtle->sublets->data[i])->width;
+
+          XMoveResizeWindow(subtle->dpy, subtle->windows.sublets, 
+            x - width, 0, width, subtle->th);
         }
-
-      for(i = 0; i < subtle->sublets->ndata; i++) ///< Calculate window width
-        width += SUBLET(subtle->sublets->data[i])->width;
+      else XMoveResizeWindow(subtle->dpy, subtle->windows.sublets, 0, 
+        subtle->swap ? 0 : s->geom.height + subtle->th, s->geom.width, subtle->th);
 
       XMapRaised(subtle->dpy, subtle->windows.sublets);
-      XMoveResizeWindow(subtle->dpy, subtle->windows.sublets, x - width, 0, width, subtle->th);
     }
   else XUnmapWindow(subtle->dpy, subtle->windows.sublets);
 } /* }}} */

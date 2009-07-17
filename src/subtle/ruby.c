@@ -696,7 +696,8 @@ RubyWrapLoadConfig(VALUE data)
   subtle->bw      = RubyGetFixnum(config, "border",  2);
   subtle->step    = RubyGetFixnum(config, "step",    5);
   subtle->gravity = RubyGetFixnum(config, "gravity", 5);
-  subtle->bottom  = RubyGetBool(config, "bottom");
+  subtle->swap    = RubyGetBool(config, "swap");
+  subtle->panel   = RubyGetBool(config, "panel");
   subtle->stipple = RubyGetBool(config, "stipple");
   RubyGetRect(config, "padding", &subtle->strut);
 
