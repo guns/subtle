@@ -490,6 +490,22 @@ SubtlerClientKill(char *arg1,
   else subSharedLogWarn("Failed killing client\n");
 } /* }}} */
 
+/* SubtlerSubletNew {{{ */
+static void
+SubtlerSubletNew(char *arg1,
+  char *arg2)
+{
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  CHECK(arg1, "Usage: %sr -s -a PATH\n", PKG_NAME);
+  subSharedLogDebug("%s\n", __func__);
+
+  snprintf(data.b, sizeof(data.b), "%s", arg1);
+  
+  if(!subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_NEW", data, False))
+    subSharedLogWarn("Failed creating sublet\n");
+} /* }}} */
+
 /* SubtlerSubletList {{{ */
 static void
 SubtlerSubletList(char *arg1,
@@ -886,8 +902,9 @@ SubtlerUsage(int group)
   if(-1 == group || SUB_GROUP_SUBLET == group)
     {
       printf("\nOptions for sublets:\n" \
+             "  -a, --add=PATH          Create new sublet\n" \
              "  -l, --list              List all sublets\n" \
-             "  -u, --update            Update sublet\n" \
+             "  -u, --update            Updates value of sublet\n" \
              "  -k, --kill=PATTERN      Kill a sublet\n");
     }    
   if(-1 == group || SUB_GROUP_TAG == group)
@@ -1090,8 +1107,8 @@ main(int argc,
       SubtlerClientList, SubtlerClientTag, SubtlerClientUntag, SubtlerClientTags, NULL, 
       SubtlerClientGravity, SubtlerClientScreen, SubtlerClientRestackRaise, 
       SubtlerClientRestackLower },
-    { NULL, SubtlerSubletKill, NULL, NULL, NULL, NULL, NULL, NULL, SubtlerSubletList, 
-      NULL, NULL, NULL, SubtlerSubletUpdate, NULL, NULL, NULL, NULL },
+    { SubtlerSubletNew, SubtlerSubletKill, NULL, NULL, NULL, NULL, NULL, NULL, 
+      SubtlerSubletList, NULL, NULL, NULL, SubtlerSubletUpdate, NULL, NULL, NULL, NULL },
     { SubtlerTagNew, SubtlerTagKill, SubtlerTagFind, NULL, NULL, NULL, 
       NULL, NULL, SubtlerTagList, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL },
     { SubtlerViewNew, SubtlerViewKill, SubtlerViewFind, NULL, NULL, NULL, NULL,
