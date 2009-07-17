@@ -416,7 +416,10 @@ RubyConfigForeach(VALUE key,
                 /* Sanity */
                 if(1 <= gravity && 9 >= gravity) flags |= SUB_TAG_GRAVITY;
                 if(1 <= screen && screen <= subtle->screens->ndata)
-                  flags |= SUB_TAG_SCREEN;
+                  {
+                    screen -= 1;
+                    flags |= SUB_TAG_SCREEN;
+                  }
 
                 /* Set property flags */
                 if(True == RubyGetBool(value, "full"))  flags |= SUB_TAG_FULL;
