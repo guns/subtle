@@ -27,7 +27,7 @@ class Temp < Subtle::Sublet
 
       @temp = file.match(/temperature:\s+(\d+)/).captures
 
-      self.data = @temp.to_s + " C" + color(COLORS[:bg_focus]) + "//"
+      self.data = @temp.to_s + " C" + color("#CF6171") + " // "
     rescue => err # Sanitize to prevent unloading
       self.data = "subtle"
       p err

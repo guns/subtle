@@ -31,7 +31,7 @@ class Memory < Subtle::Sublet
       @used    = (@total - (@free + @buffers + @cached)) / 1024
       @total   = @total / 1024
 
-      self.data = @used.to_s + "/" + @total.to_s + color(COLORS[:bg_focus]) + "//"
+      self.data = @used.to_s + "/" + @total.to_s + color("#CF6171") + " // "
     rescue => err # Sanitize to prevent unloading
       self.data = "subtle"
       p err
