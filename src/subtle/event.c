@@ -713,10 +713,13 @@ EventGrab(XEvent *ev)
                   {
                     SubClient *iter = CLIENT(subtle->clients->data[i]);
 
+                    printf("name=%s\n", c->name);
+
                     if(c != iter && VISIBLE(subtle->cv, iter))
                       subSharedMatch(g->data.num, iter->win, c->gravity, 
                         iter->gravity, &match, &found);
                   }
+                  printf("match=%d\n", match);
 
                 if(found && (c = CLIENT(subSharedFind(found, CLIENTID))))
                   {
@@ -988,7 +991,7 @@ subEventLoop(void)
 
       /* Set timeout */
       if(0 < subtle->sublets->ndata && 
-        SUBLET(subtle->sublets->data[0])->flags & SUB_SUBLET_INOTIFY)
+        !(SUBLET(subtle->sublets->data[0])->flags & SUB_SUBLET_INOTIFY))
         tv.tv_sec = SUBLET(subtle->sublets->data[0])->time - now;
       else tv.tv_sec = 60; 
 
