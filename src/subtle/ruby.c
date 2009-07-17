@@ -673,7 +673,16 @@ RubyWrapLoadConfig(VALUE data)
 
   /* Check path */
   if(!subtle->paths.config)
-    snprintf(buf, sizeof(buf), "%s/%s/%s", getenv("XDG_CONFIG_HOME"), PKG_NAME, PKG_CONFIG);
+    {
+      FILE *fd = NULL;
+
+      snprintf(buf, sizeof(buf), "%s/%s/%s", getenv("XDG_CONFIG_HOME"), PKG_NAME, PKG_CONFIG);
+
+      /* Check if config file exists */
+      if(!(fd = fopen(buf, "r")))
+        snprintf(buf, sizeof(buf), "%s/%s", DIR_CONFIG, PKG_CONFIG);
+      else fclose(fd);
+    }
   else snprintf(buf, sizeof(buf), "%s", subtle->paths.config);
   subSharedLogDebug("config=%s\n", buf);
 
