@@ -116,9 +116,9 @@ void
 subArraySort(SubArray *a,
   int(*compar)(const void *a, const void *b))
 {
-  assert(a && a->ndata > 0 && compar);
+  assert(a && compar);
 
-  qsort(a->data, a->ndata, sizeof(void *), compar);
+  if(0 < a->ndata) qsort(a->data, a->ndata, sizeof(void *), compar);
 } /* }}} */
 
  /** subArrayClear {{{
