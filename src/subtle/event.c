@@ -796,7 +796,15 @@ EventFocus(XFocusChangeEvent *ev)
   SubClient *c = NULL;
   SubTray *t = NULL;
 
-  if(NotifyGrab == ev->mode || NotifyUngrab == ev->mode) return;
+  /* Check if we are interested in this event */
+  if((NotifyNormal != ev->mode || NotifyInferior == ev->detail) &&
+    !(NotifyWhileGrabbed == ev->mode && 
+    (NotifyNonlinear == ev->detail || NotifyAncestor == ev->detail)))
+    {
+      subSharedLogDebug("Focus ignore: type=%s, mode=%d, detail=%d, send_event=%d\n", 
+        FocusIn == ev->type ? "in" : "out", ev->mode, ev->detail, ev->send_event);
+      return;
+    }
 
   /* Handle other focus event */
   if(ROOT == ev->window)
