@@ -75,7 +75,7 @@ end
 
 # Main {{{
 begin
-  $subtle = Subtlext::Subtle.new(":2")
+  $subtle = Subtlext::Subtle.new
 
   @list_clients = Gtk::ListStore.new(String)
   @list_sublets = Gtk::ListStore.new(String)
