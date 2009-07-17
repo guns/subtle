@@ -683,7 +683,7 @@ SubtlerViewNew(char *arg1,
     subSharedLogWarn("Failed creating view\n");
 } /* }}} */
 
-/* SubtlerClientFind {{{ */
+/* SubtlerViewFind {{{ */
 static void
 SubtlerViewFind(char *arg1,
   char *arg2)
@@ -707,7 +707,7 @@ SubtlerViewFind(char *arg1,
       rv      = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display),
         XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);        
 
-      printf("%#lx %c %s\n", win, (*cv == *rv ? '*' : '-'), names[id]);
+      printf("%#lx %c %d %s\n", win, (*cv == *rv ? '*' : '-'), id + 1, names[id]);
 
       XFreeStringList(names);
       free(cv);
@@ -762,7 +762,7 @@ SubtlerViewList(char *arg1,
   if(nv && cv && names && views)
     {
       for(i = 0; *nv && i < *nv; i++)
-        printf("%#lx %c %s\n", views[i], (i == *cv ? '*' : '-'), names[i]);
+        printf("%#lx %c %d %s\n", views[i], (i == *cv ? '*' : '-'), i + 1, names[i]);
 
       XFreeStringList(names);
       free(nv);
@@ -934,9 +934,9 @@ SubtlerUsage(int group)
          "  If the PATTERN is '-' %sr will read from stdin.\n", PKG_NAME);
 
   printf("\nFormat:\n" \
-         "  Client listing: <window id> [-*] <view> <geometry> <gravity> <screen> <name> (<class>)\n" \
+         "  Client listing: <window id> [-*] <view id> <geometry> <gravity> <screen> <name> (<class>)\n" \
          "  Tag listing:    <name>\n" \
-         "  View listing:   <window id> [-*] <name>\n");
+         "  View listing:   <window id> [-*] <view id> <name>\n");
 
   printf("\nGravities:\n" \
          "  GravityBottomLeft  = %ld\n" \
