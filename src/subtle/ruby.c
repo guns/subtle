@@ -123,6 +123,7 @@ static VALUE
 RubySubletInterval(VALUE self)
 {
   SubSublet *s = NULL;
+
   Data_Get_Struct(self, SubSublet, s);
 
   return s ? INT2FIX(s->interval) : Qnil;
@@ -134,8 +135,8 @@ RubySubletIntervalSet(VALUE self,
   VALUE value)
 {
   SubSublet *s = NULL;
-  Data_Get_Struct(self, SubSublet, s);
 
+  Data_Get_Struct(self, SubSublet, s);
   if(s)
     {
       switch(rb_type(value))
@@ -154,6 +155,7 @@ static VALUE
 RubySubletPath(VALUE self)
 {
   SubSublet *s = NULL;
+
   Data_Get_Struct(self, SubSublet, s);
 
   return s ? rb_str_new2(s->path) : Qnil;
@@ -166,8 +168,8 @@ RubySubletPathSet(VALUE self,
 {
   SubSublet *s = NULL;
   char *watch = NULL;
-  Data_Get_Struct(self, SubSublet, s);
 
+  Data_Get_Struct(self, SubSublet, s);
   if(s)
     {
       switch(rb_type(value)) ///< Check value type
@@ -485,13 +487,16 @@ RubyParseText(char *string,
               if(t->flags & SUB_DATA_STRING && t->data.string) free(t->data.string);
             }
           else if((t = TEXT(subSharedMemoryAlloc(1, sizeof(SubText)))))
-            subArrayPush(ary, t);
+            {
+              i++;
+              subArrayPush(ary, t);
+            }
 
           t->flags        = SUB_TYPE_TEXT|SUB_DATA_STRING;
           t->data.string  = strdup(tok);
-          t->width        = XTextWidth(subtle->xfs, tok, strlen(tok)) + 6; ///< Font offset
+          t->width        = XTextWidth(subtle->xfs, tok, strlen(tok) - 1) + 6; ///< Font offset
           t->color        = color;
-          *width          += t->width;
+          *width         += t->width;
         }
 
       tok = strtok(NULL, SEPARATOR);
@@ -660,22 +665,13 @@ static VALUE
 RubyWrapLoadConfig(VALUE data)
 {
   int i, size = 0, state = 0;
-  char *path = NULL, *family = NULL, *style = NULL, buf[100];
+  char *family = NULL, *style = NULL, buf[100];
   VALUE config = Qnil, entry = Qnil;
-  FILE *fd = NULL;
 
   /* Check path */
-  if(!RTEST(data) || !(path = RSTRING_PTR(data)))
-    {
-      snprintf(buf, sizeof(buf), "%s/%s/%s",
-        getenv("XDG_CONFIG_HOME"), PKG_NAME, PKG_CONFIG);
-      if(!(fd = fopen(buf, "r")))
-        {
-          snprintf(buf, sizeof(buf), "%s/%s", DIR_CONFIG, PKG_CONFIG);
-        }
-      else fclose(fd);
-    }
-  else snprintf(buf, sizeof(buf), "%s", path);
+  if(!subtle->paths.config)
+    snprintf(buf, sizeof(buf), "%s/%s/%s", getenv("XDG_CONFIG_HOME"), PKG_NAME, PKG_CONFIG);
+  else snprintf(buf, sizeof(buf), "%s", subtle->paths.config);
   subSharedLogDebug("config=%s\n", buf);
 
   rb_load_protect(rb_str_new2(buf), 0, &state); ///< Load config
@@ -840,20 +836,20 @@ RubyWrapCall(VALUE data)
   signal(SIGALRM, RubySignal); ///< Limit execution time
   alarm(EXECTIME);
 
-  if((int)rargs[1] & SUB_TYPE_SUBLET) /* {{{ */
+  if((int)rargs[0] & SUB_TYPE_SUBLET) /* {{{ */
     {
-      ret = rb_funcall(rargs[0], rb_intern("run"), 0, NULL) ;
+      ret = rb_funcall(rargs[1], rb_intern("run"), 0, NULL) ;
     } /* }}} */
-  else if((int)rargs[1] & (SUB_TYPE_GRAB|SUB_TYPE_HOOK)) /* {{{ */
+  else if((int)rargs[0] & (SUB_TYPE_GRAB|SUB_TYPE_HOOK)) /* {{{ */
     {
       int id = 0, arity = 0;
 
       /* Check proc arity */
-      switch((arity = FIX2INT(rb_funcall(rargs[0], rb_intern("arity"), 0, NULL))))
+      switch((arity = FIX2INT(rb_funcall(rargs[1], rb_intern("arity"), 0, NULL))))
         {
           case 0:
           case -1: ///< No optional arguments 
-            ret = rb_funcall(rargs[0], rb_intern("call"), 0, NULL);
+            ret = rb_funcall(rargs[1], rb_intern("call"), 0, NULL);
             break;
           case 1: ///< One argument
             if(rargs[2])
@@ -894,7 +890,7 @@ RubyWrapCall(VALUE data)
                     rb_iv_set(inst, "@win", LONG2NUM(v->button));
                   }
 
-                ret = rb_funcall(rargs[0], rb_intern("call"), 1, inst);
+                ret = rb_funcall(rargs[1], rb_intern("call"), 1, inst);
                 break;
               } ///< Fall through
           default:
@@ -907,6 +903,15 @@ RubyWrapCall(VALUE data)
   alarm(0);
 
   return ret;
+} /* }}} */
+
+/* RubyWrapRemove {{{ */
+static VALUE
+RubyWrapRemove(VALUE name)
+{
+  VALUE object = rb_const_get(rb_mKernel, rb_intern("Object"));
+
+  return rb_funcall(object, rb_intern("send"), 2, rb_str_new2("remove_const"), name);
 } /* }}} */
 
  /** subRubyInit {{{
@@ -955,13 +960,13 @@ subRubyInit(void)
   **/
 
 void
-subRubyLoadConfig(const char *path)
+subRubyLoadConfig(void)
 {
   int state = 0;
 
-  rb_protect(RubyWrapLoadConfig, path ? rb_str_new2(path) : Qnil, &state);
+  rb_protect(RubyWrapLoadConfig, Qnil, &state);
 
-  if(state) RubyPerror(True, True, "Failed loading config %s", path);
+  if(state) RubyPerror(True, True, "Failed reading config");
 } /* }}} */
 
  /** subRubyLoadSublet {{{
@@ -970,22 +975,47 @@ subRubyLoadConfig(const char *path)
   **/
 
 void
-subRubyLoadSublet(const char *path)
+subRubyLoadSublet(const char *file)
 {
   int state = 0;
+  char path[100];
 
-  /* Load and instantiate sublet */
+  /* Check path */
+  if(!subtle->paths.sublets)
+    snprintf(path, sizeof(path), "%s/%s/sublets/%s", getenv("XDG_DATA_HOME"), PKG_NAME, file);
+  else snprintf(path, sizeof(path), "%s/%s", subtle->paths.sublets, file);
+  subSharedLogDebug("path=%s\n", path);
+
+  /* Load sublet */
   rb_load_protect(rb_str_new2(path), 0, &state); ///< Load sublet
 
   if(0 == state && Qnil != sublet)
     {
+      VALUE self = Qnil;
       char *name = (char *)rb_class2name((ID)sublet);
 
-      if(!rb_funcall(sublet, rb_intern("new"), 0, NULL))
+      /* Instantiate sublet */
+      if((self = rb_funcall(sublet, rb_intern("new"), 0, NULL)))
         {
-          subSharedLogWarn("Failed loading sublet `%s'\n", name);
+          SubSublet *s = NULL;
+          Data_Get_Struct(self, SubSublet, s);
+
+          /* Append sublet to linked list */
+          if(!subtle->sublet) subtle->sublet = s;
+          else
+            {
+              SubSublet *iter = subtle->sublet;
+
+              while(iter && iter->next) iter = iter->next;
+
+              iter->next = s;
+            }
+
+          subRubyCall(SUB_TYPE_SUBLET, s->recv, NULL); ///< First run
+
+          printf("Loaded sublet (%s)\n", name);
         }
-      else printf("Loaded sublet (%s)\n", name);
+      else subSharedLogWarn("Failed instantiating sublet `%s'\n", name);
 
       sublet = Qnil;
     }
@@ -994,14 +1024,12 @@ subRubyLoadSublet(const char *path)
 
  /** subRubyLoadSublets {{{
   * @brief Load sublets from path
-  * @param[in]  path  Path of the sublets
   **/
 
 void
-subRubyLoadSublets(const char *path)
+subRubyLoadSublets(void)
 {
   int i, num;
-  DIR *dir = NULL;
   char buf[100];
   struct dirent **entries = NULL;
 
@@ -1015,21 +1043,9 @@ subRubyLoadSublets(const char *path)
 #endif /* HAVE_SYS_INOTIFY_H */
 
   /* Check path */
-  if(!path)
-    {
-      snprintf(buf, sizeof(buf), "%s/%s/sublets", getenv("XDG_DATA_HOME"), PKG_NAME);
-      if(!(dir = opendir(buf))) 
-        {
-          subSharedLogWarn("No sublets found\n");
-
-          subSubletUpdate();
-          subSubletPublish();
-
-          return;
-        }
-      closedir(dir);
-    }
-  else snprintf(buf, sizeof(buf), "%s", path);
+  if(!subtle->paths.sublets)
+    snprintf(buf, sizeof(buf), "%s/%s/sublets", getenv("XDG_DATA_HOME"), PKG_NAME);
+  else snprintf(buf, sizeof(buf), "%s", subtle->paths.sublets);
   subSharedLogDebug("path=%s\n", buf);
 
   /* Scan directory */
@@ -1037,33 +1053,13 @@ subRubyLoadSublets(const char *path)
     {
       for(i = 0; i < num; i++)
         {
-          char file[150];
-
-          snprintf(file, sizeof(file), "%s/%s", buf, entries[i]->d_name);
-          subSharedLogDebug("path=%s\n", file);
-
-          subRubyLoadSublet(file);
+          subRubyLoadSublet(entries[i]->d_name);
 
           free(entries[i]);
         }
       free(entries);
 
-      /* Preserve load order of sublets */
-      if(0 < subtle->sublets->ndata)
-        {
-          for(i = 0; i < subtle->sublets->ndata; i++)
-            {
-              SubSublet *s = SUBLET(subtle->sublets->data[i]);
-
-              if(i < subtle->sublets->ndata - 1)
-                s->next = SUBLET(subtle->sublets->data[i + 1]);
-
-              subRubyCall(SUB_TYPE_SUBLET, s->recv, NULL); ///< First run
-            }
-
-          subtle->sublet = SUBLET(subtle->sublets->data[0]);
-          subArraySort(subtle->sublets, subSubletCompare); ///< Initially sort
-        }
+      subArraySort(subtle->sublets, subSubletCompare); ///< Initially sort
     }
   else subSharedLogWarn("No sublets found\n");
 
@@ -1104,8 +1100,8 @@ subRubyCall(int type,
   VALUE result = Qnil, rargs[3] = { 0 };
 
   /* Wrap up data */
-  rargs[0] = recv;
-  rargs[1] = (VALUE)type;
+  rargs[0] = (VALUE)type;
+  rargs[1] = recv;
   rargs[2] = (VALUE)extra;
 
   result = rb_protect(RubyWrapCall, (VALUE)&rargs, &state);
@@ -1120,6 +1116,21 @@ subRubyCall(int type,
     }
 
   return Qtrue == result ? 1 : (Qfalse == result ? 0 : -1);
+} /* }}} */
+
+ /** subRubyRemove {{{
+  * @brief Remove constant
+  * @param[in]  name  Name of constant
+  **/
+
+int
+subRubyRemove(char *name)
+{
+  int state = 0;
+
+  rb_protect(RubyWrapRemove, rb_str_new2(name), &state);
+ 
+  return state;
 } /* }}} */
 
  /** subRubyFinish {{{
