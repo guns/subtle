@@ -46,6 +46,7 @@ subSubletUpdate(void)
       for(i = 0; i < subtle->sublets->ndata; i++) ///< Calculate window width
         width += SUBLET(subtle->sublets->data[i])->width;
 
+      XMapRaised(subtle->dpy, subtle->windows.sublets);
       XMoveResizeWindow(subtle->dpy, subtle->windows.sublets, DisplayWidth(subtle->dpy,
         DefaultScreen(subtle->dpy)) - width, 0, width, subtle->th);
     }
@@ -168,23 +169,23 @@ subSubletKill(SubSublet *s,
       else
         {
           SubSublet *iter = subtle->sublet;
-          while(iter)
-            {
-              if(iter->next == s)
-                {
-                  iter->next = s->next;
-                  break;
-                }
-              iter = iter->next;
-            }
+
+          while(iter && iter->next != s) iter = iter->next;
+
+          iter->next = s->next;
         }
+
+      subRubyRemove(s->name); ///< Remove class definition
     }
 
 #ifdef HAVE_SYS_INOTIFY_H
   /* Tidy up inotify */
-  inotify_rm_watch(subtle->notify, s->interval);
+  if(s->flags & SUB_SUBLET_INOTIFY)
+    {
+      inotify_rm_watch(subtle->notify, s->interval);
 
-  if(s->path) free(s->path);
+      if(s->path) free(s->path);
+    }
 #endif /* HAVE_SYS_INOTIFY_H */ 
 
   if(s->name) free(s->name);
