@@ -19,7 +19,6 @@
 #include <execinfo.h>
 #endif /* HAVE_EXECINFO_H */
 
-static char *config = NULL;
 SubSubtle *subtle = NULL;
 
 /* SubtleUsage {{{ */
@@ -67,7 +66,7 @@ SubtleSignal(int signum)
         subArrayClear(subtle->tags,  True);
         subArrayClear(subtle->views, True);
 
-        subRubyLoadConfig(config);
+        subRubyLoadConfig();
         subDisplayConfigure();
 
         /* Update client tags */
@@ -131,7 +130,7 @@ main(int argc,
   char *argv[])
 {
   int c, check = 0;
-  char *sublets = NULL, *display = NULL;
+  char *display = NULL;
   struct sigaction act;
   const struct option long_options[] =
   {
@@ -151,18 +150,30 @@ main(int argc,
   int debug = 0;
 #endif /* DEBUG */
 
+  /* Signal handler */
+  act.sa_handler = SubtleSignal;
+  act.sa_flags   = 0;
+  memset(&act.sa_mask, 0, sizeof(sigset_t)); ///< Avoid uninitialized values
+  sigaction(SIGHUP,  &act, NULL);
+  sigaction(SIGTERM, &act, NULL);
+  sigaction(SIGINT,  &act, NULL);
+  sigaction(SIGSEGV, &act, NULL);
+  sigaction(SIGCHLD, &act, NULL);
+
+  subtle = SUBTLE(subSharedMemoryAlloc(1, sizeof(SubSubtle)));
+
   while(-1 != (c = getopt_long(argc, argv, "c:d:hks:vD", long_options, NULL)))
     {
       switch(c)
         {
-          case 'c': config  = optarg; break;
-          case 'd': display = optarg; break;
-          case 'h': SubtleUsage();    return 0;
-          case 'k': check = 1;        break;
-          case 's': sublets = optarg; break;
-          case 'v': SubtleVersion();  return 0;
+          case 'c': subtle->paths.config = optarg;  break;
+          case 'd': display = optarg;               break;
+          case 'h': SubtleUsage();                  return 0;
+          case 'k': check = 1;                      break;
+          case 's': subtle->paths.sublets = optarg; break;
+          case 'v': SubtleVersion();                return 0;
 #ifdef DEBUG          
-          case 'D': debug = 1;        break;
+          case 'D': debug = 1;                      break;
 #else /* DEBUG */
           case 'D':
             printf("Please recompile %s with `debug=yes'\n", PKG_NAME);
@@ -174,28 +185,20 @@ main(int argc,
         }
     }
 
-  act.sa_handler = SubtleSignal;
-  act.sa_flags   = 0;
-  memset(&act.sa_mask, 0, sizeof(sigset_t)); ///< Avoid uninitialized values
-  sigaction(SIGHUP,  &act, NULL);
-  sigaction(SIGTERM, &act, NULL);
-  sigaction(SIGINT,  &act, NULL);
-  sigaction(SIGSEGV, &act, NULL);
-  sigaction(SIGCHLD, &act, NULL);
-
   if(check) ///< Load and check config
     {
       subRubyInit();
-      subRubyLoadConfig(config);
+      subRubyLoadConfig();
       subRubyFinish();
 
       printf("Config OK\n");
+
+      free(subtle);
 
       return 0;
     }
 
   /* Alloc */
-  subtle = SUBTLE(subSharedMemoryAlloc(1, sizeof(SubSubtle)));
   subtle->clients = subArrayNew();
   subtle->grabs   = subArrayNew();
   subtle->screens = subArrayNew();
@@ -217,8 +220,8 @@ main(int argc,
   subTagInit();
 
   /* Load */
-  subRubyLoadConfig(config);
-  subRubyLoadSublets(sublets);
+  subRubyLoadConfig();
+  subRubyLoadSublets();
 
   /* Display */
   subDisplayConfigure();
