@@ -989,8 +989,10 @@ subEventLoop(void)
       /* Set timeout */
       if(0 < subtle->sublets->ndata && 
         SUBLET(subtle->sublets->data[0])->flags & SUB_SUBLET_INOTIFY)
-        tv.tv_sec = abs(SUBLET(subtle->sublets->data[0])->time - now);
+        tv.tv_sec = SUBLET(subtle->sublets->data[0])->time - now;
       else tv.tv_sec = 60; 
+
+      if(0 > tv.tv_sec) tv.tv_sec = 0; ///< Sanitize
       tv.tv_usec = 0;
 
       FD_ZERO(&rfds);
