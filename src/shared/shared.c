@@ -188,126 +188,51 @@ subSharedRegexKill(regex_t *preg)
   free(preg);
 } /* }}} */
 
-#define MATCH(win,gravity1,gravity2,score,match,found) \
-  if(gravity1 == gravity2 && score > *match) \
-    { \
-      *match = score; \
-      *found = win; \
-    } \
-
  /** subSharedMatch {{{
   * @brief Match a window based on neighbourship
   * @param[in]     type      Type of neighbourship
-  * @param[in]     win       Window
   * @param[in]     gravity1  Gravity 1
   * @param[in]     gravity2  Gravity 2
-  * @param[inout]  match     Match score
-  * @param[inout]  found     Found window
   **/
 
-void
+int
 subSharedMatch(int type,
-  Window win,
   int gravity1,
-  int gravity2,
-  int *match,
-  Window *found)
+  int gravity2)
 {
-  switch(type)
+  int score = 0;
+
+  switch(abs(gravity1 - gravity2))
     {
-      case SUB_WINDOW_UP: /* {{{ */
-        switch(gravity1)
-          {
-            case SUB_GRAVITY_BOTTOM:
-              MATCH(win, gravity2, SUB_GRAVITY_TOP, 100, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_TOP_LEFT, 75, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_TOP_RIGHT, 75, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_CENTER, 50, match, found);
-              break;            
-            case SUB_GRAVITY_BOTTOM_LEFT:
-              MATCH(win, gravity2, SUB_GRAVITY_TOP, 100, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_TOP_LEFT, 100, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_TOP_RIGHT, 75, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_CENTER, 50, match, found);
-              break;            
-            case SUB_GRAVITY_BOTTOM_RIGHT:
-              MATCH(win, gravity2, SUB_GRAVITY_TOP, 100, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_TOP_LEFT, 75, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_TOP_RIGHT, 100, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_CENTER, 50, match, found);
-              break;
-          }
-        break; /* }}} */
-      case SUB_WINDOW_LEFT: /* {{{ */
-        switch(gravity1)
-          {
-            case SUB_GRAVITY_TOP_RIGHT:
-              MATCH(win, gravity2, SUB_GRAVITY_LEFT, 100, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_TOP_LEFT, 75, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_LEFT, 50, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_CENTER, 25, match, found);
-              break;
-            case SUB_GRAVITY_BOTTOM_RIGHT:
-              MATCH(win, gravity2, SUB_GRAVITY_LEFT, 100, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_LEFT, 75, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_TOP_LEFT, 50, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_CENTER, 25, match, found);
-              break;
-            case SUB_GRAVITY_RIGHT:
-              MATCH(win, gravity2, SUB_GRAVITY_LEFT, 100, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_TOP_LEFT, 75, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_LEFT, 50, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_CENTER, 25, match, found);
-              break;                                    
-          }
-        break; /* }}} */
-      case SUB_WINDOW_RIGHT: /* {{{ */
-        switch(gravity1)
-          {
-            case SUB_GRAVITY_TOP_LEFT:
-              MATCH(win, gravity2, SUB_GRAVITY_RIGHT, 100, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_TOP_RIGHT, 75, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_RIGHT, 50, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_CENTER, 25, match, found);
-              break;
-            case SUB_GRAVITY_BOTTOM_LEFT:
-              MATCH(win, gravity2, SUB_GRAVITY_RIGHT, 100, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_RIGHT, 75, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_TOP_RIGHT, 50, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_CENTER, 25, match, found);
-              break;
-            case SUB_GRAVITY_LEFT:
-              MATCH(win, gravity2, SUB_GRAVITY_RIGHT, 100, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_TOP_RIGHT, 75, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_RIGHT, 50, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_CENTER, 25, match, found);
-              break;
-          }
-        break; /* }}} */
-      case SUB_WINDOW_DOWN: /* {{{ */
-        switch(gravity1)
-          {
-            case SUB_GRAVITY_TOP:
-              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM, 100, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_LEFT, 75, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_RIGHT, 75, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_CENTER, 50, match, found);
-              break;            
-            case SUB_GRAVITY_TOP_LEFT:
-              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM, 100, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_LEFT, 100, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_RIGHT, 75, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_CENTER, 50, match, found);
-              break;            
-            case SUB_GRAVITY_TOP_RIGHT:
-              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM, 100, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_LEFT, 75, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_BOTTOM_RIGHT, 100, match, found);
-              MATCH(win, gravity2, SUB_GRAVITY_CENTER, 50, match, found);
-              break;
-          }
-        break; /* }}} */                        
+      case 1:
+        if(SUB_WINDOW_LEFT == type || SUB_WINDOW_RIGHT == type) score = 100; 
+        break;
+      case 2:
+        if(SUB_WINDOW_LEFT == type || SUB_WINDOW_RIGHT == type) score = 75; 
+        break;
+      case 3: 
+        if(SUB_WINDOW_UP == type || SUB_WINDOW_DOWN == type)    score = 100; 
+        break;
+      case 4: 
+        if(SUB_WINDOW_UP == type || SUB_WINDOW_DOWN == type)    score = 50;
+        break;
+      case 5: 
+        if(SUB_WINDOW_UP == type || SUB_WINDOW_DOWN == type)    score = 50;
+        if(SUB_WINDOW_LEFT == type || SUB_WINDOW_RIGHT == type) score = 50; 
+        break;
+      case 6:
+        if(SUB_WINDOW_UP == type || SUB_WINDOW_DOWN == type)    score = 75;
+        break;
+      case 7:
+        if(SUB_WINDOW_UP == type || SUB_WINDOW_DOWN == type)    score = 50;
+        break;
+      case 8:
+        if(SUB_WINDOW_UP == type || SUB_WINDOW_DOWN == type)    score = 50;
+        break;
+      default: break;
     }
+
+  return score;
 } /* }}} */
 
  /** subSharedPropertyGet {{{

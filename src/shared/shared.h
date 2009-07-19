@@ -99,8 +99,7 @@ void subSharedRegexKill(regex_t *preg);                           ///< Kill rege
 /* }}} */
 
 /* Match {{{ */
-void subSharedMatch(int type, Window win, int gravity1,
-  int gravity2, int *match, Window *found);                       ///< Match window
+int subSharedMatch(int type, int gravity1, int gravity2);         ///< Match window
 /* }}} */
 
 /* Property {{{ */
