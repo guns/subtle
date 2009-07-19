@@ -718,13 +718,13 @@ EventGrab(XEvent *ev)
                     SubClient *iter = CLIENT(subtle->clients->data[i]);
 
                     if(c != iter && VISIBLE(subtle->cv, iter))
-                      if(match < (score = subSharedMatch(g->data.num, c->gravity, iter->gravity)))
+                      if(match < (score = subSharedMatch(g->data.num, 
+                        c->gravity & ~SUB_GRAVITY_MODES, iter->gravity & ~SUB_GRAVITY_MODES)))
                         {
                           match = score;
                           found = iter->win;
                         }
                   }
-                  printf("match=%d\n", match);
 
                 if(found && (c = CLIENT(subSharedFind(found, CLIENTID))))
                   {
