@@ -202,7 +202,7 @@ static VALUE
 SubtlextMatch(VALUE self,
   int type)
 {
-  int i, id = 0, size = 0, match = 0, *gravity1 = NULL;
+  int i, id = 0, size = 0, match = 0, score = 0, *gravity1 = NULL;
   Window *clients = NULL, *views = NULL, found = None;
   VALUE win = Qnil, client = Qnil;
   unsigned long *cv = NULL, *flags1 = NULL;
@@ -232,9 +232,12 @@ SubtlextMatch(VALUE self,
               int *gravity2 = (int *)subSharedPropertyGet(clients[i], XA_CARDINAL,
                 "SUBTLE_WINDOW_GRAVITY", NULL);
 
-              subSharedMatch(type, clients[i], *gravity1, *gravity2, &match, &found);
-
-              if(found == clients[i]) id = i;
+              if(match < (score = subSharedMatch(type, *gravity1, *gravity2)))
+                {
+                  match = score;
+                  found = clients[i];
+                  id    = i;
+                }
 
               free(gravity2);
             }

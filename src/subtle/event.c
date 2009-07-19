@@ -709,7 +709,7 @@ EventGrab(XEvent *ev)
           case SUB_GRAB_WINDOW_SELECT: /* {{{ */
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               {
-                int i, match = 0;
+                int i, match = 0, score = 0;
                 Window found = None;
 
                 /* Iterate once to find a client score-based */
@@ -718,8 +718,11 @@ EventGrab(XEvent *ev)
                     SubClient *iter = CLIENT(subtle->clients->data[i]);
 
                     if(c != iter && VISIBLE(subtle->cv, iter))
-                      subSharedMatch(g->data.num, iter->win, c->gravity, 
-                        iter->gravity, &match, &found);
+                      if(match < (score = subSharedMatch(g->data.num, c->gravity, iter->gravity)))
+                        {
+                          match = score;
+                          found = iter->win;
+                        }
                   }
                   printf("match=%d\n", match);
 

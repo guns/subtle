@@ -108,7 +108,7 @@ static char *
 SubtlerMatch(int type)
 {
   char *ret = NULL;
-  int i, size = 0, match = 0, *gravity1 = NULL;
+  int i, size = 0, match = 0, score = 0, *gravity1 = NULL;
   Window found = None, *clients = NULL, *views = NULL;
   unsigned long *cv = NULL, *flags1 = NULL, *focus = NULL;
 
@@ -139,7 +139,11 @@ SubtlerMatch(int type)
                   int *gravity2 = (int *)subSharedPropertyGet(clients[i], XA_CARDINAL, 
                     "SUBTLE_WINDOW_GRAVITY", NULL);
 
-                  subSharedMatch(type, clients[i], *gravity1, *gravity2, &match, &found);
+                  if(match < (score = subSharedMatch(type,  *gravity1, *gravity2)))
+                    {
+                      match = score;
+                      found = clients[i];
+                    }
 
                   free(gravity2);
                 }
