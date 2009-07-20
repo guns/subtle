@@ -98,6 +98,11 @@ GRABS = {
   "W-Right"  => :WindowRight,                 # Select window right
   "W-S-k"    => :WindowKill,                  # Kill window
 
+  "A-S-1"    => :WindowScreen1,               # Set screen 1
+  "A-S-2"    => :WindowScreen2,               # Set screen 2
+  "A-S-3"    => :WindowScreen3,               # Set screen 3
+  "A-S-4"    => :WindowScreen4,               # Set screen 4
+
   # Gravities grabs
   "W-KP_7"   => :GravityTopLeft,              # Set top left gravity
   "W-KP_8"   => :GravityTop,                  # Set top gravity
