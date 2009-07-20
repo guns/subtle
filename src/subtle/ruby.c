@@ -366,6 +366,14 @@ RubyConfigForeach(VALUE key,
                           data = DATA((unsigned long)(atol(name) - 1));
                         }
                     }
+                  else if(!strncmp(name, "WindowScreen", 12)) ///< Window screen
+                    {
+                      if((name = (char *)name + 12))
+                        {
+                          type = SUB_GRAB_WINDOW_SCREEN;
+                          data = DATA((unsigned long)(atol(name) - 1));
+                        }
+                    }
                 } 
               break;
             case T_DATA: ///< Proc   

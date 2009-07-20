@@ -309,7 +309,10 @@ EventMessage(XClientMessageEvent *ev)
                     subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_SCREEN, (long *)&c->screen, 1);
 
                     if(VISIBLE(subtle->cv, c)) 
-                      subViewConfigure(subtle->cv);
+                      {
+                        subViewConfigure(subtle->cv);
+                        subClientWarp(c);
+                      }
                   }
               }
             break; /* }}} */            
@@ -753,18 +756,42 @@ EventGrab(XEvent *ev)
           case SUB_GRAB_WINDOW_GRAVITY: /* {{{ */
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               {
-                if(c->flags & SUB_STATE_FLOAT) subClientToggle(c, SUB_STATE_FLOAT);
-                if(c->flags & SUB_STATE_FULL)  subClientToggle(c, SUB_STATE_FULL);
+                if(1 <= g->data.num && 9 >= g->data.num) ///< Check values
+                  {
+                    if(c->flags & SUB_STATE_FLOAT) subClientToggle(c, SUB_STATE_FLOAT);
+                    if(c->flags & SUB_STATE_FULL)  subClientToggle(c, SUB_STATE_FULL);
 
-                subClientSetGravity(c, g->data.num);
+                    subClientSetGravity(c, g->data.num);
 
-                vid               = subArrayIndex(subtle->views, (void *)subtle->cv);
-                c->gravities[vid] = c->gravity;
+                    vid               = subArrayIndex(subtle->views, (void *)subtle->cv);
+                    c->gravities[vid] = c->gravity;
 
-                subClientWarp(c);
-                XRaiseWindow(subtle->dpy, c->win);
+                    subClientWarp(c);
+                    XRaiseWindow(subtle->dpy, c->win);
+                  }
               }
             break; /* }}} */
+          case SUB_GRAB_WINDOW_SCREEN: /* {{{ */
+            if((c = CLIENT(subSharedFind(win, CLIENTID))))
+              {
+                if(subtle->screens->ndata > g->data.num) ///< Check values
+                  {
+                    c->screen  = g->data.num;
+                    c->gravity = -1; ///< Force update
+
+                    subClientSetSize(c);
+
+                    /* EWMH: Screen */
+                    subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_SCREEN, (long *)&c->screen, 1);
+
+                    if(VISIBLE(subtle->cv, c)) 
+                      {
+                        subViewConfigure(subtle->cv);
+                        subClientWarp(c);
+                      }
+                  }
+              }
+            break; /* }}} */            
           case SUB_GRAB_WINDOW_KILL: /* {{{ */
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               { 
