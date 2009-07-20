@@ -94,7 +94,11 @@ subTrayUpdate(void)
 {
   if(0 < subtle->trays->ndata)
     {
-      int i, width = 3, x = SCREENW;
+      SubScreen *s = NULL;
+      int i, width = 3, x = 0;
+
+      s = SCREEN(subtle->screens->data[0]);
+      x = s->base.width;
 
       /* Resize every tray client */
       for(i = 0; i < subtle->trays->ndata; i++)

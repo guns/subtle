@@ -141,9 +141,12 @@ subDisplayInit(const char *display)
 void
 subDisplayConfigure(void)
 {
+  SubScreen *s = NULL;
   XGCValues gvals;
 
   assert(subtle);
+
+  s = SCREEN(subtle->screens->data[0]);
 
   /* Update GCs */
   gvals.foreground = subtle->colors.fg_bar;
@@ -174,7 +177,7 @@ subDisplayConfigure(void)
     XReparentWindow(subtle->dpy, subtle->windows.sublets, ROOT, 0, 0);
 
   XMoveResizeWindow(subtle->dpy, subtle->windows.bar, 0, 
-    subtle->swap ? SCREENH - subtle->th : 0, SCREENW, subtle->th);
+    subtle->swap ? s->base.height - subtle->th : 0, s->base.width, subtle->th);
 
   /* Map windows */
   XMapWindow(subtle->dpy, subtle->windows.views);

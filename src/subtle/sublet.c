@@ -45,7 +45,7 @@ subSubletUpdate(void)
       int i, width = 3, x = 0;
 
       s = SCREEN(subtle->screens->data[0]);
-      x = s->geom.width;
+      x = s->base.width;
 
       if(!subtle->panel)
         {
