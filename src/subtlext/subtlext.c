@@ -370,7 +370,7 @@ SubtlextClientTagList(VALUE self)
   int i, size = 0;
   char **tags = NULL;
   unsigned long *flags = NULL;
-  VALUE win = Qnil, array = Qnil, method = Qnil, klass = Qnil;
+  VALUE array = Qnil, method = Qnil, klass = Qnil;
 
   if((win = NUM2LONG(rb_iv_get(self, "@win"))))
     {
