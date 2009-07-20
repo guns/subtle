@@ -174,7 +174,10 @@ SubtlerCurrentClient(void)
   if((focus = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
     XA_WINDOW, "_NET_ACTIVE_WINDOW", NULL)))
     {
-      subSharedPropertyClass(*focus, NULL, &ret);
+      char buf[20];
+
+      snprintf(buf, sizeof(buf), "%#lx", *focus);
+      ret = strdup(buf);
 
       free(focus);
     }
@@ -1225,7 +1228,12 @@ main(int argc,
         break;
       case SUB_MOD_SELECT:
         if(None != (win = subSharedWindowSelect()))
-          subSharedPropertyClass(win, NULL, &arg1);
+          {
+            char buf[20];
+
+            snprintf(buf, sizeof(buf), "%#lx", win);
+            arg1 = strdup(buf);
+          }
         break;
       default:
         if(argc > optind)     arg1 = SubtlerParse(argv[optind]);

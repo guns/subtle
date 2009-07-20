@@ -610,7 +610,7 @@ subSharedClientFind(char *name,
   if((clients = subSharedClientList(&size)))
     {
       int i;
-      char *inst = NULL, *klass = NULL, buf[10];
+      char *inst = NULL, *klass = NULL, buf[20];
       regex_t *preg = subSharedRegexNew(name);
 
       for(i = 0; i < size; i++)
