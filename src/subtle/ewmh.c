@@ -30,6 +30,7 @@ typedef struct xembedinfo_t
 void
 subEwmhInit(void)
 {
+  Window *check = NULL;
   int len = 0;
   long data[4] = { 0, 0, 0, 0 }, pid = (long)getpid();
   char *selection = NULL, *names[] =
@@ -66,7 +67,7 @@ subEwmhInit(void)
     "SUBTLE_RELOAD", "SUBTLE_QUIT"
   };
 
-  /* EWMH: Tray selection */
+  /* Register atoms */
   len       = strlen(names[SUB_EWMH_NET_SYSTEM_TRAY_SELECTION]) + 5; ///< For high screen counts
   selection = (char *)subSharedMemoryAlloc(len, sizeof(char)); 
 
@@ -74,8 +75,17 @@ subEwmhInit(void)
   subSharedLogDebug("Selection: len=%d, name=%s\n", len, selection);
   names[SUB_EWMH_NET_SYSTEM_TRAY_SELECTION] = selection;
 
-  /* EWMH: Supported hints */
   XInternAtoms(subtle->dpy, names, SUB_EWMH_TOTAL, 0, atoms);
+
+  /* Check if another EWMH-compatible WM is running */
+  if((check = (Window *)subSharedPropertyGet(DefaultRootWindow(subtle->dpy), XA_WINDOW,
+    SUB_EWMH_NET_SUPPORTING_WM_CHECK, NULL)))
+    {
+      free(check);
+      subSharedLogError("Failed taking over display\n");
+    }
+
+  /* EWMH: Supported hints */
   XChangeProperty(subtle->dpy, ROOT, atoms[SUB_EWMH_NET_SUPPORTED], XA_ATOM, 32, 
     PropModeReplace, (unsigned char *)&atoms, SUB_EWMH_TOTAL);
 
@@ -88,13 +98,13 @@ subEwmhInit(void)
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_SHOWING_DESKTOP, (long *)&data, 1);
 
   /* EWMH: Workarea size */
-  data[2] = DisplayWidth(subtle->dpy, DefaultScreen(subtle->dpy)); 
-  data[3] = DisplayHeight(subtle->dpy, DefaultScreen(subtle->dpy));
+  data[2] = SCREENW; 
+  data[3] = SCREENH;
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_WORKAREA, (long *)&data, 4);
 
   /* EWMH: Desktop sizes */
-  data[0] = DisplayWidth(subtle->dpy, DefaultScreen(subtle->dpy));
-  data[1] = DisplayHeight(subtle->dpy, DefaultScreen(subtle->dpy));
+  data[0] = SCREENW;
+  data[1] = SCREENH;
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_DESKTOP_GEOMETRY, (long *)&data, 2);
 
   /* EWMH: Client list and client list stacking */
@@ -325,6 +335,36 @@ subEwmhMessage(Window dst,
   ev.data.l[4]    = data4;
 
   return XSendEvent(subtle->dpy, dst, False, NoEventMask, (XEvent *)&ev);
+} /* }}} */
+
+ /** subEwmhFinish {{{
+  * @brief Delete set ICCCM/EWMH atoms
+  **/
+
+void
+subEwmhFinish(void)
+{
+  if(subtle->xfs) ///< Delete properties only on real shutdown
+    {
+      /* EWMH properties */
+      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_SUPPORTED);
+      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_SUPPORTING_WM_CHECK);
+      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW);
+      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP);
+      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_DESKTOP_NAMES);
+      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_NUMBER_OF_DESKTOPS);
+      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_DESKTOP_VIEWPORT);
+      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_SHOWING_DESKTOP);
+      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_DESKTOP_GEOMETRY);
+      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_VIRTUAL_ROOTS);
+      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_WORKAREA);
+      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_CLIENT_LIST);
+      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_CLIENT_LIST_STACKING);
+
+      /* subtle extension */
+      subSharedPropertyDelete(ROOT, SUB_EWMH_SUBTLE_TAG_LIST);
+      subSharedPropertyDelete(ROOT, SUB_EWMH_SUBTLE_SUBLET_LIST);
+    }
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

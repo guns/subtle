@@ -97,6 +97,7 @@ SubtleSignal(int signum)
             subArrayKill(subtle->trays,   True);
             subArrayKill(subtle->views,   True);
 
+            subEwmhFinish();
             subDisplayFinish();
           }
 

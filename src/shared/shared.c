@@ -72,10 +72,6 @@ subSharedLogXError(Display *disp,
 #ifdef DEBUG
 #ifdef WM
   if(subtle->debug) return 0;
-  if(BadAccess == ev->error_code && DefaultRootWindow(disp) == ev->resourceid)
-    {
-      subSharedLogError("Failed taking over display. Another WM running - exiting.\n");
-    }
 #else /* WM */
   if(debug) return 0;
 #endif /* WM */
@@ -377,6 +373,29 @@ subSharedPropertyClass(Window win,
 
       XFreeStringList(klasses);
     }  
+} /* }}} */
+
+ /** subSharedPropertyDelete {{{
+  * @brief Get window property
+  * @param[in]  win   Client window
+  * @param[in]  name  Property name
+  * @param[in]  e     A #SubEwmh
+  * return Deletes the property
+  **/
+
+void 
+subSharedPropertyDelete(Window win, 
+#ifdef WM
+  SubEwmh e)
+#else /* WM */
+  char *name)
+#endif /* WM */
+{
+#ifdef WM
+  XDeleteProperty(subtle->dpy, win, subEwmhGet(e));
+#else /* WM */
+  XDeleteProperty(display, win, XInternAtom(display, name, False));
+#endif /* WM */
 } /* }}} */
 
 #ifdef WM

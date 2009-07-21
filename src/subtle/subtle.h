@@ -495,6 +495,7 @@ void subEwmhSetWMState(Window win, long state);                   ///< Set windo
 int subEwmhMessage(Window dst, Window win, SubEwmh e,
   long data0, long data1, long data2, long data3,
   long data4);                                                    ///< Send message
+void subEwmhFinish(void);                                         ///< Unset EWMH properties
 /* }}} */
 
 /* grab.c {{{ */

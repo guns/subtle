@@ -108,11 +108,13 @@ char *subSharedPropertyGet(Window win, Atom type,
   SubEwmh e, unsigned long *size);                                ///< Get window property
 char **subSharedPropertyStrings(Window win,
   SubEwmh e, int *size);                                          ///< Get window property list
+void subSharedPropertyDelete(Window win, SubEwmh e);              ///< Delete window property
 #else
 char *subSharedPropertyGet(Window win, Atom type,
   char *name, unsigned long *size);                               ///< Get window property
 char **subSharedPropertyStrings(Window win,
   char *name, int *size);                                         ///< Get window property list
+void subSharedPropertyDelete(Window win, char *name);             ///< Delete window property
 #endif /* WM */
 
 void subSharedPropertyClass(Window win, char **inst,

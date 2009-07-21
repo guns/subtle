@@ -1129,11 +1129,12 @@ subRubyCall(int type,
 
   if(state) 
     {
+      alarm(0); ///< Reset alarm on error
+
       RubyPerror(True, False, "Failed calling %s",
         type & SUB_TYPE_SUBLET ? "sublet" : (type & SUB_TYPE_GRAB ? "grab" : "hook"));
-      result = Qnil;
 
-      alarm(0); ///< Reset alarm
+      result = Qnil;
     }
 
   return Qtrue == result ? 1 : (Qfalse == result ? 0 : -1);
