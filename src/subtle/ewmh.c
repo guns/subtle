@@ -81,6 +81,8 @@ subEwmhInit(void)
   if((check = (Window *)subSharedPropertyGet(DefaultRootWindow(subtle->dpy), XA_WINDOW,
     SUB_EWMH_NET_SUPPORTING_WM_CHECK, NULL)))
     {
+      subSharedLogDebug("check=%#lx\n", *check);
+
       free(check);
       subSharedLogError("Failed taking over display\n");
     }
