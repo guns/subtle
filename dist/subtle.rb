@@ -9,22 +9,25 @@
 # Options
 #
 OPTIONS = {
-  :border  => 2,               # Border size of the windows
-  :step    => 5,               # Window move/resize key step
-  :gravity => 5,               # Default gravity (0 = copy gravity of focus window)
-  :swap    => false,           # Bar at bottom?
-  :panel   => false,           # Show sublets in an own panel?
-  :stipple => true,            # Draw stipple on bar  
-  :padding => [ 0, 0, 0, 0 ]   # Screen padding (left, right, top, bottom)
+  :border  => 2,                                   # Border size of the windows
+  :step    => 5,                                   # Window move/resize key step
+  :snap    => 10,                                  # Window border snapping
+  :gravity => 5,                                   # Default gravity (0 = copy gravity of focus)
+  :padding => [ 0, 0, 0, 0 ]                       # Screen padding (left, right, top, bottom)
+  :font    => "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*"  # Font string
 }
 
 #
-# Font
+# Panel
 #
-FONT = { 
-  :family => "lucidatypewriter",   # Font family for the text
-  :style  => "medium",             # Font style (medium|bold|italic)
-  :size   => 11                    # Font size
+# Available panels: 
+# :views, :cation, :tray, :sublets
+# :spacer
+#
+PANEL = {
+  :top     => [ :views, :caption, :spacer, :tray, :sublets ],
+  :bottom  => [ ],
+  :stipple => true
 }
 
 #
@@ -33,10 +36,12 @@ FONT = {
 COLORS = { 
   :fg_bar        => "#e2e2e5",  # Foreground color of bar
   :fg_views      => "#CF6171",  # Foreground color of view button
+  :fg_sublets    => "#000000",  # foreground color of sublets
   :fg_focus      => "#000000",  # Foreground color of focus window title and view
 
   :bg_bar        => "#444444",  # Background color of bar
   :bg_views      => "#3d3d3d",  # Background color of view button
+  :bg_sublets    => "#CF6171",  # Background color of sublets
   :bg_focus      => "#CF6171",  # Background color of focus window title and view
 
   :border_focus  => "#CF6171",  # Border color of focus windows
