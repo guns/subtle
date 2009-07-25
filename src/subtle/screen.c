@@ -50,18 +50,24 @@ subScreenNew(int x,
 void
 subScreenUpdate(void)
 {
-  SubScreen *s = NULL;
-
   assert(subtle);
 
-  s = SCREEN(subtle->screens->data[0]); ///< Apply strut only on first screen
-
   /* x => left, y => right, width => top, height => bottom */
-  s->geom.x      = s->base.x + subtle->strut.x; ///< Only first screen
-  s->geom.width  = s->base.width - subtle->strut.x;
-  s->geom.y      = s->base.y + (subtle->swap && !subtle->panel ? 0 : subtle->th) + subtle->strut.width;
-  s->geom.height = s->base.height - (subtle->panel ? 2 * subtle->th : subtle->th) 
-    - subtle->strut.height - subtle->strut.width;    
+  subtle->screen->geom.x      = subtle->screen->base.x + subtle->strut.x;
+  subtle->screen->geom.y      = subtle->screen->base.y + subtle->strut.width;
+  subtle->screen->geom.width  = subtle->screen->base.width - subtle->strut.x;
+  subtle->screen->geom.height = subtle->screen->base.height - subtle->strut.height - 
+    subtle->strut.width;    
+
+  /* Add panel heights */
+  if(subtle->flags & SUB_SUBTLE_PANEL1)
+    {
+      subtle->screen->geom.y      += subtle->th;
+      subtle->screen->geom.height -= subtle->th;
+    }
+
+  if(subtle->flags & SUB_SUBTLE_PANEL2)
+    subtle->screen->geom.height -= subtle->th;
 } /* }}} */
 
  /** subScreenJump {{{
