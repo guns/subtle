@@ -13,7 +13,7 @@ OPTIONS = {
   :step    => 5,                                   # Window move/resize key step
   :snap    => 10,                                  # Window border snapping
   :gravity => 5,                                   # Default gravity (0 = copy gravity of focus)
-  :padding => [ 0, 0, 0, 0 ]                       # Screen padding (left, right, top, bottom)
+  :padding => [ 0, 0, 0, 0 ],                      # Screen padding (left, right, top, bottom)
   :font    => "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*"  # Font string
 }
 
@@ -53,8 +53,8 @@ COLORS = {
 #
 # Dmenu settings
 #
-@dmenu = "dmenu_run -fn '%s-%d' -nb '%s' -nf '%s' -sb '%s' -sf '%s' -p 'Select:'" % [
-  FONT[:family], FONT[:size],
+@dmenu = "dmenu_run -fn '%s' -nb '%s' -nf '%s' -sb '%s' -sf '%s' -p 'Select:'" % [
+  OPTIONS[:font],
   COLORS[:bg_bar], COLORS[:fg_bar], 
   COLORS[:bg_focus], COLORS[:fg_focus]
 ]
