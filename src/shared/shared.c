@@ -36,7 +36,8 @@ subSharedLog(int type,
 
 #ifdef DEBUG
 #ifdef WM
-  if((!subtle && !type) || (subtle && !subtle->debug && !type)) return;
+  if((!subtle && !type) || (subtle && 
+    !(subtle->flags & SUB_SUBTLE_DEBUG) && !type)) return;
 #else  /* WM */
   if(!debug && !type) return;
 #endif /* WM */
@@ -71,7 +72,7 @@ subSharedLogXError(Display *disp,
 {
 #ifdef DEBUG
 #ifdef WM
-  if(subtle->debug) return 0;
+  if(!(subtle->flags & SUB_SUBTLE_DEBUG)) return 0;
 #else /* WM */
   if(debug) return 0;
 #endif /* WM */
@@ -441,7 +442,7 @@ subSharedFocus(void)
   Window win;
   SubClient *c = NULL;
 
-  XUnmapWindow(subtle->dpy, subtle->windows.caption); 
+  XUnmapWindow(subtle->dpy, subtle->panels.caption.win); 
 
    /* Focus */
   XQueryPointer(subtle->dpy, ROOT, (Window *)&dummy, &win,
@@ -487,7 +488,7 @@ subSharedMessage(Window win,
   ev.xclient.data.l[3] = data.l[3];
   ev.xclient.data.l[4] = data.l[4];
 
-  if(!((status = XSendEvent(display, DefaultRootWindow(display), False, mask, &ev))))
+  if(!display || !((status = XSendEvent(display, DefaultRootWindow(display), False, mask, &ev))))
     subSharedLogWarn("Failed sending client message `%s'\n", type);
 
   if(True == sync) XSync(display, False);
@@ -816,7 +817,7 @@ subSharedSubtleRunning(void)
   int ret = False;
 
   /* Get supporting window */
-  if((check = subSharedWindowWMCheck()))
+  if(display && (check = subSharedWindowWMCheck()))
     {
       subSharedLogDebug("Support: win=%#lx\n", *check);
 

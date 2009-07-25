@@ -62,6 +62,8 @@ SubtleSignal(int signum)
   switch(signum)
     {
       case SIGHUP: ///< Reload config
+        subtle->flags = 0;
+
         subArrayClear(subtle->grabs, True);
         subArrayClear(subtle->tags,  True);
         subArrayClear(subtle->views, True);
@@ -147,10 +149,6 @@ main(int argc,
     { 0, 0, 0, 0}
   };
 
-#ifdef DEBUG
-  int debug = 0;
-#endif /* DEBUG */
-
   /* Signal handler */
   act.sa_handler = SubtleSignal;
   act.sa_flags   = 0;
@@ -167,14 +165,14 @@ main(int argc,
     {
       switch(c)
         {
-          case 'c': subtle->paths.config = optarg;  break;
-          case 'd': display = optarg;               break;
-          case 'h': SubtleUsage();                  return 0;
-          case 'k': check = 1;                      break;
-          case 's': subtle->paths.sublets = optarg; break;
-          case 'v': SubtleVersion();                return 0;
+          case 'c': subtle->paths.config = optarg;     break;
+          case 'd': display = optarg;                  break;
+          case 'h': SubtleUsage();                     return 0;
+          case 'k': check = 1;                         break;
+          case 's': subtle->paths.sublets = optarg;    break;
+          case 'v': SubtleVersion();                   return 0;
 #ifdef DEBUG          
-          case 'D': debug = 1;                      break;
+          case 'D': subtle->flags |= SUB_SUBTLE_DEBUG; break;
 #else /* DEBUG */
           case 'D':
             printf("Please recompile %s with `debug=yes'\n", PKG_NAME);
@@ -207,10 +205,6 @@ main(int argc,
   subtle->tags    = subArrayNew();
   subtle->trays   = subArrayNew();
   subtle->views   = subArrayNew();
-
-#ifdef DEBUG
-  subtle->debug = debug;
-#endif /* DEBUG */
 
   /* Init */
   SubtleVersion();
