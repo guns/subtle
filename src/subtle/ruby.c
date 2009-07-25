@@ -37,6 +37,12 @@ typedef struct rubyhooks_t
   VALUE         sym;
   unsigned long *hook;
 } RubyHooks;
+
+typedef struct rubypanels_t
+{
+  VALUE    sym;
+  SubPanel *panel;
+} RubyPanels;
 /* }}} */
 
 /* RubyPerror {{{ */
@@ -182,7 +188,7 @@ RubySubletPathSet(VALUE self,
             /* Create inotify watch */
             if(0 < (s->interval = inotify_add_watch(subtle->notify, watch, IN_MODIFY)))
               {
-                XSaveContext(subtle->dpy, subtle->windows.sublets, s->interval, (void *)s);
+                XSaveContext(subtle->dpy, subtle->panels.sublets.win, s->interval, (void *)s);
 
                 subSharedLogDebug("Inotify: Adding watch on %s\n", watch); 
 
@@ -479,7 +485,7 @@ RubyParseText(char *string,
 {
   int i = 0;
   SubText *t = NULL;
-  unsigned long color = subtle->colors.fg_bar;
+  unsigned long color = subtle->colors.fg_sublets;
   char *tok = strtok(string, SEPARATOR);
   *width = 0;
 
@@ -512,6 +518,70 @@ RubyParseText(char *string,
 
       tok = strtok(NULL, SEPARATOR);
     }
+} /* }}} */
+
+/* RubyParsePanel {{{ */
+int
+RubyParsePanel(VALUE hash,
+  char *key,
+  SubPanel **p)
+{
+  Window panel = subtle->windows.panel1;
+  int i, j, flags = 0, enabled = False;
+  VALUE entry = Qnil, value = RubyGetValue(hash, key, T_ARRAY, False); 
+  VALUE spacer = CHAR2SYM("spacer");
+ 
+  RubyPanels panels[] = {
+    { CHAR2SYM("views"),   &subtle->panels.views   },
+    { CHAR2SYM("caption"), &subtle->panels.caption },
+    { CHAR2SYM("sublets"), &subtle->panels.sublets },
+    { CHAR2SYM("tray"),    &subtle->panels.tray    }
+  };
+
+  if(!strncmp(key, "bottom", 6))
+    {
+      flags |= SUB_PANEL_BOTTOM;
+      panel  = subtle->windows.panel2;
+    }
+ 
+  /* Parse panels */
+  if(T_ARRAY == rb_type(value))
+    {
+      for(i = 0; Qnil != (entry = rb_ary_entry(value, i)); ++i)
+        {
+          if(entry == spacer)
+            {
+              flags |= SUB_PANEL_SPACER1;
+            }
+          else
+            for(j = 0; j < LENGTH(panels); j++)
+              {
+                if(entry == panels[j].sym)
+                  {
+                    if(!subtle->panel)
+                      {
+                        subtle->panel = panels[j].panel;
+                        *p            = panels[j].panel;
+                      }
+                    else (*p)->next  = panels[j].panel;
+
+                    /* Update panel */
+                    *p          = panels[j].panel;
+                    (*p)->flags = SUB_TYPE_PANEL|flags;
+
+                    XReparentWindow(subtle->dpy, (*p)->win, panel, 0, 0);
+
+                    flags   = 0;
+                    enabled = True; /// Enable this panel
+                  }
+              }
+        }
+    }
+
+  /* Add end spacer */
+  if(*p && flags & SUB_PANEL_SPACER1) (*p)->flags |= SUB_PANEL_SPACER2;
+
+  return enabled;
 } /* }}} */
 
 /* RubySubletData {{{ */
@@ -675,9 +745,10 @@ RubySignal(int signum)
 static VALUE
 RubyWrapLoadConfig(VALUE data)
 {
-  int i, size = 0, state = 0;
-  char *family = NULL, *style = NULL, buf[100];
+  int i, state = 0;
+  char *font = NULL, buf[100];
   VALUE config = Qnil, entry = Qnil;
+  SubPanel *p = NULL;
 
   /* Check path */
   if(!subtle->paths.config)
@@ -703,29 +774,10 @@ RubyWrapLoadConfig(VALUE data)
   config          = rb_const_get(rb_cObject, rb_intern("OPTIONS"));
   subtle->bw      = RubyGetFixnum(config, "border",  2);
   subtle->step    = RubyGetFixnum(config, "step",    5);
+  subtle->snap    = RubyGetFixnum(config, "snap",    10);
   subtle->gravity = RubyGetFixnum(config, "gravity", 5);
-  subtle->swap    = RubyGetBool(config, "swap");
-  subtle->panel   = RubyGetBool(config, "panel");
-  subtle->stipple = RubyGetBool(config, "stipple");
+  font            = RubyGetString(config, "font",    FONT);
   RubyGetRect(config, "padding", &subtle->strut);
-
-  /* Config: Font */
-  config = rb_const_get(rb_cObject, rb_intern("FONT"));
-  family = RubyGetString(config, "family", "fixed");
-  style  = RubyGetString(config, "style",  "medium");
-  size   = RubyGetFixnum(config, "size",    10);
-
-  /* Config: Colors */
-  config                   = rb_const_get(rb_cObject, rb_intern("COLORS"));
-  subtle->colors.fg_bar    = RubyParseColor(RubyGetString(config, "fg_bar",        "#e2e2e5"));
-  subtle->colors.fg_views  = RubyParseColor(RubyGetString(config, "fg_views",      "#CF6171"));
-  subtle->colors.fg_focus  = RubyParseColor(RubyGetString(config, "fg_focus",      "#000000"));
-  subtle->colors.bg_bar    = RubyParseColor(RubyGetString(config, "bg_bar",        "#444444"));
-  subtle->colors.bg_views  = RubyParseColor(RubyGetString(config, "bg_views",      "#3d3d3d"));
-  subtle->colors.bg_focus  = RubyParseColor(RubyGetString(config, "bg_focus",      "#CF6171"));
-  subtle->colors.bo_focus  = RubyParseColor(RubyGetString(config, "border_focus",  "#CF6171"));
-  subtle->colors.bo_normal = RubyParseColor(RubyGetString(config, "border_normal", "#CF6171"));
-  subtle->colors.bg        = RubyParseColor(RubyGetString(config, "background",    "#3d3d3d3"));
 
   /* Config: Font */
   if(subtle->xfs) ///< Free in case of reload
@@ -734,18 +786,36 @@ RubyWrapLoadConfig(VALUE data)
       subtle->xfs = NULL;
     }
 
-  snprintf(buf, sizeof(buf), "-*-%s-%s-*-*-*-%d-*-*-*-*-*-*-*", family, style, size);
-  if(!(subtle->xfs = XLoadQueryFont(subtle->dpy, buf)))
+  if(!(subtle->xfs = XLoadQueryFont(subtle->dpy, font)))
     {
-      subSharedLogWarn("Failed loading font `%s' - falling back to fixed\n", family);
-      subSharedLogDebug("Font: %s\n", buf);
+      subSharedLogWarn("Failed loading font `%s'\n", font);
 
-      subtle->xfs = XLoadQueryFont(subtle->dpy, "-*-fixed-medium-*-*-*-13-*-*-*-*-*-*-*");
-      if(!subtle->xfs) subSharedLogError("Failed loading font `fixed`\n");
+      subtle->xfs = XLoadQueryFont(subtle->dpy, FONT);
+      if(!subtle->xfs) subSharedLogError("Failed loading font `%s`\n", FONT);
     }
 
   subtle->fy = subtle->xfs->max_bounds.ascent + subtle->xfs->max_bounds.descent;
   subtle->th = subtle->fy + 2;
+
+  /* Config: Colors */
+  config                    = rb_const_get(rb_cObject, rb_intern("COLORS"));
+  subtle->colors.fg_panel   = RubyParseColor(RubyGetString(config, "fg_panel",      "#e2e2e5"));
+  subtle->colors.fg_views   = RubyParseColor(RubyGetString(config, "fg_views",      "#CF6171"));
+  subtle->colors.fg_sublets = RubyParseColor(RubyGetString(config, "fg_sublets",    "#CF6171"));
+  subtle->colors.fg_focus   = RubyParseColor(RubyGetString(config, "fg_focus",      "#000000"));
+  subtle->colors.bg_panel   = RubyParseColor(RubyGetString(config, "bg_panel",      "#444444"));
+  subtle->colors.bg_views   = RubyParseColor(RubyGetString(config, "bg_views",      "#3d3d3d"));
+  subtle->colors.bg_sublets = RubyParseColor(RubyGetString(config, "bg_sublets",    "#CF6171"));
+  subtle->colors.bg_focus   = RubyParseColor(RubyGetString(config, "bg_focus",      "#CF6171"));
+  subtle->colors.bo_focus   = RubyParseColor(RubyGetString(config, "border_focus",  "#CF6171"));
+  subtle->colors.bo_normal  = RubyParseColor(RubyGetString(config, "border_normal", "#CF6171"));
+  subtle->colors.bg         = RubyParseColor(RubyGetString(config, "background",    "#3d3d3d3"));
+
+  /* Config: Panels */
+  config = rb_const_get(rb_cObject, rb_intern("PANEL"));
+  if(RubyParsePanel(config, "top", &p))    subtle->flags |= SUB_SUBTLE_PANEL1;
+  if(RubyParsePanel(config, "bottom", &p)) subtle->flags |= SUB_SUBTLE_PANEL2;
+  if(RubyGetBool(config, "stipple"))       subtle->flags |= SUB_SUBTLE_STIPPLE;
 
   /* Config: Grabs */
   config = rb_const_get(rb_cObject, rb_intern("GRABS"));
