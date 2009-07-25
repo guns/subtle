@@ -87,15 +87,17 @@ subEwmhInit(void)
       subSharedLogError("Failed taking over display\n");
     }
 
+  subtle->flags |= SUB_SUBTLE_EWMH; ///< Set EWMH flag
+
   /* EWMH: Supported hints */
   XChangeProperty(subtle->dpy, ROOT, atoms[SUB_EWMH_NET_SUPPORTED], XA_ATOM, 32, 
     PropModeReplace, (unsigned char *)&atoms, SUB_EWMH_TOTAL);
 
   /* EWMH: Window manager information */
-  subEwmhSetWindows(ROOT, SUB_EWMH_NET_SUPPORTING_WM_CHECK, &subtle->windows.bar, 1);
-  subEwmhSetString(subtle->windows.bar, SUB_EWMH_NET_WM_NAME, PKG_NAME);
-  subEwmhSetString(subtle->windows.bar, SUB_EWMH_WM_CLASS, PKG_NAME);
-  subEwmhSetCardinals(subtle->windows.bar, SUB_EWMH_NET_WM_PID, &pid, 1);
+  subEwmhSetWindows(ROOT, SUB_EWMH_NET_SUPPORTING_WM_CHECK, &subtle->windows.panel1, 1);
+  subEwmhSetString(subtle->windows.panel1, SUB_EWMH_NET_WM_NAME, PKG_NAME);
+  subEwmhSetString(subtle->windows.panel1, SUB_EWMH_WM_CLASS, PKG_NAME);
+  subEwmhSetCardinals(subtle->windows.panel1, SUB_EWMH_NET_WM_PID, &pid, 1);
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_DESKTOP_VIEWPORT, (long *)&data, 2);
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_SHOWING_DESKTOP, (long *)&data, 1);
 
@@ -346,7 +348,7 @@ subEwmhMessage(Window dst,
 void
 subEwmhFinish(void)
 {
-  if(subtle->xfs) ///< Delete properties only on real shutdown
+  if(subtle->flags & SUB_SUBTLE_EWMH) ///< Delete properties only on real shutdown
     {
       /* EWMH properties */
       subSharedPropertyDelete(ROOT, SUB_EWMH_NET_SUPPORTED);
