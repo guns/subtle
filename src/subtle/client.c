@@ -32,21 +32,17 @@ ClientMask(SubClient *c)
 static void
 ClientSnap(SubClient *c)
 {
-  SubScreen *s = NULL;
-
   assert(c);
 
-  s = SCREEN(subtle->screens->data[c->screen]);
+  if(subtle->screen->base.x + subtle->snap > c->geom.x) 
+    c->geom.x = subtle->screen->base.x + subtle->bw;
+  else if(c->geom.x > (subtle->screen->base.x + subtle->screen->base.width - WINW(c) - subtle->snap)) 
+    c->geom.x = subtle->screen->base.x + subtle->screen->base.width - c->geom.width - subtle->bw;
 
-  if(s->base.x + SNAP > c->geom.x) 
-    c->geom.x = s->base.x + subtle->bw;
-  else if(c->geom.x > (s->base.x + s->base.width - WINW(c) - SNAP)) 
-    c->geom.x = s->base.x + s->base.width - c->geom.width - subtle->bw;
-
-  if(s->base.y + SNAP + (0 < s->base.y ? 0 : subtle->th) > c->geom.y)
-    c->geom.y = s->base.y + subtle->bw + (0 < s->base.y ? 0 : subtle->th);
-  else if(c->geom.y > (s->base.y + s->base.height - WINH(c) - SNAP)) 
-    c->geom.y = s->base.y + s->base.height - c->geom.height - subtle->bw;
+  if(subtle->screen->base.y + subtle->snap + (0 < subtle->screen->base.y ? 0 : subtle->th) > c->geom.y)
+    c->geom.y = subtle->screen->base.y + subtle->bw + (0 < subtle->screen->base.y ? 0 : subtle->th);
+  else if(c->geom.y > (subtle->screen->base.y + subtle->screen->base.height - WINH(c) - subtle->snap)) 
+    c->geom.y = subtle->screen->base.y + subtle->screen->base.height - c->geom.height - subtle->bw;
 } /* }}} */
 
  /** subClientNew {{{
@@ -80,7 +76,6 @@ subClientNew(Window win)
   XFetchName(subtle->dpy, c->win, &c->caption);
   subSharedPropertyClass(c->win, &c->name, &c->klass);
   if(!c->caption && c->name) c->caption = strdup(c->name); ///< Fallback for e.g. Skype
-  c->width = XTextWidth(subtle->xfs, c->caption, strlen(c->caption)) + 6; ///< Font offset
 
   /* X related properties */
   sattrs.border_pixel = subtle->colors.bo_normal;
@@ -255,11 +250,13 @@ subClientRender(SubClient *c)
   gvals.foreground = subtle->colors.fg_focus;
   XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
 
-  XResizeWindow(subtle->dpy, subtle->windows.caption, c->width + pos, subtle->th);
-  XClearWindow(subtle->dpy, subtle->windows.caption);
+  XResizeWindow(subtle->dpy, subtle->panels.caption.win, 
+    subtle->panels.caption.width + pos, subtle->th);
+  XClearWindow(subtle->dpy, subtle->panels.caption.win);
 
-  XDrawString(subtle->dpy, subtle->windows.caption, subtle->gcs.font, 3, subtle->fy - 1,
+  XDrawString(subtle->dpy, subtle->panels.caption.win, subtle->gcs.font, 3, subtle->fy - 1,
     buf, strlen(buf));
+
 } /* }}} */
 
  /** subClientFocus {{{
@@ -282,17 +279,16 @@ subClientFocus(SubClient *c)
       return;
     }
 
+  /* Update panel width */
+  subtle->panels.caption.width = XTextWidth(subtle->xfs, c->caption, strlen(c->caption)) + 6;
+
   /* Check client input focus type */
   if(!(c->flags & SUB_PREF_INPUT) && c->flags & SUB_PREF_FOCUS)
     {
       subEwmhMessage(c->win, c->win, SUB_EWMH_WM_PROTOCOLS, 
         subEwmhGet(SUB_EWMH_WM_TAKE_FOCUS), CurrentTime, 0, 0, 0);
     }   
-  else 
-    {
-      XMapWindow(subtle->dpy, subtle->windows.caption); ///< Map before event happens
-      XSetInputFocus(subtle->dpy, c->win, RevertToNone, CurrentTime);
-    }
+  else XSetInputFocus(subtle->dpy, c->win, RevertToNone, CurrentTime);
 
   subSharedLogDebug("Focus: win=%#lx, input=%d, focus=%d\n", c->win,
     !!(c->flags & SUB_PREF_INPUT), !!(c->flags & SUB_PREF_FOCUS));
@@ -777,7 +773,7 @@ subClientToggle(SubClient *c,
           c->gravity = -1; ///< Updating gravity
         }
 
-      if(type & SUB_STATE_STICK) subViewConfigure(subtle->cv);
+      if(type & SUB_STATE_STICK) subViewConfigure(subtle->view);
     }
   else ///< Set flags
     {
@@ -804,7 +800,7 @@ subClientToggle(SubClient *c,
 
   subClientConfigure(c);
 
-  if(VISIBLE(subtle->cv, c)) ///< Check visibility first
+  if(VISIBLE(subtle->view, c)) ///< Check visibility first
     {
       subClientFocus(c);
       subClientRender(c);

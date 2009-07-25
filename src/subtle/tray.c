@@ -41,12 +41,12 @@ subTrayNew(Window win)
   /* Update tray window */
   subEwmhSetWMState(t->win, WithdrawnState);
   XSelectInput(subtle->dpy, t->win, EVENTMASK);
-  XReparentWindow(subtle->dpy, t->win, subtle->windows.tray, 0, 0);
+  XReparentWindow(subtle->dpy, t->win, subtle->panels.tray.win, 0, 0);
   XAddToSaveSet(subtle->dpy, t->win);
   XSaveContext(subtle->dpy, t->win, TRAYID, (void *)t);
 
   subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime, XEMBED_EMBEDDED_NOTIFY,
-    0, subtle->windows.tray, 0); ///< Start embedding life cycle 
+    0, subtle->panels.tray.win, 0); ///< Start embedding life cycle 
 
   subSharedLogDebug("new=tray, name=%s, win=%#lx\n", t->name, win);
 
@@ -86,7 +86,7 @@ subTrayConfigure(SubTray *t)
 } /* }}} */
 
  /** subTrayUpdate {{{
-  * @brief Update tray bar
+  * @brief Update tray window
   **/
 
 void
@@ -94,25 +94,24 @@ subTrayUpdate(void)
 {
   if(0 < subtle->trays->ndata)
     {
-      SubScreen *s = NULL;
-      int i, width = 3, x = 0;
+      int i;
+      
+      subtle->panels.tray.width = 3;
 
-      s = SCREEN(subtle->screens->data[0]);
-      x = s->base.width;
-
-      /* Resize every tray client */
+      /* Resize every tray */
       for(i = 0; i < subtle->trays->ndata; i++)
         {
           SubTray *t = TRAY(subtle->trays->data[i]);
 
-          XMoveResizeWindow(subtle->dpy, t->win, width, 0, t->width, subtle->th);
-          width += t->width;
+          XMoveResizeWindow(subtle->dpy, t->win, subtle->panels.tray.width, 
+            0, t->width, subtle->th);
+          subtle->panels.tray.width += t->width;
         }
 
-      XMapRaised(subtle->dpy, subtle->windows.tray);
-      XMoveResizeWindow(subtle->dpy, subtle->windows.tray, x - width - 3, 0, width + 3, subtle->th);
+      XResizeWindow(subtle->dpy, subtle->panels.tray.win, 
+        subtle->panels.tray.width + 3, subtle->th);
     }
-  else XUnmapWindow(subtle->dpy, subtle->windows.tray); ///< Unmap when tray is empty
+  else XUnmapWindow(subtle->dpy, subtle->panels.tray.win); ///< Unmap when tray is empty
 } /* }}} */
 
  /** subTraySelect {{{
@@ -125,8 +124,8 @@ subTraySelect(void)
   Atom sel = subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION);
 
   /* Tray selection */
-  XSetSelectionOwner(subtle->dpy, sel, subtle->windows.tray, CurrentTime);
-  if(XGetSelectionOwner(subtle->dpy, sel) == subtle->windows.tray)
+  XSetSelectionOwner(subtle->dpy, sel, subtle->panels.tray.win, CurrentTime);
+  if(XGetSelectionOwner(subtle->dpy, sel) == subtle->panels.tray.win)
     {
       subSharedLogDebug("Selection: type=%ld\n", sel);
     }
@@ -134,7 +133,7 @@ subTraySelect(void)
 
   /* Send manager info */
   subEwmhMessage(ROOT, ROOT, SUB_EWMH_MANAGER, CurrentTime, 
-    subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION), subtle->windows.tray, 0, 0);
+    subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION), subtle->panels.tray.win, 0, 0);
 } /* }}} */
   
  /** subTrayFocus {{{

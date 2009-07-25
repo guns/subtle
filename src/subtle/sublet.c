@@ -41,36 +41,17 @@ subSubletUpdate(void)
 {
   if(0 < subtle->sublets->ndata)
     {
-      SubScreen *s = NULL;
-      int i, width = 3, x = 0;
+      int i;
+      
+      subtle->panels.sublets.width = 3;
 
-      s = SCREEN(subtle->screens->data[0]);
-      x = s->base.width;
+      for(i = 0; i < subtle->sublets->ndata; i++) ///< Calculate window width
+        subtle->panels.sublets.width += SUBLET(subtle->sublets->data[i])->width;
 
-      if(!subtle->panel)
-        {
-          /* Get position of tray window */ 
-          if(0 < subtle->trays->ndata)
-            {
-              XWindowAttributes attrs;
-
-              XGetWindowAttributes(subtle->dpy, subtle->windows.tray, &attrs);
-
-              x = attrs.x;
-            }
-
-          for(i = 0; i < subtle->sublets->ndata; i++) ///< Calculate window width
-            width += SUBLET(subtle->sublets->data[i])->width;
-
-          XMoveResizeWindow(subtle->dpy, subtle->windows.sublets, 
-            x - width, 0, width, subtle->th);
-        }
-      else XMoveResizeWindow(subtle->dpy, subtle->windows.sublets, 0, 
-        subtle->swap ? 0 : s->geom.height + subtle->th, s->geom.width, subtle->th);
-
-      XMapRaised(subtle->dpy, subtle->windows.sublets);
+      XResizeWindow(subtle->dpy, subtle->panels.sublets.win, 
+        subtle->panels.sublets.width + 3, subtle->th);
     }
-  else XUnmapWindow(subtle->dpy, subtle->windows.sublets);
+  else XUnmapWindow(subtle->dpy, subtle->panels.sublets.win);
 } /* }}} */
 
  /** subSubletRender {{{
@@ -87,10 +68,10 @@ subSubletRender(void)
       SubSublet *s = SUBLET(subtle->sublet);
       SubText *t = NULL;
 
-      XClearWindow(subtle->dpy, subtle->windows.sublets);
+      XClearWindow(subtle->dpy, subtle->panels.sublets.win);
 
       /* Init GC */
-      gvals.foreground = subtle->colors.fg_bar;
+      gvals.foreground = subtle->colors.fg_sublets;
       XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
 
       /* Render every sublet */
@@ -105,7 +86,7 @@ subSubletRender(void)
                   gvals.foreground = t->color;
                   XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
 
-                  XDrawString(subtle->dpy, subtle->windows.sublets, subtle->gcs.font, width,
+                  XDrawString(subtle->dpy, subtle->panels.sublets.win, subtle->gcs.font, width,
                     subtle->fy - 1, t->data.string, strlen(t->data.string));
 
                   width += t->width;

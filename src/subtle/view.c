@@ -33,7 +33,7 @@ subViewNew(char *name,
   v->width = XTextWidth(subtle->xfs, v->name, strlen(v->name)) + 6; ///< Font offset
 
   /* Create button */
-  v->button = XCreateSimpleWindow(subtle->dpy, subtle->windows.views, 0, 0, 1,
+  v->button = XCreateSimpleWindow(subtle->dpy, subtle->panels.views.win, 0, 0, 1,
     subtle->th, 0, 0, subtle->colors.bg_views);
 
   XSaveContext(subtle->dpy, v->button, BUTTONID, (void *)v);
@@ -122,21 +122,21 @@ subViewUpdate(void)
 {
   if(0 < subtle->views->ndata)
     {
-      int i, width = 0;
+      int i;
+      
+      subtle->panels.views.width = 0;
 
       for(i = 0; i < subtle->views->ndata; i++)
         {
           SubView *v = VIEW(subtle->views->data[i]);
 
-          XMoveResizeWindow(subtle->dpy, v->button, width, 0, v->width, subtle->th);
-          width += v->width;
+          XMoveResizeWindow(subtle->dpy, v->button, subtle->panels.views.width, 
+            0, v->width, subtle->th);
+          subtle->panels.views.width += v->width;
         }
 
-      if(0 < width) 
-        {
-          XResizeWindow(subtle->dpy, subtle->windows.views, width, subtle->th);
-          XMoveWindow(subtle->dpy, subtle->windows.caption, width, 0); 
-        }
+      XResizeWindow(subtle->dpy, subtle->panels.views.win, 
+        subtle->panels.views.width, subtle->th);
     }
 } /* }}} */
 
@@ -153,19 +153,13 @@ subViewRender(void)
       int i;
       XGCValues gvals;
 
-      /* Bar window */
-      XClearWindow(subtle->dpy, subtle->windows.bar);
-      if(subtle->stipple) ///< Draw stipple
-        XFillRectangle(subtle->dpy, subtle->windows.bar, subtle->gcs.stipple, 0, 2,
-          SCREENW, subtle->th - 4);  
-
       /* View buttons */
       for(i = 0; i < subtle->views->ndata; i++)
         {
           SubView *v = VIEW(subtle->views->data[i]);
 
           /* Select color pair */
-          if(subtle->cv == v)
+          if(subtle->view == v)
             {
               gvals.foreground = subtle->colors.fg_focus;
               gvals.background = subtle->colors.bg_focus;
@@ -206,7 +200,7 @@ subViewJump(SubView *v)
       return;
     }
 
-  subtle->cv = v;
+  subtle->view = v;
 
   subViewConfigure(v);
 
