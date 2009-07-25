@@ -34,12 +34,12 @@ PANEL = {
 # Colors
 # 
 COLORS = { 
-  :fg_bar        => "#e2e2e5",  # Foreground color of bar
+  :fg_panel        => "#e2e2e5",  # Foreground color of bar
   :fg_views      => "#CF6171",  # Foreground color of view button
   :fg_sublets    => "#000000",  # foreground color of sublets
   :fg_focus      => "#000000",  # Foreground color of focus window title and view
 
-  :bg_bar        => "#444444",  # Background color of bar
+  :bg_panel        => "#444444",  # Background color of bar
   :bg_views      => "#3d3d3d",  # Background color of view button
   :bg_sublets    => "#CF6171",  # Background color of sublets
   :bg_focus      => "#CF6171",  # Background color of focus window title and view
@@ -55,7 +55,7 @@ COLORS = {
 #
 @dmenu = "dmenu_run -fn '%s' -nb '%s' -nf '%s' -sb '%s' -sf '%s' -p 'Select:'" % [
   OPTIONS[:font],
-  COLORS[:bg_bar], COLORS[:fg_bar], 
+  COLORS[:bg_panel], COLORS[:fg_panel], 
   COLORS[:bg_focus], COLORS[:fg_focus]
 ]
 
