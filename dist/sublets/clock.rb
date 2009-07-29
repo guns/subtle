@@ -15,6 +15,6 @@ class Clock < Subtle::Sublet
   end
 
   def run
-    self.data = Time.now().strftime("%H:%M") + color("#CF6171") + " // "
+    self.data = Time.now().strftime("%H:%M") + "  |  "
   end
 end

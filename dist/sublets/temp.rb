@@ -10,10 +10,11 @@
 #
 
 class Temp < Subtle::Sublet
-  @temp = ""
+  attr_accessor :temp
 
   def initialize
     self.interval = 60
+    @temp         = ""
   end
 
   def run
@@ -27,7 +28,7 @@ class Temp < Subtle::Sublet
 
       @temp = file.match(/temperature:\s+(\d+)/).captures
 
-      self.data = @temp.to_s + " C" + color("#CF6171") + " // "
+      self.data = @temp.to_s + "C  |  "
     rescue => err # Sanitize to prevent unloading
       self.data = "subtle"
       p err

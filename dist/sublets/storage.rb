@@ -10,11 +10,12 @@
 #
 
 class Storage < Subtle::Sublet
-  @left  = 0
-  @total = 0
+  attr_accessor :left, :total
 
   def initialize
     self.interval = 120
+    @left         = 0
+    @total        = 0
   end
 
   def run

@@ -10,15 +10,15 @@
 #
 
 class Battery < Subtle::Sublet
-  @path      = 0
-  @capacity  = 0
-  @remaining = 0
-  @rate      = 0
-  @state     = ""
+  attr_accessor :path, :capacity, :remaining, :rate, :state
 
   def initialize
     self.interval = 60
     @path         = Dir["/proc/acpi/battery/*"][0] #< Get battery slot
+    @capacity     = 0
+    @remaining    = 0
+    @rate         = 0
+    @state        = ""
 
     begin
       file = ""
@@ -59,7 +59,7 @@ class Battery < Subtle::Sublet
           ac = "CHG"
       end
   
-      self.data = "%d%%/%s%s // " % [ (@remaining * 100 / @capacity).floor, ac, color("#CF6171") ]
+      self.data = "%d%%/%s  |  " % [ (@remaining * 100 / @capacity).floor, ac ]
     rescue => err # Sanitize to prevent unloading
       self.data = "subtle"
       p err

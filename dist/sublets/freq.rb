@@ -10,10 +10,11 @@
 #
 
 class Freq < Subtle::Sublet
-  @freq  = 0
+  attr_accessor :freq
 
   def initialize
     self.interval = 120
+    @freq         = 0
   end
 
   def run
@@ -27,7 +28,7 @@ class Freq < Subtle::Sublet
 
       @freq = file.match(/cpu MHz\s+:\s+([0-9.]+)/).captures.first.to_i.floor.to_s
 
-      self.data = @freq + " Mhz" + color("#CF6171") + " // "
+      self.data = @freq + " Mhz  |  "
     rescue => err # Sanitize to prevent unloading
       self.data = "subtle"
       p err
