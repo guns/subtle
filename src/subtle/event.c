@@ -559,12 +559,12 @@ EventProperty(XPropertyEvent *ev)
               {
                 if(c->caption) free(c->caption);
                 c->caption = caption;
-                c->width   = XTextWidth(subtle->xfs, c->caption, strlen(c->caption)) + 6; ///< Font offset
 
                 if(subtle->windows.focus == c->win) 
                   {
-                    subClientRender(c);
-                    subViewRender();
+                    subClientSetCaption(c);
+                    subPanelUpdate();
+                    subPanelRender();
                   }
               }
           }
