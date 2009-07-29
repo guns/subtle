@@ -73,17 +73,12 @@ SubtleSignal(int signum)
 
         /* Update client tags */
         for(i = 0; i < subtle->clients->ndata; i++)
-          {
-            SubClient *c = CLIENT(subtle->clients->data[i]);
-
-            c->tags = SUB_TAG_DEFAULT; ///< Reset default tag
-
-            subClientSetTags(c);
-          }
+          subClientSetTags(CLIENT(subtle->clients->data[i]));
 
         subScreenUpdate();
         subViewJump(subtle->views->data[0]);
-        subSubletRender();
+        subPanelUpdate();
+        subPanelRender();
 
         printf("Reloaded config\n");
         break;
@@ -212,7 +207,6 @@ main(int argc,
   subRubyInit();
   subEwmhInit();
   subGrabInit();
-  subTagInit();
 
   /* Load */
   subRubyLoadConfig();

@@ -829,13 +829,22 @@ RubyWrapLoadConfig(VALUE data)
 
   /* Config: Tags */
   config = rb_const_get(rb_cObject, rb_intern("TAGS"));
-  rb_hash_foreach(config, RubyConfigForeach, SUB_TYPE_TAG);
 
-  if(1 == subtle->tags->ndata) ///< Excluding default tag
+  /*Check default tag */
+  if(T_HASH != rb_type(config) || 
+    Qtrue != rb_funcall(config, rb_intern("has_key?"), 1, CHAR2SYM("default")))
     {
-      subSharedLogWarn("No tags found\n");
+      SubTag *t = subTagNew("default", NULL, 0, 0, 0);
+
+      subArrayPush(subtle->tags, (void *)t);
     }
-  else subTagPublish();
+
+  if(T_HASH == rb_type(config)) ///< Parse tags hash
+    rb_hash_foreach(config, RubyConfigForeach, SUB_TYPE_TAG);
+
+  subTagPublish();
+
+  if(1 == subtle->tags->ndata) subSharedLogWarn("No tags found\n");
 
   /* Config: Views */
   config = rb_const_get(rb_cObject, rb_intern("VIEWS"));
@@ -863,24 +872,20 @@ RubyWrapLoadConfig(VALUE data)
     }
   else ///< Check default tag
     {
-      int def = -1;
       SubView *v = NULL;
 
       /* Check for view with default tag */
-      for(i = 0; i < subtle->views->ndata; i++)
+      for(i = subtle->views->ndata; i > 0; i--)
         if((v = VIEW(subtle->views->data[i])) && v->tags & SUB_TAG_DEFAULT)
           {
-            def = i;
-            subSharedLogDebug("Default view: name=%s, id=%d\n", v->name, def);
+            subSharedLogDebug("Default view: name=%s\n", v->name);
             break;
           }
 
-      if(-1 == def) ///< Add default tag to first view
-        {
-          v = VIEW(subtle->views->data[0]);
-          v->tags |= SUB_TAG_DEFAULT;
-          subEwmhSetCardinals(v->button, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&v->tags, 1);
-        }
+      v->tags |= SUB_TAG_DEFAULT; ///< Set default tag
+
+      /* EWMH: Tags */
+      subEwmhSetCardinals(v->button, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&v->tags, 1);
     }
 
   subViewUpdate();

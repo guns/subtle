@@ -231,7 +231,7 @@ typedef struct subclient_t /* {{{ */
 
   float      minr, maxr;                                          ///< Client ratios
   int        minw, minh, maxw, maxh, incw, inch;                  ///< Client sizes
-  int        width, gravity, screen;                              ///< Client informations
+  int        gravity, screen;                                     ///< Client informations
   int        *gravities;                                          ///< Client view gravities
 } SubClient; /* }}} */
 
@@ -487,6 +487,7 @@ void subClientSetSize(SubClient *c);                              ///< Set clien
 void subClientSetHints(SubClient *c);                             ///< Set client hints
 void subClientSetTags(SubClient *c);                              ///< Set client tags
 void subClientSetStrut(SubClient *c);                             ///< Set client strut
+void subClientSetCaption(SubClient *c);                           ///< Set client caption
 void subClientToggle(SubClient *c, int type);                     ///< Toggle client state
 void subClientPublish(void);                                      ///< Publish all clients
 void subClientKill(SubClient *c, int close);                      ///< Kill client
@@ -570,7 +571,6 @@ void subSubletKill(SubSublet *s, int unlink);                     ///< Kill subl
 /* }}} */
 
 /* tag.c {{{ */
-void subTagInit(void);                                            ///< Init tags
 SubTag *subTagNew(char *name, char *regex, int flags,
   int gravity, int screen);                                       ///< Create tag
 void subTagPublish(void);                                         ///< Publish tags

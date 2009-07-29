@@ -33,18 +33,6 @@ TagFind(char *name)
   return NULL;
 } /* }}} */
 
- /** subTagInit {{{
-  * @brief Init default tags
-  **/
-void
-subTagInit(void)
-{
-  SubTag *t = subTagNew("default", NULL, 0, 0, 0);
-  subArrayPush(subtle->tags, (void *)t);
-
-  subTagPublish();
-} /* }}} */
-
  /** subTagNew {{{
   * @brief Create new tag
   * @param[in]  name     Name of the tag
