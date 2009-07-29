@@ -201,6 +201,7 @@ subSharedMatch(int type,
 
   switch(abs(gravity1 - gravity2))
     {
+      case 0: score = 25; break;
       case 1:
         if(SUB_WINDOW_LEFT == type || SUB_WINDOW_RIGHT == type) score = 100; 
         break;
@@ -213,10 +214,7 @@ subSharedMatch(int type,
       case 4: 
         if(SUB_WINDOW_UP == type || SUB_WINDOW_DOWN == type)    score = 50;
         break;
-      case 5: 
-        if(SUB_WINDOW_UP == type || SUB_WINDOW_DOWN == type)    score = 50;
-        if(SUB_WINDOW_LEFT == type || SUB_WINDOW_RIGHT == type) score = 50; 
-        break;
+      case 5: score = 50; break;
       case 6:
         if(SUB_WINDOW_UP == type || SUB_WINDOW_DOWN == type)    score = 75;
         break;
