@@ -69,7 +69,6 @@ subClientNew(Window win)
   c = CLIENT(subSharedMemoryAlloc(1, sizeof(SubClient)));
   c->gravities = (int *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(int));
   c->flags     = SUB_TYPE_CLIENT;
-  c->tags      = SUB_TAG_DEFAULT;
   c->win       = win;
 
   /* Fetch name and class */
@@ -226,7 +225,6 @@ subClientConfigure(SubClient *c)
 void
 subClientRender(SubClient *c)
 {
-  int pos = 0;
   char buf[255];
   XSetWindowAttributes sattrs;
   XGCValues gvals;
@@ -234,24 +232,20 @@ subClientRender(SubClient *c)
   DEAD(c);
   assert(c);
 
+  /* Set window border */
   sattrs.border_pixel = subtle->windows.focus == c->win ? subtle->colors.bo_focus : 
     subtle->colors.bo_normal;
   XChangeWindowAttributes(subtle->dpy, c->win, CWBorderPixel, &sattrs);
 
   /* Caption */
   if(c->flags & (SUB_STATE_STICK|SUB_STATE_FLOAT))
-    {
-      snprintf(buf, sizeof(buf), "%c%s", c->flags & SUB_STATE_STICK ? '*' : '^', c->caption);
-      pos = (subtle->xfs->min_bounds.width + subtle->xfs->max_bounds.width) / 2; ///< Width of char
-    }
+    snprintf(buf, sizeof(buf), "%c%s", c->flags & SUB_STATE_STICK ? '*' : '^', c->caption);
   else snprintf(buf, sizeof(buf), "%s", c->caption);
 
   /* Caption title */
   gvals.foreground = subtle->colors.fg_focus;
   XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
 
-  XResizeWindow(subtle->dpy, subtle->panels.caption.win, 
-    subtle->panels.caption.width + pos, subtle->th);
   XClearWindow(subtle->dpy, subtle->panels.caption.win);
 
   XDrawString(subtle->dpy, subtle->panels.caption.win, subtle->gcs.font, 3, subtle->fy - 1,
@@ -279,8 +273,7 @@ subClientFocus(SubClient *c)
       return;
     }
 
-  /* Update panel width */
-  subtle->panels.caption.width = XTextWidth(subtle->xfs, c->caption, strlen(c->caption)) + 6;
+  subClientSetCaption(c);
 
   /* Check client input focus type */
   if(!(c->flags & SUB_PREF_INPUT) && c->flags & SUB_PREF_FOCUS)
@@ -693,11 +686,13 @@ subClientSetTags(SubClient *c)
   DEAD(c);
   assert(c);
 
-  for(i = 0; c->klass && i < subtle->tags->ndata; i++)
+  c->tags = SUB_TAG_DEFAULT; ///< Set default tag
+
+  /* Check matching tags */
+  for(i = 0; (c->name || c->klass) && i < subtle->tags->ndata; i++)
     {
       SubTag *t = TAG(subtle->tags->data[i]);
 
-      /* Match client */
       if(t->preg && ((c->name && subSharedRegexMatch(t->preg, c->name)) || 
         (c->klass && subSharedRegexMatch(t->preg, c->klass))))
         {
@@ -709,7 +704,16 @@ subClientSetTags(SubClient *c)
           if(t->flags & SUB_TAG_SCREEN)  c->screen  = t->screen;
         }
     }
-  if(SUB_TAG_DEFAULT < c->tags) c->tags &= ~SUB_TAG_DEFAULT; ///< Remove default tag
+
+  /* Check if client is visible on at least one screen */
+  for(i = 0; i < subtle->views->ndata; i++)
+    {
+      if(VIEW(subtle->views->data[i])->tags & (c->tags & ~SUB_TAG_DEFAULT))
+        {
+          c->tags &= ~SUB_TAG_DEFAULT; ///< Remove default tag
+          break;
+        }
+    }
 
   subClientToggle(c, flags & ~c->flags); ///< Toggle flags
 } /* }}} */
@@ -745,6 +749,21 @@ subClientSetStrut(SubClient *c)
 
       XFree(strut);
     }
+} /* }}} */
+
+ /** subClientSetCaption {{{
+  * @brief Set caption width
+  * @param[in]  c  A #SubClient
+  **/
+
+void
+subClientSetCaption(SubClient *c)
+{
+  /* Update panel width */
+  subtle->panels.caption.width = XTextWidth(subtle->xfs, c->caption, 
+    strlen(c->caption) + (c->flags & (SUB_STATE_STICK|SUB_STATE_FLOAT) ? 1 : 0)) + 6;
+  XResizeWindow(subtle->dpy, subtle->panels.caption.win, 
+    subtle->panels.caption.width, subtle->th);
 } /* }}} */
 
  /** subClientToggle {{{
@@ -803,7 +822,8 @@ subClientToggle(SubClient *c,
   if(VISIBLE(subtle->view, c)) ///< Check visibility first
     {
       subClientFocus(c);
-      subClientRender(c);
+      subPanelUpdate();
+      subPanelRender();
     }
 } /* }}} */
 
