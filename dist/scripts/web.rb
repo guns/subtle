@@ -85,6 +85,17 @@ post("/clients/focus") do # {{{
   haml(:index)
 end # }}}
 
+post("/sublets/delete") do # {{{
+  name = params["sublets-name"] || nil
+
+  if(!name.nil?)
+    $subtle.del_sublet(name)
+    @action = "Deleted sublet #{name}"
+  end
+
+  haml(:index)
+end # }}}
+
 post("/tags/new") do # {{{
   name = params["tags-name"] || nil
 
@@ -243,7 +254,7 @@ __END__
 -# Sublets {{{
 .sublets 
   %h2{:style => "font-size: 12px"} Sublets
-  %form{:action => "/sublets/kill", :method => "post"}
+  %form{:action => "/sublets/delete", :method => "post"}
     %select{:name => "sublets-name", :tabindex => "1"}
 
       -$subtle.sublets.each do |s|
