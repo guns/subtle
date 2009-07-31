@@ -10,13 +10,14 @@
 
 require("rubygems")
 require("sinatra")
+require("haml")
 require("subtle/subtlext")
 
 $subtle = nil
 
 before do
   begin
-    $subtle = Subtlext::Subtle.new(":2")
+    $subtle = Subtlext::Subtle.new
   rescue
     throw(:halt, [401, "subtle is not running"])
   end
@@ -27,7 +28,7 @@ get("/") do # {{{
 end # }}}
 
 post("/clients/tags") do # {{{
-  name = params["clients[name]"] || nil
+  name = params["clients-name"] || nil
 
   if(!name.nil?)
     c = $subtle.find_client(name)
@@ -38,8 +39,8 @@ post("/clients/tags") do # {{{
 end # }}}
 
 post("/clients/tag") do # {{{
-  name = params["clients[name]"] || nil
-  tag  = params["clients[tag]"] || nil
+  name = params["clients-name"] || nil
+  tag  = params["clients-tag"] || nil
 
   if(!name.nil? && !tag.nil?)
     $subtle.find_client(name).tag(tag)
@@ -50,8 +51,8 @@ post("/clients/tag") do # {{{
 end # }}}
 
 post("/clients/untag") do # {{{
-  name = params["clients[name]"] || nil
-  tag  = params["clients[tag]"] || nil
+  name = params["clients-name"] || nil
+  tag  = params["clients-tag"] || nil
 
   if(!name.nil? && !tag.nil?)
     $subtle.find_client(name).untag(tag)
@@ -62,8 +63,8 @@ post("/clients/untag") do # {{{
 end # }}}
 
 post("/clients/toggle") do # {{{
-  name   = params["clients[name]"] || nil
-  action = params["clients[action]"] || nil
+  name   = params["clients-name"] || nil
+  action = params["clients-action"] || nil
 
   if(!name.nil? && !action.nil?)
     $subtle.find_client(name).send("toggle_" + action)
@@ -74,10 +75,10 @@ post("/clients/toggle") do # {{{
 end # }}}
 
 post("/clients/focus") do # {{{
-  name = params["clients[name]"] || nil
+  name = params["clients-name"] || nil
 
   if(!name.nil?)
-    $subtle.find_client(name)
+    $subtle.find_client(name).focus
     @action = "Set focus to client #{name}"
   end
 
@@ -85,7 +86,7 @@ post("/clients/focus") do # {{{
 end # }}}
 
 post("/tags/new") do # {{{
-  name = params["tags[name]"] || nil
+  name = params["tags-name"] || nil
 
   if(!name.nil?)
     $subtle.add_tag(name)
@@ -96,7 +97,7 @@ post("/tags/new") do # {{{
 end # }}}
 
 post("/tags/delete") do # {{{
-  name = params["tags[name]"] || nil
+  name = params["tags-name"] || nil
 
   if(!name.nil?)
     $subtle.del_tag(name)
@@ -107,7 +108,7 @@ post("/tags/delete") do # {{{
 end # }}}
 
 post("/views/new") do # {{{
-  name = params["views[name]"] || nil
+  name = params["views-name"] || nil
 
   if(!name.nil?)
     $subtle.add_view(name)
@@ -118,7 +119,7 @@ post("/views/new") do # {{{
 end # }}}
 
 post("/views/jump") do # {{{
-  name = params["views[name]"] || nil
+  name = params["views-name"] || nil
 
   if(!name.nil?)
     $subtle.find_view(name).jump
@@ -129,7 +130,7 @@ post("/views/jump") do # {{{
 end # }}}
 
 post("/views/tags") do # {{{
-  name = params["views[name]"] || nil
+  name = params["views-name"] || nil
 
   if(!name.nil?)
     v = $subtle.find_view(name)
@@ -140,8 +141,8 @@ post("/views/tags") do # {{{
 end # }}}
 
 post("/views/tag") do # {{{
-  name = params["views[name]"] || nil
-  tag  = params["views[tag]"] || nil
+  name = params["views-name"] || nil
+  tag  = params["views-tag"] || nil
 
   if(!name.nil? && !tag.nil?)
     $subtle.find_view(name).tag(tag)
@@ -152,8 +153,8 @@ post("/views/tag") do # {{{
 end # }}}
 
 post("/views/untag") do # {{{
-  name = params["views[name]"] || nil
-  tag  = params["views[tag]"] || nil
+  name = params["views-name"] || nil
+  tag  = params["views-tag"] || nil
 
   if(!name.nil? && !tag.nil?)
     $subtle.find_view(name).untag(tag)
@@ -164,7 +165,7 @@ post("/views/untag") do # {{{
 end # }}}
 
 post("/views/delete") do # {{{
-  name = params["views[name]"] || nil
+  name = params["views-name"] || nil
 
   if(!name.nil?)
     $subtle.del_view(name)
@@ -184,7 +185,8 @@ __END__
   %head
     %title= "subtle #{$subtle.version}"
 
-  %body= yield()
+  %body
+    =yield()
 
     .footer{:style => "margin: 10px 0px 10px 0px; font-size: 11px"}
       %a{:href => "http://unexist.scrapping.cc/projects/show/subtle"}= "subtle (#{$subtle.version})"
@@ -200,7 +202,7 @@ __END__
 .clients 
   %h2{:style => "font-size: 12px"} Clients
   %form{:action => "/clients/tags", :method => "post"}
-    %select{:name => "clients[name]", :tabindex => "1"}
+    %select{:name => "clients-name", :tabindex => "1"}
 
       -$subtle.clients.each do |c|
         %option{:value => c.name}= c.name
@@ -209,12 +211,12 @@ __END__
     %input{:type => "submit", :value => "delete", :onclick => "this.form.action = '/clients/delete'", :tabindex => "3"}
 
   %form{:action => "/clients/tag", :method => "post"}
-    %select{:name => "clients[name]", :tabindex => "1"}
+    %select{:name => "clients-name", :tabindex => "1"}
 
       -$subtle.clients.each do |c|
         %option{:value => c.name}= c.name
 
-    %select{:name => "clients[tag]", :tabindex => "2"}
+    %select{:name => "clients-tag", :tabindex => "2"}
 
       -$subtle.tags.each do |t|
         %option{:value => t.name}= t.name
@@ -223,12 +225,12 @@ __END__
     %input{:type => "submit", :value => "untag", :onclick => "this.form.action = '/clients/untag'", :tabindex => "4"}
 
   %form{:action => "/clients/toggle", :method => "post"}
-    %select{:name => "clients[name]", :tabindex => "1"}
+    %select{:name => "clients-name", :tabindex => "1"}
 
       -$subtle.clients.each do |c|
         %option{:value => c.name}= c.name
   
-    %select{:name => "clients[action]", :tabindex => "2"}
+    %select{:name => "clients-action", :tabindex => "2"}
 
       -["full", "float", "stick"].each do |action|
         %option{:value => action}= action
@@ -242,7 +244,7 @@ __END__
 .sublets 
   %h2{:style => "font-size: 12px"} Sublets
   %form{:action => "/sublets/kill", :method => "post"}
-    %select{:name => "sublets[name]", :tabindex => "1"}
+    %select{:name => "sublets-name", :tabindex => "1"}
 
       -$subtle.sublets.each do |s|
         %option{:value => s.name}= s.name
@@ -254,11 +256,11 @@ __END__
 .tags
   %h2{:style => "font-size: 12px"} Tags
   %form{:action => "/tags/new", :method => "post"}
-    %input{:type => "text", :name => "tags[name]", :tabindex => "1"}
+    %input{:type => "text", :name => "tags-name", :tabindex => "1"}
     %input{:type => "submit", :value => "create", :tabindex => "2"}
    
   %form{:action => "/tags/delete", :method => "post"}
-    %select{:name => "tags[name]", :tabindex => "1"}
+    %select{:name => "tags-name", :tabindex => "1"}
 
       -$subtle.tags.each do |t|
         %option{:value => t.name}= t.name
@@ -270,11 +272,11 @@ __END__
 .views 
   %h2{:style => "font-size: 12px"} Views
   %form{:action => "/views/new", :method => "post"}
-    %input{:type => "text", :name => "views[name]", :tabindex => "1"}
+    %input{:type => "text", :name => "views-name", :tabindex => "1"}
     %input{:type => "submit", :value => "create", :tabindex => "2"}
   
   %form{:action => "/views/jump", :method => "post"}
-    %select{:name => "views[name]", :tabindex => "1"}
+    %select{:name => "views-name", :tabindex => "1"}
 
       -$subtle.views.each do |v|
         %option{:value => v.name, :selected => v.name == $subtle.current_view.name}= v.name
@@ -284,12 +286,12 @@ __END__
     %input{:type => "submit", :value => "delete", :onclick => "this.form.action = '/views/delete'", :tabindex => "3"}
 
   %form{:action => "/views/tag", :method => "post"}
-    %select{:name => "views[name]", :tabindex => "1"}
+    %select{:name => "views-name", :tabindex => "1"}
 
       -$subtle.views.each do |v|
         %option{:value => v.name, :selected => v.name == $subtle.current_view.name}= v.name
 
-    %select{:name => "views[tag]", :tabindex => "2"}
+    %select{:name => "views-tag", :tabindex => "2"}
 
       -$subtle.tags.each do |t|
         %option{:value => t.name}= t.name
