@@ -117,9 +117,12 @@ subSubletCompare(const void *a,
   SubSublet *s1 = *(SubSublet **)a, *s2 = *(SubSublet **)b;
 
   assert(a && b);
+  
+  /* Exclude notify sublets */
+  if(s1->flags & SUB_SUBLET_INOTIFY) return 1;
+  else if(s2->flags & SUB_SUBLET_INOTIFY) return -1;
 
-  return s1->time < s2->time && !(s1->flags & SUB_SUBLET_INOTIFY) ? -1 : 
-    (s1->time == s2->time ? 0 : 1);
+  return s1->time < s2->time ? -1 : (s1->time == s2->time ? 0 : 1);
 } /* }}} */
 
  /** subSubletPublish {{{
