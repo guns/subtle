@@ -23,6 +23,7 @@ int debug = 0;
 
 /* Prototypes {{{ */
 static VALUE SubtlextSubtleClientCurrent(VALUE self);
+static VALUE SubtlextClientUpdate(VALUE self);
 /* }}} */
 
 /* Flags {{{ */
@@ -120,14 +121,24 @@ SubtlextFind(int type,
 /* SubtlextToggle {{{ */
 static VALUE
 SubtlextToggle(VALUE self,
-  char *type)
+  char *type,
+  int flag)
 {
   Window win = 0;
-  SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
   if((win = NUM2LONG(rb_iv_get(self, "@win"))))
     {
+      int flags = 0;
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+      flags     = FIX2INT(rb_iv_get(self, "@flags"));
       data.l[1] = XInternAtom(display, type, False);
+
+      /* Toggle flag */
+      if(flags & flag) flags &= ~flag;
+      else flags |= flag;
+
+      rb_iv_set(self, "@flags", INT2FIX(flags));
 
       subSharedMessage(win, "_NET_WM_STATE", data, True);
     }
@@ -161,41 +172,13 @@ SubtlextRestack(VALUE self,
 static VALUE
 SubtlextClientFromWin(Window win)
 {
-  int id = 0;
-  char buf[20], *wmname = NULL, *wmklass = NULL;
-  int *gravity = NULL, *screen = NULL;
-  XWindowAttributes attrs;
   VALUE klass = Qnil, client = Qnil;
 
-  /* Get real id */
-  snprintf(buf, sizeof(buf), "%#lx", win);
-  id = subSharedClientFind(buf, NULL);
-
   /* Create new instance */
-  subSharedPropertyClass(win, &wmname, &wmklass);
-  klass   = rb_const_get(mod, rb_intern("Client"));
-  client  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(wmname));
-  gravity = (int *)subSharedPropertyGet(win, XA_CARDINAL,
-    "SUBTLE_WINDOW_GRAVITY", NULL);
-  screen = (int *)subSharedPropertyGet(win, XA_CARDINAL,
-    "SUBTLE_WINDOW_SCREEN", NULL);
+  klass  = rb_const_get(mod, rb_intern("Client"));
+  client = rb_funcall(klass, rb_intern("new"), 1, LONG2NUM(win));
 
-  XGetWindowAttributes(display, win, &attrs);
-
-  rb_iv_set(client, "@id",      INT2FIX(id));
-  rb_iv_set(client, "@win",     LONG2NUM(win));
-  rb_iv_set(client, "@klass",   rb_str_new2(wmklass));
-  rb_iv_set(client, "@x",       INT2FIX(attrs.x));
-  rb_iv_set(client, "@y",       INT2FIX(attrs.y));
-  rb_iv_set(client, "@width",   INT2FIX(attrs.width));
-  rb_iv_set(client, "@height",  INT2FIX(attrs.height));
-  rb_iv_set(client, "@gravity", INT2FIX(*gravity));
-  rb_iv_set(client, "@screen",  INT2FIX(*screen + 1));
-
-  free(wmname);
-  free(wmklass);
-  free(gravity);
-  free(screen);
+  SubtlextClientUpdate(client);
 
   return client;
 } /* }}} */
@@ -299,18 +282,19 @@ SubtlextTag(VALUE self,
 /* SubtlextClientInit {{{ */
 static VALUE
 SubtlextClientInit(VALUE self,
-  VALUE name)
+  VALUE win)
 {
   rb_iv_set(self, "@id",      Qnil);
-  rb_iv_set(self, "@win",     Qnil);
-  rb_iv_set(self, "@name",    name);
+  rb_iv_set(self, "@win",     win);
+  rb_iv_set(self, "@name",    Qnil);
   rb_iv_set(self, "@klass",   Qnil);
   rb_iv_set(self, "@x",       Qnil);
   rb_iv_set(self, "@y",       Qnil); 
   rb_iv_set(self, "@width",   Qnil); 
   rb_iv_set(self, "@height",  Qnil); 
   rb_iv_set(self, "@gravity", Qnil);
-  rb_iv_set(self, "@screen", Qnil);
+  rb_iv_set(self, "@screen",  Qnil);
+  rb_iv_set(self, "@flags",   Qnil);
 
   return self;
 } /* }}} */
@@ -411,29 +395,50 @@ SubtlextClientTagAdd(VALUE self,
 static VALUE
 SubtlextClientTagDel(VALUE self,
   VALUE value)
-{  
+{
   return SubtlextTag(self, value, SUB_ACTION_UNTAG, SUB_TYPE_CLIENT);
+} /* }}} */
+
+/* SubtlextClientStateFull {{{ */
+VALUE
+SubtlextClientStateFull(VALUE self)
+{
+  return FIX2INT(rb_iv_get(self, "@flags")) & SUB_EWMH_FULL ? Qtrue : Qfalse;
+} /* }}} */
+
+/* SubtlextClientStateFloat {{{ */
+VALUE
+SubtlextClientStateFloat(VALUE self)
+{
+  return FIX2INT(rb_iv_get(self, "@flags")) & SUB_EWMH_FLOAT ? Qtrue : Qfalse;
+} /* }}} */
+
+/* SubtlextClientStateStick {{{ */
+VALUE
+SubtlextClientStateStick(VALUE self)
+{
+  return FIX2INT(rb_iv_get(self, "@flags")) & SUB_EWMH_STICK ? Qtrue : Qfalse;
 } /* }}} */
 
 /* SubtlextClientToggleFull {{{ */
 static VALUE
 SubtlextClientToggleFull(VALUE self)
 {
-  return SubtlextToggle(self, "_NET_WM_STATE_FULLSCREEN");
+  return SubtlextToggle(self, "_NET_WM_STATE_FULLSCREEN", SUB_EWMH_FULL);
 } /* }}} */
 
 /* SubtlextClientToggleFloat {{{ */
 static VALUE
 SubtlextClientToggleFloat(VALUE self)
 {
-  return SubtlextToggle(self, "_NET_WM_STATE_ABOVE");
+  return SubtlextToggle(self, "_NET_WM_STATE_ABOVE", SUB_EWMH_FLOAT);
 } /* }}} */
 
 /* SubtlextClientToggleStick {{{ */
 static VALUE
 SubtlextClientToggleStick(VALUE self)
 {
-  return SubtlextToggle(self, "_NET_WM_STATE_STICKY");
+  return SubtlextToggle(self, "_NET_WM_STATE_STICKY", SUB_EWMH_STICK);
 } /* }}} */
 
 /* SubtlextClientRestackRaise {{{ */
@@ -568,8 +573,7 @@ SubtlextClientGravitySet(VALUE self,
           VALUE id = rb_iv_get(self, "@id");
 
           data.l[0] = NUM2LONG(id);
-          data.l[1] = -1;
-          data.l[2] = FIX2LONG(value);
+          data.l[1] = FIX2LONG(value);
 
           subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_GRAVITY", data, True);
 
@@ -672,6 +676,57 @@ SubtlextClientSizeSet(VALUE self,
         else rb_raise(rb_eArgError, "Missing arguments");
         break;
       default: rb_raise(rb_eArgError, "Unknown value type");
+    }
+
+  return Qnil;
+} /* }}} */
+
+/* SubtlextClientUpdate {{{ */
+VALUE
+SubtlextClientUpdate(VALUE self)
+{
+   Window win = 0;
+
+  /* Get real id */
+  if((win = NUM2LONG(rb_iv_get(self, "@win"))))
+    {
+      int id = 0;
+      char buf[20], *wmname = NULL, *wmklass = NULL;
+      int *gravity = NULL, *screen = NULL, *flags = NULL;
+      XWindowAttributes attrs;
+
+      /* Get client id */
+      snprintf(buf, sizeof(buf), "%#lx", win);
+      id = subSharedClientFind(buf, NULL);
+
+      /* Create new instance */
+      subSharedPropertyClass(win, &wmname, &wmklass);
+      gravity = (int *)subSharedPropertyGet(win, XA_CARDINAL,
+        "SUBTLE_WINDOW_GRAVITY", NULL);
+      screen  = (int *)subSharedPropertyGet(win, XA_CARDINAL,
+        "SUBTLE_WINDOW_SCREEN", NULL);
+      flags   = (int *)subSharedPropertyGet(win, XA_CARDINAL,
+        "SUBTLE_WINDOW_FLAGS", NULL);
+
+      XGetWindowAttributes(display, win, &attrs);
+
+      /* Update properties */
+      rb_iv_set(self, "@id",      INT2FIX(id));
+      rb_iv_set(self, "@name",    rb_str_new2(wmname));
+      rb_iv_set(self, "@klass",   rb_str_new2(wmklass));
+      rb_iv_set(self, "@x",       INT2FIX(attrs.x));
+      rb_iv_set(self, "@y",       INT2FIX(attrs.y));
+      rb_iv_set(self, "@width",   INT2FIX(attrs.width));
+      rb_iv_set(self, "@height",  INT2FIX(attrs.height));
+      rb_iv_set(self, "@gravity", INT2FIX(*gravity));
+      rb_iv_set(self, "@screen",  INT2FIX(*screen + 1));
+      rb_iv_set(self, "@flags",   INT2FIX(*flags));
+
+      free(wmname);
+      free(wmklass);
+      free(gravity);
+      free(screen);
+      free(flags);
     }
 
   return Qnil;
@@ -1543,6 +1598,7 @@ Init_subtlext(void)
   rb_define_attr(klass,   "width",   1, 0);
   rb_define_attr(klass,   "height",  1, 0);
   rb_define_attr(klass,   "name",    1, 0);
+  rb_define_attr(klass,   "flags",   1, 0);
 
   rb_define_method(klass, "initialize",   SubtlextClientInit,          1);
   rb_define_method(klass, "views",        SubtlextClientViewList,      0);
@@ -1552,6 +1608,9 @@ Init_subtlext(void)
   rb_define_method(klass, "toggle_full",  SubtlextClientToggleFull,    0);
   rb_define_method(klass, "toggle_float", SubtlextClientToggleFloat,   0);
   rb_define_method(klass, "toggle_stick", SubtlextClientToggleStick,   0);
+  rb_define_method(klass, "is_full?",     SubtlextClientStateFull,     0);
+  rb_define_method(klass, "is_float?",    SubtlextClientStateFloat,    0);
+  rb_define_method(klass, "is_stick?",    SubtlextClientStateStick,    0);
   rb_define_method(klass, "raise",        SubtlextClientRestackRaise,  0);
   rb_define_method(klass, "lower",        SubtlextClientRestackLower,  0);
   rb_define_method(klass, "up",           SubtlextClientMatchUp,       0);
@@ -1568,6 +1627,7 @@ Init_subtlext(void)
   rb_define_method(klass, "screen=",      SubtlextClientScreenSet,     1);  
   rb_define_method(klass, "size",         SubtlextClientSize,          0);
   rb_define_method(klass, "size=",        SubtlextClientSizeSet,       1);
+  rb_define_method(klass, "update",       SubtlextClientUpdate,        0);
   rb_define_method(klass, "+",            SubtlextClientOperatorPlus,  1);
   rb_define_method(klass, "-",            SubtlextClientOperatorMinus, 1);
 

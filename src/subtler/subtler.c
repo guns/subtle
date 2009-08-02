@@ -221,7 +221,8 @@ SubtlerClientFind(char *arg1,
       Window unused;
       char *inst = NULL, *klass = NULL;
       unsigned int width, height, border;
-      unsigned long *nv = NULL, *rv = NULL, *cv = NULL, *gravity = NULL, *screen = NULL;
+      unsigned long *nv = NULL, *rv = NULL, *cv = NULL,
+        *gravity = NULL, *screen = NULL, *flags = NULL;
 
       /* Collect data */
       subSharedPropertyClass(win, &inst, &klass);
@@ -235,11 +236,15 @@ SubtlerClientFind(char *arg1,
         "SUBTLE_WINDOW_GRAVITY", NULL);
       screen = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, 
         "SUBTLE_WINDOW_SCREEN", NULL);
+      flags = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, 
+        "SUBTLE_WINDOW_FLAGS", NULL);
 
       XGetGeometry(display, win, &unused, &x, &y, &width, &height, &border, &border);
 
-      printf("%#lx %c %ld %ux%u %ld %ld %s (%s)\n", win, (*cv == *rv ? '*' : '-'),
-        (*cv > *nv ? -1 : *cv + 1), width, height, *gravity, *screen + 1, inst, klass);
+      printf("%#lx %c %ld %ux%u %ld %ld %c%c%c %s (%s)\n", win, (*cv == *rv ? '*' : '-'),
+        (*cv > *nv ? -1 : *cv + 1), width, height, *gravity, *screen + 1, 
+        *flags & SUB_EWMH_FULL ? 'F' : '-', *flags & SUB_EWMH_FLOAT ? 'O' : '-', 
+        *flags & SUB_EWMH_STICK ? 'S' : '-', inst, klass);
 
       free(inst);
       free(klass);
@@ -248,6 +253,7 @@ SubtlerClientFind(char *arg1,
       free(cv);
       free(gravity);
       free(screen);
+      free(flags);
     }
   else subSharedLogWarn("Failed finding client\n");
 } /* }}} */
@@ -347,7 +353,7 @@ SubtlerClientList(char *arg1,
           Window unused;
           char *inst = NULL, *klass = NULL;
           unsigned int width, height, border;
-          unsigned long *cv = NULL, *gravity = NULL, *screen = NULL;
+          unsigned long *cv = NULL, *gravity = NULL, *screen = NULL, *flags = NULL;
 
           /* Collect client data */
           subSharedPropertyClass(clients[i], &inst, &klass);
@@ -357,17 +363,22 @@ SubtlerClientList(char *arg1,
             "SUBTLE_WINDOW_GRAVITY", NULL);
           screen = (unsigned long*)subSharedPropertyGet(clients[i], XA_CARDINAL, 
             "SUBTLE_WINDOW_SCREEN", NULL);
+          flags = (unsigned long*)subSharedPropertyGet(clients[i], XA_CARDINAL, 
+            "SUBTLE_WINDOW_FLAGS", NULL);
 
           XGetGeometry(display, clients[i], &unused, &x, &y, &width, &height, &border, &border);
 
-          printf("%#lx %c %ld %ux%u %ld %ld %s (%s)\n", clients[i], (*cv == *rv ? '*' : '-'),
-            (*cv > *nv ? -1 : *cv + 1), width, height, *gravity, *screen + 1, inst, klass);
+          printf("%#lx %c %ld %ux%u %ld %ld %c%c%c %s (%s)\n", clients[i], (*cv == *rv ? '*' : '-'),
+            (*cv > *nv ? -1 : *cv + 1), width, height, *gravity, *screen + 1, 
+            *flags & SUB_EWMH_FULL ? 'F' : '-', *flags & SUB_EWMH_FLOAT ? 'O' : '-', 
+            *flags & SUB_EWMH_STICK ? 'S' : '-', inst, klass);
 
           free(inst);
           free(klass);
           free(cv);
           free(gravity);
           free(screen);
+          free(flags);
         }
 
       free(clients);
@@ -424,10 +435,9 @@ SubtlerClientGravity(char *arg1,
   subSharedLogDebug("%s\n", __func__);
 
   data.l[0] = subSharedClientFind(arg1, NULL);
-  data.l[1] = -1;
-  data.l[2] = atoi(arg2);
+  data.l[1] = atoi(arg2);
 
-  if(-1 != data.l[0] && 1 <= data.l[2] && 9 >= data.l[2])
+  if(-1 != data.l[0] && 1 <= data.l[1] && 9 >= data.l[1])
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_GRAVITY", data, False);
   else subSharedLogWarn("Failed setting client gravity\n");
 } /* }}} */
@@ -941,7 +951,7 @@ SubtlerUsage(int group)
          "  If the PATTERN is '-' %sr will read from stdin.\n", PKG_NAME);
 
   printf("\nFormat:\n" \
-         "  Client listing: <window id> [-*] <view id> <geometry> <gravity> <screen> <name> (<class>)\n" \
+         "  Client listing: <window id> [-*] <view id> <geometry> <gravity> <screen> <flags> <name> (<class>)\n" \
          "  Tag listing:    <name>\n" \
          "  View listing:   <window id> [-*] <view id> <name>\n");
 
