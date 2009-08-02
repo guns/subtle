@@ -258,15 +258,15 @@ RubyGetBool(VALUE hash,
 } /* }}} */
 
 /* RubyGetRect {{{ */
-static void
+static int
 RubyGetRect(VALUE hash,
   char *key,
   XRectangle *r)
 {
-  int data[4] = { 0 };
   VALUE ary = Qnil;
+  int data[4] = { 0 }, ret = False;
 
-  if(Qnil != (ary = RubyGetValue(hash, key, T_ARRAY, False)))
+  if(Qnil != (ary = RubyGetValue(hash, key, T_ARRAY, True)))
     {
       int i;
       VALUE value = Qnil, meth = rb_intern("at");
@@ -276,6 +276,8 @@ RubyGetRect(VALUE hash,
           value   = rb_funcall(ary, meth, 1, INT2FIX(i)) ;
           data[i] = RTEST(value) ? FIX2INT(value) : 0;
         }
+      
+      ret = True;
     }
 
   /* Assign data to rect */
@@ -283,6 +285,8 @@ RubyGetRect(VALUE hash,
   r->y      = data[1]; ///< Right
   r->width  = data[2]; ///< Top
   r->height = data[3]; ///< Bottom
+
+  return ret;
 } /* }}} */
 
 /* RubyConfigForeach {{{ */
@@ -301,9 +305,9 @@ RubyConfigForeach(VALUE key,
     { CHAR2SYM("SubtleQuit"),         SUB_GRAB_SUBTLE_QUIT,    None                     }, 
     { CHAR2SYM("WindowMove"),         SUB_GRAB_WINDOW_MOVE,    None                     },
     { CHAR2SYM("WindowResize"),       SUB_GRAB_WINDOW_RESIZE,  None                     }, 
-    { CHAR2SYM("WindowFloat"),        SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_FLOAT          }, 
-    { CHAR2SYM("WindowFull"),         SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_FULL           }, 
-    { CHAR2SYM("WindowStick"),        SUB_GRAB_WINDOW_TOGGLE,  SUB_STATE_STICK          }, 
+    { CHAR2SYM("WindowFloat"),        SUB_GRAB_WINDOW_TOGGLE,  SUB_MODE_FLOAT          }, 
+    { CHAR2SYM("WindowFull"),         SUB_GRAB_WINDOW_TOGGLE,  SUB_MODE_FULL           }, 
+    { CHAR2SYM("WindowStick"),        SUB_GRAB_WINDOW_TOGGLE,  SUB_MODE_STICK          }, 
     { CHAR2SYM("WindowRaise"),        SUB_GRAB_WINDOW_STACK,   Above                    }, 
     { CHAR2SYM("WindowLower"),        SUB_GRAB_WINDOW_STACK,   Below                    }, 
     { CHAR2SYM("WindowLeft"),         SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_LEFT          }, 
@@ -414,34 +418,37 @@ RubyConfigForeach(VALUE key,
         switch(rb_type(value)) ///< Check value type
           {
             case T_STRING:
-              if((entry = (void *)subTagNew(STR2CSTR(key), STR2CSTR(value), 0, 0, 0)))
+              if((entry = (void *)subTagNew(STR2CSTR(key), STR2CSTR(value))))
                 subArrayPush(subtle->tags, entry);
               break;
             case T_HASH:
               {
-                int flags = 0, gravity = 0, screen = 0;
-                char *regex = NULL;
+                SubTag *t = NULL;
+                char *regex = RubyGetString(value, "regex", NULL);
 
-                /* Fetch values */
-                regex   = RubyGetString(value, "regex",   NULL);
-                gravity = RubyGetFixnum(value, "gravity", 0);
-                screen  = RubyGetFixnum(value, "screen",  0);
-
-                /* Sanity */
-                if(1 <= gravity && 9 >= gravity) flags |= SUB_TAG_GRAVITY;
-                if(1 <= screen && screen <= subtle->screens->ndata)
+                if((t = subTagNew(STR2CSTR(key), regex)))
                   {
-                    screen -= 1;
-                    flags |= SUB_TAG_SCREEN;
+                    /* Fetch values */
+                    t->gravity = RubyGetFixnum(value, "gravity", 0);
+                    t->screen  = RubyGetFixnum(value, "screen",  0);
+
+                    /* Sanity */
+                    if(1 <= t->gravity && 9 >= t->gravity) t->flags |= SUB_MODE_GRAVITY;
+                    if(1 <= t->screen && t->screen <= subtle->screens->ndata)
+                    {
+                      t->screen -= 1;
+                      t->flags  |= SUB_MODE_SCREEN;
+                    }
+
+                    /* Set property flags */
+                    if(True == RubyGetBool(value, "full"))  t->flags |= SUB_MODE_FULL;
+                    if(True == RubyGetBool(value, "float")) t->flags |= SUB_MODE_FLOAT;
+                    if(True == RubyGetBool(value, "stick")) t->flags |= SUB_MODE_STICK;
+                    if(True == RubyGetRect(value, "size", &t->size)) 
+                      t->flags |= SUB_MODE_SIZE;
+
+                    subArrayPush(subtle->tags, (void *)t);
                   }
-
-                /* Set property flags */
-                if(True == RubyGetBool(value, "full"))  flags |= SUB_TAG_FULL;
-                if(True == RubyGetBool(value, "float")) flags |= SUB_TAG_FLOAT;
-                if(True == RubyGetBool(value, "stick")) flags |= SUB_TAG_STICK;
-
-                if((entry = (void *)subTagNew(STR2CSTR(key), regex, flags, gravity, screen)))
-                  subArrayPush(subtle->tags, entry);
                 break;
               }
             default:
@@ -558,6 +565,7 @@ RubyParsePanel(VALUE hash,
               {
                 if(entry == panels[j].sym)
                   {
+                    /* Append to list */
                     if(!subtle->panel)
                       {
                         subtle->panel = panels[j].panel;
@@ -647,7 +655,7 @@ RubySubtleTagAdd(VALUE self,
       VALUE mod = Qnil, klass = Qnil;
 
       /* Create new tag */
-      t = subTagNew(STR2CSTR(value), NULL, 0, 0, 0);
+      t = subTagNew(STR2CSTR(value), NULL);
       subArrayPush(subtle->tags, (void *)t);
       subTagPublish();
 
@@ -832,11 +840,20 @@ RubyWrapLoadConfig(VALUE data)
 
   /*Check default tag */
   if(T_HASH != rb_type(config) || 
-    Qtrue != rb_funcall(config, rb_intern("has_key?"), 1, CHAR2SYM("default")))
+    Qtrue != rb_funcall(config, rb_intern("has_key?"), 1, rb_str_new2("default")))
     {
-      SubTag *t = subTagNew("default", NULL, 0, 0, 0);
+      SubTag *t = subTagNew("default", NULL);
 
       subArrayPush(subtle->tags, (void *)t);
+    }
+  else ///< Fetch default tag
+    {
+      VALUE key = Qnil, value = Qnil;
+
+      key   = rb_str_new2("default");
+      value = rb_funcall(config, rb_intern("delete"), 1, key);
+      
+      RubyConfigForeach(key, value, SUB_TYPE_TAG);
     }
 
   if(T_HASH == rb_type(config)) ///< Parse tags hash
@@ -875,7 +892,7 @@ RubyWrapLoadConfig(VALUE data)
       SubView *v = NULL;
 
       /* Check for view with default tag */
-      for(i = subtle->views->ndata; i > 0; i--)
+      for(i = subtle->views->ndata - 1; i >= 0; i--)
         if((v = VIEW(subtle->views->data[i])) && v->tags & SUB_TAG_DEFAULT)
           {
             subSharedLogDebug("Default view: name=%s\n", v->name);
@@ -938,7 +955,7 @@ RubyWrapCall(VALUE data)
     } /* }}} */
   else if((int)rargs[0] & (SUB_TYPE_GRAB|SUB_TYPE_HOOK)) /* {{{ */
     {
-      int id = 0, arity = 0;
+      int id = 0, arity = 0, flags = 0;
 
       /* Check proc arity */
       switch((arity = FIX2INT(rb_funcall(rargs[1], rb_intern("arity"), 0, NULL))))
@@ -961,10 +978,16 @@ RubyWrapCall(VALUE data)
                     /* Create client instance */
                     id    = subArrayIndex(subtle->clients, (void *)c);
                     klass = rb_const_get(mod, rb_intern("Client"));
-                    inst  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(c->name));
+                    inst  = rb_funcall(klass, rb_intern("new"), 1, LONG2NUM(c->win));
 
+                    /* Translate flags */
+                    if(c->flags & SUB_MODE_FULL)  flags |= SUB_EWMH_FULL;
+                    if(c->flags & SUB_MODE_FLOAT) flags |= SUB_EWMH_FLOAT;
+                    if(c->flags & SUB_MODE_STICK) flags |= SUB_EWMH_STICK;
+
+                    /* Set properties */
                     rb_iv_set(inst, "@id",      INT2FIX(id));
-                    rb_iv_set(inst, "@win",     LONG2NUM(c->win));
+                    rb_iv_set(inst, "@name",    rb_str_new2(c->name));
                     rb_iv_set(inst, "@klass",   rb_str_new2(c->klass));
                     rb_iv_set(inst, "@x",       INT2FIX(c->geom.x));
                     rb_iv_set(inst, "@y",       INT2FIX(c->geom.y));
@@ -972,6 +995,7 @@ RubyWrapCall(VALUE data)
                     rb_iv_set(inst, "@height",  INT2FIX(c->geom.height));
                     rb_iv_set(inst, "@gravity", INT2FIX(c->gravity));
                     rb_iv_set(inst, "@screen",  INT2FIX(c->screen + 1));
+                    rb_iv_set(inst, "@flags",   INT2FIX(flags));
                   }
                 else if(c->flags & SUB_TYPE_VIEW)
                   {

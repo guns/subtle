@@ -37,18 +37,12 @@ TagFind(char *name)
   * @brief Create new tag
   * @param[in]  name     Name of the tag
   * @param[in]  regex    Regex
-  * @param[in]  flags    Flags
-  * @param[in]  gravity  Gravity
-  * @param[in]  screen   Screen
   * @return Returns a #SubTag or \p NULL
   **/
 
 SubTag *
 subTagNew(char *name,
-  char *regex,
-  int flags,
-  int gravity,
-  int screen)
+  char *regex)
 {
   SubTag *t = NULL;
 
@@ -57,23 +51,18 @@ subTagNew(char *name,
   /* Check if tag already exists */
   if((t = TagFind(name)))
     {
-      subSharedLogWarn("Multiple defition of tag `%s'\n", name);
+      subSharedLogWarn("Multiple definition of tag `%s'\n", name);
 
       return NULL;
     }
 
   t = TAG(subSharedMemoryAlloc(1, sizeof(SubTag)));
   t->name  = strdup(name);
-  t->flags = (SUB_TYPE_TAG|flags);
-
-  /* Properties */
-  if(flags & SUB_TAG_GRAVITY) t->gravity = gravity;
-  if(flags & SUB_TAG_SCREEN)  t->screen  = screen;
+  t->flags = SUB_TYPE_TAG;
 
   if(regex && strncmp("", regex, 1)) t->preg = subSharedRegexNew(regex);
 
-  subSharedLogDebug("new=tag, name=%s, flags=%d, screen=%d, gravity=%d\n", 
-    name, flags, screen, gravity);
+  subSharedLogDebug("new=tag, name=%s, regex=%s\n", name, regex);
 
   return t;
 } /* }}} */
