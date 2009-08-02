@@ -977,9 +977,10 @@ subClientKill(SubClient *c,
   subSharedFocus(); ///< Focus
 
   if(c->gravities) free(c->gravities);
-  if(c->caption) XFree(c->caption);
-  if(c->name) XFree(c->name);
-  if(c->klass) XFree(c->klass);
+  if(c->screens)   free(c->screens);
+  if(c->caption)   XFree(c->caption);
+  if(c->name)      XFree(c->name);
+  if(c->klass)     XFree(c->klass);
   free(c);
 
   subSharedLogDebug("kill=client\n");
