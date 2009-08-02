@@ -34,13 +34,13 @@ PANEL = {
 # Colors
 # 
 COLORS = { 
-  :fg_panel        => "#e2e2e5",  # Foreground color of bar
+  :fg_panel      => "#e2e2e5",  # Foreground color of bar
   :fg_views      => "#CF6171",  # Foreground color of view button
   :fg_sublets    => "#000000",  # foreground color of sublets
   :fg_focus      => "#000000",  # Foreground color of focus window title and view
 
-  :bg_panel        => "#444444",  # Background color of bar
-  :bg_views      => "#3d3d3d",  # Background color of view button
+  :bg_panel      => "#444444",  # Background color of bar
+  :bg_views      => "#444444",  # Background color of view button
   :bg_sublets    => "#CF6171",  # Background color of sublets
   :bg_focus      => "#CF6171",  # Background color of focus window title and view
 
@@ -136,16 +136,17 @@ TAGS = {
   "browser" => "uzbl|opera|firefox",
   "editor"  => "[g]?vim",
   "stick"   => { :regex => "mplayer|imagemagick", :float => true, :stick => true },
-  "float"   => { :regex => "gimp", :float => true }
+  "float"   => { :regex => "gimp", :float => true },
+  "fixed"   => { :size => [ 10, 10, 100, 100 ], :stick => true }
 }  
 
 #
 # Views
 #
 VIEWS = [
-  { "work" => "terms" },
-  { "dev"  => "editor|terms" },
-  { "web"  => "browser" }
+  { "terms" => "terms" },
+  { "www"   => "browser" },
+  { "dev"   => "editor|terms" }
 ]
 
 #
