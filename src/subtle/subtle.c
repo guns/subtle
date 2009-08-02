@@ -62,8 +62,17 @@ SubtleSignal(int signum)
   switch(signum)
     {
       case SIGHUP: ///< Reload config
-        subtle->flags = 0;
+        /* Reset before reloading */
+        subtle->flags  &= (SUB_SUBTLE_DEBUG|SUB_SUBTLE_EWMH);
+        subtle->panel   = NULL;
 
+        /* Clear x cache */
+        subtle->panels.tray.x     = 0;
+        subtle->panels.views.x    = 0;
+        subtle->panels.caption.x  = 0;
+        subtle->panels.sublets.x  = 0;
+
+        /* Clear arrays */
         subArrayClear(subtle->grabs, True);
         subArrayClear(subtle->tags,  True);
         subArrayClear(subtle->views, True);
@@ -75,9 +84,7 @@ SubtleSignal(int signum)
         for(i = 0; i < subtle->clients->ndata; i++)
           subClientSetTags(CLIENT(subtle->clients->data[i]));
 
-        subScreenUpdate();
         subViewJump(subtle->views->data[0]);
-        subPanelUpdate();
         subPanelRender();
 
         printf("Reloaded config\n");

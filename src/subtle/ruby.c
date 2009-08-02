@@ -784,10 +784,10 @@ RubyWrapLoadConfig(VALUE data)
   subtle->step    = RubyGetFixnum(config, "step",    5);
   subtle->snap    = RubyGetFixnum(config, "snap",    10);
   subtle->gravity = RubyGetFixnum(config, "gravity", 5);
-  font            = RubyGetString(config, "font",    FONT);
   RubyGetRect(config, "padding", &subtle->strut);
 
   /* Config: Font */
+  font = RubyGetString(config, "font", FONT);
   if(subtle->xfs) ///< Free in case of reload
     {
       XFreeFont(subtle->dpy, subtle->xfs);

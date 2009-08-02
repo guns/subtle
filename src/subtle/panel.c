@@ -12,35 +12,6 @@
 
 #include "subtle.h"
 
- /** subPanelRender {{{ 
-  * @brief Render panels
-  **/
-
-void
-subPanelRender(void)
-{
-  SubClient *c = NULL;
-
-  assert(subtle);
-
-  XClearWindow(subtle->dpy, subtle->windows.panel1);
-  XClearWindow(subtle->dpy, subtle->windows.panel2);
-
-  if(subtle->flags & SUB_SUBTLE_STIPPLE) ///< Draw stipple
-    {
-      XFillRectangle(subtle->dpy, subtle->windows.panel1, subtle->gcs.stipple, 0, 2,
-        subtle->screen->base.width, subtle->th - 4);
-      XFillRectangle(subtle->dpy, subtle->windows.panel2, subtle->gcs.stipple, 0, 2,
-        subtle->screen->base.width, subtle->th - 4);        
-    }
-
-  /* Render panels */
-  if(subtle->windows.focus && (c = CLIENT(subSharedFind(subtle->windows.focus, CLIENTID)))) 
-    subClientRender(c);
-  subSubletRender();
-  subViewRender();
-} /* }}} */
-
  /** subPanelUpdate {{{
   * @brief Configure panels
   **/
@@ -60,6 +31,10 @@ subPanelUpdate(void)
       if(p->flags & SUB_PANEL_BOTTOM) n = 1;
       if(p->flags & SUB_PANEL_SPACER1) spacer[n]++;
       if(p->flags & SUB_PANEL_SPACER2) spacer[n]++;
+
+      /* Decrease caption width */
+      if(p->win == subtle->panels.caption.win && !subtle->windows.focus)
+        p->width = 0;
 
       width[n] += p->width;
       p         = p->next;
@@ -89,11 +64,41 @@ subPanelUpdate(void)
         x += (subtle->screen->base.width - width[n]) / spacer[n];
 
       /* Remap caption window only when needed */
-      if(p->win != subtle->panels.caption.win || 
-        (p->win == subtle->panels.caption.win && subtle->windows.focus))
+      if(p->win == subtle->panels.caption.win && !subtle->windows.focus)
+        XUnmapWindow(subtle->dpy, p->win);
+      else
         XMapRaised(subtle->dpy, p->win);
 
       x += p->width;
       p  = p->next;
     }
+} /* }}} */
+
+ /** subPanelRender {{{ 
+  * @brief Render panels
+  **/
+
+void
+subPanelRender(void)
+{
+  SubClient *c = NULL;
+
+  assert(subtle);
+
+  XClearWindow(subtle->dpy, subtle->windows.panel1);
+  XClearWindow(subtle->dpy, subtle->windows.panel2);
+
+  if(subtle->flags & SUB_SUBTLE_STIPPLE) ///< Draw stipple
+    {
+      XFillRectangle(subtle->dpy, subtle->windows.panel1, subtle->gcs.stipple, 0, 2,
+        subtle->screen->base.width, subtle->th - 4);
+      XFillRectangle(subtle->dpy, subtle->windows.panel2, subtle->gcs.stipple, 0, 2,
+        subtle->screen->base.width, subtle->th - 4);        
+    }
+
+  /* Render panels */
+  if(subtle->windows.focus && (c = CLIENT(subSharedFind(subtle->windows.focus, CLIENTID)))) 
+    subClientRender(c);
+  subSubletRender();
+  subViewRender();
 } /* }}} */
