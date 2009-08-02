@@ -39,13 +39,13 @@ subSubletNew(void)
 void
 subSubletUpdate(void)
 {
+  subtle->panels.sublets.width = 0;
+
   if(0 < subtle->sublets->ndata)
     {
       int i;
-      
-      subtle->panels.sublets.width = 3;
 
-      for(i = 0; i < subtle->sublets->ndata; i++) ///< Calculate window width
+      for(i = 0, subtle->panels.sublets.width = 3; i < subtle->sublets->ndata; i++)
         subtle->panels.sublets.width += SUBLET(subtle->sublets->data[i])->width;
 
       XResizeWindow(subtle->dpy, subtle->panels.sublets.win, 

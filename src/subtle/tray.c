@@ -92,14 +92,14 @@ subTrayConfigure(SubTray *t)
 void
 subTrayUpdate(void)
 {
+  subtle->panels.tray.width = 0; ///< Reset width
+
   if(0 < subtle->trays->ndata)
     {
       int i;
-      
-      subtle->panels.tray.width = 3;
 
       /* Resize every tray */
-      for(i = 0; i < subtle->trays->ndata; i++)
+      for(i = 0, subtle->panels.tray.width = 3; i < subtle->trays->ndata; i++)
         {
           SubTray *t = TRAY(subtle->trays->data[i]);
 
