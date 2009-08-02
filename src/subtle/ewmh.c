@@ -60,7 +60,7 @@ subEwmhInit(void)
 
     /* subtle */
     "SUBTLE_WINDOW_TAG", "SUBTLE_WINDOW_UNTAG", "SUBTLE_WINDOW_TAGS", "SUBTLE_WINDOW_GRAVITY",
-    "SUBTLE_WINDOW_SCREEN",
+    "SUBTLE_WINDOW_SCREEN", "SUBTLE_WINDOW_FLAGS",
     "SUBTLE_TAG_NEW", "SUBTLE_TAG_LIST", "SUBTLE_TAG_KILL",
     "SUBTLE_VIEW_NEW", "SUBTLE_VIEW_KILL",
     "SUBTLE_SUBLET_NEW", "SUBTLE_SUBLET_UPDATE", "SUBTLE_SUBLET_LIST", "SUBTLE_SUBLET_KILL",
@@ -78,7 +78,8 @@ subEwmhInit(void)
   XInternAtoms(subtle->dpy, names, SUB_EWMH_TOTAL, 0, atoms);
 
   /* Check if another EWMH-compatible WM is running */
-  if((check = (Window *)subSharedPropertyGet(DefaultRootWindow(subtle->dpy), XA_WINDOW,
+  if(!(subtle->flags & SUB_SUBTLE_DEBUG) && 
+    (check = (Window *)subSharedPropertyGet(DefaultRootWindow(subtle->dpy), XA_WINDOW,
     SUB_EWMH_NET_SUPPORTING_WM_CHECK, NULL)))
     {
       subSharedLogDebug("check=%#lx\n", *check);
