@@ -88,7 +88,14 @@ subClientNew(Window win)
    /* Fetch name and class */
   XFetchName(subtle->dpy, c->win, &c->caption);
   subSharedPropertyClass(c->win, &c->name, &c->klass);
-  if(!c->caption && c->name) c->caption = strdup(c->name); ///< Fallback for e.g. Skype
+
+  /* Fallback for stupid clients like Skype */
+  if(!c->caption || !strcmp("", c->caption))
+    {
+      if(c->name) c->caption = strdup(c->name);
+      else if(c->klass) c->caption = strdup(c->klass);
+      else c->caption = strdup("subtle");
+    }
  
   /* X related properties */
   sattrs.border_pixel = subtle->colors.bo_normal;
@@ -151,7 +158,7 @@ subClientNew(Window win)
   /* Urgent windows */
   if(c->flags & SUB_CLIENT_URGENT)
     {
-      subClientToggle(c, (c->flags ^ (SUB_MODE_FLOAT|SUB_MODE_STICK)));
+      subClientToggle(c, (~c->flags & (SUB_MODE_FLOAT|SUB_MODE_STICK)));
       subClientWarp(c);
     }
 
@@ -554,7 +561,7 @@ subClientSetTags(SubClient *c)
   /* EWMH: Tags */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&c->tags, 1);
 
-  subClientToggle(c, flags & ~c->flags); ///< Toggle flags
+  subClientToggle(c, ~c->flags & flags); ///< Toggle flags
 } /* }}} */
 
   /** subClientSetGravity {{{ 
