@@ -68,8 +68,8 @@ subViewNew(char *name,
 void
 subViewConfigure(SubView *v)
 {
-  long vid = 0;
   int i;
+  long vid = 0;
 
   assert(v);
 
@@ -92,15 +92,11 @@ subViewConfigure(SubView *v)
       /* Find matching clients */
       if(VISIBLE(v, c))
         {
-          if(!(c->flags & (SUB_STATE_FULL|SUB_STATE_FLOAT)))
+          if(!(c->flags & (SUB_MODE_FULL|SUB_MODE_FLOAT)))
             {
-              /* Check current gravity */
-              if(c->gravity != c->gravities[vid])
-                {
-                  subClientSetGravity(c, c->gravities[vid]);
-                  c->gravities[vid] = c->gravity;
-                }
-              else subClientConfigure(c);
+              subClientSetScreen(c, c->screens[vid], False);
+              subClientSetGravity(c, c->gravities[vid], False);
+              subClientConfigure(c);
 
               XMapWindow(subtle->dpy, c->win);
 
@@ -120,11 +116,11 @@ subViewConfigure(SubView *v)
 void
 subViewUpdate(void)
 {
+  subtle->panels.views.width = 0;
+
   if(0 < subtle->views->ndata)
     {
       int i;
-      
-      subtle->panels.views.width = 0;
 
       for(i = 0; i < subtle->views->ndata; i++)
         {
@@ -187,8 +183,6 @@ subViewRender(void)
 void
 subViewJump(SubView *v)
 {
-  long vid = 0;
-
   assert(v);
 
   /* Hook: Jump */
@@ -200,13 +194,14 @@ subViewJump(SubView *v)
       return;
     }
 
+  /* Store view */
+  subtle->vid  = subArrayIndex(subtle->views, (void *)v);
   subtle->view = v;
 
   subViewConfigure(v);
 
   /* EWMH: Current desktop */
-  vid = subArrayIndex(subtle->views, (void *)v); ///< Get desktop number
-  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP, &vid, 1);
+  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP, (long *)&subtle->vid, 1);
 
   subSharedFocus();
   subViewRender();
