@@ -27,8 +27,8 @@ subDisplayInit(const char *display)
 {
   XGCValues gvals;
   XSetWindowAttributes sattrs;
-  SubScreen *s = NULL;
   unsigned long mask = 0;
+  SubScreen *s = NULL;
   const char stipple[] = {
     0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 0x49, 0x12, 0x24, 0x49, 0x92, 0x24,
     0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 0x49, 0x12, 0x24, 0x49, 0x92, 0x24,
@@ -149,11 +149,8 @@ void
 subDisplayConfigure(void)
 {
   XGCValues gvals;
-  SubScreen *s = NULL;
 
   assert(subtle);
-
-  s = SCREEN(subtle->screens->data[0]); ///< Select first screen
 
   /* Update GCs */
   gvals.foreground = subtle->colors.fg_panel;
@@ -184,19 +181,21 @@ subDisplayConfigure(void)
   /* Panels */
   if(subtle->flags & SUB_SUBTLE_PANEL1)
     {
-      XMoveResizeWindow(subtle->dpy, subtle->windows.panel1, 0, 0, s->base.width, subtle->th);
+      XMoveResizeWindow(subtle->dpy, subtle->windows.panel1, 0, 0, 
+        subtle->screen->base.width, subtle->th);
       XMapRaised(subtle->dpy, subtle->windows.panel1);
     }
 
   if(subtle->flags & SUB_SUBTLE_PANEL2)
     {
-      XMoveResizeWindow(subtle->dpy, subtle->windows.panel2, 0, s->base.height - subtle->th,
-        s->base.width, subtle->th);
+      XMoveResizeWindow(subtle->dpy, subtle->windows.panel2, 0, 
+        subtle->screen->base.height - subtle->th, subtle->screen->base.width, 
+        subtle->th);
       XMapRaised(subtle->dpy, subtle->windows.panel2);
     }
 
+  subScreenUpdate(); ///< Initially update strut
   subPanelUpdate();  ///< Initially update panels
-  subScreenUpdate(); ///< Update strut
 } /* }}} */
 
  /** subDisplayScan {{{
@@ -211,6 +210,7 @@ subDisplayScan(void)
 
   assert(subtle);
 
+  /* Scan for client windows */
   XQueryTree(subtle->dpy, ROOT, &dummy, &dummy, &wins, &n);
   for(i = 0; i < n; i++)
     {
@@ -242,7 +242,6 @@ subDisplayScan(void)
   subClientPublish();
   subScreenUpdate();
   subTrayUpdate();
-  subSubletUpdate();
 
   /* Activate first view */
   subViewJump(VIEW(subtle->views->data[0]));

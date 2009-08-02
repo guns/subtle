@@ -53,7 +53,7 @@
 #define MAX(a,b)     (a >= b ? a : b)                             ///< Maximum
 
 #define DEAD(c) \
-  if(!c || c->flags & SUB_STATE_DEAD) return;                     ///< Check dead clients
+  if(!c || c->flags & SUB_CLIENT_DEAD) return;                     ///< Check dead clients
 
 #define MINMAX(val,min,max) \
   (min && val < min ? min : max && val > max ? max : val)         ///< Value min/max
@@ -72,7 +72,7 @@
 #define COLORMAP \
   DefaultColormap(subtle->dpy, DefaultScreen(subtle->dpy))      ///< Default colormap
 #define VISIBLE(v,c) \
-  (v && c && (v->tags & c->tags || c->flags & SUB_STATE_STICK))   ///< Visible on view
+  (v && c && (v->tags & c->tags || c->flags & SUB_MODE_STICK))   ///< Visible on view
 #define SCREENW \
   DisplayWidth(subtle->dpy, DefaultScreen(subtle->dpy))         ///< Get screen width
 #define SCREENH \
@@ -141,27 +141,33 @@
 #define SUB_TYPE_TRAY                 (1L << 9)                   ///< Tray
 #define SUB_TYPE_VIEW                 (1L << 10)                  ///< View
 
-/* Client states */
-#define SUB_STATE_FULL                (1L << 11)                  ///< Fullscreen window
-#define SUB_STATE_FLOAT               (1L << 12)                  ///< Floating window
-#define SUB_STATE_STICK               (1L << 13)                  ///< Stick window
-#define SUB_STATE_DEAD                (1L << 14)                  ///< Dead window
+/* Mode flags */
+#define SUB_MODE_FULL                 (1L << 20)                  ///< Fullscreen mode
+#define SUB_MODE_FLOAT                (1L << 21)                  ///< Float mode
+#define SUB_MODE_STICK                (1L << 22)                  ///< Stick mode
+#define SUB_MODE_GRAVITY              (1L << 23)                  ///< Gravity mode
+#define SUB_MODE_SCREEN               (1L << 24)                  ///< Screen mode
+#define SUB_MODE_SIZE                 (1L << 25)                  ///< Size mode
 
-/* Client preferences */
-#define SUB_PREF_FOCUS                (1L << 15)                  ///< Send focus message
-#define SUB_PREF_CLOSE                (1L << 16)                  ///< Send close message
-#define SUB_PREF_INPUT                (1L << 17)                  ///< Active/passive focus-model
-#define SUB_PREF_URGENT               (1L << 18)                  ///< Urgent window
+/* Client flags */
+#define SUB_CLIENT_DEAD               (1L << 11)                  ///< Dead window
+#define SUB_CLIENT_FOCUS              (1L << 12)                  ///< Send focus message
+#define SUB_CLIENT_CLOSE              (1L << 13)                  ///< Send close message
+#define SUB_CLIENT_INPUT              (1L << 14)                  ///< Active/passive focus-model
+#define SUB_CLIENT_URGENT             (1L << 15)                  ///< Urgent window
 
-/* Sublet types */
-#define SUB_SUBLET_INOTIFY            (1L << 11)                  ///< Inotify sublet
-
-/* Data types */
+/* Data flags */
 #define SUB_DATA_STRING               (1L << 15)                  ///< String data
 #define SUB_DATA_NUM                  (1L << 16)                  ///< Num data
 #define SUB_DATA_NIL                  (1L << 17)                  ///< Nil data
 
-/* Grab types */
+/* Drag flags */
+#define SUB_DRAG_START                (1L << 11)                  ///< Drag start
+#define SUB_DRAG_MOVE                 (1L << 12)                  ///< Drag move
+#define SUB_DRAG_SWAP                 (1L << 13)                  ///< Drag swap
+#define SUB_DRAG_RESIZE               (1L << 14)                  ///< Drag resize
+
+/* Grab flags */
 #define SUB_GRAB_KEY                  (1L << 11)                  ///< Key grab
 #define SUB_GRAB_MOUSE                (1L << 12)                  ///< Mouse grab  
 #define SUB_GRAB_EXEC                 (1L << 13)                  ///< Exec an app
@@ -179,25 +185,19 @@
 #define SUB_GRAB_WINDOW_SCREEN        (1L << 25)                  ///< Set screen of window
 #define SUB_GRAB_WINDOW_KILL          (1L << 26)                  ///< Kill window
 
-/* Drag states */
-#define SUB_DRAG_START                (1L << 11)                  ///< Drag start
-#define SUB_DRAG_MOVE                 (1L << 12)                  ///< Drag move
-#define SUB_DRAG_SWAP                 (1L << 13)                  ///< Drag swap
-#define SUB_DRAG_RESIZE               (1L << 14)                  ///< Drag resize
-
-/* Tag types */
-#define SUB_TAG_DEFAULT               (1L << 1)                   ///< Default tag
-#define SUB_TAG_FULL                  (1L << 11)                  ///< Fullscreen tag
-#define SUB_TAG_FLOAT                 (1L << 12)                  ///< Float tag
-#define SUB_TAG_STICK                 (1L << 13)                  ///< Stick tag
-#define SUB_TAG_GRAVITY               (1L << 14)                  ///< Gravity tag
-#define SUB_TAG_SCREEN                (1L << 15)                  ///< Screen tag
-
-/* Gravity types */
+/* Gravity flags */
 #define SUB_GRAVITY_MODE33            (1L << 5)                   ///< 33% mode flag
 #define SUB_GRAVITY_MODE66            (1L << 6)                   ///< 66% mode flag
 #define SUB_GRAVITY_MODES \
   (SUB_GRAVITY_MODE33|SUB_GRAVITY_MODE66)                         ///< All modes
+
+/* Panel flags */
+#define SUB_PANEL_SPACER1             (1L << 11)                  ///< Panel spacer1
+#define SUB_PANEL_SPACER2             (1L << 12)                  ///< Panel spacer2
+#define SUB_PANEL_BOTTOM              (1L << 13)                  ///< Panel bottom
+
+/* Sublet types */
+#define SUB_SUBLET_INOTIFY            (1L << 11)                  ///< Inotify sublet
 
 /* Subtle flags */
 #define SUB_SUBTLE_DEBUG              (1L << 1)                   ///< Debug enabled
@@ -206,10 +206,8 @@
 #define SUB_SUBTLE_PANEL2             (1L << 4)                   ///< Panel2 enabled
 #define SUB_SUBTLE_EWMH               (1L << 5)                   ///< EWMH set
 
-/* Panel flags */
-#define SUB_PANEL_SPACER1             (1L << 11)                  ///< Panel spacer1
-#define SUB_PANEL_SPACER2             (1L << 12)                  ///< Panel spacer2
-#define SUB_PANEL_BOTTOM              (1L << 13)                  ///< Panel bottom
+/* Tag flags */
+#define SUB_TAG_DEFAULT               (1L << 1)                   ///< Default tag
 /* }}} */
 
 /* Typedefs {{{ */
@@ -231,8 +229,9 @@ typedef struct subclient_t /* {{{ */
 
   float      minr, maxr;                                          ///< Client ratios
   int        minw, minh, maxw, maxh, incw, inch;                  ///< Client sizes
+
   int        gravity, screen;                                     ///< Client informations
-  int        *gravities;                                          ///< Client view gravities
+  int        *gravities, *screens;                                ///< Client per vie
 } SubClient; /* }}} */
 
 typedef enum subewmh_t /* {{{ */
@@ -294,6 +293,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_WINDOW_TAGS,                                    ///< Subtle window tags
   SUB_EWMH_SUBTLE_WINDOW_GRAVITY,                                 ///< Subtle window gravity
   SUB_EWMH_SUBTLE_WINDOW_SCREEN,                                  ///< Subtle window screen
+  SUB_EWMH_SUBTLE_WINDOW_FLAGS,                                   ///< Subtle window flags
   SUB_EWMH_SUBTLE_TAG_NEW,                                        ///< Subtle tag new
   SUB_EWMH_SUBTLE_TAG_LIST,                                       ///< Subtle tag list
   SUB_EWMH_SUBTLE_TAG_KILL,                                       ///< Subtle tag kill
@@ -371,7 +371,7 @@ typedef struct subsubtle_t /* {{{ */
 {
   FLAGS                flags;                                     ///< Subtle flags
 
-  int                  th, bw, fy, step, snap, gravity;           ///< Subtle properties
+  int                  th, bw, fy, vid, step, snap, gravity;      ///< Subtle properties
 
   Display              *dpy;                                      ///< Subtle Xorg display
   XFontStruct          *xfs;                                      ///< Subtle font
@@ -434,10 +434,11 @@ typedef struct subsubtle_t /* {{{ */
 
 typedef struct subtag_t /* {{{ */
 {
-  FLAGS    flags;                                                 ///< Tag flags
-  char    *name;                                                  ///< Tag name
-  regex_t *preg;                                                  ///< Tag regex
-  int     gravity, screen;                                        ///< Tag gravity, screen
+  FLAGS      flags;                                               ///< Tag flags
+  char       *name;                                               ///< Tag name
+  regex_t    *preg;                                               ///< Tag regex
+  int        gravity, screen;                                     ///< Tag gravity, screen
+  XRectangle size;                                                ///< Tag size
 } SubTag; /* }}} */
 
 typedef struct subtray_t /* {{{ */
@@ -482,10 +483,12 @@ void subClientFocus(SubClient *c);                                ///< Focus cli
 void subClientWarp(SubClient *c);                                 ///< Warp to client
 void subClientDrag(SubClient *c, int mode);                       ///< Move/drag client
 void subClientUpdate(int vid);                                    ///< Update clients
-void subClientSetGravity(SubClient *c, int type);                 ///< Set client gravity
+int subClientTag(SubClient *c, int tag);                          ///< Tag client
+void subClientSetTags(SubClient *c);                              ///< Update client tags
+void subClientSetGravity(SubClient *c, int gravity, int force);   ///< Set client gravity
+void subClientSetScreen(SubClient *c, int screen, int force);     ///< Set client screen
 void subClientSetSize(SubClient *c);                              ///< Set client sizes
 void subClientSetHints(SubClient *c);                             ///< Set client hints
-void subClientSetTags(SubClient *c);                              ///< Set client tags
 void subClientSetStrut(SubClient *c);                             ///< Set client strut
 void subClientSetCaption(SubClient *c);                           ///< Set client caption
 void subClientToggle(SubClient *c, int type);                     ///< Toggle client state
@@ -538,8 +541,8 @@ void subGrabKill(SubGrab *g);                                     ///< Kill grab
 /* }}} */
 
 /* panel.c {{{ */
-void subPanelRender(void);                                        ///< Render panels
 void subPanelUpdate(void);                                        ///< Configure panels
+void subPanelRender(void);                                        ///< Render panels
 /* }}} */
 
 /* ruby.c {{{ */
@@ -571,8 +574,7 @@ void subSubletKill(SubSublet *s, int unlink);                     ///< Kill subl
 /* }}} */
 
 /* tag.c {{{ */
-SubTag *subTagNew(char *name, char *regex, int flags,
-  int gravity, int screen);                                       ///< Create tag
+SubTag *subTagNew(char *name, char *regex);                       ///< Create tag
 void subTagPublish(void);                                         ///< Publish tags
 void subTagKill(SubTag *t);                                       ///< Delete tag
 /* }}} */
