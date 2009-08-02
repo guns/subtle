@@ -224,7 +224,7 @@ subSharedMatch(int type,
       case 8:
         if(SUB_WINDOW_UP == type || SUB_WINDOW_DOWN == type)    score = 50;
         break;
-      default: break;
+      default: score = 25; break;
     }
 
   return score;
@@ -358,20 +358,19 @@ subSharedPropertyClass(Window win,
 
   assert(win);
 
-  if((klasses = subSharedPropertyStrings(win, 
+  klasses = subSharedPropertyStrings(win, 
 #ifdef WM
     SUB_EWMH_WM_CLASS,
 #else /* WM */    
     "WM_CLASS",
 #endif /* WM */    
-    &size)))
-    {
-      /* Instance/class name and fallback values */
-      if(inst)  *inst  = strdup(klasses[0] ? klasses[0] : "subtle");
-      if(klass) *klass = strdup(klasses[1] ? klasses[1] : "subtle");
+    &size);
 
-      XFreeStringList(klasses);
-    }  
+  /* Sanitize instance/class names */
+  if(inst)  *inst  = strdup(klasses && klasses[0] ? klasses[0] : "subtle");
+  if(klass) *klass = strdup(klasses && klasses[1] ? klasses[1] : "subtle");
+
+  if(klasses) XFreeStringList(klasses);
 } /* }}} */
 
  /** subSharedPropertyDelete {{{
@@ -439,8 +438,6 @@ subSharedFocus(void)
   int dummy;
   Window win;
   SubClient *c = NULL;
-
-  XUnmapWindow(subtle->dpy, subtle->panels.caption.win); 
 
    /* Focus */
   XQueryPointer(subtle->dpy, ROOT, (Window *)&dummy, &win,

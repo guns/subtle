@@ -38,21 +38,25 @@
 /* }}} */
 
 /* Flags {{{ */
-#define SUB_GRAVITY_UNKNOWN       0L        ///< Gravity unknown
-#define SUB_GRAVITY_BOTTOM_LEFT   1L        ///< Gravity bottom left
-#define SUB_GRAVITY_BOTTOM        2L        ///< Gravity bottom
-#define SUB_GRAVITY_BOTTOM_RIGHT  3L        ///< Gravity bottom right
-#define SUB_GRAVITY_LEFT          4L        ///< Gravity left
-#define SUB_GRAVITY_CENTER        5L        ///< Gravity center
-#define SUB_GRAVITY_RIGHT         6L        ///< Gravity right
-#define SUB_GRAVITY_TOP_LEFT      7L        ///< Gravity top left
-#define SUB_GRAVITY_TOP           8L        ///< Gravity top
-#define SUB_GRAVITY_TOP_RIGHT     9L        ///< Gravity top right
+#define SUB_GRAVITY_UNKNOWN       0L         ///< Gravity unknown
+#define SUB_GRAVITY_BOTTOM_LEFT   1L         ///< Gravity bottom left
+#define SUB_GRAVITY_BOTTOM        2L         ///< Gravity bottom
+#define SUB_GRAVITY_BOTTOM_RIGHT  3L         ///< Gravity bottom right
+#define SUB_GRAVITY_LEFT          4L         ///< Gravity left
+#define SUB_GRAVITY_CENTER        5L         ///< Gravity center
+#define SUB_GRAVITY_RIGHT         6L         ///< Gravity right
+#define SUB_GRAVITY_TOP_LEFT      7L         ///< Gravity top left
+#define SUB_GRAVITY_TOP           8L         ///< Gravity top
+#define SUB_GRAVITY_TOP_RIGHT     9L         ///< Gravity top right
 
-#define SUB_WINDOW_LEFT           0L        ///< Window left
-#define SUB_WINDOW_DOWN           1L        ///< Window down
-#define SUB_WINDOW_UP             2L        ///< Window above
-#define SUB_WINDOW_RIGHT          3L        ///< Window right
+#define SUB_WINDOW_LEFT           0L         ///< Window left
+#define SUB_WINDOW_DOWN           1L         ///< Window down
+#define SUB_WINDOW_UP             2L         ///< Window above
+#define SUB_WINDOW_RIGHT          3L         ///< Window right
+
+#define SUB_EWMH_FULL             (1L << 1)  ///< EWMH full flag
+#define SUB_EWMH_FLOAT            (1L << 2)  ///< EWMH float flag
+#define SUB_EWMH_STICK            (1L << 3)  ///< EWMH stick flag
 /* }}} */
 
 /* Typedefs {{{ */
