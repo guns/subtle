@@ -970,6 +970,15 @@ subClientKill(SubClient *c,
   XDeleteContext(subtle->dpy, c->win, CLIENTID);
   XUnmapWindow(subtle->dpy, c->win);
 
+  /* Focus */
+  if(subtle->windows.focus == c->win)
+    {
+      subtle->windows.focus        = 0;
+      subtle->panels.caption.width = 0;
+      subPanelUpdate();
+      subPanelRender();
+    }
+
   /* Close window */
   if(close && !(c->flags & SUB_CLIENT_DEAD))
     {
