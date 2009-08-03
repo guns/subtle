@@ -1048,7 +1048,7 @@ SubtlerReload(void)
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_RELOAD", data, False);
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_RELOAD", data, True);
 } /* }}} */
 
 /* SubtlerQuit {{{ */
@@ -1057,7 +1057,7 @@ SubtlerQuit(void)
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_QUIT", data, False);
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_QUIT", data, True);
 } /* }}} */
 
 /* main {{{ */
