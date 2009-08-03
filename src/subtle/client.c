@@ -74,8 +74,12 @@ subClientNew(Window win)
   c->win       = win;
 
  /* Default gravity */
-  if(0 == subtle->gravity && (k = CLIENT(subSharedFind(subtle->windows.focus, CLIENTID))))
-    grav = k->gravity; ///< Copy gravity
+  if(0 == subtle->gravity)
+    {
+      if((k = CLIENT(subSharedFind(subtle->windows.focus, CLIENTID))))
+        grav = k->gravity; ///< Copy gravity
+      else grav = 5; ///< Fallback default
+    }
   else grav = subtle->gravity; ///< Set default
 
   /* Init gravities and screens */
@@ -257,7 +261,6 @@ subClientRender(SubClient *c)
 
   XDrawString(subtle->dpy, subtle->panels.caption.win, subtle->gcs.font, 3, subtle->fy - 1,
     buf, strlen(buf));
-
 } /* }}} */
 
  /** subClientFocus {{{
@@ -279,8 +282,6 @@ subClientFocus(SubClient *c)
 
       return;
     }
-
-  subClientSetCaption(c);
 
   /* Check client input focus type */
   if(!(c->flags & SUB_CLIENT_INPUT) && c->flags & SUB_CLIENT_FOCUS)
@@ -852,6 +853,9 @@ subClientSetStrut(SubClient *c)
 void
 subClientSetCaption(SubClient *c)
 {
+  assert(c);
+  DEAD(c);
+
   /* Update panel width */
   subtle->panels.caption.width = XTextWidth(subtle->xfs, c->caption, 
     strlen(c->caption) + (c->flags & (SUB_MODE_STICK|SUB_MODE_FLOAT) ? 1 : 0)) + 6;
@@ -965,11 +969,6 @@ subClientKill(SubClient *c,
 {
   assert(c);
 
-  /* Ignore further events and delete context */
-  XSelectInput(subtle->dpy, c->win, NoEventMask);
-  XDeleteContext(subtle->dpy, c->win, CLIENTID);
-  XUnmapWindow(subtle->dpy, c->win);
-
   /* Focus */
   if(subtle->windows.focus == c->win)
     {
@@ -978,6 +977,11 @@ subClientKill(SubClient *c,
       subPanelUpdate();
       subPanelRender();
     }
+
+  /* Ignore further events and delete context */
+  XSelectInput(subtle->dpy, c->win, NoEventMask);
+  XDeleteContext(subtle->dpy, c->win, CLIENTID);
+  XUnmapWindow(subtle->dpy, c->win);
 
   /* Close window */
   if(close && !(c->flags & SUB_CLIENT_DEAD))
