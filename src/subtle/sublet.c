@@ -125,6 +125,59 @@ subSubletCompare(const void *a,
   return s1->time < s2->time ? -1 : (s1->time == s2->time ? 0 : 1);
 } /* }}} */
 
+ /** subSubletSetData {{{
+  * @brief Compare two sublets
+  * @param[in]  s     A #SubSublet
+  * @param[in]  data  Data
+  **/
+
+void
+subSubletSetData(SubSublet *s,
+  const char *data)
+{
+  int i = 0;
+  char *tmp = NULL, *tok = NULL;
+  unsigned long color = 0;
+  SubText *t = NULL;
+
+  assert(s);
+
+  color    = subtle->colors.fg_sublets;
+  tmp      = strdup(data);
+  s->width = 0;
+
+  /* Split and iterate over tokens */
+  while((tok = strsep(&tmp, SEPARATOR)))
+    {
+      if(!strncmp(tok, "#", 1)) ///< Color
+        {
+          color = subSharedColor(tok);
+        }
+      else ///< Recycle or re-use item to save allocs
+        {
+          if(i < s->text->ndata)
+            {
+              t = TEXT(s->text->data[i++]);
+
+              if(t->flags & SUB_DATA_STRING && t->data.string) free(t->data.string);
+            }
+          else if((t = TEXT(subSharedMemoryAlloc(1, sizeof(SubText)))))
+            {
+              i++;
+              subArrayPush(s->text, t);
+            }
+
+          t->flags        = SUB_TYPE_TEXT|SUB_DATA_STRING;
+          t->data.string  = strdup(tok);
+          t->width        = XTextWidth(subtle->xfs, tok, strlen(tok) - 1) + 6; ///< Font offset
+          t->color        = color;
+          s->width       += t->width;
+        }
+    }
+
+  free(tmp);
+} /* }}} */
+
  /** subSubletPublish {{{
   * @brief Publish sublets
   **/

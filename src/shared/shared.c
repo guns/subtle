@@ -428,6 +428,27 @@ subSharedTime(void)
   return tv.tv_sec;
 } /* }}} */
 
+ /** subSharedColor {{{
+  * @brief Parse color and add itto colormap
+  * @param[in]  name  Color name
+  **/
+
+unsigned long
+subSharedColor(char *name)
+{
+  XColor color = { 0 }; ///< Default color
+
+  /* Parse and store color */
+  if(!XParseColor(subtle->dpy, COLORMAP, name, &color))
+    {
+      subSharedLogWarn("Failed loading color `%s'\n", name);
+    }
+  else if(!XAllocColor(subtle->dpy, COLORMAP, &color))
+    subSharedLogWarn("Failed allocating color `%s'\n", name);
+
+  return color.pixel;
+} /* }}} */
+
  /** subSharedFocus {{{
   * @brief Get pointer window and focus it
   **/
@@ -439,7 +460,7 @@ subSharedFocus(void)
   Window win;
   SubClient *c = NULL;
 
-   /* Focus */
+  /* Focus */
   XQueryPointer(subtle->dpy, ROOT, (Window *)&dummy, &win,
     &dummy, &dummy, &dummy, &dummy, (unsigned int *)&dummy);
 
