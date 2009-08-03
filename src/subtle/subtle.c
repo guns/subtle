@@ -67,10 +67,10 @@ SubtleSignal(int signum)
         subtle->panel   = NULL;
 
         /* Clear x cache */
-        subtle->panels.tray.x     = 0;
-        subtle->panels.views.x    = 0;
-        subtle->panels.caption.x  = 0;
-        subtle->panels.sublets.x  = 0;
+        subtle->panels.tray.x    = 0;
+        subtle->panels.views.x   = 0;
+        subtle->panels.caption.x = 0;
+        subtle->panels.sublets.x = 0;
 
         /* Clear arrays */
         subArrayClear(subtle->grabs, True);
