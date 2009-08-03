@@ -301,6 +301,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_VIEW_KILL,                                      ///< Subtle view kill
   SUB_EWMH_SUBTLE_SUBLET_NEW,                                     ///< Subtle sublet new
   SUB_EWMH_SUBTLE_SUBLET_UPDATE,                                  ///< Subtle sublet update
+  SUB_EWMH_SUBTLE_SUBLET_DATA,                                    ///< Subtle sublet data
   SUB_EWMH_SUBTLE_SUBLET_LIST,                                    ///< Subtle sublet list
   SUB_EWMH_SUBTLE_SUBLET_KILL,                                    ///< Subtle sublet kill
   SUB_EWMH_SUBTLE_RELOAD,                                         ///< Subtle reload config
@@ -569,6 +570,7 @@ SubSublet *subSubletNew(void);                                    ///< Create su
 void subSubletUpdate(void);                                       ///< Update sublet bar
 void subSubletRender(void);                                       ///< Render sublet
 int subSubletCompare(const void *a, const void *b);               ///< Compare two sublets
+void subSubletSetData(SubSublet *s, const char *string);          ///< Set sublet data
 void subSubletPublish(void);                                      ///< Publish sublets
 void subSubletKill(SubSublet *s, int unlink);                     ///< Kill sublet
 /* }}} */

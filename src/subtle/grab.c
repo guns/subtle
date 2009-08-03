@@ -197,7 +197,6 @@ subGrabUnset(Window win)
 {
   XUngrabKey(subtle->dpy, AnyKey, AnyModifier, win);
   XUngrabButton(subtle->dpy, AnyButton, AnyModifier, win);
-  subtle->windows.focus = 0; ///< Unset focus window
 } /* }}} */
 
  /** subGrabCompare {{{

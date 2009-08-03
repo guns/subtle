@@ -25,25 +25,17 @@ subPanelUpdate(void)
   assert(subtle);
 
   /* Gather width for spacer */
-  p = subtle->panel;
-  while(p)
+  for(p = subtle->panel; p; p = p->next)
     {
       if(p->flags & SUB_PANEL_BOTTOM) n = 1;
       if(p->flags & SUB_PANEL_SPACER1) spacer[n]++;
       if(p->flags & SUB_PANEL_SPACER2) spacer[n]++;
 
-      /* Decrease caption width */
-      if(p->win == subtle->panels.caption.win && !subtle->windows.focus)
-        p->width = 0;
-
       width[n] += p->width;
-      p         = p->next;
     }
 
   /* Move and resize windows */
-  p = subtle->panel;
-  n = 0;
-  while(p)
+  for(p = subtle->panel, n = 0; p; p = p->next) 
     {
       if(p->flags & SUB_PANEL_BOTTOM)
         {
@@ -63,14 +55,11 @@ subPanelUpdate(void)
       if(p->flags & SUB_PANEL_SPACER2) ///< Add second spacer
         x += (subtle->screen->base.width - width[n]) / spacer[n];
 
-      /* Remap caption window only when needed */
-      if(p->win == subtle->panels.caption.win && !subtle->windows.focus)
-        XUnmapWindow(subtle->dpy, p->win);
-      else
-        XMapRaised(subtle->dpy, p->win);
+      /* Remap window only when needed */
+      if(0 < p->width) XMapRaised(subtle->dpy, p->win);
+      else XUnmapWindow(subtle->dpy, p->win);
 
       x += p->width;
-      p  = p->next;
     }
 } /* }}} */
 
