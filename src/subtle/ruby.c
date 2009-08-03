@@ -467,66 +467,6 @@ RubyConfigForeach(VALUE key,
   return Qnil;
 } /* }}} */
 
-/* RubyParseColor {{{ */
-static unsigned long
-RubyParseColor(char *name)
-{
-  XColor color = { 0 }; ///< Default color
-
-  /* Parse and store color */
-  if(!XParseColor(subtle->dpy, COLORMAP, name, &color))
-    {
-      subSharedLogWarn("Failed loading color `%s'\n", name);
-    }
-  else if(!XAllocColor(subtle->dpy, COLORMAP, &color))
-    subSharedLogWarn("Failed allocating color `%s'\n", name);
-
-  return color.pixel;
-} /* }}} */
-
-/* RubyParseText {{{ */
-static void
-RubyParseText(char *string,
-  SubArray *ary,
-  int *width)
-{
-  int i = 0;
-  SubText *t = NULL;
-  unsigned long color = subtle->colors.fg_sublets;
-  char *tok = strtok(string, SEPARATOR);
-  *width = 0;
-
-  while(tok)
-    {
-      if(!strncmp(tok, "#", 1)) ///< Color
-        {
-          color = RubyParseColor(tok);
-        }
-      else ///< Recycle or re-use item to save allocs
-        {
-          if(i < ary->ndata)
-            {
-              t = TEXT(ary->data[i++]);
-
-              if(t->flags & SUB_DATA_STRING && t->data.string) free(t->data.string);
-            }
-          else if((t = TEXT(subSharedMemoryAlloc(1, sizeof(SubText)))))
-            {
-              i++;
-              subArrayPush(ary, t);
-            }
-
-          t->flags        = SUB_TYPE_TEXT|SUB_DATA_STRING;
-          t->data.string  = strdup(tok);
-          t->width        = XTextWidth(subtle->xfs, tok, strlen(tok) - 1) + 6; ///< Font offset
-          t->color        = color;
-          *width         += t->width;
-        }
-
-      tok = strtok(NULL, SEPARATOR);
-    }
-} /* }}} */
-
 /* RubyParsePanel {{{ */
 int
 RubyParsePanel(VALUE hash,
@@ -625,18 +565,12 @@ RubySubletDataSet(VALUE self,
   SubSublet *s = NULL;
   Data_Get_Struct(self, SubSublet, s);
 
-  if(s)
+  if(s && RTEST(value) && T_STRING == rb_type(value)) ///< Check value type
     {
-      switch(rb_type(value)) ///< Check value type
-        {
-          case T_STRING: 
-            RubyParseText(RSTRING_PTR(value), s->text, &s->width); 
-            ret = Qtrue;
-            break;
-          default:
-            rb_raise(rb_eArgError, "Unknown value type");
-        }
+      subSubletSetData(s, RSTRING_PTR(value)); 
+      ret = Qtrue;
     }
+  else rb_raise(rb_eArgError, "Unknown value type");
 
   return ret;
 } /* }}} */
@@ -807,17 +741,17 @@ RubyWrapLoadConfig(VALUE data)
 
   /* Config: Colors */
   config                    = rb_const_get(rb_cObject, rb_intern("COLORS"));
-  subtle->colors.fg_panel   = RubyParseColor(RubyGetString(config, "fg_panel",      "#e2e2e5"));
-  subtle->colors.fg_views   = RubyParseColor(RubyGetString(config, "fg_views",      "#CF6171"));
-  subtle->colors.fg_sublets = RubyParseColor(RubyGetString(config, "fg_sublets",    "#CF6171"));
-  subtle->colors.fg_focus   = RubyParseColor(RubyGetString(config, "fg_focus",      "#000000"));
-  subtle->colors.bg_panel   = RubyParseColor(RubyGetString(config, "bg_panel",      "#444444"));
-  subtle->colors.bg_views   = RubyParseColor(RubyGetString(config, "bg_views",      "#3d3d3d"));
-  subtle->colors.bg_sublets = RubyParseColor(RubyGetString(config, "bg_sublets",    "#CF6171"));
-  subtle->colors.bg_focus   = RubyParseColor(RubyGetString(config, "bg_focus",      "#CF6171"));
-  subtle->colors.bo_focus   = RubyParseColor(RubyGetString(config, "border_focus",  "#CF6171"));
-  subtle->colors.bo_normal  = RubyParseColor(RubyGetString(config, "border_normal", "#CF6171"));
-  subtle->colors.bg         = RubyParseColor(RubyGetString(config, "background",    "#3d3d3d3"));
+  subtle->colors.fg_panel   = subSharedColor(RubyGetString(config, "fg_panel",      "#e2e2e5"));
+  subtle->colors.fg_views   = subSharedColor(RubyGetString(config, "fg_views",      "#CF6171"));
+  subtle->colors.fg_sublets = subSharedColor(RubyGetString(config, "fg_sublets",    "#CF6171"));
+  subtle->colors.fg_focus   = subSharedColor(RubyGetString(config, "fg_focus",      "#000000"));
+  subtle->colors.bg_panel   = subSharedColor(RubyGetString(config, "bg_panel",      "#444444"));
+  subtle->colors.bg_views   = subSharedColor(RubyGetString(config, "bg_views",      "#3d3d3d"));
+  subtle->colors.bg_sublets = subSharedColor(RubyGetString(config, "bg_sublets",    "#CF6171"));
+  subtle->colors.bg_focus   = subSharedColor(RubyGetString(config, "bg_focus",      "#CF6171"));
+  subtle->colors.bo_focus   = subSharedColor(RubyGetString(config, "border_focus",  "#CF6171"));
+  subtle->colors.bo_normal  = subSharedColor(RubyGetString(config, "border_normal", "#CF6171"));
+  subtle->colors.bg         = subSharedColor(RubyGetString(config, "background",    "#3d3d3d3"));
 
   /* Config: Panels */
   config = rb_const_get(rb_cObject, rb_intern("PANEL"));
