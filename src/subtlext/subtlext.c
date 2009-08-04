@@ -1295,6 +1295,46 @@ SubtlextSubletUpdate(VALUE self)
   return Qnil;
 } /* }}} */
 
+/* SubtlextDataScreen {{{ */
+static VALUE
+SubtlextSubletData(VALUE self)
+{
+  VALUE id = rb_iv_get(self, "@id");
+
+  //gravity = (int *)subSharedPropertyGet(win, XA_STRING,
+    //"SUBTLE_SUBLET_DATA", NULL);
+   
+      
+  return RTEST(id) ? id : Qnil;
+} /* }}} */
+
+/* SubtlextSubletDataSet {{{ */
+static VALUE
+SubtlextSubletDataSet(VALUE self,
+  VALUE value)
+{
+  if(T_STRING == rb_type(value))
+    {
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+      VALUE id = rb_iv_get(self, "@id");
+
+      snprintf(data.b, sizeof(data.b), "%c%s",
+        (char)NUM2LONG(id), RSTRING_PTR(value));
+
+      subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_DATA", data, True);
+
+      return value;
+    }
+  else
+    {
+      rb_raise(rb_eStandardError, "Failed setting sublet data");
+      return Qnil;
+    }
+
+  rb_raise(rb_eArgError, "Failed setting value type `%d'", rb_type(value));
+  return Qnil;
+} /* }}} */
+
 /* SubtlextSubletToString {{{ */
 static VALUE
 SubtlextSubletToString(VALUE self)
@@ -1682,6 +1722,8 @@ Init_subtlext(void)
 
   rb_define_method(klass, "initialize", SubtlextSubletInit,     1);
   rb_define_method(klass, "update",     SubtlextSubletUpdate,   0);
+  rb_define_method(klass, "data",       SubtlextSubletData,     0);
+  rb_define_method(klass, "data=",      SubtlextSubletDataSet,  1);  
   rb_define_method(klass, "to_s",       SubtlextSubletToString, 0);
 
   /* Class: tag */

@@ -49,11 +49,12 @@ typedef void(*SubtlerCommand)(char *, char *);
 #define SUB_ACTION_UNTAG   10  ///< Action untag
 #define SUB_ACTION_TAGS    11  ///< Action tags
 #define SUB_ACTION_UPDATE  12  ///< Action update
-#define SUB_ACTION_GRAVITY 13  ///< Action gravity
-#define SUB_ACTION_SCREEN  14  ///< Action screen
-#define SUB_ACTION_RAISE   15  ///< Action raise
-#define SUB_ACTION_LOWER   16  ///< Action lower
-#define SUB_ACTION_TOTAL   17  ///< Action total
+#define SUB_ACTION_DATA    13  ///< Action data
+#define SUB_ACTION_GRAVITY 14  ///< Action gravity
+#define SUB_ACTION_SCREEN  15  ///< Action screen
+#define SUB_ACTION_RAISE   16  ///< Action raise
+#define SUB_ACTION_LOWER   17  ///< Action lower
+#define SUB_ACTION_TOTAL   18  ///< Action total
 
 /* Modifier */
 #define SUB_MOD_LEFT       0   ///< Mod left
@@ -312,7 +313,7 @@ static void
 SubtlerClientRestackRaise(char *arg1,
   char *arg2)
 {
-  CHECK(arg1, "Usage: %sr -c -A CLIENT\n", PKG_NAME);
+  CHECK(arg1, "Usage: %sr -c -E CLIENT\n", PKG_NAME);
 
   SubtlerRestack(arg1, Above);
 } /* }}} */
@@ -322,7 +323,7 @@ static void
 SubtlerClientRestackLower(char *arg1,
   char *arg2)
 {
-  CHECK(arg1, "Usage: %sr -c -B CLIENT\n", PKG_NAME);
+  CHECK(arg1, "Usage: %sr -c -R CLIENT\n", PKG_NAME);
 
   SubtlerRestack(arg1, Below);
 } /* }}} */
@@ -556,6 +557,26 @@ SubtlerSubletUpdate(char *arg1,
   if(-1 != (data.l[0] = subSharedSubletFind(arg1)))
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_UPDATE", data, False);
   else subSharedLogWarn("Failed updating sublet\n");
+} /* }}} */
+
+/* SubtlerSubletData {{{ */
+static void
+SubtlerSubletData(char *arg1,
+  char *arg2)
+{
+  int id = 0;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  CHECK(arg1, "Usage: %sr -s PATTERN -A DATA\n", PKG_NAME);
+  subSharedLogDebug("%s\n", __func__);
+
+  if(-1 != (id = subSharedSubletFind(arg1)))
+    {
+      snprintf(data.b, sizeof(data.b), "%c%s", (char)id, arg2);
+
+      subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_DATA", data, False);
+    }
+  else subSharedLogWarn("Failed setting sublet data\n");
 } /* }}} */
 
 /* SubtlerSubletKill {{{ */
@@ -912,8 +933,8 @@ SubtlerUsage(int group)
              "  -G, --tags              Show client tags\n" \
              "  -g, --gravity           Set client gravity\n" \
              "  -n, --screen            Set client screen\n" \
-             "  -A, --raise             Raise client window (A as in Above)\n" \
-             "  -B, --lower             Lower client window (B as in Below)\n" \
+             "  -E, --raise             Raise client window\n" \
+             "  -R, --lower             Lower client window\n" \
              "  -k, --kill=PATTERN      Kill a client\n");
     }
   if(-1 == group || SUB_GROUP_SUBLET == group)
@@ -922,6 +943,7 @@ SubtlerUsage(int group)
              "  -a, --add=PATH          Create new sublet\n" \
              "  -l, --list              List all sublets\n" \
              "  -u, --update            Updates value of sublet\n" \
+             "  -A, --data              Set data of sublet\n" \
              "  -k, --kill=PATTERN      Kill a sublet\n");
     }    
   if(-1 == group || SUB_GROUP_TAG == group)
@@ -1091,9 +1113,10 @@ main(int argc,
     { "untag",   no_argument,       0, 'U' },
     { "tags",    no_argument,       0, 'G' },
     { "update",  no_argument,       0, 'u' },
+    { "data",    no_argument,       0, 'A' },
     { "gravity", no_argument,       0, 'g' },
-    { "raise",   no_argument,       0, 'A' },
-    { "lower",   no_argument,       0, 'B' },
+    { "raise",   no_argument,       0, 'E' },
+    { "lower",   no_argument,       0, 'R' },
 
     /* Modifier */
     { "reload",  no_argument,       0, 'r' },
@@ -1118,19 +1141,20 @@ main(int argc,
   /* Command table {{{ */
   const SubtlerCommand cmds[SUB_GROUP_TOTAL][SUB_ACTION_TOTAL] = { 
     /* Client, Sublet, Tag, View <=> Add, Kill, Find, Focus, Full, Float, 
-       Stick, Jump, List, Tag, Untag, Tags, Update, Gravity, Screen, Raise, Lower */
+       Stick, Jump, List, Tag, Untag, Tags, Update, Data, Gravity, Screen, Raise, Lower */
     { NULL, SubtlerClientKill, SubtlerClientFind,  SubtlerClientFocus, 
       SubtlerClientToggleFull, SubtlerClientToggleFloat, SubtlerClientToggleStick, NULL,
       SubtlerClientList, SubtlerClientTag, SubtlerClientUntag, SubtlerClientTags, NULL, 
-      SubtlerClientGravity, SubtlerClientScreen, SubtlerClientRestackRaise, 
+      NULL, SubtlerClientGravity, SubtlerClientScreen, SubtlerClientRestackRaise, 
       SubtlerClientRestackLower },
     { SubtlerSubletNew, SubtlerSubletKill, NULL, NULL, NULL, NULL, NULL, NULL, 
-      SubtlerSubletList, NULL, NULL, NULL, SubtlerSubletUpdate, NULL, NULL, NULL, NULL },
+      SubtlerSubletList, NULL, NULL, NULL, SubtlerSubletUpdate, SubtlerSubletData,
+      NULL, NULL, NULL, NULL },
     { SubtlerTagNew, SubtlerTagKill, SubtlerTagFind, NULL, NULL, NULL, 
-      NULL, NULL, SubtlerTagList, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL },
+      NULL, NULL, SubtlerTagList, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL },
     { SubtlerViewNew, SubtlerViewKill, SubtlerViewFind, NULL, NULL, NULL, NULL,
       SubtlerViewJump, SubtlerViewList, SubtlerViewTag, SubtlerViewUntag, SubtlerViewTags, 
-      NULL, NULL, NULL, NULL, NULL }
+      NULL, NULL, NULL, NULL, NULL, NULL }
   }; /* }}} */
 
   /* Set up signal handler */
@@ -1141,7 +1165,7 @@ main(int argc,
   sigaction(SIGINT, &act, NULL);
   sigaction(SIGSEGV, &act, NULL);
 
-  while((c = getopt_long(argc, argv, "cstvakfoFOSjlTUGugnABrqHJKLDd:hCxV", long_options, NULL)) != -1)
+  while((c = getopt_long(argc, argv, "cstvakfoFOSjlTUGuAgnERrqHJKLDd:hCxV", long_options, NULL)) != -1)
     {
       switch(c)
         {
@@ -1165,10 +1189,11 @@ main(int argc,
           case 'U': action = SUB_ACTION_UNTAG;   break;
           case 'G': action = SUB_ACTION_TAGS;    break;
           case 'u': action = SUB_ACTION_UPDATE;  break;
+          case 'A': action = SUB_ACTION_DATA;    break;
           case 'g': action = SUB_ACTION_GRAVITY; break;
           case 'n': action = SUB_ACTION_SCREEN;  break;
-          case 'A': action = SUB_ACTION_RAISE;   break;
-          case 'B': action = SUB_ACTION_LOWER;   break;
+          case 'E': action = SUB_ACTION_RAISE;   break;
+          case 'R': action = SUB_ACTION_LOWER;   break;
 
           /* Modifier */
           case 'r': mod = SUB_MOD_RELOAD;        break;
@@ -1241,6 +1266,7 @@ main(int argc,
           {
             char buf[20];
 
+            /* Use window id for matching */
             snprintf(buf, sizeof(buf), "%#lx", win);
             arg1 = strdup(buf);
           }
