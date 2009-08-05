@@ -470,7 +470,7 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_NET_WM_STATE: /* {{{ */
             switch(subEwmhFind(ev->data.l[1])) ///< Only the first property
               {
-                case SUB_EWMH_NET_WM_STATE_FULLSCRN:
+                case SUB_EWMH_NET_WM_STATE_FULLSCREEN:
                   subClientToggle(c, SUB_MODE_FULL);
                   break;
                 case SUB_EWMH_NET_WM_STATE_ABOVE:
