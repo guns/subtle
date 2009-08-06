@@ -688,27 +688,41 @@ static VALUE
 RubyWrapLoadConfig(VALUE data)
 {
   int i, state = 0;
-  char *font = NULL, buf[100];
+  char *font = NULL, buf[100], path[50];
   VALUE config = Qnil, entry = Qnil;
   SubPanel *p = NULL;
 
-  /* Check path */
-  if(!subtle->paths.config)
+  /* Check config paths */
+  if(subtle->paths.config) 
+    snprintf(path, sizeof(path), "%s", subtle->paths.config);
+  else
     {
       FILE *fd = NULL;
+      char *tok = NULL, *bufp = buf, *home = getenv("XDG_CONFIG_HOME"), 
+        *dirs = getenv("XDG_CONFIG_DIRS");
 
-      snprintf(buf, sizeof(buf), "%s/%s/%s", getenv("XDG_CONFIG_HOME"), PKG_NAME, PKG_CONFIG);
+      /* Combine paths */
+      snprintf(path, sizeof(path), "%s/.config", getenv("HOME"));
+      snprintf(buf, sizeof(buf), "%s:%s", home ? home : path, dirs ? dirs : "/etc/xdg");
 
-      /* Check if config file exists */
-      if(!(fd = fopen(buf, "r")))
-        snprintf(buf, sizeof(buf), "%s/%s", DIR_CONFIG, PKG_CONFIG);
-      else fclose(fd);
+      /* Search config in XDG path */
+      while((tok = strsep(&bufp, ":")))
+        {
+          snprintf(path, sizeof(path), "%s/%s/%s", tok, PKG_NAME, PKG_CONFIG);
+
+          if((fd = fopen(path, "r"))) ///< Check if config file exists
+            {
+              fclose(fd);
+              break;
+            }
+
+          subSharedLogDebug("Checked config=%s\n", path);
+        }
     }
-  else snprintf(buf, sizeof(buf), "%s", subtle->paths.config);
-  subSharedLogDebug("config=%s\n", buf);
+  printf("Using config `%s'\n", path);
 
-  rb_load_protect(rb_str_new2(buf), 0, &state); ///< Load config
-  if(state) RubyPerror(True, True, "Failed reading config `%s'", buf);
+  rb_load_protect(rb_str_new2(path), 0, &state); ///< Load config
+  if(state) RubyPerror(True, True, "Failed finding config in `%s'", buf);
 
   if(!subtle || !subtle->dpy) return Qnil; ///< Exit after config check
 
@@ -1032,16 +1046,24 @@ void
 subRubyLoadSublet(const char *file)
 {
   int state = 0;
-  char path[100];
+  char buf[100];
 
   /* Check path */
-  if(!subtle->paths.sublets)
-    snprintf(path, sizeof(path), "%s/%s/sublets/%s", getenv("XDG_DATA_HOME"), PKG_NAME, file);
-  else snprintf(path, sizeof(path), "%s/%s", subtle->paths.sublets, file);
-  subSharedLogDebug("path=%s\n", path);
+  if(subtle->paths.sublets)
+    snprintf(buf, sizeof(buf), "%s/%s", subtle->paths.sublets, file);
+  else
+    {
+      char *data = getenv("XDG_DATA_HOME"), path[50];
+
+      /* Combine paths */
+      snprintf(path, sizeof(path), "%s/.local/share", getenv("HOME"));
+      snprintf(buf, sizeof(buf), "%s/%s/sublets/%s", 
+        data ? data : path, PKG_NAME, file);
+    }
+  subSharedLogDebug("sublet=%s\n", buf);
 
   /* Load sublet */
-  rb_load_protect(rb_str_new2(path), 0, &state); ///< Load sublet
+  rb_load_protect(rb_str_new2(buf), 0, &state); ///< Load sublet
 
   if(0 == state && Qnil != sublet)
     {
@@ -1073,7 +1095,7 @@ subRubyLoadSublet(const char *file)
 
       sublet = Qnil;
     }
-  else RubyPerror(True, False, "Failed loading sublet `%s'", path);
+  else RubyPerror(True, False, "Failed loading sublet `%s'", buf);
 } /* }}} */
 
  /** subRubyLoadSublets {{{
@@ -1097,10 +1119,17 @@ subRubyLoadSublets(void)
 #endif /* HAVE_SYS_INOTIFY_H */
 
   /* Check path */
-  if(!subtle->paths.sublets)
-    snprintf(buf, sizeof(buf), "%s/%s/sublets", getenv("XDG_DATA_HOME"), PKG_NAME);
-  else snprintf(buf, sizeof(buf), "%s", subtle->paths.sublets);
-  subSharedLogDebug("path=%s\n", buf);
+  if(subtle->paths.sublets)
+    snprintf(buf, sizeof(buf), "%s", subtle->paths.sublets);
+  else
+    {
+      char *data = getenv("XDG_DATA_HOME"), path[50];
+
+      /* Combine paths */
+      snprintf(path, sizeof(path), "%s/.local/share", getenv("HOME"));
+      snprintf(buf, sizeof(buf), "%s/%s/sublets", data ? data : path, PKG_NAME);
+    }
+  printf("Loading sublets from `%s'\n", buf);
 
   /* Scan directory */
   if(0 < ((num = scandir(buf, &entries, RubyFilter, alphasort))))

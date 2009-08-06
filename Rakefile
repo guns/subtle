@@ -16,21 +16,16 @@ require("fileutils")
 # 
 # Settings
 #
-# XDG paths {{{
-@xdg_config = ENV["XDG_CONFIG_DIRS"] ? ENV["XDG_CONFIG_DIRS"].split(":").first : "/etc/xdg"
-@xdg_data   = ENV["XDG_DATA_DIRS"]   ? ENV["XDG_DATA_DIRS"].split(":").first   : "$(prefix)/share"
-# }}}
-
 # Options / defines {{{
 @options = {
   "destdir"    => "",
-  "xdg_config" => @xdg_config + "/$(PKG_NAME)",
-  "xdg_data"   => @xdg_data + "/$(PKG_NAME)",
-  "bindir"     => "$(destdir)/usr/bin",
-  "sysconfdir" => "$(destdir)/$(xdg_config)",
-  "datadir"    => "$(destdir)/$(xdg_data)",
-  "subletdir"  => "$(destdir)/$(xdg_data)/sublets",
-  "scriptdir"  => "$(destdir)/$(xdg_data)/scripts",
+  "prefix"     => "/usr",
+  "bindir"     => "$(destdir)/$(prefix)/bin",
+  "sysconfdir" => "$(destdir)/etc",
+  "configdir"  => "$(sysconfdir)/xdg/$(PKG_NAME)",
+  "datadir"    => "$(destdir)/$(prefix)/share/$(PKG_NAME)",
+  "subletdir"  => "$(datadir)/sublets",
+  "scriptdir"  => "$(datadir)/scripts",
   "extdir"     => "$(destdir)/$(sitelibdir)/$(PKG_NAME)",
   "debug"      => "no",
   "builddir"   => "build",
@@ -48,9 +43,7 @@ require("fileutils")
   "PKG_VERSION"   => "0.8.$(revision)",
   "PKG_BUGREPORT" => "unexist@dorfelite.net",
   "PKG_CONFIG"    => "subtle.rb",
-  "RUBY_VERSION"  => "$(MAJOR).$(MINOR).$(TEENY)",
-  "DIR_CONFIG"    => "$(xdg_config)",
-  "DIR_SUBLET"    => "$(xdg_data)/sublets"
+  "RUBY_VERSION"  => "$(MAJOR).$(MINOR).$(TEENY)"
 }  # }}}
 
 # Lists {{{
@@ -253,8 +246,9 @@ task(:config) do
 #{@defines["PKG_NAME"]} #{@defines["PKG_VERSION"]}
 -----------------
 Binaries............: #{@options["bindir"]}
-Configuration.......: #{@options["sysconfdir"]}
-Sublets.............: #{@options["datadir"]}
+Configuration.......: #{@options["configdir"]}
+Sublets.............: #{@options["subletdir"]}
+Scripts.............: #{@options["scriptdir"]}
 Extension...........: #{@options["extdir"]}
 
 Debugging messages..: #{@options["debug"]}
@@ -282,11 +276,11 @@ task(PG_RBE => [:config, OBJ_SHD])
 # Task: install {{{
 desc("Install subtle")
 task(:install => [:config, :build]) do
+  # Make install dirs
   FileUtils.mkdir_p( 
     [
       @options["bindir"],
-      @options["sysconfdir"],
-      @options["datadir"],
+      @options["configdir"],
       @options["subletdir"],
       @options["scriptdir"],
       @options["extdir"]
@@ -299,21 +293,21 @@ task(:install => [:config, :build]) do
   message("INSTALL %s\n" % [PG_RMT])
   FileUtils.install(PG_RMT, @options["bindir"], :mode => 0755, :verbose => false)
 
-  message("INSTALL %s\n" % [PG_RBE])
-  FileUtils.install(PG_RBE + ".so", @options["extdir"], :mode => 0644, :verbose => false)
-
-  FileList["dist/scripts/*.*"].collect do |f|
-    message("INSTALL %s\n" % [File.basename(f)])
-    FileUtils.install(f, @options["scriptdir"], :mode => 0644, :verbose => false)
-  end
+  message("INSTALL %s\n" % [@defines["PKG_CONFIG"]])
+  FileUtils.install("dist/" + @defines["PKG_CONFIG"], @options["configdir"], :mode => 0644, :verbose => false)
 
   FileList["dist/sublets/*.rb"].collect do |f|
     message("INSTALL %s\n" % [File.basename(f)])
     FileUtils.install(f, @options["subletdir"], :mode => 0644, :verbose => false)
   end
 
-  message("INSTALL %s\n" % [@defines["PKG_CONFIG"]])
-  FileUtils.install("dist/" + @defines["PKG_CONFIG"], @options["sysconfdir"], :mode => 0644, :verbose => false)
+  FileList["dist/scripts/*.*"].collect do |f|
+    message("INSTALL %s\n" % [File.basename(f)])
+    FileUtils.install(f, @options["scriptdir"], :mode => 0644, :verbose => false)
+  end
+
+  message("INSTALL %s\n" % [PG_RBE])
+  FileUtils.install(PG_RBE + ".so", @options["extdir"], :mode => 0644, :verbose => false)
 end # }}}
 
 # Task: help {{{
