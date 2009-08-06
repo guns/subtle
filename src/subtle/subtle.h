@@ -570,7 +570,7 @@ SubSublet *subSubletNew(void);                                    ///< Create su
 void subSubletUpdate(void);                                       ///< Update sublet bar
 void subSubletRender(void);                                       ///< Render sublet
 int subSubletCompare(const void *a, const void *b);               ///< Compare two sublets
-void subSubletSetData(SubSublet *s, const char *string);          ///< Set sublet data
+void subSubletSetData(SubSublet *s, char *data);                  ///< Set sublet data
 void subSubletPublish(void);                                      ///< Publish sublets
 void subSubletKill(SubSublet *s, int unlink);                     ///< Kill sublet
 /* }}} */

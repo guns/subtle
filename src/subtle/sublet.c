@@ -133,21 +133,20 @@ subSubletCompare(const void *a,
 
 void
 subSubletSetData(SubSublet *s,
-  const char *data)
+  char *data)
 {
   int i = 0;
-  char *tmp = NULL, *tok = NULL;
+  char *tok = NULL;
   unsigned long color = 0;
   SubText *t = NULL;
 
   assert(s);
 
   color    = subtle->colors.fg_sublets;
-  tmp      = strdup(data);
   s->width = 0;
 
   /* Split and iterate over tokens */
-  while((tok = strsep(&tmp, SEPARATOR)))
+  while((tok = strsep(&data, SEPARATOR)))
     {
       if(!strncmp(tok, "#", 1)) ///< Color
         {
@@ -174,8 +173,6 @@ subSubletSetData(SubSublet *s,
           s->width       += t->width;
         }
     }
-
-  free(tmp);
 } /* }}} */
 
  /** subSubletPublish {{{
