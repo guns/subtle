@@ -14,13 +14,14 @@ class Battery < Subtle::Sublet
 
   def initialize
     self.interval = 60
-    @path         = Dir["/proc/acpi/battery/*"][0] #< Get battery slot
     @capacity     = 0
     @remaining    = 0
     @rate         = 0
     @state        = ""
 
     begin
+      @path = Dir["/proc/acpi/battery/*"][0] #< Get battery slot
+
       file = ""
 
       # Read battery info file
