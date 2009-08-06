@@ -28,7 +28,6 @@ subDisplayInit(const char *display)
   XGCValues gvals;
   XSetWindowAttributes sattrs;
   unsigned long mask = 0;
-  SubScreen *s = NULL;
   const char stipple[] = {
     0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 0x49, 0x12, 0x24, 0x49, 0x92, 0x24,
     0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 0x49, 0x12, 0x24, 0x49, 0x92, 0x24,
@@ -37,7 +36,6 @@ subDisplayInit(const char *display)
 
 #ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
   int xinerama_event = 0, xinerama_error = 0;
-  XineramaScreenInfo *screens = NULL;
 #endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
 
   assert(subtle);
@@ -77,8 +75,11 @@ subDisplayInit(const char *display)
   if(XineramaQueryExtension(subtle->dpy, &xinerama_event, &xinerama_error) &&
     XineramaIsActive(subtle->dpy))
     {
-      int i, n;
+      int i, n = 0;
+      XineramaScreenInfo *screens = NULL;
+      SubScreen *s = NULL; 
 
+      /* Query screens */
       if((screens = XineramaQueryScreens(subtle->dpy, &n)))
         {
           for(i = 0; i < n; i++)
@@ -108,9 +109,9 @@ subDisplayInit(const char *display)
   sattrs.background_pixel  = subtle->colors.bg_panel;
   mask                     = CWEventMask|CWOverrideRedirect|CWBackPixel;
 
-  subtle->windows.panel1  = XCreateWindow(subtle->dpy, ROOT, 0, 0, subtle->screen->base.width, 
+  subtle->windows.panel1     = XCreateWindow(subtle->dpy, ROOT, 0, 0, subtle->screen->base.width, 
     1, 0, CopyFromParent, InputOutput, CopyFromParent, mask, &sattrs);
-  subtle->windows.panel2  = XCreateWindow(subtle->dpy, ROOT, 0, 
+  subtle->windows.panel2     = XCreateWindow(subtle->dpy, ROOT, 0, 
     subtle->screen->base.height - subtle->th, subtle->screen->base.width, 1, 0, CopyFromParent, 
     InputOutput, CopyFromParent, mask, &sattrs);
   subtle->panels.views.win   = XCreateSimpleWindow(subtle->dpy, subtle->windows.panel1, 
