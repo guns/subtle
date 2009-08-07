@@ -263,6 +263,31 @@ subClientRender(SubClient *c)
     buf, strlen(buf));
 } /* }}} */
 
+ /** subClientCompare {{{
+  * @brief Compare two stacking level of clients
+  * @param[in]  a  A #SubClient
+  * @param[in]  b  A #SubClient
+  * @return Returns the result of the comparison of both clients
+  * @retval  -1  a is smaller
+  * @retval  0   a and b are equal  
+  * @retval  1   a is greater
+  **/
+
+int
+subClientCompare(const void *a,
+  const void *b)
+{
+  int flags = (SUB_MODE_FULL|SUB_MODE_FLOAT);
+  SubClient *c1 = *(SubClient **)a, *c2 = *(SubClient **)b;
+
+  assert(a && b);
+
+  /* Check flags */
+  if((c1->flags & flags) == (c2->flags & flags)) return 0;
+  else if(c1->flags & flags) return 1;
+  else return -1;
+} /* }}} */
+
  /** subClientFocus {{{
   * @brief Set focus to client
   * @param[in]  c  A #SubClient
@@ -917,6 +942,9 @@ subClientToggle(SubClient *c,
     }
 
   subClientConfigure(c);
+
+  /* Sort for keeping stacking order */
+  if(type & SUB_MODE_FULL) subArraySort(subtle->clients, subClientCompare);
 
   /* Translate flags */
   if(c->flags & SUB_MODE_FULL)  flags |= SUB_EWMH_FULL;

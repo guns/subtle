@@ -146,8 +146,11 @@
 #define SUB_MODE_FLOAT                (1L << 21)                  ///< Float mode
 #define SUB_MODE_STICK                (1L << 22)                  ///< Stick mode
 #define SUB_MODE_GRAVITY              (1L << 23)                  ///< Gravity mode
-#define SUB_MODE_SCREEN               (1L << 24)                  ///< Screen mode
-#define SUB_MODE_SIZE                 (1L << 25)                  ///< Size mode
+#define SUB_MODE_NO_FULL              (1L << 24)                  ///< Disable full mode
+#define SUB_MODE_NO_FLOAT             (1L << 25)                  ///< Disable float mode
+#define SUB_MODE_NO_STICK             (1L << 26)                  ///< Disable stick mode
+#define SUB_MODE_SCREEN               (1L << 27)                  ///< Screen mode
+#define SUB_MODE_SIZE                 (1L << 28)                  ///< Size mode
 
 /* Client flags */
 #define SUB_CLIENT_DEAD               (1L << 11)                  ///< Dead window
@@ -480,6 +483,7 @@ void subArrayKill(SubArray *a, int clean);                        ///< Kill arra
 SubClient *subClientNew(Window win);                              ///< Create client
 void subClientConfigure(SubClient *c);                            ///< Send configure request
 void subClientRender(SubClient *c);                               ///< Render client
+int subClientCompare(const void *a, const void *b);               ///< Compare two clients
 void subClientFocus(SubClient *c);                                ///< Focus client
 void subClientWarp(SubClient *c);                                 ///< Warp to client
 void subClientDrag(SubClient *c, int mode);                       ///< Move/drag client
