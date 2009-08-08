@@ -420,6 +420,7 @@ subClientDrag(SubClient *c,
           case MotionNotify: /* {{{ */
             if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE))
               {
+                int check = 0;
                 ClientMask(c);
           
                 /* Calculate selection rect */
@@ -431,16 +432,22 @@ subClientDrag(SubClient *c,
 
                       ClientSnap(c); ///< Snap to border
                       break;
-                    case SUB_DRAG_RESIZE: 
-                      if(left) 
+                    case SUB_DRAG_RESIZE:
+                      if(left) ///< Drag to left
                         {
-                          c->geom.width  = ww + (rx - ev.xmotion.x_root);
+                          check          = ww + (rx - ev.xmotion.x_root); ///< Avoid overflow
+                          c->geom.width  = check > c->minw ? check : c->minw;
                           c->geom.width -= (c->geom.width % c->incw);
                           c->geom.x      = (rx - wx) + ww - c->geom.width;
                         }
-                      else c->geom.width  = ww - (rx - ev.xmotion.x_root);
+                      else ///< Drag to right
+                        {
+                          check          = ww - (rx - ev.xmotion.x_root); ///< Avoid overflow
+                          c->geom.width  = check > c->minw ? check : c->minw;
+                        }
 
-                      c->geom.height = wh - (ry - ev.xmotion.y_root);
+                      check = wh - (ry - ev.xmotion.y_root); ///< Avoid overflow
+                      c->geom.height = check > c->minh ? check : c->minh;
 
                       subClientSetSize(c);
                       break;
@@ -734,26 +741,25 @@ subClientSetSize(SubClient *c)
   /* Limit base width */
   if(c->base.width < c->minw) c->base.width = c->minw;
   if(c->base.width > c->maxw) c->base.width = c->maxw;
-  if(c->base.x + c->base.width > s->base.x + s->base.width) 
-    c->base.width = s->base.width - (s->base.x - c->base.x);
+  if(c->base.x + c->geom.width > s->geom.x + s->geom.width) 
+    c->base.width = s->geom.width - (s->geom.x - c->base.x);
 
   /* Limit base height */
   if(c->base.height < c->minh) c->base.height = c->minh;
   if(c->base.height > c->maxh) c->base.height = c->maxh;
-  if(c->base.y + c->base.height > s->base.y + s->base.height - subtle->bw)
-    c->base.height = s->base.height - (s->base.y - c->base.y);
+  if(c->base.y + c->base.height > s->geom.y + s->geom.height)
+    c->base.height = s->geom.height - (s->geom.y + c->base.y);
 
   /* Limit width */
   if(c->geom.width < c->minw) c->geom.width = c->minw;
   if(c->geom.width > c->maxw) c->geom.width = c->maxw;
-  if(c->geom.x + c->geom.width > s->base.x + s->base.width) 
-    c->geom.width = s->base.width - (s->base.x - c->geom.x);
+  if(c->geom.x + c->geom.width > s->geom.x + s->geom.width) 
 
   /* Limit height */
   if(c->geom.height < c->minh) c->geom.height = c->minh;
   if(c->geom.height > c->maxh) c->geom.height = c->maxh;
-  if(c->geom.y + c->geom.height > s->base.y + s->base.height - subtle->bw)
-    c->geom.height = s->base.height - (s->base.y - c->geom.y);
+  if(c->geom.y + c->geom.height > s->geom.y + s->geom.height)
+    c->geom.height = s->geom.height - (s->geom.y + c->geom.y);
 
   /* Check incs */
   c->geom.width  -= c->geom.width % c->incw; 
