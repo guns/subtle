@@ -135,6 +135,7 @@ subDisplayInit(const char *display)
   /* Select input */
   XSelectInput(subtle->dpy, subtle->panels.views.win, ButtonPressMask); 
   XSelectInput(subtle->dpy, subtle->panels.tray.win, KeyPressMask|ButtonPressMask); 
+  XSelectInput(subtle->dpy, subtle->panels.sublets.win, ButtonPressMask); 
 
   XSync(subtle->dpy, False);
 

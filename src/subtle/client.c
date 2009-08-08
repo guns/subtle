@@ -174,7 +174,7 @@ subClientNew(Window win)
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
   if(subtle->hooks.create) ///< Create hook
-    subRubyCall(SUB_TYPE_HOOK, subtle->hooks.create, c);
+    subRubyCall(SUB_CALL_HOOK, subtle->hooks.create, c);
 
   subSharedLogDebug("new=client, name=%s, klass=%s, win=%#lx\n", c->name, c->klass, win);
 
@@ -302,7 +302,7 @@ subClientFocus(SubClient *c)
 
   /* Hook: Focus */
   if(subtle->hooks.focus && 
-    0 == subRubyCall(SUB_TYPE_HOOK, subtle->hooks.focus, (void *)c))
+    0 == subRubyCall(SUB_CALL_HOOK, subtle->hooks.focus, (void *)c))
     {
       subSharedLogDebug("Hook: name=focus, client=%#lx, state=ignored\n", c->win);
 
@@ -641,7 +641,7 @@ subClientSetGravity(SubClient *c,
 
       /* Hook: Gravity */
       if(subtle->hooks.gravity && 
-        0 == subRubyCall(SUB_TYPE_HOOK, subtle->hooks.gravity, (void *)c))
+        0 == subRubyCall(SUB_CALL_HOOK, subtle->hooks.gravity, (void *)c))
         {
           subSharedLogDebug("Hook: name=gravity, client=%#lx, state=ignored\n", c->win);
 
