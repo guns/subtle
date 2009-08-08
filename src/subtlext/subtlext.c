@@ -671,6 +671,12 @@ SubtlextClientSizeSet(VALUE self,
             for(i = 1; i < 5; i++)
               data.l[i] = FIX2INT(rb_funcall(value, meth, 1, INT2FIX(i - 1)));
 
+            /* Update geometry */
+            rb_iv_set(self, "@x",      INT2FIX(data.l[0]));
+            rb_iv_set(self, "@y",      INT2FIX(data.l[1]));
+            rb_iv_set(self, "@width",  INT2FIX(data.l[2]));
+            rb_iv_set(self, "@height", INT2FIX(data.l[3]));
+
             subSharedMessage(NUM2LONG(win), "_NET_MOVERESIZE_WINDOW", data, True);
           }
         else rb_raise(rb_eArgError, "Missing arguments");
