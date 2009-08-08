@@ -54,7 +54,7 @@ ClientSnap(SubClient *c)
 SubClient *
 subClientNew(Window win)
 {
-  int i, n, grav;
+  int i, n = 0, grav = 0, flags = 0;
   long vid = 0;
   Window trans = 0;
   XWMHints *hints = NULL;
@@ -144,7 +144,11 @@ subClientNew(Window win)
   /* Window manager hints */
   if((hints = XGetWMHints(subtle->dpy, c->win)))
     {
-      if(hints->flags & XUrgencyHint)              c->tags  |= SUB_CLIENT_URGENT;
+      if(hints->flags & XUrgencyHint)              
+        {
+          flags    |= (SUB_MODE_FLOAT|SUB_MODE_STICK);
+          c->flags |= SUB_CLIENT_URGENT;
+        }
       if(hints->flags & InputHint && hints->input) c->flags |= SUB_CLIENT_INPUT;
 
       XFree(hints);
@@ -153,18 +157,16 @@ subClientNew(Window win)
   /* Check for transient windows */
   if(XGetTransientForHint(subtle->dpy, c->win, &trans))
     {
-      c->flags |= SUB_CLIENT_URGENT;
+      flags |= subtle->flags & SUB_SUBTLE_URGENT ?  ///< Make transient windows urgent
+        SUB_MODE_FLOAT|SUB_MODE_STICK|SUB_CLIENT_URGENT : SUB_MODE_FLOAT;
 
       if((k = CLIENT(subSharedFind(trans, CLIENTID))))
         c->tags |= k->tags; ///< Copy tags
      }
 
-  /* Urgent windows */
-  if(c->flags & SUB_CLIENT_URGENT)
-    {
-      subClientToggle(c, (~c->flags & (SUB_MODE_FLOAT|SUB_MODE_STICK)));
-      subClientWarp(c);
-    }
+  /* Toggle modes and warp if needed */
+  subClientToggle(c, (~c->flags & flags));
+  if(c->flags & SUB_CLIENT_URGENT) subClientWarp(c);
 
   /* EWMH: Gravity, screen and desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
@@ -527,12 +529,14 @@ subClientTag(SubClient *c,
   if(0 <= tag && subtle->tags->ndata > tag)
     {
       SubTag *t = TAG(subtle->tags->data[tag]);
+      
+      /* Collect flags */
+      flags    |= (t->flags & (SUB_MODE_FULL|SUB_MODE_FLOAT|SUB_MODE_STICK));
+      c->flags |= (t->flags & (SUB_MODE_UNFULL|SUB_MODE_UNFLOAT|SUB_MODE_UNSTICK));
+      c->tags  |= (1L << (tag + 1));
 
-      flags   |= (t->flags & (SUB_MODE_FULL|SUB_MODE_FLOAT|SUB_MODE_STICK));
-      c->tags |= (1L << (tag + 1));
-
-      /* Set size */
-      if(t->flags & SUB_MODE_SIZE)
+      /* Set size and enable float */
+      if(t->flags & SUB_MODE_SIZE && !(c->flags & SUB_MODE_UNFLOAT))
         {
           flags   |= SUB_MODE_FLOAT;
           c->base  = t->size;
@@ -550,6 +554,11 @@ subClientTag(SubClient *c,
               if(t->flags & SUB_MODE_SCREEN)  c->screens[i]   = t->screen;
             }
         }
+
+      /* Remove flags */
+      if(flags & SUB_MODE_FULL && c->flags & SUB_MODE_UNFULL)   flags &= ~SUB_MODE_FULL;
+      if(flags & SUB_MODE_FLOAT && c->flags & SUB_MODE_UNFLOAT) flags &= ~SUB_MODE_FLOAT;
+      if(flags & SUB_MODE_STICK && c->flags & SUB_MODE_UNSTICK) flags &= ~SUB_MODE_STICK;
     }
 
   return flags;
@@ -907,6 +916,11 @@ subClientToggle(SubClient *c,
 
   DEAD(c);
   assert(c);
+
+  /* Remove flags */
+  if(type & SUB_MODE_FULL && c->flags & SUB_MODE_UNFULL)   type &= ~SUB_MODE_FULL;
+  if(type & SUB_MODE_FLOAT && c->flags & SUB_MODE_UNFLOAT) type &= ~SUB_MODE_FLOAT;
+  if(type & SUB_MODE_STICK && c->flags & SUB_MODE_UNSTICK) type &= ~SUB_MODE_STICK;
 
   if(c->flags & type) ///< Unset flags
     {

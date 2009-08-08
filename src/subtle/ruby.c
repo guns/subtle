@@ -72,6 +72,46 @@ RubyPerror(int verbose,
   return Qnil;
 } /* }}} */
 
+/* RubyFilter {{{ */
+static inline int
+RubyFilter(const struct dirent *entry)
+{
+  return !fnmatch("*.rb", entry->d_name, FNM_PATHNAME);
+} /* }}} */
+
+/* RubyDispatcher {{{ */
+static VALUE  
+RubyDispatcher(int argc, 
+  VALUE *argv, 
+  VALUE self)
+{  
+  char *name = NULL;
+  VALUE missing = Qnil, args = Qnil;     
+
+  rb_scan_args(argc, argv, "1*", &missing, &args);  
+  name = (char *)rb_id2name(SYM2ID(missing));  
+
+  subSharedLogDebug("Missing: method=%s\n", name);
+
+  if(Qnil == subtlext) subRubyLoadSubtlext(); ///< Load subtlext on demand
+
+  if(rb_respond_to(subtlext, rb_to_id(missing))) ///< Dispatch method calls
+    return rb_funcall2(subtlext, rb_to_id(missing), --argc, ++argv);
+  
+  rb_raise(rb_eStandardError, "Failed finding method `%s'", name);
+  return Qnil;  
+} /* }}} */
+
+/* RubySignal {{{ */
+static void
+RubySignal(int signum)
+{
+  if(SIGALRM == signum) ///< Catch SIGALRM
+    {
+      rb_raise(rb_eInterrupt, "Execution time (%ds) expired", EXECTIME);
+    }
+} /* }}} */
+
 /* RubySubletMark {{{ */
 static void
 RubySubletMark(SubSublet *s)
@@ -155,6 +195,49 @@ RubySubletIntervalSet(VALUE self,
   return Qfalse;
 } /* }}} */
 
+/* RubySubletData {{{ */
+static VALUE
+RubySubletData(VALUE self)
+{
+  int i;
+  VALUE string = Qnil;
+  SubSublet *s = NULL;
+  Data_Get_Struct(self, SubSublet, s);
+  
+  /* Concat string */
+  if(s && 0 < s->text->ndata) 
+    {
+      for(i = 0; i < s->text->ndata; i++)
+        {
+          SubText *t = TEXT(s->text->data[i]);
+
+          if(Qnil == string) rb_str_new2(t->data.string);
+          else rb_str_cat(string, t->data.string, strlen(t->data.string));
+        }
+    }
+
+  return string;
+} /* }}} */
+
+/* RubySubletDataSet {{{ */
+static VALUE
+RubySubletDataSet(VALUE self,
+  VALUE value)
+{
+  VALUE ret = Qfalse;
+  SubSublet *s = NULL;
+  Data_Get_Struct(self, SubSublet, s);
+
+  if(s && RTEST(value) && T_STRING == rb_type(value)) ///< Check value type
+    {
+      subSubletSetData(s, RSTRING_PTR(value)); 
+      ret = Qtrue;
+    }
+  else rb_raise(rb_eArgError, "Unknown value type");
+
+  return ret;
+} /* }}} */
+
 #ifdef HAVE_SYS_INOTIFY_H
 /* RubySubletPath {{{ */
 static VALUE
@@ -219,7 +302,7 @@ RubyGetValue(VALUE hash,
 
   /* Check for key */
   if(RTEST(hash) && Qtrue == rb_funcall(hash, rb_intern("has_key?"), 1, sym))
-      value = rb_funcall(hash, rb_intern("fetch"), 1, sym);
+    value = rb_funcall(hash, rb_intern("fetch"), 1, sym);
   else if(!optional) subSharedLogWarn("Failed reading key `%s'\n", key);
 
   return rb_type(value) == type ? value : Qnil;
@@ -252,9 +335,13 @@ static int
 RubyGetBool(VALUE hash,
   char *key)
 {
-  VALUE value = RubyGetValue(hash, key, T_TRUE, True);
+  VALUE value = Qnil, sym = CHAR2SYM(key);
+
+  /* Do it manually for trinary state */
+  if(RTEST(hash) && Qtrue == rb_funcall(hash, rb_intern("has_key?"), 1, sym))
+    value = rb_funcall(hash, rb_intern("fetch"), 1, sym);
   
-  return Qtrue == value ? True : False; ///< We skip the fallback stuff here
+  return Qtrue == value ? True : (Qfalse == value ? False : -1);
 } /* }}} */
 
 /* RubyGetRect {{{ */
@@ -289,9 +376,9 @@ RubyGetRect(VALUE hash,
   return ret;
 } /* }}} */
 
-/* RubyConfigForeach {{{ */
+/* RubyParseForeach {{{ */
 static int
-RubyConfigForeach(VALUE key,
+RubyParseForeach(VALUE key,
   VALUE value,
   VALUE extra)
 {
@@ -423,6 +510,7 @@ RubyConfigForeach(VALUE key,
               break;
             case T_HASH:
               {
+                int mode;
                 SubTag *t = NULL;
                 char *regex = RubyGetString(value, "regex", NULL);
 
@@ -439,13 +527,21 @@ RubyConfigForeach(VALUE key,
                       t->screen -= 1;
                       t->flags  |= SUB_MODE_SCREEN;
                     }
+                    if(RubyGetRect(value, "size", &t->size)) 
+                      t->flags |= SUB_MODE_SIZE;
 
                     /* Set property flags */
-                    if(True == RubyGetBool(value, "full"))  t->flags |= SUB_MODE_FULL;
-                    if(True == RubyGetBool(value, "float")) t->flags |= SUB_MODE_FLOAT;
-                    if(True == RubyGetBool(value, "stick")) t->flags |= SUB_MODE_STICK;
-                    if(True == RubyGetRect(value, "size", &t->size)) 
-                      t->flags |= SUB_MODE_SIZE;
+                    if(True == (mode = RubyGetBool(value, "full")))
+                      t->flags |= SUB_MODE_FULL;
+                    else if(False == mode) t->flags |= SUB_MODE_UNFULL;
+
+                    if(True == (mode = RubyGetBool(value, "float")))  
+                      t->flags |= SUB_MODE_FLOAT;
+                    else if(False == mode) t->flags |= SUB_MODE_UNFLOAT;
+
+                    if(True == (mode = RubyGetBool(value, "stick"))) 
+                      t->flags |= SUB_MODE_STICK;
+                    else if(False == mode) t->flags |= SUB_MODE_UNSTICK;
 
                     subArrayPush(subtle->tags, (void *)t);
                   }
@@ -532,49 +628,6 @@ RubyParsePanel(VALUE hash,
   return enabled;
 } /* }}} */
 
-/* RubySubletData {{{ */
-static VALUE
-RubySubletData(VALUE self)
-{
-  int i;
-  VALUE string = Qnil;
-  SubSublet *s = NULL;
-  Data_Get_Struct(self, SubSublet, s);
-  
-  /* Concat string */
-  if(s && 0 < s->text->ndata) 
-    {
-      for(i = 0; i < s->text->ndata; i++)
-        {
-          SubText *t = TEXT(s->text->data[i]);
-
-          if(Qnil == string) rb_str_new2(t->data.string);
-          else rb_str_cat(string, t->data.string, strlen(t->data.string));
-        }
-    }
-
-  return string;
-} /* }}} */
-
-/* RubySubletDataSet {{{ */
-static VALUE
-RubySubletDataSet(VALUE self,
-  VALUE value)
-{
-  VALUE ret = Qfalse;
-  SubSublet *s = NULL;
-  Data_Get_Struct(self, SubSublet, s);
-
-  if(s && RTEST(value) && T_STRING == rb_type(value)) ///< Check value type
-    {
-      subSubletSetData(s, RSTRING_PTR(value)); 
-      ret = Qtrue;
-    }
-  else rb_raise(rb_eArgError, "Unknown value type");
-
-  return ret;
-} /* }}} */
-
 /* RubySubtleTagAdd {{{ */
 static VALUE
 RubySubtleTagAdd(VALUE self,
@@ -643,46 +696,6 @@ RubySubtleViewAdd(VALUE self,
   return view;
 } /* }}} */
 
-/* RubyFilter {{{ */
-static inline int
-RubyFilter(const struct dirent *entry)
-{
-  return !fnmatch("*.rb", entry->d_name, FNM_PATHNAME);
-} /* }}} */
-
-/* RubyDispatcher {{{ */
-static VALUE  
-RubyDispatcher(int argc, 
-  VALUE *argv, 
-  VALUE self)
-{  
-  char *name = NULL;
-  VALUE missing = Qnil, args = Qnil;     
-
-  rb_scan_args(argc, argv, "1*", &missing, &args);  
-  name = (char *)rb_id2name(SYM2ID(missing));  
-
-  subSharedLogDebug("Missing: method=%s\n", name);
-
-  if(Qnil == subtlext) subRubyLoadSubtlext(); ///< Load subtlext on demand
-
-  if(rb_respond_to(subtlext, rb_to_id(missing))) ///< Dispatch method calls
-    return rb_funcall2(subtlext, rb_to_id(missing), --argc, ++argv);
-  
-  rb_raise(rb_eStandardError, "Failed finding method `%s'", name);
-  return Qnil;  
-} /* }}} */
-
-/* RubySignal {{{ */
-static void
-RubySignal(int signum)
-{
-  if(SIGALRM == signum) ///< Catch SIGALRM
-    {
-      rb_raise(rb_eInterrupt, "Execution time (%ds) expired", EXECTIME);
-    }
-} /* }}} */
-
 /* RubyWrapLoadConfig {{{ */
 static VALUE
 RubyWrapLoadConfig(VALUE data)
@@ -733,6 +746,7 @@ RubyWrapLoadConfig(VALUE data)
   subtle->snap    = RubyGetFixnum(config, "snap",    10);
   subtle->gravity = RubyGetFixnum(config, "gravity", 5);
   RubyGetRect(config, "padding", &subtle->strut);
+  if(True == RubyGetBool(config, "urgent")) subtle->flags |= SUB_SUBTLE_URGENT;
 
   /* Config: Font */
   font = RubyGetString(config, "font", FONT);
@@ -769,13 +783,13 @@ RubyWrapLoadConfig(VALUE data)
 
   /* Config: Panels */
   config = rb_const_get(rb_cObject, rb_intern("PANEL"));
-  if(RubyParsePanel(config, "top", &p))    subtle->flags |= SUB_SUBTLE_PANEL1;
-  if(RubyParsePanel(config, "bottom", &p)) subtle->flags |= SUB_SUBTLE_PANEL2;
-  if(RubyGetBool(config, "stipple"))       subtle->flags |= SUB_SUBTLE_STIPPLE;
+  if(RubyParsePanel(config, "top", &p))      subtle->flags |= SUB_SUBTLE_PANEL1;
+  if(RubyParsePanel(config, "bottom", &p))   subtle->flags |= SUB_SUBTLE_PANEL2;
+  if(True == RubyGetBool(config, "stipple")) subtle->flags |= SUB_SUBTLE_STIPPLE;
 
   /* Config: Grabs */
   config = rb_const_get(rb_cObject, rb_intern("GRABS"));
-  rb_hash_foreach(config, RubyConfigForeach, SUB_TYPE_GRAB);
+  rb_hash_foreach(config, RubyParseForeach, SUB_TYPE_GRAB);
 
   if(0 == subtle->grabs->ndata)
     {
@@ -801,11 +815,11 @@ RubyWrapLoadConfig(VALUE data)
       key   = rb_str_new2("default");
       value = rb_funcall(config, rb_intern("delete"), 1, key);
       
-      RubyConfigForeach(key, value, SUB_TYPE_TAG);
+      RubyParseForeach(key, value, SUB_TYPE_TAG);
     }
 
   if(T_HASH == rb_type(config)) ///< Parse tags hash
-    rb_hash_foreach(config, RubyConfigForeach, SUB_TYPE_TAG);
+    rb_hash_foreach(config, RubyParseForeach, SUB_TYPE_TAG);
 
   subTagPublish();
 
@@ -815,12 +829,12 @@ RubyWrapLoadConfig(VALUE data)
   config = rb_const_get(rb_cObject, rb_intern("VIEWS"));
   switch(rb_type(config)) ///< Allow hashes or arrays for ordering
     {
-      case T_HASH: rb_hash_foreach(config, RubyConfigForeach, SUB_TYPE_VIEW); break;
+      case T_HASH: rb_hash_foreach(config, RubyParseForeach, SUB_TYPE_VIEW); break;
       case T_ARRAY:
         for(i = 0; Qnil != (entry = rb_ary_entry(config, i)); ++i)
           {
             if(T_HASH == rb_type(entry))
-              rb_hash_foreach(entry, RubyConfigForeach, SUB_TYPE_VIEW);
+              rb_hash_foreach(entry, RubyParseForeach, SUB_TYPE_VIEW);
             else subSharedLogWarn("Failed parsing view entry %d\n", i);
           }
         break;
@@ -858,7 +872,7 @@ RubyWrapLoadConfig(VALUE data)
 
   /* Config: Hooks */
   config = rb_const_get(rb_cObject, rb_intern("HOOKS"));
-  rb_hash_foreach(config, RubyConfigForeach, SUB_TYPE_HOOK);
+  rb_hash_foreach(config, RubyParseForeach, SUB_TYPE_HOOK);
 
   return Qnil;
 } /* }}} */

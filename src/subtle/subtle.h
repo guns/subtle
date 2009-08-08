@@ -146,9 +146,9 @@
 #define SUB_MODE_FLOAT                (1L << 21)                  ///< Float mode
 #define SUB_MODE_STICK                (1L << 22)                  ///< Stick mode
 #define SUB_MODE_GRAVITY              (1L << 23)                  ///< Gravity mode
-#define SUB_MODE_NO_FULL              (1L << 24)                  ///< Disable full mode
-#define SUB_MODE_NO_FLOAT             (1L << 25)                  ///< Disable float mode
-#define SUB_MODE_NO_STICK             (1L << 26)                  ///< Disable stick mode
+#define SUB_MODE_UNFULL              (1L << 24)                  ///< Disable full mode
+#define SUB_MODE_UNFLOAT             (1L << 25)                  ///< Disable float mode
+#define SUB_MODE_UNSTICK             (1L << 26)                  ///< Disable stick mode
 #define SUB_MODE_SCREEN               (1L << 27)                  ///< Screen mode
 #define SUB_MODE_SIZE                 (1L << 28)                  ///< Size mode
 
@@ -208,6 +208,7 @@
 #define SUB_SUBTLE_PANEL1             (1L << 3)                   ///< Panel1 enabled
 #define SUB_SUBTLE_PANEL2             (1L << 4)                   ///< Panel2 enabled
 #define SUB_SUBTLE_EWMH               (1L << 5)                   ///< EWMH set
+#define SUB_SUBTLE_URGENT             (1L << 6)                   ///< Urgent transients
 
 /* Tag flags */
 #define SUB_TAG_DEFAULT               (1L << 1)                   ///< Default tag
