@@ -27,6 +27,13 @@ subSubletNew(void)
   s->time  = subSharedTime();
   s->text  = subArrayNew();
 
+  /* Create button */
+  s->button = XCreateSimpleWindow(subtle->dpy, subtle->panels.sublets.win, 0, 0, 1,
+    subtle->th, 0, 0, subtle->colors.bg_sublets);
+
+  XSaveContext(subtle->dpy, s->button, BUTTONID, (void *)s);
+  XMapRaised(subtle->dpy, s->button);
+
   subSharedLogDebug("new=sublet\n");
 
   return s;
@@ -43,13 +50,17 @@ subSubletUpdate(void)
 
   if(0 < subtle->sublets->ndata)
     {
-      int i;
+      SubSublet *s = NULL;
 
-      for(i = 0, subtle->panels.sublets.width = 3; i < subtle->sublets->ndata; i++)
-        subtle->panels.sublets.width += SUBLET(subtle->sublets->data[i])->width;
+      for(s = subtle->sublet; s; s = s->next)
+        {
+          XMoveResizeWindow(subtle->dpy, s->button, subtle->panels.sublets.width, 
+            0, s->width, subtle->th);
+          subtle->panels.sublets.width += s->width;
+        }
 
       XResizeWindow(subtle->dpy, subtle->panels.sublets.win, 
-        subtle->panels.sublets.width + 3, subtle->th);
+        subtle->panels.sublets.width, subtle->th);
     }
   else XUnmapWindow(subtle->dpy, subtle->panels.sublets.win);
 } /* }}} */
@@ -63,20 +74,22 @@ subSubletRender(void)
 {
   if(0 < subtle->sublets->ndata)
     {
-      int i, width = 3;
+      int i, width = 0;
       XGCValues gvals;
-      SubSublet *s = SUBLET(subtle->sublet);
+      SubSublet *s = NULL;
       SubText *t = NULL;
-
-      XClearWindow(subtle->dpy, subtle->panels.sublets.win);
 
       /* Init GC */
       gvals.foreground = subtle->colors.fg_sublets;
       XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
 
       /* Render every sublet */
-      while(s)
+      for(s = subtle->sublet; s; s = s->next)
         {
+          width = 3;
+
+          XClearWindow(subtle->dpy, s->button);
+
           /* Render text part */
           for(i = 0; i < s->text->ndata; i++)
             {
@@ -86,14 +99,12 @@ subSubletRender(void)
                   gvals.foreground = t->color;
                   XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
 
-                  XDrawString(subtle->dpy, subtle->panels.sublets.win, subtle->gcs.font, width,
+                  XDrawString(subtle->dpy, s->button, subtle->gcs.font, width,
                     subtle->fy - 1, t->data.string, strlen(t->data.string));
 
                   width += t->width;
                 }
             }
-
-          s = s->next;
         }
 
       XFlush(subtle->dpy);
@@ -241,6 +252,9 @@ subSubletKill(SubSublet *s,
       if(s->path) free(s->path);
     }
 #endif /* HAVE_SYS_INOTIFY_H */ 
+
+  XDeleteContext(subtle->dpy, s->button, BUTTONID);
+  XDestroyWindow(subtle->dpy, s->button);
 
   if(s->name) free(s->name);
   subArrayKill(s->text, True);
