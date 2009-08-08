@@ -27,16 +27,15 @@ SubtleUsage(void)
 {
   printf("Usage: %s [OPTIONS]\n\n" \
          "Options:\n" \
-         "  -c, --config=FILE       Load config (default: %s/%s/%s)\n" \
-         "  -d, --display=DISPLAY   Connect to DISPLAY (default: %s)\n" \
+         "  -c, --config=FILE       Load config\n" \
+         "  -d, --display=DISPLAY   Connect to DISPLAY\n" \
          "  -h, --help              Show this help and exit\n" \
          "  -k, --check             Check config syntax\n" \
-         "  -s, --sublets=DIR       Load sublets from DIR (default: %s/%s/sublets)\n" \
+         "  -s, --sublets=DIR       Load sublets from DIR\n" \
          "  -v, --version           Show version info and exit\n" \
          "  -D, --debug             Print debugging messages\n" \
          "Please report bugs to <%s>\n", 
-         PKG_NAME, getenv("XDG_CONFIG_HOME"), PKG_NAME, PKG_CONFIG, getenv("DISPLAY"), 
-         getenv("XDG_DATA_HOME"), PKG_NAME, PKG_BUGREPORT);
+         PKG_NAME, PKG_BUGREPORT);
 } /* }}} */
 
 /* SubtleVersion {{{ */
