@@ -406,7 +406,7 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_SUBTLE_SUBLET_UPDATE: /* {{{ */
             if((s = EventFindSublet((int)ev->data.l[0])))
               {
-                subRubyCall(SUB_TYPE_SUBLET, s->recv, NULL);
+                subRubyCall(SUB_CALL_SUBLET_RUN, s->recv, NULL);
                 subSubletUpdate();
                 subPanelUpdate();
                 subPanelRender();                
@@ -665,6 +665,15 @@ EventGrab(XEvent *ev)
 
             return;
           }
+        else if(ev->xbutton.window == subtle->panels.sublets.win) ///< Sublet buttons
+          {
+            SubSublet *s = SUBLET(subSharedFind(ev->xbutton.subwindow, BUTTONID));
+
+            if(s && s->flags & SUB_SUBLET_CLICK) ///< Call click method
+              subRubyCall(SUB_CALL_SUBLET_CLICK, s->recv, NULL);
+
+            return;
+          }
 
         if(ev->xbutton.window != subtle->windows.focus) ///< Update focus
           XSetInputFocus(subtle->dpy, ev->xbutton.window, RevertToNone, CurrentTime);
@@ -696,7 +705,7 @@ EventGrab(XEvent *ev)
             if(g->data.string) EventExec(g->data.string);
             break; /* }}} */
           case SUB_GRAB_PROC: /* {{{ */
-            subRubyCall(SUB_TYPE_GRAB, g->data.num, CLIENT(subSharedFind(win, CLIENTID)));
+            subRubyCall(SUB_CALL_GRAB, g->data.num, CLIENT(subSharedFind(win, CLIENTID)));
             break; /* }}} */
           case SUB_GRAB_VIEW_JUMP: /* {{{ */
             if(g->data.num < subtle->views->ndata)
@@ -984,7 +993,7 @@ subEventLoop(void)
 
                       if((s = SUBLET(subSharedFind(subtle->panels.sublets.win, event->wd))))
                         {
-                          subRubyCall(SUB_TYPE_SUBLET, s->recv, NULL);
+                          subRubyCall(SUB_CALL_SUBLET_RUN, s->recv, NULL);
                           subSubletUpdate();
                           subPanelUpdate();
                           subPanelRender();
@@ -1004,7 +1013,7 @@ subEventLoop(void)
                 {
                   while(s && s->time <= now)
                     {
-                      subRubyCall(SUB_TYPE_SUBLET, s->recv, NULL);
+                      subRubyCall(SUB_CALL_SUBLET_RUN, s->recv, NULL);
 
                       s->time  = now + s->interval; ///< Adjust seconds
                       s->time -= s->time % s->interval;

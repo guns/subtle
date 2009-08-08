@@ -139,6 +139,10 @@ RubySubletNew(VALUE self)
   subArrayPush(subtle->sublets, s);
   rb_ary_push(shelter, data); ///< Protect from GC
 
+  /* Check click handler */
+  if(Qtrue == rb_funcall(s->recv, rb_intern("respond_to?"), 1, CHAR2SYM("click")))
+    s->flags |= SUB_SUBLET_CLICK;
+
   return data;
 } /* }}} */
 
@@ -911,11 +915,15 @@ RubyWrapCall(VALUE data)
   signal(SIGALRM, RubySignal); ///< Limit execution time
   alarm(EXECTIME);
 
-  if((int)rargs[0] & SUB_TYPE_SUBLET) /* {{{ */
+  if((int)rargs[0] & SUB_CALL_SUBLET_RUN) /* {{{ */
     {
-      ret = rb_funcall(rargs[1], rb_intern("run"), 0, NULL) ;
+      ret = rb_funcall(rargs[1], rb_intern("run"), 0, NULL);
     } /* }}} */
-  else if((int)rargs[0] & (SUB_TYPE_GRAB|SUB_TYPE_HOOK)) /* {{{ */
+  else if((int)rargs[0] & SUB_CALL_SUBLET_CLICK) /* {{{ */
+    {
+      ret = rb_funcall(rargs[1], rb_intern("click"), 0, NULL);
+    } /* }}} */
+  else if((int)rargs[0] & (SUB_CALL_GRAB|SUB_CALL_HOOK)) /* {{{ */
     {
       int id = 0, arity = 0, flags = 0;
 
@@ -1101,7 +1109,7 @@ subRubyLoadSublet(const char *file)
               iter->next = s;
             }
 
-          subRubyCall(SUB_TYPE_SUBLET, s->recv, NULL); ///< First run
+          subRubyCall(SUB_CALL_SUBLET_RUN, s->recv, NULL); ///< First run
 
           printf("Loaded sublet (%s)\n", name);
         }
@@ -1208,7 +1216,8 @@ subRubyCall(int type,
       alarm(0); ///< Reset alarm on error
 
       RubyPerror(True, False, "Failed calling %s",
-        type & SUB_TYPE_SUBLET ? "sublet" : (type & SUB_TYPE_GRAB ? "grab" : "hook"));
+        type & (SUB_CALL_SUBLET_RUN|SUB_CALL_SUBLET_CLICK) ? 
+        "sublet" : (type & SUB_CALL_GRAB ? "grab" : "hook"));
 
       result = Qnil;
     }

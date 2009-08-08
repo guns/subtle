@@ -146,9 +146,9 @@
 #define SUB_MODE_FLOAT                (1L << 21)                  ///< Float mode
 #define SUB_MODE_STICK                (1L << 22)                  ///< Stick mode
 #define SUB_MODE_GRAVITY              (1L << 23)                  ///< Gravity mode
-#define SUB_MODE_UNFULL              (1L << 24)                  ///< Disable full mode
-#define SUB_MODE_UNFLOAT             (1L << 25)                  ///< Disable float mode
-#define SUB_MODE_UNSTICK             (1L << 26)                  ///< Disable stick mode
+#define SUB_MODE_UNFULL               (1L << 24)                  ///< Disable full mode
+#define SUB_MODE_UNFLOAT              (1L << 25)                  ///< Disable float mode
+#define SUB_MODE_UNSTICK              (1L << 26)                  ///< Disable stick mode
 #define SUB_MODE_SCREEN               (1L << 27)                  ///< Screen mode
 #define SUB_MODE_SIZE                 (1L << 28)                  ///< Size mode
 
@@ -199,8 +199,14 @@
 #define SUB_PANEL_SPACER2             (1L << 12)                  ///< Panel spacer2
 #define SUB_PANEL_BOTTOM              (1L << 13)                  ///< Panel bottom
 
+#define SUB_CALL_SUBLET_RUN           (1L << 1)                   ///< Ruby sublet run call
+#define SUB_CALL_SUBLET_CLICK         (1L << 2)                   ///< Ruby sublet click call
+#define SUB_CALL_GRAB                 (1L << 3)                   ///< Ruby grab call
+#define SUB_CALL_HOOK                 (1L << 4)                   ///< Ruby hook call
+
 /* Sublet types */
 #define SUB_SUBLET_INOTIFY            (1L << 11)                  ///< Inotify sublet
+#define SUB_SUBLET_CLICK              (1L << 12)                  ///< Sublet click function
 
 /* Subtle flags */
 #define SUB_SUBTLE_DEBUG              (1L << 1)                   ///< Debug enabled
@@ -364,6 +370,7 @@ typedef struct subsublet_t /* {{{ */
   char               *path;                                       ///< Sublet inotify path
 #endif /* HAVE_SYS_INOTIFY */
 
+  Window             button;                                      ///< Sublet button
   int                width;                                       ///< Sublet width
   unsigned long      recv;                                        ///< Sublet Ruby receiver
   time_t             time, interval;                              ///< Sublet update/interval time

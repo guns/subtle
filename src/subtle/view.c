@@ -75,7 +75,7 @@ subViewConfigure(SubView *v)
 
   /* Hook: Jump */
   if(subtle->hooks.configure &&
-    0 == subRubyCall(SUB_TYPE_HOOK, subtle->hooks.configure, (void *)v))
+    0 == subRubyCall(SUB_CALL_HOOK, subtle->hooks.configure, (void *)v))
     {
       subSharedLogDebug("Hook: name=configure, view=%#lx, state=ignored\n", v->button);
 
@@ -187,7 +187,7 @@ subViewJump(SubView *v)
 
   /* Hook: Jump */
   if(subtle->hooks.jump &&
-    0 == subRubyCall(SUB_TYPE_HOOK, subtle->hooks.jump, (void *)v))
+    0 == subRubyCall(SUB_CALL_HOOK, subtle->hooks.jump, (void *)v))
     {
       subSharedLogDebug("Hook: name=jump, view=%#lx, state=ignored\n", v->button);
 
@@ -261,7 +261,7 @@ subViewKill(SubView *v)
 {
   assert(v);
 
-  XDeleteContext(subtle->dpy, v->button, 1);
+  XDeleteContext(subtle->dpy, v->button, BUTTONID);
   XDestroyWindow(subtle->dpy, v->button);
 
   free(v->name);
