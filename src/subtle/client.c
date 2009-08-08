@@ -277,14 +277,13 @@ int
 subClientCompare(const void *a,
   const void *b)
 {
-  int flags = (SUB_MODE_FULL|SUB_MODE_FLOAT);
   SubClient *c1 = *(SubClient **)a, *c2 = *(SubClient **)b;
 
   assert(a && b);
 
   /* Check flags */
-  if((c1->flags & flags) == (c2->flags & flags)) return 0;
-  else if(c1->flags & flags) return 1;
+  if((c1->flags & SUB_MODE_FULL) == (c2->flags & SUB_MODE_FULL)) return 0;
+  else if(c1->flags & SUB_MODE_FULL) return 1;
   else return -1;
 } /* }}} */
 
