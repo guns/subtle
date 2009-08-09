@@ -54,18 +54,18 @@ SubtlextFind(int type,
   switch(rb_type(value))
     {
       case T_STRING:
-        if(SUB_TYPE_TAG == type) id = subSharedTagFind(STR2CSTR(value));
-        else id = subSharedViewFind(STR2CSTR(value), &win);
+        if(SUB_TYPE_TAG == type) id = subSharedTagFind(RSTRING_PTR(value));
+        else id = subSharedViewFind(RSTRING_PTR(value), &win);
 
         /* Create and find again */
         if(-1 == id && True == create)
           {
-            snprintf(data.b, sizeof(data.b), "%s", STR2CSTR(value));
+            snprintf(data.b, sizeof(data.b), "%s", RSTRING_PTR(value));
             subSharedMessage(DefaultRootWindow(display), 
               SUB_TYPE_TAG == type ? "SUBTLE_TAG_NEW" : "SUBTLE_VIEW_NEW", data, True);
 
-            if(SUB_TYPE_TAG == type) id = subSharedTagFind(STR2CSTR(value));
-            else id = subSharedViewFind(STR2CSTR(value), &win);
+            if(SUB_TYPE_TAG == type) id = subSharedTagFind(RSTRING_PTR(value));
+            else id = subSharedViewFind(RSTRING_PTR(value), &win);
           }
 
         if(-1 != id)
@@ -91,13 +91,13 @@ SubtlextFind(int type,
                 name = rb_iv_get(value, "@name");
 
                 /* Inform subtle */
-                snprintf(data.b, sizeof(data.b), "%s", STR2CSTR(name));
+                snprintf(data.b, sizeof(data.b), "%s", RSTRING_PTR(name));
                 subSharedMessage(DefaultRootWindow(display), 
                   SUB_TYPE_TAG == type ? "SUBTLE_TAG_NEW" : "SUBTLE_VIEW_NEW", data, True);
 
                 /* Check if object exists */
-                if(SUB_TYPE_TAG == type) id = subSharedTagFind(STR2CSTR(name));
-                else id = subSharedViewFind(STR2CSTR(name), &win);
+                if(SUB_TYPE_TAG == type) id = subSharedTagFind(RSTRING_PTR(name));
+                else id = subSharedViewFind(RSTRING_PTR(name), &win);
                 if(-1 == id)
                   {
                     rb_raise(rb_eStandardError, "Failed updating %s", 
@@ -672,10 +672,10 @@ SubtlextClientSizeSet(VALUE self,
               data.l[i] = FIX2INT(rb_funcall(value, meth, 1, INT2FIX(i - 1)));
 
             /* Update geometry */
-            rb_iv_set(self, "@x",      INT2FIX(data.l[0]));
-            rb_iv_set(self, "@y",      INT2FIX(data.l[1]));
-            rb_iv_set(self, "@width",  INT2FIX(data.l[2]));
-            rb_iv_set(self, "@height", INT2FIX(data.l[3]));
+            rb_iv_set(self, "@x",      INT2FIX(data.l[1]));
+            rb_iv_set(self, "@y",      INT2FIX(data.l[2]));
+            rb_iv_set(self, "@width",  INT2FIX(data.l[3]));
+            rb_iv_set(self, "@height", INT2FIX(data.l[4]));
 
             subSharedMessage(NUM2LONG(win), "_NET_MOVERESIZE_WINDOW", data, True);
           }
@@ -788,7 +788,7 @@ SubtlextSubtleNew(int argc,
   /* Open display */
   if(!display) ///< Establish new connection
     {
-      if(RTEST(disp)) name = STR2CSTR(disp);
+      if(RTEST(disp)) name = RSTRING_PTR(disp);
       if(!(display = XOpenDisplay(name)))
         {
           subSharedLogError("Failed opening display `%s'\n", (name) ? name : ":0.0");
@@ -977,7 +977,7 @@ SubtlextSubtleClientFind(VALUE self,
   Window win = 0;
   VALUE client = Qnil;
 
-  if(RTEST(name) && -1 != ((id = subSharedClientFind(STR2CSTR(name), &win))))
+  if(RTEST(name) && -1 != ((id = subSharedClientFind(RSTRING_PTR(name), &win))))
     {
       client = SubtlextClientFromWin(win);
     }
@@ -995,7 +995,7 @@ SubtlextSubtleClientFocus(VALUE self,
   Window win = 0;
   VALUE client = Qnil;
 
-  if(RTEST(name) && -1 != ((id = subSharedClientFind(STR2CSTR(name), &win))))
+  if(RTEST(name) && -1 != ((id = subSharedClientFind(RSTRING_PTR(name), &win))))
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
@@ -1045,7 +1045,7 @@ SubtlextSubtleClientDel(VALUE self,
   int id = -1;
   Window win = 0;
 
-  if(RTEST(name) && -1 != ((id = subSharedClientFind(STR2CSTR(name), &win))))
+  if(RTEST(name) && -1 != ((id = subSharedClientFind(RSTRING_PTR(name), &win))))
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
@@ -1086,7 +1086,7 @@ SubtlextSubtleSubletDel(VALUE self,
 {
   int id = -1;
 
-  if(RTEST(name) && -1 != ((id = subSharedSubletFind(STR2CSTR(name)))))
+  if(RTEST(name) && -1 != ((id = subSharedSubletFind(RSTRING_PTR(name)))))
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
@@ -1137,7 +1137,7 @@ SubtlextSubtleSubletFind(VALUE self,
   int id = -1;
   VALUE klass = Qnil, sublet = Qnil;
 
-  if(RTEST(name) && -1 != ((id = subSharedSubletFind(STR2CSTR(name)))))
+  if(RTEST(name) && -1 != ((id = subSharedSubletFind(RSTRING_PTR(name)))))
     {
       klass  = rb_const_get(mod, rb_intern("Sublet"));
       sublet = rb_funcall(klass, rb_intern("new"), 1, name);
@@ -1287,7 +1287,7 @@ SubtlextSubletUpdate(VALUE self)
   int id = -1;
   VALUE name = rb_iv_get(self, "@name");
 
-  if(RTEST(name) && -1 != ((id = subSharedSubletFind(STR2CSTR(name)))))
+  if(RTEST(name) && -1 != ((id = subSharedSubletFind(RSTRING_PTR(name)))))
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
@@ -1514,7 +1514,7 @@ SubtlextViewTagList(VALUE self)
   VALUE array = Qnil, method = Qnil, klass = Qnil, name = Qnil;
 
   name = rb_iv_get(self, "@name");
-  if(RTEST(name) && -1 != subSharedViewFind(STR2CSTR(name), &win))
+  if(RTEST(name) && -1 != subSharedViewFind(RSTRING_PTR(name), &win))
     {
       method = rb_intern("new");
       klass  = rb_const_get(mod, rb_intern("Tag"));

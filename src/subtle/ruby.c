@@ -163,7 +163,7 @@ RubySubletColor(VALUE self,
 {
   char buf[12];
 
-  snprintf(buf, sizeof(buf), "<>%s<>", STR2CSTR(color));
+  snprintf(buf, sizeof(buf), "<>%s<>", RSTRING_PTR(color));
 
   return rb_str_new2(buf);
 } /* }}} */
@@ -268,7 +268,7 @@ RubySubletPathSet(VALUE self,
       switch(rb_type(value)) ///< Check value type
         {
           case T_STRING: 
-            watch     = STR2CSTR(value);
+            watch     = RSTRING_PTR(value);
             s->flags |= SUB_SUBLET_INOTIFY;
             s->path   = strdup(watch);
 
@@ -320,7 +320,7 @@ RubyGetString(VALUE hash,
 {
   VALUE value = RubyGetValue(hash, key, T_STRING, NULL == fallback);
   
-  return Qnil != value ? STR2CSTR(value) : fallback;
+  return Qnil != value ? RSTRING_PTR(value) : fallback;
 } /* }}} */
 
 /* RubyGetFixnum {{{ */
@@ -434,7 +434,7 @@ RubyParseForeach(VALUE key,
           {
             case T_STRING: ///< String
               type = SUB_GRAB_EXEC;
-              data = DATA(strdup(STR2CSTR(value)));
+              data = DATA(strdup(RSTRING_PTR(value)));
               break;
             case T_SYMBOL: ///< Symbol
               for(i = 0; i < LENGTH(grabs); i++)
@@ -484,11 +484,11 @@ RubyParseForeach(VALUE key,
               rb_ary_push(shelter, value); ///< Protect from GC
               break;
             default:
-              subSharedLogWarn("Failed parsing grab `%s'\n", STR2CSTR(key));
+              subSharedLogWarn("Failed parsing grab `%s'\n", RSTRING_PTR(key));
               return Qnil;
           }
 
-        if(-1 != type && (entry = (void *)subGrabNew(STR2CSTR(key), type, data)))
+        if(-1 != type && (entry = (void *)subGrabNew(RSTRING_PTR(key), type, data)))
           subArrayPush(subtle->grabs, entry);
         break; /* }}} */
       case SUB_TYPE_HOOK: /* {{{ */
@@ -509,7 +509,7 @@ RubyParseForeach(VALUE key,
         switch(rb_type(value)) ///< Check value type
           {
             case T_STRING:
-              if((entry = (void *)subTagNew(STR2CSTR(key), STR2CSTR(value))))
+              if((entry = (void *)subTagNew(RSTRING_PTR(key), RSTRING_PTR(value))))
                 subArrayPush(subtle->tags, entry);
               break;
             case T_HASH:
@@ -518,7 +518,7 @@ RubyParseForeach(VALUE key,
                 SubTag *t = NULL;
                 char *regex = RubyGetString(value, "regex", NULL);
 
-                if((t = subTagNew(STR2CSTR(key), regex)))
+                if((t = subTagNew(RSTRING_PTR(key), regex)))
                   {
                     /* Fetch values */
                     t->gravity = RubyGetFixnum(value, "gravity", 0);
@@ -558,7 +558,7 @@ RubyParseForeach(VALUE key,
 
         break; /* }}} */
       case SUB_TYPE_VIEW: /* {{{ */
-        if((entry = (void *)subViewNew(STR2CSTR(key), STR2CSTR(value))))
+        if((entry = (void *)subViewNew(RSTRING_PTR(key), RSTRING_PTR(value))))
           subArrayPush(subtle->views, entry);
         break; /* }}} */
       default: subSharedLogDebug("Never to be reached?!\n");
@@ -646,7 +646,7 @@ RubySubtleTagAdd(VALUE self,
       VALUE mod = Qnil, klass = Qnil;
 
       /* Create new tag */
-      t = subTagNew(STR2CSTR(value), NULL);
+      t = subTagNew(RSTRING_PTR(value), NULL);
       subArrayPush(subtle->tags, (void *)t);
       subTagPublish();
 
@@ -678,7 +678,7 @@ RubySubtleViewAdd(VALUE self,
       VALUE mod = Qnil, klass = Qnil;
       
       /* Create new view */
-      v = subViewNew(STR2CSTR(value), NULL);
+      v = subViewNew(RSTRING_PTR(value), NULL);
       subArrayPush(subtle->views, (void *)v);
       subClientUpdate(-1); ///< Grow
       subViewUpdate();
