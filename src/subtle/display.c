@@ -51,8 +51,10 @@ subDisplayInit(const char *display)
   gvals.stipple       = XCreateBitmapFromData(subtle->dpy, ROOT, stipple, 15, 16);
   mask                = GCFunction|GCFillStyle|GCStipple;
   subtle->gcs.stipple = XCreateGC(subtle->dpy, ROOT, mask, &gvals);
-
-  subtle->gcs.font = XCreateGC(subtle->dpy, ROOT, GCFunction, &gvals);
+ 
+  gvals.plane_mask = AllPlanes;
+  mask             = GCFunction|GCPlaneMask;
+  subtle->gcs.font = XCreateGC(subtle->dpy, ROOT, mask, &gvals);
 
   gvals.function       = GXinvert;
   gvals.subwindow_mode = IncludeInferiors;

@@ -261,7 +261,7 @@ subClientRender(SubClient *c)
 
   XClearWindow(subtle->dpy, subtle->panels.caption.win);
 
-  XDrawString(subtle->dpy, subtle->panels.caption.win, subtle->gcs.font, 3, subtle->fy - 1,
+  XDrawString(subtle->dpy, subtle->panels.caption.win, subtle->gcs.font, 3, subtle->fy,
     buf, strlen(buf));
 } /* }}} */
 

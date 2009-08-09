@@ -73,7 +73,7 @@ subViewConfigure(SubView *v)
 
   assert(v);
 
-  /* Hook: Jump */
+  /* Hook: Configure */
   if(subtle->hooks.configure &&
     0 == subRubyCall(SUB_CALL_HOOK, subtle->hooks.configure, (void *)v))
     {
@@ -169,7 +169,7 @@ subViewRender(void)
           XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
           XSetWindowBackground(subtle->dpy, v->button, gvals.background); 
           XClearWindow(subtle->dpy, v->button);
-          XDrawString(subtle->dpy, v->button, subtle->gcs.font, 3, subtle->fy - 1,
+          XDrawString(subtle->dpy, v->button, subtle->gcs.font, 3, subtle->fy,
             v->name, strlen(v->name));
         }
     }
