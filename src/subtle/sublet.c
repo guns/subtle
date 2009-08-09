@@ -108,7 +108,7 @@ subSubletRender(void)
                 {
                   SubPixmap *p = PIXMAP(subtle->pixmaps->data[t->data.num]);
 
-                  subPixmapRender(p, s->button, width, 0, 
+                  subPixmapRender(p, s->button, width, abs(subtle->th - p->height) / 2, 
                     t->color, subtle->colors.bg_sublets);
 
                   width += p->width;
@@ -190,15 +190,14 @@ subSubletSetData(SubSublet *s,
             {
               int pid = atoi(tok + 1);
               
+              /* Add pixmap */
               if(0 <= pid && pid <= subtle->pixmaps->ndata)
                 {
                   SubPixmap *p = PIXMAP(subtle->pixmaps->data[pid]);
 
                   t->flags     = SUB_TYPE_TEXT|SUB_DATA_NUM;
                   t->data.num  = pid;
-                  t->color     = color;
                   t->width     = p->width;
-                  s->width    += p->width;
                 }
             }
           else
@@ -206,9 +205,10 @@ subSubletSetData(SubSublet *s,
               t->flags        = SUB_TYPE_TEXT|SUB_DATA_STRING;
               t->data.string  = strdup(tok);
               t->width        = XTextWidth(subtle->xfs, tok, strlen(tok) - 1) + 6; ///< Font offset
-              t->color        = color;
-              s->width       += t->width;
             }
+
+          t->color  = color;
+          s->width += t->width;
         }
     }
 } /* }}} */
