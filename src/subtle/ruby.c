@@ -163,7 +163,30 @@ RubySubletColor(VALUE self,
 {
   char buf[12];
 
-  snprintf(buf, sizeof(buf), "<>%s<>", RSTRING_PTR(color));
+  snprintf(buf, sizeof(buf), "%s%s%s",
+    SEPARATOR, RSTRING_PTR(color), SEPARATOR);
+
+  return rb_str_new2(buf);
+} /* }}} */
+
+/* RubySubletIcon {{{ */
+static VALUE
+RubySubletIcon(VALUE self,
+  VALUE path)
+{
+  int pid = -1;
+  char buf[10];
+  SubPixmap *p = NULL;
+
+  /* Creating pixmap */
+  if(-1 == (pid = subPixmapFind(RSTRING_PTR(path))) &&
+    (p = subPixmapNew(RSTRING_PTR(path))))
+    {
+      pid = subtle->pixmaps->ndata;
+      subArrayPush(subtle->pixmaps, (void *)p);
+    }
+
+  snprintf(buf, sizeof(buf), "%s!%d%s", SEPARATOR, pid, SEPARATOR);
 
   return rb_str_new2(buf);
 } /* }}} */
@@ -768,8 +791,9 @@ RubyWrapLoadConfig(VALUE data)
       if(!subtle->xfs) subSharedLogError("Failed loading font `%s`\n", FONT);
     }
 
-  subtle->fy = subtle->xfs->max_bounds.ascent + subtle->xfs->max_bounds.descent;
-  subtle->th = subtle->fy + 2;
+  /* Calculate font size and panel height */
+  subtle->th = subtle->xfs->max_bounds.ascent + subtle->xfs->max_bounds.descent + 2;
+  subtle->fy = (subtle->th - 2 + subtle->xfs->max_bounds.ascent) / 2;
 
   /* Config: Colors */
   config                    = rb_const_get(rb_cObject, rb_intern("COLORS"));
@@ -1029,6 +1053,7 @@ subRubyInit(void)
   rb_define_singleton_method(klass, "inherited", RubySubletInherited, 1);
 
   rb_define_method(klass, "color",     RubySubletColor,       1);
+  rb_define_method(klass, "icon",      RubySubletIcon,        1);
   rb_define_method(klass, "interval",  RubySubletInterval,    0);
   rb_define_method(klass, "interval=", RubySubletIntervalSet, 1);
   rb_define_method(klass, "data",      RubySubletData,        0);
