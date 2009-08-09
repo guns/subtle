@@ -94,6 +94,7 @@ SubtleSignal(int signum)
           {
             subArrayKill(subtle->clients, True);
             subArrayKill(subtle->grabs,   True);
+            subArrayKill(subtle->pixmaps, True);
             subArrayKill(subtle->screens, True);
             subArrayKill(subtle->sublets, True);
             subArrayKill(subtle->tags,    True);
@@ -201,6 +202,7 @@ main(int argc,
   /* Alloc */
   subtle->clients = subArrayNew();
   subtle->grabs   = subArrayNew();
+  subtle->pixmaps = subArrayNew();
   subtle->screens = subArrayNew();
   subtle->sublets = subArrayNew();
   subtle->tags    = subArrayNew();
