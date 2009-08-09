@@ -96,6 +96,7 @@
 #define DATA(d)   ((SubData)d)                                    ///< Cast to SubData
 #define GRAB(g)   ((SubGrab *)g)                                  ///< Cast to SubGrab
 #define PANEL(p)  ((SubPabel *)p)                                 ///< Cast to SubPanel
+#define PIXMAP(p) ((SubPixmap *)p)                                ///< Cast to SubPixmap
 #define SCREEN(s) ((SubScreen *)s)                                ///< Cast to SubScreen
 #define SUBLET(s) ((SubSublet *)s)                                ///< Cast to SubSublet
 #define SUBTLE(s) ((SubSubtle *)s)                                ///< Cast to SubSubtle
@@ -134,12 +135,13 @@
 #define SUB_TYPE_GRAB                 (1L << 2)                   ///< Grab
 #define SUB_TYPE_HOOK                 (1L << 3)                   ///< Hook
 #define SUB_TYPE_PANEL                (1L << 4)                   ///< Panel
-#define SUB_TYPE_SCREEN               (1L << 5)                   ///< Screen
-#define SUB_TYPE_SUBLET               (1L << 6)                   ///< Sublet
-#define SUB_TYPE_TAG                  (1L << 7)                   ///< Tag
-#define SUB_TYPE_TEXT                 (1L << 8)                   ///< Text
-#define SUB_TYPE_TRAY                 (1L << 9)                   ///< Tray
-#define SUB_TYPE_VIEW                 (1L << 10)                  ///< View
+#define SUB_TYPE_PIXMAP               (1L << 5)                   ///< Pixmap
+#define SUB_TYPE_SCREEN               (1L << 6)                   ///< Screen
+#define SUB_TYPE_SUBLET               (1L << 7)                   ///< Sublet
+#define SUB_TYPE_TAG                  (1L << 8)                   ///< Tag
+#define SUB_TYPE_TEXT                 (1L << 9)                   ///< Text
+#define SUB_TYPE_TRAY                 (1L << 10)                  ///< Tray
+#define SUB_TYPE_VIEW                 (1L << 11)                  ///< View
 
 /* Mode flags */
 #define SUB_MODE_FULL                 (1L << 20)                  ///< Fullscreen mode
@@ -153,40 +155,40 @@
 #define SUB_MODE_SIZE                 (1L << 28)                  ///< Size mode
 
 /* Client flags */
-#define SUB_CLIENT_DEAD               (1L << 11)                  ///< Dead window
-#define SUB_CLIENT_FOCUS              (1L << 12)                  ///< Send focus message
-#define SUB_CLIENT_CLOSE              (1L << 13)                  ///< Send close message
-#define SUB_CLIENT_INPUT              (1L << 14)                  ///< Active/passive focus-model
-#define SUB_CLIENT_URGENT             (1L << 15)                  ///< Urgent window
+#define SUB_CLIENT_DEAD               (1L << 12)                  ///< Dead window
+#define SUB_CLIENT_FOCUS              (1L << 13)                  ///< Send focus message
+#define SUB_CLIENT_CLOSE              (1L << 14)                  ///< Send close message
+#define SUB_CLIENT_INPUT              (1L << 15)                  ///< Active/passive focus-model
+#define SUB_CLIENT_URGENT             (1L << 16)                  ///< Urgent window
 
 /* Data flags */
-#define SUB_DATA_STRING               (1L << 15)                  ///< String data
-#define SUB_DATA_NUM                  (1L << 16)                  ///< Num data
-#define SUB_DATA_NIL                  (1L << 17)                  ///< Nil data
+#define SUB_DATA_STRING               (1L << 12)                  ///< String data
+#define SUB_DATA_NUM                  (1L << 13)                  ///< Num data
+#define SUB_DATA_NIL                  (1L << 14)                  ///< Nil data
 
 /* Drag flags */
-#define SUB_DRAG_START                (1L << 11)                  ///< Drag start
-#define SUB_DRAG_MOVE                 (1L << 12)                  ///< Drag move
-#define SUB_DRAG_SWAP                 (1L << 13)                  ///< Drag swap
-#define SUB_DRAG_RESIZE               (1L << 14)                  ///< Drag resize
+#define SUB_DRAG_START                (1L << 1)                   ///< Drag start
+#define SUB_DRAG_MOVE                 (1L << 2)                   ///< Drag move
+#define SUB_DRAG_SWAP                 (1L << 3)                   ///< Drag swap
+#define SUB_DRAG_RESIZE               (1L << 4)                   ///< Drag resize
 
 /* Grab flags */
-#define SUB_GRAB_KEY                  (1L << 11)                  ///< Key grab
-#define SUB_GRAB_MOUSE                (1L << 12)                  ///< Mouse grab  
-#define SUB_GRAB_EXEC                 (1L << 13)                  ///< Exec an app
-#define SUB_GRAB_PROC                 (1L << 14)                  ///< Grab with proc
-#define SUB_GRAB_VIEW_JUMP            (1L << 15)                  ///< Jump to view
-#define SUB_GRAB_SCREEN_JUMP          (1L << 16)                  ///< Jump to screen
-#define SUB_GRAB_SUBTLE_RELOAD        (1L << 17)                  ///< Reload subtle
-#define SUB_GRAB_SUBTLE_QUIT          (1L << 18)                  ///< Quit subtle
-#define SUB_GRAB_WINDOW_MOVE          (1L << 19)                  ///< Resize window
-#define SUB_GRAB_WINDOW_RESIZE        (1L << 20)                  ///< Move window
-#define SUB_GRAB_WINDOW_TOGGLE        (1L << 21)                  ///< Toggle window
-#define SUB_GRAB_WINDOW_STACK         (1L << 22)                  ///< Stack window
-#define SUB_GRAB_WINDOW_SELECT        (1L << 23)                  ///< Select window
-#define SUB_GRAB_WINDOW_GRAVITY       (1L << 24)                  ///< Set gravity of window
-#define SUB_GRAB_WINDOW_SCREEN        (1L << 25)                  ///< Set screen of window
-#define SUB_GRAB_WINDOW_KILL          (1L << 26)                  ///< Kill window
+#define SUB_GRAB_KEY                  (1L << 12)                  ///< Key grab
+#define SUB_GRAB_MOUSE                (1L << 13)                  ///< Mouse grab  
+#define SUB_GRAB_EXEC                 (1L << 14)                  ///< Exec an app
+#define SUB_GRAB_PROC                 (1L << 15)                  ///< Grab with proc
+#define SUB_GRAB_VIEW_JUMP            (1L << 16)                  ///< Jump to view
+#define SUB_GRAB_SCREEN_JUMP          (1L << 17)                  ///< Jump to screen
+#define SUB_GRAB_SUBTLE_RELOAD        (1L << 18)                  ///< Reload subtle
+#define SUB_GRAB_SUBTLE_QUIT          (1L << 19)                  ///< Quit subtle
+#define SUB_GRAB_WINDOW_MOVE          (1L << 20)                  ///< Resize window
+#define SUB_GRAB_WINDOW_RESIZE        (1L << 21)                  ///< Move window
+#define SUB_GRAB_WINDOW_TOGGLE        (1L << 22)                  ///< Toggle window
+#define SUB_GRAB_WINDOW_STACK         (1L << 23)                  ///< Stack window
+#define SUB_GRAB_WINDOW_SELECT        (1L << 24)                  ///< Select window
+#define SUB_GRAB_WINDOW_GRAVITY       (1L << 25)                  ///< Set gravity of window
+#define SUB_GRAB_WINDOW_SCREEN        (1L << 26)                  ///< Set screen of window
+#define SUB_GRAB_WINDOW_KILL          (1L << 27)                  ///< Kill window
 
 /* Gravity flags */
 #define SUB_GRAVITY_MODE33            (1L << 5)                   ///< 33% mode flag
@@ -195,9 +197,9 @@
   (SUB_GRAVITY_MODE33|SUB_GRAVITY_MODE66)                         ///< All modes
 
 /* Panel flags */
-#define SUB_PANEL_SPACER1             (1L << 11)                  ///< Panel spacer1
-#define SUB_PANEL_SPACER2             (1L << 12)                  ///< Panel spacer2
-#define SUB_PANEL_BOTTOM              (1L << 13)                  ///< Panel bottom
+#define SUB_PANEL_SPACER1             (1L << 12)                  ///< Panel spacer1
+#define SUB_PANEL_SPACER2             (1L << 13)                  ///< Panel spacer2
+#define SUB_PANEL_BOTTOM              (1L << 14)                  ///< Panel bottom
 
 #define SUB_CALL_SUBLET_RUN           (1L << 1)                   ///< Ruby sublet run call
 #define SUB_CALL_SUBLET_CLICK         (1L << 2)                   ///< Ruby sublet click call
@@ -205,8 +207,8 @@
 #define SUB_CALL_HOOK                 (1L << 4)                   ///< Ruby hook call
 
 /* Sublet types */
-#define SUB_SUBLET_INOTIFY            (1L << 11)                  ///< Inotify sublet
-#define SUB_SUBLET_CLICK              (1L << 12)                  ///< Sublet click function
+#define SUB_SUBLET_INOTIFY            (1L << 12)                  ///< Inotify sublet
+#define SUB_SUBLET_CLICK              (1L << 13)                  ///< Sublet click function
 
 /* Subtle flags */
 #define SUB_SUBTLE_DEBUG              (1L << 1)                   ///< Debug enabled
@@ -354,6 +356,14 @@ typedef struct subpanel_t /* {{{ */
   struct subpanel_t  *next;                                       ///< Panel next
 } SubPanel; /* }}} */
 
+typedef struct subpixmap_t /* {{{ */
+{
+  FLAGS         flags;                                            ///< Pixmap flags
+  Pixmap        pixmap;                                           ///< Pixmap drawable
+  int           quark;                                            ///< Pixmap quark
+  unsigned int  width, height;                                    ///< Pixmap geometry
+} SubPixmap; /* }}} */
+
 typedef struct subscreen_t /* {{{ */
 {
   FLAGS        flags;                                             ///< Screen flags
@@ -397,6 +407,7 @@ typedef struct subsubtle_t /* {{{ */
 
   struct subarray_t    *clients;                                  ///< Subtle clients
   struct subarray_t    *grabs;                                    ///< Subtle grabs
+  struct subarray_t    *pixmaps;                                  ///< Subtle pixmaps
   struct subarray_t    *screens;                                  ///< Subtle screens
   struct subarray_t    *sublets;                                  ///< Subtle sublets
   struct subarray_t    *tags;                                     ///< Subtle tags
@@ -546,7 +557,7 @@ void subGrabInit(void);                                           ///< Init keym
 SubGrab *subGrabNew(const char *chain, int type,                  ///< Create grab
   SubData data);
 KeySym subGrabGet(void);                                          ///< Get grab
-SubGrab *subGrabFind(int code, KeySym sym, unsigned int mod);                 ///< Find grab
+SubGrab *subGrabFind(int code, KeySym sym, unsigned int mod);     ///< Find grab
 void subGrabSet(Window win);                                      ///< Grab window
 void subGrabUnset(Window win);                                    ///< Ungrab window
 int subGrabCompare(const void *a, const void *b);                 ///< Compare grabs
@@ -556,6 +567,14 @@ void subGrabKill(SubGrab *g);                                     ///< Kill grab
 /* panel.c {{{ */
 void subPanelUpdate(void);                                        ///< Configure panels
 void subPanelRender(void);                                        ///< Render panels
+/* }}} */
+
+/* pixmap.c {{{ */
+SubPixmap *subPixmapNew(const char *path);                        ///< Create pixmap
+void subPixmapRender(SubPixmap *p, Window win,
+  int x, int y, long fg,long bg);                                 ///< Render pixmap
+int subPixmapFind(const char *path);                              ///< Find pixmap
+void subPixmapKill(SubPixmap *p);                                 ///< Kill pixmap
 /* }}} */
 
 /* ruby.c {{{ */
