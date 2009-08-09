@@ -100,9 +100,18 @@ subSubletRender(void)
                   XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
 
                   XDrawString(subtle->dpy, s->button, subtle->gcs.font, width,
-                    subtle->fy - 1, t->data.string, strlen(t->data.string));
+                    subtle->fy, t->data.string, strlen(t->data.string));
 
                   width += t->width;
+                }
+              else if(t->flags & SUB_DATA_NUM)
+                {
+                  SubPixmap *p = PIXMAP(subtle->pixmaps->data[t->data.num]);
+
+                  subPixmapRender(p, s->button, width, 0, 
+                    t->color, subtle->colors.bg_sublets);
+
+                  width += p->width;
                 }
             }
         }
@@ -177,11 +186,29 @@ subSubletSetData(SubSublet *s,
               subArrayPush(s->text, t);
             }
 
-          t->flags        = SUB_TYPE_TEXT|SUB_DATA_STRING;
-          t->data.string  = strdup(tok);
-          t->width        = XTextWidth(subtle->xfs, tok, strlen(tok) - 1) + 6; ///< Font offset
-          t->color        = color;
-          s->width       += t->width;
+          if(!strncmp(tok, "!", 1)) ///< Icon
+            {
+              int pid = atoi(tok + 1);
+              
+              if(0 <= pid && pid <= subtle->pixmaps->ndata)
+                {
+                  SubPixmap *p = PIXMAP(subtle->pixmaps->data[pid]);
+
+                  t->flags     = SUB_TYPE_TEXT|SUB_DATA_NUM;
+                  t->data.num  = pid;
+                  t->color     = color;
+                  t->width     = p->width;
+                  s->width    += p->width;
+                }
+            }
+          else
+            {
+              t->flags        = SUB_TYPE_TEXT|SUB_DATA_STRING;
+              t->data.string  = strdup(tok);
+              t->width        = XTextWidth(subtle->xfs, tok, strlen(tok) - 1) + 6; ///< Font offset
+              t->color        = color;
+              s->width       += t->width;
+            }
         }
     }
 } /* }}} */
