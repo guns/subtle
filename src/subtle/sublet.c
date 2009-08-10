@@ -108,10 +108,10 @@ subSubletRender(void)
                 {
                   SubPixmap *p = PIXMAP(subtle->pixmaps->data[t->data.num]);
 
-                  subPixmapRender(p, s->button, width, abs(subtle->th - p->height) / 2, 
+                  subPixmapRender(p, s->button, width + 3, abs(subtle->th - p->height) / 2, 
                     t->color, subtle->colors.bg_sublets);
 
-                  width += p->width;
+                  width += p->width + 6;
                 }
             }
         }
@@ -155,7 +155,7 @@ void
 subSubletSetData(SubSublet *s,
   char *data)
 {
-  int i = 0;
+  int i = 0, id = 0;
   char *tok = NULL;
   unsigned long color = 0;
   SubText *t = NULL;
@@ -168,47 +168,38 @@ subSubletSetData(SubSublet *s,
   /* Split and iterate over tokens */
   while((tok = strsep(&data, SEPARATOR)))
     {
-      if(!strncmp(tok, "#", 1)) ///< Color
+      if('#' == *tok) ///< Color
+        color = subSharedColor(tok);
+      else if('\0' != *tok) ///< Text or pixmap
         {
-          color = subSharedColor(tok);
-        }
-      else ///< Recycle or re-use item to save allocs
-        {
-          if(i < s->text->ndata)
+          /* Recycle items */
+          if(i < s->text->ndata && (t = TEXT(s->text->data[i])))
             {
-              t = TEXT(s->text->data[i++]);
-
-              if(t->flags & SUB_DATA_STRING && t->data.string) free(t->data.string);
+              if(t->flags & SUB_DATA_STRING && t->data.string)
+                free(t->data.string);
             }
           else if((t = TEXT(subSharedMemoryAlloc(1, sizeof(SubText)))))
-            {
-              i++;
-              subArrayPush(s->text, t);
-            }
+            subArrayPush(s->text, (void *)t);
 
-          if(!strncmp(tok, "!", 1)) ///< Icon
+          /* Get pixmap from id */
+          if('!' == *tok && 0 <= (id = atoi(tok + 1)) && id <= subtle->pixmaps->ndata)
             {
-              int pid = atoi(tok + 1);
-              
-              /* Add pixmap */
-              if(0 <= pid && pid <= subtle->pixmaps->ndata)
-                {
-                  SubPixmap *p = PIXMAP(subtle->pixmaps->data[pid]);
+              SubPixmap *p = PIXMAP(subtle->pixmaps->data[id]);
 
-                  t->flags     = SUB_TYPE_TEXT|SUB_DATA_NUM;
-                  t->data.num  = pid;
-                  t->width     = p->width;
-                }
+              t->flags    = SUB_TYPE_TEXT|SUB_DATA_NUM;
+              t->data.num = id;
+              t->width    = p->width + 6; ///< Add spacer
             }
           else
             {
-              t->flags        = SUB_TYPE_TEXT|SUB_DATA_STRING;
-              t->data.string  = strdup(tok);
-              t->width        = XTextWidth(subtle->xfs, tok, strlen(tok) - 1) + 6; ///< Font offset
+              t->flags       = SUB_TYPE_TEXT|SUB_DATA_STRING;
+              t->data.string = strdup(tok);
+              t->width       = XTextWidth(subtle->xfs, tok, strlen(tok) - 1) + 6; ///< Font offset
             }
 
           t->color  = color;
           s->width += t->width;
+          i++;
         }
     }
 } /* }}} */

@@ -28,8 +28,8 @@ subPixmapNew(const char *path)
 
   /* Create pixmap */
   p = PIXMAP(subSharedMemoryAlloc(1, sizeof(SubPixmap)));
-  p->flags  = SUB_TYPE_PIXMAP;
-  p->quark  = XrmStringToQuark(path); ///< Create hash
+  p->flags = SUB_TYPE_PIXMAP;
+  p->quark = XrmStringToQuark(path); ///< Create hash
 
   /* Reading pixmap file */
   if(BitmapSuccess != XReadBitmapFile(subtle->dpy, ROOT, path, 
