@@ -154,10 +154,9 @@ subArrayClear(SubArray *a,
           SubText *t = TEXT(c);
 
           if(t->flags & SUB_DATA_STRING && t->data.string) 
-            {
-              free(t->data.string); ///< Special case
-              free(t);
-            }
+            free(t->data.string); ///< Special case
+
+          free(t);
         }
       else free(a->data[i]); 
     }
