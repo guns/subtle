@@ -954,9 +954,8 @@ RubyWrapCall(VALUE data)
       meth  = rb_funcall(rargs[1], rb_intern("method"), 1, CHAR2SYM("click"));
       arity = FIX2INT(rb_funcall(meth, rb_intern("arity"), 0, NULL));
 
-      if(2 > arity)
-        XTranslateCoordinates(subtle->dpy, ev->window, ev->subwindow, 
-          ev->x, ev->y, &x, &y, &win);
+      XTranslateCoordinates(subtle->dpy, ev->window, ev->subwindow, 
+        ev->x, ev->y, &x, &y, &win);
 
       ret = rb_funcall(rargs[1], cb, arity, INT2FIX(ev->button), INT2FIX(x), INT2FIX(y));
 
