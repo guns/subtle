@@ -670,7 +670,7 @@ EventGrab(XEvent *ev)
             SubSublet *s = SUBLET(subSharedFind(ev->xbutton.subwindow, BUTTONID));
 
             if(s && s->flags & SUB_SUBLET_CLICK) ///< Call click method
-              subRubyCall(SUB_CALL_SUBLET_CLICK, s->recv, NULL);
+              subRubyCall(SUB_CALL_SUBLET_CLICK, s->recv, (void *)&ev->xbutton);
 
             return;
           }
@@ -757,12 +757,13 @@ EventGrab(XEvent *ev)
                 int i, match = 0, score = 0;
                 Window found = None;
 
-                /* Iterate once to find a client score-based */
+                /* Iterate once to find a client based on score */
                 for(i = 0; 100 != match && i < subtle->clients->ndata; i++)
                   {
                     SubClient *iter = CLIENT(subtle->clients->data[i]);
 
-                    if(c != iter && VISIBLE(subtle->view, iter))
+                    if(c != iter && c->screen == iter->screen && 
+                      VISIBLE(subtle->view, iter))
                       if(match < (score = subSharedMatch(g->data.num, 
                         c->gravity & ~SUB_GRAVITY_MODES, iter->gravity & ~SUB_GRAVITY_MODES)))
                         {

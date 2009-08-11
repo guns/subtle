@@ -945,7 +945,22 @@ RubyWrapCall(VALUE data)
     } /* }}} */
   else if((int)rargs[0] & SUB_CALL_SUBLET_CLICK) /* {{{ */
     {
-      ret = rb_funcall(rargs[1], rb_intern("click"), 0, NULL);
+      Window win = 0;
+      int x = 0, y = 0, arity = 0;
+      XButtonEvent *ev = (XButtonEvent *)rargs[2];
+      VALUE meth = Qnil, cb = rb_intern("click");
+
+      /* Get arity of callback */
+      meth  = rb_funcall(rargs[1], rb_intern("method"), 1, CHAR2SYM("click"));
+      arity = FIX2INT(rb_funcall(meth, rb_intern("arity"), 0, NULL));
+
+      if(2 > arity)
+        XTranslateCoordinates(subtle->dpy, ev->window, ev->subwindow, 
+          ev->x, ev->y, &x, &y, &win);
+
+      ret = rb_funcall(rargs[1], cb, arity, INT2FIX(ev->button), INT2FIX(x), INT2FIX(y));
+
+      subSharedLogDebug("Proc: arity=%d\n", arity);      
     } /* }}} */
   else if((int)rargs[0] & (SUB_CALL_GRAB|SUB_CALL_HOOK)) /* {{{ */
     {
