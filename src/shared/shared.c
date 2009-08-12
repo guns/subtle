@@ -199,34 +199,34 @@ subSharedMatch(int type,
 {
   int score = 0;
 
-  switch(abs(gravity1 - gravity2))
+  switch(gravity2 - gravity1)
     {
-      case 0: score = 25; break;
-      case 1:
-        if(SUB_WINDOW_LEFT == type || SUB_WINDOW_RIGHT == type) score = 100; 
+      case -1: 
+        if(SUB_WINDOW_LEFT == type && 4 == gravity1 && 3 == gravity2)
+          score = 40;
+        if(SUB_WINDOW_LEFT == type) score = 100;
         break;
-      case 2:
-        if(SUB_WINDOW_LEFT == type || SUB_WINDOW_RIGHT == type) score = 75; 
+      case  1: 
+        if(SUB_WINDOW_LEFT == type && 4 == gravity1 && 3 == gravity2) 
+          score = 40;
+        if(SUB_WINDOW_RIGHT == type) score = 100;
         break;
-      case 3: 
-        if(SUB_WINDOW_UP == type || SUB_WINDOW_DOWN == type)    score = 100; 
-        break;
-      case 4: 
-        if(SUB_WINDOW_UP == type || SUB_WINDOW_DOWN == type)    score = 50;
-        break;
-      case 5: score = 50; break;
-      case 6:
-        if(SUB_WINDOW_UP == type || SUB_WINDOW_DOWN == type)    score = 75;
-        break;
-      case 7:
-        if(SUB_WINDOW_UP == type || SUB_WINDOW_DOWN == type)    score = 50;
-        break;
-      case 8:
-        if(SUB_WINDOW_UP == type || SUB_WINDOW_DOWN == type)    score = 50;
-        break;
-      default: score = 25; break;
-    }
 
+      case -2: if(SUB_WINDOW_LEFT == type)  score =  80; break;
+      case  2: if(SUB_WINDOW_RIGHT == type) score =  80; break;
+
+      case -3: if(SUB_WINDOW_DOWN == type)  score = 100; break;
+      case  3: if(SUB_WINDOW_UP == type)    score = 100; break;
+
+      case -5: score =  60; break;
+      case  5: score =  60; break;
+
+      case -6: if(SUB_WINDOW_DOWN == type)  score =  80; break;
+      case  6: if(SUB_WINDOW_UP == type)    score =  80; break;
+
+      default: score = 10;
+    }
+printf("score=%d\n", score);
   return score;
 } /* }}} */
 
