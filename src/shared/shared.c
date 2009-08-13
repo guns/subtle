@@ -226,7 +226,7 @@ subSharedMatch(int type,
 
       default: score = 10;
     }
-printf("score=%d\n", score);
+
   return score;
 } /* }}} */
 
