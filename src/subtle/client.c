@@ -976,6 +976,7 @@ subClientToggle(SubClient *c,
   if(VISIBLE(subtle->view, c)) ///< Check visibility first
     {
       subClientFocus(c);
+      subClientSetCaption(c);
       subPanelUpdate();
       subPanelRender();
     }
