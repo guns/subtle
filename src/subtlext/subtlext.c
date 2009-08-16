@@ -1666,7 +1666,7 @@ Init_subtlext(void)
   rb_define_method(klass, "focus",        SubtlextClientFocus,         0);
   rb_define_method(klass, "focus?",       SubtlextClientFocusHas,      0);
   rb_define_method(klass, "kill",         SubtlextClientKill,          0);
-  rb_define_method(klass, "to_s",         SubtlextClientToString,      0);
+  rb_define_method(klass, "to_str",       SubtlextClientToString,      0);
   rb_define_method(klass, "gravity",      SubtlextClientGravity,       0);
   rb_define_method(klass, "gravity=",     SubtlextClientGravitySet,    1);
   rb_define_method(klass, "screen",       SubtlextClientScreen,        0);
@@ -1676,6 +1676,7 @@ Init_subtlext(void)
   rb_define_method(klass, "update",       SubtlextClientUpdate,        0);
   rb_define_method(klass, "+",            SubtlextClientOperatorPlus,  1);
   rb_define_method(klass, "-",            SubtlextClientOperatorMinus, 1);
+  rb_define_alias(klass, "to_s", "to_str");
 
   /* Class: gravity */
   klass = rb_define_class_under(mod, "Gravity", rb_cObject);
@@ -1720,7 +1721,8 @@ Init_subtlext(void)
   rb_define_method(klass, "running?",       SubtlextSubtleRunning,          0);
   rb_define_method(klass, "reload",         SubtlextSubtleReload,           0);
   rb_define_method(klass, "quit",           SubtlextSubtleQuit,             0);
-  rb_define_method(klass, "to_s",           SubtlextSubtleToString,         0);
+  rb_define_method(klass, "to_str",         SubtlextSubtleToString,         0);
+  rb_define_alias(klass, "to_s", "to_str");
 
   /* Class: sublet */
   klass = rb_define_class_under(mod, "Sublet", rb_cObject);
@@ -1740,7 +1742,8 @@ Init_subtlext(void)
   rb_define_method(klass, "initialize", SubtlextTagInit,     1);
   rb_define_method(klass, "taggings",   SubtlextTagTaggings, 0);
   rb_define_method(klass, "save",       SubtlextTagSave,     0);
-  rb_define_method(klass, "to_s",       SubtlextTagToString, 0);
+  rb_define_method(klass, "to_str",     SubtlextTagToString, 0);
+  rb_define_alias(klass, "to_s", "to_str");
 
   /* Class: view */
   klass = rb_define_class_under(mod, "View", rb_cObject);
@@ -1756,9 +1759,10 @@ Init_subtlext(void)
   rb_define_method(klass, "jump",       SubtlextViewJump,          0);
   rb_define_method(klass, "current?",   SubtlextViewCurrent,       0);
   rb_define_method(klass, "save",       SubtlextViewSave,          0);
-  rb_define_method(klass, "to_s",       SubtlextViewToString,      0);
+  rb_define_method(klass, "to_str",     SubtlextViewToString,      0);
   rb_define_method(klass, "+",          SubtlextViewOperatorPlus,  1);
   rb_define_method(klass, "-",          SubtlextViewOperatorMinus, 1);
+  rb_define_alias(klass, "to_s", "to_str");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
