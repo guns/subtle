@@ -1026,8 +1026,6 @@ subEventLoop(void)
               subSubletUpdate();
               subPanelUpdate();
               subPanelRender();
-
-              XFlush(subtle->dpy);
             }
         } /* }}} */
 

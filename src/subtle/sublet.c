@@ -115,8 +115,6 @@ subSubletRender(void)
                 }
             }
         }
-
-      XFlush(subtle->dpy);
     }
 } /* }}} */
 
@@ -168,8 +166,7 @@ subSubletSetData(SubSublet *s,
   /* Split and iterate over tokens */
   while((tok = strsep(&data, SEPARATOR)))
     {
-      if('#' == *tok) ///< Color
-        color = subSharedColor(tok);
+      if('#' == *tok) color = atol(tok + 1); ///< Color
       else if('\0' != *tok) ///< Text or pixmap
         {
           /* Recycle items */
