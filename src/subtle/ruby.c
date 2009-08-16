@@ -112,210 +112,6 @@ RubySignal(int signum)
     }
 } /* }}} */
 
-/* RubySubletMark {{{ */
-static void
-RubySubletMark(SubSublet *s)
-{
-  rb_gc_mark(s->recv);
-} /* }}} */
-
-/* RubySubletNew {{{ */
-static VALUE
-RubySubletNew(VALUE self)
-{
-  SubSublet *s = NULL;
-  VALUE data = Qnil;
-  char *name = (char *)rb_class2name(self);
-
-  /* Create sublet */
-  s = subSubletNew();
-  data    = Data_Wrap_Struct(self, RubySubletMark, NULL, (void *)s);
-  s->recv = data; 
-  s->name = strdup(name);
-
-  rb_obj_call_init(data, 0, NULL); ///< Call initialize
-  if(0 == s->interval) s->interval = 60; ///< Sanitize
-
-  subArrayPush(subtle->sublets, s);
-  rb_ary_push(shelter, data); ///< Protect from GC
-
-  /* Check click handler */
-  if(Qtrue == rb_funcall(s->recv, rb_intern("respond_to?"), 1, CHAR2SYM("click")))
-    s->flags |= SUB_SUBLET_CLICK;
-
-  return data;
-} /* }}} */
-
-/* RubySubletInherited {{{ */
-static VALUE
-RubySubletInherited(VALUE self,
-  VALUE recv)
-{
-  sublet = recv; ///< Store inherited sublet
-
-  return Qnil;
-} /* }}} */
-
-/* RubySubletColor {{{ */
-static VALUE
-RubySubletColor(VALUE self,
-  VALUE color)
-{
-  char buf[12];
-
-  snprintf(buf, sizeof(buf), "%s%s%s",
-    SEPARATOR, RSTRING_PTR(color), SEPARATOR);
-
-  return rb_str_new2(buf);
-} /* }}} */
-
-/* RubySubletIcon {{{ */
-static VALUE
-RubySubletIcon(VALUE self,
-  VALUE path)
-{
-  int pid = -1;
-  char buf[10];
-  SubPixmap *p = NULL;
-
-  /* Creating pixmap */
-  if(-1 == (pid = subPixmapFind(RSTRING_PTR(path))) &&
-    (p = subPixmapNew(RSTRING_PTR(path))))
-    {
-      pid = subtle->pixmaps->ndata;
-      subArrayPush(subtle->pixmaps, (void *)p);
-    }
-
-  snprintf(buf, sizeof(buf), "%s!%d%s", SEPARATOR, pid, SEPARATOR);
-
-  return rb_str_new2(buf);
-} /* }}} */
-
-/* RubySubletInterval {{{ */
-static VALUE
-RubySubletInterval(VALUE self)
-{
-  SubSublet *s = NULL;
-
-  Data_Get_Struct(self, SubSublet, s);
-
-  return s ? INT2FIX(s->interval) : Qnil;
-} /* }}} */
-
-/* RubySubletIntervalSet {{{ */
-static VALUE
-RubySubletIntervalSet(VALUE self,
-  VALUE value)
-{
-  SubSublet *s = NULL;
-
-  Data_Get_Struct(self, SubSublet, s);
-  if(s)
-    {
-      switch(rb_type(value))
-        {
-          case T_FIXNUM: s->interval = FIX2INT(value); return Qtrue;
-          default: subSharedLogWarn("Unknown value type\n");
-        }
-    }
-
-  return Qfalse;
-} /* }}} */
-
-/* RubySubletData {{{ */
-static VALUE
-RubySubletData(VALUE self)
-{
-  int i;
-  VALUE string = Qnil;
-  SubSublet *s = NULL;
-  Data_Get_Struct(self, SubSublet, s);
-  
-  /* Concat string */
-  if(s && 0 < s->text->ndata) 
-    {
-      for(i = 0; i < s->text->ndata; i++)
-        {
-          SubText *t = TEXT(s->text->data[i]);
-
-          if(Qnil == string) rb_str_new2(t->data.string);
-          else rb_str_cat(string, t->data.string, strlen(t->data.string));
-        }
-    }
-
-  return string;
-} /* }}} */
-
-/* RubySubletDataSet {{{ */
-static VALUE
-RubySubletDataSet(VALUE self,
-  VALUE value)
-{
-  VALUE ret = Qfalse;
-  SubSublet *s = NULL;
-  Data_Get_Struct(self, SubSublet, s);
-
-  if(s && RTEST(value) && T_STRING == rb_type(value)) ///< Check value type
-    {
-      subSubletSetData(s, RSTRING_PTR(value)); 
-      ret = Qtrue;
-    }
-  else rb_raise(rb_eArgError, "Unknown value type");
-
-  return ret;
-} /* }}} */
-
-#ifdef HAVE_SYS_INOTIFY_H
-/* RubySubletPath {{{ */
-static VALUE
-RubySubletPath(VALUE self)
-{
-  SubSublet *s = NULL;
-
-  Data_Get_Struct(self, SubSublet, s);
-
-  return s ? rb_str_new2(s->path) : Qnil;
-} /* }}} */
-
-/* RubySubletPathSet {{{ */
-static VALUE
-RubySubletPathSet(VALUE self,
-  VALUE value)
-{
-  SubSublet *s = NULL;
-  char *watch = NULL;
-
-  Data_Get_Struct(self, SubSublet, s);
-  if(s)
-    {
-      switch(rb_type(value)) ///< Check value type
-        {
-          case T_STRING: 
-            watch     = RSTRING_PTR(value);
-            s->flags |= SUB_SUBLET_INOTIFY;
-            s->path   = strdup(watch);
-
-            /* Create inotify watch */
-            if(0 < (s->interval = inotify_add_watch(subtle->notify, watch, IN_MODIFY)))
-              {
-                XSaveContext(subtle->dpy, subtle->panels.sublets.win, s->interval, (void *)s);
-
-                subSharedLogDebug("Inotify: Adding watch on %s\n", watch); 
-
-                return Qtrue;
-              }
-
-            subSharedLogWarn("Failed adding watch on file `%s': %s\n", 
-              watch, strerror(errno));
-            break;
-          default: subSharedLogWarn("Failed handling unknown value type\n");
-        }
-    }
-
-  return Qfalse;
-} /* }}} */
-#endif /* HAVE_SYS_INOTIFY_H */
-
 /* RubyGetValue {{{ */
 static VALUE
 RubyGetValue(VALUE hash,
@@ -655,6 +451,320 @@ RubyParsePanel(VALUE hash,
   return enabled;
 } /* }}} */
 
+/* RubyParseColor {{{ */
+unsigned long
+RubyParseColor(char *name)
+{
+  XColor color = { 0 }; ///< Default color
+
+  /* Parse and store color */
+  if(!XParseColor(subtle->dpy, COLORMAP, name, &color))
+    {
+      subSharedLogWarn("Failed loading color `%s'\n", name);
+    }
+  else if(!XAllocColor(subtle->dpy, COLORMAP, &color))
+    subSharedLogWarn("Failed allocating color `%s'\n", name);
+
+  return color.pixel;
+} /* }}} */
+
+/* RubySubletMark {{{ */
+static void
+RubySubletMark(SubSublet *s)
+{
+  rb_gc_mark(s->recv);
+} /* }}} */
+
+/* RubyWrapInit {{{ */
+static VALUE
+RubyWrapInit(VALUE data)
+{
+  rb_obj_call_init(data, 0, NULL); ///< Call initialize
+
+  return Qnil;
+} /* }}} */
+
+/* RubySubletNew {{{ */
+static VALUE
+RubySubletNew(VALUE self)
+{
+  int state = 0;
+  SubSublet *s = NULL;
+  VALUE data = Qnil;
+  char *name = (char *)rb_class2name(self);
+
+  /* Create sublet */
+  s = subSubletNew();
+  data    = Data_Wrap_Struct(self, RubySubletMark, NULL, (void *)s);
+  s->recv = data; 
+  s->name = strdup(name);
+
+  /* Call initialize */
+  rb_protect(RubyWrapInit, data, &state);
+  if(state) 
+    {
+      RubyPerror(True, False, "Failed initializing sublet `%s'", name);
+
+      subSubletKill(s, False);
+
+      return Qnil;
+    }
+
+  if(0 == s->interval) s->interval = 60; ///< Sanitize
+
+  subArrayPush(subtle->sublets, s);
+  rb_ary_push(shelter, data); ///< Protect from GC
+
+  /* Check click handler */
+  if(rb_respond_to(s->recv, rb_intern("click"))) s->flags |= SUB_SUBLET_CLICK;
+
+  return data;
+} /* }}} */
+
+/* RubySubletInherited {{{ */
+static VALUE
+RubySubletInherited(VALUE self,
+  VALUE recv)
+{
+  sublet = recv; ///< Store inherited sublet
+
+  return Qnil;
+} /* }}} */
+
+/* RubySubletInterval {{{ */
+static VALUE
+RubySubletInterval(VALUE self)
+{
+  SubSublet *s = NULL;
+
+  Data_Get_Struct(self, SubSublet, s);
+
+  return s ? INT2FIX(s->interval) : Qnil;
+} /* }}} */
+
+/* RubySubletIntervalSet {{{ */
+static VALUE
+RubySubletIntervalSet(VALUE self,
+  VALUE value)
+{
+  SubSublet *s = NULL;
+
+  Data_Get_Struct(self, SubSublet, s);
+  if(s)
+    {
+      switch(rb_type(value))
+        {
+          case T_FIXNUM: s->interval = FIX2INT(value); return Qtrue;
+          default: subSharedLogWarn("Unknown value type\n");
+        }
+    }
+
+  return Qfalse;
+} /* }}} */
+
+/* RubySubletData {{{ */
+static VALUE
+RubySubletData(VALUE self)
+{
+  int i;
+  VALUE string = Qnil;
+  SubSublet *s = NULL;
+  Data_Get_Struct(self, SubSublet, s);
+  
+  /* Concat string */
+  if(s && 0 < s->text->ndata) 
+    {
+      for(i = 0; i < s->text->ndata; i++)
+        {
+          SubText *t = TEXT(s->text->data[i]);
+
+          if(Qnil == string) rb_str_new2(t->data.string);
+          else rb_str_cat(string, t->data.string, strlen(t->data.string));
+        }
+    }
+
+  return string;
+} /* }}} */
+
+/* RubySubletDataSet {{{ */
+static VALUE
+RubySubletDataSet(VALUE self,
+  VALUE value)
+{
+  VALUE ret = Qfalse;
+  SubSublet *s = NULL;
+  Data_Get_Struct(self, SubSublet, s);
+
+  if(s && RTEST(value) && T_STRING == rb_type(value)) ///< Check value type
+    {
+      subSubletSetData(s, RSTRING_PTR(value)); 
+      ret = Qtrue;
+    }
+  else rb_raise(rb_eArgError, "Unknown value type");
+
+  return ret;
+} /* }}} */
+
+#ifdef HAVE_SYS_INOTIFY_H
+/* RubySubletPath {{{ */
+static VALUE
+RubySubletPath(VALUE self)
+{
+  SubSublet *s = NULL;
+
+  Data_Get_Struct(self, SubSublet, s);
+
+  return s ? rb_str_new2(s->path) : Qnil;
+} /* }}} */
+
+/* RubySubletPathSet {{{ */
+static VALUE
+RubySubletPathSet(VALUE self,
+  VALUE value)
+{
+  SubSublet *s = NULL;
+  char *watch = NULL;
+
+  Data_Get_Struct(self, SubSublet, s);
+  if(s)
+    {
+      switch(rb_type(value)) ///< Check value type
+        {
+          case T_STRING: 
+            watch     = RSTRING_PTR(value);
+            s->flags |= SUB_SUBLET_INOTIFY;
+            s->path   = strdup(watch);
+
+            /* Create inotify watch */
+            if(0 < (s->interval = inotify_add_watch(subtle->notify, watch, IN_MODIFY)))
+              {
+                XSaveContext(subtle->dpy, subtle->panels.sublets.win, s->interval, (void *)s);
+
+                subSharedLogDebug("Inotify: Adding watch on %s\n", watch); 
+
+                return Qtrue;
+              }
+
+            subSharedLogWarn("Failed adding watch on file `%s': %s\n", 
+              watch, strerror(errno));
+            break;
+          default: subSharedLogWarn("Failed handling unknown value type\n");
+        }
+    }
+
+  return Qfalse;
+} /* }}} */
+#endif /* HAVE_SYS_INOTIFY_H */
+
+/* RubyIconInit {{{ */
+static VALUE
+RubyIconInit(VALUE self,
+  VALUE path)
+{
+  int id = -1;
+  SubPixmap *p = NULL;
+
+  /* Creating pixmap */
+  if(-1 == (id = subPixmapFind(RSTRING_PTR(path))) &&
+    (p = subPixmapNew(RSTRING_PTR(path))))
+    {
+      id = subtle->pixmaps->ndata;
+      subArrayPush(subtle->pixmaps, (void *)p);
+    }
+
+  rb_iv_set(self, "@id", INT2FIX(id));
+
+  return self;
+} /* }}} */
+
+/* RubyIconToString {{{ */
+static VALUE
+RubyIconToString(VALUE self)
+{
+  char buf[12];
+  VALUE id = rb_iv_get(self, "@id");
+
+  snprintf(buf, sizeof(buf), "%s!%d%s",
+    SEPARATOR, FIX2INT(id), SEPARATOR);
+
+  return rb_str_new2(buf);
+} /* }}} */
+
+/* Rubyconcat {{{ */
+static VALUE
+RubyConcat(VALUE str1,
+  VALUE str2)
+{
+  VALUE ret = Qnil;
+
+  /* Check value */
+  if(RTEST(str1) && RTEST(str2) && T_STRING == rb_type(str1))
+    {
+      VALUE string = str2;
+      
+      /* Convert argument to string */
+      if(T_STRING != rb_type(str2) && rb_respond_to(str2, rb_intern("to_s")))
+        string = rb_funcall(str2, rb_intern("to_s"), 0, NULL);
+
+      /* Concat strings */
+      if(T_STRING == rb_type(string))
+        ret = rb_str_cat(str1, RSTRING_PTR(string), RSTRING_LEN(string));
+    }
+  else rb_raise(rb_eArgError, "Unknown value type");
+
+  return ret;
+} /* }}} */
+
+/* RubyIconOperatorPlus {{{ */
+static VALUE
+RubyIconOperatorPlus(VALUE self,
+  VALUE value)
+{
+  return RubyConcat(RubyIconToString(self), value);
+} /* }}} */
+
+/* RubyColorInit {{{ */
+static VALUE
+RubyColorInit(VALUE self,
+  VALUE color)
+{
+  /* Check arguments */ 
+  if(RTEST(color) && T_STRING == rb_type(color))
+    {
+      unsigned long pixel = RubyParseColor(RSTRING_PTR(color));
+
+      rb_iv_set(self, "@pixel", INT2FIX(pixel));
+    }
+  else
+    {
+      rb_raise(rb_eArgError, "Unknown value type");
+      return Qnil;
+    }
+
+  return self;
+} /* }}} */
+
+/* RubyColorToString {{{ */
+static VALUE
+RubyColorToString(VALUE self)
+{
+  char buf[20];
+  VALUE pixel = rb_iv_get(self, "@pixel");
+
+  snprintf(buf, sizeof(buf), "%s#%ld%s",
+    SEPARATOR, NUM2LONG(pixel), SEPARATOR);
+
+  return rb_str_new2(buf);
+} /* }}} */
+
+/* RubyColorOperatorPlus {{{ */
+static VALUE
+RubyColorOperatorPlus(VALUE self,
+  VALUE value)
+{
+  return RubyConcat(RubyColorToString(self), value);
+} /* }}} */
+
 /* RubySubtleTagAdd {{{ */
 static VALUE
 RubySubtleTagAdd(VALUE self,
@@ -797,17 +907,17 @@ RubyWrapLoadConfig(VALUE data)
 
   /* Config: Colors */
   config                    = rb_const_get(rb_cObject, rb_intern("COLORS"));
-  subtle->colors.fg_panel   = subSharedColor(RubyGetString(config, "fg_panel",      "#e2e2e5"));
-  subtle->colors.fg_views   = subSharedColor(RubyGetString(config, "fg_views",      "#CF6171"));
-  subtle->colors.fg_sublets = subSharedColor(RubyGetString(config, "fg_sublets",    "#CF6171"));
-  subtle->colors.fg_focus   = subSharedColor(RubyGetString(config, "fg_focus",      "#000000"));
-  subtle->colors.bg_panel   = subSharedColor(RubyGetString(config, "bg_panel",      "#444444"));
-  subtle->colors.bg_views   = subSharedColor(RubyGetString(config, "bg_views",      "#3d3d3d"));
-  subtle->colors.bg_sublets = subSharedColor(RubyGetString(config, "bg_sublets",    "#CF6171"));
-  subtle->colors.bg_focus   = subSharedColor(RubyGetString(config, "bg_focus",      "#CF6171"));
-  subtle->colors.bo_focus   = subSharedColor(RubyGetString(config, "border_focus",  "#CF6171"));
-  subtle->colors.bo_normal  = subSharedColor(RubyGetString(config, "border_normal", "#CF6171"));
-  subtle->colors.bg         = subSharedColor(RubyGetString(config, "background",    "#3d3d3d3"));
+  subtle->colors.fg_panel   = RubyParseColor(RubyGetString(config, "fg_panel",      "#e2e2e5"));
+  subtle->colors.fg_views   = RubyParseColor(RubyGetString(config, "fg_views",      "#CF6171"));
+  subtle->colors.fg_sublets = RubyParseColor(RubyGetString(config, "fg_sublets",    "#CF6171"));
+  subtle->colors.fg_focus   = RubyParseColor(RubyGetString(config, "fg_focus",      "#000000"));
+  subtle->colors.bg_panel   = RubyParseColor(RubyGetString(config, "bg_panel",      "#444444"));
+  subtle->colors.bg_views   = RubyParseColor(RubyGetString(config, "bg_views",      "#3d3d3d"));
+  subtle->colors.bg_sublets = RubyParseColor(RubyGetString(config, "bg_sublets",    "#CF6171"));
+  subtle->colors.bg_focus   = RubyParseColor(RubyGetString(config, "bg_focus",      "#CF6171"));
+  subtle->colors.bo_focus   = RubyParseColor(RubyGetString(config, "border_focus",  "#CF6171"));
+  subtle->colors.bo_normal  = RubyParseColor(RubyGetString(config, "border_normal", "#CF6171"));
+  subtle->colors.bg         = RubyParseColor(RubyGetString(config, "background",    "#3d3d3d3"));
 
   /* Config: Panels */
   config = rb_const_get(rb_cObject, rb_intern("PANEL"));
@@ -1065,9 +1175,6 @@ subRubyInit(void)
   klass = rb_define_class_under(mod, "Sublet", rb_cObject);
   rb_define_singleton_method(klass, "new",       RubySubletNew,       0);
   rb_define_singleton_method(klass, "inherited", RubySubletInherited, 1);
-
-  rb_define_method(klass, "color",     RubySubletColor,       1);
-  rb_define_method(klass, "icon",      RubySubletIcon,        1);
   rb_define_method(klass, "interval",  RubySubletInterval,    0);
   rb_define_method(klass, "interval=", RubySubletIntervalSet, 1);
   rb_define_method(klass, "data",      RubySubletData,        0);
@@ -1077,6 +1184,22 @@ subRubyInit(void)
   rb_define_method(klass, "path",      RubySubletPath,    0);
   rb_define_method(klass, "path=",     RubySubletPathSet, 1);
 #endif /* HAVE_SYS_INOTIFY */
+
+  /* Class: icon */
+  klass = rb_define_class_under(mod, "Icon", rb_cObject);
+  rb_define_attr(klass, "id", 1, 0);
+  rb_define_method(klass, "initialize", RubyIconInit,         1);
+  rb_define_method(klass, "to_str",     RubyIconToString,     0);
+  rb_define_method(klass, "+",          RubyIconOperatorPlus, 1);
+  rb_define_alias(klass, "to_s", "to_str");
+
+   /* Class: color */
+  klass = rb_define_class_under(mod, "Color", rb_cObject);
+  rb_define_attr(klass, "pixel", 1, 0);
+  rb_define_method(klass, "initialize", RubyColorInit,         1);
+  rb_define_method(klass, "to_str",     RubyColorToString,     0);
+  rb_define_method(klass, "+",          RubyColorOperatorPlus, 1);
+  rb_define_alias(klass, "to_s", "to_str");
 
   /* Bypassing garbage collection */
   shelter = rb_ary_new();
@@ -1093,8 +1216,8 @@ subRubyLoadConfig(void)
 {
   int state = 0;
 
+  /* Carefully load config */
   rb_protect(RubyWrapLoadConfig, Qnil, &state);
-
   if(state) RubyPerror(True, True, "Failed reading config");
 } /* }}} */
 
@@ -1123,16 +1246,15 @@ subRubyLoadSublet(const char *file)
     }
   subSharedLogDebug("sublet=%s\n", buf);
 
-  /* Load sublet */
+  /* Carefully load sublet */
   rb_load_protect(rb_str_new2(buf), 0, &state); ///< Load sublet
-
   if(0 == state && Qnil != sublet)
     {
       VALUE self = Qnil;
       char *name = (char *)rb_class2name((ID)sublet);
 
       /* Instantiate sublet */
-      if((self = rb_funcall(sublet, rb_intern("new"), 0, NULL)))
+      if(Qnil != (self = rb_funcall(sublet, rb_intern("new"), 0, NULL)))
         {
           SubSublet *s = NULL;
           Data_Get_Struct(self, SubSublet, s);
@@ -1220,8 +1342,8 @@ subRubyLoadSubtlext(void)
 {
   int state = 0;
 
+  /* Carefully load sublext */
   rb_protect(RubyWrapLoadSubtlext, Qnil, &state);
-
   if(state) RubyPerror(True, True, "Failed loading subtlext");
 } /* }}} */
 
@@ -1248,8 +1370,8 @@ subRubyCall(int type,
   rargs[1] = recv;
   rargs[2] = (VALUE)extra;
 
+  /* Carefully call */
   result = rb_protect(RubyWrapCall, (VALUE)&rargs, &state);
-
   if(state) 
     {
       alarm(0); ///< Reset alarm on error
