@@ -129,7 +129,6 @@ void subSharedPropertyClass(Window win, char **inst,
 /* Subtle {{{ */
 XPointer * subSharedFind(Window win, XContext id);                ///< Find data with context manager
 time_t subSharedTime(void);                                       ///< Get current time 
-unsigned long subSharedColor(char *name);                         ///< Parse color
 void subSharedFocus(void);                                        ///< Get pointer window and focus it
 /* }}} */
 #else /* WM */
