@@ -11,12 +11,16 @@
   **/
 
 #include <unistd.h>
+#include <sys/poll.h>
 #include <X11/Xatom.h>
 #include "subtle.h"
 
 #ifdef HAVE_SYS_INOTIFY_H
 #define BUFLEN (sizeof(struct inotify_event))
 #endif /* HAVE_SYS_INOTIFY_H */
+
+struct pollfd *watches = NULL;
+int nwatches = 0;
 
 /* EventUntag {{{ */
 static void
@@ -918,6 +922,45 @@ EventFocus(XFocusChangeEvent *ev)
     }
 } /* }}} */
 
+ /** subEventWatchAdd {{{ 
+  * @brief Add descriptor to watch list
+  * @param[in]  fd  File descriptor
+  **/
+
+void
+subEventWatchAdd(int fd)
+{
+  watches = (struct pollfd *)subSharedMemoryRealloc(watches, (nwatches + 1) * sizeof(struct pollfd));
+
+  watches[nwatches].fd        = fd;
+  watches[nwatches].events    = POLLIN;
+  watches[nwatches++].revents = 0;
+} /* }}} */
+
+ /** subEventWatchDel {{{ 
+  * @brief Del fd from watch list
+  * @param[in]  fd  File descriptor
+  **/
+
+void
+subEventWatchDel(int fd)
+{
+  int i, j;
+
+  for(i = 0; i < nwatches; i++)
+    {
+      if(watches[i].fd == fd)
+        {
+          for(j = i; j < nwatches - 1; j++)
+            watches[j] = watches[j + 1]; 
+          break;
+        }
+    }
+
+  nwatches--;
+  watches = (struct pollfd *)subSharedMemoryRealloc(watches, nwatches * sizeof(struct pollfd));
+} /* }}} */
+
  /** subEventLoop {{{ 
   * @brief Event all X events
   **/
@@ -925,28 +968,19 @@ EventFocus(XFocusChangeEvent *ev)
 void
 subEventLoop(void)
 {
-  int nfds;
+  int i, timeout = 60;
   XEvent ev;
   time_t now;
-  fd_set rfds;
-  struct timeval tv;
 
 #ifdef HAVE_SYS_INOTIFY_H
   char buf[BUFLEN];
 #endif /* HAVE_SYS_INOTIFY_H */
 
-  tv.tv_sec  = 0; 
-  tv.tv_usec = 0;
-  nfds       = ConnectionNumber(subtle->dpy) + 1;
-
   subPanelRender();
-
-  FD_ZERO(&rfds);
-  FD_SET(ConnectionNumber(subtle->dpy), &rfds);
+  subEventWatchAdd(ConnectionNumber(subtle->dpy));
 
 #ifdef HAVE_SYS_INOTIFY_H
-  FD_SET(subtle->notify, &rfds); ///< Add inotify socket to set
-  nfds = nfds < subtle->notify + 1 ? subtle->notify + 1: nfds; ///< Find biggest fd number
+  subEventWatchAdd(subtle->notify);
 #endif /* HAVE_SYS_INOTIFY_H */
 
   XSync(subtle->dpy, False); ///< Sync before waiting for data
@@ -954,55 +988,73 @@ subEventLoop(void)
   while(1)
     {
       now = subSharedTime();
-      if(select(nfds, &rfds, NULL, NULL, &tv)) ///< Data ready on any connection
+      if(0 < poll(watches, nwatches, timeout * 1000)) ///< Data ready on any connection
         {
-          if(FD_ISSET(ConnectionNumber(subtle->dpy), &rfds)) ///< X connection {{{
+          for(i = 0; i < nwatches; i++)
             {
-              while(XPending(subtle->dpy)) ///< X events
+              if(0 != watches[i].revents)
                 {
-                  XNextEvent(subtle->dpy, &ev);
-                  switch(ev.type)
+                  if(watches[i].fd == ConnectionNumber(subtle->dpy)) ///< X events {{{
                     {
-                      case ConfigureRequest:  EventConfigure(&ev.xconfigurerequest); break;
-                      case MapRequest:        EventMapRequest(&ev.xmaprequest);      break;
-                      case MapNotify:         EventMap(&ev.xmap);                    break;
-                      case UnmapNotify:       EventUnmap(&ev.xunmap);                break;
-                      case DestroyNotify:     EventDestroy(&ev.xdestroywindow);      break;
-                      case ClientMessage:     EventMessage(&ev.xclient);             break;
-                      case ColormapNotify:    EventColormap(&ev.xcolormap);          break;
-                      case PropertyNotify:    EventProperty(&ev.xproperty);          break;
-                      case EnterNotify:       EventCrossing(&ev.xcrossing);          break;
-                      case SelectionClear:    EventSelection(&ev.xselectionclear);   break;
-                      case Expose:            EventExpose(&ev.xexpose);              break;
-                      case ButtonPress:
-                      case KeyPress:          EventGrab(&ev);                        break;
-                      case FocusIn:           
-                      case FocusOut:          EventFocus(&ev.xfocus);                break;
-                    }
-                }            
-            } /* }}} */
-#ifdef HAVE_SYS_INOTIFY_H
-          if(FD_ISSET(subtle->notify, &rfds)) ///< Inotify {{{
-            {
-              if(0 < read(subtle->notify, buf, BUFLEN)) ///< Inotify events
-                {
-                  struct inotify_event *event = (struct inotify_event *)&buf[0];
-
-                  if(event && IN_IGNORED != event->mask) ///< Skip unwatch events
-                    {
-                      SubSublet *s = NULL;
-
-                      if((s = SUBLET(subSharedFind(subtle->panels.sublets.win, event->wd))))
+                      while(XPending(subtle->dpy)) ///< X events
                         {
-                          subRubyCall(SUB_CALL_SUBLET_RUN, s->recv, NULL);
-                          subSubletUpdate();
-                          subPanelUpdate();
-                          subPanelRender();
+                          XNextEvent(subtle->dpy, &ev);
+                          switch(ev.type)
+                            {
+                              case ConfigureRequest:  EventConfigure(&ev.xconfigurerequest); break;
+                              case MapRequest:        EventMapRequest(&ev.xmaprequest);      break;
+                              case MapNotify:         EventMap(&ev.xmap);                    break;
+                              case UnmapNotify:       EventUnmap(&ev.xunmap);                break;
+                              case DestroyNotify:     EventDestroy(&ev.xdestroywindow);      break;
+                              case ClientMessage:     EventMessage(&ev.xclient);             break;
+                              case ColormapNotify:    EventColormap(&ev.xcolormap);          break;
+                              case PropertyNotify:    EventProperty(&ev.xproperty);          break;
+                              case EnterNotify:       EventCrossing(&ev.xcrossing);          break;
+                              case SelectionClear:    EventSelection(&ev.xselectionclear);   break;
+                              case Expose:            EventExpose(&ev.xexpose);              break;
+                              case ButtonPress:
+                              case KeyPress:          EventGrab(&ev);                        break;
+                              case FocusIn:           
+                              case FocusOut:          EventFocus(&ev.xfocus);                break;
+                            }
+                        }                       
+                    } /* }}} */
+#ifdef HAVE_SYS_INOTIFY_H
+                  else if(watches[i].fd == subtle->notify) ///< Inotify {{{
+                    {
+                      if(0 < read(subtle->notify, buf, BUFLEN)) ///< Inotify events
+                        {
+                          struct inotify_event *event = (struct inotify_event *)&buf[0];
+
+                          if(event && IN_IGNORED != event->mask) ///< Skip unwatch events
+                            {
+                              SubSublet *s = NULL;
+
+                              if((s = SUBLET(subSharedFind(subtle->panels.sublets.win, event->wd))))
+                                {
+                                  subRubyCall(SUB_CALL_SUBLET_RUN, s->recv, NULL);
+                                  subSubletUpdate();
+                                  subPanelUpdate();
+                                  subPanelRender();
+                                }
+                            }
                         }
-                    }
-                }
-            } /* }}} */
+                    } /* }}} */
 #endif /* HAVE_SYS_INOTIFY_H */
+                  else ///< Socket {{{ 
+                    {
+                       SubSublet *s = NULL;
+
+                       if((s = SUBLET(subSharedFind(subtle->panels.sublets.win, watches[i].fd))))
+                         {
+                           subRubyCall(SUB_CALL_SUBLET_RUN, s->recv, NULL);
+                           subSubletUpdate();
+                           subPanelUpdate();
+                           subPanelRender();
+                         }
+                    } /* }}} */
+                }
+            }
         }
       else ///< Timeout waiting for data or error {{{
         {
@@ -1021,29 +1073,21 @@ subEventLoop(void)
 
                       subArraySort(subtle->sublets, subSubletCompare);
                     }
-                }
 
-              subSubletUpdate();
-              subPanelUpdate();
-              subPanelRender();
+                  subSubletUpdate();
+                  subPanelUpdate();
+                  subPanelRender();
+                }
             }
         } /* }}} */
 
-      /* Set timeout */
+      /* Set new timeout */
       if(0 < subtle->sublets->ndata && 
-        !(SUBLET(subtle->sublets->data[0])->flags & SUB_SUBLET_INOTIFY))
-        tv.tv_sec = SUBLET(subtle->sublets->data[0])->time - now;
-      else tv.tv_sec = 60; 
+        !(SUBLET(subtle->sublets->data[0])->flags & (SUB_SUBLET_SOCKET|SUB_SUBLET_INOTIFY)))
+        timeout = SUBLET(subtle->sublets->data[0])->time - now;
+      else timeout = 60; 
 
-      if(0 > tv.tv_sec) tv.tv_sec = 0; ///< Sanitize
-      tv.tv_usec = 0;
-
-      FD_ZERO(&rfds);
-      FD_SET(ConnectionNumber(subtle->dpy), &rfds);
-
-#ifdef HAVE_SYS_INOTIFY_H
-      FD_SET(subtle->notify, &rfds); ///< Add inotify socket to set
-#endif /* HAVE_SYS_INOTIFY_H */
+      if(0 > timeout) timeout = 0; ///< Sanitize
     }
 } /* }}} */
 
