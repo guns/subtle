@@ -10,11 +10,10 @@
 #
 
 class Cpu < Subtle::Sublet
-  attr_accessor :icon, :cpus, :sum, :last, :delta
+  attr_accessor :cpus, :sum, :last, :delta
 
   def initialize
     self.interval = 30
-    @icon         = Subtle::Icon.new(ENV["XDG_DATA_HOME"] + "/icons/cpu.xbm")
     @cpus         = 0
     @last         = []
     @delta        = []
@@ -56,7 +55,7 @@ class Cpu < Subtle::Sublet
         data << percent.to_s + "% "
       end
 
-      self.data = @icon + data + " | "
+      self.data = data + " | "
     rescue => err # Sanitize to prevent unloading
       self.data = "subtle"
       p err
