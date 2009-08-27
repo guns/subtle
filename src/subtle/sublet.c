@@ -137,8 +137,8 @@ subSubletCompare(const void *a,
   assert(a && b);
   
   /* Exclude notify sublets */
-  if(s1->flags & SUB_SUBLET_INOTIFY) return 1;
-  else if(s2->flags & SUB_SUBLET_INOTIFY) return -1;
+  if(s1->flags & (SUB_SUBLET_SOCKET|SUB_SUBLET_INOTIFY)) return 1;
+  else if(s2->flags & (SUB_SUBLET_SOCKET|SUB_SUBLET_INOTIFY)) return -1;
 
   return s1->time < s2->time ? -1 : (s1->time == s2->time ? 0 : 1);
 } /* }}} */
@@ -261,11 +261,7 @@ subSubletKill(SubSublet *s,
 #ifdef HAVE_SYS_INOTIFY_H
   /* Tidy up inotify */
   if(s->flags & SUB_SUBLET_INOTIFY)
-    {
-      inotify_rm_watch(subtle->notify, s->interval);
-
-      if(s->path) free(s->path);
-    }
+    inotify_rm_watch(subtle->notify, s->interval);
 #endif /* HAVE_SYS_INOTIFY_H */ 
 
   XDeleteContext(subtle->dpy, s->button, BUTTONID);
