@@ -208,7 +208,8 @@
 
 /* Sublet types */
 #define SUB_SUBLET_INOTIFY            (1L << 12)                  ///< Inotify sublet
-#define SUB_SUBLET_CLICK              (1L << 13)                  ///< Sublet click function
+#define SUB_SUBLET_SOCKET             (1L << 13)                  ///< Socket sublet
+#define SUB_SUBLET_CLICK              (1L << 14)                  ///< Sublet click function
 
 /* Subtle flags */
 #define SUB_SUBTLE_DEBUG              (1L << 1)                   ///< Debug enabled
@@ -376,10 +377,6 @@ typedef struct subsublet_t /* {{{ */
   FLAGS              flags;                                       ///< Sublet flags
   char               *name;                                       ///< Sublet name
 
-#ifdef HAVE_SYS_INOTIFY_H
-  char               *path;                                       ///< Sublet inotify path
-#endif /* HAVE_SYS_INOTIFY */
-
   Window             button;                                      ///< Sublet button
   int                width;                                       ///< Sublet width
   unsigned long      recv;                                        ///< Sublet Ruby receiver
@@ -528,6 +525,8 @@ void subDisplayFinish(void);                                      ///< Kill disp
 /* }}} */
 
 /* event.c {{{ */
+void subEventWatchAdd(int fd);                                    ///< Add watch fd
+void subEventWatchDel(int fd);                                    ///< Del watch fd
 void subEventLoop(void);                                          ///< Event loop
 /* }}} */
 
