@@ -52,9 +52,10 @@ subDisplayInit(const char *display)
   mask                = GCFunction|GCFillStyle|GCStipple;
   subtle->gcs.stipple = XCreateGC(subtle->dpy, ROOT, mask, &gvals);
  
-  gvals.plane_mask = AllPlanes;
-  mask             = GCFunction|GCPlaneMask;
-  subtle->gcs.font = XCreateGC(subtle->dpy, ROOT, mask, &gvals);
+  gvals.plane_mask         = AllPlanes;
+  gvals.graphics_exposures = False;
+  mask                     = GCFunction|GCPlaneMask|GCGraphicsExposures;
+  subtle->gcs.font         = XCreateGC(subtle->dpy, ROOT, mask, &gvals);
 
   gvals.function       = GXinvert;
   gvals.subwindow_mode = IncludeInferiors;
