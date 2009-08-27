@@ -605,56 +605,90 @@ RubySubletDataSet(VALUE self,
   return ret;
 } /* }}} */
 
-#ifdef HAVE_SYS_INOTIFY_H
-/* RubySubletPath {{{ */
+/* RubySubletWatch {{{ */
 static VALUE
-RubySubletPath(VALUE self)
-{
-  SubSublet *s = NULL;
-
-  Data_Get_Struct(self, SubSublet, s);
-
-  return s ? rb_str_new2(s->path) : Qnil;
-} /* }}} */
-
-/* RubySubletPathSet {{{ */
-static VALUE
-RubySubletPathSet(VALUE self,
+RubySubletWatch(VALUE self,
   VALUE value)
 {
+  VALUE ret = Qfalse;
   SubSublet *s = NULL;
-  char *watch = NULL;
+  Data_Get_Struct(self, SubSublet, s);
+
+  if(s && !(s->flags & (SUB_SUBLET_SOCKET|SUB_SUBLET_INOTIFY)) && RTEST(value))
+    {
+      if(rb_respond_to(value, rb_intern("fileno"))) ///< Probably a socket
+        {
+          int fd = FIX2INT(rb_funcall(value, rb_intern("fileno"), 0, NULL)); ///< Get socket file number
+
+          s->flags    |= SUB_SUBLET_SOCKET;
+          s->interval  = fd;
+
+          XSaveContext(subtle->dpy, subtle->panels.sublets.win, s->interval, (void *)s);
+          subEventWatchAdd(fd);
+
+          ret = Qtrue;
+        }
+#ifdef HAVE_SYS_INOTIFY_H
+      else if(T_STRING == rb_type(value)) /// Inotify file
+        {
+          char *watch = RSTRING_PTR(value);
+
+          /* Create inotify watch */
+          if(0 < (s->interval = inotify_add_watch(subtle->notify, watch, IN_MODIFY)))
+            {
+              s->flags |= SUB_SUBLET_INOTIFY;
+
+              XSaveContext(subtle->dpy, subtle->panels.sublets.win, s->interval, (void *)s);
+              subSharedLogDebug("Inotify: Adding watch on %s\n", watch); 
+
+              ret = Qtrue;
+            }
+          else subSharedLogWarn("Failed adding watch on file `%s': %s\n", 
+            watch, strerror(errno));
+        }
+#endif /* HAVE_SYS_INOTIFY_H */
+      else subSharedLogWarn("Failed handling unknown value type\n");
+    }
+  return ret;
+
+} /* }}} */
+
+/* RubySubletUnwatch {{{ */
+static VALUE
+RubySubletUnwatch(VALUE self)
+{
+  VALUE ret = Qfalse;
+  SubSublet *s = NULL;
 
   Data_Get_Struct(self, SubSublet, s);
   if(s)
     {
-      switch(rb_type(value)) ///< Check value type
+      if(s->flags & SUB_SUBLET_SOCKET) ///< Probably a socket
         {
-          case T_STRING: 
-            watch     = RSTRING_PTR(value);
-            s->flags |= SUB_SUBLET_INOTIFY;
-            s->path   = strdup(watch);
+          XDeleteContext(subtle->dpy, subtle->panels.sublets.win, s->interval);
+          subEventWatchDel(s->interval);
 
-            /* Create inotify watch */
-            if(0 < (s->interval = inotify_add_watch(subtle->notify, watch, IN_MODIFY)))
-              {
-                XSaveContext(subtle->dpy, subtle->panels.sublets.win, s->interval, (void *)s);
+          s->flags    &= ~SUB_SUBLET_SOCKET;
+          s->interval  = 0;
 
-                subSharedLogDebug("Inotify: Adding watch on %s\n", watch); 
-
-                return Qtrue;
-              }
-
-            subSharedLogWarn("Failed adding watch on file `%s': %s\n", 
-              watch, strerror(errno));
-            break;
-          default: subSharedLogWarn("Failed handling unknown value type\n");
+          ret = Qtrue;
         }
+#ifdef HAVE_SYS_INOTIFY_H
+      else if(s->flags & SUB_SUBLET_INOTIFY) /// Inotify file
+        {
+          XDeleteContext(subtle->dpy, subtle->panels.sublets.win, s->interval);
+          inotify_rm_watch(subtle->notify, s->interval);
+
+          s->flags    &= ~SUB_SUBLET_INOTIFY;
+          s->interval  = 0;
+
+          ret = Qtrue;
+        }
+#endif /* HAVE_SYS_INOTIFY_H */
     }
 
-  return Qfalse;
+  return ret;
 } /* }}} */
-#endif /* HAVE_SYS_INOTIFY_H */
 
 /* RubyIconInit {{{ */
 static VALUE
@@ -690,7 +724,7 @@ RubyIconToString(VALUE self)
   return rb_str_new2(buf);
 } /* }}} */
 
-/* Rubyconcat {{{ */
+/* RubyConcat {{{ */
 static VALUE
 RubyConcat(VALUE str1,
   VALUE str2)
@@ -1179,11 +1213,8 @@ subRubyInit(void)
   rb_define_method(klass, "interval=", RubySubletIntervalSet, 1);
   rb_define_method(klass, "data",      RubySubletData,        0);
   rb_define_method(klass, "data=",     RubySubletDataSet,     1);
-
-#ifdef HAVE_SYS_INOTIFY_H
-  rb_define_method(klass, "path",      RubySubletPath,    0);
-  rb_define_method(klass, "path=",     RubySubletPathSet, 1);
-#endif /* HAVE_SYS_INOTIFY */
+  rb_define_method(klass, "watch",     RubySubletWatch,       1);
+  rb_define_method(klass, "unwatch",   RubySubletUnwatch,     0);
 
   /* Class: icon */
   klass = rb_define_class_under(mod, "Icon", rb_cObject);
