@@ -367,8 +367,8 @@ subSharedPropertyClass(Window win,
     &size);
 
   /* Sanitize instance/class names */
-  if(inst)  *inst  = strdup(klasses && klasses[0] ? klasses[0] : "subtle");
-  if(klass) *klass = strdup(klasses && klasses[1] ? klasses[1] : "subtle");
+  if(inst)  *inst  = strdup(0 < size ? klasses[0] : "subtle");
+  if(klass) *klass = strdup(1 < size ? klasses[1] : "subtle");
 
   if(klasses) XFreeStringList(klasses);
 } /* }}} */
