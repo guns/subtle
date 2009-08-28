@@ -610,6 +610,7 @@ static VALUE
 RubySubletWatch(VALUE self,
   VALUE value)
 {
+  int flags = 0;
   VALUE ret = Qfalse;
   SubSublet *s = NULL;
   Data_Get_Struct(self, SubSublet, s);
@@ -626,6 +627,10 @@ RubySubletWatch(VALUE self,
           XSaveContext(subtle->dpy, subtle->panels.sublets.win, s->interval, (void *)s);
           subEventWatchAdd(fd);
 
+          /* Set nonblocking */
+          if(-1 == (flags = fcntl(fd, F_GETFL, 0))) flags = 0;
+          fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+ 
           ret = Qtrue;
         }
 #ifdef HAVE_SYS_INOTIFY_H
