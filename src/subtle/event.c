@@ -1053,6 +1053,8 @@ subEventLoop(void)
                            subPanelRender();
                          }
                     } /* }}} */
+
+                  watches[i].revents = 0;
                 }
             }
         }
