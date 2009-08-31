@@ -968,7 +968,7 @@ subEventWatchDel(int fd)
 void
 subEventLoop(void)
 {
-  int i, timeout = 60;
+  int i, timeout = 0;
   XEvent ev;
   time_t now;
 
@@ -983,14 +983,12 @@ subEventLoop(void)
   subEventWatchAdd(subtle->notify);
 #endif /* HAVE_SYS_INOTIFY_H */
 
-  XSync(subtle->dpy, False); ///< Sync before waiting for data
-
   while(1)
     {
       now = subSharedTime();
       if(0 < poll(watches, nwatches, timeout * 1000)) ///< Data ready on any connection
         {
-          for(i = 0; i < nwatches; i++)
+          for(i = 0; i < nwatches; i++) ///< Find descriptor
             {
               if(0 != watches[i].revents)
                 {
@@ -1053,8 +1051,6 @@ subEventLoop(void)
                            subPanelRender();
                          }
                     } /* }}} */
-
-                  watches[i].revents = 0;
                 }
             }
         }
