@@ -79,10 +79,6 @@ subSubletRender(void)
       SubSublet *s = NULL;
       SubText *t = NULL;
 
-      /* Init GC */
-      gvals.foreground = subtle->colors.fg_sublets;
-      XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
-
       /* Render every sublet */
       for(s = subtle->sublet; s; s = s->next)
         {
@@ -115,6 +111,8 @@ subSubletRender(void)
                 }
             }
         }
+
+      XSync(subtle->dpy, False); ///< Sync before going on
     }
 } /* }}} */
 
