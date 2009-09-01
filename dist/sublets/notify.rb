@@ -10,19 +10,20 @@
 #
 
 class Notify < Subtle::Sublet
+  attr_accessor :file
+
   def initialize
-    self.path = "/tmp/watch"
+    @file = ENV["HOME"] + "/notify.log"
+
+    watch @file
   end
 
   def run
-    file = ""
-
-    # We never begin/rescue here to unload the
-    # sublet if the watch file doesn't exist
-    File.open(self.path, "r") do |f|
-      file = f.read
-    end
-
-    self.data = file.chop || "subtle"
+    begin
+      self.data = File.readlines(@file).to_s.chop
+    rescue => err # Sanitize to prevent unloading
+      self.data = "subtle"
+      p err
+    end  
   end
 end
