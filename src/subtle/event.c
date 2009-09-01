@@ -661,6 +661,7 @@ EventGrab(XEvent *ev)
   switch(ev->type)
     {
       case ButtonPress:
+        /* Check panel buttons */
         if(ev->xbutton.window == subtle->panels.views.win) ///< View buttons
           {
             SubView *v = VIEW(subSharedFind(ev->xbutton.subwindow, BUTTONID));

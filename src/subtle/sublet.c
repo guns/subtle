@@ -62,7 +62,6 @@ subSubletUpdate(void)
       XResizeWindow(subtle->dpy, subtle->panels.sublets.win, 
         subtle->panels.sublets.width, subtle->th);
     }
-  else XUnmapWindow(subtle->dpy, subtle->panels.sublets.win);
 } /* }}} */
 
  /** subSubletRender {{{
@@ -189,7 +188,7 @@ subSubletSetData(SubSublet *s,
             {
               t->flags       = SUB_TYPE_TEXT|SUB_DATA_STRING;
               t->data.string = strdup(tok);
-              t->width       = XTextWidth(subtle->xfs, tok, strlen(tok) - 1) + 6; ///< Font offset
+              t->width       = XTextWidth(subtle->xfs, tok, strlen(tok)) + 6; ///< Font offset
             }
 
           t->color  = color;
