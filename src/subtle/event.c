@@ -312,11 +312,11 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_SUBTLE_WINDOW_SCREEN: /* {{{ */
             if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0]))))
               {
-                if(1 <= ev->data.l[1] && subtle->screens->ndata >= ev->data.l[1]) ///< Check values
+                if(0 <= ev->data.l[1] && subtle->screens->ndata > ev->data.l[1]) ///< Check values
                   {
                     if(VISIBLE(subtle->view, c)) 
                       {
-                        subClientSetScreen(c, ev->data.l[1] - 1, True);
+                        subClientSetScreen(c, ev->data.l[1], True);
                         subViewConfigure(subtle->view);
                         subClientWarp(c);
                       }
