@@ -218,6 +218,7 @@ task(:config) do
     # Xinerama
     if(have_header("X11/extensions/Xinerama.h"))
       @options["ldflags"] << " -lXinerama"
+      @options["extflags"] << " -lXinerama"
     end
     
     # Update flags
