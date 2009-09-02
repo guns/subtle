@@ -13,6 +13,10 @@
 #include <ruby.h>
 #include "shared.h"
 
+#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
+#include <X11/extensions/Xinerama.h>
+#endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
+
 Display *display = NULL;
 static int refcount = 0;
 VALUE mod = Qnil;
@@ -30,6 +34,7 @@ static VALUE SubtlextClientUpdate(VALUE self);
 #define SUB_TYPE_CLIENT  0           ///< Client
 #define SUB_TYPE_VIEW    1           ///< View
 #define SUB_TYPE_TAG     2           ///< Tag
+#define SUB_TYPE_SCREEN  3           ///< Screen
 
 #define SUB_ACTION_TAG   0           ///< Tag
 #define SUB_ACTION_UNTAG 1           ///< Untag
@@ -46,13 +51,73 @@ SubtlextFind(int type,
   VALUE klass = Qnil, obj = Qnil, name = Qnil;
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  assert(SUB_TYPE_TAG == type || SUB_TYPE_VIEW == type);
+  assert(SUB_TYPE_TAG == type || SUB_TYPE_VIEW == type || SUB_TYPE_SCREEN == type);
 
-  klass = rb_const_get(mod, rb_intern(SUB_TYPE_TAG == type ? "Tag" : "View")); 
+  switch(type)
+    {
+      case SUB_TYPE_TAG:    name = rb_intern("Tag");    break;
+      case SUB_TYPE_VIEW:   name = rb_intern("View");   break;
+      case SUB_TYPE_SCREEN: name = rb_intern("Screen"); break;
+    }
 
-  /* Check object */
+  klass = rb_const_get(mod, name); 
+
+  /* Check object type */
   switch(rb_type(value))
     {
+      case T_FIXNUM:
+        if(SUB_TYPE_SCREEN == type)
+          {
+            int n = 0;
+            
+#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
+            int xinerama_event = 0, xinerama_error = 0;
+#endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
+
+            id  = FIX2INT(value);
+            obj = rb_funcall(klass, rb_intern("new"), 1, value);
+
+#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
+            /* Xinerama */
+            if(XineramaQueryExtension(display, &xinerama_event, &xinerama_error) &&
+              XineramaIsActive(display))
+              {
+                XineramaScreenInfo *screens = NULL;
+
+                /* Query screens */
+                if((screens = XineramaQueryScreens(display, &n)))
+                  {
+                    if(0 <= id && n > id)
+                      {
+                        rb_iv_set(obj, "@x",      INT2FIX(screens[id].x_org));
+                        rb_iv_set(obj, "@y",      INT2FIX(screens[id].y_org));
+                        rb_iv_set(obj, "@width",  INT2FIX(screens[id].width));
+                        rb_iv_set(obj, "@height", INT2FIX(screens[id].height));
+                      }
+                    else 
+                      {
+                        rb_raise(rb_eStandardError, "Failed finding screen");
+
+                        return Qnil;
+                      }
+
+                    XFree(screens);
+                  }
+              } 
+#endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
+
+            /* Return default screen */
+            if(0 == n)
+              {
+                rb_iv_set(obj, "@x",      INT2FIX(0));
+                rb_iv_set(obj, "@y",      INT2FIX(0));
+                rb_iv_set(obj, "@width",  INT2FIX(DisplayWidth(display, DefaultScreen(display))));
+                rb_iv_set(obj, "@height", INT2FIX(DisplayHeight(display, DefaultScreen(display))));
+              }
+
+            return obj;
+          }
+        break;
       case T_STRING:
         if(SUB_TYPE_TAG == type) id = subSharedTagFind(RSTRING_PTR(value));
         else id = subSharedViewFind(RSTRING_PTR(value), &win);
@@ -277,6 +342,65 @@ SubtlextTag(VALUE self,
 
   rb_raise(rb_eArgError, "Unknown value type");
   return Qfalse;
+} /* }}} */
+
+/* SubtlextScreens {{{ */
+static VALUE
+SubtlextScreens(void)
+{
+  int n = 0;
+  VALUE method = Qnil, klass = Qnil, array = Qnil; 
+
+#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
+  int xinerama_event = 0, xinerama_error = 0;
+#endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
+
+  method = rb_intern("new");
+  klass  = rb_const_get(mod, rb_intern("Screen"));
+  array  = rb_ary_new();
+
+#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
+  /* Xinerama */
+  if(XineramaQueryExtension(display, &xinerama_event, &xinerama_error) &&
+    XineramaIsActive(display))
+    {
+      int i;
+      XineramaScreenInfo *screens = NULL;
+
+      /* Query screens */
+      if((screens = XineramaQueryScreens(display, &n)))
+        {
+          for(i = 0; i < n; i++)
+            {
+              VALUE s = rb_funcall(klass, method, 1, INT2FIX(i));
+
+              rb_iv_set(s, "@x",      INT2FIX(screens[i].x_org));
+              rb_iv_set(s, "@y",      INT2FIX(screens[i].y_org));
+              rb_iv_set(s, "@width",  INT2FIX(screens[i].width));
+              rb_iv_set(s, "@height", INT2FIX(screens[i].height));
+
+              rb_ary_push(array, s);
+            }
+
+          XFree(screens);
+        }
+    } 
+#endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
+
+  /* Get default screen */
+  if(0 == n)
+    {
+      VALUE s = rb_funcall(klass, method, 1, INT2FIX(0));
+
+      rb_iv_set(s, "@x",      INT2FIX(0));
+      rb_iv_set(s, "@y",      INT2FIX(0));
+      rb_iv_set(s, "@width",  INT2FIX(DisplayWidth(display, DefaultScreen(display))));
+      rb_iv_set(s, "@height", INT2FIX(DisplayHeight(display, DefaultScreen(display))));
+
+      rb_ary_push(array, s);
+    }
+
+  return array;
 } /* }}} */
 
 /* SubtlextClientInit {{{ */
@@ -598,7 +722,7 @@ SubtlextClientScreen(VALUE self)
 {
   VALUE screen = rb_iv_get(self, "@screen");
 
-  return RTEST(screen) ? screen : Qnil;
+  return SubtlextFind(SUB_TYPE_SCREEN, screen, False);
 } /* }}} */
 
 /* SubtlextClientScreenSet {{{ */
@@ -606,29 +730,36 @@ static VALUE
 SubtlextClientScreenSet(VALUE self,
   VALUE value)
 {
-  if(T_FIXNUM == rb_type(value))
+  int screen = -1;
+
+  /* Check object type */
+  switch(rb_type(value))
     {
-      int screen = FIX2INT(value);
-
-      if(1 <= screen)
+      case T_FIXNUM: screen = FIX2INT(value); break;
+      case T_OBJECT:
+      case T_CLASS:
         {
-          SubMessageData data = { { 0, 0, 0, 0, 0 } };
-          VALUE id = rb_iv_get(self, "@id");
-
-          data.l[0] = NUM2LONG(id);
-          data.l[1] = FIX2LONG(value);
-
-          subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_SCREEN", data, True);
-
-          rb_iv_set(self, "@screen", value);
-
-          return value;
+          VALUE klass = rb_const_get(mod, rb_intern("Screen")); 
+          
+          if(rb_obj_is_instance_of(value, klass)) ///< Check object instance
+            screen = FIX2INT(rb_iv_get(value, "@id"));
         }
-      else
-        {
-          rb_raise(rb_eStandardError, "Failed setting client screen");
-          return Qnil;
-        }
+    }
+
+  /* Set screen */
+  if(-1 != screen)
+    {
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+      VALUE id = rb_iv_get(self, "@id");
+
+      data.l[0] = NUM2LONG(id);
+      data.l[1] = screen;
+
+      subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_SCREEN", data, True);
+
+      rb_iv_set(self, "@screen", INT2FIX(screen));
+
+      return Qnil;
     }
 
   rb_raise(rb_eArgError, "Failed setting value type `%d'", rb_type(value));
@@ -725,7 +856,7 @@ SubtlextClientUpdate(VALUE self)
       rb_iv_set(self, "@width",   INT2FIX(attrs.width));
       rb_iv_set(self, "@height",  INT2FIX(attrs.height));
       rb_iv_set(self, "@gravity", INT2FIX(*gravity));
-      rb_iv_set(self, "@screen",  INT2FIX(*screen + 1));
+      rb_iv_set(self, "@screen",  INT2FIX(*screen));
       rb_iv_set(self, "@flags",   INT2FIX(*flags));
 
       free(wmname);
@@ -752,6 +883,50 @@ SubtlextClientOperatorMinus(VALUE self,
   VALUE value)
 {
   return SubtlextTag(self, value, SUB_ACTION_UNTAG, SUB_TYPE_CLIENT);
+} /* }}} */
+
+/* SubtlextScreenInit {{{ */
+static VALUE
+SubtlextScreenInit(VALUE self,
+  VALUE id)
+{
+  rb_iv_set(self, "@id",      id);
+  rb_iv_set(self, "@x",       Qnil);
+  rb_iv_set(self, "@y",       Qnil); 
+  rb_iv_set(self, "@width",   Qnil); 
+  rb_iv_set(self, "@height",  Qnil); 
+
+  return self;
+} /* }}} */
+
+/* SubtlextScreenClientList {{{ */
+static VALUE
+SubtlextScreenClientList(VALUE self)
+{
+  int i, id, size = 0;
+  Window *clients = NULL;
+  VALUE array = Qnil;
+  
+  id      = FIX2INT(rb_iv_get(self, "@id"));
+  array   = rb_ary_new();
+  clients = subSharedClientList(&size);
+
+  if(clients)
+    {
+      for(i = 0; i < size; i++)
+        {
+          int *screen = (int *)subSharedPropertyGet(clients[i], XA_CARDINAL, 
+            "SUBTLE_WINDOW_SCREEN", NULL);
+
+          if(id - 1 == *screen) ///< Check if screen matches
+            rb_ary_push(array, SubtlextClientFromWin(clients[i]));
+
+          free(screen);
+        }
+      free(clients);
+    }
+
+  return array;
 } /* }}} */
 
 /* SubtlextSubtleKill {{{ */
@@ -1255,6 +1430,62 @@ SubtlextSubtleViewCurrent(VALUE self)
   return view;
 } /* }}} */
 
+/* SubtlextSubtleScreenList {{{ */
+static VALUE
+SubtlextSubtleScreenList(VALUE self)
+{
+  return SubtlextScreens();
+} /* }}} */
+
+/* SubtlextSubtleScreenCurrent {{{ */
+static VALUE
+SubtlextSubtleScreenCurrent(VALUE self)
+{
+  int num = 0;
+  unsigned long *focus = NULL;
+
+  /* Get current screen from current client or use the first */
+  if((focus = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
+    XA_WINDOW, "_NET_ACTIVE_WINDOW", NULL)))
+    {
+      int *screen = NULL;
+
+      screen = (int *)subSharedPropertyGet(*focus, XA_CARDINAL, "SUBTLE_WINDOW_SCREEN", NULL);
+      num    = *screen;
+
+      free(focus);
+      free(screen);
+    }
+
+  return SubtlextFind(SUB_TYPE_SCREEN, INT2FIX(num), False);
+} /* }}} */
+
+/* SubtlextSubtleScreenFind {{{ */
+static VALUE
+SubtlextSubtleScreenFind(VALUE self,
+  VALUE id)
+{
+  return SubtlextFind(SUB_TYPE_SCREEN, id, False);
+} /* }}} */
+
+/* SubtlextScreenToString {{{ */
+static VALUE
+SubtlextScreenToString(VALUE self)
+{
+  char buf[256];
+  VALUE x = Qnil, y = Qnil, width = Qnil, height = Qnil;
+
+  x      = rb_iv_get(self, "@x");
+  y      = rb_iv_get(self, "@y");
+  width  = rb_iv_get(self, "@width");
+  height = rb_iv_get(self, "@height");
+
+  snprintf(buf, sizeof(buf), "%dx%d+%d+%d", FIX2INT(x), FIX2INT(y),
+    FIX2INT(width), FIX2INT(height));
+
+  return rb_str_new2(buf);
+} /* }}} */
+
 /* SubtlextSubtleToString {{{ */
 static VALUE
 SubtlextSubtleToString(VALUE self)
@@ -1474,12 +1705,10 @@ SubtlextViewClientList(VALUE self)
 {
   int i, size = 0;
   Window *clients = NULL;
-  VALUE win = Qnil, array = Qnil, method = Qnil, klass = Qnil;
+  VALUE win = Qnil, array = Qnil;
   unsigned long *flags1 = NULL;
   
   win     = rb_iv_get(self, "@win");
-  method  = rb_intern("new");
-  klass   = rb_const_get(mod, rb_intern("Client"));
   array   = rb_ary_new2(size);
   clients = subSharedClientList(&size);
   flags1  = (unsigned long *)subSharedPropertyGet(NUM2LONG(win), XA_CARDINAL, 
@@ -1688,7 +1917,20 @@ Init_subtlext(void)
   rb_define_const(klass, "Right",       INT2FIX(SUB_GRAVITY_RIGHT));
   rb_define_const(klass, "BottomLeft",  INT2FIX(SUB_GRAVITY_BOTTOM_LEFT));
   rb_define_const(klass, "Bottom",      INT2FIX(SUB_GRAVITY_BOTTOM));
-  rb_define_const(klass, "BottomRight", INT2FIX(SUB_GRAVITY_BOTTOM_RIGHT));  
+  rb_define_const(klass, "BottomRight", INT2FIX(SUB_GRAVITY_BOTTOM_RIGHT));
+
+  /* Class: screen */
+  klass = rb_define_class_under(mod, "Screen", rb_cObject);
+  rb_define_attr(klass,   "id",      1, 0);
+  rb_define_attr(klass,   "x",       1, 0);
+  rb_define_attr(klass,   "y",       1, 0);
+  rb_define_attr(klass,   "width",   1, 0);
+  rb_define_attr(klass,   "height",  1, 0);
+
+  rb_define_method(klass, "initialize",   SubtlextScreenInit,       1);
+  rb_define_method(klass, "clients",      SubtlextScreenClientList, 0);
+  rb_define_method(klass, "to_str",       SubtlextScreenToString,   0);
+  rb_define_alias(klass, "to_s", "to_str");
 
   /* Class: subtle */
   klass = rb_define_class_under(mod, "Subtle", rb_cObject);
@@ -1699,11 +1941,13 @@ Init_subtlext(void)
   rb_define_method(klass, "display",        SubtlextSubtleDisplay,          0);
   rb_define_method(klass, "views",          SubtlextSubtleViewList,         0);
   rb_define_method(klass, "tags",           SubtlextSubtleTagList,          0);
+  rb_define_method(klass, "screens",        SubtlextSubtleScreenList,       0);
   rb_define_method(klass, "sublets",        SubtlextSubtleSubletList,       0);
   rb_define_method(klass, "clients",        SubtlextSubtleClientList,       0);
   rb_define_method(klass, "find_view",      SubtlextSubtleViewFind,         1);
   rb_define_method(klass, "find_tag",       SubtlextSubtleTagFind,          1);
   rb_define_method(klass, "find_client",    SubtlextSubtleClientFind,       1);
+  rb_define_method(klass, "find_screen",    SubtlextSubtleScreenFind,       1);
   rb_define_method(klass, "find_sublet",    SubtlextSubtleSubletFind,       1);
   rb_define_method(klass, "focus_client",   SubtlextSubtleClientFocus,      1);
   rb_define_method(klass, "focus_left",     SubtlextSubtleClientFocusLeft,  0);
@@ -1718,6 +1962,7 @@ Init_subtlext(void)
   rb_define_method(klass, "del_view",       SubtlextSubtleViewDel,          1);
   rb_define_method(klass, "current_view",   SubtlextSubtleViewCurrent,      0);
   rb_define_method(klass, "current_client", SubtlextSubtleClientCurrent,    0);
+  rb_define_method(klass, "current_screen", SubtlextSubtleScreenCurrent,    0);
   rb_define_method(klass, "running?",       SubtlextSubtleRunning,          0);
   rb_define_method(klass, "reload",         SubtlextSubtleReload,           0);
   rb_define_method(klass, "quit",           SubtlextSubtleQuit,             0);

@@ -16,6 +16,10 @@
 #include <execinfo.h>
 #endif /* HAVE_EXECINFO_H */
 
+#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
+#include <X11/extensions/Xinerama.h>
+#endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
+
 Display *display = NULL;
 int debug = 0;
 
@@ -30,10 +34,11 @@ typedef void(*SubtlerCommand)(char *, char *);
 /* Flags {{{ */
 /* Groups */
 #define SUB_GROUP_CLIENT   0   ///< Group client
-#define SUB_GROUP_SUBLET   1   ///< Group sublet
-#define SUB_GROUP_TAG      2   ///< Group tag
-#define SUB_GROUP_VIEW     3   ///< Group view
-#define SUB_GROUP_TOTAL    4   ///< Group total
+#define SUB_GROUP_SCREEN   1   ///< Group screen
+#define SUB_GROUP_SUBLET   2   ///< Group sublet
+#define SUB_GROUP_TAG      3   ///< Group tag
+#define SUB_GROUP_VIEW     4   ///< Group view
+#define SUB_GROUP_TOTAL    5   ///< Group total
 
 /* Actions */
 #define SUB_ACTION_ADD     0   ///< Action add
@@ -243,7 +248,7 @@ SubtlerClientFind(char *arg1,
       XGetGeometry(display, win, &unused, &x, &y, &width, &height, &border, &border);
 
       printf("%#lx %c %ld %ux%u %ld %ld %c%c%c %s (%s)\n", win, (*cv == *rv ? '*' : '-'),
-        (*cv > *nv ? -1 : *cv + 1), width, height, *gravity, *screen + 1, 
+        (*cv > *nv ? -1 : *cv + 1), width, height, *gravity, *screen, 
         *flags & SUB_EWMH_FULL ? 'F' : '-', *flags & SUB_EWMH_FLOAT ? 'O' : '-', 
         *flags & SUB_EWMH_STICK ? 'S' : '-', inst, klass);
 
@@ -370,7 +375,7 @@ SubtlerClientList(char *arg1,
           XGetGeometry(display, clients[i], &unused, &x, &y, &width, &height, &border, &border);
 
           printf("%#lx %c %ld %ux%u %ld %ld %c%c%c %s (%s)\n", clients[i], (*cv == *rv ? '*' : '-'),
-            (*cv > *nv ? -1 : *cv + 1), width, height, *gravity, *screen + 1, 
+            (*cv > *nv ? -1 : *cv + 1), width, height, *gravity, *screen, 
             *flags & SUB_EWMH_FULL ? 'F' : '-', *flags & SUB_EWMH_FLOAT ? 'O' : '-', 
             *flags & SUB_EWMH_STICK ? 'S' : '-', inst, klass);
 
@@ -456,7 +461,7 @@ SubtlerClientScreen(char *arg1,
   data.l[0] = subSharedClientFind(arg1, NULL);
   data.l[1] = atoi(arg2);
 
-  if(-1 != data.l[0] && 1 <= data.l[1])
+  if(-1 != data.l[0] && 0 <= data.l[1])
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_SCREEN", data, False);
   else subSharedLogWarn("Failed setting client screen\n");
 } /* }}} */
@@ -506,6 +511,95 @@ SubtlerClientKill(char *arg1,
       subSharedMessage(win, "_NET_CLOSE_WINDOW", data, False);
     }
   else subSharedLogWarn("Failed killing client\n");
+} /* }}} */
+
+/* SubtlerScreenFind {{{ */
+static void
+SubtlerScreenFind(char *arg1,
+  char *arg2)
+{
+  int n = 0, find = 0;
+
+#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
+  int xinerama_event = 0, xinerama_error = 0;
+#endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
+
+  CHECK(arg1, "Usage: %sr -e -f ID\n", PKG_NAME);
+  subSharedLogDebug("%s\n", __func__);
+
+  find = atoi(arg1);
+
+#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
+  /* Xinerama */
+  if(XineramaQueryExtension(display, &xinerama_event, &xinerama_error) &&
+    XineramaIsActive(display))
+    {
+      int i;
+      XineramaScreenInfo *screens = NULL;
+
+      /* Query screens */
+      if((screens = XineramaQueryScreens(display, &n)))
+        {
+          for(i = 0; i < n; i++)
+            if(i == find)
+              {
+                printf("%d %dx%d+%d+%d\n", i, screens[i].x_org, screens[i].y_org,
+                  screens[i].width, screens[i].height);
+
+                XFree(screens);
+
+                return;
+              }
+
+          XFree(screens);
+        }
+    } 
+#endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
+
+  /* Get default screen */
+  if(0 == n)
+    printf("0 0x0+%d+%d\n", DisplayWidth(display, DefaultScreen(display)), 
+      DisplayHeight(display, DefaultScreen(display)));
+  else subSharedLogWarn("Failed finding screen\n");
+} /* }}} */
+
+/* SubtlerScreenList {{{ */
+static void
+SubtlerScreenList(char *arg1,
+  char *arg2)
+{
+  int n = 0;
+
+#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
+  int xinerama_event = 0, xinerama_error = 0;
+#endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
+
+  subSharedLogDebug("%s\n", __func__);
+
+#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
+  /* Xinerama */
+  if(XineramaQueryExtension(display, &xinerama_event, &xinerama_error) &&
+    XineramaIsActive(display))
+    {
+      int i;
+      XineramaScreenInfo *screens = NULL;
+
+      /* Query screens */
+      if((screens = XineramaQueryScreens(display, &n)))
+        {
+          for(i = 0; i < n; i++)
+            printf("%d %dx%d+%d+%d\n", i, screens[i].x_org, screens[i].y_org,
+              screens[i].width, screens[i].height);
+
+          XFree(screens);
+        }
+    } 
+#endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
+
+  /* Get default screen */
+  if(0 == n)
+    printf("0 0x0+%d+%d\n", DisplayWidth(display, DefaultScreen(display)), 
+      DisplayHeight(display, DefaultScreen(display)));  
 } /* }}} */
 
 /* SubtlerSubletNew {{{ */
@@ -619,6 +713,7 @@ SubtlerTagFind(char *arg1,
   char **names = NULL;
   Window *views = NULL, *clients = NULL;
 
+  CHECK(arg1, "Usage: %sr -t -f NAME\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   /* Collect data */
@@ -800,7 +895,7 @@ SubtlerViewList(char *arg1,
   if(nv && cv && names && views)
     {
       for(i = 0; *nv && i < *nv; i++)
-        printf("%#lx %c %d %s\n", views[i], (i == *cv ? '*' : '-'), i + 1, names[i]);
+        printf("%#lx %c %d %s\n", views[i], (i == *cv ? '*' : '-'), i, names[i]);
 
       XFreeStringList(names);
       free(nv);
@@ -937,6 +1032,12 @@ SubtlerUsage(int group)
              "  -R, --lower             Lower client window\n" \
              "  -k, --kill=PATTERN      Kill a client\n");
     }
+  if(-1 == group || SUB_GROUP_SCREEN == group)
+    {
+      printf("\nOptions for screens:\n" \
+             "  -l, --list              List all screens\n" \
+             "  -f, --find=ID           Find a screen\n");
+    }        
   if(-1 == group || SUB_GROUP_SUBLET == group)
     {
       printf("\nOptions for sublets:\n" \
@@ -974,6 +1075,7 @@ SubtlerUsage(int group)
 
   printf("\nFormat:\n" \
          "  Client listing: <window id> [-*] <view id> <geometry> <gravity> <screen> <flags> <name> (<class>)\n" \
+         "  Screen listing: <screen id> <geometry>\n" \
          "  Tag listing:    <name>\n" \
          "  View listing:   <window id> [-*] <view id> <name>\n");
 
@@ -1095,6 +1197,7 @@ main(int argc,
   {
     /* Groups */
     { "clients", no_argument,       0, 'c' },
+    { "screen",  no_argument,       0, 'e' },
     { "sublets", no_argument,       0, 's' },
     { "tags",    no_argument,       0, 't' },
     { "views",   no_argument,       0, 'v' },
@@ -1140,13 +1243,15 @@ main(int argc,
 
   /* Command table {{{ */
   const SubtlerCommand cmds[SUB_GROUP_TOTAL][SUB_ACTION_TOTAL] = { 
-    /* Client, Sublet, Tag, View <=> Add, Kill, Find, Focus, Full, Float, 
+    /* Client, Screen, Sublet, Tag, View <=> Add, Kill, Find, Focus, Full, Float, 
        Stick, Jump, List, Tag, Untag, Tags, Update, Data, Gravity, Screen, Raise, Lower */
     { NULL, SubtlerClientKill, SubtlerClientFind,  SubtlerClientFocus, 
       SubtlerClientToggleFull, SubtlerClientToggleFloat, SubtlerClientToggleStick, NULL,
       SubtlerClientList, SubtlerClientTag, SubtlerClientUntag, SubtlerClientTags, NULL, 
       NULL, SubtlerClientGravity, SubtlerClientScreen, SubtlerClientRestackRaise, 
       SubtlerClientRestackLower },
+    { NULL, NULL, SubtlerScreenFind, NULL, NULL, NULL, NULL, NULL, SubtlerScreenList, NULL, NULL,
+      NULL, NULL, NULL, NULL, NULL, NULL, NULL },
     { SubtlerSubletNew, SubtlerSubletKill, NULL, NULL, NULL, NULL, NULL, NULL, 
       SubtlerSubletList, NULL, NULL, NULL, SubtlerSubletUpdate, SubtlerSubletData,
       NULL, NULL, NULL, NULL },
@@ -1165,12 +1270,13 @@ main(int argc,
   sigaction(SIGINT, &act, NULL);
   sigaction(SIGSEGV, &act, NULL);
 
-  while((c = getopt_long(argc, argv, "cstvakfoFOSjlTUGuAgnERrqHJKLDd:hCxV", long_options, NULL)) != -1)
+  while((c = getopt_long(argc, argv, "cestvakfoFOSjlTUGuAgnERrqHJKLDd:hCxV", long_options, NULL)) != -1)
     {
       switch(c)
         {
           /* Groups */
           case 'c': group = SUB_GROUP_CLIENT;    break;
+          case 'e': group = SUB_GROUP_SCREEN;    break;
           case 's': group = SUB_GROUP_SUBLET;    break;
           case 't': group = SUB_GROUP_TAG;       break;
           case 'v': group = SUB_GROUP_VIEW;      break;
