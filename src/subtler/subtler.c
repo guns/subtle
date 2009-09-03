@@ -693,15 +693,16 @@ static void
 SubtlerTagNew(char *arg1,
   char *arg2)
 {
-  SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
   CHECK(arg1, "Usage: %sr -t -a NAME\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  snprintf(data.b, sizeof(data.b), "%s", arg1);
-  
-  if(!subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_NEW", data, False))
-    subSharedLogWarn("Failed creating tag\n");
+  if(-1 == subSharedTagFind(arg1))
+    {
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+      snprintf(data.b, sizeof(data.b), "%s", arg1);
+      subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_NEW", data, False);
+    }
 } /* }}} */
 
 /* SubtlerTagFind {{{ */
@@ -805,15 +806,16 @@ static void
 SubtlerViewNew(char *arg1,
   char *arg2)
 {
-  SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
   CHECK(arg1, "Usage: %sr -t -a PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
+  
+  if(-1 == subSharedViewFind(arg1, NULL))
+    {
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  snprintf(data.b, sizeof(data.b), "%s", arg1);
-
-  if(!subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_NEW", data, False))
-    subSharedLogWarn("Failed creating view\n");
+      snprintf(data.b, sizeof(data.b), "%s", arg1);
+      subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_NEW", data, False);
+    }
 } /* }}} */
 
 /* SubtlerViewFind {{{ */
@@ -1149,20 +1151,21 @@ SubtlerParse(char *string)
 {
   char buf[256], *ret = NULL;
 
-  assert(string);
-
-  if(!strncmp(string, "-", 1)) ///< Read pipe
+  if(string)
     {
-      if(!fgets(buf, sizeof(buf), stdin)) 
-        subSharedLogError("Failed reading from pipe\n");
+      if(!strncmp(string, "-", 1)) ///< Read pipe
+        {
+          if(!fgets(buf, sizeof(buf), stdin)) 
+            subSharedLogError("Failed reading from pipe\n");
 
-      ret = (char *)subSharedMemoryAlloc(strlen(buf), sizeof(char));
-      strncpy(ret, buf, strlen(buf) - 1);
+          ret = (char *)subSharedMemoryAlloc(strlen(buf), sizeof(char));
+          strncpy(ret, buf, strlen(buf) - 1);
 
-      subSharedLogDebug("Parse: len=%d\n", strlen(buf));
+          subSharedLogDebug("Parse: len=%d\n", strlen(buf));
+        }
+      else ret = strdup(string); ///< Just copy string
     }
-  else ret = strdup(string); ///< Just copy string
-  
+
   return ret;
 } /* }}} */
 
