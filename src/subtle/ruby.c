@@ -112,6 +112,31 @@ RubySignal(int signum)
     }
 } /* }}} */
 
+/* RubyConcat {{{ */
+static VALUE
+RubyConcat(VALUE str1,
+  VALUE str2)
+{
+  VALUE ret = Qnil;
+
+  /* Check value */
+  if(RTEST(str1) && RTEST(str2) && T_STRING == rb_type(str1))
+    {
+      VALUE string = str2;
+      
+      /* Convert argument to string */
+      if(T_STRING != rb_type(str2) && rb_respond_to(str2, rb_intern("to_s")))
+        string = rb_funcall(str2, rb_intern("to_s"), 0, NULL);
+
+      /* Concat strings */
+      if(T_STRING == rb_type(string))
+        ret = rb_str_cat(str1, RSTRING_PTR(string), RSTRING_LEN(string));
+    }
+  else rb_raise(rb_eArgError, "Unknown value type");
+
+  return ret;
+} /* }}} */
+
 /* RubyGetValue {{{ */
 static VALUE
 RubyGetValue(VALUE hash,
@@ -484,6 +509,80 @@ RubyWrapInit(VALUE data)
   return Qnil;
 } /* }}} */
 
+/* RubySubtleTagAdd {{{ */
+static VALUE
+RubySubtleTagAdd(VALUE self,
+  VALUE value)
+{
+  VALUE tag = Qnil;
+
+  if(T_STRING == rb_type(value))
+    {
+      SubTag *t = NULL;
+
+      /* Create new tag */
+      if((t = subTagNew(RSTRING_PTR(value), NULL)))
+        {
+          int tid = -1;
+          VALUE mod = Qnil, klass = Qnil;
+
+          subArrayPush(subtle->tags, (void *)t);
+          subTagPublish();
+
+          /* Create new instance */
+          tid   = subArrayIndex(subtle->tags, (void *)t);
+          mod   = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
+          klass = rb_const_get(mod, rb_intern("Tag"));
+          tag   = rb_funcall(klass, rb_intern("new"), 1, value);
+
+          rb_iv_set(tag, "@id",   INT2FIX(tid));
+          rb_iv_set(tag, "@name", rb_str_new2(t->name));
+        }
+    }
+  else rb_raise(rb_eArgError, "Unknown value type");
+
+  return tag;
+} /* }}} */
+
+/* RubySubtleViewAdd {{{ */
+static VALUE
+RubySubtleViewAdd(VALUE self,
+  VALUE value)
+{
+  VALUE view = Qnil;
+
+  if(T_STRING == rb_type(value))
+    {
+      SubView *v = NULL;
+      
+      /* Create new view */
+      if((v = subViewNew(RSTRING_PTR(value), NULL)))
+        {
+          int vid = -1;
+          VALUE mod = Qnil, klass = Qnil;
+
+          subArrayPush(subtle->views, (void *)v);
+          subClientUpdate(-1); ///< Grow
+          subViewUpdate();
+          subViewPublish();
+          subViewRender();    
+
+          /* Create new instance */
+          vid   = subArrayIndex(subtle->views, (void *)v);
+          mod   = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
+          klass = rb_const_get(mod, rb_intern("View"));
+          view  = rb_funcall(klass, rb_intern("new"), 1, value);
+
+          rb_iv_set(view, "@id",   INT2FIX(vid));
+          rb_iv_set(view, "@name", rb_str_new2(v->name));
+          rb_iv_set(view, "@win",  LONG2NUM(v->button));      
+        }
+    }
+  else rb_raise(rb_eArgError, "Unknown value type");
+
+  return view;
+} /* }}} */
+
 /* RubySubletNew {{{ */
 static VALUE
 RubySubletNew(VALUE self)
@@ -729,31 +828,6 @@ RubyIconToString(VALUE self)
   return rb_str_new2(buf);
 } /* }}} */
 
-/* RubyConcat {{{ */
-static VALUE
-RubyConcat(VALUE str1,
-  VALUE str2)
-{
-  VALUE ret = Qnil;
-
-  /* Check value */
-  if(RTEST(str1) && RTEST(str2) && T_STRING == rb_type(str1))
-    {
-      VALUE string = str2;
-      
-      /* Convert argument to string */
-      if(T_STRING != rb_type(str2) && rb_respond_to(str2, rb_intern("to_s")))
-        string = rb_funcall(str2, rb_intern("to_s"), 0, NULL);
-
-      /* Concat strings */
-      if(T_STRING == rb_type(string))
-        ret = rb_str_cat(str1, RSTRING_PTR(string), RSTRING_LEN(string));
-    }
-  else rb_raise(rb_eArgError, "Unknown value type");
-
-  return ret;
-} /* }}} */
-
 /* RubyIconOperatorPlus {{{ */
 static VALUE
 RubyIconOperatorPlus(VALUE self,
@@ -802,74 +876,6 @@ RubyColorOperatorPlus(VALUE self,
   VALUE value)
 {
   return RubyConcat(RubyColorToString(self), value);
-} /* }}} */
-
-/* RubySubtleTagAdd {{{ */
-static VALUE
-RubySubtleTagAdd(VALUE self,
-  VALUE value)
-{
-  VALUE tag = Qnil;
-
-  if(T_STRING == rb_type(value))
-    {
-      int tid = -1;
-      SubTag *t = NULL;
-      VALUE mod = Qnil, klass = Qnil;
-
-      /* Create new tag */
-      t = subTagNew(RSTRING_PTR(value), NULL);
-      subArrayPush(subtle->tags, (void *)t);
-      subTagPublish();
-
-      /* Create new instance */
-      tid   = subArrayIndex(subtle->tags, (void *)t);
-      mod   = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
-      klass = rb_const_get(mod, rb_intern("Tag"));
-      tag   = rb_funcall(klass, rb_intern("new"), 1, value);
-
-      rb_iv_set(tag, "@id",   INT2FIX(tid));
-      rb_iv_set(tag, "@name", rb_str_new2(t->name));
-    }
-  else rb_raise(rb_eArgError, "Unknown value type");
-
-  return tag;
-} /* }}} */
-
-/* RubySubtleViewAdd {{{ */
-static VALUE
-RubySubtleViewAdd(VALUE self,
-  VALUE value)
-{
-  VALUE view = Qnil;
-
-  if(T_STRING == rb_type(value))
-    {
-      int vid = -1;
-      SubView *v = NULL;
-      VALUE mod = Qnil, klass = Qnil;
-      
-      /* Create new view */
-      v = subViewNew(RSTRING_PTR(value), NULL);
-      subArrayPush(subtle->views, (void *)v);
-      subClientUpdate(-1); ///< Grow
-      subViewUpdate();
-      subViewPublish();
-      subViewRender();    
-
-      /* Create new instance */
-      vid   = subArrayIndex(subtle->views, (void *)v);
-      mod   = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
-      klass = rb_const_get(mod, rb_intern("View"));
-      view  = rb_funcall(klass, rb_intern("new"), 1, value);
-
-      rb_iv_set(view, "@id",   INT2FIX(vid));
-      rb_iv_set(view, "@name", rb_str_new2(v->name));
-      rb_iv_set(view, "@win",  LONG2NUM(v->button));      
-    }
-  else rb_raise(rb_eArgError, "Unknown value type");
-
-  return view;
 } /* }}} */
 
 /* RubyWrapLoadConfig {{{ */
