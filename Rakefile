@@ -9,6 +9,7 @@
 #
 
 require("rake/clean")
+require("rake/rdoctask")
 require("mkmf")
 require("yaml")
 require("fileutils")
@@ -334,6 +335,15 @@ task(:test => [:build]) do
     require("test/subtlext_suite")
   end
 end # }}}
+
+# Task: rdoc
+Rake::RDocTask.new(:rdoc) do |rdoc|
+  rdoc.rdoc_files.include("src/subtle/ruby.c", "src/subtlext/subtlext.c")
+  #rdoc.rdoc_dir = "doc"
+  #rdoc.template = "hanna"
+  rdoc.options << "-o doc"
+  rdoc.title    = "Subtle RDoc Documentation"
+end
 
 #
 # File tasks
