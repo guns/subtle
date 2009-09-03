@@ -437,7 +437,18 @@ SubtlextScreens(void)
   return array;
 } /* }}} */
 
+/* = Client */
+
 /* SubtlextClientInit {{{ */
+/*
+ * call-seq: new(win) -> Subtlext::Client
+ *
+ * Create a new Client object
+ *
+ *  subtle = Subtlext::Client.new(123456789)
+ *  => #<Subtlext::Client:xxx>
+ */
+
 static VALUE
 SubtlextClientInit(VALUE self,
   VALUE win)
@@ -458,6 +469,18 @@ SubtlextClientInit(VALUE self,
 } /* }}} */
 
 /* SubtlextClientViewList {{{ */
+/*
+ * call-seq: views -> Array
+ *
+ * Get Array of View Client is on
+ *
+ *  client.views
+ *  => [#<Subtlext::View:xxx>, #<Subtlext::View:xxx>]
+ * 
+ *  client.views
+ *  => nil
+ */
+
 static VALUE
 SubtlextClientViewList(VALUE self)
 {
@@ -505,6 +528,18 @@ SubtlextClientViewList(VALUE self)
 } /* }}} */
 
 /* SubtlextClientTagList {{{ */
+/*
+ * call-seq: tags -> Array
+ *
+ * Get Array of defined Tag
+ *
+ *  client.tags
+ *  => [#<Subtlext::Tag:xxx>, #<Subtlext::Tag:xxx>]
+ * 
+ *  client.tags
+ *  => []
+ */
+
 static VALUE
 SubtlextClientTagList(VALUE self)
 {
@@ -542,6 +577,18 @@ SubtlextClientTagList(VALUE self)
 } /* }}} */
 
 /* SubtlextClientTagHas {{{ */
+/*
+ * call-seq: has_tag?(name) -> true or false
+ * 
+ * Check if Client has Tag by given name or Tag object
+ *
+ *  client.has_tag?("subtle")
+ *  => true
+ * 
+ *  client.has_tag?(subtle.find_tag("subtle"))
+ *  => false
+ */
+
 static VALUE
 SubtlextClientTagHas(VALUE self,
   VALUE value)
@@ -550,14 +597,40 @@ SubtlextClientTagHas(VALUE self,
 } /* }}} */
 
 /* SubtlextClientTagAdd {{{ */
+/*
+ * call-seq: tag(name) -> nil
+ *
+ * Tag Client with given name or Tag object
+ *
+ *  client.tag("subtle")
+ *  => #<Subtlext::Tag:xxx>
+ * 
+ *  client.tag(Subtlext::Tag.new("subtle"))
+ *  => #<Subtlext::Tag:xxx>
+ */
+
 static VALUE
 SubtlextClientTagAdd(VALUE self,
   VALUE value)
 {
-  return SubtlextTag(SUB_TYPE_CLIENT, SUB_ACTION_TAG, self, value);
+  SubtlextTag(SUB_TYPE_CLIENT, SUB_ACTION_TAG, self, value);
+
+  return Qnil;
 } /* }}} */
 
 /* SubtlextClientTagDel {{{ */
+/*
+ * call-seq: untag(name) -> nil
+ *
+ * Untag Client with given name or Tag object
+ *
+ *  client.untag("subtle")
+ *  => nil
+ * 
+ *  client.untag(subtle.find_tag("subtle"))
+ *  => nil
+ */
+
 static VALUE
 SubtlextClientTagDel(VALUE self,
   VALUE value)
@@ -566,6 +639,18 @@ SubtlextClientTagDel(VALUE self,
 } /* }}} */
 
 /* SubtlextClientStateFull {{{ */
+/*
+ * call-seq: is_full? -> true of false
+ *
+ * Check if a Client is fullscreen
+ *
+ *  client.is_full?
+ *  => true
+ * 
+ *  client.is_full?
+ *  => false
+ */
+
 VALUE
 SubtlextClientStateFull(VALUE self)
 {
@@ -573,6 +658,18 @@ SubtlextClientStateFull(VALUE self)
 } /* }}} */
 
 /* SubtlextClientStateFloat {{{ */
+/*
+ * call-seq: is_float? -> true of false
+ *
+ * Check if a Client is floating
+ *
+ *  client.is_float?
+ *  => true
+ * 
+ *  client.is_float?
+ *  => false
+ */
+
 VALUE
 SubtlextClientStateFloat(VALUE self)
 {
@@ -580,6 +677,18 @@ SubtlextClientStateFloat(VALUE self)
 } /* }}} */
 
 /* SubtlextClientStateStick {{{ */
+/*
+ * call-seq: is_stick? -> true of false
+ *
+ * Check if a client is sticky
+ *
+ *  client.is_stick?
+ *  => true
+ * 
+ *  client.is_stick?
+ *  => false
+ */
+
 VALUE
 SubtlextClientStateStick(VALUE self)
 {
@@ -587,6 +696,15 @@ SubtlextClientStateStick(VALUE self)
 } /* }}} */
 
 /* SubtlextClientToggleFull {{{ */
+/*
+ * call-seq: toggle_full -> nil
+ *
+ * Toggle Client fullscreen state
+ *
+ *  client.toggle_full
+ *  => nil
+ */
+
 static VALUE
 SubtlextClientToggleFull(VALUE self)
 {
@@ -594,6 +712,15 @@ SubtlextClientToggleFull(VALUE self)
 } /* }}} */
 
 /* SubtlextClientToggleFloat {{{ */
+/*
+ * call-seq: toggle_float -> nil
+ *
+ * Toggle Client floating state
+ *
+ *  client.toggle_float
+ *  => nil
+ */
+
 static VALUE
 SubtlextClientToggleFloat(VALUE self)
 {
@@ -601,6 +728,15 @@ SubtlextClientToggleFloat(VALUE self)
 } /* }}} */
 
 /* SubtlextClientToggleStick {{{ */
+/*
+ * call-seq: toggle_stick -> nil
+ *
+ * Toggle Client sticky state
+ *
+ *  client.toggle_stick
+ *  => nil
+ */
+
 static VALUE
 SubtlextClientToggleStick(VALUE self)
 {
@@ -608,6 +744,15 @@ SubtlextClientToggleStick(VALUE self)
 } /* }}} */
 
 /* SubtlextClientRestackRaise {{{ */
+/*
+ * call-seq: raise -> nil
+ *
+ * Raise Client window
+ *
+ *  client.raise
+ *  => nil
+ */
+
 static VALUE
 SubtlextClientRestackRaise(VALUE self)
 {
@@ -615,6 +760,15 @@ SubtlextClientRestackRaise(VALUE self)
 } /* }}} */
 
 /* SubtlextClientRestackLower {{{ */
+/*
+ * call-seq: lower -> nil
+ *
+ * Raise Client window
+ *
+ *  client.raise
+ *  => nil
+ */
+
 static VALUE
 SubtlextClientRestackLower(VALUE self)
 {
@@ -622,6 +776,18 @@ SubtlextClientRestackLower(VALUE self)
 } /* }}} */
 
 /* SubtlextClientMatchUp {{{ */
+/*
+ * call-seq: up -> Subtlext::Client or nil
+ *
+ * Get Client above
+ *
+ *  client.up
+ *  => #<Subtlext::Client:xxx>
+ * 
+ *  client.up
+ *  => nil
+ */
+
 static VALUE
 SubtlextClientMatchUp(VALUE self)
 {
@@ -629,6 +795,18 @@ SubtlextClientMatchUp(VALUE self)
 } /* }}} */
 
 /* SubtlextClientMatchLeft {{{ */
+/*
+ * call-seq: left -> Subtlext::Client or nil
+ *
+ * Get Client left
+ *
+ *  client.left
+ *  => #<Subtlext::Client:xxx>
+ * 
+ *  client.left
+ *  => nil
+ */
+
 static VALUE
 SubtlextClientMatchLeft(VALUE self)
 {
@@ -636,6 +814,18 @@ SubtlextClientMatchLeft(VALUE self)
 } /* }}} */
 
 /* SubtlextClientMatchRight {{{ */
+/*
+ * call-seq: right -> Subtlext::Client or nil
+ *
+ * Get Client right
+ *
+ *  client.right
+ *  => #<Subtlext::Client:xxx>
+ * 
+ *  client.right
+ *  => nil
+ */
+
 static VALUE
 SubtlextClientMatchRight(VALUE self)
 {
@@ -643,6 +833,18 @@ SubtlextClientMatchRight(VALUE self)
 } /* }}} */
 
 /* SubtlextClientMatchDown {{{ */
+/*
+ * call-seq: down -> Subtlext::Client or nil
+ *
+ * Get Client below
+ *
+ *  client.down
+ *  => #<Subtlext::Client:xxx>
+ * 
+ *  client.down
+ *  => nil
+ */
+
 static VALUE
 SubtlextClientMatchDown(VALUE self)
 {
@@ -650,6 +852,15 @@ SubtlextClientMatchDown(VALUE self)
 } /* }}} */
 
 /* SubtlextClientFocus {{{ */
+/*
+ * call-seq: focus -> nil
+ *
+ * Set focus to Client
+ *
+ *  client.focus
+ *  => nil
+ */
+
 static VALUE
 SubtlextClientFocus(VALUE self)
 {
@@ -667,6 +878,18 @@ SubtlextClientFocus(VALUE self)
 } /* }}} */
 
 /* SubtlextClientFocusHas {{{ */
+/*
+ * call-seq: has_focus? -> true or false
+ *
+ * Check if Client has focus
+ *
+ *  client.focus?
+ *  => true
+ *
+ *  client.focus?
+ *  => false
+ */
+
 static VALUE
 SubtlextClientFocusHas(VALUE self)
 {
@@ -688,6 +911,15 @@ SubtlextClientFocusHas(VALUE self)
 } /* }}} */
 
 /* SubtlextClientKill {{{ */
+/*
+ * call-seq: kill -> nil
+ *
+ * Send a close signal to Client
+ *
+ *  client.kill
+ *  => nil
+ */
+
 static VALUE
 SubtlextClientKill(VALUE self)
 {
@@ -707,6 +939,15 @@ SubtlextClientKill(VALUE self)
 } /* }}} */
 
 /* SubtlextClientToString {{{ */
+/*
+ * call-seq: to_str -> String
+ *
+ * Convert Client object to String
+ *
+ *  puts client
+ *  => "subtle"
+ */
+
 static VALUE
 SubtlextClientToString(VALUE self)
 {
@@ -716,6 +957,15 @@ SubtlextClientToString(VALUE self)
 } /* }}} */
 
 /* SubtlextClientGravity {{{ */
+/*
+ * call-seq: gravity -> Fixnum
+ *
+ * Get client gravity
+ *
+ *  client.gravity
+ *  => 5
+ */
+
 static VALUE
 SubtlextClientGravity(VALUE self)
 {
@@ -725,6 +975,15 @@ SubtlextClientGravity(VALUE self)
 } /* }}} */
 
 /* SubtlextClientGravitySet {{{ */
+/*
+ * call-seq: gravity=(fixnum) -> nil
+ *
+ * Set client gravity
+ *
+ *  client.gravity = 0
+ *  => nil
+ */
+
 static VALUE
 SubtlextClientGravitySet(VALUE self,
   VALUE value)
@@ -759,6 +1018,15 @@ SubtlextClientGravitySet(VALUE self,
 } /* }}} */
 
 /* SubtlextClientScreen {{{ */
+/*
+ * call-seq: screen -> Subtlext::Screen
+ *
+ * Get screen client is on as Screen object
+ *
+ *  client.screen
+ *  => #<Subtlext::Screen:xxx>
+ */
+
 static VALUE
 SubtlextClientScreen(VALUE self)
 {
@@ -768,6 +1036,18 @@ SubtlextClientScreen(VALUE self)
 } /* }}} */
 
 /* SubtlextClientScreenSet {{{ */
+/*
+ * call-seq: screen=(screen) -> nil
+ *
+ * Set client screen
+ *
+ *  client.screen = 0
+ *  => nil
+ * 
+ *  client.screen = subtle.find_screen(0)
+ *  => nil
+ */
+
 static VALUE
 SubtlextClientScreenSet(VALUE self,
   VALUE value)
@@ -809,6 +1089,15 @@ SubtlextClientScreenSet(VALUE self,
 } /* }}} */
 
 /* SubtlextClientSize {{{ */
+/*
+ * call-seq: size -> Array
+ *
+ * Get Client size as Array
+ *
+ *  client.size
+ *  => [ 0, 0, 100, 100 ]
+ */
+
 static VALUE
 SubtlextClientSize(VALUE self)
 {
@@ -824,6 +1113,15 @@ SubtlextClientSize(VALUE self)
 } /* }}} */
 
 /* SubtlextClientSizeSet {{{ */
+/*
+ * call-seq: size= -> nil
+ *
+ * Set Client size
+ *
+ *  client.size = [ 0, 0, 100, 100 ]
+ *  => [ 0, 0, 100, 100 ]
+ */
+
 static VALUE
 SubtlextClientSizeSet(VALUE self,
   VALUE value)
@@ -861,6 +1159,15 @@ SubtlextClientSizeSet(VALUE self,
 } /* }}} */
 
 /* SubtlextClientUpdate {{{ */
+/*
+ * call-seq: update -> nil
+ *
+ * Update Client properties
+ *
+ *  client.update
+ *  => nil
+ */
+
 VALUE
 SubtlextClientUpdate(VALUE self)
 {
@@ -912,6 +1219,18 @@ SubtlextClientUpdate(VALUE self)
 } /* }}} */
 
 /* SubtlextClientOperatorPlus {{{ */
+/*
+ * call-seq: +(tag) -> nil
+ *
+ * Add existing Tag to Client
+ *
+ *  client + tag
+ *  => nil
+ *
+ *  client + "subtle" 
+ *  => nil
+ */
+
 static VALUE
 SubtlextClientOperatorPlus(VALUE self,
   VALUE value)
@@ -920,6 +1239,18 @@ SubtlextClientOperatorPlus(VALUE self,
 } /* }}} */
 
 /* SubtlextClientOperatorMinus {{{ */
+/*
+ * call-seq: -(tag) -> nil
+ *
+ * Add exsiting Tag to client
+ *
+ *  client - tag
+ *  => nil
+ *
+ *  client - "subtle" 
+ *  => nil
+ */
+
 static VALUE
 SubtlextClientOperatorMinus(VALUE self,
   VALUE value)
@@ -927,7 +1258,18 @@ SubtlextClientOperatorMinus(VALUE self,
   return SubtlextTag(self, value, SUB_ACTION_UNTAG, SUB_TYPE_CLIENT);
 } /* }}} */
 
+/* Screen */
+
 /* SubtlextScreenInit {{{ */
+/*
+ * call-seq: new(id) -> Subtlext::Screen
+ *
+ * Create a new Screen object
+ *
+ *  subtle = Subtlext::Screen.new(0)
+ *  => #<Subtlext::Screen:xxx>
+ */
+
 static VALUE
 SubtlextScreenInit(VALUE self,
   VALUE id)
@@ -942,6 +1284,18 @@ SubtlextScreenInit(VALUE self,
 } /* }}} */
 
 /* SubtlextScreenClientList {{{ */
+/*
+ * call-seq: clients -> Array
+ *
+ * Get Client on Screen
+ *
+ *  screen.clients
+ *  => [ #<Subtlext::Client:xxx>, #<Subtlext::Client:xxx> ]
+ *
+ *  screen.clients
+ *  => []
+ */
+
 static VALUE
 SubtlextScreenClientList(VALUE self)
 {
@@ -972,6 +1326,15 @@ SubtlextScreenClientList(VALUE self)
 } /* }}} */
 
 /* SubtlextScreenToString {{{ */
+/*
+ * call-seq: to_str -> String
+ *
+ * Convert Screen object to String
+ *
+ *  puts screen
+ *  => "0x0+800+600
+ */
+
 static VALUE
 SubtlextScreenToString(VALUE self)
 {
@@ -988,6 +1351,8 @@ SubtlextScreenToString(VALUE self)
   return rb_str_new2(buf);
 } /* }}} */
 
+/* Subtle */
+
 /* SubtlextSubtleKill {{{ */
 static void
 SubtlextSubtleKill(void *data)
@@ -1001,6 +1366,19 @@ SubtlextSubtleKill(void *data)
 } /* }}} */
 
 /* SubtlextSubtleNew {{{ */
+/*
+ * call-seq: new(display, debug) -> Subtlext::Subtle
+ *
+ * Create a new Subtle object and open connection to X server
+ *
+ *  subtle = Subtlext::Subtle.new(":0")
+ *  => #<Subtlext::Subtle:xxx>
+ *
+ *  subtle = Subtlext::Subtle.new(":0", true)
+ *  <DEBUG> src/subtlext/subtlext.c:xxx: Connection opened (:0)
+ *  => #<Subtlext::Subtle:xxx>
+ */
+
 static VALUE
 SubtlextSubtleNew(int argc,
   VALUE *argv,
@@ -1054,6 +1432,15 @@ SubtlextSubtleNew(int argc,
 } /* }}} */
 
 /* SubtlextSubtleNew2 {{{ */
+/*
+ * call-seq: new2(display) -> Subtlext::Subtle
+ *
+ * Create a new Subtle object - internal used only
+ *
+ *  subtle = Subtlext::Subtle.new(display)
+ *  => #<Subtlext::Subtle:xxx>
+ */
+
 static VALUE
 SubtlextSubtleNew2(VALUE self,
   VALUE disp)
@@ -1071,6 +1458,15 @@ SubtlextSubtleNew2(VALUE self,
 } /* }}} */
 
 /* SubtlextSubtleVersion {{{ */
+/*
+ * call-seq: version -> String
+ *
+ * Get the version of Subtlext
+ *
+ *  puts subtle.version 
+ *  => "0.8.xxx"
+ */
+
 VALUE 
 SubtlextSubtleVersion(VALUE self)
 {
@@ -1078,6 +1474,15 @@ SubtlextSubtleVersion(VALUE self)
 } /* }}} */
 
 /* SubtlextSubtleDisplay {{{ */
+/*
+ * call-seq: display -> String
+ *
+ * Get the display name
+ *
+ *  subtle.display
+ *  => ":0"
+ */
+
 VALUE 
 SubtlextSubtleDisplay(VALUE self)
 {
@@ -1085,6 +1490,18 @@ SubtlextSubtleDisplay(VALUE self)
 } /* }}} */
 
 /* SubtlextSubtleRunning {{{ */
+/*
+ * call-seq: running? -> true or false
+ *
+ * Check if subtle is running
+ *
+ *  subtle.running?
+ *  => true
+ *
+ *  subtle.running?
+ *  => false
+ */
+
 static VALUE
 SubtlextSubtleRunning(VALUE self)
 {
@@ -1092,6 +1509,15 @@ SubtlextSubtleRunning(VALUE self)
 } /* }}} */
 
 /* SubtlextSubtleReload {{{ */
+/*
+ * call-seq: reload -> nil
+ *
+ * Force Subtle to reload the config
+ *
+ *  subtle.reload
+ *  => nil
+ */
+
 static VALUE
 SubtlextSubtleReload(VALUE self)
 {
@@ -1103,6 +1529,15 @@ SubtlextSubtleReload(VALUE self)
 } /* }}} */
 
 /* SubtlextSubtleQuit {{{ */
+/*
+ * call-seq: quit -> nil
+ *
+ * Force Subtle to exit
+ *
+ *  subtle.reload
+ *  => nil
+ */
+
 static VALUE
 SubtlextSubtleQuit(VALUE self)
 {
@@ -1114,6 +1549,18 @@ SubtlextSubtleQuit(VALUE self)
 } /* }}} */
 
 /* SubtlextSubtleTagList {{{ */
+/*
+ * call-seq: tags -> Array
+ *
+ * Get Array of defined Tag
+ *
+ *  subtle.tags
+ *  => [#<Subtlext::Tag:xxx>, #<Subtlext::Tag:xxx>]
+ *
+ *  subtle.tags
+ *  => []
+ */
+
 static VALUE
 SubtlextSubtleTagList(VALUE self)
 {
@@ -1140,6 +1587,18 @@ SubtlextSubtleTagList(VALUE self)
 } /* }}} */
 
 /* SubtlextSubtleTagFind {{{ */
+/*
+ * call-seq: find_tag(name) -> Subtlext::Tag or nil
+ *
+ * Find Tag by given name
+ *
+ *  subtle.find_tag("subtle")
+ *  => #<Subtlext::Tag:xxx>
+ * 
+ *  subtle.find_tag("subtle")
+ *  => nil
+ */
+
 static VALUE
 SubtlextSubtleTagFind(VALUE self,
   VALUE name)
@@ -1148,6 +1607,18 @@ SubtlextSubtleTagFind(VALUE self,
 } /* }}} */
 
 /* SubtlextSubtleTagAdd {{{ */
+/*
+ * call-seq: add_tag(name) -> Subtlext::Tag
+ *
+ * Add Tag with given name or Tag object
+ *
+ *  subtle.add_tag("subtle")
+ *  => #<Subtlext::Tag:xxx>
+ *
+ *  subtle.add_tag(Tag.new("subtle"))
+ *  => #<Subtlext::Tag:xxx>
+ */
+
 static VALUE
 SubtlextSubtleTagAdd(VALUE self,
   VALUE value)
@@ -1156,6 +1627,18 @@ SubtlextSubtleTagAdd(VALUE self,
 } /* }}} */
 
 /* SubtlextSubtleTagDel {{{ */
+/*
+ * call-seq: del_tag(name) -> nil
+ *
+ * Delete Tag by given name or Tag object
+ *
+ *  subtle.del_tag("subtle")
+ *  => nil
+ * 
+ *  subtle.del_tag(subtle.find_tag("subtle"))
+ *  => nil
+ */
+
 static VALUE
 SubtlextSubtleTagDel(VALUE self,
   VALUE value)
@@ -1179,6 +1662,18 @@ SubtlextSubtleTagDel(VALUE self,
 } /* }}} */
 
 /* SubtlextSubtleClientList {{{ */
+/*
+ * call-seq: clients -> Array
+ *
+ * Get Array of Client
+ *
+ *  subtle.clients
+ *  => [#<Subtlext::Client:xxx>, #<Subtlext::Client:xxx>]
+ *
+ *  subtle.clients
+ *  => []
+ */
+
 static VALUE
 SubtlextSubtleClientList(VALUE self)
 {
@@ -1202,6 +1697,18 @@ SubtlextSubtleClientList(VALUE self)
 } /* }}} */
 
 /* SubtlextSubtleClientFind {{{ */
+/*
+ * call-seq: find_client(name) -> Subtlext::Client or nil
+ *
+ * Find Client by given name
+ *
+ *  subtle.find_client("subtle")
+ *  => #<Subtlext::Client:xxx>
+ * 
+ *  subtle.find_client("subtle")
+ *  => nil
+ */
+
 static VALUE
 SubtlextSubtleClientFind(VALUE self,
   VALUE name)
@@ -1220,6 +1727,18 @@ SubtlextSubtleClientFind(VALUE self,
 } /* }}} */
 
 /* SubtlextSubtleClientFocus {{{ */
+/*
+ * call-seq: focus_client(name) -> Subtlext::Client or nil
+ *
+ * Find Client by given name and set focus
+ *
+ *  subtle.focus_client("subtle")
+ *  => #<Subtlext::Client:xxx>
+ *
+ *  subtle.focus_client("subtle")
+ *  => nil
+ */
+
 static VALUE
 SubtlextSubtleClientFocus(VALUE self,
   VALUE name)
@@ -1243,6 +1762,18 @@ SubtlextSubtleClientFocus(VALUE self,
 } /* }}} */
 
 /* SubtlextSubtleClientFocusLeft {{{ */
+/*
+ * call-seq: focus_left -> Sublext::Client or nil
+ *
+ * Focus Client left from current Client
+ *
+ *  subtle.focus_left
+ *  => #<Subtlext::Client:xxx>
+ *
+ *  subtle.focus_left
+ *  => nil
+ */
+
 static VALUE
 SubtlextSubtleClientFocusLeft(VALUE self)
 {
@@ -1250,6 +1781,18 @@ SubtlextSubtleClientFocusLeft(VALUE self)
 } /* }}} */
 
 /* SubtlextSubtleClientFocusDown {{{ */
+/*
+ * call-seq: focus_down -> Sublext::Client or nil
+ *
+ * Focus Client below current Client
+ *
+ *  subtle.focus_down
+ *  => #<Subtlext::Client:xxx>
+ *
+ *  subtle.focus_down
+ *  => nil
+ */
+
 static VALUE
 SubtlextSubtleClientFocusDown(VALUE self)
 {
@@ -1257,6 +1800,18 @@ SubtlextSubtleClientFocusDown(VALUE self)
 } /* }}} */
 
 /* SubtlextSubtleClientFocusUp {{{ */
+/*
+ * call-seq: focus_up -> Sublext::Client or nil
+ *
+ * Focus Client above current Client
+ *
+ *  subtle.focus_up
+ *  => #<Subtlext::Client:xxx>
+ *
+ *  subtle.focus_up
+ *  => nil
+ */
+
 static VALUE
 SubtlextSubtleClientFocusUp(VALUE self)
 {
@@ -1264,6 +1819,18 @@ SubtlextSubtleClientFocusUp(VALUE self)
 } /* }}} */
 
 /* SubtlextSubtleClientFocusRight {{{ */
+/*
+ * call-seq: focus_right -> Sublext::Client or nil
+ *
+ * Focus Client right from current Client
+ *
+ *  subtle.focus_right
+ *  => #<Subtlext::Client:xxx>
+ *
+ *  subtle.focus_right
+ *  => nil
+ */
+
 static VALUE
 SubtlextSubtleClientFocusRight(VALUE self)
 {
@@ -1271,6 +1838,18 @@ SubtlextSubtleClientFocusRight(VALUE self)
 } /* }}} */
 
 /* SubtlextSubtleClientDel {{{ */
+/*
+ * call-seq: del_client(name) -> nil
+ *
+ * Delete Client by given name or Client object
+ *
+ *  subtle.del_client("subtle")
+ *  => nil
+ * 
+ *  subtle.del_client(subtle.find_client("subtle"))
+ *  => nil
+ */
+
 static VALUE
 SubtlextSubtleClientDel(VALUE self,
   VALUE name)
@@ -1294,6 +1873,16 @@ SubtlextSubtleClientDel(VALUE self,
 } /* }}} */
 
 /* SubtlextSubtleClientCurrent {{{ */
+/*
+ * call-seq: current_client -> Subtlext::Client
+ *
+ * Get current active Client
+ *
+ *  subtle.current_client
+ *  => #<Subtlext::Client:xxx>
+ */
+
+
 static VALUE
 SubtlextSubtleClientCurrent(VALUE self)
 {
@@ -1313,6 +1902,15 @@ SubtlextSubtleClientCurrent(VALUE self)
 } /* }}} */
 
 /* SubtlextSubtleSubletDel {{{ */
+/*
+ * call-seq: del_sublet(name) -> nil
+ *
+ * Delete Sublet by given name
+ *
+ *  subtle.del_sublet("subtle")
+ *  => nil
+ */
+
 static VALUE
 SubtlextSubtleSubletDel(VALUE self,
   VALUE name)
@@ -1334,6 +1932,18 @@ SubtlextSubtleSubletDel(VALUE self,
 } /* }}} */
 
 /* SubtlextSubtleSubletList {{{ */
+/*
+ * call-seq: sublets -> Array
+ *
+ * Get Array of Sublet
+ *
+ *  subtle.sublets
+ *  => [#<Subtlext::Sublet:xxx>, #<Subtlext::Sublet:xxx>]
+ *
+ *  subtle.sublets
+ *  => []
+ */
+
 static VALUE
 SubtlextSubtleSubletList(VALUE self)
 {
@@ -1363,6 +1973,18 @@ SubtlextSubtleSubletList(VALUE self)
 } /* }}} */
 
 /* SubtlextSubtleSubletFind {{{ */
+/*
+ * call-seq: find_sublet(name) -> Subtlext::Sublet or nil
+ *
+ * Find Sublet by given name
+ *
+ *  subtle.find_sublet("subtle")
+ *  => #<Subtlext::Sublet:xxx>
+ * 
+ *  subtle.find_sublet("subtle")
+ *  => nil
+ */
+
 static VALUE
 SubtlextSubtleSubletFind(VALUE self,
   VALUE name)
@@ -1385,6 +2007,15 @@ SubtlextSubtleSubletFind(VALUE self,
 } /* }}} */
 
 /* SubtlextSubtleViewList {{{ */
+/*
+ * call-seq: views -> Array
+ *
+ * Get array of defined View
+ *
+ *  subtle.views
+ *  => [#<Subtlext::View:xxx>, #<Subtlext::View:xxx>]
+ */
+
 static VALUE
 SubtlextSubtleViewList(VALUE self)
 {
@@ -1421,6 +2052,18 @@ SubtlextSubtleViewList(VALUE self)
 } /* }}} */
 
 /* SubtlextSubtleViewFind {{{ */
+/*
+ * call-seq: find_view(name) -> Subtlext::View or nil
+ *
+ * Find View by given name
+ *
+ *  subtle.find_view("subtle")
+ *  => #<Subtlext::View:xxx>
+ *
+ *  subtle.find_view("subtle")
+ *  => nil
+ */
+
 static VALUE
 SubtlextSubtleViewFind(VALUE self,
   VALUE name)
@@ -1429,6 +2072,18 @@ SubtlextSubtleViewFind(VALUE self,
 } /* }}} */
 
 /* SubtlextSubtleViewAdd {{{ */
+/*
+ * call-seq: add_view(name) -> Subtlext::View
+ *
+ * Add View with given name or View object
+ *
+ *  subtle.add_view("subtle")
+ *  => #<Subtlext::View:xxx>
+ * 
+ *  subtle.add_view(View.new("subtle"))
+ *  => #<Subtlext::View:xxx>
+ */
+
 static VALUE
 SubtlextSubtleViewAdd(VALUE self,
   VALUE value)
@@ -1437,6 +2092,18 @@ SubtlextSubtleViewAdd(VALUE self,
 } /* }}} */
 
 /* SubtlextSubtleViewDel {{{ */
+/*
+ * call-seq: del_view(name) -> nil
+ *
+ * Delete View by given name or View object
+ *
+ *  subtle.del_view("subtle")
+ *  => nil
+ * 
+ *  subtle.del_view(subtle.find_view("subtle"))
+ *  => nil
+ */
+
 static VALUE
 SubtlextSubtleViewDel(VALUE self,
   VALUE value)
@@ -1460,6 +2127,15 @@ SubtlextSubtleViewDel(VALUE self,
 } /* }}} */
 
 /* SubtlextSubtleViewCurrent {{{ */
+/*
+ * call-seq: current_view -> Subtlext::View
+ *
+ * Get current active View
+ *
+ *  subtle.current_view
+ *  => #<Subtlext::View:xxx>
+ */
+
 static VALUE
 SubtlextSubtleViewCurrent(VALUE self)
 {
@@ -1489,6 +2165,18 @@ SubtlextSubtleViewCurrent(VALUE self)
 } /* }}} */
 
 /* SubtlextSubtleScreenList {{{ */
+/*
+ * call-seq: screens -> Array
+ *
+ * Get Array of Screen
+ *
+ *  subtle.clients
+ *  => [#<Subtlext::Screen:xxx>, #<Subtlext::Screen:xxx>]
+ *
+ *  subtle.screens
+ *  => []
+ */
+
 static VALUE
 SubtlextSubtleScreenList(VALUE self)
 {
@@ -1496,6 +2184,15 @@ SubtlextSubtleScreenList(VALUE self)
 } /* }}} */
 
 /* SubtlextSubtleScreenCurrent {{{ */
+/*
+ * call-seq: current_screen -> Subtlext::Screen
+ *
+ * Get current active Screen
+ *
+ *  subtle.current_screen
+ *  => #<Subtlext::Screen:xxx>
+ */
+
 static VALUE
 SubtlextSubtleScreenCurrent(VALUE self)
 {
@@ -1519,6 +2216,18 @@ SubtlextSubtleScreenCurrent(VALUE self)
 } /* }}} */
 
 /* SubtlextSubtleScreenFind {{{ */
+/*
+ * call-seq: find_screen(name) -> Subtlext::Screen or nil
+ *
+ * Find Screen by given id
+ *
+ *  subtle.find_screen(0)
+ *  => #<Subtlext::Screen:xxx>
+ * 
+ *  subtle.find_screen(0)
+ *  => nil
+ */
+
 static VALUE
 SubtlextSubtleScreenFind(VALUE self,
   VALUE id)
@@ -1527,6 +2236,15 @@ SubtlextSubtleScreenFind(VALUE self,
 } /* }}} */
 
 /* SubtlextSubtleToString {{{ */
+/*
+ * call-seq: to_str -> String
+ *
+ * Convert Subtle object to string
+ *
+ *  puts subtle
+ *  => "subtle (0.8.xxx) on :0.0 (800x600)"
+ */
+
 static VALUE
 SubtlextSubtleToString(VALUE self)
 {
@@ -1540,7 +2258,18 @@ SubtlextSubtleToString(VALUE self)
   return rb_str_new2(buf);
 } /* }}} */
 
+/* Sublet */
+
 /* SubtlextSubletInit {{{ */
+/*
+ * call-seq: new(name) -> Subtlext::Sublet
+ *
+ * Create new Sublet object
+ *
+ *  sublet = Subtlext::Sublet.new("subtle")
+ *  => #<Subtlext::Sublet:xxx> * 
+ */
+
 static VALUE
 SubtlextSubletInit(VALUE self,
   VALUE name)
@@ -1552,6 +2281,15 @@ SubtlextSubletInit(VALUE self,
 } /* }}} */
 
 /* SubtlextSubletUpdate {{{ */
+/*
+ * call-seq: update -> nil
+ *
+ * Force Sublet to update it's data
+ *
+ *  sublet.update
+ *  => nil
+ */
+
 static VALUE
 SubtlextSubletUpdate(VALUE self)
 {
@@ -1573,6 +2311,15 @@ SubtlextSubletUpdate(VALUE self)
 } /* }}} */
 
 /* SubtlextSubletData {{{ */
+/*
+ * call-seq: data -> String
+ *
+ * Get data of Sublet
+ *
+ *  puts sublet.data
+ *  => "subtle" 
+ */
+
 static VALUE
 SubtlextSubletData(VALUE self)
 {
@@ -1582,6 +2329,15 @@ SubtlextSubletData(VALUE self)
 } /* }}} */
 
 /* SubtlextSubletDataSet {{{ */
+/*
+ * call-seq: data= -> String
+ *
+ * Set data of sublet
+ *
+ *  sublet.data = "subtle" 
+ *  => "subtle" 
+ */
+
 static VALUE
 SubtlextSubletDataSet(VALUE self,
   VALUE value)
@@ -1609,6 +2365,15 @@ SubtlextSubletDataSet(VALUE self,
 } /* }}} */
 
 /* SubtlextSubletToString {{{ */
+/*
+ * call-seq: to_str -> String
+ *
+ * Convert Sublet object to String
+ *
+ *  puts sublet
+ *  => sublet
+ */
+
 static VALUE
 SubtlextSubletToString(VALUE self)
 {
@@ -1617,7 +2382,18 @@ SubtlextSubletToString(VALUE self)
   return RTEST(name) ? name : Qnil;
 } /* }}} */
 
+/* Tag */
+
 /* SubtlextTagInit {{{ */
+/*
+ * call-seq: new(name) -> Subtlext::Tag
+ *
+ * Create new Tag object
+ *
+ *  tag = Subtlext::Tag.new("subtle")
+ *  => #<Subtlext::Tag:xxx>
+ */
+
 static VALUE
 SubtlextTagInit(VALUE self,
   VALUE name)
@@ -1629,13 +2405,36 @@ SubtlextTagInit(VALUE self,
 } /* }}} */
 
 /* SubtlextTagSave {{{ */
+/*
+ * call-seq: save -> nil
+ *
+ * Saves the Tag and sends it to Subtle
+ *
+ *  tag.save
+ *  => #<Subtlext::Tag:xxx>
+ */
+
 static VALUE
 SubtlextTagSave(VALUE self)
 {
-  return SubtlextFind(SUB_TYPE_TAG, self, True, True);
+  SubtlextFind(SUB_TYPE_TAG, self, True, True);
+
+  return Qnil;
 } /* }}} */
 
 /* SubtlextTagTagggings {{{ */
+/*
+ * call-seq: taggings -> Array
+ *
+ * Get Array of Client and View that are tagged with this
+ *
+ *  tag.taggings()
+ *  => [#<Subtlext::View:xxx>, #<Client:xxx>]
+ *
+ *  tag.taggings()
+ *  => []
+ */
+
 static VALUE
 SubtlextTagTaggings(VALUE self)
 {
@@ -1715,6 +2514,15 @@ SubtlextTagTaggings(VALUE self)
 } /* }}} */
 
 /* SubtlextTagToString {{{ */
+/*
+ * call-seq: to_str -> String
+ *
+ * Convert Tag object to String
+ *
+ *  puts tag
+ *  => "subtle" 
+ */
+
 static VALUE
 SubtlextTagToString(VALUE self)
 {
@@ -1723,7 +2531,18 @@ SubtlextTagToString(VALUE self)
   return RTEST(name) ? name : Qnil;
 } /* }}} */
 
+/* Views */
+
 /* SubtlextViewInit {{{ */
+/*
+ * call-seq: new(name) -> Subtlext::View
+ *
+ * Create a new View object
+ *
+ *  view = Subtlext::View.new("subtle")
+ *  => #<Subtlext::View:xxx>
+ */
+
 static VALUE
 SubtlextViewInit(VALUE self,
   VALUE name)
@@ -1736,6 +2555,18 @@ SubtlextViewInit(VALUE self,
 } /* }}} */
 
 /* SubtlextViewClientList {{{ */
+/*
+ * call-seq: clients -> Array
+ *
+ * Get Array of Client on View
+ *
+ *  view.clients
+ *  => [#<Subtlext::Client:xxx>, #<Subtlext::Client:xxx>]
+ *
+ *  view.clients
+ *  => []
+ */
+
 static VALUE
 SubtlextViewClientList(VALUE self)
 {
@@ -1769,6 +2600,18 @@ SubtlextViewClientList(VALUE self)
 } /* }}} */
 
 /* SubtlextViewTagList {{{ */
+/*
+ * call-seq: tags -> Array
+ *
+ * Get Array of Tags of View
+ *
+ *  view.tags
+ *  => [#<Subtlext::Tag:xxx>, #<Subtlext::Tag:xxx>]
+ *
+ *  view.tags
+ *  => []
+ */
+
 static VALUE
 SubtlextViewTagList(VALUE self)
 {
@@ -1809,6 +2652,18 @@ SubtlextViewTagList(VALUE self)
 } /* }}} */
 
 /* SubtlextViewTagHas {{{ */
+/*
+ * call-seq: has_tag?(name) -> true or false
+ *
+ * Check if a View has a certain Tag
+ *
+ *  view.has_tag?("subtle")
+ *  => true
+ * 
+ *  view.has_tag?(subtle.find_tag("subtle"))
+ *  => false
+ */
+
 static VALUE
 SubtlextViewTagHas(VALUE self,
   VALUE value)
@@ -1817,6 +2672,18 @@ SubtlextViewTagHas(VALUE self,
 } /* }}} */
 
 /* SubtlextViewTagAdd {{{ */
+/*
+ * call-seq: has_tag?(name) -> true or false
+ *
+ * Tag View with with given name or Tag object
+ *
+ *  view.tag("subtle")
+ *  => #<Subtlext::Tag:xxx>
+ * 
+ *  view.tag(Tag.new("subtle"))
+ *  => #<Subtlext::Tag:xxx> * 
+ */
+
 static VALUE
 SubtlextViewTagAdd(VALUE self,
   VALUE value)
@@ -1825,6 +2692,18 @@ SubtlextViewTagAdd(VALUE self,
 } /* }}} */
 
 /* SubtlextViewTagDel {{{ */
+/*
+ * call-seq: untag(name) -> nil
+ *
+ * Untag View with with given name or Tag object
+ *
+ *  view.untag("subtle")
+ *  => #<Subtlext::Tag:xxx>
+ * 
+ *  view.untag(Tag.new("subtle"))
+ *  => #<Subtlext::Tag:xxx> * 
+ */
+
 static VALUE
 SubtlextViewTagDel(VALUE self,
   VALUE value)
@@ -1833,6 +2712,15 @@ SubtlextViewTagDel(VALUE self,
 } /* }}} */
 
 /* SubtlextViewJump {{{ */
+/*
+ * call-seq: jump -> nil
+ *
+ * Jump to this View
+ *
+ *  view.jump
+ *  => nil
+ */
+
 static VALUE
 SubtlextViewJump(VALUE self)
 {
@@ -1847,6 +2735,18 @@ SubtlextViewJump(VALUE self)
 } /* }}} */
 
 /* SubtlextViewCurrent {{{ */
+/*
+ * call-seq: current? -> true or false
+ *
+ * Check if this View is the current active View
+ *
+ *  view.current?
+ *  => true
+ *
+ *  view.current?
+ *  => false
+ */
+
 static VALUE
 SubtlextViewCurrent(VALUE self)
 {
@@ -1864,13 +2764,33 @@ SubtlextViewCurrent(VALUE self)
 } /* }}} */
 
 /* SubtlextViewSave {{{ */
+/*
+ * call-seq: save -> true or false
+ *
+ * Saves the View and sends it to Subtle
+ *
+ *  view.save
+ *  => #<Subtlext::View:xxx>
+ */
+
 static VALUE
 SubtlextViewSave(VALUE self)
 {
-  return SubtlextFind(SUB_TYPE_VIEW, self, True, True);
+  SubtlextFind(SUB_TYPE_VIEW, self, True, True);
+
+  return Qnil;
 } /* }}} */
 
 /* SubtlextViewToString {{{ */
+/*
+ * call-seq: to_str -> String
+ *
+ * Convert View object to String
+ *
+ *  puts view
+ *  => "subtle" 
+ */
+
 static VALUE
 SubtlextViewToString(VALUE self)
 {
@@ -1880,6 +2800,18 @@ SubtlextViewToString(VALUE self)
 } /* }}} */
 
 /* SubtlextViewOperatorPlus {{{ */
+/*
+ * call-seq: +(tag) -> nil
+ *
+ * Add existing Tag to View
+ *
+ *  view + tag
+ *  => nil
+ *
+ *  view + "subtle" 
+ *  => nil
+ */
+
 static VALUE
 SubtlextViewOperatorPlus(VALUE self,
   VALUE value)
@@ -1888,6 +2820,18 @@ SubtlextViewOperatorPlus(VALUE self,
 } /* }}} */
 
 /* SubtlextViewOperatorMinus {{{ */
+/*
+ * call-seq: -(tag) -> nil
+ * 
+ * Remove existing Tag from View
+ *
+ *  view - tag
+ *  => nil
+ *
+ *  view - "subtle" 
+ *  => nil
+ */
+
 static VALUE
 SubtlextViewOperatorMinus(VALUE self,
   VALUE value)
@@ -1895,166 +2839,260 @@ SubtlextViewOperatorMinus(VALUE self,
   return SubtlextTag(self, value, SUB_ACTION_UNTAG, SUB_TYPE_VIEW);
 } /* }}} */
 
- /** Init_subtlext {{{
-  * @brief Extension entry point
-  **/
-
+/* Init_subtlext {{{ */
+/*
+ * Subtlext is the module of the extension
+ */
 void 
 Init_subtlext(void)
 {
-  VALUE klass = Qnil;
+  VALUE client = Qnil, gravity = Qnil, screen = Qnil, subtle = Qnil, sublet = Qnil, tag = Qnil, view = Qnil;
 
   /* Module: sublext */
   mod = rb_define_module("Subtlext");
 
-  /* Class: client */
-  klass = rb_define_class_under(mod, "Client", rb_cObject);
-  rb_define_attr(klass,   "id",      1, 0);
-  rb_define_attr(klass,   "win",     1, 0);
-  rb_define_attr(klass,   "klass",   1, 0);
-  rb_define_attr(klass,   "x",       1, 0);
-  rb_define_attr(klass,   "y",       1, 0);
-  rb_define_attr(klass,   "width",   1, 0);
-  rb_define_attr(klass,   "height",  1, 0);
-  rb_define_attr(klass,   "name",    1, 0);
-  rb_define_attr(klass,   "flags",   1, 0);
+  /*
+   * Document-class: Subtlext::Client
+   *
+   * Client class for interaction with clients
+   */
 
-  rb_define_method(klass, "initialize",   SubtlextClientInit,          1);
-  rb_define_method(klass, "views",        SubtlextClientViewList,      0);
-  rb_define_method(klass, "tags",         SubtlextClientTagList,       0);
+  client = rb_define_class_under(mod, "Client", rb_cObject);
 
-  rb_define_method(klass, "has_tag?",     SubtlextClientTagHas,        1);
-  rb_define_method(klass, "tag",          SubtlextClientTagAdd,        1);
-  rb_define_method(klass, "untag",        SubtlextClientTagDel,        1);
-  rb_define_method(klass, "toggle_full",  SubtlextClientToggleFull,    0);
-  rb_define_method(klass, "toggle_float", SubtlextClientToggleFloat,   0);
-  rb_define_method(klass, "toggle_stick", SubtlextClientToggleStick,   0);
-  rb_define_method(klass, "is_full?",     SubtlextClientStateFull,     0);
-  rb_define_method(klass, "is_float?",    SubtlextClientStateFloat,    0);
-  rb_define_method(klass, "is_stick?",    SubtlextClientStateStick,    0);
-  rb_define_method(klass, "raise",        SubtlextClientRestackRaise,  0);
-  rb_define_method(klass, "lower",        SubtlextClientRestackLower,  0);
-  rb_define_method(klass, "up",           SubtlextClientMatchUp,       0);
-  rb_define_method(klass, "left",         SubtlextClientMatchLeft,     0);
-  rb_define_method(klass, "right",        SubtlextClientMatchRight,    0);
-  rb_define_method(klass, "down",         SubtlextClientMatchDown,     0);
-  rb_define_method(klass, "focus",        SubtlextClientFocus,         0);
-  rb_define_method(klass, "has_focus?",   SubtlextClientFocusHas,      0);
-  rb_define_method(klass, "kill",         SubtlextClientKill,          0);
-  rb_define_method(klass, "to_str",       SubtlextClientToString,      0);
-  rb_define_method(klass, "gravity",      SubtlextClientGravity,       0);
-  rb_define_method(klass, "gravity=",     SubtlextClientGravitySet,    1);
-  rb_define_method(klass, "screen",       SubtlextClientScreen,        0);
-  rb_define_method(klass, "screen=",      SubtlextClientScreenSet,     1);  
-  rb_define_method(klass, "size",         SubtlextClientSize,          0);
-  rb_define_method(klass, "size=",        SubtlextClientSizeSet,       1);
-  rb_define_method(klass, "update",       SubtlextClientUpdate,        0);
-  rb_define_method(klass, "+",            SubtlextClientOperatorPlus,  1);
-  rb_define_method(klass, "-",            SubtlextClientOperatorMinus, 1);
-  rb_define_alias(klass, "to_s", "to_str");
+  /* Client id */
+  rb_define_attr(client,   "id",      1, 0); 
 
-  /* Class: gravity */
-  klass = rb_define_class_under(mod, "Gravity", rb_cObject);
-  rb_define_const(klass, "TopLeft",     INT2FIX(SUB_GRAVITY_TOP_LEFT));
-  rb_define_const(klass, "Top",         INT2FIX(SUB_GRAVITY_TOP));
-  rb_define_const(klass, "TopRight",    INT2FIX(SUB_GRAVITY_TOP_RIGHT));
-  rb_define_const(klass, "Left",        INT2FIX(SUB_GRAVITY_LEFT));
-  rb_define_const(klass, "Center",      INT2FIX(SUB_GRAVITY_CENTER));
-  rb_define_const(klass, "Right",       INT2FIX(SUB_GRAVITY_RIGHT));
-  rb_define_const(klass, "BottomLeft",  INT2FIX(SUB_GRAVITY_BOTTOM_LEFT));
-  rb_define_const(klass, "Bottom",      INT2FIX(SUB_GRAVITY_BOTTOM));
-  rb_define_const(klass, "BottomRight", INT2FIX(SUB_GRAVITY_BOTTOM_RIGHT));
+  /* Window id */
+  rb_define_attr(client,   "win",     1, 0);
 
-  /* Class: screen */
-  klass = rb_define_class_under(mod, "Screen", rb_cObject);
-  rb_define_attr(klass,   "id",      1, 0);
-  rb_define_attr(klass,   "x",       1, 0);
-  rb_define_attr(klass,   "y",       1, 0);
-  rb_define_attr(klass,   "width",   1, 0);
-  rb_define_attr(klass,   "height",  1, 0);
+  /* WM_CLASS */
+  rb_define_attr(client,   "klass",   1, 0);
 
-  rb_define_method(klass, "initialize",   SubtlextScreenInit,       1);
-  rb_define_method(klass, "clients",      SubtlextScreenClientList, 0);
-  rb_define_method(klass, "to_str",       SubtlextScreenToString,   0);
-  rb_define_alias(klass, "to_s", "to_str");
+  /* X position on screen */
+  rb_define_attr(client,   "x",       1, 0);
 
-  /* Class: subtle */
-  klass = rb_define_class_under(mod, "Subtle", rb_cObject);
-  rb_define_singleton_method(klass, "new", SubtlextSubtleNew,  -1);
-  rb_define_singleton_method(klass, "new2", SubtlextSubtleNew2, 1);
+  /* Y position on screen */
+  rb_define_attr(client,   "y",       1, 0);
 
-  rb_define_method(klass, "version",        SubtlextSubtleVersion,          0);
-  rb_define_method(klass, "display",        SubtlextSubtleDisplay,          0);
-  rb_define_method(klass, "views",          SubtlextSubtleViewList,         0);
-  rb_define_method(klass, "tags",           SubtlextSubtleTagList,          0);
-  rb_define_method(klass, "screens",        SubtlextSubtleScreenList,       0);
-  rb_define_method(klass, "sublets",        SubtlextSubtleSubletList,       0);
-  rb_define_method(klass, "clients",        SubtlextSubtleClientList,       0);
-  rb_define_method(klass, "find_view",      SubtlextSubtleViewFind,         1);
-  rb_define_method(klass, "find_tag",       SubtlextSubtleTagFind,          1);
-  rb_define_method(klass, "find_client",    SubtlextSubtleClientFind,       1);
-  rb_define_method(klass, "find_screen",    SubtlextSubtleScreenFind,       1);
-  rb_define_method(klass, "find_sublet",    SubtlextSubtleSubletFind,       1);
-  rb_define_method(klass, "focus_client",   SubtlextSubtleClientFocus,      1);
-  rb_define_method(klass, "focus_left",     SubtlextSubtleClientFocusLeft,  0);
-  rb_define_method(klass, "focus_down",     SubtlextSubtleClientFocusDown,  0);
-  rb_define_method(klass, "focus_up",       SubtlextSubtleClientFocusUp,    0);
-  rb_define_method(klass, "focus_right",    SubtlextSubtleClientFocusRight, 0);
-  rb_define_method(klass, "add_tag",        SubtlextSubtleTagAdd,           1);
-  rb_define_method(klass, "add_view",       SubtlextSubtleViewAdd,          1);
-  rb_define_method(klass, "del_client",     SubtlextSubtleClientDel,        1);
-  rb_define_method(klass, "del_sublet",     SubtlextSubtleSubletDel,        1);
-  rb_define_method(klass, "del_tag",        SubtlextSubtleTagDel,           1);
-  rb_define_method(klass, "del_view",       SubtlextSubtleViewDel,          1);
-  rb_define_method(klass, "current_view",   SubtlextSubtleViewCurrent,      0);
-  rb_define_method(klass, "current_client", SubtlextSubtleClientCurrent,    0);
-  rb_define_method(klass, "current_screen", SubtlextSubtleScreenCurrent,    0);
-  rb_define_method(klass, "running?",       SubtlextSubtleRunning,          0);
-  rb_define_method(klass, "reload",         SubtlextSubtleReload,           0);
-  rb_define_method(klass, "quit",           SubtlextSubtleQuit,             0);
-  rb_define_method(klass, "to_str",         SubtlextSubtleToString,         0);
-  rb_define_alias(klass, "to_s", "to_str");
+  /* Window width */
+  rb_define_attr(client,   "width",   1, 0);
 
-  /* Class: sublet */
-  klass = rb_define_class_under(mod, "Sublet", rb_cObject);
-  rb_define_attr(klass,   "name", 1, 0);
+  /* Window height */
+  rb_define_attr(client,   "height",  1, 0);
 
-  rb_define_method(klass, "initialize", SubtlextSubletInit,     1);
-  rb_define_method(klass, "update",     SubtlextSubletUpdate,   0);
-  rb_define_method(klass, "data",       SubtlextSubletData,     0);
-  rb_define_method(klass, "data=",      SubtlextSubletDataSet,  1);  
-  rb_define_method(klass, "to_s",       SubtlextSubletToString, 0);
+  /* WM_NAME */
+  rb_define_attr(client,   "name",    1, 0);
 
-  /* Class: tag */
-  klass = rb_define_class_under(mod, "Tag", rb_cObject);
-  rb_define_attr(klass,   "id",   1, 0);
-  rb_define_attr(klass,   "name", 1, 0);
+  /* Bitfield of window states */
+  rb_define_attr(client,   "flags",   1, 0);
 
-  rb_define_method(klass, "initialize", SubtlextTagInit,     1);
-  rb_define_method(klass, "taggings",   SubtlextTagTaggings, 0);
-  rb_define_method(klass, "save",       SubtlextTagSave,     0);
-  rb_define_method(klass, "to_str",     SubtlextTagToString, 0);
-  rb_define_alias(klass, "to_s", "to_str");
+  rb_define_method(client, "initialize",   SubtlextClientInit,          1);
+  rb_define_method(client, "views",        SubtlextClientViewList,      0);
+  rb_define_method(client, "tags",         SubtlextClientTagList,       0);
 
-  /* Class: view */
-  klass = rb_define_class_under(mod, "View", rb_cObject);
-  rb_define_attr(klass,   "id",   1, 0);
-  rb_define_attr(klass,   "win",  1, 0);
-  rb_define_attr(klass,   "name", 1, 0);
+  rb_define_method(client, "has_tag?",     SubtlextClientTagHas,        1);
+  rb_define_method(client, "tag",          SubtlextClientTagAdd,        1);
+  rb_define_method(client, "untag",        SubtlextClientTagDel,        1);
+  rb_define_method(client, "toggle_full",  SubtlextClientToggleFull,    0);
+  rb_define_method(client, "toggle_float", SubtlextClientToggleFloat,   0);
+  rb_define_method(client, "toggle_stick", SubtlextClientToggleStick,   0);
+  rb_define_method(client, "is_full?",     SubtlextClientStateFull,     0);
+  rb_define_method(client, "is_float?",    SubtlextClientStateFloat,    0);
+  rb_define_method(client, "is_stick?",    SubtlextClientStateStick,    0);
+  rb_define_method(client, "raise",        SubtlextClientRestackRaise,  0);
+  rb_define_method(client, "lower",        SubtlextClientRestackLower,  0);
+  rb_define_method(client, "up",           SubtlextClientMatchUp,       0);
+  rb_define_method(client, "left",         SubtlextClientMatchLeft,     0);
+  rb_define_method(client, "right",        SubtlextClientMatchRight,    0);
+  rb_define_method(client, "down",         SubtlextClientMatchDown,     0);
+  rb_define_method(client, "focus",        SubtlextClientFocus,         0);
+  rb_define_method(client, "has_focus?",   SubtlextClientFocusHas,      0);
+  rb_define_method(client, "kill",         SubtlextClientKill,          0);
+  rb_define_method(client, "to_str",       SubtlextClientToString,      0);
+  rb_define_method(client, "gravity",      SubtlextClientGravity,       0);
+  rb_define_method(client, "gravity=",     SubtlextClientGravitySet,    1);
+  rb_define_method(client, "screen",       SubtlextClientScreen,        0);
+  rb_define_method(client, "screen=",      SubtlextClientScreenSet,     1);  
+  rb_define_method(client, "size",         SubtlextClientSize,          0);
+  rb_define_method(client, "size=",        SubtlextClientSizeSet,       1);
+  rb_define_method(client, "update",       SubtlextClientUpdate,        0);
+  rb_define_method(client, "+",            SubtlextClientOperatorPlus,  1);
+  rb_define_method(client, "-",            SubtlextClientOperatorMinus, 1);
+  rb_define_alias(client, "to_s", "to_str");
 
-  rb_define_method(klass, "initialize", SubtlextViewInit,          1);
-  rb_define_method(klass, "clients",    SubtlextViewClientList,    0);
-  rb_define_method(klass, "tags",       SubtlextViewTagList,       0);
-  rb_define_method(klass, "has_tag?",   SubtlextViewTagHas,        1);
-  rb_define_method(klass, "tag",        SubtlextViewTagAdd,        1);
-  rb_define_method(klass, "untag",      SubtlextViewTagDel,        1);
-  rb_define_method(klass, "jump",       SubtlextViewJump,          0);
-  rb_define_method(klass, "current?",   SubtlextViewCurrent,       0);
-  rb_define_method(klass, "save",       SubtlextViewSave,          0);
-  rb_define_method(klass, "to_str",     SubtlextViewToString,      0);
-  rb_define_method(klass, "+",          SubtlextViewOperatorPlus,  1);
-  rb_define_method(klass, "-",          SubtlextViewOperatorMinus, 1);
-  rb_define_alias(klass, "to_s", "to_str");
+  /*
+   * Document-class: Subtlext::Gravity
+   *
+   * Gravity class with constants for tha different gravities
+   */
+
+  gravity = rb_define_class_under(mod, "Gravity", rb_cObject);
+
+  /* 1: Top-Left */
+  rb_define_const(gravity, "TopLeft",     INT2FIX(SUB_GRAVITY_TOP_LEFT));
+
+  /* 2: Top */
+  rb_define_const(gravity, "Top",         INT2FIX(SUB_GRAVITY_TOP));
+
+  /* 3: Top-Right */
+  rb_define_const(gravity, "TopRight",    INT2FIX(SUB_GRAVITY_TOP_RIGHT));
+
+  /* 4: Left */
+  rb_define_const(gravity, "Left",        INT2FIX(SUB_GRAVITY_LEFT));
+
+  /* 5: Center */
+  rb_define_const(gravity, "Center",      INT2FIX(SUB_GRAVITY_CENTER));
+
+  /* 6: Right */
+  rb_define_const(gravity, "Right",       INT2FIX(SUB_GRAVITY_RIGHT));
+
+  /* 7: Bottom-Left */
+  rb_define_const(gravity, "BottomLeft",  INT2FIX(SUB_GRAVITY_BOTTOM_LEFT));
+
+  /* 8: Bottom */
+  rb_define_const(gravity, "Bottom",      INT2FIX(SUB_GRAVITY_BOTTOM));
+
+  /* 9: Bottom-Right */
+  rb_define_const(gravity, "BottomRight", INT2FIX(SUB_GRAVITY_BOTTOM_RIGHT));
+
+  /*
+   * Document-class: Subtlext::Screen
+   *
+   * Screen class for interaction with screens
+   */
+
+  screen = rb_define_class_under(mod, "Screen", rb_cObject);
+
+  /* Screen id */
+  rb_define_attr(screen,   "id",      1, 0);
+
+  /* X offset */
+  rb_define_attr(screen,   "x",       1, 0);
+
+  /* Y offset */
+  rb_define_attr(screen,   "y",       1, 0);
+
+  /* Screen width */
+  rb_define_attr(screen,   "width",   1, 0);
+
+  /* Screen height */
+  rb_define_attr(screen,   "height",  1, 0);
+
+  rb_define_method(screen, "initialize",   SubtlextScreenInit,       1);
+  rb_define_method(screen, "clients",      SubtlextScreenClientList, 0);
+  rb_define_method(screen, "to_str",       SubtlextScreenToString,   0);
+  rb_define_alias(screen, "to_s", "to_str");
+
+  /*
+   * Document-class: Subtlext::Subtle
+   *
+   * Subtle class for interaction with the window manager
+   */
+
+  subtle = rb_define_class_under(mod, "Subtle", rb_cObject);
+  rb_define_singleton_method(subtle, "new", SubtlextSubtleNew,  -1);
+  rb_define_singleton_method(subtle, "new2", SubtlextSubtleNew2, 1);
+
+  rb_define_method(subtle, "version",        SubtlextSubtleVersion,          0);
+  rb_define_method(subtle, "display",        SubtlextSubtleDisplay,          0);
+  rb_define_method(subtle, "views",          SubtlextSubtleViewList,         0);
+  rb_define_method(subtle, "tags",           SubtlextSubtleTagList,          0);
+  rb_define_method(subtle, "screens",        SubtlextSubtleScreenList,       0);
+  rb_define_method(subtle, "sublets",        SubtlextSubtleSubletList,       0);
+  rb_define_method(subtle, "clients",        SubtlextSubtleClientList,       0);
+  rb_define_method(subtle, "find_view",      SubtlextSubtleViewFind,         1);
+  rb_define_method(subtle, "find_tag",       SubtlextSubtleTagFind,          1);
+  rb_define_method(subtle, "find_client",    SubtlextSubtleClientFind,       1);
+  rb_define_method(subtle, "find_screen",    SubtlextSubtleScreenFind,       1);
+  rb_define_method(subtle, "find_sublet",    SubtlextSubtleSubletFind,       1);
+  rb_define_method(subtle, "focus_client",   SubtlextSubtleClientFocus,      1);
+  rb_define_method(subtle, "focus_left",     SubtlextSubtleClientFocusLeft,  0);
+  rb_define_method(subtle, "focus_down",     SubtlextSubtleClientFocusDown,  0);
+  rb_define_method(subtle, "focus_up",       SubtlextSubtleClientFocusUp,    0);
+  rb_define_method(subtle, "focus_right",    SubtlextSubtleClientFocusRight, 0);
+  rb_define_method(subtle, "add_tag",        SubtlextSubtleTagAdd,           1);
+  rb_define_method(subtle, "add_view",       SubtlextSubtleViewAdd,          1);
+  rb_define_method(subtle, "del_client",     SubtlextSubtleClientDel,        1);
+  rb_define_method(subtle, "del_sublet",     SubtlextSubtleSubletDel,        1);
+  rb_define_method(subtle, "del_tag",        SubtlextSubtleTagDel,           1);
+  rb_define_method(subtle, "del_view",       SubtlextSubtleViewDel,          1);
+  rb_define_method(subtle, "current_view",   SubtlextSubtleViewCurrent,      0);
+  rb_define_method(subtle, "current_client", SubtlextSubtleClientCurrent,    0);
+  rb_define_method(subtle, "current_screen", SubtlextSubtleScreenCurrent,    0);
+  rb_define_method(subtle, "running?",       SubtlextSubtleRunning,          0);
+  rb_define_method(subtle, "reload",         SubtlextSubtleReload,           0);
+  rb_define_method(subtle, "quit",           SubtlextSubtleQuit,             0);
+  rb_define_method(subtle, "to_str",         SubtlextSubtleToString,         0);
+  rb_define_alias(subtle, "to_s", "to_str");
+
+  /*
+   * Document-class: Subtlext::Sublet
+   *
+   * Sublet class for interaction with sublets
+   */
+
+  sublet = rb_define_class_under(mod, "Sublet", rb_cObject);
+
+  /* Name of the sublet */
+  rb_define_attr(sublet,   "name", 1, 0);
+
+  rb_define_method(sublet, "initialize", SubtlextSubletInit,     1);
+  rb_define_method(sublet, "update",     SubtlextSubletUpdate,   0);
+  rb_define_method(sublet, "data",       SubtlextSubletData,     0);
+  rb_define_method(sublet, "data=",      SubtlextSubletDataSet,  1);  
+  rb_define_method(sublet, "to_str",     SubtlextSubletToString, 0);
+  rb_define_alias(sublet, "to_s", "to_str");
+
+  /*
+   * Document-class: Subtlext::Tag
+   *
+   * Tag class for interaction with tags
+   */
+
+  tag = rb_define_class_under(mod, "Tag", rb_cObject);
+
+  /* Tag id */
+  rb_define_attr(tag,   "id",   1, 0);
+
+  /* Name of the tag */
+  rb_define_attr(tag,   "name", 1, 0);
+
+  rb_define_method(tag, "initialize", SubtlextTagInit,     1);
+  rb_define_method(tag, "taggings",   SubtlextTagTaggings, 0);
+  rb_define_method(tag, "save",       SubtlextTagSave,     0);
+  rb_define_method(tag, "to_str",     SubtlextTagToString, 0);
+  rb_define_alias(tag, "to_s", "to_str");
+
+  /*
+   * Document-class: Subtlext::View
+   *
+   * View class for interaction with views
+   */
+
+  view = rb_define_class_under(mod, "View", rb_cObject);
+
+  /* View id */
+  rb_define_attr(view,   "id",   1, 0);
+
+  /* Window id */
+  rb_define_attr(view,   "win",  1, 0);
+
+  /* Name of the view */
+  rb_define_attr(view,   "name", 1, 0);
+
+  rb_define_method(view, "initialize", SubtlextViewInit,          1);
+  rb_define_method(view, "clients",    SubtlextViewClientList,    0);
+  rb_define_method(view, "tags",       SubtlextViewTagList,       0);
+  rb_define_method(view, "has_tag?",   SubtlextViewTagHas,        1);
+  rb_define_method(view, "tag",        SubtlextViewTagAdd,        1);
+  rb_define_method(view, "untag",      SubtlextViewTagDel,        1);
+  rb_define_method(view, "jump",       SubtlextViewJump,          0);
+  rb_define_method(view, "current?",   SubtlextViewCurrent,       0);
+  rb_define_method(view, "save",       SubtlextViewSave,          0);
+  rb_define_method(view, "to_str",     SubtlextViewToString,      0);
+  rb_define_method(view, "+",          SubtlextViewOperatorPlus,  1);
+  rb_define_method(view, "-",          SubtlextViewOperatorMinus, 1);
+  rb_define_alias(view, "to_s", "to_str");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

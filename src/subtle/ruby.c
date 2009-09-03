@@ -22,7 +22,7 @@
 #define CHAR2SYM(name) ID2SYM(rb_intern(name))
 #define SYM2CHAR(sym)  rb_id2name(SYM2ID(sym))
 
-static VALUE shelter = Qnil, sublet = Qnil, subtlext = Qnil; ///< Globals
+static VALUE shelter = Qnil, inherited = Qnil, subtlext = Qnil; ///< Globals
 
 /* Typedef {{{ */
 typedef struct rubygrabs_t
@@ -80,6 +80,10 @@ RubyFilter(const struct dirent *entry)
 } /* }}} */
 
 /* RubyDispatcher {{{ */
+/*
+ * Dispatcher for Subtlext commands - internal use only
+ */
+
 static VALUE  
 RubyDispatcher(int argc, 
   VALUE *argv, 
@@ -584,6 +588,15 @@ RubySubtleViewAdd(VALUE self,
 } /* }}} */
 
 /* RubySubletNew {{{ */
+/*
+ * call-seq: new -> Subtle::Sublet
+ *
+ * Create new Sublet object
+ *
+ *  tag = Subtle::Subtle.new
+ *  => #<Subtle::Sublet:xxx>
+ */
+
 static VALUE
 RubySubletNew(VALUE self)
 {
@@ -621,16 +634,34 @@ RubySubletNew(VALUE self)
 } /* }}} */
 
 /* RubySubletInherited {{{ */
+/*
+ * call-seq: inherited(recv) -> nil
+ *
+ * Callback for inheritance - internal use only
+ *
+ *  tag = Subtle::Subtle.new
+ *  => #<Subtle::Sublet:xxx>
+ */
+
 static VALUE
 RubySubletInherited(VALUE self,
   VALUE recv)
 {
-  sublet = recv; ///< Store inherited sublet
+  inherited = recv; ///< Store inherited sublet
 
   return Qnil;
 } /* }}} */
 
 /* RubySubletInterval {{{ */
+/*
+ * call-seq: interval -> Fixnum
+ *
+ * Get interval time of Sublet
+ *
+ *  puts sublet.interval
+ *  => 60
+ */
+
 static VALUE
 RubySubletInterval(VALUE self)
 {
@@ -642,6 +673,15 @@ RubySubletInterval(VALUE self)
 } /* }}} */
 
 /* RubySubletIntervalSet {{{ */
+/*
+ * call-seq: interval=(fixnum) -> nil
+ *
+ * Set interval time of Sublet
+ *
+ *  sublet.interval = 60
+ *  => nil
+ */
+
 static VALUE
 RubySubletIntervalSet(VALUE self,
   VALUE value)
@@ -658,10 +698,19 @@ RubySubletIntervalSet(VALUE self,
         }
     }
 
-  return Qfalse;
+  return Qnil;
 } /* }}} */
 
 /* RubySubletData {{{ */
+/*
+ * call-seq: data -> String or nil
+ *
+ * Get data of Sublet
+ *
+ *  puts sublet.data
+ *  => "subtle"
+ */
+
 static VALUE
 RubySubletData(VALUE self)
 {
@@ -686,25 +735,44 @@ RubySubletData(VALUE self)
 } /* }}} */
 
 /* RubySubletDataSet {{{ */
+/*
+ * call-seq: data=(string) -> nil
+ *
+ * Set data of Sublet
+ *
+ *  sublet.data = "subtle"
+ *  => nil
+ */
+
 static VALUE
 RubySubletDataSet(VALUE self,
   VALUE value)
 {
-  VALUE ret = Qfalse;
   SubSublet *s = NULL;
   Data_Get_Struct(self, SubSublet, s);
 
   if(s && RTEST(value) && T_STRING == rb_type(value)) ///< Check value type
     {
       subSubletSetData(s, RSTRING_PTR(value)); 
-      ret = Qtrue;
     }
   else rb_raise(rb_eArgError, "Unknown value type");
 
-  return ret;
+  return Qnil;
 } /* }}} */
 
 /* RubySubletWatch {{{ */
+/*
+ * call-seq: watch(source) -> true or false
+ *
+ * Add watch file via inotify or socket
+ *
+ *  watch "/path/to/file"
+ *  => true
+ *
+ *  @socket = TCPSocket("localhost", 6600)
+ *  watch @socket
+ */
+
 static VALUE
 RubySubletWatch(VALUE self,
   VALUE value)
@@ -753,11 +821,20 @@ RubySubletWatch(VALUE self,
 #endif /* HAVE_SYS_INOTIFY_H */
       else subSharedLogWarn("Failed handling unknown value type\n");
     }
-  return ret;
 
+  return ret;
 } /* }}} */
 
 /* RubySubletUnwatch {{{ */
+/*
+ * call-seq: unwatch -> true or false
+ *
+ * Remove watch from Sublet
+ *
+ *  unwatch
+ *  => true
+ */
+
 static VALUE
 RubySubletUnwatch(VALUE self)
 {
@@ -795,6 +872,15 @@ RubySubletUnwatch(VALUE self)
 } /* }}} */
 
 /* RubyIconInit {{{ */
+/*
+ * call-seq: new(path) -> Subtle::Icon
+ *
+ * Create new Icon object
+ *
+ *  tag = Subtle::Icon.new("/path/to/icon")
+ *  => #<Subtle::Icon:xxx>
+ */
+
 static VALUE
 RubyIconInit(VALUE self,
   VALUE path)
@@ -816,6 +902,15 @@ RubyIconInit(VALUE self,
 } /* }}} */
 
 /* RubyIconToString {{{ */
+/*
+ * call-seq: to_str -> String
+ *
+ * Convert Icon object to String
+ *
+ *  puts icon
+ *  => "<>!4<>" 
+ */
+
 static VALUE
 RubyIconToString(VALUE self)
 {
@@ -829,6 +924,15 @@ RubyIconToString(VALUE self)
 } /* }}} */
 
 /* RubyIconOperatorPlus {{{ */
+/*
+ * call-seq: +(string) -> String
+ *
+ * Convert self to String and add String
+ *
+ *  icon + "subtle"
+ *  => "<>!4<>subtle"
+ */
+
 static VALUE
 RubyIconOperatorPlus(VALUE self,
   VALUE value)
@@ -837,6 +941,15 @@ RubyIconOperatorPlus(VALUE self,
 } /* }}} */
 
 /* RubyColorInit {{{ */
+/*
+ * call-seq: new(color) -> Subtle::Color
+ *
+ * Create new Color object
+ *
+ *  tag = Subtle::Color.new("#336699")
+ *  => #<Subtle::Color:xxx>
+ */
+
 static VALUE
 RubyColorInit(VALUE self,
   VALUE color)
@@ -858,6 +971,15 @@ RubyColorInit(VALUE self,
 } /* }}} */
 
 /* RubyColorToString {{{ */
+/*
+ * call-seq: to_str -> String
+ *
+ * Convert Color object to String
+ *
+ *  puts color
+ *  => "<>123456789<>" 
+ */
+
 static VALUE
 RubyColorToString(VALUE self)
 {
@@ -871,6 +993,15 @@ RubyColorToString(VALUE self)
 } /* }}} */
 
 /* RubyColorOperatorPlus {{{ */
+/*
+ * call-seq: +(string) -> String
+ *
+ * Convert self to String and add String
+ *
+ *  color + "subtle"
+ *  => "<>123456789<>subtle"
+ */
+
 static VALUE
 RubyColorOperatorPlus(VALUE self,
   VALUE value)
@@ -1204,7 +1335,7 @@ RubyWrapRemove(VALUE name)
 void
 subRubyInit(void)
 {
-  VALUE mod = Qnil, klass = Qnil;
+  VALUE mod = Qnil, sublet = Qnil, icon = Qnil, color = Qnil;
 
   RUBY_INIT_STACK;
   ruby_init();
@@ -1213,35 +1344,61 @@ subRubyInit(void)
 
   rb_define_method(rb_mKernel, "method_missing", RubyDispatcher, -1); ///< Subtlext dispatcher
 
-  /* Module: subtle */
+  /*
+   * Document-class: Subtle 
+   *
+   * Subtle is the module for internal use in subtle for sublets.
+   */
+
   mod = rb_define_module("Subtle");
 
-  /* Class: sublet */
-  klass = rb_define_class_under(mod, "Sublet", rb_cObject);
-  rb_define_singleton_method(klass, "new",       RubySubletNew,       0);
-  rb_define_singleton_method(klass, "inherited", RubySubletInherited, 1);
-  rb_define_method(klass, "interval",  RubySubletInterval,    0);
-  rb_define_method(klass, "interval=", RubySubletIntervalSet, 1);
-  rb_define_method(klass, "data",      RubySubletData,        0);
-  rb_define_method(klass, "data=",     RubySubletDataSet,     1);
-  rb_define_method(klass, "watch",     RubySubletWatch,       1);
-  rb_define_method(klass, "unwatch",   RubySubletUnwatch,     0);
+  /*
+   * Document-class: Subtle::Sublet
+   *
+   * Sublet class for interaction with sublets
+   */
 
-  /* Class: icon */
-  klass = rb_define_class_under(mod, "Icon", rb_cObject);
-  rb_define_attr(klass, "id", 1, 0);
-  rb_define_method(klass, "initialize", RubyIconInit,         1);
-  rb_define_method(klass, "to_str",     RubyIconToString,     0);
-  rb_define_method(klass, "+",          RubyIconOperatorPlus, 1);
-  rb_define_alias(klass, "to_s", "to_str");
+  sublet = rb_define_class_under(mod, "Sublet", rb_cObject);
+  rb_define_singleton_method(sublet, "new",       RubySubletNew,       0);
+  rb_define_singleton_method(sublet, "inherited", RubySubletInherited, 1);
+  rb_define_method(sublet, "interval",  RubySubletInterval,    0);
+  rb_define_method(sublet, "interval=", RubySubletIntervalSet, 1);
+  rb_define_method(sublet, "data",      RubySubletData,        0);
+  rb_define_method(sublet, "data=",     RubySubletDataSet,     1);
+  rb_define_method(sublet, "watch",     RubySubletWatch,       1);
+  rb_define_method(sublet, "unwatch",   RubySubletUnwatch,     0);
 
-   /* Class: color */
-  klass = rb_define_class_under(mod, "Color", rb_cObject);
-  rb_define_attr(klass, "pixel", 1, 0);
-  rb_define_method(klass, "initialize", RubyColorInit,         1);
-  rb_define_method(klass, "to_str",     RubyColorToString,     0);
-  rb_define_method(klass, "+",          RubyColorOperatorPlus, 1);
-  rb_define_alias(klass, "to_s", "to_str");
+  /*
+   * Document-class: Subtle::Icon
+   *
+   * Icon class for interaction with icons
+   */
+
+  icon = rb_define_class_under(mod, "Icon", rb_cObject);
+
+  /* Icon id */
+  rb_define_attr(icon, "id", 1, 0);
+
+  rb_define_method(icon, "initialize", RubyIconInit,         1);
+  rb_define_method(icon, "to_str",     RubyIconToString,     0);
+  rb_define_method(icon, "+",          RubyIconOperatorPlus, 1);
+  rb_define_alias(icon, "to_s", "to_str");
+
+  /*
+   * Document-class: Subtle::Color
+   *
+   * Color class for interaction with colors
+   */
+
+  color = rb_define_class_under(mod, "Color", rb_cObject);
+
+  /* Pixel number */
+  rb_define_attr(color, "pixel", 1, 0);
+
+  rb_define_method(color, "initialize", RubyColorInit,         1);
+  rb_define_method(color, "to_str",     RubyColorToString,     0);
+  rb_define_method(color, "+",          RubyColorOperatorPlus, 1);
+  rb_define_alias(color, "to_s", "to_str");
 
   /* Bypassing garbage collection */
   shelter = rb_ary_new();
@@ -1290,13 +1447,13 @@ subRubyLoadSublet(const char *file)
 
   /* Carefully load sublet */
   rb_load_protect(rb_str_new2(buf), 0, &state); ///< Load sublet
-  if(0 == state && Qnil != sublet)
+  if(0 == state && Qnil != inherited)
     {
       VALUE self = Qnil;
-      char *name = (char *)rb_class2name((ID)sublet);
+      char *name = (char *)rb_class2name((ID)inherited);
 
       /* Instantiate sublet */
-      if(Qnil != (self = rb_funcall(sublet, rb_intern("new"), 0, NULL)))
+      if(Qnil != (self = rb_funcall(inherited, rb_intern("new"), 0, NULL)))
         {
           SubSublet *s = NULL;
           Data_Get_Struct(self, SubSublet, s);
@@ -1318,7 +1475,7 @@ subRubyLoadSublet(const char *file)
         }
       else subSharedLogWarn("Failed instantiating sublet `%s'\n", name);
 
-      sublet = Qnil;
+      inherited = Qnil;
     }
   else RubyPerror(True, False, "Failed loading sublet `%s'", buf);
 } /* }}} */
