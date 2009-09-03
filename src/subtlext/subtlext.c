@@ -44,6 +44,7 @@ static VALUE SubtlextClientUpdate(VALUE self);
 static VALUE
 SubtlextFind(int type,
   VALUE value,
+  int exception,
   int create)
 {
   int id = -1;
@@ -96,7 +97,7 @@ SubtlextFind(int type,
                       }
                     else 
                       {
-                        rb_raise(rb_eStandardError, "Failed finding screen");
+                        if(exception) rb_raise(rb_eStandardError, "Failed finding screen");
 
                         return Qnil;
                       }
@@ -145,7 +146,8 @@ SubtlextFind(int type,
             return obj;
           }
 
-        rb_raise(rb_eStandardError, "Failed finding %s", SUB_TYPE_TAG == type ? "tag" : "view");
+        if(exception) rb_raise(rb_eStandardError, "Failed finding %s", SUB_TYPE_TAG == type ? "tag" : "view");
+
         return Qnil;
       case T_OBJECT:
       case T_CLASS:
@@ -165,8 +167,9 @@ SubtlextFind(int type,
                 else id = subSharedViewFind(RSTRING_PTR(name), &win);
                 if(-1 == id)
                   {
-                    rb_raise(rb_eStandardError, "Failed updating %s", 
+                    if(exception) rb_raise(rb_eStandardError, "Failed updating %s", 
                       SUB_TYPE_TAG == type ? "tag" : "view");
+
                     return Qnil;
                   }                
 
@@ -179,7 +182,8 @@ SubtlextFind(int type,
           }
     }
 
-  rb_raise(rb_eArgError, "Unknown value type");
+  if(exception) rb_raise(rb_eArgError, "Unknown value type");
+
   return Qnil;
 } /* }}} */
 
@@ -317,7 +321,7 @@ SubtlextTag(int action,
   VALUE tag = Qnil;
 
   /* Find tag */
-  if(Qnil != (tag = SubtlextFind(SUB_TYPE_TAG, value, True)))
+  if(Qnil != (tag = SubtlextFind(SUB_TYPE_TAG, value, True, True)))
     {
       VALUE oid = Qnil, tid = Qnil;
 
@@ -352,7 +356,7 @@ SubtlextTagHas(VALUE self,
   VALUE tag = Qnil, ret = Qfalse;
 
   /* Find tag */
-  if(Qnil != (tag = SubtlextFind(SUB_TYPE_TAG, value, False)))
+  if(Qnil != (tag = SubtlextFind(SUB_TYPE_TAG, value, False, False)))
     {
       int id = 0;
       Window win = 0;
@@ -370,7 +374,6 @@ SubtlextTagHas(VALUE self,
           free(tags);
         }
     }
-  else rb_raise(rb_eArgError, "Failed finding tag");
 
   return ret;
 } /* }}} */
@@ -761,7 +764,7 @@ SubtlextClientScreen(VALUE self)
 {
   VALUE screen = rb_iv_get(self, "@screen");
 
-  return SubtlextFind(SUB_TYPE_SCREEN, screen, False);
+  return SubtlextFind(SUB_TYPE_SCREEN, screen, True, False);
 } /* }}} */
 
 /* SubtlextClientScreenSet {{{ */
@@ -1124,7 +1127,7 @@ static VALUE
 SubtlextSubtleTagFind(VALUE self,
   VALUE name)
 {
-  return SubtlextFind(SUB_TYPE_TAG, name, False);
+  return SubtlextFind(SUB_TYPE_TAG, name, True, False);
 } /* }}} */
 
 /* SubtlextSubtleTagAdd {{{ */
@@ -1132,7 +1135,7 @@ static VALUE
 SubtlextSubtleTagAdd(VALUE self,
   VALUE value)
 {
-  return SubtlextFind(SUB_TYPE_TAG, value, True); ///< Find or create tag
+  return SubtlextFind(SUB_TYPE_TAG, value, True, True); ///< Find or create tag
 } /* }}} */
 
 /* SubtlextSubtleTagDel {{{ */
@@ -1142,7 +1145,7 @@ SubtlextSubtleTagDel(VALUE self,
 {
   VALUE tag = Qnil;
 
-  if(Qnil != (tag = SubtlextFind(SUB_TYPE_TAG, value, False)))
+  if(Qnil != (tag = SubtlextFind(SUB_TYPE_TAG, value, True, False)))
     {
       VALUE id = Qnil;
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
@@ -1154,7 +1157,6 @@ SubtlextSubtleTagDel(VALUE self,
 
       subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_KILL", data, True);  
     }
-  else rb_raise(rb_eStandardError, "Failed finding tag");
 
   return Qnil;
 } /* }}} */
@@ -1406,7 +1408,7 @@ static VALUE
 SubtlextSubtleViewFind(VALUE self,
   VALUE name)
 {
-  return SubtlextFind(SUB_TYPE_VIEW, name, False);
+  return SubtlextFind(SUB_TYPE_VIEW, name, True, False);
 } /* }}} */
 
 /* SubtlextSubtleViewAdd {{{ */
@@ -1414,7 +1416,7 @@ static VALUE
 SubtlextSubtleViewAdd(VALUE self,
   VALUE value)
 {
-  return SubtlextFind(SUB_TYPE_VIEW, value, True); ///< Find or create view
+  return SubtlextFind(SUB_TYPE_VIEW, value, True, True); ///< Find or create view
 } /* }}} */
 
 /* SubtlextSubtleViewDel {{{ */
@@ -1424,7 +1426,7 @@ SubtlextSubtleViewDel(VALUE self,
 {
   VALUE view = Qnil;
 
-  if(Qnil != (view = SubtlextFind(SUB_TYPE_VIEW, value, False)))
+  if(Qnil != (view = SubtlextFind(SUB_TYPE_VIEW, value, True, False)))
     {
       VALUE id = Qnil;
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
@@ -1496,7 +1498,7 @@ SubtlextSubtleScreenCurrent(VALUE self)
       free(screen);
     }
 
-  return SubtlextFind(SUB_TYPE_SCREEN, INT2FIX(num), False);
+  return SubtlextFind(SUB_TYPE_SCREEN, INT2FIX(num), True, False);
 } /* }}} */
 
 /* SubtlextSubtleScreenFind {{{ */
@@ -1504,7 +1506,7 @@ static VALUE
 SubtlextSubtleScreenFind(VALUE self,
   VALUE id)
 {
-  return SubtlextFind(SUB_TYPE_SCREEN, id, False);
+  return SubtlextFind(SUB_TYPE_SCREEN, id, True, False);
 } /* }}} */
 
 /* SubtlextScreenToString {{{ */
@@ -1634,7 +1636,7 @@ SubtlextTagInit(VALUE self,
 static VALUE
 SubtlextTagSave(VALUE self)
 {
-  return SubtlextFind(SUB_TYPE_TAG, self, True);
+  return SubtlextFind(SUB_TYPE_TAG, self, True, True);
 } /* }}} */
 
 /* SubtlextTagTagggings {{{ */
@@ -1869,7 +1871,7 @@ SubtlextViewCurrent(VALUE self)
 static VALUE
 SubtlextViewSave(VALUE self)
 {
-  return SubtlextFind(SUB_TYPE_VIEW, self, True);
+  return SubtlextFind(SUB_TYPE_VIEW, self, True, True);
 } /* }}} */
 
 /* SubtlextViewToString {{{ */
