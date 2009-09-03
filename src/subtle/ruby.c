@@ -721,10 +721,10 @@ static VALUE
 RubyIconToString(VALUE self)
 {
   char buf[12];
-  VALUE id = rb_iv_get(self, "@id");
+  int id = FIX2INT(rb_iv_get(self, "@id"));
 
   snprintf(buf, sizeof(buf), "%s!%d%s",
-    SEPARATOR, FIX2INT(id), SEPARATOR);
+    SEPARATOR, id, SEPARATOR);
 
   return rb_str_new2(buf);
 } /* }}} */
