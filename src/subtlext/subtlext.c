@@ -313,15 +313,15 @@ SubtlextMatch(VALUE self,
 
 /* SubtlextTag {{{ */
 static VALUE
-SubtlextTag(int action,
-  int type,
+SubtlextTag(int type,
+  int action,
   VALUE self,
   VALUE value)
 {
   VALUE tag = Qnil;
 
   /* Find tag */
-  if(Qnil != (tag = SubtlextFind(SUB_TYPE_TAG, value, True, True)))
+  if(Qnil != (tag = SubtlextFind(SUB_TYPE_TAG, value, True, False)))
     {
       VALUE oid = Qnil, tid = Qnil;
 
@@ -334,7 +334,7 @@ SubtlextTag(int action,
 
           data.l[0] = FIX2LONG(oid);
           data.l[1] = FIX2LONG(tid);
-          data.l[2] = type;
+          data.l[2] = SUB_TYPE_CLIENT == type ? 0 : 1; ///< Get type
 
           subSharedMessage(DefaultRootWindow(display),
             SUB_ACTION_TAG == action ? "SUBTLE_WINDOW_TAG" : "SUBTLE_WINDOW_UNTAG",
@@ -971,6 +971,23 @@ SubtlextScreenClientList(VALUE self)
   return array;
 } /* }}} */
 
+/* SubtlextScreenToString {{{ */
+static VALUE
+SubtlextScreenToString(VALUE self)
+{
+  char buf[256];
+  int x = 0, y = 0, width = 0, height = 0;
+
+  x      = FIX2INT(rb_iv_get(self, "@x"));
+  y      = FIX2INT(rb_iv_get(self, "@y"));
+  width  = FIX2INT(rb_iv_get(self, "@width"));
+  height = FIX2INT(rb_iv_get(self, "@height"));
+
+  snprintf(buf, sizeof(buf), "%dx%d+%d+%d", x, y, width, height);
+
+  return rb_str_new2(buf);
+} /* }}} */
+
 /* SubtlextSubtleKill {{{ */
 static void
 SubtlextSubtleKill(void *data)
@@ -1509,23 +1526,6 @@ SubtlextSubtleScreenFind(VALUE self,
   return SubtlextFind(SUB_TYPE_SCREEN, id, True, False);
 } /* }}} */
 
-/* SubtlextScreenToString {{{ */
-static VALUE
-SubtlextScreenToString(VALUE self)
-{
-  char buf[256];
-  int x = 0, y = 0, width = 0, height = 0;
-
-  x      = FIX2INT(rb_iv_get(self, "@x"));
-  y      = FIX2INT(rb_iv_get(self, "@y"));
-  width  = FIX2INT(rb_iv_get(self, "@width"));
-  height = FIX2INT(rb_iv_get(self, "@height"));
-
-  snprintf(buf, sizeof(buf), "%dx%d+%d+%d", x, y, width, height);
-
-  return rb_str_new2(buf);
-} /* }}} */
-
 /* SubtlextSubtleToString {{{ */
 static VALUE
 SubtlextSubtleToString(VALUE self)
@@ -1572,15 +1572,11 @@ SubtlextSubletUpdate(VALUE self)
   return Qnil;
 } /* }}} */
 
-/* SubtlextDataScreen {{{ */
+/* SubtlextSubletData {{{ */
 static VALUE
 SubtlextSubletData(VALUE self)
 {
   VALUE id = rb_iv_get(self, "@id");
-
-  //gravity = (int *)subSharedPropertyGet(win, XA_STRING,
-    //"SUBTLE_SUBLET_DATA", NULL);
-   
       
   return RTEST(id) ? id : Qnil;
 } /* }}} */
@@ -1812,7 +1808,7 @@ SubtlextViewTagList(VALUE self)
   return Qnil;
 } /* }}} */
 
-/* SubtlextClientTagHas {{{ */
+/* SubtlextViewTagHas {{{ */
 static VALUE
 SubtlextViewTagHas(VALUE self,
   VALUE value)
