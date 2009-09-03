@@ -337,9 +337,11 @@ EventMessage(XClientMessageEvent *ev)
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_TAG_NEW: /* {{{ */
-            t = subTagNew(ev->data.b, NULL); 
-            subArrayPush(subtle->tags, (void *)t);
-            subTagPublish();
+            if(ev->data.b && (t = subTagNew(ev->data.b, NULL)))
+              {
+                subArrayPush(subtle->tags, (void *)t);
+                subTagPublish();
+              }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_TAG_KILL: /* {{{ */
             if((t = TAG(subArrayGet(subtle->tags, (int)ev->data.l[0]))))
@@ -360,9 +362,8 @@ EventMessage(XClientMessageEvent *ev)
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_VIEW_NEW: /* {{{ */
-            if(ev->data.b)
-              { 
-                v = subViewNew(ev->data.b, NULL); 
+            if(ev->data.b && (v = subViewNew(ev->data.b, NULL)))
+              {
                 subArrayPush(subtle->views, (void *)v);
                 subClientUpdate(-1); ///< Grow
                 subViewUpdate();
