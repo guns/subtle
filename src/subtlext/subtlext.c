@@ -309,10 +309,10 @@ SubtlextMatch(VALUE self,
 
 /* SubtlextTag {{{ */
 static VALUE
-SubtlextTag(VALUE self,
-  VALUE value,
-  int action,
-  int type)
+SubtlextTag(int action,
+  int type,
+  VALUE self,
+  VALUE value)
 {
   VALUE tag = Qnil;
 
@@ -342,6 +342,37 @@ SubtlextTag(VALUE self,
 
   rb_raise(rb_eArgError, "Unknown value type");
   return Qfalse;
+} /* }}} */
+
+/* SubtlextTagHas {{{ */
+static VALUE
+SubtlextTagHas(VALUE self,
+  VALUE value)
+{
+  VALUE tag = Qnil, ret = Qfalse;
+
+  /* Find tag */
+  if(Qnil != (tag = SubtlextFind(SUB_TYPE_TAG, value, False)))
+    {
+      int id = 0;
+      Window win = 0;
+      unsigned long *tags = NULL;
+
+      win = NUM2LONG(rb_iv_get(self, "@win"));
+      id  = FIX2INT(rb_iv_get(tag, "@id"));
+
+      if((tags = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, 
+        "SUBTLE_WINDOW_TAGS", NULL)))
+        {
+          if(*tags & (1L << (id + 1)))
+            ret = Qtrue;
+          
+          free(tags);
+        }
+    }
+  else rb_raise(rb_eArgError, "Failed finding tag");
+
+  return ret;
 } /* }}} */
 
 /* SubtlextScreens {{{ */
@@ -507,12 +538,20 @@ SubtlextClientTagList(VALUE self)
   return array;
 } /* }}} */
 
+/* SubtlextClientTagHas {{{ */
+static VALUE
+SubtlextClientTagHas(VALUE self,
+  VALUE value)
+{
+  return SubtlextTagHas(self, value);
+} /* }}} */
+
 /* SubtlextClientTagAdd {{{ */
 static VALUE
 SubtlextClientTagAdd(VALUE self,
   VALUE value)
 {
-  return SubtlextTag(self, value, SUB_ACTION_TAG, SUB_TYPE_CLIENT);
+  return SubtlextTag(SUB_TYPE_CLIENT, SUB_ACTION_TAG, self, value);
 } /* }}} */
 
 /* SubtlextClientTagDel {{{ */
@@ -520,7 +559,7 @@ static VALUE
 SubtlextClientTagDel(VALUE self,
   VALUE value)
 {
-  return SubtlextTag(self, value, SUB_ACTION_UNTAG, SUB_TYPE_CLIENT);
+  return SubtlextTag(SUB_TYPE_CLIENT, SUB_ACTION_UNTAG, self, value);
 } /* }}} */
 
 /* SubtlextClientStateFull {{{ */
@@ -1771,12 +1810,20 @@ SubtlextViewTagList(VALUE self)
   return Qnil;
 } /* }}} */
 
+/* SubtlextClientTagHas {{{ */
+static VALUE
+SubtlextViewTagHas(VALUE self,
+  VALUE value)
+{
+  return SubtlextTagHas(self, value);
+} /* }}} */
+
 /* SubtlextViewTagAdd {{{ */
 static VALUE
 SubtlextViewTagAdd(VALUE self,
   VALUE value)
 {
-  return SubtlextTag(self, value, SUB_ACTION_TAG, SUB_TYPE_VIEW);
+  return SubtlextTag(SUB_TYPE_VIEW, SUB_ACTION_TAG, self, value);
 } /* }}} */
 
 /* SubtlextViewTagDel {{{ */
@@ -1784,7 +1831,7 @@ static VALUE
 SubtlextViewTagDel(VALUE self,
   VALUE value)
 {  
-  return SubtlextTag(self, value, SUB_ACTION_UNTAG, SUB_TYPE_VIEW);
+  return SubtlextTag(SUB_TYPE_VIEW, SUB_ACTION_UNTAG, self, value);
 } /* }}} */
 
 /* SubtlextViewJump {{{ */
@@ -1877,6 +1924,8 @@ Init_subtlext(void)
   rb_define_method(klass, "initialize",   SubtlextClientInit,          1);
   rb_define_method(klass, "views",        SubtlextClientViewList,      0);
   rb_define_method(klass, "tags",         SubtlextClientTagList,       0);
+
+  rb_define_method(klass, "has_tag?",     SubtlextClientTagHas,        1);
   rb_define_method(klass, "tag",          SubtlextClientTagAdd,        1);
   rb_define_method(klass, "untag",        SubtlextClientTagDel,        1);
   rb_define_method(klass, "toggle_full",  SubtlextClientToggleFull,    0);
@@ -1892,7 +1941,7 @@ Init_subtlext(void)
   rb_define_method(klass, "right",        SubtlextClientMatchRight,    0);
   rb_define_method(klass, "down",         SubtlextClientMatchDown,     0);
   rb_define_method(klass, "focus",        SubtlextClientFocus,         0);
-  rb_define_method(klass, "focus?",       SubtlextClientFocusHas,      0);
+  rb_define_method(klass, "has_focus?",   SubtlextClientFocusHas,      0);
   rb_define_method(klass, "kill",         SubtlextClientKill,          0);
   rb_define_method(klass, "to_str",       SubtlextClientToString,      0);
   rb_define_method(klass, "gravity",      SubtlextClientGravity,       0);
@@ -1998,6 +2047,7 @@ Init_subtlext(void)
   rb_define_method(klass, "initialize", SubtlextViewInit,          1);
   rb_define_method(klass, "clients",    SubtlextViewClientList,    0);
   rb_define_method(klass, "tags",       SubtlextViewTagList,       0);
+  rb_define_method(klass, "has_tag?",   SubtlextViewTagHas,        1);
   rb_define_method(klass, "tag",        SubtlextViewTagAdd,        1);
   rb_define_method(klass, "untag",      SubtlextViewTagDel,        1);
   rb_define_method(klass, "jump",       SubtlextViewJump,          0);
