@@ -1473,15 +1473,14 @@ static VALUE
 SubtlextScreenToString(VALUE self)
 {
   char buf[256];
-  VALUE x = Qnil, y = Qnil, width = Qnil, height = Qnil;
+  int x = 0, y = 0, width = 0, height = 0;
 
-  x      = rb_iv_get(self, "@x");
-  y      = rb_iv_get(self, "@y");
-  width  = rb_iv_get(self, "@width");
-  height = rb_iv_get(self, "@height");
+  x      = FIX2INT(rb_iv_get(self, "@x"));
+  y      = FIX2INT(rb_iv_get(self, "@y"));
+  width  = FIX2INT(rb_iv_get(self, "@width"));
+  height = FIX2INT(rb_iv_get(self, "@height"));
 
-  snprintf(buf, sizeof(buf), "%dx%d+%d+%d", FIX2INT(x), FIX2INT(y),
-    FIX2INT(width), FIX2INT(height));
+  snprintf(buf, sizeof(buf), "%dx%d+%d+%d", x, y, width, height);
 
   return rb_str_new2(buf);
 } /* }}} */
