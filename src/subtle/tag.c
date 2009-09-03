@@ -49,12 +49,7 @@ subTagNew(char *name,
   assert(name);
 
   /* Check if tag already exists */
-  if((t = TagFind(name)))
-    {
-      subSharedLogWarn("Multiple definition of tag `%s'\n", name);
-
-      return NULL;
-    }
+  if((t = TagFind(name))) return NULL;
 
   t = TAG(subSharedMemoryAlloc(1, sizeof(SubTag)));
   t->name  = strdup(name);
