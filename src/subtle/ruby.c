@@ -693,8 +693,14 @@ RubySubletIntervalSet(VALUE self,
     {
       switch(rb_type(value))
         {
-          case T_FIXNUM: s->interval = FIX2INT(value); return Qtrue;
-          default: subSharedLogWarn("Unknown value type\n");
+          case T_FIXNUM: 
+            s->interval = FIX2INT(value); 
+            s->time     = subSharedTime() + s->interval;
+
+            if(0 < s->interval) s->flags |= SUB_SUBLET_INTERVAL;
+            else s->flags &= ~SUB_SUBLET_INTERVAL;
+            break;
+          default: rb_raise(rb_eArgError, "Unknown value type");
         }
     }
 
@@ -788,11 +794,11 @@ RubySubletWatch(VALUE self,
         {
           int fd = FIX2INT(rb_funcall(value, rb_intern("fileno"), 0, NULL)); ///< Get socket file number
 
-          s->flags    |= SUB_SUBLET_SOCKET;
-          s->interval  = fd;
+          s->flags |= SUB_SUBLET_SOCKET;
+          s->watch  = fd;
 
-          XSaveContext(subtle->dpy, subtle->panels.sublets.win, s->interval, (void *)s);
-          subEventWatchAdd(fd);
+          XSaveContext(subtle->dpy, subtle->panels.sublets.win, s->watch, (void *)s);
+          subEventWatchAdd(s->watch);
 
           /* Set nonblocking */
           if(-1 == (flags = fcntl(fd, F_GETFL, 0))) flags = 0;
@@ -806,11 +812,11 @@ RubySubletWatch(VALUE self,
           char *watch = RSTRING_PTR(value);
 
           /* Create inotify watch */
-          if(0 < (s->interval = inotify_add_watch(subtle->notify, watch, IN_MODIFY)))
+          if(0 < (s->watch = inotify_add_watch(subtle->notify, watch, IN_MODIFY)))
             {
               s->flags |= SUB_SUBLET_INOTIFY;
 
-              XSaveContext(subtle->dpy, subtle->panels.sublets.win, s->interval, (void *)s);
+              XSaveContext(subtle->dpy, subtle->panels.sublets.win, s->watch, (void *)s);
               subSharedLogDebug("Inotify: Adding watch on %s\n", watch); 
 
               ret = Qtrue;
@@ -846,22 +852,22 @@ RubySubletUnwatch(VALUE self)
     {
       if(s->flags & SUB_SUBLET_SOCKET) ///< Probably a socket
         {
-          XDeleteContext(subtle->dpy, subtle->panels.sublets.win, s->interval);
-          subEventWatchDel(s->interval);
+          XDeleteContext(subtle->dpy, subtle->panels.sublets.win, s->watch);
+          subEventWatchDel(s->watch);
 
-          s->flags    &= ~SUB_SUBLET_SOCKET;
-          s->interval  = 0;
+          s->flags &= ~SUB_SUBLET_SOCKET;
+          s->watch  = 0;
 
           ret = Qtrue;
         }
 #ifdef HAVE_SYS_INOTIFY_H
       else if(s->flags & SUB_SUBLET_INOTIFY) /// Inotify file
         {
-          XDeleteContext(subtle->dpy, subtle->panels.sublets.win, s->interval);
-          inotify_rm_watch(subtle->notify, s->interval);
+          XDeleteContext(subtle->dpy, subtle->panels.sublets.win, s->watch);
+          inotify_rm_watch(subtle->notify, s->watch);
 
-          s->flags    &= ~SUB_SUBLET_INOTIFY;
-          s->interval  = 0;
+          s->flags &= ~SUB_SUBLET_INOTIFY;
+          s->watch  = 0;
 
           ret = Qtrue;
         }
