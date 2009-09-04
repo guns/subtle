@@ -336,14 +336,12 @@ task(:test => [:build]) do
   end
 end # }}}
 
-# Task: rdoc
+# Task: rdoc {{{
 Rake::RDocTask.new(:rdoc) do |rdoc|
   rdoc.rdoc_files.include("src/subtle/ruby.c", "src/subtlext/subtlext.c")
-  #rdoc.rdoc_dir = "doc"
-  #rdoc.template = "hanna"
   rdoc.options << "-o doc"
   rdoc.title    = "Subtle RDoc Documentation"
-end
+end # }}}
 
 #
 # File tasks
