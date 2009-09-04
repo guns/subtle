@@ -56,7 +56,7 @@ subSubletUpdate(void)
         {
           XMoveResizeWindow(subtle->dpy, s->button, subtle->panels.sublets.width, 
             0, s->width, subtle->th);
-          subtle->panels.sublets.width += s->width;
+          subtle->panels.sublets.width += s->width + 6;
         }
 
       XResizeWindow(subtle->dpy, subtle->panels.sublets.win, 
@@ -83,6 +83,7 @@ subSubletRender(void)
         {
           width = 3;
 
+          XSetWindowBackground(subtle->dpy,  s->button, subtle->colors.bg_sublets);
           XClearWindow(subtle->dpy, s->button);
 
           /* Render text part */
@@ -103,10 +104,10 @@ subSubletRender(void)
                 {
                   SubPixmap *p = PIXMAP(subtle->pixmaps->data[t->data.num]);
 
-                  subPixmapRender(p, s->button, width + 3, abs(subtle->th - p->height) / 2, 
+                  subPixmapRender(p, s->button, width + 2, abs(subtle->th - p->height) / 2, 
                     t->color, subtle->colors.bg_sublets);
 
-                  width += p->width + 6;
+                  width += p->width + 4;
                 }
             }
         }
@@ -133,9 +134,9 @@ subSubletCompare(const void *a,
 
   assert(a && b);
   
-  /* Exclude notify sublets */
-  if(s1->flags & (SUB_SUBLET_SOCKET|SUB_SUBLET_INOTIFY)) return 1;
-  else if(s2->flags & (SUB_SUBLET_SOCKET|SUB_SUBLET_INOTIFY)) return -1;
+  /* Include only interval sublets */
+  if(!(s1->flags & (SUB_SUBLET_INTERVAL))) return 1;
+  if(!(s2->flags & (SUB_SUBLET_INTERVAL))) return -1;
 
   return s1->time < s2->time ? -1 : (s1->time == s2->time ? 0 : 1);
 } /* }}} */
@@ -182,13 +183,13 @@ subSubletSetData(SubSublet *s,
 
               t->flags    = SUB_TYPE_TEXT|SUB_DATA_NUM;
               t->data.num = id;
-              t->width    = p->width + 6; ///< Add spacer
+              t->width    = p->width + 4; ///< Add spacer
             }
           else
             {
               t->flags       = SUB_TYPE_TEXT|SUB_DATA_STRING;
               t->data.string = strdup(tok);
-              t->width       = XTextWidth(subtle->xfs, tok, strlen(tok)) + 6; ///< Font offset
+              t->width       = XTextWidth(subtle->xfs, tok, strlen(tok)); ///< Font offset
             }
 
           t->color  = color;

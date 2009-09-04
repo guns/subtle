@@ -207,9 +207,10 @@
 #define SUB_CALL_HOOK                 (1L << 4)                   ///< Ruby hook call
 
 /* Sublet types */
-#define SUB_SUBLET_INOTIFY            (1L << 12)                  ///< Inotify sublet
-#define SUB_SUBLET_SOCKET             (1L << 13)                  ///< Socket sublet
-#define SUB_SUBLET_CLICK              (1L << 14)                  ///< Sublet click function
+#define SUB_SUBLET_INTERVAL           (1L << 12)
+#define SUB_SUBLET_INOTIFY            (1L << 13)                  ///< Inotify sublet
+#define SUB_SUBLET_SOCKET             (1L << 14)                  ///< Socket sublet
+#define SUB_SUBLET_CLICK              (1L << 15)                  ///< Sublet click function
 
 /* Subtle flags */
 #define SUB_SUBTLE_DEBUG              (1L << 1)                   ///< Debug enabled
@@ -378,7 +379,7 @@ typedef struct subsublet_t /* {{{ */
   char               *name;                                       ///< Sublet name
 
   Window             button;                                      ///< Sublet button
-  int                width;                                       ///< Sublet width
+  int                watch, width;                                ///< Sublet width
   unsigned long      recv;                                        ///< Sublet Ruby receiver
   time_t             time, interval;                              ///< Sublet update/interval time
 

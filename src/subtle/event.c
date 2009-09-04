@@ -1062,28 +1062,28 @@ subEventLoop(void)
             {
               SubSublet *s = SUBLET(subtle->sublets->data[0]);
 
-              if(!(s->flags & SUB_SUBLET_INOTIFY)) ///< Skip inotify on top
+              while(s && s->flags & SUB_SUBLET_INTERVAL && s->time <= now)
                 {
-                  while(s && s->time <= now)
-                    {
-                      subRubyCall(SUB_CALL_SUBLET_RUN, s->recv, NULL);
+                  subRubyCall(SUB_CALL_SUBLET_RUN, s->recv, NULL);
 
+                  if(s->flags & SUB_SUBLET_INTERVAL) ///< This may change in run
+                    {
                       s->time  = now + s->interval; ///< Adjust seconds
                       s->time -= s->time % s->interval;
-
-                      subArraySort(subtle->sublets, subSubletCompare);
                     }
 
-                  subSubletUpdate();
-                  subPanelUpdate();
-                  subPanelRender();
+                  subArraySort(subtle->sublets, subSubletCompare);
                 }
+
+              subSubletUpdate();
+              subPanelUpdate();
+              subPanelRender();
             }
         } /* }}} */
 
       /* Set new timeout */
       if(0 < subtle->sublets->ndata && 
-        !(SUBLET(subtle->sublets->data[0])->flags & (SUB_SUBLET_SOCKET|SUB_SUBLET_INOTIFY)))
+        SUBLET(subtle->sublets->data[0])->flags & SUB_SUBLET_INTERVAL)
         timeout = SUBLET(subtle->sublets->data[0])->time - now;
       else timeout = 60; 
 
