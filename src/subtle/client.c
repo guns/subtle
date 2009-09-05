@@ -25,24 +25,33 @@ static void
 ClientMask(SubClient *c)
 {
   XDrawRectangle(subtle->dpy, ROOT, subtle->gcs.invert, c->geom.x - 1, c->geom.y - 1,
-    c->geom.width + 1, c->geom.height + 1);
+    c->geom.width - 2 * subtle->bw + 1, c->geom.height - 2 * subtle->bw + 1);
 } /* }}} */
 
 /* ClientSnap {{{ */
 static void
 ClientSnap(SubClient *c)
 {
+  int top = 0, bottom = 0;
+
   assert(c);
+
+  /* Panel gaps */
+  if(0 == subtle->screen->base.y)
+    {
+      if(subtle->flags & SUB_SUBTLE_PANEL1) top    += subtle->th;
+      if(subtle->flags & SUB_SUBTLE_PANEL2) bottom += subtle->th;
+    }
 
   if(subtle->screen->base.x + subtle->snap > c->geom.x) 
     c->geom.x = subtle->screen->base.x + subtle->bw;
-  else if(c->geom.x > (subtle->screen->base.x + subtle->screen->base.width - WINW(c) - subtle->snap)) 
-    c->geom.x = subtle->screen->base.x + subtle->screen->base.width - c->geom.width - subtle->bw;
+  else if(c->geom.x > (subtle->screen->base.x + subtle->screen->base.width - c->geom.width - subtle->snap)) 
+    c->geom.x = subtle->screen->base.x + subtle->screen->base.width + subtle->bw - c->geom.width;
 
-  if(subtle->screen->base.y + subtle->snap + (0 < subtle->screen->base.y ? 0 : subtle->th) > c->geom.y)
-    c->geom.y = subtle->screen->base.y + subtle->bw + (0 < subtle->screen->base.y ? 0 : subtle->th);
-  else if(c->geom.y > (subtle->screen->base.y + subtle->screen->base.height - WINH(c) - subtle->snap)) 
-    c->geom.y = subtle->screen->base.y + subtle->screen->base.height - c->geom.height - subtle->bw;
+  if(subtle->screen->base.y + subtle->snap + top > c->geom.y)
+    c->geom.y = subtle->screen->base.y + subtle->bw + top;
+  else if(c->geom.y > (subtle->screen->base.y + subtle->screen->base.height - c->geom.height - subtle->snap - bottom)) 
+    c->geom.y = subtle->screen->base.y + subtle->screen->base.height + subtle->bw - c->geom.height - bottom;
 } /* }}} */
 
  /** subClientNew {{{
@@ -195,17 +204,9 @@ subClientConfigure(SubClient *c)
   assert(c);
   DEAD(c);
 
-  r = c->geom;
-
-  if(c->flags & SUB_MODE_FLOAT)
-    {
-      r.y += subtle->th;
-    }
-  else ///< Border
-    {
-      r.width  -= 2 * subtle->bw;
-      r.height -= 2 * subtle->bw;
-    }
+  r         = c->geom;
+  r.width  -= 2 * subtle->bw;
+  r.height -= 2 * subtle->bw;
 
   if(c->flags & SUB_MODE_FULL) ///< Get fullscreen size of screen
     r = SCREEN(subtle->screens->data[c->screen])->base;
@@ -464,8 +465,8 @@ subClientDrag(SubClient *c,
 
   if(c->flags & SUB_MODE_FLOAT) ///< Resize client
     {
-      c->geom.y -= (subtle->th + subtle->bw); ///< Border and bar height
       c->geom.x -= subtle->bw;
+      c->geom.y -= subtle->bw;
 
       subClientConfigure(c);
     }
