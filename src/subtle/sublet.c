@@ -56,8 +56,10 @@ subSubletUpdate(void)
         {
           XMoveResizeWindow(subtle->dpy, s->button, subtle->panels.sublets.width, 
             0, s->width, subtle->th);
-          subtle->panels.sublets.width += s->width + 6;
+          subtle->panels.sublets.width += s->width;
         }
+
+      subtle->panels.sublets.width += 6;
 
       XResizeWindow(subtle->dpy, subtle->panels.sublets.win, 
         subtle->panels.sublets.width, subtle->th);
@@ -197,6 +199,8 @@ subSubletSetData(SubSublet *s,
           i++;
         }
     }
+
+  s->width += 3;
 } /* }}} */
 
  /** subSubletPublish {{{
