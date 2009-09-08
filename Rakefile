@@ -1,5 +1,6 @@
 #
 # @package subtle
+#
 # @file Rake build file
 # @copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
 # @version $Id$
@@ -8,11 +9,11 @@
 # See the file COPYING.
 #
 
-require("rake/clean")
-require("rake/rdoctask")
 require("mkmf")
 require("yaml")
 require("fileutils")
+require("rake/clean")
+require("rake/rdoctask")
 
 # 
 # Settings
@@ -83,7 +84,7 @@ CLOBBER.include(@options["builddir"], "config.h", "config.log", "config.yml")
 def silent_sh(cmd, msg, &block)
   # Hide raw messages?
 
-  if(:default == RakeFileUtils.verbose) then
+  if(:default == RakeFileUtils.verbose)
     rake_output_message(msg)
   else
     rake_output_message(Array == cmd.class ? cmd.join(" ") : cmd) #< Check type
@@ -153,13 +154,13 @@ task(:config) do
   else
     # Get options
     @options.each_key do |k|
-      if(!ENV[k].nil?) then
+      if(!ENV[k].nil?)
         @options[k] = ENV[k]
       end
     end
 
     # Debug
-    if("yes" == @options["debug"]) then
+    if("yes" == @options["debug"])
       @options["cflags"] << " -g -DDEBUG"
     else
       @options["cflags"] << " -g -DNDEBUG"
@@ -198,21 +199,21 @@ task(:config) do
    
     # Check header
     HEADER.each do |h|
-      if(!have_header(h)) then
+      if(!have_header(h))
         fail("Header #{h} was not found")
       end
     end
 
     # Check functions
     FUNCS.each do |f|
-      if(!have_func(f)) then
+      if(!have_func(f))
         fail("Func #{f} was not found")
       end
     end
 
     # Check pkg-config for X11
     cflags, ldflags, libs = pkg_config("x11")
-    if(libs.nil?) then
+    if(libs.nil?)
       fail("X11 was not found")
     end
 
@@ -315,7 +316,7 @@ end # }}}
 # Task: help {{{
 desc("Show help")
 task(:help => [:config]) do
-    puts <<EOF
+  puts <<EOF
 destdir=PATH       Set intermediate install prefix (current: #{@options["destdir"]})
 prefix=PATH        Set install prefix (current: #{@options["prefix"]})
 bindir=PATH        Set binary directory (current: #{@options["bindir"]})
