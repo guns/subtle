@@ -1,8 +1,7 @@
 Install
 -------
-h1. Install
 
-[[subtle]] has the following dependencies:
+subtle has the following dependencies:
 
  1. Ruby[1] (>=1.8)
  2. Rake[2] (>=0.8)
@@ -18,18 +17,18 @@ and install the developer version as followed:
 
 The installer will copy the files to following XDG[6] default path: (see: rake help)
 
- * Binaries   -> _/usr/bin_
- * Configs    -> _/etc/xdg/subtle_
- * Sublets    -> _/usr/share/subtle_
- * Extension  -> _(Ruby Dir)/subtle_
+ * Binaries   -> /usr/bin
+ * Configs    -> /etc/xdg/subtle
+ * Sublets    -> /usr/share/subtle
+ * Extension  -> (Ruby Dir)/subtle
 
 The path can be easily changed (see: rake help) and are printed after config has finished.
 	
 On start subtle[7] will check if a config file is available in the typical XDG paths and
-use it. A local config is preferred over a system wide. (see: _$XDG_CONFIG_HOME_) Then it will 
-have a look for sublets[8] in the XDG paths too and load them accordingly. (see _$XDG_DATA_HOME)
+use it. A local config is preferred over a system wide. (see: $XDG_CONFIG_HOME) Then it will 
+have a look for sublets[8] in the XDG paths too and load them accordingly. (see $XDG_DATA_HOME)
 
-_No system wide sublets[8] will be loaded per default.
+No system wide sublets[8] will be loaded per default.
 
  * To create a user config just create '$XDG_CONFIG_HOME/subtle' and copy the latest config from 
    the 'dist' folder into it.
