@@ -352,9 +352,11 @@ typedef struct subgrab_t /* {{{ */
 
 typedef struct subpanel_t /* {{{ */
 {
-  FLAGS              flags;
+  FLAGS              flags;                                       ///< Panel flags
+
   Window             win;                                         ///< Panel win
   int                x, width;                                    ///< Panel x, width
+
   struct subpanel_t  *next;                                       ///< Panel next
 } SubPanel; /* }}} */
 
@@ -418,7 +420,13 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    char               *config, *sublets;                         ///< Sublet paths
+    char              *string;                                    ///< Subtle sublet separator
+    int               width;
+  } separator;
+
+  struct
+  {
+    char               *config, *sublets;                         ///< Subtle paths
   } paths;
 
   struct
