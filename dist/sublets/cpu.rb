@@ -55,7 +55,7 @@ class Cpu < Subtle::Sublet
         data << percent.to_s + "% "
       end
 
-      self.data = data + " | "
+      self.data = data.chop
     rescue => err # Sanitize to prevent unloading
       self.data = "subtle"
       p err

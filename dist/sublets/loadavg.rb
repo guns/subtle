@@ -22,7 +22,7 @@ class Loadavg < Subtle::Sublet
         file = f.read
       end
 
-      self.data = file.slice(0, 14) + "  |  "
+      self.data = file.slice(0, 14)
     rescue => err # Sanitize to prevent unloading
       self.data = "subtle"
       p err

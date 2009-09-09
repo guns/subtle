@@ -60,7 +60,7 @@ class Battery < Subtle::Sublet
           ac = "CHG"
       end
   
-      self.data = "%d%%/%s  |  " % [ (@remaining * 100 / @capacity).floor, ac ]
+      self.data = "%d%%/%s" % [ (@remaining * 100 / @capacity).floor, ac ]
     rescue => err # Sanitize to prevent unloading
       self.data = "subtle"
       p err

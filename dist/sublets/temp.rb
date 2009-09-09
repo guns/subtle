@@ -34,7 +34,7 @@ class Temp < Subtle::Sublet
 
       @temp = file.match(/temperature:\s+(\d+)/).captures
 
-      self.data = @temp.to_s + "C  "
+      self.data = @temp.to_s + "C "
     rescue => err # Sanitize to prevent unloading
       self.data = "subtle"
       p err
