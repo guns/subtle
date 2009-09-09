@@ -54,15 +54,12 @@ subSubletUpdate(void)
 
       for(s = subtle->sublet; s; s = s->next)
         {
-          XMoveResizeWindow(subtle->dpy, s->button, subtle->panels.sublets.width, 
-            0, s->width, subtle->th);
-          subtle->panels.sublets.width += s->width;
+          XMoveResizeWindow(subtle->dpy, s->button, subtle->panels.sublets.width, 0, s->width, subtle->th);
+          subtle->panels.sublets.width += s->width + subtle->separator.width;
         }
 
-      subtle->panels.sublets.width += 6;
-
-      XResizeWindow(subtle->dpy, subtle->panels.sublets.win, 
-        subtle->panels.sublets.width, subtle->th);
+      subtle->panels.sublets.width += 6; ///< Add spacings
+      XResizeWindow(subtle->dpy, subtle->panels.sublets.win, subtle->panels.sublets.width, subtle->th);
     }
 } /* }}} */
 
@@ -75,23 +72,27 @@ subSubletRender(void)
 {
   if(0 < subtle->sublets->ndata)
     {
-      int i, width = 0;
+      int i, separator = 0, width = 0;
       XGCValues gvals;
       SubSublet *s = NULL;
       SubText *t = NULL;
+
+      /* Clear panel */
+      XSetWindowBackground(subtle->dpy, subtle->panels.sublets.win, subtle->colors.bg_sublets);
+      XClearWindow(subtle->dpy, subtle->panels.sublets.win);
 
       /* Render every sublet */
       for(s = subtle->sublet; s; s = s->next)
         {
           width = 3;
 
-          XSetWindowBackground(subtle->dpy,  s->button, subtle->colors.bg_sublets);
+          XSetWindowBackground(subtle->dpy, s->button, subtle->colors.bg_sublets);
           XClearWindow(subtle->dpy, s->button);
 
           /* Render text part */
           for(i = 0; i < s->text->ndata; i++)
             {
-              if((t = TEXT(s->text->data[i])) && t->flags & SUB_DATA_STRING)
+              if((t = TEXT(s->text->data[i])) && t->flags & SUB_DATA_STRING) ///< Text
                 {
                   /* Update GC */
                   gvals.foreground = t->color;
@@ -102,15 +103,25 @@ subSubletRender(void)
 
                   width += t->width;
                 }
-              else if(t->flags & SUB_DATA_NUM)
+              else if(t->flags & SUB_DATA_NUM) ///< Icon
                 {
+                  int x = (0 < i) ? 2 : 0; ///< Add spacing when sublet doesn't begin with an icon
                   SubPixmap *p = PIXMAP(subtle->pixmaps->data[t->data.num]);
 
-                  subPixmapRender(p, s->button, width + 2, abs(subtle->th - p->height) / 2, 
+                  subPixmapRender(p, s->button, width + x, abs(subtle->th - p->height) / 2, 
                     t->color, subtle->colors.bg_sublets);
 
-                  width += p->width + 4;
+                  width += p->width + 2 + x;
                 }
+            }
+
+          /* Draw separator */
+          if(s->next)
+            {
+              separator += s->width;
+              XDrawString(subtle->dpy, subtle->panels.sublets.win, subtle->gcs.font, separator + 3,
+                subtle->fy, subtle->separator.string, strlen(subtle->separator.string));
+              separator += subtle->separator.width;
             }
         }
 
@@ -185,22 +196,22 @@ subSubletSetData(SubSublet *s,
 
               t->flags    = SUB_TYPE_TEXT|SUB_DATA_NUM;
               t->data.num = id;
-              t->width    = p->width + 4; ///< Add spacer
+              t->width    = p->width + 4; ///< Add spacing
             }
           else
             {
               t->flags       = SUB_TYPE_TEXT|SUB_DATA_STRING;
               t->data.string = strdup(tok);
-              t->width       = XTextWidth(subtle->xfs, tok, strlen(tok)); ///< Font offset
+              t->width       = XTextWidth(subtle->xfs, tok, strlen(tok));
             }
 
           t->color  = color;
-          s->width += t->width;
+          s->width += t->width; ///< Add spacing
           i++;
         }
     }
 
-  s->width += 3;
+  s->width += 3; ///< Add spacing
 } /* }}} */
 
  /** subSubletPublish {{{
