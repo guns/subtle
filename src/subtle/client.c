@@ -549,7 +549,7 @@ subClientTag(SubClient *c,
           SubView *v = VIEW(subtle->views->data[i]);
 
           /* Match only views with this tag */
-          if(VISIBLE(v, c))
+          if(v->tags & (1L << (tag + 1)))
             {
               if(t->flags & SUB_MODE_GRAVITY) c->gravities[i] = t->gravity;
               if(t->flags & SUB_MODE_SCREEN)  c->screens[i]   = t->screen;
