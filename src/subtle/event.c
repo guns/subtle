@@ -276,7 +276,7 @@ EventMessage(XClientMessageEvent *ev)
                           subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, 
                             (long *)&c->tags, 1);
 
-                          if(subtle->view->tags & tag) subViewConfigure(subtle->view);
+                          if(VISIBLE(subtle->view, c)) subViewConfigure(subtle->view);
                         }
                       break;
                     case 1: ///< Views
