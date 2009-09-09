@@ -43,7 +43,7 @@ subPanelUpdate(void)
           x = 0; ///< Reset for new panel
         }
 
-      if(p->flags & SUB_PANEL_SPACER1) ///< Add first spacer
+      if(p->flags & SUB_PANEL_SPACER1) ///< Add before spacer
         x += (subtle->screen->base.width - width[n]) / spacer[n];
 
       if(p->x != x) ///< Cache x value
@@ -52,7 +52,7 @@ subPanelUpdate(void)
           p->x = x;
         }
 
-      if(p->flags & SUB_PANEL_SPACER2) ///< Add second spacer
+      if(p->flags & SUB_PANEL_SPACER2) ///< Add after spacer
         x += (subtle->screen->base.width - width[n]) / spacer[n];
 
       /* Remap window only when needed */

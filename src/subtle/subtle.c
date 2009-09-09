@@ -76,6 +76,8 @@ SubtleSignal(int signum)
         subArrayClear(subtle->tags,  True);
         subArrayClear(subtle->views, True);
 
+        if(subtle->separator.string) free(subtle->separator.string);
+
         subRubyLoadConfig();
         subDisplayConfigure();
 
@@ -107,6 +109,7 @@ SubtleSignal(int signum)
 
         subRubyFinish();
 
+        if(subtle->separator.string) free(subtle->separator.string);
         if(subtle) free(subtle);
 
         printf("Exit\n");
