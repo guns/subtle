@@ -910,8 +910,8 @@ subClientSetCaption(SubClient *c)
   DEAD(c);
 
   /* Update panel width */
-  subtle->panels.caption.width = XTextWidth(subtle->xfs, c->caption, 
-    strlen(c->caption) + (c->flags & (SUB_MODE_STICK|SUB_MODE_FLOAT) ? 1 : 0)) + 6;
+  subtle->panels.caption.width = subSharedTextWidth(c->caption, 
+    strlen(c->caption) + (c->flags & (SUB_MODE_STICK|SUB_MODE_FLOAT) ? 1 : 0), NULL, NULL, True) + 6;
   XResizeWindow(subtle->dpy, subtle->panels.caption.win, 
     subtle->panels.caption.width, subtle->th);
 } /* }}} */

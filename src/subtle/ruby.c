@@ -1110,7 +1110,7 @@ RubyWrapLoadConfig(VALUE data)
   /* Separator */
   subtle->separator.string = strdup(RubyGetString(config, "separator", "|"));
   subtle->separator.width  = subSharedTextWidth(subtle->separator.string, 
-    strlen(subtle->separator.string)) + 6;
+    strlen(subtle->separator.string), NULL, NULL, True) + 6;
 
   /* Config: Grabs */
   config = rb_const_get(rb_cObject, rb_intern("GRABS"));

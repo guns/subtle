@@ -30,7 +30,7 @@ subViewNew(char *name,
   v = VIEW(subSharedMemoryAlloc(1, sizeof(SubView)));
   v->flags = SUB_TYPE_VIEW;
   v->name  = strdup(name);
-  v->width = XTextWidth(subtle->xfs, v->name, strlen(v->name)) + 6; ///< Font offset
+  v->width = subSharedTextWidth(v->name, strlen(v->name), NULL, NULL, True) + 6; ///< Font offset
 
   /* Create button */
   v->button = XCreateSimpleWindow(subtle->dpy, subtle->panels.views.win, 0, 0, 1,
