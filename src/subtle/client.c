@@ -14,10 +14,10 @@
 #include "subtle.h"
 
 /* Typedef {{{ */
-typedef struct clientgravity_t
+typedef struct clientcell_t
 {
-  int grav_right, grav_down, cells_x, cells_y;
-} ClientGravity;
+  int right, down, x, y;
+} ClientCell;
 /* }}} */
 
 /* ClientMask {{{ */
@@ -54,6 +54,24 @@ ClientSnap(SubClient *c)
     c->geom.y = subtle->screen->base.y + subtle->screen->base.height + subtle->bw - c->geom.height - bottom;
 } /* }}} */
 
+/* ClientGravity {{{ */
+int
+ClientGravity(void)
+{
+  int grav = 5;
+  SubClient *c = NULL;
+
+  /* Default gravity */
+  if(0 == subtle->gravity)
+    {
+      if((c = CLIENT(subSharedFind(subtle->windows.focus, CLIENTID))))
+        grav = c->gravity; ///< Copy gravity
+    }
+  else grav = subtle->gravity; ///< Set default
+
+  return grav;
+} /* }}} */
+
  /** subClientNew {{{
   * @brief Create new client
   * @param[in]  win  Client window
@@ -82,16 +100,8 @@ subClientNew(Window win)
   c->gravity   = -1; ///< Force update
   c->win       = win;
 
- /* Default gravity */
-  if(0 == subtle->gravity)
-    {
-      if((k = CLIENT(subSharedFind(subtle->windows.focus, CLIENTID))))
-        grav = k->gravity; ///< Copy gravity
-      else grav = 5; ///< Fallback default
-    }
-  else grav = subtle->gravity; ///< Set default
-
   /* Init gravities and screens */
+  grav = ClientGravity();
   for(i = 0; i < subtle->views->ndata; i++)
     {
       c->gravities[i] = grav;
@@ -204,9 +214,13 @@ subClientConfigure(SubClient *c)
   assert(c);
   DEAD(c);
 
-  r         = c->geom;
-  r.width  -= 2 * subtle->bw;
-  r.height -= 2 * subtle->bw;
+  r = c->geom;
+
+  if(!(c->flags & SUB_MODE_FLOAT))
+    {
+      r.width  -= 2 * subtle->bw;
+      r.height -= 2 * subtle->bw;
+    } 
 
   if(c->flags & SUB_MODE_FULL) ///< Get fullscreen size of screen
     r = SCREEN(subtle->screens->data[c->screen])->base;
@@ -504,7 +518,7 @@ subClientUpdate(int vid)
 
       if(-1 == vid) ///< Initialise
         {
-          c->gravities[subtle->views->ndata - 1] = subtle->gravity;
+          c->gravities[subtle->views->ndata - 1] = ClientGravity();
           c->screens[subtle->views->ndata - 1]   = 0;
         }
     }
@@ -623,10 +637,10 @@ subClientSetGravity(SubClient *c,
 
   if(force || c->gravity != gravity) ///< Check if update is required
     {
-      int grav = 0, mode = 0;
+      int cell = 0, mode = 0;
       SubScreen *s = NULL;
       XRectangle slot = { 0 };
-      static const ClientGravity props[] = /* {{{ */
+      static const ClientCell cells[] = /* {{{ */
       {
         { 0, 1, 1, 1 }, ///< Gravity unknown
         { 0, 1, 2, 2 }, ///< Gravity bottom left
@@ -649,14 +663,14 @@ subClientSetGravity(SubClient *c,
           return;
         }
 
-      grav = gravity & ~SUB_GRAVITY_MODES; ///< Strip modes
+      cell = gravity & ~SUB_GRAVITY_MODES; ///< Strip modes
 
       /* Compute slot */
       s = SCREEN(subtle->screens->data[c->screens[subtle->vid]]);
-      slot.height = s->geom.height / props[grav].cells_y;
-      slot.width  = s->geom.width / props[grav].cells_x;
-      slot.x      = s->geom.x + props[grav].grav_right * slot.width;
-      slot.y      = s->geom.y + props[grav].grav_down * slot.height;
+      slot.height = s->geom.height / cells[cell].y;
+      slot.width  = s->geom.width / cells[cell].x;
+      slot.x      = s->geom.x + cells[cell].right * slot.width;
+      slot.y      = s->geom.y + cells[cell].down * slot.height;
 
       /* Toggle between modes */
       if(gravity & SUB_GRAVITY_MODES || (c->geom.x == slot.x && c->geom.width == slot.width))
@@ -665,9 +679,9 @@ subClientSetGravity(SubClient *c,
           int height66 = s->geom.height - height33;
           int comph    = abs(s->geom.height - 3 * height33); ///< Int rounding fix
 
-          if(2 == props[grav].cells_y)
+          if(2 == cells[cell].y)
             {
-              int y = s->geom.y + props[grav].grav_down * height33;
+              int y = s->geom.y + cells[cell].down * height33;
 
               if(gravity & SUB_GRAVITY_MODE66 || (!(gravity & SUB_GRAVITY_MODES) &&
                 c->geom.height == slot.height && c->geom.y == slot.y)) ///< 33%
@@ -679,7 +693,7 @@ subClientSetGravity(SubClient *c,
               else if(gravity & SUB_GRAVITY_MODE33 || (!(gravity & SUB_GRAVITY_MODES) &&
                 c->geom.height == height66 && c->geom.y == y)) ///< 66%
                 {
-                  slot.y      = s->geom.y + props[grav].grav_down * height66;
+                  slot.y      = s->geom.y + cells[cell].down * height66;
                   slot.height = height33;
                   mode        = SUB_GRAVITY_MODE33;
 
@@ -696,11 +710,11 @@ subClientSetGravity(SubClient *c,
 
       /* Update client rect */
       c->geom                   = slot;
-      c->gravity                = grav | mode;
-      c->gravities[subtle->vid] = grav | mode;
+      c->gravity                = cell | mode;
+      c->gravities[subtle->vid] = cell | mode;
 
       /* EWMH: Gravity */
-      subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&grav, 1);
+      subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&cell, 1);
     }
 } /* }}} */
 
