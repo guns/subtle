@@ -104,13 +104,13 @@ subSubletRender(void)
                 }
               else if(t->flags & SUB_DATA_NUM) ///< Icon
                 {
-                  int x = (0 < i) ? 2 : 0; ///< Add spacing when sublet doesn't begin with an icon
+                  int x = (0 == i) ? 0 : 2; ///< Add spacing when icon isn't first
                   SubPixmap *p = PIXMAP(subtle->pixmaps->data[t->data.num]);
 
                   subPixmapRender(p, s->button, width + x, abs(subtle->th - p->height) / 2, 
                     t->color, subtle->colors.bg_sublets);
 
-                  width += p->width + 2 + x;
+                  width += p->width + x + (i != s->text->ndata - 1 ? 2 : 0); //< Add spacing when isn't last
                 }
             }
 
@@ -163,7 +163,7 @@ void
 subSubletSetData(SubSublet *s,
   char *data)
 {
-  int i = 0, id = 0;
+  int i = 0, id = 0, left = 0, right = 0;
   char *tok = NULL;
   unsigned long color = 0;
   SubText *t = NULL;
@@ -201,13 +201,27 @@ subSubletSetData(SubSublet *s,
             {
               t->flags       = SUB_TYPE_TEXT|SUB_DATA_STRING;
               t->data.string = strdup(tok);
-              t->width       = XTextWidth(subtle->xfs, tok, strlen(tok));
+              t->width       = subSharedTextWidth(tok, strlen(tok), &left, &right, False);
+
+              if(0 == i) t->width -= left; ///< Remove left bearing from first text item
             }
 
           t->color  = color;
           s->width += t->width; ///< Add spacing
           i++;
         }
+    }
+  
+  /* Fix spacing of last item */
+  if(t->flags & SUB_DATA_STRING)
+    {
+      s->width -= right;
+      t->width -= right;
+    }
+  else if(t->flags & SUB_DATA_NUM)
+    {
+      s->width -= 2;
+      t->width -= 2;
     }
 } /* }}} */
 
