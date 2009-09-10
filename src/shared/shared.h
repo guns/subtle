@@ -130,7 +130,8 @@ void subSharedPropertyClass(Window win, char **inst,
 XPointer * subSharedFind(Window win, XContext id);                ///< Find data with context manager
 time_t subSharedTime(void);                                       ///< Get current time 
 void subSharedFocus(void);                                        ///< Get pointer window and focus it
-int subSharedTextWidth(const char *string, int len);              ///< Get width of enclosing box
+int subSharedTextWidth(const char *string, int len,
+  int *left, int *right, int center);                             ///< Get width of enclosing box
 /* }}} */
 #else /* WM */
 /* Message {{{ */

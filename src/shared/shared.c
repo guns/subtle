@@ -449,29 +449,36 @@ subSharedFocus(void)
 
  /** subSharedTextWidth {{{
   * @brief Get width of the smallest enclosing box
-  * @param[in]  string  The string
-  * @param[in]  len      Length of the string
+  * @param[in]     string  The string
+  * @param[in]     len     Length of the string
+  * @param[inout]  left    Left bearing
+  * @param[inout]  right   Right bearing
+  * @param[in]     center  Center text
   * @return Width of the box
   **/
 
 int
 subSharedTextWidth(const char *string,
-  int len)
+  int len,
+  int *left,
+  int *right,
+  int center)
 {
-  int direction = 0, ascent = 0, descent = 0, left = 0, right = 0;
+  int direction = 0, ascent = 0, descent = 0, lbearing = 0, rbearing = 0;
   XCharStruct overall;
 
   assert(string);
 
-  XTextExtents(subtle->xfs, subtle->separator.string, strlen(subtle->separator.string), 
-    &direction, &ascent, &descent, &overall);
+  XTextExtents(subtle->xfs, string, len, &direction, &ascent, &descent, &overall);
 
-  /* Get spacings */
-  left  = overall.lbearing;
-  right = overall.width - overall.rbearing;
+  /* Get bearings */
+  lbearing = overall.lbearing;
+  rbearing = overall.width - overall.rbearing;
 
+  if(left)  *left  = lbearing;
+  if(right) *right = rbearing;
 
-  return overall.width - abs(left - right);
+  return center ? overall.width - abs(lbearing - rbearing) : overall.width;
 } /* }}} */
 #else /* WM */
  /** subSharedMessage {{{
