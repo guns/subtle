@@ -446,6 +446,33 @@ subSharedFocus(void)
   if((c = CLIENT(subSharedFind(win, CLIENTID)))) subClientFocus(c);
   else XSetInputFocus(subtle->dpy, ROOT, RevertToNone, CurrentTime);
 } /* }}} */
+
+ /** subSharedTextWidth {{{
+  * @brief Get width of the smallest enclosing box
+  * @param[in]  string  The string
+  * @param[in]  len      Length of the string
+  * @return Width of the box
+  **/
+
+int
+subSharedTextWidth(const char *string,
+  int len)
+{
+  int direction = 0, ascent = 0, descent = 0, left = 0, right = 0;
+  XCharStruct overall;
+
+  assert(string);
+
+  XTextExtents(subtle->xfs, subtle->separator.string, strlen(subtle->separator.string), 
+    &direction, &ascent, &descent, &overall);
+
+  /* Get spacings */
+  left  = overall.lbearing;
+  right = overall.width - overall.rbearing;
+
+
+  return overall.width - abs(left - right);
+} /* }}} */
 #else /* WM */
  /** subSharedMessage {{{
   * @brief Send client message to window
