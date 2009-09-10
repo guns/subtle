@@ -40,7 +40,7 @@ subSubletNew(void)
 } /* }}} */ 
 
  /** subSubletUpdate {{{
-  * @brief Update sublet bar
+  * @brief Update sublet panel
   **/
 
 void
@@ -55,10 +55,9 @@ subSubletUpdate(void)
       for(s = subtle->sublet; s; s = s->next)
         {
           XMoveResizeWindow(subtle->dpy, s->button, subtle->panels.sublets.width, 0, s->width, subtle->th);
-          subtle->panels.sublets.width += s->width + subtle->separator.width;
+          subtle->panels.sublets.width += s->width + (s->next ? subtle->separator.width : 0);
         }
 
-      subtle->panels.sublets.width += 6; ///< Add spacings
       XResizeWindow(subtle->dpy, subtle->panels.sublets.win, subtle->panels.sublets.width, subtle->th);
     }
 } /* }}} */
@@ -172,7 +171,7 @@ subSubletSetData(SubSublet *s,
   assert(s);
 
   color    = subtle->colors.fg_sublets;
-  s->width = 0;
+  s->width = 6;
 
   /* Split and iterate over tokens */
   while((tok = strsep(&data, SEPARATOR)))
@@ -196,7 +195,7 @@ subSubletSetData(SubSublet *s,
 
               t->flags    = SUB_TYPE_TEXT|SUB_DATA_NUM;
               t->data.num = id;
-              t->width    = p->width + 4; ///< Add spacing
+              t->width    = p->width + (0 == i ? 2 : 4); ///< Add spacing and check if icon is first
             }
           else
             {
@@ -210,8 +209,6 @@ subSubletSetData(SubSublet *s,
           i++;
         }
     }
-
-  s->width += 3; ///< Add spacing
 } /* }}} */
 
  /** subSubletPublish {{{
