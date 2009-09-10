@@ -273,7 +273,6 @@ subClientRender(SubClient *c)
   /* Caption title */
   gvals.foreground = subtle->colors.fg_focus;
   XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
-
   XClearWindow(subtle->dpy, subtle->panels.caption.win);
 
   XDrawString(subtle->dpy, subtle->panels.caption.win, subtle->gcs.font, 3, subtle->fy,

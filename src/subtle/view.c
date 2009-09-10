@@ -27,7 +27,7 @@ subViewNew(char *name,
 
   assert(name);
   
-  v  = VIEW(subSharedMemoryAlloc(1, sizeof(SubView)));
+  v = VIEW(subSharedMemoryAlloc(1, sizeof(SubView)));
   v->flags = SUB_TYPE_VIEW;
   v->name  = strdup(name);
   v->width = XTextWidth(subtle->xfs, v->name, strlen(v->name)) + 6; ///< Font offset
@@ -110,7 +110,7 @@ subViewConfigure(SubView *v)
 } /* }}} */
 
  /** subViewUpdate {{{ 
-  * @brief Update view bar
+  * @brief Update view panel
   **/
 
 void
@@ -131,8 +131,7 @@ subViewUpdate(void)
           subtle->panels.views.width += v->width;
         }
 
-      XResizeWindow(subtle->dpy, subtle->panels.views.win, 
-        subtle->panels.views.width, subtle->th);
+      XResizeWindow(subtle->dpy, subtle->panels.views.win, subtle->panels.views.width, subtle->th);
     }
 } /* }}} */
 
