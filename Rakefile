@@ -173,7 +173,7 @@ task(:config) do
       if(!match.nil? && 2 == match.size)
         @options["revision"] = match[1]
       else
-        @options["revision"] = "UNKNOWN"
+        @options["revision"] = "999999"
       end
     end  
 
