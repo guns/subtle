@@ -22,7 +22,7 @@ OPTIONS = {
 # Panel
 #
 # Available panels: 
-# :views, :cation, :tray, :sublets
+# :views, :caption, :tray, :sublets
 # :spacer
 #
 PANEL = {
