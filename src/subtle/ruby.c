@@ -505,7 +505,7 @@ RubyParseColor(char *name)
 static void
 RubySubletMark(SubSublet *s)
 {
-  rb_gc_mark(s->recv);
+  if(s) rb_gc_mark(s->recv);
 } /* }}} */
 
 /* RubyWrapInit {{{ */
@@ -1343,6 +1343,16 @@ RubyWrapRemove(VALUE name)
   return rb_funcall(object, rb_intern("send"), 2, rb_str_new2("remove_const"), name);
 } /* }}} */
 
+/* RubyWrapRelease {{{ */
+static VALUE
+RubyWrapRelease(VALUE value)
+{
+  if(Qtrue == rb_funcall(shelter, rb_intern("include?"), 1, value))
+    rb_funcall(shelter, rb_intern("delete"), 1, value);
+
+  return Qnil;
+} /* }}} */
+
  /** subRubyInit {{{
   * @brief Init ruby
   **/
@@ -1611,6 +1621,21 @@ subRubyRemove(char *name)
   int state = 0;
 
   rb_protect(RubyWrapRemove, rb_str_new2(name), &state);
+ 
+  return state;
+} /* }}} */
+
+ /** subRubyRelease {{{
+  * @brief Release value from shelter
+  * @param[in]  value  The released value
+  **/
+
+int
+subRubyRelease(unsigned long value)
+{
+  int state = 0;
+
+  rb_protect(RubyWrapRelease, value, &state);
  
   return state;
 } /* }}} */

@@ -594,6 +594,7 @@ void subRubyLoadSublets(void);                                    ///< Load subl
 void subRubyLoadSubtlext(void);                                   ///< Load subtlext
 int subRubyCall(int type, unsigned long recv, void *extra);       ///< Call Ruby script
 int subRubyRemove(char *name);                                    ///< Remove constant
+int subRubyRelease(unsigned long recv);                           ///< Release receiver
 void subRubyFinish(void);                                         ///< Kill Ruby stack
 /* }}} */
 
