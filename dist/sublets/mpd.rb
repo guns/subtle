@@ -6,6 +6,7 @@
 # Description: Show the current track
 # Version: 0.1
 # Date: Fri May 23 00:25 CET 2009
+# Tags: Default Mpc
 # $Id$
 #
 

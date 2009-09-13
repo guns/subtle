@@ -6,6 +6,7 @@
 # Description: Show the loadavg
 # Version: 0.1
 # Date: Sat Sep 13 19:00 CET 2008
+# Tags: Default Proc
 # $Id$
 #
 

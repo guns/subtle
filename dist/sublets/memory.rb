@@ -6,6 +6,7 @@
 # Description: Show the memory usage
 # Version: 0.1
 # Date: Fri Jan 09 16:00 CET 2009
+# Tags: Default
 # $Id$
 #
 

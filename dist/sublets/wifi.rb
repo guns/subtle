@@ -6,6 +6,7 @@
 # Description: Show the status of a wifi device
 # Version: 0.1
 # Date: Sat Sep 05 11:00 CET 2009
+# Tags: Default
 # $Id$
 #
 
