@@ -76,6 +76,13 @@ SubtleSignal(int signum)
         subArrayClear(subtle->tags,  True);
         subArrayClear(subtle->views, True);
 
+        /* Release hooks */
+        if(subtle->hooks.jump)      subRubyRelease(subtle->hooks.jump);
+        if(subtle->hooks.configure) subRubyRelease(subtle->hooks.configure);
+        if(subtle->hooks.create)    subRubyRelease(subtle->hooks.create);
+        if(subtle->hooks.focus)     subRubyRelease(subtle->hooks.focus);
+        if(subtle->hooks.gravity)   subRubyRelease(subtle->hooks.gravity);
+
         if(subtle->separator.string) free(subtle->separator.string);
 
         subRubyLoadConfig();
