@@ -395,6 +395,10 @@ RubyParseForeach(VALUE key,
                       t->flags |= SUB_MODE_STICK;
                     else if(False == mode) t->flags |= SUB_MODE_UNSTICK;
 
+                    if(True == (mode = RubyGetBool(value, "urgent"))) 
+                      t->flags |= SUB_MODE_URGENT;
+                    else if(False == mode) t->flags |= SUB_MODE_UNURGENT;
+
                     subArrayPush(subtle->tags, (void *)t);
                   }
                 break;

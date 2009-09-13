@@ -165,8 +165,8 @@ subClientNew(Window win)
     {
       if(hints->flags & XUrgencyHint)              
         {
-          flags    |= (SUB_MODE_FLOAT|SUB_MODE_STICK);
-          c->flags |= SUB_CLIENT_URGENT;
+          flags |= (SUB_MODE_FLOAT|SUB_MODE_STICK);
+          if(!(c->flags & SUB_MODE_UNURGENT)) c->flags |= SUB_MODE_URGENT;
         }
       if(hints->flags & InputHint && hints->input) c->flags |= SUB_CLIENT_INPUT;
 
@@ -176,8 +176,8 @@ subClientNew(Window win)
   /* Check for transient windows */
   if(XGetTransientForHint(subtle->dpy, c->win, &trans))
     {
-      flags |= subtle->flags & SUB_SUBTLE_URGENT ?  ///< Make transient windows urgent
-        SUB_MODE_FLOAT|SUB_MODE_STICK|SUB_CLIENT_URGENT : SUB_MODE_FLOAT;
+      flags |= subtle->flags & SUB_SUBTLE_URGENT && !(c->flags & SUB_MODE_UNURGENT) ? ///< Make transient windows urgent
+        SUB_MODE_FLOAT|SUB_MODE_STICK|SUB_MODE_URGENT : SUB_MODE_FLOAT;
 
       if((k = CLIENT(subSharedFind(trans, CLIENTID))))
         c->tags |= k->tags; ///< Copy tags
@@ -185,7 +185,7 @@ subClientNew(Window win)
 
   /* Toggle modes and warp if needed */
   subClientToggle(c, (~c->flags & flags));
-  if(c->flags & SUB_CLIENT_URGENT) subClientWarp(c);
+  if(c->flags & SUB_MODE_URGENT) subClientWarp(c);
 
   /* EWMH: Gravity, screen and desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
@@ -545,8 +545,8 @@ subClientTag(SubClient *c,
       SubTag *t = TAG(subtle->tags->data[tag]);
       
       /* Collect flags */
-      flags    |= (t->flags & (SUB_MODE_FULL|SUB_MODE_FLOAT|SUB_MODE_STICK));
-      c->flags |= (t->flags & (SUB_MODE_UNFULL|SUB_MODE_UNFLOAT|SUB_MODE_UNSTICK));
+      flags    |= (t->flags & (SUB_MODE_FULL|SUB_MODE_FLOAT|SUB_MODE_STICK|SUB_MODE_URGENT));
+      c->flags |= (t->flags & (SUB_MODE_UNFULL|SUB_MODE_UNFLOAT|SUB_MODE_UNSTICK|SUB_MODE_UNURGENT));
       c->tags  |= (1L << (tag + 1));
 
       /* Set size and enable float */
@@ -570,9 +570,10 @@ subClientTag(SubClient *c,
         }
 
       /* Remove flags */
-      if(flags & SUB_MODE_FULL && c->flags & SUB_MODE_UNFULL)   flags &= ~SUB_MODE_FULL;
-      if(flags & SUB_MODE_FLOAT && c->flags & SUB_MODE_UNFLOAT) flags &= ~SUB_MODE_FLOAT;
-      if(flags & SUB_MODE_STICK && c->flags & SUB_MODE_UNSTICK) flags &= ~SUB_MODE_STICK;
+      if(flags & SUB_MODE_FULL && c->flags & SUB_MODE_UNFULL)     flags &= ~SUB_MODE_FULL;
+      if(flags & SUB_MODE_FLOAT && c->flags & SUB_MODE_UNFLOAT)   flags &= ~SUB_MODE_FLOAT;
+      if(flags & SUB_MODE_STICK && c->flags & SUB_MODE_UNSTICK)   flags &= ~SUB_MODE_STICK;
+      if(flags & SUB_MODE_URGENT && c->flags & SUB_MODE_UNURGENT) flags &= ~SUB_MODE_URGENT;
     }
 
   return flags;

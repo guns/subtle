@@ -148,18 +148,19 @@
 #define SUB_MODE_FLOAT                (1L << 21)                  ///< Float mode
 #define SUB_MODE_STICK                (1L << 22)                  ///< Stick mode
 #define SUB_MODE_GRAVITY              (1L << 23)                  ///< Gravity mode
-#define SUB_MODE_UNFULL               (1L << 24)                  ///< Disable full mode
-#define SUB_MODE_UNFLOAT              (1L << 25)                  ///< Disable float mode
-#define SUB_MODE_UNSTICK              (1L << 26)                  ///< Disable stick mode
-#define SUB_MODE_SCREEN               (1L << 27)                  ///< Screen mode
-#define SUB_MODE_SIZE                 (1L << 28)                  ///< Size mode
+#define SUB_MODE_URGENT               (1L << 24)                  ///< Urgent mode
+#define SUB_MODE_UNFULL               (1L << 25)                  ///< Disable full mode
+#define SUB_MODE_UNFLOAT              (1L << 26)                  ///< Disable float mode
+#define SUB_MODE_UNSTICK              (1L << 27)                  ///< Disable stick mode
+#define SUB_MODE_UNURGENT             (1L << 28)                  ///< Disable urgent mode
+#define SUB_MODE_SCREEN               (1L << 29)                  ///< Screen mode
+#define SUB_MODE_SIZE                 (1L << 30)                  ///< Size mode
 
 /* Client flags */
 #define SUB_CLIENT_DEAD               (1L << 12)                  ///< Dead window
 #define SUB_CLIENT_FOCUS              (1L << 13)                  ///< Send focus message
 #define SUB_CLIENT_CLOSE              (1L << 14)                  ///< Send close message
 #define SUB_CLIENT_INPUT              (1L << 15)                  ///< Active/passive focus-model
-#define SUB_CLIENT_URGENT             (1L << 16)                  ///< Urgent window
 
 /* Data flags */
 #define SUB_DATA_STRING               (1L << 12)                  ///< String data
