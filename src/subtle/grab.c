@@ -241,6 +241,7 @@ subGrabKill(SubGrab *g)
   assert(g);
 
   if(g->flags & SUB_GRAB_EXEC && g->data.string) free(g->data.string);
+  if(g->flags & SUB_GRAB_PROC && g->data.num) subRubyRelease(g->data.num);
   free(g);
 
   subSharedLogDebug("kill=grab\n");

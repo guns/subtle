@@ -278,8 +278,8 @@ subSubletKill(SubSublet *s,
 
           iter->next = s->next;
         }
-
       subRubyRemove(s->name); ///< Remove class definition
+      subRubyRelease(s->recv); ///< Release from shelter
     }
 
 #ifdef HAVE_SYS_INOTIFY_H
@@ -290,6 +290,8 @@ subSubletKill(SubSublet *s,
 
   XDeleteContext(subtle->dpy, s->button, BUTTONID);
   XDestroyWindow(subtle->dpy, s->button);
+
+  printf("Unloaded sublet (%s)\n", s->name);
 
   if(s->name) free(s->name);
   subArrayKill(s->text, True);
