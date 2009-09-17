@@ -77,14 +77,6 @@ subPanelRender(void)
   XClearWindow(subtle->dpy, subtle->windows.panel1);
   XClearWindow(subtle->dpy, subtle->windows.panel2);
 
-  if(subtle->flags & SUB_SUBTLE_STIPPLE) ///< Draw stipple
-    {
-      XFillRectangle(subtle->dpy, subtle->windows.panel1, subtle->gcs.stipple, 0, 2,
-        subtle->screen->base.width, subtle->th - 4);
-      XFillRectangle(subtle->dpy, subtle->windows.panel2, subtle->gcs.stipple, 0, 2,
-        subtle->screen->base.width, subtle->th - 4);        
-    }
-
   /* Render panels */
   if(subtle->windows.focus && (c = CLIENT(subSharedFind(subtle->windows.focus, CLIENTID)))) 
     subClientRender(c);

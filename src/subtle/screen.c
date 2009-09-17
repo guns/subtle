@@ -29,6 +29,7 @@ subScreenNew(int x,
 {
   SubScreen *s = NULL;
 
+  /* Create screen */
   s = SCREEN(subSharedMemoryAlloc(1, sizeof(SubScreen)));
   s->flags       = SUB_TYPE_SCREEN;
   s->geom.x      = x;
