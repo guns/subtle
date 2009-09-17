@@ -282,8 +282,7 @@ subDisplayFinish(void)
       XDestroyWindow(subtle->dpy, subtle->windows.panel2);
 
       XInstallColormap(subtle->dpy, DefaultColormap(subtle->dpy, SCRN));
-      XSetInputFocus(subtle->dpy, PointerRoot, RevertToPointerRoot, CurrentTime);
-
+      XSetInputFocus(subtle->dpy, ROOT, RevertToPointerRoot, CurrentTime);
       XCloseDisplay(subtle->dpy);
     }
 
