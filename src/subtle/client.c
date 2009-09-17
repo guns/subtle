@@ -1040,11 +1040,13 @@ subClientKill(SubClient *c,
       subPanelUpdate();
       subPanelRender();
     }
-
+    
   /* Ignore further events and delete context */
   XSelectInput(subtle->dpy, c->win, NoEventMask);
   XDeleteContext(subtle->dpy, c->win, CLIENTID);
   XUnmapWindow(subtle->dpy, c->win);
+
+  subSharedFocus(); ///< Focus
 
   /* Close window */
   if(close && !(c->flags & SUB_CLIENT_DEAD))
@@ -1055,8 +1057,6 @@ subClientKill(SubClient *c,
             subEwmhGet(SUB_EWMH_WM_DELETE_WINDOW), CurrentTime, 0, 0, 0);
         }
       else XKillClient(subtle->dpy, c->win);
-
-      subSharedFocus(); ///< Focus
     }
 
   if(c->gravities) free(c->gravities);
