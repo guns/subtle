@@ -124,7 +124,7 @@ subArraySort(SubArray *a,
  /** subArrayClear {{{
   * @brief Delete all elements
   * @param[in]  a      A #SubArray
-  * @param[in]  clean  Free elements or not
+  * @param[in]  clean  Pass clean to elements
   **/
 
 void
@@ -135,17 +135,17 @@ subArrayClear(SubArray *a,
 
   assert(a);
 
-  for(i = 0; clean && i < a->ndata; i++)
+  for(i = 0; i < a->ndata; i++)
     {
       /* Check type and kill */
       SubClient *c = CLIENT(a->data[i]);
 
       /* Common types first */
-      if(c->flags & SUB_TYPE_CLIENT)      subClientKill(c, False);
-      else if(c->flags & SUB_TYPE_GRAB)   subGrabKill(GRAB(c));
+      if(c->flags & SUB_TYPE_CLIENT)      subClientKill(c, clean);
+      else if(c->flags & SUB_TYPE_GRAB)   subGrabKill(GRAB(c), clean);
       else if(c->flags & SUB_TYPE_PIXMAP) subPixmapKill(PIXMAP(c));
       else if(c->flags & SUB_TYPE_SCREEN) subScreenKill(SCREEN(c));
-      else if(c->flags & SUB_TYPE_SUBLET) subSubletKill(SUBLET(c), False);
+      else if(c->flags & SUB_TYPE_SUBLET) subSubletKill(SUBLET(c), clean);
       else if(c->flags & SUB_TYPE_TAG)    subTagKill(TAG(c));
       else if(c->flags & SUB_TYPE_TRAY)   subTrayKill(TRAY(c));
       else if(c->flags & SUB_TYPE_VIEW)   subViewKill(VIEW(c));
@@ -170,7 +170,7 @@ subArrayClear(SubArray *a,
  /** subArrayKill {{{
   * @brief Kill array with all elements
   * @param[in]  a      A #SubArray
-  * @param[in]  clean  Free elements or not
+  * @param[in]  clean  Pass clean to elements
   **/
 
 void
