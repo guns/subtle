@@ -28,7 +28,6 @@ OPTIONS = {
 PANEL = {
   :top       => [ :views, :caption, :spacer, :tray, :sublets ],   # Top panel
   :bottom    => [ ],                                              # Bottom panel
-  :stipple   => true,                                             # Add stippling to panels
   :separator => "|"                                               # Separator between sublets
 }
 
