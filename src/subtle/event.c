@@ -1003,6 +1003,8 @@ subEventLoop(void)
   sigaction(SIGSEGV, &sa, NULL);
   sigaction(SIGCHLD, &sa, NULL);
 
+  XSync(subtle->dpy, False);
+
   while(subtle && subtle->flags & SUB_SUBTLE_RUN)
     {
       now = subSharedTime();

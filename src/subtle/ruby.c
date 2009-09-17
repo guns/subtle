@@ -111,9 +111,7 @@ static void
 RubySignal(int signum)
 {
   if(SIGALRM == signum) ///< Catch SIGALRM
-    {
-      rb_raise(rb_eInterrupt, "Execution time (%ds) expired", EXECTIME);
-    }
+    rb_raise(rb_eInterrupt, "Execution time (%ds) expired", EXECTIME);
 } /* }}} */
 
 /* RubyConcat {{{ */

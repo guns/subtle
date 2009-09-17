@@ -437,7 +437,7 @@ SubtlextScreens(void)
   return array;
 } /* }}} */
 
-/* = Client */
+/* Client */
 
 /* SubtlextClientInit {{{ */
 /*
