@@ -233,15 +233,18 @@ subGrabCompare(const void *a,
 
  /** subGrabKill {{{
   * @brief Kill grab
+  * @param[in]  g      A #SubGrab
+  * @param[in]  clean  Release ruby symbol 
   **/
 
 void
-subGrabKill(SubGrab *g)
+subGrabKill(SubGrab *g,
+  int clean)
 {
   assert(g);
 
   if(g->flags & SUB_GRAB_EXEC && g->data.string) free(g->data.string);
-  if(g->flags & SUB_GRAB_PROC && g->data.num) subRubyRelease(g->data.num);
+  if(clean && g->flags & SUB_GRAB_PROC && g->data.num) subRubyRelease(g->data.num);
   free(g);
 
   subSharedLogDebug("kill=grab\n");
