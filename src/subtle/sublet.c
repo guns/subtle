@@ -278,6 +278,7 @@ subSubletKill(SubSublet *s,
 
           iter->next = s->next;
         }
+
       subRubyRemove(s->name); ///< Remove class definition
       subRubyRelease(s->recv); ///< Release from shelter
     }

@@ -220,6 +220,7 @@
 #define SUB_SUBTLE_PANEL2             (1L << 4)                   ///< Panel2 enabled
 #define SUB_SUBTLE_EWMH               (1L << 5)                   ///< EWMH set
 #define SUB_SUBTLE_URGENT             (1L << 6)                   ///< Urgent transients
+#define SUB_SUBTLE_RUN                (1L << 7)                   ///< Run event loop
 
 /* Tag flags */
 #define SUB_TAG_DEFAULT               (1L << 1)                   ///< Default tag
@@ -570,7 +571,7 @@ SubGrab *subGrabFind(int code, KeySym sym, unsigned int mod);     ///< Find grab
 void subGrabSet(Window win);                                      ///< Grab window
 void subGrabUnset(Window win);                                    ///< Ungrab window
 int subGrabCompare(const void *a, const void *b);                 ///< Compare grabs
-void subGrabKill(SubGrab *g);                                     ///< Kill grab
+void subGrabKill(SubGrab *g, int clean);                          ///< Kill grab
 /* }}} */
 
 /* panel.c {{{ */
@@ -589,6 +590,7 @@ void subPixmapKill(SubPixmap *p);                                 ///< Kill pixm
 /* ruby.c {{{ */
 void subRubyInit(void);                                           ///< Init Ruby stack 
 void subRubyLoadConfig(void);                                     ///< Load config file
+void subRubyReloadConfig(void);                                   ///< Reload config file
 void subRubyLoadSublet(const char *file);                         ///< Load sublet
 void subRubyLoadSublets(void);                                    ///< Load sublets
 void subRubyLoadSubtlext(void);                                   ///< Load subtlext
