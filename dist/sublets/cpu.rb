@@ -6,15 +6,15 @@
 # Description: Show the cpu usage
 # Version: 0.1
 # Date: Mon May 18 21:00 CET 2009
-# Tags: Default Multicore
 # $Id$
 #
 
 class Cpu < Subtle::Sublet
-  attr_accessor :cpus, :sum, :last, :delta
+  attr_accessor :icon, :cpus, :sum, :last, :delta
 
   def initialize
     self.interval = 30
+    @icon         = Subtle::Icon.new(ENV["XDG_DATA_HOME"] + "/icons/cpu.xbm")
     @cpus         = 0
     @last         = []
     @delta        = []
@@ -43,12 +43,12 @@ class Cpu < Subtle::Sublet
       file = IO.readlines("/proc/stat").join
 
       file.scan(/cpu(\d+) (\d+) (\d+) (\d+)/) do |num, user, nice, system| 
-        n         = num.first.to_i
+        n         = num.to_i
         @delta[n] = time - @last[n]
         @delta[n] = 1 if(0 == @delta[n])
         @last[n]  = time
 
-        sum       = user.first.to_i + nice.first.to_i + system.first.to_i
+        sum       = user.to_i + nice.to_i + system.to_i
         use       = ((sum - @sum[n]) / @delta[n] / 100.0)
         @sum[n]   = sum
         percent   = (use * 100.0).ceil % 100
@@ -56,7 +56,7 @@ class Cpu < Subtle::Sublet
         data << percent.to_s + "% "
       end
 
-      self.data = data.chop
+      self.data = @icon + data.chop
     rescue => err # Sanitize to prevent unloading
       self.data = "subtle"
       p err
