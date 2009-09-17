@@ -11,13 +11,7 @@
   **/
 
 #include <getopt.h>
-#include <sys/wait.h>
-#include <signal.h>
 #include "subtle.h"
-
-#ifdef HAVE_EXECINFO_H
-#include <execinfo.h>
-#endif /* HAVE_EXECINFO_H */
 
 SubSubtle *subtle = NULL;
 
@@ -48,95 +42,35 @@ SubtleVersion(void)
          PKG_NAME, PKG_VERSION, X_PROTOCOL, X_PROTOCOL_REVISION, RUBY_VERSION);
 } /* }}} */
 
-/* SubtleSignal {{{ */
-static void
-SubtleSignal(int signum)
+/* SubtleFinish {{{ */
+void
+SubtleFinish(void)
 {
-  int i;
-#ifdef HAVE_EXECINFO_H
-  void *array[10];
-  size_t size;
-#endif /* HAVE_EXECINFO_H */
+  subRubyFinish();
 
-  switch(signum)
+  if(subtle)
     {
-      case SIGHUP: ///< Reload config
-        /* Reset before reloading */
-        subtle->flags  &= (SUB_SUBTLE_DEBUG|SUB_SUBTLE_EWMH);
-        subtle->panel   = NULL;
+      /* Kill arrays */
+      subArrayKill(subtle->clients, False);
+      subArrayKill(subtle->grabs,   False);
+      subArrayKill(subtle->pixmaps, True);
+      subArrayKill(subtle->screens, True);
+      subArrayKill(subtle->sublets, False);
+      subArrayKill(subtle->tags,    True);
+      subArrayKill(subtle->trays,   True);
+      subArrayKill(subtle->views,   True);
 
-        /* Clear x cache */
-        subtle->panels.tray.x    = 0;
-        subtle->panels.views.x   = 0;
-        subtle->panels.caption.x = 0;
-        subtle->panels.sublets.x = 0;
+      subEwmhFinish();
+      subDisplayFinish();
 
-        /* Clear arrays */
-        subArrayClear(subtle->grabs, True);
-        subArrayClear(subtle->tags,  True);
-        subArrayClear(subtle->views, True);
+      if(subtle->separator.string) free(subtle->separator.string);
 
-        /* Release hooks */
-        if(subtle->hooks.jump)      subRubyRelease(subtle->hooks.jump);
-        if(subtle->hooks.configure) subRubyRelease(subtle->hooks.configure);
-        if(subtle->hooks.create)    subRubyRelease(subtle->hooks.create);
-        if(subtle->hooks.focus)     subRubyRelease(subtle->hooks.focus);
-        if(subtle->hooks.gravity)   subRubyRelease(subtle->hooks.gravity);
-
-        if(subtle->separator.string) free(subtle->separator.string);
-
-        subRubyLoadConfig();
-        subDisplayConfigure();
-
-        /* Update client tags */
-        for(i = 0; i < subtle->clients->ndata; i++)
-          subClientSetTags(CLIENT(subtle->clients->data[i]));
-
-        subViewJump(subtle->views->data[0]);
-        subPanelRender();
-
-        printf("Reloaded config\n");
-        break;
-      case SIGTERM:
-      case SIGINT: ///< Tidy up
-        if(subtle)
-          {
-            subArrayKill(subtle->clients, True);
-            subArrayKill(subtle->grabs,   True);
-            subArrayKill(subtle->pixmaps, True);
-            subArrayKill(subtle->screens, True);
-            subArrayKill(subtle->sublets, True);
-            subArrayKill(subtle->tags,    True);
-            subArrayKill(subtle->trays,   True);
-            subArrayKill(subtle->views,   True);
-
-            subEwmhFinish();
-            subDisplayFinish();
-          }
-
-        subRubyFinish();
-
-        if(subtle->separator.string) free(subtle->separator.string);
-        if(subtle) free(subtle);
-
-        printf("Exit\n");
-
-        exit(0);
-        break;
-      case SIGSEGV:
-#ifdef HAVE_EXECINFO_H
-        size = backtrace(array, 10);
-
-        printf("Last %zd stack frames:\n", size);
-        backtrace_symbols_fd(array, size, 0);
-#endif /* HAVE_EXECINFO_H */
-
-        printf("Please report this bug to <%s>\n", PKG_BUGREPORT);
-        abort();
-      case SIGCHLD:
-        wait(NULL);
-        break;
+      free(subtle);
     }
+
+  printf("Exit\n");
+
+  exit(0);
 } /* }}} */
 
 /* main {{{ */
@@ -146,7 +80,6 @@ main(int argc,
 {
   int c, check = 0;
   char *display = NULL;
-  struct sigaction act;
   const struct option long_options[] =
   {
     { "config",  required_argument, 0, 'c' },
@@ -161,17 +94,9 @@ main(int argc,
     { 0, 0, 0, 0}
   };
 
-  /* Signal handler */
-  act.sa_handler = SubtleSignal;
-  act.sa_flags   = 0;
-  memset(&act.sa_mask, 0, sizeof(sigset_t)); ///< Avoid uninitialized values
-  sigaction(SIGHUP,  &act, NULL);
-  sigaction(SIGTERM, &act, NULL);
-  sigaction(SIGINT,  &act, NULL);
-  sigaction(SIGSEGV, &act, NULL);
-  sigaction(SIGCHLD, &act, NULL);
 
   subtle = SUBTLE(subSharedMemoryAlloc(1, sizeof(SubSubtle)));
+  subtle->flags |= SUB_SUBTLE_RUN;
 
   while(-1 != (c = getopt_long(argc, argv, "c:d:hks:vD", long_options, NULL)))
     {
@@ -236,7 +161,9 @@ main(int argc,
 
   subEventLoop();
 
-  return 0; ///< Make compiler happy
+  SubtleFinish();
+
+  return 0;
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
