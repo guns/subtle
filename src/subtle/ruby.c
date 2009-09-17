@@ -374,11 +374,8 @@ RubyParseForeach(VALUE key,
 
                     /* Sanity */
                     if(1 <= t->gravity && 9 >= t->gravity) t->flags |= SUB_MODE_GRAVITY;
-                    if(1 <= t->screen && t->screen <= subtle->screens->ndata)
-                    {
-                      t->screen -= 1;
+                    if(0 <= t->screen && t->screen < subtle->screens->ndata)
                       t->flags  |= SUB_MODE_SCREEN;
-                    }
                     if(RubyGetRect(value, "size", &t->size)) 
                       t->flags |= SUB_MODE_SIZE;
 
