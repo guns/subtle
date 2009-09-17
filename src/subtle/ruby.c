@@ -1056,8 +1056,8 @@ RubyWrapLoadConfig(VALUE data)
         }
     }
   printf("Using config `%s'\n", path);
-
   rb_load_protect(rb_str_new2(path), 0, &state); ///< Load config
+
   if(state) RubyPerror(True, True, "Failed finding config in `%s'", buf);
 
   if(!subtle || !subtle->dpy) return Qnil; ///< Exit after config check
@@ -1443,6 +1443,65 @@ subRubyLoadConfig(void)
   /* Carefully load config */
   rb_protect(RubyWrapLoadConfig, Qnil, &state);
   if(state) RubyPerror(True, True, "Failed reading config");
+} /* }}} */
+
+ /** subRubyReloadConfig {{{
+  * @brief Reload config file
+  * @param[in]  path  Path to config file
+  **/
+
+void
+subRubyReloadConfig(void)
+{
+  int i, state = 0;
+
+  /* Reset before reloading */
+  subtle->flags  &= (SUB_SUBTLE_DEBUG|SUB_SUBTLE_EWMH|SUB_SUBTLE_RUN);
+  subtle->panel   = NULL;
+
+  /* Clear x cache */
+  subtle->panels.tray.x    = 0;
+  subtle->panels.views.x   = 0;
+  subtle->panels.caption.x = 0;
+  subtle->panels.sublets.x = 0;
+
+  /* Clear arrays */
+  subArrayClear(subtle->grabs, True);
+  subArrayClear(subtle->tags,  True);
+  subArrayClear(subtle->views, True);
+
+  /* Release hooks */
+  if(subtle->hooks.jump)      subRubyRelease(subtle->hooks.jump);
+  if(subtle->hooks.configure) subRubyRelease(subtle->hooks.configure);
+  if(subtle->hooks.create)    subRubyRelease(subtle->hooks.create);
+  if(subtle->hooks.focus)     subRubyRelease(subtle->hooks.focus);
+  if(subtle->hooks.gravity)   subRubyRelease(subtle->hooks.gravity);
+
+  if(subtle->separator.string) free(subtle->separator.string);
+
+  /* Remove constants */
+  subRubyRemove("OPTIONS");
+  subRubyRemove("PANEL");
+  subRubyRemove("COLORS");
+  subRubyRemove("GRABS");
+  subRubyRemove("TAGS");
+  subRubyRemove("VIEWS");
+  subRubyRemove("HOOKS");
+
+   /* Carefully load config */
+  rb_protect(RubyWrapLoadConfig, Qnil, &state);
+  if(state) RubyPerror(True, True, "Failed reading config");
+
+  subDisplayConfigure();
+
+ /* Update client tags */
+  for(i = 0; i < subtle->clients->ndata; i++)
+    subClientSetTags(CLIENT(subtle->clients->data[i]));
+
+  subViewJump(subtle->views->data[0]);
+  subPanelRender();
+
+  printf("Reloaded config\n");
 } /* }}} */
 
  /** subRubyLoadSublet {{{
