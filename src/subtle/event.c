@@ -911,7 +911,6 @@ EventFocus(XFocusChangeEvent *ev)
           subtle->windows.focus = c->win;
           subGrabSet(c->win);
           subClientSetCaption(c);
-          subClientRender(c);
 
           /* EWMH: Active window */
           subEwmhSetWindows(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW, &subtle->windows.focus, 1);
