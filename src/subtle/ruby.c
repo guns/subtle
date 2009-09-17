@@ -1109,7 +1109,6 @@ RubyWrapLoadConfig(VALUE data)
   config = rb_const_get(rb_cObject, rb_intern("PANEL"));
   if(RubyParsePanel(config, "top", &p))      subtle->flags |= SUB_SUBTLE_PANEL1;
   if(RubyParsePanel(config, "bottom", &p))   subtle->flags |= SUB_SUBTLE_PANEL2;
-  if(True == RubyGetBool(config, "stipple")) subtle->flags |= SUB_SUBTLE_STIPPLE;
   
   /* Separator */
   subtle->separator.string = strdup(RubyGetString(config, "separator", "|"));
@@ -1237,9 +1236,6 @@ RubyWrapCall(VALUE data)
 {
   VALUE ret = Qfalse, *rargs = (VALUE *)data;
 
-  signal(SIGALRM, RubySignal); ///< Limit execution time
-  alarm(EXECTIME);
-
   if((int)rargs[0] & SUB_CALL_SUBLET_RUN) /* {{{ */
     {
       ret = rb_funcall(rargs[1], rb_intern("run"), 0, NULL);
@@ -1328,8 +1324,6 @@ RubyWrapCall(VALUE data)
         }
       subSharedLogDebug("Proc: arity=%d\n", arity);      
     } /* }}} */
-
-  alarm(0);
 
   return ret;
 } /* }}} */
@@ -1653,18 +1647,21 @@ subRubyCall(int type,
   rargs[1] = recv;
   rargs[2] = (VALUE)extra;
 
+  signal(SIGALRM, RubySignal); ///< Limit execution time
+  alarm(EXECTIME);
+
   /* Carefully call */
   result = rb_protect(RubyWrapCall, (VALUE)&rargs, &state);
   if(state) 
     {
-      alarm(0); ///< Reset alarm on error
-
       RubyPerror(True, False, "Failed calling %s",
         type & (SUB_CALL_SUBLET_RUN|SUB_CALL_SUBLET_CLICK) ? 
         "sublet" : (type & SUB_CALL_GRAB ? "grab" : "hook"));
 
       result = Qnil;
     }
+
+  alarm(0);
 
   return Qtrue == result ? 1 : (Qfalse == result ? 0 : -1);
 } /* }}} */
