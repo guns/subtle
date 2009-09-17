@@ -11,9 +11,17 @@
   **/
 
 #include <unistd.h>
-#include <sys/poll.h>
 #include <X11/Xatom.h>
+#include <signal.h>
+#include <sys/wait.h>
 #include "subtle.h"
+
+#define __USE_GNU 1
+#include <sys/poll.h>
+
+#ifdef HAVE_EXECINFO_H
+#include <execinfo.h>
+#endif /* HAVE_EXECINFO_H */
 
 #ifdef HAVE_SYS_INOTIFY_H
 #define BUFLEN (sizeof(struct inotify_event))
@@ -77,6 +85,37 @@ EventFindSublet(int id)
     }
 
   return iter;
+} /* }}} */
+
+/* EventSignal {{{ */
+static void 
+EventSignal(int signum)
+{
+#ifdef HAVE_EXECINFO_H
+  void *array[10];
+  size_t size;
+#endif /* HAVE_EXECINFO_H */
+
+  switch(signum)
+    {
+      case SIGHUP: subRubyReloadConfig(); break; ///< Reload config 
+      case SIGINT:
+        if(subtle) subtle->flags &= ~SUB_SUBTLE_RUN;
+        XNoOp(subtle->dpy); ///< Forcing ppoll to leave lock
+        XSync(subtle->dpy, False);
+        break;
+      case SIGSEGV:
+#ifdef HAVE_EXECINFO_H
+        size = backtrace(array, 10);
+
+        printf("Last %zd stack frames:\n", size);
+        backtrace_symbols_fd(array, size, 0);
+#endif /* HAVE_EXECINFO_H */
+
+        printf("Please report this bug to <%s>\n", PKG_BUGREPORT);
+        abort();
+      case SIGCHLD: wait(NULL); break;
+    }
 } /* }}} */
 
 /* EventConfigure {{{ */
@@ -598,16 +637,6 @@ EventProperty(XPropertyEvent *ev)
             subViewRender();
           }
         break; /* }}} */
-#ifdef DEBUG
-      default:
-        {
-          char *name = XGetAtomName(subtle->dpy, ev->atom);
-
-          subSharedLogDebug("Property: name=%s, type=%ld, win=%#lx\n", 
-            name ? name : "n/a", ev->atom, ev->window);
-          if(name) XFree(name);
-        }
-#endif /* DEBUG */
     }    
 } /* }}} */
 
@@ -618,16 +647,20 @@ EventCrossing(XCrossingEvent *ev)
   SubClient *c = NULL;
   SubTray *t = NULL;
 
-  if(ROOT == ev->window)
+  /* Check if we are interested in this event */
+  if(ev->window == subtle->windows.focus) return;
+
+  /* Handle crossing event */
+  if(ROOT == ev->window) ///< Root
     {
       subGrabSet(ROOT);
     }
-  else if((c = CLIENT(subSharedFind(ev->window, CLIENTID))))
+  else if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) ///< Client
     {
       if(!(c->flags & SUB_CLIENT_DEAD))
         subClientFocus(c);
     }
-  else if((t = TRAY(subSharedFind(ev->window, TRAYID)))) 
+  else if((t = TRAY(subSharedFind(ev->window, TRAYID)))) ///< Tray
     subTrayFocus(t);
 } /* }}} */
 
@@ -691,7 +724,6 @@ EventGrab(XEvent *ev)
         sym   = XKeycodeToKeysym(subtle->dpy, ev->xkey.keycode, 0);
         code  = ev->xkey.keycode;
         state = ev->xkey.state;
-
         break;
     }
 
@@ -726,10 +758,10 @@ EventGrab(XEvent *ev)
               subScreenJump(SCREEN(subtle->screens->data[g->data.num]));
             break; /* }}} */
           case SUB_GRAB_SUBTLE_RELOAD: /* {{{ */
-            raise(SIGHUP);
+            subRubyReloadConfig();
             break; /* }}} */
           case SUB_GRAB_SUBTLE_QUIT: /* {{{ */
-            raise(SIGTERM);
+            if(subtle) subtle->flags &= ~SUB_SUBTLE_RUN;
             break; /* }}} */
           case SUB_GRAB_WINDOW_MOVE:
           case SUB_GRAB_WINDOW_RESIZE: /* {{{ */
@@ -850,51 +882,36 @@ static void
 EventFocus(XFocusChangeEvent *ev)
 {
   SubClient *c = NULL;
-  SubTray *t = NULL;
 
   /* Check if we are interested in this event */
-  if((NotifyNormal != ev->mode || NotifyInferior == ev->detail) &&
-    !(NotifyWhileGrabbed == ev->mode && 
-    (NotifyNonlinear == ev->detail || NotifyAncestor == ev->detail)))
+  if(ev->window == subtle->windows.focus) return;
+
+  /* Remove focus */
+  subGrabUnset(subtle->windows.focus);
+  if((c = CLIENT(subSharedFind(subtle->windows.focus, CLIENTID)))) 
     {
-      subSharedLogDebug("Focus ignore: type=%s, mode=%d, detail=%d, send_event=%d\n", 
-        FocusIn == ev->type ? "in" : "out", ev->mode, ev->detail, ev->send_event);
-      return;
+      subtle->windows.focus        = 0;
+      subtle->panels.caption.width = 0;
+      subClientRender(c);
     }
 
-  /* Handle other focus event */
-  if(ROOT == ev->window)
+  /* Handle focus event */
+  if(ROOT == ev->window) ///< Root
     {
-      if(FocusIn == ev->type) 
-        {
-          subtle->windows.focus = ROOT;
+      subtle->windows.focus = ROOT;
+      subGrabSet(ROOT);
 
-          subGrabSet(ROOT);
-        }
-      else if(FocusOut == ev->type)
-        {
-          subtle->windows.focus = 0;
-
-          subGrabUnset(ROOT);
-        }
+      subPanelUpdate();
+      subPanelRender();
     }
   else if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) ///< Clients
     {
-      if(!(c->flags & SUB_CLIENT_DEAD)) ///< Beware of the dead
-        { 
-          if(FocusIn == ev->type && VISIBLE(subtle->view, c)) ///< FocusIn event
-            {
-              subtle->windows.focus = c->win;
-              subGrabSet(c->win);
-              subClientSetCaption(c);
-            }
-          else if(FocusOut == ev->type && !(c->flags & SUB_MODE_FULL)) ///< FocusOut event
-            {
-              subtle->windows.focus        = 0;
-              subtle->panels.caption.width = 0;
-              subGrabUnset(c->win);
-              subClientRender(c);
-            }
+      if(!(c->flags & SUB_CLIENT_DEAD) && VISIBLE(subtle->view, c))
+        {
+          subtle->windows.focus = c->win;
+          subGrabSet(c->win);
+          subClientSetCaption(c);
+          subClientRender(c);
 
           /* EWMH: Active window */
           subEwmhSetWindows(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW, &subtle->windows.focus, 1);
@@ -902,25 +919,6 @@ EventFocus(XFocusChangeEvent *ev)
           subPanelUpdate();
           subPanelRender();
         }
-    }
-  else if((t = TRAY(subSharedFind(ev->window, TRAYID)))) ///< Tray
-    {
-      int opcodes[3] = { XEMBED_WINDOW_DEACTIVATE, XEMBED_FOCUS_OUT, 0 };
-
-      if(FocusIn == ev->type) 
-        {
-          opcodes[0] = XEMBED_WINDOW_ACTIVATE;
-          opcodes[1] = XEMBED_FOCUS_IN;
-          opcodes[2] = XEMBED_FOCUS_CURRENT;
-
-          /* EWMH: Active window */
-          subEwmhSetWindows(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW, &t->win, 1);
-        }
-
-      subEwmhMessage(ev->window, ev->window, SUB_EWMH_XEMBED, CurrentTime, 
-        opcodes[0], 0, 0, 0);
-      subEwmhMessage(ev->window, ev->window, SUB_EWMH_XEMBED, CurrentTime, 
-        opcodes[1], opcodes[2], 0, 0);          
     }
 } /* }}} */
 
@@ -970,9 +968,12 @@ subEventWatchDel(int fd)
 void
 subEventLoop(void)
 {
-  int i, timeout = 0;
+  int i;
   XEvent ev;
   time_t now;
+  sigset_t sigs;
+  struct sigaction sa;
+  struct timespec timeout = { .tv_sec= 0, .tv_nsec = 0 };
 
 #ifdef HAVE_SYS_INOTIFY_H
   char buf[BUFLEN];
@@ -984,11 +985,30 @@ subEventLoop(void)
 #ifdef HAVE_SYS_INOTIFY_H
   subEventWatchAdd(subtle->notify);
 #endif /* HAVE_SYS_INOTIFY_H */
+  
+  /* Signal set for ppoll */
+  sigemptyset(&sigs);
+  sigaddset(&sigs, SIGHUP);
+  sigaddset(&sigs, SIGINT);
+  sigaddset(&sigs, SIGSEGV);
+  sigaddset(&sigs, SIGCHLD);
 
-  while(1)
+  /* Signal handler */
+  sa.sa_handler = EventSignal;
+  sa.sa_flags   = 0;
+  memset(&sa.sa_mask, 0, sizeof(sigset_t)); ///< Avoid uninitialized values
+  sigemptyset(&sa.sa_mask);
+
+  sigaction(SIGHUP,  &sa, NULL);
+  sigaction(SIGINT,  &sa, NULL);
+  sigaction(SIGSEGV, &sa, NULL);
+  sigaction(SIGCHLD, &sa, NULL);
+
+  while(subtle && subtle->flags & SUB_SUBTLE_RUN)
     {
       now = subSharedTime();
-      if(0 < poll(watches, nwatches, timeout * 1000)) ///< Data ready on any connection
+
+      if(0 < ppoll(watches, nwatches, &timeout, &sigs)) ///< Data ready on any connection
         {
           for(i = 0; i < nwatches; i++) ///< Find descriptor
             {
@@ -1012,10 +1032,9 @@ subEventLoop(void)
                               case EnterNotify:       EventCrossing(&ev.xcrossing);          break;
                               case SelectionClear:    EventSelection(&ev.xselectionclear);   break;
                               case Expose:            EventExpose(&ev.xexpose);              break;
+                              case FocusIn:           EventFocus(&ev.xfocus);                break;
                               case ButtonPress:
                               case KeyPress:          EventGrab(&ev);                        break;
-                              case FocusIn:           
-                              case FocusOut:          EventFocus(&ev.xfocus);                break;
                             }
                         }                       
                     } /* }}} */
@@ -1082,12 +1101,12 @@ subEventLoop(void)
         } /* }}} */
 
       /* Set new timeout */
-      if(0 < subtle->sublets->ndata && 
+      if(subtle && 0 < subtle->sublets->ndata && 
         SUBLET(subtle->sublets->data[0])->flags & SUB_SUBLET_INTERVAL)
-        timeout = SUBLET(subtle->sublets->data[0])->time - now;
-      else timeout = 60; 
+        timeout.tv_sec = SUBLET(subtle->sublets->data[0])->time - now;
+      else timeout.tv_sec = 60; 
 
-      if(0 > timeout) timeout = 0; ///< Sanitize
+      if(0 > timeout.tv_sec) timeout.tv_sec = 0; ///< Sanitize
     }
 } /* }}} */
 
