@@ -253,7 +253,7 @@ subClientConfigure(SubClient *c)
 void
 subClientRender(SubClient *c)
 {
-  char buf[255];
+  char buf[50];
   XSetWindowAttributes sattrs;
   XGCValues gvals;
 
@@ -1055,9 +1055,9 @@ subClientKill(SubClient *c,
             subEwmhGet(SUB_EWMH_WM_DELETE_WINDOW), CurrentTime, 0, 0, 0);
         }
       else XKillClient(subtle->dpy, c->win);
-    }
 
-  subSharedFocus(); ///< Focus
+      subSharedFocus(); ///< Focus
+    }
 
   if(c->gravities) free(c->gravities);
   if(c->screens)   free(c->screens);
