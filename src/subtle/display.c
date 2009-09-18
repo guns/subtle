@@ -28,6 +28,11 @@ subDisplayInit(const char *display)
   XGCValues gvals;
   XSetWindowAttributes sattrs;
   unsigned long mask = 0;
+  const char stipple[] = {
+    0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 0x49, 0x12, 0x24, 0x49, 0x92, 0x24,
+    0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 0x49, 0x12, 0x24, 0x49, 0x92, 0x24,
+    0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 0x49, 0x12
+  };
 
 #ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
   int xinerama_event = 0, xinerama_error = 0;
@@ -42,7 +47,9 @@ subDisplayInit(const char *display)
 
   /* Create GCs */
   gvals.function      = GXcopy;
-  mask                = GCFunction;
+  gvals.fill_style    = FillStippled;
+  gvals.stipple       = XCreateBitmapFromData(subtle->dpy, ROOT, stipple, 15, 16);
+  mask                = GCFunction|GCFillStyle|GCStipple;  
   subtle->gcs.stipple = XCreateGC(subtle->dpy, ROOT, mask, &gvals);
  
   gvals.plane_mask         = AllPlanes;
@@ -183,19 +190,21 @@ subDisplayConfigure(void)
         subtle->screen->base.width, subtle->th);
       XMapRaised(subtle->dpy, subtle->windows.panel1);
     }
+  else XUnmapWindow(subtle->dpy, subtle->windows.panel1);
 
   if(subtle->flags & SUB_SUBTLE_PANEL2)
     {
       XMoveResizeWindow(subtle->dpy, subtle->windows.panel2, 0, 
-        subtle->screen->base.height - subtle->th, subtle->screen->base.width, 
-        subtle->th);
+        subtle->screen->base.height - subtle->th, subtle->screen->base.width, subtle->th);
       XMapRaised(subtle->dpy, subtle->windows.panel2);
     }
+  else XUnmapWindow(subtle->dpy, subtle->windows.panel2);
 
-  subScreenUpdate(); ///< Initially update strut
-  subPanelUpdate();  ///< Initially update panels
+  /* Update struts and panels */
+  subScreenUpdate();
+  subPanelUpdate();
 
-  XSync(subtle->dpy, False);
+  XSync(subtle->dpy, False); ///< Sync all changes
 } /* }}} */
 
  /** subDisplayScan {{{

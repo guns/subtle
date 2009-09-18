@@ -1104,6 +1104,7 @@ RubyWrapLoadConfig(VALUE data)
   config = rb_const_get(rb_cObject, rb_intern("PANEL"));
   if(RubyParsePanel(config, "top", &p))      subtle->flags |= SUB_SUBTLE_PANEL1;
   if(RubyParsePanel(config, "bottom", &p))   subtle->flags |= SUB_SUBTLE_PANEL2;
+  if(True == RubyGetBool(config, "stipple")) subtle->flags |= SUB_SUBTLE_STIPPLE;
   
   /* Separator */
   subtle->separator.string = strdup(RubyGetString(config, "separator", "|"));

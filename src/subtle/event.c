@@ -100,9 +100,12 @@ EventSignal(int signum)
     {
       case SIGHUP: subRubyReloadConfig(); break; ///< Reload config 
       case SIGINT:
-        if(subtle) subtle->flags &= ~SUB_SUBTLE_RUN;
-        XNoOp(subtle->dpy); ///< Forcing ppoll to leave lock
-        XSync(subtle->dpy, False);
+        if(subtle) 
+          {
+            subtle->flags &= ~SUB_SUBTLE_RUN;
+            XNoOp(subtle->dpy); ///< Forcing ppoll to leave lock
+            XSync(subtle->dpy, False);
+          }
         break;
       case SIGSEGV:
 #ifdef HAVE_EXECINFO_H
