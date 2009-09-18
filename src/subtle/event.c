@@ -967,12 +967,13 @@ subEventWatchDel(int fd)
 void
 subEventLoop(void)
 {
-  int i;
+  int i, events = 0;
   XEvent ev;
   time_t now;
   sigset_t sigs;
   struct sigaction sa;
-  struct timespec timeout = { .tv_sec= 0, .tv_nsec = 0 };
+  struct timespec timeout = { .tv_sec= 1, .tv_nsec = 0 };
+  SubSublet *s = NULL;
 
 #ifdef HAVE_SYS_INOTIFY_H
   char buf[BUFLEN];
@@ -1003,13 +1004,11 @@ subEventLoop(void)
   sigaction(SIGSEGV, &sa, NULL);
   sigaction(SIGCHLD, &sa, NULL);
 
-  XSync(subtle->dpy, False);
-
   while(subtle && subtle->flags & SUB_SUBTLE_RUN)
     {
       now = subSharedTime();
 
-      if(0 < ppoll(watches, nwatches, &timeout, &sigs)) ///< Data ready on any connection
+      if(0 < (events = ppoll(watches, nwatches, &timeout, &sigs))) ///< Data ready on any connection
         {
           for(i = 0; i < nwatches; i++) ///< Find descriptor
             {
@@ -1048,8 +1047,6 @@ subEventLoop(void)
 
                           if(event && IN_IGNORED != event->mask) ///< Skip unwatch events
                             {
-                              SubSublet *s = NULL;
-
                               if((s = SUBLET(subSharedFind(subtle->panels.sublets.win, event->wd))))
                                 {
                                   subRubyCall(SUB_CALL_SUBLET_RUN, s->recv, NULL);
@@ -1063,8 +1060,6 @@ subEventLoop(void)
 #endif /* HAVE_SYS_INOTIFY_H */
                   else ///< Socket {{{ 
                     {
-                       SubSublet *s = NULL;
-
                        if((s = SUBLET(subSharedFind(subtle->panels.sublets.win, watches[i].fd))))
                          {
                            subRubyCall(SUB_CALL_SUBLET_RUN, s->recv, NULL);
@@ -1076,11 +1071,11 @@ subEventLoop(void)
                 }
             }
         }
-      else ///< Timeout waiting for data or error {{{
+      else if(0 == events) ///< Timeout waiting for data or error {{{
         {
           if(0 < subtle->sublets->ndata)
             {
-              SubSublet *s = SUBLET(subtle->sublets->data[0]);
+              s = SUBLET(subtle->sublets->data[0]);
 
               while(s && s->flags & SUB_SUBLET_INTERVAL && s->time <= now)
                 {
@@ -1102,12 +1097,13 @@ subEventLoop(void)
         } /* }}} */
 
       /* Set new timeout */
-      if(subtle && 0 < subtle->sublets->ndata && 
-        SUBLET(subtle->sublets->data[0])->flags & SUB_SUBLET_INTERVAL)
-        timeout.tv_sec = SUBLET(subtle->sublets->data[0])->time - now;
-      else timeout.tv_sec = 60; 
-
-      if(0 > timeout.tv_sec) timeout.tv_sec = 0; ///< Sanitize
+      if(0 < subtle->sublets->ndata)
+        {
+          s = SUBLET(subtle->sublets->data[0]);
+          timeout.tv_sec = s->flags & SUB_SUBLET_INTERVAL ? s->time - now : 60;
+          if(0 >= timeout.tv_sec) timeout.tv_sec = 1; ///< Sanitize
+        }
+      else timeout.tv_sec = 0; ///< Wait idefinitely
     }
 } /* }}} */
 
