@@ -194,6 +194,8 @@ subDisplayConfigure(void)
 
   subScreenUpdate(); ///< Initially update strut
   subPanelUpdate();  ///< Initially update panels
+
+  XSync(subtle->dpy, False);
 } /* }}} */
 
  /** subDisplayScan {{{
