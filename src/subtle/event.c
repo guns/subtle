@@ -358,7 +358,17 @@ EventMessage(XClientMessageEvent *ev)
                   {
                     if(VISIBLE(subtle->view, c)) 
                       {
+                        int flags = c->flags & (SUB_MODE_FULL|SUB_MODE_FLOAT);
+
                         subClientSetScreen(c, ev->data.l[1], True);
+
+                        /* Remove full/float mode and re-set it for screen change */
+                        if(flags) 
+                          {
+                            c->flags &= ~flags;
+                            subClientToggle(c, flags);
+                          }                        
+
                         subViewConfigure(subtle->view);
                         subClientWarp(c);
                       }
@@ -694,7 +704,7 @@ EventGrab(XEvent *ev)
   unsigned int code = 0, state = 0;
   KeySym sym;
 
-  /* Distinct types */
+  /* Distinct types {{{ */
   switch(ev->type)
     {
       case ButtonPress:
@@ -728,7 +738,7 @@ EventGrab(XEvent *ev)
         code  = ev->xkey.keycode;
         state = ev->xkey.state;
         break;
-    }
+    } /* }}} */
 
   /* Find grab */
   if((g = subGrabFind(code, sym, state)))
@@ -857,7 +867,17 @@ EventGrab(XEvent *ev)
               {
                 if(subtle->screens->ndata > g->data.num) ///< Check values
                   {
+                    int flags = c->flags & (SUB_MODE_FULL|SUB_MODE_FLOAT);
+
                     subClientSetScreen(c, g->data.num, True);
+
+                    /* Remove full/float mode and re-set it for screen change */
+                    if(flags) 
+                      {
+                        c->flags &= ~flags;
+                        subClientToggle(c, flags);
+                      }
+
                     subViewConfigure(subtle->view);
                     subClientWarp(c);
                   }
