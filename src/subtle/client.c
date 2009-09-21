@@ -25,33 +25,29 @@ static void
 ClientMask(SubClient *c)
 {
   XDrawRectangle(subtle->dpy, ROOT, subtle->gcs.invert, c->geom.x - 1, c->geom.y - 1,
-    c->geom.width - 2 * subtle->bw + 1, c->geom.height - 2 * subtle->bw + 1);
+    c->geom.width + 1, c->geom.height + 1);
 } /* }}} */
 
 /* ClientSnap {{{ */
 static void
 ClientSnap(SubClient *c)
 {
-  int top = 0, bottom = 0;
+  SubScreen *s = NULL;
 
   assert(c);
 
-  /* Panel gaps */
-  if(0 == subtle->screen->base.y)
-    {
-      if(subtle->flags & SUB_SUBTLE_PANEL1) top    += subtle->th;
-      if(subtle->flags & SUB_SUBTLE_PANEL2) bottom += subtle->th;
-    }
+  s = SCREEN(subtle->screens->data[c->screen]);
 
-  if(subtle->screen->base.x + subtle->snap > c->geom.x) 
-    c->geom.x = subtle->screen->base.x + subtle->bw;
-  else if(c->geom.x > (subtle->screen->base.x + subtle->screen->base.width - c->geom.width - subtle->snap)) 
-    c->geom.x = subtle->screen->base.x + subtle->screen->base.width + subtle->bw - c->geom.width;
+  /* Snap to screen edges */
+  if(s->geom.x + subtle->snap > c->geom.x) 
+    c->geom.x = s->geom.x + subtle->bw;
+  else if(c->geom.x > (s->geom.x + s->geom.width + subtle->bw - c->geom.width - subtle->snap)) 
+    c->geom.x = s->geom.x + s->geom.width - c->geom.width - subtle->bw;
 
-  if(subtle->screen->base.y + subtle->snap + top > c->geom.y)
-    c->geom.y = subtle->screen->base.y + subtle->bw + top;
-  else if(c->geom.y > (subtle->screen->base.y + subtle->screen->base.height - c->geom.height - subtle->snap - bottom)) 
-    c->geom.y = subtle->screen->base.y + subtle->screen->base.height + subtle->bw - c->geom.height - bottom;
+  if(s->geom.y + subtle->snap > c->geom.y)
+    c->geom.y = s->geom.y + subtle->bw;
+  else if(c->geom.y > (s->geom.y + s->geom.height + subtle->bw - c->geom.height - subtle->snap)) 
+    c->geom.y = s->geom.y + s->geom.height - c->geom.height - subtle->bw;
 } /* }}} */
 
 /* ClientGravity {{{ */
@@ -450,10 +446,13 @@ subClientDrag(SubClient *c,
                     case SUB_DRAG_RESIZE:
                       if(left) ///< Drag to left
                         {
-                          check          = ww + (rx - ev.xmotion.x_root); ///< Avoid overflow
-                          c->geom.width  = check > c->minw ? check : c->minw;
-                          c->geom.width -= (c->geom.width % c->incw);
-                          c->geom.x      = (rx - wx) + ww - c->geom.width;
+                          if(0 < (rx - wx) - (rx - ev.xmotion.x_root)) ///< Check edge
+                            {
+                              check          = ww + (rx - ev.xmotion.x_root); ///< Avoid overflow
+                              c->geom.width  = check > c->minw ? check : c->minw;
+                              c->geom.width -= (c->geom.width % c->incw);
+                              c->geom.x      = (rx - wx) + ww - c->geom.width;
+                            }
                         }
                       else ///< Drag to right
                         {
@@ -666,7 +665,7 @@ subClientSetGravity(SubClient *c,
       cell = gravity & ~SUB_GRAVITY_MODES; ///< Strip modes
 
       /* Compute slot */
-      s = SCREEN(subtle->screens->data[c->screens[subtle->vid]]);
+      s = SCREEN(subtle->screens->data[c->screen]);
       slot.height = s->geom.height / cells[cell].y;
       slot.width  = s->geom.width / cells[cell].x;
       slot.x      = s->geom.x + cells[cell].right * slot.width;
@@ -770,6 +769,8 @@ subClientSetSize(SubClient *c)
   /* Limit base height */
   if(c->base.height < c->minh) c->base.height = c->minh;
   if(c->base.height > c->maxh) c->base.height = c->maxh;
+
+  if(c->base.y < s->geom.y) c->base.y = s->geom.y;
   if(c->base.y + c->base.height > s->geom.y + s->geom.height)
     c->base.height = s->geom.height - (s->geom.y + c->base.y);
 
@@ -777,6 +778,7 @@ subClientSetSize(SubClient *c)
   if(c->geom.width < c->minw) c->geom.width = c->minw;
   if(c->geom.width > c->maxw) c->geom.width = c->maxw;
   if(c->geom.x + c->geom.width > s->geom.x + s->geom.width) 
+    c->geom.width = s->geom.width - (s->geom.x + c->geom.x);
 
   /* Limit height */
   if(c->geom.height < c->minh) c->geom.height = c->minh;
@@ -793,7 +795,7 @@ subClientSetSize(SubClient *c)
     c->geom.width = (int)(c->geom.height * c->minr);
 
   if(c->maxr && c->geom.height * c->maxr < c->geom.width)
-    c->geom.width = (int)(c->geom.height * c->maxr); 
+    c->geom.width = (int)(c->geom.height * c->maxr);
 } /* }}} */
 
   /** subClientSetHints {{{
@@ -966,8 +968,8 @@ subClientToggle(SubClient *c,
 
           if(s->base.x >= c->geom.x || s->base.y >= c->geom.y) ///< Center
             {
-              c->geom.x = s->base.x + (s->base.width - c->geom.width) / 2;
-              c->geom.y = s->base.y + ((s->base.height - subtle->th) - c->geom.height) / 2;
+              c->geom.x = s->geom.x + (s->geom.width - c->geom.width) / 2;
+              c->geom.y = s->geom.y + ((s->geom.height - subtle->th) - c->geom.height) / 2;
             }
         }
 
