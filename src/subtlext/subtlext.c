@@ -1158,6 +1158,31 @@ SubtlextClientSizeSet(VALUE self,
   return Qnil;
 } /* }}} */
 
+/* SubtlextClientAlive {{{ */
+/*
+ * call-seq: alive? -> true or false
+ *
+ * Check if client is alive
+ *
+ *  client.alive?
+ *  => true
+ *
+ *  client.alive?
+ *  => false
+ */
+
+static VALUE
+SubtlextClientAlive(VALUE self)
+{
+  VALUE ret = Qfalse, name = rb_iv_get(self, "@name");
+
+  /* Just find the client */
+  if(RTEST(name) && -1 != subSharedClientFind(RSTRING_PTR(name), NULL))
+    ret = Qtrue;
+
+  return ret;
+} /* }}} */
+
 /* SubtlextClientUpdate {{{ */
 /*
  * call-seq: update -> nil
@@ -2915,6 +2940,7 @@ Init_subtlext(void)
   rb_define_method(client, "screen=",      SubtlextClientScreenSet,     1);  
   rb_define_method(client, "size",         SubtlextClientSize,          0);
   rb_define_method(client, "size=",        SubtlextClientSizeSet,       1);
+  rb_define_method(client, "alive?",       SubtlextClientAlive,         0);
   rb_define_method(client, "update",       SubtlextClientUpdate,        0);
   rb_define_method(client, "+",            SubtlextClientOperatorPlus,  1);
   rb_define_method(client, "-",            SubtlextClientOperatorMinus, 1);
