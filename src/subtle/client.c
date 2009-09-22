@@ -760,35 +760,19 @@ subClientSetSize(SubClient *c)
 
   s = SCREEN(subtle->screens->data[c->screen]);
 
-  /* Limit base width */
-  if(c->base.width < c->minw) c->base.width = c->minw;
-  if(c->base.width > c->maxw) c->base.width = c->maxw;
-  if(c->base.x + c->geom.width > s->geom.x + s->geom.width) 
-    c->base.width = s->geom.width - (s->geom.x - c->base.x);
+  /* Limit width */
+  if(c->base.width < c->minw)  c->base.width  = c->minw;
+  if(c->base.width > c->maxw)  c->base.width  = c->maxw;
 
-  /* Limit base height */
+  if(c->geom.width < c->minw)  c->geom.width  = c->minw;
+  if(c->geom.width > c->maxw)  c->geom.width  = c->maxw;
+
+  /* Limit height */
   if(c->base.height < c->minh) c->base.height = c->minh;
   if(c->base.height > c->maxh) c->base.height = c->maxh;
 
-  if(c->base.y < s->geom.y) c->base.y = s->geom.y;
-  if(c->base.y + c->base.height > s->geom.y + s->geom.height)
-    c->base.height = s->geom.height - (s->geom.y + c->base.y);
-
-  /* Limit width */
-  if(c->geom.width < c->minw) c->geom.width = c->minw;
-  if(c->geom.width > c->maxw) c->geom.width = c->maxw;
-  if(c->geom.x + c->geom.width > s->geom.x + s->geom.width) 
-    c->geom.width = s->geom.width - (s->geom.x + c->geom.x);
-
-  /* Limit height */
   if(c->geom.height < c->minh) c->geom.height = c->minh;
   if(c->geom.height > c->maxh) c->geom.height = c->maxh;
-  if(c->geom.y + c->geom.height > s->geom.y + s->geom.height)
-    c->geom.height = s->geom.height - (s->geom.y + c->geom.y);
-
-  /* Check incs */
-  c->geom.width  -= c->geom.width % c->incw; 
-  c->geom.height -= c->geom.height % c->inch;
 
   /* Check aspect ratios */
   if(c->minr && c->geom.height * c->minr > c->geom.width)
@@ -796,6 +780,14 @@ subClientSetSize(SubClient *c)
 
   if(c->maxr && c->geom.height * c->maxr < c->geom.width)
     c->geom.width = (int)(c->geom.height * c->maxr);
+
+  /* Limit sizes */
+  subScreenLimit(s, &c->geom);
+  subScreenLimit(s, &c->base);
+
+  /* Check incs */
+  c->geom.width  -= c->geom.width % c->incw; 
+  c->geom.height -= c->geom.height % c->inch;
 } /* }}} */
 
   /** subClientSetHints {{{
@@ -961,16 +953,16 @@ subClientToggle(SubClient *c,
       if(type & SUB_MODE_FLOAT)
         {
           SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
-
+          
           c->geom = c->base;
 
-          subClientSetSize(c); ///< Sanitize
-
-          if(s->base.x >= c->geom.x || s->base.y >= c->geom.y) ///< Center
+          if(s->base.x == c->geom.x && s->base.y == c->geom.y) ///< Center
             {
               c->geom.x = s->geom.x + (s->geom.width - c->geom.width) / 2;
               c->geom.y = s->geom.y + ((s->geom.height - subtle->th) - c->geom.height) / 2;
             }
+
+          subClientSetSize(c); ///< Sanitize
         }
 
       if(type & SUB_MODE_FULL)
