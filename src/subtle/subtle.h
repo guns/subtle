@@ -604,6 +604,7 @@ void subRubyFinish(void);                                         ///< Kill Ruby
 SubScreen *subScreenNew(int x, int y, unsigned int width,
   unsigned int height);                                           ///< Create screen
 void subScreenUpdate(void);                                       ///< Update screens
+void subScreenLimit(SubScreen *s, XRectangle *r);                 ///< Limit rect size
 void subScreenJump(SubScreen *s);                                 ///< Jump to screen
 void subScreenKill(SubScreen *s);                                 ///< Kill screen
 /* }}} */

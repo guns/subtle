@@ -85,6 +85,33 @@ subScreenJump(SubScreen *s)
     s->geom.x + s->geom.width / 2, s->geom.y + s->geom.height / 2);
 } /* }}} */
 
+ /** SubScreenLimit {{{
+  * @brief Limit a rect to in screen boundaries
+  * @param[in]  s  A #SubScreem
+  * @param[in]  r  A XRectangle
+  **/
+
+void
+subScreenLimit(SubScreen *s,
+  XRectangle *r)
+{
+  assert(s && r);
+
+  /* Check boundaries */
+  if(r->x < s->geom.x || r->x > s->geom.x + s->geom.width)
+    r->x = s->geom.x;
+
+  if(r->y < s->geom.y || r->y > s->geom.y + s->geom.height)
+    r->y = s->geom.y;
+
+  /* Check sizes */
+  if(r->x + r->width > s->geom.x + s->geom.width)
+    r->width = s->geom.x + s->geom.width - r->x;
+
+  if(r->y + r->height > s->geom.y + s->geom.height)
+    r->height = s->geom.y + s->geom.height - r->y;
+} /* }}} */
+
  /** SubScreenKill {{{
   * @brief Kill a screen
   * @param[in]  s  A #SubScreem
