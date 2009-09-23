@@ -749,16 +749,17 @@ SubtlerTagFind(char *arg1,
     {
       for(i = 0; i < size_clients; i++)
         {
-          char *klass = NULL;
+          char *name = NULL, *klass = NULL;
           unsigned long *flags   = (unsigned long *)subSharedPropertyGet(clients[i], 
             XA_CARDINAL, "SUBTLE_WINDOW_TAGS", NULL);
 
-          subSharedPropertyClass(clients[i], NULL, &klass);
+          subSharedPropertyClass(clients[i], &name, &klass);
 
           if((int)*flags & (1L << (tag + 1))) 
-            printf("%#lx %s [client]\n", clients[i], klass);
+            printf("%#lx %s (%s) [client]\n", clients[i], name, klass);
 
           free(flags);
+          free(name);
           free(klass);
         }
 
