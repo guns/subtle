@@ -1128,7 +1128,7 @@ subEventLoop(void)
           timeout.tv_sec = s->flags & SUB_SUBLET_INTERVAL ? s->time - now : 60;
           if(0 >= timeout.tv_sec) timeout.tv_sec = 1; ///< Sanitize
         }
-      else timeout.tv_sec = 0; ///< Wait idefinitely
+      else timeout.tv_sec = 60;
     }
 } /* }}} */
 
