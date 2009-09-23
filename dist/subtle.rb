@@ -22,11 +22,11 @@ OPTIONS = {
 # Panel
 #
 # Available panels: 
-# :views, :caption, :tray, :sublets
+# :views, :title, :tray, :sublets
 # :spacer
 #
 PANEL = {
-  :top       => [ :views, :caption, :spacer, :tray, :sublets ],   # Top panel
+  :top       => [ :views, :title, :spacer, :tray, :sublets ],   # Top panel
   :bottom    => [ ],                                              # Bottom panel
   :stipple   => false,                                            # Add stipple to panels
   :separator => "|"                                               # Separator between sublets
