@@ -98,10 +98,10 @@ subScreenLimit(SubScreen *s,
   assert(s && r);
 
   /* Check boundaries and center */
-  if(r->x <= s->geom.x || r->x >= s->geom.x + s->geom.width)
+  if(0 == r->x || r->x <= s->geom.x || r->x >= s->geom.x + s->geom.width)
     r->x = s->geom.x + (r->width - r->width) / 2;
 
-  if(r->y <= s->geom.y || r->y >= s->geom.y + s->geom.height)
+  if(0 == r->y || r->y <= s->geom.y || r->y >= s->geom.y + s->geom.height)
     r->y = s->geom.y + (s->geom.height - r->height) / 2;
 
   /* Check sizes */
