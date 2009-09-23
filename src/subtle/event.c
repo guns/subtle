@@ -605,16 +605,16 @@ EventProperty(XPropertyEvent *ev)
       case SUB_EWMH_WM_NAME: /* {{{ */
         if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) 
           {
-            char *caption = NULL;
+            char *title = NULL;
 
-            if(XFetchName(subtle->dpy, c->win, &caption))
+            if(XFetchName(subtle->dpy, c->win, &title))
               {
-                if(c->caption) free(c->caption);
-                c->caption = caption;
+                if(c->title) free(c->title);
+                c->title = title;
 
                 if(subtle->windows.focus == c->win) 
                   {
-                    subClientSetCaption(c);
+                    subClientSetTitle(c);
                     subPanelUpdate();
                     subPanelRender();
                   }
@@ -913,8 +913,8 @@ EventFocus(XFocusChangeEvent *ev)
   subGrabUnset(subtle->windows.focus);
   if((c = CLIENT(subSharedFind(subtle->windows.focus, CLIENTID)))) 
     {
-      subtle->windows.focus        = 0;
-      subtle->panels.caption.width = 0;
+      subtle->windows.focus      = 0;
+      subtle->panels.title.width = 0;
       subClientRender(c);
     }
 
@@ -933,7 +933,7 @@ EventFocus(XFocusChangeEvent *ev)
         {
           subtle->windows.focus = c->win;
           subGrabSet(c->win);
-          subClientSetCaption(c);
+          subClientSetTitle(c);
 
           /* EWMH: Active window */
           subEwmhSetWindows(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW, &subtle->windows.focus, 1);

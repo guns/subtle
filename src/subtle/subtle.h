@@ -241,7 +241,7 @@ typedef struct subarray_t /* {{{ */
 typedef struct subclient_t /* {{{ */
 {
   FLAGS      flags;                                               ///< Client flags
-  char       *name, *klass, *caption;                             ///< Client name, klass, caption
+  char       *name, *klass, *title;                               ///< Client name, klass, title
 
   TAGS       tags;                                                ///< Client tags
   Window     win;                                                 ///< Client window
@@ -443,7 +443,7 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    struct subpanel_t  views, caption, tray, sublets;
+    struct subpanel_t  views, title, tray, sublets;
   } panels;                                                       ///< Subtle panels
 
   struct
@@ -527,7 +527,7 @@ void subClientSetScreen(SubClient *c, int screen, int force);     ///< Set clien
 void subClientSetSize(SubClient *c);                              ///< Set client sizes
 void subClientSetHints(SubClient *c);                             ///< Set client hints
 void subClientSetStrut(SubClient *c);                             ///< Set client strut
-void subClientSetCaption(SubClient *c);                           ///< Set client caption
+void subClientSetTitle(SubClient *c);                             ///< Set client title
 void subClientToggle(SubClient *c, int type);                     ///< Toggle client state
 void subClientPublish(void);                                      ///< Publish all clients
 void subClientKill(SubClient *c, int close);                      ///< Kill client

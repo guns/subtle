@@ -119,7 +119,7 @@ subDisplayInit(const char *display)
     InputOutput, CopyFromParent, mask, &sattrs);
   subtle->panels.views.win   = XCreateSimpleWindow(subtle->dpy, subtle->windows.panel1, 
     0, 0, 1, 1, 0, 0, sattrs.background_pixel);
-  subtle->panels.caption.win = XCreateSimpleWindow(subtle->dpy, subtle->windows.panel1, 
+  subtle->panels.title.win   = XCreateSimpleWindow(subtle->dpy, subtle->windows.panel1, 
     0, 0, 1, 1, 0, 0, sattrs.background_pixel);
   subtle->panels.tray.win    = XCreateSimpleWindow(subtle->dpy, subtle->windows.panel1, 
     0, 0, 1, 1, 0, 0, subtle->colors.bg_focus);    
@@ -131,7 +131,7 @@ subDisplayInit(const char *display)
   XChangeWindowAttributes(subtle->dpy, subtle->windows.panel1,     mask, &sattrs);
   XChangeWindowAttributes(subtle->dpy, subtle->windows.panel2,     mask, &sattrs);
   XChangeWindowAttributes(subtle->dpy, subtle->panels.views.win,   mask, &sattrs);
-  XChangeWindowAttributes(subtle->dpy, subtle->panels.caption.win, mask, &sattrs);
+  XChangeWindowAttributes(subtle->dpy, subtle->panels.title.win,   mask, &sattrs);
   XChangeWindowAttributes(subtle->dpy, subtle->panels.tray.win,    mask, &sattrs);
   XChangeWindowAttributes(subtle->dpy, subtle->panels.sublets.win, mask, &sattrs);
 
@@ -169,7 +169,7 @@ subDisplayConfigure(void)
   /* Update windows */
   XSetWindowBackground(subtle->dpy,  subtle->windows.panel1,     subtle->colors.bg_panel);
   XSetWindowBackground(subtle->dpy,  subtle->windows.panel2,     subtle->colors.bg_panel);
-  XSetWindowBackground(subtle->dpy,  subtle->panels.caption.win, subtle->colors.bg_focus);
+  XSetWindowBackground(subtle->dpy,  subtle->panels.title.win, subtle->colors.bg_focus);
   XSetWindowBackground(subtle->dpy,  subtle->panels.views.win,   subtle->colors.bg_views);
   XSetWindowBackground(subtle->dpy,  subtle->panels.tray.win,    subtle->colors.bg_panel);
   XSetWindowBackground(subtle->dpy,  subtle->panels.sublets.win, subtle->colors.bg_sublets);
@@ -177,7 +177,7 @@ subDisplayConfigure(void)
 
   XClearWindow(subtle->dpy, subtle->windows.panel1);
   XClearWindow(subtle->dpy, subtle->windows.panel2);
-  XClearWindow(subtle->dpy, subtle->panels.caption.win);
+  XClearWindow(subtle->dpy, subtle->panels.title.win);
   XClearWindow(subtle->dpy, subtle->panels.views.win);
   XClearWindow(subtle->dpy, subtle->panels.tray.win);
   XClearWindow(subtle->dpy, subtle->panels.sublets.win);

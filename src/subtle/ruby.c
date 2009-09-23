@@ -448,7 +448,7 @@ RubyParsePanel(VALUE hash,
   RubyPanels panels[] = 
   {
     { CHAR2SYM("views"),   &subtle->panels.views   },
-    { CHAR2SYM("caption"), &subtle->panels.caption },
+    { CHAR2SYM("title"),   &subtle->panels.title },
     { CHAR2SYM("sublets"), &subtle->panels.sublets },
     { CHAR2SYM("tray"),    &subtle->panels.tray    }
   };
@@ -1531,7 +1531,7 @@ subRubyReloadConfig(void)
   /* Clear x cache */
   subtle->panels.tray.x    = 0;
   subtle->panels.views.x   = 0;
-  subtle->panels.caption.x = 0;
+  subtle->panels.title.x   = 0;
   subtle->panels.sublets.x = 0;
 
   /* Clear arrays */

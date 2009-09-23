@@ -105,15 +105,15 @@ subClientNew(Window win)
     }
 
    /* Fetch name and class */
-  XFetchName(subtle->dpy, c->win, &c->caption);
+  XFetchName(subtle->dpy, c->win, &c->title);
   subSharedPropertyClass(c->win, &c->name, &c->klass);
 
   /* Fallback for stupid clients like Skype */
-  if(!c->caption || !strcmp("", c->caption))
+  if(!c->title || !strcmp("", c->title))
     {
-      if(c->name) c->caption = strdup(c->name);
-      else if(c->klass) c->caption = strdup(c->klass);
-      else c->caption = strdup("subtle");
+      if(c->name) c->title = strdup(c->name);
+      else if(c->klass) c->title = strdup(c->klass);
+      else c->title = strdup("subtle");
     }
  
   /* X related properties */
@@ -269,17 +269,17 @@ subClientRender(SubClient *c)
     subtle->colors.bo_normal;
   XChangeWindowAttributes(subtle->dpy, c->win, CWBorderPixel, &sattrs);
 
-  /* Caption */
+  /* Title mode */
   if(c->flags & (SUB_MODE_STICK|SUB_MODE_FLOAT))
-    snprintf(buf, sizeof(buf), "%c%s", c->flags & SUB_MODE_STICK ? '*' : '^', c->caption);
-  else snprintf(buf, sizeof(buf), "%s", c->caption);
+    snprintf(buf, sizeof(buf), "%c%s", c->flags & SUB_MODE_STICK ? '*' : '^', c->title);
+  else snprintf(buf, sizeof(buf), "%s", c->title);
 
-  /* Caption title */
+  /* Title window */
   gvals.foreground = subtle->colors.fg_focus;
   XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
-  XClearWindow(subtle->dpy, subtle->panels.caption.win);
+  XClearWindow(subtle->dpy, subtle->panels.title.win);
 
-  XDrawString(subtle->dpy, subtle->panels.caption.win, subtle->gcs.font, 3, subtle->fy,
+  XDrawString(subtle->dpy, subtle->panels.title.win, subtle->gcs.font, 3, subtle->fy,
     buf, strlen(buf));
 } /* }}} */
 
@@ -608,7 +608,7 @@ subClientSetTags(SubClient *c)
 
       /* Check if tag matches client */
       if(t->preg &&
-        ((t->flags & SUB_TAG_MATCH_TITLE && c->caption && subSharedRegexMatch(t->preg, c->caption)) ||
+        ((t->flags & SUB_TAG_MATCH_TITLE && c->title && subSharedRegexMatch(t->preg, c->title)) ||
         (t->flags & SUB_TAG_MATCH_NAME && c->name && subSharedRegexMatch(t->preg, c->name)) ||
         (t->flags & SUB_TAG_MATCH_CLASS && c->klass && subSharedRegexMatch(t->preg, c->klass))))
         flags |= subClientTag(c, i);
@@ -904,26 +904,26 @@ subClientSetStrut(SubClient *c)
     }
 } /* }}} */
 
- /** subClientSetCaption {{{
-  * @brief Set caption width
+ /** subClientSetTitle {{{
+  * @brief Set title width
   * @param[in]  c  A #SubClient
   **/
 
 void
-subClientSetCaption(SubClient *c)
+subClientSetTitle(SubClient *c)
 {
   int len = 0;
 
   assert(c);
   DEAD(c);
 
-  len = strlen(c->caption) + (c->flags & (SUB_MODE_STICK|SUB_MODE_FLOAT) ? 1 : 0);
+  len = strlen(c->title) + (c->flags & (SUB_MODE_STICK|SUB_MODE_FLOAT) ? 1 : 0);
 
   /* Update panel width */
-  subtle->panels.caption.width = subSharedTextWidth(c->caption, 50 >= len ? len : 50, 
+  subtle->panels.title.width = subSharedTextWidth(c->title, 50 >= len ? len : 50, 
     NULL, NULL, True) + 6;
-  XResizeWindow(subtle->dpy, subtle->panels.caption.win, 
-    subtle->panels.caption.width, subtle->th);
+  XResizeWindow(subtle->dpy, subtle->panels.title.win, 
+    subtle->panels.title.width, subtle->th);
 } /* }}} */
 
  /** subClientToggle {{{
@@ -995,7 +995,7 @@ subClientToggle(SubClient *c,
   if(VISIBLE(subtle->view, c)) ///< Check visibility first
     {
       subClientFocus(c);
-      subClientSetCaption(c);
+      subClientSetTitle(c);
       subPanelUpdate();
       subPanelRender();
     }
@@ -1039,8 +1039,8 @@ subClientKill(SubClient *c,
   /* Focus */
   if(subtle->windows.focus == c->win)
     {
-      subtle->windows.focus        = 0;
-      subtle->panels.caption.width = 0;
+      subtle->windows.focus      = 0;
+      subtle->panels.title.width = 0;
       subPanelUpdate();
       subPanelRender();
     }
@@ -1065,7 +1065,7 @@ subClientKill(SubClient *c,
 
   if(c->gravities) free(c->gravities);
   if(c->screens)   free(c->screens);
-  if(c->caption)   XFree(c->caption);
+  if(c->title)     XFree(c->title);
   if(c->name)      XFree(c->name);
   if(c->klass)     XFree(c->klass);
   free(c);
