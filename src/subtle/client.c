@@ -967,21 +967,16 @@ subClientToggle(SubClient *c,
 
       if(type & SUB_MODE_FLOAT)
         {
-          SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
-          
           c->geom = c->base;
-
-          if(s->base.x == c->geom.x && s->base.y == c->geom.y) ///< Center
-            {
-              c->geom.x = s->geom.x + (s->geom.width - c->geom.width) / 2;
-              c->geom.y = s->geom.y + ((s->geom.height - subtle->th) - c->geom.height) / 2;
-            }
 
           subClientSetSize(c); ///< Sanitize
         }
 
       if(type & SUB_MODE_FULL)
-        XSetWindowBorderWidth(subtle->dpy, c->win, 0);
+        {
+          XSetWindowBorderWidth(subtle->dpy, c->win, 0);
+          subClientSetSize(c); ///< Sanitize
+        }
     }
 
   subClientConfigure(c);
