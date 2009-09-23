@@ -71,7 +71,7 @@ subSubletRender(void)
 {
   if(0 < subtle->sublets->ndata)
     {
-      int i, separator = 0, width = 0;
+      int j, separator = 0, width = 0;
       XGCValues gvals;
       SubSublet *s = NULL;
       SubText *t = NULL;
@@ -89,9 +89,9 @@ subSubletRender(void)
           XClearWindow(subtle->dpy, s->button);
 
           /* Render text part */
-          for(i = 0; i < s->text->ndata; i++)
+          for(j = 0; j < s->text->ndata; j++)
             {
-              if((t = TEXT(s->text->data[i])) && t->flags & SUB_DATA_STRING) ///< Text
+              if((t = TEXT(s->text->data[j])) && t->flags & SUB_DATA_STRING) ///< Text
                 {
                   /* Update GC */
                   gvals.foreground = t->color;
@@ -104,13 +104,13 @@ subSubletRender(void)
                 }
               else if(t->flags & SUB_DATA_NUM) ///< Icon
                 {
-                  int x = (0 == i) ? 0 : 2; ///< Add spacing when icon isn't first
-                  SubPixmap *p = PIXMAP(subtle->pixmaps->data[t->data.num]);
+                  int x = (0 == j) ? 0 : 2; ///< Add spacing when icon isn't first
+                  SubIcon *i = ICON(subtle->icons->data[t->data.num]);
 
-                  subPixmapRender(p, s->button, width + x, abs(subtle->th - p->height) / 2, 
+                  subIconRender(i, s->button, width + x, abs(subtle->th - i->height) / 2, 
                     t->color, subtle->colors.bg_sublets);
 
-                  width += p->width + x + (i != s->text->ndata - 1 ? 2 : 0); //< Add spacing when isn't last
+                  width += i->width + x + (j != s->text->ndata - 1 ? 2 : 0); //< Add spacing when isn't last
                 }
             }
 
@@ -177,7 +177,7 @@ subSubletSetData(SubSublet *s,
   while((tok = strsep(&data, SEPARATOR)))
     {
       if('#' == *tok) color = atol(tok + 1); ///< Color
-      else if('\0' != *tok) ///< Text or pixmap
+      else if('\0' != *tok) ///< Text or icon
         {
           /* Recycle items */
           if(i < s->text->ndata && (t = TEXT(s->text->data[i])))
@@ -188,10 +188,10 @@ subSubletSetData(SubSublet *s,
           else if((t = TEXT(subSharedMemoryAlloc(1, sizeof(SubText)))))
             subArrayPush(s->text, (void *)t);
 
-          /* Get pixmap from id */
-          if('!' == *tok && 0 <= (id = atoi(tok + 1)) && id <= subtle->pixmaps->ndata)
+          /* Get icon from id */
+          if('!' == *tok && 0 <= (id = atoi(tok + 1)) && id <= subtle->icons->ndata)
             {
-              SubPixmap *p = PIXMAP(subtle->pixmaps->data[id]);
+              SubIcon *p = ICON(subtle->icons->data[id]);
 
               t->flags    = SUB_TYPE_TEXT|SUB_DATA_NUM;
               t->data.num = id;

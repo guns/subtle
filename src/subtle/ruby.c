@@ -912,14 +912,14 @@ RubyIconInit(VALUE self,
   VALUE path)
 {
   int id = -1;
-  SubPixmap *p = NULL;
+  SubIcon *i = NULL;
 
-  /* Creating pixmap */
-  if(-1 == (id = subPixmapFind(RSTRING_PTR(path))) &&
-    (p = subPixmapNew(RSTRING_PTR(path))))
+  /* Creating icon */
+  if(-1 == (id = subIconFind(RSTRING_PTR(path))) &&
+    (i = subIconNew(RSTRING_PTR(path))))
     {
-      id = subtle->pixmaps->ndata;
-      subArrayPush(subtle->pixmaps, (void *)p);
+      id = subtle->icons->ndata;
+      subArrayPush(subtle->icons, (void *)i);
     }
 
   rb_iv_set(self, "@id", INT2FIX(id));

@@ -96,8 +96,8 @@
 #define CLIENT(c) ((SubClient *)c)                                ///< Cast to SubClient
 #define DATA(d)   ((SubData)d)                                    ///< Cast to SubData
 #define GRAB(g)   ((SubGrab *)g)                                  ///< Cast to SubGrab
+#define ICON(i)   ((SubIcon *)i)                                  ///< Cast to SubIcon
 #define PANEL(p)  ((SubPabel *)p)                                 ///< Cast to SubPanel
-#define PIXMAP(p) ((SubPixmap *)p)                                ///< Cast to SubPixmap
 #define SCREEN(s) ((SubScreen *)s)                                ///< Cast to SubScreen
 #define SUBLET(s) ((SubSublet *)s)                                ///< Cast to SubSublet
 #define SUBTLE(s) ((SubSubtle *)s)                                ///< Cast to SubSubtle
@@ -135,8 +135,8 @@
 #define SUB_TYPE_CLIENT               (1L << 1)                   ///< Client
 #define SUB_TYPE_GRAB                 (1L << 2)                   ///< Grab
 #define SUB_TYPE_HOOK                 (1L << 3)                   ///< Hook
-#define SUB_TYPE_PANEL                (1L << 4)                   ///< Panel
-#define SUB_TYPE_PIXMAP               (1L << 5)                   ///< Pixmap
+#define SUB_TYPE_ICON                 (1L << 4)                   ///< Icon
+#define SUB_TYPE_PANEL                (1L << 5)                   ///< Panel
 #define SUB_TYPE_SCREEN               (1L << 6)                   ///< Screen
 #define SUB_TYPE_SUBLET               (1L << 7)                   ///< Sublet
 #define SUB_TYPE_TAG                  (1L << 8)                   ///< Tag
@@ -357,6 +357,14 @@ typedef struct subgrab_t /* {{{ */
   union subdata_t data;                                           ///< Grab data
 } SubGrab; /* }}} */
 
+typedef struct subicon_t /* {{{ */
+{
+  FLAGS         flags;                                            ///< Icon flags
+  Pixmap        pixmap;                                           ///< Icon drawable
+  int           quark;                                            ///< Icon quark
+  unsigned int  width, height;                                    ///< Icon geometry
+} SubIcon; /* }}} */
+
 typedef struct subpanel_t /* {{{ */
 {
   FLAGS              flags;                                       ///< Panel flags
@@ -366,14 +374,6 @@ typedef struct subpanel_t /* {{{ */
 
   struct subpanel_t  *next;                                       ///< Panel next
 } SubPanel; /* }}} */
-
-typedef struct subpixmap_t /* {{{ */
-{
-  FLAGS         flags;                                            ///< Pixmap flags
-  Pixmap        pixmap;                                           ///< Pixmap drawable
-  int           quark;                                            ///< Pixmap quark
-  unsigned int  width, height;                                    ///< Pixmap geometry
-} SubPixmap; /* }}} */
 
 typedef struct subscreen_t /* {{{ */
 {
@@ -414,7 +414,7 @@ typedef struct subsubtle_t /* {{{ */
 
   struct subarray_t    *clients;                                  ///< Subtle clients
   struct subarray_t    *grabs;                                    ///< Subtle grabs
-  struct subarray_t    *pixmaps;                                  ///< Subtle pixmaps
+  struct subarray_t    *icons;                                  ///< Subtle icons
   struct subarray_t    *screens;                                  ///< Subtle screens
   struct subarray_t    *sublets;                                  ///< Subtle sublets
   struct subarray_t    *tags;                                     ///< Subtle tags
@@ -584,12 +584,12 @@ void subPanelUpdate(void);                                        ///< Configure
 void subPanelRender(void);                                        ///< Render panels
 /* }}} */
 
-/* pixmap.c {{{ */
-SubPixmap *subPixmapNew(const char *path);                        ///< Create pixmap
-void subPixmapRender(SubPixmap *p, Window win,
-  int x, int y, long fg,long bg);                                 ///< Render pixmap
-int subPixmapFind(const char *path);                              ///< Find pixmap
-void subPixmapKill(SubPixmap *p);                                 ///< Kill pixmap
+/* icon.c {{{ */
+SubIcon *subIconNew(const char *path);                            ///< Create icon
+void subIconRender(SubIcon *i, Window win,
+  int x, int y, long fg, long bg);                                ///< Render icon
+int subIconFind(const char *path);                                ///< Find icon
+void subIconKill(SubIcon *i);                                     ///< Kill icon
 /* }}} */
 
 /* ruby.c {{{ */

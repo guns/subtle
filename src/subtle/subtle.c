@@ -53,7 +53,7 @@ SubtleFinish(void)
       /* Kill arrays */
       subArrayKill(subtle->clients, False);
       subArrayKill(subtle->grabs,   False);
-      subArrayKill(subtle->pixmaps, True);
+      subArrayKill(subtle->icons, True);
       subArrayKill(subtle->screens, True);
       subArrayKill(subtle->sublets, False);
       subArrayKill(subtle->tags,    True);
@@ -137,7 +137,7 @@ main(int argc,
   /* Alloc */
   subtle->clients = subArrayNew();
   subtle->grabs   = subArrayNew();
-  subtle->pixmaps = subArrayNew();
+  subtle->icons   = subArrayNew();
   subtle->screens = subArrayNew();
   subtle->sublets = subArrayNew();
   subtle->tags    = subArrayNew();
