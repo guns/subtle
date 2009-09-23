@@ -176,7 +176,10 @@ subClientNew(Window win)
         SUB_MODE_FLOAT|SUB_MODE_STICK|SUB_MODE_URGENT : SUB_MODE_FLOAT;
 
       if((k = CLIENT(subSharedFind(trans, CLIENTID))))
-        c->tags |= k->tags; ///< Copy tags
+        {
+          c->tags   |= k->tags; ///< Copy tags
+          c->screen  = k->screen; ///< Copy screen too
+        }
      }
 
   /* Toggle modes and warp if needed */
@@ -549,7 +552,7 @@ subClientTag(SubClient *c,
       c->tags  |= (1L << (tag + 1));
 
       /* Set size and enable float */
-      if(t->flags & SUB_MODE_SIZE && !(c->flags & SUB_MODE_UNFLOAT))
+      if(t->flags & SUB_TAG_SIZE && !(c->flags & SUB_MODE_UNFLOAT))
         {
           flags   |= SUB_MODE_FLOAT;
           c->base  = t->size;
@@ -563,8 +566,8 @@ subClientTag(SubClient *c,
           /* Match only views with this tag */
           if(v->tags & (1L << (tag + 1)))
             {
-              if(t->flags & SUB_MODE_GRAVITY) c->gravities[i] = t->gravity;
-              if(t->flags & SUB_MODE_SCREEN)  c->screens[i]   = t->screen;
+              if(t->flags & SUB_TAG_GRAVITY) c->gravities[i] = t->gravity;
+              if(t->flags & SUB_TAG_SCREEN)  c->screens[i]   = t->screen;
             }
         }
 
@@ -598,9 +601,12 @@ subClientSetTags(SubClient *c)
     {
       SubTag *t = TAG(subtle->tags->data[i]);
 
-      if(t->preg && ((c->name && subSharedRegexMatch(t->preg, c->name)) || 
-        (c->klass && subSharedRegexMatch(t->preg, c->klass))))
-          flags |= subClientTag(c, i);
+      /* Check if tag matches client */
+      if(t->preg &&
+        ((t->flags & SUB_TAG_MATCH_TITLE && c->caption && subSharedRegexMatch(t->preg, c->caption)) ||
+        (t->flags & SUB_TAG_MATCH_NAME && c->name && subSharedRegexMatch(t->preg, c->name)) ||
+        (t->flags & SUB_TAG_MATCH_CLASS && c->klass && subSharedRegexMatch(t->preg, c->klass))))
+        flags |= subClientTag(c, i);
     }
 
   /* Check if client is visible on at least one screen */
@@ -901,12 +907,16 @@ subClientSetStrut(SubClient *c)
 void
 subClientSetCaption(SubClient *c)
 {
+  int len = 0;
+
   assert(c);
   DEAD(c);
 
+  len = strlen(c->caption) + (c->flags & (SUB_MODE_STICK|SUB_MODE_FLOAT) ? 1 : 0);
+
   /* Update panel width */
-  subtle->panels.caption.width = subSharedTextWidth(c->caption, 
-    strlen(c->caption) + (c->flags & (SUB_MODE_STICK|SUB_MODE_FLOAT) ? 1 : 0), NULL, NULL, True) + 6;
+  subtle->panels.caption.width = subSharedTextWidth(c->caption, 50 >= len ? len : 50, 
+    NULL, NULL, True) + 6;
   XResizeWindow(subtle->dpy, subtle->panels.caption.win, 
     subtle->panels.caption.width, subtle->th);
 } /* }}} */
