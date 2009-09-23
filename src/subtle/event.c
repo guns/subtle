@@ -104,7 +104,7 @@ EventSignal(int signum)
           {
             subtle->flags &= ~SUB_SUBTLE_RUN;
             XNoOp(subtle->dpy); ///< Forcing ppoll to leave lock
-            XSync(subtle->dpy, False);
+            XSync(subtle->dpy, True);
           }
         break;
       case SIGSEGV:
