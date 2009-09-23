@@ -172,13 +172,18 @@ subClientNew(Window win)
   /* Check for transient windows */
   if(XGetTransientForHint(subtle->dpy, c->win, &trans))
     {
-      flags |= subtle->flags & SUB_SUBTLE_URGENT && !(c->flags & SUB_MODE_UNURGENT) ? ///< Make transient windows urgent
+      /* Check if transient windows should be urgent */
+      flags |= subtle->flags & SUB_SUBTLE_URGENT && !(c->flags & SUB_MODE_UNURGENT) ?
         SUB_MODE_FLOAT|SUB_MODE_STICK|SUB_MODE_URGENT : SUB_MODE_FLOAT;
 
       if((k = CLIENT(subSharedFind(trans, CLIENTID))))
         {
-          c->tags   |= k->tags; ///< Copy tags
-          c->screen  = k->screen; ///< Copy screen too
+          /* Copy tags and screens */
+          c->tags   |= k->tags;
+          c->screen |= k->screen;
+
+           for(i = 0; i < subtle->views->ndata; i++)
+             c->screens[i] = k->screens[i];
         }
      }
 
