@@ -97,7 +97,7 @@ subScreenLimit(SubScreen *s,
 {
   assert(s && r);
 
-  /* Check boundaries and center */
+  /* Check boundaries */
   if(0 == r->x || r->x <= s->geom.x || r->x >= s->geom.x + s->geom.width)
     r->x = s->geom.x + (r->width - r->width) / 2;
 

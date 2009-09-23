@@ -44,6 +44,7 @@
 #define MINH         100L                                         ///< Client min height
 #define SEPARATOR    "<>"                                         ///< Color separator
 #define EXECTIME     1                                            ///< Max execution time
+#define DEFAULTTAG   (1L << 1)                                    ///< Default tag
 
 #define LENGTH(a)    (sizeof(a) / sizeof(a[0]))                   ///< Array length
 #define WINW(c)      (c->geom.width - 2 * subtle->bw)             ///< Get real width
@@ -147,20 +148,17 @@
 #define SUB_MODE_FULL                 (1L << 20)                  ///< Fullscreen mode
 #define SUB_MODE_FLOAT                (1L << 21)                  ///< Float mode
 #define SUB_MODE_STICK                (1L << 22)                  ///< Stick mode
-#define SUB_MODE_GRAVITY              (1L << 23)                  ///< Gravity mode
-#define SUB_MODE_URGENT               (1L << 24)                  ///< Urgent mode
-#define SUB_MODE_UNFULL               (1L << 25)                  ///< Disable full mode
-#define SUB_MODE_UNFLOAT              (1L << 26)                  ///< Disable float mode
-#define SUB_MODE_UNSTICK              (1L << 27)                  ///< Disable stick mode
-#define SUB_MODE_UNURGENT             (1L << 28)                  ///< Disable urgent mode
-#define SUB_MODE_SCREEN               (1L << 29)                  ///< Screen mode
-#define SUB_MODE_SIZE                 (1L << 30)                  ///< Size mode
+#define SUB_MODE_URGENT               (1L << 23)                  ///< Urgent mode
+#define SUB_MODE_UNFULL               (1L << 24)                  ///< Disable full mode
+#define SUB_MODE_UNFLOAT              (1L << 25)                  ///< Disable float mode
+#define SUB_MODE_UNSTICK              (1L << 26)                  ///< Disable stick mode
+#define SUB_MODE_UNURGENT             (1L << 27)                  ///< Disable urgent mode
 
 /* Client flags */
-#define SUB_CLIENT_DEAD               (1L << 12)                  ///< Dead window
-#define SUB_CLIENT_FOCUS              (1L << 13)                  ///< Send focus message
+#define SUB_CLIENT_FOCUS              (1L << 12)                  ///< Send focus message
+#define SUB_CLIENT_INPUT              (1L << 13)                  ///< Active/passive focus-model
 #define SUB_CLIENT_CLOSE              (1L << 14)                  ///< Send close message
-#define SUB_CLIENT_INPUT              (1L << 15)                  ///< Active/passive focus-model
+#define SUB_CLIENT_DEAD               (1L << 15)                  ///< Dead window
 
 /* Data flags */
 #define SUB_DATA_STRING               (1L << 12)                  ///< String data
@@ -202,6 +200,7 @@
 #define SUB_PANEL_SPACER2             (1L << 13)                  ///< Panel spacer2
 #define SUB_PANEL_BOTTOM              (1L << 14)                  ///< Panel bottom
 
+/* Call flags */
 #define SUB_CALL_SUBLET_RUN           (1L << 1)                   ///< Ruby sublet run call
 #define SUB_CALL_SUBLET_CLICK         (1L << 2)                   ///< Ruby sublet click call
 #define SUB_CALL_GRAB                 (1L << 3)                   ///< Ruby grab call
@@ -223,7 +222,13 @@
 #define SUB_SUBTLE_RUN                (1L << 7)                   ///< Run event loop
 
 /* Tag flags */
-#define SUB_TAG_DEFAULT               (1L << 1)                   ///< Default tag
+#define SUB_TAG_GRAVITY               (1L << 12)                  ///< Gravity property
+#define SUB_TAG_SCREEN                (1L << 13)                  ///< Screen property
+#define SUB_TAG_SIZE                  (1L << 14)                  ///< Size property
+#define SUB_TAG_MATCH                 (1L << 15)                  ///< Match property
+#define SUB_TAG_MATCH_TITLE           (1L << 16)                  ///< Match window title
+#define SUB_TAG_MATCH_NAME            (1L << 17)                  ///< Match WM_NAME
+#define SUB_TAG_MATCH_CLASS           (1L << 18)                  ///< Match WM_CLASS
 /* }}} */
 
 /* Typedefs {{{ */
