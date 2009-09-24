@@ -99,7 +99,7 @@ subScreenLimit(SubScreen *s,
 
   /* Check boundaries */
   if(0 == r->x || r->x <= s->geom.x || r->x >= s->geom.x + s->geom.width)
-    r->x = s->geom.x + (r->width - r->width) / 2;
+    r->x = s->geom.x + (s->geom.width - r->width) / 2;
 
   if(0 == r->y || r->y <= s->geom.y || r->y >= s->geom.y + s->geom.height)
     r->y = s->geom.y + (s->geom.height - r->height) / 2;
