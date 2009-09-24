@@ -660,9 +660,6 @@ EventCrossing(XCrossingEvent *ev)
   SubClient *c = NULL;
   SubTray *t = NULL;
 
-  /* Check if we are interested in this event */
-  if(ev->window == subtle->windows.focus) return;
-
   /* Handle crossing event */
   if(ROOT == ev->window) ///< Root
     {
@@ -701,6 +698,7 @@ static void
 EventGrab(XEvent *ev)
 {
   SubGrab *g = NULL;
+  SubClient *c = NULL;
   unsigned int code = 0, mod = 0;
 
   /* Distinct types {{{ */
@@ -726,9 +724,6 @@ EventGrab(XEvent *ev)
             return;
           }
 
-        if(ev->xbutton.window != subtle->windows.focus) ///< Update focus
-          XSetInputFocus(subtle->dpy, ev->xbutton.window, RevertToNone, CurrentTime);
-
         code = XK_Pointer_Button1 + ev->xbutton.button;
         mod  = ev->xbutton.state;
         break;
@@ -742,7 +737,6 @@ EventGrab(XEvent *ev)
   if((g = subGrabFind(code, mod)))
     {
       Window win = 0;
-      SubClient *c = NULL;
       FLAGS flag = 0;
 
       win  = ev->xbutton.window == ROOT ? ev->xbutton.subwindow : ev->xbutton.window;
