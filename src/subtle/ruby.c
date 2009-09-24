@@ -1134,6 +1134,7 @@ RubyWrapLoadConfig(VALUE data)
   subtle->gravity = RubyGetFixnum(config, "gravity", 5);
   RubyGetRect(config, "padding", &subtle->strut);
   if(True == RubyGetBool(config, "urgent")) subtle->flags |= SUB_SUBTLE_URGENT;
+  if(True == RubyGetBool(config, "resize")) subtle->flags |= SUB_SUBTLE_RESIZE;
 
   /* Config: Font */
   font = RubyGetString(config, "font", FONT);

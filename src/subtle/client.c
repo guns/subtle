@@ -137,7 +137,7 @@ subClientNew(Window win)
   subEwmhSetWMState(c->win, WithdrawnState);
   subClientSetHints(c);
   subClientSetStrut(c);
-  subClientSetSize(c);
+  subClientSetSize(c, True);
   subClientSetTags(c);
 
   /* Window manager protocols */
@@ -432,7 +432,7 @@ subClientDrag(SubClient *c,
                 *dirx = MINMAX(*dirx, c->minw, c->maxw);
                 *diry = MINMAX(*diry, c->minh, c->maxh);
               
-                subClientSetSize(c);
+                subClientSetSize(c, True);
                 ClientMask(c);
               }
             break; /* }}} */
@@ -471,7 +471,7 @@ subClientDrag(SubClient *c,
                       check = wh - (ry - ev.xmotion.y_root); ///< Avoid overflow
                       c->geom.height = check > c->minh ? check : c->minh;
 
-                      subClientSetSize(c);
+                      subClientSetSize(c, True);
                       break;
                   }  
 
@@ -723,6 +723,8 @@ subClientSetGravity(SubClient *c,
       c->gravity                = cell | mode;
       c->gravities[subtle->vid] = cell | mode;
 
+      if(subtle->flags & SUB_SUBTLE_RESIZE) subClientSetSize(c, False);
+
       /* EWMH: Gravity */
       subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&cell, 1);
     }
@@ -749,7 +751,7 @@ subClientSetScreen(SubClient *c,
       c->screen               = screen;
       c->gravity              = -1; ///< Force update
 
-      subClientSetSize(c); ///< Update size for screen
+      subClientSetSize(c, True); ///< Update size for screen
 
       /* EWMH: Screen */
       subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_SCREEN, (long *)&c->screen, 1);
@@ -758,11 +760,13 @@ subClientSetScreen(SubClient *c,
 
   /** subClientSetSize {{{ 
    * @brief Set client size according to client hints
-   * @param[in]  c  A #SubClient
+   * @param[in]  c      A #SubClient
+   * @param[in]  limit  Limit size to min/max
    **/
 
 void
-subClientSetSize(SubClient *c)
+subClientSetSize(SubClient *c,
+  int limit)
 {
   SubScreen *s = NULL;
 
@@ -771,19 +775,26 @@ subClientSetSize(SubClient *c)
 
   s = SCREEN(subtle->screens->data[c->screen]);
 
-  /* Limit width */
-  if(c->base.width < c->minw)  c->base.width  = c->minw;
-  if(c->base.width > c->maxw)  c->base.width  = c->maxw;
+  if(limit) ///< Limit width and height
+    {
+      /* Limit width */
+      if(c->base.width < c->minw)  c->base.width  = c->minw;
+      if(c->base.width > c->maxw)  c->base.width  = c->maxw;
 
-  if(c->geom.width < c->minw)  c->geom.width  = c->minw;
-  if(c->geom.width > c->maxw)  c->geom.width  = c->maxw;
+      if(c->geom.width < c->minw)  c->geom.width  = c->minw;
+      if(c->geom.width > c->maxw)  c->geom.width  = c->maxw;
 
-  /* Limit height */
-  if(c->base.height < c->minh) c->base.height = c->minh;
-  if(c->base.height > c->maxh) c->base.height = c->maxh;
+      /* Limit height */
+      if(c->base.height < c->minh) c->base.height = c->minh;
+      if(c->base.height > c->maxh) c->base.height = c->maxh;
 
-  if(c->geom.height < c->minh) c->geom.height = c->minh;
-  if(c->geom.height > c->maxh) c->geom.height = c->maxh;
+      if(c->geom.height < c->minh) c->geom.height = c->minh;
+      if(c->geom.height > c->maxh) c->geom.height = c->maxh;
+
+      /* Limit sizes */
+      subScreenLimit(s, &c->geom);
+      subScreenLimit(s, &c->base);
+    }
 
   /* Check aspect ratios */
   if(c->minr && c->geom.height * c->minr > c->geom.width)
@@ -791,10 +802,6 @@ subClientSetSize(SubClient *c)
 
   if(c->maxr && c->geom.height * c->maxr < c->geom.width)
     c->geom.width = (int)(c->geom.height * c->maxr);
-
-  /* Limit sizes */
-  subScreenLimit(s, &c->geom);
-  subScreenLimit(s, &c->base);
 
   /* Check incs */
   c->geom.width  -= c->geom.width % c->incw; 
@@ -969,13 +976,13 @@ subClientToggle(SubClient *c,
         {
           c->geom = c->base;
 
-          subClientSetSize(c); ///< Sanitize
+          subClientSetSize(c, True); ///< Sanitize
         }
 
       if(type & SUB_MODE_FULL)
         {
           XSetWindowBorderWidth(subtle->dpy, c->win, 0);
-          subClientSetSize(c); ///< Sanitize
+          subClientSetSize(c, True); ///< Sanitize
         }
     }
 

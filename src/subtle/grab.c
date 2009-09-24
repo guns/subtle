@@ -129,20 +129,17 @@ subGrabNew(const char *chain,
  /** subGrabFind {{{
   * @brief Find grab
   * @param[in]  code   A code
-  * @param[in]  sym    A KeySym
   * @param[in]  mod    A modmask
   * @return Returns a #SubGrab or \p NULL
   **/
 
 SubGrab *
 subGrabFind(int code,
-  KeySym sym,
   unsigned int mod)
 {
   SubGrab **ret = NULL, *gptr = NULL, g;
   
   g.code = code;
-  g.sym  = sym;
   g.mod  = (mod & ~(LockMask|numlockmask));
   gptr   = &g;
   ret    = (SubGrab **)bsearch(&gptr, subtle->grabs->data, subtle->grabs->ndata,

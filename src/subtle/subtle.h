@@ -219,7 +219,8 @@
 #define SUB_SUBTLE_PANEL2             (1L << 4)                   ///< Panel2 enabled
 #define SUB_SUBTLE_EWMH               (1L << 5)                   ///< EWMH set
 #define SUB_SUBTLE_URGENT             (1L << 6)                   ///< Urgent transients
-#define SUB_SUBTLE_RUN                (1L << 7)                   ///< Run event loop
+#define SUB_SUBTLE_RESIZE             (1L << 7)                   ///< Respect size
+#define SUB_SUBTLE_RUN                (1L << 8)                   ///< Run event loop
 
 /* Tag flags */
 #define SUB_TAG_GRAVITY               (1L << 12)                  ///< Gravity property
@@ -524,7 +525,7 @@ int subClientTag(SubClient *c, int tag);                          ///< Tag clien
 void subClientSetTags(SubClient *c);                              ///< Update client tags
 void subClientSetGravity(SubClient *c, int gravity, int force);   ///< Set client gravity
 void subClientSetScreen(SubClient *c, int screen, int force);     ///< Set client screen
-void subClientSetSize(SubClient *c);                              ///< Set client sizes
+void subClientSetSize(SubClient *c, int limit);                   ///< Set client sizes
 void subClientSetHints(SubClient *c);                             ///< Set client hints
 void subClientSetStrut(SubClient *c);                             ///< Set client strut
 void subClientSetTitle(SubClient *c);                             ///< Set client title
@@ -572,16 +573,11 @@ void subGrabInit(void);                                           ///< Init keym
 SubGrab *subGrabNew(const char *chain, int type,                  ///< Create grab
   SubData data);
 KeySym subGrabGet(void);                                          ///< Get grab
-SubGrab *subGrabFind(int code, KeySym sym, unsigned int mod);     ///< Find grab
+SubGrab *subGrabFind(int code, unsigned int mod);                 ///< Find grab
 void subGrabSet(Window win);                                      ///< Grab window
 void subGrabUnset(Window win);                                    ///< Ungrab window
 int subGrabCompare(const void *a, const void *b);                 ///< Compare grabs
 void subGrabKill(SubGrab *g, int clean);                          ///< Kill grab
-/* }}} */
-
-/* panel.c {{{ */
-void subPanelUpdate(void);                                        ///< Configure panels
-void subPanelRender(void);                                        ///< Render panels
 /* }}} */
 
 /* icon.c {{{ */
@@ -590,6 +586,11 @@ void subIconRender(SubIcon *i, Window win,
   int x, int y, long fg, long bg);                                ///< Render icon
 int subIconFind(const char *path);                                ///< Find icon
 void subIconKill(SubIcon *i);                                     ///< Kill icon
+/* }}} */
+
+/* panel.c {{{ */
+void subPanelUpdate(void);                                        ///< Configure panels
+void subPanelRender(void);                                        ///< Render panels
 /* }}} */
 
 /* ruby.c {{{ */

@@ -112,7 +112,7 @@ EventSignal(int signum)
         size = backtrace(array, 10);
 
         printf("Last %zd stack frames:\n", size);
-        backtrace_symbols_fd(array, size, 0);
+
 #endif /* HAVE_EXECINFO_H */
 
         printf("Please report this bug to <%s>\n", PKG_BUGREPORT);
@@ -556,7 +556,7 @@ EventMessage(XClientMessageEvent *ev)
             c->geom.width  = ev->data.l[3];
             c->geom.height = ev->data.l[4];
 
-            subClientSetSize(c);
+            subClientSetSize(c, True);
             subClientConfigure(c);
             break; /* }}} */
           default: break;
@@ -701,8 +701,7 @@ static void
 EventGrab(XEvent *ev)
 {
   SubGrab *g = NULL;
-  unsigned int code = 0, state = 0;
-  KeySym sym;
+  unsigned int code = 0, mod = 0;
 
   /* Distinct types {{{ */
   switch(ev->type)
@@ -713,7 +712,7 @@ EventGrab(XEvent *ev)
           {
             SubView *v = VIEW(subSharedFind(ev->xbutton.subwindow, BUTTONID));
 
-            if(subtle->view != v) subViewJump(v); ///< Prevent jumping to current view
+            if(v && subtle->view != v) subViewJump(v); ///< Prevent jumping to current view
 
             return;
           }
@@ -730,18 +729,17 @@ EventGrab(XEvent *ev)
         if(ev->xbutton.window != subtle->windows.focus) ///< Update focus
           XSetInputFocus(subtle->dpy, ev->xbutton.window, RevertToNone, CurrentTime);
 
-        code  = XK_Pointer_Button1 + ev->xbutton.button;
-        state = ev->xbutton.state;
+        code = XK_Pointer_Button1 + ev->xbutton.button;
+        mod  = ev->xbutton.state;
         break;
       case KeyPress:
-        sym   = XKeycodeToKeysym(subtle->dpy, ev->xkey.keycode, 0);
-        code  = ev->xkey.keycode;
-        state = ev->xkey.state;
+        code = ev->xkey.keycode;
+        mod  = ev->xkey.state;
         break;
     } /* }}} */
 
   /* Find grab */
-  if((g = subGrabFind(code, sym, state)))
+  if((g = subGrabFind(code, mod)))
     {
       Window win = 0;
       SubClient *c = NULL;
