@@ -64,7 +64,7 @@ OBJ_RBE = SRC_RBE.collect { |f| File.join(@options["builddir"], File.basename(f)
 OBJ_SHD = SRC_SHD.collect { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
 OBJ_SHW = SRC_SHD.collect { |f| File.join(@options["builddir"], File.basename(f).ext("wm.o")) }
 
-FUNCS   = ["select"]
+FUNCS   = [ "poll" ]
 HEADER  = [
   "stdio.h", "stdlib.h", "stdarg.h", "string.h", "unistd.h", "signal.h", "errno.h", 
   "assert.h", "regex.h", "sys/time.h", "sys/types.h", "sys/inotify.h", "execinfo.h"
@@ -204,6 +204,12 @@ task(:config) do
       end
     end
 
+    # Xinerama
+    if(have_header("X11/extensions/Xinerama.h"))
+      @options["ldflags"] << " -lXinerama"
+      @options["extflags"] << " -lXinerama"
+    end
+
     # Check functions
     FUNCS.each do |f|
       if(!have_func(f))
@@ -216,13 +222,7 @@ task(:config) do
     if(libs.nil?)
       fail("X11 was not found")
     end
-
-    # Xinerama
-    if(have_header("X11/extensions/Xinerama.h"))
-      @options["ldflags"] << " -lXinerama"
-      @options["extflags"] << " -lXinerama"
-    end
-    
+   
     # Update flags
     @options["cflags"] << " %s" % [cflags]
     @options["ldflags"] << " %s" % [libs]
@@ -298,11 +298,6 @@ task(:install => [:config, :build]) do
 
   message("INSTALL %s\n" % [@defines["PKG_CONFIG"]])
   FileUtils.install("dist/" + @defines["PKG_CONFIG"], @options["configdir"], :mode => 0644, :verbose => false)
-
-  FileList["dist/sublets/*.rb"].collect do |f|
-    message("INSTALL %s\n" % [File.basename(f)])
-    FileUtils.install(f, @options["subletdir"], :mode => 0644, :verbose => false)
-  end
 
   FileList["dist/scripts/*.*"].collect do |f|
     message("INSTALL %s\n" % [File.basename(f)])
