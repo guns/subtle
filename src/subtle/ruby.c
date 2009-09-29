@@ -231,6 +231,23 @@ RubyGetRect(VALUE hash,
   return ret;
 } /* }}} */
 
+/* RubyGetIcon {{{ */
+static SubIcon *
+RubyGetIcon(VALUE self)
+{
+  SubIcon *i = NULL;
+  int id = FIX2INT(rb_iv_get(self, "@id"));
+
+  if(0 <= id && id < subtle->icons->ndata)
+    {
+      if((i = ICON(subtle->icons->data[id])) && 0 == i->gc) ///< Create a GC on demand
+        i->gc = XCreateGC(subtle->dpy, i->pixmap, 0, NULL);
+    }
+  else rb_raise(rb_eArgError, "Unknown value type");
+
+  return i;
+} /* }}} */
+
 /* RubyParseForeach {{{ */
 static int
 RubyParseForeach(VALUE key,
@@ -517,13 +534,6 @@ RubyParseColor(char *name)
   return color.pixel;
 } /* }}} */
 
-/* RubySubletMark {{{ */
-static void
-RubySubletMark(SubSublet *s)
-{
-  if(s) rb_gc_mark(s->recv);
-} /* }}} */
-
 /* RubyWrapInit {{{ */
 static VALUE
 RubyWrapInit(VALUE data)
@@ -531,6 +541,13 @@ RubyWrapInit(VALUE data)
   rb_obj_call_init(data, 0, NULL); ///< Call initialize
 
   return Qnil;
+} /* }}} */
+
+/* RubySubletMark {{{ */
+static void
+RubySubletMark(SubSublet *s)
+{
+  if(s) rb_gc_mark(s->recv);
 } /* }}} */
 
 /* RubySubtleTagAdd {{{ */
@@ -900,31 +917,114 @@ RubySubletUnwatch(VALUE self)
 /* RubyIconInit {{{ */
 /*
  * call-seq: new(path) -> Subtle::Icon
+ *           new(x, y) -> Subtle::Icon
  *
  * Create new Icon object
  *
- *  tag = Subtle::Icon.new("/path/to/icon")
+ *  icon = Subtle::Icon.new("/path/to/icon")
+ *  => #<Subtle::Icon:xxx>
+ *
+ *  icon = Subtle::Icon.new(8, 8)
  *  => #<Subtle::Icon:xxx>
  */
 
 static VALUE
-RubyIconInit(VALUE self,
-  VALUE path)
+RubyIconInit(int argc,
+  VALUE *argv,
+  VALUE self)
 {
   int id = -1;
   SubIcon *i = NULL;
+  VALUE arg1 = Qnil, arg2 = Qnil;
 
-  /* Creating icon */
-  if(-1 == (id = subIconFind(RSTRING_PTR(path))) &&
-    (i = subIconNew(RSTRING_PTR(path))))
+  rb_scan_args(argc, argv, "02", &arg1, &arg2);
+
+  if(T_STRING == rb_type(arg1)) ///< Icon path
     {
-      id = subtle->icons->ndata;
-      subArrayPush(subtle->icons, (void *)i);
+      /* Find or create icon */
+      if(-1 == (id = subIconFind(RSTRING_PTR(arg1))))
+        i = subIconNew(RSTRING_PTR(arg1));
     }
+  else if(T_FIXNUM == rb_type(arg1) && T_FIXNUM == rb_type(arg2)) ///< Icon dimensions
+    {
+      /* Create empty pixmap */
+      i         = ICON(subSharedMemoryAlloc(1, sizeof(SubIcon)));
+      i->flags  = SUB_TYPE_ICON;
+      i->width  = FIX2INT(arg1);
+      i->height = FIX2INT(arg2);
+      i->pixmap = XCreatePixmap(subtle->dpy, ROOT, i->width, i->height, 1);
+    }
+  else rb_raise(rb_eArgError, "Unknown value types");
 
-  rb_iv_set(self, "@id", INT2FIX(id));
+  /* Save icon and get id */
+  id = subtle->icons->ndata;
+  subArrayPush(subtle->icons, (void *)i);
+
+  rb_iv_set(self, "@id",     INT2FIX(id));
+  rb_iv_set(self, "@width",  INT2FIX(i->width));
+  rb_iv_set(self, "@height", INT2FIX(i->height));
 
   return self;
+} /* }}} */
+
+/* RubyIconDraw {{{ */
+/*
+ * call-seq: draw(x, y) -> nil
+ *
+ * Draw a pixel on the icon
+ *
+ *  icon.draw(1, 1)
+ *  => nil
+ */
+
+static VALUE
+RubyIconDraw(VALUE self,
+  VALUE x,
+  VALUE y)
+{
+  if(T_FIXNUM == rb_type(x) && T_FIXNUM == rb_type(y))
+    {
+      XGCValues gvals;
+      SubIcon *i = RubyGetIcon(self);
+
+      /* Update GC */
+      gvals.foreground = 1;
+      gvals.background = 0;
+      XChangeGC(subtle->dpy, i->gc, GCForeground|GCBackground, &gvals);
+
+      XDrawPoint(subtle->dpy, i->pixmap, i->gc, FIX2INT(x), FIX2INT(y));
+    }
+  else rb_raise(rb_eArgError, "Unknown value types");
+
+  return Qnil;
+} /* }}} */
+
+/* RubyIconClear {{{ */
+/*
+ * call-seq: clear -> nil
+ *
+ * Clear the pixmap
+ *
+ *  icon.clear
+ *  => nil
+ */
+
+static VALUE
+RubyIconClear(VALUE self,
+  VALUE x,
+  VALUE y)
+{
+  XGCValues gvals;
+  SubIcon *i = RubyGetIcon(self);
+
+  /* Update GC */
+  gvals.foreground = 0;
+  gvals.background = 1;
+  XChangeGC(subtle->dpy, i->gc, GCForeground|GCBackground, &gvals);
+
+  XFillRectangle(subtle->dpy, i->pixmap, i->gc, 0, 0, i->width, i->height);
+
+  return Qnil;
 } /* }}} */
 
 /* RubyIconToString {{{ */
@@ -951,17 +1051,17 @@ RubyIconToString(VALUE self)
 
 /* RubyIconOperatorPlus {{{ */
 /*
- * call-seq: +(string) -> String
- *
- * Convert self to String and add String
- *
- *  icon + "subtle"
- *  => "<>!4<>subtle"
- */
+* call-seq: +(string) -> String
+*
+* Convert self to String and add String
+*
+*  icon + "subtle"
+*  => "<>!4<>subtle"
+*/
 
 static VALUE
 RubyIconOperatorPlus(VALUE self,
-  VALUE value)
+VALUE value)
 {
   return RubyConcat(RubyIconToString(self), value);
 } /* }}} */
@@ -1474,9 +1574,17 @@ subRubyInit(void)
   /* Icon id */
   rb_define_attr(icon, "id", 1, 0);
 
-  rb_define_method(icon, "initialize", RubyIconInit,         1);
-  rb_define_method(icon, "to_str",     RubyIconToString,     0);
-  rb_define_method(icon, "+",          RubyIconOperatorPlus, 1);
+  /* Icon width */
+  rb_define_attr(icon, "width", 1, 0);
+
+  /* Icon height */
+  rb_define_attr(icon, "height", 1, 0);
+
+  rb_define_method(icon, "initialize", RubyIconInit,         -1);
+  rb_define_method(icon, "draw",       RubyIconDraw,          2);
+  rb_define_method(icon, "clear",      RubyIconClear,         0);
+  rb_define_method(icon, "to_str",     RubyIconToString,      0);
+  rb_define_method(icon, "+",          RubyIconOperatorPlus,  1);
   rb_define_alias(icon, "to_s", "to_str");
 
   /*
