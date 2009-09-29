@@ -154,6 +154,12 @@
 #define SUB_MODE_UNSTICK              (1L << 26)                  ///< Disable stick mode
 #define SUB_MODE_UNURGENT             (1L << 27)                  ///< Disable urgent mode
 
+/* Call flags */
+#define SUB_CALL_SUBLET_RUN           (1L << 1)                   ///< Ruby sublet run call
+#define SUB_CALL_SUBLET_CLICK         (1L << 2)                   ///< Ruby sublet click call
+#define SUB_CALL_GRAB                 (1L << 3)                   ///< Ruby grab call
+#define SUB_CALL_HOOK                 (1L << 4)                   ///< Ruby hook call
+
 /* Client flags */
 #define SUB_CLIENT_FOCUS              (1L << 12)                  ///< Send focus message
 #define SUB_CLIENT_INPUT              (1L << 13)                  ///< Active/passive focus-model
@@ -199,12 +205,6 @@
 #define SUB_PANEL_SPACER1             (1L << 12)                  ///< Panel spacer1
 #define SUB_PANEL_SPACER2             (1L << 13)                  ///< Panel spacer2
 #define SUB_PANEL_BOTTOM              (1L << 14)                  ///< Panel bottom
-
-/* Call flags */
-#define SUB_CALL_SUBLET_RUN           (1L << 1)                   ///< Ruby sublet run call
-#define SUB_CALL_SUBLET_CLICK         (1L << 2)                   ///< Ruby sublet click call
-#define SUB_CALL_GRAB                 (1L << 3)                   ///< Ruby grab call
-#define SUB_CALL_HOOK                 (1L << 4)                   ///< Ruby hook call
 
 /* Sublet types */
 #define SUB_SUBLET_INTERVAL           (1L << 12)
@@ -364,6 +364,7 @@ typedef struct subicon_t /* {{{ */
   Pixmap        pixmap;                                           ///< Icon drawable
   int           quark;                                            ///< Icon quark
   unsigned int  width, height;                                    ///< Icon geometry
+  GC            gc;                                               ///< Icon GC
 } SubIcon; /* }}} */
 
 typedef struct subpanel_t /* {{{ */

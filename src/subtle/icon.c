@@ -124,6 +124,7 @@ subIconKill(SubIcon *i)
   assert(i);
 
   XFreePixmap(subtle->dpy, i->pixmap);
+  if(0 != i->gc) XFreeGC(subtle->dpy, i->gc);
   free(i);
 
   subSharedLogDebug("kill=icon\n");
