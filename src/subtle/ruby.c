@@ -365,7 +365,7 @@ RubyParseForeach(VALUE key,
                     RubyTags *tags = (RubyTags *)rargs[1];
 
                     /* Collect flags */
-                    for(i = 0; 7 > i; i++)
+                    for(i = 0; 8 > i; i++)
                       {
                         if(Qtrue == rb_funcall(value, meth, 1, tags[i].sym))
                           t->flags |= tags[i].flags;
@@ -1185,6 +1185,7 @@ RubyWrapLoadConfig(VALUE data)
   {
     { CHAR2SYM("gravity"), SUB_TAG_GRAVITY },
     { CHAR2SYM("screen"),  SUB_TAG_SCREEN  },
+    { CHAR2SYM("size"),    SUB_TAG_SIZE    },
     { CHAR2SYM("full"),    SUB_MODE_FULL   },
     { CHAR2SYM("float"),   SUB_MODE_FLOAT  },
     { CHAR2SYM("stick"),   SUB_MODE_STICK  },
