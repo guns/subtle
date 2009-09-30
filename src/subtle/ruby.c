@@ -916,8 +916,8 @@ RubySubletUnwatch(VALUE self)
 
 /* RubyIconInit {{{ */
 /*
- * call-seq: new(path) -> Subtle::Icon
- *           new(x, y) -> Subtle::Icon
+ * call-seq: new(path)          -> Subtle::Icon
+ *           new(width, height) -> Subtle::Icon
  *
  * Create new Icon object
  *
@@ -1003,7 +1003,7 @@ RubyIconDraw(VALUE self,
 /*
  * call-seq: clear -> nil
  *
- * Clear the pixmap
+ * Clear the icon
  *
  *  icon.clear
  *  => nil
