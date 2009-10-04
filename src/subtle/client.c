@@ -843,18 +843,21 @@ subClientSetHints(SubClient *c)
     {
       if(size->flags & PMinSize) ///< Program min size
         {
-          if(size->min_width)  c->minw = MIN(MINW, size->min_width);
-          if(size->min_height) c->minh = MIN(MINH, size->min_height);
+          /* Limit min size to screen size if larger */
+          if(size->min_width)  
+            c->minw = c->minw > s->geom.width ? s->geom.width : MIN(MINW, size->min_width);
+          if(size->min_height) 
+            c->minh = c->minh > s->geom.height ? s->geom.height : MIN(MINH, size->min_height);
         }
 
       if(size->flags & PMaxSize) ///< Program max size
         {
+          /* Limit max size to screen size if larger */
           if(size->max_width)
-            c->maxw = size->max_width > s->base.width ? 
-              s->base.width : size->max_width;
+            c->maxw = size->max_width > s->geom.width ?  s->geom.width : size->max_width;
           if(size->max_height)
-            c->maxh = size->max_height > s->base.height - subtle->th ? 
-              s->base.height - subtle->th : size->max_height;
+            c->maxh = size->max_height > s->geom.height - subtle->th ? 
+              s->geom.height - subtle->th : size->max_height;
         }
 
       if(size->flags & PAspect) ///< Aspect
