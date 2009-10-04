@@ -26,7 +26,6 @@ require("rake/rdoctask")
   "sysconfdir" => "$(destdir)/etc",
   "configdir"  => "$(sysconfdir)/xdg/$(PKG_NAME)",
   "datadir"    => "$(destdir)/$(prefix)/share/$(PKG_NAME)",
-  "subletdir"  => "$(datadir)/sublets",
   "scriptdir"  => "$(datadir)/scripts",
   "extdir"     => "$(destdir)/$(sitelibdir)/$(PKG_NAME)",
   "debug"      => "no",
@@ -250,10 +249,8 @@ task(:config) do
 -----------------
 Binaries............: #{@options["bindir"]}
 Configuration.......: #{@options["configdir"]}
-Sublets.............: #{@options["subletdir"]}
 Scripts.............: #{@options["scriptdir"]}
 Extension...........: #{@options["extdir"]}
-
 Debugging messages..: #{@options["debug"]}
 
 EOF
@@ -284,7 +281,6 @@ task(:install => [:config, :build]) do
     [
       @options["bindir"],
       @options["configdir"],
-      @options["subletdir"],
       @options["scriptdir"],
       @options["extdir"]
     ]
