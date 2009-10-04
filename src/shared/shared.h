@@ -125,6 +125,10 @@ void subSharedPropertyClass(Window win, char **inst,
   char **klass);                                                  ///< Get WM class
 /* }}} */
 
+/* Spawn {{{ */
+void subSharedSpawn(char *cmd);                                   ///< Spawn a command
+/* }}} */
+
 #ifdef WM
 /* Subtle {{{ */
 XPointer * subSharedFind(Window win, XContext id);                ///< Find data with context manager
@@ -136,7 +140,7 @@ int subSharedTextWidth(const char *string, int len,
 #else /* WM */
 /* Message {{{ */
 int subSharedMessage(Window win, char *type,
-  SubMessageData data, int sync);                                 ///< Send client message
+  SubMessageData data, int xsync);                                ///< Send client message
 /* }}} */
 
 /* Window {{{ */

@@ -52,24 +52,6 @@ EventUntag(SubClient *c,
     SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&c->tags, 1);
 } /* }}} */
 
-/* EventExec {{{ */
-static void
-EventExec(char *cmd)
-{
-  pid_t pid = fork();
-
-  switch(pid)
-    {
-      case 0:
-        setsid();
-        execlp("/bin/sh", "sh", "-c", cmd, NULL);
-
-        subSharedLogWarn("Failed executing command `%s'\n", cmd); ///< Never to be reached
-        exit(1);
-      case -1: subSharedLogWarn("Failed forking `%s'\n", cmd);
-    }
-} /* }}} */
-
 /* EventFindSublet {{{ */
 static SubSublet *
 EventFindSublet(int id)
@@ -745,7 +727,7 @@ EventGrab(XEvent *ev)
       switch(flag)
         {
           case SUB_GRAB_EXEC: /* {{{ */
-            if(g->data.string) EventExec(g->data.string);
+            if(g->data.string) subSharedSpawn(g->data.string);
             break; /* }}} */
           case SUB_GRAB_PROC: /* {{{ */
             subRubyCall(SUB_CALL_GRAB, g->data.num, CLIENT(subSharedFind(win, CLIENTID)));

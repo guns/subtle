@@ -1573,6 +1573,27 @@ SubtlextSubtleQuit(VALUE self)
   return Qnil;
 } /* }}} */
 
+/* SubtlextSubtleSpawn {{{ */
+/*
+ * call-seq: spawn(cmd) -> nil
+ *
+ * Spawn a command
+ *
+ *  spawn("xterm")
+ *  => nil
+ */
+
+static VALUE
+SubtlextSubtleSpawn(VALUE self,
+  VALUE cmd)
+{
+  if(RTEST(cmd) && T_STRING == rb_type(cmd))
+    subSharedSpawn(RSTRING_PTR(cmd));
+  else rb_raise(rb_eArgError, "Unknown value type");
+
+  return Qnil;
+} /* }}} */
+
 /* SubtlextSubtleTagList {{{ */
 /*
  * call-seq: tags -> Array
@@ -3048,6 +3069,7 @@ Init_subtlext(void)
   rb_define_method(subtle, "running?",       SubtlextSubtleRunning,          0);
   rb_define_method(subtle, "reload",         SubtlextSubtleReload,           0);
   rb_define_method(subtle, "quit",           SubtlextSubtleQuit,             0);
+  rb_define_method(subtle, "spawn",          SubtlextSubtleSpawn,            1);
   rb_define_method(subtle, "to_str",         SubtlextSubtleToString,         0);
   rb_define_alias(subtle, "to_s", "to_str");
 

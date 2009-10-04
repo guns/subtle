@@ -12,6 +12,7 @@
 
 #include <stdarg.h>
 #include <signal.h>
+#include <unistd.h>
 #include <sys/time.h>
 #include "shared.h"
 
@@ -396,6 +397,28 @@ subSharedPropertyDelete(Window win,
 #endif /* WM */
 } /* }}} */
 
+ /** subSharedSpawn {{{
+  * @brief Spawn a command
+  * @param[in]  cmd  Command string
+  **/
+
+void
+subSharedSpawn(char *cmd)
+{
+  pid_t pid = fork();
+
+  switch(pid)
+    {
+      case 0:
+        setsid();
+        execlp("/bin/sh", "sh", "-c", cmd, NULL);
+
+        subSharedLogWarn("Failed executing command `%s'\n", cmd); ///< Never to be reached
+        exit(1);
+      case -1: subSharedLogWarn("Failed forking `%s'\n", cmd);
+    }
+} /* }}} */
+
 #ifdef WM
  /** subSharedFind {{{
   * @brief Find data with the context manager
@@ -480,13 +503,15 @@ subSharedTextWidth(const char *string,
 
   return center ? overall.width - abs(lbearing - rbearing) : overall.width;
 } /* }}} */
+
 #else /* WM */
+
  /** subSharedMessage {{{
   * @brief Send client message to window
-  * @param[in]  win   Client window
-  * @param[in]  type  Message type 
-  * @param[in]  data  A #SubMessageData
-  * @param[in]  sync  Sync connection
+  * @param[in]  win    Client window
+  * @param[in]  type   Message type 
+  * @param[in]  data   A #SubMessageData
+  * @param[in]  xsync  Sync connection
   * @returns
   **/
 
@@ -494,7 +519,7 @@ int
 subSharedMessage(Window win,
   char *type,
   SubMessageData data,
-  int sync)
+  int xsync)
 {
   int status = 0;
   XEvent ev;
@@ -520,7 +545,7 @@ subSharedMessage(Window win,
   if(!display || !((status = XSendEvent(display, DefaultRootWindow(display), False, mask, &ev))))
     subSharedLogWarn("Failed sending client message `%s'\n", type);
 
-  if(True == sync) XSync(display, False);
+  if(True == xsync) XSync(display, False);
 
   return status;
 } /* }}} */
