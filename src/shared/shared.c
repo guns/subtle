@@ -200,18 +200,11 @@ subSharedMatch(int type,
 {
   int score = 0;
 
+  /* Matching is a bit annoying, doing calculations on the numpad */
   switch(gravity2 - gravity1)
     {
-      case -1: 
-        if(SUB_WINDOW_LEFT == type && 4 == gravity1 && 3 == gravity2)
-          score = 40;
-        if(SUB_WINDOW_LEFT == type) score = 100;
-        break;
-      case  1: 
-        if(SUB_WINDOW_LEFT == type && 4 == gravity1 && 3 == gravity2) 
-          score = 40;
-        if(SUB_WINDOW_RIGHT == type) score = 100;
-        break;
+      case -1: score = 40; break;
+      case  1: score = 40; break;
 
       case -2: if(SUB_WINDOW_LEFT == type)  score =  80; break;
       case  2: if(SUB_WINDOW_RIGHT == type) score =  80; break;
@@ -219,8 +212,8 @@ subSharedMatch(int type,
       case -3: if(SUB_WINDOW_DOWN == type)  score = 100; break;
       case  3: if(SUB_WINDOW_UP == type)    score = 100; break;
 
-      case -5: score =  60; break;
-      case  5: score =  60; break;
+      case -5: score = 60; break;
+      case  5: score = 60; break;
 
       case -6: if(SUB_WINDOW_DOWN == type)  score =  80; break;
       case  6: if(SUB_WINDOW_UP == type)    score =  80; break;

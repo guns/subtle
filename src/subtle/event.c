@@ -780,28 +780,27 @@ EventGrab(XEvent *ev)
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               {
                 int i, match = 0, score = 0;
-                Window found = None;
+                SubClient *found = NULL;
 
                 /* Iterate once to find a client based on score */
                 for(i = 0; 100 != match && i < subtle->clients->ndata; i++)
                   {
                     SubClient *iter = CLIENT(subtle->clients->data[i]);
 
-                    if(c != iter && c->screen == iter->screen && 
-                      VISIBLE(subtle->view, iter))
-                      if(match < (score = subSharedMatch(g->data.num, 
-                        c->gravity & ~SUB_GRAVITY_MODES, iter->gravity & ~SUB_GRAVITY_MODES)))
-                        {
-                          match = score;
-                          found = iter->win;
-                        }
+                    if(c != iter && c->screen == iter->screen && VISIBLE(subtle->view, iter) &&
+                        (match < (score = subSharedMatch(g->data.num, 
+                        c->gravity & ~SUB_GRAVITY_MODES, iter->gravity & ~SUB_GRAVITY_MODES))))
+                      {
+                        match = score;
+                        found = iter;
+                      }
                   }
 
-                if(found && (c = CLIENT(subSharedFind(found, CLIENTID))))
+                if(found)
                   {
-                    subClientWarp(c);
-                    subClientFocus(c);
-                    subSharedLogDebug("Match: win=%#lx, score=%d, iterations=%d\n", found, match, i);
+                    subClientWarp(found);
+                    subClientFocus(found);
+                    subSharedLogDebug("Match: win=%#lx, score=%d, iterations=%d\n", found->win, match, i);
                   }
               }
             else ///< Select the first if no client has focus
