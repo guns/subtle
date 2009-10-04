@@ -606,7 +606,7 @@ EventProperty(XPropertyEvent *ev)
       case SUB_EWMH_WM_NORMAL_HINTS: /* {{{ */
         if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) 
           {
-            subClientSetHints(c);
+            subClientSetNormalHints(c);
           }
         else if((t = TRAY(subSharedFind(ev->window, TRAYID))))
           {
@@ -615,6 +615,14 @@ EventProperty(XPropertyEvent *ev)
             subPanelUpdate();
             subPanelRender();
           }          
+        break; /* }}} */
+      case SUB_EWMH_WM_HINTS: /* {{{ */
+        if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) 
+          {
+            subClientSetWMHints(c);
+            subViewConfigure(subtle->view);
+            if(c->flags & SUB_MODE_URGENT) subClientWarp(c);
+          }
         break; /* }}} */
       case SUB_EWMH_NET_WM_STRUT: /* {{{ */
          if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) 
@@ -889,6 +897,13 @@ EventFocus(XFocusChangeEvent *ev)
       subtle->windows.focus      = 0;
       subtle->panels.title.width = 0;
       subClientRender(c);
+
+      /* Remove urgent after losing focus */
+      if(c->flags & SUB_MODE_URGENT)
+        {
+          c->flags &= ~SUB_MODE_URGENT;
+          subViewConfigure(subtle->view);
+        }
     }
 
   /* Handle focus event */

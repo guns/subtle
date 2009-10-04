@@ -73,7 +73,7 @@
 #define COLORMAP \
   DefaultColormap(subtle->dpy, DefaultScreen(subtle->dpy))      ///< Default colormap
 #define VISIBLE(v,c) \
-  (v && c && (v->tags & c->tags || c->flags & SUB_MODE_STICK))   ///< Visible on view
+  (v && c && (v->tags & c->tags || c->flags & (SUB_MODE_STICK|SUB_MODE_URGENT)))   ///< Visible on view
 #define SCREENW \
   DisplayWidth(subtle->dpy, DefaultScreen(subtle->dpy))         ///< Get screen width
 #define SCREENH \
@@ -267,6 +267,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_WM_DELETE_WINDOW,                                      ///< Send close messages
   SUB_EWMH_WM_NORMAL_HINTS,                                       ///< Window normal hints
   SUB_EWMH_WM_SIZE_HINTS,                                         ///< Window size hints
+  SUB_EWMH_WM_HINTS,                                              ///< Window hints
 
   /* EWMH */
   SUB_EWMH_NET_SUPPORTED,                                         ///< Supported states
@@ -294,7 +295,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_NET_WM_STATE,                                          ///< Window state
   SUB_EWMH_NET_WM_STATE_FULLSCREEN,                               ///< Fullscreen window
   SUB_EWMH_NET_WM_STATE_ABOVE,                                    ///< Floating window
-  SUB_EWMH_NET_WM_STATE_STICKY,                                   ///< Urgent window
+  SUB_EWMH_NET_WM_STATE_STICKY,                                   ///< Sticky window
 
   /* Tray */
   SUB_EWMH_NET_SYSTEM_TRAY_OPCODE,                                ///< Tray messages
@@ -527,7 +528,8 @@ void subClientSetTags(SubClient *c);                              ///< Update cl
 void subClientSetGravity(SubClient *c, int gravity, int force);   ///< Set client gravity
 void subClientSetScreen(SubClient *c, int screen, int force);     ///< Set client screen
 void subClientSetSize(SubClient *c, int limit);                   ///< Set client sizes
-void subClientSetHints(SubClient *c);                             ///< Set client hints
+void subClientSetNormalHints(SubClient *c);                       ///< Set client normal hints
+void subClientSetWMHints(SubClient *c);                           ///< Set client WM hints
 void subClientSetStrut(SubClient *c);                             ///< Set client strut
 void subClientSetTitle(SubClient *c);                             ///< Set client title
 void subClientToggle(SubClient *c, int type);                     ///< Toggle client state

@@ -80,7 +80,6 @@ subClientNew(Window win)
   int i, n = 0, grav = 0, flags = 0;
   long vid = 0;
   Window trans = 0;
-  XWMHints *hints = NULL;
   XWindowAttributes attrs;
   XSetWindowAttributes sattrs;
   Atom *protos = NULL;
@@ -135,10 +134,11 @@ subClientNew(Window win)
 
   /* Update client */
   subEwmhSetWMState(c->win, WithdrawnState);
-  subClientSetHints(c);
+  subClientSetNormalHints(c);
   subClientSetStrut(c);
   subClientSetSize(c, True);
   subClientSetTags(c);
+  subClientSetWMHints(c); ///< Must be set after tags
 
   /* Window manager protocols */
   if(XGetWMProtocols(subtle->dpy, c->win, &protos, &n))
@@ -156,25 +156,12 @@ subClientNew(Window win)
       XFree(protos);
     }
 
-  /* Window manager hints */
-  if((hints = XGetWMHints(subtle->dpy, c->win)))
-    {
-      if(hints->flags & XUrgencyHint)              
-        {
-          flags |= (SUB_MODE_FLOAT|SUB_MODE_STICK);
-          if(!(c->flags & SUB_MODE_UNURGENT)) c->flags |= SUB_MODE_URGENT;
-        }
-      if(hints->flags & InputHint && hints->input) c->flags |= SUB_CLIENT_INPUT;
-
-      XFree(hints);
-    }
-
   /* Check for transient windows */
   if(XGetTransientForHint(subtle->dpy, c->win, &trans))
     {
       /* Check if transient windows should be urgent */
       flags |= subtle->flags & SUB_SUBTLE_URGENT && !(c->flags & SUB_MODE_UNURGENT) ?
-        SUB_MODE_FLOAT|SUB_MODE_STICK|SUB_MODE_URGENT : SUB_MODE_FLOAT;
+        SUB_MODE_FLOAT|SUB_MODE_URGENT : SUB_MODE_FLOAT;
 
       if((k = CLIENT(subSharedFind(trans, CLIENTID))))
         {
@@ -808,13 +795,13 @@ subClientSetSize(SubClient *c,
   c->geom.height -= c->geom.height % c->inch;
 } /* }}} */
 
-  /** subClientSetHints {{{
-   * @brief Set client hints
+  /** subClientSetNormalHints {{{
+   * @brief Set client normal hints
    * @param[in]  c  A #SubClient
    **/
 
 void
-subClientSetHints(SubClient *c)
+subClientSetNormalHints(SubClient *c)
 {
   long supplied = 0;
   XSizeHints *size = NULL;
@@ -879,6 +866,31 @@ subClientSetHints(SubClient *c)
     "maxw=%d, maxh=%d, minr=%f, maxr=%f\n",
     c->geom.x, c->geom.y, c->geom.width, c->geom.height, c->minw, c->minh, c->maxw,
     c->maxh, c->minr, c->maxr);
+} /* }}} */
+
+  /** subClientSetWMHints {{{
+   * @brief Set client WM hints
+   * @param[in]  c  A #SubClient
+   **/
+
+void
+subClientSetWMHints(SubClient *c)
+{
+  XWMHints *hints = NULL;
+
+  assert(c);
+
+  /* Window manager hints */
+  if((hints = XGetWMHints(subtle->dpy, c->win)))
+    {
+      /* Handle urgency */
+      if(hints->flags & XUrgencyHint)
+        if(!(c->flags & SUB_MODE_UNURGENT)) c->flags |= SUB_MODE_URGENT;
+        
+      if(hints->flags & InputHint && hints->input) c->flags |= SUB_CLIENT_INPUT;
+
+      XFree(hints);
+    }
 } /* }}} */
 
   /** subClientSetStrut {{{ 
