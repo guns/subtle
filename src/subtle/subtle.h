@@ -180,7 +180,7 @@
 /* Grab flags */
 #define SUB_GRAB_KEY                  (1L << 12)                  ///< Key grab
 #define SUB_GRAB_MOUSE                (1L << 13)                  ///< Mouse grab  
-#define SUB_GRAB_EXEC                 (1L << 14)                  ///< Exec an app
+#define SUB_GRAB_SPAWN                (1L << 14)                  ///< Spawn an app
 #define SUB_GRAB_PROC                 (1L << 15)                  ///< Grab with proc
 #define SUB_GRAB_VIEW_JUMP            (1L << 16)                  ///< Jump to view
 #define SUB_GRAB_SCREEN_JUMP          (1L << 17)                  ///< Jump to screen

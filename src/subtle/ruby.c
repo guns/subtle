@@ -266,7 +266,7 @@ RubyParseForeach(VALUE key,
         switch(rb_type(value)) ///< Check value type
           {
             case T_STRING: ///< String
-              type = SUB_GRAB_EXEC;
+              type = SUB_GRAB_SPAWN;
               data = DATA(strdup(RSTRING_PTR(value)));
               break;
             case T_SYMBOL: ///< Symbol

@@ -81,7 +81,7 @@ subGrabNew(const char *chain,
           if(NoSymbol == sym) ///< Check if there's still no symbol
             {
               subSharedLogWarn("Failed assigning keychain `%s'\n", chain);
-              if(g->flags & SUB_GRAB_EXEC && g->data.string) free(g->data.string);
+              if(g->flags & SUB_GRAB_SPAWN && g->data.string) free(g->data.string);
               free(g);
               free(tokens);
               
@@ -240,7 +240,7 @@ subGrabKill(SubGrab *g,
 {
   assert(g);
 
-  if(g->flags & SUB_GRAB_EXEC && g->data.string) free(g->data.string);
+  if(g->flags & SUB_GRAB_SPAWN && g->data.string) free(g->data.string);
   if(clean && g->flags & SUB_GRAB_PROC && g->data.num) subRubyRelease(g->data.num);
   free(g);
 

@@ -726,7 +726,7 @@ EventGrab(XEvent *ev)
 
       switch(flag)
         {
-          case SUB_GRAB_EXEC: /* {{{ */
+          case SUB_GRAB_SPAWN: /* {{{ */
             if(g->data.string) subSharedSpawn(g->data.string);
             break; /* }}} */
           case SUB_GRAB_PROC: /* {{{ */
