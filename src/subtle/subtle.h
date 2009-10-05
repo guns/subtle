@@ -285,12 +285,12 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_NET_CLOSE_WINDOW,                                      ///< Close window             
   SUB_EWMH_NET_RESTACK_WINDOW,                                    ///< Change window stacking
   SUB_EWMH_NET_MOVERESIZE_WINDOW,                                 ///< Resize window
+  SUB_EWMH_NET_SHOWING_DESKTOP,                                   ///< Showing desktop mode 
 
   SUB_EWMH_NET_WM_NAME,                                           ///< Name of client
   SUB_EWMH_NET_WM_PID,                                            ///< PID of client
   SUB_EWMH_NET_WM_DESKTOP,                                        ///< Desktop client is on
   SUB_EWMH_NET_WM_STRUT,                                          ///< Strut
-  SUB_EWMH_NET_SHOWING_DESKTOP,                                   ///< Showing desktop mode 
 
   SUB_EWMH_NET_WM_STATE,                                          ///< Window state
   SUB_EWMH_NET_WM_STATE_FULLSCREEN,                               ///< Fullscreen window
@@ -647,7 +647,7 @@ void subTrayKill(SubTray *t);                                     ///< Delete tr
 
 /* view.c {{{ */
 SubView *subViewNew(char *name, char *tags);                      ///< Create view
-void subViewConfigure(SubView *v);                                ///< Configure view
+void subViewConfigure(SubView *v, int align);                     ///< Configure view
 void subViewUpdate(void);                                         ///< Update views
 void subViewRender(void);                                         ///< Render views
 void subViewJump(SubView *v);                                     ///< Jump to view

@@ -62,11 +62,13 @@ subViewNew(char *name,
 
  /** subViewConfigure {{{
   * @brief Calculate client sizes and tiling layout
-  * @param[in]  v  A #SubView
+  * @param[in]  v      A #SubView
+  * @param[in]  align  Re-align clients
   **/
 
 void
-subViewConfigure(SubView *v)
+subViewConfigure(SubView *v,
+  int align)
 {
   int i;
   long vid = 0;
@@ -94,8 +96,8 @@ subViewConfigure(SubView *v)
         {
           if(!(c->flags & (SUB_MODE_FULL|SUB_MODE_FLOAT)))
             {
-              subClientSetScreen(c, c->screens[vid], False);
-              subClientSetGravity(c, c->gravities[vid], False);
+              subClientSetScreen(c, c->screens[vid], align);
+              subClientSetGravity(c, c->gravities[vid], align);
               subClientConfigure(c);
 
               XMapWindow(subtle->dpy, c->win);
@@ -197,7 +199,7 @@ subViewJump(SubView *v)
   subtle->vid  = subArrayIndex(subtle->views, (void *)v);
   subtle->view = v;
 
-  subViewConfigure(v);
+  subViewConfigure(v, False);
 
   /* EWMH: Current desktop */
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP, (long *)&subtle->vid, 1);
