@@ -911,12 +911,16 @@ subClientSetStrut(SubClient *c)
   if((strut = (long *)subSharedPropertyGet(c->win, XA_CARDINAL, 
     SUB_EWMH_NET_WM_STRUT, &size)))
     {
-      if(4 == size) ///< Only complete struts
+      if(size == 4 * sizeof(long)) ///< Only complete struts
         {
           subtle->strut.x      = MAX(subtle->strut.x,      strut[0]); ///< Left
           subtle->strut.y      = MAX(subtle->strut.y,      strut[1]); ///< Right
           subtle->strut.width  = MAX(subtle->strut.width,  strut[2]); ///< Top
           subtle->strut.height = MAX(subtle->strut.height, strut[3]); ///< Bottom
+
+          /* Update screen clients */
+          subScreenUpdate();
+          subViewConfigure(subtle->view, True);
 
           subSharedLogDebug("Strut: x=%ld, y=%d, width=%d, height=%d\n", subtle->strut.x,
             subtle->strut.y, subtle->strut.width, subtle->strut.height);
@@ -981,7 +985,7 @@ subClientToggle(SubClient *c,
           c->gravity = -1; ///< Updating gravity
         }
 
-      if(type & SUB_MODE_STICK) subViewConfigure(subtle->view);
+      if(type & SUB_MODE_STICK) subViewConfigure(subtle->view, False);
     }
   else ///< Set flags
     {
