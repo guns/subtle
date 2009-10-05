@@ -14,6 +14,7 @@ OPTIONS = {
   :snap    => 10,                                  # Window border snapping
   :gravity => 5,                                   # Default gravity (0 = copy gravity of focus)
   :urgent  => true,                                # Make transient windows urgent
+  :resize  => false,                               # Respect resize hints in tile
   :padding => [ 0, 0, 0, 0 ],                      # Screen padding (left, right, top, bottom)
   :font    => "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*"  # Font string
 }
