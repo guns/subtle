@@ -107,16 +107,34 @@ EventSignal(int signum)
 static void
 EventConfigure(XConfigureRequestEvent *ev)
 {
-  XWindowChanges wc;
+  SubClient *c = NULL;
 
-  wc.x          = ev->x;
-  wc.y          = ev->y;
-  wc.width      = ev->width;
-  wc.height     = ev->height;
-  wc.sibling    = ev->above;
-  wc.stack_mode = ev->detail;
+  if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) 
+    {
+      if(subtle->flags & SUB_SUBTLE_RESIZE || c->flags & SUB_MODE_FLOAT)
+        {
+          XRectangle rect = { ev->x, ev->y, ev->width, ev->height };
 
-  XConfigureWindow(subtle->dpy, ev->window, ev->value_mask, &wc); 
+          subScreenLimit(SCREEN(subtle->screens->data[c->screen]), &rect, False);
+
+          c->geom = rect;
+
+          subClientConfigure(c);
+        }
+    }
+  else ///< Unmanaged windows
+    {
+      XWindowChanges wc;
+
+      wc.x          = ev->x;
+      wc.y          = ev->y;
+      wc.width      = ev->width;
+      wc.height     = ev->height;
+      wc.sibling    = ev->above;
+      wc.stack_mode = ev->detail;
+
+      XConfigureWindow(subtle->dpy, ev->window, ev->value_mask, &wc); 
+    }
 } /* }}} */
 
 /* EventMapRequest {{{ */

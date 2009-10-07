@@ -118,8 +118,8 @@ subClientNew(Window win)
   /* X related properties */
   sattrs.border_pixel = subtle->colors.bo_normal;
   XChangeWindowAttributes(subtle->dpy, c->win, CWBorderPixel, &sattrs);
-  XSelectInput(subtle->dpy, c->win, EVENTMASK);
   XSetWindowBorderWidth(subtle->dpy, c->win, subtle->bw);
+  XSelectInput(subtle->dpy, c->win, EVENTMASK);
   XAddToSaveSet(subtle->dpy, c->win);
   XSaveContext(subtle->dpy, c->win, CLIENTID, (void *)c);
 
@@ -139,6 +139,8 @@ subClientNew(Window win)
   subClientSetSize(c, True);
   subClientSetTags(c);
   subClientSetWMHints(c); ///< Must be set after tags
+
+  flags = subClientSetWMState(c);
 
   /* Window manager protocols */
   if(XGetWMProtocols(subtle->dpy, c->win, &protos, &n))
@@ -160,8 +162,7 @@ subClientNew(Window win)
   if(XGetTransientForHint(subtle->dpy, c->win, &trans))
     {
       /* Check if transient windows should be urgent */
-      flags |= subtle->flags & SUB_SUBTLE_URGENT && !(c->flags & SUB_MODE_UNURGENT) ?
-        SUB_MODE_FLOAT|SUB_MODE_URGENT : SUB_MODE_FLOAT;
+      flags |= subtle->flags & SUB_SUBTLE_URGENT ? SUB_MODE_FLOAT|SUB_MODE_URGENT : SUB_MODE_FLOAT;
 
       if((k = CLIENT(subSharedFind(trans, CLIENTID))))
         {
@@ -207,12 +208,6 @@ subClientConfigure(SubClient *c)
 
   r = c->geom;
 
-  if(!(c->flags & SUB_MODE_FLOAT))
-    {
-      r.width  -= 2 * subtle->bw;
-      r.height -= 2 * subtle->bw;
-    } 
-
   if(c->flags & SUB_MODE_FULL) ///< Get fullscreen size of screen
     r = SCREEN(subtle->screens->data[c->screen])->base;
 
@@ -226,7 +221,7 @@ subClientConfigure(SubClient *c)
   ev.height            = r.height;
   ev.above             = None;
   ev.override_redirect = 0;
-  ev.border_width      = 0;
+  ev.border_width      = subtle->bw;
 
   XMoveResizeWindow(subtle->dpy, c->win, r.x, r.y, r.width, r.height);
   XSendEvent(subtle->dpy, c->win, False, StructureNotifyMask, (XEvent *)&ev);
@@ -538,7 +533,7 @@ subClientTag(SubClient *c,
     {
       SubTag *t = TAG(subtle->tags->data[tag]);
       
-      /* Collect flags */
+      /* Collect flags and tags */
       flags    |= (t->flags & (SUB_MODE_FULL|SUB_MODE_FLOAT|SUB_MODE_STICK|SUB_MODE_URGENT));
       c->flags |= (t->flags & (SUB_MODE_UNFULL|SUB_MODE_UNFLOAT|SUB_MODE_UNSTICK|SUB_MODE_UNURGENT));
       c->tags  |= (1L << (tag + 1));
@@ -562,12 +557,6 @@ subClientTag(SubClient *c,
               if(t->flags & SUB_TAG_SCREEN)  c->screens[i]   = t->screen;
             }
         }
-
-      /* Remove flags */
-      if(flags & SUB_MODE_FULL && c->flags & SUB_MODE_UNFULL)     flags &= ~SUB_MODE_FULL;
-      if(flags & SUB_MODE_FLOAT && c->flags & SUB_MODE_UNFLOAT)   flags &= ~SUB_MODE_FLOAT;
-      if(flags & SUB_MODE_STICK && c->flags & SUB_MODE_UNSTICK)   flags &= ~SUB_MODE_STICK;
-      if(flags & SUB_MODE_URGENT && c->flags & SUB_MODE_UNURGENT) flags &= ~SUB_MODE_URGENT;
     }
 
   return flags;
@@ -638,7 +627,7 @@ subClientSetGravity(SubClient *c,
       SubScreen *s = NULL;
       XRectangle slot = { 0 };
       static const ClientCell cells[] = /* {{{ */
-      {
+      { ///< right, down, x, y
         { 0, 1, 1, 1 }, ///< Gravity unknown
         { 0, 1, 2, 2 }, ///< Gravity bottom left
         { 0, 1, 1, 2 }, ///< Gravity bottom
@@ -662,6 +651,9 @@ subClientSetGravity(SubClient *c,
 
       cell = gravity & ~SUB_GRAVITY_MODES; ///< Strip modes
 
+      c->geom.width  += 2 * subtle->bw;
+      c->geom.height += 2 * subtle->bw;
+
       /* Compute slot */
       s = SCREEN(subtle->screens->data[c->screen]);
       slot.height = s->geom.height / cells[cell].y;
@@ -681,7 +673,7 @@ subClientSetGravity(SubClient *c,
               int y = s->geom.y + cells[cell].down * height33;
 
               if(gravity & SUB_GRAVITY_MODE66 || (!(gravity & SUB_GRAVITY_MODES) &&
-                c->geom.height == slot.height && c->geom.y == slot.y)) ///< 33%
+                  c->geom.height == slot.height && c->geom.y == slot.y)) ///< 33%
                 {
                   slot.y      = y;
                   slot.height = height66;
@@ -697,7 +689,7 @@ subClientSetGravity(SubClient *c,
                 }
             }
           else if(gravity & SUB_GRAVITY_MODE33 || (!(gravity & SUB_GRAVITY_MODES) &&
-            c->geom.height == slot.height && c->geom.y == slot.y))
+              c->geom.height == slot.height && c->geom.y == slot.y))
             {
               slot.y      = s->geom.y + height33;
               slot.height = height33 + comph;
@@ -706,9 +698,11 @@ subClientSetGravity(SubClient *c,
         }  
 
       /* Update client rect */
-      c->geom                   = slot;
-      c->gravity                = cell | mode;
-      c->gravities[subtle->vid] = cell | mode;
+      slot.width                -= 2 * subtle->bw;
+      slot.height               -= 2 * subtle->bw;
+      c->geom                    = slot;
+      c->gravity                 = cell | mode;
+      c->gravities[subtle->vid]  = cell | mode;
 
       if(subtle->flags & SUB_SUBTLE_RESIZE) subClientSetSize(c, False);
 
@@ -779,8 +773,8 @@ subClientSetSize(SubClient *c,
       if(c->geom.height > c->maxh) c->geom.height = c->maxh;
 
       /* Limit sizes */
-      subScreenLimit(s, &c->geom);
-      subScreenLimit(s, &c->base);
+      subScreenLimit(s, &c->geom, True);
+      subScreenLimit(s, &c->base, True);
     }
 
   /* Check aspect ratios */
@@ -847,6 +841,18 @@ subClientSetNormalHints(SubClient *c)
               s->geom.height - subtle->th : size->max_height;
         }
 
+      if(size->flags & (USPosition|PPosition)) ///< User/program size
+        {
+          c->geom.x = c->base.x = size->x;
+          c->geom.y = c->base.y = size->y;
+        }
+
+      if(size->flags & (USPosition|PPosition)) ///< User/program position
+        {
+          c->geom.x = c->base.x = size->x;
+          c->geom.y = c->base.y = size->y;
+        }
+
       if(size->flags & PAspect) ///< Aspect
         {
           if(size->min_aspect.y) c->minr = (float)size->min_aspect.x / size->min_aspect.y;
@@ -893,6 +899,42 @@ subClientSetWMHints(SubClient *c)
     }
 } /* }}} */
 
+  /** subClientSetWMState {{{
+   * @brief Set client WM state
+   * @param[in]  c  A #SubClient
+   * @return Return changed flags
+   **/
+
+int
+subClientSetWMState(SubClient *c)
+{
+  int i, flags = 0;
+  unsigned long size = 0;
+  Atom *states = NULL;
+
+  assert(c);
+
+  /* Window state */
+  if((states = (Atom *)subSharedPropertyGet(c->win, XA_ATOM, 
+      SUB_EWMH_NET_WM_STATE, &size)))
+    {
+      for(i = 0; i < size / sizeof(Atom); i++)
+        {
+          switch(subEwmhFind(states[i]))
+            {
+              case SUB_EWMH_NET_WM_STATE_FULLSCREEN: flags |= SUB_MODE_FULL;  break;
+              case SUB_EWMH_NET_WM_STATE_ABOVE:      flags |= SUB_MODE_FLOAT; break;
+              case SUB_EWMH_NET_WM_STATE_STICKY:     flags |= SUB_MODE_STICK; break;
+              default: break;
+            }
+        }
+
+      XFree(states);
+    }
+
+  return flags;
+} /* }}} */
+
   /** subClientSetStrut {{{ 
    * @brief Set client strut
    * @param[in]  c  A #SubClient
@@ -909,16 +951,16 @@ subClientSetStrut(SubClient *c)
 
   /* Get strut property */
   if((strut = (long *)subSharedPropertyGet(c->win, XA_CARDINAL, 
-    SUB_EWMH_NET_WM_STRUT, &size)))
+      SUB_EWMH_NET_WM_STRUT, &size)))
     {
-      if(size == 4 * sizeof(long)) ///< Only complete struts
+      if(4 * sizeof(long) == size) ///< Only complete struts
         {
           subtle->strut.x      = MAX(subtle->strut.x,      strut[0]); ///< Left
           subtle->strut.y      = MAX(subtle->strut.y,      strut[1]); ///< Right
           subtle->strut.width  = MAX(subtle->strut.width,  strut[2]); ///< Top
           subtle->strut.height = MAX(subtle->strut.height, strut[3]); ///< Bottom
 
-          /* Update screen clients */
+          /* Update screen and clients */
           subScreenUpdate();
           subViewConfigure(subtle->view, True);
 
@@ -968,9 +1010,10 @@ subClientToggle(SubClient *c,
   assert(c);
 
   /* Remove flags */
-  if(type & SUB_MODE_FULL && c->flags & SUB_MODE_UNFULL)   type &= ~SUB_MODE_FULL;
-  if(type & SUB_MODE_FLOAT && c->flags & SUB_MODE_UNFLOAT) type &= ~SUB_MODE_FLOAT;
-  if(type & SUB_MODE_STICK && c->flags & SUB_MODE_UNSTICK) type &= ~SUB_MODE_STICK;
+  if(type & SUB_MODE_FULL && c->flags & SUB_MODE_UNFULL)     type &= ~SUB_MODE_FULL;
+  if(type & SUB_MODE_FLOAT && c->flags & SUB_MODE_UNFLOAT)   type &= ~SUB_MODE_FLOAT;
+  if(type & SUB_MODE_STICK && c->flags & SUB_MODE_UNSTICK)   type &= ~SUB_MODE_STICK;
+  if(type & SUB_MODE_URGENT && c->flags & SUB_MODE_UNURGENT) type &= ~SUB_MODE_URGENT;
 
   if(c->flags & type) ///< Unset flags
     {
