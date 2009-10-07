@@ -457,6 +457,7 @@ SubtlextClientInit(VALUE self,
   rb_iv_set(self, "@win",     win);
   rb_iv_set(self, "@name",    Qnil);
   rb_iv_set(self, "@klass",   Qnil);
+  rb_iv_set(self, "@title",   Qnil);
   rb_iv_set(self, "@x",       Qnil);
   rb_iv_set(self, "@y",       Qnil); 
   rb_iv_set(self, "@width",   Qnil); 
@@ -1202,7 +1203,7 @@ SubtlextClientUpdate(VALUE self)
   if((win = NUM2LONG(rb_iv_get(self, "@win"))))
     {
       int id = 0;
-      char buf[20], *wmname = NULL, *wmklass = NULL;
+      char buf[20], *name = NULL, *klass = NULL, *title = NULL;
       int *gravity = NULL, *screen = NULL, *flags = NULL;
       XWindowAttributes attrs;
 
@@ -1211,7 +1212,7 @@ SubtlextClientUpdate(VALUE self)
       id = subSharedClientFind(buf, NULL);
 
       /* Create new instance */
-      subSharedPropertyClass(win, &wmname, &wmklass);
+      subSharedPropertyClass(win, &name, &klass);
       gravity = (int *)subSharedPropertyGet(win, XA_CARDINAL,
         "SUBTLE_WINDOW_GRAVITY", NULL);
       screen  = (int *)subSharedPropertyGet(win, XA_CARDINAL,
@@ -1219,12 +1220,14 @@ SubtlextClientUpdate(VALUE self)
       flags   = (int *)subSharedPropertyGet(win, XA_CARDINAL,
         "SUBTLE_WINDOW_FLAGS", NULL);
 
+      XFetchName(display, win, &title);
       XGetWindowAttributes(display, win, &attrs);
 
       /* Update properties */
       rb_iv_set(self, "@id",      INT2FIX(id));
-      rb_iv_set(self, "@name",    rb_str_new2(wmname));
-      rb_iv_set(self, "@klass",   rb_str_new2(wmklass));
+      rb_iv_set(self, "@name",    rb_str_new2(name));
+      rb_iv_set(self, "@klass",   rb_str_new2(klass));
+      rb_iv_set(self, "@title",   rb_str_new2(title));
       rb_iv_set(self, "@x",       INT2FIX(attrs.x));
       rb_iv_set(self, "@y",       INT2FIX(attrs.y));
       rb_iv_set(self, "@width",   INT2FIX(attrs.width));
@@ -1233,8 +1236,9 @@ SubtlextClientUpdate(VALUE self)
       rb_iv_set(self, "@screen",  INT2FIX(*screen));
       rb_iv_set(self, "@flags",   INT2FIX(*flags));
 
-      free(wmname);
-      free(wmklass);
+      free(name);
+      free(klass);
+      free(title);
       free(gravity);
       free(screen);
       free(flags);
@@ -2913,6 +2917,9 @@ Init_subtlext(void)
 
   /* WM_CLASS */
   rb_define_attr(client,   "klass",   1, 0);
+
+  /* WM_NAME */
+  rb_define_attr(client,   "title",   1, 0);
 
   /* X position on screen */
   rb_define_attr(client,   "x",       1, 0);

@@ -1471,6 +1471,7 @@ RubyWrapCall(VALUE data)
                     rb_iv_set(inst, "@id",      INT2FIX(id));
                     rb_iv_set(inst, "@name",    rb_str_new2(c->name));
                     rb_iv_set(inst, "@klass",   rb_str_new2(c->klass));
+                    rb_iv_set(inst, "@title",   rb_str_new2(c->title));
                     rb_iv_set(inst, "@x",       INT2FIX(c->geom.x));
                     rb_iv_set(inst, "@y",       INT2FIX(c->geom.y));
                     rb_iv_set(inst, "@width",   INT2FIX(c->geom.width));
