@@ -87,29 +87,41 @@ subScreenJump(SubScreen *s)
 
  /** SubScreenLimit {{{
   * @brief Limit a rect to in screen boundaries
-  * @param[in]  s  A #SubScreem
-  * @param[in]  r  A XRectangle
+  * @param[in]  s       A #SubScreem
+  * @param[in]  r       A XRectangle
+  * @param[in]  center  Center window on bad geometry
   **/
 
 void
 subScreenLimit(SubScreen *s,
-  XRectangle *r)
+  XRectangle *r,
+  int center)
 {
   assert(s && r);
 
   /* Check boundaries */
-  if(0 == r->x || r->x <= s->geom.x || r->x >= s->geom.x + s->geom.width)
-    r->x = s->geom.x + (s->geom.width - r->width) / 2;
-
-  if(0 == r->y || r->y <= s->geom.y || r->y >= s->geom.y + s->geom.height)
-    r->y = s->geom.y + (s->geom.height - r->height) / 2;
+  if(r->x <= s->geom.x) r->x = s->geom.x;
+  if(r->y <= s->geom.y) r->y = s->geom.y;
 
   /* Check sizes */
   if(r->x + r->width > s->geom.x + s->geom.width)
-    r->width = s->geom.x + s->geom.width - r->x;
+    {
+      if(r->width > s->geom.width) r->width = s->geom.width;
+      r->x = s->geom.x + s->geom.width - r->width;
+    }
 
   if(r->y + r->height > s->geom.y + s->geom.height)
-    r->height = s->geom.y + s->geom.height - r->y;
+    {
+      if(r->height > s->geom.height) r->height = s->geom.height;
+      r->y = s->geom.y + s->geom.height - r->height;
+    }
+  
+  /* Center rect */
+  if(center && r->x == s->geom.x)
+    r->y = s->geom.y + (s->geom.height - r->height) / 2;
+
+  if(center && r->x == s->geom.x)
+    r->x = s->geom.x + (s->geom.width - r->width) / 2;
 } /* }}} */
 
  /** SubScreenKill {{{
