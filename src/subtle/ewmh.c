@@ -79,8 +79,8 @@ subEwmhInit(void)
 
   /* Check if another EWMH-compatible WM is running */
   if(!(subtle->flags & SUB_SUBTLE_DEBUG) && 
-    (check = (Window *)subSharedPropertyGet(DefaultRootWindow(subtle->dpy), XA_WINDOW,
-    SUB_EWMH_NET_SUPPORTING_WM_CHECK, NULL)))
+      (check = (Window *)subSharedPropertyGet(DefaultRootWindow(subtle->dpy), XA_WINDOW,
+      SUB_EWMH_NET_SUPPORTING_WM_CHECK, NULL)))
     {
       subSharedLogDebug("check=%#lx\n", *check);
 
@@ -147,9 +147,7 @@ subEwmhFind(Atom atom)
 {
   int i;
 
-  assert(atom);
-
-  for(i = 0; i < SUB_EWMH_TOTAL; i++)
+  for(i = 0; atom && i < SUB_EWMH_TOTAL; i++)
     if(atoms[i] == atom) return i;
 
   return -1;
@@ -195,7 +193,7 @@ subEwmhGetXEmbedState(Window win)
 
   /* Get xembed data */
   if((info = (XEmbedInfo *)subSharedPropertyGet(win, subEwmhGet(SUB_EWMH_XEMBED_INFO), 
-    SUB_EWMH_XEMBED_INFO, NULL))) 
+      SUB_EWMH_XEMBED_INFO, NULL))) 
     {
       flags = (long)info->flags;
 

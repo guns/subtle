@@ -119,7 +119,7 @@ SubtlerMatch(int type)
   unsigned long *cv = NULL, *flags1 = NULL, *focus = NULL;
 
   if((focus = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-    XA_WINDOW, "_NET_ACTIVE_WINDOW", NULL)))
+      XA_WINDOW, "_NET_ACTIVE_WINDOW", NULL)))
     {
       clients = subSharedClientList(&size);
       views   = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW, 
@@ -178,7 +178,7 @@ SubtlerCurrentClient(void)
   unsigned long *focus = NULL;
 
   if((focus = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-    XA_WINDOW, "_NET_ACTIVE_WINDOW", NULL)))
+      XA_WINDOW, "_NET_ACTIVE_WINDOW", NULL)))
     {
       char buf[20];
 

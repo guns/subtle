@@ -530,6 +530,7 @@ void subClientSetScreen(SubClient *c, int screen, int force);     ///< Set clien
 void subClientSetSize(SubClient *c, int limit);                   ///< Set client sizes
 void subClientSetNormalHints(SubClient *c);                       ///< Set client normal hints
 void subClientSetWMHints(SubClient *c);                           ///< Set client WM hints
+int subClientSetWMState(SubClient *c);                            ///< Set client WM state
 void subClientSetStrut(SubClient *c);                             ///< Set client strut
 void subClientSetTitle(SubClient *c);                             ///< Set client title
 void subClientToggle(SubClient *c, int type);                     ///< Toggle client state
@@ -613,7 +614,7 @@ void subRubyFinish(void);                                         ///< Kill Ruby
 SubScreen *subScreenNew(int x, int y, unsigned int width,
   unsigned int height);                                           ///< Create screen
 void subScreenUpdate(void);                                       ///< Update screens
-void subScreenLimit(SubScreen *s, XRectangle *r);                 ///< Limit rect size
+void subScreenLimit(SubScreen *s, XRectangle *r, int center);     ///< Limit rect size
 void subScreenJump(SubScreen *s);                                 ///< Jump to screen
 void subScreenKill(SubScreen *s);                                 ///< Kill screen
 /* }}} */
