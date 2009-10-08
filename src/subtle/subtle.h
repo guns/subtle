@@ -149,6 +149,7 @@
 #define SUB_MODE_FLOAT                (1L << 21)                  ///< Float mode
 #define SUB_MODE_STICK                (1L << 22)                  ///< Stick mode
 #define SUB_MODE_URGENT               (1L << 23)                  ///< Urgent mode
+#define SUB_MODE_URGENT_ONCE          (1L << 24)                  ///< Urgent once
 #define SUB_MODE_UNFULL               (1L << 24)                  ///< Disable full mode
 #define SUB_MODE_UNFLOAT              (1L << 25)                  ///< Disable float mode
 #define SUB_MODE_UNSTICK              (1L << 26)                  ///< Disable stick mode

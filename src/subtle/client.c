@@ -890,8 +890,11 @@ subClientSetWMHints(SubClient *c)
   if((hints = XGetWMHints(subtle->dpy, c->win)))
     {
       /* Handle urgency */
-      if(hints->flags & XUrgencyHint)
-        if(!(c->flags & SUB_MODE_UNURGENT)) c->flags |= SUB_MODE_URGENT;
+      if(!(c->flags & SUB_MODE_UNURGENT))
+        {
+          if(hints->flags & XUrgencyHint)     c->flags |= SUB_MODE_URGENT;
+          else if(c->flags & SUB_MODE_URGENT) c->flags |= SUB_MODE_URGENT_ONCE;
+        }
         
       if(hints->flags & InputHint && hints->input) c->flags |= SUB_CLIENT_INPUT;
 

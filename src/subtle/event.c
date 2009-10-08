@@ -639,7 +639,7 @@ EventProperty(XPropertyEvent *ev)
           {
             subClientSetWMHints(c);
             subViewConfigure(subtle->view, False);
-            if(c->flags & SUB_MODE_URGENT) subClientWarp(c);
+            if(c->flags & (SUB_MODE_URGENT|SUB_MODE_URGENT_ONCE)) subClientWarp(c);
           }
         break; /* }}} */
       case SUB_EWMH_NET_WM_STRUT: /* {{{ */
@@ -917,9 +917,9 @@ EventFocus(XFocusChangeEvent *ev)
       subClientRender(c);
 
       /* Remove urgent after losing focus */
-      if(c->flags & SUB_MODE_URGENT)
+      if(c->flags & SUB_MODE_URGENT_ONCE)
         {
-          c->flags &= ~SUB_MODE_URGENT;
+          c->flags &= ~(SUB_MODE_URGENT|SUB_MODE_URGENT_ONCE);
           subViewConfigure(subtle->view, False);
         }
     }
