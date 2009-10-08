@@ -42,37 +42,6 @@ SubtleVersion(void)
          PKG_NAME, PKG_VERSION, X_PROTOCOL, X_PROTOCOL_REVISION, RUBY_VERSION);
 } /* }}} */
 
-/* SubtleFinish {{{ */
-void
-SubtleFinish(void)
-{
-  subRubyFinish();
-
-  if(subtle)
-    {
-      /* Kill arrays */
-      subArrayKill(subtle->clients, False);
-      subArrayKill(subtle->grabs,   False);
-      subArrayKill(subtle->icons, True);
-      subArrayKill(subtle->screens, True);
-      subArrayKill(subtle->sublets, False);
-      subArrayKill(subtle->tags,    True);
-      subArrayKill(subtle->trays,   True);
-      subArrayKill(subtle->views,   True);
-
-      subEwmhFinish();
-      subDisplayFinish();
-
-      if(subtle->separator.string) free(subtle->separator.string);
-
-      free(subtle);
-    }
-
-  printf("Exit\n");
-
-  exit(0);
-} /* }}} */
-
 /* main {{{ */
 int
 main(int argc,
@@ -161,7 +130,7 @@ main(int argc,
 
   subEventLoop();
 
-  SubtleFinish();
+  subEventFinish();
 
   return 0;
 } /* }}} */

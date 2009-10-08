@@ -552,6 +552,7 @@ void subDisplayFinish(void);                                      ///< Kill disp
 void subEventWatchAdd(int fd);                                    ///< Add watch fd
 void subEventWatchDel(int fd);                                    ///< Del watch fd
 void subEventLoop(void);                                          ///< Event loop
+void subEventFinish(void);                                        ///< Finish events
 /* }}} */
 
 /* ewmh.c  {{{ */

@@ -1145,4 +1145,38 @@ subEventLoop(void)
     }
 } /* }}} */
 
+ /** subEventFinish {{{ 
+  * @brief Finish event processing
+  **/
+
+void
+subEventFinish(void)
+{
+  subRubyFinish();
+
+  if(subtle)
+    {
+      /* Kill arrays */
+      subArrayKill(subtle->clients, False);
+      subArrayKill(subtle->grabs,   False);
+      subArrayKill(subtle->icons, True);
+      subArrayKill(subtle->screens, True);
+      subArrayKill(subtle->sublets, False);
+      subArrayKill(subtle->tags,    True);
+      subArrayKill(subtle->trays,   True);
+      subArrayKill(subtle->views,   True);
+
+      subEwmhFinish();
+      subDisplayFinish();
+
+      if(subtle->separator.string) free(subtle->separator.string);
+
+      free(subtle);
+    }
+
+  printf("Exit\n");
+
+  exit(0);
+} /* }}} */
+
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
