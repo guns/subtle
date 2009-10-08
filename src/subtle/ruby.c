@@ -50,29 +50,22 @@ typedef struct rubytags_t
 } RubyTags;
 /* }}} */
 
-/* RubyPerror {{{ */
+/* RubyBacktrace {{{ */
 static VALUE
-RubyPerror(int verbose, 
-  int fatal,
-  const char *format,
-  ...)
+RubyBacktrace(void)
 {
-  va_list ap;
-  char buf[255];
-  VALUE lineno = Qnil, lasterr = Qnil, message = Qnil;
+  int i;
+  VALUE lasterr = Qnil, message = Qnil, klass = Qnil, backtrace = Qnil, entry = Qnil;
 
-  /* Fetch infos */
-  lineno  = rb_gv_get("$.");
-  lasterr = rb_gv_get("$!");
-  message = rb_obj_as_string(lasterr);
+  /* Fetching backtrace data */
+  lasterr   = rb_gv_get("$!");
+  message   = rb_obj_as_string(lasterr);
+  klass     = rb_class_path(CLASS_OF(lasterr));
+  backtrace = rb_funcall(lasterr, rb_intern("backtrace"), 0, NULL);
 
-  va_start(ap, format);
-  vsnprintf(buf, sizeof(buf), format, ap);
-  va_end(ap);
-
-  if(True == verbose && RTEST(message)) subSharedLogWarn("%s\n\n", RSTRING_PTR(message));
-  if(True == fatal) subSharedLogError("%s at line %d\n", buf, FIX2INT(lineno));
-  subSharedLogWarn("%s at line %d\n", buf, FIX2INT(lineno));
+  subSharedLogWarn("%s: %s\n", RSTRING_PTR(klass), RSTRING_PTR(message));
+  for(i = 0; Qnil != (entry = rb_ary_entry(backtrace, i)); ++i)
+    printf("\tfrom %s\n", RSTRING_PTR(entry));
 
   return Qnil;
 } /* }}} */
@@ -652,7 +645,8 @@ RubySubletNew(VALUE self)
   rb_protect(RubyWrapInit, data, &state);
   if(state) 
     {
-      RubyPerror(True, False, "Failed initializing sublet `%s'", name);
+      subSharedLogWarn("Failed initializing sublet `%s'\n", name);
+      RubyBacktrace();
 
       subSubletKill(s, False);
 
@@ -1139,8 +1133,8 @@ RubyColorOperatorPlus(VALUE self,
 static VALUE
 RubyWrapLoadConfig(VALUE data)
 {
-  int i, state = 0;
-  char *font = NULL, buf[100], path[50];
+  int i;
+  char *font = NULL;
   VALUE config = Qnil, entry = Qnil, rargs[2] = { 0 };
   SubPanel *p = NULL;
 
@@ -1192,40 +1186,6 @@ RubyWrapLoadConfig(VALUE data)
     { CHAR2SYM("urgent"),  SUB_MODE_URGENT },
     { CHAR2SYM("match"),   SUB_TAG_MATCH   }
   }; /* }}} */
-
-  /* Check config paths */
-  if(subtle->paths.config) 
-    snprintf(path, sizeof(path), "%s", subtle->paths.config);
-  else
-    {
-      FILE *fd = NULL;
-      char *tok = NULL, *bufp = buf, *home = getenv("XDG_CONFIG_HOME"), 
-        *dirs = getenv("XDG_CONFIG_DIRS");
-
-      /* Combine paths */
-      snprintf(path, sizeof(path), "%s/.config", getenv("HOME"));
-      snprintf(buf, sizeof(buf), "%s:%s", home ? home : path, dirs ? dirs : "/etc/xdg");
-
-      /* Search config in XDG path */
-      while((tok = strsep(&bufp, ":")))
-        {
-          snprintf(path, sizeof(path), "%s/%s/%s", tok, PKG_NAME, PKG_CONFIG);
-
-          if((fd = fopen(path, "r"))) ///< Check if config file exists
-            {
-              fclose(fd);
-              break;
-            }
-
-          subSharedLogDebug("Checked config=%s\n", path);
-        }
-    }
-  printf("Using config `%s'\n", path);
-  rb_load_protect(rb_str_new2(path), 0, &state); ///< Load config
-
-  if(state) RubyPerror(True, True, "Failed finding config in `%s'", buf);
-
-  if(!subtle || !subtle->dpy) return Qnil; ///< Exit after config check
 
   /* Config: Options */
   config          = rb_const_get(rb_cObject, rb_intern("OPTIONS"));
@@ -1619,10 +1579,55 @@ void
 subRubyLoadConfig(void)
 {
   int state = 0;
+  char buf[100], path[50];
+
+  /* Check config paths */
+  if(subtle->paths.config) 
+    snprintf(path, sizeof(path), "%s", subtle->paths.config);
+  else
+    {
+      FILE *fd = NULL;
+      char *tok = NULL, *bufp = buf, *home = getenv("XDG_CONFIG_HOME"), 
+        *dirs = getenv("XDG_CONFIG_DIRS");
+
+      /* Combine paths */
+      snprintf(path, sizeof(path), "%s/.config", getenv("HOME"));
+      snprintf(buf, sizeof(buf), "%s:%s", home ? home : path, dirs ? dirs : "/etc/xdg");
+
+      /* Search config in XDG path */
+      while((tok = strsep(&bufp, ":")))
+        {
+          snprintf(path, sizeof(path), "%s/%s/%s", tok, PKG_NAME, PKG_CONFIG);
+
+          if((fd = fopen(path, "r"))) ///< Check if config file exists
+            {
+              fclose(fd);
+              break;
+            }
+
+          subSharedLogDebug("Checked config=%s\n", path);
+        }
+    }
+  
+  /* Loading config */
+  printf("Using config `%s'\n", path);
+  rb_load_protect(rb_str_new2(path), 0, &state); ///< Load config
+  if(state) 
+    {
+      RubyBacktrace();
+      subEventFinish();
+      return;
+    }
+
+  if(!subtle || !subtle->dpy) return; ///< Exit after config check
 
   /* Carefully load config */
   rb_protect(RubyWrapLoadConfig, Qnil, &state);
-  if(state) RubyPerror(True, True, "Failed reading config");
+  if(state)
+    {
+      RubyBacktrace();
+      subEventFinish();
+    }
 } /* }}} */
 
  /** subRubyReloadConfig {{{
@@ -1636,8 +1641,8 @@ subRubyReloadConfig(void)
   int i, state = 0;
 
   /* Reset before reloading */
-  subtle->flags  &= (SUB_SUBTLE_DEBUG|SUB_SUBTLE_EWMH|SUB_SUBTLE_RUN);
-  subtle->panel   = NULL;
+  subtle->flags &= (SUB_SUBTLE_DEBUG|SUB_SUBTLE_EWMH|SUB_SUBTLE_RUN);
+  subtle->panel  = NULL;
 
   /* Clear x cache */
   subtle->panels.tray.x    = 0;
@@ -1668,9 +1673,15 @@ subRubyReloadConfig(void)
   subRubyRemove("VIEWS");
   subRubyRemove("HOOKS");
 
-   /* Carefully load config */
+   /* Carefully reload config */
   rb_protect(RubyWrapLoadConfig, Qnil, &state);
-  if(state) RubyPerror(True, True, "Failed reading config");
+  if(state)
+    {
+      subSharedLogWarn("Failed reloading config\n");
+      RubyBacktrace();
+      subEventFinish();
+      return;
+    }
 
   subDisplayConfigure();
 
@@ -1741,7 +1752,11 @@ subRubyLoadSublet(const char *file)
 
       inherited = Qnil;
     }
-  else RubyPerror(True, False, "Failed loading sublet `%s'", buf);
+  else
+    {
+      subSharedLogWarn("Failed loading sublet `%s'\n", buf);
+      RubyBacktrace();
+    }
 } /* }}} */
 
  /** subRubyLoadSublets {{{
@@ -1807,7 +1822,12 @@ subRubyLoadSubtlext(void)
 
   /* Carefully load sublext */
   rb_protect(RubyWrapLoadSubtlext, Qnil, &state);
-  if(state) RubyPerror(True, True, "Failed loading subtlext");
+  if(state)
+    {
+      subSharedLogWarn("Failed loading subtlext\n");
+      RubyBacktrace();
+      subEventFinish();
+    }
 } /* }}} */
 
  /** subRubyCall {{{
@@ -1840,9 +1860,9 @@ subRubyCall(int type,
   result = rb_protect(RubyWrapCall, (VALUE)&rargs, &state);
   if(state) 
     {
-      RubyPerror(True, False, "Failed calling %s",
-        type & (SUB_CALL_SUBLET_RUN|SUB_CALL_SUBLET_CLICK) ? 
+      subSharedLogWarn("Failed calling %s\n", type & (SUB_CALL_SUBLET_RUN|SUB_CALL_SUBLET_CLICK) ? 
         "sublet" : (type & SUB_CALL_GRAB ? "grab" : "hook"));
+      RubyBacktrace();
 
       result = Qnil;
     }
