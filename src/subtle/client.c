@@ -77,13 +77,11 @@ ClientGravity(void)
 SubClient *
 subClientNew(Window win)
 {
-  int i, n = 0, grav = 0, flags = 0;
+  int i, grav = 0, flags = 0;
   long vid = 0;
-  Window trans = 0;
   XWindowAttributes attrs;
   XSetWindowAttributes sattrs;
-  Atom *protos = NULL;
-  SubClient *c = NULL, *k = NULL;
+  SubClient *c = NULL;
 
   assert(win);
 
@@ -122,6 +120,7 @@ subClientNew(Window win)
   XSelectInput(subtle->dpy, c->win, EVENTMASK);
   XAddToSaveSet(subtle->dpy, c->win);
   XSaveContext(subtle->dpy, c->win, CLIENTID, (void *)c);
+  subEwmhSetWMState(c->win, WithdrawnState);
 
   /* Window attributes */
   XGetWindowAttributes(subtle->dpy, c->win, &attrs);
@@ -133,51 +132,16 @@ subClientNew(Window win)
   c->base        = c->geom; ///< Backup size
 
   /* Update client */
-  subEwmhSetWMState(c->win, WithdrawnState);
   subClientSetNormalHints(c);
+  subClientSetProtocols(c);
   subClientSetStrut(c);
-  subClientSetSize(c, True);
   subClientSetTags(c);
-  subClientSetWMHints(c); ///< Must be set after tags
 
-  flags = subClientSetWMState(c);
-
-  /* Window manager protocols */
-  if(XGetWMProtocols(subtle->dpy, c->win, &protos, &n))
-    {
-      for(i = 0; i < n; i++)
-        {
-          switch(subEwmhFind(protos[i]))
-            {
-              case SUB_EWMH_WM_TAKE_FOCUS:    c->flags |= SUB_CLIENT_FOCUS; break;
-              case SUB_EWMH_WM_DELETE_WINDOW: c->flags |= SUB_CLIENT_CLOSE; break;
-              default: break;
-            }
-         }
-
-      XFree(protos);
-    }
-
-  /* Check for transient windows */
-  if(XGetTransientForHint(subtle->dpy, c->win, &trans))
-    {
-      /* Check if transient windows should be urgent */
-      flags |= subtle->flags & SUB_SUBTLE_URGENT ? SUB_MODE_FLOAT|SUB_MODE_URGENT : SUB_MODE_FLOAT;
-
-      if((k = CLIENT(subSharedFind(trans, CLIENTID))))
-        {
-          /* Copy tags and screens */
-          c->tags   |= k->tags;
-          c->screen |= k->screen;
-
-           for(i = 0; i < subtle->views->ndata; i++)
-             c->screens[i] = k->screens[i];
-        }
-     }
-
-  /* Toggle modes and warp if needed */
+  /* Set client flags */
+  subClientSetHints(c, &flags);
+  subClientSetState(c, &flags);
   subClientToggle(c, (~c->flags & flags));
-  if(c->flags & SUB_MODE_URGENT) subClientWarp(c);
+  if(c->flags & (SUB_MODE_URGENT|SUB_MODE_URGENT_ONCE)) subClientWarp(c);
 
   /* EWMH: Gravity, screen and desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
@@ -208,6 +172,12 @@ subClientConfigure(SubClient *c)
 
   r = c->geom;
 
+  if(!(c->flags & SUB_MODE_FLOAT))
+    {
+      r.width  -= 2 * subtle->bw;
+      r.height -= 2 * subtle->bw;
+    } 
+
   if(c->flags & SUB_MODE_FULL) ///< Get fullscreen size of screen
     r = SCREEN(subtle->screens->data[c->screen])->base;
 
@@ -219,9 +189,9 @@ subClientConfigure(SubClient *c)
   ev.y                 = r.y;
   ev.width             = r.width;
   ev.height            = r.height;
-  ev.above             = None;
-  ev.override_redirect = 0;
   ev.border_width      = subtle->bw;
+  ev.above             = None;
+  ev.override_redirect = False;
 
   XMoveResizeWindow(subtle->dpy, c->win, r.x, r.y, r.width, r.height);
   XSendEvent(subtle->dpy, c->win, False, StructureNotifyMask, (XEvent *)&ev);
@@ -414,7 +384,7 @@ subClientDrag(SubClient *c,
                 *dirx = MINMAX(*dirx, c->minw, c->maxw);
                 *diry = MINMAX(*diry, c->minh, c->maxh);
               
-                subClientSetSize(c, True);
+                subClientSetSize(c);
                 ClientMask(c);
               }
             break; /* }}} */
@@ -453,7 +423,7 @@ subClientDrag(SubClient *c,
                       check = wh - (ry - ev.xmotion.y_root); ///< Avoid overflow
                       c->geom.height = check > c->minh ? check : c->minh;
 
-                      subClientSetSize(c, True);
+                      subClientSetSize(c);
                       break;
                   }  
 
@@ -651,9 +621,6 @@ subClientSetGravity(SubClient *c,
 
       cell = gravity & ~SUB_GRAVITY_MODES; ///< Strip modes
 
-      c->geom.width  += 2 * subtle->bw;
-      c->geom.height += 2 * subtle->bw;
-
       /* Compute slot */
       s = SCREEN(subtle->screens->data[c->screen]);
       slot.height = s->geom.height / cells[cell].y;
@@ -698,13 +665,11 @@ subClientSetGravity(SubClient *c,
         }  
 
       /* Update client rect */
-      slot.width                -= 2 * subtle->bw;
-      slot.height               -= 2 * subtle->bw;
       c->geom                    = slot;
       c->gravity                 = cell | mode;
       c->gravities[subtle->vid]  = cell | mode;
 
-      if(subtle->flags & SUB_SUBTLE_RESIZE) subClientSetSize(c, False);
+      subClientSetSize(c);
 
       /* EWMH: Gravity */
       subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&cell, 1);
@@ -732,7 +697,7 @@ subClientSetScreen(SubClient *c,
       c->screen               = screen;
       c->gravity              = -1; ///< Force update
 
-      subClientSetSize(c, True); ///< Update size for screen
+      subClientSetSize(c); ///< Update size for screen
 
       /* EWMH: Screen */
       subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_SCREEN, (long *)&c->screen, 1);
@@ -741,23 +706,19 @@ subClientSetScreen(SubClient *c,
 
   /** subClientSetSize {{{ 
    * @brief Set client size according to client hints
-   * @param[in]  c      A #SubClient
-   * @param[in]  limit  Limit size to min/max
+   * @param[in]  c  A #SubClient
    **/
 
 void
-subClientSetSize(SubClient *c,
-  int limit)
+subClientSetSize(SubClient *c)
 {
-  SubScreen *s = NULL;
-
   DEAD(c);
   assert(c);
 
-  s = SCREEN(subtle->screens->data[c->screen]);
-
-  if(limit) ///< Limit width and height
+  if(subtle->flags & SUB_SUBTLE_RESIZE || c->flags & SUB_MODE_FLOAT)
     {
+      SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
+
       /* Limit width */
       if(c->base.width < c->minw)  c->base.width  = c->minw;
       if(c->base.width > c->maxw)  c->base.width  = c->maxw;
@@ -775,18 +736,107 @@ subClientSetSize(SubClient *c,
       /* Limit sizes */
       subScreenLimit(s, &c->geom, True);
       subScreenLimit(s, &c->base, True);
+
+      /* Check aspect ratios */
+      if(c->minr && c->geom.height * c->minr > c->geom.width)
+        c->geom.width = (int)(c->geom.height * c->minr);
+
+      if(c->maxr && c->geom.height * c->maxr < c->geom.width)
+        c->geom.width = (int)(c->geom.height * c->maxr);
+
+      /* Check incs */
+      c->geom.width  -= c->geom.width % c->incw; 
+      c->geom.height -= c->geom.height % c->inch;
     }
+} /* }}} */
 
-  /* Check aspect ratios */
-  if(c->minr && c->geom.height * c->minr > c->geom.width)
-    c->geom.width = (int)(c->geom.height * c->minr);
+  /** subClientSetStrut {{{ 
+   * @brief Set client strut
+   * @param[in]  c  A #SubClient
+   **/
 
-  if(c->maxr && c->geom.height * c->maxr < c->geom.width)
-    c->geom.width = (int)(c->geom.height * c->maxr);
+void
+subClientSetStrut(SubClient *c)
+{
+  unsigned long size = 0;
+  long *strut = NULL;
 
-  /* Check incs */
-  c->geom.width  -= c->geom.width % c->incw; 
-  c->geom.height -= c->geom.height % c->inch;
+  DEAD(c);
+  assert(c);
+
+  /* Get strut property */
+  if((strut = (long *)subSharedPropertyGet(c->win, XA_CARDINAL, 
+      SUB_EWMH_NET_WM_STRUT, &size)))
+    {
+      if(4 * sizeof(long) == size) ///< Only complete struts
+        {
+          subtle->strut.x      = MAX(subtle->strut.x,      strut[0]); ///< Left
+          subtle->strut.y      = MAX(subtle->strut.y,      strut[1]); ///< Right
+          subtle->strut.width  = MAX(subtle->strut.width,  strut[2]); ///< Top
+          subtle->strut.height = MAX(subtle->strut.height, strut[3]); ///< Bottom
+
+          /* Update screen and clients */
+          subScreenUpdate();
+          subViewConfigure(subtle->view, True);
+
+          subSharedLogDebug("Strut: x=%ld, y=%d, width=%d, height=%d\n", subtle->strut.x,
+            subtle->strut.y, subtle->strut.width, subtle->strut.height);
+        }
+
+      XFree(strut);
+    }
+} /* }}} */
+
+ /** subClientSetTitle {{{
+  * @brief Set title width
+  * @param[in]  c  A #SubClient
+  **/
+
+void
+subClientSetTitle(SubClient *c)
+{
+  int len = 0;
+
+  assert(c);
+  DEAD(c);
+
+  len = strlen(c->title) + (c->flags & (SUB_MODE_STICK|SUB_MODE_FLOAT) ? 1 : 0);
+
+  /* Update panel width */
+  subtle->panels.title.width = subSharedTextWidth(c->title, 50 >= len ? len : 50, 
+    NULL, NULL, True) + 6;
+  XResizeWindow(subtle->dpy, subtle->panels.title.win, 
+    subtle->panels.title.width, subtle->th);
+} /* }}} */
+
+ /** subClientSetProtocols {{{
+  * @brief Set client protocols
+  * @param[in]  c  A #SubClient
+  **/
+
+void
+subClientSetProtocols(SubClient *c)
+{
+  int i, n = 0;
+  Atom *protos = NULL;
+
+  assert(c);
+
+  /* Window manager protocols */
+  if(XGetWMProtocols(subtle->dpy, c->win, &protos, &n))
+    {
+      for(i = 0; i < n; i++)
+        {
+          switch(subEwmhFind(protos[i]))
+            {
+              case SUB_EWMH_WM_TAKE_FOCUS:    c->flags |= SUB_CLIENT_FOCUS; break;
+              case SUB_EWMH_WM_DELETE_WINDOW: c->flags |= SUB_CLIENT_CLOSE; break;
+              default: break;
+            }
+         }
+
+      XFree(protos);
+    }
 } /* }}} */
 
   /** subClientSetNormalHints {{{
@@ -874,17 +924,19 @@ subClientSetNormalHints(SubClient *c)
     c->maxh, c->minr, c->maxr);
 } /* }}} */
 
-  /** subClientSetWMHints {{{
+  /** subClientSetHints {{{
    * @brief Set client WM hints
-   * @param[in]  c  A #SubClient
+   * @param[in]  c      A #SubClient
+   * @param[in]  flags  Mode flags
    **/
 
 void
-subClientSetWMHints(SubClient *c)
+subClientSetHints(SubClient *c,
+  int *flags)
 {
   XWMHints *hints = NULL;
 
-  assert(c);
+  assert(c && flags);
 
   /* Window manager hints */
   if((hints = XGetWMHints(subtle->dpy, c->win)))
@@ -892,8 +944,8 @@ subClientSetWMHints(SubClient *c)
       /* Handle urgency */
       if(!(c->flags & SUB_MODE_UNURGENT))
         {
-          if(hints->flags & XUrgencyHint)     c->flags |= SUB_MODE_URGENT;
-          else if(c->flags & SUB_MODE_URGENT) c->flags |= SUB_MODE_URGENT_ONCE;
+          if(hints->flags & XUrgencyHint)     *flags |= SUB_MODE_URGENT;
+          else if(c->flags & SUB_MODE_URGENT) *flags |= SUB_MODE_URGENT_ONCE;
         }
         
       if(hints->flags & InputHint && hints->input) c->flags |= SUB_CLIENT_INPUT;
@@ -902,16 +954,17 @@ subClientSetWMHints(SubClient *c)
     }
 } /* }}} */
 
-  /** subClientSetWMState {{{
+  /** subClientSetState {{{
    * @brief Set client WM state
-   * @param[in]  c  A #SubClient
-   * @return Return changed flags
+   * @param[in]  c      A #SubClient
+   * @param[in]  flags  Mode flags
    **/
 
-int
-subClientSetWMState(SubClient *c)
+void
+subClientSetState(SubClient *c,
+  int *flags)
 {
-  int i, flags = 0;
+  int i;
   unsigned long size = 0;
   Atom *states = NULL;
 
@@ -925,76 +978,49 @@ subClientSetWMState(SubClient *c)
         {
           switch(subEwmhFind(states[i]))
             {
-              case SUB_EWMH_NET_WM_STATE_FULLSCREEN: flags |= SUB_MODE_FULL;  break;
-              case SUB_EWMH_NET_WM_STATE_ABOVE:      flags |= SUB_MODE_FLOAT; break;
-              case SUB_EWMH_NET_WM_STATE_STICKY:     flags |= SUB_MODE_STICK; break;
+              case SUB_EWMH_NET_WM_STATE_FULLSCREEN: *flags |= SUB_MODE_FULL;  break;
+              case SUB_EWMH_NET_WM_STATE_ABOVE:      *flags |= SUB_MODE_FLOAT; break;
+              case SUB_EWMH_NET_WM_STATE_STICKY:     *flags |= SUB_MODE_STICK; break;
               default: break;
             }
         }
 
       XFree(states);
     }
-
-  return flags;
 } /* }}} */
 
-  /** subClientSetStrut {{{ 
-   * @brief Set client strut
-   * @param[in]  c  A #SubClient
-   **/
-
-void
-subClientSetStrut(SubClient *c)
-{
-  unsigned long size = 0;
-  long *strut = NULL;
-
-  DEAD(c);
-  assert(c);
-
-  /* Get strut property */
-  if((strut = (long *)subSharedPropertyGet(c->win, XA_CARDINAL, 
-      SUB_EWMH_NET_WM_STRUT, &size)))
-    {
-      if(4 * sizeof(long) == size) ///< Only complete struts
-        {
-          subtle->strut.x      = MAX(subtle->strut.x,      strut[0]); ///< Left
-          subtle->strut.y      = MAX(subtle->strut.y,      strut[1]); ///< Right
-          subtle->strut.width  = MAX(subtle->strut.width,  strut[2]); ///< Top
-          subtle->strut.height = MAX(subtle->strut.height, strut[3]); ///< Bottom
-
-          /* Update screen and clients */
-          subScreenUpdate();
-          subViewConfigure(subtle->view, True);
-
-          subSharedLogDebug("Strut: x=%ld, y=%d, width=%d, height=%d\n", subtle->strut.x,
-            subtle->strut.y, subtle->strut.width, subtle->strut.height);
-        }
-
-      XFree(strut);
-    }
-} /* }}} */
-
- /** subClientSetTitle {{{
-  * @brief Set title width
-  * @param[in]  c  A #SubClient
+ /** subClientSetTransient {{{
+  * @brief Set client transient
+  * @param[in]  c      A #SubClient
+  * @param[in]  flags  Mode flags
   **/
 
 void
-subClientSetTitle(SubClient *c)
+subClientSetTransient(SubClient *c,
+  int *flags)
 {
-  int len = 0;
+  int i;
+  Window trans = 0;
+  SubClient *k = NULL;
 
-  assert(c);
-  DEAD(c);
+  assert(c && flags);
 
-  len = strlen(c->title) + (c->flags & (SUB_MODE_STICK|SUB_MODE_FLOAT) ? 1 : 0);
+  /* Check for transient windows */
+  if(XGetTransientForHint(subtle->dpy, c->win, &trans))
+    {
+      /* Check if transient windows should be urgent */
+      *flags |= subtle->flags & SUB_SUBTLE_URGENT ? SUB_MODE_FLOAT|SUB_MODE_URGENT : SUB_MODE_FLOAT;
 
-  /* Update panel width */
-  subtle->panels.title.width = subSharedTextWidth(c->title, 50 >= len ? len : 50, 
-    NULL, NULL, True) + 6;
-  XResizeWindow(subtle->dpy, subtle->panels.title.win, 
-    subtle->panels.title.width, subtle->th);
+      if((k = CLIENT(subSharedFind(trans, CLIENTID))))
+        {
+          /* Copy tags and screens */
+          c->tags   |= k->tags;
+          c->screen |= k->screen;
+
+           for(i = 0; i < subtle->views->ndata; i++)
+             c->screens[i] = k->screens[i];
+        }
+     }
 } /* }}} */
 
  /** subClientToggle {{{
@@ -1041,13 +1067,13 @@ subClientToggle(SubClient *c,
         {
           c->geom = c->base;
 
-          subClientSetSize(c, True); ///< Sanitize
+          subClientSetSize(c); ///< Sanitize
         }
 
       if(type & SUB_MODE_FULL)
         {
           XSetWindowBorderWidth(subtle->dpy, c->win, 0);
-          subClientSetSize(c, True); ///< Sanitize
+          subClientSetSize(c); ///< Sanitize
         }
     }
 

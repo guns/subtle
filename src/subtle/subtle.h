@@ -528,12 +528,14 @@ int subClientTag(SubClient *c, int tag);                          ///< Tag clien
 void subClientSetTags(SubClient *c);                              ///< Update client tags
 void subClientSetGravity(SubClient *c, int gravity, int force);   ///< Set client gravity
 void subClientSetScreen(SubClient *c, int screen, int force);     ///< Set client screen
-void subClientSetSize(SubClient *c, int limit);                   ///< Set client sizes
-void subClientSetNormalHints(SubClient *c);                       ///< Set client normal hints
-void subClientSetWMHints(SubClient *c);                           ///< Set client WM hints
-int subClientSetWMState(SubClient *c);                            ///< Set client WM state
+void subClientSetSize(SubClient *c);                              ///< Set client sizes
 void subClientSetStrut(SubClient *c);                             ///< Set client strut
 void subClientSetTitle(SubClient *c);                             ///< Set client title
+void subClientSetProtocols(SubClient *c);                         ///< Set client protocols
+void subClientSetNormalHints(SubClient *c);                       ///< Set client normal hints
+void subClientSetHints(SubClient *c, int *flags);                 ///< Set client WM hints
+void subClientSetState(SubClient *c, int *flags);                 ///< Set client WM state
+void subClientSetTransient(SubClient *c, int *flags);             ///< Set client transient
 void subClientToggle(SubClient *c, int type);                     ///< Toggle client state
 void subClientPublish(void);                                      ///< Publish all clients
 void subClientKill(SubClient *c, int close);                      ///< Kill client

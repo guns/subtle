@@ -113,12 +113,14 @@ EventConfigure(XConfigureRequestEvent *ev)
     {
       if(subtle->flags & SUB_SUBTLE_RESIZE || c->flags & SUB_MODE_FLOAT)
         {
-          XRectangle rect = { ev->x, ev->y, ev->width, ev->height };
+          SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
 
-          subScreenLimit(SCREEN(subtle->screens->data[c->screen]), &rect, False);
+          if(ev->value_mask & CWX)      c->geom.x      = s->geom.x + ev->x;
+          if(ev->value_mask & CWY)      c->geom.y      = s->geom.y + ev->y;
+          if(ev->value_mask & CWWidth)  c->geom.width  = ev->width;
+          if(ev->value_mask & CWHeight) c->geom.height = ev->height;
 
-          c->geom = rect;
-
+          subScreenLimit(s, &c->geom, False);
           subClientConfigure(c);
         }
     }
@@ -126,12 +128,13 @@ EventConfigure(XConfigureRequestEvent *ev)
     {
       XWindowChanges wc;
 
-      wc.x          = ev->x;
-      wc.y          = ev->y;
-      wc.width      = ev->width;
-      wc.height     = ev->height;
-      wc.sibling    = ev->above;
-      wc.stack_mode = ev->detail;
+      wc.x            = ev->x;
+      wc.y            = ev->y;
+      wc.width        = ev->width;
+      wc.height       = ev->height;
+      wc.border_width = subtle->bw;
+      wc.sibling      = ev->above;
+      wc.stack_mode   = ev->detail;
 
       XConfigureWindow(subtle->dpy, ev->window, ev->value_mask, &wc); 
     }
@@ -556,7 +559,7 @@ EventMessage(XClientMessageEvent *ev)
             c->geom.width  = ev->data.l[3];
             c->geom.height = ev->data.l[4];
 
-            subClientSetSize(c, True);
+            subClientSetSize(c);
             subClientConfigure(c);
             break; /* }}} */
           default: break;
@@ -637,7 +640,11 @@ EventProperty(XPropertyEvent *ev)
       case SUB_EWMH_WM_HINTS: /* {{{ */
         if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) 
           {
-            subClientSetWMHints(c);
+            int flags = 0;
+
+            subClientSetHints(c, &flags);
+            subClientToggle(c, (~c->flags & flags));
+
             subViewConfigure(subtle->view, False);
             if(c->flags & (SUB_MODE_URGENT|SUB_MODE_URGENT_ONCE)) subClientWarp(c);
           }
