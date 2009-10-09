@@ -641,7 +641,7 @@ SubtlextClientTagDel(VALUE self,
 
 /* SubtlextClientStateFull {{{ */
 /*
- * call-seq: is_full? -> true of false
+ * call-seq: is_full? -> true or false
  *
  * Check if a Client is fullscreen
  *
@@ -660,7 +660,7 @@ SubtlextClientStateFull(VALUE self)
 
 /* SubtlextClientStateFloat {{{ */
 /*
- * call-seq: is_float? -> true of false
+ * call-seq: is_float? -> true or false
  *
  * Check if a Client is floating
  *
@@ -679,7 +679,7 @@ SubtlextClientStateFloat(VALUE self)
 
 /* SubtlextClientStateStick {{{ */
 /*
- * call-seq: is_stick? -> true of false
+ * call-seq: is_stick? -> true or false
  *
  * Check if a client is sticky
  *
