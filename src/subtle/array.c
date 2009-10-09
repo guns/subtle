@@ -131,40 +131,41 @@ void
 subArrayClear(SubArray *a,
   int clean)
 {
-  int i;
-
-  assert(a);
-
-  for(i = 0; i < a->ndata; i++)
+  if(a)
     {
-      /* Check type and kill */
-      SubClient *c = CLIENT(a->data[i]);
+      int i;
 
-      /* Common types first */
-      if(c->flags & SUB_TYPE_CLIENT)      subClientKill(c, clean);
-      else if(c->flags & SUB_TYPE_GRAB)   subGrabKill(GRAB(c), clean);
-      else if(c->flags & SUB_TYPE_ICON)   subIconKill(ICON(c));
-      else if(c->flags & SUB_TYPE_SCREEN) subScreenKill(SCREEN(c));
-      else if(c->flags & SUB_TYPE_SUBLET) subSubletKill(SUBLET(c), clean);
-      else if(c->flags & SUB_TYPE_TAG)    subTagKill(TAG(c));
-      else if(c->flags & SUB_TYPE_TRAY)   subTrayKill(TRAY(c));
-      else if(c->flags & SUB_TYPE_VIEW)   subViewKill(VIEW(c));
-      else if(c->flags & SUB_TYPE_TEXT)
+      for(i = 0; i < a->ndata; i++)
         {
-          SubText *t = TEXT(c);
+          /* Check type and kill */
+          SubClient *c = CLIENT(a->data[i]);
 
-          if(t->flags & SUB_DATA_STRING && t->data.string) 
-            free(t->data.string); ///< Special case
+          /* Common types first */
+          if(c->flags & SUB_TYPE_CLIENT)      subClientKill(c, clean);
+          else if(c->flags & SUB_TYPE_GRAB)   subGrabKill(GRAB(c), clean);
+          else if(c->flags & SUB_TYPE_ICON)   subIconKill(ICON(c));
+          else if(c->flags & SUB_TYPE_SCREEN) subScreenKill(SCREEN(c));
+          else if(c->flags & SUB_TYPE_SUBLET) subSubletKill(SUBLET(c), clean);
+          else if(c->flags & SUB_TYPE_TAG)    subTagKill(TAG(c));
+          else if(c->flags & SUB_TYPE_TRAY)   subTrayKill(TRAY(c));
+          else if(c->flags & SUB_TYPE_VIEW)   subViewKill(VIEW(c));
+          else if(c->flags & SUB_TYPE_TEXT)
+            {
+              SubText *t = TEXT(c);
 
-          free(t);
+              if(t->flags & SUB_DATA_STRING && t->data.string) 
+                free(t->data.string); ///< Special case
+
+              free(t);
+            }
+          else free(a->data[i]); 
         }
-      else free(a->data[i]); 
+
+      if(a->data) free(a->data);
+
+      a->data  = NULL;
+      a->ndata = 0;
     }
-
-  if(a->data) free(a->data);
-
-  a->data  = NULL;
-  a->ndata = 0;
 } /* }}} */
 
  /** subArrayKill {{{
@@ -177,11 +178,13 @@ void
 subArrayKill(SubArray *a,
   int clean)
 {
-  assert(a);
+  if(a)
+    {
+      subArrayClear(a, clean);
 
-  subArrayClear(a, clean);
-
-  free(a);
+      free(a);
+      a = NULL;
+    }
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
