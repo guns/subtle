@@ -1638,7 +1638,7 @@ subRubyLoadConfig(void)
 void
 subRubyReloadConfig(void)
 {
-  int i, state = 0;
+  int i;
 
   /* Reset before reloading */
   subtle->flags &= (SUB_SUBTLE_DEBUG|SUB_SUBTLE_EWMH|SUB_SUBTLE_RUN);
@@ -1673,16 +1673,7 @@ subRubyReloadConfig(void)
   subRubyRemove("VIEWS");
   subRubyRemove("HOOKS");
 
-   /* Carefully reload config */
-  rb_protect(RubyWrapLoadConfig, Qnil, &state);
-  if(state)
-    {
-      subSharedLogWarn("Failed reloading config\n");
-      RubyBacktrace();
-      subEventFinish();
-      return;
-    }
-
+  subRubyLoadConfig();
   subDisplayConfigure();
 
  /* Update client tags */

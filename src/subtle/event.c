@@ -1159,7 +1159,7 @@ subEventFinish(void)
       /* Kill arrays */
       subArrayKill(subtle->clients, False);
       subArrayKill(subtle->grabs,   False);
-      subArrayKill(subtle->icons, True);
+      subArrayKill(subtle->icons,   True);
       subArrayKill(subtle->screens, True);
       subArrayKill(subtle->sublets, False);
       subArrayKill(subtle->tags,    True);
