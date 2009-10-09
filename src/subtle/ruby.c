@@ -1134,7 +1134,7 @@ static VALUE
 RubyWrapLoadConfig(VALUE data)
 {
   int i;
-  char *font = NULL;
+  char *str = NULL;
   VALUE config = Qnil, entry = Qnil, rargs[2] = { 0 };
   SubPanel *p = NULL;
 
@@ -1198,16 +1198,16 @@ RubyWrapLoadConfig(VALUE data)
   if(True == RubyGetBool(config, "resize")) subtle->flags |= SUB_SUBTLE_RESIZE;
 
   /* Config: Font */
-  font = RubyGetString(config, "font", FONT);
+  str = RubyGetString(config, "font", FONT);
   if(subtle->xfs) ///< Free in case of reload
     {
       XFreeFont(subtle->dpy, subtle->xfs);
       subtle->xfs = NULL;
     }
 
-  if(!(subtle->xfs = XLoadQueryFont(subtle->dpy, font)))
+  if(!(subtle->xfs = XLoadQueryFont(subtle->dpy, str)))
     {
-      subSharedLogWarn("Failed loading font `%s'\n", font);
+      subSharedLogWarn("Failed loading font `%s'\n", str);
 
       subtle->xfs = XLoadQueryFont(subtle->dpy, FONT);
       if(!subtle->xfs) subSharedLogError("Failed loading font `%s`\n", FONT);
@@ -1229,7 +1229,13 @@ RubyWrapLoadConfig(VALUE data)
   subtle->colors.bg_focus   = RubyParseColor(RubyGetString(config, "bg_focus",      "#CF6171"));
   subtle->colors.bo_focus   = RubyParseColor(RubyGetString(config, "border_focus",  "#CF6171"));
   subtle->colors.bo_normal  = RubyParseColor(RubyGetString(config, "border_normal", "#CF6171"));
-  subtle->colors.bg         = RubyParseColor(RubyGetString(config, "background",    "#3d3d3d3"));
+
+  /* Root background */
+  if((str = RubyGetString(config, "background", NULL)))
+    {
+      subtle->flags |= SUB_SUBTLE_BACKGROUND;
+      subtle->colors.bg = RubyParseColor(str);
+    }
 
   /* Config: Panels */
   config = rb_const_get(rb_cObject, rb_intern("PANEL"));

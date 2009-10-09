@@ -173,7 +173,9 @@ subDisplayConfigure(void)
   XSetWindowBackground(subtle->dpy,  subtle->panels.views.win,   subtle->colors.bg_views);
   XSetWindowBackground(subtle->dpy,  subtle->panels.tray.win,    subtle->colors.bg_panel);
   XSetWindowBackground(subtle->dpy,  subtle->panels.sublets.win, subtle->colors.bg_sublets);
-  XSetWindowBackground(subtle->dpy,  ROOT,                       subtle->colors.bg);
+  
+  if(subtle->flags & SUB_SUBTLE_BACKGROUND) ///< Set background if desired
+    XSetWindowBackground(subtle->dpy, ROOT, subtle->colors.bg);
 
   XClearWindow(subtle->dpy, subtle->windows.panel1);
   XClearWindow(subtle->dpy, subtle->windows.panel2);

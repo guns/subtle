@@ -218,10 +218,11 @@
 #define SUB_SUBTLE_STIPPLE            (1L << 2)                   ///< Stipple enabled
 #define SUB_SUBTLE_PANEL1             (1L << 3)                   ///< Panel1 enabled
 #define SUB_SUBTLE_PANEL2             (1L << 4)                   ///< Panel2 enabled
-#define SUB_SUBTLE_EWMH               (1L << 5)                   ///< EWMH set
-#define SUB_SUBTLE_URGENT             (1L << 6)                   ///< Urgent transients
-#define SUB_SUBTLE_RESIZE             (1L << 7)                   ///< Respect size
-#define SUB_SUBTLE_RUN                (1L << 8)                   ///< Run event loop
+#define SUB_SUBTLE_URGENT             (1L << 5)                   ///< Urgent transients
+#define SUB_SUBTLE_RESIZE             (1L << 6)                   ///< Respect size
+#define SUB_SUBTLE_BACKGROUND         (1L << 7)                   ///< Set root background
+#define SUB_SUBTLE_EWMH               (1L << 8)                   ///< EWMH set
+#define SUB_SUBTLE_RUN                (1L << 9)                   ///< Run event loop
 
 /* Tag flags */
 #define SUB_TAG_GRAVITY               (1L << 12)                  ///< Gravity property
