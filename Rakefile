@@ -209,6 +209,12 @@ task(:config) do
       @options["extflags"] << " -lXinerama"
     end
 
+    # Xrandr
+    if(have_header("X11/extensions/Xrandr.h"))
+      @options["ldflags"] << " -lXrandr"
+      @options["extflags"] << " -lXrandr"
+    end
+
     # Check functions
     FUNCS.each do |f|
       if(!have_func(f))
