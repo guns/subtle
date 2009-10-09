@@ -140,6 +140,7 @@ subClientNew(Window win)
   /* Set client flags */
   subClientSetHints(c, &flags);
   subClientSetState(c, &flags);
+  subClientSetTransient(c, &flags);
   subClientToggle(c, (~c->flags & flags));
   if(c->flags & (SUB_MODE_URGENT|SUB_MODE_URGENT_ONCE)) subClientWarp(c);
 
@@ -747,6 +748,12 @@ subClientSetSize(SubClient *c)
       /* Check incs */
       c->geom.width  -= c->geom.width % c->incw; 
       c->geom.height -= c->geom.height % c->inch;
+
+      /* Center */
+      if(c->geom.x == s->geom.x)
+        c->geom.x = (s->geom.width - c->geom.width) / 2;
+      if(c->geom.y == s->geom.y)
+        c->geom.y = (s->geom.height - c->geom.height) / 2;
     }
 } /* }}} */
 
