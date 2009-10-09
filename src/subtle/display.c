@@ -13,9 +13,9 @@
 #include <X11/cursorfont.h>
 #include "subtle.h"
 
-#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
-#include <X11/extensions/Xinerama.h>
-#endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
+#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
+#include <X11/extensions/Xrandr.h>
+#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
 
  /** subDisplayInit {{{
   * @brief Open connection to X server and create display
@@ -34,9 +34,9 @@ subDisplayInit(const char *display)
     0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 0x49, 0x12
   };
 
-#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
-  int xinerama_event = 0, xinerama_error = 0;
-#endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
+#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
+  int junk = 0;
+#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
 
   assert(subtle);
 
@@ -73,38 +73,12 @@ subDisplayInit(const char *display)
   sattrs.event_mask = ROOTMASK;
   XChangeWindowAttributes(subtle->dpy, ROOT, CWCursor|CWEventMask, &sattrs);
 
-#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
-  /* Xinerama */
-  if(XineramaQueryExtension(subtle->dpy, &xinerama_event, &xinerama_error) &&
-    XineramaIsActive(subtle->dpy))
-    {
-      int i, n = 0;
-      XineramaScreenInfo *screens = NULL;
-      SubScreen *s = NULL; 
+  subScreenInit(); ///< Init screens
 
-      /* Query screens */
-      if((screens = XineramaQueryScreens(subtle->dpy, &n)))
-        {
-          for(i = 0; i < n; i++)
-            {
-              if((s = subScreenNew(screens[i].x_org, screens[i].y_org,
-                screens[i].width, screens[i].height)))
-                subArrayPush(subtle->screens, (void *)s);
-            }
-
-          subtle->screen = SCREEN(subtle->screens->data[0]); ///< Select first screen
-
-          XFree(screens);
-        }
-    } 
-#endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
-
-  /* Create default screen */
-  if(0 == subtle->screens->ndata)
-    {
-      if((subtle->screen = subScreenNew(0, 0, SCREENW, SCREENH)))
-        subArrayPush(subtle->screens, (void *)subtle->screen);
-    }
+#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
+  if(XRRQueryExtension(subtle->dpy, &subtle->xrandr, &junk))
+    subtle->flags |= SUB_SUBTLE_XRANDR;
+#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
 
   /* Create windows */
   sattrs.event_mask        = ButtonPressMask|ExposureMask;
@@ -112,9 +86,10 @@ subDisplayInit(const char *display)
   sattrs.background_pixel  = subtle->colors.bg_panel;
   mask                     = CWEventMask|CWOverrideRedirect|CWBackPixel;
 
-  subtle->windows.panel1     = XCreateWindow(subtle->dpy, ROOT, 0, 0, subtle->screen->base.width, 
-    1, 0, CopyFromParent, InputOutput, CopyFromParent, mask, &sattrs);
-  subtle->windows.panel2     = XCreateWindow(subtle->dpy, ROOT, 0, 
+  subtle->windows.panel1     = XCreateWindow(subtle->dpy, ROOT, subtle->screen->base.x, 
+    subtle->screen->base.y, subtle->screen->base.width, 1, 0, CopyFromParent, 
+    InputOutput, CopyFromParent, mask, &sattrs);
+  subtle->windows.panel2     = XCreateWindow(subtle->dpy, ROOT, subtle->screen->base.x, 
     subtle->screen->base.height - subtle->th, subtle->screen->base.width, 1, 0, CopyFromParent, 
     InputOutput, CopyFromParent, mask, &sattrs);
   subtle->panels.views.win   = XCreateSimpleWindow(subtle->dpy, subtle->windows.panel1, 
@@ -139,6 +114,10 @@ subDisplayInit(const char *display)
   XSelectInput(subtle->dpy, subtle->panels.views.win, ButtonPressMask); 
   XSelectInput(subtle->dpy, subtle->panels.tray.win, KeyPressMask|ButtonPressMask); 
   XSelectInput(subtle->dpy, subtle->panels.sublets.win, ButtonPressMask); 
+
+#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
+  XRRSelectInput(subtle->dpy, ROOT, RRScreenChangeNotifyMask);
+#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
 
   XSync(subtle->dpy, False);
 
@@ -203,7 +182,7 @@ subDisplayConfigure(void)
   else XUnmapWindow(subtle->dpy, subtle->windows.panel2);
 
   /* Update struts and panels */
-  subScreenUpdate();
+  subScreenConfigure();
   subPanelUpdate();
 
   XSync(subtle->dpy, False); ///< Sync all changes
@@ -251,7 +230,7 @@ subDisplayScan(void)
   XFree(wins);
 
   subClientPublish();
-  subScreenUpdate();
+  subScreenConfigure();
   subTrayUpdate();
 
   /* Activate first view */

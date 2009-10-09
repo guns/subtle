@@ -27,6 +27,10 @@
 #define BUFLEN (sizeof(struct inotify_event))
 #endif /* HAVE_SYS_INOTIFY_H */
 
+#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
+#include <X11/extensions/Xrandr.h>
+#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
+
 struct pollfd *watches = NULL;
 int nwatches = 0;
 
@@ -653,7 +657,7 @@ EventProperty(XPropertyEvent *ev)
          if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) 
           {
             subClientSetStrut(c);
-            subScreenUpdate();
+            subScreenConfigure();
             subSharedLogDebug("Hints: Updated strut hints\n");
           }
         break; /* }}} */
@@ -957,6 +961,27 @@ EventFocus(XFocusChangeEvent *ev)
     }
 } /* }}} */
 
+/* EventScreen {{{ */
+static void
+EventScreen(XRRScreenChangeNotifyEvent *ev)
+{
+  /* Update screens */
+  subArrayClear(subtle->screens, True);
+  subScreenInit();
+  subScreenConfigure();
+
+  /* Update panels */ 
+  XMoveResizeWindow(subtle->dpy, subtle->windows.panel1, subtle->screen->base.x, 
+    subtle->screen->base.y, subtle->screen->geom.width, subtle->th);
+  XMoveResizeWindow(subtle->dpy, subtle->windows.panel2, subtle->screen->base.x, 
+    subtle->screen->base.height - subtle->th, subtle->screen->geom.width, subtle->th);
+  subPanelUpdate();
+
+  subViewConfigure(subtle->view, True);
+
+  subSharedLogDebug("Updated screen sizes\n");
+} /* }}} */
+
  /** subEventWatchAdd {{{ 
   * @brief Add descriptor to watch list
   * @param[in]  fd  File descriptor
@@ -1073,6 +1098,13 @@ subEventLoop(void)
                               case FocusIn:           EventFocus(&ev.xfocus);                break;
                               case ButtonPress:
                               case KeyPress:          EventGrab(&ev);                        break;
+                              
+                              default:
+#ifdef HAVE_X11_EXTENSIONS_XRANDR_H                              
+                                if(subtle->flags & SUB_SUBTLE_XRANDR && ev.type == subtle->xrandr)
+                                  EventScreen((XRRScreenChangeNotifyEvent *)&ev);
+#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
+                                break;
                             }
                         }                       
                     } /* }}} */

@@ -93,6 +93,15 @@ subClientNew(Window win)
   c->gravity   = -1; ///< Force update
   c->win       = win;
 
+  /* Window attributes */
+  XGetWindowAttributes(subtle->dpy, c->win, &attrs);
+  c->cmap        = attrs.colormap;
+  c->geom.x      = attrs.x;
+  c->geom.y      = attrs.y;
+  c->geom.width  = MAX(MINW, attrs.width);
+  c->geom.height = MAX(MINH, attrs.height);
+  c->base        = c->geom; ///< Backup size
+
   /* Init gravities and screens */
   grav = ClientGravity();
   for(i = 0; i < subtle->views->ndata; i++)
@@ -121,16 +130,6 @@ subClientNew(Window win)
   XAddToSaveSet(subtle->dpy, c->win);
   XSaveContext(subtle->dpy, c->win, CLIENTID, (void *)c);
   subEwmhSetWMState(c->win, WithdrawnState);
-
-  /* Window attributes */
-  XGetWindowAttributes(subtle->dpy, c->win, &attrs);
-  c->cmap        = attrs.colormap;
-  c->geom.x      = attrs.x;
-  c->geom.y      = attrs.y;
-  c->geom.width  = MAX(MINW, attrs.width);
-  c->geom.height = MAX(MINH, attrs.height);
-  c->base        = c->geom; ///< Backup size
-
   /* Update client */
   subClientSetNormalHints(c);
   subClientSetProtocols(c);
@@ -783,7 +782,7 @@ subClientSetStrut(SubClient *c)
           subtle->strut.height = MAX(subtle->strut.height, strut[3]); ///< Bottom
 
           /* Update screen and clients */
-          subScreenUpdate();
+          subScreenConfigure();
           subViewConfigure(subtle->view, True);
 
           subSharedLogDebug("Strut: x=%ld, y=%d, width=%d, height=%d\n", subtle->strut.x,

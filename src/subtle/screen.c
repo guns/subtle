@@ -12,6 +12,53 @@
 
 #include "subtle.h"
 
+#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
+#include <X11/extensions/Xinerama.h>
+#endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
+
+ /** subScreenInit {{{
+  * @brief Init screens
+  **/
+
+void
+subScreenInit(void)
+{
+#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
+  int event = 0, junk = 0;
+
+  if(XineramaQueryExtension(subtle->dpy, &event, &junk) &&
+      XineramaIsActive(subtle->dpy))
+    {
+      int i, n = 0;
+      XineramaScreenInfo *screens = NULL;
+      SubScreen *s = NULL; 
+
+      /* Query screens */
+      if((screens = XineramaQueryScreens(subtle->dpy, &n)))
+        {
+          for(i = 0; i < n; i++)
+            {
+              if((s = subScreenNew(screens[i].x_org, screens[i].y_org,
+                  screens[i].width, screens[i].height)))
+                subArrayPush(subtle->screens, (void *)s);
+            }
+
+          subtle->flags  |= SUB_SUBTLE_XINERAMA;
+          subtle->screen  = SCREEN(subtle->screens->data[0]); ///< Select first screen
+
+          XFree(screens);
+        }
+    } 
+#endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
+
+  /* Create default screen */
+  if(0 == subtle->screens->ndata)
+    {
+      if((subtle->screen = subScreenNew(0, 0, SCREENW, SCREENH)))
+        subArrayPush(subtle->screens, (void *)subtle->screen);
+    }
+} /* }}} */
+
  /** subScreenNew {{{
   * @brief Create a new view
   * @param[in]  x       X position of screen
@@ -44,12 +91,12 @@ subScreenNew(int x,
   return s;
 } /* }}} */
 
- /** subScreenUpdate {{{
+ /** subScreenConfigure {{{
   * @brief Update screens
   **/
 
 void
-subScreenUpdate(void)
+subScreenConfigure(void)
 {
   assert(subtle);
 

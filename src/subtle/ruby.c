@@ -1233,8 +1233,8 @@ RubyWrapLoadConfig(VALUE data)
   /* Root background */
   if((str = RubyGetString(config, "background", NULL)))
     {
-      subtle->flags |= SUB_SUBTLE_BACKGROUND;
-      subtle->colors.bg = RubyParseColor(str);
+      subtle->flags     |= SUB_SUBTLE_BACKGROUND;
+      subtle->colors.bg  = RubyParseColor(str);
     }
 
   /* Config: Panels */

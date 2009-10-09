@@ -221,8 +221,10 @@
 #define SUB_SUBTLE_URGENT             (1L << 5)                   ///< Urgent transients
 #define SUB_SUBTLE_RESIZE             (1L << 6)                   ///< Respect size
 #define SUB_SUBTLE_BACKGROUND         (1L << 7)                   ///< Set root background
-#define SUB_SUBTLE_EWMH               (1L << 8)                   ///< EWMH set
-#define SUB_SUBTLE_RUN                (1L << 9)                   ///< Run event loop
+#define SUB_SUBTLE_XINERAMA           (1L << 8)                   ///< Using Xinerama
+#define SUB_SUBTLE_XRANDR             (1L << 9)                   ///< Using Xrandr
+#define SUB_SUBTLE_EWMH               (1L << 10)                  ///< EWMH set
+#define SUB_SUBTLE_RUN                (1L << 11)                  ///< Run event loop
 
 /* Tag flags */
 #define SUB_TAG_GRAVITY               (1L << 12)                  ///< Gravity property
@@ -430,6 +432,10 @@ typedef struct subsubtle_t /* {{{ */
   int                  notify;                                    ///< Subtle inotify descriptor
 #endif /* HAVE_SYS_INOTIFY_H */
 
+#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
+  int                  xrandr;                                    ///< Xrandr events
+#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
+
   struct
   {
     char              *string;                                    ///< Subtle sublet separator
@@ -616,9 +622,11 @@ void subRubyFinish(void);                                         ///< Kill Ruby
 /* }}} */
 
 /* screen.c {{{ */
+void subScreenInit(void);                                         ///< Init screens
 SubScreen *subScreenNew(int x, int y, unsigned int width,
   unsigned int height);                                           ///< Create screen
-void subScreenUpdate(void);                                       ///< Update screens
+void subScreenConfigure(void);                                    ///< Configure screens
+void subScreenUpdate(void);                                       ///< Update screen sizes
 void subScreenLimit(SubScreen *s, XRectangle *r, int center);     ///< Limit rect size
 void subScreenJump(SubScreen *s);                                 ///< Jump to screen
 void subScreenKill(SubScreen *s);                                 ///< Kill screen
