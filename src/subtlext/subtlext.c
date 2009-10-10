@@ -40,6 +40,41 @@ static VALUE SubtlextClientUpdate(VALUE self);
 #define SUB_ACTION_UNTAG 1           ///< Untag
 /* }}} */
 
+/* SubtlextConnect {{{ */
+static void
+SubtlextConnect(VALUE disp)
+{
+  /* Open display */
+  if(!display) ///< Establish new connection
+    {
+      char *name = NULL;
+
+      if(RTEST(disp)) name = RSTRING_PTR(disp);
+      if(!(display = XOpenDisplay(name)))
+        {
+          subSharedLogError("Failed opening display `%s'\n", (name) ? name : ":0.0");
+
+          return;
+        }
+      XSetErrorHandler(subSharedLogXError);
+
+      /* Check if subtle is running */
+      if(True != subSharedSubtleRunning())
+        {
+          XCloseDisplay(display);
+          display = NULL;
+          
+          rb_raise(rb_eStandardError, "Failed finding running %s", PKG_NAME);
+
+          return;
+        }
+
+      subSharedLogDebug("Connection opened (%s)\n", name);
+    }
+
+  refcount++;
+} /* }}} */
+
 /* SubtlextFind {{{ */
 static VALUE
 SubtlextFind(int type,
@@ -465,6 +500,8 @@ SubtlextClientInit(VALUE self,
   rb_iv_set(self, "@gravity", Qnil);
   rb_iv_set(self, "@screen",  Qnil);
   rb_iv_set(self, "@flags",   Qnil);
+
+  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
 
   return self;
 } /* }}} */
@@ -1309,6 +1346,8 @@ SubtlextScreenInit(VALUE self,
   rb_iv_set(self, "@width",   Qnil); 
   rb_iv_set(self, "@height",  Qnil); 
 
+  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+
   return self;
 } /* }}} */
 
@@ -1413,7 +1452,6 @@ SubtlextSubtleNew(int argc,
   VALUE *argv,
   VALUE self)
 {
-  char *name = NULL;
   VALUE disp = Qnil, data = Qnil;
 
 #ifdef DEBUG
@@ -1424,34 +1462,9 @@ SubtlextSubtleNew(int argc,
   if(Qtrue == dbg) debug++;
 #else
   rb_scan_args(argc, argv, "01", &disp);
-#endif /* DEBUG */ 
+#endif /* DEBUG */
 
-  /* Open display */
-  if(!display) ///< Establish new connection
-    {
-      if(RTEST(disp)) name = RSTRING_PTR(disp);
-      if(!(display = XOpenDisplay(name)))
-        {
-          subSharedLogError("Failed opening display `%s'\n", (name) ? name : ":0.0");
-
-          return Qnil;
-        }
-      XSetErrorHandler(subSharedLogXError);
-
-      /* Check if subtle is running */
-      if(True != subSharedSubtleRunning())
-        {
-          XCloseDisplay(display);
-          display = NULL;
-          
-          rb_raise(rb_eStandardError, "Failed finding running %s", PKG_NAME);
-
-          return Qnil;
-        }
-
-      subSharedLogDebug("Connection opened (%s)\n", name);
-    }
-  refcount++;
+  SubtlextConnect(disp);
 
   /* Create instance */
   data = Data_Wrap_Struct(self, 0, SubtlextSubtleKill, display);
@@ -2327,6 +2340,8 @@ SubtlextSubletInit(VALUE self,
   rb_iv_set(self, "@id",   Qnil);
   rb_iv_set(self, "@name", name);
 
+  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+
   return self;
 } /* }}} */
 
@@ -2450,6 +2465,8 @@ SubtlextTagInit(VALUE self,
 {
   rb_iv_set(self, "@id",   Qnil);
   rb_iv_set(self, "@name", name);
+
+  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
 
   return self;
 } /* }}} */
@@ -2600,6 +2617,8 @@ SubtlextViewInit(VALUE self,
   rb_iv_set(self, "@id",   Qnil);
   rb_iv_set(self, "@win",  Qnil);
   rb_iv_set(self, "@name", name);
+
+  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
 
   return self;
 } /* }}} */
