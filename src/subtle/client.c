@@ -13,13 +13,6 @@
 #include <X11/Xatom.h>
 #include "subtle.h"
 
-/* Typedef {{{ */
-typedef struct clientcell_t
-{
-  int right, down, x, y;
-} ClientCell;
-/* }}} */
-
 /* ClientMask {{{ */
 static void
 ClientMask(SubClient *c)
@@ -593,86 +586,47 @@ subClientSetGravity(SubClient *c,
 
   if(force || c->gravity != gravity) ///< Check if update is required
     {
-      int cell = 0, mode = 0;
+      int grav1 = 1, grav2 = 1, m = 0;
+      XRectangle *mode = NULL;
+      SubGravity *g = NULL;
       SubScreen *s = NULL;
-      XRectangle slot = { 0 };
-      static const ClientCell cells[] = /* {{{ */
-      { ///< right, down, x, y
-        { 0, 1, 1, 1 }, ///< Gravity unknown
-        { 0, 1, 2, 2 }, ///< Gravity bottom left
-        { 0, 1, 1, 2 }, ///< Gravity bottom
-        { 1, 1, 2, 2 }, ///< Gravity bottom right
-        { 0, 0, 2, 1 }, ///< Gravity left
-        { 0, 0, 1, 1 }, ///< Gravity center
-        { 1, 0, 2, 1 }, ///< Gravity right
-        { 0, 0, 2, 2 }, ///< Gravity top left
-        { 0, 0, 1, 2 }, ///< Gravity top
-        { 1, 0, 2, 2 }, ///< Gravity top right
-      }; /* }}} */
 
       /* Hook: Gravity */
       if(subtle->hooks.gravity && 
-        0 == subRubyCall(SUB_CALL_HOOK, subtle->hooks.gravity, (void *)c))
+          0 == subRubyCall(SUB_CALL_HOOK, subtle->hooks.gravity, (void *)c))
         {
           subSharedLogDebug("Hook: name=gravity, client=%#lx, state=ignored\n", c->win);
 
           return;
         }
 
-      cell = gravity & ~SUB_GRAVITY_MODES; ///< Strip modes
+      grav1 = GETGRAV(gravity);
+      grav2 = GETGRAV(c->gravity);
+      m     = GETMODE(c->gravity);
 
-      /* Compute slot */
-      s = SCREEN(subtle->screens->data[c->screen]);
-      slot.height = s->geom.height / cells[cell].y;
-      slot.width  = s->geom.width / cells[cell].x;
-      slot.x      = s->geom.x + cells[cell].right * slot.width;
-      slot.y      = s->geom.y + cells[cell].down * slot.height;
-
-      /* Toggle between modes */
-      if(gravity & SUB_GRAVITY_MODES || (c->geom.x == slot.x && c->geom.width == slot.width))
+      /* Get gravity and mode */
+      g = GRAVITY(subtle->gravities->data[grav1 - 1]);
+      if(grav1 == grav2)
         {
-          int height33 = s->geom.height / 3;
-          int height66 = s->geom.height - height33;
-          int comph    = abs(s->geom.height - 3 * height33); ///< Int rounding fix
+          if(m < g->nmodes - 1) m++;
+          else m = 0;
+        }
+      else m = 0;
+      mode = &g->modes[m];
 
-          if(2 == cells[cell].y)
-            {
-              int y = s->geom.y + cells[cell].down * height33;
+      /* Calculate slot */
+      s = SCREEN(subtle->screens->data[c->screen]);
+      c->geom.x      = s->geom.x + (s->geom.width * mode->x / 100);
+      c->geom.y      = s->geom.y + (s->geom.height * mode->y / 100);
+      c->geom.width  = s->geom.width * mode->width / 100;
+      c->geom.height = s->geom.height * mode->height / 100;
 
-              if(gravity & SUB_GRAVITY_MODE66 || (!(gravity & SUB_GRAVITY_MODES) &&
-                  c->geom.height == slot.height && c->geom.y == slot.y)) ///< 33%
-                {
-                  slot.y      = y;
-                  slot.height = height66;
-                  mode        = SUB_GRAVITY_MODE66;
-                }
-              else if(gravity & SUB_GRAVITY_MODE33 || (!(gravity & SUB_GRAVITY_MODES) &&
-                c->geom.height == height66 && c->geom.y == y)) ///< 66%
-                {
-                  slot.y      = s->geom.y + cells[cell].down * height66;
-                  slot.height = height33;
-                  mode        = SUB_GRAVITY_MODE33;
-
-                }
-            }
-          else if(gravity & SUB_GRAVITY_MODE33 || (!(gravity & SUB_GRAVITY_MODES) &&
-              c->geom.height == slot.height && c->geom.y == slot.y))
-            {
-              slot.y      = s->geom.y + height33;
-              slot.height = height33 + comph;
-              mode        = SUB_GRAVITY_MODE33;
-            }
-        }  
-
-      /* Update client rect */
-      c->geom                    = slot;
-      c->gravity                 = cell | mode;
-      c->gravities[subtle->vid]  = cell | mode;
-
+      /* Update client */
+      c->gravity  = c->gravities[subtle->vid] = GRAVMODE(grav1, m);
       subClientSetSize(c);
 
       /* EWMH: Gravity */
-      subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&cell, 1);
+      subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
     }
 } /* }}} */
 
