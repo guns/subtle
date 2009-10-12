@@ -43,7 +43,7 @@ typedef struct rubypanels_t
   SubPanel *panel;
 } RubyPanels;
 
-typedef struct rubytags_t
+typedef struct rubysymbol_t
 {
   VALUE sym;
   int   flags;
@@ -192,16 +192,14 @@ RubyGetBool(VALUE hash,
   return Qtrue == value ? True : (Qfalse == value ? False : -1);
 } /* }}} */
 
-/* RubyGetRect {{{ */
+/* RubyGetArray {{{ */
 static int
-RubyGetRect(VALUE hash,
-  char *key,
+RubyGetArray(VALUE ary,
   XRectangle *r)
 {
-  VALUE ary = Qnil;
   int data[4] = { 0 }, ret = False;
 
-  if(Qnil != (ary = RubyGetValue(hash, key, T_ARRAY, True)))
+  if(T_ARRAY == rb_type(ary))
     {
       int i;
       VALUE value = Qnil, meth = rb_intern("at");
@@ -211,15 +209,30 @@ RubyGetRect(VALUE hash,
           value   = rb_funcall(ary, meth, 1, INT2FIX(i)) ;
           data[i] = RTEST(value) ? FIX2INT(value) : 0;
         }
-      
+
       ret = True;
     }
 
   /* Assign data to rect */
-  r->x      = data[0]; ///< Left
-  r->y      = data[1]; ///< Right
-  r->width  = data[2]; ///< Top
-  r->height = data[3]; ///< Bottom
+  r->x      = data[0];
+  r->y      = data[1];
+  r->width  = data[2];
+  r->height = data[3];
+
+  return ret;
+} /* }}} */
+
+/* RubyGetRect {{{ */
+static int
+RubyGetRect(VALUE hash,
+  char *key,
+  XRectangle *r)
+{
+  int ret = False;
+  VALUE ary = Qnil;
+
+  if(Qnil != (ary = RubyGetValue(hash, key, T_ARRAY, True)))
+    ret = RubyGetArray(ary, r);
 
   return ret;
 } /* }}} */
@@ -322,22 +335,6 @@ RubyParseForeach(VALUE key,
         if(-1 != type && (entry = (void *)subGrabNew(RSTRING_PTR(key), type, data)))
           subArrayPush(subtle->grabs, entry);
         break; /* }}} */
-      case SUB_TYPE_HOOK: /* {{{ */
-        if(T_SYMBOL == rb_type(key) && T_DATA == rb_type(value)) ///< Check value types
-          {
-            RubyHooks *hooks = (RubyHooks *)rargs[1];
-
-            for(i = 0; 5 > i; i++)
-              if(key == hooks[i].sym)
-                {
-                  *(hooks[i].hook) = value; ///< Store proc
-                  rb_ary_push(shelter, value); ///< Protect from GC
-                  
-                  subSharedLogDebug("hook=%s\n", SYM2CHAR(hooks[i].sym));
-                  break;
-                }
-          }
-        break; /* }}} */
       case SUB_TYPE_TAG: /* {{{ */
         switch(rb_type(value)) ///< Check value type
           {
@@ -439,6 +436,22 @@ RubyParseForeach(VALUE key,
         if((entry = (void *)subViewNew(RSTRING_PTR(key), RSTRING_PTR(value))))
           subArrayPush(subtle->views, entry);
         break; /* }}} */
+      case SUB_TYPE_HOOK: /* {{{ */
+        if(T_SYMBOL == rb_type(key) && T_DATA == rb_type(value)) ///< Check value types
+          {
+            RubyHooks *hooks = (RubyHooks *)rargs[1];
+
+            for(i = 0; 5 > i; i++)
+              if(key == hooks[i].sym)
+                {
+                  *(hooks[i].hook) = value; ///< Store proc
+                  rb_ary_push(shelter, value); ///< Protect from GC
+                  
+                  subSharedLogDebug("hook=%s\n", SYM2CHAR(hooks[i].sym));
+                  break;
+                }
+          }
+        break; /* }}} */
       default: subSharedLogDebug("Never to be reached?!\n");
     }
 
@@ -449,20 +462,13 @@ RubyParseForeach(VALUE key,
 int
 RubyParsePanel(VALUE hash,
   char *key,
-  SubPanel **p)
+  SubPanel **p,
+  RubyPanels *panels)
 {
   int i, j, flags = 0, enabled = False;
   Window panel = subtle->windows.panel1;
   VALUE entry = Qnil, spacer = CHAR2SYM("spacer"), value = RubyGetValue(hash, key, T_ARRAY, False); 
  
-  RubyPanels panels[] = 
-  {
-    { CHAR2SYM("views"),   &subtle->panels.views   },
-    { CHAR2SYM("title"),   &subtle->panels.title },
-    { CHAR2SYM("sublets"), &subtle->panels.sublets },
-    { CHAR2SYM("tray"),    &subtle->panels.tray    }
-  };
-
   if(!strncmp(key, "bottom", 6))
     {
       flags |= SUB_PANEL_BOTTOM;
@@ -479,7 +485,7 @@ RubyParsePanel(VALUE hash,
               flags |= SUB_PANEL_SPACER1;
             }
           else
-            for(j = 0; j < LENGTH(panels); j++)
+            for(j = 0; 4 > j; j++)
               {
                 if(entry == panels[j].sym)
                   {
@@ -1133,12 +1139,26 @@ RubyColorOperatorPlus(VALUE self,
 static VALUE
 RubyWrapLoadConfig(VALUE data)
 {
-  int i;
+  int i, j;
   char *str = NULL;
-  VALUE config = Qnil, entry = Qnil, rargs[2] = { 0 };
+  VALUE config = Qnil, entry = Qnil, ary = Qnil, rargs[2] = { 0 };
   SubPanel *p = NULL;
 
   /* Foreach arguments {{{ */
+  RubyPanels panels[] = 
+  {
+    { CHAR2SYM("views"),   &subtle->panels.views   },
+    { CHAR2SYM("title"),   &subtle->panels.title   },
+    { CHAR2SYM("sublets"), &subtle->panels.sublets },
+    { CHAR2SYM("tray"),    &subtle->panels.tray    }
+  };
+
+  char *gravities[] = {
+    "bottom_left", "bottom", "bottom_right",
+    "left", "center", "right", 
+    "top_left", "top", "top_right", 
+  };
+
   RubyGrabs grabs[] =
   {
     { CHAR2SYM("SubtleReload"),       SUB_GRAB_SUBTLE_RELOAD,  None                     },
@@ -1166,15 +1186,6 @@ RubyWrapLoadConfig(VALUE data)
     { CHAR2SYM("GravityBottom"),      SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM       }
   };
 
-  RubyHooks hooks[] =
-  {
-    { CHAR2SYM("HookJump"),      &subtle->hooks.jump      },
-    { CHAR2SYM("HookConfigure"), &subtle->hooks.configure },
-    { CHAR2SYM("HookCreate"),    &subtle->hooks.create    },
-    { CHAR2SYM("HookFocus"),     &subtle->hooks.focus     },
-    { CHAR2SYM("HookGravity"),   &subtle->hooks.gravity   }
-  };
-
   RubyTags tags[] =
   {
     { CHAR2SYM("gravity"), SUB_TAG_GRAVITY },
@@ -1185,6 +1196,15 @@ RubyWrapLoadConfig(VALUE data)
     { CHAR2SYM("stick"),   SUB_MODE_STICK  },
     { CHAR2SYM("urgent"),  SUB_MODE_URGENT },
     { CHAR2SYM("match"),   SUB_TAG_MATCH   }
+  };
+
+  RubyHooks hooks[] =
+  {
+    { CHAR2SYM("HookJump"),      &subtle->hooks.jump      },
+    { CHAR2SYM("HookConfigure"), &subtle->hooks.configure },
+    { CHAR2SYM("HookCreate"),    &subtle->hooks.create    },
+    { CHAR2SYM("HookFocus"),     &subtle->hooks.focus     },
+    { CHAR2SYM("HookGravity"),   &subtle->hooks.gravity   }
   }; /* }}} */
 
   /* Config: Options */
@@ -1217,6 +1237,17 @@ RubyWrapLoadConfig(VALUE data)
   subtle->th = subtle->xfs->max_bounds.ascent + subtle->xfs->max_bounds.descent + 2;
   subtle->fy = (subtle->th - 2 + subtle->xfs->max_bounds.ascent) / 2;
 
+  /* Config: Panels */
+  config = rb_const_get(rb_cObject, rb_intern("PANEL"));
+  if(RubyParsePanel(config, "top", &p, panels))     subtle->flags |= SUB_SUBTLE_PANEL1;
+  if(RubyParsePanel(config, "bottom", &p, panels))  subtle->flags |= SUB_SUBTLE_PANEL2;
+  if(True == RubyGetBool(config, "stipple"))        subtle->flags |= SUB_SUBTLE_STIPPLE;
+  
+  /* Separator */
+  subtle->separator.string = strdup(RubyGetString(config, "separator", "|"));
+  subtle->separator.width  = subSharedTextWidth(subtle->separator.string, 
+    strlen(subtle->separator.string), NULL, NULL, True) + 6;
+
   /* Config: Colors */
   config                    = rb_const_get(rb_cObject, rb_intern("COLORS"));
   subtle->colors.fg_panel   = RubyParseColor(RubyGetString(config, "fg_panel",      "#e2e2e5"));
@@ -1237,16 +1268,24 @@ RubyWrapLoadConfig(VALUE data)
       subtle->colors.bg  = RubyParseColor(str);
     }
 
-  /* Config: Panels */
-  config = rb_const_get(rb_cObject, rb_intern("PANEL"));
-  if(RubyParsePanel(config, "top", &p))      subtle->flags |= SUB_SUBTLE_PANEL1;
-  if(RubyParsePanel(config, "bottom", &p))   subtle->flags |= SUB_SUBTLE_PANEL2;
-  if(True == RubyGetBool(config, "stipple")) subtle->flags |= SUB_SUBTLE_STIPPLE;
-  
-  /* Separator */
-  subtle->separator.string = strdup(RubyGetString(config, "separator", "|"));
-  subtle->separator.width  = subSharedTextWidth(subtle->separator.string, 
-    strlen(subtle->separator.string), NULL, NULL, True) + 6;
+  /* Config: Gravities */
+  config = rb_const_get(rb_cObject, rb_intern("GRAVITIES"));
+
+  for(i = 0; 9 > i; i++)
+    {
+      SubGravity *g = GRAVITY(subtle->gravities->data[i]);
+
+      if(Qnil != (ary = RubyGetValue(config, gravities[i], T_ARRAY, True)))
+        {
+          for(j = 0; Qnil != (entry = rb_ary_entry(ary, j)); ++j)
+            {
+              XRectangle rect;
+
+              if(RubyGetArray(entry, &rect))
+                subGravityAddMode(g, &rect);
+            }     
+        }
+    }
 
   /* Config: Grabs */
   config   = rb_const_get(rb_cObject, rb_intern("GRABS"));
@@ -1268,7 +1307,7 @@ RubyWrapLoadConfig(VALUE data)
 
   /* Check default tag */
   if(T_HASH != rb_type(config) || 
-    Qtrue != rb_funcall(config, rb_intern("has_key?"), 1, rb_str_new2("default")))
+      Qtrue != rb_funcall(config, rb_intern("has_key?"), 1, rb_str_new2("default")))
     {
       SubTag *t = subTagNew("default", NULL); ///< Add default tag
 
@@ -1674,6 +1713,7 @@ subRubyReloadConfig(void)
   subRubyRemove("OPTIONS");
   subRubyRemove("PANEL");
   subRubyRemove("COLORS");
+  subRubyRemove("GRAVITIES");
   subRubyRemove("GRABS");
   subRubyRemove("TAGS");
   subRubyRemove("VIEWS");
