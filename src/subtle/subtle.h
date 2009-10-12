@@ -53,6 +53,10 @@
 #define MIN(a,b)     (a >= b ? b : a)                             ///< Minimum
 #define MAX(a,b)     (a >= b ? a : b)                             ///< Maximum
 
+#define GRAVMODE(grav,mode) ((mode << 4) | grav)                  ///< Combine gravity and mode
+#define GETGRAV(gravity) (gravity & 0xf)                          ///< Get gravity
+#define GETMODE(gravity) (gravity >> 4)                           ///< Get mode 
+
 #define DEAD(c) \
   if(!c || c->flags & SUB_CLIENT_DEAD) return;                     ///< Check dead clients
 
@@ -92,19 +96,20 @@
   r.height = d;                                                   ///< Set rect values
 
 /* Casts */
-#define ARRAY(a)  ((SubArray *)a)                                 ///< Cast to SubArray
-#define CLIENT(c) ((SubClient *)c)                                ///< Cast to SubClient
-#define DATA(d)   ((SubData)d)                                    ///< Cast to SubData
-#define GRAB(g)   ((SubGrab *)g)                                  ///< Cast to SubGrab
-#define ICON(i)   ((SubIcon *)i)                                  ///< Cast to SubIcon
-#define PANEL(p)  ((SubPabel *)p)                                 ///< Cast to SubPanel
-#define SCREEN(s) ((SubScreen *)s)                                ///< Cast to SubScreen
-#define SUBLET(s) ((SubSublet *)s)                                ///< Cast to SubSublet
-#define SUBTLE(s) ((SubSubtle *)s)                                ///< Cast to SubSubtle
-#define TEXT(t)   ((SubText *)t)                                  ///< Cast to SubText
-#define TAG(t)    ((SubTag *)t)                                   ///< Cast to SubTag
-#define TRAY(t)   ((SubTray *)t)                                  ///< Cast to SubTray
-#define VIEW(v)   ((SubView *)v)                                  ///< Cast to SubView
+#define ARRAY(a)   ((SubArray *)a)                                ///< Cast to SubArray
+#define CLIENT(c)  ((SubClient *)c)                               ///< Cast to SubClient
+#define DATA(d)    ((SubData)d)                                   ///< Cast to SubData
+#define GRAB(g)    ((SubGrab *)g)                                 ///< Cast to SubGrab
+#define GRAVITY(g) ((SubGravity *)g)                              ///< Cast to SubGravity
+#define ICON(i)    ((SubIcon *)i)                                 ///< Cast to SubIcon
+#define PANEL(p)   ((SubPabel *)p)                                ///< Cast to SubPanel
+#define SCREEN(s)  ((SubScreen *)s)                               ///< Cast to SubScreen
+#define SUBLET(s)  ((SubSublet *)s)                               ///< Cast to SubSublet
+#define SUBTLE(s)  ((SubSubtle *)s)                               ///< Cast to SubSubtle
+#define TEXT(t)    ((SubText *)t)                                 ///< Cast to SubText
+#define TAG(t)     ((SubTag *)t)                                  ///< Cast to SubTag
+#define TRAY(t)    ((SubTray *)t)                                 ///< Cast to SubTray
+#define VIEW(v)    ((SubView *)v)                                 ///< Cast to SubView
 
 /* XEmbed messages */
 #define XEMBED_EMBEDDED_NOTIFY         0L
@@ -134,15 +139,16 @@
 /* Data types */
 #define SUB_TYPE_CLIENT               (1L << 1)                   ///< Client
 #define SUB_TYPE_GRAB                 (1L << 2)                   ///< Grab
-#define SUB_TYPE_HOOK                 (1L << 3)                   ///< Hook
-#define SUB_TYPE_ICON                 (1L << 4)                   ///< Icon
-#define SUB_TYPE_PANEL                (1L << 5)                   ///< Panel
-#define SUB_TYPE_SCREEN               (1L << 6)                   ///< Screen
-#define SUB_TYPE_SUBLET               (1L << 7)                   ///< Sublet
-#define SUB_TYPE_TAG                  (1L << 8)                   ///< Tag
-#define SUB_TYPE_TEXT                 (1L << 9)                   ///< Text
-#define SUB_TYPE_TRAY                 (1L << 10)                  ///< Tray
-#define SUB_TYPE_VIEW                 (1L << 11)                  ///< View
+#define SUB_TYPE_GRAVITY              (1L << 3)                   ///< Gravity
+#define SUB_TYPE_HOOK                 (1L << 4)                   ///< Hook
+#define SUB_TYPE_ICON                 (1L << 5)                   ///< Icon
+#define SUB_TYPE_PANEL                (1L << 6)                   ///< Panel
+#define SUB_TYPE_SCREEN               (1L << 7)                   ///< Screen
+#define SUB_TYPE_SUBLET               (1L << 8)                   ///< Sublet
+#define SUB_TYPE_TAG                  (1L << 9)                   ///< Tag
+#define SUB_TYPE_TEXT                 (1L << 10)                  ///< Text
+#define SUB_TYPE_TRAY                 (1L << 11)                  ///< Tray
+#define SUB_TYPE_VIEW                 (1L << 12)                  ///< View
 
 /* Mode flags */
 #define SUB_MODE_FULL                 (1L << 20)                  ///< Fullscreen mode
@@ -162,15 +168,15 @@
 #define SUB_CALL_HOOK                 (1L << 4)                   ///< Ruby hook call
 
 /* Client flags */
-#define SUB_CLIENT_FOCUS              (1L << 12)                  ///< Send focus message
-#define SUB_CLIENT_INPUT              (1L << 13)                  ///< Active/passive focus-model
-#define SUB_CLIENT_CLOSE              (1L << 14)                  ///< Send close message
-#define SUB_CLIENT_DEAD               (1L << 15)                  ///< Dead window
+#define SUB_CLIENT_FOCUS              (1L << 13)                  ///< Send focus message
+#define SUB_CLIENT_INPUT              (1L << 14)                  ///< Active/passive focus-model
+#define SUB_CLIENT_CLOSE              (1L << 15)                  ///< Send close message
+#define SUB_CLIENT_DEAD               (1L << 16)                  ///< Dead window
 
 /* Data flags */
-#define SUB_DATA_STRING               (1L << 12)                  ///< String data
-#define SUB_DATA_NUM                  (1L << 13)                  ///< Num data
-#define SUB_DATA_NIL                  (1L << 14)                  ///< Nil data
+#define SUB_DATA_STRING               (1L << 13)                  ///< String data
+#define SUB_DATA_NUM                  (1L << 14)                  ///< Num data
+#define SUB_DATA_NIL                  (1L << 15)                  ///< Nil data
 
 /* Drag flags */
 #define SUB_DRAG_START                (1L << 1)                   ///< Drag start
@@ -179,39 +185,33 @@
 #define SUB_DRAG_RESIZE               (1L << 4)                   ///< Drag resize
 
 /* Grab flags */
-#define SUB_GRAB_KEY                  (1L << 12)                  ///< Key grab
-#define SUB_GRAB_MOUSE                (1L << 13)                  ///< Mouse grab  
-#define SUB_GRAB_SPAWN                (1L << 14)                  ///< Spawn an app
-#define SUB_GRAB_PROC                 (1L << 15)                  ///< Grab with proc
-#define SUB_GRAB_VIEW_JUMP            (1L << 16)                  ///< Jump to view
-#define SUB_GRAB_SCREEN_JUMP          (1L << 17)                  ///< Jump to screen
-#define SUB_GRAB_SUBTLE_RELOAD        (1L << 18)                  ///< Reload subtle
-#define SUB_GRAB_SUBTLE_QUIT          (1L << 19)                  ///< Quit subtle
-#define SUB_GRAB_WINDOW_MOVE          (1L << 20)                  ///< Resize window
-#define SUB_GRAB_WINDOW_RESIZE        (1L << 21)                  ///< Move window
-#define SUB_GRAB_WINDOW_TOGGLE        (1L << 22)                  ///< Toggle window
-#define SUB_GRAB_WINDOW_STACK         (1L << 23)                  ///< Stack window
-#define SUB_GRAB_WINDOW_SELECT        (1L << 24)                  ///< Select window
-#define SUB_GRAB_WINDOW_GRAVITY       (1L << 25)                  ///< Set gravity of window
-#define SUB_GRAB_WINDOW_SCREEN        (1L << 26)                  ///< Set screen of window
-#define SUB_GRAB_WINDOW_KILL          (1L << 27)                  ///< Kill window
-
-/* Gravity flags */
-#define SUB_GRAVITY_MODE33            (1L << 5)                   ///< 33% mode flag
-#define SUB_GRAVITY_MODE66            (1L << 6)                   ///< 66% mode flag
-#define SUB_GRAVITY_MODES \
-  (SUB_GRAVITY_MODE33|SUB_GRAVITY_MODE66)                         ///< All modes
+#define SUB_GRAB_KEY                  (1L << 13)                  ///< Key grab
+#define SUB_GRAB_MOUSE                (1L << 14)                  ///< Mouse grab  
+#define SUB_GRAB_SPAWN                (1L << 15)                  ///< Spawn an app
+#define SUB_GRAB_PROC                 (1L << 16)                  ///< Grab with proc
+#define SUB_GRAB_VIEW_JUMP            (1L << 17)                  ///< Jump to view
+#define SUB_GRAB_SCREEN_JUMP          (1L << 18)                  ///< Jump to screen
+#define SUB_GRAB_SUBTLE_RELOAD        (1L << 19)                  ///< Reload subtle
+#define SUB_GRAB_SUBTLE_QUIT          (1L << 20)                  ///< Quit subtle
+#define SUB_GRAB_WINDOW_MOVE          (1L << 21)                  ///< Resize window
+#define SUB_GRAB_WINDOW_RESIZE        (1L << 22)                  ///< Move window
+#define SUB_GRAB_WINDOW_TOGGLE        (1L << 23)                  ///< Toggle window
+#define SUB_GRAB_WINDOW_STACK         (1L << 24)                  ///< Stack window
+#define SUB_GRAB_WINDOW_SELECT        (1L << 25)                  ///< Select window
+#define SUB_GRAB_WINDOW_GRAVITY       (1L << 26)                  ///< Set gravity of window
+#define SUB_GRAB_WINDOW_SCREEN        (1L << 27)                  ///< Set screen of window
+#define SUB_GRAB_WINDOW_KILL          (1L << 28)                  ///< Kill window
 
 /* Panel flags */
-#define SUB_PANEL_SPACER1             (1L << 12)                  ///< Panel spacer1
-#define SUB_PANEL_SPACER2             (1L << 13)                  ///< Panel spacer2
-#define SUB_PANEL_BOTTOM              (1L << 14)                  ///< Panel bottom
+#define SUB_PANEL_SPACER1             (1L << 13)                  ///< Panel spacer1
+#define SUB_PANEL_SPACER2             (1L << 14)                  ///< Panel spacer2
+#define SUB_PANEL_BOTTOM              (1L << 15)                  ///< Panel bottom
 
 /* Sublet types */
-#define SUB_SUBLET_INTERVAL           (1L << 12)
-#define SUB_SUBLET_INOTIFY            (1L << 13)                  ///< Inotify sublet
-#define SUB_SUBLET_SOCKET             (1L << 14)                  ///< Socket sublet
-#define SUB_SUBLET_CLICK              (1L << 15)                  ///< Sublet click function
+#define SUB_SUBLET_INTERVAL           (1L << 13)
+#define SUB_SUBLET_INOTIFY            (1L << 14)                  ///< Inotify sublet
+#define SUB_SUBLET_SOCKET             (1L << 15)                  ///< Socket sublet
+#define SUB_SUBLET_CLICK              (1L << 16)                  ///< Sublet click function
 
 /* Subtle flags */
 #define SUB_SUBTLE_DEBUG              (1L << 1)                   ///< Debug enabled
@@ -227,13 +227,13 @@
 #define SUB_SUBTLE_RUN                (1L << 11)                  ///< Run event loop
 
 /* Tag flags */
-#define SUB_TAG_GRAVITY               (1L << 12)                  ///< Gravity property
-#define SUB_TAG_SCREEN                (1L << 13)                  ///< Screen property
-#define SUB_TAG_SIZE                  (1L << 14)                  ///< Size property
-#define SUB_TAG_MATCH                 (1L << 15)                  ///< Match property
-#define SUB_TAG_MATCH_TITLE           (1L << 16)                  ///< Match window title
-#define SUB_TAG_MATCH_NAME            (1L << 17)                  ///< Match WM_NAME
-#define SUB_TAG_MATCH_CLASS           (1L << 18)                  ///< Match WM_CLASS
+#define SUB_TAG_GRAVITY               (1L << 13)                  ///< Gravity property
+#define SUB_TAG_SCREEN                (1L << 14)                  ///< Screen property
+#define SUB_TAG_SIZE                  (1L << 15)                  ///< Size property
+#define SUB_TAG_MATCH                 (1L << 16)                  ///< Match property
+#define SUB_TAG_MATCH_TITLE           (1L << 17)                  ///< Match window title
+#define SUB_TAG_MATCH_NAME            (1L << 18)                  ///< Match WM_NAME
+#define SUB_TAG_MATCH_CLASS           (1L << 19)                  ///< Match WM_CLASS
 /* }}} */
 
 /* Typedefs {{{ */
@@ -259,6 +259,12 @@ typedef struct subclient_t /* {{{ */
   int        gravity, screen;                                     ///< Client informations
   int        *gravities, *screens;                                ///< Client per vie
 } SubClient; /* }}} */
+
+typedef union subdata_t /* {{{ */
+{
+  unsigned long num;                                              ///< Data num
+  char          *string;                                          ///< Data string
+} SubData; /* }}} */
 
 typedef enum subewmh_t /* {{{ */
 {
@@ -337,22 +343,6 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_TOTAL
 } SubEwmh; /* }}} */
 
-typedef union subdata_t /* {{{ */
-{
-  unsigned long num;                                              ///< Data num
-  char          *string;                                          ///< Data string
-} SubData; /* }}} */
-
-typedef struct subtext_t /* {{{ */
-{
-  FLAGS           flags;                                          ///< Text flags
-
-  int             width;                                          ///< Text width
-  unsigned long   color;                                          ///< Text color
-
-  union subdata_t data;                                           ///< Text data
-} SubText; /* }}} */
-
 typedef struct subgrab_t /* {{{ */
 {
   FLAGS           flags;                                          ///< Grab flags
@@ -363,6 +353,14 @@ typedef struct subgrab_t /* {{{ */
   union subdata_t data;                                           ///< Grab data
 } SubGrab; /* }}} */
 
+typedef struct subgravity_t /* {{{ */
+{
+  FLAGS      flags;                                              ///< Gravity flags
+
+  int         nmodes;                                            ///< Gravity mode count
+  XRectangle *modes;                                             ///< Gravity modes
+} SubGravity; /* }}} */
+
 typedef struct subicon_t /* {{{ */
 {
   FLAGS         flags;                                            ///< Icon flags
@@ -371,6 +369,16 @@ typedef struct subicon_t /* {{{ */
   unsigned int  width, height;                                    ///< Icon geometry
   GC            gc;                                               ///< Icon GC
 } SubIcon; /* }}} */
+
+typedef struct subtext_t /* {{{ */
+{
+  FLAGS           flags;                                          ///< Text flags
+
+  int             width;                                          ///< Text width
+  unsigned long   color;                                          ///< Text color
+
+  union subdata_t data;                                           ///< Text data
+} SubText; /* }}} */
 
 typedef struct subpanel_t /* {{{ */
 {
@@ -421,7 +429,8 @@ typedef struct subsubtle_t /* {{{ */
 
   struct subarray_t    *clients;                                  ///< Subtle clients
   struct subarray_t    *grabs;                                    ///< Subtle grabs
-  struct subarray_t    *icons;                                  ///< Subtle icons
+  struct subarray_t    *gravities;                                ///< Subtle grabs
+  struct subarray_t    *icons;                                    ///< Subtle icons
   struct subarray_t    *screens;                                  ///< Subtle screens
   struct subarray_t    *sublets;                                  ///< Subtle sublets
   struct subarray_t    *tags;                                     ///< Subtle tags
@@ -593,6 +602,13 @@ void subGrabSet(Window win);                                      ///< Grab wind
 void subGrabUnset(Window win);                                    ///< Ungrab window
 int subGrabCompare(const void *a, const void *b);                 ///< Compare grabs
 void subGrabKill(SubGrab *g, int clean);                          ///< Kill grab
+/* }}} */
+
+/* gravity.c {{{ */
+void subGravityInit(void);                                        ///< Init gravities
+SubGravity *subGravityNew(void);                                  ///< Create gravity
+void subGravityAddMode(SubGravity *g, XRectangle *mode);          ///< Add mode
+void subGravityKill(SubGravity *g);                               ///< Kill gravity
 /* }}} */
 
 /* icon.c {{{ */

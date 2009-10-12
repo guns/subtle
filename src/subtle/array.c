@@ -141,14 +141,15 @@ subArrayClear(SubArray *a,
           SubClient *c = CLIENT(a->data[i]);
 
           /* Common types first */
-          if(c->flags & SUB_TYPE_CLIENT)      subClientKill(c, clean);
-          else if(c->flags & SUB_TYPE_GRAB)   subGrabKill(GRAB(c), clean);
-          else if(c->flags & SUB_TYPE_ICON)   subIconKill(ICON(c));
-          else if(c->flags & SUB_TYPE_SCREEN) subScreenKill(SCREEN(c));
-          else if(c->flags & SUB_TYPE_SUBLET) subSubletKill(SUBLET(c), clean);
-          else if(c->flags & SUB_TYPE_TAG)    subTagKill(TAG(c));
-          else if(c->flags & SUB_TYPE_TRAY)   subTrayKill(TRAY(c));
-          else if(c->flags & SUB_TYPE_VIEW)   subViewKill(VIEW(c));
+          if(c->flags & SUB_TYPE_CLIENT)       subClientKill(c, clean);
+          else if(c->flags & SUB_TYPE_GRAB)    subGrabKill(GRAB(c), clean);
+          else if(c->flags & SUB_TYPE_GRAVITY) subGravityKill(GRAVITY(c));
+          else if(c->flags & SUB_TYPE_ICON)    subIconKill(ICON(c));
+          else if(c->flags & SUB_TYPE_SCREEN)  subScreenKill(SCREEN(c));
+          else if(c->flags & SUB_TYPE_SUBLET)  subSubletKill(SUBLET(c), clean);
+          else if(c->flags & SUB_TYPE_TAG)     subTagKill(TAG(c));
+          else if(c->flags & SUB_TYPE_TRAY)    subTrayKill(TRAY(c));
+          else if(c->flags & SUB_TYPE_VIEW)    subViewKill(VIEW(c));
           else if(c->flags & SUB_TYPE_TEXT)
             {
               SubText *t = TEXT(c);
