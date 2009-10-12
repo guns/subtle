@@ -104,14 +104,15 @@ main(int argc,
     }
 
   /* Alloc */
-  subtle->clients = subArrayNew();
-  subtle->grabs   = subArrayNew();
-  subtle->icons   = subArrayNew();
-  subtle->screens = subArrayNew();
-  subtle->sublets = subArrayNew();
-  subtle->tags    = subArrayNew();
-  subtle->trays   = subArrayNew();
-  subtle->views   = subArrayNew();
+  subtle->clients   = subArrayNew();
+  subtle->grabs     = subArrayNew();
+  subtle->gravities = subArrayNew();
+  subtle->icons     = subArrayNew();
+  subtle->screens   = subArrayNew();
+  subtle->sublets   = subArrayNew();
+  subtle->tags      = subArrayNew();
+  subtle->trays     = subArrayNew();
+  subtle->views     = subArrayNew();
 
   /* Init */
   SubtleVersion();
@@ -119,6 +120,7 @@ main(int argc,
   subRubyInit();
   subEwmhInit();
   subGrabInit();
+  subGravityInit();
 
   /* Load */
   subRubyLoadConfig();

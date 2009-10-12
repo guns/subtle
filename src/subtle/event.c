@@ -826,7 +826,7 @@ EventGrab(XEvent *ev)
 
                     if(c != iter && c->screen == iter->screen && VISIBLE(subtle->view, iter) &&
                         (match < (score = subSharedMatch(g->data.num, 
-                        c->gravity & ~SUB_GRAVITY_MODES, iter->gravity & ~SUB_GRAVITY_MODES))))
+                        GETGRAV(c->gravity), GETGRAV(iter->gravity)))))
                       {
                         match = score;
                         found = iter;
@@ -1189,14 +1189,15 @@ subEventFinish(void)
   if(subtle)
     {
       /* Kill arrays */
-      subArrayKill(subtle->clients, False);
-      subArrayKill(subtle->grabs,   False);
-      subArrayKill(subtle->icons,   True);
-      subArrayKill(subtle->screens, True);
-      subArrayKill(subtle->sublets, False);
-      subArrayKill(subtle->tags,    True);
-      subArrayKill(subtle->trays,   True);
-      subArrayKill(subtle->views,   True);
+      subArrayKill(subtle->clients,   False);
+      subArrayKill(subtle->grabs,     False);
+      subArrayKill(subtle->gravities, True);
+      subArrayKill(subtle->icons,     True);
+      subArrayKill(subtle->screens,   True);
+      subArrayKill(subtle->sublets,   False);
+      subArrayKill(subtle->tags,      True);
+      subArrayKill(subtle->trays,     True);
+      subArrayKill(subtle->views,     True);
 
       subEwmhFinish();
       subDisplayFinish();
