@@ -329,6 +329,9 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_WINDOW_GRAVITY,                                 ///< Subtle window gravity
   SUB_EWMH_SUBTLE_WINDOW_SCREEN,                                  ///< Subtle window screen
   SUB_EWMH_SUBTLE_WINDOW_FLAGS,                                   ///< Subtle window flags
+  SUB_EWMH_SUBTLE_GRAVITY_NEW,                                    ///< Subtle gravity new
+  SUB_EWMH_SUBTLE_GRAVITY_LIST,                                   ///< Subtle gravity list
+  SUB_EWMH_SUBTLE_GRAVITY_KILL,                                   ///< Subtle gravtiy kill
   SUB_EWMH_SUBTLE_TAG_NEW,                                        ///< Subtle tag new
   SUB_EWMH_SUBTLE_TAG_LIST,                                       ///< Subtle tag list
   SUB_EWMH_SUBTLE_TAG_KILL,                                       ///< Subtle tag kill
@@ -609,7 +612,10 @@ void subGrabKill(SubGrab *g, int clean);                          ///< Kill grab
 /* gravity.c {{{ */
 void subGravityInit(void);                                        ///< Init gravities
 SubGravity *subGravityNew(void);                                  ///< Create gravity
+void subGravityPublish(void);                                     ///< Publish gravities
 void subGravityAddMode(SubGravity *g, XRectangle *mode);          ///< Add mode
+void subGravityDelMode(SubGravity *g, int id);                    ///< Del mode
+void subGravityClear(SubGravity *g);                              ///< Delete all gravity modes
 void subGravityKill(SubGravity *g);                               ///< Kill gravity
 /* }}} */
 
