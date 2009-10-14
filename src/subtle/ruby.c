@@ -1272,19 +1272,19 @@ RubyWrapLoadConfig(VALUE data)
 
   for(i = 0; 9 > i; i++)
     {
+      XRectangle rect;
       SubGravity *g = GRAVITY(subtle->gravities->data[i]);
 
+      /* Add gravity modes */
       if(Qnil != (ary = RubyGetValue(config, gravities[i], T_ARRAY, True)))
         {
           for(j = 0; Qnil != (entry = rb_ary_entry(ary, j)); ++j)
-            {
-              XRectangle rect;
-
-              if(RubyGetArray(entry, &rect))
-                subGravityAddMode(g, &rect);
-            }     
+            if(RubyGetArray(entry, &rect))
+              subGravityAddMode(g, &rect);
         }
     }
+
+  subGravityPublish();
 
   /* Config: Grabs */
   config   = rb_const_get(rb_cObject, rb_intern("GRABS"));
@@ -1698,6 +1698,9 @@ subRubyReloadConfig(void)
   subArrayClear(subtle->grabs, True);
   subArrayClear(subtle->tags,  True);
   subArrayClear(subtle->views, True);
+
+  for(i = 0; i < 9; i++)
+    subGravityClear(GRAVITY(subtle->gravities->data[i]));
 
   /* Release hooks */
   if(subtle->hooks.jump)      subRubyRelease(subtle->hooks.jump);
