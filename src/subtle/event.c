@@ -259,15 +259,16 @@ EventMessage(XClientMessageEvent *ev)
       SubSublet *s = NULL;
       SubTag *t = NULL;
       SubView *v = NULL;
+      SubGravity *g = NULL;
 
       switch(id)
         {
           case SUB_EWMH_NET_CURRENT_DESKTOP: /* {{{ */
             if(0 <= ev->data.l[0] && ev->data.l[0] < subtle->views->ndata)
               {
-                v = VIEW(subtle->views->data[ev->data.l[0]]);
-
-                if(subtle->view != v) subViewJump(v);
+                if((v = VIEW(subtle->views->data[ev->data.l[0]])) && 
+                    subtle->view != v)
+                  subViewJump(v);
               }
             break; /* }}} */
           case SUB_EWMH_NET_ACTIVE_WINDOW: /* {{{ */
@@ -312,7 +313,7 @@ EventMessage(XClientMessageEvent *ev)
                   {
                     case 0: ///< Clients
                       if((c = CLIENT(subArrayGet(subtle->clients, 
-                        (int)ev->data.l[0])))) ///< Clients
+                          (int)ev->data.l[0])))) ///< Clients
                         {
                           if(SUB_EWMH_SUBTLE_WINDOW_TAG == id)
                             {
@@ -396,6 +397,28 @@ EventMessage(XClientMessageEvent *ev)
                 subClientToggle(c, flags);
               }
             break; /* }}} */
+          case SUB_EWMH_SUBTLE_GRAVITY_NEW: /* {{{ */
+            if(0 <= ev->data.l[0] && ev->data.l[0] < subtle->gravities->ndata)
+              {
+                if((g = GRAVITY(subtle->gravities->data[ev->data.l[0]])))
+                  {
+                    XRectangle mode = { ev->data.l[1], ev->data.l[2], ev->data.l[3], ev->data.l[4] };
+
+                    subGravityAddMode(g, &mode);
+                    subGravityPublish();
+                  }
+              }
+            break; /* }}} */
+          case SUB_EWMH_SUBTLE_GRAVITY_KILL: /* {{{ */
+            if(0 <= ev->data.l[0] && ev->data.l[0] < subtle->gravities->ndata)
+              {
+                if((g = GRAVITY(subtle->gravities->data[ev->data.l[0]])))
+                  {
+                    subGravityDelMode(g, ev->data.l[1]);
+                    subGravityPublish();
+                  }
+              }
+            break; /* }}} */            
           case SUB_EWMH_SUBTLE_TAG_NEW: /* {{{ */
             if(ev->data.b && (t = subTagNew(ev->data.b, NULL)))
               {
