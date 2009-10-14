@@ -714,6 +714,62 @@ subSharedClientFind(char *name,
   return -1;
 } /* }}} */
 
+ /** subSharedGravityList {{{
+  * @brief Get gravity mode list of gravity id
+  * @param[in]     id    Gravity id
+  * @param[inout]  size  Size of the gravity mode list
+  * @return Returns the gravity mode list
+  * @retval  NULL  No gravity modes found
+  **/
+
+XRectangle *
+subSharedGravityList(int id,
+    int *size)
+{
+  XRectangle *modes = NULL;
+  char **gravities = NULL;
+
+  assert(size);
+
+  if((gravities = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_GRAVTIY_LIST", size)))
+    {
+      int i, gid = 0, pos = 0, len = 3;
+      XRectangle mode = { 0 };
+
+      modes = (XRectangle *)subSharedMemoryAlloc(len, sizeof(XRectangle));
+
+      for(i = 0; i < *size; i++)
+        {
+          sscanf(gravities[i], "%d#%hdx%hd+%hd+%hd", &gid, &mode.x, &mode.y, &mode.width, &mode.height);
+
+          if(id == gid)
+            {
+              if(pos == len)
+                {
+                  len   *= 2;
+                  modes  = (XRectangle *)subSharedMemoryRealloc(modes, len * sizeof(XRectangle));
+                }
+             
+              modes[pos] = mode;
+              pos++;
+            }
+        }
+
+      /* Reduce memory use */
+      modes = (XRectangle *)subSharedMemoryRealloc(modes, pos * sizeof(XRectangle));
+      *size = pos;
+
+      XFreeStringList(gravities);
+    }
+  else
+    {
+      *size = 0;
+      subSharedLogDebug("Failed getting gravity list\n");
+    }
+
+  return modes;
+} /* }}} */
+
  /** subSharedTagFind {{{
   * @brief Find tag id
   * @param[in]   name  Tag name

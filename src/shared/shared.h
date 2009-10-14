@@ -153,6 +153,10 @@ Window *subSharedClientList(int *size);                           ///< Get clien
 int subSharedClientFind(char *name, Window *win);                 ///< Find client id
 /* }}} */
 
+/* Gravity {{{ */
+XRectangle *subSharedGravityList(int id, int *size);              ///< Get gravity list of gravity id
+/* }}} */
+
 /* Tag {{{ */
 int subSharedTagFind(char *name);                                 ///< Find tag id
 /* }}} */
