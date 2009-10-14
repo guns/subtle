@@ -338,14 +338,14 @@ RubyParseForeach(VALUE key,
       case SUB_TYPE_TAG: /* {{{ */
         switch(rb_type(value)) ///< Check value type
           {
-            case T_STRING:
+            case T_STRING: /* {{{ */
               if((entry = (void *)subTagNew(RSTRING_PTR(key), RSTRING_PTR(value))))
                 {
                   TAG(entry)->flags |= (SUB_TAG_MATCH_NAME|SUB_TAG_MATCH_CLASS); ///< Set default matching
                   subArrayPush(subtle->tags, entry);
                 }
-              break;
-            case T_HASH:
+              break; /* }}} */
+            case T_HASH: /* {{{ */
               {
                 SubTag *t = NULL;
 
@@ -355,7 +355,7 @@ RubyParseForeach(VALUE key,
                     RubyTags *tags = (RubyTags *)rargs[1];
 
                     /* Collect flags */
-                    for(i = 0; 8 > i; i++)
+                    for(i = 0; 9 > i; i++)
                       {
                         if(Qtrue == rb_funcall(value, meth, 1, tags[i].sym))
                           t->flags |= tags[i].flags;
@@ -382,21 +382,20 @@ RubyParseForeach(VALUE key,
                       }
 
                     /* Check tri-state properties */
-                    if(t->flags & SUB_MODE_FULL)
-                      if(False == RubyGetBool(value, "full"))
-                        t->flags ^= (SUB_MODE_FULL|SUB_MODE_UNFULL);
+                    if(t->flags & SUB_MODE_FULL && (False == RubyGetBool(value, "full")))
+                      t->flags ^= (SUB_MODE_FULL|SUB_MODE_UNFULL);
 
-                    if(t->flags & SUB_MODE_FLOAT)
-                      if(False == RubyGetBool(value, "float"))
-                        t->flags ^= (SUB_MODE_FLOAT|SUB_MODE_UNFLOAT);
+                    if(t->flags & SUB_MODE_FLOAT && (False == RubyGetBool(value, "float")))
+                      t->flags ^= (SUB_MODE_FLOAT|SUB_MODE_UNFLOAT);
 
-                    if(t->flags & SUB_MODE_STICK)
-                      if(False == RubyGetBool(value, "stick"))
-                        t->flags ^= (SUB_MODE_STICK|SUB_MODE_UNSTICK);
+                    if(t->flags & SUB_MODE_STICK && (False == RubyGetBool(value, "stick")))
+                      t->flags ^= (SUB_MODE_STICK|SUB_MODE_UNSTICK);
 
-                    if(t->flags & SUB_MODE_URGENT)
-                      if(False == RubyGetBool(value, "urgent"))
-                        t->flags ^= (SUB_MODE_URGENT|SUB_MODE_UNURGENT);
+                    if(t->flags & SUB_MODE_URGENT && (False == RubyGetBool(value, "urgent")))
+                      t->flags ^= (SUB_MODE_URGENT|SUB_MODE_UNURGENT);
+
+                    if(t->flags & SUB_MODE_RESIZE && (False == RubyGetBool(value, "resize")))
+                      t->flags ^= (SUB_MODE_RESIZE|SUB_MODE_UNRESIZE);
 
                     /* Check matching properties */
                     if(t->flags & SUB_TAG_MATCH)
@@ -424,13 +423,12 @@ RubyParseForeach(VALUE key,
 
                     subArrayPush(subtle->tags, (void *)t);
                   }
-                break;
-              }
+                }
+              break; /* }}} */
             default:
               subSharedLogWarn("Failed parsing tag `%s'\n", SYM2CHAR(key));
               return Qnil;
           }
-
         break; /* }}} */
       case SUB_TYPE_VIEW: /* {{{ */
         if((entry = (void *)subViewNew(RSTRING_PTR(key), RSTRING_PTR(value))))
@@ -1153,7 +1151,7 @@ RubyWrapLoadConfig(VALUE data)
     { CHAR2SYM("tray"),    &subtle->panels.tray    }
   };
 
-  char *gravities[] = {
+  char *gravities[] = { ///< This order is necessary
     "bottom_left", "bottom", "bottom_right",
     "left", "center", "right", 
     "top_left", "top", "top_right", 
@@ -1195,6 +1193,7 @@ RubyWrapLoadConfig(VALUE data)
     { CHAR2SYM("float"),   SUB_MODE_FLOAT  },
     { CHAR2SYM("stick"),   SUB_MODE_STICK  },
     { CHAR2SYM("urgent"),  SUB_MODE_URGENT },
+    { CHAR2SYM("resize"),  SUB_MODE_RESIZE },
     { CHAR2SYM("match"),   SUB_TAG_MATCH   }
   };
 

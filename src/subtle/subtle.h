@@ -32,8 +32,8 @@
 /* }}} */
 
 /* Macros {{{ */
-#define FLAGS        int                                          ///< Flags
-#define TAGS         int                                          ///< Tags
+#define FLAGS        unsigned int                                 ///< Flags
+#define TAGS         unsigned int                                 ///< Tags
 
 #define CLIENTID     1L                                           ///< Client data id
 #define VIEWID       2L                                           ///< View data id
@@ -156,10 +156,12 @@
 #define SUB_MODE_STICK                (1L << 22)                  ///< Stick mode
 #define SUB_MODE_URGENT               (1L << 23)                  ///< Urgent mode
 #define SUB_MODE_URGENT_ONCE          (1L << 24)                  ///< Urgent once
-#define SUB_MODE_UNFULL               (1L << 24)                  ///< Disable full mode
-#define SUB_MODE_UNFLOAT              (1L << 25)                  ///< Disable float mode
-#define SUB_MODE_UNSTICK              (1L << 26)                  ///< Disable stick mode
-#define SUB_MODE_UNURGENT             (1L << 27)                  ///< Disable urgent mode
+#define SUB_MODE_RESIZE               (1L << 25)                  ///< Resize mode
+#define SUB_MODE_UNFULL               (1L << 26)                  ///< Disable full mode
+#define SUB_MODE_UNFLOAT              (1L << 27)                  ///< Disable float mode
+#define SUB_MODE_UNSTICK              (1L << 28)                  ///< Disable stick mode
+#define SUB_MODE_UNURGENT             (1L << 29)                  ///< Disable urgent mode
+#define SUB_MODE_UNRESIZE             (1L << 30)                  ///< Disable resize mode
 
 /* Call flags */
 #define SUB_CALL_SUBLET_RUN           (1L << 1)                   ///< Ruby sublet run call
