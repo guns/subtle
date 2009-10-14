@@ -59,6 +59,12 @@ subGravityAddMode(SubGravity *g,
   /* Add mode */
   g->modes = (XRectangle *)subSharedMemoryRealloc(g->modes, (g->nmodes + 1) * sizeof(XRectangle));
   g->modes[g->nmodes] = *mode;
+
+  /* Sanitize sizes */
+  g->modes[g->nmodes].x      = MINMAX(g->modes[g->nmodes].x,      0, 100);
+  g->modes[g->nmodes].y      = MINMAX(g->modes[g->nmodes].y,      0, 100);
+  g->modes[g->nmodes].width  = MINMAX(g->modes[g->nmodes].width,  0, 100);
+  g->modes[g->nmodes].height = MINMAX(g->modes[g->nmodes].height, 0, 100);
  
   g->nmodes++;
 
