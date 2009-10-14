@@ -165,12 +165,6 @@ subClientConfigure(SubClient *c)
 
   r = c->geom;
 
-  if(!(c->flags & SUB_MODE_FLOAT))
-    {
-      r.width  -= 2 * subtle->bw;
-      r.height -= 2 * subtle->bw;
-    } 
-
   if(c->flags & SUB_MODE_FULL) ///< Get fullscreen size of screen
     r = SCREEN(subtle->screens->data[c->screen])->base;
 
@@ -186,6 +180,13 @@ subClientConfigure(SubClient *c)
   ev.above             = None;
   ev.override_redirect = False;
 
+  /* Apply border size */
+  if(!(c->flags & SUB_MODE_FLOAT))
+    {
+      r.width  -= 2 * subtle->bw;
+      r.height -= 2 * subtle->bw;
+    }
+    
   XMoveResizeWindow(subtle->dpy, c->win, r.x, r.y, r.width, r.height);
   XSendEvent(subtle->dpy, c->win, False, StructureNotifyMask, (XEvent *)&ev);
 
@@ -497,8 +498,8 @@ subClientTag(SubClient *c,
       SubTag *t = TAG(subtle->tags->data[tag]);
       
       /* Collect flags and tags */
-      flags    |= (t->flags & (SUB_MODE_FULL|SUB_MODE_FLOAT|SUB_MODE_STICK|SUB_MODE_URGENT));
-      c->flags |= (t->flags & (SUB_MODE_UNFULL|SUB_MODE_UNFLOAT|SUB_MODE_UNSTICK|SUB_MODE_UNURGENT));
+      flags    |= (t->flags & (SUB_MODE_FULL|SUB_MODE_FLOAT|SUB_MODE_STICK|SUB_MODE_URGENT|SUB_MODE_RESIZE));
+      c->flags |= (t->flags & (SUB_MODE_UNFULL|SUB_MODE_UNFLOAT|SUB_MODE_UNSTICK|SUB_MODE_UNURGENT|SUB_MODE_UNRESIZE));
       c->tags  |= (1L << (tag + 1));
 
       /* Set size and enable float */
@@ -669,7 +670,8 @@ subClientSetSize(SubClient *c)
   DEAD(c);
   assert(c);
 
-  if(subtle->flags & SUB_SUBTLE_RESIZE || c->flags & SUB_MODE_FLOAT)
+  if(!(c->flags & SUB_MODE_UNRESIZE) && 
+      (subtle->flags & SUB_SUBTLE_RESIZE || c->flags & (SUB_MODE_FLOAT|SUB_MODE_RESIZE)))
     {
       SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
 
