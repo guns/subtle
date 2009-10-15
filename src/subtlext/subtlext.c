@@ -1420,7 +1420,7 @@ SubtlextGravityModeAdd(int argc,
   rect = rb_funcall(klass, rb_intern("new"), 4, INT2FIX(x),  INT2FIX(y), INT2FIX(width), INT2FIX(height));
   rb_ary_push(ary, rect);
 
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_GRAVTIY_NEW", data, True);
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_GRAVITY_NEW", data, True);
 
   return Qnil;
 } /* }}} */
@@ -1455,7 +1455,7 @@ SubtlextGravityModeDel(VALUE self,
           data.l[0] = gid;
           data.l[1] = mid;
 
-          subSharedMessage(DefaultRootWindow(display), "SUBTLE_GRAVTIY_KILL", data, True);
+          subSharedMessage(DefaultRootWindow(display), "SUBTLE_GRAVITY_KILL", data, True);
 
           rb_funcall(ary, rb_intern("delete_at"), 1, id);
         }
@@ -2232,7 +2232,7 @@ SubtlextSubtleGravityList(VALUE self)
 
   VALUE array = rb_ary_new();
 
-  if((gravities = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_GRAVTIY_LIST", &size)))
+  if((gravities = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_GRAVITY_LIST", &size)))
     {
       int i, id = -1, gid = -1;
       VALUE klass_grav = Qnil, klass_rect = Qnil, meth = Qnil, gravity = Qnil, rect = Qnil, ary = Qnil;

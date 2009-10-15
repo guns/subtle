@@ -90,7 +90,7 @@ EventSignal(int signum)
           {
             subtle->flags &= ~SUB_SUBTLE_RUN;
             XNoOp(subtle->dpy); ///< Forcing ppoll to leave lock
-            XSync(subtle->dpy, True);
+            XSync(subtle->dpy, False);
           }
         break;
       case SIGSEGV:
@@ -1055,9 +1055,9 @@ subEventLoop(void)
   int i, events = 0;
   XEvent ev;
   time_t now;
-  sigset_t sigs;
+  sigset_t sigmask;
   struct sigaction sa;
-  struct timespec timeout = { .tv_sec= 1, .tv_nsec = 0 };
+  struct timespec timeout = { 1, 0 };
   SubSublet *s = NULL;
 
 #ifdef HAVE_SYS_INOTIFY_H
@@ -1072,11 +1072,11 @@ subEventLoop(void)
 #endif /* HAVE_SYS_INOTIFY_H */
   
   /* Signal set for ppoll */
-  sigemptyset(&sigs);
-  sigaddset(&sigs, SIGHUP);
-  sigaddset(&sigs, SIGINT);
-  sigaddset(&sigs, SIGSEGV);
-  sigaddset(&sigs, SIGCHLD);
+  sigemptyset(&sigmask);
+  sigaddset(&sigmask, SIGHUP);
+  sigaddset(&sigmask, SIGINT);
+  sigaddset(&sigmask, SIGSEGV);
+  sigaddset(&sigmask, SIGCHLD);
 
   /* Signal handler */
   sa.sa_handler = EventSignal;
@@ -1095,7 +1095,7 @@ subEventLoop(void)
     {
       now = subSharedTime();
 
-      if(0 < (events = ppoll(watches, nwatches, &timeout, &sigs))) ///< Data ready on any connection
+      if(0 < (events = ppoll(watches, nwatches, &timeout, &sigmask))) ///< Data ready on any connection
         {
           for(i = 0; i < nwatches; i++) ///< Find descriptor
             {

@@ -731,7 +731,7 @@ subSharedGravityList(int id,
 
   assert(size);
 
-  if((gravities = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_GRAVTIY_LIST", size)))
+  if((gravities = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_GRAVITY_LIST", size)))
     {
       int i, gid = 0, pos = 0, len = 3;
       XRectangle mode = { 0 };
