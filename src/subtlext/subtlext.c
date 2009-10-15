@@ -488,7 +488,7 @@ static VALUE
 SubtlextClientInit(VALUE self,
   VALUE win)
 {
-  if(FIXNUM_P(win) && T_BIGNUM != rb_type(win))
+  if(!FIXNUM_P(win) && T_BIGNUM != rb_type(win))
     rb_raise(rb_eArgError, "Invalid value type");
 
   rb_iv_set(self, "@id",      Qnil);
@@ -1131,26 +1131,27 @@ SubtlextClientScreenSet(VALUE self,
 
 /* SubtlextClientSize {{{ */
 /*
- * call-seq: size -> Array
+ * call-seq: size -> Subtlext::Rectangle
  *
- * Get Client size as Array
+ * Get Client size as Rectangle
  *
  *  client.size
- *  => [ 0, 0, 100, 100 ]
+ *  => #<Subtlext::Rectangle:xxx>
  */
 
 static VALUE
 SubtlextClientSize(VALUE self)
 {
-  VALUE ary = rb_ary_new2(4);
+  VALUE klass = Qnil, x = Qnil, y = Qnil, width = Qnil, height = Qnil;
 
-  /* Push sizes */
-  rb_ary_push(ary,  rb_iv_get(self, "@x"));
-  rb_ary_push(ary,  rb_iv_get(self, "@y"));
-  rb_ary_push(ary,  rb_iv_get(self, "@width"));
-  rb_ary_push(ary,  rb_iv_get(self, "@height"));
+  /* Collect data */
+  klass  = rb_const_get(mod, rb_intern("Rectangle"));
+  x      = rb_iv_get(self, "@x");
+  y      = rb_iv_get(self, "@y");
+  width  = rb_iv_get(self, "@width");
+  height = rb_iv_get(self, "@height");
 
-  return ary;
+  return rb_funcall(klass, rb_intern("new"), 4, x, y, width, height);
 } /* }}} */
 
 /* SubtlextClientSizeSet {{{ */
@@ -1161,6 +1162,9 @@ SubtlextClientSize(VALUE self)
  *
  *  client.size = [ 0, 0, 100, 100 ]
  *  => [ 0, 0, 100, 100 ]
+ *
+ *  client.size = Subtlext::Rectangle(0, 0, 100, 100)
+ *  => #<Subtlext::Rectangle:xxx>
  */
 
 static VALUE
@@ -1168,33 +1172,42 @@ SubtlextClientSizeSet(VALUE self,
   VALUE value)
 {
   int len = 0;
+  VALUE klass = Qnil, type = Qnil, win = Qnil;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  klass = rb_const_get(mod, rb_intern("Rectangle"));
 
   /* Check object */
-  switch(rb_type(value))
+  if(T_OBJECT == (type = rb_type(value)) && rb_obj_is_instance_of(value, klass))
     {
-      case T_ARRAY:
-        if(4 == (len = FIX2INT(rb_funcall(value, rb_intern("length"), 0, NULL))))
-          {
-            int i;
-            VALUE win = rb_iv_get(self, "@win"), meth = rb_intern("at");
-            SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-            /* Get sizes */
-            for(i = 1; i < 5; i++)
-              data.l[i] = FIX2INT(rb_funcall(value, meth, 1, INT2FIX(i - 1)));
-
-            /* Update geometry */
-            rb_iv_set(self, "@x",      INT2FIX(data.l[1]));
-            rb_iv_set(self, "@y",      INT2FIX(data.l[2]));
-            rb_iv_set(self, "@width",  INT2FIX(data.l[3]));
-            rb_iv_set(self, "@height", INT2FIX(data.l[4]));
-
-            subSharedMessage(NUM2LONG(win), "_NET_MOVERESIZE_WINDOW", data, True);
-          }
-        else rb_raise(rb_eArgError, "Missing arguments");
-        break;
-      default: rb_raise(rb_eArgError, "Unknown value type");
+      data.l[1] = FIX2INT(rb_iv_get(value, "@x"));
+      data.l[2] = FIX2INT(rb_iv_get(value, "@y"));
+      data.l[3] = FIX2INT(rb_iv_get(value, "@width"));
+      data.l[4] = FIX2INT(rb_iv_get(value, "@height"));
     }
+  else if(T_ARRAY == type && 4 == (len = FIX2INT(rb_funcall(value, rb_intern("length"), 0, NULL))))
+    {
+      int i;
+      VALUE meth = rb_intern("at");
+
+      /* Get sizes */
+      for(i = 1; i < 5; i++)
+        data.l[i] = FIX2INT(rb_funcall(value, meth, 1, INT2FIX(i - 1)));
+    }
+  else
+    {
+      rb_raise(rb_eArgError, "Unknown value type");
+      return Qnil;
+    }
+
+  win = rb_iv_get(self, "@win"), 
+  subSharedMessage(NUM2LONG(win), "_NET_MOVERESIZE_WINDOW", data, True);
+
+  /* Update geometry */
+  rb_iv_set(self, "@x",      INT2FIX(data.l[1]));
+  rb_iv_set(self, "@y",      INT2FIX(data.l[2]));
+  rb_iv_set(self, "@width",  INT2FIX(data.l[3]));
+  rb_iv_set(self, "@height", INT2FIX(data.l[4]));
 
   return Qnil;
 } /* }}} */
@@ -1374,7 +1387,7 @@ SubtlextGravityModeAdd(int argc,
   VALUE self)
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
-  VALUE x = Qnil, y = Qnil, width = Qnil, height = Qnil, klass = Qnil, rect = Qnil, ary = Qnil;
+  VALUE type = Qnil, x = Qnil, y = Qnil, width = Qnil, height = Qnil, klass = Qnil, rect = Qnil, ary = Qnil;
 
   rb_scan_args(argc, argv, "04", &x, &y, &width, &height);
 
@@ -1382,30 +1395,24 @@ SubtlextGravityModeAdd(int argc,
   data.l[0] = FIX2INT(rb_iv_get(self, "@id")) - 1;
 
   /* Check object */
-  switch(rb_type(x))
+  if(T_OBJECT == (type = rb_type(x)) && rb_obj_is_instance_of(x, klass))
     {
-      case T_OBJECT:
-      case T_CLASS:
-        if(rb_obj_is_instance_of(x, klass))
-          {
-            data.l[1] = FIX2INT(rb_iv_get(x, "@x"));
-            data.l[2] = FIX2INT(rb_iv_get(x, "@y"));
-            data.l[3] = FIX2INT(rb_iv_get(x, "@width"));
-            data.l[4] = FIX2INT(rb_iv_get(x, "@height"));
-          }
-        break;
-      case T_FIXNUM:
-        if(FIXNUM_P(y) && FIXNUM_P(width) && FIXNUM_P(height))
-          {
-            data.l[1] = FIX2INT(x);
-            data.l[2] = FIX2INT(y);
-            data.l[3] = FIX2INT(width);
-            data.l[4] = FIX2INT(height);
-          }
-        break;
-      default:
-        rb_raise(rb_eArgError, "Unknown value type");
-        return Qnil;
+      data.l[1] = FIX2INT(rb_iv_get(x, "@x"));
+      data.l[2] = FIX2INT(rb_iv_get(x, "@y"));
+      data.l[3] = FIX2INT(rb_iv_get(x, "@width"));
+      data.l[4] = FIX2INT(rb_iv_get(x, "@height"));
+    }
+  else if(T_FIXNUM == type && FIXNUM_P(y) && FIXNUM_P(width) && FIXNUM_P(height))
+    {
+      data.l[1] = FIX2INT(x);
+      data.l[2] = FIX2INT(y);
+      data.l[3] = FIX2INT(width);
+      data.l[4] = FIX2INT(height);
+    }
+  else
+    {
+      rb_raise(rb_eArgError, "Unknown value type");
+      return Qnil;
     }
 
   /* Add to modes list */
@@ -2302,6 +2309,8 @@ SubtlextSubtleGravityFind(VALUE self,
 
           rb_ary_push(ary, rect);
         }
+
+      free(modes);
     }
   else rb_raise(rb_eStandardError, "Failed finding gravity");
 
