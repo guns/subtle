@@ -518,6 +518,34 @@ SubtlerClientKill(char *arg1,
 
 /* Gravity */
 
+/* SubtlerGravityNew {{{ */
+static void
+SubtlerGravityNew(char *arg1,
+  char *arg2)
+{
+  int find = 0;
+
+  CHECK(arg1 && arg2, "Usage: %sr -g -a ID GEOMETRY\n", PKG_NAME);
+  subSharedLogDebug("%s\n", __func__);
+
+  if(0 < (find = atoi(arg1)) && 9 >= find)  
+    {
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+      XRectangle mode = { 0, 0, 100, 100 };
+
+      sscanf(arg2, "%hdx%hd+%hd+%hd", &mode.x, &mode.y, &mode.width, &mode.height);
+
+      data.l[0] = find - 1;
+      data.l[1] = mode.x;
+      data.l[2] = mode.y;
+      data.l[3] = mode.width;
+      data.l[4] = mode.height;
+
+      subSharedMessage(DefaultRootWindow(display), "SUBTLE_GRAVITY_NEW", data, False);
+    }
+  else subSharedLogWarn("Failed adding gravity mode\n");
+} /* }}} */
+
 /* SubtlerGravityFind {{{ */
 static void
 SubtlerGravityFind(char *arg1,
@@ -542,7 +570,7 @@ SubtlerGravityFind(char *arg1,
       
       for(i = 0; i < size; i++)
         {
-          printf("%s %3d x %-3x %3d + %-3d\n", names[find - 1], 
+          printf("%s %3d x %-3d %3d + %-3d\n", names[find - 1], 
             modes[i].x, modes[i].x, modes[i].width, modes[i].height);
         }
     }
@@ -557,7 +585,7 @@ SubtlerGravityList(char *arg1,
   int size = 0;
   char **gravities = NULL;
 
-  if((gravities = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_GRAVTIY_LIST", &size)))
+  if((gravities = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_GRAVITY_LIST", &size)))
     {
       int i, id = -1;
       XRectangle mode = { 0 };
@@ -577,6 +605,28 @@ SubtlerGravityList(char *arg1,
       XFreeStringList(gravities);
     }
   else subSharedLogWarn("Failed getting gravity list\n");
+} /* }}} */
+
+/* SubtlerGravityKill {{{ */
+static void
+SubtlerGravityKill(char *arg1,
+  char *arg2)
+{
+  int find = 0, mode = 0;
+
+  CHECK(arg1 && arg2, "Usage: %sr -g -a ID GEOMETRY\n", PKG_NAME);
+  subSharedLogDebug("%s\n", __func__);
+
+  if(0 < (find = atoi(arg1)) && 9 >= find && 0 <= (mode = atoi(arg2)))  
+    {
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+      data.l[0] = find - 1;
+      data.l[1] = mode;
+
+      subSharedMessage(DefaultRootWindow(display), "SUBTLE_GRAVITY_KILL", data, False);
+    }
+  else subSharedLogWarn("Failed killing gravity mode\n");
 } /* }}} */
 
 /* Screen */
@@ -669,6 +719,8 @@ SubtlerScreenList(char *arg1,
     printf("0 %4d x %-4d %4d + %-4d\n", 0, 0, DisplayWidth(display, DefaultScreen(display)), 
       DisplayHeight(display, DefaultScreen(display)));  
 } /* }}} */
+
+/* Sublet */
 
 /* SubtlerSubletNew {{{ */
 static void
@@ -1095,7 +1147,7 @@ SubtlerUsage(int group)
   if(-1 == group || SUB_GROUP_CLIENT == group)
     {
       printf("\nOptions for clients:\n" \
-             "  -f, --find=PATTERN      Find a client\n" \
+             "  -f, --find=PATTERN      Find client\n" \
              "  -o, --focus=PATTERN     Set focus to client\n" \
              "  -F, --full              Toggle full\n" \
              "  -O, --float             Toggle float\n" \
@@ -1108,14 +1160,16 @@ SubtlerUsage(int group)
              "  -n, --screen            Set client screen\n" \
              "  -E, --raise             Raise client window\n" \
              "  -R, --lower             Lower client window\n" \
-             "  -k, --kill=PATTERN      Kill a client\n");
+             "  -k, --kill=PATTERN      Kill client\n");
     }
 
   if(-1 == group || SUB_GROUP_GRAVITY == group)
     {
-      printf("\nOptions for screens:\n" \
+      printf("\nOptions for gravities:\n" \
+             "  -a, --add ID GEOMETRY   Create new gravity mode\n" \
              "  -l, --list              List all gravities\n" \
-             "  -f, --find=ID           Find a gravity\n");
+             "  -f, --find=ID           Find a gravity\n" \
+             "  -k, --kill=ID           Kill gravity mode\n");
     }      
 
   if(-1 == group || SUB_GROUP_SCREEN == group)
@@ -1132,7 +1186,7 @@ SubtlerUsage(int group)
              "  -l, --list              List all sublets\n" \
              "  -u, --update            Updates value of sublet\n" \
              "  -A, --data              Set data of sublet\n" \
-             "  -k, --kill=PATTERN      Kill a sublet\n");
+             "  -k, --kill=PATTERN      Kill sublet\n");
     }    
 
   if(-1 == group || SUB_GROUP_TAG == group)
@@ -1141,7 +1195,7 @@ SubtlerUsage(int group)
              "  -a, --add=NAME          Create new tag\n" \
              "  -f, --find              Find all clients/views by tag\n" \
              "  -l, --list              List all tags\n" \
-             "  -k, --kill=PATTERN      Kill a tag\n");
+             "  -k, --kill=PATTERN      Kill tag\n");
     }
 
   if(-1 == group || SUB_GROUP_VIEW == group)
@@ -1153,7 +1207,7 @@ SubtlerUsage(int group)
              "  -T, --tag=PATTERN       Add tag to view\n" \
              "  -U, --untag=PATTERN     Remove tag from view\n" \
              "  -G, --tags              Show view tags\n" \
-             "  -k, --kill=VIEW         Kill a view\n");
+             "  -k, --kill=VIEW         Kill view\n");
     }
   
   printf("\nPattern:\n" \
@@ -1338,8 +1392,8 @@ main(int argc,
       SubtlerClientList, SubtlerClientTag, SubtlerClientUntag, SubtlerClientTags, NULL, 
       NULL, SubtlerClientGravity, SubtlerClientScreen, SubtlerClientRestackRaise, 
       SubtlerClientRestackLower },
-    { NULL, NULL, SubtlerGravityFind, NULL, NULL, NULL, NULL, NULL, SubtlerGravityList, NULL, NULL,
-      NULL, NULL, NULL, NULL, NULL, NULL, NULL },    
+    { SubtlerGravityNew, SubtlerGravityKill, SubtlerGravityFind, NULL, NULL, NULL, NULL, NULL, 
+      SubtlerGravityList, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL },    
     { NULL, NULL, SubtlerScreenFind, NULL, NULL, NULL, NULL, NULL, SubtlerScreenList, NULL, NULL,
       NULL, NULL, NULL, NULL, NULL, NULL, NULL },
     { SubtlerSubletNew, SubtlerSubletKill, NULL, NULL, NULL, NULL, NULL, NULL, 
