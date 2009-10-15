@@ -101,7 +101,7 @@ SubtlextFind(int type,
   /* Check object type */
   switch(rb_type(value))
     {
-      case T_FIXNUM:
+      case T_FIXNUM: /* {{{ */
         if(SUB_TYPE_SCREEN == type)
           {
             int n = 0;
@@ -153,7 +153,7 @@ SubtlextFind(int type,
 
             return obj;
           }
-        break;
+        break; /* }}} */
       case T_STRING:
         if(SUB_TYPE_TAG == type) id = subSharedTagFind(RSTRING_PTR(value));
         else id = subSharedViewFind(RSTRING_PTR(value), &win);
@@ -184,8 +184,7 @@ SubtlextFind(int type,
         if(exception) rb_raise(rb_eStandardError, "Failed finding %s", SUB_TYPE_TAG == type ? "tag" : "view");
 
         return Qnil;
-      case T_OBJECT:
-      case T_CLASS:
+      case T_OBJECT: /* {{{ */
         if(rb_obj_is_instance_of(value, klass)) ///< Check object instance
           {
             if(Qnil == rb_iv_get(value, "@id") && True == create)
@@ -215,6 +214,7 @@ SubtlextFind(int type,
 
             return value;
           }
+        break; /* }}} */
     }
 
   if(exception) rb_raise(rb_eArgError, "Unknown value type");
@@ -348,10 +348,10 @@ SubtlextMatch(VALUE self,
 
 /* SubtlextTag {{{ */
 static VALUE
-SubtlextTag(int type,
-  int action,
-  VALUE self,
-  VALUE value)
+SubtlextTag(VALUE self,
+  VALUE value,
+  int type,
+  int action)
 {
   VALUE tag = Qnil;
 
@@ -654,7 +654,7 @@ static VALUE
 SubtlextClientTagAdd(VALUE self,
   VALUE value)
 {
-  SubtlextTag(SUB_TYPE_CLIENT, SUB_ACTION_TAG, self, value);
+  SubtlextTag(self, value, SUB_TYPE_CLIENT, SUB_ACTION_TAG);
 
   return Qnil;
 } /* }}} */
@@ -676,7 +676,7 @@ static VALUE
 SubtlextClientTagDel(VALUE self,
   VALUE value)
 {
-  return SubtlextTag(SUB_TYPE_CLIENT, SUB_ACTION_UNTAG, self, value);
+  return SubtlextTag(self, value, SUB_TYPE_CLIENT, SUB_ACTION_UNTAG);
 } /* }}} */
 
 /* SubtlextClientStateFull {{{ */
@@ -1337,7 +1337,7 @@ static VALUE
 SubtlextClientOperatorMinus(VALUE self,
   VALUE value)
 {
-  return SubtlextTag(self, value, SUB_ACTION_UNTAG, SUB_TYPE_CLIENT);
+  return SubtlextTag(self, value, SUB_TYPE_CLIENT, SUB_ACTION_UNTAG);
 } /* }}} */
 
 /* Gravity */
@@ -3119,7 +3119,7 @@ static VALUE
 SubtlextViewTagAdd(VALUE self,
   VALUE value)
 {
-  return SubtlextTag(SUB_TYPE_VIEW, SUB_ACTION_TAG, self, value);
+  return SubtlextTag(self, value, SUB_TYPE_VIEW, SUB_ACTION_TAG);
 } /* }}} */
 
 /* SubtlextViewTagDel {{{ */
@@ -3139,7 +3139,7 @@ static VALUE
 SubtlextViewTagDel(VALUE self,
   VALUE value)
 {  
-  return SubtlextTag(SUB_TYPE_VIEW, SUB_ACTION_UNTAG, self, value);
+  return SubtlextTag(self, value, SUB_TYPE_VIEW, SUB_ACTION_UNTAG);
 } /* }}} */
 
 /* SubtlextViewJump {{{ */
