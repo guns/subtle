@@ -186,7 +186,7 @@ subClientConfigure(SubClient *c)
       r.width  -= 2 * subtle->bw;
       r.height -= 2 * subtle->bw;
     }
-    
+
   XMoveResizeWindow(subtle->dpy, c->win, r.x, r.y, r.width, r.height);
   XSendEvent(subtle->dpy, c->win, False, StructureNotifyMask, (XEvent *)&ev);
 
@@ -617,17 +617,17 @@ subClientSetGravity(SubClient *c,
 
       /* Calculate slot */
       s = SCREEN(subtle->screens->data[c->screen]);
-      c->geom.x      = s->geom.x + (s->geom.width * mode->x / 100);
-      c->geom.y      = s->geom.y + (s->geom.height * mode->y / 100);
       c->geom.width  = s->geom.width * mode->width / 100;
       c->geom.height = s->geom.height * mode->height / 100;
+      c->geom.x      = s->geom.x + ((s->geom.width - c->geom.width) * mode->x / 100);
+      c->geom.y      = s->geom.y + ((s->geom.height - c->geom.height) * mode->y / 100);
 
       /* Update client */
-      c->gravity  = c->gravities[subtle->vid] = GRAVMODE(grav1, m);
+      c->gravity = c->gravities[subtle->vid] = GRAVMODE(grav1, m);
       subClientSetSize(c);
 
       /* EWMH: Gravity */
-      subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
+      subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&grav1, 1);
     }
 } /* }}} */
 
