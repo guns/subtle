@@ -1156,7 +1156,7 @@ SubtlerUsage(int group)
              "  -T, --tag=PATTERN       Add tag to client\n" \
              "  -U, --untag=PATTERN     Remove tag from client\n" \
              "  -G, --tags              Show client tags\n" \
-             "  -g, --gravity           Set client gravity\n" \
+             "  -y, --gravity           Set client gravity\n" \
              "  -n, --screen            Set client screen\n" \
              "  -E, --raise             Raise client window\n" \
              "  -R, --lower             Lower client window\n" \
@@ -1182,7 +1182,7 @@ SubtlerUsage(int group)
   if(-1 == group || SUB_GROUP_SUBLET == group)
     {
       printf("\nOptions for sublets:\n" \
-             "  -a, --add=PATH          Create new sublet\n" \
+             "  -a, --add=FILE          Create new sublet\n" \
              "  -l, --list              List all sublets\n" \
              "  -u, --update            Updates value of sublet\n" \
              "  -A, --data              Set data of sublet\n" \
@@ -1210,13 +1210,17 @@ SubtlerUsage(int group)
              "  -k, --kill=VIEW         Kill view\n");
     }
   
-  printf("\nPattern:\n" \
-         "  Matching clients, tags and views works either via plain, regex\n" \
-         "  (see regex(7)) or window id. If a pattern matches more than once\n" \
-         "  ONLY the first match will be used.\n\n" \
-         "  If the PATTERN is '-' %sr will read from stdin.\n", PKG_NAME);
+  printf("\nFormats:\n" \
+         "  DISPLAY:  :<display number>\n" \
+         "  ID:       <number>\n" \
+         "  GEOMETRY: <x>x<y>+<width>+<height>\n" \
+         "  PATTERN:\n" \
+         "    Matching clients, tags and views works either via plain, regex\n" \
+         "    (see regex(7)) or window id. If a pattern matches more than once\n" \
+         "    ONLY the first match will be used. If the PATTERN is '-' %sr will\n" \
+         "    read from stdin.\n", PKG_NAME);
 
-  printf("\nFormat:\n" \
+  printf("\nListings:\n" \
          "  Client listing:  <window id> [-*] <view id> <geometry> <gravity> <screen> <flags> <name> (<class>)\n" \
          "  Gravity listing: <gravity id> <geometry>\n" \
          "  Screen listing:  <screen id> <geometry>\n" \
@@ -1244,9 +1248,10 @@ SubtlerUsage(int group)
          "  %sr -c xterm -G          Show tags of client 'xterm'\n" \
          "  %sr -c -x -f             Select client and show info\n" \
          "  %sr -c -C -y 5           Set gravity 5 to current active client\n" \
+         "  %sr -g -a 5 10x10+50+50  Add new gravity mode to gravity 4\n" \
          "  %sr -t -f term           Show every client/view tagged with 'term'\n" \
          "\nPlease report bugs to <%s>\n",
-         PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_BUGREPORT);
+         PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_BUGREPORT);
 } /* }}} */
 
 /* SubtlerVersion {{{ */
