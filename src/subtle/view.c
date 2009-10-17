@@ -97,7 +97,7 @@ subViewConfigure(SubView *v,
           if(!(c->flags & (SUB_MODE_FULL|SUB_MODE_FLOAT)))
             {
               subClientSetScreen(c, c->screens[vid], align);
-              subClientSetGravity(c, c->gravities[vid], align);
+              subClientSetGravity(c, c->gravities[vid], False, align);
               subClientConfigure(c);
 
               XMapWindow(subtle->dpy, c->win);

@@ -53,10 +53,6 @@
 #define MIN(a,b)     (a >= b ? b : a)                             ///< Minimum
 #define MAX(a,b)     (a >= b ? a : b)                             ///< Maximum
 
-#define GRAVMODE(grav,mode) ((mode << 4) | grav)                  ///< Combine gravity and mode
-#define GETGRAV(gravity) (gravity & 0xf)                          ///< Get gravity
-#define GETMODE(gravity) (gravity >> 4)                           ///< Get mode 
-
 #define DEAD(c) \
   if(!c || c->flags & SUB_CLIENT_DEAD) return;                     ///< Check dead clients
 
@@ -547,7 +543,8 @@ void subClientDrag(SubClient *c, int mode);                       ///< Move/drag
 void subClientUpdate(int vid);                                    ///< Update clients
 int subClientTag(SubClient *c, int tag);                          ///< Tag client
 void subClientSetTags(SubClient *c);                              ///< Update client tags
-void subClientSetGravity(SubClient *c, int gravity, int force);   ///< Set client gravity
+void subClientSetGravity(SubClient *c, int gravity,
+  int toggle, int force);                                         ///< Set client gravity
 void subClientSetScreen(SubClient *c, int screen, int force);     ///< Set client screen
 void subClientSetSize(SubClient *c);                              ///< Set client sizes
 void subClientSetStrut(SubClient *c);                             ///< Set client strut

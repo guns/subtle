@@ -346,17 +346,16 @@ EventMessage(XClientMessageEvent *ev)
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_WINDOW_GRAVITY: /* {{{ */
-            if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0]))))
+            if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0]))) && 
+                VISIBLE(subtle->view, c))
               {
-                if(1 <= ev->data.l[1] && 9 >= ev->data.l[1]) ///< Check values
+                if((g = GRAVITY(subArrayGet(subtle->gravities, (int)ev->data.l[2]))) &&
+                    0 <= ev->data.l[2] && g->nmodes > ev->data.l[2])
                   {
-                    if(VISIBLE(subtle->view, c)) 
-                      {
-                        subClientSetGravity(c, ev->data.l[1], True);
-                        subClientConfigure(c);
-                        subClientWarp(c);
-                        XRaiseWindow(subtle->dpy, c->win);        
-                      }
+                    subClientSetGravity(c, GRAVMODE(ev->data.l[1], ev->data.l[2]), False, True);
+                    subClientConfigure(c);
+                    subClientWarp(c);
+                    XRaiseWindow(subtle->dpy, c->win);        
                   }
               }
             break; /* }}} */
@@ -884,16 +883,13 @@ EventGrab(XEvent *ev)
           case SUB_GRAB_WINDOW_GRAVITY: /* {{{ */
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               {
-                if(1 <= g->data.num && 9 >= g->data.num) ///< Check values
-                  {
-                    if(c->flags & SUB_MODE_FLOAT) subClientToggle(c, SUB_MODE_FLOAT);
-                    if(c->flags & SUB_MODE_FULL)  subClientToggle(c, SUB_MODE_FULL);
+                if(c->flags & SUB_MODE_FLOAT) subClientToggle(c, SUB_MODE_FLOAT);
+                if(c->flags & SUB_MODE_FULL)  subClientToggle(c, SUB_MODE_FULL);
 
-                    subClientSetGravity(c, g->data.num, True);
-                    subClientConfigure(c);
-                    subClientWarp(c);
-                    XRaiseWindow(subtle->dpy, c->win);
-                  }
+                subClientSetGravity(c, g->data.num, True, True);
+                subClientConfigure(c);
+                subClientWarp(c);
+                XRaiseWindow(subtle->dpy, c->win);
               }
             break; /* }}} */
           case SUB_GRAB_WINDOW_SCREEN: /* {{{ */
