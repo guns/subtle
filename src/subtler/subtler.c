@@ -212,6 +212,48 @@ SubtlerCurrentView(void)
   return ret;
 } /* }}} */
 
+/* SubtlerClientPrint {{{ */
+void
+SubtlerClientPrint(Window win,
+  int rv,
+  int nv)
+{
+  int x, y, grav = 0, mode = 0;
+  Window unused;
+  char *inst = NULL, *klass = NULL;
+  unsigned int width, height, border;
+  unsigned long *cv = NULL, *gravity = NULL, *screen = NULL, *flags = NULL;
+
+  /* Collect client data */
+  subSharedPropertyClass(win, &inst, &klass);
+  cv      = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, 
+    "_NET_WM_DESKTOP", NULL);
+  gravity = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, 
+    "SUBTLE_WINDOW_GRAVITY", NULL);
+  screen = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, 
+    "SUBTLE_WINDOW_SCREEN", NULL);
+  flags = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, 
+    "SUBTLE_WINDOW_FLAGS", NULL);
+
+  /* Get gravity and modes */
+  grav = GETGRAV(*gravity);
+  mode = GETMODE(*gravity);
+
+  XGetGeometry(display, win, &unused, &x, &y, &width, &height, &border, &border);
+
+  printf("%#10lx %c %ld %4u x %-4u %d %d %ld %c%c%c %s (%s)\n", win, (*cv == rv ? '*' : '-'),
+    (*cv > nv ? -1 : *cv + 1), width, height, grav, mode, *screen, 
+    *flags & SUB_EWMH_FULL ? 'F' : '-', *flags & SUB_EWMH_FLOAT ? 'O' : '-', 
+    *flags & SUB_EWMH_STICK ? 'S' : '-', inst, klass);
+
+  free(inst);
+  free(klass);
+  free(cv);
+  free(gravity);
+  free(screen);
+  free(flags);
+} /* }}} */
+
 /* Client */
 
 /* SubtlerClientFind {{{ */
@@ -226,43 +268,18 @@ SubtlerClientFind(char *arg1,
 
   if(-1 != subSharedClientFind(arg1, &win))
     {
-      int x, y;
-      Window unused;
-      char *inst = NULL, *klass = NULL;
-      unsigned int width, height, border;
-      unsigned long *nv = NULL, *rv = NULL, *cv = NULL,
-        *gravity = NULL, *screen = NULL, *flags = NULL;
+      unsigned long *nv = NULL, *rv = NULL;
 
       /* Collect data */
-      subSharedPropertyClass(win, &inst, &klass);
-      nv      = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
+      nv = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
         XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
-      rv      = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display),
+      rv = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display),
         XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
-      cv      = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, 
-        "_NET_WM_DESKTOP", NULL);
-      gravity = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, 
-        "SUBTLE_WINDOW_GRAVITY", NULL);
-      screen = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, 
-        "SUBTLE_WINDOW_SCREEN", NULL);
-      flags = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, 
-        "SUBTLE_WINDOW_FLAGS", NULL);
 
-      XGetGeometry(display, win, &unused, &x, &y, &width, &height, &border, &border);
+      SubtlerClientPrint(win, *nv, *rv);
 
-      printf("%#10lx %c %ld %4u x %-4u %ld %ld %c%c%c %s (%s)\n", win, (*cv == *rv ? '*' : '-'),
-        (*cv > *nv ? -1 : *cv + 1), width, height, *gravity, *screen, 
-        *flags & SUB_EWMH_FULL ? 'F' : '-', *flags & SUB_EWMH_FLOAT ? 'O' : '-', 
-        *flags & SUB_EWMH_STICK ? 'S' : '-', inst, klass);
-
-      free(inst);
-      free(klass);
       free(nv);
       free(rv);
-      free(cv);
-      free(gravity);
-      free(screen);
-      free(flags);
     }
   else subSharedLogWarn("Failed finding client\n");
 } /* }}} */
@@ -357,38 +374,7 @@ SubtlerClientList(char *arg1,
         XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
 
       for(i = 0; i < size; i++) 
-        {
-          int x, y;
-          Window unused;
-          char *inst = NULL, *klass = NULL;
-          unsigned int width, height, border;
-          unsigned long *cv = NULL, *gravity = NULL, *screen = NULL, *flags = NULL;
-
-          /* Collect client data */
-          subSharedPropertyClass(clients[i], &inst, &klass);
-          cv      = (unsigned long*)subSharedPropertyGet(clients[i], XA_CARDINAL, 
-            "_NET_WM_DESKTOP", NULL);
-          gravity = (unsigned long*)subSharedPropertyGet(clients[i], XA_CARDINAL, 
-            "SUBTLE_WINDOW_GRAVITY", NULL);
-          screen = (unsigned long*)subSharedPropertyGet(clients[i], XA_CARDINAL, 
-            "SUBTLE_WINDOW_SCREEN", NULL);
-          flags = (unsigned long*)subSharedPropertyGet(clients[i], XA_CARDINAL, 
-            "SUBTLE_WINDOW_FLAGS", NULL);
-
-          XGetGeometry(display, clients[i], &unused, &x, &y, &width, &height, &border, &border);
-
-          printf("%#10lx %c %ld %4u x %-4u %ld %ld %c%c%c %s (%s)\n", clients[i], (*cv == *rv ? '*' : '-'),
-            (*cv > *nv ? -1 : *cv + 1), width, height, *gravity, *screen, 
-            *flags & SUB_EWMH_FULL ? 'F' : '-', *flags & SUB_EWMH_FLOAT ? 'O' : '-', 
-            *flags & SUB_EWMH_STICK ? 'S' : '-', inst, klass);
-
-          free(inst);
-          free(klass);
-          free(cv);
-          free(gravity);
-          free(screen);
-          free(flags);
-        }
+        SubtlerClientPrint(clients[i], *nv, *rv);
 
       free(clients);
       free(nv);
@@ -1221,7 +1207,7 @@ SubtlerUsage(int group)
          "    read from stdin.\n", PKG_NAME);
 
   printf("\nListings:\n" \
-         "  Client listing:  <window id> [-*] <view id> <geometry> <gravity> <screen> <flags> <name> (<class>)\n" \
+         "  Client listing:  <window id> [-*] <view id> <geometry> <gravity> <mode> <screen> <flags> <name> (<class>)\n" \
          "  Gravity listing: <gravity id> <geometry>\n" \
          "  Screen listing:  <screen id> <geometry>\n" \
          "  Tag listing:     <name>\n" \

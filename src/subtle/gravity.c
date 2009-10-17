@@ -101,7 +101,6 @@ subGravityDelMode(SubGravity *g,
 
 } /* }}} */
 
-
  /** subGravityPublish {{{
   * @brief Publish gravities
   **/
