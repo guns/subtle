@@ -574,12 +574,14 @@ subClientSetTags(SubClient *c)
    * @brief Set client gravity for current view
    * @param[in]  c        A #SubClient
    * @param[in]  gravity  The gravity number
+   * @param[in]  toggle   Toggle modes
    * @param[in]  force    Force update
    **/
 
 void
 subClientSetGravity(SubClient *c,
   int gravity,
+  int toggle,
   int force)
 {
   DEAD(c);
@@ -587,7 +589,7 @@ subClientSetGravity(SubClient *c,
 
   if(force || c->gravity != gravity) ///< Check if update is required
     {
-      int grav1 = 1, grav2 = 1, m = 0;
+      int grav1 = 1, grav2 = 1, mode1 = 0, mode2 = 0;
       XRectangle *mode = NULL;
       SubGravity *g = NULL;
       SubScreen *s = NULL;
@@ -601,19 +603,21 @@ subClientSetGravity(SubClient *c,
           return;
         }
 
+      /* Get gravity and modes */
       grav1 = GETGRAV(gravity);
       grav2 = GETGRAV(c->gravity);
-      m     = GETMODE(c->gravity);
+      mode1 = GETMODE(gravity);
+      mode2 = GETMODE(c->gravity);
 
-      /* Get gravity and mode */
+      /* Get gravity and toggle mode */
       g = GRAVITY(subtle->gravities->data[grav1 - 1]);
-      if(grav1 == grav2)
+      if(toggle && grav1 == grav2)
         {
-          if(m < g->nmodes - 1) m++;
-          else m = 0;
+          mode1 = mode2;
+          if(mode1 < g->nmodes - 1) mode1++;
+          else mode1 = 0;
         }
-      else m = 0;
-      mode = &g->modes[m];
+      mode = &g->modes[mode1];
 
       /* Calculate slot */
       s = SCREEN(subtle->screens->data[c->screen]);
@@ -623,11 +627,11 @@ subClientSetGravity(SubClient *c,
       c->geom.y      = s->geom.y + ((s->geom.height - c->geom.height) * mode->y / 100);
 
       /* Update client */
-      c->gravity = c->gravities[subtle->vid] = GRAVMODE(grav1, m);
+      c->gravity = c->gravities[subtle->vid] = GRAVMODE(grav1, mode1);
       subClientSetSize(c);
 
       /* EWMH: Gravity */
-      subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&grav1, 1);
+      subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
     }
 } /* }}} */
 
