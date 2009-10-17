@@ -37,6 +37,12 @@
 #include "config.h"
 /* }}} */
 
+/* Macros {{{ */
+#define GRAVMODE(grav,mode) ((mode << 4) | grav)                  ///< Combine gravity and mode
+#define GETGRAV(gravity) (gravity & 0xf)                          ///< Get gravity
+#define GETMODE(gravity) (gravity >> 4)                           ///< Get mode 
+/* }}} */
+
 /* Flags {{{ */
 #define SUB_GRAVITY_UNKNOWN       0L         ///< Gravity unknown
 #define SUB_GRAVITY_BOTTOM_LEFT   1L         ///< Gravity bottom left
