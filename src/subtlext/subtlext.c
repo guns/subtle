@@ -17,6 +17,9 @@
 #include <X11/extensions/Xinerama.h>
 #endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
 
+#define CHAR2SYM(name) ID2SYM(rb_intern(name))
+#define SYM2CHAR(sym)  rb_id2name(SYM2ID(sym))
+
 Display *display = NULL;
 static int refcount = 0;
 VALUE mod = Qnil;
@@ -1029,32 +1032,49 @@ static VALUE
 SubtlextClientGravitySet(VALUE self,
   VALUE value)
 {
-  if(FIXNUM_P(value))
+  int gravity = -1, mode = -1;
+
+  /* Check object type */
+  switch(rb_type(value))
     {
-      int gravity = FIX2INT(value);
-
-      if(1 <= gravity && 9 >= gravity)
+      case T_FIXNUM: gravity = FIX2INT(value); break;
+      case T_HASH:
         {
-          SubMessageData data = { { 0, 0, 0, 0, 0 } };
-          VALUE id = rb_iv_get(self, "@id");
+          VALUE sym_gravity = CHAR2SYM("gravity"), sym_mode = CHAR2SYM("mode"),
+            meth_has_key = rb_intern("has_key?"), meth_fetch = rb_intern("fetch");
 
-          data.l[0] = NUM2LONG(id);
-          data.l[1] = FIX2LONG(value);
+          if(Qtrue == rb_funcall(value, meth_has_key, 1, sym_gravity)) 
+            gravity = FIX2INT(rb_funcall(value, meth_fetch, 1, sym_gravity));
 
-          subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_GRAVITY", data, True);
-
-          rb_iv_set(self, "@gravity", value);
-
-          return value;
+          if(Qtrue == rb_funcall(value, meth_has_key, 1, sym_mode)) 
+            mode = FIX2INT(rb_funcall(value, meth_fetch, 1, sym_mode));
         }
-      else
+        break;
+      case T_OBJECT:
         {
-          rb_raise(rb_eStandardError, "Failed setting client gravity");
-          return Qnil;
+          VALUE klass = rb_const_get(mod, rb_intern("Gravity")); 
+          
+          if(rb_obj_is_instance_of(value, klass)) ///< Check object instance
+            gravity = FIX2INT(rb_iv_get(value, "@id"));
         }
     }
+  
+  /* Set gravity */
+  if(-1 != gravity)
+    {
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+      VALUE id = rb_iv_get(self, "@id");
 
-  rb_raise(rb_eArgError, "Failed setting value type `%d'", rb_type(value));
+      data.l[0] = NUM2LONG(id);
+      data.l[1] = gravity;
+      data.l[2] = -1 != mode ? mode : 0;
+
+      subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_GRAVITY", data, True);
+
+      rb_iv_set(self, "@gravity", INT2FIX(gravity));
+    }
+  else rb_raise(rb_eArgError, "Failed setting value type `%s'", rb_obj_classname(value));
+
   return Qnil;
 } /* }}} */
 
@@ -1100,7 +1120,6 @@ SubtlextClientScreenSet(VALUE self,
     {
       case T_FIXNUM: screen = FIX2INT(value); break;
       case T_OBJECT:
-      case T_CLASS:
         {
           VALUE klass = rb_const_get(mod, rb_intern("Screen")); 
           
@@ -1121,11 +1140,9 @@ SubtlextClientScreenSet(VALUE self,
       subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_SCREEN", data, True);
 
       rb_iv_set(self, "@screen", INT2FIX(screen));
-
-      return Qnil;
     }
+  else rb_raise(rb_eArgError, "Failed setting value type `%s'", rb_obj_classname(value));
 
-  rb_raise(rb_eArgError, "Failed setting value type `%d'", rb_type(value));
   return Qnil;
 } /* }}} */
 
@@ -1156,7 +1173,8 @@ SubtlextClientSize(VALUE self)
 
 /* SubtlextClientSizeSet {{{ */
 /*
- * call-seq: size= -> nil
+ * call-seq: size=(array) -> nil
+ *           size=(rect)  -> nil
  *
  * Set Client size
  *
@@ -1171,43 +1189,50 @@ static VALUE
 SubtlextClientSizeSet(VALUE self,
   VALUE value)
 {
-  int len = 0;
-  VALUE klass = Qnil, type = Qnil, win = Qnil;
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  klass = rb_const_get(mod, rb_intern("Rectangle"));
-
-  /* Check object */
-  if(T_OBJECT == (type = rb_type(value)) && rb_obj_is_instance_of(value, klass))
+  /* Check object type */
+  switch(rb_type(value))
     {
-      data.l[1] = FIX2INT(rb_iv_get(value, "@x"));
-      data.l[2] = FIX2INT(rb_iv_get(value, "@y"));
-      data.l[3] = FIX2INT(rb_iv_get(value, "@width"));
-      data.l[4] = FIX2INT(rb_iv_get(value, "@height"));
+      case T_OBJECT:
+        {
+          VALUE klass = rb_const_get(mod, rb_intern("Rectangle")); 
+          
+          if(rb_obj_is_instance_of(value, klass)) ///< Check object instance
+            {
+              data.l[1] = FIX2INT(rb_iv_get(value, "@x"));
+              data.l[2] = FIX2INT(rb_iv_get(value, "@y"));
+              data.l[3] = FIX2INT(rb_iv_get(value, "@width"));
+              data.l[4] = FIX2INT(rb_iv_get(value, "@height"));
+            }
+        }
+        break;
+      case T_ARRAY:
+        if(4 == FIX2INT(rb_funcall(value, rb_intern("length"), 0, NULL)))
+          {
+            int i;
+            VALUE meth = rb_intern("at");
+
+            /* Get sizes */
+            for(i = 1; i < 5; i++)
+              data.l[i] = FIX2INT(rb_funcall(value, meth, 1, INT2FIX(i - 1)));
+          }
     }
-  else if(T_ARRAY == type && 4 == (len = FIX2INT(rb_funcall(value, rb_intern("length"), 0, NULL))))
+
+  /* Set size */
+  if(0 < data.l[3] && 0 < data.l[4]) ///< Check width and height
     {
-      int i;
-      VALUE meth = rb_intern("at");
+      VALUE win = rb_iv_get(self, "@win");
 
-      /* Get sizes */
-      for(i = 1; i < 5; i++)
-        data.l[i] = FIX2INT(rb_funcall(value, meth, 1, INT2FIX(i - 1)));
+      subSharedMessage(NUM2LONG(win), "_NET_MOVERESIZE_WINDOW", data, True);
+
+      /* Update geometry */
+      rb_iv_set(self, "@x",      INT2FIX(data.l[1]));
+      rb_iv_set(self, "@y",      INT2FIX(data.l[2]));
+      rb_iv_set(self, "@width",  INT2FIX(data.l[3]));
+      rb_iv_set(self, "@height", INT2FIX(data.l[4]));
     }
-  else
-    {
-      rb_raise(rb_eArgError, "Unknown value type");
-      return Qnil;
-    }
-
-  win = rb_iv_get(self, "@win"), 
-  subSharedMessage(NUM2LONG(win), "_NET_MOVERESIZE_WINDOW", data, True);
-
-  /* Update geometry */
-  rb_iv_set(self, "@x",      INT2FIX(data.l[1]));
-  rb_iv_set(self, "@y",      INT2FIX(data.l[2]));
-  rb_iv_set(self, "@width",  INT2FIX(data.l[3]));
-  rb_iv_set(self, "@height", INT2FIX(data.l[4]));
+  else rb_raise(rb_eArgError, "Failed setting value type `%s'", rb_obj_classname(value));
 
   return Qnil;
 } /* }}} */
@@ -2772,17 +2797,10 @@ SubtlextSubletDataSet(VALUE self,
         (char)NUM2LONG(id), RSTRING_PTR(value));
 
       subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_DATA", data, True);
-
-      return value;
     }
-  else
-    {
-      rb_raise(rb_eStandardError, "Failed setting sublet data");
-      return Qnil;
-    }
+  else rb_raise(rb_eArgError, "Failed setting value type `%s'", rb_obj_classname(value));
 
-  rb_raise(rb_eArgError, "Failed setting value type `%d'", rb_type(value));
-  return Qnil;
+  return value;
 } /* }}} */
 
 /* SubtlextSubletToString {{{ */
