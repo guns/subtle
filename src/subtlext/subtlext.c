@@ -1352,6 +1352,7 @@ SubtlextClientOperatorMinus(VALUE self,
  * call-seq: new(x, y, width, height) -> Subtlext::Geometry
  *           new(array)               -> Subtlext::Geometry
  *           new(hash)                -> Subtlext::Geometry
+ *           new(geometry)            -> Subtlext::Geometry
  *
  * Create a new Geometry object
  *
@@ -1363,6 +1364,9 @@ SubtlextClientOperatorMinus(VALUE self,
  *
  *  geom = Subtlext::Geometry.new({ :x => 0, :y => 0, :width => 50, :height => 50 })
  *  => #<Subtlext::Geometry:xxx>
+ *
+ *  geom = Subtlext::Geometry.new(Subtlext::Geometry.new(0, 0, 50, 50))
+ *  => #<Subtlext::Geometry:xxx>
  */
 
 static VALUE
@@ -1370,54 +1374,63 @@ SubtlextGeometryInit(int argc,
   VALUE *argv,
   VALUE self)
 {
-  VALUE x = Qnil, y = Qnil, width = Qnil, height = Qnil, data[4] = { Qnil };
+  VALUE value = Qnil, data[4] = { Qnil };
 
-  rb_scan_args(argc, argv, "04", &x, &y, &width, &height);
+  rb_scan_args(argc, argv, "04", &data[0], &data[1], &data[2], &data[3]);
+  value = data[0];
 
   /* Check object type */
-  switch(rb_type(x))
+  switch(rb_type(value))
     {
-      case T_FIXNUM:
-        data[0] = x;
-        data[1] = y;
-        data[2] = width;
-        data[3] = height;
-        break;
       case T_ARRAY:
-        if(4 == FIX2INT(rb_funcall(x, rb_intern("length"), 0, NULL)))
+        if(4 == FIX2INT(rb_funcall(value, rb_intern("size"), 0, NULL)))
           {
             int i;
             VALUE meth = rb_intern("at");
 
             for(i = 0; 4 > i; i++)
-              data[i] = rb_funcall(x, meth, 1, INT2FIX(i - 1));
+              data[i] = rb_funcall(value, meth, 1, INT2FIX(i));
           }
-      case T_HASH:
-        {
-          int i;
-          const char *syms[] = { "x", "y", "width", "height" };
-          VALUE meth_has_key = rb_intern("has_key?"), meth_fetch = rb_intern("fetch");
-
-          for(i = 0; 4 > i; i++)
-            {
-              VALUE sym = CHAR2SYM(syms[i]);
-
-              if(Qtrue == rb_funcall(x, meth_has_key, 1, sym)) 
-                data[i] = rb_funcall(x, meth_fetch, 1, sym);
-            }
-        }
         break;
-    }
+      case T_HASH:
+          {
+            int i;
+            const char *syms[] = { "x", "y", "width", "height" };
+            VALUE meth_has_key = rb_intern("has_key?"), meth_fetch = rb_intern("fetch");
 
-  if(FIXNUM_P(data[2]) && FIXNUM_P(data[3]) && 
-      0 < FIX2INT(data[2]) && 0 < FIX2INT(data[3]))
-    {
-      rb_iv_set(self, "@x",      x);
-      rb_iv_set(self, "@y",      y);
-      rb_iv_set(self, "@width",  width); 
-      rb_iv_set(self, "@height", height); 
+            for(i = 0; 4 > i; i++)
+              {
+                VALUE sym = CHAR2SYM(syms[i]);
+
+                if(Qtrue == rb_funcall(value, meth_has_key, 1, sym)) 
+                  data[i] = rb_funcall(value, meth_fetch, 1, sym);
+              }
+          }
+        break;
+      case T_OBJECT:
+          {
+            VALUE klass = rb_const_get(mod, rb_intern("Geometry")); 
+            
+            /* A copy constructor would be more suitable for this.. */
+            if(rb_obj_is_instance_of(value, klass)) ///< Check object instance
+              {
+                data[0] = rb_iv_get(value, "@x");
+                data[1] = rb_iv_get(value, "@y");
+                data[2] = rb_iv_get(value, "@height");
+                data[3] = rb_iv_get(value, "@width");
+              }
+          }        
     }
-  else rb_raise(rb_eArgError, "Failed setting value type `%s'", rb_obj_classname(x));
+  /* Set values */
+  if(FIXNUM_P(data[0]) && FIXNUM_P(data[1]) && FIXNUM_P(data[2]) && 
+      FIXNUM_P(data[3]) && 0 < FIX2INT(data[2]) && 0 < FIX2INT(data[3]))
+    {
+      rb_iv_set(self, "@x",      data[0]);
+      rb_iv_set(self, "@y",      data[1]);
+      rb_iv_set(self, "@width",  data[2]); 
+      rb_iv_set(self, "@height", data[3]); 
+    }
+  else rb_raise(rb_eArgError, "Failed setting value type `%s'", rb_obj_classname(value));
 
   return self;
 } /* }}} */
@@ -1640,6 +1653,7 @@ SubtlextGravityToString(VALUE self)
 
   return rb_str_new2(gravities[FIX2INT(rb_iv_get(self, "@id")) - 1]);
 } /* }}} */
+
 /* Screen */
 
 /* SubtlextScreenInit {{{ */
@@ -2318,14 +2332,14 @@ SubtlextSubtleGravityList(VALUE self)
           if(id != gid)
             {
               id      = gid;
-              gravity = rb_funcall(klass_grav, meth, 1, INT2FIX(id + 1));
-              ary     = rb_iv_get(gravity, "@modes");
+              gravity = rb_funcall(klass_grav, meth, 1, INT2FIX(gid + 1));
+              ary     = rb_iv_get(gravity, "@geometries");
 
               rb_ary_push(array, gravity);
             }
 
           geom = rb_funcall(klass_geom, meth, 4, INT2FIX(mode.x), INT2FIX(mode.y),  
-            INT2FIX(mode.width),  INT2FIX(mode.height));
+            INT2FIX(mode.width), INT2FIX(mode.height));
 
           rb_ary_push(ary, geom);
         }
@@ -3377,7 +3391,6 @@ Init_subtlext(void)
   rb_define_method(client, "initialize",   SubtlextClientInit,           1);
   rb_define_method(client, "views",        SubtlextClientViewList,       0);
   rb_define_method(client, "tags",         SubtlextClientTagList,        0);
-
   rb_define_method(client, "has_tag?",     SubtlextClientTagHas,         1);
   rb_define_method(client, "tag",          SubtlextClientTagAdd,         1);
   rb_define_method(client, "untag",        SubtlextClientTagDel,         1);
