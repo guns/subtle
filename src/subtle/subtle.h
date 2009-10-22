@@ -46,7 +46,6 @@
 #define EXECTIME     1                                            ///< Max execution time
 #define DEFAULTTAG   (1L << 1)                                    ///< Default tag
 
-#define LENGTH(a)    (sizeof(a) / sizeof(a[0]))                   ///< Array length
 #define WINW(c)      (c->geom.width - 2 * subtle->bw)             ///< Get real width
 #define WINH(c)      (c->geom.height - 2 * subtle->bw)            ///< Get real height
 #define ZERO(n)      (0 < n ? n : 1)                              ///< Prevent zero
@@ -81,8 +80,6 @@
 
 #define ROOT       DefaultRootWindow(subtle->dpy)                ///< Root window
 #define SCRN       DefaultScreen(subtle->dpy)                    ///< Default screen
-#define RINT(r)    printf("%s: x=%d, y=%d, width=%d, height=%d\n", \
-  #r, r.x, r.y, r.width, r.height);
 #define FONT       "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*"           ///< Default font
 
 #define SETRECT(r,a,b,c,d) \
