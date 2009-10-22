@@ -35,34 +35,46 @@
 #endif /* WM */
 
 #include "config.h"
+
+#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
+#include <X11/extensions/Xinerama.h>
+#endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
 /* }}} */
 
 /* Macros {{{ */
 #define GRAVMODE(grav,mode) ((mode << 4) | grav)                  ///< Combine gravity and mode
 #define GETGRAV(gravity) (gravity & 0xf)                          ///< Get gravity
 #define GETMODE(gravity) (gravity >> 4)                           ///< Get mode 
+
+#define LENGTH(a)    (sizeof(a) / sizeof(a[0]))                   ///< Array length
+#define RINT(r)    printf("%s: x=%d, y=%d, width=%d, height=%d\n", \
+  #r, r.x, r.y, r.width, r.height);                               ///< Print a XRectangle
 /* }}} */
 
 /* Flags {{{ */
-#define SUB_GRAVITY_UNKNOWN       0L         ///< Gravity unknown
-#define SUB_GRAVITY_BOTTOM_LEFT   1L         ///< Gravity bottom left
-#define SUB_GRAVITY_BOTTOM        2L         ///< Gravity bottom
-#define SUB_GRAVITY_BOTTOM_RIGHT  3L         ///< Gravity bottom right
-#define SUB_GRAVITY_LEFT          4L         ///< Gravity left
-#define SUB_GRAVITY_CENTER        5L         ///< Gravity center
-#define SUB_GRAVITY_RIGHT         6L         ///< Gravity right
-#define SUB_GRAVITY_TOP_LEFT      7L         ///< Gravity top left
-#define SUB_GRAVITY_TOP           8L         ///< Gravity top
-#define SUB_GRAVITY_TOP_RIGHT     9L         ///< Gravity top right
+#define SUB_GRAVITY_UNKNOWN       0L                              ///< Gravity unknown
+#define SUB_GRAVITY_BOTTOM_LEFT   1L                              ///< Gravity bottom left
+#define SUB_GRAVITY_BOTTOM        2L                              ///< Gravity bottom
+#define SUB_GRAVITY_BOTTOM_RIGHT  3L                              ///< Gravity bottom right
+#define SUB_GRAVITY_LEFT          4L                              ///< Gravity left
+#define SUB_GRAVITY_CENTER        5L                              ///< Gravity center
+#define SUB_GRAVITY_RIGHT         6L                              ///< Gravity right
+#define SUB_GRAVITY_TOP_LEFT      7L                              ///< Gravity top left
+#define SUB_GRAVITY_TOP           8L                              ///< Gravity top
+#define SUB_GRAVITY_TOP_RIGHT     9L                              ///< Gravity top right
 
-#define SUB_WINDOW_LEFT           0L         ///< Window left
-#define SUB_WINDOW_DOWN           1L         ///< Window down
-#define SUB_WINDOW_UP             2L         ///< Window above
-#define SUB_WINDOW_RIGHT          3L         ///< Window right
+#define SUB_WINDOW_LEFT           0L                              ///< Window left
+#define SUB_WINDOW_DOWN           1L                              ///< Window down
+#define SUB_WINDOW_UP             2L                              ///< Window above
+#define SUB_WINDOW_RIGHT          3L                              ///< Window right
 
-#define SUB_EWMH_FULL             (1L << 1)  ///< EWMH full flag
-#define SUB_EWMH_FLOAT            (1L << 2)  ///< EWMH float flag
-#define SUB_EWMH_STICK            (1L << 3)  ///< EWMH stick flag
+#define SUB_EWMH_FULL             (1L << 1)                       ///< EWMH full flag
+#define SUB_EWMH_FLOAT            (1L << 2)                       ///< EWMH float flag
+#define SUB_EWMH_STICK            (1L << 3)                       ///< EWMH stick flag
+
+#define SUB_MATCH_TITLE           (1L << 1)                       ///< Match title
+#define SUB_MATCH_NAME            (1L << 2)                       ///< Match name
+#define SUB_MATCH_CLASS           (1L << 3)                       ///< Match class
 /* }}} */
 
 /* Typedefs {{{ */
@@ -154,26 +166,17 @@ Window *subSharedWindowWMCheck(void);                             ///< Get WM ch
 Window subSharedWindowSelect(void);                               ///< Select a window
 /* }}} */
 
-/* Client {{{ */
+/* Lists {{{ */
 Window *subSharedClientList(int *size);                           ///< Get client list
-int subSharedClientFind(char *name, Window *win);                 ///< Find client id
-/* }}} */
-
-/* Gravity {{{ */
 XRectangle *subSharedGravityList(int id, int *size);              ///< Get gravity list of gravity id
 /* }}} */
 
-/* Tag {{{ */
-int subSharedTagFind(char *name);                                 ///< Find tag id
-/* }}} */
-
-/* View {{{ */
-int subSharedViewFind(char *name, Window *win);                   ///< Find view id              
-/* }}} */
-
-/* Sublet {{{ */
+/* Find {{{ */
+int subSharedClientFind(char *match, Window *win, int flags);     ///< Find client id
+int subSharedScreenFind(int id, XRectangle *geometry);            ///< Find screen id
 int subSharedSubletFind(char *name);                              ///< Find sublet id
-/* }}} */
+int subSharedTagFind(char *name);                                 ///< Find tag id
+int subSharedViewFind(char *name, Window *win);                   ///< Find view id              
 
 /* Subtle {{{ */
 int subSharedSubtleRunning(void);                                 ///< Check if subtle is running

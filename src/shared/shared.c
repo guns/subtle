@@ -577,7 +577,7 @@ subSharedWindowSelect(void)
   type   = XInternAtom(display, "WM_STATE", True);
 
   if(XGrabPointer(display, root, False, ButtonPressMask|ButtonReleaseMask, 
-    GrabModeSync, GrabModeAsync, root, cursor, CurrentTime))
+      GrabModeSync, GrabModeAsync, root, cursor, CurrentTime))
     {
       XFreeCursor(display, cursor);
 
@@ -605,7 +605,7 @@ subSharedWindowSelect(void)
   XQueryTree(display, win, &dummy, &dummy, &wins, &n);
   for(i = 0; i < n; i++)
     if(Success == XGetWindowProperty(display, wins[i], type, 0, 0, False, 
-      AnyPropertyType, &rtype, &format, &nitems, &bytes, &data))
+        AnyPropertyType, &rtype, &format, &nitems, &bytes, &data))
       {
         if(data) 
           {
@@ -637,12 +637,12 @@ Window *
 subSharedClientList(int *size)
 {
   Window *clients = NULL;
-  unsigned long len;
+  unsigned long len = 0;
 
   assert(size);
 
   if((clients = (Window *)subSharedPropertyGet(DefaultRootWindow(display),
-    XA_WINDOW, "_NET_CLIENT_LIST", &len)))
+      XA_WINDOW, "_NET_CLIENT_LIST", &len)))
     {
       *size = len / sizeof(Window);
     }
@@ -657,61 +657,63 @@ subSharedClientList(int *size)
 
  /** subSharedClientFind {{{
   * @brief Find client id
-  * @param[in]   name  Client name
-  * @param[out]  win   Client window
+  * @param[in]   match  Match string
+  * @param[out]  win    Client window
+  * @param[in]   flags  Matching flags
   * @return Returns the client window list id
-  * @retval  -1   Client not found
+  * @retval  -1  Client not found
   **/
 
 int
 subSharedClientFind(char *name,
-  Window *win)
+  Window *win,
+  int flags)
 {
-  int size = 0;
-  Window *clients = NULL, selwin = None;
+  int id = -1, size = 0;
+  Window *clients = NULL;
 
   assert(name);
 
-  if(!strncmp(name, "#", 1) && win) selwin = subSharedWindowSelect(); ///< Select window
-  
   if((clients = subSharedClientList(&size)))
     {
       int i;
-      char *inst = NULL, *klass = NULL, buf[20];
+      char *title = NULL, *inst = NULL, *klass = NULL, buf[20] = { 0 };
+      Window selwin = None;
       regex_t *preg = subSharedRegexNew(name);
 
-      for(i = 0; i < size; i++)
+      if(!strncmp(name, "#", 1) && win)
+        selwin = subSharedWindowSelect(); ///< Select window
+
+      for(i = 0; -1 == id && i < size; i++)
         {
+          XFetchName(display, clients[i], &title);
           subSharedPropertyClass(clients[i], &inst, &klass);
           snprintf(buf, sizeof(buf), "%#lx", clients[i]);
 
-          /* Find client either by window id or by inst/class */
-          if(clients[i] == selwin || (inst && subSharedRegexMatch(preg, inst)) ||
-            (klass && subSharedRegexMatch(preg, klass))
-            || subSharedRegexMatch(preg, buf))
+          /* Find client either by window id or by title/inst/class */
+          if(clients[i] == selwin || subSharedRegexMatch(preg, buf) ||
+              (flags & SUB_MATCH_TITLE && title && subSharedRegexMatch(preg, title)) ||
+              (flags & SUB_MATCH_NAME  && inst  && subSharedRegexMatch(preg, inst))  ||
+              (flags & SUB_MATCH_CLASS && klass && subSharedRegexMatch(preg, klass)))
             {
-              subSharedLogDebug("Found: type=client, name=%s, win=%#lx, id=%d\n", name,
-                clients[i], i);
+              subSharedLogDebug("Found: type=client, name=%s, win=%#lx, id=%d, flags\n", 
+                name, clients[i], i, flags);
 
               if(win) *win = clients[i];
-
-              subSharedRegexKill(preg);
-              free(inst);
-              free(klass);
-              free(clients);
-
-              return i;
+              id = i;
             }
+
+          XFree(title);
           free(inst);
           free(klass);
         }
+
       subSharedRegexKill(preg);
+      free(clients);
     }
-  free(clients);
+  else subSharedLogDebug("Failed finding client `%s'\n", name);
 
-  subSharedLogDebug("Failed finding client `%s'\n", name);
-
-  return -1;
+  return id;
 } /* }}} */
 
  /** subSharedGravityList {{{
@@ -770,11 +772,73 @@ subSharedGravityList(int id,
   return modes;
 } /* }}} */
 
+ /** subSharedScreenFind {{{
+  * @brief Find screen id
+  * @param[in]   id        Screen id
+  * @param[out]  geometry  Geometry of the screen
+  * @return Returns the screen list id
+  * @retval  -1  Screen not found
+  **/
+
+int
+subSharedScreenFind(int id,
+  XRectangle *geometry)
+{
+  int ret = -1;
+
+#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
+  int xinerama_event = 0, xinerama_error = 0;
+
+  /* Xinerama */
+  if(XineramaQueryExtension(display, &xinerama_event, &xinerama_error) &&
+      XineramaIsActive(display))
+    {
+      int n = 0;
+      XineramaScreenInfo *screens = NULL;
+
+      /* Query screens */
+      if((screens = XineramaQueryScreens(display, &n)))
+        {
+          if(0 <= id && n > id) ///< Find selected screen
+            {
+              ret = id;
+
+              if(geometry)
+                {
+                  geometry->x      = screens[id].x_org;
+                  geometry->y      = screens[id].y_org;
+                  geometry->width  = screens[id].width;
+                  geometry->height = screens[id].height;
+                }
+            }
+
+          XFree(screens);
+        }
+    } 
+#endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
+
+  /* Probably default screen */
+  if(-1 == ret && 0 == id)
+    {
+      ret = id;
+
+      if(geometry)
+        {
+          geometry->x      = 0;
+          geometry->y      = 0;
+          geometry->width  = DisplayWidth(display, DefaultScreen(display));
+          geometry->height = DisplayHeight(display, DefaultScreen(display));
+        }
+    }
+
+  return ret;
+} /* }}} */
+
  /** subSharedTagFind {{{
   * @brief Find tag id
   * @param[in]   name  Tag name
   * @return Returns the tag list id
-  * @retval  -1   Tag not found
+  * @retval  -1  Tag not found
   **/
 
 int
@@ -814,7 +878,7 @@ subSharedTagFind(char *name)
   * @param[in]   name  View name
   * @param[out]  win   View window
   * @return Returns the view list id
-  * @retval  -1   View not found
+  * @retval  -1  View not found
   **/
 
 int
