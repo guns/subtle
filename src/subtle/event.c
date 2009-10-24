@@ -120,8 +120,13 @@ EventConfigure(XConfigureRequestEvent *ev)
         {
           SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
 
-          if(ev->value_mask & CWX)      c->geom.x      = s->geom.x + ev->x;
-          if(ev->value_mask & CWY)      c->geom.y      = s->geom.y + ev->y;
+          /* We restrict this from graviated clients */
+          if(c->flags & SUB_MODE_FLOAT)
+            {
+              if(ev->value_mask & CWX) c->geom.x = s->geom.x + ev->x;
+              if(ev->value_mask & CWY) c->geom.y = s->geom.y + ev->y;
+            }
+
           if(ev->value_mask & CWWidth)  c->geom.width  = ev->width;
           if(ev->value_mask & CWHeight) c->geom.height = ev->height;
 
