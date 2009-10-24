@@ -46,14 +46,14 @@
 #define EXECTIME     1                                            ///< Max execution time
 #define DEFAULTTAG   (1L << 1)                                    ///< Default tag
 
-#define WINW(c)      (c->geom.width - 2 * subtle->bw)             ///< Get real width
-#define WINH(c)      (c->geom.height - 2 * subtle->bw)            ///< Get real height
+#define WIDTH(c)     (c->geom.width + 2 * subtle->bw)             ///< Get real width
+#define HEIGHT(c)    (c->geom.height + 2 * subtle->bw)            ///< Get real height
 #define ZERO(n)      (0 < n ? n : 1)                              ///< Prevent zero
 #define MIN(a,b)     (a >= b ? b : a)                             ///< Minimum
 #define MAX(a,b)     (a >= b ? a : b)                             ///< Maximum
 
 #define DEAD(c) \
-  if(!c || c->flags & SUB_CLIENT_DEAD) return;                     ///< Check dead clients
+  if(!c || c->flags & SUB_CLIENT_DEAD) return;                    ///< Check dead clients
 
 #define MINMAX(val,min,max) \
   (min && val < min ? min : max && val > max ? max : val)         ///< Value min/max
