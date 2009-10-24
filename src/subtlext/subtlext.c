@@ -1544,7 +1544,7 @@ SubtlextGeometryInit(int argc,
 
 /* SubtlextGeometryToArray {{{ */
 /*
- * call-seq: to_str -> Array
+ * call-seq: to_str -> String
  *
  * Convert Geometry object to Array
  *
