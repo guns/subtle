@@ -180,13 +180,6 @@ subClientConfigure(SubClient *c)
   ev.above             = None;
   ev.override_redirect = False;
 
-  /* Apply border size */
-  if(!(c->flags & SUB_MODE_FLOAT))
-    {
-      r.width  -= 2 * subtle->bw;
-      r.height -= 2 * subtle->bw;
-    }
-
   XMoveResizeWindow(subtle->dpy, c->win, r.x, r.y, r.width, r.height);
   XSendEvent(subtle->dpy, c->win, False, StructureNotifyMask, (XEvent *)&ev);
 
@@ -548,9 +541,9 @@ subClientSetTags(SubClient *c)
 
       /* Check if tag matches client */
       if(t->preg &&
-        ((t->flags & SUB_TAG_MATCH_TITLE && c->title && subSharedRegexMatch(t->preg, c->title)) ||
-        (t->flags & SUB_TAG_MATCH_NAME && c->name && subSharedRegexMatch(t->preg, c->name)) ||
-        (t->flags & SUB_TAG_MATCH_CLASS && c->klass && subSharedRegexMatch(t->preg, c->klass))))
+          ((t->flags & SUB_TAG_MATCH_TITLE && c->title && subSharedRegexMatch(t->preg, c->title)) ||
+          (t->flags  & SUB_TAG_MATCH_NAME  && c->name  && subSharedRegexMatch(t->preg, c->name))  ||
+          (t->flags  & SUB_TAG_MATCH_CLASS && c->klass && subSharedRegexMatch(t->preg, c->klass))))
         flags |= subClientTag(c, i);
     }
 
@@ -621,10 +614,10 @@ subClientSetGravity(SubClient *c,
 
       /* Calculate slot */
       s = SCREEN(subtle->screens->data[c->screen]);
-      c->geom.width  = s->geom.width * mode->width / 100;
-      c->geom.height = s->geom.height * mode->height / 100;
-      c->geom.x      = s->geom.x + ((s->geom.width - c->geom.width) * mode->x / 100);
-      c->geom.y      = s->geom.y + ((s->geom.height - c->geom.height) * mode->y / 100);
+      c->geom.width  = s->geom.width * mode->width / 100 - 2 * subtle->bw;
+      c->geom.height = s->geom.height * mode->height / 100 - 2 * subtle->bw;
+      c->geom.x      = s->geom.x + ((s->geom.width - WIDTH(c)) * mode->x / 100);
+      c->geom.y      = s->geom.y + ((s->geom.height - HEIGHT(c)) * mode->y / 100);
 
       /* Update client */
       c->gravity = c->gravities[subtle->vid] = GRAVMODE(grav1, mode1);
@@ -705,14 +698,17 @@ subClientSetSize(SubClient *c)
         c->geom.width = (int)(c->geom.height * c->maxr);
 
       /* Check incs */
-      c->geom.width  -= c->geom.width % c->incw; 
-      c->geom.height -= c->geom.height % c->inch;
+      c->geom.width  -= WIDTH(c) % c->incw; 
+      c->geom.height -= HEIGHT(c) % c->inch;
 
       /* Center */
-      if(c->geom.x == s->geom.x)
-        c->geom.x = (s->geom.width - c->geom.width) / 2;
-      if(c->geom.y == s->geom.y)
-        c->geom.y = (s->geom.height - c->geom.height) / 2;
+      if(c->flags & SUB_MODE_FLOAT)
+        {
+          if(c->geom.x == s->geom.x)
+            c->geom.x = (s->geom.width - WIDTH(c)) / 2;
+          if(c->geom.y == s->geom.y)
+            c->geom.y = (s->geom.height - HEIGHT(c)) / 2;
+        }
     }
 } /* }}} */
 
