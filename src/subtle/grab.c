@@ -240,8 +240,14 @@ subGrabKill(SubGrab *g,
 {
   assert(g);
 
-  if(g->flags & SUB_GRAB_SPAWN && g->data.string) free(g->data.string);
-  if(clean && g->flags & SUB_GRAB_PROC && g->data.num) subRubyRelease(g->data.num);
+  /* Clean certain types */
+  if(g->flags & SUB_GRAB_SPAWN && g->data.string) 
+    free(g->data.string);
+  else if(g->flags & SUB_GRAB_PROC && clean && g->data.num) 
+    subRubyRelease(g->data.num);
+  else if(g->flags & SUB_GRAB_WINDOW_GRAVITY && g->data.num)
+    free(g->data.string);
+
   free(g);
 
   subSharedLogDebug("kill=grab\n");

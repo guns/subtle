@@ -80,8 +80,8 @@ subIconRender(SubIcon *i,
 } /* }}} */
 
  /** subIconFind {{{
-  * @brief Find icon
-  * @param[in]  path  description
+  * @brief Find icon id
+  * @param[in]  path  Path to icon
   * @retval  -1  Not found
   * @retval  >0  Found id
   **/
