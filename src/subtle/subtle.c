@@ -120,7 +120,6 @@ main(int argc,
   subRubyInit();
   subEwmhInit();
   subGrabInit();
-  subGravityInit();
 
   /* Load */
   subRubyLoadConfig();
@@ -131,7 +130,6 @@ main(int argc,
   subDisplayScan();
 
   subEventLoop();
-
   subEventFinish();
 
   return 0;
