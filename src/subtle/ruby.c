@@ -31,6 +31,12 @@ typedef struct rubygrabs_t
   unsigned long flags, extra;
 } RubyGrabs;
 
+typedef struct rubygravities_t
+{
+  VALUE      sym;
+  XRectangle geometry;
+} RubyGravities;
+
 typedef struct rubyhooks_t
 {
   VALUE         sym;
@@ -137,6 +143,22 @@ RubyConcat(VALUE str1,
   return ret;
 } /* }}} */
 
+/* RubyFetch {{{ */
+static VALUE
+RubyFetch(VALUE hash,
+  char *key)
+{
+  VALUE value = Qnil, sym = CHAR2SYM(key);
+
+  assert(key);
+
+  /* Check for key */
+  if(RTEST(hash) && Qtrue == rb_funcall(hash, rb_intern("has_key?"), 1, sym))
+    value = rb_funcall(hash, rb_intern("fetch"), 1, sym);
+
+  return value;
+} /* }}} */
+
 /* RubyGetValue {{{ */
 static VALUE
 RubyGetValue(VALUE hash,
@@ -144,14 +166,13 @@ RubyGetValue(VALUE hash,
   int type,
   int optional)
 {
-  VALUE value = Qundef, sym = CHAR2SYM(key);
+  VALUE value = Qnil;
 
   assert(key);
 
   /* Check for key */
-  if(RTEST(hash) && Qtrue == rb_funcall(hash, rb_intern("has_key?"), 1, sym))
-    value = rb_funcall(hash, rb_intern("fetch"), 1, sym);
-  else if(!optional) subSharedLogWarn("Failed reading key `%s'\n", key);
+  if(Qnil == (value = RubyFetch(hash, key)) && !optional)
+    subSharedLogWarn("Failed reading key `%s'\n", key);
 
   return rb_type(value) == type ? value : Qnil;
 } /* }}} */
@@ -254,6 +275,27 @@ RubyGetIcon(VALUE self)
   return i;
 } /* }}} */
 
+/* RubyGetGravity {{{ */
+static int
+RubyGetGravity(VALUE hash)
+{
+  int gravity = -1;
+  VALUE value = RubyFetch(hash, "gravity");
+
+  /* Check value type */
+  switch(rb_type(value))
+    {
+      case T_FIXNUM:
+        gravity = FIX2INT(value);
+        break;
+      case T_SYMBOL:
+        gravity = subGravityFind(SYM2CHAR(value), 0);
+        break;
+    }
+
+  return 0 <= gravity && gravity < subtle->gravities->ndata ? gravity : -1;
+} /* }}} */
+
 /* RubyParseForeach {{{ */
 static int
 RubyParseForeach(VALUE key,
@@ -261,7 +303,7 @@ RubyParseForeach(VALUE key,
   VALUE extra)
 {
   int i, type = -1;
-  void *entry = NULL;
+  void *object = NULL;
   VALUE *rargs = (VALUE *)extra;
   SubData data = { None };
 
@@ -271,78 +313,116 @@ RubyParseForeach(VALUE key,
       case SUB_TYPE_GRAB: /* {{{ */
         switch(rb_type(value)) ///< Check value type
           {
-            case T_STRING: ///< String
+            case T_SYMBOL: /* {{{ */
+                {
+                  RubyGrabs *grabs = (RubyGrabs *)rargs[1];
+
+                  /* Find symbol and add flag */
+                  for(i = 0; 14 > i; i++)
+                    {
+                      if(value == grabs[i].sym)
+                        {
+                          type = grabs[i].flags;
+                          data = DATA(grabs[i].extra);
+                          break;
+                        }
+                    }
+
+                  if(-1 == type) ///< Symbols with parameters
+                    {
+                      const char *name = SYM2CHAR(value);
+
+                      if(!strncmp(name, "ViewJump", 8)) ///< View jump
+                        {
+                          if((name = (char *)name + 8))
+                            {
+                              type = SUB_GRAB_VIEW_JUMP;
+                              data = DATA((unsigned long)(atol(name) - 1));
+                            }
+                        }
+                      else if(!strncmp(name, "ScreenJump", 10)) ///< Screen jump
+                        {
+                          if((name = (char *)name + 10))
+                            {
+                              type = SUB_GRAB_SCREEN_JUMP;
+                              data = DATA((unsigned long)(atol(name) - 1));
+                            }
+                        }
+                      else if(!strncmp(name, "WindowScreen", 12)) ///< Window screen
+                        {
+                          if((name = (char *)name + 12))
+                            {
+                              type = SUB_GRAB_WINDOW_SCREEN;
+                              data = DATA((unsigned long)(atol(name) - 1));
+                            }
+                        }
+                    } 
+                }
+              break; /* }}} */
+            case T_ARRAY: /* {{{ */
+                {
+                  int id = -1, size = 0;
+                  VALUE entry = Qnil;
+                  char *gravities = NULL;
+
+                  /* Create gravity string */
+                  size      = FIX2INT(rb_funcall(value, rb_intern("size"), 0, NULL));
+                  gravities = (char *)subSharedMemoryAlloc(size + 1, sizeof(char));
+
+                  /* Add gravities */
+                  for(i = 0; Qnil != (entry = rb_ary_entry(value, i)); i++)
+                    if(T_SYMBOL == rb_type(entry))
+                      {
+                        /* We store ids in a string */
+                        if(-1 != (id = subGravityFind(SYM2CHAR(entry), 0)))
+                          gravities[i] = id + 65; /// Use letters only
+                        else subSharedLogWarn("Failed finding gravity `%s'\n", SYM2CHAR(entry));
+                      }
+
+                  type = SUB_GRAB_WINDOW_GRAVITY;
+                  data = DATA(gravities);
+                }
+              break; /* }}} */
+            case T_STRING: /* {{{ */
               type = SUB_GRAB_SPAWN;
               data = DATA(strdup(RSTRING_PTR(value)));
-              break;
-            case T_SYMBOL: ///< Symbol
-              {
-                RubyGrabs *grabs = (RubyGrabs *)rargs[1];
-
-                /* Find symbol and add flag */
-                for(i = 0; 23 > i; i++)
-                  {
-                    if(value == grabs[i].sym)
-                      {
-                        type = grabs[i].flags;
-                        data = DATA(grabs[i].extra);
-                        break;
-                      }
-                  }
-
-                if(-1 == type) ///< Symbols with parameters
-                  {
-                    const char *name = SYM2CHAR(value);
-
-                    if(!strncmp(name, "ViewJump", 8)) ///< View jump
-                      {
-                        if((name = (char *)name + 8))
-                          {
-                            type = SUB_GRAB_VIEW_JUMP;
-                            data = DATA((unsigned long)(atol(name) - 1));
-                          }
-                      }
-                    else if(!strncmp(name, "ScreenJump", 10)) ///< Screen jump
-                      {
-                        if((name = (char *)name + 10))
-                          {
-                            type = SUB_GRAB_SCREEN_JUMP;
-                            data = DATA((unsigned long)(atol(name) - 1));
-                          }
-                      }
-                    else if(!strncmp(name, "WindowScreen", 12)) ///< Window screen
-                      {
-                        if((name = (char *)name + 12))
-                          {
-                            type = SUB_GRAB_WINDOW_SCREEN;
-                            data = DATA((unsigned long)(atol(name) - 1));
-                          }
-                      }
-                  } 
-                break;
-              }
-            case T_DATA: ///< Proc   
+              break; /* }}} */
+            case T_DATA: /* {{{ */
               type = SUB_GRAB_PROC;
               data = DATA(value);
 
               rb_ary_push(shelter, value); ///< Protect from GC
-              break;
+              break; /* }}} */
             default:
               subSharedLogWarn("Failed parsing grab `%s'\n", RSTRING_PTR(key));
               return Qnil;
           }
 
-        if(-1 != type && (entry = (void *)subGrabNew(RSTRING_PTR(key), type, data)))
-          subArrayPush(subtle->grabs, entry);
+        if(-1 != type && (object = (void *)subGrabNew(RSTRING_PTR(key), type, data)))
+          subArrayPush(subtle->grabs, object);
+        break; /* }}} */
+      case SUB_TYPE_GRAVITY: /* {{{ */
+        if(T_SYMBOL == rb_type(key) && T_ARRAY == rb_type(value)) ///< Check value types
+          {
+            XRectangle geometry = { 0 };
+
+            if(RubyGetArray(value, &geometry))
+              {
+                SubGravity *g = subGravityNew(SYM2CHAR(key), &geometry);
+
+                subArrayPush(subtle->gravities, (void *)g);
+              }
+          }
+        else subSharedLogWarn("Failed parsing gravity `%s'\n", SYM2CHAR(key));
         break; /* }}} */
       case SUB_TYPE_TAG: /* {{{ */
         switch(rb_type(value)) ///< Check value type
           {
             case T_STRING: /* {{{ */
-              if((entry = (void *)subTagNew(RSTRING_PTR(key), RSTRING_PTR(value))))
+              if((object = (void *)subTagNew(RSTRING_PTR(key), RSTRING_PTR(value))))
                 {
-                  TAG(entry)->flags |= (SUB_TAG_MATCH_NAME|SUB_TAG_MATCH_CLASS); ///< Set default matching
-                  subArrayPush(subtle->tags, entry);
+                  TAG(object)->flags |= (SUB_TAG_MATCH_NAME|SUB_TAG_MATCH_CLASS); ///< Set default matching
+                  subArrayPush(subtle->tags, object);
                 }
               break; /* }}} */
             case T_HASH: /* {{{ */
@@ -364,8 +444,8 @@ RubyParseForeach(VALUE key,
                     /* Check values */
                     if(t->flags & SUB_TAG_GRAVITY)
                       {
-                        t->gravity = RubyGetFixnum(value, "gravity", 5);
-                        if(1 > t->gravity || 9 < t->gravity) t->flags &= ~SUB_TAG_GRAVITY; ///< Sanity
+                        if(-1 == (t->gravity = RubyGetGravity(value)))
+                          t->flags &= ~SUB_TAG_GRAVITY; ///< Sanity
                       }
 
                     if(t->flags & SUB_TAG_SCREEN)
@@ -425,14 +505,18 @@ RubyParseForeach(VALUE key,
                   }
                 }
               break; /* }}} */
-            default:
-              subSharedLogWarn("Failed parsing tag `%s'\n", SYM2CHAR(key));
-              return Qnil;
+            default: /* {{{ */
+              subSharedLogWarn("Failed parsing tag `%s'\n", RSTRING_PTR(key));
+              return Qnil; /* }}} */
           }
         break; /* }}} */
       case SUB_TYPE_VIEW: /* {{{ */
-        if((entry = (void *)subViewNew(RSTRING_PTR(key), RSTRING_PTR(value))))
-          subArrayPush(subtle->views, entry);
+        if(T_STRING == rb_type(key) && T_STRING == rb_type(value)) ///< Check value types
+          {
+            if((object = (void *)subViewNew(RSTRING_PTR(key), RSTRING_PTR(value))))
+              subArrayPush(subtle->views, object);
+          }
+        else subSharedLogWarn("Failed parsing view `%s'\n", RSTRING_PTR(key));
         break; /* }}} */
       case SUB_TYPE_HOOK: /* {{{ */
         if(T_SYMBOL == rb_type(key) && T_DATA == rb_type(value)) ///< Check value types
@@ -440,17 +524,19 @@ RubyParseForeach(VALUE key,
             RubyHooks *hooks = (RubyHooks *)rargs[1];
 
             for(i = 0; 5 > i; i++)
-              if(key == hooks[i].sym)
-                {
-                  *(hooks[i].hook) = value; ///< Store proc
-                  rb_ary_push(shelter, value); ///< Protect from GC
+              {
+                if(key == hooks[i].sym)
+                  {
+                    *(hooks[i].hook) = value; ///< Store proc
+                    rb_ary_push(shelter, value); ///< Protect from GC
                   
-                  subSharedLogDebug("hook=%s\n", SYM2CHAR(hooks[i].sym));
-                  break;
-                }
+                    subSharedLogDebug("hook=%s\n", SYM2CHAR(hooks[i].sym));
+                    break;
+                  }
+              }
           }
+        else subSharedLogWarn("Failed parsing hook `%s'\n", SYM2CHAR(key));
         break; /* }}} */
-      default: subSharedLogDebug("Never to be reached?!\n");
     }
 
   return Qnil;
@@ -724,20 +810,15 @@ RubySubletIntervalSet(VALUE self,
   SubSublet *s = NULL;
 
   Data_Get_Struct(self, SubSublet, s);
-  if(s)
+  if(s && FIXNUM_P(value))
     {
-      switch(rb_type(value))
-        {
-          case T_FIXNUM: 
-            s->interval = FIX2INT(value); 
-            s->time     = subSharedTime() + s->interval;
+      s->interval = FIX2INT(value); 
+      s->time     = subSharedTime() + s->interval;
 
-            if(0 < s->interval) s->flags |= SUB_SUBLET_INTERVAL;
-            else s->flags &= ~SUB_SUBLET_INTERVAL;
-            break;
-          default: rb_raise(rb_eArgError, "Unknown value type");
-        }
+      if(0 < s->interval) s->flags |= SUB_SUBLET_INTERVAL;
+      else s->flags &= ~SUB_SUBLET_INTERVAL;
     }
+  else rb_raise(rb_eArgError, "Unknown value type `%s'", rb_obj_classname(value));
 
   return Qnil;
 } /* }}} */
@@ -763,6 +844,7 @@ RubySubletData(VALUE self)
   /* Concat string */
   if(s && 0 < s->text->ndata) 
     {
+      /* Assemble string */
       for(i = 0; i < s->text->ndata; i++)
         {
           SubText *t = TEXT(s->text->data[i]);
@@ -1137,9 +1219,9 @@ RubyColorOperatorPlus(VALUE self,
 static VALUE
 RubyWrapLoadConfig(VALUE data)
 {
-  int i, j;
+  int i;
   char *str = NULL;
-  VALUE config = Qnil, entry = Qnil, ary = Qnil, rargs[2] = { 0 };
+  VALUE config = Qnil, entry = Qnil, rargs[2] = { 0 };
   SubPanel *p = NULL;
 
   /* Foreach arguments {{{ */
@@ -1149,12 +1231,6 @@ RubyWrapLoadConfig(VALUE data)
     { CHAR2SYM("title"),   &subtle->panels.title   },
     { CHAR2SYM("sublets"), &subtle->panels.sublets },
     { CHAR2SYM("tray"),    &subtle->panels.tray    }
-  };
-
-  char *gravities[] = { ///< This order is necessary
-    "bottom_left", "bottom", "bottom_right",
-    "left", "center", "right", 
-    "top_left", "top", "top_right", 
   };
 
   RubyGrabs grabs[] =
@@ -1173,15 +1249,6 @@ RubyWrapLoadConfig(VALUE data)
     { CHAR2SYM("WindowUp"),           SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_UP            }, 
     { CHAR2SYM("WindowRight"),        SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_RIGHT         }, 
     { CHAR2SYM("WindowKill"),         SUB_GRAB_WINDOW_KILL,    None                     },
-    { CHAR2SYM("GravityTopLeft"),     SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP_LEFT     }, 
-    { CHAR2SYM("GravityTopRight"),    SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP_RIGHT    }, 
-    { CHAR2SYM("GravityTop"),         SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_TOP          }, 
-    { CHAR2SYM("GravityLeft"),        SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_LEFT         }, 
-    { CHAR2SYM("GravityCenter"),      SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_CENTER       }, 
-    { CHAR2SYM("GravityRight"),       SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_RIGHT        }, 
-    { CHAR2SYM("GravityBottomLeft"),  SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM_LEFT  }, 
-    { CHAR2SYM("GravityBottomRight"), SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM_RIGHT },
-    { CHAR2SYM("GravityBottom"),      SUB_GRAB_WINDOW_GRAVITY, SUB_GRAVITY_BOTTOM       }
   };
 
   RubyTags tags[] =
@@ -1206,13 +1273,23 @@ RubyWrapLoadConfig(VALUE data)
     { CHAR2SYM("HookGravity"),   &subtle->hooks.gravity   }
   }; /* }}} */
 
+  /* Gravities */
+  config   = rb_const_get(rb_cObject, rb_intern("GRAVITIES"));
+  rargs[0] = SUB_TYPE_GRAVITY;
+
+  rb_hash_foreach(config, RubyParseForeach, (VALUE)&rargs);
+
+  if(1 == subtle->gravities->ndata) subSharedLogError("No gravities found\n");
+
+  subGravityPublish();
+
   /* Config: Options */
   config          = rb_const_get(rb_cObject, rb_intern("OPTIONS"));
   subtle->bw      = RubyGetFixnum(config, "border",  2);
   subtle->step    = RubyGetFixnum(config, "step",    5);
   subtle->snap    = RubyGetFixnum(config, "snap",    10);
-  subtle->gravity = RubyGetFixnum(config, "gravity", 5);
   RubyGetRect(config, "padding", &subtle->strut);
+  if(-1 == (subtle->gravity = RubyGetGravity(config))) subtle->gravity = 5;
   if(True == RubyGetBool(config, "urgent")) subtle->flags |= SUB_SUBTLE_URGENT;
   if(True == RubyGetBool(config, "resize")) subtle->flags |= SUB_SUBTLE_RESIZE;
 
@@ -1238,9 +1315,9 @@ RubyWrapLoadConfig(VALUE data)
 
   /* Config: Panels */
   config = rb_const_get(rb_cObject, rb_intern("PANEL"));
-  if(RubyParsePanel(config, "top", &p, panels))     subtle->flags |= SUB_SUBTLE_PANEL1;
-  if(RubyParsePanel(config, "bottom", &p, panels))  subtle->flags |= SUB_SUBTLE_PANEL2;
-  if(True == RubyGetBool(config, "stipple"))        subtle->flags |= SUB_SUBTLE_STIPPLE;
+  if(RubyParsePanel(config, "top", &p, panels))    subtle->flags |= SUB_SUBTLE_PANEL1;
+  if(RubyParsePanel(config, "bottom", &p, panels)) subtle->flags |= SUB_SUBTLE_PANEL2;
+  if(True == RubyGetBool(config, "stipple"))       subtle->flags |= SUB_SUBTLE_STIPPLE;
   
   /* Separator */
   subtle->separator.string = strdup(RubyGetString(config, "separator", "|"));
@@ -1267,25 +1344,6 @@ RubyWrapLoadConfig(VALUE data)
       subtle->colors.bg  = RubyParseColor(str);
     }
 
-  /* Config: Gravities */
-  config = rb_const_get(rb_cObject, rb_intern("GRAVITIES"));
-
-  for(i = 0; 9 > i; i++)
-    {
-      XRectangle rect;
-      SubGravity *g = GRAVITY(subtle->gravities->data[i]);
-
-      /* Add gravity modes */
-      if(Qnil != (ary = RubyGetValue(config, gravities[i], T_ARRAY, True)))
-        {
-          for(j = 0; Qnil != (entry = rb_ary_entry(ary, j)); ++j)
-            if(RubyGetArray(entry, &rect))
-              subGravityAddMode(g, &rect);
-        }
-    }
-
-  subGravityPublish();
-
   /* Config: Grabs */
   config   = rb_const_get(rb_cObject, rb_intern("GRABS"));
   rargs[0] = SUB_TYPE_GRAB;
@@ -1298,6 +1356,7 @@ RubyWrapLoadConfig(VALUE data)
       subSharedLogWarn("No grabs found\n");
     }
   else subArraySort(subtle->grabs, subGrabCompare);
+
 
   /* Config: Tags */
   config   = rb_const_get(rb_cObject, rb_intern("TAGS"));
@@ -1695,12 +1754,11 @@ subRubyReloadConfig(void)
   subtle->panels.sublets.x = 0;
 
   /* Clear arrays */
-  subArrayClear(subtle->grabs, True);
-  subArrayClear(subtle->tags,  True);
-  subArrayClear(subtle->views, True);
+  subArrayClear(subtle->grabs,     True);
+  subArrayClear(subtle->gravities, True);
+  subArrayClear(subtle->tags,      True);
+  subArrayClear(subtle->views,     True);
 
-  for(i = 0; i < 9; i++)
-    subGravityClear(GRAVITY(subtle->gravities->data[i]));
 
   /* Release hooks */
   if(subtle->hooks.jump)      subRubyRelease(subtle->hooks.jump);
