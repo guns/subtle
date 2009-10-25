@@ -582,10 +582,8 @@ subClientSetGravity(SubClient *c,
 
   if(force || c->gravity != gravity) ///< Check if update is required
     {
-      int grav1 = 1, grav2 = 1, mode1 = 0, mode2 = 0;
-      XRectangle *mode = NULL;
-      SubGravity *g = NULL;
       SubScreen *s = NULL;
+      SubGravity *g = NULL;
 
       /* Hook: Gravity */
       if(subtle->hooks.gravity && 
@@ -596,31 +594,16 @@ subClientSetGravity(SubClient *c,
           return;
         }
 
-      /* Get gravity and modes */
-      grav1 = GETGRAV(gravity);
-      grav2 = GETGRAV(c->gravity);
-      mode1 = GETMODE(gravity);
-      mode2 = GETMODE(c->gravity);
-
-      /* Get gravity and toggle mode */
-      g = GRAVITY(subtle->gravities->data[grav1 - 1]);
-      if(toggle && grav1 == grav2)
-        {
-          mode1 = mode2;
-          if(mode1 < g->nmodes - 1) mode1++;
-          else mode1 = 0;
-        }
-      mode = &g->modes[mode1];
-
       /* Calculate slot */
-      s = SCREEN(subtle->screens->data[c->screen]);
-      c->geom.width  = s->geom.width * mode->width / 100 - 2 * subtle->bw;
-      c->geom.height = s->geom.height * mode->height / 100 - 2 * subtle->bw;
-      c->geom.x      = s->geom.x + ((s->geom.width - WIDTH(c)) * mode->x / 100);
-      c->geom.y      = s->geom.y + ((s->geom.height - HEIGHT(c)) * mode->y / 100);
+      s              = SCREEN(subtle->screens->data[c->screen]);
+      g              = GRAVITY(subtle->gravities->data[gravity]);
+      c->geom.width  = s->geom.width * g->geometry.width / 100 - 2 * subtle->bw;
+      c->geom.height = s->geom.height * g->geometry.height / 100 - 2 * subtle->bw;
+      c->geom.x      = s->geom.x + ((s->geom.width - WIDTH(c)) * g->geometry.x / 100);
+      c->geom.y      = s->geom.y + ((s->geom.height - HEIGHT(c)) * g->geometry.y / 100);
 
       /* Update client */
-      c->gravity = c->gravities[subtle->vid] = GRAVMODE(grav1, mode1);
+      c->gravity = c->gravities[subtle->vid] = gravity;
       subClientSetSize(c);
 
       /* EWMH: Gravity */

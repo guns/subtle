@@ -259,7 +259,7 @@ EventMessage(XClientMessageEvent *ev)
   /* Messages for root window {{{ */
   if(ROOT == ev->window)
     {
-      int tag, id = subEwmhFind(ev->message_type);
+      int tag = 0, id = subEwmhFind(ev->message_type);
 
       SubSublet *s = NULL;
       SubTag *t = NULL;
@@ -354,10 +354,11 @@ EventMessage(XClientMessageEvent *ev)
             if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0]))) && 
                 VISIBLE(subtle->view, c))
               {
-                if((g = GRAVITY(subArrayGet(subtle->gravities, (int)ev->data.l[2]))) &&
-                    0 <= ev->data.l[2] && g->nmodes > ev->data.l[2])
+                int gid = -1;
+
+                if(-1 != (gid = subGravityFind(NULL, ev->data.l[1])))
                   {
-                    subClientSetGravity(c, GRAVMODE(ev->data.l[1], ev->data.l[2]), False, True);
+                    subClientSetGravity(c, gid, False, True);
                     subClientConfigure(c);
                     subClientWarp(c);
                     XRaiseWindow(subtle->dpy, c->win);        
@@ -402,26 +403,18 @@ EventMessage(XClientMessageEvent *ev)
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_GRAVITY_NEW: /* {{{ */
-            if(0 <= ev->data.l[0] && ev->data.l[0] < subtle->gravities->ndata)
               {
-                if((g = GRAVITY(subtle->gravities->data[ev->data.l[0]])))
-                  {
-                    XRectangle mode = { ev->data.l[1], ev->data.l[2], ev->data.l[3], ev->data.l[4] };
+                XRectangle geometry = { ev->data.l[1], ev->data.l[2], ev->data.l[3], ev->data.l[4] };
 
-                    subGravityAddMode(g, &mode);
-                    subGravityPublish();
-                  }
+                /* Add gravity */
+                g        = subGravityNew(NULL, &geometry);
+                g->quark = ev->data.l[0];
+
+                subArrayPush(subtle->gravities, (void *)g);
+                subGravityPublish();
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_GRAVITY_KILL: /* {{{ */
-            if(0 <= ev->data.l[0] && ev->data.l[0] < subtle->gravities->ndata)
-              {
-                if((g = GRAVITY(subtle->gravities->data[ev->data.l[0]])))
-                  {
-                    subGravityDelMode(g, ev->data.l[1]);
-                    subGravityPublish();
-                  }
-              }
             break; /* }}} */            
           case SUB_EWMH_SUBTLE_TAG_NEW: /* {{{ */
             if(ev->data.b && (t = subTagNew(ev->data.b, NULL)))
@@ -888,10 +881,26 @@ EventGrab(XEvent *ev)
           case SUB_GRAB_WINDOW_GRAVITY: /* {{{ */
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               {
+                int i, id = -1, cid = 0, fid = (int)g->data.string[0] - 65, size = strlen(g->data.string);
+
                 if(c->flags & SUB_MODE_FLOAT) subClientToggle(c, SUB_MODE_FLOAT);
                 if(c->flags & SUB_MODE_FULL)  subClientToggle(c, SUB_MODE_FULL);
 
-                subClientSetGravity(c, g->data.num, True, True);
+                /* Select next gravity */
+                for(i = 0; -1 == id && i < size; i++)
+                  {
+                    cid = (int)g->data.string[i] - 65;
+
+                    /* Toggle gravity */ 
+                    if(c->gravity == cid)
+                      {
+                        if(cid < fid + size - 1) id = cid + 1;
+                        else id = fid; ///< Select first id
+                      }
+                  }
+                if(-1 == id) id = fid; ///< Fallback
+
+                subClientSetGravity(c, id, True, True);
                 subClientConfigure(c);
                 subClientWarp(c);
                 XRaiseWindow(subtle->dpy, c->win);
