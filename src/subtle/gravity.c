@@ -10,95 +10,33 @@
   * See the file COPYING.
   **/
 
+#include <X11/Xresource.h>
 #include "subtle.h"
-
- /** subGravityInit {{{
-  * @brief Init gravities
-  **/
-
-void
-subGravityInit(void)
-{
-  int i;
-
-  /* Create gravities */
-  for(i = 0; i < 9; i++)
-    {
-      SubGravity *g = subGravityNew();
-
-      subArrayPush(subtle->gravities, (void *)g);
-    }
-} /* }}} */
 
  /** subGravityNew {{{
   * @brief Create new gravity
+  * @param[in]  name      Gravity name
+  * @param[in]  geometry  Geometry of gravity
   * @return Returns a new #SubGravity or \p NULL
   **/
 
 SubGravity *
-subGravityNew(void)
+subGravityNew(const char *name,
+  XRectangle *geometry)
 {
-  SubGravity *g = GRAVITY(subSharedMemoryAlloc(1, sizeof(SubGravity)));
+  SubGravity *g = NULL;
+  
+  /* Create gravity */
+  g = GRAVITY(subSharedMemoryAlloc(1, sizeof(SubGravity)));
   g->flags |= SUB_TYPE_GRAVITY;
 
-  subSharedLogDebug("new=gravity\n");
+  if(name)     g->quark    = XrmStringToQuark(name); ///< Create hash
+  if(geometry) g->geometry = *geometry;
+
+  subSharedLogDebug("new=gravity, name=%s, quark=%d, x=%d, y=%d, width=%d, height=%d\n", 
+    name, g->quark, geometry->x, geometry->y, geometry->width, geometry->height);
 
   return g;
-} /* }}} */
-
- /** subGravityAddMode {{{
-  * @brief Add mode to gravtiy
-  * @param[in]  g     A #SubGravity
-  * @param[in]  mode  The new mode
-  **/
-
-void
-subGravityAddMode(SubGravity *g,
-  XRectangle *mode)
-{
-  assert(g && mode);
-
-  /* Add mode */
-  g->modes = (XRectangle *)subSharedMemoryRealloc(g->modes, (g->nmodes + 1) * sizeof(XRectangle));
-  g->modes[g->nmodes] = *mode;
-
-  /* Sanitize sizes */
-  g->modes[g->nmodes].x      = MINMAX(g->modes[g->nmodes].x,      0, 100);
-  g->modes[g->nmodes].y      = MINMAX(g->modes[g->nmodes].y,      0, 100);
-  g->modes[g->nmodes].width  = MINMAX(g->modes[g->nmodes].width,  0, 100);
-  g->modes[g->nmodes].height = MINMAX(g->modes[g->nmodes].height, 0, 100);
-
-  subSharedLogDebug("new=mode, x=%d, y=%d, width=%d, height%d\n", g->modes[g->nmodes].x, 
-    g->modes[g->nmodes].y, g->modes[g->nmodes].width, g->modes[g->nmodes].height);
-
-  g->nmodes++;
-} /* }}} */
-
- /** subGravityDelMode {{{
-  * @brief Delete mode from gravtiy
-  * @param[in]  g   A #SubGravity
-  * @param[in]  id  Mode id
-  **/
-
-void
-subGravityDelMode(SubGravity *g,
-  int id)
-{
-  assert(g);
-
-  if(0 <= id && g->nmodes > id)
-    {
-      int i;
-
-      for(i = id; i < g->nmodes - 1; i++)
-        g->modes[i] = g->modes[i - 1];
-
-      (g->nmodes)--;
-      g->modes = (XRectangle *)subSharedMemoryRealloc(g->modes, (g->nmodes) * sizeof(XRectangle));
-
-      subSharedLogDebug("kill=mode, id=%d\n", id);
-    }
-
 } /* }}} */
 
  /** subGravityPublish {{{
@@ -108,63 +46,74 @@ subGravityDelMode(SubGravity *g,
 void
 subGravityPublish(void)
 {
-  int i, j, pos = 0, len = 9;
-  char **modes = NULL, buf[30];
+  int i;
+  char **gravities = NULL, buf[30];
   SubGravity *g = NULL;
 
   assert(0 < subtle->gravities->ndata);
 
-  modes = (char **)subSharedMemoryAlloc(len, sizeof(char *));
+  gravities = (char **)subSharedMemoryAlloc(subtle->gravities->ndata, sizeof(char *));
 
   for(i = 0; i < subtle->gravities->ndata; i++)
     {
       g = GRAVITY(subtle->gravities->data[i]);
 
-      for(j = 0; j < g->nmodes; j++)
-        {
-          /* Increase size of array */
-          if(pos == len)
-            {
-              len   *= 2;
-              modes  = (char **)subSharedMemoryRealloc(modes, len * sizeof(char *));
-            }
-          
-          /* Add mode to list */
-          snprintf(buf, sizeof(buf), "%d#%dx%d+%d+%d", i + 1, g->modes[j].x,  
-            g->modes[j].y, g->modes[j].width, g->modes[j].height);
+      /* Add gravity to list */
+      snprintf(buf, sizeof(buf), "%d#%dx%d+%d+%d", i, g->geometry.x,  
+        g->geometry.y, g->geometry.width, g->geometry.height);
 
-          modes[pos] = (char *)subSharedMemoryAlloc(strlen(buf) + 1, sizeof(char));
-          strncpy(modes[pos], buf, strlen(buf));
-          pos++;
-        }
+      gravities[i] = (char *)subSharedMemoryAlloc(strlen(buf) + 1, sizeof(char));
+      strncpy(gravities[i], buf, strlen(buf));
     }
 
   /* EWMH: Gravity list */
-  subEwmhSetStrings(ROOT, SUB_EWMH_SUBTLE_GRAVITY_LIST, modes, pos);
-
-  subSharedLogDebug("publish=gravities, n=%d\n", pos);
+  subEwmhSetStrings(ROOT, SUB_EWMH_SUBTLE_GRAVITY_LIST, gravities, subtle->gravities->ndata);
 
   /* Tidy up */
-  for(i = 0; i < pos; i++)
-    free(modes[i]);
+  for(i = 0; i < subtle->gravities->ndata; i++)
+    free(gravities[i]);
 
-  free(modes);
+  free(gravities);
+
+  subSharedLogDebug("publish=gravities, n=%d\n", subtle->gravities->ndata);
 } /* }}} */
 
- /** subGravityClear {{{
-  * @brief Delete all gravity modes
-  * @param[in]  g  A #SubGravity
+ /** subGravityFind {{{
+  * @brief Find gravity
+  * @param[in]   name   Gravity name
+  * @param[in]   quark  Quark
+  * @retval  -1  Not found
+  * @retval  >0  Found id
   **/
 
-void
-subGravityClear(SubGravity *g)
+int
+subGravityFind(const char *name,
+  int quark)
 {
-  assert(g);
+  int found = -1;
 
-  free(g->modes);
+  if(0 < subtle->gravities->ndata)
+    {
+      int i, quirk = 0;
+      
+      /* Get quark */
+      if(name) quirk = XrmStringToQuark(name);
+      else quirk = quark;
 
-  g->modes  = NULL;
-  g->nmodes = 0;
+      for(i = 0; i < subtle->gravities->ndata; i++)
+        {
+          SubGravity *g = GRAVITY(subtle->gravities->data[i]);
+
+          /* Compare quarks */
+          if(g->quark == quirk)
+            {
+              found = i;
+              break;
+            }
+        }
+    }
+
+  return found;
 } /* }}} */
 
  /** subGravityKill {{{
@@ -177,7 +126,7 @@ subGravityKill(SubGravity *g)
 {
   assert(g);
 
-  subGravityClear(g);
-
   free(g);
+
+  subSharedLogDebug("kill=gravity\n");
 } /* }}} */

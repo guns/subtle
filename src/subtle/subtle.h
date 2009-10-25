@@ -353,19 +353,20 @@ typedef struct subgrab_t /* {{{ */
 
 typedef struct subgravity_t /* {{{ */
 {
-  FLAGS      flags;                                              ///< Gravity flags
+  FLAGS      flags;                                               ///< Gravity flags
 
-  int         nmodes;                                            ///< Gravity mode count
-  XRectangle *modes;                                             ///< Gravity modes
+  int        quark;                                               ///< Gravity quark
+  XRectangle geometry;                                            ///< Gravity geometry
 } SubGravity; /* }}} */
 
 typedef struct subicon_t /* {{{ */
 {
-  FLAGS         flags;                                            ///< Icon flags
-  Pixmap        pixmap;                                           ///< Icon drawable
-  int           quark;                                            ///< Icon quark
-  unsigned int  width, height;                                    ///< Icon geometry
-  GC            gc;                                               ///< Icon GC
+  FLAGS        flags;                                             ///< Icon flags
+
+  Pixmap       pixmap;                                            ///< Icon drawable
+  int          quark;                                             ///< Icon quark
+  unsigned int width, height;                                     ///< Icon geometry
+  GC           gc;                                                ///< Icon GC
 } SubIcon; /* }}} */
 
 typedef struct subtext_t /* {{{ */
@@ -604,12 +605,10 @@ void subGrabKill(SubGrab *g, int clean);                          ///< Kill grab
 /* }}} */
 
 /* gravity.c {{{ */
-void subGravityInit(void);                                        ///< Init gravities
-SubGravity *subGravityNew(void);                                  ///< Create gravity
+SubGravity *subGravityNew(const char *name,
+  XRectangle *geometry);                                          ///< Create gravity
 void subGravityPublish(void);                                     ///< Publish gravities
-void subGravityAddMode(SubGravity *g, XRectangle *mode);          ///< Add mode
-void subGravityDelMode(SubGravity *g, int id);                    ///< Del mode
-void subGravityClear(SubGravity *g);                              ///< Delete all gravity modes
+int subGravityFind(const char *name, int quark);                  ///< Find gravity id
 void subGravityKill(SubGravity *g);                               ///< Kill gravity
 /* }}} */
 
