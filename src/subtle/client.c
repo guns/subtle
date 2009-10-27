@@ -471,8 +471,8 @@ subClientUpdate(int vid)
 
  /** subClientTag {{{
   * @brief Set tag properties to client
-  * @param[in]  c      A #SubClient
-  * @param[in]  tagid  Tag id
+  * @param[in]  c    A #SubClient
+  * @param[in]  tag  Tag id
   * @return Return changed flags
   **/
 
@@ -496,10 +496,10 @@ subClientTag(SubClient *c,
       c->tags  |= (1L << (tag + 1));
 
       /* Set size and enable float */
-      if(t->flags & SUB_TAG_SIZE && !(c->flags & SUB_MODE_UNFLOAT))
+      if(t->flags & SUB_TAG_GEOMETRY && !(c->flags & SUB_MODE_UNFLOAT))
         {
           flags   |= SUB_MODE_FLOAT;
-          c->base  = t->size;
+          c->base  = t->geometry;
         }
 
       /* Set gravity and screens for matching views */
