@@ -30,52 +30,21 @@ subGravityNew(const char *name,
   g = GRAVITY(subSharedMemoryAlloc(1, sizeof(SubGravity)));
   g->flags |= SUB_TYPE_GRAVITY;
 
-  if(name)     g->quark    = XrmStringToQuark(name); ///< Create hash
-  if(geometry) g->geometry = *geometry;
+  if(name) g->quark = XrmStringToQuark(name); ///< Create hash
+
+  /* Sanitize values */
+  if(geometry) 
+    {
+      g->geometry.x      = MINMAX(geometry->x,      0, 100);
+      g->geometry.y      = MINMAX(geometry->y,      0, 100);
+      g->geometry.width  = MINMAX(geometry->width,  0, 100);
+      g->geometry.height = MINMAX(geometry->height, 0, 100);
+    }
 
   subSharedLogDebug("new=gravity, name=%s, quark=%d, x=%d, y=%d, width=%d, height=%d\n", 
     name, g->quark, geometry->x, geometry->y, geometry->width, geometry->height);
 
   return g;
-} /* }}} */
-
- /** subGravityPublish {{{
-  * @brief Publish gravities
-  **/
-
-void
-subGravityPublish(void)
-{
-  int i;
-  char **gravities = NULL, buf[30];
-  SubGravity *g = NULL;
-
-  assert(0 < subtle->gravities->ndata);
-
-  gravities = (char **)subSharedMemoryAlloc(subtle->gravities->ndata, sizeof(char *));
-
-  for(i = 0; i < subtle->gravities->ndata; i++)
-    {
-      g = GRAVITY(subtle->gravities->data[i]);
-
-      /* Add gravity to list */
-      snprintf(buf, sizeof(buf), "%d#%dx%d+%d+%d", i, g->geometry.x,  
-        g->geometry.y, g->geometry.width, g->geometry.height);
-
-      gravities[i] = (char *)subSharedMemoryAlloc(strlen(buf) + 1, sizeof(char));
-      strncpy(gravities[i], buf, strlen(buf));
-    }
-
-  /* EWMH: Gravity list */
-  subEwmhSetStrings(ROOT, SUB_EWMH_SUBTLE_GRAVITY_LIST, gravities, subtle->gravities->ndata);
-
-  /* Tidy up */
-  for(i = 0; i < subtle->gravities->ndata; i++)
-    free(gravities[i]);
-
-  free(gravities);
-
-  subSharedLogDebug("publish=gravities, n=%d\n", subtle->gravities->ndata);
 } /* }}} */
 
  /** subGravityFind {{{
@@ -94,18 +63,18 @@ subGravityFind(const char *name,
 
   if(0 < subtle->gravities->ndata)
     {
-      int i, quirk = 0;
+      int i, hash = 0;
       
       /* Get quark */
-      if(name) quirk = XrmStringToQuark(name);
-      else quirk = quark;
+      if(name) hash = XrmStringToQuark(name);
+      else hash = quark;
 
       for(i = 0; i < subtle->gravities->ndata; i++)
         {
           SubGravity *g = GRAVITY(subtle->gravities->data[i]);
 
           /* Compare quarks */
-          if(g->quark == quirk)
+          if(g->quark == hash)
             {
               found = i;
               break;
@@ -114,6 +83,47 @@ subGravityFind(const char *name,
     }
 
   return found;
+} /* }}} */
+
+ /** subGravityPublish {{{
+  * @brief Publish gravities
+  **/
+
+void
+subGravityPublish(void)
+{
+  int i;
+  char **gravities = NULL, buf[30] = { 0 };
+  SubGravity *g = NULL;
+  XRectangle *geometries = NULL;
+
+  assert(0 < subtle->gravities->ndata);
+
+  gravities  = (char **)subSharedMemoryAlloc(subtle->gravities->ndata, sizeof(char *));
+  geometries = (XRectangles *)subSharedMemoryAlloc(subtle->gravities->ndata, sizeof(XRectangle));
+
+  for(i = 0; i < subtle->gravities->ndata; i++)
+    {
+      g = GRAVITY(subtle->gravities->data[i]);
+
+      /* Add gravity to list */
+      snprintf(buf, sizeof(buf), "%s#%dx%d+%d+%d", XrmQuarkToString(g->quark), g->geometry.x,  
+        g->geometry.y, g->geometry.width, g->geometry.height);
+
+      gravities[i] = (char *)subSharedMemoryAlloc(strlen(buf) + 1, sizeof(char));
+      strncpy(gravities[i], buf, strlen(buf));
+    }
+
+  /* EWMH: Gravity list */
+  subEwmhSetStrings(ROOT, SUB_EWMH_SUBTLE_GRAVITY_LIST, gravities, subtle->gravities->ndata);
+
+  /* Tidy up */
+  for(i = 0; i < subtle->gravities->ndata; i++)
+    free(gravities[i]);
+
+  free(gravities);
+
+  subSharedLogDebug("publish=gravities, n=%d\n", subtle->gravities->ndata);
 } /* }}} */
 
  /** subGravityKill {{{
