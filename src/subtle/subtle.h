@@ -224,7 +224,7 @@
 /* Tag flags */
 #define SUB_TAG_GRAVITY               (1L << 13)                  ///< Gravity property
 #define SUB_TAG_SCREEN                (1L << 14)                  ///< Screen property
-#define SUB_TAG_SIZE                  (1L << 15)                  ///< Size property
+#define SUB_TAG_GEOMETRY              (1L << 15)                  ///< Geometry property
 #define SUB_TAG_MATCH                 (1L << 16)                  ///< Match property
 #define SUB_TAG_MATCH_TITLE           (1L << 17)                  ///< Match window title
 #define SUB_TAG_MATCH_NAME            (1L << 18)                  ///< Match WM_NAME
@@ -493,7 +493,7 @@ typedef struct subtag_t /* {{{ */
   char       *name;                                               ///< Tag name
   regex_t    *preg;                                               ///< Tag regex
   int        gravity, screen;                                     ///< Tag gravity, screen
-  XRectangle size;                                                ///< Tag size
+  XRectangle geometry;                                            ///< Tag geometry
 } SubTag; /* }}} */
 
 typedef struct subtray_t /* {{{ */
@@ -607,8 +607,8 @@ void subGrabKill(SubGrab *g, int clean);                          ///< Kill grab
 /* gravity.c {{{ */
 SubGravity *subGravityNew(const char *name,
   XRectangle *geometry);                                          ///< Create gravity
-void subGravityPublish(void);                                     ///< Publish gravities
 int subGravityFind(const char *name, int quark);                  ///< Find gravity id
+void subGravityPublish(void);                                     ///< Publish gravities
 void subGravityKill(SubGravity *g);                               ///< Kill gravity
 /* }}} */
 

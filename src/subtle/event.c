@@ -261,9 +261,9 @@ EventMessage(XClientMessageEvent *ev)
     {
       int tag = 0, id = subEwmhFind(ev->message_type);
 
-      SubSublet *s = NULL;
-      SubTag *t = NULL;
-      SubView *v = NULL;
+      SubSublet  *s = NULL;
+      SubTag     *t = NULL;
+      SubView    *v = NULL;
       SubGravity *g = NULL;
 
       switch(id)

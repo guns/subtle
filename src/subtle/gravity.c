@@ -95,26 +95,24 @@ subGravityPublish(void)
   int i;
   char **gravities = NULL, buf[30] = { 0 };
   SubGravity *g = NULL;
-  XRectangle *geometries = NULL;
 
   assert(0 < subtle->gravities->ndata);
 
   gravities  = (char **)subSharedMemoryAlloc(subtle->gravities->ndata, sizeof(char *));
-  geometries = (XRectangles *)subSharedMemoryAlloc(subtle->gravities->ndata, sizeof(XRectangle));
 
   for(i = 0; i < subtle->gravities->ndata; i++)
     {
       g = GRAVITY(subtle->gravities->data[i]);
 
       /* Add gravity to list */
-      snprintf(buf, sizeof(buf), "%s#%dx%d+%d+%d", XrmQuarkToString(g->quark), g->geometry.x,  
-        g->geometry.y, g->geometry.width, g->geometry.height);
-
+      snprintf(buf, sizeof(buf), "%dx%d+%d+%d#%s", g->geometry.x, g->geometry.y,
+        g->geometry.width, g->geometry.height, XrmQuarkToString(g->quark));
+      
       gravities[i] = (char *)subSharedMemoryAlloc(strlen(buf) + 1, sizeof(char));
       strncpy(gravities[i], buf, strlen(buf));
     }
 
-  /* EWMH: Gravity list */
+  /* EWMH: Gravity list and geometries */
   subEwmhSetStrings(ROOT, SUB_EWMH_SUBTLE_GRAVITY_LIST, gravities, subtle->gravities->ndata);
 
   /* Tidy up */
