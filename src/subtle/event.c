@@ -403,18 +403,39 @@ EventMessage(XClientMessageEvent *ev)
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_GRAVITY_NEW: /* {{{ */
+            if(ev->data.b)
               {
-                XRectangle geometry = { ev->data.l[1], ev->data.l[2], ev->data.l[3], ev->data.l[4] };
+                XRectangle geometry = { 0 };
+                char buf[30] = { 0 };
+
+                sscanf(ev->data.b, "%hdx%hd+%hd+%hd#%s", &geometry.x, &geometry.y,
+                  &geometry.width, &geometry.height, buf);
 
                 /* Add gravity */
-                g        = subGravityNew(NULL, &geometry);
-                g->quark = ev->data.l[0];
+                g = subGravityNew(buf, &geometry);
 
                 subArrayPush(subtle->gravities, (void *)g);
                 subGravityPublish();
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_GRAVITY_KILL: /* {{{ */
+            if((g = GRAVITY(subArrayGet(subtle->gravities, (int)ev->data.l[0]))))
+              {
+                int i;
+
+                /* Check clients if gravity is in use */
+                for(i = 0; i < subtle->clients->ndata; i++)
+                  {
+                    if((c = CLIENT(subtle->clients->data[i])) && c->gravity == ev->data.l[0])
+                      {
+                        subClientSetGravity(c, 0, False, True); ///< Fallback to first gravity
+                        subClientConfigure(c);
+                        subClientWarp(c);
+                        XRaiseWindow(subtle->dpy, c->win);    
+                      }
+                  }
+
+              }
             break; /* }}} */            
           case SUB_EWMH_SUBTLE_TAG_NEW: /* {{{ */
             if(ev->data.b && (t = subTagNew(ev->data.b, NULL)))

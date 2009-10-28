@@ -517,15 +517,12 @@ SubtlerGravityNew(char *arg1,
   if(0 < (find = atoi(arg1)) && 9 >= find)  
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
-      XRectangle mode = { 0, 0, 100, 100 };
+      XRectangle geometry = { 0 };
 
-      sscanf(arg2, "%hdx%hd+%hd+%hd", &mode.x, &mode.y, &mode.width, &mode.height);
-
-      data.l[0] = find - 1;
-      data.l[1] = mode.x;
-      data.l[2] = mode.y;
-      data.l[3] = mode.width;
-      data.l[4] = mode.height;
+      sscanf(arg2, "%hdx%hd+%hd+%hd", &geometry.x, &geometry.y,
+        &geometry.width, &geometry.height);
+      snprintf(data.b, sizeof(data.b), "%dx%d+%d+%d#%s", geometry.x, geometry.y, 
+        geometry.width, geometry.height, arg1);
 
       subSharedMessage(DefaultRootWindow(display), "SUBTLE_GRAVITY_NEW", data, False);
     }
@@ -537,28 +534,20 @@ static void
 SubtlerGravityFind(char *arg1,
   char *arg2)
 {
-  int find = 0, size = 0;
-  XRectangle *modes = NULL;
-  static const char *names[] = { ///< This order is necessary
-    "BottomLeft", "Bottom", "BottomRight",
-    "Left", "Center", "Right", 
-    "TopLeft", "Top", "TopRight"
-  };
+  int find = 0;
+  XRectangle geometry = { 0 };
+  char *name = NULL;
 
   CHECK(arg1, "Usage: %sr -g -f ID\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  find = atoi(arg1);
-
-  if(1 <= find && 9 >= find && (modes = subSharedGravityList(find, &size)))
+  /* Find gravity */
+  if(0 <= (find = atoi(arg1)) && -1 != subSharedGravityFind(find, &name, &geometry))
     {
-      int i;
-      
-      for(i = 0; i < size; i++)
-        {
-          printf("%s %3d x %-3d %3d + %-3d\n", names[find - 1], 
-            modes[i].x, modes[i].x, modes[i].width, modes[i].height);
-        }
+      printf("%s %3d x %-3d %3d + %-3d\n", name, 
+        geometry.x, geometry.y, geometry.width, geometry.height);    
+
+      free(name);
     }
   else subSharedLogWarn("Failed finding gravity\n");
 } /* }}} */
@@ -571,21 +560,21 @@ SubtlerGravityList(char *arg1,
   int size = 0;
   char **gravities = NULL;
 
-  if((gravities = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_GRAVITY_LIST", &size)))
+  /* Get gravity list */
+  if((gravities  = subSharedPropertyStrings(DefaultRootWindow(display), 
+      "SUBTLE_GRAVITY_LIST", &size)))
     {
-      int i, id = -1;
-      XRectangle mode = { 0 };
-      static const char *names[] = { ///< This order is necessary
-        "BottomLeft", "Bottom", "BottomRight",
-        "Left", "Center", "Right", 
-        "TopLeft", "Top", "TopRight"
-      };
+      int i;
+      XRectangle geometry = { 0 };
+      char buf[30] = { 0 };
 
       for(i = 0; i < size; i++)
         {
-          sscanf(gravities[i], "%d#%hdx%hd+%hd+%hd", &id, &mode.x, &mode.y, &mode.width, &mode.height);
+          sscanf(gravities[i], "%hdx%hd+%hd+%hd#%s", &geometry.x, &geometry.y,
+            &geometry.width, &geometry.height, buf);
 
-          printf("%11s %3d x %-3d %3d + %-3d\n", names[id - 1], mode.x, mode.y, mode. width, mode.height);
+          printf("%15s %3d x %-3d %3d + %-3d\n", buf, 
+            geometry.x, geometry.y, geometry.width, geometry.height);
         }
 
       XFreeStringList(gravities);
@@ -598,17 +587,16 @@ static void
 SubtlerGravityKill(char *arg1,
   char *arg2)
 {
-  int find = 0, mode = 0;
+  int find = 0;
 
-  CHECK(arg1 && arg2, "Usage: %sr -g -a ID GEOMETRY\n", PKG_NAME);
+  CHECK(arg1 && arg2, "Usage: %sr -g -k ID\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  if(0 < (find = atoi(arg1)) && 9 >= find && 0 <= (mode = atoi(arg2)))  
+  if(0 <= (find = atoi(arg1)))  
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-      data.l[0] = find - 1;
-      data.l[1] = mode;
+      data.l[0] = find;
 
       subSharedMessage(DefaultRootWindow(display), "SUBTLE_GRAVITY_KILL", data, False);
     }
