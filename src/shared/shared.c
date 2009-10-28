@@ -716,60 +716,50 @@ subSharedClientFind(char *name,
   return id;
 } /* }}} */
 
- /** subSharedGravityList {{{
-  * @brief Get gravity mode list of gravity id
-  * @param[in]     id    Gravity id
-  * @param[inout]  size  Size of the gravity mode list
-  * @return Returns the gravity mode list
-  * @retval  NULL  No gravity modes found
+ /** subSharedGravityFind {{{
+  * @brief Get gravity data
+  * @param[in]     id        Gravity id
+  * @param[inout]  name      Name of the gravity
+  * @param[inout]  geometry  Gravity geometry
+  * @return Returns the id of the gravity 
+  * @retval  -1  No gravity found
   **/
 
-XRectangle *
-subSharedGravityList(int id,
-    int *size)
+int
+subSharedGravityFind(int id,
+  char **name,
+  XRectangle *geometry)
 {
-  XRectangle *modes = NULL;
+  int ret = -1, size = 0;
   char **gravities = NULL;
 
-  assert(size);
-
-  if((gravities = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_GRAVITY_LIST", size)))
+  if((gravities = subSharedPropertyStrings(DefaultRootWindow(display), 
+      "SUBTLE_GRAVITY_LIST", &size)))
     {
-      int i, gid = 0, pos = 0, len = 3;
-      XRectangle mode = { 0 };
-
-      modes = (XRectangle *)subSharedMemoryAlloc(len, sizeof(XRectangle));
-
-      for(i = 0; i < *size; i++)
+      if(id < size)
         {
-          sscanf(gravities[i], "%d#%hdx%hd+%hd+%hd", &gid, &mode.x, &mode.y, &mode.width, &mode.height);
+          XRectangle geom = { 0 };
+          char buf[30] = { 0 };
+          
+          sscanf(gravities[id], "%hdx%hd+%hd+%hd#%s", &geom.x, &geom.y,
+            &geom.width, &geom.height, buf);
 
-          if(id == gid)
+          /* Copy values */
+          if(name)
             {
-              if(pos == len)
-                {
-                  len   *= 2;
-                  modes  = (XRectangle *)subSharedMemoryRealloc(modes, len * sizeof(XRectangle));
-                }
-             
-              modes[pos] = mode;
-              pos++;
+              *name = (char *)subSharedMemoryAlloc(strlen(buf), sizeof(char));
+              strncpy(*name, buf, strlen(buf));
             }
+          if(geometry) *geometry = geom;
+          
+          ret = id;
         }
-
-      /* Reduce memory use */
-      modes = (XRectangle *)subSharedMemoryRealloc(modes, pos * sizeof(XRectangle));
-      *size = pos;
 
       XFreeStringList(gravities);
     }
-  else
-    {
-      *size = 0;
-      subSharedLogDebug("Failed getting gravity list\n");
-    }
+  else subSharedLogDebug("Failed getting gravity list\n");
 
-  return modes;
+  return ret;
 } /* }}} */
 
  /** subSharedScreenFind {{{

@@ -168,11 +168,12 @@ Window subSharedWindowSelect(void);                               ///< Select a 
 
 /* Lists {{{ */
 Window *subSharedClientList(int *size);                           ///< Get client list
-XRectangle *subSharedGravityList(int id, int *size);              ///< Get gravity list of gravity id
 /* }}} */
 
 /* Find {{{ */
 int subSharedClientFind(char *match, Window *win, int flags);     ///< Find client id
+int subSharedGravityFind(int id, char **name,
+  XRectangle *geometry);                                          ///< Get gravity id
 int subSharedScreenFind(int id, XRectangle *geometry);            ///< Find screen id
 int subSharedSubletFind(char *name);                              ///< Find sublet id
 int subSharedTagFind(char *name);                                 ///< Find tag id
