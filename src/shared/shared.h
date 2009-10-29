@@ -172,12 +172,13 @@ Window *subSharedClientList(int *size);                           ///< Get clien
 
 /* Find {{{ */
 int subSharedClientFind(char *match, Window *win, int flags);     ///< Find client id
-int subSharedGravityFind(int id, char **name,
-  XRectangle *geometry);                                          ///< Get gravity id
+int subSharedGravityFind(char *match, char **name,
+  XRectangle *geometry);                                          ///< Find gravity id
 int subSharedScreenFind(int id, XRectangle *geometry);            ///< Find screen id
-int subSharedSubletFind(char *name);                              ///< Find sublet id
-int subSharedTagFind(char *name);                                 ///< Find tag id
-int subSharedViewFind(char *name, Window *win);                   ///< Find view id              
+int subSharedSubletFind(char *match);                             ///< Find sublet id
+int subSharedTagFind(char *match);                                ///< Find tag id
+int subSharedViewFind(char *match, char **name,
+  Window *win);                                                   ///< Find view id              
 
 /* Subtle {{{ */
 int subSharedSubtleRunning(void);                                 ///< Check if subtle is running

@@ -11,6 +11,7 @@
   **/
 
 #include <stdarg.h>
+#include <ctype.h>
 #include <signal.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -718,7 +719,7 @@ subSharedClientFind(char *name,
 
  /** subSharedGravityFind {{{
   * @brief Get gravity data
-  * @param[in]     id        Gravity id
+  * @param[in]     match     Name or id of the gravity
   * @param[inout]  name      Name of the gravity
   * @param[inout]  geometry  Gravity geometry
   * @return Returns the id of the gravity 
@@ -726,38 +727,51 @@ subSharedClientFind(char *name,
   **/
 
 int
-subSharedGravityFind(int id,
+subSharedGravityFind(char *match,
   char **name,
   XRectangle *geometry)
 {
   int ret = -1, size = 0;
   char **gravities = NULL;
+  regex_t *preg = NULL;
 
-  if((gravities = subSharedPropertyStrings(DefaultRootWindow(display), 
-      "SUBTLE_GRAVITY_LIST", &size)))
+  assert(match);
+
+  /* Find gravity id */
+  if((preg = subSharedRegexNew(match)) &&
+      (gravities = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_GRAVITY_LIST", &size)))
     {
-      if(id < size)
+      int i;
+      XRectangle geom = { 0 };
+      char buf[30] = { 0 };
+
+      for(i = 0; i < size; i++)
         {
-          XRectangle geom = { 0 };
-          char buf[30] = { 0 };
-          
-          sscanf(gravities[id], "%hdx%hd+%hd+%hd#%s", &geom.x, &geom.y,
+          sscanf(gravities[i], "%hdx%hd+%hd+%hd#%s", &geom.x, &geom.y,
             &geom.width, &geom.height, buf);
 
-          /* Copy values */
-          if(name)
+          /* Check id and name */
+          if((isdigit(match[0]) && atoi(match) == i) || 
+              (!isdigit(match[0]) && subSharedRegexMatch(preg, buf)))
             {
-              *name = (char *)subSharedMemoryAlloc(strlen(buf), sizeof(char));
-              strncpy(*name, buf, strlen(buf));
-            }
-          if(geometry) *geometry = geom;
-          
-          ret = id;
-        }
+              subSharedLogDebug("Found: type=gravity, name=%s, id=%d\n", buf, i);
 
+              if(geometry) *geometry = geom;
+              if(name)
+                {
+                  *name = (char *)subSharedMemoryAlloc(strlen(buf) + 1, sizeof(char));
+                  strncpy(*name, buf, strlen(buf));
+                }
+
+              ret = i;
+              break;
+            }
+          }
+
+      subSharedRegexKill(preg);
       XFreeStringList(gravities);
     }
-  else subSharedLogDebug("Failed getting gravity list\n");
+  else subSharedLogDebug("Failed finding gravity `%s'\n", name);
 
   return ret;
 } /* }}} */
@@ -826,137 +840,139 @@ subSharedScreenFind(int id,
 
  /** subSharedTagFind {{{
   * @brief Find tag id
-  * @param[in]   name  Tag name
+  * @param[in]   match  Tag name
   * @return Returns the tag list id
   * @retval  -1  Tag not found
   **/
 
 int
-subSharedTagFind(char *name)
+subSharedTagFind(char *match)
 {
-  int i, size = 0;
+  int ret = -1, size = 0;
   char **tags = NULL;
   regex_t *preg = NULL;
 
-  assert(name);
-
-  preg = subSharedRegexNew(name);
-  tags = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
+  assert(match);
 
   /* Find tag id */
-  for(i = 0; i < size; i++)
-    if(subSharedRegexMatch(preg, tags[i]))
-      {
-        subSharedLogDebug("Found: type=tag, name=%s, id=%d\n", name, i);
+  if((preg = subSharedRegexNew(match)) &&
+      (tags = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size)))
+    {
+      int i;
 
-        subSharedRegexKill(preg);
-        XFreeStringList(tags);
+      for(i = 0; i < size; i++)
+        if((isdigit(match[0]) && atoi(match) == i) || 
+            (!isdigit(match[0]) && subSharedRegexMatch(preg, tags[i])))
+          {
+            subSharedLogDebug("Found: type=tag, name=%s, id=%d\n", tags[i], i);
 
-        return i;
-      }
+            ret = i;
+            break;
+          }
 
-  subSharedRegexKill(preg);
-  XFreeStringList(tags);
+      subSharedRegexKill(preg);
+      XFreeStringList(tags);
+    }
+  else subSharedLogDebug("Failed finding tag `%s'\n", match);
 
-  subSharedLogDebug("Failed finding tag `%s'\n", name);
-
-  return -1;
+  return ret;
 } /* }}} */
 
  /** subSharedViewFind {{{
   * @brief Find view id
-  * @param[in]   name  View name
-  * @param[out]  win   View window
+  * @param[in]   match  View name or window id
+  * @param[out]  win    View window
   * @return Returns the view list id
   * @retval  -1  View not found
   **/
 
 int
-subSharedViewFind(char *name,
+subSharedViewFind(char *match,
+  char **name,
   Window *win)
 {
-  int size = 0;
-  Window *views = NULL, root = DefaultRootWindow(display);
+  int ret = -1, size = 0;
+  Window *views = NULL;
   char **names = NULL;
+  regex_t *preg = NULL;
 
-  assert(name);
+  assert(match);
 
-  views = (Window *)subSharedPropertyGet(root, XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
-  names = subSharedPropertyStrings(root, "_NET_DESKTOP_NAMES", &size);  
-
-  if(names)
+  /* Find view id */
+  if((views = (Window *)subSharedPropertyGet(DefaultRootWindow(display), 
+      XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL)) &&
+      (names = subSharedPropertyStrings(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size)) &&
+      (preg = subSharedRegexNew(match)))
     {
       int i;
-      char buf[10];
-      regex_t *preg = subSharedRegexNew(name);
+      char buf[10] = { 0 };
 
       for(i = 0; i < size; i++)
         {
           snprintf(buf, sizeof(buf), "%#lx", views[i]);
 
           /* Find view either by name or by window id */
-          if(subSharedRegexMatch(preg, names[i]) || subSharedRegexMatch(preg, buf))
+          if((isdigit(match[0]) && (subSharedRegexMatch(preg, buf) || atoi(match) == i)) ||
+              (!isdigit(match[0]) && (subSharedRegexMatch(preg, names[i]))))
             {
               subSharedLogDebug("Found: type=view, name=%s win=%#lx, id=%d\n",
-                name, views[i], i);
+                match, views[i], i);
 
-              if(win) *win = views[i];
+              if(win) *win   = views[i];
+              if(name) *name = strdup(names[i]);
 
-              subSharedRegexKill(preg);
-              XFreeStringList(names);
-              free(views);
-
-              return i;
+              ret = i;
+              break;
             }
         }
+
       subSharedRegexKill(preg);
+      XFreeStringList(names);
+      free(views);
     }
-
-  XFreeStringList(names);
-  free(views);
-
-  subSharedLogDebug("Failed finding view `%s'\n", name);
+  else subSharedLogDebug("Failed finding view `%s'\n", match);
 
   return -1;
 } /* }}} */
 
  /** subSharedSubletFind {{{
   * @brief Find sublet
-  * @param[in]   name  Sublet name
-  * @return Returns the sublet list id
+  * @param[in]   match  Sublet name
+  * @return Returns the sublet id
   * @retval  -1   Sublet not found
   **/
 
 int
-subSharedSubletFind(char *name)
+subSharedSubletFind(char *match)
 {
-  int i, size = 0;
+  int ret = -1, size = 0;
   char **sublets = NULL;
   regex_t *preg = NULL;
 
-  assert(name);
-
-  preg    = subSharedRegexNew(name);
-  sublets = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_SUBLET_LIST", &size);
+  assert(match);
 
   /* Find sublet id */
-  for(i = 0; i < size; i++)
-    if(subSharedRegexMatch(preg, sublets[i]))
-      {
-        subSharedLogDebug("Found: type=sublet, name=%s, id=%d\n", name, i);
+  if((preg = subSharedRegexNew(match)) &&
+      (sublets = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_SUBLET_LIST", &size)))
+    {
+      int i;
 
-        subSharedRegexKill(preg);
-        free(sublets);
+      for(i = 0; i < size; i++)
+        if((isdigit(match[0]) && atoi(match) == i) || 
+            (!isdigit(match[0]) && subSharedRegexMatch(preg, sublets[i])))
+          {
+            subSharedLogDebug("Found: type=sublet, name=%s, id=%d\n", sublets[i], i);
 
-        return i;
-      }
+            ret = i;
+            break;
+          }
 
-  subSharedRegexKill(preg);
-  XFreeStringList(sublets);
+      subSharedRegexKill(preg);
+      XFreeStringList(sublets);
+    }
+  else subSharedLogDebug("Failed finding sublet `%s'\n", match);
 
-  subSharedLogDebug("Failed finding sublet `%s'\n", name);
-
-  return -1;
+  return ret;
 } /* }}} */
 
  /** subSharedSubtleRunning {{{
