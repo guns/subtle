@@ -352,17 +352,13 @@ EventMessage(XClientMessageEvent *ev)
             break; /* }}} */
           case SUB_EWMH_SUBTLE_WINDOW_GRAVITY: /* {{{ */
             if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0]))) && 
+                ((g = GRAVITY(subArrayGet(subtle->gravities, (int)ev->data.l[1])))) &&
                 VISIBLE(subtle->view, c))
               {
-                int gid = -1;
-
-                if(-1 != (gid = subGravityFind(NULL, ev->data.l[1])))
-                  {
-                    subClientSetGravity(c, gid, False, True);
-                    subClientConfigure(c);
-                    subClientWarp(c);
-                    XRaiseWindow(subtle->dpy, c->win);        
-                  }
+                subClientSetGravity(c, (int)ev->data.l[1], False, True);
+                subClientConfigure(c);
+                subClientWarp(c);
+                XRaiseWindow(subtle->dpy, c->win);        
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_WINDOW_SCREEN: /* {{{ */
@@ -435,6 +431,10 @@ EventMessage(XClientMessageEvent *ev)
                       }
                   }
 
+                /* Finallly remove gravity */
+                subArrayRemove(subtle->gravities, (void *)g);
+                subGravityKill(g);
+                subGravityPublish();
               }
             break; /* }}} */            
           case SUB_EWMH_SUBTLE_TAG_NEW: /* {{{ */
@@ -921,10 +921,14 @@ EventGrab(XEvent *ev)
                   }
                 if(-1 == id) id = fid; ///< Fallback
 
-                subClientSetGravity(c, id, True, True);
-                subClientConfigure(c);
-                subClientWarp(c);
-                XRaiseWindow(subtle->dpy, c->win);
+                /* Sanity check */
+                if(0 <= id && id < subtle->gravities->ndata)
+                  {
+                    subClientSetGravity(c, id, True, True);
+                    subClientConfigure(c);
+                    subClientWarp(c);
+                    XRaiseWindow(subtle->dpy, c->win);
+                  }
               }
             break; /* }}} */
           case SUB_GRAB_WINDOW_SCREEN: /* {{{ */
