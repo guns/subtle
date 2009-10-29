@@ -218,9 +218,9 @@ SubtlerClientPrint(Window win,
   int rv,
   int nv)
 {
-  int x, y, grav = 0, mode = 0;
+  int x, y;
   Window unused;
-  char *inst = NULL, *klass = NULL;
+  char *inst = NULL, *klass = NULL, *grav = NULL, buf[5] = { 0 };
   unsigned int width, height, border;
   unsigned long *cv = NULL, *gravity = NULL, *screen = NULL, *flags = NULL;
 
@@ -235,14 +235,14 @@ SubtlerClientPrint(Window win,
   flags = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, 
     "SUBTLE_WINDOW_FLAGS", NULL);
 
-  /* Get gravity and modes */
-  grav = GETGRAV(*gravity);
-  mode = GETMODE(*gravity);
+  /* Get gravity */
+  snprintf(buf, sizeof(buf), "%ld", *gravity);
+  subSharedGravityFind(buf, &grav, NULL);
 
   XGetGeometry(display, win, &unused, &x, &y, &width, &height, &border, &border);
 
-  printf("%#10lx %c %ld %4u x %-4u %d %d %ld %c%c%c %s (%s)\n", win, (*cv == rv ? '*' : '-'),
-    (*cv > nv ? -1 : *cv + 1), width, height, grav, mode, *screen, 
+  printf("%#10lx %c %ld %4u x %-4u %10s %ld %c%c%c %s (%s)\n", win, (*cv == rv ? '*' : '-'),
+    (*cv > nv ? -1 : *cv + 1), width, height, grav, *screen, 
     *flags & SUB_EWMH_FULL ? 'F' : '-', *flags & SUB_EWMH_FLOAT ? 'O' : '-', 
     *flags & SUB_EWMH_STICK ? 'S' : '-', inst, klass);
 
@@ -252,6 +252,7 @@ SubtlerClientPrint(Window win,
   free(gravity);
   free(screen);
   free(flags);
+  free(grav);
 } /* }}} */
 
 /* Client */
@@ -430,9 +431,9 @@ SubtlerClientGravity(char *arg1,
   subSharedLogDebug("%s\n", __func__);
 
   data.l[0] = subSharedClientFind(arg1, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS));
-  data.l[1] = atoi(arg2);
+  data.l[1] = subSharedGravityFind(arg2, NULL, NULL);
 
-  if(-1 != data.l[0] && 1 <= data.l[1] && 9 >= data.l[1])
+  if(-1 != data.l[0] && -1 != data.l[1])
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_GRAVITY", data, False);
   else subSharedLogWarn("Failed setting client gravity\n");
 } /* }}} */
@@ -509,24 +510,20 @@ static void
 SubtlerGravityNew(char *arg1,
   char *arg2)
 {
-  int find = 0;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+  XRectangle geometry = { 0 };
 
-  CHECK(arg1 && arg2, "Usage: %sr -g -a ID GEOMETRY\n", PKG_NAME);
+  CHECK(arg1 && arg2, "Usage: %sr -g -a NAME GEOMETRY\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  if(0 < (find = atoi(arg1)) && 9 >= find)  
-    {
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
-      XRectangle geometry = { 0 };
+  /* Parse data */
+  sscanf(arg2, "%hdx%hd+%hd+%hd", &geometry.x, &geometry.y,
+    &geometry.width, &geometry.height);
+  snprintf(data.b, sizeof(data.b), "%dx%d+%d+%d#%s", geometry.x, geometry.y, 
+    geometry.width, geometry.height, arg1);
 
-      sscanf(arg2, "%hdx%hd+%hd+%hd", &geometry.x, &geometry.y,
-        &geometry.width, &geometry.height);
-      snprintf(data.b, sizeof(data.b), "%dx%d+%d+%d#%s", geometry.x, geometry.y, 
-        geometry.width, geometry.height, arg1);
-
-      subSharedMessage(DefaultRootWindow(display), "SUBTLE_GRAVITY_NEW", data, False);
-    }
-  else subSharedLogWarn("Failed adding gravity mode\n");
+  if(!subSharedMessage(DefaultRootWindow(display), "SUBTLE_GRAVITY_NEW", data, False))
+    subSharedLogWarn("Failed adding gravity\n");
 } /* }}} */
 
 /* SubtlerGravityFind {{{ */
@@ -534,18 +531,17 @@ static void
 SubtlerGravityFind(char *arg1,
   char *arg2)
 {
-  int find = 0;
   XRectangle geometry = { 0 };
   char *name = NULL;
 
-  CHECK(arg1, "Usage: %sr -g -f ID\n", PKG_NAME);
+  CHECK(arg1, "Usage: %sr -g -f GRAVITY\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   /* Find gravity */
-  if(0 <= (find = atoi(arg1)) && -1 != subSharedGravityFind(find, &name, &geometry))
+  if(-1 != subSharedGravityFind(arg1, &name, &geometry))
     {
       printf("%s %3d x %-3d %3d + %-3d\n", name, 
-        geometry.x, geometry.y, geometry.width, geometry.height);    
+        geometry.x, geometry.y, geometry.width, geometry.height);
 
       free(name);
     }
@@ -587,20 +583,14 @@ static void
 SubtlerGravityKill(char *arg1,
   char *arg2)
 {
-  int find = 0;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(arg1 && arg2, "Usage: %sr -g -k ID\n", PKG_NAME);
+  CHECK(arg1 && arg2, "Usage: %sr -g -k GRAVITY\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  if(0 <= (find = atoi(arg1)))  
-    {
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-      data.l[0] = find;
-
+  if(-1 != (data.l[0] = subSharedGravityFind(arg1, NULL, NULL)))  
       subSharedMessage(DefaultRootWindow(display), "SUBTLE_GRAVITY_KILL", data, False);
-    }
-  else subSharedLogWarn("Failed killing gravity mode\n");
+  else subSharedLogWarn("Failed killing gravity\n");
 } /* }}} */
 
 /* Screen */
@@ -822,7 +812,7 @@ SubtlerTagFind(char *arg1,
   clients = subSharedClientList(&size_clients);
 
   /* Views */
-  if(tag && names && views)
+  if(-1 != tag && names && views)
     {
       for(i = 0; i < size_views; i++)
         {
@@ -841,7 +831,7 @@ SubtlerTagFind(char *arg1,
   else subSharedLogWarn("Failed getting view list\n");
 
   /* Clients */
-  if(tag && clients)
+  if(-1 != tag && clients)
     {
       for(i = 0; i < size_clients; i++)
         {
@@ -908,7 +898,7 @@ SubtlerViewNew(char *arg1,
   CHECK(arg1, "Usage: %sr -t -a PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
   
-  if(-1 == subSharedViewFind(arg1, NULL))
+  if(-1 == subSharedViewFind(arg1, NULL, NULL))
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
@@ -924,26 +914,24 @@ SubtlerViewFind(char *arg1,
 {
   int id;
   Window win;
+  char *name = NULL;
 
   CHECK(arg1, "Usage: %sr -v -f PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  if(-1 != (id = subSharedViewFind(arg1, &win)) )
+  if(-1 != (id = subSharedViewFind(arg1, &name, &win)) )
     {
-      int size = 0;
-      char **names = NULL;
       unsigned long *cv = NULL, *rv = NULL;
 
       /* Collect data */
-      names   = subSharedPropertyStrings(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
-      cv      = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
+      cv = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
         XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
-      rv      = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display),
+      rv = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display),
         XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);        
 
-      printf("%#10lx %c %2d %s\n", win, (*cv == *rv ? '*' : '-'), id + 1, names[id]);
+      printf("%#10lx %c %2d %s\n", win, (*cv == *rv ? '*' : '-'), id, name);
 
-      XFreeStringList(names);
+      free(name);
       free(cv);
       free(rv);
     }
@@ -961,8 +949,8 @@ SubtlerViewJump(char *arg1,
   CHECK(arg1, "Usage: %sr -v -j PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  /* Try to convert arg1 to long or to find view */
-  if((view = atoi(arg1)) || (-1 != (view = subSharedViewFind(arg1, NULL))))
+  /* Find view */
+  if(-1 != (view = subSharedViewFind(arg1, NULL, NULL)))
     {
       data.l[0] = view;
 
@@ -1016,7 +1004,7 @@ SubtlerViewTag(char *arg1,
   CHECK(arg1 && arg2, "Usage: %sr -v PATTERN -T PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  data.l[0] = subSharedViewFind(arg1, NULL);
+  data.l[0] = subSharedViewFind(arg1, NULL, NULL);
   data.l[1] = subSharedTagFind(arg2);
   data.l[2] = 1;
 
@@ -1035,7 +1023,7 @@ SubtlerViewUntag(char *arg1,
   CHECK(arg1 && arg2, "Usage: %sr -v PATTERN -U PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  data.l[0] = subSharedViewFind(arg1, NULL);
+  data.l[0] = subSharedViewFind(arg1, NULL, NULL);
   data.l[1] = subSharedTagFind(arg2);
   data.l[2] = 1;
 
@@ -1057,7 +1045,7 @@ SubtlerViewTags(char *arg1,
   CHECK(arg1, "Usage: %sr -v PATTERN -G\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  if(-1 != subSharedViewFind(arg1, &win))
+  if(-1 != subSharedViewFind(arg1, NULL, &win))
     {
       flags = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, "SUBTLE_WINDOW_TAGS", NULL);
       tags  = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
@@ -1081,7 +1069,7 @@ SubtlerViewKill(char *arg1,
   CHECK(arg1, "Usage: %sr -v -k PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  if((data.l[0] = subSharedViewFind(arg1, NULL)))
+  if((data.l[0] = subSharedViewFind(arg1, NULL, NULL)))
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_KILL", data, False);
   else subSharedLogWarn("Failed killing view\n");
 } /* }}} */
@@ -1140,10 +1128,10 @@ SubtlerUsage(int group)
   if(-1 == group || SUB_GROUP_GRAVITY == group)
     {
       printf("\nOptions for gravities:\n" \
-             "  -a, --add ID GEOMETRY   Create new gravity mode\n" \
+             "  -a, --add NAME GEOMETRY Create new gravity mode\n" \
              "  -l, --list              List all gravities\n" \
-             "  -f, --find=ID           Find a gravity\n" \
-             "  -k, --kill=ID           Kill gravity mode\n");
+             "  -f, --find=PATTERN      Find a gravity\n" \
+             "  -k, --kill=PATTERN      Kill gravity mode\n");
     }      
 
   if(-1 == group || SUB_GROUP_SCREEN == group)
@@ -1195,26 +1183,12 @@ SubtlerUsage(int group)
          "    read from stdin.\n", PKG_NAME);
 
   printf("\nListings:\n" \
-         "  Client listing:  <window id> [-*] <view id> <geometry> <gravity> <mode> <screen> <flags> <name> (<class>)\n" \
+         "  Client listing:  <window id> [-*] <view id> <geometry> <gravity> <screen> <flags> <name> (<class>)\n" \
          "  Gravity listing: <gravity id> <geometry>\n" \
          "  Screen listing:  <screen id> <geometry>\n" \
          "  Tag listing:     <name>\n" \
          "  View listing:    <window id> [-*] <view id> <name>\n");
 
-  printf("\nGravities:\n" \
-         "  BottomLeft  = %ld\n" \
-         "  Bottom      = %ld\n" \
-         "  BottomRight = %ld\n" \
-         "  Left        = %ld\n" \
-         "  Center      = %ld\n" \
-         "  Right       = %ld\n" \
-         "  Top_Left    = %ld\n" \
-         "  Top         = %ld\n" \
-         "  Right       = %ld\n",
-         SUB_GRAVITY_BOTTOM_LEFT, SUB_GRAVITY_BOTTOM, SUB_GRAVITY_BOTTOM_RIGHT,
-         SUB_GRAVITY_LEFT, SUB_GRAVITY_CENTER, SUB_GRAVITY_RIGHT, SUB_GRAVITY_TOP_LEFT,
-         SUB_GRAVITY_TOP, SUB_GRAVITY_TOP_RIGHT);
-  
   printf("\nExamples:\n" \
          "  %sr -c -l                List all clients\n" \
          "  %sr -t -a subtle         Add new tag 'subtle'\n" \
