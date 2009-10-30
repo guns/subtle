@@ -30,18 +30,16 @@ int debug = 0;
 
 /* Prototypes {{{ */
 static VALUE SubtlextSubtleClientCurrent(VALUE self);
-static VALUE SubtlextClientUpdate(VALUE self);
-static VALUE SubtlextGravityUpdate(VALUE self);
-static VALUE SubtlextScreenUpdate(VALUE self);
-static VALUE SubtlextTagUpdate(VALUE self);
-static VALUE SubtlextViewUpdate(VALUE self);
+VALUE SubtlextClientUpdate(VALUE self);
 /* }}} */
 
 /* Flags {{{ */
 #define SUB_TYPE_CLIENT  0           ///< Client
-#define SUB_TYPE_VIEW    1           ///< View
-#define SUB_TYPE_TAG     2           ///< Tag
-#define SUB_TYPE_SCREEN  3           ///< Screen
+#define SUB_TYPE_GRAVITY 1           ///< Gravity
+#define SUB_TYPE_VIEW    2           ///< View
+#define SUB_TYPE_TAG     3           ///< Tag
+#define SUB_TYPE_SCREEN  4           ///< Screen
+#define SUB_TYPE_SUBLET  5           ///< Sublet
 
 #define SUB_ACTION_TAG   0           ///< Tag
 #define SUB_ACTION_UNTAG 1           ///< Untag
@@ -56,8 +54,6 @@ SubtlextInstantiateClient(Window win)
   /* Create new instance */
   klass  = rb_const_get(mod, rb_intern("Client"));
   client = rb_funcall(klass, rb_intern("new"), 1, LONG2NUM(win));
-
-  SubtlextClientUpdate(client);
 
   return client;
 } /* }}} */
@@ -81,15 +77,13 @@ SubtlextInstantiateGeometry(int x,
 
 /* SubtlextInstantiateGravity {{{ */
 static VALUE
-SubtlextInstantiateGravity(int id)
+SubtlextInstantiateGravity(char *name)
 {
   VALUE klass = Qnil, gravity = Qnil;
 
   /* Create new instance */
   klass   = rb_const_get(mod, rb_intern("Gravity"));
-  gravity = rb_funcall(klass, rb_intern("new"), 1, INT2FIX(id)); 
-
-  SubtlextGravityUpdate(gravity);
+  gravity = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(name)); 
 
   return gravity;
 } /* }}} */
@@ -104,7 +98,18 @@ SubtlextInstantiateScreen(int id)
   klass  = rb_const_get(mod, rb_intern("Screen"));
   screen = rb_funcall(klass, rb_intern("new"), 1, INT2FIX(id));
 
-  SubtlextScreenUpdate(screen);
+  return screen;
+} /* }}} */
+
+/* SubtlextInstantiateSublet {{{ */
+static VALUE
+SubtlextInstantiateSublet(char *name)
+{
+  VALUE klass = Qnil, screen = Qnil;
+
+  /* Create new instance */
+  klass  = rb_const_get(mod, rb_intern("Sublet"));
+  screen = rb_funcall(klass, rb_intern("new"), 1, RSTRING_PTR(name));
 
   return screen;
 } /* }}} */
@@ -119,8 +124,6 @@ SubtlextInstantiateTag(char *name)
   klass = rb_const_get(mod, rb_intern("Tag"));
   tag   = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(name));
 
-  SubtlextTagUpdate(tag);
-
   return tag;
 } /* }}} */
 
@@ -133,8 +136,6 @@ SubtlextInstantiateView(char *name)
   /* Create new instance */
   klass = rb_const_get(mod, rb_intern("View"));
   view  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(name));
-
-  SubtlextViewUpdate(view);
 
   return view;
 } /* }}} */
@@ -180,56 +181,73 @@ SubtlextFind(int type,
   VALUE value,
   int exception)
 {
-  char *klass = NULL;
+  int id = 0, flags = 0;
+  Window win = None;
+  char *klass = NULL, *name = NULL, buf[50] = { 0 };
+  XRectangle geometry = { 0 };
   VALUE object = Qnil;
-
-  assert(SUB_TYPE_CLIENT == type || SUB_TYPE_TAG == type ||
-    SUB_TYPE_VIEW == type || SUB_TYPE_SCREEN == type);
 
   /* Get object type */
   switch(type)
     {
-      case SUB_TYPE_CLIENT: klass = "Client"; break;
-      case SUB_TYPE_TAG:    klass = "Tag";    break;
-      case SUB_TYPE_SCREEN: klass = "Screen"; break;
-      case SUB_TYPE_VIEW:   klass = "View";   break;
+      case SUB_TYPE_CLIENT:  klass = "Client";  break;
+      case SUB_TYPE_GRAVITY: klass = "Gravity"; break;
+      case SUB_TYPE_TAG:     klass = "Tag";     break;
+      case SUB_TYPE_SCREEN:  klass = "Screen";  break;
+      case SUB_TYPE_SUBLET:  klass = "Sublet";  break;
+      case SUB_TYPE_VIEW:    klass = "View";    break;
     }
+
+  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
 
   /* Check object type */
   switch(rb_type(value))
     {
       case T_FIXNUM: /* {{{ */
-        if(SUB_TYPE_SCREEN == type)
-          object = SubtlextInstantiateScreen(FIX2INT(value));
+        id = FIX2INT(value);
+        snprintf(buf, sizeof(buf), "%d", FIX2INT(value));
+        break; /* }}} */
+      case T_HASH: /* {{{ */
+        if(SUB_TYPE_CLIENT == type)
+          {
+            int i;
+            VALUE meth_has_key = rb_intern("has_key?"), meth_fetch = rb_intern("fetch"), match = Qnil;
+
+            struct properties 
+            {
+              VALUE sym;
+              int   flags;
+            } props[] = {
+              { CHAR2SYM("title"), SUB_MATCH_TITLE },
+              { CHAR2SYM("name"),  SUB_MATCH_NAME  },
+              { CHAR2SYM("class"), SUB_MATCH_CLASS },
+              { CHAR2SYM("all"),   (SUB_MATCH_TITLE|SUB_MATCH_NAME|SUB_MATCH_CLASS) }
+            };
+
+            /* Check hash keys */
+            for(i = 0; LENGTH(props) > i; i++)
+              {
+                if(Qtrue == rb_funcall(value, meth_has_key, 1, props[i].sym))
+                  {
+                    match = rb_funcall(value, meth_fetch, 1, props[i].sym);
+                    flags = props[i].flags;
+                    break;
+                  }
+              }
+
+            if(T_STRING == rb_type(match))
+              snprintf(buf, sizeof(buf), "%s", RSTRING_PTR(match));
+          }
+        break; /* }}} */        
+      case T_OBJECT: /* {{{ */
+        if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern(klass)))) 
+          object = value;
         break; /* }}} */
       case T_STRING: /* {{{ */
-        /* Instantiate objects */
-        switch(type)
-          {
-            case SUB_TYPE_CLIENT:
-                {
-                  Window win = None;
+        if(SUB_TYPE_CLIENT == type) ///< Set default match flags
+          flags = (SUB_MATCH_NAME|SUB_MATCH_CLASS);
 
-                  if(-1 != subSharedClientFind(RSTRING_PTR(value), 
-                      &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))
-                    object = SubtlextInstantiateClient(win);
-                }
-              break;
-            case SUB_TYPE_TAG:
-              object = SubtlextInstantiateTag(RSTRING_PTR(value));
-              break;
-            case SUB_TYPE_VIEW:
-              object = SubtlextInstantiateView(RSTRING_PTR(value));
-              break;
-          }
-        break; /* }}} */
-      case T_OBJECT: /* {{{ */
-          {
-            /* Check object type */
-            if(rb_obj_is_instance_of(value, 
-                rb_const_get(mod, rb_intern(klass)))) 
-              object = value;
-          }
+        snprintf(buf, sizeof(buf), "%s", RSTRING_PTR(value));
         break; /* }}} */
       default: /* {{{ */
         if(exception)
@@ -240,8 +258,69 @@ SubtlextFind(int type,
           } /* }}} */
     }
 
+  /* Instantiate objects */
+  switch(type)
+    {
+      case SUB_TYPE_CLIENT: /* {{{ */
+        if(-1 != (id = subSharedClientFind(buf, &win, flags)))
+          {
+            object = SubtlextInstantiateClient(win);
+
+            if(!NIL_P(object)) SubtlextClientUpdate(object);
+          }
+        break; /* }}} */
+      case SUB_TYPE_GRAVITY: /* {{{ */
+        if(-1 != (id = subSharedGravityFind(buf, &name, &geometry)))
+          {
+            object = SubtlextInstantiateGravity(name);
+
+            if(!NIL_P(object)) 
+              rb_iv_set(object, "@geometry", SubtlextInstantiateGeometry(geometry.x, geometry.y, 
+                geometry.width, geometry.height));
+            
+            free(name);
+          }
+        break; /* }}} */     
+      case SUB_TYPE_TAG: /* {{{ */
+        if(-1 != (id = subSharedTagFind(buf, &name)))
+          {
+            object = SubtlextInstantiateTag(name);
+            
+            free(name);
+          }
+        break; /* }}} */      
+      case SUB_TYPE_SCREEN: /* {{{ */
+        if(-1 != (id = subSharedScreenFind(id, &geometry)))
+          {
+            object = SubtlextInstantiateScreen(id);
+
+            if(!NIL_P(object)) 
+              rb_iv_set(object, "@geometry", SubtlextInstantiateGeometry(geometry.x, geometry.y, 
+                geometry.width, geometry.height));
+          }
+        break; /* }}} */
+      case SUB_TYPE_SUBLET: /* {{{ */
+        if(-1 != (id = subSharedSubletFind(buf, &name)))
+          {
+            object = SubtlextInstantiateSublet(name);
+            
+            free(name);
+          }
+        break; /* }}} */
+      case SUB_TYPE_VIEW: /* {{{ */
+        if(-1 != (id = subSharedViewFind(buf, &name, &win)))
+          {
+            object = SubtlextInstantiateView(name);
+            
+            free(name);
+          }
+        break; /* }}} */
+    }
+
   if(NIL_P(object) && exception)
     rb_raise(rb_eArgError, "Failed finding `%s'", klass);
+
+  if(!NIL_P(object)) rb_iv_set(object, "@id", INT2FIX(id)); ///< Set id
 
   return object;
 } /* }}} */
@@ -543,11 +622,11 @@ SubtlextClientUpdate(VALUE self)
           subSharedPropertyClass(NUM2LONG(win), &wmname, &wmclass);
 
           /* Set properties */
-          rb_iv_set(self, "@id",        INT2FIX(id));
-          rb_iv_set(self, "@flags",     INT2FIX(*flags));
-          rb_iv_set(self, "@title",     rb_str_new2(title));
-          rb_iv_set(self, "@name",      rb_str_new2(wmname));
-          rb_iv_set(self, "@klass",     rb_str_new2(wmclass));
+          rb_iv_set(self, "@id",       INT2FIX(id));
+          rb_iv_set(self, "@flags",    INT2FIX(*flags));
+          rb_iv_set(self, "@title",    rb_str_new2(title));
+          rb_iv_set(self, "@name",     rb_str_new2(wmname));
+          rb_iv_set(self, "@klass",    rb_str_new2(wmclass));
 
           /* Set to nil for on demand loading */
           rb_iv_set(self, "@geometry", Qnil);
@@ -564,78 +643,6 @@ SubtlextClientUpdate(VALUE self)
   else rb_raise(rb_eArgError, "Unknown value type");
 
   return Qnil;
-} /* }}} */
-
-/* SubtlextClientFind {{{ */
-/*
- * call-seq: find(hash) -> Subtlext::Client or nil
- *
- * Find a Client
- *
- *  Subtlext::Client.find(:name => "xterm")
- *  => #<Subtlext::Client:xxx>
- *
- *  Subtlext::Client.find(:class => "foobar")
- *  => nil
- */
-
-static VALUE
-SubtlextClientFind(VALUE self,
-  VALUE value)
-{
-  int flags = 0;
-  VALUE client = Qnil, match = Qnil;
-
-  /* Check object type */
-  switch(rb_type(value))
-    {
-      case T_HASH:
-          {
-            int i;
-            VALUE meth_has_key = rb_intern("has_key?"), meth_fetch = rb_intern("fetch");
-            struct properties 
-            {
-              VALUE sym;
-              int   flags;
-            } props[] = {
-              { CHAR2SYM("title"), SUB_MATCH_TITLE },
-              { CHAR2SYM("name"),  SUB_MATCH_NAME  },
-              { CHAR2SYM("class"), SUB_MATCH_CLASS },
-              { CHAR2SYM("all"),   (SUB_MATCH_TITLE|SUB_MATCH_NAME|SUB_MATCH_CLASS) }
-            };
-
-            for(i = 0; LENGTH(props) > i; i++)
-              {
-                if(Qtrue == rb_funcall(value, meth_has_key, 1, props[i].sym))
-                  {
-                    match = rb_funcall(value, meth_fetch, 1, props[i].sym);
-                    flags = props[i].flags;
-                    break;
-                  }
-              }
-          }
-        break;
-      case T_STRING:
-        match = value;
-        flags = (SUB_MATCH_NAME|SUB_MATCH_CLASS);
-    }
-
-  /* Find client */
-  if(T_STRING == rb_type(match) && 0 < flags)
-    {
-      Window win = None;
-
-      if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
-
-      if(-1 != subSharedClientFind(RSTRING_PTR(match), &win, flags))
-        {
-          client = SubtlextInstantiateClient(win);
-        }
-      else rb_raise(rb_eStandardError, "Failed finding client");
-    }
-  else rb_raise(rb_eArgError, "Failed setting value type `%s'", rb_obj_classname(value));
-
-  return client;
 } /* }}} */
 
 /* SubtlextClientViewList {{{ */
@@ -1145,11 +1152,14 @@ SubtlextClientGravity(VALUE self)
       (win = NUM2LONG(rb_iv_get(self, "@win"))))
     {
       int *id = NULL;
+      char buf[5] = { 0 };
 
       /* Collect data */
-      id      = (int *)subSharedPropertyGet(win, XA_CARDINAL,
+      id = (int *)subSharedPropertyGet(win, XA_CARDINAL,
         "SUBTLE_WINDOW_GRAVITY", NULL);
-      gravity = SubtlextInstantiateGravity(*id);
+
+      snprintf(buf, sizeof(buf), "%d", *id);
+      gravity = SubtlextInstantiateGravity(buf);
 
       rb_iv_set(self, "@gravity", gravity);
 
@@ -1173,30 +1183,28 @@ static VALUE
 SubtlextClientGravitySet(VALUE self,
   VALUE value)
 {
-  int gravity = -1, mode = -1;
+  VALUE gravity = Qnil;
 
   /* Check object type */
   switch(rb_type(value))
     {
-      case T_FIXNUM: gravity = FIX2INT(value); break;
-      case T_HASH:
-        {
-          VALUE sym_gravity = CHAR2SYM("gravity"), sym_mode = CHAR2SYM("mode"),
-            meth_has_key = rb_intern("has_key?"), meth_fetch = rb_intern("fetch");
+      case T_FIXNUM: 
+          {
+            char buf[5] = { 0 };
 
-          if(Qtrue == rb_funcall(value, meth_has_key, 1, sym_gravity)) 
-            gravity = FIX2INT(rb_funcall(value, meth_fetch, 1, sym_gravity));
-
-          if(Qtrue == rb_funcall(value, meth_has_key, 1, sym_mode)) 
-            mode = FIX2INT(rb_funcall(value, meth_fetch, 1, sym_mode));
-        }
+            snprintf(buf, sizeof(buf), "%d", FIX2INT(value));
+            gravity = SubtlextInstantiateGravity(buf);
+          }
+        break;
+      case T_STRING:
+        gravity = SubtlextInstantiateGravity(RSTRING_PTR(value));
         break;
       case T_OBJECT:
         {
           VALUE klass = rb_const_get(mod, rb_intern("Gravity")); 
           
           if(rb_obj_is_instance_of(value, klass)) ///< Check object instance
-            gravity = FIX2INT(rb_iv_get(value, "@id"));
+            gravity = value;
         }
     }
   
@@ -1204,15 +1212,13 @@ SubtlextClientGravitySet(VALUE self,
   if(-1 != gravity)
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
-      VALUE id = rb_iv_get(self, "@id");
 
-      data.l[0] = NUM2LONG(id);
-      data.l[1] = gravity;
-      data.l[2] = -1 != mode ? mode : 0;
+      data.l[0] = FIX2LONG(rb_iv_get(self, "@id"));
+      data.l[1] = FIX2LONG(rb_iv_get(gravity, "@id"));
 
       subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_GRAVITY", data, True);
 
-      rb_iv_set(self, "@gravity", INT2FIX(gravity));
+      rb_iv_set(self, "@gravity", gravity);
     }
   else rb_raise(rb_eArgError, "Failed setting value type `%s'", rb_obj_classname(value));
 
@@ -1223,7 +1229,7 @@ SubtlextClientGravitySet(VALUE self,
 /*
  * call-seq: screen -> Subtlext::Screen
  *
- * Get screen client is on as Screen object
+ * Get screen Client is on as Screen object
  *
  *  client.screen
  *  => #<Subtlext::Screen:xxx>
@@ -1242,9 +1248,9 @@ SubtlextClientScreen(VALUE self)
       int *id = NULL;
       
       /* Collect data */
-      id      = (int *)subSharedPropertyGet(win, XA_CARDINAL, 
+      id     = (int *)subSharedPropertyGet(win, XA_CARDINAL, 
         "SUBTLE_WINDOW_SCREEN", NULL);
-      screen  = SubtlextInstantiateScreen(*id);
+      screen = SubtlextInstantiateScreen(*id);
 
       rb_iv_set(self, "@screen", screen);
 
@@ -1622,23 +1628,24 @@ SubtlextGeometryToString(VALUE self)
 
 /* SubtlextGravityInit {{{ */
 /*
- * call-seq: new(id) -> Subtlext::Gravity
+ * call-seq: new(name) -> Subtlext::Gravity
  *
  * Create a new Gravity object
  *
- *  gravity = Subtlext::Gravity.new(1)
+ *  gravity = Subtlext::Gravity.new("top")
  *  => #<Subtlext::Gravity:xxx>
  */
 
 static VALUE
 SubtlextGravityInit(VALUE self,
-  VALUE id)
+  VALUE name)
 {
-  if(0 >= FIX2INT(id) && 9 < FIX2INT(id))
+  if(T_STRING != rb_type(name))
     rb_raise(rb_eArgError, "Invalid value type");
 
-  rb_iv_set(self, "@id",         id);
-  rb_iv_set(self, "@geometries", rb_ary_new());
+  rb_iv_set(self, "@id",       Qnil);
+  rb_iv_set(self, "@name",     name);
+  rb_iv_set(self, "@geometry", Qnil);
 
   if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
 
@@ -1658,126 +1665,51 @@ SubtlextGravityInit(VALUE self,
 static VALUE
 SubtlextGravityUpdate(VALUE self)
 {
-  int size = 0;
-  XRectangle *modes = NULL;
-  VALUE id = rb_iv_get(self, "@id");
+  int id;
+  XRectangle geometry = { 0 };
+  VALUE name = rb_iv_get(self, "@name");
 
-  if(FIXNUM_P(id) && 1 <= FIX2INT(id) && 9 >= FIX2INT(id) && 
-      (modes = subSharedGravityList(FIX2INT(id), &size)))
+  /* Update gravity */
+  if(T_STRING == rb_type(name) && 
+      -1 != (id = subSharedGravityFind(RSTRING_PTR(name), NULL, &geometry)))
     {
-      int i;
-      VALUE klass = Qnil, meth = Qnil, ary = Qnil, geom = Qnil;
-      
-      klass   = rb_const_get(mod, rb_intern("Geometry"));
-      meth    = rb_intern("new");
-      ary     = rb_iv_get(self, "@geometries");
-
-      /* Add modes to gravity */
-      for(i = 0; i < size; i++)
-        {
-          geom = rb_funcall(klass, meth, 4, INT2FIX(modes[i].x),  INT2FIX(modes[i].y),  
-            INT2FIX(modes[i].width),  INT2FIX(modes[i].height));
-
-          rb_ary_push(ary, geom);
-        }
-
-      free(modes);
+      rb_iv_set(self, "@id", INT2FIX(id));
+      rb_iv_set(self, "@geometry", SubtlextInstantiateGeometry(geometry.x, geometry.y,
+        geometry.width, geometry.height));
     }
   else rb_raise(rb_eStandardError, "Failed finding gravity");
 
   return Qnil;
 } /* }}} */
 
-/* SubtlextGravityGeometryAdd {{{ */
+/* SubtlextGravityGeometry {{{ */
 /*
- * call-seq: add_geometry(x, y, width, height) -> nil
- *           add_geometry(array)               -> nil
- *           add_geometry(hash)                -> nil
- *           add_geometry(geometry)            -> nil
+ * call-seq: geometry -> Subtlext::Geometry
  *
- * Add a new Geometry to Gravity
+ * Get Gravity Geometry
  *
- *  gravity.add_geometry(0, 0, 50, 50)
- *  => #<Subtlext::Geometry:xxx>
- *
- *  gravity.add_geometry([ 0, 0, 50, 50 ])
- *  => #<Subtlext::Geometry:xxx>
- *
- *  gravity.add_geometry({ :x => 0, :y => 0, :width => 50, :height => 50 })
+ *  gravity.geometry
  *  => #<Subtlext::Geometry:xxx>
  */
 
 static VALUE
-SubtlextGravityGeometryAdd(int argc,
-  VALUE *argv,
-  VALUE self)
+SubtlextGravityGeometry(VALUE self)
 {
-  VALUE x = Qnil, y = Qnil, width = Qnil, height = Qnil, geometry = Qnil;
+  VALUE geometry = Qnil, name = Qnil;
 
-  /* Load geometry object */
-  rb_scan_args(argc, argv, "04", &x, &y, &width, &height);
-  geometry = SubtlextInstantiateGeometry(FIX2INT(x), FIX2INT(y), FIX2INT(width), FIX2INT(height));
-
-  /* Add geometry */
-  if(RTEST(geometry))
+  /* Load on demand */
+  if(NIL_P((geometry = rb_iv_get(self, "@geometry"))) &&
+      T_STRING == rb_type((name = rb_iv_get(self, "@name"))))
     {
-      VALUE ary = Qnil;
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
-      
-      ary       = rb_iv_get(self, "@geometries");
-      data.l[0] = FIX2INT(rb_iv_get(self,  "@id"));
-      data.l[1] = FIX2INT(rb_iv_get(geometry,  "@x"));
-      data.l[2] = FIX2INT(rb_iv_get(geometry,  "@y"));
-      data.l[3] = FIX2INT(rb_iv_get(geometry,  "@width"));
-      data.l[4] = FIX2INT(rb_iv_get(geometry,  "@height"));
+      XRectangle geom = { 0 };
 
-      subSharedMessage(DefaultRootWindow(display), "SUBTLE_GRAVITY_NEW", data, True);
+      subSharedGravityFind(RSTRING_PTR(name), NULL, &geom);
 
-      rb_ary_push(ary, geometry);
+      geometry = SubtlextInstantiateGeometry(geom.x, geom.y, geom.width, geom.height);
+      rb_iv_set(self, "@geometry", geometry);
     }
 
-  return Qnil;
-} /* }}} */
-
-/* SubtlextGravityGeometryDel {{{ */
-/*
- * call-seq: del_gravity(id) -> nil
- *
- * Delete a Geometry from Gravity
- *
- *  gravity.del_gepmetry(2)
- *  => nil
- */
-
-static VALUE
-SubtlextGravityGeometryDel(VALUE self,
-  VALUE id)
-{
-  if(FIXNUM_P(id))
-    {
-      int gid = 0, mid = 0;
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
-      VALUE ary = Qnil, size = Qnil;
-      
-      gid  = FIX2INT(rb_iv_get(self, "@id")) - 1;
-      mid  = FIX2INT(id);
-      ary  = rb_iv_get(self, "@geometries");
-      size = rb_funcall(ary, rb_intern("size"), 0, NULL);
-
-      if(1 < size && 0 <= mid && size > mid)
-        {
-          data.l[0] = gid;
-          data.l[1] = mid;
-
-          subSharedMessage(DefaultRootWindow(display), "SUBTLE_GRAVITY_KILL", data, True);
-
-          rb_funcall(ary, rb_intern("delete_at"), 1, id);
-        }
-      else rb_raise(rb_eRangeError, "Argument is in invalid range");
-    }
-  else rb_raise(rb_eArgError, "Unknown value type");
-
-  return Qnil;
+  return geometry;
 } /* }}} */
 
 /* SubtlextGravityToString {{{ */
@@ -1848,7 +1780,7 @@ SubtlextScreenUpdate(VALUE self)
     {
       XRectangle geometry = { 0 };
 
-      if(subSharedScreenFind(FIX2INT(id), &geometry))
+      if(-1 != subSharedScreenFind(FIX2INT(id), &geometry))
         {
           rb_iv_set(self, "@geometry", SubtlextInstantiateGeometry(geometry.x,
             geometry.y, geometry.width, geometry.height));
@@ -2494,89 +2426,64 @@ SubtlextSubtleGravityList(VALUE self)
 
   VALUE array = rb_ary_new();
 
-  if((gravities = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_GRAVITY_LIST", &size)))
+  /* Get gravity list */
+  if((gravities = subSharedPropertyStrings(DefaultRootWindow(display), 
+      "SUBTLE_GRAVITY_LIST", &size)))
     {
-      int i, id = -1, gid = -1;
-      VALUE klass_grav = Qnil, klass_geom = Qnil, meth = Qnil, gravity = Qnil, geom = Qnil, ary = Qnil;
-      XRectangle mode = { 0 };
-      
+      int i;
+      XRectangle geometry = { 0 };
+      char buf[30] = { 0 };
+      VALUE klass_grav = Qnil, klass_geom = Qnil, meth = Qnil, gravity = Qnil, geom = Qnil;
+
       klass_grav = rb_const_get(mod, rb_intern("Gravity"));
       klass_geom = rb_const_get(mod, rb_intern("Geometry"));
       meth       = rb_intern("new");
 
+      /* Create gravity list */
       for(i = 0; i < size; i++)
         {
-          sscanf(gravities[i], "%d#%hdx%hd+%hd+%hd", &gid, &mode.x, &mode.y, &mode.width, &mode.height);
+          sscanf(gravities[i], "%hdx%hd+%hd+%hd#%s", &geometry.x, &geometry.y,
+            &geometry.width, &geometry.height, buf);
 
-          if(id != gid)
-            {
-              id      = gid;
-              gravity = rb_funcall(klass_grav, meth, 1, INT2FIX(gid + 1));
-              ary     = rb_iv_get(gravity, "@geometries");
+          gravity = rb_funcall(klass_grav, meth, 1, rb_str_new2(buf));
+          geom    = rb_funcall(klass_geom, meth, 4, INT2FIX(geometry.x), INT2FIX(geometry.y),
+            INT2FIX(geometry.width), INT2FIX(geometry.height));
 
-              rb_ary_push(array, gravity);
-            }
+          rb_iv_set(gravity, "@id", INT2FIX(i));
+          rb_iv_set(gravity, "@geometry", geom);
 
-          geom = rb_funcall(klass_geom, meth, 4, INT2FIX(mode.x), INT2FIX(mode.y),  
-            INT2FIX(mode.width), INT2FIX(mode.height));
-
-          rb_ary_push(ary, geom);
+          rb_ary_push(array, gravity);
         }
 
       XFreeStringList(gravities);
     }
-  else rb_raise(rb_eStandardError, "Failed finding gravities");
+  else rb_raise(rb_eStandardError, "Failed getting gravity list");
 
   return array;
 } /* }}} */
 
 /* SubtlextSubtleGravityFind {{{ */
 /*
- * call-seq: find_gravity(id) -> Subtlext::Gravity or nil
+ * call-seq: find_gravity(id)   -> Subtlext::Gravity or nil
+ *           find_gravity(name) -> Subtlext::Gravity or nil
  *
  * Find Gravity by given id
  *
  *  subtle.find_gravity(1)
  *  => #<Subtlext::Gravity:xxx>
- * 
+ *
+ *  subtle.find_gravity("top")
+ *  => #<Subtlext::Gravity:xxx>
+ *
  *  subtle.find_gravity(1)
  *  => nil
  */
 
 static VALUE
 SubtlextSubtleGravityFind(VALUE self,
-  VALUE id)
+  VALUE value)
 {
-  int size = 0;
-  XRectangle *modes = NULL;
-  VALUE gravity = Qnil;
-
-  if(FIXNUM_P(id) && 1 <= FIX2INT(id) && 9 >= FIX2INT(id) && 
-      (modes = subSharedGravityList(FIX2INT(id), &size)))
-    {
-      int i;
-      VALUE klass_grav = Qnil, klass_geom = Qnil, meth = Qnil, ary = Qnil, geom = Qnil;
-      
-      klass_grav = rb_const_get(mod, rb_intern("Gravity"));
-      klass_geom = rb_const_get(mod, rb_intern("Geometry"));
-      meth       = rb_intern("new");
-      gravity    = rb_funcall(klass_grav, meth, 1, id);
-      ary        = rb_iv_get(gravity, "@geometries");
-
-      /* Add modes to gravity */
-      for(i = 0; i < size; i++)
-        {
-          geom = rb_funcall(klass_geom, meth, 4, INT2FIX(modes[i].x),  INT2FIX(modes[i].y),  
-            INT2FIX(modes[i].width),  INT2FIX(modes[i].height));
-
-          rb_ary_push(ary, geom);
-        }
-
-      free(modes);
-    }
-  else rb_raise(rb_eStandardError, "Failed finding gravity");
-
-  return gravity;
+  return SubtlextFind(SUB_TYPE_GRAVITY, value, True);
 } /* }}} */
 
 /* SubtlextSubtleSubletDel {{{ */
@@ -2595,7 +2502,7 @@ SubtlextSubtleSubletDel(VALUE self,
 {
   int id = -1;
 
-  if(RTEST(name) && -1 != ((id = subSharedSubletFind(RSTRING_PTR(name)))))
+  if(RTEST(name) && -1 != ((id = subSharedSubletFind(RSTRING_PTR(name), NULL))))
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
@@ -2652,36 +2559,27 @@ SubtlextSubtleSubletList(VALUE self)
 
 /* SubtlextSubtleSubletFind {{{ */
 /*
- * call-seq: find_sublet(name) -> Subtlext::Sublet or nil
+ * call-seq: find_sublet(id)   -> Subtlext::Sublet or nil
+ *           find_sublet(name) -> Subtlext::Sublet or nil
  *
  * Find Sublet by given name
+ *
+ * subtle.find_sublet(1)
+ * => #<Subtlext::Sublet:xxx>
  *
  *  subtle.find_sublet("subtle")
  *  => #<Subtlext::Sublet:xxx>
  * 
- *  subtle.find_sublet("subtle")
+ *  subtle.find_sublet(1)
  *  => nil
  */
 
 static VALUE
 SubtlextSubtleSubletFind(VALUE self,
-  VALUE name)
+  VALUE value)
 {
-  int id = -1;
-  VALUE klass = Qnil, sublet = Qnil;
+  return SubtlextFind(SUB_TYPE_SUBLET, value, True);
 
-  if(RTEST(name) && -1 != ((id = subSharedSubletFind(RSTRING_PTR(name)))))
-    {
-      klass  = rb_const_get(mod, rb_intern("Sublet"));
-      sublet = rb_funcall(klass, rb_intern("new"), 1, name);
-
-      rb_iv_set(sublet, "@id", INT2FIX(id));
-
-      return sublet;
-    }
-  else rb_raise(rb_eStandardError, "Failed finding sublet");
-
-  return sublet;
 } /* }}} */
 
 /* SubtlextSubtleViewList {{{ */
@@ -2700,22 +2598,22 @@ SubtlextSubtleViewList(VALUE self)
   int i, size = 0;
   char **names = NULL;
   Window *views = NULL;
-  VALUE array = Qnil, method = Qnil, klass = Qnil;
+  VALUE array = Qnil, meth = Qnil, klass = Qnil;
   
   /* Collect data */
-  method = rb_intern("new");
-  klass  = rb_const_get(mod, rb_intern("View"));
-  names  = subSharedPropertyStrings(DefaultRootWindow(display), 
+  meth  = rb_intern("new");
+  klass = rb_const_get(mod, rb_intern("View"));
+  names = subSharedPropertyStrings(DefaultRootWindow(display), 
     "_NET_DESKTOP_NAMES", &size);
-  views   = (Window *)subSharedPropertyGet(DefaultRootWindow(display), 
+  views = (Window *)subSharedPropertyGet(DefaultRootWindow(display), 
     XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);  
-  array  = rb_ary_new2(size);
+  array = rb_ary_new2(size);
 
   if(names && views)
     {
       for(i = 0; i < size; i++)
         {
-          VALUE v = rb_funcall(klass, method, 1, rb_str_new2(names[i]));
+          VALUE v = rb_funcall(klass, meth, 1, rb_str_new2(names[i]));
 
           rb_iv_set(v, "@id",  INT2FIX(i));
           rb_iv_set(v, "@win", LONG2NUM(views[i]));
@@ -2725,6 +2623,7 @@ SubtlextSubtleViewList(VALUE self)
       XFreeStringList(names); 
       free(views);
     }
+  else rb_raise(rb_eStandardError, "Failed getting view list");
 
   return array;
 } /* }}} */
@@ -2987,7 +2886,7 @@ SubtlextSubletUpdate(VALUE self)
   int id = -1;
   VALUE name = rb_iv_get(self, "@name");
 
-  if(RTEST(name) && -1 != ((id = subSharedSubletFind(RSTRING_PTR(name)))))
+  if(RTEST(name) && -1 != ((id = subSharedSubletFind(RSTRING_PTR(name), NULL))))
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
@@ -3113,14 +3012,14 @@ SubtlextTagUpdate(VALUE self)
       int id = -1;
 
       /* Create tag if needed */
-      if(-1 == (id = subSharedTagFind(RSTRING_PTR(name))))
+      if(-1 == (id = subSharedTagFind(RSTRING_PTR(name), NULL)))
         {
           SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
           snprintf(data.b, sizeof(data.b), "%s", RSTRING_PTR(name));
           subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_NEW", data, True);    
 
-          id = subSharedTagFind(RSTRING_PTR(name));
+          id = subSharedTagFind(RSTRING_PTR(name), NULL);
         }
 
       /* Final check */
@@ -3292,14 +3191,14 @@ SubtlextViewUpdate(VALUE self)
       int id = -1;
 
       /* Create view if needed */
-      if(-1 == (id = subSharedViewFind(RSTRING_PTR(name), NULL)))
+      if(-1 == (id = subSharedViewFind(RSTRING_PTR(name), NULL, NULL)))
         {
           SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
           snprintf(data.b, sizeof(data.b), "%s", RSTRING_PTR(name));
           subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_NEW", data, True);    
 
-          id = subSharedViewFind(RSTRING_PTR(name), NULL);
+          id = subSharedViewFind(RSTRING_PTR(name), NULL, NULL);
         }
 
       /* Final check */
@@ -3382,7 +3281,7 @@ SubtlextViewTagList(VALUE self)
   VALUE array = Qnil, method = Qnil, klass = Qnil, name = Qnil;
 
   name = rb_iv_get(self, "@name");
-  if(RTEST(name) && -1 != subSharedViewFind(RSTRING_PTR(name), &win))
+  if(RTEST(name) && -1 != subSharedViewFind(RSTRING_PTR(name), NULL, &win))
     {
       method = rb_intern("new");
       klass  = rb_const_get(mod, rb_intern("Tag"));
@@ -3614,16 +3513,17 @@ Init_subtlext(void)
   /* WM_NAME */
   rb_define_attr(client,   "title",    1, 0);
 
-  /* Geometry */
-  rb_define_attr(client,   "geometry", 1, 0);
-
   /* WM_NAME */
   rb_define_attr(client,   "name",     1, 0);
+
+  /* Geometry */
+  rb_define_attr(gravity,  "geometry", 0, 0);
 
   /* Bitfield of window states */
   rb_define_attr(client,   "flags",    1, 0);
 
-  rb_define_singleton_method(client, "find", SubtlextClientFind, 1);
+  rb_define_singleton_method(client, "find", SubtlextSubtleClientFind, 1);
+  rb_define_singleton_method(client, "[]",   SubtlextSubtleClientFind, 1);
 
   rb_define_method(client, "initialize",   SubtlextClientInit,           1);
   rb_define_method(client, "update",       SubtlextClientUpdate,         0);
@@ -3696,15 +3596,22 @@ Init_subtlext(void)
   gravity = rb_define_class_under(mod, "Gravity", rb_cObject);
 
   /* Gravity id */
-  rb_define_attr(gravity,  "id",         1, 0);
+  rb_define_attr(gravity,  "id",       1, 0);
 
-  /* Available geometries */
-  rb_define_attr(gravity,  "geometries", 1, 0);
+  /* Name of the gravity */
+  rb_define_attr(client,   "name",     1, 0);
 
-  rb_define_method(gravity, "initialize",   SubtlextGravityInit,         1);
-  rb_define_method(gravity, "add_geometry", SubtlextGravityGeometryAdd, -1);
-  rb_define_method(gravity, "del_geometry", SubtlextGravityGeometryDel,  1);
-  rb_define_method(gravity, "to_str",       SubtlextGravityToString,     0);
+  /* Geometry */
+  rb_define_attr(gravity,  "geometry", 0, 0);
+
+  rb_define_singleton_method(gravity, "find", SubtlextSubtleGravityFind, 1);
+  rb_define_singleton_method(gravity, "[]",   SubtlextSubtleGravityFind, 1);
+
+  rb_define_method(gravity, "initialize", SubtlextGravityInit,     1);
+  rb_define_method(gravity, "update",     SubtlextGravityUpdate,   0);
+  rb_define_method(gravity, "geometry",   SubtlextGravityGeometry, 0);
+  rb_define_method(gravity, "to_str",     SubtlextGravityToString, 0);
+  rb_define_alias(gravity, "save", "update");
   rb_define_alias(gravity, "to_s", "to_str");  
 
   /*
@@ -3721,12 +3628,14 @@ Init_subtlext(void)
   /* Geometry */
   rb_define_attr(screen,   "geometry", 1, 0);
 
-  /* Screen height */
-  rb_define_attr(screen,   "height",   1, 0);
+  rb_define_singleton_method(screen, "find", SubtlextSubtleScreenFind, 1);
+  rb_define_singleton_method(screen, "[]",   SubtlextSubtleScreenFind, 1);
 
   rb_define_method(screen, "initialize", SubtlextScreenInit,       1);
+  rb_define_method(screen, "update",     SubtlextScreenUpdate,     0);
   rb_define_method(screen, "clients",    SubtlextScreenClientList, 0);
   rb_define_method(screen, "to_str",     SubtlextScreenToString,   0);
+  rb_define_alias(screen, "save", "update");
   rb_define_alias(screen, "to_s", "to_str");
 
   /*
@@ -3785,6 +3694,9 @@ Init_subtlext(void)
   /* Name of the sublet */
   rb_define_attr(sublet,   "name", 1, 0);
 
+  rb_define_singleton_method(sublet, "find", SubtlextSubtleSubletFind, 1);
+  rb_define_singleton_method(sublet, "[]",   SubtlextSubtleSubletFind, 1);
+
   rb_define_method(sublet, "initialize", SubtlextSubletInit,     1);
   rb_define_method(sublet, "update",     SubtlextSubletUpdate,   0);
   rb_define_method(sublet, "data",       SubtlextSubletData,     0);
@@ -3805,6 +3717,9 @@ Init_subtlext(void)
 
   /* Name of the tag */
   rb_define_attr(tag,   "name", 1, 0);
+
+  rb_define_singleton_method(tag, "find", SubtlextSubtleTagFind, 1);
+  rb_define_singleton_method(tag, "[]",   SubtlextSubtleTagFind, 1);
 
   rb_define_method(tag, "initialize", SubtlextTagInit,     1);
   rb_define_method(tag, "update",     SubtlextTagUpdate,   0);
@@ -3829,6 +3744,9 @@ Init_subtlext(void)
 
   /* Name of the view */
   rb_define_attr(view,   "name", 1, 0);
+
+  rb_define_singleton_method(view, "find", SubtlextSubtleViewFind, 1);
+  rb_define_singleton_method(view, "[]",   SubtlextSubtleViewFind, 1);
 
   rb_define_method(view, "initialize", SubtlextViewInit,          1);
   rb_define_method(view, "update",     SubtlextViewUpdate,        0);
