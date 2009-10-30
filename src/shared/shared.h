@@ -175,8 +175,8 @@ int subSharedClientFind(char *match, Window *win, int flags);     ///< Find clie
 int subSharedGravityFind(char *match, char **name,
   XRectangle *geometry);                                          ///< Find gravity id
 int subSharedScreenFind(int id, XRectangle *geometry);            ///< Find screen id
-int subSharedSubletFind(char *match);                             ///< Find sublet id
-int subSharedTagFind(char *match);                                ///< Find tag id
+int subSharedSubletFind(char *match, char **name);                ///< Find sublet id
+int subSharedTagFind(char *match, char **name);                   ///< Find tag id
 int subSharedViewFind(char *match, char **name,
   Window *win);                                                   ///< Find view id              
 

@@ -666,23 +666,24 @@ subSharedClientList(int *size)
   **/
 
 int
-subSharedClientFind(char *name,
+subSharedClientFind(char *match,
   Window *win,
   int flags)
 {
   int id = -1, size = 0;
   Window *clients = NULL;
 
-  assert(name);
-
+  assert(match);
+  
+  /* Find client id */
   if((clients = subSharedClientList(&size)))
     {
       int i;
       char *title = NULL, *inst = NULL, *klass = NULL, buf[20] = { 0 };
       Window selwin = None;
-      regex_t *preg = subSharedRegexNew(name);
+      regex_t *preg = subSharedRegexNew(match);
 
-      if(!strncmp(name, "#", 1) && win)
+      if(!strncmp(match, "#", 1) && win)
         selwin = subSharedWindowSelect(); ///< Select window
 
       for(i = 0; -1 == id && i < size; i++)
@@ -698,7 +699,7 @@ subSharedClientFind(char *name,
               (flags & SUB_MATCH_CLASS && klass && subSharedRegexMatch(preg, klass)))
             {
               subSharedLogDebug("Found: type=client, name=%s, win=%#lx, id=%d, flags\n", 
-                name, clients[i], i, flags);
+                match, clients[i], i, flags);
 
               if(win) *win = clients[i];
               id = i;
@@ -712,7 +713,7 @@ subSharedClientFind(char *name,
       subSharedRegexKill(preg);
       free(clients);
     }
-  else subSharedLogDebug("Failed finding client `%s'\n", name);
+  else subSharedLogDebug("Failed finding client `%s'\n", match);
 
   return id;
 } /* }}} */
@@ -840,13 +841,15 @@ subSharedScreenFind(int id,
 
  /** subSharedTagFind {{{
   * @brief Find tag id
-  * @param[in]   match  Tag name
+  * @param[in]     match  Tag name or id
+  * @param[inout]  name   Name of the found tag
   * @return Returns the tag list id
   * @retval  -1  Tag not found
   **/
 
 int
-subSharedTagFind(char *match)
+subSharedTagFind(char *match,
+  char **name)
 {
   int ret = -1, size = 0;
   char **tags = NULL;
@@ -861,14 +864,19 @@ subSharedTagFind(char *match)
       int i;
 
       for(i = 0; i < size; i++)
-        if((isdigit(match[0]) && atoi(match) == i) || 
-            (!isdigit(match[0]) && subSharedRegexMatch(preg, tags[i])))
-          {
-            subSharedLogDebug("Found: type=tag, name=%s, id=%d\n", tags[i], i);
+        {
+          if((isdigit(match[0]) && atoi(match) == i) || 
+              (!isdigit(match[0]) && subSharedRegexMatch(preg, tags[i])))
+            {
+              subSharedLogDebug("Found: type=tag, match=%s, name=%s, id=%d\n", 
+                match, tags[i], i);
 
-            ret = i;
-            break;
-          }
+              if(name) *name = strdup(tags[i]);
+
+              ret = i;
+              break;
+            }
+        }
 
       subSharedRegexKill(preg);
       XFreeStringList(tags);
@@ -880,8 +888,9 @@ subSharedTagFind(char *match)
 
  /** subSharedViewFind {{{
   * @brief Find view id
-  * @param[in]   match  View name or window id
-  * @param[out]  win    View window
+  * @param[in]     match  View name or window id
+  * @param[inout]  name   Name of the found view
+  * @param[out]    win    View window
   * @return Returns the view list id
   * @retval  -1  View not found
   **/
@@ -912,11 +921,12 @@ subSharedViewFind(char *match,
           snprintf(buf, sizeof(buf), "%#lx", views[i]);
 
           /* Find view either by name or by window id */
-          if((isdigit(match[0]) && (subSharedRegexMatch(preg, buf) || atoi(match) == i)) ||
-              (!isdigit(match[0]) && (subSharedRegexMatch(preg, names[i]))))
+          if((isdigit(match[0]) && atoi(match) == i) ||
+              (!isdigit(match[0]) && subSharedRegexMatch(preg, names[i])) ||
+              subSharedRegexMatch(preg, buf))
             {
-              subSharedLogDebug("Found: type=view, name=%s win=%#lx, id=%d\n",
-                match, views[i], i);
+              subSharedLogDebug("Found: type=view, match=%s, name=%s win=%#lx, id=%d\n",
+                match, names[i], views[i], i);
 
               if(win) *win   = views[i];
               if(name) *name = strdup(names[i]);
@@ -932,18 +942,20 @@ subSharedViewFind(char *match,
     }
   else subSharedLogDebug("Failed finding view `%s'\n", match);
 
-  return -1;
+  return ret;
 } /* }}} */
 
  /** subSharedSubletFind {{{
   * @brief Find sublet
-  * @param[in]   match  Sublet name
+  * @param[in]     match  Sublet name or id
+  * @param[inout]  name   Name of the found sublet
   * @return Returns the sublet id
   * @retval  -1   Sublet not found
   **/
 
 int
-subSharedSubletFind(char *match)
+subSharedSubletFind(char *match,
+  char **name)
 {
   int ret = -1, size = 0;
   char **sublets = NULL;
@@ -961,7 +973,10 @@ subSharedSubletFind(char *match)
         if((isdigit(match[0]) && atoi(match) == i) || 
             (!isdigit(match[0]) && subSharedRegexMatch(preg, sublets[i])))
           {
-            subSharedLogDebug("Found: type=sublet, name=%s, id=%d\n", sublets[i], i);
+            subSharedLogDebug("Found: type=sublet, match=%s, name=%s, id=%d\n", 
+              match, sublets[i], i);
+
+            if(name) *name = strdup(sublets[i]);
 
             ret = i;
             break;
