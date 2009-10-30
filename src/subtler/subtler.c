@@ -395,7 +395,7 @@ SubtlerClientTag(char *arg1,
   subSharedLogDebug("%s\n", __func__);
 
   data.l[0] = subSharedClientFind(arg1, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS));
-  data.l[1] = subSharedTagFind(arg2);
+  data.l[1] = subSharedTagFind(arg2, NULL);
 
   if(-1 != data.l[0] && -1 != data.l[1])
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_TAG", data, False);
@@ -413,7 +413,7 @@ SubtlerClientUntag(char *arg1,
   subSharedLogDebug("%s\n", __func__);
 
   data.l[0] = subSharedClientFind(arg1, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS));
-  data.l[1] = subSharedTagFind(arg2);
+  data.l[1] = subSharedTagFind(arg2, NULL);
 
   if(-1 != data.l[0] && -1 != data.l[1])
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_UNTAG", data, False);
@@ -557,7 +557,7 @@ SubtlerGravityList(char *arg1,
   char **gravities = NULL;
 
   /* Get gravity list */
-  if((gravities  = subSharedPropertyStrings(DefaultRootWindow(display), 
+  if((gravities = subSharedPropertyStrings(DefaultRootWindow(display), 
       "SUBTLE_GRAVITY_LIST", &size)))
     {
       int i;
@@ -606,7 +606,7 @@ SubtlerScreenFind(char *arg1,
   int xinerama_event = 0, xinerama_error = 0;
 #endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
 
-  CHECK(arg1, "Usage: %sr -e -f ID\n", PKG_NAME);
+  CHECK(arg1, "Usage: %sr -s -f ID\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   find = atoi(arg1);
@@ -693,7 +693,7 @@ SubtlerSubletNew(char *arg1,
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(arg1, "Usage: %sr -s -a PATH\n", PKG_NAME);
+  CHECK(arg1, "Usage: %sr -b -a PATH\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   snprintf(data.b, sizeof(data.b), "%s", arg1);
@@ -729,10 +729,10 @@ SubtlerSubletUpdate(char *arg1,
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(arg1, "Usage: %sr -s -u PATTERN\n", PKG_NAME);
+  CHECK(arg1, "Usage: %sr -b -u PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  if(-1 != (data.l[0] = subSharedSubletFind(arg1)))
+  if(-1 != (data.l[0] = subSharedSubletFind(arg1, NULL)))
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_UPDATE", data, False);
   else subSharedLogWarn("Failed updating sublet\n");
 } /* }}} */
@@ -745,10 +745,10 @@ SubtlerSubletData(char *arg1,
   int id = 0;
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(arg1, "Usage: %sr -s PATTERN -A DATA\n", PKG_NAME);
+  CHECK(arg1, "Usage: %sr -b PATTERN -A DATA\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  if(-1 != (id = subSharedSubletFind(arg1)))
+  if(-1 != (id = subSharedSubletFind(arg1, NULL)))
     {
       snprintf(data.b, sizeof(data.b), "%c%s", (char)id, arg2);
 
@@ -764,10 +764,10 @@ SubtlerSubletKill(char *arg1,
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(arg1, "Usage: %sr -s -k PATTERN\n", PKG_NAME);
+  CHECK(arg1, "Usage: %sr -b -k PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  if(-1 != (data.l[0] = subSharedSubletFind(arg1)))
+  if(-1 != (data.l[0] = subSharedSubletFind(arg1, NULL)))
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_KILL", data, False);
   else subSharedLogWarn("Failed killing sublet\n");
 } /* }}} */
@@ -782,7 +782,7 @@ SubtlerTagNew(char *arg1,
   CHECK(arg1, "Usage: %sr -t -a NAME\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  if(-1 == subSharedTagFind(arg1))
+  if(-1 == subSharedTagFind(arg1, NULL))
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
@@ -804,7 +804,7 @@ SubtlerTagFind(char *arg1,
   subSharedLogDebug("%s\n", __func__);
 
   /* Collect data */
-  tag     = subSharedTagFind(arg1);
+  tag     = subSharedTagFind(arg1, NULL);
   names   = subSharedPropertyStrings(DefaultRootWindow(display),
     "_NET_DESKTOP_NAMES", &size_views);
   views  = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW,
@@ -883,7 +883,7 @@ SubtlerTagKill(char *arg1,
   CHECK(arg1, "Usage: %sr -t -k PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  if(-1 != (data.l[0] = subSharedTagFind(arg1)))
+  if(-1 != (data.l[0] = subSharedTagFind(arg1, NULL)))
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_KILL", data, False);
   else subSharedLogWarn("Failed killing tag\n");
 } /* }}} */
@@ -1005,7 +1005,7 @@ SubtlerViewTag(char *arg1,
   subSharedLogDebug("%s\n", __func__);
 
   data.l[0] = subSharedViewFind(arg1, NULL, NULL);
-  data.l[1] = subSharedTagFind(arg2);
+  data.l[1] = subSharedTagFind(arg2, NULL);
   data.l[2] = 1;
 
   if(-1 != data.l[0] && -1 != data.l[1])
@@ -1024,7 +1024,7 @@ SubtlerViewUntag(char *arg1,
   subSharedLogDebug("%s\n", __func__);
 
   data.l[0] = subSharedViewFind(arg1, NULL, NULL);
-  data.l[1] = subSharedTagFind(arg2);
+  data.l[1] = subSharedTagFind(arg2, NULL);
   data.l[2] = 1;
 
   if(-1 != data.l[0] && -1 != data.l[1])
@@ -1098,9 +1098,9 @@ SubtlerUsage(int group)
              "  -x, --select            Select a window via pointer\n" \
              "\nGroups:\n" \
              "  -c, --clients           Use clients group\n" \
-             "  -y, --gravity           Use gravity group\n" \
-             "  -e, --screeen           Use screen group\n" \
-             "  -s, --sublets           Use sublets group\n" \
+             "  -g, --gravity           Use gravity group\n" \
+             "  -s, --screen            Use screen group\n" \
+             "  -b, --sublets           Use sublets group\n" \
              "  -t, --tags              Use tags group\n" \
              "  -v, --views             Use views group\n", 
              getenv("DISPLAY"), PKG_NAME, PKG_NAME);
@@ -1177,8 +1177,8 @@ SubtlerUsage(int group)
          "  ID:       <number>\n" \
          "  GEOMETRY: <x>x<y>+<width>+<height>\n" \
          "  PATTERN:\n" \
-         "    Matching clients, tags and views works either via plain, regex\n" \
-         "    (see regex(7)) or window id. If a pattern matches more than once\n" \
+         "    Matching clients, gravities, tags and views works either via plaintext, \n" \
+         "    regex (see regex(7)), id or window id. If a pattern matches more than once\n" \
          "    ONLY the first match will be used. If the PATTERN is '-' %sr will\n" \
          "    read from stdin.\n", PKG_NAME);
 
@@ -1365,15 +1365,15 @@ main(int argc,
   memset(&act.sa_mask, 0, sizeof(sigset_t)); ///< Avoid uninitialized values
   sigaction(SIGSEGV, &act, NULL);
 
-  while((c = getopt_long(argc, argv, "cgestvakfoFOSjlTUGuAynERrqHJKLDd:hCxV", long_options, NULL)) != -1)
+  while((c = getopt_long(argc, argv, "cgsbtvakfoFOSjlTUGuAynERrqHJKLDd:hCxV", long_options, NULL)) != -1)
     {
       switch(c)
         {
           /* Groups */
           case 'c': group = SUB_GROUP_CLIENT;    break;
           case 'g': group = SUB_GROUP_GRAVITY;   break;
-          case 'e': group = SUB_GROUP_SCREEN;    break;
-          case 's': group = SUB_GROUP_SUBLET;    break;
+          case 's': group = SUB_GROUP_SCREEN;    break;
+          case 'b': group = SUB_GROUP_SUBLET;    break;
           case 't': group = SUB_GROUP_TAG;       break;
           case 'v': group = SUB_GROUP_VIEW;      break;
 
