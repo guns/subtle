@@ -42,10 +42,6 @@
 /* }}} */
 
 /* Macros {{{ */
-#define GRAVMODE(grav,mode) ((mode << 4) | grav)                  ///< Combine gravity and mode
-#define GETGRAV(gravity) (gravity & 0xf)                          ///< Get gravity
-#define GETMODE(gravity) (gravity >> 4)                           ///< Get mode 
-
 #define LENGTH(a)    (sizeof(a) / sizeof(a[0]))                   ///< Array length
 #define RINT(r)    printf("%s: x=%d, y=%d, width=%d, height=%d\n", \
   #r, r.x, r.y, r.width, r.height);                               ///< Print a XRectangle
