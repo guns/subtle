@@ -1,60 +1,142 @@
 # 
-# This program can be distributed under the terms of the GNU GPL.
-# See the file COPYING.
-# 
-# $Id$
-# 
+# Author::  Christoph Kappel <unexist@dorfelite.net>
+# Version:: $Id$
+# License:: GNU GPL
+#
+# = Subtle example configuration
+#
+# This file will be installed as default and can also be used as a starter for an own
+# custom configuration file. The system wide config usually resides in +/etc/xdg/subtle+
+# and the user config in +HOME/.config/subtle+, both locations are dependent on the 
+# locations specified by +XDG_CONFIG_DIRS+ and +XDG_CONFIG_HOME+.
+#
 
 #
-# Options
+# == Options
+#
+# Following options change behaviour and sizes of the window manager:
 #
 OPTIONS = {
-  :border  => 2,                                   # Border size of the windows
-  :step    => 5,                                   # Window move/resize key step
-  :snap    => 10,                                  # Window border snapping
-  :gravity => :center,                             # Default gravity (0 = copy gravity of focus)
-  :urgent  => true,                                # Make transient windows urgent
-  :resize  => false,                               # Respect resize hints in tile
-  :padding => [ 0, 0, 0, 0 ],                      # Screen padding (left, right, top, bottom)
-  :font    => "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*"  # Font string
+  # Border size in pixel of the windows
+  :border  => 2,                                   
+
+  # Window move/resize steps in pixel per keypress
+  :step    => 5,
+
+  # Window screen border snapping
+  :snap    => 10,
+
+  # Default starting gravity for windows
+  :gravity => :center,
+
+  # Make transient windows urgent
+  :urgent  => true,
+
+  # Enable respecting of size hints globally
+  :resize  => false,
+
+  # Screen size padding (left, right, top, bottom)
+  :padding => [ 0, 0, 0, 0 ],
+
+  # Font string (see xfontsel)
+  :font    => "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*"
 }
 
 #
-# Panel
+# == Panel
 #
-# Available panels: 
-# :views, :title, :tray, :sublets
-# :spacer
+# The next configuration values determine the layout and placement of the panel. Generally,
+# the panel in subtle consists of two independent bars, one on the top and one at the bottom
+# of the screen. In Xinerama setups there will only be panels visible on the first screen.
+#
+# The top and bottom bar can contain different items and will be hidden when empty. 
+#
+# Following items are available:
+#
+# [*:views*]    List of views with buttons
+# [*:title*]    Title of the current active window
+# [*:tray*]     Systray icons
+# [*:sublets*]  Installed sublets
+# [*:spacer*]   Variable spacer
 #
 PANEL = {
-  :top       => [ :views, :title, :spacer, :tray, :sublets ],   # Top panel
-  :bottom    => [ ],                                            # Bottom panel
-  :stipple   => false,                                          # Add stipple to panels
-  :separator => "|"                                             # Separator between sublets
+  # Content of the top panel
+  :top       => [ :views, :title, :spacer, :tray, :sublets ],
+
+  # Content of the bottom panel
+  :bottom    => [ ],
+
+  # Add stipple to panels
+  :stipple   => false,
+
+  # Separator between sublets
+  :separator => "|"
 }
 
 #
-# Colors
+# == Colors
+#
+# Colors directly define the look of subtle, valid values are: 
+#
+# [*hexadecimal*] #0000ff
+# [*decimal*]     (0, 0, 255)
+# [*names*]       blue
+#
+# Whenever there is no valid value for a color set - subtle will use a default one. There
+# is only one exception to this: If no background color is given no color will be set. This
+# will ensure a custom background pixmap won't be overwritten.
 # 
 COLORS = { 
-  :fg_panel      => "#e2e2e5",  # Foreground color of panel
-  :fg_views      => "#CF6171",  # Foreground color of view button
-  :fg_sublets    => "#000000",  # Foreground color of sublets
-  :fg_focus      => "#000000",  # Foreground color of focus window title and view
+  # Foreground color of panel
+  :fg_panel      => "#e2e2e5",  
 
-  :bg_panel      => "#444444",  # Background color of panel
-  :bg_views      => "#444444",  # Background color of view button
-  :bg_sublets    => "#CF6171",  # Background color of sublets
-  :bg_focus      => "#CF6171",  # Background color of focus window title and view
+  # Foreground color of view button
+  :fg_views      => "#CF6171",
 
-  :border_focus  => "#CF6171",  # Border color of focus windows
-  :border_normal => "#5d5d5d",  # Border color of normal windows
+  # Foreground color of sublets
+  :fg_sublets    => "#000000",
+
+  # Foreground color of focus window title and view
+  :fg_focus      => "#000000",
+
+  # Background color of panel
+  :bg_panel      => "#444444",
+
+  # Background color of view button
+  :bg_views      => "#444444",
+
+  # Background color of sublets
+  :bg_sublets    => "#CF6171",
+
+  # Background color of focus window title and view
+  :bg_focus      => "#CF6171",
+
+  # Border color of focus windows
+  :border_focus  => "#CF6171",
+
+  # Border color of normal windows
+  :border_normal => "#5d5d5d",  
   
-  :background    => "#3d3d3d"   # Background color of root background
+  # Background color of root background
+  :background    => "#3d3d3d"
 }
 
 #
-# Gravities
+# == Gravities
+#
+# Gravities are predefined sizes a window can be set to. There are several ways to set a 
+# certain gravity, most convenient is to define a grafity via a tag or change them during
+# runtime via grab. Subtler and subtlext can also modify gravities.
+#
+# A gravity consists of four values which are a percentage value of the screen size. The first
+# two values are x and y starting at the center of the screen and he last two values are the 
+# width and height.
+#
+# === Example
+#
+# Following defines a gravity for a window with 100% width and height:
+#
+#   :example = [ 0, 0, 100, 100 ]
 #
 GRAVITIES = {
   :top_left       => [   0,   0,  50,  50 ], 
@@ -86,8 +168,9 @@ GRAVITIES = {
   :bottom_right33 => [ 100, 100,  50,  33 ]
 }  
 
+# == Dmenu
 #
-# Dmenu settings
+# This is just an example how to use dmenu with colors defined in the subtle config.
 #
 @dmenu = "dmenu_run -fn '%s' -nb '%s' -nf '%s' -sb '%s' -sf '%s' -p 'Select:'" % [
   OPTIONS[:font],
@@ -95,89 +178,192 @@ GRAVITIES = {
   COLORS[:bg_focus], COLORS[:fg_focus]
 ]
 
+# == Grabs
 #
-# Grabs
+# Grabs are keyboard and mouse actions within subtle, every grab can be assigned either
+# to a key and/or to a mouse button combination. A grab consists of a chain and an action.
 #
-# Modifier keys:
-# A  = Alt key       S = Shift key
-# C  = Control key   W = Super (Windows key)
-# M  = Meta key
+# === Chain
 #
-# Mouse buttons:
-# B1 = Button1       B2 = Button2
-# B3 = Button3       B4 = Button4
-# B5 = Button5
+# A chain is a string of modifiers, mouse buttons and normal keys separated by a hyphen.
+#
+# ==== Modifiers:
+#
+# [*S*] Shift key
+# [*A*] Alt key       
+# [*C*] Control key   
+# [*W*] Super (Windows key)
+# [*M*] Meta key
+#
+# ==== Mouse buttons:
+#
+# [*B1*] Button1       
+# [*B2*] Button2
+# [*B3*] Button3
+# [*B4*] Button4
+# [*B5*] Button5
+#
+# === Action
+#
+# An action is something that happens when a grab is activated, this can be one of the following:
+#
+# [*symbol*] Run a subtle action
+# [*string*] Start a certain program
+# [*array*]  Cycle through gravities
+# [*lambda*] Run a Ruby proc
+#
+# === Example
+#
+# This will create a grab that starts a xterm when Alt+Enter are pressed:
+#
+#   "A-Return" => "xterm"
 #
 GRABS = {
-  # View Jumps
-  "W-1"      => :ViewJump1,                   # Jump to view 1
-  "W-2"      => :ViewJump2,                   # Jump to view 2
-  "W-3"      => :ViewJump3,                   # Jump to view 3 
-  "W-4"      => :ViewJump4,                   # Jump to view 4
+  # Switch to view1, view2, ...
+  "W-1"      => :ViewJump1,
+  "W-2"      => :ViewJump2,
+  "W-3"      => :ViewJump3,
+  "W-4"      => :ViewJump4,
 
-  # View Jumps
-  "W-A-1"    => :ScreenJump1,                 # Jump to screen 1
-  "W-A-2"    => :ScreenJump2,                 # Jump to screen 2
-  "W-A-3"    => :ScreenJump3,                 # Jump to screen 3 
-  "W-A-4"    => :ScreenJump4,                 # Jump to screen 4
+  # Move mouse to screen1, screen2, ...
+  "W-A-1"    => :ScreenJump1,
+  "W-A-2"    => :ScreenJump2,
+  "W-A-3"    => :ScreenJump3,
+  "W-A-4"    => :ScreenJump4,
 
-  # Subtle grabs
-  "W-C-r"    => :SubtleReload,                # Reload config
-  "W-C-q"    => :SubtleQuit,                  # Quit subtle
+  # Move window to screen1, screen2, ...
+  "A-S-1"    => :WindowScreen1,
+  "A-S-2"    => :WindowScreen2,
+  "A-S-3"    => :WindowScreen3,
+  "A-S-4"    => :WindowScreen4,
 
-  # Window grabs
-  "W-B1"     => :WindowMove,                  # Move window
-  "W-B3"     => :WindowResize,                # Resize window
-  "W-f"      => :WindowFloat,                 # Toggle float mode
-  "W-space"  => :WindowFull,                  # Toggle full mode
-  "W-s"      => :WindowStick,                 # Toggle stick mode
-  "W-r"      => :WindowRaise,                 # Raise window
-  "W-l"      => :WindowLower,                 # Lower window
-  "W-Left"   => :WindowLeft,                  # Select window left
-  "W-Down"   => :WindowDown,                  # Select window below
-  "W-Up"     => :WindowUp,                    # Select window above
-  "W-Right"  => :WindowRight,                 # Select window right
-  "W-S-k"    => :WindowKill,                  # Kill window
+  # Force reload of config
+  "W-C-r"    => :SubtleReload,
 
-  "A-S-1"    => :WindowScreen1,               # Move window to screen 1
-  "A-S-2"    => :WindowScreen2,               # Move window to screen 2
-  "A-S-3"    => :WindowScreen3,               # Move window to screen 3
-  "A-S-4"    => :WindowScreen4,               # Move window to screen 4
+  # Quit subtle
+  "W-C-q"    => :SubtleQuit,
 
-  # Gravities grabs
-  "W-KP_7"    => [ :top_left,     :top_left66,     :top_left33     ],  # Top-left gravity
-  "W-KP_8"    => [ :top,          :top66,          :top33          ],  # Top gravity
-  "W-KP_9"    => [ :top_right,    :top_right66,    :top_right33    ],  # Top-right gravity
-  "W-KP_4"    => [ :left,         :left66,         :left33         ],  # Left gravity
-  "W-KP_5"    => [ :center,       :center66,       :center33       ],  # Center gravity
-  "W-KP_6"    => [ :right,        :right66,        :right33        ],  # Right gravity
-  "W-KP_1"    => [ :bottom_left,  :bottom_left66,  :bottom_left33  ],  # Bottom-left gravity
-  "W-KP_2"    => [ :bottom,       :bottom66,       :bottom33       ],  # Bottom gravity
-  "W-KP_3"    => [ :bottom_right, :bottom_right66, :bottom_right33 ],  # Bottom-right gravity
+  # Move current window
+  "W-B1"     => :WindowMove,
 
-  # Exec
-  "W-Return" => "xterm",                      # Exec a term
-  "W-x"      => @dmenu,                       # Exec dmenu
+  # Resize current window
+  "W-B3"     => :WindowResize,
 
-  # Ruby lambdas
-  "S-F2"     => lambda { |c| puts c.name  },  # Print client name
-  "S-F3"     => lambda { puts version },      # Print subtlext version
+  # Toggle floating mode of window
+  "W-f"      => :WindowFloat,
+
+  # Toggle fullscreen mode of window
+  "W-space"  => :WindowFull,
+
+  # Toggle sticky mode of window (will be visible on all views)
+  "W-s"      => :WindowStick,
+
+  # Raise window
+  "W-r"      => :WindowRaise,
+  
+  # Lower window
+  "W-l"      => :WindowLower,
+  
+  # Select next windows
+  "W-Left"   => :WindowLeft,
+  "W-Down"   => :WindowDown,
+  "W-Up"     => :WindowUp,
+  "W-Right"  => :WindowRight,
+
+  # Kill current window
+  "W-S-k"    => :WindowKill,
+
+  # Cycle between given gravities
+  "W-KP_7"    => [ :top_left,     :top_left66,     :top_left33     ],
+  "W-KP_8"    => [ :top,          :top66,          :top33          ],
+  "W-KP_9"    => [ :top_right,    :top_right66,    :top_right33    ],
+  "W-KP_4"    => [ :left,         :left66,         :left33         ],
+  "W-KP_5"    => [ :center,       :center66,       :center33       ],
+  "W-KP_6"    => [ :right,        :right66,        :right33        ],
+  "W-KP_1"    => [ :bottom_left,  :bottom_left66,  :bottom_left33  ],
+  "W-KP_2"    => [ :bottom,       :bottom66,       :bottom33       ],
+  "W-KP_3"    => [ :bottom_right, :bottom_right66, :bottom_right33 ],
+
+  # Exec some programs
+  "W-Return" => "xterm",
+  "W-x"      => @dmenu,
+
+  # Run Ruby lambdas
+  "S-F2"     => lambda { |c| puts c.name  },
+  "S-F3"     => lambda { puts version }
 }
 
 #
-# Tags
+# == Tags
 #
+# Tags are generally used in subtle for placement of windows. This placement is strict,
+# that means that - aside from other tiling window managers - windows must have a matching
+# tag to be on a certain view. This also includes that windows that are started on a certain
+# view will not automatically be placed there.
+#
+# There are to ways to define a tag:
+#
+# [*string*] With a WM_CLASS/WM_NAME
+# [*hash*]   With a hash of properties
+#
+# === Default
+#
+# Whenever a window has no tag it will get the default tag and be placed on the default view. 
+# The default view can either be set by the user with adding the default tag to a view by 
+# choice or otherwise the first defined view will be chosen automatically.
+#
+# === Properties
+#
+# Additionally tags can do a lot more then just control the placement - they also have properties
+# than can define and control some aspects of a window like the default gravity or the default
+# screen per view.
+#
+# [*:float*]   This property either sets the tagged client floating or prevents it from being 
+#              floating depending on the value.
+# [*:full*]    This property either sets the tagged client to fullscreen or prevents it from being
+#              set to fullscreen depending on the value.
+# [*:gravity*] This property sets a certain to gravity to the tagged client, but only on views that
+#              have this tag too.
+# [*:match*]   This property influcences the matching of tags, per default tags will only match the
+#              WM_NAME and the WM_CLASS portion of a client. Match expects an array with following
+#              possible values:
+#
+#              [*:title*]  match the title which is also visible in the panel
+#              [*:name*]   match the WM_NAME
+#              [*:class*]  match the WM_CLASS
+# [*:regex*]   This property sets the matching pattern for a tag. Matching works either via plain,
+#              regex (see regex) or window id. If a pattern matches more than once ONLY the first
+#              match will be used.
+# [*:resize*]  This property either enables or disables honoring of client resize hints and is
+#              independent of the global option.
+# [*:screen*]  This property sets a certain to screen to the tagged client, but only on views that
+#              have this tag too. Please keep in mind that screen count starts with 0 for the first
+#              screen.
+# [*:size*]    This property sets a certain to size as well as floating to the tagged client, but
+#              only on views that have this tag too. It expects an array with x, y, width and height
+#              values.
+# [*:stick*]   This property either sets the tagged client to stick or prevents it from being set to
+#              stick depending on the value. Stick clients are visible on every view.
+# [*:urgent*]  This property either sets the tagged client to be urgent or prevents it from being
+#              urgent depending on the value. Urgent clients will get keyboard and mouse focus
+#              automatically.
+
 TAGS = {
   "terms"   => "xterm|[u]?rxvt",
   "browser" => "uzbl|opera|firefox|navigator",
   "editor"  => { :regex => "[g]?vim", :resize => true },
   "stick"   => { :regex => "mplayer|imagemagick", :float => true, :stick => true },
   "float"   => { :regex => "gimp", :float => true },
-  "fixed"   => { :geometry => [ 10, 10, 100, 100 ], :stick => true }
+  "fixed"   => { :geometry => [ 10, 10, 100, 100 ], :stick => true },
+  "gravity" => { :gravity => :center }
 }  
 
 #
-# Views
+# == Views
+#
+# Views are the virtual desktops in subtle, they show all windows that share a tag with them.
+# Windows that have no tag will be visible on the default view which is the view with the
+# default tag or the first defined view when this tag isn't set.
 #
 VIEWS = {
   "terms" => "terms",
@@ -186,7 +372,20 @@ VIEWS = {
 }
 
 #
-# Hooks
+# == Hooks
+#
+# And finally hooks are a way to bind Ruby scripts to a certain event. Following hooks exist so far:
+#
+# [*:HookCreate*]    Called whenever a window is created
+# [*:HookJump*]      Called whenever the view is switched
+# [*:HookConfigure*] Called whenever a view is configured
+# [*:HookFocus*]     Called whenever a window gets focus
+#
+# === Example
+#
+# This hook will print the name of the window that gets the focus:
+#
+#   :HookFocus => lambda { |c| puts c.name }
 #
 HOOKS = { }
 
