@@ -167,7 +167,8 @@ Window *subSharedClientList(int *size);                           ///< Get clien
 /* }}} */
 
 /* Find {{{ */
-int subSharedClientFind(char *match, Window *win, int flags);     ///< Find client id
+int subSharedClientFind(char *match, char **name,
+  Window *win, int flags);                                        ///< Find client id
 int subSharedGravityFind(char *match, char **name,
   XRectangle *geometry);                                          ///< Find gravity id
 int subSharedScreenFind(int id, XRectangle *geometry);            ///< Find screen id

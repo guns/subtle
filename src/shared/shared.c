@@ -658,15 +658,17 @@ subSharedClientList(int *size)
 
  /** subSharedClientFind {{{
   * @brief Find client id
-  * @param[in]   match  Match string
-  * @param[out]  win    Client window
-  * @param[in]   flags  Matching flags
+  * @param[in]     match  Match string
+  * @param[inout]  name   Name of the client
+  * @param[inout]  win    Client window
+  * @param[in]     flags  Matching flags
   * @return Returns the client window list id
   * @retval  -1  Client not found
   **/
 
 int
 subSharedClientFind(char *match,
+  char **name,
   Window *win,
   int flags)
 {
@@ -702,6 +704,12 @@ subSharedClientFind(char *match,
                 match, clients[i], i, flags);
 
               if(win) *win = clients[i];
+              if(name)
+                {
+                  *name = (char *)subSharedMemoryAlloc(strlen(inst) + 1, sizeof(char));
+                  strncpy(*name, inst, strlen(inst));
+                 }
+              
               id = i;
             }
 

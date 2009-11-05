@@ -82,7 +82,7 @@ SubtlerToggle(char *name,
   Window win = 0;
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  if(-1 != subSharedClientFind(name, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))  
+  if(-1 != subSharedClientFind(name, NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))  
     {
       data.l[1] = XInternAtom(display, type, False);
 
@@ -99,7 +99,7 @@ SubtlerRestack(char *name,
   Window win = 0;
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  if(-1 != subSharedClientFind(name, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))  
+  if(-1 != subSharedClientFind(name, NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))  
     {
       data.l[0] = 2; ///< Mimic a pager
       data.l[1] = win;
@@ -267,7 +267,7 @@ SubtlerClientFind(char *arg1,
   CHECK(arg1, "Usage: %sr -c -f PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  if(-1 != subSharedClientFind(arg1, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))
+  if(-1 != subSharedClientFind(arg1, NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))
     {
       unsigned long *nv = NULL, *rv = NULL;
 
@@ -296,7 +296,7 @@ SubtlerClientFocus(char *arg1,
   CHECK(arg1, "Usage: %sr -c -o CLIENT\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  if(-1 != subSharedClientFind(arg1, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))
+  if(-1 != subSharedClientFind(arg1, NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))
     {
       data.l[0] = win;
       subSharedMessage(DefaultRootWindow(display), "_NET_ACTIVE_WINDOW", data, False);
@@ -394,7 +394,7 @@ SubtlerClientTag(char *arg1,
   CHECK(arg1 && arg2, "Usage: %sr -c PATTERN -T PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  data.l[0] = subSharedClientFind(arg1, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS));
+  data.l[0] = subSharedClientFind(arg1, NULL, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS));
   data.l[1] = subSharedTagFind(arg2, NULL);
 
   if(-1 != data.l[0] && -1 != data.l[1])
@@ -412,7 +412,7 @@ SubtlerClientUntag(char *arg1,
   CHECK(arg1 && arg2, "Usage: %sr -c PATTERN -U PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  data.l[0] = subSharedClientFind(arg1, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS));
+  data.l[0] = subSharedClientFind(arg1, NULL, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS));
   data.l[1] = subSharedTagFind(arg2, NULL);
 
   if(-1 != data.l[0] && -1 != data.l[1])
@@ -430,7 +430,7 @@ SubtlerClientGravity(char *arg1,
   CHECK(arg1 && arg2, "Usage: %sr -c PATTERN -y NUMBER\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  data.l[0] = subSharedClientFind(arg1, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS));
+  data.l[0] = subSharedClientFind(arg1, NULL, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS));
   data.l[1] = subSharedGravityFind(arg2, NULL, NULL);
 
   if(-1 != data.l[0] && -1 != data.l[1])
@@ -448,7 +448,7 @@ SubtlerClientScreen(char *arg1,
   CHECK(arg1 && arg2, "Usage: %sr -c PATTERN -n NUMBER\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  data.l[0] = subSharedClientFind(arg1, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS));
+  data.l[0] = subSharedClientFind(arg1, NULL, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS));
   data.l[1] = atoi(arg2);
 
   if(-1 != data.l[0] && 0 <= data.l[1])
@@ -466,7 +466,7 @@ SubtlerClientTags(char *arg1,
   CHECK(arg1, "Usage: %sr -c PATTERN -G\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  if(-1 != subSharedClientFind(arg1, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))
+  if(-1 != subSharedClientFind(arg1, NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))
     {
       int i, size = 0;
       unsigned long *flags = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL,
@@ -493,7 +493,7 @@ SubtlerClientKill(char *arg1,
   CHECK(arg1, "Usage: %sr -c -k PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  if(-1 != subSharedClientFind(arg1, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))
+  if(-1 != subSharedClientFind(arg1, NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))
     {
       data.l[0] = CurrentTime;
       data.l[1] = 2;  ///< Claim to be a pager
