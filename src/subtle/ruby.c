@@ -464,7 +464,7 @@ RubyParseForeach(VALUE key,
 
                     if(t->flags & SUB_TAG_GEOMETRY)
                       {
-                        if(!RubyGetGeometry(value, "size", &t->geometry)) ///< Sanity
+                        if(!RubyGetGeometry(value, "geometry", &t->geometry)) ///< Sanity
                           t->flags &= ~SUB_TAG_GEOMETRY;
                       }
 
