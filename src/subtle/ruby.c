@@ -673,15 +673,15 @@ RubyWrapLoadConfig(VALUE data)
 
   RubyTags tags[] =
   {
-    { CHAR2SYM("gravity"), SUB_TAG_GRAVITY },
-    { CHAR2SYM("screen"),  SUB_TAG_SCREEN  },
-    { CHAR2SYM("size"),    SUB_TAG_GEOMETRY    },
-    { CHAR2SYM("full"),    SUB_MODE_FULL   },
-    { CHAR2SYM("float"),   SUB_MODE_FLOAT  },
-    { CHAR2SYM("stick"),   SUB_MODE_STICK  },
-    { CHAR2SYM("urgent"),  SUB_MODE_URGENT },
-    { CHAR2SYM("resize"),  SUB_MODE_RESIZE },
-    { CHAR2SYM("match"),   SUB_TAG_MATCH   }
+    { CHAR2SYM("gravity"),  SUB_TAG_GRAVITY  },
+    { CHAR2SYM("screen"),   SUB_TAG_SCREEN   },
+    { CHAR2SYM("geometry"), SUB_TAG_GEOMETRY },
+    { CHAR2SYM("full"),     SUB_MODE_FULL    },
+    { CHAR2SYM("float"),    SUB_MODE_FLOAT   },
+    { CHAR2SYM("stick"),    SUB_MODE_STICK   },
+    { CHAR2SYM("urgent"),   SUB_MODE_URGENT  },
+    { CHAR2SYM("resize"),   SUB_MODE_RESIZE  },
+    { CHAR2SYM("match"),    SUB_TAG_MATCH    }
   };
 
   RubyHooks hooks[] =
