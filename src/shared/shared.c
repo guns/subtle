@@ -656,6 +656,35 @@ subSharedClientList(int *size)
   return clients;
 } /* }}} */
 
+ /** subSharedTrayList {{{
+  * @brief Get tray list
+  * @param[inout]  size  Size of the window list
+  * @return Returns the window list
+  * @retval  NULL  No trays found
+  **/
+
+Window *
+subSharedTrayList(int *size)
+{
+  Window *trays = NULL;
+  unsigned long len = 0;
+
+  assert(size);
+
+  if((trays = (Window *)subSharedPropertyGet(DefaultRootWindow(display),
+      XA_WINDOW, "SUBTLE_TRAY_LIST", &len)))
+    {
+      *size = len / sizeof(Window);
+    }
+  else
+    {
+      *size = 0;
+      subSharedLogDebug("Failed getting tray list\n");
+    }
+
+  return trays;
+} /* }}} */
+
  /** subSharedClientFind {{{
   * @brief Find client id
   * @param[in]     match  Match string
@@ -892,6 +921,76 @@ subSharedTagFind(char *match,
   else subSharedLogDebug("Failed finding tag `%s'\n", match);
 
   return ret;
+} /* }}} */
+
+ /** subSharedTrayFind {{{
+  * @brief Find tray id
+  * @param[in]     match  Tray name or id
+  * @param[inout]  name   Name of the found tray
+  * @param[inout]  win    Tray window
+  * @param[in]     flags  Matching flags
+  * @return Returns the tray list id
+  * @retval  -1  Tag not found
+  **/
+
+int
+subSharedTrayFind(char *match,
+  char **name,
+  Window *win,
+  int flags)
+{
+  int id = -1, size = 0;
+  Window *trays = NULL;
+
+  assert(match);
+  
+  /* Find tray id */
+  if((trays = subSharedTrayList(&size)))
+    {
+      int i;
+      char *title = NULL, *inst = NULL, *klass = NULL, buf[20] = { 0 };
+      Window selwin = None;
+      regex_t *preg = subSharedRegexNew(match);
+
+      if(!strncmp(match, "#", 1) && win)
+        selwin = subSharedWindowSelect(); ///< Select window
+
+      for(i = 0; -1 == id && i < size; i++)
+        {
+          XFetchName(display, trays[i], &title);
+          subSharedPropertyClass(trays[i], &inst, &klass);
+          snprintf(buf, sizeof(buf), "%#lx", trays[i]);
+
+          /* Find client either by window id or by title/inst/class */
+          if(trays[i] == selwin || subSharedRegexMatch(preg, buf) ||
+              (flags & SUB_MATCH_TITLE && title && subSharedRegexMatch(preg, title)) ||
+              (flags & SUB_MATCH_NAME  && inst  && subSharedRegexMatch(preg, inst))  ||
+              (flags & SUB_MATCH_CLASS && klass && subSharedRegexMatch(preg, klass)))
+            {
+              subSharedLogDebug("Found: type=tray, name=%s, win=%#lx, id=%d, flags\n", 
+                match, trays[i], i, flags);
+
+              if(win) *win = trays[i];
+              if(name)
+                {
+                  *name = (char *)subSharedMemoryAlloc(strlen(inst) + 1, sizeof(char));
+                  strncpy(*name, inst, strlen(inst));
+                 }
+              
+              id = i;
+            }
+
+          XFree(title);
+          free(inst);
+          free(klass);
+        }
+
+      subSharedRegexKill(preg);
+      free(trays);
+    }
+  else subSharedLogDebug("Failed finding tray `%s'\n", match);
+
+  return id;
 } /* }}} */
 
  /** subSharedViewFind {{{

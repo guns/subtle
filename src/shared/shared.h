@@ -164,6 +164,7 @@ Window subSharedWindowSelect(void);                               ///< Select a 
 
 /* Lists {{{ */
 Window *subSharedClientList(int *size);                           ///< Get client list
+Window *subSharedTrayList(int *size);                             ///< Get tray list
 /* }}} */
 
 /* Find {{{ */
@@ -174,6 +175,8 @@ int subSharedGravityFind(char *match, char **name,
 int subSharedScreenFind(int id, XRectangle *geometry);            ///< Find screen id
 int subSharedSubletFind(char *match, char **name);                ///< Find sublet id
 int subSharedTagFind(char *match, char **name);                   ///< Find tag id
+int subSharedTrayFind(char *match, char **name,
+  Window *win, int flags);                                        ///< Find tray id
 int subSharedViewFind(char *match, char **name,
   Window *win);                                                   ///< Find view id              
 
