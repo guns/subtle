@@ -241,6 +241,7 @@ EventDestroy(XDestroyWindowEvent *ev)
   else if((t = TRAY(subSharedFind(ev->event, TRAYID)))) ///< Tray
     {
       subArrayRemove(subtle->trays, (void *)t);
+      subTrayPublish();
       subTrayKill(t);
       subTrayUpdate();
       subPanelUpdate();
@@ -263,6 +264,7 @@ EventMessage(XClientMessageEvent *ev)
 
       SubSublet  *s = NULL;
       SubTag     *t = NULL;
+      SubTray    *r = NULL;
       SubView    *v = NULL;
       SubGravity *g = NULL;
 
@@ -462,6 +464,17 @@ EventMessage(XClientMessageEvent *ev)
                 if(reconf) subViewConfigure(subtle->view, False);
               }
             break; /* }}} */
+          case SUB_EWMH_SUBTLE_TRAY_KILL: /* {{{ */
+            if((r = TRAY(subArrayGet(subtle->trays, (int)ev->data.l[0]))))
+              {
+                subArrayRemove(subtle->trays, (void *)r);
+                subTrayKill(r);
+                subTrayPublish();
+                subTrayUpdate();
+                subPanelUpdate();
+                subPanelRender();               
+              }
+            break; /* }}} */            
           case SUB_EWMH_SUBTLE_VIEW_NEW: /* {{{ */
             if(ev->data.b && (v = subViewNew(ev->data.b, NULL)))
               {
@@ -554,6 +567,7 @@ EventMessage(XClientMessageEvent *ev)
                     {
                       t = subTrayNew(ev->data.l[2]);
                       subArrayPush(subtle->trays, (void *)t);
+                      subTrayPublish();
                       subTrayUpdate();
                       subPanelUpdate();
                       subPanelRender();
@@ -1049,6 +1063,7 @@ EventScreen(XRRScreenChangeNotifyEvent *ev)
 void
 subEventWatchAdd(int fd)
 {
+  /* Add descriptor to list */
   watches = (struct pollfd *)subSharedMemoryRealloc(watches, (nwatches + 1) * sizeof(struct pollfd));
 
   watches[nwatches].fd        = fd;
@@ -1189,13 +1204,13 @@ subEventLoop(void)
 #endif /* HAVE_SYS_INOTIFY_H */
                   else ///< Socket {{{ 
                     {
-                       if((s = SUBLET(subSharedFind(subtle->panels.sublets.win, watches[i].fd))))
-                         {
-                           subRubyCall(SUB_CALL_SUBLET_RUN, s->recv, NULL);
-                           subSubletUpdate();
-                           subPanelUpdate();
-                           subPanelRender();
-                         }
+                      if((s = SUBLET(subSharedFind(subtle->panels.sublets.win, watches[i].fd))))
+                        {
+                          subRubyCall(SUB_CALL_SUBLET_RUN, s->recv, NULL);
+                          subSubletUpdate();
+                          subPanelUpdate();
+                          subPanelRender();
+                        }
                     } /* }}} */
                 }
             }

@@ -655,20 +655,20 @@ RubyWrapLoadConfig(VALUE data)
 
   RubyGrabs grabs[] =
   {
-    { CHAR2SYM("SubtleReload"),       SUB_GRAB_SUBTLE_RELOAD,  None                     },
-    { CHAR2SYM("SubtleQuit"),         SUB_GRAB_SUBTLE_QUIT,    None                     }, 
-    { CHAR2SYM("WindowMove"),         SUB_GRAB_WINDOW_MOVE,    None                     },
-    { CHAR2SYM("WindowResize"),       SUB_GRAB_WINDOW_RESIZE,  None                     }, 
-    { CHAR2SYM("WindowFloat"),        SUB_GRAB_WINDOW_TOGGLE,  SUB_MODE_FLOAT           }, 
-    { CHAR2SYM("WindowFull"),         SUB_GRAB_WINDOW_TOGGLE,  SUB_MODE_FULL            }, 
-    { CHAR2SYM("WindowStick"),        SUB_GRAB_WINDOW_TOGGLE,  SUB_MODE_STICK           }, 
-    { CHAR2SYM("WindowRaise"),        SUB_GRAB_WINDOW_STACK,   Above                    }, 
-    { CHAR2SYM("WindowLower"),        SUB_GRAB_WINDOW_STACK,   Below                    }, 
-    { CHAR2SYM("WindowLeft"),         SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_LEFT          }, 
-    { CHAR2SYM("WindowDown"),         SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_DOWN          }, 
-    { CHAR2SYM("WindowUp"),           SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_UP            }, 
-    { CHAR2SYM("WindowRight"),        SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_RIGHT         }, 
-    { CHAR2SYM("WindowKill"),         SUB_GRAB_WINDOW_KILL,    None                     },
+    { CHAR2SYM("SubtleReload"), SUB_GRAB_SUBTLE_RELOAD,  None             },
+    { CHAR2SYM("SubtleQuit"),   SUB_GRAB_SUBTLE_QUIT,    None             }, 
+    { CHAR2SYM("WindowMove"),   SUB_GRAB_WINDOW_MOVE,    None             },
+    { CHAR2SYM("WindowResize"), SUB_GRAB_WINDOW_RESIZE,  None             }, 
+    { CHAR2SYM("WindowFloat"),  SUB_GRAB_WINDOW_TOGGLE,  SUB_MODE_FLOAT   }, 
+    { CHAR2SYM("WindowFull"),   SUB_GRAB_WINDOW_TOGGLE,  SUB_MODE_FULL    }, 
+    { CHAR2SYM("WindowStick"),  SUB_GRAB_WINDOW_TOGGLE,  SUB_MODE_STICK   }, 
+    { CHAR2SYM("WindowRaise"),  SUB_GRAB_WINDOW_STACK,   Above            }, 
+    { CHAR2SYM("WindowLower"),  SUB_GRAB_WINDOW_STACK,   Below            }, 
+    { CHAR2SYM("WindowLeft"),   SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_LEFT  }, 
+    { CHAR2SYM("WindowDown"),   SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_DOWN  }, 
+    { CHAR2SYM("WindowUp"),     SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_UP    }, 
+    { CHAR2SYM("WindowRight"),  SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_RIGHT }, 
+    { CHAR2SYM("WindowKill"),   SUB_GRAB_WINDOW_KILL,    None             },
   };
 
   RubyTags tags[] =
@@ -1308,7 +1308,7 @@ RubySubletInherited(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* RubySubletInterval {{{ */
+/* RubySubletIntervalReader {{{ */
 /*
  * call-seq: interval -> Fixnum
  *
@@ -1319,7 +1319,7 @@ RubySubletInherited(VALUE self,
  */
 
 static VALUE
-RubySubletInterval(VALUE self)
+RubySubletIntervalReader(VALUE self)
 {
   SubSublet *s = NULL;
 
@@ -1328,7 +1328,7 @@ RubySubletInterval(VALUE self)
   return s ? INT2FIX(s->interval) : Qnil;
 } /* }}} */
 
-/* RubySubletIntervalSet {{{ */
+/* RubySubletIntervalWriter {{{ */
 /*
  * call-seq: interval=(fixnum) -> nil
  *
@@ -1339,7 +1339,7 @@ RubySubletInterval(VALUE self)
  */
 
 static VALUE
-RubySubletIntervalSet(VALUE self,
+RubySubletIntervalWriter(VALUE self,
   VALUE value)
 {
   SubSublet *s = NULL;
@@ -1358,7 +1358,7 @@ RubySubletIntervalSet(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* RubySubletData {{{ */
+/* RubySubletDataReader {{{ */
 /*
  * call-seq: data -> String or nil
  *
@@ -1369,7 +1369,7 @@ RubySubletIntervalSet(VALUE self,
  */
 
 static VALUE
-RubySubletData(VALUE self)
+RubySubletDataReader(VALUE self)
 {
   int i;
   VALUE string = Qnil;
@@ -1392,7 +1392,7 @@ RubySubletData(VALUE self)
   return string;
 } /* }}} */
 
-/* RubySubletDataSet {{{ */
+/* RubySubletDataWriter {{{ */
 /*
  * call-seq: data=(string) -> nil
  *
@@ -1403,7 +1403,7 @@ RubySubletData(VALUE self)
  */
 
 static VALUE
-RubySubletDataSet(VALUE self,
+RubySubletDataWriter(VALUE self,
   VALUE value)
 {
   SubSublet *s = NULL;
@@ -1641,12 +1641,13 @@ subRubyInit(void)
   sublet = rb_define_class_under(mod, "Sublet", rb_cObject);
   rb_define_singleton_method(sublet, "new",       RubySubletNew,       0);
   rb_define_singleton_method(sublet, "inherited", RubySubletInherited, 1);
-  rb_define_method(sublet, "interval",  RubySubletInterval,    0);
-  rb_define_method(sublet, "interval=", RubySubletIntervalSet, 1);
-  rb_define_method(sublet, "data",      RubySubletData,        0);
-  rb_define_method(sublet, "data=",     RubySubletDataSet,     1);
-  rb_define_method(sublet, "watch",     RubySubletWatch,       1);
-  rb_define_method(sublet, "unwatch",   RubySubletUnwatch,     0);
+
+  rb_define_method(sublet, "interval",  RubySubletIntervalReader, 0);
+  rb_define_method(sublet, "interval=", RubySubletIntervalWriter, 1);
+  rb_define_method(sublet, "data",      RubySubletDataReader,     0);
+  rb_define_method(sublet, "data=",     RubySubletDataWriter,     1);
+  rb_define_method(sublet, "watch",     RubySubletWatch,          1);
+  rb_define_method(sublet, "unwatch",   RubySubletUnwatch,        0);
 
   /*
    * Document-class: Subtle::Icon

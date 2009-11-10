@@ -181,6 +181,27 @@ subTraySetState(SubTray *t)
     }
 } /* }}} */
 
+ /** subTrayPublish {{{
+  * @brief Publish trays
+  **/
+
+void
+subTrayPublish(void)
+{
+  int i;
+  Window *wins = (Window *)subSharedMemoryAlloc(subtle->trays->ndata, sizeof(Window));
+
+  for(i = 0; i < subtle->trays->ndata; i++)
+    wins[i] = TRAY(subtle->trays->data[i])->win;
+
+  /* EWMH: Client list and client list stacking */
+  subEwmhSetWindows(ROOT, SUB_EWMH_SUBTLE_TRAY_LIST, wins, subtle->trays->ndata);
+
+  subSharedLogDebug("publish=tray, trays=%d\n", subtle->trays->ndata);
+
+  free(wins);
+} /* }}} */
+
  /** subTrayKill {{{
   * @brief Kill tray
   * @param[in]  t  A #SubTray
