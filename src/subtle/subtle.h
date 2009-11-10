@@ -328,6 +328,8 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_TAG_NEW,                                        ///< Subtle tag new
   SUB_EWMH_SUBTLE_TAG_LIST,                                       ///< Subtle tag list
   SUB_EWMH_SUBTLE_TAG_KILL,                                       ///< Subtle tag kill
+  SUB_EWMH_SUBTLE_TRAY_LIST,                                      ///< Subtle tray list
+  SUB_EWMH_SUBTLE_TRAY_KILL,                                      ///< Subtle tray kill
   SUB_EWMH_SUBTLE_VIEW_NEW,                                       ///< Subtle view new
   SUB_EWMH_SUBTLE_VIEW_KILL,                                      ///< Subtle view kill
   SUB_EWMH_SUBTLE_SUBLET_NEW,                                     ///< Subtle sublet new
@@ -673,6 +675,7 @@ void subTrayUpdate(void);                                         ///< Update tr
 void subTraySelect(void);                                         ///< Get selection
 void subTrayFocus(SubTray *t);                                    ///< Focus tray
 void subTraySetState(SubTray *t);                                 ///< Set state
+void subTrayPublish(void);                                        ///< Publish trays
 void subTrayKill(SubTray *t);                                     ///< Delete tray
 /* }}} */
 
