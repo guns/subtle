@@ -24,13 +24,19 @@ Display *display = NULL;
 static int refcount = 0;
 VALUE mod = Qnil;
 
+static const char *klasses[] = { 
+  "Client", "Gravity", "View", "Tag", "Tray", "Screen", "Sublet" 
+};
+
 #ifdef DEBUG
 int debug = 0;
 #endif /* DEBUG */
 
 /* Prototypes {{{ */
-static VALUE SubtlextSubtleClientCurrent(VALUE self);
-VALUE SubtlextClientUpdate(VALUE self);
+static VALUE SubtlextClientUpdate(VALUE self);
+static VALUE SubtlextTrayUpdate(VALUE self);
+static VALUE SubtlextScreenUpdate(VALUE self);
+static VALUE SubtlextViewUpdate(VALUE self);
 /* }}} */
 
 /* Flags {{{ */
@@ -38,12 +44,12 @@ VALUE SubtlextClientUpdate(VALUE self);
 #define SUB_TYPE_GRAVITY 1           ///< Gravity
 #define SUB_TYPE_VIEW    2           ///< View
 #define SUB_TYPE_TAG     3           ///< Tag
-#define SUB_TYPE_SCREEN  4           ///< Screen
-#define SUB_TYPE_SUBLET  5           ///< Sublet
-
-#define SUB_ACTION_TAG   0           ///< Tag
-#define SUB_ACTION_UNTAG 1           ///< Untag
+#define SUB_TYPE_TRAY    4           ///< Tray
+#define SUB_TYPE_SCREEN  5           ///< Screen
+#define SUB_TYPE_SUBLET  6           ///< Sublet
 /* }}} */
+
+/* Instantiator */
 
 /* SubtlextInstantiateClient {{{ */
 static VALUE
@@ -127,6 +133,19 @@ SubtlextInstantiateTag(char *name)
   return tag;
 } /* }}} */
 
+/* SubtlextInstantiateTray {{{ */
+static VALUE
+SubtlextInstantiateTray(Window win)
+{
+  VALUE klass = Qnil, tray = Qnil;
+
+  /* Create new instance */
+  klass = rb_const_get(mod, rb_intern("Tray"));
+  tray  = rb_funcall(klass, rb_intern("new"), 1, LONG2NUM(win));
+
+  return tray;
+} /* }}} */
+
 /* SubtlextInstantiateView {{{ */
 static VALUE
 SubtlextInstantiateView(char *name)
@@ -139,6 +158,8 @@ SubtlextInstantiateView(char *name)
 
   return view;
 } /* }}} */
+
+/* Misc */
 
 /* SubtlextConnect {{{ */
 static void
@@ -183,20 +204,9 @@ SubtlextFind(int type,
 {
   int id = 0, flags = 0;
   Window win = None;
-  char *klass = NULL, *name = NULL, buf[50] = { 0 };
+  char *name = NULL, buf[50] = { 0 };
   XRectangle geometry = { 0 };
   VALUE object = Qnil;
-
-  /* Get object type */
-  switch(type)
-    {
-      case SUB_TYPE_CLIENT:  klass = "Client";  break;
-      case SUB_TYPE_GRAVITY: klass = "Gravity"; break;
-      case SUB_TYPE_TAG:     klass = "Tag";     break;
-      case SUB_TYPE_SCREEN:  klass = "Screen";  break;
-      case SUB_TYPE_SUBLET:  klass = "Sublet";  break;
-      case SUB_TYPE_VIEW:    klass = "View";    break;
-    }
 
   if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
 
@@ -240,11 +250,11 @@ SubtlextFind(int type,
           }
         break; /* }}} */        
       case T_OBJECT: /* {{{ */
-        if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern(klass)))) 
+        if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern(klasses[type])))) 
           object = value;
         break; /* }}} */
       case T_STRING: /* {{{ */
-        if(SUB_TYPE_CLIENT == type) ///< Set default match flags
+        if(SUB_TYPE_CLIENT == type || SUB_TYPE_TRAY == type) ///< Set default match flags
           flags = (SUB_MATCH_NAME|SUB_MATCH_CLASS);
 
         snprintf(buf, sizeof(buf), "%s", RSTRING_PTR(value));
@@ -262,23 +272,27 @@ SubtlextFind(int type,
   switch(type)
     {
       case SUB_TYPE_CLIENT: /* {{{ */
-        if(-1 != (id = subSharedClientFind(buf, &name, &win, flags)))
+        if(-1 != (id = subSharedClientFind(buf, NULL, &win, flags)))
           {
-            object = SubtlextInstantiateClient(win);
-
-            if(!NIL_P(object)) SubtlextClientUpdate(object);
-
-            free(name);
+            if(Qnil != (object = SubtlextInstantiateClient(win)))
+              {
+                rb_iv_set(object, "@id", FIX2INT(id)); 
+                
+                SubtlextClientUpdate(object);
+              }
           }
         break; /* }}} */
       case SUB_TYPE_GRAVITY: /* {{{ */
         if(-1 != (id = subSharedGravityFind(buf, &name, &geometry)))
           {
-            object = SubtlextInstantiateGravity(name);
+            if(Qnil != (object = SubtlextInstantiateGravity(name)))
+              {
+                VALUE geom = SubtlextInstantiateGeometry(geometry.x, geometry.y, 
+                  geometry.width, geometry.height);
 
-            if(!NIL_P(object)) 
-              rb_iv_set(object, "@geometry", SubtlextInstantiateGeometry(geometry.x, geometry.y, 
-                geometry.width, geometry.height));
+                rb_iv_set(object, "@id",       INT2FIX(id)); 
+                rb_iv_set(object, "@geometry", geom);
+              }
             
             free(name);
           }
@@ -286,25 +300,40 @@ SubtlextFind(int type,
       case SUB_TYPE_TAG: /* {{{ */
         if(-1 != (id = subSharedTagFind(buf, &name)))
           {
-            object = SubtlextInstantiateTag(name);
+            if(Qnil != (object = SubtlextInstantiateTag(name)))
+              rb_iv_set(object, "@id", FIX2INT(id)); 
             
             free(name);
           }
-        break; /* }}} */      
+        break; /* }}} */
+      case SUB_TYPE_TRAY: /* {{{ */
+        if(-1 != (id = subSharedTrayFind(buf, NULL, &win, flags)))
+          {
+            if(Qnil != (object = SubtlextInstantiateTray(win)))
+              {
+                rb_iv_set(object, "@id", INT2FIX(id)); 
+
+                SubtlextTrayUpdate(object);
+              }
+          }
+        break; /* }}} */        
       case SUB_TYPE_SCREEN: /* {{{ */
         if(-1 != (id = subSharedScreenFind(id, &geometry)))
           {
-            object = SubtlextInstantiateScreen(id);
+            if(Qnil != (object = SubtlextInstantiateScreen(id)))
+              {
+                VALUE geom = SubtlextInstantiateGeometry(geometry.x, geometry.y, 
+                  geometry.width, geometry.height);
 
-            if(!NIL_P(object)) 
-              rb_iv_set(object, "@geometry", SubtlextInstantiateGeometry(geometry.x, geometry.y, 
-                geometry.width, geometry.height));
+                rb_iv_set(object, "@geometry", geom);
+              }
           }
         break; /* }}} */
       case SUB_TYPE_SUBLET: /* {{{ */
         if(-1 != (id = subSharedSubletFind(buf, &name)))
           {
-            object = SubtlextInstantiateSublet(name);
+            if(Qnil != (object = SubtlextInstantiateSublet(name)))
+              rb_iv_set(object, "@id", INT2FIX(id)); 
             
             free(name);
           }
@@ -312,19 +341,65 @@ SubtlextFind(int type,
       case SUB_TYPE_VIEW: /* {{{ */
         if(-1 != (id = subSharedViewFind(buf, &name, &win)))
           {
-            object = SubtlextInstantiateView(name);
-            
+            if(Qnil != (object = SubtlextInstantiateView(name)))
+              {
+                rb_iv_set(object, "@id",  INT2FIX(id)); 
+                rb_iv_set(object, "@win", LONG2NUM(win)); 
+              }
+
             free(name);
           }
         break; /* }}} */
     }
 
   if(NIL_P(object) && exception)
-    rb_raise(rb_eArgError, "Failed finding `%s'", klass);
+    rb_raise(rb_eArgError, "Failed finding `%s'", klasses[type]);
 
   if(!NIL_P(object)) rb_iv_set(object, "@id", INT2FIX(id)); ///< Set id
 
   return object;
+} /* }}} */
+
+/* SubtlextKill {{{ */
+static VALUE
+SubtlextKill(VALUE value,
+  int type)
+{
+  int id = -1;
+
+  /* Check object type */
+  switch(rb_type(value))
+    {
+      case T_OBJECT: id = FIX2INT(rb_iv_get(value, "@id")); break;
+      case T_STRING:
+        {
+          VALUE object = Qnil;
+
+          if(RTEST((object = SubtlextFind(type, value, False))))
+            id = FIX2INT(rb_iv_get(object, "@id"));
+        }
+    }
+
+  /* Send message */
+  if(-1 != id)
+    {
+      int i = 0;
+      char buf[20] = { 0 };
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+      data.l[0] = id;
+
+      /* Create message type */
+      snprintf(buf, sizeof(buf), "SUBTLE_%s_KILL", klasses[type]);
+      for(i = 6; i < strlen(buf); i++) buf[i] = toupper(buf[i]);
+
+      printf("%s\n", buf);
+
+      subSharedMessage(DefaultRootWindow(display), buf, data, True);
+    }
+  else rb_raise(rb_eStandardError, "Failed killing %s", klasses[type]);
+
+  return Qnil;
 } /* }}} */
 
 /* SubtlextToggle {{{ */
@@ -377,9 +452,9 @@ SubtlextRestack(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* SubtlextGetScreens {{{ */
+/* SubtlextScreens {{{ */
 static VALUE
-SubtlextGetScreens(void)
+SubtlextScreens(void)
 {
   int n = 0;
   VALUE method = Qnil, klass = Qnil, array = Qnil, screen = Qnil, geometry = Qnil; 
@@ -495,20 +570,17 @@ SubtlextMatch(VALUE self,
 static VALUE
 SubtlextTag(VALUE self,
   VALUE value,
-  int type,
-  int action)
+  char *action)
 {
   VALUE tag = Qnil;
-
-  assert(SUB_TYPE_CLIENT == type || SUB_TYPE_TAG == type);
 
   /* Find tag */
   if(Qnil != (tag = SubtlextFind(SUB_TYPE_TAG, value, True)))
     {
       VALUE oid = Qnil, tid = Qnil;
 
-      oid = rb_iv_get(self, "@id");
-      tid = rb_iv_get(tag, "@id");
+      oid   = rb_iv_get(self, "@id");
+      tid   = rb_iv_get(tag, "@id");
 
       if(Qnil != oid && Qnil != tid)
         {
@@ -516,20 +588,109 @@ SubtlextTag(VALUE self,
 
           data.l[0] = FIX2LONG(oid);
           data.l[1] = FIX2LONG(tid);
-          data.l[2] = SUB_TYPE_CLIENT == type ? 0 : 1; ///< Get type
+          data.l[2] = rb_obj_is_instance_of(value, 
+            rb_const_get(mod, rb_intern("Client"))) ? 0 : 1; ///< Client = 0, View = 1
 
-          subSharedMessage(DefaultRootWindow(display),
-            SUB_ACTION_TAG == action ? "SUBTLE_WINDOW_TAG" : "SUBTLE_WINDOW_UNTAG",
-            data, True);
+          subSharedMessage(DefaultRootWindow(display), action, data, True);
         }
     }
 
   return Qnil;
 } /* }}} */
 
-/* SubtlextTaggings {{{ */
+/* Window */
+
+/* SubtlextWindowTagAdd {{{ */
+/*
+ * call-seq: tag(name) -> Subtlext::Tag
+ *           +(name)   -> Subtlext::Tag
+ *
+ * Add a Tag to Client or View
+ *
+ *  client.tag("subtle")
+ *  => #<Subtlext::Tag:xxx>
+ *
+ *  view.tag("subtle")
+ *  => #<Subtlext::Tag:xxx>
+ *
+ *  client + "subtle"
+ *  => #<Subtlext::Tag:xxx>
+ */
+
 static VALUE
-SubtlextTaggings(VALUE self,
+SubtlextWindowTagAdd(VALUE self,
+  VALUE value)
+{
+  return SubtlextTag(self, value, "SUBTLE_WINDOW_TAG");
+} /* }}} */
+
+/* SubtlextWindowTagDel {{{ */
+/*
+ * call-seq: untag(name) -> Subtlext::Tag
+ *           -(name)     -> Subtlext::Tag
+ *
+ * Remove a Tag from Client or View
+ *
+ *  client.untag("subtle")
+ *  => #<Subtlext::Tag:xxx>
+ *
+ *  view.untag("subtle")
+ *  => #<Subtlext::Tag:xxx>
+ *
+ *  client - "subtle"
+ *  => #<Subtlext::Tag:xxx>
+ */
+
+static VALUE
+SubtlextWindowTagDel(VALUE self,
+  VALUE value)
+{
+  return SubtlextTag(self, value, "SUBTLE_WINDOW_UNTAG");
+} /* }}} */
+
+/* SubtlextWindowTagList {{{ */
+static VALUE
+SubtlextWindowTagList(VALUE self)
+{
+  Window win = None;
+  VALUE array = rb_ary_new();
+
+  /* Get win */
+  if(None != (win = NUM2LONG(rb_iv_get(self, "@win"))))
+    {
+      int i, size = 0;
+      char **tags = NULL;
+      unsigned long *flags = NULL;
+      VALUE method = Qnil, klass = Qnil, t = Qnil;
+    
+      method = rb_intern("new");
+      klass  = rb_const_get(mod, rb_intern("Tag"));
+      flags  = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, 
+        "SUBTLE_WINDOW_TAGS", NULL);
+      tags   = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
+
+      /* Build tag array */
+      for(i = 0; i < size; i++)
+        {
+          if((int)*flags & (1L << (i + 1)))
+            {
+              /* Create new tag */
+              t = rb_funcall(klass, method, 1, rb_str_new2(tags[i]));
+              rb_iv_set(t, "@id", INT2FIX(i));
+              rb_ary_push(array, t);
+            }
+        }
+
+      XFreeStringList(tags);
+      free(flags);
+    }
+
+  return array;
+} /* }}} */
+
+/* SubtlextWindowTagAssoc {{{ */
+static VALUE
+SubtlextWindowTagAssoc(VALUE self,
   int type)
 {
   int i, id = 0, size = 0;
@@ -594,9 +755,9 @@ SubtlextTaggings(VALUE self,
   return array;
 } /* }}} */
 
-/* SubtlextTagHas {{{ */
+/* SubtlextWindowTagAsk {{{ */
 static VALUE
-SubtlextTagHas(VALUE self,
+SubtlextWindowTagAsk(VALUE self,
   VALUE value)
 {
   VALUE tag = Qnil, ret = Qfalse;
@@ -619,6 +780,48 @@ SubtlextTagHas(VALUE self,
           
           free(tags);
         }
+    }
+
+  return ret;
+} /* }}} */
+
+/* SubtlextWindowFocus {{{ */
+static VALUE
+SubtlextWindowFocus(VALUE self)
+{
+  VALUE win = Qnil;
+
+  /* Get win */
+  if(Qnil != (win = rb_iv_get(self, "@win")))
+    {
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+      data.l[0] = NUM2LONG(win);
+
+      subSharedMessage(DefaultRootWindow(display), "_NET_ACTIVE_WINDOW", data, True);
+    }
+  else rb_raise(rb_eStandardError, "Failed setting focus");
+
+  return Qnil;
+} /* }}} */
+
+/* SubtlextWindowFocusAsk {{{ */
+static VALUE
+SubtlextWindowFocusAsk(VALUE self)
+{
+  VALUE ret = Qfalse, win = Qnil;
+  unsigned long *focus = NULL;
+
+  /* Fetch data */
+  win   = rb_iv_get(self, "@win");
+  focus = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
+    XA_WINDOW, "_NET_ACTIVE_WINDOW", NULL);
+
+  /* Check if win has focus */
+  if(RTEST(win) && focus)
+    {
+      if(*focus == NUM2LONG(win)) ret = Qtrue;
+      free(focus);
     }
 
   return ret;
@@ -658,6 +861,65 @@ SubtlextClientInit(VALUE self,
   return self;
 } /* }}} */
 
+/* SubtlextClientFind {{{ */
+/*
+ * call-seq: find(id)   -> Subtlext::Client or nil
+ *           find(name) -> Subtlext::Client or nil
+ *           [name]     -> Subtlext::Client or nil
+ *           [id]       -> Subtlext::Client or nil
+ *
+ * Find Client by given name or id
+ *
+ *  Subtlext::Client.find("subtle")
+ *  => #<Subtlext::Client:xxx>
+ *
+ *  Subtlext::Client[1]
+ *  => #<Subtlext::Client:xxx>
+ *
+ *  Subtlext::Client["subtle"]
+ *  => nil
+ */
+
+static VALUE
+SubtlextClientFind(VALUE self,
+  VALUE name)
+{
+  return SubtlextFind(SUB_TYPE_CLIENT, name, True);
+} /* }}} */
+
+/* SubtlextClientCurrent {{{ */
+/*
+ * call-seq: current -> Subtlext::Client
+ *
+ * Get current active Client
+ *
+ *  Subtlext::Client.current
+ *  => #<Subtlext::Client:xxx>
+ */
+
+
+static VALUE
+SubtlextClientCurrent(VALUE self)
+{
+  VALUE client = Qnil;
+  unsigned long *focus = NULL;
+
+  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+
+  if((focus = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
+    XA_WINDOW, "_NET_ACTIVE_WINDOW", NULL)))
+    {
+      client = SubtlextInstantiateClient(*focus);
+
+      if(!NIL_P(client)) SubtlextClientUpdate(client);
+
+      free(focus);
+    }
+  else rb_raise(rb_eStandardError, "Failed getting current client");
+
+  return client;
+} /* }}} */
+
 /* SubtlextClientUpdate {{{ */
 /*
  * call-seq: update -> nil
@@ -668,7 +930,7 @@ SubtlextClientInit(VALUE self,
  *  => nil
  */
 
-VALUE
+static VALUE
 SubtlextClientUpdate(VALUE self)
 {
   VALUE win = rb_iv_get(self, "@win");
@@ -773,118 +1035,7 @@ SubtlextClientViewList(VALUE self)
   return array;
 } /* }}} */
 
-/* SubtlextClientTagList {{{ */
-/*
- * call-seq: tags -> Array
- *
- * Get Array of defined Tag
- *
- *  client.tags
- *  => [#<Subtlext::Tag:xxx>, #<Subtlext::Tag:xxx>]
- * 
- *  client.tags
- *  => []
- */
-
-static VALUE
-SubtlextClientTagList(VALUE self)
-{
-  Window win = 0;
-  int i, size = 0;
-  char **tags = NULL;
-  unsigned long *flags = NULL;
-  VALUE array = Qnil, method = Qnil, klass = Qnil;
-
-  if((win = NUM2LONG(rb_iv_get(self, "@win"))))
-    {
-      method = rb_intern("new");
-      klass  = rb_const_get(mod, rb_intern("Tag"));
-      flags  = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, 
-        "SUBTLE_WINDOW_TAGS", NULL);
-      tags   = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
-      array  = rb_ary_new2(size);
-
-      /* Build tag array */
-      for(i = 0; i < size; i++)
-        {
-          if((int)*flags & (1L << (i + 1)))
-            {
-              VALUE t = rb_funcall(klass, method, 1, rb_str_new2(tags[i]));
-              rb_iv_set(t, "@id", INT2FIX(i));
-              rb_ary_push(array, t);
-            }
-        }
-
-      XFreeStringList(tags);
-      free(flags);
-    }
-
-  return array;
-} /* }}} */
-
-/* SubtlextClientTagHas {{{ */
-/*
- * call-seq: has_tag?(name) -> true or false
- * 
- * Check if Client has Tag by given name or Tag object
- *
- *  client.has_tag?("subtle")
- *  => true
- * 
- *  client.has_tag?(subtle.find_tag("subtle"))
- *  => false
- */
-
-static VALUE
-SubtlextClientTagHas(VALUE self,
-  VALUE value)
-{
-  return SubtlextTagHas(self, value);
-} /* }}} */
-
-/* SubtlextClientTagAdd {{{ */
-/*
- * call-seq: tag(name) -> nil
- *
- * Tag Client with given name or Tag object
- *
- *  client.tag("subtle")
- *  => #<Subtlext::Tag:xxx>
- * 
- *  client.tag(Subtlext::Tag.new("subtle"))
- *  => #<Subtlext::Tag:xxx>
- */
-
-static VALUE
-SubtlextClientTagAdd(VALUE self,
-  VALUE value)
-{
-  SubtlextTag(self, value, SUB_TYPE_CLIENT, SUB_ACTION_TAG);
-
-  return Qnil;
-} /* }}} */
-
-/* SubtlextClientTagDel {{{ */
-/*
- * call-seq: untag(name) -> nil
- *
- * Untag Client with given name or Tag object
- *
- *  client.untag("subtle")
- *  => nil
- * 
- *  client.untag(subtle.find_tag("subtle"))
- *  => nil
- */
-
-static VALUE
-SubtlextClientTagDel(VALUE self,
-  VALUE value)
-{
-  return SubtlextTag(self, value, SUB_TYPE_CLIENT, SUB_ACTION_UNTAG);
-} /* }}} */
-
-/* SubtlextClientStateFull {{{ */
+/* SubtlextClientStateFullAsk {{{ */
 /*
  * call-seq: is_full? -> true or false
  *
@@ -898,12 +1049,12 @@ SubtlextClientTagDel(VALUE self,
  */
 
 VALUE
-SubtlextClientStateFull(VALUE self)
+SubtlextClientStateFullAsk(VALUE self)
 {
   return FIX2INT(rb_iv_get(self, "@flags")) & SUB_EWMH_FULL ? Qtrue : Qfalse;
 } /* }}} */
 
-/* SubtlextClientStateFloat {{{ */
+/* SubtlextClientStateFloatAsk {{{ */
 /*
  * call-seq: is_float? -> true or false
  *
@@ -917,12 +1068,12 @@ SubtlextClientStateFull(VALUE self)
  */
 
 VALUE
-SubtlextClientStateFloat(VALUE self)
+SubtlextClientStateFloatAsk(VALUE self)
 {
   return FIX2INT(rb_iv_get(self, "@flags")) & SUB_EWMH_FLOAT ? Qtrue : Qfalse;
 } /* }}} */
 
-/* SubtlextClientStateStick {{{ */
+/* SubtlextClientStateStickAsk {{{ */
 /*
  * call-seq: is_stick? -> true or false
  *
@@ -936,7 +1087,7 @@ SubtlextClientStateFloat(VALUE self)
  */
 
 VALUE
-SubtlextClientStateStick(VALUE self)
+SubtlextClientStateStickAsk(VALUE self)
 {
   return FIX2INT(rb_iv_get(self, "@flags")) & SUB_EWMH_STICK ? Qtrue : Qfalse;
 } /* }}} */
@@ -1110,20 +1261,10 @@ SubtlextClientMatchDown(VALUE self)
 static VALUE
 SubtlextClientFocus(VALUE self)
 {
-  VALUE win = rb_iv_get(self, "@win");
-  SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-  if(RTEST(win))
-    {
-      data.l[0] = NUM2LONG(win);
-      subSharedMessage(DefaultRootWindow(display), "_NET_ACTIVE_WINDOW", data, True);
-    }
-  else rb_raise(rb_eStandardError, "Failed setting focus");
-
-  return Qnil;
+  return SubtlextWindowFocus(self);
 } /* }}} */
 
-/* SubtlextClientFocusHas {{{ */
+/* SubtlextClientFocusAsk {{{ */
 /*
  * call-seq: has_focus? -> true or false
  *
@@ -1137,26 +1278,12 @@ SubtlextClientFocus(VALUE self)
  */
 
 static VALUE
-SubtlextClientFocusHas(VALUE self)
+SubtlextClientFocusAsk(VALUE self)
 {
-  VALUE ret = Qfalse, win = Qnil;
-  unsigned long *focus = NULL;
-
-  /* Fetch data */
-  win   = rb_iv_get(self, "@win");
-  focus = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-    XA_WINDOW, "_NET_ACTIVE_WINDOW", NULL);
-
-  if(RTEST(win) && focus)
-    {
-      if(*focus == NUM2LONG(win)) ret = Qtrue;
-      free(focus);
-    }
-
-  return ret;
+  return SubtlextWindowFocusAsk(self);
 } /* }}} */
 
-/* SubtlextClientAlive {{{ */
+/* SubtlextClientAliveAsk {{{ */
 /*
  * call-seq: alive? -> true or false
  *
@@ -1170,7 +1297,7 @@ SubtlextClientFocusHas(VALUE self)
  */
 
 static VALUE
-SubtlextClientAlive(VALUE self)
+SubtlextClientAliveAsk(VALUE self)
 {
   VALUE ret = Qfalse, name = rb_iv_get(self, "@name");
 
@@ -1180,24 +1307,6 @@ SubtlextClientAlive(VALUE self)
     ret = Qtrue;
 
   return ret;
-} /* }}} */
-
-/* SubtlextClientToString {{{ */
-/*
- * call-seq: to_str -> String
- *
- * Convert Client object to String
- *
- *  puts client
- *  => "subtle"
- */
-
-static VALUE
-SubtlextClientToString(VALUE self)
-{
-  VALUE name = rb_iv_get(self, "@name");
-
-  return RTEST(name) ? name : Qnil;
 } /* }}} */
 
 /* SubtlextClientGravityReader {{{ */
@@ -1459,44 +1568,22 @@ SubtlextClientGeometryWriter(int argc,
   return geometry;
 } /* }}} */
 
-/* SubtlextClientOperatorPlus {{{ */
+/* SubtlextClientToString {{{ */
 /*
- * call-seq: +(tag) -> nil
+ * call-seq: to_str -> String
  *
- * Add existing Tag to Client
+ * Convert Client object to String
  *
- *  client + tag
- *  => nil
- *
- *  client + "subtle" 
- *  => nil
+ *  puts client
+ *  => "subtle"
  */
 
 static VALUE
-SubtlextClientOperatorPlus(VALUE self,
-  VALUE value)
+SubtlextClientToString(VALUE self)
 {
-  return SubtlextTag(self, value, SUB_ACTION_TAG, SUB_TYPE_CLIENT);
-} /* }}} */
+  VALUE name = rb_iv_get(self, "@name");
 
-/* SubtlextClientOperatorMinus {{{ */
-/*
- * call-seq: -(tag) -> nil
- *
- * Add exsiting Tag to client
- *
- *  client - tag
- *  => nil
- *
- *  client - "subtle" 
- *  => nil
- */
-
-static VALUE
-SubtlextClientOperatorMinus(VALUE self,
-  VALUE value)
-{
-  return SubtlextTag(self, value, SUB_TYPE_CLIENT, SUB_ACTION_UNTAG);
+  return RTEST(name) ? name : Qnil;
 } /* }}} */
 
 /* SubtlextClientKill {{{ */
@@ -1640,7 +1727,7 @@ SubtlextGeometryToArray(VALUE self)
   return ary;
 } /* }}} */
 
-/* SubtlextGeometryToHAsh {{{ */
+/* SubtlextGeometryToHash {{{ */
 /*
  * call-seq: to_hash -> Hash
  *
@@ -1719,6 +1806,32 @@ SubtlextGravityInit(VALUE self,
   if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
 
   return self;
+} /* }}} */
+
+/* SubtlextGravityFind {{{ */
+/*
+ * call-seq: find(id)   -> Subtlext::Gravity or nil
+ *           find(name) -> Subtlext::Gravity or nil
+ *           [name]     -> Subtlext::Gravity or nil
+ *           [id]       -> Subtlext::Gravity or nil
+ *
+ * Find Gravity by given name or id
+ *
+ *  Subtlext::Gravity.find("subtle")
+ *  => #<Subtlext::Gravity:xxx>
+ *
+ *  Subtlext::Gravity[1]
+ *  => #<Subtlext::Gravity:xxx>
+ *
+ *  Subtlext::Gravity["subtle"]
+ *  => nil
+ */
+
+static VALUE
+SubtlextGravityFind(VALUE self,
+  VALUE value)
+{
+  return SubtlextFind(SUB_TYPE_GRAVITY, value, True);
 } /* }}} */
 
 /* SubtlextGravityUpdate {{{ */
@@ -1803,6 +1916,22 @@ SubtlextGravityToString(VALUE self)
   return rb_str_new2(gravities[FIX2INT(rb_iv_get(self, "@id")) - 1]);
 } /* }}} */
 
+/* SubtlextGravityKill {{{ */
+/*
+ * call-seq: kill -> nil
+ *
+ * Kill a Gravity
+ *
+ *  gravity.kill
+ *  => nil
+ */
+
+static VALUE
+SubtlextGravityKill(VALUE self)
+{
+  return SubtlextKill(self, SUB_TYPE_GRAVITY);
+} /* }}} */
+
 /* Screen */
 
 /* SubtlextScreenInit {{{ */
@@ -1828,6 +1957,68 @@ SubtlextScreenInit(VALUE self,
   if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
 
   return self;
+} /* }}} */
+
+/* SubtlextScreenFind {{{ */
+/*
+ * call-seq: find(id)   -> Subtlext::Screen or nil
+ *           find(name) -> Subtlext::Screen or nil
+ *           [name]     -> Subtlext::Screen or nil
+ *           [id]       -> Subtlext::Screen or nil
+ *
+ * Find Screen by given name or id
+ *
+ *  Subtlext::Screen.find("subtle")
+ *  => #<Subtlext::Screen:xxx>
+ *
+ *  Subtlext::Screen[1]
+ *  => #<Subtlext::Screen:xxx>
+ *
+ *  Subtlext::Screen["subtle"]
+ *  => nil
+ */
+
+static VALUE
+SubtlextScreenFind(VALUE self,
+  VALUE id)
+{
+  return SubtlextFind(SUB_TYPE_SCREEN, id, True);
+} /* }}} */
+
+/* SubtlextSubtleCurrent {{{ */
+/*
+ * call-seq: current -> Subtlext::Screen
+ *
+ * Get current active Screen
+ *
+ *  Subtlext::Screen.current
+ *  => #<Subtlext::Screen:xxx>
+ */
+
+static VALUE
+SubtlextScreenCurrent(VALUE self)
+{
+  unsigned long *focus = NULL;
+  VALUE screen = Qnil;
+
+  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+
+  /* Get current screen from current client or use the first */
+  if((focus = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
+    XA_WINDOW, "_NET_ACTIVE_WINDOW", NULL)))
+    {
+      int *id = NULL;
+
+      id     = (int *)subSharedPropertyGet(*focus, XA_CARDINAL, "SUBTLE_WINDOW_SCREEN", NULL);
+      screen = SubtlextInstantiateScreen(*id);
+
+      if(!NIL_P(screen)) SubtlextScreenUpdate(screen);
+
+      free(focus);
+      free(id);
+    }
+
+  return screen;
 } /* }}} */
 
 /* SubtlextScreenUpdate {{{ */
@@ -2041,7 +2232,7 @@ SubtlextSubtleDisplay(VALUE self)
   return rb_str_new2(DisplayString(display));
 } /* }}} */
 
-/* SubtlextSubtleRunning {{{ */
+/* SubtlextSubtleRunningAsk {{{ */
 /*
  * call-seq: running? -> true or false
  *
@@ -2055,49 +2246,9 @@ SubtlextSubtleDisplay(VALUE self)
  */
 
 static VALUE
-SubtlextSubtleRunning(VALUE self)
+SubtlextSubtleRunningAsk(VALUE self)
 {
   return subSharedSubtleRunning() ? Qtrue : Qfalse;
-} /* }}} */
-
-/* SubtlextSubtleReload {{{ */
-/*
- * call-seq: reload -> nil
- *
- * Force Subtle to reload the config
- *
- *  subtle.reload
- *  => nil
- */
-
-static VALUE
-SubtlextSubtleReload(VALUE self)
-{
-  SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_RELOAD", data, True);
-
-  return Qnil;
-} /* }}} */
-
-/* SubtlextSubtleQuit {{{ */
-/*
- * call-seq: quit -> nil
- *
- * Force Subtle to exit
- *
- *  subtle.reload
- *  => nil
- */
-
-static VALUE
-SubtlextSubtleQuit(VALUE self)
-{
-  SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_QUIT", data, True);
-
-  return Qnil;
 } /* }}} */
 
 /* SubtlextSubtleSpawn {{{ */
@@ -2121,197 +2272,21 @@ SubtlextSubtleSpawn(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* SubtlextSubtleTagList {{{ */
+/* SubtlextSubtleFocus {{{ */
 /*
- * call-seq: tags -> Array
- *
- * Get Array of defined Tag
- *
- *  subtle.tags
- *  => [#<Subtlext::Tag:xxx>, #<Subtlext::Tag:xxx>]
- *
- *  subtle.tags
- *  => []
- */
-
-static VALUE
-SubtlextSubtleTagList(VALUE self)
-{
-  int i, size = 0;
-  char **tags = NULL;
-  VALUE array = Qnil, method = Qnil, klass = Qnil;
-  
-  method = rb_intern("new");
-  klass  = rb_const_get(mod, rb_intern("Tag"));
-  tags   = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
-  array  = rb_ary_new2(size);
-
-  for(i = 0; i < size; i++)
-    {
-      VALUE t = rb_funcall(klass, method, 1, rb_str_new2(tags[i]));
-
-      rb_iv_set(t, "@id",  INT2FIX(i));
-      rb_ary_push(array, t);
-    }
-
-  XFreeStringList(tags);
-
-  return array;
-} /* }}} */
-
-/* SubtlextSubtleTagFind {{{ */
-/*
- * call-seq: find_tag(name) -> Subtlext::Tag or nil
- *
- * Find Tag by given name
- *
- *  subtle.find_tag("subtle")
- *  => #<Subtlext::Tag:xxx>
- * 
- *  subtle.find_tag("subtle")
- *  => nil
- */
-
-static VALUE
-SubtlextSubtleTagFind(VALUE self,
-  VALUE name)
-{
-  return SubtlextFind(SUB_TYPE_TAG, name, True);
-} /* }}} */
-
-/* SubtlextSubtleTagAdd {{{ */
-/*
- * call-seq: add_tag(name) -> Subtlext::Tag
- *
- * Add Tag with given name or Tag object
- *
- *  subtle.add_tag("subtle")
- *  => #<Subtlext::Tag:xxx>
- *
- *  subtle.add_tag(Tag.new("subtle"))
- *  => #<Subtlext::Tag:xxx>
- */
-
-static VALUE
-SubtlextSubtleTagAdd(VALUE self,
-  VALUE value)
-{
-  VALUE tag = Qnil;
-
-  if(NIL_P((tag = SubtlextFind(SUB_TYPE_TAG, value, False))))
-    {
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-      snprintf(data.b, sizeof(data.b), "%s", RSTRING_PTR(value));
-      subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_NEW", data, True);    
-
-      tag = SubtlextInstantiateTag(RSTRING_PTR(value));
-    }
-
-  return tag;
-} /* }}} */
-
-/* SubtlextSubtleTagDel {{{ */
-/*
- * call-seq: del_tag(name) -> nil
- *
- * Delete Tag by given name or Tag object
- *
- *  subtle.del_tag("subtle")
- *  => nil
- * 
- *  subtle.del_tag(subtle.find_tag("subtle"))
- *  => nil
- */
-
-static VALUE
-SubtlextSubtleTagDel(VALUE self,
-  VALUE value)
-{
-  VALUE tag = Qnil;
-
-  if(RTEST((tag = SubtlextFind(SUB_TYPE_TAG, value, True))))
-    {
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-      data.l[0] = FIX2LONG(rb_iv_get(tag, "@id"));
-
-      subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_KILL", data, True);  
-    }
-
-  return Qnil;
-} /* }}} */
-
-/* SubtlextSubtleClientList {{{ */
-/*
- * call-seq: clients -> Array
- *
- * Get Array of Client
- *
- *  subtle.clients
- *  => [#<Subtlext::Client:xxx>, #<Subtlext::Client:xxx>]
- *
- *  subtle.clients
- *  => []
- */
-
-static VALUE
-SubtlextSubtleClientList(VALUE self)
-{
-  int size = 0;
-  Window *clients = NULL;
-  VALUE array = Qnil;
-
-  array  = rb_ary_new2(size);    
-
-  if((clients = subSharedClientList(&size)))
-    {
-      int i;
-
-      for(i = 0; i < size; i++)
-        rb_ary_push(array, SubtlextInstantiateClient(clients[i]));
-
-      free(clients);
-    }
-
-  return array;
-} /* }}} */
-
-/* SubtlextSubtleClientFind {{{ */
-/*
- * call-seq: find_client(name) -> Subtlext::Client or nil
- *
- * Find Client by given name
- *
- *  subtle.find_client("subtle")
- *  => #<Subtlext::Client:xxx>
- * 
- *  subtle.find_client("subtle")
- *  => nil
- */
-
-static VALUE
-SubtlextSubtleClientFind(VALUE self,
-  VALUE name)
-{
-  return SubtlextFind(SUB_TYPE_CLIENT, name, True);
-} /* }}} */
-
-/* SubtlextSubtleClientFocus {{{ */
-/*
- * call-seq: focus_client(name) -> Subtlext::Client or nil
+ * call-seq: focus(name) -> Subtlext::Client or nil
  *
  * Find Client by given name and set focus
  *
- *  subtle.focus_client("subtle")
+ *  subtle.focus("subtle")
  *  => #<Subtlext::Client:xxx>
  *
- *  subtle.focus_client("subtle")
+ *  subtle.focus("subtle")
  *  => nil
  */
 
 static VALUE
-SubtlextSubtleClientFocus(VALUE self,
+SubtlextSubtleFocus(VALUE self,
   VALUE name)
 {
   int id = -1;
@@ -2333,80 +2308,44 @@ SubtlextSubtleClientFocus(VALUE self,
   return client;
 } /* }}} */
 
-/* SubtlextSubtleClientFocusLeft {{{ */
+/* SubtlextSubtleClientList {{{ */
 /*
- * call-seq: focus_left -> Sublext::Client or nil
+ * call-seq: clients -> Array
  *
- * Focus Client left from current Client
+ * Get Array of Client
  *
- *  subtle.focus_left
- *  => #<Subtlext::Client:xxx>
+ *  subtle.clients
+ *  => [#<Subtlext::Client:xxx>, #<Subtlext::Client:xxx>]
  *
- *  subtle.focus_left
- *  => nil
+ *  subtle.clients
+ *  => []
  */
 
 static VALUE
-SubtlextSubtleClientFocusLeft(VALUE self)
+SubtlextSubtleClientList(VALUE self)
 {
-  return SubtlextClientFocus(SubtlextClientMatchLeft(SubtlextSubtleClientCurrent(self)));
-} /* }}} */
+  int i, size = 0;
+  Window *clients = NULL;
+  VALUE meth = Qnil, klass = Qnil, array = Qnil;
+  
+  meth    = rb_intern("new");
+  klass   = rb_const_get(mod, rb_intern("Client"));
+  clients = subSharedClientList(&size);
+  array   = rb_ary_new2(size);    
 
-/* SubtlextSubtleClientFocusDown {{{ */
-/*
- * call-seq: focus_down -> Sublext::Client or nil
- *
- * Focus Client below current Client
- *
- *  subtle.focus_down
- *  => #<Subtlext::Client:xxx>
- *
- *  subtle.focus_down
- *  => nil
- */
+  /* Populate array */
+  for(i = 0; i < size; i++)
+    {
+      VALUE c = rb_funcall(klass, meth, 1, LONG2NUM(clients[i]));
 
-static VALUE
-SubtlextSubtleClientFocusDown(VALUE self)
-{
-  return SubtlextClientFocus(SubtlextClientMatchDown(SubtlextSubtleClientCurrent(self)));
-} /* }}} */
+      if(!NIL_P(c)) SubtlextClientUpdate(c);
 
-/* SubtlextSubtleClientFocusUp {{{ */
-/*
- * call-seq: focus_up -> Sublext::Client or nil
- *
- * Focus Client above current Client
- *
- *  subtle.focus_up
- *  => #<Subtlext::Client:xxx>
- *
- *  subtle.focus_up
- *  => nil
- */
+      rb_ary_push(array, c);
+    }
 
-static VALUE
-SubtlextSubtleClientFocusUp(VALUE self)
-{
-  return SubtlextClientFocus(SubtlextClientMatchUp(SubtlextSubtleClientCurrent(self)));
-} /* }}} */
+  free(clients);
 
-/* SubtlextSubtleClientFocusRight {{{ */
-/*
- * call-seq: focus_right -> Sublext::Client or nil
- *
- * Focus Client right from current Client
- *
- *  subtle.focus_right
- *  => #<Subtlext::Client:xxx>
- *
- *  subtle.focus_right
- *  => nil
- */
-
-static VALUE
-SubtlextSubtleClientFocusRight(VALUE self)
-{
-  return SubtlextClientFocus(SubtlextClientMatchRight(SubtlextSubtleClientCurrent(self)));
+  return array;
 } /* }}} */
 
 /* SubtlextSubtleClientDel {{{ */
@@ -2443,35 +2382,6 @@ SubtlextSubtleClientDel(VALUE self,
   else rb_raise(rb_eStandardError, "Failed finding client");
 
   return Qnil;
-} /* }}} */
-
-/* SubtlextSubtleClientCurrent {{{ */
-/*
- * call-seq: current_client -> Subtlext::Client
- *
- * Get current active Client
- *
- *  subtle.current_client
- *  => #<Subtlext::Client:xxx>
- */
-
-
-static VALUE
-SubtlextSubtleClientCurrent(VALUE self)
-{
-  VALUE client = Qnil;
-  unsigned long *focus = NULL;
-
-  if((focus = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-    XA_WINDOW, "_NET_ACTIVE_WINDOW", NULL)))
-    {
-      client = SubtlextInstantiateClient(*focus);
-
-      free(focus);
-    }
-  else rb_raise(rb_eStandardError, "Failed getting current client");
-
-  return client;
 } /* }}} */
 
 /* SubtlextSubtleGravityList {{{ */
@@ -2531,58 +2441,190 @@ SubtlextSubtleGravityList(VALUE self)
   return array;
 } /* }}} */
 
-/* SubtlextSubtleGravityFind {{{ */
+/* SubtlextSubtleGravityDel {{{ */
 /*
- * call-seq: find_gravity(id)   -> Subtlext::Gravity or nil
- *           find_gravity(name) -> Subtlext::Gravity or nil
+ * call-seq: del_gravity(name) -> nil
  *
- * Find Gravity by given id
+ * Delete Gravity by given name or Gravity object
  *
- *  subtle.find_gravity(1)
- *  => #<Subtlext::Gravity:xxx>
- *
- *  subtle.find_gravity("top")
- *  => #<Subtlext::Gravity:xxx>
- *
- *  subtle.find_gravity(1)
+ *  subtle.del_gravity("subtle")
+ *  => nil
+ * 
+ *  subtle.del_gravity(subtle.find_gravity("subtle"))
  *  => nil
  */
 
 static VALUE
-SubtlextSubtleGravityFind(VALUE self,
+SubtlextSubtleGravityDel(VALUE self,
   VALUE value)
 {
-  return SubtlextFind(SUB_TYPE_GRAVITY, value, True);
+  return SubtlextKill(value, SUB_TYPE_GRAVITY);
 } /* }}} */
 
-/* SubtlextSubtleSubletDel {{{ */
+/* SubtlextSubtleTagList {{{ */
 /*
- * call-seq: del_sublet(name) -> nil
+ * call-seq: tags -> Array
  *
- * Delete Sublet by given name
+ * Get Array of defined Tag
+ *
+ *  subtle.tags
+ *  => [#<Subtlext::Tag:xxx>, #<Subtlext::Tag:xxx>]
+ *
+ *  subtle.tags
+ *  => []
+ */
+
+static VALUE
+SubtlextSubtleTagList(VALUE self)
+{
+  int i, size = 0;
+  char **tags = NULL;
+  VALUE meth = Qnil, klass = Qnil, array = Qnil;
+  
+  meth  = rb_intern("new");
+  klass = rb_const_get(mod, rb_intern("Tag"));
+  tags  = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
+  array = rb_ary_new2(size);
+
+  /* Populate array */
+  for(i = 0; i < size; i++)
+    {
+      VALUE t = rb_funcall(klass, meth, 1, rb_str_new2(tags[i]));
+
+      rb_iv_set(t, "@id",  INT2FIX(i));
+      rb_ary_push(array, t);
+    }
+
+  XFreeStringList(tags);
+
+  return array;
+} /* }}} */
+
+/* SubtlextSubtleTagAdd {{{ */
+/*
+ * call-seq: add_tag(name) -> Subtlext::Tag
+ *
+ * Add Tag with given name or Tag object
+ *
+ *  subtle.add_tag("subtle")
+ *  => #<Subtlext::Tag:xxx>
+ *
+ *  subtle.add_tag(Tag.new("subtle"))
+ *  => #<Subtlext::Tag:xxx>
+ */
+
+static VALUE
+SubtlextSubtleTagAdd(VALUE self,
+  VALUE value)
+{
+  VALUE tag = Qnil;
+
+  if(NIL_P((tag = SubtlextFind(SUB_TYPE_TAG, value, False))))
+    {
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+      snprintf(data.b, sizeof(data.b), "%s", RSTRING_PTR(value));
+      subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_NEW", data, True);    
+
+      tag = SubtlextInstantiateTag(RSTRING_PTR(value));
+    }
+
+  return tag;
+} /* }}} */
+
+/* SubtlextSubtleTagDel {{{ */
+/*
+ * call-seq: del_tag(name) -> nil
+ *
+ * Delete Tag by given name or Tag object
+ *
+ *  subtle.del_tag("subtle")
+ *  => nil
+ * 
+ *  subtle.del_tag(subtle.find_tag("subtle"))
+ *  => nil
+ */
+
+static VALUE
+SubtlextSubtleTagDel(VALUE self,
+  VALUE value)
+{
+  return SubtlextKill(value, SUB_TYPE_TAG);
+} /* }}} */
+
+/* SubtlextSubtleTrayList {{{ */
+/*
+ * call-seq: trays -> Array
+ *
+ * Get Array of defined Tray
+ *
+ *  subtle.trays
+ *  => [#<Subtlext::Tray:xxx>, #<Subtlext::Tray:xxx>]
+ *
+ *  subtle.trays
+ *  => []
+ */
+
+static VALUE
+SubtlextSubtleTrayList(VALUE self)
+{
+  int i, size = 0;
+  Window *trays = NULL;
+  VALUE meth = Qnil, klass = Qnil, array = Qnil;
+  
+  meth  = rb_intern("new");
+  klass = rb_const_get(mod, rb_intern("Tray"));
+  trays = subSharedTrayList(&size);
+  array = rb_ary_new2(size);
+
+  for(i = 0; i < size; i++)
+    {
+      VALUE t = rb_funcall(klass, meth, 1, LONG2NUM(trays[i]));
+
+      if(!NIL_P(t)) SubtlextTrayUpdate(t);
+
+      rb_ary_push(array, t);
+    }
+
+  free(trays);
+
+  return array;
+} /* }}} */
+
+/* SubtlextSubtleTrayDel {{{ */
+/*
+ * call-seq: del_tray(name) -> nil
+ *
+ * Delete Tray by given name or Tray object
  *
  *  subtle.del_sublet("subtle")
  *  => nil
  */
 
 static VALUE
-SubtlextSubtleSubletDel(VALUE self,
-  VALUE name)
+SubtlextSubtleTrayDel(VALUE self,
+  VALUE value)
 {
-  int id = -1;
+  return SubtlextKill(value, SUB_TYPE_TRAY);
+} /* }}} */
 
-  if(RTEST(name) && -1 != ((id = subSharedSubletFind(RSTRING_PTR(name), NULL))))
-    {
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+/* SubtlextSubtleScreenList {{{ */
+/*
+ * call-seq: screens -> Array
+ * 
+ * Get Array of Screen
+ *
+ *  subtle.clients
+ *  => [#<Subtlext::Screen:xxx>, #<Subtlext::Screen:xxx>]
+ *
+ *  subtle.screens
+ *  => []
+ */
 
-      /* Send data */
-      data.l[0] = id;
-
-      subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_KILL", data, True);       
-    }
-  else rb_raise(rb_eStandardError, "Failed finding sublet");
-
-  return Qnil;
+static VALUE
+SubtlextSubtleScreenList(VALUE self)
+{
+  return SubtlextScreens();
 } /* }}} */
 
 /* SubtlextSubtleSubletList {{{ */
@@ -2603,9 +2645,9 @@ SubtlextSubtleSubletList(VALUE self)
 {
   int i, size = 0;
   char **sublets = NULL;
-  VALUE array = Qnil, method = Qnil, klass = Qnil;
+  VALUE meth = Qnil, klass = Qnil, array = Qnil;
   
-  method  = rb_intern("new");
+  meth    = rb_intern("new");
   klass   = rb_const_get(mod, rb_intern("Sublet"));
   sublets = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_SUBLET_LIST", &size);
   array   = rb_ary_new2(size);
@@ -2614,7 +2656,7 @@ SubtlextSubtleSubletList(VALUE self)
     {
       for(i = 0; i < size; i++)
         {
-          VALUE s = rb_funcall(klass, method, 1, rb_str_new2(sublets[i]));
+          VALUE s = rb_funcall(klass, meth, 1, rb_str_new2(sublets[i]));
 
           rb_iv_set(s, "@id", INT2FIX(i));
           rb_ary_push(array, s);
@@ -2626,29 +2668,24 @@ SubtlextSubtleSubletList(VALUE self)
   return array;
 } /* }}} */
 
-/* SubtlextSubtleSubletFind {{{ */
+/* SubtlextSubtleSubletDel {{{ */
 /*
- * call-seq: find_sublet(id)   -> Subtlext::Sublet or nil
- *           find_sublet(name) -> Subtlext::Sublet or nil
+ * call-seq: del_sublet(name) -> nil
  *
- * Find Sublet by given name
+ * Delete Sublet by given name or Sublet object
  *
- * subtle.find_sublet(1)
- * => #<Subtlext::Sublet:xxx>
+ *  subtle.del_sublet("subtle")
+ *  => nil
  *
- *  subtle.find_sublet("subtle")
- *  => #<Subtlext::Sublet:xxx>
- * 
- *  subtle.find_sublet(1)
+ *  subtle.del_sublet(subtle.find_sublet("subtle"))
  *  => nil
  */
 
 static VALUE
-SubtlextSubtleSubletFind(VALUE self,
+SubtlextSubtleSubletDel(VALUE self,
   VALUE value)
 {
-  return SubtlextFind(SUB_TYPE_SUBLET, value, True);
-
+  return SubtlextKill(value, SUB_TYPE_SUBLET);
 } /* }}} */
 
 /* SubtlextSubtleViewList {{{ */
@@ -2667,7 +2704,7 @@ SubtlextSubtleViewList(VALUE self)
   int i, size = 0;
   char **names = NULL;
   Window *views = NULL;
-  VALUE array = Qnil, meth = Qnil, klass = Qnil;
+  VALUE meth = Qnil, klass = Qnil, array = Qnil;
   
   /* Collect data */
   meth  = rb_intern("new");
@@ -2695,26 +2732,6 @@ SubtlextSubtleViewList(VALUE self)
   else rb_raise(rb_eStandardError, "Failed getting view list");
 
   return array;
-} /* }}} */
-
-/* SubtlextSubtleViewFind {{{ */
-/*
- * call-seq: find_view(name) -> Subtlext::View or nil
- *
- * Find View by given name
- *
- *  subtle.find_view("subtle")
- *  => #<Subtlext::View:xxx>
- *
- *  subtle.find_view("subtle")
- *  => nil
- */
-
-static VALUE
-SubtlextSubtleViewFind(VALUE self,
-  VALUE name)
-{
-  return SubtlextFind(SUB_TYPE_VIEW, name, True);
 } /* }}} */
 
 /* SubtlextSubtleViewAdd {{{ */
@@ -2766,127 +2783,7 @@ static VALUE
 SubtlextSubtleViewDel(VALUE self,
   VALUE value)
 {
-  VALUE view = Qnil;
-
-  if(RTEST((view = SubtlextFind(SUB_TYPE_VIEW, value, True))))
-    {
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-      data.l[0] = FIX2INT(rb_iv_get(view, "@id"));
-
-      subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_KILL", data, True);  
-    }
-
-  return Qnil;
-} /* }}} */
-
-/* SubtlextSubtleViewCurrent {{{ */
-/*
- * call-seq: current_view -> Subtlext::View
- *
- * Get current active View
- *
- *  subtle.current_view
- *  => #<Subtlext::View:xxx>
- */
-
-static VALUE
-SubtlextSubtleViewCurrent(VALUE self)
-{
-  int size = 0;
-  char **names = NULL;
-  unsigned long *cv = NULL;
-  Window *views = NULL;
-  VALUE klass = Qnil, view = Qnil;
-  
-  /* Create view instance */
-  klass = rb_const_get(mod, rb_intern("View"));
-  names = subSharedPropertyStrings(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
-  cv    = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-    XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
-  views = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW, 
-    "_NET_VIRTUAL_ROOTS", NULL);
-  view  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(names[*cv]));
-
-  rb_iv_set(view, "@id",  INT2FIX(*cv));
-  rb_iv_set(view, "@win", LONG2NUM(views[*cv]));
-
-  XFreeStringList(names);
-  free(views);
-  free(cv);
-      
-  return view;
-} /* }}} */
-
-/* SubtlextSubtleScreenList {{{ */
-/*
- * call-seq: screens -> Array
- * 
- * Get Array of Screen
- *
- *  subtle.clients
- *  => [#<Subtlext::Screen:xxx>, #<Subtlext::Screen:xxx>]
- *
- *  subtle.screens
- *  => []
- */
-
-static VALUE
-SubtlextSubtleScreenList(VALUE self)
-{
-  return SubtlextGetScreens();
-} /* }}} */
-
-/* SubtlextSubtleScreenCurrent {{{ */
-/*
- * call-seq: current_screen -> Subtlext::Screen
- *
- * Get current active Screen
- *
- *  subtle.current_screen
- *  => #<Subtlext::Screen:xxx>
- */
-
-static VALUE
-SubtlextSubtleScreenCurrent(VALUE self)
-{
-  unsigned long *focus = NULL;
-  VALUE screen = Qnil;
-
-  /* Get current screen from current client or use the first */
-  if((focus = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-    XA_WINDOW, "_NET_ACTIVE_WINDOW", NULL)))
-    {
-      int *id = NULL;
-
-      id     = (int *)subSharedPropertyGet(*focus, XA_CARDINAL, "SUBTLE_WINDOW_SCREEN", NULL);
-      screen = SubtlextInstantiateScreen(INT2FIX(*id));
-
-      free(focus);
-      free(id);
-    }
-
-  return screen;
-} /* }}} */
-
-/* SubtlextSubtleScreenFind {{{ */
-/*
- * call-seq: find_screen(name) -> Subtlext::Screen or nil
- *
- * Find Screen by given id
- *
- *  subtle.find_screen(0)
- *  => #<Subtlext::Screen:xxx>
- * 
- *  subtle.find_screen(0)
- *  => nil
- */
-
-static VALUE
-SubtlextSubtleScreenFind(VALUE self,
-  VALUE id)
-{
-  return SubtlextFind(SUB_TYPE_SCREEN, id, True);
+  return SubtlextKill(value, SUB_TYPE_VIEW);
 } /* }}} */
 
 /* SubtlextSubtleToString {{{ */
@@ -2910,6 +2807,46 @@ SubtlextSubtleToString(VALUE self)
     DisplayHeight(display, DefaultScreen(display)));
 
   return rb_str_new2(buf);
+} /* }}} */
+
+/* SubtlextSubtleReload {{{ */
+/*
+ * call-seq: reload -> nil
+ *
+ * Force Subtle to reload the config
+ *
+ *  subtle.reload
+ *  => nil
+ */
+
+static VALUE
+SubtlextSubtleReload(VALUE self)
+{
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_RELOAD", data, True);
+
+  return Qnil;
+} /* }}} */
+
+/* SubtlextSubtleQuit {{{ */
+/*
+ * call-seq: quit -> nil
+ *
+ * Force Subtle to exit
+ *
+ *  subtle.reload
+ *  => nil
+ */
+
+static VALUE
+SubtlextSubtleQuit(VALUE self)
+{
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_QUIT", data, True);
+
+  return Qnil;
 } /* }}} */
 
 /* Sublet */
@@ -2937,6 +2874,33 @@ SubtlextSubletInit(VALUE self,
   if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
 
   return self;
+} /* }}} */
+
+/* SubtlextSubletFind {{{ */
+/*
+ * call-seq: find(id)   -> Subtlext::Sublet or nil
+ *           find(name) -> Subtlext::Sublet or nil
+ *           [name]     -> Subtlext::Sublet or nil
+ *           [id]       -> Subtlext::Sublet or nil
+ *
+ * Find Sublet by given name or id
+ *
+ *  Subtlext::Sublet.find("subtle")
+ *  => #<Subtlext::Sublet:xxx>
+ *
+ *  Subtlext::Sublet[1]
+ *  => #<Subtlext::Sublet:xxx>
+ *
+ *  Subtlext::Sublet["subtle"]
+ *  => nil
+ */
+
+static VALUE
+SubtlextSubletFind(VALUE self,
+  VALUE value)
+{
+  return SubtlextFind(SUB_TYPE_SUBLET, value, True);
+
 } /* }}} */
 
 /* SubtlextSubletUpdate {{{ */
@@ -3034,6 +2998,22 @@ SubtlextSubletToString(VALUE self)
   return RTEST(name) ? name : Qnil;
 } /* }}} */
 
+/* SubtlextSubletKill {{{ */
+/*
+ * call-seq: kill -> nil
+ *
+ * Kill a Sublet
+ *
+ *  sublet.kill
+ *  => nil
+ */
+
+static VALUE
+SubtlextSubletKill(VALUE self)
+{
+  return SubtlextKill(self, SUB_TYPE_SUBLET);
+} /* }}} */
+
 /* Tag */
 
 /* SubtlextTagInit {{{ */
@@ -3059,6 +3039,32 @@ SubtlextTagInit(VALUE self,
   if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
 
   return self;
+} /* }}} */
+
+/* SubtlextTagFind {{{ */
+/*
+ * call-seq: find(id)   -> Subtlext::Tag or nil
+ *           find(name) -> Subtlext::Tag or nil
+ *           [name]     -> Subtlext::Tag or nil
+ *           [id]       -> Subtlext::Tag or nil
+ *
+ * Find Tag by given name or id
+ *
+ *  Subtlext::Tag.find("subtle")
+ *  => #<Subtlext::Tag:xxx>
+ *
+ *  Subtlext::Tag[1]
+ *  => #<Subtlext::Tag:xxx>
+ *
+ *  Subtlext::Tag["subtle"]
+ *  => nil
+ */
+
+static VALUE
+SubtlextTagFind(VALUE self,
+  VALUE value)
+{
+  return SubtlextFind(SUB_TYPE_TAG, value, True);
 } /* }}} */
 
 /* SubtlextTagUpdate {{{ */
@@ -3119,7 +3125,7 @@ SubtlextTagUpdate(VALUE self)
 static VALUE
 SubtlextTagClients(VALUE self)
 {
-  return SubtlextTaggings(self, SUB_TYPE_CLIENT);
+  return SubtlextWindowTagAssoc(self, SUB_TYPE_CLIENT);
 } /* }}} */
 
 /* SubtlextTagViews {{{ */
@@ -3138,7 +3144,7 @@ SubtlextTagClients(VALUE self)
 static VALUE
 SubtlextTagViews(VALUE self)
 {
-  return SubtlextTaggings(self, SUB_TYPE_VIEW);
+  return SubtlextWindowTagAssoc(self, SUB_TYPE_VIEW);
 } /* }}} */
 
 /* SubtlextTagToString {{{ */
@@ -3157,6 +3163,192 @@ SubtlextTagToString(VALUE self)
   VALUE name = rb_iv_get(self, "@name");
 
   return RTEST(name) ? name : Qnil;
+} /* }}} */
+
+/* SubtlextTagKill {{{ */
+/*
+ * call-seq: kill -> nil
+ *
+ * Kill a Tag
+ *
+ *  tag.kill
+ *  => nil
+ */
+
+static VALUE
+SubtlextTagKill(VALUE self)
+{
+  return SubtlextKill(self, SUB_TYPE_TAG);
+} /* }}} */
+
+/* Tray */
+
+/* SubtlextTrayInit {{{ */
+/*
+ * call-seq: new(name) -> Subtlext::Tray
+ *
+ * Create new Tray object
+ *
+ *  tag = Subtlext::Tray.new("subtle")
+ *  => #<Subtlext::Tray:xxx>
+ */
+
+static VALUE
+SubtlextTrayInit(VALUE self,
+  VALUE win)
+{
+  if(!FIXNUM_P(win) && T_BIGNUM != rb_type(win))
+    rb_raise(rb_eArgError, "Invalid value type");
+
+  rb_iv_set(self, "@id",    Qnil);
+  rb_iv_set(self, "@win",   win);
+  rb_iv_set(self, "@name",  Qnil);
+  rb_iv_set(self, "@klass", Qnil);
+  rb_iv_set(self, "@title", Qnil);
+
+  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+
+  return self;
+} /* }}} */
+
+/* SubtlextTrayFind {{{ */
+/*
+ * call-seq: find(id)   -> Subtlext::Tray or nil
+ *           find(name) -> Subtlext::Tray or nil
+ *           [name]     -> Subtlext::Tray or nil
+ *           [id]       -> Subtlext::Tray or nil
+ *
+ * Find Tray by given name or id
+ *
+ *  Subtlext::Tray.find("subtle")
+ *  => #<Subtlext::Tray:xxx>
+ *
+ *  Subtlext::Tray[1]
+ *  => #<Subtlext::Tray:xxx>
+ *
+ *  Subtlext::Tray["subtle"]
+ *  => nil
+ */
+
+static VALUE
+SubtlextTrayFind(VALUE self,
+  VALUE name)
+{
+  return SubtlextFind(SUB_TYPE_TRAY, name, True);
+} /* }}} */
+
+/* SubtlextTrayUpdate {{{ */
+/*
+ * call-seq: update -> nil
+ *
+ * Update Tray properties
+ *
+ *  tray.update
+ *  => nil
+ */
+
+static VALUE
+SubtlextTrayUpdate(VALUE self)
+{
+  VALUE win = rb_iv_get(self, "@win");
+
+  if(RTEST(win) && (T_FIXNUM == rb_type(win) || T_BIGNUM == rb_type(win)))
+    {
+      int id = 0;
+      char buf[20] = { 0 };
+
+      snprintf(buf, sizeof(buf), "%#lx", NUM2LONG(win));
+      if(-1 != (id = subSharedTrayFind(buf, NULL, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS))))
+        {
+          char *title = NULL, *wmname = NULL, *wmclass = NULL;
+
+          XFetchName(display, NUM2LONG(win), &title);
+          subSharedPropertyClass(NUM2LONG(win), &wmname, &wmclass);
+
+          /* Set properties */
+          rb_iv_set(self, "@id",    INT2FIX(id));
+          rb_iv_set(self, "@title", rb_str_new2(title));
+          rb_iv_set(self, "@name",  rb_str_new2(wmname));
+          rb_iv_set(self, "@klass", rb_str_new2(wmclass));
+
+          free(title);
+          free(wmname);
+          free(wmclass);
+        }
+      else rb_raise(rb_eStandardError, "Failed finding tray");  
+    }
+  else rb_raise(rb_eArgError, "Unknown value type");
+
+  return Qnil;
+} /* }}} */
+
+/* SubtlextTrayFocus {{{ */
+/*
+ * call-seq: focus -> nil
+ *
+ * Set focus to Tray
+ *
+ *  tray.focus
+ *  => nil
+ */
+
+static VALUE
+SubtlextTrayFocus(VALUE self)
+{
+  return SubtlextWindowFocus(self);
+} /* }}} */
+
+/* SubtlextTrayFocusAsk {{{ */
+/*
+ * call-seq: has_focus? -> true or false
+ *
+ * Check if Tray has focus
+ *
+ *  tray.has_focus?
+ *  => true
+ *
+ *  tray.has_focus?
+ *  => false
+ */
+
+static VALUE
+SubtlextTrayFocusAsk(VALUE self)
+{
+  return SubtlextWindowFocusAsk(self);
+} /* }}} */
+
+/* SubtlextTrayToString {{{ */
+/*
+ * call-seq: to_str -> String
+ *
+ * Convert Tray object to String
+ *
+ *  puts tray
+ *  => "subtle" 
+ */
+
+static VALUE
+SubtlextTrayToString(VALUE self)
+{
+  VALUE name = rb_iv_get(self, "@name");
+
+  return RTEST(name) ? name : Qnil;
+} /* }}} */
+
+/* SubtlextTrayKill {{{ */
+/*
+ * call-seq: kill -> nil
+ *
+ * Kill a Tray
+ *
+ *  tray.kill
+ *  => nil
+ */
+
+static VALUE
+SubtlextTrayKill(VALUE self)
+{
+  return SubtlextKill(self, SUB_TYPE_TRAY);
 } /* }}} */
 
 /* View */
@@ -3185,6 +3377,74 @@ SubtlextViewInit(VALUE self,
   if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
 
   return self;
+} /* }}} */
+
+/* SubtlextViewFind {{{ */
+
+/*
+ * call-seq: find(id)   -> Subtlext::View or nil
+ *           find(name) -> Subtlext::View or nil
+ *           [name]     -> Subtlext::View or nil
+ *           [id]       -> Subtlext::View or nil
+ *
+ * Find View by given name or id
+ *
+ *  Subtlext::View.find("subtle")
+ *  => #<Subtlext::View:xxx>
+ *
+ *  Subtlext::View[1]
+ *  => #<Subtlext::View:xxx>
+ *
+ *  Subtlext::View["subtle"]
+ *  => nil
+ */
+
+static VALUE
+SubtlextViewFind(VALUE self,
+  VALUE name)
+{
+  return SubtlextFind(SUB_TYPE_VIEW, name, True);
+} /* }}} */
+
+/* SubtlextViewCurrent {{{ */
+/*
+ * call-seq: current -> Subtlext::View
+ *
+ * Get current active View
+ *
+ *  Subtlext::View.current
+ *  => #<Subtlext::View:xxx>
+ */
+
+static VALUE
+SubtlextViewCurrent(VALUE self)
+{
+  int size = 0;
+  char **names = NULL;
+  unsigned long *cv = NULL;
+  Window *views = NULL;
+  VALUE view = Qnil;
+
+  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  
+  /* Get current view */
+  names = subSharedPropertyStrings(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
+  cv    = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
+    XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+  views = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW, 
+    "_NET_VIRTUAL_ROOTS", NULL);
+
+  /* Create instance */
+  view = SubtlextInstantiateView(names[*cv]);
+  rb_iv_set(view, "@win", LONG2NUM(views[*cv]));
+
+  if(!NIL_P(view)) SubtlextViewUpdate(view);
+
+  XFreeStringList(names);
+  free(views);
+  free(cv);
+      
+  return view;
 } /* }}} */
 
 /* SubtlextViewUpdate {{{ */
@@ -3274,118 +3534,6 @@ SubtlextViewClientList(VALUE self)
   return array;
 } /* }}} */
 
-/* SubtlextViewTagList {{{ */
-/*
- * call-seq: tags -> Array
- *
- * Get Array of Tags of View
- *
- *  view.tags
- *  => [#<Subtlext::Tag:xxx>, #<Subtlext::Tag:xxx>]
- *
- *  view.tags
- *  => []
- */
-
-static VALUE
-SubtlextViewTagList(VALUE self)
-{
-  Window win = 0;
-  int i, size = 0;
-  char **tags = NULL;
-  unsigned long *flags = NULL;
-  VALUE array = Qnil, method = Qnil, klass = Qnil, name = Qnil;
-
-  name = rb_iv_get(self, "@name");
-  if(RTEST(name) && -1 != subSharedViewFind(RSTRING_PTR(name), NULL, &win))
-    {
-      method = rb_intern("new");
-      klass  = rb_const_get(mod, rb_intern("Tag"));
-      flags  = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, 
-        "SUBTLE_WINDOW_TAGS", NULL);
-      tags   = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
-      array  = rb_ary_new2(size);
-
-      /* Build tag array */
-      for(i = 0; i < size; i++)
-        {
-          if((int)*flags & (1L << (i + 1)))
-            {
-              VALUE t = rb_funcall(klass, method, 1, rb_str_new2(tags[i]));
-
-              rb_iv_set(t, "@id", INT2FIX(i));
-              rb_ary_push(array, t);
-            }
-        }
-
-      XFreeStringList(tags);
-
-      return array;
-    }
-  
-  return Qnil;
-} /* }}} */
-
-/* SubtlextViewTagHas {{{ */
-/*
- * call-seq: has_tag?(name) -> true or false
- *
- * Check if a View has a certain Tag
- *
- *  view.has_tag?("subtle")
- *  => true
- * 
- *  view.has_tag?(subtle.find_tag("subtle"))
- *  => false
- */
-
-static VALUE
-SubtlextViewTagHas(VALUE self,
-  VALUE value)
-{
-  return SubtlextTagHas(self, value);
-} /* }}} */
-
-/* SubtlextViewTagAdd {{{ */
-/*
- * call-seq: has_tag?(name) -> true or false
- *
- * Tag View with with given name or Tag object
- *
- *  view.tag("subtle")
- *  => #<Subtlext::Tag:xxx>
- * 
- *  view.tag(Tag.new("subtle"))
- *  => #<Subtlext::Tag:xxx> * 
- */
-
-static VALUE
-SubtlextViewTagAdd(VALUE self,
-  VALUE value)
-{
-  return SubtlextTag(self, value, SUB_TYPE_VIEW, SUB_ACTION_TAG);
-} /* }}} */
-
-/* SubtlextViewTagDel {{{ */
-/*
- * call-seq: untag(name) -> nil
- *
- * Untag View with with given name or Tag object
- *
- *  view.untag("subtle")
- *  => #<Subtlext::Tag:xxx>
- * 
- *  view.untag(Tag.new("subtle"))
- *  => #<Subtlext::Tag:xxx> * 
- */
-
-static VALUE
-SubtlextViewTagDel(VALUE self,
-  VALUE value)
-{  
-  return SubtlextTag(self, value, SUB_TYPE_VIEW, SUB_ACTION_UNTAG);
-} /* }}} */
-
 /* SubtlextViewJump {{{ */
 /*
  * call-seq: jump -> nil
@@ -3409,7 +3557,7 @@ SubtlextViewJump(VALUE self)
   return Qnil;
 } /* }}} */
 
-/* SubtlextViewCurrent {{{ */
+/* SubtlextViewCurrentAsk {{{ */
 /*
  * call-seq: current? -> true or false
  *
@@ -3423,7 +3571,7 @@ SubtlextViewJump(VALUE self)
  */
 
 static VALUE
-SubtlextViewCurrent(VALUE self)
+SubtlextViewCurrentAsk(VALUE self)
 {
   unsigned long *cv = NULL;
   VALUE id = Qnil, ret = Qfalse;;
@@ -3456,44 +3604,20 @@ SubtlextViewToString(VALUE self)
   return RTEST(name) ? name : Qnil;
 } /* }}} */
 
-/* SubtlextViewOperatorPlus {{{ */
+/* SubtlextViewKill {{{ */
 /*
- * call-seq: +(tag) -> nil
+ * call-seq: kill -> nil
  *
- * Add existing Tag to View
+ * Kill a View
  *
- *  view + tag
- *  => nil
- *
- *  view + "subtle" 
+ *  view.kill
  *  => nil
  */
 
 static VALUE
-SubtlextViewOperatorPlus(VALUE self,
-  VALUE value)
+SubtlextViewKill(VALUE self)
 {
-  return SubtlextTag(self, value, SUB_ACTION_TAG, SUB_TYPE_VIEW);
-} /* }}} */
-
-/* SubtlextViewOperatorMinus {{{ */
-/*
- * call-seq: -(tag) -> nil
- * 
- * Remove existing Tag from View
- *
- *  view - tag
- *  => nil
- *
- *  view - "subtle" 
- *  => nil
- */
-
-static VALUE
-SubtlextViewOperatorMinus(VALUE self,
-  VALUE value)
-{
-  return SubtlextTag(self, value, SUB_ACTION_UNTAG, SUB_TYPE_VIEW);
+  return SubtlextKill(self, SUB_TYPE_VIEW);
 } /* }}} */
 
 /* Init_subtlext {{{ */
@@ -3504,7 +3628,7 @@ void
 Init_subtlext(void)
 {
   VALUE client = Qnil, geometry = Qnil, gravity = Qnil, screen = Qnil;
-  VALUE subtle = Qnil, sublet = Qnil, tag = Qnil, view = Qnil;
+  VALUE subtle = Qnil, sublet = Qnil, tag = Qnil, tray = Qnil, view = Qnil;
 
   /* Module: sublext */
   mod = rb_define_module("Subtlext");
@@ -3518,39 +3642,44 @@ Init_subtlext(void)
   client = rb_define_class_under(mod, "Client", rb_cObject);
 
   /* Client id */
-  rb_define_attr(client,   "id",       1, 0); 
+  rb_define_attr(client, "id",       1, 0); 
 
   /* Window id */
-  rb_define_attr(client,   "win",      1, 0);
+  rb_define_attr(client, "win",      1, 0);
 
   /* WM_CLASS */
-  rb_define_attr(client,   "klass",    1, 0);
+  rb_define_attr(client, "klass",    1, 0);
 
   /* WM_NAME */
-  rb_define_attr(client,   "title",    1, 0);
+  rb_define_attr(client, "title",    1, 0);
 
   /* WM_NAME */
-  rb_define_attr(client,   "name",     1, 0);
+  rb_define_attr(client, "name",     1, 0);
 
   /* Bitfield of window states */
-  rb_define_attr(client,   "flags",    1, 0);
+  rb_define_attr(client, "flags",    1, 0);
 
-  rb_define_singleton_method(client, "find", SubtlextSubtleClientFind, 1);
-  rb_define_singleton_method(client, "[]",   SubtlextSubtleClientFind, 1);
+  rb_define_singleton_method(client, "find",    SubtlextClientFind,    1);
+  rb_define_singleton_method(client, "[]",      SubtlextClientFind,    1);
+  rb_define_singleton_method(client, "current", SubtlextClientCurrent, 0);
 
   rb_define_method(client, "initialize",   SubtlextClientInit,            1);
   rb_define_method(client, "update",       SubtlextClientUpdate,          0);
+
+  rb_define_method(client, "tags",         SubtlextWindowTagList,         0);
+  rb_define_method(client, "has_tag?",     SubtlextWindowTagAsk,          1);
+  rb_define_method(client, "tag",          SubtlextWindowTagAdd,          1);
+  rb_define_method(client, "untag",        SubtlextWindowTagDel,          1);
+  rb_define_method(client, "+",            SubtlextWindowTagAdd,          1);
+  rb_define_method(client, "-",            SubtlextWindowTagDel,          1);
+
   rb_define_method(client, "views",        SubtlextClientViewList,        0);
-  rb_define_method(client, "tags",         SubtlextClientTagList,         0);
-  rb_define_method(client, "has_tag?",     SubtlextClientTagHas,          1);
-  rb_define_method(client, "tag",          SubtlextClientTagAdd,          1);
-  rb_define_method(client, "untag",        SubtlextClientTagDel,          1);
   rb_define_method(client, "toggle_full",  SubtlextClientToggleFull,      0);
   rb_define_method(client, "toggle_float", SubtlextClientToggleFloat,     0);
   rb_define_method(client, "toggle_stick", SubtlextClientToggleStick,     0);
-  rb_define_method(client, "is_full?",     SubtlextClientStateFull,       0);
-  rb_define_method(client, "is_float?",    SubtlextClientStateFloat,      0);
-  rb_define_method(client, "is_stick?",    SubtlextClientStateStick,      0);
+  rb_define_method(client, "is_full?",     SubtlextClientStateFullAsk,    0);
+  rb_define_method(client, "is_float?",    SubtlextClientStateFloatAsk,   0);
+  rb_define_method(client, "is_stick?",    SubtlextClientStateStickAsk,   0);
   rb_define_method(client, "raise",        SubtlextClientRestackRaise,    0);
   rb_define_method(client, "lower",        SubtlextClientRestackLower,    0);
   rb_define_method(client, "up",           SubtlextClientMatchUp,         0);
@@ -3558,8 +3687,7 @@ Init_subtlext(void)
   rb_define_method(client, "right",        SubtlextClientMatchRight,      0);
   rb_define_method(client, "down",         SubtlextClientMatchDown,       0);
   rb_define_method(client, "focus",        SubtlextClientFocus,           0);
-  rb_define_method(client, "has_focus?",   SubtlextClientFocusHas,        0);
-  rb_define_method(client, "kill",         SubtlextClientKill,            0);
+  rb_define_method(client, "has_focus?",   SubtlextClientFocusAsk,        0);
   rb_define_method(client, "to_str",       SubtlextClientToString,        0);
   rb_define_method(client, "gravity",      SubtlextClientGravityReader,   0);
   rb_define_method(client, "gravity=",     SubtlextClientGravityWriter,   1);
@@ -3567,9 +3695,9 @@ Init_subtlext(void)
   rb_define_method(client, "screen=",      SubtlextClientScreenWriter,    1);  
   rb_define_method(client, "geometry",     SubtlextClientGeometryReader,  0);
   rb_define_method(client, "geometry=",    SubtlextClientGeometryWriter, -1);
-  rb_define_method(client, "alive?",       SubtlextClientAlive,           0);
-  rb_define_method(client, "+",            SubtlextClientOperatorPlus,    1);
-  rb_define_method(client, "-",            SubtlextClientOperatorMinus,   1);
+  rb_define_method(client, "alive?",       SubtlextClientAliveAsk,        0);
+  rb_define_method(client, "kill",         SubtlextClientKill,            0);
+
   rb_define_alias(client, "save", "update");
   rb_define_alias(client, "to_s", "to_str");
 
@@ -3582,21 +3710,22 @@ Init_subtlext(void)
   geometry = rb_define_class_under(mod, "Geometry", rb_cObject);
 
   /* X offset */
-  rb_define_attr(geometry,   "x",      1, 1);
+  rb_define_attr(geometry, "x",      1, 1);
 
   /* Y offset */
-  rb_define_attr(geometry,   "y",      1, 1);
+  rb_define_attr(geometry, "y",      1, 1);
 
   /* Geometry width */
-  rb_define_attr(geometry,   "width",  1, 1);
+  rb_define_attr(geometry, "width",  1, 1);
 
   /* Geometry height */
-  rb_define_attr(geometry,   "height", 1, 1);
+  rb_define_attr(geometry, "height", 1, 1);
 
   rb_define_method(geometry, "initialize", SubtlextGeometryInit,     -1);
   rb_define_method(geometry, "to_a",       SubtlextGeometryToArray,   0);
   rb_define_method(geometry, "to_hash",    SubtlextGeometryToHash,    0);
   rb_define_method(geometry, "to_str",     SubtlextGeometryToString,  0);
+
   rb_define_alias(geometry, "to_h", "to_hash");
   rb_define_alias(geometry, "to_s", "to_str");
 
@@ -3609,21 +3738,23 @@ Init_subtlext(void)
   gravity = rb_define_class_under(mod, "Gravity", rb_cObject);
 
   /* Gravity id */
-  rb_define_attr(gravity,  "id",       1, 0);
+  rb_define_attr(gravity, "id",       1, 0);
 
   /* Name of the gravity */
-  rb_define_attr(client,   "name",     1, 0);
+  rb_define_attr(gravity, "name",     1, 0);
 
   /* Geometry */
-  rb_define_attr(gravity,  "geometry", 0, 0);
+  rb_define_attr(gravity, "geometry", 0, 0);
 
-  rb_define_singleton_method(gravity, "find", SubtlextSubtleGravityFind, 1);
-  rb_define_singleton_method(gravity, "[]",   SubtlextSubtleGravityFind, 1);
+  rb_define_singleton_method(gravity, "find", SubtlextGravityFind, 1);
+  rb_define_singleton_method(gravity, "[]",   SubtlextGravityFind, 1);
 
   rb_define_method(gravity, "initialize", SubtlextGravityInit,     1);
   rb_define_method(gravity, "update",     SubtlextGravityUpdate,   0);
   rb_define_method(gravity, "geometry",   SubtlextGravityGeometry, 0);
   rb_define_method(gravity, "to_str",     SubtlextGravityToString, 0);
+  rb_define_method(gravity, "kill",       SubtlextGravityKill,     0);
+
   rb_define_alias(gravity, "save", "update");
   rb_define_alias(gravity, "to_s", "to_str");  
 
@@ -3636,18 +3767,20 @@ Init_subtlext(void)
   screen = rb_define_class_under(mod, "Screen", rb_cObject);
 
   /* Screen id */
-  rb_define_attr(screen,   "id",       1, 0);
+  rb_define_attr(screen, "id",       1, 0);
 
   /* Geometry */
-  rb_define_attr(screen,   "geometry", 1, 0);
+  rb_define_attr(screen, "geometry", 1, 0);
 
-  rb_define_singleton_method(screen, "find", SubtlextSubtleScreenFind, 1);
-  rb_define_singleton_method(screen, "[]",   SubtlextSubtleScreenFind, 1);
+  rb_define_singleton_method(screen, "find",    SubtlextScreenFind,    1);
+  rb_define_singleton_method(screen, "[]",      SubtlextScreenFind,    1);
+  rb_define_singleton_method(screen, "current", SubtlextScreenCurrent, 0);
 
   rb_define_method(screen, "initialize", SubtlextScreenInit,       1);
   rb_define_method(screen, "update",     SubtlextScreenUpdate,     0);
   rb_define_method(screen, "clients",    SubtlextScreenClientList, 0);
   rb_define_method(screen, "to_str",     SubtlextScreenToString,   0);
+
   rb_define_alias(screen, "save", "update");
   rb_define_alias(screen, "to_s", "to_str");
 
@@ -3659,42 +3792,49 @@ Init_subtlext(void)
 
   subtle = rb_define_class_under(mod, "Subtle", rb_cObject);
   rb_define_singleton_method(subtle, "new",  SubtlextSubtleNew,  -1);
-  rb_define_singleton_method(subtle, "new2", SubtlextSubtleNew2, 1);
+  rb_define_singleton_method(subtle, "new2", SubtlextSubtleNew2,  1);
 
-  rb_define_method(subtle, "version",        SubtlextSubtleVersion,          0);
-  rb_define_method(subtle, "display",        SubtlextSubtleDisplay,          0);
-  rb_define_method(subtle, "views",          SubtlextSubtleViewList,         0);
-  rb_define_method(subtle, "tags",           SubtlextSubtleTagList,          0);
-  rb_define_method(subtle, "screens",        SubtlextSubtleScreenList,       0);
-  rb_define_method(subtle, "sublets",        SubtlextSubtleSubletList,       0);
-  rb_define_method(subtle, "clients",        SubtlextSubtleClientList,       0);
-  rb_define_method(subtle, "gravities",      SubtlextSubtleGravityList,      0);
-  rb_define_method(subtle, "find_view",      SubtlextSubtleViewFind,         1);
-  rb_define_method(subtle, "find_tag",       SubtlextSubtleTagFind,          1);
-  rb_define_method(subtle, "find_client",    SubtlextSubtleClientFind,       1);
-  rb_define_method(subtle, "find_gravity",   SubtlextSubtleGravityFind,      1);
-  rb_define_method(subtle, "find_screen",    SubtlextSubtleScreenFind,       1);
-  rb_define_method(subtle, "find_sublet",    SubtlextSubtleSubletFind,       1);
-  rb_define_method(subtle, "focus_client",   SubtlextSubtleClientFocus,      1);
-  rb_define_method(subtle, "focus_left",     SubtlextSubtleClientFocusLeft,  0);
-  rb_define_method(subtle, "focus_down",     SubtlextSubtleClientFocusDown,  0);
-  rb_define_method(subtle, "focus_up",       SubtlextSubtleClientFocusUp,    0);
-  rb_define_method(subtle, "focus_right",    SubtlextSubtleClientFocusRight, 0);
-  rb_define_method(subtle, "add_tag",        SubtlextSubtleTagAdd,           1);
-  rb_define_method(subtle, "add_view",       SubtlextSubtleViewAdd,          1);
-  rb_define_method(subtle, "del_client",     SubtlextSubtleClientDel,        1);
-  rb_define_method(subtle, "del_sublet",     SubtlextSubtleSubletDel,        1);
-  rb_define_method(subtle, "del_tag",        SubtlextSubtleTagDel,           1);
-  rb_define_method(subtle, "del_view",       SubtlextSubtleViewDel,          1);
-  rb_define_method(subtle, "current_view",   SubtlextSubtleViewCurrent,      0);
-  rb_define_method(subtle, "current_client", SubtlextSubtleClientCurrent,    0);
-  rb_define_method(subtle, "current_screen", SubtlextSubtleScreenCurrent,    0);
-  rb_define_method(subtle, "running?",       SubtlextSubtleRunning,          0);
-  rb_define_method(subtle, "reload",         SubtlextSubtleReload,           0);
-  rb_define_method(subtle, "quit",           SubtlextSubtleQuit,             0);
-  rb_define_method(subtle, "spawn",          SubtlextSubtleSpawn,            1);
-  rb_define_method(subtle, "to_str",         SubtlextSubtleToString,         0);
+  rb_define_method(subtle, "version",        SubtlextSubtleVersion,     0);
+  rb_define_method(subtle, "display",        SubtlextSubtleDisplay,     0);
+  rb_define_method(subtle, "clients",        SubtlextSubtleClientList,  0);
+  rb_define_method(subtle, "gravities",      SubtlextSubtleGravityList, 0);
+  rb_define_method(subtle, "screens",        SubtlextSubtleScreenList,  0);
+  rb_define_method(subtle, "sublets",        SubtlextSubtleSubletList,  0);
+  rb_define_method(subtle, "tags",           SubtlextSubtleTagList,     0);
+  rb_define_method(subtle, "trays",          SubtlextSubtleTrayList,    0);
+  rb_define_method(subtle, "views",          SubtlextSubtleViewList,    0);
+
+  rb_define_method(subtle, "find_client",    SubtlextClientFind,        1);
+  rb_define_method(subtle, "find_gravity",   SubtlextGravityFind,       1);
+  rb_define_method(subtle, "find_screen",    SubtlextScreenFind,        1);
+  rb_define_method(subtle, "find_sublet",    SubtlextSubletFind,        1);
+  rb_define_method(subtle, "find_tag",       SubtlextTagFind,           1);
+  rb_define_method(subtle, "find_tray",      SubtlextTrayFind,          1);
+  rb_define_method(subtle, "find_view",      SubtlextViewFind,          1);
+
+  rb_define_method(subtle, "focus",          SubtlextSubtleFocus,       1);
+  rb_define_method(subtle, "add_tag",        SubtlextSubtleTagAdd,      1);
+  rb_define_method(subtle, "add_view",       SubtlextSubtleViewAdd,     1);
+
+  rb_define_method(subtle, "del_client",     SubtlextSubtleClientDel,   1);
+  rb_define_method(subtle, "del_gravity",    SubtlextSubtleGravityDel,  1);
+  rb_define_method(subtle, "del_sublet",     SubtlextSubtleSubletDel,   1);
+  rb_define_method(subtle, "del_tag",        SubtlextSubtleTagDel,      1);
+  rb_define_method(subtle, "del_tray",       SubtlextSubtleTrayDel,     1);
+  rb_define_method(subtle, "del_view",       SubtlextSubtleViewDel,     1);
+
+  rb_define_method(subtle, "current_view",   SubtlextViewCurrent,       0);
+  rb_define_method(subtle, "current_client", SubtlextClientCurrent,     0);
+  rb_define_method(subtle, "current_screen", SubtlextScreenCurrent,     0);
+
+  rb_define_method(subtle, "running?",       SubtlextSubtleRunningAsk,  0);
+  rb_define_method(subtle, "reload",         SubtlextSubtleReload,      0);
+  rb_define_method(subtle, "quit",           SubtlextSubtleQuit,        0);
+  rb_define_method(subtle, "spawn",          SubtlextSubtleSpawn,       1);
+  rb_define_method(subtle, "to_str",         SubtlextSubtleToString,    0);
+
   rb_define_alias(subtle, "to_s", "to_str");
+  rb_define_alias(subtle, "kill", "quit");
 
   /*
    * Document-class: Subtlext::Sublet
@@ -3705,16 +3845,18 @@ Init_subtlext(void)
   sublet = rb_define_class_under(mod, "Sublet", rb_cObject);
 
   /* Name of the sublet */
-  rb_define_attr(sublet,   "name", 1, 0);
+  rb_define_attr(sublet, "name", 1, 0);
 
-  rb_define_singleton_method(sublet, "find", SubtlextSubtleSubletFind, 1);
-  rb_define_singleton_method(sublet, "[]",   SubtlextSubtleSubletFind, 1);
+  rb_define_singleton_method(sublet, "find", SubtlextSubletFind, 1);
+  rb_define_singleton_method(sublet, "[]",   SubtlextSubletFind, 1);
 
   rb_define_method(sublet, "initialize", SubtlextSubletInit,       1);
   rb_define_method(sublet, "update",     SubtlextSubletUpdate,     0);
   rb_define_method(sublet, "data",       SubtlextSubletDataReader, 0);
   rb_define_method(sublet, "data=",      SubtlextSubletDataWriter, 1);  
   rb_define_method(sublet, "to_str",     SubtlextSubletToString,   0);
+  rb_define_method(sublet, "kill",       SubtlextSubletKill,       0);
+
   rb_define_alias(sublet, "to_s", "to_str");
 
   /*
@@ -3731,16 +3873,53 @@ Init_subtlext(void)
   /* Name of the tag */
   rb_define_attr(tag,   "name", 1, 0);
 
-  rb_define_singleton_method(tag, "find", SubtlextSubtleTagFind, 1);
-  rb_define_singleton_method(tag, "[]",   SubtlextSubtleTagFind, 1);
+  rb_define_singleton_method(tag, "find", SubtlextTagFind, 1);
+  rb_define_singleton_method(tag, "[]",   SubtlextTagFind, 1);
 
   rb_define_method(tag, "initialize", SubtlextTagInit,     1);
   rb_define_method(tag, "update",     SubtlextTagUpdate,   0);
   rb_define_method(tag, "clients",    SubtlextTagClients,  0);
   rb_define_method(tag, "views",      SubtlextTagViews,    0);
   rb_define_method(tag, "to_str",     SubtlextTagToString, 0);
+  rb_define_method(tag, "kill",       SubtlextTagKill,     0);
+
   rb_define_alias(tag, "save", "update");
   rb_define_alias(tag, "to_s", "to_str");
+
+  /*
+   * Document-class: Subtlext::Tray
+   *
+   * Tag class for interaction with trays
+   */
+
+  tray = rb_define_class_under(mod, "Tray", rb_cObject);
+
+  /* Tray id */
+  rb_define_attr(tray, "id",    1, 0);
+
+  /* Window id */
+  rb_define_attr(tray, "win",   1, 0);
+
+  /* WM_CLASS */
+  rb_define_attr(tag,  "klass", 1, 0);
+
+  /* WM_NAME */
+  rb_define_attr(tag,  "title", 1, 0);
+
+  /* WM_NAME */
+  rb_define_attr(tag,  "name",  1, 0);
+
+  rb_define_singleton_method(tray, "find", SubtlextTrayFind, 1);
+  rb_define_singleton_method(tray, "[]",   SubtlextTrayFind, 1);
+
+  rb_define_method(tray, "initialize", SubtlextTrayInit,     1);
+  rb_define_method(tray, "update",     SubtlextTrayUpdate,   0);
+  rb_define_method(tray, "focus",      SubtlextTrayFocus,    0);
+  rb_define_method(tray, "has_focus?", SubtlextTrayFocusAsk, 0);
+  rb_define_method(tray, "to_str",     SubtlextTrayToString, 0);
+  rb_define_method(tray, "kill",       SubtlextTrayKill,     0);
+
+  rb_define_alias(tray, "to_s", "to_str");
 
   /*
    * Document-class: Subtlext::View
@@ -3751,29 +3930,34 @@ Init_subtlext(void)
   view = rb_define_class_under(mod, "View", rb_cObject);
 
   /* View id */
-  rb_define_attr(view,   "id",   1, 0);
+  rb_define_attr(view, "id",   1, 0);
 
   /* Window id */
-  rb_define_attr(view,   "win",  1, 0);
+  rb_define_attr(view, "win",  1, 0);
 
   /* Name of the view */
-  rb_define_attr(view,   "name", 1, 0);
+  rb_define_attr(view, "name", 1, 0);
 
-  rb_define_singleton_method(view, "find", SubtlextSubtleViewFind, 1);
-  rb_define_singleton_method(view, "[]",   SubtlextSubtleViewFind, 1);
+  rb_define_singleton_method(view, "find",    SubtlextViewFind,    1);
+  rb_define_singleton_method(view, "[]",      SubtlextViewFind,    1);
+  rb_define_singleton_method(view, "current", SubtlextViewCurrent, 0);
 
   rb_define_method(view, "initialize", SubtlextViewInit,          1);
   rb_define_method(view, "update",     SubtlextViewUpdate,        0);
+
+  rb_define_method(view, "tags",       SubtlextWindowTagList,     0);
+  rb_define_method(view, "has_tag?",   SubtlextWindowTagAsk,      1);
+  rb_define_method(view, "tag",        SubtlextWindowTagAdd,      1);
+  rb_define_method(view, "untag",      SubtlextWindowTagDel,      1);
+  rb_define_method(view, "+",          SubtlextWindowTagAdd,      1);
+  rb_define_method(view, "-",          SubtlextWindowTagDel,      1);
+
   rb_define_method(view, "clients",    SubtlextViewClientList,    0);
-  rb_define_method(view, "tags",       SubtlextViewTagList,       0);
-  rb_define_method(view, "has_tag?",   SubtlextViewTagHas,        1);
-  rb_define_method(view, "tag",        SubtlextViewTagAdd,        1);
-  rb_define_method(view, "untag",      SubtlextViewTagDel,        1);
   rb_define_method(view, "jump",       SubtlextViewJump,          0);
-  rb_define_method(view, "current?",   SubtlextViewCurrent,       0);
+  rb_define_method(view, "current?",   SubtlextViewCurrentAsk,    0);
   rb_define_method(view, "to_str",     SubtlextViewToString,      0);
-  rb_define_method(view, "+",          SubtlextViewOperatorPlus,  1);
-  rb_define_method(view, "-",          SubtlextViewOperatorMinus, 1);
+  rb_define_method(view, "kill",       SubtlextViewKill,          0);
+
   rb_define_alias(view, "save", "update");
   rb_define_alias(view, "to_s", "to_str");
 } /* }}} */
