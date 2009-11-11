@@ -674,7 +674,7 @@ subClientSetSize(SubClient *c)
       c->geom.height -= HEIGHT(c) % c->inch;
 
       /* Fit sizes */
-      subScreenFit(s, &c->geom, True);
+      subScreenFit(s, &c->geom, c->flags & SUB_MODE_FLOAT);
       subScreenFit(s, &c->base, False);       
     }
 } /* }}} */

@@ -166,7 +166,10 @@ subScreenFit(SubScreen *s,
   /* Center */
   if(center)
     {
-      r->x = s->geom.x + (s->geom.width - r->width - 2 * subtle->bw) / 2;
+      if(r->x == s->geom.x)
+        r->x = s->geom.x + (s->geom.width - r->width - 2 * subtle->bw) / 2;
+
+      if(r->y == s->geom.y)
       r->y = s->geom.y + (s->geom.height - r->height - 2 * subtle->bw) / 2;
     }
   
