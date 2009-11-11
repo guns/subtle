@@ -274,7 +274,7 @@ subClientFocus(SubClient *c)
     }   
   else XSetInputFocus(subtle->dpy, c->win, RevertToNone, CurrentTime);
 
-  subSharedLogDebug("Focus: win=%#lx, input=%d, focus=%d\n", c->win,
+  subSharedLogDebug("Focus: type=client, win=%#lx, input=%d, focus=%d\n", c->win,
     !!(c->flags & SUB_CLIENT_INPUT), !!(c->flags & SUB_CLIENT_FOCUS));
 } /* }}} */
 

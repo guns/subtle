@@ -297,6 +297,8 @@ EventMessage(XClientMessageEvent *ev)
                 subClientWarp(c);
                 subClientFocus(c);
               }
+            else if((r = TRAY(subSharedFind(ev->data.l[0], TRAYID))))
+              subTrayFocus(r);
             break; /* }}} */
           case SUB_EWMH_NET_RESTACK_WINDOW: /* {{{ */
             if((c = CLIENT(subSharedFind(ev->data.l[1], CLIENTID))))

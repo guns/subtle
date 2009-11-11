@@ -145,7 +145,7 @@ subTrayFocus(SubTray *t)
 
   XSetInputFocus(subtle->dpy, t->win, RevertToNone, CurrentTime);
 
-  subSharedLogDebug("Focus: win=%#lx\n", t->win);
+  subSharedLogDebug("Focus: type=tray, win=%#lx\n", t->win);
 } /* }}} */
   
  /** subTraySetState {{{
