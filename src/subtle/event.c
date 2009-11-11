@@ -130,7 +130,7 @@ EventConfigure(XConfigureRequestEvent *ev)
           if(ev->value_mask & CWWidth)  c->geom.width  = ev->width;
           if(ev->value_mask & CWHeight) c->geom.height = ev->height;
 
-          subScreenLimit(s, &c->geom, False);
+          subScreenFit(s, &c->geom, False);
           subClientConfigure(c);
         }
     }

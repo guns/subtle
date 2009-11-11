@@ -25,20 +25,14 @@ subTrayNew(Window win)
 
   assert(win);
 
+  /* Create new tray */
   t = TRAY(subSharedMemoryAlloc(1, sizeof(SubTray)));
   t->flags = SUB_TYPE_TRAY;
   t->win   = win;
   t->width = subtle->th; ///< Default width
 
-  /* Fetch name */
-  if(!XFetchName(subtle->dpy, t->win, &t->name))
-    {
-      free(t);
-
-      return NULL;
-    }
-
-  /* Update tray window */
+  /* Update tray properties */
+  subSharedPropertyTitle(win, &t->name);
   subEwmhSetWMState(t->win, WithdrawnState);
   XSelectInput(subtle->dpy, t->win, EVENTMASK);
   XReparentWindow(subtle->dpy, t->win, subtle->panels.tray.win, 0, 0);

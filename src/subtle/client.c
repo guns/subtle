@@ -78,7 +78,7 @@ subClientNew(Window win)
 
   assert(win);
 
-  /* Create client */
+  /* Create new client */
   c = CLIENT(subSharedMemoryAlloc(1, sizeof(SubClient)));
   c->gravities = (int *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(int));
   c->screens   = (int *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(int));
@@ -103,17 +103,9 @@ subClientNew(Window win)
       c->screens[i]   = 0;
     }
 
-   /* Fetch name and class */
-  XFetchName(subtle->dpy, c->win, &c->title);
+   /* Fetch title, name and class */
+  subSharedPropertyTitle(c->win, &c->title);
   subSharedPropertyClass(c->win, &c->name, &c->klass);
-
-  /* Fallback for stupid clients like Skype */
-  if(!c->title || !strcmp("", c->title))
-    {
-      if(c->name) c->title = strdup(c->name);
-      else if(c->klass) c->title = strdup(c->klass);
-      else c->title = strdup("subtle");
-    }
  
   /* X related properties */
   sattrs.border_pixel = subtle->colors.bo_normal;
@@ -123,6 +115,7 @@ subClientNew(Window win)
   XAddToSaveSet(subtle->dpy, c->win);
   XSaveContext(subtle->dpy, c->win, CLIENTID, (void *)c);
   subEwmhSetWMState(c->win, WithdrawnState);
+
   /* Update client */
   subClientSetNormalHints(c);
   subClientSetProtocols(c);
@@ -669,10 +662,6 @@ subClientSetSize(SubClient *c)
       if(c->geom.height < c->minh) c->geom.height = c->minh;
       if(c->geom.height > c->maxh) c->geom.height = c->maxh;
 
-      /* Limit sizes */
-      subScreenLimit(s, &c->geom, True);
-      subScreenLimit(s, &c->base, True);
-
       /* Check aspect ratios */
       if(c->minr && c->geom.height * c->minr > c->geom.width)
         c->geom.width = (int)(c->geom.height * c->minr);
@@ -684,14 +673,9 @@ subClientSetSize(SubClient *c)
       c->geom.width  -= WIDTH(c) % c->incw; 
       c->geom.height -= HEIGHT(c) % c->inch;
 
-      /* Center */
-      if(c->flags & SUB_MODE_FLOAT)
-        {
-          if(c->geom.x == s->geom.x)
-            c->geom.x = (s->geom.width - WIDTH(c)) / 2;
-          if(c->geom.y == s->geom.y)
-            c->geom.y = (s->geom.height - HEIGHT(c)) / 2;
-        }
+      /* Fit sizes */
+      subScreenFit(s, &c->geom, True);
+      subScreenFit(s, &c->base, False);       
     }
 } /* }}} */
 
@@ -984,9 +968,9 @@ subClientToggle(SubClient *c,
   assert(c);
 
   /* Remove flags */
-  if(type & SUB_MODE_FULL && c->flags & SUB_MODE_UNFULL)     type &= ~SUB_MODE_FULL;
-  if(type & SUB_MODE_FLOAT && c->flags & SUB_MODE_UNFLOAT)   type &= ~SUB_MODE_FLOAT;
-  if(type & SUB_MODE_STICK && c->flags & SUB_MODE_UNSTICK)   type &= ~SUB_MODE_STICK;
+  if(type & SUB_MODE_FULL   && c->flags & SUB_MODE_UNFULL)   type &= ~SUB_MODE_FULL;
+  if(type & SUB_MODE_FLOAT  && c->flags & SUB_MODE_UNFLOAT)  type &= ~SUB_MODE_FLOAT;
+  if(type & SUB_MODE_STICK  && c->flags & SUB_MODE_UNSTICK)  type &= ~SUB_MODE_STICK;
   if(type & SUB_MODE_URGENT && c->flags & SUB_MODE_UNURGENT) type &= ~SUB_MODE_URGENT;
 
   if(c->flags & type) ///< Unset flags
