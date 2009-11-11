@@ -646,7 +646,7 @@ SubScreen *subScreenNew(int x, int y, unsigned int width,
   unsigned int height);                                           ///< Create screen
 void subScreenConfigure(void);                                    ///< Configure screens
 void subScreenUpdate(void);                                       ///< Update screen sizes
-void subScreenLimit(SubScreen *s, XRectangle *r, int center);     ///< Limit rect size
+void subScreenFit(SubScreen *s, XRectangle *r, int center);       ///< Fit rect size
 void subScreenJump(SubScreen *s);                                 ///< Jump to screen
 void subScreenKill(SubScreen *s);                                 ///< Kill screen
 /* }}} */

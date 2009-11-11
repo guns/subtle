@@ -132,15 +132,17 @@ subScreenJump(SubScreen *s)
     s->geom.x + s->geom.width / 2, s->geom.y + s->geom.height / 2);
 } /* }}} */
 
- /** SubScreenLimit {{{
-  * @brief Limit a rect to in screen boundaries
-  * @param[in]  s  A #SubScreem
-  * @param[in]  r  A XRectangle
+ /** SubScreenFit {{{
+  * @brief Fit a rect to in screen boundaries
+  * @param[in]  s       A #SubScreen
+  * @param[in]  r       A XRectangle
+  * @param[in]  center  Center rect
   **/
 
 void
-subScreenLimit(SubScreen *s,
-  XRectangle *r)
+subScreenFit(SubScreen *s,
+  XRectangle *r,
+  int center)
 {
   assert(s && r);
 
@@ -160,6 +162,14 @@ subScreenLimit(SubScreen *s,
       if(r->height > s->geom.height) r->height = s->geom.height;
       r->y = s->geom.y + s->geom.height - r->height;
     }
+
+  /* Center */
+  if(center)
+    {
+      r->x = s->geom.x + (s->geom.width - r->width - 2 * subtle->bw) / 2;
+      r->y = s->geom.y + (s->geom.height - r->height - 2 * subtle->bw) / 2;
+    }
+  
 } /* }}} */
 
  /** SubScreenKill {{{
