@@ -176,7 +176,7 @@ subClientConfigure(SubClient *c)
   XMoveResizeWindow(subtle->dpy, c->win, r.x, r.y, r.width, r.height);
   XSendEvent(subtle->dpy, c->win, False, StructureNotifyMask, (XEvent *)&ev);
 
-  subSharedLogDebug("configure=client, win=%#lx, name=%s, state=%c, x=%03d, y=%03d, width=%03d, height=%03d\n",
+  subSharedLogDebug("Configure=client, win=%#lx, name=%s, state=%c, x=%03d, y=%03d, width=%03d, height=%03d\n",
     c->win, c->klass, c->flags & SUB_MODE_FLOAT ? 'f' : c->flags & SUB_MODE_FULL ? 'u' : 'n',
     c->geom.x, c->geom.y, c->geom.width, c->geom.height);
 } /* }}} */

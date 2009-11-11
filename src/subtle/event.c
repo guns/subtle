@@ -672,17 +672,15 @@ EventProperty(XPropertyEvent *ev)
           {
             char *title = NULL;
 
-            if(XFetchName(subtle->dpy, c->win, &title))
-              {
-                if(c->title) free(c->title);
-                c->title = title;
+            subSharedPropertyTitle(c->win, &title);
+            if(c->title) free(c->title);
+            c->title = title;
 
-                if(subtle->windows.focus == c->win) 
-                  {
-                    subClientSetTitle(c);
-                    subPanelUpdate();
-                    subPanelRender();
-                  }
+            if(subtle->windows.focus == c->win) 
+              {
+                subClientSetTitle(c);
+                subPanelUpdate();
+                subPanelRender();
               }
           }
         break; /* }}} */
@@ -704,10 +702,13 @@ EventProperty(XPropertyEvent *ev)
           {
             int flags = 0;
 
+            /* Check changes */
             subClientSetHints(c, &flags);
-            subClientToggle(c, (~c->flags & flags));
-
-            subViewConfigure(subtle->view, False);
+            if(flags)
+              {
+                subClientToggle(c, (~c->flags & flags));
+                subViewConfigure(subtle->view, False);
+              }
             if(c->flags & (SUB_MODE_URGENT|SUB_MODE_URGENT_ONCE)) subClientWarp(c);
           }
         break; /* }}} */
