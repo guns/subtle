@@ -135,8 +135,9 @@ char **subSharedPropertyStrings(Window win,
 void subSharedPropertyDelete(Window win, char *name);             ///< Delete window property
 #endif /* WM */
 
+void subSharedPropertyTitle(Window win, char **title);            ///< Get window name
 void subSharedPropertyClass(Window win, char **inst,
-  char **klass);                                                  ///< Get WM class
+  char **klass);                                                  ///< Get window class
 /* }}} */
 
 /* Spawn {{{ */

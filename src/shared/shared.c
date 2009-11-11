@@ -335,12 +335,32 @@ subSharedPropertyStrings(Window win,
   return list;
 } /* }}} */
 
+ /** subSharedPropertyTitle {{{
+  * @brief Get window title
+  * @warning Must be free'd
+  * @param[in]     win    A #Window
+  * @param[inout]  inst   Window title
+  **/
+
+void
+subSharedPropertyTitle(Window win,
+  char **title)
+{
+#ifdef WM
+  XFetchName(subtle->dpy, win, title);
+#else /* WM */
+  XFetchName(display, win, title);
+#endif /* WM */
+
+  if(!(*title)) *title = strdup("subtle"); ///< Sanitize
+} /* }}} */
+
  /** subSharedPropertyClass {{{
   * @brief Get window class
   * @warning Must be free'd
-  * @param[in]     win    Client window
-  * @param[inout]  inst   Client instance name
-  * @param[inout]  klass  Client class name
+  * @param[in]     win    A #Window
+  * @param[inout]  inst   Window instance name
+  * @param[inout]  klass  Window class name
   **/
 
 void
@@ -370,7 +390,7 @@ subSharedPropertyClass(Window win,
 
  /** subSharedPropertyDelete {{{
   * @brief Get window property
-  * @param[in]  win   Client window
+  * @param[in]  win   A #Window
   * @param[in]  name  Property name
   * @param[in]  e     A #SubEwmh
   * return Deletes the property
@@ -416,7 +436,7 @@ subSharedSpawn(char *cmd)
 #ifdef WM
  /** subSharedFind {{{
   * @brief Find data with the context manager
-  * @param[in]  win  Window
+  * @param[in]  win  A #Window
   * @param[in]  id   Context id
   * @return Returns found data pointer or \p NULL
   **/
