@@ -134,15 +134,13 @@ subScreenJump(SubScreen *s)
 
  /** SubScreenLimit {{{
   * @brief Limit a rect to in screen boundaries
-  * @param[in]  s       A #SubScreem
-  * @param[in]  r       A XRectangle
-  * @param[in]  center  Center window on bad geometry
+  * @param[in]  s  A #SubScreem
+  * @param[in]  r  A XRectangle
   **/
 
 void
 subScreenLimit(SubScreen *s,
-  XRectangle *r,
-  int center)
+  XRectangle *r)
 {
   assert(s && r);
 
