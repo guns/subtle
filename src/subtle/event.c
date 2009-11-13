@@ -14,10 +14,8 @@
 #include <X11/Xatom.h>
 #include <signal.h>
 #include <sys/wait.h>
-#include "subtle.h"
-
-#define __USE_GNU 1
 #include <sys/poll.h>
+#include "subtle.h"
 
 #ifdef HAVE_EXECINFO_H
 #include <execinfo.h>
@@ -1105,12 +1103,10 @@ subEventWatchDel(int fd)
 void
 subEventLoop(void)
 {
-  int i, events = 0;
+  int i, timeout = 1, events = 0;
   XEvent ev;
   time_t now;
-  sigset_t sigmask;
   struct sigaction sa;
-  struct timespec timeout = { 1, 0 };
   SubSublet *s = NULL;
 
 #ifdef HAVE_SYS_INOTIFY_H
@@ -1124,13 +1120,6 @@ subEventLoop(void)
   subEventWatchAdd(subtle->notify);
 #endif /* HAVE_SYS_INOTIFY_H */
   
-  /* Signal set for ppoll */
-  sigemptyset(&sigmask);
-  sigaddset(&sigmask, SIGHUP);
-  sigaddset(&sigmask, SIGINT);
-  sigaddset(&sigmask, SIGSEGV);
-  sigaddset(&sigmask, SIGCHLD);
-
   /* Signal handler */
   sa.sa_handler = EventSignal;
   sa.sa_flags   = 0;
@@ -1148,7 +1137,7 @@ subEventLoop(void)
     {
       now = subSharedTime();
 
-      if(0 < (events = ppoll(watches, nwatches, &timeout, &sigmask))) ///< Data ready on any connection
+      if(0 < (events = poll(watches, nwatches, timeout * 1000))) ///< Data ready on any connection
         {
           for(i = 0; i < nwatches; i++) ///< Find descriptor
             {
@@ -1247,10 +1236,10 @@ subEventLoop(void)
       if(0 < subtle->sublets->ndata)
         {
           s = SUBLET(subtle->sublets->data[0]);
-          timeout.tv_sec = s->flags & SUB_SUBLET_INTERVAL ? s->time - now : 60;
-          if(0 >= timeout.tv_sec) timeout.tv_sec = 1; ///< Sanitize
+          timeout = s->flags & SUB_SUBLET_INTERVAL ? s->time - now : 60;
+          if(0 >= timeout) timeout = 1; ///< Sanitize
         }
-      else timeout.tv_sec = 60;
+      else timeout = 60;
     }
 } /* }}} */
 
