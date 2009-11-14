@@ -215,7 +215,7 @@ SubtlextFind(int type,
     {
       case T_FIXNUM: /* {{{ */
         id = FIX2INT(value);
-        snprintf(buf, sizeof(buf), "%d", FIX2INT(value));
+        snprintf(buf, sizeof(buf), "%d", id);
         break; /* }}} */
       case T_HASH: /* {{{ */
         if(SUB_TYPE_CLIENT == type)
@@ -1370,7 +1370,7 @@ SubtlextClientGravityWriter(VALUE self,
           {
             char buf[5] = { 0 };
 
-            snprintf(buf, sizeof(buf), "%d", FIX2INT(value));
+            snprintf(buf, sizeof(buf), "%ld", FIX2INT(value));
             gravity = SubtlextInstantiateGravity(buf);
           }
         break;
