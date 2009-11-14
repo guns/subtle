@@ -544,7 +544,7 @@ EventMessage(XClientMessageEvent *ev)
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_RELOAD: /* {{{ */
-            raise(SIGHUP);
+            subRubyReloadConfig();
             break; /* }}} */
           case SUB_EWMH_SUBTLE_QUIT: /* {{{ */
             raise(SIGTERM);
