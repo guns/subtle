@@ -1370,7 +1370,7 @@ SubtlextClientGravityWriter(VALUE self,
           {
             char buf[5] = { 0 };
 
-            snprintf(buf, sizeof(buf), "%ld", FIX2INT(value));
+            snprintf(buf, sizeof(buf), "%d", (int)FIX2INT(value));
             gravity = SubtlextInstantiateGravity(buf);
           }
         break;
