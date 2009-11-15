@@ -12,14 +12,8 @@
 
 #include <unistd.h>
 #include <X11/Xatom.h>
-#include <signal.h>
-#include <sys/wait.h>
 #include <sys/poll.h>
 #include "subtle.h"
-
-#ifdef HAVE_EXECINFO_H
-#include <execinfo.h>
-#endif /* HAVE_EXECINFO_H */
 
 #ifdef HAVE_SYS_INOTIFY_H
 #define BUFLEN (sizeof(struct inotify_event))
@@ -69,40 +63,6 @@ EventFindSublet(int id)
     }
 
   return iter;
-} /* }}} */
-
-/* EventSignal {{{ */
-static void 
-EventSignal(int signum)
-{
-#ifdef HAVE_EXECINFO_H
-  void *array[10];
-  size_t size;
-#endif /* HAVE_EXECINFO_H */
-
-  switch(signum)
-    {
-      case SIGHUP: subRubyReloadConfig(); break; ///< Reload config 
-      case SIGINT:
-        if(subtle) 
-          {
-            subtle->flags &= ~SUB_SUBTLE_RUN;
-            XNoOp(subtle->dpy); ///< Forcing ppoll to leave lock
-            XSync(subtle->dpy, False);
-          }
-        break;
-      case SIGSEGV:
-#ifdef HAVE_EXECINFO_H
-        size = backtrace(array, 10);
-
-        printf("Last %zd stack frames:\n", size);
-
-#endif /* HAVE_EXECINFO_H */
-
-        printf("Please report this bug to <%s>\n", PKG_BUGREPORT);
-        abort();
-      case SIGCHLD: wait(NULL); break;
-    }
 } /* }}} */
 
 /* EventConfigure {{{ */
@@ -1106,7 +1066,6 @@ subEventLoop(void)
   int i, timeout = 1, events = 0;
   XEvent ev;
   time_t now;
-  struct sigaction sa;
   SubSublet *s = NULL;
 
 #ifdef HAVE_SYS_INOTIFY_H
@@ -1119,17 +1078,6 @@ subEventLoop(void)
 #ifdef HAVE_SYS_INOTIFY_H
   subEventWatchAdd(subtle->notify);
 #endif /* HAVE_SYS_INOTIFY_H */
-  
-  /* Signal handler */
-  sa.sa_handler = EventSignal;
-  sa.sa_flags   = 0;
-  memset(&sa.sa_mask, 0, sizeof(sigset_t)); ///< Avoid uninitialized values
-  sigemptyset(&sa.sa_mask);
-
-  sigaction(SIGHUP,  &sa, NULL);
-  sigaction(SIGINT,  &sa, NULL);
-  sigaction(SIGSEGV, &sa, NULL);
-  sigaction(SIGCHLD, &sa, NULL);
 
   XSync(subtle->dpy, False); ///< Sync before going on
 
@@ -1137,7 +1085,7 @@ subEventLoop(void)
     {
       now = subSharedTime();
 
-      if(0 < (events = poll(watches, nwatches, timeout * 1000))) ///< Data ready on any connection
+      if(0 < (events = poll(watches, nwatches, timeout * 1000))) ///< Data ready on a connection
         {
           for(i = 0; i < nwatches; i++) ///< Find descriptor
             {

@@ -11,9 +11,49 @@
   **/
 
 #include <getopt.h>
+#include <sys/wait.h>
+#include <signal.h>
 #include "subtle.h"
 
+#ifdef HAVE_EXECINFO_H
+#include <execinfo.h>
+#endif /* HAVE_EXECINFO_H */
+
 SubSubtle *subtle = NULL;
+
+/* SubtleSignal {{{ */
+static void 
+SubtleSignal(int signum)
+{
+#ifdef HAVE_EXECINFO_H
+  void *array[10];
+  size_t size;
+#endif /* HAVE_EXECINFO_H */
+
+  switch(signum)
+    {
+      case SIGHUP: subRubyReloadConfig(); break; ///< Reload config 
+      case SIGINT:
+        if(subtle) 
+          {
+            subtle->flags &= ~SUB_SUBTLE_RUN;
+            XNoOp(subtle->dpy); ///< Forcing ppoll to leave lock
+            XSync(subtle->dpy, False);
+          }
+        break;
+      case SIGSEGV:
+#ifdef HAVE_EXECINFO_H
+        size = backtrace(array, 10);
+
+        printf("Last %zd stack frames:\n", size);
+
+#endif /* HAVE_EXECINFO_H */
+
+        printf("Please report this bug to <%s>\n", PKG_BUGREPORT);
+        abort();
+      case SIGCHLD: wait(NULL); break;
+    }
+} /* }}} */
 
 /* SubtleUsage {{{ */
 static void
@@ -49,6 +89,7 @@ main(int argc,
 {
   int c, check = 0;
   char *display = NULL;
+  struct sigaction sa;
   const struct option long_options[] =
   {
     { "config",  required_argument, 0, 'c' },
@@ -89,6 +130,17 @@ main(int argc,
             return -1;
         }
     }
+  
+  /* Signal handler */
+  sa.sa_handler = SubtleSignal;
+  sa.sa_flags   = 0;
+  memset(&sa.sa_mask, 0, sizeof(sigset_t)); ///< Avoid uninitialized values
+  sigemptyset(&sa.sa_mask);
+
+  sigaction(SIGHUP,  &sa, NULL);
+  sigaction(SIGINT,  &sa, NULL);
+  sigaction(SIGSEGV, &sa, NULL);
+  sigaction(SIGCHLD, &sa, NULL);
 
   if(check) ///< Load and check config
     {
