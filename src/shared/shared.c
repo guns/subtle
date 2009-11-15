@@ -245,14 +245,14 @@ subSharedPropertyGet(Window win,
 #endif /* WM */
   unsigned long *size)
 {
+  int format = 0;
   unsigned long nitems = 0, bytes = 0;
   unsigned char *data = NULL;
-  int format = 0;
   Atom rtype = None, prop = None;
   Display *disp = NULL;
 
 #ifdef WM
-  char *name = "subtle";
+  char name[5] = { 0 };
 #endif /* WM */
 
   assert(win);
@@ -260,22 +260,25 @@ subSharedPropertyGet(Window win,
 #ifdef WM
   disp = subtle->dpy; 
   prop = subEwmhGet(e);
+
+  snprintf(name, sizeof(name), "%d", e);
 #else /* WM */
   disp = display;
   prop = XInternAtom(display, name, False);
 #endif /* WM */
 
   if(Success != XGetWindowProperty(disp, win, prop, 0L, 4096, 
-    False, type, &rtype, &format, &nitems, &bytes, &data))
+      False, type, &rtype, &format, &nitems, &bytes, &data))
     {
       subSharedLogWarn("Failed getting property `%s'\n", name);
 
       return NULL;
     }
 
+  /* Check result */
   if(type != rtype)
     {
-      subSharedLogDebug("Property: %s => %ld != %ld'\n", name, type, rtype);
+      subSharedLogDebug("Property: name=%s, type=%ld, rtype=%ld'\n", name, type, rtype);
       XFree(data);
 
       return NULL;
@@ -520,6 +523,131 @@ subSharedTextWidth(const char *string,
 
 #else /* WM */
 
+/* SharedList {{{ */
+Window *
+SharedList(char *prop,
+  int *size)
+{
+  Window *wins = NULL;
+  unsigned long len = 0;
+
+  assert(prop && size);
+
+  if((wins = (Window *)subSharedPropertyGet(DefaultRootWindow(display),
+      XA_WINDOW, prop, &len)))
+    {
+      *size = len / sizeof(Window);
+    }
+  else
+    {
+      *size = 0;
+      subSharedLogDebug("Failed getting window list\n");
+    }
+
+  return wins;
+} /* }}} */
+
+/* SharedFind {{{ */
+int
+SharedFind(char *prop,
+  char *match,
+  char **name)
+{
+  int ret = -1, size = 0;
+  char **strings = NULL;
+  regex_t *preg = NULL;
+
+  assert(prop && match);
+
+  /* Find sublet id */
+  if((preg = subSharedRegexNew(match)) &&
+      (strings = subSharedPropertyStrings(DefaultRootWindow(display), prop, &size)))
+    {
+      int i;
+
+      for(i = 0; i < size; i++)
+        if((isdigit(match[0]) && atoi(match) == i) || 
+            (!isdigit(match[0]) && subSharedRegexMatch(preg, strings[i])))
+          {
+            subSharedLogDebug("Found: prop=%s, match=%s, name=%s, id=%d\n", 
+              prop, match, strings[i], i);
+
+            if(name) *name = strdup(strings[i]);
+
+            ret = i;
+            break;
+          }
+
+      subSharedRegexKill(preg);
+      XFreeStringList(strings);
+    }
+  else subSharedLogDebug("Failed finding string `%s'\n", match);
+
+  return ret;
+} /* }}} */
+
+/* SharedFindWindow {{{ */
+int
+SharedFindWindow(char *prop,
+  char *match,
+  char **name,
+  Window *win,
+  int flags)
+{
+  int id = -1, size = 0;
+  Window *wins = NULL;
+
+  assert(prop && match);
+  
+  /* Find window id */
+  if((wins = SharedList(prop, &size)))
+    {
+      int i;
+      char *title = NULL, *inst = NULL, *klass = NULL, buf[20] = { 0 };
+      Window selwin = None;
+      regex_t *preg = subSharedRegexNew(match);
+
+      if(!strncmp(match, "#", 1) && win)
+        selwin = subSharedWindowSelect(); ///< Select window
+
+      for(i = 0; -1 == id && i < size; i++)
+        {
+          XFetchName(display, wins[i], &title);
+          subSharedPropertyClass(wins[i], &inst, &klass);
+          snprintf(buf, sizeof(buf), "%#lx", wins[i]);
+
+          /* Find client either by window id or by title/inst/class */
+          if(wins[i] == selwin || subSharedRegexMatch(preg, buf) ||
+              (flags & SUB_MATCH_TITLE && title && subSharedRegexMatch(preg, title)) ||
+              (flags & SUB_MATCH_NAME  && inst  && subSharedRegexMatch(preg, inst))  ||
+              (flags & SUB_MATCH_CLASS && klass && subSharedRegexMatch(preg, klass)))
+            {
+              subSharedLogDebug("Found: prop=%s, name=%s, win=%#lx, id=%d, flags\n", 
+                prop, match, wins[i], i, flags);
+
+              if(win) *win = wins[i];
+              if(name)
+                {
+                  *name = (char *)subSharedMemoryAlloc(strlen(inst) + 1, sizeof(char));
+                  strncpy(*name, inst, strlen(inst));
+                 }
+              
+              id = i;
+            }
+
+          XFree(title);
+          free(inst);
+          free(klass);
+        }
+
+      subSharedRegexKill(preg);
+      free(wins);
+    }
+  else subSharedLogDebug("Failed finding window `%s'\n", match);
+
+  return id;
+} /* }}} */
+
  /** subSharedMessage {{{
   * @brief Send client message to window
   * @param[in]  win    Client window
@@ -657,23 +785,7 @@ subSharedWindowSelect(void)
 Window *
 subSharedClientList(int *size)
 {
-  Window *clients = NULL;
-  unsigned long len = 0;
-
-  assert(size);
-
-  if((clients = (Window *)subSharedPropertyGet(DefaultRootWindow(display),
-      XA_WINDOW, "_NET_CLIENT_LIST", &len)))
-    {
-      *size = len / sizeof(Window);
-    }
-  else
-    {
-      *size = 0;
-      subSharedLogDebug("Failed getting client list\n");
-    }
-
-  return clients;
+  return SharedList("_NET_CLIENT_LIST", size);
 } /* }}} */
 
  /** subSharedTrayList {{{
@@ -686,23 +798,7 @@ subSharedClientList(int *size)
 Window *
 subSharedTrayList(int *size)
 {
-  Window *trays = NULL;
-  unsigned long len = 0;
-
-  assert(size);
-
-  if((trays = (Window *)subSharedPropertyGet(DefaultRootWindow(display),
-      XA_WINDOW, "SUBTLE_TRAY_LIST", &len)))
-    {
-      *size = len / sizeof(Window);
-    }
-  else
-    {
-      *size = 0;
-      subSharedLogDebug("Failed getting tray list\n");
-    }
-
-  return trays;
+  return SharedList("SUBTLE_TRAY_LIST", size);
 } /* }}} */
 
  /** subSharedClientFind {{{
@@ -721,58 +817,7 @@ subSharedClientFind(char *match,
   Window *win,
   int flags)
 {
-  int id = -1, size = 0;
-  Window *clients = NULL;
-
-  assert(match);
-  
-  /* Find client id */
-  if((clients = subSharedClientList(&size)))
-    {
-      int i;
-      char *title = NULL, *inst = NULL, *klass = NULL, buf[20] = { 0 };
-      Window selwin = None;
-      regex_t *preg = subSharedRegexNew(match);
-
-      if(!strncmp(match, "#", 1) && win)
-        selwin = subSharedWindowSelect(); ///< Select window
-
-      for(i = 0; -1 == id && i < size; i++)
-        {
-          XFetchName(display, clients[i], &title);
-          subSharedPropertyClass(clients[i], &inst, &klass);
-          snprintf(buf, sizeof(buf), "%#lx", clients[i]);
-
-          /* Find client either by window id or by title/inst/class */
-          if(clients[i] == selwin || subSharedRegexMatch(preg, buf) ||
-              (flags & SUB_MATCH_TITLE && title && subSharedRegexMatch(preg, title)) ||
-              (flags & SUB_MATCH_NAME  && inst  && subSharedRegexMatch(preg, inst))  ||
-              (flags & SUB_MATCH_CLASS && klass && subSharedRegexMatch(preg, klass)))
-            {
-              subSharedLogDebug("Found: type=client, name=%s, win=%#lx, id=%d, flags\n", 
-                match, clients[i], i, flags);
-
-              if(win) *win = clients[i];
-              if(name)
-                {
-                  *name = (char *)subSharedMemoryAlloc(strlen(inst) + 1, sizeof(char));
-                  strncpy(*name, inst, strlen(inst));
-                 }
-              
-              id = i;
-            }
-
-          XFree(title);
-          free(inst);
-          free(klass);
-        }
-
-      subSharedRegexKill(preg);
-      free(clients);
-    }
-  else subSharedLogDebug("Failed finding client `%s'\n", match);
-
-  return id;
+  return SharedFindWindow("_NET_CLIENT_LIST", match, name, win, flags);
 } /* }}} */
 
  /** subSharedGravityFind {{{
@@ -908,39 +953,7 @@ int
 subSharedTagFind(char *match,
   char **name)
 {
-  int ret = -1, size = 0;
-  char **tags = NULL;
-  regex_t *preg = NULL;
-
-  assert(match);
-
-  /* Find tag id */
-  if((preg = subSharedRegexNew(match)) &&
-      (tags = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size)))
-    {
-      int i;
-
-      for(i = 0; i < size; i++)
-        {
-          if((isdigit(match[0]) && atoi(match) == i) || 
-              (!isdigit(match[0]) && subSharedRegexMatch(preg, tags[i])))
-            {
-              subSharedLogDebug("Found: type=tag, match=%s, name=%s, id=%d\n", 
-                match, tags[i], i);
-
-              if(name) *name = strdup(tags[i]);
-
-              ret = i;
-              break;
-            }
-        }
-
-      subSharedRegexKill(preg);
-      XFreeStringList(tags);
-    }
-  else subSharedLogDebug("Failed finding tag `%s'\n", match);
-
-  return ret;
+  return SharedFind("SUBTLE_TAG_LIST", match, name);
 } /* }}} */
 
  /** subSharedTrayFind {{{
@@ -959,58 +972,22 @@ subSharedTrayFind(char *match,
   Window *win,
   int flags)
 {
-  int id = -1, size = 0;
-  Window *trays = NULL;
+  return SharedFindWindow("SUBTLE_TRAY_LIST", match, name, win, flags);
+} /* }}} */
 
-  assert(match);
-  
-  /* Find tray id */
-  if((trays = subSharedTrayList(&size)))
-    {
-      int i;
-      char *title = NULL, *inst = NULL, *klass = NULL, buf[20] = { 0 };
-      Window selwin = None;
-      regex_t *preg = subSharedRegexNew(match);
+ /** subSharedSubletFind {{{
+  * @brief Find sublet
+  * @param[in]     match  Sublet name or id
+  * @param[inout]  name   Name of the found sublet
+  * @return Returns the sublet id
+  * @retval  -1   Sublet not found
+  **/
 
-      if(!strncmp(match, "#", 1) && win)
-        selwin = subSharedWindowSelect(); ///< Select window
-
-      for(i = 0; -1 == id && i < size; i++)
-        {
-          XFetchName(display, trays[i], &title);
-          subSharedPropertyClass(trays[i], &inst, &klass);
-          snprintf(buf, sizeof(buf), "%#lx", trays[i]);
-
-          /* Find client either by window id or by title/inst/class */
-          if(trays[i] == selwin || subSharedRegexMatch(preg, buf) ||
-              (flags & SUB_MATCH_TITLE && title && subSharedRegexMatch(preg, title)) ||
-              (flags & SUB_MATCH_NAME  && inst  && subSharedRegexMatch(preg, inst))  ||
-              (flags & SUB_MATCH_CLASS && klass && subSharedRegexMatch(preg, klass)))
-            {
-              subSharedLogDebug("Found: type=tray, name=%s, win=%#lx, id=%d, flags\n", 
-                match, trays[i], i, flags);
-
-              if(win) *win = trays[i];
-              if(name)
-                {
-                  *name = (char *)subSharedMemoryAlloc(strlen(inst) + 1, sizeof(char));
-                  strncpy(*name, inst, strlen(inst));
-                 }
-              
-              id = i;
-            }
-
-          XFree(title);
-          free(inst);
-          free(klass);
-        }
-
-      subSharedRegexKill(preg);
-      free(trays);
-    }
-  else subSharedLogDebug("Failed finding tray `%s'\n", match);
-
-  return id;
+int
+subSharedSubletFind(char *match,
+  char **name)
+{
+  return SharedFind("SUBTLE_TRAY_LIST", match, name);
 } /* }}} */
 
  /** subSharedViewFind {{{
@@ -1068,51 +1045,6 @@ subSharedViewFind(char *match,
       free(views);
     }
   else subSharedLogDebug("Failed finding view `%s'\n", match);
-
-  return ret;
-} /* }}} */
-
- /** subSharedSubletFind {{{
-  * @brief Find sublet
-  * @param[in]     match  Sublet name or id
-  * @param[inout]  name   Name of the found sublet
-  * @return Returns the sublet id
-  * @retval  -1   Sublet not found
-  **/
-
-int
-subSharedSubletFind(char *match,
-  char **name)
-{
-  int ret = -1, size = 0;
-  char **sublets = NULL;
-  regex_t *preg = NULL;
-
-  assert(match);
-
-  /* Find sublet id */
-  if((preg = subSharedRegexNew(match)) &&
-      (sublets = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_SUBLET_LIST", &size)))
-    {
-      int i;
-
-      for(i = 0; i < size; i++)
-        if((isdigit(match[0]) && atoi(match) == i) || 
-            (!isdigit(match[0]) && subSharedRegexMatch(preg, sublets[i])))
-          {
-            subSharedLogDebug("Found: type=sublet, match=%s, name=%s, id=%d\n", 
-              match, sublets[i], i);
-
-            if(name) *name = strdup(sublets[i]);
-
-            ret = i;
-            break;
-          }
-
-      subSharedRegexKill(preg);
-      XFreeStringList(sublets);
-    }
-  else subSharedLogDebug("Failed finding sublet `%s'\n", match);
 
   return ret;
 } /* }}} */
