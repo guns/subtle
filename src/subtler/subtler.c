@@ -24,7 +24,7 @@ Display *display = NULL;
 int debug = 0;
 
 /* Typedefs {{{ */
-typedef void(*SubtlerCommand)(char *, char *);
+typedef void(*SubtlerCommand)(int, char *, char *);
 /* }}} */
 
 /* Macros {{{ */
@@ -38,8 +38,9 @@ typedef void(*SubtlerCommand)(char *, char *);
 #define SUB_GROUP_SCREEN   2   ///< Group screen
 #define SUB_GROUP_SUBLET   3   ///< Group sublet
 #define SUB_GROUP_TAG      4   ///< Group tag
-#define SUB_GROUP_VIEW     5   ///< Group view
-#define SUB_GROUP_TOTAL    6   ///< Group total
+#define SUB_GROUP_TRAY     5   ///< Group tray
+#define SUB_GROUP_VIEW     6   ///< Group view
+#define SUB_GROUP_TOTAL    7   ///< Group total
 
 /* Actions */
 #define SUB_ACTION_ADD     0   ///< Action add
@@ -63,15 +64,11 @@ typedef void(*SubtlerCommand)(char *, char *);
 #define SUB_ACTION_TOTAL   18  ///< Action total
 
 /* Modifier */
-#define SUB_MOD_LEFT       0   ///< Mod left
-#define SUB_MOD_DOWN       1   ///< Mod down
-#define SUB_MOD_UP         2   ///< Mod up
-#define SUB_MOD_RIGHT      3   ///< Mod right
-#define SUB_MOD_CURRENT    4   ///< Mod current
-#define SUB_MOD_SELECT     5   ///< Mod select
-#define SUB_MOD_RELOAD     6   ///< Mod reload
-#define SUB_MOD_QUIT       7   ///< Mod quit
-#define SUB_MOD_TOTAL      8   ///< Mod total
+#define SUB_MOD_CURRENT    1   ///< Mod current
+#define SUB_MOD_SELECT     2   ///< Mod select
+#define SUB_MOD_RELOAD     3   ///< Mod reload
+#define SUB_MOD_QUIT       4   ///< Mod quit
+#define SUB_MOD_TOTAL      5   ///< Mod total
 /* }}} */
 
 /* SubtlerToggle {{{ */
@@ -108,67 +105,6 @@ SubtlerRestack(char *name,
       subSharedMessage(DefaultRootWindow(display), "_NET_RESTACK_WINDOW", data, False);
     }
   else subSharedLogWarn("Failed restacking client");  
-} /* }}} */
-
-/* SubtlerMatch {{{ */
-static char *
-SubtlerMatch(int type)
-{
-  char *ret = NULL;
-  int i, size = 0, match = 0, score = 0, *gravity1 = NULL;
-  Window found = None, *clients = NULL, *views = NULL;
-  unsigned long *cv = NULL, *flags1 = NULL, *focus = NULL;
-
-  if((focus = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-      XA_WINDOW, "_NET_ACTIVE_WINDOW", NULL)))
-    {
-      clients = subSharedClientList(&size);
-      views   = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW, 
-        "_NET_VIRTUAL_ROOTS", NULL);
-      cv      = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-        XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
-
-      if(clients && cv)
-        {
-          flags1   = (unsigned long *)subSharedPropertyGet(views[*cv], XA_CARDINAL, 
-            "SUBTLE_WINDOW_TAGS", NULL);
-          gravity1 = (int *)subSharedPropertyGet(*focus, XA_CARDINAL, 
-            "SUBTLE_WINDOW_GRAVITY", NULL);
-
-          /* Iterate once to find a client score-based */
-          for(i = 0; 100 != match && i < size; i++)
-            {
-              unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(clients[i], XA_CARDINAL, 
-                "SUBTLE_WINDOW_TAGS", NULL);
-
-              if(*focus != clients[i] && *flags1 & *flags2) ///< Check if there are common tags
-                {
-                  int *gravity2 = (int *)subSharedPropertyGet(clients[i], XA_CARDINAL, 
-                    "SUBTLE_WINDOW_GRAVITY", NULL);
-
-                  if(match < (score = subSharedMatch(type,  *gravity1, *gravity2)))
-                    {
-                      match = score;
-                      found = clients[i];
-                    }
-
-                  free(gravity2);
-                }
-
-              free(flags2);
-            }
-          
-          if(found) subSharedPropertyClass(found, NULL, &ret); ///< Get WM_CLASS of found win
-
-          free(focus);
-          free(flags1);
-          free(gravity1);
-          free(clients);
-          free(cv);
-        }
-    }
-
-  return ret;
 } /* }}} */
 
 /* SubtlerCurrentClient {{{ */
@@ -255,16 +191,31 @@ SubtlerClientPrint(Window win,
   free(grav);
 } /* }}} */
 
+/* SubtlerTrayPrint {{{ */
+void
+SubtlerTrayPrint(Window win)
+{
+  char *inst = NULL, *klass = NULL;
+
+  subSharedPropertyClass(win, &inst, &klass);
+
+  printf("%#10lx %s (%s)\n", win, inst, klass);
+
+  free(inst);
+  free(klass);
+} /* }}} */
+
 /* Client */
 
 /* SubtlerClientFind {{{ */
 static void
-SubtlerClientFind(char *arg1,
+SubtlerClientFind(int argc,
+  char *arg1,
   char *arg2)
 {
   Window win;
 
-  CHECK(arg1, "Usage: %sr -c -f PATTERN\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -c -f PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 != subSharedClientFind(arg1, NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))
@@ -287,13 +238,14 @@ SubtlerClientFind(char *arg1,
 
 /* SubtlerClientFocus {{{ */
 static void
-SubtlerClientFocus(char *arg1,
+SubtlerClientFocus(int argc,
+  char *arg1,
   char *arg2)
 {
   Window win;
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(arg1, "Usage: %sr -c -o CLIENT\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -c -o CLIENT\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 != subSharedClientFind(arg1, NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))
@@ -306,57 +258,63 @@ SubtlerClientFocus(char *arg1,
 
 /* SubtlerClientToggleFull {{{ */
 static void
-SubtlerClientToggleFull(char *arg1,
+SubtlerClientToggleFull(int argc,
+  char *arg1,
   char *arg2)
 {
-  CHECK(arg1, "Usage: %sr -c -F CLIENT\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -c -F CLIENT\n", PKG_NAME);
 
   SubtlerToggle(arg1, "_NET_WM_STATE_FULLSCREEN");
 } /* }}} */
 
 /* SubtlerClientToggleFloat {{{ */
 static void
-SubtlerClientToggleFloat(char *arg1,
+SubtlerClientToggleFloat(int argc,
+  char *arg1,
   char *arg2)
 {
-  CHECK(arg1, "Usage: %sr -c -O CLIENT\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -c -O CLIENT\n", PKG_NAME);
 
   SubtlerToggle(arg1, "_NET_WM_STATE_ABOVE");
 } /* }}} */
 
 /* SubtlerClientToggleStick {{{ */
 static void
-SubtlerClientToggleStick(char *arg1,
+SubtlerClientToggleStick(int argc, 
+  char *arg1,
   char *arg2)
 {
-  CHECK(arg1, "Usage: %sr -c -S CLIENT\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -c -S CLIENT\n", PKG_NAME);
 
   SubtlerToggle(arg1, "_NET_WM_STATE_STICKY");
 } /* }}} */
 
 /* SubtlerClientRestackRaise {{{ */
 static void
-SubtlerClientRestackRaise(char *arg1,
+SubtlerClientRestackRaise(int argc,
+  char *arg1,
   char *arg2)
 {
-  CHECK(arg1, "Usage: %sr -c -E CLIENT\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -c -E CLIENT\n", PKG_NAME);
 
   SubtlerRestack(arg1, Above);
 } /* }}} */
 
 /* SubtlerClientRestackLower {{{ */
 static void
-SubtlerClientRestackLower(char *arg1,
+SubtlerClientRestackLower(int argc,
+  char *arg1,
   char *arg2)
 {
-  CHECK(arg1, "Usage: %sr -c -R CLIENT\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -c -R CLIENT\n", PKG_NAME);
 
   SubtlerRestack(arg1, Below);
 } /* }}} */
 
 /* SubtlerClientList {{{ */
 static void
-SubtlerClientList(char *arg1,
+SubtlerClientList(int argc,
+  char *arg1,
   char *arg2)
 {
   int i, size = 0;
@@ -386,12 +344,13 @@ SubtlerClientList(char *arg1,
 
 /* SubtlerClientTag {{{ */
 static void
-SubtlerClientTag(char *arg1,
+SubtlerClientTag(int argc,
+  char *arg1,
   char *arg2)
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(arg1 && arg2, "Usage: %sr -c PATTERN -T PATTERN\n", PKG_NAME);
+  CHECK(2 == argc, "Usage: %sr -c PATTERN -T PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   data.l[0] = subSharedClientFind(arg1, NULL, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS));
@@ -404,12 +363,13 @@ SubtlerClientTag(char *arg1,
 
 /* SubtlerClientUntag {{{ */
 static void
-SubtlerClientUntag(char *arg1,
+SubtlerClientUntag(int argc,
+  char *arg1,
   char *arg2)
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(arg1 && arg2, "Usage: %sr -c PATTERN -U PATTERN\n", PKG_NAME);
+  CHECK(2 == argc, "Usage: %sr -c PATTERN -U PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   data.l[0] = subSharedClientFind(arg1, NULL, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS));
@@ -422,12 +382,13 @@ SubtlerClientUntag(char *arg1,
 
 /* SubtlerClientGravity {{{ */
 static void
-SubtlerClientGravity(char *arg1,
+SubtlerClientGravity(int argc,
+  char *arg1,
   char *arg2)
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(arg1 && arg2, "Usage: %sr -c PATTERN -y NUMBER\n", PKG_NAME);
+  CHECK(2 == argc, "Usage: %sr -c PATTERN -y NUMBER\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   data.l[0] = subSharedClientFind(arg1, NULL, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS));
@@ -440,12 +401,13 @@ SubtlerClientGravity(char *arg1,
 
 /* SubtlerClientScreen {{{ */
 static void
-SubtlerClientScreen(char *arg1,
+SubtlerClientScreen(int argc,
+  char *arg1,
   char *arg2)
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(arg1 && arg2, "Usage: %sr -c PATTERN -n NUMBER\n", PKG_NAME);
+  CHECK(2 == argc, "Usage: %sr -c PATTERN -n NUMBER\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   data.l[0] = subSharedClientFind(arg1, NULL, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS));
@@ -458,12 +420,13 @@ SubtlerClientScreen(char *arg1,
 
 /* SubtlerClientTags {{{ */
 static void
-SubtlerClientTags(char *arg1,
+SubtlerClientTags(int argc,
+  char *arg1,
   char *arg2)
 {
   Window win;
 
-  CHECK(arg1, "Usage: %sr -c PATTERN -G\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -c PATTERN -G\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 != subSharedClientFind(arg1, NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))
@@ -484,13 +447,14 @@ SubtlerClientTags(char *arg1,
 
 /* SubtlerClientKill {{{ */
 static void
-SubtlerClientKill(char *arg1,
+SubtlerClientKill(int argc,
+  char *arg1,
   char *arg2)
 {
   Window win;
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(arg1, "Usage: %sr -c -k PATTERN\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -c -k PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 != subSharedClientFind(arg1, NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))
@@ -507,13 +471,14 @@ SubtlerClientKill(char *arg1,
 
 /* SubtlerGravityNew {{{ */
 static void
-SubtlerGravityNew(char *arg1,
+SubtlerGravityNew(int argc,
+  char *arg1,
   char *arg2)
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
   XRectangle geometry = { 0 };
 
-  CHECK(arg1 && arg2, "Usage: %sr -g -a NAME GEOMETRY\n", PKG_NAME);
+  CHECK(2 == argc, "Usage: %sr -g -a NAME GEOMETRY\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   /* Parse data */
@@ -528,13 +493,14 @@ SubtlerGravityNew(char *arg1,
 
 /* SubtlerGravityFind {{{ */
 static void
-SubtlerGravityFind(char *arg1,
+SubtlerGravityFind(int argc,
+  char *arg1,
   char *arg2)
 {
   XRectangle geometry = { 0 };
   char *name = NULL;
 
-  CHECK(arg1, "Usage: %sr -g -f GRAVITY\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -g -f GRAVITY\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   /* Find gravity */
@@ -550,7 +516,8 @@ SubtlerGravityFind(char *arg1,
 
 /* SubtlerGravityList {{{ */
 static void
-SubtlerGravityList(char *arg1,
+SubtlerGravityList(int argc,
+  char *arg1,
   char *arg2)
 {
   int size = 0;
@@ -580,12 +547,13 @@ SubtlerGravityList(char *arg1,
 
 /* SubtlerGravityKill {{{ */
 static void
-SubtlerGravityKill(char *arg1,
+SubtlerGravityKill(int argc,
+  char *arg1,
   char *arg2)
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(arg1 && arg2, "Usage: %sr -g -k GRAVITY\n", PKG_NAME);
+  CHECK(2 == argc, "Usage: %sr -g -k GRAVITY\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 != (data.l[0] = subSharedGravityFind(arg1, NULL, NULL)))  
@@ -597,7 +565,8 @@ SubtlerGravityKill(char *arg1,
 
 /* SubtlerScreenFind {{{ */
 static void
-SubtlerScreenFind(char *arg1,
+SubtlerScreenFind(int argc,
+  char *arg1,
   char *arg2)
 {
   int n = 0, find = 0;
@@ -606,7 +575,7 @@ SubtlerScreenFind(char *arg1,
   int xinerama_event = 0, xinerama_error = 0;
 #endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
 
-  CHECK(arg1, "Usage: %sr -s -f ID\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -s -f ID\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   find = atoi(arg1);
@@ -647,7 +616,8 @@ SubtlerScreenFind(char *arg1,
 
 /* SubtlerScreenList {{{ */
 static void
-SubtlerScreenList(char *arg1,
+SubtlerScreenList(int argc,
+  char *arg1,
   char *arg2)
 {
   int n = 0;
@@ -688,12 +658,13 @@ SubtlerScreenList(char *arg1,
 
 /* SubtlerSubletNew {{{ */
 static void
-SubtlerSubletNew(char *arg1,
+SubtlerSubletNew(int argc,
+  char *arg1,
   char *arg2)
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(arg1, "Usage: %sr -b -a PATH\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -b -a PATH\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   snprintf(data.b, sizeof(data.b), "%s", arg1);
@@ -704,7 +675,8 @@ SubtlerSubletNew(char *arg1,
 
 /* SubtlerSubletList {{{ */
 static void
-SubtlerSubletList(char *arg1,
+SubtlerSubletList(int argc,
+  char *arg1,
   char *arg2)
 {
   int i, size = 0;
@@ -724,12 +696,13 @@ SubtlerSubletList(char *arg1,
 
 /* SubtlerSubletUpdate {{{ */
 static void
-SubtlerSubletUpdate(char *arg1,
+SubtlerSubletUpdate(int argc,
+  char *arg1,
   char *arg2)
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(arg1, "Usage: %sr -b -u PATTERN\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -b -u PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 != (data.l[0] = subSharedSubletFind(arg1, NULL)))
@@ -739,13 +712,14 @@ SubtlerSubletUpdate(char *arg1,
 
 /* SubtlerSubletData {{{ */
 static void
-SubtlerSubletData(char *arg1,
+SubtlerSubletData(int argc,
+  char *arg1,
   char *arg2)
 {
   int id = 0;
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(arg1, "Usage: %sr -b PATTERN -A DATA\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -b PATTERN -A DATA\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 != (id = subSharedSubletFind(arg1, NULL)))
@@ -759,12 +733,13 @@ SubtlerSubletData(char *arg1,
 
 /* SubtlerSubletKill {{{ */
 static void
-SubtlerSubletKill(char *arg1,
+SubtlerSubletKill(int argc,
+  char *arg1,
   char *arg2)
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(arg1, "Usage: %sr -b -k PATTERN\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -b -k PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 != (data.l[0] = subSharedSubletFind(arg1, NULL)))
@@ -776,10 +751,11 @@ SubtlerSubletKill(char *arg1,
 
 /* SubtlerTagNew {{{ */
 static void
-SubtlerTagNew(char *arg1,
+SubtlerTagNew(int argc,
+  char *arg1,
   char *arg2)
 {
-  CHECK(arg1, "Usage: %sr -t -a NAME\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -t -a NAME\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 == subSharedTagFind(arg1, NULL))
@@ -793,14 +769,15 @@ SubtlerTagNew(char *arg1,
 
 /* SubtlerTagFind {{{ */
 static void
-SubtlerTagFind(char *arg1,
+SubtlerTagFind(int argc,
+  char *arg1,
   char *arg2)
 {
   int i, tag = -1, size_clients = 0, size_views = 0;
   char **names = NULL;
   Window *views = NULL, *clients = NULL;
 
-  CHECK(arg1, "Usage: %sr -t -f NAME\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -t -f NAME\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   /* Collect data */
@@ -856,7 +833,8 @@ SubtlerTagFind(char *arg1,
 
 /* SubtlerTagList {{{ */
 static void
-SubtlerTagList(char *arg1,
+SubtlerTagList(int argc,
+  char *arg1,
   char *arg2)
 {
   int i, size = 0;
@@ -875,12 +853,13 @@ SubtlerTagList(char *arg1,
 
 /* SubtlerTagKill {{{ */
 static void
-SubtlerTagKill(char *arg1,
+SubtlerTagKill(int argc,
+  char *arg1,
   char *arg2)
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(arg1, "Usage: %sr -t -k PATTERN\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -t -k PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 != (data.l[0] = subSharedTagFind(arg1, NULL)))
@@ -888,14 +867,93 @@ SubtlerTagKill(char *arg1,
   else subSharedLogWarn("Failed killing tag\n");
 } /* }}} */
 
+/* Tray */
+
+/* SubtlerTagFind {{{ */
+static void
+SubtlerTrayFind(int argc,
+  char *arg1,
+  char *arg2)
+{
+  Window win;
+
+  CHECK(1 == argc, "Usage: %sr -r -f PATTERN\n", PKG_NAME);
+  subSharedLogDebug("%s\n", __func__);
+
+  if(-1 != subSharedTrayFind(arg1, NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))
+    {
+      SubtlerTrayPrint(win);
+    }
+  else subSharedLogWarn("Failed finding tray\n");
+} /* }}} */
+
+/* SubtlerTrayFocus {{{ */
+static void
+SubtlerTrayFocus(int argc,
+  char *arg1,
+  char *arg2)
+{
+  Window win;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  CHECK(1 == argc, "Usage: %sr -r -o CLIENT\n", PKG_NAME);
+  subSharedLogDebug("%s\n", __func__);
+
+  if(-1 != subSharedTrayFind(arg1, NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))
+    {
+      data.l[0] = win;
+      subSharedMessage(DefaultRootWindow(display), "_NET_ACTIVE_WINDOW", data, False);
+    }
+  else subSharedLogWarn("Failed finding tray\n");
+} /* }}} */
+
+/* SubtlerTrayList {{{ */
+static void
+SubtlerTrayList(int argc,
+  char *arg1,
+  char *arg2)
+{
+  int i, size = 0;
+  Window *trays = NULL;
+
+  subSharedLogDebug("%s\n", __func__);
+
+  if((trays = subSharedTrayList(&size)))
+    {
+      for(i = 0; i < size; i++) 
+        SubtlerTrayPrint(trays[i]);
+
+      free(trays);
+    }
+  else subSharedLogWarn("Failed getting tray list!\n");
+} /* }}} */
+
+/* SubtlerTrayKill {{{ */
+static void
+SubtlerTrayKill(int argc,
+  char *arg1,
+  char *arg2)
+{
+  Window win;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  CHECK(1 == argc, "Usage: %sr -r -k PATTERN\n", PKG_NAME);
+  subSharedLogDebug("%s\n", __func__);
+
+  if(-1 != (data.l[0] = subSharedTrayFind(arg1, NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS))))
+    subSharedMessage(DefaultRootWindow(display), "SUBTLE_TRAY_KILL", data, False);
+  else subSharedLogWarn("Failed killing tray\n");
+} /* }}} */
+
 /* View */
 
 /* SubtlerViewNew {{{ */
 static void
-SubtlerViewNew(char *arg1,
+SubtlerViewNew(int argc,
+  char *arg1,
   char *arg2)
 {
-  CHECK(arg1, "Usage: %sr -t -a PATTERN\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -t -a PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
   
   if(-1 == subSharedViewFind(arg1, NULL, NULL))
@@ -909,14 +967,15 @@ SubtlerViewNew(char *arg1,
 
 /* SubtlerViewFind {{{ */
 static void
-SubtlerViewFind(char *arg1,
+SubtlerViewFind(int argc,
+  char *arg1,
   char *arg2)
 {
   int id;
   Window win;
   char *name = NULL;
 
-  CHECK(arg1, "Usage: %sr -v -f PATTERN\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -v -f PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 != (id = subSharedViewFind(arg1, &name, &win)) )
@@ -940,13 +999,14 @@ SubtlerViewFind(char *arg1,
 
 /* SubtlerViewJump {{{ */
 static void
-SubtlerViewJump(char *arg1,
+SubtlerViewJump(int argc,
+  char *arg1,
   char *arg2)
 {
   int view = 0;
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(arg1, "Usage: %sr -v -j PATTERN\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -v -j PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   /* Find view */
@@ -961,7 +1021,8 @@ SubtlerViewJump(char *arg1,
 
 /* SubtlerViewList {{{ */
 static void
-SubtlerViewList(char *arg1,
+SubtlerViewList(int argc,
+  char *arg1,
   char *arg2)
 {
   int i, size = 0;
@@ -996,12 +1057,13 @@ SubtlerViewList(char *arg1,
 
 /* SubtlerViewTag {{{ */
 static void
-SubtlerViewTag(char *arg1,
+SubtlerViewTag(int argc,
+  char *arg1,
   char *arg2)
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(arg1 && arg2, "Usage: %sr -v PATTERN -T PATTERN\n", PKG_NAME);
+  CHECK(2 == argc, "Usage: %sr -v PATTERN -T PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   data.l[0] = subSharedViewFind(arg1, NULL, NULL);
@@ -1015,12 +1077,13 @@ SubtlerViewTag(char *arg1,
 
 /* SubtlerViewUntag {{{ */
 static void
-SubtlerViewUntag(char *arg1,
+SubtlerViewUntag(int argc,
+  char *arg1,
   char *arg2)
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(arg1 && arg2, "Usage: %sr -v PATTERN -U PATTERN\n", PKG_NAME);
+  CHECK(2 == argc, "Usage: %sr -v PATTERN -U PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   data.l[0] = subSharedViewFind(arg1, NULL, NULL);
@@ -1034,7 +1097,8 @@ SubtlerViewUntag(char *arg1,
 
 /* SubtlerViewTags {{{ */
 static void
-SubtlerViewTags(char *arg1,
+SubtlerViewTags(int argc,
+  char *arg1,
   char *arg2)
 {
   int i, size = 0;
@@ -1042,7 +1106,7 @@ SubtlerViewTags(char *arg1,
   char **tags = NULL;
   unsigned long *flags = NULL;
 
-  CHECK(arg1, "Usage: %sr -v PATTERN -G\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -v PATTERN -G\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 != subSharedViewFind(arg1, NULL, &win))
@@ -1061,12 +1125,13 @@ SubtlerViewTags(char *arg1,
 
 /* SubtlerViewKill {{{ */
 static void
-SubtlerViewKill(char *arg1,
+SubtlerViewKill(int argc,
+  char *arg1,
   char *arg2)
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(arg1, "Usage: %sr -v -k PATTERN\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -v -k PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if((data.l[0] = subSharedViewFind(arg1, NULL, NULL)))
@@ -1285,17 +1350,19 @@ main(int argc,
   char *argv[])
 {
   Window win = None;
-  int c, mod = -1, group = -1, action = -1;
+  int c, mod = -1, group = -1, action = -1, args = 0;
   char *dispname = NULL, *arg1 = NULL, *arg2 = NULL;
   struct sigaction act;
   const struct option long_options[] = /* {{{ */
   {
     /* Groups */
-    { "clients", no_argument,       0, 'c' },
+    { "client",  no_argument,       0, 'c' },
+    { "gravity", no_argument,       0, 'g' },
     { "screen",  no_argument,       0, 'e' },
-    { "sublets", no_argument,       0, 's' },
-    { "tags",    no_argument,       0, 't' },
-    { "views",   no_argument,       0, 'v' },
+    { "sublet",  no_argument,       0, 's' },
+    { "tag",     no_argument,       0, 't' },
+    { "tray",    no_argument,       0, 'r' },
+    { "view",    no_argument,       0, 'v' },
 
     /* Actions */
     { "add",     no_argument,       0, 'a' },
@@ -1312,19 +1379,15 @@ main(int argc,
     { "tags",    no_argument,       0, 'G' },
     { "update",  no_argument,       0, 'u' },
     { "data",    no_argument,       0, 'A' },
-    { "gravity", no_argument,       0, 'g' },
+    { "gravity", no_argument,       0, 'y' },
     { "raise",   no_argument,       0, 'E' },
-    { "lower",   no_argument,       0, 'R' },
+    { "lower",   no_argument,       0, 'L' },
 
     /* Modifier */
-    { "reload",  no_argument,       0, 'r' },
-    { "quit",    no_argument,       0, 'q' },
-    { "left",    no_argument,       0, 'H' },
-    { "down",    no_argument,       0, 'J' },
-    { "up",      no_argument,       0, 'K' },
-    { "right",   no_argument,       0, 'L' },
+    { "reload",  no_argument,       0, 'R' },
+    { "quit",    no_argument,       0, 'Q' },
     { "current", no_argument,       0, 'C' },
-    { "select",  no_argument,       0, 'x' },
+    { "select",  no_argument,       0, 'X' },
 
     /* Other */
 #ifdef DEBUG
@@ -1338,7 +1401,7 @@ main(int argc,
 
   /* Command table {{{ */
   const SubtlerCommand cmds[SUB_GROUP_TOTAL][SUB_ACTION_TOTAL] = { 
-    /* Client, Gravity, Screen, Sublet, Tag, View <=> Add, Kill, Find, Focus, Full, Float, 
+    /* Client, Gravity, Screen, Sublet, Tag, Tray, View <=> Add, Kill, Find, Focus, Full, Float, 
        Stick, Jump, List, Tag, Untag, Tags, Update, Data, Gravity, Screen, Raise, Lower */
     { NULL, SubtlerClientKill, SubtlerClientFind,  SubtlerClientFocus, 
       SubtlerClientToggleFull, SubtlerClientToggleFloat, SubtlerClientToggleStick, NULL,
@@ -1354,6 +1417,8 @@ main(int argc,
       NULL, NULL, NULL, NULL },
     { SubtlerTagNew, SubtlerTagKill, SubtlerTagFind, NULL, NULL, NULL, 
       NULL, NULL, SubtlerTagList, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL },
+    { NULL, SubtlerTrayKill, SubtlerTrayFind, SubtlerTrayFocus, NULL, NULL, NULL, NULL,
+      SubtlerTrayList, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL },      
     { SubtlerViewNew, SubtlerViewKill, SubtlerViewFind, NULL, NULL, NULL, NULL,
       SubtlerViewJump, SubtlerViewList, SubtlerViewTag, SubtlerViewUntag, SubtlerViewTags, 
       NULL, NULL, NULL, NULL, NULL, NULL }
@@ -1365,7 +1430,7 @@ main(int argc,
   memset(&act.sa_mask, 0, sizeof(sigset_t)); ///< Avoid uninitialized values
   sigaction(SIGSEGV, &act, NULL);
 
-  while((c = getopt_long(argc, argv, "cgsbtvakfoFOSjlTUGuAynERrqHJKLDd:hCxV", long_options, NULL)) != -1)
+  while((c = getopt_long(argc, argv, "cgsbtrvakfoFOSjlTUGuAynELRQCXd:hDV", long_options, NULL)) != -1)
     {
       switch(c)
         {
@@ -1375,6 +1440,7 @@ main(int argc,
           case 's': group = SUB_GROUP_SCREEN;    break;
           case 'b': group = SUB_GROUP_SUBLET;    break;
           case 't': group = SUB_GROUP_TAG;       break;
+          case 'r': group = SUB_GROUP_TRAY;      break;
           case 'v': group = SUB_GROUP_VIEW;      break;
 
           /* Actions */
@@ -1395,17 +1461,13 @@ main(int argc,
           case 'y': action = SUB_ACTION_GRAVITY; break;
           case 'n': action = SUB_ACTION_SCREEN;  break;
           case 'E': action = SUB_ACTION_RAISE;   break;
-          case 'R': action = SUB_ACTION_LOWER;   break;
+          case 'L': action = SUB_ACTION_LOWER;   break;
 
           /* Modifier */
-          case 'r': mod = SUB_MOD_RELOAD;        break;
-          case 'q': mod = SUB_MOD_QUIT;          break;
-          case 'H': mod = SUB_MOD_LEFT;          break;
-          case 'J': mod = SUB_MOD_DOWN;          break;
-          case 'K': mod = SUB_MOD_UP;            break;
-          case 'L': mod = SUB_MOD_RIGHT;         break;
+          case 'R': mod = SUB_MOD_RELOAD;        break;
+          case 'Q': mod = SUB_MOD_QUIT;          break;
           case 'C': mod = SUB_MOD_CURRENT;       break;
-          case 'x': mod = SUB_MOD_SELECT;        break;
+          case 'X': mod = SUB_MOD_SELECT;        break;
 
           /* Other */
           case 'd': dispname = optarg;           break;
@@ -1444,18 +1506,11 @@ main(int argc,
       return -1;
     }
  
-  /* Get arguments */
+  /* Check mods */
   switch(mod)
     {
-      case SUB_MOD_RELOAD: SubtlerReload();                       return 0;
-      case SUB_MOD_QUIT:   SubtlerQuit();                         return 0;
-
-      /* Stupid - but easier */
-      case SUB_MOD_LEFT:   arg1 = SubtlerMatch(SUB_WINDOW_LEFT);  break;
-      case SUB_MOD_DOWN:   arg1 = SubtlerMatch(SUB_WINDOW_DOWN);  break;
-      case SUB_MOD_UP:     arg1 = SubtlerMatch(SUB_WINDOW_UP);    break;
-      case SUB_MOD_RIGHT:  arg1 = SubtlerMatch(SUB_WINDOW_RIGHT); break;
-
+      case SUB_MOD_RELOAD:  SubtlerReload(); return 0;
+      case SUB_MOD_QUIT:    SubtlerQuit();   return 0;
       case SUB_MOD_CURRENT:
         if(SUB_GROUP_VIEW == group) ///< Current of correct group
           {
@@ -1477,16 +1532,19 @@ main(int argc,
         if(argc > optind)     arg1 = SubtlerParse(argv[optind]);
         if(argc > optind + 1) arg2 = SubtlerParse(argv[optind + 1]);
     }
+
   if(-1 != mod && argc > optind) ///< Get arg2
     arg2 = SubtlerParse(argv[optind]);
 
   /* Select command */
   if(-1 != group && -1 != action && cmds[group][action]) 
     {
-      cmds[group][action](arg1, arg2);
+      if(arg1) args++;
+      if(arg2) args++;
+
+      cmds[group][action](args, arg1, arg2);
     }
-  else if((SUB_MOD_CURRENT == mod || (SUB_MOD_LEFT <= mod && SUB_MOD_RIGHT >= mod)) 
-    && (SUB_GROUP_VIEW == group || SUB_GROUP_CLIENT == group))
+  else if(SUB_MOD_CURRENT == mod && (SUB_GROUP_VIEW == group || SUB_GROUP_CLIENT == group))
     {
       printf("%s\n", arg1 ? arg1 : "None"); ///< Print selected client
     }
