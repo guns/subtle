@@ -48,18 +48,19 @@
 /* }}} */
 
 /* Flags {{{ */
-#define SUB_WINDOW_LEFT  0L                                       ///< Window left
-#define SUB_WINDOW_DOWN  1L                                       ///< Window down
-#define SUB_WINDOW_UP    2L                                       ///< Window above
-#define SUB_WINDOW_RIGHT 3L                                       ///< Window right
+#define SUB_WINDOW_LEFT   0L                                      ///< Window left
+#define SUB_WINDOW_DOWN   1L                                      ///< Window down
+#define SUB_WINDOW_UP     2L                                      ///< Window above
+#define SUB_WINDOW_RIGHT  3L                                      ///< Window right
 
-#define SUB_EWMH_FULL    (1L << 1)                                ///< EWMH full flag
-#define SUB_EWMH_FLOAT   (1L << 2)                                ///< EWMH float flag
-#define SUB_EWMH_STICK   (1L << 3)                                ///< EWMH stick flag
+#define SUB_EWMH_FULL     (1L << 1)                               ///< EWMH full flag
+#define SUB_EWMH_FLOAT    (1L << 2)                               ///< EWMH float flag
+#define SUB_EWMH_STICK    (1L << 3)                               ///< EWMH stick flag
 
-#define SUB_MATCH_TITLE  (1L << 1)                                ///< Match title
-#define SUB_MATCH_NAME   (1L << 2)                                ///< Match name
-#define SUB_MATCH_CLASS  (1L << 3)                                ///< Match class
+#define SUB_MATCH_TITLE   (1L << 1)                               ///< Match title
+#define SUB_MATCH_NAME    (1L << 2)                               ///< Match name
+#define SUB_MATCH_CLASS   (1L << 3)                               ///< Match class
+#define SUB_MATCH_GRAVITY (1L << 4)                               ///< Match gravity
 /* }}} */
 
 /* Typedefs {{{ */

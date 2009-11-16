@@ -594,7 +594,7 @@ SharedFindWindow(char *prop,
   Window *win,
   int flags)
 {
-  int id = -1, size = 0;
+  int id = -1, size = 0, gravity1 = 0, gravity2 = 0;
   Window *wins = NULL;
 
   assert(prop && match);
@@ -607,8 +607,13 @@ SharedFindWindow(char *prop,
       Window selwin = None;
       regex_t *preg = subSharedRegexNew(match);
 
+      /* Select window */
       if(!strncmp(match, "#", 1) && win)
-        selwin = subSharedWindowSelect(); ///< Select window
+        selwin = subSharedWindowSelect();
+
+      /* Find id of gravity */
+      if(flags & SUB_MATCH_GRAVITY)
+        gravity1 = subSharedGravityFind(match, NULL, NULL); 
 
       for(i = 0; -1 == id && i < size; i++)
         {
@@ -616,11 +621,26 @@ SharedFindWindow(char *prop,
           subSharedPropertyClass(wins[i], &inst, &klass);
           snprintf(buf, sizeof(buf), "%#lx", wins[i]);
 
-          /* Find client either by window id or by title/inst/class */
+          /* Get window gravity */
+          if(flags & SUB_MATCH_GRAVITY)
+            {
+              int *gravity = (int *)subSharedPropertyGet(wins[i], XA_CARDINAL,
+                "SUBTLE_WINDOW_GRAVITY", NULL);
+
+              gravity2 = *gravity;
+
+              subSharedLogDebug("Gravity: match=%s, gravity1=%d, gravity2=%d, =%d\n", 
+                match, gravity1, gravity2, gravity1 == gravity2);
+
+              free(gravity);
+            }
+
+          /* Find window either by window id, by title/inst/class or by gravity */
           if(wins[i] == selwin || subSharedRegexMatch(preg, buf) ||
-              (flags & SUB_MATCH_TITLE && title && subSharedRegexMatch(preg, title)) ||
-              (flags & SUB_MATCH_NAME  && inst  && subSharedRegexMatch(preg, inst))  ||
-              (flags & SUB_MATCH_CLASS && klass && subSharedRegexMatch(preg, klass)))
+              (flags & SUB_MATCH_TITLE   && title && subSharedRegexMatch(preg, title)) ||
+              (flags & SUB_MATCH_NAME    && inst  && subSharedRegexMatch(preg, inst))  ||
+              (flags & SUB_MATCH_CLASS   && klass && subSharedRegexMatch(preg, klass)) ||
+              (flags & SUB_MATCH_GRAVITY && gravity1 == gravity2))
             {
               subSharedLogDebug("Found: prop=%s, name=%s, win=%#lx, id=%d, flags\n", 
                 prop, match, wins[i], i, flags);
