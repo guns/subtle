@@ -97,11 +97,14 @@ subTrayUpdate(void)
         {
           SubTray *t = TRAY(subtle->trays->data[i]);
 
-          XMoveResizeWindow(subtle->dpy, t->win, subtle->panels.tray.width, 0, t->width, subtle->th);
+          XMapWindow(subtle->dpy, t->win);
+          XMoveResizeWindow(subtle->dpy, t->win, subtle->panels.tray.width, 
+            0, t->width, subtle->th);
           subtle->panels.tray.width += t->width;
         }
 
-      XResizeWindow(subtle->dpy, subtle->panels.tray.win, subtle->panels.tray.width + 3, subtle->th);
+      XResizeWindow(subtle->dpy, subtle->panels.tray.win, 
+        subtle->panels.tray.width + 3, subtle->th);
     }
 } /* }}} */
 

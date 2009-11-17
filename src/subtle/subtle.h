@@ -105,26 +105,26 @@
 #define VIEW(v)    ((SubView *)v)                                 ///< Cast to SubView
 
 /* XEmbed messages */
-#define XEMBED_EMBEDDED_NOTIFY         0                          ///< Start embedding
-#define XEMBED_WINDOW_ACTIVATE         1                          ///< Tray has focus
-#define XEMBED_WINDOW_DEACTIVATE       2                          ///< Tray has no focus
-#define XEMBED_REQUEST_FOCUS           3
-#define XEMBED_FOCUS_IN                4                          ///< Focus model
-#define XEMBED_FOCUS_OUT               5
-#define XEMBED_FOCUS_NEXT              6
-#define XEMBED_FOCUS_PREV              7
-#define XEMBED_GRAB_KEY                8
-#define XEMBED_UNGRAB_KEY              9
-#define XEMBED_MODALITY_ON             10
-#define XEMBED_MODALITY_OFF            11
-#define XEMBED_REGISTER_ACCELERATOR    12
-#define XEMBED_UNREGISTER_ACCELERATOR  13
-#define XEMBED_ACTIVATE_ACCELERATOR    14
+#define XEMBED_EMBEDDED_NOTIFY         0L                         ///< Start embedding
+#define XEMBED_WINDOW_ACTIVATE         1L                         ///< Tray has focus
+#define XEMBED_WINDOW_DEACTIVATE       2L                         ///< Tray has no focus
+#define XEMBED_REQUEST_FOCUS           3L
+#define XEMBED_FOCUS_IN                4L                         ///< Focus model
+#define XEMBED_FOCUS_OUT               5L
+#define XEMBED_FOCUS_NEXT              6L
+#define XEMBED_FOCUS_PREV              7L
+#define XEMBED_GRAB_KEY                8L
+#define XEMBED_UNGRAB_KEY              9L
+#define XEMBED_MODALITY_ON             10L
+#define XEMBED_MODALITY_OFF            11L
+#define XEMBED_REGISTER_ACCELERATOR    12L
+#define XEMBED_UNREGISTER_ACCELERATOR  13L
+#define XEMBED_ACTIVATE_ACCELERATOR    14L
 
 /* Details for XEMBED_FOCUS_IN */
-#define XEMBED_FOCUS_CURRENT           0                          /// Focus default
-#define XEMBED_FOCUS_FIRST             1
-#define XEMBED_FOCUS_LAST              2
+#define XEMBED_FOCUS_CURRENT           0L                         /// Focus default
+#define XEMBED_FOCUS_FIRST             1L
+#define XEMBED_FOCUS_LAST              2L
 
 /* Flags for _XEMBED_INFO */
 #define XEMBED_MAPPED                  (1L << 0)                  ///< Tray mapped
