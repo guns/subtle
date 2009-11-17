@@ -1437,6 +1437,8 @@ SubtlextClientScreenReader(VALUE self)
         "SUBTLE_WINDOW_SCREEN", NULL);
       screen = SubtlextInstantiateScreen(*id);
 
+      if(!NIL_P(screen)) SubtlextScreenUpdate(screen);
+
       rb_iv_set(self, "@screen", screen);
 
       free(id);
