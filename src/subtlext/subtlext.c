@@ -557,10 +557,11 @@ static VALUE
 SubtlextMatch(VALUE self,
   int type)
 {
-  int i, id = 0, size = 0, match = 0, score = 0, *gravity1 = NULL;
+  int i, id = 0, size = 0, match = 0, score = 0;
   Window *clients = NULL, *views = NULL, found = None;
   VALUE win = Qnil, client = Qnil;
   unsigned long *cv = NULL, *flags1 = NULL;
+  XRectangle geometry1 = { 0 }, geometry2 = { 0 };
 
   win     = rb_iv_get(self, "@win");
   clients = subSharedClientList(&size);
@@ -573,8 +574,7 @@ SubtlextMatch(VALUE self,
     {
       flags1   = (unsigned long *)subSharedPropertyGet(views[*cv], XA_CARDINAL,
         "SUBTLE_WINDOW_TAGS", NULL);
-      gravity1 = (int *)subSharedPropertyGet(NUM2LONG(win), XA_CARDINAL,
-        "SUBTLE_WINDOW_GRAVITY", NULL);
+      subSharedPropertyGeometry(win, &geometry1);
 
       /* Iterate once to find a client score-based */
       for(i = 0; 100 != match && i < size; i++)
@@ -584,17 +584,15 @@ SubtlextMatch(VALUE self,
 
           if(win != clients[i] && *flags1 & *flags2) ///< Check if there are common tags
             {
-              int *gravity2 = (int *)subSharedPropertyGet(clients[i], XA_CARDINAL,
-                "SUBTLE_WINDOW_GRAVITY", NULL);
+              subSharedPropertyGeometry(win, &geometry2);
 
-              if(match < (score = subSharedMatch(type, *gravity1, *gravity2)))
+              if(match < (score = subSharedMatch(type, &geometry1, &geometry2)))
                 {
                   match = score;
                   found = clients[i];
                   id    = i;
                 }
 
-              free(gravity2);
             }
 
           free(flags2);
@@ -603,7 +601,6 @@ SubtlextMatch(VALUE self,
       if(found) client = SubtlextInstantiateClient(found);
 
       free(flags1);
-      free(gravity1);
       free(clients);
       free(cv);
     }
@@ -1572,21 +1569,22 @@ static VALUE
 SubtlextClientGeometryReader(VALUE self)
 {
   Window win = None;
-  VALUE geometry = Qnil;
+  VALUE geom = Qnil;
 
   /* Load on demand */
-  if(NIL_P((geometry = rb_iv_get(self, "@geometry"))) &&
+  if(NIL_P((geom = rb_iv_get(self, "@geometry"))) &&
       (win = NUM2LONG(rb_iv_get(self, "@win"))))
     {
-      XWindowAttributes attrs;
+      XRectangle geometry = { 0 };
 
-      XGetWindowAttributes(display, win, &attrs);
+      subSharedPropertyGeometry(win, &geometry);
 
-      geometry = SubtlextInstantiateGeometry(attrs.x, attrs.y, attrs.width, attrs.height);
-      rb_iv_set(self, "@geometry", geometry);
+      geom = SubtlextInstantiateGeometry(geometry.x, geometry.y, 
+        geometry.width, geometry.height);
+      rb_iv_set(self, "@geometry", geom);
     }
 
-  return geometry;
+  return geom;
 } /* }}} */
 
 /* SubtlextClientGeometryWriter {{{ */

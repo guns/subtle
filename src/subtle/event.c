@@ -843,7 +843,7 @@ EventGrab(XEvent *ev)
 
                     if(c != iter && c->screen == iter->screen && VISIBLE(subtle->view, iter) &&
                         (match < (score = subSharedMatch(g->data.num, 
-                        c->gravity, iter->gravity))))
+                        &c->geom, &iter->geom))))
                       {
                         match = score;
                         found = iter;
