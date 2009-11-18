@@ -3523,9 +3523,10 @@ SubtlextViewClientList(VALUE self)
 {
   int i, size = 0;
   Window *clients = NULL;
-  VALUE win = Qnil, array = Qnil;
+  VALUE win = Qnil, array = Qnil, client = Qnil;
   unsigned long *flags1 = NULL;
   
+  /* Fetch data */
   win     = rb_iv_get(self, "@win");
   array   = rb_ary_new2(size);
   clients = subSharedClientList(&size);
@@ -3540,7 +3541,13 @@ SubtlextViewClientList(VALUE self)
             "SUBTLE_WINDOW_TAGS", NULL);
 
           if(*flags1 & *flags2) ///< Check if there are common tags
-            rb_ary_push(array, SubtlextInstantiateClient(clients[i]));
+            {
+              if(!NIL_P(client = SubtlextInstantiateClient(clients[i])))
+                {
+                  SubtlextClientUpdate(client);
+                  rb_ary_push(array, client); 
+                }
+            }
 
           free(flags2);
         }
