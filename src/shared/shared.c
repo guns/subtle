@@ -188,41 +188,53 @@ subSharedRegexKill(regex_t *preg)
 } /* }}} */
 
  /** subSharedMatch {{{
-  * @brief Match a window based on neighbourship
-  * @param[in]     type      Type of neighbourship
-  * @param[in]     gravity1  Gravity 1
-  * @param[in]     gravity2  Gravity 2
+  * @brief Match a window based on position
+  * @param[in]  type       Type of matching
+  * @param[in]  geometry1  Geometry 1
+  * @param[in]  geometry2  Geometry 2
   **/
 
 int
 subSharedMatch(int type,
-  int gravity1,
-  int gravity2)
+  XRectangle *geometry1,
+  XRectangle *geometry2)
 {
-  int score = 0;
+  int x = 0, y = 0;
 
-  /* Matching is a bit annoying, doing calculations on the numpad */
-  switch(gravity2 - gravity1)
+  /* Matching is a bit annoying */
+  switch(type)
     {
-      case -1: score = 40; break;
-      case  1: score = 40; break;
+      case SUB_WINDOW_LEFT:
+        if(geometry2->x + geometry2->width == geometry1->x) x = 50;
+        else x = 10;
 
-      case -2: if(SUB_WINDOW_LEFT == type)  score =  80; break;
-      case  2: if(SUB_WINDOW_RIGHT == type) score =  80; break;
+        if(geometry2->y == geometry1->y) y = 50;
+        else y = 10;
+        break;
+      case SUB_WINDOW_RIGHT:
+        if(geometry1->x + geometry1->width == geometry2->x) x = 50;
+        else x = 10;
 
-      case -3: if(SUB_WINDOW_DOWN == type)  score = 100; break;
-      case  3: if(SUB_WINDOW_UP == type)    score = 100; break;
+        if(geometry1->y == geometry2->y) y = 50;
+        else y = 10;
+        break;
+      case SUB_WINDOW_UP:
+        if(geometry2->x == geometry1->x) x = 50;
+        else x = 10;
 
-      case -5: score = 60; break;
-      case  5: score = 60; break;
+        if(geometry2->y + geometry2->height == geometry1->y) y = 50;
+        else y = 10;
+        break;
+      case SUB_WINDOW_DOWN:
+        if(geometry2->x == geometry1->x) x = 50;
+        else x = 10;
 
-      case -6: if(SUB_WINDOW_DOWN == type)  score =  80; break;
-      case  6: if(SUB_WINDOW_UP == type)    score =  80; break;
-
-      default: score = 10;
+        if(geometry1->y + geometry1->height == geometry2->y) y = 50;
+        else y = 10;
+        break;
     }
 
-  return score;
+  return x + y;
 } /* }}} */
 
  /** subSharedPropertyGet {{{
@@ -391,12 +403,38 @@ subSharedPropertyClass(Window win,
   if(klasses) XFreeStringList(klasses);
 } /* }}} */
 
+ /** subSharedPropertyGeometry {{{
+  * @brief Get window geometry
+  * @param[in]     win       A #Window
+  * @param[inout]  geometry  A #XRectangle
+  **/
+
+void
+subSharedPropertyGeometry(Window win,
+  XRectangle *geometry)
+{
+  XWindowAttributes attrs;
+
+  assert(win && geometry);
+
+#ifdef WM
+  XGetWindowAttributes(subtle->dpy, win, &attrs);
+#else /* WM */
+  XGetWindowAttributes(display, win, &attrs);
+#endif /* WM */
+
+  /* Copy values */
+  geometry->x      = attrs.x;
+  geometry->y      = attrs.y;
+  geometry->width  = attrs.width;
+  geometry->height = attrs.height;
+} /* }}} */
+
  /** subSharedPropertyDelete {{{
-  * @brief Get window property
+  * @brief Deletes the property
   * @param[in]  win   A #Window
   * @param[in]  name  Property name
   * @param[in]  e     A #SubEwmh
-  * return Deletes the property
   **/
 
 void 
@@ -407,6 +445,8 @@ subSharedPropertyDelete(Window win,
   char *name)
 #endif /* WM */
 {
+  assert(win);
+
 #ifdef WM
   XDeleteProperty(subtle->dpy, win, subEwmhGet(e));
 #else /* WM */

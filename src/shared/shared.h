@@ -107,7 +107,8 @@ void subSharedRegexKill(regex_t *preg);                           ///< Kill rege
 /* }}} */
 
 /* Match {{{ */
-int subSharedMatch(int type, int gravity1, int gravity2);         ///< Match window
+int subSharedMatch(int type, XRectangle *geometry1,
+  XRectangle *geometry2);                                         ///< Match window
 /* }}} */
 
 /* Property {{{ */
@@ -128,6 +129,10 @@ void subSharedPropertyDelete(Window win, char *name);             ///< Delete wi
 void subSharedPropertyTitle(Window win, char **title);            ///< Get window name
 void subSharedPropertyClass(Window win, char **inst,
   char **klass);                                                  ///< Get window class
+
+void subSharedPropertyGeometry(Window win,
+  XRectangle *geometry);                                          ///< Get window geometry
+
 /* }}} */
 
 /* Spawn {{{ */
