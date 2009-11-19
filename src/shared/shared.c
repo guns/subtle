@@ -1047,7 +1047,7 @@ int
 subSharedSubletFind(char *match,
   char **name)
 {
-  return SharedFind("SUBTLE_TRAY_LIST", match, name);
+  return SharedFind("SUBTLE_SUBLET_LIST", match, name);
 } /* }}} */
 
  /** subSharedViewFind {{{
