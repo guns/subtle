@@ -841,7 +841,7 @@ EventGrab(XEvent *ev)
                   {
                     SubClient *iter = CLIENT(subtle->clients->data[i]);
 
-                    if(c != iter && c->screen == iter->screen && VISIBLE(subtle->view, iter) &&
+                    if(c != iter && VISIBLE(subtle->view, iter) &&
                         (match < (score = subSharedMatch(g->data.num, 
                         &c->geom, &iter->geom))))
                       {
