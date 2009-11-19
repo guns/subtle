@@ -575,7 +575,7 @@ SubtlerScreenFind(int argc,
   int xinerama_event = 0, xinerama_error = 0;
 #endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
 
-  CHECK(1 == argc, "Usage: %sr -s -f ID\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -e -f ID\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   find = atoi(arg1);
@@ -664,7 +664,7 @@ SubtlerSubletNew(int argc,
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(1 == argc, "Usage: %sr -b -a PATH\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -s -a PATH\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   snprintf(data.b, sizeof(data.b), "%s", arg1);
@@ -702,7 +702,7 @@ SubtlerSubletUpdate(int argc,
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(1 == argc, "Usage: %sr -b -u PATTERN\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -s -u PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 != (data.l[0] = subSharedSubletFind(arg1, NULL)))
@@ -719,7 +719,7 @@ SubtlerSubletData(int argc,
   int id = 0;
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(1 == argc, "Usage: %sr -b PATTERN -A DATA\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -s PATTERN -A DATA\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 != (id = subSharedSubletFind(arg1, NULL)))
@@ -739,7 +739,7 @@ SubtlerSubletKill(int argc,
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  CHECK(1 == argc, "Usage: %sr -b -k PATTERN\n", PKG_NAME);
+  CHECK(1 == argc, "Usage: %sr -s -k PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
   if(-1 != (data.l[0] = subSharedSubletFind(arg1, NULL)))
@@ -1162,12 +1162,13 @@ SubtlerUsage(int group)
              "  -C, --current           Select current active window/view\n" \
              "  -x, --select            Select a window via pointer\n" \
              "\nGroups:\n" \
-             "  -c, --clients           Use clients group\n" \
+             "  -c, --client            Use client group\n" \
              "  -g, --gravity           Use gravity group\n" \
-             "  -s, --screen            Use screen group\n" \
-             "  -b, --sublets           Use sublets group\n" \
-             "  -t, --tags              Use tags group\n" \
-             "  -v, --views             Use views group\n", 
+             "  -e, --screen            Use screen group\n" \
+             "  -s, --sublet            Use sublet group\n" \
+             "  -t, --tag               Use tag group\n" \
+             "  -r, --tray              Use tray group\n" \
+             "  -v, --view              Use views group\n", 
              getenv("DISPLAY"), PKG_NAME, PKG_NAME);
     }
 
@@ -1437,8 +1438,8 @@ main(int argc,
           /* Groups */
           case 'c': group = SUB_GROUP_CLIENT;    break;
           case 'g': group = SUB_GROUP_GRAVITY;   break;
-          case 's': group = SUB_GROUP_SCREEN;    break;
-          case 'b': group = SUB_GROUP_SUBLET;    break;
+          case 'e': group = SUB_GROUP_SCREEN;    break;
+          case 's': group = SUB_GROUP_SUBLET;    break;
           case 't': group = SUB_GROUP_TAG;       break;
           case 'r': group = SUB_GROUP_TRAY;      break;
           case 'v': group = SUB_GROUP_VIEW;      break;
