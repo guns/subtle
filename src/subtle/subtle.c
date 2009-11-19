@@ -37,8 +37,8 @@ SubtleSignal(int signum)
         if(subtle) 
           {
             subtle->flags &= ~SUB_SUBTLE_RUN;
-            XNoOp(subtle->dpy); ///< Forcing ppoll to leave lock
-            XSync(subtle->dpy, False);
+            XNoOp(subtle->dpy); ///< Pushing some data for poll
+            XSync(subtle->dpy, True);
           }
         break;
       case SIGSEGV:
