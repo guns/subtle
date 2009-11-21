@@ -865,6 +865,46 @@ RubyWrapLoadConfig(VALUE data)
   return Qnil;
 } /* }}} */
 
+/* RubyWrapLoadSublet {{{ */
+static VALUE
+RubyWrapLoadSublet(VALUE data)
+{
+  if(Qnil != inherited)
+    {
+      VALUE self = Qnil;
+      char *name = (char *)rb_class2name((ID)inherited);
+
+      /* Instantiate sublet */
+      if(Qnil != (self = rb_funcall(inherited, rb_intern("new"), 0, NULL)))
+        {
+          SubSublet *s = NULL;
+          Data_Get_Struct(self, SubSublet, s);
+
+          if(s)
+            {
+              /* Append sublet to linked list */
+              if(!subtle->sublet) subtle->sublet = s;
+              else
+                {
+                  SubSublet *iter = subtle->sublet;
+
+                  while(iter && iter->next) iter = iter->next;
+
+                  iter->next = s;
+                }
+              subRubyCall(SUB_CALL_SUBLET_RUN, s->recv, NULL); ///< First run
+
+              printf("Loaded sublet (%s)\n", name);
+            }
+        }
+
+      inherited = Qnil;
+    }
+  else subSharedLogWarn("Failed instantiating sublet\n");
+
+  return Qnil;
+} /* }}} */
+
 /* RubyWrapLoadSubtlext {{{ */
 static VALUE
 RubyWrapLoadSubtlext(VALUE data)
@@ -1106,30 +1146,34 @@ RubyIconInit(int argc,
 
   rb_scan_args(argc, argv, "02", &arg1, &arg2);
 
+  /* Find or create icon */
   if(T_STRING == rb_type(arg1)) ///< Icon path
     {
       /* Find or create icon */
       if(-1 == (id = subIconFind(RSTRING_PTR(arg1))))
         i = subIconNew(RSTRING_PTR(arg1));
     }
-  else if(T_FIXNUM == rb_type(arg1) && T_FIXNUM == rb_type(arg2)) ///< Icon dimensions
+  else if(FIXNUM_P(arg1) && FIXNUM_P(arg2)) ///< Icon dimensions
     {
       /* Create empty pixmap */
-      i         = ICON(subSharedMemoryAlloc(1, sizeof(SubIcon)));
+      i = ICON(subSharedMemoryAlloc(1, sizeof(SubIcon)));
       i->flags  = SUB_TYPE_ICON;
       i->width  = FIX2INT(arg1);
       i->height = FIX2INT(arg2);
       i->pixmap = XCreatePixmap(subtle->dpy, ROOT, i->width, i->height, 1);
     }
+
+  /* Set icon properties */
+  if(i)
+    {
+      if(-1 == id) id = subtle->icons->ndata; ///< Latest icon
+      subArrayPush(subtle->icons, (void *)i);
+
+      rb_iv_set(self, "@id",     INT2FIX(id));
+      rb_iv_set(self, "@width",  INT2FIX(i->width));
+      rb_iv_set(self, "@height", INT2FIX(i->height));
+    }
   else rb_raise(rb_eArgError, "Unknown value types");
-
-  /* Save icon and get id */
-  id = subtle->icons->ndata;
-  subArrayPush(subtle->icons, (void *)i);
-
-  rb_iv_set(self, "@id",     INT2FIX(id));
-  rb_iv_set(self, "@width",  INT2FIX(i->width));
-  rb_iv_set(self, "@height", INT2FIX(i->height));
 
   return self;
 } /* }}} */
@@ -1822,58 +1866,38 @@ void
 subRubyLoadSublet(const char *file)
 {
   int state = 0;
-  char buf[100];
+  char buf[100] = { 0 };
 
   /* Check path */
   if(subtle->paths.sublets)
     snprintf(buf, sizeof(buf), "%s/%s", subtle->paths.sublets, file);
   else
     {
-      char *data = getenv("XDG_DATA_HOME"), path[50];
+      char *home = getenv("XDG_DATA_HOME"), path[50] = { 0 };
 
       /* Combine paths */
       snprintf(path, sizeof(path), "%s/.local/share", getenv("HOME"));
       snprintf(buf, sizeof(buf), "%s/%s/sublets/%s", 
-        data ? data : path, PKG_NAME, file);
+        home ? home : path, PKG_NAME, file);
     }
   subSharedLogDebug("sublet=%s\n", buf);
 
-  /* Carefully load sublet */
-  rb_load_protect(rb_str_new2(buf), 0, &state); ///< Load sublet
-  if(0 == state && Qnil != inherited)
+  /* Carefully load file */
+  rb_load_protect(rb_str_new2(buf), 0, &state);
+  if(state)
     {
-      VALUE self = Qnil;
-      char *name = (char *)rb_class2name((ID)inherited);
-
-      /* Instantiate sublet */
-      if(Qnil != (self = rb_funcall(inherited, rb_intern("new"), 0, NULL)))
-        {
-          SubSublet *s = NULL;
-          Data_Get_Struct(self, SubSublet, s);
-
-          /* Append sublet to linked list */
-          if(!subtle->sublet) subtle->sublet = s;
-          else
-            {
-              SubSublet *iter = subtle->sublet;
-
-              while(iter && iter->next) iter = iter->next;
-
-              iter->next = s;
-            }
-
-          subRubyCall(SUB_CALL_SUBLET_RUN, s->recv, NULL); ///< First run
-
-          printf("Loaded sublet (%s)\n", name);
-        }
-      else subSharedLogWarn("Failed instantiating sublet `%s'\n", name);
-
-      inherited = Qnil;
-    }
+      subSharedLogWarn("Failed loading sublet `%s'\n", file);
+      RubyBacktrace();
+    }  
   else
     {
-      subSharedLogWarn("Failed loading sublet `%s'\n", buf);
-      RubyBacktrace();
+      /* Carefully instantiate */
+      rb_protect(RubyWrapLoadSublet, 0, &state);
+      if(state)
+        {
+          subSharedLogWarn("Failed instantiating sublet `%s'\n", file);
+          RubyBacktrace();
+        }
     }
 } /* }}} */
 
