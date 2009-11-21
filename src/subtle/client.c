@@ -491,7 +491,8 @@ subClientTag(SubClient *c,
       /* Set size and enable float */
       if(t->flags & SUB_TAG_GEOMETRY && !(c->flags & SUB_MODE_UNFLOAT))
         {
-          flags   |= SUB_MODE_FLOAT;
+          flags   |= (SUB_MODE_FLOAT|SUB_MODE_UNRESIZE); ///< Disable size checks
+          c->geom  = t->geometry;
           c->base  = t->geometry;
         }
 
@@ -643,11 +644,11 @@ subClientSetSize(SubClient *c)
   DEAD(c);
   assert(c);
 
+  SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
+
   if(!(c->flags & SUB_MODE_UNRESIZE) && 
       (subtle->flags & SUB_SUBTLE_RESIZE || c->flags & (SUB_MODE_FLOAT|SUB_MODE_RESIZE)))
     {
-      SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
-
       /* Limit width */
       if(c->base.width < c->minw)  c->base.width  = c->minw;
       if(c->base.width > c->maxw)  c->base.width  = c->maxw;
@@ -672,11 +673,11 @@ subClientSetSize(SubClient *c)
       /* Check incs */
       c->geom.width  -= WIDTH(c) % c->incw; 
       c->geom.height -= HEIGHT(c) % c->inch;
-
-      /* Fit sizes */
-      subScreenFit(s, &c->geom, c->flags & SUB_MODE_FLOAT);
-      subScreenFit(s, &c->base, False);       
     }
+
+  /* Fit sizes */
+  subScreenFit(s, &c->geom, c->flags & SUB_MODE_FLOAT);
+  subScreenFit(s, &c->base, False);
 } /* }}} */
 
   /** subClientSetStrut {{{ 
@@ -820,18 +821,6 @@ subClientSetNormalHints(SubClient *c)
               s->geom.height - subtle->th : size->max_height;
         }
 
-      if(size->flags & (USPosition|PPosition)) ///< User/program size
-        {
-          c->geom.x = c->base.x = size->x;
-          c->geom.y = c->base.y = size->y;
-        }
-
-      if(size->flags & (USPosition|PPosition)) ///< User/program position
-        {
-          c->geom.x = c->base.x = size->x;
-          c->geom.y = c->base.y = size->y;
-        }
-
       if(size->flags & PAspect) ///< Aspect
         {
           if(size->min_aspect.y) c->minr = (float)size->min_aspect.x / size->min_aspect.y;
@@ -842,6 +831,23 @@ subClientSetNormalHints(SubClient *c)
         {
           if(size->width_inc)  c->incw = size->width_inc;
           if(size->height_inc) c->inch = size->height_inc;
+        }
+
+      /* Check for specific position */
+      if(!(c->flags & SUB_MODE_UNRESIZE) &&
+          (subtle->flags & SUB_SUBTLE_RESIZE || c->flags & (SUB_MODE_FLOAT|SUB_MODE_RESIZE)))
+        {
+          if(size->flags & (USSize|PSize)) ///< User/program size
+            {
+              c->geom.width  = c->base.width  = size->width;
+              c->geom.height = c->base.height = size->height;
+            }
+
+          if(size->flags & (USPosition|PPosition)) ///< User/program position
+            {
+              c->geom.x = c->base.x = size->x;
+              c->geom.y = c->base.y = size->y;
+            }
         }
     }
 
