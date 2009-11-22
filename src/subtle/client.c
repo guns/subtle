@@ -381,29 +381,29 @@ subClientDrag(SubClient *c,
                       c->geom.x = (rx - wx) - (rx - ev.xmotion.x_root);
                       c->geom.y = (ry - wy) - (ry - ev.xmotion.y_root);
 
-                      ClientSnap(c); ///< Snap to border
+                      ClientSnap(c); ///< Snap border
                       break;
                     case SUB_DRAG_RESIZE:
-                      if(left) ///< Drag to left
+                      if(left) ///< Drag left
                         {
                           if(0 < (rx - wx) - (rx - ev.xmotion.x_root)) ///< Check edge
                             {
-                              check          = ww + (rx - ev.xmotion.x_root); ///< Avoid overflow
+                              /* Calculate width and x */
+                              check          = ww + (rx - ev.xmotion.x_root);
                               c->geom.width  = check > c->minw ? check : c->minw;
                               c->geom.width -= (c->geom.width % c->incw);
                               c->geom.x      = (rx - wx) + ww - c->geom.width;
                             }
                         }
-                      else ///< Drag to right
-                        {
-                          check          = ww - (rx - ev.xmotion.x_root); ///< Avoid overflow
-                          c->geom.width  = check > c->minw ? check : c->minw;
-                        }
+                      else c->geom.width = ww - (rx - ev.xmotion.x_root); ///< Drag right
 
-                      check = wh - (ry - ev.xmotion.y_root); ///< Avoid overflow
-                      c->geom.height = check > c->minh ? check : c->minh;
-
+                      c->geom.height = wh - (ry - ev.xmotion.y_root);
                       subClientSetSize(c);
+                      
+                      /* Recalculate x position after size fitting */
+                      if(left && c->geom.x + c->geom.width != wx + ww)
+                        c->geom.x = (rx - wx) + ww - c->geom.width;
+
                       break;
                   }  
 
