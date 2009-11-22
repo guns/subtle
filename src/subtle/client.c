@@ -401,8 +401,13 @@ subClientDrag(SubClient *c,
                       subClientSetSize(c);
                       
                       /* Recalculate x position after size fitting */
-                      if(left && c->geom.x + c->geom.width != wx + ww)
-                        c->geom.x = (rx - wx) + ww - c->geom.width;
+                      if(left)
+                        {
+                          if(c->geom.x + c->geom.width != wx + ww)
+                            c->geom.x = (rx - wx) + ww - c->geom.width;
+                        }
+                      else c->geom.x = (rx - wx);
+                      c->geom.y = (ry - wy);
 
                       break;
                   }  
@@ -663,17 +668,17 @@ subClientSetSize(SubClient *c)
       if(c->geom.height < c->minh) c->geom.height = c->minh;
       if(c->geom.height > c->maxh) c->geom.height = c->maxh;
 
-      /* Check aspect ratios */
-      if(c->minr && c->geom.height * c->minr > c->geom.width)
-        c->geom.width = (int)(c->geom.height * c->minr);
-
-      if(c->maxr && c->geom.height * c->maxr < c->geom.width)
-        c->geom.width = (int)(c->geom.height * c->maxr);
-
       /* Check incs */
       c->geom.width  -= WIDTH(c) % c->incw; 
       c->geom.height -= HEIGHT(c) % c->inch;
     }
+
+  /* Check aspect ratios */
+  if(c->minr && c->geom.height * c->minr > c->geom.width)
+    c->geom.width = (int)(c->geom.height * c->minr);
+
+  if(c->maxr && c->geom.height * c->maxr < c->geom.width)
+    c->geom.width = (int)(c->geom.height * c->maxr);
 
   /* Fit sizes */
   subScreenFit(s, &c->geom, c->flags & SUB_MODE_FLOAT);
