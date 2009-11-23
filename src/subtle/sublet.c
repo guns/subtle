@@ -213,12 +213,12 @@ subSubletSetData(SubSublet *s,
     }
   
   /* Fix spacing of last item */
-  if(t->flags & SUB_DATA_STRING)
+  if(t && t->flags & SUB_DATA_STRING)
     {
       s->width -= right;
       t->width -= right;
     }
-  else if(t->flags & SUB_DATA_NUM)
+  else if(t && t->flags & SUB_DATA_NUM)
     {
       s->width -= 2;
       t->width -= 2;
