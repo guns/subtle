@@ -88,34 +88,40 @@ PANEL = {
 # 
 COLORS = { 
   # Foreground color of panel
-  :fg_panel      => "#e2e2e5",  
+  :fg_panel      => "#757575",
 
   # Foreground color of view button
-  :fg_views      => "#CF6171",
+  :fg_views      => "#757575",
 
   # Foreground color of sublets
-  :fg_sublets    => "#000000",
+  :fg_sublets    => "#757575",
 
-  # Foreground color of focus window title and view
-  :fg_focus      => "#000000",
+  # Foreground color of focus window titles and active views
+  :fg_focus      => "#fecf35",
+
+  # Foreground color of urgent window titles and views
+  :fg_urgent     => "#FF9800",
 
   # Background color of panel
-  :bg_panel      => "#444444",
+  :bg_panel      => "#202020",
 
   # Background color of view button
-  :bg_views      => "#444444",
+  :bg_views      => "#202020",
 
   # Background color of sublets
-  :bg_sublets    => "#CF6171",
+  :bg_sublets    => "#202020",
 
-  # Background color of focus window title and view
-  :bg_focus      => "#CF6171",
+  # Background color of focus window titles and active views
+  :bg_focus      => "#202020",
+
+  # Background color of urgent window titles and views
+  :bg_urgent     => "#202020",
 
   # Border color of focus windows
-  :border_focus  => "#CF6171",
+  :border_focus  => "#303030",
 
   # Border color of normal windows
-  :border_normal => "#5d5d5d",  
+  :border_normal => "#202020",  
   
   # Background color of root background
   :background    => "#3d3d3d"
