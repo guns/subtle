@@ -127,7 +127,6 @@ subClientNew(Window win)
   subClientSetState(c, &flags);
   subClientSetTransient(c, &flags);
   subClientToggle(c, (~c->flags & flags));
-  if(c->flags & (SUB_MODE_URGENT|SUB_MODE_URGENT_ONCE)) subClientWarp(c);
 
   /* EWMH: Gravity, screen and desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
@@ -189,26 +188,38 @@ subClientConfigure(SubClient *c)
 void
 subClientRender(SubClient *c)
 {
-  char buf[50];
+  char buf[50] = { 0 };
   XSetWindowAttributes sattrs;
   XGCValues gvals;
 
   DEAD(c);
   assert(c);
 
-  /* Set window border */
-  sattrs.border_pixel = subtle->windows.focus == c->win ? subtle->colors.bo_focus : 
-    subtle->colors.bo_normal;
-  XChangeWindowAttributes(subtle->dpy, c->win, CWBorderPixel, &sattrs);
-
   /* Title mode */
   if(c->flags & (SUB_MODE_STICK|SUB_MODE_FLOAT))
     snprintf(buf, sizeof(buf), "%c%s", c->flags & SUB_MODE_STICK ? '*' : '^', c->title);
   else snprintf(buf, sizeof(buf), "%s", c->title);
 
-  /* Title window */
-  gvals.foreground = subtle->colors.fg_focus;
+  /* Select color pair */
+  if(c->flags & SUB_MODE_URGENT)
+    {
+      gvals.foreground = subtle->colors.fg_urgent;
+      gvals.background = subtle->colors.bg_urgent;         
+    }
+  else
+    {
+      gvals.foreground = subtle->colors.fg_focus;
+      gvals.background = subtle->colors.bg_focus;
+    }
+
+  /* Set window border */
+  sattrs.border_pixel = subtle->windows.focus == c->win ? subtle->colors.bo_focus : 
+    subtle->colors.bo_normal;
+
+  /* Update window */
   XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
+  XChangeWindowAttributes(subtle->dpy, c->win, CWBorderPixel, &sattrs);
+  XSetWindowBackground(subtle->dpy, subtle->panels.title.win, gvals.background); 
   XClearWindow(subtle->dpy, subtle->panels.title.win);
 
   XDrawString(subtle->dpy, subtle->panels.title.win, subtle->gcs.font, 3, subtle->fy,
@@ -885,7 +896,7 @@ subClientSetHints(SubClient *c,
       if(!(c->flags & SUB_MODE_UNURGENT))
         {
           if(hints->flags & XUrgencyHint)     *flags |= SUB_MODE_URGENT;
-          else if(c->flags & SUB_MODE_URGENT) *flags |= SUB_MODE_URGENT_ONCE;
+          else if(c->flags & SUB_MODE_URGENT) *flags |= SUB_MODE_URGENT_FOCUS;
         }
         
       if(hints->flags & InputHint && hints->input) c->flags |= SUB_CLIENT_INPUT;

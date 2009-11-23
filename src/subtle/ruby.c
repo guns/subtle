@@ -746,16 +746,18 @@ RubyWrapLoadConfig(VALUE data)
 
   /* Config: Colors */
   config                    = rb_const_get(rb_cObject, rb_intern("COLORS"));
-  subtle->colors.fg_panel   = RubyParseColor(RubyGetString(config, "fg_panel",      "#e2e2e5"));
-  subtle->colors.fg_views   = RubyParseColor(RubyGetString(config, "fg_views",      "#CF6171"));
-  subtle->colors.fg_sublets = RubyParseColor(RubyGetString(config, "fg_sublets",    "#CF6171"));
-  subtle->colors.fg_focus   = RubyParseColor(RubyGetString(config, "fg_focus",      "#000000"));
-  subtle->colors.bg_panel   = RubyParseColor(RubyGetString(config, "bg_panel",      "#444444"));
-  subtle->colors.bg_views   = RubyParseColor(RubyGetString(config, "bg_views",      "#3d3d3d"));
-  subtle->colors.bg_sublets = RubyParseColor(RubyGetString(config, "bg_sublets",    "#CF6171"));
-  subtle->colors.bg_focus   = RubyParseColor(RubyGetString(config, "bg_focus",      "#CF6171"));
-  subtle->colors.bo_focus   = RubyParseColor(RubyGetString(config, "border_focus",  "#CF6171"));
-  subtle->colors.bo_normal  = RubyParseColor(RubyGetString(config, "border_normal", "#CF6171"));
+  subtle->colors.fg_panel   = RubyParseColor(RubyGetString(config, "fg_panel",      "#757575"));
+  subtle->colors.fg_views   = RubyParseColor(RubyGetString(config, "fg_views",      "#757575"));
+  subtle->colors.fg_sublets = RubyParseColor(RubyGetString(config, "fg_sublets",    "#757575"));
+  subtle->colors.fg_focus   = RubyParseColor(RubyGetString(config, "fg_focus",      "#fecf35"));
+  subtle->colors.fg_urgent  = RubyParseColor(RubyGetString(config, "fg_urgent",     "#FF9800"));
+  subtle->colors.bg_panel   = RubyParseColor(RubyGetString(config, "bg_panel",      "#202020"));
+  subtle->colors.bg_views   = RubyParseColor(RubyGetString(config, "bg_views",      "#202020"));
+  subtle->colors.bg_sublets = RubyParseColor(RubyGetString(config, "bg_sublets",    "#202020"));
+  subtle->colors.bg_focus   = RubyParseColor(RubyGetString(config, "bg_focus",      "#202020"));
+  subtle->colors.bg_urgent  = RubyParseColor(RubyGetString(config, "bg_urgent",     "#202020"));
+  subtle->colors.bo_focus   = RubyParseColor(RubyGetString(config, "border_focus",  "#303030"));
+  subtle->colors.bo_normal  = RubyParseColor(RubyGetString(config, "border_normal", "#202020"));
 
   /* Root background */
   if((str = RubyGetString(config, "background", NULL)))

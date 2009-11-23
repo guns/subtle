@@ -158,7 +158,12 @@ subViewRender(void)
           SubView *v = VIEW(subtle->views->data[i]);
 
           /* Select color pair */
-          if(subtle->view == v)
+          if(v->flags & SUB_MODE_URGENT)
+            {
+              gvals.foreground = subtle->colors.fg_urgent;
+              gvals.background = subtle->colors.bg_urgent;            
+            }
+          else if(subtle->view == v)
             {
               gvals.foreground = subtle->colors.fg_focus;
               gvals.background = subtle->colors.bg_focus;

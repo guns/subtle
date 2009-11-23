@@ -68,15 +68,15 @@
   (ButtonPressMask|ButtonReleaseMask|PointerMotionMask)
 
 #define VISUAL \
-  DefaultVisual(subtle->dpy, DefaultScreen(subtle->dpy))        ///< Default visual
+  DefaultVisual(subtle->dpy, DefaultScreen(subtle->dpy))         ///< Default visual
 #define COLORMAP \
-  DefaultColormap(subtle->dpy, DefaultScreen(subtle->dpy))      ///< Default colormap
+  DefaultColormap(subtle->dpy, DefaultScreen(subtle->dpy))       ///< Default colormap
 #define VISIBLE(v,c) \
-  (v && c && (v->tags & c->tags || c->flags & (SUB_MODE_STICK|SUB_MODE_URGENT)))   ///< Visible on view
+  (v && c && (v->tags & c->tags || c->flags & SUB_MODE_STICK))   ///< Visible on view
 #define SCREENW \
-  DisplayWidth(subtle->dpy, DefaultScreen(subtle->dpy))         ///< Get screen width
+  DisplayWidth(subtle->dpy, DefaultScreen(subtle->dpy))          ///< Get screen width
 #define SCREENH \
-  DisplayHeight(subtle->dpy, DefaultScreen(subtle->dpy))        ///< Get screen height
+  DisplayHeight(subtle->dpy, DefaultScreen(subtle->dpy))         ///< Get screen height
 
 #define ROOT       DefaultRootWindow(subtle->dpy)                ///< Root window
 #define SCRN       DefaultScreen(subtle->dpy)                    ///< Default screen
@@ -150,7 +150,7 @@
 #define SUB_MODE_FLOAT                (1L << 21)                  ///< Float mode
 #define SUB_MODE_STICK                (1L << 22)                  ///< Stick mode
 #define SUB_MODE_URGENT               (1L << 23)                  ///< Urgent mode
-#define SUB_MODE_URGENT_ONCE          (1L << 24)                  ///< Urgent once
+#define SUB_MODE_URGENT_FOCUS         (1L << 24)                  ///< Urgent mode until focus
 #define SUB_MODE_RESIZE               (1L << 25)                  ///< Resize mode
 #define SUB_MODE_UNFULL               (1L << 26)                  ///< Disable full mode
 #define SUB_MODE_UNFLOAT              (1L << 27)                  ///< Disable float mode
@@ -471,8 +471,9 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    unsigned long      fg_panel, fg_views, fg_sublets, fg_focus, bg_panel, bg_views,
-                       bg_sublets, bg_focus, bo_focus, bo_normal, bg;
+    unsigned long      fg_panel, fg_views, fg_sublets, fg_focus, fg_urgent,
+                       bg_panel, bg_views, bg_sublets, bg_focus, bg_urgent,
+                       bo_focus, bo_normal, bg;
   } colors;                                                       ///< Subtle colors
 
   struct
