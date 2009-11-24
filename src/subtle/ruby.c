@@ -1575,6 +1575,57 @@ RubySubletUnwatch(VALUE self)
   return ret;
 } /* }}} */
 
+/* RubySubletWatch {{{ */
+/*
+ * call-seq: set_background(value) -> nil
+ *
+ * Set the background color of a Sublet
+ *
+ *  set_background("#ffffff")
+ *  => nil
+ *
+ *  set_background(Sublet::Color.new("#ffffff"))
+ *  => nil
+ */
+
+static VALUE
+RubySubletBackground(VALUE self,
+  VALUE value)
+{
+  SubSublet *s = NULL;
+  Data_Get_Struct(self, SubSublet, s);
+
+  if(s)
+    {
+      s->bg = subtle->colors.bg_sublets; ///< Set default color
+
+      /* Check value type */
+      switch(rb_type(value))
+        {
+          case T_STRING: 
+            s->bg = RubyParseColor(RSTRING_PTR(value)); 
+            break;
+          case T_OBJECT:
+              {
+                VALUE mod = Qnil, klass = Qnil;
+                
+                mod   = rb_const_get(rb_mKernel, rb_intern("Subtle"));
+                klass = rb_const_get(mod, rb_intern("Color"));
+
+                if(rb_obj_is_instance_of(value, klass)) ///< Check object instance
+                  s->bg = NUM2LONG(rb_iv_get(self, "@pixel"));
+              }
+            break;
+          default:
+            rb_raise(rb_eArgError, "Unknown value type");
+        }
+
+      subSubletRender();
+    }
+
+  return Qnil;
+} /* }}} */
+
 /* Subtle */
 
 /* RubySubtleTagAdd {{{ */
@@ -1688,12 +1739,13 @@ subRubyInit(void)
   rb_define_singleton_method(sublet, "new",       RubySubletNew,       0);
   rb_define_singleton_method(sublet, "inherited", RubySubletInherited, 1);
 
-  rb_define_method(sublet, "interval",  RubySubletIntervalReader, 0);
-  rb_define_method(sublet, "interval=", RubySubletIntervalWriter, 1);
-  rb_define_method(sublet, "data",      RubySubletDataReader,     0);
-  rb_define_method(sublet, "data=",     RubySubletDataWriter,     1);
-  rb_define_method(sublet, "watch",     RubySubletWatch,          1);
-  rb_define_method(sublet, "unwatch",   RubySubletUnwatch,        0);
+  rb_define_method(sublet, "interval",       RubySubletIntervalReader, 0);
+  rb_define_method(sublet, "interval=",      RubySubletIntervalWriter, 1);
+  rb_define_method(sublet, "data",           RubySubletDataReader,     0);
+  rb_define_method(sublet, "data=",          RubySubletDataWriter,     1);
+  rb_define_method(sublet, "watch",          RubySubletWatch,          1);
+  rb_define_method(sublet, "unwatch",        RubySubletUnwatch,        0);
+  rb_define_method(sublet, "set_background", RubySubletBackground,     1);
 
   /*
    * Document-class: Subtle::Icon

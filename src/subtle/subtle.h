@@ -407,7 +407,7 @@ typedef struct subsublet_t /* {{{ */
 
   Window             button;                                      ///< Sublet button
   int                watch, width;                                ///< Sublet width
-  unsigned long      recv;                                        ///< Sublet Ruby receiver
+  unsigned long      recv, bg;                                    ///< Sublet Ruby receiver, background color
   time_t             time, interval;                              ///< Sublet update/interval time
 
   struct subsublet_t *next;                                       ///< Sublet next sibling

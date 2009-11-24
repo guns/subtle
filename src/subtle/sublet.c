@@ -26,6 +26,7 @@ subSubletNew(void)
   s->flags = SUB_TYPE_SUBLET;
   s->time  = subSharedTime();
   s->text  = subArrayNew();
+  s->bg    = subtle->colors.bg_sublets;
 
   /* Create button */
   s->button = XCreateSimpleWindow(subtle->dpy, subtle->panels.sublets.win, 0, 0, 1,
@@ -85,7 +86,7 @@ subSubletRender(void)
         {
           width = 3;
 
-          XSetWindowBackground(subtle->dpy, s->button, subtle->colors.bg_sublets);
+          XSetWindowBackground(subtle->dpy, s->button, s->bg);
           XClearWindow(subtle->dpy, s->button);
 
           /* Render text part */
@@ -104,13 +105,17 @@ subSubletRender(void)
                 }
               else if(t->flags & SUB_DATA_NUM) ///< Icon
                 {
+                  SubIcon *i = NULL;
                   int x = (0 == j) ? 0 : 2; ///< Add spacing when icon isn't first
-                  SubIcon *i = ICON(subtle->icons->data[t->data.num]);
+                  
+                  if((i = ICON(subtle->icons->data[t->data.num])))
+                    {
+                      subIconRender(i, s->button, width + x, abs(subtle->th - i->height) / 2, 
+                        t->color, subtle->colors.bg_sublets);
 
-                  subIconRender(i, s->button, width + x, abs(subtle->th - i->height) / 2, 
-                    t->color, subtle->colors.bg_sublets);
-
-                  width += i->width + x + (j != s->text->ndata - 1 ? 2 : 0); //< Add spacing when isn't last
+                      /* Add spacing when isn't last */
+                      width += i->width + x + (j != s->text->ndata - 1 ? 2 : 0); 
+                    }
                 }
             }
 
