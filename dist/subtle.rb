@@ -131,7 +131,7 @@ COLORS = {
 # == Gravities
 #
 # Gravities are predefined sizes a window can be set to. There are several ways to set a 
-# certain gravity, most convenient is to define a grafity via a tag or change them during
+# certain gravity, most convenient is to define a gravity via a tag or change them during
 # runtime via grab. Subtler and subtlext can also modify gravities.
 #
 # A gravity consists of four values which are a percentage value of the screen size. The first
@@ -334,9 +334,9 @@ GRABS = {
 #              WM_NAME and the WM_CLASS portion of a client. Match expects an array with following
 #              possible values:
 #
-#              [*:title*]  match the title which is also visible in the panel
-#              [*:name*]   match the WM_NAME
-#              [*:class*]  match the WM_CLASS
+#              [*:name*]       match the WM_NAME
+#              [*:instance*]   match the first (instance) part from WM_CLASS
+#              [*:class*]      match the second (class) part from WM_CLASS
 # [*:regex*]   This property sets the matching pattern for a tag. Matching works either via plain,
 #              regex (see regex) or window id. If a pattern matches more than once ONLY the first
 #              match will be used.
@@ -361,6 +361,7 @@ TAGS = {
   "stick"   => { :regex => "mplayer|imagemagick", :float => true, :stick => true },
   "float"   => { :regex => "gimp", :float => true },
   "fixed"   => { :geometry => [ 10, 10, 100, 100 ], :stick => true },
+  "resize"  => { :regex => "sakura|gvim", :resize => true }
   "gravity" => { :gravity => :center }
 }  
 
@@ -374,7 +375,7 @@ TAGS = {
 VIEWS = {
   "terms" => "terms",
   "www"   => "browser|default",
-  "dev"   => "editor|terms"
+  "dev"   => "editor"
 }
 
 #
