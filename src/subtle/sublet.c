@@ -122,6 +122,10 @@ subSubletRender(void)
           /* Draw separator */
           if(s->next)
             {
+              /* Update GC */
+              gvals.foreground = subtle->colors.fg_sublets;
+              XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
+
               separator += s->width;
               XDrawString(subtle->dpy, subtle->panels.sublets.win, subtle->gcs.font, separator + 3,
                 subtle->fy, subtle->separator.string, strlen(subtle->separator.string));
