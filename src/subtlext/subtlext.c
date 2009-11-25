@@ -238,10 +238,10 @@ SubtlextFind(int type,
               VALUE sym;
               int   flags;
             } props[] = {
-              { CHAR2SYM("title"),   SUB_MATCH_TITLE   },
-              { CHAR2SYM("name"),    SUB_MATCH_NAME    },
-              { CHAR2SYM("class"),   SUB_MATCH_CLASS   },
-              { CHAR2SYM("gravity"), SUB_MATCH_GRAVITY }
+              { CHAR2SYM("name"),     SUB_MATCH_NAME     },
+              { CHAR2SYM("instance"), SUB_MATCH_INSTANCE },
+              { CHAR2SYM("class"),    SUB_MATCH_CLASS    },
+              { CHAR2SYM("gravity"),  SUB_MATCH_GRAVITY  }
             };
 
             /* Check hash keys */
@@ -891,8 +891,8 @@ SubtlextClientInit(VALUE self,
   rb_iv_set(self, "@id",       Qnil);
   rb_iv_set(self, "@win",      win);
   rb_iv_set(self, "@name",     Qnil);
+  rb_iv_set(self, "@instance", Qnil);
   rb_iv_set(self, "@klass",    Qnil);
-  rb_iv_set(self, "@title",    Qnil);
   rb_iv_set(self, "@geometry", Qnil); 
   rb_iv_set(self, "@gravity",  Qnil);
   rb_iv_set(self, "@screen",   Qnil);
@@ -1035,19 +1035,19 @@ SubtlextClientUpdate(VALUE self)
       if(-1 != (id = subSharedClientFind(buf, NULL, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS))))
         {
           int *flags = NULL;
-          char *title = NULL, *wmname = NULL, *wmclass = NULL;
+          char *wmname = NULL, *wminstance = NULL, *wmclass = NULL;
 
           flags = (int *)subSharedPropertyGet(NUM2LONG(win), XA_CARDINAL,
             "SUBTLE_WINDOW_FLAGS", NULL);
 
-          XFetchName(display, NUM2LONG(win), &title);
-          subSharedPropertyClass(NUM2LONG(win), &wmname, &wmclass);
+          XFetchName(display, NUM2LONG(win), &wmname);
+          subSharedPropertyClass(NUM2LONG(win), &wminstance, &wmclass);
 
           /* Set properties */
           rb_iv_set(self, "@id",       INT2FIX(id));
           rb_iv_set(self, "@flags",    INT2FIX(*flags));
-          rb_iv_set(self, "@title",    rb_str_new2(title));
           rb_iv_set(self, "@name",     rb_str_new2(wmname));
+          rb_iv_set(self, "@instance", rb_str_new2(wminstance));
           rb_iv_set(self, "@klass",    rb_str_new2(wmclass));
 
           /* Set to nil for on demand loading */
@@ -1056,8 +1056,8 @@ SubtlextClientUpdate(VALUE self)
           rb_iv_set(self, "@screen",   Qnil);
 
           free(flags);
-          free(title);
           free(wmname);
+          free(wminstance);
           free(wmclass);
         }
       else rb_raise(rb_eStandardError, "Failed finding client");  
@@ -3735,14 +3735,14 @@ Init_subtlext(void)
   /* Window id */
   rb_define_attr(client, "win",      1, 0);
 
-  /* WM_CLASS */
-  rb_define_attr(client, "klass",    1, 0);
-
-  /* WM_NAME */
-  rb_define_attr(client, "title",    1, 0);
-
   /* WM_NAME */
   rb_define_attr(client, "name",     1, 0);
+
+  /* Instance of WM_CLASS */
+  rb_define_attr(client, "instance", 1, 0);
+
+  /* Class of WM_CLASS */
+  rb_define_attr(client, "klass",    1, 0);
 
   /* Bitfield of window states */
   rb_define_attr(client, "flags",    1, 0);

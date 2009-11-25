@@ -48,19 +48,19 @@
 /* }}} */
 
 /* Flags {{{ */
-#define SUB_WINDOW_LEFT   0L                                      ///< Window left
-#define SUB_WINDOW_DOWN   1L                                      ///< Window down
-#define SUB_WINDOW_UP     2L                                      ///< Window above
-#define SUB_WINDOW_RIGHT  3L                                      ///< Window right
+#define SUB_WINDOW_LEFT    0L                                     ///< Window left
+#define SUB_WINDOW_DOWN    1L                                     ///< Window down
+#define SUB_WINDOW_UP      2L                                     ///< Window above
+#define SUB_WINDOW_RIGHT   3L                                     ///< Window right
 
-#define SUB_EWMH_FULL     (1L << 1)                               ///< EWMH full flag
-#define SUB_EWMH_FLOAT    (1L << 2)                               ///< EWMH float flag
-#define SUB_EWMH_STICK    (1L << 3)                               ///< EWMH stick flag
+#define SUB_EWMH_FULL      (1L << 1)                              ///< EWMH full flag
+#define SUB_EWMH_FLOAT     (1L << 2)                              ///< EWMH float flag
+#define SUB_EWMH_STICK     (1L << 3)                              ///< EWMH stick flag
 
-#define SUB_MATCH_TITLE   (1L << 1)                               ///< Match title
-#define SUB_MATCH_NAME    (1L << 2)                               ///< Match name
-#define SUB_MATCH_CLASS   (1L << 3)                               ///< Match class
-#define SUB_MATCH_GRAVITY (1L << 4)                               ///< Match gravity
+#define SUB_MATCH_NAME     (1L << 1)                              ///< Match WM_NAME
+#define SUB_MATCH_INSTANCE (1L << 2)                              ///< Match instance of WM_CLASS
+#define SUB_MATCH_CLASS    (1L << 3)                              ///< Match class of WM_CLASS
+#define SUB_MATCH_GRAVITY  (1L << 4)                              ///< Match gravity
 /* }}} */
 
 /* Typedefs {{{ */
@@ -126,7 +126,7 @@ char **subSharedPropertyStrings(Window win,
 void subSharedPropertyDelete(Window win, char *name);             ///< Delete window property
 #endif /* WM */
 
-void subSharedPropertyTitle(Window win, char **title);            ///< Get window name
+void subSharedPropertyName(Window win, char **name);              ///< Get window name
 void subSharedPropertyClass(Window win, char **inst,
   char **klass);                                                  ///< Get window class
 

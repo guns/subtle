@@ -350,24 +350,24 @@ subSharedPropertyStrings(Window win,
   return list;
 } /* }}} */
 
- /** subSharedPropertyTitle {{{
+ /** subSharedPropertyName {{{
   * @brief Get window title
   * @warning Must be free'd
   * @param[in]     win    A #Window
-  * @param[inout]  inst   Window title
+  * @param[inout]  name   Window WM_NAME
   **/
 
 void
-subSharedPropertyTitle(Window win,
-  char **title)
+subSharedPropertyName(Window win,
+  char **name)
 {
 #ifdef WM
-  XFetchName(subtle->dpy, win, title);
+  XFetchName(subtle->dpy, win, name);
 #else /* WM */
-  XFetchName(display, win, title);
+  XFetchName(display, win, name);
 #endif /* WM */
 
-  if(!(*title)) *title = strdup("subtle"); ///< Sanitize
+  if(!(*name)) *name = strdup("subtle"); ///< Sanitize
 } /* }}} */
 
  /** subSharedPropertyClass {{{
@@ -643,7 +643,7 @@ SharedFindWindow(char *prop,
   if((wins = SharedList(prop, &size)))
     {
       int i;
-      char *title = NULL, *inst = NULL, *klass = NULL, buf[20] = { 0 };
+      char *wmname = NULL, *instance = NULL, *klass = NULL, buf[20] = { 0 };
       Window selwin = None;
       regex_t *preg = subSharedRegexNew(match);
 
@@ -657,8 +657,8 @@ SharedFindWindow(char *prop,
 
       for(i = 0; -1 == id && i < size; i++)
         {
-          XFetchName(display, wins[i], &title);
-          subSharedPropertyClass(wins[i], &inst, &klass);
+          XFetchName(display, wins[i], &wmname);
+          subSharedPropertyClass(wins[i], &instance, &klass);
           snprintf(buf, sizeof(buf), "%#lx", wins[i]);
 
           /* Get window gravity */
@@ -669,18 +669,18 @@ SharedFindWindow(char *prop,
 
               gravity2 = *gravity;
 
-              subSharedLogDebug("Gravity: match=%s, gravity1=%d, gravity2=%d, =%d\n", 
-                match, gravity1, gravity2, gravity1 == gravity2);
+              subSharedLogDebug("Gravity: match=%s, gravity1=%d, gravity2=%d\n", 
+                match, gravity1, gravity2);
 
               free(gravity);
             }
 
           /* Find window either by window id, by title/inst/class or by gravity */
           if(wins[i] == selwin || subSharedRegexMatch(preg, buf) ||
-              (flags & SUB_MATCH_TITLE   && title && subSharedRegexMatch(preg, title)) ||
-              (flags & SUB_MATCH_NAME    && inst  && subSharedRegexMatch(preg, inst))  ||
-              (flags & SUB_MATCH_CLASS   && klass && subSharedRegexMatch(preg, klass)) ||
-              (flags & SUB_MATCH_GRAVITY && gravity1 == gravity2))
+              (flags & SUB_MATCH_NAME     && wmname     && subSharedRegexMatch(preg, wmname))   ||
+              (flags & SUB_MATCH_INSTANCE && instance   && subSharedRegexMatch(preg, instance)) ||
+              (flags & SUB_MATCH_CLASS    && klass      && subSharedRegexMatch(preg, klass))    ||
+              (flags & SUB_MATCH_GRAVITY  && gravity1 == gravity2))
             {
               subSharedLogDebug("Found: prop=%s, name=%s, win=%#lx, id=%d, flags\n", 
                 prop, match, wins[i], i, flags);
@@ -688,15 +688,15 @@ SharedFindWindow(char *prop,
               if(win) *win = wins[i];
               if(name)
                 {
-                  *name = (char *)subSharedMemoryAlloc(strlen(inst) + 1, sizeof(char));
-                  strncpy(*name, inst, strlen(inst));
+                  *name = (char *)subSharedMemoryAlloc(strlen(instance) + 1, sizeof(char));
+                  strncpy(*name, instance, strlen(instance));
                  }
               
               id = i;
             }
 
-          XFree(title);
-          free(inst);
+          free(wmname);
+          free(instance);
           free(klass);
         }
 

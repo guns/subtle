@@ -103,9 +103,9 @@ subClientNew(Window win)
       c->screens[i]   = 0;
     }
 
-   /* Fetch title, name and class */
-  subSharedPropertyTitle(c->win, &c->title);
-  subSharedPropertyClass(c->win, &c->name, &c->klass);
+   /* Fetch name, instance and class */
+  subSharedPropertyName(c->win, &c->name);
+  subSharedPropertyClass(c->win, &c->instance, &c->klass);
  
   /* X related properties */
   sattrs.border_pixel = subtle->colors.bo_normal;
@@ -197,8 +197,8 @@ subClientRender(SubClient *c)
 
   /* Title mode */
   if(c->flags & (SUB_MODE_STICK|SUB_MODE_FLOAT))
-    snprintf(buf, sizeof(buf), "%c%s", c->flags & SUB_MODE_STICK ? '*' : '^', c->title);
-  else snprintf(buf, sizeof(buf), "%s", c->title);
+    snprintf(buf, sizeof(buf), "%c%s", c->flags & SUB_MODE_STICK ? '*' : '^', c->name);
+  else snprintf(buf, sizeof(buf), "%s", c->name);
 
   /* Select color pair */
   if(c->flags & SUB_MODE_URGENT)
@@ -219,10 +219,10 @@ subClientRender(SubClient *c)
   /* Update window */
   XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
   XChangeWindowAttributes(subtle->dpy, c->win, CWBorderPixel, &sattrs);
-  XSetWindowBackground(subtle->dpy, subtle->panels.title.win, gvals.background); 
-  XClearWindow(subtle->dpy, subtle->panels.title.win);
+  XSetWindowBackground(subtle->dpy, subtle->panels.focus.win, gvals.background); 
+  XClearWindow(subtle->dpy, subtle->panels.focus.win);
 
-  XDrawString(subtle->dpy, subtle->panels.title.win, subtle->gcs.font, 3, subtle->fy,
+  XDrawString(subtle->dpy, subtle->panels.focus.win, subtle->gcs.font, 3, subtle->fy,
     buf, strlen(buf));
 } /* }}} */
 
@@ -551,9 +551,9 @@ subClientSetTags(SubClient *c)
 
       /* Check if tag matches client */
       if(t->preg &&
-          ((t->flags & SUB_TAG_MATCH_TITLE && c->title && subSharedRegexMatch(t->preg, c->title)) ||
-          (t->flags  & SUB_TAG_MATCH_NAME  && c->name  && subSharedRegexMatch(t->preg, c->name))  ||
-          (t->flags  & SUB_TAG_MATCH_CLASS && c->klass && subSharedRegexMatch(t->preg, c->klass))))
+          ((t->flags & SUB_TAG_MATCH_NAME     && c->name     && subSharedRegexMatch(t->preg, c->name)) ||
+          (t->flags  & SUB_TAG_MATCH_INSTANCE && c->instance && subSharedRegexMatch(t->preg, c->instance))  ||
+          (t->flags  & SUB_TAG_MATCH_CLASS    && c->klass    && subSharedRegexMatch(t->preg, c->klass))))
         flags |= subClientTag(c, i);
     }
 
@@ -733,26 +733,26 @@ subClientSetStrut(SubClient *c)
     }
 } /* }}} */
 
- /** subClientSetTitle {{{
+ /** subClientSetName {{{
   * @brief Set title width
   * @param[in]  c  A #SubClient
   **/
 
 void
-subClientSetTitle(SubClient *c)
+subClientSetName(SubClient *c)
 {
   int len = 0;
 
   assert(c);
   DEAD(c);
 
-  len = strlen(c->title) + (c->flags & (SUB_MODE_STICK|SUB_MODE_FLOAT) ? 1 : 0);
+  len = strlen(c->name) + (c->flags & (SUB_MODE_STICK|SUB_MODE_FLOAT) ? 1 : 0);
 
   /* Update panel width */
-  subtle->panels.title.width = subSharedTextWidth(c->title, 50 >= len ? len : 50, 
+  subtle->panels.focus.width = subSharedTextWidth(c->name, 50 >= len ? len : 50, 
     NULL, NULL, True) + 6;
-  XResizeWindow(subtle->dpy, subtle->panels.title.win, 
-    subtle->panels.title.width, subtle->th);
+  XResizeWindow(subtle->dpy, subtle->panels.focus.win, 
+    subtle->panels.focus.width, subtle->th);
 } /* }}} */
 
  /** subClientSetProtocols {{{
@@ -1044,7 +1044,7 @@ subClientToggle(SubClient *c,
   if(VISIBLE(subtle->view, c)) ///< Check visibility first
     {
       subClientFocus(c);
-      subClientSetTitle(c);
+      subClientSetName(c);
       subPanelUpdate();
       subPanelRender();
     }
@@ -1089,7 +1089,7 @@ subClientKill(SubClient *c,
   if(subtle->windows.focus == c->win)
     {
       subtle->windows.focus      = 0;
-      subtle->panels.title.width = 0;
+      subtle->panels.focus.width = 0;
       subPanelUpdate();
       subPanelRender();
     }
@@ -1114,9 +1114,9 @@ subClientKill(SubClient *c,
 
   if(c->gravities) free(c->gravities);
   if(c->screens)   free(c->screens);
-  if(c->title)     XFree(c->title);
-  if(c->name)      XFree(c->name);
-  if(c->klass)     XFree(c->klass);
+  if(c->name)      free(c->name);
+  if(c->instance)  free(c->instance);
+  if(c->klass)     free(c->klass);
   free(c);
 
   subSharedLogDebug("kill=client\n");

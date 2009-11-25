@@ -628,15 +628,15 @@ EventProperty(XPropertyEvent *ev)
       case SUB_EWMH_WM_NAME: /* {{{ */
         if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) 
           {
-            char *title = NULL;
+            char *name = NULL;
 
-            subSharedPropertyTitle(c->win, &title);
-            if(c->title) free(c->title);
-            c->title = title;
+            subSharedPropertyName(c->win, &name);
+            if(c->name) free(c->name);
+            c->name = name;
 
             if(subtle->windows.focus == c->win) 
               {
-                subClientSetTitle(c);
+                subClientSetName(c);
                 subPanelUpdate();
                 subPanelRender();
               }
@@ -970,7 +970,7 @@ EventFocus(XFocusChangeEvent *ev)
   if((c = CLIENT(subSharedFind(subtle->windows.focus, CLIENTID)))) 
     {
       subtle->windows.focus      = 0;
-      subtle->panels.title.width = 0;
+      subtle->panels.focus.width = 0;
       subClientRender(c);
 
       /* Remove urgent after losing focus */
@@ -1010,7 +1010,7 @@ EventFocus(XFocusChangeEvent *ev)
         {
           subtle->windows.focus = c->win;
           subGrabSet(c->win);
-          subClientSetTitle(c);
+          subClientSetName(c);
 
           /* EWMH: Active window */
           subEwmhSetWindows(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW, &subtle->windows.focus, 1);

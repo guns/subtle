@@ -228,9 +228,9 @@
 #define SUB_TAG_SCREEN                (1L << 14)                  ///< Screen property
 #define SUB_TAG_GEOMETRY              (1L << 15)                  ///< Geometry property
 #define SUB_TAG_MATCH                 (1L << 16)                  ///< Match property
-#define SUB_TAG_MATCH_TITLE           (1L << 17)                  ///< Match window title
-#define SUB_TAG_MATCH_NAME            (1L << 18)                  ///< Match WM_NAME
-#define SUB_TAG_MATCH_CLASS           (1L << 19)                  ///< Match WM_CLASS
+#define SUB_TAG_MATCH_NAME            (1L << 17)                  ///< Match WM_NAME
+#define SUB_TAG_MATCH_INSTANCE        (1L << 18)                  ///< Match instance of WM_CLASS
+#define SUB_TAG_MATCH_CLASS           (1L << 19)                  ///< Match class of WM_CLASS
 /* }}} */
 
 /* Typedefs {{{ */
@@ -243,7 +243,7 @@ typedef struct subarray_t /* {{{ */
 typedef struct subclient_t /* {{{ */
 {
   FLAGS      flags;                                               ///< Client flags
-  char       *name, *klass, *title;                               ///< Client name, klass, title
+  char       *name, *instance, *klass;                            ///< Client name, instance, klass
 
   TAGS       tags;                                                ///< Client tags
   Window     win;                                                 ///< Client window
@@ -254,7 +254,7 @@ typedef struct subclient_t /* {{{ */
   int        minw, minh, maxw, maxh, incw, inch;                  ///< Client sizes
 
   int        gravity, screen;                                     ///< Client informations
-  int        *gravities, *screens;                                ///< Client per vie
+  int        *gravities, *screens;                                ///< Client per view
 } SubClient; /* }}} */
 
 typedef union subdata_t /* {{{ */
@@ -466,7 +466,7 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    struct subpanel_t  views, title, tray, sublets;
+    struct subpanel_t  views, focus, tray, sublets;
   } panels;                                                       ///< Subtle panels
 
   struct
@@ -551,7 +551,7 @@ void subClientSetGravity(SubClient *c, int gravity,
 void subClientSetScreen(SubClient *c, int screen, int force);     ///< Set client screen
 void subClientSetSize(SubClient *c);                              ///< Set client sizes
 void subClientSetStrut(SubClient *c);                             ///< Set client strut
-void subClientSetTitle(SubClient *c);                             ///< Set client title
+void subClientSetName(SubClient *c);                             ///< Set client title
 void subClientSetProtocols(SubClient *c);                         ///< Set client protocols
 void subClientSetNormalHints(SubClient *c);                       ///< Set client normal hints
 void subClientSetHints(SubClient *c, int *flags);                 ///< Set client WM hints

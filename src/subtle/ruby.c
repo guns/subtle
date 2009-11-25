@@ -428,7 +428,7 @@ RubyParseForeach(VALUE key,
             case T_STRING: /* {{{ */
               if((object = (void *)subTagNew(RSTRING_PTR(key), RSTRING_PTR(value))))
                 {
-                  TAG(object)->flags |= (SUB_TAG_MATCH_NAME|SUB_TAG_MATCH_CLASS); ///< Set default matching
+                  TAG(object)->flags |= (SUB_TAG_MATCH_INSTANCE|SUB_TAG_MATCH_CLASS); ///< Set default matching
                   subArrayPush(subtle->tags, object);
                 }
               break; /* }}} */
@@ -493,11 +493,11 @@ RubyParseForeach(VALUE key,
                           {
                             meth = rb_intern("include?");
 
-                            if(Qtrue == rb_funcall(match, meth, 1, CHAR2SYM("title"))) 
-                              t->flags |= SUB_TAG_MATCH_TITLE;
-
                             if(Qtrue == rb_funcall(match, meth, 1, CHAR2SYM("name"))) 
                               t->flags |= SUB_TAG_MATCH_NAME;
+
+                            if(Qtrue == rb_funcall(match, meth, 1, CHAR2SYM("instance"))) 
+                              t->flags |= SUB_TAG_MATCH_INSTANCE;
 
                             if(Qtrue == rb_funcall(match, meth, 1, CHAR2SYM("class"))) 
                               t->flags |= SUB_TAG_MATCH_CLASS;                              
@@ -505,8 +505,8 @@ RubyParseForeach(VALUE key,
                       }
 
                     /* Enable default if no matcher is present */
-                    if(!(t->flags & (SUB_TAG_MATCH_TITLE|SUB_TAG_MATCH_NAME|SUB_TAG_MATCH_CLASS)))
-                      t->flags |= (SUB_TAG_MATCH_NAME|SUB_TAG_MATCH_CLASS);
+                    if(!(t->flags & (SUB_TAG_MATCH_NAME|SUB_TAG_MATCH_INSTANCE|SUB_TAG_MATCH_CLASS)))
+                      t->flags |= (SUB_TAG_MATCH_INSTANCE|SUB_TAG_MATCH_CLASS);
 
                     subArrayPush(subtle->tags, (void *)t);
                   }
@@ -648,7 +648,7 @@ RubyWrapLoadConfig(VALUE data)
   RubyPanels panels[] = 
   {
     { CHAR2SYM("views"),   &subtle->panels.views   },
-    { CHAR2SYM("title"),   &subtle->panels.title   },
+    { CHAR2SYM("title"),   &subtle->panels.focus   },
     { CHAR2SYM("sublets"), &subtle->panels.sublets },
     { CHAR2SYM("tray"),    &subtle->panels.tray    }
   };
@@ -996,7 +996,7 @@ RubyWrapCall(VALUE data)
                     rb_iv_set(inst, "@id",      INT2FIX(id));
                     rb_iv_set(inst, "@name",    rb_str_new2(c->name));
                     rb_iv_set(inst, "@klass",   rb_str_new2(c->klass));
-                    rb_iv_set(inst, "@title",   rb_str_new2(c->title));
+                    rb_iv_set(inst, "@title",   rb_str_new2(c->name));
                     rb_iv_set(inst, "@x",       INT2FIX(c->geom.x));
                     rb_iv_set(inst, "@y",       INT2FIX(c->geom.y));
                     rb_iv_set(inst, "@width",   INT2FIX(c->geom.width));
@@ -1869,7 +1869,7 @@ subRubyReloadConfig(void)
   /* Clear x cache */
   subtle->panels.tray.x    = 0;
   subtle->panels.views.x   = 0;
-  subtle->panels.title.x   = 0;
+  subtle->panels.focus.x   = 0;
   subtle->panels.sublets.x = 0;
 
   /* Clear arrays */
