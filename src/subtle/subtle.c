@@ -155,10 +155,11 @@ main(int argc,
       return 0;
     }
 
-  /* Alloc */
+  /* Alloc arrays */
   subtle->clients   = subArrayNew();
   subtle->grabs     = subArrayNew();
   subtle->gravities = subArrayNew();
+  subtle->hooks     = subArrayNew();
   subtle->icons     = subArrayNew();
   subtle->screens   = subArrayNew();
   subtle->sublets   = subArrayNew();

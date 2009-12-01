@@ -157,12 +157,12 @@ SubtlerClientPrint(Window win,
 {
   int x, y;
   Window unused;
-  char *inst = NULL, *klass = NULL, *grav = NULL, buf[5] = { 0 };
+  char *instance = NULL, *klass = NULL, *grav = NULL, buf[5] = { 0 };
   unsigned int width, height, border;
   unsigned long *cv = NULL, *gravity = NULL, *screen = NULL, *flags = NULL;
 
   /* Collect client data */
-  subSharedPropertyClass(win, &inst, &klass);
+  subSharedPropertyClass(win, &instance, &klass);
   cv      = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, 
     "_NET_WM_DESKTOP", NULL);
   gravity = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, 
@@ -181,9 +181,9 @@ SubtlerClientPrint(Window win,
   printf("%#10lx %c %ld %4u x %-4u %10s %ld %c%c%c %s (%s)\n", win, (*cv == rv ? '*' : '-'),
     (*cv > nv ? -1 : *cv + 1), width, height, grav, *screen, 
     *flags & SUB_EWMH_FULL ? 'F' : '-', *flags & SUB_EWMH_FLOAT ? 'O' : '-', 
-    *flags & SUB_EWMH_STICK ? 'S' : '-', inst, klass);
+    *flags & SUB_EWMH_STICK ? 'S' : '-', instance, klass);
 
-  free(inst);
+  free(instance);
   free(klass);
   free(cv);
   free(gravity);
