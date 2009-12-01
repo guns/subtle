@@ -94,6 +94,7 @@
 #define DATA(d)    ((SubData)d)                                   ///< Cast to SubData
 #define GRAB(g)    ((SubGrab *)g)                                 ///< Cast to SubGrab
 #define GRAVITY(g) ((SubGravity *)g)                              ///< Cast to SubGravity
+#define HOOK(h)    ((SubHook *)h)                                 ///< Cast to SubHook
 #define ICON(i)    ((SubIcon *)i)                                 ///< Cast to SubIcon
 #define PANEL(p)   ((SubPabel *)p)                                ///< Cast to SubPanel
 #define SCREEN(s)  ((SubScreen *)s)                               ///< Cast to SubScreen
@@ -159,10 +160,19 @@
 #define SUB_MODE_UNRESIZE             (1L << 30)                  ///< Disable resize mode
 
 /* Call flags */
-#define SUB_CALL_SUBLET_RUN           (1L << 1)                   ///< Ruby sublet run call
-#define SUB_CALL_SUBLET_CLICK         (1L << 2)                   ///< Ruby sublet click call
-#define SUB_CALL_GRAB                 (1L << 3)                   ///< Ruby grab call
-#define SUB_CALL_HOOK                 (1L << 4)                   ///< Ruby hook call
+#define SUB_CALL_CLIENT_CREATE        (1L << 13)
+#define SUB_CALL_CLIENT_CONFIGURE     (1L << 14)
+#define SUB_CALL_CLIENT_FOCUS         (1L << 15)
+#define SUB_CALL_CLIENT_KILL          (1L << 16)
+#define SUB_CALL_PROC                 (1L << 17)
+#define SUB_CALL_SUBLET_RUN           (1L << 18)
+#define SUB_CALL_SUBLET_CLICK         (1L << 19)
+#define SUB_CALL_TAG_CREATE           (1L << 20)
+#define SUB_CALL_TAG_KILL             (1L << 21)
+#define SUB_CALL_VIEW_CREATE          (1L << 22)
+#define SUB_CALL_VIEW_CONFIGURE       (1L << 23)
+#define SUB_CALL_VIEW_JUMP            (1L << 24)
+#define SUB_CALL_VIEW_KILL            (1L << 25)
 
 /* Client flags */
 #define SUB_CLIENT_FOCUS              (1L << 13)                  ///< Send focus message
@@ -363,6 +373,12 @@ typedef struct subgravity_t /* {{{ */
   XRectangle geometry;                                            ///< Gravity geometry
 } SubGravity; /* }}} */
 
+typedef struct subhook_t /* {{{ */
+{
+  FLAGS         flags;                                            ///< Hook flags
+  unsigned long recv;                                             ///< Hook receiver
+} SubHook; /* }}} */
+
 typedef struct subicon_t /* {{{ */
 {
   FLAGS        flags;                                             ///< Icon flags
@@ -432,7 +448,8 @@ typedef struct subsubtle_t /* {{{ */
 
   struct subarray_t    *clients;                                  ///< Subtle clients
   struct subarray_t    *grabs;                                    ///< Subtle grabs
-  struct subarray_t    *gravities;                                ///< Subtle grabs
+  struct subarray_t    *gravities;                                ///< Subtle gravities
+  struct subarray_t    *hooks;                                    ///< Subtle hooks
   struct subarray_t    *icons;                                    ///< Subtle icons
   struct subarray_t    *screens;                                  ///< Subtle screens
   struct subarray_t    *sublets;                                  ///< Subtle sublets
@@ -485,11 +502,6 @@ typedef struct subsubtle_t /* {{{ */
   {
     Cursor             arrow, move, resize;
   } cursors;                                                      ///< Subtle cursors
-
-  struct
-  {
-    unsigned long      jump, configure, create, focus, gravity;   ///< Subtle hooks
-  } hooks;
 } SubSubtle; /* }}} */
 
 typedef struct subtag_t /* {{{ */
@@ -615,6 +627,12 @@ SubGravity *subGravityNew(const char *name,
 int subGravityFind(const char *name, int quark);                  ///< Find gravity id
 void subGravityPublish(void);                                     ///< Publish gravities
 void subGravityKill(SubGravity *g);                               ///< Kill gravity
+/* }}} */
+
+/* hook.c {{{ */
+SubHook *subHookNew(int type, unsigned long recv);
+void subHookCall(int type, void *extra);
+void subHookKill(SubHook *h);
 /* }}} */
 
 /* icon.c {{{ */
