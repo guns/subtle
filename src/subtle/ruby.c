@@ -22,6 +22,11 @@
 #define CHAR2SYM(name) ID2SYM(rb_intern(name))
 #define SYM2CHAR(sym)  rb_id2name(SYM2ID(sym))
 
+#define PANELSLENGTH  4
+#define GRABSLENGTH  14  
+#define TAGSLENGTH    9
+#define HOOKSLENGTH   8
+
 static VALUE shelter = Qnil, inherited = Qnil, subtlext = Qnil; ///< Globals
 
 /* Typedef {{{ */
@@ -37,12 +42,6 @@ typedef struct rubygravities_t
   XRectangle geometry;
 } RubyGravities;
 
-typedef struct rubyhooks_t
-{
-  VALUE         sym;
-  unsigned long *hook;
-} RubyHooks;
-
 typedef struct rubypanels_t
 {
   VALUE    sym;
@@ -53,7 +52,7 @@ typedef struct rubysymbol_t
 {
   VALUE sym;
   int   flags;
-} RubyTags;
+} RubySymbols;
 /* }}} */
 
 /* Prototypes {{{ */
@@ -146,6 +145,85 @@ static inline int
 RubyFilter(const struct dirent *entry)
 {
   return !fnmatch("*.rb", entry->d_name, FNM_PATHNAME);
+} /* }}} */
+
+/* RubyConvert {{{ */
+static VALUE
+RubyConvert(void *data)
+{
+  SubClient *c = NULL;
+  VALUE object = Qnil;
+
+  /* Convert object to ruby */
+  if((c = CLIENT(data)))
+    {
+      int id = 0;
+      VALUE mod = Qnil, klass = Qnil;
+
+      if(Qnil == subtlext) subRubyLoadSubtlext(); ///< Load subtlext on demand
+      mod = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
+
+      if(c->flags & SUB_TYPE_CLIENT) /* {{{ */
+        {
+          int flags = 0;
+
+          /* Create client instance */
+          id     = subArrayIndex(subtle->clients, (void *)c);
+          klass  = rb_const_get(mod, rb_intern("Client"));
+          object = rb_funcall(klass, rb_intern("new"), 1, LONG2NUM(c->win));
+
+          /* Translate flags */
+          if(c->flags & SUB_MODE_FULL)  flags |= SUB_EWMH_FULL;
+          if(c->flags & SUB_MODE_FLOAT) flags |= SUB_EWMH_FLOAT;
+          if(c->flags & SUB_MODE_STICK) flags |= SUB_EWMH_STICK;
+
+          /* Set properties */
+          rb_iv_set(object, "@id",       INT2FIX(id));
+          rb_iv_set(object, "@name",     rb_str_new2(c->name));
+          rb_iv_set(object, "@instance", rb_str_new2(c->instance));
+          rb_iv_set(object, "@klass",    rb_str_new2(c->klass));
+          rb_iv_set(object, "@flags",    INT2FIX(flags));
+        } /* }}} */
+      else if(c->flags & SUB_TYPE_VIEW) /* {{{ */
+        {
+          SubView *v = VIEW(c);
+
+          /* Create view instance */
+          id     = subArrayIndex(subtle->views, (void *)v);
+          klass  = rb_const_get(mod, rb_intern("View"));
+          object = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(v->name));
+
+          /* Set properties */
+          rb_iv_set(object, "@id",  INT2FIX(id));
+          rb_iv_set(object, "@win", LONG2NUM(v->button));
+        } /* }}} */
+    }
+
+  return object;
+} /* }}} */
+
+/* RubyArity {{{ */
+static int
+RubyArity(VALUE meth,
+  int max)
+{
+  int arity = FIX2INT(rb_funcall(meth, rb_intern("arity"), 0, NULL));
+
+  return -1 == arity ? max : arity; ///< Convert for splats
+} /* }}} */
+
+/* RubyHook {{{ */
+static void
+RubyHook(VALUE sublet,
+  VALUE extra,
+  VALUE sym)
+{
+  VALUE meth = Qnil;
+
+  /* Get arity of callback */
+  meth = rb_funcall(sublet, rb_intern("method"), 1, sym);
+
+  rb_funcall(sublet, SYM2ID(sym), RubyArity(meth, 1), RubyConvert((VALUE *)extra));
 } /* }}} */
 
 /* Fetch */
@@ -320,7 +398,7 @@ RubyParseForeach(VALUE key,
                   RubyGrabs *grabs = (RubyGrabs *)rargs[1];
 
                   /* Find symbol and add flag */
-                  for(i = 0; 14 > i; i++)
+                  for(i = 0; GRABSLENGTH > i; i++)
                     {
                       if(value == grabs[i].sym)
                         {
@@ -439,10 +517,10 @@ RubyParseForeach(VALUE key,
                 if((t = subTagNew(RSTRING_PTR(key), RubyGetString(value, "regex", NULL))))
                   {
                     VALUE meth = rb_intern("has_key?");
-                    RubyTags *tags = (RubyTags *)rargs[1];
+                    RubySymbols *tags = (RubySymbols *)rargs[1];
 
                     /* Collect flags */
-                    for(i = 0; 9 > i; i++)
+                    for(i = 0; TAGSLENGTH > i; i++)
                       {
                         if(Qtrue == rb_funcall(value, meth, 1, tags[i].sym))
                           t->flags |= tags[i].flags;
@@ -528,13 +606,15 @@ RubyParseForeach(VALUE key,
       case SUB_TYPE_HOOK: /* {{{ */
         if(T_SYMBOL == rb_type(key) && T_DATA == rb_type(value)) ///< Check value types
           {
-            RubyHooks *hooks = (RubyHooks *)rargs[1];
+            RubySymbols *hooks = (RubySymbols *)rargs[1];
 
-            for(i = 0; 5 > i; i++)
+            for(i = 0; HOOKSLENGTH > i; i++)
               {
                 if(key == hooks[i].sym)
                   {
-                    *(hooks[i].hook) = value; ///< Store proc
+                    object = (void *)subHookNew(hooks[i].flags|SUB_CALL_PROC, value);
+
+                    subArrayPush(subtle->hooks, object);
                     rb_ary_push(shelter, value); ///< Protect from GC
                   
                     subSharedLogDebug("hook=%s\n", SYM2CHAR(hooks[i].sym));
@@ -558,7 +638,8 @@ RubyParsePanel(VALUE hash,
 {
   int i, j, flags = 0, enabled = False;
   Window panel = subtle->windows.panel1;
-  VALUE entry = Qnil, spacer = CHAR2SYM("spacer"), value = RubyFetchKey(hash, key, T_ARRAY, False); 
+  VALUE entry = Qnil, spacer = CHAR2SYM("spacer"), 
+    value = RubyFetchKey(hash, key, T_ARRAY, False); 
  
   if(!strncmp(key, "bottom", 6))
     {
@@ -671,7 +752,7 @@ RubyWrapLoadConfig(VALUE data)
     { CHAR2SYM("WindowKill"),   SUB_GRAB_WINDOW_KILL,    None             },
   };
 
-  RubyTags tags[] =
+  RubySymbols tags[] =
   {
     { CHAR2SYM("gravity"),  SUB_TAG_GRAVITY  },
     { CHAR2SYM("screen"),   SUB_TAG_SCREEN   },
@@ -684,14 +765,18 @@ RubyWrapLoadConfig(VALUE data)
     { CHAR2SYM("match"),    SUB_TAG_MATCH    }
   };
 
-  RubyHooks hooks[] =
+  RubySymbols hooks[] =
   {
-    { CHAR2SYM("HookJump"),      &subtle->hooks.jump      },
-    { CHAR2SYM("HookConfigure"), &subtle->hooks.configure },
-    { CHAR2SYM("HookCreate"),    &subtle->hooks.create    },
-    { CHAR2SYM("HookFocus"),     &subtle->hooks.focus     },
-    { CHAR2SYM("HookGravity"),   &subtle->hooks.gravity   }
-  }; /* }}} */
+    { CHAR2SYM("HookClientCreate"),    SUB_CALL_CLIENT_CREATE    },
+    { CHAR2SYM("HookClientConfigure"), SUB_CALL_CLIENT_CONFIGURE },
+    { CHAR2SYM("HookClientFocus"),     SUB_CALL_CLIENT_FOCUS     },
+    { CHAR2SYM("HookClientKill"),      SUB_CALL_CLIENT_KILL      },
+    { CHAR2SYM("HookViewCreate"),      SUB_CALL_VIEW_CREATE      },
+    { CHAR2SYM("HookViewConfigure"),   SUB_CALL_VIEW_CONFIGURE   },
+    { CHAR2SYM("HookViewJump"),        SUB_CALL_VIEW_JUMP        },
+    { CHAR2SYM("HookViewKill"),        SUB_CALL_VIEW_KILL        }
+  };
+  /* }}} */
 
   /* Gravities */
   config   = rb_const_get(rb_cObject, rb_intern("GRAVITIES"));
@@ -841,7 +926,7 @@ RubyWrapLoadConfig(VALUE data)
       SubView *v = NULL;
 
       /* Check for view with default tag */
-      for(i = subtle->views->ndata - 1; i >= 0; i--)
+      for(i = subtle->views->ndata - 1; 0 <= i; i--)
         if((v = VIEW(subtle->views->data[i])) && v->tags & DEFAULTTAG)
           {
             subSharedLogDebug("Default view: name=%s\n", v->name);
@@ -860,7 +945,7 @@ RubyWrapLoadConfig(VALUE data)
   /* Config: Hooks */
   config   = rb_const_get(rb_cObject, rb_intern("HOOKS"));
   rargs[0] = SUB_TYPE_HOOK;
-  rargs[1] = (VALUE)&hooks;  
+  rargs[1] = (VALUE)&hooks;
 
   rb_hash_foreach(config, RubyParseForeach, (VALUE)&rargs);
 
@@ -874,16 +959,45 @@ RubyWrapLoadSublet(VALUE data)
   if(Qnil != inherited)
     {
       VALUE self = Qnil;
-      char *name = (char *)rb_class2name((ID)inherited);
 
       /* Instantiate sublet */
       if(Qnil != (self = rb_funcall(inherited, rb_intern("new"), 0, NULL)))
         {
           SubSublet *s = NULL;
+          char *name = (char *)rb_class2name((ID)inherited);
+
+          RubySymbols calls[] = 
+          {
+            { rb_intern("client_create"),    SUB_CALL_CLIENT_CREATE    },
+            { rb_intern("client_configure"), SUB_CALL_CLIENT_CONFIGURE },
+            { rb_intern("client_focus"),     SUB_CALL_CLIENT_FOCUS     },
+            { rb_intern("client_kill"),      SUB_CALL_CLIENT_KILL      },
+            { rb_intern("tag_create"),       SUB_CALL_TAG_CREATE       },
+            { rb_intern("tag_kill"),         SUB_CALL_TAG_KILL         },
+            { rb_intern("view_create"),      SUB_CALL_VIEW_CREATE      },
+            { rb_intern("view_configure"),   SUB_CALL_VIEW_CONFIGURE   },
+            { rb_intern("view_jump"),        SUB_CALL_VIEW_JUMP        },
+            { rb_intern("view_kill"),        SUB_CALL_VIEW_KILL        }
+          };
+
           Data_Get_Struct(self, SubSublet, s);
 
           if(s)
             {
+              int i, flags = 0;
+
+              /* Collect hook flags */
+              for(i = 0; LENGTH(calls) > i; i++)
+                if(rb_respond_to(s->recv, calls[i].sym))
+                  flags |= calls[i].flags;
+
+              /* Add hook */
+              if(flags)
+                {
+                  SubHook *h = subHookNew(flags, s->recv);
+                  subArrayPush(subtle->hooks, h);
+                }
+
               /* Append sublet to linked list */
               if(!subtle->sublet) subtle->sublet = s;
               else
@@ -894,6 +1008,7 @@ RubyWrapLoadSublet(VALUE data)
 
                   iter->next = s;
                 }
+
               subRubyCall(SUB_CALL_SUBLET_RUN, s->recv, NULL); ///< First run
 
               printf("Loaded sublet (%s)\n", name);
@@ -936,99 +1051,68 @@ RubyWrapLoadSubtlext(VALUE data)
 static VALUE
 RubyWrapCall(VALUE data)
 {
-  VALUE ret = Qfalse, *rargs = (VALUE *)data;
+  VALUE *rargs = (VALUE *)data;
 
-  if((int)rargs[0] & SUB_CALL_SUBLET_RUN) /* {{{ */
+  /* Check call type */
+  switch((int)rargs[0])
     {
-      ret = rb_funcall(rargs[1], rb_intern("run"), 0, NULL);
-    } /* }}} */
-  else if((int)rargs[0] & SUB_CALL_SUBLET_CLICK) /* {{{ */
-    {
-      Window win = 0;
-      int x = 0, y = 0, arity = 0;
-      XButtonEvent *ev = (XButtonEvent *)rargs[2];
-      VALUE meth = Qnil, cb = rb_intern("click");
+      case SUB_CALL_SUBLET_RUN: /* {{{ */
+        rb_funcall(rargs[1], rb_intern("run"), 0, NULL);
+        break; /* }}} */
+      case SUB_CALL_CLIENT_CREATE: /* {{{ */
+        RubyHook(rargs[1], rargs[2], CHAR2SYM("client_create")); 
+        break; /* }}} */
+      case SUB_CALL_CLIENT_CONFIGURE: /* {{{ */
+        RubyHook(rargs[1], rargs[2], CHAR2SYM("client_configure")); 
+        break; /* }}} */
+      case SUB_CALL_CLIENT_FOCUS: /* {{{ */
+        RubyHook(rargs[1], rargs[2], CHAR2SYM("client_focus")); 
+        break; /* }}} */
+      case SUB_CALL_CLIENT_KILL: /* {{{ */
+        RubyHook(rargs[1], rargs[2], CHAR2SYM("client_kill")); 
+        break; /* }}} */
+      case SUB_CALL_TAG_CREATE: /* {{{ */
+        RubyHook(rargs[1], rargs[2], CHAR2SYM("tag_create")); 
+        break; /* }}} */
+      case SUB_CALL_TAG_KILL: /* {{{ */
+        RubyHook(rargs[1], rargs[2], CHAR2SYM("tag_kill")); 
+        break; /* }}} */
+      case SUB_CALL_VIEW_CREATE: /* {{{ */
+        RubyHook(rargs[1], rargs[2], CHAR2SYM("view_create")); 
+        break; /* }}} */
+      case SUB_CALL_VIEW_CONFIGURE: /* {{{ */
+        RubyHook(rargs[1], rargs[2], CHAR2SYM("view_configure")); 
+        break; /* }}} */
+      case SUB_CALL_VIEW_JUMP: /* {{{ */
+        RubyHook(rargs[1], rargs[2], CHAR2SYM("view_jump")); 
+        break; /* }}} */
+      case SUB_CALL_VIEW_KILL: /* {{{ */
+        RubyHook(rargs[1], rargs[2], CHAR2SYM("view_kill")); 
+        break; /* }}} */
+      case SUB_CALL_SUBLET_CLICK: /* {{{ */
+          {
+            Window win = 0;
+            int x = 0, y = 0;
+            XButtonEvent *ev = (XButtonEvent *)rargs[2];
+            VALUE meth = Qnil;
 
-      /* Get arity of callback */
-      meth  = rb_funcall(rargs[1], rb_intern("method"), 1, CHAR2SYM("click"));
-      arity = FIX2INT(rb_funcall(meth, rb_intern("arity"), 0, NULL));
+            /* Get arity of callback */
+            meth = rb_funcall(rargs[1], rb_intern("method"), 1, CHAR2SYM("click"));
 
-      XTranslateCoordinates(subtle->dpy, ev->window, ev->subwindow, 
-        ev->x, ev->y, &x, &y, &win);
+            XTranslateCoordinates(subtle->dpy, ev->window, ev->subwindow, 
+              ev->x, ev->y, &x, &y, &win);
 
-      ret = rb_funcall(rargs[1], cb, arity, INT2FIX(ev->button), INT2FIX(x), INT2FIX(y));
+            rb_funcall(rargs[1], rb_intern("click"), RubyArity(meth, 3),
+              INT2FIX(ev->button), INT2FIX(x), INT2FIX(y));
+          }
+        break; /* }}} */
+      case SUB_CALL_PROC: /* {{{ */
+        rb_funcall(rargs[1], rb_intern("call"), 
+          RubyArity(rargs[1], 1), RubyConvert((VALUE *)rargs[2]));
+        break; /* }}} */
+    }
 
-      subSharedLogDebug("Proc: arity=%d\n", arity);      
-    } /* }}} */
-  else if((int)rargs[0] & (SUB_CALL_GRAB|SUB_CALL_HOOK)) /* {{{ */
-    {
-      int id = 0, arity = 0, flags = 0;
-
-      /* Check proc arity */
-      switch((arity = FIX2INT(rb_funcall(rargs[1], rb_intern("arity"), 0, NULL))))
-        {
-          case 0:
-          case -1: ///< No optional arguments 
-            ret = rb_funcall(rargs[1], rb_intern("call"), 0, NULL);
-            break;
-          case 1: ///< One argument
-            if(rargs[2])
-              {
-                SubClient *c = CLIENT(rargs[2]);
-                VALUE mod = Qnil, klass = Qnil, inst = Qnil;
-
-                if(Qnil == subtlext) subRubyLoadSubtlext(); ///< Load subtlext on demand
-                mod = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
-
-                if(c->flags & SUB_TYPE_CLIENT)
-                  {
-                    /* Create client instance */
-                    id    = subArrayIndex(subtle->clients, (void *)c);
-                    klass = rb_const_get(mod, rb_intern("Client"));
-                    inst  = rb_funcall(klass, rb_intern("new"), 1, LONG2NUM(c->win));
-
-                    /* Translate flags */
-                    if(c->flags & SUB_MODE_FULL)  flags |= SUB_EWMH_FULL;
-                    if(c->flags & SUB_MODE_FLOAT) flags |= SUB_EWMH_FLOAT;
-                    if(c->flags & SUB_MODE_STICK) flags |= SUB_EWMH_STICK;
-
-                    /* Set properties */
-                    rb_iv_set(inst, "@id",      INT2FIX(id));
-                    rb_iv_set(inst, "@name",    rb_str_new2(c->name));
-                    rb_iv_set(inst, "@klass",   rb_str_new2(c->klass));
-                    rb_iv_set(inst, "@title",   rb_str_new2(c->name));
-                    rb_iv_set(inst, "@x",       INT2FIX(c->geom.x));
-                    rb_iv_set(inst, "@y",       INT2FIX(c->geom.y));
-                    rb_iv_set(inst, "@width",   INT2FIX(c->geom.width));
-                    rb_iv_set(inst, "@height",  INT2FIX(c->geom.height));
-                    rb_iv_set(inst, "@gravity", INT2FIX(c->gravity));
-                    rb_iv_set(inst, "@screen",  INT2FIX(c->screen + 1));
-                    rb_iv_set(inst, "@flags",   INT2FIX(flags));
-                  }
-                else if(c->flags & SUB_TYPE_VIEW)
-                  {
-                    SubView *v = VIEW(c);
-
-                    /* Create view instance */
-                    id    = subArrayIndex(subtle->views, (void *)v);
-                    klass = rb_const_get(mod, rb_intern("View"));
-                    inst  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(v->name));
-
-                    rb_iv_set(inst, "@id",  INT2FIX(id));
-                    rb_iv_set(inst, "@win", LONG2NUM(v->button));
-                  }
-
-                ret = rb_funcall(rargs[1], rb_intern("call"), 1, inst);
-                break;
-              } ///< Fall through
-          default:
-            rb_raise(rb_eStandardError, "Failed calling proc with `%d' argument(s)", arity);
-            ret = Qfalse;
-        }
-      subSharedLogDebug("Proc: arity=%d\n", arity);      
-    } /* }}} */
-
-  return ret;
+  return Qnil;
 } /* }}} */
 
 /* RubyWrapRemove {{{ */
@@ -1464,6 +1548,57 @@ RubySubletDataWriter(VALUE self,
   return Qnil;
 } /* }}} */
 
+/* RubySubletBackgroundWriter {{{ */
+/*
+ * call-seq: background=(value) -> nil
+ *
+ * Set the background color of a Sublet
+ *
+ *  sublet.background("#ffffff")
+ *  => nil
+ *
+ *  sublet.background(Sublet::Color.new("#ffffff"))
+ *  => nil
+ */
+
+static VALUE
+RubySubletBackgroundWriter(VALUE self,
+  VALUE value)
+{
+  SubSublet *s = NULL;
+  Data_Get_Struct(self, SubSublet, s);
+
+  if(s)
+    {
+      s->bg = subtle->colors.bg_sublets; ///< Set default color
+
+      /* Check value type */
+      switch(rb_type(value))
+        {
+          case T_STRING: 
+            s->bg = RubyParseColor(RSTRING_PTR(value)); 
+            break;
+          case T_OBJECT:
+              {
+                VALUE mod = Qnil, klass = Qnil;
+                
+                mod   = rb_const_get(rb_mKernel, rb_intern("Subtle"));
+                klass = rb_const_get(mod, rb_intern("Color"));
+
+                if(rb_obj_is_instance_of(value, klass)) ///< Check object instance
+                  s->bg = NUM2LONG(rb_iv_get(self, "@pixel"));
+              }
+            break;
+          default:
+            rb_raise(rb_eArgError, "Unknown value type");
+        }
+
+      subSubletRender();
+    }
+
+  return Qnil;
+} /* }}} */
+
 /* RubySubletWatch {{{ */
 /*
  * call-seq: watch(source) -> true or false
@@ -1573,57 +1708,6 @@ RubySubletUnwatch(VALUE self)
     }
 
   return ret;
-} /* }}} */
-
-/* RubySubletWatch {{{ */
-/*
- * call-seq: set_background(value) -> nil
- *
- * Set the background color of a Sublet
- *
- *  set_background("#ffffff")
- *  => nil
- *
- *  set_background(Sublet::Color.new("#ffffff"))
- *  => nil
- */
-
-static VALUE
-RubySubletBackground(VALUE self,
-  VALUE value)
-{
-  SubSublet *s = NULL;
-  Data_Get_Struct(self, SubSublet, s);
-
-  if(s)
-    {
-      s->bg = subtle->colors.bg_sublets; ///< Set default color
-
-      /* Check value type */
-      switch(rb_type(value))
-        {
-          case T_STRING: 
-            s->bg = RubyParseColor(RSTRING_PTR(value)); 
-            break;
-          case T_OBJECT:
-              {
-                VALUE mod = Qnil, klass = Qnil;
-                
-                mod   = rb_const_get(rb_mKernel, rb_intern("Subtle"));
-                klass = rb_const_get(mod, rb_intern("Color"));
-
-                if(rb_obj_is_instance_of(value, klass)) ///< Check object instance
-                  s->bg = NUM2LONG(rb_iv_get(self, "@pixel"));
-              }
-            break;
-          default:
-            rb_raise(rb_eArgError, "Unknown value type");
-        }
-
-      subSubletRender();
-    }
-
-  return Qnil;
 } /* }}} */
 
 /* Subtle */
@@ -1739,13 +1823,13 @@ subRubyInit(void)
   rb_define_singleton_method(sublet, "new",       RubySubletNew,       0);
   rb_define_singleton_method(sublet, "inherited", RubySubletInherited, 1);
 
-  rb_define_method(sublet, "interval",       RubySubletIntervalReader, 0);
-  rb_define_method(sublet, "interval=",      RubySubletIntervalWriter, 1);
-  rb_define_method(sublet, "data",           RubySubletDataReader,     0);
-  rb_define_method(sublet, "data=",          RubySubletDataWriter,     1);
-  rb_define_method(sublet, "watch",          RubySubletWatch,          1);
-  rb_define_method(sublet, "unwatch",        RubySubletUnwatch,        0);
-  rb_define_method(sublet, "set_background", RubySubletBackground,     1);
+  rb_define_method(sublet, "interval",       RubySubletIntervalReader,   0);
+  rb_define_method(sublet, "interval=",      RubySubletIntervalWriter,   1);
+  rb_define_method(sublet, "data",           RubySubletDataReader,       0);
+  rb_define_method(sublet, "data=",          RubySubletDataWriter,       1);
+  rb_define_method(sublet, "background=",    RubySubletBackgroundWriter, 1);
+  rb_define_method(sublet, "watch",          RubySubletWatch,            1);
+  rb_define_method(sublet, "unwatch",        RubySubletUnwatch,          0);
 
   /*
    * Document-class: Subtle::Icon
@@ -1873,18 +1957,11 @@ subRubyReloadConfig(void)
   subtle->panels.sublets.x = 0;
 
   /* Clear arrays */
+  subArrayClear(subtle->hooks,     True);
   subArrayClear(subtle->grabs,     True);
   subArrayClear(subtle->gravities, True);
   subArrayClear(subtle->tags,      True);
   subArrayClear(subtle->views,     True);
-
-
-  /* Release hooks */
-  if(subtle->hooks.jump)      subRubyRelease(subtle->hooks.jump);
-  if(subtle->hooks.configure) subRubyRelease(subtle->hooks.configure);
-  if(subtle->hooks.create)    subRubyRelease(subtle->hooks.create);
-  if(subtle->hooks.focus)     subRubyRelease(subtle->hooks.focus);
-  if(subtle->hooks.gravity)   subRubyRelease(subtle->hooks.gravity);
 
   if(subtle->separator.string) free(subtle->separator.string);
 
@@ -2056,8 +2133,8 @@ subRubyCall(int type,
   result = rb_protect(RubyWrapCall, (VALUE)&rargs, &state);
   if(state) 
     {
-      subSharedLogWarn("Failed calling %s\n", type & (SUB_CALL_SUBLET_RUN|SUB_CALL_SUBLET_CLICK) ? 
-        "sublet" : (type & SUB_CALL_GRAB ? "grab" : "hook"));
+      subSharedLogWarn("Failed calling %s\n", 
+        type & (SUB_CALL_SUBLET_RUN|SUB_CALL_SUBLET_CLICK) ?  "sublet" : "proc");
       RubyBacktrace();
 
       result = Qnil;
