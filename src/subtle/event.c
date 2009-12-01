@@ -126,6 +126,9 @@ EventMapRequest(XMapRequestEvent *ev)
               subViewConfigure(subtle->view, False); 
               subViewRender();
             }
+          
+          /* Hook: Create */
+          subHookCall(SUB_CALL_CLIENT_CREATE, (void *)c);
         }
     }
 } /* }}} */
@@ -404,6 +407,9 @@ EventMessage(XClientMessageEvent *ev)
               {
                 subArrayPush(subtle->tags, (void *)t);
                 subTagPublish();
+
+                /* Hook: Create */
+                subHookCall(SUB_CALL_TAG_CREATE, (void *)t);                
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_TAG_KILL: /* {{{ */
@@ -444,6 +450,9 @@ EventMessage(XClientMessageEvent *ev)
                 subViewPublish();
                 subPanelUpdate();
                 subPanelRender();
+
+                /* Hook: Create */
+                subHookCall(SUB_CALL_VIEW_CREATE, (void *)v);
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_VIEW_KILL: /* {{{ */
@@ -796,7 +805,7 @@ EventGrab(XEvent *ev)
             if(g->data.string) subSharedSpawn(g->data.string);
             break; /* }}} */
           case SUB_GRAB_PROC: /* {{{ */
-            subRubyCall(SUB_CALL_GRAB, g->data.num, CLIENT(subSharedFind(win, CLIENTID)));
+            subRubyCall(SUB_CALL_PROC, g->data.num, CLIENT(subSharedFind(win, CLIENTID)));
             break; /* }}} */
           case SUB_GRAB_VIEW_JUMP: /* {{{ */
             if(g->data.num < subtle->views->ndata)
@@ -1015,6 +1024,9 @@ EventFocus(XFocusChangeEvent *ev)
           /* EWMH: Active window */
           subEwmhSetWindows(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW, &subtle->windows.focus, 1);
 
+          /* Hook: Focus */
+          subHookCall(SUB_CALL_CLIENT_FOCUS, (void *)c);
+
           subPanelUpdate();
           subPanelRender();
         }
@@ -1228,6 +1240,9 @@ subEventFinish(void)
 
   if(subtle)
     {
+      /* Clear hooks first to stop calling */
+      subArrayClear(subtle->hooks,    True);
+
       /* Kill arrays */
       subArrayKill(subtle->clients,   False);
       subArrayKill(subtle->grabs,     False);
@@ -1238,6 +1253,7 @@ subEventFinish(void)
       subArrayKill(subtle->tags,      True);
       subArrayKill(subtle->trays,     True);
       subArrayKill(subtle->views,     True);
+      subArrayKill(subtle->hooks,     False);
 
       subEwmhFinish();
       subDisplayFinish();

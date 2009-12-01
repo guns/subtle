@@ -144,6 +144,7 @@ subArrayClear(SubArray *a,
           if(c->flags & SUB_TYPE_CLIENT)       subClientKill(c, clean);
           else if(c->flags & SUB_TYPE_GRAB)    subGrabKill(GRAB(c), clean);
           else if(c->flags & SUB_TYPE_GRAVITY) subGravityKill(GRAVITY(c));
+          else if(c->flags & SUB_TYPE_HOOK)    subHookKill(HOOK(c));
           else if(c->flags & SUB_TYPE_ICON)    subIconKill(ICON(c));
           else if(c->flags & SUB_TYPE_SCREEN)  subScreenKill(SCREEN(c));
           else if(c->flags & SUB_TYPE_SUBLET)  subSubletKill(SUBLET(c), clean);

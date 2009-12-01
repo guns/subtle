@@ -75,15 +75,6 @@ subViewConfigure(SubView *v,
 
   assert(v);
 
-  /* Hook: Configure */
-  if(subtle->hooks.configure &&
-    0 == subRubyCall(SUB_CALL_HOOK, subtle->hooks.configure, (void *)v))
-    {
-      subSharedLogDebug("Hook: name=configure, view=%#lx, state=ignored\n", v->button);
-
-      return;
-    }
-
   vid = subArrayIndex(subtle->views, (void *)v);
 
   /* Clients */
@@ -111,6 +102,9 @@ subViewConfigure(SubView *v,
     }
 
   subSharedLogDebug("Configure: type=view, vid=%d, name=%s\n", vid, v->name);
+
+  /* Hook: Configure */
+  subHookCall(SUB_CALL_VIEW_CONFIGURE, (void *)v);
 } /* }}} */
 
  /** subViewUpdate {{{ 
@@ -193,15 +187,6 @@ subViewJump(SubView *v)
 {
   assert(v);
 
-  /* Hook: Jump */
-  if(subtle->hooks.jump &&
-    0 == subRubyCall(SUB_CALL_HOOK, subtle->hooks.jump, (void *)v))
-    {
-      subSharedLogDebug("Hook: name=jump, view=%#lx, state=ignored\n", v->button);
-
-      return;
-    }
-
   /* Store view */
   subtle->vid  = subArrayIndex(subtle->views, (void *)v);
   subtle->view = v;
@@ -213,6 +198,9 @@ subViewJump(SubView *v)
 
   subSharedFocus();
   subViewRender();
+
+  /* Hook: Jump */
+  subHookCall(SUB_CALL_VIEW_JUMP, (void *)v);
 } /* }}} */
 
  /** subViewPublish {{{
@@ -268,6 +256,9 @@ void
 subViewKill(SubView *v)
 {
   assert(v);
+
+  /* Hook: Kill */
+  subHookCall(SUB_CALL_VIEW_KILL, (void *)v);
 
   XDeleteContext(subtle->dpy, v->button, BUTTONID);
   XDestroyWindow(subtle->dpy, v->button);

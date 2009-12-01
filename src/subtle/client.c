@@ -133,9 +133,6 @@ subClientNew(Window win)
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_SCREEN, (long *)&c->screen, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
-  if(subtle->hooks.create) ///< Create hook
-    subRubyCall(SUB_CALL_HOOK, subtle->hooks.create, c);
-
   subSharedLogDebug("new=client, name=%s, klass=%s, win=%#lx\n", c->name, c->klass, win);
 
   return c;
@@ -178,6 +175,9 @@ subClientConfigure(SubClient *c)
   subSharedLogDebug("Configure: type=client, win=%#lx, name=%s, state=%c, x=%03d, y=%03d, width=%03d, height=%03d\n",
     c->win, c->klass, c->flags & SUB_MODE_FLOAT ? 'f' : c->flags & SUB_MODE_FULL ? 'u' : 'n',
     c->geom.x, c->geom.y, c->geom.width, c->geom.height);
+
+  /* Hook: Create */
+  subHookCall(SUB_CALL_CLIENT_CONFIGURE, (void *)c);
 } /* }}} */
 
  /** subClientRender {{{
@@ -260,15 +260,6 @@ subClientFocus(SubClient *c)
 {
   DEAD(c);
   assert(c);
-
-  /* Hook: Focus */
-  if(subtle->hooks.focus && 
-    0 == subRubyCall(SUB_CALL_HOOK, subtle->hooks.focus, (void *)c))
-    {
-      subSharedLogDebug("Hook: name=focus, client=%#lx, state=ignored\n", c->win);
-
-      return;
-    }
 
   /* Check client input focus type */
   if(!(c->flags & SUB_CLIENT_INPUT) && c->flags & SUB_CLIENT_FOCUS)
@@ -594,15 +585,6 @@ subClientSetGravity(SubClient *c,
     {
       SubScreen *s = NULL;
       SubGravity *g = NULL;
-
-      /* Hook: Gravity */
-      if(subtle->hooks.gravity && 
-          0 == subRubyCall(SUB_CALL_HOOK, subtle->hooks.gravity, (void *)c))
-        {
-          subSharedLogDebug("Hook: name=gravity, client=%#lx, state=ignored\n", c->win);
-
-          return;
-        }
 
       /* Calculate slot */
       s              = SCREEN(subtle->screens->data[c->screen]);
@@ -1084,6 +1066,9 @@ subClientKill(SubClient *c,
   int close)
 {
   assert(c);
+
+    /* Hook: Create */
+  subHookCall(SUB_CALL_CLIENT_KILL, (void *)c);
 
   /* Focus */
   if(subtle->windows.focus == c->win)
