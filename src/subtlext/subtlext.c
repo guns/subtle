@@ -630,7 +630,7 @@ SubtlextTag(VALUE self,
 
           data.l[0] = FIX2LONG(oid);
           data.l[1] = FIX2LONG(tid);
-          data.l[2] = rb_obj_is_instance_of(value, 
+          data.l[2] = rb_obj_is_instance_of(self, 
             rb_const_get(mod, rb_intern("Client"))) ? 0 : 1; ///< Client = 0, View = 1
 
           subSharedMessage(DefaultRootWindow(display), action, data, True);
@@ -644,8 +644,8 @@ SubtlextTag(VALUE self,
 
 /* SubtlextWindowTagAdd {{{ */
 /*
- * call-seq: tag(name) -> Subtlext::Tag
- *           +(name)   -> Subtlext::Tag
+ * call-seq: tag(value) -> Subtlext::Tag
+ *           +(value)   -> Subtlext::Tag
  *
  * Add a Tag to Client or View
  *
@@ -668,8 +668,8 @@ SubtlextWindowTagAdd(VALUE self,
 
 /* SubtlextWindowTagDel {{{ */
 /*
- * call-seq: untag(name) -> Subtlext::Tag
- *           -(name)     -> Subtlext::Tag
+ * call-seq: untag(value) -> Subtlext::Tag
+ *           -(value)     -> Subtlext::Tag
  *
  * Remove a Tag from Client or View
  *
