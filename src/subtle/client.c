@@ -878,6 +878,7 @@ subClientSetHints(SubClient *c,
       /* Handle urgency */
       if(!(c->flags & SUB_MODE_UNURGENT))
         {
+          /* Set urgency or remove urgency after losing focus */
           if(hints->flags & XUrgencyHint)     *flags |= SUB_MODE_URGENT;
           else if(c->flags & SUB_MODE_URGENT) *flags |= SUB_MODE_URGENT_FOCUS;
         }
