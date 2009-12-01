@@ -309,6 +309,9 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_NET_WM_DESKTOP,                                        ///< Desktop client is on
   SUB_EWMH_NET_WM_STRUT,                                          ///< Strut
 
+  SUB_EWMH_NET_WM_WINDOW_TYPE,                                     ///< Window type
+  SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG,                             ///< Dialog window
+
   SUB_EWMH_NET_WM_STATE,                                          ///< Window state
   SUB_EWMH_NET_WM_STATE_FULLSCREEN,                               ///< Fullscreen window
   SUB_EWMH_NET_WM_STATE_ABOVE,                                    ///< Floating window
@@ -563,12 +566,13 @@ void subClientSetGravity(SubClient *c, int gravity,
 void subClientSetScreen(SubClient *c, int screen, int force);     ///< Set client screen
 void subClientSetSize(SubClient *c);                              ///< Set client sizes
 void subClientSetStrut(SubClient *c);                             ///< Set client strut
-void subClientSetName(SubClient *c);                             ///< Set client title
+void subClientSetName(SubClient *c);                              ///< Set client WM_NAME
 void subClientSetProtocols(SubClient *c);                         ///< Set client protocols
 void subClientSetNormalHints(SubClient *c);                       ///< Set client normal hints
 void subClientSetHints(SubClient *c, int *flags);                 ///< Set client WM hints
 void subClientSetState(SubClient *c, int *flags);                 ///< Set client WM state
 void subClientSetTransient(SubClient *c, int *flags);             ///< Set client transient
+void subClientSetType(SubClient *c, int *flags);                  ///< Set client tyoe
 void subClientToggle(SubClient *c, int type);                     ///< Toggle client state
 void subClientPublish(void);                                      ///< Publish all clients
 void subClientKill(SubClient *c, int close);                      ///< Kill client

@@ -126,6 +126,7 @@ subClientNew(Window win)
   subClientSetHints(c, &flags);
   subClientSetState(c, &flags);
   subClientSetTransient(c, &flags);
+  subClientSetType(c, &flags);
   subClientToggle(c, (~c->flags & flags));
 
   /* EWMH: Gravity, screen and desktop */
@@ -954,6 +955,39 @@ subClientSetTransient(SubClient *c,
              c->screens[i] = k->screens[i];
         }
      }
+} /* }}} */
+
+ /** subClientSetType {{{
+  * @brief Set client type
+  * @param[in]  c      A #SubClient
+  * @param[in]  flags  Mode flags
+  **/
+
+void
+subClientSetType(SubClient *c,
+  int *flags)
+{
+  int i;
+  unsigned long size = 0;
+  Atom *types = NULL;
+
+  assert(c);
+
+  /* Window type */
+  if((types = (Atom *)subSharedPropertyGet(c->win, XA_ATOM, 
+      SUB_EWMH_NET_WM_WINDOW_TYPE, &size)))
+    {
+      for(i = 0; i < size / sizeof(Atom); i++)
+        {
+          switch(subEwmhFind(types[i]))
+            {
+              case SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG: *flags |= SUB_MODE_FLOAT;  break;
+              default: break;
+            }
+        }
+
+      XFree(types);
+    }
 } /* }}} */
 
  /** subClientToggle {{{
