@@ -361,7 +361,7 @@ TAGS = {
   "stick"   => { :regex => "mplayer|imagemagick", :float => true, :stick => true },
   "float"   => { :regex => "gimp", :float => true },
   "fixed"   => { :geometry => [ 10, 10, 100, 100 ], :stick => true },
-  "resize"  => { :regex => "sakura|gvim", :resize => true }
+  "resize"  => { :regex => "sakura|gvim", :resize => true },
   "gravity" => { :gravity => :center }
 }  
 
