@@ -96,7 +96,7 @@
 #define GRAVITY(g) ((SubGravity *)g)                              ///< Cast to SubGravity
 #define HOOK(h)    ((SubHook *)h)                                 ///< Cast to SubHook
 #define ICON(i)    ((SubIcon *)i)                                 ///< Cast to SubIcon
-#define PANEL(p)   ((SubPabel *)p)                                ///< Cast to SubPanel
+#define PANEL(p)   ((SubPanel *)p)                                ///< Cast to SubPanel
 #define SCREEN(s)  ((SubScreen *)s)                               ///< Cast to SubScreen
 #define SUBLET(s)  ((SubSublet *)s)                               ///< Cast to SubSublet
 #define SUBTLE(s)  ((SubSubtle *)s)                               ///< Cast to SubSubtle
@@ -212,13 +212,16 @@
 /* Panel flags */
 #define SUB_PANEL_SPACER1             (1L << 13)                  ///< Panel spacer1
 #define SUB_PANEL_SPACER2             (1L << 14)                  ///< Panel spacer2
-#define SUB_PANEL_BOTTOM              (1L << 15)                  ///< Panel bottom
+#define SUB_PANEL_SEPARATOR           (1L << 15)                  ///< Panel separator
+#define SUB_PANEL_BOTTOM              (1L << 16)                  ///< Panel bottom
+#define SUB_PANEL_SUBLETS             (1L << 17)                  ///< Panel sublets
 
 /* Sublet types */
-#define SUB_SUBLET_INTERVAL           (1L << 13)
-#define SUB_SUBLET_INOTIFY            (1L << 14)                  ///< Inotify sublet
-#define SUB_SUBLET_SOCKET             (1L << 15)                  ///< Socket sublet
-#define SUB_SUBLET_CLICK              (1L << 16)                  ///< Sublet click function
+#define SUB_SUBLET_INTERVAL           (1L << 20)
+#define SUB_SUBLET_INOTIFY            (1L << 21)                  ///< Inotify sublet
+#define SUB_SUBLET_SOCKET             (1L << 22)                  ///< Socket sublet
+#define SUB_SUBLET_CLICK              (1L << 23)                  ///< Sublet click function
+#define SUB_SUBLET_PANEL              (1L << 24)                  ///< Sublet in panel
 
 /* Subtle flags */
 #define SUB_SUBTLE_DEBUG              (1L << 1)                   ///< Debug enabled
@@ -404,12 +407,11 @@ typedef struct subtext_t /* {{{ */
 
 typedef struct subpanel_t /* {{{ */
 {
-  FLAGS              flags;                                       ///< Panel flags
+  FLAGS             flags;                                        ///< Panel flags
+  Window            win;                                          ///< Panel win
+  int               x, width;                                     ///< Panel x, width
 
-  Window             win;                                         ///< Panel win
-  int                x, width;                                    ///< Panel x, width
-
-  struct subpanel_t  *next;                                       ///< Panel next
+  struct subpanel_t *next;                                        ///< Panel next
 } SubPanel; /* }}} */
 
 typedef struct subscreen_t /* {{{ */
@@ -422,10 +424,10 @@ typedef struct subscreen_t /* {{{ */
 typedef struct subsublet_t /* {{{ */
 {
   FLAGS              flags;                                       ///< Sublet flags
-  char               *name;                                       ///< Sublet name
+  Window             win;                                         ///< Sublet window
+  int                x, width, watch;                             ///< Sublet x, width, width
 
-  Window             button;                                      ///< Sublet button
-  int                watch, width;                                ///< Sublet width
+  char               *name;                                       ///< Sublet name
   unsigned long      recv, bg;                                    ///< Sublet Ruby receiver, background color
   time_t             time, interval;                              ///< Sublet update/interval time
 
@@ -446,7 +448,6 @@ typedef struct subsubtle_t /* {{{ */
 
   struct subpanel_t    *panel;                                    ///< Subtle first panel
   struct subscreen_t   *screen;                                   ///< Subtle first screen
-  struct subsublet_t   *sublet;                                   ///< Subtle first sublet
   struct subview_t     *view;                                     ///< Subtle current view
 
   struct subarray_t    *clients;                                  ///< Subtle clients
@@ -486,7 +487,7 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    struct subpanel_t  views, focus, tray, sublets;
+    struct subpanel_t  views, focus, tray;
   } panels;                                                       ///< Subtle panels
 
   struct
@@ -659,6 +660,7 @@ void subRubyReloadConfig(void);                                   ///< Reload co
 void subRubyLoadSublet(const char *file);                         ///< Load sublet
 void subRubyLoadSublets(void);                                    ///< Load sublets
 void subRubyLoadSubtlext(void);                                   ///< Load subtlext
+void subRubyLoadPanels(void);                                     ///< Load panels
 int subRubyCall(int type, unsigned long recv, void *extra);       ///< Call Ruby script
 int subRubyRemove(char *name);                                    ///< Remove constant
 int subRubyRelease(unsigned long recv);                           ///< Release receiver

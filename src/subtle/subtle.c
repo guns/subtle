@@ -177,6 +177,7 @@ main(int argc,
   /* Load */
   subRubyLoadConfig();
   subRubyLoadSublets();
+  subRubyLoadPanels();
 
   /* Display */
   subDisplayConfigure();
