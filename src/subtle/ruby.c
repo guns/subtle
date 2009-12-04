@@ -16,6 +16,7 @@
 #include <dirent.h>
 #include <fnmatch.h>
 #include <fcntl.h>
+#include <ctype.h>
 #include <ruby.h>
 #include "subtle.h"
 
@@ -638,47 +639,82 @@ RubyParsePanel(VALUE hash,
 {
   int i, j, flags = 0, enabled = False;
   Window panel = subtle->windows.panel1;
-  VALUE entry = Qnil, spacer = CHAR2SYM("spacer"), 
-    value = RubyFetchKey(hash, key, T_ARRAY, False); 
+  VALUE entry = Qnil, spacer = Qnil, separator, sublets = Qnil, value = Qnil;
+  
+  spacer    = CHAR2SYM("spacer");
+  separator = CHAR2SYM("separator");
+  sublets   = CHAR2SYM("sublets");
+  value     = RubyFetchKey(hash, key, T_ARRAY, False); 
  
+  /* Check position of panel */
   if(!strncmp(key, "bottom", 6))
     {
       flags |= SUB_PANEL_BOTTOM;
       panel  = subtle->windows.panel2;
     }
- 
+
   /* Parse panels */
   if(T_ARRAY == rb_type(value))
     {
       for(i = 0; Qnil != (entry = rb_ary_entry(value, i)); ++i)
         {
+          void *item = NULL;
+
           if(entry == spacer)
             {
               flags |= SUB_PANEL_SPACER1;
             }
+          else if(entry == separator)
+            {
+              flags |= SUB_PANEL_SEPARATOR;
+            }
+          else if(entry == sublets)
+            {
+              /* Add dummy to get flags */
+              flags |= SUB_PANEL_SUBLETS;
+              item   = (void *)subSharedMemoryAlloc(1, sizeof(SubPanel));
+            }
           else
-            for(j = 0; 4 > j; j++)
-              {
-                if(entry == panels[j].sym)
-                  {
-                    /* Append to list */
-                    if(!subtle->panel)
-                      {
-                        subtle->panel = panels[j].panel;
-                        *p            = panels[j].panel;
-                      }
-                    else (*p)->next  = panels[j].panel;
+            {
+              /* Check for real panels */
+              for(j = 0; !item && PANELSLENGTH > j; j++)
+                {
+                  if(entry == panels[j].sym)
+                    {
+                      panels[j].panel->flags |= SUB_TYPE_PANEL;
+                      item = (void *)panels[j].panel;
+                    }
+                }
 
-                    /* Update panel */
-                    *p          = panels[j].panel;
-                    (*p)->flags = SUB_TYPE_PANEL|flags;
+              /* Check for sublets */
+              for(j = 0; !item && j < subtle->sublets->ndata; j++)
+                {
+                  SubSublet *s = SUBLET(subtle->sublets->data[j]);
 
-                    XReparentWindow(subtle->dpy, (*p)->win, panel, 0, 0);
+                  if(entry == CHAR2SYM(s->name))
+                    {
+                      item      = (void *)s;
+                      s->flags |= SUB_SUBLET_PANEL;
+                    }
+                }
+            }
+              
+          /* Add item to panel list */
+          if(item)
+            {
+              if(!subtle->panel) subtle->panel = PANEL(item);
+              else (*p)->next = PANEL(item);
 
-                    flags   = 0;
-                    enabled = True; /// Enable this panel
-                  }
-              }
+              /* Update panel */
+              *p           = PANEL(item);
+              (*p)->flags |= flags;
+              (*p)->next   = NULL;
+
+              XReparentWindow(subtle->dpy, (*p)->win, panel, 0, 0);
+
+              flags   = 0;
+              enabled = True; /// Enable this panel
+            }
         }
     }
 
@@ -723,17 +759,8 @@ RubyWrapLoadConfig(VALUE data)
   int i;
   char *str = NULL;
   VALUE config = Qnil, entry = Qnil, rargs[2] = { 0 };
-  SubPanel *p = NULL;
 
   /* Foreach arguments {{{ */
-  RubyPanels panels[] = 
-  {
-    { CHAR2SYM("views"),   &subtle->panels.views   },
-    { CHAR2SYM("title"),   &subtle->panels.focus   },
-    { CHAR2SYM("sublets"), &subtle->panels.sublets },
-    { CHAR2SYM("tray"),    &subtle->panels.tray    }
-  };
-
   RubyGrabs grabs[] =
   {
     { CHAR2SYM("SubtleReload"), SUB_GRAB_SUBTLE_RELOAD,  None             },
@@ -818,16 +845,6 @@ RubyWrapLoadConfig(VALUE data)
   subtle->th = subtle->xfs->max_bounds.ascent + subtle->xfs->max_bounds.descent + 2;
   subtle->fy = (subtle->th - 2 + subtle->xfs->max_bounds.ascent) / 2;
 
-  /* Config: Panels */
-  config = rb_const_get(rb_cObject, rb_intern("PANEL"));
-  if(RubyParsePanel(config, "top", &p, panels))    subtle->flags |= SUB_SUBTLE_PANEL1;
-  if(RubyParsePanel(config, "bottom", &p, panels)) subtle->flags |= SUB_SUBTLE_PANEL2;
-  if(True == RubyGetBool(config, "stipple"))       subtle->flags |= SUB_SUBTLE_STIPPLE;
-  
-  /* Separator */
-  subtle->separator.string = strdup(RubyGetString(config, "separator", "|"));
-  subtle->separator.width  = subSharedTextWidth(subtle->separator.string, 
-    strlen(subtle->separator.string), NULL, NULL, True) + 6;
 
   /* Config: Colors */
   config                    = rb_const_get(rb_cObject, rb_intern("COLORS"));
@@ -863,7 +880,6 @@ RubyWrapLoadConfig(VALUE data)
       subSharedLogWarn("No grabs found\n");
     }
   else subArraySort(subtle->grabs, subGrabCompare);
-
 
   /* Config: Tags */
   config   = rb_const_get(rb_cObject, rb_intern("TAGS"));
@@ -998,17 +1014,6 @@ RubyWrapLoadSublet(VALUE data)
                   subArrayPush(subtle->hooks, h);
                 }
 
-              /* Append sublet to linked list */
-              if(!subtle->sublet) subtle->sublet = s;
-              else
-                {
-                  SubSublet *iter = subtle->sublet;
-
-                  while(iter && iter->next) iter = iter->next;
-
-                  iter->next = s;
-                }
-
               subRubyCall(SUB_CALL_SUBLET_RUN, s->recv, NULL); ///< First run
 
               printf("Loaded sublet (%s)\n", name);
@@ -1046,6 +1051,79 @@ RubyWrapLoadSubtlext(VALUE data)
 
   return Qnil;
 }/* }}} */
+
+/* RubyWrapLoadPanels {{{ */
+static VALUE
+RubyWrapLoadPanels(VALUE data)
+{
+  int i;
+  VALUE config = Qnil;
+  SubPanel *p = NULL, *prev = NULL;
+  Window panel = subtle->windows.panel1;
+  RubyPanels panels[] = 
+  {
+    { CHAR2SYM("views"), &subtle->panels.views },
+    { CHAR2SYM("title"), &subtle->panels.focus },
+    { CHAR2SYM("tray"),  &subtle->panels.tray  }
+  };
+
+  /* Config: Panels */
+  config = rb_const_get(rb_cObject, rb_intern("PANEL"));
+  if(RubyParsePanel(config, "top",    &p, panels)) subtle->flags |= SUB_SUBTLE_PANEL1;
+  if(RubyParsePanel(config, "bottom", &p, panels)) subtle->flags |= SUB_SUBTLE_PANEL2;
+  if(True == RubyGetBool(config, "stipple"))       subtle->flags |= SUB_SUBTLE_STIPPLE;
+  
+  /* Separator */
+  subtle->separator.string = strdup(RubyGetString(config, "separator", "|"));
+  subtle->separator.width  = subSharedTextWidth(subtle->separator.string, 
+    strlen(subtle->separator.string), NULL, NULL, True) + 6; ///< Add spacings
+
+  /* Link remaining sublets */
+  for(p = subtle->panel; p; prev = p, p = p->next)
+    {
+      if(p->flags & SUB_PANEL_BOTTOM) panel = subtle->windows.panel2;
+      if(p->flags & SUB_PANEL_SUBLETS)
+        {
+          SubPanel *dummy = p, *next = p->next;
+
+          for(i = 0; i < subtle->sublets->ndata; i++)
+            {
+              SubPanel *p2 = PANEL(subtle->sublets->data[i]);
+
+              if(!(p2->flags & SUB_SUBLET_PANEL))
+                {
+                  p->next = p2;
+                  p       = p->next;
+
+                  /* Spacer between every sublet */
+                  if(dummy->next != p) p->flags |= SUB_PANEL_SEPARATOR;
+
+                  XReparentWindow(subtle->dpy, p->win, panel, 0, 0);
+                }
+            }
+
+          p->next             = next;
+          prev->next          = dummy->next;
+          dummy->next->flags |= dummy->flags;
+          dummy->next->flags &= ~(SUB_PANEL_SUBLETS|SUB_PANEL_SPACER2);
+
+          /* Add spacer to last sublet */
+          if(dummy->flags & SUB_PANEL_SPACER2)
+            {
+              p->flags &= ~SUB_PANEL_SPACER1;
+              p->flags |= SUB_PANEL_SPACER2;
+            }
+
+          free(dummy);
+        }
+
+    }
+
+  subArraySort(subtle->sublets, subSubletCompare); ///< Finally sort
+  subSubletUpdate(); ///< Update sublet panel
+
+  return Qnil;
+} /* }}} */
 
 /* RubyWrapCall {{{ */
 static VALUE
@@ -1385,22 +1463,26 @@ RubySubletMark(SubSublet *s)
 static VALUE
 RubySubletNew(VALUE self)
 {
-  int state = 0;
+  int i, len = 0, state = 0;
   SubSublet *s = NULL;
-  VALUE data = Qnil;
-  char *name = (char *)rb_class2name(self);
+  char *classname = (char *)rb_class2name(self);
 
   /* Create sublet */
   s = subSubletNew();
-  data    = Data_Wrap_Struct(self, RubySubletMark, NULL, (void *)s);
-  s->recv = data; 
-  s->name = strdup(name);
+  s->recv = Data_Wrap_Struct(self, RubySubletMark, NULL, (void *)s);
+
+  /* Lower name */
+  len     = strlen(classname);
+  s->name = (char *)subSharedMemoryAlloc(len + 1, sizeof(char));
+
+  for(i = 0; i < len; i++)
+    s->name[i] = (char)tolower((int)classname[i]);
 
   /* Call initialize */
-  rb_protect(RubyWrapInit, data, &state);
+  rb_protect(RubyWrapInit, s->recv, &state);
   if(state) 
     {
-      subSharedLogWarn("Failed initializing sublet `%s'\n", name);
+      subSharedLogWarn("Failed initializing sublet `%s'\n", classname);
       RubyBacktrace();
 
       subSubletKill(s, False);
@@ -1411,12 +1493,12 @@ RubySubletNew(VALUE self)
   if(0 == s->interval) s->interval = 60; ///< Sanitize
 
   subArrayPush(subtle->sublets, s);
-  rb_ary_push(shelter, data); ///< Protect from GC
+  rb_ary_push(shelter, s->recv); ///< Protect from GC
 
   /* Check click handler */
   if(rb_respond_to(s->recv, rb_intern("click"))) s->flags |= SUB_SUBLET_CLICK;
 
-  return data;
+  return s->recv;
 } /* }}} */
 
 /* RubySubletInherited {{{ */
@@ -1592,8 +1674,6 @@ RubySubletBackgroundWriter(VALUE self,
           default:
             rb_raise(rb_eArgError, "Unknown value type");
         }
-
-      subSubletRender();
     }
 
   return Qnil;
@@ -1630,7 +1710,7 @@ RubySubletWatch(VALUE self,
           s->flags |= SUB_SUBLET_SOCKET;
           s->watch  = fd;
 
-          XSaveContext(subtle->dpy, subtle->panels.sublets.win, s->watch, (void *)s);
+          XSaveContext(subtle->dpy, subtle->windows.panel1, s->watch, (void *)s);
           subEventWatchAdd(s->watch);
 
           /* Set nonblocking */
@@ -1649,7 +1729,7 @@ RubySubletWatch(VALUE self,
             {
               s->flags |= SUB_SUBLET_INOTIFY;
 
-              XSaveContext(subtle->dpy, subtle->panels.sublets.win, s->watch, (void *)s);
+              XSaveContext(subtle->dpy, subtle->windows.panel1, s->watch, (void *)s);
               subSharedLogDebug("Inotify: Adding watch on %s\n", watch); 
 
               ret = Qtrue;
@@ -1685,7 +1765,7 @@ RubySubletUnwatch(VALUE self)
     {
       if(s->flags & SUB_SUBLET_SOCKET) ///< Probably a socket
         {
-          XDeleteContext(subtle->dpy, subtle->panels.sublets.win, s->watch);
+          XDeleteContext(subtle->dpy, subtle->windows.panel1, s->watch);
           subEventWatchDel(s->watch);
 
           s->flags &= ~SUB_SUBLET_SOCKET;
@@ -1696,7 +1776,7 @@ RubySubletUnwatch(VALUE self)
 #ifdef HAVE_SYS_INOTIFY_H
       else if(s->flags & SUB_SUBLET_INOTIFY) /// Inotify file
         {
-          XDeleteContext(subtle->dpy, subtle->panels.sublets.win, s->watch);
+          XDeleteContext(subtle->dpy, subtle->windows.panel1, s->watch);
           inotify_rm_watch(subtle->notify, s->watch);
 
           s->flags &= ~SUB_SUBLET_INOTIFY;
@@ -1945,16 +2025,10 @@ void
 subRubyReloadConfig(void)
 {
   int i;
+  SubPanel *p = NULL, *next = NULL;
 
   /* Reset before reloading */
   subtle->flags &= (SUB_SUBTLE_DEBUG|SUB_SUBTLE_EWMH|SUB_SUBTLE_RUN);
-  subtle->panel  = NULL;
-
-  /* Clear x cache */
-  subtle->panels.tray.x    = 0;
-  subtle->panels.views.x   = 0;
-  subtle->panels.focus.x   = 0;
-  subtle->panels.sublets.x = 0;
 
   /* Clear arrays */
   subArrayClear(subtle->hooks,     True);
@@ -1975,14 +2049,29 @@ subRubyReloadConfig(void)
   subRubyRemove("VIEWS");
   subRubyRemove("HOOKS");
 
+  /* Reset panel config */
+  for(p = subtle->panel; p;)
+    {
+      p->flags &= ~(SUB_SUBLET_PANEL|SUB_PANEL_SUBLETS|SUB_PANEL_SPACER1| \
+        SUB_PANEL_SPACER2|SUB_PANEL_SEPARATOR|SUB_PANEL_BOTTOM);
+      p->x      = 0;
+      next      = p->next;
+      p->next   = NULL;
+      p         = next;
+    }
+  subtle->panel = NULL;
+
   subRubyLoadConfig();
+  subRubyLoadPanels();
   subDisplayConfigure();
 
- /* Update client tags */
+  /* Update client tags */
   for(i = 0; i < subtle->clients->ndata; i++)
     subClientSetTags(CLIENT(subtle->clients->data[i]));
 
   subViewJump(subtle->views->data[0]);
+  
+  subPanelUpdate();
   subPanelRender();
 
   printf("Reloaded config\n");
@@ -2032,6 +2121,25 @@ subRubyLoadSublet(const char *file)
     }
 } /* }}} */
 
+ /** subRubyLoadPanels {{{
+  * @brief Load panels
+  **/
+
+void
+subRubyLoadPanels(void)
+{
+  int state = 0;
+
+  /* Carefully load panels */
+  rb_protect(RubyWrapLoadPanels, Qnil, &state);
+  if(state)
+    {
+      subSharedLogWarn("Failed loading panels\n");
+      RubyBacktrace();
+      subEventFinish();
+    }
+} /* }}} */
+
  /** subRubyLoadSublets {{{
   * @brief Load sublets from path
   **/
@@ -2075,8 +2183,6 @@ subRubyLoadSublets(void)
           free(entries[i]);
         }
       free(entries);
-
-      subArraySort(subtle->sublets, subSubletCompare); ///< Initially sort
     }
   else subSharedLogWarn("No sublets found\n");
 

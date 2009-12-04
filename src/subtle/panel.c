@@ -20,16 +20,17 @@ void
 subPanelUpdate(void)
 {
   SubPanel *p = NULL;
-  int n = 0, x = 0, width[2] = { 0 }, spacer[2] = { 0 };
+  int n = 0, x = 0, separator[2] = { 0 }, width[2] = { 0 }, spacer[2] = { 0 };
 
   assert(subtle);
 
-  /* Gather width for spacer */
+  /* Collect width for spacer */
   for(p = subtle->panel; p; p = p->next)
     {
-      if(p->flags & SUB_PANEL_BOTTOM) n = 1;
-      if(p->flags & SUB_PANEL_SPACER1) spacer[n]++;
-      if(p->flags & SUB_PANEL_SPACER2) spacer[n]++;
+      if(p->flags & SUB_PANEL_BOTTOM)    n = 1;
+      if(p->flags & SUB_PANEL_SPACER1)   spacer[n]++;
+      if(p->flags & SUB_PANEL_SPACER2)   spacer[n]++;
+      if(p->flags & SUB_PANEL_SEPARATOR) separator[n] += subtle->separator.width;
 
       width[n] += p->width;
     }
@@ -43,14 +44,16 @@ subPanelUpdate(void)
           x = 0; ///< Reset for new panel
         }
 
-      if(p->flags & SUB_PANEL_SPACER1) ///< Add before spacer
-        x += (subtle->screen->base.width - width[n]) / spacer[n];
+      /* Update x position */
+      if(p->flags & SUB_PANEL_SEPARATOR) ///< Add space for separator
+        x += subtle->separator.width;
 
-      if(p->x != x) ///< Cache x value
-        {
-          XMoveWindow(subtle->dpy, p->win, x, 0);
-          p->x = x;
-        }
+      if(p->flags & SUB_PANEL_SPACER1) ///< Add before spacer
+        x += (subtle->screen->base.width - width[n] - separator[n]) / spacer[n];
+
+      /* Set window position */
+      XMoveWindow(subtle->dpy, p->win, x, 0);
+      p->x = x;
 
       if(p->flags & SUB_PANEL_SPACER2) ///< Add after spacer
         x += (subtle->screen->base.width - width[n]) / spacer[n];
@@ -70,19 +73,36 @@ subPanelUpdate(void)
 void
 subPanelRender(void)
 {
+  SubPanel *p = NULL;
   SubClient *c = NULL;
+  XGCValues gvals;
+  Window panel = subtle->windows.panel1;
 
   assert(subtle);
 
   XClearWindow(subtle->dpy, subtle->windows.panel1);
   XClearWindow(subtle->dpy, subtle->windows.panel2);
 
+  /* Draw stipple on panels */
   if(subtle->flags & SUB_SUBTLE_STIPPLE) ///< Draw stipple
     {
       XFillRectangle(subtle->dpy, subtle->windows.panel1, subtle->gcs.stipple, 0, 2,
         subtle->screen->base.width, subtle->th - 4);
       XFillRectangle(subtle->dpy, subtle->windows.panel2, subtle->gcs.stipple, 0, 2,
         subtle->screen->base.width, subtle->th - 4);        
+    }
+
+  /* Update GC */
+  gvals.foreground = subtle->colors.fg_panel;
+  XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
+
+  /* Draw separators */
+  for(p = subtle->panel; p; p = p->next)
+    {
+      if(p->flags & SUB_PANEL_BOTTOM) panel = subtle->windows.panel2;
+      if(p->flags & SUB_PANEL_SEPARATOR) ///< Draw separator before panel 
+        XDrawString(subtle->dpy, panel, subtle->gcs.font, p->x - subtle->separator.width + 3,
+          subtle->fy, subtle->separator.string, strlen(subtle->separator.string));
     }
 
   /* Render panels */
