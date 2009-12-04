@@ -53,16 +53,16 @@ static SubSublet *
 EventFindSublet(int id)
 {
   int i = 0;
-  SubSublet *iter = subtle->sublet;
+  SubPanel *iter = subtle->panel;
 
-  /* Find sublet inlinked list */
+  /* Find sublet in linked list */
   while(iter)
     {
-      if(i++ == id) break;
+      if(iter->flags & SUB_TYPE_SUBLET && i++ == id) break;
       iter = iter->next;
     }
 
-  return iter;
+  return SUBLET(iter);
 } /* }}} */
 
 /* EventConfigure {{{ */
@@ -771,7 +771,8 @@ EventGrab(XEvent *ev)
 
             return;
           }
-        else if(ev->xbutton.window == subtle->panels.sublets.win) ///< Sublet buttons
+        else if(ev->xbutton.window == subtle->windows.panel1 ||
+            ev->xbutton.window == subtle->windows.panel2) ///< Sublet buttons
           {
             SubSublet *s = SUBLET(subSharedFind(ev->xbutton.subwindow, BUTTONID));
 
@@ -1169,7 +1170,7 @@ subEventLoop(void)
 
                           if(event && IN_IGNORED != event->mask) ///< Skip unwatch events
                             {
-                              if((s = SUBLET(subSharedFind(subtle->panels.sublets.win, event->wd))))
+                              if((s = SUBLET(subSharedFind(subtle->windows.panel1, event->wd))))
                                 {
                                   subRubyCall(SUB_CALL_SUBLET_RUN, s->recv, NULL);
                                   subSubletUpdate();
@@ -1182,7 +1183,7 @@ subEventLoop(void)
 #endif /* HAVE_SYS_INOTIFY_H */
                   else ///< Socket {{{ 
                     {
-                      if((s = SUBLET(subSharedFind(subtle->panels.sublets.win, watches[i].fd))))
+                      if((s = SUBLET(subSharedFind(subtle->windows.panel1, watches[i].fd))))
                         {
                           subRubyCall(SUB_CALL_SUBLET_RUN, s->recv, NULL);
                           subSubletUpdate();

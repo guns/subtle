@@ -98,8 +98,6 @@ subDisplayInit(const char *display)
     0, 0, 1, 1, 0, 0, sattrs.background_pixel);
   subtle->panels.tray.win    = XCreateSimpleWindow(subtle->dpy, subtle->windows.panel1, 
     0, 0, 1, 1, 0, 0, subtle->colors.bg_focus);    
-  subtle->panels.sublets.win = XCreateSimpleWindow(subtle->dpy, subtle->windows.panel1, 
-    0, 0, 1, 1, 0, 0, sattrs.background_pixel);
 
   /* Set override redirect */
   mask = CWOverrideRedirect;
@@ -108,12 +106,10 @@ subDisplayInit(const char *display)
   XChangeWindowAttributes(subtle->dpy, subtle->panels.views.win,   mask, &sattrs);
   XChangeWindowAttributes(subtle->dpy, subtle->panels.focus.win,   mask, &sattrs);
   XChangeWindowAttributes(subtle->dpy, subtle->panels.tray.win,    mask, &sattrs);
-  XChangeWindowAttributes(subtle->dpy, subtle->panels.sublets.win, mask, &sattrs);
 
   /* Select input */
   XSelectInput(subtle->dpy, subtle->panels.views.win, ButtonPressMask); 
   XSelectInput(subtle->dpy, subtle->panels.tray.win, KeyPressMask|ButtonPressMask); 
-  XSelectInput(subtle->dpy, subtle->panels.sublets.win, ButtonPressMask); 
 
 #ifdef HAVE_X11_EXTENSIONS_XRANDR_H
   XRRSelectInput(subtle->dpy, ROOT, RRScreenChangeNotifyMask);
@@ -151,7 +147,6 @@ subDisplayConfigure(void)
   XSetWindowBackground(subtle->dpy,  subtle->panels.focus.win, subtle->colors.bg_focus);
   XSetWindowBackground(subtle->dpy,  subtle->panels.views.win,   subtle->colors.bg_views);
   XSetWindowBackground(subtle->dpy,  subtle->panels.tray.win,    subtle->colors.bg_panel);
-  XSetWindowBackground(subtle->dpy,  subtle->panels.sublets.win, subtle->colors.bg_sublets);
   
   if(subtle->flags & SUB_SUBTLE_BACKGROUND) ///< Set background if desired
     XSetWindowBackground(subtle->dpy, ROOT, subtle->colors.bg);
@@ -161,7 +156,6 @@ subDisplayConfigure(void)
   XClearWindow(subtle->dpy, subtle->panels.focus.win);
   XClearWindow(subtle->dpy, subtle->panels.views.win);
   XClearWindow(subtle->dpy, subtle->panels.tray.win);
-  XClearWindow(subtle->dpy, subtle->panels.sublets.win);
   XClearWindow(subtle->dpy, ROOT);
 
   /* Panels */
@@ -263,6 +257,7 @@ subDisplayFinish(void)
 
       /* Destroy view windows */
       XDestroySubwindows(subtle->dpy, subtle->windows.panel1);
+      XDestroySubwindows(subtle->dpy, subtle->windows.panel2);
       XDestroyWindow(subtle->dpy, subtle->windows.panel1);
       XDestroyWindow(subtle->dpy, subtle->windows.panel2);
 
