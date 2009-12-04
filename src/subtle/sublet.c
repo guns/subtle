@@ -20,20 +20,21 @@
 SubSublet *
 subSubletNew(void)
 {
-  SubSublet *s = SUBLET(subSharedMemoryAlloc(1, sizeof(SubSublet)));
+  SubSublet *s = NULL;
 
-  /* Init sublet */
+  /* Create new sublet */
+  s = SUBLET(subSharedMemoryAlloc(1, sizeof(SubSublet)));
   s->flags = SUB_TYPE_SUBLET;
   s->time  = subSharedTime();
   s->text  = subArrayNew();
   s->bg    = subtle->colors.bg_sublets;
 
   /* Create button */
-  s->button = XCreateSimpleWindow(subtle->dpy, subtle->panels.sublets.win, 0, 0, 1,
+  s->win = XCreateSimpleWindow(subtle->dpy, subtle->windows.panel1, 0, 0, 1,
     subtle->th, 0, 0, subtle->colors.bg_sublets);
 
-  XSaveContext(subtle->dpy, s->button, BUTTONID, (void *)s);
-  XMapRaised(subtle->dpy, s->button);
+  XSaveContext(subtle->dpy, s->win, BUTTONID, (void *)s);
+  XMapRaised(subtle->dpy, s->win);
 
   subSharedLogDebug("new=sublet\n");
 
@@ -47,19 +48,16 @@ subSubletNew(void)
 void
 subSubletUpdate(void)
 {
-  subtle->panels.sublets.width = 0;
-
   if(0 < subtle->sublets->ndata)
     {
-      SubSublet *s = NULL;
+      int i;
 
-      for(s = subtle->sublet; s; s = s->next)
+      for(i = 0; i < subtle->sublets->ndata; i++)
         {
-          XMoveResizeWindow(subtle->dpy, s->button, subtle->panels.sublets.width, 0, s->width, subtle->th);
-          subtle->panels.sublets.width += s->width + (s->next ? subtle->separator.width : 0);
-        }
+          SubSublet *s = SUBLET(subtle->sublets->data[i]);
 
-      XResizeWindow(subtle->dpy, subtle->panels.sublets.win, subtle->panels.sublets.width, subtle->th);
+          XResizeWindow(subtle->dpy, s->win, s->width, subtle->th);
+        }
     }
 } /* }}} */
 
@@ -72,33 +70,30 @@ subSubletRender(void)
 {
   if(0 < subtle->sublets->ndata)
     {
-      int j, separator = 0, width = 0;
+      int j, k, width = 0;
       XGCValues gvals;
       SubSublet *s = NULL;
       SubText *t = NULL;
 
-      /* Clear panel */
-      XSetWindowBackground(subtle->dpy, subtle->panels.sublets.win, subtle->colors.bg_sublets);
-      XClearWindow(subtle->dpy, subtle->panels.sublets.win);
-
       /* Render every sublet */
-      for(s = subtle->sublet; s; s = s->next)
+      for(j = 0; j < subtle->sublets->ndata; j++)
         {
+          s     = SUBLET(subtle->sublets->data[j]);
           width = 3;
 
-          XSetWindowBackground(subtle->dpy, s->button, s->bg);
-          XClearWindow(subtle->dpy, s->button);
+          XSetWindowBackground(subtle->dpy, s->win, s->bg);
+          XClearWindow(subtle->dpy, s->win);
 
           /* Render text part */
-          for(j = 0; j < s->text->ndata; j++)
+          for(k = 0; k < s->text->ndata; k++)
             {
-              if((t = TEXT(s->text->data[j])) && t->flags & SUB_DATA_STRING) ///< Text
+              if((t = TEXT(s->text->data[k])) && t->flags & SUB_DATA_STRING) ///< Text
                 {
                   /* Update GC */
                   gvals.foreground = t->color;
                   XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
 
-                  XDrawString(subtle->dpy, s->button, subtle->gcs.font, width,
+                  XDrawString(subtle->dpy, s->win, subtle->gcs.font, width,
                     subtle->fy, t->data.string, strlen(t->data.string));
 
                   width += t->width;
@@ -106,30 +101,17 @@ subSubletRender(void)
               else if(t->flags & SUB_DATA_NUM) ///< Icon
                 {
                   SubIcon *i = NULL;
-                  int x = (0 == j) ? 0 : 2; ///< Add spacing when icon isn't first
+                  int x = (0 == k) ? 0 : 2; ///< Add spacing when icon isn't first
                   
                   if((i = ICON(subtle->icons->data[t->data.num])))
                     {
-                      subIconRender(i, s->button, width + x, abs(subtle->th - i->height) / 2, 
+                      subIconRender(i, s->win, width + x, abs(subtle->th - i->height) / 2, 
                         t->color, subtle->colors.bg_sublets);
 
                       /* Add spacing when isn't last */
-                      width += i->width + x + (j != s->text->ndata - 1 ? 2 : 0); 
+                      width += i->width + x + (k != s->text->ndata - 1 ? 2 : 0); 
                     }
                 }
-            }
-
-          /* Draw separator */
-          if(s->next)
-            {
-              /* Update GC */
-              gvals.foreground = subtle->colors.fg_sublets;
-              XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
-
-              separator += s->width;
-              XDrawString(subtle->dpy, subtle->panels.sublets.win, subtle->gcs.font, separator + 3,
-                subtle->fy, subtle->separator.string, strlen(subtle->separator.string));
-              separator += subtle->separator.width;
             }
         }
 
@@ -243,17 +225,12 @@ subSubletPublish(void)
 {
   int i = 0;
   char **names = NULL;
-  SubSublet *iter = NULL;
   
-  iter  = subtle->sublet;
   names = (char **)subSharedMemoryAlloc(subtle->sublets->ndata, sizeof(char *));
 
-  /* Get list in order */
-  while(iter)
-    {
-      names[i++] = iter->name;
-      iter       = iter->next;
-    }
+  /* Collect names */
+  for(i = 0; i < subtle->sublets->ndata; i++)
+    names[i] = SUBLET(subtle->sublets->data[i])->name;
 
   /* EWMH: Sublet list */
   subEwmhSetStrings(ROOT, SUB_EWMH_SUBTLE_SUBLET_LIST, names, subtle->sublets->ndata);
@@ -278,14 +255,14 @@ subSubletKill(SubSublet *s,
   if(unlink)
     {
       /* Update linked list */
-      if(subtle->sublet == s) subtle->sublet = s->next;
+      if(subtle->panel == PANEL(s)) subtle->panel = PANEL(s->next);
       else
         {
-          SubSublet *iter = subtle->sublet;
+          SubPanel *iter = subtle->panel;
 
-          while(iter && iter->next != s) iter = iter->next;
+          while(iter && iter->next != PANEL(s)) iter = iter->next;
 
-          iter->next = s->next;
+          iter->next = PANEL(s->next);
         }
 
       subRubyRemove(s->name); ///< Remove class definition
@@ -298,8 +275,8 @@ subSubletKill(SubSublet *s,
     inotify_rm_watch(subtle->notify, s->interval);
 #endif /* HAVE_SYS_INOTIFY_H */ 
 
-  XDeleteContext(subtle->dpy, s->button, BUTTONID);
-  XDestroyWindow(subtle->dpy, s->button);
+  XDeleteContext(subtle->dpy, s->win, BUTTONID);
+  XDestroyWindow(subtle->dpy, s->win);
 
   printf("Unloaded sublet (%s)\n", s->name);
 
