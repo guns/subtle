@@ -337,6 +337,7 @@ GRABS = {
 #              [*:name*]       match the WM_NAME
 #              [*:instance*]   match the first (instance) part from WM_CLASS
 #              [*:class*]      match the second (class) part from WM_CLASS
+#              [*:role*]       match the window role
 # [*:regex*]   This property sets the matching pattern for a tag. Matching works either via plain,
 #              regex (see regex) or window id. If a pattern matches more than once ONLY the first
 #              match will be used.
