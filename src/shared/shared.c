@@ -643,7 +643,7 @@ SharedFindWindow(char *prop,
   if((wins = SharedList(prop, &size)))
     {
       int i;
-      char *wmname = NULL, *instance = NULL, *klass = NULL, buf[20] = { 0 };
+      char *wmname = NULL, *instance = NULL, *klass = NULL, *role = NULL, buf[20] = { 0 };
       Window selwin = None;
       regex_t *preg = subSharedRegexNew(match);
 
@@ -675,11 +675,15 @@ SharedFindWindow(char *prop,
               free(gravity);
             }
 
+          /* Get window role */
+          role = subSharedPropertyGet(wins[i], XA_STRING, "WM_WINDOW_ROLE", NULL);
+
           /* Find window either by window id, by title/inst/class or by gravity */
           if(wins[i] == selwin || subSharedRegexMatch(preg, buf) ||
               (flags & SUB_MATCH_NAME     && wmname     && subSharedRegexMatch(preg, wmname))   ||
               (flags & SUB_MATCH_INSTANCE && instance   && subSharedRegexMatch(preg, instance)) ||
               (flags & SUB_MATCH_CLASS    && klass      && subSharedRegexMatch(preg, klass))    ||
+              (flags & SUB_MATCH_ROLE     && role       && subSharedRegexMatch(preg, role))     ||
               (flags & SUB_MATCH_GRAVITY  && gravity1 == gravity2))
             {
               subSharedLogDebug("Found: prop=%s, name=%s, win=%#lx, id=%d, flags\n", 
@@ -694,7 +698,8 @@ SharedFindWindow(char *prop,
               
               id = i;
             }
-
+          
+          if(role) free(role);
           free(wmname);
           free(instance);
           free(klass);
