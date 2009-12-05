@@ -244,6 +244,7 @@
 #define SUB_TAG_MATCH_NAME            (1L << 17)                  ///< Match WM_NAME
 #define SUB_TAG_MATCH_INSTANCE        (1L << 18)                  ///< Match instance of WM_CLASS
 #define SUB_TAG_MATCH_CLASS           (1L << 19)                  ///< Match class of WM_CLASS
+#define SUB_TAG_MATCH_ROLE            (1L << 20)                  ///< Match role of window
 /* }}} */
 
 /* Typedefs {{{ */
@@ -288,6 +289,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_WM_NORMAL_HINTS,                                       ///< Window normal hints
   SUB_EWMH_WM_SIZE_HINTS,                                         ///< Window size hints
   SUB_EWMH_WM_HINTS,                                              ///< Window hints
+  SUB_EWMH_WM_WINDOW_ROLE,                                        ///< Window role
 
   /* EWMH */
   SUB_EWMH_NET_SUPPORTED,                                         ///< Supported states
