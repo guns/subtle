@@ -85,11 +85,11 @@ subViewConfigure(SubView *v,
       /* Find matching clients */
       if(VISIBLE(v, c))
         {
+          subClientSetScreen(c, c->screens[vid], align);
+
           if(!(c->flags & (SUB_MODE_FULL|SUB_MODE_FLOAT)))
             {
-              subClientSetScreen(c, c->screens[vid], align);
               subClientSetGravity(c, c->gravities[vid], False, align);
-              subClientConfigure(c);
 
               XMapWindow(subtle->dpy, c->win);
 
@@ -97,6 +97,8 @@ subViewConfigure(SubView *v,
               subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
             }
           else XMapRaised(subtle->dpy, c->win); ///< Float/full
+
+          subClientConfigure(c);
         }
       else XUnmapWindow(subtle->dpy, c->win); ///< Unmap other windows
     }
