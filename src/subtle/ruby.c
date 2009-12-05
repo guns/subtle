@@ -579,12 +579,16 @@ RubyParseForeach(VALUE key,
                               t->flags |= SUB_TAG_MATCH_INSTANCE;
 
                             if(Qtrue == rb_funcall(match, meth, 1, CHAR2SYM("class"))) 
-                              t->flags |= SUB_TAG_MATCH_CLASS;                              
+                              t->flags |= SUB_TAG_MATCH_CLASS;
+
+                            if(Qtrue == rb_funcall(match, meth, 1, CHAR2SYM("role"))) 
+                              t->flags |= SUB_TAG_MATCH_ROLE;
                           }
                       }
 
                     /* Enable default if no matcher is present */
-                    if(!(t->flags & (SUB_TAG_MATCH_NAME|SUB_TAG_MATCH_INSTANCE|SUB_TAG_MATCH_CLASS)))
+                    if(!(t->flags & (SUB_TAG_MATCH_NAME|SUB_TAG_MATCH_INSTANCE| \
+                        SUB_TAG_MATCH_CLASS|SUB_TAG_MATCH_ROLE)))
                       t->flags |= (SUB_TAG_MATCH_INSTANCE|SUB_TAG_MATCH_CLASS);
 
                     subArrayPush(subtle->tags, (void *)t);

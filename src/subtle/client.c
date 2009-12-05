@@ -530,11 +530,15 @@ void
 subClientSetTags(SubClient *c)
 {
   int i, flags = 0, visible = 0;
+  char *role = NULL;
 
   DEAD(c);
   assert(c);
 
   c->tags = 0; ///< Reset tags
+
+  /* Get window role */
+  role = subSharedPropertyGet(c->win, XA_STRING, SUB_EWMH_WM_WINDOW_ROLE, NULL);
 
   /* Check matching tags */
   for(i = 0; (c->name || c->klass) && i < subtle->tags->ndata; i++)
@@ -543,11 +547,14 @@ subClientSetTags(SubClient *c)
 
       /* Check if tag matches client */
       if(t->preg &&
-          ((t->flags & SUB_TAG_MATCH_NAME     && c->name     && subSharedRegexMatch(t->preg, c->name)) ||
-          (t->flags  & SUB_TAG_MATCH_INSTANCE && c->instance && subSharedRegexMatch(t->preg, c->instance))  ||
-          (t->flags  & SUB_TAG_MATCH_CLASS    && c->klass    && subSharedRegexMatch(t->preg, c->klass))))
+          ((t->flags & SUB_TAG_MATCH_NAME     && c->name     && subSharedRegexMatch(t->preg, c->name))     ||
+          (t->flags  & SUB_TAG_MATCH_INSTANCE && c->instance && subSharedRegexMatch(t->preg, c->instance)) ||
+          (t->flags  & SUB_TAG_MATCH_CLASS    && c->klass    && subSharedRegexMatch(t->preg, c->klass))    ||
+          (t->flags  & SUB_TAG_MATCH_ROLE     && role        && subSharedRegexMatch(t->preg, role))))
         flags |= subClientTag(c, i);
     }
+
+  if(role) free(role);
 
   /* Check if client is visible on at least one screen */
   for(i = 0; i < subtle->views->ndata; i++)
@@ -1034,6 +1041,8 @@ subClientToggle(SubClient *c,
       if(type & SUB_MODE_FLOAT)
         {
           c->geom = c->base;
+
+          printf("c->screen=%d\n", c->screen);
 
           subClientSetSize(c); ///< Sanitize
         }
