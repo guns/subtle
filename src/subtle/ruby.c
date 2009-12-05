@@ -1082,49 +1082,52 @@ RubyWrapLoadPanels(VALUE data)
   subtle->separator.width  = subSharedTextWidth(subtle->separator.string, 
     strlen(subtle->separator.string), NULL, NULL, True) + 6; ///< Add spacings
 
-  /* Link remaining sublets */
-  for(p = subtle->panel; p; prev = p, p = p->next)
+  /* Link remaining sublets if any */
+  if(0 < subtle->sublets->ndata)
     {
-      if(p->flags & SUB_PANEL_BOTTOM) panel = subtle->windows.panel2;
-      if(p->flags & SUB_PANEL_SUBLETS)
+      for(p = subtle->panel; p; prev = p, p = p->next)
         {
-          SubPanel *dummy = p, *next = p->next;
-
-          for(i = 0; i < subtle->sublets->ndata; i++)
+          if(p->flags & SUB_PANEL_BOTTOM) panel = subtle->windows.panel2;
+          if(p->flags & SUB_PANEL_SUBLETS)
             {
-              SubPanel *p2 = PANEL(subtle->sublets->data[i]);
+              SubPanel *dummy = p, *next = p->next;
 
-              if(!(p2->flags & SUB_SUBLET_PANEL))
+              for(i = 0; i < subtle->sublets->ndata; i++)
                 {
-                  p->next = p2;
-                  p       = p->next;
+                  SubPanel *p2 = PANEL(subtle->sublets->data[i]);
 
-                  /* Spacer between every sublet */
-                  if(dummy->next != p) p->flags |= SUB_PANEL_SEPARATOR;
+                  if(!(p2->flags & SUB_SUBLET_PANEL))
+                    {
+                      p->next = p2;
+                      p       = p->next;
 
-                  XReparentWindow(subtle->dpy, p->win, panel, 0, 0);
+                      /* Spacer between every sublet */
+                      if(dummy->next != p) p->flags |= SUB_PANEL_SEPARATOR;
+
+                      XReparentWindow(subtle->dpy, p->win, panel, 0, 0);
+                    }
                 }
+
+              p->next             = next;
+              prev->next          = dummy->next;
+              dummy->next->flags |= dummy->flags;
+              dummy->next->flags &= ~(SUB_PANEL_SUBLETS|SUB_PANEL_SPACER2);
+
+              /* Add spacer to last sublet */
+              if(dummy->flags & SUB_PANEL_SPACER2)
+                {
+                  p->flags &= ~SUB_PANEL_SPACER1;
+                  p->flags |= SUB_PANEL_SPACER2;
+                }
+
+              free(dummy);
             }
 
-          p->next             = next;
-          prev->next          = dummy->next;
-          dummy->next->flags |= dummy->flags;
-          dummy->next->flags &= ~(SUB_PANEL_SUBLETS|SUB_PANEL_SPACER2);
-
-          /* Add spacer to last sublet */
-          if(dummy->flags & SUB_PANEL_SPACER2)
-            {
-              p->flags &= ~SUB_PANEL_SPACER1;
-              p->flags |= SUB_PANEL_SPACER2;
-            }
-
-          free(dummy);
         }
 
+      subArraySort(subtle->sublets, subSubletCompare); ///< Finally sort
+      subSubletUpdate(); ///< Update sublet panel
     }
-
-  subArraySort(subtle->sublets, subSubletCompare); ///< Finally sort
-  subSubletUpdate(); ///< Update sublet panel
 
   return Qnil;
 } /* }}} */
