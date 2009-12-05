@@ -241,7 +241,8 @@ SubtlextFind(int type,
               { CHAR2SYM("name"),     SUB_MATCH_NAME     },
               { CHAR2SYM("instance"), SUB_MATCH_INSTANCE },
               { CHAR2SYM("class"),    SUB_MATCH_CLASS    },
-              { CHAR2SYM("gravity"),  SUB_MATCH_GRAVITY  }
+              { CHAR2SYM("gravity"),  SUB_MATCH_GRAVITY  },
+              { CHAR2SYM("role"),     SUB_MATCH_ROLE     }
             };
 
             /* Check hash keys */
