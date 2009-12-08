@@ -494,7 +494,7 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_SUBTLE_SUBLET_UPDATE: /* {{{ */
             if((s = EventFindSublet((int)ev->data.l[0])))
               {
-                subRubyCall(SUB_CALL_SUBLET_RUN, s->recv, NULL);
+                subRubyCall(SUB_CALL_SUBLET_RUN, s->instance, (void *)s, NULL);
                 subSubletUpdate();
                 subPanelUpdate();
                 subPanelRender();                
@@ -777,7 +777,7 @@ EventGrab(XEvent *ev)
             SubSublet *s = SUBLET(subSharedFind(ev->xbutton.subwindow, BUTTONID));
 
             if(s && s->flags & SUB_SUBLET_CLICK) ///< Call click method
-              subRubyCall(SUB_CALL_SUBLET_CLICK, s->recv, (void *)&ev->xbutton);
+              subRubyCall(SUB_CALL_SUBLET_CLICK, s->click, (void *)s, (void *)&ev->xbutton);
 
             return;
           }
@@ -806,7 +806,7 @@ EventGrab(XEvent *ev)
             if(g->data.string) subSharedSpawn(g->data.string);
             break; /* }}} */
           case SUB_GRAB_PROC: /* {{{ */
-            subRubyCall(SUB_CALL_PROC, g->data.num, CLIENT(subSharedFind(win, CLIENTID)));
+            subRubyCall(SUB_CALL_PROC, g->data.num, subSharedFind(win, CLIENTID), NULL);
             break; /* }}} */
           case SUB_GRAB_VIEW_JUMP: /* {{{ */
             if(g->data.num < subtle->views->ndata)
@@ -1111,7 +1111,11 @@ subEventLoop(void)
   char buf[BUFLEN];
 #endif /* HAVE_SYS_INOTIFY_H */
 
+  /* Initially draw panel */
   subPanelRender();
+  for(i = 0; i < subtle->sublets->ndata; i++)
+    subSubletRender(SUBLET(subtle->sublets->data[i]));
+
   subEventWatchAdd(ConnectionNumber(subtle->dpy));
 
 #ifdef HAVE_SYS_INOTIFY_H
@@ -1172,7 +1176,7 @@ subEventLoop(void)
                             {
                               if((s = SUBLET(subSharedFind(subtle->windows.panel1, event->wd))))
                                 {
-                                  subRubyCall(SUB_CALL_SUBLET_RUN, s->recv, NULL);
+                                  subRubyCall(SUB_CALL_SUBLET_RUN, s->instance, (void *)s, NULL);
                                   subSubletUpdate();
                                   subPanelUpdate();
                                   subPanelRender();
@@ -1185,7 +1189,7 @@ subEventLoop(void)
                     {
                       if((s = SUBLET(subSharedFind(subtle->windows.panel1, watches[i].fd))))
                         {
-                          subRubyCall(SUB_CALL_SUBLET_RUN, s->recv, NULL);
+                          subRubyCall(SUB_CALL_SUBLET_RUN, s->instance, (void *)s, NULL);
                           subSubletUpdate();
                           subPanelUpdate();
                           subPanelRender();
@@ -1202,7 +1206,7 @@ subEventLoop(void)
 
               while(s && s->flags & SUB_SUBLET_INTERVAL && s->time <= now)
                 {
-                  subRubyCall(SUB_CALL_SUBLET_RUN, s->recv, NULL);
+                  subRubyCall(SUB_CALL_SUBLET_RUN, s->run, (void *)s, NULL);
 
                   if(s->flags & SUB_SUBLET_INTERVAL) ///< This may change in run
                     {
