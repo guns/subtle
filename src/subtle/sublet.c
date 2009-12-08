@@ -63,60 +63,53 @@ subSubletUpdate(void)
 
  /** subSubletRender {{{
   * @brief Render sublets
+  * @param[in]  s  A #SubSublet
   **/
 
 void
-subSubletRender(void)
+subSubletRender(SubSublet *s)
 {
-  if(0 < subtle->sublets->ndata)
+  int j, width = 3;
+  XGCValues gvals;
+  SubText *t = NULL;
+
+  assert(s);
+
+  XSetWindowBackground(subtle->dpy, s->win, s->bg);
+  XClearWindow(subtle->dpy, s->win);
+
+  /* Render text parts */
+  for(j = 0; j < s->text->ndata; j++)
     {
-      int j, k, width = 0;
-      XGCValues gvals;
-      SubSublet *s = NULL;
-      SubText *t = NULL;
-
-      /* Render every sublet */
-      for(j = 0; j < subtle->sublets->ndata; j++)
+      if((t = TEXT(s->text->data[j])) && t->flags & SUB_DATA_STRING) ///< Text
         {
-          s     = SUBLET(subtle->sublets->data[j]);
-          width = 3;
+          /* Update GC */
+          gvals.foreground = t->color;
+          XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
 
-          XSetWindowBackground(subtle->dpy, s->win, s->bg);
-          XClearWindow(subtle->dpy, s->win);
+          XDrawString(subtle->dpy, s->win, subtle->gcs.font, width,
+            subtle->fy, t->data.string, strlen(t->data.string));
 
-          /* Render text part */
-          for(k = 0; k < s->text->ndata; k++)
+          width += t->width;
+        }
+      else if(t->flags & SUB_DATA_NUM) ///< Icon
+        {
+          SubIcon *i = NULL;
+          int x = (0 == j) ? 0 : 2; ///< Add spacing when icon isn't first
+          
+          if((i = ICON(subtle->icons->data[t->data.num])))
             {
-              if((t = TEXT(s->text->data[k])) && t->flags & SUB_DATA_STRING) ///< Text
-                {
-                  /* Update GC */
-                  gvals.foreground = t->color;
-                  XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
+              subIconRender(i, s->win, width + x, abs(subtle->th - i->height) / 2, 
+                t->color, subtle->colors.bg_sublets);
 
-                  XDrawString(subtle->dpy, s->win, subtle->gcs.font, width,
-                    subtle->fy, t->data.string, strlen(t->data.string));
-
-                  width += t->width;
-                }
-              else if(t->flags & SUB_DATA_NUM) ///< Icon
-                {
-                  SubIcon *i = NULL;
-                  int x = (0 == k) ? 0 : 2; ///< Add spacing when icon isn't first
-                  
-                  if((i = ICON(subtle->icons->data[t->data.num])))
-                    {
-                      subIconRender(i, s->win, width + x, abs(subtle->th - i->height) / 2, 
-                        t->color, subtle->colors.bg_sublets);
-
-                      /* Add spacing when isn't last */
-                      width += i->width + x + (k != s->text->ndata - 1 ? 2 : 0); 
-                    }
-                }
+              /* Add spacing when isn't last */
+              width += i->width + x + (j != s->text->ndata - 1 ? 2 : 0); 
             }
         }
-
-      XSync(subtle->dpy, False); ///< Sync before going on
     }
+
+  XResizeWindow(subtle->dpy, s->win, s->width, subtle->th);
+  XSync(subtle->dpy, False); ///< Sync before going on
 } /* }}} */
 
  /** subSubletCompare {{{
@@ -266,7 +259,7 @@ subSubletKill(SubSublet *s,
         }
 
       subRubyRemove(s->name); ///< Remove class definition
-      subRubyRelease(s->recv); ///< Release from shelter
+      subRubyRelease(s->instance); ///< Release from shelter
     }
 
 #ifdef HAVE_SYS_INOTIFY_H

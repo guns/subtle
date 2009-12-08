@@ -384,7 +384,8 @@ typedef struct subgravity_t /* {{{ */
 typedef struct subhook_t /* {{{ */
 {
   FLAGS         flags;                                            ///< Hook flags
-  unsigned long recv;                                             ///< Hook receiver
+  unsigned long proc;                                             ///< Hook receiver
+  void          *data;                                            ///< Hook data
 } SubHook; /* }}} */
 
 typedef struct subicon_t /* {{{ */
@@ -430,7 +431,7 @@ typedef struct subsublet_t /* {{{ */
   int                x, width, watch;                             ///< Sublet x, width, width
 
   char               *name;                                       ///< Sublet name
-  unsigned long      recv, bg;                                    ///< Sublet Ruby receiver, background color
+  unsigned long      instance, run, click, bg;                    ///< Sublet Ruby receiver, background color
   time_t             time, interval;                              ///< Sublet update/interval time
 
   struct subsublet_t *next;                                       ///< Sublet next sibling
@@ -637,8 +638,8 @@ void subGravityKill(SubGravity *g);                               ///< Kill grav
 /* }}} */
 
 /* hook.c {{{ */
-SubHook *subHookNew(int type, unsigned long recv);
-void subHookCall(int type, void *extra);
+SubHook *subHookNew(int type, unsigned long proc, void *data);
+void subHookCall(int type, void *data);
 void subHookKill(SubHook *h);
 /* }}} */
 
@@ -663,7 +664,8 @@ void subRubyLoadSublet(const char *file);                         ///< Load subl
 void subRubyLoadSublets(void);                                    ///< Load sublets
 void subRubyLoadSubtlext(void);                                   ///< Load subtlext
 void subRubyLoadPanels(void);                                     ///< Load panels
-int subRubyCall(int type, unsigned long recv, void *extra);       ///< Call Ruby script
+int subRubyCall(int type, unsigned long proc,
+  void *data1, void *data2);                                      ///< Call Ruby script
 int subRubyRemove(char *name);                                    ///< Remove constant
 int subRubyRelease(unsigned long recv);                           ///< Release receiver
 void subRubyFinish(void);                                         ///< Kill Ruby stack
@@ -682,8 +684,8 @@ void subScreenKill(SubScreen *s);                                 ///< Kill scre
 
 /* sublet.c {{{ */
 SubSublet *subSubletNew(void);                                    ///< Create sublet
-void subSubletUpdate(void);                                       ///< Update sublet bar
-void subSubletRender(void);                                       ///< Render sublet
+void subSubletUpdate(void);                                       ///< Update sublet windows
+void subSubletRender(SubSublet *s);                               ///< Render sublet
 int subSubletCompare(const void *a, const void *b);               ///< Compare two sublets
 void subSubletSetData(SubSublet *s, char *data);                  ///< Set sublet data
 void subSubletPublish(void);                                      ///< Publish sublets

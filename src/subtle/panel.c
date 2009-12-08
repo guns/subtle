@@ -73,6 +73,7 @@ subPanelUpdate(void)
 void
 subPanelRender(void)
 {
+  int i;
   SubPanel *p = NULL;
   SubClient *c = NULL;
   XGCValues gvals;
@@ -108,6 +109,7 @@ subPanelRender(void)
   /* Render panels */
   if(subtle->windows.focus && (c = CLIENT(subSharedFind(subtle->windows.focus, CLIENTID)))) 
     subClientRender(c);
-  subSubletRender();
+  for(i = 0; i < subtle->sublets->ndata; i++)
+    subSubletRender(SUBLET(subtle->sublets->data[i]));
   subViewRender();
 } /* }}} */
