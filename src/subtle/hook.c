@@ -15,24 +15,27 @@
  /** subHookNew {{{
   * @brief Create new hook
   * @param[in]  type  Type of hook
-  * @param[in]  recv  Receiver
+  * @param[in]  proc  Hook proc
+  * @param[in]  data  Extra data
   * @return Returns a new #SubHook or \p NULL
   **/
 
 SubHook *
 subHookNew(int type,
-  unsigned long recv)
+  unsigned long proc,
+  void *data)
 {
   SubHook *h = NULL;
 
-  assert(recv);
+  assert(proc);
 
   /* Create new hook */
   h = HOOK(subSharedMemoryAlloc(1, sizeof(SubHook)));
   h->flags = (SUB_TYPE_HOOK|type);
-  h->recv  = recv;
+  h->proc  = proc;
+  h->data  = data;
 
-  subSharedLogDebug("new=hook\n");
+  subSharedLogDebug("new=hook, proc=%ld, data=%p\n", proc, data);
 
   return h;
 } /* }}} */
@@ -40,12 +43,13 @@ subHookNew(int type,
  /** subHookCall {{{
   * @brief Emit a hook
   * @param[in]  type  Type of hook
+  * @param[in]  data  Hook data
   **/
 
 
 void
 subHookCall(int type,
-  void *extra)
+  void *data)
 {
   int i;
 
@@ -57,7 +61,9 @@ subHookCall(int type,
       if(h->flags & type) 
         {
           subRubyCall(h->flags & SUB_CALL_PROC ? SUB_CALL_PROC : type, 
-            h->recv, extra);
+            h->proc, h->data, data);
+
+          subSharedLogDebug("call=hook, type=%d, proc=%ld, data=%p\n", type, h->proc, data);
         }
     }
 } /* }}} */
