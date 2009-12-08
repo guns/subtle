@@ -28,7 +28,7 @@
 #define TAGSLENGTH    9
 #define HOOKSLENGTH   8
 
-static VALUE shelter = Qnil, inherited = Qnil, subtlext = Qnil; ///< Globals
+static VALUE shelter = Qnil, subtlext = Qnil; ///< Globals
 
 /* Typedef {{{ */
 typedef struct rubygrabs_t
@@ -213,18 +213,11 @@ RubyArity(VALUE meth,
   return -1 == arity ? max : arity; ///< Convert for splats
 } /* }}} */
 
-/* RubyHook {{{ */
+/* RubyMark {{{ */
 static void
-RubyHook(VALUE sublet,
-  VALUE extra,
-  VALUE sym)
+RubyMark(SubSublet *s)
 {
-  VALUE meth = Qnil;
-
-  /* Get arity of callback */
-  meth = rb_funcall(sublet, rb_intern("method"), 1, sym);
-
-  rb_funcall(sublet, SYM2ID(sym), RubyArity(meth, 1), RubyConvert((VALUE *)extra));
+  if(s) rb_gc_mark(s->instance);
 } /* }}} */
 
 /* Fetch */
@@ -617,7 +610,7 @@ RubyParseForeach(VALUE key,
               {
                 if(key == hooks[i].sym)
                   {
-                    object = (void *)subHookNew(hooks[i].flags|SUB_CALL_PROC, value);
+                    object = (void *)subHookNew(hooks[i].flags|SUB_CALL_PROC, value, NULL);
 
                     subArrayPush(subtle->hooks, object);
                     rb_ary_push(shelter, value); ///< Protect from GC
@@ -746,15 +739,6 @@ RubyParseColor(char *name)
 } /* }}} */
 
 /* Wrap */
-
-/* RubyWrapInit {{{ */
-static VALUE
-RubyWrapInit(VALUE data)
-{
-  rb_obj_call_init(data, 0, NULL); ///< Call initialize
-
-  return Qnil;
-} /* }}} */
 
 /* RubyWrapLoadConfig {{{ */
 static VALUE
@@ -972,65 +956,6 @@ RubyWrapLoadConfig(VALUE data)
   return Qnil;
 } /* }}} */
 
-/* RubyWrapLoadSublet {{{ */
-static VALUE
-RubyWrapLoadSublet(VALUE data)
-{
-  if(Qnil != inherited)
-    {
-      VALUE self = Qnil;
-
-      /* Instantiate sublet */
-      if(Qnil != (self = rb_funcall(inherited, rb_intern("new"), 0, NULL)))
-        {
-          SubSublet *s = NULL;
-          char *name = (char *)rb_class2name((ID)inherited);
-
-          RubySymbols calls[] = 
-          {
-            { rb_intern("client_create"),    SUB_CALL_CLIENT_CREATE    },
-            { rb_intern("client_configure"), SUB_CALL_CLIENT_CONFIGURE },
-            { rb_intern("client_focus"),     SUB_CALL_CLIENT_FOCUS     },
-            { rb_intern("client_kill"),      SUB_CALL_CLIENT_KILL      },
-            { rb_intern("tag_create"),       SUB_CALL_TAG_CREATE       },
-            { rb_intern("tag_kill"),         SUB_CALL_TAG_KILL         },
-            { rb_intern("view_create"),      SUB_CALL_VIEW_CREATE      },
-            { rb_intern("view_configure"),   SUB_CALL_VIEW_CONFIGURE   },
-            { rb_intern("view_jump"),        SUB_CALL_VIEW_JUMP        },
-            { rb_intern("view_kill"),        SUB_CALL_VIEW_KILL        }
-          };
-
-          Data_Get_Struct(self, SubSublet, s);
-
-          if(s)
-            {
-              int i, flags = 0;
-
-              /* Collect hook flags */
-              for(i = 0; LENGTH(calls) > i; i++)
-                if(rb_respond_to(s->recv, calls[i].sym))
-                  flags |= calls[i].flags;
-
-              /* Add hook */
-              if(flags)
-                {
-                  SubHook *h = subHookNew(flags, s->recv);
-                  subArrayPush(subtle->hooks, h);
-                }
-
-              subRubyCall(SUB_CALL_SUBLET_RUN, s->recv, NULL); ///< First run
-
-              printf("Loaded sublet (%s)\n", name);
-            }
-        }
-
-      inherited = Qnil;
-    }
-  else subSharedLogWarn("Failed instantiating sublet\n");
-
-  return Qnil;
-} /* }}} */
-
 /* RubyWrapLoadSubtlext {{{ */
 static VALUE
 RubyWrapLoadSubtlext(VALUE data)
@@ -1142,59 +1067,37 @@ RubyWrapCall(VALUE data)
   switch((int)rargs[0])
     {
       case SUB_CALL_SUBLET_RUN: /* {{{ */
-        rb_funcall(rargs[1], rb_intern("run"), 0, NULL);
-        break; /* }}} */
-      case SUB_CALL_CLIENT_CREATE: /* {{{ */
-        RubyHook(rargs[1], rargs[2], CHAR2SYM("client_create")); 
-        break; /* }}} */
-      case SUB_CALL_CLIENT_CONFIGURE: /* {{{ */
-        RubyHook(rargs[1], rargs[2], CHAR2SYM("client_configure")); 
-        break; /* }}} */
-      case SUB_CALL_CLIENT_FOCUS: /* {{{ */
-        RubyHook(rargs[1], rargs[2], CHAR2SYM("client_focus")); 
-        break; /* }}} */
-      case SUB_CALL_CLIENT_KILL: /* {{{ */
-        RubyHook(rargs[1], rargs[2], CHAR2SYM("client_kill")); 
-        break; /* }}} */
-      case SUB_CALL_TAG_CREATE: /* {{{ */
-        RubyHook(rargs[1], rargs[2], CHAR2SYM("tag_create")); 
-        break; /* }}} */
-      case SUB_CALL_TAG_KILL: /* {{{ */
-        RubyHook(rargs[1], rargs[2], CHAR2SYM("tag_kill")); 
-        break; /* }}} */
-      case SUB_CALL_VIEW_CREATE: /* {{{ */
-        RubyHook(rargs[1], rargs[2], CHAR2SYM("view_create")); 
-        break; /* }}} */
-      case SUB_CALL_VIEW_CONFIGURE: /* {{{ */
-        RubyHook(rargs[1], rargs[2], CHAR2SYM("view_configure")); 
-        break; /* }}} */
-      case SUB_CALL_VIEW_JUMP: /* {{{ */
-        RubyHook(rargs[1], rargs[2], CHAR2SYM("view_jump")); 
-        break; /* }}} */
-      case SUB_CALL_VIEW_KILL: /* {{{ */
-        RubyHook(rargs[1], rargs[2], CHAR2SYM("view_kill")); 
+          {
+            SubSublet *s = SUBLET(rargs[2]);
+
+            rb_funcall(s->run, rb_intern("call"), RubyArity(s->run, 1), s->instance);
+          }
         break; /* }}} */
       case SUB_CALL_SUBLET_CLICK: /* {{{ */
           {
             Window win = 0;
             int x = 0, y = 0;
-            XButtonEvent *ev = (XButtonEvent *)rargs[2];
-            VALUE meth = Qnil;
-
-            /* Get arity of callback */
-            meth = rb_funcall(rargs[1], rb_intern("method"), 1, CHAR2SYM("click"));
+            SubSublet *s = SUBLET(rargs[2]);
+            XButtonEvent *ev = (XButtonEvent *)rargs[3];
 
             XTranslateCoordinates(subtle->dpy, ev->window, ev->subwindow, 
               ev->x, ev->y, &x, &y, &win);
 
-            rb_funcall(rargs[1], rb_intern("click"), RubyArity(meth, 3),
-              INT2FIX(ev->button), INT2FIX(x), INT2FIX(y));
+            rb_funcall(s->click, rb_intern("call"), RubyArity(s->click, 4),
+              s->instance, INT2FIX(x), INT2FIX(y), INT2FIX(ev->button));
           }
         break; /* }}} */
       case SUB_CALL_PROC: /* {{{ */
         rb_funcall(rargs[1], rb_intern("call"), 
           RubyArity(rargs[1], 1), RubyConvert((VALUE *)rargs[2]));
         break; /* }}} */
+      default: ///< Hooks
+        {
+          SubSublet *s = SUBLET(rargs[2]);
+
+          rb_funcall(rargs[1], rb_intern("call"), RubyArity(rargs[1], 2), s->instance, 
+            RubyConvert((VALUE *)rargs[3]));
+        }      
     }
 
   return Qnil;
@@ -1448,83 +1351,246 @@ VALUE value)
   return RubyConcat(RubyIconToString(self), value);
 } /* }}} */
 
-/* Sublet */
+/* Kernel */
 
-/* RubySubletMark {{{ */
-static void
-RubySubletMark(SubSublet *s)
-{
-  if(s) rb_gc_mark(s->recv);
-} /* }}} */
-
-/* RubySubletNew {{{ */
+/* RubySubletConfigure {{{ */
 /*
- * call-seq: new -> Subtle::Sublet
+ * call-seq: configure -> nil
  *
- * Create new Sublet object
+ * Configure block for Sublet
  *
- *  tag = Subtle::Subtle.new
- *  => #<Subtle::Sublet:xxx>
+ *  configure do |s|
+ *    s.name = :subtle
+ *  end
  */
 
-static VALUE
-RubySubletNew(VALUE self)
+static VALUE 
+RubySubletConfigure(VALUE self,
+  VALUE name)
 {
-  int i, len = 0, state = 0;
-  SubSublet *s = NULL;
-  char *classname = (char *)rb_class2name(self);
+  rb_need_block();
 
-  /* Create sublet */
-  s = subSubletNew();
-  s->recv = Data_Wrap_Struct(self, RubySubletMark, NULL, (void *)s);
-
-  /* Lower name */
-  len     = strlen(classname);
-  s->name = (char *)subSharedMemoryAlloc(len + 1, sizeof(char));
-
-  for(i = 0; i < len; i++)
-    s->name[i] = (char)tolower((int)classname[i]);
-
-  /* Call initialize */
-  rb_protect(RubyWrapInit, s->recv, &state);
-  if(state) 
+  if(T_SYMBOL == rb_type(name))
     {
-      subSharedLogWarn("Failed initializing sublet `%s'\n", classname);
-      RubyBacktrace();
+      SubSublet *s = NULL;
+      VALUE p = Qnil, mod = Qnil, klass = Qnil;
 
-      subSubletKill(s, False);
+      /* Create new sublet */
+      s           = subSubletNew();
+      p           = rb_block_proc();
+      mod         = rb_const_get(rb_mKernel, rb_intern("Subtle"));
+      klass       = rb_const_get(mod, rb_intern("Sublet"));
+      s->name     = strdup(SYM2CHAR(name));
+      s->instance = Data_Wrap_Struct(klass, RubyMark, NULL, (void *)s);
 
-      return Qnil;
+      subArrayPush(subtle->sublets, s);
+      rb_ary_push(shelter, s->instance); ///< Protect from GC
+
+      printf("Loaded sublet (%s)\n", s->name);
+
+      rb_funcall(p, rb_intern("call"), 1, s->instance);
+
+      if(0 == s->interval) s->interval = 60; ///< Sanitize
     }
-
-  if(0 == s->interval) s->interval = 60; ///< Sanitize
-
-  subArrayPush(subtle->sublets, s);
-  rb_ary_push(shelter, s->recv); ///< Protect from GC
-
-  /* Check click handler */
-  if(rb_respond_to(s->recv, rb_intern("click"))) s->flags |= SUB_SUBLET_CLICK;
-
-  return s->recv;
-} /* }}} */
-
-/* RubySubletInherited {{{ */
-/*
- * call-seq: inherited(recv) -> nil
- *
- * Callback for inheritance - internal use only
- *
- *  tag = Subtle::Subtle.new
- *  => #<Subtle::Sublet:xxx>
- */
-
-static VALUE
-RubySubletInherited(VALUE self,
-  VALUE recv)
-{
-  inherited = recv; ///< Store inherited sublet
+  else rb_raise(rb_eArgError, "Unknown value type");
 
   return Qnil;
+} /* }}} */
+
+/* RubySubletEvent {{{ */
+/*
+ * call-seq: on(event, &block) -> nil
+ *
+ * Event block for Sublet
+ *
+ *  on :event do |s|
+ *    puts s.name
+ *  end
+ */
+
+static VALUE 
+RubySubletEvent(VALUE self,
+  VALUE event)
+{
+  rb_need_block();
+
+  if(0 < subtle->sublets->ndata)
+    {
+      if(T_SYMBOL == rb_type(event))
+        {
+          SubSublet *s = NULL;
+          VALUE p = Qnil;
+
+          /* Since loading is linear we use the last sublet */
+          s = SUBLET(subtle->sublets->data[subtle->sublets->ndata - 1]);
+          p = rb_block_proc();
+
+          if(T_SYMBOL == rb_type(event))
+            {
+              if(CHAR2SYM("run") == event)
+                {
+                  s->run = p; ///< Store run proc
+
+                  subRubyCall(SUB_CALL_SUBLET_RUN, s->run, (void *)s, NULL); ///< First run
+                }
+              else if(CHAR2SYM("click") == event)
+                {
+                  s->flags |= SUB_SUBLET_CLICK;
+                  s->click  = p;
+                }
+              else
+                {
+                  int i;
+                  RubySymbols hooks[] =
+                  {
+                    { CHAR2SYM("client_create"),    SUB_CALL_CLIENT_CREATE    },
+                    { CHAR2SYM("client_configure"), SUB_CALL_CLIENT_CONFIGURE },
+                    { CHAR2SYM("client_focus"),     SUB_CALL_CLIENT_FOCUS     },
+                    { CHAR2SYM("client_kill"),      SUB_CALL_CLIENT_KILL      },
+                    { CHAR2SYM("view_create"),      SUB_CALL_VIEW_CREATE      },
+                    { CHAR2SYM("view_configure"),   SUB_CALL_VIEW_CONFIGURE   },
+                    { CHAR2SYM("view_jump"),        SUB_CALL_VIEW_JUMP        },
+                    { CHAR2SYM("view_kill"),        SUB_CALL_VIEW_KILL        }
+                  };
+
+                  for(i = 0; LENGTH(hooks) > i; i++)
+                    {
+                      if(hooks[i].sym == event)
+                        {
+                          SubHook *h = subHookNew(hooks[i].flags, p, (void *)s);
+
+                          subArrayPush(subtle->hooks, (void *)h);
+                          rb_ary_push(shelter, p); ///< Protect from GC
+                        }
+                    }
+                }
+            }
+        }
+      else rb_raise(rb_eArgError, "Unknown value type");
+    }
+
+  return Qnil;
+} /* }}} */
+
+/* RubySubletHelper {{{ */
+/*
+ * call-seq: helper -> nil
+ *
+ * Helper block for Sublet
+ *
+ *  helper do |s|
+ *    def test
+ *      puts "test"
+ *    end
+ *  end
+ */
+
+static VALUE 
+RubySubletHelper(VALUE self)
+{
+  rb_need_block();
+
+  if(0 < subtle->sublets->ndata)
+    {
+      SubSublet *s = NULL;
+
+      /* Since loading is linear we use the last sublet */
+      s = SUBLET(subtle->sublets->data[subtle->sublets->ndata - 1]);
+
+      rb_yield_values(1, s->instance);
+      rb_obj_instance_eval(0, 0, s->instance);
+    }
+
+  return Qnil;
+} /* }}} */
+
+/* Sublet */
+
+/* RubySubletDispatcher {{{ */
+/*
+ * Dispatcher for Subtlet instance variables - internal use only
+ */
+
+static VALUE  
+RubySubletDispatcher(int argc, 
+  VALUE *argv, 
+  VALUE self)
+{ 
+  char *name = NULL;
+  VALUE missing = Qnil, args = Qnil, ret = Qnil;
+
+  rb_scan_args(argc, argv, "1*", &missing, &args);
+  
+  name = (char *)rb_id2name(SYM2ID(missing));
+
+  subSharedLogDebug("Dispatcher: missing=%s, args=%d\n", name, argc);
+
+  /* Dispatch calls */
+  if(rb_respond_to(self, rb_to_id(missing))) ///< Intance methods
+    ret = rb_funcall2(self, rb_to_id(missing), --argc, ++argv);
+  else ///< Instance variables
+    {
+      char buf[20] = { 0 };
+
+      snprintf(buf, sizeof(buf), "@%s", name);
+
+      if(index(name, '='))
+        {
+          int len = 0;
+          VALUE value = Qnil;
+          
+          value    = rb_ary_entry(args, 0); ///< Get first arg
+          len      = strlen(name);
+          buf[len] = '\0'; ///< Overwrite equal sign
+
+          rb_funcall(self, rb_intern("instance_variable_set"), 2, CHAR2SYM(buf), value);
+        }
+      else ret = rb_funcall(self, rb_intern("instance_variable_get"), 1, CHAR2SYM(buf));
+    }
+
+  return ret;
+} /* }}} */ 
+
+/* RubySubletRender {{{ */
+/*
+ * call-seq: render -> nil
+ *
+ * Remder a Sublet
+ *
+ *  sublet.remder
+ *  => nil
+ */
+
+static VALUE
+RubySubletRender(VALUE self)
+{
+  SubSublet *s = NULL;
+
+  Data_Get_Struct(self, SubSublet, s);
+
+  if(s) subSubletRender(s);
+
+  return Qnil;
+} /* }}} */ 
+
+/* RubySubletNameReader {{{ */
+/*
+ * call-seq: name -> String
+ *
+ * Get name of Sublet
+ *
+ *  puts sublet.name
+ *  => "sublet"
+ */
+
+static VALUE
+RubySubletNameReader(VALUE self)
+{
+  SubSublet *s = NULL;
+
+  Data_Get_Struct(self, SubSublet, s);
+
+  return s ? rb_str_new2(s->name) : Qnil;
 } /* }}} */
 
 /* RubySubletIntervalReader {{{ */
@@ -1564,6 +1630,7 @@ RubySubletIntervalWriter(VALUE self,
   SubSublet *s = NULL;
 
   Data_Get_Struct(self, SubSublet, s);
+
   if(s && FIXNUM_P(value))
     {
       s->interval = FIX2INT(value); 
@@ -1628,9 +1695,10 @@ RubySubletDataWriter(VALUE self,
   SubSublet *s = NULL;
   Data_Get_Struct(self, SubSublet, s);
 
-  if(s && RTEST(value) && T_STRING == rb_type(value)) ///< Check value type
+  if(s && T_STRING == rb_type(value)) ///< Check value type
     {
       subSubletSetData(s, RSTRING_PTR(value)); 
+      subSubletRender(s);
     }
   else rb_raise(rb_eArgError, "Unknown value type");
 
@@ -1681,6 +1749,8 @@ RubySubletBackgroundWriter(VALUE self,
           default:
             rb_raise(rb_eArgError, "Unknown value type");
         }
+
+      subSubletRender(s);
     }
 
   return Qnil;
@@ -1892,6 +1962,12 @@ subRubyInit(void)
 
   rb_define_method(rb_mKernel, "method_missing", RubyDispatcher, -1); ///< Subtlext dispatcher
 
+  /* DSL functions */
+  rb_define_method(rb_mKernel, "method_missing", RubySubletDispatcher, -1);
+  rb_define_method(rb_mKernel, "configure",      RubySubletConfigure,   1);
+  rb_define_method(rb_mKernel, "on",             RubySubletEvent,       1);
+  rb_define_method(rb_mKernel, "helper",         RubySubletHelper,      0);
+
   /*
    * Document-class: Subtle 
    *
@@ -1907,16 +1983,16 @@ subRubyInit(void)
    */
 
   sublet = rb_define_class_under(mod, "Sublet", rb_cObject);
-  rb_define_singleton_method(sublet, "new",       RubySubletNew,       0);
-  rb_define_singleton_method(sublet, "inherited", RubySubletInherited, 1);
 
-  rb_define_method(sublet, "interval",       RubySubletIntervalReader,   0);
-  rb_define_method(sublet, "interval=",      RubySubletIntervalWriter,   1);
-  rb_define_method(sublet, "data",           RubySubletDataReader,       0);
-  rb_define_method(sublet, "data=",          RubySubletDataWriter,       1);
-  rb_define_method(sublet, "background=",    RubySubletBackgroundWriter, 1);
-  rb_define_method(sublet, "watch",          RubySubletWatch,            1);
-  rb_define_method(sublet, "unwatch",        RubySubletUnwatch,          0);
+  rb_define_method(sublet, "render",      RubySubletRender,           0);
+  rb_define_method(sublet, "name",        RubySubletNameReader,       0);
+  rb_define_method(sublet, "interval",    RubySubletIntervalReader,   0);
+  rb_define_method(sublet, "interval=",   RubySubletIntervalWriter,   1);
+  rb_define_method(sublet, "data",        RubySubletDataReader,       0);
+  rb_define_method(sublet, "data=",       RubySubletDataWriter,       1);
+  rb_define_method(sublet, "background=", RubySubletBackgroundWriter, 1);
+  rb_define_method(sublet, "watch",       RubySubletWatch,            1);
+  rb_define_method(sublet, "unwatch",     RubySubletUnwatch,          0);
 
   /*
    * Document-class: Subtle::Icon
@@ -2116,16 +2192,6 @@ subRubyLoadSublet(const char *file)
       subSharedLogWarn("Failed loading sublet `%s'\n", file);
       RubyBacktrace();
     }  
-  else
-    {
-      /* Carefully instantiate */
-      rb_protect(RubyWrapLoadSublet, 0, &state);
-      if(state)
-        {
-          subSharedLogWarn("Failed instantiating sublet `%s'\n", file);
-          RubyBacktrace();
-        }
-    }
 } /* }}} */
 
  /** subRubyLoadPanels {{{
@@ -2219,8 +2285,9 @@ subRubyLoadSubtlext(void)
  /** subRubyCall {{{
   * @brief Safely call ruby script
   * @param[in]  type   Script type
-  * @param[in]  recv   Script receiver
-  * @param[in]  extra  Extra argument
+  * @param[in]  proc   Script receiver
+  * @param[in]  data1  Extra data
+  * @param[in]  data2  Extra data
   * @retval   0  Called script returned false
   * @retval   1  Called script returned true
   * @retval  -1  Calling script failed
@@ -2228,16 +2295,18 @@ subRubyLoadSubtlext(void)
 
 int
 subRubyCall(int type,
-  unsigned long recv,
-  void *extra)
+  unsigned long proc,
+  void *data1,
+  void *data2)
 {
   int state = 0;
-  VALUE result = Qnil, rargs[3] = { 0 };
+  VALUE result = Qnil, rargs[4] = { 0 };
 
   /* Wrap up data */
   rargs[0] = (VALUE)type;
-  rargs[1] = recv;
-  rargs[2] = (VALUE)extra;
+  rargs[1] = proc;
+  rargs[2] = (VALUE)data1;
+  rargs[3] = (VALUE)data2;
 
   signal(SIGALRM, RubySignal); ///< Limit execution time
   alarm(EXECTIME);
