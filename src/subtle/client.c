@@ -1042,8 +1042,6 @@ subClientToggle(SubClient *c,
         {
           c->geom = c->base;
 
-          printf("c->screen=%d\n", c->screen);
-
           subClientSetSize(c); ///< Sanitize
         }
 
