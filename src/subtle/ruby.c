@@ -167,11 +167,13 @@ RubyConvert(void *data)
       if(c->flags & SUB_TYPE_CLIENT) /* {{{ */
         {
           int flags = 0;
+          char *role = NULL;
 
           /* Create client instance */
           id     = subArrayIndex(subtle->clients, (void *)c);
           klass  = rb_const_get(mod, rb_intern("Client"));
           object = rb_funcall(klass, rb_intern("new"), 1, LONG2NUM(c->win));
+          role   = subSharedPropertyGet(NUM2LONG(c->win), XA_STRING, SUB_EWMH_WM_WINDOW_ROLE, NULL);
 
           /* Translate flags */
           if(c->flags & SUB_MODE_FULL)  flags |= SUB_EWMH_FULL;
@@ -183,7 +185,10 @@ RubyConvert(void *data)
           rb_iv_set(object, "@name",     rb_str_new2(c->name));
           rb_iv_set(object, "@instance", rb_str_new2(c->instance));
           rb_iv_set(object, "@klass",    rb_str_new2(c->klass));
+          rb_iv_set(object, "@role",     role ? rb_str_new2(role) : Qnil);
           rb_iv_set(object, "@flags",    INT2FIX(flags));
+
+          if(role) free(role);
         } /* }}} */
       else if(c->flags & SUB_TYPE_VIEW) /* {{{ */
         {
@@ -1430,6 +1435,8 @@ RubySubletEvent(VALUE self,
               if(CHAR2SYM("run") == event)
                 {
                   s->run = p; ///< Store run proc
+                  rb_ary_push(shelter, s->run); ///< Protect from GC
+
 
                   subRubyCall(SUB_CALL_SUBLET_RUN, s->run, (void *)s, NULL); ///< First run
                 }
@@ -1437,6 +1444,7 @@ RubySubletEvent(VALUE self,
                 {
                   s->flags |= SUB_SUBLET_CLICK;
                   s->click  = p;
+                  rb_ary_push(shelter, s->click); ///< Protect from GC
                 }
               else
                 {
