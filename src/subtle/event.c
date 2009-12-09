@@ -1006,10 +1006,13 @@ EventFocus(XFocusChangeEvent *ev)
     }
 
   /* Handle focus event */
-  if(ROOT == ev->window || ROOT == subtle->windows.focus) ///< Root
+  if(ROOT == ev->window) ///< Root
     {
       subtle->windows.focus = ROOT;
       subGrabSet(ROOT);
+
+      subtle->windows.focus      = 0;
+      subtle->panels.focus.width = 0;
 
       subPanelUpdate();
       subPanelRender();

@@ -258,8 +258,11 @@ subSubletKill(SubSublet *s,
           iter->next = PANEL(s->next);
         }
 
-      subRubyRemove(s->name); ///< Remove class definition
-      subRubyRelease(s->instance); ///< Release from shelter
+      /* Remove and release ruby procs */
+      subRubyRemove(s->name);
+      subRubyRelease(s->instance);
+      subRubyRelease(s->run);
+      subRubyRelease(s->click);
     }
 
 #ifdef HAVE_SYS_INOTIFY_H

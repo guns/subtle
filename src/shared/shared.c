@@ -524,7 +524,7 @@ subSharedFocus(void)
     &dummy, &dummy, &dummy, &dummy, (unsigned int *)&dummy);
 
   if((c = CLIENT(subSharedFind(win, CLIENTID)))) subClientFocus(c);
-  else XSetInputFocus(subtle->dpy, ROOT, RevertToNone, CurrentTime);
+  else XSetInputFocus(subtle->dpy, ROOT, RevertToParent, CurrentTime);
 } /* }}} */
 
  /** subSharedTextWidth {{{

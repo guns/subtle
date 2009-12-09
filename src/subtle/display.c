@@ -209,7 +209,7 @@ subDisplayScan(void)
             {
               case IsViewable:
                 if((flags = subEwmhGetXEmbedState(wins[i])) && ///< Tray
-                  (t = subTrayNew(wins[i])))
+                    (t = subTrayNew(wins[i])))
                   {
                     subArrayPush(subtle->trays, (void *)t);
                   }
