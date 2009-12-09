@@ -894,6 +894,7 @@ SubtlextClientInit(VALUE self,
   rb_iv_set(self, "@name",     Qnil);
   rb_iv_set(self, "@instance", Qnil);
   rb_iv_set(self, "@klass",    Qnil);
+  rb_iv_set(self, "@role",     Qnil);
   rb_iv_set(self, "@geometry", Qnil); 
   rb_iv_set(self, "@gravity",  Qnil);
   rb_iv_set(self, "@screen",   Qnil);
@@ -1036,13 +1037,14 @@ SubtlextClientUpdate(VALUE self)
       if(-1 != (id = subSharedClientFind(buf, NULL, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS))))
         {
           int *flags = NULL;
-          char *wmname = NULL, *wminstance = NULL, *wmclass = NULL;
-
-          flags = (int *)subSharedPropertyGet(NUM2LONG(win), XA_CARDINAL,
-            "SUBTLE_WINDOW_FLAGS", NULL);
+          char *wmname = NULL, *wminstance = NULL, *wmclass = NULL, *role = NULL;
 
           XFetchName(display, NUM2LONG(win), &wmname);
           subSharedPropertyClass(NUM2LONG(win), &wminstance, &wmclass);
+
+          flags = (int *)subSharedPropertyGet(NUM2LONG(win), XA_CARDINAL,
+            "SUBTLE_WINDOW_FLAGS", NULL);
+          role = subSharedPropertyGet(NUM2LONG(win), XA_STRING, "WM_WINDOW_ROLE", NULL);
 
           /* Set properties */
           rb_iv_set(self, "@id",       INT2FIX(id));
@@ -1050,6 +1052,7 @@ SubtlextClientUpdate(VALUE self)
           rb_iv_set(self, "@name",     rb_str_new2(wmname));
           rb_iv_set(self, "@instance", rb_str_new2(wminstance));
           rb_iv_set(self, "@klass",    rb_str_new2(wmclass));
+          rb_iv_set(self, "@role",     role ? rb_str_new2(role) : Qnil);
 
           /* Set to nil for on demand loading */
           rb_iv_set(self, "@geometry", Qnil);
@@ -1060,6 +1063,7 @@ SubtlextClientUpdate(VALUE self)
           free(wmname);
           free(wminstance);
           free(wmclass);
+          if(role) free(role);
         }
       else rb_raise(rb_eStandardError, "Failed finding client");  
     }
@@ -3709,6 +3713,8 @@ SubtlextViewKill(VALUE self)
   return SubtlextKill(self, SUB_TYPE_VIEW);
 } /* }}} */
 
+/* Plugin */
+
 /* Init_subtlext {{{ */
 /*
  * Subtlext is the module of the extension
@@ -3744,6 +3750,9 @@ Init_subtlext(void)
 
   /* Class of WM_CLASS */
   rb_define_attr(client, "klass",    1, 0);
+
+    /* Window role */
+  rb_define_attr(client, "role",     1, 0);
 
   /* Bitfield of window states */
   rb_define_attr(client, "flags",    1, 0);
