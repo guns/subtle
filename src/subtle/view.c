@@ -193,10 +193,10 @@ subViewJump(SubView *v)
   subtle->vid  = subArrayIndex(subtle->views, (void *)v);
   subtle->view = v;
 
-  subViewConfigure(v, False);
-
   /* EWMH: Current desktop */
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP, (long *)&subtle->vid, 1);
+
+  subViewConfigure(v, False);
 
   subSharedFocus();
   subViewRender();
