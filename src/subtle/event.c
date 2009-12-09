@@ -1006,7 +1006,7 @@ EventFocus(XFocusChangeEvent *ev)
     }
 
   /* Handle focus event */
-  if(ROOT == ev->window) ///< Root
+  if(ROOT == ev->window || ROOT == subtle->windows.focus) ///< Root
     {
       subtle->windows.focus = ROOT;
       subGrabSet(ROOT);
@@ -1267,6 +1267,8 @@ subEventFinish(void)
 
       free(subtle);
     }
+
+  if(watches) free(watches);
 
   printf("Exit\n");
 
