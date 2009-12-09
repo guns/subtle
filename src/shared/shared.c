@@ -282,7 +282,7 @@ subSharedPropertyGet(Window win,
   if(Success != XGetWindowProperty(disp, win, prop, 0L, 4096, 
       False, type, &rtype, &format, &nitems, &bytes, &data))
     {
-      subSharedLogWarn("Failed getting property `%s'\n", name);
+      subSharedLogDebug("Failed getting property `%s'\n", name);
 
       return NULL;
     }
