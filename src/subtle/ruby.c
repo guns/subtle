@@ -173,7 +173,7 @@ RubyConvert(void *data)
           id     = subArrayIndex(subtle->clients, (void *)c);
           klass  = rb_const_get(mod, rb_intern("Client"));
           object = rb_funcall(klass, rb_intern("new"), 1, LONG2NUM(c->win));
-          role   = subSharedPropertyGet(NUM2LONG(c->win), XA_STRING, SUB_EWMH_WM_WINDOW_ROLE, NULL);
+          role   = subSharedPropertyGet(LONG2NUM(c->win), XA_STRING, SUB_EWMH_WM_WINDOW_ROLE, NULL);
 
           /* Translate flags */
           if(c->flags & SUB_MODE_FULL)  flags |= SUB_EWMH_FULL;
