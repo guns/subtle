@@ -81,33 +81,6 @@ RubyBacktrace(void)
   return Qnil;
 } /* }}} */
 
-/* RubyDispatcher {{{ */
-/*
- * Dispatcher for Subtlext commands - internal use only
- */
-
-static VALUE  
-RubyDispatcher(int argc, 
-  VALUE *argv, 
-  VALUE self)
-{  
-  char *name = NULL;
-  VALUE missing = Qnil, args = Qnil;     
-
-  rb_scan_args(argc, argv, "1*", &missing, &args);  
-  name = (char *)rb_id2name(SYM2ID(missing));  
-
-  subSharedLogDebug("Missing: method=%s\n", name);
-
-  if(Qnil == subtlext) subRubyLoadSubtlext(); ///< Load subtlext on demand
-
-  if(rb_respond_to(subtlext, rb_to_id(missing))) ///< Dispatch method calls
-    return rb_funcall2(subtlext, rb_to_id(missing), --argc, ++argv);
-  
-  rb_raise(rb_eStandardError, "Failed finding method `%s'", name);
-  return Qnil;  
-} /* }}} */
-
 /* RubySignal {{{ */
 static void
 RubySignal(int signum)
@@ -1357,7 +1330,34 @@ VALUE value)
 
 /* Kernel */
 
-/* RubySubletConfigure {{{ */
+/* RubyKernelDispatcher {{{ */
+/*
+ * Dispatcher for Subtlext commands - internal use only
+ */
+
+static VALUE  
+RubyKernelDispatcher(int argc, 
+  VALUE *argv, 
+  VALUE self)
+{  
+  char *name = NULL;
+  VALUE missing = Qnil, args = Qnil;     
+
+  rb_scan_args(argc, argv, "1*", &missing, &args);  
+  name = (char *)rb_id2name(SYM2ID(missing));  
+
+  subSharedLogDebug("Missing: method=%s\n", name);
+
+  if(Qnil == subtlext) subRubyLoadSubtlext(); ///< Load subtlext on demand
+
+  if(rb_respond_to(subtlext, rb_to_id(missing))) ///< Dispatch method calls
+    return rb_funcall2(subtlext, rb_to_id(missing), --argc, ++argv);
+  
+  rb_raise(rb_eStandardError, "Failed finding method `%s'", name);
+  return Qnil;  
+} /* }}} */
+
+/* RubyKernelConfigure {{{ */
 /*
  * call-seq: configure -> nil
  *
@@ -1369,7 +1369,7 @@ VALUE value)
  */
 
 static VALUE 
-RubySubletConfigure(VALUE self,
+RubyKernelConfigure(VALUE self,
   VALUE name)
 {
   rb_need_block();
@@ -1401,7 +1401,7 @@ RubySubletConfigure(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* RubySubletEvent {{{ */
+/* RubyKernelEvent {{{ */
 /*
  * call-seq: on(event, &block) -> nil
  *
@@ -1413,7 +1413,7 @@ RubySubletConfigure(VALUE self,
  */
 
 static VALUE 
-RubySubletEvent(VALUE self,
+RubyKernelEvent(VALUE self,
   VALUE event)
 {
   rb_need_block();
@@ -1479,7 +1479,7 @@ RubySubletEvent(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* RubySubletHelper {{{ */
+/* RubyKernelHelper {{{ */
 /*
  * call-seq: helper -> nil
  *
@@ -1493,7 +1493,7 @@ RubySubletEvent(VALUE self,
  */
 
 static VALUE 
-RubySubletHelper(VALUE self)
+RubyKernelHelper(VALUE self)
 {
   rb_need_block();
 
@@ -1967,13 +1967,12 @@ subRubyInit(void)
   ruby_init_loadpath();
   ruby_script("subtle");
 
-  rb_define_method(rb_mKernel, "method_missing", RubyDispatcher, -1); ///< Subtlext dispatcher
+  rb_define_method(rb_mKernel, "method_missing", RubyKernelDispatcher, -1); ///< Subtlext dispatcher
 
   /* DSL functions */
-  rb_define_method(rb_mKernel, "method_missing", RubySubletDispatcher, -1);
-  rb_define_method(rb_mKernel, "configure",      RubySubletConfigure,   1);
-  rb_define_method(rb_mKernel, "on",             RubySubletEvent,       1);
-  rb_define_method(rb_mKernel, "helper",         RubySubletHelper,      0);
+  rb_define_method(rb_mKernel, "configure",      RubyKernelConfigure,   1);
+  rb_define_method(rb_mKernel, "on",             RubyKernelEvent,       1);
+  rb_define_method(rb_mKernel, "helper",         RubyKernelHelper,      0);
 
   /*
    * Document-class: Subtle 
@@ -1991,15 +1990,16 @@ subRubyInit(void)
 
   sublet = rb_define_class_under(mod, "Sublet", rb_cObject);
 
-  rb_define_method(sublet, "render",      RubySubletRender,           0);
-  rb_define_method(sublet, "name",        RubySubletNameReader,       0);
-  rb_define_method(sublet, "interval",    RubySubletIntervalReader,   0);
-  rb_define_method(sublet, "interval=",   RubySubletIntervalWriter,   1);
-  rb_define_method(sublet, "data",        RubySubletDataReader,       0);
-  rb_define_method(sublet, "data=",       RubySubletDataWriter,       1);
-  rb_define_method(sublet, "background=", RubySubletBackgroundWriter, 1);
-  rb_define_method(sublet, "watch",       RubySubletWatch,            1);
-  rb_define_method(sublet, "unwatch",     RubySubletUnwatch,          0);
+  rb_define_method(sublet, "method_missing", RubySubletDispatcher,       -1);
+  rb_define_method(sublet, "render",         RubySubletRender,            0);
+  rb_define_method(sublet, "name",           RubySubletNameReader,        0);
+  rb_define_method(sublet, "interval",       RubySubletIntervalReader,    0);
+  rb_define_method(sublet, "interval=",      RubySubletIntervalWriter,    1);
+  rb_define_method(sublet, "data",           RubySubletDataReader,        0);
+  rb_define_method(sublet, "data=",          RubySubletDataWriter,        1);
+  rb_define_method(sublet, "background=",    RubySubletBackgroundWriter,  1);
+  rb_define_method(sublet, "watch",          RubySubletWatch,             1);
+  rb_define_method(sublet, "unwatch",        RubySubletUnwatch,           0);
 
   /*
    * Document-class: Subtle::Icon
