@@ -353,13 +353,15 @@ subSharedPropertyStrings(Window win,
  /** subSharedPropertyName {{{
   * @brief Get window title
   * @warning Must be free'd
-  * @param[in]     win    A #Window
-  * @param[inout]  name   Window WM_NAME
+  * @param[in]     win       A #Window
+  * @param[inout]  name      Window WM_NAME
+  * @param[in]     fallback  Fallback name
   **/
 
 void
 subSharedPropertyName(Window win,
-  char **name)
+  char **name,
+  char *fallback)
 {
 #ifdef WM
   XFetchName(subtle->dpy, win, name);
@@ -367,7 +369,7 @@ subSharedPropertyName(Window win,
   XFetchName(display, win, name);
 #endif /* WM */
 
-  if(!(*name)) *name = strdup("subtle"); ///< Sanitize
+  if(!(*name)) *name = strdup(fallback ? fallback : PKG_NAME); ///< Sanitize
 } /* }}} */
 
  /** subSharedPropertyClass {{{

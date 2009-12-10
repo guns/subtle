@@ -127,7 +127,8 @@ char **subSharedPropertyStrings(Window win,
 void subSharedPropertyDelete(Window win, char *name);             ///< Delete window property
 #endif /* WM */
 
-void subSharedPropertyName(Window win, char **name);              ///< Get window name
+void subSharedPropertyName(Window win, char **name,
+  char *fallback);                                                ///< Get window name
 void subSharedPropertyClass(Window win, char **inst,
   char **klass);                                                  ///< Get window class
 
