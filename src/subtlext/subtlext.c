@@ -123,13 +123,13 @@ SubtlextInstantiateScreen(int id)
 static VALUE
 SubtlextInstantiateSublet(char *name)
 {
-  VALUE klass = Qnil, screen = Qnil;
+  VALUE klass = Qnil, sublet = Qnil;
 
   /* Create new instance */
   klass  = rb_const_get(mod, rb_intern("Sublet"));
-  screen = rb_funcall(klass, rb_intern("new"), 1, RSTRING_PTR(name));
+  sublet = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(name));
 
-  return screen;
+  return sublet;
 } /* }}} */
 
 /* SubtlextInstantiateTag {{{ */
@@ -230,7 +230,6 @@ SubtlextFind(int type,
         snprintf(buf, sizeof(buf), "%d", id);
         break; /* }}} */
       case T_HASH: /* {{{ */
-        if(SUB_TYPE_CLIENT == type)
           {
             int i;
             VALUE meth_has_key = rb_intern("has_key?"), meth_fetch = rb_intern("fetch"), match = Qnil;
@@ -240,6 +239,7 @@ SubtlextFind(int type,
               VALUE sym;
               int   flags;
             } props[] = {
+              /* Only clients use all flags */
               { CHAR2SYM("name"),     SUB_MATCH_NAME     },
               { CHAR2SYM("instance"), SUB_MATCH_INSTANCE },
               { CHAR2SYM("class"),    SUB_MATCH_CLASS    },
@@ -2788,7 +2788,6 @@ SubtlextSubletFind(VALUE self,
   VALUE value)
 {
   return SubtlextFind(SUB_TYPE_SUBLET, value, True);
-
 } /* }}} */
 
 /* SubtlextSubletAll {{{ */
