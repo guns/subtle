@@ -47,6 +47,8 @@ static VALUE SubtlextTagAll(VALUE self);
 static VALUE SubtlextScreenAll(VALUE self);
 static VALUE SubtlextSubletAll(VALUE self);
 static VALUE SubtlextViewAll(VALUE self);
+static VALUE SubtlextGeometryInit(int argc, VALUE *argv, VALUE self);
+
 /* }}} */
 
 /* Flags {{{ */
@@ -1615,11 +1617,7 @@ SubtlextClientGeometryWriter(int argc,
   VALUE *argv,
   VALUE self)
 {
-  VALUE x = Qnil, y = Qnil, width = Qnil, height = Qnil, geometry = Qnil;
-
-  /* Load geometry object */
-  rb_scan_args(argc, argv, "04", &x, &y, &width, &height);
-  geometry = SubtlextInstantiateGeometry(FIX2INT(x), FIX2INT(y), FIX2INT(width), FIX2INT(height));
+  VALUE geometry = SubtlextGeometryInit(argc, argv, self); ///< Delegate
 
   /* Update geometry */
   if(RTEST(geometry))
