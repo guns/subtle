@@ -87,7 +87,7 @@ PANEL = {
 # will ensure a custom background pixmap won't be overwritten.
 # 
 COLORS = { 
-  # Foreground color of panel
+  # Foreground color of panel and separator
   :fg_panel      => "#757575",
 
   # Foreground color of view button

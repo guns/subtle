@@ -798,7 +798,7 @@ RubyWrapLoadConfig(VALUE data)
   };
   /* }}} */
 
-  /* Gravities */
+  /* Gravities need to be parsed first */
   config   = rb_const_get(rb_cObject, rb_intern("GRAVITIES"));
   rargs[0] = SUB_TYPE_GRAVITY;
 
@@ -837,7 +837,6 @@ RubyWrapLoadConfig(VALUE data)
   /* Calculate font size and panel height */
   subtle->th = subtle->xfs->max_bounds.ascent + subtle->xfs->max_bounds.descent + 2;
   subtle->fy = (subtle->th - 2 + subtle->xfs->max_bounds.ascent) / 2;
-
 
   /* Config: Colors */
   config                    = rb_const_get(rb_cObject, rb_intern("COLORS"));
