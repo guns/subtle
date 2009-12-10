@@ -491,6 +491,13 @@ EventMessage(XClientMessageEvent *ev)
                 subPanelRender();
               }
             break; /* }}} */
+          case SUB_EWMH_SUBTLE_SUBLET_BACKGROUND: /* {{{ */
+            if((s = EventFindSublet((int)ev->data.l[0])))
+              {
+                s->bg = ev->data.l[1];
+                subSubletRender(s);
+              }
+            break; /* }}} */
           case SUB_EWMH_SUBTLE_SUBLET_UPDATE: /* {{{ */
             if((s = EventFindSublet((int)ev->data.l[0])))
               {
