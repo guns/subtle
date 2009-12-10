@@ -2885,7 +2885,7 @@ SubtlextSubletDataReader(VALUE self)
 
 /* SubtlextSubletDataWriter {{{ */
 /*
- * call-seq: data= -> String
+ * call-seq: data=(string) -> String
  *
  * Set data of sublet
  *
@@ -2906,6 +2906,34 @@ SubtlextSubletDataWriter(VALUE self,
         (char)NUM2LONG(id), RSTRING_PTR(value));
 
       subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_DATA", data, True);
+    }
+  else rb_raise(rb_eArgError, "Failed setting value type `%s'", rb_obj_classname(value));
+
+  return value;
+} /* }}} */
+
+/* SubtlextSubletBackgroundWriter {{{ */
+/*
+ * call-seq: background=(color) -> nil
+ *
+ * Set background of sublet
+ *
+ *  sublet.background = "#ff0000"
+ *  => nil
+ */
+
+static VALUE
+SubtlextSubletBackgroundWriter(VALUE self,
+  VALUE value)
+{
+  if(T_STRING == rb_type(value))
+    {
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+      data.l[0] = rb_iv_get(self, "@id");
+      data.l[1] = subSharedParseColor(RSTRING_PTR(value));
+
+      subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_BACKGROUND", data, True);
     }
   else rb_raise(rb_eArgError, "Failed setting value type `%s'", rb_obj_classname(value));
 
@@ -3951,12 +3979,13 @@ Init_subtlext(void)
   rb_define_singleton_method(sublet, "[]",   SubtlextSubletFind, 1);
   rb_define_singleton_method(sublet, "all",  SubtlextSubletAll,  0);
 
-  rb_define_method(sublet, "initialize", SubtlextSubletInit,       1);
-  rb_define_method(sublet, "update",     SubtlextSubletUpdate,     0);
-  rb_define_method(sublet, "data",       SubtlextSubletDataReader, 0);
-  rb_define_method(sublet, "data=",      SubtlextSubletDataWriter, 1);  
-  rb_define_method(sublet, "to_str",     SubtlextSubletToString,   0);
-  rb_define_method(sublet, "kill",       SubtlextSubletKill,       0);
+  rb_define_method(sublet, "initialize",  SubtlextSubletInit,             1);
+  rb_define_method(sublet, "update",      SubtlextSubletUpdate,           0);
+  rb_define_method(sublet, "data",        SubtlextSubletDataReader,       0);
+  rb_define_method(sublet, "data=",       SubtlextSubletDataWriter,       1);  
+  rb_define_method(sublet, "background=", SubtlextSubletBackgroundWriter, 1);  
+  rb_define_method(sublet, "to_str",      SubtlextSubletToString,         0);
+  rb_define_method(sublet, "kill",        SubtlextSubletKill,             0);
 
   rb_define_alias(sublet, "to_s", "to_str");
 
