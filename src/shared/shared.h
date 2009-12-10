@@ -137,8 +137,9 @@ void subSharedPropertyGeometry(Window win,
 
 /* }}} */
 
-/* Spawn {{{ */
+/* Misc {{{ */
 void subSharedSpawn(char *cmd);                                   ///< Spawn a command
+unsigned long subSharedParseColor(char *name);                    ///< Parse a color
 /* }}} */
 
 #ifdef WM

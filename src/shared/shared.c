@@ -456,6 +456,39 @@ subSharedPropertyDelete(Window win,
 #endif /* WM */
 } /* }}} */
 
+ /** subSharedParseColor {{{
+  * @brief Parse and load color
+  * @param[in]  name  Color string
+  * @return Color pixel value
+  **/
+
+unsigned long
+subSharedParseColor(char *name)
+{
+  XColor color = { 0 }; ///< Default color
+  Display *disp = NULL;
+
+  assert(name);
+
+#ifdef WM
+  disp = subtle->dpy; 
+#else /* WM */
+  disp = display;
+#endif /* WM */
+
+  /* Parse and store color */
+  if(!XParseColor(disp, DefaultColormap(disp, DefaultScreen(disp)), 
+      name, &color))
+    {
+      subSharedLogWarn("Failed loading color `%s'\n", name);
+    }
+  else if(!XAllocColor(disp, DefaultColormap(disp, DefaultScreen(disp)), 
+      &color))
+    subSharedLogWarn("Failed allocating color `%s'\n", name);
+
+  return color.pixel;
+} /* }}} */
+
  /** subSharedSpawn {{{
   * @brief Spawn a command
   * @param[in]  cmd  Command string
