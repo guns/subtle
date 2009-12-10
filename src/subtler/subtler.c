@@ -179,7 +179,7 @@ SubtlerClientPrint(Window win,
   XGetGeometry(display, win, &unused, &x, &y, &width, &height, &border, &border);
 
   printf("%#10lx %c %ld %4u x %-4u %10s %ld %c%c%c %s (%s)\n", win, (*cv == rv ? '*' : '-'),
-    (*cv > nv ? -1 : *cv + 1), width, height, grav, *screen, 
+    (*cv > nv ? -1 : *cv + 1), width, height, grav ? grav : "-", *screen, 
     *flags & SUB_EWMH_FULL ? 'F' : '-', *flags & SUB_EWMH_FLOAT ? 'O' : '-', 
     *flags & SUB_EWMH_STICK ? 'S' : '-', instance, klass);
 
