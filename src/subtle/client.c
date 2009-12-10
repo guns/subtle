@@ -104,8 +104,8 @@ subClientNew(Window win)
     }
 
    /* Fetch name, instance and class */
-  subSharedPropertyName(c->win, &c->name);
   subSharedPropertyClass(c->win, &c->instance, &c->klass);
+  subSharedPropertyName(c->win, &c->name, c->klass);
  
   /* X related properties */
   sattrs.border_pixel = subtle->colors.bo_normal;
@@ -134,7 +134,8 @@ subClientNew(Window win)
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_SCREEN, (long *)&c->screen, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
-  subSharedLogDebug("new=client, name=%s, klass=%s, win=%#lx\n", c->name, c->klass, win);
+  subSharedLogDebug("new=client, name=%s, instance=%s, klass=%s, win=%#lx\n", 
+    c->name, c->instance, c->klass, win);
 
   return c;
 } /* }}} */

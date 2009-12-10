@@ -639,7 +639,7 @@ EventProperty(XPropertyEvent *ev)
           {
             char *name = NULL;
 
-            subSharedPropertyName(c->win, &name);
+            subSharedPropertyName(c->win, &name, c->klass);
             if(c->name) free(c->name);
             c->name = name;
 

@@ -1039,8 +1039,8 @@ SubtlextClientUpdate(VALUE self)
           int *flags = NULL;
           char *wmname = NULL, *wminstance = NULL, *wmclass = NULL, *role = NULL;
 
-          XFetchName(display, NUM2LONG(win), &wmname);
           subSharedPropertyClass(NUM2LONG(win), &wminstance, &wmclass);
+          subSharedPropertyName(NUM2LONG(win), &wmname, wmclass);
 
           flags = (int *)subSharedPropertyGet(NUM2LONG(win), XA_CARDINAL,
             "SUBTLE_WINDOW_FLAGS", NULL);
