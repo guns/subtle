@@ -54,6 +54,12 @@ typedef struct rubysymbol_t
   VALUE sym;
   int   flags;
 } RubySymbols;
+
+typedef struct rubymethods_t
+{
+  VALUE sym;
+  int   flags, arity;
+} RubyMethods;
 /* }}} */
 
 /* Prototypes {{{ */
@@ -183,12 +189,9 @@ RubyConvert(void *data)
 
 /* RubyArity {{{ */
 static int
-RubyArity(VALUE meth,
-  int max)
+RubyArity(VALUE proc)
 {
-  int arity = FIX2INT(rb_funcall(meth, rb_intern("arity"), 0, NULL));
-
-  return -1 == arity ? max : arity; ///< Convert for splats
+  return FIX2INT(rb_funcall(proc, rb_intern("arity"), 0, NULL));
 } /* }}} */
 
 /* RubyMark {{{ */
@@ -1027,37 +1030,31 @@ RubyWrapCall(VALUE data)
   switch((int)rargs[0])
     {
       case SUB_CALL_SUBLET_RUN: /* {{{ */
-          {
-            SubSublet *s = SUBLET(rargs[2]);
-
-            rb_funcall(s->run, rb_intern("call"), RubyArity(s->run, 1), s->instance);
-          }
+        rb_funcall(rargs[1], rb_intern("run"), 1, rargs[1]);
         break; /* }}} */
-      case SUB_CALL_SUBLET_CLICK: /* {{{ */
-          {
-            Window win = 0;
-            int x = 0, y = 0;
-            SubSublet *s = SUBLET(rargs[2]);
-            XButtonEvent *ev = (XButtonEvent *)rargs[3];
-
-            XTranslateCoordinates(subtle->dpy, ev->window, ev->subwindow, 
-              ev->x, ev->y, &x, &y, &win);
-
-            rb_funcall(s->click, rb_intern("call"), RubyArity(s->click, 4),
-              s->instance, INT2FIX(x), INT2FIX(y), INT2FIX(ev->button));
-          }
+      case SUB_CALL_SUBLET_OVER: /* {{{ */
+        rb_funcall(rargs[1], rb_intern("mouse_over"), 1, rargs[1]);
+        break; /* }}} */
+      case SUB_CALL_SUBLET_OUT: /* {{{ */
+        rb_funcall(rargs[1], rb_intern("mouse_out"), 1, rargs[1]);
         break; /* }}} */
       case SUB_CALL_PROC: /* {{{ */
-        rb_funcall(rargs[1], rb_intern("call"), 
-          RubyArity(rargs[1], 1), RubyConvert((VALUE *)rargs[2]));
+        rb_funcall(rargs[1], rb_intern("call"), 1, RubyConvert((VALUE *)rargs[2]));
         break; /* }}} */
-      default: ///< Hooks
+      case SUB_CALL_SUBLET_DOWN: /* {{{ */
+          {
+            XButtonEvent *ev = (XButtonEvent *)rargs[2];
+
+            rb_funcall(rargs[1], rb_intern("mouse_down"), 4,
+              rargs[1], INT2FIX(ev->x), INT2FIX(ev->y), INT2FIX(ev->button));
+          }
+        break; /* }}} */        
+      default: ///< Sublet hooks
         {
           SubSublet *s = SUBLET(rargs[2]);
 
-          rb_funcall(rargs[1], rb_intern("call"), RubyArity(rargs[1], 2), s->instance, 
-            RubyConvert((VALUE *)rargs[3]));
-        }      
+          rb_funcall(rargs[1], rb_intern("call"), 2, s->instance, RubyConvert((VALUE *)rargs[3]));
+        }
     }
 
   return Qnil;
@@ -1405,56 +1402,74 @@ RubyKernelEvent(VALUE self,
     {
       if(T_SYMBOL == rb_type(event))
         {
+          int i, arity = 0, mask = 0;
           SubSublet *s = NULL;
-          VALUE p = Qnil;
+          VALUE p = Qnil, sing = Qnil, meth = Qnil;
+
+          RubyMethods methods[] = 
+          {
+            { CHAR2SYM("run"),        SUB_SUBLET_RUN,  1 },
+            { CHAR2SYM("mouse_down"), SUB_SUBLET_DOWN, 4 },
+            { CHAR2SYM("mouse_over"), SUB_SUBLET_OVER, 1 },
+            { CHAR2SYM("mouse_out"),  SUB_SUBLET_OUT,  1 }
+          };
+
+          RubySymbols hooks[] =
+          {
+            { CHAR2SYM("client_create"),    SUB_CALL_CLIENT_CREATE    },
+            { CHAR2SYM("client_configure"), SUB_CALL_CLIENT_CONFIGURE },
+            { CHAR2SYM("client_focus"),     SUB_CALL_CLIENT_FOCUS     },
+            { CHAR2SYM("client_kill"),      SUB_CALL_CLIENT_KILL      },
+            { CHAR2SYM("view_create"),      SUB_CALL_VIEW_CREATE      },
+            { CHAR2SYM("view_configure"),   SUB_CALL_VIEW_CONFIGURE   },
+            { CHAR2SYM("view_jump"),        SUB_CALL_VIEW_JUMP        },
+            { CHAR2SYM("view_kill"),        SUB_CALL_VIEW_KILL        }
+          };
 
           /* Since loading is linear we use the last sublet */
-          s = SUBLET(subtle->sublets->data[subtle->sublets->ndata - 1]);
-          p = rb_block_proc();
+          s     = SUBLET(subtle->sublets->data[subtle->sublets->ndata - 1]);
+          p     = rb_block_proc();
+          arity = RubyArity(p);
+          sing  = rb_singleton_class(s->instance);
+          meth  = rb_intern("define_method");
 
-          if(T_SYMBOL == rb_type(event))
+          /* Special hooks */
+          for(i = 0; LENGTH(methods) > i; i++)
             {
-              if(CHAR2SYM("run") == event)
+              if(methods[i].sym == event)
                 {
-                  s->run = p; ///< Store run proc
-                  rb_ary_push(shelter, s->run); ///< Protect from GC
-
-
-                  subRubyCall(SUB_CALL_SUBLET_RUN, s->run, (void *)s, NULL); ///< First run
-                }
-              else if(CHAR2SYM("click") == event)
-                {
-                  s->flags |= SUB_SUBLET_CLICK;
-                  s->click  = p;
-                  rb_ary_push(shelter, s->click); ///< Protect from GC
-                }
-              else
-                {
-                  int i;
-                  RubySymbols hooks[] =
-                  {
-                    { CHAR2SYM("client_create"),    SUB_CALL_CLIENT_CREATE    },
-                    { CHAR2SYM("client_configure"), SUB_CALL_CLIENT_CONFIGURE },
-                    { CHAR2SYM("client_focus"),     SUB_CALL_CLIENT_FOCUS     },
-                    { CHAR2SYM("client_kill"),      SUB_CALL_CLIENT_KILL      },
-                    { CHAR2SYM("view_create"),      SUB_CALL_VIEW_CREATE      },
-                    { CHAR2SYM("view_configure"),   SUB_CALL_VIEW_CONFIGURE   },
-                    { CHAR2SYM("view_jump"),        SUB_CALL_VIEW_JUMP        },
-                    { CHAR2SYM("view_kill"),        SUB_CALL_VIEW_KILL        }
-                  };
-
-                  for(i = 0; LENGTH(hooks) > i; i++)
+                  /* Check arity */
+                  if(-1 == arity || methods[i].arity == arity)
                     {
-                      if(hooks[i].sym == event)
-                        {
-                          SubHook *h = subHookNew(hooks[i].flags, p, (void *)s);
+                      s->flags |= methods[i].flags;
 
-                          subArrayPush(subtle->hooks, (void *)h);
-                          rb_ary_push(shelter, p); ///< Protect from GC
-                        }
+                      rb_funcall(sing, meth, 2, event, p);
                     }
+                  else rb_raise(rb_eArgError, "Wrong number of arguments (%d for %d)", 
+                    arity, methods[i].arity);
                 }
             }
+
+          /* Generic hooks */
+          for(i = 0; LENGTH(hooks) > i; i++)
+            {
+              if(hooks[i].sym == event)
+                {
+                  SubHook *h = subHookNew(hooks[i].flags, p, (void *)s);
+
+                  subArrayPush(subtle->hooks, (void *)h);
+                  rb_ary_push(shelter, p); ///< Protect from GC
+                }
+            }
+
+          /* Hook specific stuff */
+          if(s->flags & SUB_SUBLET_RUN)
+            subRubyCall(SUB_CALL_SUBLET_RUN, s->instance, (void *)s, NULL); ///< First run
+          if(s->flags & SUB_SUBLET_DOWN) mask |= ButtonPressMask;
+          if(s->flags & SUB_SUBLET_OVER) mask |= EnterWindowMask;
+          if(s->flags & SUB_SUBLET_OUT)  mask |= LeaveWindowMask;
+
+          XSelectInput(subtle->dpy, s->win, mask); 
         }
       else rb_raise(rb_eArgError, "Unknown value type");
     }
@@ -2306,13 +2321,18 @@ subRubyCall(int type,
   if(state) 
     {
       subSharedLogWarn("Failed calling %s\n", 
-        type & (SUB_CALL_SUBLET_RUN|SUB_CALL_SUBLET_CLICK) ?  "sublet" : "proc");
+        type & (SUB_CALL_SUBLET_RUN|SUB_CALL_SUBLET_DOWN) ?  "sublet" : "proc");
       RubyBacktrace();
 
       result = Qnil;
     }
 
   alarm(0);
+
+#ifdef DEBUG
+  subSharedLogDebug("GC RUN\n");
+  rb_gc_start();
+#endif /* DEBUG */
 
   return Qtrue == result ? 1 : (Qfalse == result ? 0 : -1);
 } /* }}} */
