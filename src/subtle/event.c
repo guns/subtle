@@ -501,7 +501,8 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_SUBTLE_SUBLET_UPDATE: /* {{{ */
             if((s = EventFindSublet((int)ev->data.l[0])))
               {
-                subRubyCall(SUB_CALL_SUBLET_RUN, s->instance, (void *)s, NULL);
+                subRubyCall(SUB_CALL_SUBLET_RUN, 
+                  s->instance, (void *)s, NULL);
                 subSubletUpdate();
                 subPanelUpdate();
                 subPanelRender();                
@@ -723,19 +724,37 @@ EventCrossing(XCrossingEvent *ev)
 {
   SubClient *c = NULL;
   SubTray *t = NULL;
+  SubSublet *s = NULL;
 
-  /* Handle crossing event */
-  if(ROOT == ev->window) ///< Root
-    {
-      subGrabSet(ROOT);
+  switch(ev->type)
+    { 
+      case EnterNotify:
+        /* Handle crossing event */
+        if(ROOT == ev->window) ///< Root
+          {
+            subGrabSet(ROOT);
+          }
+        else if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) ///< Client
+          {
+            if(!(c->flags & SUB_CLIENT_DEAD)) subClientFocus(c);
+          }
+        else if((t = TRAY(subSharedFind(ev->window, TRAYID)))) ///< Tray
+          {
+            subTrayFocus(t);
+          }
+        else if((s = SUBLET(subSharedFind(ev->window, SUBLETID)))) ///< Sublet
+          {
+            if(s->flags & SUB_SUBLET_OVER)
+              subRubyCall(SUB_CALL_SUBLET_OVER, s->instance, (void *)s, NULL);
+          }
+        break;
+      case LeaveNotify:
+        if((s = SUBLET(subSharedFind(ev->window, SUBLETID)))) ///< Sublet
+          {
+            if(s->flags & SUB_SUBLET_OUT)
+              subRubyCall(SUB_CALL_SUBLET_OUT, s->instance, (void *)s, NULL);
+          }
     }
-  else if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) ///< Client
-    {
-      if(!(c->flags & SUB_CLIENT_DEAD))
-        subClientFocus(c);
-    }
-  else if((t = TRAY(subSharedFind(ev->window, TRAYID)))) ///< Tray
-    subTrayFocus(t);
 } /* }}} */
 
 /* EventSelection {{{ */
@@ -763,28 +782,25 @@ EventGrab(XEvent *ev)
 {
   SubGrab *g = NULL;
   SubClient *c = NULL;
+  SubSublet *s = NULL;
+  SubView *v = NULL;
   unsigned int code = 0, mod = 0;
 
   /* Distinct types {{{ */
   switch(ev->type)
     {
       case ButtonPress:
-        /* Check panel buttons */
-        if(ev->xbutton.window == subtle->panels.views.win) ///< View buttons
+        if((v = VIEW(subSharedFind(ev->xbutton.window, VIEWID))))
           {
-            SubView *v = VIEW(subSharedFind(ev->xbutton.subwindow, BUTTONID));
-
-            if(v && subtle->view != v) subViewJump(v); ///< Prevent jumping to current view
+            if(subtle->view != v) subViewJump(v); ///< Prevent jumping to current view
 
             return;
           }
-        else if(ev->xbutton.window == subtle->windows.panel1 ||
-            ev->xbutton.window == subtle->windows.panel2) ///< Sublet buttons
+        else if((s = SUBLET(subSharedFind(ev->xbutton.window, SUBLETID))))
           {
-            SubSublet *s = SUBLET(subSharedFind(ev->xbutton.subwindow, BUTTONID));
-
-            if(s && s->flags & SUB_SUBLET_CLICK) ///< Call click method
-              subRubyCall(SUB_CALL_SUBLET_CLICK, s->click, (void *)s, (void *)&ev->xbutton);
+            if(s->flags & SUB_SUBLET_DOWN) ///< Call click method
+              subRubyCall(SUB_CALL_SUBLET_DOWN, 
+                s->instance, (void *)&ev->xbutton, NULL);
 
             return;
           }
@@ -813,12 +829,13 @@ EventGrab(XEvent *ev)
             if(g->data.string) subSharedSpawn(g->data.string);
             break; /* }}} */
           case SUB_GRAB_PROC: /* {{{ */
-            subRubyCall(SUB_CALL_PROC, g->data.num, subSharedFind(win, CLIENTID), NULL);
+            subRubyCall(SUB_CALL_PROC, g->data.num, 
+              subSharedFind(win, CLIENTID), NULL);
             break; /* }}} */
           case SUB_GRAB_VIEW_JUMP: /* {{{ */
             if(g->data.num < subtle->views->ndata)
               {
-                SubView *v = VIEW(subtle->views->data[g->data.num]);
+                v = VIEW(subtle->views->data[g->data.num]);
 
                 if(subtle->view != v) subViewJump(v);
               }
@@ -1044,6 +1061,8 @@ EventFocus(XFocusChangeEvent *ev)
     }
 } /* }}} */
 
+#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
+
 /* EventScreen {{{ */
 static void
 EventScreen(XRRScreenChangeNotifyEvent *ev)
@@ -1064,6 +1083,8 @@ EventScreen(XRRScreenChangeNotifyEvent *ev)
 
   subSharedLogDebug("Updated screen sizes\n");
 } /* }}} */
+
+#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
 
  /** subEventWatchAdd {{{ 
   * @brief Add descriptor to watch list
@@ -1138,7 +1159,8 @@ subEventLoop(void)
     {
       now = subSharedTime();
 
-      if(0 < (events = poll(watches, nwatches, timeout * 1000))) ///< Data ready on a connection
+      /* Data ready on any connection */
+      if(0 < (events = poll(watches, nwatches, timeout * 1000)))
         {
           for(i = 0; i < nwatches; i++) ///< Find descriptor
             {
@@ -1159,10 +1181,11 @@ subEventLoop(void)
                               case ClientMessage:     EventMessage(&ev.xclient);             break;
                               case ColormapNotify:    EventColormap(&ev.xcolormap);          break;
                               case PropertyNotify:    EventProperty(&ev.xproperty);          break;
-                              case EnterNotify:       EventCrossing(&ev.xcrossing);          break;
                               case SelectionClear:    EventSelection(&ev.xselectionclear);   break;
                               case Expose:            EventExpose(&ev.xexpose);              break;
                               case FocusIn:           EventFocus(&ev.xfocus);                break;
+                              case EnterNotify:       
+                              case LeaveNotify:       EventCrossing(&ev.xcrossing);          break;
                               case ButtonPress:
                               case KeyPress:          EventGrab(&ev);                        break;
                               
@@ -1184,9 +1207,11 @@ subEventLoop(void)
 
                           if(event && IN_IGNORED != event->mask) ///< Skip unwatch events
                             {
-                              if((s = SUBLET(subSharedFind(subtle->windows.panel1, event->wd))))
+                              if((s = SUBLET(subSharedFind(subtle->windows.panel1, 
+                                  event->wd))))
                                 {
-                                  subRubyCall(SUB_CALL_SUBLET_RUN, s->instance, (void *)s, NULL);
+                                  subRubyCall(SUB_CALL_SUBLET_RUN, 
+                                    s->instance, (void *)s, NULL);
                                   subSubletUpdate();
                                   subPanelUpdate();
                                   subPanelRender();
@@ -1197,9 +1222,11 @@ subEventLoop(void)
 #endif /* HAVE_SYS_INOTIFY_H */
                   else ///< Socket {{{ 
                     {
-                      if((s = SUBLET(subSharedFind(subtle->windows.panel1, watches[i].fd))))
+                      if((s = SUBLET(subSharedFind(subtle->windows.panel1, 
+                          watches[i].fd))))
                         {
-                          subRubyCall(SUB_CALL_SUBLET_RUN, s->instance, (void *)s, NULL);
+                          subRubyCall(SUB_CALL_SUBLET_RUN, s->instance, 
+                            (void *)s, NULL);
                           subSubletUpdate();
                           subPanelUpdate();
                           subPanelRender();
@@ -1216,7 +1243,8 @@ subEventLoop(void)
 
               while(s && s->flags & SUB_SUBLET_INTERVAL && s->time <= now)
                 {
-                  subRubyCall(SUB_CALL_SUBLET_RUN, s->run, (void *)s, NULL);
+                  subRubyCall(SUB_CALL_SUBLET_RUN, 
+                    s->instance, (void *)s, NULL);
 
                   if(s->flags & SUB_SUBLET_INTERVAL) ///< This may change in run
                     {
