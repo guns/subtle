@@ -494,7 +494,7 @@ subSharedParseColor(char *name)
   * @param[in]  cmd  Command string
   **/
 
-void
+pid_t
 subSharedSpawn(char *cmd)
 {
   pid_t pid = fork();
@@ -509,6 +509,8 @@ subSharedSpawn(char *cmd)
         exit(1);
       case -1: subSharedLogWarn("Failed forking `%s'\n", cmd);
     }
+
+  return pid;
 } /* }}} */
 
 #ifdef WM
