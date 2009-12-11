@@ -37,8 +37,8 @@
 
 #define CLIENTID     1L                                           ///< Client data id
 #define VIEWID       2L                                           ///< View data id
-#define TRAYID       3L                                           ///< tray data id
-#define BUTTONID     4L                                           ///< Button data id
+#define TRAYID       3L                                           ///< Tray data id
+#define SUBLETID     4L                                           ///< Sublet data id
 
 #define MINW         100L                                         ///< Client min width
 #define MINH         100L                                         ///< Client min height
@@ -160,19 +160,21 @@
 #define SUB_MODE_UNRESIZE             (1L << 30)                  ///< Disable resize mode
 
 /* Call flags */
-#define SUB_CALL_CLIENT_CREATE        (1L << 13)
-#define SUB_CALL_CLIENT_CONFIGURE     (1L << 14)
-#define SUB_CALL_CLIENT_FOCUS         (1L << 15)
-#define SUB_CALL_CLIENT_KILL          (1L << 16)
-#define SUB_CALL_PROC                 (1L << 17)
-#define SUB_CALL_SUBLET_RUN           (1L << 18)
-#define SUB_CALL_SUBLET_CLICK         (1L << 19)
-#define SUB_CALL_TAG_CREATE           (1L << 20)
-#define SUB_CALL_TAG_KILL             (1L << 21)
-#define SUB_CALL_VIEW_CREATE          (1L << 22)
-#define SUB_CALL_VIEW_CONFIGURE       (1L << 23)
-#define SUB_CALL_VIEW_JUMP            (1L << 24)
-#define SUB_CALL_VIEW_KILL            (1L << 25)
+#define SUB_CALL_CLIENT_CREATE        (1L << 13)                  ///< Client create hook
+#define SUB_CALL_CLIENT_CONFIGURE     (1L << 14)                  ///< Client configure hook
+#define SUB_CALL_CLIENT_FOCUS         (1L << 15)                  ///< Client focus hook
+#define SUB_CALL_CLIENT_KILL          (1L << 16)                  ///< Client kill hook
+#define SUB_CALL_PROC                 (1L << 17)                  ///< Call proc
+#define SUB_CALL_SUBLET_RUN           (1L << 18)                  ///< Sublet run hook
+#define SUB_CALL_SUBLET_DOWN          (1L << 19)                  ///< Sublet mouse down hook
+#define SUB_CALL_SUBLET_OVER          (1L << 20)                  ///< Sublet mouse over hook
+#define SUB_CALL_SUBLET_OUT           (1L << 21)                  ///< Sublet mouse out hook
+#define SUB_CALL_TAG_CREATE           (1L << 22)                  ///< Tag create hook
+#define SUB_CALL_TAG_KILL             (1L << 23)                  ///< Tag kill hook
+#define SUB_CALL_VIEW_CREATE          (1L << 24)                  ///< View create hook
+#define SUB_CALL_VIEW_CONFIGURE       (1L << 25)                  ///< View configure hook
+#define SUB_CALL_VIEW_JUMP            (1L << 26)                  ///< View jump hook
+#define SUB_CALL_VIEW_KILL            (1L << 27)                  ///< View kill hook
 
 /* Client flags */
 #define SUB_CLIENT_FOCUS              (1L << 13)                  ///< Send focus message
@@ -220,8 +222,11 @@
 #define SUB_SUBLET_INTERVAL           (1L << 20)
 #define SUB_SUBLET_INOTIFY            (1L << 21)                  ///< Inotify sublet
 #define SUB_SUBLET_SOCKET             (1L << 22)                  ///< Socket sublet
-#define SUB_SUBLET_CLICK              (1L << 23)                  ///< Sublet click function
-#define SUB_SUBLET_PANEL              (1L << 24)                  ///< Sublet in panel
+#define SUB_SUBLET_RUN                (1L << 23)                  ///< Sublet run function
+#define SUB_SUBLET_DOWN               (1L << 24)                  ///< Sublet mouse down function
+#define SUB_SUBLET_OVER               (1L << 25)                  ///< Sublet mouse over function
+#define SUB_SUBLET_OUT                (1L << 26)                  ///< Sublet mouse out function
+#define SUB_SUBLET_PANEL              (1L << 27)                  ///< Sublet in panel
 
 /* Subtle flags */
 #define SUB_SUBTLE_DEBUG              (1L << 1)                   ///< Debug enabled
@@ -385,7 +390,7 @@ typedef struct subgravity_t /* {{{ */
 typedef struct subhook_t /* {{{ */
 {
   FLAGS         flags;                                            ///< Hook flags
-  unsigned long proc;                                             ///< Hook receiver
+  unsigned long proc;                                             ///< Hook proc
   void          *data;                                            ///< Hook data
 } SubHook; /* }}} */
 
@@ -432,7 +437,7 @@ typedef struct subsublet_t /* {{{ */
   int                x, width, watch;                             ///< Sublet x, width, width
 
   char               *name;                                       ///< Sublet name
-  unsigned long      instance, run, click, bg;                    ///< Sublet Ruby receiver, background color
+  unsigned long      instance, bg;                                ///< Sublet ruby instance, background color
   time_t             time, interval;                              ///< Sublet update/interval time
 
   struct subsublet_t *next;                                       ///< Sublet next sibling
@@ -639,9 +644,9 @@ void subGravityKill(SubGravity *g);                               ///< Kill grav
 /* }}} */
 
 /* hook.c {{{ */
-SubHook *subHookNew(int type, unsigned long proc, void *data);
-void subHookCall(int type, void *data);
-void subHookKill(SubHook *h);
+SubHook *subHookNew(int type, unsigned long proc, void *data);    ///< Create hook
+void subHookCall(int type, void *data);                           ///< Call hook
+void subHookKill(SubHook *h);                                     ///< Kill hook
 /* }}} */
 
 /* icon.c {{{ */

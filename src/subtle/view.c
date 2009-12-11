@@ -36,7 +36,8 @@ subViewNew(char *name,
   v->button = XCreateSimpleWindow(subtle->dpy, subtle->panels.views.win, 0, 0, 1,
     subtle->th, 0, 0, subtle->colors.bg_views);
 
-  XSaveContext(subtle->dpy, v->button, BUTTONID, (void *)v);
+  XSaveContext(subtle->dpy, v->button, VIEWID, (void *)v);
+  XSelectInput(subtle->dpy, v->button,  ButtonPressMask); 
   XMapRaised(subtle->dpy, v->button);
 
   /* Tags */
@@ -262,7 +263,7 @@ subViewKill(SubView *v)
   /* Hook: Kill */
   subHookCall(SUB_CALL_VIEW_KILL, (void *)v);
 
-  XDeleteContext(subtle->dpy, v->button, BUTTONID);
+  XDeleteContext(subtle->dpy, v->button, VIEWID);
   XDestroyWindow(subtle->dpy, v->button);
 
   free(v->name);

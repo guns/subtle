@@ -109,7 +109,7 @@ subDisplayInit(const char *display)
 
   /* Select input */
   XSelectInput(subtle->dpy, subtle->panels.views.win, ButtonPressMask); 
-  XSelectInput(subtle->dpy, subtle->panels.tray.win, KeyPressMask|ButtonPressMask); 
+  XSelectInput(subtle->dpy, subtle->panels.tray.win,  KeyPressMask|ButtonPressMask); 
 
 #ifdef HAVE_X11_EXTENSIONS_XRANDR_H
   XRRSelectInput(subtle->dpy, ROOT, RRScreenChangeNotifyMask);
