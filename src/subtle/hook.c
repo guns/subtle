@@ -16,7 +16,6 @@
   * @brief Create new hook
   * @param[in]  type  Type of hook
   * @param[in]  proc  Hook proc
-  * @param[in]  data  Extra data
   * @return Returns a new #SubHook or \p NULL
   **/
 
@@ -35,7 +34,7 @@ subHookNew(int type,
   h->proc  = proc;
   h->data  = data;
 
-  subSharedLogDebug("new=hook, proc=%ld, data=%p\n", proc, data);
+  subSharedLogDebug("new=hook, type=%d, proc=%ld\n", type, proc);
 
   return h;
 } /* }}} */
@@ -63,7 +62,8 @@ subHookCall(int type,
           subRubyCall(h->flags & SUB_CALL_PROC ? SUB_CALL_PROC : type, 
             h->proc, h->data, data);
 
-          subSharedLogDebug("call=hook, type=%d, proc=%ld, data=%p\n", type, h->proc, data);
+          subSharedLogDebug("call=hook, type=%d, proc=%ld, data=%p\n",
+            type, h->proc, data);
         }
     }
 } /* }}} */
