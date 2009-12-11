@@ -2420,23 +2420,27 @@ SubtlextSubtleRunningAsk(VALUE self)
 
 /* SubtlextSubtleSpawn {{{ */
 /*
- * call-seq: spawn(cmd) -> nil
+ * call-seq: spawn(cmd) -> Fixnum
  *
- * Spawn a command
+ * Spawn a command and return the pid
  *
  *  spawn("xterm")
- *  => nil
+ *  => 123
  */
 
 static VALUE
 SubtlextSubtleSpawn(VALUE self,
   VALUE cmd)
 {
-  if(RTEST(cmd) && T_STRING == rb_type(cmd))
-    subSharedSpawn(RSTRING_PTR(cmd));
+  VALUE ret = Qnil;
+
+  if(T_STRING == rb_type(cmd))
+    {
+      ret = INT2FIX((int)subSharedSpawn(RSTRING_PTR(cmd)));
+    }
   else rb_raise(rb_eArgError, "Unknown value type");
 
-  return Qnil;
+  return ret;
 } /* }}} */
 
 /* SubtlextSubtleFocus {{{ */
