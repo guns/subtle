@@ -33,7 +33,7 @@ subSubletNew(void)
   s->win = XCreateSimpleWindow(subtle->dpy, subtle->windows.panel1, 0, 0, 1,
     subtle->th, 0, 0, subtle->colors.bg_sublets);
 
-  XSaveContext(subtle->dpy, s->win, BUTTONID, (void *)s);
+  XSaveContext(subtle->dpy, s->win, SUBLETID, (void *)s);
   XMapRaised(subtle->dpy, s->win);
 
   subSharedLogDebug("new=sublet\n");
@@ -247,6 +247,8 @@ subSubletKill(SubSublet *s,
 
   if(unlink)
     {
+      int i;
+
       /* Update linked list */
       if(subtle->panel == PANEL(s)) subtle->panel = PANEL(s->next);
       else
@@ -261,8 +263,15 @@ subSubletKill(SubSublet *s,
       /* Remove and release ruby procs */
       subRubyRemove(s->name);
       subRubyRelease(s->instance);
-      subRubyRelease(s->run);
-      subRubyRelease(s->click);
+
+      /* Check hooks */
+      for(i = 0; i < subtle->hooks->ndata; i++)
+        {
+          SubHook *h = HOOK(subtle->hooks->data[i]);
+
+          if(h->data == (void *)s) subArrayRemove(subtle->hooks, (void *)s);
+        }
+
     }
 
 #ifdef HAVE_SYS_INOTIFY_H
@@ -271,7 +280,7 @@ subSubletKill(SubSublet *s,
     inotify_rm_watch(subtle->notify, s->interval);
 #endif /* HAVE_SYS_INOTIFY_H */ 
 
-  XDeleteContext(subtle->dpy, s->win, BUTTONID);
+  XDeleteContext(subtle->dpy, s->win, SUBLETID);
   XDestroyWindow(subtle->dpy, s->win);
 
   printf("Unloaded sublet (%s)\n", s->name);
