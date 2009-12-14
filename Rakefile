@@ -316,7 +316,6 @@ task(:install => [:config, :build]) do
     message("INSTALL %s\n" % [File.basename(f)])
     FileUtils.install(f, @options["mandir"], :mode => 0644, :verbose => false)
   end
-  message("INSTALL 
 end # }}}
 
 # Task: help {{{
