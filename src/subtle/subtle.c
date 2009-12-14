@@ -148,7 +148,7 @@ main(int argc,
       subRubyLoadConfig();
       subRubyFinish();
 
-      printf("Config OK\n");
+      printf("Syntax OK\n");
 
       free(subtle);
 
