@@ -313,7 +313,7 @@ task(:install => [:config, :build]) do
   FileUtils.install(PG_RBE + ".so", @options["extdir"], :mode => 0644, :verbose => false)
 
   FileList["dist/man/*.*"].collect do |f|
-    message("INSTALL %s\n" % [File.basename(f))
+    message("INSTALL %s\n" % [File.basename(f)])
     FileUtils.install(f, @options["mandir"], :mode => 0644, :verbose => false)
   end
   message("INSTALL 
