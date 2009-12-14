@@ -1382,7 +1382,7 @@ SubtlerUsage(int group)
          "  %sr -c -C -y 5           Set gravity 5 to current active client\n" \
          "  %sr -t -f term           Show every client/view tagged with 'term'\n" \
          "\nPlease report bugs to <%s>\n",
-         PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_BUGREPORT);
+         PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_BUGREPORT);
 } /* }}} */
 
 /* SubtlerVersion {{{ */
