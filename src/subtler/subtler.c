@@ -1263,11 +1263,11 @@ SubtlerViewKill(int argc,
 static void
 SubtlerUsage(int group)
 {
-  printf("Usage: %sr [OPTIONS] [GROUP] [ACTION]\n", PKG_NAME);
+  printf("Usage: %sr [GENERIC|MODIFIER] [GROUP] [ACTION]\n", PKG_NAME);
 
   if(-1 == group)
     {
-      printf("\nOptions:\n" \
+      printf("\nGeneric:\n" \
              "  -d, --display=DISPLAY   Connect to DISPLAY (default: %s)\n" \
              "  -D, --debug             Print debugging messages\n" \
              "  -h, --help              Show this help and exit\n" \
@@ -1275,12 +1275,8 @@ SubtlerUsage(int group)
              "\nModifier:\n" \
              "  -r, --reload            Reload %s\n" \
              "  -q, --quit              Quit %s\n" \
-             "  -H, --left              Select window left\n" \
-             "  -J, --down              Select window below\n" \
-             "  -K, --up                Select window above\n" \
-             "  -L, --right             Select window right\n" \
              "  -C, --current           Select current active window/view\n" \
-             "  -x, --select            Select a window via pointer\n" \
+             "  -X, --select            Select a window via pointer\n" \
              "\nGroups:\n" \
              "  -c, --client            Use client group\n" \
              "  -g, --gravity           Use gravity group\n" \
@@ -1294,7 +1290,7 @@ SubtlerUsage(int group)
 
   if(-1 == group || SUB_GROUP_CLIENT == group)
     {
-      printf("\nOptions for clients:\n" \
+      printf("\nActions for clients:\n" \
              "  -f, --find=PATTERN      Find client\n" \
              "  -o, --focus=PATTERN     Set focus to client\n" \
              "  -F, --full              Toggle full\n" \
@@ -1313,8 +1309,8 @@ SubtlerUsage(int group)
 
   if(-1 == group || SUB_GROUP_GRAVITY == group)
     {
-      printf("\nOptions for gravities:\n" \
-             "  -a, --add NAME GEOMETRY Create new gravity mode\n" \
+      printf("\nActions for gravities:\n" \
+             "  -a, --add=NAME          Create new gravity\n" \
              "  -l, --list              List all gravities\n" \
              "  -f, --find=PATTERN      Find a gravity\n" \
              "  -k, --kill=PATTERN      Kill gravity mode\n");
@@ -1322,14 +1318,14 @@ SubtlerUsage(int group)
 
   if(-1 == group || SUB_GROUP_SCREEN == group)
     {
-      printf("\nOptions for screens:\n" \
+      printf("\nActions for screens:\n" \
              "  -l, --list              List all screens\n" \
              "  -f, --find=ID           Find a screen\n");
     }      
 
   if(-1 == group || SUB_GROUP_SUBLET == group)
     {
-      printf("\nOptions for sublets:\n" \
+      printf("\nActions for sublets:\n" \
              "  -a, --add=FILE          Create new sublet\n" \
              "  -l, --list              List all sublets\n" \
              "  -u, --update            Updates value of sublet\n" \
@@ -1339,7 +1335,7 @@ SubtlerUsage(int group)
 
   if(-1 == group || SUB_GROUP_TAG == group)
     {
-      printf("\nOptions for tags:\n" \
+      printf("\nActions for tags:\n" \
              "  -a, --add=NAME          Create new tag\n" \
              "  -f, --find              Find all clients/views by tag\n" \
              "  -l, --list              List all tags\n" \
@@ -1349,7 +1345,7 @@ SubtlerUsage(int group)
 
   if(-1 == group || SUB_GROUP_VIEW == group)
     {
-      printf("\nOptions for views:\n" \
+      printf("\nActions for views:\n" \
              "  -a, --add=NAME          Create new view\n" \
              "  -f, --find=PATTERN      Find a view\n" \
              "  -l, --list              List all views\n" \
@@ -1365,10 +1361,10 @@ SubtlerUsage(int group)
          "  ID:       <number>\n" \
          "  GEOMETRY: <x>x<y>+<width>+<height>\n" \
          "  PATTERN:\n" \
-         "    Matching clients, gravities, tags and views works either via plaintext, \n" \
-         "    regex (see regex(7)), id or window id. If a pattern matches more than once\n" \
-         "    ONLY the first match will be used. If the PATTERN is '-' %sr will\n" \
-         "    read from stdin.\n", PKG_NAME);
+         "    Matching works either via plaintext, regex (see regex(7)), id or window id" \
+         "    if applicable. If a pattern matches more than once ONLY the first match will" \
+         "    be used." \
+         "    If the PATTERN is '-' %sr will read from stdin.\n", PKG_NAME);
 
   printf("\nListings:\n" \
          "  Client listing:  <window id> [-*] <view id> <geometry> <gravity> <screen> <flags> <name> (<class>)\n" \
@@ -1384,7 +1380,6 @@ SubtlerUsage(int group)
          "  %sr -c xterm -G          Show tags of client 'xterm'\n" \
          "  %sr -c -x -f             Select client and show info\n" \
          "  %sr -c -C -y 5           Set gravity 5 to current active client\n" \
-         "  %sr -g -a 5 10x10+50+50  Add new gravity mode to gravity 4\n" \
          "  %sr -t -f term           Show every client/view tagged with 'term'\n" \
          "\nPlease report bugs to <%s>\n",
          PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_NAME, PKG_BUGREPORT);
