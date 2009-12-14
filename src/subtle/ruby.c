@@ -1039,7 +1039,7 @@ RubyWrapCall(VALUE data)
         rb_funcall(rargs[1], rb_intern("mouse_out"), 1, rargs[1]);
         break; /* }}} */
       case SUB_CALL_PROC: /* {{{ */
-        rb_funcall(rargs[1], rb_intern("call"), 1, RubyConvert((VALUE *)rargs[2]));
+        rb_funcall(rargs[1], rb_intern("call"), 1, RubyConvert((VALUE *)rargs[3]));
         break; /* }}} */
       case SUB_CALL_SUBLET_DOWN: /* {{{ */
           {
