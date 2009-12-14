@@ -1,0 +1,59 @@
+.TH subtlext 1 "December 14, 2009" "version 0.8" "User commands"
+
+.SH NAME
+subtlext - a ruby extension for subtle
+
+.SH SYNOPSIS
+.B subtlext
+
+.SH DESCRIPTION
+Subtlext is an extension that brings the power of subtler to Ruby.
+.P
+A compending list of the classes with it's functionality can be found in rdoc 
+and informations about the available unit tests in the development section.
+
+.SH EXAMPLE
+require("subtle/subtlext")
+ 
+subtle = Subtlext::Subtle.new(":2")
+
+puts "subtle %s on %s" % 
+  [subtle.version, subtle.running? ? subtle.display : "none"]
+
+puts "Tags: %s" % [subtle.tags.join(", ")]
+
+# Views
+views = []
+subtle.views.each do |v|
+  views.push("%s (%s)" % [v.current? ? "[#{v}]" : v, v.tags.join(", ")])
+end
+puts "Views: %s" % [views.join(", ")]
+
+# Clients
+clients = []
+subtle.clients.each do |c|
+  clients.push("%s (%s)" % [c, c.tags.join(", ")])
+end
+puts "Clients: %s" % [clients.join(", ")]
+
+.SH OUTPUT
+subtle 0.8.1017 on :2.0
+Tags: default, float, full, editor, video, browser, terms
+Views: web (default, browser), [dev] (editor, terms), work (video, browser, terms)
+Clients: xterm (terms), xterm (terms)
+
+.SH AUTHOR
+Written by Christoph Kappel
+
+.SH BUGS
+Report bugs to unexist@dorfelite.net
+Homepage: http://unexist.scrapping.cc
+
+.SH COPYRIGHT
+Copyright (c) Christoph Kappel <unexist@dorfelite.net>
+
+.SH SEE ALSO
+.B
+subtle (1) 
+.B
+subtler (1)

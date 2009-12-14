@@ -1,0 +1,106 @@
+.TH subtle 1 "December 14, 2009" "version 0.8" "User commands"
+
+.SH NAME
+subtle - a grid-based manual tiling window manager
+
+.SH SYNOPSIS
+.B subtle
+.RB [OPTIONS]
+
+.SH DESCRIPTION
+subtle is a grid-based manual tiling window manager with a strong focus on easy
+but customizable look and feel. In comparison to other tiling windows managers,
+subtle has no automatic tiling of the screen size in any way, instead windows are
+arranged according to positions inside of a grid - these positions are called
+gravities.
+
+.P
+For better understanding of gravities, the layout of the grid is per default 
+oriented on the numpad but can be changed in the config. That means that the 5 on
+the numpad is center, the 7 the upper left corner and so on. The gravity of a 
+window can be changed with the 
+.I
+:WindowGravity
+grab, which is 
+.B
+Win+Numpad
+number.
+
+.P
+Views, virtual desktops in subtle, show only windows with matching tags. Both 
+windows and views can be tagged either in the config or via subtler and subtlext.
+Tagging is mandatory, without a matching tag a window will never appear on a 
+certain view.
+
+.SH OPTIONS
+.TP
+.B \-c, \-\-config=CONFIG
+Load config
+.TP
+.B \-d, \-\-display=DISPLAY
+Connect to DISPLAY
+.TP
+.B \-h, \-\-help
+Show this help and exit
+.TP
+.B \-k, \-\-check
+Check config syntax
+.TP
+.B \-s, \-\-sublets=DIR
+Load sublets from DIR
+.TP
+.B \-v, \-\-version
+Show version info and exit
+.TP
+.B \-D, \-\-debug
+Print debugging messages
+
+.SH GETTING STARTED
+To get started with subtle just follow the install instructions, have a look in
+the 
+.B
+INSTALL
+file in the tarball or check if there is a package for your 
+distribution. If no package is available and you want to supply one you are 
+welcome.
+
+.P
+Next step after installing is configuring. Subtle follows the XDG specifications,
+therefore can the default system config be found in 
+.I 
+$XDG_CONFIG_DIRS/subtle 
+or in 
+.I
+/etc/xdg/subtle.
+If you prefer a user based config just copy the system config to 
+.I
+$XDG_CONFIG_HOME/subtle
+or to 
+.I
+$HOME/.config/subtle.
+
+.P
+If you update the config please check it with subtle -k first before starting 
+subtle.
+
+Inside of subtle just press 
+.IWin+Return to launch a xterm which usually starts at
+center gravity. Once you have a client you can play with gravites to get used to
+the system. It's really easy and straight forward, just try the various
+combinations of Win+Numpad number.
+
+.SH AUTHOR
+Written by Christoph Kappel
+
+.SH BUGS
+Report bugs to unexist@dorfelite.net
+Homepage: http://unexist.scrapping.cc
+
+.SH COPYRIGHT
+Copyright (c) Christoph Kappel <unexist@dorfelite.net>
+
+.SH SEE ALSO
+.B
+subtler (1) 
+.B
+subtlext (1)

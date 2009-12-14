@@ -1,0 +1,241 @@
+.TH subtler 1 "December 14, 2009" "version 0.8" "User commands"
+
+.SH NAME
+subtler - a commandline interface for subtle
+
+.SH SYNOPSIS
+.B subtler
+.RB [GENERIC|MODIFIER] [GROUP] [ACTION]
+
+.SH DESCRIPTION
+Subtler is a commandline tool that allows to interact with a 
+.B
+EWMH/NetWM
+compatible window manager and especially with subtle. It uses many features
+of subtle like adding new tags - but other stuff will also work with every
+other compliant wm.
+
+.SH FORMATS
+.SS DISPLAY
+:<display number>
+
+.SS ID
+<number
+
+.SS GEOMETRY
+<x>x<y>+<width>+<height>
+
+.SS PATTERN
+Matching works either via plain, regex (7) or window id if applicable. If a
+pattern matches more than once ONLY the first match will be used. 
+.P
+If the PATTERN is - subtler will read from stdin.
+
+.SH OPTIONS
+.SS GENERIC
+.TP
+.BR \-d, \-\-display=DISPLAY   
+Connect to DISPLAY (default: :0)
+.TP
+.BR -D, --debug
+Print debugging messages
+.TP
+.BR \-h, \-\-help
+Show this help and exit
+.TP
+.BR \-V, \-\-version
+Show version info and exit
+
+.SS MODIFIER
+.TP
+.BR \-r, \-\-reload
+Reload subtle
+.TP
+.BR \-q, \-\-quit
+Quit subtle
+.TP
+.BR \-C, \-\-current
+Select current active window/view
+.TP
+.BR \-X, \-\-select
+Select a window via pointer
+
+.SS GROUPS
+.TP
+.BR \-c, \-\-client
+Use client group
+.TP
+.BR \-g, \-\-gravity
+Use gravity group
+.TP
+.BR \-e, \-\-screen
+Use screen group
+.TP
+.BR \-s, \-\-sublet
+Use sublet group
+.TP
+.BR \-t, \-\-tag
+Use tag group
+.TP
+.BR \-r, \-\-tray
+Use tray group
+.TP
+.BR \-v, \-\-view
+Use views group
+
+.SS ACTIONS FOR CLIENTS
+.TP
+.BR \-f, \-\-find=PATTERN      
+Find client
+.TP
+.BR \-o, \-\-focus=PATTERN     
+Set focus to client
+.TP
+.BR \-F, \-\-full
+Toggle full
+.TP
+.BR \-O, \-\-float             
+Toggle float
+.TP
+.BR \-S, \-\-stick             
+Toggle stick
+.TP
+.BR \-l, \-\-list              
+List all clients
+.TP
+.BR \-T, \-\-tag=PATTERN
+Add tag to client
+.TP
+.BR \-U, \-\-untag=PATTERN
+Remove tag from client
+.TP
+.BR \-G, \-\-tags              
+Show client tags
+.TP
+.BR \-y, \-\-gravity           
+Set client gravity
+.TP
+.BR \-n, \-\-screen            
+Set client screen
+.TP
+.BR \-E, \-\-raise             
+Raise client window
+.TP
+.BR \-R, \-\-lower             
+Lower client window
+.TP
+.BR \-k, \-\-kill=PATTERN
+Kill client
+
+.SS ACTIONS FOR GRAVITIES
+.TP
+.BR \-a, \-\-add=NAME          
+Create new gravity
+.TP
+.BR \-l, \-\-list              
+List all gravities
+.TP
+.BR \-f, \-\-find=PATTERN      
+Find a gravity
+.TP
+.BR \-k, \-\-kill=PATTERN      
+Kill gravity mode
+
+.SS ACTIONS FOR SCREENS
+.TP
+.BR \-l, \-\-list
+List all screens
+.TP
+.BR \-f, \-\-find=ID        
+Find a screen
+
+.SS ACTIONS FOR SUBLETS
+.TP
+.BR \-a, \-\-add=FILE          
+Create new sublet
+.TP
+.BR \-l, \-\-list
+List all sublets
+.TP
+.BR \-u, \-\-update
+Updates value of sublet
+.TP
+.BR \-A, \-\-data
+Set data of sublet
+.TP
+.BR \-k, \-\-kill=PATTERN      
+Kill sublet
+
+.SS ACTIONS FOR TAGS
+.TP
+.BR \-a, \-\-add=NAME          
+Create new tag
+.TP
+.BR \-f, \-\-find
+Find all clients/views by tag
+.TP
+.BR \-l, \-\-list
+List all tags
+.TP
+.BR \-I, \-\-clients
+Show clients with tag
+.TP
+.BR \-k, \-\-kill=PATTERN      
+Kill tag
+
+.TP
+.BR \-a, \-\-add=NAME          
+Create new view
+.TP
+.BR \-f, \-\-find=PATTERN      
+Find a view
+.TP
+.BR \-l, \-\-list
+List all views
+.TP
+.BR \-T, \-\-tag=PATTERN       
+Add tag to view
+.TP
+.BR \-U, \-\-untag=PATTERN     
+Remove tag from view
+.TP
+.BR \-G, \-\-tags
+Show view tags
+.TP
+.BR \-I, \-\-clients
+Show clients on view
+.TP
+.BR \-k, \-\-kill=VIEW         
+Kill view
+
+.SH LISTINGS
+Client listing:  <window id> [\-*] <view id> <geometry> <gravity> <screen> <flags> <name> (<class>)
+Gravity listing: <gravity id> <geometry>
+Screen listing:  <screen id> <geometry>
+Tag listing:     <name>
+View listing:    <window id> [\-*] <view id> <name>
+
+.SH EXAMPLES
+subtler -c -l                List all clients
+subtler -t -a subtle         Add new tag 'subtle'
+subtler -v subtle -T rocks   Tag view 'subtle' with tag 'rocks'
+subtler -c xterm -G          Show tags of client 'xterm'
+subtler -c -x -f             Select client and show info
+subtler -c -C -y 5           Set gravity 5 to current active client
+subtler -t -f term           Show every client/view tagged with 'term'
+
+.SH AUTHOR
+Written by Christoph Kappel
+
+.SH BUGS
+Report bugs to unexist@dorfelite.net
+Homepage: http://unexist.scrapping.cc
+
+.SH COPYRIGHT
+Copyright (c) Christoph Kappel <unexist@dorfelite.net>
+
+.SH SEE ALSO
+.B
+subtle (1) 
+.B
+subtlext (1)
