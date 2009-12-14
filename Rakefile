@@ -22,12 +22,14 @@ require("rake/rdoctask")
 @options = {
   "destdir"    => "",
   "prefix"     => "/usr",
+  "manprefix"  => "$(prefix)/share/man",
   "bindir"     => "$(destdir)/$(prefix)/bin",
   "sysconfdir" => "$(destdir)/etc",
   "configdir"  => "$(sysconfdir)/xdg/$(PKG_NAME)",
   "datadir"    => "$(destdir)/$(prefix)/share/$(PKG_NAME)",
   "scriptdir"  => "$(datadir)/scripts",
   "extdir"     => "$(destdir)/$(sitelibdir)/$(PKG_NAME)",
+  "mandir"     => "$(destdir)/$(manprefix)/man1",
   "debug"      => "no",
   "builddir"   => "build",
   "hdrdir"     => "",
@@ -288,7 +290,8 @@ task(:install => [:config, :build]) do
       @options["bindir"],
       @options["configdir"],
       @options["scriptdir"],
-      @options["extdir"]
+      @options["extdir"],
+      @options["mandir"]
     ]
   )
 
@@ -308,6 +311,12 @@ task(:install => [:config, :build]) do
 
   message("INSTALL %s\n" % [PG_RBE])
   FileUtils.install(PG_RBE + ".so", @options["extdir"], :mode => 0644, :verbose => false)
+
+  FileList["dist/man/*.*"].collect do |f|
+    message("INSTALL %s\n" % [File.basename(f))
+    FileUtils.install(f, @options["mandir"], :mode => 0644, :verbose => false)
+  end
+  message("INSTALL 
 end # }}}
 
 # Task: help {{{
@@ -316,6 +325,7 @@ task(:help => [:config]) do
   puts <<EOF
 destdir=PATH       Set intermediate install prefix (current: #{@options["destdir"]})
 prefix=PATH        Set install prefix (current: #{@options["prefix"]})
+manprefix=PATH     Set install prefix for manpages (current: #{@options["manprefix"]})
 bindir=PATH        Set binary directory (current: #{@options["bindir"]})
 sysconfdir=PATH    Set config directory (current: #{@options["sysconfdir"]})
 datadir=PATH       Set data directory (current: #{@options["datadir"]})
