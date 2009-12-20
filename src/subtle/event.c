@@ -73,7 +73,7 @@ EventConfigure(XConfigureRequestEvent *ev)
 
   if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) 
     {
-      if(!(c->flags & SUB_MODE_UNRESIZE) && 
+      if(!(c->flags & SUB_MODE_NONRESIZE) && 
           (subtle->flags & SUB_SUBTLE_RESIZE || c->flags & (SUB_MODE_FLOAT|SUB_MODE_RESIZE)))
         {
           SubScreen *s = SCREEN(subtle->screens->data[c->screen]);

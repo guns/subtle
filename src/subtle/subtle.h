@@ -78,6 +78,14 @@
 #define SCREENH \
   DisplayHeight(subtle->dpy, DefaultScreen(subtle->dpy))         ///< Get screen height
 
+#define  MODES_ALL \
+  (SUB_MODE_FULL|SUB_MODE_FLOAT|SUB_MODE_STICK| \
+  SUB_MODE_URGENT|SUB_MODE_RESIZE)                                ///< All mode flags
+
+#define MODES_NONE \
+  (SUB_MODE_NONFULL|SUB_MODE_NONFLOAT|SUB_MODE_NONSTICK| \
+  SUB_MODE_NONURGENT|SUB_MODE_NONRESIZE)                          ///< All none mode flags
+
 #define ROOT       DefaultRootWindow(subtle->dpy)                ///< Root window
 #define SCRN       DefaultScreen(subtle->dpy)                    ///< Default screen
 #define FONT       "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*"           ///< Default font
@@ -153,11 +161,11 @@
 #define SUB_MODE_URGENT               (1L << 23)                  ///< Urgent mode
 #define SUB_MODE_URGENT_FOCUS         (1L << 24)                  ///< Urgent mode until focus
 #define SUB_MODE_RESIZE               (1L << 25)                  ///< Resize mode
-#define SUB_MODE_UNFULL               (1L << 26)                  ///< Disable full mode
-#define SUB_MODE_UNFLOAT              (1L << 27)                  ///< Disable float mode
-#define SUB_MODE_UNSTICK              (1L << 28)                  ///< Disable stick mode
-#define SUB_MODE_UNURGENT             (1L << 29)                  ///< Disable urgent mode
-#define SUB_MODE_UNRESIZE             (1L << 30)                  ///< Disable resize mode
+#define SUB_MODE_NONFULL               (1L << 26)                  ///< Disable full mode
+#define SUB_MODE_NONFLOAT              (1L << 27)                  ///< Disable float mode
+#define SUB_MODE_NONSTICK              (1L << 28)                  ///< Disable stick mode
+#define SUB_MODE_NONURGENT             (1L << 29)                  ///< Disable urgent mode
+#define SUB_MODE_NONRESIZE             (1L << 30)                  ///< Disable resize mode
 
 /* Call flags */
 #define SUB_CALL_CLIENT_CREATE        (1L << 13)                  ///< Client create hook

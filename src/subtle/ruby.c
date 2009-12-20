@@ -24,7 +24,7 @@
 #define SYM2CHAR(sym)  rb_id2name(SYM2ID(sym))
 
 #define PANELSLENGTH  4
-#define GRABSLENGTH  14  
+#define GRABSLENGTH  14
 #define TAGSLENGTH    9
 #define HOOKSLENGTH   8
 
@@ -65,6 +65,7 @@ typedef struct rubymethods_t
 /* Prototypes {{{ */
 static VALUE RubySubtleTagAdd(VALUE self, VALUE value);
 static VALUE RubySubtleViewAdd(VALUE self, VALUE value);
+static void RubySubletMark(SubSublet *s);
 /* }}} */
 
 /* RubyBacktrace {{{ */
@@ -192,13 +193,6 @@ static int
 RubyArity(VALUE proc)
 {
   return FIX2INT(rb_funcall(proc, rb_intern("arity"), 0, NULL));
-} /* }}} */
-
-/* RubyMark {{{ */
-static void
-RubyMark(SubSublet *s)
-{
-  if(s) rb_gc_mark(s->instance);
 } /* }}} */
 
 /* Fetch */
@@ -523,19 +517,19 @@ RubyParseForeach(VALUE key,
 
                     /* Check tri-state properties */
                     if(t->flags & SUB_MODE_FULL && (False == RubyGetBool(value, "full")))
-                      t->flags ^= (SUB_MODE_FULL|SUB_MODE_UNFULL);
+                      t->flags ^= (SUB_MODE_FULL|SUB_MODE_NONFULL);
 
                     if(t->flags & SUB_MODE_FLOAT && (False == RubyGetBool(value, "float")))
-                      t->flags ^= (SUB_MODE_FLOAT|SUB_MODE_UNFLOAT);
+                      t->flags ^= (SUB_MODE_FLOAT|SUB_MODE_NONFLOAT);
 
                     if(t->flags & SUB_MODE_STICK && (False == RubyGetBool(value, "stick")))
-                      t->flags ^= (SUB_MODE_STICK|SUB_MODE_UNSTICK);
+                      t->flags ^= (SUB_MODE_STICK|SUB_MODE_NONSTICK);
 
                     if(t->flags & SUB_MODE_URGENT && (False == RubyGetBool(value, "urgent")))
-                      t->flags ^= (SUB_MODE_URGENT|SUB_MODE_UNURGENT);
+                      t->flags ^= (SUB_MODE_URGENT|SUB_MODE_NONURGENT);
 
                     if(t->flags & SUB_MODE_RESIZE && (False == RubyGetBool(value, "resize")))
-                      t->flags ^= (SUB_MODE_RESIZE|SUB_MODE_UNRESIZE);
+                      t->flags ^= (SUB_MODE_RESIZE|SUB_MODE_NONRESIZE);
 
                     /* Check matching properties */
                     if(t->flags & SUB_TAG_MATCH)
@@ -1365,7 +1359,7 @@ RubyKernelConfigure(VALUE self,
       mod         = rb_const_get(rb_mKernel, rb_intern("Subtle"));
       klass       = rb_const_get(mod, rb_intern("Sublet"));
       s->name     = strdup(SYM2CHAR(name));
-      s->instance = Data_Wrap_Struct(klass, RubyMark, NULL, (void *)s);
+      s->instance = Data_Wrap_Struct(klass, RubySubletMark, NULL, (void *)s);
 
       subArrayPush(subtle->sublets, s);
       rb_ary_push(shelter, s->instance); ///< Protect from GC
@@ -1510,6 +1504,13 @@ RubyKernelHelper(VALUE self)
 } /* }}} */
 
 /* Sublet */
+
+/* RubySubletMark {{{ */
+static void
+RubySubletMark(SubSublet *s)
+{
+  if(s) rb_gc_mark(s->instance);
+} /* }}} */
 
 /* RubySubletDispatcher {{{ */
 /*
@@ -1728,8 +1729,8 @@ RubySubletBackgroundWriter(VALUE self,
   VALUE value)
 {
   SubSublet *s = NULL;
-  Data_Get_Struct(self, SubSublet, s);
 
+  Data_Get_Struct(self, SubSublet, s);
   if(s)
     {
       s->bg = subtle->colors.bg_sublets; ///< Set default color

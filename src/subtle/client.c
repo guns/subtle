@@ -493,14 +493,14 @@ subClientTag(SubClient *c,
       SubTag *t = TAG(subtle->tags->data[tag]);
       
       /* Collect flags and tags */
-      flags    |= (t->flags & (SUB_MODE_FULL|SUB_MODE_FLOAT|SUB_MODE_STICK|SUB_MODE_URGENT|SUB_MODE_RESIZE));
-      c->flags |= (t->flags & (SUB_MODE_UNFULL|SUB_MODE_UNFLOAT|SUB_MODE_UNSTICK|SUB_MODE_UNURGENT|SUB_MODE_UNRESIZE));
+      flags    |= (t->flags & MODES_ALL);
+      c->flags |= (t->flags & MODES_NONE);
       c->tags  |= (1L << (tag + 1));
 
       /* Set size and enable float */
-      if(t->flags & SUB_TAG_GEOMETRY && !(c->flags & SUB_MODE_UNFLOAT))
+      if(t->flags & SUB_TAG_GEOMETRY && !(c->flags & SUB_MODE_NONFLOAT))
         {
-          flags   |= (SUB_MODE_FLOAT|SUB_MODE_UNRESIZE); ///< Disable size checks
+          flags   |= (SUB_MODE_FLOAT|SUB_MODE_NONRESIZE); ///< Disable size checks
           c->geom  = t->geometry;
           c->base  = t->geometry;
         }
@@ -511,7 +511,7 @@ subClientTag(SubClient *c,
           SubView *v = VIEW(subtle->views->data[i]);
 
           /* Match only views with this tag */
-          if(v->tags & (1L << (tag + 1)))
+          if(v->tags & (1L << (tag + 1)) || t->flags & SUB_MODE_STICK)
             {
               if(t->flags & SUB_TAG_GRAVITY) c->gravities[i] = t->gravity;
               if(t->flags & SUB_TAG_SCREEN)  c->screens[i]   = t->screen;
@@ -653,7 +653,7 @@ subClientSetSize(SubClient *c)
 
   SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
 
-  if(!(c->flags & SUB_MODE_UNRESIZE) && 
+  if(!(c->flags & SUB_MODE_NONRESIZE) && 
       (subtle->flags & SUB_SUBTLE_RESIZE || c->flags & (SUB_MODE_FLOAT|SUB_MODE_RESIZE)))
     {
       /* Limit width */
@@ -841,7 +841,7 @@ subClientSetNormalHints(SubClient *c)
         }
 
       /* Check for specific position */
-      if(!(c->flags & SUB_MODE_UNRESIZE) &&
+      if(!(c->flags & SUB_MODE_NONRESIZE) &&
           (subtle->flags & SUB_SUBTLE_RESIZE || c->flags & (SUB_MODE_FLOAT|SUB_MODE_RESIZE)))
         {
           if(size->flags & (USSize|PSize)) ///< User/program size
@@ -884,7 +884,7 @@ subClientSetHints(SubClient *c,
   if((hints = XGetWMHints(subtle->dpy, c->win)))
     {
       /* Handle urgency */
-      if(!(c->flags & SUB_MODE_UNURGENT))
+      if(!(c->flags & SUB_MODE_NONURGENT))
         {
           /* Set urgency or remove urgency after losing focus */
           if(hints->flags & XUrgencyHint)     *flags |= SUB_MODE_URGENT;
@@ -1015,10 +1015,10 @@ subClientToggle(SubClient *c,
   assert(c);
 
   /* Remove flags */
-  if(type & SUB_MODE_FULL   && c->flags & SUB_MODE_UNFULL)   type &= ~SUB_MODE_FULL;
-  if(type & SUB_MODE_FLOAT  && c->flags & SUB_MODE_UNFLOAT)  type &= ~SUB_MODE_FLOAT;
-  if(type & SUB_MODE_STICK  && c->flags & SUB_MODE_UNSTICK)  type &= ~SUB_MODE_STICK;
-  if(type & SUB_MODE_URGENT && c->flags & SUB_MODE_UNURGENT) type &= ~SUB_MODE_URGENT;
+  if(type & SUB_MODE_FULL   && c->flags & SUB_MODE_NONFULL)   type &= ~SUB_MODE_FULL;
+  if(type & SUB_MODE_FLOAT  && c->flags & SUB_MODE_NONFLOAT)  type &= ~SUB_MODE_FLOAT;
+  if(type & SUB_MODE_STICK  && c->flags & SUB_MODE_NONSTICK)  type &= ~SUB_MODE_STICK;
+  if(type & SUB_MODE_URGENT && c->flags & SUB_MODE_NONURGENT) type &= ~SUB_MODE_URGENT;
 
   if(c->flags & type) ///< Unset flags
     {
