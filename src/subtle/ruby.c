@@ -24,7 +24,7 @@
 #define SYM2CHAR(sym)  rb_id2name(SYM2ID(sym))
 
 #define PANELSLENGTH  4
-#define GRABSLENGTH  14
+#define GRABSLENGTH  15
 #define TAGSLENGTH    9
 #define HOOKSLENGTH   8
 
@@ -709,20 +709,21 @@ RubyWrapLoadConfig(VALUE data)
   /* Foreach arguments {{{ */
   RubyGrabs grabs[] =
   {
-    { CHAR2SYM("SubtleReload"), SUB_GRAB_SUBTLE_RELOAD,  None             },
-    { CHAR2SYM("SubtleQuit"),   SUB_GRAB_SUBTLE_QUIT,    None             }, 
-    { CHAR2SYM("WindowMove"),   SUB_GRAB_WINDOW_MOVE,    None             },
-    { CHAR2SYM("WindowResize"), SUB_GRAB_WINDOW_RESIZE,  None             }, 
-    { CHAR2SYM("WindowFloat"),  SUB_GRAB_WINDOW_TOGGLE,  SUB_MODE_FLOAT   }, 
-    { CHAR2SYM("WindowFull"),   SUB_GRAB_WINDOW_TOGGLE,  SUB_MODE_FULL    }, 
-    { CHAR2SYM("WindowStick"),  SUB_GRAB_WINDOW_TOGGLE,  SUB_MODE_STICK   }, 
-    { CHAR2SYM("WindowRaise"),  SUB_GRAB_WINDOW_STACK,   Above            }, 
-    { CHAR2SYM("WindowLower"),  SUB_GRAB_WINDOW_STACK,   Below            }, 
-    { CHAR2SYM("WindowLeft"),   SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_LEFT  }, 
-    { CHAR2SYM("WindowDown"),   SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_DOWN  }, 
-    { CHAR2SYM("WindowUp"),     SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_UP    }, 
-    { CHAR2SYM("WindowRight"),  SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_RIGHT }, 
-    { CHAR2SYM("WindowKill"),   SUB_GRAB_WINDOW_KILL,    None             },
+    { CHAR2SYM("SubletsReload"), SUB_GRAB_SUBLETS_RELOAD, None             },
+    { CHAR2SYM("SubtleReload"),  SUB_GRAB_SUBTLE_RELOAD,  None             },
+    { CHAR2SYM("SubtleQuit"),    SUB_GRAB_SUBTLE_QUIT,    None             }, 
+    { CHAR2SYM("WindowMove"),    SUB_GRAB_WINDOW_MOVE,    None             },
+    { CHAR2SYM("WindowResize"),  SUB_GRAB_WINDOW_RESIZE,  None             }, 
+    { CHAR2SYM("WindowFloat"),   SUB_GRAB_WINDOW_TOGGLE,  SUB_MODE_FLOAT   }, 
+    { CHAR2SYM("WindowFull"),    SUB_GRAB_WINDOW_TOGGLE,  SUB_MODE_FULL    }, 
+    { CHAR2SYM("WindowStick"),   SUB_GRAB_WINDOW_TOGGLE,  SUB_MODE_STICK   }, 
+    { CHAR2SYM("WindowRaise"),   SUB_GRAB_WINDOW_STACK,   Above            }, 
+    { CHAR2SYM("WindowLower"),   SUB_GRAB_WINDOW_STACK,   Below            }, 
+    { CHAR2SYM("WindowLeft"),    SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_LEFT  }, 
+    { CHAR2SYM("WindowDown"),    SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_DOWN  }, 
+    { CHAR2SYM("WindowUp"),      SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_UP    }, 
+    { CHAR2SYM("WindowRight"),   SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_RIGHT }, 
+    { CHAR2SYM("WindowKill"),    SUB_GRAB_WINDOW_KILL,    None             },
   };
 
   RubySymbols tags[] =
@@ -919,21 +920,19 @@ RubyWrapLoadSubtlext(VALUE data)
 {
   VALUE mod = Qnil, klass = Qnil;
 
-  /* Load and init subtlext */
   rb_require("subtle/subtlext"); ///< Load subtlext
-  mod = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
 
   /* Class: subtle */
-  klass    = rb_const_get(mod, rb_intern("Subtle"));
-  subtlext = rb_funcall(klass, rb_intern("new2"), 1, (VALUE)subtle->dpy);
+  mod   = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
+  klass = rb_const_get(mod, rb_intern("Subtle"));
 
   /* @todo Overwrite methods to bypass timing problems */
   rb_define_method(klass, "add_tag",  RubySubtleTagAdd,  1);
   rb_define_method(klass, "add_view", RubySubtleViewAdd, 1);
 
-  rb_ary_push(shelter, subtlext); ///< Protect from GC
-
   printf("Loaded subtlext\n");
+  
+  subtlext = Qtrue;
 
   return Qnil;
 }/* }}} */
@@ -1304,33 +1303,6 @@ VALUE value)
 
 /* Kernel */
 
-/* RubyKernelDispatcher {{{ */
-/*
- * Dispatcher for Subtlext commands - internal use only
- */
-
-static VALUE  
-RubyKernelDispatcher(int argc, 
-  VALUE *argv, 
-  VALUE self)
-{  
-  char *name = NULL;
-  VALUE missing = Qnil, args = Qnil;     
-
-  rb_scan_args(argc, argv, "1*", &missing, &args);  
-  name = (char *)rb_id2name(SYM2ID(missing));  
-
-  subSharedLogDebug("Missing: method=%s\n", name);
-
-  if(Qnil == subtlext) subRubyLoadSubtlext(); ///< Load subtlext on demand
-
-  if(rb_respond_to(subtlext, rb_to_id(missing))) ///< Dispatch method calls
-    return rb_funcall2(subtlext, rb_to_id(missing), --argc, ++argv);
-  
-  rb_raise(rb_eStandardError, "Failed finding method `%s'", name);
-  return Qnil;  
-} /* }}} */
-
 /* RubyKernelConfigure {{{ */
 /*
  * call-seq: configure -> nil
@@ -1342,7 +1314,7 @@ RubyKernelDispatcher(int argc,
  *  end
  */
 
-static VALUE 
+static VALUE
 RubyKernelConfigure(VALUE self,
   VALUE name)
 {
@@ -1501,6 +1473,35 @@ RubyKernelHelper(VALUE self)
     }
 
   return Qnil;
+} /* }}} */
+
+/* Object */
+
+/* RubyObjectDispatcher {{{ */
+/*
+ * Dispatcher for Subtlext constants - internal use only
+ */
+
+static VALUE
+RubyObjectDispatcher(VALUE self,
+  VALUE missing)
+{  
+  ID id = Qnil;
+  VALUE ret = Qnil;
+  char *name = NULL;
+
+  id   = SYM2ID(missing);
+  name = (char *)rb_id2name(id);  
+
+  printf("Missing: constant=%s\n", name);
+
+  if(Qnil == subtlext) subRubyLoadSubtlext(); ///< Load subtlext on demand
+
+  if(rb_const_defined(rb_mKernel, id))
+    ret = rb_const_get(rb_mKernel, id);
+  else rb_raise(rb_eStandardError, "Failed finding constant `%s'", name);
+
+  return ret;
 } /* }}} */
 
 /* Sublet */
@@ -1966,17 +1967,28 @@ subRubyInit(void)
   ruby_init_loadpath();
   ruby_script("subtle");
 
-  rb_define_method(rb_mKernel, "method_missing", RubyKernelDispatcher, -1); ///< Subtlext dispatcher
+  /*
+   * Document-class: Kernel
+   *
+   * Ruby Kernel class for Sublet DSL
+   */
 
-  /* DSL functions */
-  rb_define_method(rb_mKernel, "configure",      RubyKernelConfigure,   1);
-  rb_define_method(rb_mKernel, "on",             RubyKernelEvent,       1);
-  rb_define_method(rb_mKernel, "helper",         RubyKernelHelper,      0);
+  rb_define_method(rb_mKernel, "configure", RubyKernelConfigure, 1);
+  rb_define_method(rb_mKernel, "on",        RubyKernelEvent,     1);
+  rb_define_method(rb_mKernel, "helper",    RubyKernelHelper,    0);
+
+  /*
+   * Document-class: Object
+   *
+   * Ruby Object class dispatcher
+   */
+
+  rb_define_singleton_method(rb_cObject, "const_missing", RubyObjectDispatcher, 1);
 
   /*
    * Document-class: Subtle 
    *
-   * Subtle is the module for internal use in subtle for sublets.
+   * Subtle is the module for interaction with the window manager
    */
 
   mod = rb_define_module("Subtle");
@@ -2107,7 +2119,6 @@ subRubyLoadConfig(void)
 
  /** subRubyReloadConfig {{{
   * @brief Reload config file
-  * @param[in]  path  Path to config file
   **/
 
 void
@@ -2164,6 +2175,35 @@ subRubyReloadConfig(void)
   subPanelRender();
 
   printf("Reloaded config\n");
+} /* }}} */
+
+ /** subRubyReloadSublets {{{
+  * @brief Reload all sublets
+  **/
+
+void
+subRubyReloadSublets(void)
+{
+  SubPanel *p = NULL, *next = NULL;
+
+  subArrayClear(subtle->sublets, True);
+
+  /* Reset panel config */
+  for(p = subtle->panel; p;)
+    {
+      p->flags &= ~(SUB_SUBLET_PANEL|SUB_PANEL_SUBLETS|SUB_PANEL_SPACER1| \
+        SUB_PANEL_SPACER2|SUB_PANEL_SEPARATOR|SUB_PANEL_BOTTOM);
+      p->x      = 0;
+      next      = p->next;
+      p->next   = NULL;
+      p         = next;
+    }
+  subtle->panel = NULL;
+
+  subRubyLoadSublets();
+  subRubyLoadPanels();
+
+  printf("Reloaded sublets\n");
 } /* }}} */
 
  /** subRubyLoadSublet {{{
