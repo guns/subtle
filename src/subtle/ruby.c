@@ -1493,10 +1493,11 @@ RubyObjectDispatcher(VALUE self,
   id   = SYM2ID(missing);
   name = (char *)rb_id2name(id);  
 
-  printf("Missing: constant=%s\n", name);
+  subSharedLogDebug("Missing: constant=%s\n", name);
 
   if(Qnil == subtlext) subRubyLoadSubtlext(); ///< Load subtlext on demand
 
+  /* Check if subtlext has this symbol */
   if(rb_const_defined(rb_mKernel, id))
     ret = rb_const_get(rb_mKernel, id);
   else rb_raise(rb_eStandardError, "Failed finding constant `%s'", name);
