@@ -2858,7 +2858,7 @@ SubtlextSubletBackgroundWriter(VALUE self,
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-      data.l[0] = rb_iv_get(self, "@id");
+      data.l[0] = FIX2INT(rb_iv_get(self, "@id"));
       data.l[1] = subSharedParseColor(RSTRING_PTR(value));
 
       subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_BACKGROUND", data, True);
