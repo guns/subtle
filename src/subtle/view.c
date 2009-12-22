@@ -243,10 +243,10 @@ subViewPublish(void)
 
       subSharedLogDebug("publish=views, n=%d\n", i);
 
+      XSync(subtle->dpy, False); ///< Sync all changes
+
       free(views);
       free(names);
-
-      XSync(subtle->dpy, False);
     }
 } /* }}} */
 

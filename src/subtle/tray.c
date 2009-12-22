@@ -129,7 +129,7 @@ subTraySelect(void)
   subEwmhMessage(ROOT, ROOT, SUB_EWMH_MANAGER, CurrentTime, 
     subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION), subtle->panels.tray.win, 0, 0);
 } /* }}} */
-  
+
  /** subTrayFocus {{{
   * @brief Set focus to tray
   * @param[in]  t  A #SubTray
@@ -144,7 +144,7 @@ subTrayFocus(SubTray *t)
 
   subSharedLogDebug("Focus: type=tray, win=%#lx\n", t->win);
 } /* }}} */
-  
+
  /** subTraySetState {{{
   * @brief Set window state and map/unmap accordingly
   * @param[in]  t  A #SubTray
@@ -195,6 +195,8 @@ subTrayPublish(void)
   subEwmhSetWindows(ROOT, SUB_EWMH_SUBTLE_TRAY_LIST, wins, subtle->trays->ndata);
 
   subSharedLogDebug("publish=tray, trays=%d\n", subtle->trays->ndata);
+
+  XSync(subtle->dpy, False); ///< Sync all changes
 
   free(wins);
 } /* }}} */

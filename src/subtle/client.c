@@ -1083,15 +1083,19 @@ void
 subClientPublish(void)
 {
   int i;
-  Window *wins = (Window *)subSharedMemoryAlloc(subtle->clients->ndata, sizeof(Window));
+  Window *wins = (Window *)subSharedMemoryAlloc(subtle->clients->ndata, 
+    sizeof(Window));
 
   for(i = 0; i < subtle->clients->ndata; i++)
     wins[i] = CLIENT(subtle->clients->data[i])->win;
 
   /* EWMH: Client list and client list stacking */
-  subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST, wins, subtle->clients->ndata);
+  subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST, wins, 
+    subtle->clients->ndata);
   subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST_STACKING, wins,
     subtle->clients->ndata);
+
+  XSync(subtle->dpy, False); ///< Sync all changes
 
   subSharedLogDebug("publish=client, clients=%d\n", subtle->clients->ndata);
 

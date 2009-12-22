@@ -218,17 +218,24 @@ subSubletPublish(void)
 {
   int i = 0;
   char **names = NULL;
-  
+  SubPanel *iter = subtle->panel;
+
   names = (char **)subSharedMemoryAlloc(subtle->sublets->ndata, sizeof(char *));
 
-  /* Collect names */
-  for(i = 0; i < subtle->sublets->ndata; i++)
-    names[i] = SUBLET(subtle->sublets->data[i])->name;
+  /* Find sublets in panel list */
+  while(iter)
+    {
+      if(iter->flags & SUB_TYPE_SUBLET) ///< Collect names
+        names[i++] = SUBLET(iter)->name;
+      iter = iter->next;
+    }  
 
   /* EWMH: Sublet list */
   subEwmhSetStrings(ROOT, SUB_EWMH_SUBTLE_SUBLET_LIST, names, subtle->sublets->ndata);
 
   subSharedLogDebug("publish=sublet, n=%d\n", subtle->sublets->ndata);
+
+  XSync(subtle->dpy, False); ///< Sync all changes
 
   free(names);
 } /* }}} */
@@ -247,8 +254,6 @@ subSubletKill(SubSublet *s,
 
   if(unlink)
     {
-      int i;
-
       /* Update linked list */
       if(subtle->panel == PANEL(s)) subtle->panel = PANEL(s->next);
       else
@@ -257,21 +262,13 @@ subSubletKill(SubSublet *s,
 
           while(iter && iter->next != PANEL(s)) iter = iter->next;
 
-          iter->next = PANEL(s->next);
+          if(iter) iter->next = PANEL(s->next);
         }
 
       /* Remove and release ruby procs */
-      subRubyRemove(s->name);
+      subHookRemove(s->instance, (void *)s);
       subRubyRelease(s->instance);
-
-      /* Check hooks */
-      for(i = 0; i < subtle->hooks->ndata; i++)
-        {
-          SubHook *h = HOOK(subtle->hooks->data[i]);
-
-          if(h->data == (void *)s) subArrayRemove(subtle->hooks, (void *)s);
-        }
-
+      subRubyRemove(s->name);
     }
 
 #ifdef HAVE_SYS_INOTIFY_H

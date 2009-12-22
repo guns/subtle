@@ -98,30 +98,36 @@ subGravityPublish(void)
 
   assert(0 < subtle->gravities->ndata);
 
-  gravities  = (char **)subSharedMemoryAlloc(subtle->gravities->ndata, sizeof(char *));
+  gravities  = (char **)subSharedMemoryAlloc(subtle->gravities->ndata, 
+    sizeof(char *));
 
   for(i = 0; i < subtle->gravities->ndata; i++)
     {
       g = GRAVITY(subtle->gravities->data[i]);
 
       /* Add gravity to list */
-      snprintf(buf, sizeof(buf), "%dx%d+%d+%d#%s", g->geometry.x, g->geometry.y,
-        g->geometry.width, g->geometry.height, XrmQuarkToString(g->quark));
+      snprintf(buf, sizeof(buf), "%dx%d+%d+%d#%s", g->geometry.x, 
+        g->geometry.y, g->geometry.width, g->geometry.height, 
+        XrmQuarkToString(g->quark));
       
-      gravities[i] = (char *)subSharedMemoryAlloc(strlen(buf) + 1, sizeof(char));
+      gravities[i] = (char *)subSharedMemoryAlloc(strlen(buf) + 1, 
+        sizeof(char));
       strncpy(gravities[i], buf, strlen(buf));
     }
 
   /* EWMH: Gravity list and geometries */
-  subEwmhSetStrings(ROOT, SUB_EWMH_SUBTLE_GRAVITY_LIST, gravities, subtle->gravities->ndata);
+  subEwmhSetStrings(ROOT, SUB_EWMH_SUBTLE_GRAVITY_LIST, gravities, 
+    subtle->gravities->ndata);
 
   /* Tidy up */
   for(i = 0; i < subtle->gravities->ndata; i++)
     free(gravities[i]);
 
-  free(gravities);
-
   subSharedLogDebug("publish=gravities, n=%d\n", subtle->gravities->ndata);
+
+  XSync(subtle->dpy, False); ///< Sync all changes
+
+  free(gravities);
 } /* }}} */
 
  /** subGravityKill {{{

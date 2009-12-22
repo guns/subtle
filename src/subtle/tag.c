@@ -84,6 +84,8 @@ subTagPublish(void)
 
   subSharedLogDebug("publish=tags, n=%d\n", i);
 
+  XSync(subtle->dpy, False); ///< Sync all changes
+
   free(names);
 } /* }}} */
 
