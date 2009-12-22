@@ -21,7 +21,6 @@
 #define SYM2CHAR(sym)  rb_id2name(SYM2ID(sym))
 
 Display *display = NULL;
-static int refcount = 0;
 VALUE mod = Qnil;
 
 static const char *klasses[] = { 
@@ -180,22 +179,28 @@ SubtlextInstantiateView(char *name)
 
 /* Misc */
 
+/* SubtlextSweep {{{ */
+static void
+SubtlextSweep(void)
+{
+  if(display) 
+    {
+      subSharedLogDebug("Connection closed (%s)\n", DisplayString(display));
+
+      XCloseDisplay(display);
+    }
+} /* }}} */
+
 /* SubtlextConnect {{{ */
 static void
-SubtlextConnect(VALUE disp)
+SubtlextConnect(void)
 {
   /* Open display */
-  if(!display) ///< Establish new connection
+  if(!display)
     {
-      char *name = NULL;
-
-      if(RTEST(disp)) name = RSTRING_PTR(disp);
-      if(!(display = XOpenDisplay(name)))
-        {
-          subSharedLogError("Failed opening display `%s'\n", (name) ? name : ":0.0");
-
-          return;
-        }
+      if(!(display = XOpenDisplay(NULL)))
+        subSharedLogError("Failed opening display `%s'\n", 
+          DisplayString(display));
       XSetErrorHandler(subSharedLogXError);
 
       /* Check if subtle is running */
@@ -209,10 +214,11 @@ SubtlextConnect(VALUE disp)
           return;
         }
 
-      subSharedLogDebug("Connection opened (%s)\n", name);
-    }
+      /* Register sweeper */
+      atexit(SubtlextSweep);
 
-  refcount++;
+      subSharedLogDebug("Connection opened (%s)\n", DisplayString(display));
+    }
 } /* }}} */
 
 /* SubtlextFind {{{ */
@@ -227,7 +233,7 @@ SubtlextFind(int type,
   XRectangle geometry = { 0 };
   VALUE object = Qnil;
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
 
   /* Check object type */
   switch(rb_type(value))
@@ -420,7 +426,7 @@ SubtlextKill(VALUE value,
 {
   int id = -1;
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
 
   /* Check object type */
   switch(rb_type(value))
@@ -518,7 +524,7 @@ SubtlextScreens(void)
   int xinerama_event = 0, xinerama_error = 0;
 #endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
 
   method = rb_intern("new");
   klass  = rb_const_get(mod, rb_intern("Screen"));
@@ -911,7 +917,7 @@ SubtlextClientInit(VALUE self,
   rb_iv_set(self, "@screen",   Qnil);
   rb_iv_set(self, "@flags",    Qnil);
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
 
   return self;
 } /* }}} */
@@ -962,7 +968,7 @@ SubtlextClientCurrent(VALUE self)
   VALUE client = Qnil;
   unsigned long *focus = NULL;
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
 
   if((focus = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
     XA_WINDOW, "_NET_ACTIVE_WINDOW", NULL)))
@@ -998,7 +1004,7 @@ SubtlextClientAll(VALUE self)
   Window *clients = NULL;
   VALUE meth = Qnil, klass = Qnil, array = Qnil, client = Qnil;
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
   
   /* Fetch data */
   meth    = rb_intern("new");
@@ -1883,7 +1889,7 @@ SubtlextGravityInit(VALUE self,
   rb_iv_set(self, "@name",     name);
   rb_iv_set(self, "@geometry", Qnil);
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
 
   return self;
 } /* }}} */
@@ -1937,7 +1943,7 @@ SubtlextGravityAll(VALUE self)
 
   VALUE array = rb_ary_new();
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
 
   /* Get gravity list */
   if((gravities = subSharedPropertyStrings(DefaultRootWindow(display), 
@@ -2111,7 +2117,7 @@ SubtlextScreenInit(VALUE self,
   rb_iv_set(self, "@id",       id);
   rb_iv_set(self, "@geometry", Qnil); 
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
 
   return self;
 } /* }}} */
@@ -2177,7 +2183,7 @@ SubtlextScreenCurrent(VALUE self)
   unsigned long *focus = NULL;
   VALUE screen = Qnil;
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
 
   /* Get current screen from current client or use the first */
   if((focus = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
@@ -2327,7 +2333,7 @@ SubtlextSubtleVersion(VALUE self)
 VALUE 
 SubtlextSubtleDisplay(VALUE self)
 {
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
 
   return rb_str_new2(DisplayString(display));
 } /* }}} */
@@ -2348,7 +2354,7 @@ SubtlextSubtleDisplay(VALUE self)
 static VALUE
 SubtlextSubtleRunningAsk(VALUE self)
 {
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
 
   return subSharedSubtleRunning() ? Qtrue : Qfalse;
 } /* }}} */
@@ -2399,7 +2405,7 @@ SubtlextSubtleFocus(VALUE self,
   Window win = 0;
   VALUE client = Qnil;
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
 
   if(RTEST(name) && -1 != ((id = subSharedClientFind(RSTRING_PTR(name), 
       NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))))
@@ -2436,7 +2442,7 @@ SubtlextSubtleClientDel(VALUE self,
   int id = -1;
   Window win = 0;
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
 
   if(RTEST(name) && -1 != ((id = subSharedClientFind(RSTRING_PTR(name), 
       NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))))
@@ -2493,7 +2499,7 @@ SubtlextSubtleTagAdd(VALUE self,
 {
   VALUE tag = Qnil;
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
 
   if(NIL_P((tag = SubtlextFind(SUB_TYPE_TAG, value, False))))
     {
@@ -2584,7 +2590,7 @@ SubtlextSubtleViewAdd(VALUE self,
 {
   VALUE view = Qnil;
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
 
   if(NIL_P((view = SubtlextFind(SUB_TYPE_VIEW, value, False))))
     {
@@ -2634,7 +2640,7 @@ SubtlextSubtleReload(VALUE self)
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
 
   subSharedMessage(DefaultRootWindow(display), "SUBTLE_RELOAD", data, True);
 
@@ -2656,7 +2662,7 @@ SubtlextSubtleQuit(VALUE self)
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
 
   subSharedMessage(DefaultRootWindow(display), "SUBTLE_QUIT", data, True);
 
@@ -2685,7 +2691,7 @@ SubtlextSubletInit(VALUE self,
   rb_iv_set(self, "@id",   Qnil);
   rb_iv_set(self, "@name", name);
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
 
   return self;
 } /* }}} */
@@ -2738,7 +2744,7 @@ SubtlextSubletAll(VALUE self)
   char **sublets = NULL;
   VALUE meth = Qnil, klass = Qnil, array = Qnil;
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
   
   /* Fetch data */
   meth    = rb_intern("new");
@@ -2924,7 +2930,7 @@ SubtlextTagInit(VALUE self,
   rb_iv_set(self, "@id",   Qnil);
   rb_iv_set(self, "@name", name);
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
 
   return self;
 } /* }}} */
@@ -2977,7 +2983,7 @@ SubtlextTagAll(VALUE self)
   char **tags = NULL;
   VALUE meth = Qnil, klass = Qnil, array = Qnil;
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
   
   /* Fetch data */
   meth  = rb_intern("new");
@@ -3141,7 +3147,7 @@ SubtlextTrayInit(VALUE self,
   rb_iv_set(self, "@klass", Qnil);
   rb_iv_set(self, "@title", Qnil);
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
 
   return self;
 } /* }}} */
@@ -3195,7 +3201,7 @@ SubtlextTrayAll(VALUE self)
   Window *trays = NULL;
   VALUE meth = Qnil, klass = Qnil, array = Qnil;
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
   
   /* Fetch data */
   meth  = rb_intern("new");
@@ -3358,7 +3364,7 @@ SubtlextViewInit(VALUE self,
   rb_iv_set(self, "@win",  Qnil);
   rb_iv_set(self, "@name", name);
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
 
   return self;
 } /* }}} */
@@ -3410,7 +3416,7 @@ SubtlextViewCurrent(VALUE self)
   Window *views = NULL;
   VALUE view = Qnil;
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
   
   /* Get current view */
   names = subSharedPropertyStrings(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
@@ -3453,7 +3459,7 @@ SubtlextViewAll(VALUE self)
   Window *views = NULL;
   VALUE meth = Qnil, klass = Qnil, array = Qnil;
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
   
   /* Fetch data */
   meth  = rb_intern("new");
@@ -3576,6 +3582,8 @@ SubtlextViewClients(VALUE self)
 
       free(clients);
     }
+
+  free(flags1);
 
   return array;
 } /* }}} */
@@ -3713,7 +3721,7 @@ SubtlextWindowNew(int argc,
   SubtlextWindow *w = NULL;
   VALUE args[5] = { Qnil }, klass = Qnil, geometry = Qnil;
 
-  if(!display) SubtlextConnect(Qnil); ///< Implicit open connection
+  SubtlextConnect(); ///< Implicit open connection
 
   rb_scan_args(argc, argv, "05", &args[0], &args[1], &args[2], &args[3], &args[4]);
 
@@ -3771,6 +3779,8 @@ SubtlextWindowNew(int argc,
   /* Store data */
   rb_iv_set(w->instance, "@win",      LONG2NUM(win));
   rb_iv_set(w->instance, "@geometry", geometry);
+
+  free(text.value);
 
   return w->instance;
 } /* }}} */
