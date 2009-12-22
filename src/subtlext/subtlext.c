@@ -590,7 +590,7 @@ SubtlextMatch(VALUE self,
 
   if(clients && cv)
     {
-      flags1   = (unsigned long *)subSharedPropertyGet(views[*cv], XA_CARDINAL,
+      flags1 = (unsigned long *)subSharedPropertyGet(views[*cv], XA_CARDINAL,
         "SUBTLE_WINDOW_TAGS", NULL);
       subSharedPropertyGeometry(win, &geometry1);
 
@@ -3568,7 +3568,7 @@ SubtlextViewClients(VALUE self)
           unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(clients[i], XA_CARDINAL, 
             "SUBTLE_WINDOW_TAGS", NULL);
 
-          if(*flags1 & *flags2) ///< Check if there are common tags
+          if(flags2 && *flags1 & *flags2) ///< Check if there are common tags
             {
               if(!NIL_P(client = rb_funcall(klass, meth, 1, LONG2NUM(clients[i]))))
                 {
@@ -3577,7 +3577,7 @@ SubtlextViewClients(VALUE self)
                 }
             }
 
-          free(flags2);
+          if(flags2) free(flags2);
         }
 
       free(clients);
