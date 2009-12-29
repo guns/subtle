@@ -25,38 +25,68 @@ subArrayNew(void)
 
  /** subArrayPush {{{
   * @brief Push element to array
-  * @param[in]  a  A #SubArray
-  * @param[in]  e  New element
+  * @param[in]  a     A #SubArray
+  * @param[in]  elem  New element
   **/
 
 void
 subArrayPush(SubArray *a,
-  void *e)
+  void *elem)
 {
   assert(a);
 
-  if(e)
+  if(elem)
     {
       a->data = (void **)subSharedMemoryRealloc(a->data, (a->ndata + 1) * sizeof(void *));
-      a->data[(a->ndata)++] = e;
+      a->data[(a->ndata)++] = elem;
     }
+} /* }}} */
+
+/** subArrayInsert {{{
+  * @brief Insert element at position
+  * @param[in]  a     A #SubArray
+  * @param[in]  pos   Position
+  * @param[in]  elem  Array element
+  **/
+
+void
+subArrayInsert(SubArray *a,
+  int pos,
+  void *elem)
+{
+  int i;
+
+  assert(a && elem);
+
+  /* Check boundaries */
+  if(pos < a->ndata)
+    {
+      a->ndata++;
+      a->data = (void **)subSharedMemoryRealloc(a->data, a->ndata * sizeof(void *));
+
+      for(i = a->ndata - 1; i > pos; i--)
+        a->data[i] = a->data[i - 1];
+
+      a->data[pos] = elem;
+    }
+  else subArrayPush(a, elem);
 } /* }}} */
 
  /** subArrayRemove {{{
   * @brief Remove element from array
-  * @param[in]  a  A #SubArray
-  * @param[in]  e  Array element
+  * @param[in]  a     A #SubArray
+  * @param[in]  elem  Array element
   **/
 
 void
 subArrayRemove(SubArray *a,
-  void *e)
+  void *elem)
 {
   int i, idx;
 
-  assert(a && e);
+  assert(a && elem);
 
-  if(0 <= (idx = subArrayIndex(a, e)))
+  if(0 <= (idx = subArrayIndex(a, elem)))
     {
       for(i = idx; i < a->ndata - 1; i++) 
         a->data[i] = a->data[i + 1];
@@ -79,29 +109,26 @@ subArrayGet(SubArray *a,
 {
   assert(a);
 
-  if(0 <= id && id <= a->ndata)
-    return a->data[id];
-
-  return NULL;
+  return 0 <= id && id < a->ndata ? a->data[id] : NULL;
 } /* }}} */
 
  /** subArrayIndex {{{
   * @brief Find array id of element
-  * @param[in]  a  A #SubArray
-  * @param[in]  e  Element
+  * @param[in]  a     A #SubArray
+  * @param[in]  elem  Element
   * @return Returns found idx or \p -1
   **/
 
 int
 subArrayIndex(SubArray *a,
-  void *e)
+  void *elem)
 {
   int i;
 
-  assert(a && e);
+  assert(a && elem);
 
   for(i = 0; i < a->ndata; i++) 
-    if(a->data[i] == e) return i;
+    if(a->data[i] == elem) return i;
 
   return -1;
 } /* }}} */
@@ -160,7 +187,7 @@ subArrayClear(SubArray *a,
 
               free(t);
             }
-          else free(a->data[i]); 
+          else if(!(c->flags & SUB_TYPE_PANEL)) free(a->data[i]); 
         }
 
       if(a->data) free(a->data);
