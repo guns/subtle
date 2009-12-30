@@ -33,7 +33,7 @@ subViewNew(char *name,
   v->width = subSharedTextWidth(v->name, strlen(v->name), NULL, NULL, True) + 6; ///< Font offset
 
   /* Create button */
-  v->button = XCreateSimpleWindow(subtle->dpy, subtle->panels.views.win, 0, 0, 1,
+  v->button = XCreateSimpleWindow(subtle->dpy, subtle->windows.views.win, 0, 0, 1,
     subtle->th, 0, 0, subtle->colors.bg_views);
 
   XSaveContext(subtle->dpy, v->button, VIEWID, (void *)v);
@@ -117,7 +117,7 @@ subViewConfigure(SubView *v,
 void
 subViewUpdate(void)
 {
-  subtle->panels.views.width = 0;
+  subtle->windows.views.width = 0;
 
   if(0 < subtle->views->ndata)
     {
@@ -127,12 +127,12 @@ subViewUpdate(void)
         {
           SubView *v = VIEW(subtle->views->data[i]);
 
-          XMoveResizeWindow(subtle->dpy, v->button, subtle->panels.views.width, 
+          XMoveResizeWindow(subtle->dpy, v->button, subtle->windows.views.width, 
             0, v->width, subtle->th);
-          subtle->panels.views.width += v->width;
+          subtle->windows.views.width += v->width;
         }
 
-      XResizeWindow(subtle->dpy, subtle->panels.views.win, subtle->panels.views.width, subtle->th);
+      XResizeWindow(subtle->dpy, subtle->windows.views.win, subtle->windows.views.width, subtle->th);
     }
 } /* }}} */
 
