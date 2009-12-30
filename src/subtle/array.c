@@ -151,7 +151,7 @@ subArraySort(SubArray *a,
  /** subArrayClear {{{
   * @brief Delete all elements
   * @param[in]  a      A #SubArray
-  * @param[in]  clean  Pass clean to elements
+  * @param[in]  clean  Clean elements
   **/
 
 void
@@ -162,19 +162,19 @@ subArrayClear(SubArray *a,
     {
       int i;
 
-      for(i = 0; i < a->ndata; i++)
+      for(i = 0; clean && i < a->ndata; i++)
         {
           /* Check type and kill */
           SubClient *c = CLIENT(a->data[i]);
 
           /* Common types first */
-          if(c->flags & SUB_TYPE_CLIENT)       subClientKill(c, clean);
-          else if(c->flags & SUB_TYPE_GRAB)    subGrabKill(GRAB(c), clean);
+          if(c->flags & SUB_TYPE_CLIENT)       subClientKill(c, False);
+          else if(c->flags & SUB_TYPE_GRAB)    subGrabKill(GRAB(c));
           else if(c->flags & SUB_TYPE_GRAVITY) subGravityKill(GRAVITY(c));
           else if(c->flags & SUB_TYPE_HOOK)    subHookKill(HOOK(c));
           else if(c->flags & SUB_TYPE_ICON)    subIconKill(ICON(c));
           else if(c->flags & SUB_TYPE_SCREEN)  subScreenKill(SCREEN(c));
-          else if(c->flags & SUB_TYPE_SUBLET)  subSubletKill(SUBLET(c), clean);
+          else if(c->flags & SUB_TYPE_SUBLET)  subSubletKill(SUBLET(c));
           else if(c->flags & SUB_TYPE_TAG)     subTagKill(TAG(c));
           else if(c->flags & SUB_TYPE_TRAY)    subTrayKill(TRAY(c));
           else if(c->flags & SUB_TYPE_VIEW)    subViewKill(VIEW(c));
@@ -200,7 +200,7 @@ subArrayClear(SubArray *a,
  /** subArrayKill {{{
   * @brief Kill array with all elements
   * @param[in]  a      A #SubArray
-  * @param[in]  clean  Pass clean to elements
+  * @param[in]  clean  Clean to elements
   **/
 
 void
