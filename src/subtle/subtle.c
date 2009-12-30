@@ -161,6 +161,7 @@ main(int argc,
   subtle->gravities = subArrayNew();
   subtle->hooks     = subArrayNew();
   subtle->icons     = subArrayNew();
+  subtle->panels    = subArrayNew();
   subtle->screens   = subArrayNew();
   subtle->sublets   = subArrayNew();
   subtle->tags      = subArrayNew();
