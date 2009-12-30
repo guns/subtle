@@ -219,7 +219,8 @@ SubtlerClientFind(int argc,
   CHECK(1 == argc, "Usage: %sr -c -f PATTERN\n", PKG_NAME);
   subSharedLogDebug("%s\n", __func__);
 
-  if(-1 != subSharedClientFind(arg1, NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))
+  if(-1 != subSharedClientFind(arg1, NULL, &win, 
+      (SUB_MATCH_NAME|SUB_MATCH_CLASS|SUB_MATCH_ROLE)))
     {
       unsigned long *nv = NULL, *rv = NULL;
 
