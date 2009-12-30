@@ -230,20 +230,18 @@ subGrabCompare(const void *a,
 
  /** subGrabKill {{{
   * @brief Kill grab
-  * @param[in]  g      A #SubGrab
-  * @param[in]  clean  Release ruby symbol 
+  * @param[in]  g  A #SubGrab
   **/
 
 void
-subGrabKill(SubGrab *g,
-  int clean)
+subGrabKill(SubGrab *g)
 {
   assert(g);
 
   /* Clean certain types */
   if(g->flags & SUB_GRAB_SPAWN && g->data.string) 
     free(g->data.string);
-  else if(g->flags & SUB_GRAB_PROC && clean && g->data.num) 
+  else if(g->flags & SUB_GRAB_PROC && g->data.num) 
     subRubyRelease(g->data.num);
   else if(g->flags & SUB_GRAB_WINDOW_GRAVITY && g->data.num)
     free(g->data.string);
