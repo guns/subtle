@@ -29,17 +29,16 @@ subSubletNew(void)
   s->text  = subArrayNew();
   s->bg    = subtle->colors.bg_sublets;
 
-  /* Create button */
+  /* Create window */
   s->win = XCreateSimpleWindow(subtle->dpy, subtle->windows.panel1, 0, 0, 1,
     subtle->th, 0, 0, subtle->colors.bg_sublets);
 
   XSaveContext(subtle->dpy, s->win, SUBLETID, (void *)s);
-  XMapRaised(subtle->dpy, s->win);
 
   subSharedLogDebug("new=sublet\n");
 
   return s;
-} /* }}} */ 
+} /* }}} */
 
  /** subSubletUpdate {{{
   * @brief Update sublet panel
@@ -216,18 +215,18 @@ subSubletSetData(SubSublet *s,
 void
 subSubletPublish(void)
 {
-  int i = 0;
+  int i = 0, idx = 0;
   char **names = NULL;
-  SubPanel *iter = subtle->panel;
 
   names = (char **)subSharedMemoryAlloc(subtle->sublets->ndata, sizeof(char *));
 
   /* Find sublets in panel list */
-  while(iter)
+  for(i = 0; i < subtle->panels->ndata; i++)
     {
-      if(iter->flags & SUB_TYPE_SUBLET) ///< Collect names
-        names[i++] = SUBLET(iter)->name;
-      iter = iter->next;
+      SubSublet *s = SUBLET(subtle->panels->data[i]);
+
+      if(s->flags & SUB_TYPE_SUBLET) ///< Collect names
+        names[idx++] = s->name;
     }  
 
   /* EWMH: Sublet list */
@@ -242,37 +241,21 @@ subSubletPublish(void)
 
  /** subSubletKill {{{
   * @brief Kill sublet
-  * @param[in]  s       A #SubSublet
-  * @param[in]  unlink  Unlink sublets
+  * @param[in]  s  A #SubSublet
   **/
 
 void
-subSubletKill(SubSublet *s,
-  int unlink)
+subSubletKill(SubSublet *s)
 {
   assert(s);
 
-  if(unlink)
-    {
-      /* Update linked list */
-      if(subtle->panel == PANEL(s)) subtle->panel = PANEL(s->next);
-      else
-        {
-          SubPanel *iter = subtle->panel;
-
-          while(iter && iter->next != PANEL(s)) iter = iter->next;
-
-          if(iter) iter->next = PANEL(s->next);
-        }
-
-      /* Remove and release ruby procs */
-      subHookRemove(s->instance, (void *)s);
-      subRubyRelease(s->instance);
-      subRubyRemove(s->name);
-    }
+  /* Tidy up */
+  subArrayRemove(subtle->panels, (void *)s);
+  subHookRemove(s->instance, (void *)s);
+  subRubyRelease(s->instance);
+  subRubyRemove(s->name);
 
 #ifdef HAVE_SYS_INOTIFY_H
-  /* Tidy up inotify */
   if(s->flags & SUB_SUBLET_INOTIFY)
     inotify_rm_watch(subtle->notify, s->interval);
 #endif /* HAVE_SYS_INOTIFY_H */ 
