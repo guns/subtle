@@ -215,16 +215,16 @@ subClientRender(SubClient *c)
     }
 
   /* Set window border */
-  sattrs.border_pixel = subtle->windows.focus == c->win ? subtle->colors.bo_focus : 
-    subtle->colors.bo_normal;
+  sattrs.border_pixel = subtle->windows.focus == c->win ?
+    subtle->colors.bo_focus : subtle->colors.bo_normal;
 
   /* Update window */
   XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
   XChangeWindowAttributes(subtle->dpy, c->win, CWBorderPixel, &sattrs);
-  XSetWindowBackground(subtle->dpy, subtle->panels.focus.win, gvals.background); 
-  XClearWindow(subtle->dpy, subtle->panels.focus.win);
+  XSetWindowBackground(subtle->dpy, subtle->windows.title.win, gvals.background);
+  XClearWindow(subtle->dpy, subtle->windows.title.win);
 
-  XDrawString(subtle->dpy, subtle->panels.focus.win, subtle->gcs.font, 3, subtle->fy,
+  XDrawString(subtle->dpy, subtle->windows.title.win, subtle->gcs.font, 3, subtle->fy,
     buf, strlen(buf));
 } /* }}} */
 
@@ -740,10 +740,10 @@ subClientSetName(SubClient *c)
   len = strlen(c->name) + (c->flags & (SUB_MODE_STICK|SUB_MODE_FLOAT) ? 1 : 0);
 
   /* Update panel width */
-  subtle->panels.focus.width = subSharedTextWidth(c->name, 50 >= len ? len : 50, 
-    NULL, NULL, True) + 6;
-  XResizeWindow(subtle->dpy, subtle->panels.focus.win, 
-    subtle->panels.focus.width, subtle->th);
+  subtle->windows.title.width = subSharedTextWidth(c->name, 
+    50 >= len ? len : 50, NULL, NULL, True) + 6;
+  XResizeWindow(subtle->dpy, subtle->windows.title.win, 
+    subtle->windows.title.width, subtle->th);
 } /* }}} */
 
  /** subClientSetProtocols {{{
@@ -1120,8 +1120,8 @@ subClientKill(SubClient *c,
   /* Focus */
   if(subtle->windows.focus == c->win)
     {
-      subtle->windows.focus      = 0;
-      subtle->panels.focus.width = 0;
+      subtle->windows.focus       = 0;
+      subtle->windows.title.width = 0;
       subPanelUpdate();
       subPanelRender();
     }
