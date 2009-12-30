@@ -45,7 +45,6 @@ subHookNew(int type,
   * @param[in]  data  Hook data
   **/
 
-
 void
 subHookCall(int type,
   void *data)
@@ -64,6 +63,31 @@ subHookCall(int type,
 
           subSharedLogDebug("call=hook, type=%d, proc=%ld, data=%p\n",
             type, h->proc, data);
+        }
+    }
+} /* }}} */
+
+ /** subHookRemove {{{
+  * @brief Remove a hook
+  * @param[in]  proc  Hook proc
+  * @param[in]  data  Hook data
+  **/
+
+void
+subHookRemove(unsigned long proc,
+  void *data)
+{
+  int i;
+
+  for(i = 0; i < subtle->hooks->ndata; i++)
+    {
+      SubHook *h = HOOK(subtle->hooks->data[i]);
+
+      /* Check if proc or data matches */
+      if(h->proc == proc || h->data == data) 
+        {
+          subArrayRemove(subtle->hooks, (void *)h);
+          subHookKill(h);
         }
     }
 } /* }}} */
