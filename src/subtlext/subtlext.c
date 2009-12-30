@@ -3526,7 +3526,6 @@ SubtlextViewUpdate(VALUE self)
       else rb_raise(rb_eStandardError, "Failed finding view");  
     }
   else rb_raise(rb_eStandardError, "Failed finding view");  
-
   return Qnil;
 } /* }}} */
 
@@ -3691,6 +3690,7 @@ SubtlextWindowSweep(SubtlextWindow *w)
     {
       XFreeGC(display, w->gc);
       XFreeFont(display, w->xfs);
+      free(w);
     }
   
 } /* }}} */
