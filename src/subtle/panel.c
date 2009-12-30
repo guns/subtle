@@ -19,43 +19,54 @@
 void
 subPanelUpdate(void)
 {
-  SubPanel *p = NULL;
-  int n = 0, x = 0, separator[2] = { 0 }, width[2] = { 0 }, spacer[2] = { 0 };
+  int i, n = 0, x = 0, separator[2] = { 0 }, width[2] = { 0 }, 
+    spacer[2] = { 0 };
 
   assert(subtle);
 
   /* Collect width for spacer */
-  for(p = subtle->panel; p; p = p->next)
+  for(i = 0; i < subtle->panels->ndata; i++)
     {
-      if(p->flags & SUB_PANEL_BOTTOM)    n = 1;
-      if(p->flags & SUB_PANEL_SPACER1)   spacer[n]++;
-      if(p->flags & SUB_PANEL_SPACER2)   spacer[n]++;
-      if(p->flags & SUB_PANEL_SEPARATOR) separator[n] += subtle->separator.width;
+      SubPanel *p = PANEL(subtle->panels->data[i]);
+
+      if(p->flags & SUB_PANEL_BOTTOM)  n = 1;
+      if(p->flags & SUB_PANEL_SPACER1) spacer[n]++;
+      if(p->flags & SUB_PANEL_SPACER2) spacer[n]++;
+      if(p->flags & SUB_PANEL_SEPARATOR1) 
+        separator[n] += subtle->separator.width;
+      if(p->flags & SUB_PANEL_SEPARATOR2) 
+        separator[n] += subtle->separator.width;
 
       width[n] += p->width;
     }
 
   /* Move and resize windows */
-  for(p = subtle->panel, n = 0; p; p = p->next) 
+  for(i = 0, n = 0; i < subtle->panels->ndata; i++)
     {
+      SubPanel *p = PANEL(subtle->panels->data[i]);
+
       if(p->flags & SUB_PANEL_BOTTOM)
         {
           n = 1;
           x = 0; ///< Reset for new panel
         }
 
-      /* Update x position */
-      if(p->flags & SUB_PANEL_SEPARATOR) ///< Add space for separator
+      /* Before panel item */
+      if(p->flags & SUB_PANEL_SEPARATOR1) ///< Add separator
         x += subtle->separator.width;
 
-      if(p->flags & SUB_PANEL_SPACER1) ///< Add before spacer
+      if(p->flags & SUB_PANEL_SPACER1) ///< Add spacer
         x += (subtle->screen->base.width - width[n] - separator[n]) / spacer[n];
 
       /* Set window position */
       XMoveWindow(subtle->dpy, p->win, x, 0);
       p->x = x;
 
-      if(p->flags & SUB_PANEL_SPACER2) ///< Add after spacer
+      /* After panel item */
+      if(p->flags & SUB_PANEL_SEPARATOR2) ///< Add separator
+        x += subtle->separator.width;
+
+      if(p->flags & SUB_PANEL_SPACER2) ///< Add spacer
         x += (subtle->screen->base.width - width[n]) / spacer[n];
 
       /* Remap window only when needed */
@@ -74,7 +85,6 @@ void
 subPanelRender(void)
 {
   int i;
-  SubPanel *p = NULL;
   SubClient *c = NULL;
   XGCValues gvals;
   Window panel = subtle->windows.panel1;
@@ -98,18 +108,25 @@ subPanelRender(void)
   XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
 
   /* Draw separators */
-  for(p = subtle->panel; p; p = p->next)
+  for(i = 0; i < subtle->panels->ndata; i++)
     {
+      SubPanel *p = PANEL(subtle->panels->data[i]);
+
       if(p->flags & SUB_PANEL_BOTTOM) panel = subtle->windows.panel2;
-      if(p->flags & SUB_PANEL_SEPARATOR) ///< Draw separator before panel 
+      if(p->flags & SUB_PANEL_SEPARATOR1) ///< Draw separator before panel 
         XDrawString(subtle->dpy, panel, subtle->gcs.font, p->x - subtle->separator.width + 3,
           subtle->fy, subtle->separator.string, strlen(subtle->separator.string));
+      if(p->flags & SUB_PANEL_SEPARATOR2) ///< Draw separator after panel 
+        XDrawString(subtle->dpy, panel, subtle->gcs.font, p->x + p->width + 3,
+          subtle->fy, subtle->separator.string, strlen(subtle->separator.string));          
     }
 
   /* Render panels */
   if(subtle->windows.focus && (c = CLIENT(subSharedFind(subtle->windows.focus, CLIENTID)))) 
     subClientRender(c);
+
   for(i = 0; i < subtle->sublets->ndata; i++)
     subSubletRender(SUBLET(subtle->sublets->data[i]));
+
   subViewRender();
 } /* }}} */
