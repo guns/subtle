@@ -243,6 +243,9 @@ GRABS = {
   "A-S-3"    => :WindowScreen3,
   "A-S-4"    => :WindowScreen4,
 
+  # Force reload of sublets
+  "W-C-s"    => :SubletsReload,
+
   # Force reload of config
   "W-C-r"    => :SubtleReload,
 

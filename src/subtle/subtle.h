@@ -78,7 +78,7 @@
 #define SCREENH \
   DisplayHeight(subtle->dpy, DefaultScreen(subtle->dpy))         ///< Get screen height
 
-#define  MODES_ALL \
+#define MODES_ALL \
   (SUB_MODE_FULL|SUB_MODE_FLOAT|SUB_MODE_STICK| \
   SUB_MODE_URGENT|SUB_MODE_RESIZE)                                ///< All mode flags
 
@@ -208,23 +208,25 @@
 #define SUB_GRAB_PROC                 (1L << 16)                  ///< Grab with proc
 #define SUB_GRAB_VIEW_JUMP            (1L << 17)                  ///< Jump to view
 #define SUB_GRAB_SCREEN_JUMP          (1L << 18)                  ///< Jump to screen
-#define SUB_GRAB_SUBTLE_RELOAD        (1L << 19)                  ///< Reload subtle
-#define SUB_GRAB_SUBTLE_QUIT          (1L << 20)                  ///< Quit subtle
-#define SUB_GRAB_WINDOW_MOVE          (1L << 21)                  ///< Resize window
-#define SUB_GRAB_WINDOW_RESIZE        (1L << 22)                  ///< Move window
-#define SUB_GRAB_WINDOW_TOGGLE        (1L << 23)                  ///< Toggle window
-#define SUB_GRAB_WINDOW_STACK         (1L << 24)                  ///< Stack window
-#define SUB_GRAB_WINDOW_SELECT        (1L << 25)                  ///< Select window
-#define SUB_GRAB_WINDOW_GRAVITY       (1L << 26)                  ///< Set gravity of window
-#define SUB_GRAB_WINDOW_SCREEN        (1L << 27)                  ///< Set screen of window
-#define SUB_GRAB_WINDOW_KILL          (1L << 28)                  ///< Kill window
+#define SUB_GRAB_SUBLETS_RELOAD       (1L << 19)                  ///< Reload subtle
+#define SUB_GRAB_SUBTLE_RELOAD        (1L << 20)                  ///< Reload subtle
+#define SUB_GRAB_SUBTLE_QUIT          (1L << 21)                  ///< Quit subtle
+#define SUB_GRAB_WINDOW_MOVE          (1L << 22)                  ///< Resize window
+#define SUB_GRAB_WINDOW_RESIZE        (1L << 23)                  ///< Move window
+#define SUB_GRAB_WINDOW_TOGGLE        (1L << 24)                  ///< Toggle window
+#define SUB_GRAB_WINDOW_STACK         (1L << 25)                  ///< Stack window
+#define SUB_GRAB_WINDOW_SELECT        (1L << 26)                  ///< Select window
+#define SUB_GRAB_WINDOW_GRAVITY       (1L << 27)                  ///< Set gravity of window
+#define SUB_GRAB_WINDOW_SCREEN        (1L << 28)                  ///< Set screen of window
+#define SUB_GRAB_WINDOW_KILL          (1L << 29)                  ///< Kill window
 
 /* Panel flags */
 #define SUB_PANEL_SPACER1             (1L << 13)                  ///< Panel spacer1
 #define SUB_PANEL_SPACER2             (1L << 14)                  ///< Panel spacer2
-#define SUB_PANEL_SEPARATOR           (1L << 15)                  ///< Panel separator
-#define SUB_PANEL_BOTTOM              (1L << 16)                  ///< Panel bottom
-#define SUB_PANEL_SUBLETS             (1L << 17)                  ///< Panel sublets
+#define SUB_PANEL_SEPARATOR1          (1L << 15)                  ///< Panel separator1
+#define SUB_PANEL_SEPARATOR2          (1L << 16)                  ///< Panel separator2
+#define SUB_PANEL_BOTTOM              (1L << 17)                  ///< Panel bottom
+#define SUB_PANEL_SUBLETS             (1L << 18)                  ///< Panel sublets
 
 /* Sublet types */
 #define SUB_SUBLET_INTERVAL           (1L << 20)
@@ -448,7 +450,6 @@ typedef struct subsublet_t /* {{{ */
   unsigned long      instance, bg;                                ///< Sublet ruby instance, background color
   time_t             time, interval;                              ///< Sublet update/interval time
 
-  struct subsublet_t *next;                                       ///< Sublet next sibling
   struct subarray_t  *text;                                       ///< Sublet text
 } SubSublet; /* }}} */
 
@@ -463,7 +464,6 @@ typedef struct subsubtle_t /* {{{ */
 
   XRectangle           strut;                                     ///< Subtle strut
 
-  struct subpanel_t    *panel;                                    ///< Subtle first panel
   struct subscreen_t   *screen;                                   ///< Subtle first screen
   struct subview_t     *view;                                     ///< Subtle current view
 
@@ -472,6 +472,7 @@ typedef struct subsubtle_t /* {{{ */
   struct subarray_t    *gravities;                                ///< Subtle gravities
   struct subarray_t    *hooks;                                    ///< Subtle hooks
   struct subarray_t    *icons;                                    ///< Subtle icons
+  struct subarray_t    *panels;                                   ///< Subtle panels
   struct subarray_t    *screens;                                  ///< Subtle screens
   struct subarray_t    *sublets;                                  ///< Subtle sublets
   struct subarray_t    *tags;                                     ///< Subtle tags
@@ -500,12 +501,8 @@ typedef struct subsubtle_t /* {{{ */
   struct
   {
     Window             panel1, panel2, focus;
+    struct subpanel_t  views, title, tray;
   } windows;                                                      ///< Subtle windows
-
-  struct
-  {
-    struct subpanel_t  views, focus, tray;
-  } panels;                                                       ///< Subtle panels
 
   struct
   {
@@ -558,10 +555,11 @@ extern SubSubtle *subtle;
 
 /* array.c {{{ */
 SubArray *subArrayNew(void);                                      ///< Create array
-void subArrayPush(SubArray *a, void *e);                          ///< Push element to array
-void subArrayRemove(SubArray *a, void *e);                        ///< Remove element from array
+void subArrayPush(SubArray *a, void *elem);                       ///< Push element to array
+void subArrayInsert(SubArray *a, int pos, void *elem);            ///< Insert element at pos
+void subArrayRemove(SubArray *a, void *elem);                     ///< Remove element from array
 void *subArrayGet(SubArray *a, int idx);                          ///< Get element
-int subArrayIndex(SubArray *a, void *e);                          ///< Find array id of element
+int subArrayIndex(SubArray *a, void *elem);                       ///< Find array id of element
 void subArraySort(SubArray *a,                                    ///< Sort array with given compare function 
   int(*compar)(const void *a, const void *b));
 void subArrayClear(SubArray *a, int clean);                       ///< Delete all elements
@@ -640,7 +638,7 @@ SubGrab *subGrabFind(int code, unsigned int mod);                 ///< Find grab
 void subGrabSet(Window win);                                      ///< Grab window
 void subGrabUnset(Window win);                                    ///< Ungrab window
 int subGrabCompare(const void *a, const void *b);                 ///< Compare grabs
-void subGrabKill(SubGrab *g, int clean);                          ///< Kill grab
+void subGrabKill(SubGrab *g);                                     ///< Kill grab
 /* }}} */
 
 /* gravity.c {{{ */
@@ -654,6 +652,7 @@ void subGravityKill(SubGravity *g);                               ///< Kill grav
 /* hook.c {{{ */
 SubHook *subHookNew(int type, unsigned long proc, void *data);    ///< Create hook
 void subHookCall(int type, void *data);                           ///< Call hook
+void subHookRemove(unsigned long proc, void *data);               ///< Remove hook
 void subHookKill(SubHook *h);                                     ///< Kill hook
 /* }}} */
 
@@ -674,6 +673,7 @@ void subPanelRender(void);                                        ///< Render pa
 void subRubyInit(void);                                           ///< Init Ruby stack 
 void subRubyLoadConfig(void);                                     ///< Load config file
 void subRubyReloadConfig(void);                                   ///< Reload config file
+void subRubyReloadSublets(void);                                  ///< Reload sublets
 void subRubyLoadSublet(const char *file);                         ///< Load sublet
 void subRubyLoadSublets(void);                                    ///< Load sublets
 void subRubyLoadSubtlext(void);                                   ///< Load subtlext
@@ -703,7 +703,7 @@ void subSubletRender(SubSublet *s);                               ///< Render su
 int subSubletCompare(const void *a, const void *b);               ///< Compare two sublets
 void subSubletSetData(SubSublet *s, char *data);                  ///< Set sublet data
 void subSubletPublish(void);                                      ///< Publish sublets
-void subSubletKill(SubSublet *s, int unlink);                     ///< Kill sublet
+void subSubletKill(SubSublet *s);                                 ///< Kill sublet
 /* }}} */
 
 /* tag.c {{{ */

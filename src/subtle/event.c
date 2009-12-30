@@ -52,17 +52,18 @@ EventUntag(SubClient *c,
 static SubSublet *
 EventFindSublet(int id)
 {
-  int i = 0;
-  SubPanel *iter = subtle->panel;
+  int i = 0, idx = 0;
+  SubSublet *s = NULL;
 
   /* Find sublet in linked list */
-  while(iter)
+  for(i = 0; i < subtle->panels->ndata; i++)
     {
-      if(iter->flags & SUB_TYPE_SUBLET && i++ == id) break;
-      iter = iter->next;
+      s = SUBLET(subtle->panels->data[i]);
+
+      if(s->flags & SUB_TYPE_SUBLET && idx++ == id) break;
     }
 
-  return SUBLET(iter);
+  return s;
 } /* }}} */
 
 /* EventConfigure {{{ */
@@ -178,6 +179,7 @@ EventUnmap(XUnmapEvent *ev)
       subArrayRemove(subtle->trays, (void *)t);
       subTrayKill(t);
       subTrayUpdate();
+      subTrayPublish();
       subPanelUpdate();
       subPanelRender();
     }    
@@ -202,9 +204,9 @@ EventDestroy(XDestroyWindowEvent *ev)
   else if((t = TRAY(subSharedFind(ev->event, TRAYID)))) ///< Tray
     {
       subArrayRemove(subtle->trays, (void *)t);
-      subTrayPublish();
       subTrayKill(t);
       subTrayUpdate();
+      subTrayPublish();
       subPanelUpdate();
       subPanelRender();
     }
@@ -513,7 +515,7 @@ EventMessage(XClientMessageEvent *ev)
               {
                 subArrayRemove(subtle->sublets, (void *)s);
                 subArraySort(subtle->sublets, subSubletCompare);
-                subSubletKill(s, True);
+                subSubletKill(s);
                 subSubletUpdate();
                 subSubletPublish();
                 subPanelUpdate();
@@ -529,7 +531,7 @@ EventMessage(XClientMessageEvent *ev)
         }
     } /* }}} */
   /* Messages for tray window {{{ */
-  else if(ev->window == subtle->panels.tray.win)
+  else if(ev->window == subtle->windows.tray.win)
     {
       SubTray *t = NULL;
       int id = subEwmhFind(ev->message_type);
@@ -762,7 +764,7 @@ void
 EventSelection(XSelectionClearEvent *ev)
 {
   if(subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION) == ev->selection)
-    if(ev->window == subtle->panels.tray.win)
+    if(ev->window == subtle->windows.tray.win)
       {
         subSharedLogDebug("We lost the selection? Renew it!\n");
         subTraySelect();
@@ -830,7 +832,7 @@ EventGrab(XEvent *ev)
             break; /* }}} */
           case SUB_GRAB_PROC: /* {{{ */
             subRubyCall(SUB_CALL_PROC, g->data.num, 
-              subSharedFind(win, CLIENTID), NULL);
+              (void *)g, subSharedFind(win, CLIENTID));
             break; /* }}} */
           case SUB_GRAB_VIEW_JUMP: /* {{{ */
             if(g->data.num < subtle->views->ndata)
@@ -844,8 +846,12 @@ EventGrab(XEvent *ev)
             if(g->data.num < subtle->screens->ndata)
               subScreenJump(SCREEN(subtle->screens->data[g->data.num]));
             break; /* }}} */
+          case SUB_GRAB_SUBLETS_RELOAD: /* {{{ */
+            subRubyReloadSublets();
+            break; /* }}} */
           case SUB_GRAB_SUBTLE_RELOAD: /* {{{ */
             subRubyReloadConfig();
+            return; ///< Return to avoid errors
             break; /* }}} */
           case SUB_GRAB_SUBTLE_QUIT: /* {{{ */
             if(subtle) subtle->flags &= ~SUB_SUBTLE_RUN;
@@ -1003,8 +1009,8 @@ EventFocus(XFocusChangeEvent *ev)
   subGrabUnset(subtle->windows.focus);
   if((c = CLIENT(subSharedFind(subtle->windows.focus, CLIENTID)))) 
     {
-      subtle->windows.focus      = 0;
-      subtle->panels.focus.width = 0;
+      subtle->windows.focus       = 0;
+      subtle->windows.title.width = 0;
       subClientRender(c);
 
       /* Remove urgent after losing focus */
@@ -1035,8 +1041,8 @@ EventFocus(XFocusChangeEvent *ev)
       subtle->windows.focus = ROOT;
       subGrabSet(ROOT);
 
-      subtle->windows.focus      = 0;
-      subtle->panels.focus.width = 0;
+      subtle->windows.focus       = 0;
+      subtle->windows.title.width = 0;
 
       subPanelUpdate();
       subPanelRender();
@@ -1279,24 +1285,27 @@ subEventLoop(void)
 void
 subEventFinish(void)
 {
-  subRubyFinish();
-
   if(subtle)
     {
+      XSync(subtle->dpy, False); ///< Sync before going on
+
       /* Clear hooks first to stop calling */
       subArrayClear(subtle->hooks,    True);
 
       /* Kill arrays */
-      subArrayKill(subtle->clients,   False);
-      subArrayKill(subtle->grabs,     False);
+      subArrayKill(subtle->clients,   True);
+      subArrayKill(subtle->grabs,     True);
       subArrayKill(subtle->gravities, True);
       subArrayKill(subtle->icons,     True);
       subArrayKill(subtle->screens,   True);
-      subArrayKill(subtle->sublets,   False);
+      subArrayKill(subtle->sublets,   True);
+      subArrayKill(subtle->panels,    False); ///< Before sublets
       subArrayKill(subtle->tags,      True);
       subArrayKill(subtle->trays,     True);
       subArrayKill(subtle->views,     True);
       subArrayKill(subtle->hooks,     False);
+
+      subRubyFinish();
 
       subEwmhFinish();
       subDisplayFinish();
