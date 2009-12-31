@@ -10,23 +10,21 @@
 
 require("subtle/subtlext")
 
-subtle = Subtlext::Subtle.new(":2")
-
 puts "subtle %s on %s" % 
-  [subtle.version, subtle.running? ? subtle.display : "none"]
+  [Subtlext::Subtle.version, Subtlext::Subtle.running? ? Subtlext::Subtle.display : "none"]
 
-puts "Tags: %s" % [subtle.tags.join(", ")]
+puts "Tags: %s" % [Subtlext::Tag[:all].join(", ")]
 
 # Views
 views = []
-subtle.views.each do |v|
+Subtlext::View[:all].each do |v|
   views.push("%s (%s)" % [v.current? ? "[#{v}]" : v, v.tags.join(", ")])
 end
 puts "Views: %s" % [views.join(", ")]
 
 # Clients
 clients = []
-subtle.clients.each do |c|
+Subtlext::Client[:all].each do |c|
   clients.push("%s (%s)" % [c, c.tags.join(", ")])
 end
 puts "Clients: %s" % [clients.join(", ")]
