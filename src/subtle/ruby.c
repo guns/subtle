@@ -1052,7 +1052,7 @@ RubyWrapLoadPanels(VALUE data)
               /* Check spacers and separators in first and last sublet */
               if((s = SUBLET(subArrayGet(subtle->panels, i))))
                 s->flags |= (p->flags &
-                  (SUB_PANEL_SPACER1|SUB_PANEL_SEPARATOR1));
+                  (SUB_PANEL_BOTTOM|SUB_PANEL_SPACER1|SUB_PANEL_SEPARATOR1));
 
               if((s = SUBLET(subArrayGet(subtle->panels, pos - 1))))
                 {
