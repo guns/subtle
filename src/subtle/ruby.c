@@ -1003,8 +1003,8 @@ RubyWrapLoadPanels(VALUE data)
     { CHAR2SYM("title"), &subtle->windows.title },
     { CHAR2SYM("tray"),  &subtle->windows.tray  }
   };
-
   /* Config: Panels */
+
   config = rb_const_get(rb_cObject, rb_intern("PANEL"));
   if(RubyForeachPanel(config, "top", panels)) 
     subtle->flags |= SUB_SUBTLE_PANEL1;
@@ -1379,8 +1379,8 @@ VALUE value)
  *
  * Configure block for Sublet
  *
- *  configure do |s|
- *    s.name = :subtle
+ *  configure :sublet do |s|
+ *    s.interval = 60
  *  end
  */
 
@@ -1410,7 +1410,7 @@ RubyKernelConfigure(VALUE self,
 
       printf("Loaded sublet (%s)\n", s->name);
 
-      if(0 == s->interval) s->interval = 60; ///< Sanitize
+      if(0 >= s->interval) s->interval = 60; ///< Sanitize
     }
   else rb_raise(rb_eArgError, "Unknown value type");
 
@@ -1528,7 +1528,7 @@ RubyKernelEvent(VALUE self,
  *  end
  */
 
-static VALUE 
+static VALUE
 RubyKernelHelper(VALUE self)
 {
   rb_need_block();
@@ -1581,10 +1581,10 @@ RubyObjectDispatcher(VALUE self,
 
 /* RubySubletDispatcher {{{ */
 /*
- * Dispatcher for Subtlet instance variables - internal use only
+ * Dispatcher for Sublet instance variables - internal use only
  */
 
-static VALUE  
+static VALUE
 RubySubletDispatcher(int argc, 
   VALUE *argv, 
   VALUE self)
@@ -1622,7 +1622,7 @@ RubySubletDispatcher(int argc,
     }
 
   return ret;
-} /* }}} */ 
+} /* }}} */
 
 /* RubySubletRender {{{ */
 /*
