@@ -952,11 +952,13 @@ subClientSetTransient(SubClient *c,
   if(XGetTransientForHint(subtle->dpy, c->win, &trans))
     {
       /* Check if transient windows should be urgent */
-      *flags |= subtle->flags & SUB_SUBTLE_URGENT ? SUB_MODE_FLOAT|SUB_MODE_URGENT : SUB_MODE_FLOAT;
+      *flags |= subtle->flags & SUB_SUBTLE_URGENT ?
+        SUB_MODE_FLOAT|SUB_MODE_URGENT : SUB_MODE_FLOAT;
 
       if((k = CLIENT(subSharedFind(trans, CLIENTID))))
         {
-          /* Copy tags and screens */
+          /* Copy stick flag, tags and screens */
+          c->flags  |= (k->flags & SUB_MODE_STICK);
           c->tags   |= k->tags;
           c->screen |= k->screen;
 
