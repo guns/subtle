@@ -1241,7 +1241,28 @@ RubyIconInit(int argc,
     {
       /* Find or create icon */
       if(-1 == (id = subIconFind(RSTRING_PTR(arg1))))
-        i = subIconNew(RSTRING_PTR(arg1));
+        {
+          char buf[100] = { 0 }, *file = RSTRING_PTR(arg1);
+
+          /* Find file */
+          if(-1 != access(file, R_OK))
+            snprintf(buf, sizeof(buf), "%s", file);
+          else
+            {
+              char fallback[256] = { 0 }, *data = getenv("XDG_DATA_HOME");
+
+              /* Combine paths */
+              snprintf(fallback, sizeof(fallback), "%s/.local/share", getenv("HOME"));
+              snprintf(buf, sizeof(buf), "%s/subtle/icons/%s", data ? data : fallback, file);
+
+              printf("%s\n", buf);
+
+              if(-1 == access(file, R_OK))
+                rb_raise(rb_eStandardError, "Icon not found `%s'", file);
+            }
+
+          i = subIconNew(buf);
+        }
       else i = ICON(subArrayGet(subtle->icons, id));
     }
   else if(FIXNUM_P(arg1) && FIXNUM_P(arg2)) ///< Icon dimensions
