@@ -1,59 +1,74 @@
-.TH subtlext 1 "January 15, 2010" "version 0.8" "User commands"
-
-.SH NAME
-subtlext - a ruby extension for subtle
-
-.SH SYNOPSIS
-.B subtlext
-
-.SH DESCRIPTION
-Subtlext is an extension that brings the power of subtler to Ruby.
+.\" generated with Ron/v0.3
+.\" http://github.com/rtomayko/ron/
+.
+.TH "SUBTLEXT" "1" "January 2010" "" ""
+.
+.SH "NAME"
+\fBsubtlext\fR \-\- a ruby extension for subtle
+.
+.SH "SYNOPSIS"
+\fBsubtlext\fR
+.
+.SH "DESCRIPTION"
+\fBsubtlext\fR is an extension that brings the power of \fBsubtler\fR to Ruby.
+.
 .P
-A compending list of the classes with it's functionality can be found in rdoc 
+A compending list of the classes with it's functionality can be found in rdoc
 and informations about the available unit tests in the development section.
+.
+.SH "EXAMPLE"
+.
+.nf
 
-.SH EXAMPLE
-require("subtle/subtlext")
- 
-subtle = Subtlext::Subtle.new(":2")
-
+require("subtle/subtlext") 
 puts "subtle %s on %s" % 
-  [subtle.version, subtle.running? ? subtle.display : "none"]
+  [Subtlext::Subtle.version, Subtlext::Subtle.running? ? 
+  Subtlext::Subtle.display : "none"]
 
-puts "Tags: %s" % [subtle.tags.join(", ")]
+puts "Tags: %s" % [Subtlext::Tag[:all].join(", ")]
 
 # Views
 views = []
-subtle.views.each do |v|
+Subtlext::View[:all].each do |v|
   views.push("%s (%s)" % [v.current? ? "[#{v}]" : v, v.tags.join(", ")])
 end
 puts "Views: %s" % [views.join(", ")]
 
 # Clients
 clients = []
-subtle.clients.each do |c|
+Subtlext::Client[:all].each do |c|
   clients.push("%s (%s)" % [c, c.tags.join(", ")])
 end
 puts "Clients: %s" % [clients.join(", ")]
+.
+.fi
+.
+.SH "OUTPUT"
+.
+.nf
 
-.SH OUTPUT
-subtle 0.8.1017 on :2.0
-Tags: default, float, full, editor, video, browser, terms
-Views: web (default, browser), [dev] (editor, terms), work (video, browser, terms)
-Clients: xterm (terms), xterm (terms)
-
-.SH AUTHOR
-Written by Christoph Kappel
-
-.SH BUGS
+subtle 0.8.1684 on :0.0
+Tags: default, test, void, terms, browser, editor, stick, float, eight, 
+  two, seven, one, bashrun, sakura, python
+Views: terms (terms, eight, two), [www] (browser, eight, two), 
+void (default, void, eight, two), editor (test, editor, seven, one)
+Clients: urxvt2 (two, one), urxvt1 (eight, seven), 
+  subtle \- Subtlext \- Redmine \- Vimperator (browser), 
+  Xephyr on :2.0 (ctrl+shift grabs mouse and keyboard) (test, float), 
+  event.c (~/projects/subtle/src/subtle) \- GVIM (editor) 
+.
+.fi
+.
+.SH "BUGS"
 Report bugs to unexist@dorfelite.net
-Homepage: http://wiki.subtle.de
-
-.SH COPYRIGHT
-Copyright (c) Christoph Kappel <unexist@dorfelite.net>
-
-.SH SEE ALSO
-.B
-subtle (1) 
-.B
-subtler (1)
+.
+.br
+Homepage: http://sur.subtle.de
+.
+.br
+.
+.SH "COPYRIGHT"
+Copyright (c) Christoph Kappel \fIunexist@dorfelite.net\fR
+.
+.SH "SEE ALSO"
+subtle(1), subtler(1), sur(1), surserver(1)

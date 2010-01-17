@@ -1,241 +1,442 @@
-.TH subtler 1 "January 15, 2010" "version 0.8" "User commands"
-
-.SH NAME
-subtler - a commandline interface for subtle
-
-.SH SYNOPSIS
-.B subtler
-.RB [GENERIC|MODIFIER] [GROUP] [ACTION]
-
-.SH DESCRIPTION
-Subtler is a commandline tool that allows to interact with a 
-.B
-EWMH/NetWM
+.\" generated with Ron/v0.3
+.\" http://github.com/rtomayko/ron/
+.
+.TH "SUBTLER" "1" "January 2010" "" ""
+.
+.SH "NAME"
+\fBsubtler\fR \-\- a commandline interface for subtle
+.
+.SH "SYNOPSIS"
+.
+.SH "DESCRIPTION"
+\fBsubtler\fR is a commandline tool that allows to interact with a \fBEWMH/NetWM\fR
 compatible window manager and especially with subtle. It uses many features
-of subtle like adding new tags - but other stuff will also work with every
+of subtle like adding new tags \- but other stuff will also work with every
 other compliant wm.
-
-.SH FORMATS
-.SS DISPLAY
-:<display number>
-
-.SS ID
-<number
-
-.SS GEOMETRY
-<x>x<y>+<width>+<height>
-
-.SS PATTERN
-Matching works either via plain, regex (7) or window id if applicable. If a
-pattern matches more than once ONLY the first match will be used. 
-.P
-If the PATTERN is - subtler will read from stdin.
-
-.SH OPTIONS
-.SS GENERIC
-.TP
-.BR \-d, \-\-display=DISPLAY   
-Connect to DISPLAY (default: :0)
-.TP
-.BR -D, --debug
-Print debugging messages
-.TP
-.BR \-h, \-\-help
-Show this help and exit
-.TP
-.BR \-V, \-\-version
-Show version info and exit
-
-.SS MODIFIER
-.TP
-.BR \-r, \-\-reload
-Reload subtle
-.TP
-.BR \-q, \-\-quit
-Quit subtle
-.TP
-.BR \-C, \-\-current
-Select current active window/view
-.TP
-.BR \-X, \-\-select
-Select a window via pointer
-
-.SS GROUPS
-.TP
-.BR \-c, \-\-client
-Use client group
-.TP
-.BR \-g, \-\-gravity
-Use gravity group
-.TP
-.BR \-e, \-\-screen
-Use screen group
-.TP
-.BR \-s, \-\-sublet
-Use sublet group
-.TP
-.BR \-t, \-\-tag
-Use tag group
-.TP
-.BR \-r, \-\-tray
-Use tray group
-.TP
-.BR \-v, \-\-view
-Use views group
-
-.SS ACTIONS FOR CLIENTS
-.TP
-.BR \-f, \-\-find=PATTERN      
-Find client
-.TP
-.BR \-o, \-\-focus=PATTERN     
-Set focus to client
-.TP
-.BR \-F, \-\-full
-Toggle full
-.TP
-.BR \-O, \-\-float             
-Toggle float
-.TP
-.BR \-S, \-\-stick             
-Toggle stick
-.TP
-.BR \-l, \-\-list              
-List all clients
-.TP
-.BR \-T, \-\-tag=PATTERN
-Add tag to client
-.TP
-.BR \-U, \-\-untag=PATTERN
-Remove tag from client
-.TP
-.BR \-G, \-\-tags              
-Show client tags
-.TP
-.BR \-y, \-\-gravity           
-Set client gravity
-.TP
-.BR \-n, \-\-screen            
-Set client screen
-.TP
-.BR \-E, \-\-raise             
-Raise client window
-.TP
-.BR \-R, \-\-lower             
-Lower client window
-.TP
-.BR \-k, \-\-kill=PATTERN
-Kill client
-
-.SS ACTIONS FOR GRAVITIES
-.TP
-.BR \-a, \-\-add=NAME          
-Create new gravity
-.TP
-.BR \-l, \-\-list              
-List all gravities
-.TP
-.BR \-f, \-\-find=PATTERN      
-Find a gravity
-.TP
-.BR \-k, \-\-kill=PATTERN      
-Kill gravity mode
-
-.SS ACTIONS FOR SCREENS
-.TP
-.BR \-l, \-\-list
-List all screens
-.TP
-.BR \-f, \-\-find=ID        
-Find a screen
-
-.SS ACTIONS FOR SUBLETS
-.TP
-.BR \-a, \-\-add=FILE          
-Create new sublet
-.TP
-.BR \-l, \-\-list
-List all sublets
-.TP
-.BR \-u, \-\-update
-Updates value of sublet
-.TP
-.BR \-A, \-\-data
-Set data of sublet
-.TP
-.BR \-k, \-\-kill=PATTERN      
-Kill sublet
-
-.SS ACTIONS FOR TAGS
-.TP
-.BR \-a, \-\-add=NAME          
-Create new tag
-.TP
-.BR \-f, \-\-find
-Find all clients/views by tag
-.TP
-.BR \-l, \-\-list
-List all tags
-.TP
-.BR \-I, \-\-clients
-Show clients with tag
-.TP
-.BR \-k, \-\-kill=PATTERN      
-Kill tag
-
-.TP
-.BR \-a, \-\-add=NAME          
-Create new view
-.TP
-.BR \-f, \-\-find=PATTERN      
-Find a view
-.TP
-.BR \-l, \-\-list
-List all views
-.TP
-.BR \-T, \-\-tag=PATTERN       
-Add tag to view
-.TP
-.BR \-U, \-\-untag=PATTERN     
-Remove tag from view
-.TP
-.BR \-G, \-\-tags
-Show view tags
-.TP
-.BR \-I, \-\-clients
-Show clients on view
-.TP
-.BR \-k, \-\-kill=VIEW         
-Kill view
-
-.SH LISTINGS
-Client listing:  <window id> [\-*] <view id> <geometry> <gravity> <screen> <flags> <name> (<class>)
-Gravity listing: <gravity id> <geometry>
-Screen listing:  <screen id> <geometry>
-Tag listing:     <name>
-View listing:    <window id> [\-*] <view id> <name>
-
-.SH EXAMPLES
-subtler -c -l                List all clients
-subtler -t -a subtle         Add new tag 'subtle'
-subtler -v subtle -T rocks   Tag view 'subtle' with tag 'rocks'
-subtler -c xterm -G          Show tags of client 'xterm'
-subtler -c -x -f             Select client and show info
-subtler -c -C -y 5           Set gravity 5 to current active client
-subtler -t -f term           Show every client/view tagged with 'term'
-
-.SH AUTHOR
-Written by Christoph Kappel
-
-.SH BUGS
+.
+.SH "FORMATS"
+.
+.IP "\(bu" 4
+\fBDISPLAY\fR   :\fIdisplay number\fR 
+.
+.IP "\(bu" 4
+\fBID\fR        \fInumber\fR 
+.
+.IP "\(bu" 4
+\fBGEOMETRY\fR  <xx\fIy\fR+\fIwidth\fR+\fIheight\fR 
+.
+.IP "\(bu" 4
+\fBPATTERN\fR
+.
+.br
+  Matching works either via plain, regex(7) or window id if applicable. If a
+  pattern matches more than once ONLY the first match will be used.
+.
+.IP
+If the \fBPATTERN\fR is \- subtler will read from stdin.
+.
+.IP "" 0
+.
+.SH "OPTIONS"
+.
+.SH "GENERIC"
+.
+.IP "\(bu" 4
+\fBd\fR, \fB\-\-display\fR DISPLAY
+.
+.br
+  Connect to DISPLAY (default: :0)
+.
+.IP "\(bu" 4
+\fBD\fR, \fB\-\-debug\fR
+.
+.br
+  Print debugging messages
+.
+.IP "\(bu" 4
+\fBh\fR, \fB\-\-help\fR
+.
+.br
+  Show this help and exit
+.
+.IP "\(bu" 4
+\fBV\fR, \fB\-\-version\fR
+.
+.br
+  Show version info and exit
+.
+.IP "" 0
+.
+.SH "MODIFIER"
+.
+.IP "\(bu" 4
+\fBr\fR, \fB\-\-reload\fR
+.
+.br
+  Reload subtle
+.
+.IP "\(bu" 4
+\fBq\fR, \fB\-\-quit\fR
+.
+.br
+  Quit subtle
+.
+.IP "\(bu" 4
+\fBC\fR, \fB\-\-current\fR
+.
+.br
+  Select current active window/view
+.
+.IP "\(bu" 4
+\fBX\fR, \fB\-\-select\fR
+.
+.br
+  Select a window via pointer
+.
+.IP "" 0
+.
+.SH "GROUPS"
+.
+.IP "\(bu" 4
+\fBc\fR, \fB\-\-client\fR
+.
+.br
+  Use client group
+.
+.IP "\(bu" 4
+\fBg\fR, \fB\-\-gravity\fR
+.
+.br
+  Use gravity group
+.
+.IP "\(bu" 4
+\fBe\fR, \fB\-\-screen\fR
+.
+.br
+  Use screen group
+.
+.IP "\(bu" 4
+\fBs\fR, \fB\-\-sublet\fR
+.
+.br
+  Use sublet group
+.
+.IP "\(bu" 4
+\fBt\fR, \fB\-\-tag\fR
+.
+.br
+  Use tag group
+.
+.IP "\(bu" 4
+\fBr\fR, \fB\-\-tray\fR
+.
+.br
+  Use tray group
+.
+.IP "\(bu" 4
+\fBv\fR, \fB\-\-view\fR
+.
+.br
+  Use views group
+.
+.IP "" 0
+.
+.SH "ACTIONS FOR CLIENTS"
+.
+.IP "\(bu" 4
+\fBf\fR, \fB\-\-find\fR PATTERN
+.
+.br
+  Find client
+.
+.IP "\(bu" 4
+\fBo\fR, \fB\-\-focus\fR PATTERN
+.
+.br
+  Set focus to client
+.
+.IP "\(bu" 4
+\fBF\fR, \fB\-\-full\fR
+.
+.br
+  Toggle full
+.
+.IP "\(bu" 4
+\fBO\fR, \fB\-\-float\fR
+.
+.br
+  Toggle float
+.
+.IP "\(bu" 4
+\fBS\fR, \fB\-\-stick\fR
+.
+.br
+  Toggle stick
+.
+.IP "\(bu" 4
+\fBl\fR, \fB\-\-list\fR
+.
+.br
+  List all clients
+.
+.IP "\(bu" 4
+\fBT\fR, \fB\-\-tag\fR PATTERN
+.
+.br
+  Add tag to client
+.
+.IP "\(bu" 4
+\fBU\fR, \fB\-\-untag\fR PATTERN
+.
+.br
+  Remove tag from client
+.
+.IP "\(bu" 4
+\fBG\fR, \fB\-\-tags\fR
+.
+.br
+  Show client tags
+.
+.IP "\(bu" 4
+\fBy\fR, \fB\-\-gravity\fR
+.
+.br
+  Set client gravity
+.
+.IP "\(bu" 4
+\fBn\fR, \fB\-\-screen\fR
+.
+.br
+  Set client screen
+.
+.IP "\(bu" 4
+\fBE\fR, \fB\-\-raise\fR
+.
+.br
+  Raise client window
+.
+.IP "\(bu" 4
+\fBR\fR, \fB\-\-lower\fR
+.
+.br
+  Lower client window
+.
+.IP "\(bu" 4
+\fBk\fR, \fB\-\-kill\fR PATTERN
+.
+.br
+  Kill client
+.
+.IP "" 0
+.
+.SH "ACTIONS FOR GRAVITIES"
+.
+.IP "\(bu" 4
+\fBa\fR, \fB\-\-add\fR NAME
+.
+.br
+  Create new gravity
+.
+.IP "\(bu" 4
+\fBl\fR, \fB\-\-list\fR
+.
+.br
+  List all gravities
+.
+.IP "\(bu" 4
+\fBf\fR, \fB\-\-find\fR PATTERN
+.
+.br
+  Find a gravity
+.
+.IP "\(bu" 4
+\fBk\fR, \fB\-\-kill\fR PATTERN
+.
+.br
+  Kill gravity mode
+.
+.IP "" 0
+.
+.SH "ACTIONS FOR SCREENS"
+.
+.IP "\(bu" 4
+\fBl\fR, \fB\-\-list\fR
+.
+.br
+  List all screens
+.
+.IP "\(bu" 4
+\fBf\fR, \fB\-\-find\fR ID
+.
+.br
+  Find a screen
+.
+.IP "" 0
+.
+.SH "ACTIONS FOR SUBLETS"
+.
+.IP "\(bu" 4
+\fBa\fR, \fB\-\-add\fR FILE
+.
+.br
+  Create new sublet
+.
+.IP "\(bu" 4
+\fBl\fR, \fB\-\-list\fR
+.
+.br
+  List all sublets
+.
+.IP "\(bu" 4
+\fBu\fR, \fB\-\-update\fR
+.
+.br
+  Updates value of sublet
+.
+.IP "\(bu" 4
+\fBA\fR, \fB\-\-data\fR
+.
+.br
+  Set data of sublet
+.
+.IP "\(bu" 4
+\fBk\fR, \fB\-\-kill\fR  PATTERN
+.
+.br
+  Kill sublet
+.
+.IP "" 0
+.
+.SH "ACTIONS FOR TAGS"
+.
+.IP "\(bu" 4
+\fBa\fR, \fB\-\-add\fR NAME
+.
+.br
+  Create new tag
+.
+.IP "\(bu" 4
+\fBf\fR, \fB\-\-find\fR
+.
+.br
+  Find all clients/views by tag
+.
+.IP "\(bu" 4
+\fBl\fR, \fB\-\-list\fR
+.
+.br
+  List all tags
+.
+.IP "\(bu" 4
+\fBI\fR, \fB\-\-clients\fR
+.
+.br
+  Show clients with tag
+.
+.IP "\(bu" 4
+\fBk\fR, \fB\-\-kill\fR PATTERN
+.
+.br
+  Kill tag
+.
+.IP "" 0
+.
+.SH "ACTIONS FOR VIEWS"
+.
+.IP "\(bu" 4
+\fBa\fR, \fB\-\-add\fR NAME
+.
+.br
+  Create new view
+.
+.IP "\(bu" 4
+\fBf\fR, \fB\-\-find\fR PATTERN
+.
+.br
+  Find a view
+.
+.IP "\(bu" 4
+\fBl\fR, \fB\-\-list\fR
+  List all views
+.
+.IP "\(bu" 4
+\fBT\fR, \fB\-\-tag\fR PATTERN
+.
+.br
+  Add tag to view
+.
+.IP "\(bu" 4
+\fBU\fR, `\-\-untag PATTERN
+.
+.br
+  Remove tag from view
+.
+.IP "\(bu" 4
+\fBG\fR, \fB\-\-tags\fR
+  Show view tags
+.
+.IP "\(bu" 4
+\fBI\fR, \fB\-\-clients\fR
+  Show clients on view
+.
+.IP "\(bu" 4
+\fBk\fR, \fB\-\-kill\fR VIEW
+.
+.br
+  Kill view
+.
+.IP "" 0
+.
+.SH "LISTINGS"
+Client listing:  \fIwindow id\fR [\-\fI] \fIview id\fR \fIgeometry\fR \fIgravity\fR \fIscreen\fR \fIflags\fR \fIname\fR (\fIclass\fR)
+.
+.br
+Gravity listing: \fIgravity id\fR \fIgeometry\fR
+.
+.br
+Screen listing:  \fIscreen id\fR \fIgeometry\fR
+.
+.br
+Tag listing:     \fIname\fR
+.
+.br
+View listing:    \fIwindow id\fR [\-\fR] \fIview id\fR \fIname\fR
+.
+.br
+.
+.SH "EXAMPLES"
+subtler \-c \-l                List all clients
+.
+.br
+subtler \-t \-a subtle         Add new tag 'subtle'
+.
+.br
+subtler \-v subtle \-T rocks   Tag view 'subtle' with tag 'rocks'
+.
+.br
+subtler \-c xterm \-G          Show tags of client 'xterm'
+.
+.br
+subtler \-c \-x \-f             Select client and show info
+.
+.br
+subtler \-c \-C \-y 5           Set gravity 5 to current active client
+.
+.br
+subtler \-t \-f term           Show every client/view tagged with 'term'
+.
+.br
+.
+.SH "BUGS"
 Report bugs to unexist@dorfelite.net
-Homepage: http://wiki.subtle.de
-
-.SH COPYRIGHT
-Copyright (c) Christoph Kappel <unexist@dorfelite.net>
-
-.SH SEE ALSO
-.B
-subtle (1) 
-.B
-subtlext (1)
+.
+.br
+Homepage: http://sur.subtle.de
+.
+.br
+.
+.SH "COPYRIGHT"
+Copyright (c) Christoph Kappel \fIunexist@dorfelite.net\fR
+.
+.SH "SEE ALSO"
+subtle(1), subtlext(1), sur(1), surserver(1)
