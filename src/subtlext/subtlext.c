@@ -3909,6 +3909,23 @@ SubtlextWindowBackgroundWriter(VALUE self,
   return Qnil;
 } /* }}} */
 
+/* SubtlextWindowGeometryReader {{{ */
+/*
+ * call-seq: gemetry -> Subtlext::Geometry
+ *
+ * Get geometry of a window
+ *
+ *  win.geometry
+ *  => #<Subtlext::Geometry:xxx>
+ */
+
+static VALUE
+SubtlextWindowGeometryReader(VALUE self,
+  VALUE value)
+{
+  return rb_iv_get(self, "@geometry");
+} /* }}} */
+
 /* SubtlextWindowPuts {{{ */
 /*
  * call-seq: puts(string, x, y) -> nil
@@ -4352,6 +4369,7 @@ Init_subtlext(void)
   rb_define_method(window, "kill",        SubtlextWindowKill,              0);
   rb_define_method(window, "foreground=", SubtlextWindowForegroundWriter,  1);
   rb_define_method(window, "background=", SubtlextWindowBackgroundWriter,  1);
+  rb_define_method(window, "geometry",    SubtlextWindowGeometryReader,    0);
   rb_define_method(window, "puts",        SubtlextWindowPuts,             -1);
 
 } /* }}} */
