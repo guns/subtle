@@ -2081,7 +2081,6 @@ subRubyLoadConfig(void)
     snprintf(path, sizeof(path), "%s", subtle->paths.config);
   else
     {
-      FILE *fd = NULL;
       char *tok = NULL, *bufp = buf, *home = getenv("XDG_CONFIG_HOME"), 
         *dirs = getenv("XDG_CONFIG_DIRS");
 
@@ -2094,11 +2093,8 @@ subRubyLoadConfig(void)
         {
           snprintf(path, sizeof(path), "%s/%s/%s", tok, PKG_NAME, PKG_CONFIG);
 
-          if((fd = fopen(path, "r"))) ///< Check if config file exists
-            {
-              fclose(fd);
-              break;
-            }
+          if(-1 != access(path, R_OK)) ///< Check if config file exists
+            break;
 
           subSharedLogDebug("Checked config=%s\n", path);
         }
