@@ -1255,9 +1255,7 @@ RubyIconInit(int argc,
               snprintf(fallback, sizeof(fallback), "%s/.local/share", getenv("HOME"));
               snprintf(buf, sizeof(buf), "%s/subtle/icons/%s", data ? data : fallback, file);
 
-              printf("%s\n", buf);
-
-              if(-1 == access(file, R_OK))
+              if(-1 == access(buf, R_OK))
                 rb_raise(rb_eStandardError, "Icon not found `%s'", file);
             }
 
