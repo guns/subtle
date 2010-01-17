@@ -2,7 +2,7 @@
 # @package subtle
 #
 # @file Rake build file
-# @copyright (c) 2005-2008 Christoph Kappel <unexist@dorfelite.net>
+# @copyright (c) 2005-2010 Christoph Kappel <unexist@dorfelite.net>
 # @version $Id$
 #
 # This program can be distributed under the terms of the GNU GPL.
@@ -295,6 +295,7 @@ task(:install => [:config, :build]) do
     ]
   )
 
+  # Install files
   message("INSTALL %s\n" % [PG_WM])
   FileUtils.install(PG_WM, @options["bindir"], :mode => 0755, :verbose => false)
 
@@ -304,14 +305,17 @@ task(:install => [:config, :build]) do
   message("INSTALL %s\n" % [@defines["PKG_CONFIG"]])
   FileUtils.install("dist/" + @defines["PKG_CONFIG"], @options["configdir"], :mode => 0644, :verbose => false)
 
+  # Install scripts
   FileList["dist/scripts/*.*"].collect do |f|
     message("INSTALL %s\n" % [File.basename(f)])
     FileUtils.install(f, @options["scriptdir"], :mode => 0644, :verbose => false)
   end
 
+  # Install extension
   message("INSTALL %s\n" % [PG_RBE])
   FileUtils.install(PG_RBE + ".so", @options["extdir"], :mode => 0644, :verbose => false)
 
+  # Install manpages
   FileList["dist/man/*.*"].collect do |f|
     message("INSTALL %s\n" % [File.basename(f)])
     FileUtils.install(f, @options["mandir"], :mode => 0644, :verbose => false)

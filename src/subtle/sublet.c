@@ -3,7 +3,7 @@
   * @package subtle
   *
   * @file Sublet functions
-  * @copyright (c) 2005-2009 Christoph Kappel <unexist@dorfelite.net>
+  * @copyright (c) 2005-2010 Christoph Kappel <unexist@dorfelite.net>
   * @version $Id$
   *
   * This program can be distributed under the terms of the GNU GPL.
