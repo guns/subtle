@@ -52,11 +52,11 @@ subSharedLog(int type,
   switch(type)
     {
 #ifdef DEBUG
-      case 0: fprintf(stderr, "<DEBUG> %s:%d: %s", file, line, buf);  break;
+      case 0: fprintf(stderr, "<DEBUG> %s:%d: %s", file, line, buf); break;
 #endif /* DEBUG */
-      case 1: fprintf(stderr, "<ERROR> %s", buf); raise(SIGINT);      break;
-      case 2: fprintf(stdout, "<WARNING> %s", buf);                   break;
-      case 3: fprintf(stderr, "%s", buf); raise(SIGINT);              break;
+      case 1: fprintf(stderr, "<ERROR> %s", buf);                    break;
+      case 2: fprintf(stdout, "<WARNING> %s", buf);                  break;
+      case 3: fprintf(stderr, "%s", buf);                            break;
     }
 } /* }}} */
 
