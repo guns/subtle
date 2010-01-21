@@ -11,11 +11,75 @@
   **/
 
 #include <X11/cursorfont.h>
+#include <unistd.h>
 #include "subtle.h"
 
 #ifdef HAVE_X11_EXTENSIONS_XRANDR_H
 #include <X11/extensions/Xrandr.h>
 #endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
+
+/* DisplayClaim {{{ */
+int
+DisplayClaim(void)
+{
+  int success = True;
+  char buf[10] = { 0 };
+  Atom session = None;
+  Window owner = None;
+
+  /* Get session atom */
+  snprintf(buf, sizeof(buf), "WM_S%d", DefaultScreen(subtle->dpy));
+  session = XInternAtom(subtle->dpy, buf, False);
+
+  if((owner = XGetSelectionOwner(subtle->dpy, session)))
+    {
+      if(!(subtle->flags & SUB_SUBTLE_REPLACE))
+        {
+          subSharedLogError("Found a running window manager\n");
+
+          return False;
+        }
+
+      XSelectInput(subtle->dpy, owner, StructureNotifyMask);
+      XSync(subtle->dpy, False);                                                                                       
+    }
+
+  /* Aquire session selection */
+  XSetSelectionOwner(subtle->dpy, session, 
+    subtle->windows.support, CurrentTime);
+
+  /* Wait for previous window manager to exit */
+  if(XGetSelectionOwner(subtle->dpy, session) == subtle->windows.support)
+    {
+      if(owner)
+        {
+          int i;
+          XEvent event;
+
+          printf("Waiting for current window manager to exit\n");
+
+          for(i = 0; i < WAITTIME; i++)
+            {
+              if(XCheckWindowEvent(subtle->dpy, owner, 
+                  StructureNotifyMask, &event) && 
+                  DestroyNotify == event.type)
+                return True;
+
+              sleep(1);
+            }
+
+          subSharedLogError("Giving up waiting for window managert\n");
+          success = False;
+        }
+    }
+  else 
+    {
+      subSharedLogWarn("Failed replacing current window manager\n");
+      success = False;
+    }
+
+  return success;
+} /* }}} */
 
  /** subDisplayInit {{{
   * @brief Open connection to X server and create display
@@ -42,7 +106,25 @@ subDisplayInit(const char *display)
 
   /* Connect to display and setup error handler */
   if(!(subtle->dpy = XOpenDisplay(display)))
-    subSharedLogError("Failed opening display `%s'\n", (display) ? display : ":0.0");
+    {
+      subSharedLogError("Failed opening display `%s'\n", 
+        (display) ? display : ":0.0");
+
+      subEventFinish();
+    }
+
+  /* Create supporting window */
+  subtle->windows.support = XCreateSimpleWindow(subtle->dpy, ROOT, 
+    -100, -100, 1, 1, 0, 0, 0);
+
+  sattrs.override_redirect = True;
+  sattrs.event_mask        = PropertyChangeMask;
+  XChangeWindowAttributes(subtle->dpy, subtle->windows.support, 
+    CWEventMask|CWOverrideRedirect, &sattrs);
+
+  /* Claim display */
+  if(!DisplayClaim()) subEventFinish();
+
   XSetErrorHandler(subSharedLogXError);
 
   setenv("DISPLAY", DisplayString(subtle->dpy), True); ///< Set display for clients
@@ -104,11 +186,9 @@ subDisplayInit(const char *display)
 
   /* Set override redirect */
   mask = CWOverrideRedirect;
-  XChangeWindowAttributes(subtle->dpy, subtle->windows.panel1,
-    mask, &sattrs);
-  XChangeWindowAttributes(subtle->dpy, subtle->windows.panel2,
-    mask, &sattrs);
-  XChangeWindowAttributes(subtle->dpy, subtle->windows.views.win,
+  XChangeWindowAttributes(subtle->dpy, subtle->windows.panel1, mask, &sattrs);
+  XChangeWindowAttributes(subtle->dpy, subtle->windows.panel2, mask, &sattrs);
+  XChangeWindowAttributes(subtle->dpy, subtle->windows.views.win, 
     mask, &sattrs);
   XChangeWindowAttributes(subtle->dpy, subtle->windows.title.win,
     mask, &sattrs);
@@ -270,11 +350,21 @@ subDisplayFinish(void)
       if(subtle->gcs.invert)  XFreeGC(subtle->dpy, subtle->gcs.invert);
       if(subtle->xfs)         XFreeFont(subtle->dpy, subtle->xfs);
 
-      /* Destroy view windows */
-      XDestroySubwindows(subtle->dpy, subtle->windows.panel1);
-      XDestroySubwindows(subtle->dpy, subtle->windows.panel2);
-      XDestroyWindow(subtle->dpy, subtle->windows.panel1);
-      XDestroyWindow(subtle->dpy, subtle->windows.panel2);
+      /* Destroy windows */
+      if(subtle->windows.panel1) 
+        {
+          XDestroySubwindows(subtle->dpy, subtle->windows.panel1);
+          XDestroyWindow(subtle->dpy, subtle->windows.panel1);
+        }
+
+      if(subtle->windows.panel2)
+        {
+          XDestroySubwindows(subtle->dpy, subtle->windows.panel2);
+          XDestroyWindow(subtle->dpy, subtle->windows.panel2);
+        }
+
+      if(subtle->windows.panel1) 
+        XDestroyWindow(subtle->dpy, subtle->windows.support);
 
       XInstallColormap(subtle->dpy, DefaultColormap(subtle->dpy, SCRN));
       XSetInputFocus(subtle->dpy, ROOT, RevertToPointerRoot, CurrentTime);
