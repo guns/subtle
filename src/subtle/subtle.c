@@ -65,6 +65,7 @@ SubtleUsage(void)
          "  -d, --display=DISPLAY   Connect to DISPLAY\n" \
          "  -h, --help              Show this help and exit\n" \
          "  -k, --check             Check config syntax\n" \
+         "  -r, --replace           Replace current window manager\n" \
          "  -s, --sublets=DIR       Load sublets from DIR\n" \
          "  -v, --version           Show version info and exit\n" \
          "  -D, --debug             Print debugging messages\n" \
@@ -96,6 +97,7 @@ main(int argc,
     { "display", required_argument, 0, 'd' },
     { "help",    no_argument,       0, 'h' },
     { "check",   no_argument,       0, 'k' },
+    { "replace", no_argument,       0, 'r' },
     { "sublets", required_argument, 0, 's' },
     { "version", no_argument,       0, 'v' },
 #ifdef DEBUG
@@ -104,7 +106,6 @@ main(int argc,
     { 0, 0, 0, 0}
   };
 
-
   subtle = SUBTLE(subSharedMemoryAlloc(1, sizeof(SubSubtle)));
   subtle->flags |= SUB_SUBTLE_RUN;
 
@@ -112,14 +113,15 @@ main(int argc,
     {
       switch(c)
         {
-          case 'c': subtle->paths.config = optarg;     break;
-          case 'd': display = optarg;                  break;
-          case 'h': SubtleUsage();                     return 0;
-          case 'k': check = 1;                         break;
-          case 's': subtle->paths.sublets = optarg;    break;
-          case 'v': SubtleVersion();                   return 0;
+          case 'c': subtle->paths.config = optarg;       break;
+          case 'd': display = optarg;                    break;
+          case 'h': SubtleUsage();                       return 0;
+          case 'k': check = 1;                           break;
+          case 'r': subtle->flags |= SUB_SUBTLE_REPLACE; break;
+          case 's': subtle->paths.sublets = optarg;      break;
+          case 'v': SubtleVersion();                     return 0;
 #ifdef DEBUG          
-          case 'D': subtle->flags |= SUB_SUBTLE_DEBUG; break;
+          case 'D': subtle->flags |= SUB_SUBTLE_DEBUG;   break;
 #else /* DEBUG */
           case 'D':
             printf("Please recompile %s with `debug=yes'\n", PKG_NAME);
@@ -142,7 +144,8 @@ main(int argc,
   sigaction(SIGSEGV, &sa, NULL);
   sigaction(SIGCHLD, &sa, NULL);
 
-  if(check) ///< Load and check config
+  /* Load and check config */
+  if(check)
     {
       subRubyInit();
       subRubyLoadConfig();
