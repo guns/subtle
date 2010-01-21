@@ -804,7 +804,11 @@ RubyWrapLoadConfig(VALUE data)
 
   rb_hash_foreach(config, RubyForeachGravity, (VALUE)&rargs);
 
-  if(1 == subtle->gravities->ndata) subSharedLogError("No gravities found\n");
+  if(1 == subtle->gravities->ndata) 
+    {
+      subSharedLogError("No gravities found\n");
+      subEventFinish();
+    }
 
   subGravityPublish();
 
@@ -831,7 +835,10 @@ RubyWrapLoadConfig(VALUE data)
       subSharedLogWarn("Failed loading font `%s'\n", str);
 
       subtle->xfs = XLoadQueryFont(subtle->dpy, FONT);
-      if(!subtle->xfs) subSharedLogError("Failed loading font `%s`\n", FONT);
+      if(!subtle->xfs) 
+        {
+          subSharedLogError("Failed loading font `%s`\n", FONT);
+        }
     }
 
   /* Calculate font size and panel height */
@@ -2442,11 +2449,14 @@ subRubyRelease(unsigned long value)
 void
 subRubyFinish(void)
 {
-  ruby_finalize();
+  if(Qnil != shelter)
+    {
+      ruby_finalize();
 
 #ifdef HAVE_SYS_INOTIFY_H
-  if(subtle && subtle->notify) close(subtle->notify);
+      if(subtle && subtle->notify) close(subtle->notify);
 #endif /* HAVE_SYS_INOTIFY_H */
+    }
 
   subSharedLogDebug("kill=ruby\n");
 } /* }}} */
