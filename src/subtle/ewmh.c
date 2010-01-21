@@ -30,7 +30,6 @@ typedef struct xembedinfo_t
 void
 subEwmhInit(void)
 {
-  Window *check = NULL;
   int len = 0;
   long data[4] = { 0, 0, 0, 0 }, pid = (long)getpid();
   char *selection = NULL, *names[] =
@@ -74,7 +73,7 @@ subEwmhInit(void)
     "SUBTLE_RELOAD", "SUBTLE_QUIT"
   };
 
-  /* Register atoms */
+  /* Apply tray selection */
   len       = strlen(names[SUB_EWMH_NET_SYSTEM_TRAY_SELECTION]) + 5; ///< For high screen counts
   selection = (char *)subSharedMemoryAlloc(len, sizeof(char)); 
 
@@ -82,30 +81,20 @@ subEwmhInit(void)
   subSharedLogDebug("Selection: len=%d, name=%s\n", len, selection);
   names[SUB_EWMH_NET_SYSTEM_TRAY_SELECTION] = selection;
 
-  XInternAtoms(subtle->dpy, names, SUB_EWMH_TOTAL, 0, atoms);
-
-  /* Check if another EWMH-compatible WM is running */
-  if(!(subtle->flags & SUB_SUBTLE_DEBUG) && 
-      (check = (Window *)subSharedPropertyGet(DefaultRootWindow(subtle->dpy), XA_WINDOW,
-      SUB_EWMH_NET_SUPPORTING_WM_CHECK, NULL)))
-    {
-      subSharedLogDebug("check=%#lx\n", *check);
-
-      free(check);
-      subSharedLogError("Failed taking over display\n");
-    }
+  XInternAtoms(subtle->dpy, names, SUB_EWMH_TOTAL, 0, atoms); ///< Register atoms
 
   subtle->flags |= SUB_SUBTLE_EWMH; ///< Set EWMH flag
 
   /* EWMH: Supported hints */
-  XChangeProperty(subtle->dpy, ROOT, atoms[SUB_EWMH_NET_SUPPORTED], XA_ATOM, 32, 
-    PropModeReplace, (unsigned char *)&atoms, SUB_EWMH_TOTAL);
+  XChangeProperty(subtle->dpy, ROOT, atoms[SUB_EWMH_NET_SUPPORTED], XA_ATOM, 
+    32, PropModeReplace, (unsigned char *)&atoms, SUB_EWMH_TOTAL);
 
   /* EWMH: Window manager information */
-  subEwmhSetWindows(ROOT, SUB_EWMH_NET_SUPPORTING_WM_CHECK, &subtle->windows.panel1, 1);
-  subEwmhSetString(subtle->windows.panel1, SUB_EWMH_NET_WM_NAME, PKG_NAME);
-  subEwmhSetString(subtle->windows.panel1, SUB_EWMH_WM_CLASS, PKG_NAME);
-  subEwmhSetCardinals(subtle->windows.panel1, SUB_EWMH_NET_WM_PID, &pid, 1);
+  subEwmhSetWindows(ROOT, SUB_EWMH_NET_SUPPORTING_WM_CHECK, 
+    &subtle->windows.support, 1);
+  subEwmhSetString(subtle->windows.support, SUB_EWMH_NET_WM_NAME, PKG_NAME);
+  subEwmhSetString(subtle->windows.support, SUB_EWMH_WM_CLASS, PKG_NAME);
+  subEwmhSetCardinals(subtle->windows.support, SUB_EWMH_NET_WM_PID, &pid, 1);
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_DESKTOP_VIEWPORT, (long *)&data, 2);
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_SHOWING_DESKTOP, (long *)&data, 1);
 
@@ -375,6 +364,8 @@ subEwmhFinish(void)
       subSharedPropertyDelete(ROOT, SUB_EWMH_SUBTLE_TAG_LIST);
       subSharedPropertyDelete(ROOT, SUB_EWMH_SUBTLE_SUBLET_LIST);
     }
+
+  subSharedLogDebug("kill=ewmh\n");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

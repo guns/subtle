@@ -62,7 +62,10 @@ subTrayConfigure(SubTray *t)
   
   /* Size hints */
   if(!(hints = XAllocSizeHints())) 
-    subSharedLogError("Can't alloc memory. Exhausted?\n");
+    {
+      subSharedLogError("Can't alloc memory. Exhausted?\n");
+      abort();
+    }
 
   XGetWMNormalHints(subtle->dpy, t->win, hints, &supplied);
   if(0 < supplied)
@@ -127,7 +130,8 @@ subTraySelect(void)
 
   /* Send manager info */
   subEwmhMessage(ROOT, ROOT, SUB_EWMH_MANAGER, CurrentTime, 
-    subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION), subtle->windows.tray.win, 0, 0);
+    subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION), 
+      subtle->windows.tray.win, 0, 0);
 } /* }}} */
 
  /** subTrayFocus {{{

@@ -792,7 +792,10 @@ subClientSetNormalHints(SubClient *c)
   assert(c);
 
   if(!(size = XAllocSizeHints()))
-    subSharedLogError("Can't alloc memory. Exhausted?\n");
+    {
+      subSharedLogError("Can't alloc memory. Exhausted?\n");
+      abort();
+    }
 
   s = SCREEN(subtle->screens->data[c->screen]);
 
