@@ -1432,7 +1432,10 @@ SubtlerParse(char *string)
       if(!strncmp(string, "-", 1)) ///< Read pipe
         {
           if(!fgets(buf, sizeof(buf), stdin)) 
-            subSharedLogError("Failed reading from pipe\n");
+            {
+              subSharedLogError("Failed reading from pipe\n");
+              abort();
+            }
 
           ret = (char *)subSharedMemoryAlloc(strlen(buf), sizeof(char));
           strncpy(ret, buf, strlen(buf) - 1);
@@ -1625,7 +1628,7 @@ main(int argc,
 
       return -1;
     }
- 
+
   /* Check mods */
   switch(mod)
     {
@@ -1657,7 +1660,7 @@ main(int argc,
     arg2 = SubtlerParse(argv[optind]);
 
   /* Select command */
-  if(-1 != group && -1 != action && cmds[group][action]) 
+  if(-1 != group && -1 != action && cmds[group][action])
     {
       if(arg1) args++;
       if(arg2) args++;
@@ -1673,7 +1676,7 @@ main(int argc,
   XCloseDisplay(display);
   if(arg1) free(arg1);
   if(arg2) free(arg2);
-  
+
   return 0;
 } /* }}} */
 
