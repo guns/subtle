@@ -199,8 +199,11 @@ SubtlextConnect(void)
   if(!display)
     {
       if(!(display = XOpenDisplay(NULL)))
-        subSharedLogError("Failed opening display `%s'\n", 
-          DisplayString(display));
+        {
+          rb_raise(rb_eStandardError, "Failed opening display `%s'", 
+            DisplayString(display));
+        }
+
       XSetErrorHandler(subSharedLogXError);
 
       /* Check if subtle is running */
@@ -2304,22 +2307,6 @@ SubtlextScreenToString(VALUE self)
 
 /* Subtle */
 
-/* SubtlextSubtleVersion {{{ */
-/*
- * call-seq: version -> String
- *
- * Get the version of Subtlext
- *
- *  puts subtle.version 
- *  => "0.8.xxx"
- */
-
-VALUE
-SubtlextSubtleVersion(VALUE self)
-{
-  return rb_str_new2(PKG_VERSION);
-} /* }}} */
-
 /* SubtlextSubtleDisplay {{{ */
 /*
  * call-seq: display -> String
@@ -4013,6 +4000,9 @@ Init_subtlext(void)
 
   mod = rb_define_module("Subtlext");
 
+  /* Subtlext version */
+  rb_define_const(mod, "VERSION", rb_str_new2(PKG_VERSION));
+
   /*
    * Document-class: Subtlext::Client
    *
@@ -4179,7 +4169,6 @@ Init_subtlext(void)
 
   subtle = rb_define_module_under(mod, "Subtle");
 
-  rb_define_singleton_method(subtle, "version",        SubtlextSubtleVersion,     0);
   rb_define_singleton_method(subtle, "display",        SubtlextSubtleDisplay,     0);
 
   rb_define_singleton_method(subtle, "clients",        SubtlextClientAll,         0);
