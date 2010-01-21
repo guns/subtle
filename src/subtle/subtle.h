@@ -44,6 +44,7 @@
 #define MINH         100L                                         ///< Client min height
 #define SEPARATOR    "<>"                                         ///< Color separator
 #define EXECTIME     1                                            ///< Max execution time
+#define WAITTIME     10                                           ///< Max waiting time
 #define DEFAULTTAG   (1L << 1)                                    ///< Default tag
 
 #define WIDTH(c)     (c->geom.width + 2 * subtle->bw)             ///< Get real width
@@ -250,6 +251,7 @@
 #define SUB_SUBTLE_XRANDR             (1L << 9)                   ///< Using Xrandr
 #define SUB_SUBTLE_EWMH               (1L << 10)                  ///< EWMH set
 #define SUB_SUBTLE_RUN                (1L << 11)                  ///< Run event loop
+#define SUB_SUBTLE_REPLACE            (1L << 12)                  ///< Replace previous wm
 
 /* Tag flags */
 #define SUB_TAG_GRAVITY               (1L << 13)                  ///< Gravity property
@@ -500,7 +502,7 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    Window             panel1, panel2, focus;
+    Window             panel1, panel2, focus, support;
     struct subpanel_t  views, title, tray;
   } windows;                                                      ///< Subtle windows
 
