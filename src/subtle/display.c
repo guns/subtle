@@ -45,23 +45,25 @@ subDisplayInit(const char *display)
     subSharedLogError("Failed opening display `%s'\n", (display) ? display : ":0.0");
   XSetErrorHandler(subSharedLogXError);
 
+  setenv("DISPLAY", DisplayString(subtle->dpy), True); ///< Set display for clients
+
   /* Create GCs */
-  gvals.function      = GXcopy;
-  gvals.fill_style    = FillStippled;
-  gvals.stipple       = XCreateBitmapFromData(subtle->dpy, ROOT, stipple, 15, 16);
-  mask                = GCFunction|GCFillStyle|GCStipple;  
-  subtle->gcs.stipple = XCreateGC(subtle->dpy, ROOT, mask, &gvals);
+  gvals.function           = GXcopy;
+  gvals.fill_style         = FillStippled;
+  gvals.stipple            = XCreateBitmapFromData(subtle->dpy, ROOT, stipple, 15, 16);
+  mask                     = GCFunction|GCFillStyle|GCStipple;  
+  subtle->gcs.stipple      = XCreateGC(subtle->dpy, ROOT, mask, &gvals);
  
   gvals.plane_mask         = AllPlanes;
   gvals.graphics_exposures = False;
   mask                     = GCFunction|GCPlaneMask|GCGraphicsExposures;
   subtle->gcs.font         = XCreateGC(subtle->dpy, ROOT, mask, &gvals);
 
-  gvals.function       = GXinvert;
-  gvals.subwindow_mode = IncludeInferiors;
-  gvals.line_width     = 3;
-  mask                 = GCFunction|GCSubwindowMode|GCLineWidth;
-  subtle->gcs.invert   = XCreateGC(subtle->dpy, ROOT, mask, &gvals);
+  gvals.function           = GXinvert;
+  gvals.subwindow_mode     = IncludeInferiors;
+  gvals.line_width         = 3;
+  mask                     = GCFunction|GCSubwindowMode|GCLineWidth;
+  subtle->gcs.invert       = XCreateGC(subtle->dpy, ROOT, mask, &gvals);
 
   /* Create cursors */
   subtle->cursors.arrow  = XCreateFontCursor(subtle->dpy, XC_left_ptr);
