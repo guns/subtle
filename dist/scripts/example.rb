@@ -11,7 +11,7 @@
 require("subtle/subtlext")
 
 puts "subtle %s on %s" % 
-  [Subtlext::Subtle.version, Subtlext::Subtle.running? ? Subtlext::Subtle.display : "none"]
+  [Subtlext::VERSION, Subtlext::Subtle.running? ? Subtlext::Subtle.display : "none"]
 
 puts "Tags: %s" % [Subtlext::Tag[:all].join(", ")]
 
