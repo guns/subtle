@@ -763,12 +763,21 @@ EventCrossing(XCrossingEvent *ev)
 void
 EventSelection(XSelectionClearEvent *ev)
 {
-  if(subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION) == ev->selection)
-    if(ev->window == subtle->windows.tray.win)
-      {
-        subSharedLogDebug("We lost the selection? Renew it!\n");
-        subTraySelect();
-      }
+  /* Handle selection clear events */
+  if(ev->window == subtle->windows.tray.win) ///< Tray selection
+    {
+      subSharedLogDebug("SelectionClear: type=tray, win=%#lx\n", ev->window);
+      subTraySelect();
+    }
+  else if(ev->window == subtle->windows.support) ///< Session selection
+    {
+      subSharedLogDebug("SelectionClear: type=session, win=%#lx\n", ev->window);
+      subSharedLogWarn("Quitting the field\n");
+      subtle->flags &= ~SUB_SUBTLE_RUN; ///< Exit
+    }
+
+  subSharedLogDebug("SelectionClear: win=%#lx, tray=%#lx, support=%#lx\n", 
+    ev->window, subtle->windows.tray.win, subtle->windows.support);
 } /* }}} */
 
 /* EventExpose {{{ */
@@ -1287,7 +1296,8 @@ subEventFinish(void)
 {
   if(subtle)
     {
-      XSync(subtle->dpy, False); ///< Sync before going on
+      if(subtle->dpy)
+        XSync(subtle->dpy, False); ///< Sync before going on
 
       /* Clear hooks first to stop calling */
       subArrayClear(subtle->hooks,    True);
