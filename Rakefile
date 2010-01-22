@@ -332,6 +332,7 @@ manprefix=PATH     Set install prefix for manpages (current: #{@options["manpref
 bindir=PATH        Set binary directory (current: #{@options["bindir"]})
 sysconfdir=PATH    Set config directory (current: #{@options["sysconfdir"]})
 datadir=PATH       Set data directory (current: #{@options["datadir"]})
+mandir=PATH        Set man directory (current: #{@options["mandir"]})
 debug=yes          Build with debugging messages (current: #{@options["debug"]})
 EOF
 end # }}}

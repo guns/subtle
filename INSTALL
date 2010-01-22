@@ -10,7 +10,7 @@ subtle has the following dependencies:
 Stable releases can be found here[4]. If you like you can clone the Mercurial[5] repository
 and install the developer version as followed:
 
- 1. hg clone http://hg.scrapping.cc/subtle
+ 1. hg clone http://hg.subtle.de/subtle
  2. cd subtle
  3. rake [options]
  4. rake install
@@ -40,7 +40,7 @@ Always compare your existing config with the one of the repository/tarball to ge
 [1] http://www.ruby-lang.org
 [2] http://rake.rubyforge.org
 [3] http://xorg.freedesktop.org
-[4] http://unexist.scrapping.cc/projects/list_files/subtle
+[4] http://subtle.de/projects/list_files/subtle
 [5] http://www.selenic.com/mercurial
 [6] http://standards.freedesktop.org/basedir-spec/latest/
 [7] http://unexist.scrapping.cc/wiki/subtle/Subtle
