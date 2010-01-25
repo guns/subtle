@@ -827,7 +827,7 @@ subClientSetNormalHints(SubClient *c)
           if(size->max_width)
             c->maxw = size->max_width > s->geom.width ?  s->geom.width : size->max_width;
           if(size->max_height)
-            c->maxh = size->max_height > s->geom.height - subtle->th ? 
+            c->maxh = size->max_height > s->geom.height - subtle->th ?
               s->geom.height - subtle->th : size->max_height;
         }
 
@@ -1020,10 +1020,14 @@ subClientToggle(SubClient *c,
   assert(c);
 
   /* Remove flags */
-  if(type & SUB_MODE_FULL   && c->flags & SUB_MODE_NONFULL)   type &= ~SUB_MODE_FULL;
-  if(type & SUB_MODE_FLOAT  && c->flags & SUB_MODE_NONFLOAT)  type &= ~SUB_MODE_FLOAT;
-  if(type & SUB_MODE_STICK  && c->flags & SUB_MODE_NONSTICK)  type &= ~SUB_MODE_STICK;
-  if(type & SUB_MODE_URGENT && c->flags & SUB_MODE_NONURGENT) type &= ~SUB_MODE_URGENT;
+  if(type & SUB_MODE_FULL   && c->flags & SUB_MODE_NONFULL)   
+    type &= ~SUB_MODE_FULL;
+  if(type & SUB_MODE_FLOAT  && c->flags & SUB_MODE_NONFLOAT)
+    type &= ~SUB_MODE_FLOAT;
+  if(type & SUB_MODE_STICK  && c->flags & SUB_MODE_NONSTICK) 
+    type &= ~SUB_MODE_STICK;
+  if(type & SUB_MODE_URGENT && c->flags & SUB_MODE_NONURGENT)
+    type &= ~SUB_MODE_URGENT;
 
   if(c->flags & type) ///< Unset flags
     {

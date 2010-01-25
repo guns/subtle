@@ -162,11 +162,11 @@
 #define SUB_MODE_URGENT               (1L << 23)                  ///< Urgent mode
 #define SUB_MODE_URGENT_FOCUS         (1L << 24)                  ///< Urgent mode until focus
 #define SUB_MODE_RESIZE               (1L << 25)                  ///< Resize mode
-#define SUB_MODE_NONFULL               (1L << 26)                  ///< Disable full mode
-#define SUB_MODE_NONFLOAT              (1L << 27)                  ///< Disable float mode
-#define SUB_MODE_NONSTICK              (1L << 28)                  ///< Disable stick mode
-#define SUB_MODE_NONURGENT             (1L << 29)                  ///< Disable urgent mode
-#define SUB_MODE_NONRESIZE             (1L << 30)                  ///< Disable resize mode
+#define SUB_MODE_NONFULL              (1L << 26)                  ///< Disable full mode
+#define SUB_MODE_NONFLOAT             (1L << 27)                  ///< Disable float mode
+#define SUB_MODE_NONSTICK             (1L << 28)                  ///< Disable stick mode
+#define SUB_MODE_NONURGENT            (1L << 29)                  ///< Disable urgent mode
+#define SUB_MODE_NONRESIZE            (1L << 30)                  ///< Disable resize mode
 
 /* Call flags */
 #define SUB_CALL_CLIENT_CREATE        (1L << 13)                  ///< Client create hook
@@ -184,6 +184,7 @@
 #define SUB_CALL_VIEW_CONFIGURE       (1L << 25)                  ///< View configure hook
 #define SUB_CALL_VIEW_JUMP            (1L << 26)                  ///< View jump hook
 #define SUB_CALL_VIEW_KILL            (1L << 27)                  ///< View kill hook
+#define SUB_CALL_EXIT                 (1L << 28)                  ///< Exit hook
 
 /* Client flags */
 #define SUB_CLIENT_FOCUS              (1L << 13)                  ///< Send focus message

@@ -26,7 +26,7 @@
 #define PANELSLENGTH  3
 #define GRABSLENGTH  15
 #define TAGSLENGTH    9
-#define HOOKSLENGTH   8
+#define HOOKSLENGTH  11
 
 static VALUE shelter = Qnil, subtlext = Qnil; ///< Globals
 
@@ -177,6 +177,18 @@ RubyConvert(void *data)
           /* Set properties */
           rb_iv_set(object, "@id",  INT2FIX(id));
           rb_iv_set(object, "@win", LONG2NUM(v->button));
+        } /* }}} */
+      else if(c->flags & SUB_TYPE_TAG) /* {{{ */
+        {
+          SubTag *t = TAG(c);
+
+          /* Create tag instance */
+          id     = subArrayIndex(subtle->tags, (void *)t);
+          klass  = rb_const_get(subtlext, rb_intern("Tag"));
+          object = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(t->name));
+
+          /* Set properties */
+          rb_iv_set(object, "@id", INT2FIX(id));
         } /* }}} */
     }
 
@@ -544,21 +556,21 @@ RubyForeachTag(VALUE key,
               if(t->flags & SUB_TAG_MATCH)
                 {
                   VALUE match = Qnil;
-                  
+
                   if(Qnil != (match = RubyFetchKey(value, "match", T_ARRAY, True)))
                     {
                       meth = rb_intern("include?");
 
-                      if(Qtrue == rb_funcall(match, meth, 1, CHAR2SYM("name"))) 
+                      if(Qtrue == rb_funcall(match, meth, 1, CHAR2SYM("name")))
                         t->flags |= SUB_TAG_MATCH_NAME;
 
-                      if(Qtrue == rb_funcall(match, meth, 1, CHAR2SYM("instance"))) 
+                      if(Qtrue == rb_funcall(match, meth, 1, CHAR2SYM("instance")))
                         t->flags |= SUB_TAG_MATCH_INSTANCE;
 
-                      if(Qtrue == rb_funcall(match, meth, 1, CHAR2SYM("class"))) 
+                      if(Qtrue == rb_funcall(match, meth, 1, CHAR2SYM("class")))
                         t->flags |= SUB_TAG_MATCH_CLASS;
 
-                      if(Qtrue == rb_funcall(match, meth, 1, CHAR2SYM("role"))) 
+                      if(Qtrue == rb_funcall(match, meth, 1, CHAR2SYM("role")))
                         t->flags |= SUB_TAG_MATCH_ROLE;
                     }
                 }
@@ -1486,10 +1498,13 @@ RubyKernelEvent(VALUE self,
             { CHAR2SYM("client_configure"), SUB_CALL_CLIENT_CONFIGURE },
             { CHAR2SYM("client_focus"),     SUB_CALL_CLIENT_FOCUS     },
             { CHAR2SYM("client_kill"),      SUB_CALL_CLIENT_KILL      },
+            { CHAR2SYM("tag_create"),       SUB_CALL_TAG_CREATE       },
+            { CHAR2SYM("tag_kill"),         SUB_CALL_TAG_KILL         },
             { CHAR2SYM("view_create"),      SUB_CALL_VIEW_CREATE      },
             { CHAR2SYM("view_configure"),   SUB_CALL_VIEW_CONFIGURE   },
             { CHAR2SYM("view_jump"),        SUB_CALL_VIEW_JUMP        },
-            { CHAR2SYM("view_kill"),        SUB_CALL_VIEW_KILL        }
+            { CHAR2SYM("view_kill"),        SUB_CALL_VIEW_KILL        },
+            { CHAR2SYM("exit"),             SUB_CALL_EXIT             }
           };
 
           /* Since loading is linear we use the last sublet */
