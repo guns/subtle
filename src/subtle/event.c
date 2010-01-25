@@ -411,7 +411,7 @@ EventMessage(XClientMessageEvent *ev)
                 subTagPublish();
 
                 /* Hook: Create */
-                subHookCall(SUB_CALL_TAG_CREATE, (void *)t);                
+                subHookCall(SUB_CALL_TAG_CREATE, (void *)t);
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_TAG_KILL: /* {{{ */
@@ -526,7 +526,7 @@ EventMessage(XClientMessageEvent *ev)
             subRubyReloadConfig();
             break; /* }}} */
           case SUB_EWMH_SUBTLE_QUIT: /* {{{ */
-            raise(SIGTERM);
+            subEventFinish();
             break; /* }}} */            
         }
     } /* }}} */
@@ -1298,6 +1298,9 @@ subEventFinish(void)
     {
       if(subtle->dpy)
         XSync(subtle->dpy, False); ///< Sync before going on
+
+      /* Hook: Exit */
+      subHookCall(SUB_CALL_EXIT, NULL);
 
       /* Clear hooks first to stop calling */
       subArrayClear(subtle->hooks,    True);
