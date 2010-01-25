@@ -806,7 +806,10 @@ RubyWrapLoadConfig(VALUE data)
     { CHAR2SYM("HookViewCreate"),      SUB_CALL_VIEW_CREATE      },
     { CHAR2SYM("HookViewConfigure"),   SUB_CALL_VIEW_CONFIGURE   },
     { CHAR2SYM("HookViewJump"),        SUB_CALL_VIEW_JUMP        },
-    { CHAR2SYM("HookViewKill"),        SUB_CALL_VIEW_KILL        }
+    { CHAR2SYM("HookViewKill"),        SUB_CALL_VIEW_KILL        },
+    { CHAR2SYM("HookTagCreate"),       SUB_CALL_TAG_CREATE       },
+    { CHAR2SYM("HookTagKill"),         SUB_CALL_TAG_KILL         },
+    { CHAR2SYM("HookExit"),            SUB_CALL_EXIT             }
   };
   /* }}} */
 
