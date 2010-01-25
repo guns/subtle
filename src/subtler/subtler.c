@@ -1274,8 +1274,8 @@ SubtlerUsage(int group)
              "  -h, --help              Show this help and exit\n" \
              "  -V, --version           Show version info and exit\n" \
              "\nModifier:\n" \
-             "  -r, --reload            Reload %s\n" \
-             "  -q, --quit              Quit %s\n" \
+             "  -R, --reload            Reload %s\n" \
+             "  -Q, --quit              Quit %s\n" \
              "  -C, --current           Select current active window/view\n" \
              "  -X, --select            Select a window via pointer\n" \
              "\nGroups:\n" \
