@@ -22,6 +22,7 @@
 #include <regex.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/Xft/Xft.h>
 #include <X11/Xmd.h>
 
 #include "config.h"
@@ -253,6 +254,7 @@
 #define SUB_SUBTLE_EWMH               (1L << 10)                  ///< EWMH set
 #define SUB_SUBTLE_RUN                (1L << 11)                  ///< Run event loop
 #define SUB_SUBTLE_REPLACE            (1L << 12)                  ///< Replace previous wm
+#define SUB_SUBTLE_XFT                (1L << 13)                  ///< Use xft
 
 /* Tag flags */
 #define SUB_TAG_GRAVITY               (1L << 13)                  ///< Gravity property
@@ -460,10 +462,9 @@ typedef struct subsubtle_t /* {{{ */
 {
   FLAGS                flags;                                     ///< Subtle flags
 
-  int                  th, bw, fy, vid, step, snap, gravity;      ///< Subtle properties
+  int                  th, bw, vid, step, snap, gravity;          ///< Subtle properties
 
   Display              *dpy;                                      ///< Subtle Xorg display
-  XFontStruct          *xfs;                                      ///< Subtle font
 
   XRectangle           strut;                                     ///< Subtle strut
 
@@ -487,8 +488,16 @@ typedef struct subsubtle_t /* {{{ */
 #endif /* HAVE_SYS_INOTIFY_H */
 
 #ifdef HAVE_X11_EXTENSIONS_XRANDR_H
-  int                  xrandr;                                    ///< Xrandr events
+  int                  xrandr;                                    ///< Subtle Xrandr events
 #endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
+
+  struct
+  {
+    int y;
+    XFontStruct       *xfs;                                       ///< Subtle XFS font
+    XftFont           *xft;                                       ///< Subtle XFT font
+    XftDraw           *draw;                                      ///< Subtle XFT draw
+  } font;
 
   struct
   {
@@ -594,7 +603,7 @@ void subClientSetTransient(SubClient *c, int *flags);             ///< Set clien
 void subClientSetType(SubClient *c, int *flags);                  ///< Set client tyoe
 void subClientToggle(SubClient *c, int type);                     ///< Toggle client state
 void subClientPublish(void);                                      ///< Publish all clients
-void subClientKill(SubClient *c, int close);                      ///< Kill client
+void subClientKill(SubClient *c, int destroy);                    ///< Kill client
 /* }}} */
 
 /* display.c {{{ */
