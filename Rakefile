@@ -205,6 +205,17 @@ task(:config) do
       end
     end
 
+    # Check pkg-config for X11
+    cflags, ldflags, libs = pkg_config("x11")
+    if(libs.nil?)
+      fail("X11 was not found")
+    end
+   
+    # Update flags
+    @options["cflags"] << " %s" % [cflags]
+    @options["ldflags"] << " %s" % [libs]
+    @options["extflags"] << " %s" % [libs]
+
     # Xinerama
     if(have_header("X11/extensions/Xinerama.h"))
       @options["ldflags"] << " -lXinerama"
@@ -217,23 +228,20 @@ task(:config) do
       @options["extflags"] << " -lXrandr"
     end
 
+    # Check pkg-config for Xft
+    cflags, ldflags, libs = pkg_config("xft")
+    unless(libs.nil?)
+      # Update flags
+      @options["cpppath"] << " %s" % [cflags]
+      @options["ldflags"] << " %s" % [libs]
+    end
+
     # Check functions
     FUNCS.each do |f|
       if(!have_func(f))
         fail("Func #{f} was not found")
       end
     end
-
-    # Check pkg-config for X11
-    cflags, ldflags, libs = pkg_config("x11")
-    if(libs.nil?)
-      fail("X11 was not found")
-    end
-   
-    # Update flags
-    @options["cflags"] << " %s" % [cflags]
-    @options["ldflags"] << " %s" % [libs]
-    @options["extflags"] << " %s" % [libs]
 
     # Defines
     @defines.each do |k, v|
