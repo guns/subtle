@@ -30,7 +30,7 @@ OPTIONS = {
   :gravity => :center,
 
   # Make transient windows urgent
-  :urgent  => true,
+  :urgent  => false,
 
   # Enable respecting of size hints globally
   :resize  => false,
@@ -40,6 +40,9 @@ OPTIONS = {
 
   # Font string (see xfontsel)
   :font    => "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*"
+
+  # Xft font (overrides :font and may be excluded per compile time)
+  #:xftfont => "fixed-10"
 }
 
 #
@@ -53,11 +56,12 @@ OPTIONS = {
 #
 # Following items are available:
 #
-# [*:views*]    List of views with buttons
-# [*:title*]    Title of the current active window
-# [*:tray*]     Systray icons
-# [*:sublets*]  Installed sublets
-# [*:spacer*]   Variable spacer
+# [*:views*]     List of views with buttons
+# [*:title*]     Title of the current active window
+# [*:tray*]      Systray icons
+# [*:sublets*]   Catch-all for installed sublets
+# [*:spacer*]    Variable spacer
+# [*:separator*] Insert separator
 #
 PANEL = {
   # Content of the top panel
