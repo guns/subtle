@@ -120,8 +120,8 @@ subPanelRender(void)
   if(subtle->windows.focus && (c = CLIENT(subSharedFind(subtle->windows.focus, CLIENTID)))) 
     subClientRender(c);
 
+  subViewRender();
+
   for(i = 0; i < subtle->sublets->ndata; i++)
     subSubletRender(SUBLET(subtle->sublets->data[i]));
-
-  subViewRender();
 } /* }}} */

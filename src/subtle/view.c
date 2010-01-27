@@ -30,11 +30,12 @@ subViewNew(char *name,
   v = VIEW(subSharedMemoryAlloc(1, sizeof(SubView)));
   v->flags = SUB_TYPE_VIEW;
   v->name  = strdup(name);
-  v->width = subSharedTextWidth(v->name, strlen(v->name), NULL, NULL, True) + 6; ///< Font offset
+  v->width = subSharedTextWidth(v->name, strlen(v->name), NULL, 
+    NULL, True) + 6; ///< Font offset
 
   /* Create button */
-  v->button = XCreateSimpleWindow(subtle->dpy, subtle->windows.views.win, 0, 0, 1,
-    subtle->th, 0, 0, subtle->colors.bg_views);
+  v->button = XCreateSimpleWindow(subtle->dpy, subtle->windows.views.win, 
+    0, 0, 1, subtle->th, 0, 0, subtle->colors.bg_views);
 
   XSaveContext(subtle->dpy, v->button, VIEWID, (void *)v);
   XSelectInput(subtle->dpy, v->button,  ButtonPressMask); 
@@ -54,7 +55,8 @@ subViewNew(char *name,
     }
 
   /* EWMH: Tags */
-  subEwmhSetCardinals(v->button, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&v->tags, 1); ///< Init 
+  subEwmhSetCardinals(v->button, SUB_EWMH_SUBTLE_WINDOW_TAGS, 
+    (long *)&v->tags, 1); ///< Init 
 
   subSharedLogDebug("new=view, name=%s\n", name);
 
@@ -239,7 +241,7 @@ subViewPublish(void)
 
       subSharedLogDebug("publish=views, n=%d\n", i);
 
-      XSync(subtle->dpy, False); ///< Sync all changes
+      XSync(subtle->dpy, False); ///< Sync all changes#
 
       free(views);
       free(names);

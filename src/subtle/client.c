@@ -989,7 +989,9 @@ subClientSetType(SubClient *c,
         {
           switch(subEwmhFind(types[i]))
             {
-              case SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG: *flags |= SUB_MODE_FLOAT;  break;
+              case SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG: 
+                *flags |= SUB_MODE_FLOAT;  
+                break;
               default: break;
             }
         }
