@@ -15,6 +15,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <X11/Xft/Xft.h>
 #include "shared.h"
 
  /** subSharedLog {{{
@@ -566,7 +567,7 @@ subSharedFocus(void)
 
  /** subSharedTextWidth {{{
   * @brief Get width of the smallest enclosing box
-  * @param[in]     string  The string
+  * @param[in]     text    The text
   * @param[in]     len     Length of the string
   * @param[inout]  left    Left bearing
   * @param[inout]  right   Right bearing
@@ -581,22 +582,98 @@ subSharedTextWidth(const char *string,
   int *right,
   int center)
 {
-  int direction = 0, ascent = 0, descent = 0, lbearing = 0, rbearing = 0;
-  XCharStruct overall;
+  int width = 0, lbearing = 0, rbearing = 0;
 
   assert(string);
 
-  XTextExtents(subtle->xfs, string, len, &direction, &ascent, &descent, &overall);
+  if(subtle->flags & SUB_SUBTLE_XFT) ///< XFT
+    {
+      XGlyphInfo extents;
 
-  /* Get bearings */
-  lbearing = overall.lbearing;
-  rbearing = overall.width - overall.rbearing;
+      XftTextExtents8(subtle->dpy, subtle->font.xft, (XftChar8*)string,
+        len, &extents);
+
+      lbearing = extents.x;
+      rbearing = extents.xOff;
+      width    = extents.width + extents.xOff;
+    }
+  else ///< XFS
+    {
+      XCharStruct extents;
+      int direction = 0, ascent = 0, descent = 0;
+
+      XTextExtents(subtle->font.xfs, string, len, &direction, 
+        &ascent, &descent, &extents);
+
+      lbearing = extents.lbearing;
+      rbearing = extents.width - extents.rbearing;
+      width    = extents.width;
+    }
+
 
   if(left)  *left  = lbearing;
   if(right) *right = rbearing;
 
-  return center ? overall.width - abs(lbearing - rbearing) : overall.width;
+  return center ? width - abs(lbearing - rbearing) : width;
 } /* }}} */
+
+ /** subSharedTextDraw {{{
+  * @brief Draw text
+  * @param[in]  win   Length of the string
+  * @param[in]  x     Left bearing
+  * @param[in]  y     Right bearing
+  * @param[in]  fg    Center text
+  * @param[in]  bg    Center text
+  * @param[in]  text  The string
+  * @return Width of the box
+  **/
+
+void subSharedTextDraw(Window win,
+  int x,
+  int y,
+  long fg,
+  long bg,
+  const char *text)
+{
+  /* Clear window */
+  if(0 <= bg)
+    {
+      XClearWindow(subtle->dpy, win);
+      XSetWindowBackground(subtle->dpy, win, bg); 
+    }
+
+  /* Draw text */
+  if(subtle->flags & SUB_SUBTLE_XFT) ///< XFT
+    {
+      XftColor color = { 0 };
+      XColor xcolor = { 0 };
+
+      /* Get color */
+      xcolor.pixel = fg;
+
+      XQueryColor(subtle->dpy, COLORMAP, &xcolor);
+
+      color.pixel       = xcolor.pixel;
+      color.color.red   = xcolor.red;
+      color.color.green = xcolor.green;
+      color.color.blue  = xcolor.blue;
+      color.color.alpha = 0xffff;
+
+      XftDrawChange(subtle->font.draw, win);                                                                               
+      XftDrawStringUtf8(subtle->font.draw, &color, subtle->font.xft,
+        x, y, (XftChar8 *)text, wcslen(text));
+    }
+  else ///< XFS
+    {
+      XGCValues gvals;
+
+      gvals.foreground = fg;
+      
+      XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
+      XDrawString(subtle->dpy, win, subtle->gcs.font, x, y,
+        text, strlen(text));
+    }
+}
 
 #else /* WM */
 
