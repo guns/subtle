@@ -147,7 +147,7 @@ subViewRender(void)
   if(0 < subtle->views->ndata)
     {
       int i;
-      XGCValues gvals;
+      long fg = 0, bg = 0;
 
       /* View buttons */
       for(i = 0; i < subtle->views->ndata; i++)
@@ -157,25 +157,21 @@ subViewRender(void)
           /* Select color pair */
           if(v->flags & SUB_MODE_URGENT)
             {
-              gvals.foreground = subtle->colors.fg_urgent;
-              gvals.background = subtle->colors.bg_urgent;            
+              fg = subtle->colors.fg_urgent;
+              bg = subtle->colors.bg_urgent;            
             }
           else if(subtle->view == v)
             {
-              gvals.foreground = subtle->colors.fg_focus;
-              gvals.background = subtle->colors.bg_focus;
+              fg = subtle->colors.fg_focus;
+              bg = subtle->colors.bg_focus;
             }
           else
             {
-              gvals.foreground = subtle->colors.fg_views;
-              gvals.background = subtle->colors.bg_views;
+              fg = subtle->colors.fg_views;
+              bg = subtle->colors.bg_views;
             }
 
-          XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
-          XSetWindowBackground(subtle->dpy, v->button, gvals.background); 
-          XClearWindow(subtle->dpy, v->button);
-          XDrawString(subtle->dpy, v->button, subtle->gcs.font, 3, subtle->fy,
-            v->name, strlen(v->name));
+          subSharedTextDraw(v->button, 3, subtle->font.y, fg, bg, v->name);
         }
     }
 } /* }}} */

@@ -69,7 +69,6 @@ void
 subSubletRender(SubSublet *s)
 {
   int j, width = 3;
-  XGCValues gvals;
   SubText *t = NULL;
 
   assert(s);
@@ -82,12 +81,8 @@ subSubletRender(SubSublet *s)
     {
       if((t = TEXT(s->text->data[j])) && t->flags & SUB_DATA_STRING) ///< Text
         {
-          /* Update GC */
-          gvals.foreground = t->color;
-          XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
-
-          XDrawString(subtle->dpy, s->win, subtle->gcs.font, width,
-            subtle->fy, t->data.string, strlen(t->data.string));
+          subSharedTextDraw(s->win, width, subtle->font.y, 
+            t->color, -1, t->data.string);
 
           width += t->width;
         }

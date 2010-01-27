@@ -192,7 +192,7 @@ subClientRender(SubClient *c)
 {
   char buf[50] = { 0 };
   XSetWindowAttributes sattrs;
-  XGCValues gvals;
+  long fg = 0, bg = 0;
 
   DEAD(c);
   assert(c);
@@ -205,27 +205,21 @@ subClientRender(SubClient *c)
   /* Select color pair */
   if(c->flags & SUB_MODE_URGENT)
     {
-      gvals.foreground = subtle->colors.fg_urgent;
-      gvals.background = subtle->colors.bg_urgent;         
+      fg = subtle->colors.fg_urgent;
+      bg = subtle->colors.bg_urgent;         
     }
   else
     {
-      gvals.foreground = subtle->colors.fg_focus;
-      gvals.background = subtle->colors.bg_focus;
+      fg = subtle->colors.fg_focus;
+      bg = subtle->colors.bg_focus;
     }
 
   /* Set window border */
   sattrs.border_pixel = subtle->windows.focus == c->win ?
     subtle->colors.bo_focus : subtle->colors.bo_normal;
+  XSetWindowBackground(subtle->dpy, subtle->windows.title.win, bg);
 
-  /* Update window */
-  XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
-  XChangeWindowAttributes(subtle->dpy, c->win, CWBorderPixel, &sattrs);
-  XSetWindowBackground(subtle->dpy, subtle->windows.title.win, gvals.background);
-  XClearWindow(subtle->dpy, subtle->windows.title.win);
-
-  XDrawString(subtle->dpy, subtle->windows.title.win, subtle->gcs.font, 3, subtle->fy,
-    buf, strlen(buf));
+  subSharedTextDraw(subtle->windows.title.win, 3, subtle->font.y, fg, bg, buf);
 } /* }}} */
 
  /** subClientCompare {{{
@@ -1112,14 +1106,14 @@ subClientPublish(void)
 } /* }}} */
 
  /** subClientKill {{{
-  * @brief Send interested clients the close signal and/or kill it
-  * @param[in]  c      A #SubClient
-  * @param[in]  close  Close window
+  * @brief Send interested clients the  signal and/or kill it
+  * @param[in]  c        A #SubClient
+  * @param[in]  destroy  Destroy window
   **/
 
 void
 subClientKill(SubClient *c,
-  int close)
+  int destroy)
 {
   assert(c);
 
@@ -1142,8 +1136,8 @@ subClientKill(SubClient *c,
 
   subSharedFocus(); ///< Focus
 
-  /* Close window */
-  if(close && !(c->flags & SUB_CLIENT_DEAD))
+  /* Destroy window */
+  if(destroy && !(c->flags & SUB_CLIENT_DEAD))
     {
       if(c->flags & SUB_CLIENT_CLOSE) ///< Honor window preferences
         {
