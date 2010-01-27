@@ -65,11 +65,12 @@ OBJ_RBE = SRC_RBE.collect { |f| File.join(@options["builddir"], File.basename(f)
 OBJ_SHD = SRC_SHD.collect { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
 OBJ_SHW = SRC_SHD.collect { |f| File.join(@options["builddir"], File.basename(f).ext("wm.o")) }
 
-FUNCS   = [ "poll" ]
+FUNCS   = [ "select" ]
 HEADER  = [
   "stdio.h", "stdlib.h", "stdarg.h", "string.h", "unistd.h", "signal.h", "errno.h", 
-  "assert.h", "regex.h", "sys/time.h", "sys/types.h", "sys/inotify.h", "execinfo.h"
+  "assert.h", "regex.h", "sys/time.h", "sys/types.h"
 ]
+OPTIONAL = [ "sys/inotify.h", "execinfo.h" ]
 # }}}
 
 # Miscellaneous {{{
@@ -178,7 +179,7 @@ task(:config) do
       end
     end  
 
-    # Get header dir
+    # Get ruby header dir
     if(CONFIG["rubyhdrdir"].nil?)
       @options["hdrdir"]  = Config.expand(CONFIG["archdir"]) 
     else
@@ -205,35 +206,53 @@ task(:config) do
       end
     end
 
-    # Check pkg-config for X11
-    cflags, ldflags, libs = pkg_config("x11")
-    if(libs.nil?)
-      fail("X11 was not found")
+    # Check optional headers
+    OPTIONAL.each do |h|
+      have_header(h)
     end
-   
-    # Update flags
-    @options["cflags"] << " %s" % [cflags]
-    @options["ldflags"] << " %s" % [libs]
-    @options["extflags"] << " %s" % [libs]
+
+    # Check pkg-config for X11
+    checking_for("X11/Xlib.h") do
+      cflags, ldflags, libs = pkg_config("x11")
+      if(libs.nil?)
+        fail("X11 was not found")
+      end
+     
+      # Update flags
+      @options["cflags"]   << " %s" % [cflags]
+      @options["ldflags"]  << " %s" % [libs]
+      @options["extflags"] << " %s" % [libs]
+
+      true
+    end
+
+    # Check pkg-config for Xft
+    checking_for("X11/Xft/Xft.h") do
+      ret = false
+
+      cflags, ldflags, libs = pkg_config("xft")
+      unless(libs.nil?)
+        # Update flags
+        @options["cpppath"] << " %s" % [cflags]
+        @options["ldflags"] << " %s" % [libs]
+
+        $defs.push("-DHAVE_X11_XFT_XFT_H")
+        ret = true
+      end
+
+      ret
+    end
 
     # Xinerama
     if(have_header("X11/extensions/Xinerama.h"))
-      @options["ldflags"] << " -lXinerama"
+      @options["ldflags"]  << " -lXinerama"
       @options["extflags"] << " -lXinerama"
     end
 
     # Xrandr
     if(have_header("X11/extensions/Xrandr.h"))
-      @options["ldflags"] << " -lXrandr"
+      @options["ldflags"]  << " -lXrandr"
       @options["extflags"] << " -lXrandr"
-    end
-
-    # Check pkg-config for Xft
-    cflags, ldflags, libs = pkg_config("xft")
-    unless(libs.nil?)
-      # Update flags
-      @options["cpppath"] << " %s" % [cflags]
-      @options["ldflags"] << " %s" % [libs]
     end
 
     # Check functions
