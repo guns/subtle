@@ -218,6 +218,7 @@ void
 subDisplayConfigure(void)
 {
   XGCValues gvals;
+  long mask = GCForeground;
 
   assert(subtle);
 
@@ -227,7 +228,14 @@ subDisplayConfigure(void)
   XChangeGC(subtle->dpy, subtle->gcs.stipple, GCForeground|GCLineWidth, &gvals);
 
   gvals.foreground = subtle->colors.fg_panel;
-  gvals.font       = subtle->xfs->fid;
+
+  /* Set font id */
+  if(!(subtle->flags & SUB_SUBTLE_XFT))
+    {
+      gvals.font  = subtle->font.xfs->fid;
+      mask       |= GCFont;
+    }
+
   XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground|GCFont, &gvals);
 
   /* Update windows */
@@ -348,7 +356,10 @@ subDisplayFinish(void)
       if(subtle->gcs.stipple) XFreeGC(subtle->dpy, subtle->gcs.stipple);
       if(subtle->gcs.font)    XFreeGC(subtle->dpy, subtle->gcs.font);
       if(subtle->gcs.invert)  XFreeGC(subtle->dpy, subtle->gcs.invert);
-      if(subtle->xfs)         XFreeFont(subtle->dpy, subtle->xfs);
+
+      /* Unload fonts on reload */
+      if(subtle->font.xfs) XFreeFont(subtle->dpy, subtle->font.xfs);
+      if(subtle->font.xft) XftFontClose(subtle->dpy, subtle->font.xft);
 
       /* Destroy windows */
       if(subtle->windows.panel1) 
