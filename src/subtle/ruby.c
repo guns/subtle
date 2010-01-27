@@ -839,27 +839,56 @@ RubyWrapLoadConfig(VALUE data)
 
   /* Config: Font */
   str = RubyGetString(config, "font", FONT);
-  if(subtle->xfs) ///< Free in case of reload
+
+
+  /* Load font */
+  if('-' != str[0]) ///< XFT
     {
-      XFreeFont(subtle->dpy, subtle->xfs);
-      subtle->xfs = NULL;
+      subtle->flags |= SUB_SUBTLE_XFT;
+
+      /* Create draw */
+      if(!subtle->font.draw)
+        {
+          subtle->font.draw = XftDrawCreate(subtle->dpy, ROOT, 
+            VISUAL, COLORMAP);
+        }
+
+      /* Load xft font */
+      if(!(subtle->font.xft = XftFontOpenName(subtle->dpy,
+          DefaultScreen(subtle->dpy), str)))
+        {
+          subtle->font.xft = XftFontOpenXlfd(subtle->dpy,
+            DefaultScreen(subtle->dpy), str);
+        }
+
+      subtle->th     = subtle->font.xft->ascent + 
+        subtle->font.xft->descent + 2;
+      subtle->font.y = (subtle->th - 2 + subtle->font.xft->ascent) / 2;
+    }
+  else ///< XFS 
+    {
+      subtle->font.xfs = XLoadQueryFont(subtle->dpy, str);
+      subtle->th       = subtle->font.xfs->max_bounds.ascent + 
+        subtle->font.xfs->max_bounds.descent + 2;
+      subtle->font.y   = (subtle->th - 2 + 
+        subtle->font.xfs->max_bounds.ascent) / 2;
     }
 
-  if(!(subtle->xfs = XLoadQueryFont(subtle->dpy, str)))
+  /* Check if font loading failed */
+  if(!subtle->font.xfs && !subtle->font.xft)
     {
-      subSharedLogWarn("Failed loading font `%s'\n", str);
+      subtle->flags &= ~SUB_SUBTLE_XFT;
 
-      subtle->xfs = XLoadQueryFont(subtle->dpy, FONT);
-      if(!subtle->xfs) 
+      subSharedLogWarn("Failed loading font `%s'", str);
+
+      if(!(subtle->font.xfs = XLoadQueryFont(subtle->dpy, FONT)))
         {
-          subSharedLogError("Failed loading font `%s`\n", FONT);
+          subSharedLogError("Failed loading fallback font `%s`\n", FONT);
+          subEventFinish();
+
+          return Qfalse;
         }
     }
-
-  /* Calculate font size and panel height */
-  subtle->th = subtle->xfs->max_bounds.ascent + 
-    subtle->xfs->max_bounds.descent + 2;
-  subtle->fy = (subtle->th - 2 + subtle->xfs->max_bounds.ascent) / 2;
 
   /* Config: Colors */
   config                    = rb_const_get(rb_cObject, rb_intern("COLORS"));
@@ -2203,8 +2232,22 @@ subRubyReloadConfig(void)
   int i;
 
   /* Reset before reloading */
-  subtle->flags &= (SUB_SUBTLE_DEBUG|SUB_SUBTLE_EWMH|SUB_SUBTLE_RUN);
+  subtle->flags &= (SUB_SUBTLE_DEBUG|SUB_SUBTLE_EWMH|
+    SUB_SUBTLE_RUN|SUB_SUBTLE_XFT);
   subtle->view   = NULL;
+
+  /* Unload fonts */
+  if(subtle->font.xfs)
+    {
+      XFreeFont(subtle->dpy, subtle->font.xfs);
+      subtle->font.xfs = NULL;
+    }
+
+  if(subtle->font.xft)
+    {
+      XftFontClose(subtle->dpy, subtle->font.xft);
+      subtle->font.xft = NULL;
+    }
 
   /* Clear arrays */
   subArrayClear(subtle->hooks,     True); ///< Must be first
