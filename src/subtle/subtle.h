@@ -22,7 +22,6 @@
 #include <regex.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-#include <X11/Xft/Xft.h>
 #include <X11/Xmd.h>
 
 #include "config.h"
@@ -30,6 +29,10 @@
 #ifdef HAVE_SYS_INOTIFY_H
 #include <sys/inotify.h>
 #endif /* HAVE_SYS_INOTIFY */
+
+#ifdef HAVE_X11_XFT_XFT_H
+#include <X11/Xft/Xft.h>
+#endif /* HAVE_X11_XFT_XFT_H */
 /* }}} */
 
 /* Macros {{{ */
@@ -277,7 +280,7 @@ typedef struct subarray_t /* {{{ */
 typedef struct subclient_t /* {{{ */
 {
   FLAGS      flags;                                               ///< Client flags
-  char       *name, *instance, *klass;                            ///< Client name, instance, klass
+  char       *name, *instance, *klass;                            ///< Client instance, klass
 
   TAGS       tags;                                                ///< Client tags
   Window     win;                                                 ///< Client window
@@ -494,14 +497,17 @@ typedef struct subsubtle_t /* {{{ */
   struct
   {
     int y;
-    XFontStruct       *xfs;                                       ///< Subtle XFS font
+    XFontSet          xfs;                                        ///< Subtle XFS font
+
+#ifdef HAVE_X11_XFT_XFT_H
     XftFont           *xft;                                       ///< Subtle XFT font
     XftDraw           *draw;                                      ///< Subtle XFT draw
+#endif /* HAVE_X11_XFT_XFT_H */
   } font;
 
   struct
   {
-    char              *string;                                    ///< Subtle sublet separator
+    char             *string;                                    ///< Subtle sublet separator
     int               width;
   } separator;
 
@@ -554,12 +560,12 @@ typedef struct subtray_t /* {{{ */
 
 typedef struct subview_t /* {{{ */
 {
-  FLAGS  flags;                                                   ///< View flags
-  char   *name;                                                   ///< View name
-  TAGS   tags;                                                    ///< View tags
+  FLAGS    flags;                                                 ///< View flags
+  char     *name;                                                 ///< View name
+  TAGS     tags;                                                  ///< View tags
 
-  Window button;                                                  ///< View button
-  int    width;                                                   ///< View width
+  Window   button;                                                ///< View button
+  int      width;                                                 ///< View width
 } SubView; /* }}} */
 
 extern SubSubtle *subtle;

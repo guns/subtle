@@ -202,6 +202,35 @@ RubyArity(VALUE proc)
   return FIX2INT(rb_funcall(proc, rb_intern("arity"), 0, NULL));
 } /* }}} */
 
+/* RubyFontSet {{{ */
+int
+RubyFontSet(const char *name)
+{
+  int n = 0, ret = False;
+  char *def = NULL, **missing = NULL;
+
+  /* Load font set */
+  if(name && (subtle->font.xfs = XCreateFontSet(subtle->dpy, 
+      name, &missing, &n, &def)))
+    {
+      XFontStruct **xfonts = NULL;
+      char **names = NULL;
+
+      XFontsOfFontSet(subtle->font.xfs, &xfonts, &names);
+
+      /* Font metrics */
+      subtle->th     = xfonts[0]->max_bounds.ascent + 
+        xfonts[0]->max_bounds.descent + 2;
+      subtle->font.y = (subtle->th - 2 + xfonts[0]->max_bounds.ascent) / 2;
+
+      ret = True;
+    }
+
+  if(missing) XFreeStringList(missing); ///< Ignore this
+
+  return ret;
+} /* }}} */
+
 /* Fetch */
 
 /* RubyFetchKey {{{ */
@@ -838,21 +867,9 @@ RubyWrapLoadConfig(VALUE data)
   if(True == RubyGetBool(config, "resize")) subtle->flags |= SUB_SUBTLE_RESIZE;
 
   /* Config: Font */
-  str = RubyGetString(config, "font", FONT);
-
-
-  /* Load font */
-  if('-' != str[0]) ///< XFT
+#ifdef HAVE_X11_XFT_XFT_H
+  if((str = RubyGetString(config, "xftfont", NULL)))
     {
-      subtle->flags |= SUB_SUBTLE_XFT;
-
-      /* Create draw */
-      if(!subtle->font.draw)
-        {
-          subtle->font.draw = XftDrawCreate(subtle->dpy, ROOT, 
-            VISUAL, COLORMAP);
-        }
-
       /* Load xft font */
       if(!(subtle->font.xft = XftFontOpenName(subtle->dpy,
           DefaultScreen(subtle->dpy), str)))
@@ -861,32 +878,37 @@ RubyWrapLoadConfig(VALUE data)
             DefaultScreen(subtle->dpy), str);
         }
 
-      subtle->th     = subtle->font.xft->ascent + 
-        subtle->font.xft->descent + 2;
-      subtle->font.y = (subtle->th - 2 + subtle->font.xft->ascent) / 2;
-    }
-  else ///< XFS 
-    {
-      subtle->font.xfs = XLoadQueryFont(subtle->dpy, str);
-      subtle->th       = subtle->font.xfs->max_bounds.ascent + 
-        subtle->font.xfs->max_bounds.descent + 2;
-      subtle->font.y   = (subtle->th - 2 + 
-        subtle->font.xfs->max_bounds.ascent) / 2;
-    }
-
-  /* Check if font loading failed */
-  if(!subtle->font.xfs && !subtle->font.xft)
-    {
-      subtle->flags &= ~SUB_SUBTLE_XFT;
-
-      subSharedLogWarn("Failed loading font `%s'", str);
-
-      if(!(subtle->font.xfs = XLoadQueryFont(subtle->dpy, FONT)))
+      if(subtle->font.xft)
         {
-          subSharedLogError("Failed loading fallback font `%s`\n", FONT);
-          subEventFinish();
+          subtle->flags |= SUB_SUBTLE_XFT;
 
-          return Qfalse;
+          /* Create draw */
+          if(!subtle->font.draw)
+            subtle->font.draw = XftDrawCreate(subtle->dpy, ROOT, 
+              VISUAL, COLORMAP);
+
+          /* Font metrics */
+          subtle->th     = subtle->font.xft->ascent + 
+            subtle->font.xft->descent + 2;
+          subtle->font.y = (subtle->th - 2 + subtle->font.xft->ascent) / 2;
+        }
+    }
+  else
+#endif /* HAVE_X11_XFT_XFT_H */
+    {
+      str = RubyGetString(config, "font", NULL);
+
+      if(!RubyFontSet(str))
+        {
+          subSharedLogWarn("Failed loading font `%s'", str);
+
+          if(!RubyFontSet(FONT))
+            {
+              subSharedLogError("Failed loading fallback font `%s`\n", FONT);
+              subEventFinish();
+
+              return Qfalse;
+            }
         }
     }
 
@@ -2239,7 +2261,7 @@ subRubyReloadConfig(void)
   /* Unload fonts */
   if(subtle->font.xfs)
     {
-      XFreeFont(subtle->dpy, subtle->font.xfs);
+      XFreeFontSet(subtle->dpy, subtle->font.xfs);
       subtle->font.xfs = NULL;
     }
 

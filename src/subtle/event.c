@@ -1319,7 +1319,6 @@ subEventFinish(void)
       subArrayKill(subtle->hooks,     False);
 
       subRubyFinish();
-
       subEwmhFinish();
       subDisplayFinish();
 
