@@ -150,7 +150,7 @@ void subSharedFocus(void);                                        ///< Get point
 int subSharedTextWidth(const char *text, int len,
   int *left, int *right, int center);                             ///< Get width of enclosing box
 void subSharedTextDraw(Window win, int x, int y, 
-  long fg, long bg, char *text);                                  ///< Draw text
+  long fg, long bg, const char *text);                            ///< Draw text
 /* }}} */
 #else /* WM */
 /* Message {{{ */

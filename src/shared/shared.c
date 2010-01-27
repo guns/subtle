@@ -326,7 +326,7 @@ subSharedPropertyStrings(Window win,
 {
   Atom atom;
   char **list = NULL;
-  XTextProperty text;
+  XTextProperty prop;
   Display *disp = NULL;
 
   assert(win && size);
@@ -340,12 +340,12 @@ subSharedPropertyStrings(Window win,
   atom = XInternAtom(display, name, False);
 #endif /* WM */ 
  
-  if((XGetTextProperty(disp, win, &text, atom) || 
-    XGetTextProperty(disp, win, &text, XA_STRING)) && text.nitems)
+  if((XGetTextProperty(disp, win, &prop, atom) || 
+    XGetTextProperty(disp, win, &prop, XA_STRING)) && prop.nitems)
     {
-      XTextPropertyToStringList(&text, &list, size);
+      XmbTextPropertyToTextList(disp, &prop, &list, size);
 
-      XFree(text.value);
+      XFree(prop.value);
     }
 
   return list;
@@ -364,13 +364,38 @@ subSharedPropertyName(Window win,
   char **name,
   char *fallback)
 {
+  Display *disp = NULL;
+  char **list = NULL;
+  XTextProperty prop;
+
 #ifdef WM
-  XFetchName(subtle->dpy, win, name);
+  disp = subtle->dpy;
 #else /* WM */
-  XFetchName(display, win, name);
+  disp = display;
 #endif /* WM */
 
-  if(!(*name)) *name = strdup(fallback ? fallback : PKG_NAME); ///< Sanitize
+  XGetTextProperty(disp, win, &prop, XA_WM_NAME);
+
+  if(!prop.nitems)
+    {
+      *name = strdup(PKG_NAME);
+
+      return;
+    }
+
+  if(XA_STRING == prop.encoding)
+    *name = strdup((char *)prop.value);
+  else
+    {
+      int size = 0;
+
+      if(XmbTextPropertyToTextList(disp, &prop, &list, &size))
+        {
+          *name = strdup(*list);
+
+          XFreeStringList(list);
+        }
+    }
 } /* }}} */
 
  /** subSharedPropertyClass {{{
@@ -576,7 +601,7 @@ subSharedFocus(void)
   **/
 
 int
-subSharedTextWidth(const char *string,
+subSharedTextWidth(const char *text,
   int len,
   int *left,
   int *right,
@@ -584,32 +609,32 @@ subSharedTextWidth(const char *string,
 {
   int width = 0, lbearing = 0, rbearing = 0;
 
-  assert(string);
+  assert(text);
 
+#ifdef HAVE_X11_XFT_XFT_H
   if(subtle->flags & SUB_SUBTLE_XFT) ///< XFT
     {
       XGlyphInfo extents;
 
-      XftTextExtents8(subtle->dpy, subtle->font.xft, (XftChar8*)string,
+      XftTextExtents8(subtle->dpy, subtle->font.xft, (XftChar8*)text,
         len, &extents);
 
       lbearing = extents.x;
-      rbearing = extents.xOff;
-      width    = extents.width + extents.xOff;
-    }
-  else ///< XFS
-    {
-      XCharStruct extents;
-      int direction = 0, ascent = 0, descent = 0;
-
-      XTextExtents(subtle->font.xfs, string, len, &direction, 
-        &ascent, &descent, &extents);
-
-      lbearing = extents.lbearing;
-      rbearing = extents.width - extents.rbearing;
+      rbearing = extents.xOff - extents.width;
       width    = extents.width;
     }
+  else ///< XFS
+#endif /* HAVE_X11_XFT_XFT_H */
+    {
+      XRectangle overall_ink = { 0 }, overall_logical = { 0 };
 
+      XmbTextExtents(subtle->font.xfs, text, len, 
+        &overall_ink, &overall_logical);
+
+      width    = overall_logical.width;
+      lbearing = overall_logical.x;
+      rbearing = rbearing;
+    }
 
   if(left)  *left  = lbearing;
   if(right) *right = rbearing;
@@ -635,14 +660,17 @@ void subSharedTextDraw(Window win,
   long bg,
   const char *text)
 {
+  assert(text);
+
   /* Clear window */
   if(0 <= bg)
     {
       XClearWindow(subtle->dpy, win);
-      XSetWindowBackground(subtle->dpy, win, bg); 
+      XSetWindowBackground(subtle->dpy, win, bg);
     }
 
   /* Draw text */
+#ifdef HAVE_X11_XFT_XFT_H
   if(subtle->flags & SUB_SUBTLE_XFT) ///< XFT
     {
       XftColor color = { 0 };
@@ -661,19 +689,20 @@ void subSharedTextDraw(Window win,
 
       XftDrawChange(subtle->font.draw, win);                                                                               
       XftDrawStringUtf8(subtle->font.draw, &color, subtle->font.xft,
-        x, y, (XftChar8 *)text, wcslen(text));
+        x, y, (XftChar8 *)text, strlen(text));
     }
   else ///< XFS
+#endif /* HAVE_X11_XFT_XFT_H */
     {
       XGCValues gvals;
 
       gvals.foreground = fg;
       
       XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
-      XDrawString(subtle->dpy, win, subtle->gcs.font, x, y,
-        text, strlen(text));
+      XmbDrawString(subtle->dpy, win, subtle->font.xfs, subtle->gcs.font, 
+        x, y, text, strlen(text));
     }
-}
+} /* }}} */
 
 #else /* WM */
 
