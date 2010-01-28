@@ -231,7 +231,7 @@ task(:config) do
     # Check pkg-config for Xft
     if("yes" == @options["xft"])
       checking_for("X11/Xft/Xft.h") do
-        ret = false
+        ret  = false
 
         cflags, ldflags, libs = pkg_config("xft")
         unless(libs.nil?)
@@ -241,6 +241,8 @@ task(:config) do
 
           $defs.push("-DHAVE_X11_XFT_XFT_H")
           ret = true
+        else
+          @options["xft"] = "no"
         end
 
         ret
