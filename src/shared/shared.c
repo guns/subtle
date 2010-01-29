@@ -15,7 +15,6 @@
 #include <signal.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include <X11/Xft/Xft.h>
 #include "shared.h"
 
  /** subSharedLog {{{

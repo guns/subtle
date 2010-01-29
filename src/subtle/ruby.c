@@ -2265,11 +2265,13 @@ subRubyReloadConfig(void)
       subtle->font.xfs = NULL;
     }
 
+#ifdef HAVE_X11_XFT_XFT_H
   if(subtle->font.xft)
     {
       XftFontClose(subtle->dpy, subtle->font.xft);
       subtle->font.xft = NULL;
     }
+#endif /* HAVE_X11_XFT_XFT_H */
 
   /* Clear arrays */
   subArrayClear(subtle->hooks,     True); ///< Must be first

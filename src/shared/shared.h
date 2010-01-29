@@ -39,6 +39,10 @@
 #ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
 #include <X11/extensions/Xinerama.h>
 #endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
+
+#ifdef HAVE_X11_XFT_XFT_H
+#include <X11/Xft/Xft.h>
+#endif /* HAVE_X11_XFT_XFT_H */
 /* }}} */
 
 /* Macros {{{ */
