@@ -3,7 +3,7 @@ Install
 
 subtle has the following dependencies:
 
- 1. Ruby[1] (>=1.8)
+ 1. Ruby[1] (>=1.9)
  2. Rake[2] (>=0.8)
  3. X11[3] (>=6.8.2)
 
@@ -43,5 +43,5 @@ Always compare your existing config with the one of the repository/tarball to ge
 [4] http://subtle.de/projects/list_files/subtle
 [5] http://www.selenic.com/mercurial
 [6] http://standards.freedesktop.org/basedir-spec/latest/
-[7] http://unexist.scrapping.cc/wiki/subtle/Subtle
-[8] http://unexist.scrapping.cc/wiki/subtle/Sublets
+[7] http://subforge.org/wiki/subtle/Subtle
+[8] http://subforge.org/wiki/subtle/Sublets
