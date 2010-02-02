@@ -191,7 +191,6 @@ void
 subClientRender(SubClient *c)
 {
   char buf[50] = { 0 };
-  XSetWindowAttributes sattrs;
   long fg = 0, bg = 0;
 
   DEAD(c);
@@ -214,10 +213,10 @@ subClientRender(SubClient *c)
       bg = subtle->colors.bg_focus;
     }
 
-  /* Set window border */
-  sattrs.border_pixel = subtle->windows.focus == c->win ?
-    subtle->colors.bo_focus : subtle->colors.bo_normal;
+  /* Set window background and border */
   XSetWindowBackground(subtle->dpy, subtle->windows.title.win, bg);
+  XSetWindowBorder(subtle->dpy, c->win, subtle->windows.focus == c->win ? 
+    subtle->colors.bo_focus : subtle->colors.bo_normal);
 
   subSharedTextDraw(subtle->windows.title.win, 3, subtle->font.y, fg, bg, buf);
 } /* }}} */
