@@ -588,13 +588,18 @@ subClientSetGravity(SubClient *c,
       SubScreen *s = NULL;
       SubGravity *g = NULL;
 
+      s = SCREEN(subtle->screens->data[c->screen]);
+      g = GRAVITY(subtle->gravities->data[gravity]);
+
       /* Calculate slot */
-      s              = SCREEN(subtle->screens->data[c->screen]);
-      g              = GRAVITY(subtle->gravities->data[gravity]);
-      c->geom.width  = s->geom.width * g->geometry.width / 100 - 2 * subtle->bw;
-      c->geom.height = s->geom.height * g->geometry.height / 100 - 2 * subtle->bw;
-      c->geom.x      = s->geom.x + ((s->geom.width - WIDTH(c)) * g->geometry.x / 100);
-      c->geom.y      = s->geom.y + ((s->geom.height - HEIGHT(c)) * g->geometry.y / 100);
+      c->geom.width  = (s->geom.width * g->geometry.width / 100);
+      c->geom.height = (s->geom.height * g->geometry.height / 100);
+      c->geom.x      = s->geom.x + ((s->geom.width - c->geom.width) * g->geometry.x / 100);
+      c->geom.y      = s->geom.y + ((s->geom.height - c->geom.height) * g->geometry.y / 100);
+
+      /* Substract border width */
+      c->geom.width  -= 2 * subtle->bw;
+      c->geom.height -= 2 * subtle->bw;
 
       /* Update client */
       c->gravity = c->gravities[subtle->vid] = gravity;
