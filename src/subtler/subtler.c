@@ -1390,7 +1390,7 @@ SubtlerUsage(int group)
 static void
 SubtlerVersion(void)
 {
-  printf("%sr %s - Copyright (c) 2005-2009 Christoph Kappel\n" \
+  printf("%sr %s - Copyright (c) 2005-2010 Christoph Kappel\n" \
           "Released under the GNU General Public License\n" \
           "Compiled for X%dR%d\n", 
           PKG_NAME, PKG_VERSION, X_PROTOCOL, X_PROTOCOL_REVISION);
