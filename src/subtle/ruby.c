@@ -857,10 +857,11 @@ RubyWrapLoadConfig(VALUE data)
   subGravityPublish();
 
   /* Config: Options */
-  config       = rb_const_get(rb_cObject, rb_intern("OPTIONS"));
-  subtle->bw   = RubyGetFixnum(config, "border", 2);
-  subtle->step = RubyGetFixnum(config, "step",   5);
-  subtle->snap = RubyGetFixnum(config, "snap",   10);
+  config        = rb_const_get(rb_cObject, rb_intern("OPTIONS"));
+  subtle->bw    = RubyGetFixnum(config, "border", 2);
+  subtle->step  = RubyGetFixnum(config, "step",   5);
+  subtle->snap  = RubyGetFixnum(config, "snap",   10);
+  subtle->limit = RubyGetFixnum(config, "limit",  EXECTIME);
   RubyGetGeometry(config, "padding", &subtle->strut);
   if(-1 == (subtle->gravity = RubyGetGravity(config))) subtle->gravity = 0;
   if(True == RubyGetBool(config, "urgent")) subtle->flags |= SUB_SUBTLE_URGENT;
@@ -2473,8 +2474,12 @@ subRubyCall(int type,
   rargs[2] = (VALUE)data1;
   rargs[3] = (VALUE)data2;
 
-  signal(SIGALRM, RubySignal); ///< Limit execution time
-  alarm(EXECTIME);
+  /* Limit execution time */
+  if(0 < subtle->limit)
+    {
+      signal(SIGALRM, RubySignal);
+      alarm(EXECTIME);
+    }
 
   /* Carefully call */
   result = rb_protect(RubyWrapCall, (VALUE)&rargs, &state);
@@ -2487,7 +2492,7 @@ subRubyCall(int type,
       result = Qnil;
     }
 
-  alarm(0);
+  if(0 < subtle->limit) alarm(0); ///< Reset alarm
 
 #ifdef DEBUG
   subSharedLogDebug("GC RUN\n");

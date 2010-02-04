@@ -465,7 +465,7 @@ typedef struct subsubtle_t /* {{{ */
 {
   FLAGS                flags;                                     ///< Subtle flags
 
-  int                  th, bw, vid, step, snap, gravity;          ///< Subtle properties
+  int                  th, bw, vid, step, snap, limit, gravity;   ///< Subtle properties
 
   Display              *dpy;                                      ///< Subtle Xorg display
 
