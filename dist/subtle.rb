@@ -26,7 +26,10 @@ OPTIONS = {
   # Window screen border snapping
   :snap    => 10,
 
-  # Default starting gravity for windows
+  # Limit execution time of sublets (0 = no limit)
+  :limit   => 1,
+
+  # Default starting gravity for windows (0 = gravity of last client)
   :gravity => :center,
 
   # Make transient windows urgent
