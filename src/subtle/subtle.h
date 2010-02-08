@@ -182,13 +182,14 @@
 #define SUB_CALL_SUBLET_DOWN          (1L << 19)                  ///< Sublet mouse down hook
 #define SUB_CALL_SUBLET_OVER          (1L << 20)                  ///< Sublet mouse over hook
 #define SUB_CALL_SUBLET_OUT           (1L << 21)                  ///< Sublet mouse out hook
-#define SUB_CALL_TAG_CREATE           (1L << 22)                  ///< Tag create hook
-#define SUB_CALL_TAG_KILL             (1L << 23)                  ///< Tag kill hook
-#define SUB_CALL_VIEW_CREATE          (1L << 24)                  ///< View create hook
-#define SUB_CALL_VIEW_CONFIGURE       (1L << 25)                  ///< View configure hook
-#define SUB_CALL_VIEW_JUMP            (1L << 26)                  ///< View jump hook
-#define SUB_CALL_VIEW_KILL            (1L << 27)                  ///< View kill hook
-#define SUB_CALL_EXIT                 (1L << 28)                  ///< Exit hook
+#define SUB_CALL_SUBLET_WATCH         (1L << 22)                  ///< Sublet watch hook
+#define SUB_CALL_TAG_CREATE           (1L << 23)                  ///< Tag create hook
+#define SUB_CALL_TAG_KILL             (1L << 24)                  ///< Tag kill hook
+#define SUB_CALL_VIEW_CREATE          (1L << 25)                  ///< View create hook
+#define SUB_CALL_VIEW_CONFIGURE       (1L << 26)                  ///< View configure hook
+#define SUB_CALL_VIEW_JUMP            (1L << 27)                  ///< View jump hook
+#define SUB_CALL_VIEW_KILL            (1L << 28)                  ///< View kill hook
+#define SUB_CALL_EXIT                 (1L << 29)                  ///< Exit hook
 
 /* Client flags */
 #define SUB_CLIENT_FOCUS              (1L << 13)                  ///< Send focus message
@@ -233,6 +234,7 @@
 #define SUB_PANEL_SEPARATOR2          (1L << 16)                  ///< Panel separator2
 #define SUB_PANEL_BOTTOM              (1L << 17)                  ///< Panel bottom
 #define SUB_PANEL_SUBLETS             (1L << 18)                  ///< Panel sublets
+#define SUB_PANEL_HIDDEN              (1L << 19)                  ///< Hidden panel
 
 /* Sublet types */
 #define SUB_SUBLET_INTERVAL           (1L << 20)
@@ -242,7 +244,8 @@
 #define SUB_SUBLET_DOWN               (1L << 24)                  ///< Sublet mouse down function
 #define SUB_SUBLET_OVER               (1L << 25)                  ///< Sublet mouse over function
 #define SUB_SUBLET_OUT                (1L << 26)                  ///< Sublet mouse out function
-#define SUB_SUBLET_PANEL              (1L << 27)                  ///< Sublet in panel
+#define SUB_SUBLET_WATCH              (1L << 27)                  ///< Sublet watch function
+#define SUB_SUBLET_PANEL              (1L << 28)                  ///< Sublet in panel
 
 /* Subtle flags */
 #define SUB_SUBTLE_DEBUG              (1L << 1)                   ///< Debug enabled

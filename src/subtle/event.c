@@ -1225,7 +1225,7 @@ subEventLoop(void)
                               if((s = SUBLET(subSharedFind(subtle->windows.panel1, 
                                   event->wd))))
                                 {
-                                  subRubyCall(SUB_CALL_SUBLET_RUN, 
+                                  subRubyCall(SUB_CALL_SUBLET_WATCH, 
                                     s->instance, (void *)s, NULL);
                                   subSubletUpdate();
                                   subPanelUpdate();
@@ -1240,7 +1240,7 @@ subEventLoop(void)
                       if((s = SUBLET(subSharedFind(subtle->windows.panel1, 
                           watches[i].fd))))
                         {
-                          subRubyCall(SUB_CALL_SUBLET_RUN, s->instance, 
+                          subRubyCall(SUB_CALL_SUBLET_WATCH, s->instance, 
                             (void *)s, NULL);
                           subSubletUpdate();
                           subPanelUpdate();
