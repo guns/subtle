@@ -3684,11 +3684,11 @@ SubtlextWindowSweep(SubtlextWindow *w)
 
 /* SubtlextWindowNew {{{ */
 /*
- * call-seq: new(name, geometry, bw, background. border) -> Subtlext::Window
+ * call-seq: new(name, geometry, bw, foreground, background, border) -> Subtlext::Window
  *
  * Create a new Window object
  *
- *  geom = Subtlext::Window.new("subtle", [ 0, 0, 50, 50 ])
+ *  win = Subtlext::Window.new("subtle", [ 0, 0, 50, 50 ])
  *  => #<Subtlext::Window:xxx>
  */
 
@@ -3699,35 +3699,51 @@ SubtlextWindowNew(int argc,
 {
   char *name = NULL;
   int x = 0, y = 0, width = 50, height = 50, bw = 1;
-  unsigned long bo = 0, bg = 0;
+  unsigned long fg = 0, bg = 0, bo = 0;
   XClassHint hint;
   Window win = None;
   XTextProperty text;
   XSetWindowAttributes sattrs;
   XGCValues gvals;
   SubtlextWindow *w = NULL;
-  VALUE args[5] = { Qnil }, klass = Qnil, geometry = Qnil;
+  VALUE args[6] = { Qnil }, klass = Qnil, geometry = Qnil;
 
   SubtlextConnect(); ///< Implicit open connection
 
-  rb_scan_args(argc, argv, "05", &args[0], &args[1], &args[2], &args[3], &args[4]);
+  rb_scan_args(argc, argv, "06", &args[0], &args[1], &args[2], 
+    &args[3], &args[4], &args[5]);
 
   /* Collect data */
   name     = RSTRING_PTR(args[0]);
   klass    = rb_const_get(mod, rb_intern("Geometry"));
   geometry = rb_funcall(klass, rb_intern("new"), 1, args[1]);
 
-  /* Create window graphics and font */
+  /* Parse arguments */
+  if(T_FIXNUM == rb_type(args[2]))
+    bw = FIX2INT(args[2]);
+
+  if(T_STRING == rb_type(args[3]))
+    fg = subSharedParseColor(RSTRING_PTR(args[3]));
+
+  if(T_STRING == rb_type(args[4]))
+    bg = subSharedParseColor(RSTRING_PTR(args[4]));
+
+  if(T_STRING == rb_type(args[5]))
+    bo = subSharedParseColor(RSTRING_PTR(args[5]));
+
+  /* Create window font */
   w = (SubtlextWindow *)subSharedMemoryAlloc(1, sizeof(SubtlextWindow));
   w->xfs           = XLoadQueryFont(display, "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*");
   gvals.font       = w->xfs->fid;
-  gvals.foreground = WhitePixel(display, DefaultScreen(display));
+  gvals.foreground = fg;
 
+  /* Create window gc */
   w->gc       = XCreateGC(display, DefaultRootWindow(display), 
     GCFont|GCForeground, &gvals);
   w->instance = Data_Wrap_Struct(self, SubtlextWindowMark, 
     SubtlextWindowSweep, (void *)w);
 
+  /* Parse geometry */
   if(!NIL_P(geometry))
     {
       x      = FIX2INT(rb_iv_get(geometry, "@x"));
@@ -3735,15 +3751,6 @@ SubtlextWindowNew(int argc,
       width  = FIX2INT(rb_iv_get(geometry, "@width"));
       height = FIX2INT(rb_iv_get(geometry, "@height"));
     }
-
-  if(T_FIXNUM == rb_type(args[2]))
-    bw = FIX2INT(args[2]); 
-
-  if(T_STRING == rb_type(args[3]))
-    bg = subSharedParseColor(RSTRING_PTR(args[3]));
-
-  if(T_STRING == rb_type(args[4]))
-    bo = subSharedParseColor(RSTRING_PTR(args[4]));
 
   /* Create window */
   sattrs.override_redirect = True;
