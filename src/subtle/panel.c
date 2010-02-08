@@ -29,6 +29,7 @@ subPanelUpdate(void)
     {
       SubPanel *p = PANEL(subtle->panels->data[i]);
 
+      if(p->flags & SUB_PANEL_HIDDEN) continue;
       if(p->flags & SUB_PANEL_BOTTOM)  n = 1;
       if(p->flags & SUB_PANEL_SPACER1) spacer[n]++;
       if(p->flags & SUB_PANEL_SPACER2) spacer[n]++;
@@ -45,6 +46,7 @@ subPanelUpdate(void)
     {
       SubPanel *p = PANEL(subtle->panels->data[i]);
 
+      if(p->flags & SUB_PANEL_HIDDEN) continue;
       if(p->flags & SUB_PANEL_BOTTOM)
         {
           n = 1;
@@ -107,6 +109,7 @@ subPanelRender(void)
     {
       SubPanel *p = PANEL(subtle->panels->data[i]);
 
+      if(p->flags & SUB_PANEL_HIDDEN) continue;
       if(p->flags & SUB_PANEL_BOTTOM) panel = subtle->windows.panel2;
       if(p->flags & SUB_PANEL_SEPARATOR1) ///< Draw separator before panel 
         subSharedTextDraw(panel, p->x - subtle->separator.width + 3, subtle->font.y, 
