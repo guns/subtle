@@ -57,7 +57,7 @@ typedef struct rubysymbol_t
 
 typedef struct rubymethods_t
 {
-  VALUE sym;
+  VALUE sym, real;
   int   flags, arity;
 } RubyMethods;
 /* }}} */
@@ -1164,26 +1164,29 @@ RubyWrapCall(VALUE data)
   switch((int)rargs[0])
     {
       case SUB_CALL_SUBLET_RUN: /* {{{ */
-        rb_funcall(rargs[1], rb_intern("run"), 1, rargs[1]);
+        rb_funcall(rargs[1], rb_intern("__run"), 1, rargs[1]);
+        break; /* }}} */
+      case SUB_CALL_SUBLET_WATCH: /* {{{ */
+        rb_funcall(rargs[1], rb_intern("__watch"), 1, rargs[1]);
         break; /* }}} */
       case SUB_CALL_SUBLET_OVER: /* {{{ */
-        rb_funcall(rargs[1], rb_intern("mouse_over"), 1, rargs[1]);
+        rb_funcall(rargs[1], rb_intern("__over"), 1, rargs[1]);
         break; /* }}} */
       case SUB_CALL_SUBLET_OUT: /* {{{ */
-        rb_funcall(rargs[1], rb_intern("mouse_out"), 1, rargs[1]);
-        break; /* }}} */
-      case SUB_CALL_PROC: /* {{{ */
-        rb_funcall(rargs[1], rb_intern("call"), 
-          MINMAX(RubyArity(rargs[1]), 0, 1), RubyConvert((VALUE *)rargs[3]));
+        rb_funcall(rargs[1], rb_intern("__out"), 1, rargs[1]);
         break; /* }}} */
       case SUB_CALL_SUBLET_DOWN: /* {{{ */
           {
             XButtonEvent *ev = (XButtonEvent *)rargs[2];
 
-            rb_funcall(rargs[1], rb_intern("mouse_down"), 4, rargs[1], 
+            rb_funcall(rargs[1], rb_intern("__down"), 4, rargs[1], 
               INT2FIX(ev->x), INT2FIX(ev->y), INT2FIX(ev->button));
           }
         break; /* }}} */        
+      case SUB_CALL_PROC: /* {{{ */
+        rb_funcall(rargs[1], rb_intern("call"), 
+          MINMAX(RubyArity(rargs[1]), 0, 1), RubyConvert((VALUE *)rargs[3]));
+        break; /* }}} */
       default: ///< Sublet hooks
         {
           SubSublet *s = SUBLET(rargs[2]);
@@ -1541,10 +1544,11 @@ RubyKernelEvent(VALUE self,
 
           RubyMethods methods[] = 
           {
-            { CHAR2SYM("run"),        SUB_SUBLET_RUN,  1 },
-            { CHAR2SYM("mouse_down"), SUB_SUBLET_DOWN, 4 },
-            { CHAR2SYM("mouse_over"), SUB_SUBLET_OVER, 1 },
-            { CHAR2SYM("mouse_out"),  SUB_SUBLET_OUT,  1 }
+            { CHAR2SYM("run"),        CHAR2SYM("__run"),   SUB_SUBLET_RUN,   1 },
+            { CHAR2SYM("watch"),      CHAR2SYM("__watch"), SUB_SUBLET_WATCH, 1 },
+            { CHAR2SYM("mouse_down"), CHAR2SYM("__down"),  SUB_SUBLET_DOWN,  4 },
+            { CHAR2SYM("mouse_over"), CHAR2SYM("__over"),  SUB_SUBLET_OVER,  1 },
+            { CHAR2SYM("mouse_out"),  CHAR2SYM("__out"),   SUB_SUBLET_OUT,   1 }
           };
 
           RubySymbols hooks[] =
@@ -1580,7 +1584,7 @@ RubyKernelEvent(VALUE self,
                       s->flags |= methods[i].flags;
 
                       /* Create instance method from proc */
-                      rb_funcall(sing, meth, 2, event, p);
+                      rb_funcall(sing, meth, 2, methods[i].real, p);
                     }
                   else rb_raise(rb_eArgError, "Wrong number of arguments (%d for %d)", 
                     arity, methods[i].arity);
@@ -1971,6 +1975,86 @@ RubySubletWindowReader(VALUE self)
   return win;
 } /* }}} */
 
+/* RubySubletShow {{{ */
+/*
+ * call-seq: show -> nil
+ *
+ * Show sublet
+ *
+ *  sublet.show
+ *  => nil
+ */
+
+static VALUE
+RubySubletShow(VALUE self)
+{
+  SubSublet *s = NULL;
+
+  Data_Get_Struct(self, SubSublet, s);
+
+  if(s)
+    {
+      s->flags &= ~SUB_PANEL_HIDDEN;
+
+      /* Update panels */
+      subPanelUpdate();
+      subPanelRender();
+    }
+
+  return Qnil;
+} /* }}} */
+
+/* RubySubletHide {{{ */
+/*
+ * call-seq: hide -> nil
+ *
+ * Hide sublet
+ *
+ *  sublet.hide
+ *  => nil
+ */
+
+static VALUE
+RubySubletHide(VALUE self,
+  VALUE value)
+{
+  SubSublet *s = NULL;
+
+  Data_Get_Struct(self, SubSublet, s);
+
+  if(s)
+    {
+      s->flags |= SUB_PANEL_HIDDEN;
+      XUnmapWindow(subtle->dpy, s->win);
+
+      /* Update panels */
+      subPanelUpdate();
+      subPanelRender();
+    }
+
+  return Qnil;
+} /* }}} */
+
+/* RubySubletHidden {{{ */
+/*
+ * call-seq: hidden? -> Bool
+ *
+ * Whether sublet is displayed
+ *
+ *  puts sublet.display
+ *  => true
+ */
+
+static VALUE
+RubySubletHidden(VALUE self)
+{
+  SubSublet *s = NULL;
+
+  Data_Get_Struct(self, SubSublet, s);
+
+  return s && s->flags & SUB_PANEL_HIDDEN ? Qtrue : Qfalse;
+} /* }}} */
+
 /* RubySubletWatch {{{ */
 /*
  * call-seq: watch(source) -> true or false
@@ -1995,19 +2079,25 @@ RubySubletWatch(VALUE self,
 
   if(s && !(s->flags & (SUB_SUBLET_SOCKET|SUB_SUBLET_INOTIFY)) && RTEST(value))
     {
-      if(rb_respond_to(value, rb_intern("fileno"))) ///< Probably a socket
+      if(FIXNUM_P(value) || ///< Socket file descriptor
+          rb_respond_to(value, rb_intern("fileno"))) ///< Ruby socket
         {
-          int fd = FIX2INT(rb_funcall(value, rb_intern("fileno"), 0, NULL)); ///< Get socket file number
-
           s->flags |= SUB_SUBLET_SOCKET;
-          s->watch  = fd;
+
+          /* Get socket file descriptor */
+          if(FIXNUM_P(value)) s->watch = FIX2INT(value);
+          else
+            {
+              s->watch = FIX2INT(rb_funcall(value, rb_intern("fileno"),
+                0, NULL));
+            }
 
           XSaveContext(subtle->dpy, subtle->windows.panel1, s->watch, (void *)s);
           subEventWatchAdd(s->watch);
 
           /* Set nonblocking */
-          if(-1 == (flags = fcntl(fd, F_GETFL, 0))) flags = 0;
-          fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+          if(-1 == (flags = fcntl(s->watch, F_GETFL, 0))) flags = 0;
+          fcntl(s->watch, F_SETFL, flags | O_NONBLOCK);
  
           ret = Qtrue;
         }
@@ -2093,10 +2183,16 @@ subRubyInit(void)
 {
   VALUE mod = Qnil, sublet = Qnil, icon = Qnil, color = Qnil;
 
+  void Init_prelude(void);
+
   RUBY_INIT_STACK;
   ruby_init();
   ruby_init_loadpath();
   ruby_script("subtle");
+
+  /* FIXME: Fake ruby_init_gems(Qtrue) */
+  rb_define_module("Gem");
+  Init_prelude();
 
   /*
    * Document-class: Kernel
@@ -2141,6 +2237,9 @@ subRubyInit(void)
   rb_define_method(sublet, "data=",          RubySubletDataWriter,        1);
   rb_define_method(sublet, "background=",    RubySubletBackgroundWriter,  1);
   rb_define_method(sublet, "win",            RubySubletWindowReader,      0);
+  rb_define_method(sublet, "show",           RubySubletShow,              0);
+  rb_define_method(sublet, "hide",           RubySubletHide,              0);
+  rb_define_method(sublet, "hidden?",        RubySubletHidden,            0);
   rb_define_method(sublet, "watch",          RubySubletWatch,             1);
   rb_define_method(sublet, "unwatch",        RubySubletUnwatch,           0);
 
