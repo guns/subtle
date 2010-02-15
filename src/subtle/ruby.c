@@ -1732,9 +1732,9 @@ RubySubletDispatcher(int argc,
 /*
  * call-seq: render -> nil
  *
- * Remder a Sublet
+ * Render a Sublet
  *
- *  sublet.remder
+ *  sublet.render
  *  => nil
  */
 
