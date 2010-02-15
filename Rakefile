@@ -52,20 +52,27 @@ require("rake/rdoctask")
 }  # }}}
 
 # Lists {{{
-PG_WM   = "subtle"
-PG_RMT  = "subtler"
-PG_RBE  = "subtlext"
+PG_SUBTLE   = "subtle"
+PG_SUBTLER  = "subtler"
+PG_SUBTLEXT = "subtlext"
 
-SRC_WM  = FileList["src/subtle/*.c"]
-SRC_RMT = FileList["src/subtler/*.c"]
-SRC_RBE = FileList["src/subtlext/*.c"]
-SRC_SHD = FileList["src/shared/*.c"]
+SRC_SHARED   = FileList["src/shared/*.c"]
+SRC_SUBTLE   = (SRC_SHARED | FileList["src/subtle/*.c"])
+SRC_SUBTLER  = (SRC_SHARED | FileList["src/subtler/*.c"])
+SRC_SUBTLEXT = (SRC_SHARED | FileList["src/subtlext/*.c"])
 
-OBJ_WM  = SRC_WM.collect  { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
-OBJ_RMT = SRC_RMT.collect { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
-OBJ_RBE = SRC_RBE.collect { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
-OBJ_SHD = SRC_SHD.collect { |f| File.join(@options["builddir"], File.basename(f).ext("o")) }
-OBJ_SHW = SRC_SHD.collect { |f| File.join(@options["builddir"], File.basename(f).ext("wm.o")) }
+# Collect object files
+OBJ_SUBTLE = SRC_SUBTLE.collect do |f| 
+  File.join(@options["builddir"], "subtle", File.basename(f).ext("o")) 
+end
+
+OBJ_SUBTLER = SRC_SUBTLER.collect do |f|
+  File.join(@options["builddir"], "subtler", File.basename(f).ext("o"))
+end
+
+OBJ_SUBTLEXT = SRC_SUBTLEXT.collect do |f|
+  File.join(@options["builddir"], "subtlext", File.basename(f).ext("o"))
+end
 
 FUNCS   = [ "select" ]
 HEADER  = [
@@ -77,7 +84,7 @@ OPTIONAL = [ "sys/inotify.h", "execinfo.h" ]
 
 # Miscellaneous {{{
 Logging.logfile("config.log") #< mkmf log
-CLEAN.include(PG_WM, PG_RMT, "#{PG_RBE}.so", OBJ_WM, OBJ_SHD, OBJ_SHW, OBJ_RMT, OBJ_RBE)
+CLEAN.include(PG_SUBTLE, PG_SUBTLER, "#{PG_SUBTLEXT}.so", OBJ_SUBTLE, OBJ_SUBTLER, OBJ_SUBTLEXT)
 CLOBBER.include(@options["builddir"], "config.h", "config.log", "config.yml")
 # }}}
 
@@ -150,6 +157,15 @@ task(:config) do
   if(!File.exists?(@options["builddir"]))
     Dir.mkdir(@options["builddir"])
   end
+
+  # Create more build dirs
+  FileUtils.mkdir_p( 
+    [
+      File.join(@options["builddir"], "subtle"),
+      File.join(@options["builddir"], "subtler"),
+      File.join(@options["builddir"], "subtlext")
+    ]
+  )
 
   # Check if options.yaml exists or config is run per target
   if((!ARGV.nil? && !ARGV.include?("config")) && File.exist?("config.yml"))
@@ -294,9 +310,10 @@ Binaries............: #{@options["bindir"]}
 Configuration.......: #{@options["configdir"]}
 Scripts.............: #{@options["scriptdir"]}
 Extension...........: #{@options["extdir"]}
-Debugging messages..: #{@options["debug"]}
+
 Xft support.........: #{@options["xft"]}
 Xinerama support....: #{@options["xinerama"]}
+Debugging messages..: #{@options["debug"]}
 
 EOF
   end
@@ -304,18 +321,18 @@ end # }}}
 
 # Task: build {{{
 desc("Build all")
-task(:build => [:config, PG_WM, PG_RMT, PG_RBE])
+task(:build => [:config, PG_SUBTLE, PG_SUBTLER, PG_SUBTLEXT])
 # }}}
 
 # Task: subtle/subtler/subtlext {{{
 desc("Build subtle")
-task(PG_WM => [:config, OBJ_SHW])
+task(PG_SUBTLE => [:config])
 
 desc("Build subtler")
-task(PG_RMT => [:config, OBJ_SHD])
+task(PG_SUBTLER => [:config])
 
 desc("Build subtlext")
-task(PG_RBE => [:config, OBJ_SHD])
+task(PG_SUBTLEXT => [:config])
 # }}}
 
 # Task: install {{{
@@ -333,11 +350,11 @@ task(:install => [:config, :build]) do
   )
 
   # Install files
-  message("INSTALL %s\n" % [PG_WM])
-  FileUtils.install(PG_WM, @options["bindir"], :mode => 0755, :verbose => false)
+  message("INSTALL %s\n" % [PG_SUBTLE])
+  FileUtils.install(PG_SUBTLE, @options["bindir"], :mode => 0755, :verbose => false)
 
-  message("INSTALL %s\n" % [PG_RMT])
-  FileUtils.install(PG_RMT, @options["bindir"], :mode => 0755, :verbose => false)
+  message("INSTALL %s\n" % [PG_SUBTLER])
+  FileUtils.install(PG_SUBTLER, @options["bindir"], :mode => 0755, :verbose => false)
 
   message("INSTALL %s\n" % [@defines["PKG_CONFIG"]])
   FileUtils.install("dist/" + @defines["PKG_CONFIG"], @options["configdir"], :mode => 0644, :verbose => false)
@@ -349,8 +366,8 @@ task(:install => [:config, :build]) do
   end
 
   # Install extension
-  message("INSTALL %s\n" % [PG_RBE])
-  FileUtils.install(PG_RBE + ".so", @options["extdir"], :mode => 0644, :verbose => false)
+  message("INSTALL %s\n" % [PG_SUBTLEXT])
+  FileUtils.install(PG_SUBTLEXT + ".so", @options["extdir"], :mode => 0644, :verbose => false)
 
   # Install manpages
   FileList["dist/man/*.*"].collect do |f|
@@ -398,42 +415,49 @@ end # }}}
 # File tasks
 #
 # Task: compile {{{
-(SRC_SHD | SRC_WM).each do |src|
-  ext = SRC_SHD.include?(src) ? "wm.o" : "o"
-  out = File.join(@options["builddir"], File.basename(src).ext(ext))
+SRC_SUBTLE.each do |src|
+  out = File.join(@options["builddir"], PG_SUBTLE, File.basename(src).ext("o"))
 
   file(out => src) do
-    compile(src, out, "-DWM")
+    compile(src, out, "-D#{PG_SUBTLE.upcase}")
   end
 end 
 
-(SRC_SHD | SRC_RMT | SRC_RBE).each do |src|
-  out = File.join(@options["builddir"], File.basename(src).ext("o"))
+SRC_SUBTLER.each do |src|
+  out = File.join(@options["builddir"], PG_SUBTLER, File.basename(src).ext("o"))
 
   file(out => src) do
-    compile(src, out)
+    compile(src, out, "-D#{PG_SUBTLER.upcase}")
   end
-end 
+end
+
+SRC_SUBTLEXT.each do |src|
+  out = File.join(@options["builddir"], PG_SUBTLEXT, File.basename(src).ext("o"))
+
+  file(out => src) do
+    compile(src, out, "-D#{PG_SUBTLEXT.upcase}")
+  end
+end
 # }}}
 
 # Task: link {{{
-file(PG_WM => OBJ_WM) do
-  silent_sh("gcc -o #{PG_WM} #{OBJ_SHW} #{OBJ_WM} #{@options["ldflags"]}", 
-    "LD #{PG_WM}") do |ok, status|
+file(PG_SUBTLE => OBJ_SUBTLE) do
+  silent_sh("gcc -o #{PG_SUBTLE} #{OBJ_SUBTLE} #{@options["ldflags"]}", 
+    "LD #{PG_SUBTLE}") do |ok, status|
       ok or fail("Linker failed with status #{status.exitstatus}")
   end
 end
 
-file(PG_RMT => OBJ_RMT) do
-  silent_sh("gcc -o #{PG_RMT} #{OBJ_SHD} #{OBJ_RMT} #{@options["ldflags"]}", 
-    "LD #{PG_RMT}") do |ok, status|
+file(PG_SUBTLER => OBJ_SUBTLER) do
+  silent_sh("gcc -o #{PG_SUBTLER} #{OBJ_SUBTLER} #{@options["ldflags"]}", 
+    "LD #{PG_SUBTLER}") do |ok, status|
       ok or fail("Linker failed with status #{status.exitstatus}")
   end
 end
 
-file(PG_RBE => OBJ_RBE) do
-  silent_sh("gcc -o #{PG_RBE}.so #{OBJ_SHD} #{OBJ_RBE} -shared #{@options["extflags"]}", 
-    "LD #{PG_RBE}") do |ok, status|
+file(PG_SUBTLEXT => OBJ_SUBTLEXT) do
+  silent_sh("gcc -o #{PG_SUBTLEXT}.so #{OBJ_SUBTLEXT} -shared #{@options["extflags"]}", 
+    "LD #{PG_SUBTLEXT}") do |ok, status|
       ok or fail("Linker failed with status #{status.exitstatus}")
   end
 end # }}}
