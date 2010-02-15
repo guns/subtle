@@ -112,7 +112,6 @@
 #define PANEL(p)   ((SubPanel *)p)                                ///< Cast to SubPanel
 #define SCREEN(s)  ((SubScreen *)s)                               ///< Cast to SubScreen
 #define SUBLET(s)  ((SubSublet *)s)                               ///< Cast to SubSublet
-#define SUBTLE(s)  ((SubSubtle *)s)                               ///< Cast to SubSubtle
 #define TEXT(t)    ((SubText *)t)                                 ///< Cast to SubText
 #define TAG(t)     ((SubTag *)t)                                  ///< Cast to SubTag
 #define TRAY(t)    ((SubTray *)t)                                 ///< Cast to SubTray

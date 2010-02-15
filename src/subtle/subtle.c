@@ -2,7 +2,7 @@
  /**
   * @package subtle
   *
-  * @file subtle program
+  * @file Main functions
   * @copyright (c) 2005-2010 Christoph Kappel <unexist@dorfelite.net>
   * @version $Id$
   * 
@@ -106,9 +106,11 @@ main(int argc,
     { 0, 0, 0, 0}
   };
 
-  subtle = SUBTLE(subSharedMemoryAlloc(1, sizeof(SubSubtle)));
+  /* Create subtle */
+  subtle = (SubSubtle *)(subSharedMemoryAlloc(1, sizeof(SubSubtle)));
   subtle->flags |= SUB_SUBTLE_RUN;
 
+  /* Parse arguments */
   while(-1 != (c = getopt_long(argc, argv, "c:d:hks:vD", long_options, NULL)))
     {
       switch(c)
