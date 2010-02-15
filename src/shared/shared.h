@@ -30,9 +30,9 @@
 #include <X11/Xmd.h>
 #include <X11/cursorfont.h>
 
-#ifdef WM
+#ifdef SUBTLE
 #include "subtle.h"
-#endif /* WM */
+#endif /* SUBTLE */
 
 #include "config.h"
 
@@ -61,15 +61,15 @@
 #define SUB_EWMH_FLOAT     (1L << 2)                              ///< EWMH float flag
 #define SUB_EWMH_STICK     (1L << 3)                              ///< EWMH stick flag
 
-#define SUB_MATCH_NAME     (1L << 1)                              ///< Match WM_NAME
-#define SUB_MATCH_INSTANCE (1L << 2)                              ///< Match instance of WM_CLASS
-#define SUB_MATCH_CLASS    (1L << 3)                              ///< Match class of WM_CLASS
+#define SUB_MATCH_NAME     (1L << 1)                              ///< Match SUBTLE_NAME
+#define SUB_MATCH_INSTANCE (1L << 2)                              ///< Match instance of SUBTLE_CLASS
+#define SUB_MATCH_CLASS    (1L << 3)                              ///< Match class of SUBTLE_CLASS
 #define SUB_MATCH_ROLE     (1L << 4)                              ///< Match window role
 #define SUB_MATCH_GRAVITY  (1L << 5)                              ///< Match gravity
 /* }}} */
 
 /* Typedefs {{{ */
-#ifndef WM
+#ifndef SUBTLE
 typedef union submessagedata_t {
   char  b[20];
   short s[10];
@@ -82,7 +82,7 @@ extern Display *display;
 extern int debug;
 #endif /* DEBUG */
 
-#endif /* WM */
+#endif /* SUBTLE */
 /* }}} */
 
 /* Log {{{ */
@@ -117,7 +117,7 @@ int subSharedMatch(int type, XRectangle *geometry1,
 /* }}} */
 
 /* Property {{{ */
-#if WM
+#if SUBTLE
 char *subSharedPropertyGet(Window win, Atom type,
   SubEwmh e, unsigned long *size);                                ///< Get window property
 char **subSharedPropertyStrings(Window win,
@@ -129,7 +129,7 @@ char *subSharedPropertyGet(Window win, Atom type,
 char **subSharedPropertyStrings(Window win,
   char *name, int *size);                                         ///< Get window property list
 void subSharedPropertyDelete(Window win, char *name);             ///< Delete window property
-#endif /* WM */
+#endif /* SUBTLE */
 
 void subSharedPropertyName(Window win, char **name,
   char *fallback);                                                ///< Get window name
@@ -146,7 +146,7 @@ pid_t subSharedSpawn(char *cmd);                                  ///< Spawn a c
 unsigned long subSharedParseColor(char *name);                    ///< Parse a color
 /* }}} */
 
-#ifdef WM
+#ifdef SUBTLE
 /* Subtle {{{ */
 XPointer * subSharedFind(Window win, XContext id);                ///< Find data with context manager
 time_t subSharedTime(void);                                       ///< Get current time 
@@ -156,14 +156,14 @@ int subSharedTextWidth(const char *text, int len,
 void subSharedTextDraw(Window win, int x, int y, 
   long fg, long bg, const char *text);                            ///< Draw text
 /* }}} */
-#else /* WM */
+#else /* SUBTLE */
 /* Message {{{ */
 int subSharedMessage(Window win, char *type,
   SubMessageData data, int xsync);                                ///< Send client message
 /* }}} */
 
 /* Window {{{ */
-Window *subSharedWindowWMCheck(void);                             ///< Get WM check window
+Window *subSharedWindowSUBTLECheck(void);                             ///< Get SUBTLE check window
 Window subSharedWindowSelect(void);                               ///< Select a window
 /* }}} */
 
@@ -188,7 +188,7 @@ int subSharedViewFind(char *match, char **name,
 /* Subtle {{{ */
 int subSharedSubtleRunning(void);                                 ///< Check if subtle is running
 /* }}} */
-#endif /* WM */
+#endif /* SUBTLE */
 
 #endif /* SHARED_H */
 

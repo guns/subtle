@@ -37,12 +37,12 @@ subSharedLog(int type,
   char buf[255];
 
 #ifdef DEBUG
-#ifdef WM
+#ifdef SUBTLE
   if((!subtle && !type) || (subtle && 
     !(subtle->flags & SUB_SUBTLE_DEBUG) && !type)) return;
-#else  /* WM */
+#else  /* SUBTLE */
   if(!debug && !type) return;
-#endif /* WM */
+#endif /* SUBTLE */
 #endif /* DEBUG */
 
   va_start(ap, format);
@@ -73,11 +73,11 @@ subSharedLogXError(Display *disp,
   XErrorEvent *ev)
 {
 #ifdef DEBUG
-#ifdef WM
+#ifdef SUBTLE
   if(!(subtle->flags & SUB_SUBTLE_DEBUG)) return 0;
-#else /* WM */
+#else /* SUBTLE */
   if(debug) return 0;
-#endif /* WM */
+#endif /* SUBTLE */
 #endif /* DEBUG */
 
   if(42 != ev->request_code) /* X_SetInputFocus */
@@ -250,11 +250,11 @@ subSharedMatch(int type,
 char *
 subSharedPropertyGet(Window win,
   Atom type,
-#ifdef WM
+#ifdef SUBTLE
   SubEwmh e,
-#else /* WM */
+#else /* SUBTLE */
   char *name,
-#endif /* WM */
+#endif /* SUBTLE */
   unsigned long *size)
 {
   int format = 0;
@@ -263,21 +263,21 @@ subSharedPropertyGet(Window win,
   Atom rtype = None, prop = None;
   Display *disp = NULL;
 
-#ifdef WM
+#ifdef SUBTLE
   char name[5] = { 0 };
-#endif /* WM */
+#endif /* SUBTLE */
 
   assert(win);
 
-#ifdef WM
+#ifdef SUBTLE
   disp = subtle->dpy; 
   prop = subEwmhGet(e);
 
   snprintf(name, sizeof(name), "%d", e);
-#else /* WM */
+#else /* SUBTLE */
   disp = display;
   prop = XInternAtom(display, name, False);
-#endif /* WM */
+#endif /* SUBTLE */
 
   if(Success != XGetWindowProperty(disp, win, prop, 0L, 4096, 
       False, type, &rtype, &format, &nitems, &bytes, &data))
@@ -316,11 +316,11 @@ subSharedPropertyGet(Window win,
 
 char **
 subSharedPropertyStrings(Window win,
-#ifdef WM
+#ifdef SUBTLE
   SubEwmh e,
-#else /* WM */
+#else /* SUBTLE */
   char *name,
-#endif /* WM */
+#endif /* SUBTLE */
   int *size)
 {
   Atom atom;
@@ -331,13 +331,13 @@ subSharedPropertyStrings(Window win,
   assert(win && size);
 
   /* Check UTF8 and XA_STRING */
-#ifdef WM
+#ifdef SUBTLE
   disp = subtle->dpy;
   atom = subEwmhGet(e);
-#else /* WM */
+#else /* SUBTLE */
   disp = display;
   atom = XInternAtom(display, name, False);
-#endif /* WM */ 
+#endif /* SUBTLE */ 
  
   if((XGetTextProperty(disp, win, &prop, atom) || 
     XGetTextProperty(disp, win, &prop, XA_STRING)) && prop.nitems)
@@ -367,11 +367,11 @@ subSharedPropertyName(Window win,
   char **list = NULL;
   XTextProperty prop;
 
-#ifdef WM
+#ifdef SUBTLE
   disp = subtle->dpy;
-#else /* WM */
+#else /* SUBTLE */
   disp = display;
-#endif /* WM */
+#endif /* SUBTLE */
 
   XGetTextProperty(disp, win, &prop, XA_WM_NAME);
 
@@ -416,11 +416,11 @@ subSharedPropertyClass(Window win,
   assert(win);
 
   klasses = subSharedPropertyStrings(win, 
-#ifdef WM
+#ifdef SUBTLE
     SUB_EWMH_WM_CLASS,
-#else /* WM */    
+#else /* SUBTLE */    
     "WM_CLASS",
-#endif /* WM */    
+#endif /* SUBTLE */    
     &size);
 
   /* Sanitize instance/class names */
@@ -444,11 +444,11 @@ subSharedPropertyGeometry(Window win,
 
   assert(win && geometry);
 
-#ifdef WM
+#ifdef SUBTLE
   XGetWindowAttributes(subtle->dpy, win, &attrs);
-#else /* WM */
+#else /* SUBTLE */
   XGetWindowAttributes(display, win, &attrs);
-#endif /* WM */
+#endif /* SUBTLE */
 
   /* Copy values */
   geometry->x      = attrs.x;
@@ -466,19 +466,19 @@ subSharedPropertyGeometry(Window win,
 
 void 
 subSharedPropertyDelete(Window win, 
-#ifdef WM
+#ifdef SUBTLE
   SubEwmh e)
-#else /* WM */
+#else /* SUBTLE */
   char *name)
-#endif /* WM */
+#endif /* SUBTLE */
 {
   assert(win);
 
-#ifdef WM
+#ifdef SUBTLE
   XDeleteProperty(subtle->dpy, win, subEwmhGet(e));
-#else /* WM */
+#else /* SUBTLE */
   XDeleteProperty(display, win, XInternAtom(display, name, False));
-#endif /* WM */
+#endif /* SUBTLE */
 } /* }}} */
 
  /** subSharedParseColor {{{
@@ -495,11 +495,11 @@ subSharedParseColor(char *name)
 
   assert(name);
 
-#ifdef WM
+#ifdef SUBTLE
   disp = subtle->dpy; 
-#else /* WM */
+#else /* SUBTLE */
   disp = display;
-#endif /* WM */
+#endif /* SUBTLE */
 
   /* Parse and store color */
   if(!XParseColor(disp, DefaultColormap(disp, DefaultScreen(disp)), 
@@ -538,7 +538,7 @@ subSharedSpawn(char *cmd)
   return pid;
 } /* }}} */
 
-#ifdef WM
+#ifdef SUBTLE
  /** subSharedFind {{{
   * @brief Find data with the context manager
   * @param[in]  win  A #Window
@@ -703,7 +703,7 @@ void subSharedTextDraw(Window win,
     }
 } /* }}} */
 
-#else /* WM */
+#else /* SUBTLE */
 
 /* SharedList {{{ */
 Window *
@@ -1290,6 +1290,6 @@ subSharedSubtleRunning(void)
 
   return ret;
 } /* }}} */
-#endif /* WM */
+#endif /* SUBTLE */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
