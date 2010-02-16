@@ -540,11 +540,14 @@ subClientSetTags(SubClient *c)
       SubTag *t = TAG(subtle->tags->data[i]);
 
       /* Check if tag matches client */
-      if(t->preg &&
-          ((t->flags & SUB_TAG_MATCH_NAME     && c->name     && subSharedRegexMatch(t->preg, c->name))     ||
-          (t->flags  & SUB_TAG_MATCH_INSTANCE && c->instance && subSharedRegexMatch(t->preg, c->instance)) ||
-          (t->flags  & SUB_TAG_MATCH_CLASS    && c->klass    && subSharedRegexMatch(t->preg, c->klass))    ||
-          (t->flags  & SUB_TAG_MATCH_ROLE     && role        && subSharedRegexMatch(t->preg, role))))
+      if(t->preg && ((t->flags & SUB_TAG_MATCH_NAME && c->name &&
+            subSharedRegexMatch(t->preg, c->name))||
+          (t->flags & SUB_TAG_MATCH_INSTANCE && c->instance &&
+            subSharedRegexMatch(t->preg, c->instance)) ||
+          (t->flags & SUB_TAG_MATCH_CLASS && c->klass && 
+            subSharedRegexMatch(t->preg, c->klass)) ||
+          (t->flags & SUB_TAG_MATCH_ROLE && role && 
+            subSharedRegexMatch(t->preg, role))))
         flags |= subClientTag(c, i);
     }
 
