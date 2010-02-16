@@ -1933,48 +1933,6 @@ RubySubletBackgroundWriter(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* RubySubletWindowReader {{{ */
-/*
- * call-seq: win -> Subtlext::Window
- *
- * Get window of Sublet
- *
- *  sublet.win
- *  => #<Subtlext::Window:xxx>
- */
-
-static VALUE
-RubySubletWindowReader(VALUE self)
-{
-  VALUE win = Qnil;
-  SubSublet *s = NULL;
-
-  Data_Get_Struct(self, SubSublet, s);
-
-  if(s)
-    {
-      /* Load on demand */
-      if(NIL_P((win = rb_iv_get(self, "@win"))))
-        {
-          VALUE klass = Qnil, ary = Qnil;
-          XWindowAttributes attrs;
-
-          subRubyLoadSubtlext(); ///< Load subtlext on demand
-
-          /* Get window geometry */
-          XGetWindowAttributes(subtle->dpy, s->win, &attrs);
-          ary = rb_ary_new3(4, INT2FIX(attrs.x), INT2FIX(attrs.y),
-            INT2FIX(attrs.width),INT2FIX(attrs.height));
-
-          klass = rb_const_get(subtlext, rb_intern("Window"));
-          win   = rb_funcall(klass, rb_intern("new"), 2, 
-            rb_str_new2(s->name), ary);
-        }
-    }
-
-  return win;
-} /* }}} */
-
 /* RubySubletShow {{{ */
 /*
  * call-seq: show -> nil
@@ -2236,7 +2194,6 @@ subRubyInit(void)
   rb_define_method(sublet, "data",           RubySubletDataReader,        0);
   rb_define_method(sublet, "data=",          RubySubletDataWriter,        1);
   rb_define_method(sublet, "background=",    RubySubletBackgroundWriter,  1);
-  rb_define_method(sublet, "win",            RubySubletWindowReader,      0);
   rb_define_method(sublet, "show",           RubySubletShow,              0);
   rb_define_method(sublet, "hide",           RubySubletHide,              0);
   rb_define_method(sublet, "hidden?",        RubySubletHidden,            0);
