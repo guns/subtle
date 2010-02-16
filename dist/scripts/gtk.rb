@@ -1,6 +1,6 @@
 #
 # gtk - subtlext test script with Gtk+
-# Copyright (c) 2005-2009 Christoph Kappel
+# Copyright (c) 2005-2010 Christoph Kappel
 #
 # This program can be distributed under the terms of the GNU GPL.
 # See the file COPYING.
@@ -11,481 +11,408 @@
 require("gtk2")
 require("subtle/subtlext")
 
-# Variables {{{
-$subtle       = nil
-@window       = nil
-@list_clients = nil
-@list_sublets = nil
-@list_tags    = nil
-@list_views   = nil
-# }}}
+class Remote < Gtk::Window
+  attr_accessor :clients, :sublets, :tags, :views, :table, :action
 
-# Functions {{{
-def GtkUpdateClients
-  begin
-    @list_clients.clear
-    $subtle.clients.each do |client|
-      @list_clients.append().set_value(0, client.name)
+  def initialize # {{{
+    super
+
+    raise "subtle not running" unless(Subtlext::Subtle.running?)
+
+    # Options
+    self.title        = "subtle #{Subtlext::VERSION}"
+    self.resizable    = false
+    self.keep_above   = true
+    self.border_width = 10
+
+    set_wmclass("remote", "subtle")
+    stick
+
+    # Signals
+    signal_connect("delete_event") do
+      false
     end
-  rescue
-  end
-end
 
-def GtkUpdateSublets
-  begin
-    @list_sublets.clear
-    $subtle.sublets.each do |sublet|
-      @list_sublets.append().set_value(0, sublet.name)
+    signal_connect("destroy") do
+      Gtk.main_quit
     end
-  rescue
-  end
-end
 
-def GtkUpdateTags
-  begin
-    @list_tags.clear
-    $subtle.tags.each do |tag|
-      @list_tags.append().set_value(0, tag.name)
+    # List stores
+    @clients = Gtk::ListStore.new(String)
+    @sublets = Gtk::ListStore.new(String)
+    @tags    = Gtk::ListStore.new(String)
+    @views   = Gtk::ListStore.new(String)
+
+    # Create vbox
+    vbox = Gtk::VBox.new()
+    add(vbox)
+
+    # Create widgets
+    @table = Gtk::Table.new(4, 13)
+    vbox.pack_start(@table)
+
+    create_clients
+    create_sublets
+    create_tags
+    create_views
+
+    # Update list stores
+    update_clients
+    update_views
+    update_tags
+    update_sublets
+
+    # Footer
+    hbox = Gtk::HBox.new()
+    vbox.pack_start(hbox)
+
+    link = Gtk::LinkButton.new("subtle (#{Subtlext::VERSION})")
+    link.uri = "http://subtle.subforge.org"
+    hbox.pack_start(link)
+
+    link = Gtk::LinkButton.new("Gtk+ (#{Gtk::MAJOR_VERSION}.#{Gtk::MINOR_VERSION}.#{Gtk::MICRO_VERSION})")
+    link.uri = "http://ruby-gnome2.sourceforge.jp"
+    hbox.pack_start(link)
+
+    @action = Gtk::Label.new("subtle (#{Subtlext::VERSION})", true)
+    vbox.pack_start(@action)
+
+    show_all
+  end # }}}
+
+  private
+
+  def label(markup) # {{{
+    label = Gtk::Label.new("", true)
+    label.set_markup(markup)
+    label.set_alignment(0, 0)
+    label.set_padding(0, 3)
+
+    label
+  end # }}}
+
+  def button(caption, &blk) # {{{
+    button = Gtk::Button.new(caption)
+    button.signal_connect("clicked") do
+      begin
+        blk.call
+      rescue
+        message($!)
+      end
     end
-  rescue
-  end
-end
 
-def GtkUpdateViews
-  begin
-    @list_views.clear
-    $subtle.views.each do |view|
-      @list_views.append().set_value(0, view.name)
+    button
+  end # }}}
+
+  def create_clients # {{{
+    # Row1
+    @table.attach_defaults(label("<b>Clients</b>"), 0, 4, 0, 1)
+
+    # Row2
+    combo_c1name = Gtk::ComboBox.new
+    combo_c1name.model = @clients
+    @table.attach_defaults(combo_c1name, 0, 2, 1, 2)
+
+    @table.attach_defaults(
+      button("tags") do
+        name = combo_c1name.active_text
+
+        if(!name.nil?)
+          c = Subtlext::Client[name]
+          @action.set_markup("<b>Tags of client #{name}: " + c.tags.join(", ") + "</b>")
+        end
+      end, 2, 3, 1, 2
+    )
+
+    @table.attach_defaults(
+      button("delete") do
+        name = combo_c1name.active_text
+
+        if(!name.nil?)
+          Subtlext::Client[name].kill
+          @action.set_markup("<b>Deleted client #{name}</b>")
+          update_clients()
+        end
+      end, 3, 4, 1, 2
+    )
+
+    # Row3
+    combo_c2name = Gtk::ComboBox.new()
+    combo_c2name.model = @clients
+    table.attach_defaults(combo_c2name, 0, 1, 2, 3)
+
+    combo_c2tag = Gtk::ComboBox.new()
+    combo_c2tag.model = @tags
+    table.attach_defaults(combo_c2tag, 1, 2, 2, 3)
+
+    @table.attach_defaults(
+      button("tag") do
+        name = combo_c2name.active_text
+        tag  = combo_c2tag.active_text
+
+        if(!name.nil? && !tag.nil?)
+          Subtlext::Client[name].tag(tag)
+          @action.set_markup("<b>Added tag #{tag} to client #{name}</b>")
+        end
+      end, 2, 3, 2, 3
+    )
+
+    @table.attach_defaults(
+      button("untag") do
+        name = combo_c2name.active_text
+        tag  = combo_c2tag.active_text
+
+        if(!name.nil? && !tag.nil?)
+          Subtlext::Client[name].untag(tag)
+          @action.set_markup("<b>Deleted tag #{tag} from client #{name}</b>")
+        end
+      end, 3, 4, 2, 3
+    )
+
+    # Row4
+    combo_c3name = Gtk::ComboBox.new()
+    combo_c3name.model = @clients
+    @table.attach_defaults(combo_c3name, 0, 1, 3, 4)
+
+    combo_c3action = Gtk::ComboBox.new()
+    [ "full", "float", "stick" ].each do |name|
+      combo_c3action.append_text(name)
     end
-  rescue
-  end
-end
+    combo_c3action.active = 0
+    @table.attach_defaults(combo_c3action, 1, 2, 3, 4)
 
-def GtkMessage(text)
-  dialog = Gtk::MessageDialog.new(@window, 
-    Gtk::Dialog::DESTROY_WITH_PARENT,
-    Gtk::MessageDialog::ERROR,
-    Gtk::MessageDialog::BUTTONS_CLOSE,
-    text
-  )
-  dialog.run()
-  dialog.destroy()
-end
-# }}}
+    @table.attach_defaults(
+      button("toggle") do
+        name   = combo_c3name.active_text
+        action = combo_c3action.active_text
 
-# Main {{{
-begin
-  $subtle = Subtlext::Subtle.new
+        if(!name.nil? && !action.nil?)
+          Subtlext::Client[name].send("toggle_" + action)
+          @action.set_markup("<b>Toggled #{action} of client #{name}</b>")
+        end
+      end, 2, 3, 3, 4
+    )
 
-  @list_clients = Gtk::ListStore.new(String)
-  @list_sublets = Gtk::ListStore.new(String)
-  @list_tags    = Gtk::ListStore.new(String)
-  @list_views   = Gtk::ListStore.new(String)
-rescue
-  GtkMessage($!)
-  exit
-end
-# }}}
+    @table.attach_defaults(
+      button("focus") do
+        name = combo_c3name.active_text
 
-# Window {{{
-@window = Gtk::Window.new($subtle.to_s)
-@window.border_width = 10
+        if(!name.nil?)
+          Subtlext::Client[name].focus
+          @action.set_markup("<b>Set focus to client #{name}</b>")
+        end
+      end, 3, 4, 3, 4
+    )
+  end # }}}
 
-@window.signal_connect("delete_event") do
-  false
-end
+  def create_sublets # {{{
+    # Row1
+    @table.attach_defaults(label("<b>Sublets</b>"), 0, 4, 4, 5)
 
-@window.signal_connect("destroy") do
-  Gtk.main_quit
-end
+    # Row2
+    combo_s1name = Gtk::ComboBox.new()
+    combo_s1name.model = @sublets
+    @table.attach_defaults(combo_s1name, 0, 2, 5, 6)
 
-vbox = Gtk::VBox.new()
-@window.add(vbox)
+    @table.attach_defaults(
+      button("delete") do
+        name = combo_s1name.text
 
-link = Gtk::LinkButton.new($subtle.to_s)
-link.uri = "http://unexist.scrapping.cc/projects/show/subtle"
-vbox.pack_start(link)
+        if(!name.nil?)
+          Subtlext::Sublet[name].kill
+          @action.set_markup("<b>Deleted sublet #{name}</b>")
+          update_sublets()
+        end
+      end, 2, 4, 5, 6
+    )
+  end # }}}
 
-link.signal_connect("clicked") do
-  GtkUpdateClients()
-  GtkUpdateSublets()
-  GtkUpdateTags()
-  GtkUpdateViews() 
-end
+  def create_tags # {{{
+    @table.attach_defaults(label("<b>Tags</b>"), 0, 4, 6, 7)
 
-label_action = Gtk::Label.new("", true)
-# }}}
+    # Row2
+    entry_t1name = Gtk::Entry.new()
+    table.attach_defaults(entry_t1name, 0, 2, 7, 8)
 
-# Table {{{
-table = Gtk::Table.new(4, 13)
-vbox.pack_start(table)
-# }}}
+    @table.attach_defaults(
+      button("create") do
+        name = entry_t1name.text
 
-# Clients {{{
-# Row1 {{{
-label = Gtk::Label.new("", true)
-label.set_markup("<b>Clients</b>")
-label.set_alignment(0, 0)
-label.set_padding(0, 3)
-table.attach_defaults(label, 0, 4, 0, 1)
-# }}}
+        if(!name.nil?)
+          Subtlext::Subtle.add_tag(name)
+          @action.set_markup("<b>Added tag #{name}</b>")
+          update_tags()
+        end
+      end, 2, 4, 7, 8
+    )
 
-# Row2 {{{
-combo_c1name = Gtk::ComboBox.new()
-combo_c1name.model = @list_clients
-table.attach_defaults(combo_c1name, 0, 2, 1, 2)
+    # Row3
+    combo_t2name = Gtk::ComboBox.new()
+    combo_t2name.model = @tags
+    @table.attach_defaults(combo_t2name, 0, 2, 8, 9)
 
-button = Gtk::Button.new("tags")
-button.signal_connect("clicked") do
-  begin
-    name = combo_c1name.active_text
+    @table.attach_defaults(
+      button("create") do
+        name = combo_t2name.active_text
 
-    if(!name.nil?)
-      c = $subtle.find_client(name)
-      label_action.set_markup("<b>Tags of client #{name}: " + c.tags.join(", ") + "</b>")
+        if(!name.nil?)
+          Subtlext::Subtle.del_tag(name)
+          @action.set_markup("<b>Deleted tag #{name}</b>")
+          update_tags()
+        end
+      end, 2, 4, 8, 9
+    )
+  end # }}}
+
+  def create_views # {{{
+    # Row1
+    @table.attach_defaults(label("<b>Views</b>"), 0, 4, 9, 10)
+
+    # Row2
+    entry_v1name = Gtk::Entry.new
+    @table.attach_defaults(entry_v1name, 0, 2, 10, 11)
+
+    @table.attach_defaults(
+      button("create") do
+        name = entry_v1name.text
+
+        if(!name.nil?)
+          Subtlext::Subtle.add_view(name)
+          update_views()
+          @action.set_markup("<b>Added view #{name}</b>")
+          update_views()
+        end
+      end, 2, 4, 10, 11
+    )
+
+    # Row3
+    combo_v2name = Gtk::ComboBox.new
+    combo_v2name.model = @views
+    table.attach_defaults(combo_v2name, 0, 1, 11, 12)
+
+    @table.attach_defaults(
+      button("jump") do
+        name = combo_v2name.active_text
+
+        if(!name.nil?)
+          Subtlext::View[name].jump
+          @action.set_markup("<b>Jumped to view #{name}</b>")
+        end
+      end, 1, 2, 11, 12
+    )
+
+    @table.attach_defaults(
+      button("tags") do
+        name = combo_v2name.active_text
+
+        if(!name.nil?)
+          v = Subtlext::View[name]
+          @action.set_markup("<b>Tags of view #{name}: " + v.tags.join(", ") + "</b>")
+        end
+      end, 2, 3, 11, 12
+    )
+
+    @table.attach_defaults(
+      button("delete") do
+        name = combo_v2name.active_text
+
+        if(!name.nil?)
+          Subtlext::View[name].kill
+          @action.set_markup("<b>Deleted view #{name}</b>")
+          update_views()
+        end
+      end, 3, 4, 11, 12
+    )
+
+    # Row4
+    combo_v3name = Gtk::ComboBox.new()
+    combo_v3name.model = @views
+    @table.attach_defaults(combo_v3name, 0, 1, 12, 13)
+
+    combo_v3tag = Gtk::ComboBox.new()
+    combo_v3tag.model = @tags
+    @table.attach_defaults(combo_v3tag, 1, 2, 12, 13)
+
+    @table.attach_defaults(
+      button("tag") do
+        name = combo_v3name.active_text
+        tag  = combo_v3tag.active_text
+
+        if(!name.nil? && !tag.nil?)
+          Subtlext::View[name].tag(tag)
+          @action.set_markup("<b>Added tag #{tag} to view #{name}</b>")
+        end
+      end, 2, 3, 12, 13
+    )
+
+    @table.attach_defaults(
+      button("untag") do
+        name = combo_v3name.active_text
+        tag  = combo_v3tag.active_text
+
+        if(!name.nil? && !tag.nil?)
+          Subtlext::View[name].untag(tag)
+          @action.set_markup("<b>Deleted tag #{tag} from view #{name}</b>")
+        end
+      end, 3, 4, 12, 13
+    )
+  end # }}}
+
+  def update_clients # {{{
+    begin
+      @clients.clear
+      Subtlext::Client[:all].each do |c|
+        @clients.append.set_value(0, c.instance)
+      end
+    rescue
     end
-  rescue
-    GtkMessage($!)
-  end
-end
-table.attach_defaults(button, 2, 3, 1, 2)
+  end # }}}
 
-button = Gtk::Button.new("delete")
-button.signal_connect("clicked") do
-  begin
-    name = combo_c1name.active_text
-
-    if(!name.nil?)
-      $subtle.del_client(name)
-      label_action.set_markup("<b>Deleted client #{name}</b>")
-      GtkUpdateClients()
+  def update_sublets # {{{
+    begin
+      @sublets.clear
+      Subtlext::Sublet[:all].each do |s|
+        @sublets.append.set_value(0, s.name)
+      end
+    rescue
     end
-  rescue
-    GtkMessage($!)
-  end
-end
-table.attach_defaults(button, 3, 4, 1, 2)
-# }}}
+  end # }}}
 
-# Row3 {{{
-combo_c2name = Gtk::ComboBox.new()
-combo_c2name.model = @list_clients
-table.attach_defaults(combo_c2name, 0, 1, 2, 3)
-
-combo_c2tag = Gtk::ComboBox.new()
-combo_c2tag.model = @list_tags
-table.attach_defaults(combo_c2tag, 1, 2, 2, 3)
-
-button = Gtk::Button.new("tag")
-button.signal_connect("clicked") do
-  begin
-    name = combo_c2name.active_text
-    tag  = combo_c2tag.active_text
-
-    if(!name.nil? && !tag.nil?)
-      $subtle.find_client(name).tag(tag)
-      label_action.set_markup("<b>Added tag #{tag} to client #{name}</b>")
+  def update_tags # {{{
+    begin
+      @tags.clear
+      Subtlext::Tag[:all].each do |t|
+        @tags.append.set_value(0, t.name)
+      end
+    rescue
     end
-  rescue
-    GtkMessage($!)
-  end
-end
-table.attach_defaults(button, 2, 3, 2, 3)
+  end # }}}
 
-button = Gtk::Button.new("untag")
-button.signal_connect("clicked") do
-  begin
-    name = combo_c2name.active_text
-    tag  = combo_c2tag.active_text
-
-    if(!name.nil? && !tag.nil?)
-      $subtle.find_client(name).untag(tag)
-      label_action.set_markup("<b>Deleted tag #{tag} from client #{name}</b>")
+  def update_views # {{{
+    begin
+      @views.clear
+      Subtlext::View[:all].each do |v|
+        @views.append.set_value(0, v.name)
+      end
+    rescue
     end
-  rescue
-    GtkMessage($!)
-  end
+  end # }}}
+
+  def message(text) # {{{
+    dialog = Gtk::MessageDialog.new(self,
+      Gtk::Dialog::DESTROY_WITH_PARENT,
+      Gtk::MessageDialog::ERROR,
+      Gtk::MessageDialog::BUTTONS_CLOSE,
+      text
+    )
+    dialog.run
+    dialog.destroy
+  end # }}}
 end
-table.attach_defaults(button, 3, 4, 2, 3)
-# }}}
-
-# Row4 {{{
-combo_c3name = Gtk::ComboBox.new()
-combo_c3name.model = @list_clients
-table.attach_defaults(combo_c3name, 0, 1, 3, 4)
-
-combo_c3action = Gtk::ComboBox.new()
-["full", "float", "stick"].each do |name|
-  combo_c3action.append_text(name)
-end
-combo_c3action.active = 0
-table.attach_defaults(combo_c3action, 1, 2, 3, 4)
-
-button = Gtk::Button.new("toggle")
-button.signal_connect("clicked") do
-  begin
-    name   = combo_c3name.active_text
-    action = combo_c3action.active_text
-
-    if(!name.nil? && !action.nil?)
-      $subtle.find_client(name).send("toggle_" + action)
-      label_action.set_markup("<b>Toggled #{action} of client #{name}</b>")
-    end
-  rescue
-    GtkMessage($!)
-  end
-end
-table.attach_defaults(button, 2, 3, 3, 4)
-
-button = Gtk::Button.new("focus")
-button.signal_connect("clicked") do
-  begin
-    name = combo_c3name.active_text
-
-    if(!name.nil?)
-      $subtle.focus_client(name)
-      label_action.set_markup("<b>Set focus to client #{name}</b>")
-    end
-  rescue
-    GtkMessage($!)
-  end
-end
-table.attach_defaults(button, 3, 4, 3, 4)
-# }}}
-# }}}
-
-# Sublets {{{
-# Row1 {{{
-label = Gtk::Label.new("", true)
-label.set_markup("<b>Sublets</b>")
-label.set_alignment(0, 0)
-label.set_padding(0, 3)
-table.attach_defaults(label, 0, 4, 4, 5)
-# }}}
-
-# Row2 {{{
-combo_s1name = Gtk::ComboBox.new()
-combo_s1name.model = @list_sublets
-table.attach_defaults(combo_s1name, 0, 2, 5, 6)
-
-button = Gtk::Button.new("delete")
-button.signal_connect("clicked") do
-  begin
-    name = combo_s1name.text
-
-    if(!name.nil?)
-      $subtle.del_sublet(name)
-      label_action.set_markup("<b>Deleted sublet #{name}</b>")
-      GtkUpdateSublets()
-    end
-  rescue
-    GtkMessage($!)
-  end
-end
-table.attach_defaults(button, 2, 4, 5, 6)
-# }}}
-# }}}
-
-# Tags {{{
-# Row1 {{{
-label = Gtk::Label.new("", true)
-label.set_markup("<b>Tags</b>")
-label.set_alignment(0, 0)
-label.set_padding(0, 3)
-table.attach_defaults(label, 0, 4, 6, 7)
-# }}}
-
-# Row2 {{{
-entry_t1name = Gtk::Entry.new()
-table.attach_defaults(entry_t1name, 0, 2, 7, 8)
-
-button = Gtk::Button.new("create")
-button.signal_connect("clicked") do
-  begin
-    name = entry_t1name.text
-
-    if(!name.nil?)
-      $subtle.add_tag(name)
-      label_action.set_markup("<b>Added tag #{name}</b>")
-      GtkUpdateTags()
-    end
-  rescue
-    GtkMessage($!)
-  end
-end
-table.attach_defaults(button, 2, 4, 7, 8)
-# }}}
-
-# Row3 {{{
-combo_t2name = Gtk::ComboBox.new()
-combo_t2name.model = @list_tags
-table.attach_defaults(combo_t2name, 0, 2, 8, 9)
-
-button = Gtk::Button.new("delete")
-button.signal_connect("clicked") do
-  begin
-    name = combo_t2name.active_text
-
-    if(!name.nil?)
-      $subtle.del_tag(name)
-      label_action.set_markup("<b>Deleted tag #{name}</b>")
-      GtkUpdateTags()
-    end
-  rescue
-    GtkMessage($!)
-  end
-end
-table.attach_defaults(button, 2, 4, 8, 9)
-# }}}
-# }}}
-
-# Views {{{
-# Row1 {{{
-label = Gtk::Label.new("", true)
-label.set_markup("<b>Views</b>")
-label.set_alignment(0, 0)
-label.set_padding(0, 3)
-table.attach_defaults(label, 0, 4, 9, 10)
-# }}}
-
-# Row2 {{{
-entry_v1name = Gtk::Entry.new()
-table.attach_defaults(entry_v1name, 0, 2, 10, 11)
-
-button = Gtk::Button.new("create")
-button.signal_connect("clicked") do
-  begin
-    name = entry_v1name.text
-
-    if(!name.nil?)
-      $subtle.add_view(name)
-      GtkUpdateViews()
-      label_action.set_markup("<b>Added view #{name}</b>")
-      GtkUpdateViews()
-    end
-  rescue
-    GtkMessage($!)
-  end
-end
-table.attach_defaults(button, 2, 4, 10, 11)
-# }}}
-
-# Row3 {{{
-combo_v2name = Gtk::ComboBox.new()
-combo_v2name.model = @list_views
-table.attach_defaults(combo_v2name, 0, 1, 11, 12)
-
-button = Gtk::Button.new("jump")
-button.signal_connect("clicked") do
-  begin
-    name = combo_v2name.active_text
-
-    if(!name.nil?)
-      $subtle.find_view(name).jump()
-      label_action.set_markup("<b>Jumped to view #{name}</b>")
-    end
-  rescue
-    GtkMessage($!)
-  end
-end
-table.attach_defaults(button, 1, 2, 11, 12)
-
-button = Gtk::Button.new("tags")
-button.signal_connect("clicked") do
-  begin
-    name = combo_v2name.active_text
-
-    if(!name.nil?)
-      v = $subtle.find_view(name)
-      label_action.set_markup("<b>Tags of view #{name}: " + v.tags.join(", ") + "</b>")
-    end
-  rescue
-    GtkMessage($!)
-  end
-end
-table.attach_defaults(button, 2, 3, 11, 12)
-
-button = Gtk::Button.new("delete")
-button.signal_connect("clicked") do
-  begin
-    name = combo_v2name.active_text
-
-    if(!name.nil?)
-      $subtle.del_view(name)
-      label_action.set_markup("<b>Deleted view #{name}</b>")
-      GtkUpdateViews()
-    end
-  rescue
-    GtkMessage($!)
-  end
-end
-table.attach_defaults(button, 3, 4, 11, 12)
-# }}}
-
-# Row4 {{{
-combo_v3name = Gtk::ComboBox.new()
-combo_v3name.model = @list_views
-table.attach_defaults(combo_v3name, 0, 1, 12, 13)
-
-combo_v3tag = Gtk::ComboBox.new()
-combo_v3tag.model = @list_tags
-table.attach_defaults(combo_v3tag, 1, 2, 12, 13)
-
-button = Gtk::Button.new("tag")
-button.signal_connect("clicked") do
-  begin
-    name = combo_v3name.active_text
-    tag  = combo_v3tag.active_text
-
-    if(!name.nil? && !tag.nil?)
-      $subtle.find_view(name).tag(tag)
-      label_action.set_markup("<b>Added tag #{tag} to view #{name}</b>")
-    end
-  rescue
-    GtkMessage($!)
-  end
-end
-table.attach_defaults(button, 2, 3, 12, 13)
-
-button = Gtk::Button.new("untag")
-button.signal_connect("clicked") do
-  begin
-    name = combo_v3name.active_text
-    tag  = combo_v3tag.active_text
-
-    if(!name.nil? && !tag.nil?)
-      $subtle.find_view(name).untag(tag)
-      label_action.set_markup("<b>Deleted tag #{tag} from view #{name}</b>")
-    end
-  rescue
-    GtkMessage($!)
-  end
-end
-table.attach_defaults(button, 3, 4, 12, 13)
-# }}}
-# }}}
-
-# Hbox {{{
-hbox = Gtk::HBox.new()
-vbox.pack_start(hbox)
-
-link = Gtk::LinkButton.new("subtle (#{$subtle.version})")
-link.uri = "http://unexist.scrapping.cc/projects/show/subtle"
-hbox.pack_start(link)
-
-link = Gtk::LinkButton.new("Gtk+ (#{Gtk::MAJOR_VERSION}.#{Gtk::MINOR_VERSION}.#{Gtk::MICRO_VERSION})")
-link.uri = "http://ruby-gnome2.sourceforge.jp"
-hbox.pack_start(link)
-# }}}
-
-vbox.pack_start(label_action)
 
 # Init
-GtkUpdateClients()
-GtkUpdateSublets()
-GtkUpdateTags()
-GtkUpdateViews()
+Gtk.init
+window = Remote.new
+Gtk.main
 
-@window.show_all()
-
-Gtk.main()
+# vim:ts=2:bs=2:sw=2:et:fdm=marker
