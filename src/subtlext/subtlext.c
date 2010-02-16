@@ -632,12 +632,12 @@ Init_subtlext(void)
   rb_define_method(client, "initialize",   subClientInit,            1);
   rb_define_method(client, "update",       subClientUpdate,          0);
 
-  rb_define_method(client, "tags",         subSubtlextTagList,         0);
-  rb_define_method(client, "has_tag?",     subSubtlextTagAsk,          1);
-  rb_define_method(client, "tag",          subSubtlextTagAdd,          1);
-  rb_define_method(client, "untag",        subSubtlextTagDel,          1);
-  rb_define_method(client, "+",            subSubtlextTagAdd,          1);
-  rb_define_method(client, "-",            subSubtlextTagDel,          1);
+  rb_define_method(client, "tags",         subSubtlextTagList,       0);
+  rb_define_method(client, "has_tag?",     subSubtlextTagAsk,        1);
+  rb_define_method(client, "tag",          subSubtlextTagAdd,        1);
+  rb_define_method(client, "untag",        subSubtlextTagDel,        1);
+  rb_define_method(client, "+",            subSubtlextTagAdd,        1);
+  rb_define_method(client, "-",            subSubtlextTagDel,        1);
 
   rb_define_method(client, "views",        subClientViewList,        0);
   rb_define_method(client, "toggle_full",  subClientToggleFull,      0);
@@ -913,12 +913,12 @@ Init_subtlext(void)
   rb_define_method(view, "initialize", subViewInit,          1);
   rb_define_method(view, "update",     subViewUpdate,        0);
 
-  rb_define_method(view, "tags",       subSubtlextTagList,     0);
-  rb_define_method(view, "has_tag?",   subSubtlextTagAsk,      1);
-  rb_define_method(view, "tag",        subSubtlextTagAdd,      1);
-  rb_define_method(view, "untag",      subSubtlextTagDel,      1);
-  rb_define_method(view, "+",          subSubtlextTagAdd,      1);
-  rb_define_method(view, "-",          subSubtlextTagDel,      1);
+  rb_define_method(view, "tags",       subSubtlextTagList,   0);
+  rb_define_method(view, "has_tag?",   subSubtlextTagAsk,    1);
+  rb_define_method(view, "tag",        subSubtlextTagAdd,    1);
+  rb_define_method(view, "untag",      subSubtlextTagDel,    1);
+  rb_define_method(view, "+",          subSubtlextTagAdd,    1);
+  rb_define_method(view, "-",          subSubtlextTagDel,    1);
 
   rb_define_method(view, "clients",    subViewClients,       0);
   rb_define_method(view, "jump",       subViewJump,          0);
@@ -940,17 +940,17 @@ Init_subtlext(void)
   /* Window id */
   rb_define_attr(window, "win", 1, 0);
 
-  /* WM_NAME */
-  rb_define_attr(window, "name", 1, 0);
+  rb_define_singleton_method(window, "new", subWindowNew, 1);
 
-  rb_define_singleton_method(window, "new", subWindowNew, -1);
-
-  rb_define_method(window, "show",        subWindowShow,              0);
-  rb_define_method(window, "hide",        subWindowHide,              0);
-  rb_define_method(window, "kill",        subWindowKill,              0);
-  rb_define_method(window, "background=", subWindowBackgroundWriter,  1);
-  rb_define_method(window, "geometry",    subWindowGeometryReader,    0);
-  rb_define_method(window, "puts",        subWindowPuts,             -1);
+  rb_define_method(window, "name=",          subWindowNameWriter,        1);
+  rb_define_method(window, "font=",          subWindowFontWriter,        1);
+  rb_define_method(window, "background=",    subWindowBackgroundWriter,  1);
+  rb_define_method(window, "border_color=",  subWindowBorderColorWriter, 1);
+  rb_define_method(window, "border_size=",   subWindowBorderSizeWriter,  1);
+  rb_define_method(window, "geometry",       subWindowGeometryReader,    0);
+  rb_define_method(window, "show",           subWindowShow,              0);
+  rb_define_method(window, "hide",           subWindowHide,              0);
+  rb_define_method(window, "kill",           subWindowKill,              0);
 
 } /* }}} */
 

@@ -191,12 +191,14 @@ VALUE subViewKill(VALUE self);                                    ///< Kill view
 
 /* window.c {{{ */
 VALUE subWindowNew(VALUE self, VALUE options);                    ///< Create window
-VALUE subWindowNameWriter(VALUE self, VALUE name);                ///< Set window name
+VALUE subWindowNameWriter(VALUE self, VALUE value);               ///< Set name
+VALUE subWindowFontWriter(VALUE self, VALUE value);               ///< Set font
 VALUE subWindowBackgroundWriter(VALUE self, VALUE value);         ///< Set background
-VALUE subWindowGeometryReader(VALUE self, VALUE value);           ///< Get window geometry
+VALUE subWindowBorderColorWriter(VALUE self, VALUE value);        ///< Set border color
+VALUE subWindowBorderSizeWriter(VALUE self, VALUE value);         ///< Set border size
+VALUE subWindowGeometryReader(VALUE self);                        ///< Get geometry
 VALUE subWindowShow(VALUE self);                                  ///< Show window
 VALUE subWindowHide(VALUE self);                                  ///< Hide window
-VALUE subWindowPuts(int argc, VALUE *argv, VALUE self);           ///< Put text on window
 VALUE subWindowKill(VALUE self);                                  ///< Kill window
 /* }}} */
 
