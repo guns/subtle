@@ -1049,6 +1049,20 @@ subClientToggle(SubClient *c,
     }
   else ///< Set flags
     {
+      /* Need to be done before setting flag */
+      if(type & SUB_MODE_STICK)
+        {
+          int i;
+
+          /* Set gravity for clients on views client will be visible now */
+          for(i = 0; i < subtle->views->ndata; i++)
+            {
+              SubView *v = VIEW(subtle->views->data[i]);
+
+              if(!(VISIBLE(v, c))) c->gravities[i] = c->gravity;
+            }
+        }
+
       c->flags |= type;
 
       if(type & SUB_MODE_FLOAT)
