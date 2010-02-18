@@ -134,7 +134,8 @@ VALUE subSubtleTrayDel(VALUE self, VALUE value);                  ///< Kill a tr
 VALUE subSubtleSubletDel(VALUE self, VALUE value);                ///< Kill a sublet
 VALUE subSubtleViewAdd(VALUE self, VALUE value);                  ///< Add a view
 VALUE subSubtleViewDel(VALUE self, VALUE value);                  ///< Kill a view
-VALUE subSubtleReload(VALUE self);                                ///< Reload subtle
+VALUE subSubtleReloadConfig(VALUE self);                          ///< Reload config
+VALUE subSubtleReloadSublets(VALUE self);                         ///< Reload sublets
 VALUE subSubtleQuit(VALUE self);                                  ///< Quit subtle
 /* }}} */
 

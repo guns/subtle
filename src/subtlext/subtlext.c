@@ -761,43 +761,44 @@ Init_subtlext(void)
 
   subtle = rb_define_module_under(mod, "Subtle");
 
-  rb_define_singleton_method(subtle, "display",        subSubtleDisplay,     0);
+  rb_define_singleton_method(subtle, "display",        subSubtleDisplay,       0);
 
-  rb_define_singleton_method(subtle, "clients",        subClientAll,         0);
-  rb_define_singleton_method(subtle, "gravities",      subGravityAll,        0);
-  rb_define_singleton_method(subtle, "screens",        subScreenAll,         0);
-  rb_define_singleton_method(subtle, "sublets",        subSubletAll,         0);
-  rb_define_singleton_method(subtle, "tags",           subTagAll,            0);
-  rb_define_singleton_method(subtle, "trays",          subTrayAll,           0);
-  rb_define_singleton_method(subtle, "views",          subViewAll,           0);
+  rb_define_singleton_method(subtle, "clients",        subClientAll,           0);
+  rb_define_singleton_method(subtle, "gravities",      subGravityAll,          0);
+  rb_define_singleton_method(subtle, "screens",        subScreenAll,           0);
+  rb_define_singleton_method(subtle, "sublets",        subSubletAll,           0);
+  rb_define_singleton_method(subtle, "tags",           subTagAll,              0);
+  rb_define_singleton_method(subtle, "trays",          subTrayAll,             0);
+  rb_define_singleton_method(subtle, "views",          subViewAll,             0);
 
-  rb_define_singleton_method(subtle, "find_client",    subClientFind,        1);
-  rb_define_singleton_method(subtle, "find_gravity",   subGravityFind,       1);
-  rb_define_singleton_method(subtle, "find_screen",    subScreenFind,        1);
-  rb_define_singleton_method(subtle, "find_sublet",    subSubletFind,        1);
-  rb_define_singleton_method(subtle, "find_tag",       subTagFind,           1);
-  rb_define_singleton_method(subtle, "find_tray",      subTrayFind,          1);
-  rb_define_singleton_method(subtle, "find_view",      subViewFind,          1);
+  rb_define_singleton_method(subtle, "find_client",    subClientFind,          1);
+  rb_define_singleton_method(subtle, "find_gravity",   subGravityFind,         1);
+  rb_define_singleton_method(subtle, "find_screen",    subScreenFind,          1);
+  rb_define_singleton_method(subtle, "find_sublet",    subSubletFind,          1);
+  rb_define_singleton_method(subtle, "find_tag",       subTagFind,             1);
+  rb_define_singleton_method(subtle, "find_tray",      subTrayFind,            1);
+  rb_define_singleton_method(subtle, "find_view",      subViewFind,            1);
 
-  rb_define_singleton_method(subtle, "focus",          subSubtleFocus,       1);
-  rb_define_singleton_method(subtle, "add_tag",        subSubtleTagAdd,      1);
-  rb_define_singleton_method(subtle, "add_view",       subSubtleViewAdd,     1);
+  rb_define_singleton_method(subtle, "focus",          subSubtleFocus,         1);
+  rb_define_singleton_method(subtle, "add_tag",        subSubtleTagAdd,        1);
+  rb_define_singleton_method(subtle, "add_view",       subSubtleViewAdd,       1);
 
-  rb_define_singleton_method(subtle, "del_client",     subSubtleClientDel,   1);
-  rb_define_singleton_method(subtle, "del_gravity",    subSubtleGravityDel,  1);
-  rb_define_singleton_method(subtle, "del_sublet",     subSubtleSubletDel,   1);
-  rb_define_singleton_method(subtle, "del_tag",        subSubtleTagDel,      1);
-  rb_define_singleton_method(subtle, "del_tray",       subSubtleTrayDel,     1);
-  rb_define_singleton_method(subtle, "del_view",       subSubtleViewDel,     1);
+  rb_define_singleton_method(subtle, "del_client",     subSubtleClientDel,     1);
+  rb_define_singleton_method(subtle, "del_gravity",    subSubtleGravityDel,    1);
+  rb_define_singleton_method(subtle, "del_sublet",     subSubtleSubletDel,     1);
+  rb_define_singleton_method(subtle, "del_tag",        subSubtleTagDel,        1);
+  rb_define_singleton_method(subtle, "del_tray",       subSubtleTrayDel,       1);
+  rb_define_singleton_method(subtle, "del_view",       subSubtleViewDel,       1);
 
-  rb_define_singleton_method(subtle, "current_view",   subViewCurrent,       0);
-  rb_define_singleton_method(subtle, "current_client", subClientCurrent,     0);
-  rb_define_singleton_method(subtle, "current_screen", subScreenCurrent,     0);
+  rb_define_singleton_method(subtle, "current_view",   subViewCurrent,         0);
+  rb_define_singleton_method(subtle, "current_client", subClientCurrent,       0);
+  rb_define_singleton_method(subtle, "current_screen", subScreenCurrent,       0);
 
-  rb_define_singleton_method(subtle, "running?",       subSubtleRunningAsk,  0);
-  rb_define_singleton_method(subtle, "reload",         subSubtleReload,      0);
-  rb_define_singleton_method(subtle, "quit",           subSubtleQuit,        0);
-  rb_define_singleton_method(subtle, "spawn",          subSubtleSpawn,       1);
+  rb_define_singleton_method(subtle, "running?",       subSubtleRunningAsk,    0);
+  rb_define_singleton_method(subtle, "reload_config",  subSubtleReloadConfig,  0);
+  rb_define_singleton_method(subtle, "reload_sublets", subSubtleReloadSublets, 0);
+  rb_define_singleton_method(subtle, "quit",           subSubtleQuit,          0);
+  rb_define_singleton_method(subtle, "spawn",          subSubtleSpawn,         1);
 
   /*
    * Document-class: Subtlext::Sublet

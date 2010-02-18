@@ -11,6 +11,19 @@
 
 #include "subtlext.h"
 
+/* SubtleReload {{{ */
+static VALUE
+SubtleReload(char *message)
+{
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  subSubtlextConnect(); ///< Implicit open connection
+
+  subSharedMessage(DefaultRootWindow(display), message, data, True);
+
+  return Qnil;
+} /* }}} */
+
 /* subSubtleDisplay {{{ */
 /*
  * call-seq: display -> String
@@ -316,26 +329,36 @@ subSubtleViewDel(VALUE self,
   return subSubtlextKill(value, SUB_TYPE_VIEW);
 } /* }}} */
 
-/* subSubtleReload {{{ */
+/* subSubtleReloadConfig {{{ */
 /*
- * call-seq: reload -> nil
+ * call-seq: reload_config -> nil
  *
  * Force Subtle to reload the config
  *
- *  subtle.reload
+ *  subtle.reload_config
+ *  => nil
+ */
+
+VALUE
+subSubtleReloadConfig(VALUE self)
+{
+  return SubtleReload("SUBTLE_RELOAD_CONFIG");
+} /* }}} */
+
+/* subSubtleReloadSublets {{{ */
+/*
+ * call-seq: reload_sublets -> nil
+ *
+ * Force Subtle to reload the sublets
+ *
+ *  subtle.reload_sublets
  *  => nil
  */
 
 VALUE
 subSubtleReload(VALUE self)
 {
-  SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-  subSubtlextConnect(); ///< Implicit open connection
-
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_RELOAD", data, True);
-
-  return Qnil;
+  return SubtleReload("SUBTLE_RELOAD_SUBLETS");
 } /* }}} */
 
 /* subSubtleQuit {{{ */

@@ -33,43 +33,44 @@ typedef void(*SubtlerCommand)(int, char *, char *);
 
 /* Flags {{{ */
 /* Groups */
-#define SUB_GROUP_CLIENT   0   ///< Group client
-#define SUB_GROUP_GRAVITY  1   ///< Group gravity
-#define SUB_GROUP_SCREEN   2   ///< Group screen
-#define SUB_GROUP_SUBLET   3   ///< Group sublet
-#define SUB_GROUP_TAG      4   ///< Group tag
-#define SUB_GROUP_TRAY     5   ///< Group tray
-#define SUB_GROUP_VIEW     6   ///< Group view
-#define SUB_GROUP_TOTAL    7   ///< Group total
+#define SUB_GROUP_CLIENT       0   ///< Group client
+#define SUB_GROUP_GRAVITY      1   ///< Group gravity
+#define SUB_GROUP_SCREEN       2   ///< Group screen
+#define SUB_GROUP_SUBLET       3   ///< Group sublet
+#define SUB_GROUP_TAG          4   ///< Group tag
+#define SUB_GROUP_TRAY         5   ///< Group tray
+#define SUB_GROUP_VIEW         6   ///< Group view
+#define SUB_GROUP_TOTAL        7   ///< Group total
 
 /* Actions */
-#define SUB_ACTION_ADD     0   ///< Action add
-#define SUB_ACTION_KILL    1   ///< Action kill
-#define SUB_ACTION_FIND    2   ///< Action find
-#define SUB_ACTION_FOCUS   3   ///< Action focus
-#define SUB_ACTION_FULL    4   ///< Action max
-#define SUB_ACTION_FLOAT   5   ///< Action float
-#define SUB_ACTION_STICK   6   ///< Action stick
-#define SUB_ACTION_JUMP    7   ///< Action jump
-#define SUB_ACTION_LIST    8   ///< Action list
-#define SUB_ACTION_TAG     9   ///< Action tag
-#define SUB_ACTION_UNTAG   10  ///< Action untag
-#define SUB_ACTION_TAGS    11  ///< Action tags
-#define SUB_ACTION_CLIENTS 12  ///< Action clients
-#define SUB_ACTION_UPDATE  13  ///< Action update
-#define SUB_ACTION_DATA    14  ///< Action data
-#define SUB_ACTION_GRAVITY 15  ///< Action gravity
-#define SUB_ACTION_SCREEN  16  ///< Action screen
-#define SUB_ACTION_RAISE   17  ///< Action raise
-#define SUB_ACTION_LOWER   18  ///< Action lower
-#define SUB_ACTION_TOTAL   19  ///< Action total
+#define SUB_ACTION_ADD         0   ///< Action add
+#define SUB_ACTION_KILL        1   ///< Action kill
+#define SUB_ACTION_FIND        2   ///< Action find
+#define SUB_ACTION_FOCUS       3   ///< Action focus
+#define SUB_ACTION_FULL        4   ///< Action max
+#define SUB_ACTION_FLOAT       5   ///< Action float
+#define SUB_ACTION_STICK       6   ///< Action stick
+#define SUB_ACTION_JUMP        7   ///< Action jump
+#define SUB_ACTION_LIST        8   ///< Action list
+#define SUB_ACTION_TAG         9   ///< Action tag
+#define SUB_ACTION_UNTAG      10   ///< Action untag
+#define SUB_ACTION_TAGS       11   ///< Action tags
+#define SUB_ACTION_CLIENTS    12   ///< Action clients
+#define SUB_ACTION_UPDATE     13   ///< Action update
+#define SUB_ACTION_DATA       14   ///< Action data
+#define SUB_ACTION_GRAVITY    15   ///< Action gravity
+#define SUB_ACTION_SCREEN     16   ///< Action screen
+#define SUB_ACTION_RAISE      17   ///< Action raise
+#define SUB_ACTION_LOWER      18   ///< Action lower
+#define SUB_ACTION_TOTAL      19   ///< Action total
 
 /* Modifier */
-#define SUB_MOD_CURRENT    1   ///< Mod current
-#define SUB_MOD_SELECT     2   ///< Mod select
-#define SUB_MOD_RELOAD     3   ///< Mod reload
-#define SUB_MOD_QUIT       4   ///< Mod quit
-#define SUB_MOD_TOTAL      5   ///< Mod total
+#define SUB_MOD_CURRENT        1   ///< Mod current
+#define SUB_MOD_SELECT         2   ///< Mod select
+#define SUB_MOD_RELOAD_CONFIG  3   ///< Mod reload config
+#define SUB_MOD_RELOAD_SUBLETS 4   ///< Mod reload sublets
+#define SUB_MOD_QUIT           5   ///< Mod quit
+#define SUB_MOD_TOTAL          6   ///< Mod total
 /* }}} */
 
 /* SubtlerToggle {{{ */
@@ -1274,7 +1275,8 @@ SubtlerUsage(int group)
              "  -h, --help              Show this help and exit\n" \
              "  -V, --version           Show version info and exit\n" \
              "\nModifier:\n" \
-             "  -R, --reload            Reload %s\n" \
+             "  -r, --reload-config     Reload config\n" \
+             "  -R, --reload-sublets    Reload sublets\n" \
              "  -Q, --quit              Quit %s\n" \
              "  -C, --current           Select current active window/view\n" \
              "  -X, --select            Select a window via pointer\n" \
@@ -1284,9 +1286,9 @@ SubtlerUsage(int group)
              "  -e, --screen            Use screen group\n" \
              "  -s, --sublet            Use sublet group\n" \
              "  -t, --tag               Use tag group\n" \
-             "  -r, --tray              Use tray group\n" \
+             "  -y, --tray              Use tray group\n" \
              "  -v, --view              Use views group\n", 
-             getenv("DISPLAY"), PKG_NAME, PKG_NAME);
+             getenv("DISPLAY"), PKG_NAME);
     }
 
   if(-1 == group || SUB_GROUP_CLIENT == group)
@@ -1301,7 +1303,7 @@ SubtlerUsage(int group)
              "  -T, --tag=PATTERN       Add tag to client\n" \
              "  -U, --untag=PATTERN     Remove tag from client\n" \
              "  -G, --tags              Show client tags\n" \
-             "  -y, --gravity           Set client gravity\n" \
+             "  -Y, --gravity           Set client gravity\n" \
              "  -n, --screen            Set client screen\n" \
              "  -E, --raise             Raise client window\n" \
              "  -R, --lower             Lower client window\n" \
@@ -1450,11 +1452,13 @@ SubtlerParse(char *string)
 
 /* SubtlerReload {{{ */
 static void
-SubtlerReload(void)
+SubtlerReload(int mod)
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_RELOAD", data, True);
+  subSharedMessage(DefaultRootWindow(display), 
+    SUB_MOD_RELOAD_CONFIG == mod ? "SUBTLE_RELOAD_CONFIG" : 
+    "SUBTLE_RELOAD_SUBLETS", data, True);
 } /* }}} */
 
 /* SubtlerQuit {{{ */
@@ -1478,46 +1482,47 @@ main(int argc,
   const struct option long_options[] = /* {{{ */
   {
     /* Groups */
-    { "client",  no_argument,       0, 'c' },
-    { "gravity", no_argument,       0, 'g' },
-    { "screen",  no_argument,       0, 'e' },
-    { "sublet",  no_argument,       0, 's' },
-    { "tag",     no_argument,       0, 't' },
-    { "tray",    no_argument,       0, 'r' },
-    { "view",    no_argument,       0, 'v' },
+    { "client",         no_argument,       0, 'c' },
+    { "gravity",        no_argument,       0, 'g' },
+    { "screen",         no_argument,       0, 'e' },
+    { "sublet",         no_argument,       0, 's' },
+    { "tag",            no_argument,       0, 't' },
+    { "tray",           no_argument,       0, 'y' },
+    { "view",           no_argument,       0, 'v' },
 
     /* Actions */
-    { "add",     no_argument,       0, 'a' },
-    { "kill",    no_argument,       0, 'k' },
-    { "find",    no_argument,       0, 'f' },
-    { "focus",   no_argument,       0, 'o' },
-    { "full",    no_argument,       0, 'F' },
-    { "float",   no_argument,       0, 'O' },
-    { "stick",   no_argument,       0, 'S' },
-    { "jump",    no_argument,       0, 'j' },
-    { "list",    no_argument,       0, 'l' },
-    { "tag",     no_argument,       0, 'T' },
-    { "untag",   no_argument,       0, 'U' },
-    { "tags",    no_argument,       0, 'G' },
-    { "update",  no_argument,       0, 'u' },
-    { "data",    no_argument,       0, 'A' },
-    { "gravity", no_argument,       0, 'y' },
-    { "raise",   no_argument,       0, 'E' },
-    { "lower",   no_argument,       0, 'L' },
+    { "add",            no_argument,       0, 'a' },
+    { "kill",           no_argument,       0, 'k' },
+    { "find",           no_argument,       0, 'f' },
+    { "focus",          no_argument,       0, 'o' },
+    { "full",           no_argument,       0, 'F' },
+    { "float",          no_argument,       0, 'O' },
+    { "stick",          no_argument,       0, 'S' },
+    { "jump",           no_argument,       0, 'j' },
+    { "list",           no_argument,       0, 'l' },
+    { "tag",            no_argument,       0, 'T' },
+    { "untag",          no_argument,       0, 'U' },
+    { "tags",           no_argument,       0, 'G' },
+    { "update",         no_argument,       0, 'u' },
+    { "data",           no_argument,       0, 'A' },
+    { "gravity",        no_argument,       0, 'Y' },
+    { "raise",          no_argument,       0, 'E' },
+    { "lower",          no_argument,       0, 'L' },
 
     /* Modifier */
-    { "reload",  no_argument,       0, 'R' },
-    { "quit",    no_argument,       0, 'Q' },
-    { "current", no_argument,       0, 'C' },
-    { "select",  no_argument,       0, 'X' },
+    { "reload-config",  no_argument,       0, 'r' },
+    { "reload-sublets", no_argument,       0, 'R' },
+    { "quit",           no_argument,       0, 'Q' },
+    { "current",        no_argument,       0, 'C' },
+    { "select",         no_argument,       0, 'X' },
 
     /* Other */
 #ifdef DEBUG
-    { "debug",   no_argument,       0, 'D' },
+    { "debug",          no_argument,       0, 'D' },
 #endif /* DEBUG */
-    { "display", required_argument, 0, 'd' },
-    { "help",    no_argument,       0, 'h' },
-    { "version", no_argument,       0, 'V' },
+    { "display",        required_argument, 0, 'd' },
+    { "help",           no_argument,       0, 'h' },
+    { "version",        no_argument,       0, 'V' },
     { 0, 0, 0, 0}
   }; /* }}} */
 
@@ -1552,7 +1557,7 @@ main(int argc,
   memset(&act.sa_mask, 0, sizeof(sigset_t)); ///< Avoid uninitialized values
   sigaction(SIGSEGV, &act, NULL);
 
-  while((c = getopt_long(argc, argv, "cgestrvakfoFOSjlTUGIuAynELRQCXd:hDV", long_options, NULL)) != -1)
+  while((c = getopt_long(argc, argv, "cgestyvakfoFOSjlTUGIuAYnELrRQCXd:hDV", long_options, NULL)) != -1)
     {
       switch(c)
         {
@@ -1562,41 +1567,42 @@ main(int argc,
           case 'e': group = SUB_GROUP_SCREEN;    break;
           case 's': group = SUB_GROUP_SUBLET;    break;
           case 't': group = SUB_GROUP_TAG;       break;
-          case 'r': group = SUB_GROUP_TRAY;      break;
+          case 'y': group = SUB_GROUP_TRAY;      break;
           case 'v': group = SUB_GROUP_VIEW;      break;
 
           /* Actions */
-          case 'a': action = SUB_ACTION_ADD;     break;
-          case 'k': action = SUB_ACTION_KILL;    break;
-          case 'f': action = SUB_ACTION_FIND;    break;
-          case 'o': action = SUB_ACTION_FOCUS;   break;
-          case 'F': action = SUB_ACTION_FULL;    break;
-          case 'O': action = SUB_ACTION_FLOAT;   break;
-          case 'S': action = SUB_ACTION_STICK;   break;
-          case 'j': action = SUB_ACTION_JUMP;    break;
-          case 'l': action = SUB_ACTION_LIST;    break;
-          case 'T': action = SUB_ACTION_TAG;     break;
-          case 'U': action = SUB_ACTION_UNTAG;   break;
-          case 'G': action = SUB_ACTION_TAGS;    break;
-          case 'I': action = SUB_ACTION_CLIENTS; break;
-          case 'u': action = SUB_ACTION_UPDATE;  break;
-          case 'A': action = SUB_ACTION_DATA;    break;
-          case 'y': action = SUB_ACTION_GRAVITY; break;
-          case 'n': action = SUB_ACTION_SCREEN;  break;
-          case 'E': action = SUB_ACTION_RAISE;   break;
-          case 'L': action = SUB_ACTION_LOWER;   break;
+          case 'a': action = SUB_ACTION_ADD;      break;
+          case 'k': action = SUB_ACTION_KILL;     break;
+          case 'f': action = SUB_ACTION_FIND;     break;
+          case 'o': action = SUB_ACTION_FOCUS;    break;
+          case 'F': action = SUB_ACTION_FULL;     break;
+          case 'O': action = SUB_ACTION_FLOAT;    break;
+          case 'S': action = SUB_ACTION_STICK;    break;
+          case 'j': action = SUB_ACTION_JUMP;     break;
+          case 'l': action = SUB_ACTION_LIST;     break;
+          case 'T': action = SUB_ACTION_TAG;      break;
+          case 'U': action = SUB_ACTION_UNTAG;    break;
+          case 'G': action = SUB_ACTION_TAGS;     break;
+          case 'I': action = SUB_ACTION_CLIENTS;  break;
+          case 'u': action = SUB_ACTION_UPDATE;   break;
+          case 'A': action = SUB_ACTION_DATA;     break;
+          case 'Y': action = SUB_ACTION_GRAVITY;  break;
+          case 'n': action = SUB_ACTION_SCREEN;   break;
+          case 'E': action = SUB_ACTION_RAISE;    break;
+          case 'L': action = SUB_ACTION_LOWER;    break;
 
           /* Modifier */
-          case 'R': mod = SUB_MOD_RELOAD;        break;
-          case 'Q': mod = SUB_MOD_QUIT;          break;
-          case 'C': mod = SUB_MOD_CURRENT;       break;
-          case 'X': mod = SUB_MOD_SELECT;        break;
+          case 'r': mod = SUB_MOD_RELOAD_CONFIG;  break;
+          case 'R': mod = SUB_MOD_RELOAD_SUBLETS; break;
+          case 'Q': mod = SUB_MOD_QUIT;           break;
+          case 'C': mod = SUB_MOD_CURRENT;        break;
+          case 'X': mod = SUB_MOD_SELECT;         break;
 
           /* Other */
-          case 'd': dispname = optarg;           break;
-          case 'h': SubtlerUsage(group);         return 0;
+          case 'd': dispname = optarg;            break;
+          case 'h': SubtlerUsage(group);          return 0;
 #ifdef DEBUG          
-          case 'D': debug = 1;                   break;
+          case 'D': debug = 1;                    break;
 #else /* DEBUG */
           case 'D': 
             printf("Please recompile %sr with `debug=yes'\n", PKG_NAME); 
@@ -1632,8 +1638,11 @@ main(int argc,
   /* Check mods */
   switch(mod)
     {
-      case SUB_MOD_RELOAD:  SubtlerReload(); return 0;
-      case SUB_MOD_QUIT:    SubtlerQuit();   return 0;
+      case SUB_MOD_RELOAD_CONFIG:
+      case SUB_MOD_RELOAD_SUBLETS:  
+        SubtlerReload(mod);
+        return 0;
+      case SUB_MOD_QUIT: SubtlerQuit(); return 0;
       case SUB_MOD_CURRENT:
         if(SUB_GROUP_VIEW == group) ///< Current of correct group
           {

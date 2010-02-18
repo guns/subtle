@@ -244,6 +244,9 @@ subSubletKill(SubSublet *s)
 {
   assert(s);
 
+  /* Call exit hook */
+
+
   /* Tidy up */
   subArrayRemove(subtle->panels, (void *)s);
   subHookRemove(s->instance, (void *)s);
