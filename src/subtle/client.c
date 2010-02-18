@@ -1157,7 +1157,23 @@ subClientKill(SubClient *c,
   XDeleteContext(subtle->dpy, c->win, CLIENTID);
   XUnmapWindow(subtle->dpy, c->win);
 
-  subSharedFocus(); ///< Focus
+  /* Try to focus next window */
+  if(ROOT == subSharedFocus())
+    {
+      int i;
+
+      for(i = 0; i < subtle->clients->ndata; i++)
+        {
+          SubClient *k = CLIENT(subtle->clients->data[i]);
+
+          if(VISIBLE(subtle->view, k)) ///< Check visibility first 
+            {
+              subClientWarp(k);
+              subClientFocus(k);
+              break;
+            }
+        }
+    }
 
   /* Destroy window */
   if(destroy && !(c->flags & SUB_CLIENT_DEAD))
