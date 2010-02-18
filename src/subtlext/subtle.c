@@ -356,7 +356,7 @@ subSubtleReloadConfig(VALUE self)
  */
 
 VALUE
-subSubtleReload(VALUE self)
+subSubtleReloadSublets(VALUE self)
 {
   return SubtleReload("SUBTLE_RELOAD_SUBLETS");
 } /* }}} */
