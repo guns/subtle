@@ -522,8 +522,11 @@ EventMessage(XClientMessageEvent *ev)
                 subPanelRender();
               }
             break; /* }}} */
-          case SUB_EWMH_SUBTLE_RELOAD: /* {{{ */
+          case SUB_EWMH_SUBTLE_RELOAD_CONFIG: /* {{{ */
             subRubyReloadConfig();
+            break; /* }}} */
+          case SUB_EWMH_SUBTLE_RELOAD_SUBLETS: /* {{{ */
+            subRubyReloadSublets();
             break; /* }}} */
           case SUB_EWMH_SUBTLE_QUIT: /* {{{ */
             subEventFinish();
@@ -1110,7 +1113,8 @@ void
 subEventWatchAdd(int fd)
 {
   /* Add descriptor to list */
-  watches = (struct pollfd *)subSharedMemoryRealloc(watches, (nwatches + 1) * sizeof(struct pollfd));
+  watches = (struct pollfd *)subSharedMemoryRealloc(watches, 
+    (nwatches + 1) * sizeof(struct pollfd));
 
   watches[nwatches].fd        = fd;
   watches[nwatches].events    = POLLIN;
@@ -1138,7 +1142,8 @@ subEventWatchDel(int fd)
     }
 
   nwatches--;
-  watches = (struct pollfd *)subSharedMemoryRealloc(watches, nwatches * sizeof(struct pollfd));
+  watches = (struct pollfd *)subSharedMemoryRealloc(watches, 
+    nwatches * sizeof(struct pollfd));
 } /* }}} */
 
  /** subEventLoop {{{ 
