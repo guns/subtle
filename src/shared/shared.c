@@ -572,9 +572,10 @@ subSharedTime(void)
 
  /** subSharedFocus {{{
   * @brief Get pointer window and focus it
+  * @return New focus window
   **/
 
-void
+Window
 subSharedFocus(void)
 {
   int dummy;
@@ -587,6 +588,8 @@ subSharedFocus(void)
 
   if((c = CLIENT(subSharedFind(win, CLIENTID)))) subClientFocus(c);
   else XSetInputFocus(subtle->dpy, ROOT, RevertToParent, CurrentTime);
+
+  return c ? c->win : ROOT;
 } /* }}} */
 
  /** subSharedTextWidth {{{

@@ -150,7 +150,7 @@ unsigned long subSharedParseColor(char *name);                    ///< Parse a c
 /* Subtle {{{ */
 XPointer * subSharedFind(Window win, XContext id);                ///< Find data with context manager
 time_t subSharedTime(void);                                       ///< Get current time 
-void subSharedFocus(void);                                        ///< Get pointer window and focus it
+Window subSharedFocus(void);                                      ///< Get pointer window and focus it
 int subSharedTextWidth(const char *text, int len,
   int *left, int *right, int center);                             ///< Get width of enclosing box
 void subSharedTextDraw(Window win, int x, int y, 
