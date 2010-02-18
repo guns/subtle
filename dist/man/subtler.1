@@ -1,7 +1,7 @@
 .\" generated with Ron/v0.3
 .\" http://github.com/rtomayko/ron/
 .
-.TH "SUBTLER" "1" "January 2010" "" ""
+.TH "SUBTLER" "1" "February 2010" "" ""
 .
 .SH "NAME"
 \fBsubtler\fR \-\- a commandline interface for subtle
@@ -70,10 +70,16 @@ If the \fBPATTERN\fR is \- subtler will read from stdin.
 .SH "MODIFIER"
 .
 .IP "\(bu" 4
-\fBR\fR, \fB\-\-reload\fR
+\fBr\fR, \fB\-\-reload\-config\fR
 .
 .br
-  Reload subtle
+  Reload config
+.
+.IP "\(bu" 4
+\fBR\fR, \fB\-\-reload\-sublets\fR
+.
+.br
+  Reload sublets
 .
 .IP "\(bu" 4
 \fBQ\fR, \fB\-\-quit\fR
@@ -128,7 +134,7 @@ If the \fBPATTERN\fR is \- subtler will read from stdin.
   Use tag group
 .
 .IP "\(bu" 4
-\fBr\fR, \fB\-\-tray\fR
+\fBy\fR, \fB\-\-tray\fR
 .
 .br
   Use tray group
@@ -198,7 +204,7 @@ If the \fBPATTERN\fR is \- subtler will read from stdin.
   Show client tags
 .
 .IP "\(bu" 4
-\fBy\fR, \fB\-\-gravity\fR
+\fBY\fR, \fB\-\-gravity\fR
 .
 .br
   Set client gravity
@@ -216,7 +222,7 @@ If the \fBPATTERN\fR is \- subtler will read from stdin.
   Raise client window
 .
 .IP "\(bu" 4
-\fBR\fR, \fB\-\-lower\fR
+\fBL\fR, \fB\-\-lower\fR
 .
 .br
   Lower client window
