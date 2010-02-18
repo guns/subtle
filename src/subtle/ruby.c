@@ -2315,6 +2315,15 @@ subRubyReloadConfig(void)
     SUB_SUBTLE_RUN|SUB_SUBTLE_XFT);
   subtle->view   = NULL;
 
+  /* Reset sublet panel flags */
+  for(i = 0; i < subtle->sublets->ndata; i++)
+    {
+      SubSublet *s = SUBLET(subtle->sublets->data[i]);
+
+      s->flags &= ~(SUB_SUBLET_PANEL|SUB_PANEL_BOTTOM| SUB_PANEL_SPACER1|
+        SUB_PANEL_SPACER1| SUB_PANEL_SEPARATOR1|SUB_PANEL_SEPARATOR2);
+    }
+
   /* Unload fonts */
   if(subtle->font.xfs)
     {
