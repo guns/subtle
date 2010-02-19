@@ -435,7 +435,7 @@ SRC_SUBTLEXT.each do |src|
   out = File.join(@options["builddir"], PG_SUBTLEXT, File.basename(src).ext("o"))
 
   file(out => src) do
-    compile(src, out, "-D#{PG_SUBTLEXT.upcase}")
+    compile(src, out, "-D#{PG_SUBTLEXT.upcase} -fPIC")
   end
 end
 # }}}
