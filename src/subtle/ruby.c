@@ -1163,6 +1163,9 @@ RubyWrapCall(VALUE data)
   /* Check call type */
   switch((int)rargs[0])
     {
+      case SUB_CALL_SUBLET_CONFIGURE: /* {{{ */
+        rb_funcall(rargs[1], rb_intern("__configure"), 1, rargs[1]);
+        break; /* }}} */
       case SUB_CALL_SUBLET_RUN: /* {{{ */
         rb_funcall(rargs[1], rb_intern("__run"), 1, rargs[1]);
         break; /* }}} */
@@ -1506,11 +1509,9 @@ RubyKernelConfigure(VALUE self,
       subArrayPush(subtle->sublets, s);
       rb_ary_push(shelter, s->instance); ///< Protect from GC
 
-      rb_funcall(p, rb_intern("call"), 1, s->instance);
-
-      printf("Loaded sublet (%s)\n", s->name);
-
-      if(0 >= s->interval) s->interval = 60; ///< Sanitize
+      /* Define configure method */
+      rb_funcall(rb_singleton_class(s->instance), rb_intern("define_method"), 
+        2, CHAR2SYM("__configure"), p);
     }
   else rb_raise(rb_eArgError, "Unknown value type");
 
@@ -1605,8 +1606,6 @@ RubyKernelEvent(VALUE self,
             }
 
           /* Hook specific stuff */
-          if(s->flags & SUB_SUBLET_RUN)
-            subRubyCall(SUB_CALL_SUBLET_RUN, s->instance, (void *)s, NULL); ///< First run
           if(s->flags & SUB_SUBLET_DOWN) mask |= ButtonPressMask;
           if(s->flags & SUB_SUBLET_OVER) mask |= EnterWindowMask;
           if(s->flags & SUB_SUBLET_OUT)  mask |= LeaveWindowMask;
@@ -1644,6 +1643,7 @@ RubyKernelHelper(VALUE self)
       /* Since loading is linear we use the last sublet */
       s = SUBLET(subtle->sublets->data[subtle->sublets->ndata - 1]);
 
+      /* Instance eval the block */
       rb_yield_values(1, s->instance);
       rb_obj_instance_eval(0, 0, s->instance);
     }
@@ -2402,6 +2402,7 @@ subRubyLoadSublet(const char *file)
 {
   int state = 0;
   char buf[100] = { 0 };
+  SubSublet *s = NULL;
 
   /* Check path */
   if(subtle->paths.sublets)
@@ -2423,7 +2424,21 @@ subRubyLoadSublet(const char *file)
     {
       subSharedLogWarn("Failed loading sublet `%s'\n", file);
       RubyBacktrace();
-    }  
+    }
+
+  /* Configure and run sublet */
+  s = SUBLET(subtle->sublets->data[subtle->sublets->ndata - 1]);
+
+  subRubyCall(SUB_CALL_SUBLET_CONFIGURE, s->instance, (void *)s, NULL);
+
+  if(0 >= s->interval) s->interval = 60; ///< Sanitize
+  if(s->flags & SUB_SUBLET_RUN)
+    {
+      subRubyCall(SUB_CALL_SUBLET_RUN, s->instance, 
+        (void *)s, NULL); ///< First run
+    }
+
+  printf("Loaded sublet (%s)\n", s->name);
 } /* }}} */
 
  /** subRubyLoadPanels {{{
