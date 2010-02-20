@@ -478,36 +478,38 @@ subClientTag(SubClient *c,
   int i, flags = 0;
 
   assert(c);
-  if(!c || c->flags & SUB_CLIENT_DEAD) return flags;
 
   /* Update flags and tags */
-  if(0 <= tag && subtle->tags->ndata > tag)
+  if(c && !(c->flags & SUB_CLIENT_DEAD))
     {
-      SubTag *t = TAG(subtle->tags->data[tag]);
-      
-      /* Collect flags and tags */
-      flags    |= (t->flags & MODES_ALL);
-      c->flags |= (t->flags & MODES_NONE);
-      c->tags  |= (1L << (tag + 1));
-
-      /* Set size and enable float */
-      if(t->flags & SUB_TAG_GEOMETRY && !(c->flags & SUB_MODE_NONFLOAT))
+      if(0 <= tag && subtle->tags->ndata > tag)
         {
-          flags   |= (SUB_MODE_FLOAT|SUB_MODE_NONRESIZE); ///< Disable size checks
-          c->geom  = t->geometry;
-          c->base  = t->geometry;
-        }
+          SubTag *t = TAG(subtle->tags->data[tag]);
+          
+          /* Collect flags and tags */
+          flags    |= (t->flags & MODES_ALL);
+          c->flags |= (t->flags & MODES_NONE);
+          c->tags  |= (1L << (tag + 1));
 
-      /* Set gravity and screens for matching views */
-      for(i = 0; i < subtle->views->ndata; i++)
-        {
-          SubView *v = VIEW(subtle->views->data[i]);
-
-          /* Match only views with this tag */
-          if(v->tags & (1L << (tag + 1)) || t->flags & SUB_MODE_STICK)
+          /* Set size and enable float */
+          if(t->flags & SUB_TAG_GEOMETRY && !(c->flags & SUB_MODE_NONFLOAT))
             {
-              if(t->flags & SUB_TAG_GRAVITY) c->gravities[i] = t->gravity;
-              if(t->flags & SUB_TAG_SCREEN)  c->screens[i]   = t->screen;
+              flags   |= (SUB_MODE_FLOAT|SUB_MODE_NONRESIZE); ///< Disable size checks
+              c->geom  = t->geometry;
+              c->base  = t->geometry;
+            }
+
+          /* Set gravity and screens for matching views */
+          for(i = 0; i < subtle->views->ndata; i++)
+            {
+              SubView *v = VIEW(subtle->views->data[i]);
+
+              /* Match only views with this tag */
+              if(v->tags & (1L << (tag + 1)) || t->flags & SUB_MODE_STICK)
+                {
+                  if(t->flags & SUB_TAG_GRAVITY) c->gravities[i] = t->gravity;
+                  if(t->flags & SUB_TAG_SCREEN)  c->screens[i]   = t->screen;
+                }
             }
         }
     }
@@ -1077,6 +1079,8 @@ subClientToggle(SubClient *c,
           XSetWindowBorderWidth(subtle->dpy, c->win, 0);
           subClientSetSize(c); ///< Sanitize
         }
+
+      if(type & SUB_MODE_URGENT) subClientWarp(c);
     }
 
   subClientConfigure(c);
