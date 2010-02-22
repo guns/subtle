@@ -137,7 +137,7 @@ subTagUpdate(VALUE self)
 {
   VALUE name = rb_iv_get(self, "@name");
 
-  if(RTEST(name) && T_STRING == rb_type(name))
+  if(T_STRING == rb_type(name))
     {
       int id = -1;
 
@@ -152,12 +152,21 @@ subTagUpdate(VALUE self)
           id = subSharedTagFind(RSTRING_PTR(name), NULL);
         }
 
-      /* Final check */
-      if(-1 != id)
+      /* Guess tag id */
+      if(-1 == id)
         {
-          rb_iv_set(self, "@id", INT2FIX(id));
+          int size = 0;
+          char **tags = NULL;
+
+          tags = subSharedPropertyStrings(DefaultRootWindow(display),
+            "SUBTLE_TAG_LIST", &size);
+
+          id = size; ///< New id should be last
+
+          XFreeStringList(tags);
         }
-      else rb_raise(rb_eStandardError, "Failed finding tag");  
+
+      rb_iv_set(self, "@id", INT2FIX(id));
     }
   else rb_raise(rb_eArgError, "Unknown value type");
 

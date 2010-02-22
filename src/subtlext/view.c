@@ -184,7 +184,7 @@ subViewUpdate(VALUE self)
 {
   VALUE name = rb_iv_get(self, "@name");
 
-  if(RTEST(name) && T_STRING == rb_type(name))
+  if(T_STRING == rb_type(name))
     {
       int id = -1;
 
@@ -199,14 +199,24 @@ subViewUpdate(VALUE self)
           id = subSharedViewFind(RSTRING_PTR(name), NULL, NULL);
         }
 
-      /* Final check */
-      if(-1 != id)
+      /* Guess view id */
+      if(-1 == id)
         {
-          rb_iv_set(self, "@id", INT2FIX(id));
+          int size = 0;
+          char **names = NULL;
+
+          names = subSharedPropertyStrings(DefaultRootWindow(display),
+            "_NET_DESKTOP_NAMES", &size);
+
+          id = size; ///< New id should be last
+
+          XFreeStringList(names);
         }
-      else rb_raise(rb_eStandardError, "Failed finding view");  
+
+      rb_iv_set(self, "@id", INT2FIX(id));
     }
-  else rb_raise(rb_eStandardError, "Failed finding view");  
+  else rb_raise(rb_eArgError, "Unknown value type");
+
   return Qnil;
 } /* }}} */
 
