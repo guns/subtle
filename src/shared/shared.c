@@ -667,8 +667,8 @@ void subSharedTextDraw(Window win,
   /* Clear window */
   if(0 <= bg)
     {
-      XClearWindow(subtle->dpy, win);
       XSetWindowBackground(subtle->dpy, win, bg);
+      XClearWindow(subtle->dpy, win);
     }
 
   /* Draw text */
