@@ -23,9 +23,9 @@ static const char *klasses[] = {
 int debug = 0;
 #endif /* DEBUG */
 
-/* subTag {{{ */
+/* SubtlextTag {{{ */
 VALUE
-subTag(VALUE self,
+SubtlextTag(VALUE self,
   VALUE value,
   char *action)
 {
@@ -36,8 +36,8 @@ subTag(VALUE self,
     {
       VALUE oid = Qnil, tid = Qnil;
 
-      oid   = rb_iv_get(self, "@id");
-      tid   = rb_iv_get(tag, "@id");
+      oid = rb_iv_get(self, "@id");
+      tid = rb_iv_get(tag, "@id");
 
       if(Qnil != oid && Qnil != tid)
         {
@@ -48,9 +48,12 @@ subTag(VALUE self,
           data.l[2] = rb_obj_is_instance_of(self, 
             rb_const_get(mod, rb_intern("Client"))) ? 0 : 1; ///< Client = 0, View = 1
 
+          printf("win-id=%ld, tag-id=%ld\n", data.l[0], data.l[1]);
+
           subSharedMessage(DefaultRootWindow(display), action, data, True);
         }
     }
+  else rb_raise(rb_eStandardError, "Failed adding tag");
 
   return Qnil;
 } /* }}} */
@@ -165,8 +168,9 @@ subSubtlextFind(int type,
           }
         break; /* }}} */        
       case T_OBJECT: /* {{{ */
-        if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern(klasses[type])))) 
-          object = value;
+        if(rb_obj_is_instance_of(value, rb_const_get(mod, 
+            rb_intern(klasses[type])))) 
+            return value;
         break; /* }}} */
       case T_STRING: /* {{{ */
         if(SUB_TYPE_CLIENT == type || SUB_TYPE_TRAY == type) ///< Set default match flags
@@ -202,7 +206,8 @@ subSubtlextFind(int type,
       default: /* {{{ */
         if(exception)
           {
-            rb_raise(rb_eArgError, "Unknwon value type `%s'", rb_obj_classname(value));
+            rb_raise(rb_eArgError, "Unknwon value type `%s'", 
+              rb_obj_classname(value));
 
             return Qnil;
           } /* }}} */
@@ -265,6 +270,7 @@ subSubtlextFind(int type,
                 VALUE geom = subGeometryInstantiate(geometry.x, geometry.y, 
                   geometry.width, geometry.height);
 
+                rb_iv_set(object, "@id",       INT2FIX(id)); 
                 rb_iv_set(object, "@geometry", geom);
               }
           }
@@ -294,8 +300,7 @@ subSubtlextFind(int type,
 
   if(NIL_P(object) && exception)
     rb_raise(rb_eArgError, "Failed finding `%s'", klasses[type]);
-
-  if(!NIL_P(object)) rb_iv_set(object, "@id", INT2FIX(id)); ///< Set id
+  //if(!NIL_P(object)) rb_iv_set(object, "@id", INT2FIX(id)); ///< Set id
 
   return object;
 } /* }}} */
@@ -365,7 +370,7 @@ VALUE
 subSubtlextTagAdd(VALUE self,
   VALUE value)
 {
-  return subTag(self, value, "SUBTLE_WINDOW_TAG");
+  return SubtlextTag(self, value, "SUBTLE_WINDOW_TAG");
 } /* }}} */
 
 /* subSubtlextTagDel {{{ */
@@ -389,7 +394,7 @@ VALUE
 subSubtlextTagDel(VALUE self,
   VALUE value)
 {
-  return subTag(self, value, "SUBTLE_WINDOW_UNTAG");
+  return SubtlextTag(self, value, "SUBTLE_WINDOW_UNTAG");
 } /* }}} */
 
 /* subSubtlextTagList {{{ */
