@@ -321,6 +321,9 @@ subDisplayScan(void)
   subScreenConfigure();
   subTrayUpdate();
 
+  /* Hook: Start */
+  subHookCall(SUB_HOOK_START, NULL);
+
   /* Activate first view */
   subViewJump(VIEW(subtle->views->data[0]));
   subtle->windows.focus = ROOT;

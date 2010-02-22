@@ -172,24 +172,28 @@
 #define SUB_MODE_NONRESIZE            (1L << 30)                  ///< Disable resize mode
 
 /* Call flags */
-#define SUB_CALL_CLIENT_CREATE        (1L << 13)                  ///< Client create hook
-#define SUB_CALL_CLIENT_CONFIGURE     (1L << 14)                  ///< Client configure hook
-#define SUB_CALL_CLIENT_FOCUS         (1L << 15)                  ///< Client focus hook
-#define SUB_CALL_CLIENT_KILL          (1L << 16)                  ///< Client kill hook
-#define SUB_CALL_PROC                 (1L << 17)                  ///< Call proc
-#define SUB_CALL_SUBLET_CONFIGURE     (1L << 18)                  ///< Sublet run hook
-#define SUB_CALL_SUBLET_RUN           (1L << 19)                  ///< Sublet run hook
-#define SUB_CALL_SUBLET_DOWN          (1L << 20)                  ///< Sublet mouse down hook
-#define SUB_CALL_SUBLET_OVER          (1L << 21)                  ///< Sublet mouse over hook
-#define SUB_CALL_SUBLET_OUT           (1L << 22)                  ///< Sublet mouse out hook
-#define SUB_CALL_SUBLET_WATCH         (1L << 23)                  ///< Sublet watch hook
-#define SUB_CALL_TAG_CREATE           (1L << 24)                  ///< Tag create hook
-#define SUB_CALL_TAG_KILL             (1L << 25)                  ///< Tag kill hook
-#define SUB_CALL_VIEW_CREATE          (1L << 26)                  ///< View create hook
-#define SUB_CALL_VIEW_CONFIGURE       (1L << 27)                  ///< View configure hook
-#define SUB_CALL_VIEW_JUMP            (1L << 29)                  ///< View jump hook
-#define SUB_CALL_VIEW_KILL            (1L << 29)                  ///< View kill hook
-#define SUB_CALL_EXIT                 (1L << 30)                  ///< Exit hook
+#define SUB_CALL_HOOK                 (1L << 13)                  ///< Call hook
+#define SUB_CALL_SUBLET_CONFIGURE     (1L << 14)                  ///< Sublet watch hook
+#define SUB_CALL_SUBLET_RUN           (1L << 15)                  ///< Sublet run hook
+#define SUB_CALL_SUBLET_WATCH         (1L << 16)                  ///< Sublet watch hook
+#define SUB_CALL_SUBLET_DOWN          (1L << 17)                  ///< Sublet mouse down hook
+#define SUB_CALL_SUBLET_OVER          (1L << 18)                  ///< Sublet mouse over hook
+#define SUB_CALL_SUBLET_OUT           (1L << 19)                  ///< Sublet mouse out hook
+
+/* Hooks */
+#define SUB_HOOK_START                (1L << 14)                  ///< Start hook (must start at 14)
+#define SUB_HOOK_RELOAD               (1L << 15)                  ///< Start hook
+#define SUB_HOOK_EXIT                 (1L << 16)                  ///< Exit hook
+#define SUB_HOOK_CLIENT_CREATE        (1L << 17)                  ///< Client create hook
+#define SUB_HOOK_CLIENT_CONFIGURE     (1L << 18)                  ///< Client configure hook
+#define SUB_HOOK_CLIENT_FOCUS         (1L << 19)                  ///< Client focus hook
+#define SUB_HOOK_CLIENT_KILL          (1L << 20)                  ///< Client kill hook
+#define SUB_HOOK_TAG_CREATE           (1L << 21)                  ///< Tag create hook
+#define SUB_HOOK_TAG_KILL             (1L << 22)                  ///< Tag kill hook
+#define SUB_HOOK_VIEW_CREATE          (1L << 23)                  ///< View create hook
+#define SUB_HOOK_VIEW_CONFIGURE       (1L << 24)                  ///< View configure hook
+#define SUB_HOOK_VIEW_JUMP            (1L << 25)                  ///< View jump hook
+#define SUB_HOOK_VIEW_KILL            (1L << 26)                  ///< View kill hook
 
 /* Client flags */
 #define SUB_CLIENT_FOCUS              (1L << 13)                  ///< Send focus message

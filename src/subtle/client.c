@@ -179,7 +179,7 @@ subClientConfigure(SubClient *c)
     c->geom.x, c->geom.y, c->geom.width, c->geom.height);
 
   /* Hook: Create */
-  subHookCall(SUB_CALL_CLIENT_CONFIGURE, (void *)c);
+  subHookCall(SUB_HOOK_CLIENT_CONFIGURE, (void *)c);
 } /* }}} */
 
  /** subClientRender {{{
@@ -1145,7 +1145,7 @@ subClientKill(SubClient *c,
   assert(c);
 
     /* Hook: Create */
-  subHookCall(SUB_CALL_CLIENT_KILL, (void *)c);
+  subHookCall(SUB_HOOK_CLIENT_KILL, (void *)c);
 
   /* Focus */
   if(subtle->windows.focus == c->win)

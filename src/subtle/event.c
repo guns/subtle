@@ -129,7 +129,7 @@ EventMapRequest(XMapRequestEvent *ev)
             }
           
           /* Hook: Create */
-          subHookCall(SUB_CALL_CLIENT_CREATE, (void *)c);
+          subHookCall(SUB_HOOK_CLIENT_CREATE, (void *)c);
         }
     }
 } /* }}} */
@@ -411,7 +411,7 @@ EventMessage(XClientMessageEvent *ev)
                 subTagPublish();
 
                 /* Hook: Create */
-                subHookCall(SUB_CALL_TAG_CREATE, (void *)t);
+                subHookCall(SUB_HOOK_TAG_CREATE, (void *)t);
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_TAG_KILL: /* {{{ */
@@ -454,7 +454,7 @@ EventMessage(XClientMessageEvent *ev)
                 subPanelRender();
 
                 /* Hook: Create */
-                subHookCall(SUB_CALL_VIEW_CREATE, (void *)v);
+                subHookCall(SUB_HOOK_VIEW_CREATE, (void *)v);
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_VIEW_KILL: /* {{{ */
@@ -843,7 +843,7 @@ EventGrab(XEvent *ev)
             if(g->data.string) subSharedSpawn(g->data.string);
             break; /* }}} */
           case SUB_GRAB_PROC: /* {{{ */
-            subRubyCall(SUB_CALL_PROC, g->data.num, 
+            subRubyCall(SUB_CALL_HOOK, g->data.num, 
               (void *)g, subSharedFind(win, CLIENTID));
             break; /* }}} */
           case SUB_GRAB_VIEW_JUMP: /* {{{ */
@@ -1071,7 +1071,7 @@ EventFocus(XFocusChangeEvent *ev)
           subEwmhSetWindows(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW, &subtle->windows.focus, 1);
 
           /* Hook: Focus */
-          subHookCall(SUB_CALL_CLIENT_FOCUS, (void *)c);
+          subHookCall(SUB_HOOK_CLIENT_FOCUS, (void *)c);
 
           subPanelUpdate();
           subPanelRender();
@@ -1305,7 +1305,7 @@ subEventFinish(void)
         XSync(subtle->dpy, False); ///< Sync before going on
 
       /* Hook: Exit */
-      subHookCall(SUB_CALL_EXIT, NULL);
+      subHookCall(SUB_HOOK_EXIT, NULL);
 
       /* Clear hooks first to stop calling */
       subArrayClear(subtle->hooks,    True);

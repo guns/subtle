@@ -26,7 +26,7 @@
 #define PANELSLENGTH  3
 #define GRABSLENGTH  15
 #define TAGSLENGTH    9
-#define HOOKSLENGTH  11
+#define HOOKSLENGTH  12
 
 static VALUE shelter = Qnil, subtlext = Qnil; ///< Globals
 
@@ -659,7 +659,7 @@ RubyForeachHook(VALUE key,
         {
           if(key == hooks[i].sym)
             {
-              object = (void *)subHookNew(hooks[i].flags|SUB_CALL_PROC, 
+              object = (void *)subHookNew(hooks[i].flags|SUB_CALL_HOOK, 
                 value, NULL);
 
               subArrayPush(subtle->hooks, object);
@@ -828,17 +828,19 @@ RubyWrapLoadConfig(VALUE data)
 
   RubySymbols hooks[] =
   {
-    { CHAR2SYM("HookClientCreate"),    SUB_CALL_CLIENT_CREATE    },
-    { CHAR2SYM("HookClientConfigure"), SUB_CALL_CLIENT_CONFIGURE },
-    { CHAR2SYM("HookClientFocus"),     SUB_CALL_CLIENT_FOCUS     },
-    { CHAR2SYM("HookClientKill"),      SUB_CALL_CLIENT_KILL      },
-    { CHAR2SYM("HookViewCreate"),      SUB_CALL_VIEW_CREATE      },
-    { CHAR2SYM("HookViewConfigure"),   SUB_CALL_VIEW_CONFIGURE   },
-    { CHAR2SYM("HookViewJump"),        SUB_CALL_VIEW_JUMP        },
-    { CHAR2SYM("HookViewKill"),        SUB_CALL_VIEW_KILL        },
-    { CHAR2SYM("HookTagCreate"),       SUB_CALL_TAG_CREATE       },
-    { CHAR2SYM("HookTagKill"),         SUB_CALL_TAG_KILL         },
-    { CHAR2SYM("HookExit"),            SUB_CALL_EXIT             }
+    { CHAR2SYM("HookStart"),           SUB_HOOK_START            },
+    { CHAR2SYM("HookReload"),          SUB_HOOK_RELOAD           },
+    { CHAR2SYM("HookExit"),            SUB_HOOK_EXIT             },
+    { CHAR2SYM("HookClientCreate"),    SUB_HOOK_CLIENT_CREATE    },
+    { CHAR2SYM("HookClientConfigure"), SUB_HOOK_CLIENT_CONFIGURE },
+    { CHAR2SYM("HookClientFocus"),     SUB_HOOK_CLIENT_FOCUS     },
+    { CHAR2SYM("HookClientKill"),      SUB_HOOK_CLIENT_KILL      },
+    { CHAR2SYM("HookViewCreate"),      SUB_HOOK_VIEW_CREATE      },
+    { CHAR2SYM("HookViewConfigure"),   SUB_HOOK_VIEW_CONFIGURE   },
+    { CHAR2SYM("HookViewJump"),        SUB_HOOK_VIEW_JUMP        },
+    { CHAR2SYM("HookViewKill"),        SUB_HOOK_VIEW_KILL        },
+    { CHAR2SYM("HookTagCreate"),       SUB_HOOK_TAG_CREATE       },
+    { CHAR2SYM("HookTagKill"),         SUB_HOOK_TAG_KILL         }
   };
   /* }}} */
 
@@ -1186,7 +1188,7 @@ RubyWrapCall(VALUE data)
               INT2FIX(ev->x), INT2FIX(ev->y), INT2FIX(ev->button));
           }
         break; /* }}} */        
-      case SUB_CALL_PROC: /* {{{ */
+      case SUB_CALL_HOOK: /* {{{ */
         rb_funcall(rargs[1], rb_intern("call"), 
           MINMAX(RubyArity(rargs[1]), 0, 1), RubyConvert((VALUE *)rargs[3]));
         break; /* }}} */
@@ -1554,17 +1556,17 @@ RubyKernelEvent(VALUE self,
 
           RubySymbols hooks[] =
           {
-            { CHAR2SYM("client_create"),    SUB_CALL_CLIENT_CREATE    },
-            { CHAR2SYM("client_configure"), SUB_CALL_CLIENT_CONFIGURE },
-            { CHAR2SYM("client_focus"),     SUB_CALL_CLIENT_FOCUS     },
-            { CHAR2SYM("client_kill"),      SUB_CALL_CLIENT_KILL      },
-            { CHAR2SYM("tag_create"),       SUB_CALL_TAG_CREATE       },
-            { CHAR2SYM("tag_kill"),         SUB_CALL_TAG_KILL         },
-            { CHAR2SYM("view_create"),      SUB_CALL_VIEW_CREATE      },
-            { CHAR2SYM("view_configure"),   SUB_CALL_VIEW_CONFIGURE   },
-            { CHAR2SYM("view_jump"),        SUB_CALL_VIEW_JUMP        },
-            { CHAR2SYM("view_kill"),        SUB_CALL_VIEW_KILL        },
-            { CHAR2SYM("exit"),             SUB_CALL_EXIT             }
+            { CHAR2SYM("exit"),             SUB_HOOK_EXIT             },
+            { CHAR2SYM("client_create"),    SUB_HOOK_CLIENT_CREATE    },
+            { CHAR2SYM("client_configure"), SUB_HOOK_CLIENT_CONFIGURE },
+            { CHAR2SYM("client_focus"),     SUB_HOOK_CLIENT_FOCUS     },
+            { CHAR2SYM("client_kill"),      SUB_HOOK_CLIENT_KILL      },
+            { CHAR2SYM("tag_create"),       SUB_HOOK_TAG_CREATE       },
+            { CHAR2SYM("tag_kill"),         SUB_HOOK_TAG_KILL         },
+            { CHAR2SYM("view_create"),      SUB_HOOK_VIEW_CREATE      },
+            { CHAR2SYM("view_configure"),   SUB_HOOK_VIEW_CONFIGURE   },
+            { CHAR2SYM("view_jump"),        SUB_HOOK_VIEW_JUMP        },
+            { CHAR2SYM("view_kill"),        SUB_HOOK_VIEW_KILL        }
           };
 
           /* Since loading is linear we use the last sublet */

@@ -100,7 +100,7 @@ subTagKill(SubTag *t)
   assert(t);
 
   /* Hook: Kill */
-  subHookCall(SUB_CALL_TAG_KILL, (void *)t);
+  subHookCall(SUB_HOOK_TAG_KILL, (void *)t);
 
   if(t->preg) subSharedRegexKill(t->preg);
   free(t->name);

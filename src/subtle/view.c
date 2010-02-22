@@ -109,7 +109,7 @@ subViewConfigure(SubView *v,
   subSharedLogDebug("Configure: type=view, vid=%d, name=%s\n", vid, v->name);
 
   /* Hook: Configure */
-  subHookCall(SUB_CALL_VIEW_CONFIGURE, (void *)v);
+  subHookCall(SUB_HOOK_VIEW_CONFIGURE, (void *)v);
 } /* }}} */
 
  /** subViewUpdate {{{ 
@@ -201,7 +201,7 @@ subViewJump(SubView *v)
   subViewRender();
 
   /* Hook: Jump */
-  subHookCall(SUB_CALL_VIEW_JUMP, (void *)v);
+  subHookCall(SUB_HOOK_VIEW_JUMP, (void *)v);
 } /* }}} */
 
  /** subViewPublish {{{
@@ -241,7 +241,7 @@ subViewPublish(void)
 
       subSharedLogDebug("publish=views, n=%d\n", i);
 
-      XSync(subtle->dpy, False); ///< Sync all changes#
+      XSync(subtle->dpy, False); ///< Sync all changes
 
       free(views);
       free(names);
@@ -259,7 +259,7 @@ subViewKill(SubView *v)
   assert(v);
 
   /* Hook: Kill */
-  subHookCall(SUB_CALL_VIEW_KILL, (void *)v);
+  subHookCall(SUB_HOOK_VIEW_KILL, (void *)v);
 
   XDeleteContext(subtle->dpy, v->button, VIEWID);
   XDestroyWindow(subtle->dpy, v->button);
