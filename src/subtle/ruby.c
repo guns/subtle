@@ -659,7 +659,7 @@ RubyForeachHook(VALUE key,
         {
           if(key == hooks[i].sym)
             {
-              object = (void *)subHookNew(hooks[i].flags|SUB_CALL_HOOK, 
+              object = (void *)subHookNew(hooks[i].flags|SUB_CALL_HOOKS, 
                 value, NULL);
 
               subArrayPush(subtle->hooks, object);
@@ -1163,42 +1163,47 @@ RubyWrapCall(VALUE data)
   VALUE *rargs = (VALUE *)data;
 
   /* Check call type */
-  switch((int)rargs[0])
+  if((int)rargs[0] & SUB_CALL_HOOKS)
     {
-      case SUB_CALL_SUBLET_CONFIGURE: /* {{{ */
-        rb_funcall(rargs[1], rb_intern("__configure"), 1, rargs[1]);
-        break; /* }}} */
-      case SUB_CALL_SUBLET_RUN: /* {{{ */
-        rb_funcall(rargs[1], rb_intern("__run"), 1, rargs[1]);
-        break; /* }}} */
-      case SUB_CALL_SUBLET_WATCH: /* {{{ */
-        rb_funcall(rargs[1], rb_intern("__watch"), 1, rargs[1]);
-        break; /* }}} */
-      case SUB_CALL_SUBLET_OVER: /* {{{ */
-        rb_funcall(rargs[1], rb_intern("__over"), 1, rargs[1]);
-        break; /* }}} */
-      case SUB_CALL_SUBLET_OUT: /* {{{ */
-        rb_funcall(rargs[1], rb_intern("__out"), 1, rargs[1]);
-        break; /* }}} */
-      case SUB_CALL_SUBLET_DOWN: /* {{{ */
-          {
-            XButtonEvent *ev = (XButtonEvent *)rargs[2];
+      rb_funcall(rargs[1], rb_intern("call"), 
+        MINMAX(RubyArity(rargs[1]), 0, 1), RubyConvert((VALUE *)rargs[3]));
+    }
+  else if((int)rargs[0] & SUB_CALL_SUBLET_HOOKS)
+    {
+      SubSublet *s = SUBLET(rargs[2]);
 
-            rb_funcall(rargs[1], rb_intern("__down"), 4, rargs[1], 
-              INT2FIX(ev->x), INT2FIX(ev->y), INT2FIX(ev->button));
-          }
-        break; /* }}} */        
-      case SUB_CALL_HOOK: /* {{{ */
-        rb_funcall(rargs[1], rb_intern("call"), 
-          MINMAX(RubyArity(rargs[1]), 0, 1), RubyConvert((VALUE *)rargs[3]));
-        break; /* }}} */
-      default: ///< Sublet hooks
+      rb_funcall(rargs[1], rb_intern("call"), 
+        MINMAX(RubyArity(rargs[1]), 1, 2), s->instance, 
+        RubyConvert((VALUE *)rargs[3]));
+    }
+  else
+    {
+      /* Check call type */
+      switch((int)rargs[0])
         {
-          SubSublet *s = SUBLET(rargs[2]);
+          case SUB_CALL_SUBLET_CONFIGURE: /* {{{ */
+            rb_funcall(rargs[1], rb_intern("__configure"), 1, rargs[1]);
+            break; /* }}} */
+          case SUB_CALL_SUBLET_RUN: /* {{{ */
+            rb_funcall(rargs[1], rb_intern("__run"), 1, rargs[1]);
+            break; /* }}} */
+          case SUB_CALL_SUBLET_WATCH: /* {{{ */
+            rb_funcall(rargs[1], rb_intern("__watch"), 1, rargs[1]);
+            break; /* }}} */
+          case SUB_CALL_SUBLET_OVER: /* {{{ */
+            rb_funcall(rargs[1], rb_intern("__over"), 1, rargs[1]);
+            break; /* }}} */
+          case SUB_CALL_SUBLET_OUT: /* {{{ */
+            rb_funcall(rargs[1], rb_intern("__out"), 1, rargs[1]);
+            break; /* }}} */
+          case SUB_CALL_SUBLET_DOWN: /* {{{ */
+              {
+                XButtonEvent *ev = (XButtonEvent *)rargs[2];
 
-          rb_funcall(rargs[1], rb_intern("call"), 
-            MINMAX(RubyArity(rargs[1]), 1, 2), s->instance, 
-            RubyConvert((VALUE *)rargs[3]));
+                rb_funcall(rargs[1], rb_intern("__down"), 4, rargs[1], 
+                  INT2FIX(ev->x), INT2FIX(ev->y), INT2FIX(ev->button));
+              }
+            break; /* }}} */        
         }
     }
 
@@ -1599,7 +1604,8 @@ RubyKernelEvent(VALUE self,
             {
               if(hooks[i].sym == event)
                 {
-                  SubHook *h = subHookNew(hooks[i].flags, p, (void *)s);
+                  SubHook *h = subHookNew(hooks[i].flags|SUB_CALL_SUBLET_HOOKS,
+                    p, (void *)s);
 
                   /* Add hook to the hooks array */
                   subArrayPush(subtle->hooks, (void *)h);

@@ -843,7 +843,7 @@ EventGrab(XEvent *ev)
             if(g->data.string) subSharedSpawn(g->data.string);
             break; /* }}} */
           case SUB_GRAB_PROC: /* {{{ */
-            subRubyCall(SUB_CALL_HOOK, g->data.num, 
+            subRubyCall(SUB_CALL_HOOKS, g->data.num, 
               (void *)g, subSharedFind(win, CLIENTID));
             break; /* }}} */
           case SUB_GRAB_VIEW_JUMP: /* {{{ */
