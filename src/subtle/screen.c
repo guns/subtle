@@ -43,8 +43,7 @@ subScreenInit(void)
                 subArrayPush(subtle->screens, (void *)s);
             }
 
-          subtle->flags  |= SUB_SUBTLE_XINERAMA;
-          subtle->screen  = SCREEN(subtle->screens->data[0]); ///< Select first screen
+          subtle->flags |= SUB_SUBTLE_XINERAMA;
 
           XFree(screens);
         }
@@ -53,10 +52,7 @@ subScreenInit(void)
 
   /* Create default screen */
   if(0 == subtle->screens->ndata)
-    {
-      if((subtle->screen = subScreenNew(0, 0, SCREENW, SCREENH)))
-        subArrayPush(subtle->screens, (void *)subtle->screen);
-    }
+    subArrayPush(subtle->screens, (void *)subScreenNew(0, 0, SCREENW, SCREENH));
 } /* }}} */
 
  /** subScreenNew {{{
@@ -101,21 +97,21 @@ subScreenConfigure(void)
   assert(subtle);
 
   /* x => left, y => right, width => top, height => bottom */
-  subtle->screen->geom.x      = subtle->screen->base.x + subtle->strut.x;
-  subtle->screen->geom.y      = subtle->screen->base.y + subtle->strut.width;
-  subtle->screen->geom.width  = subtle->screen->base.width - subtle->strut.x;
-  subtle->screen->geom.height = subtle->screen->base.height - subtle->strut.height - 
+  DEFSCREEN->geom.x      = DEFSCREEN->base.x + subtle->strut.x;
+  DEFSCREEN->geom.y      = DEFSCREEN->base.y + subtle->strut.width;
+  DEFSCREEN->geom.width  = DEFSCREEN->base.width - subtle->strut.x;
+  DEFSCREEN->geom.height = DEFSCREEN->base.height - subtle->strut.height - 
     subtle->strut.width;    
 
   /* Add panel heights */
   if(subtle->flags & SUB_SUBTLE_PANEL1)
     {
-      subtle->screen->geom.y      += subtle->th;
-      subtle->screen->geom.height -= subtle->th;
+      DEFSCREEN->geom.y      += subtle->th;
+      DEFSCREEN->geom.height -= subtle->th;
     }
 
   if(subtle->flags & SUB_SUBTLE_PANEL2)
-    subtle->screen->geom.height -= subtle->th;
+    DEFSCREEN->geom.height -= subtle->th;
 } /* }}} */
 
  /** subScreenJump {{{
@@ -128,8 +124,13 @@ subScreenJump(SubScreen *s)
 {
   assert(s);
 
+  /* Store screen */
+  subtle->sid = subArrayIndex(subtle->screens, (void *)s);
+
   XWarpPointer(subtle->dpy, None, ROOT, 0, 0, s->geom.x, s->geom.y,
     s->geom.x + s->geom.width / 2, s->geom.y + s->geom.height / 2);
+
+  subSharedFocus();
 } /* }}} */
 
  /** SubScreenFit {{{
