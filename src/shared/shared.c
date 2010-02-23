@@ -585,11 +585,36 @@ subSharedFocus(void)
   /* Focus */
   XQueryPointer(subtle->dpy, ROOT, (Window *)&dummy, &win,
     &dummy, &dummy, &dummy, &dummy, (unsigned int *)&dummy);
+  
+  /* Find next client */
+  if((c = CLIENT(subSharedFind(win, CLIENTID)))) 
+    {
+      subClientFocus(c);
 
-  if((c = CLIENT(subSharedFind(win, CLIENTID)))) subClientFocus(c);
-  else XSetInputFocus(subtle->dpy, ROOT, RevertToParent, CurrentTime);
+      return c->win;
+    }
+  else
+    {
+      int i;
 
-  return c ? c->win : ROOT;
+      for(i = 0; i < subtle->clients->ndata; i++)
+        {
+          c = CLIENT(subtle->clients->data[i]);
+
+          /* Check screen and visibility */
+          if(c->screen == subtle->sid && VISIBLE(CURVIEW, c))
+            {
+              subClientWarp(c);
+              subClientFocus(c);
+
+              return c->win;
+            }
+        }
+    }
+
+  XSetInputFocus(subtle->dpy, ROOT, RevertToParent, CurrentTime); ///< Fallback
+
+  return ROOT;
 } /* }}} */
 
  /** subSharedTextWidth {{{
