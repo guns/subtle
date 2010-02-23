@@ -264,6 +264,8 @@ subClientFocus(SubClient *c)
     }   
   else XSetInputFocus(subtle->dpy, c->win, RevertToNone, CurrentTime);
 
+  subtle->sid = c->screen; ///< Store screen
+
   subSharedLogDebug("Focus: type=client, win=%#lx, input=%d, focus=%d\n", c->win,
     !!(c->flags & SUB_CLIENT_INPUT), !!(c->flags & SUB_CLIENT_FOCUS));
 } /* }}} */
@@ -575,14 +577,12 @@ subClientSetTags(SubClient *c)
    * @brief Set client gravity for current view
    * @param[in]  c        A #SubClient
    * @param[in]  gravity  The gravity number
-   * @param[in]  toggle   Toggle modes
    * @param[in]  force    Force update
    **/
 
 void
 subClientSetGravity(SubClient *c,
   int gravity,
-  int toggle,
   int force)
 {
   DEAD(c);
@@ -717,7 +717,7 @@ subClientSetStrut(SubClient *c)
 
           /* Update screen and clients */
           subScreenConfigure();
-          subViewConfigure(subtle->view, True);
+          subViewConfigure(CURVIEW, True);
 
           subSharedLogDebug("Strut: x=%ld, y=%d, width=%d, height=%d\n", subtle->strut.x,
             subtle->strut.y, subtle->strut.width, subtle->strut.height);
@@ -1047,7 +1047,7 @@ subClientToggle(SubClient *c,
           c->gravity = -1; ///< Updating gravity
         }
 
-      if(type & SUB_MODE_STICK) subViewConfigure(subtle->view, False);
+      if(type & SUB_MODE_STICK) subViewConfigure(CURVIEW, False);
     }
   else ///< Set flags
     {
@@ -1096,7 +1096,7 @@ subClientToggle(SubClient *c,
   /* EWMH: Flags */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_FLAGS, (long *)&flags, 1);
 
-  if(VISIBLE(subtle->view, c)) ///< Check visibility first
+  if(VISIBLE(CURVIEW, c)) ///< Check visibility first
     {
       subClientFocus(c);
       subClientSetName(c);
@@ -1161,23 +1161,7 @@ subClientKill(SubClient *c,
   XDeleteContext(subtle->dpy, c->win, CLIENTID);
   XUnmapWindow(subtle->dpy, c->win);
 
-  /* Try to focus next window */
-  if(ROOT == subSharedFocus())
-    {
-      int i;
-
-      for(i = 0; i < subtle->clients->ndata; i++)
-        {
-          SubClient *k = CLIENT(subtle->clients->data[i]);
-
-          if(VISIBLE(subtle->view, k)) ///< Check visibility first 
-            {
-              subClientWarp(k);
-              subClientFocus(k);
-              break;
-            }
-        }
-    }
+  subSharedFocus();
 
   /* Destroy window */
   if(destroy && !(c->flags & SUB_CLIENT_DEAD))
