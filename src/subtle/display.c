@@ -171,11 +171,11 @@ subDisplayInit(const char *display)
   mask                     = CWEventMask|CWOverrideRedirect|CWBackPixel;
 
   subtle->windows.panel1     = XCreateWindow(subtle->dpy, ROOT, 
-    subtle->screen->base.x, subtle->screen->base.y, subtle->screen->base.width,
+    DEFSCREEN->base.x, DEFSCREEN->base.y, DEFSCREEN->base.width,
     1, 0, CopyFromParent, InputOutput, CopyFromParent, mask, &sattrs);
   subtle->windows.panel2     = XCreateWindow(subtle->dpy, ROOT, 
-    subtle->screen->base.x, subtle->screen->base.height - subtle->th, 
-    subtle->screen->base.width, 1, 0, CopyFromParent, InputOutput, 
+    DEFSCREEN->base.x, DEFSCREEN->base.height - subtle->th, 
+    DEFSCREEN->base.width, 1, 0, CopyFromParent, InputOutput, 
     CopyFromParent, mask, &sattrs);
   subtle->windows.views.win   = XCreateSimpleWindow(subtle->dpy, 
     subtle->windows.panel1, 0, 0, 1, 1, 0, 0, sattrs.background_pixel);
@@ -255,7 +255,7 @@ subDisplayConfigure(void)
   if(subtle->flags & SUB_SUBTLE_PANEL1)
     {
       XMoveResizeWindow(subtle->dpy, subtle->windows.panel1, 0, 0, 
-        subtle->screen->base.width, subtle->th);
+        DEFSCREEN->base.width, subtle->th);
       XMapRaised(subtle->dpy, subtle->windows.panel1);
     }
   else XUnmapWindow(subtle->dpy, subtle->windows.panel1);
@@ -263,7 +263,7 @@ subDisplayConfigure(void)
   if(subtle->flags & SUB_SUBTLE_PANEL2)
     {
       XMoveResizeWindow(subtle->dpy, subtle->windows.panel2, 0, 
-        subtle->screen->base.height - subtle->th, subtle->screen->base.width, 
+        DEFSCREEN->base.height - subtle->th, DEFSCREEN->base.width, 
         subtle->th);
       XMapRaised(subtle->dpy, subtle->windows.panel2);
     }

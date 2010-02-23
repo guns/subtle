@@ -122,9 +122,9 @@ EventMapRequest(XMapRequestEvent *ev)
           subArrayPush(subtle->clients, (void *)c);
           subClientPublish();
 
-          if(VISIBLE(subtle->view, c)) ///< Check visibility first
+          if(VISIBLE(CURVIEW, c)) ///< Check visibility first
             {
-              subViewConfigure(subtle->view, False); 
+              subViewConfigure(CURVIEW, False); 
               subViewRender();
             }
           
@@ -170,7 +170,7 @@ EventUnmap(XUnmapEvent *ev)
       subEwmhSetWMState(c->win, WithdrawnState);
       subArrayRemove(subtle->clients, (void *)c);
       subClientPublish();
-      if(VISIBLE(subtle->view, c)) subViewConfigure(subtle->view, False);
+      if(VISIBLE(CURVIEW, c)) subViewConfigure(CURVIEW, False);
       subClientKill(c, False);
     }
   else if((t = TRAY(subSharedFind(ev->window, TRAYID)))) ///< Tray
@@ -198,7 +198,7 @@ EventDestroy(XDestroyWindowEvent *ev)
       c->flags |= SUB_CLIENT_DEAD; ///< Ignore remaining events
       subArrayRemove(subtle->clients, (void *)c);
       subClientPublish();
-      if(VISIBLE(subtle->view, c)) subViewConfigure(subtle->view, False);
+      if(VISIBLE(CURVIEW, c)) subViewConfigure(CURVIEW, False);
       subClientKill(c, True); 
     }
   else if((t = TRAY(subSharedFind(ev->event, TRAYID)))) ///< Tray
@@ -237,14 +237,14 @@ EventMessage(XClientMessageEvent *ev)
             if(0 <= ev->data.l[0] && ev->data.l[0] < subtle->views->ndata)
               {
                 if((v = VIEW(subtle->views->data[ev->data.l[0]])) && 
-                    subtle->view != v)
+                    CURVIEW != v)
                   subViewJump(v);
               }
             break; /* }}} */
           case SUB_EWMH_NET_ACTIVE_WINDOW: /* {{{ */
             if((c = CLIENT(subSharedFind(ev->data.l[0], CLIENTID))))
               {
-                if(!(VISIBLE(subtle->view, c))) ///< Client is on current view?
+                if(!(VISIBLE(CURVIEW, c))) ///< Client is on current view?
                   {
                     int i;
 
@@ -299,7 +299,7 @@ EventMessage(XClientMessageEvent *ev)
                           subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, 
                             (long *)&c->tags, 1);
 
-                          if(subtle->view->tags & tag) subViewConfigure(subtle->view, False);
+                          if(CURVIEW->tags & tag) subViewConfigure(CURVIEW, False);
                         }
                       break;
                     case 1: ///< Views
@@ -312,7 +312,7 @@ EventMessage(XClientMessageEvent *ev)
                           subEwmhSetCardinals(v->button, SUB_EWMH_SUBTLE_WINDOW_TAGS, 
                             (long *)&v->tags, 1);
 
-                          if(subtle->view == v) subViewConfigure(v, False);
+                          if(CURVIEW == v) subViewConfigure(v, False);
                         } 
                   }
               }
@@ -320,9 +320,9 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_SUBTLE_WINDOW_GRAVITY: /* {{{ */
             if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0]))) && 
                 ((g = GRAVITY(subArrayGet(subtle->gravities, (int)ev->data.l[1])))) &&
-                VISIBLE(subtle->view, c))
+                VISIBLE(CURVIEW, c))
               {
-                subClientSetGravity(c, (int)ev->data.l[1], False, True);
+                subClientSetGravity(c, (int)ev->data.l[1], True);
                 subClientConfigure(c);
                 subClientWarp(c);
                 XRaiseWindow(subtle->dpy, c->win);        
@@ -333,7 +333,7 @@ EventMessage(XClientMessageEvent *ev)
               {
                 if(0 <= ev->data.l[1] && subtle->screens->ndata > ev->data.l[1]) ///< Check values
                   {
-                    if(VISIBLE(subtle->view, c)) 
+                    if(VISIBLE(CURVIEW, c)) 
                       {
                         int flags = c->flags & (SUB_MODE_FULL|SUB_MODE_FLOAT);
 
@@ -346,7 +346,7 @@ EventMessage(XClientMessageEvent *ev)
                             subClientToggle(c, flags);
                           }                        
 
-                        subViewConfigure(subtle->view, False);
+                        subViewConfigure(CURVIEW, False);
                         subClientWarp(c);
                       }
                   }
@@ -391,7 +391,7 @@ EventMessage(XClientMessageEvent *ev)
                   {
                     if((c = CLIENT(subtle->clients->data[i])) && c->gravity == ev->data.l[0])
                       {
-                        subClientSetGravity(c, 0, False, True); ///< Fallback to first gravity
+                        subClientSetGravity(c, 0, True); ///< Fallback to first gravity
                         subClientConfigure(c);
                         subClientWarp(c);
                         XRaiseWindow(subtle->dpy, c->win);    
@@ -417,7 +417,7 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_SUBTLE_TAG_KILL: /* {{{ */
             if((t = TAG(subArrayGet(subtle->tags, (int)ev->data.l[0]))))
               {
-                int i, reconf = subtle->view->tags & (1L << ((int)ev->data.l[0] + 1));
+                int i, reconf = CURVIEW->tags & (1L << ((int)ev->data.l[0] + 1));
 
                 for(i = 0; i < subtle->views->ndata; i++) ///< Views
                   EventUntag(CLIENT(subtle->views->data[i]), (int)ev->data.l[0]);
@@ -429,7 +429,7 @@ EventMessage(XClientMessageEvent *ev)
                 subTagKill(t);
                 subTagPublish();
                 
-                if(reconf) subViewConfigure(subtle->view, False);
+                if(reconf) subViewConfigure(CURVIEW, False);
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_TRAY_KILL: /* {{{ */
@@ -470,7 +470,7 @@ EventMessage(XClientMessageEvent *ev)
                 subPanelUpdate();
                 subPanelRender();
 
-                if(subtle->view == v) subViewJump(VIEW(subtle->views->data[0])); 
+                if(CURVIEW == v) subViewJump(VIEW(subtle->views->data[0])); 
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_SUBLET_NEW: /* {{{ */
@@ -584,12 +584,12 @@ EventMessage(XClientMessageEvent *ev)
                 default: break;
               }
 
-            if(VISIBLE(subtle->view, c)) subViewConfigure(subtle->view, False);
+            if(VISIBLE(CURVIEW, c)) subViewConfigure(CURVIEW, False);
             break; /* }}} */
           case SUB_EWMH_NET_CLOSE_WINDOW: /* {{{ */
             subArrayRemove(subtle->clients, (void *)c);
             subClientPublish();
-            if(VISIBLE(subtle->view, c)) subViewConfigure(subtle->view, False);
+            if(VISIBLE(CURVIEW, c)) subViewConfigure(CURVIEW, False);
             subClientKill(c, True);
             subViewUpdate();
             break; /* }}} */
@@ -687,7 +687,7 @@ EventProperty(XPropertyEvent *ev)
             if(flags)
               {
                 subClientToggle(c, (~c->flags & flags));
-                subViewConfigure(subtle->view, False);
+                subViewConfigure(CURVIEW, False);
               }
 
             if(c->flags & SUB_MODE_URGENT) 
@@ -806,7 +806,7 @@ EventGrab(XEvent *ev)
       case ButtonPress:
         if((v = VIEW(subSharedFind(ev->xbutton.window, VIEWID))))
           {
-            if(subtle->view != v) subViewJump(v); ///< Prevent jumping to current view
+            if(CURVIEW != v) subViewJump(v); ///< Prevent jumping to current view
 
             return;
           }
@@ -851,7 +851,7 @@ EventGrab(XEvent *ev)
               {
                 v = VIEW(subtle->views->data[g->data.num]);
 
-                if(subtle->view != v) subViewJump(v);
+                if(CURVIEW != v) subViewJump(v);
               }
             break; /* }}} */
           case SUB_GRAB_SCREEN_JUMP: /* {{{ */
@@ -884,11 +884,11 @@ EventGrab(XEvent *ev)
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               {
                 subClientToggle(c, g->data.num);
-                if(VISIBLE(subtle->view, c)) subViewConfigure(subtle->view, False);
+                if(VISIBLE(CURVIEW, c)) subViewConfigure(CURVIEW, False);
               }
             break; /* }}} */
           case SUB_GRAB_WINDOW_STACK: /* {{{ */
-            if((c = CLIENT(subSharedFind(win, CLIENTID))) && VISIBLE(subtle->view, c)) 
+            if((c = CLIENT(subSharedFind(win, CLIENTID))) && VISIBLE(CURVIEW, c)) 
               {
                 if(Above == g->data.num)      XRaiseWindow(subtle->dpy, c->win);
                 else if(Below == g->data.num) XLowerWindow(subtle->dpy, c->win);
@@ -905,7 +905,7 @@ EventGrab(XEvent *ev)
                   {
                     SubClient *iter = CLIENT(subtle->clients->data[i]);
 
-                    if(c != iter && VISIBLE(subtle->view, iter) &&
+                    if(c != iter && VISIBLE(CURVIEW, iter) &&
                         (match < (score = subSharedMatch(g->data.num, 
                         &c->geom, &iter->geom))))
                       {
@@ -929,7 +929,7 @@ EventGrab(XEvent *ev)
                   {
                     SubClient *iter = CLIENT(subtle->clients->data[i]);
 
-                    if(VISIBLE(subtle->view, iter)) 
+                    if(VISIBLE(CURVIEW, iter)) 
                       {
                         subClientFocus(iter);
                         subClientWarp(iter);
@@ -963,7 +963,7 @@ EventGrab(XEvent *ev)
                 /* Sanity check */
                 if(0 <= id && id < subtle->gravities->ndata)
                   {
-                    subClientSetGravity(c, id, True, True);
+                    subClientSetGravity(c, id, True);
                     subClientConfigure(c);
                     subClientWarp(c);
                     XRaiseWindow(subtle->dpy, c->win);
@@ -986,7 +986,7 @@ EventGrab(XEvent *ev)
                         subClientToggle(c, flags);
                       }
 
-                    subViewConfigure(subtle->view, False);
+                    subViewConfigure(CURVIEW, False);
                     subClientWarp(c);
                   }
               }
@@ -996,7 +996,7 @@ EventGrab(XEvent *ev)
               { 
                 subArrayRemove(subtle->clients, (void *)c);
                 subClientPublish();
-                if(VISIBLE(subtle->view, c)) subViewConfigure(subtle->view, False);
+                if(VISIBLE(CURVIEW, c)) subViewConfigure(CURVIEW, False);
                 subClientKill(c, True);
               }
             break; /* }}} */
@@ -1043,7 +1043,7 @@ EventFocus(XFocusChangeEvent *ev)
             }
 
           subViewRender();
-          subViewConfigure(subtle->view, False);
+          subViewConfigure(CURVIEW, False);
         }
     }
 
@@ -1061,7 +1061,7 @@ EventFocus(XFocusChangeEvent *ev)
     }
   else if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) ///< Clients
     {
-      if(!(c->flags & SUB_CLIENT_DEAD) && VISIBLE(subtle->view, c))
+      if(!(c->flags & SUB_CLIENT_DEAD) && VISIBLE(CURVIEW, c))
         {
           subtle->windows.focus = c->win;
           subGrabSet(c->win);
@@ -1091,13 +1091,13 @@ EventScreen(XRRScreenChangeNotifyEvent *ev)
   subScreenConfigure();
 
   /* Update panels */ 
-  XMoveResizeWindow(subtle->dpy, subtle->windows.panel1, subtle->screen->base.x, 
-    subtle->screen->base.y, subtle->screen->geom.width, subtle->th);
-  XMoveResizeWindow(subtle->dpy, subtle->windows.panel2, subtle->screen->base.x, 
-    subtle->screen->base.height - subtle->th, subtle->screen->geom.width, subtle->th);
+  XMoveResizeWindow(subtle->dpy, subtle->windows.panel1, DEFSCREEN->base.x, 
+    DEFSCREEN->base.y, DEFSCREEN->geom.width, subtle->th);
+  XMoveResizeWindow(subtle->dpy, subtle->windows.panel2, DEFSCREEN->base.x, 
+    DEFSCREEN->base.height - subtle->th, DEFSCREEN->geom.width, subtle->th);
   subPanelUpdate();
 
-  subViewConfigure(subtle->view, True);
+  subViewConfigure(CURVIEW, True);
 
   subSharedLogDebug("Updated screen sizes\n");
 } /* }}} */

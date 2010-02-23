@@ -58,7 +58,7 @@ subPanelUpdate(void)
         x += subtle->separator.width;
 
       if(p->flags & SUB_PANEL_SPACER1) ///< Add spacer
-        x += (subtle->screen->base.width - width[n] - separator[n]) / spacer[n];
+        x += (DEFSCREEN->base.width - width[n] - separator[n]) / spacer[n];
 
       /* Set window position */
       XMoveWindow(subtle->dpy, p->win, x, 0);
@@ -69,7 +69,7 @@ subPanelUpdate(void)
         x += subtle->separator.width;
 
       if(p->flags & SUB_PANEL_SPACER2) ///< Add spacer
-        x += (subtle->screen->base.width - width[n]) / spacer[n];
+        x += (DEFSCREEN->base.width - width[n]) / spacer[n];
 
       /* Remap window only when needed */
       if(0 < p->width) XMapRaised(subtle->dpy, p->win);
@@ -99,9 +99,9 @@ subPanelRender(void)
   if(subtle->flags & SUB_SUBTLE_STIPPLE) ///< Draw stipple
     {
       XFillRectangle(subtle->dpy, subtle->windows.panel1, subtle->gcs.stipple, 0, 2,
-        subtle->screen->base.width, subtle->th - 4);
+        DEFSCREEN->base.width, subtle->th - 4);
       XFillRectangle(subtle->dpy, subtle->windows.panel2, subtle->gcs.stipple, 0, 2,
-        subtle->screen->base.width, subtle->th - 4);        
+        DEFSCREEN->base.width, subtle->th - 4);        
     }
 
   /* Draw separators */

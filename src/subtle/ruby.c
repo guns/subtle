@@ -2321,7 +2321,7 @@ subRubyReloadConfig(void)
   /* Reset before reloading */
   subtle->flags &= (SUB_SUBTLE_DEBUG|SUB_SUBTLE_EWMH|
     SUB_SUBTLE_RUN|SUB_SUBTLE_XFT);
-  subtle->view   = NULL;
+  subtle->vid = 0;
 
   /* Reset sublet panel flags */
   for(i = 0; i < subtle->sublets->ndata; i++)

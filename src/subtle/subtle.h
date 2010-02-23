@@ -83,6 +83,10 @@
 #define SCREENH \
   DisplayHeight(subtle->dpy, DefaultScreen(subtle->dpy))         ///< Get screen height
 
+#define CURVIEW VIEW(subtle->views->data[subtle->vid])           ///< Get current view
+#define CURSCREEN SCREEN(subtle->screens->data[subtle->sid])     ///< Get current screen
+#define DEFSCREEN SCREEN(subtle->screens->data[0])               ///< Get first screen
+
 #define MODES_ALL \
   (SUB_MODE_FULL|SUB_MODE_FLOAT|SUB_MODE_STICK| \
   SUB_MODE_URGENT|SUB_MODE_RESIZE)                                ///< All mode flags
@@ -474,14 +478,12 @@ typedef struct subsubtle_t /* {{{ */
 {
   FLAGS                flags;                                     ///< Subtle flags
 
-  int                  th, bw, vid, step, snap, limit, gravity;   ///< Subtle properties
+  int                  th, bw, step, snap, limit, gravity;        ///< Subtle properties
+  int                  vid, sid;                                  ///< Subtle current view, screen
 
   Display              *dpy;                                      ///< Subtle Xorg display
 
   XRectangle           strut;                                     ///< Subtle strut
-
-  struct subscreen_t   *screen;                                   ///< Subtle first screen
-  struct subview_t     *view;                                     ///< Subtle current view
 
   struct subarray_t    *clients;                                  ///< Subtle clients
   struct subarray_t    *grabs;                                    ///< Subtle grabs
@@ -604,8 +606,7 @@ void subClientDrag(SubClient *c, int mode);                       ///< Move/drag
 void subClientUpdate(int vid);                                    ///< Update clients
 int subClientTag(SubClient *c, int tag);                          ///< Tag client
 void subClientSetTags(SubClient *c);                              ///< Update client tags
-void subClientSetGravity(SubClient *c, int gravity,
-  int toggle, int force);                                         ///< Set client gravity
+void subClientSetGravity(SubClient *c, int gravity, int force);   ///< Set client gravity
 void subClientSetScreen(SubClient *c, int screen, int force);     ///< Set client screen
 void subClientSetSize(SubClient *c);                              ///< Set client sizes
 void subClientSetStrut(SubClient *c);                             ///< Set client strut

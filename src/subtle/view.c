@@ -92,7 +92,7 @@ subViewConfigure(SubView *v,
 
           if(!(c->flags & (SUB_MODE_FULL|SUB_MODE_FLOAT)))
             {
-              subClientSetGravity(c, c->gravities[vid], False, align);
+              subClientSetGravity(c, c->gravities[vid], align);
 
               XMapWindow(subtle->dpy, c->win);
 
@@ -162,7 +162,7 @@ subViewRender(void)
               fg = subtle->colors.fg_urgent;
               bg = subtle->colors.bg_urgent;            
             }
-          else if(subtle->view == v)
+          else if(CURVIEW == v)
             {
               fg = subtle->colors.fg_focus;
               bg = subtle->colors.bg_focus;
@@ -189,11 +189,11 @@ subViewJump(SubView *v)
   assert(v);
 
   /* Store view */
-  subtle->vid  = subArrayIndex(subtle->views, (void *)v);
-  subtle->view = v;
+  subtle->vid = subArrayIndex(subtle->views, (void *)v);
 
   /* EWMH: Current desktop */
-  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP, (long *)&subtle->vid, 1);
+  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP, 
+    (long *)&subtle->vid, 1);
 
   subViewConfigure(v, False);
 
