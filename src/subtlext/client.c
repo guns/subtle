@@ -285,7 +285,7 @@ subClientUpdate(VALUE self)
 {
   VALUE win = rb_iv_get(self, "@win");
 
-  if(RTEST(win) && (T_FIXNUM == rb_type(win) || T_BIGNUM == rb_type(win)))
+  if(T_FIXNUM == rb_type(win) || T_BIGNUM == rb_type(win))
     {
       int id = 0;
       char buf[20] = { 0 };

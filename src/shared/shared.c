@@ -372,16 +372,17 @@ subSharedPropertyName(Window win,
 #else /* SUBTLE */
   disp = display;
 #endif /* SUBTLE */
-
+  
+  /* Get text property */
   XGetTextProperty(disp, win, &prop, XA_WM_NAME);
-
   if(!prop.nitems)
     {
-      *name = strdup(PKG_NAME);
+      *name = strdup(fallback);
 
       return;
     }
 
+  /* Handle encoding */
   if(XA_STRING == prop.encoding)
     *name = strdup((char *)prop.value);
   else
@@ -395,6 +396,9 @@ subSharedPropertyName(Window win,
           XFreeStringList(list);
         }
     }
+
+  /* Fallback */
+  if(!*name) *name = strdup(fallback);
 } /* }}} */
 
  /** subSharedPropertyClass {{{
