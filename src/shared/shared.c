@@ -576,11 +576,12 @@ subSharedTime(void)
 
  /** subSharedFocus {{{
   * @brief Get pointer window and focus it
+  * @param[in]  focus  Focus next client
   * @return New focus window
   **/
 
 Window
-subSharedFocus(void)
+subSharedFocus(int focus)
 {
   int dummy;
   Window win;
@@ -597,7 +598,7 @@ subSharedFocus(void)
 
       return c->win;
     }
-  else
+  else if(focus)
     {
       int i;
 
