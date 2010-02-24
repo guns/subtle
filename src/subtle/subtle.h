@@ -757,7 +757,7 @@ SubView *subViewNew(char *name, char *tags);                      ///< Create vi
 void subViewConfigure(SubView *v, int align);                     ///< Configure view
 void subViewUpdate(void);                                         ///< Update views
 void subViewRender(void);                                         ///< Render views
-void subViewJump(SubView *v);                                     ///< Jump to view
+void subViewJump(SubView *v, int focus);                          ///< Jump to view
 void subViewPublish(void);                                        ///< Publish views
 void subViewKill(SubView *v);                                     ///< Kill view
 /* }}} */

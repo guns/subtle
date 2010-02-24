@@ -180,11 +180,13 @@ subViewRender(void)
 
  /** subViewJump {{{
   * @brief Jump to view
-  * @param[in]  v  A #SubView
+  * @param[in]  v      A #SubView
+  * @param[in]  focus  Focus next client
   **/
 
 void
-subViewJump(SubView *v)
+subViewJump(SubView *v,
+  int focus)
 {
   assert(v);
 
@@ -197,7 +199,7 @@ subViewJump(SubView *v)
 
   subViewConfigure(v, False);
 
-  subSharedFocus();
+  subSharedFocus(focus);
   subViewRender();
 
   /* Hook: Jump */
