@@ -215,8 +215,12 @@ subClientRender(SubClient *c)
 
   /* Set window background and border */
   XSetWindowBackground(subtle->dpy, subtle->windows.title.win, bg);
-  XSetWindowBorder(subtle->dpy, c->win, subtle->windows.focus == c->win ? 
-    subtle->colors.bo_focus : subtle->colors.bo_normal);
+
+  if(!(c->flags & SUB_CLIENT_DOCK))
+    {
+      XSetWindowBorder(subtle->dpy, c->win, subtle->windows.focus == c->win ? 
+        subtle->colors.bo_focus : subtle->colors.bo_normal);
+    }
 
   subSharedTextDraw(subtle->windows.title.win, 3, subtle->font.y, fg, bg, buf);
 } /* }}} */
@@ -686,8 +690,11 @@ subClientSetSize(SubClient *c)
     c->geom.width = (int)(c->geom.height * c->maxr);
 
   /* Fit sizes */
-  subScreenFit(s, &c->geom, c->flags & SUB_MODE_FLOAT);
-  subScreenFit(s, &c->base, False);
+  if(!(c->flags & SUB_CLIENT_DOCK))
+    {
+      subScreenFit(s, &c->geom, c->flags & SUB_MODE_FLOAT);
+      subScreenFit(s, &c->base, False);
+    }
 } /* }}} */
 
   /** subClientSetStrut {{{ 
@@ -1000,6 +1007,12 @@ subClientSetType(SubClient *c,
             {
               case SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG: 
                 *flags |= SUB_MODE_FLOAT;  
+                break;
+              case SUB_EWMH_NET_WM_WINDOW_TYPE_DOCK:
+                *flags   |= (SUB_MODE_FLOAT|SUB_MODE_STICK);
+                c->flags |= SUB_CLIENT_DOCK;
+
+                XSetWindowBorderWidth(subtle->dpy, c->win, 0);
                 break;
               default: break;
             }

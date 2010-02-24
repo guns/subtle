@@ -204,7 +204,8 @@
 #define SUB_CLIENT_FOCUS              (1L << 13)                  ///< Send focus message
 #define SUB_CLIENT_INPUT              (1L << 14)                  ///< Active/passive focus-model
 #define SUB_CLIENT_CLOSE              (1L << 15)                  ///< Send close message
-#define SUB_CLIENT_DEAD               (1L << 16)                  ///< Dead window
+#define SUB_CLIENT_DOCK               (1L << 16)                  ///< Dock window
+#define SUB_CLIENT_DEAD               (1L << 17)                  ///< Dead window
 
 /* Data flags */
 #define SUB_DATA_STRING               (1L << 13)                  ///< String data
@@ -349,8 +350,9 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_NET_WM_DESKTOP,                                        ///< Desktop client is on
   SUB_EWMH_NET_WM_STRUT,                                          ///< Strut
 
-  SUB_EWMH_NET_WM_WINDOW_TYPE,                                     ///< Window type
+  SUB_EWMH_NET_WM_WINDOW_TYPE,                                    ///< Window type
   SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG,                             ///< Dialog window
+  SUB_EWMH_NET_WM_WINDOW_TYPE_DOCK,                               ///< Dock window
 
   SUB_EWMH_NET_WM_STATE,                                          ///< Window state
   SUB_EWMH_NET_WM_STATE_FULLSCREEN,                               ///< Fullscreen window
