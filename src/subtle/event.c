@@ -238,7 +238,7 @@ EventMessage(XClientMessageEvent *ev)
               {
                 if((v = VIEW(subtle->views->data[ev->data.l[0]])) && 
                     CURVIEW != v)
-                  subViewJump(v);
+                  subViewJump(v, True);
               }
             break; /* }}} */
           case SUB_EWMH_NET_ACTIVE_WINDOW: /* {{{ */
@@ -252,7 +252,7 @@ EventMessage(XClientMessageEvent *ev)
                     for(i = 0; i < subtle->views->ndata; i++)
                       if(VISIBLE(VIEW(subtle->views->data[i]), c))
                         {
-                          subViewJump(VIEW(subtle->views->data[i]));
+                          subViewJump(VIEW(subtle->views->data[i]), False);
                           break;
                         }
                   }
@@ -470,7 +470,7 @@ EventMessage(XClientMessageEvent *ev)
                 subPanelUpdate();
                 subPanelRender();
 
-                if(CURVIEW == v) subViewJump(VIEW(subtle->views->data[0])); 
+                if(CURVIEW == v) subViewJump(VIEW(subtle->views->data[0]), True); 
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_SUBLET_NEW: /* {{{ */
@@ -806,7 +806,7 @@ EventGrab(XEvent *ev)
       case ButtonPress:
         if((v = VIEW(subSharedFind(ev->xbutton.window, VIEWID))))
           {
-            if(CURVIEW != v) subViewJump(v); ///< Prevent jumping to current view
+            if(CURVIEW != v) subViewJump(v, False); ///< Prevent jumping to current view
 
             return;
           }
@@ -851,7 +851,7 @@ EventGrab(XEvent *ev)
               {
                 v = VIEW(subtle->views->data[g->data.num]);
 
-                if(CURVIEW != v) subViewJump(v);
+                if(CURVIEW != v) subViewJump(v, True);
               }
             break; /* }}} */
           case SUB_GRAB_SCREEN_JUMP: /* {{{ */
