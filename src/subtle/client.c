@@ -1161,7 +1161,7 @@ subClientKill(SubClient *c,
   XDeleteContext(subtle->dpy, c->win, CLIENTID);
   XUnmapWindow(subtle->dpy, c->win);
 
-  subSharedFocus();
+  subSharedFocus(True);
 
   /* Destroy window */
   if(destroy && !(c->flags & SUB_CLIENT_DEAD))

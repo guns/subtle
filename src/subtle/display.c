@@ -325,7 +325,7 @@ subDisplayScan(void)
   subHookCall(SUB_HOOK_START, NULL);
 
   /* Activate first view */
-  subViewJump(VIEW(subtle->views->data[0]));
+  subViewJump(VIEW(subtle->views->data[0]), False);
   subtle->windows.focus = ROOT;
   subGrabSet(ROOT);
 } /* }}} */

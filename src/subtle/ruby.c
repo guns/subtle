@@ -2373,7 +2373,7 @@ subRubyReloadConfig(void)
   for(i = 0; i < subtle->clients->ndata; i++)
     subClientSetTags(CLIENT(subtle->clients->data[i]));
 
-  subViewJump(subtle->views->data[0]);
+  subViewJump(subtle->views->data[0], True);
   
   subPanelUpdate();
   subPanelRender();
