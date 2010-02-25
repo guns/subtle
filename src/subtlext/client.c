@@ -833,6 +833,11 @@ subClientGeometryReader(VALUE self)
   Window win = None;
   VALUE geom = Qnil;
 
+  geom = rb_iv_get(self, "@geometry");
+  win = NUM2LONG(rb_iv_get(self, "@win"));
+
+  rb_p(geom);
+
   /* Load on demand */
   if(NIL_P((geom = rb_iv_get(self, "@geometry"))) &&
       (win = NUM2LONG(rb_iv_get(self, "@win"))))
@@ -843,6 +848,7 @@ subClientGeometryReader(VALUE self)
 
       geom = subGeometryInstantiate(geometry.x, geometry.y, 
         geometry.width, geometry.height);
+
       rb_iv_set(self, "@geometry", geom);
     }
 
@@ -872,8 +878,12 @@ subClientGeometryWriter(int argc,
   VALUE *argv,
   VALUE self)
 {
-  VALUE geometry = subGeometryInit(argc, argv, self); ///< Delegate
-
+  VALUE klass = Qnil, geometry = Qnil;
+  
+  /* Delegate arguments */
+  klass    = rb_const_get(mod, rb_intern("Geometry"));
+  geometry = rb_funcall2(klass, rb_intern("new"), argc, argv);
+  
   /* Update geometry */
   if(RTEST(geometry))
     {
@@ -887,6 +897,8 @@ subClientGeometryWriter(int argc,
       data.l[4] = FIX2INT(rb_iv_get(geometry,  "@height"));
 
       subSharedMessage(win, "_NET_MOVERESIZE_WINDOW", data, True);
+
+      rb_p(geometry);
 
       rb_iv_set(self, "@geometry", geometry);
     }
