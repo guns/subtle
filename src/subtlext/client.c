@@ -836,8 +836,6 @@ subClientGeometryReader(VALUE self)
   geom = rb_iv_get(self, "@geometry");
   win = NUM2LONG(rb_iv_get(self, "@win"));
 
-  rb_p(geom);
-
   /* Load on demand */
   if(NIL_P((geom = rb_iv_get(self, "@geometry"))) &&
       (win = NUM2LONG(rb_iv_get(self, "@win"))))
@@ -897,8 +895,6 @@ subClientGeometryWriter(int argc,
       data.l[4] = FIX2INT(rb_iv_get(geometry,  "@height"));
 
       subSharedMessage(win, "_NET_MOVERESIZE_WINDOW", data, True);
-
-      rb_p(geometry);
 
       rb_iv_set(self, "@geometry", geometry);
     }
