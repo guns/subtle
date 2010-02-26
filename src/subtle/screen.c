@@ -147,10 +147,6 @@ subScreenFit(SubScreen *s,
 {
   assert(s && r);
 
-  /* Check position */
-  if(r->x <= s->geom.x) r->x = s->geom.x;
-  if(r->y <= s->geom.y) r->y = s->geom.y;
-
   /* Check sizes and boundaries */
   if(r->x + r->width > s->geom.x + s->geom.width)
     {

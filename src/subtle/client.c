@@ -636,6 +636,19 @@ subClientSetScreen(SubClient *c,
 
   if(force || c->screen != screen) ///< Check if update is required
     {
+      if(c->flags & SUB_MODE_FLOAT)
+        {
+          SubScreen *s1 = NULL, *s2 = NULL;
+          
+          s1 = SCREEN(subtle->screens->data[c->screen]);
+          s2 = SCREEN(subtle->screens->data[screen]);
+
+          /* Update screen offsets */
+          c->geom.x = c->geom.x - s1->geom.x + s2->geom.x;
+          c->geom.y = c->geom.y - s1->geom.y + s2->geom.y;
+        }
+
+      /* Update screen and gravity */
       c->screens[subtle->vid] = screen;
       c->screen               = screen;
       c->gravity              = -1; ///< Force update
@@ -643,13 +656,14 @@ subClientSetScreen(SubClient *c,
       subClientSetSize(c); ///< Update size for screen
 
       /* EWMH: Screen */
-      subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_SCREEN, (long *)&c->screen, 1);
+      subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_SCREEN, 
+        (long *)&c->screen, 1);
     }
 } /* }}} */
 
   /** subClientSetSize {{{ 
    * @brief Set client size according to client hints
-   * @param[in]  c  A #SubClient
+   * @param[in]  c    A #SubClient
    **/
 
 void
@@ -658,10 +672,10 @@ subClientSetSize(SubClient *c)
   DEAD(c);
   assert(c);
 
-  SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
-
+  /* Check sizes */
   if(!(c->flags & SUB_MODE_NONRESIZE) && 
-      (subtle->flags & SUB_SUBTLE_RESIZE || c->flags & (SUB_MODE_FLOAT|SUB_MODE_RESIZE)))
+      (subtle->flags & SUB_SUBTLE_RESIZE || 
+      c->flags & (SUB_MODE_FLOAT|SUB_MODE_RESIZE)))
     {
       /* Limit width */
       if(c->base.width < c->minw)  c->base.width  = c->minw;
@@ -680,18 +694,20 @@ subClientSetSize(SubClient *c)
       /* Check incs */
       c->geom.width  -= WIDTH(c) % c->incw; 
       c->geom.height -= HEIGHT(c) % c->inch;
+
+      /* Check aspect ratios */
+      if(c->minr && c->geom.height * c->minr > c->geom.width)
+        c->geom.width = (int)(c->geom.height * c->minr);
+
+      if(c->maxr && c->geom.height * c->maxr < c->geom.width)
+        c->geom.width = (int)(c->geom.height * c->maxr);
     }
-
-  /* Check aspect ratios */
-  if(c->minr && c->geom.height * c->minr > c->geom.width)
-    c->geom.width = (int)(c->geom.height * c->minr);
-
-  if(c->maxr && c->geom.height * c->maxr < c->geom.width)
-    c->geom.width = (int)(c->geom.height * c->maxr);
 
   /* Fit sizes */
   if(!(c->flags & SUB_CLIENT_DOCK))
     {
+      SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
+
       subScreenFit(s, &c->geom, c->flags & SUB_MODE_FLOAT);
       subScreenFit(s, &c->base, False);
     }

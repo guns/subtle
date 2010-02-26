@@ -975,17 +975,7 @@ EventGrab(XEvent *ev)
               {
                 if(subtle->screens->ndata > g->data.num) ///< Check values
                   {
-                    int flags = c->flags & (SUB_MODE_FULL|SUB_MODE_FLOAT);
-
                     subClientSetScreen(c, g->data.num, True);
-
-                    /* Remove full/float mode and re-set it for screen change */
-                    if(flags) 
-                      {
-                        c->flags &= ~flags;
-                        subClientToggle(c, flags);
-                      }
-
                     subViewConfigure(CURVIEW, False);
                     subClientWarp(c);
                   }
