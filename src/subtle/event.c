@@ -650,11 +650,8 @@ EventProperty(XPropertyEvent *ev)
       case SUB_EWMH_WM_NAME: /* {{{ */
         if((c = CLIENT(subSharedFind(ev->window, CLIENTID)))) 
           {
-            char *name = NULL;
-
-            subSharedPropertyName(c->win, &name, c->klass);
             if(c->name) free(c->name);
-            c->name = name;
+            subSharedPropertyName(c->win, &c->name, c->klass);
 
             if(subtle->windows.focus == c->win) 
               {

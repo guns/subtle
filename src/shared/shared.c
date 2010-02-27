@@ -366,20 +366,27 @@ subSharedPropertyName(Window win,
   Display *disp = NULL;
   char **list = NULL;
   XTextProperty prop;
+  Atom atom;
 
 #ifdef SUBTLE
   disp = subtle->dpy;
+  atom = subEwmhGet(SUB_EWMH_NET_WM_NAME);
 #else /* SUBTLE */
   disp = display;
+  atom = XInternAtom(display, "_NET_WM_NAME", False);
 #endif /* SUBTLE */
   
   /* Get text property */
-  XGetTextProperty(disp, win, &prop, XA_WM_NAME);
+  XGetTextProperty(disp, win, &prop, atom);
   if(!prop.nitems)
     {
-      *name = strdup(fallback);
+      XGetTextProperty(disp, win, &prop, XA_WM_NAME);
+      if(!prop.nitems)
+        {
+          *name = strdup(fallback);
 
-      return;
+          return;
+        }
     }
 
   /* Handle encoding */
@@ -389,7 +396,7 @@ subSharedPropertyName(Window win,
     {
       int size = 0;
 
-      if(XmbTextPropertyToTextList(disp, &prop, &list, &size))
+      if(Success == XmbTextPropertyToTextList(disp, &prop, &list, &size) && 0 < size)
         {
           *name = strdup(*list);
 
