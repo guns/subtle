@@ -106,6 +106,8 @@ subViewConfigure(SubView *v,
       else XUnmapWindow(subtle->dpy, c->win); ///< Unmap other windows
     }
 
+  subSharedFocus(True);
+
   subSharedLogDebug("Configure: type=view, vid=%d, name=%s\n", vid, v->name);
 
   /* Hook: Configure */
