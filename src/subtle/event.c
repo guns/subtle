@@ -813,8 +813,13 @@ EventGrab(XEvent *ev)
         else if((s = SUBLET(subSharedFind(ev->xbutton.window, SUBLETID))))
           {
             if(s->flags & SUB_SUBLET_DOWN) ///< Call click method
-              subRubyCall(SUB_CALL_SUBLET_DOWN, 
-                s->instance, (void *)&ev->xbutton, NULL);
+              {
+                subRubyCall(SUB_CALL_SUBLET_DOWN, 
+                  s->instance, (void *)&ev->xbutton, NULL);
+                subSubletUpdate();
+                subPanelUpdate();
+                subPanelRender();
+               }
 
             return;
           }
