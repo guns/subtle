@@ -12,6 +12,7 @@
 
 #include <X11/cursorfont.h>
 #include <unistd.h>
+#include <locale.h>
 #include "subtle.h"
 
 #ifdef HAVE_X11_EXTENSIONS_XRANDR_H
@@ -103,6 +104,9 @@ subDisplayInit(const char *display)
 #endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
 
   assert(subtle);
+
+  /* Set locale */
+  if(!setlocale(LC_CTYPE, "")) XSupportsLocale();
 
   /* Connect to display and setup error handler */
   if(!(subtle->dpy = XOpenDisplay(display)))
