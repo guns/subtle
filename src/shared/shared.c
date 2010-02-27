@@ -655,7 +655,7 @@ subSharedTextWidth(const char *text,
     {
       XGlyphInfo extents;
 
-      XftTextExtents8(subtle->dpy, subtle->font.xft, (XftChar8*)text,
+      XftTextExtentsUtf8(subtle->dpy, subtle->font.xft, (XftChar8*)text,
         len, &extents);
 
       lbearing = extents.x;
