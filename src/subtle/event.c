@@ -943,7 +943,8 @@ EventGrab(XEvent *ev)
           case SUB_GRAB_WINDOW_GRAVITY: /* {{{ */
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               {
-                int i, id = -1, cid = 0, fid = (int)g->data.string[0] - 65, size = strlen(g->data.string);
+                int i, id = -1, cid = 0, fid = (int)g->data.string[0] - 65,
+                  size = strlen(g->data.string);
 
                 if(c->flags & SUB_MODE_FLOAT) subClientToggle(c, SUB_MODE_FLOAT);
                 if(c->flags & SUB_MODE_FULL)  subClientToggle(c, SUB_MODE_FULL);
@@ -956,8 +957,9 @@ EventGrab(XEvent *ev)
                     /* Toggle gravity */ 
                     if(c->gravity == cid)
                       {
-                        if(cid < fid + size - 1) id = cid + 1;
-                        else id = fid; ///< Select first id
+                        /* Select first or next id */
+                        if(i == size - 1) id = fid;
+                        else id = (int)g->data.string[i + 1] - 65;
                       }
                   }
                 if(-1 == id) id = fid; ///< Fallback
