@@ -872,9 +872,11 @@ EventGrab(XEvent *ev)
             break; /* }}} */
           case SUB_GRAB_WINDOW_MOVE:
           case SUB_GRAB_WINDOW_RESIZE: /* {{{ */
-            if((c = CLIENT(subSharedFind(win, CLIENTID))) && !(c->flags & SUB_MODE_FULL))
+            if((c = CLIENT(subSharedFind(win, CLIENTID))) && 
+                !(c->flags & SUB_MODE_FULL))
               {
-                if(!(c->flags & SUB_MODE_FLOAT)) subClientToggle(c, SUB_MODE_FLOAT);
+                if(!(c->flags & SUB_MODE_FLOAT)) 
+                  subClientToggle(c, SUB_MODE_FLOAT);
 
                 if(SUB_GRAB_WINDOW_MOVE == flag)        flag = SUB_DRAG_MOVE;
                 else if(SUB_GRAB_WINDOW_RESIZE == flag) flag = SUB_DRAG_RESIZE;
@@ -946,8 +948,9 @@ EventGrab(XEvent *ev)
                 int i, id = -1, cid = 0, fid = (int)g->data.string[0] - 65,
                   size = strlen(g->data.string);
 
-                if(c->flags & SUB_MODE_FLOAT) subClientToggle(c, SUB_MODE_FLOAT);
-                if(c->flags & SUB_MODE_FULL)  subClientToggle(c, SUB_MODE_FULL);
+                /* Remove float/fullscreen mode */
+                if(c->flags & (SUB_MODE_FLOAT|SUB_MODE_FULL))
+                  subClientToggle(c, c->flags & (SUB_MODE_FLOAT|SUB_MODE_FULL));
 
                 /* Select next gravity */
                 for(i = 0; -1 == id && i < size; i++)
