@@ -199,42 +199,37 @@ subSharedMatch(int type,
   XRectangle *geometry1,
   XRectangle *geometry2)
 {
-  int x = 0, y = 0;
+  int dx = 0, dy = 0;
 
-  /* Matching is a bit annoying */
+  /* Euclidean distance */
+  dx = abs(geometry1->x - geometry2->x);
+  dy = abs(geometry1->y - geometry2->y);
+
+  if(0 == dx) dx = 100;
+  if(0 == dy) dy = 100;
+
+  /* Add weighting */
   switch(type)
     {
-      case SUB_WINDOW_LEFT:
-        if(geometry2->x + geometry2->width == geometry1->x) x = 50;
-        else x = 10;
-
-        if(geometry2->y == geometry1->y) y = 50;
-        else y = 10;
+     case SUB_WINDOW_LEFT:
+        if(geometry2->x < geometry1->x) dx /= 8;
+        dy *= 2;
         break;
       case SUB_WINDOW_RIGHT:
-        if(geometry1->x + geometry1->width == geometry2->x) x = 50;
-        else x = 10;
-
-        if(geometry1->y == geometry2->y) y = 50;
-        else y = 10;
+        if(geometry2->x > geometry1->x) dx /= 8;
+        dy *= 2;
         break;
       case SUB_WINDOW_UP:
-        if(geometry2->x == geometry1->x) x = 50;
-        else x = 10;
-
-        if(geometry2->y + geometry2->height == geometry1->y) y = 50;
-        else y = 10;
+        if(geometry2->y < geometry1->y) dy /= 8;
+        dx *= 2;
         break;
       case SUB_WINDOW_DOWN:
-        if(geometry2->x == geometry1->x) x = 50;
-        else x = 10;
-
-        if(geometry1->y + geometry1->height == geometry2->y) y = 50;
-        else y = 10;
+        if(geometry2->y > geometry1->y) dy /= 8;
+        dx *= 2;
         break;
     }
 
-  return x + y;
+  return dx + dy;
 } /* }}} */
 
  /** subSharedPropertyGet {{{
