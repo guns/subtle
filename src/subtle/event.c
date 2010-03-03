@@ -901,20 +901,22 @@ EventGrab(XEvent *ev)
           case SUB_GRAB_WINDOW_SELECT: /* {{{ */
             if((c = CLIENT(subSharedFind(win, CLIENTID))))
               {
-                int i, match = 0, score = 0;
+                int i, match = (1L << 30), score = 0;
                 SubClient *found = NULL;
 
                 /* Iterate once to find a client based on score */
-                for(i = 0; 100 != match && i < subtle->clients->ndata; i++)
+                for(i = 0; i < subtle->clients->ndata; i++)
                   {
                     SubClient *iter = CLIENT(subtle->clients->data[i]);
 
-                    if(c != iter && VISIBLE(CURVIEW, iter) &&
-                        (match < (score = subSharedMatch(g->data.num, 
-                        &c->geom, &iter->geom))))
+                    if(c != iter && VISIBLE(CURVIEW, iter))
                       {
-                        match = score;
-                        found = iter;
+                        if(match > (score = subSharedMatch(g->data.num, 
+                          &c->geom, &iter->geom)))
+                        {
+                          match = score;
+                          found = iter;
+                        }
                       }
                   }
 
@@ -922,7 +924,7 @@ EventGrab(XEvent *ev)
                   {
                     subClientWarp(found);
                     subClientFocus(found);
-                    subSharedLogDebug("Match: win=%#lx, score=%d, iterations=%d\n", found->win, match, i);
+                    subSharedLogDebug("Match: win=%#lx, score=%d\n", found->win, match);
                   }
               }
             else ///< Select the first if no client has focus

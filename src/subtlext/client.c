@@ -45,7 +45,7 @@ VALUE
 ClientMatch(VALUE self,
   int type)
 {
-  int i, id = 0, size = 0, match = 0, score = 0;
+  int i, id = 0, size = 0, match = (1L << 30), score = 0;
   Window *clients = NULL, *views = NULL, found = None;
   VALUE win = Qnil, client = Qnil;
   unsigned long *cv = NULL, *flags1 = NULL;
@@ -65,7 +65,7 @@ ClientMatch(VALUE self,
       subSharedPropertyGeometry(win, &geometry1);
 
       /* Iterate once to find a client score-based */
-      for(i = 0; 100 != match && i < size; i++)
+      for(i = 0; i < size; i++)
         {
           unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(clients[i], XA_CARDINAL,
             "SUBTLE_WINDOW_TAGS", NULL);
@@ -74,7 +74,7 @@ ClientMatch(VALUE self,
             {
               subSharedPropertyGeometry(win, &geometry2);
 
-              if(match < (score = subSharedMatch(type, &geometry1, &geometry2)))
+              if(match > (score = subSharedMatch(type, &geometry1, &geometry2)))
                 {
                   match = score;
                   found = clients[i];

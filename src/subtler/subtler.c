@@ -109,6 +109,8 @@ SubtlerRestack(char *name,
   else subSharedLogWarn("Failed restacking client");  
 } /* }}} */
 
+/* Client */
+
 /* SubtlerCurrentClient {{{ */
 static char *
 SubtlerCurrentClient(void)
@@ -194,22 +196,6 @@ SubtlerClientPrint(Window win,
   free(flags);
   free(grav);
 } /* }}} */
-
-/* SubtlerTrayPrint {{{ */
-void
-SubtlerTrayPrint(Window win)
-{
-  char *inst = NULL, *klass = NULL;
-
-  subSharedPropertyClass(win, &inst, &klass);
-
-  printf("%#10lx %s (%s)\n", win, inst, klass);
-
-  free(inst);
-  free(klass);
-} /* }}} */
-
-/* Client */
 
 /* SubtlerClientFind {{{ */
 static void
@@ -949,6 +935,20 @@ SubtlerTagKill(int argc,
 } /* }}} */
 
 /* Tray */
+
+/* SubtlerTrayPrint {{{ */
+void
+SubtlerTrayPrint(Window win)
+{
+  char *inst = NULL, *klass = NULL;
+
+  subSharedPropertyClass(win, &inst, &klass);
+
+  printf("%#10lx %s (%s)\n", win, inst, klass);
+
+  free(inst);
+  free(klass);
+} /* }}} */
 
 /* SubtlerTagFind {{{ */
 static void
