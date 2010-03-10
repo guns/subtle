@@ -14,14 +14,11 @@
 /* Typedefs {{{ */
 typedef struct subtlextwindow_t
 {
-  GC gc;
+  GC          gc;
+  Window      win;
   XFontStruct *xfs;
-  VALUE instance;
-  Window win;
-
-  char *title;
-  char **text;
-  int ntext;
+  VALUE       instance;
+  SubText     *text;
 } SubtlextWindow;
 /* }}} */
 
@@ -40,9 +37,11 @@ WindowSweep(SubtlextWindow *w)
     {
       XFreeGC(display, w->gc);
       XFreeFont(display, w->xfs);
+
+      subSharedTextFree(w->text);
+
       free(w);
     }
-  
 } /* }}} */
 
 /* subWindowNew {{{ */
@@ -113,7 +112,7 @@ subWindowNew(VALUE self,
   if(rb_block_given_p())
     {
       rb_yield_values(1, w->instance);
-      //rb_obj_instance_eval(0, 0, w->instance);
+      rb_obj_instance_eval(0, 0, w->instance);
     }
 
   XSync(display, False); ///< Sync with X
@@ -244,7 +243,7 @@ subWindowBackgroundWriter(VALUE self,
       switch(rb_type(value))
         {
           case T_STRING:
-            color = subSharedParseColor(RSTRING_PTR(value));
+            color = subSharedParseColor(display, RSTRING_PTR(value));
             win   = rb_iv_get(self, "@win");
 
             XSetWindowBackground(display, NUM2LONG(win), color);
@@ -283,7 +282,7 @@ subWindowBorderColorWriter(VALUE self,
       switch(rb_type(value))
         {
           case T_STRING:
-            color = subSharedParseColor(RSTRING_PTR(value));
+            color = subSharedParseColor(display, RSTRING_PTR(value));
             win   = rb_iv_get(self, "@win");
 
             XSetWindowBorder(display, NUM2LONG(win), color);
@@ -347,6 +346,32 @@ VALUE
 subWindowGeometryReader(VALUE self)
 {
   return rb_iv_get(self, "@geometry");
+} /* }}} */
+
+/* subWindowTextWriter {{{ */
+/*
+ * call-seq: text(str, color) -> nil
+ *
+ * Add test to window
+ *
+ *  win.text("subtle", "#fff000")
+ *  => nil
+ */
+
+VALUE
+subWindowTextWriter(VALUE self,
+  VALUE text,
+  VALUE color)
+{
+  SubtlextWindow *w = NULL;
+
+  Data_Get_Struct(self, SubtlextWindow, w);
+  if(w)
+    {
+      
+    }
+
+  return Qnil;
 } /* }}} */
 
 /* subWindowShow {{{ */
