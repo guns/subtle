@@ -102,7 +102,8 @@ subTagAll(VALUE self)
   /* Fetch data */
   meth  = rb_intern("new");
   klass = rb_const_get(mod, rb_intern("Tag"));
-  tags  = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
+  tags  = subSharedPropertyStrings(display, DefaultRootWindow(display),
+    XInternAtom(display, "SUBTLE_TAG_LIST", False), &size);
   array = rb_ary_new2(size);
 
   /* Populate array */
@@ -158,8 +159,8 @@ subTagUpdate(VALUE self)
           int size = 0;
           char **tags = NULL;
 
-          tags = subSharedPropertyStrings(DefaultRootWindow(display),
-            "SUBTLE_TAG_LIST", &size);
+          tags = subSharedPropertyStrings(display, DefaultRootWindow(display),
+            XInternAtom(display, "SUBTLE_TAG_LIST", False), &size);
 
           id = size; ///< New id should be last
 

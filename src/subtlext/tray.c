@@ -153,7 +153,7 @@ subTrayUpdate(VALUE self)
           char *title = NULL, *wmname = NULL, *wmclass = NULL;
 
           XFetchName(display, NUM2LONG(win), &title);
-          subSharedPropertyClass(NUM2LONG(win), &wmname, &wmclass);
+          subSharedPropertyClass(display, NUM2LONG(win), &wmname, &wmclass);
 
           /* Set properties */
           rb_iv_set(self, "@id",    INT2FIX(id));

@@ -102,7 +102,8 @@ subSubletAll(VALUE self)
   /* Fetch data */
   meth    = rb_intern("new");
   klass   = rb_const_get(mod, rb_intern("Sublet"));
-  sublets = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_SUBLET_LIST", &size);
+  sublets = subSharedPropertyStrings(display, DefaultRootWindow(display),
+    XInternAtom(display, "SUBTLE_SUBLET_LIST", False), &size);
   array   = rb_ary_new2(size);
 
   /* Populate array */
@@ -218,7 +219,7 @@ subSubletBackgroundWriter(VALUE self,
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
       data.l[0] = FIX2INT(rb_iv_get(self, "@id"));
-      data.l[1] = subSharedParseColor(RSTRING_PTR(value));
+      data.l[1] = subSharedParseColor(display, RSTRING_PTR(value));
 
       subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_BACKGROUND", data, True);
     }

@@ -53,26 +53,30 @@ ClientMatch(VALUE self,
 
   win     = rb_iv_get(self, "@win");
   clients = subSharedClientList(&size);
-  views   = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW,
-    "_NET_VIRTUAL_ROOTS", NULL);
-  cv      = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-    XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+  views   = (Window *)subSharedPropertyGet(display, 
+    DefaultRootWindow(display), XA_WINDOW,
+    XInternAtom(display, "_NET_VIRTUAL_ROOTS", False), NULL);
+  cv      = (unsigned long *)subSharedPropertyGet(display,
+    DefaultRootWindow(display), XA_CARDINAL, 
+    XInternAtom(display, "_NET_CURRENT_DESKTOP", False), NULL);
 
   if(clients && cv)
     {
-      flags1 = (unsigned long *)subSharedPropertyGet(views[*cv], XA_CARDINAL,
-        "SUBTLE_WINDOW_TAGS", NULL);
-      subSharedPropertyGeometry(win, &geometry1);
+      flags1 = (unsigned long *)subSharedPropertyGet(display, 
+        views[*cv], XA_CARDINAL,
+        XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
+      subSharedPropertyGeometry(display, win, &geometry1);
 
       /* Iterate once to find a client score-based */
       for(i = 0; i < size; i++)
         {
-          unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(clients[i], XA_CARDINAL,
-            "SUBTLE_WINDOW_TAGS", NULL);
+          unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(display, 
+            clients[i], XA_CARDINAL,
+            XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
 
           if(win != clients[i] && *flags1 & *flags2) ///< Check if there are common tags
             {
-              subSharedPropertyGeometry(win, &geometry2);
+              subSharedPropertyGeometry(display, win, &geometry2);
 
               if(match > (score = subSharedMatch(type, &geometry1, &geometry2)))
                 {
@@ -210,8 +214,9 @@ subClientCurrent(VALUE self)
 
   subSubtlextConnect(); ///< Implicit open connection
 
-  if((focus = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-    XA_WINDOW, "_NET_ACTIVE_WINDOW", NULL)))
+  if((focus = (unsigned long *)subSharedPropertyGet(display, 
+      DefaultRootWindow(display), XA_WINDOW, 
+      XInternAtom(display, "_NET_ACTIVE_WINDOW", False), NULL)))
     {
       client = subClientInstantiate(*focus);
 
@@ -296,12 +301,13 @@ subClientUpdate(VALUE self)
           int *flags = NULL;
           char *wmname = NULL, *wminstance = NULL, *wmclass = NULL, *role = NULL;
 
-          subSharedPropertyClass(NUM2LONG(win), &wminstance, &wmclass);
-          subSharedPropertyName(NUM2LONG(win), &wmname, wmclass);
+          subSharedPropertyClass(display, NUM2LONG(win), &wminstance, &wmclass);
+          subSharedPropertyName(display, NUM2LONG(win), &wmname, wmclass);
 
-          flags = (int *)subSharedPropertyGet(NUM2LONG(win), XA_CARDINAL,
-            "SUBTLE_WINDOW_FLAGS", NULL);
-          role = subSharedPropertyGet(NUM2LONG(win), XA_STRING, "WM_WINDOW_ROLE", NULL);
+          flags = (int *)subSharedPropertyGet(display, NUM2LONG(win), XA_CARDINAL,
+            XInternAtom(display, "SUBTLE_WINDOW_FLAGS", False), NULL);
+          role = subSharedPropertyGet(display, NUM2LONG(win), XA_STRING,
+            XInternAtom(display, "WM_WINDOW_ROLE", False), NULL);
 
           /* Set properties */
           rb_iv_set(self, "@id",       INT2FIX(id));
@@ -355,19 +361,20 @@ subClientViewList(VALUE self)
   method  = rb_intern("new");
   klass   = rb_const_get(mod, rb_intern("View"));
   array   = rb_ary_new2(size);
-  names   = subSharedPropertyStrings(DefaultRootWindow(display), 
-    "_NET_DESKTOP_NAMES", &size);
-  views   = (Window *)subSharedPropertyGet(DefaultRootWindow(display), 
-    XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
-  flags1  = (unsigned long *)subSharedPropertyGet(NUM2LONG(win), XA_CARDINAL, 
-    "SUBTLE_WINDOW_TAGS", NULL);
+  names   = subSharedPropertyStrings(display, DefaultRootWindow(display), 
+    XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size);
+  views   = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display), 
+    XA_WINDOW, XInternAtom(display, "_NET_VIRTUAL_ROOTS", False), NULL);
+  flags1  = (unsigned long *)subSharedPropertyGet(display, NUM2LONG(win), 
+    XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
 
   if(names && views)
     {
       for(i = 0; i < size; i++)
         {
-          unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(views[i], 
-            XA_CARDINAL, "SUBTLE_WINDOW_TAGS", NULL);
+          unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(display, 
+            views[i], XA_CARDINAL, 
+            XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
 
           if(*flags1 & *flags2) ///< Check if there are common tags
             {
@@ -686,8 +693,8 @@ subClientGravityReader(VALUE self)
       char buf[5] = { 0 };
 
       /* Collect data */
-      id = (int *)subSharedPropertyGet(win, XA_CARDINAL,
-        "SUBTLE_WINDOW_GRAVITY", NULL);
+      id = (int *)subSharedPropertyGet(display, win, XA_CARDINAL,
+        XInternAtom(display, "SUBTLE_WINDOW_GRAVITY", False), NULL);
 
       snprintf(buf, sizeof(buf), "%d", *id);
       gravity = subGravityInstantiate(buf);
@@ -767,8 +774,8 @@ subClientScreenReader(VALUE self)
       int *id = NULL;
       
       /* Collect data */
-      id     = (int *)subSharedPropertyGet(win, XA_CARDINAL, 
-        "SUBTLE_WINDOW_SCREEN", NULL);
+      id     = (int *)subSharedPropertyGet(display, win, XA_CARDINAL, 
+        XInternAtom(display, "SUBTLE_WINDOW_SCREEN", False), NULL);
       screen = subScreenInstantiate(*id);
 
       if(!NIL_P(screen)) subScreenUpdate(screen);
@@ -842,7 +849,7 @@ subClientGeometryReader(VALUE self)
     {
       XRectangle geometry = { 0 };
 
-      subSharedPropertyGeometry(win, &geometry);
+      subSharedPropertyGeometry(display, win, &geometry);
 
       geom = subGeometryInstantiate(geometry.x, geometry.y, 
         geometry.width, geometry.height);

@@ -102,8 +102,8 @@ subGravityAll(VALUE self)
   subSubtlextConnect(); ///< Implicit open connection
 
   /* Get gravity list */
-  if((gravities = subSharedPropertyStrings(DefaultRootWindow(display), 
-      "SUBTLE_GRAVITY_LIST", &size)))
+  if((gravities = subSharedPropertyStrings(display, DefaultRootWindow(display), 
+      XInternAtom(display, "SUBTLE_GRAVITY_LIST", False), &size)))
     {
       int i;
       XRectangle geometry = { 0 };

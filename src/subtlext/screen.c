@@ -174,13 +174,14 @@ subScreenCurrent(VALUE self)
   subSubtlextConnect(); ///< Implicit open connection
 
   /* Get current screen from current client or use the first */
-  if((focus = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-      XA_WINDOW, "_NET_ACTIVE_WINDOW", NULL)))
+  if((focus = (unsigned long *)subSharedPropertyGet(display, 
+      DefaultRootWindow(display), XA_WINDOW, 
+      XInternAtom(display, "_NET_ACTIVE_WINDOW", False), NULL)))
     {
       int *id = NULL;
 
-      id     = (int *)subSharedPropertyGet(*focus, XA_CARDINAL, 
-        "SUBTLE_WINDOW_SCREEN", NULL);
+      id     = (int *)subSharedPropertyGet(display, *focus, XA_CARDINAL, 
+        XInternAtom(display, "SUBTLE_WINDOW_SCREEN", False), NULL);
       screen = subScreenInstantiate(*id);
 
       if(!NIL_P(screen)) subScreenUpdate(screen);
@@ -251,8 +252,8 @@ subScreenClientList(VALUE self)
     {
       for(i = 0; i < size; i++)
         {
-          int *screen = (int *)subSharedPropertyGet(clients[i], XA_CARDINAL, 
-            "SUBTLE_WINDOW_SCREEN", NULL);
+          int *screen = (int *)subSharedPropertyGet(display, clients[i],XA_CARDINAL,
+            XInternAtom(display, "SUBTLE_WINDOW_SCREEN", False), NULL);
 
           if(id - 1 == *screen) ///< Check if screen matches
             rb_ary_push(array, subClientInstantiate(clients[i]));

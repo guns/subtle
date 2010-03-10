@@ -100,11 +100,13 @@ subViewCurrent(VALUE self)
   subSubtlextConnect(); ///< Implicit open connection
   
   /* Get current view */
-  names = subSharedPropertyStrings(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
-  cv    = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-    XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
-  views = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW, 
-    "_NET_VIRTUAL_ROOTS", NULL);
+  names = subSharedPropertyStrings(display, DefaultRootWindow(display),
+    XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size);
+  cv    = (unsigned long *)subSharedPropertyGet(display, 
+    DefaultRootWindow(display), XA_CARDINAL, 
+    XInternAtom(display, "_NET_CURRENT_DESKTOP", False), NULL);
+  views = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display),
+    XA_WINDOW, XInternAtom(display, "_NET_VIRTUAL_ROOTS", False), NULL);
 
   /* Create instance */
   view = subViewInstantiate(names[*cv]);
@@ -145,10 +147,10 @@ subViewAll(VALUE self)
   /* Fetch data */
   meth  = rb_intern("new");
   klass = rb_const_get(mod, rb_intern("View"));
-  names = subSharedPropertyStrings(DefaultRootWindow(display), 
-    "_NET_DESKTOP_NAMES", &size);
-  views = (Window *)subSharedPropertyGet(DefaultRootWindow(display), 
-    XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);  
+  names = subSharedPropertyStrings(display, DefaultRootWindow(display), 
+    XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size);
+  views = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display), 
+    XA_WINDOW, XInternAtom(display, "_NET_VIRTUAL_ROOTS", False), NULL);  
   array = rb_ary_new2(size);
 
   if(names && views)
@@ -205,8 +207,8 @@ subViewUpdate(VALUE self)
           int size = 0;
           char **names = NULL;
 
-          names = subSharedPropertyStrings(DefaultRootWindow(display),
-            "_NET_DESKTOP_NAMES", &size);
+          names = subSharedPropertyStrings(display, DefaultRootWindow(display),
+            XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size);
 
           id = size; ///< New id should be last
 
@@ -247,16 +249,17 @@ subViewClients(VALUE self)
   meth    = rb_intern("new");
   array   = rb_ary_new2(size);
   clients = subSharedClientList(&size);
-  flags1  = (unsigned long *)subSharedPropertyGet(NUM2LONG(win), XA_CARDINAL, 
-    "SUBTLE_WINDOW_TAGS", NULL);
+  flags1  = (unsigned long *)subSharedPropertyGet(display, NUM2LONG(win), XA_CARDINAL, 
+    XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
 
   /* Populate array */
   if(clients)
     {
       for(i = 0; i < size; i++)
         {
-          unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(clients[i], XA_CARDINAL, 
-            "SUBTLE_WINDOW_TAGS", NULL);
+          unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(display, 
+            clients[i], XA_CARDINAL, 
+            XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
 
           if(flags2 && *flags1 & *flags2) ///< Check if there are common tags
             {
@@ -321,8 +324,8 @@ subViewCurrentAsk(VALUE self)
   VALUE id = Qnil, ret = Qfalse;;
   
   id = rb_iv_get(self, "@id");
-  cv = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-    XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+  cv = (unsigned long *)subSharedPropertyGet(display, DefaultRootWindow(display),
+    XA_CARDINAL, XInternAtom(display, "_NET_CURRENT_DESKTOP", False), NULL);
 
   if(FIX2INT(id) == *cv) ret = Qtrue;
   free(cv);
