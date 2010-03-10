@@ -21,7 +21,6 @@
 #endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
 
 Display *display = NULL;
-int debug = 0;
 
 /* Typedefs {{{ */
 typedef void(*SubtlerCommand)(int, char *, char *);
@@ -118,8 +117,9 @@ SubtlerCurrentClient(void)
   char *ret = NULL;
   unsigned long *focus = NULL;
 
-  if((focus = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-      XA_WINDOW, "_NET_ACTIVE_WINDOW", NULL)))
+  if((focus = (unsigned long *)subSharedPropertyGet(display, 
+      DefaultRootWindow(display), XA_WINDOW,
+      XInternAtom(display, "_NET_ACTIVE_WINDOW", False), NULL)))
     {
       char buf[20];
 
@@ -140,9 +140,12 @@ SubtlerCurrentView(void)
   char **names = NULL, *ret = NULL;
   unsigned long *cv = NULL;
   
-  names = subSharedPropertyStrings(DefaultRootWindow(display), "_NET_DESKTOP_NAMES", &size);
-  cv    = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-    XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+  /* Collect view data */
+  names = subSharedPropertyStrings(display, DefaultRootWindow(display), 
+    XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size);
+  cv    = (unsigned long *)subSharedPropertyGet(display, 
+    DefaultRootWindow(display), XA_CARDINAL, 
+    XInternAtom(display, "_NET_CURRENT_DESKTOP", False), NULL);
 
   ret = strdup(names[*cv]);
 
@@ -165,15 +168,15 @@ SubtlerClientPrint(Window win,
   unsigned long *cv = NULL, *gravity = NULL, *screen = NULL, *flags = NULL;
 
   /* Collect client data */
-  subSharedPropertyClass(win, &instance, &klass);
-  cv      = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, 
-    "_NET_WM_DESKTOP", NULL);
-  gravity = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, 
-    "SUBTLE_WINDOW_GRAVITY", NULL);
-  screen = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, 
-    "SUBTLE_WINDOW_SCREEN", NULL);
-  flags = (unsigned long*)subSharedPropertyGet(win, XA_CARDINAL, 
-    "SUBTLE_WINDOW_FLAGS", NULL);
+  subSharedPropertyClass(display, win, &instance, &klass);
+  cv      = (unsigned long*)subSharedPropertyGet(display, win, XA_CARDINAL, 
+    XInternAtom(display, "_NET_WM_DESKTOP", False), NULL);
+  gravity = (unsigned long*)subSharedPropertyGet(display, win, XA_CARDINAL, 
+    XInternAtom(display, "SUBTLE_WINDOW_GRAVITY", False), NULL);
+  screen  = (unsigned long*)subSharedPropertyGet(display, win, XA_CARDINAL, 
+    XInternAtom(display, "SUBTLE_WINDOW_SCREEN", False), NULL);
+  flags   = (unsigned long*)subSharedPropertyGet(display, win, XA_CARDINAL, 
+    XInternAtom(display, "SUBTLE_WINDOW_FLAGS", False), NULL);
 
   /* Get gravity */
   snprintf(buf, sizeof(buf), "%ld", *gravity);
@@ -214,10 +217,12 @@ SubtlerClientFind(int argc,
       unsigned long *nv = NULL, *rv = NULL;
 
       /* Collect data */
-      nv = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-        XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
-      rv = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display),
-        XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+      nv = (unsigned long *)subSharedPropertyGet(display, 
+        DefaultRootWindow(display), XA_CARDINAL, 
+        XInternAtom(display, "_NET_NUMBER_OF_DESKTOPS", False), NULL);
+      rv = (unsigned long*)subSharedPropertyGet(display, 
+        DefaultRootWindow(display), XA_CARDINAL, 
+        XInternAtom(display, "_NET_CURRENT_DESKTOP", False), NULL);
 
       SubtlerClientPrint(win, *nv, *rv);
 
@@ -318,11 +323,14 @@ SubtlerClientList(int argc,
       unsigned long *nv = NULL, *rv = NULL;
 
       /* Collect data */
-      nv = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-        XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
-      rv = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display),
-        XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+      nv = (unsigned long *)subSharedPropertyGet(display, 
+        DefaultRootWindow(display), XA_CARDINAL,
+        XInternAtom(display, "_NET_NUMBER_OF_DESKTOPS", False), NULL);
+      rv = (unsigned long*)subSharedPropertyGet(display, 
+        DefaultRootWindow(display), XA_CARDINAL, 
+        XInternAtom(display, "_NET_CURRENT_DESKTOP", False), NULL);
 
+      /* Print clients */
       for(i = 0; i < size; i++) 
         SubtlerClientPrint(clients[i], *nv, *rv);
 
@@ -422,9 +430,11 @@ SubtlerClientTags(int argc,
   if(-1 != subSharedClientFind(arg1, NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))
     {
       int i, size = 0;
-      unsigned long *flags = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL,
-        "SUBTLE_WINDOW_TAGS", NULL);
-      char **tags = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
+      unsigned long *flags = (unsigned long *)subSharedPropertyGet(display, 
+        win, XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), 
+        NULL);
+      char **tags = subSharedPropertyStrings(display, DefaultRootWindow(display), 
+        XInternAtom(display, "SUBTLE_TAG_LIST", False), &size);
 
       for(i = 0; i < size; i++)
         if((int)*flags & (1L << (i + 1))) printf("%s\n", tags[i]);
@@ -514,8 +524,9 @@ SubtlerGravityList(int argc,
   char **gravities = NULL;
 
   /* Get gravity list */
-  if((gravities = subSharedPropertyStrings(DefaultRootWindow(display), 
-      "SUBTLE_GRAVITY_LIST", &size)))
+  if((gravities = subSharedPropertyStrings(display, 
+      DefaultRootWindow(display), 
+      XInternAtom(display, "SUBTLE_GRAVITY_LIST", False), &size)))
     {
       int i;
       XRectangle geometry = { 0 };
@@ -551,15 +562,18 @@ SubtlerGravityClients(int argc,
   if(-1 != (id = subSharedGravityFind(arg1, NULL, NULL)))
     {
       clients = subSharedClientList(&size);
-      nv      = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-        XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
-      rv      = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display),
-        XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+      nv      = (unsigned long *)subSharedPropertyGet(display,
+        DefaultRootWindow(display), XA_CARDINAL,
+        XInternAtom(display, "_NET_NUMBER_OF_DESKTOPS", False), NULL);
+      rv      = (unsigned long*)subSharedPropertyGet(display,
+        DefaultRootWindow(display), XA_CARDINAL, 
+        XInternAtom(display, "_NET_CURRENT_DESKTOP", False), NULL);
 
       for(i = 0; i < size; i++)
         {
-          gravity = (unsigned long*)subSharedPropertyGet(clients[i], XA_CARDINAL, 
-            "SUBTLE_WINDOW_GRAVITY", NULL);
+          gravity = (unsigned long*)subSharedPropertyGet(display, 
+            clients[i], XA_CARDINAL, 
+            XInternAtom(display, "SUBTLE_WINDOW_GRAVITY", False), NULL);
 
           if(*gravity == id) ///< Check if gravity id matches
             SubtlerClientPrint(clients[i], *nv, *rv);
@@ -713,7 +727,8 @@ SubtlerSubletList(int argc,
 
   subSharedLogDebug("%s\n", __func__);
 
-  if((sublets = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_SUBLET_LIST", &size)))
+  if((sublets = subSharedPropertyStrings(display, DefaultRootWindow(display),
+      XInternAtom(display, "SUBTLE_SUBLET_LIST", False), &size)))
     {
       for(i = 0; i < size; i++)
         printf("%s\n", sublets[i]);
@@ -810,10 +825,10 @@ SubtlerTagFind(int argc,
 
   /* Collect data */
   tag     = subSharedTagFind(arg1, NULL);
-  names   = subSharedPropertyStrings(DefaultRootWindow(display),
-    "_NET_DESKTOP_NAMES", &size_views);
-  views  = (Window *)subSharedPropertyGet(DefaultRootWindow(display), XA_WINDOW,
-    "_NET_VIRTUAL_ROOTS", NULL);
+  names   = subSharedPropertyStrings(display, DefaultRootWindow(display),
+    XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size_views);
+  views  = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display),
+    XA_WINDOW, XInternAtom(display, "_NET_VIRTUAL_ROOTS", False), NULL);
   clients = subSharedClientList(&size_clients);
 
   /* Views */
@@ -821,8 +836,9 @@ SubtlerTagFind(int argc,
     {
       for(i = 0; i < size_views; i++)
         {
-          unsigned long *flags = (unsigned long *)subSharedPropertyGet(views[i], 
-            XA_CARDINAL, "SUBTLE_WINDOW_TAGS", NULL);
+          unsigned long *flags = (unsigned long *)subSharedPropertyGet(display, 
+            views[i], XA_CARDINAL,
+            XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
 
           if((int)*flags & (1L << (tag + 1))) 
             printf("%#lx %s [view]\n", views[i], names[i]);
@@ -841,10 +857,11 @@ SubtlerTagFind(int argc,
       for(i = 0; i < size_clients; i++)
         {
           char *name = NULL, *klass = NULL;
-          unsigned long *flags   = (unsigned long *)subSharedPropertyGet(clients[i], 
-            XA_CARDINAL, "SUBTLE_WINDOW_TAGS", NULL);
+          unsigned long *flags   = (unsigned long *)subSharedPropertyGet(display, 
+            clients[i], XA_CARDINAL, 
+            XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
 
-          subSharedPropertyClass(clients[i], &name, &klass);
+          subSharedPropertyClass(display, clients[i], &name, &klass);
 
           if((int)*flags & (1L << (tag + 1))) 
             printf("%#lx %s (%s) [client]\n", clients[i], name, klass);
@@ -870,7 +887,8 @@ SubtlerTagList(int argc,
 
   subSharedLogDebug("%s\n", __func__);
 
-  if((tags = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size)))
+  if((tags = subSharedPropertyStrings(display, DefaultRootWindow(display), 
+      XInternAtom(display, "SUBTLE_TAG_LIST", False), &size)))
     {
       for(i = 0; i < size; i++) printf("%s\n", tags[i]);
 
@@ -895,15 +913,17 @@ SubtlerTagClients(int argc,
   if(-1 != (id = subSharedTagFind(arg1, NULL)))
     {
       clients = subSharedClientList(&size);
-      nv      = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-        XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
-      rv      = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display),
-        XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+      nv      = (unsigned long *)subSharedPropertyGet(display,
+        DefaultRootWindow(display), XA_CARDINAL, 
+        XInternAtom(display, "_NET_NUMBER_OF_DESKTOPS", False), NULL);
+      rv      = (unsigned long*)subSharedPropertyGet(display,
+        DefaultRootWindow(display), XA_CARDINAL,
+        XInternAtom(display, "_NET_CURRENT_DESKTOP", False), NULL);
 
       for(i = 0; i < size; i++)
         {
-          tags = (unsigned long *)subSharedPropertyGet(clients[i], 
-            XA_CARDINAL, "SUBTLE_WINDOW_TAGS", NULL);
+          tags = (unsigned long *)subSharedPropertyGet(display, clients[i], 
+            XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
 
           if(*tags & (1L << (id + 1))) ///< Check if tag id matches
             SubtlerClientPrint(clients[i], *nv, *rv);
@@ -942,7 +962,7 @@ SubtlerTrayPrint(Window win)
 {
   char *inst = NULL, *klass = NULL;
 
-  subSharedPropertyClass(win, &inst, &klass);
+  subSharedPropertyClass(display, win, &inst, &klass);
 
   printf("%#10lx %s (%s)\n", win, inst, klass);
 
@@ -1063,10 +1083,12 @@ SubtlerViewFind(int argc,
       unsigned long *cv = NULL, *rv = NULL;
 
       /* Collect data */
-      cv = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-        XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
-      rv = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display),
-        XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);        
+      cv = (unsigned long *)subSharedPropertyGet(display, 
+        DefaultRootWindow(display), XA_CARDINAL,
+        XInternAtom(display, "_NET_CURRENT_DESKTOP", False), NULL);
+      rv = (unsigned long*)subSharedPropertyGet(display, 
+        DefaultRootWindow(display), XA_CARDINAL, 
+        XInternAtom(display, "_NET_CURRENT_DESKTOP", False), NULL);        
 
       printf("%#10lx %c %2d %s\n", win, (*cv == *rv ? '*' : '-'), id, name);
 
@@ -1113,19 +1135,22 @@ SubtlerViewList(int argc,
   subSharedLogDebug("%s\n", __func__);
 
   /* Collect data */
-  nv     = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-    XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
-  cv     = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-    XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
-  names  = subSharedPropertyStrings(DefaultRootWindow(display), 
-    "_NET_DESKTOP_NAMES", &size);
-  views = (Window *)subSharedPropertyGet(DefaultRootWindow(display),
-    XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
+  nv     = (unsigned long *)subSharedPropertyGet(display,
+    DefaultRootWindow(display), XA_CARDINAL, 
+    XInternAtom(display, "_NET_NUMBER_OF_DESKTOPS", False), NULL);
+  cv     = (unsigned long *)subSharedPropertyGet(display,
+    DefaultRootWindow(display), XA_CARDINAL,
+    XInternAtom(display, "_NET_CURRENT_DESKTOP", False), NULL);
+  names  = subSharedPropertyStrings(display, DefaultRootWindow(display),
+    XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size);
+  views = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display),
+    XA_WINDOW, XInternAtom(display, "_NET_VIRTUAL_ROOTS", False), NULL);
 
   if(nv && cv && names && views)
     {
       for(i = 0; *nv && i < *nv; i++)
-        printf("%#10lx %c %2d %s\n", views[i], (i == *cv ? '*' : '-'), i, names[i]);
+        printf("%#10lx %c %2d %s\n", views[i], (i == *cv ? '*' : '-'), 
+          i, names[i]);
 
       XFreeStringList(names);
       free(nv);
@@ -1191,8 +1216,10 @@ SubtlerViewTags(int argc,
 
   if(-1 != subSharedViewFind(arg1, NULL, &win))
     {
-      flags = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, "SUBTLE_WINDOW_TAGS", NULL);
-      tags  = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
+      flags = (unsigned long *)subSharedPropertyGet(display, win, 
+        XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
+      tags  = subSharedPropertyStrings(display, DefaultRootWindow(display), 
+        XInternAtom(display, "SUBTLE_TAG_LIST", False), &size);
 
       for(i = 0; i < size; i++)
         if((int)*flags & (1L << (i + 1))) printf("%s\n", tags[i]);
@@ -1221,17 +1248,20 @@ SubtlerViewClients(int argc,
   if(-1 != subSharedViewFind(arg1, NULL, &win))
     {
       /* Fetch data */
-      tags1  = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, "SUBTLE_WINDOW_TAGS", NULL);
+      tags1  = (unsigned long *)subSharedPropertyGet(display, win, XA_CARDINAL, 
+        XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
       clients = subSharedClientList(&size);
-      nv      = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-        XA_CARDINAL, "_NET_NUMBER_OF_DESKTOPS", NULL);
-      rv      = (unsigned long*)subSharedPropertyGet(DefaultRootWindow(display),
-        XA_CARDINAL, "_NET_CURRENT_DESKTOP", NULL);
+      nv      = (unsigned long *)subSharedPropertyGet(display, 
+        DefaultRootWindow(display), XA_CARDINAL,
+        XInternAtom(display, "_NET_NUMBER_OF_DESKTOPS", False), NULL);
+      rv      = (unsigned long*)subSharedPropertyGet(display, 
+        DefaultRootWindow(display), XA_CARDINAL,
+        XInternAtom(display, "_NET_CURRENT_DESKTOP", False), NULL);
 
       for(i = 0; i < size; i++)
         {
-          tags2 = (unsigned long *)subSharedPropertyGet(clients[i], 
-            XA_CARDINAL, "SUBTLE_WINDOW_TAGS", NULL);
+          tags2 = (unsigned long *)subSharedPropertyGet(display, clients[i], 
+            XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
 
           if(*tags1 & *tags2) ///< Check if there are common tags
             SubtlerClientPrint(clients[i], *nv, *rv);
@@ -1604,7 +1634,7 @@ main(int argc,
           case 'd': dispname = optarg;            break;
           case 'h': SubtlerUsage(group);          return 0;
 #ifdef DEBUG          
-          case 'D': debug = 1;                    break;
+          case 'D': subSharedDebug();             break;
 #else /* DEBUG */
           case 'D': 
             printf("Please recompile %sr with `debug=yes'\n", PKG_NAME); 
