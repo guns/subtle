@@ -25,14 +25,11 @@
 #include <X11/Xmd.h>
 
 #include "config.h"
+#include "shared.h"
 
 #ifdef HAVE_SYS_INOTIFY_H
 #include <sys/inotify.h>
 #endif /* HAVE_SYS_INOTIFY */
-
-#ifdef HAVE_X11_XFT_XFT_H
-#include <X11/Xft/Xft.h>
-#endif /* HAVE_X11_XFT_XFT_H */
 /* }}} */
 
 /* Macros {{{ */
@@ -46,7 +43,6 @@
 
 #define MINW         100L                                         ///< Client min width
 #define MINH         100L                                         ///< Client min height
-#define SEPARATOR    "<>"                                         ///< Color separator
 #define EXECTIME     1                                            ///< Max execution time
 #define WAITTIME     10                                           ///< Max waiting time
 #define DEFAULTTAG   (1L << 1)                                    ///< Default tag
@@ -95,9 +91,8 @@
   (SUB_MODE_NONFULL|SUB_MODE_NONFLOAT|SUB_MODE_NONSTICK| \
   SUB_MODE_NONURGENT|SUB_MODE_NONRESIZE)                          ///< All none mode flags
 
-#define ROOT       DefaultRootWindow(subtle->dpy)                ///< Root window
-#define SCRN       DefaultScreen(subtle->dpy)                    ///< Default screen
-#define FONT       "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*"           ///< Default font
+#define ROOT       DefaultRootWindow(subtle->dpy)                 ///< Root window
+#define SCRN       DefaultScreen(subtle->dpy)                     ///< Default screen
 
 #define SETRECT(r,a,b,c,d) \
   r.x      = a; \
@@ -153,14 +148,12 @@
 #define SUB_TYPE_GRAB                 (1L << 2)                   ///< Grab
 #define SUB_TYPE_GRAVITY              (1L << 3)                   ///< Gravity
 #define SUB_TYPE_HOOK                 (1L << 4)                   ///< Hook
-#define SUB_TYPE_ICON                 (1L << 5)                   ///< Icon
-#define SUB_TYPE_PANEL                (1L << 6)                   ///< Panel
-#define SUB_TYPE_SCREEN               (1L << 7)                   ///< Screen
-#define SUB_TYPE_SUBLET               (1L << 8)                   ///< Sublet
-#define SUB_TYPE_TAG                  (1L << 9)                   ///< Tag
-#define SUB_TYPE_TEXT                 (1L << 10)                  ///< Text
-#define SUB_TYPE_TRAY                 (1L << 11)                  ///< Tray
-#define SUB_TYPE_VIEW                 (1L << 12)                  ///< View
+#define SUB_TYPE_PANEL                (1L << 5)                   ///< Panel
+#define SUB_TYPE_SCREEN               (1L << 6)                   ///< Screen
+#define SUB_TYPE_SUBLET               (1L << 7)                   ///< Sublet
+#define SUB_TYPE_TAG                  (1L << 8)                   ///< Tag
+#define SUB_TYPE_TRAY                 (1L << 9)                   ///< Tray
+#define SUB_TYPE_VIEW                 (1L << 10)                  ///< View
 
 /* Mode flags */
 #define SUB_MODE_FULL                 (1L << 20)                  ///< Fullscreen mode
@@ -206,11 +199,6 @@
 #define SUB_CLIENT_CLOSE              (1L << 15)                  ///< Send close message
 #define SUB_CLIENT_DOCK               (1L << 16)                  ///< Dock window
 #define SUB_CLIENT_DEAD               (1L << 17)                  ///< Dead window
-
-/* Data flags */
-#define SUB_DATA_STRING               (1L << 13)                  ///< String data
-#define SUB_DATA_NUM                  (1L << 14)                  ///< Num data
-#define SUB_DATA_NIL                  (1L << 15)                  ///< Nil data
 
 /* Drag flags */
 #define SUB_DRAG_START                (1L << 1)                   ///< Drag start
@@ -270,7 +258,6 @@
 #define SUB_SUBTLE_EWMH               (1L << 10)                  ///< EWMH set
 #define SUB_SUBTLE_RUN                (1L << 11)                  ///< Run event loop
 #define SUB_SUBTLE_REPLACE            (1L << 12)                  ///< Replace previous wm
-#define SUB_SUBTLE_XFT                (1L << 13)                  ///< Use xft
 
 /* Tag flags */
 #define SUB_TAG_GRAVITY               (1L << 13)                  ///< Gravity property
@@ -306,12 +293,6 @@ typedef struct subclient_t /* {{{ */
   int        gravity, screen;                                     ///< Client informations
   int        *gravities, *screens;                                ///< Client per view
 } SubClient; /* }}} */
-
-typedef union subdata_t /* {{{ */
-{
-  unsigned long num;                                              ///< Data num
-  char          *string;                                          ///< Data string
-} SubData; /* }}} */
 
 typedef enum subewmh_t /* {{{ */
 {
@@ -427,26 +408,6 @@ typedef struct subhook_t /* {{{ */
   void          *data;                                            ///< Hook data
 } SubHook; /* }}} */
 
-typedef struct subicon_t /* {{{ */
-{
-  FLAGS        flags;                                             ///< Icon flags
-
-  Pixmap       pixmap;                                            ///< Icon drawable
-  int          quark;                                             ///< Icon quark
-  unsigned int width, height;                                     ///< Icon geometry
-  GC           gc;                                                ///< Icon GC
-} SubIcon; /* }}} */
-
-typedef struct subtext_t /* {{{ */
-{
-  FLAGS           flags;                                          ///< Text flags
-
-  int             width;                                          ///< Text width
-  unsigned long   color;                                          ///< Text color
-
-  union subdata_t data;                                           ///< Text data
-} SubText; /* }}} */
-
 typedef struct subpanel_t /* {{{ */
 {
   FLAGS             flags;                                        ///< Panel flags
@@ -465,15 +426,15 @@ typedef struct subscreen_t /* {{{ */
 
 typedef struct subsublet_t /* {{{ */
 {
-  FLAGS              flags;                                       ///< Sublet flags
-  Window             win;                                         ///< Sublet window
-  int                x, width, watch;                             ///< Sublet x, width, width
+  FLAGS             flags;                                        ///< Sublet flags
+  Window            win;                                          ///< Sublet window
+  int               x, width, watch;                              ///< Sublet x, width, width
+ 
+  char              *name;                                        ///< Sublet name
+  unsigned long     instance, bg;                                 ///< Sublet ruby instance, background color
+  time_t            time, interval;                               ///< Sublet update/interval time
 
-  char               *name;                                       ///< Sublet name
-  unsigned long      instance, bg;                                ///< Sublet ruby instance, background color
-  time_t             time, interval;                              ///< Sublet update/interval time
-
-  struct subarray_t  *text;                                       ///< Sublet text
+  struct subtext_t  *text;                                        ///< Sublet text
 } SubSublet; /* }}} */
 
 typedef struct subsubtle_t /* {{{ */
@@ -487,11 +448,12 @@ typedef struct subsubtle_t /* {{{ */
 
   XRectangle           strut;                                     ///< Subtle strut
 
+  struct subfont_t     *font;                                     ///< Subtle font
+
   struct subarray_t    *clients;                                  ///< Subtle clients
   struct subarray_t    *grabs;                                    ///< Subtle grabs
   struct subarray_t    *gravities;                                ///< Subtle gravities
   struct subarray_t    *hooks;                                    ///< Subtle hooks
-  struct subarray_t    *icons;                                    ///< Subtle icons
   struct subarray_t    *panels;                                   ///< Subtle panels
   struct subarray_t    *screens;                                  ///< Subtle screens
   struct subarray_t    *sublets;                                  ///< Subtle sublets
@@ -506,17 +468,6 @@ typedef struct subsubtle_t /* {{{ */
 #ifdef HAVE_X11_EXTENSIONS_XRANDR_H
   int                  xrandr;                                    ///< Subtle Xrandr events
 #endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
-
-  struct
-  {
-    int y;
-    XFontSet          xfs;                                        ///< Subtle XFS font
-
-#ifdef HAVE_X11_XFT_XFT_H
-    XftFont           *xft;                                       ///< Subtle XFT font
-    XftDraw           *draw;                                      ///< Subtle XFT draw
-#endif /* HAVE_X11_XFT_XFT_H */
-  } font;
 
   struct
   {
@@ -686,14 +637,6 @@ void subHookRemove(unsigned long proc, void *data);               ///< Remove ho
 void subHookKill(SubHook *h);                                     ///< Kill hook
 /* }}} */
 
-/* icon.c {{{ */
-SubIcon *subIconNew(const char *path);                            ///< Create icon
-void subIconRender(SubIcon *i, Window win,
-  int x, int y, long fg, long bg);                                ///< Render icon
-int subIconFind(const char *path);                                ///< Find icon
-void subIconKill(SubIcon *i);                                     ///< Kill icon
-/* }}} */
-
 /* panel.c {{{ */
 void subPanelUpdate(void);                                        ///< Configure panels
 void subPanelRender(void);                                        ///< Render panels
@@ -736,6 +679,12 @@ void subSubletPublish(void);                                      ///< Publish s
 void subSubletKill(SubSublet *s);                                 ///< Kill sublet
 /* }}} */
 
+/* subtle.c {{{ */
+XPointer * subSubtleFind(Window win, XContext id);                ///< Find window
+time_t subSubtleTime(void);                                       ///< Get current time
+Window subSubtleFocus(int focus);                                 ///< Focus window
+/* }}} */
+
 /* tag.c {{{ */
 SubTag *subTagNew(char *name, char *regex);                       ///< Create tag
 void subTagPublish(void);                                         ///< Publish tags
@@ -763,8 +712,6 @@ void subViewJump(SubView *v, int focus);                          ///< Jump to v
 void subViewPublish(void);                                        ///< Publish views
 void subViewKill(SubView *v);                                     ///< Kill view
 /* }}} */
-
-#include "shared.h" ///< After typedefs and prototypes
 
 #endif /* SUBTLE_H */
 

@@ -12,6 +12,7 @@
 
 #include <getopt.h>
 #include <sys/wait.h>
+#include <sys/time.h>
 #include <signal.h>
 #include "subtle.h"
 
@@ -83,6 +84,85 @@ SubtleVersion(void)
          PKG_NAME, PKG_VERSION, X_PROTOCOL, X_PROTOCOL_REVISION, RUBY_VERSION);
 } /* }}} */
 
+ /** subSubtleFind {{{
+  * @brief Find data with the context manager
+  * @param[in]  win  A #Window
+  * @param[in]  id   Context id
+  * @return Returns found data pointer or \p NULL
+  **/
+
+XPointer *
+subSubtleFind(Window win,
+  XContext id)
+{
+  XPointer *data = NULL;
+
+  return XCNOENT != XFindContext(subtle->dpy, win, id, (XPointer *)&data) ? data : NULL;
+} /* }}} */
+
+ /** subSubtleTime {{{
+  * @brief Get the current time in seconds 
+  * @return Returns time in seconds
+  **/
+
+time_t
+subSubtleTime(void)
+{
+  struct timeval tv;
+
+  gettimeofday(&tv, 0);
+
+  return tv.tv_sec;
+} /* }}} */
+
+ /** subSubtleFocus {{{
+  * @brief Get pointer window and focus it
+  * @param[in]  focus  Focus next client
+  * @return New focus window
+  **/
+
+Window
+subSubtleFocus(int focus)
+{
+  int dummy;
+  Window win;
+  SubClient *c = NULL;
+
+  /* Focus */
+  XQueryPointer(subtle->dpy, ROOT, (Window *)&dummy, &win,
+    &dummy, &dummy, &dummy, &dummy, (unsigned int *)&dummy);
+  
+  /* Find next client */
+  if((c = CLIENT(subSubtleFind(win, CLIENTID)))) 
+    {
+      subClientFocus(c);
+
+      return c->win;
+    }
+  else if(focus)
+    {
+      int i;
+
+      for(i = 0; i < subtle->clients->ndata; i++)
+        {
+          c = CLIENT(subtle->clients->data[i]);
+
+          /* Check screen and visibility */
+          if(c->screen == subtle->sid && VISIBLE(CURVIEW, c))
+            {
+              subClientWarp(c);
+              subClientFocus(c);
+
+              return c->win;
+            }
+        }
+    }
+
+  XSetInputFocus(subtle->dpy, ROOT, RevertToParent, CurrentTime); ///< Fallback
+
+  return ROOT;
+} /* }}} */
+
 /* main {{{ */
 int
 main(int argc,
@@ -123,7 +203,10 @@ main(int argc,
           case 's': subtle->paths.sublets = optarg;      break;
           case 'v': SubtleVersion();                     return 0;
 #ifdef DEBUG          
-          case 'D': subtle->flags |= SUB_SUBTLE_DEBUG;   break;
+          case 'D': 
+            subtle->flags |= SUB_SUBTLE_DEBUG;
+            subSharedDebug();
+            break;
 #else /* DEBUG */
           case 'D':
             printf("Please recompile %s with `debug=yes'\n", PKG_NAME);
@@ -165,7 +248,6 @@ main(int argc,
   subtle->grabs     = subArrayNew();
   subtle->gravities = subArrayNew();
   subtle->hooks     = subArrayNew();
-  subtle->icons     = subArrayNew();
   subtle->panels    = subArrayNew();
   subtle->screens   = subArrayNew();
   subtle->sublets   = subArrayNew();
