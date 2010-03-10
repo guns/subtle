@@ -76,6 +76,12 @@ VALUE subClientToString(VALUE self);                              ///< Client to
 VALUE subClientKill(VALUE self);                                  ///< Kill client
 /* }}} */
 
+/* color.c {{{ */
+VALUE subColorInit(VALUE self, VALUE color);                      ///< Create new color
+VALUE subColorToString(VALUE self);                               ///< Convert to string
+VALUE subColorOperatorPlus(VALUE self, VALUE value);              ///< Concat string
+/* }}} */
+
 /* geometry.c {{{ */
 VALUE subGeometryInstantiate(int x, int y, int width, 
   int height);                                                    ///< Instantiate geometry
@@ -95,6 +101,15 @@ VALUE subGravityGeometry(VALUE self);                             ///< Get geome
 VALUE subGravityToString(VALUE self);                             ///< Gravity to string
 VALUE subGravityToSym(VALUE self);                                ///< Gravity to symbol
 VALUE subGravityKill(VALUE self);                                 ///< Kill gravity
+/* }}} */
+
+/* icon.c {{{ */
+VALUE subIconNew(int argc, VALUE *argv, VALUE self);              ///< Create new icon
+VALUE subIconDraw(VALUE self, VALUE x, VALUE y);                  ///< Draw a pixel
+VALUE subIconClear(VALUE self);                                   ///< Clear icon
+VALUE subIconToString(VALUE self);                                ///< Convert to string
+VALUE subIconOperatorPlus(VALUE self, VALUE value);               ///< Concat string
+VALUE subIconOperatorMult(VALUE self, VALUE value);               ///< Concat string
 /* }}} */
 
 /* screen.c {{{ */
@@ -141,6 +156,7 @@ VALUE subSubtleQuit(VALUE self);                                  ///< Quit subt
 
 /* subtlext.c {{{ */
 void subSubtlextConnect(void);                                    ///< Connect to display
+VALUE subSubtlextConcat(VALUE str1, VALUE str2);                  ///< Concat strings
 VALUE subSubtlextFind(int type, VALUE value, int exception);      ///< Find object
 VALUE subSubtlextKill(VALUE value, int type);                     ///< Kill display
 VALUE subSubtlextTagAdd(VALUE self, VALUE value);                 ///< Add tag to object
@@ -191,6 +207,7 @@ VALUE subViewKill(VALUE self);                                    ///< Kill view
 /* }}} */
 
 /* window.c {{{ */
+VALUE subWindowDispatcher(int argc, VALUE *argv, VALUE self);     ///< Window dispatcher
 VALUE subWindowNew(VALUE self, VALUE options);                    ///< Create window
 VALUE subWindowNameWriter(VALUE self, VALUE value);               ///< Set name
 VALUE subWindowFontWriter(VALUE self, VALUE value);               ///< Set font
@@ -198,6 +215,7 @@ VALUE subWindowBackgroundWriter(VALUE self, VALUE value);         ///< Set backg
 VALUE subWindowBorderColorWriter(VALUE self, VALUE value);        ///< Set border color
 VALUE subWindowBorderSizeWriter(VALUE self, VALUE value);         ///< Set border size
 VALUE subWindowGeometryReader(VALUE self);                        ///< Get geometry
+VALUE subWindowTextWriter(VALUE self, VALUE text, VALUE color);   ///< Add text
 VALUE subWindowShow(VALUE self);                                  ///< Show window
 VALUE subWindowHide(VALUE self);                                  ///< Hide window
 VALUE subWindowKill(VALUE self);                                  ///< Kill window

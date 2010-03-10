@@ -75,6 +75,7 @@ RubyBacktrace(void)
   klass     = rb_class_path(CLASS_OF(lasterr));
   backtrace = rb_funcall(lasterr, rb_intern("backtrace"), 0, NULL);
 
+  /* Print error and backtrace */
   subSharedLogWarn("%s: %s\n", RSTRING_PTR(klass), RSTRING_PTR(message));
   for(i = 0; Qnil != (entry = rb_ary_entry(backtrace, i)); ++i)
     printf("\tfrom %s\n", RSTRING_PTR(entry));
@@ -88,31 +89,6 @@ RubySignal(int signum)
 {
   if(SIGALRM == signum) ///< Catch SIGALRM
     rb_raise(rb_eInterrupt, "Execution time (%ds) expired", EXECTIME);
-} /* }}} */
-
-/* RubyConcat {{{ */
-static VALUE
-RubyConcat(VALUE str1,
-  VALUE str2)
-{
-  VALUE ret = Qnil;
-
-  /* Check value */
-  if(RTEST(str1) && RTEST(str2) && T_STRING == rb_type(str1))
-    {
-      VALUE string = str2;
-      
-      /* Convert argument to string */
-      if(T_STRING != rb_type(str2) && rb_respond_to(str2, rb_intern("to_s")))
-        string = rb_funcall(str2, rb_intern("to_s"), 0, NULL);
-
-      /* Concat strings */
-      if(T_STRING == rb_type(string))
-        ret = rb_str_cat(str1, RSTRING_PTR(string), RSTRING_LEN(string));
-    }
-  else rb_raise(rb_eArgError, "Unknown value type");
-
-  return ret;
 } /* }}} */
 
 /* RubyFilter {{{ */
@@ -148,7 +124,8 @@ RubyConvert(void *data)
           id     = subArrayIndex(subtle->clients, (void *)c);
           klass  = rb_const_get(subtlext, rb_intern("Client"));
           object = rb_funcall(klass, rb_intern("new"), 1, LONG2NUM(c->win));
-          role   = subSharedPropertyGet(LONG2NUM(c->win), XA_STRING, SUB_EWMH_WM_WINDOW_ROLE, NULL);
+          role   = subSharedPropertyGet(subtle->dpy, LONG2NUM(c->win), 
+            XA_STRING, subEwmhGet(SUB_EWMH_WM_WINDOW_ROLE), NULL);
 
           /* Translate flags */
           if(c->flags & SUB_MODE_FULL)  flags |= SUB_EWMH_FULL;
@@ -200,35 +177,6 @@ static int
 RubyArity(VALUE proc)
 {
   return FIX2INT(rb_funcall(proc, rb_intern("arity"), 0, NULL));
-} /* }}} */
-
-/* RubyFontSet {{{ */
-int
-RubyFontSet(const char *name)
-{
-  int n = 0, ret = False;
-  char *def = NULL, **missing = NULL;
-
-  /* Load font set */
-  if(name && (subtle->font.xfs = XCreateFontSet(subtle->dpy, 
-      name, &missing, &n, &def)))
-    {
-      XFontStruct **xfonts = NULL;
-      char **names = NULL;
-
-      XFontsOfFontSet(subtle->font.xfs, &xfonts, &names);
-
-      /* Font metrics */
-      subtle->th     = xfonts[0]->max_bounds.ascent + 
-        xfonts[0]->max_bounds.descent + 2;
-      subtle->font.y = (subtle->th - 2 + xfonts[0]->max_bounds.ascent) / 2;
-
-      ret = True;
-    }
-
-  if(missing) XFreeStringList(missing); ///< Ignore this
-
-  return ret;
 } /* }}} */
 
 /* Fetch */
@@ -339,23 +287,6 @@ RubyGetGeometry(VALUE hash,
     ret = RubyFetchGeometry(ary, geometry);
 
   return ret;
-} /* }}} */
-
-/* RubyGetIcon {{{ */
-static SubIcon *
-RubyGetIcon(VALUE self)
-{
-  SubIcon *i = NULL;
-  int id = FIX2INT(rb_iv_get(self, "@id"));
-
-  if(0 <= id && id < subtle->icons->ndata)
-    {
-      if((i = ICON(subtle->icons->data[id])) && 0 == i->gc) ///< Create a GC on demand
-        i->gc = XCreateGC(subtle->dpy, i->pixmap, 0, NULL);
-    }
-  else rb_raise(rb_eArgError, "Unknown value type");
-
-  return i;
 } /* }}} */
 
 /* RubyGetGravity {{{ */
@@ -859,7 +790,7 @@ RubyWrapLoadConfig(VALUE data)
   subGravityPublish();
 
   /* Config: Options */
-  config        = rb_const_get(rb_cObject, rb_intern("OPTIONS"));
+  config = rb_const_get(rb_cObject, rb_intern("OPTIONS"));
   subtle->bw    = RubyGetFixnum(config, "border", 2);
   subtle->step  = RubyGetFixnum(config, "step",   5);
   subtle->snap  = RubyGetFixnum(config, "snap",   10);
@@ -870,83 +801,42 @@ RubyWrapLoadConfig(VALUE data)
   if(True == RubyGetBool(config, "resize")) subtle->flags |= SUB_SUBTLE_RESIZE;
 
   /* Config: Font */
-#ifdef HAVE_X11_XFT_XFT_H
-  if((str = RubyGetString(config, "xftfont", NULL)))
-    {
-      /* Load xft font */
-      if(!(subtle->font.xft = XftFontOpenName(subtle->dpy,
-          DefaultScreen(subtle->dpy), str)))
-        {
-          subtle->font.xft = XftFontOpenXlfd(subtle->dpy,
-            DefaultScreen(subtle->dpy), str);
-        }
-
-      if(subtle->font.xft)
-        {
-          subtle->flags |= SUB_SUBTLE_XFT;
-
-          /* Create draw */
-          if(!subtle->font.draw)
-            subtle->font.draw = XftDrawCreate(subtle->dpy, ROOT, 
-              VISUAL, COLORMAP);
-
-          /* Font metrics */
-          subtle->th     = subtle->font.xft->ascent + 
-            subtle->font.xft->descent + 2;
-          subtle->font.y = (subtle->th - 2 + subtle->font.xft->ascent) / 2;
-        }
-    }
-  else
-#endif /* HAVE_X11_XFT_XFT_H */
-    {
-      str = RubyGetString(config, "font", NULL);
-
-      if(!RubyFontSet(str))
-        {
-          subSharedLogWarn("Failed loading font `%s'", str);
-
-          if(!RubyFontSet(FONT))
-            {
-              subSharedLogError("Failed loading fallback font `%s`\n", FONT);
-              subEventFinish();
-
-              return Qfalse;
-            }
-        }
-    }
+  str = RubyGetString(config, "font", NULL);
+  if(!(subtle->font = subSharedFontNew(subtle->dpy, str))) subEventFinish();
+  subtle->th = subtle->font->height;
 
   /* Config: Colors */
-  config                    = rb_const_get(rb_cObject, rb_intern("COLORS"));
-  subtle->colors.fg_panel   = subSharedParseColor(
+  config = rb_const_get(rb_cObject, rb_intern("COLORS"));
+  subtle->colors.fg_panel   = subSharedParseColor(subtle->dpy,
     RubyGetString(config, "fg_panel",      "#757575"));
-  subtle->colors.fg_views   = subSharedParseColor(
+  subtle->colors.fg_views   = subSharedParseColor(subtle->dpy,
     RubyGetString(config, "fg_views",      "#757575"));
-  subtle->colors.fg_sublets = subSharedParseColor(
+  subtle->colors.fg_sublets = subSharedParseColor(subtle->dpy,
     RubyGetString(config, "fg_sublets",    "#757575"));
-  subtle->colors.fg_focus   = subSharedParseColor(
+  subtle->colors.fg_focus   = subSharedParseColor(subtle->dpy,
     RubyGetString(config, "fg_focus",      "#fecf35"));
-  subtle->colors.fg_urgent  = subSharedParseColor(
+  subtle->colors.fg_urgent  = subSharedParseColor(subtle->dpy,
     RubyGetString(config, "fg_urgent",     "#FF9800"));
-  subtle->colors.bg_panel   = subSharedParseColor(
+  subtle->colors.bg_panel   = subSharedParseColor(subtle->dpy,
     RubyGetString(config, "bg_panel",      "#202020"));
-  subtle->colors.bg_views   = subSharedParseColor(
+  subtle->colors.bg_views   = subSharedParseColor(subtle->dpy,
     RubyGetString(config, "bg_views",      "#202020"));
-  subtle->colors.bg_sublets = subSharedParseColor(
+  subtle->colors.bg_sublets = subSharedParseColor(subtle->dpy,
     RubyGetString(config, "bg_sublets",    "#202020"));
-  subtle->colors.bg_focus   = subSharedParseColor(
+  subtle->colors.bg_focus   = subSharedParseColor(subtle->dpy,
     RubyGetString(config, "bg_focus",      "#202020"));
-  subtle->colors.bg_urgent  = subSharedParseColor(
+  subtle->colors.bg_urgent  = subSharedParseColor(subtle->dpy,
     RubyGetString(config, "bg_urgent",     "#202020"));
-  subtle->colors.bo_focus   = subSharedParseColor(
+  subtle->colors.bo_focus   = subSharedParseColor(subtle->dpy,
     RubyGetString(config, "border_focus",  "#303030"));
-  subtle->colors.bo_normal  = subSharedParseColor(
+  subtle->colors.bo_normal  = subSharedParseColor(subtle->dpy,
     RubyGetString(config, "border_normal", "#202020"));
 
   /* Root background */
   if((str = RubyGetString(config, "background", NULL)))
     {
       subtle->flags     |= SUB_SUBTLE_BACKGROUND;
-      subtle->colors.bg  = subSharedParseColor(str);
+      subtle->colors.bg  = subSharedParseColor(subtle->dpy, str);
     }
 
   /* Config: Grabs */
@@ -1096,8 +986,9 @@ RubyWrapLoadPanels(VALUE data)
   /* Separator */
   if(subtle->separator.string) free(subtle->separator.string);
   subtle->separator.string = strdup(RubyGetString(config, "separator", "|"));
-  subtle->separator.width  = subSharedTextWidth(subtle->separator.string, 
-    strlen(subtle->separator.string), NULL, NULL, True) + 6; ///< Add spacings
+  subtle->separator.width  = subSharedTextWidth(subtle->font, 
+    subtle->separator.string, strlen(subtle->separator.string),
+    NULL, NULL, True) + 6; ///< Add spacings
 
   /* Add remaining sublets if any */
   if(0 < subtle->sublets->ndata)
@@ -1227,258 +1118,6 @@ RubyWrapRelease(VALUE value)
     rb_funcall(shelter, rb_intern("delete"), 1, value);
 
   return Qnil;
-} /* }}} */
-
-/* Color */
-
-/* RubyColorInit {{{ */
-/*
- * call-seq: new(color) -> Subtle::Color
- *
- * Create new Color object
- *
- *  tag = Subtle::Color.new("#336699")
- *  => #<Subtle::Color:xxx>
- */
-
-static VALUE
-RubyColorInit(VALUE self,
-  VALUE color)
-{
-  /* Check arguments */ 
-  if(RTEST(color) && T_STRING == rb_type(color))
-    {
-      unsigned long pixel = subSharedParseColor(RSTRING_PTR(color));
-
-      rb_iv_set(self, "@pixel", INT2FIX(pixel));
-    }
-  else
-    {
-      rb_raise(rb_eArgError, "Unknown value type");
-      return Qnil;
-    }
-
-  return self;
-} /* }}} */
-
-/* RubyColorToString {{{ */
-/*
- * call-seq: to_str -> String
- *
- * Convert Color object to String
- *
- *  puts color
- *  => "<>123456789<>" 
- */
-
-static VALUE
-RubyColorToString(VALUE self)
-{
-  char buf[20];
-  VALUE pixel = rb_iv_get(self, "@pixel");
-
-  snprintf(buf, sizeof(buf), "%s#%ld%s",
-    SEPARATOR, NUM2LONG(pixel), SEPARATOR);
-
-  return rb_str_new2(buf);
-} /* }}} */
-
-/* RubyColorOperatorPlus {{{ */
-/*
- * call-seq: +(string) -> String
- *
- * Convert self to String and add String
- *
- *  color + "subtle"
- *  => "<>123456789<>subtle"
- */
-
-static VALUE
-RubyColorOperatorPlus(VALUE self,
-  VALUE value)
-{
-  return RubyConcat(RubyColorToString(self), value);
-} /* }}} */
-
-/* Icon */
-
-/* RubyIconInit {{{ */
-/*
- * call-seq: new(path)          -> Subtle::Icon
- *           new(width, height) -> Subtle::Icon
- *
- * Create new Icon object
- *
- *  icon = Subtle::Icon.new("/path/to/icon")
- *  => #<Subtle::Icon:xxx>
- *
- *  icon = Subtle::Icon.new(8, 8)
- *  => #<Subtle::Icon:xxx>
- */
-
-static VALUE
-RubyIconInit(int argc,
-  VALUE *argv,
-  VALUE self)
-{
-  int id = -1;
-  SubIcon *i = NULL;
-  VALUE arg1 = Qnil, arg2 = Qnil;
-
-  rb_scan_args(argc, argv, "02", &arg1, &arg2);
-
-  /* Find or create icon */
-  if(T_STRING == rb_type(arg1)) ///< Icon path
-    {
-      /* Find or create icon */
-      if(-1 == (id = subIconFind(RSTRING_PTR(arg1))))
-        {
-          char buf[100] = { 0 }, *file = RSTRING_PTR(arg1);
-
-          /* Find file */
-          if(-1 != access(file, R_OK))
-            snprintf(buf, sizeof(buf), "%s", file);
-          else
-            {
-              char fallback[256] = { 0 }, *data = getenv("XDG_DATA_HOME");
-
-              /* Combine paths */
-              snprintf(fallback, sizeof(fallback), "%s/.local/share", getenv("HOME"));
-              snprintf(buf, sizeof(buf), "%s/subtle/icons/%s", data ? data : fallback, file);
-
-              if(-1 == access(buf, R_OK))
-                rb_raise(rb_eStandardError, "Icon not found `%s'", file);
-            }
-
-          i = subIconNew(buf);
-        }
-      else i = ICON(subArrayGet(subtle->icons, id));
-    }
-  else if(FIXNUM_P(arg1) && FIXNUM_P(arg2)) ///< Icon dimensions
-    {
-      /* Create empty pixmap */
-      i = ICON(subSharedMemoryAlloc(1, sizeof(SubIcon)));
-      i->flags  = SUB_TYPE_ICON;
-      i->width  = FIX2INT(arg1);
-      i->height = FIX2INT(arg2);
-      i->pixmap = XCreatePixmap(subtle->dpy, ROOT, i->width, i->height, 1);
-    }
-
-  /* Set icon properties */
-  if(i)
-    {
-      if(-1 == id) 
-        { 
-          id = subtle->icons->ndata; ///< Latest icon
-          subArrayPush(subtle->icons, (void *)i);
-        }
-
-      rb_iv_set(self, "@id",     INT2FIX(id));
-      rb_iv_set(self, "@width",  INT2FIX(i->width));
-      rb_iv_set(self, "@height", INT2FIX(i->height));
-    }
-  else rb_raise(rb_eArgError, "Unknown value types");
-
-  return self;
-} /* }}} */
-
-/* RubyIconDraw {{{ */
-/*
- * call-seq: draw(x, y) -> nil
- *
- * Draw a pixel on the icon
- *
- *  icon.draw(1, 1)
- *  => nil
- */
-
-static VALUE
-RubyIconDraw(VALUE self,
-  VALUE x,
-  VALUE y)
-{
-  if(T_FIXNUM == rb_type(x) && T_FIXNUM == rb_type(y))
-    {
-      XGCValues gvals;
-      SubIcon *i = RubyGetIcon(self);
-
-      /* Update GC */
-      gvals.foreground = 1;
-      gvals.background = 0;
-      XChangeGC(subtle->dpy, i->gc, GCForeground|GCBackground, &gvals);
-
-      XDrawPoint(subtle->dpy, i->pixmap, i->gc, FIX2INT(x), FIX2INT(y));
-    }
-  else rb_raise(rb_eArgError, "Unknown value types");
-
-  return Qnil;
-} /* }}} */
-
-/* RubyIconClear {{{ */
-/*
- * call-seq: clear -> nil
- *
- * Clear the icon
- *
- *  icon.clear
- *  => nil
- */
-
-static VALUE
-RubyIconClear(VALUE self,
-  VALUE x,
-  VALUE y)
-{
-  XGCValues gvals;
-  SubIcon *i = RubyGetIcon(self);
-
-  /* Update GC */
-  gvals.foreground = 0;
-  gvals.background = 1;
-  XChangeGC(subtle->dpy, i->gc, GCForeground|GCBackground, &gvals);
-
-  XFillRectangle(subtle->dpy, i->pixmap, i->gc, 0, 0, i->width, i->height);
-
-  return Qnil;
-} /* }}} */
-
-/* RubyIconToString {{{ */
-/*
- * call-seq: to_str -> String
- *
- * Convert Icon object to String
- *
- *  puts icon
- *  => "<>!4<>" 
- */
-
-static VALUE
-RubyIconToString(VALUE self)
-{
-  char buf[12];
-  int id = FIX2INT(rb_iv_get(self, "@id"));
-
-  snprintf(buf, sizeof(buf), "%s!%d%s",
-    SEPARATOR, id, SEPARATOR);
-
-  return rb_str_new2(buf);
-} /* }}} */
-
-/* RubyIconOperatorPlus {{{ */
-/*
-* call-seq: +(string) -> String
-*
-* Convert self to String and add String
-*
-*  icon + "subtle"
-*  => "<>!4<>subtle"
-*/
-
-static VALUE
-RubyIconOperatorPlus(VALUE self,
-VALUE value)
-{
-  return RubyConcat(RubyIconToString(self), value);
 } /* }}} */
 
 /* Kernel */
@@ -1819,7 +1458,7 @@ RubySubletIntervalWriter(VALUE self,
   if(s && FIXNUM_P(value))
     {
       s->interval = FIX2INT(value); 
-      s->time     = subSharedTime() + s->interval;
+      s->time     = subSubtleTime() + s->interval;
 
       if(0 < s->interval) s->flags |= SUB_SUBLET_INTERVAL;
       else s->flags &= ~SUB_SUBLET_INTERVAL;
@@ -1848,15 +1487,15 @@ RubySubletDataReader(VALUE self)
   Data_Get_Struct(self, SubSublet, s);
   
   /* Concat string */
-  if(s && 0 < s->text->ndata) 
+  if(s && 0 < s->text->nitems) 
     {
       /* Assemble string */
-      for(i = 0; i < s->text->ndata; i++)
+      for(i = 0; i < s->text->nitems; i++)
         {
-          SubText *t = TEXT(s->text->data[i]);
+          SubTextItem *item = (SubTextItem *)s->text->items[i];
 
-          if(Qnil == string) rb_str_new2(t->data.string);
-          else rb_str_cat(string, t->data.string, strlen(t->data.string));
+          if(Qnil == string) rb_str_new2(item->data.string);
+          else rb_str_cat(string, item->data.string, strlen(item->data.string));
         }
     }
 
@@ -1918,7 +1557,7 @@ RubySubletBackgroundWriter(VALUE self,
       switch(rb_type(value))
         {
           case T_STRING: 
-            s->bg = subSharedParseColor(RSTRING_PTR(value)); 
+            s->bg = subSharedParseColor(subtle->dpy, RSTRING_PTR(value)); 
             break;
           case T_OBJECT:
               {
@@ -2147,7 +1786,7 @@ RubySubletUnwatch(VALUE self)
 void
 subRubyInit(void)
 {
-  VALUE mod = Qnil, sublet = Qnil, icon = Qnil, color = Qnil;
+  VALUE mod = Qnil, sublet = Qnil;
 
   void Init_prelude(void);
 
@@ -2207,46 +1846,6 @@ subRubyInit(void)
   rb_define_method(sublet, "hidden?",        RubySubletHidden,            0);
   rb_define_method(sublet, "watch",          RubySubletWatch,             1);
   rb_define_method(sublet, "unwatch",        RubySubletUnwatch,           0);
-
-  /*
-   * Document-class: Subtle::Icon
-   *
-   * Icon class for interaction with icons
-   */
-
-  icon = rb_define_class_under(mod, "Icon", rb_cObject);
-
-  /* Icon id */
-  rb_define_attr(icon, "id", 1, 0);
-
-  /* Icon width */
-  rb_define_attr(icon, "width", 1, 0);
-
-  /* Icon height */
-  rb_define_attr(icon, "height", 1, 0);
-
-  rb_define_method(icon, "initialize", RubyIconInit,         -1);
-  rb_define_method(icon, "draw",       RubyIconDraw,          2);
-  rb_define_method(icon, "clear",      RubyIconClear,         0);
-  rb_define_method(icon, "to_str",     RubyIconToString,      0);
-  rb_define_method(icon, "+",          RubyIconOperatorPlus,  1);
-  rb_define_alias(icon, "to_s", "to_str");
-
-  /*
-   * Document-class: Subtle::Color
-   *
-   * Color class for interaction with colors
-   */
-
-  color = rb_define_class_under(mod, "Color", rb_cObject);
-
-  /* Pixel number */
-  rb_define_attr(color, "pixel", 1, 0);
-
-  rb_define_method(color, "initialize", RubyColorInit,         1);
-  rb_define_method(color, "to_str",     RubyColorToString,     0);
-  rb_define_method(color, "+",          RubyColorOperatorPlus, 1);
-  rb_define_alias(color, "to_s", "to_str");
 
   /* Bypassing garbage collection */
   shelter = rb_ary_new();
@@ -2332,19 +1931,11 @@ subRubyReloadConfig(void)
     }
 
   /* Unload fonts */
-  if(subtle->font.xfs)
+  if(subtle->font)
     {
-      XFreeFontSet(subtle->dpy, subtle->font.xfs);
-      subtle->font.xfs = NULL;
+      subSharedFontKill(subtle->dpy, subtle->font);
+      subtle->font = NULL;
     }
-
-#ifdef HAVE_X11_XFT_XFT_H
-  if(subtle->font.xft)
-    {
-      XftFontClose(subtle->dpy, subtle->font.xft);
-      subtle->font.xft = NULL;
-    }
-#endif /* HAVE_X11_XFT_XFT_H */
 
   /* Clear arrays */
   subArrayClear(subtle->hooks,     True); ///< Must be first

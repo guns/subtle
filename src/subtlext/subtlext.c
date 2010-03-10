@@ -19,10 +19,6 @@ static const char *klasses[] = {
   "Client", "Gravity", "View", "Tag", "Tray", "Screen", "Sublet" 
 };
 
-#ifdef DEBUG
-int debug = 0;
-#endif /* DEBUG */
-
 /* SubtlextTag {{{ */
 VALUE
 SubtlextTag(VALUE self,
@@ -103,6 +99,31 @@ subSubtlextConnect(void)
 
       subSharedLogDebug("Connection opened (%s)\n", DisplayString(display));
     }
+} /* }}} */
+
+/* subSubtlextConcat {{{ */
+VALUE
+subSubtlextConcat(VALUE str1,
+  VALUE str2)
+{
+  VALUE ret = Qnil;
+
+  /* Check value */
+  if(RTEST(str1) && RTEST(str2) && T_STRING == rb_type(str1))
+    {
+      VALUE string = str2;
+      
+      /* Convert argument to string */
+      if(T_STRING != rb_type(str2) && rb_respond_to(str2, rb_intern("to_s")))
+        string = rb_funcall(str2, rb_intern("to_s"), 0, NULL);
+
+      /* Concat strings */
+      if(T_STRING == rb_type(string))
+        ret = rb_str_cat(str1, RSTRING_PTR(string), RSTRING_LEN(string));
+    }
+  else rb_raise(rb_eArgError, "Unknown value type");
+
+  return ret;
 } /* }}} */
 
 /* subSubtlextFind {{{ */
@@ -414,9 +435,10 @@ subSubtlextTagList(VALUE self)
     
       method = rb_intern("new");
       klass  = rb_const_get(mod, rb_intern("Tag"));
-      flags  = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, 
-        "SUBTLE_WINDOW_TAGS", NULL);
-      tags   = subSharedPropertyStrings(DefaultRootWindow(display), "SUBTLE_TAG_LIST", &size);
+      flags  = (unsigned long *)subSharedPropertyGet(display, win, XA_CARDINAL, 
+        XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
+      tags   = subSharedPropertyStrings(display, DefaultRootWindow(display), 
+        XInternAtom(display, "SUBTLE_TAG_LIST", False), &size);
 
       /* Build tag array */
       for(i = 0; i < size; i++)
@@ -461,18 +483,19 @@ subSubtlextTagAssoc(VALUE self,
         break;
       case SUB_TYPE_VIEW:
         klass = rb_const_get(mod, rb_intern("View"));
-        names = subSharedPropertyStrings(DefaultRootWindow(display), 
-          "_NET_DESKTOP_NAMES", &size);
-        wins  = (Window *)subSharedPropertyGet(DefaultRootWindow(display), 
-          XA_WINDOW, "_NET_VIRTUAL_ROOTS", NULL);
+        names = subSharedPropertyStrings(display, DefaultRootWindow(display), 
+          XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size);
+        wins  = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display), 
+          XA_WINDOW, XInternAtom(display, "_NET_VIRTUAL_ROOTS", False), NULL);
         break;
     }
 
   /* Populate array */
   for(i = 0; i < size; i++)
     {
-      unsigned long *flags = (unsigned long *)subSharedPropertyGet(wins[i], XA_CARDINAL, 
-        "SUBTLE_WINDOW_TAGS", NULL);
+      unsigned long *flags = (unsigned long *)subSharedPropertyGet(display, 
+        wins[i], XA_CARDINAL, 
+        XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
 
       if((int)*flags & (1L << (id + 1))) ///< Check if tag id matches
         {
@@ -521,8 +544,8 @@ subSubtlextTagAsk(VALUE self,
       win = NUM2LONG(rb_iv_get(self, "@win"));
       id  = FIX2INT(rb_iv_get(tag, "@id"));
 
-      if((tags = (unsigned long *)subSharedPropertyGet(win, XA_CARDINAL, 
-          "SUBTLE_WINDOW_TAGS", NULL)))
+      if((tags = (unsigned long *)subSharedPropertyGet(display, win, XA_CARDINAL, 
+          XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL)))
         {
           if(*tags & (1L << (id + 1)))
             ret = Qtrue;
@@ -563,8 +586,8 @@ subSubtlextFocusAsk(VALUE self)
 
   /* Fetch data */
   win   = rb_iv_get(self, "@win");
-  focus = (unsigned long *)subSharedPropertyGet(DefaultRootWindow(display),
-    XA_WINDOW, "_NET_ACTIVE_WINDOW", NULL);
+  focus = (unsigned long *)subSharedPropertyGet(display, DefaultRootWindow(display),
+    XA_WINDOW, XInternAtom(display, "_NET_ACTIVE_WINDOW", False), NULL);
 
   /* Check if win has focus */
   if(RTEST(win) && focus)
@@ -585,9 +608,9 @@ subSubtlextFocusAsk(VALUE self)
 void
 Init_subtlext(void)
 {
-  VALUE client = Qnil, geometry = Qnil, gravity = Qnil, screen = Qnil;
-  VALUE subtle = Qnil, sublet = Qnil, tag = Qnil, tray = Qnil, view = Qnil;
-  VALUE window = Qnil;
+  VALUE client = Qnil, color = Qnil, geometry = Qnil, gravity = Qnil;
+  VALUE icon = Qnil, screen = Qnil, subtle = Qnil, sublet = Qnil;
+  VALUE tag = Qnil, tray = Qnil, view = Qnil, window = Qnil;
 
   /*
    * Document-class: Subtlext
@@ -673,6 +696,23 @@ Init_subtlext(void)
   rb_define_alias(client, "to_s", "to_str");
 
   /*
+   * Document-class: Subtlext::Color
+   *
+   * Color class for interaction with colors
+   */
+
+  color = rb_define_class_under(mod, "Color", rb_cObject);
+
+  /* Pixel number */
+  rb_define_attr(color, "pixel", 1, 0);
+
+  rb_define_method(color, "initialize", subColorInit,         1);
+  rb_define_method(color, "to_str",     subColorToString,     0);
+  rb_define_method(color, "+",          subColorOperatorPlus, 1);
+
+  rb_define_alias(color, "to_s", "to_str");
+
+  /*
    * Document-class: Subtlext::Geometry
    *
    * Class for various sizes
@@ -730,6 +770,30 @@ Init_subtlext(void)
 
   rb_define_alias(gravity, "save", "update");
   rb_define_alias(gravity, "to_s", "to_str");
+
+  /*
+   * Document-class: Subtlext::Icon
+   *
+   * Icon class for interaction with icons
+   */
+
+  icon = rb_define_class_under(mod, "Icon", rb_cObject);
+
+  /* Icon width */
+  rb_define_attr(icon, "width", 1, 0);
+
+  /* Icon height */
+  rb_define_attr(icon, "height", 1, 0);
+
+  rb_define_singleton_method(icon, "new", subIconNew, -1);
+
+  rb_define_method(icon, "draw",   subIconDraw,         2);
+  rb_define_method(icon, "clear",  subIconClear,        0);
+  rb_define_method(icon, "to_str", subIconToString,     0);
+  rb_define_method(icon, "+",      subIconOperatorPlus, 1);
+  rb_define_method(icon, "*",      subIconOperatorMult, 1);
+
+  rb_define_alias(icon, "to_s", "to_str");
 
   /*
    * Document-class: Subtlext::Screen
@@ -948,16 +1012,18 @@ Init_subtlext(void)
 
   rb_define_singleton_method(window, "new", subWindowNew, 1);
 
-  rb_define_method(window, "name=",          subWindowNameWriter,        1);
-  rb_define_method(window, "font=",          subWindowFontWriter,        1);
-  rb_define_method(window, "background=",    subWindowBackgroundWriter,  1);
-  rb_define_method(window, "border_color=",  subWindowBorderColorWriter, 1);
-  rb_define_method(window, "border_size=",   subWindowBorderSizeWriter,  1);
-  rb_define_method(window, "geometry",       subWindowGeometryReader,    0);
-  rb_define_method(window, "show",           subWindowShow,              0);
-  rb_define_method(window, "hide",           subWindowHide,              0);
-  rb_define_method(window, "kill",           subWindowKill,              0);
+  rb_define_method(window, "name=",         subWindowNameWriter,        1);
+  rb_define_method(window, "font=",         subWindowFontWriter,        1);
+  rb_define_method(window, "background=",   subWindowBackgroundWriter,  1);
+  rb_define_method(window, "border_color=", subWindowBorderColorWriter, 1);
+  rb_define_method(window, "border_size=",  subWindowBorderSizeWriter,  1);
+  rb_define_method(window, "text",          subWindowTextWriter,        2);
+  rb_define_method(window, "geometry",      subWindowGeometryReader,    0);
+  rb_define_method(window, "show",          subWindowShow,              0);
+  rb_define_method(window, "hide",          subWindowHide,              0);
+  rb_define_method(window, "kill",          subWindowKill,              0);
 
+  rb_define_alias(rb_singleton_class(window), "configure", "new");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
