@@ -30,7 +30,7 @@ subViewNew(char *name,
   v = VIEW(subSharedMemoryAlloc(1, sizeof(SubView)));
   v->flags = SUB_TYPE_VIEW;
   v->name  = strdup(name);
-  v->width = subSharedTextWidth(v->name, strlen(v->name), NULL, 
+  v->width = subSharedTextWidth(subtle->font, v->name, strlen(v->name), NULL, 
     NULL, True) + 6; ///< Font offset
 
   /* Create button */
@@ -173,7 +173,8 @@ subViewRender(void)
               bg = subtle->colors.bg_views;
             }
 
-          subSharedTextDraw(v->button, 3, subtle->font.y, fg, bg, v->name);
+          subSharedTextDraw(subtle->dpy, subtle->gcs.font, subtle->font,
+            v->button, 3, subtle->font->y, fg, bg, v->name);
         }
     }
 } /* }}} */
@@ -199,7 +200,7 @@ subViewJump(SubView *v,
 
   subViewConfigure(v, False);
 
-  subSharedFocus(focus);
+  subSubtleFocus(focus);
   subViewRender();
 
   /* Hook: Jump */

@@ -126,12 +126,12 @@ subDisplayInit(const char *display)
   XChangeWindowAttributes(subtle->dpy, subtle->windows.support, 
     CWEventMask|CWOverrideRedirect, &sattrs);
 
-  /* Claim display */
+  /* Claim and setup display */
   if(!DisplayClaim()) subEventFinish();
 
   XSetErrorHandler(subSharedLogXError);
-
   setenv("DISPLAY", DisplayString(subtle->dpy), True); ///< Set display for clients
+  XrmInitialize();
 
   /* Create GCs */
   gvals.function           = GXcopy;
@@ -355,12 +355,8 @@ subDisplayFinish(void)
       if(subtle->gcs.font)    XFreeGC(subtle->dpy, subtle->gcs.font);
       if(subtle->gcs.invert)  XFreeGC(subtle->dpy, subtle->gcs.invert);
 
-      /* Free fonts */
-      if(subtle->font.xfs) XFreeFontSet(subtle->dpy, subtle->font.xfs);
-
-#ifdef HAVE_X11_XFT_XFT_H    
-      if(subtle->font.xft) XftFontClose(subtle->dpy, subtle->font.xft);
-#endif /* HAVE_X11_XFT_XFT_H */
+      /* Free font */
+      if(subtle->font) subSharedFontKill(subtle->dpy, subtle->font);
 
       /* Destroy windows */
       if(subtle->windows.panel1) 

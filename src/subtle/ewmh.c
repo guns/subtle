@@ -189,12 +189,13 @@ subEwmhGetXEmbedState(Window win)
   XEmbedInfo *info = NULL;
 
   /* Get xembed data */
-  if((info = (XEmbedInfo *)subSharedPropertyGet(win, subEwmhGet(SUB_EWMH_XEMBED_INFO), 
-      SUB_EWMH_XEMBED_INFO, NULL))) 
+  if((info = (XEmbedInfo *)subSharedPropertyGet(subtle->dpy, win, 
+      subEwmhGet(SUB_EWMH_XEMBED_INFO), subEwmhGet(SUB_EWMH_XEMBED_INFO), 
+      NULL))) 
     {
       flags = (long)info->flags;
 
-      subSharedLogDebug("XEmbedInfo: win=%#lx, version=%ld, flags=%ld, mapped=%ld\n", 
+      subSharedLogDebug("XEmbedInfo: win=%#lx, version=%ld, flags=%ld, mapped=%ld\n",
         win, info->version, info->flags, info->flags & XEMBED_MAPPED);
       
       XFree(info);
@@ -347,23 +348,23 @@ subEwmhFinish(void)
   if(subtle->flags & SUB_SUBTLE_EWMH) ///< Delete properties only on real shutdown
     {
       /* EWMH properties */
-      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_SUPPORTED);
-      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_SUPPORTING_WM_CHECK);
-      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW);
-      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP);
-      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_DESKTOP_NAMES);
-      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_NUMBER_OF_DESKTOPS);
-      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_DESKTOP_VIEWPORT);
-      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_SHOWING_DESKTOP);
-      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_DESKTOP_GEOMETRY);
-      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_VIRTUAL_ROOTS);
-      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_WORKAREA);
-      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_CLIENT_LIST);
-      subSharedPropertyDelete(ROOT, SUB_EWMH_NET_CLIENT_LIST_STACKING);
+      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_SUPPORTED));
+      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_SUPPORTING_WM_CHECK));
+      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_ACTIVE_WINDOW));
+      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_CURRENT_DESKTOP));
+      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_DESKTOP_NAMES));
+      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_NUMBER_OF_DESKTOPS));
+      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_DESKTOP_VIEWPORT));
+      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_SHOWING_DESKTOP));
+      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_DESKTOP_GEOMETRY));
+      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_VIRTUAL_ROOTS));
+      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_WORKAREA));
+      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_CLIENT_LIST));
+      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_CLIENT_LIST_STACKING));
 
       /* subtle extension */
-      subSharedPropertyDelete(ROOT, SUB_EWMH_SUBTLE_TAG_LIST);
-      subSharedPropertyDelete(ROOT, SUB_EWMH_SUBTLE_SUBLET_LIST);
+      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_TAG_LIST));
+      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_SUBLET_LIST));
     }
 
   subSharedLogDebug("kill=ewmh\n");

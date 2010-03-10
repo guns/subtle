@@ -32,15 +32,15 @@ subTrayNew(Window win)
   t->width = subtle->th; ///< Default width
 
   /* Update tray properties */
-  subSharedPropertyName(win, &t->name, NULL);
+  subSharedPropertyName(subtle->dpy, win, &t->name, NULL);
   subEwmhSetWMState(t->win, WithdrawnState);
   XSelectInput(subtle->dpy, t->win, EVENTMASK);
   XReparentWindow(subtle->dpy, t->win, subtle->windows.tray.win, 0, 0);
   XAddToSaveSet(subtle->dpy, t->win);
   XSaveContext(subtle->dpy, t->win, TRAYID, (void *)t);
 
-  subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime, XEMBED_EMBEDDED_NOTIFY,
-    0, subtle->windows.tray.win, 0); ///< Start embedding life cycle 
+  subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime, 
+    XEMBED_EMBEDDED_NOTIFY, 0, subtle->windows.tray.win, 0); ///< Start embedding life cycle 
 
   subSharedLogDebug("new=tray, name=%s, win=%#lx\n", t->name, win);
 

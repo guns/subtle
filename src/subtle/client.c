@@ -53,7 +53,7 @@ ClientGravity(void)
   /* Default gravity */
   if(0 == subtle->gravity)
     {
-      if((c = CLIENT(subSharedFind(subtle->windows.focus, CLIENTID))))
+      if((c = CLIENT(subSubtleFind(subtle->windows.focus, CLIENTID))))
         grav = c->gravity; ///< Copy gravity
     }
   else grav = subtle->gravity; ///< Set default
@@ -104,8 +104,8 @@ subClientNew(Window win)
     }
 
    /* Fetch name, instance and class */
-  subSharedPropertyClass(c->win, &c->instance, &c->klass);
-  subSharedPropertyName(c->win, &c->name, c->klass);
+  subSharedPropertyClass(subtle->dpy, c->win, &c->instance, &c->klass);
+  subSharedPropertyName(subtle->dpy, c->win, &c->name, c->klass);
  
   /* X related properties */
   sattrs.border_pixel = subtle->colors.bo_normal;
@@ -222,7 +222,8 @@ subClientRender(SubClient *c)
         subtle->colors.bo_focus : subtle->colors.bo_normal);
     }
 
-  subSharedTextDraw(subtle->windows.title.win, 3, subtle->font.y, fg, bg, buf);
+  subSharedTextDraw(subtle->dpy, subtle->gcs.font, subtle->font,
+    subtle->windows.title.win, 3, subtle->font->y, fg, bg, buf);
 } /* }}} */
 
  /** subClientCompare {{{
@@ -540,7 +541,8 @@ subClientSetTags(SubClient *c)
   c->tags = 0; ///< Reset tags
 
   /* Get window role */
-  role = subSharedPropertyGet(c->win, XA_STRING, SUB_EWMH_WM_WINDOW_ROLE, NULL);
+  role = subSharedPropertyGet(subtle->dpy, c->win, XA_STRING, 
+    subEwmhGet(SUB_EWMH_WM_WINDOW_ROLE), NULL);
 
   /* Check matching tags */
   for(i = 0; (c->name || c->klass) && i < subtle->tags->ndata; i++)
@@ -728,8 +730,8 @@ subClientSetStrut(SubClient *c)
   assert(c);
 
   /* Get strut property */
-  if((strut = (long *)subSharedPropertyGet(c->win, XA_CARDINAL, 
-      SUB_EWMH_NET_WM_STRUT, &size)))
+  if((strut = (long *)subSharedPropertyGet(subtle->dpy, c->win, XA_CARDINAL, 
+      subEwmhGet(SUB_EWMH_NET_WM_STRUT), &size)))
     {
       if(4 * sizeof(long) == size) ///< Only complete struts
         {
@@ -766,7 +768,7 @@ subClientSetName(SubClient *c)
   len = strlen(c->name) + (c->flags & (SUB_MODE_STICK|SUB_MODE_FLOAT) ? 1 : 0);
 
   /* Update panel width */
-  subtle->windows.title.width = subSharedTextWidth(c->name, 
+  subtle->windows.title.width = subSharedTextWidth(subtle->font, c->name, 
     50 >= len ? len : 50, NULL, NULL, True) + 6;
   XResizeWindow(subtle->dpy, subtle->windows.title.win, 
     subtle->windows.title.width, subtle->th);
@@ -943,8 +945,8 @@ subClientSetState(SubClient *c,
   assert(c);
 
   /* Window state */
-  if((states = (Atom *)subSharedPropertyGet(c->win, XA_ATOM, 
-      SUB_EWMH_NET_WM_STATE, &size)))
+  if((states = (Atom *)subSharedPropertyGet(subtle->dpy, c->win, XA_ATOM, 
+      subEwmhGet(SUB_EWMH_NET_WM_STATE), &size)))
     {
       for(i = 0; i < size / sizeof(Atom); i++)
         {
@@ -984,7 +986,7 @@ subClientSetTransient(SubClient *c,
       *flags |= subtle->flags & SUB_SUBTLE_URGENT ?
         SUB_MODE_FLOAT|SUB_MODE_URGENT : SUB_MODE_FLOAT;
 
-      if((k = CLIENT(subSharedFind(trans, CLIENTID))))
+      if((k = CLIENT(subSubtleFind(trans, CLIENTID))))
         {
           /* Copy stick flag, tags and screens */
           c->flags  |= (k->flags & SUB_MODE_STICK);
@@ -1014,8 +1016,8 @@ subClientSetType(SubClient *c,
   assert(c);
 
   /* Window type */
-  if((types = (Atom *)subSharedPropertyGet(c->win, XA_ATOM, 
-      SUB_EWMH_NET_WM_WINDOW_TYPE, &size)))
+  if((types = (Atom *)subSharedPropertyGet(subtle->dpy, c->win, XA_ATOM, 
+      subEwmhGet(SUB_EWMH_NET_WM_WINDOW_TYPE), &size)))
     {
       for(i = 0; i < size / sizeof(Atom); i++)
         {
@@ -1190,7 +1192,7 @@ subClientKill(SubClient *c,
   XDeleteContext(subtle->dpy, c->win, CLIENTID);
   XUnmapWindow(subtle->dpy, c->win);
 
-  subSharedFocus(True);
+  subSubtleFocus(True);
 
   /* Destroy window */
   if(destroy && !(c->flags & SUB_CLIENT_DEAD))

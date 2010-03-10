@@ -112,15 +112,17 @@ subPanelRender(void)
       if(p->flags & SUB_PANEL_HIDDEN) continue;
       if(p->flags & SUB_PANEL_BOTTOM) panel = subtle->windows.panel2;
       if(p->flags & SUB_PANEL_SEPARATOR1) ///< Draw separator before panel 
-        subSharedTextDraw(panel, p->x - subtle->separator.width + 3, subtle->font.y, 
+        subSharedTextDraw(subtle->dpy, subtle->gcs.font, subtle->font,
+        panel, p->x - subtle->separator.width + 3, subtle->font->y, 
           subtle->colors.fg_panel, -1, subtle->separator.string);
       if(p->flags & SUB_PANEL_SEPARATOR2) ///< Draw separator after panel 
-        subSharedTextDraw(panel, p->x + p->width + 3, subtle->font.y, 
+        subSharedTextDraw(subtle->dpy, subtle->gcs.font, subtle->font,
+          panel, p->x + p->width + 3, subtle->font->y, 
           subtle->colors.fg_panel, -1, subtle->separator.string);
     }
 
   /* Render panels */
-  if(subtle->windows.focus && (c = CLIENT(subSharedFind(subtle->windows.focus, CLIENTID)))) 
+  if(subtle->windows.focus && (c = CLIENT(subSubtleFind(subtle->windows.focus, CLIENTID)))) 
     subClientRender(c);
 
   subViewRender();
