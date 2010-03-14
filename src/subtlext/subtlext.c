@@ -10,6 +10,7 @@
   * See the file COPYING.
   **/
 
+#include <unistd.h>
 #include "subtlext.h"
 
 Display *display = NULL;
@@ -577,6 +578,61 @@ subSubtlextFocus(VALUE self)
   return Qnil;
 } /* }}} */
 
+/* subSubtlextClick {{{ */
+VALUE 
+subSubtlextClick(int argc,
+  VALUE *argv,
+  VALUE self)
+{
+  VALUE button = Qnil, x = Qnil, y = Qnil;
+
+  rb_scan_args(argc, argv, "03", &button, &x, &y);
+
+  /* Check object type */
+  if(FIXNUM_P(button))
+    {
+      Window win = None, subwin = None;
+      XEvent event = { 0 };
+
+      win = NUM2LONG(rb_iv_get(self, "@win"));
+
+      /* Assemble button event */
+      event.type                  = EnterNotify;
+      event.xcrossing.window      = win;
+      event.xcrossing.root        = DefaultRootWindow(display);
+      event.xcrossing.subwindow   = win;
+      event.xcrossing.same_screen = True;
+      event.xcrossing.x           = FIXNUM_P(x) ? FIX2INT(x) : 5;
+      event.xcrossing.y           = FIXNUM_P(y) ? FIX2INT(y) : 5;
+
+      /* Translate window x/y to root x/y */
+      XTranslateCoordinates(display, event.xcrossing.window, 
+        event.xcrossing.root, event.xcrossing.x, event.xcrossing.y,
+        &event.xcrossing.x_root, &event.xcrossing.y_root, &subwin);
+
+      //XSetInputFocus(display, event.xany.window, RevertToPointerRoot, CurrentTime);
+      XSendEvent(display, win, True, EnterWindowMask, &event);
+
+      /* Send button press event */
+      event.type           = ButtonPress;
+      event.xbutton.button = FIX2INT(button);
+
+      XSendEvent(display, win, True, ButtonPressMask, &event);
+      XFlush(display);
+
+      usleep(12000);
+
+      /* Send button release event */
+      event.type = ButtonRelease;
+
+      XSendEvent(display, win, True, ButtonReleaseMask, &event);
+      XFlush(display);
+    }
+  else rb_raise(rb_eArgError, "Unknown value type");
+
+  return Qnil;
+} /* }}} */
+
 /* subSubtlextFocusAsk {{{ */
 VALUE
 subSubtlextFocusAsk(VALUE self)
@@ -681,6 +737,7 @@ Init_subtlext(void)
   rb_define_method(client, "right",        subClientMatchRight,      0);
   rb_define_method(client, "down",         subClientMatchDown,       0);
   rb_define_method(client, "focus",        subClientFocus,           0);
+  rb_define_method(client, "click",        subClientClick,          -1);
   rb_define_method(client, "has_focus?",   subClientFocusAsk,        0);
   rb_define_method(client, "to_str",       subClientToString,        0);
   rb_define_method(client, "gravity",      subClientGravityReader,   0);
@@ -949,12 +1006,13 @@ Init_subtlext(void)
   rb_define_singleton_method(tray, "[]",   subTrayFind, 1);
   rb_define_singleton_method(tray, "all",  subTrayAll,  0);
 
-  rb_define_method(tray, "initialize", subTrayInit,     1);
-  rb_define_method(tray, "update",     subTrayUpdate,   0);
-  rb_define_method(tray, "focus",      subTrayFocus,    0);
-  rb_define_method(tray, "has_focus?", subTrayFocusAsk, 0);
-  rb_define_method(tray, "to_str",     subTrayToString, 0);
-  rb_define_method(tray, "kill",       subTrayKill,     0);
+  rb_define_method(tray, "initialize", subTrayInit,      1);
+  rb_define_method(tray, "update",     subTrayUpdate,    0);
+  rb_define_method(tray, "focus",      subTrayFocus,     0);
+  rb_define_method(tray, "click",      subTrayClick,    -1);
+  rb_define_method(tray, "has_focus?", subTrayFocusAsk,  0);
+  rb_define_method(tray, "to_str",     subTrayToString,  0);
+  rb_define_method(tray, "kill",       subTrayKill,      0);
 
   rb_define_alias(tray, "to_s", "to_str");
 

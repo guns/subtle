@@ -624,6 +624,24 @@ subClientFocus(VALUE self)
   return subSubtlextFocus(self);
 } /* }}} */
 
+/* subClientClick {{{ */
+/*
+ * call-seq: click(button, x, y) -> nil
+ *
+ * Emulate a click on a Client
+ *
+ *  client.click(2)
+ *  => nil
+ */
+
+VALUE
+subClientClick(int argc,
+  VALUE *argv,
+  VALUE self)
+{
+  return subSubtlextClick(argc, argv, self);
+} /* }}} */
+
 /* subClientFocusAsk {{{ */
 /*
  * call-seq: has_focus? -> true or false

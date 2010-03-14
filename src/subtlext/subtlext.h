@@ -63,6 +63,7 @@ VALUE subClientMatchLeft(VALUE self);                             ///< Get clien
 VALUE subClientMatchRight(VALUE self);                            ///< Get client right
 VALUE subClientMatchDown(VALUE self);                             ///< Get client down
 VALUE subClientFocus(VALUE self);                                 ///< Focus client
+VALUE subClientClick(int argc, VALUE *argv, VALUE self);          ///< Click client
 VALUE subClientFocusAsk(VALUE self);                              ///< Has client focus
 VALUE subClientAliveAsk(VALUE self);                              ///< Is client alive
 VALUE subClientGravityReader(VALUE self);                         ///< Get client gravity
@@ -165,6 +166,7 @@ VALUE subSubtlextTagList(VALUE self);                             ///< List tags
 VALUE subSubtlextTagAssoc(VALUE self, int type);                  ///< Get tags from object
 VALUE subSubtlextTagAsk(VALUE self, VALUE value);                 ///< Has object tag
 VALUE subSubtlextFocus(VALUE self);                               ///< Focus object
+VALUE subSubtlextClick(int argc, VALUE *argv, VALUE self);        ///< Click object
 VALUE subSubtlextFocusAsk(VALUE self);                            ///< Has object focus
 /* }}} */
 
@@ -187,6 +189,7 @@ VALUE subTrayFind(VALUE self, VALUE name);                        ///< Find tray
 VALUE subTrayAll(VALUE self);                                     ///< Get all trays
 VALUE subTrayUpdate(VALUE self);                                  ///< Update tray
 VALUE subTrayFocus(VALUE self);                                   ///< Focus tray
+VALUE subTrayClick(int argc, VALUE *argv, VALUE self);            ///< Click tray
 VALUE subTrayFocusAsk(VALUE self);                                ///< Has tray focus
 VALUE subTrayToString(VALUE self);                                ///< Tray to string
 VALUE subTrayKill(VALUE self);                                    ///< Kill tray

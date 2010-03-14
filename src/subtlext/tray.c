@@ -188,6 +188,24 @@ subTrayFocus(VALUE self)
   return subSubtlextFocus(self);
 } /* }}} */
 
+/* subTrayClick {{{ */
+/*
+ * call-seq: click(button, x, y) -> nil
+ *
+ * Emulate a click on a Tray
+ *
+ *  tray.click(2)
+ *  => nil
+ */
+
+VALUE
+subTrayClick(int argc,
+  VALUE *argv,
+  VALUE self)
+{
+  return subSubtlextClick(argc, argv, self);
+} /* }}} */
+
 /* subTrayFocusAsk {{{ */
 /*
  * call-seq: has_focus? -> true or false
