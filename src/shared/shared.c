@@ -407,6 +407,8 @@ subSharedPropertyDelete(Display *disp,
 
 /* Text */
 
+#ifndef SUBTLER
+
  /** subSharedTextNew {{{
   * @brief Parse text
   * @return New #SubText
@@ -726,30 +728,6 @@ subSharedFontKill(Display *disp,
 
 /* Misc */
 
- /** subSharedSpawn {{{
-  * @brief Spawn a command
-  * @param[in]  cmd  Command string
-  **/
-
-pid_t
-subSharedSpawn(char *cmd)
-{
-  pid_t pid = fork();
-
-  switch(pid)
-    {
-      case 0:
-        setsid();
-        execlp("/bin/sh", "sh", "-c", cmd, NULL);
-
-        subSharedLogWarn("Failed executing command `%s'\n", cmd); ///< Never to be reached
-        exit(1);
-      case -1: subSharedLogWarn("Failed forking `%s'\n", cmd);
-    }
-
-  return pid;
-} /* }}} */
-
  /** subSharedMatch {{{
   * @brief Match a window based on position
   * @param[in]  type       Type of matching
@@ -821,6 +799,32 @@ subSharedParseColor(Display *disp,
     subSharedLogWarn("Failed allocating color `%s'\n", name);
 
   return color.pixel;
+} /* }}} */
+
+#endif /* SUBTLER */
+
+ /** subSharedSpawn {{{
+  * @brief Spawn a command
+  * @param[in]  cmd  Command string
+  **/
+
+pid_t
+subSharedSpawn(char *cmd)
+{
+  pid_t pid = fork();
+
+  switch(pid)
+    {
+      case 0:
+        setsid();
+        execlp("/bin/sh", "sh", "-c", cmd, NULL);
+
+        subSharedLogWarn("Failed executing command `%s'\n", cmd); ///< Never to be reached
+        exit(1);
+      case -1: subSharedLogWarn("Failed forking `%s'\n", cmd);
+    }
+
+  return pid;
 } /* }}} */
 
 #ifndef SUBTLE

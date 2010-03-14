@@ -74,6 +74,7 @@
 /* }}} */
 
 /* Typedefs {{{ */
+#ifndef SUBTLER
 typedef union subdata_t
 {
   unsigned long num;
@@ -106,6 +107,7 @@ typedef struct subicon_t
   unsigned int width, height;
   GC           gc;
 } SubtIcon;
+#endif /* SUBTLER */
 
 #ifndef SUBTLE
 typedef union submessagedata_t {
@@ -161,6 +163,8 @@ void subSharedPropertyDelete(Display *disp, Window win,
   Atom prop);                                                     ///< Delete window property
 /* }}} */
 
+#ifndef SUBTLER
+
 /* Text {{{ */
 SubText *subSharedTextNew(void);                                  ///< Create new text
 int subSharedTextParse(Display *disp, SubFont *f,
@@ -181,13 +185,19 @@ void subSharedFontKill(Display *disp, SubFont *f);                ///< Kill font
 /* }}} */
 
 /* Misc {{{ */
-pid_t subSharedSpawn(char *cmd);                                  ///< Spawn command
-unsigned long subSharedParseColor(Display *disp, char *name);  ///< Parse color
+unsigned long subSharedParseColor(Display *disp, char *name);     ///< Parse color
 int subSharedMatch(int type, XRectangle *geometry1,
   XRectangle *geometry2);                                         ///< Match window
 /* }}} */
 
+#endif /* SUBTLER */
+
+/* Misc {{{ */
+pid_t subSharedSpawn(char *cmd);                                  ///< Spawn command
+/* }}} */
+
 #ifndef SUBTLE
+
 /* Message {{{ */
 int subSharedMessage(Window win, char *type,
   SubMessageData data, int xsync);                                ///< Send client message
@@ -220,6 +230,7 @@ int subSharedViewFind(char *match, char **name,
 /* Subtle {{{ */
 int subSharedSubtleRunning(void);                                 ///< Check if subtle is running
 /* }}} */
+
 #endif /* SUBTLE */
 
 #endif /* SHARED_H */
