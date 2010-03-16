@@ -2083,7 +2083,7 @@ subRubyLoadSublets(void)
     snprintf(buf, sizeof(buf), "%s", subtle->paths.sublets);
   else
     {
-      char *data = getenv("XDG_DATA_HOME"), path[50];
+      char *data = getenv("XDG_DATA_HOME"), path[50] = { 0 };
 
       /* Combine paths */
       snprintf(path, sizeof(path), "%s/.local/share", getenv("HOME"));
