@@ -31,7 +31,6 @@ require("rake/rdoctask")
   "extdir"     => "$(destdir)/$(sitelibdir)/$(PKG_NAME)",
   "mandir"     => "$(destdir)/$(manprefix)/man1",
   "debug"      => "no",
-  "xft"        => "yes",
   "xinerama"   => "yes",
   "builddir"   => "build",
   "hdrdir"     => "",
@@ -244,27 +243,6 @@ task(:config) do
       true
     end
 
-    # Check pkg-config for Xft
-    if("yes" == @options["xft"])
-      checking_for("X11/Xft/Xft.h") do
-        ret  = false
-
-        cflags, ldflags, libs = pkg_config("xft")
-        unless(libs.nil?)
-          # Update flags
-          @options["cpppath"] << " %s" % [cflags]
-          @options["ldflags"] << " %s" % [libs]
-
-          $defs.push("-DHAVE_X11_XFT_XFT_H")
-          ret = true
-        else
-          @options["xft"] = "no"
-        end
-
-        ret
-      end
-    end
-
     # Xinerama
     if("yes" == @options["xinerama"])
       if(have_header("X11/extensions/Xinerama.h"))
@@ -311,7 +289,6 @@ Configuration.......: #{@options["configdir"]}
 Scripts.............: #{@options["scriptdir"]}
 Extension...........: #{@options["extdir"]}
 
-Xft support.........: #{@options["xft"]}
 Xinerama support....: #{@options["xinerama"]}
 Debugging messages..: #{@options["debug"]}
 
@@ -388,7 +365,6 @@ sysconfdir=PATH    Set config directory (current: #{@options["sysconfdir"]})
 datadir=PATH       Set data directory (current: #{@options["datadir"]})
 mandir=PATH        Set man directory (current: #{@options["mandir"]})
 debug=[yes|no]     Whether to build with debugging messages (current: #{@options["debug"]})
-xft=[yes|no]       Whether to build with Xft support (current: #{@options["xft"]})
 xinerama=[yes|no]  Whether to build with Xinerama support (current: #{@options["xinerama"]})
 EOF
 end # }}}
