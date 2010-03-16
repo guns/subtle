@@ -131,7 +131,7 @@ subIconNew(int argc,
     }
   else rb_raise(rb_eArgError, "Unknown value types");
 
-  XFlush(display);
+  XSync(display, False); ///< Sync all changes
 
   return i->instance;
 } /* }}} */
