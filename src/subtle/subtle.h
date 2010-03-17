@@ -674,7 +674,6 @@ SubSublet *subSubletNew(void);                                    ///< Create su
 void subSubletUpdate(void);                                       ///< Update sublet windows
 void subSubletRender(SubSublet *s);                               ///< Render sublet
 int subSubletCompare(const void *a, const void *b);               ///< Compare two sublets
-void subSubletSetData(SubSublet *s, char *data);                  ///< Set sublet data
 void subSubletPublish(void);                                      ///< Publish sublets
 void subSubletKill(SubSublet *s);                                 ///< Kill sublet
 /* }}} */

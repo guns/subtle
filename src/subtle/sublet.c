@@ -60,13 +60,6 @@ subSubletUpdate(void)
     }
 } /* }}} */
 
-void
-subSubletSetData(SubSublet *s,
-  char *data)
-{
-  s->width = subSharedTextParse(subtle->dpy, subtle->font, s->text, data);
-}
-
  /** subSubletRender {{{
   * @brief Render sublets
   * @param[in]  s  A #SubSublet
@@ -160,9 +153,20 @@ subSubletKill(SubSublet *s)
   subRubyRelease(s->instance);
   subRubyRemove(s->name);
 
+  /* Remove socket watch */
+  if(s->flags & SUB_SUBLET_SOCKET)
+    {
+      XDeleteContext(subtle->dpy, subtle->windows.panel1, s->watch);
+      subEventWatchDel(s->watch);
+    }
+
 #ifdef HAVE_SYS_INOTIFY_H
+  /* Remove inotify watch */
   if(s->flags & SUB_SUBLET_INOTIFY)
-    inotify_rm_watch(subtle->notify, s->interval);
+    {
+      XDeleteContext(subtle->dpy, subtle->windows.panel1, s->watch);
+      inotify_rm_watch(subtle->notify, s->interval);
+    }
 #endif /* HAVE_SYS_INOTIFY_H */ 
 
   XDeleteContext(subtle->dpy, s->win, SUBLETID);
