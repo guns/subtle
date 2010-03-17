@@ -172,59 +172,6 @@ subTrayUpdate(VALUE self)
   return Qnil;
 } /* }}} */
 
-/* subTrayFocus {{{ */
-/*
- * call-seq: focus -> nil
- *
- * Set focus to Tray
- *
- *  tray.focus
- *  => nil
- */
-
-VALUE
-subTrayFocus(VALUE self)
-{
-  return subSubtlextFocus(self);
-} /* }}} */
-
-/* subTrayClick {{{ */
-/*
- * call-seq: click(button, x, y) -> nil
- *
- * Emulate a click on a Tray
- *
- *  tray.click(2)
- *  => nil
- */
-
-VALUE
-subTrayClick(int argc,
-  VALUE *argv,
-  VALUE self)
-{
-  return subSubtlextClick(argc, argv, self);
-} /* }}} */
-
-/* subTrayFocusAsk {{{ */
-/*
- * call-seq: has_focus? -> true or false
- *
- * Check if Tray has focus
- *
- *  tray.has_focus?
- *  => true
- *
- *  tray.has_focus?
- *  => false
- */
-
-VALUE
-subTrayFocusAsk(VALUE self)
-{
-  return subSubtlextFocusAsk(self);
-} /* }}} */
-
 /* subTrayToString {{{ */
 /*
  * call-seq: to_str -> String

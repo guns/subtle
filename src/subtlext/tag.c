@@ -190,7 +190,7 @@ subTagUpdate(VALUE self)
 VALUE
 subTagClients(VALUE self)
 {
-  return subSubtlextTagAssoc(self, SUB_TYPE_CLIENT);
+  return subSubtlextAssoc(self, SUB_TYPE_CLIENT);
 } /* }}} */
 
 /* subTagViews {{{ */
@@ -209,7 +209,7 @@ subTagClients(VALUE self)
 VALUE
 subTagViews(VALUE self)
 {
-  return subSubtlextTagAssoc(self, SUB_TYPE_VIEW);
+  return subSubtlextAssoc(self, SUB_TYPE_VIEW);
 } /* }}} */
 
 /* subTagToString {{{ */

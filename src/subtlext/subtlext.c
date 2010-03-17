@@ -20,8 +20,59 @@ static const char *klasses[] = {
   "Client", "Gravity", "View", "Tag", "Tray", "Screen", "Sublet" 
 };
 
+/* SubtlextSweep {{{ */
+static void
+SubtlextSweep(void)
+{
+  if(display) 
+    {
+      subSharedLogDebug("Connection closed (%s)\n", DisplayString(display));
+
+      XCloseDisplay(display);
+
+      display = NULL;
+    }
+} /* }}} */
+
+/* SubtlextPidReader {{{ */
+/*
+ * call-seq: pid => Fixnum
+ *
+ * Get window pid
+ *
+ *  object.pid
+ *  => 123
+ **/
+
+static VALUE
+SubtlextPidReader(VALUE self)
+{
+  Window win = None;
+  VALUE pid = Qnil;
+
+  /* Load on demand */
+  if(NIL_P((pid = rb_iv_get(self, "@pid"))) &&
+     (win = NUM2LONG(rb_iv_get(self, "@win"))))
+    {
+      int *id = NULL;
+
+      /* Get pid */
+      if((id = (int *)subSharedPropertyGet(display, win, XA_CARDINAL,
+          XInternAtom(display, "_NET_WM_PID", False), NULL)))
+        {
+          pid = INT2FIX(*id);
+
+          rb_iv_set(self, "@pid", pid);
+
+          free(id);
+        }
+    }
+
+  return pid;
+} /* }}} */
+
 /* SubtlextTag {{{ */
-VALUE
+static VALUE
 SubtlextTag(VALUE self,
   VALUE value,
   char *action)
@@ -55,19 +106,256 @@ SubtlextTag(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* SubtlextSweep {{{ */
-static void
-SubtlextSweep(void)
+/* SubtlextTagAdd {{{ */
+/*
+ * call-seq: tag(value) -> Subtlext::Tag
+ *           +(value)   -> Subtlext::Tag
+ *
+ * Add an existing tag to window
+ *
+ *  object.tag("subtle")
+ *  => #<Subtlext::Tag:xxx>
+ *
+ *  object + "subtle"
+ *  => #<Subtlext::Tag:xxx>
+ */
+
+static VALUE
+SubtlextTagAdd(VALUE self,
+  VALUE value)
 {
-  if(display) 
-    {
-      subSharedLogDebug("Connection closed (%s)\n", DisplayString(display));
-
-      XCloseDisplay(display);
-
-      display = NULL;
-    }
+  return SubtlextTag(self, value, "SUBTLE_WINDOW_TAG");
 } /* }}} */
+
+/* SubtlextTagDel {{{ */
+/*
+ * call-seq: untag(value) -> Subtlext::Tag
+ *           -(value)     -> Subtlext::Tag
+ *
+ * Remove an existing tag from window
+ *
+ *  object.untag("subtle")
+ *  => #<Subtlext::Tag:xxx>
+ *
+ *  object - "subtle"
+ *  => #<Subtlext::Tag:xxx>
+ */
+
+static VALUE
+SubtlextTagDel(VALUE self,
+  VALUE value)
+{
+  return SubtlextTag(self, value, "SUBTLE_WINDOW_UNTAG");
+} /* }}} */
+
+/* SubtlextTagList {{{ */
+/*
+ * call-seq: tags -> Array
+ *
+ * Get list of tags for window
+ *
+ *  object.tags
+ *  => [#<Subtlext::Tag:xxx>, #<Subtlext::Tag:xxx>]
+ */
+
+static VALUE
+SubtlextTagList(VALUE self)
+{
+  Window win = None;
+  VALUE array = rb_ary_new();
+
+  /* Get win */
+  if(None != (win = NUM2LONG(rb_iv_get(self, "@win"))))
+    {
+      int i, size = 0;
+      char **tags = NULL;
+      unsigned long *flags = NULL;
+      VALUE method = Qnil, klass = Qnil, t = Qnil;
+    
+      method = rb_intern("new");
+      klass  = rb_const_get(mod, rb_intern("Tag"));
+      flags  = (unsigned long *)subSharedPropertyGet(display, win, XA_CARDINAL, 
+        XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
+      tags   = subSharedPropertyStrings(display, DefaultRootWindow(display), 
+        XInternAtom(display, "SUBTLE_TAG_LIST", False), &size);
+
+      /* Build tag array */
+      for(i = 0; i < size; i++)
+        {
+          if((int)*flags & (1L << (i + 1)))
+            {
+              /* Create new tag */
+              t = rb_funcall(klass, method, 1, rb_str_new2(tags[i]));
+              rb_iv_set(t, "@id", INT2FIX(i));
+              rb_ary_push(array, t);
+            }
+        }
+
+      XFreeStringList(tags);
+      free(flags);
+    }
+
+  return array;
+} /* }}} */
+
+/* SubtlextTagAsk {{{ */
+VALUE
+SubtlextTagAsk(VALUE self,
+  VALUE value)
+{
+  VALUE tag = Qnil, ret = Qfalse;
+
+  /* Find tag */
+  if(Qnil != (tag = subSubtlextFind(SUB_TYPE_TAG, value, False)))
+    {
+      int id = 0;
+      Window win = 0;
+      unsigned long *tags = NULL;
+
+      win = NUM2LONG(rb_iv_get(self, "@win"));
+      id  = FIX2INT(rb_iv_get(tag, "@id"));
+
+      if((tags = (unsigned long *)subSharedPropertyGet(display, win, XA_CARDINAL, 
+          XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL)))
+        {
+          if(*tags & (1L << (id + 1)))
+            ret = Qtrue;
+          
+          free(tags);
+        }
+    }
+
+  return ret;
+} /* }}} */
+
+/* SubtlextClick {{{ */
+/*
+ * call-seq: click(button, x, y) -> nil
+ *
+ * Emulate a click on a window
+ *
+ *  object.click(2)
+ *  => nil
+ */
+
+static VALUE 
+SubtlextClick(int argc,
+  VALUE *argv,
+  VALUE self)
+{
+  VALUE button = Qnil, x = Qnil, y = Qnil;
+
+  rb_scan_args(argc, argv, "03", &button, &x, &y);
+
+  /* Check object type */
+  if(FIXNUM_P(button))
+    {
+      Window win = None, subwin = None;
+      XEvent event = { 0 };
+
+      win = NUM2LONG(rb_iv_get(self, "@win"));
+
+      /* Assemble button event */
+      event.type                  = EnterNotify;
+      event.xcrossing.window      = win;
+      event.xcrossing.root        = DefaultRootWindow(display);
+      event.xcrossing.subwindow   = win;
+      event.xcrossing.same_screen = True;
+      event.xcrossing.x           = FIXNUM_P(x) ? FIX2INT(x) : 5;
+      event.xcrossing.y           = FIXNUM_P(y) ? FIX2INT(y) : 5;
+
+      /* Translate window x/y to root x/y */
+      XTranslateCoordinates(display, event.xcrossing.window, 
+        event.xcrossing.root, event.xcrossing.x, event.xcrossing.y,
+        &event.xcrossing.x_root, &event.xcrossing.y_root, &subwin);
+
+      //XSetInputFocus(display, event.xany.window, RevertToPointerRoot, CurrentTime);
+      XSendEvent(display, win, True, EnterWindowMask, &event);
+
+      /* Send button press event */
+      event.type           = ButtonPress;
+      event.xbutton.button = FIX2INT(button);
+
+      XSendEvent(display, win, True, ButtonPressMask, &event);
+      XFlush(display);
+
+      usleep(12000);
+
+      /* Send button release event */
+      event.type = ButtonRelease;
+
+      XSendEvent(display, win, True, ButtonReleaseMask, &event);
+      XFlush(display);
+    }
+  else rb_raise(rb_eArgError, "Unknown value type");
+
+  return Qnil;
+} /* }}} */
+
+/* SubtlextFocus {{{ */
+/*
+ * call-seq: focus -> nil
+ *
+ * Set focus to window
+ *
+ *  object.focus
+ *  => nil
+ */
+
+VALUE
+SubtlextFocus(VALUE self)
+{
+  VALUE win = Qnil;
+
+  /* Get win */
+  if(Qnil != (win = rb_iv_get(self, "@win")))
+    {
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+      data.l[0] = NUM2LONG(win);
+
+      subSharedMessage(DefaultRootWindow(display), "_NET_ACTIVE_WINDOW", data, True);
+    }
+  else rb_raise(rb_eStandardError, "Failed setting focus");
+
+  return Qnil;
+} /* }}} */
+
+/* SubtlextFocusAsk {{{ */
+/*
+ * call-seq: has_focus? -> true or false
+ *
+ * Check if window has focus
+ *
+ *  object.focus?
+ *  => true
+ *
+ *  object.focus?
+ *  => false
+ */
+
+static VALUE
+SubtlextFocusAsk(VALUE self)
+{
+  VALUE ret = Qfalse, win = Qnil;
+  unsigned long *focus = NULL;
+
+  /* Fetch data */
+  win   = rb_iv_get(self, "@win");
+  focus = (unsigned long *)subSharedPropertyGet(display, DefaultRootWindow(display),
+    XA_WINDOW, XInternAtom(display, "_NET_ACTIVE_WINDOW", False), NULL);
+
+  /* Check if win has focus */
+  if(RTEST(win) && focus)
+    {
+      if(*focus == NUM2LONG(win)) ret = Qtrue;
+      free(focus);
+    }
+
+  return ret;
+} /* }}} */
+
+/* Exported */
 
 /* subSubtlextConnect {{{ */
 void
@@ -163,7 +451,8 @@ subSubtlextFind(int type,
               { CHAR2SYM("instance"), SUB_MATCH_INSTANCE },
               { CHAR2SYM("class"),    SUB_MATCH_CLASS    },
               { CHAR2SYM("gravity"),  SUB_MATCH_GRAVITY  },
-              { CHAR2SYM("role"),     SUB_MATCH_ROLE     }
+              { CHAR2SYM("role"),     SUB_MATCH_ROLE     },
+              { CHAR2SYM("pid"),      SUB_MATCH_PID      }
             };
 
             /* Check hash keys */
@@ -186,6 +475,8 @@ subSubtlextFind(int type,
                 case T_SYMBOL:
                   snprintf(buf, sizeof(buf), "%s", SYM2CHAR(match));
                   break;
+                case T_FIXNUM:
+                  snprintf(buf, sizeof(buf), "%d", FIX2INT(match));
               }
           }
         break; /* }}} */        
@@ -371,98 +662,9 @@ subSubtlextKill(VALUE value,
   return Qnil;
 } /* }}} */
 
-/* subSubtlextTagAdd {{{ */
-/*
- * call-seq: tag(value) -> Subtlext::Tag
- *           +(value)   -> Subtlext::Tag
- *
- * Add a Tag to Client or View
- *
- *  client.tag("subtle")
- *  => #<Subtlext::Tag:xxx>
- *
- *  view.tag("subtle")
- *  => #<Subtlext::Tag:xxx>
- *
- *  client + "subtle"
- *  => #<Subtlext::Tag:xxx>
- */
-
+/* subSubtlextAssoc {{{ */
 VALUE
-subSubtlextTagAdd(VALUE self,
-  VALUE value)
-{
-  return SubtlextTag(self, value, "SUBTLE_WINDOW_TAG");
-} /* }}} */
-
-/* subSubtlextTagDel {{{ */
-/*
- * call-seq: untag(value) -> Subtlext::Tag
- *           -(value)     -> Subtlext::Tag
- *
- * Remove a Tag from Client or View
- *
- *  client.untag("subtle")
- *  => #<Subtlext::Tag:xxx>
- *
- *  view.untag("subtle")
- *  => #<Subtlext::Tag:xxx>
- *
- *  client - "subtle"
- *  => #<Subtlext::Tag:xxx>
- */
-
-VALUE
-subSubtlextTagDel(VALUE self,
-  VALUE value)
-{
-  return SubtlextTag(self, value, "SUBTLE_WINDOW_UNTAG");
-} /* }}} */
-
-/* subSubtlextTagList {{{ */
-VALUE
-subSubtlextTagList(VALUE self)
-{
-  Window win = None;
-  VALUE array = rb_ary_new();
-
-  /* Get win */
-  if(None != (win = NUM2LONG(rb_iv_get(self, "@win"))))
-    {
-      int i, size = 0;
-      char **tags = NULL;
-      unsigned long *flags = NULL;
-      VALUE method = Qnil, klass = Qnil, t = Qnil;
-    
-      method = rb_intern("new");
-      klass  = rb_const_get(mod, rb_intern("Tag"));
-      flags  = (unsigned long *)subSharedPropertyGet(display, win, XA_CARDINAL, 
-        XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
-      tags   = subSharedPropertyStrings(display, DefaultRootWindow(display), 
-        XInternAtom(display, "SUBTLE_TAG_LIST", False), &size);
-
-      /* Build tag array */
-      for(i = 0; i < size; i++)
-        {
-          if((int)*flags & (1L << (i + 1)))
-            {
-              /* Create new tag */
-              t = rb_funcall(klass, method, 1, rb_str_new2(tags[i]));
-              rb_iv_set(t, "@id", INT2FIX(i));
-              rb_ary_push(array, t);
-            }
-        }
-
-      XFreeStringList(tags);
-      free(flags);
-    }
-
-  return array;
-} /* }}} */
-
-/* subSubtlextTagAssoc {{{ */
-VALUE
-subSubtlextTagAssoc(VALUE self,
+subSubtlextAssoc(VALUE self,
   int type)
 {
   int i, id = 0, size = 0;
@@ -528,133 +730,6 @@ subSubtlextTagAssoc(VALUE self,
   return array;
 } /* }}} */
 
-/* subSubtlextTagAsk {{{ */
-VALUE
-subSubtlextTagAsk(VALUE self,
-  VALUE value)
-{
-  VALUE tag = Qnil, ret = Qfalse;
-
-  /* Find tag */
-  if(Qnil != (tag = subSubtlextFind(SUB_TYPE_TAG, value, False)))
-    {
-      int id = 0;
-      Window win = 0;
-      unsigned long *tags = NULL;
-
-      win = NUM2LONG(rb_iv_get(self, "@win"));
-      id  = FIX2INT(rb_iv_get(tag, "@id"));
-
-      if((tags = (unsigned long *)subSharedPropertyGet(display, win, XA_CARDINAL, 
-          XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL)))
-        {
-          if(*tags & (1L << (id + 1)))
-            ret = Qtrue;
-          
-          free(tags);
-        }
-    }
-
-  return ret;
-} /* }}} */
-
-/* subSubtlextFocus {{{ */
-VALUE
-subSubtlextFocus(VALUE self)
-{
-  VALUE win = Qnil;
-
-  /* Get win */
-  if(Qnil != (win = rb_iv_get(self, "@win")))
-    {
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-      data.l[0] = NUM2LONG(win);
-
-      subSharedMessage(DefaultRootWindow(display), "_NET_ACTIVE_WINDOW", data, True);
-    }
-  else rb_raise(rb_eStandardError, "Failed setting focus");
-
-  return Qnil;
-} /* }}} */
-
-/* subSubtlextClick {{{ */
-VALUE 
-subSubtlextClick(int argc,
-  VALUE *argv,
-  VALUE self)
-{
-  VALUE button = Qnil, x = Qnil, y = Qnil;
-
-  rb_scan_args(argc, argv, "03", &button, &x, &y);
-
-  /* Check object type */
-  if(FIXNUM_P(button))
-    {
-      Window win = None, subwin = None;
-      XEvent event = { 0 };
-
-      win = NUM2LONG(rb_iv_get(self, "@win"));
-
-      /* Assemble button event */
-      event.type                  = EnterNotify;
-      event.xcrossing.window      = win;
-      event.xcrossing.root        = DefaultRootWindow(display);
-      event.xcrossing.subwindow   = win;
-      event.xcrossing.same_screen = True;
-      event.xcrossing.x           = FIXNUM_P(x) ? FIX2INT(x) : 5;
-      event.xcrossing.y           = FIXNUM_P(y) ? FIX2INT(y) : 5;
-
-      /* Translate window x/y to root x/y */
-      XTranslateCoordinates(display, event.xcrossing.window, 
-        event.xcrossing.root, event.xcrossing.x, event.xcrossing.y,
-        &event.xcrossing.x_root, &event.xcrossing.y_root, &subwin);
-
-      //XSetInputFocus(display, event.xany.window, RevertToPointerRoot, CurrentTime);
-      XSendEvent(display, win, True, EnterWindowMask, &event);
-
-      /* Send button press event */
-      event.type           = ButtonPress;
-      event.xbutton.button = FIX2INT(button);
-
-      XSendEvent(display, win, True, ButtonPressMask, &event);
-      XFlush(display);
-
-      usleep(12000);
-
-      /* Send button release event */
-      event.type = ButtonRelease;
-
-      XSendEvent(display, win, True, ButtonReleaseMask, &event);
-      XFlush(display);
-    }
-  else rb_raise(rb_eArgError, "Unknown value type");
-
-  return Qnil;
-} /* }}} */
-
-/* subSubtlextFocusAsk {{{ */
-VALUE
-subSubtlextFocusAsk(VALUE self)
-{
-  VALUE ret = Qfalse, win = Qnil;
-  unsigned long *focus = NULL;
-
-  /* Fetch data */
-  win   = rb_iv_get(self, "@win");
-  focus = (unsigned long *)subSharedPropertyGet(display, DefaultRootWindow(display),
-    XA_WINDOW, XInternAtom(display, "_NET_ACTIVE_WINDOW", False), NULL);
-
-  /* Check if win has focus */
-  if(RTEST(win) && focus)
-    {
-      if(*focus == NUM2LONG(win)) ret = Qtrue;
-      free(focus);
-    }
-
-  return ret;
-} /* }}} */
-
 /* Plugin */
 
 /* Init_subtlext {{{ */
@@ -708,21 +783,23 @@ Init_subtlext(void)
   /* Bitfield of window states */
   rb_define_attr(client, "flags",    1, 0);
 
+  /* Singleton methods */
   rb_define_singleton_method(client, "find",    subClientFind,    1);
-  rb_define_singleton_method(client, "[]",      subClientFind,    1);
   rb_define_singleton_method(client, "current", subClientCurrent, 0);
   rb_define_singleton_method(client, "all",     subClientAll,     0);
 
+  /* General methods */
+  rb_define_method(client, "tags",         SubtlextTagList,   0);
+  rb_define_method(client, "has_tag?",     SubtlextTagAsk,    1);
+  rb_define_method(client, "tag",          SubtlextTagAdd,    1);
+  rb_define_method(client, "untag",        SubtlextTagDel,    1);
+  rb_define_method(client, "click",        SubtlextClick,    -1);
+  rb_define_method(client, "focus",        SubtlextFocus,     0);
+  rb_define_method(client, "has_focus?",   SubtlextFocusAsk,  0);
+
+  /* Class methods */
   rb_define_method(client, "initialize",   subClientInit,            1);
   rb_define_method(client, "update",       subClientUpdate,          0);
-
-  rb_define_method(client, "tags",         subSubtlextTagList,       0);
-  rb_define_method(client, "has_tag?",     subSubtlextTagAsk,        1);
-  rb_define_method(client, "tag",          subSubtlextTagAdd,        1);
-  rb_define_method(client, "untag",        subSubtlextTagDel,        1);
-  rb_define_method(client, "+",            subSubtlextTagAdd,        1);
-  rb_define_method(client, "-",            subSubtlextTagDel,        1);
-
   rb_define_method(client, "views",        subClientViewList,        0);
   rb_define_method(client, "toggle_full",  subClientToggleFull,      0);
   rb_define_method(client, "toggle_float", subClientToggleFloat,     0);
@@ -736,9 +813,6 @@ Init_subtlext(void)
   rb_define_method(client, "left",         subClientMatchLeft,       0);
   rb_define_method(client, "right",        subClientMatchRight,      0);
   rb_define_method(client, "down",         subClientMatchDown,       0);
-  rb_define_method(client, "focus",        subClientFocus,           0);
-  rb_define_method(client, "click",        subClientClick,          -1);
-  rb_define_method(client, "has_focus?",   subClientFocusAsk,        0);
   rb_define_method(client, "to_str",       subClientToString,        0);
   rb_define_method(client, "gravity",      subClientGravityReader,   0);
   rb_define_method(client, "gravity=",     subClientGravityWriter,   1);
@@ -746,9 +820,16 @@ Init_subtlext(void)
   rb_define_method(client, "screen=",      subClientScreenWriter,    1);  
   rb_define_method(client, "geometry",     subClientGeometryReader,  0);
   rb_define_method(client, "geometry=",    subClientGeometryWriter, -1);
+  rb_define_method(client, "pid",          SubtlextPidReader,        0);
   rb_define_method(client, "alive?",       subClientAliveAsk,        0);
   rb_define_method(client, "kill",         subClientKill,            0);
 
+  /* Singleton aliases */
+  rb_define_alias(rb_singleton_class(client), "[]", "find");
+
+  /* Aliases */
+  rb_define_alias(client, "+",    "tag");
+  rb_define_alias(client, "-",    "untag");
   rb_define_alias(client, "save", "update");
   rb_define_alias(client, "to_s", "to_str");
 
@@ -763,10 +844,12 @@ Init_subtlext(void)
   /* Pixel number */
   rb_define_attr(color, "pixel", 1, 0);
 
+  /* Class methods */
   rb_define_method(color, "initialize", subColorInit,         1);
   rb_define_method(color, "to_str",     subColorToString,     0);
   rb_define_method(color, "+",          subColorOperatorPlus, 1);
 
+  /* Aliases */
   rb_define_alias(color, "to_s", "to_str");
 
   /*
@@ -789,11 +872,13 @@ Init_subtlext(void)
   /* Geometry height */
   rb_define_attr(geometry, "height", 1, 1);
 
+  /* Class methods */
   rb_define_method(geometry, "initialize", subGeometryInit,     -1);
   rb_define_method(geometry, "to_a",       subGeometryToArray,   0);
   rb_define_method(geometry, "to_hash",    subGeometryToHash,    0);
   rb_define_method(geometry, "to_str",     subGeometryToString,  0);
 
+  /* Aliases */
   rb_define_alias(geometry, "to_h", "to_hash");
   rb_define_alias(geometry, "to_s", "to_str");
 
@@ -814,10 +899,11 @@ Init_subtlext(void)
   /* Geometry */
   rb_define_attr(gravity, "geometry", 0, 0);
 
+  /* Singleton methods */
   rb_define_singleton_method(gravity, "find", subGravityFind, 1);
-  rb_define_singleton_method(gravity, "[]",   subGravityFind, 1);
   rb_define_singleton_method(gravity, "all",  subGravityAll,  0);
 
+  /* Class methods */
   rb_define_method(gravity, "initialize", subGravityInit,     1);
   rb_define_method(gravity, "update",     subGravityUpdate,   0);
   rb_define_method(gravity, "geometry",   subGravityGeometry, 0);
@@ -825,6 +911,10 @@ Init_subtlext(void)
   rb_define_method(gravity, "to_sym",     subGravityToSym,    0);
   rb_define_method(gravity, "kill",       subGravityKill,     0);
 
+  /* Singleton aliases */
+  rb_define_alias(rb_singleton_class(gravity), "[]", "find");
+
+  /* Aliases */
   rb_define_alias(gravity, "save", "update");
   rb_define_alias(gravity, "to_s", "to_str");
 
@@ -842,14 +932,17 @@ Init_subtlext(void)
   /* Icon height */
   rb_define_attr(icon, "height", 1, 0);
 
+  /* Singleton methods */
   rb_define_singleton_method(icon, "new", subIconNew, -1);
 
+  /* Class methods */
   rb_define_method(icon, "draw",   subIconDraw,         2);
   rb_define_method(icon, "clear",  subIconClear,        0);
   rb_define_method(icon, "to_str", subIconToString,     0);
   rb_define_method(icon, "+",      subIconOperatorPlus, 1);
   rb_define_method(icon, "*",      subIconOperatorMult, 1);
 
+  /* Aliases */
   rb_define_alias(icon, "to_s", "to_str");
 
   /*
@@ -866,16 +959,21 @@ Init_subtlext(void)
   /* Geometry */
   rb_define_attr(screen, "geometry", 1, 0);
 
+  /* Singleton methods */
   rb_define_singleton_method(screen, "find",    subScreenFind,    1);
-  rb_define_singleton_method(screen, "[]",      subScreenFind,    1);
   rb_define_singleton_method(screen, "current", subScreenCurrent, 0);
   rb_define_singleton_method(screen, "all",     subScreenAll,     0);
 
+  /* Class methods */
   rb_define_method(screen, "initialize", subScreenInit,       1);
   rb_define_method(screen, "update",     subScreenUpdate,     0);
   rb_define_method(screen, "clients",    subScreenClientList, 0);
   rb_define_method(screen, "to_str",     subScreenToString,   0);
 
+  /* Singleton aliases */
+  rb_define_alias(rb_singleton_class(screen), "[]", "find");
+
+  /* Aliases */
   rb_define_alias(screen, "save", "update");
   rb_define_alias(screen, "to_s", "to_str");
 
@@ -887,8 +985,8 @@ Init_subtlext(void)
 
   subtle = rb_define_module_under(mod, "Subtle");
 
-  rb_define_singleton_method(subtle, "display",        subSubtleDisplay,       0);
-
+  /* Singleton methods */
+  rb_define_singleton_method(subtle, "display",        subSubtleDisplayReader, 0);
   rb_define_singleton_method(subtle, "clients",        subClientAll,           0);
   rb_define_singleton_method(subtle, "gravities",      subGravityAll,          0);
   rb_define_singleton_method(subtle, "screens",        subScreenAll,           0);
@@ -896,7 +994,6 @@ Init_subtlext(void)
   rb_define_singleton_method(subtle, "tags",           subTagAll,              0);
   rb_define_singleton_method(subtle, "trays",          subTrayAll,             0);
   rb_define_singleton_method(subtle, "views",          subViewAll,             0);
-
   rb_define_singleton_method(subtle, "find_client",    subClientFind,          1);
   rb_define_singleton_method(subtle, "find_gravity",   subGravityFind,         1);
   rb_define_singleton_method(subtle, "find_screen",    subScreenFind,          1);
@@ -904,27 +1001,27 @@ Init_subtlext(void)
   rb_define_singleton_method(subtle, "find_tag",       subTagFind,             1);
   rb_define_singleton_method(subtle, "find_tray",      subTrayFind,            1);
   rb_define_singleton_method(subtle, "find_view",      subViewFind,            1);
-
   rb_define_singleton_method(subtle, "focus",          subSubtleFocus,         1);
   rb_define_singleton_method(subtle, "add_tag",        subSubtleTagAdd,        1);
   rb_define_singleton_method(subtle, "add_view",       subSubtleViewAdd,       1);
-
   rb_define_singleton_method(subtle, "del_client",     subSubtleClientDel,     1);
   rb_define_singleton_method(subtle, "del_gravity",    subSubtleGravityDel,    1);
   rb_define_singleton_method(subtle, "del_sublet",     subSubtleSubletDel,     1);
   rb_define_singleton_method(subtle, "del_tag",        subSubtleTagDel,        1);
   rb_define_singleton_method(subtle, "del_tray",       subSubtleTrayDel,       1);
   rb_define_singleton_method(subtle, "del_view",       subSubtleViewDel,       1);
-
   rb_define_singleton_method(subtle, "current_view",   subViewCurrent,         0);
   rb_define_singleton_method(subtle, "current_client", subClientCurrent,       0);
   rb_define_singleton_method(subtle, "current_screen", subScreenCurrent,       0);
-
   rb_define_singleton_method(subtle, "running?",       subSubtleRunningAsk,    0);
   rb_define_singleton_method(subtle, "reload_config",  subSubtleReloadConfig,  0);
   rb_define_singleton_method(subtle, "reload_sublets", subSubtleReloadSublets, 0);
   rb_define_singleton_method(subtle, "quit",           subSubtleQuit,          0);
   rb_define_singleton_method(subtle, "spawn",          subSubtleSpawn,         1);
+
+  /* Singleton aliases */
+  rb_define_alias(rb_singleton_class(subtle), "+", "add_tag");
+  rb_define_alias(rb_singleton_class(subtle), "-", "del_tag");
 
   /*
    * Document-class: Subtlext::Sublet
@@ -937,10 +1034,11 @@ Init_subtlext(void)
   /* Name of the sublet */
   rb_define_attr(sublet, "name", 1, 0);
 
+  /* Singleton methods */
   rb_define_singleton_method(sublet, "find", subSubletFind, 1);
-  rb_define_singleton_method(sublet, "[]",   subSubletFind, 1);
   rb_define_singleton_method(sublet, "all",  subSubletAll,  0);
 
+  /* Class methods */
   rb_define_method(sublet, "initialize",  subSubletInit,             1);
   rb_define_method(sublet, "update",      subSubletUpdate,           0);
   rb_define_method(sublet, "data",        subSubletDataReader,       0);
@@ -949,6 +1047,10 @@ Init_subtlext(void)
   rb_define_method(sublet, "to_str",      subSubletToString,         0);
   rb_define_method(sublet, "kill",        subSubletKill,             0);
 
+  /* Singleton aliases */
+  rb_define_alias(rb_singleton_class(sublet), "[]", "find");
+
+  /* Aliases */
   rb_define_alias(sublet, "to_s", "to_str");
 
   /*
@@ -965,10 +1067,11 @@ Init_subtlext(void)
   /* Name of the tag */
   rb_define_attr(tag,   "name", 1, 0);
 
+  /* Singleton methods */
   rb_define_singleton_method(tag, "find", subTagFind, 1);
-  rb_define_singleton_method(tag, "[]",   subTagFind, 1);
   rb_define_singleton_method(tag, "all",  subTagAll,  0);
 
+  /* Class methods */
   rb_define_method(tag, "initialize", subTagInit,     1);
   rb_define_method(tag, "update",     subTagUpdate,   0);
   rb_define_method(tag, "clients",    subTagClients,  0);
@@ -976,6 +1079,10 @@ Init_subtlext(void)
   rb_define_method(tag, "to_str",     subTagToString, 0);
   rb_define_method(tag, "kill",       subTagKill,     0);
 
+  /* Singleton aliases */
+  /*rb_define_alias(rb_singleton_class(tag), "[]", "find");*/
+
+  /* Aliases */
   rb_define_alias(tag, "save", "update");
   rb_define_alias(tag, "to_s", "to_str");
 
@@ -1002,18 +1109,26 @@ Init_subtlext(void)
   /* WM_NAME */
   rb_define_attr(tag,  "name",  1, 0);
 
+  /* Singleton methods */
   rb_define_singleton_method(tray, "find", subTrayFind, 1);
-  rb_define_singleton_method(tray, "[]",   subTrayFind, 1);
   rb_define_singleton_method(tray, "all",  subTrayAll,  0);
 
-  rb_define_method(tray, "initialize", subTrayInit,      1);
-  rb_define_method(tray, "update",     subTrayUpdate,    0);
-  rb_define_method(tray, "focus",      subTrayFocus,     0);
-  rb_define_method(tray, "click",      subTrayClick,    -1);
-  rb_define_method(tray, "has_focus?", subTrayFocusAsk,  0);
-  rb_define_method(tray, "to_str",     subTrayToString,  0);
-  rb_define_method(tray, "kill",       subTrayKill,      0);
+  /* General methods */
+  rb_define_method(tray, "click",      SubtlextClick,    -1);
+  rb_define_method(tray, "focus",      SubtlextFocus,     0);
+  rb_define_method(tray, "has_focus?", SubtlextFocusAsk,  0);
 
+  /* Class methods */
+  rb_define_method(tray, "initialize", subTrayInit,       1);
+  rb_define_method(tray, "update",     subTrayUpdate,     0);
+  rb_define_method(tray, "pid",        SubtlextPidReader, 0);
+  rb_define_method(tray, "to_str",     subTrayToString,   0);
+  rb_define_method(tray, "kill",       subTrayKill,       0);
+
+  /* Singleton aliases */
+  rb_define_alias(rb_singleton_class(tray), "[]", "find");
+
+  /* Aliases */
   rb_define_alias(tray, "to_s", "to_str");
 
   /*
@@ -1033,30 +1148,36 @@ Init_subtlext(void)
   /* Name of the view */
   rb_define_attr(view, "name", 1, 0);
 
+  /* Singleton methods */
   rb_define_singleton_method(view, "find",    subViewFind,    1);
-  rb_define_singleton_method(view, "[]",      subViewFind,    1);
   rb_define_singleton_method(view, "current", subViewCurrent, 0);
   rb_define_singleton_method(view, "all",     subViewAll,     0);
 
+  /* General methods */
+  rb_define_method(view, "tags",       SubtlextTagList,      0);
+  rb_define_method(view, "has_tag?",   SubtlextTagAsk,       1);
+  rb_define_method(view, "tag",        SubtlextTagAdd,       1);
+  rb_define_method(view, "untag",      SubtlextTagDel,       1);
+
+  /* Class methods */
   rb_define_method(view, "initialize", subViewInit,          1);
   rb_define_method(view, "update",     subViewUpdate,        0);
-
-  rb_define_method(view, "tags",       subSubtlextTagList,   0);
-  rb_define_method(view, "has_tag?",   subSubtlextTagAsk,    1);
-  rb_define_method(view, "tag",        subSubtlextTagAdd,    1);
-  rb_define_method(view, "untag",      subSubtlextTagDel,    1);
-  rb_define_method(view, "+",          subSubtlextTagAdd,    1);
-  rb_define_method(view, "-",          subSubtlextTagDel,    1);
-
   rb_define_method(view, "clients",    subViewClients,       0);
   rb_define_method(view, "jump",       subViewJump,          0);
   rb_define_method(view, "current?",   subViewCurrentAsk,    0);
   rb_define_method(view, "to_str",     subViewToString,      0);
   rb_define_method(view, "kill",       subViewKill,          0);
 
-  rb_define_alias(view, "save", "update");
-  rb_define_alias(view, "to_s", "to_str");
-
+  /* Singleton aliases */
+  rb_define_alias(rb_singleton_class(view), "[]", "find");
+  
+  /* Aliases */
+  rb_define_alias(view, "+",     "tag");
+  rb_define_alias(view, "-",     "untag");
+  rb_define_alias(view, "click", "jump");
+  rb_define_alias(view, "save",  "update");
+  rb_define_alias(view, "to_s",  "to_str");
+ 
   /*
    * Document-class: Subtlext::Window
    *
@@ -1068,8 +1189,10 @@ Init_subtlext(void)
   /* Window id */
   rb_define_attr(window, "win", 1, 0);
 
+  /* Singleton methods */
   rb_define_singleton_method(window, "new", subWindowNew, 1);
 
+  /* Class methods */
   rb_define_method(window, "name=",         subWindowNameWriter,        1);
   rb_define_method(window, "font=",         subWindowFontWriter,        1);
   rb_define_method(window, "background=",   subWindowBackgroundWriter,  1);
@@ -1081,6 +1204,7 @@ Init_subtlext(void)
   rb_define_method(window, "hide",          subWindowHide,              0);
   rb_define_method(window, "kill",          subWindowKill,              0);
 
+  /* Singleton aliases */
   rb_define_alias(rb_singleton_class(window), "configure", "new");
 } /* }}} */
 

@@ -62,9 +62,6 @@ VALUE subClientMatchUp(VALUE self);                               ///< Get clien
 VALUE subClientMatchLeft(VALUE self);                             ///< Get client left
 VALUE subClientMatchRight(VALUE self);                            ///< Get client right
 VALUE subClientMatchDown(VALUE self);                             ///< Get client down
-VALUE subClientFocus(VALUE self);                                 ///< Focus client
-VALUE subClientClick(int argc, VALUE *argv, VALUE self);          ///< Click client
-VALUE subClientFocusAsk(VALUE self);                              ///< Has client focus
 VALUE subClientAliveAsk(VALUE self);                              ///< Is client alive
 VALUE subClientGravityReader(VALUE self);                         ///< Get client gravity
 VALUE subClientGravityWriter(VALUE self, VALUE value);            ///< Set client gravity
@@ -138,7 +135,7 @@ VALUE subSubletKill(VALUE self);                                  ///< Kill subl
 /* }}} */
 
 /* subtle.c {{{ */
-VALUE subSubtleDisplay(VALUE self);                               ///< Get display
+VALUE subSubtleDisplayReader(VALUE self);                         ///< Get display
 VALUE subSubtleRunningAsk(VALUE self);                            ///< Is subtle running
 VALUE subSubtleSpawn(VALUE self, VALUE cmd);                      ///< Spawn command
 VALUE subSubtleFocus(VALUE self, VALUE name);                     ///< Focus a client
@@ -160,14 +157,7 @@ void subSubtlextConnect(void);                                    ///< Connect t
 VALUE subSubtlextConcat(VALUE str1, VALUE str2);                  ///< Concat strings
 VALUE subSubtlextFind(int type, VALUE value, int exception);      ///< Find object
 VALUE subSubtlextKill(VALUE value, int type);                     ///< Kill display
-VALUE subSubtlextTagAdd(VALUE self, VALUE value);                 ///< Add tag to object
-VALUE subSubtlextTagDel(VALUE self, VALUE value);                 ///< Del tag from object
-VALUE subSubtlextTagList(VALUE self);                             ///< List tags from object
-VALUE subSubtlextTagAssoc(VALUE self, int type);                  ///< Get tags from object
-VALUE subSubtlextTagAsk(VALUE self, VALUE value);                 ///< Has object tag
-VALUE subSubtlextFocus(VALUE self);                               ///< Focus object
-VALUE subSubtlextClick(int argc, VALUE *argv, VALUE self);        ///< Click object
-VALUE subSubtlextFocusAsk(VALUE self);                            ///< Has object focus
+VALUE subSubtlextAssoc(VALUE self, int type);                     ///< Get tags from object
 /* }}} */
 
 /* tag.c {{{ */
@@ -188,9 +178,6 @@ VALUE subTrayInit(VALUE self, VALUE win);                         ///< Create tr
 VALUE subTrayFind(VALUE self, VALUE name);                        ///< Find tray
 VALUE subTrayAll(VALUE self);                                     ///< Get all trays
 VALUE subTrayUpdate(VALUE self);                                  ///< Update tray
-VALUE subTrayFocus(VALUE self);                                   ///< Focus tray
-VALUE subTrayClick(int argc, VALUE *argv, VALUE self);            ///< Click tray
-VALUE subTrayFocusAsk(VALUE self);                                ///< Has tray focus
 VALUE subTrayToString(VALUE self);                                ///< Tray to string
 VALUE subTrayKill(VALUE self);                                    ///< Kill tray
 /* }}} */

@@ -608,59 +608,6 @@ subClientMatchDown(VALUE self)
   return ClientMatch(self, SUB_WINDOW_DOWN);
 } /* }}} */
 
-/* subClientFocus {{{ */
-/*
- * call-seq: focus -> nil
- *
- * Set focus to Client
- *
- *  client.focus
- *  => nil
- */
-
-VALUE
-subClientFocus(VALUE self)
-{
-  return subSubtlextFocus(self);
-} /* }}} */
-
-/* subClientClick {{{ */
-/*
- * call-seq: click(button, x, y) -> nil
- *
- * Emulate a click on a Client
- *
- *  client.click(2)
- *  => nil
- */
-
-VALUE
-subClientClick(int argc,
-  VALUE *argv,
-  VALUE self)
-{
-  return subSubtlextClick(argc, argv, self);
-} /* }}} */
-
-/* subClientFocusAsk {{{ */
-/*
- * call-seq: has_focus? -> true or false
- *
- * Check if Client has focus
- *
- *  client.focus?
- *  => true
- *
- *  client.focus?
- *  => false
- */
-
-VALUE
-subClientFocusAsk(VALUE self)
-{
-  return subSubtlextFocusAsk(self);
-} /* }}} */
-
 /* subClientAliveAsk {{{ */
 /*
  * call-seq: alive? -> true or false
@@ -710,18 +657,19 @@ subClientGravityReader(VALUE self)
       int *id = NULL;
       char buf[5] = { 0 };
 
-      /* Collect data */
-      id = (int *)subSharedPropertyGet(display, win, XA_CARDINAL,
-        XInternAtom(display, "SUBTLE_WINDOW_GRAVITY", False), NULL);
+      /* Get gravity */
+      if((id = (int *)subSharedPropertyGet(display, win, XA_CARDINAL,
+          XInternAtom(display, "SUBTLE_WINDOW_GRAVITY", False), NULL)))
+        {
+          snprintf(buf, sizeof(buf), "%d", *id);
+          gravity = subGravityInstantiate(buf);
 
-      snprintf(buf, sizeof(buf), "%d", *id);
-      gravity = subGravityInstantiate(buf);
+          if(!NIL_P(gravity)) subGravityUpdate(gravity);
 
-      if(!NIL_P(gravity)) subGravityUpdate(gravity);
+          rb_iv_set(self, "@gravity", gravity);
 
-      rb_iv_set(self, "@gravity", gravity);
-
-      free(id);
+          free(id);
+        }
     }
 
   return gravity;

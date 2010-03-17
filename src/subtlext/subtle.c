@@ -24,7 +24,7 @@ SubtleReload(char *message)
   return Qnil;
 } /* }}} */
 
-/* subSubtleDisplay {{{ */
+/* subSubtleDisplayReader {{{ */
 /*
  * call-seq: display -> String
  *
@@ -35,7 +35,7 @@ SubtleReload(char *message)
  */
 
 VALUE 
-subSubtleDisplay(VALUE self)
+subSubtleDisplayReader(VALUE self)
 {
   subSubtlextConnect(); ///< Implicit open connection
 
