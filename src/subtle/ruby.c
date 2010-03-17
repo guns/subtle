@@ -1521,7 +1521,8 @@ RubySubletDataWriter(VALUE self,
 
   if(s && T_STRING == rb_type(value)) ///< Check value type
     {
-      subSubletSetData(s, RSTRING_PTR(value)); 
+      s->width = subSharedTextParse(subtle->dpy, subtle->font, 
+        s->text, RSTRING_PTR(value));
       subSubletRender(s);
     }
   else rb_raise(rb_eArgError, "Unknown value type");
@@ -1711,6 +1712,19 @@ RubySubletWatch(VALUE self,
         {
           char *watch = RSTRING_PTR(value);
 
+          /* Init inotify on demand */
+          if(!subtle->notify)
+            {
+              if(0 > (subtle->notify = inotify_init()))
+                {
+                  subSharedLogWarn("Failed initing inotify\n");
+                  subSharedLogDebug("Inotify: %s\n", strerror(errno));
+
+                  return Qnil;
+                }
+              else fcntl(subtle->notify, F_SETFL, O_NONBLOCK);
+            }
+
           /* Create inotify watch */
           if(0 < (s->watch = inotify_add_watch(subtle->notify, watch, IN_MODIFY)))
             {
@@ -1833,6 +1847,7 @@ subRubyInit(void)
 
   sublet = rb_define_class_under(mod, "Sublet", rb_cObject);
 
+  /* Class methods */
   rb_define_method(sublet, "method_missing", RubySubletDispatcher,       -1);
   rb_define_method(sublet, "render",         RubySubletRender,            0);
   rb_define_method(sublet, "name",           RubySubletNameReader,        0);
@@ -2068,15 +2083,6 @@ subRubyLoadSublets(void)
   int i, num;
   char buf[100];
   struct dirent **entries = NULL;
-
-#ifdef HAVE_SYS_INOTIFY_H
-  if(0 > (subtle->notify = inotify_init()))
-    {
-      subSharedLogWarn("Failed initing inotify\n");
-      subSharedLogDebug("Inotify: %s\n", strerror(errno));
-    }
-  else fcntl(subtle->notify, F_SETFL, O_NONBLOCK);
-#endif /* HAVE_SYS_INOTIFY_H */
 
   /* Check path */
   if(subtle->paths.sublets)
