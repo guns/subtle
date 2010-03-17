@@ -75,7 +75,8 @@ EventConfigure(XConfigureRequestEvent *ev)
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID)))) 
     {
       if(!(c->flags & SUB_MODE_NONRESIZE) && 
-          (subtle->flags & SUB_SUBTLE_RESIZE || c->flags & (SUB_MODE_FLOAT|SUB_MODE_RESIZE)))
+          (subtle->flags & SUB_SUBTLE_RESIZE || 
+          c->flags & (SUB_MODE_FLOAT|SUB_MODE_RESIZE)))
         {
           SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
 
@@ -271,7 +272,8 @@ EventMessage(XClientMessageEvent *ev)
                     case Above: XRaiseWindow(subtle->dpy, c->win); break;
                     case Below: XLowerWindow(subtle->dpy, c->win); break;
                     default:
-                      subSharedLogDebug("Restack: Ignored restack event (%d)\n", ev->data.l[2]);
+                      subSharedLogDebug("Restack: Ignored restack event (%d)\n", 
+                        ev->data.l[2]);
                   }
               }
             break; /* }}} */            
@@ -487,7 +489,8 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_SUBTLE_SUBLET_DATA: /* {{{ */
             if((s = EventFindSublet((int)ev->data.b[0])))
               {
-                subSubletSetData(s, ev->data.b + 1);
+                s->width = subSharedTextParse(subtle->dpy, subtle->font, 
+                  s->text, ev->data.b + 1);                
                 subSubletUpdate();
                 subPanelUpdate();
                 subPanelRender();
