@@ -67,10 +67,11 @@
 #define SUB_EWMH_STICK     (1L << 3)                              ///< EWMH stick flag
 
 #define SUB_MATCH_NAME     (1L << 1)                              ///< Match SUBTLE_NAME
-#define SUB_MATCH_INSTANCE (1L << 2)                              ///< Match instance of SUBTLE_CLASS
-#define SUB_MATCH_CLASS    (1L << 3)                              ///< Match class of SUBTLE_CLASS
-#define SUB_MATCH_ROLE     (1L << 4)                              ///< Match window role
-#define SUB_MATCH_GRAVITY  (1L << 5)                              ///< Match gravity
+#define SUB_MATCH_INSTANCE (1L << 2)                              ///< Match instance of WM_CLASS
+#define SUB_MATCH_CLASS    (1L << 3)                              ///< Match class of WM_CLASS
+#define SUB_MATCH_GRAVITY  (1L << 4)                              ///< Match gravity
+#define SUB_MATCH_ROLE     (1L << 5)                              ///< Match window role
+#define SUB_MATCH_PID      (1L << 6)                              ///< Match pid
 /* }}} */
 
 /* Typedefs {{{ */

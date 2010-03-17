@@ -901,7 +901,7 @@ SharedFindWindow(char *prop,
   Window *win,
   int flags)
 {
-  int id = -1, size = 0, gravity1 = 0, gravity2 = 0;
+  int id = -1, size = 0;
   Window *wins = NULL;
 
   assert(prop && match);
@@ -909,7 +909,7 @@ SharedFindWindow(char *prop,
   /* Find window id */
   if((wins = SharedList(prop, &size)))
     {
-      int i;
+      int i, gravity1 = 0, gravity2 = -1, pid1 = 0, pid2 = -1; ///<  Init differently
       char *wmname = NULL, *instance = NULL, *klass = NULL, *role = NULL, buf[20] = { 0 };
       Window selwin = None;
       regex_t *preg = subSharedRegexNew(match);
@@ -920,7 +920,11 @@ SharedFindWindow(char *prop,
 
       /* Find id of gravity */
       if(flags & SUB_MATCH_GRAVITY)
-        gravity1 = subSharedGravityFind(match, NULL, NULL); 
+        gravity1 = subSharedGravityFind(match, NULL, NULL);
+
+      /* Get pid */
+      if(flags & SUB_MATCH_PID)
+        pid1 = atoi(match);
 
       for(i = 0; -1 == id && i < size; i++)
         {
@@ -931,28 +935,48 @@ SharedFindWindow(char *prop,
           /* Get window gravity */
           if(flags & SUB_MATCH_GRAVITY)
             {
-              int *gravity = (int *)subSharedPropertyGet(display, wins[i], 
-                XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_GRAVITY", False), NULL);
+              int *gravity = NULL;
+              
+              if((gravity = (int *)subSharedPropertyGet(display, wins[i], 
+                  XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_GRAVITY",
+                  False), NULL)))
+                {
+                  gravity2 = *gravity;
 
-              gravity2 = *gravity;
+                  subSharedLogDebug("Gravity: match=%s, gravity1=%d, gravity2=%d\n",
+                    match, gravity1, gravity2);
 
-              subSharedLogDebug("Gravity: match=%s, gravity1=%d, gravity2=%d\n", 
-                match, gravity1, gravity2);
-
-              free(gravity);
+                  free(gravity);
+                }
             }
 
           /* Get window role */
-          role = subSharedPropertyGet(display, wins[i], XA_STRING,
-            XInternAtom(display, "WM_WINDOW_ROLE", False), NULL);
+          if(flags & SUB_MATCH_ROLE)
+            role = subSharedPropertyGet(display, wins[i], XA_STRING,
+              XInternAtom(display, "WM_WINDOW_ROLE", False), NULL);
 
-          /* Find window either by window id, by title/inst/class or by gravity */
+          /* Get window pid */
+          if(flags & SUB_MATCH_PID)
+            {
+              int *pid = NULL;
+              
+              if((pid = (int *)subSharedPropertyGet(display, wins[i], XA_CARDINAL,
+                  XInternAtom(display, "_NET_WM_PID", False), NULL)))
+                {
+                  pid2 = *pid;
+
+                  free(pid);
+                }
+            }
+
+          /* Find window either by window id, title, inst, class, gravity or pid */
           if(wins[i] == selwin || subSharedRegexMatch(preg, buf) ||
               (flags & SUB_MATCH_NAME     && wmname     && subSharedRegexMatch(preg, wmname))   ||
               (flags & SUB_MATCH_INSTANCE && instance   && subSharedRegexMatch(preg, instance)) ||
               (flags & SUB_MATCH_CLASS    && klass      && subSharedRegexMatch(preg, klass))    ||
               (flags & SUB_MATCH_ROLE     && role       && subSharedRegexMatch(preg, role))     ||
-              (flags & SUB_MATCH_GRAVITY  && gravity1 == gravity2))
+              (flags & SUB_MATCH_GRAVITY  && gravity1 == gravity2) ||
+              (flags & SUB_MATCH_PID      && pid1 == pid2))
             {
               subSharedLogDebug("Found: prop=%s, name=%s, win=%#lx, id=%d, flags\n", 
                 prop, match, wins[i], i, flags);
