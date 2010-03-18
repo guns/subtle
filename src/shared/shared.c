@@ -685,7 +685,7 @@ subSharedFontNew(Display *disp,
   /* Load font set */
   if(!(f->xfs = XCreateFontSet(disp, name, &missing, &n, &def)))
     {
-      subSharedLogWarn("Failed loading font `%s'", name);
+      subSharedLogWarn("Failed loading font `%s' - using default\n", name);
 
       if(!(f->xfs = XCreateFontSet(disp, DEFFONT, &missing, &n, &def)))
         {
