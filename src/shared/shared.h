@@ -43,7 +43,7 @@
 #define RINT(r)   printf("%s: x=%d, y=%d, width=%d, height=%d\n", \
   #r, r.x, r.y, r.width, r.height);                               ///< Print a XRectangle
 
-#define DEFFONT   "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*"             ///< Default font
+#define DEFFONT   "-*-*-medium-*-*-*-14-*-*-*-*-*-*-*"            ///< Default font
 
 /* Data flags */
 #define SUB_DATA_STRING  (1L << 13)                               ///< String data
