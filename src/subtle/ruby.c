@@ -1712,19 +1712,6 @@ RubySubletWatch(VALUE self,
         {
           char *watch = RSTRING_PTR(value);
 
-          /* Init inotify on demand */
-          if(!subtle->notify)
-            {
-              if(0 > (subtle->notify = inotify_init()))
-                {
-                  subSharedLogWarn("Failed initing inotify\n");
-                  subSharedLogDebug("Inotify: %s\n", strerror(errno));
-
-                  return Qnil;
-                }
-              else fcntl(subtle->notify, F_SETFL, O_NONBLOCK);
-            }
-
           /* Create inotify watch */
           if(0 < (s->watch = inotify_add_watch(subtle->notify, watch, IN_MODIFY)))
             {
@@ -2083,6 +2070,21 @@ subRubyLoadSublets(void)
   int i, num;
   char buf[100];
   struct dirent **entries = NULL;
+
+#ifdef HAVE_SYS_INOTIFY_H
+  /* Init inotify on demand */
+  if(!subtle->notify)
+    {
+      if(0 > (subtle->notify = inotify_init()))
+        {
+          subSharedLogWarn("Failed initing inotify\n");
+          subSharedLogDebug("Inotify: %s\n", strerror(errno));
+
+          return;
+        }
+      else fcntl(subtle->notify, F_SETFL, O_NONBLOCK);
+    }
+#endif /* HAVE_SYS_INOTIFY_H */
 
   /* Check path */
   if(subtle->paths.sublets)
