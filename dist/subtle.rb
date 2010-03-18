@@ -43,9 +43,6 @@ OPTIONS = {
 
   # Font string (see xfontsel)
   :font    => "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*"
-
-  # Xft font (overrides :font and may be excluded per compile time)
-  #:xftfont => "fixed-10"
 }
 
 #
