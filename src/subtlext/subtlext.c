@@ -11,6 +11,7 @@
   **/
 
 #include <unistd.h>
+#include <locale.h>
 #include "subtlext.h"
 
 Display *display = NULL;
@@ -371,6 +372,8 @@ subSubtlextConnect(void)
         }
 
       XSetErrorHandler(subSharedLogXError);
+
+      if(!setlocale(LC_CTYPE, "")) XSupportsLocale();
 
       /* Check if subtle is running */
       if(True != subSharedSubtleRunning())

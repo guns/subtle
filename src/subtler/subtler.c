@@ -10,6 +10,7 @@
   * See the file COPYING.
   **/
 
+#include <locale.h>
 #include "shared.h"
 
 #ifdef HAVE_EXECINFO_H
@@ -1293,6 +1294,8 @@ SubtlerViewKill(int argc,
   else subSharedLogWarn("Failed killing view\n");
 } /* }}} */
 
+/* Misc */
+
 /* SubtlerUsage {{{ */
 static void
 SubtlerUsage(int group)
@@ -1655,6 +1658,8 @@ main(int argc,
       return -1;
     }
   XSetErrorHandler(subSharedLogXError);
+
+  if(!setlocale(LC_CTYPE, "")) XSupportsLocale();
 
   /* Check if subtle is running */
   if(True != subSharedSubtleRunning())
