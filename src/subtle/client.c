@@ -1103,7 +1103,8 @@ subClientToggle(SubClient *c,
           c->geom = c->base;
 
           subClientSetSize(c); ///< Sanitize
-          subClientWarp(c);
+
+          if(VISIBLE(CURVIEW, c)) subClientWarp(c);
         }
 
       if(type & SUB_MODE_FULL)
