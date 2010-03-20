@@ -190,16 +190,26 @@ subClientConfigure(SubClient *c)
 void
 subClientRender(SubClient *c)
 {
+  int x = 0;
   char buf[50] = { 0 };
   long fg = 0, bg = 0;
 
   DEAD(c);
   assert(c);
 
-  /* Title mode */
-  if(c->flags & (SUB_MODE_STICK|SUB_MODE_FLOAT))
-    snprintf(buf, sizeof(buf), "%c%s", c->flags & SUB_MODE_STICK ? '*' : '^', c->name);
-  else snprintf(buf, sizeof(buf), "%s", c->name);
+  /* Title modes */
+  if(c->flags & SUB_MODE_FLOAT)
+    {
+      snprintf(buf + x, sizeof(buf), "%c", '^');
+      x++;
+    }
+  if(c->flags & SUB_MODE_STICK)
+    {
+      snprintf(buf + x, sizeof(buf), "%c", '*');
+      x++;
+    }
+
+  snprintf(buf + x, sizeof(buf), "%s", c->name);
 
   /* Select color pair */
   if(c->flags & SUB_MODE_URGENT)
@@ -765,7 +775,11 @@ subClientSetName(SubClient *c)
   assert(c);
   DEAD(c);
 
-  len = strlen(c->name) + (c->flags & (SUB_MODE_STICK|SUB_MODE_FLOAT) ? 1 : 0);
+  len = strlen(c->name);
+  
+  /* Title modes */
+  if(c->flags & SUB_MODE_FLOAT) len++;
+  if(c->flags & SUB_MODE_STICK) len++;
 
   /* Update panel width */
   subtle->windows.title.width = subSharedTextWidth(subtle->font, c->name, 
@@ -991,13 +1005,14 @@ subClientSetTransient(SubClient *c,
 {
   int i;
   Window trans = 0;
-  SubClient *k = NULL;
 
   assert(c && flags);
 
   /* Check for transient windows */
   if(XGetTransientForHint(subtle->dpy, c->win, &trans))
     {
+      SubClient *k = NULL;
+
       /* Check if transient windows should be urgent */
       *flags |= subtle->flags & SUB_SUBTLE_URGENT ?
         SUB_MODE_FLOAT|SUB_MODE_URGENT : SUB_MODE_FLOAT;
@@ -1009,8 +1024,8 @@ subClientSetTransient(SubClient *c,
           c->tags   |= k->tags;
           c->screen |= k->screen;
 
-           for(i = 0; i < subtle->views->ndata; i++)
-             c->screens[i] = k->screens[i];
+          for(i = 0; i < subtle->views->ndata; i++)
+            c->screens[i] = k->screens[i];
         }
      }
 } /* }}} */
