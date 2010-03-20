@@ -97,8 +97,6 @@ SubtlextTag(VALUE self,
           data.l[2] = rb_obj_is_instance_of(self, 
             rb_const_get(mod, rb_intern("Client"))) ? 0 : 1; ///< Client = 0, View = 1
 
-          printf("win-id=%ld, tag-id=%ld\n", data.l[0], data.l[1]);
-
           subSharedMessage(DefaultRootWindow(display), action, data, True);
         }
     }
