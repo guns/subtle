@@ -148,25 +148,17 @@ subScreenFit(SubScreen *s,
   assert(s && r);
 
   /* Check sizes */
-  if(r->width > s->geom.width)   r->width = s->geom.width;
+  if(r->width > s->geom.width)   r->width  = s->geom.width;
   if(r->height > s->geom.height) r->height = s->geom.height;
 
   /* Check position */
-  if(r->x + r->width > s->geom.x + s->geom.width || r->x < s->geom.x)
-    r->x = s->geom.x + s->geom.width - r->width;
+  if((center && r->x == s->geom.x) ||
+      r->x + r->width > s->geom.x + s->geom.width || r->x < s->geom.x)
+    r->x = s->geom.x + (s->geom.width - r->width - 2 * subtle->bw) / 2;
 
-  if(r->y + r->height > s->geom.y + s->geom.height || r->y < s->geom.y)
-    r->y = s->geom.y + s->geom.height - r->height;
-
-  /* Center */
-  if(center)
-    {
-      if(r->x == s->geom.x)
-        r->x = s->geom.x + (s->geom.width  - r->width  - 2 * subtle->bw) / 2;
-      if(r->y == s->geom.y)
-        r->y = s->geom.y + (s->geom.height - r->height - 2 * subtle->bw) / 2;
-    }
-  
+  if((center && r->y == s->geom.y) ||
+      r->y + r->height > s->geom.y + s->geom.height || r->y < s->geom.y)
+    r->y = s->geom.y + (s->geom.height - r->height - 2 * subtle->bw) / 2;
 } /* }}} */
 
  /** SubScreenKill {{{
