@@ -1083,7 +1083,7 @@ Init_subtlext(void)
   rb_define_method(tag, "kill",       subTagKill,     0);
 
   /* Singleton aliases */
-  /*rb_define_alias(rb_singleton_class(tag), "[]", "find");*/
+  rb_define_alias(rb_singleton_class(tag), "[]", "find");
 
   /* Aliases */
   rb_define_alias(tag, "save", "update");
