@@ -117,7 +117,7 @@ subClientNew(Window win)
   subEwmhSetWMState(c->win, WithdrawnState);
 
   /* Update client */
-  subClientSetNormalHints(c);
+  subClientSetNormalHints(c, &flags);
   subClientSetProtocols(c);
   subClientSetStrut(c);
   subClientSetTags(c);
@@ -810,7 +810,8 @@ subClientSetProtocols(SubClient *c)
    **/
 
 void
-subClientSetNormalHints(SubClient *c)
+subClientSetNormalHints(SubClient *c,
+  int *flags)
 {
   long supplied = 0;
   XSizeHints *size = NULL;
@@ -844,25 +845,38 @@ subClientSetNormalHints(SubClient *c)
         {
           /* Limit min size to screen size if larger */
           if(size->min_width)  
-            c->minw = c->minw > s->geom.width ? s->geom.width : MIN(MINW, size->min_width);
+            c->minw = c->minw > s->geom.width ? s->geom.width :
+              MIN(MINW, size->min_width);
           if(size->min_height) 
-            c->minh = c->minh > s->geom.height ? s->geom.height : MIN(MINH, size->min_height);
+            c->minh = c->minh > s->geom.height ? s->geom.height :
+              MIN(MINH, size->min_height);
         }
 
       if(size->flags & PMaxSize) ///< Program max size
         {
           /* Limit max size to screen size if larger */
           if(size->max_width)
-            c->maxw = size->max_width > s->geom.width ?  s->geom.width : size->max_width;
+            c->maxw = size->max_width > s->geom.width ?
+              s->geom.width : size->max_width;
           if(size->max_height)
             c->maxh = size->max_height > s->geom.height - subtle->th ?
               s->geom.height - subtle->th : size->max_height;
         }
 
+      /* Floating on equal min and max sizes */
+      if(size->flags & PMinSize && size->flags & PMaxSize)
+        {
+          if(size->min_width == size->max_width &&
+              size->min_height == size->max_height)
+            *flags |= SUB_MODE_FLOAT;
+        }
+
       if(size->flags & PAspect) ///< Aspect
         {
-          if(size->min_aspect.y) c->minr = (float)size->min_aspect.x / size->min_aspect.y;
-          if(size->max_aspect.y) c->maxr = (float)size->max_aspect.x / size->max_aspect.y;
+          if(size->min_aspect.y)
+            c->minr = (float)size->min_aspect.x / size->min_aspect.y;
+          if(size->max_aspect.y) 
+            c->maxr = (float)size->max_aspect.x / size->max_aspect.y;
         }
 
       if(size->flags & PResizeInc) ///< Resize inc
@@ -873,7 +887,8 @@ subClientSetNormalHints(SubClient *c)
 
       /* Check for specific position */
       if(!(c->flags & SUB_MODE_NONRESIZE) &&
-          (subtle->flags & SUB_SUBTLE_RESIZE || c->flags & (SUB_MODE_FLOAT|SUB_MODE_RESIZE)))
+          (subtle->flags & SUB_SUBTLE_RESIZE ||
+          c->flags & (SUB_MODE_FLOAT|SUB_MODE_RESIZE)))
         {
           if(size->flags & (USSize|PSize)) ///< User/program size
             {
@@ -893,8 +908,8 @@ subClientSetNormalHints(SubClient *c)
 
   subSharedLogDebug("Normal hints: x=%d, y=%d, width=%d, height=%d, minw=%d, minh=%d, " \
     "maxw=%d, maxh=%d, minr=%f, maxr=%f\n",
-    c->geom.x, c->geom.y, c->geom.width, c->geom.height, c->minw, c->minh, c->maxw,
-    c->maxh, c->minr, c->maxr);
+    c->geom.x, c->geom.y, c->geom.width, c->geom.height, c->minw, 
+    c->minh, c->maxw, c->maxh, c->minr, c->maxr);
 } /* }}} */
 
   /** subClientSetHints {{{
@@ -922,7 +937,8 @@ subClientSetHints(SubClient *c,
           else if(c->flags & SUB_MODE_URGENT) *flags |= SUB_MODE_URGENT_FOCUS;
         }
         
-      if(hints->flags & InputHint && hints->input) c->flags |= SUB_CLIENT_INPUT;
+      if(hints->flags & InputHint && hints->input) 
+        c->flags |= SUB_CLIENT_INPUT;
 
       XFree(hints);
     }

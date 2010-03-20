@@ -565,7 +565,7 @@ void subClientSetSize(SubClient *c);                              ///< Set clien
 void subClientSetStrut(SubClient *c);                             ///< Set client strut
 void subClientSetName(SubClient *c);                              ///< Set client WM_NAME
 void subClientSetProtocols(SubClient *c);                         ///< Set client protocols
-void subClientSetNormalHints(SubClient *c);                       ///< Set client normal hints
+void subClientSetNormalHints(SubClient *c, int *flags);           ///< Set client normal hints
 void subClientSetHints(SubClient *c, int *flags);                 ///< Set client WM hints
 void subClientSetState(SubClient *c, int *flags);                 ///< Set client WM state
 void subClientSetTransient(SubClient *c, int *flags);             ///< Set client transient

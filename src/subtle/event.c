@@ -667,7 +667,10 @@ EventProperty(XPropertyEvent *ev)
       case SUB_EWMH_WM_NORMAL_HINTS: /* {{{ */
         if((c = CLIENT(subSubtleFind(ev->window, CLIENTID)))) 
           {
-            subClientSetNormalHints(c);
+            int flags = 0;
+
+            subClientSetNormalHints(c, &flags);
+            subClientToggle(c, (~c->flags & flags));
           }
         else if((t = TRAY(subSubtleFind(ev->window, TRAYID))))
           {
