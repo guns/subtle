@@ -1118,12 +1118,16 @@ subClientToggle(SubClient *c,
         {
           int i;
 
-          /* Set gravity for clients on views client will be visible now */
+          /* Set gravity and screen for other views */
           for(i = 0; i < subtle->views->ndata; i++)
             {
               SubView *v = VIEW(subtle->views->data[i]);
 
-              if(!(VISIBLE(v, c))) c->gravities[i] = c->gravity;
+              if(!(VISIBLE(v, c)))
+                {
+                  c->gravities[i] = c->gravity;
+                  c->screens[i]   = c->screen;
+                }
             }
         }
 
