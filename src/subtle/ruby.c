@@ -946,11 +946,7 @@ RubyWrapLoadSubtlext(VALUE data)
   /* Load subtlext */
   if(NIL_P(subtlext))
     {
-#ifdef DEBUG    
-      rb_require("subtlext");
-#else /* DEBUG */
       rb_require("subtle/subtlext");
-#endif /* DEBUG */
 
       subtlext = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
 
