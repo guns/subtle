@@ -42,7 +42,7 @@ OPTIONS = {
   :padding => [ 0, 0, 0, 0 ],
 
   # Font string (see xfontsel)
-  :font    => "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*"
+  :font    => "-*-*-medium-*-*-*-14-*-*-*-*-*-*-*"
 }
 
 #
