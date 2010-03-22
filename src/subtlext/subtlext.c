@@ -1193,17 +1193,23 @@ Init_subtlext(void)
   /* Singleton methods */
   rb_define_singleton_method(window, "new", subWindowNew, 1);
 
+  /* General methods */
+  rb_define_method(window, "click",        SubtlextClick, -1);
+  rb_define_method(window, "focus",        SubtlextFocus,  0);
+
   /* Class methods */
-  rb_define_method(window, "name=",         subWindowNameWriter,        1);
-  rb_define_method(window, "font=",         subWindowFontWriter,        1);
-  rb_define_method(window, "background=",   subWindowBackgroundWriter,  1);
-  rb_define_method(window, "border_color=", subWindowBorderColorWriter, 1);
-  rb_define_method(window, "border_size=",  subWindowBorderSizeWriter,  1);
-  rb_define_method(window, "text",          subWindowTextWriter,        2);
-  rb_define_method(window, "geometry",      subWindowGeometryReader,    0);
-  rb_define_method(window, "show",          subWindowShow,              0);
-  rb_define_method(window, "hide",          subWindowHide,              0);
-  rb_define_method(window, "kill",          subWindowKill,              0);
+  rb_define_method(window, "name",         subWindowNameWriter,        1);
+  rb_define_method(window, "font",         subWindowFontWriter,        1);
+  rb_define_method(window, "foreground",   subWindowForegroundWriter,  1);
+  rb_define_method(window, "background",   subWindowBackgroundWriter,  1);
+  rb_define_method(window, "border_color", subWindowBorderColorWriter, 1);
+  rb_define_method(window, "border_size",  subWindowBorderSizeWriter,  1);
+  rb_define_method(window, "text",         subWindowTextWriter,        1);
+  rb_define_method(window, "input",        subWindowInput,             0);
+  rb_define_method(window, "geometry",     subWindowGeometryReader,    0);
+  rb_define_method(window, "show",         subWindowShow,              0);
+  rb_define_method(window, "hide",         subWindowHide,              0);
+  rb_define_method(window, "kill",         subWindowKill,              0);
 
   /* Singleton aliases */
   rb_define_alias(rb_singleton_class(window), "configure", "new");

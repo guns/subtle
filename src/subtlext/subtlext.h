@@ -201,11 +201,13 @@ VALUE subWindowDispatcher(int argc, VALUE *argv, VALUE self);     ///< Window di
 VALUE subWindowNew(VALUE self, VALUE options);                    ///< Create window
 VALUE subWindowNameWriter(VALUE self, VALUE value);               ///< Set name
 VALUE subWindowFontWriter(VALUE self, VALUE value);               ///< Set font
+VALUE subWindowForegroundWriter(VALUE self, VALUE value);         ///< Set foreground
 VALUE subWindowBackgroundWriter(VALUE self, VALUE value);         ///< Set background
 VALUE subWindowBorderColorWriter(VALUE self, VALUE value);        ///< Set border color
 VALUE subWindowBorderSizeWriter(VALUE self, VALUE value);         ///< Set border size
 VALUE subWindowGeometryReader(VALUE self);                        ///< Get geometry
-VALUE subWindowTextWriter(VALUE self, VALUE text, VALUE color);   ///< Add text
+VALUE subWindowTextWriter(VALUE self, VALUE text);                ///< Add text
+VALUE subWindowInput(VALUE self);                                 ///< Get input
 VALUE subWindowShow(VALUE self);                                  ///< Show window
 VALUE subWindowHide(VALUE self);                                  ///< Hide window
 VALUE subWindowKill(VALUE self);                                  ///< Kill window
