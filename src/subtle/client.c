@@ -84,6 +84,7 @@ subClientNew(Window win)
   c->screens   = (int *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(int));
   c->flags     = SUB_TYPE_CLIENT;
   c->gravity   = -1; ///< Force update
+  c->screen    = -1;
   c->win       = win;
 
   /* Window attributes */
@@ -652,7 +653,7 @@ subClientSetScreen(SubClient *c,
         {
           SubScreen *s1 = NULL, *s2 = NULL;
           
-          s1 = SCREEN(subtle->screens->data[c->screen]);
+          s1 = SCREEN(subtle->screens->data[-1 != c->screen ? c->screen : 0]);
           s2 = SCREEN(subtle->screens->data[screen]);
 
           /* Update screen offsets */
@@ -718,7 +719,9 @@ subClientSetSize(SubClient *c)
   /* Fit sizes */
   if(!(c->flags & SUB_CLIENT_DOCK))
     {
-      SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
+      SubScreen *s = NULL;
+      
+      s = SCREEN(subtle->screens->data[-1 != c->screen ? c->screen : 0]);
 
       subScreenFit(s, &c->geom, c->flags & SUB_MODE_FLOAT);
       subScreenFit(s, &c->base, False);
@@ -840,7 +843,7 @@ subClientSetNormalHints(SubClient *c,
       abort();
     }
 
-  s = SCREEN(subtle->screens->data[c->screen]);
+  s = SCREEN(subtle->screens->data[0]); ///< Take first screen
 
   /* Default values {{{ */
   c->minw   = MINW;
@@ -1125,8 +1128,8 @@ subClientToggle(SubClient *c,
 
               if(!(VISIBLE(v, c)))
                 {
-                  c->gravities[i] = c->gravity;
-                  c->screens[i]   = c->screen;
+                  if(-1 != c->gravity) c->gravities[i] = c->gravity;
+                  if(-1 != c->screen)  c->screens[i]   = c->screen;
                 }
             }
         }
