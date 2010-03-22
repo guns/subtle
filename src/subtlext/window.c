@@ -8,17 +8,19 @@
   * This program can be distributed under the terms of the GNU GPL.
   * See the file COPYING.
   **/
- 
+
+#include <pthread.h>
 #include "subtlext.h"
 
 /* Typedefs {{{ */
 typedef struct subtlextwindow_t
 {
-  GC          gc;
-  Window      win;
-  XFontStruct *xfs;
-  VALUE       instance;
-  SubText     *text;
+  Window        win;
+  SubFont       *font;
+  SubText       *text;
+  VALUE         instance;
+  unsigned long fg, bg;
+  int           width;
 } SubtlextWindow;
 /* }}} */
 
@@ -35,10 +37,8 @@ WindowSweep(SubtlextWindow *w)
 {
   if(w)
     {
-      XFreeGC(display, w->gc);
-      XFreeFont(display, w->xfs);
-
       subSharedTextFree(w->text);
+      subSharedFontKill(display, w->font);
 
       free(w);
     }
@@ -63,7 +63,6 @@ subWindowNew(VALUE self,
   int data[4] = { 0, 0, 1, 1 };
   VALUE geom = Qnil;
   XSetWindowAttributes sattrs;
-  XGCValues gvals;
 
   subSubtlextConnect(); ///< Implicit open connection
 
@@ -82,8 +81,8 @@ subWindowNew(VALUE self,
         {
           VALUE sym = CHAR2SYM(syms[i]);
 
-          if(Qtrue == rb_hash_lookup(options, sym))
-            data[i] = rb_hash_aref(options, sym);
+          if(RTEST(rb_hash_lookup(options, sym)))
+            data[i] = FIX2INT(rb_hash_aref(options, sym));
         }
     }
   else rb_raise(rb_eArgError, "Unknown value type");
@@ -99,11 +98,10 @@ subWindowNew(VALUE self,
     CWOverrideRedirect, &sattrs);
 
   /* Create window defaults */
-  w->xfs           = XLoadQueryFont(display, "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*");
-  gvals.font       = w->xfs->fid;
-  gvals.foreground = WhitePixel(display, DefaultScreen(display));
-  w->gc            = XCreateGC(display, w->win, GCFont|GCForeground, &gvals);
-
+  w->font          = subSharedFontNew(display, "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*");
+  w->text          = subSharedTextNew();
+  w->bg            = BlackPixel(display, DefaultScreen(display));
+  
   /* Store data */
   rb_iv_set(w->instance, "@win",      LONG2NUM(w->win));
   rb_iv_set(w->instance, "@geometry", geom);
@@ -111,7 +109,7 @@ subWindowNew(VALUE self,
   /* Yield to block if given */
   if(rb_block_given_p())
     {
-      rb_yield_values(1, w->instance);
+      //rb_yield_values(1, w->instance);
       rb_obj_instance_eval(0, 0, w->instance);
     }
 
@@ -153,7 +151,7 @@ subWindowNameWriter(VALUE self,
 
             /* Set Window informations */
             hint.res_name  = name;
-            hint.res_class = name;
+            hint.res_class = "Subtlext";
 
             XSetClassHint(display, win, &hint);
             XStringListToTextProperty(&name, 1, &text);
@@ -189,8 +187,7 @@ subWindowFontWriter(VALUE self,
   if(w)
     {
       char *font = NULL;
-      XGCValues gvals;
-      XFontStruct *xfs = NULL;
+      SubFont *f = NULL;
 
       switch(rb_type(value))
         {
@@ -198,16 +195,46 @@ subWindowFontWriter(VALUE self,
             font = RSTRING_PTR(value);
 
             /* Create window font */
-            if(!(xfs = XLoadQueryFont(display, font)))
+            if(!(f = subSharedFontNew(display, font)))
               rb_raise(rb_eArgError, "Unknown value type");
 
             /* Replace font */
-            if(w->xfs) XFreeFont(display, w->xfs);
+            if(w->font) subSharedFontKill(display, w->font);
 
-            w->xfs     = xfs;
-            gvals.font = xfs->fid;
-      
-            XChangeGC(display, w->gc, GCFont, &gvals);
+            w->font = f;
+            break;
+          default:
+            rb_raise(rb_eArgError, "Unknown value type");
+        }
+    }
+
+  return Qnil;
+} /* }}} */
+
+/* subWindowForegroundWriter {{{ */
+/*
+ * call-seq: foreground=(color) -> nil
+ *
+ * Set foreground color of a window
+ *
+ *  win.foreground = "#000000"
+ *  => nil
+ */
+
+VALUE
+subWindowForegroundWriter(VALUE self,
+  VALUE value)
+{
+  SubtlextWindow *w = NULL;
+
+  Data_Get_Struct(self, SubtlextWindow, w);
+  if(w)
+    {
+      /* Check object type */
+      switch(rb_type(value))
+        {
+          case T_STRING:
+            w->fg = subSharedParseColor(display, RSTRING_PTR(value));
             break;
           default:
             rb_raise(rb_eArgError, "Unknown value type");
@@ -236,17 +263,11 @@ subWindowBackgroundWriter(VALUE self,
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w)
     {
-      VALUE win = Qnil;
-      unsigned long color = BlackPixel(display, DefaultScreen(display));
-
       /* Check object type */
       switch(rb_type(value))
         {
           case T_STRING:
-            color = subSharedParseColor(display, RSTRING_PTR(value));
-            win   = rb_iv_get(self, "@win");
-
-            XSetWindowBackground(display, NUM2LONG(win), color);
+            w->bg = subSharedParseColor(display, RSTRING_PTR(value));
             break;
           default:
             rb_raise(rb_eArgError, "Unknown value type");
@@ -275,7 +296,6 @@ subWindowBorderColorWriter(VALUE self,
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w)
     {
-      VALUE win = Qnil;
       unsigned long color = WhitePixel(display, DefaultScreen(display));
 
       /* Check object type */
@@ -283,9 +303,9 @@ subWindowBorderColorWriter(VALUE self,
         {
           case T_STRING:
             color = subSharedParseColor(display, RSTRING_PTR(value));
-            win   = rb_iv_get(self, "@win");
 
-            XSetWindowBorder(display, NUM2LONG(win), color);
+            XSetWindowBorder(display, w->win, color);
+            XFlush(display);
             break;
           default:
             rb_raise(rb_eArgError, "Unknown value type");
@@ -314,19 +334,17 @@ subWindowBorderSizeWriter(VALUE self,
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w)
     {
-      VALUE win = Qnil;
       int width = 3;
 
       /* Check object type */
       if(FIXNUM_P(value))
         {
           width = FIX2INT(value);
-          win   = rb_iv_get(self, "@win");
 
-          XSetWindowBorder(display, NUM2LONG(win), width);
+          XSetWindowBorderWidth(display, w->win, width);
+          XFlush(display);
         }
-      else
-        rb_raise(rb_eArgError, "Unknown value type");
+      else rb_raise(rb_eArgError, "Unknown value type");
     }
 
   return Qnil;
@@ -360,15 +378,78 @@ subWindowGeometryReader(VALUE self)
 
 VALUE
 subWindowTextWriter(VALUE self,
-  VALUE text,
-  VALUE color)
+  VALUE text)
 {
   SubtlextWindow *w = NULL;
 
   Data_Get_Struct(self, SubtlextWindow, w);
-  if(w)
+  if(w) w->width = subSharedTextParse(display, w->font, w->text,
+    RSTRING_PTR(text));
+
+  return Qnil;
+} /* }}} */
+
+/* subWindowInput {{{ */
+/*
+ * call-seq: input -> String
+ *
+ * Get input
+ *
+ *  inp = input
+ *  => "subtle"
+ */
+
+VALUE
+subWindowInput(VALUE self)
+{
+  SubtlextWindow *w = NULL;
+
+  Data_Get_Struct(self, SubtlextWindow, w);
+  if(w) 
     {
-      
+      XEvent ev;
+      char buf[32] = { 0 }, text[4096] = { 0 };
+      int num = 0, len = 0, running = True;
+      KeySym sym;
+
+      XSelectInput(display, w->win, KeyPressMask);
+
+      while(running && !XNextEvent(display, &ev))
+        switch(ev.type)
+          {
+            case KeyPress: 
+              num = XLookupString(&ev.xkey, buf, sizeof(buf), &sym, NULL);
+
+              switch(sym)
+                {
+                  case XK_Return:
+                  case XK_KP_Enter:
+                    running = False;
+                    break;
+                  case XK_Escape:
+                    running = False;
+                    break;
+                  case XK_BackSpace:
+                    text[--len] = 0;
+                    break;
+                  default:
+                    buf[num] = 0;
+                    strncpy(text + len, buf, sizeof(text) - len);
+                    len += num;
+                    break;
+                }
+
+                XClearWindow(display, w->win);
+
+                subSharedTextRender(display, DefaultGC(display, 0),
+                  w->font, w->text, w->win, w->fg, w->bg);
+                
+                subSharedTextDraw(display, DefaultGC(display, 0), w->font,
+                  w->win, w->width + 5, w->font->y, w->fg, w->bg, text);
+
+              break;
+            default: break;
+          }
     }
 
   return Qnil;
@@ -387,11 +468,17 @@ subWindowTextWriter(VALUE self,
 VALUE
 subWindowShow(VALUE self)
 {
-  VALUE win = rb_iv_get(self, "@win");
+  SubtlextWindow *w = NULL;
 
-  if(RTEST(win)) 
+  Data_Get_Struct(self, SubtlextWindow, w);
+  if(w) 
     {
-      XMapRaised(display, NUM2LONG(win));
+      XMapRaised(display, w->win);
+      XClearWindow(display, w->win);
+
+      subSharedTextRender(display, DefaultGC(display, 0),
+        w->font, w->text, w->win, w->fg, w->bg);
+
       XSync(display, False); ///< Sync with X
     }
 
