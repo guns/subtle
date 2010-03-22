@@ -26,9 +26,13 @@ subColorInit(VALUE self,
   VALUE color)
 {
   /* Check arguments */ 
-  if(RTEST(color) && T_STRING == rb_type(color))
+  if(T_STRING == rb_type(color))
     {
-      unsigned long pixel = subSharedParseColor(display, RSTRING_PTR(color));
+      unsigned long pixel = 0;
+
+      subSubtlextConnect(); ///< Implicit open connection
+      
+      pixel = subSharedParseColor(display, RSTRING_PTR(color));
 
       rb_iv_set(self, "@pixel", INT2FIX(pixel));
     }
