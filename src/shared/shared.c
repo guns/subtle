@@ -503,42 +503,45 @@ subSharedTextParse(Display *disp,
  /** subSharedTextRender {{{
   * @brief Render text
   * @param[in]  disp  Display
-  * @param[in]  gc       GC
-  * @param[in]  f        A #SubFont
-  * @param[in]  t        A #SubText
-  * @param[in]  str      String to parse
+  * @param[in]  gc   GC
+  * @param[in]  f    A #SubFont
+  * @param[in]  win  A #Window
+  * @param[in]  x    X position
+  * @param[in]  y    Y position
+  * @param[in]  fg   Foreground color
+  * @param[in]  bg   Background color
+  * @param[in]  t    A #SubText
   **/
 
 void
 subSharedTextRender(Display *disp,
   GC gc,
   SubFont *f,
-  SubText *t,
   Window win,
+  int x,
+  int y,
   long fg,
-  long bg)
+  long bg,
+  SubText *t)
 {
-  int i, width = 3;
+  int i, width = x;
   SubTextItem *item = NULL;
 
   assert(t);
-
-  XSetWindowBackground(disp, win, bg);
-  XClearWindow(disp, win);
 
   /* Render text items */
   for(i = 0; i < t->nitems; i++)
     {
       if((item = (SubTextItem *)t->items[i]) && False == item->icon) ///< Text
         {
-          subSharedTextDraw(disp, gc, f, win, width, f->y, 
-            -1 == item->color ? fg : item->color, -1, item->data.string);
+          subSharedTextDraw(disp, gc, f, win, width, y, 
+            -1 == item->color ? fg : item->color, bg, item->data.string);
 
           width += item->width;
         }
       else if(True == item->icon) ///< Icon
         {
-          int x = (0 == i) ? 0 : 2; ///< Add spacing when icon isn't first
+          int dx = (0 == i) ? 0 : 2; ///< Add spacing when icon isn't first
 
           XGCValues gvals;
 
@@ -548,10 +551,10 @@ subSharedTextRender(Display *disp,
           XChangeGC(disp, gc, GCForeground|GCBackground, &gvals);
 
           XCopyPlane(disp, (Pixmap)item->data.num, win, gc, 0, 0, item->width, 
-            item->height, width + x, abs(f->height - item->height) / 2, 1);
+            item->height, width + dx, abs(f->height - item->height) / 2, 1);
 
           /* Add spacing when icon isn't last */
-          width += item->width + x + (i != t->nitems - 1 ? 2 : 0); 
+          width += item->width + dx + (i != t->nitems - 1 ? 2 : 0); 
         }
     }
 } /* }}} */
@@ -596,15 +599,14 @@ subSharedTextWidth(SubFont *f,
  /** subSharedTextDraw {{{
   * @brief Draw text
   * @param[in]  disp  Display
-  * @param[in]  gc       GC
-  * @param[in]  f        A #SubFont
-  * @param[in]  win      Target window
-  * @param[in]  x        X position
-  * @param[in]  y        Y position
-  * @param[in]  fg       Foreground color
-  * @param[in]  bg       Background color
-  * @param[in]  text     Text to draw
-  * @return Width of the box
+  * @param[in]  gc    GC
+  * @param[in]  f     A #SubFont
+  * @param[in]  win   Target window
+  * @param[in]  x     X position
+  * @param[in]  y     Y position
+  * @param[in]  fg    Foreground color
+  * @param[in]  bg    Background color
+  * @param[in]  text  Text to draw
   **/
 
 void 
@@ -622,17 +624,11 @@ subSharedTextDraw(Display *disp,
 
   assert(text);
 
-  /* Clear window */
-  if(0 <= bg)
-    {
-      XSetWindowBackground(disp, win, bg);
-      XClearWindow(disp, win);
-    }
-
   /* Draw text */
   gvals.foreground = fg;
+  gvals.background = bg;
       
-  XChangeGC(disp, gc, GCForeground, &gvals);
+  XChangeGC(disp, gc, GCForeground|GCBackground, &gvals);
   XmbDrawString(disp, win, f->xfs, gc, x, y, text, strlen(text));
 } /* }}} */
 

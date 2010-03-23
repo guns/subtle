@@ -171,7 +171,7 @@ SubText *subSharedTextNew(void);                                  ///< Create ne
 int subSharedTextParse(Display *disp, SubFont *f,
   SubText *t, char *text);                                        ///< Parse text
 void subSharedTextRender(Display *disp, GC gc, SubFont *f, 
-  SubText *t, Window win, long fg, long bg);                      ///< Render text
+  Window win, int x, int y, long fg, long bg, SubText *t);        ///< Render text
 int subSharedTextWidth(SubFont *f, const char *text,
   int len, int *left, int *right, int center);                    ///< Get text width
 void subSharedTextFree(SubText *t);                               ///< Free text
