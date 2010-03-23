@@ -477,7 +477,7 @@ subSubtlextFind(int type,
                   snprintf(buf, sizeof(buf), "%s", SYM2CHAR(match));
                   break;
                 case T_FIXNUM:
-                  snprintf(buf, sizeof(buf), "%ld", FIX2INT(match));
+                  snprintf(buf, sizeof(buf), "%d", (int)FIX2INT(match));
               }
           }
         break; /* }}} */        
