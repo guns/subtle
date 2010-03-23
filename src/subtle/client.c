@@ -158,7 +158,7 @@ subClientConfigure(SubClient *c)
   r = c->geom;
 
   if(c->flags & SUB_MODE_FULL) ///< Get fullscreen size of screen
-    r = SCREEN(subtle->screens->data[c->screen])->base;
+    r = SCREEN(subtle->screens->data[-1 != c->screen ? c->screen : 0])->base;
 
   /* Tell client new geometry */
   ev.type              = ConfigureNotify;
