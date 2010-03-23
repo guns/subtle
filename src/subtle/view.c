@@ -172,6 +172,10 @@ subViewRender(void)
               fg = subtle->colors.fg_views;
               bg = subtle->colors.bg_views;
             }
+          
+          /* Set color and draw */
+          XSetWindowBackground(subtle->dpy, v->button, bg);
+          XClearWindow(subtle->dpy, v->button);
 
           subSharedTextDraw(subtle->dpy, subtle->gcs.font, subtle->font,
             v->button, 3, subtle->font->y, fg, bg, v->name);

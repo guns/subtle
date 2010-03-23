@@ -70,12 +70,14 @@ subSubletRender(SubSublet *s)
 {
   assert(s);
 
+  /* Set color */
   XSetWindowBackground(subtle->dpy, s->win, s->bg);
   XClearWindow(subtle->dpy, s->win);
 
   /* Render text parts */
-  subSharedTextRender(subtle->dpy, subtle->gcs.font, subtle->font,
-    s->text, s->win, subtle->colors.fg_sublets, subtle->colors.bg_sublets);
+  subSharedTextRender(subtle->dpy, subtle->gcs.font, subtle->font, s->win, 3, 
+    subtle->font->y, subtle->colors.fg_sublets, subtle->colors.bg_sublets, 
+    s->text);
 
   XResizeWindow(subtle->dpy, s->win, s->width, subtle->th);
   XSync(subtle->dpy, False); ///< Sync before going on

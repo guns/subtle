@@ -226,8 +226,9 @@ subClientRender(SubClient *c)
 
   /* Set window background and border */
   XSetWindowBackground(subtle->dpy, subtle->windows.title.win, bg);
+  XClearWindow(subtle->dpy, subtle->windows.title.win);
 
-  if(!(c->flags & SUB_CLIENT_DOCK))
+  if(!(c->flags & SUB_CLIENT_DOCK)) ///< Exclude docking windows
     {
       XSetWindowBorder(subtle->dpy, c->win, subtle->windows.focus == c->win ? 
         subtle->colors.bo_focus : subtle->colors.bo_normal);
