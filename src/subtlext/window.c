@@ -268,6 +268,8 @@ subWindowBackgroundWriter(VALUE self,
         {
           case T_STRING:
             w->bg = subSharedParseColor(display, RSTRING_PTR(value));
+
+            XSetWindowBackground(display, w->win, w->bg);
             break;
           default:
             rb_raise(rb_eArgError, "Unknown value type");
@@ -403,6 +405,7 @@ VALUE
 subWindowInput(VALUE self)
 {
   SubtlextWindow *w = NULL;
+  VALUE ret = Qnil;
 
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w) 
@@ -412,47 +415,61 @@ subWindowInput(VALUE self)
       int num = 0, len = 0, running = True;
       KeySym sym;
 
+      XGrabKeyboard(display, DefaultRootWindow(display), True, 
+        GrabModeAsync, GrabModeAsync, CurrentTime);
+      XMapRaised(display, w->win);
       XSelectInput(display, w->win, KeyPressMask);
+      XSetInputFocus(display, w->win, RevertToPointerRoot, CurrentTime);
+          XFlush(display);
 
-      while(running && !XNextEvent(display, &ev))
-        switch(ev.type)
-          {
-            case KeyPress: 
-              num = XLookupString(&ev.xkey, buf, sizeof(buf), &sym, NULL);
+      while(running)
+        {
+          XClearWindow(display, w->win);
 
-              switch(sym)
-                {
-                  case XK_Return:
-                  case XK_KP_Enter:
-                    running = False;
-                    break;
-                  case XK_Escape:
-                    running = False;
-                    break;
-                  case XK_BackSpace:
-                    text[--len] = 0;
-                    break;
-                  default:
-                    buf[num] = 0;
-                    strncpy(text + len, buf, sizeof(text) - len);
-                    len += num;
-                    break;
-                }
+          subSharedTextRender(display, DefaultGC(display, 0), w->font,
+            w->win, 3, w->font->y, w->fg, w->bg, w->text);
+          
+          subSharedTextDraw(display, DefaultGC(display, 0), w->font,
+            w->win, w->width + 5, w->font->y, w->fg, w->bg, text);
 
-                XClearWindow(display, w->win);
+          XFlush(display);
+          XNextEvent(display, &ev);
 
-                subSharedTextRender(display, DefaultGC(display, 0),
-                  w->font, w->text, w->win, w->fg, w->bg);
-                
-                subSharedTextDraw(display, DefaultGC(display, 0), w->font,
-                  w->win, w->width + 5, w->font->y, w->fg, w->bg, text);
+          switch(ev.type)
+            {
+              case KeyPress: 
+                num = XLookupString(&ev.xkey, buf, sizeof(buf), &sym, NULL);
 
-              break;
-            default: break;
-          }
+                switch(sym)
+                  {
+                    case XK_Return:
+                    case XK_KP_Enter:
+                      running = False;
+                      break;
+                    case XK_Escape:
+                      running = False;
+                      text[0] = 0;
+                      break;
+                    case XK_BackSpace:
+                      if(0 < len) text[--len] = 0;
+                      break;
+                    default:
+                      buf[num] = 0;
+                      strncpy(text + len, buf, sizeof(text) - len);
+                      len += num;
+                      break;
+                  }
+                break;
+              default: break;
+            }
+        }
+
+      XUngrabKeyboard(display, CurrentTime);
+
+      ret = rb_str_new2(text);
     }
 
-  return Qnil;
+  return ret;
 } /* }}} */
 
 /* subWindowShow {{{ */
@@ -474,12 +491,6 @@ subWindowShow(VALUE self)
   if(w) 
     {
       XMapRaised(display, w->win);
-      XClearWindow(display, w->win);
-
-      subSharedTextRender(display, DefaultGC(display, 0),
-        w->font, w->text, w->win, w->fg, w->bg);
-
-      XSync(display, False); ///< Sync with X
     }
 
   return Qnil;
