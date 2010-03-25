@@ -324,7 +324,7 @@ EventMessage(XClientMessageEvent *ev)
                 ((g = GRAVITY(subArrayGet(subtle->gravities, (int)ev->data.l[1])))) &&
                 VISIBLE(CURVIEW, c))
               {
-                subClientSetGravity(c, (int)ev->data.l[1], True);
+                subClientSetGravity(c, (int)ev->data.l[1], -1, True);
                 subClientConfigure(c);
                 subClientWarp(c);
                 XRaiseWindow(subtle->dpy, c->win);        
@@ -339,7 +339,7 @@ EventMessage(XClientMessageEvent *ev)
                       {
                         int flags = c->flags & (SUB_MODE_FULL|SUB_MODE_FLOAT);
 
-                        subClientSetScreen(c, ev->data.l[1], True);
+                        subClientSetGravity(c, -1, ev->data.l[1], True);
 
                         /* Remove full/float mode and re-set it for screen change */
                         if(flags) 
@@ -393,7 +393,7 @@ EventMessage(XClientMessageEvent *ev)
                   {
                     if((c = CLIENT(subtle->clients->data[i])) && c->gravity == ev->data.l[0])
                       {
-                        subClientSetGravity(c, 0, True); ///< Fallback to first gravity
+                        subClientSetGravity(c, 0, -1, True); ///< Fallback to first gravity
                         subClientConfigure(c);
                         subClientWarp(c);
                         XRaiseWindow(subtle->dpy, c->win);    
@@ -604,7 +604,7 @@ EventMessage(XClientMessageEvent *ev)
             c->geom.width  = ev->data.l[3];
             c->geom.height = ev->data.l[4];
 
-            subClientSetSize(c);
+            subClientResize(c);
             subClientConfigure(c);
             break; /* }}} */
           default: break;
@@ -884,6 +884,7 @@ EventGrab(XEvent *ev)
                 if(!(c->flags & SUB_MODE_FLOAT)) 
                   subClientToggle(c, SUB_MODE_FLOAT);
 
+                /* Translate flags */
                 if(SUB_GRAB_WINDOW_MOVE == flag)        flag = SUB_DRAG_MOVE;
                 else if(SUB_GRAB_WINDOW_RESIZE == flag) flag = SUB_DRAG_RESIZE;
 
@@ -978,7 +979,7 @@ EventGrab(XEvent *ev)
                 /* Sanity check */
                 if(0 <= id && id < subtle->gravities->ndata)
                   {
-                    subClientSetGravity(c, id, True);
+                    subClientSetGravity(c, id, -1, True);
                     subClientConfigure(c);
                     subClientWarp(c);
                     XRaiseWindow(subtle->dpy, c->win);
@@ -990,7 +991,7 @@ EventGrab(XEvent *ev)
               {
                 if(subtle->screens->ndata > g->data.num) ///< Check values
                   {
-                    subClientSetScreen(c, g->data.num, True);
+                    subClientSetGravity(c, -1, g->data.num, True);
                     subViewConfigure(CURVIEW, False);
                     subClientWarp(c);
                   }
