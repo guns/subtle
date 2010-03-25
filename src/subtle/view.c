@@ -88,18 +88,22 @@ subViewConfigure(SubView *v,
       /* Find matching clients */
       if(VISIBLE(v, c))
         {
-          subClientSetScreen(c, c->screens[vid], align);
+          subClientSetGravity(c, c->gravities[vid], c->screens[vid], align);
 
-          if(!(c->flags & (SUB_MODE_FULL|SUB_MODE_FLOAT)))
+          /* Map or raise window */
+          if(c->flags & (SUB_MODE_FULL|SUB_MODE_FLOAT))
+            XMapRaised(subtle->dpy, c->win);
+          else XMapWindow(subtle->dpy, c->win);
+
+          /* Warp after gravity and screen is set */
+          if(c->flags & SUB_CLIENT_WARP)
             {
-              subClientSetGravity(c, c->gravities[vid], align);
-
-              XMapWindow(subtle->dpy, c->win);
-
-              /* EWMH: Desktop */
-              subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
+              c->flags &= ~SUB_CLIENT_WARP;
+              subClientWarp(c);
             }
-          else XMapRaised(subtle->dpy, c->win); ///< Float/full
+
+          /* EWMH: Desktop */
+          subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
           subClientConfigure(c);
         }
