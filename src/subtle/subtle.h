@@ -198,13 +198,13 @@
 #define SUB_CLIENT_INPUT              (1L << 14)                  ///< Active/passive focus-model
 #define SUB_CLIENT_CLOSE              (1L << 15)                  ///< Send close message
 #define SUB_CLIENT_DOCK               (1L << 16)                  ///< Dock window
-#define SUB_CLIENT_DEAD               (1L << 17)                  ///< Dead window
+#define SUB_CLIENT_WARP               (1L << 17)                  ///< Warp window
+#define SUB_CLIENT_DEAD               (1L << 18)                  ///< Dead window
 
 /* Drag flags */
 #define SUB_DRAG_START                (1L << 1)                   ///< Drag start
 #define SUB_DRAG_MOVE                 (1L << 2)                   ///< Drag move
-#define SUB_DRAG_SWAP                 (1L << 3)                   ///< Drag swap
-#define SUB_DRAG_RESIZE               (1L << 4)                   ///< Drag resize
+#define SUB_DRAG_RESIZE               (1L << 3)                   ///< Drag resize
 
 /* Grab flags */
 #define SUB_GRAB_KEY                  (1L << 13)                  ///< Key grab
@@ -285,7 +285,7 @@ typedef struct subclient_t /* {{{ */
   TAGS       tags;                                                ///< Client tags
   Window     win;                                                 ///< Client window
   Colormap   cmap;                                                ///< Client colormap
-  XRectangle geom, base;                                          ///< Client geom, base
+  XRectangle geom;                                                ///< Client geom
 
   float      minr, maxr;                                          ///< Client ratios
   int        minw, minh, maxw, maxh, incw, inch;                  ///< Client sizes
@@ -557,11 +557,11 @@ void subClientFocus(SubClient *c);                                ///< Focus cli
 void subClientWarp(SubClient *c);                                 ///< Warp to client
 void subClientDrag(SubClient *c, int mode);                       ///< Move/drag client
 void subClientUpdate(int vid);                                    ///< Update clients
+void subClientResize(SubClient *c);                               ///< Set client sizes
 int subClientTag(SubClient *c, int tag);                          ///< Tag client
 void subClientSetTags(SubClient *c);                              ///< Update client tags
-void subClientSetGravity(SubClient *c, int gravity, int force);   ///< Set client gravity
-void subClientSetScreen(SubClient *c, int screen, int force);     ///< Set client screen
-void subClientSetSize(SubClient *c);                              ///< Set client sizes
+void subClientSetGravity(SubClient *c, int gravity,
+  int screen, int force);                                         ///< Set client gravity
 void subClientSetStrut(SubClient *c);                             ///< Set client strut
 void subClientSetName(SubClient *c);                              ///< Set client WM_NAME
 void subClientSetProtocols(SubClient *c);                         ///< Set client protocols
