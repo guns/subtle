@@ -199,7 +199,8 @@
 #define SUB_CLIENT_CLOSE              (1L << 15)                  ///< Send close message
 #define SUB_CLIENT_DOCK               (1L << 16)                  ///< Dock window
 #define SUB_CLIENT_WARP               (1L << 17)                  ///< Warp window
-#define SUB_CLIENT_DEAD               (1L << 18)                  ///< Dead window
+#define SUB_CLIENT_CENTER             (1L << 18)                  ///< Center window
+#define SUB_CLIENT_DEAD               (1L << 19)                  ///< Dead window
 
 /* Drag flags */
 #define SUB_DRAG_START                (1L << 1)                   ///< Drag start
@@ -399,7 +400,7 @@ typedef struct subgravity_t /* {{{ */
   FLAGS      flags;                                               ///< Gravity flags
 
   int        quark;                                               ///< Gravity quark
-  XRectangle geometry;                                            ///< Gravity geometry
+  XRectangle geom;                                                ///< Gravity geometry
 } SubGravity; /* }}} */
 
 typedef struct subhook_t /* {{{ */
@@ -559,6 +560,7 @@ void subClientWarp(SubClient *c);                                 ///< Warp to c
 void subClientDrag(SubClient *c, int mode);                       ///< Move/drag client
 void subClientUpdate(int vid);                                    ///< Update clients
 void subClientResize(SubClient *c);                               ///< Set client sizes
+void subClientCenter(SubClient *c);                               ///< Center client
 int subClientTag(SubClient *c, int tag);                          ///< Tag client
 void subClientSetTags(SubClient *c);                              ///< Update client tags
 void subClientSetGravity(SubClient *c, int gravity,
@@ -566,8 +568,8 @@ void subClientSetGravity(SubClient *c, int gravity,
 void subClientSetStrut(SubClient *c);                             ///< Set client strut
 void subClientSetName(SubClient *c);                              ///< Set client WM_NAME
 void subClientSetProtocols(SubClient *c);                         ///< Set client protocols
-void subClientSetNormalHints(SubClient *c, int *flags);           ///< Set client normal hints
-void subClientSetHints(SubClient *c, int *flags);                 ///< Set client WM hints
+void subClientSetSizeHints(SubClient *c, int *flags);           ///< Set client normal hints
+void subClientSetWMHints(SubClient *c, int *flags);                 ///< Set client WM hints
 void subClientSetState(SubClient *c, int *flags);                 ///< Set client WM state
 void subClientSetTransient(SubClient *c, int *flags);             ///< Set client transient
 void subClientSetType(SubClient *c, int *flags);                  ///< Set client tyoe
@@ -625,7 +627,7 @@ void subGrabKill(SubGrab *g);                                     ///< Kill grab
 
 /* gravity.c {{{ */
 SubGravity *subGravityNew(const char *name,
-  XRectangle *geometry);                                          ///< Create gravity
+  XRectangle *geom);                                              ///< Create gravity
 int subGravityFind(const char *name, int quark);                  ///< Find gravity id
 void subGravityPublish(void);                                     ///< Publish gravities
 void subGravityKill(SubGravity *g);                               ///< Kill gravity
@@ -665,7 +667,7 @@ SubScreen *subScreenNew(int x, int y, unsigned int width,
   unsigned int height);                                           ///< Create screen
 void subScreenConfigure(void);                                    ///< Configure screens
 void subScreenUpdate(void);                                       ///< Update screen sizes
-void subScreenFit(SubScreen *s, XRectangle *r, int center);       ///< Fit rect size
+void subScreenFit(SubScreen *s, XRectangle *r);                   ///< Fit rect size
 void subScreenJump(SubScreen *s);                                 ///< Jump to screen
 void subScreenKill(SubScreen *s);                                 ///< Kill screen
 /* }}} */

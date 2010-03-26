@@ -117,18 +117,20 @@ subClientNew(Window win)
 
   /* Update client */
   subEwmhSetWMState(c->win, WithdrawnState);
-  subClientSetNormalHints(c, &flags);
+  subClientSetSizeHints(c, &flags);
   subClientSetProtocols(c);
   subClientSetStrut(c);
   subClientSetTags(c);
 
   /* Set client flags */
-  subClientSetHints(c, &flags);
+  subClientSetWMHints(c, &flags);
   subClientSetState(c, &flags);
   subClientSetTransient(c, &flags);
   subClientSetType(c, &flags);
 
+  /* Update according to flags */
   subClientToggle(c, (~c->flags & flags)); ///< Toggle flags
+  if(c->flags & SUB_CLIENT_CENTER) subClientCenter(c);
 
   /* EWMH: Gravity, screen and desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
@@ -413,7 +415,7 @@ subClientDrag(SubClient *c,
 
                       c->geom.height = wh - (ry - ev.xmotion.y_root);
                       subClientResize(c);
-                      
+#if 0                      
                       /* Recalculate x position after size fitting */
                       if(left)
                         {
@@ -422,7 +424,7 @@ subClientDrag(SubClient *c,
                         }
                       else c->geom.x = (rx - wx);
                       c->geom.y = (ry - wy);
-
+#endif
                       break;
                   }  
 
@@ -521,12 +523,29 @@ subClientResize(SubClient *c)
   /* Fit sizes */
   if(!(c->flags & SUB_CLIENT_DOCK))
     {
-      SubScreen *s = NULL;
-      
-      s = SCREEN(subtle->screens->data[c->screen]);
+      SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
 
-      subScreenFit(s, &c->geom, c->flags & SUB_MODE_FLOAT);
+      subScreenFit(s, &c->geom);
     }
+} /* }}} */
+
+  /** subClientCenter {{{ 
+   * @brief Center client
+   * @param[in]  c  A #SubClient
+   **/
+
+void
+subClientCenter(SubClient *c)
+{
+  SubScreen *s = NULL;
+
+  DEAD(c);
+  assert(c);
+
+  s = SCREEN(subtle->screens->data[c->screen]);
+
+  c->geom.x = s->geom.x + (s->geom.width - c->geom.width - 2 * subtle->bw) / 2;
+  c->geom.y = s->geom.y + (s->geom.height - c->geom.height - 2 * subtle->bw) / 2;
 } /* }}} */
 
  /** subClientTag {{{
@@ -679,12 +698,12 @@ subClientSetGravity(SubClient *c,
             gravity : c->gravity]);
 
           /* Calculate slot */
-          c->geom.width  = (s->geom.width * g->geometry.width / 100);
-          c->geom.height = (s->geom.height * g->geometry.height / 100);
+          c->geom.width  = (s->geom.width * g->geom.width / 100);
+          c->geom.height = (s->geom.height * g->geom.height / 100);
           c->geom.x      = s->geom.x + ((s->geom.width - c->geom.width) *
-            g->geometry.x / 100);
+            g->geom.x / 100);
           c->geom.y      = s->geom.y + ((s->geom.height - c->geom.height) *
-            g->geometry.y / 100);
+            g->geom.y / 100);
 
           /* Substract border width */
           c->geom.width  -= 2 * subtle->bw;
@@ -798,13 +817,13 @@ subClientSetProtocols(SubClient *c)
     }
 } /* }}} */
 
-  /** subClientSetNormalHints {{{
-   * @brief Set client normal hints
+  /** subClientSetSizeHints {{{
+   * @brief Set client size hints
    * @param[in]  c  A #SubClient
    **/
 
 void
-subClientSetNormalHints(SubClient *c,
+subClientSetSizeHints(SubClient *c,
   int *flags)
 {
   long supplied = 0;
@@ -820,7 +839,7 @@ subClientSetNormalHints(SubClient *c,
       abort();
     }
 
-  s = SCREEN(subtle->screens->data[0]); ///< Take first screen
+  s = SCREEN(subtle->screens->data[0]); ///< Assume first screen
 
   /* Default values {{{ */
   c->minw   = MINW;
@@ -832,7 +851,7 @@ subClientSetNormalHints(SubClient *c,
   c->incw   = 1;
   c->inch   = 1; /* }}} */
 
-  /* Size hints */
+  /* Size hints - no idea why it's called normal hints */
   if(XGetWMNormalHints(subtle->dpy, c->win, size, &supplied))
     {
       if(size->flags & PMinSize) ///< Program min size
@@ -862,7 +881,10 @@ subClientSetNormalHints(SubClient *c,
         {
           if(size->min_width == size->max_width &&
               size->min_height == size->max_height)
-            *flags |= SUB_MODE_FLOAT;
+            {
+              *flags   |= SUB_MODE_FLOAT;
+              c->flags |= SUB_CLIENT_CENTER;
+            }
         }
 
       if(size->flags & PAspect) ///< Aspect
@@ -906,14 +928,14 @@ subClientSetNormalHints(SubClient *c,
     c->minh, c->maxw, c->maxh, c->minr, c->maxr);
 } /* }}} */
 
-  /** subClientSetHints {{{
+  /** subClientSetWMHints {{{
    * @brief Set client WM hints
    * @param[in]  c      A #SubClient
    * @param[in]  flags  Mode flags
    **/
 
 void
-subClientSetHints(SubClient *c,
+subClientSetWMHints(SubClient *c,
   int *flags)
 {
   XWMHints *hints = NULL;
@@ -1036,7 +1058,8 @@ subClientSetType(SubClient *c,
           switch(subEwmhFind(types[i]))
             {
               case SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG: 
-                *flags |= SUB_MODE_FLOAT;  
+                *flags   |= SUB_MODE_FLOAT;
+                c->flags |= SUB_CLIENT_CENTER;
                 break;
               case SUB_EWMH_NET_WM_WINDOW_TYPE_DOCK:
                 *flags   |= (SUB_MODE_FLOAT|SUB_MODE_STICK);

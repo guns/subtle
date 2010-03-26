@@ -90,7 +90,7 @@ EventConfigure(XConfigureRequestEvent *ev)
           if(ev->value_mask & CWWidth)  c->geom.width  = ev->width;
           if(ev->value_mask & CWHeight) c->geom.height = ev->height;
 
-          if(!(c->flags & SUB_CLIENT_DOCK)) subScreenFit(s, &c->geom, False);
+          if(!(c->flags & SUB_CLIENT_DOCK)) subScreenFit(s, &c->geom);
           subClientConfigure(c);
         }
     }
@@ -669,7 +669,7 @@ EventProperty(XPropertyEvent *ev)
           {
             int flags = 0;
 
-            subClientSetNormalHints(c, &flags);
+            subClientSetSizeHints(c, &flags);
             subClientToggle(c, (~c->flags & flags));
           }
         else if((t = TRAY(subSubtleFind(ev->window, TRAYID))))
@@ -686,7 +686,7 @@ EventProperty(XPropertyEvent *ev)
             int i, flags = 0;
 
             /* Check changes */
-            subClientSetHints(c, &flags);
+            subClientSetWMHints(c, &flags);
             if(flags)
               {
                 subClientToggle(c, (~c->flags & flags));
