@@ -135,15 +135,13 @@ subScreenJump(SubScreen *s)
 
  /** SubScreenFit {{{
   * @brief Fit a rect to in screen boundaries
-  * @param[in]  s       A #SubScreen
-  * @param[in]  r       A XRectangle
-  * @param[in]  center  Center rect
+  * @param[in]  s  A #SubScreen
+  * @param[in]  r  A XRectangle
   **/
 
 void
 subScreenFit(SubScreen *s,
-  XRectangle *r,
-  int center)
+  XRectangle *r)
 {
   assert(s && r);
 
@@ -152,13 +150,15 @@ subScreenFit(SubScreen *s,
   if(r->height > s->geom.height) r->height = s->geom.height;
 
   /* Check position */
-  if((center && r->x == s->geom.x) ||
-      r->x + r->width > s->geom.x + s->geom.width || r->x < s->geom.x)
-    r->x = s->geom.x + (s->geom.width - r->width - 2 * subtle->bw) / 2;
+  if(r->x < s->geom.x) r->x = 0;
+  if(r->y < s->geom.y) r->y = 0;
 
-  if((center && r->y == s->geom.y) ||
-      r->y + r->height > s->geom.y + s->geom.height || r->y < s->geom.y)
-    r->y = s->geom.y + (s->geom.height - r->height - 2 * subtle->bw) / 2;
+  /* Check width and height */
+  if(r->x + r->width > s->geom.x + s->geom.width)
+    r->width -=  (r->x + r->width) - (s->geom.x + s->geom.width);
+
+  if(r->y + r->height > s->geom.y + s->geom.height)
+    r->height -=  (r->y + r->height) - (s->geom.y + s->geom.height);
 } /* }}} */
 
  /** SubScreenKill {{{
