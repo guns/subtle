@@ -339,6 +339,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_NET_WM_STATE_FULLSCREEN,                               ///< Fullscreen window
   SUB_EWMH_NET_WM_STATE_ABOVE,                                    ///< Floating window
   SUB_EWMH_NET_WM_STATE_STICKY,                                   ///< Sticky window
+  SUB_EWMH_NET_WM_STATE_MODAL,                                    ///< Modal window
 
   /* Tray */
   SUB_EWMH_NET_SYSTEM_TRAY_OPCODE,                                ///< Tray messages

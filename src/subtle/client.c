@@ -962,9 +962,10 @@ subClientSetState(SubClient *c,
         {
           switch(subEwmhFind(states[i]))
             {
-              case SUB_EWMH_NET_WM_STATE_FULLSCREEN: *flags |= SUB_MODE_FULL;  break;
-              case SUB_EWMH_NET_WM_STATE_ABOVE:      *flags |= SUB_MODE_FLOAT; break;
-              case SUB_EWMH_NET_WM_STATE_STICKY:     *flags |= SUB_MODE_STICK; break;
+              case SUB_EWMH_NET_WM_STATE_FULLSCREEN: *flags |= SUB_MODE_FULL;   break;
+              case SUB_EWMH_NET_WM_STATE_ABOVE:      *flags |= SUB_MODE_FLOAT;  break;
+              case SUB_EWMH_NET_WM_STATE_STICKY:     *flags |= SUB_MODE_STICK;  break;
+              case SUB_EWMH_NET_WM_STATE_MODAL:      *flags |= SUB_MODE_URGENT; break;
               default: break;
             }
         }
