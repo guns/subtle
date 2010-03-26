@@ -15,14 +15,14 @@
 
  /** subGravityNew {{{
   * @brief Create new gravity
-  * @param[in]  name      Gravity name
-  * @param[in]  geometry  Geometry of gravity
+  * @param[in]  name  Gravity name
+  * @param[in]  geom  Geometry of gravity
   * @return Returns a new #SubGravity or \p NULL
   **/
 
 SubGravity *
 subGravityNew(const char *name,
-  XRectangle *geometry)
+  XRectangle *geom)
 {
   SubGravity *g = NULL;
   
@@ -33,16 +33,16 @@ subGravityNew(const char *name,
   if(name) g->quark = XrmStringToQuark(name); ///< Create hash
 
   /* Sanitize values */
-  if(geometry) 
+  if(geom) 
     {
-      g->geometry.x      = MINMAX(geometry->x,      0, 100);
-      g->geometry.y      = MINMAX(geometry->y,      0, 100);
-      g->geometry.width  = MINMAX(geometry->width,  0, 100);
-      g->geometry.height = MINMAX(geometry->height, 0, 100);
+      g->geom.x      = MINMAX(geom->x,      0, 100);
+      g->geom.y      = MINMAX(geom->y,      0, 100);
+      g->geom.width  = MINMAX(geom->width,  0, 100);
+      g->geom.height = MINMAX(geom->height, 0, 100);
     }
 
   subSharedLogDebug("new=gravity, name=%s, quark=%d, x=%d, y=%d, width=%d, height=%d\n", 
-    name, g->quark, geometry->x, geometry->y, geometry->width, geometry->height);
+    name, g->quark, geom->x, geom->y, geom->width, geom->height);
 
   return g;
 } /* }}} */
@@ -106,8 +106,8 @@ subGravityPublish(void)
       g = GRAVITY(subtle->gravities->data[i]);
 
       /* Add gravity to list */
-      snprintf(buf, sizeof(buf), "%dx%d+%d+%d#%s", g->geometry.x, 
-        g->geometry.y, g->geometry.width, g->geometry.height, 
+      snprintf(buf, sizeof(buf), "%dx%d+%d+%d#%s", g->geom.x, 
+        g->geom.y, g->geom.width, g->geom.height, 
         XrmQuarkToString(g->quark));
       
       gravities[i] = (char *)subSharedMemoryAlloc(strlen(buf) + 1, 
