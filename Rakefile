@@ -171,6 +171,11 @@ task(:config) do
     yaml = YAML::load(File.open("config.yml"))
     @options, @defines = YAML::load(yaml)
   else
+    # Check version
+    if(1 != CONFIG["MAJOR"].to_i or 9 != CONFIG["MINOR"].to_i)
+      fail("Ruby 1.9.0 or higher required")
+    end
+
     # Get options
     @options.each_key do |k|
       if(!ENV[k].nil?)
@@ -192,7 +197,7 @@ task(:config) do
       if(!match.nil? && 2 == match.size)
         @options["revision"] = match[1]
       else
-        @options["revision"] = "999999"
+        @options["revision"] = "-hg"
       end
     end  
 
@@ -336,8 +341,16 @@ task(:install => [:config, :build]) do
   message("INSTALL %s\n" % [@defines["PKG_CONFIG"]])
   FileUtils.install("dist/" + @defines["PKG_CONFIG"], @options["configdir"], :mode => 0644, :verbose => false)
 
+  # Get path of sed
+  sed = find_executable0("sed")
+
+  # Update interpreter name and path
+  interpreter = File.join(Config.expand(CONFIG["bindir"]), CONFIG["ruby_install_name"])
+
   # Install scripts
   FileList["dist/scripts/*.*"].collect do |f|
+    `#{sed} -i -e 's#/usr/bin/ruby##{interpreter}#' f`
+
     message("INSTALL %s\n" % [File.basename(f)])
     FileUtils.install(f, @options["scriptdir"], :mode => 0644, :verbose => false)
   end
