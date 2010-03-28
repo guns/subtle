@@ -344,15 +344,15 @@ task(:install => [:config, :build]) do
   # Get path of sed
   sed = find_executable0("sed")
 
-  # Update interpreter name and path
+  # Get interpreter name and path
   interpreter = File.join(Config.expand(CONFIG["bindir"]), CONFIG["ruby_install_name"])
 
   # Install scripts
   FileList["dist/scripts/*.*"].collect do |f|
-    `#{sed} -i -e 's#/usr/bin/ruby##{interpreter}#' f`
-
     message("INSTALL %s\n" % [File.basename(f)])
     FileUtils.install(f, @options["scriptdir"], :mode => 0644, :verbose => false)
+
+    `#{sed} -i -e 's#/usr/bin/ruby.*##{interpreter}#' #{File.join(@options["scriptdir"], f)}`
   end
 
   # Install extension
