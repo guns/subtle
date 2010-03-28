@@ -415,16 +415,7 @@ subClientDrag(SubClient *c,
 
                       c->geom.height = wh - (ry - ev.xmotion.y_root);
                       subClientResize(c);
-#if 0                      
-                      /* Recalculate x position after size fitting */
-                      if(left)
-                        {
-                          if(c->geom.x + c->geom.width != wx + ww)
-                            c->geom.x = (rx - wx) + ww - c->geom.width;
-                        }
-                      else c->geom.x = (rx - wx);
-                      c->geom.y = (ry - wy);
-#endif
+
                       break;
                   }  
 
@@ -579,8 +570,9 @@ subClientTag(SubClient *c,
           /* Set size and enable float */
           if(t->flags & SUB_TAG_GEOMETRY && !(c->flags & SUB_MODE_NONFLOAT))
             {
-              flags   |= (SUB_MODE_FLOAT|SUB_MODE_NONRESIZE); ///< Disable size checks
-              c->geom  = t->geometry;
+              flags    |= (SUB_MODE_FLOAT|SUB_MODE_NONRESIZE); ///< Disable size checks
+              c->flags &= ~SUB_CLIENT_CENTER; ///< Disable center
+              c->geom   = t->geometry;
             }
 
           /* Set gravity and screens for matching views */

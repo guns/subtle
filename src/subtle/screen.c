@@ -143,22 +143,24 @@ void
 subScreenFit(SubScreen *s,
   XRectangle *r)
 {
+  int maxx, maxy;
+
   assert(s && r);
 
-  /* Check sizes */
+  /* Check size */
   if(r->width > s->geom.width)   r->width  = s->geom.width;
   if(r->height > s->geom.height) r->height = s->geom.height;
 
   /* Check position */
-  if(r->x < s->geom.x) r->x = 0;
-  if(r->y < s->geom.y) r->y = 0;
+  if(r->x < s->geom.x) r->x = s->geom.x;
+  if(r->y < s->geom.y) r->y = s->geom.y;
 
   /* Check width and height */
-  if(r->x + r->width > s->geom.x + s->geom.width)
-    r->width -=  (r->x + r->width) - (s->geom.x + s->geom.width);
+  maxx = s->geom.x + s->geom.width;
+  maxy = s->geom.y + s->geom.height;
 
-  if(r->y + r->height > s->geom.y + s->geom.height)
-    r->height -=  (r->y + r->height) - (s->geom.y + s->geom.height);
+  if(r->x > maxx || r->x + r->width > maxx)  r->x = maxx - r->width;
+  if(r->y > maxy || r->y + r->height > maxy) r->y = maxy - r->height;
 } /* }}} */
 
  /** SubScreenKill {{{
