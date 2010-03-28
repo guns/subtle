@@ -352,7 +352,8 @@ task(:install => [:config, :build]) do
     message("INSTALL %s\n" % [File.basename(f)])
     FileUtils.install(f, @options["scriptdir"], :mode => 0644, :verbose => false)
 
-    `#{sed} -i -e 's#/usr/bin/ruby.*##{interpreter}#' #{File.join(@options["scriptdir"], f)}`
+    `#{sed} -i -e 's#/usr/bin/ruby.*##{interpreter}#' \
+      #{File.join(@options["scriptdir"], File.basename(f))}`
   end
 
   # Install extension
