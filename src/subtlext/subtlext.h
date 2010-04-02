@@ -104,6 +104,7 @@ VALUE subGravityKill(VALUE self);                                 ///< Kill grav
 /* icon.c {{{ */
 VALUE subIconNew(int argc, VALUE *argv, VALUE self);              ///< Create new icon
 VALUE subIconDraw(VALUE self, VALUE x, VALUE y);                  ///< Draw a pixel
+VALUE subIconDrawRect(int argc, VALUE *argv, VALUE self);         ///< Draw a rect
 VALUE subIconClear(VALUE self);                                   ///< Clear icon
 VALUE subIconToString(VALUE self);                                ///< Convert to string
 VALUE subIconOperatorPlus(VALUE self, VALUE value);               ///< Concat string

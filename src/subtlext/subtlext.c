@@ -937,11 +937,12 @@ Init_subtlext(void)
   rb_define_singleton_method(icon, "new", subIconNew, -1);
 
   /* Class methods */
-  rb_define_method(icon, "draw",   subIconDraw,         2);
-  rb_define_method(icon, "clear",  subIconClear,        0);
-  rb_define_method(icon, "to_str", subIconToString,     0);
-  rb_define_method(icon, "+",      subIconOperatorPlus, 1);
-  rb_define_method(icon, "*",      subIconOperatorMult, 1);
+  rb_define_method(icon, "draw",      subIconDraw,          2);
+  rb_define_method(icon, "draw_rect", subIconDrawRect,     -1);
+  rb_define_method(icon, "clear",     subIconClear,         0);
+  rb_define_method(icon, "to_str",    subIconToString,      0);
+  rb_define_method(icon, "+",         subIconOperatorPlus,  1);
+  rb_define_method(icon, "*",         subIconOperatorMult,  1);
 
   /* Aliases */
   rb_define_alias(icon, "to_s", "to_str");

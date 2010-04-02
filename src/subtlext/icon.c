@@ -178,6 +178,59 @@ subIconDraw(VALUE self,
   return Qnil;
 } /* }}} */
 
+/* subIconDrawRect {{{ */
+/*
+ * call-seq: rect(x, y, width, height, fill) -> nil
+ *
+ * Draw a rect on the icon
+ *
+ *  icon.rect(1, 1, 10, 10, false)
+ *  => nil
+ */
+
+VALUE
+subIconDrawRect(int argc,
+  VALUE *argv,
+  VALUE self)
+{
+  VALUE data[5] = { Qnil };
+
+  rb_scan_args(argc, argv, "05", &data[0], &data[1], &data[2], &data[3], &data[4]);
+
+  if(FIXNUM_P(data[0]) && FIXNUM_P(data[1]) && FIXNUM_P(data[2]) && FIXNUM_P(data[3]))
+    {
+      SubtlextIcon *i = NULL;
+
+      Data_Get_Struct(self, SubtlextIcon, i);
+      if(i)
+        {
+          XGCValues gvals;
+
+          if(0 == i->gc) ///< Create on demand
+            i->gc = XCreateGC(display, i->pixmap, 0, NULL);
+
+          /* Update GC */
+          gvals.foreground = 1;
+          gvals.background = 0;
+          XChangeGC(display, i->gc, GCForeground|GCBackground, &gvals);
+
+          /* Draw rect */
+          if(Qtrue == data[4])
+            {
+              XFillRectangle(display, i->pixmap, i->gc, FIX2INT(data[0]),
+                FIX2INT(data[1]), FIX2INT(data[2]), FIX2INT(data[3]));
+            }
+          else XDrawRectangle(display, i->pixmap, i->gc, FIX2INT(data[0]),
+            FIX2INT(data[1]), FIX2INT(data[2]), FIX2INT(data[3]));
+
+          XFlush(display);
+        }
+    }
+  else rb_raise(rb_eArgError, "Unknown value types");
+
+  return Qnil;
+} /* }}} */
+
 /* subIconClear {{{ */
 /*
  * call-seq: clear -> nil
