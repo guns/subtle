@@ -9,7 +9,6 @@
   * See the file COPYING.
   **/
 
-#include <pthread.h>
 #include "subtlext.h"
 
 /* Typedefs {{{ */
