@@ -443,7 +443,7 @@ typedef struct subsubtle_t /* {{{ */
 {
   FLAGS                flags;                                     ///< Subtle flags
 
-  int                  th, bw, step, snap, limit, gravity;        ///< Subtle properties
+  int                  th, bw, pbw, step, snap, limit, gravity;   ///< Subtle properties
   int                  vid, sid;                                  ///< Subtle current view, screen
 
   Display              *dpy;                                      ///< Subtle Xorg display
@@ -492,7 +492,7 @@ typedef struct subsubtle_t /* {{{ */
   {
     unsigned long      fg_panel, fg_views, fg_sublets, fg_focus, fg_urgent,
                        bg_panel, bg_views, bg_sublets, bg_focus, bg_urgent,
-                       bo_focus, bo_normal, bg;
+                       bo_focus, bo_normal, bo_panel, bg;
   } colors;                                                       ///< Subtle colors
 
   struct

@@ -774,9 +774,9 @@ subClientSetName(SubClient *c)
 
   /* Update panel width */
   subtle->windows.title.width = subSharedTextWidth(subtle->font, c->name, 
-    50 >= len ? len : 50, NULL, NULL, True) + 6;
+    50 >= len ? len : 50, NULL, NULL, True) + 6 + 2 * subtle->pbw; ///< Font offset and panel border
   XResizeWindow(subtle->dpy, subtle->windows.title.win, 
-    subtle->windows.title.width, subtle->th);
+    subtle->windows.title.width, subtle->th - 2 * subtle->pbw);
 } /* }}} */
 
  /** subClientSetProtocols {{{

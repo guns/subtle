@@ -30,15 +30,14 @@ subViewNew(char *name,
   v = VIEW(subSharedMemoryAlloc(1, sizeof(SubView)));
   v->flags = SUB_TYPE_VIEW;
   v->name  = strdup(name);
-  v->width = subSharedTextWidth(subtle->font, v->name, strlen(v->name), NULL, 
-    NULL, True) + 6; ///< Font offset
+
 
   /* Create button */
   v->button = XCreateSimpleWindow(subtle->dpy, subtle->windows.views.win, 
     0, 0, 1, subtle->th, 0, 0, subtle->colors.bg_views);
 
   XSaveContext(subtle->dpy, v->button, VIEWID, (void *)v);
-  XSelectInput(subtle->dpy, v->button,  ButtonPressMask); 
+  XSelectInput(subtle->dpy, v->button,  ButtonPressMask);
   XMapRaised(subtle->dpy, v->button);
 
   /* Tags */
@@ -133,10 +132,15 @@ subViewUpdate(void)
         {
           SubView *v = VIEW(subtle->views->data[i]);
 
+          v->width = subSharedTextWidth(subtle->font, v->name, strlen(v->name), NULL, 
+            NULL, True) + 6 + 2 * subtle->pbw; ///< Font offset and panel border
+
           XMoveResizeWindow(subtle->dpy, v->button, subtle->windows.views.width, 
-            0, v->width, subtle->th);
+            0, v->width, subtle->th - 2 * subtle->pbw);
           subtle->windows.views.width += v->width;
         }
+
+      subtle->windows.views.width += 2 * subtle->pbw;
 
       XResizeWindow(subtle->dpy, subtle->windows.views.win, subtle->windows.views.width, subtle->th);
     }

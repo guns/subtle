@@ -831,6 +831,8 @@ RubyWrapLoadConfig(VALUE data)
     RubyGetString(config, "border_focus",  "#303030"));
   subtle->colors.bo_normal  = subSharedParseColor(subtle->dpy,
     RubyGetString(config, "border_normal", "#202020"));
+  subtle->colors.bo_panel   = subSharedParseColor(subtle->dpy,
+    RubyGetString(config, "border_panel", "#202020"));
 
   /* Root background */
   if((str = RubyGetString(config, "background", NULL)))
@@ -978,13 +980,38 @@ RubyWrapLoadPanels(VALUE data)
     subtle->flags |= SUB_SUBTLE_PANEL2;
   if(True == RubyGetBool(config, "stipple"))   
     subtle->flags |= SUB_SUBTLE_STIPPLE;
+   subtle->pbw = RubyGetFixnum(config, "border", 0);
 
   /* Separator */
   if(subtle->separator.string) free(subtle->separator.string);
   subtle->separator.string = strdup(RubyGetString(config, "separator", "|"));
   subtle->separator.width  = subSharedTextWidth(subtle->font, 
     subtle->separator.string, strlen(subtle->separator.string),
-    NULL, NULL, True) + 6; ///< Add spacings
+    NULL, NULL, True);
+ 
+  /* Update sizes */
+  if(0 < subtle->separator.width) subtle->separator.width += 6; ///< Add spacings
+  if(0 < subtle->pbw)
+    {
+      subtle->th = subtle->font->height + 2 * subtle->pbw;
+      subDisplayConfigure();
+
+      subViewUpdate();
+      subSubletUpdate();
+    }
+
+  /* Update panel border */
+  for(i = 0; i < subtle->views->ndata; i++)
+    {
+      SubView *v = VIEW(subtle->views->data[i]);
+
+      XSetWindowBorder(subtle->dpy, v->button, subtle->colors.bo_panel);
+      XSetWindowBorderWidth(subtle->dpy, v->button, subtle->pbw);
+    }
+
+  /* Update title border */
+  XSetWindowBorder(subtle->dpy, subtle->windows.title.win, subtle->colors.bo_panel);
+  XSetWindowBorderWidth(subtle->dpy, subtle->windows.title.win, subtle->pbw);
 
   /* Add remaining sublets if any */
   if(0 < subtle->sublets->ndata)
@@ -992,6 +1019,10 @@ RubyWrapLoadPanels(VALUE data)
       for(i = 0; i < subtle->panels->ndata; i++)
         {
           SubPanel *p = PANEL(subtle->panels->data[i]);
+
+          /* Set borders */
+          XSetWindowBorder(subtle->dpy, p->win, subtle->colors.bo_panel);
+          XSetWindowBorderWidth(subtle->dpy, p->win, subtle->pbw);
 
           if(p->flags & SUB_PANEL_BOTTOM) panel = subtle->windows.panel2;
           if(p->flags & SUB_PANEL_SUBLETS)
@@ -1013,6 +1044,10 @@ RubyWrapLoadPanels(VALUE data)
 
                       subArrayInsert(subtle->panels, pos++, (void *)s);
                       XReparentWindow(subtle->dpy, s->win, panel, 0, 0);
+
+                      /* Set borders */
+                      XSetWindowBorder(subtle->dpy, s->win, subtle->colors.bo_panel);
+                      XSetWindowBorderWidth(subtle->dpy, s->win, subtle->pbw);
                     }
                 }
 

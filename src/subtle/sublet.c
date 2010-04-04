@@ -33,6 +33,7 @@ subSubletNew(void)
   s->win = XCreateSimpleWindow(subtle->dpy, subtle->windows.panel1, 0, 0, 1,
     subtle->th, 0, 0, subtle->colors.bg_sublets);
 
+
   XSaveContext(subtle->dpy, s->win, SUBLETID, (void *)s);
 
   subSharedLogDebug("new=sublet\n");
@@ -55,7 +56,7 @@ subSubletUpdate(void)
         {
           SubSublet *s = SUBLET(subtle->sublets->data[i]);
 
-          XResizeWindow(subtle->dpy, s->win, s->width, subtle->th);
+          XResizeWindow(subtle->dpy, s->win, s->width, subtle->th - 2 * subtle->pbw);
         }
     }
 } /* }}} */
@@ -79,7 +80,7 @@ subSubletRender(SubSublet *s)
     subtle->font->y, subtle->colors.fg_sublets, subtle->colors.bg_sublets, 
     s->text);
 
-  XResizeWindow(subtle->dpy, s->win, s->width, subtle->th);
+  XResizeWindow(subtle->dpy, s->win, s->width, subtle->th - 2 * subtle->pbw);
   XSync(subtle->dpy, False); ///< Sync before going on
 } /* }}} */
 
