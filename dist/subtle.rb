@@ -74,7 +74,10 @@ PANEL = {
   :stipple   => false,
 
   # Separator between sublets
-  :separator => "|"
+  :separator => "|",
+
+  # Border size in pixel of panel items
+  :border    => 0
 }
 
 #
@@ -125,7 +128,10 @@ COLORS = {
   :border_focus  => "#303030",
 
   # Border color of normal windows
-  :border_normal => "#202020",  
+  :border_normal => "#202020",
+
+  # Border color of panel items
+  :border_panel  => "#303030",
   
   # Background color of root background
   :background    => "#3d3d3d"
