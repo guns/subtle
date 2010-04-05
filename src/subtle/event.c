@@ -689,11 +689,7 @@ EventProperty(XPropertyEvent *ev)
 
             /* Check changes */
             subClientSetWMHints(c, &flags);
-            if(flags)
-              {
-                subClientToggle(c, (~c->flags & flags));
-                subViewConfigure(CURVIEW, False);
-              }
+            subClientToggle(c, (~c->flags & flags));
 
             if(c->flags & SUB_MODE_URGENT) 
               {
@@ -702,7 +698,7 @@ EventProperty(XPropertyEvent *ev)
                   {
                     SubView *v = VIEW(subtle->views->data[i]);
 
-                    if(v->tags & c->tags) v->flags |= SUB_MODE_URGENT;
+                    if(VISIBLE(v, c)) v->flags |= SUB_MODE_URGENT;
                   }
 
                 subViewRender();
