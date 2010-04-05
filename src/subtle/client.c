@@ -1149,14 +1149,6 @@ subClientToggle(SubClient *c,
 
   /* EWMH: Flags */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_FLAGS, (long *)&flags, 1);
-
-  if(VISIBLE(CURVIEW, c)) ///< Check visibility first
-    {
-      subClientFocus(c);
-      subClientSetName(c);
-      subPanelUpdate();
-      subPanelRender();
-    }
 } /* }}} */
 
  /** subClientPublish {{{
