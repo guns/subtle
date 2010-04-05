@@ -160,6 +160,12 @@ subSubtleFocus(int focus)
 
   XSetInputFocus(subtle->dpy, ROOT, RevertToParent, CurrentTime); ///< Fallback
 
+  subtle->windows.focus       = 0;
+  subtle->windows.title.width = 0;
+
+  subPanelUpdate();
+  subPanelRender();
+
   return ROOT;
 } /* }}} */
 
