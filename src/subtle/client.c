@@ -117,16 +117,14 @@ subClientNew(Window win)
 
   /* Update client */
   subEwmhSetWMState(c->win, WithdrawnState);
+  subClientSetType(c, &flags);
   subClientSetSizeHints(c, &flags);
   subClientSetProtocols(c);
   subClientSetStrut(c);
   subClientSetTags(c);
-
-  /* Set client flags */
   subClientSetWMHints(c, &flags);
   subClientSetState(c, &flags);
   subClientSetTransient(c, &flags);
-  subClientSetType(c, &flags);
 
   /* Update according to flags */
   subClientToggle(c, (~c->flags & flags)); ///< Toggle flags
@@ -230,7 +228,7 @@ subClientRender(SubClient *c)
   XSetWindowBackground(subtle->dpy, subtle->windows.title.win, bg);
   XClearWindow(subtle->dpy, subtle->windows.title.win);
 
-  if(!(c->flags & SUB_CLIENT_DOCK)) ///< Exclude docking windows
+  if(!(c->flags & SUB_CLIENT_IMMOBILE)) ///< Exclude immobile windows
     {
       XSetWindowBorder(subtle->dpy, c->win, subtle->windows.focus == c->win ? 
         subtle->colors.bo_focus : subtle->colors.bo_normal);
@@ -254,14 +252,24 @@ int
 subClientCompare(const void *a,
   const void *b)
 {
+  int ret = 0;
   SubClient *c1 = *(SubClient **)a, *c2 = *(SubClient **)b;
 
   assert(a && b);
 
   /* Check flags */
-  if((c1->flags & SUB_MODE_FULL) == (c2->flags & SUB_MODE_FULL)) return 0;
-  else if(c1->flags & SUB_MODE_FULL) return 1;
-  else return -1;
+  if((c1->flags | c2->flags) & SUB_MODE_FULL)
+    {
+      if(c1->flags & SUB_MODE_FULL) ret = 1;
+      if(c2->flags & SUB_MODE_FULL) ret = -1;
+    }
+  else if((c1->flags | c2->flags) & SUB_CLIENT_IMMOBILE)
+    {
+      if(c1->flags & SUB_CLIENT_IMMOBILE) ret = -1;
+      if(c2->flags & SUB_CLIENT_IMMOBILE) ret = 1;
+    }
+
+  return ret;
 } /* }}} */
 
  /** subClientFocus {{{
@@ -512,7 +520,7 @@ subClientResize(SubClient *c)
     }
 
   /* Fit sizes */
-  if(!(c->flags & SUB_CLIENT_DOCK))
+  if(!(c->flags & SUB_CLIENT_IMMOBILE))
     {
       SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
 
@@ -528,15 +536,18 @@ subClientResize(SubClient *c)
 void
 subClientCenter(SubClient *c)
 {
-  SubScreen *s = NULL;
-
   DEAD(c);
   assert(c);
 
-  s = SCREEN(subtle->screens->data[c->screen]);
+  if(!(c->flags & SUB_CLIENT_IMMOBILE))
+    {
+      SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
 
-  c->geom.x = s->geom.x + (s->geom.width - c->geom.width - 2 * subtle->bw) / 2;
-  c->geom.y = s->geom.y + (s->geom.height - c->geom.height - 2 * subtle->bw) / 2;
+      c->geom.x = s->geom.x + 
+        (s->geom.width - c->geom.width - 2 * subtle->bw) / 2;
+      c->geom.y = s->geom.y + 
+        (s->geom.height - c->geom.height - 2 * subtle->bw) / 2;
+    }
 } /* }}} */
 
  /** subClientTag {{{
@@ -684,7 +695,7 @@ subClientSetGravity(SubClient *c,
               c->geom.y = c->geom.y - s1->geom.y + s2->geom.y;
             }
         }
-      else
+      else if(!(c->flags & SUB_CLIENT_IMMOBILE))
         {
           SubGravity *g = GRAVITY(subtle->gravities->data[-1 != gravity ? 
             gravity : c->gravity]);
@@ -766,17 +777,22 @@ subClientSetName(SubClient *c)
   assert(c);
   DEAD(c);
 
-  len = strlen(c->name);
-  
-  /* Title modes */
-  if(c->flags & SUB_MODE_FLOAT) len++;
-  if(c->flags & SUB_MODE_STICK) len++;
+  /* Check for immobile clients */
+  if(!(c->flags & SUB_CLIENT_IMMOBILE))
+    {
+      len = strlen(c->name);
+      
+      /* Title modes */
+      if(c->flags & SUB_MODE_FLOAT) len++;
+      if(c->flags & SUB_MODE_STICK) len++;
 
-  /* Update panel width */
-  subtle->windows.title.width = subSharedTextWidth(subtle->font, c->name, 
-    50 >= len ? len : 50, NULL, NULL, True) + 6 + 2 * subtle->pbw; ///< Font offset and panel border
-  XResizeWindow(subtle->dpy, subtle->windows.title.win, 
-    subtle->windows.title.width, subtle->th - 2 * subtle->pbw);
+      /* Update panel width */
+      subtle->windows.title.width = subSharedTextWidth(subtle->font, c->name, 
+        50 >= len ? len : 50, NULL, NULL, True) + 6 + 2 * subtle->pbw; ///< Font offset and panel border
+      XResizeWindow(subtle->dpy, subtle->windows.title.win, 
+        subtle->windows.title.width, subtle->th - 2 * subtle->pbw);
+    }
+  else subtle->windows.title.width = 0;
 } /* }}} */
 
  /** subClientSetProtocols {{{
@@ -872,7 +888,8 @@ subClientSetSizeHints(SubClient *c,
       if(size->flags & PMinSize && size->flags & PMaxSize)
         {
           if(size->min_width == size->max_width &&
-              size->min_height == size->max_height)
+              size->min_height == size->max_height &&
+              !(c->flags & SUB_CLIENT_IMMOBILE))
             {
               *flags   |= SUB_MODE_FLOAT;
               c->flags |= SUB_CLIENT_CENTER;
@@ -1045,18 +1062,42 @@ subClientSetType(SubClient *c,
   if((types = (Atom *)subSharedPropertyGet(subtle->dpy, c->win, XA_ATOM, 
       subEwmhGet(SUB_EWMH_NET_WM_WINDOW_TYPE), &size)))
     {
+      int id = 0;
+
       for(i = 0; i < size / sizeof(Atom); i++)
         {
-          switch(subEwmhFind(types[i]))
+          switch((id = subEwmhFind(types[i])))
             {
               case SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG: 
                 *flags   |= SUB_MODE_FLOAT;
                 c->flags |= SUB_CLIENT_CENTER;
                 break;
               case SUB_EWMH_NET_WM_WINDOW_TYPE_DOCK:
-                *flags   |= (SUB_MODE_FLOAT|SUB_MODE_STICK);
-                c->flags |= SUB_CLIENT_DOCK;
+              case SUB_EWMH_NET_WM_WINDOW_TYPE_DESKTOP:
+                *flags   |= SUB_MODE_STICK;
+                c->flags |= SUB_CLIENT_IMMOBILE;
 
+                /* Special treatment */
+                if(SUB_EWMH_NET_WM_WINDOW_TYPE_DESKTOP == id)
+                  {
+                    SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
+
+                    c->geom = s->base;
+
+                    /* Add panel heights */
+                    if(subtle->flags & SUB_SUBTLE_PANEL1)
+                      {
+                        c->geom.y      += subtle->th;
+                        c->geom.height -= subtle->th;
+                      }
+
+                    if(subtle->flags & SUB_SUBTLE_PANEL2)
+                      c->geom.height -= subtle->th;
+
+                    XLowerWindow(subtle->dpy, c->win);
+                  }
+                else XRaiseWindow(subtle->dpy, c->win);
+                
                 XSetWindowBorderWidth(subtle->dpy, c->win, 0);
                 break;
               default: break;

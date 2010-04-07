@@ -91,7 +91,7 @@ EventConfigure(XConfigureRequestEvent *ev)
           if(ev->value_mask & CWHeight) c->geom.height = ev->height;
 
           /* Resize client */
-          if(!(c->flags & SUB_CLIENT_DOCK)) subScreenFit(s, &c->geom);
+          if(!(c->flags & SUB_CLIENT_IMMOBILE)) subScreenFit(s, &c->geom);
 
           subClientConfigure(c);
         }
@@ -130,7 +130,10 @@ EventMapRequest(XMapRequestEvent *ev)
               subViewConfigure(CURVIEW, False); 
               subViewRender();
             }
-          
+
+          if(c->flags & SUB_CLIENT_IMMOBILE) ///< Reorder stacking
+            subArraySort(subtle->clients, subClientCompare);
+
           /* Hook: Create */
           subHookCall(SUB_HOOK_CLIENT_CREATE, (void *)c);
         }
@@ -897,7 +900,9 @@ EventGrab(XEvent *ev)
               }
             break; /* }}} */
           case SUB_GRAB_WINDOW_STACK: /* {{{ */
-            if((c = CLIENT(subSubtleFind(win, CLIENTID))) && VISIBLE(CURVIEW, c)) 
+            if((c = CLIENT(subSubtleFind(win, CLIENTID))) && 
+                !(c->flags & SUB_CLIENT_IMMOBILE) &&
+                VISIBLE(CURVIEW, c))
               {
                 if(Above == g->data.num)      XRaiseWindow(subtle->dpy, c->win);
                 else if(Below == g->data.num) XLowerWindow(subtle->dpy, c->win);
@@ -950,7 +955,8 @@ EventGrab(XEvent *ev)
               }
             break; /* }}} */
           case SUB_GRAB_WINDOW_GRAVITY: /* {{{ */
-            if((c = CLIENT(subSubtleFind(win, CLIENTID))))
+            if((c = CLIENT(subSubtleFind(win, CLIENTID))) && 
+                !(c->flags & SUB_CLIENT_IMMOBILE))
               {
                 int i, id = -1, cid = 0, fid = (int)g->data.string[0] - 65,
                   size = strlen(g->data.string);
