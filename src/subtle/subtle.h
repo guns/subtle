@@ -169,14 +169,14 @@
 #define SUB_MODE_NONRESIZE            (1L << 30)                  ///< Disable resize mode
 
 /* Call flags */
-#define SUB_CALL_HOOKS                (1L << 13)                  ///< Call hook
-#define SUB_CALL_SUBLET_HOOKS         (1L << 14)                  ///< Call sublet hooks
-#define SUB_CALL_SUBLET_CONFIGURE     (1L << 15)                  ///< Sublet watch hook
-#define SUB_CALL_SUBLET_RUN           (1L << 16)                  ///< Sublet run hook
-#define SUB_CALL_SUBLET_WATCH         (1L << 17)                  ///< Sublet watch hook
-#define SUB_CALL_SUBLET_DOWN          (1L << 18)                  ///< Sublet mouse down hook
-#define SUB_CALL_SUBLET_OVER          (1L << 19)                  ///< Sublet mouse over hook
-#define SUB_CALL_SUBLET_OUT           (1L << 20)                  ///< Sublet mouse out hook
+#define SUB_CALL_HOOKS                (1L << 11)                  ///< Call hook
+#define SUB_CALL_SUBLET_HOOKS         (1L << 12)                  ///< Call sublet hooks
+#define SUB_CALL_SUBLET_CONFIGURE     (1L << 13)                  ///< Sublet watch hook
+#define SUB_CALL_SUBLET_RUN           (1L << 14)                  ///< Sublet run hook
+#define SUB_CALL_SUBLET_WATCH         (1L << 15)                  ///< Sublet watch hook
+#define SUB_CALL_SUBLET_DOWN          (1L << 16)                  ///< Sublet mouse down hook
+#define SUB_CALL_SUBLET_OVER          (1L << 17)                  ///< Sublet mouse over hook
+#define SUB_CALL_SUBLET_OUT           (1L << 18)                  ///< Sublet mouse out hook
 
 /* Hooks */
 #define SUB_HOOK_START                (1L << 15)                  ///< Start hook (must start at 15)
@@ -194,13 +194,13 @@
 #define SUB_HOOK_VIEW_KILL            (1L << 27)                  ///< View kill hook
 
 /* Client flags */
-#define SUB_CLIENT_FOCUS              (1L << 13)                  ///< Send focus message
-#define SUB_CLIENT_INPUT              (1L << 14)                  ///< Active/passive focus-model
-#define SUB_CLIENT_CLOSE              (1L << 15)                  ///< Send close message
-#define SUB_CLIENT_DOCK               (1L << 16)                  ///< Dock window
-#define SUB_CLIENT_WARP               (1L << 17)                  ///< Warp window
-#define SUB_CLIENT_CENTER             (1L << 18)                  ///< Center window
-#define SUB_CLIENT_DEAD               (1L << 19)                  ///< Dead window
+#define SUB_CLIENT_FOCUS              (1L << 11)                  ///< Send focus message (must start at 11)
+#define SUB_CLIENT_INPUT              (1L << 12)                  ///< Active/passive focus-model
+#define SUB_CLIENT_CLOSE              (1L << 13)                  ///< Send close message
+#define SUB_CLIENT_IMMOBILE           (1L << 14)                  ///< Immobile window
+#define SUB_CLIENT_WARP               (1L << 15)                  ///< Warp window
+#define SUB_CLIENT_CENTER             (1L << 16)                  ///< Center window
+#define SUB_CLIENT_DEAD               (1L << 17)                  ///< Dead window
 
 /* Drag flags */
 #define SUB_DRAG_START                (1L << 1)                   ///< Drag start
@@ -208,32 +208,32 @@
 #define SUB_DRAG_RESIZE               (1L << 3)                   ///< Drag resize
 
 /* Grab flags */
-#define SUB_GRAB_KEY                  (1L << 13)                  ///< Key grab
-#define SUB_GRAB_MOUSE                (1L << 14)                  ///< Mouse grab  
-#define SUB_GRAB_SPAWN                (1L << 15)                  ///< Spawn an app
-#define SUB_GRAB_PROC                 (1L << 16)                  ///< Grab with proc
-#define SUB_GRAB_VIEW_JUMP            (1L << 17)                  ///< Jump to view
-#define SUB_GRAB_SCREEN_JUMP          (1L << 18)                  ///< Jump to screen
-#define SUB_GRAB_SUBLETS_RELOAD       (1L << 19)                  ///< Reload subtle
-#define SUB_GRAB_SUBTLE_RELOAD        (1L << 20)                  ///< Reload subtle
-#define SUB_GRAB_SUBTLE_QUIT          (1L << 21)                  ///< Quit subtle
-#define SUB_GRAB_WINDOW_MOVE          (1L << 22)                  ///< Resize window
-#define SUB_GRAB_WINDOW_RESIZE        (1L << 23)                  ///< Move window
-#define SUB_GRAB_WINDOW_TOGGLE        (1L << 24)                  ///< Toggle window
-#define SUB_GRAB_WINDOW_STACK         (1L << 25)                  ///< Stack window
-#define SUB_GRAB_WINDOW_SELECT        (1L << 26)                  ///< Select window
-#define SUB_GRAB_WINDOW_GRAVITY       (1L << 27)                  ///< Set gravity of window
-#define SUB_GRAB_WINDOW_SCREEN        (1L << 28)                  ///< Set screen of window
-#define SUB_GRAB_WINDOW_KILL          (1L << 29)                  ///< Kill window
+#define SUB_GRAB_KEY                  (1L << 11)                  ///< Key grab
+#define SUB_GRAB_MOUSE                (1L << 12)                  ///< Mouse grab  
+#define SUB_GRAB_SPAWN                (1L << 13)                  ///< Spawn an app
+#define SUB_GRAB_PROC                 (1L << 14)                  ///< Grab with proc
+#define SUB_GRAB_VIEW_JUMP            (1L << 15)                  ///< Jump to view
+#define SUB_GRAB_SCREEN_JUMP          (1L << 16)                  ///< Jump to screen
+#define SUB_GRAB_SUBLETS_RELOAD       (1L << 17)                  ///< Reload subtle
+#define SUB_GRAB_SUBTLE_RELOAD        (1L << 18)                  ///< Reload subtle
+#define SUB_GRAB_SUBTLE_QUIT          (1L << 19)                  ///< Quit subtle
+#define SUB_GRAB_WINDOW_MOVE          (1L << 20)                  ///< Resize window
+#define SUB_GRAB_WINDOW_RESIZE        (1L << 21)                  ///< Move window
+#define SUB_GRAB_WINDOW_TOGGLE        (1L << 22)                  ///< Toggle window
+#define SUB_GRAB_WINDOW_STACK         (1L << 23)                  ///< Stack window
+#define SUB_GRAB_WINDOW_SELECT        (1L << 24)                  ///< Select window
+#define SUB_GRAB_WINDOW_GRAVITY       (1L << 25)                  ///< Set gravity of window
+#define SUB_GRAB_WINDOW_SCREEN        (1L << 26)                  ///< Set screen of window
+#define SUB_GRAB_WINDOW_KILL          (1L << 27)                  ///< Kill window
 
 /* Panel flags */
-#define SUB_PANEL_SPACER1             (1L << 13)                  ///< Panel spacer1
-#define SUB_PANEL_SPACER2             (1L << 14)                  ///< Panel spacer2
-#define SUB_PANEL_SEPARATOR1          (1L << 15)                  ///< Panel separator1
-#define SUB_PANEL_SEPARATOR2          (1L << 16)                  ///< Panel separator2
-#define SUB_PANEL_BOTTOM              (1L << 17)                  ///< Panel bottom
-#define SUB_PANEL_SUBLETS             (1L << 18)                  ///< Panel sublets
-#define SUB_PANEL_HIDDEN              (1L << 19)                  ///< Hidden panel
+#define SUB_PANEL_SPACER1             (1L << 11)                  ///< Panel spacer1
+#define SUB_PANEL_SPACER2             (1L << 12)                  ///< Panel spacer2
+#define SUB_PANEL_SEPARATOR1          (1L << 13)                  ///< Panel separator1
+#define SUB_PANEL_SEPARATOR2          (1L << 14)                  ///< Panel separator2
+#define SUB_PANEL_BOTTOM              (1L << 15)                  ///< Panel bottom
+#define SUB_PANEL_SUBLETS             (1L << 16)                  ///< Panel sublets
+#define SUB_PANEL_HIDDEN              (1L << 17)                  ///< Hidden panel
 
 /* Sublet types */
 #define SUB_SUBLET_INTERVAL           (1L << 20)
@@ -261,14 +261,14 @@
 #define SUB_SUBTLE_REPLACE            (1L << 12)                  ///< Replace previous wm
 
 /* Tag flags */
-#define SUB_TAG_GRAVITY               (1L << 13)                  ///< Gravity property
-#define SUB_TAG_SCREEN                (1L << 14)                  ///< Screen property
-#define SUB_TAG_GEOMETRY              (1L << 15)                  ///< Geometry property
-#define SUB_TAG_MATCH                 (1L << 16)                  ///< Match property
-#define SUB_TAG_MATCH_NAME            (1L << 17)                  ///< Match WM_NAME
-#define SUB_TAG_MATCH_INSTANCE        (1L << 18)                  ///< Match instance of WM_CLASS
-#define SUB_TAG_MATCH_CLASS           (1L << 19)                  ///< Match class of WM_CLASS
-#define SUB_TAG_MATCH_ROLE            (1L << 20)                  ///< Match role of window
+#define SUB_TAG_GRAVITY               (1L << 11)                  ///< Gravity property
+#define SUB_TAG_SCREEN                (1L << 12)                  ///< Screen property
+#define SUB_TAG_GEOMETRY              (1L << 13)                  ///< Geometry property
+#define SUB_TAG_MATCH                 (1L << 14)                  ///< Match property
+#define SUB_TAG_MATCH_NAME            (1L << 15)                  ///< Match WM_NAME
+#define SUB_TAG_MATCH_INSTANCE        (1L << 16)                  ///< Match instance of WM_CLASS
+#define SUB_TAG_MATCH_CLASS           (1L << 17)                  ///< Match class of WM_CLASS
+#define SUB_TAG_MATCH_ROLE            (1L << 18)                  ///< Match role of window
 /* }}} */
 
 /* Typedefs {{{ */
@@ -335,6 +335,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_NET_WM_WINDOW_TYPE,                                    ///< Window type
   SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG,                             ///< Dialog window
   SUB_EWMH_NET_WM_WINDOW_TYPE_DOCK,                               ///< Dock window
+  SUB_EWMH_NET_WM_WINDOW_TYPE_DESKTOP,                            ///< Desktop window
 
   SUB_EWMH_NET_WM_STATE,                                          ///< Window state
   SUB_EWMH_NET_WM_STATE_FULLSCREEN,                               ///< Fullscreen window
