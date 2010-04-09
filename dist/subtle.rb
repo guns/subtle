@@ -367,7 +367,7 @@ GRABS = {
 # [*:urgent*]  This property either sets the tagged client to be urgent or prevents it from being
 #              urgent depending on the value. Urgent clients will get keyboard and mouse focus
 #              automatically.
-
+#
 TAGS = {
   "terms"   => "xterm|[u]?rxvt",
   "browser" => "uzbl|opera|firefox|navigator",
@@ -386,10 +386,19 @@ TAGS = {
 # Windows that have no tag will be visible on the default view which is the view with the
 # default tag or the first defined view when this tag isn't set.
 #
+# === Properties
+#
+# The same notation as in tags is possible for views, but currently only one additional property to
+# regex is available.
+#
+# [*:dynamic*] This property enables dynamic mode of the view, that means it will only be visible
+#              when there is a client on it.
+#
 VIEWS = {
   "terms" => "terms",
   "www"   => "browser|default",
-  "dev"   => "editor"
+  "dev"   => "editor",
+  "temp"  => { :dynamic => true }
 }
 
 #
