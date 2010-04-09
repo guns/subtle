@@ -179,7 +179,7 @@
 #define SUB_CALL_SUBLET_OUT           (1L << 18)                  ///< Sublet mouse out hook
 
 /* Hooks */
-#define SUB_HOOK_START                (1L << 15)                  ///< Start hook (must start at 15)
+#define SUB_HOOK_START                (1L << 15)                  ///< Start hook (after call flags [15])
 #define SUB_HOOK_RELOAD               (1L << 16)                  ///< Start hook
 #define SUB_HOOK_EXIT                 (1L << 17)                  ///< Exit hook
 #define SUB_HOOK_CLIENT_CREATE        (1L << 18)                  ///< Client create hook
@@ -194,7 +194,7 @@
 #define SUB_HOOK_VIEW_KILL            (1L << 27)                  ///< View kill hook
 
 /* Client flags */
-#define SUB_CLIENT_FOCUS              (1L << 11)                  ///< Send focus message (must start at 11)
+#define SUB_CLIENT_FOCUS              (1L << 11)                  ///< Send focus message
 #define SUB_CLIENT_INPUT              (1L << 12)                  ///< Active/passive focus-model
 #define SUB_CLIENT_CLOSE              (1L << 13)                  ///< Send close message
 #define SUB_CLIENT_IMMOBILE           (1L << 14)                  ///< Immobile window
@@ -236,7 +236,7 @@
 #define SUB_PANEL_HIDDEN              (1L << 17)                  ///< Hidden panel
 
 /* Sublet types */
-#define SUB_SUBLET_INTERVAL           (1L << 20)
+#define SUB_SUBLET_INTERVAL           (1L << 20)                  ///< Sublet has interval (after panel flags)
 #define SUB_SUBLET_INOTIFY            (1L << 21)                  ///< Inotify sublet
 #define SUB_SUBLET_SOCKET             (1L << 22)                  ///< Socket sublet
 #define SUB_SUBLET_RUN                (1L << 23)                  ///< Sublet run function
@@ -269,6 +269,9 @@
 #define SUB_TAG_MATCH_INSTANCE        (1L << 16)                  ///< Match instance of WM_CLASS
 #define SUB_TAG_MATCH_CLASS           (1L << 17)                  ///< Match class of WM_CLASS
 #define SUB_TAG_MATCH_ROLE            (1L << 18)                  ///< Match role of window
+
+/* View flags */
+#define SUB_VIEW_DYNAMIC              (1L << 20)                  ///< Dynamic view (after panel flags)
 /* }}} */
 
 /* Typedefs {{{ */
@@ -710,6 +713,7 @@ void subTrayKill(SubTray *t);                                     ///< Delete tr
 SubView *subViewNew(char *name, char *tags);                      ///< Create view
 void subViewConfigure(SubView *v, int align);                     ///< Configure view
 void subViewUpdate(void);                                         ///< Update views
+void subViewDynamic(void);                                        ///< Update dynamic views
 void subViewRender(void);                                         ///< Render views
 void subViewJump(SubView *v, int focus);                          ///< Jump to view
 void subViewPublish(void);                                        ///< Publish views

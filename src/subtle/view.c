@@ -31,14 +31,12 @@ subViewNew(char *name,
   v->flags = SUB_TYPE_VIEW;
   v->name  = strdup(name);
 
-
   /* Create button */
   v->button = XCreateSimpleWindow(subtle->dpy, subtle->windows.views.win, 
     0, 0, 1, subtle->th, 0, 0, subtle->colors.bg_views);
 
   XSaveContext(subtle->dpy, v->button, VIEWID, (void *)v);
   XSelectInput(subtle->dpy, v->button,  ButtonPressMask);
-  XMapRaised(subtle->dpy, v->button);
 
   /* Tags */
   if(tags && strncmp("", tags, 1))
@@ -116,7 +114,7 @@ subViewConfigure(SubView *v,
 } /* }}} */
 
  /** subViewUpdate {{{ 
-  * @brief Update view panel
+  * @brief Update dynamic views
   **/
 
 void
@@ -132,18 +130,69 @@ subViewUpdate(void)
         {
           SubView *v = VIEW(subtle->views->data[i]);
 
-          v->width = subSharedTextWidth(subtle->font, v->name, strlen(v->name), NULL, 
-            NULL, True) + 6 + 2 * subtle->pbw; ///< Font offset and panel border
+          /* Check dynamic views */
+          if(v->flags & SUB_PANEL_HIDDEN) 
+            {
+              XUnmapWindow(subtle->dpy, v->button);
+            }
+          else
+            {
+              v->width = subSharedTextWidth(subtle->font, v->name, strlen(v->name), NULL, 
+                NULL, True) + 6 + 2 * subtle->pbw; ///< Font offset and panel border
 
-          XMoveResizeWindow(subtle->dpy, v->button, subtle->windows.views.width, 
-            0, v->width, subtle->th - 2 * subtle->pbw);
-          subtle->windows.views.width += v->width;
+              XMoveResizeWindow(subtle->dpy, v->button, subtle->windows.views.width, 
+                0, v->width, subtle->th - 2 * subtle->pbw);
+              subtle->windows.views.width += v->width;
+
+              XMapRaised(subtle->dpy, v->button);
+            }
         }
 
       subtle->windows.views.width += 2 * subtle->pbw;
 
       XResizeWindow(subtle->dpy, subtle->windows.views.win, subtle->windows.views.width, subtle->th);
     }
+} /* }}} */
+
+ /** subViewDynamic {{{ 
+  * @brief Update dynamic views
+  **/
+
+void
+subViewDynamic(void)
+{
+  int i, j;
+
+  /* Update dynamic views (n²) */
+  for(i = 0; i < subtle->views->ndata; i++)
+    {
+      int visible = 0;
+      SubView *v = VIEW(subtle->views->data[i]);
+
+      if(v->flags & SUB_VIEW_DYNAMIC)
+        {
+          for(j = 0; j < subtle->clients->ndata; j++)
+            {
+              SubClient *c = CLIENT(subtle->clients->data[j]);
+
+              if(VISIBLE(v, c)) visible++;
+            }
+
+          /* Update flags */
+          if(0 < visible) v->flags &= ~SUB_PANEL_HIDDEN;
+          else 
+            {
+              v->flags |= SUB_PANEL_HIDDEN;
+
+              /* Check current view */
+              if(CURVIEW == v) 
+                subViewJump(VIEW(subtle->views->data[0]), True);
+            }
+        }
+    }
+
+  subViewUpdate();
+  subPanelUpdate();
 } /* }}} */
 
  /** subViewRender {{{ 
@@ -164,29 +213,32 @@ subViewRender(void)
         {
           SubView *v = VIEW(subtle->views->data[i]);
 
-          /* Select color pair */
-          if(v->flags & SUB_MODE_URGENT)
-            {
-              fg = subtle->colors.fg_urgent;
-              bg = subtle->colors.bg_urgent;            
-            }
-          else if(CURVIEW == v)
-            {
-              fg = subtle->colors.fg_focus;
-              bg = subtle->colors.bg_focus;
-            }
-          else
-            {
-              fg = subtle->colors.fg_views;
-              bg = subtle->colors.bg_views;
-            }
-          
-          /* Set color and draw */
-          XSetWindowBackground(subtle->dpy, v->button, bg);
-          XClearWindow(subtle->dpy, v->button);
+          if(!(v->flags & SUB_PANEL_HIDDEN))
+            {          
+              /* Select color pair */
+              if(v->flags & SUB_MODE_URGENT)
+                {
+                  fg = subtle->colors.fg_urgent;
+                  bg = subtle->colors.bg_urgent;            
+                }
+              else if(CURVIEW == v)
+                {
+                  fg = subtle->colors.fg_focus;
+                  bg = subtle->colors.bg_focus;
+                }
+              else
+                {
+                  fg = subtle->colors.fg_views;
+                  bg = subtle->colors.bg_views;
+                }
+              
+              /* Set color and draw */
+              XSetWindowBackground(subtle->dpy, v->button, bg);
+              XClearWindow(subtle->dpy, v->button);
 
-          subSharedTextDraw(subtle->dpy, subtle->gcs.font, subtle->font,
-            v->button, 3, subtle->font->y, fg, bg, v->name);
+              subSharedTextDraw(subtle->dpy, subtle->gcs.font, subtle->font,
+                v->button, 3, subtle->font->y, fg, bg, v->name);
+            }
         }
     }
 } /* }}} */
