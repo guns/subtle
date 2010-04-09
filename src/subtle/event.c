@@ -125,6 +125,8 @@ EventMapRequest(XMapRequestEvent *ev)
           subArrayPush(subtle->clients, (void *)c);
           subClientPublish();
 
+          subViewDynamic(); ///< Dynamic views
+
           if(VISIBLE(CURVIEW, c)) ///< Check visibility first
             {
               subViewConfigure(CURVIEW, False); 
@@ -204,8 +206,11 @@ EventDestroy(XDestroyWindowEvent *ev)
       c->flags |= SUB_CLIENT_DEAD; ///< Ignore remaining events
       subArrayRemove(subtle->clients, (void *)c);
       subClientPublish();
+
+      subViewDynamic(); ///< Dynamic views
+
       if(VISIBLE(CURVIEW, c)) subViewConfigure(CURVIEW, False);
-      subClientKill(c, True); 
+      subClientKill(c, True);
     }
   else if((t = TRAY(subSubtleFind(ev->event, TRAYID)))) ///< Tray
     {
@@ -314,7 +319,7 @@ EventMessage(XClientMessageEvent *ev)
                         {
                           if(SUB_EWMH_SUBTLE_WINDOW_TAG == id) v->tags |= tag; ///< Action
                           else v->tags &= ~tag;
-                        
+
                           /* EWMH: Tags */
                           subEwmhSetCardinals(v->button, SUB_EWMH_SUBTLE_WINDOW_TAGS, 
                             (long *)&v->tags, 1);
@@ -322,6 +327,8 @@ EventMessage(XClientMessageEvent *ev)
                           if(CURVIEW == v) subViewConfigure(v, False);
                         } 
                   }
+
+                subViewDynamic(); ///< Dynamic views
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_WINDOW_GRAVITY: /* {{{ */

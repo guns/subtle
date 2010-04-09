@@ -643,6 +643,8 @@ subClientSetTags(SubClient *c)
 
   if(role) free(role);
 
+  subViewDynamic(); ///< Dynamic views
+
   /* Check if client is visible on at least one screen */
   for(i = 0; i < subtle->views->ndata; i++)
     if(VIEW(subtle->views->data[i])->tags & c->tags) 
