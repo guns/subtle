@@ -447,107 +447,115 @@ RubyForeachTag(VALUE key,
   VALUE value,
   VALUE extra)
 {
-  int i;
-  void *object = NULL;
-  VALUE *rargs = (VALUE *)extra;
-
-  switch(rb_type(value)) ///< Check value type
+  /* Check key type */ 
+  if(T_STRING == rb_type(key))
     {
-      case T_STRING: /* {{{ */
-        if((object = (void *)subTagNew(RSTRING_PTR(key), RSTRING_PTR(value))))
-          {
-            TAG(object)->flags |= (SUB_TAG_MATCH_INSTANCE|SUB_TAG_MATCH_CLASS); ///< Set default matching
-            subArrayPush(subtle->tags, object);
-          }
-        break; /* }}} */
-      case T_HASH: /* {{{ */
+      int i;
+      SubTag *t = NULL;
+      VALUE *rargs = (VALUE *)extra;
+
+      switch(rb_type(value)) ///< Check value type
         {
-          SubTag *t = NULL;
-
-          if((t = subTagNew(RSTRING_PTR(key), RubyGetString(value, "regex", NULL))))
+          case T_STRING: /* {{{ */
+            if((t = subTagNew(RSTRING_PTR(key), RSTRING_PTR(value))))
+              {
+                t->flags |= (SUB_TAG_MATCH_INSTANCE|SUB_TAG_MATCH_CLASS); ///< Set default matching
+                subArrayPush(subtle->tags, (void *)t);
+              }
+            break; /* }}} */
+          case T_HASH: /* {{{ */
             {
-              VALUE meth = rb_intern("has_key?");
-              RubySymbols *tags = (RubySymbols *)rargs[1];
-
-              /* Collect flags */
-              for(i = 0; TAGSLENGTH > i; i++)
+              if((t = subTagNew(RSTRING_PTR(key), 
+                  RubyGetString(value, "regex", NULL))))
                 {
-                  if(Qtrue == rb_funcall(value, meth, 1, tags[i].sym))
-                    t->flags |= tags[i].flags;
-                }
+                  RubySymbols *tags = (RubySymbols *)rargs[1];
 
-              /* Check values */
-              if(t->flags & SUB_TAG_GRAVITY)
-                {
-                  if(-1 == (t->gravity = RubyGetGravity(value)))
-                    t->flags &= ~SUB_TAG_GRAVITY; ///< Sanity
-                }
-
-              if(t->flags & SUB_TAG_SCREEN)
-                {
-                  t->screen = RubyGetFixnum(value, "screen",  0);
-                  if(0 > t->screen || t->screen > subtle->screens->ndata - 1) ///< Sanity
-                    t->flags &= ~SUB_TAG_SCREEN;
-                }
-
-              if(t->flags & SUB_TAG_GEOMETRY)
-                {
-                  if(!RubyGetGeometry(value, "geometry", &t->geometry)) ///< Sanity
-                    t->flags &= ~SUB_TAG_GEOMETRY;
-                }
-
-              /* Check tri-state properties */
-              if(t->flags & SUB_MODE_FULL && (False == RubyGetBool(value, "full")))
-                t->flags ^= (SUB_MODE_FULL|SUB_MODE_NONFULL);
-
-              if(t->flags & SUB_MODE_FLOAT && (False == RubyGetBool(value, "float")))
-                t->flags ^= (SUB_MODE_FLOAT|SUB_MODE_NONFLOAT);
-
-              if(t->flags & SUB_MODE_STICK && (False == RubyGetBool(value, "stick")))
-                t->flags ^= (SUB_MODE_STICK|SUB_MODE_NONSTICK);
-
-              if(t->flags & SUB_MODE_URGENT && (False == RubyGetBool(value, "urgent")))
-                t->flags ^= (SUB_MODE_URGENT|SUB_MODE_NONURGENT);
-
-              if(t->flags & SUB_MODE_RESIZE && (False == RubyGetBool(value, "resize")))
-                t->flags ^= (SUB_MODE_RESIZE|SUB_MODE_NONRESIZE);
-
-              /* Check matching properties */
-              if(t->flags & SUB_TAG_MATCH)
-                {
-                  VALUE match = Qnil;
-
-                  if(Qnil != (match = RubyFetchKey(value, "match", T_ARRAY, True)))
+                  /* Collect flags */
+                  for(i = 0; TAGSLENGTH > i; i++)
                     {
-                      meth = rb_intern("include?");
-
-                      if(Qtrue == rb_funcall(match, meth, 1, CHAR2SYM("name")))
-                        t->flags |= SUB_TAG_MATCH_NAME;
-
-                      if(Qtrue == rb_funcall(match, meth, 1, CHAR2SYM("instance")))
-                        t->flags |= SUB_TAG_MATCH_INSTANCE;
-
-                      if(Qtrue == rb_funcall(match, meth, 1, CHAR2SYM("class")))
-                        t->flags |= SUB_TAG_MATCH_CLASS;
-
-                      if(Qtrue == rb_funcall(match, meth, 1, CHAR2SYM("role")))
-                        t->flags |= SUB_TAG_MATCH_ROLE;
+                      if(RTEST(rb_hash_lookup(value, tags[i].sym)))
+                        t->flags |= tags[i].flags;
                     }
+
+                  /* Check values */
+                  if(t->flags & SUB_TAG_GRAVITY)
+                    {
+                      if(-1 == (t->gravity = RubyGetGravity(value)))
+                        t->flags &= ~SUB_TAG_GRAVITY; ///< Sanity
+                    }
+
+                  if(t->flags & SUB_TAG_SCREEN)
+                    {
+                      t->screen = RubyGetFixnum(value, "screen",  0);
+                      if(0 > t->screen || 
+                          t->screen > subtle->screens->ndata - 1) ///< Sanity
+                        t->flags &= ~SUB_TAG_SCREEN;
+                    }
+
+                  if(t->flags & SUB_TAG_GEOMETRY)
+                    {
+                      if(!RubyGetGeometry(value, "geometry", &t->geometry)) ///< Sanity
+                        t->flags &= ~SUB_TAG_GEOMETRY;
+                    }
+
+                  /* Check tri-state properties */
+                  if(t->flags & SUB_MODE_FULL && 
+                      (False == RubyGetBool(value, "full")))
+                    t->flags ^= (SUB_MODE_FULL|SUB_MODE_NONFULL);
+
+                  if(t->flags & SUB_MODE_FLOAT && 
+                      (False == RubyGetBool(value, "float")))
+                    t->flags ^= (SUB_MODE_FLOAT|SUB_MODE_NONFLOAT);
+
+                  if(t->flags & SUB_MODE_STICK && 
+                      (False == RubyGetBool(value, "stick")))
+                    t->flags ^= (SUB_MODE_STICK|SUB_MODE_NONSTICK);
+
+                  if(t->flags & SUB_MODE_URGENT && 
+                      (False == RubyGetBool(value, "urgent")))
+                    t->flags ^= (SUB_MODE_URGENT|SUB_MODE_NONURGENT);
+
+                  if(t->flags & SUB_MODE_RESIZE && 
+                      (False == RubyGetBool(value, "resize")))
+                    t->flags ^= (SUB_MODE_RESIZE|SUB_MODE_NONRESIZE);
+
+                  /* Check matching properties */
+                  if(t->flags & SUB_TAG_MATCH)
+                    {
+                      VALUE match = Qnil;
+
+                      if(Qnil != (match = RubyFetchKey(value, "match", 
+                          T_ARRAY, True)))
+                        {
+                          if(Qtrue == rb_ary_includes(match, CHAR2SYM("name")))
+                            t->flags |= SUB_TAG_MATCH_NAME;
+
+                          if(Qtrue == rb_ary_includes(match, CHAR2SYM("instance")))
+                            t->flags |= SUB_TAG_MATCH_INSTANCE;
+
+                          if(Qtrue == rb_ary_includes(match, CHAR2SYM("class")))
+                            t->flags |= SUB_TAG_MATCH_CLASS;
+
+                          if(Qtrue == rb_ary_includes(match, CHAR2SYM("role")))
+                            t->flags |= SUB_TAG_MATCH_ROLE;
+                        }
+                    }
+
+                  /* Enable default if no matcher is present */
+                  if(!(t->flags & (SUB_TAG_MATCH_NAME|SUB_TAG_MATCH_INSTANCE| \
+                      SUB_TAG_MATCH_CLASS|SUB_TAG_MATCH_ROLE)))
+                    t->flags |= (SUB_TAG_MATCH_INSTANCE|SUB_TAG_MATCH_CLASS);
+
+                  subArrayPush(subtle->tags, (void *)t);
                 }
-
-              /* Enable default if no matcher is present */
-              if(!(t->flags & (SUB_TAG_MATCH_NAME|SUB_TAG_MATCH_INSTANCE| \
-                  SUB_TAG_MATCH_CLASS|SUB_TAG_MATCH_ROLE)))
-                t->flags |= (SUB_TAG_MATCH_INSTANCE|SUB_TAG_MATCH_CLASS);
-
-              subArrayPush(subtle->tags, (void *)t);
-            }
-          }
-        break; /* }}} */
-      default: /* {{{ */
-        subSharedLogWarn("Failed parsing tag `%s'\n", RSTRING_PTR(key));
-        return Qnil; /* }}} */
+              }
+            break; /* }}} */
+          default: /* {{{ */
+            subSharedLogWarn("Failed parsing value of tag `%s'\n", RSTRING_PTR(key));
+            return Qnil; /* }}} */
+        }
     }
+  else subSharedLogWarn("Failed parsing tag name `%s'\n", RSTRING_PTR(key));
 
   return Qnil;
 } /* }}} */
@@ -558,15 +566,35 @@ RubyForeachView(VALUE key,
   VALUE value,
   VALUE extra)
 {
-  void *object = NULL;
-
-  /* Check value type */
-  if(T_STRING == rb_type(key) && T_STRING == rb_type(value))
+  /* Check key type */ 
+  if(T_STRING == rb_type(key))
     {
-      if((object = (void *)subViewNew(RSTRING_PTR(key), RSTRING_PTR(value))))
-        subArrayPush(subtle->views, object);
+      SubView *v = NULL;
+
+      /* Check value type */
+      switch(rb_type(value))
+        {
+          case T_STRING: /* {{{ */
+            if((v = subViewNew(RSTRING_PTR(key), RSTRING_PTR(value))))
+              subArrayPush(subtle->views, (void *)v);
+            break; /* }}} */
+          case T_HASH: /* {{{ */
+            if((v = subViewNew(RSTRING_PTR(key), 
+                RubyGetString(value, "regex", NULL))))
+              {
+                if(True == RubyGetBool(value, "dynamic"))
+                  v->flags |= (SUB_VIEW_DYNAMIC|SUB_PANEL_HIDDEN);
+
+                subArrayPush(subtle->views, (void *)v);
+              }
+          
+            break; /* }}} */
+          default: /* {{{ */
+            subSharedLogWarn("Failed parsing value of view `%s'\n", RSTRING_PTR(key));
+            return Qnil; /* }}} */          
+        }
     }
-  else subSharedLogWarn("Failed parsing view `%s'\n", RSTRING_PTR(key));
+  else subSharedLogWarn("Failed parsing view name `%s'\n", RSTRING_PTR(key));
 
   return Qnil;
 } /* }}} */
@@ -577,23 +605,22 @@ RubyForeachHook(VALUE key,
   VALUE value,
   VALUE extra)
 {
-  int i;
-  void *object = NULL;
-  VALUE *rargs = (VALUE *)extra;
-
   /* Check value type */
   if(T_SYMBOL == rb_type(key) && T_DATA == rb_type(value))
     {
+      int i;
+      SubHook *h = NULL;
+      VALUE *rargs = (VALUE *)extra;
       RubySymbols *hooks = (RubySymbols *)rargs[1];
 
       for(i = 0; HOOKSLENGTH > i; i++)
         {
           if(key == hooks[i].sym)
             {
-              object = (void *)subHookNew(hooks[i].flags|SUB_CALL_HOOKS, 
+              h = subHookNew(hooks[i].flags|SUB_CALL_HOOKS,
                 value, NULL);
 
-              subArrayPush(subtle->hooks, object);
+              subArrayPush(subtle->hooks, (void *)h);
               rb_ary_push(shelter, value); ///< Protect from GC
             
               subSharedLogDebug("hook=%s\n", SYM2CHAR(hooks[i].sym));
