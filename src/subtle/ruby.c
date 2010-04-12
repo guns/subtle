@@ -172,13 +172,6 @@ RubyConvert(void *data)
   return object;
 } /* }}} */
 
-/* RubyArity {{{ */
-static int
-RubyArity(VALUE proc)
-{
-  return FIX2INT(rb_funcall(proc, rb_intern("arity"), 0, NULL));
-} /* }}} */
-
 /* Fetch */
 
 /* RubyFetchKey {{{ */
@@ -1115,14 +1108,14 @@ RubyWrapCall(VALUE data)
   if((int)rargs[0] & SUB_CALL_HOOKS)
     {
       rb_funcall(rargs[1], rb_intern("call"), 
-        MINMAX(RubyArity(rargs[1]), 0, 1), RubyConvert((VALUE *)rargs[3]));
+        MINMAX(rb_proc_arity(rargs[1]), 0, 1), RubyConvert((VALUE *)rargs[3]));
     }
   else if((int)rargs[0] & SUB_CALL_SUBLET_HOOKS)
     {
       SubSublet *s = SUBLET(rargs[2]);
 
       rb_funcall(rargs[1], rb_intern("call"), 
-        MINMAX(RubyArity(rargs[1]), 1, 2), s->instance, 
+        MINMAX(rb_proc_arity(rargs[1]), 1, 2), s->instance, 
         RubyConvert((VALUE *)rargs[3]));
     }
   else
@@ -1277,7 +1270,7 @@ RubyKernelEvent(VALUE self,
           /* Since loading is linear we use the last sublet */
           s     = SUBLET(subtle->sublets->data[subtle->sublets->ndata - 1]);
           p     = rb_block_proc();
-          arity = RubyArity(p);
+          arity = rb_proc_arity(p);
           sing  = rb_singleton_class(s->instance);
           meth  = rb_intern("define_method");
 
