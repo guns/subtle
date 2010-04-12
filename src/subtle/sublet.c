@@ -154,7 +154,6 @@ subSubletKill(SubSublet *s)
   subArrayRemove(subtle->panels, (void *)s);
   subHookRemove(s->instance, (void *)s);
   subRubyRelease(s->instance);
-  subRubyRemove(s->name);
 
   /* Remove socket watch */
   if(s->flags & SUB_SUBLET_SOCKET)

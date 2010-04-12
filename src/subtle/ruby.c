@@ -1178,6 +1178,15 @@ RubyWrapRelease(VALUE value)
   return Qnil;
 } /* }}} */
 
+/* RubyWrapRead {{{ */
+static VALUE
+RubyWrapRead(VALUE file)
+{
+  VALUE str = rb_funcall(rb_cFile, rb_intern("read"), 1, file);
+
+  return str;
+} /* }}} */
+
 /* Kernel */
 
 /* RubyKernelConfigure {{{ */
@@ -1200,18 +1209,12 @@ RubyKernelConfigure(VALUE self,
   if(T_SYMBOL == rb_type(name))
     {
       SubSublet *s = NULL;
-      VALUE p = Qnil, mod = Qnil, klass = Qnil;
+      VALUE p = Qnil;
 
-      /* Create new sublet */
-      s = subSubletNew();
-      p           = rb_block_proc();
-      mod         = rb_const_get(rb_mKernel, rb_intern("Subtle"));
-      klass       = rb_const_get(mod, rb_intern("Sublet"));
-      s->name     = strdup(SYM2CHAR(name));
-      s->instance = Data_Wrap_Struct(klass, NULL, NULL, (void *)s);
-
-      subArrayPush(subtle->sublets, s);
-      rb_ary_push(shelter, s->instance); ///< Protect from GC
+      /* Assume latest sublet */
+      p = rb_block_proc();
+      s = SUBLET(subtle->sublets->data[subtle->sublets->ndata - 1]);
+      s->name = strdup(SYM2CHAR(name));
 
       /* Define configure method */
       rb_funcall(rb_singleton_class(s->instance), rb_intern("define_method"), 
@@ -2061,6 +2064,7 @@ subRubyLoadSublet(const char *file)
   int state = 0;
   char buf[100] = { 0 };
   SubSublet *s = NULL;
+  VALUE str = Qnil, rargs[1] = { Qnil }, mod = Qnil, klass = Qnil;
 
   /* Check path */
   if(subtle->paths.sublets)
@@ -2077,16 +2081,30 @@ subRubyLoadSublet(const char *file)
   subSharedLogDebug("sublet=%s\n", buf);
 
   /* Carefully load file */
-  rb_load_protect(rb_str_new2(buf), 0, &state);
+  str = rb_protect(RubyWrapRead, rb_str_new2(buf), &state);
   if(state)
     {
       subSharedLogWarn("Failed loading sublet `%s'\n", file);
       RubyBacktrace();
     }
 
-  /* Configure and run sublet */
-  s = SUBLET(subtle->sublets->data[subtle->sublets->ndata - 1]);
+  /* Create sublet */
+  s = subSubletNew();
+  mod         = rb_const_get(rb_mKernel, rb_intern("Subtle"));
+  klass       = rb_const_get(mod, rb_intern("Sublet"));
+  s->instance = Data_Wrap_Struct(klass, NULL, NULL, (void *)s);
 
+  /* Create namespace module */
+  s->mod = rb_module_new();
+  rb_define_singleton_method(s->mod, "const_missing", RubyObjectDispatcher, 1);
+
+  subArrayPush(subtle->sublets, s);
+  rb_ary_push(shelter, s->instance); ///< Protect from GC
+
+  rargs[0] = str;
+  rb_mod_module_eval(1, rargs, s->mod);
+
+  /* Configure and run sublet first time */
   subRubyCall(SUB_CALL_SUBLET_CONFIGURE, s->instance, (void *)s, NULL);
 
   if(0 >= s->interval) s->interval = 60; ///< Sanitize
