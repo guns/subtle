@@ -121,7 +121,7 @@ subIconNew(int argc,
       i->instance = Data_Wrap_Struct(self, IconMark, 
         IconSweep, (void *)i);
 
-      rb_obj_call_init(i->instance, 0, 0);
+      rb_obj_call_init(i->instance, argc, argv);
      
       rb_iv_set(i->instance, "@width",  INT2FIX(i->width));
       rb_iv_set(i->instance, "@height", INT2FIX(i->height));
@@ -134,6 +134,29 @@ subIconNew(int argc,
   XSync(display, False); ///< Sync all changes
 
   return i->instance;
+} /* }}} */
+
+/* subIconInit {{{ */
+/*
+ * call-seq: initialize(path)          -> Subtle::Icon
+ *           initialize(width, height) -> Subtle::Icon
+ *
+ * Initialize Icon object
+ *
+ *  icon = Subtlext::Icon.new("/path/to/icon")
+ *  => #<Subtlext::Icon:xxx>
+ *
+ *  icon = Subtlext::Icon.new(8, 8)
+ *  => #<Subtlext::Icon:xxx>
+ */
+
+VALUE
+subIconInit(int argc,
+  VALUE *argv,
+  VALUE self)
+{
+  /* Dummy method */
+  return Qnil;
 } /* }}} */
 
 /* subIconDraw {{{ */
