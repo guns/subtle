@@ -933,8 +933,8 @@ Init_subtlext(void)
   /* Icon height */
   rb_define_attr(icon, "height", 1, 0);
 
-  /* Singleton methods */
-  rb_define_singleton_method(icon, "new", subIconNew, -1);
+  /* Allocate */
+  rb_define_alloc_func(icon, subIconAlloc);
 
   /* Class methods */
   rb_define_method(icon, "initialize", subIconInit,         -1);

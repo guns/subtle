@@ -42,96 +42,22 @@ IconSweep(SubtlextIcon *i)
     }
 } /* }}} */
 
-/* subIconNew {{{ */
+/* subIconAlloc {{{ */
 /*
  * call-seq: new(path)          -> Subtle::Icon
  *           new(width, height) -> Subtle::Icon
  *
- * Create new Icon object
- *
- *  icon = Subtlext::Icon.new("/path/to/icon")
- *  => #<Subtlext::Icon:xxx>
- *
- *  icon = Subtlext::Icon.new(8, 8)
- *  => #<Subtlext::Icon:xxx>
+ * Allocate new Icon object
  */
 
 VALUE
-subIconNew(int argc,
-  VALUE *argv,
-  VALUE self)
+subIconAlloc(VALUE self)
 {
   SubtlextIcon *i = NULL;
-  VALUE arg1 = Qnil, arg2 = Qnil;
 
-  rb_scan_args(argc, argv, "02", &arg1, &arg2);
-
-  subSubtlextConnect(); ///< Implicit open connection
-
-  /* Find or create icon */
-  if(T_STRING == rb_type(arg1)) ///< Icon path
-    {
-      int hotx = 0, hoty = 0;
-      char buf[100] = { 0 }, *file = RSTRING_PTR(arg1);
-
-      /* Find file */
-      if(-1 != access(file, R_OK))
-        snprintf(buf, sizeof(buf), "%s", file);
-      else
-        {
-          char fallback[256] = { 0 }, *data = getenv("XDG_DATA_HOME");
-
-          /* Combine paths */
-          snprintf(fallback, sizeof(fallback), "%s/.local/share", 
-            getenv("HOME"));
-          snprintf(buf, sizeof(buf), "%s/subtle/icons/%s", 
-            data ? data : fallback, file);
-
-          if(-1 == access(buf, R_OK))
-            rb_raise(rb_eStandardError, "Icon not found `%s'", file);
-        }
-
-      /* Create new icon */
-      i = (SubtlextIcon *)subSharedMemoryAlloc(1, sizeof(SubtlextIcon));
-
-      /* Reading icon file */
-      if(BitmapSuccess != XReadBitmapFile(display, DefaultRootWindow(display),
-          buf, &i->width, &i->height, &i->pixmap, &hotx, &hoty))
-        {
-          rb_raise(rb_eStandardError, "Icon not found `%s'", buf);
-
-          free(i);
-
-          return Qnil;
-        }
-    }
-  else if(FIXNUM_P(arg1) && FIXNUM_P(arg2)) ///< Icon dimensions
-    {
-      /* Create empty pixmap */
-      i = (SubtlextIcon *)subSharedMemoryAlloc(1, sizeof(SubtlextIcon));
-      i->width  = FIX2INT(arg1);
-      i->height = FIX2INT(arg2);
-      i->pixmap = XCreatePixmap(display, DefaultRootWindow(display), 
-        i->width, i->height, 1);
-    }
-
-  /* Set icon properties */
-  if(i)
-    {
-      i->instance = Data_Wrap_Struct(self, IconMark, 
-        IconSweep, (void *)i);
-
-      rb_obj_call_init(i->instance, argc, argv);
-     
-      rb_iv_set(i->instance, "@width",  INT2FIX(i->width));
-      rb_iv_set(i->instance, "@height", INT2FIX(i->height));
-
-      subSharedLogDebug("new=icon, width=%03d, height=%03d\n",
-        i->width, i->height);
-    }
-  else rb_raise(rb_eArgError, "Unknown value types");
-
-  XSync(display, False); ///< Sync all changes
+  /* Create icon */
+  i = (SubtlextIcon *)subSharedMemoryAlloc(1, sizeof(SubtlextIcon));
+  i->instance = Data_Wrap_Struct(self, IconMark, IconSweep, (void *)i);
 
   return i->instance;
 } /* }}} */
@@ -155,7 +81,69 @@ subIconInit(int argc,
   VALUE *argv,
   VALUE self)
 {
-  /* Dummy method */
+  SubtlextIcon *i = NULL;
+
+  Data_Get_Struct(self, SubtlextIcon, i);
+  if(i)  
+    {
+      VALUE arg1 = Qnil, arg2 = Qnil;
+
+      rb_scan_args(argc, argv, "02", &arg1, &arg2);
+
+      subSubtlextConnect(); ///< Implicit open connection
+
+      /* Find or create icon */
+      if(T_STRING == rb_type(arg1)) ///< Icon path
+        {
+          int hotx = 0, hoty = 0;
+          char buf[100] = { 0 }, *file = RSTRING_PTR(arg1);
+
+          /* Find file */
+          if(-1 != access(file, R_OK))
+            snprintf(buf, sizeof(buf), "%s", file);
+          else
+            {
+              char fallback[256] = { 0 }, *data = getenv("XDG_DATA_HOME");
+
+              /* Combine paths */
+              snprintf(fallback, sizeof(fallback), "%s/.local/share", 
+                getenv("HOME"));
+              snprintf(buf, sizeof(buf), "%s/subtle/icons/%s", 
+                data ? data : fallback, file);
+
+              if(-1 == access(buf, R_OK))
+                rb_raise(rb_eStandardError, "Icon not found `%s'", file);
+            }
+
+          /* Reading icon file */
+          if(BitmapSuccess != XReadBitmapFile(display, DefaultRootWindow(display),
+              buf, &i->width, &i->height, &i->pixmap, &hotx, &hoty))
+            {
+              rb_raise(rb_eStandardError, "Icon not found `%s'", buf);
+
+              return Qnil;
+            }
+        }
+      else if(FIXNUM_P(arg1) && FIXNUM_P(arg2)) ///< Icon dimensions
+        {
+          /* Create empty pixmap */
+          i->width  = FIX2INT(arg1);
+          i->height = FIX2INT(arg2);
+          i->pixmap = XCreatePixmap(display, DefaultRootWindow(display), 
+            i->width, i->height, 1);
+        }
+      else rb_raise(rb_eArgError, "Unknown value types");
+
+      /* Update object */
+      rb_iv_set(i->instance, "@width",  INT2FIX(i->width));
+      rb_iv_set(i->instance, "@height", INT2FIX(i->height));
+
+      XSync(display, False); ///< Sync all changes
+
+      subSharedLogDebug("new=icon, width=%03d, height=%03d\n",
+            i->width, i->height);
+    }
+
   return Qnil;
 } /* }}} */
 
