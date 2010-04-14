@@ -43,11 +43,31 @@ WindowSweep(SubtlextWindow *w)
     }
 } /* }}} */
 
-/* subWindowNew {{{ */
+/* subWindowAlloc {{{ */
 /*
- * call-seq: new(name, geometry, bw, foreground, background, border) -> Subtlext::Window
+ * call-seq: new(geometry) -> Subtlext::Window
  *
- * Create a new Window object
+ * Allocate new Window object
+ **/
+
+VALUE
+subWindowAlloc(VALUE self)
+{
+  SubtlextWindow *w = NULL;
+
+  /* Create window */
+  w = (SubtlextWindow *)subSharedMemoryAlloc(1, sizeof(SubtlextWindow));
+  w->instance = Data_Wrap_Struct(self, WindowMark, 
+    WindowSweep, (void *)w);
+
+  return w->instance;
+} /* }}} */
+
+/* subWindowInit {{{ 
+ *
+ * call-seq: new(geometry) -> Subtlext::Window
+ *
+ * Initialize Window object
  *
  *  win = Subtlext::Window.new(:x => 5, :y => 5) do |w|
  *    s.background = "#ffffff"
@@ -56,65 +76,65 @@ WindowSweep(SubtlextWindow *w)
 
 VALUE
 subWindowNew(VALUE self,
-  VALUE options)
+  VALUE geometry)
 {
   SubtlextWindow *w = NULL;
-  int data[4] = { 0, 0, 1, 1 };
-  VALUE geom = Qnil;
-  XSetWindowAttributes sattrs;
 
-  subSubtlextConnect(); ///< Implicit open connection
-
-  /* Wrap data */
-  w = (SubtlextWindow *)subSharedMemoryAlloc(1, sizeof(SubtlextWindow));
-  w->instance = Data_Wrap_Struct(self, WindowMark, 
-    WindowSweep, (void *)w);
-
-  /* Parse options hash */
-  if(T_HASH == rb_type(options))
+  Data_Get_Struct(self, SubtlextWindow, w);
+  if(w)  
     {
-      int i;
-      const char *syms[] = { "x", "y", "width", "height" };
+      int data[4] = { 0, 0, 1, 1 };
+      VALUE geom = Qnil;
+      XSetWindowAttributes sattrs;
 
-      for(i = 0; 4 > i; i++)
+      subSubtlextConnect(); ///< Implicit open connection
+
+      /* Parse geometry hash */
+      if(T_HASH == rb_type(geometry))
         {
-          VALUE sym = CHAR2SYM(syms[i]);
+          int i;
+          const char *syms[] = { "x", "y", "width", "height" };
 
-          if(RTEST(rb_hash_lookup(options, sym)))
-            data[i] = FIX2INT(rb_hash_aref(options, sym));
+          for(i = 0; 4 > i; i++)
+            {
+              VALUE sym = CHAR2SYM(syms[i]);
+
+              if(RTEST(rb_hash_lookup(geometry, sym)))
+                data[i] = FIX2INT(rb_hash_aref(geometry, sym));
+            }
         }
+      else rb_raise(rb_eArgError, "Unknown value type");
+
+      /* Create geometry */
+      geom = subGeometryInstantiate(data[0], data[1], data[2], data[3]);
+
+      /* Create window */
+      sattrs.override_redirect = True;
+
+      w->win = XCreateWindow(display, DefaultRootWindow(display), 
+        data[0], data[1], data[2], data[3], 1, CopyFromParent, CopyFromParent, CopyFromParent,
+        CWOverrideRedirect, &sattrs);
+
+      /* Create window defaults */
+      w->font          = subSharedFontNew(display, "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*");
+      w->text          = subSharedTextNew();
+      w->bg            = BlackPixel(display, DefaultScreen(display));
+      
+      /* Store data */
+      rb_iv_set(w->instance, "@win",      LONG2NUM(w->win));
+      rb_iv_set(w->instance, "@geometry", geom);
+      
+      /* Yield to block if given */
+      if(rb_block_given_p())
+        {
+          //rb_yield_values(1, w->instance);
+          rb_obj_instance_eval(0, 0, w->instance);
+        }
+
+      XSync(display, False); ///< Sync with X
     }
-  else rb_raise(rb_eArgError, "Unknown value type");
 
-  /* Create geometry */
-  geom = subGeometryInstantiate(data[0], data[1], data[2], data[3]);
-
-  /* Create window */
-  sattrs.override_redirect = True;
-
-  w->win = XCreateWindow(display, DefaultRootWindow(display), 
-    data[0], data[1], data[2], data[3], 1, CopyFromParent, CopyFromParent, CopyFromParent,
-    CWOverrideRedirect, &sattrs);
-
-  /* Create window defaults */
-  w->font          = subSharedFontNew(display, "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*");
-  w->text          = subSharedTextNew();
-  w->bg            = BlackPixel(display, DefaultScreen(display));
-  
-  /* Store data */
-  rb_iv_set(w->instance, "@win",      LONG2NUM(w->win));
-  rb_iv_set(w->instance, "@geometry", geom);
-  
-  /* Yield to block if given */
-  if(rb_block_given_p())
-    {
-      //rb_yield_values(1, w->instance);
-      rb_obj_instance_eval(0, 0, w->instance);
-    }
-
-  XSync(display, False); ///< Sync with X
-
-  return w->instance;
+  return Qnil;
 } /* }}} */
 
 /* subWindowNameWriter {{{ */

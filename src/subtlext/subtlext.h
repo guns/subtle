@@ -200,7 +200,8 @@ VALUE subViewKill(VALUE self);                                    ///< Kill view
 
 /* window.c {{{ */
 VALUE subWindowDispatcher(int argc, VALUE *argv, VALUE self);     ///< Window dispatcher
-VALUE subWindowNew(VALUE self, VALUE options);                    ///< Create window
+VALUE subWindowAlloc(VALUE self);                                 ///< Allocate window
+VALUE subWindowInit(VALUE self, VALUE geometry);                  ///< Init window
 VALUE subWindowNameWriter(VALUE self, VALUE value);               ///< Set name
 VALUE subWindowFontWriter(VALUE self, VALUE value);               ///< Set font
 VALUE subWindowForegroundWriter(VALUE self, VALUE value);         ///< Set foreground

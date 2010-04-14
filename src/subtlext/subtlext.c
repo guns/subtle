@@ -1192,14 +1192,15 @@ Init_subtlext(void)
   /* Window id */
   rb_define_attr(window, "win", 1, 0);
 
-  /* Singleton methods */
-  rb_define_singleton_method(window, "new", subWindowNew, 1);
+  /* Allocate */
+  rb_define_alloc_func(window, subWindowAlloc);
 
   /* General methods */
   rb_define_method(window, "click",        SubtlextClick, -1);
   rb_define_method(window, "focus",        SubtlextFocus,  0);
 
   /* Class methods */
+  rb_define_method(window, "initialize",   subWindowInit,              1);
   rb_define_method(window, "name",         subWindowNameWriter,        1);
   rb_define_method(window, "font",         subWindowFontWriter,        1);
   rb_define_method(window, "foreground",   subWindowForegroundWriter,  1);
