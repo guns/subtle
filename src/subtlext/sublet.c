@@ -43,6 +43,7 @@ subSubletInit(VALUE self,
 
   rb_iv_set(self, "@id",   Qnil);
   rb_iv_set(self, "@name", name);
+  rb_iv_set(self, "@win",  Qnil);
 
   subSubtlextConnect(); ///< Implicit open connection
 
@@ -226,6 +227,43 @@ subSubletBackgroundWriter(VALUE self,
   else rb_raise(rb_eArgError, "Failed setting value type `%s'", rb_obj_classname(value));
 
   return value;
+} /* }}} */
+
+/* subWindowGeometryReader {{{ */
+/*
+ * call-seq: gemetry -> Subtlext::Geometry
+ *
+ * Get geometry of a sublet
+ *
+ *  win.geometry
+ *  => #<Subtlext::Geometry:xxx>
+ */
+
+VALUE
+subSubletGeometryReader(VALUE self)
+{
+  VALUE win = Qnil;
+  XRectangle geom = { 0 };
+
+  /* Find sublet window */
+  if(NIL_P(win = rb_iv_get(self, "@win")))
+    {
+      int id = 0, size = 0;
+      Window *wins = NULL;
+
+      id   = FIX2INT(rb_iv_get(self, "@id"));
+      wins = subSharedSubletList(&size);
+      win  = LONG2NUM(wins[id]);
+
+      rb_iv_set(self, "@win", win);
+
+      free(wins);
+    }
+
+  /* Get window geometry */
+  subSharedPropertyGeometry(display, NUM2LONG(win), &geom);
+
+  return subGeometryInstantiate(geom.x, geom.y, geom.width, geom.height);
 } /* }}} */
 
 /* subSubletToString {{{ */

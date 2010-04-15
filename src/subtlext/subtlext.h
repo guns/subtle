@@ -132,6 +132,7 @@ VALUE subSubletUpdate(VALUE self);                                ///< Update su
 VALUE subSubletDataReader(VALUE self);                            ///< Get sublet data
 VALUE subSubletDataWriter(VALUE self, VALUE value);               ///< Set sublet data
 VALUE subSubletBackgroundWriter(VALUE self, VALUE value);         ///< Set sublet background
+VALUE subSubletGeometryReader(VALUE self);                        ///< Get sublet geometry
 VALUE subSubletToString(VALUE self);                              ///< Sublet to string
 VALUE subSubletKill(VALUE self);                                  ///< Kill sublet
 /* }}} */
