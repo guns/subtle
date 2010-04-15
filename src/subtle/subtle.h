@@ -381,6 +381,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_SUBLET_DATA,                                    ///< Subtle sublet data
   SUB_EWMH_SUBTLE_SUBLET_BACKGROUND,                              ///< Subtle sublet background
   SUB_EWMH_SUBTLE_SUBLET_LIST,                                    ///< Subtle sublet list
+  SUB_EWMH_SUBTLE_SUBLET_WINDOWS,                                 ///< Subtle sublet windows
   SUB_EWMH_SUBTLE_SUBLET_KILL,                                    ///< Subtle sublet kill
   SUB_EWMH_SUBTLE_RELOAD_CONFIG,                                  ///< Subtle reload config
   SUB_EWMH_SUBTLE_RELOAD_SUBLETS,                                 ///< Subtle reload sublets
