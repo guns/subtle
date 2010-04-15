@@ -1635,6 +1635,43 @@ RubySubletBackgroundWriter(VALUE self,
   return Qnil;
 } /* }}} */
 
+/* RubySubletGeometryReader {{{ */
+/*
+ * call-seq: gemetry -> Subtlext::Geometry
+ *
+ * Get geometry of a sublet
+ *
+ *  win.geometry
+ *  => #<Subtlext::Geometry:xxx>
+ */
+
+VALUE
+RubySubletGeometryReader(VALUE self)
+{
+  SubSublet *s = NULL;
+  VALUE geometry = Qnil;
+
+  Data_Get_Struct(self, SubSublet, s);
+  if(s)
+    {
+      XRectangle geom = { 0 };
+      VALUE klass = Qnil;
+
+      subRubyLoadSubtlext(); ///< Load subtlext on demand
+
+      /* Get window geometry */
+      subSharedPropertyGeometry(subtle->dpy, s->win, &geom);
+
+      /* Create geometry object */
+      klass    = rb_const_get(subtlext, rb_intern("Geometry"));
+      geometry = rb_funcall(klass, rb_intern("new"), 4,
+        INT2FIX(geom.x), INT2FIX(geom.y),
+        INT2FIX(geom.width), INT2FIX(geom.height));
+    }
+
+  return geometry;
+} /* }}} */
+
 /* RubySubletShow {{{ */
 /*
  * call-seq: show -> nil
@@ -1897,6 +1934,7 @@ subRubyInit(void)
   rb_define_method(sublet, "data",           RubySubletDataReader,        0);
   rb_define_method(sublet, "data=",          RubySubletDataWriter,        1);
   rb_define_method(sublet, "background=",    RubySubletBackgroundWriter,  1);
+  rb_define_method(sublet, "geometry",       RubySubletGeometryReader,    0);
   rb_define_method(sublet, "show",           RubySubletShow,              0);
   rb_define_method(sublet, "hide",           RubySubletHide,              0);
   rb_define_method(sublet, "hidden?",        RubySubletHidden,            0);
