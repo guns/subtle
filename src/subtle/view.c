@@ -255,6 +255,9 @@ subViewJump(SubView *v,
 {
   assert(v);
 
+  /* Ignore dynamic views */
+  if(v->flags & SUB_PANEL_HIDDEN) return;
+
   /* Store view */
   subtle->vid = subArrayIndex(subtle->views, (void *)v);
 
