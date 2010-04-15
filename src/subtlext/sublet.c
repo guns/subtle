@@ -229,7 +229,7 @@ subSubletBackgroundWriter(VALUE self,
   return value;
 } /* }}} */
 
-/* subWindowGeometryReader {{{ */
+/* subSubletGeometryReader {{{ */
 /*
  * call-seq: gemetry -> Subtlext::Geometry
  *
