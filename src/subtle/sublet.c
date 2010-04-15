@@ -118,8 +118,11 @@ subSubletPublish(void)
 {
   int i = 0, idx = 0;
   char **names = NULL;
+  Window *wins = NULL;
 
+  /* Alloc space */
   names = (char **)subSharedMemoryAlloc(subtle->sublets->ndata, sizeof(char *));
+  wins  = (Window *)subSharedMemoryAlloc(subtle->sublets->ndata, sizeof(Window));
 
   /* Find sublets in panel list */
   for(i = 0; i < subtle->panels->ndata; i++)
@@ -127,17 +130,22 @@ subSubletPublish(void)
       SubSublet *s = SUBLET(subtle->panels->data[i]);
 
       if(s->flags & SUB_TYPE_SUBLET) ///< Collect names
-        names[idx++] = s->name;
+        {
+          names[idx]  = s->name;
+          wins[idx++] = s->win;
+        }
     }
 
-  /* EWMH: Sublet list */
+  /* EWMH: Sublet list and windows */
   subEwmhSetStrings(ROOT, SUB_EWMH_SUBTLE_SUBLET_LIST, names, subtle->sublets->ndata);
+  subEwmhSetWindows(ROOT, SUB_EWMH_SUBTLE_SUBLET_WINDOWS, wins, subtle->sublets->ndata);
 
   subSharedLogDebug("publish=sublet, n=%d\n", subtle->sublets->ndata);
 
   XSync(subtle->dpy, False); ///< Sync all changes
 
   free(names);
+  free(wins);
 } /* }}} */
 
  /** subSubletKill {{{
