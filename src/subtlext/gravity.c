@@ -19,7 +19,7 @@ subGravityInstantiate(char *name)
 
   /* Create new instance */
   klass   = rb_const_get(mod, rb_intern("Gravity"));
-  gravity = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(name)); 
+  gravity = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(name));
 
   return gravity;
 } /* }}} */
@@ -102,7 +102,7 @@ subGravityAll(VALUE self)
   subSubtlextConnect(); ///< Implicit open connection
 
   /* Get gravity list */
-  if((gravities = subSharedPropertyStrings(display, DefaultRootWindow(display), 
+  if((gravities = subSharedPropertyStrings(display, DefaultRootWindow(display),
       XInternAtom(display, "SUBTLE_GRAVITY_LIST", False), &size)))
     {
       int i;
@@ -156,7 +156,7 @@ subGravityUpdate(VALUE self)
   VALUE match = rb_iv_get(self, "@name");
 
   /* Update gravity */
-  if(T_STRING == rb_type(match) && 
+  if(T_STRING == rb_type(match) &&
       -1 != (id = subSharedGravityFind(RSTRING_PTR(match), &name, &geometry)))
     {
       rb_iv_set(self, "@id",       INT2FIX(id));

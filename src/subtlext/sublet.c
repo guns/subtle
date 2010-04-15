@@ -31,7 +31,7 @@ subSubletInstantiate(char *name)
  * Create new Sublet object
  *
  *  sublet = Subtlext::Sublet.new("subtle")
- *  => #<Subtlext::Sublet:xxx> * 
+ *  => #<Subtlext::Sublet:xxx> *
  */
 
 VALUE
@@ -98,7 +98,7 @@ subSubletAll(VALUE self)
   VALUE meth = Qnil, klass = Qnil, array = Qnil;
 
   subSubtlextConnect(); ///< Implicit open connection
-  
+
   /* Fetch data */
   meth    = rb_intern("new");
   klass   = rb_const_get(mod, rb_intern("Sublet"));
@@ -160,14 +160,14 @@ subSubletUpdate(VALUE self)
  * Get data of Sublet
  *
  *  puts sublet.data
- *  => "subtle" 
+ *  => "subtle"
  */
 
 VALUE
 subSubletDataReader(VALUE self)
 {
   VALUE id = rb_iv_get(self, "@id");
-      
+
   return RTEST(id) ? id : Qnil;
 } /* }}} */
 
@@ -177,8 +177,8 @@ subSubletDataReader(VALUE self)
  *
  * Set data of sublet
  *
- *  sublet.data = "subtle" 
- *  => "subtle" 
+ *  sublet.data = "subtle"
+ *  => "subtle"
  */
 
 VALUE

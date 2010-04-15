@@ -25,13 +25,13 @@ VALUE
 subColorInit(VALUE self,
   VALUE color)
 {
-  /* Check arguments */ 
+  /* Check arguments */
   if(T_STRING == rb_type(color))
     {
       unsigned long pixel = 0;
 
       subSubtlextConnect(); ///< Implicit open connection
-      
+
       pixel = subSharedParseColor(display, RSTRING_PTR(color));
 
       rb_iv_set(self, "@pixel", INT2FIX(pixel));
@@ -52,7 +52,7 @@ subColorInit(VALUE self,
  * Convert Color object to String
  *
  *  puts color
- *  => "<>123456789<>" 
+ *  => "<>123456789<>"
  */
 
 VALUE

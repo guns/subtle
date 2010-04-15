@@ -53,16 +53,16 @@ ClientMatch(VALUE self,
 
   win     = rb_iv_get(self, "@win");
   clients = subSharedClientList(&size);
-  views   = (Window *)subSharedPropertyGet(display, 
+  views   = (Window *)subSharedPropertyGet(display,
     DefaultRootWindow(display), XA_WINDOW,
     XInternAtom(display, "_NET_VIRTUAL_ROOTS", False), NULL);
   cv      = (unsigned long *)subSharedPropertyGet(display,
-    DefaultRootWindow(display), XA_CARDINAL, 
+    DefaultRootWindow(display), XA_CARDINAL,
     XInternAtom(display, "_NET_CURRENT_DESKTOP", False), NULL);
 
   if(clients && cv)
     {
-      flags1 = (unsigned long *)subSharedPropertyGet(display, 
+      flags1 = (unsigned long *)subSharedPropertyGet(display,
         views[*cv], XA_CARDINAL,
         XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
       subSharedPropertyGeometry(display, win, &geometry1);
@@ -70,7 +70,7 @@ ClientMatch(VALUE self,
       /* Iterate once to find a client score-based */
       for(i = 0; i < size; i++)
         {
-          unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(display, 
+          unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(display,
             clients[i], XA_CARDINAL,
             XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
 
@@ -112,11 +112,11 @@ ClientRestack(VALUE self,
     {
       data.l[0] = 2; ///< Claim to be a pager
       data.l[1] = NUM2LONG(win);
-      data.l[2] = detail; 
+      data.l[2] = detail;
 
       subSharedMessage(DefaultRootWindow(display), "_NET_RESTACK_WINDOW", data, True);
     }
-  else rb_raise(rb_eStandardError, "Failed restacking client");  
+  else rb_raise(rb_eStandardError, "Failed restacking client");
 
   return Qnil;
 } /* }}} */
@@ -157,7 +157,7 @@ subClientInit(VALUE self,
   rb_iv_set(self, "@instance", Qnil);
   rb_iv_set(self, "@klass",    Qnil);
   rb_iv_set(self, "@role",     Qnil);
-  rb_iv_set(self, "@geometry", Qnil); 
+  rb_iv_set(self, "@geometry", Qnil);
   rb_iv_set(self, "@gravity",  Qnil);
   rb_iv_set(self, "@screen",   Qnil);
   rb_iv_set(self, "@flags",    Qnil);
@@ -214,8 +214,8 @@ subClientCurrent(VALUE self)
 
   subSubtlextConnect(); ///< Implicit open connection
 
-  if((focus = (unsigned long *)subSharedPropertyGet(display, 
-      DefaultRootWindow(display), XA_WINDOW, 
+  if((focus = (unsigned long *)subSharedPropertyGet(display,
+      DefaultRootWindow(display), XA_WINDOW,
       XInternAtom(display, "_NET_ACTIVE_WINDOW", False), NULL)))
     {
       client = subClientInstantiate(*focus);
@@ -250,12 +250,12 @@ subClientAll(VALUE self)
   VALUE meth = Qnil, klass = Qnil, array = Qnil, client = Qnil;
 
   subSubtlextConnect(); ///< Implicit open connection
-  
+
   /* Fetch data */
   meth    = rb_intern("new");
   klass   = rb_const_get(mod, rb_intern("Client"));
   clients = subSharedClientList(&size);
-  array   = rb_ary_new2(size);    
+  array   = rb_ary_new2(size);
 
   /* Populate array */
   if(clients)
@@ -328,7 +328,7 @@ subClientUpdate(VALUE self)
           free(wmclass);
           if(role) free(role);
         }
-      else rb_raise(rb_eStandardError, "Failed finding client");  
+      else rb_raise(rb_eStandardError, "Failed finding client");
     }
   else rb_raise(rb_eArgError, "Unknown value type");
 
@@ -343,7 +343,7 @@ subClientUpdate(VALUE self)
  *
  *  client.views
  *  => [#<Subtlext::View:xxx>, #<Subtlext::View:xxx>]
- * 
+ *
  *  client.views
  *  => nil
  */
@@ -356,24 +356,24 @@ subClientViewList(VALUE self)
   Window *views = NULL;
   VALUE win = Qnil, array = Qnil, method = Qnil, klass = Qnil;
   unsigned long *flags1 = NULL;
-  
+
   win     = rb_iv_get(self, "@win");
   method  = rb_intern("new");
   klass   = rb_const_get(mod, rb_intern("View"));
   array   = rb_ary_new2(size);
-  names   = subSharedPropertyStrings(display, DefaultRootWindow(display), 
+  names   = subSharedPropertyStrings(display, DefaultRootWindow(display),
     XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size);
-  views   = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display), 
+  views   = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display),
     XA_WINDOW, XInternAtom(display, "_NET_VIRTUAL_ROOTS", False), NULL);
-  flags1  = (unsigned long *)subSharedPropertyGet(display, NUM2LONG(win), 
+  flags1  = (unsigned long *)subSharedPropertyGet(display, NUM2LONG(win),
     XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
 
   if(names && views)
     {
       for(i = 0; i < size; i++)
         {
-          unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(display, 
-            views[i], XA_CARDINAL, 
+          unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(display,
+            views[i], XA_CARDINAL,
             XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
 
           if(*flags1 & *flags2) ///< Check if there are common tags
@@ -403,7 +403,7 @@ subClientViewList(VALUE self)
  *
  *  client.is_full?
  *  => true
- * 
+ *
  *  client.is_full?
  *  => false
  */
@@ -422,7 +422,7 @@ subClientStateFullAsk(VALUE self)
  *
  *  client.is_float?
  *  => true
- * 
+ *
  *  client.is_float?
  *  => false
  */
@@ -441,7 +441,7 @@ subClientStateFloatAsk(VALUE self)
  *
  *  client.is_stick?
  *  => true
- * 
+ *
  *  client.is_stick?
  *  => false
  */
@@ -540,7 +540,7 @@ subClientRestackLower(VALUE self)
  *
  *  client.up
  *  => #<Subtlext::Client:xxx>
- * 
+ *
  *  client.up
  *  => nil
  */
@@ -559,7 +559,7 @@ subClientMatchUp(VALUE self)
  *
  *  client.left
  *  => #<Subtlext::Client:xxx>
- * 
+ *
  *  client.left
  *  => nil
  */
@@ -578,7 +578,7 @@ subClientMatchLeft(VALUE self)
  *
  *  client.right
  *  => #<Subtlext::Client:xxx>
- * 
+ *
  *  client.right
  *  => nil
  */
@@ -597,7 +597,7 @@ subClientMatchRight(VALUE self)
  *
  *  client.down
  *  => #<Subtlext::Client:xxx>
- * 
+ *
  *  client.down
  *  => nil
  */
@@ -627,7 +627,7 @@ subClientAliveAsk(VALUE self)
   VALUE ret = Qfalse, name = rb_iv_get(self, "@name");
 
   /* Just find the client */
-  if(RTEST(name) && -1 != subSharedClientFind(RSTRING_PTR(name), 
+  if(RTEST(name) && -1 != subSharedClientFind(RSTRING_PTR(name),
       NULL, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))
     ret = Qtrue;
 
@@ -635,7 +635,7 @@ subClientAliveAsk(VALUE self)
 } /* }}} */
 
 /* subClientGravityReader {{{ */
-/* 
+/*
  * call-seq: gravity -> Subtlext::Gravity
  *
  * Get Client Gravity
@@ -649,9 +649,9 @@ subClientGravityReader(VALUE self)
 {
   Window win = None;
   VALUE gravity = Qnil;
-  
+
   /* Load on demand */
-  if(NIL_P((gravity = rb_iv_get(self, "@gravity"))) && 
+  if(NIL_P((gravity = rb_iv_get(self, "@gravity"))) &&
       (win = NUM2LONG(rb_iv_get(self, "@win"))))
     {
       int *id = NULL;
@@ -691,7 +691,7 @@ subClientGravityReader(VALUE self)
  *
  *  client.gravity = Subtlext::Gravity[0]
  *  => nil
- *  
+ *
  */
 
 VALUE
@@ -699,7 +699,7 @@ subClientGravityWriter(VALUE self,
   VALUE value)
 {
   VALUE gravity = subSubtlextFind(SUB_TYPE_GRAVITY, value, True);
-  
+
   /* Set gravity */
   if(Qnil != gravity)
     {
@@ -732,15 +732,15 @@ subClientScreenReader(VALUE self)
 {
   Window win = None;
   VALUE screen = Qnil;
-  
+
   /* Load on demand */
   if(NIL_P((screen = rb_iv_get(self, "@screen"))) &&
       (win = NUM2LONG(rb_iv_get(self, "@win"))))
     {
       int *id = NULL;
-      
+
       /* Collect data */
-      id     = (int *)subSharedPropertyGet(display, win, XA_CARDINAL, 
+      id     = (int *)subSharedPropertyGet(display, win, XA_CARDINAL,
         XInternAtom(display, "SUBTLE_WINDOW_SCREEN", False), NULL);
       screen = subScreenInstantiate(*id);
 
@@ -762,7 +762,7 @@ subClientScreenReader(VALUE self)
  *
  *  client.screen = 0
  *  => nil
- * 
+ *
  *  client.screen = subtle.find_screen(0)
  *  => nil
  */
@@ -817,7 +817,7 @@ subClientGeometryReader(VALUE self)
 
       subSharedPropertyGeometry(display, win, &geometry);
 
-      geom = subGeometryInstantiate(geometry.x, geometry.y, 
+      geom = subGeometryInstantiate(geometry.x, geometry.y,
         geometry.width, geometry.height);
 
       rb_iv_set(self, "@geometry", geom);
@@ -850,17 +850,17 @@ subClientGeometryWriter(int argc,
   VALUE self)
 {
   VALUE klass = Qnil, geometry = Qnil;
-  
+
   /* Delegate arguments */
   klass    = rb_const_get(mod, rb_intern("Geometry"));
   geometry = rb_funcall2(klass, rb_intern("new"), argc, argv);
-  
+
   /* Update geometry */
   if(RTEST(geometry))
     {
       Window win = None;
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
-      
+
       win       = NUM2LONG(rb_iv_get(self, "@win"));
       data.l[1] = FIX2INT(rb_iv_get(geometry,  "@x"));
       data.l[2] = FIX2INT(rb_iv_get(geometry,  "@y"));

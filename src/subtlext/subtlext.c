@@ -17,15 +17,15 @@
 Display *display = NULL;
 VALUE mod = Qnil;
 
-static const char *klasses[] = { 
-  "Client", "Gravity", "View", "Tag", "Tray", "Screen", "Sublet" 
+static const char *klasses[] = {
+  "Client", "Gravity", "View", "Tag", "Tray", "Screen", "Sublet"
 };
 
 /* SubtlextSweep {{{ */
 static void
 SubtlextSweep(void)
 {
-  if(display) 
+  if(display)
     {
       subSharedLogDebug("Connection closed (%s)\n", DisplayString(display));
 
@@ -94,7 +94,7 @@ SubtlextTag(VALUE self,
 
           data.l[0] = FIX2LONG(oid);
           data.l[1] = FIX2LONG(tid);
-          data.l[2] = rb_obj_is_instance_of(self, 
+          data.l[2] = rb_obj_is_instance_of(self,
             rb_const_get(mod, rb_intern("Client"))) ? 0 : 1; ///< Client = 0, View = 1
 
           subSharedMessage(DefaultRootWindow(display), action, data, True);
@@ -170,12 +170,12 @@ SubtlextTagList(VALUE self)
       char **tags = NULL;
       unsigned long *flags = NULL;
       VALUE method = Qnil, klass = Qnil, t = Qnil;
-    
+
       method = rb_intern("new");
       klass  = rb_const_get(mod, rb_intern("Tag"));
-      flags  = (unsigned long *)subSharedPropertyGet(display, win, XA_CARDINAL, 
+      flags  = (unsigned long *)subSharedPropertyGet(display, win, XA_CARDINAL,
         XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
-      tags   = subSharedPropertyStrings(display, DefaultRootWindow(display), 
+      tags   = subSharedPropertyStrings(display, DefaultRootWindow(display),
         XInternAtom(display, "SUBTLE_TAG_LIST", False), &size);
 
       /* Build tag array */
@@ -214,12 +214,12 @@ SubtlextTagAsk(VALUE self,
       win = NUM2LONG(rb_iv_get(self, "@win"));
       id  = FIX2INT(rb_iv_get(tag, "@id"));
 
-      if((tags = (unsigned long *)subSharedPropertyGet(display, win, XA_CARDINAL, 
+      if((tags = (unsigned long *)subSharedPropertyGet(display, win, XA_CARDINAL,
           XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL)))
         {
           if(*tags & (1L << (id + 1)))
             ret = Qtrue;
-          
+
           free(tags);
         }
     }
@@ -237,7 +237,7 @@ SubtlextTagAsk(VALUE self,
  *  => nil
  */
 
-static VALUE 
+static VALUE
 SubtlextClick(int argc,
   VALUE *argv,
   VALUE self)
@@ -264,7 +264,7 @@ SubtlextClick(int argc,
       event.xcrossing.y           = FIXNUM_P(y) ? FIX2INT(y) : 5;
 
       /* Translate window x/y to root x/y */
-      XTranslateCoordinates(display, event.xcrossing.window, 
+      XTranslateCoordinates(display, event.xcrossing.window,
         event.xcrossing.root, event.xcrossing.x, event.xcrossing.y,
         &event.xcrossing.x_root, &event.xcrossing.y_root, &subwin);
 
@@ -365,7 +365,7 @@ subSubtlextConnect(void)
     {
       if(!(display = XOpenDisplay(NULL)))
         {
-          rb_raise(rb_eStandardError, "Failed opening display `%s'", 
+          rb_raise(rb_eStandardError, "Failed opening display `%s'",
             DisplayString(display));
         }
 
@@ -378,7 +378,7 @@ subSubtlextConnect(void)
         {
           XCloseDisplay(display);
           display = NULL;
-          
+
           rb_raise(rb_eStandardError, "Failed finding running %s", PKG_NAME);
 
           return;
@@ -402,7 +402,7 @@ subSubtlextConcat(VALUE str1,
   if(RTEST(str1) && RTEST(str2) && T_STRING == rb_type(str1))
     {
       VALUE string = str2;
-      
+
       /* Convert argument to string */
       if(T_STRING != rb_type(str2) && rb_respond_to(str2, rb_intern("to_s")))
         string = rb_funcall(str2, rb_intern("to_s"), 0, NULL);
@@ -442,7 +442,7 @@ subSubtlextFind(int type,
             int i;
             VALUE meth_has_key = rb_intern("has_key?"), meth_fetch = rb_intern("fetch"), match = Qnil;
 
-            struct properties 
+            struct properties
             {
               VALUE sym;
               int   flags;
@@ -480,10 +480,10 @@ subSubtlextFind(int type,
                   snprintf(buf, sizeof(buf), "%d", (int)FIX2INT(match));
               }
           }
-        break; /* }}} */        
+        break; /* }}} */
       case T_OBJECT: /* {{{ */
-        if(rb_obj_is_instance_of(value, rb_const_get(mod, 
-            rb_intern(klasses[type])))) 
+        if(rb_obj_is_instance_of(value, rb_const_get(mod,
+            rb_intern(klasses[type]))))
             return value;
         break; /* }}} */
       case T_STRING: /* {{{ */
@@ -512,7 +512,7 @@ subSubtlextFind(int type,
                 case SUB_TYPE_SCREEN:  return subScreenAll(Qnil);  break;
                 case SUB_TYPE_SUBLET:  return subSubletAll(Qnil);  break;
                 case SUB_TYPE_VIEW:    return subViewAll(Qnil);    break;
-              }          
+              }
           }
         else if(SUB_TYPE_GRAVITY == type)
           snprintf(buf, sizeof(buf), "%s", SYM2CHAR(value));
@@ -520,7 +520,7 @@ subSubtlextFind(int type,
       default: /* {{{ */
         if(exception)
           {
-            rb_raise(rb_eArgError, "Unknwon value type `%s'", 
+            rb_raise(rb_eArgError, "Unknwon value type `%s'",
               rb_obj_classname(value));
 
             return Qnil;
@@ -535,8 +535,8 @@ subSubtlextFind(int type,
           {
             if(Qnil != (object = subClientInstantiate(win)))
               {
-                rb_iv_set(object, "@id", FIX2INT(id)); 
-                
+                rb_iv_set(object, "@id", FIX2INT(id));
+
                 subClientUpdate(object);
               }
           }
@@ -546,22 +546,22 @@ subSubtlextFind(int type,
           {
             if(Qnil != (object = subGravityInstantiate(name)))
               {
-                VALUE geom = subGeometryInstantiate(geometry.x, geometry.y, 
+                VALUE geom = subGeometryInstantiate(geometry.x, geometry.y,
                   geometry.width, geometry.height);
 
                 rb_iv_set(object, "@id",       INT2FIX(id));
                 rb_iv_set(object, "@geometry", geom);
               }
-            
+
             free(name);
           }
-        break; /* }}} */     
+        break; /* }}} */
       case SUB_TYPE_TAG: /* {{{ */
         if(-1 != (id = subSharedTagFind(buf, &name)))
           {
             if(Qnil != (object = subTagInstantiate(name)))
-              rb_iv_set(object, "@id", FIX2INT(id)); 
-            
+              rb_iv_set(object, "@id", FIX2INT(id));
+
             free(name);
           }
         break; /* }}} */
@@ -570,21 +570,21 @@ subSubtlextFind(int type,
           {
             if(Qnil != (object = subTrayInstantiate(win)))
               {
-                rb_iv_set(object, "@id", INT2FIX(id)); 
+                rb_iv_set(object, "@id", INT2FIX(id));
 
                 subTrayUpdate(object);
               }
           }
-        break; /* }}} */        
+        break; /* }}} */
       case SUB_TYPE_SCREEN: /* {{{ */
         if(-1 != (id = subSharedScreenFind(id, &geometry)))
           {
             if(Qnil != (object = subScreenInstantiate(id)))
               {
-                VALUE geom = subGeometryInstantiate(geometry.x, geometry.y, 
+                VALUE geom = subGeometryInstantiate(geometry.x, geometry.y,
                   geometry.width, geometry.height);
 
-                rb_iv_set(object, "@id",       INT2FIX(id)); 
+                rb_iv_set(object, "@id",       INT2FIX(id));
                 rb_iv_set(object, "@geometry", geom);
               }
           }
@@ -593,8 +593,8 @@ subSubtlextFind(int type,
         if(-1 != (id = subSharedSubletFind(buf, &name)))
           {
             if(Qnil != (object = subSubletInstantiate(name)))
-              rb_iv_set(object, "@id", INT2FIX(id)); 
-            
+              rb_iv_set(object, "@id", INT2FIX(id));
+
             free(name);
           }
         break; /* }}} */
@@ -603,8 +603,8 @@ subSubtlextFind(int type,
           {
             if(Qnil != (object = subViewInstantiate(name)))
               {
-                rb_iv_set(object, "@id",  INT2FIX(id)); 
-                rb_iv_set(object, "@win", LONG2NUM(win)); 
+                rb_iv_set(object, "@id",  INT2FIX(id));
+                rb_iv_set(object, "@win", LONG2NUM(win));
               }
 
             free(name);
@@ -672,7 +672,7 @@ subSubtlextAssoc(VALUE self,
   char **names = NULL;
   Window *wins = NULL;
   VALUE array = Qnil, method = Qnil, klass = Qnil, object = Qnil;
-  
+
   /* Collect data */
   id      = FIX2INT(rb_iv_get(self, "@id"));
   method  = rb_intern("new");
@@ -687,9 +687,9 @@ subSubtlextAssoc(VALUE self,
         break;
       case SUB_TYPE_VIEW:
         klass = rb_const_get(mod, rb_intern("View"));
-        names = subSharedPropertyStrings(display, DefaultRootWindow(display), 
+        names = subSharedPropertyStrings(display, DefaultRootWindow(display),
           XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size);
-        wins  = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display), 
+        wins  = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display),
           XA_WINDOW, XInternAtom(display, "_NET_VIRTUAL_ROOTS", False), NULL);
         break;
     }
@@ -697,8 +697,8 @@ subSubtlextAssoc(VALUE self,
   /* Populate array */
   for(i = 0; i < size; i++)
     {
-      unsigned long *flags = (unsigned long *)subSharedPropertyGet(display, 
-        wins[i], XA_CARDINAL, 
+      unsigned long *flags = (unsigned long *)subSharedPropertyGet(display,
+        wins[i], XA_CARDINAL,
         XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
 
       if((int)*flags & (1L << (id + 1))) ///< Check if tag id matches
@@ -764,7 +764,7 @@ Init_subtlext(void)
   client = rb_define_class_under(mod, "Client", rb_cObject);
 
   /* Client id */
-  rb_define_attr(client, "id",       1, 0); 
+  rb_define_attr(client, "id",       1, 0);
 
   /* Window id */
   rb_define_attr(client, "win",      1, 0);
@@ -818,7 +818,7 @@ Init_subtlext(void)
   rb_define_method(client, "gravity",      subClientGravityReader,   0);
   rb_define_method(client, "gravity=",     subClientGravityWriter,   1);
   rb_define_method(client, "screen",       subClientScreenReader,    0);
-  rb_define_method(client, "screen=",      subClientScreenWriter,    1);  
+  rb_define_method(client, "screen=",      subClientScreenWriter,    1);
   rb_define_method(client, "geometry",     subClientGeometryReader,  0);
   rb_define_method(client, "geometry=",    subClientGeometryWriter, -1);
   rb_define_method(client, "pid",          SubtlextPidReader,        0);
@@ -1173,14 +1173,14 @@ Init_subtlext(void)
 
   /* Singleton aliases */
   rb_define_alias(rb_singleton_class(view), "[]", "find");
-  
+
   /* Aliases */
   rb_define_alias(view, "+",     "tag");
   rb_define_alias(view, "-",     "untag");
   rb_define_alias(view, "click", "jump");
   rb_define_alias(view, "save",  "update");
   rb_define_alias(view, "to_s",  "to_str");
- 
+
   /*
    * Document-class: Subtlext::Window
    *

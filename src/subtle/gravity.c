@@ -25,7 +25,7 @@ subGravityNew(const char *name,
   XRectangle *geom)
 {
   SubGravity *g = NULL;
-  
+
   /* Create gravity */
   g = GRAVITY(subSharedMemoryAlloc(1, sizeof(SubGravity)));
   g->flags |= SUB_TYPE_GRAVITY;
@@ -33,7 +33,7 @@ subGravityNew(const char *name,
   if(name) g->quark = XrmStringToQuark(name); ///< Create hash
 
   /* Sanitize values */
-  if(geom) 
+  if(geom)
     {
       g->geom.x      = MINMAX(geom->x,      0, 100);
       g->geom.y      = MINMAX(geom->y,      0, 100);
@@ -41,7 +41,7 @@ subGravityNew(const char *name,
       g->geom.height = MINMAX(geom->height, 0, 100);
     }
 
-  subSharedLogDebug("new=gravity, name=%s, quark=%d, x=%d, y=%d, width=%d, height=%d\n", 
+  subSharedLogDebug("new=gravity, name=%s, quark=%d, x=%d, y=%d, width=%d, height=%d\n",
     name, g->quark, geom->x, geom->y, geom->width, geom->height);
 
   return g;
@@ -64,7 +64,7 @@ subGravityFind(const char *name,
   if(0 < subtle->gravities->ndata)
     {
       int i, hash = 0;
-      
+
       /* Get quark */
       if(name) hash = XrmStringToQuark(name);
       else hash = quark;
@@ -98,7 +98,7 @@ subGravityPublish(void)
 
   assert(0 < subtle->gravities->ndata);
 
-  gravities  = (char **)subSharedMemoryAlloc(subtle->gravities->ndata, 
+  gravities  = (char **)subSharedMemoryAlloc(subtle->gravities->ndata,
     sizeof(char *));
 
   for(i = 0; i < subtle->gravities->ndata; i++)
@@ -106,17 +106,17 @@ subGravityPublish(void)
       g = GRAVITY(subtle->gravities->data[i]);
 
       /* Add gravity to list */
-      snprintf(buf, sizeof(buf), "%dx%d+%d+%d#%s", g->geom.x, 
-        g->geom.y, g->geom.width, g->geom.height, 
+      snprintf(buf, sizeof(buf), "%dx%d+%d+%d#%s", g->geom.x,
+        g->geom.y, g->geom.width, g->geom.height,
         XrmQuarkToString(g->quark));
-      
-      gravities[i] = (char *)subSharedMemoryAlloc(strlen(buf) + 1, 
+
+      gravities[i] = (char *)subSharedMemoryAlloc(strlen(buf) + 1,
         sizeof(char));
       strncpy(gravities[i], buf, strlen(buf));
     }
 
   /* EWMH: Gravity list and geometries */
-  subEwmhSetStrings(ROOT, SUB_EWMH_SUBTLE_GRAVITY_LIST, gravities, 
+  subEwmhSetStrings(ROOT, SUB_EWMH_SUBTLE_GRAVITY_LIST, gravities,
     subtle->gravities->ndata);
 
   /* Tidy up */

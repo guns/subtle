@@ -98,12 +98,12 @@ subViewCurrent(VALUE self)
   VALUE view = Qnil;
 
   subSubtlextConnect(); ///< Implicit open connection
-  
+
   /* Get current view */
   names = subSharedPropertyStrings(display, DefaultRootWindow(display),
     XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size);
-  cv    = (unsigned long *)subSharedPropertyGet(display, 
-    DefaultRootWindow(display), XA_CARDINAL, 
+  cv    = (unsigned long *)subSharedPropertyGet(display,
+    DefaultRootWindow(display), XA_CARDINAL,
     XInternAtom(display, "_NET_CURRENT_DESKTOP", False), NULL);
   views = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display),
     XA_WINDOW, XInternAtom(display, "_NET_VIRTUAL_ROOTS", False), NULL);
@@ -117,7 +117,7 @@ subViewCurrent(VALUE self)
   XFreeStringList(names);
   free(views);
   free(cv);
-      
+
   return view;
 } /* }}} */
 
@@ -143,14 +143,14 @@ subViewAll(VALUE self)
   VALUE meth = Qnil, klass = Qnil, array = Qnil;
 
   subSubtlextConnect(); ///< Implicit open connection
-  
+
   /* Fetch data */
   meth  = rb_intern("new");
   klass = rb_const_get(mod, rb_intern("View"));
-  names = subSharedPropertyStrings(display, DefaultRootWindow(display), 
+  names = subSharedPropertyStrings(display, DefaultRootWindow(display),
     XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size);
-  views = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display), 
-    XA_WINDOW, XInternAtom(display, "_NET_VIRTUAL_ROOTS", False), NULL);  
+  views = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display),
+    XA_WINDOW, XInternAtom(display, "_NET_VIRTUAL_ROOTS", False), NULL);
   array = rb_ary_new2(size);
 
   if(names && views)
@@ -164,7 +164,7 @@ subViewAll(VALUE self)
           rb_ary_push(array, v);
         }
 
-      XFreeStringList(names); 
+      XFreeStringList(names);
       free(views);
     }
 
@@ -196,7 +196,7 @@ subViewUpdate(VALUE self)
           SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
           snprintf(data.b, sizeof(data.b), "%s", RSTRING_PTR(name));
-          subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_NEW", data, True);    
+          subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_NEW", data, True);
 
           id = subSharedViewFind(RSTRING_PTR(name), NULL, NULL);
         }
@@ -242,14 +242,14 @@ subViewClients(VALUE self)
   Window *clients = NULL;
   VALUE win = Qnil, klass = Qnil, meth = Qnil, array = Qnil, client = Qnil;
   unsigned long *flags1 = NULL;
-  
+
   /* Fetch data */
   win     = rb_iv_get(self, "@win");
   klass   = rb_const_get(mod, rb_intern("Client"));
   meth    = rb_intern("new");
   array   = rb_ary_new2(size);
   clients = subSharedClientList(&size);
-  flags1  = (unsigned long *)subSharedPropertyGet(display, NUM2LONG(win), XA_CARDINAL, 
+  flags1  = (unsigned long *)subSharedPropertyGet(display, NUM2LONG(win), XA_CARDINAL,
     XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
 
   /* Populate array */
@@ -257,8 +257,8 @@ subViewClients(VALUE self)
     {
       for(i = 0; i < size; i++)
         {
-          unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(display, 
-            clients[i], XA_CARDINAL, 
+          unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(display,
+            clients[i], XA_CARDINAL,
             XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
 
           if(flags2 && *flags1 & *flags2) ///< Check if there are common tags
@@ -266,7 +266,7 @@ subViewClients(VALUE self)
               if(!NIL_P(client = rb_funcall(klass, meth, 1, LONG2NUM(clients[i]))))
                 {
                   subClientUpdate(client);
-                  rb_ary_push(array, client); 
+                  rb_ary_push(array, client);
                 }
             }
 
@@ -322,14 +322,14 @@ subViewCurrentAsk(VALUE self)
 {
   unsigned long *cv = NULL;
   VALUE id = Qnil, ret = Qfalse;;
-  
+
   id = rb_iv_get(self, "@id");
   cv = (unsigned long *)subSharedPropertyGet(display, DefaultRootWindow(display),
     XA_CARDINAL, XInternAtom(display, "_NET_CURRENT_DESKTOP", False), NULL);
 
   if(FIX2INT(id) == *cv) ret = Qtrue;
   free(cv);
-      
+
   return ret;
 } /* }}} */
 
@@ -340,7 +340,7 @@ subViewCurrentAsk(VALUE self)
  * Convert View object to String
  *
  *  puts view
- *  => "subtle" 
+ *  => "subtle"
  */
 
 VALUE

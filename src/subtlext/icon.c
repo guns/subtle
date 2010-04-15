@@ -84,7 +84,7 @@ subIconInit(int argc,
   SubtlextIcon *i = NULL;
 
   Data_Get_Struct(self, SubtlextIcon, i);
-  if(i)  
+  if(i)
     {
       VALUE arg1 = Qnil, arg2 = Qnil;
 
@@ -106,9 +106,9 @@ subIconInit(int argc,
               char fallback[256] = { 0 }, *data = getenv("XDG_DATA_HOME");
 
               /* Combine paths */
-              snprintf(fallback, sizeof(fallback), "%s/.local/share", 
+              snprintf(fallback, sizeof(fallback), "%s/.local/share",
                 getenv("HOME"));
-              snprintf(buf, sizeof(buf), "%s/subtle/icons/%s", 
+              snprintf(buf, sizeof(buf), "%s/subtle/icons/%s",
                 data ? data : fallback, file);
 
               if(-1 == access(buf, R_OK))
@@ -129,7 +129,7 @@ subIconInit(int argc,
           /* Create empty pixmap */
           i->width  = FIX2INT(arg1);
           i->height = FIX2INT(arg2);
-          i->pixmap = XCreatePixmap(display, DefaultRootWindow(display), 
+          i->pixmap = XCreatePixmap(display, DefaultRootWindow(display),
             i->width, i->height, 1);
         }
       else rb_raise(rb_eArgError, "Unknown value types");
@@ -285,7 +285,7 @@ subIconClear(VALUE self)
  * Convert Icon object to String
  *
  *  puts icon
- *  => "<>!4<>" 
+ *  => "<>!4<>"
  */
 
 VALUE

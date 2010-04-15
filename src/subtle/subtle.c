@@ -5,7 +5,7 @@
   * @file Main functions
   * @copyright (c) 2005-2010 Christoph Kappel <unexist@dorfelite.net>
   * @version $Id$
-  * 
+  *
   * This program can be distributed under the terms of the GNU GPL.
   * See the file COPYING.
   **/
@@ -23,7 +23,7 @@
 SubSubtle *subtle = NULL;
 
 /* SubtleSignal {{{ */
-static void 
+static void
 SubtleSignal(int signum)
 {
 #ifdef HAVE_EXECINFO_H
@@ -33,9 +33,9 @@ SubtleSignal(int signum)
 
   switch(signum)
     {
-      case SIGHUP: subRubyReloadConfig(); break; ///< Reload config 
+      case SIGHUP: subRubyReloadConfig(); break; ///< Reload config
       case SIGINT:
-        if(subtle) 
+        if(subtle)
           {
             subtle->flags &= ~SUB_SUBTLE_RUN;
             XNoOp(subtle->dpy); ///< Pushing some data for poll
@@ -70,7 +70,7 @@ SubtleUsage(void)
          "  -s, --sublets=DIR       Load sublets from DIR\n" \
          "  -v, --version           Show version info and exit\n" \
          "  -D, --debug             Print debugging messages\n" \
-         "Please report bugs to <%s>\n", 
+         "Please report bugs to <%s>\n",
          PKG_NAME, PKG_BUGREPORT);
 } /* }}} */
 
@@ -80,7 +80,7 @@ SubtleVersion(void)
 {
   printf("%s %s - Copyright (c) 2005-2010 Christoph Kappel\n" \
          "Released under the GNU General Public License\n" \
-         "Compiled for X%dR%d and Ruby %s\n", 
+         "Compiled for X%dR%d and Ruby %s\n",
          PKG_NAME, PKG_VERSION, X_PROTOCOL, X_PROTOCOL_REVISION, RUBY_VERSION);
 } /* }}} */
 
@@ -101,7 +101,7 @@ subSubtleFind(Window win,
 } /* }}} */
 
  /** subSubtleTime {{{
-  * @brief Get the current time in seconds 
+  * @brief Get the current time in seconds
   * @return Returns time in seconds
   **/
 
@@ -131,9 +131,9 @@ subSubtleFocus(int focus)
   /* Focus */
   XQueryPointer(subtle->dpy, ROOT, (Window *)&dummy, &win,
     &dummy, &dummy, &dummy, &dummy, (unsigned int *)&dummy);
-  
+
   /* Find next client */
-  if((c = CLIENT(subSubtleFind(win, CLIENTID)))) 
+  if((c = CLIENT(subSubtleFind(win, CLIENTID))))
     {
       subClientFocus(c);
 
@@ -208,8 +208,8 @@ main(int argc,
           case 'r': subtle->flags |= SUB_SUBTLE_REPLACE; break;
           case 's': subtle->paths.sublets = optarg;      break;
           case 'v': SubtleVersion();                     return 0;
-#ifdef DEBUG          
-          case 'D': 
+#ifdef DEBUG
+          case 'D':
             subtle->flags |= SUB_SUBTLE_DEBUG;
             subSharedDebug();
             break;
@@ -223,7 +223,7 @@ main(int argc,
             return -1;
         }
     }
-  
+
   /* Signal handler */
   sa.sa_handler = SubtleSignal;
   sa.sa_flags   = 0;

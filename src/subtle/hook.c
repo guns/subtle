@@ -5,7 +5,7 @@
   * @file Hook functions
   * @copyright (c) 2005-2010 Christoph Kappel <unexist@dorfelite.net>
   * @version $Id$
-  * 
+  *
   * This program can be distributed under the terms of the GNU GPL.
   * See the file COPYING.
   **/
@@ -56,9 +56,9 @@ subHookCall(int type,
     {
       SubHook *h = HOOK(subtle->hooks->data[i]);
 
-      if(h->flags & type) 
+      if(h->flags & type)
         {
-          subRubyCall(h->flags & SUB_CALL_HOOKS ? SUB_CALL_HOOKS : 
+          subRubyCall(h->flags & SUB_CALL_HOOKS ? SUB_CALL_HOOKS :
             (h->flags & SUB_CALL_SUBLET_HOOKS ? SUB_CALL_SUBLET_HOOKS : type),
             h->proc, h->data, data);
 
@@ -85,7 +85,7 @@ subHookRemove(unsigned long proc,
       SubHook *h = HOOK(subtle->hooks->data[i]);
 
       /* Check if proc or data matches */
-      if(h->proc == proc || h->data == data) 
+      if(h->proc == proc || h->data == data)
         {
           subArrayRemove(subtle->hooks, (void *)h);
           subHookKill(h);

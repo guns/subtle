@@ -5,7 +5,7 @@
   * @file Tray functions
   * @copyright (c) 2005-2010 Christoph Kappel <unexist@dorfelite.net>
   * @version $Id$
-  * 
+  *
   * This program can be distributed under the terms of the GNU GPL.
   * See the file COPYING.
   **/
@@ -39,8 +39,8 @@ subTrayNew(Window win)
   XAddToSaveSet(subtle->dpy, t->win);
   XSaveContext(subtle->dpy, t->win, TRAYID, (void *)t);
 
-  subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime, 
-    XEMBED_EMBEDDED_NOTIFY, 0, subtle->windows.tray.win, 0); ///< Start embedding life cycle 
+  subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime,
+    XEMBED_EMBEDDED_NOTIFY, 0, subtle->windows.tray.win, 0); ///< Start embedding life cycle
 
   subSharedLogDebug("new=tray, name=%s, win=%#lx\n", t->name, win);
 
@@ -59,9 +59,9 @@ subTrayConfigure(SubTray *t)
   XSizeHints *hints = NULL;
 
   assert(t);
-  
+
   /* Size hints */
-  if(!(hints = XAllocSizeHints())) 
+  if(!(hints = XAllocSizeHints()))
     {
       subSharedLogError("Can't alloc memory. Exhausted?\n");
       abort();
@@ -101,12 +101,12 @@ subTrayUpdate(void)
           SubTray *t = TRAY(subtle->trays->data[i]);
 
           XMapWindow(subtle->dpy, t->win);
-          XMoveResizeWindow(subtle->dpy, t->win, subtle->windows.tray.width, 
+          XMoveResizeWindow(subtle->dpy, t->win, subtle->windows.tray.width,
             0, t->width, subtle->th);
           subtle->windows.tray.width += t->width;
         }
 
-      XResizeWindow(subtle->dpy, subtle->windows.tray.win, 
+      XResizeWindow(subtle->dpy, subtle->windows.tray.win,
         subtle->windows.tray.width + 3, subtle->th);
     }
 } /* }}} */
@@ -129,8 +129,8 @@ subTraySelect(void)
   else subSharedLogError("Failed getting tray selection\n");
 
   /* Send manager info */
-  subEwmhMessage(ROOT, ROOT, SUB_EWMH_MANAGER, CurrentTime, 
-    subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION), 
+  subEwmhMessage(ROOT, ROOT, SUB_EWMH_MANAGER, CurrentTime,
+    subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION),
       subtle->windows.tray.win, 0, 0);
 } /* }}} */
 
@@ -168,10 +168,10 @@ subTraySetState(SubTray *t)
       if(flags & XEMBED_MAPPED) ///< Map if wanted
         {
           opcode = XEMBED_WINDOW_ACTIVATE;
-          XMapRaised(subtle->dpy, t->win); 
+          XMapRaised(subtle->dpy, t->win);
           subEwmhSetWMState(t->win, NormalState);
         }
-      else 
+      else
         {
           opcode = XEMBED_WINDOW_DEACTIVATE;
           XUnmapWindow(subtle->dpy, t->win);

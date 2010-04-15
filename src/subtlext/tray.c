@@ -102,7 +102,7 @@ subTrayAll(VALUE self)
   VALUE meth = Qnil, klass = Qnil, array = Qnil;
 
   subSubtlextConnect(); ///< Implicit open connection
-  
+
   /* Fetch data */
   meth  = rb_intern("new");
   klass = rb_const_get(mod, rb_intern("Tray"));
@@ -165,7 +165,7 @@ subTrayUpdate(VALUE self)
           free(wmname);
           free(wmclass);
         }
-      else rb_raise(rb_eStandardError, "Failed finding tray");  
+      else rb_raise(rb_eStandardError, "Failed finding tray");
     }
   else rb_raise(rb_eArgError, "Unknown value type");
 
@@ -179,7 +179,7 @@ subTrayUpdate(VALUE self)
  * Convert Tray object to String
  *
  *  puts tray
- *  => "subtle" 
+ *  => "subtle"
  */
 
 VALUE

@@ -20,7 +20,7 @@ VALUE
 ScreenList(void)
 {
   int n = 0;
-  VALUE method = Qnil, klass = Qnil, array = Qnil, screen = Qnil, geometry = Qnil; 
+  VALUE method = Qnil, klass = Qnil, array = Qnil, screen = Qnil, geometry = Qnil;
 
 #ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
   int xinerama_event = 0, xinerama_error = 0;
@@ -55,7 +55,7 @@ ScreenList(void)
 
           XFree(screens);
         }
-    } 
+    }
 #endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
 
   /* Get default screen */
@@ -66,7 +66,7 @@ ScreenList(void)
         DisplayHeight(display, DefaultScreen(display)));
 
       rb_iv_set(screen, "@geometry", geometry);
-      rb_ary_push(array, screen);    
+      rb_ary_push(array, screen);
     }
 
   return array;
@@ -103,7 +103,7 @@ subScreenInit(VALUE self,
     rb_raise(rb_eArgError, "Invalid value type");
 
   rb_iv_set(self, "@id",       id);
-  rb_iv_set(self, "@geometry", Qnil); 
+  rb_iv_set(self, "@geometry", Qnil);
 
   subSubtlextConnect(); ///< Implicit open connection
 
@@ -139,7 +139,7 @@ subScreenFind(VALUE self,
 /* subScreenAll {{{ */
 /*
  * call-seq: all -> Array
- * 
+ *
  * Get Array of all Screen
  *
  *  Subtlext::Screen.all
@@ -174,13 +174,13 @@ subScreenCurrent(VALUE self)
   subSubtlextConnect(); ///< Implicit open connection
 
   /* Get current screen from current client or use the first */
-  if((focus = (unsigned long *)subSharedPropertyGet(display, 
-      DefaultRootWindow(display), XA_WINDOW, 
+  if((focus = (unsigned long *)subSharedPropertyGet(display,
+      DefaultRootWindow(display), XA_WINDOW,
       XInternAtom(display, "_NET_ACTIVE_WINDOW", False), NULL)))
     {
       int *id = NULL;
 
-      id     = (int *)subSharedPropertyGet(display, *focus, XA_CARDINAL, 
+      id     = (int *)subSharedPropertyGet(display, *focus, XA_CARDINAL,
         XInternAtom(display, "SUBTLE_WINDOW_SCREEN", False), NULL);
       screen = subScreenInstantiate(*id);
 
@@ -243,7 +243,7 @@ subScreenClientList(VALUE self)
   int i, id, size = 0;
   Window *clients = NULL;
   VALUE array = Qnil;
-  
+
   id      = FIX2INT(rb_iv_get(self, "@id"));
   array   = rb_ary_new();
   clients = subSharedClientList(&size);

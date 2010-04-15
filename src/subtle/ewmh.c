@@ -35,12 +35,12 @@ subEwmhInit(void)
   char *selection = NULL, *names[] =
   {
     /* ICCCM */
-    "WM_NAME", "WM_CLASS", "WM_STATE", "WM_PROTOCOLS", "WM_TAKE_FOCUS", 
+    "WM_NAME", "WM_CLASS", "WM_STATE", "WM_PROTOCOLS", "WM_TAKE_FOCUS",
     "WM_DELETE_WINDOW", "WM_NORMAL_HINTS", "WM_SIZE_HINTS", "WM_HINTS",
     "WM_WINDOW_ROLE",
 
     /* EWMH */
-    "_NET_SUPPORTED", "_NET_CLIENT_LIST", "_NET_CLIENT_LIST_STACKING", 
+    "_NET_SUPPORTED", "_NET_CLIENT_LIST", "_NET_CLIENT_LIST_STACKING",
     "_NET_NUMBER_OF_DESKTOPS", "_NET_DESKTOP_NAMES", "_NET_DESKTOP_GEOMETRY",
     "_NET_DESKTOP_VIEWPORT", "_NET_CURRENT_DESKTOP", "_NET_ACTIVE_WINDOW",
     "_NET_WORKAREA", "_NET_SUPPORTING_WM_CHECK", "_NET_VIRTUAL_ROOTS",
@@ -80,7 +80,7 @@ subEwmhInit(void)
 
   /* Apply tray selection */
   len       = strlen(names[SUB_EWMH_NET_SYSTEM_TRAY_SELECTION]) + 5; ///< For high screen counts
-  selection = (char *)subSharedMemoryAlloc(len, sizeof(char)); 
+  selection = (char *)subSharedMemoryAlloc(len, sizeof(char));
 
   snprintf(selection, len, "%s%u", names[SUB_EWMH_NET_SYSTEM_TRAY_SELECTION], SCRN);
   subSharedLogDebug("Selection: len=%d, name=%s\n", len, selection);
@@ -91,11 +91,11 @@ subEwmhInit(void)
   subtle->flags |= SUB_SUBTLE_EWMH; ///< Set EWMH flag
 
   /* EWMH: Supported hints */
-  XChangeProperty(subtle->dpy, ROOT, atoms[SUB_EWMH_NET_SUPPORTED], XA_ATOM, 
+  XChangeProperty(subtle->dpy, ROOT, atoms[SUB_EWMH_NET_SUPPORTED], XA_ATOM,
     32, PropModeReplace, (unsigned char *)&atoms, SUB_EWMH_TOTAL);
 
   /* EWMH: Window manager information */
-  subEwmhSetWindows(ROOT, SUB_EWMH_NET_SUPPORTING_WM_CHECK, 
+  subEwmhSetWindows(ROOT, SUB_EWMH_NET_SUPPORTING_WM_CHECK,
     &subtle->windows.support, 1);
   subEwmhSetString(subtle->windows.support, SUB_EWMH_NET_WM_NAME, PKG_NAME);
   subEwmhSetString(subtle->windows.support, SUB_EWMH_WM_CLASS, PKG_NAME);
@@ -104,7 +104,7 @@ subEwmhInit(void)
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_SHOWING_DESKTOP, (long *)&data, 1);
 
   /* EWMH: Workarea size */
-  data[2] = SCREENW; 
+  data[2] = SCREENW;
   data[3] = SCREENH;
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_WORKAREA, (long *)&data, 4);
 
@@ -115,7 +115,7 @@ subEwmhInit(void)
 
   /* EWMH: Client list and client list stacking */
   subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST, NULL, 0);
-  subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST_STACKING, NULL, 0);  
+  subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST_STACKING, NULL, 0);
 
   subTraySelect(); ///< Finally select
 
@@ -171,7 +171,7 @@ subEwmhGetWMState(Window win)
   assert(win);
 
   if(Success == XGetWindowProperty(subtle->dpy, win, atoms[SUB_EWMH_WM_STATE], 0L, 2L, False,
-      atoms[SUB_EWMH_WM_STATE], &type, &format, &bytes, &unused, 
+      atoms[SUB_EWMH_WM_STATE], &type, &format, &bytes, &unused,
       (unsigned char **)&data) && bytes)
     {
       state = *data;
@@ -193,15 +193,15 @@ subEwmhGetXEmbedState(Window win)
   XEmbedInfo *info = NULL;
 
   /* Get xembed data */
-  if((info = (XEmbedInfo *)subSharedPropertyGet(subtle->dpy, win, 
-      subEwmhGet(SUB_EWMH_XEMBED_INFO), subEwmhGet(SUB_EWMH_XEMBED_INFO), 
-      NULL))) 
+  if((info = (XEmbedInfo *)subSharedPropertyGet(subtle->dpy, win,
+      subEwmhGet(SUB_EWMH_XEMBED_INFO), subEwmhGet(SUB_EWMH_XEMBED_INFO),
+      NULL)))
     {
       flags = (long)info->flags;
 
       subSharedLogDebug("XEmbedInfo: win=%#lx, version=%ld, flags=%ld, mapped=%ld\n",
         win, info->version, info->flags, info->flags & XEMBED_MAPPED);
-      
+
       XFree(info);
     }
 
@@ -298,7 +298,7 @@ subEwmhSetWMState(Window win,
 
   assert(win);
 
-  XChangeProperty(subtle->dpy, win, atoms[SUB_EWMH_WM_STATE], 
+  XChangeProperty(subtle->dpy, win, atoms[SUB_EWMH_WM_STATE],
     atoms[SUB_EWMH_WM_STATE], 32, PropModeReplace, (unsigned char *)data, 2);
 } /* }}} */
 

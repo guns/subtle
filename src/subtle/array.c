@@ -88,7 +88,7 @@ subArrayRemove(SubArray *a,
 
   if(0 <= (idx = subArrayIndex(a, elem)))
     {
-      for(i = idx; i < a->ndata - 1; i++) 
+      for(i = idx; i < a->ndata - 1; i++)
         a->data[i] = a->data[i + 1];
 
       a->ndata--;
@@ -127,13 +127,13 @@ subArrayIndex(SubArray *a,
 
   assert(a && elem);
 
-  for(i = 0; i < a->ndata; i++) 
+  for(i = 0; i < a->ndata; i++)
     if(a->data[i] == elem) return i;
 
   return -1;
 } /* }}} */
 
-  /** subArraySort {{{ 
+  /** subArraySort {{{
    * @brief Sort array with given compare function
    * @param[in]  a       A #SubArray
    * @param[in]  compar  Compare function
@@ -177,7 +177,7 @@ subArrayClear(SubArray *a,
           else if(c->flags & SUB_TYPE_TAG)     subTagKill(TAG(c));
           else if(c->flags & SUB_TYPE_TRAY)    subTrayKill(TRAY(c));
           else if(c->flags & SUB_TYPE_VIEW)    subViewKill(VIEW(c));
-          else if(!(c->flags & SUB_TYPE_PANEL)) free(a->data[i]); 
+          else if(!(c->flags & SUB_TYPE_PANEL)) free(a->data[i]);
         }
 
       if(a->data) free(a->data);

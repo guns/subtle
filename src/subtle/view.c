@@ -7,7 +7,7 @@
   * @version $Id$
   *
   * This program can be distributed under the terms of the GNU GPL.
-  * See the file COPYING. 
+  * See the file COPYING.
   **/
 
 #include "subtle.h"
@@ -26,13 +26,13 @@ subViewNew(char *name,
   SubView *v = NULL;
 
   assert(name);
-  
+
   v = VIEW(subSharedMemoryAlloc(1, sizeof(SubView)));
   v->flags = SUB_TYPE_VIEW;
   v->name  = strdup(name);
 
   /* Create button */
-  v->button = XCreateSimpleWindow(subtle->dpy, subtle->windows.views.win, 
+  v->button = XCreateSimpleWindow(subtle->dpy, subtle->windows.views.win,
     0, 0, 1, subtle->th, 0, 0, subtle->colors.bg_views);
 
   XSaveContext(subtle->dpy, v->button, VIEWID, (void *)v);
@@ -45,15 +45,15 @@ subViewNew(char *name,
       regex_t *preg = subSharedRegexNew(tags);
 
       for(i = 0; i < subtle->tags->ndata; i++)
-        if(subSharedRegexMatch(preg, TAG(subtle->tags->data[i])->name)) 
+        if(subSharedRegexMatch(preg, TAG(subtle->tags->data[i])->name))
           v->tags |= (1L << (i + 1));
 
       subSharedRegexKill(preg);
     }
 
   /* EWMH: Tags */
-  subEwmhSetCardinals(v->button, SUB_EWMH_SUBTLE_WINDOW_TAGS, 
-    (long *)&v->tags, 1); ///< Init 
+  subEwmhSetCardinals(v->button, SUB_EWMH_SUBTLE_WINDOW_TAGS,
+    (long *)&v->tags, 1); ///< Init
 
   subSharedLogDebug("new=view, name=%s\n", name);
 
@@ -113,7 +113,7 @@ subViewConfigure(SubView *v,
   subHookCall(SUB_HOOK_VIEW_CONFIGURE, (void *)v);
 } /* }}} */
 
- /** subViewUpdate {{{ 
+ /** subViewUpdate {{{
   * @brief Update dynamic views
   **/
 
@@ -131,16 +131,16 @@ subViewUpdate(void)
           SubView *v = VIEW(subtle->views->data[i]);
 
           /* Check dynamic views */
-          if(v->flags & SUB_PANEL_HIDDEN) 
+          if(v->flags & SUB_PANEL_HIDDEN)
             {
               XUnmapWindow(subtle->dpy, v->button);
             }
           else
             {
-              v->width = subSharedTextWidth(subtle->font, v->name, strlen(v->name), NULL, 
+              v->width = subSharedTextWidth(subtle->font, v->name, strlen(v->name), NULL,
                 NULL, True) + 6 + 2 * subtle->pbw; ///< Font offset and panel border
 
-              XMoveResizeWindow(subtle->dpy, v->button, subtle->windows.views.width, 
+              XMoveResizeWindow(subtle->dpy, v->button, subtle->windows.views.width,
                 0, v->width, subtle->th - 2 * subtle->pbw);
               subtle->windows.views.width += v->width;
 
@@ -154,7 +154,7 @@ subViewUpdate(void)
     }
 } /* }}} */
 
- /** subViewDynamic {{{ 
+ /** subViewDynamic {{{
   * @brief Update dynamic views
   **/
 
@@ -180,12 +180,12 @@ subViewDynamic(void)
 
           /* Update flags */
           if(0 < visible) v->flags &= ~SUB_PANEL_HIDDEN;
-          else 
+          else
             {
               v->flags |= SUB_PANEL_HIDDEN;
 
               /* Check current view */
-              if(CURVIEW == v) 
+              if(CURVIEW == v)
                 subViewJump(VIEW(subtle->views->data[0]), True);
             }
         }
@@ -195,7 +195,7 @@ subViewDynamic(void)
   subPanelUpdate();
 } /* }}} */
 
- /** subViewRender {{{ 
+ /** subViewRender {{{
   * @brief Render view button bar
   * @param[in]  v  A #SubView
   **/
@@ -214,12 +214,12 @@ subViewRender(void)
           SubView *v = VIEW(subtle->views->data[i]);
 
           if(!(v->flags & SUB_PANEL_HIDDEN))
-            {          
+            {
               /* Select color pair */
               if(v->flags & SUB_MODE_URGENT)
                 {
                   fg = subtle->colors.fg_urgent;
-                  bg = subtle->colors.bg_urgent;            
+                  bg = subtle->colors.bg_urgent;
                 }
               else if(CURVIEW == v)
                 {
@@ -231,7 +231,7 @@ subViewRender(void)
                   fg = subtle->colors.fg_views;
                   bg = subtle->colors.bg_views;
                 }
-              
+
               /* Set color and draw */
               XSetWindowBackground(subtle->dpy, v->button, bg);
               XClearWindow(subtle->dpy, v->button);
@@ -259,7 +259,7 @@ subViewJump(SubView *v,
   subtle->vid = subArrayIndex(subtle->views, (void *)v);
 
   /* EWMH: Current desktop */
-  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP, 
+  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP,
     (long *)&subtle->vid, 1);
 
   subViewConfigure(v, False);
@@ -316,7 +316,7 @@ subViewPublish(void)
 } /* }}} */
 
  /** SubViewKill {{{
-  * @brief Kill a view 
+  * @brief Kill a view
   * @param[in]  v  A #SubView
   **/
 
@@ -332,7 +332,7 @@ subViewKill(SubView *v)
   XDestroyWindow(subtle->dpy, v->button);
 
   free(v->name);
-  free(v);          
+  free(v);
 
   subSharedLogDebug("kill=view\n");
 } /* }}} */

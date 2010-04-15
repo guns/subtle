@@ -29,7 +29,7 @@ TagFind(char *name)
       if(!strncmp(t->name, name, strlen(t->name)))
         return t;
     }
-  
+
   return NULL;
 } /* }}} */
 
@@ -76,7 +76,7 @@ subTagPublish(void)
 
   names = (char **)subSharedMemoryAlloc(subtle->tags->ndata, sizeof(char *));
 
-  for(i = 0; i < subtle->tags->ndata; i++) 
+  for(i = 0; i < subtle->tags->ndata; i++)
     names[i] = TAG(subtle->tags->data[i])->name;
 
   /* EWMH: Tag list */

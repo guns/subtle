@@ -92,7 +92,7 @@ subSharedLogXError(Display *disp,
       subSharedLogDebug("%s: win=%#lx, request=%d\n", error, ev->resourceid, ev->request_code);
     }
 
-  return 0; 
+  return 0;
 } /* }}} */
 
 /* Memory */
@@ -132,9 +132,9 @@ subSharedMemoryRealloc(void *mem,
 
 /* Regex */
 
- /** subSharedRegexNew {{{ 
+ /** subSharedRegexNew {{{
   * @brief Create new regex
-  * @param[in]  regex  Regex 
+  * @param[in]  regex  Regex
   * @return Returns a #regex_t or \p NULL
   **/
 
@@ -145,7 +145,7 @@ subSharedRegexNew(char *regex)
   regex_t *preg = NULL;
 
   assert(regex);
-  
+
   preg = (regex_t *)subSharedMemoryAlloc(1, sizeof(regex_t));
 
   /* Thread safe error handling */
@@ -203,7 +203,7 @@ subSharedRegexKill(regex_t *preg)
   * @brief Get window property
   * @param[in]     disp Display
   * @param[in]     win     Client window
-  * @param[in]     type    Property type 
+  * @param[in]     type    Property type
   * @param[in]     prop    Property
   * @param[inout]  size    Size of the property
   * return Returns the property
@@ -224,7 +224,7 @@ subSharedPropertyGet(Display *disp,
   assert(win);
 
   /* Get property */
-  if(Success != XGetWindowProperty(disp, win, prop, 0L, 4096, 
+  if(Success != XGetWindowProperty(disp, win, prop, 0L, 4096,
       False, type, &rtype, &format, &nitems, &bytes, &data))
     {
       subSharedLogDebug("Failed getting property `%ld'\n", prop);
@@ -271,7 +271,7 @@ subSharedPropertyStrings(Display *disp,
   assert(win && size);
 
   /* Check UTF8 and XA_STRING */
-  if((XGetTextProperty(disp, win, &text, prop) || 
+  if((XGetTextProperty(disp, win, &text, prop) ||
       XGetTextProperty(disp, win, &text, XA_STRING)) && text.nitems)
     {
       XmbTextPropertyToTextList(disp, &text, &list, size);
@@ -302,7 +302,7 @@ subSharedPropertyName(Display *disp,
   Atom prop;
 
   prop = XInternAtom(disp, "_NET_WM_NAME", False);
-  
+
   /* Get text property */
   XGetTextProperty(disp, win, &text, prop);
   if(!text.nitems)
@@ -368,7 +368,7 @@ subSharedPropertyClass(Display *disp,
 } /* }}} */
 
  /** subSharedPropertyGeometry {{{
-  * @brief Get window geometry 
+  * @brief Get window geometry
   * @param[in]     disp   Display
   * @param[in]     win       A #Window
   * @param[inout]  geometry  A #XRectangle
@@ -385,7 +385,7 @@ subSharedPropertyGeometry(Display *disp,
 
   assert(win && geometry);
 
-  XGetGeometry(disp, win, &root, (int *)&r.x, (int *)&r.y, 
+  XGetGeometry(disp, win, &root, (int *)&r.x, (int *)&r.y,
     (unsigned int *)&r.width, (unsigned int *)&r.height, &bw, &depth);
 
   *geometry = r;
@@ -398,9 +398,9 @@ subSharedPropertyGeometry(Display *disp,
   * @param[in]  prop     Property
   **/
 
-void 
+void
 subSharedPropertyDelete(Display *disp,
-  Window win, 
+  Window win,
   Atom prop)
 {
   assert(win);
@@ -481,7 +481,7 @@ subSharedTextParse(Display *disp,
           else
             {
               item->data.string = strdup(tok);
-              item->width       = subSharedTextWidth(f, tok, strlen(tok), 
+              item->width       = subSharedTextWidth(f, tok, strlen(tok),
                 &left, &right, False);
 
               width += item->width - (0 == i ? left : 0); ///< Remove left bearing from first text item
@@ -491,7 +491,7 @@ subSharedTextParse(Display *disp,
           i++;
         }
     }
-  
+
   /* Fix spacing of last item */
   if(item && False == item->icon)
     {
@@ -537,7 +537,7 @@ subSharedTextRender(Display *disp,
     {
       if((item = (SubTextItem *)t->items[i]) && False == item->icon) ///< Text
         {
-          subSharedTextDraw(disp, gc, f, win, width, y, 
+          subSharedTextDraw(disp, gc, f, win, width, y,
             -1 == item->color ? fg : item->color, bg, item->data.string);
 
           width += item->width;
@@ -553,11 +553,11 @@ subSharedTextRender(Display *disp,
           gvals.background = bg;
           XChangeGC(disp, gc, GCForeground|GCBackground, &gvals);
 
-          XCopyPlane(disp, (Pixmap)item->data.num, win, gc, 0, 0, item->width, 
+          XCopyPlane(disp, (Pixmap)item->data.num, win, gc, 0, 0, item->width,
             item->height, width + dx, abs(f->height - item->height) / 2, 1);
 
           /* Add spacing when icon isn't last */
-          width += item->width + dx + (i != t->nitems - 1 ? 2 : 0); 
+          width += item->width + dx + (i != t->nitems - 1 ? 2 : 0);
         }
     }
 } /* }}} */
@@ -584,9 +584,9 @@ subSharedTextWidth(SubFont *f,
   XRectangle overall_ink = { 0 }, overall_logical = { 0 };
 
   assert(text);
-  
+
   /* Get text extents */
-  XmbTextExtents(f->xfs, text, len, 
+  XmbTextExtents(f->xfs, text, len,
     &overall_ink, &overall_logical);
 
   width    = overall_logical.width;
@@ -612,7 +612,7 @@ subSharedTextWidth(SubFont *f,
   * @param[in]  text  Text to draw
   **/
 
-void 
+void
 subSharedTextDraw(Display *disp,
   GC gc,
   SubFont *f,
@@ -630,7 +630,7 @@ subSharedTextDraw(Display *disp,
   /* Draw text */
   gvals.foreground = fg;
   gvals.background = bg;
-      
+
   XChangeGC(disp, gc, GCForeground|GCBackground, &gvals);
   XmbDrawString(disp, win, f->xfs, gc, x, y, text, strlen(text));
 } /* }}} */
@@ -656,7 +656,7 @@ subSharedTextFree(SubText *t)
 
       free(t->items[i]);
     }
-  
+
   free(t->items);
   free(t);
 } /* }}} */
@@ -695,7 +695,7 @@ subSharedFontNew(Display *disp,
           return NULL;
         }
     }
-    
+
   XFontsOfFontSet(f->xfs, &xfonts, &names);
 
   /* Font metrics */
@@ -866,16 +866,16 @@ SharedFind(char *prop,
 
   /* Find sublet id */
   if((preg = subSharedRegexNew(match)) &&
-      (strings = subSharedPropertyStrings(display, DefaultRootWindow(display), 
+      (strings = subSharedPropertyStrings(display, DefaultRootWindow(display),
       XInternAtom(display, prop, False), &size)))
     {
       int i;
 
       for(i = 0; i < size; i++)
-        if((isdigit(match[0]) && atoi(match) == i) || 
+        if((isdigit(match[0]) && atoi(match) == i) ||
             (!isdigit(match[0]) && subSharedRegexMatch(preg, strings[i])))
           {
-            subSharedLogDebug("Found: prop=%s, match=%s, name=%s, id=%d\n", 
+            subSharedLogDebug("Found: prop=%s, match=%s, name=%s, id=%d\n",
               prop, match, strings[i], i);
 
             if(name) *name = strdup(strings[i]);
@@ -904,7 +904,7 @@ SharedFindWindow(char *prop,
   Window *wins = NULL;
 
   assert(prop && match);
-  
+
   /* Find window id */
   if((wins = SharedList(prop, &size)))
     {
@@ -935,8 +935,8 @@ SharedFindWindow(char *prop,
           if(flags & SUB_MATCH_GRAVITY)
             {
               int *gravity = NULL;
-              
-              if((gravity = (int *)subSharedPropertyGet(display, wins[i], 
+
+              if((gravity = (int *)subSharedPropertyGet(display, wins[i],
                   XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_GRAVITY",
                   False), NULL)))
                 {
@@ -958,7 +958,7 @@ SharedFindWindow(char *prop,
           if(flags & SUB_MATCH_PID)
             {
               int *pid = NULL;
-              
+
               if((pid = (int *)subSharedPropertyGet(display, wins[i], XA_CARDINAL,
                   XInternAtom(display, "_NET_WM_PID", False), NULL)))
                 {
@@ -977,7 +977,7 @@ SharedFindWindow(char *prop,
               (flags & SUB_MATCH_GRAVITY  && gravity1 == gravity2) ||
               (flags & SUB_MATCH_PID      && pid1 == pid2))
             {
-              subSharedLogDebug("Found: prop=%s, name=%s, win=%#lx, id=%d, flags\n", 
+              subSharedLogDebug("Found: prop=%s, name=%s, win=%#lx, id=%d, flags\n",
                 prop, match, wins[i], i, flags);
 
               if(win) *win = wins[i];
@@ -986,10 +986,10 @@ SharedFindWindow(char *prop,
                   *name = (char *)subSharedMemoryAlloc(strlen(instance) + 1, sizeof(char));
                   strncpy(*name, instance, strlen(instance));
                  }
-              
+
               id = i;
             }
-          
+
           if(role) free(role);
           free(wmname);
           free(instance);
@@ -1007,7 +1007,7 @@ SharedFindWindow(char *prop,
  /** subSharedMessage {{{
   * @brief Send client message to window
   * @param[in]  win    Client window
-  * @param[in]  type   Message type 
+  * @param[in]  type   Message type
   * @param[in]  data   A #SubMessageData
   * @param[in]  xsync  Sync connection
   * @returns
@@ -1055,7 +1055,7 @@ subSharedMessage(Window win,
 Window *
 subSharedWindowWMCheck(void)
 {
-  return (Window *)subSharedPropertyGet(display, DefaultRootWindow(display), 
+  return (Window *)subSharedPropertyGet(display, DefaultRootWindow(display),
     XA_WINDOW, XInternAtom(display, "_NET_SUPPORTING_WM_CHECK", False), NULL);
 } /* }}} */
 
@@ -1081,7 +1081,7 @@ subSharedWindowSelect(void)
   cursor = XCreateFontCursor(display, XC_cross);
   type   = XInternAtom(display, "WM_STATE", True);
 
-  if(XGrabPointer(display, root, False, ButtonPressMask|ButtonReleaseMask, 
+  if(XGrabPointer(display, root, False, ButtonPressMask|ButtonReleaseMask,
       GrabModeSync, GrabModeAsync, root, cursor, CurrentTime))
     {
       XFreeCursor(display, cursor);
@@ -1098,7 +1098,7 @@ subSharedWindowSelect(void)
       switch(event.type)
         {
           case ButtonPress:
-            if(None == win) 
+            if(None == win)
               win = event.xbutton.subwindow ? event.xbutton.subwindow : root; ///< Sanitize
             buttons++;
             break;
@@ -1109,15 +1109,15 @@ subSharedWindowSelect(void)
   /* Find children with WM_STATE atom */
   XQueryTree(display, win, &dummy, &dummy, &wins, &n);
   for(i = 0; i < n; i++)
-    if(Success == XGetWindowProperty(display, wins[i], type, 0, 0, False, 
+    if(Success == XGetWindowProperty(display, wins[i], type, 0, 0, False,
         AnyPropertyType, &rtype, &format, &nitems, &bytes, &data))
       {
-        if(data) 
+        if(data)
           {
             XFree(data);
             data = NULL;
           }
-        if(type == rtype) 
+        if(type == rtype)
           {
             win = wins[i];
             break;
@@ -1181,7 +1181,7 @@ subSharedClientFind(char *match,
   * @param[in]     match     Name or id of the gravity
   * @param[inout]  name      Name of the gravity
   * @param[inout]  geometry  Gravity geometry
-  * @return Returns the id of the gravity 
+  * @return Returns the id of the gravity
   * @retval  -1  No gravity found
   **/
 
@@ -1211,7 +1211,7 @@ subSharedGravityFind(char *match,
             &geom.width, &geom.height, buf);
 
           /* Check id and name */
-          if((isdigit(match[0]) && atoi(match) == i) || 
+          if((isdigit(match[0]) && atoi(match) == i) ||
               (!isdigit(match[0]) && subSharedRegexMatch(preg, buf)))
             {
               subSharedLogDebug("Found: type=gravity, name=%s, id=%d\n", buf, i);
@@ -1278,7 +1278,7 @@ subSharedScreenFind(int id,
 
           XFree(screens);
         }
-    } 
+    }
 #endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
 
   /* Probably default screen */
@@ -1369,9 +1369,9 @@ subSharedViewFind(char *match,
   assert(match);
 
   /* Find view id */
-  if((views = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display), 
+  if((views = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display),
       XA_WINDOW, XInternAtom(display, "_NET_VIRTUAL_ROOTS", False), NULL)) &&
-      (names = subSharedPropertyStrings(display, DefaultRootWindow(display), 
+      (names = subSharedPropertyStrings(display, DefaultRootWindow(display),
       XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size)) &&
       (preg = subSharedRegexNew(match)))
     {

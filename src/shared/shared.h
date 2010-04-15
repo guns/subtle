@@ -133,7 +133,7 @@ extern Display *display;
 #define subSharedLogWarn(...)   subSharedLog(2, __FILE__, __LINE__, __VA_ARGS__);
 
 void subSharedDebug(void);                                        ///< Enable debugging messages
-void subSharedLog(int type, const char *file, 
+void subSharedLog(int type, const char *file,
   int line, const char *format, ...);                             ///< Print messages
 int subSharedLogXError(Display *disp, XErrorEvent *ev);        ///< Print X error messages
 /* }}} */
@@ -150,13 +150,13 @@ void subSharedRegexKill(regex_t *preg);                           ///< Kill rege
 /* }}} */
 
 /* Property {{{ */
-char *subSharedPropertyGet(Display *disp, Window win, 
+char *subSharedPropertyGet(Display *disp, Window win,
   Atom type, Atom prop, unsigned long *size);                     ///< Get window property
 char **subSharedPropertyStrings(Display *disp, Window win,
   Atom prop, int *size);                                          ///< Get window property list
-void subSharedPropertyName(Display *disp, Window win, 
+void subSharedPropertyName(Display *disp, Window win,
   char **name, char *fallback);                                   ///< Get window name
-void subSharedPropertyClass(Display *disp, Window win, 
+void subSharedPropertyClass(Display *disp, Window win,
   char **inst, char **klass);                                     ///< Get window class
 void subSharedPropertyGeometry(Display *disp, Window win,
   XRectangle *geometry);                                          ///< Get window geometry
@@ -170,7 +170,7 @@ void subSharedPropertyDelete(Display *disp, Window win,
 SubText *subSharedTextNew(void);                                  ///< Create new text
 int subSharedTextParse(Display *disp, SubFont *f,
   SubText *t, char *text);                                        ///< Parse text
-void subSharedTextRender(Display *disp, GC gc, SubFont *f, 
+void subSharedTextRender(Display *disp, GC gc, SubFont *f,
   Window win, int x, int y, long fg, long bg, SubText *t);        ///< Render text
 int subSharedTextWidth(SubFont *f, const char *text,
   int len, int *left, int *right, int center);                    ///< Get text width
@@ -225,7 +225,7 @@ int subSharedTagFind(char *match, char **name);                   ///< Find tag 
 int subSharedTrayFind(char *match, char **name,
   Window *win, int flags);                                        ///< Find tray id
 int subSharedViewFind(char *match, char **name,
-  Window *win);                                                   ///< Find view id              
+  Window *win);                                                   ///< Find view id
 /* }}} */
 
 /* Subtle {{{ */

@@ -98,7 +98,7 @@ subTagAll(VALUE self)
   VALUE meth = Qnil, klass = Qnil, array = Qnil;
 
   subSubtlextConnect(); ///< Implicit open connection
-  
+
   /* Fetch data */
   meth  = rb_intern("new");
   klass = rb_const_get(mod, rb_intern("Tag"));
@@ -148,7 +148,7 @@ subTagUpdate(VALUE self)
           SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
           snprintf(data.b, sizeof(data.b), "%s", RSTRING_PTR(name));
-          subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_NEW", data, True);    
+          subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_NEW", data, True);
 
           id = subSharedTagFind(RSTRING_PTR(name), NULL);
         }
@@ -219,7 +219,7 @@ subTagViews(VALUE self)
  * Convert Tag object to String
  *
  *  puts tag
- *  => "subtle" 
+ *  => "subtle"
  */
 
 VALUE

@@ -13,7 +13,7 @@
 #include "subtle.h"
 
  /** subSubletNew {{{
-  * @brief Create a new sublet 
+  * @brief Create a new sublet
   * @return Returns a #SubSublet or \p NULL
   **/
 
@@ -76,8 +76,8 @@ subSubletRender(SubSublet *s)
   XClearWindow(subtle->dpy, s->win);
 
   /* Render text parts */
-  subSharedTextRender(subtle->dpy, subtle->gcs.font, subtle->font, s->win, 3, 
-    subtle->font->y, subtle->colors.fg_sublets, subtle->colors.bg_sublets, 
+  subSharedTextRender(subtle->dpy, subtle->gcs.font, subtle->font, s->win, 3,
+    subtle->font->y, subtle->colors.fg_sublets, subtle->colors.bg_sublets,
     s->text);
 
   XResizeWindow(subtle->dpy, s->win, s->width, subtle->th - 2 * subtle->pbw);
@@ -90,7 +90,7 @@ subSubletRender(SubSublet *s)
   * @param[in]  b  A #SubSublet
   * @return Returns the result of the comparison of both sublets
   * @retval  -1  a is smaller
-  * @retval  0   a and b are equal  
+  * @retval  0   a and b are equal
   * @retval  1   a is greater
   **/
 
@@ -101,7 +101,7 @@ subSubletCompare(const void *a,
   SubSublet *s1 = *(SubSublet **)a, *s2 = *(SubSublet **)b;
 
   assert(a && b);
-  
+
   /* Include only interval sublets */
   if(!(s1->flags & (SUB_SUBLET_INTERVAL))) return 1;
   if(!(s2->flags & (SUB_SUBLET_INTERVAL))) return -1;
@@ -128,7 +128,7 @@ subSubletPublish(void)
 
       if(s->flags & SUB_TYPE_SUBLET) ///< Collect names
         names[idx++] = s->name;
-    }  
+    }
 
   /* EWMH: Sublet list */
   subEwmhSetStrings(ROOT, SUB_EWMH_SUBTLE_SUBLET_LIST, names, subtle->sublets->ndata);
@@ -169,7 +169,7 @@ subSubletKill(SubSublet *s)
       XDeleteContext(subtle->dpy, subtle->windows.panel1, s->watch);
       inotify_rm_watch(subtle->notify, s->interval);
     }
-#endif /* HAVE_SYS_INOTIFY_H */ 
+#endif /* HAVE_SYS_INOTIFY_H */
 
   XDeleteContext(subtle->dpy, s->win, SUBLETID);
   XDestroyWindow(subtle->dpy, s->win);

@@ -22,7 +22,7 @@ subGeometryInstantiate(int x,
 
   /* Create new instance */
   klass    = rb_const_get(mod, rb_intern("Geometry"));
-  geometry = rb_funcall(klass, rb_intern("new"), 4, 
+  geometry = rb_funcall(klass, rb_intern("new"), 4,
     INT2FIX(x), INT2FIX(y), INT2FIX(width), INT2FIX(height));
 
   return geometry;
@@ -83,15 +83,15 @@ subGeometryInit(int argc,
               {
                 VALUE sym = CHAR2SYM(syms[i]);
 
-                if(Qtrue == rb_funcall(value, meth_has_key, 1, sym)) 
+                if(Qtrue == rb_funcall(value, meth_has_key, 1, sym))
                   data[i] = rb_funcall(value, meth_fetch, 1, sym);
               }
           }
         break;
       case T_OBJECT:
           {
-            VALUE klass = rb_const_get(mod, rb_intern("Geometry")); 
-            
+            VALUE klass = rb_const_get(mod, rb_intern("Geometry"));
+
             /* A copy constructor would be more suitable for this.. */
             if(rb_obj_is_instance_of(value, klass)) ///< Check object instance
               {
@@ -100,16 +100,16 @@ subGeometryInit(int argc,
                 data[2] = rb_iv_get(value, "@height");
                 data[3] = rb_iv_get(value, "@width");
               }
-          }        
+          }
     }
   /* Set values */
-  if(FIXNUM_P(data[0]) && FIXNUM_P(data[1]) && FIXNUM_P(data[2]) && 
+  if(FIXNUM_P(data[0]) && FIXNUM_P(data[1]) && FIXNUM_P(data[2]) &&
       FIXNUM_P(data[3]) && 0 < FIX2INT(data[2]) && 0 < FIX2INT(data[3]))
     {
       rb_iv_set(self, "@x",      data[0]);
       rb_iv_set(self, "@y",      data[1]);
-      rb_iv_set(self, "@width",  data[2]); 
-      rb_iv_set(self, "@height", data[3]); 
+      rb_iv_set(self, "@width",  data[2]);
+      rb_iv_set(self, "@height", data[3]);
     }
   else rb_raise(rb_eArgError, "Failed setting value type `%s'", rb_obj_classname(value));
 
@@ -154,7 +154,7 @@ subGeometryToHash(VALUE self)
 {
   VALUE klass = Qnil, hash = Qnil, meth = Qnil;
 
-  klass = rb_const_get(rb_mKernel, rb_intern("Hash")); 
+  klass = rb_const_get(rb_mKernel, rb_intern("Hash"));
   hash  = rb_funcall(klass, rb_intern("new"), 0, NULL);
   meth  = rb_intern("store");
 

@@ -54,7 +54,7 @@ subGrabNew(const char *chain,
   char *tokens = NULL, *tok = NULL;
   KeySym sym;
   SubGrab *g = NULL;
-  
+
   assert(chain);
 
   g = GRAB(subSharedMemoryAlloc(1, sizeof(SubGrab)));
@@ -65,7 +65,7 @@ subGrabNew(const char *chain,
   /* Parse keys */
   tok = strtok((char *)tokens, "-");
   while(tok)
-    { 
+    {
       /* Get key sym and modifier */
       if(NoSymbol == ((sym = XStringToKeysym(tok))))
         {
@@ -84,7 +84,7 @@ subGrabNew(const char *chain,
               if(g->flags & SUB_GRAB_SPAWN && g->data.string) free(g->data.string);
               free(g);
               free(tokens);
-              
+
               return NULL;
             }
         }
@@ -109,7 +109,7 @@ subGrabNew(const char *chain,
             g->code   = sym;
             g->sym    = sym;
             break;
-          default: 
+          default:
             g->flags |= SUB_GRAB_KEY;
             g->code   = XKeysymToKeycode(subtle->dpy, sym);
             g->sym    = sym;
@@ -122,7 +122,7 @@ subGrabNew(const char *chain,
     g->flags & SUB_GRAB_KEY ? "k" : "m", chain, g->code, g->mod);
 
   free(tokens);
-  
+
   return g;
 } /* }}} */
 
@@ -138,7 +138,7 @@ subGrabFind(int code,
   unsigned int mod)
 {
   SubGrab **ret = NULL, *gptr = NULL, g;
-  
+
   g.code = code;
   g.mod  = (mod & ~(LockMask|numlockmask));
   gptr   = &g;
@@ -162,7 +162,7 @@ subGrabSet(Window win)
       const unsigned int modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
 
       /* @todo Ugly key/modifier grabbing */
-      for(i = 0; i < subtle->grabs->ndata; i++) 
+      for(i = 0; i < subtle->grabs->ndata; i++)
         {
           SubGrab *g = GRAB(subtle->grabs->data[i]);
 
@@ -175,8 +175,8 @@ subGrabSet(Window win)
                 }
               else if(g->flags & SUB_GRAB_MOUSE)
                 {
-                  XGrabButton(subtle->dpy, g->code - XK_Pointer_Button1, 
-                    g->mod|modifiers[j], win, False, ButtonPressMask|ButtonReleaseMask, 
+                  XGrabButton(subtle->dpy, g->code - XK_Pointer_Button1,
+                    g->mod|modifiers[j], win, False, ButtonPressMask|ButtonReleaseMask,
                     GrabModeAsync, GrabModeSync, None, None);
                 }
             }
@@ -202,7 +202,7 @@ subGrabUnset(Window win)
   * @param[in]  b   A #SubGrab
   * @return Returns the result of the comparison of both grabs
   * @retval  -1  First is smaller
-  * @retval  0   Both are equal  
+  * @retval  0   Both are equal
   * @retval  1   First is greater
   **/
 
@@ -239,9 +239,9 @@ subGrabKill(SubGrab *g)
   assert(g);
 
   /* Clean certain types */
-  if(g->flags & SUB_GRAB_SPAWN && g->data.string) 
+  if(g->flags & SUB_GRAB_SPAWN && g->data.string)
     free(g->data.string);
-  else if(g->flags & SUB_GRAB_PROC && g->data.num) 
+  else if(g->flags & SUB_GRAB_PROC && g->data.num)
     subRubyRelease(g->data.num);
   else if(g->flags & SUB_GRAB_WINDOW_GRAVITY && g->data.num)
     free(g->data.string);

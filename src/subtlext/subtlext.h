@@ -81,7 +81,7 @@ VALUE subColorOperatorPlus(VALUE self, VALUE value);              ///< Concat st
 /* }}} */
 
 /* geometry.c {{{ */
-VALUE subGeometryInstantiate(int x, int y, int width, 
+VALUE subGeometryInstantiate(int x, int y, int width,
   int height);                                                    ///< Instantiate geometry
 VALUE subGeometryInit(int argc, VALUE *argv, VALUE self);         ///< Create new geometry
 VALUE subGeometryToArray(VALUE self);                             ///< Geometry to array

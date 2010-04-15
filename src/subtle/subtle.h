@@ -209,7 +209,7 @@
 
 /* Grab flags */
 #define SUB_GRAB_KEY                  (1L << 11)                  ///< Key grab
-#define SUB_GRAB_MOUSE                (1L << 12)                  ///< Mouse grab  
+#define SUB_GRAB_MOUSE                (1L << 12)                  ///< Mouse grab
 #define SUB_GRAB_SPAWN                (1L << 13)                  ///< Spawn an app
 #define SUB_GRAB_PROC                 (1L << 14)                  ///< Grab with proc
 #define SUB_GRAB_VIEW_JUMP            (1L << 15)                  ///< Jump to view
@@ -304,7 +304,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_WM_NAME,                                               ///< Name of window
   SUB_EWMH_WM_CLASS,                                              ///< Class of window
   SUB_EWMH_WM_STATE,                                              ///< Window state
-  SUB_EWMH_WM_PROTOCOLS,                                          ///< Supported protocols 
+  SUB_EWMH_WM_PROTOCOLS,                                          ///< Supported protocols
   SUB_EWMH_WM_TAKE_FOCUS,                                         ///< Send focus messages
   SUB_EWMH_WM_DELETE_WINDOW,                                      ///< Send close messages
   SUB_EWMH_WM_NORMAL_HINTS,                                       ///< Window normal hints
@@ -325,10 +325,10 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_NET_WORKAREA,                                          ///< Workarea of the views
   SUB_EWMH_NET_SUPPORTING_WM_CHECK,                               ///< Check for compliant window manager
   SUB_EWMH_NET_VIRTUAL_ROOTS,                                     ///< List of virtual destops
-  SUB_EWMH_NET_CLOSE_WINDOW,                                      ///< Close window             
+  SUB_EWMH_NET_CLOSE_WINDOW,                                      ///< Close window
   SUB_EWMH_NET_RESTACK_WINDOW,                                    ///< Change window stacking
   SUB_EWMH_NET_MOVERESIZE_WINDOW,                                 ///< Resize window
-  SUB_EWMH_NET_SHOWING_DESKTOP,                                   ///< Showing desktop mode 
+  SUB_EWMH_NET_SHOWING_DESKTOP,                                   ///< Showing desktop mode
 
   SUB_EWMH_NET_WM_NAME,                                           ///< Name of client
   SUB_EWMH_NET_WM_PID,                                            ///< PID of client
@@ -435,7 +435,7 @@ typedef struct subsublet_t /* {{{ */
   FLAGS             flags;                                        ///< Sublet flags
   Window            win;                                          ///< Sublet window
   int               x, width, watch;                              ///< Sublet x, width, width
- 
+
   char              *name;                                        ///< Sublet name
   unsigned long     instance, mod, bg;                            ///< Sublet ruby instance, ruby mod, bg color
   time_t            time, interval;                               ///< Sublet update/interval time
@@ -548,7 +548,7 @@ void subArrayInsert(SubArray *a, int pos, void *elem);            ///< Insert el
 void subArrayRemove(SubArray *a, void *elem);                     ///< Remove element from array
 void *subArrayGet(SubArray *a, int idx);                          ///< Get element
 int subArrayIndex(SubArray *a, void *elem);                       ///< Find array id of element
-void subArraySort(SubArray *a,                                    ///< Sort array with given compare function 
+void subArraySort(SubArray *a,                                    ///< Sort array with given compare function
   int(*compar)(const void *a, const void *b));
 void subArrayClear(SubArray *a, int clean);                       ///< Delete all elements
 void subArrayKill(SubArray *a, int clean);                        ///< Kill array with all elements
@@ -650,7 +650,7 @@ void subPanelRender(void);                                        ///< Render pa
 /* }}} */
 
 /* ruby.c {{{ */
-void subRubyInit(void);                                           ///< Init Ruby stack 
+void subRubyInit(void);                                           ///< Init Ruby stack
 void subRubyLoadConfig(void);                                     ///< Load config file
 void subRubyReloadConfig(void);                                   ///< Reload config file
 void subRubyReloadSublets(void);                                  ///< Reload sublets
@@ -698,7 +698,7 @@ void subTagKill(SubTag *t);                                       ///< Delete ta
 /* }}} */
 
 /* tray.c {{{ */
-SubTray *subTrayNew(Window win);                                  ///< Create tray 
+SubTray *subTrayNew(Window win);                                  ///< Create tray
 void subTrayConfigure(SubTray *t);                                ///< Configure tray
 void subTrayFocus(SubTray * t);                                   ///< Focus tray
 void subTrayUpdate(void);                                         ///< Update tray bar

@@ -34,7 +34,7 @@ SubtleReload(char *message)
  *  => ":0"
  */
 
-VALUE 
+VALUE
 subSubtleDisplayReader(VALUE self)
 {
   subSubtlextConnect(); ///< Implicit open connection
@@ -111,7 +111,7 @@ subSubtleFocus(VALUE self,
 
   subSubtlextConnect(); ///< Implicit open connection
 
-  if(RTEST(name) && -1 != ((id = subSharedClientFind(RSTRING_PTR(name), 
+  if(RTEST(name) && -1 != ((id = subSharedClientFind(RSTRING_PTR(name),
       NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))))
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
@@ -134,7 +134,7 @@ subSubtleFocus(VALUE self,
  *
  *  subtle.del_client("subtle")
  *  => nil
- * 
+ *
  *  subtle.del_client(subtle.find_client("subtle"))
  *  => nil
  */
@@ -148,7 +148,7 @@ subSubtleClientDel(VALUE self,
 
   subSubtlextConnect(); ///< Implicit open connection
 
-  if(RTEST(name) && -1 != ((id = subSharedClientFind(RSTRING_PTR(name), 
+  if(RTEST(name) && -1 != ((id = subSharedClientFind(RSTRING_PTR(name),
       NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))))
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
@@ -157,7 +157,7 @@ subSubtleClientDel(VALUE self,
       data.l[0] = CurrentTime;
       data.l[1] = 2; ///< Claim to be a pager
 
-      subSharedMessage(win, "_NET_CLOSE_WINDOW", data, True);       
+      subSharedMessage(win, "_NET_CLOSE_WINDOW", data, True);
     }
   else rb_raise(rb_eStandardError, "Failed finding client");
 
@@ -172,7 +172,7 @@ subSubtleClientDel(VALUE self,
  *
  *  subtle.del_gravity("subtle")
  *  => nil
- * 
+ *
  *  subtle.del_gravity(subtle.find_gravity("subtle"))
  *  => nil
  */
@@ -210,7 +210,7 @@ subSubtleTagAdd(VALUE self,
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
       snprintf(data.b, sizeof(data.b), "%s", RSTRING_PTR(value));
-      subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_NEW", data, True);    
+      subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_NEW", data, True);
 
       tag = subTagInstantiate(RSTRING_PTR(value));
     }
@@ -226,7 +226,7 @@ subSubtleTagAdd(VALUE self,
  *
  *  subtle.del_tag("subtle")
  *  => nil
- * 
+ *
  *  subtle.del_tag(subtle.find_tag("subtle"))
  *  => nil
  */
@@ -283,7 +283,7 @@ subSubtleSubletDel(VALUE self,
  *
  *  subtle.add_view("subtle")
  *  => #<Subtlext::View:xxx>
- * 
+ *
  *  subtle.add_view(View.new("subtle"))
  *  => #<Subtlext::View:xxx>
  */
@@ -317,7 +317,7 @@ subSubtleViewAdd(VALUE self,
  *
  *  subtle.del_view("subtle")
  *  => nil
- * 
+ *
  *  subtle.del_view(subtle.find_view("subtle"))
  *  => nil
  */

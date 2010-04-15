@@ -57,13 +57,13 @@ subWindowAlloc(VALUE self)
 
   /* Create window */
   w = (SubtlextWindow *)subSharedMemoryAlloc(1, sizeof(SubtlextWindow));
-  w->instance = Data_Wrap_Struct(self, WindowMark, 
+  w->instance = Data_Wrap_Struct(self, WindowMark,
     WindowSweep, (void *)w);
 
   return w->instance;
 } /* }}} */
 
-/* subWindowInit {{{ 
+/* subWindowInit {{{
  *
  * call-seq: new(geometry) -> Subtlext::Window
  *
@@ -81,7 +81,7 @@ subWindowInit(VALUE self,
   SubtlextWindow *w = NULL;
 
   Data_Get_Struct(self, SubtlextWindow, w);
-  if(w)  
+  if(w)
     {
       int data[4] = { 0, 0, 1, 1 };
       VALUE geom = Qnil;
@@ -111,7 +111,7 @@ subWindowInit(VALUE self,
       /* Create window */
       sattrs.override_redirect = True;
 
-      w->win = XCreateWindow(display, DefaultRootWindow(display), 
+      w->win = XCreateWindow(display, DefaultRootWindow(display),
         data[0], data[1], data[2], data[3], 1, CopyFromParent, CopyFromParent, CopyFromParent,
         CWOverrideRedirect, &sattrs);
 
@@ -119,11 +119,11 @@ subWindowInit(VALUE self,
       w->font          = subSharedFontNew(display, "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*");
       w->text          = subSharedTextNew();
       w->bg            = BlackPixel(display, DefaultScreen(display));
-      
+
       /* Store data */
       rb_iv_set(w->instance, "@win",      LONG2NUM(w->win));
       rb_iv_set(w->instance, "@geometry", geom);
-      
+
       /* Yield to block if given */
       if(rb_block_given_p())
         {
@@ -427,14 +427,14 @@ subWindowInput(VALUE self)
   VALUE ret = Qnil;
 
   Data_Get_Struct(self, SubtlextWindow, w);
-  if(w) 
+  if(w)
     {
       XEvent ev;
       char buf[32] = { 0 }, text[4096] = { 0 };
       int num = 0, len = 0, running = True;
       KeySym sym;
 
-      XGrabKeyboard(display, DefaultRootWindow(display), True, 
+      XGrabKeyboard(display, DefaultRootWindow(display), True,
         GrabModeAsync, GrabModeAsync, CurrentTime);
       XMapRaised(display, w->win);
       XSelectInput(display, w->win, KeyPressMask);
@@ -447,7 +447,7 @@ subWindowInput(VALUE self)
 
           subSharedTextRender(display, DefaultGC(display, 0), w->font,
             w->win, 3, w->font->y, w->fg, w->bg, w->text);
-          
+
           subSharedTextDraw(display, DefaultGC(display, 0), w->font,
             w->win, w->width + 5, w->font->y, w->fg, w->bg, text);
 
@@ -456,7 +456,7 @@ subWindowInput(VALUE self)
 
           switch(ev.type)
             {
-              case KeyPress: 
+              case KeyPress:
                 num = XLookupString(&ev.xkey, buf, sizeof(buf), &sym, NULL);
 
                 switch(sym)
@@ -507,7 +507,7 @@ subWindowShow(VALUE self)
   SubtlextWindow *w = NULL;
 
   Data_Get_Struct(self, SubtlextWindow, w);
-  if(w) 
+  if(w)
     {
       XMapRaised(display, w->win);
     }
@@ -530,7 +530,7 @@ subWindowHide(VALUE self)
 {
   VALUE win = rb_iv_get(self, "@win");
 
-  if(RTEST(win)) 
+  if(RTEST(win))
     {
       XUnmapWindow(display, NUM2LONG(win));
       XSync(display, False); ///< Sync with X
@@ -554,10 +554,10 @@ subWindowKill(VALUE self)
 {
   VALUE win = rb_iv_get(self, "@win");
 
-  if(RTEST(win)) 
+  if(RTEST(win))
     {
       XDestroyWindow(display, NUM2LONG(win));
-      rb_iv_set(self, "@win", Qnil); 
+      rb_iv_set(self, "@win", Qnil);
     }
 
   return Qnil;

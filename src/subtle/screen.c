@@ -31,7 +31,7 @@ subScreenInit(void)
     {
       int i, n = 0;
       XineramaScreenInfo *screens = NULL;
-      SubScreen *s = NULL; 
+      SubScreen *s = NULL;
 
       /* Query screens */
       if((screens = XineramaQueryScreens(subtle->dpy, &n)))
@@ -47,7 +47,7 @@ subScreenInit(void)
 
           XFree(screens);
         }
-    } 
+    }
 #endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
 
   /* Create default screen */
@@ -60,7 +60,7 @@ subScreenInit(void)
   * @param[in]  x       X position of screen
   * @param[in]  y       y position of screen
   * @param[in]  width   Width of screen
-  * @param[in]  height  Height of screen 
+  * @param[in]  height  Height of screen
   * @return Returns a #SubScreen or \p NULL
   **/
 
@@ -100,8 +100,8 @@ subScreenConfigure(void)
   DEFSCREEN->geom.x      = DEFSCREEN->base.x + subtle->strut.x;
   DEFSCREEN->geom.y      = DEFSCREEN->base.y + subtle->strut.width;
   DEFSCREEN->geom.width  = DEFSCREEN->base.width - subtle->strut.x;
-  DEFSCREEN->geom.height = DEFSCREEN->base.height - subtle->strut.height - 
-    subtle->strut.width;    
+  DEFSCREEN->geom.height = DEFSCREEN->base.height - subtle->strut.height -
+    subtle->strut.width;
 
   /* Add panel heights */
   if(subtle->flags & SUB_SUBTLE_PANEL1)
@@ -173,7 +173,7 @@ subScreenKill(SubScreen *s)
 {
   assert(s);
 
-  free(s);          
+  free(s);
 
   subSharedLogDebug("kill=screen\n");
 } /* }}} */
