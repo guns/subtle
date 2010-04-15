@@ -75,7 +75,7 @@ subWindowAlloc(VALUE self)
  */
 
 VALUE
-subWindowNew(VALUE self,
+subWindowInit(VALUE self,
   VALUE geometry)
 {
   SubtlextWindow *w = NULL;
