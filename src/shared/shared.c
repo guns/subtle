@@ -1157,6 +1157,19 @@ subSharedTrayList(int *size)
   return SharedList("SUBTLE_TRAY_LIST", size);
 } /* }}} */
 
+ /** subSharedSubletList {{{
+  * @brief Get sublet list
+  * @param[inout]  size  Size of the window list
+  * @return Returns the window list
+  * @retval  NULL  No sublets found
+  **/
+
+Window *
+subSharedSubletList(int *size)
+{
+  return SharedList("SUBTLE_SUBLET_WINDOWS", size);
+} /* }}} */
+
  /** subSharedClientFind {{{
   * @brief Find client id
   * @param[in]     match  Match string

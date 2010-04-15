@@ -205,13 +205,14 @@ int subSharedMessage(Window win, char *type,
 /* }}} */
 
 /* Window {{{ */
-Window *subSharedWindowSUBTLECheck(void);                             ///< Get SUBTLE check window
+Window *subSharedWindowWMCheck(void);                             ///< Get WM check window
 Window subSharedWindowSelect(void);                               ///< Select a window
 /* }}} */
 
 /* Lists {{{ */
 Window *subSharedClientList(int *size);                           ///< Get client list
 Window *subSharedTrayList(int *size);                             ///< Get tray list
+Window *subSharedSubletList(int *size);                           ///< Get sublet list
 /* }}} */
 
 /* Find {{{ */
