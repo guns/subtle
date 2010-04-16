@@ -14,6 +14,7 @@
 #include <sys/wait.h>
 #include <sys/time.h>
 #include <signal.h>
+#include <unistd.h>
 #include "subtle.h"
 
 #ifdef HAVE_EXECINFO_H
@@ -169,12 +170,53 @@ subSubtleFocus(int focus)
   return ROOT;
 } /* }}} */
 
+ /** subSubletFinish {{{
+  * @brief Finish subtle
+  **/
+
+void
+subSubtleFinish(void)
+{
+  if(subtle)
+    {
+      if(subtle->dpy)
+        XSync(subtle->dpy, False); ///< Sync before going on
+
+      /* Hook: Exit */
+      subHookCall(SUB_HOOK_EXIT, NULL);
+
+      /* Clear hooks first to stop calling */
+      subArrayClear(subtle->hooks,    True);
+
+      /* Kill arrays */
+      subArrayKill(subtle->clients,   True);
+      subArrayKill(subtle->grabs,     True);
+      subArrayKill(subtle->gravities, True);
+      subArrayKill(subtle->screens,   True);
+      subArrayKill(subtle->sublets,   True);
+      subArrayKill(subtle->panels,    False); ///< Before sublets
+      subArrayKill(subtle->tags,      True);
+      subArrayKill(subtle->trays,     True);
+      subArrayKill(subtle->views,     True);
+      subArrayKill(subtle->hooks,     False);
+
+      subEventFinish();
+      subRubyFinish();
+      subEwmhFinish();
+      subDisplayFinish();
+
+      if(subtle->separator.string) free(subtle->separator.string);
+
+      free(subtle);
+    }
+} /* }}} */
+
 /* main {{{ */
 int
 main(int argc,
   char *argv[])
 {
-  int c, check = 0;
+  int c, check = 0, restart = 0;
   char *display = NULL;
   struct sigaction sa;
   const struct option long_options[] =
@@ -235,7 +277,7 @@ main(int argc,
   sigaction(SIGSEGV, &sa, NULL);
   sigaction(SIGCHLD, &sa, NULL);
 
-  /* Load and check config */
+  /* Load and check config only */
   if(check)
     {
       subRubyInit();
@@ -278,7 +320,21 @@ main(int argc,
   subDisplayScan();
 
   subEventLoop();
-  subEventFinish();
+
+  /* Save restart flag */
+  if(subtle->flags & SUB_SUBTLE_RESTART) restart++;
+
+  subSubtleFinish();
+
+  /* Restart if necessary */
+  if(restart)
+    {
+      printf("Restarting\n");
+
+      execvp(argv[0], argv);
+    }
+
+  printf("Exit\n");
 
   return 0;
 } /* }}} */

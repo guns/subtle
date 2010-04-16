@@ -216,15 +216,16 @@
 #define SUB_GRAB_SCREEN_JUMP          (1L << 16)                  ///< Jump to screen
 #define SUB_GRAB_SUBLETS_RELOAD       (1L << 17)                  ///< Reload subtle
 #define SUB_GRAB_SUBTLE_RELOAD        (1L << 18)                  ///< Reload subtle
-#define SUB_GRAB_SUBTLE_QUIT          (1L << 19)                  ///< Quit subtle
-#define SUB_GRAB_WINDOW_MOVE          (1L << 20)                  ///< Resize window
-#define SUB_GRAB_WINDOW_RESIZE        (1L << 21)                  ///< Move window
-#define SUB_GRAB_WINDOW_TOGGLE        (1L << 22)                  ///< Toggle window
-#define SUB_GRAB_WINDOW_STACK         (1L << 23)                  ///< Stack window
-#define SUB_GRAB_WINDOW_SELECT        (1L << 24)                  ///< Select window
-#define SUB_GRAB_WINDOW_GRAVITY       (1L << 25)                  ///< Set gravity of window
-#define SUB_GRAB_WINDOW_SCREEN        (1L << 26)                  ///< Set screen of window
-#define SUB_GRAB_WINDOW_KILL          (1L << 27)                  ///< Kill window
+#define SUB_GRAB_SUBTLE_RESTART       (1L << 19)                  ///< Restart subtle
+#define SUB_GRAB_SUBTLE_QUIT          (1L << 20)                  ///< Quit subtle
+#define SUB_GRAB_WINDOW_MOVE          (1L << 21)                  ///< Resize window
+#define SUB_GRAB_WINDOW_RESIZE        (1L << 22)                  ///< Move window
+#define SUB_GRAB_WINDOW_TOGGLE        (1L << 23)                  ///< Toggle window
+#define SUB_GRAB_WINDOW_STACK         (1L << 24)                  ///< Stack window
+#define SUB_GRAB_WINDOW_SELECT        (1L << 25)                  ///< Select window
+#define SUB_GRAB_WINDOW_GRAVITY       (1L << 26)                  ///< Set gravity of window
+#define SUB_GRAB_WINDOW_SCREEN        (1L << 27)                  ///< Set screen of window
+#define SUB_GRAB_WINDOW_KILL          (1L << 28)                  ///< Kill window
 
 /* Panel flags */
 #define SUB_PANEL_SPACER1             (1L << 11)                  ///< Panel spacer1
@@ -259,6 +260,7 @@
 #define SUB_SUBTLE_EWMH               (1L << 10)                  ///< EWMH set
 #define SUB_SUBTLE_RUN                (1L << 11)                  ///< Run event loop
 #define SUB_SUBTLE_REPLACE            (1L << 12)                  ///< Replace previous wm
+#define SUB_SUBTLE_RESTART            (1L << 13)                  ///< Restart
 
 /* Tag flags */
 #define SUB_TAG_GRAVITY               (1L << 11)                  ///< Gravity property
@@ -690,6 +692,7 @@ void subSubletKill(SubSublet *s);                                 ///< Kill subl
 XPointer * subSubtleFind(Window win, XContext id);                ///< Find window
 time_t subSubtleTime(void);                                       ///< Get current time
 Window subSubtleFocus(int focus);                                 ///< Focus window
+void subSubtleFinish(void);                                       ///< Finish subtle
 /* }}} */
 
 /* tag.c {{{ */
