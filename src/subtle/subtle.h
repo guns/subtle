@@ -274,6 +274,7 @@
 
 /* View flags */
 #define SUB_VIEW_DYNAMIC              (1L << 20)                  ///< Dynamic view (after panel flags)
+#define SUB_VIEW_DYNAMIC_FOCUS        (1L << 21)                  ///< Dynamic empty but active view
 /* }}} */
 
 /* Typedefs {{{ */
