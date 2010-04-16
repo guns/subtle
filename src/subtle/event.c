@@ -544,7 +544,7 @@ EventMessage(XClientMessageEvent *ev)
             subRubyReloadSublets();
             break; /* }}} */
           case SUB_EWMH_SUBTLE_QUIT: /* {{{ */
-            subEventFinish();
+            if(subtle) subtle->flags &= ~SUB_SUBTLE_RUN;
             break; /* }}} */
         }
     } /* }}} */
@@ -883,6 +883,13 @@ EventGrab(XEvent *ev)
             break; /* }}} */
           case SUB_GRAB_SUBTLE_QUIT: /* {{{ */
             if(subtle) subtle->flags &= ~SUB_SUBTLE_RUN;
+            break; /* }}} */
+          case SUB_GRAB_SUBTLE_RESTART: /* {{{ */
+            if(subtle)
+              {
+                subtle->flags &= ~SUB_SUBTLE_RUN;
+                subtle->flags |= SUB_SUBTLE_RESTART;
+              }
             break; /* }}} */
           case SUB_GRAB_WINDOW_MOVE:
           case SUB_GRAB_WINDOW_RESIZE: /* {{{ */
@@ -1316,43 +1323,8 @@ subEventLoop(void)
 void
 subEventFinish(void)
 {
-  if(subtle)
-    {
-      if(subtle->dpy)
-        XSync(subtle->dpy, False); ///< Sync before going on
-
-      /* Hook: Exit */
-      subHookCall(SUB_HOOK_EXIT, NULL);
-
-      /* Clear hooks first to stop calling */
-      subArrayClear(subtle->hooks,    True);
-
-      /* Kill arrays */
-      subArrayKill(subtle->clients,   True);
-      subArrayKill(subtle->grabs,     True);
-      subArrayKill(subtle->gravities, True);
-      subArrayKill(subtle->screens,   True);
-      subArrayKill(subtle->sublets,   True);
-      subArrayKill(subtle->panels,    False); ///< Before sublets
-      subArrayKill(subtle->tags,      True);
-      subArrayKill(subtle->trays,     True);
-      subArrayKill(subtle->views,     True);
-      subArrayKill(subtle->hooks,     False);
-
-      subRubyFinish();
-      subEwmhFinish();
-      subDisplayFinish();
-
-      if(subtle->separator.string) free(subtle->separator.string);
-
-      free(subtle);
-    }
 
   if(watches) free(watches);
-
-  printf("Exit\n");
-
-  exit(0);
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
