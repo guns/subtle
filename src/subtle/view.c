@@ -179,14 +179,11 @@ subViewDynamic(void)
             }
 
           /* Update flags */
-          if(0 < visible) v->flags &= ~SUB_PANEL_HIDDEN;
+          if(0 < visible) v->flags &= ~(SUB_PANEL_HIDDEN|SUB_VIEW_DYNAMIC_FOCUS);
           else
             {
-              v->flags |= SUB_PANEL_HIDDEN;
-
-              /* Check current view */
-              if(CURVIEW == v)
-                subViewJump(VIEW(subtle->views->data[0]), True);
+              if(CURVIEW == v) v->flags |= SUB_VIEW_DYNAMIC_FOCUS;
+              else v->flags |= SUB_PANEL_HIDDEN;
             }
         }
     }
@@ -253,13 +250,21 @@ void
 subViewJump(SubView *v,
   int focus)
 {
+  SubView *w = NULL;
+
   assert(v);
 
   /* Ignore dynamic views */
   if(v->flags & SUB_PANEL_HIDDEN) return;
 
+  w = CURVIEW; ///< Store reference
+
   /* Store view */
   subtle->vid = subArrayIndex(subtle->views, (void *)v);
+
+  /* Check dynamic focus last views */
+  if(w->flags & SUB_VIEW_DYNAMIC_FOCUS)
+    subViewDynamic(); ///< Dynamic views
 
   /* EWMH: Current desktop */
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP,
