@@ -24,7 +24,7 @@
 #define SYM2CHAR(sym)  rb_id2name(SYM2ID(sym))
 
 #define PANELSLENGTH  3
-#define GRABSLENGTH  15
+#define GRABSLENGTH  16
 #define TAGSLENGTH    9
 #define HOOKSLENGTH  12
 
@@ -747,21 +747,22 @@ RubyWrapLoadConfig(VALUE data)
   /* Foreach arguments {{{ */
   RubyGrabs grabs[] =
   {
-    { CHAR2SYM("SubletsReload"), SUB_GRAB_SUBLETS_RELOAD, None             },
-    { CHAR2SYM("SubtleReload"),  SUB_GRAB_SUBTLE_RELOAD,  None             },
-    { CHAR2SYM("SubtleQuit"),    SUB_GRAB_SUBTLE_QUIT,    None             },
-    { CHAR2SYM("WindowMove"),    SUB_GRAB_WINDOW_MOVE,    None             },
-    { CHAR2SYM("WindowResize"),  SUB_GRAB_WINDOW_RESIZE,  None             },
-    { CHAR2SYM("WindowFloat"),   SUB_GRAB_WINDOW_TOGGLE,  SUB_MODE_FLOAT   },
-    { CHAR2SYM("WindowFull"),    SUB_GRAB_WINDOW_TOGGLE,  SUB_MODE_FULL    },
-    { CHAR2SYM("WindowStick"),   SUB_GRAB_WINDOW_TOGGLE,  SUB_MODE_STICK   },
-    { CHAR2SYM("WindowRaise"),   SUB_GRAB_WINDOW_STACK,   Above            },
-    { CHAR2SYM("WindowLower"),   SUB_GRAB_WINDOW_STACK,   Below            },
-    { CHAR2SYM("WindowLeft"),    SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_LEFT  },
-    { CHAR2SYM("WindowDown"),    SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_DOWN  },
-    { CHAR2SYM("WindowUp"),      SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_UP    },
-    { CHAR2SYM("WindowRight"),   SUB_GRAB_WINDOW_SELECT,  SUB_WINDOW_RIGHT },
-    { CHAR2SYM("WindowKill"),    SUB_GRAB_WINDOW_KILL,    None             },
+    { CHAR2SYM("SubletsReload"), SUB_GRAB_SUBLETS_RELOAD,  None             },
+    { CHAR2SYM("SubtleReload"),  SUB_GRAB_SUBTLE_RELOAD,   None             },
+    { CHAR2SYM("SubtleRestart"), SUB_GRAB_SUBTLE_RESTART,  None             },
+    { CHAR2SYM("SubtleQuit"),    SUB_GRAB_SUBTLE_QUIT,     None             },
+    { CHAR2SYM("WindowMove"),    SUB_GRAB_WINDOW_MOVE,     None             },
+    { CHAR2SYM("WindowResize"),  SUB_GRAB_WINDOW_RESIZE,   None             },
+    { CHAR2SYM("WindowFloat"),   SUB_GRAB_WINDOW_TOGGLE,   SUB_MODE_FLOAT   },
+    { CHAR2SYM("WindowFull"),    SUB_GRAB_WINDOW_TOGGLE,   SUB_MODE_FULL    },
+    { CHAR2SYM("WindowStick"),   SUB_GRAB_WINDOW_TOGGLE,   SUB_MODE_STICK   },
+    { CHAR2SYM("WindowRaise"),   SUB_GRAB_WINDOW_STACK,    Above            },
+    { CHAR2SYM("WindowLower"),   SUB_GRAB_WINDOW_STACK,    Below            },
+    { CHAR2SYM("WindowLeft"),    SUB_GRAB_WINDOW_SELECT,   SUB_WINDOW_LEFT  },
+    { CHAR2SYM("WindowDown"),    SUB_GRAB_WINDOW_SELECT,   SUB_WINDOW_DOWN  },
+    { CHAR2SYM("WindowUp"),      SUB_GRAB_WINDOW_SELECT,   SUB_WINDOW_UP    },
+    { CHAR2SYM("WindowRight"),   SUB_GRAB_WINDOW_SELECT,   SUB_WINDOW_RIGHT },
+    { CHAR2SYM("WindowKill"),    SUB_GRAB_WINDOW_KILL,     None             },
   };
 
   RubySymbols tags[] =
@@ -804,7 +805,9 @@ RubyWrapLoadConfig(VALUE data)
   if(1 == subtle->gravities->ndata)
     {
       subSharedLogError("No gravities found\n");
-      subEventFinish();
+      subSubtleFinish();
+
+      exit(-1);
     }
 
   subGravityPublish();
@@ -822,7 +825,12 @@ RubyWrapLoadConfig(VALUE data)
 
   /* Config: Font */
   str = RubyGetString(config, "font", NULL);
-  if(!(subtle->font = subSharedFontNew(subtle->dpy, str))) subEventFinish();
+  if(!(subtle->font = subSharedFontNew(subtle->dpy, str)))
+    {
+      subSubtleFinish();
+
+      exit(-1); ////< Should never happen
+    }
   subtle->th = subtle->font->height;
 
   /* Config: Colors */
@@ -1987,8 +1995,9 @@ subRubyLoadConfig(void)
   if(state)
     {
       RubyBacktrace();
-      subEventFinish();
-      return;
+      subSubtleFinish();
+
+      exit(-1);
     }
 
   if(!subtle || !subtle->dpy) return; ///< Exit after config check
@@ -1998,7 +2007,9 @@ subRubyLoadConfig(void)
   if(state)
     {
       RubyBacktrace();
-      subEventFinish();
+      subSubtleFinish();
+
+      exit(-1);
     }
 } /* }}} */
 
@@ -2163,7 +2174,9 @@ subRubyLoadPanels(void)
     {
       subSharedLogWarn("Failed loading panels\n");
       RubyBacktrace();
-      subEventFinish();
+      subSubtleFinish();
+
+      exit(-1);
     }
 } /* }}} */
 
@@ -2237,7 +2250,9 @@ subRubyLoadSubtlext(void)
     {
       subSharedLogWarn("Failed loading subtlext\n");
       RubyBacktrace();
-      subEventFinish();
+      subSubtleFinish();
+
+      exit(-1);
     }
 } /* }}} */
 

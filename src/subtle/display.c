@@ -114,7 +114,9 @@ subDisplayInit(const char *display)
       subSharedLogError("Failed opening display `%s'\n",
         (display) ? display : ":0.0");
 
-      subEventFinish();
+      subSubtleFinish();
+
+      exit(-1);
     }
 
   /* Create supporting window */
@@ -127,7 +129,12 @@ subDisplayInit(const char *display)
     CWEventMask|CWOverrideRedirect, &sattrs);
 
   /* Claim and setup display */
-  if(!DisplayClaim()) subEventFinish();
+  if(!DisplayClaim())
+    {
+      subSubtleFinish();
+
+      exit(-1);
+    }
 
   XSetErrorHandler(subSharedLogXError);
   setenv("DISPLAY", DisplayString(subtle->dpy), True); ///< Set display for clients
