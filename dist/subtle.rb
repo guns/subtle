@@ -132,7 +132,7 @@ COLORS = {
 
   # Border color of panel items
   :border_panel  => "#303030",
-  
+
   # Background color of root background
   :background    => "#3d3d3d"
 }
@@ -258,6 +258,9 @@ GRABS = {
 
   # Force reload of config
   "W-C-r"    => :SubtleReload,
+
+  # Force restart of subtle
+  "W-C-S-r"  => :SubtleRestart,
 
   # Quit subtle
   "W-C-q"    => :SubtleQuit,
