@@ -1684,7 +1684,7 @@ RubySubletGeometryReader(VALUE self)
 /*
  * call-seq: show -> nil
  *
- * Show sublet
+ * Show sublet on panel
  *
  *  sublet.show
  *  => nil
@@ -1713,7 +1713,7 @@ RubySubletShow(VALUE self)
 /*
  * call-seq: hide -> nil
  *
- * Hide sublet
+ * Hide sublet from panel
  *
  *  sublet.hide
  *  => nil
@@ -1744,7 +1744,7 @@ RubySubletHide(VALUE self,
 /*
  * call-seq: hidden? -> Bool
  *
- * Whether sublet is displayed
+ * Whether sublet is hidden
  *
  *  puts sublet.display
  *  => true
@@ -2143,6 +2143,7 @@ subRubyLoadSublet(const char *file)
   subArrayPush(subtle->sublets, s);
   rb_ary_push(shelter, s->instance); ///< Protect from GC
 
+  /* Eval sublet in anonymous module */
   rargs[0] = str;
   rb_mod_module_eval(1, rargs, s->mod);
 
@@ -2274,7 +2275,7 @@ subRubyCall(int type,
   void *data2)
 {
   int state = 0;
-  VALUE result = Qnil, rargs[4] = { 0 };
+  VALUE result = Qnil, rargs[4] = { Qnil };
 
   /* Wrap up data */
   rargs[0] = (VALUE)type;
