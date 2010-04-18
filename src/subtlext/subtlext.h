@@ -200,9 +200,11 @@ VALUE subViewKill(VALUE self);                                    ///< Kill view
 /* }}} */
 
 /* window.c {{{ */
+VALUE subWindowInstantiate(VALUE geometry);                       ///< Instantiate window
 VALUE subWindowDispatcher(int argc, VALUE *argv, VALUE self);     ///< Window dispatcher
 VALUE subWindowAlloc(VALUE self);                                 ///< Allocate window
 VALUE subWindowInit(VALUE self, VALUE geometry);                  ///< Init window
+VALUE subWindowInput(VALUE self, VALUE geometry);                 ///< Get input string
 VALUE subWindowNameWriter(VALUE self, VALUE value);               ///< Set name
 VALUE subWindowFontWriter(VALUE self, VALUE value);               ///< Set font
 VALUE subWindowForegroundWriter(VALUE self, VALUE value);         ///< Set foreground
@@ -211,7 +213,8 @@ VALUE subWindowBorderColorWriter(VALUE self, VALUE value);        ///< Set borde
 VALUE subWindowBorderSizeWriter(VALUE self, VALUE value);         ///< Set border size
 VALUE subWindowGeometryReader(VALUE self);                        ///< Get geometry
 VALUE subWindowTextWriter(VALUE self, VALUE text);                ///< Add text
-VALUE subWindowInput(VALUE self);                                 ///< Get input
+VALUE subWindowCompletion(VALUE self);                            ///< Add completion proc
+VALUE subWindowGetInput(VALUE self);                              ///< Get input
 VALUE subWindowShow(VALUE self);                                  ///< Show window
 VALUE subWindowHide(VALUE self);                                  ///< Hide window
 VALUE subWindowKill(VALUE self);                                  ///< Kill window

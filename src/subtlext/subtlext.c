@@ -1196,6 +1196,9 @@ Init_subtlext(void)
   /* Allocate */
   rb_define_alloc_func(window, subWindowAlloc);
 
+  /* Singleton methods */
+  rb_define_singleton_method(window, "input", subWindowInput, 1);
+
   /* General methods */
   rb_define_method(window, "click",        SubtlextClick, -1);
   rb_define_method(window, "focus",        SubtlextFocus,  0);
@@ -1209,7 +1212,8 @@ Init_subtlext(void)
   rb_define_method(window, "border_color", subWindowBorderColorWriter, 1);
   rb_define_method(window, "border_size",  subWindowBorderSizeWriter,  1);
   rb_define_method(window, "text",         subWindowTextWriter,        1);
-  rb_define_method(window, "input",        subWindowInput,             0);
+  rb_define_method(window, "completion",   subWindowCompletion,        0);
+  rb_define_method(window, "get_input",    subWindowGetInput,          0);
   rb_define_method(window, "geometry",     subWindowGeometryReader,    0);
   rb_define_method(window, "show",         subWindowShow,              0);
   rb_define_method(window, "hide",         subWindowHide,              0);

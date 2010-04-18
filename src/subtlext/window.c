@@ -17,7 +17,7 @@ typedef struct subtlextwindow_t
   Window        win;
   SubFont       *font;
   SubText       *text;
-  VALUE         instance;
+  VALUE         instance, completion;
   unsigned long fg, bg;
   int           width;
 } SubtlextWindow;
@@ -41,6 +41,28 @@ WindowSweep(SubtlextWindow *w)
 
       free(w);
     }
+} /* }}} */
+
+/* WindowWrapCompletion {{{ */
+static VALUE
+WindowWrapCompletion(VALUE data)
+{
+  VALUE *rargs = (VALUE *)data;
+
+  return rb_funcall(rargs[0], rb_intern("call"), 2, rargs[1], rargs[2]);
+} /* }}} */
+
+/* subWindowInstantiate {{{ */
+VALUE
+subWindowInstantiate(VALUE geometry)
+{
+  VALUE klass = Qnil, win = Qnil;
+
+  /* Create new instance */
+  klass = rb_const_get(mod, rb_intern("Window"));
+  win   = rb_funcall(klass, rb_intern("new"), 1, geometry);
+
+  return win;
 } /* }}} */
 
 /* subWindowAlloc {{{ */
@@ -79,6 +101,7 @@ subWindowInit(VALUE self,
   VALUE geometry)
 {
   SubtlextWindow *w = NULL;
+  VALUE ret = Qnil;
 
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w)
@@ -115,10 +138,11 @@ subWindowInit(VALUE self,
         data[0], data[1], data[2], data[3], 1, CopyFromParent, CopyFromParent, CopyFromParent,
         CWOverrideRedirect, &sattrs);
 
-      /* Create window defaults */
-      w->font          = subSharedFontNew(display, "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*");
-      w->text          = subSharedTextNew();
-      w->bg            = BlackPixel(display, DefaultScreen(display));
+      /* Set window defaults */
+      w->font       = subSharedFontNew(display, "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*");
+      w->text       = subSharedTextNew();
+      w->bg         = BlackPixel(display, DefaultScreen(display));
+      w->completion = Qnil;
 
       /* Store data */
       rb_iv_set(w->instance, "@win",      LONG2NUM(w->win));
@@ -128,13 +152,40 @@ subWindowInit(VALUE self,
       if(rb_block_given_p())
         {
           //rb_yield_values(1, w->instance);
-          rb_obj_instance_eval(0, 0, w->instance);
+          ret = rb_obj_instance_eval(0, 0, w->instance);
         }
 
       XSync(display, False); ///< Sync with X
     }
 
-  return Qnil;
+  return ret;
+} /* }}} */
+
+/* subWindowInput {{{ */
+/*
+ * call-seq: input(geometry) -> String
+ *
+ * Get input string
+ **/
+
+VALUE
+subWindowInput(VALUE self,
+  VALUE geometry)
+{
+  VALUE win = Qnil, ret = Qnil;
+
+  /* Create new window */
+  win = subWindowInstantiate(geometry);
+
+  /* Yield block */
+  if(rb_block_given_p())
+    rb_obj_instance_eval(0, 0, win);
+
+  ret = subWindowGetInput(win);
+
+  subWindowKill(win);
+
+  return ret;
 } /* }}} */
 
 /* subWindowNameWriter {{{ */
@@ -410,18 +461,49 @@ subWindowTextWriter(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* subWindowInput {{{ */
+/* subWindowCompletion {{{ */
+/*
+ * call-seq: completion(&block) -> nil
+ *
+ * Add completion proc
+ *
+ *  win.completion do |str, guess|
+ *    str
+ *  end
+ */
+
+VALUE
+subWindowCompletion(VALUE self)
+{
+  SubtlextWindow *w = NULL;
+
+  rb_need_block();
+
+  Data_Get_Struct(self, SubtlextWindow, w);
+  if(w && rb_block_given_p()) 
+    {
+      VALUE p = rb_block_proc();
+      int arity = rb_proc_arity(p);
+
+      if(2 == arity) w->completion = p;
+      else rb_raise(rb_eArgError, "Wrong number of arguments (%d for 2)", arity);
+    }
+
+  return Qnil;
+} /* }}} */
+
+/* subWindowGetInput {{{ */
 /*
  * call-seq: input -> String
  *
  * Get input
  *
- *  inp = input
+ *  string = get_input
  *  => "subtle"
  */
 
 VALUE
-subWindowInput(VALUE self)
+subWindowGetInput(VALUE self)
 {
   SubtlextWindow *w = NULL;
   VALUE ret = Qnil;
@@ -430,8 +512,8 @@ subWindowInput(VALUE self)
   if(w)
     {
       XEvent ev;
-      char buf[32] = { 0 }, text[4096] = { 0 };
-      int num = 0, len = 0, running = True;
+      char buf[32] = { 0 }, text[1024] = { 0 }, last[32] = { 0 };
+      int pos = 0, len = 0, running = True, start = 0, guess = -1;
       KeySym sym;
 
       XGrabKeyboard(display, DefaultRootWindow(display), True,
@@ -443,6 +525,8 @@ subWindowInput(VALUE self)
 
       while(running)
         {
+          text[len] = '_';
+
           XClearWindow(display, w->win);
 
           subSharedTextRender(display, DefaultGC(display, 0), w->font,
@@ -457,26 +541,76 @@ subWindowInput(VALUE self)
           switch(ev.type)
             {
               case KeyPress:
-                num = XLookupString(&ev.xkey, buf, sizeof(buf), &sym, NULL);
+                pos = XLookupString(&ev.xkey, buf, sizeof(buf), &sym, NULL);
 
                 switch(sym)
                   {
                     case XK_Return:
-                    case XK_KP_Enter:
+                    case XK_KP_Enter: /* {{{ */
                       running = False;
-                      break;
-                    case XK_Escape:
+                      text[len] = 0; ///< Remove underscore
+                      break; /* }}} */
+                    case XK_Escape: /* {{{ */
                       running = False;
                       text[0] = 0;
-                      break;
-                    case XK_BackSpace:
-                      if(0 < len) text[--len] = 0;
-                      break;
-                    default:
-                      buf[num] = 0;
+                      break; /* }}} */
+                    case XK_BackSpace: /* {{{ */
+                      if(0 < len) 
+                        {
+                          text[len--] = 0;
+                          text[len]   = 0;
+                        }
+                      break; /* }}} */
+                    case XK_Tab: /* {{{ */
+                      if(!(NIL_P(w->completion)))
+                        {
+                          int state = 0;
+                          VALUE rargs[3] = { Qnil }, result = Qnil;
+
+                          /* Select guess number */
+                          if(0 == ++guess) 
+                            {
+                              int i;
+
+                              /* Find start of current word */
+                              for(i = len; 0 < i; i--)
+                                if(' ' == text[i]) 
+                                  {
+                                    start = i + 1;
+                                    break;
+                                  }
+
+                              strncpy(last, text + start, len - start); ///< Store match
+                            }
+
+                          /* Wrap up data */
+                          rargs[0] = w->completion;
+                          rargs[1] = rb_str_new2(last);
+                          rargs[2] = INT2FIX(guess);
+
+                          result = rb_protect(WindowWrapCompletion, (VALUE)&rargs, &state);
+                          if(state)
+                            {
+                              printf("Error in completion func\n");
+                              rb_backtrace();
+
+                              continue;
+                            }
+
+                          if(!(NIL_P(result)))
+                            {
+                              strncpy(text + start, RSTRING_PTR(result), sizeof(text) - len);
+
+                              len = strlen(text);
+                            }
+                        }
+                      break; /* }}} */
+                    default: /* {{{ */
+                      guess    = -1;
+                      buf[pos] = 0;
                       strncpy(text + len, buf, sizeof(text) - len);
-                      len += num;
-                      break;
+                      len += pos;
+                      break; /* }}} */
                   }
                 break;
               default: break;
