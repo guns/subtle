@@ -185,13 +185,14 @@
 #define SUB_HOOK_CLIENT_CREATE        (1L << 18)                  ///< Client create hook
 #define SUB_HOOK_CLIENT_CONFIGURE     (1L << 19)                  ///< Client configure hook
 #define SUB_HOOK_CLIENT_FOCUS         (1L << 20)                  ///< Client focus hook
-#define SUB_HOOK_CLIENT_KILL          (1L << 21)                  ///< Client kill hook
-#define SUB_HOOK_TAG_CREATE           (1L << 22)                  ///< Tag create hook
-#define SUB_HOOK_TAG_KILL             (1L << 23)                  ///< Tag kill hook
-#define SUB_HOOK_VIEW_CREATE          (1L << 24)                  ///< View create hook
-#define SUB_HOOK_VIEW_CONFIGURE       (1L << 25)                  ///< View configure hook
-#define SUB_HOOK_VIEW_JUMP            (1L << 26)                  ///< View jump hook
-#define SUB_HOOK_VIEW_KILL            (1L << 27)                  ///< View kill hook
+#define SUB_HOOK_CLIENT_GRAVITY       (1L << 21)                  ///< Client gravity hook
+#define SUB_HOOK_CLIENT_KILL          (1L << 22)                  ///< Client kill hook
+#define SUB_HOOK_TAG_CREATE           (1L << 23)                  ///< Tag create hook
+#define SUB_HOOK_TAG_KILL             (1L << 24)                  ///< Tag kill hook
+#define SUB_HOOK_VIEW_CREATE          (1L << 25)                  ///< View create hook
+#define SUB_HOOK_VIEW_CONFIGURE       (1L << 26)                  ///< View configure hook
+#define SUB_HOOK_VIEW_JUMP            (1L << 27)                  ///< View jump hook
+#define SUB_HOOK_VIEW_KILL            (1L << 28)                  ///< View kill hook
 
 /* Client flags */
 #define SUB_CLIENT_FOCUS              (1L << 11)                  ///< Send focus message

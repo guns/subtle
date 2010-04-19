@@ -726,6 +726,9 @@ subClientSetGravity(SubClient *c,
         (long *)&c->gravity, 1);
       subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_SCREEN,
         (long *)&c->screen, 1);
+
+      /* Hook: Gravity */
+      subHookCall(SUB_HOOK_CLIENT_GRAVITY, (void *)c);
     }
 } /* }}} */
 

@@ -26,7 +26,7 @@
 #define PANELSLENGTH  3
 #define GRABSLENGTH  16
 #define TAGSLENGTH    9
-#define HOOKSLENGTH  12
+#define HOOKSLENGTH  13
 
 static VALUE shelter = Qnil, subtlext = Qnil; ///< Globals
 
@@ -786,6 +786,7 @@ RubyWrapLoadConfig(VALUE data)
     { CHAR2SYM("HookClientCreate"),    SUB_HOOK_CLIENT_CREATE    },
     { CHAR2SYM("HookClientConfigure"), SUB_HOOK_CLIENT_CONFIGURE },
     { CHAR2SYM("HookClientFocus"),     SUB_HOOK_CLIENT_FOCUS     },
+    { CHAR2SYM("HookClientGravity"),   SUB_HOOK_CLIENT_GRAVITY   },
     { CHAR2SYM("HookClientKill"),      SUB_HOOK_CLIENT_KILL      },
     { CHAR2SYM("HookViewCreate"),      SUB_HOOK_VIEW_CREATE      },
     { CHAR2SYM("HookViewConfigure"),   SUB_HOOK_VIEW_CONFIGURE   },
@@ -1266,6 +1267,7 @@ RubyKernelEvent(VALUE self,
             { CHAR2SYM("client_create"),    SUB_HOOK_CLIENT_CREATE    },
             { CHAR2SYM("client_configure"), SUB_HOOK_CLIENT_CONFIGURE },
             { CHAR2SYM("client_focus"),     SUB_HOOK_CLIENT_FOCUS     },
+            { CHAR2SYM("client_gravity"),   SUB_HOOK_CLIENT_GRAVITY   },
             { CHAR2SYM("client_kill"),      SUB_HOOK_CLIENT_KILL      },
             { CHAR2SYM("tag_create"),       SUB_HOOK_TAG_CREATE       },
             { CHAR2SYM("tag_kill"),         SUB_HOOK_TAG_KILL         },
