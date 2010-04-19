@@ -155,18 +155,19 @@ subGravityAll(VALUE self)
 VALUE
 subGravityUpdate(VALUE self)
 {
-  VALUE name = rb_iv_get(self, "@name");
+  VALUE match = rb_iv_get(self, "@name");
 
   /* Create gravity if needed */
-  if(T_STRING == rb_type(name))
+  if(T_STRING == rb_type(match))
     {
       int id = -1;
+      XRectangle geom = { 0 };
+      char *name = NULL;
 
-      if(-1 == (id = subSharedGravityFind(RSTRING_PTR(name), NULL, NULL)))
+      if(-1 == (id = subSharedGravityFind(RSTRING_PTR(match), &name, &geom)))
         {
           SubMessageData data = { { 0, 0, 0, 0, 0 } };
           VALUE geometry = rb_iv_get(self, "@geometry");
-          XRectangle geom = { 0 };
 
           if(NIL_P(geometry = rb_iv_get(self, "@geometry")))
             rb_raise(rb_eStandardError, "No geometry given");
@@ -182,6 +183,18 @@ subGravityUpdate(VALUE self)
           subSharedMessage(DefaultRootWindow(display), "SUBTLE_GRAVITY_NEW", data, True);
 
           id = subSharedGravityFind(RSTRING_PTR(name), NULL, NULL);
+        }
+      else ///< Update gravity
+        {
+          VALUE geometry = Qnil;
+
+          geometry = subGeometryInstantiate(geom.x, geom.y,
+            geom.width, geom.height);
+
+          rb_iv_set(self, "@name",    rb_str_new2(name));
+          rb_iv_set(self, "@gravity", geometry);
+
+          free(name);
         }
 
       /* Guess gravity id */
@@ -262,7 +275,7 @@ subGravityGeometryWriter(VALUE self,
     }
 
   return Qnil;
-}
+} /* }}} */
 
 /* subGravityToString {{{ */
 /*

@@ -661,10 +661,11 @@ subClientGravityReader(VALUE self)
       if((id = (int *)subSharedPropertyGet(display, win, XA_CARDINAL,
           XInternAtom(display, "SUBTLE_WINDOW_GRAVITY", False), NULL)))
         {
+          /* Create gravity */
           snprintf(buf, sizeof(buf), "%d", *id);
           gravity = subGravityInstantiate(buf);
 
-          if(!NIL_P(gravity)) subGravityUpdate(gravity);
+          subGravityUpdate(gravity);
 
           rb_iv_set(self, "@gravity", gravity);
 
