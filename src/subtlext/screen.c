@@ -168,6 +168,7 @@ subScreenAll(VALUE self)
 VALUE
 subScreenCurrent(VALUE self)
 {
+  int id = 0;
   unsigned long *focus = NULL;
   VALUE screen = Qnil;
 
@@ -178,17 +179,23 @@ subScreenCurrent(VALUE self)
       DefaultRootWindow(display), XA_WINDOW,
       XInternAtom(display, "_NET_ACTIVE_WINDOW", False), NULL)))
     {
-      int *id = NULL;
+      int *screen_id = NULL;
 
-      id     = (int *)subSharedPropertyGet(display, *focus, XA_CARDINAL,
-        XInternAtom(display, "SUBTLE_WINDOW_SCREEN", False), NULL);
-      screen = subScreenInstantiate(*id);
+      if((screen_id = (int *)subSharedPropertyGet(display, *focus, XA_CARDINAL,
+          XInternAtom(display, "SUBTLE_WINDOW_SCREEN", False), NULL)))
+        {
+          id = *screen_id;
 
-      if(!NIL_P(screen)) subScreenUpdate(screen);
+          free(screen_id);
+        }
 
       free(focus);
-      free(id);
     }
+
+  /* Create screen */
+  screen = subScreenInstantiate(id);
+
+  subScreenUpdate(screen);
 
   return screen;
 } /* }}} */
