@@ -26,7 +26,7 @@ subGravityInstantiate(char *name)
 
 /* subGravityInit {{{ */
 /*
- * call-seq: new(name) -> Subtlext::Gravity
+ * call-seq: new(name, gravity) -> Subtlext::Gravity
  *
  * Create a new Gravity object
  *
@@ -35,15 +35,20 @@ subGravityInstantiate(char *name)
  */
 
 VALUE
-subGravityInit(VALUE self,
-  VALUE name)
+subGravityInit(int argc,
+  VALUE *argv,
+  VALUE self)
 {
-  if(T_STRING != rb_type(name))
+  VALUE data[2] = { Qnil };
+
+  rb_scan_args(argc, argv, "02", &data[0], &data[1]);
+
+  if(T_STRING != rb_type(data[0]))
     rb_raise(rb_eArgError, "Invalid value type");
 
   rb_iv_set(self, "@id",       Qnil);
-  rb_iv_set(self, "@name",     name);
-  rb_iv_set(self, "@geometry", Qnil);
+  rb_iv_set(self, "@name",     data[0]);
+  rb_iv_set(self, "@geometry", data[1]);
 
   subSubtlextConnect(); ///< Implicit open connection
 
@@ -150,28 +155,57 @@ subGravityAll(VALUE self)
 VALUE
 subGravityUpdate(VALUE self)
 {
-  int id = -1;
-  XRectangle geometry = { 0 };
-  char *name = NULL;
-  VALUE match = rb_iv_get(self, "@name");
+  VALUE name = rb_iv_get(self, "@name");
 
-  /* Update gravity */
-  if(T_STRING == rb_type(match) &&
-      -1 != (id = subSharedGravityFind(RSTRING_PTR(match), &name, &geometry)))
+  /* Create gravity if needed */
+  if(T_STRING == rb_type(name))
     {
-      rb_iv_set(self, "@id",       INT2FIX(id));
-      rb_iv_set(self, "@name",     rb_str_new2(name));
-      rb_iv_set(self, "@geometry", subGeometryInstantiate(geometry.x, geometry.y,
-        geometry.width, geometry.height));
+      int id = -1;
 
-      free(name);
+      if(-1 == (id = subSharedGravityFind(RSTRING_PTR(name), NULL, NULL)))
+        {
+          SubMessageData data = { { 0, 0, 0, 0, 0 } };
+          VALUE geometry = rb_iv_get(self, "@geometry");
+          XRectangle geom = { 0 };
+
+          if(NIL_P(geometry = rb_iv_get(self, "@geometry")))
+            rb_raise(rb_eStandardError, "No geometry given");
+
+          /* Get values */
+          geom.x      = FIX2INT(rb_iv_get(geometry, "@x"));
+          geom.y      = FIX2INT(rb_iv_get(geometry, "@y"));
+          geom.width  = FIX2INT(rb_iv_get(geometry, "@width"));
+          geom.height = FIX2INT(rb_iv_get(geometry, "@height"));
+
+          snprintf(data.b, sizeof(data.b), "%hdx%hd+%hd+%hd#%s",
+            geom.x, geom.y, geom.width, geom.width, RSTRING_PTR(name));
+          subSharedMessage(DefaultRootWindow(display), "SUBTLE_GRAVITY_NEW", data, True);
+
+          id = subSharedGravityFind(RSTRING_PTR(name), NULL, NULL);
+        }
+
+      /* Guess gravity id */
+      if(-1 == id)
+        {
+          int size = 0;
+          char **gravities = NULL;
+
+          gravities = subSharedPropertyStrings(display, DefaultRootWindow(display),
+            XInternAtom(display, "SUBTLE_GRAVITY_LIST", False), &size);
+
+          id = size; ///< New id should be last
+
+          XFreeStringList(gravities);
+        }
+
+      rb_iv_set(self, "@id", INT2FIX(id));
     }
-  else rb_raise(rb_eStandardError, "Failed finding gravity");
+  else rb_raise(rb_eArgError, "Unknown value type");
 
   return Qnil;
 } /* }}} */
 
-/* subGravityGeometry {{{ */
+/* subGravityGeometryReader {{{ */
 /*
  * call-seq: geometry -> Subtlext::Geometry
  *
@@ -182,7 +216,7 @@ subGravityUpdate(VALUE self)
  */
 
 VALUE
-subGravityGeometry(VALUE self)
+subGravityGeometryReader(VALUE self)
 {
   VALUE geometry = Qnil, name = Qnil;
 
@@ -200,6 +234,35 @@ subGravityGeometry(VALUE self)
 
   return geometry;
 } /* }}} */
+
+/* subGravityGeometryWriter {{{ */
+/*
+ * call-seq: geometry=(geometry) -> nil
+ *
+ * Set Gravity Geometry
+ *
+ *  gravity.geometry=geometry
+ *  => #<Subtlext::Geometry:xxx>
+ */
+
+VALUE
+subGravityGeometryWriter(VALUE self,
+  VALUE value)
+{
+  /* Check value type */
+  if(T_OBJECT == rb_type(value))
+    {
+      VALUE klass = rb_const_get(mod, rb_intern("Geometry"));
+
+      if(rb_obj_is_instance_of(value, klass)) ///< Check object instance
+        {
+          rb_iv_set(self, "@geometry", value);
+        }
+      else rb_raise(rb_eArgError, "Unknown value type");
+    }
+
+  return Qnil;
+}
 
 /* subGravityToString {{{ */
 /*

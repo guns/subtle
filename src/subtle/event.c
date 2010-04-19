@@ -382,14 +382,14 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_SUBTLE_GRAVITY_NEW: /* {{{ */
             if(ev->data.b)
               {
-                XRectangle geometry = { 0 };
+                XRectangle geom = { 0 };
                 char buf[30] = { 0 };
 
-                sscanf(ev->data.b, "%hdx%hd+%hd+%hd#%s", &geometry.x, &geometry.y,
-                  &geometry.width, &geometry.height, buf);
+                sscanf(ev->data.b, "%hdx%hd+%hd+%hd#%s", &geom.x, &geom.y,
+                  &geom.width, &geom.height, buf);
 
                 /* Add gravity */
-                g = subGravityNew(buf, &geometry);
+                g = subGravityNew(buf, &geom);
 
                 subArrayPush(subtle->gravities, (void *)g);
                 subGravityPublish();

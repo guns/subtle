@@ -91,11 +91,12 @@ VALUE subGeometryToString(VALUE self);                            ///< Geometry 
 
 /* gravity.c {{{ */
 VALUE subGravityInstantiate(char *name);                          ///< Instantiate gravity
-VALUE subGravityInit(VALUE self, VALUE name);                     ///< Create new gravity
+VALUE subGravityInit(int argc, VALUE *argv, VALUE self);          ///< Create new gravity
 VALUE subGravityFind(VALUE self, VALUE value);                    ///< Find gravity
 VALUE subGravityAll(VALUE self);                                  ///< Get all gravities
 VALUE subGravityUpdate(VALUE self);                               ///< Update gravity
-VALUE subGravityGeometry(VALUE self);                             ///< Get geometry gravity
+VALUE subGravityGeometryReader(VALUE self);                       ///< Get geometry gravity
+VALUE subGravityGeometryWriter(VALUE self, VALUE value);          ///< Set geometry gravity
 VALUE subGravityToString(VALUE self);                             ///< Gravity to string
 VALUE subGravityToSym(VALUE self);                                ///< Gravity to symbol
 VALUE subGravityKill(VALUE self);                                 ///< Kill gravity
