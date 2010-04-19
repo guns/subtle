@@ -2069,6 +2069,7 @@ subRubyReloadConfig(void)
     subClientSetTags(CLIENT(subtle->clients->data[i]));
 
   subViewJump(subtle->views->data[0], True);
+  subViewConfigure(subtle->views->data[0], True);
 
   subPanelUpdate();
   subPanelRender();
