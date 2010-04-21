@@ -11,10 +11,6 @@
 
 #include "subtlext.h"
 
-#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
-#include <X11/extensions/Xinerama.h>
-#endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
-
 /* ScreenList {{{ */
 VALUE
 ScreenList(void)
