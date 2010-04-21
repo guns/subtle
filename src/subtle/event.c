@@ -473,6 +473,7 @@ EventMessage(XClientMessageEvent *ev)
                 subViewPublish();
                 subPanelUpdate();
                 subPanelRender();
+                subScreenUpdate();
 
                 /* Hook: Create */
                 subHookCall(SUB_HOOK_VIEW_CREATE, (void *)v);
@@ -490,6 +491,7 @@ EventMessage(XClientMessageEvent *ev)
                 subViewPublish();
                 subPanelUpdate();
                 subPanelRender();
+                subScreenUpdate();
 
                 if(CURVIEW == v) subViewJump(VIEW(subtle->views->data[0]), True);
               }

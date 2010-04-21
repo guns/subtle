@@ -31,7 +31,7 @@ void
 subEwmhInit(void)
 {
   int len = 0;
-  long data[4] = { 0, 0, 0, 0 }, pid = (long)getpid();
+  long data[2] = { 0, 0 }, pid = (long)getpid();
   char *selection = NULL, *names[] =
   {
     /* ICCCM */
@@ -102,13 +102,7 @@ subEwmhInit(void)
   subEwmhSetString(subtle->windows.support, SUB_EWMH_NET_WM_NAME, PKG_NAME);
   subEwmhSetString(subtle->windows.support, SUB_EWMH_WM_CLASS, PKG_NAME);
   subEwmhSetCardinals(subtle->windows.support, SUB_EWMH_NET_WM_PID, &pid, 1);
-  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_DESKTOP_VIEWPORT, (long *)&data, 2);
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_SHOWING_DESKTOP, (long *)&data, 1);
-
-  /* EWMH: Workarea size */
-  data[2] = SCREENW;
-  data[3] = SCREENH;
-  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_WORKAREA, (long *)&data, 4);
 
   /* EWMH: Desktop sizes */
   data[0] = SCREENW;

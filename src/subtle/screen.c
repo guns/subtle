@@ -88,7 +88,7 @@ subScreenNew(int x,
 } /* }}} */
 
  /** subScreenConfigure {{{
-  * @brief Update screens
+  * @brief Configure screens
   **/
 
 void
@@ -112,6 +112,48 @@ subScreenConfigure(void)
 
   if(subtle->flags & SUB_SUBTLE_PANEL2)
     DEFSCREEN->geom.height -= subtle->th;
+
+  subScreenUpdate();
+} /* }}} */
+
+ /** subScreenUpdate {{{
+  * @brief Update screens
+  **/
+
+void
+subScreenUpdate(void)
+{
+  int i;
+  long *workareas = NULL, *viewports = NULL;
+
+  assert(subtle);
+
+  /* EWMH: Workarea size of every desktop */
+  workareas = (long *)subSharedMemoryAlloc(4 * subtle->screens->ndata, 
+    sizeof(long));
+
+  for(i = 0; i < subtle->screens->ndata; i++)
+    {
+      SubScreen *s = SCREEN(subtle->screens->data[i]);
+
+      workareas[i * 4 + 0] = s->geom.x;
+      workareas[i * 4 + 1] = s->geom.y;
+      workareas[i * 4 + 2] = s->geom.width;
+      workareas[i * 4 + 3] = s->geom.height;
+    }
+
+  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_WORKAREA, workareas, 
+    4 * subtle->screens->ndata);
+
+  /* EWMH: Desktop viewport */
+  viewports = (long *)subSharedMemoryAlloc(2 * subtle->screens->ndata, 
+    sizeof(long)); ///< Calloc inits with zero - great
+
+  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_DESKTOP_VIEWPORT, viewports, 
+    2 * subtle->screens->ndata);
+
+  free(viewports);
+  free(workareas);
 } /* }}} */
 
  /** subScreenJump {{{
