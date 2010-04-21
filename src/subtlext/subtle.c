@@ -11,9 +11,9 @@
 
 #include "subtlext.h"
 
-/* SubtleReload {{{ */
+/* SubtleSend {{{ */
 static VALUE
-SubtleReload(char *message)
+SubtleSend(char *message)
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
@@ -342,7 +342,7 @@ subSubtleViewDel(VALUE self,
 VALUE
 subSubtleReloadConfig(VALUE self)
 {
-  return SubtleReload("SUBTLE_RELOAD_CONFIG");
+  return SubtleSend("SUBTLE_RELOAD_CONFIG");
 } /* }}} */
 
 /* subSubtleReloadSublets {{{ */
@@ -358,7 +358,23 @@ subSubtleReloadConfig(VALUE self)
 VALUE
 subSubtleReloadSublets(VALUE self)
 {
-  return SubtleReload("SUBTLE_RELOAD_SUBLETS");
+  return SubtleSend("SUBTLE_RELOAD_SUBLETS");
+} /* }}} */
+
+/* subSubtleRestart {{{ */
+/*
+ * call-seq: restart -> nil
+ *
+ * Force Subtle to restart
+ *
+ *  subtle.restart
+ *  => nil
+ */
+
+VALUE
+subSubtleRestart(VALUE self)
+{
+  return SubtleSend("SUBTLE_RESTART");
 } /* }}} */
 
 /* subSubtleQuit {{{ */
@@ -374,35 +390,7 @@ subSubtleReloadSublets(VALUE self)
 VALUE
 subSubtleQuit(VALUE self)
 {
-  SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-  subSubtlextConnect(); ///< Implicit open connection
-
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_QUIT", data, True);
-
-  return Qnil;
-} /* }}} */
-
-/* subSubtleQuit {{{ */
-/*
- * call-seq: restart -> nil
- *
- * Force Subtle to restart
- *
- *  subtle.restart
- *  => nil
- */
-
-VALUE
-subSubtleRestart(VALUE self)
-{
-  SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-  subSubtlextConnect(); ///< Implicit open connection
-
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_RESTART", data, True);
-
-  return Qnil;
+  return SubtleSend("SUBTLE_QUIT");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
