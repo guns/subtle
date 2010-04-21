@@ -390,6 +390,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_SUBLET_KILL,                                    ///< Subtle sublet kill
   SUB_EWMH_SUBTLE_RELOAD_CONFIG,                                  ///< Subtle reload config
   SUB_EWMH_SUBTLE_RELOAD_SUBLETS,                                 ///< Subtle reload sublets
+  SUB_EWMH_SUBTLE_RESTART,                                        ///< Subtle restart
   SUB_EWMH_SUBTLE_QUIT,                                           ///< Subtle quit
 
   SUB_EWMH_TOTAL

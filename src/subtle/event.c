@@ -550,6 +550,13 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_SUBTLE_RELOAD_SUBLETS: /* {{{ */
             subRubyReloadSublets();
             break; /* }}} */
+          case SUB_EWMH_SUBTLE_RESTART: /* {{{ */
+            if(subtle) 
+              {
+                subtle->flags &= ~SUB_SUBTLE_RUN;
+                subtle->flags |= SUB_SUBTLE_RESTART;
+              }
+            break; /* }}} */
           case SUB_EWMH_SUBTLE_QUIT: /* {{{ */
             if(subtle) subtle->flags &= ~SUB_SUBTLE_RUN;
             break; /* }}} */
@@ -869,35 +876,6 @@ EventGrab(XEvent *ev)
             subRubyCall(SUB_CALL_HOOKS, g->data.num,
               (void *)g, subSubtleFind(win, CLIENTID));
             break; /* }}} */
-          case SUB_GRAB_VIEW_JUMP: /* {{{ */
-            if(g->data.num < subtle->views->ndata)
-              {
-                v = VIEW(subtle->views->data[g->data.num]);
-
-                if(CURVIEW != v) subViewJump(v, True);
-              }
-            break; /* }}} */
-          case SUB_GRAB_SCREEN_JUMP: /* {{{ */
-            if(g->data.num < subtle->screens->ndata)
-              subScreenJump(SCREEN(subtle->screens->data[g->data.num]));
-            break; /* }}} */
-          case SUB_GRAB_SUBLETS_RELOAD: /* {{{ */
-            subRubyReloadSublets();
-            break; /* }}} */
-          case SUB_GRAB_SUBTLE_RELOAD: /* {{{ */
-            subRubyReloadConfig();
-            return; ///< Return to avoid errors
-            break; /* }}} */
-          case SUB_GRAB_SUBTLE_QUIT: /* {{{ */
-            if(subtle) subtle->flags &= ~SUB_SUBTLE_RUN;
-            break; /* }}} */
-          case SUB_GRAB_SUBTLE_RESTART: /* {{{ */
-            if(subtle)
-              {
-                subtle->flags &= ~SUB_SUBTLE_RUN;
-                subtle->flags |= SUB_SUBTLE_RESTART;
-              }
-            break; /* }}} */
           case SUB_GRAB_WINDOW_MOVE:
           case SUB_GRAB_WINDOW_RESIZE: /* {{{ */
             if((c = CLIENT(subSubtleFind(win, CLIENTID))) &&
@@ -1029,6 +1007,35 @@ EventGrab(XEvent *ev)
                 subClientPublish();
                 if(VISIBLE(CURVIEW, c)) subViewConfigure(CURVIEW, False);
                 subClientKill(c, True);
+              }
+            break; /* }}} */
+          case SUB_GRAB_VIEW_JUMP: /* {{{ */
+            if(g->data.num < subtle->views->ndata)
+              {
+                v = VIEW(subtle->views->data[g->data.num]);
+
+                if(CURVIEW != v) subViewJump(v, True);
+              }
+            break; /* }}} */
+          case SUB_GRAB_SCREEN_JUMP: /* {{{ */
+            if(g->data.num < subtle->screens->ndata)
+              subScreenJump(SCREEN(subtle->screens->data[g->data.num]));
+            break; /* }}} */
+          case SUB_GRAB_SUBLETS_RELOAD: /* {{{ */
+            subRubyReloadSublets();
+            break; /* }}} */
+          case SUB_GRAB_SUBTLE_RELOAD: /* {{{ */
+            subRubyReloadConfig();
+            return; ///< Return to avoid errors
+            break; /* }}} */
+          case SUB_GRAB_SUBTLE_QUIT: /* {{{ */
+            if(subtle) subtle->flags &= ~SUB_SUBTLE_RUN;
+            break; /* }}} */
+          case SUB_GRAB_SUBTLE_RESTART: /* {{{ */
+            if(subtle)
+              {
+                subtle->flags &= ~SUB_SUBTLE_RUN;
+                subtle->flags |= SUB_SUBTLE_RESTART;
               }
             break; /* }}} */
           default:
