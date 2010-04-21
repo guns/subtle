@@ -1263,50 +1263,62 @@ subSharedScreenFind(int id,
 {
   int ret = -1;
 
-#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
-  int xinerama_event = 0, xinerama_error = 0;
-
-  /* Xinerama */
-  if(XineramaQueryExtension(display, &xinerama_event, &xinerama_error) &&
-      XineramaIsActive(display))
+  if(0 == id)
     {
-      int n = 0;
-      XineramaScreenInfo *screens = NULL;
+      unsigned long len = 0;
+      long *workareas = NULL;
 
-      /* Query screens */
-      if((screens = XineramaQueryScreens(display, &n)))
+      /* Get workarea list */
+      if((workareas = (long *)subSharedPropertyGet(display, DefaultRootWindow(display),
+          XA_CARDINAL, XInternAtom(display, "_NET_WORKAREA", False), &len)))
         {
-          if(0 <= id && n > id) ///< Find selected screen
+          if(geometry)
             {
-              ret = id;
-
-              if(geometry)
-                {
-                  geometry->x      = screens[id].x_org;
-                  geometry->y      = screens[id].y_org;
-                  geometry->width  = screens[id].width;
-                  geometry->height = screens[id].height;
-                }
+              geometry->x      = workareas[0];
+              geometry->y      = workareas[1];
+              geometry->width  = workareas[2];
+              geometry->height = workareas[3];
             }
 
-          XFree(screens);
+          ret = 0;
+
+          free(workareas);
+        }
+      else subSharedLogDebug("Failed getting workarea list\n");
+    }
+#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
+  else
+    {
+      int xinerama_event = 0, xinerama_error = 0;
+
+      /* Xinerama */
+      if(XineramaQueryExtension(display, &xinerama_event, &xinerama_error) &&
+          XineramaIsActive(display))
+        {
+          int n = 0;
+          XineramaScreenInfo *screens = NULL;
+
+          /* Query screens */
+          if((screens = XineramaQueryScreens(display, &n)))
+            {
+              if(0 <= id && n > id) ///< Find selected screen w/o loop
+                {
+                  if(geometry)
+                    {
+                      geometry->x      = screens[id].x_org;
+                      geometry->y      = screens[id].y_org;
+                      geometry->width  = screens[id].width;
+                      geometry->height = screens[id].height;
+                    }
+
+                  ret = id;
+                }
+
+              XFree(screens);
+            }
         }
     }
 #endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
-
-  /* Probably default screen */
-  if(-1 == ret && 0 == id)
-    {
-      ret = id;
-
-      if(geometry)
-        {
-          geometry->x      = 0;
-          geometry->y      = 0;
-          geometry->width  = DisplayWidth(display, DefaultScreen(display));
-          geometry->height = DisplayHeight(display, DefaultScreen(display));
-        }
-    }
 
   return ret;
 } /* }}} */

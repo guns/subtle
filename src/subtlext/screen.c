@@ -16,7 +16,10 @@ VALUE
 ScreenList(void)
 {
   int n = 0;
+  unsigned long len = 0;
   VALUE method = Qnil, klass = Qnil, array = Qnil, screen = Qnil, geometry = Qnil;
+  XRectangle workarea = { 0 };
+  long *workareas = NULL;
 
 #ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
   int xinerama_event = 0, xinerama_error = 0;
@@ -24,9 +27,30 @@ ScreenList(void)
 
   subSubtlextConnect(); ///< Implicit open connection
 
+  /* Get workarea list */
+  if((workareas = (long *)subSharedPropertyGet(display, DefaultRootWindow(display),
+      XA_CARDINAL, XInternAtom(display, "_NET_WORKAREA", False), &len)))
+    {
+        workarea.x      = workareas[0];
+        workarea.y      = workareas[1];
+        workarea.width  = workareas[2];
+        workarea.height = workareas[3];
+
+        free(workareas);
+    }
+  else subSharedLogDebug("Failed getting workarea list\n");
+
   method = rb_intern("new");
   klass  = rb_const_get(mod, rb_intern("Screen"));
   array  = rb_ary_new();
+
+  /* Create first screen */
+  screen   = rb_funcall(klass, method, 1, INT2FIX(0));
+  geometry = subGeometryInstantiate(workarea.x, workarea.y,
+    workarea.width, workarea.height);
+
+  rb_iv_set(screen, "@geometry", geometry);
+  rb_ary_push(array, screen);
 
 #ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
   /* Xinerama */
@@ -39,7 +63,7 @@ ScreenList(void)
       /* Query screens */
       if((screens = XineramaQueryScreens(display, &n)))
         {
-          for(i = 0; i < n; i++)
+          for(i = 1; i < n; i++) ///< Start with second
             {
               screen   = rb_funcall(klass, method, 1, INT2FIX(i));
               geometry = subGeometryInstantiate(screens[i].x_org,
@@ -53,17 +77,6 @@ ScreenList(void)
         }
     }
 #endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
-
-  /* Get default screen */
-  if(0 == n)
-    {
-      screen   = rb_funcall(klass, method, 1, INT2FIX(0));
-      geometry = subGeometryInstantiate(0, 0, DisplayWidth(display, DefaultScreen(display)),
-        DisplayHeight(display, DefaultScreen(display)));
-
-      rb_iv_set(screen, "@geometry", geometry);
-      rb_ary_push(array, screen);
-    }
 
   return array;
 } /* }}} */

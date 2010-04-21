@@ -665,12 +665,32 @@ SubtlerScreenList(int argc,
   char *arg2)
 {
   int n = 0;
+  unsigned long len = 0;
+  XRectangle workarea = { 0 };
+  long *workareas = NULL;
 
 #ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
   int xinerama_event = 0, xinerama_error = 0;
 #endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
 
   subSharedLogDebug("%s\n", __func__);
+
+  /* Get workarea list */
+  if((workareas = (long *)subSharedPropertyGet(display, DefaultRootWindow(display),
+      XA_CARDINAL, XInternAtom(display, "_NET_WORKAREA", False), &len)))
+    {
+        workarea.x      = workareas[0];
+        workarea.y      = workareas[1];
+        workarea.width  = workareas[2];
+        workarea.height = workareas[3];
+
+        free(workareas);
+    }
+  else subSharedLogWarn("Failed getting workarea list\n");
+
+  /* First screen */
+  printf("0 %4d x %-4d %4d + %-4d\n", workarea.x, workarea.y,
+    workarea.width, workarea.height);
 
 #ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
   /* Xinerama */
@@ -683,7 +703,7 @@ SubtlerScreenList(int argc,
       /* Query screens */
       if((screens = XineramaQueryScreens(display, &n)))
         {
-          for(i = 0; i < n; i++)
+          for(i = 1; i < n; i++)
             printf("%d %4d x %-4d %4d + %-4d\n", i, screens[i].x_org, screens[i].y_org,
               screens[i].width, screens[i].height);
 
@@ -691,11 +711,6 @@ SubtlerScreenList(int argc,
         }
     }
 #endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
-
-  /* Get default screen */
-  if(0 == n)
-    printf("0 %4d x %-4d %4d + %-4d\n", 0, 0, DisplayWidth(display, DefaultScreen(display)),
-      DisplayHeight(display, DefaultScreen(display)));
 } /* }}} */
 
 /* Sublet */
