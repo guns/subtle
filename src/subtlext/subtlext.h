@@ -154,6 +154,7 @@ VALUE subSubtleViewAdd(VALUE self, VALUE value);                  ///< Add a vie
 VALUE subSubtleViewDel(VALUE self, VALUE value);                  ///< Kill a view
 VALUE subSubtleReloadConfig(VALUE self);                          ///< Reload config
 VALUE subSubtleReloadSublets(VALUE self);                         ///< Reload sublets
+VALUE subSubtleRestart(VALUE self);                               ///< Restart subtle
 VALUE subSubtleQuit(VALUE self);                                  ///< Quit subtle
 /* }}} */
 

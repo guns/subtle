@@ -383,4 +383,26 @@ subSubtleQuit(VALUE self)
   return Qnil;
 } /* }}} */
 
+/* subSubtleQuit {{{ */
+/*
+ * call-seq: restart -> nil
+ *
+ * Force Subtle to restart
+ *
+ *  subtle.restart
+ *  => nil
+ */
+
+VALUE
+subSubtleRestart(VALUE self)
+{
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  subSubtlextConnect(); ///< Implicit open connection
+
+  subSharedMessage(DefaultRootWindow(display), "SUBTLE_RESTART", data, True);
+
+  return Qnil;
+} /* }}} */
+
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

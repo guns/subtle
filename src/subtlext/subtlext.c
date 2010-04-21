@@ -1021,6 +1021,7 @@ Init_subtlext(void)
   rb_define_singleton_method(subtle, "running?",       subSubtleRunningAsk,    0);
   rb_define_singleton_method(subtle, "reload_config",  subSubtleReloadConfig,  0);
   rb_define_singleton_method(subtle, "reload_sublets", subSubtleReloadSublets, 0);
+  rb_define_singleton_method(subtle, "restart",        subSubtleRestart,       0);
   rb_define_singleton_method(subtle, "quit",           subSubtleQuit,          0);
   rb_define_singleton_method(subtle, "spawn",          subSubtleSpawn,         1);
 
