@@ -372,11 +372,18 @@ EventMessage(XClientMessageEvent *ev)
                 int flags = 0;
 
                 /* Translate flags */
-                if(ev->data.l[0] & SUB_EWMH_FULL)  flags |= SUB_MODE_FULL;
-                if(ev->data.l[0] & SUB_EWMH_FLOAT) flags |= SUB_MODE_FLOAT;
-                if(ev->data.l[0] & SUB_EWMH_STICK) flags |= SUB_MODE_STICK;
+                if(ev->data.l[1] & SUB_EWMH_FULL)  flags |= SUB_MODE_FULL;
+                if(ev->data.l[1] & SUB_EWMH_FLOAT) flags |= SUB_MODE_FLOAT;
+                if(ev->data.l[1] & SUB_EWMH_STICK) flags |= SUB_MODE_STICK;
 
                 subClientToggle(c, flags);
+              }
+            break; /* }}} */
+          case SUB_EWMH_SUBTLE_WINDOW_RESIZE: /* {{{ */
+            if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0]))))
+              {
+                if(True == ev->data.l[1]) c->flags &= ~SUB_MODE_NONRESIZE;
+                else c->flags |= SUB_MODE_NONRESIZE;
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_GRAVITY_NEW: /* {{{ */
