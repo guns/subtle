@@ -134,12 +134,10 @@ subScreenUpdate(void)
 
   for(i = 0; i < subtle->screens->ndata; i++)
     {
-      SubScreen *s = SCREEN(subtle->screens->data[i]);
-
-      workareas[i * 4 + 0] = s->geom.x;
-      workareas[i * 4 + 1] = s->geom.y;
-      workareas[i * 4 + 2] = s->geom.width;
-      workareas[i * 4 + 3] = s->geom.height;
+      workareas[i * 4 + 0] = DEFSCREEN->geom.x;
+      workareas[i * 4 + 1] = DEFSCREEN->geom.y;
+      workareas[i * 4 + 2] = DEFSCREEN->geom.width;
+      workareas[i * 4 + 3] = DEFSCREEN->geom.height;
     }
 
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_WORKAREA, workareas, 
