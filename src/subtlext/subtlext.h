@@ -63,13 +63,14 @@ VALUE subClientMatchLeft(VALUE self);                             ///< Get clien
 VALUE subClientMatchRight(VALUE self);                            ///< Get client right
 VALUE subClientMatchDown(VALUE self);                             ///< Get client down
 VALUE subClientAliveAsk(VALUE self);                              ///< Is client alive
-VALUE subClientGravityReader(VALUE self);                         ///< Get client gravity
-VALUE subClientGravityWriter(VALUE self, VALUE value);            ///< Set client gravity
 VALUE subClientScreenReader(VALUE self);                          ///< Get client screen
 VALUE subClientScreenWriter(VALUE self, VALUE value);             ///< Set client screen
+VALUE subClientGravityReader(VALUE self);                         ///< Get client gravity
+VALUE subClientGravityWriter(VALUE self, VALUE value);            ///< Set client gravity
 VALUE subClientGeometryReader(VALUE self);                        ///< Get client geometry
 VALUE subClientGeometryWriter(int argc, VALUE *argv,
   VALUE self);                                                    ///< Set client geometry
+VALUE subClientResizeWriter(VALUE self, VALUE value);             ///< Set Client resize
 VALUE subClientToString(VALUE self);                              ///< Client to string
 VALUE subClientKill(VALUE self);                                  ///< Kill client
 /* }}} */

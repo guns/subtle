@@ -821,6 +821,7 @@ Init_subtlext(void)
   rb_define_method(client, "screen=",      subClientScreenWriter,    1);
   rb_define_method(client, "geometry",     subClientGeometryReader,  0);
   rb_define_method(client, "geometry=",    subClientGeometryWriter, -1);
+  rb_define_method(client, "resize=",      subClientResizeWriter,    1);
   rb_define_method(client, "pid",          SubtlextPidReader,        0);
   rb_define_method(client, "alive?",       subClientAliveAsk,        0);
   rb_define_method(client, "kill",         subClientKill,            0);

@@ -876,6 +876,35 @@ subClientGeometryWriter(int argc,
   return geometry;
 } /* }}} */
 
+/* subClientGravityWriter {{{ */
+/*
+ * call-seq: resize=(bool) -> nil
+ *
+ * Set Client resize
+ *
+ *  client.resize = :false
+ *  => nil
+ *
+ */
+
+VALUE
+subClientResizeWriter(VALUE self,
+  VALUE value)
+{
+  if(Qtrue == value || Qfalse == value)
+    {
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+      data.l[0] = FIX2LONG(rb_iv_get(self, "@id"));
+      data.l[1] = (Qtrue == value);
+
+      subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_RESIZE", data, True);
+    }
+  else rb_raise(rb_eArgError, "Unknown value type");
+
+  return Qnil;
+} /* }}} */
+
 /* subClientToString {{{ */
 /*
  * call-seq: to_str -> String
