@@ -325,7 +325,7 @@ subGravityGeometryFor(VALUE self,
           real.height = geom_screen.height * geom_grav.height / 100;
           real.x      = geom_screen.x +
             (geom_screen.width - real.width) * geom_grav.x / 100;
-          real.x      = geom_screen.y +
+          real.y      = geom_screen.y +
             (geom_screen.height - real.height) * geom_grav.y / 100;
 
           /* Fill into result array */
