@@ -98,6 +98,7 @@ VALUE subGravityAll(VALUE self);                                  ///< Get all g
 VALUE subGravityUpdate(VALUE self);                               ///< Update gravity
 VALUE subGravityGeometryReader(VALUE self);                       ///< Get geometry gravity
 VALUE subGravityGeometryWriter(VALUE self, VALUE value);          ///< Set geometry gravity
+VALUE subGravityGeometryFor(VALUE self, VALUE value);             ///< Get geometry gravity for screen
 VALUE subGravityToString(VALUE self);                             ///< Gravity to string
 VALUE subGravityToSym(VALUE self);                                ///< Gravity to symbol
 VALUE subGravityKill(VALUE self);                                 ///< Kill gravity

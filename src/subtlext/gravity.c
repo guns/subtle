@@ -11,6 +11,19 @@
 
 #include "subtlext.h"
 
+/* GravityToRect */
+void
+GravityGeomToRect(VALUE self,
+  XRectangle *geom)
+{
+  VALUE geometry = rb_iv_get(self, "@geometry");
+
+  geom->x      = FIX2INT(rb_iv_get(geometry, "@x"));
+  geom->y      = FIX2INT(rb_iv_get(geometry, "@y"));
+  geom->width  = FIX2INT(rb_iv_get(geometry, "@width"));
+  geom->height = FIX2INT(rb_iv_get(geometry, "@height"));
+} /* }}} */
+
 /* subGravityInstantiate {{{ */
 VALUE
 subGravityInstantiate(char *name)
@@ -267,7 +280,8 @@ subGravityGeometryWriter(VALUE self,
     {
       VALUE klass = rb_const_get(mod, rb_intern("Geometry"));
 
-      if(rb_obj_is_instance_of(value, klass)) ///< Check object instance
+      /* Check object instance */
+      if(rb_obj_is_instance_of(value, klass))
         {
           rb_iv_set(self, "@geometry", value);
         }
@@ -275,6 +289,55 @@ subGravityGeometryWriter(VALUE self,
     }
 
   return Qnil;
+} /* }}} */
+
+/* subGravityGeometryFor {{{ */
+/*
+ * call-seq: geometry_for(screen) -> nil
+ *
+ * Get Gravity Geometry for Screen in pixel values
+ *
+ *  gravity.geometry_for(screen)
+ *  => #<Subtlext::Geometry:xxx>
+ */
+
+VALUE
+subGravityGeometryFor(VALUE self,
+  VALUE value)
+{
+  VALUE ary = rb_ary_new2(4);
+
+  /* Check value type */
+  if(T_OBJECT == rb_type(value))
+    {
+      VALUE klass = rb_const_get(mod, rb_intern("Screen"));
+
+      /* Check object instance */
+      if(rb_obj_is_instance_of(value, klass))
+        {
+          XRectangle real = { 0 }, geom_grav = { 0 }, geom_screen = { 0 };
+
+          GravityGeomToRect(self,  &geom_grav);
+          GravityGeomToRect(value, &geom_screen);
+
+          /* Calculate real values for screen */
+          real.width  = geom_screen.width * geom_grav.width / 100;
+          real.height = geom_screen.height * geom_grav.height / 100;
+          real.x      = geom_screen.x +
+            (geom_screen.width - real.width) * geom_grav.x / 100;
+          real.x      = geom_screen.y +
+            (geom_screen.height - real.height) * geom_grav.y / 100;
+
+          /* Fill into result array */
+          rb_ary_push(ary, INT2FIX(real.x));
+          rb_ary_push(ary, INT2FIX(real.y));
+          rb_ary_push(ary, INT2FIX(real.width));
+          rb_ary_push(ary, INT2FIX(real.height));
+        }
+      else rb_raise(rb_eArgError, "Unknown value type");
+    }
+
+  return ary;
 } /* }}} */
 
 /* subGravityToString {{{ */
