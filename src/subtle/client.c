@@ -356,7 +356,7 @@ subClientDrag(SubClient *c,
     } /* }}} */
 
   /* Prevent resizing of fixed size clients before grabbing */
-  if(mode == SUB_DRAG_RESIZE && c->flags & SUB_CLIENT_CENTER) return;
+  if(mode == SUB_DRAG_RESIZE && c->flags & SUB_CLIENT_FIXED) return;
 
   if(XGrabPointer(subtle->dpy, c->win, True, GRABMASK, GrabModeAsync,
     GrabModeAsync, None, cursor, CurrentTime)) return;
@@ -900,7 +900,7 @@ subClientSetSizeHints(SubClient *c,
               !(c->flags & SUB_CLIENT_IMMOBILE))
             {
               *flags   |= SUB_MODE_FLOAT;
-              c->flags |= SUB_CLIENT_CENTER;
+              c->flags |= (SUB_CLIENT_FIXED|SUB_CLIENT_CENTER);
             }
         }
 

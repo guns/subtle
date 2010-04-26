@@ -201,7 +201,8 @@
 #define SUB_CLIENT_IMMOBILE           (1L << 14)                  ///< Immobile window
 #define SUB_CLIENT_WARP               (1L << 15)                  ///< Warp window
 #define SUB_CLIENT_CENTER             (1L << 16)                  ///< Center window
-#define SUB_CLIENT_DEAD               (1L << 17)                  ///< Dead window
+#define SUB_CLIENT_FIXED              (1L << 17)                  ///< Center window
+#define SUB_CLIENT_DEAD               (1L << 18)                  ///< Dead window
 
 /* Drag flags */
 #define SUB_DRAG_START                (1L << 1)                   ///< Drag start
