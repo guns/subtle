@@ -355,8 +355,11 @@ subClientDrag(SubClient *c,
         break;
     } /* }}} */
 
-  if(XGrabPointer(subtle->dpy, c->win, True, GRABMASK, GrabModeAsync, GrabModeAsync, None,
-    cursor, CurrentTime)) return;
+  /* Prevent resizing of fixed size clients before grabbing */
+  if(mode == SUB_DRAG_RESIZE && c->flags & SUB_CLIENT_CENTER) return;
+
+  if(XGrabPointer(subtle->dpy, c->win, True, GRABMASK, GrabModeAsync,
+    GrabModeAsync, None, cursor, CurrentTime)) return;
 
   XGrabServer(subtle->dpy);
   if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE)) ClientMask(c);
