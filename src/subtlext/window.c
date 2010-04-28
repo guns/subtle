@@ -101,7 +101,6 @@ subWindowInit(VALUE self,
   VALUE geometry)
 {
   SubtlextWindow *w = NULL;
-  VALUE ret = Qnil;
 
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w)
@@ -150,15 +149,12 @@ subWindowInit(VALUE self,
 
       /* Yield to block if given */
       if(rb_block_given_p())
-        {
-          //rb_yield_values(1, w->instance);
-          ret = rb_obj_instance_eval(0, 0, w->instance);
-        }
+        rb_yield_values(1, w->instance);
 
       XSync(display, False); ///< Sync with X
     }
 
-  return ret;
+  return Qnil;
 } /* }}} */
 
 /* subWindowInput {{{ */
@@ -179,7 +175,7 @@ subWindowInput(VALUE self,
 
   /* Yield block */
   if(rb_block_given_p())
-    rb_obj_instance_eval(0, 0, win);
+    rb_yield_values(1, win);
 
   ret = subWindowGetInput(win);
 
@@ -480,7 +476,7 @@ subWindowCompletion(VALUE self)
   rb_need_block();
 
   Data_Get_Struct(self, SubtlextWindow, w);
-  if(w && rb_block_given_p()) 
+  if(w && rb_block_given_p())
     {
       VALUE p = rb_block_proc();
       int arity = rb_proc_arity(p);
