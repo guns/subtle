@@ -1252,7 +1252,7 @@ subClientKill(SubClient *c,
     }
 
   /* Urgent */
-  if(c->flags & SUB_MODE_URGENT)
+  if(c->flags & (SUB_MODE_URGENT|SUB_MODE_URGENT_FOCUS))
     {
       int i;
 
