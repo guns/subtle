@@ -1251,6 +1251,22 @@ subClientKill(SubClient *c,
       subPanelRender();
     }
 
+  /* Urgent */
+  if(c->flags & SUB_MODE_URGENT)
+    {
+      int i;
+
+      /* Dehighlight views */
+      for(i = 0; i < subtle->views->ndata; i++)
+        {
+          SubView *v = VIEW(subtle->views->data[i]);
+
+          if(VISIBLE(v, c)) v->flags &= ~SUB_MODE_URGENT;
+        }
+
+      subViewRender();
+    }
+
   /* Ignore further events and delete context */
   XSelectInput(subtle->dpy, c->win, NoEventMask);
   XDeleteContext(subtle->dpy, c->win, CLIENTID);
