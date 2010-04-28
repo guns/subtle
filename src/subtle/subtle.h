@@ -173,10 +173,11 @@
 #define SUB_CALL_SUBLET_HOOKS         (1L << 12)                  ///< Call sublet hooks
 #define SUB_CALL_SUBLET_CONFIGURE     (1L << 13)                  ///< Sublet watch hook
 #define SUB_CALL_SUBLET_RUN           (1L << 14)                  ///< Sublet run hook
-#define SUB_CALL_SUBLET_WATCH         (1L << 15)                  ///< Sublet watch hook
-#define SUB_CALL_SUBLET_DOWN          (1L << 16)                  ///< Sublet mouse down hook
-#define SUB_CALL_SUBLET_OVER          (1L << 17)                  ///< Sublet mouse over hook
-#define SUB_CALL_SUBLET_OUT           (1L << 18)                  ///< Sublet mouse out hook
+#define SUB_CALL_SUBLET_UNLOAD        (1L << 15)                  ///< Sublet unload hook
+#define SUB_CALL_SUBLET_WATCH         (1L << 16)                  ///< Sublet watch hook
+#define SUB_CALL_SUBLET_DOWN          (1L << 17)                  ///< Sublet mouse down hook
+#define SUB_CALL_SUBLET_OVER          (1L << 18)                  ///< Sublet mouse over hook
+#define SUB_CALL_SUBLET_OUT           (1L << 19)                  ///< Sublet mouse out hook
 
 /* Hooks */
 #define SUB_HOOK_START                (1L << 15)                  ///< Start hook (after call flags [15])
@@ -243,11 +244,12 @@
 #define SUB_SUBLET_INOTIFY            (1L << 21)                  ///< Inotify sublet
 #define SUB_SUBLET_SOCKET             (1L << 22)                  ///< Socket sublet
 #define SUB_SUBLET_RUN                (1L << 23)                  ///< Sublet run function
-#define SUB_SUBLET_DOWN               (1L << 24)                  ///< Sublet mouse down function
-#define SUB_SUBLET_OVER               (1L << 25)                  ///< Sublet mouse over function
-#define SUB_SUBLET_OUT                (1L << 26)                  ///< Sublet mouse out function
-#define SUB_SUBLET_WATCH              (1L << 27)                  ///< Sublet watch function
-#define SUB_SUBLET_PANEL              (1L << 28)                  ///< Sublet in panel
+#define SUB_SUBLET_UNLOAD             (1L << 24)                  ///< Sublet unload function
+#define SUB_SUBLET_DOWN               (1L << 25)                  ///< Sublet mouse down function
+#define SUB_SUBLET_OVER               (1L << 26)                  ///< Sublet mouse over function
+#define SUB_SUBLET_OUT                (1L << 27)                  ///< Sublet mouse out function
+#define SUB_SUBLET_WATCH              (1L << 28)                  ///< Sublet watch function
+#define SUB_SUBLET_PANEL              (1L << 29)                  ///< Sublet in panel
 
 /* Subtle flags */
 #define SUB_SUBTLE_DEBUG              (1L << 1)                   ///< Debug enabled

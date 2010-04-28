@@ -170,6 +170,10 @@ subSubletKill(SubSublet *s)
       subEventWatchDel(s->watch);
     }
 
+  /* Unload event */
+  if(s->flags & SUB_SUBLET_UNLOAD)
+    subRubyCall(SUB_CALL_SUBLET_UNLOAD, s->instance, (void *)s, NULL);
+
 #ifdef HAVE_SYS_INOTIFY_H
   /* Remove inotify watch */
   if(s->flags & SUB_SUBLET_INOTIFY)
