@@ -126,9 +126,11 @@ subClientNew(Window win)
   subClientSetState(c, &flags);
   subClientSetTransient(c, &flags);
 
-  /* Update according to flags */
+  /* Update and handle according to flags */
   subClientToggle(c, (~c->flags & flags)); ///< Toggle flags
   if(c->flags & SUB_CLIENT_CENTER) subClientCenter(c);
+  if(c->flags & (SUB_MODE_URGENT|SUB_MODE_URGENT_FOCUS))
+    subViewHighlight(c->tags);
 
   /* EWMH: Gravity, screen and desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
@@ -970,6 +972,7 @@ subClientSetWMHints(SubClient *c,
           else if(c->flags & SUB_MODE_URGENT) *flags |= SUB_MODE_URGENT_FOCUS;
         }
 
+
       if(hints->flags & InputHint && hints->input)
         c->flags |= SUB_CLIENT_INPUT;
 
@@ -1239,7 +1242,7 @@ subClientKill(SubClient *c,
 {
   assert(c);
 
-    /* Hook: Create */
+  /* Hook: Create */
   subHookCall(SUB_HOOK_CLIENT_KILL, (void *)c);
 
   /* Focus */
@@ -1251,21 +1254,9 @@ subClientKill(SubClient *c,
       subPanelRender();
     }
 
-  /* Urgent */
+  /* Remove highlight of urgent client */
   if(c->flags & (SUB_MODE_URGENT|SUB_MODE_URGENT_FOCUS))
-    {
-      int i;
-
-      /* Dehighlight views */
-      for(i = 0; i < subtle->views->ndata; i++)
-        {
-          SubView *v = VIEW(subtle->views->data[i]);
-
-          if(VISIBLE(v, c)) v->flags &= ~SUB_MODE_URGENT;
-        }
-
-      subViewRender();
-    }
+    subViewHighlight(0); ///< Dehighlight
 
   /* Ignore further events and delete context */
   XSelectInput(subtle->dpy, c->win, NoEventMask);

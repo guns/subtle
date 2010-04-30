@@ -725,6 +725,7 @@ SubView *subViewNew(char *name, char *tags);                      ///< Create vi
 void subViewConfigure(SubView *v, int align);                     ///< Configure view
 void subViewUpdate(void);                                         ///< Update views
 void subViewDynamic(void);                                        ///< Update dynamic views
+void subViewHighlight(int tags);                                  ///< Highlight views
 void subViewRender(void);                                         ///< Render views
 void subViewJump(SubView *v, int focus);                          ///< Jump to view
 void subViewPublish(void);                                        ///< Publish views

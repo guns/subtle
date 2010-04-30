@@ -711,24 +711,14 @@ EventProperty(XPropertyEvent *ev)
       case SUB_EWMH_WM_HINTS: /* {{{ */
         if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
           {
-            int i, flags = 0;
+            int flags = 0;
 
             /* Check changes */
             subClientSetWMHints(c, &flags);
             subClientToggle(c, (~c->flags & flags));
 
-            if(c->flags & SUB_MODE_URGENT)
-              {
-                /* Highlight views */
-                for(i = 0; i < subtle->views->ndata; i++)
-                  {
-                    SubView *v = VIEW(subtle->views->data[i]);
-
-                    if(VISIBLE(v, c)) v->flags |= SUB_MODE_URGENT;
-                  }
-
-                subViewRender();
-              }
+            if(c->flags & (SUB_MODE_URGENT|SUB_MODE_URGENT_FOCUS))
+              subViewHighlight(c->tags);
           }
         break; /* }}} */
       case SUB_EWMH_NET_WM_STRUT: /* {{{ */
@@ -1068,21 +1058,9 @@ EventFocus(XFocusChangeEvent *ev)
       /* Remove urgent after losing focus */
       if(c->flags & SUB_MODE_URGENT_FOCUS)
         {
-          int i;
-
           c->flags &= ~(SUB_MODE_URGENT|SUB_MODE_URGENT_FOCUS);
 
-          /* Highlight views */
-          for(i = 0; i < subtle->views->ndata; i++)
-            {
-              SubView *v = VIEW(subtle->views->data[i]);
-
-              if(v->flags & SUB_MODE_URGENT &&
-                  v->tags & c->tags)
-                v->flags &= ~SUB_MODE_URGENT;
-            }
-
-          subViewRender();
+          subViewHighlight(0);
           subViewConfigure(CURVIEW, False);
         }
     }

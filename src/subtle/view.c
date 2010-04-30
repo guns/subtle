@@ -192,6 +192,30 @@ subViewDynamic(void)
   subPanelUpdate();
 } /* }}} */
 
+ /** subViewHighlight {{{
+  * @brief Highlight views with urgent clients
+  * @param[in]  tags  Matching tags
+  **/
+
+void
+subViewHighlight(int tags)
+{
+  int i;
+
+  for(i = 0; i < subtle->views->ndata; i++)
+    {
+      SubView *v = VIEW(subtle->views->data[i]);
+
+      /* Enable/disable highlighting */
+      if(v->tags & tags)
+        v->flags |= SUB_MODE_URGENT;
+      else
+        v->flags &= ~ SUB_MODE_URGENT;
+    }
+
+  subViewRender();
+} /* }}} */
+
  /** subViewRender {{{
   * @brief Render view button bar
   * @param[in]  v  A #SubView
