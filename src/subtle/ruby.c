@@ -1192,6 +1192,17 @@ RubyWrapRead(VALUE file)
   return str;
 } /* }}} */
 
+/* RubyWrapModEval {{{ */
+static VALUE
+RubyWrapModEval(VALUE data)
+{
+  VALUE *rargs = (VALUE *)data;
+
+  rb_mod_module_eval(1, rargs, rargs[1]);
+
+  return Qnil;
+} /* }}} */
+
 /* Kernel */
 
 /* RubyKernelConfigure {{{ */
@@ -2113,7 +2124,7 @@ subRubyLoadSublet(const char *file)
   int state = 0;
   char buf[100] = { 0 };
   SubSublet *s = NULL;
-  VALUE str = Qnil, rargs[1] = { Qnil }, mod = Qnil, klass = Qnil;
+  VALUE str = Qnil, rargs[2] = { Qnil }, mod = Qnil, klass = Qnil;
 
   /* Check path */
   if(subtle->paths.sublets)
@@ -2135,6 +2146,8 @@ subRubyLoadSublet(const char *file)
     {
       subSharedLogWarn("Failed loading sublet `%s'\n", file);
       RubyBacktrace();
+
+      return;
     }
 
   /* Create sublet */
@@ -2150,9 +2163,20 @@ subRubyLoadSublet(const char *file)
   subArrayPush(subtle->sublets, s);
   rb_ary_push(shelter, s->instance); ///< Protect from GC
 
-  /* Eval sublet in anonymous module */
+  /* Carefully eval file */
   rargs[0] = str;
-  rb_mod_module_eval(1, rargs, s->mod);
+  rargs[1] = s->mod;
+  rb_protect(RubyWrapModEval, (VALUE)&rargs, &state);
+  if(state)
+    {
+      subSharedLogWarn("Failed loading sublet `%s'\n", file);
+      RubyBacktrace();
+
+      subArrayRemove(subtle->sublets, (void *)s);
+      subSubletKill(s);
+
+      return;
+    }
 
   /* Configure and run sublet first time */
   subRubyCall(SUB_CALL_SUBLET_CONFIGURE, s->instance, (void *)s, NULL);

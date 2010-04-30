@@ -33,7 +33,6 @@ subSubletNew(void)
   s->win = XCreateSimpleWindow(subtle->dpy, subtle->windows.panel1, 0, 0, 1,
     subtle->th, 0, 0, subtle->colors.bg_sublets);
 
-
   XSaveContext(subtle->dpy, s->win, SUBLETID, (void *)s);
 
   subSharedLogDebug("new=sublet\n");
@@ -186,10 +185,12 @@ subSubletKill(SubSublet *s)
   XDeleteContext(subtle->dpy, s->win, SUBLETID);
   XDestroyWindow(subtle->dpy, s->win);
 
-  printf("Unloaded sublet (%s)\n", s->name);
-
-  if(s->name) free(s->name);
-  subSharedTextFree(s->text);
+  if(s->name)
+    {
+      printf("Unloaded sublet (%s)\n", s->name);
+      free(s->name);
+    }
+  if(s->text) subSharedTextFree(s->text);
   free(s);
 
   subSharedLogDebug("kill=sublet\n");
