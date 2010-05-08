@@ -61,6 +61,22 @@ ClientGravity(void)
   return grav;
 } /* }}} */
 
+/* ClientCopy {{{ */
+void
+ClientCopy(SubClient *c,
+  SubClient *k)
+{
+  int i;
+
+  /* Copy stick flag, tags and screens */
+  c->flags  |= (k->flags & SUB_MODE_STICK);
+  c->tags   |= k->tags;
+  c->screen |= k->screen;
+
+  for(i = 0; i < subtle->views->ndata; i++)
+    c->screens[i] = k->screens[i];
+} /* }}} */
+
  /** subClientNew {{{
   * @brief Create new client
   * @param[in]  win  Client window
@@ -964,7 +980,7 @@ subClientSetWMHints(SubClient *c,
   /* Window manager hints */
   if((hints = XGetWMHints(subtle->dpy, c->win)))
     {
-      /* Handle urgency */
+      /* Handle urgency hint */
       if(!(c->flags & SUB_MODE_NONURGENT))
         {
           /* Set urgency or remove urgency after losing focus */
@@ -972,7 +988,16 @@ subClientSetWMHints(SubClient *c,
           else if(c->flags & SUB_MODE_URGENT) *flags |= SUB_MODE_URGENT_FOCUS;
         }
 
+      /* Handle window group hint */
+      if(hints->flags & WindowGroupHint)
+        {
+          SubClient *k = NULL;
 
+          if((k = CLIENT(subSubtleFind(hints->window_group, CLIENTID))))
+            ClientCopy(c, k);
+        }
+
+      /* Handle input hint */
       if(hints->flags & InputHint && hints->input)
         c->flags |= SUB_CLIENT_INPUT;
 
@@ -1026,7 +1051,6 @@ void
 subClientSetTransient(SubClient *c,
   int *flags)
 {
-  int i;
   Window trans = 0;
 
   assert(c && flags);
@@ -1040,16 +1064,8 @@ subClientSetTransient(SubClient *c,
       *flags |= subtle->flags & SUB_SUBTLE_URGENT ?
         SUB_MODE_FLOAT|SUB_MODE_URGENT : SUB_MODE_FLOAT;
 
-      if((k = CLIENT(subSubtleFind(trans, CLIENTID))))
-        {
-          /* Copy stick flag, tags and screens */
-          c->flags  |= (k->flags & SUB_MODE_STICK);
-          c->tags   |= k->tags;
-          c->screen |= k->screen;
-
-          for(i = 0; i < subtle->views->ndata; i++)
-            c->screens[i] = k->screens[i];
-        }
+      /* Find parent window */
+      if((k = CLIENT(subSubtleFind(trans, CLIENTID)))) ClientCopy(c, k);
      }
 } /* }}} */
 
