@@ -1,4 +1,4 @@
-# 
+#
 # Author::  Christoph Kappel <unexist@dorfelite.net>
 # Version:: $Id$
 # License:: GNU GPL
@@ -7,7 +7,7 @@
 #
 # This file will be installed as default and can also be used as a starter for an own
 # custom configuration file. The system wide config usually resides in +/etc/xdg/subtle+
-# and the user config in +HOME/.config/subtle+, both locations are dependent on the 
+# and the user config in +HOME/.config/subtle+, both locations are dependent on the
 # locations specified by +XDG_CONFIG_DIRS+ and +XDG_CONFIG_HOME+.
 #
 
@@ -18,7 +18,7 @@
 #
 OPTIONS = {
   # Border size in pixel of the windows
-  :border  => 2,                                   
+  :border  => 2,
 
   # Window move/resize steps in pixel per keypress
   :step    => 5,
@@ -52,7 +52,7 @@ OPTIONS = {
 # the panel in subtle consists of two independent bars, one on the top and one at the bottom
 # of the screen. In Xinerama setups there will only be panels visible on the first screen.
 #
-# The top and bottom bar can contain different items and will be hidden when empty. 
+# The top and bottom bar can contain different items and will be hidden when empty.
 #
 # Following items are available:
 #
@@ -76,14 +76,14 @@ PANEL = {
   # Separator between sublets
   :separator => "|",
 
-  # Border size in pixel of panel items
+  # Outline border size in pixel of panel items
   :border    => 0
 }
 
 #
 # == Colors
 #
-# Colors directly define the look of subtle, valid values are: 
+# Colors directly define the look of subtle, valid values are:
 #
 # [*hexadecimal*] #0000ff
 # [*decimal*]     (0, 0, 255)
@@ -92,8 +92,8 @@ PANEL = {
 # Whenever there is no valid value for a color set - subtle will use a default one. There
 # is only one exception to this: If no background color is given no color will be set. This
 # will ensure a custom background pixmap won't be overwritten.
-# 
-COLORS = { 
+#
+COLORS = {
   # Foreground color of panel and separator
   :fg_panel      => "#757575",
 
@@ -140,12 +140,12 @@ COLORS = {
 #
 # == Gravities
 #
-# Gravities are predefined sizes a window can be set to. There are several ways to set a 
+# Gravities are predefined sizes a window can be set to. There are several ways to set a
 # certain gravity, most convenient is to define a gravity via a tag or change them during
 # runtime via grab. Subtler and subtlext can also modify gravities.
 #
 # A gravity consists of four values which are a percentage value of the screen size. The first
-# two values are x and y starting at the center of the screen and he last two values are the 
+# two values are x and y starting at the center of the screen and he last two values are the
 # width and height.
 #
 # === Example
@@ -155,34 +155,56 @@ COLORS = {
 #   :example = [ 0, 0, 100, 100 ]
 #
 GRAVITIES = {
-  :top_left       => [   0,   0,  50,  50 ], 
+  # Top left
+  :top_left       => [   0,   0,  50,  50 ],
   :top_left66     => [   0,   0,  50,  66 ],
   :top_left33     => [   0,   0,  50,  34 ],
+
+  # Top
   :top            => [   0,   0, 100,  50 ],
   :top66          => [   0,   0, 100,  66 ],
   :top33          => [   0,   0, 100,  34 ],
+
+  # Top right
   :top_right      => [ 100,   0,  50,  50 ],
   :top_right66    => [ 100,   0,  50,  66 ],
   :top_right33    => [ 100,   0,  50,  34 ],
+
+  # Left
   :left           => [   0,   0,  50, 100 ],
   :left66         => [   0,  50,  50,  34 ],
   :left33         => [   0,  50,  25,  34 ],
+
+  # Center
   :center         => [   0,   0, 100, 100 ],
   :center66       => [   0,  50, 100,  34 ],
   :center33       => [  50,  50,  50,  34 ],
+
+  # Right
   :right          => [ 100,   0,  50, 100 ],
   :right66        => [ 100,  50,  50,  34 ],
   :right33        => [ 100,  50,  25,  34 ],
+
+  # Bottom left
   :bottom_left    => [   0, 100,  50,  50 ],
   :bottom_left66  => [   0, 100,  50,  66 ],
   :bottom_left33  => [   0, 100,  50,  34 ],
+
+  # Bottom
   :bottom         => [   0, 100, 100,  50 ],
   :bottom66       => [   0, 100, 100,  66 ],
   :bottom33       => [   0, 100, 100,  34 ],
+
+  # Bottom right
   :bottom_right   => [ 100, 100,  50,  50 ],
   :bottom_right66 => [ 100, 100,  50,  66 ],
-  :bottom_right33 => [ 100, 100,  50,  34 ]
-}  
+  :bottom_right33 => [ 100, 100,  50,  34 ],
+
+  # Gimp
+  :gimp_image     => [  50,  50,  80, 100 ],
+  :gimp_toolbox   => [   0,   0,  10, 100 ],
+  :gimp_dock      => [ 100,   0,  10, 100 ]
+}
 
 # == Dmenu
 #
@@ -190,7 +212,7 @@ GRAVITIES = {
 #
 @dmenu = "dmenu_run -fn '%s' -nb '%s' -nf '%s' -sb '%s' -sf '%s' -p 'Select:'" % [
   OPTIONS[:font],
-  COLORS[:bg_panel], COLORS[:fg_panel], 
+  COLORS[:bg_panel], COLORS[:fg_panel],
   COLORS[:bg_focus], COLORS[:fg_focus]
 ]
 
@@ -206,14 +228,14 @@ GRAVITIES = {
 # ==== Modifiers:
 #
 # [*S*] Shift key
-# [*A*] Alt key       
-# [*C*] Control key   
+# [*A*] Alt key
+# [*C*] Control key
 # [*W*] Super (Windows key)
 # [*M*] Meta key
 #
 # ==== Mouse buttons:
 #
-# [*B1*] Button1       
+# [*B1*] Button1
 # [*B2*] Button2
 # [*B3*] Button3
 # [*B4*] Button4
@@ -282,10 +304,10 @@ GRABS = {
 
   # Raise window
   "W-r"      => :WindowRaise,
-  
+
   # Lower window
   "W-l"      => :WindowLower,
-  
+
   # Select next windows
   "W-Left"   => :WindowLeft,
   "W-Down"   => :WindowDown,
@@ -330,8 +352,8 @@ GRABS = {
 #
 # === Default
 #
-# Whenever a window has no tag it will get the default tag and be placed on the default view. 
-# The default view can either be set by the user with adding the default tag to a view by 
+# Whenever a window has no tag it will get the default tag and be placed on the default view.
+# The default view can either be set by the user with adding the default tag to a view by
 # choice or otherwise the first defined view will be chosen automatically.
 #
 # === Properties
@@ -340,7 +362,7 @@ GRABS = {
 # than can define and control some aspects of a window like the default gravity or the default
 # screen per view.
 #
-# [*:float*]   This property either sets the tagged client floating or prevents it from being 
+# [*:float*]   This property either sets the tagged client floating or prevents it from being
 #              floating depending on the value.
 # [*:full*]    This property either sets the tagged client to fullscreen or prevents it from being
 #              set to fullscreen depending on the value.
@@ -372,15 +394,25 @@ GRABS = {
 #              automatically.
 #
 TAGS = {
+  # Simple tags
   "terms"   => "xterm|[u]?rxvt",
   "browser" => "uzbl|opera|firefox|navigator",
+
+  # Placement
   "editor"  => { :regex => "[g]?vim", :resize => true },
-  "stick"   => { :regex => "mplayer|imagemagick", :float => true, :stick => true },
-  "float"   => { :regex => "gimp", :float => true },
   "fixed"   => { :geometry => [ 10, 10, 100, 100 ], :stick => true },
   "resize"  => { :regex => "sakura|gvim", :resize => true },
-  "gravity" => { :gravity => :center }
-}  
+  "gravity" => { :gravity => :center },
+
+  # Modes
+  "stick"   => { :regex => "mplayer", :float => true, :stick => true },
+  "float"   => { :regex => "display", :float => true },
+
+  # Gimp
+  "gimp_image"   => { :regex => "gimp-image-window", :match => [ :role ], :gravity => :gimp_image },
+  "gimp_toolbox" => { :regex => "gimp-toolbox", :match => [ :role ], :gravity => :gimp_toolbox },
+  "gimp_dock"    => { :regex => "gimp-dock", :match => [ :role ], :gravity => :gimp_dock },
+}
 
 #
 # == Views
