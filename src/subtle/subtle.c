@@ -281,10 +281,11 @@ main(int argc,
   if(check)
     {
       subRubyInit();
-      subRubyLoadConfig();
-      subRubyFinish();
 
-      printf("Syntax OK\n");
+      if(subRubyLoadConfig())
+        printf("Syntax OK\n");
+
+      subRubyFinish();
 
       free(subtle);
 

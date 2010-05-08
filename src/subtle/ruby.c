@@ -830,7 +830,7 @@ RubyWrapLoadConfig(VALUE data)
     {
       subSubtleFinish();
 
-      exit(-1); ////< Should never happen
+      exit(-1); ///< Should never happen
     }
   subtle->th = subtle->font->height;
 
@@ -1974,9 +1974,11 @@ subRubyInit(void)
  /** subRubyLoadConfig {{{
   * @brief Load config file
   * @param[in]  path  Path to config file
+  * @retval  1  Success
+  * @retval  0  Failure
   **/
 
-void
+int
 subRubyLoadConfig(void)
 {
   int state = 0;
@@ -2012,12 +2014,16 @@ subRubyLoadConfig(void)
   if(state)
     {
       RubyBacktrace();
-      subSubtleFinish();
 
-      exit(-1);
+      if(subtle->dpy) ///< Exit when not started with -k
+        {
+          subSubtleFinish();
+
+          exit(-1);
+        }
     }
 
-  if(!subtle || !subtle->dpy) return; ///< Exit after config check
+  if(!subtle || !subtle->dpy) return !state; ///< Exit after config check
 
   /* Carefully load config */
   rb_protect(RubyWrapLoadConfig, Qnil, &state);
@@ -2028,6 +2034,8 @@ subRubyLoadConfig(void)
 
       exit(-1);
     }
+
+  return 1;
 } /* }}} */
 
  /** subRubyReloadConfig {{{

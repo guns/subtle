@@ -661,7 +661,7 @@ void subPanelRender(void);                                        ///< Render pa
 
 /* ruby.c {{{ */
 void subRubyInit(void);                                           ///< Init Ruby stack
-void subRubyLoadConfig(void);                                     ///< Load config file
+int subRubyLoadConfig(void);                                      ///< Load config file
 void subRubyReloadConfig(void);                                   ///< Reload config file
 void subRubyReloadSublets(void);                                  ///< Reload sublets
 void subRubyLoadSublet(const char *file);                         ///< Load sublet
