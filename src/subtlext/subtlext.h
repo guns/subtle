@@ -208,7 +208,6 @@ VALUE subWindowInstantiate(VALUE geometry);                       ///< Instantia
 VALUE subWindowDispatcher(int argc, VALUE *argv, VALUE self);     ///< Window dispatcher
 VALUE subWindowAlloc(VALUE self);                                 ///< Allocate window
 VALUE subWindowInit(VALUE self, VALUE geometry);                  ///< Init window
-VALUE subWindowInput(VALUE self, VALUE geometry);                 ///< Get input string
 VALUE subWindowNameWriter(VALUE self, VALUE value);               ///< Set name
 VALUE subWindowFontWriter(VALUE self, VALUE value);               ///< Set font
 VALUE subWindowForegroundWriter(VALUE self, VALUE value);         ///< Set foreground
@@ -216,9 +215,10 @@ VALUE subWindowBackgroundWriter(VALUE self, VALUE value);         ///< Set backg
 VALUE subWindowBorderColorWriter(VALUE self, VALUE value);        ///< Set border color
 VALUE subWindowBorderSizeWriter(VALUE self, VALUE value);         ///< Set border size
 VALUE subWindowGeometryReader(VALUE self);                        ///< Get geometry
-VALUE subWindowTextWriter(VALUE self, VALUE text);                ///< Add text
+VALUE subWindowWrite(VALUE self, VALUE x, VALUE y, VALUE text);   ///< Write text
+VALUE subWindowRead(VALUE self, VALUE x, VALUE y);                ///< Write text
+VALUE subWindowClear(VALUE self);                                 ///< Write text
 VALUE subWindowCompletion(VALUE self);                            ///< Add completion proc
-VALUE subWindowGetInput(VALUE self);                              ///< Get input
 VALUE subWindowShow(VALUE self);                                  ///< Show window
 VALUE subWindowHide(VALUE self);                                  ///< Hide window
 VALUE subWindowKill(VALUE self);                                  ///< Kill window
