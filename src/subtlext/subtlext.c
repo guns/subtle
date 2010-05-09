@@ -790,13 +790,13 @@ Init_subtlext(void)
   rb_define_singleton_method(client, "all",     subClientAll,     0);
 
   /* General methods */
-  rb_define_method(client, "tags",         SubtlextTagList,   0);
-  rb_define_method(client, "has_tag?",     SubtlextTagAsk,    1);
-  rb_define_method(client, "tag",          SubtlextTagAdd,    1);
-  rb_define_method(client, "untag",        SubtlextTagDel,    1);
-  rb_define_method(client, "click",        SubtlextClick,    -1);
-  rb_define_method(client, "focus",        SubtlextFocus,     0);
-  rb_define_method(client, "has_focus?",   SubtlextFocusAsk,  0);
+  rb_define_method(client, "tags",       SubtlextTagList,   0);
+  rb_define_method(client, "has_tag?",   SubtlextTagAsk,    1);
+  rb_define_method(client, "tag",        SubtlextTagAdd,    1);
+  rb_define_method(client, "untag",      SubtlextTagDel,    1);
+  rb_define_method(client, "click",      SubtlextClick,    -1);
+  rb_define_method(client, "focus",      SubtlextFocus,     0);
+  rb_define_method(client, "has_focus?", SubtlextFocusAsk,  0);
 
   /* Class methods */
   rb_define_method(client, "initialize",   subClientInit,            1);
@@ -1162,10 +1162,10 @@ Init_subtlext(void)
   rb_define_singleton_method(view, "all",     subViewAll,     0);
 
   /* General methods */
-  rb_define_method(view, "tags",       SubtlextTagList,      0);
-  rb_define_method(view, "has_tag?",   SubtlextTagAsk,       1);
-  rb_define_method(view, "tag",        SubtlextTagAdd,       1);
-  rb_define_method(view, "untag",      SubtlextTagDel,       1);
+  rb_define_method(view, "tags",     SubtlextTagList, 0);
+  rb_define_method(view, "has_tag?", SubtlextTagAsk,  1);
+  rb_define_method(view, "tag",      SubtlextTagAdd,  1);
+  rb_define_method(view, "untag",    SubtlextTagDel,  1);
 
   /* Class methods */
   rb_define_method(view, "initialize", subViewInit,          1);
@@ -1200,9 +1200,12 @@ Init_subtlext(void)
   /* Allocate */
   rb_define_alloc_func(window, subWindowAlloc);
 
+  /* Singleton methods */
+  rb_define_singleton_method(window, "once", subWindowOnce, 1);
+
   /* General methods */
-  rb_define_method(window, "click",        SubtlextClick, -1);
-  rb_define_method(window, "focus",        SubtlextFocus,  0);
+  rb_define_method(window, "click", SubtlextClick, -1);
+  rb_define_method(window, "focus", SubtlextFocus,  0);
 
   /* Class methods */
   rb_define_method(window, "initialize",    subWindowInit,              1);

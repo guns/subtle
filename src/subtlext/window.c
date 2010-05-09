@@ -561,7 +561,7 @@ subWindowRead(VALUE self,
                         }
                       break; /* }}} */
                     case XK_Tab: /* {{{ */
-                      if(!(NIL_P(w->completion)))
+                      if(T_DATA == rb_type(w->completion))
                         {
                           int state = 0;
                           VALUE rargs[3] = { Qnil }, result = Qnil;
@@ -685,6 +685,37 @@ subWindowCompletion(VALUE self)
     }
 
   return Qnil;
+} /* }}} */
+
+/* subWindowOnce {{{ */
+/*
+ * call-seq: once(geometry) -> Value
+ *
+ * Show window once as long as proc runs
+ *
+ *  Subtlext::Window.once(:x => 10, :y => 10, :widht => 100, :height => 100) do |w|
+ *    "test"
+ *  end
+ *  => "test"
+ **/
+
+VALUE
+subWindowOnce(VALUE self,
+  VALUE geometry)
+{
+  VALUE win = Qnil, ret = Qnil;
+
+  rb_need_block();
+
+  /* Create new window */
+  win = subWindowInstantiate(geometry);
+
+  /* Yield block */
+  ret = rb_yield_values(1, win);
+
+  subWindowKill(win);
+
+  return ret;
 } /* }}} */
 
 /* subWindowShow {{{ */

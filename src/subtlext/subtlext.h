@@ -219,6 +219,7 @@ VALUE subWindowWrite(VALUE self, VALUE x, VALUE y, VALUE text);   ///< Write tex
 VALUE subWindowRead(VALUE self, VALUE x, VALUE y);                ///< Write text
 VALUE subWindowClear(VALUE self);                                 ///< Write text
 VALUE subWindowCompletion(VALUE self);                            ///< Add completion proc
+VALUE subWindowOnce(VALUE self, VALUE geometry);                  ///< Run window once
 VALUE subWindowShow(VALUE self);                                  ///< Show window
 VALUE subWindowHide(VALUE self);                                  ///< Hide window
 VALUE subWindowKill(VALUE self);                                  ///< Kill window
