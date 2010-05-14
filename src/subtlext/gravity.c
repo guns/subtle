@@ -11,17 +11,14 @@
 
 #include "subtlext.h"
 
-/* GravityToRect */
+/* GravityToRect {{{ */
 void
-GravityGeomToRect(VALUE self,
-  XRectangle *geom)
+GravityToRect(VALUE self,
+  XRectangle *r)
 {
   VALUE geometry = rb_iv_get(self, "@geometry");
 
-  geom->x      = FIX2INT(rb_iv_get(geometry, "@x"));
-  geom->y      = FIX2INT(rb_iv_get(geometry, "@y"));
-  geom->width  = FIX2INT(rb_iv_get(geometry, "@width"));
-  geom->height = FIX2INT(rb_iv_get(geometry, "@height"));
+  subGeometryToRect(geometry, r); ///< Get values
 } /* }}} */
 
 /* subGravityInstantiate {{{ */
@@ -185,11 +182,7 @@ subGravityUpdate(VALUE self)
           if(NIL_P(geometry = rb_iv_get(self, "@geometry")))
             rb_raise(rb_eStandardError, "No geometry given");
 
-          /* Get values */
-          geom.x      = FIX2INT(rb_iv_get(geometry, "@x"));
-          geom.y      = FIX2INT(rb_iv_get(geometry, "@y"));
-          geom.width  = FIX2INT(rb_iv_get(geometry, "@width"));
-          geom.height = FIX2INT(rb_iv_get(geometry, "@height"));
+          subGeometryToRect(geometry, &geom); ///< Get values
 
           snprintf(data.b, sizeof(data.b), "%hdx%hd+%hd+%hd#%s",
             geom.x, geom.y, geom.width, geom.width, RSTRING_PTR(name));
@@ -317,8 +310,8 @@ subGravityGeometryFor(VALUE self,
         {
           XRectangle real = { 0 }, geom_grav = { 0 }, geom_screen = { 0 };
 
-          GravityGeomToRect(self,  &geom_grav);
-          GravityGeomToRect(value, &geom_screen);
+          GravityToRect(self,  &geom_grav);
+          GravityToRect(value, &geom_screen);
 
           /* Calculate real values for screen */
           real.width  = geom_screen.width * geom_grav.width / 100;
