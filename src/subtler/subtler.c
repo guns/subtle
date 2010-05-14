@@ -28,7 +28,12 @@ typedef void(*SubtlerCommand)(int, char *, char *);
 /* }}} */
 
 /* Macros {{{ */
-#define CHECK(cond,...) if(!cond) subSharedLog(3, __FILE__, __LINE__, __VA_ARGS__);
+#define CHECK(cond,...) \
+  if(!(cond)) \
+    { \
+      subSharedLog(3, __FILE__, __LINE__, __VA_ARGS__); \
+      exit(-1); \
+    }
 /* }}} */
 
 /* Flags {{{ */
@@ -1477,7 +1482,7 @@ SubtlerSignal(int signum)
 static char *
 SubtlerParse(char *string)
 {
-  char buf[256], *ret = NULL;
+  char buf[256] = { 0 }, *ret = NULL;
 
   if(string)
     {
@@ -1728,7 +1733,8 @@ main(int argc,
 
       cmds[group][action](args, arg1, arg2);
     }
-  else if(SUB_MOD_CURRENT == mod && (SUB_GROUP_VIEW == group || SUB_GROUP_CLIENT == group))
+  else if(SUB_MOD_CURRENT == mod && (SUB_GROUP_VIEW == group ||
+      SUB_GROUP_CLIENT == group))
     {
       printf("%s\n", arg1 ? arg1 : "None"); ///< Print selected client
     }
