@@ -364,8 +364,6 @@ SubtlerClientTag(int argc,
     (SUB_MATCH_INSTANCE|SUB_MATCH_CLASS));
   data.l[1] = subSharedTagFind(arg2, NULL);
 
-  printf("%ld, %ld\n", data.l[0], data.l[1]);
-
   if(-1 != data.l[0] && -1 != data.l[1])
     subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_TAG", data, False);
   else subSharedLogWarn("Failed tagging client\n");
