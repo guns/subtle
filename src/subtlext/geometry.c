@@ -28,6 +28,17 @@ subGeometryInstantiate(int x,
   return geometry;
 } /* }}} */
 
+/* subGeometryToRect {{{ */
+void
+subGeometryToRect(VALUE self,
+  XRectangle *r)
+{
+  r->x      = FIX2INT(rb_iv_get(self, "@x"));
+  r->y      = FIX2INT(rb_iv_get(self, "@y"));
+  r->width  = FIX2INT(rb_iv_get(self, "@width"));
+  r->height = FIX2INT(rb_iv_get(self, "@height"));
+} /* }}} */
+
 /* subGeometryInit {{{ */
 /*
  * call-seq: new(x, y, width, height) -> Subtlext::Geometry
