@@ -11,6 +11,11 @@
 
 #include "subtlext.h"
 
+/* Flags {{{ */
+#define WINDOW_COMPLETION_FUNC (1L << 1)
+#define WINDOW_INPUT_FUNC      (1L << 2)
+/* }}} */
+
 /* Typedefs {{{ */
 typedef struct subtlextwindowtext_t {
   int     x, y;
@@ -19,10 +24,10 @@ typedef struct subtlextwindowtext_t {
 
 typedef struct subtlextwindow_t
 {
-  int                ntext;
+  int                flags, ntext;
   unsigned long      fg, bg;
   Window             win;
-  VALUE              instance, completion;
+  VALUE              instance;
   SubFont            *font;
   SubtlextWindowText *text;
 } SubtlextWindow;
@@ -32,13 +37,7 @@ typedef struct subtlextwindow_t
 static void
 WindowMark(SubtlextWindow *w)
 {
-  if(w)
-    {
-      rb_gc_mark(w->instance);
-
-      if(RTEST(w->completion))
-        rb_gc_mark(w->completion);
-    }
+  if(w) rb_gc_mark(w->instance);
 } /* }}} */
 
 /* WindowSweep {{{ */
@@ -60,13 +59,13 @@ WindowSweep(SubtlextWindow *w)
     }
 } /* }}} */
 
-/* WindowWrapCompletion {{{ */
+/* WindowWrapCall {{{ */
 static VALUE
-WindowWrapCompletion(VALUE data)
+WindowWrapCall(VALUE data)
 {
   VALUE *rargs = (VALUE *)data;
 
-  return rb_funcall(rargs[0], rb_intern("call"), 2, rargs[1], rargs[2]);
+  return rb_funcall(rargs[0], rargs[1], rargs[2], rargs[3], rargs[4]);
 } /* }}} */
 
 /* WindowExpose {{{ */
@@ -82,6 +81,38 @@ WindowExpose(SubtlextWindow *w)
       w->win, w->text[i].x, w->text[i].y, w->fg, w->bg, w->text[i].text);
 
  XSync(display, False); ///< Sync with X
+} /* }}} */
+
+/* WindowDefine {{{ */
+static VALUE
+WindowDefine(VALUE self,
+  int argc,
+  int flag,
+  VALUE sym)
+{
+  SubtlextWindow *w = NULL;
+
+  rb_need_block();
+
+  Data_Get_Struct(self, SubtlextWindow, w);
+  if(w && rb_block_given_p())
+    {
+      VALUE p = rb_block_proc();
+      int arity = rb_proc_arity(p);
+
+      if(argc == arity)
+        {
+          VALUE sing = rb_singleton_class(w->instance);
+
+          w->flags |= flag;
+
+          rb_funcall(sing, rb_intern("define_method"), 2, sym, p);
+        }
+      else rb_raise(rb_eArgError, "Wrong number of arguments (%d for %d)",
+        arity, argc);
+    }
+
+  return Qnil;
 } /* }}} */
 
 /* subWindowInstantiate {{{ */
@@ -170,9 +201,8 @@ subWindowInit(VALUE self,
         CWOverrideRedirect, &sattrs);
 
       /* Set window defaults */
-      w->font       = subSharedFontNew(display, "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*");
-      w->bg         = BlackPixel(display, DefaultScreen(display));
-      w->completion = Qnil;
+      w->font = subSharedFontNew(display, "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*");
+      w->bg   = BlackPixel(display, DefaultScreen(display));
 
       /* Store data */
       rb_iv_set(w->instance, "@win",      LONG2NUM(w->win));
@@ -438,6 +468,36 @@ subWindowGeometryReader(VALUE self)
   return rb_iv_get(self, "@geometry");
 } /* }}} */
 
+/* subWindowGeometryWriter {{{ */
+/*
+ * call-seq: gemetry=(value) -> nil
+ *
+ * Get geometry of a window
+ *
+ *  win.geometry = { :x => 0, :y => 0, :width => 50, :height => 50 }
+ *  => nil
+ */
+
+VALUE
+subWindowGeometryWriter(VALUE self,
+  VALUE value)
+{
+  SubtlextWindow *w = NULL;
+
+  Data_Get_Struct(self, SubtlextWindow, w);
+  if(w)
+    {
+      XRectangle r = { 0 };
+      VALUE geom = subGeometryInit(1, &value, Qnil);
+
+      rb_iv_set(self, "@geometry", geom);
+      subGeometryToRect(geom, &r);
+      XMoveResizeWindow(display, w->win, r.x, r.y, r.width, r.height);
+    }
+
+  return Qnil;
+} /* }}} */
+
 /* subWindowWrite {{{ */
 /*
  * call-seq: write(x, y, text) -> nil
@@ -464,18 +524,36 @@ subWindowWrite(VALUE self,
       if(T_FIXNUM == rb_type(x) && T_FIXNUM == rb_type(y) &&
           T_STRING == rb_type(text))
         {
-          w->text = (SubtlextWindowText *)subSharedMemoryRealloc(w->text,
-            (w->ntext + 1) * sizeof(SubtlextWindowText));
+          int i, xi = FIX2INT(x), yi = FIX2INT(y);
+          SubtlextWindowText *wt = NULL;
+
+          /* Find text at x/y position */
+          for(i = 0; i < w->ntext; i++)
+            {
+              if(w->text[i].x == xi && w->text[i].y == yi)
+                {
+                  wt = &w->text[i];
+                  break;
+                }
+            }
 
           /* Create new text item */
-          w->text[w->ntext].text = subSharedTextNew();
-          w->text[w->ntext].x    = FIX2INT(x);
-          w->text[w->ntext].y    = FIX2INT(y);
+          if(!wt)
+            {
+              w->text = (SubtlextWindowText *)subSharedMemoryRealloc(w->text,
+                (w->ntext + 1) * sizeof(SubtlextWindowText));
 
-          len = subSharedTextParse(display, w->font,
-            w->text[w->ntext].text, RSTRING_PTR(text));
+              w->text[w->ntext].text = subSharedTextNew();
 
-          w->ntext++;
+              wt = &w->text[w->ntext];
+              wt->x    = FIX2INT(x);
+              wt->y    = FIX2INT(y);
+
+              w->ntext++;
+            }
+
+          len = subSharedTextParse(display, w->font, wt->text,
+            RSTRING_PTR(text));
         }
       else rb_raise(rb_eArgError, "Unknown value type");
     }
@@ -505,8 +583,10 @@ subWindowRead(VALUE self,
   if(w)
     {
       XEvent ev;
-      int pos = 0, len = 0, running = True, start = 0, guess = -1;
+      int pos = 0, len = 0, running = True, start = 0, guess = -1, state = 0;
       char buf[32] = { 0 }, text[1024] = { 0 }, last[32] = { 0 };
+      VALUE rargs[5] = { Qnil }, result = Qnil;
+
       KeySym sym;
 
       /* Check object type */
@@ -561,11 +641,8 @@ subWindowRead(VALUE self,
                         }
                       break; /* }}} */
                     case XK_Tab: /* {{{ */
-                      if(T_DATA == rb_type(w->completion))
+                      if(w->flags & WINDOW_COMPLETION_FUNC)
                         {
-                          int state = 0;
-                          VALUE rargs[3] = { Qnil }, result = Qnil;
-
                           /* Select guess number */
                           if(0 == ++guess) 
                             {
@@ -583,16 +660,17 @@ subWindowRead(VALUE self,
                             }
 
                           /* Wrap up data */
-                          rargs[0] = w->completion;
-                          rargs[1] = rb_str_new2(last);
-                          rargs[2] = INT2FIX(guess);
+                          rargs[0] = w->instance;
+                          rargs[1] = rb_intern("__completion");
+                          rargs[2] = 2;
+                          rargs[3] = rb_str_new2(last);
+                          rargs[4] = INT2FIX(guess);
 
                           /* Carefully call completion proc */
-                          result = rb_protect(WindowWrapCompletion, (VALUE)&rargs, &state);
+                          result = rb_protect(WindowWrapCall, (VALUE)&rargs, &state);
                           if(state)
                             {
-                              printf("Error in completion func\n");
-                              rb_backtrace();
+                              subSubtlextBacktrace();
 
                               continue;
                             }
@@ -606,11 +684,28 @@ subWindowRead(VALUE self,
                         }
                       break; /* }}} */
                     default: /* {{{ */
-                      guess    = -1;
-                      buf[pos] = 0;
-                      strncpy(text + len, buf, sizeof(text) - len);
-                      len += pos;
+                      {
+                        guess    = -1;
+                        buf[pos] = 0;
+                        strncpy(text + len, buf, sizeof(text) - len);
+                        len += pos;
+
+
+                      }
                       break; /* }}} */
+                  }
+
+                if(running && w->flags & WINDOW_INPUT_FUNC)
+                  {
+                    /* Wrap up data */
+                    rargs[0] = w->instance;
+                    rargs[1] = rb_intern("__input");
+                    rargs[2] = 1;
+                    rargs[3] = rb_str_new2(text);
+
+                    /* Carefully call completion proc */
+                    rb_protect(WindowWrapCall, (VALUE)&rargs, &state);
+                    if(state) subSubtlextBacktrace();
                   }
                 break;
               default: break;
@@ -636,21 +731,27 @@ subWindowRead(VALUE self,
  */
 
 VALUE
-subWindowClear(VALUE self)
+subWindowClear(int argc,
+  VALUE *argv,
+  VALUE self)
 {
+
   SubtlextWindow *w = NULL;
 
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w)
     {
-      int i;
+      VALUE x = Qnil, y = Qnil, width = Qnil, height = Qnil;
 
-      for(i = 0; i < w->ntext; i++)
-        subSharedTextFree(w->text[i].text);
+      rb_scan_args(argc, argv, "04", &x, &y, &width, &height);
 
-      w->ntext = 0;
-
-      free(w->text);
+      /* Either clear area or whole window */
+      if(FIXNUM_P(x) && FIXNUM_P(y) && FIXNUM_P(width) && FIXNUM_P(height))
+        {
+          XClearArea(display, w->win, FIX2INT(x), FIX2INT(y),
+            FIX2INT(width), FIX2INT(height), False);
+        }
+      else XClearWindow(display, w->win);
     }
 
   return Qnil;
@@ -670,21 +771,25 @@ subWindowClear(VALUE self)
 VALUE
 subWindowCompletion(VALUE self)
 {
-  SubtlextWindow *w = NULL;
+  return WindowDefine(self, 2, WINDOW_COMPLETION_FUNC,
+    CHAR2SYM("__completion"));
+} /* }}} */
 
-  rb_need_block();
+/* subWindowInput {{{ */
+/*
+ * call-seq: input(&block) -> nil
+ *
+ * Add input proc
+ *
+ *  win.input do |str|
+ *    str
+ *  end
+ */
 
-  Data_Get_Struct(self, SubtlextWindow, w);
-  if(w && rb_block_given_p())
-    {
-      VALUE p = rb_block_proc();
-      int arity = rb_proc_arity(p);
-
-      if(2 == arity) w->completion = p;
-      else rb_raise(rb_eArgError, "Wrong number of arguments (%d for 2)", arity);
-    }
-
-  return Qnil;
+VALUE
+subWindowInput(VALUE self)
+{
+  return WindowDefine(self, 1, WINDOW_INPUT_FUNC, CHAR2SYM("__input"));
 } /* }}} */
 
 /* subWindowOnce {{{ */

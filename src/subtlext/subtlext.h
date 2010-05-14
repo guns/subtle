@@ -84,6 +84,7 @@ VALUE subColorOperatorPlus(VALUE self, VALUE value);              ///< Concat st
 /* geometry.c {{{ */
 VALUE subGeometryInstantiate(int x, int y, int width,
   int height);                                                    ///< Instantiate geometry
+void subGeometryToRect(VALUE self, XRectangle *r);                ///< Geometry to rect
 VALUE subGeometryInit(int argc, VALUE *argv, VALUE self);         ///< Create new geometry
 VALUE subGeometryToArray(VALUE self);                             ///< Geometry to array
 VALUE subGeometryToHash(VALUE self);                              ///< Geometry to hash
@@ -161,6 +162,7 @@ VALUE subSubtleQuit(VALUE self);                                  ///< Quit subt
 
 /* subtlext.c {{{ */
 void subSubtlextConnect(void);                                    ///< Connect to display
+void subSubtlextBacktrace(void);                                  ///< Print ruby backtrace
 VALUE subSubtlextConcat(VALUE str1, VALUE str2);                  ///< Concat strings
 VALUE subSubtlextFind(int type, VALUE value, int exception);      ///< Find object
 VALUE subSubtlextKill(VALUE value, int type);                     ///< Kill display
@@ -215,10 +217,12 @@ VALUE subWindowBackgroundWriter(VALUE self, VALUE value);         ///< Set backg
 VALUE subWindowBorderColorWriter(VALUE self, VALUE value);        ///< Set border color
 VALUE subWindowBorderSizeWriter(VALUE self, VALUE value);         ///< Set border size
 VALUE subWindowGeometryReader(VALUE self);                        ///< Get geometry
+VALUE subWindowGeometryWriter(VALUE self, VALUE value);           ///< Set geometry
 VALUE subWindowWrite(VALUE self, VALUE x, VALUE y, VALUE text);   ///< Write text
-VALUE subWindowRead(VALUE self, VALUE x, VALUE y);                ///< Write text
-VALUE subWindowClear(VALUE self);                                 ///< Write text
+VALUE subWindowRead(VALUE self, VALUE x, VALUE y);                ///< Read text
+VALUE subWindowClear(int argc, VALUE *argv, VALUE self);          ///< Clear area or window
 VALUE subWindowCompletion(VALUE self);                            ///< Add completion proc
+VALUE subWindowInput(VALUE self);                                 ///< Add input proc
 VALUE subWindowOnce(VALUE self, VALUE geometry);                  ///< Run window once
 VALUE subWindowShow(VALUE self);                                  ///< Show window
 VALUE subWindowHide(VALUE self);                                  ///< Hide window

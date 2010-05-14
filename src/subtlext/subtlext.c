@@ -391,6 +391,22 @@ subSubtlextConnect(void)
     }
 } /* }}} */
 
+/* subSubtlextBacktrace {{{ */
+void
+subSubtlextBacktrace(void)
+{
+  VALUE lasterr = Qnil, message = Qnil, klass = Qnil;
+
+  /* Fetching backtrace data */
+  lasterr = rb_gv_get("$!");
+  message = rb_obj_as_string(lasterr);
+  klass   = rb_class_path(CLASS_OF(lasterr));
+
+  /* Print error and backtrace */
+  subSharedLogWarn("%s: %s\n", RSTRING_PTR(klass), RSTRING_PTR(message));
+  rb_backtrace();
+} /* }}} */
+
 /* subSubtlextConcat {{{ */
 VALUE
 subSubtlextConcat(VALUE str1,
@@ -1217,9 +1233,11 @@ Init_subtlext(void)
   rb_define_method(window, "border_size=",  subWindowBorderSizeWriter,  1);
   rb_define_method(window, "write",         subWindowWrite,             3);
   rb_define_method(window, "read",          subWindowRead,              2);
-  rb_define_method(window, "clear",         subWindowClear,             0);
+  rb_define_method(window, "clear",         subWindowClear,            -1);
   rb_define_method(window, "completion",    subWindowCompletion,        0);
+  rb_define_method(window, "input",         subWindowInput,             0);
   rb_define_method(window, "geometry",      subWindowGeometryReader,    0);
+  rb_define_method(window, "geometry=",     subWindowGeometryWriter,    1);
   rb_define_method(window, "show",          subWindowShow,              0);
   rb_define_method(window, "hide",          subWindowHide,              0);
   rb_define_method(window, "kill",          subWindowKill,              0);
