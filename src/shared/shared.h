@@ -93,7 +93,7 @@ typedef struct subtextitem_t
 typedef struct subtext_t
 {
   struct subtextitem_t **items;
-  int                  nitems;
+  int                  nitems, width;
 } SubText;
 
 typedef struct subfont_t

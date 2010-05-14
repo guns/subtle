@@ -437,12 +437,14 @@ subSharedTextParse(Display *disp,
   SubText *t,
   char *text)
 {
-  int i = 0, left = 0, right = 0, width = 6;
+  int i = 0, left = 0, right = 0;
   char *tok = NULL;
   unsigned long color = -1, pixmap = 0;
   SubTextItem *item = NULL;
 
-  assert(t);
+  assert(f && t);
+
+  t->width = 6;
 
   /* Split and iterate over tokens */
   while((tok = strsep(&text, SEPARATOR)))
@@ -476,7 +478,7 @@ subSharedTextParse(Display *disp,
               item->width    = geometry.width;
               item->height   = geometry.height;
 
-              width += item->width + (0 == i ? 2 : 4); ///< Add spacing and check if icon is first
+              t->width += item->width + (0 == i ? 2 : 4); ///< Add spacing and check if icon is first
             }
           else
             {
@@ -484,7 +486,7 @@ subSharedTextParse(Display *disp,
               item->width       = subSharedTextWidth(f, tok, strlen(tok),
                 &left, &right, False);
 
-              width += item->width - (0 == i ? left : 0); ///< Remove left bearing from first text item
+              t->width += item->width - (0 == i ? left : 0); ///< Remove left bearing from first text item
             }
 
           item->color = color;
@@ -495,12 +497,12 @@ subSharedTextParse(Display *disp,
   /* Fix spacing of last item */
   if(item && False == item->icon)
     {
-      width       -= right;
+      t->width    -= right;
       item->width -= right;
     }
-  else if(True == item->icon) width -= 2;
+  else if(True == item->icon) t->width -= 2;
 
-  return width;
+  return t->width;
 } /* }}} */
 
  /** subSharedTextRender {{{
