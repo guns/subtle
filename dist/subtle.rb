@@ -441,16 +441,26 @@ VIEWS = {
 #
 # And finally hooks are a way to bind Ruby scripts to a certain event. Following hooks exist so far:
 #
-# [*:HookCreate*]    Called whenever a window is created
-# [*:HookJump*]      Called whenever the view is switched
-# [*:HookConfigure*] Called whenever a view is configured
-# [*:HookFocus*]     Called whenever a window gets focus
+# [*:HookClientCreate*]    Called whenever a window is created
+# [*:HookClientConfigure*] Called whenever a window is configured
+# [*:HookClientFocus*]     Called whenever a window gets focus
+# [*:HookClientKill*]      Called whenever a window is killed
+#
+# [*:HookViewCreate*]      Called whenever a view is created
+# [*:HookViewConfigure*]   Called whenever a view is configured
+# [*:HookViewJump*]        Called whenever the view is switched
+# [*:HookViewKill*]        Called whenever a view is killed
+#
+# [*:HookTagCreate*]       Called whenever a tag is created
+# [*:HookTagKill*]         Called whenever a tag is killed
+#
+# [*:HookExit*]            Called on exit
 #
 # === Example
 #
 # This hook will print the name of the window that gets the focus:
 #
-#   :HookFocus => lambda { |c| puts c.name }
+#   :HookClientFocus => lambda { |c| puts c.name }
 #
 HOOKS = { }
 
