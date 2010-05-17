@@ -452,11 +452,13 @@ subSharedTextParse(Display *disp,
       if('#' == *tok) color = atol(tok + 1); ///< Color
       else if('\0' != *tok) ///< Text or icon
         {
-          /* Recycle items */
+          /* Re-use items to save alloc cycles */
           if(i < t->nitems && (item = ITEM(t->items[i])))
             {
-              if(False == item->icon && item->data.string)
+              if(!(item->flags & SUB_TEXT_ICON) && item->data.string)
                 free(item->data.string);
+
+              item->flags &= ~(SUB_TEXT_EMPTY|SUB_TEXT_ICON);
             }
           else if((item = ITEM(subSharedMemoryAlloc(1, sizeof(SubTextItem)))))
             {
@@ -473,10 +475,10 @@ subSharedTextParse(Display *disp,
 
               subSharedPropertyGeometry(disp, pixmap, &geometry);
 
-              item->icon     = True;
-              item->data.num = pixmap;
-              item->width    = geometry.width;
-              item->height   = geometry.height;
+              item->flags    |= SUB_TEXT_ICON;
+              item->data.num  = pixmap;
+              item->width     = geometry.width;
+              item->height    = geometry.height;
 
               t->width += item->width + (0 == i ? 2 : 4); ///< Add spacing and check if icon is first
             }
@@ -494,13 +496,17 @@ subSharedTextParse(Display *disp,
         }
     }
 
+  /* Mark other items a clean */
+  for(; i < t->nitems; i++)
+    ITEM(t->items[i])->flags |= SUB_TEXT_EMPTY;
+
   /* Fix spacing of last item */
-  if(item && False == item->icon)
+  if(item && !(item->flags & SUB_TEXT_ICON))
     {
       t->width    -= right;
       item->width -= right;
     }
-  else if(True == item->icon) t->width -= 2;
+  else if(item->flags & SUB_TEXT_ICON) t->width -= 2;
 
   return t->width;
 } /* }}} */
@@ -530,21 +536,19 @@ subSharedTextRender(Display *disp,
   SubText *t)
 {
   int i, width = x;
-  SubTextItem *item = NULL;
 
   assert(t);
 
   /* Render text items */
   for(i = 0; i < t->nitems; i++)
     {
-      if((item = (SubTextItem *)t->items[i]) && False == item->icon) ///< Text
-        {
-          subSharedTextDraw(disp, gc, f, win, width, y,
-            -1 == item->color ? fg : item->color, bg, item->data.string);
+      SubTextItem *item = ITEM(t->items[i]);
 
-          width += item->width;
+      if(item->flags & SUB_TEXT_EMPTY) ///< Empty text
+        {
+          break; ///< Break loop
         }
-      else if(True == item->icon) ///< Icon
+      else if(item->flags & SUB_TEXT_ICON) ///< Icon
         {
           int dx = (0 == i) ? 0 : 2; ///< Add spacing when icon isn't first
 
@@ -560,6 +564,13 @@ subSharedTextRender(Display *disp,
 
           /* Add spacing when icon isn't last */
           width += item->width + dx + (i != t->nitems - 1 ? 2 : 0);
+        }
+      else ///< Text
+        {
+          subSharedTextDraw(disp, gc, f, win, width, y,
+            -1 == item->color ? fg : item->color, bg, item->data.string);
+
+          width += item->width;
         }
     }
 } /* }}} */
@@ -653,7 +664,7 @@ subSharedTextFree(SubText *t)
     {
       SubTextItem *item = (SubTextItem *)t->items[i];
 
-      if(False == item->icon && item->data.string)
+      if(!(item->flags & SUB_TEXT_ICON) && item->data.string)
         free(item->data.string);
 
       free(t->items[i]);
