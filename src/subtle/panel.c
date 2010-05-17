@@ -98,10 +98,10 @@ subPanelRender(void)
   /* Draw stipple on panels */
   if(subtle->flags & SUB_SUBTLE_STIPPLE) ///< Draw stipple
     {
-      XFillRectangle(subtle->dpy, subtle->windows.panel1, subtle->gcs.stipple, 0, 2,
-        DEFSCREEN->base.width, subtle->th - 4);
-      XFillRectangle(subtle->dpy, subtle->windows.panel2, subtle->gcs.stipple, 0, 2,
-        DEFSCREEN->base.width, subtle->th - 4);
+      XFillRectangle(subtle->dpy, subtle->windows.panel1, subtle->gcs.stipple,
+        0, 2, DEFSCREEN->base.width, subtle->th - 4);
+      XFillRectangle(subtle->dpy, subtle->windows.panel2, subtle->gcs.stipple,
+        0, 2, DEFSCREEN->base.width, subtle->th - 4);
     }
 
   /* Draw separators */
@@ -122,11 +122,13 @@ subPanelRender(void)
     }
 
   /* Render panels */
-  if(subtle->windows.focus && (c = CLIENT(subSubtleFind(subtle->windows.focus, CLIENTID))))
+  if(subtle->windows.focus && 
+      (c = CLIENT(subSubtleFind(subtle->windows.focus, CLIENTID))))
     subClientRender(c);
 
   subViewRender();
 
+  /* Render sublets */
   for(i = 0; i < subtle->sublets->ndata; i++)
     subSubletRender(SUBLET(subtle->sublets->data[i]));
 } /* }}} */

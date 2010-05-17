@@ -146,6 +146,10 @@ subViewUpdate(void)
 
               XMapRaised(subtle->dpy, v->button);
             }
+
+          /* Set borders */
+          XSetWindowBorder(subtle->dpy, v->button, subtle->colors.bo_panel);
+          XSetWindowBorderWidth(subtle->dpy, v->button, subtle->pbw);
         }
 
       subtle->windows.views.width += 2 * subtle->pbw;

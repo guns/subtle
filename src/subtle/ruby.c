@@ -1026,15 +1026,6 @@ RubyWrapLoadPanels(VALUE data)
       subSubletUpdate();
     }
 
-  /* Update panel border */
-  for(i = 0; i < subtle->views->ndata; i++)
-    {
-      SubView *v = VIEW(subtle->views->data[i]);
-
-      XSetWindowBorder(subtle->dpy, v->button, subtle->colors.bo_panel);
-      XSetWindowBorderWidth(subtle->dpy, v->button, subtle->pbw);
-    }
-
   /* Update title border */
   XSetWindowBorder(subtle->dpy, subtle->windows.title.win, subtle->colors.bo_panel);
   XSetWindowBorderWidth(subtle->dpy, subtle->windows.title.win, subtle->pbw);
@@ -1045,10 +1036,6 @@ RubyWrapLoadPanels(VALUE data)
       for(i = 0; i < subtle->panels->ndata; i++)
         {
           SubPanel *p = PANEL(subtle->panels->data[i]);
-
-          /* Set borders */
-          XSetWindowBorder(subtle->dpy, p->win, subtle->colors.bo_panel);
-          XSetWindowBorderWidth(subtle->dpy, p->win, subtle->pbw);
 
           if(p->flags & SUB_PANEL_BOTTOM) panel = subtle->windows.panel2;
           if(p->flags & SUB_PANEL_SUBLETS)
