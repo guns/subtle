@@ -50,6 +50,10 @@
 #define SUB_DATA_NUM     (1L << 14)                               ///< Num data
 #define SUB_DATA_NIL     (1L << 15)                               ///< Nil data
 
+/* Text flags */
+#define SUB_TEXT_EMPTY   (1L << 1)                                ///< Empty text
+#define SUB_TEXT_ICON    (1L << 2)                                ///< Text icon
+
 #define FONT(f)   ((SubFont *)f)                                  ///< Cast to SubFont
 #define TEXT(t)   ((SubText *)t)                                  ///< Cast to SubText
 #define ITEM(i)   ((SubTextItem *)i)                              ///< Cast to SubTextItem
@@ -78,13 +82,13 @@
 #ifndef SUBTLER
 typedef union subdata_t
 {
-  unsigned long num;
-  char          *string;
+  unsigned long num;                                              ///< Data number
+  char          *string;                                          ///< Data string
 } SubData;
 
 typedef struct subtextitem_t
 {
-  int             icon, width, height;                            ///< Text width, height
+  int             flags, width, height;                           ///< Text flags, width, height
   unsigned long   color;                                          ///< Text color
 
   union subdata_t data;                                           ///< Text data
@@ -92,29 +96,29 @@ typedef struct subtextitem_t
 
 typedef struct subtext_t
 {
-  struct subtextitem_t **items;
-  int                  nitems, width;
+  struct subtextitem_t **items;                                   ///< Item text items
+  int                  flags, nitems, width;                      ///< Item flags, count, width
 } SubText;
 
 typedef struct subfont_t
 {
-  int y, height;
-  XFontSet xfs;
+  int      y, height;                                             ///< Font y, height
+  XFontSet xfs;                                                   ///< Font set
 } SubFont;
 
 typedef struct subicon_t
 {
-  Pixmap       pixmap;
-  unsigned int width, height;
-  GC           gc;
+  Pixmap       pixmap;                                            ///< Icon pixmap
+  unsigned int width, height;                                     ///< Icon width, height
+  GC           gc;                                                ///< Icon GC
 } SubtIcon;
 #endif /* SUBTLER */
 
 #ifndef SUBTLE
 typedef union submessagedata_t {
-  char  b[20];
-  short s[10];
-  long  l[5];
+  char  b[20];                                                    ///< MessageData char
+  short s[10];                                                    ///< MessageData short
+  long  l[5];                                                     ///< MessageData long
 } SubMessageData;
 
 extern Display *display;
@@ -135,7 +139,7 @@ extern Display *display;
 void subSharedDebug(void);                                        ///< Enable debugging messages
 void subSharedLog(int type, const char *file,
   int line, const char *format, ...);                             ///< Print messages
-int subSharedLogXError(Display *disp, XErrorEvent *ev);        ///< Print X error messages
+int subSharedLogXError(Display *disp, XErrorEvent *ev);           ///< Print X error messages
 /* }}} */
 
 /* Memory {{{ */
