@@ -504,7 +504,7 @@ subSubtlextFind(int type,
         break; /* }}} */
       case T_STRING: /* {{{ */
         if(SUB_TYPE_CLIENT == type || SUB_TYPE_TRAY == type) ///< Set default match flags
-          flags = (SUB_MATCH_NAME|SUB_MATCH_CLASS);
+          flags = (SUB_MATCH_INSTANCE|SUB_MATCH_CLASS);
 
         snprintf(buf, sizeof(buf), "%s", RSTRING_PTR(value));
         break; /* }}} */
