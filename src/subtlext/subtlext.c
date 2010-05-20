@@ -549,7 +549,7 @@ subSubtlextFind(int type,
       case SUB_TYPE_CLIENT: /* {{{ */
         if(-1 != (id = subSharedClientFind(buf, NULL, &win, flags)))
           {
-            if(Qnil != (object = subClientInstantiate(win)))
+            if(!NIL_P((object = subClientInstantiate(win))))
               {
                 rb_iv_set(object, "@id", FIX2INT(id));
 
@@ -560,7 +560,7 @@ subSubtlextFind(int type,
       case SUB_TYPE_GRAVITY: /* {{{ */
         if(-1 != (id = subSharedGravityFind(buf, &name, &geometry)))
           {
-            if(Qnil != (object = subGravityInstantiate(name)))
+            if(!NIL_P((object = subGravityInstantiate(name))))
               {
                 VALUE geom = subGeometryInstantiate(geometry.x, geometry.y,
                   geometry.width, geometry.height);
@@ -575,8 +575,8 @@ subSubtlextFind(int type,
       case SUB_TYPE_TAG: /* {{{ */
         if(-1 != (id = subSharedTagFind(buf, &name)))
           {
-            if(Qnil != (object = subTagInstantiate(name)))
-              rb_iv_set(object, "@id", FIX2INT(id));
+            if(!NIL_P((object = subTagInstantiate(name))))
+              rb_iv_set(object, "@id", INT2FIX(id));
 
             free(name);
           }
@@ -584,7 +584,7 @@ subSubtlextFind(int type,
       case SUB_TYPE_TRAY: /* {{{ */
         if(-1 != (id = subSharedTrayFind(buf, NULL, &win, flags)))
           {
-            if(Qnil != (object = subTrayInstantiate(win)))
+            if(!NIL_P((object = subTrayInstantiate(win))))
               {
                 rb_iv_set(object, "@id", INT2FIX(id));
 
@@ -595,7 +595,7 @@ subSubtlextFind(int type,
       case SUB_TYPE_SCREEN: /* {{{ */
         if(-1 != (id = subSharedScreenFind(id, &geometry)))
           {
-            if(Qnil != (object = subScreenInstantiate(id)))
+            if(!NIL_P((object = subScreenInstantiate(id))))
               {
                 VALUE geom = subGeometryInstantiate(geometry.x, geometry.y,
                   geometry.width, geometry.height);
@@ -608,7 +608,7 @@ subSubtlextFind(int type,
       case SUB_TYPE_SUBLET: /* {{{ */
         if(-1 != (id = subSharedSubletFind(buf, &name)))
           {
-            if(Qnil != (object = subSubletInstantiate(name)))
+            if(!NIL_P((object = subSubletInstantiate(name))))
               rb_iv_set(object, "@id", INT2FIX(id));
 
             free(name);
@@ -617,7 +617,7 @@ subSubtlextFind(int type,
       case SUB_TYPE_VIEW: /* {{{ */
         if(-1 != (id = subSharedViewFind(buf, &name, &win)))
           {
-            if(Qnil != (object = subViewInstantiate(name)))
+            if(!NIL_P((object = subViewInstantiate(name))))
               {
                 rb_iv_set(object, "@id",  INT2FIX(id));
                 rb_iv_set(object, "@win", LONG2NUM(win));
