@@ -748,6 +748,8 @@ subClientSetGravity(SubClient *c,
       subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_SCREEN,
         (long *)&c->screen, 1);
 
+      XSync(subtle->dpy, False); ///< Sync all changes
+
       /* Hook: Gravity */
       subHookCall(SUB_HOOK_CLIENT_GRAVITY, (void *)c);
     }
@@ -1258,7 +1260,7 @@ subClientKill(SubClient *c,
 {
   assert(c);
 
-  /* Hook: Create */
+  /* Hook: Kill */
   subHookCall(SUB_HOOK_CLIENT_KILL, (void *)c);
 
   /* Focus */
@@ -1298,6 +1300,9 @@ subClientKill(SubClient *c,
   if(c->instance)  free(c->instance);
   if(c->klass)     free(c->klass);
   free(c);
+
+  /* Hook: Tile */
+  subHookCall(SUB_HOOK_TILE, NULL);
 
   subSharedLogDebug("kill=client\n");
 } /* }}} */

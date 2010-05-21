@@ -131,6 +131,9 @@ EventMapRequest(XMapRequestEvent *ev)
             {
               subViewConfigure(CURVIEW, False);
               subViewRender();
+
+              /* Hook: Tile */
+              subHookCall(SUB_HOOK_TILE, NULL);
             }
 
           if(c->flags & SUB_CLIENT_IMMOBILE) ///< Reorder stacking
@@ -311,7 +314,13 @@ EventMessage(XClientMessageEvent *ev)
                           subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS,
                             (long *)&c->tags, 1);
 
-                          if(CURVIEW->tags & tag) subViewConfigure(CURVIEW, False);
+                          if(CURVIEW->tags & tag)
+                            {
+                              subViewConfigure(CURVIEW, False);
+
+                              /* Hook: Tile */
+                              subHookCall(SUB_HOOK_TILE, NULL);
+                            }
                         }
                       break;
                     case 1: ///< Views
@@ -340,6 +349,9 @@ EventMessage(XClientMessageEvent *ev)
                 subClientConfigure(c);
                 subClientWarp(c);
                 XRaiseWindow(subtle->dpy, c->win);
+
+                /* Hook: Tile */
+                subHookCall(SUB_HOOK_TILE, NULL);
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_WINDOW_SCREEN: /* {{{ */
@@ -978,6 +990,9 @@ EventGrab(XEvent *ev)
                     subClientConfigure(c);
                     subClientWarp(c);
                     XRaiseWindow(subtle->dpy, c->win);
+
+                    /* Hook: Tile */
+                    subHookCall(SUB_HOOK_TILE, NULL);
                   }
               }
             break; /* }}} */
@@ -989,6 +1004,9 @@ EventGrab(XEvent *ev)
                     subClientSetGravity(c, -1, g->data.num, True);
                     subViewConfigure(CURVIEW, False);
                     subClientWarp(c);
+
+                    /* Hook: Tile */
+                    subHookCall(SUB_HOOK_TILE, NULL);
                   }
               }
             break; /* }}} */

@@ -303,8 +303,9 @@ subViewJump(SubView *v,
   subSubtleFocus(focus);
   subViewRender();
 
-  /* Hook: Jump */
+  /* Hook: Jump, Tile */
   subHookCall(SUB_HOOK_VIEW_JUMP, (void *)v);
+  subHookCall(SUB_HOOK_TILE, NULL);
 } /* }}} */
 
  /** subViewPublish {{{

@@ -779,6 +779,7 @@ RubyWrapLoadConfig(VALUE data)
   {
     { CHAR2SYM("HookStart"),           SUB_HOOK_START            },
     { CHAR2SYM("HookReload"),          SUB_HOOK_RELOAD           },
+    { CHAR2SYM("HookTile"),            SUB_HOOK_TILE             },
     { CHAR2SYM("HookExit"),            SUB_HOOK_EXIT             },
     { CHAR2SYM("HookClientCreate"),    SUB_HOOK_CLIENT_CREATE    },
     { CHAR2SYM("HookClientConfigure"), SUB_HOOK_CLIENT_CONFIGURE },
