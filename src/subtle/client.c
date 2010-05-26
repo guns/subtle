@@ -98,7 +98,7 @@ subClientNew(Window win)
   c = CLIENT(subSharedMemoryAlloc(1, sizeof(SubClient)));
   c->gravities = (int *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(int));
   c->screens   = (int *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(int));
-  c->flags     = SUB_TYPE_CLIENT;
+  c->flags     = (SUB_TYPE_CLIENT|SUB_CLIENT_INIT);
   c->gravity   = -1; ///< Force update
   c->win       = win;
 
@@ -152,6 +152,8 @@ subClientNew(Window win)
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_SCREEN, (long *)&c->screen, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
+
+  c->flags &= ~SUB_CLIENT_INIT; ///< Safe for the wild
 
   subSharedLogDebug("new=client, name=%s, instance=%s, klass=%s, win=%#lx\n",
     c->name, c->instance, c->klass, win);
@@ -1172,29 +1174,37 @@ subClientToggle(SubClient *c,
       if(type & SUB_MODE_FLOAT)
         c->gravity = -1; ///< Updating gravity
 
-      if(type & SUB_MODE_STICK) subViewConfigure(CURVIEW, False);
+      if(type & SUB_MODE_STICK)
+        {
+          subViewDynamic();
+          subViewConfigure(CURVIEW, False);
+        }
     }
   else ///< Set flags
     {
-      /* Need to be done before setting flag */
+      c->flags |= type;
+
       if(type & SUB_MODE_STICK)
         {
-          int i;
-
-          /* Set gravity and screen for other views */
-          for(i = 0; i < subtle->views->ndata; i++)
+          if(!(c->flags & SUB_CLIENT_INIT)) ///< Check if client is ready
             {
-              SubView *v = VIEW(subtle->views->data[i]);
+              int i;
 
-              if(!(VISIBLE(v, c)))
+              /* Set gravity and screen for other views */
+              for(i = 0; i < subtle->views->ndata; i++)
                 {
-                  if(-1 != c->gravity) c->gravities[i] = c->gravity;
-                  //if(-1 != c->screen)  c->screens[i]   = c->screen;
+                  SubView *v = VIEW(subtle->views->data[i]);
+
+                  if(!(v->tags & c->tags)) ///< Check manually
+                    {
+                      if(-1 != c->gravity) c->gravities[i] = c->gravity;
+                      if(-1 != c->screen)  c->screens[i]   = c->screen;
+                    }
                 }
             }
-        }
 
-      c->flags |= type;
+          subViewDynamic();
+        }
 
       if(type & SUB_MODE_FLOAT) subClientResize(c); ///< Sanitize
       if(type & SUB_MODE_FULL)

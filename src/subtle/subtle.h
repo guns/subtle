@@ -197,14 +197,15 @@
 #define SUB_HOOK_VIEW_KILL            (1L << 29)                  ///< View kill hook
 
 /* Client flags */
-#define SUB_CLIENT_FOCUS              (1L << 11)                  ///< Send focus message
-#define SUB_CLIENT_INPUT              (1L << 12)                  ///< Active/passive focus-model
-#define SUB_CLIENT_CLOSE              (1L << 13)                  ///< Send close message
-#define SUB_CLIENT_IMMOBILE           (1L << 14)                  ///< Immobile window
-#define SUB_CLIENT_WARP               (1L << 15)                  ///< Warp window
-#define SUB_CLIENT_CENTER             (1L << 16)                  ///< Center window
-#define SUB_CLIENT_FIXED              (1L << 17)                  ///< Center window
-#define SUB_CLIENT_DEAD               (1L << 18)                  ///< Dead window
+#define SUB_CLIENT_INIT               (1L << 11)                  ///< Send focus message
+#define SUB_CLIENT_FOCUS              (1L << 12)                  ///< Send focus message
+#define SUB_CLIENT_INPUT              (1L << 13)                  ///< Active/passive focus-model
+#define SUB_CLIENT_CLOSE              (1L << 14)                  ///< Send close message
+#define SUB_CLIENT_IMMOBILE           (1L << 15)                  ///< Immobile window
+#define SUB_CLIENT_WARP               (1L << 16)                  ///< Warp window
+#define SUB_CLIENT_CENTER             (1L << 17)                  ///< Center window
+#define SUB_CLIENT_FIXED              (1L << 18)                  ///< Center window
+#define SUB_CLIENT_DEAD               (1L << 19)                  ///< Dead window
 
 /* Drag flags */
 #define SUB_DRAG_START                (1L << 1)                   ///< Drag start
