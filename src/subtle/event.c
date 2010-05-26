@@ -181,6 +181,9 @@ EventUnmap(XUnmapEvent *ev)
       subEwmhSetWMState(c->win, WithdrawnState);
       subArrayRemove(subtle->clients, (void *)c);
       subClientPublish();
+
+      subViewDynamic(); ///< Dynamic views
+
       if(VISIBLE(CURVIEW, c)) subViewConfigure(CURVIEW, False);
       subClientKill(c, False);
     }
