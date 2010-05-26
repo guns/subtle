@@ -1053,7 +1053,8 @@ subSharedMessage(Window win,
   ev.xclient.data.l[3] = data.l[3];
   ev.xclient.data.l[4] = data.l[4];
 
-  if(!display || !((status = XSendEvent(display, DefaultRootWindow(display), False, mask, &ev))))
+  if(!display || !((status = XSendEvent(display, DefaultRootWindow(display),
+      False, mask, &ev))))
     subSharedLogWarn("Failed sending client message `%s'\n", type);
 
   if(True == xsync) XSync(display, False);

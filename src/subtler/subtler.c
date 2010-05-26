@@ -74,8 +74,9 @@ typedef void(*SubtlerCommand)(int, char *, char *);
 #define SUB_MOD_SELECT         2   ///< Mod select
 #define SUB_MOD_RELOAD_CONFIG  3   ///< Mod reload config
 #define SUB_MOD_RELOAD_SUBLETS 4   ///< Mod reload sublets
-#define SUB_MOD_QUIT           5   ///< Mod quit
-#define SUB_MOD_TOTAL          6   ///< Mod total
+#define SUB_MOD_RESTART        5   ///< Mod restart
+#define SUB_MOD_QUIT           6   ///< Mod quit
+#define SUB_MOD_TOTAL          7   ///< Mod total
 /* }}} */
 
 /* SubtlerToggle {{{ */
@@ -1341,6 +1342,7 @@ SubtlerUsage(int group)
              "\nModifier:\n" \
              "  -r, --reload-config     Reload config\n" \
              "  -R, --reload-sublets    Reload sublets\n" \
+             "  -q, --restart           Restart subtle\n" \
              "  -Q, --quit              Quit %s\n" \
              "  -C, --current           Select current active window/view\n" \
              "  -X, --select            Select a window via pointer\n" \
@@ -1370,7 +1372,7 @@ SubtlerUsage(int group)
              "  -Y, --gravity           Set client gravity\n" \
              "  -n, --screen            Set client screen\n" \
              "  -E, --raise             Raise client window\n" \
-             "  -R, --lower             Lower client window\n" \
+             "  -L, --lower             Lower client window\n" \
              "  -k, --kill=PATTERN      Kill client\n");
     }
 
@@ -1514,26 +1516,6 @@ SubtlerParse(char *string)
   return ret;
 } /* }}} */
 
-/* SubtlerReload {{{ */
-static void
-SubtlerReload(int mod)
-{
-  SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-  subSharedMessage(DefaultRootWindow(display),
-    SUB_MOD_RELOAD_CONFIG == mod ? "SUBTLE_RELOAD_CONFIG" :
-    "SUBTLE_RELOAD_SUBLETS", data, True);
-} /* }}} */
-
-/* SubtlerQuit {{{ */
-static void
-SubtlerQuit(void)
-{
-  SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-  subSharedMessage(DefaultRootWindow(display), "SUBTLE_QUIT", data, True);
-} /* }}} */
-
 /* main {{{ */
 int
 main(int argc,
@@ -1543,6 +1525,7 @@ main(int argc,
   int c, mod = -1, group = -1, action = -1, args = 0;
   char *dispname = NULL, *arg1 = NULL, *arg2 = NULL;
   struct sigaction act;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
   const struct option long_options[] = /* {{{ */
   {
     /* Groups */
@@ -1621,7 +1604,8 @@ main(int argc,
   memset(&act.sa_mask, 0, sizeof(sigset_t)); ///< Avoid uninitialized values
   sigaction(SIGSEGV, &act, NULL);
 
-  while((c = getopt_long(argc, argv, "cgestyvakfoFOSjlTUGIuAYnELrRQCXd:hDV", long_options, NULL)) != -1)
+  /* Parse arguments {{{ */
+  while((c = getopt_long(argc, argv, "cgestyvakfoFOSjlTUGIuAYnELrRqQCXd:hDV", long_options, NULL)) != -1)
     {
       switch(c)
         {
@@ -1658,6 +1642,7 @@ main(int argc,
           /* Modifier */
           case 'r': mod = SUB_MOD_RELOAD_CONFIG;  break;
           case 'R': mod = SUB_MOD_RELOAD_SUBLETS; break;
+          case 'q': mod = SUB_MOD_RESTART;        break;
           case 'Q': mod = SUB_MOD_QUIT;           break;
           case 'C': mod = SUB_MOD_CURRENT;        break;
           case 'X': mod = SUB_MOD_SELECT;         break;
@@ -1677,7 +1662,7 @@ main(int argc,
             printf("Try `%sr --help' for more information\n", PKG_NAME);
             return -1;
         }
-    }
+    } /* }}} */
 
   /* Open connection to server */
   if(!(display = XOpenDisplay(dispname)))
@@ -1688,6 +1673,7 @@ main(int argc,
     }
   XSetErrorHandler(subSharedLogXError);
 
+  /* Set locale */
   if(!setlocale(LC_CTYPE, "")) XSupportsLocale();
 
   /* Check if subtle is running */
@@ -1705,10 +1691,21 @@ main(int argc,
   switch(mod)
     {
       case SUB_MOD_RELOAD_CONFIG:
-      case SUB_MOD_RELOAD_SUBLETS:
-        SubtlerReload(mod);
+        subSharedMessage(DefaultRootWindow(display),
+          "SUBTLE_RELOAD_CONFIG", data, True);
         return 0;
-      case SUB_MOD_QUIT: SubtlerQuit(); return 0;
+      case SUB_MOD_RELOAD_SUBLETS:
+        subSharedMessage(DefaultRootWindow(display),
+          "SUBTLE_RELOAD_SUBLETS", data, True);
+        return 0;
+      case SUB_MOD_RESTART:
+        subSharedMessage(DefaultRootWindow(display),
+          "SUBTLE_RESTART", data, True);
+        return 0;
+      case SUB_MOD_QUIT:
+        subSharedMessage(DefaultRootWindow(display),
+          "SUBTLE_QUIT", data, True);
+        return 0;
       case SUB_MOD_CURRENT:
         if(SUB_GROUP_VIEW == group) ///< Current of correct group
           {
