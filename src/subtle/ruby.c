@@ -463,7 +463,7 @@ RubyForeachTag(VALUE key,
                   /* Collect flags */
                   for(i = 0; TAGSLENGTH > i; i++)
                     {
-                      if(RTEST(rb_hash_lookup(value, tags[i].sym)))
+                      if(!NIL_P((rb_hash_lookup(value, tags[i].sym))))
                         t->flags |= tags[i].flags;
                     }
 
