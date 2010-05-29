@@ -2076,7 +2076,13 @@ subRubyReloadConfig(void)
 
   /* Update client tags */
   for(i = 0; i < subtle->clients->ndata; i++)
-    subClientSetTags(CLIENT(subtle->clients->data[i]));
+    {
+      int flags = 0;
+      SubClient *c = CLIENT(subtle->clients->data[i]);
+
+      subClientSetTags(c, &flags);
+      subClientToggle(c, ~c->flags & flags); ///< Toggle flags
+    }
 
   subViewJump(subtle->views->data[0], True);
   subViewConfigure(subtle->views->data[0], True);

@@ -137,7 +137,7 @@ subClientNew(Window win)
   subClientSetSizeHints(c, &flags);
   subClientSetProtocols(c);
   subClientSetStrut(c);
-  subClientSetTags(c);
+  subClientSetTags(c, &flags);
   subClientSetWMHints(c, &flags);
   subClientSetState(c, &flags);
   subClientSetTransient(c, &flags);
@@ -629,13 +629,15 @@ subClientTag(SubClient *c,
 
  /** subClientSetTags {{{
   * @brief Set client tags
-  * @param[in]  c  A #SubClient
+  * @param[in]  c      A #SubClient
+  * @param[in]  flags  Mode flags
   **/
 
 void
-subClientSetTags(SubClient *c)
+subClientSetTags(SubClient *c,
+  int *flags)
 {
-  int i, flags = 0, visible = 0;
+  int i, visible = 0;
   char *role = NULL;
 
   DEAD(c);
@@ -661,7 +663,7 @@ subClientSetTags(SubClient *c)
           subSharedRegexMatch(t->preg, c->klass)) ||
           (t->flags & SUB_TAG_MATCH_ROLE && role &&
           subSharedRegexMatch(t->preg, role))))
-        flags |= subClientTag(c, i);
+        *flags |= subClientTag(c, i);
     }
 
   if(role) free(role);
@@ -676,12 +678,10 @@ subClientSetTags(SubClient *c)
         break;
       }
 
-  if(0 == visible) flags |= subClientTag(c, 0); ///< Set default tag
+  if(0 == visible) *flags |= subClientTag(c, 0); ///< Set default tag
 
   /* EWMH: Tags */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&c->tags, 1);
-
-  subClientToggle(c, ~c->flags & flags); ///< Toggle flags
 } /* }}} */
 
   /** subClientSetGravity {{{
@@ -857,7 +857,8 @@ subClientSetProtocols(SubClient *c)
 
   /** subClientSetSizeHints {{{
    * @brief Set client size hints
-   * @param[in]  c  A #SubClient
+   * @param[in]  c      A #SubClient
+   * @param[in]  flags  Mode flags
    **/
 
 void

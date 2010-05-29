@@ -41,8 +41,8 @@
 #define TRAYID       3L                                           ///< Tray data id
 #define SUBLETID     4L                                           ///< Sublet data id
 
-#define MINW         100L                                         ///< Client min width
-#define MINH         100L                                         ///< Client min height
+#define MINW         1L                                           ///< Client min width
+#define MINH         1L                                           ///< Client min height
 #define EXECTIME     1                                            ///< Max execution time
 #define WAITTIME     10                                           ///< Max waiting time
 #define DEFAULTTAG   (1L << 1)                                    ///< Default tag
@@ -578,7 +578,7 @@ void subClientUpdate(int vid);                                    ///< Update cl
 void subClientResize(SubClient *c);                               ///< Set client sizes
 void subClientCenter(SubClient *c);                               ///< Center client
 int subClientTag(SubClient *c, int tag);                          ///< Tag client
-void subClientSetTags(SubClient *c);                              ///< Update client tags
+void subClientSetTags(SubClient *c, int *flags);                  ///< Update client tags
 void subClientSetGravity(SubClient *c, int gravity,
   int screen, int force);                                         ///< Set client gravity
 void subClientSetStrut(SubClient *c);                             ///< Set client strut
