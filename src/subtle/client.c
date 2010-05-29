@@ -133,11 +133,11 @@ subClientNew(Window win)
 
   /* Update client */
   subEwmhSetWMState(c->win, WithdrawnState);
-  subClientSetType(c, &flags);
-  subClientSetSizeHints(c, &flags);
   subClientSetProtocols(c);
   subClientSetStrut(c);
+  subClientSetType(c, &flags);
   subClientSetTags(c, &flags);
+  subClientSetSizeHints(c, &flags);
   subClientSetWMHints(c, &flags);
   subClientSetState(c, &flags);
   subClientSetTransient(c, &flags);
