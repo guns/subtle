@@ -800,6 +800,9 @@ Init_subtlext(void)
   /* Bitfield of window states */
   rb_define_attr(client, "flags",    1, 0);
 
+  /* Window visibility */
+  rb_define_attr(client, "hidden",   1, 0);
+
   /* Singleton methods */
   rb_define_singleton_method(client, "find",    subClientFind,    1);
   rb_define_singleton_method(client, "current", subClientCurrent, 0);
@@ -837,6 +840,9 @@ Init_subtlext(void)
   rb_define_method(client, "screen=",      subClientScreenWriter,    1);
   rb_define_method(client, "geometry",     subClientGeometryReader,  0);
   rb_define_method(client, "geometry=",    subClientGeometryWriter, -1);
+  rb_define_method(client, "show",         subClientShow,            0);
+  rb_define_method(client, "hide",         subClientHide,            0);
+  rb_define_method(client, "hidden?",      subClientHiddenAsk,       0);
   rb_define_method(client, "resize=",      subClientResizeWriter,    1);
   rb_define_method(client, "pid",          SubtlextPidReader,        0);
   rb_define_method(client, "alive?",       subClientAliveAsk,        0);
@@ -1213,6 +1219,9 @@ Init_subtlext(void)
   /* Window id */
   rb_define_attr(window, "win", 1, 0);
 
+  /* Window visibility */
+  rb_define_attr(window, "hidden",   1, 0);
+
   /* Allocate */
   rb_define_alloc_func(window, subWindowAlloc);
 
@@ -1240,6 +1249,7 @@ Init_subtlext(void)
   rb_define_method(window, "geometry=",     subWindowGeometryWriter,    1);
   rb_define_method(window, "show",          subWindowShow,              0);
   rb_define_method(window, "hide",          subWindowHide,              0);
+  rb_define_method(window, "hidden?",       subWindowHiddenAsk,         0);
   rb_define_method(window, "kill",          subWindowKill,              0);
 
   /* Singleton aliases */

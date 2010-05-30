@@ -207,6 +207,7 @@ subWindowInit(VALUE self,
       /* Store data */
       rb_iv_set(w->instance, "@win",      LONG2NUM(w->win));
       rb_iv_set(w->instance, "@geometry", geom);
+      rb_iv_set(w->instance, "@hidden",   Qtrue);
 
       /* Yield to block if given */
       if(rb_block_given_p())
@@ -841,6 +842,8 @@ subWindowShow(VALUE self)
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w)
     {
+      rb_iv_set(self, "@hidden", Qfalse);
+
       XMapRaised(display, w->win);
       WindowExpose(w);
     }
@@ -865,11 +868,29 @@ subWindowHide(VALUE self)
 
   if(RTEST(win))
     {
+      rb_iv_set(self, "@hidden", Qtrue);
+
       XUnmapWindow(display, NUM2LONG(win));
       XSync(display, False); ///< Sync with X
     }
 
   return Qnil;
+} /* }}} */
+
+/* subWindowHiddenAsk {{{ */
+/*
+ * call-seq: hidden -> true or false
+ *
+ * Whether Window is hidden
+ *
+ *  win.hidden?
+ *  => true
+ */
+
+VALUE
+subWindowHiddenAsk(VALUE self)
+{
+  return rb_iv_get(self, "@hidden");
 } /* }}} */
 
 /* subWindowKill {{{ */
