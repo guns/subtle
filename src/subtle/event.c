@@ -173,8 +173,6 @@ EventUnmap(XUnmapEvent *ev)
   SubClient *c = NULL;
   SubTray *t = NULL;
 
-  if(True != ev->send_event) return; ///< Ignore synthetic events
-
   /* Check if we know this window */
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID)))) ///< Client
     {
