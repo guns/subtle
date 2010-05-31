@@ -562,7 +562,7 @@ subClientCenter(SubClient *c)
   DEAD(c);
   assert(c);
 
-  if(!(c->flags & SUB_CLIENT_IMMOBILE))
+  if(!(c->flags & (SUB_CLIENT_IMMOBILE|SUB_MODE_NONRESIZE)))
     {
       SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
 
@@ -571,6 +571,8 @@ subClientCenter(SubClient *c)
       c->geom.y = s->geom.y +
         (s->geom.height - c->geom.height - 2 * subtle->bw) / 2;
     }
+
+  c->flags &= ~SUB_CLIENT_CENTER;
 } /* }}} */
 
  /** subClientTag {{{
@@ -604,9 +606,8 @@ subClientTag(SubClient *c,
           /* Set size and enable float */
           if(t->flags & SUB_TAG_GEOMETRY && !(c->flags & SUB_MODE_NONFLOAT))
             {
-              flags    |= (SUB_MODE_FLOAT|SUB_MODE_NONRESIZE); ///< Disable size checks
-              c->flags &= ~SUB_CLIENT_CENTER; ///< Disable center
-              c->geom   = t->geometry;
+              flags   |= (SUB_MODE_FLOAT|SUB_MODE_NONRESIZE); ///< Disable size checks
+              c->geom  = t->geometry;
             }
 
           /* Set gravity and screens for matching views */
