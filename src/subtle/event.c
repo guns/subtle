@@ -66,6 +66,40 @@ EventFindSublet(int id)
   return s;
 } /* }}} */
 
+/* EventRestack {{{ */
+static void
+EventRestack(SubClient *c,
+  long dir)
+{
+  int flags = 0;
+
+  /* Save flags */
+  flags     = c->flags & (SUB_CLIENT_IMMOBILE|SUB_MODE_FULL);
+  c->flags &= ~flags;
+
+  if(Above == dir)
+    {
+      XRaiseWindow(subtle->dpy, c->win);
+
+      /* Sort stack up */
+      c->flags |= SUB_MODE_FULL;
+      subArraySort(subtle->clients, subClientCompare);
+      c->flags &= ~SUB_MODE_FULL;
+    }
+  else if(Below == dir)
+    {
+      XLowerWindow(subtle->dpy, c->win);
+
+      /* Sort stack down */
+      c->flags |= SUB_CLIENT_IMMOBILE;
+      subArraySort(subtle->clients, subClientCompare);
+      c->flags &= ~SUB_CLIENT_IMMOBILE;
+    }
+  else subSharedLogDebug("Ignoring stacking mode %ld", dir);
+
+  c->flags |= flags;
+} /* }}} */
+
 /* EventConfigure {{{ */
 static void
 EventConfigure(XConfigureRequestEvent *ev)
@@ -282,16 +316,7 @@ EventMessage(XClientMessageEvent *ev)
             break; /* }}} */
           case SUB_EWMH_NET_RESTACK_WINDOW: /* {{{ */
             if((c = CLIENT(subSubtleFind(ev->data.l[1], CLIENTID))))
-              {
-                switch(ev->data.l[2])
-                  {
-                    case Above: XRaiseWindow(subtle->dpy, c->win); break;
-                    case Below: XLowerWindow(subtle->dpy, c->win); break;
-                    default:
-                      subSharedLogDebug("Restack: Ignored restack event (%d)\n",
-                        ev->data.l[2]);
-                  }
-              }
+              EventRestack(c, ev->data.l[2]);
             break; /* }}} */
           case SUB_EWMH_SUBTLE_WINDOW_TAG:
           case SUB_EWMH_SUBTLE_WINDOW_UNTAG: /* {{{ */
@@ -909,10 +934,7 @@ EventGrab(XEvent *ev)
             if((c = CLIENT(subSubtleFind(win, CLIENTID))) &&
                 !(c->flags & SUB_CLIENT_IMMOBILE) &&
                 VISIBLE(CURVIEW, c))
-              {
-                if(Above == g->data.num)      XRaiseWindow(subtle->dpy, c->win);
-                else if(Below == g->data.num) XLowerWindow(subtle->dpy, c->win);
-              }
+              EventRestack(c, g->data.num);
             break; /* }}} */
           case SUB_GRAB_WINDOW_SELECT: /* {{{ */
             if((c = CLIENT(subSubtleFind(win, CLIENTID))))
