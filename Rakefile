@@ -9,13 +9,13 @@
 # See the file COPYING.
 #
 
-require("mkmf")
-require("yaml")
-require("fileutils")
-require("rake/clean")
-require("rake/rdoctask")
+require "mkmf"
+require "yaml"
+require "fileutils"
+require "rake/clean"
+require "rake/rdoctask"
 
-# 
+#
 # Settings
 #
 # Options / defines {{{
@@ -61,8 +61,8 @@ SRC_SUBTLER  = (SRC_SHARED | FileList["src/subtler/*.c"])
 SRC_SUBTLEXT = (SRC_SHARED | FileList["src/subtlext/*.c"])
 
 # Collect object files
-OBJ_SUBTLE = SRC_SUBTLE.collect do |f| 
-  File.join(@options["builddir"], "subtle", File.basename(f).ext("o")) 
+OBJ_SUBTLE = SRC_SUBTLE.collect do |f|
+  File.join(@options["builddir"], "subtle", File.basename(f).ext("o"))
 end
 
 OBJ_SUBTLER = SRC_SUBTLER.collect do |f|
@@ -75,7 +75,7 @@ end
 
 FUNCS   = [ "select" ]
 HEADER  = [
-  "stdio.h", "stdlib.h", "stdarg.h", "string.h", "unistd.h", "signal.h", "errno.h", 
+  "stdio.h", "stdlib.h", "stdarg.h", "string.h", "unistd.h", "signal.h", "errno.h",
   "assert.h", "regex.h", "sys/time.h", "sys/types.h"
 ]
 OPTIONAL = [ "sys/inotify.h", "execinfo.h" ]
@@ -104,7 +104,7 @@ def silent_sh(cmd, msg, &block)
     res = system(cmd)
     block.call(res, $?)
   end
-end # }}} 
+end # }}}
 
 # Func: make_header {{{
 # FIXME: Shellwords strips quotes!
@@ -141,7 +141,7 @@ def compile(src, out = nil, options = "")
   end
 end # }}}
 
-# 
+#
 # Tasks
 #
 # Task: default {{{
@@ -158,7 +158,7 @@ task(:config) do
   end
 
   # Create more build dirs
-  FileUtils.mkdir_p( 
+  FileUtils.mkdir_p(
     [
       File.join(@options["builddir"], "subtle"),
       File.join(@options["builddir"], "subtler"),
@@ -189,7 +189,7 @@ task(:config) do
     else
       @options["cflags"] << " -g -DNDEBUG"
     end
-    
+
     # Get revision
     if(File.exists?(".hg") && (hg = find_executable0("hg")))
       match = `#{hg} tip`.match(/changeset:\s*(\d+).*/)
@@ -199,17 +199,17 @@ task(:config) do
       else
         @options["revision"] = "9999"
       end
-    end  
+    end
 
     # Get ruby header dir
     if(CONFIG["rubyhdrdir"].nil?)
-      @options["hdrdir"]  = Config.expand(CONFIG["archdir"]) 
+      @options["hdrdir"]  = Config.expand(CONFIG["archdir"])
     else
-      @options["hdrdir"]  = Config.expand(CONFIG["rubyhdrdir"]) 
+      @options["hdrdir"]  = Config.expand(CONFIG["rubyhdrdir"])
     end
 
     @options["archdir"] = File.join(
-      @options["hdrdir"], 
+      @options["hdrdir"],
       Config.expand(CONFIG["arch"])
     )
 
@@ -220,7 +220,7 @@ task(:config) do
         hash[k] = Config.expand(v, CONFIG.merge(@options.merge(@defines)))
       end
     end
-   
+
     # Check header
     HEADER.each do |h|
       if(!have_header(h))
@@ -239,7 +239,7 @@ task(:config) do
       if(libs.nil?)
         fail("X11 was not found")
       end
-     
+
       # Update flags
       @options["cflags"]   << " %s" % [cflags]
       @options["ldflags"]  << " %s" % [libs]
@@ -279,7 +279,7 @@ task(:config) do
     yaml = [@options, @defines].to_yaml
     File.open("config.yml", "w+") do |out|
       YAML::dump(yaml, out)
-    end  
+    end
 
     # Write header
     make_header("config.h")
@@ -321,7 +321,7 @@ task(PG_SUBTLEXT => [:config])
 desc("Install subtle")
 task(:install => [:config, :build]) do
   # Make install dirs
-  FileUtils.mkdir_p( 
+  FileUtils.mkdir_p(
     [
       @options["bindir"],
       @options["configdir"],
@@ -411,7 +411,7 @@ SRC_SUBTLE.each do |src|
   file(out => src) do
     compile(src, out, "-D#{PG_SUBTLE.upcase}")
   end
-end 
+end
 
 SRC_SUBTLER.each do |src|
   out = File.join(@options["builddir"], PG_SUBTLER, File.basename(src).ext("o"))
@@ -432,21 +432,21 @@ end
 
 # Task: link {{{
 file(PG_SUBTLE => OBJ_SUBTLE) do
-  silent_sh("gcc -o #{PG_SUBTLE} #{OBJ_SUBTLE} #{@options["ldflags"]}", 
+  silent_sh("gcc -o #{PG_SUBTLE} #{OBJ_SUBTLE} #{@options["ldflags"]}",
     "LD #{PG_SUBTLE}") do |ok, status|
       ok or fail("Linker failed with status #{status.exitstatus}")
   end
 end
 
 file(PG_SUBTLER => OBJ_SUBTLER) do
-  silent_sh("gcc -o #{PG_SUBTLER} #{OBJ_SUBTLER} #{@options["ldflags"]}", 
+  silent_sh("gcc -o #{PG_SUBTLER} #{OBJ_SUBTLER} #{@options["ldflags"]}",
     "LD #{PG_SUBTLER}") do |ok, status|
       ok or fail("Linker failed with status #{status.exitstatus}")
   end
 end
 
 file(PG_SUBTLEXT => OBJ_SUBTLEXT) do
-  silent_sh("gcc -o #{PG_SUBTLEXT}.so #{OBJ_SUBTLEXT} -shared #{@options["extflags"]}", 
+  silent_sh("gcc -o #{PG_SUBTLEXT}.so #{OBJ_SUBTLEXT} -shared #{@options["extflags"]}",
     "LD #{PG_SUBTLEXT}") do |ok, status|
       ok or fail("Linker failed with status #{status.exitstatus}")
   end
