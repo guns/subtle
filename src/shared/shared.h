@@ -45,15 +45,6 @@
 
 #define DEFFONT   "-*-*-medium-*-*-*-14-*-*-*-*-*-*-*"            ///< Default font
 
-/* Data flags */
-#define SUB_DATA_STRING  (1L << 13)                               ///< String data
-#define SUB_DATA_NUM     (1L << 14)                               ///< Num data
-#define SUB_DATA_NIL     (1L << 15)                               ///< Nil data
-
-/* Text flags */
-#define SUB_TEXT_EMPTY   (1L << 1)                                ///< Empty text
-#define SUB_TEXT_ICON    (1L << 2)                                ///< Text icon
-
 #define FONT(f)   ((SubFont *)f)                                  ///< Cast to SubFont
 #define TEXT(t)   ((SubText *)t)                                  ///< Cast to SubText
 #define ITEM(i)   ((SubTextItem *)i)                              ///< Cast to SubTextItem
@@ -76,6 +67,15 @@
 #define SUB_MATCH_GRAVITY  (1L << 4)                              ///< Match gravity
 #define SUB_MATCH_ROLE     (1L << 5)                              ///< Match window role
 #define SUB_MATCH_PID      (1L << 6)                              ///< Match pid
+
+/* Data flags */
+#define SUB_DATA_STRING  (1L << 13)                               ///< String data
+#define SUB_DATA_NUM     (1L << 14)                               ///< Num data
+#define SUB_DATA_NIL     (1L << 15)                               ///< Nil data
+
+/* Text flags */
+#define SUB_TEXT_EMPTY   (1L << 1)                                ///< Empty text
+#define SUB_TEXT_ICON    (1L << 2)                                ///< Text icon
 /* }}} */
 
 /* Typedefs {{{ */

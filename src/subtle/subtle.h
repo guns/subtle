@@ -156,7 +156,7 @@
 #define SUB_TYPE_VIEW                 (1L << 10)                  ///< View
 
 /* Mode flags */
-#define SUB_MODE_FULL                 (1L << 20)                  ///< Fullscreen mode
+#define SUB_MODE_FULL                 (1L << 20)                  ///< Fullscreen mode (after client flags [20]
 #define SUB_MODE_FLOAT                (1L << 21)                  ///< Float mode
 #define SUB_MODE_STICK                (1L << 22)                  ///< Stick mode
 #define SUB_MODE_URGENT               (1L << 23)                  ///< Urgent mode
