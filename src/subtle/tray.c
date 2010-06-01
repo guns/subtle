@@ -173,6 +173,8 @@ subTraySetState(SubTray *t)
         }
       else
         {
+          t->flags |= SUB_TRAY_UNMAP;
+
           opcode = XEMBED_WINDOW_DEACTIVATE;
           XUnmapWindow(subtle->dpy, t->win);
           subEwmhSetWMState(t->win, WithdrawnState);
@@ -218,6 +220,7 @@ subTrayKill(SubTray *t)
   /* Ignore further events and delete context */
   XSelectInput(subtle->dpy, t->win, NoEventMask);
   XDeleteContext(subtle->dpy, t->win, TRAYID);
+  XUnmapWindow(subtle->dpy, t->win);
 
   if(t->name) XFree(t->name);
   free(t);

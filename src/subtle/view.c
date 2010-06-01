@@ -104,7 +104,11 @@ subViewConfigure(SubView *v,
 
           subClientConfigure(c);
         }
-      else XUnmapWindow(subtle->dpy, c->win); ///< Unmap other windows
+      else ///< Unmap other windows
+        {
+          c->flags |= SUB_CLIENT_UNMAP;
+          XUnmapWindow(subtle->dpy, c->win);
+        }
     }
 
   subSharedLogDebug("Configure: type=view, vid=%d, name=%s\n", vid, v->name);

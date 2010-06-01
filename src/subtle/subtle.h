@@ -156,17 +156,17 @@
 #define SUB_TYPE_VIEW                 (1L << 10)                  ///< View
 
 /* Mode flags */
-#define SUB_MODE_FULL                 (1L << 20)                  ///< Fullscreen mode (after client flags [20]
-#define SUB_MODE_FLOAT                (1L << 21)                  ///< Float mode
-#define SUB_MODE_STICK                (1L << 22)                  ///< Stick mode
-#define SUB_MODE_URGENT               (1L << 23)                  ///< Urgent mode
-#define SUB_MODE_URGENT_FOCUS         (1L << 24)                  ///< Urgent mode until focus
-#define SUB_MODE_RESIZE               (1L << 25)                  ///< Resize mode
-#define SUB_MODE_NONFULL              (1L << 26)                  ///< Disable full mode
-#define SUB_MODE_NONFLOAT             (1L << 27)                  ///< Disable float mode
-#define SUB_MODE_NONSTICK             (1L << 28)                  ///< Disable stick mode
-#define SUB_MODE_NONURGENT            (1L << 29)                  ///< Disable urgent mode
-#define SUB_MODE_NONRESIZE            (1L << 30)                  ///< Disable resize mode
+#define SUB_MODE_FULL                 (1L << 21)                  ///< Fullscreen mode (after client flags [20]
+#define SUB_MODE_FLOAT                (1L << 22)                  ///< Float mode
+#define SUB_MODE_STICK                (1L << 23)                  ///< Stick mode
+#define SUB_MODE_URGENT               (1L << 24)                  ///< Urgent mode
+#define SUB_MODE_URGENT_FOCUS         (1L << 25)                  ///< Urgent mode until focus
+#define SUB_MODE_RESIZE               (1L << 26)                  ///< Resize mode
+#define SUB_MODE_NONFULL              (1L << 27)                  ///< Disable full mode
+#define SUB_MODE_NONFLOAT             (1L << 28)                  ///< Disable float mode
+#define SUB_MODE_NONSTICK             (1L << 29)                  ///< Disable stick mode
+#define SUB_MODE_NONURGENT            (1L << 30)                  ///< Disable urgent mode
+#define SUB_MODE_NONRESIZE            (1L << 31)                  ///< Disable resize mode
 
 /* Call flags */
 #define SUB_CALL_HOOKS                (1L << 11)                  ///< Call hook
@@ -206,6 +206,7 @@
 #define SUB_CLIENT_CENTER             (1L << 17)                  ///< Center window
 #define SUB_CLIENT_FIXED              (1L << 18)                  ///< Center window
 #define SUB_CLIENT_DEAD               (1L << 19)                  ///< Dead window
+#define SUB_CLIENT_UNMAP              (1L << 20)                  ///< Ignore unmaps
 
 /* Drag flags */
 #define SUB_DRAG_START                (1L << 1)                   ///< Drag start
@@ -277,6 +278,9 @@
 #define SUB_TAG_MATCH_INSTANCE        (1L << 16)                  ///< Match instance of WM_CLASS
 #define SUB_TAG_MATCH_CLASS           (1L << 17)                  ///< Match class of WM_CLASS
 #define SUB_TAG_MATCH_ROLE            (1L << 18)                  ///< Match role of window
+
+/* Tray flags */
+#define SUB_TRAY_UNMAP                (1L << 11)                  ///< Ignore unmaps
 
 /* View flags */
 #define SUB_VIEW_DYNAMIC              (1L << 20)                  ///< Dynamic view (after panel flags)

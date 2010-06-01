@@ -186,8 +186,10 @@ EventMap(XMapEvent *ev)
   SubClient *c = NULL;
   SubTray *t = NULL;
 
-  if(ev->window != ev->event && ev->send_event != True) return;
+  /* Ignored because we use XUnmapWindow too */
+  if(ev->window != ev->event && True != ev->send_event) return;
 
+  /* Check if we know this window */
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
     {
       subEwmhSetWMState(c->win, NormalState);
@@ -207,15 +209,23 @@ EventUnmap(XUnmapEvent *ev)
   SubClient *c = NULL;
   SubTray *t = NULL;
 
-  if(True != ev->send_event) return; ///< FIXME: Ignore synthetic events
+  /* Ignored because we use XUnmapWindow too */
+  if(ev->window != ev->event && True != ev->send_event) return;
 
   /* Check if we know this window */
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID)))) ///< Client
     {
       subEwmhSetWMState(c->win, WithdrawnState);
+
+      /* Ignore out own generated unmap events */
+      if(c->flags & SUB_CLIENT_UNMAP)
+        {
+          c->flags &= ~SUB_CLIENT_UNMAP;
+          return;
+        }
+
       subArrayRemove(subtle->clients, (void *)c);
       subClientPublish();
-
       subViewDynamic(); ///< Dynamic views
 
       if(VISIBLE(CURVIEW, c)) subViewConfigure(CURVIEW, False);
@@ -224,6 +234,14 @@ EventUnmap(XUnmapEvent *ev)
   else if((t = TRAY(subSubtleFind(ev->window, TRAYID)))) ///< Tray
     {
       subEwmhSetWMState(t->win, WithdrawnState);
+
+      /* Ignore out own generated unmap events */
+      if(t->flags & SUB_TRAY_UNMAP)
+        {
+          t->flags &= ~SUB_TRAY_UNMAP;
+          return;
+        }
+
       subArrayRemove(subtle->trays, (void *)t);
       subTrayKill(t);
       subTrayUpdate();
