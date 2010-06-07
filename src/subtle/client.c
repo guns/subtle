@@ -138,6 +138,7 @@ subClientNew(Window win)
   subClientSetType(c, &flags);
   subClientSetTags(c, &flags);
   subClientSetSizeHints(c, &flags);
+
   subClientSetWMHints(c, &flags);
   subClientSetState(c, &flags);
   subClientSetTransient(c, &flags);

@@ -113,21 +113,28 @@ EventConfigure(XConfigureRequestEvent *ev)
           c->flags & (SUB_MODE_FLOAT|SUB_MODE_RESIZE)))
         {
           SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
+          XRectangle geom = c->geom;
 
           /* We restrict this from graviated clients */
           if(c->flags & SUB_MODE_FLOAT)
             {
-              if(ev->value_mask & CWX) c->geom.x = s->geom.x + ev->x;
-              if(ev->value_mask & CWY) c->geom.y = s->geom.y + ev->y;
+              if(ev->value_mask & CWX) geom.x = s->geom.x + ev->x;
+              if(ev->value_mask & CWY) geom.y = s->geom.y + ev->y;
             }
 
-          if(ev->value_mask & CWWidth)  c->geom.width  = ev->width;
-          if(ev->value_mask & CWHeight) c->geom.height = ev->height;
+          if(ev->value_mask & CWWidth)  geom.width  = ev->width;
+          if(ev->value_mask & CWHeight) geom.height = ev->height;
 
-          /* Resize client */
-          if(!(c->flags & SUB_CLIENT_IMMOBILE)) subScreenFit(s, &c->geom);
+          /* Check new values */
+          if(RECTINRECT(geom, s->geom))
+            {
+              c->geom = geom;
 
-          subClientConfigure(c);
+              /* Resize client */
+              if(!(c->flags & SUB_CLIENT_IMMOBILE)) subScreenFit(s, &c->geom);
+
+              subClientConfigure(c);
+            }
         }
     }
   else ///< Unmanaged windows
