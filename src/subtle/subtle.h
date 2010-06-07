@@ -61,7 +61,12 @@
 
 #define XYINRECT(wx,wy,r) \
   (wx >= r.x && wx <= (r.x + r.width) && \
-  wy >= r.y && wy <= (r.y + r.height))                            ///< Whether x/y is in rect
+   wy >= r.y && wy <= (r.y + r.height))                           ///< Whether x/y is in rect
+
+#define RECTINRECT(r1,r2) \
+  (r1.x >= r2.x && r1.y >= r2.y && \
+  (r1.x + r1.width)  <= (r2.x + r2.width) && \
+  (r1.y + r1.height) <= (r2.y + r2.height))                       ///< Whether rect is in rect
 
 #define ROOTMASK \
   (SubstructureRedirectMask|SubstructureNotifyMask|FocusChangeMask|PropertyChangeMask)
