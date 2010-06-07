@@ -199,8 +199,8 @@ subScreenFit(SubScreen *s,
   maxx = s->geom.x + s->geom.width;
   maxy = s->geom.y + s->geom.height;
 
-  if(r->x > maxx || r->x + r->width > maxx)  r->x = maxx - r->width;
-  if(r->y > maxy || r->y + r->height > maxy) r->y = maxy - r->height;
+  if(r->x > maxx || r->x + r->width > maxx)  r->x = s->geom.x;
+  if(r->y > maxy || r->y + r->height > maxy) r->y = s->geom.y;
 } /* }}} */
 
  /** SubScreenKill {{{

@@ -346,7 +346,8 @@ subClientDrag(SubClient *c,
   XEvent ev;
   Window win;
   unsigned int dummy = 0;
-  int loop = True, left = False, wx = 0, wy = 0, ww = 0, wh = 0, rx = 0, ry = 0;
+  int loop = True, left = False;
+  int wx = 0, wy = 0, ww = 0, wh = 0, rx = 0, ry = 0;
   short *dirx = NULL, *diry = NULL;
   Cursor cursor;
 
@@ -418,39 +419,42 @@ subClientDrag(SubClient *c,
           case MotionNotify: /* {{{ */
             if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE))
               {
-                int check = 0;
-                ClientMask(c);
+                SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
 
-                /* Calculate selection rect */
-                switch(mode)
+                if(XYINRECT(ev.xmotion.x_root,
+                    ev.xmotion.y_root, s->geom)) ///< Check values
                   {
-                    case SUB_DRAG_MOVE:
-                      c->geom.x = (rx - wx) - (rx - ev.xmotion.x_root);
-                      c->geom.y = (ry - wy) - (ry - ev.xmotion.y_root);
+                    ClientMask(c);
 
-                      ClientSnap(c); ///< Snap border
-                      break;
-                    case SUB_DRAG_RESIZE:
-                      if(left) ///< Drag left
-                        {
-                          if(0 < (rx - wx) - (rx - ev.xmotion.x_root)) ///< Check edge
+                    /* Calculate selection rect */
+                    switch(mode)
+                      {
+                        case SUB_DRAG_MOVE:
+                          c->geom.x = (rx - wx) - (rx - ev.xmotion.x_root);
+                          c->geom.y = (ry - wy) - (ry - ev.xmotion.y_root);
+
+                          ClientSnap(c); ///< Snap border
+                          break;
+                        case SUB_DRAG_RESIZE:
+                          if(left) ///< Drag left
                             {
                               /* Calculate width and x */
-                              check         = ww + (rx - ev.xmotion.x_root);
-                              c->geom.width = check > c->minw ? check : c->minw;
+                              int check = ww + (rx - ev.xmotion.x_root);
+
+                              c->geom.width  = MAX(check, c->minw);
                               c->geom.width -= (c->geom.width % c->incw);
-                              c->geom.x     = (rx - wx) + ww - c->geom.width;
+                              c->geom.x      = (rx - wx) + ww - c->geom.width;
                             }
-                        }
-                      else c->geom.width = ww - (rx - ev.xmotion.x_root); ///< Drag right
+                          else c->geom.width = ww - (rx - ev.xmotion.x_root); ///< Drag right
 
-                      c->geom.height = wh - (ry - ev.xmotion.y_root);
-                      subClientResize(c);
+                          c->geom.height = wh - (ry - ev.xmotion.y_root);
+                          subClientResize(c);
 
-                      break;
+                          break;
+                      }
+
+                    ClientMask(c);
                   }
-
-                ClientMask(c);
               }
             break; /* }}} */
         }
