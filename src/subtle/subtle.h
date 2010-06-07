@@ -59,6 +59,10 @@
 #define MINMAX(val,min,max) \
   (min && val < min ? min : max && val > max ? max : val)         ///< Value min/max
 
+#define XYINRECT(wx,wy,r) \
+  (wx >= r.x && wx <= (r.x + r.width) && \
+  wy >= r.y && wy <= (r.y + r.height))                            ///< Whether x/y is in rect
+
 #define ROOTMASK \
   (SubstructureRedirectMask|SubstructureNotifyMask|FocusChangeMask|PropertyChangeMask)
 #define EVENTMASK \
