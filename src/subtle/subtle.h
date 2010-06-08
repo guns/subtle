@@ -333,6 +333,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_WM_SIZE_HINTS,                                         ///< Window size hints
   SUB_EWMH_WM_HINTS,                                              ///< Window hints
   SUB_EWMH_WM_WINDOW_ROLE,                                        ///< Window role
+  SUB_EWMH_WM_CLIENT_LEADER,                                      ///< Client leader
 
   /* EWMH */
   SUB_EWMH_NET_SUPPORTED,                                         ///< Supported states
