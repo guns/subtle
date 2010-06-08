@@ -32,6 +32,10 @@
 
 #include "config.h"
 
+#ifdef HAVE_X11_XFT_XFT_H
+#include <X11/Xft/Xft.h>
+#endif /* HAVE_X11_XFT_XFT_H */
+
 #ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
 #include <X11/extensions/Xinerama.h>
 #endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
@@ -80,46 +84,52 @@
 
 /* Typedefs {{{ */
 #ifndef SUBTLER
-typedef union subdata_t
+typedef union subdata_t /* {{{ */
 {
   unsigned long num;                                              ///< Data number
   char          *string;                                          ///< Data string
-} SubData;
+} SubData; /* }}} */
 
-typedef struct subtextitem_t
+typedef struct subtextitem_t /* {{{ */
 {
   int             flags, width, height;                           ///< Text flags, width, height
   unsigned long   color;                                          ///< Text color
 
   union subdata_t data;                                           ///< Text data
-} SubTextItem;
+} SubTextItem; /* }}} */
 
-typedef struct subtext_t
+typedef struct subtext_t /* {{{ */
 {
   struct subtextitem_t **items;                                   ///< Item text items
   int                  flags, nitems, width;                      ///< Item flags, count, width
-} SubText;
+} SubText; /* }}} */
 
-typedef struct subfont_t
+typedef struct subfont_t /* {{{ */
 {
   int      y, height;                                             ///< Font y, height
   XFontSet xfs;                                                   ///< Font set
-} SubFont;
 
-typedef struct subicon_t
+#ifdef HAVE_X11_XFT_XFT_H
+  XftFont  *xft;                                                  ///< Font XFT font
+  XftDraw  *draw;                                                 ///< Font XFT draw
+#endif /* HAVE_X11_XFT_XFT_H */
+} SubFont; /* }}} */
+
+typedef struct subicon_t /* {{{ */
 {
   Pixmap       pixmap;                                            ///< Icon pixmap
   unsigned int width, height;                                     ///< Icon width, height
   GC           gc;                                                ///< Icon GC
-} SubtIcon;
+} SubtIcon; /* }}} */
 #endif /* SUBTLER */
 
 #ifndef SUBTLE
-typedef union submessagedata_t {
+typedef union submessagedata_t /* {{{ */
+{
   char  b[20];                                                    ///< MessageData char
   short s[10];                                                    ///< MessageData short
   long  l[5];                                                     ///< MessageData long
-} SubMessageData;
+} SubMessageData; /* }}} */
 
 extern Display *display;
 
@@ -176,8 +186,8 @@ int subSharedTextParse(Display *disp, SubFont *f,
   SubText *t, char *text);                                        ///< Parse text
 void subSharedTextRender(Display *disp, GC gc, SubFont *f,
   Window win, int x, int y, long fg, long bg, SubText *t);        ///< Render text
-int subSharedTextWidth(SubFont *f, const char *text,
-  int len, int *left, int *right, int center);                    ///< Get text width
+int subSharedTextWidth(Display *disp, SubFont *f,
+  const char *text, int len, int *left, int *right, int center);  ///< Get text width
 void subSharedTextFree(SubText *t);                               ///< Free text
 
 void subSharedTextDraw(Display *disp, GC gc, SubFont *f,

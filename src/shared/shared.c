@@ -485,7 +485,7 @@ subSharedTextParse(Display *disp,
           else
             {
               item->data.string = strdup(tok);
-              item->width       = subSharedTextWidth(f, tok, strlen(tok),
+              item->width       = subSharedTextWidth(disp, f, tok, strlen(tok),
                 &left, &right, False);
 
               t->width += item->width - (0 == i ? left : 0); ///< Remove left bearing from first text item
@@ -577,6 +577,7 @@ subSharedTextRender(Display *disp,
 
  /** subSharedTextWidth {{{
   * @brief Get width of the smallest enclosing box
+  * @param[in]     disp    Display
   * @param[in]     text    The text
   * @param[in]     len     Length of the string
   * @param[inout]  left    Left bearing
@@ -586,7 +587,8 @@ subSharedTextRender(Display *disp,
   **/
 
 int
-subSharedTextWidth(SubFont *f,
+subSharedTextWidth(Display *disp,
+  SubFont *f,
   const char *text,
   int len,
   int *left,
@@ -594,17 +596,32 @@ subSharedTextWidth(SubFont *f,
   int center)
 {
   int width = 0, lbearing = 0, rbearing = 0;
-  XRectangle overall_ink = { 0 }, overall_logical = { 0 };
 
   assert(text);
 
   /* Get text extents */
-  XmbTextExtents(f->xfs, text, len,
-    &overall_ink, &overall_logical);
+#ifdef HAVE_X11_XFT_XFT_H
+  if(f->xft) ///< XFT
+    {
+      XGlyphInfo extents;
 
-  width    = overall_logical.width;
-  lbearing = overall_logical.x;
-  rbearing = rbearing;
+      XftTextExtents8(disp, f->xft, (XftChar8*)text, len, &extents);
+
+      width    = extents.xOff;
+      lbearing = extents.x;
+    }
+  else ///< XFS
+#endif /* HAVE_X11_XFT_XFT_H */
+    {
+      XRectangle overall_ink = { 0 }, overall_logical = { 0 };
+
+      XmbTextExtents(f->xfs, text, len,
+        &overall_ink, &overall_logical);
+
+      width    = overall_logical.width;
+      lbearing = overall_logical.x;
+      rbearing = rbearing;
+    }
 
   if(left)  *left  = lbearing;
   if(right) *right = rbearing;
@@ -638,14 +655,40 @@ subSharedTextDraw(Display *disp,
 {
   XGCValues gvals;
 
-  assert(text);
+  assert(f && text);
 
   /* Draw text */
-  gvals.foreground = fg;
-  gvals.background = bg;
+#ifdef HAVE_X11_XFT_XFT_H
+  if(f->xft) ///< XFT
+    {
+      XftColor color = { 0 };
+      XColor xcolor = { 0 };
 
-  XChangeGC(disp, gc, GCForeground|GCBackground, &gvals);
-  XmbDrawString(disp, win, f->xfs, gc, x, y, text, strlen(text));
+      /* Get color */
+      xcolor.pixel = fg;
+
+      XQueryColor(disp, DefaultColormap(disp, DefaultScreen(disp)), &xcolor);
+
+      color.pixel       = xcolor.pixel;
+      color.color.red   = xcolor.red;
+      color.color.green = xcolor.green;
+      color.color.blue  = xcolor.blue;
+      color.color.alpha = 0xffff;
+
+      XftDrawChange(f->draw, win);
+      XftDrawStringUtf8(f->draw, &color, f->xft,
+        x, y, (XftChar8 *)text, strlen(text));
+    }
+  else ///< XFS
+#endif /* HAVE_X11_XFT_XFT_H */
+    {
+      /* Draw text */
+      gvals.foreground = fg;
+      gvals.background = bg;
+
+      XChangeGC(disp, gc, GCForeground|GCBackground, &gvals);
+      XmbDrawString(disp, win, f->xfs, gc, x, y, text, strlen(text));
+    }
 } /* }}} */
 
  /** subSharedTextFree {{{
@@ -692,31 +735,61 @@ subSharedFontNew(Display *disp,
   XFontStruct **xfonts = NULL;
   SubFont *f = NULL;
 
+  /* Create new font */
   f = FONT(subSharedMemoryAlloc(1, sizeof(SubFont)));
 
-  /* Load font set */
-  if(!(f->xfs = XCreateFontSet(disp, name, &missing, &n, &def)))
+  /* Load font */
+#ifdef HAVE_X11_XFT_XFT_H
+  if(!strncmp(name, "xft:", 4))
     {
-      subSharedLogWarn("Failed loading font `%s' - using default\n", name);
-
-      if(!(f->xfs = XCreateFontSet(disp, DEFFONT, &missing, &n, &def)))
+      /* Load XFT font */
+      if(!(f->xft = XftFontOpenName(disp, DefaultScreen(disp), name + 4)))
         {
-          subSharedLogError("Failed loading fallback font `%s`\n", DEFFONT);
+          subSharedLogWarn("Failed loading font `%s' - using default\n", name);
 
-          free(f);
-
-          return NULL;
+          f->xft = XftFontOpenXlfd(disp, DefaultScreen(disp), name + 4);
         }
+
+      if(f->xft)
+        {
+          f->draw = XftDrawCreate(disp, DefaultRootWindow(disp),
+            DefaultVisual(disp, DefaultScreen(disp)),
+            DefaultColormap(disp, DefaultScreen(disp)));
+
+          /* Font metrics */
+          f->height = f->xft->ascent + f->xft->descent + 1;
+          f->y      = (f->height - 2 + f->xft->ascent) / 2;
+        }
+
     }
+  else
+#endif /* HAVE_X11_XFT_XFT_H */
+    {
+      /* Load font set */
+      if(!(f->xfs = XCreateFontSet(disp, name, &missing, &n, &def)))
+        {
+          subSharedLogWarn("Failed loading font `%s' - using default\n", name);
 
-  XFontsOfFontSet(f->xfs, &xfonts, &names);
+          if(!(f->xfs = XCreateFontSet(disp, DEFFONT, &missing, &n, &def)))
+            {
+              subSharedLogError("Failed loading fallback font `%s`\n",
+                DEFFONT);
 
-  /* Font metrics */
-  f->height = xfonts[0]->max_bounds.ascent +
-    xfonts[0]->max_bounds.descent + 2;
-  f->y      = (f->height - 2 + xfonts[0]->max_bounds.ascent) / 2;
+              free(f);
 
-  if(missing) XFreeStringList(missing); ///< Ignore this
+              return NULL;
+            }
+        }
+
+      XFontsOfFontSet(f->xfs, &xfonts, &names);
+
+      /* Font metrics */
+      f->height = xfonts[0]->max_bounds.ascent +
+        xfonts[0]->max_bounds.descent + 2;
+      f->y      = (f->height - 2 + xfonts[0]->max_bounds.ascent) / 2;
+
+      if(missing) XFreeStringList(missing); ///< Ignore this
+    }
 
   return f;
 } /* }}} */
@@ -733,7 +806,16 @@ subSharedFontKill(Display *disp,
 {
   assert(f);
 
-  XFreeFontSet(disp, f->xfs);
+#ifdef HAVE_X11_XFT_XFT_H
+  if(f->xft)
+    {
+      XftFontClose(disp, f->xft);
+    }
+  else
+#endif /* HAVE_X11_XFT_XFT_H */
+    {
+      XFreeFontSet(disp, f->xfs);
+    }
 
   free(f);
 } /* }}} */
