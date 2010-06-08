@@ -823,8 +823,9 @@ subClientSetName(SubClient *c)
       if(c->flags & SUB_MODE_STICK) len++;
 
       /* Update panel width */
-      subtle->windows.title.width = subSharedTextWidth(subtle->font, c->name,
-        50 >= len ? len : 50, NULL, NULL, True) + 6 + 2 * subtle->pbw; ///< Font offset and panel border
+      subtle->windows.title.width = subSharedTextWidth(subtle->dpy,
+        subtle->font, c->name, 50 >= len ? len : 50, NULL, NULL, True) +
+        6 + 2 * subtle->pbw; ///< Font offset and panel border
       XResizeWindow(subtle->dpy, subtle->windows.title.win,
         subtle->windows.title.width, subtle->th - 2 * subtle->pbw);
     }
@@ -1062,7 +1063,7 @@ void
 subClientSetTransient(SubClient *c,
   int *flags)
 {
-  Window trans = 0;
+  Window trans = None;
 
   assert(c && flags);
 

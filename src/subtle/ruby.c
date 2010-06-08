@@ -1012,7 +1012,7 @@ RubyWrapLoadPanels(VALUE data)
   /* Separator */
   if(subtle->separator.string) free(subtle->separator.string);
   subtle->separator.string = strdup(RubyGetString(config, "separator", "|"));
-  subtle->separator.width  = subSharedTextWidth(subtle->font,
+  subtle->separator.width  = subSharedTextWidth(subtle->dpy, subtle->font,
     subtle->separator.string, strlen(subtle->separator.string),
     NULL, NULL, True);
 

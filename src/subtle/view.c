@@ -141,8 +141,8 @@ subViewUpdate(void)
             }
           else
             {
-              v->width = subSharedTextWidth(subtle->font, v->name, strlen(v->name), NULL,
-                NULL, True) + 6 + 2 * subtle->pbw; ///< Font offset and panel border
+              v->width = subSharedTextWidth(subtle->dpy, subtle->font, v->name,
+                strlen(v->name), NULL, NULL, True) + 6 + 2 * subtle->pbw; ///< Font offset and panel border
 
               XMoveResizeWindow(subtle->dpy, v->button, subtle->windows.views.width,
                 0, v->width, subtle->th - 2 * subtle->pbw);
