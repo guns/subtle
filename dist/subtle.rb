@@ -43,6 +43,9 @@ OPTIONS = {
 
   # Font string (see xfontsel)
   :font    => "-*-*-medium-*-*-*-14-*-*-*-*-*-*-*"
+
+  # Xft string
+  #:font    => "xft:sans-8"
 }
 
 #
