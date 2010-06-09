@@ -15,7 +15,6 @@
 VALUE
 ScreenList(void)
 {
-  int n = 0;
   unsigned long len = 0;
   VALUE method = Qnil, klass = Qnil, array = Qnil, screen = Qnil, geometry = Qnil;
   XRectangle workarea = { 0 };
