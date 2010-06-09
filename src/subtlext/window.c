@@ -182,10 +182,10 @@ subWindowInit(VALUE self,
 
           for(i = 0; 4 > i; i++)
             {
-              VALUE sym = CHAR2SYM(syms[i]);
+              VALUE val = Qnil;
 
-              if(RTEST(rb_hash_lookup(geometry, sym)))
-                data[i] = FIX2INT(rb_hash_aref(geometry, sym));
+              if(RTEST(val = rb_hash_lookup(geometry, CHAR2SYM(syms[i]))))
+                data[i] = FIX2INT(val);
             }
         }
       else rb_raise(rb_eArgError, "Unknown value type");

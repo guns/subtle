@@ -178,18 +178,19 @@ RubyFetchKey(VALUE hash,
   int type,
   int optional)
 {
-  VALUE value = Qnil, sym = Qnil;
+  VALUE value = Qnil;
 
   assert(key);
 
   /* Fetch key */
-  sym = CHAR2SYM(key);
-  if(RTEST(hash) && Qtrue == rb_funcall(hash, rb_intern("has_key?"), 1, sym))
-    value = rb_funcall(hash, rb_intern("fetch"), 1, sym);
+  if(RTEST(hash))
+    {
+      value = rb_hash_lookup(hash, CHAR2SYM(key));
 
-  /* Check value type */
-  if(type && rb_type(value) != type) value = Qnil;
-  if(!optional && NIL_P(value)) subSharedLogWarn("Failed reading key `%s'\n", key);
+      /* Check value type */
+      if(type && rb_type(value) != type) value = Qnil;
+      if(!optional && NIL_P(value)) subSharedLogWarn("Failed reading key `%s'\n", key);
+    }
 
   return value;
 } /* }}} */

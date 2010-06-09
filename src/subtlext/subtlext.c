@@ -456,7 +456,7 @@ subSubtlextFind(int type,
       case T_HASH: /* {{{ */
           {
             int i;
-            VALUE meth_has_key = rb_intern("has_key?"), meth_fetch = rb_intern("fetch"), match = Qnil;
+            VALUE match = Qnil;
 
             struct properties
             {
@@ -475,9 +475,8 @@ subSubtlextFind(int type,
             /* Check hash keys */
             for(i = 0; LENGTH(props) > i; i++)
               {
-                if(Qtrue == rb_funcall(value, meth_has_key, 1, props[i].sym))
+                if(!NIL_P((match = rb_hash_lookup(value, props[i].sym))))
                   {
-                    match = rb_funcall(value, meth_fetch, 1, props[i].sym);
                     flags = props[i].flags;
                     break;
                   }

@@ -78,25 +78,18 @@ subGeometryInit(int argc,
         if(4 == FIX2INT(rb_funcall(value, rb_intern("size"), 0, NULL)))
           {
             int i;
-            VALUE meth = rb_intern("at");
 
             for(i = 0; 4 > i; i++)
-              data[i] = rb_funcall(value, meth, 1, INT2FIX(i));
+              data[i] = rb_ary_entry(value, i);
           }
         break;
       case T_HASH:
           {
             int i;
             const char *syms[] = { "x", "y", "width", "height" };
-            VALUE meth_has_key = rb_intern("has_key?"), meth_fetch = rb_intern("fetch");
 
             for(i = 0; 4 > i; i++)
-              {
-                VALUE sym = CHAR2SYM(syms[i]);
-
-                if(Qtrue == rb_funcall(value, meth_has_key, 1, sym))
-                  data[i] = rb_funcall(value, meth_fetch, 1, sym);
-              }
+              data[i] = rb_hash_lookup(value, CHAR2SYM(syms[i]));
           }
         break;
       case T_OBJECT:
