@@ -679,7 +679,6 @@ SubtlerScreenList(int argc,
   char *arg1,
   char *arg2)
 {
-  int n = 0;
   unsigned long len = 0;
   XRectangle workarea = { 0 };
   long *workareas = NULL;
