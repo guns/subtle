@@ -192,9 +192,9 @@ subClientInit(VALUE self,
 
 VALUE
 subClientFind(VALUE self,
-  VALUE name)
+  VALUE value)
 {
-  return subSubtlextFind(SUB_TYPE_CLIENT, name, True);
+  return subSubtlextFind(SUB_TYPE_CLIENT, value, True);
 } /* }}} */
 
 /* subClientCurrent {{{ */

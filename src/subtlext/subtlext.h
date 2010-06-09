@@ -45,7 +45,7 @@ extern int debug;
 /* client.c {{{ */
 VALUE subClientInstantiate(Window win);                           ///< Instantiate client
 VALUE subClientInit(VALUE self, VALUE win);                       ///< Create client
-VALUE subClientFind(VALUE self, VALUE name);                      ///< Find client
+VALUE subClientFind(VALUE self, VALUE value);                     ///< Find client
 VALUE subClientCurrent(VALUE self);                               ///< Get current client
 VALUE subClientAll(VALUE self);                                   ///< Get all clients
 VALUE subClientUpdate(VALUE self);                                ///< Update client
