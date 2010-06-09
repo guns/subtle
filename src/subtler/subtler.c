@@ -711,7 +711,7 @@ SubtlerScreenList(int argc,
   if(XineramaQueryExtension(display, &xinerama_event, &xinerama_error) &&
     XineramaIsActive(display))
     {
-      int i;
+      int i, n;
       XineramaScreenInfo *screens = NULL;
 
       /* Query screens */
