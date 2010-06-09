@@ -242,9 +242,9 @@ task(:config) do
       end
 
       # Update flags
-      @options["cflags"]   << " %s" % [cflags]
-      @options["ldflags"]  << " %s" % [libs]
-      @options["extflags"] << " %s" % [libs]
+      @options["cflags"]   << " %s" % [ cflags ]
+      @options["ldflags"]  << " %s" % [ libs ]
+      @options["extflags"] << " %s" % [ libs ]
 
       true
     end
@@ -257,8 +257,9 @@ task(:config) do
         cflags, ldflags, libs = pkg_config("xft")
         unless(libs.nil?)
           # Update flags
-          @options["cpppath"] << " %s" % [cflags]
-          @options["ldflags"] << " %s" % [libs]
+          @options["cpppath"] << " %s" % [ cflags ]
+          @options["ldflags"] << " %s" % [ libs ]
+          @options["extflags"] << " %s" % [ libs ]
 
           $defs.push("-DHAVE_X11_XFT_XFT_H")
           ret = true
