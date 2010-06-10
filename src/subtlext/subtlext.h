@@ -58,10 +58,10 @@ VALUE subClientToggleFloat(VALUE self);                           ///< Toggle fl
 VALUE subClientToggleStick(VALUE self);                           ///< Toggle stick
 VALUE subClientRestackRaise(VALUE self);                          ///< Raise client
 VALUE subClientRestackLower(VALUE self);                          ///< Lower client
-VALUE subClientMatchUp(VALUE self);                               ///< Get client above
-VALUE subClientMatchLeft(VALUE self);                             ///< Get client left
-VALUE subClientMatchRight(VALUE self);                            ///< Get client right
-VALUE subClientMatchDown(VALUE self);                             ///< Get client down
+VALUE subClientSelectUp(VALUE self);                              ///< Get client above
+VALUE subClientSelectLeft(VALUE self);                            ///< Get client left
+VALUE subClientSelectRight(VALUE self);                           ///< Get client right
+VALUE subClientSelectDown(VALUE self);                            ///< Get client down
 VALUE subClientAliveAsk(VALUE self);                              ///< Is client alive
 VALUE subClientScreenReader(VALUE self);                          ///< Get client screen
 VALUE subClientScreenWriter(VALUE self, VALUE value);             ///< Set client screen
@@ -203,6 +203,8 @@ VALUE subViewAll(VALUE self);                                     ///< Get all v
 VALUE subViewUpdate(VALUE self);                                  ///< Update view
 VALUE subViewClients(VALUE self);                                 ///< Get clients of view
 VALUE subViewJump(VALUE self);                                    ///< Jump to view
+VALUE subViewSelectNext(VALUE self);                              ///< Select next view
+VALUE subViewSelectPrev(VALUE self);                              ///< Select next view
 VALUE subViewCurrentAsk(VALUE self);                              ///< Is view the current
 VALUE subViewToString(VALUE self);                                ///< View to string
 VALUE subViewKill(VALUE self);                                    ///< Kill view

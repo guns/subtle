@@ -828,10 +828,10 @@ Init_subtlext(void)
   rb_define_method(client, "is_stick?",    subClientStateStickAsk,   0);
   rb_define_method(client, "raise",        subClientRestackRaise,    0);
   rb_define_method(client, "lower",        subClientRestackLower,    0);
-  rb_define_method(client, "up",           subClientMatchUp,         0);
-  rb_define_method(client, "left",         subClientMatchLeft,       0);
-  rb_define_method(client, "right",        subClientMatchRight,      0);
-  rb_define_method(client, "down",         subClientMatchDown,       0);
+  rb_define_method(client, "up",           subClientSelectUp,        0);
+  rb_define_method(client, "left",         subClientSelectLeft,      0);
+  rb_define_method(client, "right",        subClientSelectRight,     0);
+  rb_define_method(client, "down",         subClientSelectDown,      0);
   rb_define_method(client, "to_str",       subClientToString,        0);
   rb_define_method(client, "gravity",      subClientGravityReader,   0);
   rb_define_method(client, "gravity=",     subClientGravityWriter,   1);
@@ -1193,6 +1193,8 @@ Init_subtlext(void)
   rb_define_method(view, "update",     subViewUpdate,        0);
   rb_define_method(view, "clients",    subViewClients,       0);
   rb_define_method(view, "jump",       subViewJump,          0);
+  rb_define_method(view, "next",       subViewSelectNext,    0);
+  rb_define_method(view, "prev",       subViewSelectPrev,    0);
   rb_define_method(view, "current?",   subViewCurrentAsk,    0);
   rb_define_method(view, "to_str",     subViewToString,      0);
   rb_define_method(view, "kill",       subViewKill,          0);

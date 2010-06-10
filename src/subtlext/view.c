@@ -11,6 +11,45 @@
 
 #include "subtlext.h"
 
+/* ViewSelect {{{ */
+static VALUE
+ViewSelect(VALUE self,
+  int dir)
+{
+  int id, size = 0;
+  char **names = NULL;
+  VALUE ret = Qnil;
+
+  subSubtlextConnect(); ///< Implicit open connection
+
+  /* Fetch data */
+  id    = FIX2INT(rb_iv_get(self, "@id"));
+  names = subSharedPropertyStrings(display, DefaultRootWindow(display),
+    XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size); 
+
+  if(names)
+    {
+      /* Select view */
+      if(SUB_VIEW_NEXT == dir && id < (size - 1))
+        {
+          id++;
+        }
+      else if(SUB_VIEW_PREV == dir && 0 < id)
+        {
+          id--;
+        }
+      else return Qnil;
+
+      /* Create view */
+      ret = subViewInstantiate(names[id]);
+      subViewUpdate(ret);
+
+      XFreeStringList(names);
+    }
+
+  return ret;
+} /* }}} */
+
 /* subViewInstantiate {{{ */
 VALUE
 subViewInstantiate(char *name)
@@ -297,12 +336,47 @@ subViewJump(VALUE self)
   VALUE id = rb_iv_get(self, "@id");
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
+  subSubtlextConnect(); ///< Implicit open connection
+
   data.l[0] = FIX2INT(id);
 
   subSharedMessage(DefaultRootWindow(display), "_NET_CURRENT_DESKTOP", data, True);
 
   return Qnil;
 } /* }}} */
+
+/* subViewSelectNext {{{ */
+/*
+ * call-seq: next -> Subtlext::View or nil
+ *
+ * Select next View
+ *
+ *  view.next
+ *  => #<Subtlext::View:xxx>
+ */
+
+VALUE
+subViewSelectNext(VALUE self)
+{
+  return ViewSelect(self, SUB_VIEW_NEXT);
+} /* }}} */
+
+/* subViewSelectPrev {{{ */
+/*
+ * call-seq: prev -> Subtlext::View or nil
+ *
+ * Select prev View
+ *
+ *  view.prev
+ *  => #<Subtlext::View:xxx>
+ */
+
+VALUE
+subViewSelectPrev(VALUE self)
+{
+  return ViewSelect(self, SUB_VIEW_PREV);
+} /* }}} */
+
 
 /* subViewCurrentAsk {{{ */
 /*
