@@ -1081,11 +1081,12 @@ EventGrab(XEvent *ev)
               {
                 int idx = subArrayIndex(subtle->views, CURVIEW);
 
+                /* Select view */
                 if(SUB_VIEW_NEXT == g->data.num && idx < (subtle->views->ndata - 1))
                   {
                     subViewJump(VIEW(subtle->views->data[idx + 1]), True);
                   }
-                else if(SUB_VIEW_PREV == g->data.num && idx > 0)
+                else if(SUB_VIEW_PREV == g->data.num && 0 < idx)
                   subViewJump(VIEW(subtle->views->data[idx - 1]), True);
               }
             break; /* }}} */
