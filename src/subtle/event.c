@@ -1077,6 +1077,18 @@ EventGrab(XEvent *ev)
                 if(CURVIEW != v) subViewJump(v, True);
               }
             break; /* }}} */
+          case SUB_GRAB_VIEW_SELECT: /* {{{ */
+              {
+                int idx = subArrayIndex(subtle->views, CURVIEW);
+
+                if(SUB_VIEW_NEXT == g->data.num && idx < (subtle->views->ndata - 1))
+                  {
+                    subViewJump(VIEW(subtle->views->data[idx + 1]), True);
+                  }
+                else if(SUB_VIEW_PREV == g->data.num && idx > 0)
+                  subViewJump(VIEW(subtle->views->data[idx - 1]), True);
+              }
+            break; /* }}} */
           case SUB_GRAB_SCREEN_JUMP: /* {{{ */
             if(g->data.num < subtle->screens->ndata)
               subScreenJump(SCREEN(subtle->screens->data[g->data.num]));

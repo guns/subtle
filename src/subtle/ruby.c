@@ -24,7 +24,7 @@
 #define SYM2CHAR(sym)  rb_id2name(SYM2ID(sym))
 
 #define PANELSLENGTH  3
-#define GRABSLENGTH  16
+#define GRABSLENGTH  18
 #define TAGSLENGTH    9
 #define HOOKSLENGTH  13
 
@@ -745,6 +745,8 @@ RubyWrapLoadConfig(VALUE data)
   /* Foreach arguments {{{ */
   RubyGrabs grabs[] =
   {
+    { CHAR2SYM("ViewNext"),      SUB_GRAB_VIEW_SELECT,     SUB_VIEW_NEXT    },
+    { CHAR2SYM("ViewPrev"),      SUB_GRAB_VIEW_SELECT,     SUB_VIEW_PREV    },
     { CHAR2SYM("SubletsReload"), SUB_GRAB_SUBLETS_RELOAD,  None             },
     { CHAR2SYM("SubtleReload"),  SUB_GRAB_SUBTLE_RELOAD,   None             },
     { CHAR2SYM("SubtleRestart"), SUB_GRAB_SUBTLE_RESTART,  None             },
