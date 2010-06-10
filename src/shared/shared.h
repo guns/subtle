@@ -61,6 +61,9 @@
 #define SUB_WINDOW_UP      2L                                     ///< Window above
 #define SUB_WINDOW_RIGHT   3L                                     ///< Window right
 
+#define SUB_VIEW_NEXT      0L                                     ///< View next
+#define SUB_VIEW_PREV      1L                                     ///< View prev
+
 #define SUB_EWMH_FULL      (1L << 1)                              ///< EWMH full flag
 #define SUB_EWMH_FLOAT     (1L << 2)                              ///< EWMH float flag
 #define SUB_EWMH_STICK     (1L << 3)                              ///< EWMH stick flag
