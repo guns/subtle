@@ -261,83 +261,87 @@ GRAVITIES = {
 #
 GRABS = {
   # Switch to view1, view2, ...
-  "W-1"      => :ViewJump1,
-  "W-2"      => :ViewJump2,
-  "W-3"      => :ViewJump3,
-  "W-4"      => :ViewJump4,
+  "W-1"         => :ViewJump1,
+  "W-2"         => :ViewJump2,
+  "W-3"         => :ViewJump3,
+  "W-4"         => :ViewJump4,
+
+  # Select next and prev view */
+  "KP_Add"      => :ViewNext,
+  "KP_Subtract" => :ViewPrev,
 
   # Move mouse to screen1, screen2, ...
-  "W-A-1"    => :ScreenJump1,
-  "W-A-2"    => :ScreenJump2,
-  "W-A-3"    => :ScreenJump3,
-  "W-A-4"    => :ScreenJump4,
+  "W-A-1"       => :ScreenJump1,
+  "W-A-2"       => :ScreenJump2,
+  "W-A-3"       => :ScreenJump3,
+  "W-A-4"       => :ScreenJump4,
 
   # Move window to screen1, screen2, ...
-  "A-S-1"    => :WindowScreen1,
-  "A-S-2"    => :WindowScreen2,
-  "A-S-3"    => :WindowScreen3,
-  "A-S-4"    => :WindowScreen4,
+  "A-S-1"       => :WindowScreen1,
+  "A-S-2"       => :WindowScreen2,
+  "A-S-3"       => :WindowScreen3,
+  "A-S-4"       => :WindowScreen4,
 
   # Force reload of sublets
-  "W-C-s"    => :SubletsReload,
+  "W-C-s"       => :SubletsReload,
 
   # Force reload of config
-  "W-C-r"    => :SubtleReload,
+  "W-C-r"       => :SubtleReload,
 
   # Force restart of subtle
-  "W-C-S-r"  => :SubtleRestart,
+  "W-C-S-r"     => :SubtleRestart,
 
   # Quit subtle
-  "W-C-q"    => :SubtleQuit,
+  "W-C-q"       => :SubtleQuit,
 
   # Move current window
-  "W-B1"     => :WindowMove,
+  "W-B1"        => :WindowMove,
 
   # Resize current window
-  "W-B3"     => :WindowResize,
+  "W-B3"        => :WindowResize,
 
   # Toggle floating mode of window
-  "W-f"      => :WindowFloat,
+  "W-f"         => :WindowFloat,
 
   # Toggle fullscreen mode of window
-  "W-space"  => :WindowFull,
+  "W-space"     => :WindowFull,
 
   # Toggle sticky mode of window (will be visible on all views)
-  "W-s"      => :WindowStick,
+  "W-s"         => :WindowStick,
 
   # Raise window
-  "W-r"      => :WindowRaise,
+  "W-r"         => :WindowRaise,
 
   # Lower window
-  "W-l"      => :WindowLower,
+  "W-l"         => :WindowLower,
 
   # Select next windows
-  "W-Left"   => :WindowLeft,
-  "W-Down"   => :WindowDown,
-  "W-Up"     => :WindowUp,
-  "W-Right"  => :WindowRight,
+  "W-Left"      => :WindowLeft,
+  "W-Down"      => :WindowDown,
+  "W-Up"        => :WindowUp,
+  "W-Right"     => :WindowRight,
 
   # Kill current window
-  "W-S-k"    => :WindowKill,
+  "W-S-k"       => :WindowKill,
 
   # Cycle between given gravities
-  "W-KP_7"    => [ :top_left,     :top_left66,     :top_left33     ],
-  "W-KP_8"    => [ :top,          :top66,          :top33          ],
-  "W-KP_9"    => [ :top_right,    :top_right66,    :top_right33    ],
-  "W-KP_4"    => [ :left,         :left66,         :left33         ],
-  "W-KP_5"    => [ :center,       :center66,       :center33       ],
-  "W-KP_6"    => [ :right,        :right66,        :right33        ],
-  "W-KP_1"    => [ :bottom_left,  :bottom_left66,  :bottom_left33  ],
-  "W-KP_2"    => [ :bottom,       :bottom66,       :bottom33       ],
-  "W-KP_3"    => [ :bottom_right, :bottom_right66, :bottom_right33 ],
+  "W-KP_7"      => [ :top_left,     :top_left66,     :top_left33     ],
+  "W-KP_8"      => [ :top,          :top66,          :top33          ],
+  "W-KP_9"      => [ :top_right,    :top_right66,    :top_right33    ],
+  "W-KP_4"      => [ :left,         :left66,         :left33         ],
+  "W-KP_5"      => [ :center,       :center66,       :center33       ],
+  "W-KP_6"      => [ :right,        :right66,        :right33        ],
+  "W-KP_1"      => [ :bottom_left,  :bottom_left66,  :bottom_left33  ],
+  "W-KP_2"      => [ :bottom,       :bottom66,       :bottom33       ],
+  "W-KP_3"      => [ :bottom_right, :bottom_right66, :bottom_right33 ],
 
   # Exec some programs
-  "W-Return" => "xterm",
-  "W-x"      => @dmenu,
+  "W-Return"    => "xterm",
+  "W-x"         => @dmenu,
 
   # Run Ruby lambdas
-  "S-F2"     => lambda { |c| puts c.name  },
-  "S-F3"     => lambda { puts version }
+  "S-F2"        => lambda { |c| puts c.name  },
+  "S-F3"        => lambda { puts version }
 }
 
 #
