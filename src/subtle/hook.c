@@ -58,8 +58,7 @@ subHookCall(int type,
 
       if(h->flags & type)
         {
-          subRubyCall(h->flags & SUB_CALL_HOOKS ? SUB_CALL_HOOKS :
-            (h->flags & SUB_CALL_SUBLET_HOOKS ? SUB_CALL_SUBLET_HOOKS : type),
+          subRubyCall(h->flags & SUB_CALL_HOOKS ? SUB_CALL_HOOKS : type,
             h->proc, h->data, data);
 
           subSharedLogDebug("call=hook, type=%d, proc=%ld, data=%p\n",
