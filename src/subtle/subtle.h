@@ -179,14 +179,13 @@
 
 /* Call flags */
 #define SUB_CALL_HOOKS                (1L << 11)                  ///< Call hook
-#define SUB_CALL_SUBLET_HOOKS         (1L << 12)                  ///< Call sublet hooks
-#define SUB_CALL_SUBLET_CONFIGURE     (1L << 13)                  ///< Sublet watch hook
-#define SUB_CALL_SUBLET_RUN           (1L << 14)                  ///< Sublet run hook
-#define SUB_CALL_SUBLET_UNLOAD        (1L << 15)                  ///< Sublet unload hook
-#define SUB_CALL_SUBLET_WATCH         (1L << 16)                  ///< Sublet watch hook
-#define SUB_CALL_SUBLET_DOWN          (1L << 17)                  ///< Sublet mouse down hook
-#define SUB_CALL_SUBLET_OVER          (1L << 18)                  ///< Sublet mouse over hook
-#define SUB_CALL_SUBLET_OUT           (1L << 19)                  ///< Sublet mouse out hook
+#define SUB_CALL_SUBLET_CONFIGURE     (1L << 12)                  ///< Sublet watch hook
+#define SUB_CALL_SUBLET_RUN           (1L << 13)                  ///< Sublet run hook
+#define SUB_CALL_SUBLET_UNLOAD        (1L << 14)                  ///< Sublet unload hook
+#define SUB_CALL_SUBLET_WATCH         (1L << 15)                  ///< Sublet watch hook
+#define SUB_CALL_SUBLET_DOWN          (1L << 16)                  ///< Sublet mouse down hook
+#define SUB_CALL_SUBLET_OVER          (1L << 17)                  ///< Sublet mouse over hook
+#define SUB_CALL_SUBLET_OUT           (1L << 18)                  ///< Sublet mouse out hook
 
 /* Hooks */
 #define SUB_HOOK_START                (1L << 15)                  ///< Start hook (after call flags [15])
