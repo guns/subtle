@@ -448,27 +448,30 @@ VIEWS = {
 #
 # And finally hooks are a way to bind Ruby scripts to a certain event. Following hooks exist so far:
 #
-# [*:HookClientCreate*]    Called whenever a window is created
-# [*:HookClientConfigure*] Called whenever a window is configured
-# [*:HookClientFocus*]     Called whenever a window gets focus
-# [*:HookClientKill*]      Called whenever a window is killed
+# [*:client_create*]    Called whenever a window is created
+# [*:client_configure*] Called whenever a window is configured
+# [*:client_focus*]     Called whenever a window gets focus
+# [*:client_kill*]      Called whenever a window is killed
 #
-# [*:HookViewCreate*]      Called whenever a view is created
-# [*:HookViewConfigure*]   Called whenever a view is configured
-# [*:HookViewJump*]        Called whenever the view is switched
-# [*:HookViewKill*]        Called whenever a view is killed
+# [*:tag_create*]       Called whenever a tag is created
+# [*:tag_kill*]         Called whenever a tag is killed
 #
-# [*:HookTagCreate*]       Called whenever a tag is created
-# [*:HookTagKill*]         Called whenever a tag is killed
+# [*:view_create*]      Called whenever a view is created
+# [*:view_configure*]   Called whenever a view is configured
+# [*:view_jump*]        Called whenever the view is switched
+# [*:view_kill*]        Called whenever a view is killed
 #
-# [*:HookExit*]            Called on exit
+# [*:tile*]             Called on whenever tiling would be needed
+# [*:start*]            Called on start
+# [*:exit*]             Called on exit
 #
 # === Example
 #
 # This hook will print the name of the window that gets the focus:
 #
-#   :HookClientFocus => lambda { |c| puts c.name }
+#   on :client_focus do |c|
+#     puts c.name
+#   end
 #
-HOOKS = { }
 
 # vim:ts=2:bs=2:sw=2:et:fdm=marker
