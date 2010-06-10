@@ -40,9 +40,9 @@ ClientToggle(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* ClientMatch {{{ */
+/* ClientSelect {{{ */
 VALUE
-ClientMatch(VALUE self,
+ClientSelect(VALUE self,
   int type)
 {
   int i, id = 0, size = 0, match = (1L << 30), score = 0;
@@ -51,6 +51,7 @@ ClientMatch(VALUE self,
   unsigned long *cv = NULL, *flags1 = NULL;
   XRectangle geometry1 = { 0 }, geometry2 = { 0 };
 
+  /* Fetch data */
   win     = rb_iv_get(self, "@win");
   clients = subSharedClientList(&size);
   views   = (Window *)subSharedPropertyGet(display,
@@ -533,7 +534,7 @@ subClientRestackLower(VALUE self)
   return ClientRestack(self, Below);
 } /* }}} */
 
-/* subClientMatchUp {{{ */
+/* subClientSelectUp {{{ */
 /*
  * call-seq: up -> Subtlext::Client or nil
  *
@@ -547,12 +548,12 @@ subClientRestackLower(VALUE self)
  */
 
 VALUE
-subClientMatchUp(VALUE self)
+subClientSelectUp(VALUE self)
 {
-  return ClientMatch(self, SUB_WINDOW_UP);
+  return ClientSelect(self, SUB_WINDOW_UP);
 } /* }}} */
 
-/* subClientMatchLeft {{{ */
+/* subClientSelectLeft {{{ */
 /*
  * call-seq: left -> Subtlext::Client or nil
  *
@@ -566,12 +567,12 @@ subClientMatchUp(VALUE self)
  */
 
 VALUE
-subClientMatchLeft(VALUE self)
+subClientSelectLeft(VALUE self)
 {
-  return ClientMatch(self, SUB_WINDOW_LEFT);
+  return ClientSelect(self, SUB_WINDOW_LEFT);
 } /* }}} */
 
-/* subClientMatchRight {{{ */
+/* subClientSelectRight {{{ */
 /*
  * call-seq: right -> Subtlext::Client or nil
  *
@@ -585,12 +586,12 @@ subClientMatchLeft(VALUE self)
  */
 
 VALUE
-subClientMatchRight(VALUE self)
+subClientSelectRight(VALUE self)
 {
-  return ClientMatch(self, SUB_WINDOW_RIGHT);
+  return ClientSelect(self, SUB_WINDOW_RIGHT);
 } /* }}} */
 
-/* subClientMatchDown {{{ */
+/* subClientSelectDown {{{ */
 /*
  * call-seq: down -> Subtlext::Client or nil
  *
@@ -604,9 +605,9 @@ subClientMatchRight(VALUE self)
  */
 
 VALUE
-subClientMatchDown(VALUE self)
+subClientSelectDown(VALUE self)
 {
-  return ClientMatch(self, SUB_WINDOW_DOWN);
+  return ClientSelect(self, SUB_WINDOW_DOWN);
 } /* }}} */
 
 /* subClientAliveAsk {{{ */
