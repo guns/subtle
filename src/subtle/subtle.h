@@ -228,19 +228,20 @@
 #define SUB_GRAB_SPAWN                (1L << 13)                  ///< Spawn an app
 #define SUB_GRAB_PROC                 (1L << 14)                  ///< Grab with proc
 #define SUB_GRAB_VIEW_JUMP            (1L << 15)                  ///< Jump to view
-#define SUB_GRAB_SCREEN_JUMP          (1L << 16)                  ///< Jump to screen
-#define SUB_GRAB_SUBLETS_RELOAD       (1L << 17)                  ///< Reload subtle
-#define SUB_GRAB_SUBTLE_RELOAD        (1L << 18)                  ///< Reload subtle
-#define SUB_GRAB_SUBTLE_RESTART       (1L << 19)                  ///< Restart subtle
-#define SUB_GRAB_SUBTLE_QUIT          (1L << 20)                  ///< Quit subtle
-#define SUB_GRAB_WINDOW_MOVE          (1L << 21)                  ///< Resize window
-#define SUB_GRAB_WINDOW_RESIZE        (1L << 22)                  ///< Move window
-#define SUB_GRAB_WINDOW_TOGGLE        (1L << 23)                  ///< Toggle window
-#define SUB_GRAB_WINDOW_STACK         (1L << 24)                  ///< Stack window
-#define SUB_GRAB_WINDOW_SELECT        (1L << 25)                  ///< Select window
-#define SUB_GRAB_WINDOW_GRAVITY       (1L << 26)                  ///< Set gravity of window
-#define SUB_GRAB_WINDOW_SCREEN        (1L << 27)                  ///< Set screen of window
-#define SUB_GRAB_WINDOW_KILL          (1L << 28)                  ///< Kill window
+#define SUB_GRAB_VIEW_SELECT          (1L << 16)                  ///< Jump to view
+#define SUB_GRAB_SCREEN_JUMP          (1L << 17)                  ///< Jump to screen
+#define SUB_GRAB_SUBLETS_RELOAD       (1L << 18)                  ///< Reload subtle
+#define SUB_GRAB_SUBTLE_RELOAD        (1L << 19)                  ///< Reload subtle
+#define SUB_GRAB_SUBTLE_RESTART       (1L << 20)                  ///< Restart subtle
+#define SUB_GRAB_SUBTLE_QUIT          (1L << 21)                  ///< Quit subtle
+#define SUB_GRAB_WINDOW_MOVE          (1L << 22)                  ///< Resize window
+#define SUB_GRAB_WINDOW_RESIZE        (1L << 23)                  ///< Move window
+#define SUB_GRAB_WINDOW_TOGGLE        (1L << 24)                  ///< Toggle window
+#define SUB_GRAB_WINDOW_STACK         (1L << 25)                  ///< Stack window
+#define SUB_GRAB_WINDOW_SELECT        (1L << 26)                  ///< Select window
+#define SUB_GRAB_WINDOW_GRAVITY       (1L << 27)                  ///< Set gravity of window
+#define SUB_GRAB_WINDOW_SCREEN        (1L << 28)                  ///< Set screen of window
+#define SUB_GRAB_WINDOW_KILL          (1L << 29)                  ///< Kill window
 
 /* Panel flags */
 #define SUB_PANEL_SPACER1             (1L << 11)                  ///< Panel spacer1
