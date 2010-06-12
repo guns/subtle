@@ -265,18 +265,19 @@
 
 /* Subtle flags */
 #define SUB_SUBTLE_DEBUG              (1L << 1)                   ///< Debug enabled
-#define SUB_SUBTLE_STIPPLE            (1L << 2)                   ///< Stipple enabled
-#define SUB_SUBTLE_PANEL1             (1L << 3)                   ///< Panel1 enabled
-#define SUB_SUBTLE_PANEL2             (1L << 4)                   ///< Panel2 enabled
-#define SUB_SUBTLE_URGENT             (1L << 5)                   ///< Urgent transients
-#define SUB_SUBTLE_RESIZE             (1L << 6)                   ///< Respect size
-#define SUB_SUBTLE_BACKGROUND         (1L << 7)                   ///< Set root background
-#define SUB_SUBTLE_XINERAMA           (1L << 8)                   ///< Using Xinerama
-#define SUB_SUBTLE_XRANDR             (1L << 9)                   ///< Using Xrandr
-#define SUB_SUBTLE_EWMH               (1L << 10)                  ///< EWMH set
-#define SUB_SUBTLE_RUN                (1L << 11)                  ///< Run event loop
-#define SUB_SUBTLE_REPLACE            (1L << 12)                  ///< Replace previous wm
-#define SUB_SUBTLE_RESTART            (1L << 13)                  ///< Restart
+#define SUB_SUBTLE_CHECK              (1L << 2)                   ///< Check config
+#define SUB_SUBTLE_RUN                (1L << 3)                   ///< Run event loop
+#define SUB_SUBTLE_STIPPLE            (1L << 4)                   ///< Stipple enabled
+#define SUB_SUBTLE_PANEL1             (1L << 5)                   ///< Panel1 enabled
+#define SUB_SUBTLE_PANEL2             (1L << 6)                   ///< Panel2 enabled
+#define SUB_SUBTLE_URGENT             (1L << 7)                   ///< Urgent transients
+#define SUB_SUBTLE_RESIZE             (1L << 8)                   ///< Respect size
+#define SUB_SUBTLE_BACKGROUND         (1L << 9)                   ///< Set root background
+#define SUB_SUBTLE_XINERAMA           (1L << 10)                  ///< Using Xinerama
+#define SUB_SUBTLE_XRANDR             (1L << 11)                  ///< Using Xrandr
+#define SUB_SUBTLE_EWMH               (1L << 12)                  ///< EWMH set
+#define SUB_SUBTLE_REPLACE            (1L << 13)                  ///< Replace previous wm
+#define SUB_SUBTLE_RESTART            (1L << 14)                  ///< Restart
 
 /* Tag flags */
 #define SUB_TAG_GRAVITY               (1L << 11)                  ///< Gravity property

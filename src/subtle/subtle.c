@@ -218,7 +218,7 @@ int
 main(int argc,
   char *argv[])
 {
-  int c, check = 0, restart = 0;
+  int c, restart = 0;
   char *display = NULL;
   struct sigaction sa;
   const struct option long_options[] =
@@ -248,7 +248,7 @@ main(int argc,
           case 'c': subtle->paths.config = optarg;       break;
           case 'd': display = optarg;                    break;
           case 'h': SubtleUsage();                       return 0;
-          case 'k': check = 1;                           break;
+          case 'k': subtle->flags |= SUB_SUBTLE_CHECK;   break;
           case 'r': subtle->flags |= SUB_SUBTLE_REPLACE; break;
           case 's': subtle->paths.sublets = optarg;      break;
           case 'v': SubtleVersion();                     return 0;
@@ -280,7 +280,7 @@ main(int argc,
   sigaction(SIGCHLD, &sa, NULL);
 
   /* Load and check config only */
-  if(check)
+  if(subtle->flags & SUB_SUBTLE_CHECK)
     {
       subRubyInit();
 
