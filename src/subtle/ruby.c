@@ -2047,6 +2047,9 @@ subRubyReloadConfig(void)
   subPanelUpdate();
   subPanelRender();
 
+  /* Hook: Reload */
+  subHookCall(SUB_HOOK_RELOAD, NULL);
+
   printf("Reloaded config\n");
 } /* }}} */
 
