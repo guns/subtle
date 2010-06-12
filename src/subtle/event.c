@@ -931,7 +931,7 @@ EventGrab(XEvent *ev)
             break; /* }}} */
           case SUB_GRAB_PROC: /* {{{ */
             subRubyCall(SUB_CALL_HOOKS, g->data.num,
-              (void *)g, subSubtleFind(win, CLIENTID));
+              NULL, subSubtleFind(win, CLIENTID));
             break; /* }}} */
           case SUB_GRAB_WINDOW_MOVE:
           case SUB_GRAB_WINDOW_RESIZE: /* {{{ */
