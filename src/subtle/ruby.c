@@ -1187,6 +1187,9 @@ RubyKernelEvent(VALUE self,
 {
   rb_need_block();
 
+  if(subtle->flags & SUB_SUBTLE_CHECK) return Qnil;
+
+  /* Check value type */
   if(T_SYMBOL == rb_type(event))
     {
       int i, arity = 0;
@@ -1251,38 +1254,38 @@ RubyKernelEvent(VALUE self,
                     }
                   else rb_raise(rb_eArgError, "Wrong number of arguments (%d for %d)",
                     arity, methods[i].arity);
-                }
+               }
             }
-          }
+        }
 
-        /* Generic hooks */
-        for(i = 0; LENGTH(hooks) > i; i++)
-          {
-            if(hooks[i].sym == event)
-              {
-                SubHook *h = subHookNew(hooks[i].flags|SUB_CALL_HOOKS, 
-                  p, (void *)s);
+      /* Generic hooks */
+      for(i = 0; LENGTH(hooks) > i; i++)
+        {
+          if(hooks[i].sym == event)
+            {
+              SubHook *h = subHookNew(hooks[i].flags|SUB_CALL_HOOKS, 
+                p, (void *)s);
 
-                /* Add hook to the hooks array */
-                subArrayPush(subtle->hooks, (void *)h);
-                rb_ary_push(shelter, p); ///< Protect from GC
-              }
-          }
+              /* Add hook to the hooks array */
+              subArrayPush(subtle->hooks, (void *)h);
+              rb_ary_push(shelter, p); ///< Protect from GC
+            }
+        }
 
-        /* Sublet specific */
-        if(s)
-          {
-            int mask = 0;
+      /* Sublet specific */
+      if(s)
+        {
+          int mask = 0;
 
-            /* Hook specific stuff */
-            if(s->flags & SUB_SUBLET_DOWN) mask |= ButtonPressMask;
-            if(s->flags & SUB_SUBLET_OVER) mask |= EnterWindowMask;
-            if(s->flags & SUB_SUBLET_OUT)  mask |= LeaveWindowMask;
+          /* Hook specific stuff */
+          if(s->flags & SUB_SUBLET_DOWN) mask |= ButtonPressMask;
+          if(s->flags & SUB_SUBLET_OVER) mask |= EnterWindowMask;
+          if(s->flags & SUB_SUBLET_OUT)  mask |= LeaveWindowMask;
 
-            XSelectInput(subtle->dpy, s->win, mask);
-          }
-      }
-    else rb_raise(rb_eArgError, "Unknown value type");
+          XSelectInput(subtle->dpy, s->win, mask);
+        }
+    }
+  else rb_raise(rb_eArgError, "Unknown value type");
 
   return Qnil;
 } /* }}} */
