@@ -35,10 +35,10 @@ subGravityNew(const char *name,
   /* Sanitize values */
   if(geom)
     {
-      g->geom.x      = MINMAX(geom->x,      0, 100);
-      g->geom.y      = MINMAX(geom->y,      0, 100);
-      g->geom.width  = MINMAX(geom->width,  0, 100);
-      g->geom.height = MINMAX(geom->height, 0, 100);
+      g->geom.x      = MINMAX(geom->x,   0, 100);
+      g->geom.y      = MINMAX(geom->y,   0, 100);
+      g->geom.width  = MAX(geom->width,  100);
+      g->geom.height = MAX(geom->height, 100);
     }
 
   subSharedLogDebug("new=gravity, name=%s, quark=%d, x=%d, y=%d, width=%d, height=%d\n",
