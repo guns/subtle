@@ -33,6 +33,7 @@ require "rake/rdoctask"
   "debug"      => "no",
   "xft"        => "yes",
   "xinerama"   => "yes",
+  "xrandr"     => "yes",
   "builddir"   => "build",
   "hdrdir"     => "",
   "archdir"    => "",
@@ -280,9 +281,11 @@ task(:config) do
     end
 
     # Xrandr
-    if(have_header("X11/extensions/Xrandr.h"))
-      @options["ldflags"]  << " -lXrandr"
-      @options["extflags"] << " -lXrandr"
+    if("yes" == @options["xrandr"])
+      if(have_header("X11/extensions/Xrandr.h"))
+        @options["ldflags"]  << " -lXrandr"
+        @options["extflags"] << " -lXrandr"
+      end
     end
 
     # Check functions
@@ -319,6 +322,7 @@ Extension...........: #{@options["extdir"]}
 
 Xft support.........: #{@options["xft"]}
 Xinerama support....: #{@options["xinerama"]}
+XRandR support......: #{@options["xrandr"]}
 Debugging messages..: #{@options["debug"]}
 
 EOF
@@ -405,6 +409,7 @@ mandir=PATH        Set man directory (current: #{@options["mandir"]})
 debug=[yes|no]     Whether to build with debugging messages (current: #{@options["debug"]})
 xft=[yes|no]       Whether to build with Xft support (current: #{@options["xft"]})
 xinerama=[yes|no]  Whether to build with Xinerama support (current: #{@options["xinerama"]})
+randr=[yes|no]     Whether to build with XRandR support (current: #{@options["xrandr"]})
 EOF
 end # }}}
 
