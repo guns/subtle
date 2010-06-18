@@ -37,8 +37,8 @@ subGravityNew(const char *name,
     {
       g->geom.x      = MINMAX(geom->x,   0, 100);
       g->geom.y      = MINMAX(geom->y,   0, 100);
-      g->geom.width  = MAX(geom->width,  100);
-      g->geom.height = MAX(geom->height, 100);
+      g->geom.width  = geom->width  > 100 ? 100 : geom->width;
+      g->geom.height = geom->height > 100 ? 100 : geom->height;
     }
 
   subSharedLogDebug("new=gravity, name=%s, quark=%d, x=%d, y=%d, width=%d, height=%d\n",
