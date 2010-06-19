@@ -474,7 +474,8 @@ typedef struct subsubtle_t /* {{{ */
 {
   FLAGS                flags;                                     ///< Subtle flags
 
-  int                  th, bw, pbw, step, snap, limit, gravity;   ///< Subtle properties
+  int                  th, bw, pbw, step, snap, limit;            ///< Subtle properties
+  unsigned long        gravity;                                   ///< Subtle gravity
   int                  vid, sid;                                  ///< Subtle current view, screen
 
   Display              *dpy;                                      ///< Subtle Xorg display
@@ -539,11 +540,12 @@ typedef struct subsubtle_t /* {{{ */
 
 typedef struct subtag_t /* {{{ */
 {
-  FLAGS      flags;                                               ///< Tag flags
-  char       *name;                                               ///< Tag name
-  regex_t    *preg;                                               ///< Tag regex
-  int        gravity, screen;                                     ///< Tag gravity, screen
-  XRectangle geometry;                                            ///< Tag geometry
+  FLAGS         flags;                                            ///< Tag flags
+  char          *name;                                            ///< Tag name
+  regex_t       *preg;                                            ///< Tag regex
+  int           screen;                                           ///< Tag screen
+  unsigned long gravity;                                          ///< Tag gravity
+  XRectangle    geometry;                                         ///< Tag geometry
 } SubTag; /* }}} */
 
 typedef struct subtray_t /* {{{ */
@@ -687,7 +689,6 @@ void subRubyLoadSubtlext(void);                                   ///< Load subt
 void subRubyLoadPanels(void);                                     ///< Load panels
 int subRubyCall(int type, unsigned long proc,
   void *data1, void *data2);                                      ///< Call Ruby script
-int subRubyRemove(char *name);                                    ///< Remove constant
 int subRubyRelease(unsigned long recv);                           ///< Release receiver
 void subRubyFinish(void);                                         ///< Kill Ruby stack
 /* }}} */
