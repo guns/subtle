@@ -238,7 +238,6 @@ main(int argc,
 
   /* Create subtle */
   subtle = (SubSubtle *)(subSharedMemoryAlloc(1, sizeof(SubSubtle)));
-  subtle->flags |= SUB_SUBTLE_RUN;
 
   /* Parse arguments */
   while(-1 != (c = getopt_long(argc, argv, "c:d:hkrs:vD", long_options, NULL)))

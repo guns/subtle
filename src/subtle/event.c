@@ -1274,6 +1274,8 @@ subEventLoop(void)
 
   XSync(subtle->dpy, False); ///< Sync before going on
 
+  subtle->flags |= SUB_SUBTLE_RUN;
+
   while(subtle && subtle->flags & SUB_SUBTLE_RUN)
     {
       now = subSubtleTime();
