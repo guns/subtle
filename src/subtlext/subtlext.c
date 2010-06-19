@@ -395,16 +395,20 @@ subSubtlextConnect(void)
 void
 subSubtlextBacktrace(void)
 {
+  int i;
   VALUE lasterr = Qnil, message = Qnil, klass = Qnil;
+  VALUE backtrace = Qnil, entry = Qnil;
 
   /* Fetching backtrace data */
-  lasterr = rb_gv_get("$!");
-  message = rb_obj_as_string(lasterr);
-  klass   = rb_class_path(CLASS_OF(lasterr));
+  lasterr   = rb_gv_get("$!");
+  message   = rb_obj_as_string(lasterr);
+  klass     = rb_class_path(CLASS_OF(lasterr));
+  backtrace = rb_funcall(lasterr, rb_intern("backtrace"), 0, NULL);
 
   /* Print error and backtrace */
   subSharedLogWarn("%s: %s\n", RSTRING_PTR(klass), RSTRING_PTR(message));
-  rb_backtrace();
+  for(i = 0; Qnil != (entry = rb_ary_entry(backtrace, i)); ++i)
+    printf("\tfrom %s\n", RSTRING_PTR(entry));
 } /* }}} */
 
 /* subSubtlextConcat {{{ */
