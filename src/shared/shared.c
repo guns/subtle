@@ -810,6 +810,7 @@ subSharedFontKill(Display *disp,
   if(f->xft)
     {
       XftFontClose(disp, f->xft);
+      XftDrawDestroy(f->draw);
     }
   else
 #endif /* HAVE_X11_XFT_XFT_H */
