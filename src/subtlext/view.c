@@ -280,7 +280,7 @@ subViewClients(VALUE self)
   int i, size = 0;
   Window *clients = NULL;
   VALUE win = Qnil, klass = Qnil, meth = Qnil, array = Qnil, client = Qnil;
-  unsigned long *flags1 = NULL;
+  unsigned long *tags1 = NULL;
 
   /* Fetch data */
   win     = rb_iv_get(self, "@win");
@@ -288,7 +288,7 @@ subViewClients(VALUE self)
   meth    = rb_intern("new");
   array   = rb_ary_new2(size);
   clients = subSharedClientList(&size);
-  flags1  = (unsigned long *)subSharedPropertyGet(display, NUM2LONG(win), XA_CARDINAL,
+  tags1   = (unsigned long *)subSharedPropertyGet(display, NUM2LONG(win), XA_CARDINAL,
     XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
 
   /* Populate array */
@@ -296,11 +296,18 @@ subViewClients(VALUE self)
     {
       for(i = 0; i < size; i++)
         {
-          unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(display,
+          unsigned long *tags2 = NULL, *flags = NULL;
+
+          /* Get window flags */
+          tags2 = (unsigned long *)subSharedPropertyGet(display,
             clients[i], XA_CARDINAL,
             XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
+          flags = (unsigned long *)subSharedPropertyGet(display,
+            clients[i], XA_CARDINAL,
+            XInternAtom(display, "SUBTLE_WINDOW_FLAGS", False), NULL);
 
-          if(flags2 && *flags1 & *flags2) ///< Check if there are common tags
+          /* Check if there are common tags or window is stick */
+          if((tags2 && *tags1 & *tags2) || *flags & SUB_EWMH_STICK)
             {
               if(!NIL_P(client = rb_funcall(klass, meth, 1, LONG2NUM(clients[i]))))
                 {
@@ -309,13 +316,14 @@ subViewClients(VALUE self)
                 }
             }
 
-          if(flags2) free(flags2);
+          if(tags2) free(tags2);
+          if(flags) free(flags);
         }
 
       free(clients);
     }
 
-  free(flags1);
+  free(tags1);
 
   return array;
 } /* }}} */

@@ -357,7 +357,7 @@ subClientViewList(VALUE self)
   char **names = NULL;
   Window *views = NULL;
   VALUE win = Qnil, array = Qnil, method = Qnil, klass = Qnil;
-  unsigned long *flags1 = NULL;
+  unsigned long *tags1 = NULL, *flags = NULL;
 
   win     = rb_iv_get(self, "@win");
   method  = rb_intern("new");
@@ -367,18 +367,21 @@ subClientViewList(VALUE self)
     XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size);
   views   = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display),
     XA_WINDOW, XInternAtom(display, "_NET_VIRTUAL_ROOTS", False), NULL);
-  flags1  = (unsigned long *)subSharedPropertyGet(display, NUM2LONG(win),
+  tags1   = (unsigned long *)subSharedPropertyGet(display, NUM2LONG(win),
+    XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
+  flags   = (unsigned long *)subSharedPropertyGet(display, NUM2LONG(win),
     XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
 
   if(names && views)
     {
       for(i = 0; i < size; i++)
         {
-          unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(display,
+          unsigned long *tags2 = (unsigned long *)subSharedPropertyGet(display,
             views[i], XA_CARDINAL,
             XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
 
-          if(*flags1 & *flags2) ///< Check if there are common tags
+          /* Check if there are common tags or window is stick */
+          if((tags2 && *tags1 & *tags2) || *flags & SUB_EWMH_STICK)
             {
               VALUE v = rb_funcall(klass, method, 1, rb_str_new2(names[i]));
 
@@ -387,12 +390,15 @@ subClientViewList(VALUE self)
               rb_ary_push(array, v);
             }
 
-          free(flags2);
+          if(tags2) free(tags2);
         }
 
       XFreeStringList(names);
       free(views);
     }
+
+  if(tags1) free(tags1);
+  if(flags) free(flags);
 
   return array;
 } /* }}} */
