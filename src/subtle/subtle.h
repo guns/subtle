@@ -464,7 +464,7 @@ typedef struct subsublet_t /* {{{ */
   int               x, width, watch;                              ///< Sublet x, width, width
 
   char              *name;                                        ///< Sublet name
-  unsigned long     instance, mod, bg;                            ///< Sublet ruby instance, ruby mod, bg color
+  unsigned long     instance, bg;                                 ///< Sublet ruby instance, bg color
   time_t            time, interval;                               ///< Sublet update/interval time
 
   struct subtext_t  *text;                                        ///< Sublet text
