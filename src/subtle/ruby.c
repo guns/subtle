@@ -161,6 +161,51 @@ RubyConvert(void *data)
   return object;
 } /* }}} */
 
+/* RubyHook {{{ */
+static void
+RubyHook(VALUE event,
+  VALUE p,
+  void *data)
+{
+  int i;
+  SubHook *h = NULL;
+
+  RubySymbols hooks[] =
+  {
+    { CHAR2SYM("start"),            SUB_HOOK_START            },
+    { CHAR2SYM("exit"),             SUB_HOOK_EXIT             },
+    { CHAR2SYM("tile"),             SUB_HOOK_TILE             },
+    { CHAR2SYM("reload"),           SUB_HOOK_RELOAD           },
+    { CHAR2SYM("client_create"),    SUB_HOOK_CLIENT_CREATE    },
+    { CHAR2SYM("client_configure"), SUB_HOOK_CLIENT_CONFIGURE },
+    { CHAR2SYM("client_focus"),     SUB_HOOK_CLIENT_FOCUS     },
+    { CHAR2SYM("client_gravity"),   SUB_HOOK_CLIENT_GRAVITY   },
+    { CHAR2SYM("client_kill"),      SUB_HOOK_CLIENT_KILL      },
+    { CHAR2SYM("tag_create"),       SUB_HOOK_TAG_CREATE       },
+    { CHAR2SYM("tag_kill"),         SUB_HOOK_TAG_KILL         },
+    { CHAR2SYM("view_create"),      SUB_HOOK_VIEW_CREATE      },
+    { CHAR2SYM("view_configure"),   SUB_HOOK_VIEW_CONFIGURE   },
+    { CHAR2SYM("view_jump"),        SUB_HOOK_VIEW_JUMP        },
+    { CHAR2SYM("view_kill"),        SUB_HOOK_VIEW_KILL        }
+  };
+
+  if(subtle->flags & SUB_SUBTLE_CHECK) return; ///< Skip on check
+
+  /* Generic hooks */
+  for(i = 0; LENGTH(hooks) > i; i++)
+    {
+      if(hooks[i].sym == event)
+        {
+          /* Create new hook */
+          if((h = subHookNew(hooks[i].flags|SUB_CALL_HOOKS, p, data)))
+            {
+              subArrayPush(subtle->hooks, (void *)h);
+              rb_ary_push(shelter, p); ///< Protect from GC
+            }
+        }
+    }
+} /* }}} */
+
 /* RubyLoadPanel {{{ */
 void
 RubyLoadPanel(VALUE ary,
@@ -512,22 +557,49 @@ RubyWrapRead(VALUE file)
   return str;
 } /* }}} */
 
-/* RubyWrapModEval {{{ */
+/* RubyWrapSandboxEval {{{ */
 static VALUE
-RubyWrapModEval(VALUE data)
+RubyWrapSandboxEval(VALUE data)
 {
   VALUE *rargs = (VALUE *)data;
 
-  rb_mod_module_eval(1, rargs, rargs[1]);
+  rb_obj_instance_eval(1, rargs, rargs[1]);
 
   return Qnil;
 } /* }}} */
 
-/* Kernel */
+/* Object */
 
-/* Sublet DSL */
+/* RubyObjectDispatcher {{{ */
+/*
+ * Dispatcher for Subtlext constants - internal use only
+ */
 
-/* RubyKernelConfigure {{{ */
+static VALUE
+RubyObjectDispatcher(VALUE self,
+  VALUE missing)
+{
+  ID id = SYM2ID(missing);
+  VALUE ret = Qnil;
+
+  subRubyLoadSubtlext(); ///< Load subtlext on demand
+
+  /* Check if subtlext has this symbol */
+  if(rb_const_defined(rb_mKernel, id))
+    ret = rb_const_get(rb_mKernel, id);
+  else
+    {
+      char *name = (char *)rb_id2name(id);
+
+      rb_raise(rb_eStandardError, "Failed finding constant `%s'", name);
+    }
+
+  return ret;
+} /* }}} */
+
+/* Sandbox */
+
+/* RubySandboxConfigure {{{ */
 /*
  * call-seq: configure -> nil
  *
@@ -539,7 +611,7 @@ RubyWrapModEval(VALUE data)
  */
 
 static VALUE
-RubyKernelConfigure(VALUE self,
+RubySandboxConfigure(VALUE self,
   VALUE name)
 {
   rb_need_block();
@@ -563,7 +635,7 @@ RubyKernelConfigure(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* RubyKernelHelper {{{ */
+/* RubySandboxHelper {{{ */
 /*
  * call-seq: helper -> nil
  *
@@ -577,7 +649,7 @@ RubyKernelConfigure(VALUE self,
  */
 
 static VALUE
-RubyKernelHelper(VALUE self)
+RubySandboxHelper(VALUE self)
 {
   rb_need_block();
 
@@ -596,11 +668,11 @@ RubyKernelHelper(VALUE self)
   return Qnil;
 } /* }}} */
 
-/* RubyKernelOn {{{ */
+/* RubySandboxOn {{{ */
 /*
  * call-seq: on(event, &block) -> nil
  *
- * Event block for Sublet
+ * Event block for hooks
  *
  *  on :event do |s|
  *    puts s.name
@@ -608,7 +680,7 @@ RubyKernelHelper(VALUE self)
  */
 
 static VALUE
-RubyKernelOn(VALUE self,
+RubySandboxOn(VALUE self,
   VALUE event)
 {
   rb_need_block();
@@ -616,39 +688,14 @@ RubyKernelOn(VALUE self,
   /* Check value type */
   if(T_SYMBOL == rb_type(event))
     {
-      int i, arity = 0;
-      VALUE p = Qnil;
-      SubSublet *s = NULL;
-
-      RubySymbols hooks[] =
-      {
-        { CHAR2SYM("start"),            SUB_HOOK_START            },
-        { CHAR2SYM("exit"),             SUB_HOOK_EXIT             },
-        { CHAR2SYM("tile"),             SUB_HOOK_TILE             },
-        { CHAR2SYM("reload"),           SUB_HOOK_RELOAD           },
-        { CHAR2SYM("client_create"),    SUB_HOOK_CLIENT_CREATE    },
-        { CHAR2SYM("client_configure"), SUB_HOOK_CLIENT_CONFIGURE },
-        { CHAR2SYM("client_focus"),     SUB_HOOK_CLIENT_FOCUS     },
-        { CHAR2SYM("client_gravity"),   SUB_HOOK_CLIENT_GRAVITY   },
-        { CHAR2SYM("client_kill"),      SUB_HOOK_CLIENT_KILL      },
-        { CHAR2SYM("tag_create"),       SUB_HOOK_TAG_CREATE       },
-        { CHAR2SYM("tag_kill"),         SUB_HOOK_TAG_KILL         },
-        { CHAR2SYM("view_create"),      SUB_HOOK_VIEW_CREATE      },
-        { CHAR2SYM("view_configure"),   SUB_HOOK_VIEW_CONFIGURE   },
-        { CHAR2SYM("view_jump"),        SUB_HOOK_VIEW_JUMP        },
-        { CHAR2SYM("view_kill"),        SUB_HOOK_VIEW_KILL        }
-      };
-
       if(subtle->flags & SUB_SUBTLE_CHECK) return Qnil; ///< Skip on check
-
-      /* Fetch proc data */
-      p     = rb_block_proc();
-      arity = rb_proc_arity(p);
 
       /* Sublet hooks */
       if(0 < subtle->sublets->ndata)
         {
-          VALUE sing = Qnil, meth = Qnil;
+          int i, arity = 0, mask = 0;
+          VALUE p = Qnil, sing = Qnil, meth = Qnil;
+          SubSublet *s = NULL;
 
           RubyMethods methods[] =
           {
@@ -661,9 +708,14 @@ RubyKernelOn(VALUE self,
           };
 
           /* Since loading is linear we use the last sublet */
+          p     = rb_block_proc();
+          arity = rb_proc_arity(p);
           s     = SUBLET(subtle->sublets->data[subtle->sublets->ndata - 1]);
           sing  = rb_singleton_class(s->instance);
           meth  = rb_intern("define_method");
+
+          /* Generic hooks */
+          RubyHook(event, p, (void *)s);
 
           /* Special hooks */
           for(i = 0; LENGTH(methods) > i; i++)
@@ -682,26 +734,6 @@ RubyKernelOn(VALUE self,
                     arity, methods[i].arity);
                }
             }
-        }
-
-      /* Generic hooks */
-      for(i = 0; LENGTH(hooks) > i; i++)
-        {
-          if(hooks[i].sym == event)
-            {
-              SubHook *h = subHookNew(hooks[i].flags|SUB_CALL_HOOKS, 
-                p, (void *)s);
-
-              /* Add hook to the hooks array */
-              subArrayPush(subtle->hooks, (void *)h);
-              rb_ary_push(shelter, p); ///< Protect from GC
-            }
-        }
-
-      /* Sublet specific */
-      if(s)
-        {
-          int mask = 0;
 
           /* Hook specific stuff */
           if(s->flags & SUB_SUBLET_DOWN) mask |= ButtonPressMask;
@@ -711,12 +743,12 @@ RubyKernelOn(VALUE self,
           XSelectInput(subtle->dpy, s->win, mask);
         }
     }
-  else rb_raise(rb_eArgError, "Unknown value type");
+  else rb_raise(rb_eArgError, "Unknown value type for on");
 
   return Qnil;
 } /* }}} */
 
-/* Config DSL */
+/* Kernel */
 
 /* RubyKernelSet {{{ */
 /*
@@ -1387,33 +1419,33 @@ RubyKernelView(int argc,
   return Qnil;
 } /* }}} */
 
-/* Object */
-
-/* RubyObjectDispatcher {{{ */
+/* RubyKernelOn {{{ */
 /*
- * Dispatcher for Subtlext constants - internal use only
+ * call-seq: on(event, &block) -> nil
+ *
+ * Event block for hooks
+ *
+ *  on :event do |s|
+ *    puts s.name
+ *  end
  */
 
 static VALUE
-RubyObjectDispatcher(VALUE self,
-  VALUE missing)
+RubyKernelOn(VALUE self,
+  VALUE event)
 {
-  ID id = SYM2ID(missing);
-  VALUE ret = Qnil;
+  rb_need_block();
 
-  subRubyLoadSubtlext(); ///< Load subtlext on demand
-
-  /* Check if subtlext has this symbol */
-  if(rb_const_defined(rb_mKernel, id))
-    ret = rb_const_get(rb_mKernel, id);
-  else
+  /* Check value type */
+  if(T_SYMBOL == rb_type(event))
     {
-      char *name = (char *)rb_id2name(id);
+      if(subtle->flags & SUB_SUBTLE_CHECK) return Qnil; ///< Skip on check
 
-      rb_raise(rb_eStandardError, "Failed finding constant `%s'", name);
+      RubyHook(event, rb_block_proc(), NULL);
     }
+  else rb_raise(rb_eArgError, "Unknown value type for on");
 
-  return ret;
+  return Qnil;
 } /* }}} */
 
 /* Options */
@@ -1967,7 +1999,7 @@ RubySubletUnwatch(VALUE self)
 void
 subRubyInit(void)
 {
-  VALUE options = Qnil, sublet = Qnil;
+  VALUE options = Qnil, sandbox = Qnil, sublet = Qnil;
 
   void Init_prelude(void);
 
@@ -1979,25 +2011,6 @@ subRubyInit(void)
   /* FIXME: Fake ruby_init_gems(Qtrue) */
   rb_define_module("Gem");
   Init_prelude();
-
-  /*
-   * Document-class: Kernel
-   *
-   * Ruby Kernel class for Sublet DSL
-   */
-
-  /* Sublet DSL */
-  rb_define_method(rb_mKernel, "configure", RubyKernelConfigure, 1);
-  rb_define_method(rb_mKernel, "helper",    RubyKernelHelper,    0);
-  rb_define_method(rb_mKernel, "on",        RubyKernelOn,        1);
-
-  /* Config DSL */
-  rb_define_method(rb_mKernel, "set",       RubyKernelSet,       2);
-  rb_define_method(rb_mKernel, "color",     RubyKernelColor ,    2);
-  rb_define_method(rb_mKernel, "gravity",   RubyKernelGravity,   2);
-  rb_define_method(rb_mKernel, "grab",      RubyKernelGrab,     -1);
-  rb_define_method(rb_mKernel, "tag",       RubyKernelTag,      -1);
-  rb_define_method(rb_mKernel, "view",      RubyKernelView,     -1);
 
   /*
    * Document-class: Object
@@ -2014,6 +2027,51 @@ subRubyInit(void)
    */
 
   mod = rb_define_module("Subtle");
+
+  /*
+   * Document-class: Subtle::Sandbox
+   *
+   * Sandbox is a module to safely load sublets
+   */
+
+  sandbox = rb_define_class_under(mod, "Sandbox", rb_cObject);
+
+  /* Class methods */
+  rb_define_method(sandbox, "configure",     RubySandboxConfigure, 1);
+  rb_define_method(sandbox, "helper",        RubySandboxHelper,    0);
+  rb_define_method(sandbox, "on",            RubySandboxOn,        1);
+  rb_define_method(sandbox, "const_missing", RubyObjectDispatcher, 1);
+
+  /*
+   * Document-class: Kernel
+   *
+   * Ruby Kernel class for Sublet DSL
+   */
+
+  /* Class methods */
+  rb_define_method(rb_mKernel, "set",     RubyKernelSet,       2);
+  rb_define_method(rb_mKernel, "color",   RubyKernelColor ,    2);
+  rb_define_method(rb_mKernel, "gravity", RubyKernelGravity,   2);
+  rb_define_method(rb_mKernel, "grab",    RubyKernelGrab,     -1);
+  rb_define_method(rb_mKernel, "tag",     RubyKernelTag,      -1);
+  rb_define_method(rb_mKernel, "view",    RubyKernelView,     -1);
+  rb_define_method(rb_mKernel, "on",      RubyKernelOn,        1);
+
+  /*
+   * Document-class: Options
+   *
+   * Options class for evaluating DSL procs
+   */
+
+  options = rb_define_class_under(mod, "Options", rb_cObject);
+
+  /* Params list */
+  rb_define_attr(options, "params", 1, 1);
+
+  /* Class methods */
+  rb_define_method(options, "initialize",     RubyOptionsInit,        0);
+  rb_define_method(options, "gravity",        RubyOptionsGravity,     1);
+  rb_define_method(options, "method_missing", RubyOptionsDispatcher, -1);
 
   /*
    * Document-class: Subtle::Sublet
@@ -2039,21 +2097,6 @@ subRubyInit(void)
   rb_define_method(sublet, "watch",          RubySubletWatch,             1);
   rb_define_method(sublet, "unwatch",        RubySubletUnwatch,           0);
 
-  /*
-   * Document-class: Options
-   *
-   * Options class for evaluating DSL procs
-   */
-
-  options = rb_define_class_under(mod, "Options", rb_cObject);
-
-  /* Params list */
-  rb_define_attr(options, "params", 1, 1);
-
-  /* Class methods */
-  rb_define_method(options, "initialize",     RubyOptionsInit,        0);
-  rb_define_method(options, "gravity",        RubyOptionsGravity,     1);
-  rb_define_method(options, "method_missing", RubyOptionsDispatcher, -1);
 
   /* Bypassing garbage collection */
   shelter = rb_ary_new();
@@ -2323,7 +2366,7 @@ subRubyLoadSublet(const char *file)
   int state = 0;
   char buf[100] = { 0 };
   SubSublet *s = NULL;
-  VALUE str = Qnil, rargs[2] = { Qnil }, klass = Qnil;
+  VALUE str = Qnil, rargs[2] = { Qnil }, klass = Qnil, sandbox = Qnil;
 
   /* Check path */
   if(subtle->paths.sublets)
@@ -2354,17 +2397,17 @@ subRubyLoadSublet(const char *file)
   klass       = rb_const_get(mod, rb_intern("Sublet"));
   s->instance = Data_Wrap_Struct(klass, NULL, NULL, (void *)s);
 
-  /* Create namespace module */
-  s->mod = rb_module_new();
-  rb_define_singleton_method(s->mod, "const_missing", RubyObjectDispatcher, 1);
+  /* Create sandbox */
+  klass   = rb_const_get(mod, rb_intern("Sandbox"));
+  sandbox = rb_funcall(klass, rb_intern("new"), 0, NULL);
 
   subArrayPush(subtle->sublets, s);
   rb_ary_push(shelter, s->instance); ///< Protect from GC
 
   /* Carefully eval file */
   rargs[0] = str;
-  rargs[1] = s->mod;
-  rb_protect(RubyWrapModEval, (VALUE)&rargs, &state);
+  rargs[1] = sandbox;
+  rb_protect(RubyWrapSandboxEval, (VALUE)&rargs, &state);
   if(state)
     {
       subSharedLogWarn("Failed loading sublet `%s'\n", file);
