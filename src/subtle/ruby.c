@@ -2324,16 +2324,16 @@ subRubyReloadConfig(void)
       subClientToggle(c, ~c->flags & flags); ///< Toggle flags
     }
 
+  /* Reload sublets */
+  subRubyReloadSublets();
+
+  printf("Reloaded config\n");
+
   subViewJump(subtle->views->data[0], True);
   subViewConfigure(subtle->views->data[0], True);
 
-  subPanelUpdate();
-  subPanelRender();
-
   /* Hook: Reload */
   subHookCall(SUB_HOOK_RELOAD, NULL);
-
-  printf("Reloaded config\n");
 } /* }}} */
 
  /** subRubyReloadSublets {{{
