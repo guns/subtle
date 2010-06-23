@@ -1327,15 +1327,18 @@ RubyKernelTag(int argc,
     flags |= (SUB_TAG_MATCH_INSTANCE|SUB_TAG_MATCH_CLASS);
 
   /* Check value type */
-  if(T_STRING == rb_type(name) && T_STRING == rb_type(regex))
+  if(T_STRING == rb_type(name))
     {
       /* Skip on checking only */
       if(!(subtle->flags & SUB_SUBTLE_CHECK))
         {
           SubTag *t = NULL;
+          char *re = NULL;
+
+          if(!NIL_P(regex)) re = RSTRING_PTR(regex);
 
           /* Finally create new tag */
-          if((t = subTagNew(RSTRING_PTR(name), RSTRING_PTR(regex))))
+          if((t = subTagNew(RSTRING_PTR(name), re)))
             {
               t->flags   |= flags;
               t->gravity  = gravity;
@@ -1398,15 +1401,18 @@ RubyKernelView(int argc,
     }
 
   /* Check value type */
-  if(T_STRING == rb_type(name) && T_STRING == rb_type(regex))
+  if(T_STRING == rb_type(name))
     {
       /* Skip on checking only */
       if(!(subtle->flags & SUB_SUBTLE_CHECK))
         {
           SubView *v = NULL;
+          char *re = NULL;
+
+          if(!NIL_P(regex)) re = RSTRING_PTR(regex);
 
           /* Finally create new view */
-          if((v = subViewNew(RSTRING_PTR(name), RSTRING_PTR(regex))))
+          if((v = subViewNew(RSTRING_PTR(name), re)))
             {
               v->flags |= flags;
 
