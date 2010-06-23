@@ -1262,14 +1262,14 @@ RubyKernelTag(int argc,
   /* Get options */
   if(T_HASH == rb_type(params))
     {
-      if(T_SYMBOL == (value = rb_hash_lookup(params,
-        CHAR2SYM("gravity"))) || T_FIXNUM == value)
+      if(T_SYMBOL == rb_type(value = rb_hash_lookup(params,
+        CHAR2SYM("gravity"))) || T_FIXNUM == rb_type(value))
         {
           gravity  = value;
           flags   |= SUB_TAG_GRAVITY;
         }
 
-      if(T_FIXNUM == (value = rb_hash_lookup(params,
+      if(T_FIXNUM == rb_type(value = rb_hash_lookup(params,
           CHAR2SYM("screen"))) && 0 <= FIX2INT(value) &&
           FIX2INT(value) < subtle->screens->ndata - 1)
         {
@@ -1277,7 +1277,7 @@ RubyKernelTag(int argc,
           flags  |= SUB_TAG_SCREEN;
         }
 
-      if(T_ARRAY == (value = rb_hash_lookup(params,
+      if(T_ARRAY == rb_type(value = rb_hash_lookup(params,
           CHAR2SYM("geometry"))) &&
           RubyGetGeometry(value, &geometry))
         flags |= SUB_TAG_GEOMETRY;
@@ -1304,7 +1304,7 @@ RubyKernelTag(int argc,
         flags |= (Qtrue == value ? SUB_MODE_RESIZE : SUB_MODE_NONRESIZE);
 
       /* Check matching options */
-      if(T_ARRAY == (value = rb_hash_lookup(params,
+      if(T_ARRAY == rb_type(value = rb_hash_lookup(params,
           CHAR2SYM("match"))))
         {
           if(Qtrue == rb_ary_includes(value, CHAR2SYM("name")))
@@ -2168,7 +2168,8 @@ subRubyLoadConfig(void)
     }
 
   /* Get default gravity */
-  subtle->gravity = RubyGetGravity(subtle->gravity);
+  if(-1 == (subtle->gravity = RubyGetGravity(subtle->gravity)))
+    subtle->gravity = 0;
 
   subGravityPublish();
 
@@ -2207,7 +2208,7 @@ subRubyLoadConfig(void)
     }
   else subArraySort(subtle->grabs, subGrabCompare);
 
-  /* Check tags */
+  /* Check and update tags */
   for(i = 0; i < subtle->tags->ndata; i++)
     {
       SubTag *t = TAG(subtle->tags->data[i]);
@@ -2225,7 +2226,8 @@ subRubyLoadConfig(void)
 
       /* Update gravities */
       if(t->flags & SUB_TAG_GRAVITY)
-        t->gravity = RubyGetGravity(t->gravity);
+        if(-1 == (t->gravity = RubyGetGravity(t->gravity)))
+          t->gravity = 0;
     }
 
   /* Create default tag */
