@@ -1265,16 +1265,16 @@ RubyKernelTag(int argc,
       if(T_SYMBOL == rb_type(value = rb_hash_lookup(params,
         CHAR2SYM("gravity"))) || T_FIXNUM == rb_type(value))
         {
-          gravity  = value;
           flags   |= SUB_TAG_GRAVITY;
+          gravity  = value;
         }
 
       if(T_FIXNUM == rb_type(value = rb_hash_lookup(params,
           CHAR2SYM("screen"))) && 0 <= FIX2INT(value) &&
-          FIX2INT(value) < subtle->screens->ndata - 1)
+          FIX2INT(value) <= subtle->screens->ndata - 1)
         {
-          screen  = FIX2INT(value);
           flags  |= SUB_TAG_SCREEN;
+          screen  = FIX2INT(value);
         }
 
       if(T_ARRAY == rb_type(value = rb_hash_lookup(params,
