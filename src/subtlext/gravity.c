@@ -224,6 +224,64 @@ subGravityUpdate(VALUE self)
   return Qnil;
 } /* }}} */
 
+/* subGravityClients {{{ */
+/*
+ * call-seq: clients -> Array
+ *
+ * Get Array of Client that have this gravity
+ *
+ *  gravity.clients
+ *  => [#<Subtlext::Client:xxx>, #<Subtlext::Client:xxx>]
+ *
+ *  tag.clients
+ *  => []
+ */
+
+VALUE
+subGravityClients(VALUE self)
+{
+  int i, id = 0, size = 0;
+  Window *clients = NULL;
+  VALUE klass = Qnil, meth = Qnil, array = Qnil, client = Qnil;
+
+  /* Fetch data */
+  id      = FIX2INT(rb_iv_get(self, "@id"));
+  klass   = rb_const_get(mod, rb_intern("Client"));
+  meth    = rb_intern("new");
+  array   = rb_ary_new2(size);
+  clients = subSharedClientList(&size);
+
+  /* Populate array */
+  if(clients)
+    {
+      for(i = 0; i < size; i++)
+        {
+          unsigned long *gravity = NULL;
+
+          /* Get window flags */
+          gravity = (unsigned long *)subSharedPropertyGet(display,
+            clients[i], XA_CARDINAL,
+            XInternAtom(display, "SUBTLE_WINDOW_GRAVITY", False), NULL);
+
+          /* Check if there are common tags or window is stick */
+          if(id == *gravity)
+            {
+              if(!NIL_P(client = rb_funcall(klass, meth, 1, LONG2NUM(clients[i]))))
+                {
+                  subClientUpdate(client);
+                  rb_ary_push(array, client);
+                }
+            }
+
+          if(gravity) free(gravity);
+        }
+
+      free(clients);
+    }
+
+  return array;
+} /* }}} */
+
 /* subGravityGeometryReader {{{ */
 /*
  * call-seq: geometry -> Subtlext::Geometry

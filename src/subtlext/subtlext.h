@@ -100,6 +100,7 @@ VALUE subGravityInit(int argc, VALUE *argv, VALUE self);          ///< Create ne
 VALUE subGravityFind(VALUE self, VALUE value);                    ///< Find gravity
 VALUE subGravityAll(VALUE self);                                  ///< Get all gravities
 VALUE subGravityUpdate(VALUE self);                               ///< Update gravity
+VALUE subGravityClients(VALUE self);                              ///< List clients with gravity
 VALUE subGravityGeometryReader(VALUE self);                       ///< Get geometry gravity
 VALUE subGravityGeometryWriter(VALUE self, VALUE value);          ///< Set geometry gravity
 VALUE subGravityGeometryFor(VALUE self, VALUE value);             ///< Get geometry gravity for screen

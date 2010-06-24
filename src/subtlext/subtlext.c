@@ -931,6 +931,7 @@ Init_subtlext(void)
   /* Class methods */
   rb_define_method(gravity, "initialize",   subGravityInit,           -1);
   rb_define_method(gravity, "update",       subGravityUpdate,          0);
+  rb_define_method(gravity, "clients",      subGravityClients,         0);
   rb_define_method(gravity, "geometry",     subGravityGeometryReader,  0);
   rb_define_method(gravity, "geometry=",    subGravityGeometryWriter,  1);
   rb_define_method(gravity, "geometry_for", subGravityGeometryFor,     1);
