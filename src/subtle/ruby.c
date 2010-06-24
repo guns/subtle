@@ -1349,7 +1349,13 @@ RubyKernelTag(int argc,
                 t->screen = screen;
               else t->flags &= ~SUB_TAG_SCREEN;
 
-              subArrayPush(subtle->tags, (void *)t);
+              /* Default tag */
+              if(0 == strncmp("default", t->name, 7))
+                {
+                  subTagKill(TAG(subtle->tags->data[0]));
+                  subtle->tags->data[0] = (void *)t;
+                }
+              else subArrayPush(subtle->tags, (void *)t);
             }
         }
     }
@@ -2123,8 +2129,9 @@ subRubyInit(void)
 int
 subRubyLoadConfig(void)
 {
-  int i, state = 0, defaulttag = 0;
+  int i, state = 0;
   char buf[100], path[50];
+  SubTag *t = NULL;
 
   /* Check config paths */
   if(subtle->paths.config)
@@ -2150,6 +2157,10 @@ subRubyLoadConfig(void)
           subSharedLogDebug("Checked config=%s\n", path);
         }
     }
+
+  /* Create default tag */
+  if(!(subtle->flags & SUB_SUBTLE_CHECK) && (t = subTagNew("default", NULL)))
+    subArrayPush(subtle->tags, (void *)t);
 
   /* Loading config */
   printf("Using config `%s'\n", path);
@@ -2224,31 +2235,12 @@ subRubyLoadConfig(void)
   /* Check and update tags */
   for(i = 0; i < subtle->tags->ndata; i++)
     {
-      SubTag *t = TAG(subtle->tags->data[i]);
-
-      /* Default tag must be first */
-      if(0 == strncmp("default", t->name, 7))
-        {
-          void *swap = subtle->tags->data[0];
-
-          subtle->tags->data[0] = (void *)t;
-          subtle->tags->data[i] = swap;
-
-          defaulttag++;
-        }
+      t = TAG(subtle->tags->data[i]);
 
       /* Update gravities */
       if(t->flags & SUB_TAG_GRAVITY)
         if(-1 == (t->gravity = RubyGetGravity(t->gravity)))
           t->gravity = 0;
-    }
-
-  /* Create default tag if neccessary*/
-  if(0 == defaulttag)
-    {
-      SubTag *t = subTagNew("default", NULL);
-
-      subArrayInsert(subtle->tags, 0, (void *)t);
     }
 
   subTagPublish();

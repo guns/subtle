@@ -49,8 +49,9 @@ subTagNew(char *name,
   assert(name);
 
   /* Check if tag already exists */
-  if((t = TagFind(name))) return NULL;
+  if(strncmp("default", name, 7) && (t = TagFind(name))) return NULL;
 
+  /* Create new tag */
   t = TAG(subSharedMemoryAlloc(1, sizeof(SubTag)));
   t->name  = strdup(name);
   t->flags = SUB_TYPE_TAG;
