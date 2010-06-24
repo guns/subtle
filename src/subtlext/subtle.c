@@ -329,6 +329,37 @@ subSubtleViewDel(VALUE self,
   return subSubtlextKill(value, SUB_TYPE_VIEW);
 } /* }}} */
 
+/* subSubtleSelect {{{ */
+/*
+ * call-seq: select_window -> String
+ *
+ * Select window and get name
+ *
+ *  select_window
+ *  => "urxvt"
+ */
+
+VALUE
+subSubtleSelect(VALUE self)
+{
+  VALUE ret = Qnil;
+  Window win = None;
+
+  subSubtlextConnect(); ///< Implicit open connection
+
+  /* Select window */
+  if(None != (win = subSharedWindowSelect()))
+    {
+      char buf[20] = { 0 };
+
+      snprintf(buf, sizeof(buf), "%#lx", win);
+
+      ret = rb_str_new2(buf);
+    }
+
+  return ret;
+} /* }}} */
+
 /* subSubtleReloadConfig {{{ */
 /*
  * call-seq: reload_config -> nil

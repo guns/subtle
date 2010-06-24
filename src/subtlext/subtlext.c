@@ -673,8 +673,6 @@ subSubtlextKill(VALUE value,
       snprintf(buf, sizeof(buf), "SUBTLE_%s_KILL", klasses[type]);
       for(i = 6; i < strlen(buf); i++) buf[i] = toupper(buf[i]);
 
-      printf("%s\n", buf);
-
       subSharedMessage(DefaultRootWindow(display), buf, data, True);
     }
   else rb_raise(rb_eStandardError, "Failed killing %s", klasses[type]);
@@ -1044,6 +1042,7 @@ Init_subtlext(void)
   rb_define_singleton_method(subtle, "current_view",   subViewCurrent,         0);
   rb_define_singleton_method(subtle, "current_client", subClientCurrent,       0);
   rb_define_singleton_method(subtle, "current_screen", subScreenCurrent,       0);
+  rb_define_singleton_method(subtle, "select_window",  subSubtleSelect,        0);
   rb_define_singleton_method(subtle, "running?",       subSubtleRunningAsk,    0);
   rb_define_singleton_method(subtle, "reload_config",  subSubtleReloadConfig,  0);
   rb_define_singleton_method(subtle, "reload_sublets", subSubtleReloadSublets, 0);
