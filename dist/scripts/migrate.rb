@@ -147,7 +147,7 @@ end # }}}
         puts 'on %s do %s' % [ k.inspect, block[0] ]
         puts "  # Extracted from line #%d" % [ v.source_location[1] ]
         puts block[1]
-        puts "end"
+        puts "end\n\n"
       end
     end
   end # }}}
@@ -205,7 +205,7 @@ end # }}}
     i = 0
     @config.each do |line|
       if(opensect.nil?)
-        [ "OPTIONS", "PANEL", "GRAVITIES", "GRABS", "TAGS", "VIEWS", "HOOKS" ].each do |section|
+        [ "OPTIONS", "PANEL", "COLORS", "GRAVITIES", "GRABS", "TAGS", "VIEWS", "HOOKS" ].each do |section|
           if(line.match(/^#{section}/))
             @positions << [ i, method(eval(":print_" + section.downcase)) ]
             opensect   = section
