@@ -1270,8 +1270,7 @@ RubyKernelTag(int argc,
         }
 
       if(T_FIXNUM == rb_type(value = rb_hash_lookup(params,
-          CHAR2SYM("screen"))) && 0 <= FIX2INT(value) &&
-          FIX2INT(value) <= subtle->screens->ndata - 1)
+          CHAR2SYM("screen"))))
         {
           flags  |= SUB_TAG_SCREEN;
           screen  = FIX2INT(value);
@@ -1342,8 +1341,13 @@ RubyKernelTag(int argc,
             {
               t->flags   |= flags;
               t->gravity  = gravity;
-              t->screen   = screen;
               t->geometry = geometry;
+
+              /* Check screen */
+              if(t->flags & SUB_TAG_SCREEN &&
+                  0 <= screen && screen <= subtle->screens->ndata - 1)
+                t->screen = screen;
+              else t->flags &= ~SUB_TAG_SCREEN;
 
               subArrayPush(subtle->tags, (void *)t);
             }
@@ -2119,7 +2123,7 @@ subRubyInit(void)
 int
 subRubyLoadConfig(void)
 {
-  int i, state = 0, def = 0;
+  int i, state = 0, defaulttag = 0;
   char buf[100], path[50];
 
   /* Check config paths */
@@ -2132,7 +2136,8 @@ subRubyLoadConfig(void)
 
       /* Combine paths */
       snprintf(path, sizeof(path), "%s/.config", getenv("HOME"));
-      snprintf(buf, sizeof(buf), "%s:%s", home ? home : path, dirs ? dirs : "/etc/xdg");
+      snprintf(buf, sizeof(buf), "%s:%s", 
+        home ? home : path, dirs ? dirs : "/etc/xdg");
 
       /* Search config in XDG path */
       while((tok = strsep(&bufp, ":")))
@@ -2162,7 +2167,7 @@ subRubyLoadConfig(void)
         }
     }
 
-  if(subtle->flags & SUB_SUBTLE_CHECK) return !state; ///< Exit after config check
+  if(subtle->flags & SUB_SUBTLE_CHECK) return !state; ///< Exit after check
 
   /* Check gravities */
   if(1 == subtle->gravities->ndata)
@@ -2191,7 +2196,8 @@ subRubyLoadConfig(void)
 
           /* Create gravity string */
           value          = g->data.num;
-          size           = FIX2INT(rb_funcall(value, rb_intern("size"), 0, NULL));
+          size           = FIX2INT(rb_funcall(value,
+            rb_intern("size"), 0, NULL));
           g->data.string = (char *)subSharedMemoryAlloc(size + 1, sizeof(char));
 
           /* Add gravities */
@@ -2200,7 +2206,8 @@ subRubyLoadConfig(void)
               /* We store ids in a string to ease the whole thing */
               if(-1 != (id = RubyGetGravity(entry)))
                 g->data.string[k++] = id + 65; /// Use letters only
-              else subSharedLogWarn("Failed finding gravity `%s'\n", SYM2CHAR(entry));
+              else subSharedLogWarn("Failed finding gravity `%s'\n",
+                SYM2CHAR(entry));
             }
 
           subRubyRelease(value);
@@ -2227,7 +2234,7 @@ subRubyLoadConfig(void)
           subtle->tags->data[0] = (void *)t;
           subtle->tags->data[i] = swap;
 
-          def++;
+          defaulttag++;
         }
 
       /* Update gravities */
@@ -2236,12 +2243,12 @@ subRubyLoadConfig(void)
           t->gravity = 0;
     }
 
-  /* Create default tag */
-  if(0 == def)
+  /* Create default tag if neccessary*/
+  if(0 == defaulttag)
     {
       SubTag *t = subTagNew("default", NULL);
 
-      subArrayPush(subtle->tags, (void *)t);
+      subArrayInsert(subtle->tags, 0, (void *)t);
     }
 
   subTagPublish();
@@ -2271,7 +2278,8 @@ subRubyLoadConfig(void)
       v->tags |= DEFAULTTAG; ///< Set default tag
 
       /* EWMH: Tags */
-      subEwmhSetCardinals(v->button, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&v->tags, 1);
+      subEwmhSetCardinals(v->button, SUB_EWMH_SUBTLE_WINDOW_TAGS,
+        (long *)&v->tags, 1);
     }
 
   subViewUpdate();
