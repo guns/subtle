@@ -1004,8 +1004,8 @@ SharedFindWindow(char *prop,
   /* Find window id */
   if((wins = SharedList(prop, &size)))
     {
-      int i, gravity1 = 0, gravity2 = -1, pid1 = 0, pid2 = -1; ///<  Init differently
-      char *wmname = NULL, *instance = NULL, *klass = NULL, *role = NULL, buf[20] = { 0 };
+      int i, digit = -1, gravity1 = 0, gravity2 = -1, pid1 = 0, pid2 = -1; ///<  Init differently
+      char *wmname = NULL, *instance = NULL, *klass = NULL, *role = NULL;
       Window selwin = None;
       regex_t *preg = subSharedRegexNew(match);
 
@@ -1025,7 +1025,8 @@ SharedFindWindow(char *prop,
         {
           XFetchName(display, wins[i], &wmname);
           subSharedPropertyClass(display, wins[i], &instance, &klass);
-          snprintf(buf, sizeof(buf), "%#lx", wins[i]);
+
+          if(isdigit(match[0])) digit = atoi(match);
 
           /* Get window gravity */
           if(flags & SUB_MATCH_GRAVITY)
@@ -1065,7 +1066,7 @@ SharedFindWindow(char *prop,
             }
 
           /* Find window either by window id, title, inst, class, gravity or pid */
-          if(wins[i] == selwin || subSharedRegexMatch(preg, buf) ||
+          if(selwin == wins[i] || digit == wins[i] || digit == i ||
               (flags & SUB_MATCH_NAME     && wmname     && subSharedRegexMatch(preg, wmname))   ||
               (flags & SUB_MATCH_INSTANCE && instance   && subSharedRegexMatch(preg, instance)) ||
               (flags & SUB_MATCH_CLASS    && klass      && subSharedRegexMatch(preg, klass))    ||
@@ -1483,31 +1484,30 @@ subSharedViewFind(char *match,
   char **name,
   Window *win)
 {
-  int ret = -1, size = 0;
+  int ret = -1;
   Window *views = NULL;
-  char **names = NULL;
-  regex_t *preg = NULL;
 
   assert(match);
 
   /* Find view id */
   if((views = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display),
-      XA_WINDOW, XInternAtom(display, "_NET_VIRTUAL_ROOTS", False), NULL)) &&
-      (names = subSharedPropertyStrings(display, DefaultRootWindow(display),
-      XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size)) &&
-      (preg = subSharedRegexNew(match)))
+      XA_WINDOW, XInternAtom(display, "_NET_VIRTUAL_ROOTS", False), NULL)))
     {
-      int i;
-      char buf[10] = { 0 };
+      int i, digit = -1, size = 0;
+      char **names = NULL;
+      regex_t *preg = NULL;
+
+      names = subSharedPropertyStrings(display, DefaultRootWindow(display),
+        XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size);
+      preg  = subSharedRegexNew(match);
 
       for(i = 0; i < size; i++)
         {
-          snprintf(buf, sizeof(buf), "%#lx", views[i]);
+          if(isdigit(match[0])) digit = atoi(match);
 
           /* Find view either by name or by window id */
-          if((isdigit(match[0]) && atoi(match) == i) ||
-              (!isdigit(match[0]) && subSharedRegexMatch(preg, names[i])) ||
-              subSharedRegexMatch(preg, buf))
+          if(digit == i || digit == views[i] ||
+              subSharedRegexMatch(preg, names[i]))
             {
               subSharedLogDebug("Found: type=view, match=%s, name=%s win=%#lx, id=%d\n",
                 match, names[i], views[i], i);
