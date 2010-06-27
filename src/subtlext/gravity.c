@@ -167,13 +167,14 @@ subGravityUpdate(VALUE self)
 {
   VALUE match = rb_iv_get(self, "@name");
 
-  /* Create gravity if needed */
+  /* Check value type */
   if(T_STRING == rb_type(match))
     {
       int id = -1;
       XRectangle geom = { 0 };
       char *name = NULL;
 
+      /* Find gravity */
       if(-1 == (id = subSharedGravityFind(RSTRING_PTR(match), &name, &geom)))
         {
           SubMessageData data = { { 0, 0, 0, 0, 0 } };
@@ -184,11 +185,12 @@ subGravityUpdate(VALUE self)
 
           subGeometryToRect(geometry, &geom); ///< Get values
 
+          /* Create new gravity */
           snprintf(data.b, sizeof(data.b), "%hdx%hd+%hd+%hd#%s",
-            geom.x, geom.y, geom.width, geom.width, RSTRING_PTR(name));
+            geom.x, geom.y, geom.width, geom.width, RSTRING_PTR(match));
           subSharedMessage(DefaultRootWindow(display), "SUBTLE_GRAVITY_NEW", data, True);
 
-          id = subSharedGravityFind(RSTRING_PTR(name), NULL, NULL);
+          id = subSharedGravityFind(RSTRING_PTR(match), NULL, NULL);
         }
       else ///< Update gravity
         {
