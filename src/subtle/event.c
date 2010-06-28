@@ -74,8 +74,9 @@ EventRestack(SubClient *c,
   int flags = 0;
 
   /* Save flags */
-  flags     = c->flags & (SUB_CLIENT_IMMOBILE|SUB_MODE_FULL);
+  flags     = c->flags & (SUB_MODE_DESKTOP|SUB_MODE_FULL);
   c->flags &= ~flags;
+  c->flags |= SUB_CLIENT_INIT;
 
   if(Above == dir)
     {
@@ -91,13 +92,14 @@ EventRestack(SubClient *c,
       XLowerWindow(subtle->dpy, c->win);
 
       /* Sort stack down */
-      c->flags |= SUB_CLIENT_IMMOBILE;
+      c->flags |= SUB_MODE_DESKTOP;
       subArraySort(subtle->clients, subClientCompare);
-      c->flags &= ~SUB_CLIENT_IMMOBILE;
+      c->flags &= ~SUB_MODE_DESKTOP;
     }
-  else subSharedLogDebug("Ignoring stacking mode %ld", dir);
+  else subSharedLogDebug("Ignoring unknown stacking mode `%ld'", dir);
 
   c->flags |= flags;
+  c->flags &= ~SUB_CLIENT_INIT;
 } /* }}} */
 
 /* EventConfigure {{{ */
@@ -131,7 +133,7 @@ EventConfigure(XConfigureRequestEvent *ev)
               c->geom = geom;
 
               /* Resize client */
-              if(!(c->flags & SUB_CLIENT_IMMOBILE)) subScreenFit(s, &c->geom);
+              if(!(c->flags & SUB_MODE_DESKTOP)) subScreenFit(s, &c->geom);
 
               subClientConfigure(c);
             }
@@ -177,7 +179,7 @@ EventMapRequest(XMapRequestEvent *ev)
               subHookCall(SUB_HOOK_TILE, NULL);
             }
 
-          if(c->flags & SUB_CLIENT_IMMOBILE) ///< Reorder stacking
+          if(c->flags & SUB_MODE_DESKTOP) ///< Reorder stacking
             subArraySort(subtle->clients, subClientCompare);
 
           /* Hook: Create */
@@ -957,7 +959,7 @@ EventGrab(XEvent *ev)
             break; /* }}} */
           case SUB_GRAB_WINDOW_STACK: /* {{{ */
             if((c = CLIENT(subSubtleFind(win, CLIENTID))) &&
-                !(c->flags & SUB_CLIENT_IMMOBILE) &&
+                !(c->flags & SUB_MODE_DESKTOP) &&
                 VISIBLE(CURVIEW, c))
               EventRestack(c, g->data.num);
             break; /* }}} */
@@ -1009,7 +1011,7 @@ EventGrab(XEvent *ev)
             break; /* }}} */
           case SUB_GRAB_WINDOW_GRAVITY: /* {{{ */
             if((c = CLIENT(subSubtleFind(win, CLIENTID))) &&
-                !(c->flags & SUB_CLIENT_IMMOBILE))
+                !(c->flags & SUB_MODE_DESKTOP))
               {
                 int i, id = -1, cid = 0, fid = (int)g->data.string[0] - 65,
                   size = strlen(g->data.string);
