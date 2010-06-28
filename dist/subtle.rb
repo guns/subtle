@@ -78,7 +78,7 @@ set :stipple, false
 set :separator, "|"
 
 # Outline border size in pixel of panel items
-set :border, 0
+set :outline, 0
 
 #
 # == Colors
