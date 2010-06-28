@@ -1302,6 +1302,10 @@ RubyKernelTag(int argc,
           CHAR2SYM("resize"))) || Qfalse == value)
         flags |= (Qtrue == value ? SUB_MODE_RESIZE : SUB_MODE_NONRESIZE);
 
+      if(Qtrue == (value = rb_hash_lookup(params,
+          CHAR2SYM("desktop"))))
+        flags |= SUB_MODE_DESKTOP;
+
       /* Check matching options */
       if(T_ARRAY == rb_type(value = rb_hash_lookup(params,
           CHAR2SYM("match"))))
