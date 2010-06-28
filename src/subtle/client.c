@@ -77,6 +77,28 @@ ClientCopy(SubClient *c,
     c->screens[i] = k->screens[i];
 } /* }}} */
 
+/* ClientDesktop {{{ */
+void
+ClientDesktop(SubClient *c)
+{
+  SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
+
+  c->geom = s->base;
+
+  /* Add panel heights */
+  if(subtle->flags & SUB_SUBTLE_PANEL1)
+    {
+      c->geom.y      += subtle->th;
+      c->geom.height -= subtle->th;
+    }
+
+  if(subtle->flags & SUB_SUBTLE_PANEL2)
+    c->geom.height -= subtle->th;
+
+  XSetWindowBorderWidth(subtle->dpy, c->win, 0);
+  XLowerWindow(subtle->dpy, c->win);
+} /* }}} */
+
  /** subClientNew {{{
   * @brief Create new client
   * @param[in]  win  Client window
@@ -249,7 +271,7 @@ subClientRender(SubClient *c)
   XSetWindowBackground(subtle->dpy, subtle->windows.title.win, bg);
   XClearWindow(subtle->dpy, subtle->windows.title.win);
 
-  if(!(c->flags & SUB_CLIENT_IMMOBILE)) ///< Exclude immobile windows
+  if(!(c->flags & SUB_MODE_DESKTOP)) ///< Exclude immobile windows
     {
       XSetWindowBorder(subtle->dpy, c->win, subtle->windows.focus == c->win ?
         subtle->colors.bo_focus : subtle->colors.bo_normal);
@@ -281,13 +303,13 @@ subClientCompare(const void *a,
   /* Check flags */
   if((c1->flags | c2->flags) & SUB_MODE_FULL)
     {
-      if(c1->flags & SUB_MODE_FULL) ret = 1;
-      if(c2->flags & SUB_MODE_FULL) ret = -1;
+      if(c1->flags & SUB_MODE_FULL && !(c1->flags & SUB_CLIENT_INIT)) ret = 1;
+      if(c2->flags & SUB_MODE_FULL && !(c2->flags & SUB_CLIENT_INIT)) ret = -1;
     }
-  else if((c1->flags | c2->flags) & SUB_CLIENT_IMMOBILE)
+  else if((c1->flags | c2->flags) & SUB_MODE_DESKTOP)
     {
-      if(c1->flags & SUB_CLIENT_IMMOBILE) ret = -1;
-      if(c2->flags & SUB_CLIENT_IMMOBILE) ret = 1;
+      if(c1->flags & SUB_MODE_DESKTOP && !(c1->flags & SUB_CLIENT_INIT)) ret = -1;
+      if(c2->flags & SUB_MODE_DESKTOP && !(c2->flags & SUB_CLIENT_INIT)) ret = 1;
     }
 
   return ret;
@@ -549,7 +571,7 @@ subClientResize(SubClient *c)
     }
 
   /* Fit sizes */
-  if(!(c->flags & SUB_CLIENT_IMMOBILE))
+  if(!(c->flags & SUB_MODE_DESKTOP))
     {
       SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
 
@@ -568,7 +590,7 @@ subClientCenter(SubClient *c)
   DEAD(c);
   assert(c);
 
-  if(!(c->flags & (SUB_CLIENT_IMMOBILE|SUB_MODE_NONRESIZE)))
+  if(!(c->flags & (SUB_MODE_DESKTOP|SUB_MODE_NONRESIZE)))
     {
       SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
 
@@ -615,6 +637,9 @@ subClientTag(SubClient *c,
               flags   |= (SUB_MODE_FLOAT|SUB_MODE_NONRESIZE); ///< Disable size checks
               c->geom  = t->geometry;
             }
+
+          /* Desktop */
+          if(t->flags & SUB_MODE_DESKTOP) ClientDesktop(c);
 
           /* Set gravity and screens for matching views */
           for(i = 0; i < subtle->views->ndata; i++)
@@ -727,7 +752,7 @@ subClientSetGravity(SubClient *c,
               c->geom.y = c->geom.y - s1->geom.y + s2->geom.y;
             }
         }
-      else if(!(c->flags & SUB_CLIENT_IMMOBILE))
+      else if(!(c->flags & SUB_MODE_DESKTOP))
         {
           SubGravity *g = GRAVITY(subtle->gravities->data[-1 != gravity ?
             gravity : c->gravity]);
@@ -815,7 +840,7 @@ subClientSetName(SubClient *c)
   DEAD(c);
 
   /* Check for immobile clients */
-  if(!(c->flags & SUB_CLIENT_IMMOBILE))
+  if(!(c->flags & SUB_MODE_DESKTOP))
     {
       len = strlen(c->name);
 
@@ -928,7 +953,7 @@ subClientSetSizeHints(SubClient *c,
         {
           if(size->min_width == size->max_width &&
               size->min_height == size->max_height &&
-              !(c->flags & SUB_CLIENT_IMMOBILE))
+              !(c->flags & SUB_MODE_DESKTOP))
             {
               *flags   |= SUB_MODE_FLOAT;
               c->flags |= (SUB_CLIENT_FIXED|SUB_CLIENT_CENTER);
@@ -1114,27 +1139,12 @@ subClientSetType(SubClient *c,
                 break;
               case SUB_EWMH_NET_WM_WINDOW_TYPE_DOCK:
               case SUB_EWMH_NET_WM_WINDOW_TYPE_DESKTOP:
-                *flags   |= SUB_MODE_STICK;
-                c->flags |= SUB_CLIENT_IMMOBILE;
+                c->flags |= SUB_MODE_DESKTOP;
 
                 /* Special treatment */
                 if(SUB_EWMH_NET_WM_WINDOW_TYPE_DESKTOP == id)
                   {
-                    SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
-
-                    c->geom = s->base;
-
-                    /* Add panel heights */
-                    if(subtle->flags & SUB_SUBTLE_PANEL1)
-                      {
-                        c->geom.y      += subtle->th;
-                        c->geom.height -= subtle->th;
-                      }
-
-                    if(subtle->flags & SUB_SUBTLE_PANEL2)
-                      c->geom.height -= subtle->th;
-
-                    XLowerWindow(subtle->dpy, c->win);
+                    ClientDesktop(c);
                   }
                 else XRaiseWindow(subtle->dpy, c->win);
 
