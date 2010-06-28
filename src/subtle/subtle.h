@@ -82,7 +82,8 @@
 #define COLORMAP \
   DefaultColormap(subtle->dpy, DefaultScreen(subtle->dpy))       ///< Default colormap
 #define VISIBLE(v,c) \
-  (v && c && (v->tags & c->tags || c->flags & SUB_MODE_STICK))   ///< Visible on view
+  (v && c && (v->tags & c->tags || \
+  c->flags & (SUB_MODE_DESKTOP|SUB_MODE_STICK)))                 ///< Visible on view
 #define SCREENW \
   DisplayWidth(subtle->dpy, DefaultScreen(subtle->dpy))          ///< Get screen width
 #define SCREENH \
@@ -93,8 +94,8 @@
 #define DEFSCREEN SCREEN(subtle->screens->data[0])               ///< Get first screen
 
 #define MODES_ALL \
-  (SUB_MODE_FULL|SUB_MODE_FLOAT|SUB_MODE_STICK| \
-  SUB_MODE_URGENT|SUB_MODE_RESIZE)                                ///< All mode flags
+  (SUB_MODE_DESKTOP|SUB_MODE_FULL|SUB_MODE_FLOAT| \
+  SUB_MODE_STICK|SUB_MODE_URGENT|SUB_MODE_RESIZE)                ///< All mode flags
 
 #define MODES_NONE \
   (SUB_MODE_NONFULL|SUB_MODE_NONFLOAT|SUB_MODE_NONSTICK| \
@@ -165,7 +166,8 @@
 #define SUB_TYPE_VIEW                 (1L << 10)                  ///< View
 
 /* Mode flags */
-#define SUB_MODE_FULL                 (1L << 21)                  ///< Fullscreen mode (after client flags [20]
+#define SUB_MODE_DESKTOP              (1L << 20)                  ///< Desktop mode (after client flags [20]
+#define SUB_MODE_FULL                 (1L << 21)                  ///< Fullscreen mode
 #define SUB_MODE_FLOAT                (1L << 22)                  ///< Float mode
 #define SUB_MODE_STICK                (1L << 23)                  ///< Stick mode
 #define SUB_MODE_URGENT               (1L << 24)                  ///< Urgent mode
@@ -209,12 +211,11 @@
 #define SUB_CLIENT_FOCUS              (1L << 12)                  ///< Send focus message
 #define SUB_CLIENT_INPUT              (1L << 13)                  ///< Active/passive focus-model
 #define SUB_CLIENT_CLOSE              (1L << 14)                  ///< Send close message
-#define SUB_CLIENT_IMMOBILE           (1L << 15)                  ///< Immobile window
-#define SUB_CLIENT_WARP               (1L << 16)                  ///< Warp window
-#define SUB_CLIENT_CENTER             (1L << 17)                  ///< Center window
-#define SUB_CLIENT_FIXED              (1L << 18)                  ///< Center window
-#define SUB_CLIENT_DEAD               (1L << 19)                  ///< Dead window
-#define SUB_CLIENT_UNMAP              (1L << 20)                  ///< Ignore unmaps
+#define SUB_CLIENT_WARP               (1L << 15)                  ///< Warp window
+#define SUB_CLIENT_CENTER             (1L << 16)                  ///< Center window
+#define SUB_CLIENT_FIXED              (1L << 17)                  ///< Center window
+#define SUB_CLIENT_DEAD               (1L << 18)                  ///< Dead window
+#define SUB_CLIENT_UNMAP              (1L << 19)                  ///< Ignore unmaps
 
 /* Drag flags */
 #define SUB_DRAG_START                (1L << 1)                   ///< Drag start
