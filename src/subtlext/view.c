@@ -228,9 +228,10 @@ subViewUpdate(VALUE self)
   if(T_STRING == rb_type(name))
     {
       int id = -1;
+      Window win = None;
 
       /* Create view if needed */
-      if(-1 == (id = subSharedViewFind(RSTRING_PTR(name), NULL, NULL)))
+      if(-1 == (id = subSharedViewFind(RSTRING_PTR(name), NULL, &win)))
         {
           SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
@@ -254,7 +255,8 @@ subViewUpdate(VALUE self)
           XFreeStringList(names);
         }
 
-      rb_iv_set(self, "@id", INT2FIX(id));
+      rb_iv_set(self, "@id",  INT2FIX(id));
+      rb_iv_set(self, "@win", LONG2NUM(win));
     }
   else rb_raise(rb_eArgError, "Unknown value type");
 
@@ -384,7 +386,6 @@ subViewSelectPrev(VALUE self)
 {
   return ViewSelect(self, SUB_VIEW_PREV);
 } /* }}} */
-
 
 /* subViewCurrentAsk {{{ */
 /*
