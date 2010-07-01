@@ -227,6 +227,27 @@ SubtlextTagAsk(VALUE self,
   return ret;
 } /* }}} */
 
+/* SubtlextTagReload {{{ */
+VALUE
+SubtlextTagReload(VALUE self)
+{
+  VALUE id = Qnil;
+
+  /* Get window */
+  if(!NIL_P(id = rb_iv_get(self, "@id")))
+    {
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+      data.l[0] = FIX2INT(id);
+
+      subSharedMessage(DefaultRootWindow(display),
+        "SUBTLE_WINDOW_RETAG", data, True);
+    }
+  else rb_raise(rb_eStandardError, "Failed tagging window");
+
+  return Qnil;
+} /* }}} */
+
 /* SubtlextClick {{{ */
 /*
  * call-seq: click(button, x, y) -> nil
@@ -815,6 +836,7 @@ Init_subtlext(void)
   rb_define_method(client, "has_tag?",   SubtlextTagAsk,    1);
   rb_define_method(client, "tag",        SubtlextTagAdd,    1);
   rb_define_method(client, "untag",      SubtlextTagDel,    1);
+  rb_define_method(client, "retag",      SubtlextTagReload, 0);
   rb_define_method(client, "click",      SubtlextClick,    -1);
   rb_define_method(client, "focus",      SubtlextFocus,     0);
   rb_define_method(client, "has_focus?", SubtlextFocusAsk,  0);
