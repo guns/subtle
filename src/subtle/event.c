@@ -71,7 +71,8 @@ static void
 EventRestack(SubClient *c,
   long dir)
 {
-  int flags = 0;
+  int i, flags = 0;
+  Window *wins = NULL;
 
   /* Save flags */
   flags     = c->flags & (SUB_MODE_DESKTOP|SUB_MODE_FULL);
@@ -97,6 +98,17 @@ EventRestack(SubClient *c,
       c->flags &= ~SUB_MODE_DESKTOP;
     }
   else subSharedLogDebug("Ignoring unknown stacking mode `%ld'", dir);
+
+  /* Restack */
+  wins = subSharedMemoryAlloc(subtle->clients->ndata, sizeof(Window));
+
+  for(i = 0; i < subtle->clients->ndata; i++)
+    {
+      wins[i] = CLIENT(subtle->clients->data[i])->win;
+    }
+
+  XRestackWindows(subtle->dpy, wins, subtle->clients->ndata);
+  free(wins);
 
   c->flags |= flags;
   c->flags &= ~SUB_CLIENT_INIT;
@@ -393,6 +405,20 @@ EventMessage(XClientMessageEvent *ev)
                   }
 
                 subViewDynamic(); ///< Dynamic views
+              }
+            break; /* }}} */
+          case SUB_EWMH_SUBTLE_WINDOW_RETAG: /* {{{ */
+            if((c = CLIENT(subArrayGet(subtle->clients,
+                (int)ev->data.l[0])))) ///< Clients
+              {
+                int flags = 0;
+
+                c->tags = 0; ///> Reset tags
+
+                subClientSetTags(c, &flags);
+                subClientToggle(c, (~c->flags & flags)); ///< Toggle flags
+
+                if(VISIBLE(CURVIEW, c)) subViewConfigure(CURVIEW, False);
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_WINDOW_GRAVITY: /* {{{ */
@@ -959,8 +985,7 @@ EventGrab(XEvent *ev)
             break; /* }}} */
           case SUB_GRAB_WINDOW_STACK: /* {{{ */
             if((c = CLIENT(subSubtleFind(win, CLIENTID))) &&
-                !(c->flags & SUB_MODE_DESKTOP) &&
-                VISIBLE(CURVIEW, c))
+                !(c->flags & SUB_MODE_DESKTOP) && VISIBLE(CURVIEW, c))
               EventRestack(c, g->data.num);
             break; /* }}} */
           case SUB_GRAB_WINDOW_SELECT: /* {{{ */
