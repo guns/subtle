@@ -15,67 +15,38 @@
 VALUE
 ScreenList(void)
 {
-  unsigned long len = 0;
+  unsigned long size = 0;
   VALUE method = Qnil, klass = Qnil, array = Qnil, screen = Qnil, geometry = Qnil;
-  XRectangle workarea = { 0 };
   long *workareas = NULL;
-
-#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
-  int xinerama_event = 0, xinerama_error = 0;
-#endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
 
   subSubtlextConnect(); ///< Implicit open connection
 
-  /* Get workarea list */
-  if((workareas = (long *)subSharedPropertyGet(display, DefaultRootWindow(display),
-      XA_CARDINAL, XInternAtom(display, "_NET_WORKAREA", False), &len)))
-    {
-        workarea.x      = workareas[0];
-        workarea.y      = workareas[1];
-        workarea.width  = workareas[2];
-        workarea.height = workareas[3];
-
-        free(workareas);
-    }
-  else subSharedLogDebug("Failed getting workarea list\n");
-
+  /* Fetch data */
   method = rb_intern("new");
   klass  = rb_const_get(mod, rb_intern("Screen"));
   array  = rb_ary_new();
 
-  /* Create first screen */
-  screen   = rb_funcall(klass, method, 1, INT2FIX(0));
-  geometry = subGeometryInstantiate(workarea.x, workarea.y,
-    workarea.width, workarea.height);
-
-  rb_iv_set(screen, "@geometry", geometry);
-  rb_ary_push(array, screen);
-
-#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
-  /* Xinerama */
-  if(XineramaQueryExtension(display, &xinerama_event, &xinerama_error) &&
-    XineramaIsActive(display))
+  /* Get workarea list */
+  if((workareas = (long *)subSharedPropertyGet(display,
+      DefaultRootWindow(display), XA_CARDINAL,
+      XInternAtom(display, "_NET_WORKAREA", False), &size)))
     {
-      int i, n;
-      XineramaScreenInfo *screens = NULL;
+      int i;
 
-      /* Query screens */
-      if((screens = XineramaQueryScreens(display, &n)))
+      for(i = 0; i < size / 4; i++)
         {
-          for(i = 1; i < n; i++) ///< Start with second
-            {
-              screen   = rb_funcall(klass, method, 1, INT2FIX(i));
-              geometry = subGeometryInstantiate(screens[i].x_org,
-                screens[i].y_org, screens[i].width, screens[i].height);
+          /* Create new screen */
+          screen   = rb_funcall(klass, method, 1, INT2FIX(i));
+          geometry = subGeometryInstantiate(workareas[i * 4 + 0],
+            workareas[i * 4 + 1], workareas[i * 4 + 2], workareas[i * 4 + 3]);
 
-              rb_iv_set(screen, "@geometry", geometry);
-              rb_ary_push(array, screen);
-            }
-
-          XFree(screens);
+          rb_iv_set(screen, "@geometry", geometry);
+          rb_ary_push(array, screen);
         }
+
+      free(workareas);
     }
-#endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
+  else subSharedLogDebug("Failed getting workarea list\n");
 
   return array;
 } /* }}} */
@@ -127,21 +98,29 @@ subScreenInit(VALUE self,
  *
  * [fixnum] Array id
  *
- *  Subtlext::Screen.find("subtle")
+ *  Subtlext::Screen.find(1)
  *  => #<Subtlext::Screen:xxx>
  *
  *  Subtlext::Screen[1]
  *  => #<Subtlext::Screen:xxx>
- *
- *  Subtlext::Screen["subtle"]
- *  => nil
  */
 
 VALUE
 subScreenFind(VALUE self,
-  VALUE id)
+  VALUE value)
 {
-  return subSubtlextFind(SUB_TYPE_SCREEN, id, True);
+  VALUE screen = Qnil;
+
+  /* Check object type */
+  if(FIXNUM_P(value))
+    {
+      VALUE screens = ScreenList();
+
+      screen = rb_ary_entry(screens, FIX2INT(value));
+    }
+  else rb_raise(rb_eArgError, "Unknown value type");
+
+  return screen;
 } /* }}} */
 
 /* subScreenAll {{{ */
@@ -221,16 +200,19 @@ subScreenCurrent(VALUE self)
 VALUE
 subScreenUpdate(VALUE self)
 {
-  VALUE id = rb_iv_get(self, "@id");
+  VALUE id = Qnil;
 
-  if(RTEST(id) && FIXNUM_P(id))
+  if(FIXNUM_P(id = rb_iv_get(self, "@id")))
     {
-      XRectangle geometry = { 0 };
+      VALUE screens = Qnil, screen = Qnil;
 
-      if(-1 != subSharedScreenFind(FIX2INT(id), &geometry))
+      screens = ScreenList();
+
+      if(RTEST(screen = rb_ary_entry(screens, FIX2INT(id))))
         {
-          rb_iv_set(self, "@geometry", subGeometryInstantiate(geometry.x,
-            geometry.y, geometry.width, geometry.height));
+          VALUE geometry = rb_iv_get(screen, "@geometry");
+
+          rb_iv_set(self, "@geometry", geometry);
         }
       else rb_raise(rb_eStandardError, "Failed finding screen");
     }
