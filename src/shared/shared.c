@@ -241,11 +241,7 @@ subSharedPropertyGet(Display *disp,
       return NULL;
     }
 
-#ifdef __LP64__
-  if(size) *size = (unsigned long)(format / 4) * nitems;
-#else /* LP64 */
-  if(size) *size = (unsigned long)(format / 8) * nitems;
-#endif /* LP64 */
+  if(size) *size = nitems;
 
   return (char *)data;
 } /* }}} */
@@ -937,7 +933,7 @@ SharedList(char *prop,
   if((wins = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display),
       XA_WINDOW, XInternAtom(display, prop, False), &len)))
     {
-      *size = len / sizeof(Window);
+      *size = len;
     }
   else
     {
@@ -1364,12 +1360,11 @@ subSharedScreenFind(int id,
 
   if(0 == id)
     {
-      unsigned long len = 0;
       long *workareas = NULL;
 
       /* Get workarea list */
       if((workareas = (long *)subSharedPropertyGet(display, DefaultRootWindow(display),
-          XA_CARDINAL, XInternAtom(display, "_NET_WORKAREA", False), &len)))
+          XA_CARDINAL, XInternAtom(display, "_NET_WORKAREA", False), NULL)))
         {
           if(geometry)
             {

@@ -295,12 +295,26 @@ int
 subClientCompare(const void *a,
   const void *b)
 {
-  int ret = 0;
+  int ret = 0, ret2 = 0, flags1 = 0, flags2 = 0;
   SubClient *c1 = *(SubClient **)a, *c2 = *(SubClient **)b;
 
   assert(a && b);
 
+  flags1 = c1->flags & (SUB_MODE_FULL|SUB_MODE_DESKTOP);
+  flags2 = c2->flags & (SUB_MODE_FULL|SUB_MODE_DESKTOP);
+
   /* Check flags */
+  if(flags1 == flags2)
+    {
+      if(c1->flags & SUB_CLIENT_INIT || c2->flags & SUB_CLIENT_INIT)
+        ret2 *= -1;
+      else ret2 = 0;
+    }
+  else if((0 == flags1 && flags2 & SUB_MODE_FULL) || flags1 & SUB_MODE_DESKTOP)
+    ret2 = 1;
+  else if((0 == flags1 && flags2 & SUB_MODE_DESKTOP) || flags1 & SUB_MODE_FULL)
+    ret2 = -1;
+
   if((c1->flags | c2->flags) & SUB_MODE_FULL)
     {
       if(c1->flags & SUB_MODE_FULL && !(c1->flags & SUB_CLIENT_INIT)) ret = 1;
@@ -311,7 +325,9 @@ subClientCompare(const void *a,
       if(c1->flags & SUB_MODE_DESKTOP && !(c1->flags & SUB_CLIENT_INIT)) ret = -1;
       if(c2->flags & SUB_MODE_DESKTOP && !(c2->flags & SUB_CLIENT_INIT)) ret = 1;
     }
-
+      if(c1->flags & SUB_CLIENT_INIT || c2->flags & SUB_CLIENT_INIT)
+        ret *= -1;
+printf("a=%s, b=%s, ret=%d, ret2=%d\n", c1->name, c2->name, ret, ret2);
   return ret;
 } /* }}} */
 
@@ -807,7 +823,7 @@ subClientSetStrut(SubClient *c)
   if((strut = (long *)subSharedPropertyGet(subtle->dpy, c->win, XA_CARDINAL,
       subEwmhGet(SUB_EWMH_NET_WM_STRUT), &size)))
     {
-      if(4 * sizeof(long) == size) ///< Only complete struts
+      if(4 == size) ///< Only complete struts
         {
           subtle->strut.x      = MAX(subtle->strut.x,      strut[0]); ///< Left
           subtle->strut.y      = MAX(subtle->strut.y,      strut[1]); ///< Right
@@ -1063,7 +1079,7 @@ subClientSetState(SubClient *c,
   if((states = (Atom *)subSharedPropertyGet(subtle->dpy, c->win, XA_ATOM,
       subEwmhGet(SUB_EWMH_NET_WM_STATE), &size)))
     {
-      for(i = 0; i < size / sizeof(Atom); i++)
+      for(i = 0; i < size; i++)
         {
           switch(subEwmhFind(states[i]))
             {
@@ -1129,7 +1145,7 @@ subClientSetType(SubClient *c,
     {
       int id = 0;
 
-      for(i = 0; i < size / sizeof(Atom); i++)
+      for(i = 0; i < size; i++)
         {
           switch((id = subEwmhFind(types[i])))
             {
