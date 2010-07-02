@@ -16,6 +16,10 @@
 #include <X11/extensions/Xinerama.h>
 #endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
 
+#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
+#include <X11/extensions/Xrandr.h>
+#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
+
  /** subScreenInit {{{
   * @brief Init screens
   **/
@@ -23,36 +27,83 @@
 void
 subScreenInit(void)
 {
-#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
+  SubScreen *s = NULL;
+
+#if defined HAVE_X11_EXTENSIONS_XINERAMA_H || defined HAVE_X11_EXTENSIONS_XRANDR_H
   int event = 0, junk = 0;
 
+#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
+  if(XRRQueryExtension(subtle->dpy, &subtle->xrandr, &junk))
+    {
+      subtle->flags |= SUB_SUBTLE_XRANDR;
+
+      XRRSelectInput(subtle->dpy, ROOT, RRScreenChangeNotifyMask);
+    }
+#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
+
+#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
   if(XineramaQueryExtension(subtle->dpy, &event, &junk) &&
       XineramaIsActive(subtle->dpy))
     {
       int i, n = 0;
-      XineramaScreenInfo *screens = NULL;
-      SubScreen *s = NULL;
+      XineramaScreenInfo *info = NULL;
+
+#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
+      XRRScreenResources *res = NULL;
+
+      res = XRRGetScreenResourcesCurrent(subtle->dpy, ROOT);
+#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
 
       /* Query screens */
-      if((screens = XineramaQueryScreens(subtle->dpy, &n)))
+      if((info = XineramaQueryScreens(subtle->dpy, &n)))
         {
-          for(i = 0; i < n; i++)
+#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
+          if(res && res->ncrtc >= n)
             {
-              if((s = subScreenNew(screens[i].x_org, screens[i].y_org,
-                  screens[i].width, screens[i].height)))
-                subArrayPush(subtle->screens, (void *)s);
+              XRRCrtcInfo *crtc = NULL;
+
+              for(i = 0; i < res->ncrtc; i++)
+                {
+                  if((crtc = XRRGetCrtcInfo(subtle->dpy, res, res->crtcs[i])))
+                    {
+                      /* Create new screen */
+                      if((s = subScreenNew(crtc->x, crtc->y,
+                          crtc->width, crtc->height)))
+                        subArrayPush(subtle->screens, (void *)s);
+
+                      XRRFreeCrtcInfo(crtc);
+                    }
+                }
+
+              XRRFreeScreenResources(res);
+            }
+          else
+#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
+            {
+              for(i = 0; i < n; i++)
+                {
+                  /* Create new screen */
+                  if((s = subScreenNew(info[i].x_org, info[i].y_org,
+                      info[i].width, info[i].height)))
+                    subArrayPush(subtle->screens, (void *)s);
+                }
             }
 
           subtle->flags |= SUB_SUBTLE_XINERAMA;
 
-          XFree(screens);
+          XFree(info);
         }
     }
+#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
 #endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
 
   /* Create default screen */
   if(0 == subtle->screens->ndata)
-    subArrayPush(subtle->screens, (void *)subScreenNew(0, 0, SCREENW, SCREENH));
+    {
+      /* Create new screen */
+      if((s = subScreenNew(0, 0, SCREENW, SCREENH)))
+        subArrayPush(subtle->screens, (void *)s);
+    }
 } /* }}} */
 
  /** subScreenNew {{{
@@ -129,29 +180,31 @@ subScreenUpdate(void)
   assert(subtle);
 
   /* EWMH: Workarea size of every desktop */
-  workareas = (long *)subSharedMemoryAlloc(4 * subtle->screens->ndata, 
+  workareas = (long *)subSharedMemoryAlloc(4 * subtle->screens->ndata,
     sizeof(long));
 
   for(i = 0; i < subtle->screens->ndata; i++)
     {
-      workareas[i * 4 + 0] = DEFSCREEN->geom.x;
-      workareas[i * 4 + 1] = DEFSCREEN->geom.y;
-      workareas[i * 4 + 2] = DEFSCREEN->geom.width;
-      workareas[i * 4 + 3] = DEFSCREEN->geom.height;
+      SubScreen *s = SCREEN(subtle->screens->data[i]);
+
+      workareas[i * 4 + 0] = s->geom.x;
+      workareas[i * 4 + 1] = s->geom.y;
+      workareas[i * 4 + 2] = s->geom.width;
+      workareas[i * 4 + 3] = s->geom.height;
     }
 
-  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_WORKAREA, workareas, 
+  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_WORKAREA, workareas,
     4 * subtle->screens->ndata);
 
   /* EWMH: Desktop viewport */
-  viewports = (long *)subSharedMemoryAlloc(2 * subtle->screens->ndata, 
+  viewports = (long *)subSharedMemoryAlloc(2 * subtle->screens->ndata,
     sizeof(long)); ///< Calloc inits with zero - great
 
-  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_DESKTOP_VIEWPORT, viewports, 
+  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_DESKTOP_VIEWPORT, viewports,
     2 * subtle->screens->ndata);
 
-  free(viewports);
   free(workareas);
+  free(viewports);
 } /* }}} */
 
  /** subScreenJump {{{
