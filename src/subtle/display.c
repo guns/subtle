@@ -15,10 +15,6 @@
 #include <locale.h>
 #include "subtle.h"
 
-#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
-#include <X11/extensions/Xrandr.h>
-#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
-
 /* DisplayClaim {{{ */
 int
 DisplayClaim(void)
@@ -99,10 +95,6 @@ subDisplayInit(const char *display)
     0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 0x49, 0x12
   };
 
-#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
-  int junk = 0;
-#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
-
   assert(subtle);
 
   /* Set locale */
@@ -170,11 +162,6 @@ subDisplayInit(const char *display)
 
   subScreenInit(); ///< Init screens
 
-#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
-  if(XRRQueryExtension(subtle->dpy, &subtle->xrandr, &junk))
-    subtle->flags |= SUB_SUBTLE_XRANDR;
-#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
-
   /* Create windows */
   sattrs.event_mask        = ButtonPressMask|ExposureMask;
   sattrs.override_redirect = True;
@@ -210,10 +197,6 @@ subDisplayInit(const char *display)
   XSelectInput(subtle->dpy, subtle->windows.views.win, ButtonPressMask);
   XSelectInput(subtle->dpy, subtle->windows.tray.win,
     KeyPressMask|ButtonPressMask);
-
-#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
-  XRRSelectInput(subtle->dpy, ROOT, RRScreenChangeNotifyMask);
-#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
 
   XSync(subtle->dpy, False);
 
