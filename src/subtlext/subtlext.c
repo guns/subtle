@@ -617,19 +617,6 @@ subSubtlextFind(int type,
               }
           }
         break; /* }}} */
-      case SUB_TYPE_SCREEN: /* {{{ */
-        if(-1 != (id = subSharedScreenFind(id, &geometry)))
-          {
-            if(!NIL_P((object = subScreenInstantiate(id))))
-              {
-                VALUE geom = subGeometryInstantiate(geometry.x, geometry.y,
-                  geometry.width, geometry.height);
-
-                rb_iv_set(object, "@id",       INT2FIX(id));
-                rb_iv_set(object, "@geometry", geom);
-              }
-          }
-        break; /* }}} */
       case SUB_TYPE_SUBLET: /* {{{ */
         if(-1 != (id = subSharedSubletFind(buf, &name)))
           {
