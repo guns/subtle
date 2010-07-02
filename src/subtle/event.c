@@ -71,8 +71,7 @@ static void
 EventRestack(SubClient *c,
   long dir)
 {
-  int i, flags = 0;
-  Window *wins = NULL;
+  int flags = 0;
 
   /* Save flags */
   flags     = c->flags & (SUB_MODE_DESKTOP|SUB_MODE_FULL);
@@ -98,17 +97,6 @@ EventRestack(SubClient *c,
       c->flags &= ~SUB_MODE_DESKTOP;
     }
   else subSharedLogDebug("Ignoring unknown stacking mode `%ld'", dir);
-
-  /* Restack */
-  wins = subSharedMemoryAlloc(subtle->clients->ndata, sizeof(Window));
-
-  for(i = 0; i < subtle->clients->ndata; i++)
-    {
-      wins[i] = CLIENT(subtle->clients->data[i])->win;
-    }
-
-  XRestackWindows(subtle->dpy, wins, subtle->clients->ndata);
-  free(wins);
 
   c->flags |= flags;
   c->flags &= ~SUB_CLIENT_INIT;
