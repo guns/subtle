@@ -472,7 +472,7 @@ end
 
 # Simple views
 view "terms", "terms"
-view "www",   "browser|default"
+view "www",   "browser|default|gimp_.*"
 view "dev",   "editor"
 
 # Dynamic views
