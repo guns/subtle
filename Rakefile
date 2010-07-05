@@ -280,11 +280,24 @@ task(:config) do
       end
     end
 
-    # Xrandr
+    # Check pkg-config Xrandr
     if("yes" == @options["xrandr"])
-      if(have_header("X11/extensions/Xrandr.h"))
-        @options["ldflags"]  << " -lXrandr"
-        @options["extflags"] << " -lXrandr"
+      checking_for("X11/extensions/Xrandr.h") do
+        ret = false
+
+        cflags, ldflags, libs = pkg_config("xrandr")
+        unless(libs.nil?)
+          # Update flags
+          @options["cflags"]  << " %s" % [ cflags ]
+          @options["ldflags"] << " %s" % [ libs ]
+
+          $defs.push("-DHAVE_X11_EXTENSIONS_XRANDR_H")
+          ret = true
+        else
+          @options["xrandr"] = "no"
+        end
+
+        ret
       end
     end
 
