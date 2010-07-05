@@ -11,6 +11,58 @@
 
 #include "subtlext.h"
 
+/* GravityFind {{{ */
+int
+GravityFind(char *match,
+  char **name,
+  XRectangle *geometry)
+{
+  int ret = -1, size = 0;
+  char **gravities = NULL;
+  regex_t *preg = NULL;
+
+  assert(match);
+
+  /* Find gravity id */
+  if((preg = subSharedRegexNew(match)) &&
+      (gravities = subSharedPropertyStrings(display, DefaultRootWindow(display),
+      XInternAtom(display, "SUBTLE_GRAVITY_LIST", False), &size)))
+    {
+      int i;
+      XRectangle geom = { 0 };
+      char buf[30] = { 0 };
+
+      for(i = 0; i < size; i++)
+        {
+          sscanf(gravities[i], "%hdx%hd+%hd+%hd#%s", &geom.x, &geom.y,
+            &geom.width, &geom.height, buf);
+
+          /* Check id and name */
+          if((isdigit(match[0]) && atoi(match) == i) ||
+              (!isdigit(match[0]) && subSharedRegexMatch(preg, buf)))
+            {
+              subSharedLogDebug("Found: type=gravity, name=%s, id=%d\n", buf, i);
+
+              if(geometry) *geometry = geom;
+              if(name)
+                {
+                  *name = (char *)subSharedMemoryAlloc(strlen(buf) + 1, sizeof(char));
+                  strncpy(*name, buf, strlen(buf));
+                }
+
+              ret = i;
+              break;
+            }
+          }
+
+      subSharedRegexKill(preg);
+      XFreeStringList(gravities);
+    }
+  else subSharedLogDebug("Failed finding gravity `%s'\n", name);
+
+  return ret;
+} /* }}} */
+
 /* GravityToRect {{{ */
 void
 GravityToRect(VALUE self,
@@ -90,7 +142,49 @@ VALUE
 subGravityFind(VALUE self,
   VALUE value)
 {
-  return subSubtlextFind(SUB_TYPE_GRAVITY, value, True);
+  int id = 0;
+  VALUE gravity = Qnil;
+  XRectangle geometry = { 0 };
+  char *name = NULL, buf[50] = { 0 };
+
+  subSubtlextConnect(); ///< Implicit open connection
+
+  /* Check object type */
+  switch(rb_type(value))
+    {
+      case T_FIXNUM: /* {{{ */
+        snprintf(buf, sizeof(buf), "%d", FIX2INT(value));
+        break; /* }}} */
+      case T_STRING: /* {{{ */
+        snprintf(buf, sizeof(buf), "%s", RSTRING_PTR(value));
+        break; /* }}} */
+      case T_SYMBOL: /* {{{ */
+        if(CHAR2SYM("all") == value)
+          return subGravityAll(Qnil);
+        else snprintf(buf, sizeof(buf), "%s", SYM2CHAR(value));
+        break; /* }}} */
+      default: /* {{{ */
+        rb_raise(rb_eArgError, "Unknwon value type `%s'",
+          rb_obj_classname(value));
+
+        return Qnil; /* }}} */
+    }
+
+  if(-1 != (id = GravityFind(buf, &name, &geometry)))
+    {
+      if(!NIL_P((gravity = subGravityInstantiate(name))))
+        {
+          VALUE geom = subGeometryInstantiate(geometry.x, geometry.y,
+            geometry.width, geometry.height);
+
+          rb_iv_set(gravity, "@id",       INT2FIX(id));
+          rb_iv_set(gravity, "@geometry", geom);
+        }
+
+      free(name);
+    }
+
+  return gravity;
 } /* }}} */
 
 /* subGravityAll {{{ */
@@ -175,7 +269,7 @@ subGravityUpdate(VALUE self)
       char *name = NULL;
 
       /* Find gravity */
-      if(-1 == (id = subSharedGravityFind(RSTRING_PTR(match), &name, &geom)))
+      if(-1 == (id = GravityFind(RSTRING_PTR(match), &name, &geom)))
         {
           SubMessageData data = { { 0, 0, 0, 0, 0 } };
           VALUE geometry = rb_iv_get(self, "@geometry");
@@ -190,7 +284,7 @@ subGravityUpdate(VALUE self)
             geom.x, geom.y, geom.width, geom.width, RSTRING_PTR(match));
           subSharedMessage(DefaultRootWindow(display), "SUBTLE_GRAVITY_NEW", data, True);
 
-          id = subSharedGravityFind(RSTRING_PTR(match), NULL, NULL);
+          id = GravityFind(RSTRING_PTR(match), NULL, NULL);
         }
       else ///< Update gravity
         {
@@ -305,7 +399,7 @@ subGravityGeometryReader(VALUE self)
     {
       XRectangle geom = { 0 };
 
-      subSharedGravityFind(RSTRING_PTR(name), NULL, &geom);
+      GravityFind(RSTRING_PTR(name), NULL, &geom);
 
       geometry = subGeometryInstantiate(geom.x, geom.y, geom.width, geom.height);
       rb_iv_set(self, "@geometry", geometry);
