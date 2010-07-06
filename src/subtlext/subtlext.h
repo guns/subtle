@@ -95,6 +95,8 @@ VALUE subGeometryToString(VALUE self);                            ///< Geometry 
 /* }}} */
 
 /* gravity.c {{{ */
+int subGravityFindId(char *match, char **name,
+  XRectangle *geometry);                                          ///< Find gravity id
 VALUE subGravityInstantiate(char *name);                          ///< Instantiate gravity
 VALUE subGravityInit(int argc, VALUE *argv, VALUE self);          ///< Create new gravity
 VALUE subGravityFind(VALUE self, VALUE value);                    ///< Find gravity
@@ -149,15 +151,6 @@ VALUE subSubletKill(VALUE self);                                  ///< Kill subl
 VALUE subSubtleDisplayReader(VALUE self);                         ///< Get display
 VALUE subSubtleRunningAsk(VALUE self);                            ///< Is subtle running
 VALUE subSubtleSpawn(VALUE self, VALUE cmd);                      ///< Spawn command
-VALUE subSubtleFocus(VALUE self, VALUE name);                     ///< Focus a client
-VALUE subSubtleClientDel(VALUE self, VALUE name);                 ///< Kill client
-VALUE subSubtleGravityDel(VALUE self, VALUE value);               ///< Kill gravity
-VALUE subSubtleTagAdd(VALUE self, VALUE value);                   ///< Add a tag
-VALUE subSubtleTagDel(VALUE self, VALUE value);                   ///< Kill a tag
-VALUE subSubtleTrayDel(VALUE self, VALUE value);                  ///< Kill a tray
-VALUE subSubtleSubletDel(VALUE self, VALUE value);                ///< Kill a sublet
-VALUE subSubtleViewAdd(VALUE self, VALUE value);                  ///< Add a view
-VALUE subSubtleViewDel(VALUE self, VALUE value);                  ///< Kill a view
 VALUE subSubtleSelect(VALUE self);                                ///< Select window
 VALUE subSubtleReloadConfig(VALUE self);                          ///< Reload config
 VALUE subSubtleReloadSublets(VALUE self);                         ///< Reload sublets
@@ -169,9 +162,14 @@ VALUE subSubtleQuit(VALUE self);                                  ///< Quit subt
 void subSubtlextConnect(void);                                    ///< Connect to display
 void subSubtlextBacktrace(void);                                  ///< Print ruby backtrace
 VALUE subSubtlextConcat(VALUE str1, VALUE str2);                  ///< Concat strings
-VALUE subSubtlextFind(int type, VALUE value, int exception);      ///< Find object
-VALUE subSubtlextKill(VALUE value, int type);                     ///< Kill display
+VALUE subSubtlextParse(VALUE value, char *buf,
+  int len, int *flags);                                           ///< Parse arguments
+Window *subSubtlextList(char *prop, int *size);                   ///< Get window list
+int subSubtlextFind(char *prop, char *match, char **name);        ///< Find object
+int subSubtlextFindWindow(char *prop, char *match, char **name,
+  Window *win, int flags);                                        ///< Find window
 VALUE subSubtlextAssoc(VALUE self, int type);                     ///< Get tags from object
+Window *subSubtlextWMCheck(void);                                 ///< Get WM check window
 /* }}} */
 
 /* tag.c {{{ */

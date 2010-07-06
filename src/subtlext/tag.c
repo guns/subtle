@@ -74,7 +74,30 @@ VALUE
 subTagFind(VALUE self,
   VALUE value)
 {
-  return subSubtlextFind(SUB_TYPE_TAG, value, True);
+  int id = 0;
+  VALUE parsed = Qnil, tag = Qnil;
+  char *name = NULL, buf[50] = { 0 };
+
+  subSubtlextConnect(); ///< Implicit open connection
+
+  /* Check object type */
+  if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
+      value, buf, sizeof(buf), NULL)))
+    {
+      if(CHAR2SYM("all") == parsed)
+        return subTagAll(Qnil);
+    }
+
+  /* Find tag */
+  if(-1 != (id = subSubtlextFind("SUBTLE_TAG_LIST", buf, &name)))
+    {
+      if(!NIL_P((tag = subTagInstantiate(name))))
+        rb_iv_set(tag, "@id", INT2FIX(id));
+
+      free(name);
+    }
+
+  return tag;
 } /* }}} */
 
 /* subTagAll {{{ */
@@ -143,14 +166,15 @@ subTagUpdate(VALUE self)
       int id = -1;
 
       /* Create tag if needed */
-      if(-1 == (id = subSharedTagFind(RSTRING_PTR(name), NULL)))
+      if(-1 == (id = subSubtlextFind("SUBTLE_TAG_LIST",
+          RSTRING_PTR(name), NULL)))
         {
           SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
           snprintf(data.b, sizeof(data.b), "%s", RSTRING_PTR(name));
-          subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_NEW", data, True);
+          subSharedMessage(display, DefaultRootWindow(display), "SUBTLE_TAG_NEW", data, True);
 
-          id = subSharedTagFind(RSTRING_PTR(name), NULL);
+          id = subSubtlextFind("SUBTLE_TAG_LIST", RSTRING_PTR(name), NULL);
         }
 
       /* Guess tag id */
@@ -243,7 +267,22 @@ subTagToString(VALUE self)
 VALUE
 subTagKill(VALUE self)
 {
-  return subSubtlextKill(self, SUB_TYPE_TAG);
+  VALUE id = rb_iv_get(self, "@id");
+
+  subSubtlextConnect(); ///< Implicit open connection
+
+  if(RTEST(id))
+    {
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+      data.l[0] = FIX2INT(id);
+
+      subSharedMessage(display, DefaultRootWindow(display),
+        "SUBTLE_TAG_KILL", data, True);
+    }
+  else rb_raise(rb_eStandardError, "Failed killing tag");
+
+  return Qnil;
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

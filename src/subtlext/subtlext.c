@@ -17,10 +17,6 @@
 Display *display = NULL;
 VALUE mod = Qnil;
 
-static const char *klasses[] = {
-  "Client", "Gravity", "View", "Tag", "Tray", "Screen", "Sublet"
-};
-
 /* SubtlextSweep {{{ */
 static void
 SubtlextSweep(void)
@@ -80,8 +76,13 @@ SubtlextTag(VALUE self,
 {
   VALUE tag = Qnil;
 
+  /* Check instance type */
+  if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("Tag"))))
+    tag = value;
+  else subTagFind(Qnil, value);
+
   /* Find tag */
-  if(Qnil != (tag = subSubtlextFind(SUB_TYPE_TAG, value, True)))
+  if(RTEST(tag))
     {
       VALUE oid = Qnil, tid = Qnil;
 
@@ -97,7 +98,7 @@ SubtlextTag(VALUE self,
           data.l[2] = rb_obj_is_instance_of(self,
             rb_const_get(mod, rb_intern("Client"))) ? 0 : 1; ///< Client = 0, View = 1
 
-          subSharedMessage(DefaultRootWindow(display), action, data, True);
+          subSharedMessage(display, DefaultRootWindow(display), action, data, True);
         }
     }
   else rb_raise(rb_eStandardError, "Failed adding tag");
@@ -205,7 +206,7 @@ SubtlextTagAsk(VALUE self,
   VALUE tag = Qnil, ret = Qfalse;
 
   /* Find tag */
-  if(Qnil != (tag = subSubtlextFind(SUB_TYPE_TAG, value, False)))
+  if(Qnil != (tag = subTagFind(Qnil, value)))
     {
       int id = 0;
       Window win = 0;
@@ -240,7 +241,7 @@ SubtlextTagReload(VALUE self)
 
       data.l[0] = FIX2INT(id);
 
-      subSharedMessage(DefaultRootWindow(display),
+      subSharedMessage(display, DefaultRootWindow(display),
         "SUBTLE_WINDOW_RETAG", data, True);
     }
   else rb_raise(rb_eStandardError, "Failed tagging window");
@@ -334,7 +335,7 @@ SubtlextFocus(VALUE self)
 
       data.l[0] = NUM2LONG(win);
 
-      subSharedMessage(DefaultRootWindow(display), "_NET_ACTIVE_WINDOW", data, True);
+      subSharedMessage(display, DefaultRootWindow(display), "_NET_ACTIVE_WINDOW", data, True);
     }
   else rb_raise(rb_eStandardError, "Failed setting focus");
 
@@ -395,7 +396,7 @@ subSubtlextConnect(void)
       if(!setlocale(LC_CTYPE, "")) XSupportsLocale();
 
       /* Check if subtle is running */
-      if(True != subSharedSubtleRunning())
+      if(Qtrue != subSubtleRunningAsk(Qnil))
         {
           XCloseDisplay(display);
           display = NULL;
@@ -457,236 +458,248 @@ subSubtlextConcat(VALUE str1,
   return ret;
 } /* }}} */
 
-/* subSubtlextFind {{{ */
+/* subSubtlextParse {{{ */
 VALUE
-subSubtlextFind(int type,
-  VALUE value,
-  int exception)
+subSubtlextParse(VALUE value,
+  char *buf,
+  int len,
+  int *flags)
 {
-  int id = 0, flags = 0;
-  Window win = None;
-  char *name = NULL, buf[50] = { 0 };
-  XRectangle geometry = { 0 };
-  VALUE object = Qnil;
+  VALUE ret = Qtrue;
 
-  subSubtlextConnect(); ///< Implicit open connection
+  /* Check for hash */
+  if(T_HASH == rb_type(value) && flags) /* {{{ */
+    {
+      int i;
+      VALUE match = Qnil;
+
+      struct properties
+      {
+        VALUE sym;
+        int   flags;
+      } props[] = {
+        /* Only clients use all flags */
+        { CHAR2SYM("name"),     SUB_MATCH_NAME     },
+        { CHAR2SYM("instance"), SUB_MATCH_INSTANCE },
+        { CHAR2SYM("class"),    SUB_MATCH_CLASS    },
+        { CHAR2SYM("gravity"),  SUB_MATCH_GRAVITY  },
+        { CHAR2SYM("role"),     SUB_MATCH_ROLE     },
+        { CHAR2SYM("pid"),      SUB_MATCH_PID      }
+      };
+
+      /* Check hash keys */
+      for(i = 0; LENGTH(props) > i; i++)
+        {
+          if(!NIL_P((match = rb_hash_lookup(value, props[i].sym))))
+            {
+              *flags = props[i].flags;
+              break;
+            }
+        }
+
+      value = match; ///< Just copy over
+    } /* }}} */
 
   /* Check object type */
   switch(rb_type(value))
     {
       case T_FIXNUM: /* {{{ */
-        id = FIX2INT(value);
-        snprintf(buf, sizeof(buf), "%d", id);
-        break; /* }}} */
-      case T_HASH: /* {{{ */
-          {
-            int i;
-            VALUE match = Qnil;
-
-            struct properties
-            {
-              VALUE sym;
-              int   flags;
-            } props[] = {
-              /* Only clients use all flags */
-              { CHAR2SYM("name"),     SUB_MATCH_NAME     },
-              { CHAR2SYM("instance"), SUB_MATCH_INSTANCE },
-              { CHAR2SYM("class"),    SUB_MATCH_CLASS    },
-              { CHAR2SYM("gravity"),  SUB_MATCH_GRAVITY  },
-              { CHAR2SYM("role"),     SUB_MATCH_ROLE     },
-              { CHAR2SYM("pid"),      SUB_MATCH_PID      }
-            };
-
-            /* Check hash keys */
-            for(i = 0; LENGTH(props) > i; i++)
-              {
-                if(!NIL_P((match = rb_hash_lookup(value, props[i].sym))))
-                  {
-                    flags = props[i].flags;
-                    break;
-                  }
-              }
-
-            /* Check object type */
-            switch(rb_type(match))
-              {
-                case T_STRING:
-                  snprintf(buf, sizeof(buf), "%s", RSTRING_PTR(match));
-                  break;
-                case T_SYMBOL:
-                  snprintf(buf, sizeof(buf), "%s", SYM2CHAR(match));
-                  break;
-                case T_FIXNUM:
-                  snprintf(buf, sizeof(buf), "%d", (int)FIX2INT(match));
-              }
-          }
-        break; /* }}} */
-      case T_OBJECT: /* {{{ */
-        if(rb_obj_is_instance_of(value, rb_const_get(mod,
-            rb_intern(klasses[type]))))
-            return value;
+        snprintf(buf, len, "%d", (int)FIX2INT(value));
         break; /* }}} */
       case T_STRING: /* {{{ */
-        /* Set default match flags */
-        if(SUB_TYPE_CLIENT == type || SUB_TYPE_TRAY == type)
-          flags = (SUB_MATCH_INSTANCE|SUB_MATCH_CLASS);
-
-        snprintf(buf, sizeof(buf), "%s", RSTRING_PTR(value));
+        snprintf(buf, len, "%s", RSTRING_PTR(value));
         break; /* }}} */
       case T_SYMBOL: /* {{{ */
-        if(CHAR2SYM("current") == value)
-          {
-            switch(type)
-              {
-                case SUB_TYPE_CLIENT: return subClientCurrent(Qnil); break;
-                case SUB_TYPE_SCREEN: return subScreenCurrent(Qnil); break;
-                case SUB_TYPE_VIEW:   return subViewCurrent(Qnil);   break;
-              }
-          }
-        else if(CHAR2SYM("all") == value)
-          {
-            switch(type)
-              {
-                case SUB_TYPE_CLIENT:  return subClientAll(Qnil);  break;
-                case SUB_TYPE_GRAVITY: return subGravityAll(Qnil); break;
-                case SUB_TYPE_TAG:     return subTagAll(Qnil);     break;
-                case SUB_TYPE_SCREEN:  return subScreenAll(Qnil);  break;
-                case SUB_TYPE_SUBLET:  return subSubletAll(Qnil);  break;
-                case SUB_TYPE_VIEW:    return subViewAll(Qnil);    break;
-              }
-          }
-        else if(SUB_TYPE_GRAVITY == type)
-          snprintf(buf, sizeof(buf), "%s", SYM2CHAR(value));
+        ret = value;
         break; /* }}} */
       default: /* {{{ */
-        if(exception)
-          {
-            rb_raise(rb_eArgError, "Unknwon value type `%s'",
-              rb_obj_classname(value));
+        rb_raise(rb_eArgError, "Unknwon value type `%s'",
+          rb_obj_classname(value));
 
-            return Qnil;
-          } /* }}} */
+        ret = Qfalse; /* }}} */
     }
 
-  /* Instantiate objects */
-  switch(type)
-    {
-      case SUB_TYPE_CLIENT: /* {{{ */
-        if(-1 != (id = subSharedClientFind(buf, NULL, &win, flags)))
-          {
-            if(!NIL_P((object = subClientInstantiate(win))))
-              {
-                rb_iv_set(object, "@id", FIX2INT(id));
-
-                subClientUpdate(object);
-              }
-          }
-        break; /* }}} */
-      case SUB_TYPE_GRAVITY: /* {{{ */
-        if(-1 != (id = subSharedGravityFind(buf, &name, &geometry)))
-          {
-            if(!NIL_P((object = subGravityInstantiate(name))))
-              {
-                VALUE geom = subGeometryInstantiate(geometry.x, geometry.y,
-                  geometry.width, geometry.height);
-
-                rb_iv_set(object, "@id",       INT2FIX(id));
-                rb_iv_set(object, "@geometry", geom);
-              }
-
-            free(name);
-          }
-        break; /* }}} */
-      case SUB_TYPE_TAG: /* {{{ */
-        if(-1 != (id = subSharedTagFind(buf, &name)))
-          {
-            if(!NIL_P((object = subTagInstantiate(name))))
-              rb_iv_set(object, "@id", INT2FIX(id));
-
-            free(name);
-          }
-        break; /* }}} */
-      case SUB_TYPE_TRAY: /* {{{ */
-        if(-1 != (id = subSharedTrayFind(buf, NULL, &win, flags)))
-          {
-            if(!NIL_P((object = subTrayInstantiate(win))))
-              {
-                rb_iv_set(object, "@id", INT2FIX(id));
-
-                subTrayUpdate(object);
-              }
-          }
-        break; /* }}} */
-      case SUB_TYPE_SUBLET: /* {{{ */
-        if(-1 != (id = subSharedSubletFind(buf, &name)))
-          {
-            if(!NIL_P((object = subSubletInstantiate(name))))
-              rb_iv_set(object, "@id", INT2FIX(id));
-
-            free(name);
-          }
-        break; /* }}} */
-      case SUB_TYPE_VIEW: /* {{{ */
-        if(-1 != (id = subSharedViewFind(buf, &name, &win)))
-          {
-            if(!NIL_P((object = subViewInstantiate(name))))
-              {
-                rb_iv_set(object, "@id",  INT2FIX(id));
-                rb_iv_set(object, "@win", LONG2NUM(win));
-              }
-
-            free(name);
-          }
-        break; /* }}} */
-    }
-
-  if(NIL_P(object) && exception)
-    rb_raise(rb_eArgError, "Failed finding `%s'", klasses[type]);
-  //if(!NIL_P(object)) rb_iv_set(object, "@id", INT2FIX(id)); ///< Set id
-
-  return object;
+  return ret;
 } /* }}} */
 
-/* subSubtlextKill {{{ */
-VALUE
-subSubtlextKill(VALUE value,
-  int type)
+/* subSubtlextList {{{ */
+
+Window *
+subSubtlextList(char *prop,
+  int *size)
 {
-  int id = -1;
+  Window *wins = NULL;
+  unsigned long len = 0;
 
-  subSubtlextConnect(); ///< Implicit open connection
+  assert(prop && size);
 
-  /* Check object type */
-  switch(rb_type(value))
+  if((wins = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display),
+      XA_WINDOW, XInternAtom(display, prop, False), &len)))
     {
-      case T_OBJECT: id = FIX2INT(rb_iv_get(value, "@id")); break;
-      case T_STRING:
+      *size = len;
+    }
+  else
+    {
+      *size = 0;
+
+      subSharedLogDebug("Failed getting window list\n");
+    }
+
+  return wins;
+} /* }}} */
+
+/* subSubtlextFind {{{ */
+int
+subSubtlextFind(char *prop,
+  char *match,
+  char **name)
+{
+  int ret = -1, size = 0;
+  char **strings = NULL;
+  regex_t *preg = NULL;
+
+  assert(prop && match);
+
+  /* Find id */
+  if((preg = subSharedRegexNew(match)) &&
+      (strings = subSharedPropertyStrings(display, DefaultRootWindow(display),
+      XInternAtom(display, prop, False), &size)))
+    {
+      int i;
+
+      for(i = 0; i < size; i++)
+        if((isdigit(match[0]) && atoi(match) == i) ||
+            (!isdigit(match[0]) && subSharedRegexMatch(preg, strings[i])))
+          {
+            subSharedLogDebug("Found: prop=%s, match=%s, name=%s, id=%d\n",
+              prop, match, strings[i], i);
+
+            if(name) *name = strdup(strings[i]);
+
+            ret = i;
+            break;
+          }
+
+      subSharedRegexKill(preg);
+      XFreeStringList(strings);
+    }
+  else subSharedLogDebug("Failed finding string `%s'\n", match);
+
+  return ret;
+} /* }}} */
+
+/* subSubtlextFindWindow {{{ */
+int
+subSubtlextFindWindow(char *prop,
+  char *match,
+  char **name,
+  Window *win,
+  int flags)
+{
+  int id = -1, size = 0;
+  Window *wins = NULL;
+
+  assert(prop && match);
+
+  /* Find window id */
+  if((wins = subSubtlextList(prop, &size)))
+    {
+      int i, gravity1 = 0, gravity2 = -1, pid1 = 0, pid2 = -1; ///<  Init differently
+      long digit = -1;
+      char *wmname = NULL, *instance = NULL, *klass = NULL, *role = NULL;
+      Window selwin = None;
+      regex_t *preg = subSharedRegexNew(match);
+
+      if(isdigit(match[0])) digit = strtol(match, NULL, 0);
+
+      /* Select window */
+      if(!strncmp(match, "#", 1) && win)
+        selwin = subSubtleSelect(Qnil);
+
+      /* Find id of gravity */
+      if(flags & SUB_MATCH_GRAVITY)
+        gravity1 = subGravityFindId(match, NULL, NULL);
+
+      /* Get pid */
+      if(flags & SUB_MATCH_PID)
+        pid1 = atoi(match);
+
+      for(i = 0; -1 == id && i < size; i++)
         {
-          VALUE object = Qnil;
+          XFetchName(display, wins[i], &wmname);
+          subSharedPropertyClass(display, wins[i], &instance, &klass);
 
-          if(RTEST((object = subSubtlextFind(type, value, False))))
-            id = FIX2INT(rb_iv_get(object, "@id"));
+          /* Get window gravity */
+          if(flags & SUB_MATCH_GRAVITY)
+            {
+              int *gravity = NULL;
+
+              if((gravity = (int *)subSharedPropertyGet(display, wins[i],
+                  XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_GRAVITY",
+                  False), NULL)))
+                {
+                  gravity2 = *gravity;
+
+                  subSharedLogDebug("Gravity: match=%s, gravity1=%d, gravity2=%d\n",
+                    match, gravity1, gravity2);
+
+                  free(gravity);
+                }
+            }
+
+          /* Get window role */
+          if(flags & SUB_MATCH_ROLE)
+            role = subSharedPropertyGet(display, wins[i], XA_STRING,
+              XInternAtom(display, "WM_WINDOW_ROLE", False), NULL);
+
+          /* Get window pid */
+          if(flags & SUB_MATCH_PID)
+            {
+              int *pid = NULL;
+
+              if((pid = (int *)subSharedPropertyGet(display, wins[i], XA_CARDINAL,
+                  XInternAtom(display, "_NET_WM_PID", False), NULL)))
+                {
+                  pid2 = *pid;
+
+                  free(pid);
+                }
+            }
+
+          /* Find window either by window id, title, inst, class, gravity or pid */
+          if(selwin == wins[i] || digit == wins[i] || digit == (long)i ||
+              (flags & SUB_MATCH_NAME     && wmname     && subSharedRegexMatch(preg, wmname))   ||
+              (flags & SUB_MATCH_INSTANCE && instance   && subSharedRegexMatch(preg, instance)) ||
+              (flags & SUB_MATCH_CLASS    && klass      && subSharedRegexMatch(preg, klass))    ||
+              (flags & SUB_MATCH_ROLE     && role       && subSharedRegexMatch(preg, role))     ||
+              (flags & SUB_MATCH_GRAVITY  && gravity1 == gravity2) ||
+              (flags & SUB_MATCH_PID      && pid1 == pid2))
+            {
+              subSharedLogDebug("Found: prop=%s, name=%s, win=%#lx, id=%d, flags\n",
+                prop, match, wins[i], i, flags);
+
+              if(win) *win = wins[i];
+              if(name)
+                {
+                  *name = (char *)subSharedMemoryAlloc(strlen(instance) + 1, sizeof(char));
+                  strncpy(*name, instance, strlen(instance));
+                 }
+
+              id = i;
+            }
+
+          if(role) free(role);
+          free(wmname);
+          free(instance);
+          free(klass);
         }
+
+      subSharedRegexKill(preg);
+      free(wins);
     }
+  else subSharedLogDebug("Failed finding window `%s'\n", match);
 
-  /* Send message */
-  if(-1 != id)
-    {
-      int i = 0;
-      char buf[20] = { 0 };
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-      data.l[0] = id;
-
-      /* Create message type */
-      snprintf(buf, sizeof(buf), "SUBTLE_%s_KILL", klasses[type]);
-      for(i = 6; i < strlen(buf); i++) buf[i] = toupper(buf[i]);
-
-      subSharedMessage(DefaultRootWindow(display), buf, data, True);
-    }
-  else rb_raise(rb_eStandardError, "Failed killing %s", klasses[type]);
-
-  return Qnil;
+  return id;
 } /* }}} */
 
 /* subSubtlextAssoc {{{ */
@@ -709,7 +722,7 @@ subSubtlextAssoc(VALUE self,
     {
       case SUB_TYPE_CLIENT:
         klass = rb_const_get(mod, rb_intern("Client"));
-        wins  = subSharedClientList(&size);
+        wins  = subSubtlextList("_NET_CLIENT_LIST", &size);
         break;
       case SUB_TYPE_VIEW:
         klass = rb_const_get(mod, rb_intern("View"));
@@ -755,6 +768,18 @@ subSubtlextAssoc(VALUE self,
   free(wins);
 
   return array;
+} /* }}} */
+
+ /** subSubtlextWMCheck {{{
+  * @brief Get WM check window
+  * @return A #Window
+  **/
+
+Window *
+subSubtlextWMCheck(void)
+{
+  return (Window *)subSharedPropertyGet(display, DefaultRootWindow(display),
+    XA_WINDOW, XInternAtom(display, "_NET_SUPPORTING_WM_CHECK", False), NULL);
 } /* }}} */
 
 /* Plugin */
@@ -1027,32 +1052,6 @@ Init_subtlext(void)
 
   /* Singleton methods */
   rb_define_singleton_method(subtle, "display",        subSubtleDisplayReader, 0);
-  rb_define_singleton_method(subtle, "clients",        subClientAll,           0);
-  rb_define_singleton_method(subtle, "gravities",      subGravityAll,          0);
-  rb_define_singleton_method(subtle, "screens",        subScreenAll,           0);
-  rb_define_singleton_method(subtle, "sublets",        subSubletAll,           0);
-  rb_define_singleton_method(subtle, "tags",           subTagAll,              0);
-  rb_define_singleton_method(subtle, "trays",          subTrayAll,             0);
-  rb_define_singleton_method(subtle, "views",          subViewAll,             0);
-  rb_define_singleton_method(subtle, "find_client",    subClientFind,          1);
-  rb_define_singleton_method(subtle, "find_gravity",   subGravityFind,         1);
-  rb_define_singleton_method(subtle, "find_screen",    subScreenFind,          1);
-  rb_define_singleton_method(subtle, "find_sublet",    subSubletFind,          1);
-  rb_define_singleton_method(subtle, "find_tag",       subTagFind,             1);
-  rb_define_singleton_method(subtle, "find_tray",      subTrayFind,            1);
-  rb_define_singleton_method(subtle, "find_view",      subViewFind,            1);
-  rb_define_singleton_method(subtle, "focus",          subSubtleFocus,         1);
-  rb_define_singleton_method(subtle, "add_tag",        subSubtleTagAdd,        1);
-  rb_define_singleton_method(subtle, "add_view",       subSubtleViewAdd,       1);
-  rb_define_singleton_method(subtle, "del_client",     subSubtleClientDel,     1);
-  rb_define_singleton_method(subtle, "del_gravity",    subSubtleGravityDel,    1);
-  rb_define_singleton_method(subtle, "del_sublet",     subSubtleSubletDel,     1);
-  rb_define_singleton_method(subtle, "del_tag",        subSubtleTagDel,        1);
-  rb_define_singleton_method(subtle, "del_tray",       subSubtleTrayDel,       1);
-  rb_define_singleton_method(subtle, "del_view",       subSubtleViewDel,       1);
-  rb_define_singleton_method(subtle, "current_view",   subViewCurrent,         0);
-  rb_define_singleton_method(subtle, "current_client", subClientCurrent,       0);
-  rb_define_singleton_method(subtle, "current_screen", subScreenCurrent,       0);
   rb_define_singleton_method(subtle, "select_window",  subSubtleSelect,        0);
   rb_define_singleton_method(subtle, "running?",       subSubtleRunningAsk,    0);
   rb_define_singleton_method(subtle, "reload_config",  subSubtleReloadConfig,  0);
@@ -1060,10 +1059,6 @@ Init_subtlext(void)
   rb_define_singleton_method(subtle, "restart",        subSubtleRestart,       0);
   rb_define_singleton_method(subtle, "quit",           subSubtleQuit,          0);
   rb_define_singleton_method(subtle, "spawn",          subSubtleSpawn,         1);
-
-  /* Singleton aliases */
-  rb_define_alias(rb_singleton_class(subtle), "+", "add_tag");
-  rb_define_alias(rb_singleton_class(subtle), "-", "del_tag");
 
   /*
    * Document-class: Subtlext::Sublet

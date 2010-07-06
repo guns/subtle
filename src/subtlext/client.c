@@ -33,7 +33,7 @@ ClientToggle(VALUE self,
 
       rb_iv_set(self, "@flags", INT2FIX(flags));
 
-      subSharedMessage(win, "_NET_WM_STATE", data, True);
+      subSharedMessage(display, win, "_NET_WM_STATE", data, True);
     }
   else rb_raise(rb_eStandardError, "Failed toggling client");
 
@@ -53,7 +53,7 @@ ClientSelect(VALUE self,
 
   /* Fetch data */
   win     = rb_iv_get(self, "@win");
-  clients = subSharedClientList(&size);
+  clients = subSubtlextList("_NET_CLIENT_LIST", &size);
   views   = (Window *)subSharedPropertyGet(display,
     DefaultRootWindow(display), XA_WINDOW,
     XInternAtom(display, "_NET_VIRTUAL_ROOTS", False), NULL);
@@ -115,7 +115,7 @@ ClientRestack(VALUE self,
       data.l[1] = NUM2LONG(win);
       data.l[2] = detail;
 
-      subSharedMessage(DefaultRootWindow(display), "_NET_RESTACK_WINDOW", data, True);
+      subSharedMessage(display, DefaultRootWindow(display), "_NET_RESTACK_WINDOW", data, True);
     }
   else rb_raise(rb_eStandardError, "Failed restacking client");
 
@@ -195,7 +195,36 @@ VALUE
 subClientFind(VALUE self,
   VALUE value)
 {
-  return subSubtlextFind(SUB_TYPE_CLIENT, value, True);
+  int id = 0, flags = 0;
+  Window win = None;
+  VALUE parsed = Qnil, client = Qnil;
+  char *name = NULL, buf[50] = { 0 };
+
+  subSubtlextConnect(); ///< Implicit open connection
+
+  /* Check object type */
+  if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
+      value, buf, sizeof(buf), &flags)))
+    {
+      if(CHAR2SYM("all") == parsed)
+        return subClientAll(Qnil);
+    }
+
+  /* Find client */
+  if(-1 != (id = subSubtlextFindWindow("_NET_CLIENT_LIST",
+      buf, NULL, &win, flags)))
+    {
+      if(!NIL_P((client = subClientInstantiate(win))))
+        {
+          rb_iv_set(client, "@id", INT2FIX(id));
+
+          subClientUpdate(client);
+        }
+
+      free(name);
+    }
+
+  return client;
 } /* }}} */
 
 /* subClientCurrent {{{ */
@@ -256,7 +285,7 @@ subClientAll(VALUE self)
   /* Fetch data */
   meth    = rb_intern("new");
   klass   = rb_const_get(mod, rb_intern("Client"));
-  clients = subSharedClientList(&size);
+  clients = subSubtlextList("_NET_CLIENT_LIST", &size);
   array   = rb_ary_new2(size);
 
   /* Populate array */
@@ -298,7 +327,8 @@ subClientUpdate(VALUE self)
       char buf[20] = { 0 };
 
       snprintf(buf, sizeof(buf), "%#lx", NUM2LONG(win));
-      if(-1 != (id = subSharedClientFind(buf, NULL, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS))))
+      if(-1 != (id = subSubtlextFindWindow("_NET_CLIENT_LIST", buf,
+          NULL, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS))))
         {
           int *flags = NULL;
           char *wmname = NULL, *wminstance = NULL, *wmclass = NULL, *role = NULL;
@@ -635,8 +665,8 @@ subClientAliveAsk(VALUE self)
   VALUE ret = Qfalse, name = rb_iv_get(self, "@name");
 
   /* Just find the client */
-  if(RTEST(name) && -1 != subSharedClientFind(RSTRING_PTR(name),
-      NULL, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))
+  if(RTEST(name) && -1 != subSubtlextFindWindow("_NET_CLIENT_LIST",
+      RSTRING_PTR(name), NULL, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))
     ret = Qtrue;
 
   return ret;
@@ -707,7 +737,12 @@ VALUE
 subClientGravityWriter(VALUE self,
   VALUE value)
 {
-  VALUE gravity = subSubtlextFind(SUB_TYPE_GRAVITY, value, True);
+  VALUE gravity = Qnil;
+
+  /* Check instance type */
+  if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("Gravity"))))
+    gravity = value;
+  else subGravityFind(Qnil, value);
 
   /* Set gravity */
   if(Qnil != gravity)
@@ -717,7 +752,7 @@ subClientGravityWriter(VALUE self,
       data.l[0] = FIX2LONG(rb_iv_get(self,    "@id"));
       data.l[1] = FIX2LONG(rb_iv_get(gravity, "@id"));
 
-      subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_GRAVITY", data, True);
+      subSharedMessage(display, DefaultRootWindow(display), "SUBTLE_WINDOW_GRAVITY", data, True);
 
       rb_iv_set(self, "@gravity", gravity);
     }
@@ -780,17 +815,22 @@ VALUE
 subClientScreenWriter(VALUE self,
   VALUE value)
 {
-  VALUE screen = subSubtlextFind(SUB_TYPE_SCREEN, value, True);
+  VALUE screen = Qnil;
+
+  /* Check instance type */
+  if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("Screen"))))
+    screen = value;
+  else subScreenFind(Qnil, value);
 
   /* Set screen */
-  if(Qnil != screen)
+  if(RTEST(screen))
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
       data.l[0] = FIX2LONG(rb_iv_get(self,   "@id"));
       data.l[1] = FIX2LONG(rb_iv_get(screen, "@id"));
 
-      subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_SCREEN", data, True);
+      subSharedMessage(display, DefaultRootWindow(display), "SUBTLE_WINDOW_SCREEN", data, True);
 
       rb_iv_set(self, "@screen", INT2FIX(screen));
     }
@@ -876,7 +916,7 @@ subClientGeometryWriter(int argc,
       data.l[3] = FIX2INT(rb_iv_get(geometry,  "@width"));
       data.l[4] = FIX2INT(rb_iv_get(geometry,  "@height"));
 
-      subSharedMessage(win, "_NET_MOVERESIZE_WINDOW", data, True);
+      subSharedMessage(display, win, "_NET_MOVERESIZE_WINDOW", data, True);
 
       rb_iv_set(self, "@geometry", geometry);
     }
@@ -906,7 +946,7 @@ subClientResizeWriter(VALUE self,
       data.l[0] = FIX2LONG(rb_iv_get(self, "@id"));
       data.l[1] = (Qtrue == value);
 
-      subSharedMessage(DefaultRootWindow(display), "SUBTLE_WINDOW_RESIZE", data, True);
+      subSharedMessage(display, DefaultRootWindow(display), "SUBTLE_WINDOW_RESIZE", data, True);
     }
   else rb_raise(rb_eArgError, "Unknown value type");
 
@@ -1013,14 +1053,17 @@ VALUE
 subClientKill(VALUE self)
 {
   VALUE win = rb_iv_get(self, "@win");
-  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  subSubtlextConnect(); ///< Implicit open connection
 
   if(RTEST(win))
     {
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
       data.l[0] = CurrentTime;
       data.l[1] = 2; ///< Claim to be a pager
 
-      subSharedMessage(NUM2LONG(win), "_NET_CLOSE_WINDOW", data, True);
+      subSharedMessage(display, NUM2LONG(win), "_NET_CLOSE_WINDOW", data, True);
     }
   else rb_raise(rb_eStandardError, "Failed killing client");
 

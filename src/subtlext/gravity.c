@@ -11,9 +11,26 @@
 
 #include "subtlext.h"
 
-/* GravityFind {{{ */
+/* GravityToRect {{{ */
+void
+GravityToRect(VALUE self,
+  XRectangle *r)
+{
+  VALUE geometry = rb_iv_get(self, "@geometry");
+
+  subGeometryToRect(geometry, r); ///< Get values
+} /* }}} */
+
+/** subGravityFindId {{{ 
+ * @brief Find gravity id
+ * @param[in]  match Name to match
+ * @param[out]  name  Real name of the gravity 
+ * @param[out]  geometry  Geometry of gravity
+ * @return The id of the gravity or -1
+ ***/
+
 int
-GravityFind(char *match,
+subGravityFindId(char *match,
   char **name,
   XRectangle *geometry)
 {
@@ -61,16 +78,6 @@ GravityFind(char *match,
   else subSharedLogDebug("Failed finding gravity `%s'\n", name);
 
   return ret;
-} /* }}} */
-
-/* GravityToRect {{{ */
-void
-GravityToRect(VALUE self,
-  XRectangle *r)
-{
-  VALUE geometry = rb_iv_get(self, "@geometry");
-
-  subGeometryToRect(geometry, r); ///< Get values
 } /* }}} */
 
 /* subGravityInstantiate {{{ */
@@ -143,34 +150,23 @@ subGravityFind(VALUE self,
   VALUE value)
 {
   int id = 0;
-  VALUE gravity = Qnil;
+  VALUE parsed = Qnil, gravity = Qnil;
   XRectangle geometry = { 0 };
   char *name = NULL, buf[50] = { 0 };
 
   subSubtlextConnect(); ///< Implicit open connection
 
   /* Check object type */
-  switch(rb_type(value))
+  if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
+      value, buf, sizeof(buf), NULL)))
     {
-      case T_FIXNUM: /* {{{ */
-        snprintf(buf, sizeof(buf), "%d", FIX2INT(value));
-        break; /* }}} */
-      case T_STRING: /* {{{ */
-        snprintf(buf, sizeof(buf), "%s", RSTRING_PTR(value));
-        break; /* }}} */
-      case T_SYMBOL: /* {{{ */
-        if(CHAR2SYM("all") == value)
-          return subGravityAll(Qnil);
-        else snprintf(buf, sizeof(buf), "%s", SYM2CHAR(value));
-        break; /* }}} */
-      default: /* {{{ */
-        rb_raise(rb_eArgError, "Unknwon value type `%s'",
-          rb_obj_classname(value));
-
-        return Qnil; /* }}} */
+      if(CHAR2SYM("all") == parsed)
+        return subGravityAll(Qnil);
+      else snprintf(buf, sizeof(buf), "%s", SYM2CHAR(value));
     }
 
-  if(-1 != (id = GravityFind(buf, &name, &geometry)))
+  /* Find gravity */
+  if(-1 != (id = subGravityFindId(buf, &name, &geometry)))
     {
       if(!NIL_P((gravity = subGravityInstantiate(name))))
         {
@@ -269,7 +265,7 @@ subGravityUpdate(VALUE self)
       char *name = NULL;
 
       /* Find gravity */
-      if(-1 == (id = GravityFind(RSTRING_PTR(match), &name, &geom)))
+      if(-1 == (id = subGravityFindId(RSTRING_PTR(match), &name, &geom)))
         {
           SubMessageData data = { { 0, 0, 0, 0, 0 } };
           VALUE geometry = rb_iv_get(self, "@geometry");
@@ -282,9 +278,9 @@ subGravityUpdate(VALUE self)
           /* Create new gravity */
           snprintf(data.b, sizeof(data.b), "%hdx%hd+%hd+%hd#%s",
             geom.x, geom.y, geom.width, geom.width, RSTRING_PTR(match));
-          subSharedMessage(DefaultRootWindow(display), "SUBTLE_GRAVITY_NEW", data, True);
+          subSharedMessage(display, DefaultRootWindow(display), "SUBTLE_GRAVITY_NEW", data, True);
 
-          id = GravityFind(RSTRING_PTR(match), NULL, NULL);
+          id = subGravityFindId(RSTRING_PTR(match), NULL, NULL);
         }
       else ///< Update gravity
         {
@@ -345,7 +341,7 @@ subGravityClients(VALUE self)
   klass   = rb_const_get(mod, rb_intern("Client"));
   meth    = rb_intern("new");
   array   = rb_ary_new2(size);
-  clients = subSharedClientList(&size);
+  clients = subSubtlextList("_NET_CLIENT_LIST", &size);
 
   /* Populate array */
   if(clients)
@@ -399,7 +395,7 @@ subGravityGeometryReader(VALUE self)
     {
       XRectangle geom = { 0 };
 
-      GravityFind(RSTRING_PTR(name), NULL, &geom);
+      subGravityFindId(RSTRING_PTR(name), NULL, &geom);
 
       geometry = subGeometryInstantiate(geom.x, geom.y, geom.width, geom.height);
       rb_iv_set(self, "@geometry", geometry);
@@ -534,7 +530,22 @@ subGravityToSym(VALUE self)
 VALUE
 subGravityKill(VALUE self)
 {
-  return subSubtlextKill(self, SUB_TYPE_GRAVITY);
+  VALUE id = rb_iv_get(self, "@id");
+
+  subSubtlextConnect(); ///< Implicit open connection
+
+  if(RTEST(id))
+    {
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+      data.l[0] = FIX2INT(id);
+
+      subSharedMessage(display, DefaultRootWindow(display),
+        "SUBTLE_GRAVITY_KILL", data, True);
+    }
+  else rb_raise(rb_eStandardError, "Failed killing gravity");
+
+  return Qnil;
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

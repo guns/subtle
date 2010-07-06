@@ -75,7 +75,30 @@ VALUE
 subSubletFind(VALUE self,
   VALUE value)
 {
-  return subSubtlextFind(SUB_TYPE_SUBLET, value, True);
+  int id = 0;
+  VALUE parsed = Qnil, sublet = Qnil;
+  char *name = NULL, buf[50] = { 0 };
+
+  subSubtlextConnect(); ///< Implicit open connection
+
+  /* Check object type */
+  if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
+      value, buf, sizeof(buf), NULL)))
+    {
+      if(CHAR2SYM("all") == parsed)
+        return subClientAll(Qnil);
+    }
+
+  /* Find sublet */
+  if(-1 != (id = subSubtlextFind("SUBTLE_SUBLET_LIST", buf, &name)))
+    {
+      if(!NIL_P((sublet = subSubletInstantiate(name))))
+        rb_iv_set(sublet, "@id", INT2FIX(id));
+
+      free(name);
+    }
+
+  return sublet;
 } /* }}} */
 
 /* subSubletAll {{{ */
@@ -140,14 +163,15 @@ subSubletUpdate(VALUE self)
   int id = -1;
   VALUE name = rb_iv_get(self, "@name");
 
-  if(RTEST(name) && -1 != ((id = subSharedSubletFind(RSTRING_PTR(name), NULL))))
+  if(RTEST(name) && -1 != ((id = subSubtlextFind("SUB_SUBLET_LIST",
+      RSTRING_PTR(name), NULL))))
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
       /* Send data */
       data.l[0] = id;
 
-      subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_UPDATE", data, True);
+      subSharedMessage(display, DefaultRootWindow(display), "SUBTLE_SUBLET_UPDATE", data, True);
     }
   else rb_raise(rb_eStandardError, "Failed finding sublet");
 
@@ -194,7 +218,7 @@ subSubletDataWriter(VALUE self,
       snprintf(data.b, sizeof(data.b), "%c%s",
         (char)NUM2LONG(id), RSTRING_PTR(value));
 
-      subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_DATA", data, True);
+      subSharedMessage(display, DefaultRootWindow(display), "SUBTLE_SUBLET_DATA", data, True);
     }
   else rb_raise(rb_eArgError, "Failed setting value type `%s'", rb_obj_classname(value));
 
@@ -222,7 +246,7 @@ subSubletBackgroundWriter(VALUE self,
       data.l[0] = FIX2INT(rb_iv_get(self, "@id"));
       data.l[1] = subSharedParseColor(display, RSTRING_PTR(value));
 
-      subSharedMessage(DefaultRootWindow(display), "SUBTLE_SUBLET_BACKGROUND", data, True);
+      subSharedMessage(display, DefaultRootWindow(display), "SUBTLE_SUBLET_BACKGROUND", data, True);
     }
   else rb_raise(rb_eArgError, "Failed setting value type `%s'", rb_obj_classname(value));
 
@@ -252,7 +276,7 @@ subSubletGeometryReader(VALUE self)
       Window *wins = NULL;
 
       id   = FIX2INT(rb_iv_get(self, "@id"));
-      wins = subSharedSubletList(&size);
+      wins = subSubtlextList("SUB_SUBLET_WINDOWS", &size);
       win  = LONG2NUM(wins[id]);
 
       rb_iv_set(self, "@win", win);
@@ -297,7 +321,22 @@ subSubletToString(VALUE self)
 VALUE
 subSubletKill(VALUE self)
 {
-  return subSubtlextKill(self, SUB_TYPE_SUBLET);
+  VALUE id = rb_iv_get(self, "@id");
+
+  subSubtlextConnect(); ///< Implicit open connection
+
+  if(RTEST(id))
+    {
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+      data.l[0] = FIX2INT(id);
+
+      subSharedMessage(display, DefaultRootWindow(display),
+        "SUBTLE_SUBLET_KILL", data, True);
+    }
+  else rb_raise(rb_eStandardError, "Failed killing sublet");
+
+  return Qnil;
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

@@ -76,9 +76,38 @@ subTrayInit(VALUE self,
 
 VALUE
 subTrayFind(VALUE self,
-  VALUE name)
+  VALUE value)
 {
-  return subSubtlextFind(SUB_TYPE_TRAY, name, True);
+  int id = 0, flags = 0;
+  Window win = None;
+  VALUE parsed = Qnil, tray = Qnil;
+  char *name = NULL, buf[50] = { 0 };
+
+  subSubtlextConnect(); ///< Implicit open connection
+
+  /* Check object type */
+  if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
+      value, buf, sizeof(buf), &flags)))
+    {
+      if(CHAR2SYM("all") == parsed)
+        return subTrayAll(Qnil);
+    }
+
+  /* Find tray */
+  if(-1 != (id = subSubtlextFindWindow("SUBTLE_TRAY_LIST",
+      buf, NULL, &win, flags)))
+    {
+      if(!NIL_P((tray = subTrayInstantiate(win))))
+        {
+          rb_iv_set(tray, "@id", INT2FIX(id));
+
+          subTrayUpdate(tray);
+        }
+
+      free(name);
+    }
+
+  return tray;
 } /* }}} */
 
 /* subTrayAll {{{ */
@@ -106,7 +135,7 @@ subTrayAll(VALUE self)
   /* Fetch data */
   meth  = rb_intern("new");
   klass = rb_const_get(mod, rb_intern("Tray"));
-  trays = subSharedTrayList(&size);
+  trays = subSubtlextList("SUBTLE_TRAY_LIST", &size);
   array = rb_ary_new2(size);
 
   /* Populate array */
@@ -148,7 +177,8 @@ subTrayUpdate(VALUE self)
       char buf[20] = { 0 };
 
       snprintf(buf, sizeof(buf), "%#lx", NUM2LONG(win));
-      if(-1 != (id = subSharedTrayFind(buf, NULL, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS))))
+      if(-1 != (id = subSubtlextFindWindow("SUBTLE_TRAY_LIST", buf, NULL,
+          NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS))))
         {
           char *title = NULL, *wmname = NULL, *wmclass = NULL;
 
@@ -203,7 +233,22 @@ subTrayToString(VALUE self)
 VALUE
 subTrayKill(VALUE self)
 {
-  return subSubtlextKill(self, SUB_TYPE_TRAY);
+  VALUE id = rb_iv_get(self, "@id");
+
+  subSubtlextConnect(); ///< Implicit open connection
+
+  if(RTEST(id))
+    {
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+      data.l[0] = FIX2INT(id);
+
+      subSharedMessage(display, DefaultRootWindow(display),
+        "SUBTLE_TRAY_KILL", data, True);
+    }
+  else rb_raise(rb_eStandardError, "Failed killing tray");
+
+  return Qnil;
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

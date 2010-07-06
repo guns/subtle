@@ -35,10 +35,6 @@
 #ifdef HAVE_X11_XFT_XFT_H
 #include <X11/Xft/Xft.h>
 #endif /* HAVE_X11_XFT_XFT_H */
-
-#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
-#include <X11/extensions/Xinerama.h>
-#endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
 /* }}} */
 
 /* Macros {{{ */
@@ -86,7 +82,6 @@
 /* }}} */
 
 /* Typedefs {{{ */
-#ifndef SUBTLER
 typedef union subdata_t /* {{{ */
 {
   unsigned long num;                                              ///< Data number
@@ -124,19 +119,13 @@ typedef struct subicon_t /* {{{ */
   unsigned int width, height;                                     ///< Icon width, height
   GC           gc;                                                ///< Icon GC
 } SubtIcon; /* }}} */
-#endif /* SUBTLER */
 
-#ifndef SUBTLE
 typedef union submessagedata_t /* {{{ */
 {
   char  b[20];                                                    ///< MessageData char
   short s[10];                                                    ///< MessageData short
   long  l[5];                                                     ///< MessageData long
 } SubMessageData; /* }}} */
-
-extern Display *display;
-
-#endif /* SUBTLE */
 /* }}} */
 
 /* Log {{{ */
@@ -181,8 +170,6 @@ void subSharedPropertyDelete(Display *disp, Window win,
   Atom prop);                                                     ///< Delete window property
 /* }}} */
 
-#ifndef SUBTLER
-
 /* Text {{{ */
 SubText *subSharedTextNew(void);                                  ///< Create new text
 int subSharedTextParse(Display *disp, SubFont *f,
@@ -206,48 +193,14 @@ void subSharedFontKill(Display *disp, SubFont *f);                ///< Kill font
 unsigned long subSharedParseColor(Display *disp, char *name);     ///< Parse color
 int subSharedMatch(int type, XRectangle *geometry1,
   XRectangle *geometry2);                                         ///< Match window
-/* }}} */
-
-#endif /* SUBTLER */
-
-/* Misc {{{ */
 pid_t subSharedSpawn(char *cmd);                                  ///< Spawn command
 /* }}} */
 
 #ifndef SUBTLE
 
 /* Message {{{ */
-int subSharedMessage(Window win, char *type,
+int subSharedMessage(Display *disp, Window win, char *type,
   SubMessageData data, int xsync);                                ///< Send client message
-/* }}} */
-
-/* Window {{{ */
-Window *subSharedWindowWMCheck(void);                             ///< Get WM check window
-Window subSharedWindowSelect(void);                               ///< Select a window
-/* }}} */
-
-/* Lists {{{ */
-Window *subSharedClientList(int *size);                           ///< Get client list
-Window *subSharedTrayList(int *size);                             ///< Get tray list
-Window *subSharedSubletList(int *size);                           ///< Get sublet list
-/* }}} */
-
-/* Find {{{ */
-int subSharedClientFind(char *match, char **name,
-  Window *win, int flags);                                        ///< Find client id
-int subSharedGravityFind(char *match, char **name,
-  XRectangle *geometry);                                          ///< Find gravity id
-int subSharedScreenFind(int id, XRectangle *geometry);            ///< Find screen id
-int subSharedSubletFind(char *match, char **name);                ///< Find sublet id
-int subSharedTagFind(char *match, char **name);                   ///< Find tag id
-int subSharedTrayFind(char *match, char **name,
-  Window *win, int flags);                                        ///< Find tray id
-int subSharedViewFind(char *match, char **name,
-  Window *win);                                                   ///< Find view id
-/* }}} */
-
-/* Subtle {{{ */
-int subSharedSubtleRunning(void);                                 ///< Check if subtle is running
 /* }}} */
 
 #endif /* SUBTLE */

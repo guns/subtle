@@ -11,6 +11,58 @@
 
 #include "subtlext.h"
 
+/* ViewFind {{{ */
+int
+ViewFind(char *match,
+  char **name,
+  Window *win)
+{
+  int ret = -1;
+  Window *views = NULL;
+
+  assert(match);
+
+  /* Find view id */
+  if((views = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display),
+      XA_WINDOW, XInternAtom(display, "_NET_VIRTUAL_ROOTS", False), NULL)))
+    {
+      int i, size = 0;
+      long digit = -1;
+      char **names = NULL;
+      regex_t *preg = NULL;
+
+      names = subSharedPropertyStrings(display, DefaultRootWindow(display),
+        XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size);
+      preg  = subSharedRegexNew(match);
+
+      if(isdigit(match[0])) digit = strtol(match, NULL, 0);
+
+      for(i = 0; i < size; i++)
+        {
+          /* Find view either by name or by window id */
+          if(digit == (long)i || digit == views[i] ||
+              subSharedRegexMatch(preg, names[i]))
+            {
+              subSharedLogDebug("Found: type=view, match=%s, name=%s win=%#lx, id=%d\n",
+                match, names[i], views[i], i);
+
+              if(win) *win   = views[i];
+              if(name) *name = strdup(names[i]);
+
+              ret = i;
+              break;
+            }
+        }
+
+      subSharedRegexKill(preg);
+      XFreeStringList(names);
+      free(views);
+    }
+  else subSharedLogDebug("Failed finding view `%s'\n", match);
+
+  return ret;
+} /* }}} */
+
 /* ViewSelect {{{ */
 static VALUE
 ViewSelect(VALUE self,
@@ -112,9 +164,38 @@ subViewInit(VALUE self,
 
 VALUE
 subViewFind(VALUE self,
-  VALUE name)
+  VALUE value)
 {
-  return subSubtlextFind(SUB_TYPE_VIEW, name, True);
+  int id = 0;
+  Window win = None;
+  VALUE parsed = Qnil, view = Qnil;
+  char *name = NULL, buf[50] = { 0 };
+
+  subSubtlextConnect(); ///< Implicit open connection
+
+  /* Check object type */
+  if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
+      value, buf, sizeof(buf), NULL)))
+    {
+      if(CHAR2SYM("all") == parsed)
+        return subViewAll(Qnil);
+      else if(CHAR2SYM("current") == parsed)
+        return subViewCurrent(Qnil);
+    }
+
+  /* Find view */
+  if(-1 != (id = ViewFind(buf, &name, &win)))
+    {
+      if(!NIL_P((view = subViewInstantiate(name))))
+        {
+          rb_iv_set(view, "@id",  INT2FIX(id));
+          rb_iv_set(view, "@win", LONG2NUM(win));
+        }
+
+      free(name);
+    }
+
+  return view;
 } /* }}} */
 
 /* subViewCurrent {{{ */
@@ -231,14 +312,14 @@ subViewUpdate(VALUE self)
       Window win = None;
 
       /* Create view if needed */
-      if(-1 == (id = subSharedViewFind(RSTRING_PTR(name), NULL, &win)))
+      if(-1 == (id = ViewFind(RSTRING_PTR(name), NULL, &win)))
         {
           SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
           snprintf(data.b, sizeof(data.b), "%s", RSTRING_PTR(name));
-          subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_NEW", data, True);
+          subSharedMessage(display, DefaultRootWindow(display), "SUBTLE_VIEW_NEW", data, True);
 
-          id = subSharedViewFind(RSTRING_PTR(name), NULL, NULL);
+          id = ViewFind(RSTRING_PTR(name), NULL, NULL);
         }
 
       /* Guess view id */
@@ -289,7 +370,7 @@ subViewClients(VALUE self)
   klass   = rb_const_get(mod, rb_intern("Client"));
   meth    = rb_intern("new");
   array   = rb_ary_new2(size);
-  clients = subSharedClientList(&size);
+  clients = subSubtlextList("_NET_CLIENT_LIST", &size);
   tags1   = (unsigned long *)subSharedPropertyGet(display, NUM2LONG(win), XA_CARDINAL,
     XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
 
@@ -350,7 +431,7 @@ subViewJump(VALUE self)
 
   data.l[0] = FIX2INT(id);
 
-  subSharedMessage(DefaultRootWindow(display), "_NET_CURRENT_DESKTOP", data, True);
+  subSharedMessage(display, DefaultRootWindow(display), "_NET_CURRENT_DESKTOP", data, True);
 
   return Qnil;
 } /* }}} */
@@ -447,7 +528,22 @@ subViewToString(VALUE self)
 VALUE
 subViewKill(VALUE self)
 {
-  return subSubtlextKill(self, SUB_TYPE_VIEW);
+  VALUE id = rb_iv_get(self, "@id");
+
+  subSubtlextConnect(); ///< Implicit open connection
+
+  if(RTEST(id))
+    {
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+      data.l[0] = FIX2INT(id);
+
+      subSharedMessage(display, DefaultRootWindow(display),
+        "SUBTLE_VIEW_KILL", data, True);
+    }
+  else rb_raise(rb_eStandardError, "Failed killing view");
+
+  return Qnil;
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

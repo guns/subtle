@@ -243,7 +243,7 @@ subScreenClientList(VALUE self)
 
   id      = FIX2INT(rb_iv_get(self, "@id"));
   array   = rb_ary_new();
-  clients = subSharedClientList(&size);
+  clients = subSubtlextList("_NET_ACTIVE_WINDOW", &size);
 
   if(clients)
     {
