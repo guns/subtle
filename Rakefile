@@ -59,16 +59,11 @@ PG_SUBTLEXT = "subtlext"
 
 SRC_SHARED   = FileList["src/shared/*.c"]
 SRC_SUBTLE   = (SRC_SHARED | FileList["src/subtle/*.c"])
-SRC_SUBTLER  = (SRC_SHARED | FileList["src/subtler/*.c"])
 SRC_SUBTLEXT = (SRC_SHARED | FileList["src/subtlext/*.c"])
 
 # Collect object files
 OBJ_SUBTLE = SRC_SUBTLE.collect do |f|
   File.join(@options["builddir"], "subtle", File.basename(f).ext("o"))
-end
-
-OBJ_SUBTLER = SRC_SUBTLER.collect do |f|
-  File.join(@options["builddir"], "subtler", File.basename(f).ext("o"))
 end
 
 OBJ_SUBTLEXT = SRC_SUBTLEXT.collect do |f|
@@ -85,7 +80,7 @@ OPTIONAL = [ "sys/inotify.h", "execinfo.h" ]
 
 # Miscellaneous {{{
 Logging.logfile("config.log") #< mkmf log
-CLEAN.include(PG_SUBTLE, PG_SUBTLER, "#{PG_SUBTLEXT}.so", OBJ_SUBTLE, OBJ_SUBTLER, OBJ_SUBTLEXT)
+CLEAN.include(PG_SUBTLE, "#{PG_SUBTLEXT}.so", OBJ_SUBTLE, OBJ_SUBTLEXT)
 CLOBBER.include(@options["builddir"], "config.h", "config.log", "config.yml")
 # }}}
 
@@ -344,15 +339,12 @@ end # }}}
 
 # Task: build {{{
 desc("Build all")
-task(:build => [:config, PG_SUBTLE, PG_SUBTLER, PG_SUBTLEXT])
+task(:build => [:config, PG_SUBTLE, PG_SUBTLEXT])
 # }}}
 
 # Task: subtle/subtler/subtlext {{{
 desc("Build subtle")
 task(PG_SUBTLE => [:config])
-
-desc("Build subtler")
-task(PG_SUBTLER => [:config])
 
 desc("Build subtlext")
 task(PG_SUBTLEXT => [:config])
@@ -376,9 +368,6 @@ task(:install => [:config, :build]) do
   message("INSTALL %s\n" % [PG_SUBTLE])
   FileUtils.install(PG_SUBTLE, @options["bindir"], :mode => 0755, :verbose => false)
 
-  message("INSTALL %s\n" % [PG_SUBTLER])
-  FileUtils.install(PG_SUBTLER, @options["bindir"], :mode => 0755, :verbose => false)
-
   message("INSTALL %s\n" % [@defines["PKG_CONFIG"]])
   FileUtils.install("dist/" + @defines["PKG_CONFIG"], @options["configdir"], :mode => 0644, :verbose => false)
 
@@ -387,6 +376,12 @@ task(:install => [:config, :build]) do
 
   # Get interpreter name and path
   interpreter = File.join(Config.expand(CONFIG["bindir"]), CONFIG["ruby_install_name"])
+
+  message("INSTALL %s\n" % [PG_SUBTLER])
+  FileUtils.install(File.join("dist", PG_SUBTLER), @options["bindir"], :mode => 0755, :verbose => false)
+
+  `#{sed} -i -e 's#/usr/bin/ruby.*##{interpreter}#' \
+    #{File.join(@options["bindir"], File.join("dist", PG_SUBTLER))}`
 
   # Install scripts
   FileList["dist/scripts/*.*"].collect do |f|
@@ -456,14 +451,6 @@ SRC_SUBTLE.each do |src|
   end
 end
 
-SRC_SUBTLER.each do |src|
-  out = File.join(@options["builddir"], PG_SUBTLER, File.basename(src).ext("o"))
-
-  file(out => src) do
-    compile(src, out, "-D#{PG_SUBTLER.upcase}")
-  end
-end
-
 SRC_SUBTLEXT.each do |src|
   out = File.join(@options["builddir"], PG_SUBTLEXT, File.basename(src).ext("o"))
 
@@ -477,13 +464,6 @@ end
 file(PG_SUBTLE => OBJ_SUBTLE) do
   silent_sh("gcc -o #{PG_SUBTLE} #{OBJ_SUBTLE} #{@options["ldflags"]}",
     "LD #{PG_SUBTLE}") do |ok, status|
-      ok or fail("Linker failed with status #{status.exitstatus}")
-  end
-end
-
-file(PG_SUBTLER => OBJ_SUBTLER) do
-  silent_sh("gcc -o #{PG_SUBTLER} #{OBJ_SUBTLER} #{@options["ldflags"]}",
-    "LD #{PG_SUBTLER}") do |ok, status|
       ok or fail("Linker failed with status #{status.exitstatus}")
   end
 end
