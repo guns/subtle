@@ -58,6 +58,7 @@ subScreenInit(void)
       if((info = XineramaQueryScreens(subtle->dpy, &n)))
         {
 #ifdef HAVE_X11_EXTENSIONS_XRANDR_H
+          /* Check if xrandr knows more screens */
           if(res && res->ncrtc >= n)
             {
               XRRCrtcInfo *crtc = NULL;

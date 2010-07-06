@@ -1335,13 +1335,14 @@ RubyKernelTag(int argc,
       /* Skip on checking only */
       if(!(subtle->flags & SUB_SUBTLE_CHECK))
         {
+          int duplicate = False;
           SubTag *t = NULL;
           char *re = NULL;
 
           if(!NIL_P(regex)) re = RSTRING_PTR(regex);
 
           /* Finally create new tag */
-          if((t = subTagNew(RSTRING_PTR(name), re)))
+          if((t = subTagNew(RSTRING_PTR(name), re, &duplicate)))
             {
               t->flags   |= flags;
               t->gravity  = gravity;
@@ -1353,13 +1354,9 @@ RubyKernelTag(int argc,
                 t->screen = screen;
               else t->flags &= ~SUB_TAG_SCREEN;
 
-              /* Default tag */
-              if(0 == strncmp("default", t->name, 7))
-                {
-                  subTagKill(TAG(subtle->tags->data[0]));
-                  subtle->tags->data[0] = (void *)t;
-                }
-              else subArrayPush(subtle->tags, (void *)t);
+              /* Check if Duplicate */
+              if(False == duplicate)
+                subArrayPush(subtle->tags, (void *)t);
             }
         }
     }
@@ -2163,7 +2160,8 @@ subRubyLoadConfig(void)
     }
 
   /* Create default tag */
-  if(!(subtle->flags & SUB_SUBTLE_CHECK) && (t = subTagNew("default", NULL)))
+  if(!(subtle->flags & SUB_SUBTLE_CHECK) &&
+      (t = subTagNew("default", NULL, NULL)))
     subArrayPush(subtle->tags, (void *)t);
 
   /* Loading config */

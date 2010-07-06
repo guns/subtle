@@ -723,7 +723,7 @@ void subSubtleFinish(void);                                       ///< Finish su
 /* }}} */
 
 /* tag.c {{{ */
-SubTag *subTagNew(char *name, char *regex);                       ///< Create tag
+SubTag *subTagNew(char *name, char *regex, int *duplicate);       ///< Create tag
 void subTagPublish(void);                                         ///< Publish tags
 void subTagKill(SubTag *t);                                       ///< Delete tag
 /* }}} */

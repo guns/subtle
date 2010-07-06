@@ -21,13 +21,12 @@ TagFind(char *name)
 
   assert(name);
 
-  /* @todo Linear search.. */
+  /* Linear search */
   for(i = 0; i < subtle->tags->ndata; i++)
     {
       t = TAG(subtle->tags->data[i]);
 
-      if(!strncmp(t->name, name, strlen(t->name)))
-        return t;
+      if(0 == strcmp(t->name, name)) return t;
     }
 
   return NULL;
@@ -35,28 +34,39 @@ TagFind(char *name)
 
  /** subTagNew {{{
   * @brief Create new tag
-  * @param[in]  name     Name of the tag
-  * @param[in]  regex    Regex
+  * @param[in]   name       Name of the tag
+  * @param[in]   regex      Regex
+  * @param[out]  duplicate  Added twice
   * @return Returns a #SubTag or \p NULL
   **/
 
 SubTag *
 subTagNew(char *name,
-  char *regex)
+  char *regex,
+  int *duplicate)
 {
   SubTag *t = NULL;
 
   assert(name);
 
   /* Check if tag already exists */
-  if(strncmp("default", name, 7) && (t = TagFind(name))) return NULL;
+  if((t = TagFind(name)))
+    {
+      if(t->preg)   subSharedRegexKill(t->preg);
+      if(duplicate) *duplicate = True;
+    }
+  else
+    {
+      /* Create new tag */
+      t = TAG(subSharedMemoryAlloc(1, sizeof(SubTag)));
+      t->name  = strdup(name);
+      if(duplicate) *duplicate = False;
+    }
 
-  /* Create new tag */
-  t = TAG(subSharedMemoryAlloc(1, sizeof(SubTag)));
-  t->name  = strdup(name);
   t->flags = SUB_TYPE_TAG;
 
-  if(regex && strncmp("", regex, 1)) t->preg = subSharedRegexNew(regex);
+  if(regex && 0 != strncmp("", regex, 1))
+    t->preg = subSharedRegexNew(regex);
 
   subSharedLogDebug("new=tag, name=%s, regex=%s\n", name, regex);
 
