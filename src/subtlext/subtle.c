@@ -19,7 +19,7 @@ SubtleSend(char *message)
 
   subSubtlextConnect(); ///< Implicit open connection
 
-  subSharedMessage(DefaultRootWindow(display), message, data, True);
+  subSharedMessage(display, DefaultRootWindow(display), message, data, True);
 
   return Qnil;
 } /* }}} */
@@ -58,9 +58,31 @@ subSubtleDisplayReader(VALUE self)
 VALUE
 subSubtleRunningAsk(VALUE self)
 {
+  char *prop = NULL;
+  Window *check = NULL;
+  VALUE running = Qfalse;
+
   subSubtlextConnect(); ///< Implicit open connection
 
-  return subSharedSubtleRunning() ? Qtrue : Qfalse;
+  /* Get supporting window */
+  if(display && (check = subSubtlextWMCheck()))
+    {
+      subSharedLogDebug("Support: win=%#lx\n", *check);
+
+      /* Get property */
+      if((prop = subSharedPropertyGet(display, *check, XInternAtom(display, "UTF8_STRING", False),
+        XInternAtom(display, "_NET_WM_NAME", False), NULL)))
+        {
+          if(!strncmp(prop, PKG_NAME, strlen(prop))) running = Qtrue;
+          subSharedLogDebug("Running: wmname=%s\n", prop);
+
+          free(prop);
+        }
+
+      free(check);
+    }
+
+  return running;
 } /* }}} */
 
 /* subSubtleSpawn {{{ */
@@ -88,247 +110,6 @@ subSubtleSpawn(VALUE self,
   return ret;
 } /* }}} */
 
-/* subSubtleFocus {{{ */
-/*
- * call-seq: focus(name) -> Subtlext::Client or nil
- *
- * Find Client by given name and set focus
- *
- *  subtle.focus("subtle")
- *  => #<Subtlext::Client:xxx>
- *
- *  subtle.focus("subtle")
- *  => nil
- */
-
-VALUE
-subSubtleFocus(VALUE self,
-  VALUE name)
-{
-  int id = -1;
-  Window win = 0;
-  VALUE client = Qnil;
-
-  subSubtlextConnect(); ///< Implicit open connection
-
-  if(RTEST(name) && -1 != ((id = subSharedClientFind(RSTRING_PTR(name),
-      NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))))
-    {
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-      data.l[0] = win;
-      subSharedMessage(DefaultRootWindow(display), "_NET_ACTIVE_WINDOW", data, True);
-
-      client = subClientInstantiate(win);
-    }
-  else rb_raise(rb_eStandardError, "Failed setting focus");
-
-  return client;
-} /* }}} */
-
-/* subSubtleClientDel {{{ */
-/*
- * call-seq: del_client(name) -> nil
- *
- * Delete Client by given name or Client object
- *
- *  subtle.del_client("subtle")
- *  => nil
- *
- *  subtle.del_client(subtle.find_client("subtle"))
- *  => nil
- */
-
-VALUE
-subSubtleClientDel(VALUE self,
-  VALUE name)
-{
-  int id = -1;
-  Window win = 0;
-
-  subSubtlextConnect(); ///< Implicit open connection
-
-  if(RTEST(name) && -1 != ((id = subSharedClientFind(RSTRING_PTR(name),
-      NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))))
-    {
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-      /* Send data */
-      data.l[0] = CurrentTime;
-      data.l[1] = 2; ///< Claim to be a pager
-
-      subSharedMessage(win, "_NET_CLOSE_WINDOW", data, True);
-    }
-  else rb_raise(rb_eStandardError, "Failed finding client");
-
-  return Qnil;
-} /* }}} */
-
-/* subSubtleGravityDel {{{ */
-/*
- * call-seq: del_gravity(name) -> nil
- *
- * Delete Gravity by given name or Gravity object
- *
- *  subtle.del_gravity("subtle")
- *  => nil
- *
- *  subtle.del_gravity(subtle.find_gravity("subtle"))
- *  => nil
- */
-
-VALUE
-subSubtleGravityDel(VALUE self,
-  VALUE value)
-{
-  return subSubtlextKill(value, SUB_TYPE_GRAVITY);
-} /* }}} */
-
-/* subSubtleTagAdd {{{ */
-/*
- * call-seq: add_tag(name) -> Subtlext::Tag
- *
- * Add Tag with given name or Tag object
- *
- *  subtle.add_tag("subtle")
- *  => #<Subtlext::Tag:xxx>
- *
- *  subtle.add_tag(Tag.new("subtle"))
- *  => #<Subtlext::Tag:xxx>
- */
-
-VALUE
-subSubtleTagAdd(VALUE self,
-  VALUE value)
-{
-  VALUE tag = Qnil;
-
-  subSubtlextConnect(); ///< Implicit open connection
-
-  if(NIL_P((tag = subSubtlextFind(SUB_TYPE_TAG, value, False))))
-    {
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-      snprintf(data.b, sizeof(data.b), "%s", RSTRING_PTR(value));
-      subSharedMessage(DefaultRootWindow(display), "SUBTLE_TAG_NEW", data, True);
-
-      tag = subTagInstantiate(RSTRING_PTR(value));
-    }
-
-  return tag;
-} /* }}} */
-
-/* subSubtleTagDel {{{ */
-/*
- * call-seq: del_tag(name) -> nil
- *
- * Delete Tag by given name or Tag object
- *
- *  subtle.del_tag("subtle")
- *  => nil
- *
- *  subtle.del_tag(subtle.find_tag("subtle"))
- *  => nil
- */
-
-VALUE
-subSubtleTagDel(VALUE self,
-  VALUE value)
-{
-  return subSubtlextKill(value, SUB_TYPE_TAG);
-} /* }}} */
-
-/* subSubtleTrayDel {{{ */
-/*
- * call-seq: del_tray(name) -> nil
- *
- * Delete Tray by given name or Tray object
- *
- *  subtle.del_sublet("subtle")
- *  => nil
- */
-
-VALUE
-subSubtleTrayDel(VALUE self,
-  VALUE value)
-{
-  return subSubtlextKill(value, SUB_TYPE_TRAY);
-} /* }}} */
-
-/* subSubtleSubletDel {{{ */
-/*
- * call-seq: del_sublet(name) -> nil
- *
- * Delete Sublet by given name or Sublet object
- *
- *  subtle.del_sublet("subtle")
- *  => nil
- *
- *  subtle.del_sublet(subtle.find_sublet("subtle"))
- *  => nil
- */
-
-VALUE
-subSubtleSubletDel(VALUE self,
-  VALUE value)
-{
-  return subSubtlextKill(value, SUB_TYPE_SUBLET);
-} /* }}} */
-
-/* subSubtleViewAdd {{{ */
-/*
- * call-seq: add_view(name) -> Subtlext::View
- *
- * Add View with given name or View object
- *
- *  subtle.add_view("subtle")
- *  => #<Subtlext::View:xxx>
- *
- *  subtle.add_view(View.new("subtle"))
- *  => #<Subtlext::View:xxx>
- */
-
-VALUE
-subSubtleViewAdd(VALUE self,
-  VALUE value)
-{
-  VALUE view = Qnil;
-
-  subSubtlextConnect(); ///< Implicit open connection
-
-  if(NIL_P((view = subSubtlextFind(SUB_TYPE_VIEW, value, False))))
-    {
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-      snprintf(data.b, sizeof(data.b), "%s", RSTRING_PTR(value));
-      subSharedMessage(DefaultRootWindow(display), "SUBTLE_VIEW_NEW", data, False);
-
-      view = subViewInstantiate(RSTRING_PTR(value));
-    }
-
-  return view;
-} /* }}} */
-
-/* subSubtleViewDel {{{ */
-/*
- * call-seq: del_view(name) -> nil
- *
- * Delete View by given name or View object
- *
- *  subtle.del_view("subtle")
- *  => nil
- *
- *  subtle.del_view(subtle.find_view("subtle"))
- *  => nil
- */
-
-VALUE
-subSubtleViewDel(VALUE self,
-  VALUE value)
-{
-  return subSubtlextKill(value, SUB_TYPE_VIEW);
-} /* }}} */
-
 /* subSubtleSelect {{{ */
 /*
  * call-seq: select_window -> String
@@ -343,19 +124,75 @@ VALUE
 subSubtleSelect(VALUE self)
 {
   VALUE ret = Qnil;
+  int i, format = 0, buttons = 0;
+  unsigned int n;
+  unsigned long nitems = 0, bytes = 0;
+  unsigned char *data = NULL;
+  XEvent event;
   Window win = None;
+  Atom type = None, rtype = None;
+  Window dummy = None, root = None, *wins = NULL;
+  Cursor cursor = None;
 
   subSubtlextConnect(); ///< Implicit open connection
 
-  /* Select window */
-  if(None != (win = subSharedWindowSelect()))
+  root   = DefaultRootWindow(display);
+  cursor = XCreateFontCursor(display, XC_cross);
+  type   = XInternAtom(display, "WM_STATE", True);
+
+  /* Grab pointer */
+  if(XGrabPointer(display, root, False, ButtonPressMask|ButtonReleaseMask,
+      GrabModeSync, GrabModeAsync, root, cursor, CurrentTime))
     {
-      char buf[20] = { 0 };
+      XFreeCursor(display, cursor);
 
-      snprintf(buf, sizeof(buf), "%#lx", win);
-
-      ret = rb_str_new2(buf);
+      return Qnil;
     }
+
+  /* Select a window */
+  while(None == win || 0 != buttons)
+    {
+      XAllowEvents(display, SyncPointer, CurrentTime);
+      XWindowEvent(display, root, ButtonPressMask|ButtonReleaseMask, &event);
+
+      switch(event.type)
+        {
+          case ButtonPress:
+            if(None == win)
+              win = event.xbutton.subwindow ? event.xbutton.subwindow : root; ///< Sanitize
+            buttons++;
+            break;
+          case ButtonRelease: if(0 < buttons) buttons--; break;
+        }
+      }
+
+  /* Find children with WM_STATE atom */
+  XQueryTree(display, win, &dummy, &dummy, &wins, &n);
+
+  for(i = 0; i < n; i++)
+    if(Success == XGetWindowProperty(display, wins[i], type, 0, 0, False,
+        AnyPropertyType, &rtype, &format, &nitems, &bytes, &data))
+      {
+        if(data)
+          {
+            XFree(data);
+            data = NULL;
+          }
+
+        if(type == rtype)
+          {
+            char buf[20] = { 0 };
+
+            snprintf(buf, sizeof(buf), "%#lx", wins[i]);
+
+            ret = rb_str_new2(buf);
+            break;
+          }
+      }
+
+  XFree(wins);
+  XFreeCursor(display, cursor);
+  XUngrabPointer(display, CurrentTime);
 
   return ret;
 } /* }}} */
