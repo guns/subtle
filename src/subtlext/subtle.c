@@ -123,7 +123,6 @@ subSubtleSpawn(VALUE self,
 VALUE
 subSubtleSelect(VALUE self)
 {
-  VALUE ret = Qnil;
   int i, format = 0, buttons = 0;
   unsigned int n;
   unsigned long nitems = 0, bytes = 0;
@@ -162,7 +161,9 @@ subSubtleSelect(VALUE self)
               win = event.xbutton.subwindow ? event.xbutton.subwindow : root; ///< Sanitize
             buttons++;
             break;
-          case ButtonRelease: if(0 < buttons) buttons--; break;
+          case ButtonRelease:
+            if(0 < buttons) buttons--;
+            break;
         }
       }
 
@@ -181,11 +182,8 @@ subSubtleSelect(VALUE self)
 
         if(type == rtype)
           {
-            char buf[20] = { 0 };
+            win = wins[i];
 
-            snprintf(buf, sizeof(buf), "%#lx", wins[i]);
-
-            ret = rb_str_new2(buf);
             break;
           }
       }
@@ -194,7 +192,7 @@ subSubtleSelect(VALUE self)
   XFreeCursor(display, cursor);
   XUngrabPointer(display, CurrentTime);
 
-  return ret;
+  return None != win ? LONG2NUM(win) : Qnil;
 } /* }}} */
 
 /* subSubtleReloadConfig {{{ */
