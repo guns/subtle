@@ -54,7 +54,7 @@ require "rake/rdoctask"
 
 # Lists {{{
 PG_SUBTLE   = "subtle"
-PG_SUBTLER  = "subtler"
+PG_SUBTLER  = "subtler.rb"
 PG_SUBTLEXT = "subtlext"
 
 SRC_SHARED   = FileList["src/shared/*.c"]
@@ -129,7 +129,7 @@ end # }}}
 # Func: compile {{{
 def compile(src, out = nil, options = "")
   out = File.join(@options["builddir"], File.basename(src).ext("o")) unless(!out.nil?)
-  opt = ["shared.c", "shared.wm.c", "subtlext.c"].include?(File.basename(src)) ? " -fPIC " : ""
+  opt = ["shared.c", "subtlext.c"].include?(File.basename(src)) ? " -fPIC " : ""
   opt << options
 
   silent_sh("gcc -o #{out} -c #{@options["cflags"]} #{opt} #{@options["cpppath"]} #{src}",
@@ -342,7 +342,7 @@ desc("Build all")
 task(:build => [:config, PG_SUBTLE, PG_SUBTLEXT])
 # }}}
 
-# Task: subtle/subtler/subtlext {{{
+# Task: subtle/subtlext {{{
 desc("Build subtle")
 task(PG_SUBTLE => [:config])
 
@@ -364,40 +364,62 @@ task(:install => [:config, :build]) do
     ]
   )
 
-  # Install files
+  # Install subtle
   message("INSTALL %s\n" % [PG_SUBTLE])
-  FileUtils.install(PG_SUBTLE, @options["bindir"], :mode => 0755, :verbose => false)
+  FileUtils.install(
+    PG_SUBTLE, @options["bindir"],
+    :mode => 0755, :verbose => false
+  )
 
+  # Install subtlext
+  message("INSTALL %s\n" % [PG_SUBTLEXT])
+  FileUtils.install(
+    PG_SUBTLEXT + ".so", @options["extdir"], :mode => 0644, :verbose => false
+  )
+
+  # Install config
   message("INSTALL %s\n" % [@defines["PKG_CONFIG"]])
-  FileUtils.install("dist/" + @defines["PKG_CONFIG"], @options["configdir"], :mode => 0644, :verbose => false)
+  FileUtils.install(
+    File.join("contrib", @defines["PKG_CONFIG"]), @options["configdir"],
+    :mode => 0644, :verbose => false
+  )
 
-  # Get path of sed
-  sed = find_executable0("sed")
+  # Get path of sed and ruby interpreter
+  sed         = find_executable0("sed")
+  interpreter = File.join(Config.expand(CONFIG["bindir"]), 
+    CONFIG["ruby_install_name"]
+  )
 
-  # Get interpreter name and path
-  interpreter = File.join(Config.expand(CONFIG["bindir"]), CONFIG["ruby_install_name"])
-
+  # Install subtler
   message("INSTALL %s\n" % [PG_SUBTLER])
-  FileUtils.install(File.join("dist", PG_SUBTLER), @options["bindir"], :mode => 0755, :verbose => false)
+  FileUtils.install(
+    File.join("contrib", "bin", "subtler"), @options["bindir"],
+    :mode => 0755, :verbose => false
+  )
+  FileUtils.install(
+    File.join("contrib", "subtler", PG_SUBTLER), @options["extdir"],
+    :mode => 0644, :verbose => false
+  )
 
+  # Update interpreter name
   `#{sed} -i -e 's#/usr/bin/ruby.*##{interpreter}#' \
-    #{File.join(@options["bindir"], File.join("dist", PG_SUBTLER))}`
+    #{File.join(@options["bindir"], "subtler")}`
 
   # Install scripts
-  FileList["dist/scripts/*.*"].collect do |f|
+  FileList["contrib/scripts/*.*"].collect do |f|
     message("INSTALL %s\n" % [File.basename(f)])
-    FileUtils.install(f, @options["scriptdir"], :mode => 0644, :verbose => false)
+    FileUtils.install(f, @options["scriptdir"], 
+      :mode => 0644, :verbose => false)
 
+    # Update interpreter name
     `#{sed} -i -e 's#/usr/bin/ruby.*##{interpreter}#' \
       #{File.join(@options["scriptdir"], File.basename(f))}`
   end
 
-  # Install extension
-  message("INSTALL %s\n" % [PG_SUBTLEXT])
-  FileUtils.install(PG_SUBTLEXT + ".so", @options["extdir"], :mode => 0644, :verbose => false)
+
 
   # Install manpages
-  FileList["dist/man/*.*"].collect do |f|
+  FileList["contrib/man/*.*"].collect do |f|
     message("INSTALL %s\n" % [File.basename(f)])
     FileUtils.install(f, @options["mandir"], :mode => 0644, :verbose => false)
   end
@@ -434,7 +456,11 @@ end # }}}
 
 # Task: rdoc {{{
 Rake::RDocTask.new(:rdoc) do |rdoc|
-  rdoc.rdoc_files.include("dist/subtle.rb", "src/subtle/ruby.c", "src/subtlext/subtlext.c")
+  rdoc.rdoc_files.include(
+    "contrib/subtle.rb",
+    "src/subtle/ruby.c",
+    "src/subtlext/subtlext.c"
+  )
   rdoc.options << "-o doc"
   rdoc.title    = "Subtle RDoc Documentation"
 end # }}}
