@@ -467,6 +467,9 @@ subSubtlextParse(VALUE value,
 {
   VALUE ret = Qtrue;
 
+  /* Set defaults */
+  if(flags) *flags = (SUB_MATCH_INSTANCE|SUB_MATCH_CLASS);
+
   /* Check for hash */
   if(T_HASH == rb_type(value) && flags) /* {{{ */
     {
@@ -613,7 +616,7 @@ subSubtlextFindWindow(char *prop,
       if(isdigit(match[0])) digit = strtol(match, NULL, 0);
 
       /* Select window */
-      if(!strncmp(match, "#", 1) && win)
+      if(0 == strcmp(match, "#") && win)
         selwin = subSubtleSelect(Qnil);
 
       /* Find id of gravity */
