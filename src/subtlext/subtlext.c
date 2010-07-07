@@ -79,7 +79,7 @@ SubtlextTag(VALUE self,
   /* Check instance type */
   if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("Tag"))))
     tag = value;
-  else subTagFind(Qnil, value);
+  else tag = subTagFind(Qnil, value);
 
   /* Find tag */
   if(RTEST(tag))
