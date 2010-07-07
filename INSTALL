@@ -28,7 +28,7 @@ use it. A local config is preferred over a system wide. (see: $XDG_CONFIG_HOME) 
 have a look for sublets[8] in the XDG paths too and load them accordingly. (see $XDG_DATA_HOME)
 
  * To create a user config just create '$XDG_CONFIG_HOME/subtle' and copy the latest config from
-   the 'dist' folder into it.
+   the 'contrib' folder into it.
  * To enable sublets[8] create '$XDG_DATA_HOME/subtle/sublets' and create symlinks to the sublets[8].
    (Load order is alphabetically)
 
