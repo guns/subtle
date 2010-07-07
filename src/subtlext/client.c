@@ -208,6 +208,8 @@ subClientFind(VALUE self,
     {
       if(CHAR2SYM("all") == parsed)
         return subClientAll(Qnil);
+      else if(CHAR2SYM("current") == parsed)
+        return subClientCurrent(Qnil);
     }
 
   /* Find client */
