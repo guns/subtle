@@ -67,8 +67,8 @@ subScreenInit(void)
                 {
                   if((crtc = XRRGetCrtcInfo(subtle->dpy, res, res->crtcs[i])))
                     {
-                      /* Create new screen */
-                      if((s = subScreenNew(crtc->x, crtc->y,
+                      /* Create new screen if crtc is enabled */
+                      if(None != crtc->mode && (s = subScreenNew(crtc->x, crtc->y,
                           crtc->width, crtc->height)))
                         subArrayPush(subtle->screens, (void *)s);
 
