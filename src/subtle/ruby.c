@@ -72,14 +72,6 @@ RubyBacktrace(void)
   return Qnil;
 } /* }}} */
 
-/* RubySignal {{{ */
-static void
-RubySignal(int signum)
-{
-  if(SIGALRM == signum) ///< Catch SIGALRM
-    rb_raise(rb_eInterrupt, "Execution time (%ds) expired", EXECTIME);
-} /* }}} */
-
 /* RubyFilter {{{ */
 static inline int
 RubyFilter(const struct dirent *entry)
@@ -776,11 +768,6 @@ RubyKernelSet(VALUE self,
               {
                 if(!(subtle->flags & SUB_SUBTLE_CHECK))
                   subtle->snap = FIX2INT(value);
-              }
-            else if(CHAR2SYM("limit") == option)
-              {
-                if(!(subtle->flags & SUB_SUBTLE_CHECK))
-                  subtle->limit = FIX2INT(value);
               }
             else if(CHAR2SYM("outline") == option)
               {
@@ -2562,13 +2549,6 @@ subRubyCall(int type,
   rargs[2] = (VALUE)data1;
   rargs[3] = (VALUE)data2;
 
-  /* Limit execution time */
-  if(0 < subtle->limit)
-    {
-      signal(SIGALRM, RubySignal);
-      alarm(EXECTIME);
-    }
-
   /* Carefully call */
   result = rb_protect(RubyWrapCall, (VALUE)&rargs, &state);
   if(state)
@@ -2579,8 +2559,6 @@ subRubyCall(int type,
 
       result = Qnil;
     }
-
-  if(0 < subtle->limit) alarm(0); ///< Reset alarm
 
 #ifdef DEBUG
   subSharedLogDebug("GC RUN\n");

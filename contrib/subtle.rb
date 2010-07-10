@@ -26,9 +26,6 @@ set :step, 5
 # Window screen border snapping
 set :snap, 10
 
-# Limit execution time of sublets (0 = no limit)
-set :limit, 1
-
 # Default starting gravity for windows (0 = gravity of last client)
 set :gravity, :center
 
