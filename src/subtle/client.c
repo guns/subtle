@@ -652,7 +652,9 @@ subClientTag(SubClient *c,
               if(v->tags & (1L << (tag + 1)) || t->flags & SUB_MODE_STICK)
                 {
                   if(t->flags & SUB_TAG_GRAVITY) c->gravities[i] = t->gravity;
-                  if(t->flags & SUB_TAG_SCREEN)  c->screens[i] = t->screen;
+                  if(t->flags & SUB_TAG_SCREEN &&
+                      t->screen <= subtle->screens->ndata - 1)
+                    c->screens[i] = t->screen;
                 }
             }
         }
@@ -746,8 +748,10 @@ subClientSetGravity(SubClient *c,
             {
               SubScreen *s1 = NULL, *s2 = NULL;
 
-              s1 = SCREEN(subtle->screens->data[-1 != c->screen ? c->screen : 0]);
-              s2 = SCREEN(subtle->screens->data[screen]);
+              /* Get screens */
+              s1 = SCREEN(subArrayGet(subtle->screens,
+                -1 != c->screen ? c->screen : 0));
+              s2 = SCREEN(subArrayGet(subtle->screens, screen));
 
               /* Update screen offsets */
               c->geom.x = c->geom.x - s1->geom.x + s2->geom.x;

@@ -1345,9 +1345,8 @@ RubyKernelTag(int argc,
               t->gravity  = gravity;
               t->geometry = geometry;
 
-              /* Check screen */
-              if(t->flags & SUB_TAG_SCREEN &&
-                  0 <= screen && screen <= subtle->screens->ndata - 1)
+              /* Check screen - non existing screens are allowed */
+              if(t->flags & SUB_TAG_SCREEN && 0 <= screen)
                 t->screen = screen;
               else t->flags &= ~SUB_TAG_SCREEN;
 
