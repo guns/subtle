@@ -33,6 +33,12 @@ end # }}}
 
   def print_options
     OPTIONS.each do |k, v|
+      # Remove some symbols
+      k = case k
+        when :limit then next
+        else k
+      end
+
       @file.puts "set %-12s %s\n" % [ k.inspect + ",", v.inspect ]
     end
   end # }}}
