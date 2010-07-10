@@ -14,6 +14,7 @@ HOOKS        ||= {}
 @config       = ""
 @config_orig  = ""
 @positions    = []
+@file         = nil
 
  ## on {{{
  # Collect hook DSL blocks
@@ -32,7 +33,7 @@ end # }}}
 
   def print_options
     OPTIONS.each do |k, v|
-      puts "set %-12s %s\n" % [ k.inspect + ",", v.inspect ]
+      @file.puts "set %-12s %s\n" % [ k.inspect + ",", v.inspect ]
     end
   end # }}}
 
@@ -48,7 +49,7 @@ end # }}}
         else k
       end
 
-      puts "set %-12s %s\n" % [ k.inspect + ",", v.inspect ]
+      @file.puts "set %-12s %s\n" % [ k.inspect + ",", v.inspect ]
     end
   end # }}}
 
@@ -58,7 +59,7 @@ end # }}}
 
   def print_colors
     COLORS.each do |k, v|
-      puts "color %-15s %s\n" % [ k.inspect + ",", v.inspect ]
+      @file.puts "color %-15s %s\n" % [ k.inspect + ",", v.inspect ]
     end
   end # }}}
 
@@ -68,7 +69,7 @@ end # }}}
 
   def print_gravities
     GRAVITIES.each do |k, v|
-      puts "gravity %-15s %s\n" % [ k.inspect + ",", v.inspect ]
+      @file.puts "gravity %-15s %s\n" % [ k.inspect + ",", v.inspect ]
     end
   end # }}}
 
@@ -79,15 +80,15 @@ end # }}}
   def print_grabs
     GRABS.each do |k, v|
       if(v.is_a?(Symbol) or v.is_a?(Array) or v.is_a?(String))
-        puts 'grab %s %s' % [ k.inspect + ",", v.inspect ]
+        @file.puts 'grab %s %s' % [ k.inspect + ",", v.inspect ]
       elsif(v.is_a?(Proc))
         # Extract block from config
         block = extract(v.source_location[1])
 
-        puts "\ngrab \"%s\" do %s" % [ k, block[0] ]
-        puts "  # Extracted from line #%d" % [ v.source_location[1] ]
-        puts block[1]
-        puts "end\n\n"
+        @file.puts "\ngrab \"%s\" do %s" % [ k, block[0] ]
+        @file.puts "  # Extracted from line #%d" % [ v.source_location[1] ]
+        @file.puts block[1]
+        @file.puts "end\n\n"
       end
     end
   end # }}}
@@ -99,16 +100,16 @@ end # }}}
   def print_tags
     TAGS.each do |k, v|
       if(v.is_a?(String))
-        puts 'tag "%s", %s' % [ k, v.inspect ]
+        @file.puts 'tag "%s", %s' % [ k, v.inspect ]
       elsif(v.is_a?(Hash))
-        puts "tag \"%s\" do" % [ k ]
+        @file.puts "tag \"%s\" do" % [ k ]
 
         # Print hash values
         v.each do |vk, vv|
-          puts "  %-8s %s" % [ vk, vv.inspect ]
+          @file.puts "  %-8s %s" % [ vk, vv.inspect ]
         end
 
-        puts "end\n\n"
+        @file.puts "end\n\n"
       end
     end
   end # }}}
@@ -120,16 +121,16 @@ end # }}}
   def print_views
     VIEWS.each do |k, v|
       if(v.is_a?(String))
-        puts 'view %s, %s' % [ k.inspect, v.inspect ]
+        @file.puts 'view %s, %s' % [ k.inspect, v.inspect ]
       elsif(v.is_a?(Hash))
-        puts "view \"%s\" do" % [ k ]
+        @file.puts "view \"%s\" do" % [ k ]
 
         # Print hash values
         v.each do |vk, vv|
-          puts "  %-8s %s" % [ vk, vv.inspect ]
+          @file.puts "  %-8s %s" % [ vk, vv.inspect ]
         end
 
-        puts "end\n\n"
+        @file.puts "end\n\n"
       end
     end
   end # }}}
@@ -144,10 +145,10 @@ end # }}}
         # Extract block from config
         block = extract(v.source_location[1])
 
-        puts 'on %s do %s' % [ k.inspect, block[0] ]
-        puts "  # Extracted from line #%d" % [ v.source_location[1] ]
-        puts block[1]
-        puts "end\n\n"
+        @file.puts 'on %s do %s' % [ k.inspect, block[0] ]
+        @file.puts "  # Extracted from line #%d" % [ v.source_location[1] ]
+        @file.puts block[1]
+        @file.puts "end\n\n"
       end
     end
   end # }}}
@@ -206,14 +207,18 @@ end # }}}
     @config.each do |line|
       if(opensect.nil?)
         [ "OPTIONS", "PANEL", "COLORS", "GRAVITIES", "GRABS", "TAGS", "VIEWS", "HOOKS" ].each do |section|
-          if(line.match(/^#{section}/))
-            @positions << [ i, method(eval(":print_" + section.downcase)) ]
-            opensect   = section
-            break
+          case(line)
+            when /^#{section}\s*=\s*\{.*\}/
+              @positions << [ i, method(eval(":print_" + section.downcase)), i ]
+              break
+            when /^#{section}/
+              @positions << [ i, method(eval(":print_" + section.downcase)) ]
+              opensect   = section
+              break
           end
         end
       else
-        if(line.match(/}$/))
+        if(line.match(/^\}\s*$/))
           @positions.last << i
           opensect = nil
         end
@@ -272,10 +277,6 @@ begin
 
   puts ">>> Working on `%s`" % [ new_config ]
 
-  # Redirecting stdout
-  stdout  = $stdout
-  $stdout = File.new(new_config, "w")
-
   # Overwrite array entries
   @positions.each do |p|
     @config[p.first] = p[1]
@@ -285,18 +286,19 @@ begin
     end
   end
 
+  # Create dsl config
+  @file = File.new(new_config, "w")
+
   # Dump new config
   @config.each do |l|
     if(l.is_a?(String))
-      puts l
+      @file.puts l
     elsif(l.is_a?(Method))
       l.call
     end
   end
 
-  # Restoring stdout
-  $stdout.close
-  $stdout = stdout
+  @file.close
 
   # Renaming files
   puts ">>> Renaming `%s` -> `%s`" % [ old_config, bak_config ]
