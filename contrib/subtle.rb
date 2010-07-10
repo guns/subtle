@@ -38,6 +38,9 @@ set :urgent, false
 # Enable respecting of size hints globally
 set :resize, false
 
+# Honor randr (doesn't work with nvidia)
+set :randr, true
+
 # Screen size padding (left, right, top, bottom)
 set :padding, [ 0, 0, 0, 0 ]
 
