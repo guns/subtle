@@ -405,13 +405,7 @@ RubyWrapLoadPanels(VALUE data)
 
   /* Update sizes */
   if(0 < subtle->pbw)
-    {
-      subtle->th = subtle->font->height + 2 * subtle->pbw;
-      subDisplayConfigure();
-
-      subViewUpdate();
-      subSubletUpdate();
-    }
+    subtle->th = subtle->font->height + 2 * subtle->pbw;
 
   /* Update title border */
   XSetWindowBorder(subtle->dpy, subtle->windows.title.win, subtle->colors.bo_panel);
@@ -473,8 +467,6 @@ RubyWrapLoadPanels(VALUE data)
       subArraySort(subtle->sublets, subSubletCompare);
       subSubletUpdate();
     }
-
-  subSubletPublish();
 
   return Qnil;
 } /* }}} */
@@ -823,6 +815,11 @@ RubyKernelSet(VALUE self,
               {
                 if(!(subtle->flags & SUB_SUBTLE_CHECK) && Qtrue == value)
                   subtle->flags |= SUB_SUBTLE_RESIZE;
+              }
+            else if(CHAR2SYM("randr") == option)
+              {
+                if(!(subtle->flags & SUB_SUBTLE_CHECK) && Qfalse == value)
+                  subtle->flags &= ~SUB_SUBTLE_XRANDR;
               }
             else if(CHAR2SYM("stipple") == option)
               {
@@ -2516,6 +2513,7 @@ subRubyLoadSublets(void)
   else subSharedLogWarn("No sublets found\n");
 
   subSubletUpdate();
+  subSubletPublish();
 } /* }}} */
 
  /** subRubyLoadSubtlext {{{

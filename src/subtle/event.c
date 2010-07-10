@@ -1199,22 +1199,25 @@ EventFocus(XFocusChangeEvent *ev)
 static void
 EventScreen(XRRScreenChangeNotifyEvent *ev)
 {
-  /* Update screens */
-  subArrayClear(subtle->screens, True);
-  subScreenInit();
-  subScreenConfigure();
+  if(subtle->flags & SUB_SUBTLE_XRANDR)
+    {
+      /* Update screens */
+      subArrayClear(subtle->screens, True);
+      subScreenInit();
+      subScreenConfigure();
 
-  /* Update panels */
-  XMoveResizeWindow(subtle->dpy, subtle->windows.panel1, DEFSCREEN->base.x,
-    DEFSCREEN->base.y, DEFSCREEN->geom.width, subtle->th);
-  XMoveResizeWindow(subtle->dpy, subtle->windows.panel2, DEFSCREEN->base.x,
-    DEFSCREEN->base.height - subtle->th, DEFSCREEN->geom.width, subtle->th);
-  subPanelUpdate();
+      /* Update panels */
+      XMoveResizeWindow(subtle->dpy, subtle->windows.panel1, DEFSCREEN->base.x,
+        DEFSCREEN->base.y, DEFSCREEN->geom.width, subtle->th);
+      XMoveResizeWindow(subtle->dpy, subtle->windows.panel2, DEFSCREEN->base.x,
+        DEFSCREEN->base.height - subtle->th, DEFSCREEN->geom.width, subtle->th);
+      subPanelUpdate();
 
-  subViewConfigure(CURVIEW, True);
+      subViewConfigure(CURVIEW, True);
 
-  subSharedLogDebug("Updated screen sizes\n");
-} /* }}} */
+      subSharedLogDebug("Updated screen sizes\n");
+    }
+  } /* }}} */
 
 #endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
 

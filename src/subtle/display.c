@@ -160,21 +160,16 @@ subDisplayInit(const char *display)
   sattrs.event_mask = ROOTMASK;
   XChangeWindowAttributes(subtle->dpy, ROOT, CWCursor|CWEventMask, &sattrs);
 
-  subScreenInit(); ///< Init screens
-
   /* Create windows */
   sattrs.event_mask        = ButtonPressMask|ExposureMask;
   sattrs.override_redirect = True;
   sattrs.background_pixel  = subtle->colors.bg_panel;
   mask                     = CWEventMask|CWOverrideRedirect|CWBackPixel;
 
-  subtle->windows.panel1     = XCreateWindow(subtle->dpy, ROOT,
-    DEFSCREEN->base.x, DEFSCREEN->base.y, DEFSCREEN->base.width,
-    1, 0, CopyFromParent, InputOutput, CopyFromParent, mask, &sattrs);
-  subtle->windows.panel2     = XCreateWindow(subtle->dpy, ROOT,
-    DEFSCREEN->base.x, DEFSCREEN->base.height - subtle->th,
-    DEFSCREEN->base.width, 1, 0, CopyFromParent, InputOutput,
-    CopyFromParent, mask, &sattrs);
+  subtle->windows.panel1     = XCreateWindow(subtle->dpy, ROOT, 0, 1, 1, 1, 0,
+    CopyFromParent, InputOutput, CopyFromParent, mask, &sattrs);
+  subtle->windows.panel2     = XCreateWindow(subtle->dpy, ROOT, 0, 0, 1, 1, 0,
+    CopyFromParent, InputOutput, CopyFromParent, mask, &sattrs);
   subtle->windows.views.win   = XCreateSimpleWindow(subtle->dpy,
     subtle->windows.panel1, 0, 0, 1, 1, 0, 0, sattrs.background_pixel);
   subtle->windows.title.win   = XCreateSimpleWindow(subtle->dpy,
@@ -200,8 +195,8 @@ subDisplayInit(const char *display)
 
   XSync(subtle->dpy, False);
 
-  printf("Display (%s) is %dx%d on %d screens\n",
-    DisplayString(subtle->dpy), SCREENW, SCREENH, subtle->screens->ndata);
+  printf("Display (%s) is %dx%d\n", DisplayString(subtle->dpy),
+    SCREENW, SCREENH);
 } /* }}} */
 
  /** subDisplayConfigure {{{
@@ -214,6 +209,8 @@ subDisplayConfigure(void)
   XGCValues gvals;
 
   assert(subtle);
+
+  subScreenInit(); ///< Init screens
 
   /* Update GCs */
   gvals.foreground = subtle->colors.fg_panel;
@@ -266,6 +263,8 @@ subDisplayConfigure(void)
   /* Update struts and panels */
   subScreenConfigure();
   subPanelUpdate();
+  subViewUpdate();
+  subSubletUpdate();
 
   XSync(subtle->dpy, False); ///< Sync all changes
 } /* }}} */

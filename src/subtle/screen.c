@@ -59,7 +59,7 @@ subScreenInit(void)
         {
 #ifdef HAVE_X11_EXTENSIONS_XRANDR_H
           /* Check if xrandr knows more screens */
-          if(res && res->ncrtc >= n)
+          if(subtle->flags & SUB_SUBTLE_XRANDR && res && res->ncrtc >= n)
             {
               XRRCrtcInfo *crtc = NULL;
 
@@ -105,6 +105,8 @@ subScreenInit(void)
       if((s = subScreenNew(0, 0, SCREENW, SCREENH)))
         subArrayPush(subtle->screens, (void *)s);
     }
+
+  printf("Runnning on %d screen(s)\n", subtle->screens->ndata);
 } /* }}} */
 
  /** subScreenNew {{{
