@@ -295,26 +295,12 @@ int
 subClientCompare(const void *a,
   const void *b)
 {
-  int ret = 0, ret2 = 0, flags1 = 0, flags2 = 0;
+  int ret = 0;
   SubClient *c1 = *(SubClient **)a, *c2 = *(SubClient **)b;
 
   assert(a && b);
 
-  flags1 = c1->flags & (SUB_MODE_FULL|SUB_MODE_DESKTOP);
-  flags2 = c2->flags & (SUB_MODE_FULL|SUB_MODE_DESKTOP);
-
   /* Check flags */
-  if(flags1 == flags2)
-    {
-      if(c1->flags & SUB_CLIENT_INIT || c2->flags & SUB_CLIENT_INIT)
-        ret2 *= -1;
-      else ret2 = 0;
-    }
-  else if((0 == flags1 && flags2 & SUB_MODE_FULL) || flags1 & SUB_MODE_DESKTOP)
-    ret2 = 1;
-  else if((0 == flags1 && flags2 & SUB_MODE_DESKTOP) || flags1 & SUB_MODE_FULL)
-    ret2 = -1;
-
   if((c1->flags | c2->flags) & SUB_MODE_FULL)
     {
       if(c1->flags & SUB_MODE_FULL && !(c1->flags & SUB_CLIENT_INIT)) ret = 1;
@@ -325,9 +311,9 @@ subClientCompare(const void *a,
       if(c1->flags & SUB_MODE_DESKTOP && !(c1->flags & SUB_CLIENT_INIT)) ret = -1;
       if(c2->flags & SUB_MODE_DESKTOP && !(c2->flags & SUB_CLIENT_INIT)) ret = 1;
     }
-      if(c1->flags & SUB_CLIENT_INIT || c2->flags & SUB_CLIENT_INIT)
-        ret *= -1;
-printf("a=%s, b=%s, ret=%d, ret2=%d\n", c1->name, c2->name, ret, ret2);
+  if(c1->flags & SUB_CLIENT_INIT || c2->flags & SUB_CLIENT_INIT)
+    ret *= -1;
+
   return ret;
 } /* }}} */
 
