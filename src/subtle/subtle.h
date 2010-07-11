@@ -414,6 +414,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_RELOAD_SUBLETS,                                 ///< Subtle reload sublets
   SUB_EWMH_SUBTLE_RESTART,                                        ///< Subtle restart
   SUB_EWMH_SUBTLE_QUIT,                                           ///< Subtle quit
+  SUB_EWMH_SUBTLE_COLORS,                                         ///< Subtle restart
 
   SUB_EWMH_TOTAL
 } SubEwmh; /* }}} */
@@ -617,6 +618,7 @@ void subClientKill(SubClient *c, int destroy);                    ///< Kill clie
 void subDisplayInit(const char *display);                         ///< Create display
 void subDisplayConfigure(void);                                   ///< Configure display
 void subDisplayScan(void);                                        ///< Scan root window
+void subDisplayPublish(void);                                     ///< Publish colors
 void subDisplayFinish(void);                                      ///< Kill display
 /* }}} */
 
