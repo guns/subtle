@@ -79,7 +79,9 @@ VALUE subClientKill(VALUE self);                                  ///< Kill clie
 /* }}} */
 
 /* color.c {{{ */
+VALUE subColorInstantiate(unsigned long pixel);                   ///< Instantiate color
 VALUE subColorInit(VALUE self, VALUE color);                      ///< Create new color
+VALUE subColorToHex(VALUE self);                                  ///< Convert to hex string
 VALUE subColorToString(VALUE self);                               ///< Convert to string
 VALUE subColorOperatorPlus(VALUE self, VALUE value);              ///< Concat string
 /* }}} */
@@ -150,12 +152,13 @@ VALUE subSubletKill(VALUE self);                                  ///< Kill subl
 /* subtle.c {{{ */
 VALUE subSubtleDisplayReader(VALUE self);                         ///< Get display
 VALUE subSubtleRunningAsk(VALUE self);                            ///< Is subtle running
-VALUE subSubtleSpawn(VALUE self, VALUE cmd);                      ///< Spawn command
 VALUE subSubtleSelect(VALUE self);                                ///< Select window
 VALUE subSubtleReloadConfig(VALUE self);                          ///< Reload config
 VALUE subSubtleReloadSublets(VALUE self);                         ///< Reload sublets
 VALUE subSubtleRestart(VALUE self);                               ///< Restart subtle
 VALUE subSubtleQuit(VALUE self);                                  ///< Quit subtle
+VALUE subSubtleColors(VALUE self);                                ///< Get colors
+VALUE subSubtleSpawn(VALUE self, VALUE cmd);                      ///< Spawn command
 /* }}} */
 
 /* subtlext.c {{{ */

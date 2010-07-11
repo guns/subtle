@@ -904,11 +904,21 @@ Init_subtlext(void)
 
   color = rb_define_class_under(mod, "Color", rb_cObject);
 
+  /* Red fraction */
+  rb_define_attr(color, "red", 1, 0);
+
+  /* Green fraction */
+  rb_define_attr(color, "green", 1, 0);
+
+  /* Blue fraction */
+  rb_define_attr(color, "blue", 1, 0);
+
   /* Pixel number */
   rb_define_attr(color, "pixel", 1, 0);
 
   /* Class methods */
   rb_define_method(color, "initialize", subColorInit,         1);
+  rb_define_method(color, "to_hex",     subColorToHex,        0);
   rb_define_method(color, "to_str",     subColorToString,     0);
   rb_define_method(color, "+",          subColorOperatorPlus, 1);
 
@@ -1061,6 +1071,7 @@ Init_subtlext(void)
   rb_define_singleton_method(subtle, "reload_sublets", subSubtleReloadSublets, 0);
   rb_define_singleton_method(subtle, "restart",        subSubtleRestart,       0);
   rb_define_singleton_method(subtle, "quit",           subSubtleQuit,          0);
+  rb_define_singleton_method(subtle, "colors",         subSubtleColors,        0);
   rb_define_singleton_method(subtle, "spawn",          subSubtleSpawn,         1);
 
   /*

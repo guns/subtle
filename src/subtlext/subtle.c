@@ -85,31 +85,6 @@ subSubtleRunningAsk(VALUE self)
   return running;
 } /* }}} */
 
-/* subSubtleSpawn {{{ */
-/*
- * call-seq: spawn(cmd) -> Fixnum
- *
- * Spawn a command and return the pid
- *
- *  spawn("xterm")
- *  => 123
- */
-
-VALUE
-subSubtleSpawn(VALUE self,
-  VALUE cmd)
-{
-  VALUE ret = Qnil;
-
-  if(T_STRING == rb_type(cmd))
-    {
-      ret = INT2FIX((int)subSharedSpawn(RSTRING_PTR(cmd)));
-    }
-  else rb_raise(rb_eArgError, "Unknown value type");
-
-  return ret;
-} /* }}} */
-
 /* subSubtleSelect {{{ */
 /*
  * call-seq: select_window -> String
@@ -257,6 +232,78 @@ VALUE
 subSubtleQuit(VALUE self)
 {
   return SubtleSend("SUBTLE_QUIT");
+} /* }}} */
+
+/* subSubtleColors {{{ */
+/*
+ * call-seq: colors -> Hash
+ *
+ * Get array of all Colors
+ *
+ *  Subtlext::Subtle.colors
+ *  => { :fg_panel => #<Subtlext::Color:xxx> }
+ */
+
+VALUE
+subSubtleColors(VALUE self)
+{
+  long unsigned int i, size = 0;
+  unsigned long *colors = NULL;
+  VALUE meth = Qnil, klass = Qnil, hash = Qnil;
+  const char *names[] = {
+    "fg_panel", "fg_views", "fg_sublets", "fg_focus", "fg_urgent",
+    "bg_panel", "bg_views", "bg_sublets", "bg_focus", "bg_urgent",
+    "bo_focus", "bo_normal", "bo_panel", "background"
+  };
+
+  subSubtlextConnect(); ///< Implicit open connection
+
+  /* Fetch data */
+  meth  = rb_intern("new");
+  klass = rb_const_get(mod, rb_intern("Color"));
+  colors = (unsigned long *)subSharedPropertyGet(display,
+    DefaultRootWindow(display), XA_CARDINAL,
+    XInternAtom(display, "SUBTLE_COLORS", False), &size);
+  hash = rb_hash_new();
+
+  if(colors)
+    {
+      for(i = 0; i < size; i++)
+        {
+          VALUE c = rb_funcall(klass, meth, 1, LONG2NUM(colors[i]));
+
+          rb_hash_aset(hash, CHAR2SYM(names[i]), c);
+        }
+
+      free(colors);
+    }
+
+  return hash;
+} /* }}} */
+
+/* subSubtleSpawn {{{ */
+/*
+ * call-seq: spawn(cmd) -> Fixnum
+ *
+ * Spawn a command and return the pid
+ *
+ *  spawn("xterm")
+ *  => 123
+ */
+
+VALUE
+subSubtleSpawn(VALUE self,
+  VALUE cmd)
+{
+  VALUE ret = Qnil;
+
+  if(T_STRING == rb_type(cmd))
+    {
+      ret = INT2FIX((int)subSharedSpawn(RSTRING_PTR(cmd)));
+    }
+  else rb_raise(rb_eArgError, "Unknown value type");
+
+  return ret;
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
