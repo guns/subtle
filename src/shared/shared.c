@@ -658,9 +658,8 @@ subSharedTextDraw(Display *disp,
       XftColor color = { 0 };
       XColor xcolor = { 0 };
 
-      /* Get color */
+      /* Get color values */
       xcolor.pixel = fg;
-
       XQueryColor(disp, DefaultColormap(disp, DefaultScreen(disp)), &xcolor);
 
       color.pixel       = xcolor.pixel;
@@ -873,21 +872,21 @@ unsigned long
 subSharedParseColor(Display *disp,
   char *name)
 {
-  XColor color = { 0 }; ///< Default color
+  XColor xcolor = { 0 }; ///< Default color
 
   assert(name);
 
   /* Parse and store color */
   if(!XParseColor(disp, DefaultColormap(disp, DefaultScreen(disp)),
-      name, &color))
+      name, &xcolor))
     {
       subSharedLogWarn("Failed loading color `%s'\n", name);
     }
   else if(!XAllocColor(disp, DefaultColormap(disp, DefaultScreen(disp)),
-      &color))
+      &xcolor))
     subSharedLogWarn("Failed allocating color `%s'\n", name);
 
-  return color.pixel;
+  return xcolor.pixel;
 } /* }}} */
 
  /** subSharedSpawn {{{
