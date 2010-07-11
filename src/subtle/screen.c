@@ -33,9 +33,10 @@ subScreenInit(void)
   int event = 0, junk = 0;
 
 #ifdef HAVE_X11_EXTENSIONS_XRANDR_H
-  if(XRRQueryExtension(subtle->dpy, &subtle->xrandr, &junk))
+  if(XRRQueryExtension(subtle->dpy, &event, &junk))
     {
-      subtle->flags |= SUB_SUBTLE_XRANDR;
+      subtle->flags  |= SUB_SUBTLE_XRANDR;
+      subtle->xrandr  = event;
 
       XRRSelectInput(subtle->dpy, ROOT, RRScreenChangeNotifyMask);
     }
@@ -48,18 +49,18 @@ subScreenInit(void)
       int i, n = 0;
       XineramaScreenInfo *info = NULL;
 
-#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
-      XRRScreenResources *res = NULL;
-
-      res = XRRGetScreenResourcesCurrent(subtle->dpy, ROOT);
-#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
-
       /* Query screens */
       if((info = XineramaQueryScreens(subtle->dpy, &n)))
         {
 #ifdef HAVE_X11_EXTENSIONS_XRANDR_H
-          /* Check if xrandr knows more screens */
-          if(subtle->flags & SUB_SUBTLE_XRANDR && res && res->ncrtc >= n)
+          XRRScreenResources *res = NULL;
+
+          res = XRRGetScreenResourcesCurrent(subtle->dpy, ROOT);
+
+          /* Check if we use xrandr and if it knows more screens */
+          if(subtle->flags & SUB_SUBTLE_XRANDR &&
+              !(subtle->flags & SUB_SUBTLE_NOXRANDR) &&
+              res && res->ncrtc >= n)
             {
               XRRCrtcInfo *crtc = NULL;
 

@@ -806,7 +806,7 @@ RubyKernelSet(VALUE self,
             else if(CHAR2SYM("randr") == option)
               {
                 if(!(subtle->flags & SUB_SUBTLE_CHECK) && Qfalse == value)
-                  subtle->flags &= ~SUB_SUBTLE_XRANDR;
+                  subtle->flags |= SUB_SUBTLE_NOXRANDR;
               }
             else if(CHAR2SYM("stipple") == option)
               {

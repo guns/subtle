@@ -276,9 +276,10 @@
 #define SUB_SUBTLE_BACKGROUND         (1L << 9)                   ///< Set root background
 #define SUB_SUBTLE_XINERAMA           (1L << 10)                  ///< Using Xinerama
 #define SUB_SUBTLE_XRANDR             (1L << 11)                  ///< Using Xrandr
-#define SUB_SUBTLE_EWMH               (1L << 12)                  ///< EWMH set
-#define SUB_SUBTLE_REPLACE            (1L << 13)                  ///< Replace previous wm
-#define SUB_SUBTLE_RESTART            (1L << 14)                  ///< Restart
+#define SUB_SUBTLE_NOXRANDR           (1L << 12)                  ///< Not using Xrandr
+#define SUB_SUBTLE_EWMH               (1L << 13)                  ///< EWMH set
+#define SUB_SUBTLE_REPLACE            (1L << 14)                  ///< Replace previous wm
+#define SUB_SUBTLE_RESTART            (1L << 15)                  ///< Restart
 
 /* Tag flags */
 #define SUB_TAG_GRAVITY               (1L << 11)                  ///< Gravity property
