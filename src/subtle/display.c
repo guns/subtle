@@ -266,6 +266,8 @@ subDisplayConfigure(void)
   subViewUpdate();
   subSubletUpdate();
 
+  subDisplayPublish();
+
   XSync(subtle->dpy, False); ///< Sync all changes
 } /* }}} */
 
@@ -321,6 +323,45 @@ subDisplayScan(void)
   subViewJump(VIEW(subtle->views->data[0]), False);
   subtle->windows.focus = ROOT;
   subGrabSet(ROOT);
+} /* }}} */
+
+ /** subDisplayPublish {{{
+  * @brief Update EWMH infos
+  **/
+
+void
+subDisplayPublish(void)
+{
+  unsigned long *colors;
+
+#define NCOLORS 14
+
+  /* Create color array */
+  colors = (unsigned long *)subSharedMemoryAlloc(NCOLORS, sizeof(unsigned long));
+
+  colors[0]  = subtle->colors.fg_panel;
+  colors[1]  = subtle->colors.fg_views;
+  colors[2]  = subtle->colors.fg_sublets;
+  colors[3]  = subtle->colors.fg_focus;
+  colors[4]  = subtle->colors.fg_urgent;
+  colors[5]  = subtle->colors.bg_panel;
+  colors[6]  = subtle->colors.bg_views;
+  colors[7]  = subtle->colors.bg_sublets;
+  colors[8]  = subtle->colors.bg_focus;
+  colors[9]  = subtle->colors.bg_urgent;
+  colors[10] = subtle->colors.bo_focus;
+  colors[11] = subtle->colors.bo_normal;
+  colors[12] = subtle->colors.bo_panel;
+  colors[13] = subtle->colors.bg;
+
+  /* EWMH: Colors */
+  subEwmhSetCardinals(ROOT, SUB_EWMH_SUBTLE_COLORS, (long *)colors, NCOLORS);
+
+  subSharedLogDebug("publish=colors, n=%d\n", NCOLORS);
+
+  XSync(subtle->dpy, False); ///< Sync all changes
+
+  free(colors);
 } /* }}} */
 
  /** subDisplayFinish {{{
