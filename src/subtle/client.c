@@ -311,8 +311,6 @@ subClientCompare(const void *a,
       if(c1->flags & SUB_MODE_DESKTOP && !(c1->flags & SUB_CLIENT_INIT)) ret = -1;
       if(c2->flags & SUB_MODE_DESKTOP && !(c2->flags & SUB_CLIENT_INIT)) ret = 1;
     }
-  if(c1->flags & SUB_CLIENT_INIT || c2->flags & SUB_CLIENT_INIT)
-    ret *= -1;
 
   return ret;
 } /* }}} */
