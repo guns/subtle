@@ -308,6 +308,7 @@ main(int argc,
   /* Init */
   SubtleVersion();
   subDisplayInit(display);
+  subScreenInit();
   subRubyInit();
   subEwmhInit();
   subGrabInit();
