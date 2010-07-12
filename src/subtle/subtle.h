@@ -30,6 +30,14 @@
 #ifdef HAVE_SYS_INOTIFY_H
 #include <sys/inotify.h>
 #endif /* HAVE_SYS_INOTIFY */
+
+#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
+#include <X11/extensions/Xinerama.h>
+#endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
+
+#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
+#include <X11/extensions/Xrandr.h>
+#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
 /* }}} */
 
 /* Macros {{{ */
@@ -276,10 +284,9 @@
 #define SUB_SUBTLE_BACKGROUND         (1L << 9)                   ///< Set root background
 #define SUB_SUBTLE_XINERAMA           (1L << 10)                  ///< Using Xinerama
 #define SUB_SUBTLE_XRANDR             (1L << 11)                  ///< Using Xrandr
-#define SUB_SUBTLE_NOXRANDR           (1L << 12)                  ///< Not using Xrandr
-#define SUB_SUBTLE_EWMH               (1L << 13)                  ///< EWMH set
-#define SUB_SUBTLE_REPLACE            (1L << 14)                  ///< Replace previous wm
-#define SUB_SUBTLE_RESTART            (1L << 15)                  ///< Restart
+#define SUB_SUBTLE_EWMH               (1L << 12)                  ///< EWMH set
+#define SUB_SUBTLE_REPLACE            (1L << 13)                  ///< Replace previous wm
+#define SUB_SUBTLE_RESTART            (1L << 14)                  ///< Restart
 
 /* Tag flags */
 #define SUB_TAG_GRAVITY               (1L << 11)                  ///< Gravity property
@@ -503,10 +510,6 @@ typedef struct subsubtle_t /* {{{ */
   int                  notify;                                    ///< Subtle inotify descriptor
 #endif /* HAVE_SYS_INOTIFY_H */
 
-#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
-  int                  xrandr;                                    ///< Subtle Xrandr events
-#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
-
   struct
   {
     char             *string;                                    ///< Subtle sublet separator
@@ -703,9 +706,10 @@ void subScreenInit(void);                                         ///< Init scre
 SubScreen *subScreenNew(int x, int y, unsigned int width,
   unsigned int height);                                           ///< Create screen
 void subScreenConfigure(void);                                    ///< Configure screens
-void subScreenUpdate(void);                                       ///< Update screen sizes
+void subScreenResize(void);                                       ///< Update screen sizes
 void subScreenFit(SubScreen *s, XRectangle *r);                   ///< Fit rect size
 void subScreenJump(SubScreen *s);                                 ///< Jump to screen
+void subScreenPublish(void);                                      ///< Publish screens
 void subScreenKill(SubScreen *s);                                 ///< Kill screen
 /* }}} */
 
