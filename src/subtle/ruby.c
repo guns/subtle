@@ -805,8 +805,36 @@ RubyKernelSet(VALUE self,
               }
             else if(CHAR2SYM("randr") == option)
               {
-                if(!(subtle->flags & SUB_SUBTLE_CHECK) && Qfalse == value)
-                  subtle->flags |= SUB_SUBTLE_NOXRANDR;
+                if(!(subtle->flags & SUB_SUBTLE_CHECK))
+                  {
+                    /* Update screens on changes */
+                    if(Qfalse == value && subtle->flags & SUB_SUBTLE_XRANDR)
+                      {
+                        subtle->flags &= ~SUB_SUBTLE_XRANDR;
+
+                        printf("Not relying on xrandr\n");
+
+                        /* Update screens */
+                        subArrayClear(subtle->screens, True);
+                        subScreenInit();
+                        subScreenConfigure();
+                      }
+                    else if(Qtrue == value &&
+                        !(subtle->flags & SUB_SUBTLE_XRANDR))
+                      {
+#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
+                        int event = 0, junk = 0;
+
+                        if(XRRQueryExtension(subtle->dpy, &event, &junk))
+                          subtle->flags |= SUB_SUBTLE_XRANDR;
+#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
+
+                        /* Update screens */
+                        subArrayClear(subtle->screens, True);
+                        subScreenInit();
+                        subScreenConfigure();
+                      }
+                  }
               }
             else if(CHAR2SYM("stipple") == option)
               {
@@ -2275,8 +2303,9 @@ subRubyReloadConfig(void)
   int i;
 
   /* Reset before reloading */
-  subtle->flags &= (SUB_SUBTLE_DEBUG|SUB_SUBTLE_EWMH|SUB_SUBTLE_RUN);
-  subtle->vid = 0;
+  subtle->flags &= (SUB_SUBTLE_DEBUG|SUB_SUBTLE_EWMH|SUB_SUBTLE_RUN|
+    SUB_SUBTLE_XINERAMA|SUB_SUBTLE_XRANDR);
+  subtle->vid    = 0;
 
   /* Reset sublet panel flags */
   for(i = 0; i < subtle->sublets->ndata; i++)
