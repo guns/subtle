@@ -108,6 +108,7 @@ EventConfigure(XConfigureRequestEvent *ev)
 {
   SubClient *c = NULL;
 
+  /* Check window */
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
     {
       if(!(c->flags & SUB_MODE_NONRESIZE) &&
@@ -137,6 +138,17 @@ EventConfigure(XConfigureRequestEvent *ev)
 
               subClientConfigure(c);
             }
+        }
+    }
+  else if(ROOT == ev->window) ///< Root window
+    {
+      if(subtle->flags & SUB_SUBTLE_XRANDR)
+        {
+#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
+          XRRUpdateConfiguration((XEvent *)ev);
+#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
+
+          subScreenResize();
         }
     }
   else ///< Unmanaged windows
@@ -554,7 +566,6 @@ EventMessage(XClientMessageEvent *ev)
                 subViewPublish();
                 subPanelUpdate();
                 subPanelRender();
-                subScreenUpdate();
 
                 /* Hook: Create */
                 subHookCall(SUB_HOOK_VIEW_CREATE, (void *)v);
@@ -572,7 +583,6 @@ EventMessage(XClientMessageEvent *ev)
                 subViewPublish();
                 subPanelUpdate();
                 subPanelRender();
-                subScreenUpdate();
 
                 if(CURVIEW == v) subViewJump(VIEW(subtle->views->data[0]), True);
               }
@@ -1193,34 +1203,6 @@ EventFocus(XFocusChangeEvent *ev)
     }
 } /* }}} */
 
-#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
-
-/* EventScreen {{{ */
-static void
-EventScreen(XRRScreenChangeNotifyEvent *ev)
-{
-  if(subtle->flags & SUB_SUBTLE_XRANDR)
-    {
-      /* Update screens */
-      subArrayClear(subtle->screens, True);
-      subScreenInit();
-      subScreenConfigure();
-
-      /* Update panels */
-      XMoveResizeWindow(subtle->dpy, subtle->windows.panel1, DEFSCREEN->base.x,
-        DEFSCREEN->base.y, DEFSCREEN->geom.width, subtle->th);
-      XMoveResizeWindow(subtle->dpy, subtle->windows.panel2, DEFSCREEN->base.x,
-        DEFSCREEN->base.height - subtle->th, DEFSCREEN->geom.width, subtle->th);
-      subPanelUpdate();
-
-      subViewConfigure(CURVIEW, True);
-
-      subSharedLogDebug("Updated screen sizes\n");
-    }
-  } /* }}} */
-
-#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
-
  /** subEventWatchAdd {{{
   * @brief Add descriptor to watch list
   * @param[in]  fd  File descriptor
@@ -1327,13 +1309,7 @@ subEventLoop(void)
                               case LeaveNotify:       EventCrossing(&ev.xcrossing);          break;
                               case ButtonPress:
                               case KeyPress:          EventGrab(&ev);                        break;
-
-                              default:
-#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
-                                if(subtle->flags & SUB_SUBTLE_XRANDR && ev.type == subtle->xrandr)
-                                  EventScreen((XRRScreenChangeNotifyEvent *)&ev);
-#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
-                                break;
+                              default: break;
                             }
                         }
                     } /* }}} */
