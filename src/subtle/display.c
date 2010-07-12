@@ -95,6 +95,10 @@ subDisplayInit(const char *display)
     0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 0x49, 0x12
   };
 
+#if defined HAVE_X11_EXTENSIONS_XINERAMA_H || defined HAVE_X11_EXTENSIONS_XRANDR_H
+  int event = 0, junk = 0;
+#endif /* HAVE_X11_EXTENSIONS_XINERAMA_H HAVE_X11_EXTENSIONS_XRANDR_H */
+
   assert(subtle);
 
   /* Set locale */
@@ -193,6 +197,17 @@ subDisplayInit(const char *display)
   XSelectInput(subtle->dpy, subtle->windows.tray.win,
     KeyPressMask|ButtonPressMask);
 
+  /* Check extensions */
+#ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
+  if(XineramaQueryExtension(subtle->dpy, &event, &junk))
+    subtle->flags |= SUB_SUBTLE_XINERAMA;
+#endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
+
+#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
+  if(XRRQueryExtension(subtle->dpy, &event, &junk))
+    subtle->flags |= SUB_SUBTLE_XRANDR;
+#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
+
   XSync(subtle->dpy, False);
 
   printf("Display (%s) is %dx%d\n", DisplayString(subtle->dpy),
@@ -209,8 +224,6 @@ subDisplayConfigure(void)
   XGCValues gvals;
 
   assert(subtle);
-
-  subScreenInit(); ///< Init screens
 
   /* Update GCs */
   gvals.foreground = subtle->colors.fg_panel;
