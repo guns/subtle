@@ -202,6 +202,8 @@ module Subtle # {{{
           else
             printer(ret)
         end
+      else
+        usage(@group)
       end
     end # }}}
 
