@@ -74,32 +74,32 @@ EventRestack(SubClient *c,
   int flags = 0;
 
   /* Save flags */
-  flags     = c->flags & (SUB_MODE_DESKTOP|SUB_MODE_FULL);
+  flags     = c->flags & (SUB_CLIENT_TYPE_DESKTOP|SUB_CLIENT_MODE_FULL);
   c->flags &= ~flags;
-  c->flags |= SUB_CLIENT_INIT;
+  c->flags |= SUB_CLIENT_DEAD;
 
   if(Above == dir)
     {
       XRaiseWindow(subtle->dpy, c->win);
 
       /* Sort stack up */
-      c->flags |= SUB_MODE_FULL;
+      c->flags |= SUB_CLIENT_MODE_FULL;
       subArraySort(subtle->clients, subClientCompare);
-      c->flags &= ~SUB_MODE_FULL;
+      c->flags &= ~SUB_CLIENT_MODE_FULL;
     }
   else if(Below == dir)
     {
       XLowerWindow(subtle->dpy, c->win);
 
       /* Sort stack down */
-      c->flags |= SUB_MODE_DESKTOP;
+      c->flags |= SUB_CLIENT_TYPE_DESKTOP;
       subArraySort(subtle->clients, subClientCompare);
-      c->flags &= ~SUB_MODE_DESKTOP;
+      c->flags &= ~SUB_CLIENT_TYPE_DESKTOP;
     }
   else subSharedLogDebug("Ignoring unknown stacking mode `%ld'", dir);
 
   c->flags |= flags;
-  c->flags &= ~SUB_CLIENT_INIT;
+  c->flags &= ~SUB_CLIENT_DEAD;
 } /* }}} */
 
 /* EventConfigure {{{ */
@@ -111,15 +111,15 @@ EventConfigure(XConfigureRequestEvent *ev)
   /* Check window */
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
     {
-      if(!(c->flags & SUB_MODE_NONRESIZE) &&
+      if(!(c->flags & SUB_CLIENT_MODE_NORESIZE) &&
           (subtle->flags & SUB_SUBTLE_RESIZE ||
-          c->flags & (SUB_MODE_FLOAT|SUB_MODE_RESIZE)))
+          c->flags & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_RESIZE)))
         {
           SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
           XRectangle geom = c->geom;
 
           /* We restrict this from graviated clients */
-          if(c->flags & SUB_MODE_FLOAT)
+          if(c->flags & SUB_CLIENT_MODE_FLOAT)
             {
               if(ev->value_mask & CWX) geom.x = s->geom.x + ev->x;
               if(ev->value_mask & CWY) geom.y = s->geom.y + ev->y;
@@ -134,7 +134,7 @@ EventConfigure(XConfigureRequestEvent *ev)
               c->geom = geom;
 
               /* Resize client */
-              if(!(c->flags & SUB_MODE_DESKTOP)) subScreenFit(s, &c->geom);
+              if(!(c->flags & SUB_CLIENT_TYPE_DESKTOP)) subScreenFit(s, &c->geom);
 
               subClientConfigure(c);
             }
@@ -191,7 +191,7 @@ EventMapRequest(XMapRequestEvent *ev)
               subHookCall(SUB_HOOK_TILE, NULL);
             }
 
-          if(c->flags & SUB_MODE_DESKTOP) ///< Reorder stacking
+          if(c->flags & SUB_CLIENT_TYPE_DESKTOP) ///< Reorder stacking
             subArraySort(subtle->clients, subClientCompare);
 
           /* Hook: Create */
@@ -373,7 +373,7 @@ EventMessage(XClientMessageEvent *ev)
                             {
                               int flags = subClientTag(c, ev->data.l[1]);
 
-                              subClientToggle(c, flags); ///< Toggle flags
+                              subClientToggle(c, flags, True); ///< Toggle flags
                             }
                           else c->tags &= ~tag;
 
@@ -416,7 +416,7 @@ EventMessage(XClientMessageEvent *ev)
                 c->tags = 0; ///> Reset tags
 
                 subClientSetTags(c, &flags);
-                subClientToggle(c, (~c->flags & flags)); ///< Toggle flags
+                subClientToggle(c, (~c->flags & flags), True); ///< Toggle flags
 
                 if(VISIBLE(CURVIEW, c)) subViewConfigure(CURVIEW, False);
               }
@@ -442,7 +442,7 @@ EventMessage(XClientMessageEvent *ev)
                   {
                     if(VISIBLE(CURVIEW, c))
                       {
-                        int flags = c->flags & (SUB_MODE_FULL|SUB_MODE_FLOAT);
+                        int flags = c->flags & (SUB_CLIENT_MODE_FULL|SUB_CLIENT_MODE_FLOAT);
 
                         subClientSetGravity(c, -1, ev->data.l[1], True);
 
@@ -450,7 +450,7 @@ EventMessage(XClientMessageEvent *ev)
                         if(flags)
                           {
                             c->flags &= ~flags;
-                            subClientToggle(c, flags);
+                            subClientToggle(c, flags, True);
                           }
 
                         subViewConfigure(CURVIEW, False);
@@ -465,18 +465,18 @@ EventMessage(XClientMessageEvent *ev)
                 int flags = 0;
 
                 /* Translate flags */
-                if(ev->data.l[1] & SUB_EWMH_FULL)  flags |= SUB_MODE_FULL;
-                if(ev->data.l[1] & SUB_EWMH_FLOAT) flags |= SUB_MODE_FLOAT;
-                if(ev->data.l[1] & SUB_EWMH_STICK) flags |= SUB_MODE_STICK;
+                if(ev->data.l[1] & SUB_EWMH_FULL)  flags |= SUB_CLIENT_MODE_FULL;
+                if(ev->data.l[1] & SUB_EWMH_FLOAT) flags |= SUB_CLIENT_MODE_FLOAT;
+                if(ev->data.l[1] & SUB_EWMH_STICK) flags |= SUB_CLIENT_MODE_STICK;
 
-                subClientToggle(c, flags);
+                subClientToggle(c, flags, True);
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_WINDOW_RESIZE: /* {{{ */
             if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0]))))
               {
-                if(True == ev->data.l[1]) c->flags &= ~SUB_MODE_NONRESIZE;
-                else c->flags |= SUB_MODE_NONRESIZE;
+                if(True == ev->data.l[1]) c->flags &= ~SUB_CLIENT_MODE_NORESIZE;
+                else c->flags |= SUB_CLIENT_MODE_NORESIZE;
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_GRAVITY_NEW: /* {{{ */
@@ -695,13 +695,13 @@ EventMessage(XClientMessageEvent *ev)
             switch(subEwmhFind(ev->data.l[1])) ///< Only the first property
               {
                 case SUB_EWMH_NET_WM_STATE_FULLSCREEN:
-                  subClientToggle(c, SUB_MODE_FULL);
+                  subClientToggle(c, SUB_CLIENT_MODE_FULL, True);
                   break;
                 case SUB_EWMH_NET_WM_STATE_ABOVE:
-                  subClientToggle(c, SUB_MODE_FLOAT);
+                  subClientToggle(c, SUB_CLIENT_MODE_FLOAT, True);
                   break;
                 case SUB_EWMH_NET_WM_STATE_STICKY:
-                  subClientToggle(c, SUB_MODE_STICK);
+                  subClientToggle(c, SUB_CLIENT_MODE_STICK, True);
                   break;
                 default: break;
               }
@@ -716,7 +716,8 @@ EventMessage(XClientMessageEvent *ev)
             subViewUpdate();
             break; /* }}} */
           case SUB_EWMH_NET_MOVERESIZE_WINDOW: /* {{{ */
-            if(!(c->flags & SUB_MODE_FLOAT)) subClientToggle(c, SUB_MODE_FLOAT);
+            if(!(c->flags & SUB_CLIENT_MODE_FLOAT))
+              subClientToggle(c, SUB_CLIENT_MODE_FLOAT, True);
 
             c->geom.x      = ev->data.l[1];
             c->geom.y      = ev->data.l[2];
@@ -789,7 +790,7 @@ EventProperty(XPropertyEvent *ev)
             int flags = 0;
 
             subClientSetSizeHints(c, &flags);
-            subClientToggle(c, (~c->flags & flags));
+            subClientToggle(c, (~c->flags & flags), True);
           }
         else if((t = TRAY(subSubtleFind(ev->window, TRAYID))))
           {
@@ -806,9 +807,9 @@ EventProperty(XPropertyEvent *ev)
 
             /* Check changes */
             subClientSetWMHints(c, &flags);
-            subClientToggle(c, (~c->flags & flags));
+            subClientToggle(c, (~c->flags & flags), True);
 
-            if(c->flags & (SUB_MODE_URGENT|SUB_MODE_URGENT_FOCUS))
+            if(c->flags & (SUB_CLIENT_MODE_URGENT|SUB_CLIENT_MODE_URGENT_FOCUS))
               subViewHighlight(c->tags);
           }
         break; /* }}} */
@@ -962,10 +963,10 @@ EventGrab(XEvent *ev)
           case SUB_GRAB_WINDOW_MOVE:
           case SUB_GRAB_WINDOW_RESIZE: /* {{{ */
             if((c = CLIENT(subSubtleFind(win, CLIENTID))) &&
-                !(c->flags & (SUB_MODE_FULL|SUB_MODE_NONFLOAT)))
+                !(c->flags & (SUB_CLIENT_MODE_FULL|SUB_CLIENT_MODE_NOFLOAT)))
               {
-                if(!(c->flags & SUB_MODE_FLOAT))
-                  subClientToggle(c, SUB_MODE_FLOAT);
+                if(!(c->flags & SUB_CLIENT_MODE_FLOAT))
+                  subClientToggle(c, SUB_CLIENT_MODE_FLOAT, True);
 
                 /* Translate flags */
                 if(SUB_GRAB_WINDOW_MOVE == flag)        flag = SUB_DRAG_MOVE;
@@ -977,13 +978,13 @@ EventGrab(XEvent *ev)
           case SUB_GRAB_WINDOW_TOGGLE: /* {{{ */
             if((c = CLIENT(subSubtleFind(win, CLIENTID))))
               {
-                subClientToggle(c, g->data.num);
+                subClientToggle(c, g->data.num, True);
                 if(VISIBLE(CURVIEW, c)) subViewConfigure(CURVIEW, False);
               }
             break; /* }}} */
           case SUB_GRAB_WINDOW_STACK: /* {{{ */
             if((c = CLIENT(subSubtleFind(win, CLIENTID))) &&
-                !(c->flags & SUB_MODE_DESKTOP) && VISIBLE(CURVIEW, c))
+                !(c->flags & SUB_CLIENT_TYPE_DESKTOP) && VISIBLE(CURVIEW, c))
               EventRestack(c, g->data.num);
             break; /* }}} */
           case SUB_GRAB_WINDOW_SELECT: /* {{{ */
@@ -1034,14 +1035,15 @@ EventGrab(XEvent *ev)
             break; /* }}} */
           case SUB_GRAB_WINDOW_GRAVITY: /* {{{ */
             if((c = CLIENT(subSubtleFind(win, CLIENTID))) &&
-                !(c->flags & SUB_MODE_DESKTOP))
+                !(c->flags & SUB_CLIENT_TYPE_DESKTOP))
               {
                 int i, id = -1, cid = 0, fid = (int)g->data.string[0] - 65,
                   size = strlen(g->data.string);
 
                 /* Remove float/fullscreen mode */
-                if(c->flags & (SUB_MODE_FLOAT|SUB_MODE_FULL))
-                  subClientToggle(c, c->flags & (SUB_MODE_FLOAT|SUB_MODE_FULL));
+                if(c->flags & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_FULL))
+                  subClientToggle(c, c->flags & 
+                    (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_FULL), True);
 
                 /* Select next gravity */
                 for(i = 0; -1 == id && i < size; i++)
@@ -1162,9 +1164,9 @@ EventFocus(XFocusChangeEvent *ev)
       subClientRender(c);
 
       /* Remove urgent after losing focus */
-      if(c->flags & SUB_MODE_URGENT_FOCUS)
+      if(c->flags & SUB_CLIENT_MODE_URGENT_FOCUS)
         {
-          c->flags &= ~(SUB_MODE_URGENT|SUB_MODE_URGENT_FOCUS);
+          c->flags &= ~(SUB_CLIENT_MODE_URGENT|SUB_CLIENT_MODE_URGENT_FOCUS);
 
           subViewHighlight(0);
           subViewConfigure(CURVIEW, False);

@@ -77,11 +77,14 @@
   (r1.y + r1.height) <= (r2.y + r2.height))                       ///< Whether rect is in rect
 
 #define ROOTMASK \
-  (SubstructureRedirectMask|SubstructureNotifyMask|FocusChangeMask|PropertyChangeMask)
+  (SubstructureRedirectMask|SubstructureNotifyMask| \
+  FocusChangeMask|PropertyChangeMask)
 #define EVENTMASK \
-  (StructureNotifyMask|PropertyChangeMask|EnterWindowMask|FocusChangeMask)
+  (StructureNotifyMask|PropertyChangeMask| \
+  EnterWindowMask|FocusChangeMask)
 #define DRAGMASK \
-  (PointerMotionMask|ButtonReleaseMask|KeyPressMask|EnterWindowMask|FocusChangeMask)
+  (PointerMotionMask|ButtonReleaseMask|KeyPressMask| \
+  EnterWindowMask|FocusChangeMask)
 #define GRABMASK \
   (ButtonPressMask|ButtonReleaseMask|PointerMotionMask)
 
@@ -91,7 +94,7 @@
   DefaultColormap(subtle->dpy, DefaultScreen(subtle->dpy))       ///< Default colormap
 #define VISIBLE(v,c) \
   (v && c && (v->tags & c->tags || \
-  c->flags & (SUB_MODE_DESKTOP|SUB_MODE_STICK)))                 ///< Visible on view
+  c->flags & (SUB_CLIENT_TYPE_DESKTOP|SUB_CLIENT_MODE_STICK)))                 ///< Visible on view
 #define SCREENW \
   DisplayWidth(subtle->dpy, DefaultScreen(subtle->dpy))          ///< Get screen width
 #define SCREENH \
@@ -102,12 +105,14 @@
 #define DEFSCREEN SCREEN(subtle->screens->data[0])               ///< Get first screen
 
 #define MODES_ALL \
-  (SUB_MODE_DESKTOP|SUB_MODE_FULL|SUB_MODE_FLOAT| \
-  SUB_MODE_STICK|SUB_MODE_URGENT|SUB_MODE_RESIZE)                ///< All mode flags
+  (SUB_CLIENT_MODE_FULL|SUB_CLIENT_MODE_FLOAT| \
+  SUB_CLIENT_MODE_STICK|SUB_CLIENT_MODE_URGENT| \
+  SUB_CLIENT_MODE_RESIZE)                                         ///< All mode flags
 
 #define MODES_NONE \
-  (SUB_MODE_NONFULL|SUB_MODE_NONFLOAT|SUB_MODE_NONSTICK| \
-  SUB_MODE_NONURGENT|SUB_MODE_NONRESIZE)                          ///< All none mode flags
+  (SUB_CLIENT_MODE_NOFULL|SUB_CLIENT_MODE_NOFLOAT| \
+  SUB_CLIENT_MODE_NOSTICK|SUB_CLIENT_MODE_NOURGENT| \
+  SUB_CLIENT_MODE_NORESIZE)                                       ///< All none mode flags
 
 #define ROOT       DefaultRootWindow(subtle->dpy)                 ///< Root window
 #define SCRN       DefaultScreen(subtle->dpy)                     ///< Default screen
@@ -173,19 +178,6 @@
 #define SUB_TYPE_TRAY                 (1L << 9)                   ///< Tray
 #define SUB_TYPE_VIEW                 (1L << 10)                  ///< View
 
-/* Mode flags */
-#define SUB_MODE_DESKTOP              (1L << 20)                  ///< Desktop mode (after client flags [20]
-#define SUB_MODE_FULL                 (1L << 21)                  ///< Fullscreen mode
-#define SUB_MODE_FLOAT                (1L << 22)                  ///< Float mode
-#define SUB_MODE_STICK                (1L << 23)                  ///< Stick mode
-#define SUB_MODE_URGENT               (1L << 24)                  ///< Urgent mode
-#define SUB_MODE_URGENT_FOCUS         (1L << 25)                  ///< Urgent mode until focus
-#define SUB_MODE_RESIZE               (1L << 26)                  ///< Resize mode
-#define SUB_MODE_NONFULL              (1L << 27)                  ///< Disable full mode
-#define SUB_MODE_NONFLOAT             (1L << 28)                  ///< Disable float mode
-#define SUB_MODE_NONSTICK             (1L << 29)                  ///< Disable stick mode
-#define SUB_MODE_NONURGENT            (1L << 30)                  ///< Disable urgent mode
-#define SUB_MODE_NONRESIZE            (1L << 31)                  ///< Disable resize mode
 
 /* Call flags */
 #define SUB_CALL_HOOKS                (1L << 11)                  ///< Call hook
@@ -215,15 +207,29 @@
 #define SUB_HOOK_VIEW_KILL            (1L << 29)                  ///< View kill hook
 
 /* Client flags */
-#define SUB_CLIENT_INIT               (1L << 11)                  ///< Send focus message
+#define SUB_CLIENT_DEAD               (1L << 11)                  ///< Dead window
 #define SUB_CLIENT_FOCUS              (1L << 12)                  ///< Send focus message
 #define SUB_CLIENT_INPUT              (1L << 13)                  ///< Active/passive focus-model
 #define SUB_CLIENT_CLOSE              (1L << 14)                  ///< Send close message
-#define SUB_CLIENT_WARP               (1L << 15)                  ///< Warp window
-#define SUB_CLIENT_CENTER             (1L << 16)                  ///< Center window
-#define SUB_CLIENT_FIXED              (1L << 17)                  ///< Center window
-#define SUB_CLIENT_DEAD               (1L << 18)                  ///< Dead window
-#define SUB_CLIENT_UNMAP              (1L << 19)                  ///< Ignore unmaps
+#define SUB_CLIENT_UNMAP              (1L << 15)                  ///< Ignore unmaps
+
+#define SUB_CLIENT_TYPE_DESKTOP       (1L << 16)                  ///< Desktop type
+#define SUB_CLIENT_TYPE_DOCK          (1L << 17)                  ///< Dock type
+#define SUB_CLIENT_TYPE_TOOLBAR       (1L << 18)                  ///< Toolbar type
+#define SUB_CLIENT_TYPE_SPLASH        (1L << 19)                  ///< Splash type
+#define SUB_CLIENT_TYPE_DIALOG        (1L << 20)                  ///< Dialog type
+
+#define SUB_CLIENT_MODE_FULL          (1L << 21)                  ///< Fullscreen mode
+#define SUB_CLIENT_MODE_FLOAT         (1L << 22)                  ///< Float mode
+#define SUB_CLIENT_MODE_STICK         (1L << 23)                  ///< Stick mode
+#define SUB_CLIENT_MODE_URGENT        (1L << 24)                  ///< Urgent mode
+#define SUB_CLIENT_MODE_URGENT_FOCUS  (1L << 25)                  ///< Urgent mode until focus
+#define SUB_CLIENT_MODE_RESIZE        (1L << 26)                  ///< Resize mode
+#define SUB_CLIENT_MODE_NOFULL        (1L << 27)                  ///< Disable full mode
+#define SUB_CLIENT_MODE_NOFLOAT       (1L << 28)                  ///< Disable float mode
+#define SUB_CLIENT_MODE_NOSTICK       (1L << 29)                  ///< Disable stick mode
+#define SUB_CLIENT_MODE_NOURGENT      (1L << 30)                  ///< Disable urgent mode
+#define SUB_CLIENT_MODE_NORESIZE      (1L << 31)                  ///< Disable resize mode
 
 /* Drag flags */
 #define SUB_DRAG_START                (1L << 1)                   ///< Drag start
@@ -292,11 +298,12 @@
 #define SUB_TAG_GRAVITY               (1L << 11)                  ///< Gravity property
 #define SUB_TAG_SCREEN                (1L << 12)                  ///< Screen property
 #define SUB_TAG_GEOMETRY              (1L << 13)                  ///< Geometry property
-#define SUB_TAG_MATCH                 (1L << 14)                  ///< Match property
-#define SUB_TAG_MATCH_NAME            (1L << 15)                  ///< Match WM_NAME
-#define SUB_TAG_MATCH_INSTANCE        (1L << 16)                  ///< Match instance of WM_CLASS
-#define SUB_TAG_MATCH_CLASS           (1L << 17)                  ///< Match class of WM_CLASS
-#define SUB_TAG_MATCH_ROLE            (1L << 18)                  ///< Match role of window
+#define SUB_TAG_TYPE                  (1L << 14)                  ///< Type property
+#define SUB_TAG_MATCH                 (1L << 15)                  ///< Match property
+#define SUB_TAG_MATCH_NAME            (1L << 16)                  ///< Match WM_NAME
+#define SUB_TAG_MATCH_INSTANCE        (1L << 17)                  ///< Match instance of WM_CLASS
+#define SUB_TAG_MATCH_CLASS           (1L << 18)                  ///< Match class of WM_CLASS
+#define SUB_TAG_MATCH_ROLE            (1L << 19)                  ///< Match role of window (before client mode flags)
 
 /* Tray flags */
 #define SUB_TRAY_UNMAP                (1L << 11)                  ///< Ignore unmaps
@@ -368,11 +375,15 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_NET_WM_DESKTOP,                                        ///< Desktop client is on
   SUB_EWMH_NET_WM_STRUT,                                          ///< Strut
 
+  /* Types */
   SUB_EWMH_NET_WM_WINDOW_TYPE,                                    ///< Window type
-  SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG,                             ///< Dialog window
   SUB_EWMH_NET_WM_WINDOW_TYPE_DOCK,                               ///< Dock window
   SUB_EWMH_NET_WM_WINDOW_TYPE_DESKTOP,                            ///< Desktop window
+  SUB_EWMH_NET_WM_WINDOW_TYPE_TOOLBAR,                            ///< Toolbar window
+  SUB_EWMH_NET_WM_WINDOW_TYPE_SPLASH,                             ///< Splash window
+  SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG,                             ///< Dialog window
 
+  /* States */
   SUB_EWMH_NET_WM_STATE,                                          ///< Window state
   SUB_EWMH_NET_WM_STATE_FULLSCREEN,                               ///< Fullscreen window
   SUB_EWMH_NET_WM_STATE_ABOVE,                                    ///< Floating window
@@ -550,7 +561,7 @@ typedef struct subtag_t /* {{{ */
   FLAGS         flags;                                            ///< Tag flags
   char          *name;                                            ///< Tag name
   regex_t       *preg;                                            ///< Tag regex
-  int           screen;                                           ///< Tag screen
+  int           screen, type;                                     ///< Tag screen, type
   unsigned long gravity;                                          ///< Tag gravity
   XRectangle    geometry;                                         ///< Tag geometry
 } SubTag; /* }}} */
@@ -608,12 +619,12 @@ void subClientSetGravity(SubClient *c, int gravity,
 void subClientSetStrut(SubClient *c);                             ///< Set client strut
 void subClientSetName(SubClient *c);                              ///< Set client WM_NAME
 void subClientSetProtocols(SubClient *c);                         ///< Set client protocols
-void subClientSetSizeHints(SubClient *c, int *flags);           ///< Set client normal hints
-void subClientSetWMHints(SubClient *c, int *flags);                 ///< Set client WM hints
+void subClientSetSizeHints(SubClient *c, int *flags);             ///< Set client normal hints
+void subClientSetWMHints(SubClient *c, int *flags);               ///< Set client WM hints
 void subClientSetState(SubClient *c, int *flags);                 ///< Set client WM state
 void subClientSetTransient(SubClient *c, int *flags);             ///< Set client transient
 void subClientSetType(SubClient *c, int *flags);                  ///< Set client tyoe
-void subClientToggle(SubClient *c, int type);                     ///< Toggle client state
+void subClientToggle(SubClient *c, int type, int gravity);        ///< Toggle client state
 void subClientPublish(void);                                      ///< Publish all clients
 void subClientKill(SubClient *c, int destroy);                    ///< Kill client
 /* }}} */

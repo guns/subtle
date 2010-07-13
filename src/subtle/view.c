@@ -88,16 +88,13 @@ subViewConfigure(SubView *v,
           subClientSetGravity(c, c->gravities[vid], c->screens[vid], align);
 
           /* Map or raise window */
-          if(c->flags & (SUB_MODE_FULL|SUB_MODE_FLOAT))
+          if(c->flags & (SUB_CLIENT_MODE_FULL|SUB_CLIENT_MODE_FLOAT))
             XMapRaised(subtle->dpy, c->win);
           else XMapWindow(subtle->dpy, c->win);
 
           /* Warp after gravity and screen is set */
-          if(c->flags & SUB_CLIENT_WARP)
-            {
-              c->flags &= ~SUB_CLIENT_WARP;
-              subClientWarp(c);
-            }
+          if(c->flags & SUB_CLIENT_MODE_URGENT)
+            subClientWarp(c);
 
           /* EWMH: Desktop */
           subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
@@ -106,7 +103,7 @@ subViewConfigure(SubView *v,
         }
       else ///< Unmap other windows
         {
-          c->flags |= SUB_CLIENT_UNMAP;
+          c->flags |= SUB_CLIENT_UNMAP; ///< Ignore next unmap
           XUnmapWindow(subtle->dpy, c->win);
         }
     }
@@ -216,9 +213,9 @@ subViewHighlight(int tags)
 
       /* Enable/disable highlighting */
       if(v->tags & tags)
-        v->flags |= SUB_MODE_URGENT;
+        v->flags |= SUB_CLIENT_MODE_URGENT;
       else
-        v->flags &= ~ SUB_MODE_URGENT;
+        v->flags &= ~ SUB_CLIENT_MODE_URGENT;
     }
 
   subViewRender();
@@ -245,7 +242,7 @@ subViewRender(void)
           if(!(v->flags & SUB_PANEL_HIDDEN))
             {
               /* Select color pair */
-              if(v->flags & SUB_MODE_URGENT)
+              if(v->flags & SUB_CLIENT_MODE_URGENT)
                 {
                   fg = subtle->colors.fg_urgent;
                   bg = subtle->colors.bg_urgent;
