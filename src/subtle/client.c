@@ -69,7 +69,7 @@ ClientCopy(SubClient *c,
   int i;
 
   /* Copy stick flag, tags and screens */
-  c->flags  |= (k->flags & SUB_MODE_STICK);
+  c->flags  |= (k->flags & SUB_CLIENT_MODE_STICK);
   c->tags   |= k->tags;
   c->screen |= k->screen;
 
@@ -120,7 +120,7 @@ subClientNew(Window win)
   c = CLIENT(subSharedMemoryAlloc(1, sizeof(SubClient)));
   c->gravities = (int *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(int));
   c->screens   = (int *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(int));
-  c->flags     = (SUB_TYPE_CLIENT|SUB_CLIENT_INIT);
+  c->flags     = SUB_TYPE_CLIENT;
   c->gravity   = -1; ///< Force update
   c->win       = win;
 
@@ -149,7 +149,6 @@ subClientNew(Window win)
   sattrs.event_mask   = EVENTMASK;
   XChangeWindowAttributes(subtle->dpy, c->win, CWBorderPixel|CWEventMask, &sattrs);
   XSetWindowBorderWidth(subtle->dpy, c->win, subtle->bw);
-
   XAddToSaveSet(subtle->dpy, c->win);
   XSaveContext(subtle->dpy, c->win, CLIENTID, (void *)c);
 
@@ -160,23 +159,20 @@ subClientNew(Window win)
   subClientSetType(c, &flags);
   subClientSetTags(c, &flags);
   subClientSetSizeHints(c, &flags);
-
   subClientSetWMHints(c, &flags);
   subClientSetState(c, &flags);
   subClientSetTransient(c, &flags);
 
   /* Update and handle according to flags */
-  subClientToggle(c, (~c->flags & flags)); ///< Toggle flags
-  if(c->flags & SUB_CLIENT_CENTER) subClientCenter(c);
-  if(c->flags & (SUB_MODE_URGENT|SUB_MODE_URGENT_FOCUS))
+  subClientToggle(c, (~c->flags & flags), False); ///< Toggle flags
+  if(c->flags & SUB_CLIENT_TYPE_DIALOG) subClientCenter(c);
+  if(c->flags & (SUB_CLIENT_MODE_URGENT|SUB_CLIENT_MODE_URGENT_FOCUS))
     subViewHighlight(c->tags);
 
   /* EWMH: Gravity, screen and desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&c->gravity, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_SCREEN, (long *)&c->screen, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
-
-  c->flags &= ~SUB_CLIENT_INIT; ///< Safe for the wild
 
   subSharedLogDebug("new=client, name=%s, instance=%s, klass=%s, win=%#lx\n",
     c->name, c->instance, c->klass, win);
@@ -200,7 +196,7 @@ subClientConfigure(SubClient *c)
 
   r = c->geom;
 
-  if(c->flags & SUB_MODE_FULL) ///< Get fullscreen size of screen
+  if(c->flags & SUB_CLIENT_MODE_FULL) ///< Get fullscreen size of screen
     r = SCREEN(subtle->screens->data[-1 != c->screen ? c->screen : 0])->base;
 
   /* Tell client new geometry */
@@ -219,7 +215,7 @@ subClientConfigure(SubClient *c)
   XSendEvent(subtle->dpy, c->win, False, StructureNotifyMask, (XEvent *)&ev);
 
   subSharedLogDebug("Configure: type=client, win=%#lx, name=%s, state=%c, x=%03d, y=%03d, width=%03d, height=%03d\n",
-    c->win, c->klass, c->flags & SUB_MODE_FLOAT ? 'f' : c->flags & SUB_MODE_FULL ? 'u' : 'n',
+    c->win, c->klass, c->flags & SUB_CLIENT_MODE_FLOAT ? 'f' : c->flags & SUB_CLIENT_MODE_FULL ? 'u' : 'n',
     c->geom.x, c->geom.y, c->geom.width, c->geom.height);
 
   /* Hook: Create */
@@ -242,12 +238,12 @@ subClientRender(SubClient *c)
   assert(c);
 
   /* Title modes */
-  if(c->flags & SUB_MODE_FLOAT)
+  if(c->flags & SUB_CLIENT_MODE_FLOAT)
     {
       snprintf(buf + x, sizeof(buf), "%c", '^');
       x++;
     }
-  if(c->flags & SUB_MODE_STICK)
+  if(c->flags & SUB_CLIENT_MODE_STICK)
     {
       snprintf(buf + x, sizeof(buf), "%c", '*');
       x++;
@@ -256,7 +252,7 @@ subClientRender(SubClient *c)
   snprintf(buf + x, sizeof(buf), "%s", c->name);
 
   /* Select color pair */
-  if(c->flags & SUB_MODE_URGENT)
+  if(c->flags & SUB_CLIENT_MODE_URGENT)
     {
       fg = subtle->colors.fg_urgent;
       bg = subtle->colors.bg_urgent;
@@ -271,7 +267,7 @@ subClientRender(SubClient *c)
   XSetWindowBackground(subtle->dpy, subtle->windows.title.win, bg);
   XClearWindow(subtle->dpy, subtle->windows.title.win);
 
-  if(!(c->flags & SUB_MODE_DESKTOP)) ///< Exclude immobile windows
+  if(!(c->flags & SUB_CLIENT_TYPE_DESKTOP)) ///< Exclude immobile windows
     {
       XSetWindowBorder(subtle->dpy, c->win, subtle->windows.focus == c->win ?
         subtle->colors.bo_focus : subtle->colors.bo_normal);
@@ -301,15 +297,15 @@ subClientCompare(const void *a,
   assert(a && b);
 
   /* Check flags */
-  if((c1->flags | c2->flags) & SUB_MODE_FULL)
+  if((c1->flags | c2->flags) & SUB_CLIENT_MODE_FULL)
     {
-      if(c1->flags & SUB_MODE_FULL && !(c1->flags & SUB_CLIENT_INIT)) ret = 1;
-      if(c2->flags & SUB_MODE_FULL && !(c2->flags & SUB_CLIENT_INIT)) ret = -1;
+      if(c1->flags & SUB_CLIENT_MODE_FULL && !(c1->flags & SUB_CLIENT_DEAD)) ret = 1;
+      if(c2->flags & SUB_CLIENT_MODE_FULL && !(c2->flags & SUB_CLIENT_DEAD)) ret = -1;
     }
-  else if((c1->flags | c2->flags) & SUB_MODE_DESKTOP)
+  else if((c1->flags | c2->flags) & SUB_CLIENT_TYPE_DESKTOP)
     {
-      if(c1->flags & SUB_MODE_DESKTOP && !(c1->flags & SUB_CLIENT_INIT)) ret = -1;
-      if(c2->flags & SUB_MODE_DESKTOP && !(c2->flags & SUB_CLIENT_INIT)) ret = 1;
+      if(c1->flags & SUB_CLIENT_TYPE_DESKTOP && !(c1->flags & SUB_CLIENT_DEAD)) ret = -1;
+      if(c2->flags & SUB_CLIENT_TYPE_DESKTOP && !(c2->flags & SUB_CLIENT_DEAD)) ret = 1;
     }
 
   return ret;
@@ -400,8 +396,8 @@ subClientDrag(SubClient *c,
     } /* }}} */
 
   /* Prevent resizing of fixed size or drag of nonfloat windows */
-  if((mode == SUB_DRAG_RESIZE && c->flags & SUB_CLIENT_FIXED)
-    || c->flags & SUB_MODE_NONFLOAT) return;
+  if((mode == SUB_DRAG_RESIZE && c->flags & SUB_CLIENT_TYPE_DIALOG)
+    || c->flags & SUB_CLIENT_MODE_NOFLOAT) return;
 
   if(XGrabPointer(subtle->dpy, c->win, True, GRABMASK, GrabModeAsync,
     GrabModeAsync, None, cursor, CurrentTime)) return;
@@ -486,7 +482,7 @@ subClientDrag(SubClient *c,
 
   ClientMask(c); ///< Erase mask
 
-  if(c->flags & SUB_MODE_FLOAT) ///< Resize client
+  if(c->flags & SUB_CLIENT_MODE_FLOAT) ///< Resize client
     {
       /* Subtract borer */
       c->geom.x -= subtle->bw;
@@ -546,9 +542,9 @@ subClientResize(SubClient *c)
   assert(c);
 
   /* Check sizes */
-  if(!(c->flags & SUB_MODE_NONRESIZE) &&
+  if(!(c->flags & SUB_CLIENT_MODE_NORESIZE) &&
       (subtle->flags & SUB_SUBTLE_RESIZE ||
-      c->flags & (SUB_MODE_FLOAT|SUB_MODE_RESIZE)))
+      c->flags & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_RESIZE)))
     {
       /* Limit width */
       if(c->geom.width < c->minw)  c->geom.width  = c->minw;
@@ -571,7 +567,7 @@ subClientResize(SubClient *c)
     }
 
   /* Fit sizes */
-  if(!(c->flags & SUB_MODE_DESKTOP))
+  if(!(c->flags & SUB_CLIENT_TYPE_DESKTOP))
     {
       SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
 
@@ -590,7 +586,7 @@ subClientCenter(SubClient *c)
   DEAD(c);
   assert(c);
 
-  if(!(c->flags & (SUB_MODE_DESKTOP|SUB_MODE_NONRESIZE)))
+  if(!(c->flags & (SUB_CLIENT_TYPE_DESKTOP|SUB_CLIENT_MODE_NORESIZE)))
     {
       SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
 
@@ -599,8 +595,6 @@ subClientCenter(SubClient *c)
       c->geom.y = s->geom.y +
         (s->geom.height - c->geom.height - 2 * subtle->bw) / 2;
     }
-
-  c->flags &= ~SUB_CLIENT_CENTER;
 } /* }}} */
 
  /** subClientTag {{{
@@ -615,45 +609,43 @@ subClientTag(SubClient *c,
   int tag)
 {
   int flags = 0;
+  SubTag *t = NULL;
 
   assert(c);
 
   /* Update flags and tags */
-  if(c && !(c->flags & SUB_CLIENT_DEAD))
+  if(c && !(c->flags & SUB_CLIENT_DEAD) &&
+      (t = TAG(subArrayGet(subtle->tags, tag))))
     {
-      if(0 <= tag && subtle->tags->ndata > tag)
+      int i;
+
+      /* Collect flags and tags */
+      flags    |= (t->flags & MODES_ALL);
+      c->flags |= (t->flags & MODES_NONE);
+      c->tags  |= (1L << (tag + 1));
+
+      /* Set size and enable float */
+      if(t->flags & SUB_TAG_GEOMETRY && !(c->flags & SUB_CLIENT_MODE_NOFLOAT))
         {
-          int i;
-          SubTag *t = TAG(subtle->tags->data[tag]);
+          flags   |= (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_NORESIZE); ///< Disable size checks
+          c->geom  = t->geometry;
+        }
 
-          /* Collect flags and tags */
-          flags    |= (t->flags & MODES_ALL);
-          c->flags |= (t->flags & MODES_NONE);
-          c->tags  |= (1L << (tag + 1));
+      /* Desktop */
+      if(t->flags & SUB_CLIENT_TYPE_DESKTOP) ClientDesktop(c);
 
-          /* Set size and enable float */
-          if(t->flags & SUB_TAG_GEOMETRY && !(c->flags & SUB_MODE_NONFLOAT))
+      /* Set gravity and screens for matching views */
+      for(i = 0; i < subtle->views->ndata; i++)
+        {
+          SubView *v = VIEW(subtle->views->data[i]);
+
+          /* Match only views with this tag */
+          if(v->tags & (1L << (tag + 1)) || t->flags & SUB_CLIENT_MODE_STICK)
             {
-              flags   |= (SUB_MODE_FLOAT|SUB_MODE_NONRESIZE); ///< Disable size checks
-              c->geom  = t->geometry;
-            }
-
-          /* Desktop */
-          if(t->flags & SUB_MODE_DESKTOP) ClientDesktop(c);
-
-          /* Set gravity and screens for matching views */
-          for(i = 0; i < subtle->views->ndata; i++)
-            {
-              SubView *v = VIEW(subtle->views->data[i]);
-
-              /* Match only views with this tag */
-              if(v->tags & (1L << (tag + 1)) || t->flags & SUB_MODE_STICK)
-                {
-                  if(t->flags & SUB_TAG_GRAVITY) c->gravities[i] = t->gravity;
-                  if(t->flags & SUB_TAG_SCREEN &&
-                      t->screen <= subtle->screens->ndata - 1)
-                    c->screens[i] = t->screen;
-                }
+              if(t->flags & SUB_TAG_GRAVITY) c->gravities[i] = t->gravity;
+              if(t->flags & SUB_TAG_SCREEN &&
+                  t->screen <= subtle->screens->ndata - 1)
+                c->screens[i] = t->screen;
             }
         }
     }
@@ -689,14 +681,15 @@ subClientSetTags(SubClient *c,
       SubTag *t = TAG(subtle->tags->data[i]);
 
       /* Check if tag matches client */
-      if(t->preg && ((t->flags & SUB_TAG_MATCH_NAME && c->name &&
-          subSharedRegexMatch(t->preg, c->name))||
+      if((t->flags & SUB_TAG_TYPE && c->flags & t->type) ||
+          (t->preg && ((t->flags & SUB_TAG_MATCH_NAME && c->name &&
+            subSharedRegexMatch(t->preg, c->name)) ||
           (t->flags & SUB_TAG_MATCH_INSTANCE && c->instance &&
-          subSharedRegexMatch(t->preg, c->instance)) ||
+            subSharedRegexMatch(t->preg, c->instance)) ||
           (t->flags & SUB_TAG_MATCH_CLASS && c->klass &&
-          subSharedRegexMatch(t->preg, c->klass)) ||
+            subSharedRegexMatch(t->preg, c->klass)) ||
           (t->flags & SUB_TAG_MATCH_ROLE && role &&
-          subSharedRegexMatch(t->preg, role))))
+            subSharedRegexMatch(t->preg, role)))))
         *flags |= subClientTag(c, i);
     }
 
@@ -740,7 +733,7 @@ subClientSetGravity(SubClient *c,
       SubScreen *s = SCREEN(subtle->screens->data[-1 != screen ?
         screen : c->screen]);
 
-      if(c->flags & SUB_MODE_FLOAT)
+      if(c->flags & SUB_CLIENT_MODE_FLOAT)
         {
           if(-1 != screen)
             {
@@ -756,7 +749,7 @@ subClientSetGravity(SubClient *c,
               c->geom.y = c->geom.y - s1->geom.y + s2->geom.y;
             }
         }
-      else if(!(c->flags & SUB_MODE_DESKTOP))
+      else if(!(c->flags & SUB_CLIENT_TYPE_DESKTOP))
         {
           SubGravity *g = GRAVITY(subtle->gravities->data[-1 != gravity ?
             gravity : c->gravity]);
@@ -844,13 +837,13 @@ subClientSetName(SubClient *c)
   DEAD(c);
 
   /* Check for immobile clients */
-  if(!(c->flags & SUB_MODE_DESKTOP))
+  if(!(c->flags & SUB_CLIENT_TYPE_DESKTOP))
     {
       len = strlen(c->name);
 
       /* Title modes */
-      if(c->flags & SUB_MODE_FLOAT) len++;
-      if(c->flags & SUB_MODE_STICK) len++;
+      if(c->flags & SUB_CLIENT_MODE_FLOAT) len++;
+      if(c->flags & SUB_CLIENT_MODE_STICK) len++;
 
       /* Update panel width */
       subtle->windows.title.width = subSharedTextWidth(subtle->dpy,
@@ -957,10 +950,10 @@ subClientSetSizeHints(SubClient *c,
         {
           if(size->min_width == size->max_width &&
               size->min_height == size->max_height &&
-              !(c->flags & SUB_MODE_DESKTOP))
+              !(c->flags & SUB_CLIENT_TYPE_DESKTOP))
             {
-              *flags   |= SUB_MODE_FLOAT;
-              c->flags |= (SUB_CLIENT_FIXED|SUB_CLIENT_CENTER);
+              *flags   |= SUB_CLIENT_MODE_FLOAT;
+              c->flags |= SUB_CLIENT_TYPE_DIALOG;
             }
         }
 
@@ -979,9 +972,9 @@ subClientSetSizeHints(SubClient *c,
         }
 
       /* Check for specific position */
-      if(!(c->flags & SUB_MODE_NONRESIZE) &&
+      if(!(c->flags & SUB_CLIENT_MODE_NORESIZE) &&
           (subtle->flags & SUB_SUBTLE_RESIZE ||
-          c->flags & (SUB_MODE_FLOAT|SUB_MODE_RESIZE)))
+          c->flags & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_RESIZE)))
         {
           if(size->flags & (USSize|PSize)) ///< User/program size
             {
@@ -1023,11 +1016,11 @@ subClientSetWMHints(SubClient *c,
   if((hints = XGetWMHints(subtle->dpy, c->win)))
     {
       /* Handle urgency hint */
-      if(!(c->flags & SUB_MODE_NONURGENT))
+      if(!(c->flags & SUB_CLIENT_MODE_NOURGENT))
         {
           /* Set urgency or remove urgency after losing focus */
-          if(hints->flags & XUrgencyHint)     *flags |= SUB_MODE_URGENT;
-          else if(c->flags & SUB_MODE_URGENT) *flags |= SUB_MODE_URGENT_FOCUS;
+          if(hints->flags & XUrgencyHint)     *flags |= SUB_CLIENT_MODE_URGENT;
+          else if(c->flags & SUB_CLIENT_MODE_URGENT) *flags |= SUB_CLIENT_MODE_URGENT_FOCUS;
         }
 
       /* Handle window group hint */
@@ -1071,10 +1064,10 @@ subClientSetState(SubClient *c,
         {
           switch(subEwmhFind(states[i]))
             {
-              case SUB_EWMH_NET_WM_STATE_FULLSCREEN: *flags |= SUB_MODE_FULL;   break;
-              case SUB_EWMH_NET_WM_STATE_ABOVE:      *flags |= SUB_MODE_FLOAT;  break;
-              case SUB_EWMH_NET_WM_STATE_STICKY:     *flags |= SUB_MODE_STICK;  break;
-              case SUB_EWMH_NET_WM_STATE_MODAL:      *flags |= SUB_MODE_URGENT; break;
+              case SUB_EWMH_NET_WM_STATE_FULLSCREEN: *flags |= SUB_CLIENT_MODE_FULL;   break;
+              case SUB_EWMH_NET_WM_STATE_ABOVE:      *flags |= SUB_CLIENT_MODE_FLOAT;  break;
+              case SUB_EWMH_NET_WM_STATE_STICKY:     *flags |= SUB_CLIENT_MODE_STICK;  break;
+              case SUB_EWMH_NET_WM_STATE_MODAL:      *flags |= SUB_CLIENT_MODE_URGENT; break;
               default: break;
             }
         }
@@ -1104,7 +1097,7 @@ subClientSetTransient(SubClient *c,
 
       /* Check if transient windows should be urgent */
       *flags |= subtle->flags & SUB_SUBTLE_URGENT ?
-        SUB_MODE_FLOAT|SUB_MODE_URGENT : SUB_MODE_FLOAT;
+        SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_URGENT : SUB_CLIENT_MODE_FLOAT;
 
       /* Find parent window */
       if((k = CLIENT(subSubtleFind(trans, CLIENTID)))) ClientCopy(c, k);
@@ -1137,22 +1130,27 @@ subClientSetType(SubClient *c,
         {
           switch((id = subEwmhFind(types[i])))
             {
-              case SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG:
-                *flags   |= SUB_MODE_FLOAT;
-                c->flags |= SUB_CLIENT_CENTER;
-                break;
               case SUB_EWMH_NET_WM_WINDOW_TYPE_DOCK:
+                c->flags |= SUB_CLIENT_TYPE_DOCK;
               case SUB_EWMH_NET_WM_WINDOW_TYPE_DESKTOP:
-                c->flags |= SUB_MODE_DESKTOP;
+                c->flags |= SUB_CLIENT_TYPE_DESKTOP;
 
                 /* Special treatment */
                 if(SUB_EWMH_NET_WM_WINDOW_TYPE_DESKTOP == id)
-                  {
-                    ClientDesktop(c);
-                  }
+                  ClientDesktop(c);
                 else XRaiseWindow(subtle->dpy, c->win);
 
                 XSetWindowBorderWidth(subtle->dpy, c->win, 0);
+                break;
+              case SUB_EWMH_NET_WM_WINDOW_TYPE_TOOLBAR:
+                c->flags |= SUB_CLIENT_TYPE_TOOLBAR;
+                break;
+              case SUB_EWMH_NET_WM_WINDOW_TYPE_SPLASH:
+                c->flags |= SUB_CLIENT_TYPE_SPLASH;
+                break;
+              case SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG:
+                *flags   |= SUB_CLIENT_MODE_FLOAT;
+                c->flags |= SUB_CLIENT_TYPE_DIALOG;
                 break;
               default: break;
             }
@@ -1164,13 +1162,15 @@ subClientSetType(SubClient *c,
 
  /** subClientToggle {{{
   * @brief Toggle various states of client
-  * @param[in]  c     A #SubClient
-  * @param[in]  type  Toggle type
+  * @param[in]  c        A #SubClient
+  * @param[in]  type     Toggle type
+  * @param[in]  gravity  Whether gravity should be set
   **/
 
 void
 subClientToggle(SubClient *c,
-  int type)
+  int type,
+  int gravity)
 {
   int flags = 0;
 
@@ -1178,26 +1178,26 @@ subClientToggle(SubClient *c,
   assert(c);
 
   /* Remove flags */
-  if(type & SUB_MODE_FULL   && c->flags & SUB_MODE_NONFULL)
-    type &= ~SUB_MODE_FULL;
-  if(type & SUB_MODE_FLOAT  && c->flags & SUB_MODE_NONFLOAT)
-    type &= ~SUB_MODE_FLOAT;
-  if(type & SUB_MODE_STICK  && c->flags & SUB_MODE_NONSTICK)
-    type &= ~SUB_MODE_STICK;
-  if(type & SUB_MODE_URGENT && c->flags & SUB_MODE_NONURGENT)
-    type &= ~SUB_MODE_URGENT;
+  if(type & SUB_CLIENT_MODE_FULL   && c->flags & SUB_CLIENT_MODE_NOFULL)
+    type &= ~SUB_CLIENT_MODE_FULL;
+  if(type & SUB_CLIENT_MODE_FLOAT  && c->flags & SUB_CLIENT_MODE_NOFLOAT)
+    type &= ~SUB_CLIENT_MODE_FLOAT;
+  if(type & SUB_CLIENT_MODE_STICK  && c->flags & SUB_CLIENT_MODE_NOSTICK)
+    type &= ~SUB_CLIENT_MODE_STICK;
+  if(type & SUB_CLIENT_MODE_URGENT && c->flags & SUB_CLIENT_MODE_NOURGENT)
+    type &= ~SUB_CLIENT_MODE_URGENT;
 
   if(c->flags & type) ///< Unset flags
     {
       c->flags &= ~type;
 
-      if(type & SUB_MODE_FULL)
+      if(type & SUB_CLIENT_MODE_FULL)
         XSetWindowBorderWidth(subtle->dpy, c->win, subtle->bw);
 
-      if(type & SUB_MODE_FLOAT)
+      if(type & SUB_CLIENT_MODE_FLOAT)
         c->gravity = -1; ///< Updating gravity
 
-      if(type & SUB_MODE_STICK)
+      if(type & SUB_CLIENT_MODE_STICK)
         {
           subViewDynamic();
           subViewConfigure(CURVIEW, False);
@@ -1207,9 +1207,9 @@ subClientToggle(SubClient *c,
     {
       c->flags |= type;
 
-      if(type & SUB_MODE_STICK)
+      if(type & SUB_CLIENT_MODE_STICK)
         {
-          if(!(c->flags & SUB_CLIENT_INIT)) ///< Check if client is ready
+          if(gravity) ///< Check if gravity should be set
             {
               int i;
 
@@ -1229,26 +1229,23 @@ subClientToggle(SubClient *c,
           subViewDynamic();
         }
 
-      if(type & SUB_MODE_FLOAT) subClientResize(c); ///< Sanitize
-      if(type & SUB_MODE_FULL)
+      if(type & SUB_CLIENT_MODE_FLOAT) subClientResize(c); ///< Sanitize
+      if(type & SUB_CLIENT_MODE_FULL)
         {
           XSetWindowBorderWidth(subtle->dpy, c->win, 0);
           subClientResize(c); ///< Sanitize
         }
-
-      if(type & SUB_MODE_URGENT && VISIBLE(CURVIEW, c))
-        c->flags |= SUB_CLIENT_WARP;
     }
 
   subClientConfigure(c);
 
   /* Sort for keeping stacking order */
-  if(type & SUB_MODE_FULL) subArraySort(subtle->clients, subClientCompare);
+  if(type & SUB_CLIENT_MODE_FULL) subArraySort(subtle->clients, subClientCompare);
 
   /* Translate flags */
-  if(c->flags & SUB_MODE_FULL)  flags |= SUB_EWMH_FULL;
-  if(c->flags & SUB_MODE_FLOAT) flags |= SUB_EWMH_FLOAT;
-  if(c->flags & SUB_MODE_STICK) flags |= SUB_EWMH_STICK;
+  if(c->flags & SUB_CLIENT_MODE_FULL)  flags |= SUB_EWMH_FULL;
+  if(c->flags & SUB_CLIENT_MODE_FLOAT) flags |= SUB_EWMH_FLOAT;
+  if(c->flags & SUB_CLIENT_MODE_STICK) flags |= SUB_EWMH_STICK;
 
   /* EWMH: Flags */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_FLAGS, (long *)&flags, 1);
@@ -1306,7 +1303,7 @@ subClientKill(SubClient *c,
     }
 
   /* Remove highlight of urgent client */
-  if(c->flags & (SUB_MODE_URGENT|SUB_MODE_URGENT_FOCUS))
+  if(c->flags & (SUB_CLIENT_MODE_URGENT|SUB_CLIENT_MODE_URGENT_FOCUS))
     subViewHighlight(0); ///< Dehighlight
 
   /* Ignore further events and delete context */

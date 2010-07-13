@@ -109,9 +109,9 @@ RubyConvert(void *data)
             XA_STRING, subEwmhGet(SUB_EWMH_WM_WINDOW_ROLE), NULL);
 
           /* Translate flags */
-          if(c->flags & SUB_MODE_FULL)  flags |= SUB_EWMH_FULL;
-          if(c->flags & SUB_MODE_FLOAT) flags |= SUB_EWMH_FLOAT;
-          if(c->flags & SUB_MODE_STICK) flags |= SUB_EWMH_STICK;
+          if(c->flags & SUB_CLIENT_MODE_FULL)  flags |= SUB_EWMH_FULL;
+          if(c->flags & SUB_CLIENT_MODE_FLOAT) flags |= SUB_EWMH_FLOAT;
+          if(c->flags & SUB_CLIENT_MODE_STICK) flags |= SUB_EWMH_STICK;
 
           /* Set properties */
           rb_iv_set(object, "@id",       INT2FIX(id));
@@ -1116,17 +1116,17 @@ RubyKernelGrab(int argc,
             else if(CHAR2SYM("WindowFloat") == value)
               {
                 type = SUB_GRAB_WINDOW_TOGGLE;
-                data = DATA((unsigned long)SUB_MODE_FLOAT);
+                data = DATA((unsigned long)SUB_CLIENT_MODE_FLOAT);
               }
             else if(CHAR2SYM("WindowFull") == value)
               {
                 type = SUB_GRAB_WINDOW_TOGGLE;
-                data = DATA((unsigned long)SUB_MODE_FULL);
+                data = DATA((unsigned long)SUB_CLIENT_MODE_FULL);
               }
             else if(CHAR2SYM("WindowStick") == value)
               {
                 type = SUB_GRAB_WINDOW_TOGGLE;
-                data = DATA((unsigned long)SUB_MODE_STICK);
+                data = DATA((unsigned long)SUB_CLIENT_MODE_STICK);
               }
             else if(CHAR2SYM("WindowRaise") == value)
               {
@@ -1251,7 +1251,7 @@ RubyKernelTag(int argc,
   VALUE *argv,
   VALUE self)
 {
-  int flags = 0, screen = 0;
+  int flags = 0, screen = 0, type = 0;
   unsigned long gravity = 0;
   XRectangle geometry = { 0 };
   VALUE name = Qnil, regex = Qnil, params = Qnil, value = Qnil;
@@ -1269,6 +1269,10 @@ RubyKernelTag(int argc,
       rb_obj_instance_eval(0, 0, options);
       params = rb_iv_get(options, "@params");
       regex  = rb_hash_lookup(params, CHAR2SYM("regex"));
+
+      /* Convert regexp */
+      if(T_REGEXP == rb_type(regex))
+        regex = rb_funcall(regex, rb_intern("source"), 0, NULL);
     }
 
   /* Get options */
@@ -1293,30 +1297,43 @@ RubyKernelTag(int argc,
           RubyGetGeometry(value, &geometry))
         flags |= SUB_TAG_GEOMETRY;
 
+      if(T_SYMBOL == rb_type(value = rb_hash_lookup(params,
+          CHAR2SYM("type"))))
+        {
+          flags |= SUB_TAG_TYPE;
+
+          /* Check type */
+          if(CHAR2SYM("desktop") == value)      type = SUB_CLIENT_TYPE_DESKTOP;
+          else if(CHAR2SYM("dock") == value)    type = SUB_CLIENT_TYPE_DOCK;
+          else if(CHAR2SYM("toolbar") == value) type = SUB_CLIENT_TYPE_TOOLBAR;
+          else if(CHAR2SYM("splash") == value)  type = SUB_CLIENT_TYPE_SPLASH;
+          else if(CHAR2SYM("dialog") == value)  type = SUB_CLIENT_TYPE_DIALOG;
+        }
+
       /* Check tri-state properties */
       if(Qtrue == (value = rb_hash_lookup(params,
           CHAR2SYM("geometry"))) || Qfalse == value)
-        flags |= (Qtrue == value ? SUB_MODE_FULL : SUB_MODE_NONFULL);
+        flags |= (Qtrue == value ? SUB_CLIENT_MODE_FULL : SUB_CLIENT_MODE_NOFULL);
 
       if(Qtrue == (value = rb_hash_lookup(params,
           CHAR2SYM("float"))) || Qfalse == value)
-        flags |= (Qtrue == value ? SUB_MODE_FLOAT : SUB_MODE_NONFLOAT);
+        flags |= (Qtrue == value ? SUB_CLIENT_MODE_FLOAT : SUB_CLIENT_MODE_NOFLOAT);
 
       if(Qtrue == (value = rb_hash_lookup(params,
           CHAR2SYM("stick"))) || Qfalse == value)
-        flags |= (Qtrue == value ? SUB_MODE_STICK : SUB_MODE_NONSTICK);
+        flags |= (Qtrue == value ? SUB_CLIENT_MODE_STICK : SUB_CLIENT_MODE_NOSTICK);
 
       if(Qtrue == (value = rb_hash_lookup(params,
           CHAR2SYM("urgent"))) || Qfalse == value)
-        flags |= (Qtrue == value ? SUB_MODE_URGENT : SUB_MODE_NONURGENT);
+        flags |= (Qtrue == value ? SUB_CLIENT_MODE_URGENT : SUB_CLIENT_MODE_NOURGENT);
 
       if(Qtrue == (value = rb_hash_lookup(params,
           CHAR2SYM("resize"))) || Qfalse == value)
-        flags |= (Qtrue == value ? SUB_MODE_RESIZE : SUB_MODE_NONRESIZE);
+        flags |= (Qtrue == value ? SUB_CLIENT_MODE_RESIZE : SUB_CLIENT_MODE_NORESIZE);
 
       if(Qtrue == (value = rb_hash_lookup(params,
           CHAR2SYM("desktop"))))
-        flags |= SUB_MODE_DESKTOP;
+        flags |= SUB_CLIENT_TYPE_DESKTOP;
 
       /* Check matching options */
       if(T_ARRAY == rb_type(value = rb_hash_lookup(params,
@@ -1356,9 +1373,10 @@ RubyKernelTag(int argc,
           /* Finally create new tag */
           if((t = subTagNew(RSTRING_PTR(name), re, &duplicate)))
             {
-              t->flags   |= flags;
-              t->gravity  = gravity;
-              t->geometry = geometry;
+              t->flags    |= flags;
+              t->gravity   = gravity;
+              t->geometry  = geometry;
+              t->type      = type;
 
               /* Check screen - non existing screens are allowed */
               if(t->flags & SUB_TAG_SCREEN && 0 <= screen)
@@ -2343,7 +2361,7 @@ subRubyReloadConfig(void)
       SubClient *c = CLIENT(subtle->clients->data[i]);
 
       subClientSetTags(c, &flags);
-      subClientToggle(c, ~c->flags & flags); ///< Toggle flags
+      subClientToggle(c, ~c->flags & flags, True); ///< Toggle flags
     }
 
   /* Reload sublets */
