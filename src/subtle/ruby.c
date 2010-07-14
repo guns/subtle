@@ -18,6 +18,7 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <ruby.h>
+#include <ruby/encoding.h>
 #include "subtle.h"
 
 #define CHAR2SYM(name) ID2SYM(rb_intern(name))
@@ -2045,7 +2046,7 @@ RubySubletUnwatch(VALUE self)
 void
 subRubyInit(void)
 {
-  VALUE options = Qnil, sandbox = Qnil, sublet = Qnil;
+  VALUE encoding = Qnil, options = Qnil, sandbox = Qnil, sublet = Qnil;
 
   void Init_prelude(void);
 
@@ -2053,6 +2054,11 @@ subRubyInit(void)
   ruby_init();
   ruby_init_loadpath();
   ruby_script("subtle");
+
+  /* Set encoding */
+  encoding = rb_enc_from_encoding(rb_filesystem_encoding());
+  rb_enc_set_default_internal(encoding);
+  rb_enc_set_default_external(encoding);
 
   /* FIXME: Fake ruby_init_gems(Qtrue) */
   rb_define_module("Gem");
