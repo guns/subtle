@@ -2046,7 +2046,7 @@ RubySubletUnwatch(VALUE self)
 void
 subRubyInit(void)
 {
-  VALUE encoding = Qnil, options = Qnil, sandbox = Qnil, sublet = Qnil;
+  VALUE options = Qnil, sandbox = Qnil, sublet = Qnil;
 
   void Init_prelude(void);
 
@@ -2055,10 +2055,16 @@ subRubyInit(void)
   ruby_init_loadpath();
   ruby_script("subtle");
 
-  /* Set encoding */
-  encoding = rb_enc_from_encoding(rb_filesystem_encoding());
-  rb_enc_set_default_internal(encoding);
-  rb_enc_set_default_external(encoding);
+#ifdef HAVE_RB_ENC_SET_DEFAULT_INTERNAL
+  {
+    VALUE encoding = Qnil;
+
+    /* Set encoding */
+    encoding = rb_enc_from_encoding(rb_filesystem_encoding());
+    rb_enc_set_default_internal(encoding);
+    rb_enc_set_default_external(encoding);
+  }
+#endif /* HAVE_RB_ENC_SET_DEFAULT_INTERNAL */
 
   /* FIXME: Fake ruby_init_gems(Qtrue) */
   rb_define_module("Gem");
