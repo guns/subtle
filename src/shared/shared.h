@@ -21,7 +21,6 @@
 #include <signal.h>
 #include <errno.h>
 #include <assert.h>
-#include <regex.h>
 #include <getopt.h>
 #include <ctype.h>
 #include <X11/Xlib.h>
@@ -29,6 +28,7 @@
 #include <X11/Xutil.h>
 #include <X11/Xmd.h>
 #include <X11/cursorfont.h>
+#include <ruby/oniguruma.h>
 
 #include "config.h"
 
@@ -150,7 +150,7 @@ void *subSharedMemoryRealloc(void *mem, size_t size);             ///< Reallocat
 /* }}} */
 
 /* Regex {{{ */
-regex_t *subSharedRegexNew(char *regex);                          ///< Create new regex
+regex_t *subSharedRegexNew(char *pattern);                          ///< Create new regex
 int subSharedRegexMatch(regex_t *preg, char *string);             ///< Check if string matches preg
 void subSharedRegexKill(regex_t *preg);                           ///< Kill regex
 /* }}} */

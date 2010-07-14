@@ -87,9 +87,11 @@ subSharedLogXError(Display *disp,
 
   if(42 != ev->request_code) /* X_SetInputFocus */
     {
-      char error[255];
+      char error[255] = { 0 };
+
       XGetErrorText(disp, ev->error_code, error, sizeof(error));
-      subSharedLogDebug("%s: win=%#lx, request=%d\n", error, ev->resourceid, ev->request_code);
+      subSharedLogDebug("%s: win=%#lx, request=%d\n",
+        error, ev->resourceid, ev->request_code);
     }
 
   return 0;
@@ -134,35 +136,39 @@ subSharedMemoryRealloc(void *mem,
 
  /** subSharedRegexNew {{{
   * @brief Create new regex
-  * @param[in]  regex  Regex
+  * @param[in]  pattern  Regex
   * @return Returns a #regex_t or \p NULL
   **/
 
 regex_t *
-subSharedRegexNew(char *regex)
+subSharedRegexNew(char *pattern)
 {
-  int errcode;
+  int ecode = 0;
   regex_t *preg = NULL;
+  OnigErrorInfo einfo;
 
-  assert(regex);
+  assert(pattern);
 
-  preg = (regex_t *)subSharedMemoryAlloc(1, sizeof(regex_t));
+  /* Create onig regex */
+  ecode = onig_new(&preg, (UChar *)pattern,
+    (UChar *)(pattern + strlen(pattern)),
+    ONIG_OPTION_EXTEND|ONIG_OPTION_SINGLELINE|ONIG_OPTION_IGNORECASE,
+    ONIG_ENCODING_ASCII, ONIG_SYNTAX_RUBY, &einfo);
 
-  /* Thread safe error handling */
-  if((errcode = regcomp(preg, regex, REG_EXTENDED|REG_NOSUB|REG_ICASE)))
+  /* Check for compile errors */
+  if(ecode)
     {
-      size_t errsize = regerror(errcode, preg, NULL, 0);
-      char *errbuf = (char *)subSharedMemoryAlloc(1, errsize);
+      UChar ebuf[ONIG_MAX_ERROR_MESSAGE_LEN] = { 0 };
 
-      regerror(errcode, preg, errbuf, errsize);
+      onig_error_code_to_str((UChar*)ebuf, ecode, &einfo);
 
-      subSharedLogDebug("Can't compile preg `%s': %s\n", regex, errbuf);
+      subSharedLogWarn("Failed compiling regex `%s': %s\n", pattern, ebuf);
 
-      free(errbuf);
-      subSharedRegexKill(preg);
+      free(preg);
 
       return NULL;
     }
+
   return preg;
 } /* }}} */
 
@@ -180,7 +186,9 @@ subSharedRegexMatch(regex_t *preg,
 {
   assert(preg);
 
-  return !regexec(preg, string, 0, NULL, 0);
+  return ONIG_MISMATCH != onig_match(preg, (UChar *)string,
+    (UChar *)(string + strlen(string)), (UChar *)string, NULL,
+    ONIG_OPTION_NONE);
 } /* }}} */
 
  /** subSharedRegexKill {{{
@@ -193,8 +201,7 @@ subSharedRegexKill(regex_t *preg)
 {
   assert(preg);
 
-  regfree(preg);
-  free(preg);
+  onig_free(preg);
 } /* }}} */
 
 /* Property */
