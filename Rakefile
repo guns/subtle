@@ -73,7 +73,7 @@ end
 FUNCS   = [ "select" ]
 HEADER  = [
   "stdio.h", "stdlib.h", "stdarg.h", "string.h", "unistd.h", "signal.h", "errno.h",
-  "assert.h", "regex.h", "sys/time.h", "sys/types.h"
+  "assert.h", "sys/time.h", "sys/types.h"
 ]
 OPTIONAL = [ "sys/inotify.h", "execinfo.h" ]
 # }}}
@@ -302,6 +302,9 @@ task(:config) do
         fail("Func #{f} was not found")
       end
     end
+
+    # Encoding
+    have_func("rb_enc_set_default_internal")
 
     # Defines
     @defines.each do |k, v|
