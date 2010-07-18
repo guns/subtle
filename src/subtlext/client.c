@@ -744,7 +744,7 @@ subClientGravityWriter(VALUE self,
   /* Check instance type */
   if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("Gravity"))))
     gravity = value;
-  else subGravityFind(Qnil, value);
+  else gravity = subGravityFind(Qnil, value);
 
   /* Set gravity */
   if(Qnil != gravity)
@@ -926,7 +926,7 @@ subClientGeometryWriter(int argc,
   return geometry;
 } /* }}} */
 
-/* subClientGravityWriter {{{ */
+/* subClientResizeWriter {{{ */
 /*
  * call-seq: resize=(bool) -> nil
  *
