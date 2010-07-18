@@ -239,11 +239,13 @@ subScreenClientList(VALUE self)
 {
   int i, id, size = 0;
   Window *clients = NULL;
-  VALUE array = Qnil;
+  VALUE klass = Qnil, meth = Qnil, array = Qnil, client = Qnil;
 
   id      = FIX2INT(rb_iv_get(self, "@id"));
+  klass   = rb_const_get(mod, rb_intern("Client"));
+  meth    = rb_intern("new");
   array   = rb_ary_new();
-  clients = subSubtlextList("_NET_ACTIVE_WINDOW", &size);
+  clients = subSubtlextList("_NET_CLIENT_LIST", &size);
 
   if(clients)
     {
@@ -252,8 +254,15 @@ subScreenClientList(VALUE self)
           int *screen = (int *)subSharedPropertyGet(display, clients[i],XA_CARDINAL,
             XInternAtom(display, "SUBTLE_WINDOW_SCREEN", False), NULL);
 
-          if(id - 1 == *screen) ///< Check if screen matches
-            rb_ary_push(array, subClientInstantiate(clients[i]));
+          /* Check if screen matches */
+          if(id == *screen)
+            {
+              if(!NIL_P(client = rb_funcall(klass, meth, 1, LONG2NUM(clients[i]))))
+                {
+                  subClientUpdate(client);
+                  rb_ary_push(array, client);
+                }
+            }
 
           free(screen);
         }
