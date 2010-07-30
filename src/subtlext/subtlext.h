@@ -229,6 +229,7 @@ VALUE subWindowGeometryWriter(VALUE self, VALUE value);           ///< Set geome
 VALUE subWindowWrite(VALUE self, VALUE x, VALUE y, VALUE text);   ///< Write text
 VALUE subWindowRead(VALUE self, VALUE x, VALUE y);                ///< Read text
 VALUE subWindowClear(int argc, VALUE *argv, VALUE self);          ///< Clear area or window
+VALUE subWindowRedraw(VALUE self);                                ///< Redraw window
 VALUE subWindowCompletion(VALUE self);                            ///< Add completion proc
 VALUE subWindowInput(VALUE self);                                 ///< Add input proc
 VALUE subWindowOnce(VALUE self, VALUE geometry);                  ///< Run window once

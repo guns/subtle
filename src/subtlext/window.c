@@ -455,7 +455,7 @@ subWindowBorderSizeWriter(VALUE self,
 
 /* subWindowGeometryReader {{{ */
 /*
- * call-seq: gemetry -> Subtlext::Geometry
+ * call-seq: geometry -> Subtlext::Geometry
  *
  * Get geometry of a window
  *
@@ -471,7 +471,7 @@ subWindowGeometryReader(VALUE self)
 
 /* subWindowGeometryWriter {{{ */
 /*
- * call-seq: gemetry=(value) -> nil
+ * call-seq: geometry=(value) -> nil
  *
  * Get geometry of a window
  *
@@ -736,7 +736,6 @@ subWindowClear(int argc,
   VALUE *argv,
   VALUE self)
 {
-
   SubtlextWindow *w = NULL;
 
   Data_Get_Struct(self, SubtlextWindow, w);
@@ -754,6 +753,27 @@ subWindowClear(int argc,
         }
       else XClearWindow(display, w->win);
     }
+
+  return Qnil;
+} /* }}} */
+
+/* subWindowRedraw {{{ */
+/*
+ * call-seq: redraw -> nil
+ *
+ * Redraw window
+ *
+ *  win.redraw
+ *  => nil
+ */
+
+VALUE
+subWindowRedraw(VALUE self)
+{
+  SubtlextWindow *w = NULL;
+
+  Data_Get_Struct(self, SubtlextWindow, w);
+  if(w) WindowExpose(w);
 
   return Qnil;
 } /* }}} */
