@@ -402,7 +402,7 @@ subClientViewList(VALUE self)
   tags1   = (unsigned long *)subSharedPropertyGet(display, NUM2LONG(win),
     XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
   flags   = (unsigned long *)subSharedPropertyGet(display, NUM2LONG(win),
-    XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
+    XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_FLAGS", False), NULL);
 
   if(names && views)
     {
