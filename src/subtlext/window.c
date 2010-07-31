@@ -635,11 +635,8 @@ subWindowRead(VALUE self,
                       text[0] = 0;
                       break; /* }}} */
                     case XK_BackSpace: /* {{{ */
-                      if(0 < len) 
-                        {
-                          text[len--] = 0;
-                          text[len]   = 0;
-                        }
+                      if(0 < len) text[len--] = 0;
+                      text[len] = 0;
                       break; /* }}} */
                     case XK_Tab: /* {{{ */
                       if(w->flags & WINDOW_COMPLETION_FUNC)
