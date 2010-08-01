@@ -79,8 +79,9 @@ VALUE subClientKill(VALUE self);                                  ///< Kill clie
 /* }}} */
 
 /* color.c {{{ */
+unsigned long subColorPixel(VALUE value);                         ///< Get pixel value
 VALUE subColorInstantiate(unsigned long pixel);                   ///< Instantiate color
-VALUE subColorInit(VALUE self, VALUE color);                      ///< Create new color
+VALUE subColorInit(VALUE self, VALUE value);                      ///< Create new color
 VALUE subColorToHex(VALUE self);                                  ///< Convert to hex string
 VALUE subColorToString(VALUE self);                               ///< Convert to string
 VALUE subColorOperatorPlus(VALUE self, VALUE value);              ///< Concat string

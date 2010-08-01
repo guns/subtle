@@ -12,6 +12,40 @@
 
 #include "subtlext.h"
 
+/* subColorPixel {{{ */
+unsigned long
+subColorPixel(VALUE value)
+{
+  unsigned long pixel = 0;
+
+  /* Check object type */
+  switch(rb_type(value))
+    {
+      case T_STRING:
+        pixel = subSharedParseColor(display, RSTRING_PTR(value));
+        break;
+      case T_FIXNUM:
+        pixel = FIX2LONG(value);
+        break;
+      case T_BIGNUM:
+        pixel = NUM2LONG(value);
+        break;
+      case T_OBJECT:
+          {
+            VALUE klass = rb_const_get(mod, rb_intern("Color"));
+
+            /* Check object instance */
+            if(rb_obj_is_instance_of(value, klass))
+              pixel = NUM2LONG(rb_iv_get(value, "@pixel"));
+          }
+        break;
+      default:
+        rb_raise(rb_eArgError, "Unknown value type");
+    }
+
+  return pixel;
+} /* }}} */
+
 /* subColorInstantiate {{{ */
 VALUE
 subColorInstantiate(unsigned long pixel)
@@ -40,30 +74,15 @@ subColorInstantiate(unsigned long pixel)
 
 VALUE
 subColorInit(VALUE self,
-  VALUE color)
+  VALUE value)
 {
   XColor xcolor = { 0 };
 
   subSubtlextConnect(); ///< Implicit open connection
 
-  /* Check arguments */
-  switch(rb_type(color))
-    {
-      case T_STRING:
-        xcolor.pixel = subSharedParseColor(display, RSTRING_PTR(color));
-        break;
-      case T_FIXNUM:
-        xcolor.pixel = FIX2INT(color);
-        break;
-      case T_BIGNUM:
-        xcolor.pixel = NUM2LONG(color);
-        break;
-      default:
-        rb_raise(rb_eArgError, "Unknown value type");
-        return Qnil;
-    }
-
   /* Get color values */
+  xcolor.pixel = subColorPixel(value);
+
   XQueryColor(display, DefaultColormap(display,
     DefaultScreen(display)), &xcolor);
 
