@@ -65,7 +65,7 @@ subSharedLog(int type,
 #endif /* DEBUG */
       case 1: fprintf(stderr, "<ERROR> %s", buf);                    break;
       case 2: fprintf(stdout, "<WARNING> %s", buf);                  break;
-      case 3: fprintf(stderr, "%s", buf);                            break;
+      case 3: fprintf(stdout, "<DEPRECATION WARNING> %s", buf);      break;
     }
 } /* }}} */
 

@@ -130,13 +130,19 @@ typedef union submessagedata_t /* {{{ */
 
 /* Log {{{ */
 #ifdef DEBUG
-#define subSharedLogDebug(...)  subSharedLog(0, __FILE__, __LINE__, __VA_ARGS__);
+#define subSharedLogDebug(...)  \
+  subSharedLog(0, __FILE__, __LINE__, __VA_ARGS__);
 #else /* DEBUG */
 #define subSharedLogDebug(...)
 #endif /* DEBUG */
 
-#define subSharedLogError(...)  subSharedLog(1, __FILE__, __LINE__,  __VA_ARGS__);
-#define subSharedLogWarn(...)   subSharedLog(2, __FILE__, __LINE__, __VA_ARGS__);
+/* Macros for convenience */
+#define subSharedLogError(...) \
+  subSharedLog(1, __FILE__, __LINE__, __VA_ARGS__);
+#define subSharedLogWarn(...) \
+  subSharedLog(2, __FILE__, __LINE__, __VA_ARGS__);
+#define subSharedLogDeprecated(...) \
+  subSharedLog(3, __FILE__, __LINE__, __VA_ARGS__);
 
 void subSharedDebug(void);                                        ///< Enable debugging messages
 void subSharedLog(int type, const char *file,
