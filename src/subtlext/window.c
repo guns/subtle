@@ -329,18 +329,7 @@ subWindowForegroundWriter(VALUE self,
   SubtlextWindow *w = NULL;
 
   Data_Get_Struct(self, SubtlextWindow, w);
-  if(w)
-    {
-      /* Check object type */
-      switch(rb_type(value))
-        {
-          case T_STRING:
-            w->fg = subSharedParseColor(display, RSTRING_PTR(value));
-            break;
-          default:
-            rb_raise(rb_eArgError, "Unknown value type");
-        }
-    }
+  if(w) w->fg = subColorPixel(value);
 
   return Qnil;
 } /* }}} */
@@ -364,17 +353,9 @@ subWindowBackgroundWriter(VALUE self,
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w)
     {
-      /* Check object type */
-      switch(rb_type(value))
-        {
-          case T_STRING:
-            w->bg = subSharedParseColor(display, RSTRING_PTR(value));
+      w->bg = subColorPixel(value);
 
-            XSetWindowBackground(display, w->win, w->bg);
-            break;
-          default:
-            rb_raise(rb_eArgError, "Unknown value type");
-        }
+      XSetWindowBackground(display, w->win, w->bg);
     }
 
   return Qnil;
@@ -399,20 +380,8 @@ subWindowBorderColorWriter(VALUE self,
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w)
     {
-      unsigned long color = WhitePixel(display, DefaultScreen(display));
-
-      /* Check object type */
-      switch(rb_type(value))
-        {
-          case T_STRING:
-            color = subSharedParseColor(display, RSTRING_PTR(value));
-
-            XSetWindowBorder(display, w->win, color);
-            XFlush(display);
-            break;
-          default:
-            rb_raise(rb_eArgError, "Unknown value type");
-        }
+      XSetWindowBorder(display, w->win, subColorPixel(value));
+      XFlush(display);
     }
 
   return Qnil;
@@ -627,12 +596,12 @@ subWindowRead(VALUE self,
                   {
                     case XK_Return:
                     case XK_KP_Enter: /* {{{ */
-                      running = False;
+                      running   = False;
                       text[len] = 0; ///< Remove underscore
+                      ret       = rb_str_new2(text);
                       break; /* }}} */
                     case XK_Escape: /* {{{ */
                       running = False;
-                      text[0] = 0;
                       break; /* }}} */
                     case XK_BackSpace: /* {{{ */
                       if(0 < len) text[len--] = 0;
@@ -711,8 +680,6 @@ subWindowRead(VALUE self,
         }
 
       XUngrabKeyboard(display, CurrentTime);
-
-      ret = rb_str_new2(text);
     }
 
   return ret;
