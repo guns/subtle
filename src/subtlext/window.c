@@ -553,10 +553,10 @@ subWindowRead(VALUE self,
   if(w)
     {
       XEvent ev;
-      int pos = 0, len = 0, running = True, start = 0, guess = -1, state = 0;
+      int pos = 0, len = 0, loop = True, start = 0, guess = -1, state = 0;
       char buf[32] = { 0 }, text[1024] = { 0 }, last[32] = { 0 };
       VALUE rargs[5] = { Qnil }, result = Qnil;
-
+      Atom selection = None;
       KeySym sym;
 
       /* Check object type */
@@ -567,20 +567,20 @@ subWindowRead(VALUE self,
           return Qnil;
         }
 
-      /* Grab server and focus */
+      /* Grab and set focus */
       XGrabKeyboard(display, DefaultRootWindow(display), True,
         GrabModeAsync, GrabModeAsync, CurrentTime);
       XMapRaised(display, w->win);
-      XSelectInput(display, w->win, KeyPressMask);
+      XSelectInput(display, w->win, KeyPressMask|ButtonPressMask);
       XSetInputFocus(display, w->win, RevertToPointerRoot, CurrentTime);
-          XFlush(display);
+      selection = XInternAtom(display, "SUBTLEXT_SELECTION", False);
+      XFlush(display);
 
-      while(running)
+      while(loop)
         {
           text[len] = '_';
 
           WindowExpose(w);
-
           subSharedTextDraw(display, DefaultGC(display, 0), w->font,
             w->win, FIX2INT(x), FIX2INT(y), w->fg, w->bg, text);
 
@@ -589,19 +589,56 @@ subWindowRead(VALUE self,
 
           switch(ev.type)
             {
-              case KeyPress:
+              case ButtonPress: /* {{{ */
+                if(Button2 == ev.xbutton.button)
+                  {
+                    /* Check if there is a selection owner */
+                    if(None != XGetSelectionOwner(display, XA_PRIMARY))
+                      {
+                        XConvertSelection(display, XA_PRIMARY, XA_STRING,
+                          selection, w->win, CurrentTime); ///< Convert to atom
+
+                        XFlush(display);
+                      }
+                  }
+                break; /* }}} */
+              case SelectionNotify: /* {{{ */
+                  {
+                    Window selowner = None;
+
+                    /* Get selection owner */
+                    if(None != (selowner = XGetSelectionOwner(display,
+                        XA_PRIMARY)))
+                      {
+                        unsigned long size = 0;
+                        char *data = NULL;
+
+                        /* Get selection data */
+                        if((data = subSharedPropertyGet(display,
+                              ev.xselection.requestor, XA_STRING,
+                              selection, &size)))
+                          {
+                            strncpy(text + len, data, sizeof(text) - len);
+                            len += size;
+
+                            XFree(data);
+                          }
+                      }
+                  }
+                break; /* }}} */
+              case KeyPress: /* {{{ */
                 pos = XLookupString(&ev.xkey, buf, sizeof(buf), &sym, NULL);
 
                 switch(sym)
                   {
                     case XK_Return:
                     case XK_KP_Enter: /* {{{ */
-                      running   = False;
+                      loop   = False;
                       text[len] = 0; ///< Remove underscore
                       ret       = rb_str_new2(text);
                       break; /* }}} */
                     case XK_Escape: /* {{{ */
-                      running = False;
+                      loop = False;
                       break; /* }}} */
                     case XK_BackSpace: /* {{{ */
                       if(0 < len) text[len--] = 0;
@@ -662,7 +699,7 @@ subWindowRead(VALUE self,
                       break; /* }}} */
                   }
 
-                if(running && w->flags & WINDOW_INPUT_FUNC)
+                if(loop && w->flags & WINDOW_INPUT_FUNC)
                   {
                     /* Wrap up data */
                     rargs[0] = w->instance;
@@ -674,7 +711,7 @@ subWindowRead(VALUE self,
                     rb_protect(WindowWrapCall, (VALUE)&rargs, &state);
                     if(state) subSubtlextBacktrace();
                   }
-                break;
+                break; /* }}} */
               default: break;
             }
         }
