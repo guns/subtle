@@ -96,8 +96,8 @@ subGeometryInit(int argc,
           {
             VALUE klass = rb_const_get(mod, rb_intern("Geometry"));
 
-            /* A copy constructor would be more suitable for this.. */
-            if(rb_obj_is_instance_of(value, klass)) ///< Check object instance
+            /* Check object instance */
+            if(rb_obj_is_instance_of(value, klass))
               {
                 data[0] = rb_iv_get(value, "@x");
                 data[1] = rb_iv_get(value, "@y");
