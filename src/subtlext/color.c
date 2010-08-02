@@ -99,7 +99,7 @@ subColorInit(VALUE self,
 /*
  * call-seq: to_hex -> String
  *
- * Convert Color object to <b>rrrrggggbbbb</b> hex String
+ * Convert Color object to <b>rrggbb</b> hex String
  *
  *  puts color.to_hex
  *  => "#ff0000"
@@ -108,7 +108,7 @@ subColorInit(VALUE self,
 VALUE
 subColorToHex(VALUE self)
 {
-  char buf[14] = { 0 };
+  char buf[8] = { 0 };
   int red = 0, green = 0, blue = 0;
 
   /* Get rgb values */
@@ -116,7 +116,8 @@ subColorToHex(VALUE self)
   green = FIX2INT(rb_iv_get(self, "@green"));
   blue  = FIX2INT(rb_iv_get(self, "@blue"));
 
-  snprintf(buf, sizeof(buf), "#%04x%04x%04x", red, green, blue);
+  snprintf(buf, sizeof(buf), "#%02x%02x%02x",
+    red & 0xff, green & 0xff, blue & 0xff);
 
   return rb_str_new2(buf);
 } /* }}} */
