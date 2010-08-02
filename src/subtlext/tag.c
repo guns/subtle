@@ -172,7 +172,8 @@ subTagUpdate(VALUE self)
           SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
           snprintf(data.b, sizeof(data.b), "%s", RSTRING_PTR(name));
-          subSharedMessage(display, DefaultRootWindow(display), "SUBTLE_TAG_NEW", data, True);
+          subSharedMessage(display, DefaultRootWindow(display),
+            "SUBTLE_TAG_NEW", data, True);
 
           id = subSubtlextFind("SUBTLE_TAG_LIST", RSTRING_PTR(name), NULL);
         }
