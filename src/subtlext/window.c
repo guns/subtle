@@ -698,21 +698,23 @@ subWindowRead(VALUE self,
                       }
                       break; /* }}} */
                   }
-
-                if(loop && w->flags & WINDOW_INPUT_FUNC)
-                  {
-                    /* Wrap up data */
-                    rargs[0] = w->instance;
-                    rargs[1] = rb_intern("__input");
-                    rargs[2] = 1;
-                    rargs[3] = rb_str_new2(text);
-
-                    /* Carefully call completion proc */
-                    rb_protect(WindowWrapCall, (VALUE)&rargs, &state);
-                    if(state) subSubtlextBacktrace();
-                  }
                 break; /* }}} */
               default: break;
+            }
+
+          /* Call input proc */
+          if(loop && (SelectionNotify == ev.type || KeyPress == ev.type) &&
+              w->flags & WINDOW_INPUT_FUNC)
+            {
+              /* Wrap up data */
+              rargs[0] = w->instance;
+              rargs[1] = rb_intern("__input");
+              rargs[2] = 1;
+              rargs[3] = rb_str_new2(text);
+
+              /* Carefully call completion proc */
+              rb_protect(WindowWrapCall, (VALUE)&rargs, &state);
+              if(state) subSubtlextBacktrace();
             }
         }
 
