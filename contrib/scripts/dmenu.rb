@@ -11,18 +11,15 @@
 require "subtle/subtlext"
 require "getoptlong"
 
-# Load subtle's config for colors and font
-xdgconfig = ENV["XDG_CONFIG_HOME"] || File.join(ENV["HOME"], ".config")
-
-require File.join(xdgconfig, "subtle", "subtle.rb")
-
 # Variables
 action = :tag
 group  = :client
 klass  = Subtlext::Client
-dmenu  = "dmenu -fn '%s' -nb '%s' -nf '%s' -sb '%s' -sf '%s'" % [
-  OPTIONS[:font], COLORS[:bg_panel], COLORS[:fg_panel], 
-  COLORS[:fg_focus], COLORS[:fg_panel]
+dmenu  = "dmenu -nb '%s' -nf '%s' -sb '%s' -sf '%s'" % [
+  Subtlext::Subtle.colors[:bg_panel].to_hex,
+  Subtlext::Subtle.colors[:fg_panel].to_hex,
+  Subtlext::Subtle.colors[:fg_focus].to_hex,
+  Subtlext::Subtle.colors[:fg_panel].to_hex
 ]
 
 # Getopt options
