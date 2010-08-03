@@ -77,28 +77,6 @@ ClientCopy(SubClient *c,
     c->screens[i] = k->screens[i];
 } /* }}} */
 
-/* ClientDesktop {{{ */
-void
-ClientDesktop(SubClient *c)
-{
-  SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
-
-  c->geom = s->base;
-
-  /* Add panel heights */
-  if(subtle->flags & SUB_SUBTLE_PANEL1)
-    {
-      c->geom.y      += subtle->th;
-      c->geom.height -= subtle->th;
-    }
-
-  if(subtle->flags & SUB_SUBTLE_PANEL2)
-    c->geom.height -= subtle->th;
-
-  XSetWindowBorderWidth(subtle->dpy, c->win, 0);
-  XLowerWindow(subtle->dpy, c->win);
-} /* }}} */
-
  /** subClientNew {{{
   * @brief Create new client
   * @param[in]  win  Client window
@@ -140,9 +118,11 @@ subClientNew(Window win)
       c->screens[i]   = 0;
     }
 
-   /* Fetch name, instance and class */
+   /* Fetch name, instance, class and role */
   subSharedPropertyClass(subtle->dpy, c->win, &c->instance, &c->klass);
   subSharedPropertyName(subtle->dpy, c->win, &c->name, c->klass);
+  c->role = subSharedPropertyGet(subtle->dpy, c->win, XA_STRING,
+    subEwmhGet(SUB_EWMH_WM_WINDOW_ROLE), NULL);
 
   /* X properties */
   sattrs.border_pixel = subtle->colors.bo_normal;
@@ -620,7 +600,7 @@ subClientTag(SubClient *c,
       int i;
 
       /* Collect flags and tags */
-      flags    |= (t->flags & MODES_ALL);
+      flags    |= (t->flags & (TYPES_ALL|MODES_ALL));
       c->flags |= (t->flags & MODES_NONE);
       c->tags  |= (1L << (tag + 1));
 
@@ -630,9 +610,6 @@ subClientTag(SubClient *c,
           flags   |= (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_NORESIZE); ///< Disable size checks
           c->geom  = t->geometry;
         }
-
-      /* Desktop */
-      if(t->flags & SUB_CLIENT_TYPE_DESKTOP) ClientDesktop(c);
 
       /* Set gravity and screens for matching views */
       for(i = 0; i < subtle->views->ndata; i++)
@@ -664,40 +641,23 @@ subClientSetTags(SubClient *c,
   int *flags)
 {
   int i, visible = 0;
-  char *role = NULL;
 
   DEAD(c);
   assert(c);
 
   c->tags = 0; ///< Reset tags
 
-  /* Get window role */
-  role = subSharedPropertyGet(subtle->dpy, c->win, XA_STRING,
-    subEwmhGet(SUB_EWMH_WM_WINDOW_ROLE), NULL);
-
   /* Check matching tags */
-  for(i = 0; (c->name || c->klass) && i < subtle->tags->ndata; i++)
+  for(i = 0; i < subtle->tags->ndata; i++)
     {
-      SubTag *t = TAG(subtle->tags->data[i]);
-
       /* Check if tag matches client */
-      if((t->flags & SUB_TAG_TYPE && c->flags & t->type) ||
-          (t->preg && ((t->flags & SUB_TAG_MATCH_NAME && c->name &&
-            subSharedRegexMatch(t->preg, c->name)) ||
-          (t->flags & SUB_TAG_MATCH_INSTANCE && c->instance &&
-            subSharedRegexMatch(t->preg, c->instance)) ||
-          (t->flags & SUB_TAG_MATCH_CLASS && c->klass &&
-            subSharedRegexMatch(t->preg, c->klass)) ||
-          (t->flags & SUB_TAG_MATCH_ROLE && role &&
-            subSharedRegexMatch(t->preg, role)))))
+      if(subTagMatch(TAG(subtle->tags->data[i]), c))
         *flags |= subClientTag(c, i);
     }
 
-  if(role) free(role);
-
   subViewDynamic(); ///< Dynamic views
 
-  /* Check if client is visible on at least one screen */
+  /* Check if client is visible on at least one screen w/o stick */
   for(i = 0; i < subtle->views->ndata; i++)
     if(VIEW(subtle->views->data[i])->tags & c->tags)
       {
@@ -1131,26 +1091,19 @@ subClientSetType(SubClient *c,
           switch((id = subEwmhFind(types[i])))
             {
               case SUB_EWMH_NET_WM_WINDOW_TYPE_DOCK:
-                c->flags |= SUB_CLIENT_TYPE_DOCK;
+                *flags |= SUB_CLIENT_TYPE_DOCK;
+                break;
               case SUB_EWMH_NET_WM_WINDOW_TYPE_DESKTOP:
-                c->flags |= SUB_CLIENT_TYPE_DESKTOP;
-
-                /* Special treatment */
-                if(SUB_EWMH_NET_WM_WINDOW_TYPE_DESKTOP == id)
-                  ClientDesktop(c);
-                else XRaiseWindow(subtle->dpy, c->win);
-
-                XSetWindowBorderWidth(subtle->dpy, c->win, 0);
+                *flags |= SUB_CLIENT_TYPE_DESKTOP;
                 break;
               case SUB_EWMH_NET_WM_WINDOW_TYPE_TOOLBAR:
-                c->flags |= SUB_CLIENT_TYPE_TOOLBAR;
+                *flags |= SUB_CLIENT_TYPE_TOOLBAR;
                 break;
               case SUB_EWMH_NET_WM_WINDOW_TYPE_SPLASH:
-                c->flags |= SUB_CLIENT_TYPE_SPLASH;
+                *flags |= SUB_CLIENT_TYPE_SPLASH;
                 break;
               case SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG:
-                *flags   |= SUB_CLIENT_MODE_FLOAT;
-                c->flags |= SUB_CLIENT_TYPE_DIALOG;
+                *flags |= SUB_CLIENT_TYPE_DIALOG;
                 break;
               default: break;
             }
@@ -1191,6 +1144,7 @@ subClientToggle(SubClient *c,
     {
       c->flags &= ~type;
 
+      /* Client modes */
       if(type & SUB_CLIENT_MODE_FULL)
         XSetWindowBorderWidth(subtle->dpy, c->win, subtle->bw);
 
@@ -1207,6 +1161,7 @@ subClientToggle(SubClient *c,
     {
       c->flags |= type;
 
+      /* Client modes */
       if(type & SUB_CLIENT_MODE_STICK)
         {
           if(gravity) ///< Check if gravity should be set
@@ -1229,11 +1184,40 @@ subClientToggle(SubClient *c,
           subViewDynamic();
         }
 
-      if(type & SUB_CLIENT_MODE_FLOAT) subClientResize(c); ///< Sanitize
+      if(type & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_TYPE_DIALOG))
+        subClientResize(c); ///< Sanitize
+
       if(type & SUB_CLIENT_MODE_FULL)
         {
           XSetWindowBorderWidth(subtle->dpy, c->win, 0);
           subClientResize(c); ///< Sanitize
+        }
+
+      if(type & (SUB_EWMH_NET_WM_WINDOW_TYPE_DOCK|SUB_CLIENT_TYPE_DESKTOP))
+        {
+          /* Special treatment */
+          if(type & SUB_CLIENT_TYPE_DESKTOP)
+            {
+              SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
+
+              c->geom = s->base;
+
+              /* Add panel heights without struts */
+              if(subtle->flags & SUB_SUBTLE_PANEL1)
+                {
+                  c->geom.y      += subtle->th;
+                  c->geom.height -= subtle->th;
+                }
+
+              if(subtle->flags & SUB_SUBTLE_PANEL2)
+                c->geom.height -= subtle->th;
+
+              XSetWindowBorderWidth(subtle->dpy, c->win, 0);
+              XLowerWindow(subtle->dpy, c->win);
+            }
+          else XRaiseWindow(subtle->dpy, c->win);
+
+          XSetWindowBorderWidth(subtle->dpy, c->win, 0);
         }
     }
 
@@ -1329,6 +1313,7 @@ subClientKill(SubClient *c,
   if(c->name)      free(c->name);
   if(c->instance)  free(c->instance);
   if(c->klass)     free(c->klass);
+  if(c->role)      free(c->role);
   free(c);
 
   /* Hook: Tile */
