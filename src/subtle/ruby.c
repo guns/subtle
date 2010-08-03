@@ -265,7 +265,7 @@ RubyLoadPanel(VALUE ary,
                 {
                   if(entry == panels[j].sym)
                     {
-                      panels[j].panel->flags |= SUB_TYPE_PANEL;
+                      panels[j].panel->flags |= SUB_TYPE_UNKNOWN;
                       item                    = (void *)panels[j].panel;
                     }
                 }
@@ -358,6 +358,124 @@ RubyGetGravity(VALUE value)
     }
 
   return 0 <= gravity && gravity < subtle->gravities->ndata ? gravity : -1;
+} /* }}} */
+
+/* RubyGravityString {{{ */
+static void
+RubyGravityString(VALUE value,
+  char **string)
+{
+  /* Check value type */
+  if(T_ARRAY == rb_type(value))
+    {
+      int i = 0, j = 0, id = -1, size = 0;
+      VALUE entry = Qnil;
+
+      /* Create gravity string */
+      size    = RARRAY_LEN(value);
+      *string = (char *)subSharedMemoryAlloc(size + 1, sizeof(char));
+
+      /* Add gravities */
+      for(i = 0, j = 0; Qnil != (entry = rb_ary_entry(value, i)); i++)
+        {
+          /* We store ids in a string to ease the whole thing */
+          if(-1 != (id = RubyGetGravity(entry)))
+            (*string)[j++] = id + 65; /// Use letters only
+          else subSharedLogWarn("Failed finding gravity `%s'\n",
+            SYM2CHAR(entry));
+        }
+    }
+} /* }}} */
+
+/* Hash */
+
+/* RubyHashConvert {{{ */
+static VALUE
+RubyHashConvert(VALUE value)
+{
+  VALUE hash = Qnil;
+
+  /* Check value type */
+  switch(rb_type(value))
+    {
+      case T_HASH:
+        hash = value;
+        break;
+      default:
+        /* Convert to hash */
+        hash = rb_hash_new();
+
+        rb_hash_aset(hash, Qnil, value);
+    }
+
+  return hash;
+} /* }}} */
+
+/* RubyHashUpdate {{{ */
+static int
+RubyHashUpdate(VALUE key,
+  VALUE value,
+  VALUE data)
+{
+  if(key == Qundef) return ST_CONTINUE;
+
+  rb_hash_aset(data, key, value);
+
+  return ST_CONTINUE;
+} /* }}} */
+
+/* RubyHashMatch {{{ */
+static int
+RubyHashMatch(VALUE key,
+  VALUE value,
+  VALUE data)
+{
+  int type = 0;
+  VALUE regex = Qnil;
+
+  if(key == Qundef) return ST_CONTINUE;
+
+  /* Convert regex */
+  if(T_REGEXP == rb_type(value))
+    regex = rb_funcall(value, rb_intern("source"), 0, NULL);
+  else regex = value;
+
+  /* Check value type */
+  switch(rb_type(key))
+    {
+      case T_NIL:
+        type = SUB_TAG_MATCH_INSTANCE|SUB_TAG_MATCH_CLASS; ///< Defaults
+        break;
+      case T_SYMBOL:
+        if(CHAR2SYM("name") == key)          type = SUB_TAG_MATCH_NAME;
+        else if(CHAR2SYM("instance") == key) type = SUB_TAG_MATCH_INSTANCE;
+        else if(CHAR2SYM("class") == key)    type = SUB_TAG_MATCH_CLASS;
+        else if(CHAR2SYM("role") == key)     type = SUB_TAG_MATCH_ROLE;
+        else if(CHAR2SYM("type") == key)     type = SUB_TAG_MATCH_TYPE;
+        break;
+      case T_ARRAY:
+          {
+            int i;
+            VALUE entry = Qnil;
+
+            /* Check flags in array */
+            for(i = 0; Qnil != (entry = rb_ary_entry(key, i)); i++)
+              {
+                if(CHAR2SYM("name") == entry)          type |= SUB_TAG_MATCH_NAME;
+                else if(CHAR2SYM("instance") == entry) type |= SUB_TAG_MATCH_INSTANCE;
+                else if(CHAR2SYM("class") == entry)    type |= SUB_TAG_MATCH_CLASS;
+                else if(CHAR2SYM("role") == entry)     type |= SUB_TAG_MATCH_ROLE;
+                else if(CHAR2SYM("type") == entry)     type |= SUB_TAG_MATCH_TYPE;
+              }
+          }
+        break;
+      default: rb_raise(rb_eArgError, "Unknown value type");
+    }
+
+  /* Finally create regex */
+  if(0 < type) subTagRegex(TAG(data), type, RSTRING_PTR(regex));
+
+  return ST_CONTINUE;
 } /* }}} */
 
 /* Wrap */
@@ -731,6 +849,91 @@ RubySandboxOn(VALUE self,
   else rb_raise(rb_eArgError, "Unknown value type for on");
 
   return Qnil;
+} /* }}} */
+
+/* Options */
+
+/* RubyOptionsInit {{{ */
+/*
+ * call-seq: init -> Subtle::Options
+ *
+ * Create a new Options object
+ *
+ *  client = Subtle::Options.new
+ *  => #<Subtle::Options:xxx>
+ */
+
+static VALUE
+RubyOptionsInit(VALUE self)
+{
+  rb_iv_set(self, "@params", rb_hash_new());
+
+  return Qnil;
+} /* }}} */
+
+/* RubyOptionsDispatcher {{{ */
+/*
+ * Dispatcher for DSL proc methods - internal use only
+ */
+
+static VALUE
+RubyOptionsDispatcher(int argc,
+  VALUE *argv,
+  VALUE self)
+{
+  VALUE missing = Qnil, arg = Qnil, params = rb_iv_get(self, "@params");
+
+  rb_scan_args(argc, argv, "2", &missing, &arg);
+
+  return rb_hash_aset(params, missing, arg); ///< Just store param
+} /* }}} */
+
+/* RubyOptionsMatch {{{ */
+/*
+ * call-seq: match -> nil
+ *
+ * Append match hashes
+ *
+ *  option.match :name => /foo/
+ *  => nil
+ */
+
+static VALUE
+RubyOptionsMatch(VALUE self,
+  VALUE value)
+{
+  VALUE hash = Qnil, match = Qnil, params = rb_iv_get(self, "@params");
+
+  hash = RubyHashConvert(value);
+
+  if(T_HASH == rb_type(match = rb_hash_lookup(params, CHAR2SYM("match"))))
+    {
+      rb_hash_foreach(hash, RubyHashUpdate, match); ///< Merge!
+    }
+  else rb_hash_aset(params, CHAR2SYM("match"), hash);
+
+  return Qnil;
+} /* }}} */
+
+/* RubyOptionsGravity {{{ */
+/*
+ * call-seq: gravity -> nil
+ *
+ * Overwrite global gravity method
+ *
+ *  option.gravity :center
+ *  => nil
+ */
+
+static VALUE
+RubyOptionsGravity(VALUE self,
+  VALUE gravity)
+{
+  VALUE params = rb_iv_get(self, "@params");
+
+
+  /* Just store param */
+  return rb_hash_aset(params, CHAR2SYM("gravity"), gravity);
 } /* }}} */
 
 /* Kernel */
@@ -1255,9 +1458,9 @@ RubyKernelTag(int argc,
   int flags = 0, screen = 0, type = 0;
   unsigned long gravity = 0;
   XRectangle geometry = { 0 };
-  VALUE name = Qnil, regex = Qnil, params = Qnil, value = Qnil;
+  VALUE name = Qnil, match = Qnil, params = Qnil, value = Qnil;
 
-  rb_scan_args(argc, argv, "11", &name, &regex);
+  rb_scan_args(argc, argv, "11", &name, &match);
 
   /* Call proc */
   if(rb_block_given_p())
@@ -1269,35 +1472,46 @@ RubyKernelTag(int argc,
       options = rb_funcall(klass, rb_intern("new"), 0, NULL);
       rb_obj_instance_eval(0, 0, options);
       params = rb_iv_get(options, "@params");
-      regex  = rb_hash_lookup(params, CHAR2SYM("regex"));
 
-      /* Convert regexp */
-      if(T_REGEXP == rb_type(regex))
-        regex = rb_funcall(regex, rb_intern("source"), 0, NULL);
-    }
+      /* TODO: Deprecated */
+      if(T_STRING == rb_type(value = rb_hash_lookup(params,
+        CHAR2SYM("regex"))) || T_REGEXP == rb_type(value))
+        {
+          subSharedLogDeprecated("regex in tags is depcrecated, \
+            use match instead\n");
 
-  /* Get options */
-  if(T_HASH == rb_type(params))
-    {
+          RubyOptionsMatch(options, value);
+        }
+
+      /* Check matching options */
+      if(T_HASH == rb_type(value = rb_hash_lookup(params,
+          CHAR2SYM("match"))))
+        match = value; ///< Lazy eval
+
+      /* Set gravity */
       if(T_SYMBOL == rb_type(value = rb_hash_lookup(params,
-        CHAR2SYM("gravity"))) || T_FIXNUM == rb_type(value))
+          CHAR2SYM("gravity"))) || T_FIXNUM == rb_type(value) ||
+          T_ARRAY == rb_type(value))
         {
           flags   |= SUB_TAG_GRAVITY;
-          gravity  = value;
+          gravity  = value; ///< Lazy eval
         }
 
+      /* Set screen */
       if(T_FIXNUM == rb_type(value = rb_hash_lookup(params,
-          CHAR2SYM("screen"))))
+          CHAR2SYM("screen"))) && 0 <= FIX2INT(value))
         {
           flags  |= SUB_TAG_SCREEN;
-          screen  = FIX2INT(value);
+          screen  = FIX2INT(value); ///< Lazy eval
         }
 
+      /* Set geometry */
       if(T_ARRAY == rb_type(value = rb_hash_lookup(params,
           CHAR2SYM("geometry"))) &&
           RubyGetGeometry(value, &geometry))
         flags |= SUB_TAG_GEOMETRY;
 
+      /* Set window type */
       if(T_SYMBOL == rb_type(value = rb_hash_lookup(params,
           CHAR2SYM("type"))))
         {
@@ -1314,50 +1528,29 @@ RubyKernelTag(int argc,
       /* Check tri-state properties */
       if(Qtrue == (value = rb_hash_lookup(params,
           CHAR2SYM("geometry"))) || Qfalse == value)
-        flags |= (Qtrue == value ? SUB_CLIENT_MODE_FULL : SUB_CLIENT_MODE_NOFULL);
+        flags |= (Qtrue == value ? SUB_CLIENT_MODE_FULL :
+          SUB_CLIENT_MODE_NOFULL);
 
       if(Qtrue == (value = rb_hash_lookup(params,
           CHAR2SYM("float"))) || Qfalse == value)
-        flags |= (Qtrue == value ? SUB_CLIENT_MODE_FLOAT : SUB_CLIENT_MODE_NOFLOAT);
+        flags |= (Qtrue == value ? SUB_CLIENT_MODE_FLOAT :
+          SUB_CLIENT_MODE_NOFLOAT);
 
       if(Qtrue == (value = rb_hash_lookup(params,
           CHAR2SYM("stick"))) || Qfalse == value)
-        flags |= (Qtrue == value ? SUB_CLIENT_MODE_STICK : SUB_CLIENT_MODE_NOSTICK);
+        flags |= (Qtrue == value ? SUB_CLIENT_MODE_STICK :
+          SUB_CLIENT_MODE_NOSTICK);
 
       if(Qtrue == (value = rb_hash_lookup(params,
           CHAR2SYM("urgent"))) || Qfalse == value)
-        flags |= (Qtrue == value ? SUB_CLIENT_MODE_URGENT : SUB_CLIENT_MODE_NOURGENT);
+        flags |= (Qtrue == value ? SUB_CLIENT_MODE_URGENT :
+          SUB_CLIENT_MODE_NOURGENT);
 
       if(Qtrue == (value = rb_hash_lookup(params,
           CHAR2SYM("resize"))) || Qfalse == value)
-        flags |= (Qtrue == value ? SUB_CLIENT_MODE_RESIZE : SUB_CLIENT_MODE_NORESIZE);
-
-      if(Qtrue == (value = rb_hash_lookup(params,
-          CHAR2SYM("desktop"))))
-        flags |= SUB_CLIENT_TYPE_DESKTOP;
-
-      /* Check matching options */
-      if(T_ARRAY == rb_type(value = rb_hash_lookup(params,
-          CHAR2SYM("match"))))
-        {
-          if(Qtrue == rb_ary_includes(value, CHAR2SYM("name")))
-            flags |= SUB_TAG_MATCH_NAME;
-
-          if(Qtrue == rb_ary_includes(value, CHAR2SYM("instance")))
-            flags |= SUB_TAG_MATCH_INSTANCE;
-
-          if(Qtrue == rb_ary_includes(value, CHAR2SYM("class")))
-            flags |= SUB_TAG_MATCH_CLASS;
-
-          if(Qtrue == rb_ary_includes(value, CHAR2SYM("role")))
-            flags |= SUB_TAG_MATCH_ROLE;
-        }
+        flags |= (Qtrue == value ? SUB_CLIENT_MODE_RESIZE :
+          SUB_CLIENT_MODE_NORESIZE);
     }
-
-  /* Enable default if no matcher is present */
-  if(!(flags & (SUB_TAG_MATCH_NAME|SUB_TAG_MATCH_INSTANCE| \
-      SUB_TAG_MATCH_CLASS|SUB_TAG_MATCH_ROLE)))
-    flags |= (SUB_TAG_MATCH_INSTANCE|SUB_TAG_MATCH_CLASS);
 
   /* Check value type */
   if(T_STRING == rb_type(name))
@@ -1367,22 +1560,19 @@ RubyKernelTag(int argc,
         {
           int duplicate = False;
           SubTag *t = NULL;
-          char *re = NULL;
-
-          if(!NIL_P(regex)) re = RSTRING_PTR(regex);
 
           /* Finally create new tag */
-          if((t = subTagNew(RSTRING_PTR(name), re, &duplicate)))
+          if((t = subTagNew(RSTRING_PTR(name), &duplicate)))
             {
               t->flags    |= flags;
               t->gravity   = gravity;
+              t->screen    = screen;
               t->geometry  = geometry;
               t->type      = type;
 
-              /* Check screen - non existing screens are allowed */
-              if(t->flags & SUB_TAG_SCREEN && 0 <= screen)
-                t->screen = screen;
-              else t->flags &= ~SUB_TAG_SCREEN;
+              /* Add matcher */
+              match = RubyHashConvert(match);
+              rb_hash_foreach(match, RubyHashMatch, (VALUE)t);
 
               /* Check if Duplicate */
               if(False == duplicate)
@@ -1493,66 +1683,6 @@ RubyKernelOn(VALUE self,
   else rb_raise(rb_eArgError, "Unknown value type for on");
 
   return Qnil;
-} /* }}} */
-
-/* Options */
-
-/* RubyOptionsInit {{{ */
-/*
- * call-seq: init -> Subtle::Options
- *
- * Create a new Options object
- *
- *  client = Subtle::Options.new
- *  => #<Subtle::Options:xxx>
- */
-
-static VALUE
-RubyOptionsInit(VALUE self)
-{
-  rb_iv_set(self, "@params", rb_hash_new());
-
-  return Qnil;
-} /* }}} */
-
-/* RubyOptionsDispatcher {{{ */
-/*
- * Dispatcher for Sublet instance variables - internal use only
- */
-
-static VALUE
-RubyOptionsDispatcher(int argc,
-  VALUE *argv,
-  VALUE self)
-{
-  VALUE missing = Qnil, arg = Qnil, params = Qnil;
-
-  rb_scan_args(argc, argv, "2", &missing, &arg);
-
-  params = rb_iv_get(self, "@params");
-
-  /* Just store param */
-  return rb_hash_aset(params, missing, arg);
-} /* }}} */
-
-/* RubyOptionsGravity {{{ */
-/*
- * call-seq: gravity -> nil
- *
- * Overwrite global gravity method
- *
- *  option.gravity :center
- *  => nil
- */
-
-static VALUE
-RubyOptionsGravity(VALUE self,
-  VALUE gravity)
-{
-  VALUE params = rb_iv_get(self, "@params");
-
-  /* Just store param */
-  return rb_hash_aset(params, CHAR2SYM("gravity"), gravity);
 } /* }}} */
 
 /* Sublet */
@@ -2128,6 +2258,7 @@ subRubyInit(void)
 
   /* Class methods */
   rb_define_method(options, "initialize",     RubyOptionsInit,        0);
+  rb_define_method(options, "match",          RubyOptionsMatch,       1);
   rb_define_method(options, "gravity",        RubyOptionsGravity,     1);
   rb_define_method(options, "method_missing", RubyOptionsDispatcher, -1);
 
@@ -2202,7 +2333,7 @@ subRubyLoadConfig(void)
 
   /* Create default tag */
   if(!(subtle->flags & SUB_SUBTLE_CHECK) &&
-      (t = subTagNew("default", NULL, NULL)))
+      (t = subTagNew("default", NULL)))
     subArrayPush(subtle->tags, (void *)t);
 
   /* Loading config */
@@ -2245,26 +2376,12 @@ subRubyLoadConfig(void)
 
       if(g->flags & SUB_GRAB_WINDOW_GRAVITY)
         {
-          int j = 0, k = 0, id = -1, size = 0;
-          VALUE entry = Qnil, value = Qnil;
+          char *string = NULL;
 
           /* Create gravity string */
-          value          = g->data.num;
-          size           = FIX2INT(rb_funcall(value,
-            rb_intern("size"), 0, NULL));
-          g->data.string = (char *)subSharedMemoryAlloc(size + 1, sizeof(char));
-
-          /* Add gravities */
-          for(j = 0; Qnil != (entry = rb_ary_entry(value, j)); j++)
-            {
-              /* We store ids in a string to ease the whole thing */
-              if(-1 != (id = RubyGetGravity(entry)))
-                g->data.string[k++] = id + 65; /// Use letters only
-              else subSharedLogWarn("Failed finding gravity `%s'\n",
-                SYM2CHAR(entry));
-            }
-
-          subRubyRelease(value);
+          RubyGravityString(g->data.num, &string);
+          subRubyRelease(g->data.num);
+          g->data.string = string;
         }
     }
 
@@ -2282,8 +2399,10 @@ subRubyLoadConfig(void)
 
       /* Update gravities */
       if(t->flags & SUB_TAG_GRAVITY)
-        if(-1 == (t->gravity = RubyGetGravity(t->gravity)))
-          t->gravity = 0;
+        {
+          if(-1 == (t->gravity = RubyGetGravity(t->gravity)))
+            t->gravity = 0;
+        }
     }
 
   subTagPublish();
