@@ -348,8 +348,8 @@ end
 #
 # There are to ways to define a tag:
 #
-# [*string*] With a WM_CLASS/WM_NAME
-# [*hash*]   With a hash of properties
+# [*string*]  With a WM_CLASS/WM_NAME
+# [*hash*]    With a hash of properties
 #
 # === Default
 #
@@ -366,35 +366,74 @@ end
 #
 # [*:float*]   This property either sets the tagged client floating or prevents
 #              it from being floating depending on the value.
+#
+#              Example: float true
+#
 # [*:full*]    This property either sets the tagged client to fullscreen or
 #              prevents it from being set to fullscreen depending on the value.
+#
+#              Example: full true
+#
 # [*:gravity*] This property sets a certain to gravity to the tagged client,
 #              but only on views that have this tag too.
-# [*:match*]   This property influcences the matching of tags, per default tags
-#              will only match the WM_NAME and the WM_CLASS portion of a
-#              client. Match expects an array with following possible values:
 #
-#              [*:name*]       match the WM_NAME
-#              [*:instance*]   match the first (instance) part from WM_CLASS
-#              [*:class*]      match the second (class) part from WM_CLASS
-#              [*:role*]       match the window role
-# [*:regex*]   This property sets the matching pattern for a tag. Matching
-#              works either via plain, regex (see regex) or window id. If a
-#              pattern matches more than once ONLY the first match will be used.
+#              Example: gravity :center
+#
+# [*:match*]   This property adds matching patterns to a tag, a tag can have
+#              more than one. Matching works either via plaintext, regex
+#              (see man regex(7)) or window id. Per default tags will only
+#              match the WM_NAME and the WM_CLASS portion of a client, this
+#              can be changed with following possible values:
+#
+#              [*:name*]      Match the WM_NAME
+#              [*:instance*]  Match the first (instance) part from WM_CLASS
+#              [*:class*]     Match the second (class) part from WM_CLASS
+#              [*:role*]      Match the window role
+#
+#              Example: match :instance => "urxvt"
+#                       match [:role, :class] => "test"
+#                       match "[xa]+term"
+#
 # [*:resize*]  This property either enables or disables honoring of client
 #              resize hints and is independent of the global option.
+#
+#              Example: resize true
+#
 # [*:screen*]  This property sets a certain to screen to the tagged client, but
 #              only on views that have this tag too. Please keep in mind that
 #              screen count starts with 0 for the first screen.
+#
+#              Example: screen 0
+#
 # [*:size*]    This property sets a certain to size as well as floating to the
 #              tagged client, but only on views that have this tag too. It
 #              expects an array with x, y, width and height values.
+#
+#              Example: size [100, 100, 50, 50]
+#
 # [*:stick*]   This property either sets the tagged client to stick or prevents
 #              it from being set to stick depending on the value. Stick clients
 #              are visible on every view.
+#
+#              Example: stick true
+#
+# [*:type*]    This property sets the [[Tagging|tagged]] client to be treated
+#              as a specific window type though as the window sets the type
+#              itself. Following types are possible:
+#
+#              [*:desktop*]  Treat as desktop window (_NET_WM_WINDOW_TYPE_DESKTOP)
+#              [*:dock*]     Treat as dock window (_NET_WM_WINDOW_TYPE_DOCK)
+#              [*:toolbar*]  Treat as toolbar windows (_NET_WM_WINDOW_TYPE_TOOLBAR)
+#              [*:splash*]   Treat as splash window (_NET_WM_WINDOW_TYPE_SPLASH)
+#              [*:dialog*]   Treat as dialog window (_NET_WM_WINDOW_TYPE_DIALOG)
+#
+#              Example: type :desktop
+#
 # [*:urgent*]  This property either sets the tagged client to be urgent or
 #              prevents it from being urgent depending on the value. Urgent
 #              clients will get keyboard and mouse focus automatically.
+#
+#              Example: urgent true
 #
 
 # Simple tags
@@ -403,7 +442,7 @@ tag "browser", "uzbl|opera|firefox|navigator"
 
 # Placement
 tag "editor" do
-  regex  "[g]?vim"
+  match  "[g]?vim"
   resize true
 end
 
@@ -413,7 +452,7 @@ tag "fixed" do
 end
 
 tag "resize" do
-  regex  "sakura|gvim"
+  match  "sakura|gvim"
   resize true
 end
 
@@ -423,32 +462,29 @@ end
 
 # Modes
 tag "stick" do
-  regex "mplayer"
+  match "mplayer"
   float true
   stick true
 end
 
 tag "float" do
-  regex "display"
+  match "display"
   float true
 end
 
 # Gimp
 tag "gimp_image" do
-  regex   "gimp-image-window"
-  match   [ :role ]
+  match   :role => "gimp-image-window"
   gravity :gimp_image
 end
 
 tag "gimp_toolbox" do
-  regex   "gimp-toolbox"
-  match   [ :role ]
+  match   :role => "gimp-toolbox"
   gravity :gimp_toolbox
 end
 
 tag "gimp_dock" do
-  regex   "gimp-dock"
-  match   [ :role ]
+  match   :role => "gimp-dock"
   gravity :gimp_dock
 end
 
