@@ -1477,8 +1477,8 @@ RubyKernelTag(int argc,
       if(T_STRING == rb_type(value = rb_hash_lookup(params,
         CHAR2SYM("regex"))) || T_REGEXP == rb_type(value))
         {
-          subSharedLogDeprecated("regex in tags is depcrecated, \
-            use match instead\n");
+          subSharedLogDeprecated("regex in tags is depcrecated, " \
+            "use match instead\n");
 
           RubyOptionsMatch(options, value);
         }
