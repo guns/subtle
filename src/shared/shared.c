@@ -208,11 +208,11 @@ subSharedRegexKill(regex_t *preg)
 
  /** subSharedPropertyGet {{{
   * @brief Get window property
-  * @param[in]     disp Display
-  * @param[in]     win     Client window
-  * @param[in]     type    Property type
-  * @param[in]     prop    Property
-  * @param[inout]  size    Size of the property
+  * @param[in]     disp  Display
+  * @param[in]     win   Client window
+  * @param[in]     type  Property type
+  * @param[in]     prop  Property
+  * @param[inout]  size  Size of the property
   * return Returns the property
   **/
 
