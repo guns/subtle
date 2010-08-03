@@ -88,20 +88,24 @@
   (ButtonPressMask|ButtonReleaseMask|PointerMotionMask)
 
 #define VISUAL \
-  DefaultVisual(subtle->dpy, DefaultScreen(subtle->dpy))         ///< Default visual
+  DefaultVisual(subtle->dpy, DefaultScreen(subtle->dpy))          ///< Default visual
 #define COLORMAP \
-  DefaultColormap(subtle->dpy, DefaultScreen(subtle->dpy))       ///< Default colormap
+  DefaultColormap(subtle->dpy, DefaultScreen(subtle->dpy))        ///< Default colormap
 #define VISIBLE(v,c) \
   (v && c && (v->tags & c->tags || \
-  c->flags & (SUB_CLIENT_TYPE_DESKTOP|SUB_CLIENT_MODE_STICK)))                 ///< Visible on view
+  c->flags & (SUB_CLIENT_TYPE_DESKTOP|SUB_CLIENT_MODE_STICK)))    ///< Visible on view
 #define SCREENW \
-  DisplayWidth(subtle->dpy, DefaultScreen(subtle->dpy))          ///< Get screen width
+  DisplayWidth(subtle->dpy, DefaultScreen(subtle->dpy))           ///< Get screen width
 #define SCREENH \
-  DisplayHeight(subtle->dpy, DefaultScreen(subtle->dpy))         ///< Get screen height
+  DisplayHeight(subtle->dpy, DefaultScreen(subtle->dpy))          ///< Get screen height
 
-#define CURVIEW VIEW(subtle->views->data[subtle->vid])           ///< Get current view
-#define CURSCREEN SCREEN(subtle->screens->data[subtle->sid])     ///< Get current screen
-#define DEFSCREEN SCREEN(subtle->screens->data[0])               ///< Get first screen
+#define CURVIEW VIEW(subtle->views->data[subtle->vid])            ///< Get current view
+#define CURSCREEN SCREEN(subtle->screens->data[subtle->sid])      ///< Get current screen
+#define DEFSCREEN SCREEN(subtle->screens->data[0])                ///< Get first screen
+
+#define TYPES_ALL \
+  (SUB_CLIENT_TYPE_DESKTOP|SUB_CLIENT_TYPE_DOCK| \
+  SUB_CLIENT_TYPE_SPLASH|SUB_CLIENT_TYPE_DIALOG)                  ///< All type flags
 
 #define MODES_ALL \
   (SUB_CLIENT_MODE_FULL|SUB_CLIENT_MODE_FLOAT| \
@@ -170,13 +174,12 @@
 #define SUB_TYPE_GRAB                 (1L << 2)                   ///< Grab
 #define SUB_TYPE_GRAVITY              (1L << 3)                   ///< Gravity
 #define SUB_TYPE_HOOK                 (1L << 4)                   ///< Hook
-#define SUB_TYPE_PANEL                (1L << 5)                   ///< Panel
-#define SUB_TYPE_SCREEN               (1L << 6)                   ///< Screen
-#define SUB_TYPE_SUBLET               (1L << 7)                   ///< Sublet
-#define SUB_TYPE_TAG                  (1L << 8)                   ///< Tag
-#define SUB_TYPE_TRAY                 (1L << 9)                   ///< Tray
-#define SUB_TYPE_VIEW                 (1L << 10)                  ///< View
-
+#define SUB_TYPE_SCREEN               (1L << 5)                   ///< Screen
+#define SUB_TYPE_SUBLET               (1L << 6)                   ///< Sublet
+#define SUB_TYPE_TAG                  (1L << 7)                   ///< Tag
+#define SUB_TYPE_TRAY                 (1L << 8)                   ///< Tray
+#define SUB_TYPE_VIEW                 (1L << 9)                   ///< View
+#define SUB_TYPE_UNKNOWN              (1L << 10)                  ///< Unknwon type
 
 /* Call flags */
 #define SUB_CALL_HOOKS                (1L << 11)                  ///< Call hook
@@ -298,11 +301,13 @@
 #define SUB_TAG_SCREEN                (1L << 12)                  ///< Screen property
 #define SUB_TAG_GEOMETRY              (1L << 13)                  ///< Geometry property
 #define SUB_TAG_TYPE                  (1L << 14)                  ///< Type property
-#define SUB_TAG_MATCH                 (1L << 15)                  ///< Match property
-#define SUB_TAG_MATCH_NAME            (1L << 16)                  ///< Match WM_NAME
-#define SUB_TAG_MATCH_INSTANCE        (1L << 17)                  ///< Match instance of WM_CLASS
-#define SUB_TAG_MATCH_CLASS           (1L << 18)                  ///< Match class of WM_CLASS
-#define SUB_TAG_MATCH_ROLE            (1L << 19)                  ///< Match role of window (before client mode flags)
+
+/* Tag matcher */
+#define SUB_TAG_MATCH_NAME            (1L << 11)                  ///< Match WM_NAME
+#define SUB_TAG_MATCH_INSTANCE        (1L << 12)                  ///< Match instance of WM_CLASS
+#define SUB_TAG_MATCH_CLASS           (1L << 13)                  ///< Match class of WM_CLASS
+#define SUB_TAG_MATCH_ROLE            (1L << 14)                  ///< Match role of window
+#define SUB_TAG_MATCH_TYPE            (1L << 15)                  ///< Match type of window
 
 /* Tray flags */
 #define SUB_TRAY_UNMAP                (1L << 11)                  ///< Ignore unmaps
@@ -322,7 +327,7 @@ typedef struct subarray_t /* {{{ */
 typedef struct subclient_t /* {{{ */
 {
   FLAGS      flags;                                               ///< Client flags
-  char       *name, *instance, *klass;                            ///< Client instance, klass
+  char       *name, *instance, *klass, *role;                     ///< Client instance, klass
 
   TAGS       tags;                                                ///< Client tags
   Window     win;                                                 ///< Client window
@@ -557,12 +562,12 @@ typedef struct subsubtle_t /* {{{ */
 
 typedef struct subtag_t /* {{{ */
 {
-  FLAGS         flags;                                            ///< Tag flags
-  char          *name;                                            ///< Tag name
-  regex_t       *preg;                                            ///< Tag regex
-  int           screen, type;                                     ///< Tag screen, type
-  unsigned long gravity;                                          ///< Tag gravity
-  XRectangle    geometry;                                         ///< Tag geometry
+  FLAGS             flags;                                        ///< Tag flags
+  char              *name;                                        ///< Tag name
+  int               screen, type;                                 ///< Tag screen, type
+  unsigned long     gravity;                                      ///< Tag gravity
+  XRectangle        geometry;                                     ///< Tag geometry
+  struct subarray_t *matcher;                                     ///< Tag matcher
 } SubTag; /* }}} */
 
 typedef struct subtray_t /* {{{ */
@@ -740,7 +745,9 @@ void subSubtleFinish(void);                                       ///< Finish su
 /* }}} */
 
 /* tag.c {{{ */
-SubTag *subTagNew(char *name, char *regex, int *duplicate);       ///< Create tag
+SubTag *subTagNew(char *name, int *duplicate);                    ///< Create tag
+void subTagRegex(SubTag *t, int type, char *regex);               ///< Add regex
+int subTagMatch(SubTag *t, SubClient *c);                         ///< Check for match
 void subTagPublish(void);                                         ///< Publish tags
 void subTagKill(SubTag *t);                                       ///< Delete tag
 /* }}} */

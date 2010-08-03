@@ -12,6 +12,35 @@
 
 #include "subtle.h"
 
+/* Typedef {{{ */
+typedef struct tagmatcher_t
+{
+  FLAGS   flags;
+  regex_t *regex;
+} TagMatcher;
+/* }}} */
+
+/* TagClear {{{ */
+static void
+TagClear(SubTag *t)
+{
+  int i;
+
+  assert(t);
+
+  /* Clear matcher */
+  for(i = 0; t->matcher &&  i < t->matcher->ndata; i++)
+    {
+      TagMatcher *m = (TagMatcher *)t->matcher->data[i];
+
+      if(m->regex) subSharedRegexKill(m->regex);
+
+      free(m);
+    }
+
+  subArrayClear(t->matcher, False);
+} /* }}} */
+
 /* TagFind {{{ */
 SubTag *
 TagFind(char *name)
@@ -35,14 +64,12 @@ TagFind(char *name)
  /** subTagNew {{{
   * @brief Create new tag
   * @param[in]   name       Name of the tag
-  * @param[in]   regex      Regex
   * @param[out]  duplicate  Added twice
   * @return Returns a #SubTag or \p NULL
   **/
 
 SubTag *
 subTagNew(char *name,
-  char *regex,
   int *duplicate)
 {
   SubTag *t = NULL;
@@ -52,7 +79,7 @@ subTagNew(char *name,
   /* Check if tag already exists */
   if((t = TagFind(name)))
     {
-      if(t->preg)   subSharedRegexKill(t->preg);
+      TagClear(t);
       if(duplicate) *duplicate = True;
     }
   else
@@ -65,12 +92,76 @@ subTagNew(char *name,
 
   t->flags = SUB_TYPE_TAG;
 
-  if(regex && 0 != strncmp("", regex, 1))
-    t->preg = subSharedRegexNew(regex);
-
-  subSharedLogDebug("new=tag, name=%s, regex=%s\n", name, regex);
+  subSharedLogDebug("new=tag, name=%s\n", name);
 
   return t;
+} /* }}} */
+
+ /** subTagRegex {{{
+  * @brief Add regex to tag
+  * @param[in]  t      A #SubTag
+  * @param[in]  type   Matcher type
+  * @param[in]  regex  Regex string
+  **/
+
+void
+subTagRegex(SubTag *t,
+  int type,
+  char *regex)
+{
+  TagMatcher *m = NULL;
+
+  assert(t);
+
+  /* Create new matcher */
+  m = (TagMatcher *)subSharedMemoryAlloc(1, sizeof(TagMatcher));
+  m->flags |= (SUB_TYPE_UNKNOWN|type);
+
+  /* Prevent emtpy regex */
+  if(regex && 0 != strncmp("", regex, 1))
+    m->regex  = subSharedRegexNew(regex);
+
+  /* Create on demand */
+  if(NULL == t->matcher) t->matcher = subArrayNew();
+
+  subArrayPush(t->matcher, (void *)m);
+}
+ /** subTagMatch {{{
+  * @brief Check whether client matches tag
+  * @param[in]  t  A #SubTag
+  * @param[in]  c  A #SubClient
+  * @retval  True  Client matches
+  * @retval  False Client doesn't match
+  **/
+
+int
+subTagMatch(SubTag *t,
+  SubClient *c)
+{
+  int i;
+
+  assert(t && c);
+
+  /* Check if client matches */
+  for(i = 0; t->matcher && i < t->matcher->ndata; i++)
+    {
+      TagMatcher *m = (TagMatcher *)t->matcher->data[i];
+
+      /* Complex matching */
+      if((m->flags & SUB_TAG_MATCH_NAME && c->name &&
+            subSharedRegexMatch(m->regex, c->name)) ||
+          (m->flags & SUB_TAG_MATCH_INSTANCE && c->instance &&
+            subSharedRegexMatch(m->regex, c->instance)) ||
+          (m->flags & SUB_TAG_MATCH_CLASS && c->klass &&
+            subSharedRegexMatch(m->regex, c->klass)) ||
+          (m->flags & SUB_TAG_MATCH_ROLE && c->role &&
+            subSharedRegexMatch(m->regex, c->role)) ||
+          (m->flags & SUB_TAG_MATCH_TYPE &&
+            c->flags & (m->flags & TYPES_ALL)))
+        return True;
+    }
+
+  return False;
 } /* }}} */
 
  /** subTagPublish {{{
@@ -113,7 +204,13 @@ subTagKill(SubTag *t)
   /* Hook: Kill */
   subHookCall(SUB_HOOK_TAG_KILL, (void *)t);
 
-  if(t->preg) subSharedRegexKill(t->preg);
+  /* Remove matcher */
+  if(t->matcher)
+    {
+      TagClear(t);
+      subArrayKill(t->matcher, False);
+    }
+
   free(t->name);
   free(t);
 

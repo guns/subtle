@@ -519,7 +519,7 @@ EventMessage(XClientMessageEvent *ev)
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_TAG_NEW: /* {{{ */
-            if(ev->data.b && (t = subTagNew(ev->data.b, NULL, NULL)))
+            if(ev->data.b && (t = subTagNew(ev->data.b, NULL)))
               {
                 subArrayPush(subtle->tags, (void *)t);
                 subTagPublish();
