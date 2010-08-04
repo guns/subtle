@@ -947,6 +947,10 @@ subClientSetSizeHints(SubClient *c,
               c->geom.x = size->x;
               c->geom.y = size->y;
             }
+
+          /* Sanitize positions for stupid clients like GIMP */
+          if(size->flags & (USSize|PSize|USPosition|PPosition))
+            subClientResize(c);
         }
     }
 
