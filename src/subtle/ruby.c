@@ -50,27 +50,27 @@ typedef struct rubymethods_t
 /* }}} */
 
 /* RubyBacktrace {{{ */
-static VALUE
+static void
 RubyBacktrace(void)
 {
-  int i;
-  VALUE lasterr = Qnil, message = Qnil, klass = Qnil;
-  VALUE backtrace = Qnil, entry = Qnil;
+  VALUE lasterr = Qnil;
 
-  /* Fetching backtrace data */
-  lasterr   = rb_gv_get("$!");
-  message   = rb_obj_as_string(lasterr);
-  klass     = rb_class_path(CLASS_OF(lasterr));
-  backtrace = rb_funcall(lasterr, rb_intern("backtrace"), 0, NULL);
+  /* Get last error */
+  if(!NIL_P(lasterr = rb_gv_get("$!")))
+    {
+      int i;
+      VALUE message = Qnil, klass = Qnil, backtrace = Qnil, entry = Qnil;
 
-  /* Print error and backtrace */
-  subSharedLogWarn("%s: %s\n", RSTRING_PTR(klass), RSTRING_PTR(message));
-  for(i = 0; Qnil != (entry = rb_ary_entry(backtrace, i)); ++i)
-    printf("\tfrom %s\n", RSTRING_PTR(entry));
+      /* Fetching backtrace data */
+      message   = rb_obj_as_string(lasterr);
+      klass     = rb_class_path(CLASS_OF(lasterr));
+      backtrace = rb_funcall(lasterr, rb_intern("backtrace"), 0, NULL);
 
-  rb_backtrace();
-
-  return Qnil;
+      /* Print error and backtrace */
+      subSharedLogWarn("%s: %s\n", RSTRING_PTR(klass), RSTRING_PTR(message));
+      for(i = 0; Qnil != (entry = rb_ary_entry(backtrace, i)); ++i)
+        printf("\tfrom %s\n", RSTRING_PTR(entry));
+    }
 } /* }}} */
 
 /* RubyFilter {{{ */
@@ -401,6 +401,9 @@ RubyHashConvert(VALUE value)
       case T_HASH:
         hash = value;
         break;
+      case T_NIL:
+        /* Ignore this case */
+        break;
       default:
         /* Convert to hash */
         hash = rb_hash_new();
@@ -472,7 +475,7 @@ RubyHashMatch(VALUE key,
       default: rb_raise(rb_eArgError, "Unknown value type");
     }
 
-  /* Finally create regex */
+  /* Finally create regex if there is any */
   if(0 < type) subTagRegex(TAG(data), type, RSTRING_PTR(regex));
 
   return ST_CONTINUE;
@@ -1571,8 +1574,8 @@ RubyKernelTag(int argc,
               t->type      = type;
 
               /* Add matcher */
-              match = RubyHashConvert(match);
-              rb_hash_foreach(match, RubyHashMatch, (VALUE)t);
+              if(!NIL_P(match = RubyHashConvert(match)))
+                rb_hash_foreach(match, RubyHashMatch, (VALUE)t);
 
               /* Check if Duplicate */
               if(False == duplicate)
