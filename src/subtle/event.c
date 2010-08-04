@@ -111,7 +111,7 @@ EventConfigure(XConfigureRequestEvent *ev)
   /* Check window */
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
     {
-      if(!(c->flags & SUB_CLIENT_MODE_NORESIZE) &&
+      if(!(c->flags & (SUB_CLIENT_MODE_NORESIZE|SUB_CLIENT_TYPE_DESKTOP)) &&
           (subtle->flags & SUB_SUBTLE_RESIZE ||
           c->flags & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_RESIZE)))
         {
@@ -134,7 +134,7 @@ EventConfigure(XConfigureRequestEvent *ev)
               c->geom = geom;
 
               /* Resize client */
-              if(!(c->flags & SUB_CLIENT_TYPE_DESKTOP)) subScreenFit(s, &c->geom);
+              subScreenFit(s, &c->geom);
 
               subClientConfigure(c);
             }
