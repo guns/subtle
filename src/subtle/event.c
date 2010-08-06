@@ -242,6 +242,10 @@ EventUnmap(XUnmapEvent *ev)
       if(c->flags & SUB_CLIENT_UNMAP)
         {
           c->flags &= ~SUB_CLIENT_UNMAP;
+
+          /* Focus pointer window */
+          if(subtle->windows.focus == c->win)
+            subSubtleFocus(True);
           return;
         }
 
