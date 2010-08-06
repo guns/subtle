@@ -722,9 +722,11 @@ subClientSetGravity(SubClient *c,
           c->geom.y      = s->geom.y + ((s->geom.height - c->geom.height) *
             g->geom.y / 100);
 
-          /* Substract border width */
-          c->geom.width  -= 2 * subtle->bw;
-          c->geom.height -= 2 * subtle->bw;
+          /* Update border and gap */
+          c->geom.x      += subtle->gap;
+          c->geom.y      += subtle->gap;
+          c->geom.width  -= (2 * subtle->bw + 2 * subtle->gap);
+          c->geom.height -= (2 * subtle->bw + 2 * subtle->gap);
         }
 
       /* Update client */

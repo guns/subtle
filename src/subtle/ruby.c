@@ -981,6 +981,11 @@ RubyKernelSet(VALUE self,
                 if(!(subtle->flags & SUB_SUBTLE_CHECK))
                   subtle->pbw = FIX2INT(value);
               }
+            else if(CHAR2SYM("gap") == option)
+              {
+                if(!(subtle->flags & SUB_SUBTLE_CHECK))
+                  subtle->gap = FIX2INT(value);
+              }
             else if(CHAR2SYM("gravity") == option)
               {
                 if(!(subtle->flags & SUB_SUBTLE_CHECK))
