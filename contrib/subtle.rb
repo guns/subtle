@@ -45,6 +45,9 @@ set :padding, [ 0, 0, 0, 0 ]
 set :font, "-*-*-medium-*-*-*-14-*-*-*-*-*-*-*"
 #set :font, "xft:sans-8"
 
+# Space around windows
+set :gap, 0
+
 #
 # == Panel
 #
