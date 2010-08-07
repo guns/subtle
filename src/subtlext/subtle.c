@@ -253,7 +253,8 @@ subSubtleColors(VALUE self)
   const char *names[] = {
     "fg_panel", "fg_views", "fg_sublets", "fg_focus", "fg_urgent",
     "bg_panel", "bg_views", "bg_sublets", "bg_focus", "bg_urgent",
-    "bo_focus", "bo_normal", "bo_panel", "background"
+    "border_focus", "border_normal", "border_panel",
+    "background"
   };
 
   subSubtlextConnect(); ///< Implicit open connection
