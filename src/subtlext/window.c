@@ -533,18 +533,18 @@ subWindowWrite(VALUE self,
 
 /* subWindowRead {{{ */
 /*
- * call-seq: read(x, y) -> String
+ * call-seq: read(x, y, width) -> String
  *
  * Read input
  *
- *  string = read(10, 10)
+ *  string = read(10, 10, 10)
  *  => "subtle"
  */
 
 VALUE
-subWindowRead(VALUE self,
-  VALUE x,
-  VALUE y)
+subWindowRead(int argc,
+  VALUE *argv,
+  VALUE self)
 {
   SubtlextWindow *w = NULL;
   VALUE ret = Qnil;
@@ -553,11 +553,13 @@ subWindowRead(VALUE self,
   if(w)
     {
       XEvent ev;
-      int pos = 0, len = 0, loop = True, start = 0, guess = -1, state = 0;
+      int pos = 0, len = 0, loop = True, start = 0, guess = -1, state = 0, window = 10;
       char buf[32] = { 0 }, text[1024] = { 0 }, last[32] = { 0 };
-      VALUE rargs[5] = { Qnil }, result = Qnil;
+      VALUE x = Qnil, y = Qnil, width = Qnil, rargs[5] = { Qnil }, result = Qnil;
       Atom selection = None;
       KeySym sym;
+
+      rb_scan_args(argc, argv, "21", &x, &y, &width);
 
       /* Check object type */
       if(T_FIXNUM != rb_type(x) || T_FIXNUM != rb_type(y))
@@ -566,6 +568,8 @@ subWindowRead(VALUE self,
 
           return Qnil;
         }
+
+      if(FIXNUM_P(width)) window = FIX2INT(width);
 
       /* Grab and set focus */
       XGrabKeyboard(display, DefaultRootWindow(display), True,
@@ -582,7 +586,8 @@ subWindowRead(VALUE self,
 
           WindowExpose(w);
           subSharedTextDraw(display, DefaultGC(display, 0), w->font,
-            w->win, FIX2INT(x), FIX2INT(y), w->fg, w->bg, text);
+            w->win, FIX2INT(x), FIX2INT(y), w->fg, w->bg,
+            text + (len > window ? len - window : 0)); ///< Append window size
 
           XFlush(display);
           XNextEvent(display, &ev);

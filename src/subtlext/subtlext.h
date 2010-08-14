@@ -228,7 +228,7 @@ VALUE subWindowBorderSizeWriter(VALUE self, VALUE value);         ///< Set borde
 VALUE subWindowGeometryReader(VALUE self);                        ///< Get geometry
 VALUE subWindowGeometryWriter(VALUE self, VALUE value);           ///< Set geometry
 VALUE subWindowWrite(VALUE self, VALUE x, VALUE y, VALUE text);   ///< Write text
-VALUE subWindowRead(VALUE self, VALUE x, VALUE y);                ///< Read text
+VALUE subWindowRead(int argc, VALUE *argv, VALUE self);           ///< Read text
 VALUE subWindowClear(int argc, VALUE *argv, VALUE self);          ///< Clear area or window
 VALUE subWindowRedraw(VALUE self);                                ///< Redraw window
 VALUE subWindowCompletion(VALUE self);                            ///< Add completion proc
