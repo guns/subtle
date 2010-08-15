@@ -1883,7 +1883,7 @@ RubySubletDataWriter(VALUE self,
   if(s && T_STRING == rb_type(value)) ///< Check value type
     {
       s->width = subSharedTextParse(subtle->dpy, subtle->font,
-        s->text, RSTRING_PTR(value));
+        s->text, RSTRING_PTR(value)) + 2 * subtle->pbw;
       subSubletRender(s);
     }
   else rb_raise(rb_eArgError, "Unknown value type");

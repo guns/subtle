@@ -131,7 +131,7 @@ subSubtleFocus(int focus)
 
   if(!(subtle->flags & SUB_SUBTLE_RUN)) return ROOT;
 
-  /* Focus */
+  /* Get pointer window */
   XQueryPointer(subtle->dpy, ROOT, (Window *)&dummy, &win,
     &dummy, &dummy, &dummy, &dummy, (unsigned int *)&dummy);
 

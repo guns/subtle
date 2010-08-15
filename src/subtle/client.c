@@ -812,7 +812,7 @@ subClientSetName(SubClient *c)
         subtle->font, c->name, 50 >= len ? len : 50, NULL, NULL, True) +
         6 + 2 * subtle->pbw; ///< Font offset and panel border
       XResizeWindow(subtle->dpy, subtle->windows.title.win,
-        subtle->windows.title.width, subtle->th - 2 * subtle->pbw);
+        subtle->windows.title.width - 2 * subtle->pbw, subtle->th - 2 * subtle->pbw);
     }
   else subtle->windows.title.width = 0;
 } /* }}} */

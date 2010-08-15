@@ -106,8 +106,10 @@ subTrayUpdate(void)
           subtle->windows.tray.width += t->width;
         }
 
+      subtle->windows.tray.width += 3; ///< Add padding
+
       XResizeWindow(subtle->dpy, subtle->windows.tray.win,
-        subtle->windows.tray.width + 3, subtle->th);
+        subtle->windows.tray.width, subtle->th);
     }
 } /* }}} */
 

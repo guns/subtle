@@ -606,7 +606,7 @@ EventMessage(XClientMessageEvent *ev)
             if((s = EventFindSublet((int)ev->data.b[0])))
               {
                 s->width = subSharedTextParse(subtle->dpy, subtle->font,
-                  s->text, ev->data.b + 1);
+                  s->text, ev->data.b + 1) + 2 * subtle->pbw;
                 subSubletUpdate();
                 subPanelUpdate();
                 subPanelRender();

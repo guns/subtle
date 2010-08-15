@@ -142,7 +142,7 @@ subViewUpdate(void)
                 strlen(v->name), NULL, NULL, True) + 6 + 2 * subtle->pbw; ///< Font offset and panel border
 
               XMoveResizeWindow(subtle->dpy, v->button, subtle->windows.views.width,
-                0, v->width, subtle->th - 2 * subtle->pbw);
+                0, v->width - 2 * subtle->pbw, subtle->th - 2 * subtle->pbw);
               subtle->windows.views.width += v->width;
 
               XMapRaised(subtle->dpy, v->button);
@@ -152,8 +152,6 @@ subViewUpdate(void)
           XSetWindowBorder(subtle->dpy, v->button, subtle->colors.bo_panel);
           XSetWindowBorderWidth(subtle->dpy, v->button, subtle->pbw);
         }
-
-      subtle->windows.views.width += 2 * subtle->pbw;
 
       XResizeWindow(subtle->dpy, subtle->windows.views.win, subtle->windows.views.width, subtle->th);
     }

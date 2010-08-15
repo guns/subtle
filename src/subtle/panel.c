@@ -19,17 +19,18 @@
 void
 subPanelUpdate(void)
 {
-  int i, n = 0, x = 0, separator[2] = { 0 }, width[2] = { 0 },
-    spacer[2] = { 0 };
+  int i, n = 0, x = 0, separator[2] = { 0 },
+    width[2] = { 0 }, spacer[2] = { 0 };
+  SubPanel *p = NULL;
 
   assert(subtle);
 
   /* Collect width for spacer */
   for(i = 0; i < subtle->panels->ndata; i++)
     {
-      SubPanel *p = PANEL(subtle->panels->data[i]);
+      p = PANEL(subtle->panels->data[i]);
 
-      if(p->flags & SUB_PANEL_HIDDEN) continue;
+      if(p->flags & SUB_PANEL_HIDDEN)  continue;
       if(p->flags & SUB_PANEL_BOTTOM)  n = 1;
       if(p->flags & SUB_PANEL_SPACER1) spacer[n]++;
       if(p->flags & SUB_PANEL_SPACER2) spacer[n]++;
@@ -44,7 +45,7 @@ subPanelUpdate(void)
   /* Move and resize windows */
   for(i = 0, n = 0; i < subtle->panels->ndata; i++)
     {
-      SubPanel *p = PANEL(subtle->panels->data[i]);
+      p = PANEL(subtle->panels->data[i]);
 
       if(p->flags & SUB_PANEL_HIDDEN) continue;
       if(p->flags & SUB_PANEL_BOTTOM)
@@ -69,7 +70,7 @@ subPanelUpdate(void)
         x += subtle->separator.width;
 
       if(p->flags & SUB_PANEL_SPACER2) ///< Add spacer
-        x += (DEFSCREEN->base.width - width[n]) / spacer[n];
+        x += (DEFSCREEN->base.width - width[n] - separator[n]) / spacer[n];
 
       /* Remap window only when needed */
       if(0 < p->width) XMapRaised(subtle->dpy, p->win);

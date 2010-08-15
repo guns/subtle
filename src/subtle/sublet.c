@@ -55,7 +55,8 @@ subSubletUpdate(void)
         {
           SubSublet *s = SUBLET(subtle->sublets->data[i]);
 
-          XResizeWindow(subtle->dpy, s->win, s->width, subtle->th - 2 * subtle->pbw);
+          XResizeWindow(subtle->dpy, s->win, s->width - 2 * subtle->pbw,
+            subtle->th - 2 * subtle->pbw);
 
           /* Set borders */
           XSetWindowBorder(subtle->dpy, s->win, subtle->colors.bo_panel);
@@ -82,8 +83,6 @@ subSubletRender(SubSublet *s)
   subSharedTextRender(subtle->dpy, subtle->gcs.font, subtle->font, s->win, 3,
     subtle->font->y, subtle->colors.fg_sublets, subtle->colors.bg_sublets,
     s->text);
-
-  XResizeWindow(subtle->dpy, s->win, s->width, subtle->th - 2 * subtle->pbw);
 
   XSync(subtle->dpy, False); ///< Sync before going on
 } /* }}} */
