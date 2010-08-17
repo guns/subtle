@@ -275,22 +275,29 @@ task(:config) do
       end
     end
 
-    # Check pkg-config Xrandr
+    # Check Xrandr
     if("yes" == @options["xrandr"])
-      checking_for("X11/extensions/Xrandr.h") do
-        ret = false
+      ret = false
 
+      # Pkg-config
+      checking_for("X11/extensions/Xrandr.h") do
         cflags, ldflags, libs = pkg_config("xrandr")
         unless(libs.nil?)
-          # Update flags
-          @options["cflags"]  << " %s" % [ cflags ]
-          @options["ldflags"] << " %s" % [ libs ]
+          # Version check (xrandr >= 1.3)
+          if(try_func("XRRGetScreenResourcesCurrent", libs))
+            # Update flags
+            @options["cflags"]  << " %s" % [ cflags ]
+            @options["ldflags"] << " %s" % [ libs ]
 
-          $defs.push("-DHAVE_X11_EXTENSIONS_XRANDR_H")
-          ret = true
-        else
-          @options["xrandr"] = "no"
+            $defs.push("-DHAVE_X11_EXTENSIONS_XRANDR_H")
+
+            ret = true
+          else
+            puts "XRRGetScreenResourcesCurrent couldn't be found"
+          end
         end
+
+        @options["xrandr"] = "no" unless(ret)
 
         ret
       end
