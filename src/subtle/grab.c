@@ -156,7 +156,7 @@ subGrabFind(int code,
 void
 subGrabSet(Window win)
 {
-  if(win && 0 < subtle->grabs->ndata)
+  if(win)
     {
       int i, j;
       const unsigned int modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
