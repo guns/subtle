@@ -243,9 +243,6 @@ EventUnmap(XUnmapEvent *ev)
         {
           c->flags &= ~SUB_CLIENT_UNMAP;
 
-          /* Focus pointer window */
-          if(subtle->windows.focus == c->win)
-            subSubtleFocus(True);
           return;
         }
 
@@ -1180,11 +1177,11 @@ EventFocus(XFocusChangeEvent *ev)
   /* Handle focus event */
   if(ROOT == ev->window) ///< Root
     {
-      subtle->windows.focus = ROOT;
-      subGrabSet(ROOT);
-
-      subtle->windows.focus       = 0;
+      subtle->windows.focus       = ROOT;
       subtle->windows.title.width = 0;
+
+      XSetInputFocus(subtle->dpy, ROOT, RevertToParent, CurrentTime);
+      subGrabSet(ROOT);
 
       subPanelUpdate();
       subPanelRender();
