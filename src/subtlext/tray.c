@@ -171,6 +171,10 @@ subTrayUpdate(VALUE self)
 {
   VALUE win = rb_iv_get(self, "@win");
 
+  rb_check_frozen(self);
+  subSubtlextConnect(); ///< Implicit open connection
+
+  /* Check object type */
   if(RTEST(win) && (T_FIXNUM == rb_type(win) || T_BIGNUM == rb_type(win)))
     {
       int id = 0;
@@ -247,6 +251,8 @@ subTrayKill(VALUE self)
         "SUBTLE_TRAY_KILL", data, True);
     }
   else rb_raise(rb_eStandardError, "Failed killing tray");
+
+  rb_obj_freeze(self); ///< Freeze object
 
   return Qnil;
 } /* }}} */

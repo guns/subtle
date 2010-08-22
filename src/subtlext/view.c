@@ -72,6 +72,7 @@ ViewSelect(VALUE self,
   char **names = NULL;
   VALUE ret = Qnil;
 
+  rb_check_frozen(self);
   subSubtlextConnect(); ///< Implicit open connection
 
   /* Fetch data */
@@ -306,6 +307,10 @@ subViewUpdate(VALUE self)
 {
   VALUE name = rb_iv_get(self, "@name");
 
+  rb_check_frozen(self);
+  subSubtlextConnect(); ///< Implicit open connection
+
+  /* Check object type */
   if(T_STRING == rb_type(name))
     {
       int id = -1;
@@ -364,6 +369,9 @@ subViewClients(VALUE self)
   Window *clients = NULL;
   VALUE win = Qnil, klass = Qnil, meth = Qnil, array = Qnil, client = Qnil;
   unsigned long *tags1 = NULL;
+
+  rb_check_frozen(self);
+  subSubtlextConnect(); ///< Implicit open connection
 
   /* Fetch data */
   win     = rb_iv_get(self, "@win");
@@ -427,6 +435,7 @@ subViewJump(VALUE self)
   VALUE id = rb_iv_get(self, "@id");
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
+  rb_check_frozen(self);
   subSubtlextConnect(); ///< Implicit open connection
 
   data.l[0] = FIX2INT(id);
@@ -542,6 +551,8 @@ subViewKill(VALUE self)
         "SUBTLE_VIEW_KILL", data, True);
     }
   else rb_raise(rb_eStandardError, "Failed killing view");
+
+  rb_obj_freeze(self); ///< Freeze object
 
   return Qnil;
 } /* }}} */

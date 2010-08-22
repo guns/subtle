@@ -19,6 +19,10 @@ ClientToggle(VALUE self,
 {
   Window win = 0;
 
+  rb_check_frozen(self);
+  subSubtlextConnect(); ///< Implicit open connection
+
+  /* Find window */
   if((win = NUM2LONG(rb_iv_get(self, "@win"))))
     {
       int flags = 0;
@@ -50,6 +54,9 @@ ClientSelect(VALUE self,
   VALUE win = Qnil, client = Qnil;
   unsigned long *cv = NULL, *flags1 = NULL;
   XRectangle geometry1 = { 0 }, geometry2 = { 0 };
+
+  rb_check_frozen(self);
+  subSubtlextConnect(); ///< Implicit open connection
 
   /* Fetch data */
   win     = rb_iv_get(self, "@win");
@@ -108,6 +115,9 @@ ClientRestack(VALUE self,
 {
   VALUE win = rb_iv_get(self, "@win");
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  rb_check_frozen(self);
+  subSubtlextConnect(); ///< Implicit open connection
 
   if(RTEST(win))
     {
@@ -323,6 +333,10 @@ subClientUpdate(VALUE self)
 {
   VALUE win = rb_iv_get(self, "@win");
 
+  rb_check_frozen(self);
+  subSubtlextConnect(); ///< Implicit open connection
+
+  /* Check object type */
   if(T_FIXNUM == rb_type(win) || T_BIGNUM == rb_type(win))
     {
       int id = 0;
@@ -451,6 +465,8 @@ subClientViewList(VALUE self)
 VALUE
 subClientStateFullAsk(VALUE self)
 {
+  rb_check_frozen(self);
+
   return FIX2INT(rb_iv_get(self, "@flags")) & SUB_EWMH_FULL ? Qtrue : Qfalse;
 } /* }}} */
 
@@ -470,6 +486,8 @@ subClientStateFullAsk(VALUE self)
 VALUE
 subClientStateFloatAsk(VALUE self)
 {
+  rb_check_frozen(self);
+
   return FIX2INT(rb_iv_get(self, "@flags")) & SUB_EWMH_FLOAT ? Qtrue : Qfalse;
 } /* }}} */
 
@@ -489,6 +507,8 @@ subClientStateFloatAsk(VALUE self)
 VALUE
 subClientStateStickAsk(VALUE self)
 {
+  rb_check_frozen(self);
+
   return FIX2INT(rb_iv_get(self, "@flags")) & SUB_EWMH_STICK ? Qtrue : Qfalse;
 } /* }}} */
 
@@ -666,6 +686,9 @@ subClientAliveAsk(VALUE self)
 {
   VALUE ret = Qfalse, name = rb_iv_get(self, "@name");
 
+  rb_check_frozen(self);
+  subSubtlextConnect(); ///< Implicit open connection
+
   /* Just find the client */
   if(RTEST(name) && -1 != subSubtlextFindWindow("_NET_CLIENT_LIST",
       RSTRING_PTR(name), NULL, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))
@@ -689,6 +712,9 @@ subClientGravityReader(VALUE self)
 {
   Window win = None;
   VALUE gravity = Qnil;
+
+  rb_check_frozen(self);
+  subSubtlextConnect(); ///< Implicit open connection
 
   /* Load on demand */
   if(NIL_P((gravity = rb_iv_get(self, "@gravity"))) &&
@@ -741,6 +767,9 @@ subClientGravityWriter(VALUE self,
 {
   VALUE gravity = Qnil;
 
+  rb_check_frozen(self);
+  subSubtlextConnect(); ///< Implicit open connection
+
   /* Check instance type */
   if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("Gravity"))))
     gravity = value;
@@ -778,6 +807,9 @@ subClientScreenReader(VALUE self)
 {
   Window win = None;
   VALUE screen = Qnil;
+
+  rb_check_frozen(self);
+  subSubtlextConnect(); ///< Implicit open connection
 
   /* Load on demand */
   if(NIL_P((screen = rb_iv_get(self, "@screen"))) &&
@@ -819,6 +851,9 @@ subClientScreenWriter(VALUE self,
 {
   VALUE screen = Qnil;
 
+  rb_check_frozen(self);
+  subSubtlextConnect(); ///< Implicit open connection
+
   /* Check instance type */
   if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("Screen"))))
     screen = value;
@@ -856,6 +891,9 @@ subClientGeometryReader(VALUE self)
 {
   Window win = None;
   VALUE geom = Qnil;
+
+  rb_check_frozen(self);
+  subSubtlextConnect(); ///< Implicit open connection
 
   geom = rb_iv_get(self, "@geometry");
   win = NUM2LONG(rb_iv_get(self, "@win"));
@@ -902,6 +940,9 @@ subClientGeometryWriter(int argc,
 {
   VALUE klass = Qnil, geometry = Qnil;
 
+  rb_check_frozen(self);
+  subSubtlextConnect(); ///< Implicit open connection
+
   /* Delegate arguments */
   klass    = rb_const_get(mod, rb_intern("Geometry"));
   geometry = rb_funcall2(klass, rb_intern("new"), argc, argv);
@@ -941,6 +982,10 @@ VALUE
 subClientResizeWriter(VALUE self,
   VALUE value)
 {
+  rb_check_frozen(self);
+  subSubtlextConnect(); ///< Implicit open connection
+
+  /* Check instance type */
   if(Qtrue == value || Qfalse == value)
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
@@ -970,6 +1015,8 @@ subClientShow(VALUE self)
 {
   VALUE win = rb_iv_get(self, "@win");
 
+  rb_check_frozen(self);
+
   if(RTEST(win))
     {
       rb_iv_set(self, "@hidden", Qfalse);
@@ -995,6 +1042,8 @@ VALUE
 subClientHide(VALUE self)
 {
   VALUE win = rb_iv_get(self, "@win");
+
+  rb_check_frozen(self);
 
   if(RTEST(win))
     {
@@ -1068,6 +1117,8 @@ subClientKill(VALUE self)
       subSharedMessage(display, NUM2LONG(win), "_NET_CLOSE_WINDOW", data, True);
     }
   else rb_raise(rb_eStandardError, "Failed killing client");
+
+  rb_obj_freeze(self);
 
   return Qnil;
 } /* }}} */

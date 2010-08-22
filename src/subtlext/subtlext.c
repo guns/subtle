@@ -719,6 +719,8 @@ subSubtlextAssoc(VALUE self,
   Window *wins = NULL;
   VALUE array = Qnil, method = Qnil, klass = Qnil, object = Qnil;
 
+  rb_check_frozen(self);
+
   /* Collect data */
   id      = FIX2INT(rb_iv_get(self, "@id"));
   method  = rb_intern("new");

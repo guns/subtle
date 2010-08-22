@@ -545,6 +545,8 @@ subGravityKill(VALUE self)
     }
   else rb_raise(rb_eStandardError, "Failed killing gravity");
 
+  rb_obj_freeze(self); ///< Freeze object
+
   return Qnil;
 } /* }}} */
 

@@ -161,6 +161,9 @@ subTagUpdate(VALUE self)
 {
   VALUE name = rb_iv_get(self, "@name");
 
+  rb_check_frozen(self);
+
+  /* Check object type */
   if(T_STRING == rb_type(name))
     {
       int id = -1;
@@ -282,6 +285,8 @@ subTagKill(VALUE self)
         "SUBTLE_TAG_KILL", data, True);
     }
   else rb_raise(rb_eStandardError, "Failed killing tag");
+
+  rb_obj_freeze(self); ///< Freeze object
 
   return Qnil;
 } /* }}} */
