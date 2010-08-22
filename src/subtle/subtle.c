@@ -161,7 +161,8 @@ subSubtleFocus(int focus)
         }
     }
 
-  XSetInputFocus(subtle->dpy, ROOT, RevertToParent, CurrentTime); ///< Fallback
+  /* Fallback to root */
+  XSetInputFocus(subtle->dpy, ROOT, RevertToParent, CurrentTime);
 
   subtle->windows.focus       = 0;
   subtle->windows.title.width = 0;
