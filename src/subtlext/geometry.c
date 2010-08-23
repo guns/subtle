@@ -101,8 +101,8 @@ subGeometryInit(int argc,
               {
                 data[0] = rb_iv_get(value, "@x");
                 data[1] = rb_iv_get(value, "@y");
-                data[2] = rb_iv_get(value, "@height");
-                data[3] = rb_iv_get(value, "@width");
+                data[2] = rb_iv_get(value, "@width");
+                data[3] = rb_iv_get(value, "@height");
               }
           }
     }
