@@ -703,157 +703,6 @@ RubyObjectDispatcher(VALUE self,
   return ret;
 } /* }}} */
 
-/* Sandbox */
-
-/* RubySandboxConfigure {{{ */
-/*
- * call-seq: configure -> nil
- *
- * Configure block for Sublet
- *
- *  configure :sublet do |s|
- *    s.interval = 60
- *  end
- */
-
-static VALUE
-RubySandboxConfigure(VALUE self,
-  VALUE name)
-{
-  rb_need_block();
-
-  if(T_SYMBOL == rb_type(name))
-    {
-      SubSublet *s = NULL;
-      VALUE p = Qnil;
-
-      /* Assume latest sublet */
-      p = rb_block_proc();
-      s = SUBLET(subtle->sublets->data[subtle->sublets->ndata - 1]);
-      s->name = strdup(SYM2CHAR(name));
-
-      /* Define configure method */
-      rb_funcall(rb_singleton_class(s->instance), rb_intern("define_method"),
-        2, CHAR2SYM("__configure"), p);
-    }
-  else rb_raise(rb_eArgError, "Unknown value type");
-
-  return Qnil;
-} /* }}} */
-
-/* RubySandboxHelper {{{ */
-/*
- * call-seq: helper -> nil
- *
- * Helper block for Sublet
- *
- *  helper do |s|
- *    def test
- *      puts "test"
- *    end
- *  end
- */
-
-static VALUE
-RubySandboxHelper(VALUE self)
-{
-  rb_need_block();
-
-  if(0 < subtle->sublets->ndata)
-    {
-      SubSublet *s = NULL;
-
-      /* Since loading is linear we use the last sublet */
-      s = SUBLET(subtle->sublets->data[subtle->sublets->ndata - 1]);
-
-      /* Instance eval the block */
-      rb_yield_values(1, s->instance);
-      rb_obj_instance_eval(0, 0, s->instance);
-    }
-
-  return Qnil;
-} /* }}} */
-
-/* RubySandboxOn {{{ */
-/*
- * call-seq: on(event, &block) -> nil
- *
- * Event block for hooks
- *
- *  on :event do |s|
- *    puts s.name
- *  end
- */
-
-static VALUE
-RubySandboxOn(VALUE self,
-  VALUE event)
-{
-  rb_need_block();
-
-  /* Check value type */
-  if(T_SYMBOL == rb_type(event))
-    {
-      if(subtle->flags & SUB_SUBTLE_CHECK) return Qnil; ///< Skip on check
-
-      /* Sublet hooks */
-      if(0 < subtle->sublets->ndata)
-        {
-          int i, arity = 0, mask = 0;
-          VALUE p = Qnil, sing = Qnil, meth = Qnil;
-          SubSublet *s = NULL;
-
-          RubyMethods methods[] =
-          {
-            { CHAR2SYM("run"),        CHAR2SYM("__run"),    SUB_SUBLET_RUN,    1 },
-            { CHAR2SYM("unload"),     CHAR2SYM("__unload"), SUB_SUBLET_UNLOAD, 1 },
-            { CHAR2SYM("watch"),      CHAR2SYM("__watch"),  SUB_SUBLET_WATCH,  1 },
-            { CHAR2SYM("mouse_down"), CHAR2SYM("__down"),   SUB_SUBLET_DOWN,   4 },
-            { CHAR2SYM("mouse_over"), CHAR2SYM("__over"),   SUB_SUBLET_OVER,   1 },
-            { CHAR2SYM("mouse_out"),  CHAR2SYM("__out"),    SUB_SUBLET_OUT,    1 }
-          };
-
-          /* Since loading is linear we use the last sublet */
-          p     = rb_block_proc();
-          arity = rb_proc_arity(p);
-          s     = SUBLET(subtle->sublets->data[subtle->sublets->ndata - 1]);
-          sing  = rb_singleton_class(s->instance);
-          meth  = rb_intern("define_method");
-
-          /* Generic hooks */
-          RubyHook(event, p, (void *)s);
-
-          /* Special hooks */
-          for(i = 0; LENGTH(methods) > i; i++)
-            {
-              if(methods[i].sym == event)
-                {
-                  /* Check proc arity */
-                  if(-1 == arity || (1 <= arity && methods[i].arity >= arity))
-                    {
-                      s->flags |= methods[i].flags;
-
-                      /* Create instance method from proc */
-                      rb_funcall(sing, meth, 2, methods[i].real, p);
-                    }
-                  else rb_raise(rb_eArgError, "Wrong number of arguments (%d for %d)",
-                    arity, methods[i].arity);
-               }
-            }
-
-          /* Hook specific stuff */
-          if(s->flags & SUB_SUBLET_DOWN) mask |= ButtonPressMask;
-          if(s->flags & SUB_SUBLET_OVER) mask |= EnterWindowMask;
-          if(s->flags & SUB_SUBLET_OUT)  mask |= LeaveWindowMask;
-
-          XSelectInput(subtle->dpy, s->win, mask);
-        }
-    }
-  else rb_raise(rb_eArgError, "Unknown value type for on");
-
-  return Qnil;
-} /* }}} */
-
 /* Options */
 
 /* RubyOptionsInit {{{ */
@@ -1736,6 +1585,155 @@ RubySubletDispatcher(int argc,
   return ret;
 } /* }}} */
 
+/* RubySubletConfigure {{{ */
+/*
+ * call-seq: configure -> nil
+ *
+ * Configure block for Sublet
+ *
+ *  configure :sublet do |s|
+ *    s.interval = 60
+ *  end
+ */
+
+static VALUE
+RubySubletConfigure(VALUE self,
+  VALUE name)
+{
+  rb_need_block();
+
+  if(T_SYMBOL == rb_type(name))
+    {
+      SubSublet *s = NULL;
+      VALUE p = Qnil;
+
+      /* Assume latest sublet */
+      p = rb_block_proc();
+      s = SUBLET(subtle->sublets->data[subtle->sublets->ndata - 1]);
+      s->name = strdup(SYM2CHAR(name));
+
+      /* Define configure method */
+      rb_funcall(rb_singleton_class(s->instance), rb_intern("define_method"),
+        2, CHAR2SYM("__configure"), p);
+    }
+  else rb_raise(rb_eArgError, "Unknown value type");
+
+  return Qnil;
+} /* }}} */
+
+/* RubySubletHelper {{{ */
+/*
+ * call-seq: helper -> nil
+ *
+ * Helper block for Sublet
+ *
+ *  helper do |s|
+ *    def test
+ *      puts "test"
+ *    end
+ *  end
+ */
+
+static VALUE
+RubySubletHelper(VALUE self)
+{
+  rb_need_block();
+
+  if(0 < subtle->sublets->ndata)
+    {
+      SubSublet *s = NULL;
+
+      /* Since loading is linear we use the last sublet */
+      s = SUBLET(subtle->sublets->data[subtle->sublets->ndata - 1]);
+
+      /* Instance eval the block */
+      rb_yield_values(1, s->instance);
+      rb_obj_instance_eval(0, 0, s->instance);
+    }
+
+  return Qnil;
+} /* }}} */
+
+/* RubySubletOn {{{ */
+/*
+ * call-seq: on(event, &block) -> nil
+ *
+ * Event block for hooks
+ *
+ *  on :event do |s|
+ *    puts s.name
+ *  end
+ */
+
+static VALUE
+RubySubletOn(VALUE self,
+  VALUE event)
+{
+  rb_need_block();
+
+  /* Check value type */
+  if(T_SYMBOL == rb_type(event))
+    {
+      if(subtle->flags & SUB_SUBTLE_CHECK) return Qnil; ///< Skip on check
+
+      /* Sublet hooks */
+      if(0 < subtle->sublets->ndata)
+        {
+          int i, arity = 0, mask = 0;
+          VALUE p = Qnil, sing = Qnil, meth = Qnil;
+          SubSublet *s = NULL;
+
+          RubyMethods methods[] =
+          {
+            { CHAR2SYM("run"),        CHAR2SYM("__run"),    SUB_SUBLET_RUN,    1 },
+            { CHAR2SYM("unload"),     CHAR2SYM("__unload"), SUB_SUBLET_UNLOAD, 1 },
+            { CHAR2SYM("watch"),      CHAR2SYM("__watch"),  SUB_SUBLET_WATCH,  1 },
+            { CHAR2SYM("mouse_down"), CHAR2SYM("__down"),   SUB_SUBLET_DOWN,   4 },
+            { CHAR2SYM("mouse_over"), CHAR2SYM("__over"),   SUB_SUBLET_OVER,   1 },
+            { CHAR2SYM("mouse_methodout"),  CHAR2SYM("__out"),    SUB_SUBLET_OUT,    1 }
+          };
+
+          /* Since loading is linear we use the last sublet */
+          p     = rb_block_proc();
+          arity = rb_proc_arity(p);
+          s     = SUBLET(subtle->sublets->data[subtle->sublets->ndata - 1]);
+          sing  = rb_singleton_class(s->instance);
+          meth  = rb_intern("define_method");
+
+          /* Generic hooks */
+          RubyHook(event, p, (void *)s);
+
+          /* Special hooks */
+          for(i = 0; LENGTH(methods) > i; i++)
+            {
+              if(methods[i].sym == event)
+                {
+                  /* Check proc arity */
+                  if(-1 == arity || (1 <= arity && methods[i].arity >= arity))
+                    {
+                      s->flags |= methods[i].flags;
+
+                      /* Create instance method from proc */
+                      rb_funcall(sing, meth, 2, methods[i].real, p);
+                    }
+                  else rb_raise(rb_eArgError, "Wrong number of arguments (%d for %d)",
+                    arity, methods[i].arity);
+               }
+            }
+
+          /* Hook specific stuff */
+          if(s->flags & SUB_SUBLET_DOWN) mask |= ButtonPressMask;
+          if(s->flags & SUB_SUBLET_OVER) mask |= EnterWindowMask;
+          if(s->flags & SUB_SUBLET_OUT)  mask |= LeaveWindowMask;
+
+          XSelectInput(subtle->dpy, s->win, mask);
+        }
+    }
+  else rb_raise(rb_eArgError, "Unknown value type for on");
+
+  return Qnil;
+} /* }}} */
+
 /* RubySubletRender {{{ */
 /*
  * call-seq: render -> nil
@@ -2184,7 +2182,7 @@ RubySubletUnwatch(VALUE self)
 void
 subRubyInit(void)
 {
-  VALUE options = Qnil, sandbox = Qnil, sublet = Qnil;
+  VALUE options = Qnil, sublet = Qnil;
 
   void Init_prelude(void);
 
@@ -2223,20 +2221,6 @@ subRubyInit(void)
    */
 
   mod = rb_define_module("Subtle");
-
-  /*
-   * Document-class: Subtle::Sandbox
-   *
-   * Sandbox is a module to safely load sublets
-   */
-
-  sandbox = rb_define_class_under(mod, "Sandbox", rb_cObject);
-
-  /* Class methods */
-  rb_define_method(sandbox, "configure",     RubySandboxConfigure, 1);
-  rb_define_method(sandbox, "helper",        RubySandboxHelper,    0);
-  rb_define_method(sandbox, "on",            RubySandboxOn,        1);
-  rb_define_method(sandbox, "const_missing", RubyObjectDispatcher, 1);
 
   /*
    * Document-class: Kernel
@@ -2278,6 +2262,12 @@ subRubyInit(void)
 
   sublet = rb_define_class_under(mod, "Sublet", rb_cObject);
 
+  /* DSL stuff */
+  rb_define_method(sublet, "configure",      RubySubletConfigure,  1);
+  rb_define_method(sublet, "helper",         RubySubletHelper,     0);
+  rb_define_method(sublet, "on",             RubySubletOn,         1);
+  rb_define_method(sublet, "const_missing",  RubyObjectDispatcher, 1);
+
   /* Class methods */
   rb_define_method(sublet, "method_missing", RubySubletDispatcher,       -1);
   rb_define_method(sublet, "render",         RubySubletRender,            0);
@@ -2293,7 +2283,6 @@ subRubyInit(void)
   rb_define_method(sublet, "hidden?",        RubySubletHidden,            0);
   rb_define_method(sublet, "watch",          RubySubletWatch,             1);
   rb_define_method(sublet, "unwatch",        RubySubletUnwatch,           0);
-
 
   /* Bypassing garbage collection */
   shelter = rb_ary_new();
@@ -2545,7 +2534,7 @@ subRubyLoadSublet(const char *file)
   int state = 0;
   char buf[100] = { 0 };
   SubSublet *s = NULL;
-  VALUE str = Qnil, rargs[2] = { Qnil }, klass = Qnil, sandbox = Qnil;
+  VALUE str = Qnil, rargs[2] = { Qnil }, klass = Qnil;
 
   /* Check path */
   if(subtle->paths.sublets)
@@ -2576,16 +2565,12 @@ subRubyLoadSublet(const char *file)
   klass       = rb_const_get(mod, rb_intern("Sublet"));
   s->instance = Data_Wrap_Struct(klass, NULL, NULL, (void *)s);
 
-  /* Create sandbox */
-  klass   = rb_const_get(mod, rb_intern("Sandbox"));
-  sandbox = rb_funcall(klass, rb_intern("new"), 0, NULL);
-
   subArrayPush(subtle->sublets, s);
   rb_ary_push(shelter, s->instance); ///< Protect from GC
 
   /* Carefully eval file */
   rargs[0] = str;
-  rargs[1] = sandbox;
+  rargs[1] = s->instance;
   rb_protect(RubyWrapSandboxEval, (VALUE)&rargs, &state);
   if(state)
     {
