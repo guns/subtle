@@ -248,9 +248,9 @@ gravity :gimp_dock,      [ 100,   0,  10, 100 ]
 #
 # === Example
 #
-# This will create a grab that starts a xterm when Alt+Enter are pressed:
+# This will create a grab that starts a urxvt when Alt+Enter are pressed:
 #
-#   grab "A-Return", "xterm"
+#   grab "A-Return", "urxvt"
 #
 
 # Switch to view1, view2, ...
