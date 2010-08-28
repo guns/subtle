@@ -1295,6 +1295,7 @@ subEventLoop(void)
                       while(XPending(subtle->dpy)) ///< X events
                         {
                           XNextEvent(subtle->dpy, &ev);
+                          printf("event=%d\n", ev.type);
                           switch(ev.type)
                             {
                               case ConfigureRequest:  EventConfigure(&ev.xconfigurerequest); break;
@@ -1384,7 +1385,6 @@ subEventLoop(void)
         {
           s = SUBLET(subtle->sublets->data[0]);
           timeout = s->flags & SUB_SUBLET_INTERVAL ? s->time - now : 60;
-          if(0 >= timeout) timeout = 1; ///< Sanitize
         }
       else timeout = 60;
     }
