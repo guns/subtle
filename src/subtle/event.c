@@ -1295,7 +1295,6 @@ subEventLoop(void)
                       while(XPending(subtle->dpy)) ///< X events
                         {
                           XNextEvent(subtle->dpy, &ev);
-                          printf("event=%d\n", ev.type);
                           switch(ev.type)
                             {
                               case ConfigureRequest:  EventConfigure(&ev.xconfigurerequest); break;
