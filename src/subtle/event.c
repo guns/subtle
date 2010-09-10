@@ -76,7 +76,6 @@ EventRestack(SubClient *c,
   /* Save flags */
   flags     = c->flags & (SUB_CLIENT_TYPE_DESKTOP|SUB_CLIENT_MODE_FULL);
   c->flags &= ~flags;
-  c->flags |= SUB_CLIENT_DEAD;
 
   if(Above == dir)
     {
@@ -98,8 +97,8 @@ EventRestack(SubClient *c,
     }
   else subSharedLogDebug("Ignoring unknown stacking mode `%ld'", dir);
 
+  /* Restore flags */
   c->flags |= flags;
-  c->flags &= ~SUB_CLIENT_DEAD;
 } /* }}} */
 
 /* EventConfigure {{{ */
@@ -994,19 +993,20 @@ EventGrab(XEvent *ev)
                 int i, match = (1L << 30), score = 0;
                 SubClient *found = NULL;
 
-                /* Iterate once to find a client based on score */
+                /* Iterate once to find a client with smallest score */
                 for(i = 0; i < subtle->clients->ndata; i++)
                   {
                     SubClient *iter = CLIENT(subtle->clients->data[i]);
 
                     if(c != iter && VISIBLE(CURVIEW, iter))
                       {
+                        /* Substract stack position to get window on top */
                         if(match > (score = subSharedMatch(g->data.num,
-                          &c->geom, &iter->geom)))
-                        {
-                          match = score;
-                          found = iter;
-                        }
+                            &c->geom, &iter->geom) - i))
+                          {
+                            match = score;
+                            found = iter;
+                          }
                       }
                   }
 

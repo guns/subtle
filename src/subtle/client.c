@@ -279,13 +279,13 @@ subClientCompare(const void *a,
   /* Check flags */
   if((c1->flags | c2->flags) & SUB_CLIENT_MODE_FULL)
     {
-      if(c1->flags & SUB_CLIENT_MODE_FULL && !(c1->flags & SUB_CLIENT_DEAD)) ret = 1;
-      if(c2->flags & SUB_CLIENT_MODE_FULL && !(c2->flags & SUB_CLIENT_DEAD)) ret = -1;
+      if(c1->flags & SUB_CLIENT_MODE_FULL) ret = 1;
+      if(c2->flags & SUB_CLIENT_MODE_FULL) ret = -1;
     }
   else if((c1->flags | c2->flags) & SUB_CLIENT_TYPE_DESKTOP)
     {
-      if(c1->flags & SUB_CLIENT_TYPE_DESKTOP && !(c1->flags & SUB_CLIENT_DEAD)) ret = -1;
-      if(c2->flags & SUB_CLIENT_TYPE_DESKTOP && !(c2->flags & SUB_CLIENT_DEAD)) ret = 1;
+      if(c1->flags & SUB_CLIENT_TYPE_DESKTOP) ret = -1;
+      if(c2->flags & SUB_CLIENT_TYPE_DESKTOP) ret = 1;
     }
 
   return ret;
