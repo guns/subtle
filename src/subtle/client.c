@@ -375,9 +375,8 @@ subClientDrag(SubClient *c,
         break;
     } /* }}} */
 
-  /* Prevent resizing of fixed size or drag of nonfloat windows */
-  if((mode == SUB_DRAG_RESIZE && c->flags & SUB_CLIENT_TYPE_DIALOG)
-    || c->flags & SUB_CLIENT_MODE_NOFLOAT) return;
+  /* Prevent resizing of nonfloat windows */
+  if(mode == SUB_DRAG_RESIZE || c->flags & SUB_CLIENT_MODE_NOFLOAT) return;
 
   if(XGrabPointer(subtle->dpy, c->win, True, GRABMASK, GrabModeAsync,
     GrabModeAsync, None, cursor, CurrentTime)) return;
