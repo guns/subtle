@@ -239,12 +239,12 @@ subGrabKill(SubGrab *g)
   assert(g);
 
   /* Clean certain types */
-  if(g->flags & SUB_GRAB_SPAWN && g->data.string)
-    free(g->data.string);
+  if(g->flags & (SUB_GRAB_SPAWN|SUB_GRAB_WINDOW_GRAVITY) && g->data.string)
+    {
+      if(!(g->flags & SUB_TYPE_UNKNOWN)) free(g->data.string);
+    }
   else if(g->flags & SUB_GRAB_PROC && g->data.num)
     subRubyRelease(g->data.num);
-  else if(g->flags & SUB_GRAB_WINDOW_GRAVITY && g->data.num)
-    free(g->data.string);
 
   free(g);
 

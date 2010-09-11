@@ -663,9 +663,9 @@ RubyWrapRead(VALUE file)
   return str;
 } /* }}} */
 
-/* RubyWrapSandboxEval {{{ */
+/* RubyWrapEval {{{ */
 static VALUE
-RubyWrapSandboxEval(VALUE data)
+RubyWrapEval(VALUE data)
 {
   VALUE *rargs = (VALUE *)data;
 
@@ -1258,7 +1258,7 @@ RubyKernelGrab(int argc,
           }
         break; /* }}} */
       case T_ARRAY: /* {{{ */
-        type = SUB_GRAB_WINDOW_GRAVITY;
+        type = (SUB_GRAB_WINDOW_GRAVITY|SUB_TYPE_UNKNOWN); ///< Add unknwon marker to avoid free
         data = DATA((unsigned long)value);
 
         rb_ary_push(shelter, value); ///< Protect from GC
@@ -2313,7 +2313,7 @@ subRubyLoadConfig(void)
 
       /* Combine paths */
       snprintf(path, sizeof(path), "%s/.config", getenv("HOME"));
-      snprintf(buf, sizeof(buf), "%s:%s", 
+      snprintf(buf, sizeof(buf), "%s:%s",
         home ? home : path, dirs ? dirs : "/etc/xdg");
 
       /* Search config in XDG path */
@@ -2378,7 +2378,8 @@ subRubyLoadConfig(void)
           /* Create gravity string */
           RubyGravityString(g->data.num, &string);
           subRubyRelease(g->data.num);
-          g->data.string = string;
+          g->data.string  = string;
+          g->flags       &= ~SUB_TYPE_UNKNOWN; ///< Remove unknown marker
         }
     }
 
@@ -2571,7 +2572,7 @@ subRubyLoadSublet(const char *file)
   /* Carefully eval file */
   rargs[0] = str;
   rargs[1] = s->instance;
-  rb_protect(RubyWrapSandboxEval, (VALUE)&rargs, &state);
+  rb_protect(RubyWrapEval, (VALUE)&rargs, &state);
   if(state)
     {
       subSharedLogWarn("Failed loading sublet `%s'\n", file);
