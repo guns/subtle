@@ -2195,8 +2195,11 @@ subRubyInit(void)
   {
     VALUE encoding = Qnil;
 
+    /* FIXME: Fix for ruby 1.9.2p429 borrowed from ruby? */
+    (void)rb_filesystem_encoding();
+
     /* Set encoding */
-    encoding = rb_enc_from_encoding(rb_filesystem_encoding());
+    encoding = rb_enc_from_encoding(rb_locale_encoding());
     rb_enc_set_default_external(encoding);
   }
 #endif /* HAVE_RB_ENC_SET_DEFAULT_INTERNAL */
