@@ -2438,6 +2438,7 @@ subRubyLoadConfig(void)
 
   subViewUpdate();
   subViewPublish();
+  subDisplayPublish();
 
   return 1;
 } /* }}} */

@@ -279,8 +279,6 @@ subDisplayConfigure(void)
   subViewUpdate();
   subSubletUpdate();
 
-  subDisplayPublish();
-
   XSync(subtle->dpy, False); ///< Sync all changes
 } /* }}} */
 
