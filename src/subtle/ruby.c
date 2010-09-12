@@ -2197,7 +2197,6 @@ subRubyInit(void)
 
     /* Set encoding */
     encoding = rb_enc_from_encoding(rb_filesystem_encoding());
-    rb_enc_set_default_internal(encoding);
     rb_enc_set_default_external(encoding);
   }
 #endif /* HAVE_RB_ENC_SET_DEFAULT_INTERNAL */
