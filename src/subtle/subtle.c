@@ -135,6 +135,7 @@ subSubtleFocus(int focus)
   XQueryPointer(subtle->dpy, ROOT, (Window *)&dummy, &win,
     &dummy, &dummy, &dummy, &dummy, (unsigned int *)&dummy);
 
+
   /* Find next client */
   if((c = CLIENT(subSubtleFind(win, CLIENTID))))
     {
@@ -162,10 +163,11 @@ subSubtleFocus(int focus)
     }
 
   /* Fallback to root */
-  XSetInputFocus(subtle->dpy, ROOT, RevertToParent, CurrentTime);
-
-  subtle->windows.focus       = 0;
+  subtle->windows.focus       = ROOT;
   subtle->windows.title.width = 0;
+
+  XSetInputFocus(subtle->dpy, ROOT, RevertToNone, CurrentTime);
+  subGrabSet(ROOT);
 
   subPanelUpdate();
   subPanelRender();

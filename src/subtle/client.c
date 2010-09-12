@@ -1282,25 +1282,9 @@ subClientKill(SubClient *c,
   /* Hook: Kill */
   subHookCall(SUB_HOOK_CLIENT_KILL, (void *)c);
 
-  /* Focus */
-  if(subtle->windows.focus == c->win)
-    {
-      subtle->windows.focus       = 0;
-      subtle->windows.title.width = 0;
-      subPanelUpdate();
-      subPanelRender();
-    }
-
   /* Remove highlight of urgent client */
   if(c->flags & (SUB_CLIENT_MODE_URGENT|SUB_CLIENT_MODE_URGENT_FOCUS))
     subViewHighlight(0); ///< Dehighlight
-
-  /* Ignore further events and delete context */
-  XSelectInput(subtle->dpy, c->win, NoEventMask);
-  XDeleteContext(subtle->dpy, c->win, CLIENTID);
-  XUnmapWindow(subtle->dpy, c->win);
-
-  subSubtleFocus(True);
 
   /* Destroy window */
   if(destroy && !(c->flags & SUB_CLIENT_DEAD))
@@ -1312,6 +1296,11 @@ subClientKill(SubClient *c,
         }
       else XKillClient(subtle->dpy, c->win);
     }
+
+  /* Ignore further events and delete context */
+  XSelectInput(subtle->dpy, c->win, NoEventMask);
+  XDeleteContext(subtle->dpy, c->win, CLIENTID);
+  XUnmapWindow(subtle->dpy, c->win);
 
   if(c->gravities) free(c->gravities);
   if(c->screens)   free(c->screens);

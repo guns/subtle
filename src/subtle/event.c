@@ -235,9 +235,12 @@ EventUnmap(XUnmapEvent *ev)
   /* Check if we know this window */
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID)))) ///< Client
     {
+      int focus = (subtle->windows.focus == c->win);
+      int visible = VISIBLE(CURVIEW, c);
+
       subEwmhSetWMState(c->win, WithdrawnState);
 
-      /* Ignore out own generated unmap events */
+      /* Ignore our generated unmap events */
       if(c->flags & SUB_CLIENT_UNMAP)
         {
           c->flags &= ~SUB_CLIENT_UNMAP;
@@ -248,9 +251,10 @@ EventUnmap(XUnmapEvent *ev)
       subArrayRemove(subtle->clients, (void *)c);
       subClientPublish();
       subViewDynamic(); ///< Dynamic views
-
-      if(VISIBLE(CURVIEW, c)) subViewConfigure(CURVIEW, False);
       subClientKill(c, False);
+
+      if(visible) subViewConfigure(CURVIEW, False);
+      if(focus)   subSubtleFocus(True);
     }
   else if((t = TRAY(subSubtleFind(ev->window, TRAYID)))) ///< Tray
     {
@@ -282,14 +286,17 @@ EventDestroy(XDestroyWindowEvent *ev)
   /* Check if we know this window */
   if((c = CLIENT(subSubtleFind(ev->event, CLIENTID)))) ///< Client
     {
+      int focus = (subtle->windows.focus == c->win);
+      int visible = VISIBLE(CURVIEW, c);
+
       c->flags |= SUB_CLIENT_DEAD; ///< Ignore remaining events
       subArrayRemove(subtle->clients, (void *)c);
       subClientPublish();
-
       subViewDynamic(); ///< Dynamic views
-
-      if(VISIBLE(CURVIEW, c)) subViewConfigure(CURVIEW, False);
       subClientKill(c, True);
+
+      if(visible) subViewConfigure(CURVIEW, False);
+      if(focus)   subSubtleFocus(True);
     }
   else if((t = TRAY(subSubtleFind(ev->event, TRAYID)))) ///< Tray
     {
@@ -840,6 +847,7 @@ EventCrossing(XCrossingEvent *ev)
   SubTray *t = NULL;
   SubSublet *s = NULL;
 
+  /* Handle both crossing events */
   switch(ev->type)
     {
       case EnterNotify:
@@ -1153,7 +1161,7 @@ EventFocus(XFocusChangeEvent *ev)
 {
   SubClient *c = NULL;
 
-  /* Check if we are interested in this event */
+  /* Check if window keeps focus */
   if(ev->window == subtle->windows.focus) return;
 
   /* Remove focus */
@@ -1175,18 +1183,7 @@ EventFocus(XFocusChangeEvent *ev)
     }
 
   /* Handle focus event */
-  if(ROOT == ev->window) ///< Root
-    {
-      subtle->windows.focus       = ROOT;
-      subtle->windows.title.width = 0;
-
-      XSetInputFocus(subtle->dpy, ROOT, RevertToParent, CurrentTime);
-      subGrabSet(ROOT);
-
-      subPanelUpdate();
-      subPanelRender();
-    }
-  else if((c = CLIENT(subSubtleFind(ev->window, CLIENTID)))) ///< Clients
+  if((c = CLIENT(subSubtleFind(ev->window, CLIENTID)))) ///< Clients
     {
       if(!(c->flags & SUB_CLIENT_DEAD) && VISIBLE(CURVIEW, c))
         {
