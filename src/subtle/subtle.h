@@ -76,8 +76,7 @@
   (r1.y + r1.height) <= (r2.y + r2.height))                       ///< Whether rect is in rect
 
 #define ROOTMASK \
-  (SubstructureRedirectMask|SubstructureNotifyMask| \
-  FocusChangeMask|PropertyChangeMask)
+  (SubstructureRedirectMask|SubstructureNotifyMask|PropertyChangeMask)
 #define EVENTMASK \
   (StructureNotifyMask|PropertyChangeMask| \
   EnterWindowMask|FocusChangeMask)
