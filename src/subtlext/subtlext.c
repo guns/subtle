@@ -17,6 +17,21 @@
 Display *display = NULL;
 VALUE mod = Qnil;
 
+/* SubtlextStringify {{{ */
+static void
+SubtlextStringify(char *string)
+{
+  /* Lowercase and replace strange characters */
+  while('\0' != *string)
+    {
+      *string = toupper(*string);
+
+      if(!isalnum(*string)) *string = '_';
+
+      string++;
+    }
+} /* }}} */
+
 /* SubtlextSweep {{{ */
 static void
 SubtlextSweep(void)
@@ -374,6 +389,102 @@ SubtlextFocusAsk(VALUE self)
     }
 
   return ret;
+} /* }}} */
+
+/* SubtlextPropReader {{{ */
+/*
+ * call-seq: [value] -> String
+ *
+ * Get arbitrary property of window
+ *
+ *  object["wm"]
+ *  => "subtle"
+ */
+
+VALUE
+SubtlextPropReader(VALUE self,
+  VALUE value)
+{
+  VALUE ret = Qnil;
+
+  /* Check object type */
+  if(T_STRING == rb_type(value))
+    {
+      VALUE win = Qnil;
+
+      /* Get win */
+      if(Qnil != (win = rb_iv_get(self, "@win")))
+        {
+          char prop[255] = { 0 }, *name = NULL, *result = NULL;
+
+          /* Sanitize property name */
+          name = strdup(RSTRING_PTR(value));
+          SubtlextStringify(name);
+
+          snprintf(prop, sizeof(prop), "SUBTLE_PROPERTY_%s", name);
+
+          if((result = subSharedPropertyGet(display, NUM2LONG(win),
+              XInternAtom(display, "UTF8_STRING", False),
+              XInternAtom(display, prop, False), NULL)))
+            ret = rb_str_new2(result);
+
+          free(name);
+          free(result);
+        }
+      else rb_raise(rb_eStandardError, "Failed getting property");
+    }
+  else rb_raise(rb_eArgError, "Failed getting value type `%s'",
+    rb_obj_classname(value));
+
+  return ret;
+} /* }}} */
+
+/* SubtlextPropWriter {{{ */
+/*
+ * call-seq: [key]= value -> String
+ *
+ * Set arbitrary property of window
+ *
+ *  object["wm"] = "subtle"
+ *  => nil
+ */
+
+VALUE
+SubtlextPropWriter(VALUE self,
+  VALUE key,
+  VALUE value)
+{
+  /* Check object type */
+  if(T_STRING == rb_type(key) && T_STRING == rb_type(value))
+    {
+      VALUE win = Qnil;
+
+      /* Get win */
+      if(Qnil != (win = rb_iv_get(self, "@win")))
+        {
+          char prop[255] = { 0 }, *name = NULL;
+
+          /* Sanitize property name */
+          name = strdup(RSTRING_PTR(key));
+          SubtlextStringify(name);
+
+          snprintf(prop, sizeof(prop), "SUBTLE_PROPERTY_%s", name);
+
+          XChangeProperty(display, NUM2LONG(win),
+            XInternAtom(display, prop, False),
+            XInternAtom(display, "UTF8_STRING", False), 8, PropModeReplace,
+            (unsigned char *)RSTRING_PTR(value), RSTRING_LEN(value));
+
+          XSync(display, False); ///< Sync all changes
+
+          free(name);
+        }
+      else rb_raise(rb_eStandardError, "Failed setting property");
+    }
+  else rb_raise(rb_eArgError, "Failed setting value type `%s'",
+    rb_obj_classname(value));
+
+  return Qnil;
 } /* }}} */
 
 /* Exported */
@@ -853,14 +964,16 @@ Init_subtlext(void)
   rb_define_singleton_method(client, "all",     subClientAll,     0);
 
   /* General methods */
-  rb_define_method(client, "tags",       SubtlextTagList,   0);
-  rb_define_method(client, "has_tag?",   SubtlextTagAsk,    1);
-  rb_define_method(client, "tag",        SubtlextTagAdd,    1);
-  rb_define_method(client, "untag",      SubtlextTagDel,    1);
-  rb_define_method(client, "retag",      SubtlextTagReload, 0);
-  rb_define_method(client, "click",      SubtlextClick,    -1);
-  rb_define_method(client, "focus",      SubtlextFocus,     0);
-  rb_define_method(client, "has_focus?", SubtlextFocusAsk,  0);
+  rb_define_method(client, "tags",       SubtlextTagList,     0);
+  rb_define_method(client, "has_tag?",   SubtlextTagAsk,      1);
+  rb_define_method(client, "tag",        SubtlextTagAdd,      1);
+  rb_define_method(client, "untag",      SubtlextTagDel,      1);
+  rb_define_method(client, "retag",      SubtlextTagReload,   0);
+  rb_define_method(client, "click",      SubtlextClick,      -1);
+  rb_define_method(client, "focus",      SubtlextFocus,       0);
+  rb_define_method(client, "has_focus?", SubtlextFocusAsk,    0);
+  rb_define_method(client, "[]",         SubtlextPropReader,  1);
+  rb_define_method(client, "[]=",        SubtlextPropWriter,  2);
 
   /* Class methods */
   rb_define_method(client, "initialize",   subClientInit,            1);
@@ -1172,9 +1285,11 @@ Init_subtlext(void)
   rb_define_singleton_method(tray, "all",  subTrayAll,  0);
 
   /* General methods */
-  rb_define_method(tray, "click",      SubtlextClick,    -1);
-  rb_define_method(tray, "focus",      SubtlextFocus,     0);
-  rb_define_method(tray, "has_focus?", SubtlextFocusAsk,  0);
+  rb_define_method(tray, "click",      SubtlextClick,      -1);
+  rb_define_method(tray, "focus",      SubtlextFocus,       0);
+  rb_define_method(tray, "has_focus?", SubtlextFocusAsk,    0);
+  rb_define_method(tray, "[]",         SubtlextPropReader,  1);
+  rb_define_method(tray, "[]=",        SubtlextPropWriter,  2);
 
   /* Class methods */
   rb_define_method(tray, "initialize", subTrayInit,       1);
@@ -1212,10 +1327,12 @@ Init_subtlext(void)
   rb_define_singleton_method(view, "all",     subViewAll,     0);
 
   /* General methods */
-  rb_define_method(view, "tags",     SubtlextTagList, 0);
-  rb_define_method(view, "has_tag?", SubtlextTagAsk,  1);
-  rb_define_method(view, "tag",      SubtlextTagAdd,  1);
-  rb_define_method(view, "untag",    SubtlextTagDel,  1);
+  rb_define_method(view, "tags",     SubtlextTagList,    0);
+  rb_define_method(view, "has_tag?", SubtlextTagAsk,     1);
+  rb_define_method(view, "tag",      SubtlextTagAdd,     1);
+  rb_define_method(view, "untag",    SubtlextTagDel,     1);
+  rb_define_method(view, "[]",       SubtlextPropReader, 1);
+  rb_define_method(view, "[]=",      SubtlextPropWriter, 2);
 
   /* Class methods */
   rb_define_method(view, "initialize", subViewInit,          1);
