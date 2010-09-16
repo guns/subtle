@@ -482,7 +482,7 @@ tag "gimp_image" do
 end
 
 tag "gimp_toolbox" do
-  match   :role => "gimp-toolbox"
+  match   :role => "gimp-toolbox$"
   gravity :gimp_toolbox
 end
 
@@ -540,6 +540,7 @@ end
 # [*:view_kill*]        Called whenever a view is killed
 #
 # [*:tile*]             Called on whenever tiling would be needed
+# [*:reload*]           Called on reload
 # [*:start*]            Called on start
 # [*:exit*]             Called on exit
 #
