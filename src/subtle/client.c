@@ -1108,7 +1108,7 @@ subClientSetType(SubClient *c,
                 *flags |= SUB_CLIENT_TYPE_SPLASH;
                 break;
               case SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG:
-                *flags |= SUB_CLIENT_TYPE_DIALOG;
+                *flags |= (SUB_CLIENT_TYPE_DIALOG|SUB_CLIENT_MODE_FLOAT);
                 break;
               default: break;
             }
@@ -1189,8 +1189,7 @@ subClientToggle(SubClient *c,
           subViewDynamic();
         }
 
-      if(type & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_TYPE_DIALOG))
-        subClientResize(c); ///< Sanitize
+      if(type & SUB_CLIENT_MODE_FLOAT) subClientResize(c); ///< Sanitize
 
       if(type & SUB_CLIENT_MODE_FULL)
         {
