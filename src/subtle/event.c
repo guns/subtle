@@ -235,8 +235,8 @@ EventUnmap(XUnmapEvent *ev)
   /* Check if we know this window */
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID)))) ///< Client
     {
-      int focus = (subtle->windows.focus == c->win);
-      int visible = VISIBLE(CURVIEW, c);
+      int focus = (subtle->windows.focus == c->win),
+        visible = VISIBLE(CURVIEW, c);
 
       subEwmhSetWMState(c->win, WithdrawnState);
 
@@ -284,9 +284,8 @@ EventDestroy(XDestroyWindowEvent *ev)
   SubTray *t = NULL;
 
   /* Check if we know this window */
-  if((c = CLIENT(subSubtleFind(ev->event, CLIENTID)))) ///< Client
+  if((c = CLIENT(subSubtleFind(ev->window, CLIENTID)))) ///< Client
     {
-      int focus = (subtle->windows.focus == c->win);
       int visible = VISIBLE(CURVIEW, c);
 
       c->flags |= SUB_CLIENT_DEAD; ///< Ignore remaining events
@@ -296,7 +295,6 @@ EventDestroy(XDestroyWindowEvent *ev)
       subClientKill(c, True);
 
       if(visible) subViewConfigure(CURVIEW, False);
-      if(focus)   subSubtleFocus(True);
     }
   else if((t = TRAY(subSubtleFind(ev->event, TRAYID)))) ///< Tray
     {

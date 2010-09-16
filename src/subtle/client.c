@@ -1286,6 +1286,11 @@ subClientKill(SubClient *c,
   if(c->flags & (SUB_CLIENT_MODE_URGENT|SUB_CLIENT_MODE_URGENT_FOCUS))
     subViewHighlight(0); ///< Dehighlight
 
+  /* Ignore further events and delete context */
+  XSelectInput(subtle->dpy, c->win, NoEventMask);
+  XDeleteContext(subtle->dpy, c->win, CLIENTID);
+  XUnmapWindow(subtle->dpy, c->win);
+
   /* Destroy window */
   if(destroy && !(c->flags & SUB_CLIENT_DEAD))
     {
@@ -1295,12 +1300,9 @@ subClientKill(SubClient *c,
             subEwmhGet(SUB_EWMH_WM_DELETE_WINDOW), CurrentTime, 0, 0, 0);
         }
       else XKillClient(subtle->dpy, c->win);
-    }
 
-  /* Ignore further events and delete context */
-  XSelectInput(subtle->dpy, c->win, NoEventMask);
-  XDeleteContext(subtle->dpy, c->win, CLIENTID);
-  XUnmapWindow(subtle->dpy, c->win);
+      if(subtle->windows.focus == c->win) subSubtleFocus(True);
+    }
 
   if(c->gravities) free(c->gravities);
   if(c->screens)   free(c->screens);
