@@ -1690,7 +1690,7 @@ RubySubletOn(VALUE self,
             { CHAR2SYM("watch"),      CHAR2SYM("__watch"),  SUB_SUBLET_WATCH,  1 },
             { CHAR2SYM("mouse_down"), CHAR2SYM("__down"),   SUB_SUBLET_DOWN,   4 },
             { CHAR2SYM("mouse_over"), CHAR2SYM("__over"),   SUB_SUBLET_OVER,   1 },
-            { CHAR2SYM("mouse_methodout"),  CHAR2SYM("__out"),    SUB_SUBLET_OUT,    1 }
+            { CHAR2SYM("mouse_out"),  CHAR2SYM("__out"),    SUB_SUBLET_OUT,    1 }
           };
 
           /* Since loading is linear we use the last sublet */
