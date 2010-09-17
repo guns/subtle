@@ -43,7 +43,6 @@ subSubletInit(VALUE self,
 
   rb_iv_set(self, "@id",   Qnil);
   rb_iv_set(self, "@name", name);
-  rb_iv_set(self, "@win",  Qnil);
 
   subSubtlextConnect(); ///< Implicit open connection
 
@@ -266,26 +265,23 @@ subSubletBackgroundWriter(VALUE self,
 VALUE
 subSubletGeometryReader(VALUE self)
 {
-  VALUE win = Qnil;
+  int id = 0, size = 0;
+  Window win = None, dummy = None, *wins = NULL;
   XRectangle geom = { 0 };
 
-  /* Find sublet window */
-  if(NIL_P(win = rb_iv_get(self, "@win")))
-    {
-      int id = 0, size = 0;
-      Window *wins = NULL;
+  /* Fetch data */
+  id   = FIX2INT(rb_iv_get(self, "@id"));
+  wins = subSubtlextList("SUB_SUBLET_WINDOWS", &size);
+  win  = wins[id];
 
-      id   = FIX2INT(rb_iv_get(self, "@id"));
-      wins = subSubtlextList("SUB_SUBLET_WINDOWS", &size);
-      win  = LONG2NUM(wins[id]);
+  /* Get window geometry and translate it */
+  subSharedPropertyGeometry(display, win, &geom);
+  XTranslateCoordinates(display, win, DefaultRootWindow(display),
+    geom.x, geom.y, (int *)&geom.x, (int *)&geom.y, &dummy);
 
-      rb_iv_set(self, "@win", win);
+    printf("dummy=%#lx\n", dummy);
 
-      free(wins);
-    }
-
-  /* Get window geometry */
-  subSharedPropertyGeometry(display, NUM2LONG(win), &geom);
+  free(wins);
 
   return subGeometryInstantiate(geom.x, geom.y, geom.width, geom.height);
 } /* }}} */

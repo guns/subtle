@@ -2619,6 +2619,8 @@ subRubyLoadPanels(void)
 
       exit(-1);
     }
+
+  subSubletPublish();
 } /* }}} */
 
  /** subRubyLoadSublets {{{
@@ -2674,7 +2676,6 @@ subRubyLoadSublets(void)
   else subSharedLogWarn("No sublets found\n");
 
   subSubletUpdate();
-  subSubletPublish();
 } /* }}} */
 
  /** subRubyLoadSubtlext {{{
