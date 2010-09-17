@@ -265,21 +265,22 @@ subSubletBackgroundWriter(VALUE self,
 VALUE
 subSubletGeometryReader(VALUE self)
 {
-  int id = 0, size = 0;
+  int id = 0, size = 0, x = 0, y = 0;
   Window win = None, dummy = None, *wins = NULL;
   XRectangle geom = { 0 };
 
   /* Fetch data */
   id   = FIX2INT(rb_iv_get(self, "@id"));
-  wins = subSubtlextList("SUB_SUBLET_WINDOWS", &size);
+  wins = subSubtlextList("SUBTLE_SUBLET_WINDOWS", &size);
   win  = wins[id];
 
   /* Get window geometry and translate it */
   subSharedPropertyGeometry(display, win, &geom);
   XTranslateCoordinates(display, win, DefaultRootWindow(display),
-    geom.x, geom.y, (int *)&geom.x, (int *)&geom.y, &dummy);
+    geom.x, geom.y, &x, &y, &dummy);
 
-    printf("dummy=%#lx\n", dummy);
+  geom.x = x;
+  geom.y = y;
 
   free(wins);
 

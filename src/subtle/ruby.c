@@ -505,7 +505,6 @@ static VALUE
 RubyWrapLoadPanels(VALUE data)
 {
   int i, j, pos;
-  Window panel = subtle->windows.panel1;
   RubyPanels panels[] =
   {
     { CHAR2SYM("views"), &subtle->windows.views },
@@ -532,7 +531,6 @@ RubyWrapLoadPanels(VALUE data)
         {
           SubPanel *p = PANEL(subtle->panels->data[i]);
 
-          if(p->flags & SUB_PANEL_BOTTOM) panel = subtle->windows.panel2;
           if(p->flags & SUB_PANEL_SUBLETS)
             {
               SubSublet *s = NULL;
@@ -551,7 +549,6 @@ RubyWrapLoadPanels(VALUE data)
                       s->flags |= SUB_PANEL_SEPARATOR2;
 
                       subArrayInsert(subtle->panels, pos++, (void *)s);
-                      XReparentWindow(subtle->dpy, s->win, panel, 0, 0);
 
                       /* Set borders */
                       XSetWindowBorder(subtle->dpy, s->win, subtle->colors.bo_panel);
@@ -1958,13 +1955,20 @@ RubySubletGeometryReader(VALUE self)
   Data_Get_Struct(self, SubSublet, s);
   if(s)
     {
+      int x = 0, y = 0;
       XRectangle geom = { 0 };
+      Window dummy = None;
       VALUE klass = Qnil;
 
       subRubyLoadSubtlext(); ///< Load subtlext on demand
 
-      /* Get window geometry */
+      /* Get window geometry and translate it */
       subSharedPropertyGeometry(subtle->dpy, s->win, &geom);
+      XTranslateCoordinates(subtle->dpy, s->win, ROOT,
+        geom.x, geom.y, &x, &y, &dummy);
+
+      geom.x = x;
+      geom.y = y;
 
       /* Create geometry object */
       klass    = rb_const_get(subtlext, rb_intern("Geometry"));
