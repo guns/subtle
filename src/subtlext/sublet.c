@@ -255,7 +255,7 @@ subSubletBackgroundWriter(VALUE self,
 
 /* subSubletGeometryReader {{{ */
 /*
- * call-seq: gemetry -> Subtlext::Geometry
+ * call-seq: geometry -> Subtlext::Geometry
  *
  * Get geometry of a sublet
  *
