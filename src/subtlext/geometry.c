@@ -74,6 +74,7 @@ subGeometryInit(int argc,
   /* Check object type */
   switch(rb_type(value))
     {
+      case T_FIXNUM: break;
       case T_ARRAY:
         if(4 == FIX2INT(rb_funcall(value, rb_intern("size"), 0, NULL)))
           {
@@ -105,7 +106,10 @@ subGeometryInit(int argc,
                 data[3] = rb_iv_get(value, "@height");
               }
           }
+      default:
+        rb_raise(rb_eArgError, "Failed setting value type `%s'", rb_obj_classname(value));
     }
+
   /* Set values */
   if(FIXNUM_P(data[0]) && FIXNUM_P(data[1]) && FIXNUM_P(data[2]) &&
       FIXNUM_P(data[3]) && 0 < FIX2INT(data[2]) && 0 < FIX2INT(data[3]))
@@ -115,7 +119,7 @@ subGeometryInit(int argc,
       rb_iv_set(self, "@width",  data[2]);
       rb_iv_set(self, "@height", data[3]);
     }
-  else rb_raise(rb_eArgError, "Failed setting value type `%s'", rb_obj_classname(value));
+  else rb_raise(rb_eStandardError, "Failed setting width/height to zero");
 
   return self;
 } /* }}} */
@@ -183,9 +187,10 @@ subGeometryToHash(VALUE self)
 VALUE
 subGeometryToString(VALUE self)
 {
-  char buf[256];
+  char buf[256] = { 0 };
   int x = 0, y = 0, width = 0, height = 0;
 
+  /* Fetch data */
   x      = FIX2INT(rb_iv_get(self, "@x"));
   y      = FIX2INT(rb_iv_get(self, "@y"));
   width  = FIX2INT(rb_iv_get(self, "@width"));
