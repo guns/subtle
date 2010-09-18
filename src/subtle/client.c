@@ -1299,8 +1299,6 @@ subClientKill(SubClient *c,
             subEwmhGet(SUB_EWMH_WM_DELETE_WINDOW), CurrentTime, 0, 0, 0);
         }
       else XKillClient(subtle->dpy, c->win);
-
-      if(subtle->windows.focus == c->win) subSubtleFocus(True);
     }
 
   if(c->gravities) free(c->gravities);
