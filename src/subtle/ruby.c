@@ -1955,26 +1955,30 @@ RubySubletGeometryReader(VALUE self)
   Data_Get_Struct(self, SubSublet, s);
   if(s)
     {
-      int x = 0, y = 0;
-      XRectangle geom = { 0 };
-      Window dummy = None;
+      int wx = 0, wy = 0, px = 0, py = 0;
+      unsigned int wwidth = 0, wheight = 0, wbw = 0, wdepth = 0;
+      unsigned int pwidth = 0, pheight = 0, pbw = 0, pdepth = 0, size = 0;
+      Window *wins = NULL, parent = None, wroot = None, proot = None;
       VALUE klass = Qnil;
 
       subRubyLoadSubtlext(); ///< Load subtlext on demand
 
-      /* Get window geometry and translate it */
-      subSharedPropertyGeometry(subtle->dpy, s->win, &geom);
-      XTranslateCoordinates(subtle->dpy, s->win, ROOT,
-        geom.x, geom.y, &x, &y, &dummy);
+      /* Get parent and geometries */
+      XGetGeometry(subtle->dpy, s->win, &wroot, &wx, &wy,
+        &wwidth, &wheight, &wbw, &wdepth);
 
-      geom.x = x;
-      geom.y = y;
+      XQueryTree(subtle->dpy, s->win, &wroot, &parent,
+        &wins, &size); ///< Get parent
+
+      XGetGeometry(subtle->dpy, parent, &proot, &px, &py,
+        &pwidth, &pheight, &pbw, &pdepth);
 
       /* Create geometry object */
       klass    = rb_const_get(subtlext, rb_intern("Geometry"));
-      geometry = rb_funcall(klass, rb_intern("new"), 4,
-        INT2FIX(geom.x), INT2FIX(geom.y),
-        INT2FIX(geom.width), INT2FIX(geom.height));
+      geometry = rb_funcall(klass, rb_intern("new"), 4, INT2FIX(px + wx),
+        INT2FIX(py + wy), INT2FIX(wwidth), INT2FIX(wheight));
+
+      if(wins) XFree(wins);
     }
 
   return geometry;

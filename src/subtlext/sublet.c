@@ -265,26 +265,31 @@ subSubletBackgroundWriter(VALUE self,
 VALUE
 subSubletGeometryReader(VALUE self)
 {
-  int id = 0, size = 0, x = 0, y = 0;
-  Window win = None, dummy = None, *wins = NULL;
-  XRectangle geom = { 0 };
+  int id = 0, size = 0, wx = 0, wy = 0, px = 0, py = 0;
+  unsigned int wwidth = 0, wheight = 0, wbw = 0, wdepth = 0;
+  unsigned int pwidth = 0, pheight = 0, pbw = 0, pdepth = 0;
+  Window *wins = NULL, win = None, parent = None, wroot = None, proot = None;
 
   /* Fetch data */
   id   = FIX2INT(rb_iv_get(self, "@id"));
   wins = subSubtlextList("SUBTLE_SUBLET_WINDOWS", &size);
   win  = wins[id];
 
-  /* Get window geometry and translate it */
-  subSharedPropertyGeometry(display, win, &geom);
-  XTranslateCoordinates(display, win, DefaultRootWindow(display),
-    geom.x, geom.y, &x, &y, &dummy);
-
-  geom.x = x;
-  geom.y = y;
-
   free(wins);
 
-  return subGeometryInstantiate(geom.x, geom.y, geom.width, geom.height);
+  /* Get parent and geometries */
+  XGetGeometry(display, win, &wroot, &wx, &wy,
+    &wwidth, &wheight, &wbw, &wdepth);
+
+  XQueryTree(display, win, &wroot, &parent, &wins,
+    (unsigned int *)&size); ///< Get parent
+
+  XGetGeometry(display, parent, &proot, &px, &py,
+    &pwidth, &pheight, &pbw, &pdepth);
+
+  if(wins) XFree(wins);
+
+  return subGeometryInstantiate(px + wx, py + wy, wwidth, wheight);
 } /* }}} */
 
 /* subSubletToString {{{ */
