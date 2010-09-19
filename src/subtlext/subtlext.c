@@ -629,6 +629,7 @@ subSubtlextParse(VALUE value,
         break; /* }}} */
       case T_SYMBOL: /* {{{ */
         ret = value;
+        snprintf(buf, len, "%s", SYM2CHAR(value));
         break; /* }}} */
       default: /* {{{ */
         rb_raise(rb_eArgError, "Unknwon value type `%s'",
@@ -722,9 +723,11 @@ subSubtlextFindWindow(char *prop,
   /* Find window id */
   if((wins = subSubtlextList(prop, &size)))
     {
-      int i, gravity1 = 0, gravity2 = -1, pid1 = 0, pid2 = -1; ///<  Init differently
+      int i, gravity1 = 0, gravity2 = -1, ngravities = 0;
+      int pid1 = 0, pid2 = -1; ///<  Init differently
       long digit = -1;
-      char *wmname = NULL, *instance = NULL, *klass = NULL, *role = NULL;
+      char *wmname = NULL, *instance = NULL, *klass = NULL;
+      char *role = NULL, **gravities = NULL;
       Window selwin = None;
       regex_t *preg = subSharedRegexNew(match);
 
@@ -736,7 +739,13 @@ subSubtlextFindWindow(char *prop,
 
       /* Find id of gravity */
       if(flags & SUB_MATCH_GRAVITY)
-        gravity1 = subGravityFindId(match, NULL, NULL);
+        {
+          gravities = subSharedPropertyStrings(display,
+            DefaultRootWindow(display),
+            XInternAtom(display, "SUBTLE_GRAVITY_LIST", False), &ngravities);
+
+          gravity1 = subGravityFindId(match, NULL, NULL);
+        }
 
       /* Get pid */
       if(flags & SUB_MATCH_PID)
@@ -786,12 +795,30 @@ subSubtlextFindWindow(char *prop,
 
           /* Find window either by window id, title, inst, class, gravity or pid */
           if(selwin == wins[i] || digit == wins[i] || digit == (long)i ||
-              (flags & SUB_MATCH_NAME     && wmname     && subSharedRegexMatch(preg, wmname))   ||
-              (flags & SUB_MATCH_INSTANCE && instance   && subSharedRegexMatch(preg, instance)) ||
-              (flags & SUB_MATCH_CLASS    && klass      && subSharedRegexMatch(preg, klass))    ||
-              (flags & SUB_MATCH_ROLE     && role       && subSharedRegexMatch(preg, role))     ||
-              (flags & SUB_MATCH_GRAVITY  && gravity1 == gravity2) ||
-              (flags & SUB_MATCH_PID      && pid1 == pid2))
+              /* Compare WM_NAME */
+              (flags & SUB_MATCH_NAME && wmname
+                && subSharedRegexMatch(preg, wmname)) ||
+
+              /* Compare instance part of WM_CLASS */
+              (flags & SUB_MATCH_INSTANCE && instance
+                && subSharedRegexMatch(preg, instance)) ||
+
+              /* Compare class part of WM_CLASS */
+              (flags & SUB_MATCH_CLASS && klass
+                && subSharedRegexMatch(preg, klass)) ||
+
+              /* Compare instance part of WM_CLASS */
+              (flags & SUB_MATCH_ROLE && role
+                && subSharedRegexMatch(preg, role)) ||
+
+              /* Compare gravities */
+              (flags & SUB_MATCH_GRAVITY && (gravity1 == gravity2 ||
+                (0 <= gravity1 && gravity1 < ngravities &&
+                0 <= gravity2 && gravity2 < ngravities &&
+                !strcmp(gravities[gravity1], gravities[gravity2])))) ||
+
+              /* Compare pids */
+              (flags & SUB_MATCH_PID && pid1 == pid2))
             {
               subSharedLogDebug("Found: prop=%s, name=%s, win=%#lx, id=%d, flags\n",
                 prop, match, wins[i], i, flags);
@@ -812,6 +839,7 @@ subSubtlextFindWindow(char *prop,
           free(klass);
         }
 
+      if(gravities) XFreeStringList(gravities);
       subSharedRegexKill(preg);
       free(wins);
     }
