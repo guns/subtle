@@ -50,78 +50,34 @@ subGrabNew(const char *chain,
   int type,
   SubData data)
 {
-  int i;
-  char *tokens = NULL, *tok = NULL;
-  KeySym sym;
+  int mouse = False;
+  unsigned int code = 0, mod = 0;
+  KeySym sym = NoSymbol;
   SubGrab *g = NULL;
 
   assert(chain);
 
-  g = GRAB(subSharedMemoryAlloc(1, sizeof(SubGrab)));
-  g->flags |= (SUB_TYPE_GRAB|type);
-  g->data   = data;
-  tokens    = strdup(chain);
-
   /* Parse keys */
-  tok = strtok((char *)tokens, "-");
-  while(tok)
+  if(NoSymbol != (sym = subSharedParseKey(subtle->dpy,
+      chain, &code, &mod, &mouse)))
     {
-      /* Get key sym and modifier */
-      if(NoSymbol == ((sym = XStringToKeysym(tok))))
-        {
-          static const char *mouse[] = { "B1", "B2", "B3", "B4", "B5" };
+      /* Create new grab */
+      g = GRAB(subSharedMemoryAlloc(1, sizeof(SubGrab)));
+      g->data   = data;
+      g->code   = code;
+      g->mod    = mod;
+      g->flags |= (SUB_TYPE_GRAB|type|
+        (True == mouse ? SUB_GRAB_MOUSE : SUB_GRAB_KEY));
 
-          for(i = 0; i < LENGTH(mouse); i++)
-            if(!strncmp(tok, mouse[i], 2))
-              {
-                sym = XK_Pointer_Button1 + i + 1; ///< @todo Implementation independent?
-                break;
-              }
-
-          if(NoSymbol == sym) ///< Check if there's still no symbol
-            {
-              subSharedLogWarn("Failed assigning keychain `%s'\n", chain);
-              if(g->flags & SUB_GRAB_SPAWN && g->data.string) free(g->data.string);
-              free(g);
-              free(tokens);
-
-              return NULL;
-            }
-        }
-
-      /* Modifier mappings */
-      switch(sym)
-        {
-          /* Keys */
-          case XK_A: g->mod |= Mod1Mask;    break;
-          case XK_S: g->mod |= ShiftMask;   break;
-          case XK_C: g->mod |= ControlMask; break;
-          case XK_W: g->mod |= Mod4Mask;    break;
-          case XK_M: g->mod |= Mod3Mask;    break;
-
-          /* Mouse */
-          case XK_Pointer_Button1:
-          case XK_Pointer_Button2:
-          case XK_Pointer_Button3:
-          case XK_Pointer_Button4:
-          case XK_Pointer_Button5:
-            g->flags |= SUB_GRAB_MOUSE;
-            g->code   = sym;
-            g->sym    = sym;
-            break;
-          default:
-            g->flags |= SUB_GRAB_KEY;
-            g->code   = XKeysymToKeycode(subtle->dpy, sym);
-            g->sym    = sym;
-        }
-
-      tok = strtok(NULL, "-");
+      subSharedLogDebug("new=grab, type=%s, chain=%s, code=%03d, mod=%02d\n",
+        g->flags & SUB_GRAB_KEY ? "k" : "m", chain, g->code, g->mod);
     }
+  else
+    {
+      subSharedLogWarn("Failed assigning keychain `%s'\n", chain);
 
-  subSharedLogDebug("new=grab, type=%s, chain=%s, code=%03d, mod=%02d\n",
-    g->flags & SUB_GRAB_KEY ? "k" : "m", chain, g->code, g->mod);
-
-  free(tokens);
+      if(type & SUB_GRAB_SPAWN && g->data.string) free(g->data.string);
+    }
 
   return g;
 } /* }}} */
