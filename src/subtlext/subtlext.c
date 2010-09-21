@@ -264,18 +264,18 @@ SubtlextTagReload(VALUE self)
   return Qnil;
 } /* }}} */
 
-/* SubtlextClick {{{ */
+/* SubtlextSendButton {{{ */
 /*
- * call-seq: click(button, x, y) -> nil
+ * call-seq: send_click(button, x, y) -> nil
  *
  * Emulate a click on a window
  *
- *  object.click(2)
+ *  object.send_button(2)
  *  => nil
  */
 
 static VALUE
-SubtlextClick(int argc,
+SubtlextSendButton(int argc,
   VALUE *argv,
   VALUE self)
 {
@@ -321,6 +321,92 @@ SubtlextClick(int argc,
       event.type = ButtonRelease;
 
       XSendEvent(display, win, True, ButtonReleaseMask, &event);
+      XFlush(display);
+    }
+  else rb_raise(rb_eArgError, "Unknown value type");
+
+  return Qnil;
+} /* }}} */
+
+/* SubtlextSendKey {{{ */
+/*
+ * call-seq: send_key(key, x, y) -> nil
+ *
+ * Emulate a keypress on a window
+ *
+ *  object.send_key("d")
+ *  => nil
+ */
+
+static VALUE
+SubtlextSendKey(int argc,
+  VALUE *argv,
+  VALUE self)
+{
+  VALUE key = Qnil, x = Qnil, y = Qnil;
+
+  rb_scan_args(argc, argv, "03", &key, &x, &y);
+
+  /* Check object type */
+  if(T_STRING == rb_type(key))
+    {
+      int mouse = False;
+      unsigned int code = 0, state = 0;
+      Window win = None, subwin = None;
+      KeySym sym = None;
+      XEvent event = { 0 };
+
+      win = NUM2LONG(rb_iv_get(self, "@win"));
+
+      /* Parse keys */
+      if(NoSymbol == (sym = subSharedParseKey(display, RSTRING_PTR(key),
+          &code, &state, &mouse)))
+        {
+          rb_raise(rb_eStandardError, "Unknown key");
+
+          return Qnil;
+        }
+
+      /* Check mouse */
+      if(True == mouse)
+        {
+          rb_raise(rb_eNotImpError,
+            "Please use #send_button / #click for button events");
+
+          return Qnil;
+        }
+
+      /* Assemble button event */
+      event.type                  = EnterNotify;
+      event.xcrossing.window      = win;
+      event.xcrossing.root        = DefaultRootWindow(display);
+      event.xcrossing.subwindow   = win;
+      event.xcrossing.same_screen = True;
+      event.xcrossing.x           = FIXNUM_P(x) ? FIX2INT(x) : 5;
+      event.xcrossing.y           = FIXNUM_P(y) ? FIX2INT(y) : 5;
+
+      /* Translate window x/y to root x/y */
+      XTranslateCoordinates(display, event.xcrossing.window,
+        event.xcrossing.root, event.xcrossing.x, event.xcrossing.y,
+        &event.xcrossing.x_root, &event.xcrossing.y_root, &subwin);
+
+      //XSetInputFocus(display, event.xany.window, RevertToPointerRoot, CurrentTime);
+      XSendEvent(display, win, True, EnterWindowMask, &event);
+
+      /* Send button press event */
+      event.type         = KeyPress;
+      event.xkey.state   = state;
+      event.xkey.keycode = code;
+
+      XSendEvent(display, win, True, KeyPressMask, &event);
+      XFlush(display);
+
+      usleep(12000);
+
+      /* Send button release event */
+      event.type = KeyRelease;
+
+      XSendEvent(display, win, True, KeyReleaseMask, &event);
       XFlush(display);
     }
   else rb_raise(rb_eArgError, "Unknown value type");
@@ -992,16 +1078,17 @@ Init_subtlext(void)
   rb_define_singleton_method(client, "all",     subClientAll,     0);
 
   /* General methods */
-  rb_define_method(client, "tags",       SubtlextTagList,     0);
-  rb_define_method(client, "has_tag?",   SubtlextTagAsk,      1);
-  rb_define_method(client, "tag",        SubtlextTagAdd,      1);
-  rb_define_method(client, "untag",      SubtlextTagDel,      1);
-  rb_define_method(client, "retag",      SubtlextTagReload,   0);
-  rb_define_method(client, "click",      SubtlextClick,      -1);
-  rb_define_method(client, "focus",      SubtlextFocus,       0);
-  rb_define_method(client, "has_focus?", SubtlextFocusAsk,    0);
-  rb_define_method(client, "[]",         SubtlextPropReader,  1);
-  rb_define_method(client, "[]=",        SubtlextPropWriter,  2);
+  rb_define_method(client, "tags",        SubtlextTagList,     0);
+  rb_define_method(client, "has_tag?",    SubtlextTagAsk,      1);
+  rb_define_method(client, "tag",         SubtlextTagAdd,      1);
+  rb_define_method(client, "untag",       SubtlextTagDel,      1);
+  rb_define_method(client, "retag",       SubtlextTagReload,   0);
+  rb_define_method(client, "send_button", SubtlextSendButton, -1);
+  rb_define_method(client, "send_key",    SubtlextSendKey,    -1);
+  rb_define_method(client, "focus",       SubtlextFocus,       0);
+  rb_define_method(client, "has_focus?",  SubtlextFocusAsk,    0);
+  rb_define_method(client, "[]",          SubtlextPropReader,  1);
+  rb_define_method(client, "[]=",         SubtlextPropWriter,  2);
 
   /* Class methods */
   rb_define_method(client, "initialize",   subClientInit,            1);
@@ -1038,10 +1125,11 @@ Init_subtlext(void)
   rb_define_alias(rb_singleton_class(client), "[]", "find");
 
   /* Aliases */
-  rb_define_alias(client, "+",    "tag");
-  rb_define_alias(client, "-",    "untag");
-  rb_define_alias(client, "save", "update");
-  rb_define_alias(client, "to_s", "to_str");
+  rb_define_alias(client, "+",     "tag");
+  rb_define_alias(client, "-",     "untag");
+  rb_define_alias(client, "save",  "update");
+  rb_define_alias(client, "to_s",  "to_str");
+  rb_define_alias(client, "click", "send_button");
 
   /*
    * Document-class: Subtlext::Color
@@ -1313,11 +1401,12 @@ Init_subtlext(void)
   rb_define_singleton_method(tray, "all",  subTrayAll,  0);
 
   /* General methods */
-  rb_define_method(tray, "click",      SubtlextClick,      -1);
-  rb_define_method(tray, "focus",      SubtlextFocus,       0);
-  rb_define_method(tray, "has_focus?", SubtlextFocusAsk,    0);
-  rb_define_method(tray, "[]",         SubtlextPropReader,  1);
-  rb_define_method(tray, "[]=",        SubtlextPropWriter,  2);
+  rb_define_method(tray, "send_button", SubtlextSendButton, -1);
+  rb_define_method(tray, "send_key",    SubtlextSendKey,    -1);
+  rb_define_method(tray, "focus",       SubtlextFocus,       0);
+  rb_define_method(tray, "has_focus?",  SubtlextFocusAsk,    0);
+  rb_define_method(tray, "[]",          SubtlextPropReader,  1);
+  rb_define_method(tray, "[]=",         SubtlextPropWriter,  2);
 
   /* Class methods */
   rb_define_method(tray, "initialize", subTrayInit,       1);
@@ -1330,7 +1419,8 @@ Init_subtlext(void)
   rb_define_alias(rb_singleton_class(tray), "[]", "find");
 
   /* Aliases */
-  rb_define_alias(tray, "to_s", "to_str");
+  rb_define_alias(tray, "to_s",  "to_str");
+  rb_define_alias(tray, "click", "send_button");
 
   /*
    * Document-class: Subtlext::View
@@ -1404,8 +1494,9 @@ Init_subtlext(void)
   rb_define_singleton_method(window, "once", subWindowOnce, 1);
 
   /* General methods */
-  rb_define_method(window, "click", SubtlextClick, -1);
-  rb_define_method(window, "focus", SubtlextFocus,  0);
+  rb_define_method(window, "send_button", SubtlextSendButton, -1);
+  rb_define_method(window, "send_key",    SubtlextSendKey,    -1);
+  rb_define_method(window, "focus",       SubtlextFocus,       0);
 
   /* Class methods */
   rb_define_method(window, "initialize",    subWindowInit,              1);
@@ -1430,6 +1521,9 @@ Init_subtlext(void)
 
   /* Singleton aliases */
   rb_define_alias(rb_singleton_class(window), "configure", "new");
+
+  /* Aliases */
+  rb_define_alias(window, "click", "send_button");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
