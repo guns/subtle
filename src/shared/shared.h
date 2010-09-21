@@ -197,6 +197,8 @@ void subSharedFontKill(Display *disp, SubFont *f);                ///< Kill font
 
 /* Misc {{{ */
 unsigned long subSharedParseColor(Display *disp, char *name);     ///< Parse color
+KeySym subSharedParseKey(Display *disp, const char *key,
+  unsigned int *code, unsigned int *mod, int *mouse);             ///< Parse keys
 int subSharedMatch(int type, XRectangle *geometry1,
   XRectangle *geometry2);                                         ///< Match window
 pid_t subSharedSpawn(char *cmd);                                  ///< Spawn command

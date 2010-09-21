@@ -896,6 +896,87 @@ subSharedParseColor(Display *disp,
   return xcolor.pixel;
 } /* }}} */
 
+ /** subSharedParseKey {{{
+  * @brief Parse key
+  * @param[in]     disp     Display
+  * @param[in]     key      Key string
+  * @param[inout]  code     Color string
+  * @param[inout]  mod      Color string
+  * @param[inout]  mouse    Whether this is mouse press
+  * @return Color keysym or \p NoSymbol
+  **/
+
+KeySym
+subSharedParseKey(Display *disp,
+  const char *key,
+  unsigned int *code,
+  unsigned int *mod,
+  int *mouse)
+{
+  int i;
+  KeySym sym = NoSymbol;
+  char *tokens = NULL, *tok = NULL;
+
+  /* Parse keys */
+  tokens = strdup(key);
+  tok    = strtok((char *)tokens, "-");
+
+  while(tok)
+    {
+      /* Get key sym and modifier */
+      if(NoSymbol == ((sym = XStringToKeysym(tok))))
+        {
+          static const char *buttons[] = { "B1", "B2", "B3", "B4", "B5" };
+
+          /* Check mouse buttons */
+          for(i = 0; i < LENGTH(buttons); i++)
+            if(!strncmp(tok, buttons[i], 2))
+              {
+                sym = XK_Pointer_Button1 + i + 1; ///< @todo Implementation independent?
+                break;
+              }
+
+          /* Check if there's still no symbol */
+          if(NoSymbol == sym)
+            {
+              free(tokens);
+
+              return sym;
+            }
+        }
+
+      /* Modifier mappings */
+      switch(sym)
+        {
+          /* Keys */
+          case XK_A: *mod |= Mod1Mask;    break;
+          case XK_S: *mod |= ShiftMask;   break;
+          case XK_C: *mod |= ControlMask; break;
+          case XK_W: *mod |= Mod4Mask;    break;
+          case XK_M: *mod |= Mod3Mask;    break;
+
+          /* Mouse */
+          case XK_Pointer_Button1:
+          case XK_Pointer_Button2:
+          case XK_Pointer_Button3:
+          case XK_Pointer_Button4:
+          case XK_Pointer_Button5:
+            *mouse = True;
+            *code  = sym;
+            break;
+          default:
+            *mouse = False;
+            *code  = XKeysymToKeycode(disp, sym);
+        }
+
+      tok = strtok(NULL, "-");
+    }
+
+  free(tokens);
+
+  return sym;
+} /* }}} */
+
  /** subSharedSpawn {{{
   * @brief Spawn a command
   * @param[in]  cmd  Command string
@@ -919,6 +1000,8 @@ subSharedSpawn(char *cmd)
 
   return pid;
 } /* }}} */
+
+
 
 #ifndef SUBTLE
 
