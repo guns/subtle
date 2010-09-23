@@ -1,5 +1,5 @@
 #!/usr/bin/ruby
-# 
+#
 # @package subtle
 #
 # @file Subtle remote
@@ -11,9 +11,9 @@
 #
 
 begin
-  require "subtle/subtler"
+  require "subtle/subtler/runner"
 
-  Subtle::Subtler.new.run
+  Subtle::Subtler::Runner.new.run
 rescue LoadError => error
   missing = error.to_s.split(" ").last.gsub(/\//, "-")
 
