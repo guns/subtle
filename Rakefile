@@ -40,8 +40,9 @@ require "rake/rdoctask"
   "revision"   => "0",
   "cflags"     => "-Wall -Werror -Wpointer-arith -Wstrict-prototypes -Wunused -Wshadow -std=gnu99",
   "cpppath"    => "-I. -I$(builddir) -Isrc -Isrc/shared -Isrc/subtle -idirafter$(hdrdir) -idirafter$(archdir)",
-  "ldflags"    => "-L$(archdir) -l$(RUBY_SO_NAME)",
-  "extflags"   => "$(LDFLAGS) $(LIBRUBYARG_SHARED)"
+  "ldflags"    => "-L$(archdir) $(rpath) -l$(RUBY_SO_NAME)",
+  "extflags"   => "$(LDFLAGS) $(rpath) -l$(RUBY_SO_NAME)",
+  "rpath"      => "-Wl,-rpath=$(libdir)"
 }
 
 @defines = {
@@ -174,6 +175,9 @@ task(:config) do
     if(1 != CONFIG["MAJOR"].to_i or 9 != CONFIG["MINOR"].to_i)
       fail("Ruby 1.9.0 or higher required")
     end
+
+    # Update rpath
+    @options["rpath"] = Config.expand(@options["rpath"])
 
     # Get options
     @options.each_key do |k|
