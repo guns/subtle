@@ -54,8 +54,10 @@ require "rake/rdoctask"
 
 # Lists {{{
 PG_SUBTLE   = "subtle"
-PG_SUBTLER  = "subtler.rb"
 PG_SUBTLEXT = "subtlext"
+PG_SUBTLER  = "subtler"
+PG_SUR      = "sur"
+PG_SERVER   = "surserver"
 
 SRC_SHARED   = FileList["src/shared/*.c"]
 SRC_SUBTLE   = (SRC_SHARED | FileList["src/subtle/*.c"])
@@ -370,8 +372,18 @@ task(:install => [:config, :build]) do
       @options["configdir"],
       @options["scriptdir"],
       @options["extdir"],
-      @options["mandir"]
+      @options["mandir"],
+      File.join(@options["extdir"], "subtler"),
+      File.join(@options["extdir"], "sur")
     ]
+  )
+
+  # Install config
+  message("INSTALL config\n" % [ @defines["PKG_CONFIG"] ])
+  FileUtils.install(
+    File.join("contrib", @defines["PKG_CONFIG"]),
+    @options["configdir"],
+    :mode => 0644, :verbose => false
   )
 
   # Install subtle
@@ -384,13 +396,7 @@ task(:install => [:config, :build]) do
   # Install subtlext
   message("INSTALL %s\n" % [PG_SUBTLEXT])
   FileUtils.install(
-    PG_SUBTLEXT + ".so", @options["extdir"], :mode => 0644, :verbose => false
-  )
-
-  # Install config
-  message("INSTALL %s\n" % [@defines["PKG_CONFIG"]])
-  FileUtils.install(
-    File.join("contrib", @defines["PKG_CONFIG"]), @options["configdir"],
+    PG_SUBTLEXT + ".so", @options["extdir"],
     :mode => 0644, :verbose => false
   )
 
@@ -401,37 +407,52 @@ task(:install => [:config, :build]) do
   )
 
   # Install subtler
-  message("INSTALL %s\n" % [PG_SUBTLER])
-  FileUtils.install(
-    File.join("contrib", "bin", "subtler"), @options["bindir"],
-    :mode => 0755, :verbose => false
-  )
-  FileUtils.install(
-    File.join("contrib", "subtler", PG_SUBTLER), @options["extdir"],
-    :mode => 0644, :verbose => false
-  )
+  message("INSTALL subtler\n")
+  FileList["contrib/subtler/*.rb"].collect do |f|
+    FileUtils.install(f,
+    File.join(@options["extdir"], "subtler"),
+      :mode => 0644, :verbose => false
+    )
+  end
 
-  # Update interpreter name
-  `#{sed} -i -e 's#/usr/bin/ruby.*##{interpreter}#' \
-    #{File.join(@options["bindir"], "subtler")}`
+  # Install sur
+  message("INSTALL sur\n")
+  FileList["contrib/sur/*.rb"].collect do |f|
+    FileUtils.install(f,
+      File.join(@options["extdir"], "sur"),
+      :mode => 0644, :verbose => false
+    )
+  end
+
+  # Install tools
+  message("INSTALL tools\n")
+  FileList["contrib/bin/*"].collect do |f|
+    FileUtils.install(f, @options["bindir"],
+      :mode => 0755, :verbose => false
+    )
+
+    # Update interpreter name
+    `#{sed} -i -e 's#/usr/bin/ruby.*##{interpreter}#' \
+      #{File.join(@options["bindir"], File.basename(f))}`
+  end
 
   # Install scripts
+  message("INSTALL scripts\n")
   FileList["contrib/scripts/*.*"].collect do |f|
-    message("INSTALL %s\n" % [File.basename(f)])
-    FileUtils.install(f, @options["scriptdir"], 
-      :mode => 0644, :verbose => false)
+    FileUtils.install(f, @options["scriptdir"],
+      :mode => 0644, :verbose => false
+    )
 
     # Update interpreter name
     `#{sed} -i -e 's#/usr/bin/ruby.*##{interpreter}#' \
       #{File.join(@options["scriptdir"], File.basename(f))}`
   end
 
-
-
   # Install manpages
+  message("INSTALL manpages\n")
   FileList["contrib/man/*.*"].collect do |f|
-    message("INSTALL %s\n" % [File.basename(f)])
-    FileUtils.install(f, @options["mandir"], :mode => 0644, :verbose => false)
+    FileUtils.install(f, @options["mandir"],
+    :mode => 0644, :verbose => false)
   end
 end # }}}
 
