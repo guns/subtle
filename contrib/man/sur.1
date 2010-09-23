@@ -1,0 +1,381 @@
+.\" generated with Ron/v0.3
+.\" http://github.com/rtomayko/ron/
+.
+.TH "SUR" "1" "April 2010" "" ""
+.
+.SH "NAME"
+\fBsur\fR \-\- subtle user repository
+.
+.SH "SYNOPSIS"
+\fBsur\fR COMMAND [OPTIONS]
+.
+.SH "DESCIPTION"
+\fBsur\fR is the \fIsubtle user repository\fR and a manager for sublets in a rubygems
+like fashion.
+.
+.P
+The main goal of \fBsur\fR is to help the user managing sublets and to have a
+central point where new sublets can be found. Addionally \fBsur\fR has some
+capabilities to create and test sublets.
+.
+.SH "COMMANDS"
+.
+.IP "\(bu" 4
+\fBsur\fR \fIannotate\fR NAME [\-v VERSION|\-h]
+  Mark a sublet as to be reviewed
+.
+.IP "\(bu" 4
+\fBsur\fR \fIbuild\fR SPEC
+.
+.br
+  Create a sublet package
+.
+.IP "\(bu" 4
+\fBsur\fR \fIhelp\fR
+.
+.br
+  Show this help and exit
+.
+.IP "\(bu" 4
+\fBsur\fR \fIinstall\fR NAME [\-t|\-v VERSION|\-h]
+.
+.br
+  Install a sublet
+.
+.IP "\(bu" 4
+\fBsur\fR \fIlist\fR [\-l|\-r|\-h]
+.
+.br
+  List local/remote sublets
+.
+.IP "\(bu" 4
+\fBsur\fR \fIquery\fR NAME [\-l|\-r|\-t|\-v VERSION|\-h]
+.
+.br
+  Query for a sublet (e.g clock, clock \-v 0.3)
+.
+.IP "\(bu" 4
+\fBsur\fR \fIreorder\fR
+.
+.br
+  Reorder installed sublets for loading order
+.
+.IP "\(bu" 4
+\fBsur\fR \fIserver\fR [\-p PORT|\-h]
+.
+.br
+  Serve sublets (default: http://localhost:4567)
+.
+.IP "\(bu" 4
+\fBsur\fR \fIsubmit\fR FILE
+.
+.br
+  Submit a sublet to SUR
+.
+.IP "\(bu" 4
+\fBsur\fR \fItemplate\fR FILE
+.
+.br
+  Create a new sublet template in current dir
+.
+.IP "\(bu" 4
+\fBsur\fR \fItest\fR FILE
+.
+.br
+  Test given sublets for syntax and functionality
+.
+.IP "\(bu" 4
+\fBsur\fR \fIuninstall\fR NAME [\-t|\-v VERSION]
+.
+.br
+  Uninstall a sublet
+.
+.IP "\(bu" 4
+\fBsur\fR \fIupdate\fR [\-l|\-r|\-h]
+.
+.br
+  Update local/remote sublet cache
+.
+.IP "\(bu" 4
+\fBsur\fR \fIupgrade\fR [\-R|\-y|\-h]
+.
+.br
+  Upgrade all installed sublets
+.
+.IP "\(bu" 4
+\fBsur\fR \fIversion\fR
+.
+.br
+  Show version info and exit
+.
+.IP "" 0
+.
+.SH "OPTIONS"
+.
+.IP "\(bu" 4
+\fBannotate\fR NAME [\-v VERSION|\-h]
+.
+.br
+  \fB\-v\fR, \fB\-\-version\fR VERSION   Annotate a specific version
+.
+.br
+  \fB\-h\fR, \fB\-\-help\fR              Show this help and exit
+.
+.br
+
+.
+.IP "\(bu" 4
+\fBinstall\fR NAME [\-t|\-v VERSION|\-h]
+.
+.br
+  \fB\-R\fR, \fB\-\-reload\fR            Reload sublets after installing
+.
+.br
+  \fB\-t\fR, \fB\-\-tags\fR              Include tags in search
+.
+.br
+  \fB\-v\fR, \fB\-\-version\fR VERSION   Search for a specific version
+.
+.br
+  \fB\-h\fR, \fB\-\-help\fR              Show this help and exit
+.
+.br
+
+.
+.IP "\(bu" 4
+\fBlist\fR [\-l|\-r|\-h]
+.
+.br
+  \fB\-l\fR, \fB\-\-local\fR             Select local repository (default)
+.
+.br
+  \fB\-r\fR, \fB\-\-remote\fR            Select remote repository
+.
+.br
+  \fB\-h\fR, \fB\-\-help\fR              Show this help and exit
+.
+.br
+
+.
+.IP "\(bu" 4
+\fBquery\fR NAME [\-l|\-r|\-t|\-v VERSION|\-h]
+.
+.br
+  \fB\-e\fR, \fB\-\-regex\fR             Use regex for query
+.
+.br
+  \fB\-l\fR, \fB\-\-local\fR             Select local repository (default)
+.
+.br
+  \fB\-r\fR, \fB\-\-remote\fR            Select remote repository
+.
+.br
+  \fB\-t\fR, \fB\-\-tags\fR              Include tags in search
+.
+.br
+  \fB\-v\fR, \fB\-\-version\fR VERSION   Search for a specific version
+.
+.br
+  \fB\-h\fR, \fB\-\-help\fR              Show this help and exit
+.
+.br
+
+.
+.IP "\(bu" 4
+\fBserver\fR [\-p PORT|\-h]
+  \fB\-p\fR, \fB\-\-port\fR              Select a specific port
+.
+.br
+  \fB\-h\fR, \fB\-\-help\fR              Show this help and exit
+.
+.br
+
+.
+.IP "\(bu" 4
+\fBuninstall\fR NAME [\-t|\-v VERSION|\-h]
+  \fB\-R\fR, \fB\-\-reload\fR            Reload sublets after installing
+.
+.br
+  \fB\-t\fR, \fB\-\-tag\fR               Search for a specific tag
+.
+.br
+  \fB\-v\fR, \fB\-\-version\fR VERSION   Search for a specific version
+.
+.br
+  \fB\-h\fR, \fB\-\-help\fR              Show this help and exit
+.
+.br
+
+.
+.IP "\(bu" 4
+\fBupdate\fR [\-l|\-r|\-h]
+  \fB\-l\fR, \fB\-\-local\fR             Select local repository (default)
+.
+.br
+  \fB\-r\fR, \fB\-\-remote\fR            Select remote repository
+.
+.br
+  \fB\-h\fR, \fB\-\-help\fR              Show this help and exit
+.
+.br
+
+.
+.IP "\(bu" 4
+\fBupgrade\fR [\-R|\-y|\-h]
+  \fB\-R\fR, \fB\-\-reload\fR            Reload sublets after upgrading
+.
+.br
+  \fB\-y\fR, \fB\-\-yes\fR               Assume yes to questions
+.
+.br
+  \fB\-h\fR, \fB\-\-help\fR              Show this help and exit
+.
+.br
+
+.
+.IP "" 0
+.
+.SH "EXAMPLES"
+.
+.nf
+
+sur install clock
+sur query \-r clock
+sur uninstall \-v 0.1 clock 
+.
+.fi
+.
+.SH "SPECIFICATION"
+In order to create a sublet, you need to create a specifiction which basically
+contains some information about your sublet.
+.
+.P
+Here is a list of known attributes:
+.
+.IP "\(bu" 4
+\fBname\fR
+.
+.br
+Name of the sublet
+.
+.IP
+\fBExample:\fR  spec.name = "Sublet"
+.
+.IP "\(bu" 4
+\fBauthors\fR
+.
+.br
+List of authors of the sublet in case there are more than one
+.
+.IP
+\fBExample:\fR  spec.authors = [ "You" ]
+.
+.IP "\(bu" 4
+\fBdate\fR
+.
+.br
+Date of creation
+.
+.IP
+\fBExample:\fR  spec.date = "Sat Sep 13 19:00 CET 2008"
+.
+.IP "\(bu" 4
+\fBcontact\fR
+.
+.br
+Contact mail address
+.
+.IP
+\fBExample:\fR  spec.contact = "your@mail.com"
+.
+.IP "\(bu" 4
+\fBdescription\fR
+.
+.br
+Description of the sublet
+.
+.IP
+\fBExample:\fR  spec.description = "A shiny new sublet"
+.
+.IP "\(bu" 4
+\fBversion\fR
+.
+.br
+Version of the sublet
+.
+.IP
+\fBExample:\fR  spec.version = "0.1"
+.
+.IP "\(bu" 4
+\fBtags\fR
+.
+.br
+List of tags to categorize the sublet
+.
+.IP
+\fBExample:\fR  spec.tags = [ "Broken" ]
+.
+.IP "\(bu" 4
+\fBfiles\fR
+.
+.br
+List of files in the sublet
+.
+.IP
+\fBExample:\fR  spec.files = [ "sublet.rb" ]
+.
+.IP "\(bu" 4
+\fBicons\fR
+.
+.br
+List of supplied icons
+.
+.IP
+\fBExample:\fR  spec.icons = [ "icon.xbm" ]
+.
+.IP "\(bu" 4
+\fBsubtlext_version\fR
+.
+.br
+Required version of subtlext
+.
+.IP
+\fBExample:\fR  spec.subtlext_version = "0.9.10"
+.
+.IP "\(bu" 4
+\fBsur_version\fR
+.
+.br
+Required version of sur
+.
+.IP
+\fBExample:\fR  spec.sur_version = "0.2.3"
+.
+.IP "\(bu" 4
+\fBadd_dependency(name, version)\fR
+.
+.br
+Add a gem dependency
+.
+.IP
+\fBExample\fR: spec.add_dependency("a_gem", "0.0")
+.
+.IP "" 0
+.
+.P
+If you use the \fBtemplate\fR command \fBsur\fR will create an empty template with
+a spec file.
+.
+.SH "BUGS"
+Report bugs to unexist@dorfelite.net
+.
+.br
+Homepage: http://sur.subtle.de
+.
+.br
+.
+.SH "COPYRIGHT"
+Copyright (c) Christoph Kappel \fIunexist@dorfelite.net\fR
+.
+.SH "SEE ALSO"
+surserver(1), subtle(1), subtler(1), subtlext(1)
