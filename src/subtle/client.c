@@ -378,10 +378,13 @@ subClientDrag(SubClient *c,
   /* Prevent resizing of nonfloat windows */
   if(c->flags & SUB_CLIENT_MODE_NOFLOAT) return;
 
-  if(XGrabPointer(subtle->dpy, c->win, True, GRABMASK, GrabModeAsync,
-    GrabModeAsync, None, cursor, CurrentTime)) return;
-
+  /* Add grabs */
+  XGrabPointer(subtle->dpy, c->win, True, GRABMASK, GrabModeAsync,
+    GrabModeAsync, None, cursor, CurrentTime);
+  XGrabKeyboard(subtle->dpy, ROOT, True, GrabModeAsync,
+    GrabModeAsync, CurrentTime);
   XGrabServer(subtle->dpy);
+
   if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE)) ClientMask(c);
 
   while(loop) ///< Event loop
@@ -396,20 +399,25 @@ subClientDrag(SubClient *c,
           case KeyPress: /* {{{ */
             if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE))
               {
-                KeySym sym = XKeycodeToKeysym(subtle->dpy, ev.xkey.keycode, 0);
                 ClientMask(c);
 
-                switch(sym)
+                /* Handle keys */
+                switch(XKeycodeToKeysym(subtle->dpy, ev.xkey.keycode, 0))
                   {
                     case XK_Left:   *dirx -= subtle->step; break;
                     case XK_Right:  *dirx += subtle->step; break;
                     case XK_Up:     *diry -= subtle->step; break;
                     case XK_Down:   *diry += subtle->step; break;
-                    case XK_Return: loop = False;   break;
+                    case XK_Return:
+                    case XK_Escape: loop = False;          break;
+                    default: break;
                   }
 
-                *dirx = MINMAX(*dirx, c->minw, c->maxw);
-                *diry = MINMAX(*diry, c->minh, c->maxh);
+                if(SUB_DRAG_MOVE == mode)
+                  {
+                    *dirx = MINMAX(*dirx, c->minw, c->maxw);
+                    *diry = MINMAX(*diry, c->minh, c->maxh);
+                  }
 
                 subClientResize(c);
                 ClientMask(c);
@@ -463,14 +471,16 @@ subClientDrag(SubClient *c,
 
   if(c->flags & SUB_CLIENT_MODE_FLOAT) ///< Resize client
     {
-      /* Subtract borer */
+      /* Subtract border */
       c->geom.x -= subtle->bw;
       c->geom.y -= subtle->bw;
 
       subClientConfigure(c);
     }
 
+  /* Remove grabs */
   XUngrabPointer(subtle->dpy, CurrentTime);
+  XUngrabKeyboard(subtle->dpy, CurrentTime);
   XUngrabServer(subtle->dpy);
 } /* }}} */
 
@@ -984,8 +994,10 @@ subClientSetWMHints(SubClient *c,
       if(!(c->flags & SUB_CLIENT_MODE_NOURGENT))
         {
           /* Set urgency or remove urgency after losing focus */
-          if(hints->flags & XUrgencyHint)     *flags |= SUB_CLIENT_MODE_URGENT;
-          else if(c->flags & SUB_CLIENT_MODE_URGENT) *flags |= SUB_CLIENT_MODE_URGENT_FOCUS;
+          if(hints->flags & XUrgencyHint)
+            *flags |= SUB_CLIENT_MODE_URGENT;
+          else if(c->flags & SUB_CLIENT_MODE_URGENT)
+            *flags |= SUB_CLIENT_MODE_URGENT_FOCUS;
         }
 
       /* Handle window group hint */
@@ -993,6 +1005,7 @@ subClientSetWMHints(SubClient *c,
         {
           SubClient *k = NULL;
 
+          /* Copy tags and modes */
           if((k = CLIENT(subSubtleFind(hints->window_group, CLIENTID))))
             ClientCopy(c, k);
         }
