@@ -821,7 +821,8 @@ subClientSetName(SubClient *c)
         subtle->font, c->name, 50 >= len ? len : 50, NULL, NULL, True) +
         6 + 2 * subtle->pbw; ///< Font offset and panel border
       XResizeWindow(subtle->dpy, subtle->windows.title.win,
-        subtle->windows.title.width - 2 * subtle->pbw, subtle->th - 2 * subtle->pbw);
+        subtle->windows.title.width - 2 * subtle->pbw,
+        subtle->th - 2 * subtle->pbw);
     }
   else subtle->windows.title.width = 0;
 } /* }}} */
@@ -1250,6 +1251,15 @@ subClientToggle(SubClient *c,
 
   /* EWMH: Flags */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_FLAGS, (long *)&flags, 1);
+
+  /* Update panel */
+  if(type & (SUB_CLIENT_MODE_FULL|SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_STICK)
+      && subtle->windows.focus == c->win)
+    {
+      subClientSetName(c);
+      subPanelUpdate();
+      subPanelRender();
+    }
 } /* }}} */
 
  /** subClientPublish {{{
