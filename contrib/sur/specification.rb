@@ -190,42 +190,42 @@ module Subtle # {{{
           # Create spec
           File.open(spec, "w+") do |output|
             output.puts <<EOF
-  # -*- encoding: utf-8 -*-
-  # #{name.capitalize} specification file
-  # Created with sur-#{Subtle::Sur::VERSION}
-  Sur::Specification.new do |s|
-    s.name        = "#{name.capitalize}"
-    s.authors     = [ "#{ENV["USER"]}" ]
-    s.date        = "#{Time.now.strftime("%a %b %d %H:%M %Z %Y")}"
-    s.contact     = "YOUREMAIL"
-    s.description = "SHORT DESCRIPTION"
-    s.notes       = <<NOTES
-  LONG DESCRIPTION
-  NOTES
-    s.version     = "0.0"
-    s.tags        = [ ]
-    s.files       = [ "#{name}.rb" ]
-    s.icons       = [ ]
+# -*- encoding: utf-8 -*-
+# #{name.capitalize} specification file
+# Created with sur-#{Subtle::Sur::VERSION}
+Sur::Specification.new do |s|
+  s.name        = "#{name.capitalize}"
+  s.authors     = [ "#{ENV["USER"]}" ]
+  s.date        = "#{Time.now.strftime("%a %b %d %H:%M %Z %Y")}"
+  s.contact     = "YOUREMAIL"
+  s.description = "SHORT DESCRIPTION"
+  s.notes       = <<NOTES
+LONG DESCRIPTION
+NOTES
+  s.version     = "0.0"
+  s.tags        = [ ]
+  s.files       = [ "#{name}.rb" ]
+  s.icons       = [ ]
 
-    # Version requirements
-    # s.subtlext_version = "0.9.2127"
-    # s.sur_version      = "0.2.168"
-  end
+  # Version requirements
+  # s.subtlext_version = "0.9.2127"
+  # s.sur_version      = "0.2.168"
+end
 EOF
           end
 
           # Create sublet
           File.open(sublet, "w+") do |output|
             output.puts <<EOF
-  # #{name.capitalize} sublet file
-  # Created with sur-#{Subtle::Sur::VERSION}
-  configure :#{name} do |s|
-    s.interval = 60
-  end
+# #{name.capitalize} sublet file
+# Created with sur-#{Subtle::Sur::VERSION}
+configure :#{name} do |s|
+  s.interval = 60
+end
 
-  on :run do |s|
-    s.data =
-  end
+on :run do |s|
+  s.data =
+end
 EOF
           end
 
