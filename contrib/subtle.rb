@@ -520,6 +520,21 @@ view "temp" do
 end
 
 #
+# == Sublets
+#
+# Sublets are Ruby scripts that provide data for the panel and can be managed
+# with the sur script that comes with subtle. Configuration of sublets can
+# either be done inside of the sublet or when supported int he config.
+#
+# === Example
+#
+# sublet :clock do
+#   interval 30
+#   format   "%H:%M:%S"
+# end
+#
+
+#
 # == Hooks
 #
 # And finally hooks are a way to bind Ruby scripts to a certain event.
