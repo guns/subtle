@@ -555,6 +555,7 @@ subWindowRead(int argc,
       XEvent ev;
       int pos = 0, len = 0, loop = True, start = 0, guess = -1, state = 0, window = 10;
       char buf[32] = { 0 }, text[1024] = { 0 }, last[32] = { 0 };
+      unsigned long *focus = NULL;
       VALUE x = Qnil, y = Qnil, width = Qnil, rargs[5] = { Qnil }, result = Qnil;
       Atom selection = None;
       KeySym sym;
@@ -724,6 +725,16 @@ subWindowRead(int argc,
         }
 
       XUngrabKeyboard(display, CurrentTime);
+
+      /* Restore logical focus */
+      if((focus = (unsigned long *)subSharedPropertyGet(display,
+          DefaultRootWindow(display), XA_WINDOW,
+          XInternAtom(display, "_NET_ACTIVE_WINDOW", False), NULL)))
+        {
+          XSetInputFocus(display, *focus, RevertToPointerRoot, CurrentTime);
+
+          free(focus);
+        }
     }
 
   return ret;
