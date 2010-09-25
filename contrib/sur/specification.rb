@@ -173,7 +173,7 @@ module Subtle # {{{
       #   => nil
 
       def self.template(file)
-        require "sur/runner"
+        require "subtle/sur/version"
 
         # Build filenname
         ext     = File.extname(file)
@@ -192,7 +192,7 @@ module Subtle # {{{
             output.puts <<EOF
   # -*- encoding: utf-8 -*-
   # #{name.capitalize} specification file
-  # Created with sur-#{Sur::Runner::VERSION}
+  # Created with sur-#{Subtle::Sur::VERSION}
   Sur::Specification.new do |s|
     s.name        = "#{name.capitalize}"
     s.authors     = [ "#{ENV["USER"]}" ]
@@ -218,7 +218,7 @@ EOF
           File.open(sublet, "w+") do |output|
             output.puts <<EOF
   # #{name.capitalize} sublet file
-  # Created with sur-#{Sur::Runner::VERSION}
+  # Created with sur-#{Subtle::Sur::VERSION}
   configure :#{name} do |s|
     s.interval = 60
   end

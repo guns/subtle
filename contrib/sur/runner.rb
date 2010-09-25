@@ -113,13 +113,13 @@ module Subtle # {{{
             end
           when "reorder"   then Subtle::Sur::Client.new.reorder
           when "server"    then
-            require "sur/server"
+            require "subtle/sur/server"
 
             Sur::Server.new(@port).run
           when "submit"    then Subtle::Sur::Client.new.submit(args[1])
           when "template"  then Subtle::Sur::Specification.template(args[1])
           when "test"
-            require "sur/test/sublet"
+            require "subtle/sur/test"
 
             args.delete_at(0) #< Remove test
 
