@@ -26,7 +26,7 @@
 
 #define PANELSLENGTH  3
 
-static VALUE shelter = Qnil, mod = Qnil, subtlext = Qnil; ///< Globals
+static VALUE shelter = Qnil, mod = Qnil, subtlext = Qnil, config = Qnil; ///< Globals
 static VALUE top = Qnil, bottom = Qnil;
 
 /* Typedef {{{ */
@@ -1539,6 +1539,42 @@ RubyKernelOn(VALUE self,
   return Qnil;
 } /* }}} */
 
+/* RubyKernelSublet {{{ */
+/*
+ * call-seq: tag(name, blk)   -> nil
+ *
+ * Configure a sublet
+ *
+ *  sublet :jdownloader do
+ *    interval 20
+ *  end
+ */
+
+static VALUE
+RubyKernelSublet(VALUE self,
+  VALUE sublet)
+{
+  VALUE klass = Qnil, options = Qnil;
+
+  rb_need_block();
+
+  /* Check value type */
+  if(T_SYMBOL == rb_type(sublet))
+    {
+      /* Collect options */
+      klass   = rb_const_get(mod, rb_intern("Options"));
+      options = rb_funcall(klass, rb_intern("new"), 0, NULL);
+      rb_obj_instance_eval(0, 0, options);
+
+      /* Clone to get rid of object instance and store it */
+      rb_hash_aset(config, sublet,
+        rb_obj_clone(rb_iv_get(options, "@params")));
+    }
+  else rb_raise(rb_eArgError, "Unknown value type for sublet");
+
+  return Qnil;
+} /* }}} */
+
 /* Sublet */
 
 /* RubySubletDispatcher {{{ */
@@ -1582,6 +1618,31 @@ RubySubletDispatcher(int argc,
   return ret;
 } /* }}} */
 
+/* RubySubletConfig {{{ */
+/*
+ * call-seq: config -> Hash
+ *
+ * Get config hash from config
+ *
+ *  s.config
+ *  => { :interval => 30 }
+ */
+
+static VALUE
+RubySubletConfig(VALUE self)
+{
+  SubSublet *s = NULL;
+  VALUE hash = Qnil;
+
+  Data_Get_Struct(self, SubSublet, s);
+
+  /* Get config hash */
+  if(s && NIL_P(hash = rb_hash_lookup(config, CHAR2SYM(s->name))))
+    hash = rb_hash_new();
+
+  return hash;
+} /* }}} */
+
 /* RubySubletConfigure {{{ */
 /*
  * call-seq: configure -> nil
@@ -1605,8 +1666,8 @@ RubySubletConfigure(VALUE self,
       VALUE p = Qnil;
 
       /* Assume latest sublet */
-      p = rb_block_proc();
-      s = SUBLET(subtle->sublets->data[subtle->sublets->ndata - 1]);
+      p       = rb_block_proc();
+      s       = SUBLET(subtle->sublets->data[subtle->sublets->ndata - 1]);
       s->name = strdup(SYM2CHAR(name));
 
       /* Define configure method */
@@ -2246,6 +2307,7 @@ subRubyInit(void)
   rb_define_method(rb_mKernel, "tag",     RubyKernelTag,      -1);
   rb_define_method(rb_mKernel, "view",    RubyKernelView,     -1);
   rb_define_method(rb_mKernel, "on",      RubyKernelOn,        1);
+  rb_define_method(rb_mKernel, "sublet",  RubyKernelSublet,    1);
 
   /*
    * Document-class: Options
@@ -2280,6 +2342,7 @@ subRubyInit(void)
 
   /* Class methods */
   rb_define_method(sublet, "method_missing", RubySubletDispatcher,       -1);
+  rb_define_method(sublet, "config",         RubySubletConfig,            0);
   rb_define_method(sublet, "render",         RubySubletRender,            0);
   rb_define_method(sublet, "name",           RubySubletNameReader,        0);
   rb_define_method(sublet, "interval",       RubySubletIntervalReader,    0);
@@ -2342,6 +2405,10 @@ subRubyLoadConfig(void)
   if(!(subtle->flags & SUB_SUBTLE_CHECK) &&
       (t = subTagNew("default", NULL)))
     subArrayPush(subtle->tags, (void *)t);
+
+  /* Create and register sublet config hash */
+  config = rb_hash_new();
+  rb_gc_register_address(&config);
 
   /* Loading config */
   printf("Using config `%s'\n", path);
@@ -2464,6 +2531,9 @@ subRubyReloadConfig(void)
   subtle->flags &= (SUB_SUBTLE_DEBUG|SUB_SUBTLE_EWMH|SUB_SUBTLE_RUN|
     SUB_SUBTLE_XINERAMA|SUB_SUBTLE_XRANDR);
   subtle->vid    = 0;
+
+  /* Unregister current sublet config hash */
+  rb_gc_unregister_address(&config);
 
   /* Reset sublet panel flags */
   for(i = 0; i < subtle->sublets->ndata; i++)
