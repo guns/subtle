@@ -123,7 +123,7 @@ module Subtle # {{{
 
             args.delete_at(0) #< Remove test
 
-            Subtle::Sur::Test.new.run(args)
+            Subtle::Sur::Test.run(args)
           when "uninstall" then
             if(args[1].nil?)
               usage(args[0])

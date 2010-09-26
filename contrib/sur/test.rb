@@ -16,6 +16,9 @@ module Subtle # {{{
     module Test # {{{
       # Sublet class
       class Sublet # {{{
+        # Name of the sublet
+        attr_accessor :name
+
         # Update interval
         attr_accessor :interval
 
@@ -28,8 +31,11 @@ module Subtle # {{{
         # Visibility
         attr_accessor :visible
 
+        # Config hash
+        attr_accessor :config
+
         # Event list
-        SUBLET_EVENTS = {
+        EVENTS = {
           :run        => 1,
           :mouse_down => 4,
           :mouse_over => 1,
@@ -37,7 +43,7 @@ module Subtle # {{{
         }
 
         # Hook list
-        SUBLET_HOOKS = [
+        HOOKS = [
           :client_create,
           :client_configure,
           :client_focus,
@@ -63,6 +69,7 @@ module Subtle # {{{
         def initialize
           @visible  = true
           @interval = 60
+          @config   = {}
         end # }}}
 
         ## Subtle::Sur::Test::Sublet::method_missing {{{
@@ -280,8 +287,10 @@ module Subtle # {{{
           raise LocalJumpError.new("No block given") unless(block_given?)
           raise ArgumentError.new("Unknown value type") unless(name.is_a?(Symbol))
 
+          @name = name
+
           # Add configure method
-          $sublet.class.send(:define_method, :configure, blk)
+          self.class.send(:define_method, :__configure, blk)
         end # }}}
 
         ## Subtle::Sur::Test::Sublet::on {{{
@@ -308,19 +317,19 @@ module Subtle # {{{
           sing  = self.class
 
           # Check events
-          if(SUBLET_EVENTS.has_key?(event))
-            need = SUBLET_EVENTS[event]
+          if(Subtle::Sur::Test::Sublet::EVENTS.has_key?(event))
+            need = Subtle::Sur::Test::Sublet::EVENTS[event]
 
             if(-1 == arity || (1 <= arity && need >= arity))
-              sing.send(:define_method, event, blk)
+              sing.send(:define_method, ("__%s" % [ event ]).to_sym, blk)
             else
               raise "Wrong number of arguments (%d for %d)" % [ arity, need ]
             end
           end
 
           # Check hooks
-          if(SUBLET_HOOKS.include?(event))
-            sing.send(:define_method, event, blk)
+          if(Subtle::Sur::Test::Sublet::HOOKS.include?(event))
+            sing.send(:define_method, ("__%s" % [ event ]).to_sym, blk)
           end
         end # }}}
 
@@ -409,6 +418,8 @@ module Subtle # {{{
               unless(error.is_a?(RuntimeError))
                 puts error.backtrace
               end
+
+              next
             end
 
             # Check if sublet exists
@@ -417,31 +428,36 @@ module Subtle # {{{
               dummy   = Subtle::Sur::Test::Dummy.new
 
               # Configure and run sublet
-              sublet.configure(sublet)
-              sublet.run(sublet) if(sublet.respond_to?(:run))
+              sublet.__configure(sublet)
+              sublet.__run(sublet) if(sublet.respond_to?(:__run))
 
               # Sanitize
-              if(!sublet.instance_variable_defined?("@interval") or 0 >= sublet.interval)
+              if(!sublet.instance_variable_defined?("@interval") or
+                  0 >= sublet.interval)
                 sublet.interval = 60
               end
 
               # Collect events
-              SUBLET_EVENTS.each do |k, v|
-                if(sublet.respond_to?(k))
+              Subtle::Sur::Test::Sublet::EVENTS.each do |k, v|
+                name = ("__%s" % [ k ]).to_sym
+
+                if(sublet.respond_to?(name))
                   methods.push({
                     :name      => k,
-                    :arity     => sublet.method(k).arity,
+                    :arity     => sublet.method(name).arity,
                     :singleton => false
                   })
                 end
               end
 
               # Collect hooks
-              SUBLET_HOOKS.each do |k|
-                if(sublet.respond_to?(k))
+              Subtle::Sur::Test::Sublet::HOOKS.each do |k|
+                name = ("__%s" % [ k ]).to_sym
+
+                if(sublet.respond_to?(name))
                   methods.push({
                     :name      => k,
-                    :arity     => sublet.method(k).arity,
+                    :arity     => sublet.method(name).arity,
                     :singleton => false
                   })
                 end
@@ -490,17 +506,19 @@ module Subtle # {{{
                 begin
                   if(0 < num && methods.size >= num)
                     meth = methods[num - 1]
+                    name = meth[:singleton] ? meth[:name] :
+                      ("__%s" % [ meth[:name] ]).to_sym
 
                     # Check proc arity
                     case meth[:arity]
                       when 2 then
-                        sublet.send(meth[:name], sublet, dummy)
+                        sublet.send(name, sublet, dummy)
                       when 4 then
-                        sublet.send(meth[:name], sublet, 5, 5, 1)
+                        sublet.send(name, sublet, 5, 5, 1)
                       when 0 then
-                        sublet.send(meth[:name])
+                        sublet.send(name)
                       else
-                        sublet.send(meth[:name], sublet)
+                        sublet.send(name, sublet)
                     end
                   end
                 rescue => error
