@@ -106,6 +106,7 @@ subGeometryInit(int argc,
                 data[3] = rb_iv_get(value, "@height");
               }
           }
+        break;
       default:
         rb_raise(rb_eArgError, "Failed setting value type `%s'", rb_obj_classname(value));
     }
