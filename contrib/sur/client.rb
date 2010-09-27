@@ -29,7 +29,7 @@ module Subtle # {{{
     # Client class for interaction with the user
     class Client # {{{
       # Remote repository host
-      HOST = "http://sur.subtle.de"
+      HOST = "http://sur.subforge.org"
 
       # Local sublet cache
       attr_accessor :cache_local
@@ -108,8 +108,8 @@ module Subtle # {{{
       ## Sur::Client::annotate {{{
       # Mark a sublet as to be reviewed
       #
-      # @param [String, #read]  name     Name of the Sublet
-      # @param [String, #read]  version  Version of the Sublet
+      # @param [String]  name     Name of the Sublet
+      # @param [String]  version  Version of the Sublet
       #
       # @raise [String] Annotate error
       # @since 0.2
@@ -144,7 +144,7 @@ module Subtle # {{{
       ## Sur::Client::build {{{
       # Build a sublet package
       #
-      # @param [String, #read]  file  Spec file name
+      # @param [String]  file  Spec file name
       #
       # @see Sur::Specification.load_file
       # @raise [String] Build error
@@ -169,8 +169,17 @@ module Subtle # {{{
             # Check if files exist
             (spec.files | spec.icons).each do |f|
               unless(File.exist?(File.join(File.dirname(file), f)))
-                puts ">>> ERROR: Couldn't find file `#{f}'"
-                raise
+                raise "Couldn't find file `#{f}'"
+              end
+            end
+
+            # Check gem version
+            unless(spec.dependencies.empty?)
+              spec.dependencies.each do |name, version|
+                if(version.match(/^(\d*\.){1,2}\d*$/))
+                  puts ">>> WARNING: Gem dependency `%s' " \
+                       "requires exact gem version (=%s)" % [ name, version ]
+                end
               end
             end
 
@@ -210,84 +219,95 @@ module Subtle # {{{
       ## Sur::Client::install {{{
       # Install a new Sublet
       #
-      # @param [String, #read]  name      Name of the Sublet
-      # @param [String, #read]  version   Version of the Sublet
-      # @param [String, #read]  use_tags  Use tags
-      # @param [Bool,   #read]  reload    Reload sublets after installing
+      # @param [Array]  names     Names of Sublets
+      # @param [String]  version   Version of the Sublet
+      # @param [String]  use_tags  Use tags
+      # @param [Bool]    reload    Reload sublets after installing
       #
       # @raise [String] Install error
       # @since 0.0
       #
       # @example
-      #   Sur::Client.new.install("sublet")
+      #   Sur::Client.new.install([ "sublet" ])
       #   => nil
 
-      def install(name, version = nil, use_tags = false, reload = false)
+      def install(names, version = nil, use_tags = false, reload = false)
         build_local  if(@cache_local.nil?)
         build_remote if(@cache_remote.nil?)
 
-        # Check if sublet is already installed
-        if((specs = search(name, @cache_local, version, use_tags)) && !specs.empty?)
-          raise "Sublet `#{name}' is already installed"
-        end
+        # Install all sublets
+        names.each do |name|
+          # Check if sublet is already installed
+          if((specs = search(name, @cache_local, version, use_tags)) &&
+              !specs.empty?)
+            puts ">>> WARNING: Sublet `#{name}' is already installed"
 
-        # Check if sublet is local
-        if(File.exist?(name))
-          install_sublet(name)
+            next
+          end
 
-          reload_sublets if(reload)
-
-          return
-        end
-
-        # Check if remote sublet exists
-        if((specs = search(name, @cache_remote, version, use_tags)) && specs.empty?)
-          raise "Couldn't find sublet `#{name}' in remote repository"
-        end
-
-        # Check dependencies
-        spec = specs.first
-        raise "Couldn't install sublet `#{name}'" unless(spec.satisfied?)
-
-        # Create tempfile
-        temp = Tempfile.new(spec.to_s)
-
-        # Fetch file
-        c = Curl::Easy.new(HOST + "/get/" + spec.digest)
-
-        # Progress handler
-        c.on_progress do |dl_total, dl_now, ul_total, ul_now|
-          progress(">>> Fetching sublet `#{spec.to_s}'", dl_total, dl_now)
-          true
-        end
-
-        c.perform
-        puts
-
-        # Check server response
-        case c.response_code
-          when 200
-            body = c.body_str
-
-            # Write file to tempfile
-            File.open(temp.path, "w+") do |out|
-              out.write(body)
-            end
-
-            # Install sublet
-            install_sublet(temp.path)
+          # Check if sublet is local
+          if(File.exist?(name))
+            install_sublet(name)
 
             reload_sublets if(reload)
-          else
-            raise "Coudln't retrieve sublet. Server returned HTTP error #{c.response_code}"
+
+            next
+          end
+
+          # Check if remote sublet exists
+          if((specs = search(name, @cache_remote, version, use_tags)) &&
+              specs.empty?)
+            puts ">>> WARNING: Couldn't find sublet `#{name}' " \
+                 "in remote repository"
+
+            next
+          end
+
+          # Check dependencies
+          spec = specs.first
+          raise "Couldn't install sublet `#{name}'" unless(spec.satisfied?)
+
+          # Create tempfile
+          temp = Tempfile.new(spec.to_s)
+
+          # Fetch file
+          c = Curl::Easy.new(HOST + "/get/" + spec.digest)
+
+          # Progress handler
+          c.on_progress do |dl_total, dl_now, ul_total, ul_now|
+            progress(">>> Fetching sublet `#{spec.to_s}'", dl_total, dl_now)
+            true
+          end
+
+          c.perform
+          puts
+
+          # Check server response
+          case c.response_code
+            when 200
+              body = c.body_str
+
+              # Write file to tempfile
+              File.open(temp.path, "w+") do |out|
+                out.write(body)
+              end
+
+              # Install sublet
+              install_sublet(temp.path)
+
+              reload_sublets if(reload)
+            else
+              puts ">>> WARNING: Coudln't retrieve sublet. Server " \
+                   "returned HTTP error #{c.response_code}"
+          end
         end
       end # }}}
 
       ## Sur::Client::list {{{
       # List the Sublet in a repository
       #
-      # @param [String, #read]  repo  Repo name
-      # @param [Bool,   #read]  color  Use colors
+      # @param [String]  repo  Repo name
+      # @param [Bool]  color  Use colors
       #
       # @since 0.0
       #
@@ -311,7 +331,7 @@ module Subtle # {{{
       ## Sur::Client::notes {{{
       # Show notes about an installed sublet if any
       #
-      # @param [String, #read]  name  Name of the Sublet
+      # @param [String]  name  Name of the Sublet
       #
       # @raise [String] Notes error
       # @since 0.2
@@ -334,11 +354,11 @@ module Subtle # {{{
       ## Sur::Client::query {{{
       # Query repo for a Sublet
       #
-      # @param [String, #read]  query      Query string
-      # @param [String, #read]  repo       Repo name
-      # @param [Bool,   #read]  use_regex  Use regex
-      # @param [Bool,   #read]  use_tags   Use tags
-      # @param [Bool,   #read]  use_color  Use colors
+      # @param [String]  query      Query string
+      # @param [String]  repo       Repo name
+      # @param [Bool]    use_regex  Use regex
+      # @param [Bool]    use_tags   Use tags
+      # @param [Bool]    use_color  Use colors
       #
       # @raise [String] Query error
       # @since 0.0
@@ -427,7 +447,7 @@ module Subtle # {{{
       ## Sur::Client::submit {{{
       # Submit a Sublet to a repository
       #
-      # @param [String, #read]  file  Sublet package
+      # @param [String]  file  Sublet package
       #
       # @raise [String] Submit error
       # @since 0.0
@@ -477,10 +497,10 @@ module Subtle # {{{
       ## Sur::Client::uninstall {{{
       # Uninstall a Sublet
       #
-      # @param [String, #read]  name      Name of the Sublet
-      # @param [String, #read]  version   Version of the Sublet
-      # @param [Bool,   #read]  use_tags  Use tags
-      # @param [Bool,   #read]  reload    Reload sublets after uninstalling
+      # @param [Array]   names     Names of Sublets
+      # @param [String]  version   Version of the Sublet
+      # @param [Bool]    use_tags  Use tags
+      # @param [Bool]    reload    Reload sublets after uninstalling
       #
       # @raise [String] Uninstall error
       # @since 0.0
@@ -489,51 +509,56 @@ module Subtle # {{{
       #   Sur::Client.new.uninstall("sublet")
       #   => nil
 
-      def uninstall(name, version = nil, use_tags = false, reload = false)
+      def uninstall(names, version = nil, use_tags = false, reload = false)
         build_local if(@cache_local.nil?)
 
-        # Check if sublet is installed
-        if((specs = search(name, @cache_local, version, use_tags)) && !specs.empty?)
-          spec = specs.first
+        # Install all sublets
+        names.each do |name|
+          # Check if sublet is installed
+          if((specs = search(name, @cache_local, version, use_tags)) &&
+              !specs.empty?)
+            spec = specs.first
 
-          # Uninstall files
-          spec.files.each do |f|
-            # Check for match if sublet was reordered
-            Dir[@path_sublets + "/*"].each do |file|
-              a = File.basename(f)
-              b = File.basename(file)
+            # Uninstall files
+            spec.files.each do |f|
+              # Check for match if sublet was reordered
+              Dir[@path_sublets + "/*"].each do |file|
+                a = File.basename(f)
+                b = File.basename(file)
 
-              if(a == b || File.fnmatch("[0-9_]*#{a}", b))
-                puts ">>>>>> Uninstallling file `#{b}'"
-                FileUtils.remove_file(File.join(@path_sublets, b))
+                if(a == b || File.fnmatch("[0-9_]*#{a}", b))
+                  puts ">>>>>> Uninstallling file `#{b}'"
+                  FileUtils.remove_file(File.join(@path_sublets, b))
+                end
               end
             end
+
+            # Uninstall icons
+            spec.icons.each do |f|
+              puts ">>>>>> Uninstallling icon `#{f}'"
+              FileUtils.remove_file(File.join(@path_icons, File.basename(f)))
+            end
+
+            # Uninstall specification
+            puts ">>>>>> Uninstallling specification `#{spec.to_s}.spec'"
+            FileUtils.remove_file(File.join(@path_specs, spec.to_s + ".spec"))
+
+            puts ">>> Uninstalled sublet #{spec.to_s}"
+
+            build_local
+
+            reload_sublets if(reload)
+          else
+            puts ">>> WARNING: Couldn't find sublet `#{name}' in local " \
+                 "repository"
           end
-
-          # Uninstall icons
-          spec.icons.each do |f|
-            puts ">>>>>> Uninstallling icon `#{f}'"
-            FileUtils.remove_file(File.join(@path_icons, File.basename(f)))
-          end
-
-          # Uninstall specification
-          puts ">>>>>> Uninstallling specification `#{spec.to_s}.spec'"
-          FileUtils.remove_file(File.join(@path_specs, spec.to_s + ".spec"))
-
-          puts ">>> Uninstalled sublet #{spec.to_s}"
-
-          build_local
-
-          reload_sublets if(reload)
-        else
-          raise "Couldn't find sublet `#{name}' in local repository"
         end
       end # }}}
 
       ## Sur::Client::update {{{
       # Update a repository
       #
-      # @param [String, #read]  repo  Repo name
+      # @param [String]  repo  Repo name
       #
       # @since 0.0
       #
@@ -553,9 +578,9 @@ module Subtle # {{{
       ## Sur::Client::upgrade {{{
       # Upgrade all Sublets
       #
-      # @param [Bool, #read]  color   Use colors
-      # @param [Bool, #read]  reload  Reload sublets after uninstalling
-      # @param [Bool, #read]  assume  Whether to assume yes
+      # @param [Bool]  color   Use colors
+      # @param [Bool]  reload  Reload sublets after uninstalling
+      # @param [Bool]  assume  Whether to assume yes
       #
       # @raise Upgrade error
       # @since 0.2
@@ -609,6 +634,23 @@ module Subtle # {{{
         end
 
         reload_sublets if(reload)
+      end # }}}
+
+      ## Sur::Client::yank {{{
+      # Delete a sublet from remote server
+      #
+      # @param [String]  name     Name of the Sublet
+      # @param [String]  version  Version of the Sublet
+      #
+      # @raise Upgrade error
+      # @since 0.2
+      #
+      # @example
+      #   Sur::Client.new.yank("subtle", "0.0")
+      #   => nil
+
+      def upgrade(use_color = true, reload = false, assume = false)
+        raise NotImplementedError
       end # }}}
 
       private

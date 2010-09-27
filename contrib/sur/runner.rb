@@ -92,49 +92,63 @@ module Subtle # {{{
         end
 
         # Run
-        case args[0]
-          when "annotate"  then Subtle::Sur::Client.new.annotate(args[1], @version)
-          when "build"     then Subtle::Sur::Client.new.build(args[1])
-          when "help"      then usage(nil)
-          when "install"   then
-            if(args[1].nil?)
-              usage(args[0])
-            else
-              Sur::Client.new.install(args[1], @version, @tags, @reload)
-            end
-          when "list"      then Subtle::Sur::Client.new.list(@repo, @color)
-          when "notes"     then Subtle::Sur::Client.new.notes(args[1])
-          when "query"     then
-            if(args[1].nil?)
-              usage(args[0])
-            else
-              Subtle::Sur::Client.new.query(args[1], @repo,
-                @version, @regex, @tags, @color)
-            end
-          when "reorder"   then Subtle::Sur::Client.new.reorder
-          when "server"    then
+        cmd = args.shift
+        case cmd
+          when "annotate"
+            usage(cmd) if(args.empty?)
+
+            Subtle::Sur::Client.new.annotate(args.first, @version)
+          when "build"
+            usage(cmd) if(args.empty?)
+
+            Subtle::Sur::Client.new.build(args.first)
+          when "help" then usage(nil)
+          when "install"
+            usage(cmd) if(args.empty?)
+
+            Sur::Client.new.install(args, @version, @tags, @reload)
+          when "list"
+            Subtle::Sur::Client.new.list(@repo, @color)
+          when "notes"
+            usage(cmd) if(args.empty?)
+
+            Subtle::Sur::Client.new.notes(args)
+          when "query"
+            usage(cmd) if(args.empty?)
+
+            Subtle::Sur::Client.new.query(args.first, @repo,
+              @version, @regex, @tags, @color)
+          when "reorder"
+            Subtle::Sur::Client.new.reorder
+          when "server"
             require "subtle/sur/server"
 
             Sur::Server.new(@port).run
-          when "submit"    then Subtle::Sur::Client.new.submit(args[1])
-          when "template"  then Subtle::Sur::Specification.template(args[1])
+          when "submit"
+            usage(cmd) if(args.empty?)
+
+            Subtle::Sur::Client.new.submit(args.first)
+          when "template"
+            usage(cmd) if(args.empty?)
+
+            Subtle::Sur::Specification.template(args.first)
           when "test"
             require "subtle/sur/test"
 
-            args.delete_at(0) #< Remove test
-
             Subtle::Sur::Test.run(args)
-          when "uninstall" then
-            if(args[1].nil?)
-              usage(args[0])
-            else
-              Subtle::Sur::Client.new.uninstall(args[1],
-                @version, @tags, @reload)
-            end
-          when "update"    then Subtle::Sur::Client.new.update(@repo)
-          when "upgrade"   then Subtle::Sur::Client.new.upgrade(@color,
-            @assume, @reload)
-          when "version"   then version
+          when "uninstall"
+            usage(cmd) if(args.empty?)
+
+            Subtle::Sur::Client.new.uninstall(args, @version, @tags, @reload)
+          when "update"
+            Subtle::Sur::Client.new.update(@repo)
+          when "upgrade"
+            Subtle::Sur::Client.new.upgrade(@color, @assume, @reload)
+          when "version" then version
+          when "yank"
+            usage(cmd) if(args.empty?)
+
+            Subtle::Sur::Client.new.update(args.first, @version)
           else usage(nil)
         end
       end # }}}
@@ -258,9 +272,12 @@ module Subtle # {{{
                  "  update [-l|-r|-h]                       Update local/remote sublet cache\n" \
                  "  upgrade [-R|-y|-h]                      Upgrade all installed sublets\n" \
                  "  version                                 Show version info and exit\n"
+                 "  yank [-v VERSION]                       Delete sublet from server\n"
         end
 
         puts "\nPlease report bugs to <unexist@dorfelite.net>\n"
+
+        exit
       end # }}}
 
       def version # {{{
