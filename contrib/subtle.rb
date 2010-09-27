@@ -529,8 +529,8 @@ end
 # === Example
 #
 # sublet :clock do
-#   interval 30
-#   format   "%H:%M:%S"
+#   interval      30
+#   format_string "%H:%M:%S"
 # end
 #
 
