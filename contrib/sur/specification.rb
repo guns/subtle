@@ -92,7 +92,7 @@ module Subtle # {{{
       ## Sur::Specification::load_spec {{{
       # Load Specification from file
       #
-      # @param [String, #read]  file  Specification file name
+      # @param [String]  file  Specification file name
       # @return [Object] New Specification
       #
       # @raise [String] Loading error
@@ -125,7 +125,7 @@ module Subtle # {{{
       ## Sur::Specification::extract_spec {{{
       # Extract and load Specification from file
       #
-      # @param [String, #read]  file  Tar file name
+      # @param [String]  file  Tar file name
       # @return [Object] New Specification
       #
       # @raise [String] Loading error
@@ -164,7 +164,7 @@ module Subtle # {{{
       ## Sur::Specification::template {{{
       # Create a new Specification object
       #
-      # @param [String, #read]  file  Template name
+      # @param [String]  file  Template name
       #
       # @since 0.1
       #
@@ -210,6 +210,9 @@ NOTES
   # Version requirements
   # s.subtlext_version = "0.9.2127"
   # s.sur_version      = "0.2.168"
+
+  # Gem requirements
+  # s.add_dependency("subtle", "~> 0.1.2")
 end
 EOF
           end
@@ -252,7 +255,7 @@ EOF
       end # }}}
 
       ## Sur::Specification::validate {{{
-      # Checks if a specification is valid
+      # Check if a specification is valid
       #
       # @raise [String] Validity error
       # @since 0.1
@@ -278,10 +281,10 @@ EOF
       end # }}}
 
       ## Sur::Specification::add_dependency {{{
-      # Adds a gem dependency to the package
+      # Add a gem dependency to the package
       #
-      # @param [String, #read]  name     Dependency name
-      # @param [String, #read]  version  Required version
+      # @param [String]  name     Dependency name
+      # @param [String]  version  Required version
       #
       # @since 0.1
       #
@@ -294,7 +297,7 @@ EOF
       end # }}}
 
       ## Sur::Specification::satisfied? {{{
-      # Checks if all dependencies are satisfied
+      # Check if all dependencies are satisfied
       #
       # @return [true, false] Validity of the package
       #
@@ -305,8 +308,8 @@ EOF
       #   => true
 
       def satisfied?
-        ret  = true
-        gems = []
+        satisfied = true
+        gems      = []
 
         # Check subtlext version
         unless(@subtlext_version.nil?)
@@ -320,7 +323,8 @@ EOF
             if(major_need > major_have or minor_need > minor_have or
                 teeny_need.nil? and teeny_have.nil? and teeny_need > teeny_have)
               puts ">>> ERROR: Need at least subtlext >= #{@subtlext_version}"
-              ret = false
+
+              satisfied = false
             end
           rescue
           end
@@ -335,7 +339,8 @@ EOF
           if(major_need > major_have or minor_need > minor_have or
               teeny_need.nil? and teeny_have.nil? and teeny_need > teeny_have)
             puts ">>> ERROR: Need at least sur >= #{@sur_version}"
-            ret = false
+
+            satisfied = false
           end
         end
 
@@ -346,7 +351,8 @@ EOF
             gem(k, v)
           rescue Gem::LoadError
             gems.push("%s (%s)" % [ k, v])
-            ret = false
+
+            satisfied = false
           end
         end
 
@@ -354,7 +360,7 @@ EOF
           puts ">>> ERROR: Following gems are missing: #{gems.join(", ")}"
         end
 
-        ret
+        satisfied
       end # }}}
 
       ## Sur::Specification::to_str {{{

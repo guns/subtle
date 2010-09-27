@@ -134,7 +134,7 @@ module Subtle # {{{
       ## Sur::Server::initialize {{{
       # Create a new Server object
       #
-      # @param [Number, #read]  port  Default port
+      # @param [Number]  port  Default port
       # @return [Object] New Sur::Server
       #
       # @since 0.0
