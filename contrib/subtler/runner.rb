@@ -273,7 +273,6 @@ module Subtle # {{{
 
         if(group.nil?)
           puts <<EOF
-
   Generic:
     -d, --display=DISPLAY   Connect to DISPLAY (default: #{ENV["DISPLAY"]})
     -D, --debug             Print debugging messages
@@ -296,13 +295,13 @@ module Subtle # {{{
     -t, --tag               Use tag group
     -y, --tray              Use tray group
     -v, --view              Use views group
+
 EOF
         end
 
         if(group.nil? or Subtlext::Client == group)
           puts <<EOF
-
-  Actions for clients:
+  Actions for clients (-c, --client):
     -f, --find=PATTERN      Find client
     -o, --focus=PATTERN     Set focus to client
     -F, --full              Toggle full
@@ -317,57 +316,68 @@ EOF
     -E, --raise             Raise client window
     -L, --lower             Lower client window
     -k, --kill=PATTERN      Kill client
+
 EOF
         end
 
         if(group.nil? or Subtlext::Gravity == group)
           puts <<EOF
-
-  Actions for gravities:
+  Actions for gravities (-g, --gravity):
     -a, --add=NAME          Create new gravity
     -l, --list              List all gravities
     -f, --find=PATTERN      Find a gravity
     -k, --kill=PATTERN      Kill gravity mode
+
 EOF
         end
 
         if(group.nil? or Subtlext::Screen == group)
           puts <<EOF
-
-  Actions for screens:
+  Actions for screens (-e, --screen):
     -l, --list              List all screens
     -f, --find=ID           Find a screen
+
 EOF
         end
 
         if(group.nil? or Subtlext::Sublet == group)
           puts <<EOF
-
-  Actions for sublets:
+  Actions for sublets (-s, --sublet):
     -a, --add=FILE          Create new sublet
     -l, --list              List all sublets
     -u, --update            Updates value of sublet
     -A, --data              Set data of sublet
     -k, --kill=PATTERN      Kill sublet
+
 EOF
         end
 
         if(group.nil? or Subtlext::Tag == group)
           puts <<EOF
-
-  Actions for tags:
+  Actions for tags (-t, --tag):
     -a, --add=NAME          Create new tag
     -f, --find              Find all clients/views by tag
     -l, --list              List all tags
     -I, --clients           Show clients with tag
     -k, --kill=PATTERN      Kill tag
+
+EOF
+        end
+
+        if(group.nil? or Subtlext::Tray == group)
+          puts <<EOF
+
+  Actions for tray (-y, --tray):
+    -f, --find              Find all tray icons
+    -l, --list              List all tray icons
+    -k, --kill=PATTERN      Kill tray icon
+
 EOF
         end
 
         if(group.nil? or Subtlext::View == group)
           puts <<EOF
-
-  Actions for views:
+  Actions for views (-v, --view):
     -a, --add=NAME          Create new view
     -f, --find=PATTERN      Find a view
     -l, --list              List all views
@@ -376,11 +386,11 @@ EOF
     -G, --tags              Show view tags
     -I, --clients           Show clients on view
     -k, --kill=VIEW         Kill view
+
 EOF
         end
 
         puts <<EOF
-
   Formats:
     DISPLAY:  :<display number>
     ID:       <number>
