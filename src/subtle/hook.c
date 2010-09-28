@@ -79,6 +79,7 @@ subHookRemove(unsigned long proc,
 {
   int i;
 
+  /* Check each hook */
   for(i = 0; i < subtle->hooks->ndata; i++)
     {
       SubHook *h = HOOK(subtle->hooks->data[i]);
@@ -87,7 +88,9 @@ subHookRemove(unsigned long proc,
       if(h->proc == proc || h->data == data)
         {
           subArrayRemove(subtle->hooks, (void *)h);
+          subRubyRelease(h->proc);
           subHookKill(h);
+          i--; ///< Prevent skipping of hook
         }
     }
 } /* }}} */
