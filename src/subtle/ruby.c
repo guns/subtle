@@ -631,8 +631,10 @@ RubyWrapCall(VALUE data)
               {
                 XButtonEvent *ev = (XButtonEvent *)rargs[2];
 
-                rb_funcall(rargs[1], rb_intern("__down"), 4, rargs[1],
-                  INT2FIX(ev->x), INT2FIX(ev->y), INT2FIX(ev->button));
+                rb_funcall(rargs[1], rb_intern("__down"),
+                  MINMAX(rb_obj_method_arity(rargs[1],
+                  rb_intern("__down")), 1, 4), rargs[1], INT2FIX(ev->x),
+                  INT2FIX(ev->y), INT2FIX(ev->button));
               }
             break; /* }}} */
         }
