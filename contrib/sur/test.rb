@@ -45,17 +45,21 @@ module Subtle # {{{
 
         # Hook list
         HOOKS = [
+          :start,
+          :exit,
+          :tile,
+          :reload,
           :client_create,
           :client_configure,
           :client_focus,
+          :client_gravity,
           :client_kill,
           :tag_create,
           :tag_kill,
           :view_create,
           :view_configure,
-          :view_focus,
-          :view_kill,
-          :exit
+          :view_jump,
+          :view_kill
         ]
 
         ## Subtle::Sur::Test::Sublet::initialize {{{
