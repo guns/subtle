@@ -37,6 +37,7 @@ module Subtle # {{{
         # Event list
         EVENTS = {
           :run        => 1,
+          :unload     => 1,
           :mouse_down => 4,
           :mouse_over => 1,
           :mouse_out  => 1
