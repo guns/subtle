@@ -1192,7 +1192,8 @@ EventFocus(XFocusChangeEvent *ev)
           subClientSetName(c);
 
           /* EWMH: Active window */
-          subEwmhSetWindows(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW, &subtle->windows.focus, 1);
+          subEwmhSetWindows(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW,
+            &subtle->windows.focus, 1);
 
           /* Hook: Focus */
           subHookCall(SUB_HOOK_CLIENT_FOCUS, (void *)c);
