@@ -647,8 +647,9 @@ RubyWrapCall(VALUE data)
 static VALUE
 RubyWrapRelease(VALUE value)
 {
-  if(Qtrue == rb_funcall(shelter, rb_intern("include?"), 1, value))
-    rb_funcall(shelter, rb_intern("delete"), 1, value);
+  /* Relase value from shelter */
+  if(Qtrue == rb_ary_includes(shelter, value))
+    rb_ary_delete(shelter, value);
 
   return Qnil;
 } /* }}} */
@@ -1734,14 +1735,15 @@ RubySubletOn(VALUE self,
   /* Check value type */
   if(T_SYMBOL == rb_type(event))
     {
+      SubSublet *s = NULL;
+
       if(subtle->flags & SUB_SUBTLE_CHECK) return Qnil; ///< Skip on check
 
-      /* Sublet hooks */
-      if(0 < subtle->sublets->ndata)
+      Data_Get_Struct(self, SubSublet, s);
+      if(s)
         {
           int i, arity = 0, mask = 0;
           VALUE p = Qnil, sing = Qnil, meth = Qnil;
-          SubSublet *s = NULL;
 
           RubyMethods methods[] =
           {
@@ -1756,7 +1758,6 @@ RubySubletOn(VALUE self,
           /* Since loading is linear we use the last sublet */
           p     = rb_block_proc();
           arity = rb_proc_arity(p);
-          s     = SUBLET(subtle->sublets->data[subtle->sublets->ndata - 1]);
           sing  = rb_singleton_class(s->instance);
           meth  = rb_intern("define_method");
 
