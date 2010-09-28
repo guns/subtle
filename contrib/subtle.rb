@@ -524,7 +524,7 @@ end
 #
 # Sublets are Ruby scripts that provide data for the panel and can be managed
 # with the sur script that comes with subtle. Configuration of sublets can
-# either be done inside of the sublet or when supported int he config.
+# either be done inside of the sublet or when supported in the config.
 #
 # === Example
 #
