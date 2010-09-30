@@ -1166,6 +1166,11 @@ RubyKernelGrab(int argc,
               {
                 type = SUB_GRAB_SUBTLE_QUIT;
               }
+            else if(CHAR2SYM("SubtleEscape") == value)
+              {
+                type           = SUB_GRAB_SUBTLE_ESCAPE;
+                subtle->flags |= SUB_SUBTLE_ESCAPE;
+              }
             else if(CHAR2SYM("WindowMove") == value)
               {
                 type = SUB_GRAB_WINDOW_MOVE;
@@ -1285,7 +1290,12 @@ RubyKernelGrab(int argc,
 
           /* Finally create new grab */
           if((g = subGrabNew(RSTRING_PTR(chain), type, data)))
-            subArrayPush(subtle->grabs, (void *)g);
+            {
+              subArrayPush(subtle->grabs, (void *)g);
+
+              /* Store address of escape grab to limit search times */
+              if(g->flags & SUB_GRAB_SUBTLE_ESCAPE) subtle->escape = g;
+            }
         }
     }
   else rb_raise(rb_eArgError, "Unknown value type for grab");
@@ -2446,29 +2456,33 @@ subRubyLoadConfig(void)
 
   subGravityPublish();
 
-  /* Update gravites */
-  for(i = 0; i < subtle->grabs->ndata; i++)
-    {
-      SubGrab *g = GRAB(subtle->grabs->data[i]);
-
-      if(g->flags & SUB_GRAB_WINDOW_GRAVITY)
-        {
-          char *string = NULL;
-
-          /* Create gravity string */
-          RubyGravityString(g->data.num, &string);
-          subRubyRelease(g->data.num);
-          g->data.string  = string;
-          g->flags       &= ~SUB_TYPE_UNKNOWN; ///< Remove unknown marker
-        }
-    }
-
-  /* Check grabs */
+  /* Check and update grabs */
   if(0 == subtle->grabs->ndata)
     {
       subSharedLogWarn("No grabs found\n");
     }
-  else subArraySort(subtle->grabs, subGrabCompare);
+  else
+    {
+      subArraySort(subtle->grabs, subGrabCompare);
+
+      /* Update grabs and gravites */
+      for(i = 0; i < subtle->grabs->ndata; i++)
+        {
+          SubGrab *g = GRAB(subtle->grabs->data[i]);
+
+          /* Update gravity grab */
+          if(g->flags & SUB_GRAB_WINDOW_GRAVITY)
+            {
+              char *string = NULL;
+
+              /* Create gravity string */
+              RubyGravityString(g->data.num, &string);
+              subRubyRelease(g->data.num);
+              g->data.string  = string;
+              g->flags       &= ~SUB_TYPE_UNKNOWN; ///< Remove unknown marker
+            }
+        }
+    }
 
   /* Check and update tags */
   for(i = 0; i < subtle->tags->ndata; i++)
@@ -2553,6 +2567,9 @@ subRubyReloadConfig(void)
       subSharedFontKill(subtle->dpy, subtle->font);
       subtle->font = NULL;
     }
+
+  /* Unset escape grab */
+  subtle->escape = NULL;
 
   /* Clear arrays */
   subArrayClear(subtle->hooks,     True); ///< Must be first

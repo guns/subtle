@@ -854,7 +854,7 @@ EventCrossing(XCrossingEvent *ev)
         /* Handle crossing event */
         if(ROOT == ev->window) ///< Root
           {
-            subGrabSet(ROOT);
+            subGrabSet(ROOT, !(subtle->flags & SUB_SUBTLE_ESCAPE));
           }
         else if((c = CLIENT(subSubtleFind(ev->window, CLIENTID)))) ///< Client
           {
@@ -1147,6 +1147,9 @@ EventGrab(XEvent *ev)
                 subtle->flags |= SUB_SUBTLE_RESTART;
               }
             break; /* }}} */
+          case SUB_GRAB_SUBTLE_ESCAPE: /* {{{ */
+            subGrabSet(0 != win ? win : ROOT, True);
+            break; /* }}} */
           default:
             subSharedLogWarn("Failed finding grab!\n");
         }
@@ -1188,7 +1191,7 @@ EventFocus(XFocusChangeEvent *ev)
       if(!(c->flags & SUB_CLIENT_DEAD) && VISIBLE(CURVIEW, c))
         {
           subtle->windows.focus = c->win;
-          subGrabSet(c->win);
+          subGrabSet(c->win, !(subtle->flags & SUB_SUBTLE_ESCAPE));
           subClientSetName(c);
 
           /* EWMH: Active window */
