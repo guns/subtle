@@ -249,14 +249,15 @@
 #define SUB_GRAB_SUBTLE_RELOAD        (1L << 19)                  ///< Reload subtle
 #define SUB_GRAB_SUBTLE_RESTART       (1L << 20)                  ///< Restart subtle
 #define SUB_GRAB_SUBTLE_QUIT          (1L << 21)                  ///< Quit subtle
-#define SUB_GRAB_WINDOW_MOVE          (1L << 22)                  ///< Resize window
-#define SUB_GRAB_WINDOW_RESIZE        (1L << 23)                  ///< Move window
-#define SUB_GRAB_WINDOW_TOGGLE        (1L << 24)                  ///< Toggle window
-#define SUB_GRAB_WINDOW_STACK         (1L << 25)                  ///< Stack window
-#define SUB_GRAB_WINDOW_SELECT        (1L << 26)                  ///< Select window
-#define SUB_GRAB_WINDOW_GRAVITY       (1L << 27)                  ///< Set gravity of window
-#define SUB_GRAB_WINDOW_SCREEN        (1L << 28)                  ///< Set screen of window
-#define SUB_GRAB_WINDOW_KILL          (1L << 29)                  ///< Kill window
+#define SUB_GRAB_SUBTLE_ESCAPE        (1L << 22)                  ///< Escape key
+#define SUB_GRAB_WINDOW_MOVE          (1L << 23)                  ///< Resize window
+#define SUB_GRAB_WINDOW_RESIZE        (1L << 24)                  ///< Move window
+#define SUB_GRAB_WINDOW_TOGGLE        (1L << 25)                  ///< Toggle window
+#define SUB_GRAB_WINDOW_STACK         (1L << 26)                  ///< Stack window
+#define SUB_GRAB_WINDOW_SELECT        (1L << 27)                  ///< Select window
+#define SUB_GRAB_WINDOW_GRAVITY       (1L << 28)                  ///< Set gravity of window
+#define SUB_GRAB_WINDOW_SCREEN        (1L << 29)                  ///< Set screen of window
+#define SUB_GRAB_WINDOW_KILL          (1L << 30)                  ///< Kill window
 
 /* Panel flags */
 #define SUB_PANEL_SPACER1             (1L << 11)                  ///< Panel spacer1
@@ -294,6 +295,7 @@
 #define SUB_SUBTLE_EWMH               (1L << 12)                  ///< EWMH set
 #define SUB_SUBTLE_REPLACE            (1L << 13)                  ///< Replace previous wm
 #define SUB_SUBTLE_RESTART            (1L << 14)                  ///< Restart
+#define SUB_SUBTLE_ESCAPE             (1L << 15)                  ///< Use escape key
 
 /* Tag flags */
 #define SUB_TAG_GRAVITY               (1L << 11)                  ///< Gravity property
@@ -508,6 +510,7 @@ typedef struct subsubtle_t /* {{{ */
   XRectangle           strut;                                     ///< Subtle strut
 
   struct subfont_t     *font;                                     ///< Subtle font
+  struct subgrab_t     *escape;                                   ///< Subtle escape grab
 
   struct subarray_t    *clients;                                  ///< Subtle clients
   struct subarray_t    *grabs;                                    ///< Subtle grabs
@@ -674,7 +677,7 @@ SubGrab *subGrabNew(const char *chain, int type,                  ///< Create gr
   SubData data);
 KeySym subGrabGet(void);                                          ///< Get grab
 SubGrab *subGrabFind(int code, unsigned int mod);                 ///< Find grab
-void subGrabSet(Window win);                                      ///< Grab window
+void subGrabSet(Window win, int all);                             ///< Grab window
 void subGrabUnset(Window win);                                    ///< Ungrab window
 int subGrabCompare(const void *a, const void *b);                 ///< Compare grabs
 void subGrabKill(SubGrab *g);                                     ///< Kill grab
