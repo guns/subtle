@@ -333,7 +333,7 @@ subDisplayScan(void)
   /* Activate first view */
   subViewJump(VIEW(subtle->views->data[0]), False);
   subtle->windows.focus = ROOT;
-  subGrabSet(ROOT);
+  subGrabSet(ROOT, !(subtle->flags & SUB_SUBTLE_ESCAPE));
 } /* }}} */
 
  /** subDisplayPublish {{{

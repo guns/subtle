@@ -167,7 +167,7 @@ subSubtleFocus(int focus)
   subtle->windows.title.width = 0;
 
   XSetInputFocus(subtle->dpy, ROOT, RevertToNone, CurrentTime);
-  subGrabSet(ROOT);
+  subGrabSet(ROOT, !(subtle->flags & SUB_SUBTLE_ESCAPE));
 
   subPanelUpdate();
   subPanelRender();
@@ -191,7 +191,7 @@ subSubtleFinish(void)
       subHookCall(SUB_HOOK_EXIT, NULL);
 
       /* Clear hooks first to stop calling */
-      subArrayClear(subtle->hooks,    True);
+      subArrayClear(subtle->hooks, True);
 
       /* Kill arrays */
       subArrayKill(subtle->clients,   True);
