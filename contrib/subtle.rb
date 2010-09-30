@@ -68,6 +68,11 @@ set :gap, 0
 # [*:spacer*]    Variable spacer
 # [*:separator*] Insert separator
 #
+# === Link
+#
+# http://subforge.org/wiki/subtle/Panel
+#
+
 # Content of the top panel
 set :top, [ :views, :title, :spacer, :tray, :sublets ]
 
@@ -97,6 +102,11 @@ set :outline, 0
 # color will be set. This will ensure a custom background pixmap won't be
 # overwritten.
 #
+# === Link
+#
+# http://subforge.org/wiki/subtle/Themes
+#
+
 # Foreground color of panel and separator
 color :fg_panel,      "#757575"
 
@@ -157,7 +167,11 @@ color :background,    "#3d3d3d"
 #
 #   gravity :example, [ 0, 0, 100, 100 ]
 #
+# === Link
 #
+# http://subforge.org/wiki/subtle/Gravity
+#
+
   # Top left
 gravity :top_left,       [   0,   0,  50,  50 ]
 gravity :top_left66,     [   0,   0,  50,  66 ]
@@ -215,26 +229,51 @@ gravity :gimp_dock,      [ 100,   0,  10, 100 ]
 # assigned either to a key and/or to a mouse button combination. A grab
 # consists of a chain and an action.
 #
-# === Chain
+# === Finding keys
 #
-# A chain is a string of modifiers, mouse buttons and normal keys separated by
-# a hyphen.
+# The best resource for getting the correct key names is
+# */usr/include/X11/keysymdef.h*, but to make life easier here are some hints
+# about it:
 #
-# ==== Modifiers:
+# * Numbers and letters keep their names, so *a* is *a* and *0* is *0*
+# * Keypad keys need *KP_* as prefix, so *KP_1* is *1* on the keypad
+# * Strip the *XK_* from the key names if looked up in
+#   /usr/include/X11/keysymdef.h
+# * Keys usually have meaningful english names
+# * Modifier keys have special meaning (Alt (A), Control (C), Meta (M),
+#   Shift (S), Super (W))
 #
-# [*S*] Shift key
-# [*A*] Alt key
-# [*C*] Control key
-# [*W*] Super (Windows key)
-# [*M*] Meta key
+# === Chaining
 #
-# ==== Mouse buttons:
+# Chains are a combination of keys and modifiers to one key and can be used in
+# various ways to trigger an action. In subtle there are two ways to define
+# chains for grabs:
 #
-# [*B1*] Button1
-# [*B2*] Button2
-# [*B3*] Button3
-# [*B4*] Button4
-# [*B5*] Button5
+#   1. Default way*: Add modifiers to a key and use it for a grab
+#
+#      *Example*: grab "W-Return", "urxvt"
+#
+#   2. *Escape way*: Define an escape grab that needs to be pressed before *any* other
+#      grab can be used like in screen/tmux.
+#
+#      *Example*: grab "C-y", :SubtleEscape
+#                 grab "Return", "urxvt"
+#
+# ==== Mouse buttons
+#
+# [*B1*] = Button1 (Left mouse button)
+# [*B2*] = Button2 (Middle mouse button)
+# [*B3*] = Button3 (Right mouse button)
+# [*B4*] = Button4 (Mouse wheel up)
+# [*B5*] = Button5 (Mouse wheel down)
+#
+# ==== Modifiers
+#
+# [*A*] = Alt key
+# [*C*] = Control key
+# [*M*] = Meta key
+# [*S*] = Shift key
+# [*W*] = Super (Windows) key
 #
 # === Action
 #
@@ -252,6 +291,13 @@ gravity :gimp_dock,      [ 100,   0,  10, 100 ]
 #
 #   grab "A-Return", "urxvt"
 #
+# === Link
+#
+# http://subforge.org/wiki/subtle/Grabs
+#
+
+# Escape grab
+#  grab "C-y", :SubtleEscape
 
 # Switch to view1, view2, ...
 grab "W-1", :ViewJump1
@@ -438,6 +484,10 @@ end
 #
 #              Example: urgent true
 #
+# === Link
+#
+# http://subforge.org/wiki/subtle/Tagging
+#
 
 # Simple tags
 tag "terms",   "xterm|[u]?rxvt"
@@ -515,9 +565,9 @@ view "www",   "browser|default|gimp_.*"
 view "dev",   "editor"
 
 # Dynamic views
-view "temp" do
-  dynamic true
-end
+#  view "temp" do
+#    dynamic true
+#  end
 
 #
 # == Sublets
@@ -528,10 +578,10 @@ end
 #
 # === Example
 #
-# sublet :clock do
-#   interval      30
-#   format_string "%H:%M:%S"
-# end
+#  sublet :clock do
+#    interval      30
+#    format_string "%H:%M:%S"
+#  end
 #
 
 #
@@ -566,6 +616,10 @@ end
 #   on :client_focus do |c|
 #     puts c.name
 #   end
+#
+# === Link
+#
+# http://subforge.org/wiki/subtle/Hooks
 #
 
 # vim:ts=2:bs=2:sw=2:et:fdm=marker
