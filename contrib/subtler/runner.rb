@@ -258,6 +258,8 @@ module Subtle # {{{
               value.instance,
               value.klass
             ] # }}}
+          when Subtlext::Sublet
+            puts "%s" % [ value.name ]
           when Subtlext::View # {{{
             puts "%#10x %s %2d %s" % [
               value.win,
