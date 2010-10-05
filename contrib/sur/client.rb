@@ -599,7 +599,7 @@ module Subtle # {{{
           @cache_remote.each do |spec_b|
             if(spec_a.name == spec_b.name and
                 spec_a.version.to_f < spec_b.version.to_f)
-              list << spec_b
+              list << spec_b.name
 
               if(use_color)
                 puts ">>> %s: %s -> %s" % [
@@ -629,8 +629,8 @@ module Subtle # {{{
 
         # Finally upgrade
         list.each do |spec|
-          uninstall(spec.name)
-          install(spec.name)
+          uninstall(list)
+          install(list)
         end
 
         reload_sublets if(reload)
@@ -649,7 +649,7 @@ module Subtle # {{{
       #   Sur::Client.new.yank("subtle", "0.0")
       #   => nil
 
-      def upgrade(use_color = true, reload = false, assume = false)
+      def yank(use_color = true, reload = false, assume = false)
         raise NotImplementedError
       end # }}}
 
