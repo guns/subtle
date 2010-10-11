@@ -12,144 +12,307 @@
 
 #include "subtle.h"
 
+ /** subPanelNew {{{
+  * @brief Create a new panel
+  * @param[in]  type  Type of the panel
+  * @return Returns a #SubPanel or \p NULL
+  **/
+
+SubPanel *
+subPanelNew(int type)
+{
+  SubPanel *p = NULL;
+  XSetWindowAttributes sattrs;
+
+  assert(SUB_PANEL_VIEWS == type || SUB_PANEL_TITLE == type);
+
+  /* Create new panel */
+  p = PANEL(subSharedMemoryAlloc(1, sizeof(SubPanel)));
+  p->flags = (SUB_TYPE_PANEL|type);
+
+  sattrs.override_redirect = True;
+
+  /* Handle panel item type */
+  switch(p->flags & (SUB_PANEL_VIEWS|SUB_PANEL_TITLE))
+    {
+      case SUB_PANEL_VIEWS: /* {{{ */
+        if(0 < subtle->views->ndata)
+          {
+            int i;
+
+            p->win = XCreateSimpleWindow(subtle->dpy, ROOT, 0, 0, 1, 1, 0, 0,
+              subtle->colors.bg_views);
+
+            /* Create button windows */
+            p->wins = (Window *)subSharedMemoryAlloc(subtle->views->ndata,
+              sizeof(Window));
+
+            for(i = 0; i < subtle->views->ndata; i++)
+              {
+                p->wins[i] = XCreateSimpleWindow(subtle->dpy, p->win,
+                  0, 0, 1, subtle->th, 0, 0, subtle->colors.bg_views);
+
+                XSaveContext(subtle->dpy, p->wins[i], VIEWID,
+                  subtle->views->data[i]);
+                XSelectInput(subtle->dpy, p->wins[i], ButtonPressMask);
+
+                XChangeWindowAttributes(subtle->dpy, p->wins[i],
+                  CWOverrideRedirect, &sattrs);
+
+                XMapRaised(subtle->dpy, p->wins[i]);
+              }
+          }
+        break; /* }}} */
+      case SUB_PANEL_TITLE: /* {{{ */
+          {
+            p->win = XCreateSimpleWindow(subtle->dpy, ROOT, 0, 0, 1, 1, 0, 0,
+              subtle->colors.bg_focus);
+
+            XChangeWindowAttributes(subtle->dpy, p->win,
+              CWOverrideRedirect, &sattrs);
+
+            /* Update title border */
+            XSetWindowBorder(subtle->dpy, p->win, subtle->colors.bo_panel);
+            XSetWindowBorderWidth(subtle->dpy, p->win, subtle->pbw);
+          }
+        break; /* }}} */
+    }
+
+  subSharedLogDebug("new=panel, type=%s\n", SUB_PANEL_VIEWS == type ? "views" : "title");
+
+  return p;
+} /* }}} */
+
  /** subPanelUpdate {{{
-  * @brief Configure panels
+  * @brief Update panel
+  * @param[in]  p  A #SubPanel
   **/
 
 void
-subPanelUpdate(void)
+subPanelUpdate(SubPanel *p)
 {
-  int i, n = 0, s = 0, x = 0, sw[2] = { 0 }, fix[2] = { 0 },
-    width[2] = { 0 }, spacer[2] = { 0 };
-  SubPanel *p = NULL;
+  assert(p);
 
-  assert(subtle);
-
-  /* Collect width for spacer */
-  for(i = 0; i < subtle->panels->ndata; i++)
+  /* Handle panel item type */
+  switch(p->flags & (SUB_TYPE_SUBLET|SUB_PANEL_VIEWS|SUB_PANEL_TITLE))
     {
-      p = PANEL(subtle->panels->data[i]);
+      case SUB_TYPE_SUBLET: /* {{{ */
+        subSubletUpdate(SUBLET(p));
+        break; /* }}} */
+      case SUB_PANEL_VIEWS: /* {{{ */
+        p->width = 0;
 
-      /* Check each flag */
-      if(p->flags & SUB_PANEL_HIDDEN)  continue;
-      if(p->flags & SUB_PANEL_BOTTOM)  n = 1;
-      if(p->flags & SUB_PANEL_SPACER1) spacer[n]++;
-      if(p->flags & SUB_PANEL_SPACER2) spacer[n]++;
-      if(p->flags & SUB_PANEL_SEPARATOR1)
-        width[n] += subtle->separator.width;
-      if(p->flags & SUB_PANEL_SEPARATOR2)
-        width[n] += subtle->separator.width;
+        if(0 < subtle->views->ndata)
+          {
+            int i;
 
-      width[n] += p->width;
-    }
+            /* Update for each view */
+            for(i = 0; i < subtle->views->ndata; i++)
+              {
+                SubView *v = VIEW(subtle->views->data[i]);
 
-  /* Calculate spacer */
-  for(i = 0; i < 2; i++)
-    if(0 < spacer[i])
-      {
-        sw[i]  = (DEFSCREEN->base.width - width[i]) / spacer[i];
-        fix[i] = DEFSCREEN->base.width - (width[i] + spacer[i] * sw[i]);
-      }
+                /* Check dynamic views */
+                if(v->flags & SUB_PANEL_HIDDEN)
+                  {
+                    XUnmapWindow(subtle->dpy, p->wins[i]);
+                  }
+                else
+                  {
+                    v->width = subSharedTextWidth(subtle->dpy, subtle->font,
+                      v->name, strlen(v->name), NULL, NULL, True)
+                      + 6 + 2 * subtle->pbw; ///< Font offset and panel border
 
-  /* Move and resize windows */
-  for(i = 0, n = 0, s = 0; i < subtle->panels->ndata; i++)
-    {
-      p = PANEL(subtle->panels->data[i]);
+                    XMoveResizeWindow(subtle->dpy, p->wins[i], p->width, 0,
+                      v->width - 2 * subtle->pbw, subtle->th - 2 * subtle->pbw);
+                    p->width += v->width;
 
-      if(p->flags & SUB_PANEL_HIDDEN) continue;
-      if(p->flags & SUB_PANEL_BOTTOM)
-        {
-          n = 1;
-          x = 0; ///< Reset for new panel
-          s = 0;
-        }
+                    XMapRaised(subtle->dpy, p->wins[i]);
+                  }
 
-      /* Add separatorbBefore panel item */
-      if(p->flags & SUB_PANEL_SEPARATOR1)
-        x += subtle->separator.width;
+                /* Set borders */
+                XSetWindowBorder(subtle->dpy, p->wins[i],
+                  subtle->colors.bo_panel);
+                XSetWindowBorderWidth(subtle->dpy, p->wins[i], subtle->pbw);
+              }
 
-      /* Add spacer before item */
-      if(p->flags & SUB_PANEL_SPACER1)
-        {
-          x += sw[n];
-          if(++s == spacer[n]) x += fix[n]; ///< Add fix on last spacer
-        }
+            XResizeWindow(subtle->dpy, p->win, p->width, subtle->th);
+          }
+        break; /* }}} */
+      case SUB_PANEL_TITLE: /* {{{ */
+        p->width = 0;
 
-      /* Set window position */
-      XMoveWindow(subtle->dpy, p->win, x, 0);
-      p->x = x;
+        if(0 < subtle->clients->ndata)
+          {
+            SubClient *c = NULL;
 
-      /* Add separator after panel item */
-      if(p->flags & SUB_PANEL_SEPARATOR2)
-        x += subtle->separator.width;
+            if((c = CLIENT(subSubtleFind(subtle->windows.focus, CLIENTID))))
+              {
+                int len = 0;
 
-      /* Add spacer after item */
-      if(p->flags & SUB_PANEL_SPACER2)
-        {
-          x += sw[n];
-          if(++s == spacer[n]) x += fix[n]; ///< Add fix on last spacer
-        }
+                assert(c);
+                DEAD(c);
 
-      /* Remap window only when needed */
-      if(0 < p->width) XMapRaised(subtle->dpy, p->win);
-      else XUnmapWindow(subtle->dpy, p->win);
+                /* Exclude desktop type windows */
+                if(!(c->flags & SUB_CLIENT_TYPE_DESKTOP))
+                  {
+                    len = strlen(c->name);
 
-      x += p->width;
+                    /* Title modes */
+                    if(c->flags & SUB_CLIENT_MODE_FLOAT) len++;
+                    if(c->flags & SUB_CLIENT_MODE_STICK) len++;
+
+                    /* Update panel width */
+                    p->width = subSharedTextWidth(subtle->dpy, subtle->font,
+                      c->name, 50 >= len ? len : 50, NULL, NULL, True) +
+                      6 + 2 * subtle->pbw; ///< Font offset and panel border
+
+                    XResizeWindow(subtle->dpy, p->win,
+                      p->width - 2 * subtle->pbw,
+                      subtle->th - 2 * subtle->pbw);
+                  }
+              }
+          }
+        break; /* }}} */
     }
 } /* }}} */
 
  /** subPanelRender {{{
-  * @brief Render panels
+  * @brief Render panel
+  * @param[in]  p  A #SubPanel
   **/
 
 void
-subPanelRender(void)
+subPanelRender(SubPanel *p)
 {
-  int i;
-  SubClient *c = NULL;
-  Window panel = subtle->windows.panel1;
+  assert(p);
 
-  assert(subtle);
-
-  XClearWindow(subtle->dpy, subtle->windows.panel1);
-  XClearWindow(subtle->dpy, subtle->windows.panel2);
-
-  /* Draw stipple on panels */
-  if(subtle->flags & SUB_SUBTLE_STIPPLE) ///< Draw stipple
+  /* Handle panel item type */
+  switch(p->flags & (SUB_TYPE_SUBLET|SUB_PANEL_VIEWS|SUB_PANEL_TITLE))
     {
-      XFillRectangle(subtle->dpy, subtle->windows.panel1, subtle->gcs.stipple,
-        0, 2, DEFSCREEN->base.width, subtle->th - 4);
-      XFillRectangle(subtle->dpy, subtle->windows.panel2, subtle->gcs.stipple,
-        0, 2, DEFSCREEN->base.width, subtle->th - 4);
+      case SUB_TYPE_SUBLET: /* {{{ */
+        subSubletRender(SUBLET(p));
+        break; /* }}} */
+      case SUB_PANEL_VIEWS: /* {{{ */
+        if(0 < subtle->views->ndata)
+          {
+            int i;
+            long fg = 0, bg = 0;
+
+            /* View buttons */
+            for(i = 0; i < subtle->views->ndata; i++)
+              {
+                SubView *v = VIEW(subtle->views->data[i]);
+
+                if(!(v->flags & SUB_PANEL_HIDDEN))
+                  {
+                    /* Select color pair */
+                    if(v->flags & SUB_CLIENT_MODE_URGENT)
+                      {
+                        fg = subtle->colors.fg_urgent;
+                        bg = subtle->colors.bg_urgent;
+                      }
+                    else if(p->screen->vid == i)
+                      {
+                        fg = subtle->colors.fg_focus;
+                        bg = subtle->colors.bg_focus;
+                      }
+                    else
+                      {
+                        fg = subtle->colors.fg_views;
+                        bg = subtle->colors.bg_views;
+                      }
+
+                    /* Set window background */
+                    XSetWindowBackground(subtle->dpy, p->wins[i], bg);
+                    XClearWindow(subtle->dpy, p->wins[i]);
+
+                    subSharedTextDraw(subtle->dpy, subtle->gcs.font,
+                      subtle->font, p->wins[i], 3, subtle->font->y,
+                      fg, bg, v->name);
+                  }
+              }
+          }
+        break; /* }}} */
+      case SUB_PANEL_TITLE: /* {{{ */
+        if(0 < subtle->clients->ndata)
+          {
+            SubClient *c = NULL;
+
+            if((c = CLIENT(subSubtleFind(subtle->windows.focus, CLIENTID))))
+              {
+                int x = 0;
+                char buf[50] = { 0 };
+                long fg = 0, bg = 0;
+
+                DEAD(c);
+
+                /* Title modes */
+                if(c->flags & SUB_CLIENT_MODE_FLOAT)
+                  {
+                    snprintf(buf + x, sizeof(buf), "%c", '^');
+                    x++;
+                  }
+                if(c->flags & SUB_CLIENT_MODE_STICK)
+                  {
+                    snprintf(buf + x, sizeof(buf), "%c", '*');
+                    x++;
+                  }
+
+                snprintf(buf + x, sizeof(buf), "%s", c->name);
+
+                /* Select color pair */
+                if(c->flags & SUB_CLIENT_MODE_URGENT)
+                  {
+                    fg = subtle->colors.fg_urgent;
+                    bg = subtle->colors.bg_urgent;
+                  }
+                else
+                  {
+                    fg = subtle->colors.fg_focus;
+                    bg = subtle->colors.bg_focus;
+                  }
+
+                /* Set window background */
+                XSetWindowBackground(subtle->dpy, p->win, bg);
+                XClearWindow(subtle->dpy, p->win);
+
+                subSharedTextDraw(subtle->dpy, subtle->gcs.font, subtle->font,
+                  p->win, 3, subtle->font->y, fg, bg, buf);
+              }
+          }
+        break; /* }}} */
+    }
+} /* }}} */
+
+ /** subPanelKill {{{
+  * @brief Kill a panel
+  * @param[in]  p  A #SubPanel
+  **/
+
+void
+subPanelKill(SubPanel *p)
+{
+  assert(p);
+
+  /* Handle panel item type */
+  switch(p->flags & (SUB_PANEL_VIEWS))
+    {
+      case SUB_PANEL_VIEWS: /* {{{ */
+        if(p->wins)
+          {
+            int i;
+
+            for(i = 0; i < subtle->views->ndata; i++)
+              XDestroyWindow(subtle->dpy, p->wins[i]);
+
+            free(p->wins);
+          }
+        break; /* }}} */
     }
 
-  /* Draw separators */
-  for(i = 0; i < subtle->panels->ndata; i++)
-    {
-      SubPanel *p = PANEL(subtle->panels->data[i]);
+  XDestroyWindow(subtle->dpy, p->win);
 
-      if(p->flags & SUB_PANEL_HIDDEN) continue;
-      if(p->flags & SUB_PANEL_BOTTOM) panel = subtle->windows.panel2;
-      if(p->flags & SUB_PANEL_SEPARATOR1) ///< Draw separator before panel
-        subSharedTextDraw(subtle->dpy, subtle->gcs.font, subtle->font,
-          panel, p->x - subtle->separator.width + 3,
-          subtle->font->y + subtle->pbw, subtle->colors.fg_panel, -1,
-          subtle->separator.string);
-      if(p->flags & SUB_PANEL_SEPARATOR2) ///< Draw separator after panel
-        subSharedTextDraw(subtle->dpy, subtle->gcs.font, subtle->font,
-          panel, p->x + p->width + 3,
-          subtle->font->y + subtle->pbw, subtle->colors.fg_panel, -1,
-          subtle->separator.string);
-    }
+  free(p);
 
-  /* Render panels */
-  if(subtle->windows.focus && 
-      (c = CLIENT(subSubtleFind(subtle->windows.focus, CLIENTID))))
-    subClientRender(c);
-
-  subViewRender();
-
-  /* Render sublets */
-  for(i = 0; i < subtle->sublets->ndata; i++)
-    subSubletRender(SUBLET(subtle->sublets->data[i]));
+  subSharedLogDebug("kill=panel\n");
 } /* }}} */

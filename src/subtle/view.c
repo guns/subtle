@@ -27,16 +27,17 @@ subViewNew(char *name,
 
   assert(name);
 
+  /* Create new view */
   v = VIEW(subSharedMemoryAlloc(1, sizeof(SubView)));
   v->flags = SUB_TYPE_VIEW;
   v->name  = strdup(name);
 
   /* Create button */
-  v->button = XCreateSimpleWindow(subtle->dpy, subtle->windows.views.win,
+  v->win = XCreateSimpleWindow(subtle->dpy, ROOT,
     0, 0, 1, subtle->th, 0, 0, subtle->colors.bg_views);
 
-  XSaveContext(subtle->dpy, v->button, VIEWID, (void *)v);
-  XSelectInput(subtle->dpy, v->button,  ButtonPressMask);
+  XSaveContext(subtle->dpy, v->win, VIEWID, (void *)v);
+  XSelectInput(subtle->dpy, v->win, ButtonPressMask);
 
   /* Tags */
   if(tags && strncmp("", tags, 1))
@@ -52,147 +53,12 @@ subViewNew(char *name,
     }
 
   /* EWMH: Tags */
-  subEwmhSetCardinals(v->button, SUB_EWMH_SUBTLE_WINDOW_TAGS,
+  subEwmhSetCardinals(v->win, SUB_EWMH_SUBTLE_WINDOW_TAGS,
     (long *)&v->tags, 1); ///< Init
 
   subSharedLogDebug("new=view, name=%s\n", name);
 
   return v;
-} /* }}} */
-
- /** subViewConfigure {{{
-  * @brief Calculate client sizes and tiling layout
-  * @param[in]  v      A #SubView
-  * @param[in]  align  Re-align clients
-  **/
-
-void
-subViewConfigure(SubView *v,
-  int align)
-{
-  int i;
-  long vid = 0;
-
-  assert(v);
-
-  vid = subArrayIndex(subtle->views, (void *)v);
-
-  /* Clients */
-  for(i = 0; i < subtle->clients->ndata; i++)
-    {
-      SubClient *c = CLIENT(subtle->clients->data[i]);
-
-      /* Find matching clients */
-      if(VISIBLE(v, c))
-        {
-          subClientSetGravity(c, c->gravities[vid], c->screens[vid], align);
-
-          /* Map or raise window */
-          if(c->flags & (SUB_CLIENT_MODE_FULL|SUB_CLIENT_MODE_FLOAT))
-            XMapRaised(subtle->dpy, c->win);
-          else XMapWindow(subtle->dpy, c->win);
-
-          /* Warp after gravity and screen is set */
-          if(c->flags & SUB_CLIENT_MODE_URGENT)
-            subClientWarp(c);
-
-          /* EWMH: Desktop */
-          subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
-
-          subClientConfigure(c);
-        }
-      else ///< Unmap other windows
-        {
-          c->flags |= SUB_CLIENT_UNMAP; ///< Ignore next unmap
-          XUnmapWindow(subtle->dpy, c->win);
-        }
-    }
-
-  subSharedLogDebug("Configure: type=view, vid=%d, name=%s\n", vid, v->name);
-
-  /* Hook: Configure */
-  subHookCall(SUB_HOOK_VIEW_CONFIGURE, (void *)v);
-} /* }}} */
-
- /** subViewUpdate {{{
-  * @brief Update dynamic views
-  **/
-
-void
-subViewUpdate(void)
-{
-  subtle->windows.views.width = 0;
-
-  if(0 < subtle->views->ndata)
-    {
-      int i;
-
-      for(i = 0; i < subtle->views->ndata; i++)
-        {
-          SubView *v = VIEW(subtle->views->data[i]);
-
-          /* Check dynamic views */
-          if(v->flags & SUB_PANEL_HIDDEN)
-            {
-              XUnmapWindow(subtle->dpy, v->button);
-            }
-          else
-            {
-              v->width = subSharedTextWidth(subtle->dpy, subtle->font, v->name,
-                strlen(v->name), NULL, NULL, True) + 6 + 2 * subtle->pbw; ///< Font offset and panel border
-
-              XMoveResizeWindow(subtle->dpy, v->button, subtle->windows.views.width,
-                0, v->width - 2 * subtle->pbw, subtle->th - 2 * subtle->pbw);
-              subtle->windows.views.width += v->width;
-
-              XMapRaised(subtle->dpy, v->button);
-            }
-
-          /* Set borders */
-          XSetWindowBorder(subtle->dpy, v->button, subtle->colors.bo_panel);
-          XSetWindowBorderWidth(subtle->dpy, v->button, subtle->pbw);
-        }
-
-      XResizeWindow(subtle->dpy, subtle->windows.views.win, subtle->windows.views.width, subtle->th);
-    }
-} /* }}} */
-
- /** subViewDynamic {{{
-  * @brief Update dynamic views
-  **/
-
-void
-subViewDynamic(void)
-{
-  int i, j;
-
-  /* Update dynamic views (n²) */
-  for(i = 0; i < subtle->views->ndata; i++)
-    {
-      int visible = 0;
-      SubView *v = VIEW(subtle->views->data[i]);
-
-      if(v->flags & SUB_VIEW_DYNAMIC)
-        {
-          for(j = 0; j < subtle->clients->ndata; j++)
-            {
-              SubClient *c = CLIENT(subtle->clients->data[j]);
-
-              if(VISIBLE(v, c)) visible++;
-            }
-
-          /* Update flags */
-          if(0 < visible) v->flags &= ~(SUB_PANEL_HIDDEN|SUB_VIEW_DYNAMIC_FOCUS);
-          else
-            {
-              if(CURVIEW == v) v->flags |= SUB_VIEW_DYNAMIC_FOCUS;
-              else v->flags |= SUB_PANEL_HIDDEN;
-            }
-        }
-    }
-
-  subViewUpdate();
-  subPanelUpdate();
 } /* }}} */
 
  /** subViewHighlight {{{
@@ -213,94 +79,76 @@ subViewHighlight(int tags)
       if(v->tags & tags)
         v->flags |= SUB_CLIENT_MODE_URGENT;
       else
-        v->flags &= ~ SUB_CLIENT_MODE_URGENT;
+        v->flags &= ~SUB_CLIENT_MODE_URGENT;
     }
 
-  subViewRender();
+  subScreenRender();
 } /* }}} */
 
- /** subViewRender {{{
-  * @brief Render view button bar
+/** subViewVisible {{{
+  * @brief Whether a view is visible on a screen
   * @param[in]  v  A #SubView
+  * @return Screen id or \p null False
   **/
 
-void
-subViewRender(void)
+int
+subViewVisible(SubView *v)
 {
-  if(0 < subtle->views->ndata)
+  int i, ret = False;
+
+  assert(c);
+
+  /* Check screens */
+  for(i = 0; i < subtle->screens->ndata; i++)
     {
-      int i;
-      long fg = 0, bg = 0;
+      SubScreen *s = SCREEN(subtle->screens->data[i]);
 
-      /* View buttons */
-      for(i = 0; i < subtle->views->ndata; i++)
+      if(v == VIEW(subtle->views->data[s->vid]))
         {
-          SubView *v = VIEW(subtle->views->data[i]);
+          ret = True;
 
-          if(!(v->flags & SUB_PANEL_HIDDEN))
-            {
-              /* Select color pair */
-              if(v->flags & SUB_CLIENT_MODE_URGENT)
-                {
-                  fg = subtle->colors.fg_urgent;
-                  bg = subtle->colors.bg_urgent;
-                }
-              else if(CURVIEW == v)
-                {
-                  fg = subtle->colors.fg_focus;
-                  bg = subtle->colors.bg_focus;
-                }
-              else
-                {
-                  fg = subtle->colors.fg_views;
-                  bg = subtle->colors.bg_views;
-                }
-
-              /* Set color and draw */
-              XSetWindowBackground(subtle->dpy, v->button, bg);
-              XClearWindow(subtle->dpy, v->button);
-
-              subSharedTextDraw(subtle->dpy, subtle->gcs.font, subtle->font,
-                v->button, 3, subtle->font->y, fg, bg, v->name);
-            }
+          break;
         }
     }
+
+  return ret;
 } /* }}} */
 
  /** subViewJump {{{
   * @brief Jump to view
-  * @param[in]  v      A #SubView
-  * @param[in]  focus  Focus next client
+  * @param[in]  v  A #SubView
   **/
 
 void
-subViewJump(SubView *v,
-  int focus)
+subViewJump(SubView *v)
 {
-  SubView *w = NULL;
+  int i;
+  SubScreen *s = NULL;
 
   assert(v);
 
-  /* Ignore dynamic views */
-  if(v->flags & SUB_PANEL_HIDDEN) return;
+  /* Check if view is visible on a screen */
+  for(i = 0; i < subtle->screens->ndata; i++)
+    {
+      s = SCREEN(subtle->screens->data[i]);
 
-  w = CURVIEW; ///< Store reference
+      if(VIEW(subtle->views->data[s->vid]) == v)
+        {
+          subScreenJump(s);
 
-  /* Store view */
-  subtle->vid = subArrayIndex(subtle->views, (void *)v);
+          return;
+        }
+    }
 
-  /* Check dynamic focus last views */
-  if(w->flags & SUB_VIEW_DYNAMIC_FOCUS)
-    subViewDynamic(); ///< Dynamic views
+  /* Get current screen */
+  if((s = subScreenCurrent(NULL)))
+    {
+      s->vid = subArrayIndex(subtle->views, (void *)v);
 
-  /* EWMH: Current desktop */
-  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP,
-    (long *)&subtle->vid, 1);
-
-  subViewConfigure(v, False);
-
-  subSubtleFocus(focus);
-  subViewRender();
+      subScreenConfigure();
+      subScreenRender();
+      subSubtleFocus(True);
+    }
 
   /* Hook: Jump, Tile */
   subHookCall(SUB_HOOK_VIEW_JUMP, (void *)v);
@@ -328,7 +176,7 @@ subViewPublish(void)
         {
           SubView *v = VIEW(subtle->views->data[i]);
 
-          views[i] = v->button;
+          views[i] = v->win;
           names[i] = v->name;
         }
 
@@ -364,8 +212,8 @@ subViewKill(SubView *v)
   /* Hook: Kill */
   subHookCall(SUB_HOOK_VIEW_KILL, (void *)v);
 
-  XDeleteContext(subtle->dpy, v->button, VIEWID);
-  XDestroyWindow(subtle->dpy, v->button);
+  XDeleteContext(subtle->dpy, v->win, VIEWID);
+  XDestroyWindow(subtle->dpy, v->win);
 
   free(v->name);
   free(v);
