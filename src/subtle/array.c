@@ -168,16 +168,18 @@ subArrayClear(SubArray *a,
           SubClient *c = CLIENT(a->data[i]);
 
           /* Common types first */
-          if(c->flags & SUB_TYPE_CLIENT)          subClientKill(c, False);
-          else if(c->flags & SUB_TYPE_GRAB)       subGrabKill(GRAB(c));
-          else if(c->flags & SUB_TYPE_GRAVITY)    subGravityKill(GRAVITY(c));
-          else if(c->flags & SUB_TYPE_HOOK)       subHookKill(HOOK(c));
-          else if(c->flags & SUB_TYPE_SCREEN)     subScreenKill(SCREEN(c));
-          else if(c->flags & SUB_TYPE_SUBLET)     subSubletKill(SUBLET(c));
-          else if(c->flags & SUB_TYPE_TAG)        subTagKill(TAG(c));
-          else if(c->flags & SUB_TYPE_TRAY)       subTrayKill(TRAY(c));
-          else if(c->flags & SUB_TYPE_VIEW)       subViewKill(VIEW(c));
-          else if(!(c->flags & SUB_TYPE_UNKNOWN)) free(a->data[i]);
+          if(c->flags & SUB_TYPE_CLIENT)       subClientKill(c, False);
+          else if(c->flags & SUB_TYPE_GRAB)    subGrabKill(GRAB(c));
+          else if(c->flags & SUB_TYPE_GRAVITY) subGravityKill(GRAVITY(c));
+          else if(c->flags & SUB_TYPE_HOOK)    subHookKill(HOOK(c));
+          else if(c->flags & SUB_TYPE_SCREEN)  subScreenKill(SCREEN(c));
+          else if(c->flags & SUB_TYPE_TAG)     subTagKill(TAG(c));
+          else if(c->flags & SUB_TYPE_TRAY)    subTrayKill(TRAY(c));
+          else if(c->flags & SUB_TYPE_VIEW)    subViewKill(VIEW(c));
+
+          /* Must be before panel, sublets are in panels too */
+          else if(c->flags & SUB_TYPE_SUBLET) subSubletKill(SUBLET(c));
+          else if(c->flags & SUB_TYPE_PANEL)  subPanelKill(PANEL(c));
         }
 
       if(a->data) free(a->data);
