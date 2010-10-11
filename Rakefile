@@ -161,7 +161,6 @@ task(:config) do
   FileUtils.mkdir_p(
     [
       File.join(@options["builddir"], "subtle"),
-      File.join(@options["builddir"], "subtler"),
       File.join(@options["builddir"], "subtlext")
     ]
   )
