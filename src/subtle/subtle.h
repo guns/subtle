@@ -98,7 +98,6 @@
 #define SCREENH \
   DisplayHeight(subtle->dpy, DefaultScreen(subtle->dpy))          ///< Get screen height
 
-#define CURVIEW VIEW(subtle->views->data[subtle->vid])            ///< Get current view
 #define CURSCREEN SCREEN(subtle->screens->data[subtle->sid])      ///< Get current screen
 #define DEFSCREEN SCREEN(subtle->screens->data[0])                ///< Get first screen
 
@@ -173,12 +172,12 @@
 #define SUB_TYPE_GRAB                 (1L << 2)                   ///< Grab
 #define SUB_TYPE_GRAVITY              (1L << 3)                   ///< Gravity
 #define SUB_TYPE_HOOK                 (1L << 4)                   ///< Hook
-#define SUB_TYPE_SCREEN               (1L << 5)                   ///< Screen
-#define SUB_TYPE_SUBLET               (1L << 6)                   ///< Sublet
-#define SUB_TYPE_TAG                  (1L << 7)                   ///< Tag
-#define SUB_TYPE_TRAY                 (1L << 8)                   ///< Tray
-#define SUB_TYPE_VIEW                 (1L << 9)                   ///< View
-#define SUB_TYPE_UNKNOWN              (1L << 10)                  ///< Unknwon type
+#define SUB_TYPE_PANEL                (1L << 5)                   ///< Panel
+#define SUB_TYPE_SCREEN               (1L << 6)                   ///< Screen
+#define SUB_TYPE_SUBLET               (1L << 7)                   ///< Sublet
+#define SUB_TYPE_TAG                  (1L << 8)                   ///< Tag
+#define SUB_TYPE_TRAY                 (1L << 9)                   ///< Tray
+#define SUB_TYPE_VIEW                 (1L << 10)                   ///< View
 
 /* Call flags */
 #define SUB_CALL_HOOKS                (1L << 11)                  ///< Call hook
@@ -243,30 +242,37 @@
 #define SUB_GRAB_SPAWN                (1L << 13)                  ///< Spawn an app
 #define SUB_GRAB_PROC                 (1L << 14)                  ///< Grab with proc
 #define SUB_GRAB_VIEW_JUMP            (1L << 15)                  ///< Jump to view
-#define SUB_GRAB_VIEW_SELECT          (1L << 16)                  ///< Jump to view
-#define SUB_GRAB_SCREEN_JUMP          (1L << 17)                  ///< Jump to screen
-#define SUB_GRAB_SUBLETS_RELOAD       (1L << 18)                  ///< Reload subtle
-#define SUB_GRAB_SUBTLE_RELOAD        (1L << 19)                  ///< Reload subtle
-#define SUB_GRAB_SUBTLE_RESTART       (1L << 20)                  ///< Restart subtle
-#define SUB_GRAB_SUBTLE_QUIT          (1L << 21)                  ///< Quit subtle
-#define SUB_GRAB_SUBTLE_ESCAPE        (1L << 22)                  ///< Escape key
-#define SUB_GRAB_WINDOW_MOVE          (1L << 23)                  ///< Resize window
-#define SUB_GRAB_WINDOW_RESIZE        (1L << 24)                  ///< Move window
-#define SUB_GRAB_WINDOW_TOGGLE        (1L << 25)                  ///< Toggle window
-#define SUB_GRAB_WINDOW_STACK         (1L << 26)                  ///< Stack window
-#define SUB_GRAB_WINDOW_SELECT        (1L << 27)                  ///< Select window
-#define SUB_GRAB_WINDOW_GRAVITY       (1L << 28)                  ///< Set gravity of window
-#define SUB_GRAB_WINDOW_SCREEN        (1L << 29)                  ///< Set screen of window
+#define SUB_GRAB_VIEW_SWITCH          (1L << 16)                  ///< Jump to view
+#define SUB_GRAB_VIEW_SELECT          (1L << 17)                  ///< Jump to view
+#define SUB_GRAB_SCREEN_JUMP          (1L << 18)                  ///< Jump to screen
+#define SUB_GRAB_SUBLETS_RELOAD       (1L << 19)                  ///< Reload subtle
+#define SUB_GRAB_SUBTLE_RELOAD        (1L << 20)                  ///< Reload subtle
+#define SUB_GRAB_SUBTLE_RESTART       (1L << 21)                  ///< Restart subtle
+#define SUB_GRAB_SUBTLE_QUIT          (1L << 22)                  ///< Quit subtle
+#define SUB_GRAB_SUBTLE_ESCAPE        (1L << 23)                  ///< Escape key
+#define SUB_GRAB_WINDOW_MOVE          (1L << 24)                  ///< Resize window
+#define SUB_GRAB_WINDOW_RESIZE        (1L << 25)                  ///< Move window
+#define SUB_GRAB_WINDOW_TOGGLE        (1L << 26)                  ///< Toggle window
+#define SUB_GRAB_WINDOW_STACK         (1L << 27)                  ///< Stack window
+#define SUB_GRAB_WINDOW_SELECT        (1L << 28)                  ///< Select window
+#define SUB_GRAB_WINDOW_GRAVITY       (1L << 29)                  ///< Set gravity of window
 #define SUB_GRAB_WINDOW_KILL          (1L << 30)                  ///< Kill window
 
 /* Panel flags */
-#define SUB_PANEL_SPACER1             (1L << 11)                  ///< Panel spacer1
-#define SUB_PANEL_SPACER2             (1L << 12)                  ///< Panel spacer2
-#define SUB_PANEL_SEPARATOR1          (1L << 13)                  ///< Panel separator1
-#define SUB_PANEL_SEPARATOR2          (1L << 14)                  ///< Panel separator2
-#define SUB_PANEL_BOTTOM              (1L << 15)                  ///< Panel bottom
-#define SUB_PANEL_SUBLETS             (1L << 16)                  ///< Panel sublets
-#define SUB_PANEL_HIDDEN              (1L << 17)                  ///< Hidden panel
+#define SUB_PANEL_VIEWS               (1L << 11)                  ///< Panel views type
+#define SUB_PANEL_TITLE               (1L << 12)                  ///< Panel title type
+#define SUB_PANEL_SPACER1             (1L << 13)                  ///< Panel spacer1
+#define SUB_PANEL_SPACER2             (1L << 14)                  ///< Panel spacer2
+#define SUB_PANEL_SEPARATOR1          (1L << 15)                  ///< Panel separator1
+#define SUB_PANEL_SEPARATOR2          (1L << 16)                  ///< Panel separator2
+#define SUB_PANEL_BOTTOM              (1L << 17)                  ///< Panel bottom
+#define SUB_PANEL_SUBLETS             (1L << 18)                  ///< Panel sublets
+#define SUB_PANEL_HIDDEN              (1L << 18)                  ///< Hidden panel
+
+/* Screen types */
+#define SUB_SCREEN_PANEL1             (1L << 11)                   ///< Panel1 enabled
+#define SUB_SCREEN_PANEL2             (1L << 12)                   ///< Panel2 enabled
+#define SUB_SCREEN_STIPPLE            (1L << 13)                   ///< Stipple enabled
 
 /* Sublet types */
 #define SUB_SUBLET_INTERVAL           (1L << 20)                  ///< Sublet has interval (after panel flags)
@@ -284,9 +290,6 @@
 #define SUB_SUBTLE_DEBUG              (1L << 1)                   ///< Debug enabled
 #define SUB_SUBTLE_CHECK              (1L << 2)                   ///< Check config
 #define SUB_SUBTLE_RUN                (1L << 3)                   ///< Run event loop
-#define SUB_SUBTLE_STIPPLE            (1L << 4)                   ///< Stipple enabled
-#define SUB_SUBTLE_PANEL1             (1L << 5)                   ///< Panel1 enabled
-#define SUB_SUBTLE_PANEL2             (1L << 6)                   ///< Panel2 enabled
 #define SUB_SUBTLE_URGENT             (1L << 7)                   ///< Urgent transients
 #define SUB_SUBTLE_RESIZE             (1L << 8)                   ///< Respect size
 #define SUB_SUBTLE_BACKGROUND         (1L << 9)                   ///< Set root background
@@ -299,9 +302,8 @@
 
 /* Tag flags */
 #define SUB_TAG_GRAVITY               (1L << 11)                  ///< Gravity property
-#define SUB_TAG_SCREEN                (1L << 12)                  ///< Screen property
-#define SUB_TAG_GEOMETRY              (1L << 13)                  ///< Geometry property
-#define SUB_TAG_TYPE                  (1L << 14)                  ///< Type property
+#define SUB_TAG_GEOMETRY              (1L << 12)                  ///< Geometry property
+#define SUB_TAG_TYPE                  (1L << 13)                  ///< Type property
 
 /* Tag matcher */
 #define SUB_TAG_MATCH_NAME            (1L << 11)                  ///< Match WM_NAME
@@ -309,13 +311,10 @@
 #define SUB_TAG_MATCH_CLASS           (1L << 13)                  ///< Match class of WM_CLASS
 #define SUB_TAG_MATCH_ROLE            (1L << 14)                  ///< Match role of window
 #define SUB_TAG_MATCH_TYPE            (1L << 15)                  ///< Match type of window
+#define SUB_TAG_MATCH_INVERT          (1L << 16)                  ///< Match invert
 
 /* Tray flags */
 #define SUB_TRAY_UNMAP                (1L << 11)                  ///< Ignore unmaps
-
-/* View flags */
-#define SUB_VIEW_DYNAMIC              (1L << 20)                  ///< Dynamic view (after panel flags)
-#define SUB_VIEW_DYNAMIC_FOCUS        (1L << 21)                  ///< Dynamic empty but active view
 /* }}} */
 
 /* Typedefs {{{ */
@@ -338,8 +337,7 @@ typedef struct subclient_t /* {{{ */
   float      minr, maxr;                                          ///< Client ratios
   int        minw, minh, maxw, maxh, incw, inch;                  ///< Client sizes
 
-  int        gravity, screen;                                     ///< Client informations
-  int        *gravities, *screens;                                ///< Client per view
+  int        screen, gravity, *gravities;                         ///< Client placement
 } SubClient; /* }}} */
 
 typedef enum subewmh_t /* {{{ */
@@ -470,26 +468,36 @@ typedef struct subhook_t /* {{{ */
 
 typedef struct subpanel_t /* {{{ */
 {
-  FLAGS             flags;                                        ///< Panel flags
-  Window            win;                                          ///< Panel win
-  int               x, width;                                     ///< Panel x, width
+  /* Common fields in subpanel_t and subsublet_t */
+  FLAGS              flags;                                       ///< Panel flags
+  Window             win;                                         ///< Panel win
+  int                x, width;                                    ///< Panel x, width
+  /* End of common fields */
 
-  struct subpanel_t *next;                                        ///< Panel next
+  Window             *wins;                                       ///< Panel extra windows
+  struct subscreen_t *screen;                                     ///< Panel screen
 } SubPanel; /* }}} */
 
 typedef struct subscreen_t /* {{{ */
 {
-  FLAGS        flags;                                             ///< Screen flags
+  FLAGS             flags;                                        ///< Screen flags
 
-  XRectangle geom, base;                                          ///< Screen geom, base
+  int               vid;                                          ///< Screen current view id
+  XRectangle        geom, base;                                   ///< Screen geom, base
+  Window            panel1, panel2;                               ///< Screen windows
+  unsigned long     top, bottom;                                  ///< Screen panel values
+  struct subarray_t *panels;                                      ///< Screen panels
 } SubScreen; /* }}} */
 
 typedef struct subsublet_t /* {{{ */
 {
+  /* Common fields in subpanel_t and subsublet_t */
   FLAGS             flags;                                        ///< Sublet flags
   Window            win;                                          ///< Sublet window
-  int               x, width, watch;                              ///< Sublet x, width, width
+  int               x, width;                                     ///< Sublet x, width
+  /* End of common fields */
 
+  int               watch;                                        ///< Sublet watch id
   char              *name;                                        ///< Sublet name
   unsigned long     instance, bg;                                 ///< Sublet ruby instance, bg color
   time_t            time, interval;                               ///< Sublet update/interval time
@@ -503,7 +511,6 @@ typedef struct subsubtle_t /* {{{ */
 
   int                  th, bw, pbw, step, snap, gap;              ///< Subtle properties
   unsigned long        gravity;                                   ///< Subtle gravity
-  int                  vid, sid;                                  ///< Subtle current view, screen
 
   Display              *dpy;                                      ///< Subtle Xorg display
 
@@ -516,7 +523,6 @@ typedef struct subsubtle_t /* {{{ */
   struct subarray_t    *grabs;                                    ///< Subtle grabs
   struct subarray_t    *gravities;                                ///< Subtle gravities
   struct subarray_t    *hooks;                                    ///< Subtle hooks
-  struct subarray_t    *panels;                                   ///< Subtle panels
   struct subarray_t    *screens;                                  ///< Subtle screens
   struct subarray_t    *sublets;                                  ///< Subtle sublets
   struct subarray_t    *tags;                                     ///< Subtle tags
@@ -529,8 +535,8 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    char             *string;                                    ///< Subtle sublet separator
-    int               width;
+    char               *string;                                   ///< Subtle sublet separator
+    int                width;
   } separator;
 
   struct
@@ -540,8 +546,8 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    Window             panel1, panel2, focus, support;
-    struct subpanel_t  views, title, tray;
+    Window             focus, support;
+    struct subpanel_t  tray;
   } windows;                                                      ///< Subtle windows
 
   struct
@@ -566,7 +572,7 @@ typedef struct subtag_t /* {{{ */
 {
   FLAGS             flags;                                        ///< Tag flags
   char              *name;                                        ///< Tag name
-  int               screen, type;                                 ///< Tag screen, type
+  int               type;                                         ///< Tag screen, type
   unsigned long     gravity;                                      ///< Tag gravity
   XRectangle        geometry;                                     ///< Tag geometry
   struct subarray_t *matcher;                                     ///< Tag matcher
@@ -586,9 +592,8 @@ typedef struct subview_t /* {{{ */
   FLAGS    flags;                                                 ///< View flags
   char     *name;                                                 ///< View name
   TAGS     tags;                                                  ///< View tags
-
-  Window   button;                                                ///< View button
-  int      width, layout;                                         ///< View width, layout
+  Window   win;                                                   ///< View window
+  int      width;                                                 ///< View width
 } SubView; /* }}} */
 
 extern SubSubtle *subtle;
@@ -619,11 +624,11 @@ void subClientUpdate(int vid);                                    ///< Update cl
 void subClientResize(SubClient *c);                               ///< Set client sizes
 void subClientCenter(SubClient *c);                               ///< Center client
 int subClientTag(SubClient *c, int tag);                          ///< Tag client
+int subClientVisible(SubClient *c);                               ///< Whether client is visible
 void subClientSetTags(SubClient *c, int *flags);                  ///< Update client tags
 void subClientSetGravity(SubClient *c, int gravity,
   int screen, int force);                                         ///< Set client gravity
 void subClientSetStrut(SubClient *c);                             ///< Set client strut
-void subClientSetName(SubClient *c);                              ///< Set client WM_NAME
 void subClientSetProtocols(SubClient *c);                         ///< Set client protocols
 void subClientSetSizeHints(SubClient *c, int *flags);             ///< Set client normal hints
 void subClientSetWMHints(SubClient *c, int *flags);               ///< Set client WM hints
@@ -699,8 +704,10 @@ void subHookKill(SubHook *h);                                     ///< Kill hook
 /* }}} */
 
 /* panel.c {{{ */
-void subPanelUpdate(void);                                        ///< Configure panels
-void subPanelRender(void);                                        ///< Render panels
+SubPanel *subPanelNew(int type);                                  ///< Create new panel
+void subPanelUpdate(SubPanel *p);                                 ///< Configure panels
+void subPanelRender(SubPanel *p);                                 ///< Render panels
+void subPanelKill(SubPanel *p);                                   ///< Kill panel
 /* }}} */
 
 /* ruby.c {{{ */
@@ -722,7 +729,11 @@ void subRubyFinish(void);                                         ///< Kill Ruby
 void subScreenInit(void);                                         ///< Init screens
 SubScreen *subScreenNew(int x, int y, unsigned int width,
   unsigned int height);                                           ///< Create screen
+SubScreen *subScreenFind(int x, int y, int *sid);                 ///< Find screen by coordinates
+SubScreen *subScreenCurrent(int *sid);                            ///< Get current screen
 void subScreenConfigure(void);                                    ///< Configure screens
+void subScreenUpdate(void);                                       ///< Update screens
+void subScreenRender(void);                                       ///< Render screens
 void subScreenResize(void);                                       ///< Update screen sizes
 void subScreenFit(SubScreen *s, XRectangle *r);                   ///< Fit rect size
 void subScreenJump(SubScreen *s);                                 ///< Jump to screen
@@ -732,7 +743,7 @@ void subScreenKill(SubScreen *s);                                 ///< Kill scre
 
 /* sublet.c {{{ */
 SubSublet *subSubletNew(void);                                    ///< Create sublet
-void subSubletUpdate(void);                                       ///< Update sublet windows
+void subSubletUpdate(SubSublet *s);                               ///< Update sublet
 void subSubletRender(SubSublet *s);                               ///< Render sublet
 int subSubletCompare(const void *a, const void *b);               ///< Compare two sublets
 void subSubletPublish(void);                                      ///< Publish sublets
@@ -749,6 +760,7 @@ void subSubtleFinish(void);                                       ///< Finish su
 /* tag.c {{{ */
 SubTag *subTagNew(char *name, int *duplicate);                    ///< Create tag
 void subTagRegex(SubTag *t, int type, char *regex);               ///< Add regex
+int subTagCompare(const void *a, const void *b);                  ///< Compare two tags
 int subTagMatch(SubTag *t, SubClient *c);                         ///< Check for match
 void subTagPublish(void);                                         ///< Publish tags
 void subTagKill(SubTag *t);                                       ///< Delete tag
@@ -768,12 +780,9 @@ void subTrayKill(SubTray *t);                                     ///< Delete tr
 
 /* view.c {{{ */
 SubView *subViewNew(char *name, char *tags);                      ///< Create view
-void subViewConfigure(SubView *v, int align);                     ///< Configure view
-void subViewUpdate(void);                                         ///< Update views
-void subViewDynamic(void);                                        ///< Update dynamic views
 void subViewHighlight(int tags);                                  ///< Highlight views
-void subViewRender(void);                                         ///< Render views
-void subViewJump(SubView *v, int focus);                          ///< Jump to view
+int subViewVisible(SubView *v);                                   ///< Whether view is visible
+void subViewJump(SubView *v);                                     ///< Jump to view
 void subViewPublish(void);                                        ///< Publish views
 void subViewKill(SubView *v);                                     ///< Kill view
 /* }}} */
