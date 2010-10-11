@@ -67,6 +67,7 @@ SubtleUsage(void)
          "  -d, --display=DISPLAY   Connect to DISPLAY\n" \
          "  -h, --help              Show this help and exit\n" \
          "  -k, --check             Check config syntax\n" \
+         "  -n, --no-randr          Disable the usage of randr\n" \
          "  -r, --replace           Replace current window manager\n" \
          "  -s, --sublets=DIR       Load sublets from DIR\n" \
          "  -v, --version           Show version info and exit\n" \
@@ -125,16 +126,16 @@ subSubtleTime(void)
 Window
 subSubtleFocus(int focus)
 {
-  int dummy;
-  Window win;
+  int dummy = 0;
+  Window win = None;
   SubClient *c = NULL;
+  SubScreen *s = NULL;
 
   if(!(subtle->flags & SUB_SUBTLE_RUN)) return ROOT;
 
   /* Get pointer window */
   XQueryPointer(subtle->dpy, ROOT, (Window *)&dummy, &win,
     &dummy, &dummy, &dummy, &dummy, (unsigned int *)&dummy);
-
 
   /* Find next client */
   if((c = CLIENT(subSubtleFind(win, CLIENTID))))
@@ -145,14 +146,17 @@ subSubtleFocus(int focus)
     }
   else if(focus)
     {
-      int i;
+      int i, sid = 0;
+
+      /* Get current screen */
+      s = subScreenCurrent(&sid);
 
       for(i = 0; i < subtle->clients->ndata; i++)
         {
           c = CLIENT(subtle->clients->data[i]);
 
-          /* Check screen and visibility */
-          if(c->screen == subtle->sid && VISIBLE(CURVIEW, c))
+          /* Check visibility on current screen */
+          if(c->screen == sid && subClientVisible(c))
             {
               subClientWarp(c);
               subClientFocus(c);
@@ -163,14 +167,19 @@ subSubtleFocus(int focus)
     }
 
   /* Fallback to root */
-  subtle->windows.focus       = ROOT;
-  subtle->windows.title.width = 0;
+  subtle->windows.focus = ROOT;
 
   XSetInputFocus(subtle->dpy, ROOT, RevertToNone, CurrentTime);
   subGrabSet(ROOT, !(subtle->flags & SUB_SUBTLE_ESCAPE));
 
-  subPanelUpdate();
-  subPanelRender();
+  subScreenUpdate();
+  subScreenRender();
+
+  /* EWMH: Current destop */
+  s = subScreenCurrent(NULL);
+
+  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP,
+    (long *)&s->vid, 1);
 
   return ROOT;
 } /* }}} */
@@ -198,8 +207,7 @@ subSubtleFinish(void)
       subArrayKill(subtle->grabs,     True);
       subArrayKill(subtle->gravities, True);
       subArrayKill(subtle->screens,   True);
-      subArrayKill(subtle->sublets,   True);
-      subArrayKill(subtle->panels,    False); ///< Before sublets
+      subArrayKill(subtle->sublets,   False);
       subArrayKill(subtle->tags,      True);
       subArrayKill(subtle->trays,     True);
       subArrayKill(subtle->views,     True);
@@ -226,34 +234,37 @@ main(int argc,
   struct sigaction sa;
   const struct option long_options[] =
   {
-    { "config",  required_argument, 0, 'c' },
-    { "display", required_argument, 0, 'd' },
-    { "help",    no_argument,       0, 'h' },
-    { "check",   no_argument,       0, 'k' },
-    { "replace", no_argument,       0, 'r' },
-    { "sublets", required_argument, 0, 's' },
-    { "version", no_argument,       0, 'v' },
+    { "config",   required_argument, 0, 'c' },
+    { "display",  required_argument, 0, 'd' },
+    { "help",     no_argument,       0, 'h' },
+    { "check",    no_argument,       0, 'k' },
+    { "no-randr", no_argument,       0, 'n' },
+    { "replace",  no_argument,       0, 'r' },
+    { "sublets",  required_argument, 0, 's' },
+    { "version",  no_argument,       0, 'v' },
 #ifdef DEBUG
-    { "debug",   no_argument,       0, 'D' },
+    { "debug",    no_argument,       0, 'D' },
 #endif /* DEBUG */
     { 0, 0, 0, 0}
   };
 
   /* Create subtle */
   subtle = (SubSubtle *)(subSharedMemoryAlloc(1, sizeof(SubSubtle)));
+  subtle->flags |= (SUB_SUBTLE_XRANDR|SUB_SUBTLE_XINERAMA);
 
   /* Parse arguments */
   while(-1 != (c = getopt_long(argc, argv, "c:d:hkrs:vD", long_options, NULL)))
     {
       switch(c)
         {
-          case 'c': subtle->paths.config = optarg;       break;
-          case 'd': display = optarg;                    break;
-          case 'h': SubtleUsage();                       return 0;
-          case 'k': subtle->flags |= SUB_SUBTLE_CHECK;   break;
-          case 'r': subtle->flags |= SUB_SUBTLE_REPLACE; break;
-          case 's': subtle->paths.sublets = optarg;      break;
-          case 'v': SubtleVersion();                     return 0;
+          case 'c': subtle->paths.config = optarg;        break;
+          case 'd': display = optarg;                     break;
+          case 'h': SubtleUsage();                        return 0;
+          case 'k': subtle->flags |= SUB_SUBTLE_CHECK;    break;
+          case 'n': subtle->flags &= ~SUB_SUBTLE_XRANDR;  break;
+          case 'r': subtle->flags |= SUB_SUBTLE_REPLACE;  break;
+          case 's': subtle->paths.sublets = optarg;       break;
+          case 'v': SubtleVersion();                      return 0;
 #ifdef DEBUG
           case 'D':
             subtle->flags |= SUB_SUBTLE_DEBUG;
@@ -301,7 +312,6 @@ main(int argc,
   subtle->grabs     = subArrayNew();
   subtle->gravities = subArrayNew();
   subtle->hooks     = subArrayNew();
-  subtle->panels    = subArrayNew();
   subtle->screens   = subArrayNew();
   subtle->sublets   = subArrayNew();
   subtle->tags      = subArrayNew();
