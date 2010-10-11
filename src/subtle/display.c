@@ -164,48 +164,28 @@ subDisplayInit(const char *display)
   sattrs.event_mask = ROOTMASK;
   XChangeWindowAttributes(subtle->dpy, ROOT, CWCursor|CWEventMask, &sattrs);
 
-  /* Create windows */
-  sattrs.event_mask        = ButtonPressMask|ExposureMask;
-  sattrs.override_redirect = True;
-  sattrs.background_pixel  = subtle->colors.bg_panel;
-  mask                     = CWEventMask|CWOverrideRedirect|CWBackPixel;
-
-  subtle->windows.panel1     = XCreateWindow(subtle->dpy, ROOT, 0, 1, 1, 1, 0,
-    CopyFromParent, InputOutput, CopyFromParent, mask, &sattrs);
-  subtle->windows.panel2     = XCreateWindow(subtle->dpy, ROOT, 0, 0, 1, 1, 0,
-    CopyFromParent, InputOutput, CopyFromParent, mask, &sattrs);
-  subtle->windows.views.win   = XCreateSimpleWindow(subtle->dpy,
-    subtle->windows.panel1, 0, 0, 1, 1, 0, 0, sattrs.background_pixel);
-  subtle->windows.title.win   = XCreateSimpleWindow(subtle->dpy,
-    subtle->windows.panel1, 0, 0, 1, 1, 0, 0, sattrs.background_pixel);
-  subtle->windows.tray.win    = XCreateSimpleWindow(subtle->dpy,
-    subtle->windows.panel1, 0, 0, 1, 1, 0, 0, subtle->colors.bg_focus);
+  /* Create tray window */
+  subtle->windows.tray.win = XCreateSimpleWindow(subtle->dpy,
+    ROOT, 0, 0, 1, 1, 0, 0, subtle->colors.bg_focus);
 
   /* Set override redirect */
-  mask = CWOverrideRedirect;
-  XChangeWindowAttributes(subtle->dpy, subtle->windows.panel1, mask, &sattrs);
-  XChangeWindowAttributes(subtle->dpy, subtle->windows.panel2, mask, &sattrs);
-  XChangeWindowAttributes(subtle->dpy, subtle->windows.views.win,
-    mask, &sattrs);
-  XChangeWindowAttributes(subtle->dpy, subtle->windows.title.win,
-    mask, &sattrs);
+  sattrs.override_redirect = True;
   XChangeWindowAttributes(subtle->dpy, subtle->windows.tray.win,
-    mask, &sattrs);
+    CWOverrideRedirect, &sattrs);
 
   /* Select input */
-  XSelectInput(subtle->dpy, subtle->windows.views.win, ButtonPressMask);
   XSelectInput(subtle->dpy, subtle->windows.tray.win,
     KeyPressMask|ButtonPressMask);
 
   /* Check extensions */
 #ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
-  if(XineramaQueryExtension(subtle->dpy, &event, &junk))
-    subtle->flags |= SUB_SUBTLE_XINERAMA;
+  if(!XineramaQueryExtension(subtle->dpy, &event, &junk))
+    subtle->flags &= ~SUB_SUBTLE_XINERAMA;
 #endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
 
 #ifdef HAVE_X11_EXTENSIONS_XRANDR_H
-  if(XRRQueryExtension(subtle->dpy, &event, &junk))
-    subtle->flags |= SUB_SUBTLE_XRANDR;
+  if(!XRRQueryExtension(subtle->dpy, &event, &junk))
+    subtle->flags &= ~SUB_SUBTLE_XRANDR;
 #endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
 
   XSync(subtle->dpy, False);
@@ -228,56 +208,25 @@ subDisplayConfigure(void)
   /* Update GCs */
   gvals.foreground = subtle->colors.fg_panel;
   gvals.line_width = subtle->bw;
-  XChangeGC(subtle->dpy, subtle->gcs.stipple, GCForeground|GCLineWidth, &gvals);
+  XChangeGC(subtle->dpy, subtle->gcs.stipple,
+    GCForeground|GCLineWidth, &gvals);
 
   gvals.foreground = subtle->colors.fg_panel;
   XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
 
   /* Update windows */
-  XSetWindowBackground(subtle->dpy,  subtle->windows.panel1,
-    subtle->colors.bg_panel);
-  XSetWindowBackground(subtle->dpy,  subtle->windows.panel2,
-    subtle->colors.bg_panel);
-  XSetWindowBackground(subtle->dpy,  subtle->windows.title.win,
-    subtle->colors.bg_focus);
-  XSetWindowBackground(subtle->dpy,  subtle->windows.views.win,
-    subtle->colors.bg_views);
-  XSetWindowBackground(subtle->dpy,  subtle->windows.tray.win,
+  XSetWindowBackground(subtle->dpy, subtle->windows.tray.win,
     subtle->colors.bg_panel);
 
-  if(subtle->flags & SUB_SUBTLE_BACKGROUND) ///< Set background if desired
+  if(subtle->flags & SUB_SUBTLE_BACKGROUND) ///< Set background if set
     XSetWindowBackground(subtle->dpy, ROOT, subtle->colors.bg);
 
-  XClearWindow(subtle->dpy, subtle->windows.panel1);
-  XClearWindow(subtle->dpy, subtle->windows.panel2);
-  XClearWindow(subtle->dpy, subtle->windows.title.win);
-  XClearWindow(subtle->dpy, subtle->windows.views.win);
   XClearWindow(subtle->dpy, subtle->windows.tray.win);
   XClearWindow(subtle->dpy, ROOT);
 
-  /* Panels */
-  if(subtle->flags & SUB_SUBTLE_PANEL1)
-    {
-      XMoveResizeWindow(subtle->dpy, subtle->windows.panel1, 0, 0,
-        DEFSCREEN->base.width, subtle->th);
-      XMapRaised(subtle->dpy, subtle->windows.panel1);
-    }
-  else XUnmapWindow(subtle->dpy, subtle->windows.panel1);
-
-  if(subtle->flags & SUB_SUBTLE_PANEL2)
-    {
-      XMoveResizeWindow(subtle->dpy, subtle->windows.panel2, 0,
-        DEFSCREEN->base.height - subtle->th, DEFSCREEN->base.width,
-        subtle->th);
-      XMapRaised(subtle->dpy, subtle->windows.panel2);
-    }
-  else XUnmapWindow(subtle->dpy, subtle->windows.panel2);
-
   /* Update struts and panels */
-  subScreenConfigure();
-  subPanelUpdate();
-  subViewUpdate();
-  subSubletUpdate();
+  subScreenResize();
+  subScreenUpdate();
 
   XSync(subtle->dpy, False); ///< Sync all changes
 } /* }}} */
@@ -324,14 +273,15 @@ subDisplayScan(void)
   XFree(wins);
 
   subClientPublish();
-  subScreenConfigure();
+  subScreenUpdate();
   subTrayUpdate();
 
   /* Hook: Start */
   subHookCall(SUB_HOOK_START, NULL);
 
   /* Activate first view */
-  subViewJump(VIEW(subtle->views->data[0]), False);
+  subScreenConfigure();
+  subSubtleFocus(True);
   subtle->windows.focus = ROOT;
   subGrabSet(ROOT, !(subtle->flags & SUB_SUBTLE_ESCAPE));
 } /* }}} */
@@ -399,21 +349,7 @@ subDisplayFinish(void)
       /* Free font */
       if(subtle->font) subSharedFontKill(subtle->dpy, subtle->font);
 
-      /* Destroy windows */
-      if(subtle->windows.panel1)
-        {
-          XDestroySubwindows(subtle->dpy, subtle->windows.panel1);
-          XDestroyWindow(subtle->dpy, subtle->windows.panel1);
-        }
-
-      if(subtle->windows.panel2)
-        {
-          XDestroySubwindows(subtle->dpy, subtle->windows.panel2);
-          XDestroyWindow(subtle->dpy, subtle->windows.panel2);
-        }
-
-      if(subtle->windows.panel1)
-        XDestroyWindow(subtle->dpy, subtle->windows.support);
+      XDestroyWindow(subtle->dpy, subtle->windows.support);
 
       XInstallColormap(subtle->dpy, DefaultColormap(subtle->dpy, SCRN));
       XSetInputFocus(subtle->dpy, ROOT, RevertToPointerRoot, CurrentTime);
