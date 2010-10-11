@@ -21,6 +21,7 @@ SubSublet *
 subSubletNew(void)
 {
   SubSublet *s = NULL;
+  XSetWindowAttributes sattrs;
 
   /* Create new sublet */
   s = SUBLET(subSharedMemoryAlloc(1, sizeof(SubSublet)));
@@ -30,9 +31,11 @@ subSubletNew(void)
   s->bg    = subtle->colors.bg_sublets;
 
   /* Create window */
-  s->win = XCreateSimpleWindow(subtle->dpy, subtle->windows.panel1, 0, 0, 1,
+  s->win = XCreateSimpleWindow(subtle->dpy, ROOT, 0, 0, 1,
     subtle->th, 0, 0, subtle->colors.bg_sublets);
 
+  sattrs.override_redirect = True;
+  XChangeWindowAttributes(subtle->dpy, s->win, CWOverrideRedirect, &sattrs);
   XSaveContext(subtle->dpy, s->win, SUBLETID, (void *)s);
 
   subSharedLogDebug("new=sublet\n");
@@ -41,28 +44,21 @@ subSubletNew(void)
 } /* }}} */
 
  /** subSubletUpdate {{{
-  * @brief Update sublet panel
+  * @brief Update sublet
+  * @param[in]  s  A #SubSublet
   **/
 
 void
-subSubletUpdate(void)
+subSubletUpdate(SubSublet *s)
 {
-  if(0 < subtle->sublets->ndata)
-    {
-      int i;
+  assert(s);
 
-      for(i = 0; i < subtle->sublets->ndata; i++)
-        {
-          SubSublet *s = SUBLET(subtle->sublets->data[i]);
+  XResizeWindow(subtle->dpy, s->win, s->width - 2 * subtle->pbw,
+    subtle->th - 2 * subtle->pbw);
 
-          XResizeWindow(subtle->dpy, s->win, s->width - 2 * subtle->pbw,
-            subtle->th - 2 * subtle->pbw);
-
-          /* Set borders */
-          XSetWindowBorder(subtle->dpy, s->win, subtle->colors.bo_panel);
-          XSetWindowBorderWidth(subtle->dpy, s->win, subtle->pbw);
-        }
-    }
+  /* Set borders */
+  XSetWindowBorder(subtle->dpy, s->win, subtle->colors.bo_panel);
+  XSetWindowBorderWidth(subtle->dpy, s->win, subtle->pbw);
 } /* }}} */
 
  /** subSubletRender {{{
@@ -75,7 +71,7 @@ subSubletRender(SubSublet *s)
 {
   assert(s);
 
-  /* Set color */
+  /* Set window background */
   XSetWindowBackground(subtle->dpy, s->win, s->bg);
   XClearWindow(subtle->dpy, s->win);
 
@@ -83,8 +79,6 @@ subSubletRender(SubSublet *s)
   subSharedTextRender(subtle->dpy, subtle->gcs.font, subtle->font, s->win, 3,
     subtle->font->y, subtle->colors.fg_sublets, subtle->colors.bg_sublets,
     s->text);
-
-  XSync(subtle->dpy, False); ///< Sync before going on
 } /* }}} */
 
  /** subSubletCompare {{{
@@ -124,24 +118,25 @@ subSubletPublish(void)
   Window *wins = NULL;
 
   /* Alloc space */
-  names = (char **)subSharedMemoryAlloc(subtle->sublets->ndata, sizeof(char *));
-  wins  = (Window *)subSharedMemoryAlloc(subtle->sublets->ndata, sizeof(Window));
+  names = (char **)subSharedMemoryAlloc(subtle->sublets->ndata,
+    sizeof(char *));
+  wins  = (Window *)subSharedMemoryAlloc(subtle->sublets->ndata,
+    sizeof(Window));
 
-  /* Find sublets in panel list */
-  for(i = 0; i < subtle->panels->ndata; i++)
+  /* Find sublets */
+  for(i = 0; i < subtle->sublets->ndata; i++)
     {
-      SubSublet *s = SUBLET(subtle->panels->data[i]);
+      SubSublet *s = SUBLET(subtle->sublets->data[i]);
 
-      if(s->flags & SUB_TYPE_SUBLET) ///< Collect names
-        {
-          names[idx]  = s->name;
-          wins[idx++] = s->win;
-        }
+      names[idx]  = s->name;
+      wins[idx++] = s->win;
     }
 
   /* EWMH: Sublet list and windows */
-  subEwmhSetStrings(ROOT, SUB_EWMH_SUBTLE_SUBLET_LIST, names, subtle->sublets->ndata);
-  subEwmhSetWindows(ROOT, SUB_EWMH_SUBTLE_SUBLET_WINDOWS, wins, subtle->sublets->ndata);
+  subEwmhSetStrings(ROOT, SUB_EWMH_SUBTLE_SUBLET_LIST,
+    names, subtle->sublets->ndata);
+  subEwmhSetWindows(ROOT, SUB_EWMH_SUBTLE_SUBLET_WINDOWS,
+    wins, subtle->sublets->ndata);
 
   subSharedLogDebug("publish=sublet, n=%d\n", subtle->sublets->ndata);
 
@@ -162,14 +157,14 @@ subSubletKill(SubSublet *s)
   assert(s);
 
   /* Tidy up */
-  subArrayRemove(subtle->panels, (void *)s);
+  // FIXME subArrayRemove(subtle->panels, (void *)s);
   subHookRemove(s->instance, (void *)s);
   subRubyRelease(s->instance);
 
   /* Remove socket watch */
   if(s->flags & SUB_SUBLET_SOCKET)
     {
-      XDeleteContext(subtle->dpy, subtle->windows.panel1, s->watch);
+      XDeleteContext(subtle->dpy, subtle->windows.support, s->watch);
       subEventWatchDel(s->watch);
     }
 
@@ -181,7 +176,7 @@ subSubletKill(SubSublet *s)
   /* Remove inotify watch */
   if(s->flags & SUB_SUBLET_INOTIFY)
     {
-      XDeleteContext(subtle->dpy, subtle->windows.panel1, s->watch);
+      XDeleteContext(subtle->dpy, subtle->windows.support, s->watch);
       inotify_rm_watch(subtle->notify, s->interval);
     }
 #endif /* HAVE_SYS_INOTIFY_H */
