@@ -97,6 +97,32 @@ subTagNew(char *name,
   return t;
 } /* }}} */
 
+ /** subTagCompare {{{
+  * @brief Compare tags based on inversion
+  * @param[in]  a  A #SubTag
+  * @param[in]  b  A #SubTag
+  * @return Returns the result of the comparison of both tags
+  * @retval  -1  a is smaller
+  * @retval  0   a and b are equal
+  * @retval  1   a is greater
+  **/
+
+int
+subTagCompare(const void *a,
+  const void *b)
+{
+  int ret = 0;
+  SubTag *t1 = *(SubTag **)a, *t2 = *(SubTag **)b;
+
+  assert(a && b);
+
+  /* Check flags */
+  if(t1->flags & SUB_TAG_MATCH_INVERT) ret = -1;
+  if(t2->flags & SUB_TAG_MATCH_INVERT) ret = 1;
+
+  return ret;
+} /* }}} */
+
  /** subTagRegex {{{
   * @brief Add regex to tag
   * @param[in]  t      A #SubTag
@@ -115,17 +141,18 @@ subTagRegex(SubTag *t,
 
   /* Create new matcher */
   m = (TagMatcher *)subSharedMemoryAlloc(1, sizeof(TagMatcher));
-  m->flags |= (SUB_TYPE_UNKNOWN|type);
+  m->flags = type;
 
   /* Prevent emtpy regex */
   if(regex && 0 != strncmp("", regex, 1))
     m->regex  = subSharedRegexNew(regex);
 
-  /* Create on demand */
+  /* Create on demand to safe memory */
   if(NULL == t->matcher) t->matcher = subArrayNew();
 
   subArrayPush(t->matcher, (void *)m);
-}
+} /* }}} */
+
  /** subTagMatch {{{
   * @brief Check whether client matches tag
   * @param[in]  t  A #SubTag
@@ -142,7 +169,7 @@ subTagMatch(SubTag *t,
 
   assert(t && c);
 
-  /* Check if client matches */
+  /* Check if a matcher and client fit together */
   for(i = 0; t->matcher && i < t->matcher->ndata; i++)
     {
       TagMatcher *m = (TagMatcher *)t->matcher->data[i];
@@ -156,9 +183,8 @@ subTagMatch(SubTag *t,
             subSharedRegexMatch(m->regex, c->klass)) ||
           (m->flags & SUB_TAG_MATCH_ROLE && c->role &&
             subSharedRegexMatch(m->regex, c->role)) ||
-          (m->flags & SUB_TAG_MATCH_TYPE &&
-            c->flags & (m->flags & TYPES_ALL)))
-        return True;
+          (m->flags & SUB_TAG_MATCH_TYPE && c->flags & (m->flags & TYPES_ALL)))
+        return m->flags & SUB_TAG_MATCH_INVERT ? False : True;
     }
 
   return False;
