@@ -35,9 +35,6 @@ set :urgent, false
 # Enable respecting of size hints globally
 set :resize, false
 
-# Honor randr (doesn't work with nvidia)
-set :randr, true
-
 # Screen size padding (left, right, top, bottom)
 set :padding, [ 0, 0, 0, 0 ]
 
@@ -48,24 +45,30 @@ set :font, "-*-*-medium-*-*-*-14-*-*-*-*-*-*-*"
 # Space around windows
 set :gap, 0
 
+# Separator between sublets
+set :separator, "|"
+
+# Outline border size in pixel of panel items
+set :outline, 0
+
 #
-# == Panel
+# == Screen
 #
-# The next configuration values determine the layout and placement of the panel.
-# Generally, the panel in subtle consists of two independent bars, one on the
-# top and one at the bottom of the screen. In Xinerama setups there will only
-# be panels visible on the first screen.
+# Generally subtle comes with two panels per screen, one on the top and one at
+# the bottom. Each panel can be configured with different panel items and sublets
+# screen wise. Per default only the top panel on the first screen is used, it's
+# up to the user to enable the bottom panel or disable either one or both.
 #
-# The top and bottom bar can contain different items and will be hidden when
-# empty.
+# Empty panels are hidden.
 #
 # Following items are available:
 #
 # [*:views*]     List of views with buttons
 # [*:title*]     Title of the current active window
-# [*:tray*]      Systray icons
+# [*:tray*]      Systray icons (Can be used once)
 # [*:sublets*]   Catch-all for installed sublets
-# [*:spacer*]    Variable spacer
+# [*:sublet*]    Name of a sublet for direct placement
+# [*:spacer*]    Variable spacer (free width / count of spacers)
 # [*:separator*] Insert separator
 #
 # === Link
@@ -73,20 +76,16 @@ set :gap, 0
 # http://subforge.org/wiki/subtle/Panel
 #
 
-# Content of the top panel
-set :top, [ :views, :title, :spacer, :tray, :sublets ]
+screen 1 do
+  # Add stipple to panels
+  stipple true
 
-# Content of the bottom panel
-set :bottom, [ ]
+  # Content of the top panel
+  top     [ :views, :title, :spacer, :tray, :sublets ]
 
-# Add stipple to panels
-set :stipple, false
-
-# Separator between sublets
-set :separator, "|"
-
-# Outline border size in pixel of panel items
-set :outline, 0
+  # Content of the bottom panel
+  bottom  [ ]
+end
 
 #
 # == Colors
@@ -253,8 +252,8 @@ gravity :gimp_dock,      [ 100,   0,  10, 100 ]
 #
 #      *Example*: grab "W-Return", "urxvt"
 #
-#   2. *Escape way*: Define an escape grab that needs to be pressed before *any* other
-#      grab can be used like in screen/tmux.
+#   2. *Escape way*: Define an escape grab that needs to be pressed before
+#      *any* other grab can be used like in screen/tmux.
 #
 #      *Example*: grab "C-y", :SubtleEscape
 #                 grab "Return", "urxvt"
@@ -299,11 +298,17 @@ gravity :gimp_dock,      [ 100,   0,  10, 100 ]
 # Escape grab
 #  grab "C-y", :SubtleEscape
 
-# Switch to view1, view2, ...
-grab "W-1", :ViewJump1
-grab "W-2", :ViewJump2
-grab "W-3", :ViewJump3
-grab "W-4", :ViewJump4
+# Jump to view1, view2, ...
+grab "W-S-1", :ViewJump1
+grab "W-S-2", :ViewJump2
+grab "W-S-3", :ViewJump3
+grab "W-S-4", :ViewJump4
+
+# Switch current view
+grab "W-1", :ViewSwitch1
+grab "W-2", :ViewSwitch2
+grab "W-3", :ViewSwitch3
+grab "W-4", :ViewSwitch4
 
 # Select next and prev view */
 grab "KP_Add",      :ViewNext
@@ -314,12 +319,6 @@ grab "W-A-1", :ScreenJump1
 grab "W-A-2", :ScreenJump2
 grab "W-A-3", :ScreenJump3
 grab "W-A-4", :ScreenJump4
-
-# Move window to screen1, screen2, ...
-grab "A-S-1", :WindowScreen1
-grab "A-S-2", :WindowScreen2
-grab "A-S-3", :WindowScreen3
-grab "A-S-4", :WindowScreen4
 
 # Force reload of sublets
 grab "W-C-s", :SubletsReload
@@ -413,22 +412,22 @@ end
 # also have properties than can define and control some aspects of a window
 # like the default gravity or the default screen per view.
 #
-# [*:float*]   This property either sets the tagged client floating or prevents
+# [*float*]   This property either sets the tagged client floating or prevents
 #              it from being floating depending on the value.
 #
 #              Example: float true
 #
-# [*:full*]    This property either sets the tagged client to fullscreen or
+# [*full*]    This property either sets the tagged client to fullscreen or
 #              prevents it from being set to fullscreen depending on the value.
 #
 #              Example: full true
 #
-# [*:gravity*] This property sets a certain to gravity to the tagged client,
+# [*gravity*] This property sets a certain to gravity to the tagged client,
 #              but only on views that have this tag too.
 #
 #              Example: gravity :center
 #
-# [*:match*]   This property adds matching patterns to a tag, a tag can have
+# [*match*]   This property adds matching patterns to a tag, a tag can have
 #              more than one. Matching works either via plaintext, regex
 #              (see man regex(7)) or window id. Per default tags will only
 #              match the WM_NAME and the WM_CLASS portion of a client, this
@@ -443,30 +442,30 @@ end
 #                       match [:role, :class] => "test"
 #                       match "[xa]+term"
 #
-# [*:resize*]  This property either enables or disables honoring of client
+# [*exclude*] This property works exactly the same way as *match*, but it
+#              excludes clients that match from this tag. That can be helpful
+#              with catch-all tags e.g. for console apps.
+#
+#              Example: exclude :instance => "irssi"
+#
+# [*resize*]  This property either enables or disables honoring of client
 #              resize hints and is independent of the global option.
 #
 #              Example: resize true
 #
-# [*:screen*]  This property sets a certain to screen to the tagged client, but
-#              only on views that have this tag too. Please keep in mind that
-#              screen count starts with 0 for the first screen.
-#
-#              Example: screen 0
-#
-# [*:size*]    This property sets a certain to size as well as floating to the
+# [*size*]    This property sets a certain to size as well as floating to the
 #              tagged client, but only on views that have this tag too. It
 #              expects an array with x, y, width and height values.
 #
 #              Example: size [100, 100, 50, 50]
 #
-# [*:stick*]   This property either sets the tagged client to stick or prevents
+# [*stick*]   This property either sets the tagged client to stick or prevents
 #              it from being set to stick depending on the value. Stick clients
 #              are visible on every view.
 #
 #              Example: stick true
 #
-# [*:type*]    This property sets the [[Tagging|tagged]] client to be treated
+# [*type*]    This property sets the [[Tagging|tagged]] client to be treated
 #              as a specific window type though as the window sets the type
 #              itself. Following types are possible:
 #
@@ -478,7 +477,7 @@ end
 #
 #              Example: type :desktop
 #
-# [*:urgent*]  This property either sets the tagged client to be urgent or
+# [*urgent*]  This property either sets the tagged client to be urgent or
 #              prevents it from being urgent depending on the value. Urgent
 #              clients will get keyboard and mouse focus automatically.
 #
@@ -549,25 +548,10 @@ end
 # which is the view with the default tag or the first defined view when this
 # tag isn't set.
 #
-# === Properties
-#
-# The same notation as in tags is possible for views, but currently only one
-# additional property to regex is available.
-#
-# [*:regex*]   This property sets the matching pattern for a view.
-# [*:dynamic*] This property enables dynamic mode of the view, that means it
-#              will only be visible when there is a client on it.
-#
 
-# Simple views
 view "terms", "terms"
 view "www",   "browser|default|gimp_.*"
 view "dev",   "editor"
-
-# Dynamic views
-#  view "temp" do
-#    dynamic true
-#  end
 
 #
 # == Sublets
