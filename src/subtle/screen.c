@@ -257,7 +257,7 @@ subScreenConfigure(void)
         }
     }
 
-  subSharedLogDebug("Configure: type=view, vid=%d, name=%s\n", vid, v->name);
+  subSharedLogDebug("Configure: type=screen\n");
 
   /* Hook: Configure */
   subHookCall(SUB_HOOK_VIEW_CONFIGURE, (void *)v);
@@ -480,6 +480,8 @@ subScreenJump(SubScreen *s)
     s->geom.x + s->geom.width / 2, s->geom.y + s->geom.height / 2);
 
   subSubtleFocus(True);
+
+  subSharedLogDebug("Jump: type=screen\n");
 } /* }}} */
 
  /** SubScreenFit {{{

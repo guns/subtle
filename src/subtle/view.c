@@ -96,7 +96,7 @@ subViewVisible(SubView *v)
 {
   int i, ret = False;
 
-  assert(c);
+  assert(v);
 
   /* Check screens */
   for(i = 0; i < subtle->screens->ndata; i++)
@@ -149,6 +149,8 @@ subViewJump(SubView *v)
       subScreenRender();
       subSubtleFocus(True);
     }
+
+  subSharedLogDebug("Jump: type=view\n");
 
   /* Hook: Jump, Tile */
   subHookCall(SUB_HOOK_VIEW_JUMP, (void *)v);
