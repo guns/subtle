@@ -224,28 +224,20 @@ EventMapRequest(XMapRequestEvent *ev)
           subArrayPush(subtle->clients, (void *)c);
           subClientPublish();
 
-          printf("DEBUG %s:%d\n", __FILE__, __LINE__);
-
           if(subClientVisible(c)) ///< Check visibility first
             {
               subScreenConfigure();
               subScreenRender();
 
-              printf("DEBUG %s:%d\n", __FILE__, __LINE__);
-
               /* Hook: Tile */
               subHookCall(SUB_HOOK_TILE, NULL);
             }
-
-          printf("DEBUG %s:%d\n", __FILE__, __LINE__);
 
           if(c->flags & SUB_CLIENT_TYPE_DESKTOP) ///< Reorder stacking
             subArraySort(subtle->clients, subClientCompare);
 
           /* Hook: Create */
           subHookCall(SUB_HOOK_CLIENT_CREATE, (void *)c);
-
-          printf("DEBUG %s:%d\n", __FILE__, __LINE__);
         }
     }
 } /* }}} */
