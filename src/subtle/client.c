@@ -683,6 +683,12 @@ subClientSetGravity(SubClient *c,
               /* Update screen offsets */
               c->geom.x = c->geom.x - s1->geom.x + s2->geom.x;
               c->geom.y = c->geom.y - s1->geom.y + s2->geom.y;
+
+              c->screen = screen;
+
+              /* EWMH: Screen */
+              subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_SCREEN,
+                (long *)&c->screen, 1);
             }
         }
       /* Exclude desktop type windows */
