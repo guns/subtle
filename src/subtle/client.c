@@ -671,7 +671,7 @@ subClientSetGravity(SubClient *c,
 
       if(c->flags & SUB_CLIENT_MODE_FLOAT)
         {
-          if(-1 != screen)
+          if(-1 != screen && c->screen != screen)
             {
               SubScreen *s1 = NULL, *s2 = NULL;
 
