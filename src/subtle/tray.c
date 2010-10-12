@@ -32,7 +32,7 @@ subTrayNew(Window win)
   t->width = subtle->th; ///< Default width
 
   /* Update tray properties */
-  subSharedPropertyName(subtle->dpy, win, &t->name, NULL);
+  subSharedPropertyName(subtle->dpy, win, &t->name, PKG_NAME);
   subEwmhSetWMState(t->win, WithdrawnState);
   XSelectInput(subtle->dpy, t->win, EVENTMASK);
   XReparentWindow(subtle->dpy, t->win, subtle->windows.tray.win, 0, 0);
