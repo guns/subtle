@@ -1027,7 +1027,9 @@ EventGrab(XEvent *ev)
                   {
                     SubClient *iter = CLIENT(subtle->clients->data[i]);
 
-                    if(c != iter && subClientVisible(iter))
+                    /* Check if there are common tags */
+                    if(c != iter && c->gravity != iter->gravity &&
+                        c->tags & iter->tags)
                       {
                         /* Substract stack position to get window on top */
                         if(match > (score = subSharedMatch(g->data.num,
@@ -1043,7 +1045,9 @@ EventGrab(XEvent *ev)
                   {
                     subClientWarp(found);
                     subClientFocus(found);
-                    subSharedLogDebug("Match: win=%#lx, score=%d\n", found->win, match);
+
+                    subSharedLogDebug("Match: win=%#lx, score=%d\n",
+                      found->win, match);
                   }
               }
             else ///< Select the first if no client has focus

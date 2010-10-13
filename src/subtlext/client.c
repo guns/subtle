@@ -49,17 +49,17 @@ VALUE
 ClientSelect(VALUE self,
   int type)
 {
-  int i, id = 0, size = 0, match = (1L << 30), score = 0;
-  Window *clients = NULL, *views = NULL, found = None;
-  VALUE win = Qnil, client = Qnil;
-  unsigned long *cv = NULL, *flags1 = NULL;
+  int i, size = 0, match = (1L << 30), score = 0, *gravity1 = NULL;
+  Window win = None, *clients = NULL, *views = NULL, found = None;
+  VALUE client = Qnil;
+  unsigned long *cv = NULL, *tags1 = NULL;
   XRectangle geometry1 = { 0 }, geometry2 = { 0 };
 
   rb_check_frozen(self);
   subSubtlextConnect(); ///< Implicit open connection
 
   /* Fetch data */
-  win     = rb_iv_get(self, "@win");
+  win     = NUM2LONG(rb_iv_get(self, "@win"));
   clients = subSubtlextList("_NET_CLIENT_LIST", &size);
   views   = (Window *)subSharedPropertyGet(display,
     DefaultRootWindow(display), XA_WINDOW,
@@ -70,37 +70,52 @@ ClientSelect(VALUE self,
 
   if(clients && cv)
     {
-      flags1 = (unsigned long *)subSharedPropertyGet(display,
+      tags1 = (unsigned long *)subSharedPropertyGet(display,
         views[*cv], XA_CARDINAL,
         XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
+      gravity1 = (int *)subSharedPropertyGet(display, win,
+        XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_GRAVITY", False),
+        NULL);
+
       subSharedPropertyGeometry(display, win, &geometry1);
 
       /* Iterate once to find a client score-based */
       for(i = 0; i < size; i++)
         {
-          unsigned long *flags2 = (unsigned long *)subSharedPropertyGet(display,
+          unsigned long *tags2 = (unsigned long *)subSharedPropertyGet(display,
             clients[i], XA_CARDINAL,
             XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
+          int *gravity2 = (int *)subSharedPropertyGet(display, clients[i],
+            XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_GRAVITY",
+              False), NULL);
 
-          if(win != clients[i] && *flags1 & *flags2) ///< Check if there are common tags
+          /* Check if there are common tags */
+          if(win != clients[i] && *gravity1 != *gravity2 &&
+              *tags1 & *tags2)
             {
-              subSharedPropertyGeometry(display, win, &geometry2);
+              subSharedPropertyGeometry(display, clients[i], &geometry2);
 
               if(match > (score = subSharedMatch(type, &geometry1, &geometry2)))
                 {
                   match = score;
                   found = clients[i];
-                  id    = i;
                 }
 
             }
 
-          free(flags2);
+          free(tags2);
+          free(gravity2);
         }
 
-      if(found) client = subClientInstantiate(found);
+      if(found)
+        {
+          client = subClientInstantiate(found);
 
-      free(flags1);
+          subClientUpdate(client);
+        }
+
+      free(tags1);
+      free(gravity1);
       free(clients);
       free(cv);
     }
