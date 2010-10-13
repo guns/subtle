@@ -245,18 +245,17 @@
 #define SUB_GRAB_VIEW_SWITCH          (1L << 16)                  ///< Jump to view
 #define SUB_GRAB_VIEW_SELECT          (1L << 17)                  ///< Jump to view
 #define SUB_GRAB_SCREEN_JUMP          (1L << 18)                  ///< Jump to screen
-#define SUB_GRAB_SUBLETS_RELOAD       (1L << 19)                  ///< Reload subtle
-#define SUB_GRAB_SUBTLE_RELOAD        (1L << 20)                  ///< Reload subtle
-#define SUB_GRAB_SUBTLE_RESTART       (1L << 21)                  ///< Restart subtle
-#define SUB_GRAB_SUBTLE_QUIT          (1L << 22)                  ///< Quit subtle
-#define SUB_GRAB_SUBTLE_ESCAPE        (1L << 23)                  ///< Escape key
-#define SUB_GRAB_WINDOW_MOVE          (1L << 24)                  ///< Resize window
-#define SUB_GRAB_WINDOW_RESIZE        (1L << 25)                  ///< Move window
-#define SUB_GRAB_WINDOW_TOGGLE        (1L << 26)                  ///< Toggle window
-#define SUB_GRAB_WINDOW_STACK         (1L << 27)                  ///< Stack window
-#define SUB_GRAB_WINDOW_SELECT        (1L << 28)                  ///< Select window
-#define SUB_GRAB_WINDOW_GRAVITY       (1L << 29)                  ///< Set gravity of window
-#define SUB_GRAB_WINDOW_KILL          (1L << 30)                  ///< Kill window
+#define SUB_GRAB_SUBTLE_RELOAD        (1L << 19)                  ///< Reload subtle
+#define SUB_GRAB_SUBTLE_RESTART       (1L << 20)                  ///< Restart subtle
+#define SUB_GRAB_SUBTLE_QUIT          (1L << 21)                  ///< Quit subtle
+#define SUB_GRAB_SUBTLE_ESCAPE        (1L << 22)                  ///< Escape key
+#define SUB_GRAB_WINDOW_MOVE          (1L << 23)                  ///< Resize window
+#define SUB_GRAB_WINDOW_RESIZE        (1L << 24)                  ///< Move window
+#define SUB_GRAB_WINDOW_TOGGLE        (1L << 25)                  ///< Toggle window
+#define SUB_GRAB_WINDOW_STACK         (1L << 26)                  ///< Stack window
+#define SUB_GRAB_WINDOW_SELECT        (1L << 27)                  ///< Select window
+#define SUB_GRAB_WINDOW_GRAVITY       (1L << 28)                  ///< Set gravity of window
+#define SUB_GRAB_WINDOW_KILL          (1L << 29)                  ///< Kill window
 
 /* Panel flags */
 #define SUB_PANEL_VIEWS               (1L << 11)                  ///< Panel views type
@@ -432,8 +431,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_SUBLET_LIST,                                    ///< Subtle sublet list
   SUB_EWMH_SUBTLE_SUBLET_WINDOWS,                                 ///< Subtle sublet windows
   SUB_EWMH_SUBTLE_SUBLET_KILL,                                    ///< Subtle sublet kill
-  SUB_EWMH_SUBTLE_RELOAD_CONFIG,                                  ///< Subtle reload config
-  SUB_EWMH_SUBTLE_RELOAD_SUBLETS,                                 ///< Subtle reload sublets
+  SUB_EWMH_SUBTLE_RELOAD,                                         ///< Subtle reload
   SUB_EWMH_SUBTLE_RESTART,                                        ///< Subtle restart
   SUB_EWMH_SUBTLE_QUIT,                                           ///< Subtle quit
   SUB_EWMH_SUBTLE_COLORS,                                         ///< Subtle restart
@@ -714,7 +712,6 @@ void subPanelKill(SubPanel *p);                                   ///< Kill pane
 void subRubyInit(void);                                           ///< Init Ruby stack
 int subRubyLoadConfig(void);                                      ///< Load config file
 void subRubyReloadConfig(void);                                   ///< Reload config file
-void subRubyReloadSublets(void);                                  ///< Reload sublets
 void subRubyLoadSublet(const char *file);                         ///< Load sublet
 void subRubyLoadSublets(void);                                    ///< Load sublets
 void subRubyLoadSubtlext(void);                                   ///< Load subtlext

@@ -1175,9 +1175,12 @@ RubyKernelGrab(int argc,
                 type = SUB_GRAB_VIEW_SELECT;
                 data = DATA((unsigned long)SUB_VIEW_PREV);
               }
+            /* TODO: Deprecated */
             else if(CHAR2SYM("SubletsReload") == value)
               {
-                type = SUB_GRAB_SUBLETS_RELOAD;
+                subSharedLogDeprecated("Grab `:SubletsReload` has been removed\n");
+
+                return Qnil;
               }
             else if(CHAR2SYM("SubtleReload") == value)
               {
@@ -2706,35 +2709,6 @@ subRubyReloadConfig(void)
 
   /* Hook: Reload */
   subHookCall(SUB_HOOK_RELOAD, NULL);
-} /* }}} */
-
- /** subRubyReloadSublets {{{
-  * @brief Reload all sublets
-  **/
-
-void
-subRubyReloadSublets(void)
-{
-  int i;
-
-  /* Reset screen panels */
-  for(i = 0; i < subtle->screens->ndata; i++)
-    {
-      SubScreen *s = SCREEN(subtle->screens->data[i]);
-
-      s->flags &= ~(SUB_SCREEN_STIPPLE|SUB_SCREEN_PANEL1|SUB_SCREEN_PANEL2);
-      subArrayClear(s->panels, True);
-    }
-
-  subArrayClear(subtle->sublets, False);
-
-  subRubyLoadSublets();
-  subRubyLoadPanels();
-
-  subScreenUpdate();
-  subScreenRender();
-
-  printf("Reloaded sublets\n");
 } /* }}} */
 
  /** subRubyLoadSublet {{{

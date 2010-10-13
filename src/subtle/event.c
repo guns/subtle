@@ -671,11 +671,8 @@ EventMessage(XClientMessageEvent *ev)
                 subScreenRender();
               }
             break; /* }}} */
-          case SUB_EWMH_SUBTLE_RELOAD_CONFIG: /* {{{ */
+          case SUB_EWMH_SUBTLE_RELOAD: /* {{{ */
             subRubyReloadConfig();
-            break; /* }}} */
-          case SUB_EWMH_SUBTLE_RELOAD_SUBLETS: /* {{{ */
-            subRubyReloadSublets();
             break; /* }}} */
           case SUB_EWMH_SUBTLE_RESTART: /* {{{ */
             if(subtle) 
@@ -1140,9 +1137,6 @@ EventGrab(XEvent *ev)
           case SUB_GRAB_SCREEN_JUMP: /* {{{ */
             if(g->data.num < subtle->screens->ndata)
               subScreenJump(SCREEN(subtle->screens->data[g->data.num]));
-            break; /* }}} */
-          case SUB_GRAB_SUBLETS_RELOAD: /* {{{ */
-            subRubyReloadSublets();
             break; /* }}} */
           case SUB_GRAB_SUBTLE_RELOAD: /* {{{ */
             subRubyReloadConfig();
