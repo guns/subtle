@@ -832,7 +832,7 @@ module Subtle # {{{
         begin
           require "subtle/subtlext"
 
-          Subtlext::Subtle.reload_sublets
+          Subtlext::Subtle.reload
         rescue
           raise "Couldn't reload sublets"
         end
