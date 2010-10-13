@@ -320,10 +320,7 @@ grab "W-A-2", :ScreenJump2
 grab "W-A-3", :ScreenJump3
 grab "W-A-4", :ScreenJump4
 
-# Force reload of sublets
-grab "W-C-s", :SubletsReload
-
-# Force reload of config
+# Force reload of config and sublets
 grab "W-C-r", :SubtleReload
 
 # Force restart of subtle
