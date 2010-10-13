@@ -170,36 +170,20 @@ subSubtleSelect(VALUE self)
   return None != win ? LONG2NUM(win) : Qnil;
 } /* }}} */
 
-/* subSubtleReloadConfig {{{ */
+/* subSubtleReload {{{ */
 /*
- * call-seq: reload_config -> nil
+ * call-seq: reload -> nil
  *
- * Force Subtle to reload the config
+ * Force Subtle to reload config and sublets
  *
- *  subtle.reload_config
+ *  subtle.reload
  *  => nil
  */
 
 VALUE
-subSubtleReloadConfig(VALUE self)
+subSubtleReload(VALUE self)
 {
-  return SubtleSend("SUBTLE_RELOAD_CONFIG");
-} /* }}} */
-
-/* subSubtleReloadSublets {{{ */
-/*
- * call-seq: reload_sublets -> nil
- *
- * Force Subtle to reload the sublets
- *
- *  subtle.reload_sublets
- *  => nil
- */
-
-VALUE
-subSubtleReloadSublets(VALUE self)
-{
-  return SubtleSend("SUBTLE_RELOAD_SUBLETS");
+  return SubtleSend("SUBTLE_RELOAD");
 } /* }}} */
 
 /* subSubtleRestart {{{ */

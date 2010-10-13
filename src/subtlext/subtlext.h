@@ -154,8 +154,7 @@ VALUE subSubletKill(VALUE self);                                  ///< Kill subl
 VALUE subSubtleDisplayReader(VALUE self);                         ///< Get display
 VALUE subSubtleRunningAsk(VALUE self);                            ///< Is subtle running
 VALUE subSubtleSelect(VALUE self);                                ///< Select window
-VALUE subSubtleReloadConfig(VALUE self);                          ///< Reload config
-VALUE subSubtleReloadSublets(VALUE self);                         ///< Reload sublets
+VALUE subSubtleReload(VALUE self);                                ///< Reload config and sublets
 VALUE subSubtleRestart(VALUE self);                               ///< Restart subtle
 VALUE subSubtleQuit(VALUE self);                                  ///< Quit subtle
 VALUE subSubtleColors(VALUE self);                                ///< Get colors

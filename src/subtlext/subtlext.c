@@ -1299,15 +1299,17 @@ Init_subtlext(void)
   subtle = rb_define_module_under(mod, "Subtle");
 
   /* Singleton methods */
-  rb_define_singleton_method(subtle, "display",        subSubtleDisplayReader, 0);
-  rb_define_singleton_method(subtle, "select_window",  subSubtleSelect,        0);
-  rb_define_singleton_method(subtle, "running?",       subSubtleRunningAsk,    0);
-  rb_define_singleton_method(subtle, "reload_config",  subSubtleReloadConfig,  0);
-  rb_define_singleton_method(subtle, "reload_sublets", subSubtleReloadSublets, 0);
-  rb_define_singleton_method(subtle, "restart",        subSubtleRestart,       0);
-  rb_define_singleton_method(subtle, "quit",           subSubtleQuit,          0);
-  rb_define_singleton_method(subtle, "colors",         subSubtleColors,        0);
-  rb_define_singleton_method(subtle, "spawn",          subSubtleSpawn,         1);
+  rb_define_singleton_method(subtle, "display",       subSubtleDisplayReader, 0);
+  rb_define_singleton_method(subtle, "select_window", subSubtleSelect,        0);
+  rb_define_singleton_method(subtle, "running?",      subSubtleRunningAsk,    0);
+  rb_define_singleton_method(subtle, "reload",        subSubtleReload,        0);
+  rb_define_singleton_method(subtle, "restart",       subSubtleRestart,       0);
+  rb_define_singleton_method(subtle, "quit",          subSubtleQuit,          0);
+  rb_define_singleton_method(subtle, "colors",        subSubtleColors,        0);
+  rb_define_singleton_method(subtle, "spawn",         subSubtleSpawn,         1);
+
+  /* Aliases */
+  rb_define_alias(rb_singleton_class(subtle), "reload_config", "reload");
 
   /*
    * Document-class: Subtlext::Sublet
