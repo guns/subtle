@@ -229,7 +229,8 @@ subScreenConfigure(void)
               subClientSetGravity(c, c->gravities[s->vid], j, False);
 
               /* EWMH: Desktop */
-              subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, (long *)&s->vid, 1);
+              subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP,
+                (long *)&s->vid, 1);
 
               visible++;
             }
@@ -352,7 +353,7 @@ subScreenUpdate(void)
             }
 
           /* Remap window only when needed */
-          if(0 < p->width) XMapRaised(subtle->dpy, p->win);
+          if(0 < p->width) XMapWindow(subtle->dpy, p->win);
           else XUnmapWindow(subtle->dpy, p->win);
 
           x += p->width;
@@ -427,7 +428,7 @@ subScreenResize(void)
     {
       SubScreen *s = SCREEN(subtle->screens->data[i]);
 
-      /* x => left, y => right, width => top, height => bottom */
+      /* Add strut: x => left, y => right, width => top, height => bottom */
       s->geom.x      = s->base.x + subtle->strut.x;
       s->geom.y      = s->base.y + subtle->strut.width;
       s->geom.width  = s->base.width - subtle->strut.x;

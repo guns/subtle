@@ -554,11 +554,13 @@ RubyWrapLoadPanels(VALUE data)
       for(i = 0; i < subtle->screens->ndata; i++)
         {
           SubScreen *s = SCREEN(subtle->screens->data[i]);
+          Window panel = s->panel1;
 
           for(j = 0; j < s->panels->ndata; j++)
             {
               SubPanel *p = PANEL(s->panels->data[j]);
 
+              if(p->flags & SUB_PANEL_BOTTOM) panel = s->panel2;
               if(p->flags & SUB_PANEL_SUBLETS)
                 {
                   SubSublet *sublet = NULL;
@@ -577,6 +579,7 @@ RubyWrapLoadPanels(VALUE data)
                           sublet->flags |= SUB_PANEL_SEPARATOR2;
 
                           subArrayInsert(s->panels, pos++, (void *)sublet);
+                          XReparentWindow(subtle->dpy, sublet->win, panel, 0, 0);
 
                           /* Set borders */
                           XSetWindowBorder(subtle->dpy, sublet->win,
@@ -2040,11 +2043,11 @@ RubySubletDataWriter(VALUE self,
   SubSublet *s = NULL;
   Data_Get_Struct(self, SubSublet, s);
 
-  if(s && T_STRING == rb_type(value)) ///< Check value type
+  /* Check value type */
+  if(s && T_STRING == rb_type(value))
     {
       s->width = subSharedTextParse(subtle->dpy, subtle->font,
         s->text, RSTRING_PTR(value)) + 2 * subtle->pbw;
-      subSubletRender(s);
     }
   else rb_raise(rb_eArgError, "Unknown value type");
 
