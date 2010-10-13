@@ -157,7 +157,6 @@ subSubletKill(SubSublet *s)
   assert(s);
 
   /* Tidy up */
-  // FIXME subArrayRemove(subtle->panels, (void *)s);
   subHookRemove(s->instance, (void *)s);
   subRubyRelease(s->instance);
 

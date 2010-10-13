@@ -111,23 +111,13 @@ subPanelUpdate(SubPanel *p)
               {
                 SubView *v = VIEW(subtle->views->data[i]);
 
-                /* Check dynamic views */
-                if(v->flags & SUB_PANEL_HIDDEN)
-                  {
-                    XUnmapWindow(subtle->dpy, p->wins[i]);
-                  }
-                else
-                  {
-                    v->width = subSharedTextWidth(subtle->dpy, subtle->font,
-                      v->name, strlen(v->name), NULL, NULL, True)
-                      + 6 + 2 * subtle->pbw; ///< Font offset and panel border
+                v->width = subSharedTextWidth(subtle->dpy, subtle->font,
+                  v->name, strlen(v->name), NULL, NULL, True)
+                  + 6 + 2 * subtle->pbw; ///< Font offset and panel border
 
-                    XMoveResizeWindow(subtle->dpy, p->wins[i], p->width, 0,
-                      v->width - 2 * subtle->pbw, subtle->th - 2 * subtle->pbw);
-                    p->width += v->width;
-
-                    XMapRaised(subtle->dpy, p->wins[i]);
-                  }
+                XMoveResizeWindow(subtle->dpy, p->wins[i], p->width, 0,
+                  v->width - 2 * subtle->pbw, subtle->th - 2 * subtle->pbw);
+                p->width += v->width;
 
                 /* Set borders */
                 XSetWindowBorder(subtle->dpy, p->wins[i],
@@ -145,17 +135,16 @@ subPanelUpdate(SubPanel *p)
           {
             SubClient *c = NULL;
 
+            /* Find focus window */
             if((c = CLIENT(subSubtleFind(subtle->windows.focus, CLIENTID))))
               {
-                int len = 0;
-
                 assert(c);
                 DEAD(c);
 
                 /* Exclude desktop type windows */
                 if(!(c->flags & SUB_CLIENT_TYPE_DESKTOP))
                   {
-                    len = strlen(c->name);
+                    int len = strlen(c->name);
 
                     /* Title modes */
                     if(c->flags & SUB_CLIENT_MODE_FLOAT) len++;
