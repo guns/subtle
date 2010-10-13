@@ -659,9 +659,10 @@ EventMessage(XClientMessageEvent *ev)
               {
                 int i;
 
-                /* Remove sublet from panels */
+                /* Remove sublet from panels to avoid overhead in subSubletKill */
                 for(i = 0; i < subtle->screens->ndata; i++)
-                  subArrayRemove(subtle->sublets, subtle->screens->data[i]);
+                  subArrayRemove(SCREEN(subtle->screens->data[i])->panels,
+                    (void *)s);
 
                 subArrayRemove(subtle->sublets, (void *)s);
                 subSubletKill(s);
@@ -1337,7 +1338,8 @@ subEventLoop(void)
                         {
                           struct inotify_event *event = (struct inotify_event *)&buf[0];
 
-                          if(event && IN_IGNORED != event->mask) ///< Skip unwatch events
+                          /* Skip unwatch events */
+                          if(event && IN_IGNORED != event->mask)
                             {
                               if((s = SUBLET(subSubtleFind(
                                   subtle->windows.support, event->wd))))
