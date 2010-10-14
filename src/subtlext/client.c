@@ -579,7 +579,7 @@ subClientToggleStick(VALUE self)
 /*
  * call-seq: raise -> nil
  *
- * Raise Client window
+ * Move Client window to top of window stack
  *
  *  client.raise
  *  => nil
@@ -595,7 +595,7 @@ subClientRestackRaise(VALUE self)
 /*
  * call-seq: lower -> nil
  *
- * Raise Client window
+ * Move Client window to bottom of window stack
  *
  *  client.raise
  *  => nil
