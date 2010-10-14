@@ -69,6 +69,7 @@ set :outline, 0
 # [*:sublets*]   Catch-all for installed sublets
 # [*:sublet*]    Name of a sublet for direct placement
 # [*:spacer*]    Variable spacer (free width / count of spacers)
+# [*:center*]    Enclose items with :center to center them on the panel
 # [*:separator*] Insert separator
 #
 # === Link
