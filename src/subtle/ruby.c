@@ -207,19 +207,20 @@ RubyLoadPanel(VALUE ary,
     {
       int i, j, flags = 0;
       Window panel = s->panel1;
-      VALUE entry = Qnil, tray = Qnil, spacer = Qnil, separator;
-      VALUE sublets = Qnil, views = Qnil, title = Qnil;
-      SubPanel *p = NULL;
+      VALUE entry = Qnil, tray = Qnil, spacer = Qnil, separator = Qnil;
+      VALUE sublets = Qnil, views = Qnil, title = Qnil, center = Qnil;
+      SubPanel *p = NULL, *last = NULL;;
 
       /* Get syms */
       tray      = CHAR2SYM("tray");
       spacer    = CHAR2SYM("spacer");
+      center    = CHAR2SYM("center");
       separator = CHAR2SYM("separator");
       sublets   = CHAR2SYM("sublets");
       views     = CHAR2SYM("views");
       title     = CHAR2SYM("title");
 
-      /* Check position of panel */
+      /* Set position of panel */
       if(SUB_SCREEN_PANEL2 == position)
         {
           flags |= SUB_PANEL_BOTTOM;
@@ -234,19 +235,23 @@ RubyLoadPanel(VALUE ary,
           if(entry == spacer)
             {
               /* Add separator after panel item */
-              if(p && flags & SUB_PANEL_SEPARATOR1)
+              if(last && flags & SUB_PANEL_SEPARATOR1)
                 {
-                  p->flags |= SUB_PANEL_SEPARATOR2;
-                  flags    &= ~SUB_PANEL_SEPARATOR1;
+                  last->flags |= SUB_PANEL_SEPARATOR2;
+                  flags       &= ~SUB_PANEL_SEPARATOR1;
                 }
 
               flags |= SUB_PANEL_SPACER1;
             }
+          else if(entry == center)
+            {
+              flags |= SUB_PANEL_CENTER;
+            }
           else if(entry == separator)
             {
               /* Add spacer after panel item */
-              if(p && flags & SUB_PANEL_SEPARATOR1)
-                p->flags |= SUB_PANEL_SEPARATOR2;
+              if(last && flags & SUB_PANEL_SEPARATOR1)
+                last->flags |= SUB_PANEL_SEPARATOR2;
 
               flags |= SUB_PANEL_SEPARATOR1;
             }
@@ -291,12 +296,13 @@ RubyLoadPanel(VALUE ary,
           /* Finally add to panel */
           if(p)
             {
-              p->flags  |= flags;
-              flags      = 0;
-              s->flags  |= position; ///< Enable this panel
+              p->flags |= flags;
+              s->flags |= position; ///< Enable this panel
+              flags     = 0;
+              last      = p;
 
               if(!(p->flags & SUB_TYPE_SUBLET))
-                p->screen  = s;
+                p->screen = s;
 
               subArrayPush(s->panels, (void *)p);
               XReparentWindow(subtle->dpy, p->win, panel, 0, 0);
@@ -306,6 +312,7 @@ RubyLoadPanel(VALUE ary,
       /* Add stuff to last item */
       if(p && flags & SUB_PANEL_SPACER1)    p->flags |= SUB_PANEL_SPACER2;
       if(p && flags & SUB_PANEL_SEPARATOR1) p->flags |= SUB_PANEL_SEPARATOR2;
+      if(p && flags & SUB_PANEL_CENTER)     p->flags |= SUB_PANEL_CENTER;
 
       subRubyRelease(ary);
     }
@@ -592,7 +599,7 @@ RubyWrapLoadPanels(VALUE data)
                   /* Check spacers and separators in first and last sublet */
                   if((sublet = SUBLET(subArrayGet(s->panels, j))))
                     sublet->flags |= (p->flags & (SUB_PANEL_BOTTOM|
-                      SUB_PANEL_SPACER1|SUB_PANEL_SEPARATOR1));
+                      SUB_PANEL_SPACER1|SUB_PANEL_SEPARATOR1|SUB_PANEL_CENTER));
 
                   if((sublet = SUBLET(subArrayGet(s->panels, pos - 1))))
                     {
@@ -2540,8 +2547,18 @@ subRubyLoadConfig(void)
 
   if(subtle->flags & SUB_SUBTLE_CHECK) return !state; ///< Exit after check
 
+  /* Check screens */
+  for(i = 0; i < subtle->screens->ndata; i++)
+    {
+      SubScreen *s = SCREEN(subtle->screens->data[i]);
+
+      /* Check if vid exists */
+      if(0 > s->vid || s->vid >= subtle->views->ndata)
+        s->vid = 0;
+    }
+
   /* Check gravities */
-  if(1 == subtle->gravities->ndata)
+  if(0 == subtle->gravities->ndata)
     {
       subSharedLogError("No gravities found\n");
       subSubtleFinish();

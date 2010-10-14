@@ -278,8 +278,9 @@ subScreenUpdate(void)
     {
       SubScreen *s = SCREEN(subtle->screens->data[i]);
       SubPanel *p = NULL;
-      int j, npanel = 0, nspacer = 0, x = 0;
-      int sw[2] = { 0 }, fix[2] = { 0 }, width[2] = { 0 }, spacer[2] = { 0 };
+      int j, npanel = 0, center = False, offset = 0;
+      int x[4] = { 0 }, nspacer[4] = { 0 }; ///< Waste four ints but it's easier for the algo
+      int sw[4] = { 0 }, fix[4] = { 0 }, width[4] = { 0 }, spacer[4] = { 0 };
 
       /* Pass 1: Collect width for spacer sizes */
       for(j = 0; s->panels && j < s->panels->ndata; j++)
@@ -288,75 +289,101 @@ subScreenUpdate(void)
 
           subPanelUpdate(p);
 
-          /* Check each flag */
+          /* Check flags */
           if(p->flags & SUB_PANEL_HIDDEN)  continue;
-          if(p->flags & SUB_PANEL_BOTTOM)  npanel = 1;
-          if(p->flags & SUB_PANEL_SPACER1) spacer[npanel]++;
-          if(p->flags & SUB_PANEL_SPACER2) spacer[npanel]++;
-          if(p->flags & SUB_PANEL_SEPARATOR1)
-            width[npanel] += subtle->separator.width;
-          if(p->flags & SUB_PANEL_SEPARATOR2)
-            width[npanel] += subtle->separator.width;
+          if(p->flags & SUB_PANEL_BOTTOM)
+            {
+              npanel = 1;
+              center = False;
+            }
+          if(p->flags & SUB_PANEL_CENTER) center = !center;
 
-          width[npanel] += p->width;
+          /* Offset selects panel variables for either center or not */
+          offset = center ? npanel + 2 : npanel;
+
+          if(p->flags & SUB_PANEL_SPACER1) spacer[offset]++;
+          if(p->flags & SUB_PANEL_SPACER2) spacer[offset]++;
+          if(p->flags & SUB_PANEL_SEPARATOR1)
+            width[offset] += subtle->separator.width;
+          if(p->flags & SUB_PANEL_SEPARATOR2)
+            width[offset] += subtle->separator.width;
+
+          width[offset] += p->width;
         }
 
-      /* Calculate spacer */
-      for(j = 0; j < 2; j++)
-        if(0 < spacer[j])
-          {
-            sw[j]  = (s->base.width - width[j]) / spacer[j];
-            fix[j] = s->base.width - (width[j] + spacer[j] * sw[j]);
-          }
+      /* Calculate spacer and fix sizes */
+      for(j = 0; j < 4; j++)
+        {
+          if(0 < spacer[j])
+            {
+              sw[j]  = (s->base.width - width[j]) / spacer[j];
+              fix[j] = s->base.width - (width[j] + spacer[j] * sw[j]);
+            }
+        }
 
       /* Pass 2: Move and resize windows */
-      for(j = 0, npanel = 0, nspacer = 0; s->panels && j < s->panels->ndata; j++)
+      for(j = 0, npanel = 0, center = False; s->panels && j < s->panels->ndata; j++)
         {
           p = PANEL(s->panels->data[j]);
 
+          /* Check flags */
           if(p->flags & SUB_PANEL_HIDDEN) continue;
           if(p->flags & SUB_PANEL_BOTTOM)
             {
-              npanel  = 1;
-              nspacer = 0;
-              x       = 0; ///< Reset for new panel
+              /* Reset for new panel */
+              npanel     = 1;
+              nspacer[0] = 0;
+              nspacer[2] = 0;
+              x[0]       = 0;
+              x[2]       = 0;
+              center     = False;
             }
+          if(p->flags & SUB_PANEL_CENTER) center = !center;
 
-          /* Add separatorbBefore panel item */
+          /* Offset selects panel variables for either center or not */
+          offset = center ? npanel + 2 : npanel;
+
+          /* Set start position of centered panel items */
+          if(center && 0 == x[offset])
+            x[offset] = (s->base.width - width[offset]) / 2;
+
+          /* Add separator before panel item */
           if(p->flags & SUB_PANEL_SEPARATOR1)
-            x += subtle->separator.width;
+            x[offset] += subtle->separator.width;
 
           /* Add spacer before item */
           if(p->flags & SUB_PANEL_SPACER1)
             {
-              x += sw[npanel];
+              x[offset] += sw[offset];
 
               /* Increase last spacer size by rounding fix */
-              if(++nspacer == spacer[npanel]) x += fix[npanel];
+              if(++nspacer[offset] == spacer[offset])
+                x[offset] += fix[offset];
             }
 
           /* Set window position */
-          XMoveWindow(subtle->dpy, p->win, x, 0);
-          p->x = x;
+          XMoveWindow(subtle->dpy, p->win, x[offset], 0);
+          p->x = x[offset];
 
           /* Add separator after panel item */
           if(p->flags & SUB_PANEL_SEPARATOR2)
-            x += subtle->separator.width;
+            x[offset] += subtle->separator.width;
 
           /* Add spacer after item */
           if(p->flags & SUB_PANEL_SPACER2)
             {
-              x += sw[npanel];
+              x[offset] += sw[offset];
 
               /* Increase last spacer size by rounding fix */
-              if(++nspacer == spacer[npanel]) x += fix[npanel];
+              if(++nspacer[offset] == spacer[offset])
+                x[offset] += fix[offset];
             }
+
+          x[offset] += p->width;
 
           /* Remap window only when needed */
           if(0 < p->width) XMapWindow(subtle->dpy, p->win);
           else XUnmapWindow(subtle->dpy, p->win);
-
-          x += p->width;
         }
     }
 } /* }}} */
