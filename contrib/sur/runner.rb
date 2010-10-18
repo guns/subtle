@@ -112,7 +112,7 @@ module Subtle # {{{
           when "notes"
             usage(cmd) if(args.empty?)
 
-            Subtle::Sur::Client.new.notes(args)
+            Subtle::Sur::Client.new.notes(args.first)
           when "query"
             usage(cmd) if(args.empty?)
 
