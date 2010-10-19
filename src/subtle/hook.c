@@ -21,8 +21,7 @@
 
 SubHook *
 subHookNew(int type,
-  unsigned long proc,
-  void *data)
+  unsigned long proc)
 {
   SubHook *h = NULL;
 
@@ -32,7 +31,6 @@ subHookNew(int type,
   h = HOOK(subSharedMemoryAlloc(1, sizeof(SubHook)));
   h->flags = (SUB_TYPE_HOOK|type);
   h->proc  = proc;
-  h->data  = data;
 
   subSharedLogDebug("new=hook, type=%d, proc=%ld\n", type, proc);
 
@@ -59,38 +57,10 @@ subHookCall(int type,
       if(h->flags & type)
         {
           subRubyCall(h->flags & SUB_CALL_HOOKS ? SUB_CALL_HOOKS : type,
-            h->proc, h->data, data);
+            h->proc, data);
 
           subSharedLogDebug("call=hook, type=%d, proc=%ld, data=%p\n",
             type, h->proc, data);
-        }
-    }
-} /* }}} */
-
- /** subHookRemove {{{
-  * @brief Remove a hook
-  * @param[in]  proc  Hook proc
-  * @param[in]  data  Hook data
-  **/
-
-void
-subHookRemove(unsigned long proc,
-  void *data)
-{
-  int i;
-
-  /* Check each hook */
-  for(i = 0; i < subtle->hooks->ndata; i++)
-    {
-      SubHook *h = HOOK(subtle->hooks->data[i]);
-
-      /* Check if proc or data matches */
-      if(h->proc == proc || h->data == data)
-        {
-          subArrayRemove(subtle->hooks, (void *)h);
-          subRubyRelease(h->proc);
-          subHookKill(h);
-          i--; ///< Prevent skipping of hook
         }
     }
 } /* }}} */
@@ -110,3 +80,4 @@ subHookKill(SubHook *h)
   subSharedLogDebug("kill=hook\n");
 } /* }}} */
 
+// vim:ts=2:bs=2:sw=2:et:fdm=marker
