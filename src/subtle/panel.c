@@ -24,7 +24,8 @@ subPanelNew(int type)
   SubPanel *p = NULL;
   XSetWindowAttributes sattrs;
 
-  assert(SUB_PANEL_VIEWS == type || SUB_PANEL_TITLE == type);
+  assert(SUB_PANEL_SUBLET == type || SUB_PANEL_VIEWS == type ||
+    SUB_PANEL_TITLE == type);
 
   /* Create new panel */
   p = PANEL(subSharedMemoryAlloc(1, sizeof(SubPanel)));
@@ -33,8 +34,23 @@ subPanelNew(int type)
   sattrs.override_redirect = True;
 
   /* Handle panel item type */
-  switch(p->flags & (SUB_PANEL_VIEWS|SUB_PANEL_TITLE))
+  switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_VIEWS|SUB_PANEL_TITLE))
     {
+      case SUB_PANEL_SUBLET: /* {{{ */
+        p->sublet = (struct subsublet_t *)subSharedMemoryAlloc(1, sizeof(struct subsublet_t));
+
+        p->sublet->time  = subSubtleTime();
+        p->sublet->text  = subSharedTextNew();
+        p->sublet->bg    = subtle->colors.bg_sublets;
+
+        /* Create window */
+        p->win = XCreateSimpleWindow(subtle->dpy, ROOT, 0, 0, 1,
+          subtle->th, 0, 0, subtle->colors.bg_sublets);
+
+        XChangeWindowAttributes(subtle->dpy, p->win,
+          CWOverrideRedirect, &sattrs);
+        XSaveContext(subtle->dpy, p->win, SUBLETID, (void *)p);
+        break; /* }}} */
       case SUB_PANEL_VIEWS: /* {{{ */
         if(0 < subtle->views->ndata)
           {
@@ -44,37 +60,35 @@ subPanelNew(int type)
               subtle->colors.bg_views);
 
             /* Create button windows */
-            p->wins = (Window *)subSharedMemoryAlloc(subtle->views->ndata,
+            p->views = (Window *)subSharedMemoryAlloc(subtle->views->ndata,
               sizeof(Window));
 
             for(i = 0; i < subtle->views->ndata; i++)
               {
-                p->wins[i] = XCreateSimpleWindow(subtle->dpy, p->win,
+                p->views[i] = XCreateSimpleWindow(subtle->dpy, p->win,
                   0, 0, 1, subtle->th, 0, 0, subtle->colors.bg_views);
 
-                XSaveContext(subtle->dpy, p->wins[i], VIEWID,
+                XSaveContext(subtle->dpy, p->views[i], VIEWID,
                   subtle->views->data[i]);
-                XSelectInput(subtle->dpy, p->wins[i], ButtonPressMask);
+                XSelectInput(subtle->dpy, p->views[i], ButtonPressMask);
 
-                XChangeWindowAttributes(subtle->dpy, p->wins[i],
+                XChangeWindowAttributes(subtle->dpy, p->views[i],
                   CWOverrideRedirect, &sattrs);
 
-                XMapRaised(subtle->dpy, p->wins[i]);
+                XMapRaised(subtle->dpy, p->views[i]);
               }
           }
         break; /* }}} */
       case SUB_PANEL_TITLE: /* {{{ */
-          {
-            p->win = XCreateSimpleWindow(subtle->dpy, ROOT, 0, 0, 1, 1, 0, 0,
-              subtle->colors.bg_focus);
+        p->win = XCreateSimpleWindow(subtle->dpy, ROOT, 0, 0, 1, 1, 0, 0,
+          subtle->colors.bg_focus);
 
-            XChangeWindowAttributes(subtle->dpy, p->win,
-              CWOverrideRedirect, &sattrs);
+        XChangeWindowAttributes(subtle->dpy, p->win,
+          CWOverrideRedirect, &sattrs);
 
-            /* Update title border */
-            XSetWindowBorder(subtle->dpy, p->win, subtle->colors.bo_panel);
-            XSetWindowBorderWidth(subtle->dpy, p->win, subtle->pbw);
-          }
+        /* Update title border */
+        XSetWindowBorder(subtle->dpy, p->win, subtle->colors.bo_panel);
+        XSetWindowBorderWidth(subtle->dpy, p->win, subtle->pbw);
         break; /* }}} */
     }
 
@@ -94,10 +108,15 @@ subPanelUpdate(SubPanel *p)
   assert(p);
 
   /* Handle panel item type */
-  switch(p->flags & (SUB_TYPE_SUBLET|SUB_PANEL_VIEWS|SUB_PANEL_TITLE))
+  switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_VIEWS|SUB_PANEL_TITLE))
     {
-      case SUB_TYPE_SUBLET: /* {{{ */
-        subSubletUpdate(SUBLET(p));
+      case SUB_PANEL_SUBLET: /* {{{ */
+        XResizeWindow(subtle->dpy, p->win, p->width - 2 * subtle->pbw,
+          subtle->th - 2 * subtle->pbw);
+
+        /* Set borders */
+        XSetWindowBorder(subtle->dpy, p->win, subtle->colors.bo_panel);
+        XSetWindowBorderWidth(subtle->dpy, p->win, subtle->pbw);
         break; /* }}} */
       case SUB_PANEL_VIEWS: /* {{{ */
         p->width = 0;
@@ -115,14 +134,14 @@ subPanelUpdate(SubPanel *p)
                   v->name, strlen(v->name), NULL, NULL, True)
                   + 6 + 2 * subtle->pbw; ///< Font offset and panel border
 
-                XMoveResizeWindow(subtle->dpy, p->wins[i], p->width, 0,
+                XMoveResizeWindow(subtle->dpy, p->views[i], p->width, 0,
                   v->width - 2 * subtle->pbw, subtle->th - 2 * subtle->pbw);
                 p->width += v->width;
 
                 /* Set borders */
-                XSetWindowBorder(subtle->dpy, p->wins[i],
+                XSetWindowBorder(subtle->dpy, p->views[i],
                   subtle->colors.bo_panel);
-                XSetWindowBorderWidth(subtle->dpy, p->wins[i], subtle->pbw);
+                XSetWindowBorderWidth(subtle->dpy, p->views[i], subtle->pbw);
               }
 
             XResizeWindow(subtle->dpy, p->win, p->width, subtle->th);
@@ -176,10 +195,17 @@ subPanelRender(SubPanel *p)
   assert(p);
 
   /* Handle panel item type */
-  switch(p->flags & (SUB_TYPE_SUBLET|SUB_PANEL_VIEWS|SUB_PANEL_TITLE))
+  switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_VIEWS|SUB_PANEL_TITLE))
     {
-      case SUB_TYPE_SUBLET: /* {{{ */
-        subSubletRender(SUBLET(p));
+      case SUB_PANEL_SUBLET: /* {{{ */
+        /* Set window background */
+        XSetWindowBackground(subtle->dpy, p->win, p->sublet->bg);
+        XClearWindow(subtle->dpy, p->win);
+
+        /* Render text parts */
+        subSharedTextRender(subtle->dpy, subtle->gcs.font, subtle->font,
+          p->win, 3, subtle->font->y, subtle->colors.fg_sublets,
+          subtle->colors.bg_sublets, p->sublet->text);
         break; /* }}} */
       case SUB_PANEL_VIEWS: /* {{{ */
         if(0 < subtle->views->ndata)
@@ -212,11 +238,11 @@ subPanelRender(SubPanel *p)
                       }
 
                     /* Set window background */
-                    XSetWindowBackground(subtle->dpy, p->wins[i], bg);
-                    XClearWindow(subtle->dpy, p->wins[i]);
+                    XSetWindowBackground(subtle->dpy, p->views[i], bg);
+                    XClearWindow(subtle->dpy, p->views[i]);
 
                     subSharedTextDraw(subtle->dpy, subtle->gcs.font,
-                      subtle->font, p->wins[i], 3, subtle->font->y,
+                      subtle->font, p->views[i], 3, subtle->font->y,
                       fg, bg, v->name);
                   }
               }
@@ -273,6 +299,72 @@ subPanelRender(SubPanel *p)
     }
 } /* }}} */
 
+ /** subPanelCompare {{{
+  * @brief Compare two panels
+  * @param[in]  a  A #SubPanel
+  * @param[in]  b  A #SubPanel
+  * @return Returns the result of the comparison of both panels
+  * @retval  -1  a is smaller
+  * @retval  0   a and b are equal
+  * @retval  1   a is greater
+  **/
+
+int
+subPanelCompare(const void *a,
+  const void *b)
+{
+  SubPanel *p1 = *(SubPanel **)a, *p2 = *(SubPanel **)b;
+
+  assert(a && b);
+
+  /* Include only interval sublets */
+  if(!(p1->flags & (SUB_PANEL_INTERVAL))) return 1;
+  if(!(p2->flags & (SUB_PANEL_INTERVAL))) return -1;
+
+  return p1->sublet->time < p2->sublet->time ? -1 :
+    (p1->sublet->time == p2->sublet->time ? 0 : 1);
+} /* }}} */
+
+ /** subPanelPublish {{{
+  * @brief Publish panels
+  **/
+
+void
+subPanelPublish(void)
+{
+  int i = 0, idx = 0;
+  char **names = NULL;
+  Window *wins = NULL;
+
+  /* Alloc space */
+  names = (char **)subSharedMemoryAlloc(subtle->sublets->ndata,
+    sizeof(char *));
+  wins  = (Window *)subSharedMemoryAlloc(subtle->sublets->ndata,
+    sizeof(Window));
+
+  /* Find sublets */
+  for(i = 0; i < subtle->sublets->ndata; i++)
+    {
+      SubPanel *p = PANEL(subtle->sublets->data[i]);
+
+      names[idx]  = p->sublet->name;
+      wins[idx++] = p->win;
+    }
+
+  /* EWMH: Sublet list and windows */
+  subEwmhSetStrings(ROOT, SUB_EWMH_SUBTLE_SUBLET_LIST,
+    names, subtle->sublets->ndata);
+  subEwmhSetWindows(ROOT, SUB_EWMH_SUBTLE_SUBLET_WINDOWS,
+    wins, subtle->sublets->ndata);
+
+  subSharedLogDebug("publish=panel, n=%d\n", subtle->sublets->ndata);
+
+  XSync(subtle->dpy, False); ///< Sync all changes
+
+  free(names);
+  free(wins);
+} /* }}} */
+
  /** subPanelKill {{{
   * @brief Kill a panel
   * @param[in]  p  A #SubPanel
@@ -284,17 +376,48 @@ subPanelKill(SubPanel *p)
   assert(p);
 
   /* Handle panel item type */
-  switch(p->flags & (SUB_PANEL_VIEWS))
+  switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_VIEWS))
     {
+      case SUB_PANEL_SUBLET: /* {{{ */
+        subRubyRelease(p->sublet->instance);
+
+        /* Remove socket watch */
+        if(p->flags & SUB_PANEL_SOCKET)
+          {
+            XDeleteContext(subtle->dpy, subtle->windows.support, p->sublet->watch);
+            subEventWatchDel(p->sublet->watch);
+          }
+
+#ifdef HAVE_SYS_INOTIFY_H
+        /* Remove inotify watch */
+        if(p->flags & SUB_PANEL_INOTIFY)
+          {
+            XDeleteContext(subtle->dpy, subtle->windows.support, p->sublet->watch);
+            inotify_rm_watch(subtle->notify, p->sublet->interval);
+          }
+#endif /* HAVE_SYS_INOTIFY_H */
+
+        XDeleteContext(subtle->dpy, p->win, SUBLETID);
+
+        if(p->sublet->name)
+          {
+            printf("Unloaded sublet (%s)\n", p->sublet->name);
+            free(p->sublet->name);
+          }
+        if(p->sublet->text) subSharedTextFree(p->sublet->text);
+
+        free(p->sublet);
+
+        break; /* }}} */
       case SUB_PANEL_VIEWS: /* {{{ */
-        if(p->wins)
+        if(p->views)
           {
             int i;
 
             for(i = 0; i < subtle->views->ndata; i++)
-              XDestroyWindow(subtle->dpy, p->wins[i]);
+              XDestroyWindow(subtle->dpy, p->views[i]);
 
-            free(p->wins);
+            free(p->views);
           }
         break; /* }}} */
     }
