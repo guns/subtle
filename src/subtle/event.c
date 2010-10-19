@@ -50,21 +50,21 @@ EventUntag(SubClient *c,
 } /* }}} */
 
 /* EventFindSublet {{{ */
-static SubSublet *
+static SubPanel *
 EventFindSublet(int id)
 {
   int i = 0, idx = 0;
-  SubSublet *s = NULL;
+  SubPanel *p = NULL;
 
   /* Find sublet in linked list */
   for(i = 0; i < subtle->sublets->ndata; i++)
     {
-      s = SUBLET(subtle->sublets->data[i]);
+      p = PANEL(subtle->sublets->data[i]);
 
-      if(s->flags & SUB_TYPE_SUBLET && idx++ == id) break;
+      if(p->flags & SUB_PANEL_SUBLET && idx++ == id) break;
     }
 
-  return s;
+  return p;
 } /* }}} */
 
 /* EventSwitchView {{{ */
@@ -363,7 +363,7 @@ EventMessage(XClientMessageEvent *ev)
     {
       int tag = 0, id = subEwmhFind(ev->message_type);
 
-      SubSublet  *s = NULL;
+      SubPanel   *p = NULL;
       SubTag     *t = NULL;
       SubTray    *r = NULL;
       SubView    *v = NULL;
@@ -623,50 +623,81 @@ EventMessage(XClientMessageEvent *ev)
             if(ev->data.b)
               {
                 subRubyLoadSublet(ev->data.b);
-                subArraySort(subtle->sublets, subSubletCompare);
-                subSubletPublish();
+                subArraySort(subtle->sublets, subPanelCompare);
+                subPanelPublish();
                 subScreenUpdate();
                 subScreenRender();
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_SUBLET_DATA: /* {{{ */
-            if((s = EventFindSublet((int)ev->data.b[0])))
+            if((p = EventFindSublet((int)ev->data.b[0])))
               {
-                s->width = subSharedTextParse(subtle->dpy, subtle->font,
-                  s->text, ev->data.b + 1) + 2 * subtle->pbw;
+                p->width = subSharedTextParse(subtle->dpy, subtle->font,
+                  p->sublet->text, ev->data.b + 1) + 2 * subtle->pbw;
                 subScreenUpdate();
                 subScreenRender();
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_SUBLET_BACKGROUND: /* {{{ */
-            if((s = EventFindSublet((int)ev->data.l[0])))
+            if((p = EventFindSublet((int)ev->data.l[0])))
               {
-                s->bg = ev->data.l[1];
-                subSubletRender(s);
+                p->sublet->bg = ev->data.l[1];
+                subPanelRender(p);
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_SUBLET_UPDATE: /* {{{ */
-            if((s = EventFindSublet((int)ev->data.l[0])))
+            if((p = EventFindSublet((int)ev->data.l[0])))
               {
-                subRubyCall(SUB_CALL_SUBLET_RUN,
-                  s->instance, (void *)s, NULL);
+                subRubyCall(SUB_CALL_RUN, p->sublet->instance, NULL);
                 subScreenUpdate();
                 subScreenRender();
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_SUBLET_KILL: /* {{{ */
-            if((s = EventFindSublet((int)ev->data.l[0])))
+            if((p = EventFindSublet((int)ev->data.l[0])))
               {
                 int i;
 
-                /* Remove sublet from panels to avoid overhead in subSubletKill */
+                /* Remove sublet from panels to avoid overhead */
                 for(i = 0; i < subtle->screens->ndata; i++)
-                  subArrayRemove(SCREEN(subtle->screens->data[i])->panels,
-                    (void *)s);
+                  {
+                    subArrayRemove(SCREEN(subtle->screens->data[i])->panels,
+                      (void *)p);
+                  }
 
-                subArrayRemove(subtle->sublets, (void *)s);
-                subSubletKill(s);
-                subSubletPublish();
+                /* Remove hooks */
+                for(i = 0; i < subtle->hooks->ndata; i++)
+                  {
+                    SubHook *hook = HOOK(subtle->hooks->data[i]);
+
+                    if(hook->flags & SUB_CALL_HOOKS &&
+                        subRubyReceiver(p->sublet->instance, hook->proc))
+                      {
+                        subArrayRemove(subtle->hooks, (void *)hook);
+                        subRubyRelease(hook->proc);
+                        subHookKill(hook);
+                        i--; ///< Prevent skipping of entries
+                      }
+                  }
+
+                /* Remove grabs */
+                for(i = 0; i < subtle->grabs->ndata; i++)
+                  {
+                    SubGrab *grab = GRAB(subtle->grabs->data[i]);
+
+                    if(grab->flags & SUB_GRAB_PROC &&
+                        subRubyReceiver(p->sublet->instance, grab->data.num))
+                      {
+                        subArrayRemove(subtle->grabs, (void *)grab);
+                        subRubyRelease(grab->data.num);
+                        subGrabKill(grab);
+                        i--; ///< Prevent skipping of entries
+                      }
+                  }
+
+                subArrayRemove(subtle->sublets, (void *)p);
+                subPanelKill(p);
+                subPanelPublish();
                 subScreenUpdate();
                 subScreenRender();
               }
@@ -867,7 +898,7 @@ EventCrossing(XCrossingEvent *ev)
 {
   SubClient *c = NULL;
   SubTray *t = NULL;
-  SubSublet *s = NULL;
+  SubPanel *p = NULL;
 
   /* Handle both crossing events */
   switch(ev->type)
@@ -886,17 +917,17 @@ EventCrossing(XCrossingEvent *ev)
           {
             subTrayFocus(t);
           }
-        else if((s = SUBLET(subSubtleFind(ev->window, SUBLETID)))) ///< Sublet
+        else if((p = PANEL(subSubtleFind(ev->window, SUBLETID)))) ///< Sublet
           {
-            if(s->flags & SUB_SUBLET_OVER)
-              subRubyCall(SUB_CALL_SUBLET_OVER, s->instance, (void *)s, NULL);
+            if(p->flags & SUB_PANEL_OVER)
+              subRubyCall(SUB_CALL_OVER, p->sublet->instance, NULL);
           }
         break;
       case LeaveNotify:
-        if((s = SUBLET(subSubtleFind(ev->window, SUBLETID)))) ///< Sublet
+        if((p = PANEL(subSubtleFind(ev->window, SUBLETID)))) ///< Sublet
           {
-            if(s->flags & SUB_SUBLET_OUT)
-              subRubyCall(SUB_CALL_SUBLET_OUT, s->instance, (void *)s, NULL);
+            if(p->flags & SUB_PANEL_OUT)
+              subRubyCall(SUB_CALL_OUT, p->sublet->instance, NULL);
           }
     }
 } /* }}} */
@@ -935,7 +966,7 @@ EventGrab(XEvent *ev)
 {
   SubGrab *g = NULL;
   SubClient *c = NULL;
-  SubSublet *s = NULL;
+  SubPanel *p = NULL;
   SubView *v = NULL;
   unsigned int code = 0, mod = 0;
 
@@ -949,12 +980,12 @@ EventGrab(XEvent *ev)
 
             return;
           }
-        else if((s = SUBLET(subSubtleFind(ev->xbutton.window, SUBLETID))))
+        else if((p = PANEL(subSubtleFind(ev->xbutton.window, SUBLETID))))
           {
-            if(s->flags & SUB_SUBLET_DOWN) ///< Call click method
+            if(p->flags & SUB_PANEL_DOWN) ///< Call click method
               {
-                subRubyCall(SUB_CALL_SUBLET_DOWN,
-                  s->instance, (void *)&ev->xbutton, NULL);
+                subRubyCall(SUB_CALL_DOWN, p->sublet->instance,
+                  (void *)&ev->xbutton);
                 subScreenUpdate();
                 subScreenRender();
                }
@@ -987,7 +1018,7 @@ EventGrab(XEvent *ev)
             break; /* }}} */
           case SUB_GRAB_PROC: /* {{{ */
             subRubyCall(SUB_CALL_HOOKS, g->data.num,
-              NULL, subSubtleFind(win, CLIENTID));
+              subSubtleFind(win, CLIENTID));
             break; /* }}} */
           case SUB_GRAB_WINDOW_MOVE:
           case SUB_GRAB_WINDOW_RESIZE: /* {{{ */
@@ -1223,6 +1254,8 @@ EventFocus(XFocusChangeEvent *ev)
     }
 } /* }}} */
 
+/* Extern */
+
  /** subEventWatchAdd {{{
   * @brief Add descriptor to watch list
   * @param[in]  fd  File descriptor
@@ -1275,7 +1308,7 @@ subEventLoop(void)
   int i, timeout = 1, events = 0;
   XEvent ev;
   time_t now;
-  SubSublet *s = NULL;
+  SubPanel *p = NULL;
 
 #ifdef HAVE_SYS_INOTIFY_H
   char buf[BUFLEN];
@@ -1339,11 +1372,11 @@ subEventLoop(void)
                           /* Skip unwatch events */
                           if(event && IN_IGNORED != event->mask)
                             {
-                              if((s = SUBLET(subSubtleFind(
+                              if((p = PANEL(subSubtleFind(
                                   subtle->windows.support, event->wd))))
                                 {
-                                  subRubyCall(SUB_CALL_SUBLET_WATCH,
-                                    s->instance, (void *)s, NULL);
+                                  subRubyCall(SUB_CALL_WATCH,
+                                    p->sublet->instance, NULL);
                                   subScreenUpdate();
                                   subScreenRender();
                                 }
@@ -1353,11 +1386,11 @@ subEventLoop(void)
 #endif /* HAVE_SYS_INOTIFY_H */
                   else ///< Socket {{{
                     {
-                      if((s = SUBLET(subSubtleFind(subtle->windows.support,
+                      if((p = PANEL(subSubtleFind(subtle->windows.support,
                           watches[i].fd))))
                         {
-                          subRubyCall(SUB_CALL_SUBLET_WATCH, s->instance,
-                            (void *)s, NULL);
+                          subRubyCall(SUB_CALL_WATCH,
+                            p->sublet->instance, NULL);
                           subScreenUpdate();
                           subScreenRender();
                         }
@@ -1369,20 +1402,19 @@ subEventLoop(void)
         {
           if(0 < subtle->sublets->ndata)
             {
-              s = SUBLET(subtle->sublets->data[0]);
+              p = PANEL(subtle->sublets->data[0]);
 
-              while(s && s->flags & SUB_SUBLET_INTERVAL && s->time <= now)
+              while(p && p->flags & SUB_PANEL_INTERVAL && p->sublet->time <= now)
                 {
-                  subRubyCall(SUB_CALL_SUBLET_RUN,
-                    s->instance, (void *)s, NULL);
+                  subRubyCall(SUB_CALL_RUN, p->sublet->instance, NULL);
 
-                  if(s->flags & SUB_SUBLET_INTERVAL) ///< This may change in run
+                  if(p->flags & SUB_PANEL_INTERVAL) ///< This may change in run
                     {
-                      s->time  = now + s->interval; ///< Adjust seconds
-                      s->time -= s->time % s->interval;
+                      p->sublet->time  = now + p->sublet->interval; ///< Adjust seconds
+                      p->sublet->time -= p->sublet->time % p->sublet->interval;
                     }
 
-                  subArraySort(subtle->sublets, subSubletCompare);
+                  subArraySort(subtle->sublets, subPanelCompare);
                 }
 
               subScreenUpdate();
@@ -1393,8 +1425,8 @@ subEventLoop(void)
       /* Set new timeout */
       if(0 < subtle->sublets->ndata)
         {
-          s = SUBLET(subtle->sublets->data[0]);
-          timeout = s->flags & SUB_SUBLET_INTERVAL ? s->time - now : 60;
+          p = PANEL(subtle->sublets->data[0]);
+          timeout = p->flags & SUB_PANEL_INTERVAL ? p->sublet->time - now : 60;
           if(0 >= timeout) timeout = 1; ///< Sanitize
         }
       else timeout = 60;

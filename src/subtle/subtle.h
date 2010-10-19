@@ -50,7 +50,6 @@
 
 #define MINW         1L                                           ///< Client min width
 #define MINH         1L                                           ///< Client min height
-#define EXECTIME     1                                            ///< Max execution time
 #define WAITTIME     10                                           ///< Max waiting time
 #define DEFAULTTAG   (1L << 1)                                    ///< Default tag
 
@@ -64,7 +63,7 @@
   if(!c || c->flags & SUB_CLIENT_DEAD) return;                    ///< Check dead clients
 
 #define MINMAX(val,min,max) \
-  (min && val < min ? min : max && val > max ? max : val)         ///< Value min/max
+  ((val < min) ? min : ((val > max) ? max : val))                 ///< Value min/max
 
 #define XYINRECT(wx,wy,r) \
   (wx >= r.x && wx <= (r.x + r.width) && \
@@ -74,17 +73,6 @@
   (r1.x >= r2.x && r1.y >= r2.y && \
   (r1.x + r1.width)  <= (r2.x + r2.width) && \
   (r1.y + r1.height) <= (r2.y + r2.height))                       ///< Whether rect is in rect
-
-#define ROOTMASK \
-  (SubstructureRedirectMask|SubstructureNotifyMask|PropertyChangeMask)
-#define EVENTMASK \
-  (StructureNotifyMask|PropertyChangeMask| \
-  EnterWindowMask|FocusChangeMask)
-#define DRAGMASK \
-  (PointerMotionMask|ButtonReleaseMask|KeyPressMask| \
-  EnterWindowMask|FocusChangeMask)
-#define GRABMASK \
-  (ButtonPressMask|ButtonReleaseMask|PointerMotionMask)
 
 #define VISUAL \
   DefaultVisual(subtle->dpy, DefaultScreen(subtle->dpy))          ///< Default visual
@@ -97,9 +85,6 @@
   DisplayWidth(subtle->dpy, DefaultScreen(subtle->dpy))           ///< Get screen width
 #define SCREENH \
   DisplayHeight(subtle->dpy, DefaultScreen(subtle->dpy))          ///< Get screen height
-
-#define CURSCREEN SCREEN(subtle->screens->data[subtle->sid])      ///< Get current screen
-#define DEFSCREEN SCREEN(subtle->screens->data[0])                ///< Get first screen
 
 #define TYPES_ALL \
   (SUB_CLIENT_TYPE_DESKTOP|SUB_CLIENT_TYPE_DOCK| \
@@ -123,8 +108,22 @@
   r.y      = b; \
   r.width  = c; \
   r.height = d;                                                   ///< Set rect values
+/* }}} */
 
-/* Casts */
+/* Masks {{{ */
+#define ROOTMASK \
+  (SubstructureRedirectMask|SubstructureNotifyMask|PropertyChangeMask)
+#define EVENTMASK \
+  (StructureNotifyMask|PropertyChangeMask| \
+  EnterWindowMask|FocusChangeMask)
+#define DRAGMASK \
+  (PointerMotionMask|ButtonReleaseMask|KeyPressMask| \
+  EnterWindowMask|FocusChangeMask)
+#define GRABMASK \
+  (ButtonPressMask|ButtonReleaseMask|PointerMotionMask)
+/* }}} */
+
+/* Casts {{{ */
 #define ARRAY(a)   ((SubArray *)a)                                ///< Cast to SubArray
 #define CLIENT(c)  ((SubClient *)c)                               ///< Cast to SubClient
 #define DATA(d)    ((SubData)d)                                   ///< Cast to SubData
@@ -134,36 +133,10 @@
 #define ICON(i)    ((SubIcon *)i)                                 ///< Cast to SubIcon
 #define PANEL(p)   ((SubPanel *)p)                                ///< Cast to SubPanel
 #define SCREEN(s)  ((SubScreen *)s)                               ///< Cast to SubScreen
-#define SUBLET(s)  ((SubSublet *)s)                               ///< Cast to SubSublet
 #define TEXT(t)    ((SubText *)t)                                 ///< Cast to SubText
 #define TAG(t)     ((SubTag *)t)                                  ///< Cast to SubTag
 #define TRAY(t)    ((SubTray *)t)                                 ///< Cast to SubTray
 #define VIEW(v)    ((SubView *)v)                                 ///< Cast to SubView
-
-/* XEmbed messages */
-#define XEMBED_EMBEDDED_NOTIFY         0L                         ///< Start embedding
-#define XEMBED_WINDOW_ACTIVATE         1L                         ///< Tray has focus
-#define XEMBED_WINDOW_DEACTIVATE       2L                         ///< Tray has no focus
-#define XEMBED_REQUEST_FOCUS           3L
-#define XEMBED_FOCUS_IN                4L                         ///< Focus model
-#define XEMBED_FOCUS_OUT               5L
-#define XEMBED_FOCUS_NEXT              6L
-#define XEMBED_FOCUS_PREV              7L
-#define XEMBED_GRAB_KEY                8L
-#define XEMBED_UNGRAB_KEY              9L
-#define XEMBED_MODALITY_ON             10L
-#define XEMBED_MODALITY_OFF            11L
-#define XEMBED_REGISTER_ACCELERATOR    12L
-#define XEMBED_UNREGISTER_ACCELERATOR  13L
-#define XEMBED_ACTIVATE_ACCELERATOR    14L
-
-/* Details for XEMBED_FOCUS_IN */
-#define XEMBED_FOCUS_CURRENT           0L                         /// Focus default
-#define XEMBED_FOCUS_FIRST             1L
-#define XEMBED_FOCUS_LAST              2L
-
-/* Flags for _XEMBED_INFO */
-#define XEMBED_MAPPED                  (1L << 0)                  ///< Tray mapped
 /* }}} */
 
 /* Flags {{{ */
@@ -174,20 +147,19 @@
 #define SUB_TYPE_HOOK                 (1L << 4)                   ///< Hook
 #define SUB_TYPE_PANEL                (1L << 5)                   ///< Panel
 #define SUB_TYPE_SCREEN               (1L << 6)                   ///< Screen
-#define SUB_TYPE_SUBLET               (1L << 7)                   ///< Sublet
-#define SUB_TYPE_TAG                  (1L << 8)                   ///< Tag
-#define SUB_TYPE_TRAY                 (1L << 9)                   ///< Tray
-#define SUB_TYPE_VIEW                 (1L << 10)                   ///< View
+#define SUB_TYPE_TAG                  (1L << 7)                   ///< Tag
+#define SUB_TYPE_TRAY                 (1L << 8)                   ///< Tray
+#define SUB_TYPE_VIEW                 (1L << 9)                   ///< View
 
 /* Call flags */
 #define SUB_CALL_HOOKS                (1L << 11)                  ///< Call hook
-#define SUB_CALL_SUBLET_CONFIGURE     (1L << 12)                  ///< Sublet watch hook
-#define SUB_CALL_SUBLET_RUN           (1L << 13)                  ///< Sublet run hook
-#define SUB_CALL_SUBLET_UNLOAD        (1L << 14)                  ///< Sublet unload hook
-#define SUB_CALL_SUBLET_WATCH         (1L << 15)                  ///< Sublet watch hook
-#define SUB_CALL_SUBLET_DOWN          (1L << 16)                  ///< Sublet mouse down hook
-#define SUB_CALL_SUBLET_OVER          (1L << 17)                  ///< Sublet mouse over hook
-#define SUB_CALL_SUBLET_OUT           (1L << 18)                  ///< Sublet mouse out hook
+#define SUB_CALL_CONFIGURE     (1L << 12)                  ///< Sublet watch hook
+#define SUB_CALL_RUN           (1L << 13)                  ///< Sublet run hook
+#define SUB_CALL_UNLOAD        (1L << 14)                  ///< Sublet unload hook
+#define SUB_CALL_WATCH         (1L << 15)                  ///< Sublet watch hook
+#define SUB_CALL_DOWN          (1L << 16)                  ///< Sublet mouse down hook
+#define SUB_CALL_OVER          (1L << 17)                  ///< Sublet mouse over hook
+#define SUB_CALL_OUT           (1L << 18)                  ///< Sublet mouse out hook
 
 /* Hooks */
 #define SUB_HOOK_START                (1L << 15)                  ///< Start hook (after call flags [15])
@@ -258,33 +230,32 @@
 #define SUB_GRAB_WINDOW_KILL          (1L << 29)                  ///< Kill window
 
 /* Panel flags */
-#define SUB_PANEL_VIEWS               (1L << 11)                  ///< Panel views type
-#define SUB_PANEL_TITLE               (1L << 12)                  ///< Panel title type
-#define SUB_PANEL_SPACER1             (1L << 13)                  ///< Panel spacer1
-#define SUB_PANEL_SPACER2             (1L << 14)                  ///< Panel spacer2
-#define SUB_PANEL_SEPARATOR1          (1L << 15)                  ///< Panel separator1
-#define SUB_PANEL_SEPARATOR2          (1L << 16)                  ///< Panel separator2
-#define SUB_PANEL_BOTTOM              (1L << 17)                  ///< Panel bottom
-#define SUB_PANEL_SUBLETS             (1L << 18)                  ///< Panel sublets
+#define SUB_PANEL_SUBLET              (1L << 11)                  ///< Panel sublet type
+#define SUB_PANEL_VIEWS               (1L << 12)                  ///< Panel views type
+#define SUB_PANEL_TITLE               (1L << 13)                  ///< Panel title type
+#define SUB_PANEL_SPACER1             (1L << 14)                  ///< Panel spacer1
+#define SUB_PANEL_SPACER2             (1L << 15)                  ///< Panel spacer2
+#define SUB_PANEL_SEPARATOR1          (1L << 16)                  ///< Panel separator1
+#define SUB_PANEL_SEPARATOR2          (1L << 17)                  ///< Panel separator2
+#define SUB_PANEL_BOTTOM              (1L << 18)                  ///< Panel bottom
 #define SUB_PANEL_HIDDEN              (1L << 19)                  ///< Panel hidden
 #define SUB_PANEL_CENTER              (1L << 20)                  ///< Panel center
+#define SUB_PANEL_SUBLETS             (1L << 21)                  ///< Panel sublets
+
+#define SUB_PANEL_INTERVAL            (1L << 22)                  ///< Sublet has interval
+#define SUB_PANEL_INOTIFY             (1L << 23)                  ///< Sublet with inotify
+#define SUB_PANEL_SOCKET              (1L << 24)                  ///< Sublet with socket
+
+#define SUB_PANEL_RUN                 (1L << 25)                  ///< Sublet run function
+#define SUB_PANEL_WATCH               (1L << 26)                  ///< Sublet watch function
+#define SUB_PANEL_DOWN                (1L << 27)                  ///< Sublet mouse down function
+#define SUB_PANEL_OVER                (1L << 28)                  ///< Sublet mouse over function
+#define SUB_PANEL_OUT                 (1L << 29)                  ///< Sublet mouse out function
 
 /* Screen types */
 #define SUB_SCREEN_PANEL1             (1L << 11)                   ///< Panel1 enabled
 #define SUB_SCREEN_PANEL2             (1L << 12)                   ///< Panel2 enabled
 #define SUB_SCREEN_STIPPLE            (1L << 13)                   ///< Stipple enabled
-
-/* Sublet types */
-#define SUB_SUBLET_INTERVAL           (1L << 21)                  ///< Sublet has interval (after panel flags)
-#define SUB_SUBLET_INOTIFY            (1L << 22)                  ///< Inotify sublet
-#define SUB_SUBLET_SOCKET             (1L << 23)                  ///< Socket sublet
-#define SUB_SUBLET_RUN                (1L << 24)                  ///< Sublet run function
-#define SUB_SUBLET_UNLOAD             (1L << 25)                  ///< Sublet unload function
-#define SUB_SUBLET_DOWN               (1L << 26)                  ///< Sublet mouse down function
-#define SUB_SUBLET_OVER               (1L << 27)                  ///< Sublet mouse over function
-#define SUB_SUBLET_OUT                (1L << 28)                  ///< Sublet mouse out function
-#define SUB_SUBLET_WATCH              (1L << 29)                  ///< Sublet watch function
-#define SUB_SUBLET_PANEL              (1L << 30)                  ///< Sublet in panel
 
 /* Subtle flags */
 #define SUB_SUBTLE_DEBUG              (1L << 1)                   ///< Debug enabled
@@ -315,6 +286,31 @@
 
 /* Tray flags */
 #define SUB_TRAY_UNMAP                (1L << 11)                  ///< Ignore unmaps
+
+/* XEmbed messages */
+#define XEMBED_EMBEDDED_NOTIFY         0L                         ///< Start embedding
+#define XEMBED_WINDOW_ACTIVATE         1L                         ///< Tray has focus
+#define XEMBED_WINDOW_DEACTIVATE       2L                         ///< Tray has no focus
+#define XEMBED_REQUEST_FOCUS           3L
+#define XEMBED_FOCUS_IN                4L                         ///< Focus model
+#define XEMBED_FOCUS_OUT               5L
+#define XEMBED_FOCUS_NEXT              6L
+#define XEMBED_FOCUS_PREV              7L
+#define XEMBED_GRAB_KEY                8L
+#define XEMBED_UNGRAB_KEY              9L
+#define XEMBED_MODALITY_ON             10L
+#define XEMBED_MODALITY_OFF            11L
+#define XEMBED_REGISTER_ACCELERATOR    12L
+#define XEMBED_UNREGISTER_ACCELERATOR  13L
+#define XEMBED_ACTIVATE_ACCELERATOR    14L
+
+/* Details for XEMBED_FOCUS_IN */
+#define XEMBED_FOCUS_CURRENT           0L                         /// Focus default
+#define XEMBED_FOCUS_FIRST             1L
+#define XEMBED_FOCUS_LAST              2L
+
+/* Flags for _XEMBED_INFO */
+#define XEMBED_MAPPED                  (1L << 0)                  ///< Tray mapped
 /* }}} */
 
 /* Typedefs {{{ */
@@ -462,19 +458,19 @@ typedef struct subhook_t /* {{{ */
 {
   FLAGS         flags;                                            ///< Hook flags
   unsigned long proc;                                             ///< Hook proc
-  void          *data;                                            ///< Hook data
 } SubHook; /* }}} */
 
 typedef struct subpanel_t /* {{{ */
 {
-  /* Common fields in subpanel_t and subsublet_t */
   FLAGS              flags;                                       ///< Panel flags
   Window             win;                                         ///< Panel win
   int                x, width;                                    ///< Panel x, width
-  /* End of common fields */
-
-  Window             *wins;                                       ///< Panel extra windows
   struct subscreen_t *screen;                                     ///< Panel screen
+
+  union {
+    Window             *views;                                    ///< Panel view windows
+    struct subsublet_t *sublet;                                   ///< Panel sublet
+  };
 } SubPanel; /* }}} */
 
 typedef struct subscreen_t /* {{{ */
@@ -488,14 +484,7 @@ typedef struct subscreen_t /* {{{ */
   struct subarray_t *panels;                                      ///< Screen panels
 } SubScreen; /* }}} */
 
-typedef struct subsublet_t /* {{{ */
-{
-  /* Common fields in subpanel_t and subsublet_t */
-  FLAGS             flags;                                        ///< Sublet flags
-  Window            win;                                          ///< Sublet window
-  int               x, width;                                     ///< Sublet x, width
-  /* End of common fields */
-
+typedef struct subsublet_t { /* {{{ */
   int               watch;                                        ///< Sublet watch id
   char              *name;                                        ///< Sublet name
   unsigned long     instance, bg;                                 ///< Sublet ruby instance, bg color
@@ -696,9 +685,8 @@ void subGravityKill(SubGravity *g);                               ///< Kill grav
 /* }}} */
 
 /* hook.c {{{ */
-SubHook *subHookNew(int type, unsigned long proc, void *data);    ///< Create hook
+SubHook *subHookNew(int type, unsigned long proc);                ///< Create hook
 void subHookCall(int type, void *data);                           ///< Call hook
-void subHookRemove(unsigned long proc, void *data);               ///< Remove hook
 void subHookKill(SubHook *h);                                     ///< Kill hook
 /* }}} */
 
@@ -706,6 +694,8 @@ void subHookKill(SubHook *h);                                     ///< Kill hook
 SubPanel *subPanelNew(int type);                                  ///< Create new panel
 void subPanelUpdate(SubPanel *p);                                 ///< Configure panels
 void subPanelRender(SubPanel *p);                                 ///< Render panels
+int subPanelCompare(const void *a, const void *b);                ///< Compare two panels
+void subPanelPublish(void);                                       ///< Publish sublets
 void subPanelKill(SubPanel *p);                                   ///< Kill panel
 /* }}} */
 
@@ -717,9 +707,10 @@ void subRubyLoadSublet(const char *file);                         ///< Load subl
 void subRubyLoadSublets(void);                                    ///< Load sublets
 void subRubyLoadSubtlext(void);                                   ///< Load subtlext
 void subRubyLoadPanels(void);                                     ///< Load panels
-int subRubyCall(int type, unsigned long proc,
-  void *data1, void *data2);                                      ///< Call Ruby script
+int subRubyCall(int type, unsigned long proc, void *data);        ///< Call Ruby script
 int subRubyRelease(unsigned long recv);                           ///< Release receiver
+int subRubyReceiver(unsigned long instance,
+  unsigned long proc);                                            ///< Check if instance is receiver
 void subRubyFinish(void);                                         ///< Kill Ruby stack
 /* }}} */
 
@@ -737,15 +728,6 @@ void subScreenFit(SubScreen *s, XRectangle *r);                   ///< Fit rect 
 void subScreenJump(SubScreen *s);                                 ///< Jump to screen
 void subScreenPublish(void);                                      ///< Publish screens
 void subScreenKill(SubScreen *s);                                 ///< Kill screen
-/* }}} */
-
-/* sublet.c {{{ */
-SubSublet *subSubletNew(void);                                    ///< Create sublet
-void subSubletUpdate(SubSublet *s);                               ///< Update sublet
-void subSubletRender(SubSublet *s);                               ///< Render sublet
-int subSubletCompare(const void *a, const void *b);               ///< Compare two sublets
-void subSubletPublish(void);                                      ///< Publish sublets
-void subSubletKill(SubSublet *s);                                 ///< Kill sublet
 /* }}} */
 
 /* subtle.c {{{ */

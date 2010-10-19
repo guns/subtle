@@ -14,7 +14,7 @@
 
 static unsigned int numlockmask = 0;
 
-/* GrabBind */
+/* GrabBind {{{ */
 static void
 GrabBind(SubGrab *g,
   Window win)
