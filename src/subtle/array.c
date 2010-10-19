@@ -176,9 +176,6 @@ subArrayClear(SubArray *a,
           else if(c->flags & SUB_TYPE_TAG)     subTagKill(TAG(c));
           else if(c->flags & SUB_TYPE_TRAY)    subTrayKill(TRAY(c));
           else if(c->flags & SUB_TYPE_VIEW)    subViewKill(VIEW(c));
-
-          /* Must be before panel, sublets are in panels too */
-          else if(c->flags & SUB_TYPE_SUBLET) subSubletKill(SUBLET(c));
           else if(c->flags & SUB_TYPE_PANEL)  subPanelKill(PANEL(c));
         }
 
