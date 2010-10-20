@@ -95,6 +95,10 @@ EventSwitchView(int vid,
                   subScreenRender();
                   subSubtleFocus(focus);
 
+                  /* Hook: Jump */
+                  subHookCall(SUB_HOOK_VIEW_JUMP,
+                    subArrayGet(subtle->views, vid));
+
                   return;
                 }
             }
@@ -106,6 +110,9 @@ EventSwitchView(int vid,
       subScreenConfigure();
       subScreenRender();
       subSubtleFocus(focus);
+
+      /* Hook: Jump */
+      subHookCall(SUB_HOOK_VIEW_JUMP, subArrayGet(subtle->views, vid));
     }
 } /* }}} */
 

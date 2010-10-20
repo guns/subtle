@@ -136,6 +136,9 @@ subViewJump(SubView *v)
         {
           subScreenJump(s);
 
+          /* Hook: Jump */
+          subHookCall(SUB_HOOK_VIEW_JUMP, (void *)v);
+
           return;
         }
     }
