@@ -757,6 +757,8 @@ EventMessage(XClientMessageEvent *ev)
   /* Messages for client windows {{{ */
   else if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))));
     {
+      DEAD(c);
+
       switch(subEwmhFind(ev->message_type))
         {
           /* Actions: 0 = remove / 1 = add / 2 = toggle - we always toggle */
