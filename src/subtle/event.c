@@ -449,7 +449,7 @@ EventMessage(XClientMessageEvent *ev)
                     case 1: ///< Views
                       if((v = VIEW(subArrayGet(subtle->views, (int)ev->data.l[0])))) ///< Views
                         {
-                          int visible = subClientVisible(c);
+                          int visible = subViewVisible(v);
 
                           if(SUB_EWMH_SUBTLE_WINDOW_TAG == id) v->tags |= tag; ///< Action
                           else v->tags &= ~tag;
