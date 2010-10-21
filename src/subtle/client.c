@@ -1040,30 +1040,32 @@ subClientSetType(SubClient *c,
 
   assert(c);
 
-  /* Window type */
+  /* Get window type */
   if((types = (Atom *)subSharedPropertyGet(subtle->dpy, c->win, XA_ATOM,
       subEwmhGet(SUB_EWMH_NET_WM_WINDOW_TYPE), &size)))
     {
       int id = 0;
 
+      /* Set flags according to window types */
       for(i = 0; i < size; i++)
         {
           switch((id = subEwmhFind(types[i])))
             {
               case SUB_EWMH_NET_WM_WINDOW_TYPE_DOCK:
-                *flags |= SUB_CLIENT_TYPE_DOCK;
+                c->flags |= SUB_CLIENT_TYPE_DOCK;
                 break;
               case SUB_EWMH_NET_WM_WINDOW_TYPE_DESKTOP:
-                *flags |= SUB_CLIENT_TYPE_DESKTOP;
+                c->flags |= SUB_CLIENT_TYPE_DESKTOP;
                 break;
               case SUB_EWMH_NET_WM_WINDOW_TYPE_TOOLBAR:
-                *flags |= SUB_CLIENT_TYPE_TOOLBAR;
+                c->flags |= SUB_CLIENT_TYPE_TOOLBAR;
                 break;
               case SUB_EWMH_NET_WM_WINDOW_TYPE_SPLASH:
-                *flags |= SUB_CLIENT_TYPE_SPLASH;
+                c->flags |= SUB_CLIENT_TYPE_SPLASH;
                 break;
               case SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG:
-                *flags |= (SUB_CLIENT_TYPE_DIALOG|SUB_CLIENT_MODE_FLOAT);
+                c->flags |= SUB_CLIENT_TYPE_DIALOG;
+                *flags   |= SUB_CLIENT_MODE_FLOAT;
                 break;
               default: break;
             }

@@ -633,10 +633,6 @@ RubyHashMatch(VALUE key,
 
   if(key == Qundef) return ST_CONTINUE;
 
-  /* Convert regex */
-  if(T_REGEXP == rb_type(value))
-    regex = rb_funcall(value, rb_intern("source"), 0, NULL);
-  else regex = value;
 
   /* Check value type */
   switch(rb_type(key))
@@ -670,8 +666,30 @@ RubyHashMatch(VALUE key,
       default: rb_raise(rb_eArgError, "Unknown value type");
     }
 
+  /* Check value type */
+  switch(rb_type(value))
+    {
+      case T_REGEXP:
+        regex = rb_funcall(value, rb_intern("source"), 0, NULL);
+        break;
+      case T_SYMBOL:
+        if(CHAR2SYM("desktop") == value)      type |= SUB_CLIENT_TYPE_DESKTOP;
+        else if(CHAR2SYM("dock") == value)    type |= SUB_CLIENT_TYPE_DOCK;
+        else if(CHAR2SYM("toolbar") == value) type |= SUB_CLIENT_TYPE_TOOLBAR;
+        else if(CHAR2SYM("splash") == value)  type |= SUB_CLIENT_TYPE_SPLASH;
+        else if(CHAR2SYM("dialog") == value)  type |= SUB_CLIENT_TYPE_DIALOG;
+        else regex = rb_sym_to_s(value);
+        break;
+      case T_STRING: regex = value; break;
+      default: rb_raise(rb_eArgError, "Unknown value type");
+    }
+
   /* Finally create regex if there is any and append additional flags */
-  if(0 < type) subTagRegex(TAG(rargs[0]), type|rargs[1], RSTRING_PTR(regex));
+  if(0 < type)
+    {
+      subTagRegex(TAG(rargs[0]), type|rargs[1],
+        NIL_P(regex) ? NULL : RSTRING_PTR(regex));
+    }
 
   return ST_CONTINUE;
 } /* }}} */
