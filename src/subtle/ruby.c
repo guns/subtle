@@ -332,7 +332,7 @@ RubyGrab(VALUE chain,
           }
         break; /* }}} */
       case T_ARRAY: /* {{{ */
-        type = SUB_GRAB_WINDOW_GRAVITY;
+        type = (SUB_GRAB_WINDOW_GRAVITY|SUB_RUBY_DATA);
         data = DATA((unsigned long)value);
 
         rb_ary_push(shelter, value); ///< Protect from GC
@@ -1696,7 +1696,7 @@ RubyKernelScreen(VALUE self,
         {
           if((s = subArrayGet(subtle->screens, FIX2INT(id) - 1)))
             {
-              s->flags |= flags;
+              s->flags |= (flags|SUB_RUBY_DATA);
               s->top    = top;
               s->bottom = bottom;
 
@@ -2636,6 +2636,8 @@ subRubyLoadConfig(void)
       /* Check if vid exists */
       if(0 > s->vid || s->vid >= subtle->views->ndata)
         s->vid = 0;
+
+      s->flags &= ~SUB_RUBY_DATA;
     }
 
   /* Check gravities */
@@ -2676,6 +2678,7 @@ subRubyLoadConfig(void)
               RubyGravityString(g->data.num, &string);
               subRubyRelease(g->data.num);
               g->data.string  = string;
+              g->flags       &= ~SUB_RUBY_DATA;
             }
         }
     }

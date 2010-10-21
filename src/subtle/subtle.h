@@ -273,6 +273,9 @@
 /* Tray flags */
 #define SUB_TRAY_UNMAP                (1L << 10)                  ///< Ignore unmaps
 
+/* Special flags */
+#define SUB_RUBY_DATA                 (1L << 31)                  ///< Object stores ruby data
+
 /* Shortcuts */
 #define TYPES_ALL \
   (SUB_CLIENT_TYPE_DESKTOP|SUB_CLIENT_TYPE_DOCK| \
@@ -443,7 +446,6 @@ typedef struct subgrab_t /* {{{ */
 
   KeySym          sym;                                            ///< Grab sym
   unsigned int    code, mod;                                      ///< Grab code, modifier
-
   union subdata_t data;                                           ///< Grab data
 } SubGrab; /* }}} */
 
@@ -481,8 +483,10 @@ typedef struct subscreen_t /* {{{ */
   int               vid;                                          ///< Screen current view id
   XRectangle        geom, base;                                   ///< Screen geom, base
   Window            panel1, panel2;                               ///< Screen windows
-  unsigned long     top, bottom;                                  ///< Screen panel values
   struct subarray_t *panels;                                      ///< Screen panels
+
+  /* FIXME: Cache ruby object during config */
+  unsigned long     top, bottom;                                  ///< Screen panel values
 } SubScreen; /* }}} */
 
 typedef struct subsublet_t { /* {{{ */

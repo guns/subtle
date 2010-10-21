@@ -210,13 +210,13 @@ subGrabKill(SubGrab *g)
 {
   assert(g);
 
-  /* FIXME: Clean certain types */
-  if(g->flags & (SUB_GRAB_SPAWN|SUB_GRAB_WINDOW_GRAVITY) && g->data.string)
+  /* Clean certain types */
+  if(g->flags & (SUB_RUBY_DATA|SUB_GRAB_PROC) && g->data.num)
     {
-      free(g->data.string);
+      subRubyRelease(g->data.num); ///< Free ruby proc
     }
-  else if(g->flags & SUB_GRAB_PROC && g->data.num)
-    subRubyRelease(g->data.num); ///< Free ruby proc
+  else if(g->flags & (SUB_GRAB_SPAWN|SUB_GRAB_WINDOW_GRAVITY) && g->data.string)
+    free(g->data.string);
 
   free(g);
 
