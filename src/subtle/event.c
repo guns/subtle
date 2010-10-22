@@ -1233,15 +1233,7 @@ EventFocus(XFocusChangeEvent *ev)
     }
 
   /* Handle focus event */
-  if(ROOT == ev->window || ROOT == subtle->windows.focus) ///< Root
-    {
-      subtle->windows.focus = ROOT;
-      subGrabSet(ROOT, !(subtle->flags & SUB_SUBTLE_ESCAPE));
-
-      subScreenUpdate();
-      subScreenRender();
-    }
-  else if((c = CLIENT(subSubtleFind(ev->window, CLIENTID)))) ///< Clients
+  if((c = CLIENT(subSubtleFind(ev->window, CLIENTID)))) ///< Clients
     {
       if(!(c->flags & SUB_CLIENT_DEAD) && subClientVisible(c))
         {
