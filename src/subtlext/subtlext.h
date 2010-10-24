@@ -85,6 +85,7 @@ VALUE subColorInit(VALUE self, VALUE value);                      ///< Create ne
 VALUE subColorToHex(VALUE self);                                  ///< Convert to hex string
 VALUE subColorToString(VALUE self);                               ///< Convert to string
 VALUE subColorOperatorPlus(VALUE self, VALUE value);              ///< Concat string
+VALUE subColorEqual(VALUE self, VALUE other);                     ///< Whether objects are equal
 /* }}} */
 
 /* geometry.c {{{ */
@@ -95,6 +96,7 @@ VALUE subGeometryInit(int argc, VALUE *argv, VALUE self);         ///< Create ne
 VALUE subGeometryToArray(VALUE self);                             ///< Geometry to array
 VALUE subGeometryToHash(VALUE self);                              ///< Geometry to hash
 VALUE subGeometryToString(VALUE self);                            ///< Geometry to string
+VALUE subGeometryEqual(VALUE self, VALUE other);                  ///< Whether objects are equal
 /* }}} */
 
 /* gravity.c {{{ */

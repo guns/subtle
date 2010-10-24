@@ -202,4 +202,27 @@ subGeometryToString(VALUE self)
   return rb_str_new2(buf);
 } /* }}} */
 
+/* subGeometryEqual {{{ */
+/*
+ * call-seq: ==(other) -> True or False
+ *
+ * Whether both objects are equal (based on geometry)
+ *
+ *  object1 == object2
+ *  => true
+ */
+
+VALUE
+subGeometryEqual(VALUE self,
+  VALUE other)
+{
+  XRectangle r1 = { 0 }, r2 = { 0 };
+
+  subGeometryToRect(self, &r1);
+  subGeometryToRect(other, &r2);
+
+  return (r1.x == r2.x && r1.y == r2.y &&
+    r1.width == r2.width && r1.height == r2.height) ? Qtrue : Qfalse;
+} /* }}} */
+
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

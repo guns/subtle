@@ -238,6 +238,7 @@ VALUE
 subSubletBackgroundWriter(VALUE self,
   VALUE value)
 {
+  /* Check object type */
   if(T_STRING == rb_type(value))
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };

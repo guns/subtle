@@ -161,4 +161,22 @@ subColorOperatorPlus(VALUE self,
   return subSubtlextConcat(subColorToString(self), value);
 } /* }}} */
 
+/* subColorEqual {{{ */
+/*
+ * call-seq: ==(other) -> True or False
+ *
+ * Whether both objects are equal (based on pixel)
+ *
+ *  object1 == object2
+ *  => true
+ */
+
+VALUE
+subColorEqual(VALUE self,
+  VALUE other)
+{
+  return rb_iv_get(self, "@pixel") == rb_iv_get(other, "@pixel") ?
+    Qtrue : Qfalse;
+} /* }}} */
+
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
