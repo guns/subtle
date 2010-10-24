@@ -295,7 +295,7 @@ subDisplayPublish(void)
 {
   unsigned long *colors;
 
-#define NCOLORS 14
+#define NCOLORS 15
 
   /* Create color array */
   colors = (unsigned long *)subSharedMemoryAlloc(NCOLORS, sizeof(unsigned long));
@@ -314,6 +314,7 @@ subDisplayPublish(void)
   colors[11] = subtle->colors.bo_normal;
   colors[12] = subtle->colors.bo_panel;
   colors[13] = subtle->colors.bg;
+  colors[14] = subtle->colors.separator;
 
   /* EWMH: Colors */
   subEwmhSetCardinals(ROOT, SUB_EWMH_SUBTLE_COLORS, (long *)colors, NCOLORS);

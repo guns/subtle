@@ -1300,6 +1300,11 @@ RubyKernelColor(VALUE self,
 
           subtle->flags |= SUB_SUBTLE_BACKGROUND;
         }
+      else if(CHAR2SYM("separator") == option)
+        {
+          subtle->colors.separator = subSharedParseColor(subtle->dpy,
+            RSTRING_PTR(value));
+        }
       else subSharedLogWarn("Unknown color `:%s'\n", SYM2CHAR(option));
     }
   else rb_raise(rb_eArgError, "Unknown value type for color");
@@ -2600,6 +2605,10 @@ subRubyLoadConfig(void)
           subSharedLogDebug("Checked config=%s\n", path);
         }
     }
+
+  /* Colors */
+  if(0 == subtle->colors.separator)
+    subtle->colors.separator = subtle->colors.fg_panel;
 
   /* Create default tag */
   if(!(subtle->flags & SUB_SUBTLE_CHECK) &&
