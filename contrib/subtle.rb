@@ -149,6 +149,9 @@ color :border_panel,  "#303030"
 # Background color of root background
 color :background,    "#3d3d3d"
 
+# Color of the separator
+color :separator,     "#202020"
+
 #
 # == Gravities
 #
