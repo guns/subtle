@@ -34,48 +34,47 @@ module Subtle # {{{
         # Getopt options
         @opts = GetoptLong.new(
           # Groups
-          [ "--Client",         "-c", GetoptLong::NO_ARGUMENT ],
-          [ "--Gravity",        "-g", GetoptLong::NO_ARGUMENT ],
-          [ "--Screen",         "-e", GetoptLong::NO_ARGUMENT ],
-          [ "--Sublet",         "-s", GetoptLong::NO_ARGUMENT ],
-          [ "--Tag",            "-t", GetoptLong::NO_ARGUMENT ],
-          [ "--Tray",           "-y", GetoptLong::NO_ARGUMENT ],
-          [ "--View",           "-v", GetoptLong::NO_ARGUMENT ],
+          [ "--Client",  "-c", GetoptLong::NO_ARGUMENT ],
+          [ "--Gravity", "-g", GetoptLong::NO_ARGUMENT ],
+          [ "--Screen",  "-e", GetoptLong::NO_ARGUMENT ],
+          [ "--Sublet",  "-s", GetoptLong::NO_ARGUMENT ],
+          [ "--Tag",     "-t", GetoptLong::NO_ARGUMENT ],
+          [ "--Tray",    "-y", GetoptLong::NO_ARGUMENT ],
+          [ "--View",    "-v", GetoptLong::NO_ARGUMENT ],
 
           # Actions
-          [ "--add",            "-a", GetoptLong::NO_ARGUMENT ],
-          [ "--kill",           "-k", GetoptLong::NO_ARGUMENT ],
-          [ "--find",           "-f", GetoptLong::NO_ARGUMENT ],
-          [ "--focus",          "-o", GetoptLong::NO_ARGUMENT ],
-          [ "--full",           "-F", GetoptLong::NO_ARGUMENT ],
-          [ "--float",          "-O", GetoptLong::NO_ARGUMENT ],
-          [ "--stick",          "-S", GetoptLong::NO_ARGUMENT ],
-          [ "--jump",           "-j", GetoptLong::NO_ARGUMENT ],
-          [ "--list",           "-l", GetoptLong::NO_ARGUMENT ],
-          [ "--tag",            "-T", GetoptLong::NO_ARGUMENT ],
-          [ "--untag",          "-U", GetoptLong::NO_ARGUMENT ],
-          [ "--tags",           "-G", GetoptLong::NO_ARGUMENT ],
-          [ "--retag",          "-A", GetoptLong::NO_ARGUMENT ],
-          [ "--clients",        "-I", GetoptLong::NO_ARGUMENT ],
-          [ "--views",          "-W", GetoptLong::NO_ARGUMENT ],
-          [ "--update",         "-u", GetoptLong::NO_ARGUMENT ],
-          [ "--data",           "-D", GetoptLong::NO_ARGUMENT ],
-          [ "--gravity",        "-Y", GetoptLong::NO_ARGUMENT ],
-          [ "--screen",         "-n", GetoptLong::NO_ARGUMENT ],
-          [ "--raise",          "-E", GetoptLong::NO_ARGUMENT ],
-          [ "--lower",          "-L", GetoptLong::NO_ARGUMENT ],
+          [ "--add",     "-a", GetoptLong::NO_ARGUMENT ],
+          [ "--kill",    "-k", GetoptLong::NO_ARGUMENT ],
+          [ "--find",    "-f", GetoptLong::NO_ARGUMENT ],
+          [ "--focus",   "-o", GetoptLong::NO_ARGUMENT ],
+          [ "--full",    "-F", GetoptLong::NO_ARGUMENT ],
+          [ "--float",   "-O", GetoptLong::NO_ARGUMENT ],
+          [ "--stick",   "-S", GetoptLong::NO_ARGUMENT ],
+          [ "--jump",    "-j", GetoptLong::NO_ARGUMENT ],
+          [ "--list",    "-l", GetoptLong::NO_ARGUMENT ],
+          [ "--tag",     "-T", GetoptLong::NO_ARGUMENT ],
+          [ "--untag",   "-U", GetoptLong::NO_ARGUMENT ],
+          [ "--tags",    "-G", GetoptLong::NO_ARGUMENT ],
+          [ "--retag",   "-A", GetoptLong::NO_ARGUMENT ],
+          [ "--clients", "-I", GetoptLong::NO_ARGUMENT ],
+          [ "--views",   "-W", GetoptLong::NO_ARGUMENT ],
+          [ "--update",  "-u", GetoptLong::NO_ARGUMENT ],
+          [ "--data",    "-D", GetoptLong::NO_ARGUMENT ],
+          [ "--gravity", "-Y", GetoptLong::NO_ARGUMENT ],
+          [ "--screen",  "-n", GetoptLong::NO_ARGUMENT ],
+          [ "--raise",   "-E", GetoptLong::NO_ARGUMENT ],
+          [ "--lower",   "-L", GetoptLong::NO_ARGUMENT ],
 
           # Modifiers
-          [ "--reload_config",  "-r", GetoptLong::NO_ARGUMENT ],
-          [ "--reload_sublets", "-R", GetoptLong::NO_ARGUMENT ],
-          [ "--restart",        "-q", GetoptLong::NO_ARGUMENT ],
-          [ "--quit",           "-Q", GetoptLong::NO_ARGUMENT ],
-          [ "--current",        "-C", GetoptLong::NO_ARGUMENT ],
-          [ "--select",         "-X", GetoptLong::NO_ARGUMENT ],
+          [ "--reload",  "-r", GetoptLong::NO_ARGUMENT ],
+          [ "--restart", "-q", GetoptLong::NO_ARGUMENT ],
+          [ "--quit",    "-Q", GetoptLong::NO_ARGUMENT ],
+          [ "--current", "-C", GetoptLong::NO_ARGUMENT ],
+          [ "--select",  "-X", GetoptLong::NO_ARGUMENT ],
 
           # Other
-          [ "--help",           "-h", GetoptLong::NO_ARGUMENT ],
-          [ "--version",        "-V", GetoptLong::NO_ARGUMENT ]
+          [ "--help",    "-h", GetoptLong::NO_ARGUMENT ],
+          [ "--version", "-V", GetoptLong::NO_ARGUMENT ]
         )
       end # }}}
 
@@ -88,44 +87,43 @@ module Subtle # {{{
         @opts.each do |opt, arg|
           case opt
             # Groups
-            when "--Client"         then @group  = Subtlext::Client
-            when "--Gravity"        then @group  = Subtlext::Gravity
-            when "--Screen"         then @group  = Subtlext::Screen
-            when "--Sublet"         then @group  = Subtlext::Sublet
-            when "--Tag"            then @group  = Subtlext::Tag
-            when "--Tray"           then @group  = Subtlext::Tray
-            when "--View"           then @group  = Subtlext::View
+            when "--Client"  then @group  = Subtlext::Client
+            when "--Gravity" then @group  = Subtlext::Gravity
+            when "--Screen"  then @group  = Subtlext::Screen
+            when "--Sublet"  then @group  = Subtlext::Sublet
+            when "--Tag"     then @group  = Subtlext::Tag
+            when "--Tray"    then @group  = Subtlext::Tray
+            when "--View"    then @group  = Subtlext::View
 
             # Actions
-            when "--add"            then @action = :new
-            when "--kill"           then @action = :kill
-            when "--find"           then @action = :find
-            when "--focus"          then @action = :focus
-            when "--full"           then @action = :toggle_full
-            when "--float"          then @action = :toggle_float
-            when "--stick"          then @action = :toggle_stick
-            when "--jump"           then @action = :jump
-            when "--list"           then @action = :all
-            when "--tag"            then @action = :tag
-            when "--untag"          then @action = :untag
-            when "--tags"           then @action = :tags
-            when "--retag"          then @action = :retag
-            when "--clients"        then @action = :clients
-            when "--views"          then @action = :views
-            when "--update"         then @action = :update
-            when "--data"           then @action = :data=
-            when "--gravity"        then @action = :gravity=
-            when "--screen"         then @action = :screen=
-            when "--raise"          then @action = :raise
-            when "--lower"          then @action = :lower
+            when "--add"     then @action = :new
+            when "--kill"    then @action = :kill
+            when "--find"    then @action = :find
+            when "--focus"   then @action = :focus
+            when "--full"    then @action = :toggle_full
+            when "--float"   then @action = :toggle_float
+            when "--stick"   then @action = :toggle_stick
+            when "--jump"    then @action = :jump
+            when "--list"    then @action = :all
+            when "--tag"     then @action = :tag
+            when "--untag"   then @action = :untag
+            when "--tags"    then @action = :tags
+            when "--retag"   then @action = :retag
+            when "--clients" then @action = :clients
+            when "--views"   then @action = :views
+            when "--update"  then @action = :update
+            when "--data"    then @action = :data=
+            when "--gravity" then @action = :gravity=
+            when "--screen"  then @action = :screen=
+            when "--raise"   then @action = :raise
+            when "--lower"   then @action = :lower
 
             # Modifiers
-            when "--reload_config"  then @mod = :reload_config
-            when "--reload_sublets" then @mod = :reload_sublets
-            when "--restart"        then @mod = :restart
-            when "--quit"           then @mod = :quit
-            when "--current"        then @mod = :current
-            when "--select"         then @mod = :select
+            when "--reload"  then @mod = :reload_config
+            when "--restart" then @mod = :restart
+            when "--quit"    then @mod = :quit
+            when "--current" then @mod = :current
+            when "--select"  then @mod = :select
 
             # Other
             when "--help"
@@ -150,10 +148,9 @@ module Subtle # {{{
 
         # Modifiers
         case @mod
-          when :reload_config  then  Subtlext::Subtle.reload_config
-          when :reload_sublets then  Subtlext::Subtle.reload_sublets
-          when :restart        then  Subtlext::Subtle.restart
-          when :quit           then  Subtlext::Subtle.quit
+          when :reload  then  Subtlext::Subtle.reload
+          when :restart then  Subtlext::Subtle.restart
+          when :quit    then  Subtlext::Subtle.quit
           when :current
             arg2 = arg1
             arg1 = :current
