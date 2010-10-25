@@ -398,7 +398,7 @@ subViewClients(VALUE self)
             XInternAtom(display, "SUBTLE_WINDOW_FLAGS", False), NULL);
 
           /* Check if there are common tags or window is stick */
-          if((tags2 && *tags1 & *tags2) || *flags & SUB_EWMH_STICK)
+          if((tags1 && tags2 && *tags1 & *tags2) ||( flags && *flags & SUB_EWMH_STICK))
             {
               if(!NIL_P(client = rb_funcall(klass, meth, 1, LONG2NUM(clients[i]))))
                 {
