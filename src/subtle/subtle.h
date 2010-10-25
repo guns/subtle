@@ -492,7 +492,7 @@ typedef struct subscreen_t /* {{{ */
 typedef struct subsublet_t { /* {{{ */
   int               watch;                                        ///< Sublet watch id
   char              *name;                                        ///< Sublet name
-  unsigned long     instance, bg;                                 ///< Sublet ruby instance, bg color
+  unsigned long     instance, fg, bg;                             ///< Sublet ruby instance, fg and bg color
   time_t            time, interval;                               ///< Sublet update/interval time
 
   struct subtext_t  *text;                                        ///< Sublet text
