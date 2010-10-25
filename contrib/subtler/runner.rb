@@ -67,8 +67,8 @@ module Subtle # {{{
 
           # Modifiers
           [ "--reload",  "-r", GetoptLong::NO_ARGUMENT ],
-          [ "--restart", "-q", GetoptLong::NO_ARGUMENT ],
-          [ "--quit",    "-Q", GetoptLong::NO_ARGUMENT ],
+          [ "--restart", "-R", GetoptLong::NO_ARGUMENT ],
+          [ "--quit",    "-q", GetoptLong::NO_ARGUMENT ],
           [ "--current", "-C", GetoptLong::NO_ARGUMENT ],
           [ "--select",  "-X", GetoptLong::NO_ARGUMENT ],
 
@@ -119,7 +119,7 @@ module Subtle # {{{
             when "--lower"   then @action = :lower
 
             # Modifiers
-            when "--reload"  then @mod = :reload_config
+            when "--reload"  then @mod = :reload
             when "--restart" then @mod = :restart
             when "--quit"    then @mod = :quit
             when "--current" then @mod = :current
@@ -160,7 +160,7 @@ module Subtle # {{{
         end
 
         # Call method
-        unless(@group.nil? || @action.nil?)
+        if(!@group.nil? and !@action.nil?)
           # Check singleton and instance methods
           if((@group.singleton_methods << :new).include?(@action))
             obj   = @group
@@ -200,8 +200,9 @@ module Subtle # {{{
             else
               printer(ret)
           end
-        else
+        elsif(:reload != @mod and :restart != @mod and :quit != @mod)
           usage(@group)
+          exit
         end
       end # }}}
 
@@ -279,10 +280,9 @@ module Subtle # {{{
     -V, --version           Show version info and exit
 
   Modifier:
-    -r, --reload-config     Reload config
-    -R, --reload-sublets    Reload sublets
-    -q, --restart           Restart subtle
-    -Q, --quit              Quit %s
+    -r, --reload            Reload config and sublets
+    -R, --restart           Restart subtle
+    -q, --quit              Quit %s
     -C, --current           Select current active window/view
     -X, --select            Select a window via pointer
 
