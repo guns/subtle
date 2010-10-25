@@ -146,9 +146,228 @@ RubyConvert(void *data)
   return object;
 } /* }}} */
 
-/* RubyHook {{{ */
+/* Get */
+
+/* RubyGetGeometry {{{ */
+static int
+RubyGetGeometry(VALUE ary,
+  XRectangle *geometry)
+{
+  int data[4] = { 0 }, ret = False;
+
+  assert(geometry);
+
+  /* Check value type */
+  if(T_ARRAY == rb_type(ary))
+    {
+      int i;
+      VALUE value = Qnil, meth = rb_intern("at");
+
+      if((4 == FIX2INT(rb_funcall(ary, rb_intern("size"), 0, NULL))))
+        {
+          for(i = 0; i < 4; i++) ///< Safely fetching array values
+            {
+              value   = rb_funcall(ary, meth, 1, INT2FIX(i)) ;
+              data[i] = RTEST(value) ? FIX2INT(value) : 0;
+            }
+
+          ret = True;
+        }
+    }
+
+  /* Assign data to rect */
+  geometry->x      = data[0];
+  geometry->y      = data[1];
+  geometry->width  = data[2];
+  geometry->height = data[3];
+
+  return ret;
+} /* }}} */
+
+/* RubyGetGravity {{{ */
+static int
+RubyGetGravity(VALUE value)
+{
+  int gravity = -1;
+
+  /* Check value type */
+  switch(rb_type(value))
+    {
+      case T_FIXNUM:
+        gravity = FIX2INT(value);
+        break;
+      case T_SYMBOL:
+        gravity = subGravityFind(SYM2CHAR(value), 0);
+        break;
+    }
+
+  return 0 <= gravity && gravity < subtle->gravities->ndata ? gravity : -1;
+} /* }}} */
+
+/* RubyGetGravityString {{{ */
 static void
-RubyHook(VALUE event,
+RubyGetGravityString(VALUE value,
+  char **string)
+{
+  /* Check value type */
+  if(T_ARRAY == rb_type(value))
+    {
+      int i = 0, j = 0, id = -1, size = 0;
+      VALUE entry = Qnil;
+
+      /* Create gravity string */
+      size    = RARRAY_LEN(value);
+      *string = (char *)subSharedMemoryAlloc(size + 1, sizeof(char));
+
+      /* Add gravities */
+      for(i = 0, j = 0; Qnil != (entry = rb_ary_entry(value, i)); i++)
+        {
+          /* We store ids in a string to ease the whole thing */
+          if(-1 != (id = RubyGetGravity(entry)))
+            (*string)[j++] = id + 65; /// Use letters only
+          else subSharedLogWarn("Failed finding gravity `%s'\n",
+            SYM2CHAR(entry));
+        }
+    }
+} /* }}} */
+
+/* Hash */
+
+/* RubyHashConvert {{{ */
+static VALUE
+RubyHashConvert(VALUE value)
+{
+  VALUE hash = Qnil;
+
+  /* Check value type */
+  switch(rb_type(value))
+    {
+      case T_HASH:
+        hash = value;
+        break;
+      case T_NIL:
+        /* Ignore this case */
+        break;
+      default:
+        /* Convert to hash */
+        hash = rb_hash_new();
+
+        rb_hash_aset(hash, Qnil, value);
+    }
+
+  return hash;
+} /* }}} */
+
+/* RubyHashUpdate {{{ */
+static int
+RubyHashUpdate(VALUE key,
+  VALUE value,
+  VALUE data)
+{
+  if(key == Qundef) return ST_CONTINUE;
+
+  rb_hash_aset(data, key, value);
+
+  return ST_CONTINUE;
+} /* }}} */
+
+/* RubyHashMatch {{{ */
+static int
+RubyHashMatch(VALUE key,
+  VALUE value,
+  VALUE data)
+{
+  int type = 0;
+  VALUE regex = Qnil, *rargs = (VALUE *)data;
+
+  if(key == Qundef) return ST_CONTINUE;
+
+
+  /* Check value type */
+  switch(rb_type(key))
+    {
+      case T_NIL:
+        type = SUB_TAG_MATCH_INSTANCE|SUB_TAG_MATCH_CLASS; ///< Defaults
+        break;
+      case T_SYMBOL:
+        if(CHAR2SYM("name") == key)          type = SUB_TAG_MATCH_NAME;
+        else if(CHAR2SYM("instance") == key) type = SUB_TAG_MATCH_INSTANCE;
+        else if(CHAR2SYM("class") == key)    type = SUB_TAG_MATCH_CLASS;
+        else if(CHAR2SYM("role") == key)     type = SUB_TAG_MATCH_ROLE;
+        else if(CHAR2SYM("type") == key)     type = SUB_TAG_MATCH_TYPE;
+        break;
+      case T_ARRAY:
+          {
+            int i;
+            VALUE entry = Qnil;
+
+            /* Check flags in array */
+            for(i = 0; Qnil != (entry = rb_ary_entry(key, i)); i++)
+              {
+                if(CHAR2SYM("name") == entry)          type |= SUB_TAG_MATCH_NAME;
+                else if(CHAR2SYM("instance") == entry) type |= SUB_TAG_MATCH_INSTANCE;
+                else if(CHAR2SYM("class") == entry)    type |= SUB_TAG_MATCH_CLASS;
+                else if(CHAR2SYM("role") == entry)     type |= SUB_TAG_MATCH_ROLE;
+                else if(CHAR2SYM("type") == entry)     type |= SUB_TAG_MATCH_TYPE;
+              }
+          }
+        break;
+      default: rb_raise(rb_eArgError, "Unknown value type");
+    }
+
+  /* Check value type */
+  switch(rb_type(value))
+    {
+      case T_REGEXP:
+        regex = rb_funcall(value, rb_intern("source"), 0, NULL);
+        break;
+      case T_SYMBOL:
+        if(CHAR2SYM("desktop") == value)      type |= SUB_CLIENT_TYPE_DESKTOP;
+        else if(CHAR2SYM("dock") == value)    type |= SUB_CLIENT_TYPE_DOCK;
+        else if(CHAR2SYM("toolbar") == value) type |= SUB_CLIENT_TYPE_TOOLBAR;
+        else if(CHAR2SYM("splash") == value)  type |= SUB_CLIENT_TYPE_SPLASH;
+        else if(CHAR2SYM("dialog") == value)  type |= SUB_CLIENT_TYPE_DIALOG;
+        else regex = rb_sym_to_s(value);
+        break;
+      case T_STRING: regex = value; break;
+      default: rb_raise(rb_eArgError, "Unknown value type");
+    }
+
+  /* Finally create regex if there is any and append additional flags */
+  if(0 < type)
+    {
+      subTagRegex(TAG(rargs[0]), type|rargs[1],
+        NIL_P(regex) ? NULL : RSTRING_PTR(regex));
+    }
+
+  return ST_CONTINUE;
+} /* }}} */
+
+/* RubyHashCombine {{{ */
+static VALUE
+RubyHashCombine(VALUE self,
+  VALUE sym,
+  VALUE value)
+{
+  VALUE hash = Qnil, match = Qnil, params = rb_iv_get(self, "@params");
+
+  hash = RubyHashConvert(value);
+
+  /* Check if hash contains key and append or otherwise create it */
+  if(T_HASH == rb_type(match = rb_hash_lookup(params, sym)))
+    {
+      rb_hash_foreach(hash, RubyHashUpdate, match); ///< Merge!
+    }
+  else rb_hash_aset(params, sym, hash);
+
+  return Qnil;
+} /* }}} */
+
+/* Eval */
+
+/* RubyEvalHook {{{ */
+static void
+RubyEvalHook(VALUE event,
   VALUE proc)
 {
   int i;
@@ -192,9 +411,9 @@ RubyHook(VALUE event,
     }
 } /* }}} */
 
-/* RubyGrab {{{ */
+/* RubyEvalGrab {{{ */
 static void
-RubyGrab(VALUE chain,
+RubyEvalGrab(VALUE chain,
   VALUE value)
 {
   int type = -1;
@@ -378,9 +597,9 @@ RubyGrab(VALUE chain,
   else rb_raise(rb_eArgError, "Unknown value type for grab");
 } /* }}} */
 
-/* RubyPanel {{{ */
+/* RubyEvalPanel {{{ */
 void
-RubyPanel(VALUE ary,
+RubyEvalPanel(VALUE ary,
   int position,
   SubScreen *s)
 {
@@ -497,221 +716,120 @@ RubyPanel(VALUE ary,
     }
 } /* }}} */
 
-/* Get */
-
-/* RubyGetGeometry {{{ */
-static int
-RubyGetGeometry(VALUE ary,
-  XRectangle *geometry)
-{
-  int data[4] = { 0 }, ret = False;
-
-  assert(geometry);
-
-  /* Check value type */
-  if(T_ARRAY == rb_type(ary))
-    {
-      int i;
-      VALUE value = Qnil, meth = rb_intern("at");
-
-      if((4 == FIX2INT(rb_funcall(ary, rb_intern("size"), 0, NULL))))
-        {
-          for(i = 0; i < 4; i++) ///< Safely fetching array values
-            {
-              value   = rb_funcall(ary, meth, 1, INT2FIX(i)) ;
-              data[i] = RTEST(value) ? FIX2INT(value) : 0;
-            }
-
-          ret = True;
-        }
-    }
-
-  /* Assign data to rect */
-  geometry->x      = data[0];
-  geometry->y      = data[1];
-  geometry->width  = data[2];
-  geometry->height = data[3];
-
-  return ret;
-} /* }}} */
-
-/* RubyGetGravity {{{ */
-static int
-RubyGetGravity(VALUE value)
-{
-  int gravity = -1;
-
-  /* Check value type */
-  switch(rb_type(value))
-    {
-      case T_FIXNUM:
-        gravity = FIX2INT(value);
-        break;
-      case T_SYMBOL:
-        gravity = subGravityFind(SYM2CHAR(value), 0);
-        break;
-    }
-
-  return 0 <= gravity && gravity < subtle->gravities->ndata ? gravity : -1;
-} /* }}} */
-
-/* RubyGravityString {{{ */
+/* RubyEvalConfig {{{ */
 static void
-RubyGravityString(VALUE value,
-  char **string)
+RubyEvalConfig(void)
 {
-  /* Check value type */
-  if(T_ARRAY == rb_type(value))
+  int i;
+
+  /* Check and update colors */
+  if(0 == subtle->colors.separator)
+    subtle->colors.separator = subtle->colors.fg_panel;
+
+  /* Check and update grabs */
+  if(0 == subtle->grabs->ndata)
     {
-      int i = 0, j = 0, id = -1, size = 0;
-      VALUE entry = Qnil;
+      subSharedLogWarn("No grabs found\n");
+      subSubtleFinish();
 
-      /* Create gravity string */
-      size    = RARRAY_LEN(value);
-      *string = (char *)subSharedMemoryAlloc(size + 1, sizeof(char));
+      exit(-1);
+    }
+  else
+    {
+      subArraySort(subtle->grabs, subGrabCompare);
 
-      /* Add gravities */
-      for(i = 0, j = 0; Qnil != (entry = rb_ary_entry(value, i)); i++)
+      /* Update grabs and gravites */
+      for(i = 0; i < subtle->grabs->ndata; i++)
         {
-          /* We store ids in a string to ease the whole thing */
-          if(-1 != (id = RubyGetGravity(entry)))
-            (*string)[j++] = id + 65; /// Use letters only
-          else subSharedLogWarn("Failed finding gravity `%s'\n",
-            SYM2CHAR(entry));
+          SubGrab *g = GRAB(subtle->grabs->data[i]);
+
+          /* Update gravity grab */
+          if(g->flags & SUB_GRAB_WINDOW_GRAVITY)
+            {
+              char *string = NULL;
+
+              /* Create gravity string */
+              RubyGetGravityString(g->data.num, &string);
+              subRubyRelease(g->data.num);
+              g->data.string  = string;
+              g->flags       &= ~SUB_RUBY_DATA;
+            }
         }
     }
-} /* }}} */
 
-/* Hash */
-
-/* RubyHashConvert {{{ */
-static VALUE
-RubyHashConvert(VALUE value)
-{
-  VALUE hash = Qnil;
-
-  /* Check value type */
-  switch(rb_type(value))
+  /* Check gravities */
+  if(0 == subtle->gravities->ndata)
     {
-      case T_HASH:
-        hash = value;
-        break;
-      case T_NIL:
-        /* Ignore this case */
-        break;
-      default:
-        /* Convert to hash */
-        hash = rb_hash_new();
+      subSharedLogError("No gravities found\n");
+      subSubtleFinish();
 
-        rb_hash_aset(hash, Qnil, value);
+      exit(-1);
     }
 
-  return hash;
-} /* }}} */
+  /* Get default gravity */
+  if(-1 == (subtle->gravity = RubyGetGravity(subtle->gravity)))
+    subtle->gravity = 0;
 
-/* RubyHashUpdate {{{ */
-static int
-RubyHashUpdate(VALUE key,
-  VALUE value,
-  VALUE data)
-{
-  if(key == Qundef) return ST_CONTINUE;
+  subGravityPublish();
 
-  rb_hash_aset(data, key, value);
-
-  return ST_CONTINUE;
-} /* }}} */
-
-/* RubyHashMatch {{{ */
-static int
-RubyHashMatch(VALUE key,
-  VALUE value,
-  VALUE data)
-{
-  int type = 0;
-  VALUE regex = Qnil, *rargs = (VALUE *)data;
-
-  if(key == Qundef) return ST_CONTINUE;
-
-
-  /* Check value type */
-  switch(rb_type(key))
+  /* Check and update screens */
+  for(i = 0; i < subtle->screens->ndata; i++)
     {
-      case T_NIL:
-        type = SUB_TAG_MATCH_INSTANCE|SUB_TAG_MATCH_CLASS; ///< Defaults
-        break;
-      case T_SYMBOL:
-        if(CHAR2SYM("name") == key)          type = SUB_TAG_MATCH_NAME;
-        else if(CHAR2SYM("instance") == key) type = SUB_TAG_MATCH_INSTANCE;
-        else if(CHAR2SYM("class") == key)    type = SUB_TAG_MATCH_CLASS;
-        else if(CHAR2SYM("role") == key)     type = SUB_TAG_MATCH_ROLE;
-        else if(CHAR2SYM("type") == key)     type = SUB_TAG_MATCH_TYPE;
-        break;
-      case T_ARRAY:
+      SubScreen *s = SCREEN(subtle->screens->data[i]);
+
+      /* Check if vid exists */
+      if(0 > s->vid || s->vid >= subtle->views->ndata)
+        s->vid = 0;
+
+      s->flags &= ~SUB_RUBY_DATA;
+    }
+
+  /* Check and update tags */
+  for(i = 0; i < subtle->tags->ndata; i++)
+    {
+      SubTag *t = TAG(subtle->tags->data[i]);
+
+      /* Update gravities */
+      if(t->flags & SUB_TAG_GRAVITY)
+        {
+          if(-1 == (t->gravity = RubyGetGravity(t->gravity)))
+            t->gravity = 0;
+        }
+    }
+
+  subTagPublish();
+
+  if(1 == subtle->tags->ndata) subSharedLogWarn("No tags found\n");
+
+  /* Check and update views */
+  if(0 == subtle->views->ndata) ///< Create default view
+    {
+      SubView *v = subViewNew("subtle", "default");
+
+      subArrayPush(subtle->views, (void *)v);
+      subSharedLogWarn("No views found\n");
+    }
+  else ///< Check default tag
+    {
+      SubView *v = NULL;
+
+      /* Check for view with default tag */
+      for(i = subtle->views->ndata - 1; 0 <= i; i--)
+        if((v = VIEW(subtle->views->data[i])) && v->tags & DEFAULTTAG)
           {
-            int i;
-            VALUE entry = Qnil;
-
-            /* Check flags in array */
-            for(i = 0; Qnil != (entry = rb_ary_entry(key, i)); i++)
-              {
-                if(CHAR2SYM("name") == entry)          type |= SUB_TAG_MATCH_NAME;
-                else if(CHAR2SYM("instance") == entry) type |= SUB_TAG_MATCH_INSTANCE;
-                else if(CHAR2SYM("class") == entry)    type |= SUB_TAG_MATCH_CLASS;
-                else if(CHAR2SYM("role") == entry)     type |= SUB_TAG_MATCH_ROLE;
-                else if(CHAR2SYM("type") == entry)     type |= SUB_TAG_MATCH_TYPE;
-              }
+            subSharedLogDebug("Default view: name=%s\n", v->name);
+            break;
           }
-        break;
-      default: rb_raise(rb_eArgError, "Unknown value type");
+
+      v->tags |= DEFAULTTAG; ///< Set default tag
+
+      /* EWMH: Tags */
+      subEwmhSetCardinals(v->win, SUB_EWMH_SUBTLE_WINDOW_TAGS,
+        (long *)&v->tags, 1);
     }
 
-  /* Check value type */
-  switch(rb_type(value))
-    {
-      case T_REGEXP:
-        regex = rb_funcall(value, rb_intern("source"), 0, NULL);
-        break;
-      case T_SYMBOL:
-        if(CHAR2SYM("desktop") == value)      type |= SUB_CLIENT_TYPE_DESKTOP;
-        else if(CHAR2SYM("dock") == value)    type |= SUB_CLIENT_TYPE_DOCK;
-        else if(CHAR2SYM("toolbar") == value) type |= SUB_CLIENT_TYPE_TOOLBAR;
-        else if(CHAR2SYM("splash") == value)  type |= SUB_CLIENT_TYPE_SPLASH;
-        else if(CHAR2SYM("dialog") == value)  type |= SUB_CLIENT_TYPE_DIALOG;
-        else regex = rb_sym_to_s(value);
-        break;
-      case T_STRING: regex = value; break;
-      default: rb_raise(rb_eArgError, "Unknown value type");
-    }
-
-  /* Finally create regex if there is any and append additional flags */
-  if(0 < type)
-    {
-      subTagRegex(TAG(rargs[0]), type|rargs[1],
-        NIL_P(regex) ? NULL : RSTRING_PTR(regex));
-    }
-
-  return ST_CONTINUE;
-} /* }}} */
-
-/* RubyHashCombine {{{ */
-static VALUE
-RubyHashCombine(VALUE self,
-  VALUE sym,
-  VALUE value)
-{
-  VALUE hash = Qnil, match = Qnil, params = rb_iv_get(self, "@params");
-
-  hash = RubyHashConvert(value);
-
-  /* Check if hash contains key and append or otherwise create it */
-  if(T_HASH == rb_type(match = rb_hash_lookup(params, sym)))
-    {
-      rb_hash_foreach(hash, RubyHashUpdate, match); ///< Merge!
-    }
-  else rb_hash_aset(params, sym, hash);
-
-  return Qnil;
+  subViewPublish();
+  subDisplayPublish();
 } /* }}} */
 
 /* Wrap */
@@ -746,8 +864,8 @@ RubyWrapLoadPanels(VALUE data)
 
       if(!s->panels) s->panels = subArrayNew();
 
-      RubyPanel(s->top,    SUB_SCREEN_PANEL1, s);
-      RubyPanel(s->bottom, SUB_SCREEN_PANEL2, s);
+      RubyEvalPanel(s->top,    SUB_SCREEN_PANEL1, s);
+      RubyEvalPanel(s->bottom, SUB_SCREEN_PANEL2, s);
     }
 
   /* Pass 2: Add remaining sublets if any */
@@ -915,35 +1033,6 @@ RubyWrapEval(VALUE data)
   return Qnil;
 } /* }}} */
 
-/* Object */
-
-/* RubyObjectDispatcher {{{ */
-/*
- * Dispatcher for Subtlext constants - internal use only
- */
-
-static VALUE
-RubyObjectDispatcher(VALUE self,
-  VALUE missing)
-{
-  ID id = SYM2ID(missing);
-  VALUE ret = Qnil;
-
-  subRubyLoadSubtlext(); ///< Load subtlext on demand
-
-  /* Check if subtlext has this symbol */
-  if(rb_const_defined(rb_mKernel, id))
-    ret = rb_const_get(rb_mKernel, id);
-  else
-    {
-      char *name = (char *)rb_id2name(id);
-
-      rb_raise(rb_eStandardError, "Failed finding constant `%s'", name);
-    }
-
-  return ret;
-} /* }}} */
-
 /* Options */
 
 /* RubyOptionsInit {{{ */
@@ -985,7 +1074,7 @@ RubyOptionsDispatcher(int argc,
 /*
  * call-seq: match -> nil
  *
- * Append match hashes
+ * Append match hashes if called multiple times
  *
  *  option.match :name => /foo/
  *  => nil
@@ -1002,7 +1091,7 @@ RubyOptionsMatch(VALUE self,
 /*
  * call-seq: exclude -> nil
  *
- * Append exclude hashes
+ * Append exclude hashes if called multiple times
  *
  *  option.exclude :name => /foo/
  *  => nil
@@ -1036,9 +1125,9 @@ RubyOptionsGravity(VALUE self,
   return rb_hash_aset(params, CHAR2SYM("gravity"), gravity);
 } /* }}} */
 
-/* Kernel */
+/* Config */
 
-/* RubyKernelSet {{{ */
+/* RubyConfigSet {{{ */
 /*
  * call-seq: set(option, value) -> nil
  *
@@ -1048,7 +1137,7 @@ RubyOptionsGravity(VALUE self,
  */
 
 static VALUE
-RubyKernelSet(VALUE self,
+RubyConfigSet(VALUE self,
   VALUE option,
   VALUE value)
 {
@@ -1208,7 +1297,7 @@ RubyKernelSet(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* RubyKernelColor {{{ */
+/* RubyConfigColor {{{ */
 /*
  * call-seq: color(color, value) -> nil
  *
@@ -1218,7 +1307,7 @@ RubyKernelSet(VALUE self,
  */
 
 static VALUE
-RubyKernelColor(VALUE self,
+RubyConfigColor(VALUE self,
   VALUE option,
   VALUE value)
 {
@@ -1312,7 +1401,7 @@ RubyKernelColor(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* RubyKernelGravity {{{ */
+/* RubyConfigGravity {{{ */
 /*
  * call-seq: gravity(name, value) -> nil
  *
@@ -1322,7 +1411,7 @@ RubyKernelColor(VALUE self,
  */
 
 static VALUE
-RubyKernelGravity(VALUE self,
+RubyConfigGravity(VALUE self,
   VALUE name,
   VALUE value)
 {
@@ -1348,7 +1437,7 @@ RubyKernelGravity(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* RubyKernelGrab {{{ */
+/* RubyConfigGrab {{{ */
 /*
  * call-seq: grab(chain, value) -> nil
  *           grab(chain, &blk)  -> nil
@@ -1359,7 +1448,7 @@ RubyKernelGravity(VALUE self,
  */
 
 static VALUE
-RubyKernelGrab(int argc,
+RubyConfigGrab(int argc,
   VALUE *argv,
   VALUE self)
 {
@@ -1369,12 +1458,12 @@ RubyKernelGrab(int argc,
 
   if(rb_block_given_p()) value = rb_block_proc(); ///< Get proc
 
-  RubyGrab(chain, value);
+  RubyEvalGrab(chain, value);
 
   return Qnil;
 } /* }}} */
 
-/* RubyKernelTag {{{ */
+/* RubyConfigTag {{{ */
 /*
  * call-seq: tag(name, regex) -> nil
  *           tag(name, blk)   -> nil
@@ -1389,7 +1478,7 @@ RubyKernelGrab(int argc,
  */
 
 static VALUE
-RubyKernelTag(int argc,
+RubyConfigTag(int argc,
   VALUE *argv,
   VALUE self)
 {
@@ -1535,7 +1624,7 @@ RubyKernelTag(int argc,
   return Qnil;
 } /* }}} */
 
-/* RubyKernelView {{{ */
+/* RubyConfigView {{{ */
 /*
  * call-seq: view(name, regex) -> nil
  *
@@ -1545,7 +1634,7 @@ RubyKernelTag(int argc,
  */
 
 static VALUE
-RubyKernelView(VALUE self,
+RubyConfigView(VALUE self,
   VALUE name,
   VALUE regex)
 {
@@ -1574,7 +1663,7 @@ RubyKernelView(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* RubyKernelOn {{{ */
+/* RubyConfigOn {{{ */
 /*
  * call-seq: on(event, &block) -> nil
  *
@@ -1586,7 +1675,7 @@ RubyKernelView(VALUE self,
  */
 
 static VALUE
-RubyKernelOn(VALUE self,
+RubyConfigOn(VALUE self,
   VALUE event)
 {
   /* Check value type */
@@ -1596,14 +1685,14 @@ RubyKernelOn(VALUE self,
 
       if(subtle->flags & SUB_SUBTLE_CHECK) return Qnil; ///< Skip on check
 
-      RubyHook(event, proc);
+      RubyEvalHook(event, proc);
     }
   else rb_raise(rb_eArgError, "Unknown value type for on");
 
   return Qnil;
 } /* }}} */
 
-/* RubyKernelSublet {{{ */
+/* RubyConfigSublet {{{ */
 /*
  * call-seq: sublet(name, blk)   -> nil
  *
@@ -1615,7 +1704,7 @@ RubyKernelOn(VALUE self,
  */
 
 static VALUE
-RubyKernelSublet(VALUE self,
+RubyConfigSublet(VALUE self,
   VALUE sublet)
 {
   VALUE klass = Qnil, options = Qnil;
@@ -1639,7 +1728,7 @@ RubyKernelSublet(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* RubyKernelScreen {{{ */
+/* RubyConfigScreen {{{ */
 /*
  * call-seq: screen(name, blk) -> nil
  *
@@ -1653,7 +1742,7 @@ RubyKernelSublet(VALUE self,
  */
 
 static VALUE
-RubyKernelScreen(VALUE self,
+RubyConfigScreen(VALUE self,
   VALUE id)
 {
   VALUE params = Qnil, value = Qnil, klass = Qnil, options = Qnil;
@@ -1931,7 +2020,7 @@ RubySubletOn(VALUE self,
           snprintf(buf, sizeof(buf), "__hook_%s", SYM2CHAR(event));
           rb_funcall(sing, meth, 2, CHAR2SYM(buf), proc);
 
-          RubyHook(event, rb_obj_method(p->sublet->instance, CHAR2SYM(buf)));
+          RubyEvalHook(event, rb_obj_method(p->sublet->instance, CHAR2SYM(buf)));
         }
     }
   else rb_raise(rb_eArgError, "Unknown value type for on");
@@ -1974,7 +2063,7 @@ RubySubletGrab(VALUE self,
           rb_funcall(rb_singleton_class(p->sublet->instance),
             rb_intern("define_method"), 2, CHAR2SYM(buf), rb_block_proc());
 
-          RubyGrab(chain, rb_obj_method(p->sublet->instance, CHAR2SYM(buf)));
+          RubyEvalGrab(chain, rb_obj_method(p->sublet->instance, CHAR2SYM(buf)));
         }
     }
   else rb_raise(rb_eArgError, "Unknown value type for grab");
@@ -2479,13 +2568,8 @@ subRubyInit(void)
   rb_define_module("Gem");
   Init_prelude();
 
-  /*
-   * Document-class: Object
-   *
-   * Ruby Object class dispatcher
-   */
-
-  rb_define_singleton_method(rb_cObject, "const_missing", RubyObjectDispatcher, 1);
+  /* Add subtlext to autoload list */
+  rb_autoload(rb_cObject, SYM2ID(CHAR2SYM("Subtlext")), "subtle/subtlext");
 
   /*
    * Document-class: Subtle
@@ -2496,26 +2580,28 @@ subRubyInit(void)
   mod = rb_define_module("Subtle");
 
   /*
-   * Document-class: Kernel
+   * Document-class: Config
    *
-   * Ruby Kernel class for Sublet DSL
+   * Config class for DSL evaluation
    */
 
+  config = rb_define_class_under(mod, "Config", rb_cObject);
+
   /* Class methods */
-  rb_define_method(rb_mKernel, "set",     RubyKernelSet,       2);
-  rb_define_method(rb_mKernel, "color",   RubyKernelColor ,    2);
-  rb_define_method(rb_mKernel, "gravity", RubyKernelGravity,   2);
-  rb_define_method(rb_mKernel, "grab",    RubyKernelGrab,     -1);
-  rb_define_method(rb_mKernel, "tag",     RubyKernelTag,      -1);
-  rb_define_method(rb_mKernel, "view",    RubyKernelView,      2);
-  rb_define_method(rb_mKernel, "on",      RubyKernelOn,        1);
-  rb_define_method(rb_mKernel, "sublet",  RubyKernelSublet,    1);
-  rb_define_method(rb_mKernel, "screen",  RubyKernelScreen,    1);
+  rb_define_method(config, "set",     RubyConfigSet,       2);
+  rb_define_method(config, "color",   RubyConfigColor ,    2);
+  rb_define_method(config, "gravity", RubyConfigGravity,   2);
+  rb_define_method(config, "grab",    RubyConfigGrab,     -1);
+  rb_define_method(config, "tag",     RubyConfigTag,      -1);
+  rb_define_method(config, "view",    RubyConfigView,      2);
+  rb_define_method(config, "on",      RubyConfigOn,        1);
+  rb_define_method(config, "sublet",  RubyConfigSublet,    1);
+  rb_define_method(config, "screen",  RubyConfigScreen,    1);
 
   /*
    * Document-class: Options
    *
-   * Options class for evaluating DSL procs
+   * Options class for DSL evaluation
    */
 
   options = rb_define_class_under(mod, "Options", rb_cObject);
@@ -2543,7 +2629,6 @@ subRubyInit(void)
   rb_define_method(sublet, "helper",         RubySubletHelper,     0);
   rb_define_method(sublet, "on",             RubySubletOn,         1);
   rb_define_method(sublet, "grab",           RubySubletGrab,       1);
-  rb_define_method(sublet, "const_missing",  RubyObjectDispatcher, 1);
 
   /* Class methods */
   rb_define_method(sublet, "method_missing", RubySubletDispatcher,       -1);
@@ -2577,8 +2662,9 @@ subRubyInit(void)
 int
 subRubyLoadConfig(void)
 {
-  int i, state = 0;
-  char buf[100], path[50];
+  int state = 0;
+  char buf[100] = { 0 }, path[50] = { 0 };
+  VALUE str = Qnil , klass = Qnil, conf = Qnil, rargs[2] = { Qnil };
   SubTag *t = NULL;
 
   /* Check config paths */
@@ -2606,10 +2692,6 @@ subRubyLoadConfig(void)
         }
     }
 
-  /* Colors */
-  if(0 == subtle->colors.separator)
-    subtle->colors.separator = subtle->colors.fg_panel;
-
   /* Create default tag */
   if(!(subtle->flags & SUB_SUBTLE_CHECK) &&
       (t = subTagNew("default", NULL)))
@@ -2619,11 +2701,12 @@ subRubyLoadConfig(void)
   config = rb_hash_new();
   rb_gc_register_address(&config);
 
-  /* Loading config */
+  /* Carefully read config */
   printf("Using config `%s'\n", path);
-  rb_load_protect(rb_str_new2(path), 0, &state); ///< Load config
+  str = rb_protect(RubyWrapRead, rb_str_new2(path), &state);
   if(state)
     {
+      subSharedLogWarn("Failed reading config `%s'\n", path);
       RubyBacktrace();
 
       /* Exit when not checking only */
@@ -2633,113 +2716,36 @@ subRubyLoadConfig(void)
 
           exit(-1);
         }
+      else return !state;
     }
 
-  if(subtle->flags & SUB_SUBTLE_CHECK) return !state; ///< Exit after check
+  /* Create config */
+  klass = rb_const_get(mod, rb_intern("Config"));
+  conf  = rb_funcall(klass, rb_intern("new"), 0, NULL);
 
-  /* Check screens */
-  for(i = 0; i < subtle->screens->ndata; i++)
+  /* Carefully eval file */
+  rargs[0] = str;
+  rargs[1] = conf;
+  rb_protect(RubyWrapEval, (VALUE)&rargs, &state);
+  if(state)
     {
-      SubScreen *s = SCREEN(subtle->screens->data[i]);
+      subSharedLogWarn("Failed loading config `%s'\n", path);
+      RubyBacktrace();
 
-      /* Check if vid exists */
-      if(0 > s->vid || s->vid >= subtle->views->ndata)
-        s->vid = 0;
-
-      s->flags &= ~SUB_RUBY_DATA;
-    }
-
-  /* Check gravities */
-  if(0 == subtle->gravities->ndata)
-    {
-      subSharedLogError("No gravities found\n");
-      subSubtleFinish();
-
-      exit(-1);
-    }
-
-  /* Get default gravity */
-  if(-1 == (subtle->gravity = RubyGetGravity(subtle->gravity)))
-    subtle->gravity = 0;
-
-  subGravityPublish();
-
-  /* Check and update grabs */
-  if(0 == subtle->grabs->ndata)
-    {
-      subSharedLogWarn("No grabs found\n");
-    }
-  else
-    {
-      subArraySort(subtle->grabs, subGrabCompare);
-
-      /* Update grabs and gravites */
-      for(i = 0; i < subtle->grabs->ndata; i++)
+      /* Exit when not checking only */
+      if(!(subtle->flags & SUB_SUBTLE_CHECK))
         {
-          SubGrab *g = GRAB(subtle->grabs->data[i]);
+          subSubtleFinish();
 
-          /* Update gravity grab */
-          if(g->flags & SUB_GRAB_WINDOW_GRAVITY)
-            {
-              char *string = NULL;
-
-              /* Create gravity string */
-              RubyGravityString(g->data.num, &string);
-              subRubyRelease(g->data.num);
-              g->data.string  = string;
-              g->flags       &= ~SUB_RUBY_DATA;
-            }
+          exit(-1);
         }
+      else return !state;
     }
 
-  /* Check and update tags */
-  for(i = 0; i < subtle->tags->ndata; i++)
-    {
-      t = TAG(subtle->tags->data[i]);
+  /* If not check only lazy eval config values */
+  if(!(subtle->flags & SUB_SUBTLE_CHECK)) RubyEvalConfig();
 
-      /* Update gravities */
-      if(t->flags & SUB_TAG_GRAVITY)
-        {
-          if(-1 == (t->gravity = RubyGetGravity(t->gravity)))
-            t->gravity = 0;
-        }
-    }
-
-  subTagPublish();
-
-  if(1 == subtle->tags->ndata) subSharedLogWarn("No tags found\n");
-
-  /* Check views */
-  if(0 == subtle->views->ndata) ///< Create default view
-    {
-      SubView *v = subViewNew("subtle", "default");
-
-      subArrayPush(subtle->views, (void *)v);
-      subSharedLogWarn("No views found\n");
-    }
-  else ///< Check default tag
-    {
-      SubView *v = NULL;
-
-      /* Check for view with default tag */
-      for(i = subtle->views->ndata - 1; 0 <= i; i--)
-        if((v = VIEW(subtle->views->data[i])) && v->tags & DEFAULTTAG)
-          {
-            subSharedLogDebug("Default view: name=%s\n", v->name);
-            break;
-          }
-
-      v->tags |= DEFAULTTAG; ///< Set default tag
-
-      /* EWMH: Tags */
-      subEwmhSetCardinals(v->win, SUB_EWMH_SUBTLE_WINDOW_TAGS,
-        (long *)&v->tags, 1);
-    }
-
-  subViewPublish();
-  subDisplayPublish();
-
-  return 1;
+  return !state;
 } /* }}} */
 
  /** subRubyReloadConfig {{{
@@ -2833,7 +2839,7 @@ subRubyLoadSublet(const char *file)
   int state = 0;
   char buf[100] = { 0 };
   SubPanel *p = NULL;
-  VALUE str = Qnil, rargs[2] = { Qnil }, klass = Qnil;
+  VALUE str = Qnil, klass = Qnil, hash = Qnil, rargs[2] = { Qnil };
 
   /* Check path */
   if(subtle->paths.sublets)
@@ -2849,7 +2855,7 @@ subRubyLoadSublet(const char *file)
     }
   subSharedLogDebug("sublet=%s\n", buf);
 
-  /* Carefully load file */
+  /* Carefully read sublet */
   str = rb_protect(RubyWrapRead, rb_str_new2(buf), &state);
   if(state)
     {
@@ -2861,7 +2867,7 @@ subRubyLoadSublet(const char *file)
 
   /* Create sublet */
   p = subPanelNew(SUB_PANEL_SUBLET);
-  klass       = rb_const_get(mod, rb_intern("Sublet"));
+  klass               = rb_const_get(mod, rb_intern("Sublet"));
   p->sublet->instance = Data_Wrap_Struct(klass, NULL, NULL, (void *)p);
 
   subArrayPush(subtle->sublets, (void *)p);
@@ -2880,6 +2886,25 @@ subRubyLoadSublet(const char *file)
       subPanelKill(p);
 
       return;
+    }
+
+  /* Check for config hash */
+  if(T_HASH == rb_type(hash = rb_hash_lookup(config,
+      CHAR2SYM(p->sublet->name))))
+    {
+      VALUE value = Qnil;
+
+      if(FIXNUM_P(rb_type(value = rb_hash_lookup(hash, CHAR2SYM("interval")))))
+        p->sublet->interval = FIX2INT(value);
+
+      if(T_STRING == rb_type(value = rb_hash_lookup(hash,
+          CHAR2SYM("foreground"))))
+        p->sublet->fg = subSharedParseColor(subtle->dpy, RSTRING_PTR(value));
+
+      if(T_STRING == rb_type(value = rb_hash_lookup(hash,
+          CHAR2SYM("background"))))
+        p->sublet->bg = subSharedParseColor(subtle->dpy, RSTRING_PTR(value));
+
     }
 
   /* Configure sublet */
