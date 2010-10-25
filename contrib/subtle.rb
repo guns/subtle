@@ -549,24 +549,40 @@ end
 # which is the view with the default tag or the first defined view when this
 # tag isn't set.
 #
+# === Link
+#
+# http://subforge.org/wiki/subtle/Tagging
+#
 
-view "terms", "terms"
-view "www",   "browser|default|gimp_.*"
+view "terms", "terms|default"
+view "www",   "browser"
+view "gimp"   "gimp_.*"
 view "dev",   "editor"
 
 #
 # == Sublets
 #
 # Sublets are Ruby scripts that provide data for the panel and can be managed
-# with the sur script that comes with subtle. Configuration of sublets can
-# either be done inside of the sublet or when supported in the config.
+# with the sur script that comes with subtle.
+#
+# Follwing properties can be changed directly:
+#
+# [*interval*]    Update interval of the sublet
+# [*foreground*]  Default foreground color
+# [*background*]  Default background color
 #
 # === Example
 #
 #  sublet :clock do
 #    interval      30
+#    foreground    "#eeeeee"
+#    background    "#000000"
 #    format_string "%H:%M:%S"
 #  end
+#
+#  === Link
+#
+# http://subforge.org/wiki/subtle/Sublets#Configuration
 #
 
 #
