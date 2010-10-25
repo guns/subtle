@@ -277,7 +277,7 @@ subGravityUpdate(VALUE self)
 
           /* Create new gravity */
           snprintf(data.b, sizeof(data.b), "%hdx%hd+%hd+%hd#%s",
-            geom.x, geom.y, geom.width, geom.width, RSTRING_PTR(match));
+            geom.x, geom.y, geom.width, geom.height, RSTRING_PTR(match));
           subSharedMessage(display, DefaultRootWindow(display), "SUBTLE_GRAVITY_NEW", data, True);
 
           id = subGravityFindId(RSTRING_PTR(match), NULL, NULL);

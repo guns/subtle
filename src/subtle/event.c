@@ -482,7 +482,7 @@ EventMessage(XClientMessageEvent *ev)
                 ((g = GRAVITY(subArrayGet(subtle->gravities, (int)ev->data.l[1])))) &&
                 subClientVisible(c))
               {
-                subClientSetGravity(c, (int)ev->data.l[1], -1, True);
+                subClientSetGravity(c, (int)ev->data.l[1], c->screen, True);
                 subClientConfigure(c);
                 subClientWarp(c);
                 XRaiseWindow(subtle->dpy, c->win);
