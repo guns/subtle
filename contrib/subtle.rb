@@ -79,7 +79,7 @@ set :outline, 0
 
 screen 1 do
   # Add stipple to panels
-  stipple true
+  stipple false
 
   # Content of the top panel
   top     [ :views, :title, :spacer, :tray, :sublets ]
@@ -150,7 +150,7 @@ color :border_panel,  "#303030"
 color :background,    "#3d3d3d"
 
 # Color of the separator
-color :separator,     "#202020"
+color :separator,     "#757575"
 
 #
 # == Gravities
@@ -556,7 +556,7 @@ end
 
 view "terms", "terms|default"
 view "www",   "browser"
-view "gimp"   "gimp_.*"
+view "gimp",  "gimp_.*"
 view "dev",   "editor"
 
 #
