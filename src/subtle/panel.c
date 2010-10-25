@@ -41,6 +41,7 @@ subPanelNew(int type)
 
         p->sublet->time  = subSubtleTime();
         p->sublet->text  = subSharedTextNew();
+        p->sublet->fg    = subtle->colors.fg_sublets;
         p->sublet->bg    = subtle->colors.bg_sublets;
 
         /* Create window */
@@ -204,8 +205,8 @@ subPanelRender(SubPanel *p)
 
         /* Render text parts */
         subSharedTextRender(subtle->dpy, subtle->gcs.font, subtle->font,
-          p->win, 3, subtle->font->y, subtle->colors.fg_sublets,
-          subtle->colors.bg_sublets, p->sublet->text);
+          p->win, 3, subtle->font->y, p->sublet->fg, p->sublet->bg,
+          p->sublet->text);
         break; /* }}} */
       case SUB_PANEL_VIEWS: /* {{{ */
         if(0 < subtle->views->ndata)
