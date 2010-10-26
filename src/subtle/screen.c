@@ -211,6 +211,10 @@ subScreenConfigure(void)
   SubScreen *s = NULL;
   SubView *v = NULL;
 
+  /* Reset visible tags and views */
+  subtle->visible_tags  = 0;
+  subtle->visible_views = 0;
+
   /* Check each client */
   for(i = 0; i < subtle->clients->ndata; i++)
     {
@@ -223,8 +227,12 @@ subScreenConfigure(void)
           s = SCREEN(subtle->screens->data[j]);
           v = VIEW(subtle->views->data[s->vid]);
 
+          /* Set visible tags and views to ease lookups */
+          subtle->visible_tags  |= v->tags;
+          subtle->visible_views |= (1L << (s->vid + 1));
+
           /* Find visible clients */
-          if(VISIBLE(v, c))
+          if(VISIBLE(v->tags, c))
             {
               subClientSetGravity(c, c->gravities[s->vid], j, False);
 
