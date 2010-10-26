@@ -137,14 +137,14 @@ subSubtleFocus(int focus)
   XQueryPointer(subtle->dpy, ROOT, (Window *)&dummy, &win,
     &dummy, &dummy, &dummy, &dummy, (unsigned int *)&dummy);
 
-  /* Find next client */
+  /* Find pointer window */
   if((c = CLIENT(subSubtleFind(win, CLIENTID))))
     {
       subClientFocus(c);
 
       return c->win;
     }
-  else if(focus)
+  else if(focus) ///< Find next window
     {
       int i, sid = 0;
 
@@ -156,10 +156,10 @@ subSubtleFocus(int focus)
           c = CLIENT(subtle->clients->data[i]);
 
           /* Check visibility on current screen */
-          if(c->screen == sid && subClientVisible(c))
+          if(c->screen == sid && VISIBLE(subtle->visible_tags, c))
             {
-              subClientWarp(c);
               subClientFocus(c);
+              subClientWarp(c);
 
               return c->win;
             }
