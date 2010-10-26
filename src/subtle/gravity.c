@@ -26,6 +26,8 @@ subGravityNew(const char *name,
 {
   SubGravity *g = NULL;
 
+  assert(name && geom);
+
   /* Create gravity */
   g = GRAVITY(subSharedMemoryAlloc(1, sizeof(SubGravity)));
   g->flags |= SUB_TYPE_GRAVITY;
@@ -33,13 +35,10 @@ subGravityNew(const char *name,
   if(name) g->quark = XrmStringToQuark(name); ///< Create hash
 
   /* Sanitize values */
-  if(geom)
-    {
-      g->geom.x      = MINMAX(geom->x,   0, 100);
-      g->geom.y      = MINMAX(geom->y,   0, 100);
-      g->geom.width  = geom->width  > 100 ? 100 : geom->width;
-      g->geom.height = geom->height > 100 ? 100 : geom->height;
-    }
+  g->geom.x      = MINMAX(geom->x,      0, 100);
+  g->geom.y      = MINMAX(geom->y,      0, 100);
+  g->geom.width  = MINMAX(geom->width,  1, 100);
+  g->geom.height = MINMAX(geom->height, 1, 100);
 
   subSharedLogDebug("new=gravity, name=%s, quark=%d, x=%d, y=%d, width=%d, height=%d\n",
     name, g->quark, geom->x, geom->y, geom->width, geom->height);
