@@ -167,6 +167,8 @@ subSubtleSelect(VALUE self)
   XFreeCursor(display, cursor);
   XUngrabPointer(display, CurrentTime);
 
+  XSync(display, False); ///< Sync all changes
+
   return None != win ? LONG2NUM(win) : Qnil;
 } /* }}} */
 
