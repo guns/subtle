@@ -257,6 +257,8 @@ subClientFocus(SubClient *c)
   DEAD(c);
   assert(c);
 
+  if(!(subtle->visible_tags & c->tags)) return;
+
   /* Check client input focus type */
   if(!(c->flags & SUB_CLIENT_INPUT) && c->flags & SUB_CLIENT_FOCUS)
     {
@@ -265,8 +267,8 @@ subClientFocus(SubClient *c)
     }
   else XSetInputFocus(subtle->dpy, c->win, RevertToNone, CurrentTime);
 
-  subSharedLogDebug("Focus: type=client, win=%#lx, input=%d, focus=%d\n", c->win,
-    !!(c->flags & SUB_CLIENT_INPUT), !!(c->flags & SUB_CLIENT_FOCUS));
+  subSharedLogDebug("Focus: type=client, win=%#lx, current=%#lx, input=%d, focus=%d\n", c->win,
+    subtle->windows.focus, !!(c->flags & SUB_CLIENT_INPUT), !!(c->flags & SUB_CLIENT_FOCUS));
 } /* }}} */
 
  /** subClientWarp {{{
@@ -577,35 +579,6 @@ subClientTag(SubClient *c,
     }
 
   return flags;
-} /* }}} */
-
-/** subClientVisible {{{
-  * @brief Whether a client is visible on a screen
-  * @param[in]  c  A #SubClient
-  * @return View id or \p null False
-  **/
-
-int
-subClientVisible(SubClient *c)
-{
-  int i, ret = False;
-
-  assert(c);
-
-  /* Check screens */
-  for(i = 0; i < subtle->screens->ndata; i++)
-    {
-      SubScreen *s = SCREEN(subtle->screens->data[i]);
-
-      if(VISIBLE(VIEW(subtle->views->data[s->vid]), c))
-        {
-          ret = True;
-
-          break;
-        }
-    }
-
-  return ret;
 } /* }}} */
 
  /** subClientSetTags {{{
