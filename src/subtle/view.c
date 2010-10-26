@@ -85,35 +85,6 @@ subViewHighlight(int tags)
   subScreenRender();
 } /* }}} */
 
-/** subViewVisible {{{
-  * @brief Whether a view is visible on a screen
-  * @param[in]  v  A #SubView
-  * @return Screen id or \p null False
-  **/
-
-int
-subViewVisible(SubView *v)
-{
-  int i, ret = False;
-
-  assert(v);
-
-  /* Check screens */
-  for(i = 0; i < subtle->screens->ndata; i++)
-    {
-      SubScreen *s = SCREEN(subtle->screens->data[i]);
-
-      if(v == VIEW(subtle->views->data[s->vid]))
-        {
-          ret = True;
-
-          break;
-        }
-    }
-
-  return ret;
-} /* }}} */
-
  /** subViewJump {{{
   * @brief Jump to view
   * @param[in]  v  A #SubView
