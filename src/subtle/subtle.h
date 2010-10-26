@@ -78,8 +78,8 @@
   DefaultVisual(subtle->dpy, DefaultScreen(subtle->dpy))          ///< Default visual
 #define COLORMAP \
   DefaultColormap(subtle->dpy, DefaultScreen(subtle->dpy))        ///< Default colormap
-#define VISIBLE(v,c) \
-  (v && c && (v->tags & c->tags || \
+#define VISIBLE(visible_tags,c) \
+  (c && (visible_tags & c->tags || \
   c->flags & (SUB_CLIENT_TYPE_DESKTOP|SUB_CLIENT_MODE_STICK)))    ///< Visible on view
 #define SCREENW \
   DisplayWidth(subtle->dpy, DefaultScreen(subtle->dpy))           ///< Get screen width
@@ -503,6 +503,7 @@ typedef struct subsubtle_t /* {{{ */
   FLAGS                flags;                                     ///< Subtle flags
 
   int                  th, bw, pbw, step, snap, gap;              ///< Subtle properties
+  int                  visible_tags, visible_views;               ///< Subtle visible tags and views
   unsigned long        gravity;                                   ///< Subtle gravity
 
   Display              *dpy;                                      ///< Subtle Xorg display
@@ -617,7 +618,6 @@ void subClientUpdate(int vid);                                    ///< Update cl
 void subClientResize(SubClient *c);                               ///< Set client sizes
 void subClientCenter(SubClient *c);                               ///< Center client
 int subClientTag(SubClient *c, int tag);                          ///< Tag client
-int subClientVisible(SubClient *c);                               ///< Whether client is visible
 void subClientSetTags(SubClient *c, int *flags);                  ///< Update client tags
 void subClientSetGravity(SubClient *c, int gravity,
   int screen, int force);                                         ///< Set client gravity
