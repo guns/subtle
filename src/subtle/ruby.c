@@ -1028,7 +1028,7 @@ RubyWrapEval(VALUE data)
 {
   VALUE *rargs = (VALUE *)data;
 
-  rb_obj_instance_eval(1, rargs, rargs[1]);
+  rb_obj_instance_eval(2, rargs, rargs[2]);
 
   return Qnil;
 } /* }}} */
@@ -2664,7 +2664,7 @@ subRubyLoadConfig(void)
 {
   int state = 0;
   char buf[100] = { 0 }, path[50] = { 0 };
-  VALUE str = Qnil , klass = Qnil, conf = Qnil, rargs[2] = { Qnil };
+  VALUE str = Qnil , klass = Qnil, conf = Qnil, rargs[3] = { Qnil };
   SubTag *t = NULL;
 
   /* Check config paths */
@@ -2725,7 +2725,8 @@ subRubyLoadConfig(void)
 
   /* Carefully eval file */
   rargs[0] = str;
-  rargs[1] = conf;
+  rargs[1] = rb_str_new2(path);
+  rargs[2] = conf;
   rb_protect(RubyWrapEval, (VALUE)&rargs, &state);
   if(state)
     {
@@ -2875,7 +2876,8 @@ subRubyLoadSublet(const char *file)
 
   /* Carefully eval file */
   rargs[0] = str;
-  rargs[1] = p->sublet->instance;
+  rargs[1] = rb_str_new2(buf);
+  rargs[2] = p->sublet->instance;
   rb_protect(RubyWrapEval, (VALUE)&rargs, &state);
   if(state)
     {
