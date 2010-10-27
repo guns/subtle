@@ -257,8 +257,6 @@ subClientFocus(SubClient *c)
   DEAD(c);
   assert(c);
 
-  if(!(subtle->visible_tags & c->tags)) return;
-
   /* Check client input focus type */
   if(!(c->flags & SUB_CLIENT_INPUT) && c->flags & SUB_CLIENT_FOCUS)
     {
