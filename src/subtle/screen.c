@@ -207,7 +207,7 @@ subScreenCurrent(int *sid)
 void
 subScreenConfigure(void)
 {
-  int i, j;
+  int i;
   SubScreen *s = NULL;
   SubView *v = NULL;
 
@@ -215,54 +215,73 @@ subScreenConfigure(void)
   subtle->visible_tags  = 0;
   subtle->visible_views = 0;
 
-  /* Check each client */
-  for(i = 0; i < subtle->clients->ndata; i++)
+  /* Either check each client or just get visibles */
+  if(0 < subtle->clients->ndata)
     {
-      SubClient *c = CLIENT(subtle->clients->data[i]);
-      int visible = 0;
+      int j;
 
-      /* Check views of each screen */
-      for(j = 0; j < subtle->screens->ndata; j++)
+      /* Check each client */
+      for(i = 0; i < subtle->clients->ndata; i++)
         {
-          s = SCREEN(subtle->screens->data[j]);
+          SubClient *c = CLIENT(subtle->clients->data[i]);
+          int visible = 0;
+
+          /* Check views of each screen */
+          for(j = 0; j < subtle->screens->ndata; j++)
+            {
+              s = SCREEN(subtle->screens->data[j]);
+              v = VIEW(subtle->views->data[s->vid]);
+
+              /* Set visible tags and views to ease lookups */
+              subtle->visible_tags  |= v->tags;
+              subtle->visible_views |= (1L << (s->vid + 1));
+
+              /* Find visible clients */
+              if(VISIBLE(v->tags, c))
+                {
+                  subClientSetGravity(c, c->gravities[s->vid], j, False);
+
+                  /* EWMH: Desktop */
+                  subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP,
+                    (long *)&s->vid, 1);
+
+                  visible++;
+                }
+            }
+
+          /* Check visibility */
+          if(0 < visible)
+            {
+              /* Wait until all screens are checked */
+              subClientConfigure(c);
+
+              /* Special treatment */
+              if(c->flags & (SUB_CLIENT_MODE_FULL|SUB_CLIENT_MODE_FLOAT))
+                XMapRaised(subtle->dpy, c->win);
+              else XMapWindow(subtle->dpy, c->win);
+
+              /* Warp after gravity and screen is set */
+              if(c->flags & SUB_CLIENT_MODE_URGENT)
+                subClientWarp(c);
+            }
+          else ///< Unmap other windows
+            {
+              c->flags |= SUB_CLIENT_UNMAP; ///< Ignore next unmap
+              XUnmapWindow(subtle->dpy, c->win);
+            }
+        }
+    }
+  else
+    {
+      /* Check views of each screen */
+      for(i = 0; i < subtle->screens->ndata; i++)
+        {
+          s = SCREEN(subtle->screens->data[i]);
           v = VIEW(subtle->views->data[s->vid]);
 
           /* Set visible tags and views to ease lookups */
           subtle->visible_tags  |= v->tags;
           subtle->visible_views |= (1L << (s->vid + 1));
-
-          /* Find visible clients */
-          if(VISIBLE(v->tags, c))
-            {
-              subClientSetGravity(c, c->gravities[s->vid], j, False);
-
-              /* EWMH: Desktop */
-              subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP,
-                (long *)&s->vid, 1);
-
-              visible++;
-            }
-        }
-
-      /* Check visibility */
-      if(0 < visible)
-        {
-          /* Wait until all screens are checked */
-          subClientConfigure(c);
-
-          /* Special treatment */
-          if(c->flags & (SUB_CLIENT_MODE_FULL|SUB_CLIENT_MODE_FLOAT))
-            XMapRaised(subtle->dpy, c->win);
-          else XMapWindow(subtle->dpy, c->win);
-
-          /* Warp after gravity and screen is set */
-          if(c->flags & SUB_CLIENT_MODE_URGENT)
-            subClientWarp(c);
-        }
-      else ///< Unmap other windows
-        {
-          c->flags |= SUB_CLIENT_UNMAP; ///< Ignore next unmap
-          XUnmapWindow(subtle->dpy, c->win);
         }
     }
 

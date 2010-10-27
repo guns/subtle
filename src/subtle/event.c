@@ -224,6 +224,7 @@ EventMapRequest(XMapRequestEvent *ev)
 {
   SubClient *c = NULL;
 
+  /* Check if client exists */
   if(!(c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
     {
       if((c = subClientNew(ev->window))) ///< Create new client
@@ -231,7 +232,8 @@ EventMapRequest(XMapRequestEvent *ev)
           subArrayPush(subtle->clients, (void *)c);
           subClientPublish();
 
-          if(VISIBLE(subtle->visible_tags, c)) ///< Check visibility first
+          /* Check visibility first */
+          if(VISIBLE(subtle->visible_tags, c))
             {
               subScreenConfigure();
               subScreenRender();
