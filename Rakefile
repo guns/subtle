@@ -40,9 +40,9 @@ require "rake/rdoctask"
   "revision"   => "0",
   "cflags"     => "-Wall -Werror -Wpointer-arith -Wstrict-prototypes -Wunused -Wshadow -std=gnu99",
   "cpppath"    => "-I. -I$(builddir) -Isrc -Isrc/shared -Isrc/subtle -idirafter$(hdrdir) -idirafter$(archdir)",
-  "ldflags"    => "-L$(archdir) $(rpath) -l$(RUBY_SO_NAME)",
+  "ldflags"    => "-L$(libdir) $(rpath) -l$(RUBY_SO_NAME)",
   "extflags"   => "$(LDFLAGS) $(rpath) -l$(RUBY_SO_NAME)",
-  "rpath"      => "-Wl,-rpath=$(libdir)"
+  "rpath"      => "-L$(libdir) -Wl,-rpath=$(libdir)"
 }
 
 @defines = {
@@ -244,8 +244,8 @@ task(:config) do
 
       # Update flags
       @options["cflags"]   << " %s" % [ cflags ]
-      @options["ldflags"]  << " %s" % [ libs ]
-      @options["extflags"] << " %s" % [ libs ]
+      @options["ldflags"]  << " %s %s" % [ ldflags, libs ]
+      @options["extflags"] << " %s %s" % [ ldflags, libs ]
 
       true
     end
@@ -259,8 +259,8 @@ task(:config) do
         unless(libs.nil?)
           # Update flags
           @options["cpppath"] << " %s" % [ cflags ]
-          @options["ldflags"] << " %s" % [ libs ]
-          @options["extflags"] << " %s" % [ libs ]
+          @options["ldflags"] << " %s %s" % [ ldflags, libs ]
+          @options["extflags"] << " %s %s" % [ ldflags, libs ]
 
           $defs.push("-DHAVE_X11_XFT_XFT_H")
           ret = true
@@ -292,7 +292,7 @@ task(:config) do
           if(try_func("XRRGetScreenResourcesCurrent", libs))
             # Update flags
             @options["cflags"]  << " %s" % [ cflags ]
-            @options["ldflags"] << " %s" % [ libs ]
+            @options["ldflags"] << " %s %s" % [ ldflags, libs ]
 
             $defs.push("-DHAVE_X11_EXTENSIONS_XRANDR_H")
 
