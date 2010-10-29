@@ -52,7 +52,7 @@ ClientSelect(VALUE self,
   int i, size = 0, match = (1L << 30), score = 0, *gravity1 = NULL;
   Window win = None, *clients = NULL, *views = NULL, found = None;
   VALUE client = Qnil;
-  unsigned long *cv = NULL, *tags1 = NULL;
+  unsigned long *cv = NULL;
   XRectangle geometry1 = { 0 }, geometry2 = { 0 };
 
   rb_check_frozen(self);
@@ -70,9 +70,6 @@ ClientSelect(VALUE self,
 
   if(clients && cv)
     {
-      tags1 = (unsigned long *)subSharedPropertyGet(display,
-        views[*cv], XA_CARDINAL,
-        XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
       gravity1 = (int *)subSharedPropertyGet(display, win,
         XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_GRAVITY", False),
         NULL);
@@ -82,16 +79,12 @@ ClientSelect(VALUE self,
       /* Iterate once to find a client score-based */
       for(i = 0; i < size; i++)
         {
-          unsigned long *tags2 = (unsigned long *)subSharedPropertyGet(display,
-            clients[i], XA_CARDINAL,
-            XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
           int *gravity2 = (int *)subSharedPropertyGet(display, clients[i],
             XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_GRAVITY",
               False), NULL);
 
           /* Check if there are common tags */
-          if(win != clients[i] && *gravity1 != *gravity2 &&
-              *tags1 & *tags2)
+          if(win != clients[i] && *gravity1 != *gravity2)
             {
               subSharedPropertyGeometry(display, clients[i], &geometry2);
 
@@ -103,7 +96,6 @@ ClientSelect(VALUE self,
 
             }
 
-          free(tags2);
           free(gravity2);
         }
 
@@ -114,7 +106,6 @@ ClientSelect(VALUE self,
           subClientUpdate(client);
         }
 
-      free(tags1);
       free(gravity1);
       free(clients);
       free(cv);

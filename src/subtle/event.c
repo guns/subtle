@@ -1077,9 +1077,8 @@ EventGrab(XEvent *ev)
                   {
                     SubClient *iter = CLIENT(subtle->clients->data[i]);
 
-                    /* Check if there are common tags */
-                    if(c != iter && c->gravity != iter->gravity &&
-                        c->tags & iter->tags)
+                    /* Check if client and gravity are different */
+                    if(c != iter && c->gravity != iter->gravity)
                       {
                         /* Substract stack position to get window on top */
                         if(match > (score = subSharedMatch(g->data.num,
