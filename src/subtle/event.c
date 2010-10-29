@@ -429,6 +429,7 @@ EventMessage(XClientMessageEvent *ev)
                         {
                           int visible = VISIBLE(subtle->visible_tags, c);
 
+                          /* Update tags and properties */
                           if(SUB_EWMH_SUBTLE_WINDOW_TAG == id)
                             {
                               int flags = subClientTag(c, ev->data.l[1]);
@@ -444,6 +445,11 @@ EventMessage(XClientMessageEvent *ev)
                           if(visible)
                             {
                               subScreenConfigure();
+
+                              /* Reactivate grabs on untag */
+                              if(subtle->windows.focus == c->win &&
+                                  !(c->tags & tag))
+                                subSubtleFocus(True);
 
                               /* Hook: Tile */
                               subHookCall(SUB_HOOK_TILE, NULL);
