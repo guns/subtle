@@ -98,10 +98,9 @@
 
 /* Masks {{{ */
 #define ROOTMASK \
-  (SubstructureRedirectMask|SubstructureNotifyMask|PropertyChangeMask)
+  (StructureNotifyMask|SubstructureRedirectMask|PropertyChangeMask)
 #define EVENTMASK \
-  (StructureNotifyMask|PropertyChangeMask| \
-  EnterWindowMask|FocusChangeMask)
+  (PropertyChangeMask|EnterWindowMask|FocusChangeMask)
 #define DRAGMASK \
   (PointerMotionMask|ButtonReleaseMask|KeyPressMask| \
   EnterWindowMask|FocusChangeMask)
