@@ -447,7 +447,7 @@ EventMessage(XClientMessageEvent *ev)
                       if((c = CLIENT(subArrayGet(subtle->clients,
                           (int)ev->data.l[0])))) ///< Clients
                         {
-                          int visible = VISIBLE(subtle->visible_tags, c);
+                          int visible = 0;
 
                           /* Update tags and properties */
                           if(SUB_EWMH_SUBTLE_WINDOW_TAG == id)
@@ -457,6 +457,9 @@ EventMessage(XClientMessageEvent *ev)
                               subClientToggle(c, flags, True); ///< Toggle flags
                             }
                           else c->tags &= ~tag;
+
+                          /* Check visibility after updating tags */
+                          visible = VISIBLE(subtle->visible_tags, c);
 
                           /* EWMH: Tags */
                           subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS,
