@@ -153,9 +153,9 @@ EventRestack(SubClient *c,
 
 /* Events */
 
-/* EventConfigure {{{ */
+/* EventConfigureRequest {{{ */
 static void
-EventConfigure(XConfigureRequestEvent *ev)
+EventConfigureRequest(XConfigureRequestEvent *ev)
 {
   SubClient *c = NULL;
 
@@ -191,17 +191,6 @@ EventConfigure(XConfigureRequestEvent *ev)
             }
         }
     }
-  else if(ROOT == ev->window) ///< Root window
-    {
-      if(subtle->flags & SUB_SUBTLE_XRANDR)
-        {
-#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
-          XRRUpdateConfiguration((XEvent *)ev);
-#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
-
-          subScreenResize();
-        }
-    }
   else ///< Unmanaged windows
     {
       XWindowChanges wc;
@@ -215,6 +204,31 @@ EventConfigure(XConfigureRequestEvent *ev)
       wc.stack_mode   = ev->detail;
 
       XConfigureWindow(subtle->dpy, ev->window, ev->value_mask, &wc);
+    }
+} /* }}} */
+
+/* EventConfigure {{{ */
+static void
+EventConfigure(XConfigureEvent *ev)
+{
+  /* Ckeck window */
+  if(ROOT == ev->window)
+    {
+      if(subtle->flags & SUB_SUBTLE_XRANDR)
+        {
+#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
+          XRRUpdateConfiguration((XEvent *)ev);
+#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
+        }
+
+      /* Reload screens */
+      subArrayClear(subtle->sublets, False);
+      subArrayClear(subtle->screens, True);
+      subScreenInit();
+      subRubyReloadConfig();
+      subScreenResize();
+
+      printf("Updated screens\n");
     }
 } /* }}} */
 
@@ -1365,21 +1379,22 @@ subEventLoop(void)
                           XNextEvent(subtle->dpy, &ev);
                           switch(ev.type)
                             {
-                              case ConfigureRequest:  EventConfigure(&ev.xconfigurerequest); break;
-                              case MapRequest:        EventMapRequest(&ev.xmaprequest);      break;
-                              case MapNotify:         EventMap(&ev.xmap);                    break;
-                              case UnmapNotify:       EventUnmap(&ev.xunmap);                break;
-                              case DestroyNotify:     EventDestroy(&ev.xdestroywindow);      break;
-                              case ClientMessage:     EventMessage(&ev.xclient);             break;
-                              case ColormapNotify:    EventColormap(&ev.xcolormap);          break;
-                              case PropertyNotify:    EventProperty(&ev.xproperty);          break;
-                              case SelectionClear:    EventSelection(&ev.xselectionclear);   break;
-                              case Expose:            EventExpose(&ev.xexpose);              break;
-                              case FocusIn:           EventFocus(&ev.xfocus);                break;
+                              case ConfigureRequest:  EventConfigureRequest(&ev.xconfigurerequest); break;
+                              case ConfigureNotify:   EventConfigure(&ev.xconfigure);               break;
+                              case MapRequest:        EventMapRequest(&ev.xmaprequest);             break;
+                              case MapNotify:         EventMap(&ev.xmap);                           break;
+                              case UnmapNotify:       EventUnmap(&ev.xunmap);                       break;
+                              case DestroyNotify:     EventDestroy(&ev.xdestroywindow);             break;
+                              case ClientMessage:     EventMessage(&ev.xclient);                    break;
+                              case ColormapNotify:    EventColormap(&ev.xcolormap);                 break;
+                              case PropertyNotify:    EventProperty(&ev.xproperty);                 break;
+                              case SelectionClear:    EventSelection(&ev.xselectionclear);          break;
+                              case Expose:            EventExpose(&ev.xexpose);                     break;
+                              case FocusIn:           EventFocus(&ev.xfocus);                       break;
                               case EnterNotify:
-                              case LeaveNotify:       EventCrossing(&ev.xcrossing);          break;
+                              case LeaveNotify:       EventCrossing(&ev.xcrossing);                 break;
                               case ButtonPress:
-                              case KeyPress:          EventGrab(&ev);                        break;
+                              case KeyPress:          EventGrab(&ev);                               break;
                               default: break;
                             }
                         }
