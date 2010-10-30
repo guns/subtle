@@ -2663,7 +2663,7 @@ int
 subRubyLoadConfig(void)
 {
   int state = 0;
-  char buf[100] = { 0 }, path[50] = { 0 };
+  char buf[100] = { 0 }, path[100] = { 0 };
   VALUE str = Qnil , klass = Qnil, conf = Qnil, rargs[3] = { Qnil };
   SubTag *t = NULL;
 
