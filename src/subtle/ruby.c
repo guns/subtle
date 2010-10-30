@@ -2770,7 +2770,7 @@ subRubyReloadConfig(void)
     {
       SubPanel *p = PANEL(subtle->sublets->data[i]);
 
-      p->flags &= ~(SUB_PANEL_BOTTOM| SUB_PANEL_SPACER1|
+      p->flags &= ~(SUB_PANEL_BOTTOM|SUB_PANEL_SPACER1|
         SUB_PANEL_SPACER1| SUB_PANEL_SEPARATOR1|SUB_PANEL_SEPARATOR2);
       p->screen = NULL;
     }
@@ -2813,6 +2813,8 @@ subRubyReloadConfig(void)
     {
       int flags = 0;
       SubClient *c = CLIENT(subtle->clients->data[i]);
+
+      c->gravity = -1;
 
       subClientSetTags(c, &flags);
       subClientToggle(c, ~c->flags & flags, True); ///< Toggle flags
