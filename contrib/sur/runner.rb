@@ -281,7 +281,7 @@ module Subtle # {{{
       end # }}}
 
       def version # {{{
-        puts "Sur #{VERSION} - Copyright (c) 2009 Christoph Kappel\n" \
+        puts "Sur #{VERSION} - Copyright (c) 2009-2010 Christoph Kappel\n" \
              "Released under the GNU General Public License\n"
       end # }}}
     end # }}}
