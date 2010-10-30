@@ -72,6 +72,8 @@ static void
 EventSwitchView(int vid,
   int focus)
 {
+  SubView *v = NULL;
+
   if(vid < subtle->views->ndata)
     {
       int i, sid = 0;
@@ -91,13 +93,15 @@ EventSwitchView(int vid,
                   sc1->vid = sc2->vid;
                   sc2->vid = swap;
 
+                  v = VIEW(subArrayGet(subtle->views, vid));
+
                   subScreenConfigure();
                   subScreenRender();
-                  subSubtleFocus(focus);
+
+                  subViewFocus(v, focus);
 
                   /* Hook: Jump */
-                  subHookCall(SUB_HOOK_VIEW_JUMP,
-                    subArrayGet(subtle->views, vid));
+                  subHookCall(SUB_HOOK_VIEW_JUMP, (void *)v);
 
                   return;
                 }
@@ -106,13 +110,15 @@ EventSwitchView(int vid,
 
       /* Set view and configure */
       sc1->vid = vid;
+      v        = VIEW(subArrayGet(subtle->views, vid));
 
       subScreenConfigure();
       subScreenRender();
-      subSubtleFocus(focus);
+
+      subViewFocus(v, focus);
 
       /* Hook: Jump */
-      subHookCall(SUB_HOOK_VIEW_JUMP, subArrayGet(subtle->views, vid));
+      subHookCall(SUB_HOOK_VIEW_JUMP, (void *)v);
     }
 } /* }}} */
 
@@ -1265,6 +1271,7 @@ EventFocus(XFocusChangeEvent *ev)
       if(!(c->flags & SUB_CLIENT_DEAD) && VISIBLE(subtle->visible_tags, c))
         {
           SubScreen *s = NULL;
+          SubView *v = NULL;
 
           subtle->windows.focus = c->win;
           subGrabSet(c->win, !(subtle->flags & SUB_SUBTLE_ESCAPE));
@@ -1276,10 +1283,15 @@ EventFocus(XFocusChangeEvent *ev)
             &subtle->windows.focus, 1);
 
           /* EWMH: Current destop */
-          s = SCREEN(subArrayGet(subtle->screens, c->screen));
+          if((s = SCREEN(subArrayGet(subtle->screens, c->screen))))
+            {
+              subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP,
+                (long *)&s->vid, 1);
+            }
 
-          subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP,
-            (long *)&s->vid, 1);
+          /* Set view focus */
+          if((v = VIEW(subArrayGet(subtle->views, s->vid))))
+            v->focus = c->win;;
 
           /* Hook: Focus */
           subHookCall(SUB_HOOK_CLIENT_FOCUS, (void *)c);

@@ -585,7 +585,7 @@ typedef struct subview_t /* {{{ */
   FLAGS    flags;                                                 ///< View flags
   char     *name;                                                 ///< View name
   TAGS     tags;                                                  ///< View tags
-  Window   win;                                                   ///< View window
+  Window   win, focus;                                            ///< View window, focus
   int      width;                                                 ///< View width
 } SubView; /* }}} */
 
@@ -765,7 +765,7 @@ void subTrayKill(SubTray *t);                                     ///< Delete tr
 /* view.c {{{ */
 SubView *subViewNew(char *name, char *tags);                      ///< Create view
 void subViewHighlight(int tags);                                  ///< Highlight views
-int subViewVisible(SubView *v);                                   ///< Whether view is visible
+void subViewFocus(SubView *v, int focus);                         ///< Restore view focus
 void subViewJump(SubView *v);                                     ///< Jump to view
 void subViewPublish(void);                                        ///< Publish views
 void subViewKill(SubView *v);                                     ///< Kill view

@@ -85,6 +85,36 @@ subViewHighlight(int tags)
   subScreenRender();
 } /* }}} */
 
+ /** subViewFocus {{{
+  * @brief Restore view focus
+  * @param[in]  v  A #SubView
+  **/
+
+void
+subViewFocus(SubView *v,
+  int focus)
+{
+  assert(v);
+
+  /* Focus */
+  if(focus && None != v->focus)
+    {
+      SubClient *c = NULL;
+
+      if((c = CLIENT(subSubtleFind(v->focus, CLIENTID))) &&
+          VISIBLE(v->tags, c))
+        {
+          subClientFocus(c);
+          subClientWarp(c);
+
+          return;
+        }
+      else v->focus = None;
+    }
+
+  subSubtleFocus(focus);
+} /* }}} */
+
  /** subViewJump {{{
   * @brief Jump to view
   * @param[in]  v  A #SubView
@@ -121,7 +151,7 @@ subViewJump(SubView *v)
 
       subScreenConfigure();
       subScreenRender();
-      subSubtleFocus(True);
+      subViewFocus(v, True);
     }
 
   subSharedLogDebug("Jump: type=view\n");

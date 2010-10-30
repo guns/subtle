@@ -534,7 +534,7 @@ subScreenJump(SubScreen *s)
   XWarpPointer(subtle->dpy, None, ROOT, 0, 0, s->geom.x, s->geom.y,
     s->geom.x + s->geom.width / 2, s->geom.y + s->geom.height / 2);
 
-  subSubtleFocus(True);
+  subViewFocus(VIEW(subArrayGet(subtle->views, s->vid)), True);
 
   subSharedLogDebug("Jump: type=screen\n");
 } /* }}} */
