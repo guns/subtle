@@ -287,6 +287,12 @@ subScreenConfigure(void)
 
   subSharedLogDebug("Configure: type=screen\n");
 
+  /* EWMH: Visible tags, views */
+  subEwmhSetCardinals(ROOT, SUB_EWMH_SUBTLE_VISIBLE_TAGS,
+    (long *)&subtle->visible_tags, 1);
+  subEwmhSetCardinals(ROOT, SUB_EWMH_SUBTLE_VISIBLE_VIEWS,
+    (long *)&subtle->visible_views, 1);
+
   /* Hook: Configure */
   subHookCall(SUB_HOOK_VIEW_CONFIGURE, (void *)v);
 } /* }}} */
