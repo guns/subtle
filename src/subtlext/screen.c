@@ -19,7 +19,7 @@ ScreenList(void)
   VALUE method = Qnil, klass = Qnil, array = Qnil, screen = Qnil, geometry = Qnil;
   long *workareas = NULL;
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Fetch data */
   method = rb_intern("new");
@@ -84,7 +84,7 @@ subScreenInit(VALUE self,
   rb_iv_set(self, "@id",       id);
   rb_iv_set(self, "@geometry", Qnil);
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   return self;
 } /* }}} */
@@ -159,7 +159,7 @@ subScreenCurrent(VALUE self)
   unsigned long *focus = NULL;
   VALUE screen = Qnil;
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Get current screen from current client or use the first */
   if((focus = (unsigned long *)subSharedPropertyGet(display,

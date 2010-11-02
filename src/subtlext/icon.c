@@ -90,7 +90,7 @@ subIconInit(int argc,
 
       rb_scan_args(argc, argv, "02", &arg1, &arg2);
 
-      subSubtlextConnect(); ///< Implicit open connection
+      subSubtlextConnect(NULL); ///< Implicit open connection
 
       /* Find or create icon */
       if(T_STRING == rb_type(arg1)) ///< Icon path
@@ -191,11 +191,11 @@ subIconDraw(VALUE self,
 
 /* subIconDrawRect {{{ */
 /*
- * call-seq: rect(x, y, width, height, fill) -> nil
+ * call-seq: draw_rect(x, y, width, height, fill) -> nil
  *
  * Draw a rect on the icon
  *
- *  icon.rect(1, 1, 10, 10, false)
+ *  icon.draw_rect(1, 1, 10, 10, false)
  *  => nil
  */
 

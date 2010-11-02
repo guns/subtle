@@ -20,7 +20,7 @@ ClientToggle(VALUE self,
   Window win = 0;
 
   rb_check_frozen(self);
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Find window */
   if((win = NUM2LONG(rb_iv_get(self, "@win"))))
@@ -56,7 +56,7 @@ ClientSelect(VALUE self,
   XRectangle geometry1 = { 0 }, geometry2 = { 0 };
 
   rb_check_frozen(self);
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Fetch data */
   win     = NUM2LONG(rb_iv_get(self, "@win"));
@@ -123,7 +123,7 @@ ClientRestack(VALUE self,
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
   rb_check_frozen(self);
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   if(RTEST(win))
     {
@@ -180,7 +180,7 @@ subClientInit(VALUE self,
   rb_iv_set(self, "@flags",    Qnil);
   rb_iv_set(self, "@hidden",   Qfalse);
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   return self;
 } /* }}} */
@@ -216,7 +216,7 @@ subClientFind(VALUE self,
   VALUE parsed = Qnil, client = Qnil;
   char *name = NULL, buf[50] = { 0 };
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Check object type */
   if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
@@ -263,7 +263,7 @@ subClientCurrent(VALUE self)
   VALUE client = Qnil;
   unsigned long *focus = NULL;
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   if((focus = (unsigned long *)subSharedPropertyGet(display,
       DefaultRootWindow(display), XA_WINDOW,
@@ -301,7 +301,7 @@ subClientVisible(VALUE self)
   unsigned long *visible = NULL;
   VALUE meth = Qnil, klass = Qnil, array = Qnil, client = Qnil;
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Fetch data */
   meth    = rb_intern("new");
@@ -359,7 +359,7 @@ subClientAll(VALUE self)
   Window *clients = NULL;
   VALUE meth = Qnil, klass = Qnil, array = Qnil, client = Qnil;
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Fetch data */
   meth    = rb_intern("new");
@@ -401,7 +401,7 @@ subClientUpdate(VALUE self)
   VALUE win = rb_iv_get(self, "@win");
 
   rb_check_frozen(self);
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Check object type */
   if(T_FIXNUM == rb_type(win) || T_BIGNUM == rb_type(win))
@@ -754,7 +754,7 @@ subClientAliveAsk(VALUE self)
   VALUE ret = Qfalse, name = rb_iv_get(self, "@name");
 
   rb_check_frozen(self);
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Just find the client */
   if(RTEST(name) && -1 != subSubtlextFindWindow("_NET_CLIENT_LIST",
@@ -781,7 +781,7 @@ subClientGravityReader(VALUE self)
   VALUE gravity = Qnil;
 
   rb_check_frozen(self);
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Load on demand */
   if(NIL_P((gravity = rb_iv_get(self, "@gravity"))) &&
@@ -835,7 +835,7 @@ subClientGravityWriter(VALUE self,
   VALUE gravity = Qnil;
 
   rb_check_frozen(self);
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Check instance type */
   if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("Gravity"))))
@@ -876,7 +876,7 @@ subClientScreenReader(VALUE self)
   VALUE screen = Qnil;
 
   rb_check_frozen(self);
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Load on demand */
   if(NIL_P((screen = rb_iv_get(self, "@screen"))) &&
@@ -919,7 +919,7 @@ subClientScreenWriter(VALUE self,
   VALUE screen = Qnil;
 
   rb_check_frozen(self);
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Check instance type */
   if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("Screen"))))
@@ -960,7 +960,7 @@ subClientGeometryReader(VALUE self)
   VALUE geom = Qnil;
 
   rb_check_frozen(self);
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   geom = rb_iv_get(self, "@geometry");
   win = NUM2LONG(rb_iv_get(self, "@win"));
@@ -1008,7 +1008,7 @@ subClientGeometryWriter(int argc,
   VALUE klass = Qnil, geometry = Qnil;
 
   rb_check_frozen(self);
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Delegate arguments */
   klass    = rb_const_get(mod, rb_intern("Geometry"));
@@ -1050,7 +1050,7 @@ subClientResizeWriter(VALUE self,
   VALUE value)
 {
   rb_check_frozen(self);
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Check instance type */
   if(Qtrue == value || Qfalse == value)
@@ -1172,7 +1172,7 @@ subClientKill(VALUE self)
 {
   VALUE win = rb_iv_get(self, "@win");
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   if(RTEST(win))
     {

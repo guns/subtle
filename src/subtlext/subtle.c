@@ -17,7 +17,7 @@ SubtleSend(char *message)
 {
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   subSharedMessage(display, DefaultRootWindow(display), message, data, True);
 
@@ -37,9 +37,30 @@ SubtleSend(char *message)
 VALUE
 subSubtleDisplayReader(VALUE self)
 {
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   return rb_str_new2(DisplayString(display));
+} /* }}} */
+
+/* subSubtleDisplayWriter {{{ */
+/*
+ * call-seq: display=(string) -> nil
+ *
+ * Set the display name
+ *
+ *  subtle.display = ":0"
+ *  => nil
+ */
+
+VALUE
+subSubtleDisplayWriter(VALUE self,
+  VALUE display_string)
+{
+  /* Explicit open connection */
+  subSubtlextConnect(T_STRING == rb_type(display_string) ?
+    RSTRING_PTR(display_string) : NULL);
+
+  return Qnil;
 } /* }}} */
 
 /* subSubtleRunningAsk {{{ */
@@ -62,7 +83,7 @@ subSubtleRunningAsk(VALUE self)
   Window *check = NULL;
   VALUE running = Qfalse;
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Get supporting window */
   if(display && (check = subSubtlextWMCheck()))
@@ -108,7 +129,7 @@ subSubtleSelect(VALUE self)
   Window dummy = None, root = None, *wins = NULL;
   Cursor cursor = None;
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   root   = DefaultRootWindow(display);
   cursor = XCreateFontCursor(display, XC_cross);
@@ -243,7 +264,7 @@ subSubtleColors(VALUE self)
     "background", "separator"
   };
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Fetch data */
   meth  = rb_intern("new");

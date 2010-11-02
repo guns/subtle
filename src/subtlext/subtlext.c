@@ -611,15 +611,15 @@ SubtlextEqualWindow(VALUE self,
 
 /* subSubtlextConnect {{{ */
 void
-subSubtlextConnect(void)
+subSubtlextConnect(char *display_string)
 {
   /* Open display */
   if(!display)
     {
-      if(!(display = XOpenDisplay(NULL)))
+      if(!(display = XOpenDisplay(display_string)))
         {
           rb_raise(rb_eStandardError, "Failed opening display `%s'",
-            DisplayString(display));
+            display_string);
         }
 
       XSetErrorHandler(subSharedLogXError);
@@ -1344,6 +1344,7 @@ Init_subtlext(void)
 
   /* Singleton methods */
   rb_define_singleton_method(subtle, "display",       subSubtleDisplayReader, 0);
+  rb_define_singleton_method(subtle, "display=",      subSubtleDisplayWriter, 1);
   rb_define_singleton_method(subtle, "select_window", subSubtleSelect,        0);
   rb_define_singleton_method(subtle, "running?",      subSubtleRunningAsk,    0);
   rb_define_singleton_method(subtle, "reload",        subSubtleReload,        0);

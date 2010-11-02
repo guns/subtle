@@ -73,7 +73,7 @@ ViewSelect(VALUE self,
   VALUE ret = Qnil;
 
   rb_check_frozen(self);
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Fetch data */
   id    = FIX2INT(rb_iv_get(self, "@id"));
@@ -137,7 +137,7 @@ subViewInit(VALUE self,
   rb_iv_set(self, "@win",  Qnil);
   rb_iv_set(self, "@name", name);
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   return self;
 } /* }}} */
@@ -172,7 +172,7 @@ subViewFind(VALUE self,
   VALUE parsed = Qnil, view = Qnil;
   char *name = NULL, buf[50] = { 0 };
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Check object type */
   if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
@@ -220,7 +220,7 @@ subViewCurrent(VALUE self)
   Window *views = NULL;
   VALUE view = Qnil;
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Get current view */
   names = subSharedPropertyStrings(display, DefaultRootWindow(display),
@@ -266,7 +266,7 @@ subViewVisible(VALUE self)
   unsigned long *visible = NULL;
   VALUE meth = Qnil, klass = Qnil, array = Qnil, view = Qnil;
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Fetch data */
   meth  = rb_intern("new");
@@ -324,7 +324,7 @@ subViewAll(VALUE self)
   Window *views = NULL;
   VALUE meth = Qnil, klass = Qnil, array = Qnil;
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Fetch data */
   meth  = rb_intern("new");
@@ -369,7 +369,7 @@ subViewUpdate(VALUE self)
   VALUE name = rb_iv_get(self, "@name");
 
   rb_check_frozen(self);
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Check object type */
   if(T_STRING == rb_type(name))
@@ -432,7 +432,7 @@ subViewClients(VALUE self)
   unsigned long *tags1 = NULL;
 
   rb_check_frozen(self);
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Fetch data */
   win     = rb_iv_get(self, "@win");
@@ -497,7 +497,7 @@ subViewJump(VALUE self)
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
   rb_check_frozen(self);
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   data.l[0] = FIX2INT(id);
 
@@ -600,7 +600,7 @@ subViewKill(VALUE self)
 {
   VALUE id = rb_iv_get(self, "@id");
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   if(RTEST(id))
     {

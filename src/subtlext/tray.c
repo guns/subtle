@@ -47,7 +47,7 @@ subTrayInit(VALUE self,
   rb_iv_set(self, "@klass", Qnil);
   rb_iv_set(self, "@title", Qnil);
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   return self;
 } /* }}} */
@@ -83,7 +83,7 @@ subTrayFind(VALUE self,
   VALUE parsed = Qnil, tray = Qnil;
   char *name = NULL, buf[50] = { 0 };
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Check object type */
   if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
@@ -130,7 +130,7 @@ subTrayAll(VALUE self)
   Window *trays = NULL;
   VALUE meth = Qnil, klass = Qnil, array = Qnil;
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Fetch data */
   meth  = rb_intern("new");
@@ -172,7 +172,7 @@ subTrayUpdate(VALUE self)
   VALUE win = rb_iv_get(self, "@win");
 
   rb_check_frozen(self);
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Check object type */
   if(RTEST(win) && (T_FIXNUM == rb_type(win) || T_BIGNUM == rb_type(win)))
@@ -239,7 +239,7 @@ subTrayKill(VALUE self)
 {
   VALUE id = rb_iv_get(self, "@id");
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   if(RTEST(id))
     {

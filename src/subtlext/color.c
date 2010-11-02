@@ -78,7 +78,7 @@ subColorInit(VALUE self,
 {
   XColor xcolor = { 0 };
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Get color values */
   xcolor.pixel = subColorPixel(value);

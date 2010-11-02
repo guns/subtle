@@ -156,6 +156,7 @@ VALUE subSubletKill(VALUE self);                                  ///< Kill subl
 
 /* subtle.c {{{ */
 VALUE subSubtleDisplayReader(VALUE self);                         ///< Get display
+VALUE subSubtleDisplayWriter(VALUE self, VALUE display);          ///< Set display
 VALUE subSubtleRunningAsk(VALUE self);                            ///< Is subtle running
 VALUE subSubtleSelect(VALUE self);                                ///< Select window
 VALUE subSubtleReload(VALUE self);                                ///< Reload config and sublets
@@ -166,7 +167,7 @@ VALUE subSubtleSpawn(VALUE self, VALUE cmd);                      ///< Spawn com
 /* }}} */
 
 /* subtlext.c {{{ */
-void subSubtlextConnect(void);                                    ///< Connect to display
+void subSubtlextConnect(char *display_string);                    ///< Connect to display
 void subSubtlextBacktrace(void);                                  ///< Print ruby backtrace
 VALUE subSubtlextConcat(VALUE str1, VALUE str2);                  ///< Concat strings
 VALUE subSubtlextParse(VALUE value, char *buf,

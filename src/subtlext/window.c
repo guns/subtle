@@ -172,7 +172,7 @@ subWindowInit(VALUE self,
       VALUE geom = Qnil;
       XSetWindowAttributes sattrs;
 
-      subSubtlextConnect(); ///< Implicit open connection
+      subSubtlextConnect(NULL); ///< Implicit open connection
 
       /* Parse geometry hash */
       if(T_HASH == rb_type(geometry))

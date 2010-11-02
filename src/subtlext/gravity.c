@@ -119,7 +119,7 @@ subGravityInit(int argc,
   rb_iv_set(self, "@name",     data[0]);
   rb_iv_set(self, "@geometry", data[1]);
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   return self;
 } /* }}} */
@@ -154,7 +154,7 @@ subGravityFind(VALUE self,
   XRectangle geometry = { 0 };
   char *name = NULL, buf[50] = { 0 };
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Check object type */
   if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
@@ -204,7 +204,7 @@ subGravityAll(VALUE self)
 
   VALUE array = rb_ary_new();
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Get gravity list */
   if((gravities = subSharedPropertyStrings(display, DefaultRootWindow(display),
@@ -532,7 +532,7 @@ subGravityKill(VALUE self)
 {
   VALUE id = rb_iv_get(self, "@id");
 
-  subSubtlextConnect(); ///< Implicit open connection
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   if(RTEST(id))
     {
