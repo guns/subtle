@@ -47,6 +47,7 @@ VALUE subClientInstantiate(Window win);                           ///< Instantia
 VALUE subClientInit(VALUE self, VALUE win);                       ///< Create client
 VALUE subClientFind(VALUE self, VALUE value);                     ///< Find client
 VALUE subClientCurrent(VALUE self);                               ///< Get current client
+VALUE subClientVisible(VALUE self);                               ///< Get all visible clients
 VALUE subClientAll(VALUE self);                                   ///< Get all clients
 VALUE subClientUpdate(VALUE self);                                ///< Update client
 VALUE subClientViewList(VALUE self);                              ///< Get views clients is on
@@ -146,6 +147,7 @@ VALUE subSubletAll(VALUE self);                                   ///< Get all s
 VALUE subSubletUpdate(VALUE self);                                ///< Update sublet
 VALUE subSubletDataReader(VALUE self);                            ///< Get sublet data
 VALUE subSubletDataWriter(VALUE self, VALUE value);               ///< Set sublet data
+VALUE subSubletForegroundWriter(VALUE self, VALUE value);         ///< Set sublet foreground
 VALUE subSubletBackgroundWriter(VALUE self, VALUE value);         ///< Set sublet background
 VALUE subSubletGeometryReader(VALUE self);                        ///< Get sublet geometry
 VALUE subSubletToString(VALUE self);                              ///< Sublet to string
@@ -181,6 +183,7 @@ Window *subSubtlextWMCheck(void);                                 ///< Get WM ch
 VALUE subTagInstantiate(char *name);                              ///< Instantiate tag
 VALUE subTagInit(VALUE self, VALUE name);                         ///< Create tag
 VALUE subTagFind(VALUE self, VALUE value);                        ///< Find tag
+VALUE subTagVisible(VALUE self);                                  ///< Get all visible tags
 VALUE subTagAll(VALUE self);                                      ///< Get all tags
 VALUE subTagUpdate(VALUE self);                                   ///< Update tag
 VALUE subTagClients(VALUE self);                                  ///< Get clients with tag
@@ -204,6 +207,7 @@ VALUE subViewInstantiate(char *name);                             ///< Instantia
 VALUE subViewInit(VALUE self, VALUE name);                        ///< Create view
 VALUE subViewFind(VALUE self, VALUE name);                        ///< Find view
 VALUE subViewCurrent(VALUE self);                                 ///< Get current view
+VALUE subViewVisible(VALUE self);                                 ///< Get all visible views
 VALUE subViewAll(VALUE self);                                     ///< Get all views
 VALUE subViewUpdate(VALUE self);                                  ///< Update view
 VALUE subViewClients(VALUE self);                                 ///< Get clients of view

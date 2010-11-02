@@ -178,7 +178,9 @@ subViewFind(VALUE self,
   if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
       value, buf, sizeof(buf), NULL)))
     {
-      if(CHAR2SYM("all") == parsed)
+      if(CHAR2SYM("visible") == parsed)
+        return subViewVisible(Qnil);
+      else if(CHAR2SYM("all") == parsed)
         return subViewAll(Qnil);
       else if(CHAR2SYM("current") == parsed)
         return subViewCurrent(Qnil);
@@ -240,6 +242,65 @@ subViewCurrent(VALUE self)
   free(cv);
 
   return view;
+} /* }}} */
+
+/* subViewVisible {{{ */
+/*
+ * call-seq: visible -> Array
+ *
+ * Get array of all visible View
+ *
+ *  Subtlext::View.visible
+ *  => [#<Subtlext::View:xxx>, #<Subtlext::View:xxx>]
+ *
+ *  Subtlext::View.visible
+ *  => []
+ */
+
+VALUE
+subViewVisible(VALUE self)
+{
+  int i, size = 0;
+  char **names = NULL;
+  Window *views = NULL;
+  unsigned long *visible = NULL;
+  VALUE meth = Qnil, klass = Qnil, array = Qnil, view = Qnil;
+
+  subSubtlextConnect(); ///< Implicit open connection
+
+  /* Fetch data */
+  meth  = rb_intern("new");
+  klass = rb_const_get(mod, rb_intern("View"));
+  names = subSharedPropertyStrings(display, DefaultRootWindow(display),
+    XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size);
+  views = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display),
+    XA_WINDOW, XInternAtom(display, "_NET_VIRTUAL_ROOTS", False), NULL);
+  visible = (unsigned long *)subSharedPropertyGet(display,
+    DefaultRootWindow(display), XA_CARDINAL, XInternAtom(display,
+    "SUBTLE_VISIBLE_VIEWS", False), NULL);
+  array = rb_ary_new2(size);
+
+  /* Populate array */
+  if(names && views)
+    {
+      for(i = 0; i < size; i++)
+        {
+          /* Create view on match */
+          if(*visible & (1L << (i + 1)) && !NIL_P(view = rb_funcall(klass,
+              meth, 1, rb_str_new2(names[i]))))
+            {
+              rb_iv_set(view, "@id",  INT2FIX(i));
+              rb_iv_set(view, "@win", LONG2NUM(views[i]));
+              rb_ary_push(array, view);
+            }
+        }
+
+      XFreeStringList(names);
+      free(views);
+      free(visible);
+    }
+
+  return array;
 } /* }}} */
 
 /* subViewAll {{{ */

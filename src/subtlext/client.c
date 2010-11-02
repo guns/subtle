@@ -222,7 +222,9 @@ subClientFind(VALUE self,
   if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
       value, buf, sizeof(buf), &flags)))
     {
-      if(CHAR2SYM("all") == parsed)
+      if(CHAR2SYM("visible") == parsed)
+        return subClientVisible(Qnil);
+      else if(CHAR2SYM("all") == parsed)
         return subClientAll(Qnil);
       else if(CHAR2SYM("current") == parsed)
         return subClientCurrent(Qnil);
@@ -276,6 +278,65 @@ subClientCurrent(VALUE self)
   else rb_raise(rb_eStandardError, "Failed getting current client");
 
   return client;
+} /* }}} */
+
+/* subClientVisible {{{ */
+/*
+ * call-seq: visible -> Array
+ *
+ * Get Array of all visible Client
+ *
+ *  Subtlext::Client.visible
+ *  => [#<Subtlext::Client:xxx>, #<Subtlext::Client:xxx>]
+ *
+ *  Subtlext::Client.visible
+ *  => []
+ */
+
+VALUE
+subClientVisible(VALUE self)
+{
+  int i, size = 0;
+  Window *clients = NULL;
+  unsigned long *visible = NULL;
+  VALUE meth = Qnil, klass = Qnil, array = Qnil, client = Qnil;
+
+  subSubtlextConnect(); ///< Implicit open connection
+
+  /* Fetch data */
+  meth    = rb_intern("new");
+  klass   = rb_const_get(mod, rb_intern("Client"));
+  clients = subSubtlextList("_NET_CLIENT_LIST", &size);
+  visible = (unsigned long *)subSharedPropertyGet(display,
+    DefaultRootWindow(display), XA_CARDINAL, XInternAtom(display,
+    "SUBTLE_VISIBLE_TAGS", False), NULL);
+  array   = rb_ary_new2(size);
+
+  /* Populate array */
+  if(clients && visible)
+    {
+      for(i = 0; i < size; i++)
+        {
+          unsigned long *tags = (unsigned long *)subSharedPropertyGet(display,
+            clients[i], XA_CARDINAL, XInternAtom(display,
+            "SUBTLE_WINDOW_TAGS", False), NULL);
+
+          /* Create client on match */
+          if(*tags && *visible & *tags && !NIL_P(client = rb_funcall(klass,
+              meth, 1, LONG2NUM(clients[i]))))
+            {
+              subClientUpdate(client);
+              rb_ary_push(array, client);
+            }
+
+          if(tags) free(tags);
+        }
+
+      free(clients);
+      free(visible);
+    }
+
+  return array;
 } /* }}} */
 
 /* subClientAll {{{ */

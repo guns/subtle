@@ -1109,6 +1109,7 @@ Init_subtlext(void)
   /* Singleton methods */
   rb_define_singleton_method(client, "find",    subClientFind,    1);
   rb_define_singleton_method(client, "current", subClientCurrent, 0);
+  rb_define_singleton_method(client, "visible", subClientVisible, 0);
   rb_define_singleton_method(client, "all",     subClientAll,     0);
 
   /* General methods */
@@ -1381,6 +1382,7 @@ Init_subtlext(void)
   rb_define_method(sublet, "data",        subSubletDataReader,       0);
   rb_define_method(sublet, "data=",       subSubletDataWriter,       1);
   rb_define_method(sublet, "geometry",    subSubletGeometryReader,   0);
+  rb_define_method(sublet, "foreground=", subSubletForegroundWriter, 1);
   rb_define_method(sublet, "background=", subSubletBackgroundWriter, 1);
   rb_define_method(sublet, "to_str",      subSubletToString,         0);
   rb_define_method(sublet, "kill",        subSubletKill,             0);
@@ -1406,8 +1408,9 @@ Init_subtlext(void)
   rb_define_attr(tag,   "name", 1, 0);
 
   /* Singleton methods */
-  rb_define_singleton_method(tag, "find", subTagFind, 1);
-  rb_define_singleton_method(tag, "all",  subTagAll,  0);
+  rb_define_singleton_method(tag, "find",    subTagFind,    1);
+  rb_define_singleton_method(tag, "visible", subTagVisible, 0);
+  rb_define_singleton_method(tag, "all",     subTagAll,     0);
 
   /* General methods */
   rb_define_method(tag, "==", SubtlextEqualId, 1);
@@ -1497,6 +1500,7 @@ Init_subtlext(void)
   /* Singleton methods */
   rb_define_singleton_method(view, "find",    subViewFind,    1);
   rb_define_singleton_method(view, "current", subViewCurrent, 0);
+  rb_define_singleton_method(view, "visible", subViewVisible, 0);
   rb_define_singleton_method(view, "all",     subViewAll,     0);
 
   /* General methods */

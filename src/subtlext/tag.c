@@ -84,7 +84,9 @@ subTagFind(VALUE self,
   if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
       value, buf, sizeof(buf), NULL)))
     {
-      if(CHAR2SYM("all") == parsed)
+      if(CHAR2SYM("visible") == parsed)
+        return subTagVisible(Qnil);
+      else if(CHAR2SYM("all") == parsed)
         return subTagAll(Qnil);
     }
 
@@ -98,6 +100,60 @@ subTagFind(VALUE self,
     }
 
   return tag;
+} /* }}} */
+
+/* subTagVisible {{{ */
+/*
+ * call-seq: visible -> Array
+ *
+ * Get Array of all visible Tag
+ *
+ *  Subtlext::Tag.visible
+ *  => [#<Subtlext::Tag:xxx>, #<Subtlext::Tag:xxx>]
+ *
+ *  Subtlext::Tag.visible
+ *  => []
+ */
+
+VALUE
+subTagVisible(VALUE self)
+{
+  int i, size = 0;
+  char **tags = NULL;
+  unsigned long *visible = NULL;
+  VALUE meth = Qnil, klass = Qnil, array = Qnil, tag = Qnil;
+
+  subSubtlextConnect(); ///< Implicit open connection
+
+  /* Fetch data */
+  meth    = rb_intern("new");
+  klass   = rb_const_get(mod, rb_intern("Tag"));
+  tags    = subSharedPropertyStrings(display, DefaultRootWindow(display),
+    XInternAtom(display, "SUBTLE_TAG_LIST", False), &size);
+  visible = (unsigned long *)subSharedPropertyGet(display,
+    DefaultRootWindow(display), XA_CARDINAL, XInternAtom(display,
+    "SUBTLE_VISIBLE_TAGS", False), NULL);
+  array   = rb_ary_new2(size);
+
+  /* Populate array */
+  if(tags && visible)
+    {
+      for(i = 0; i < size; i++)
+        {
+          /* Create tag on match */
+          if(*visible & (1L << (i + 1)) && !NIL_P(tag = rb_funcall(klass,
+              meth, 1, rb_str_new2(tags[i]))))
+            {
+              rb_iv_set(tag, "@id", INT2FIX(i));
+              rb_ary_push(array, tag);
+            }
+        }
+
+      XFreeStringList(tags);
+      free(visible);
+    }
+
+  return array;
 } /* }}} */
 
 /* subTagAll {{{ */
