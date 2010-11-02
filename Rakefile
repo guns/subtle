@@ -171,12 +171,12 @@ task(:config) do
     @options, @defines = YAML::load(yaml)
   else
     # Check version
-    if(1 != CONFIG["MAJOR"].to_i or 9 != CONFIG["MINOR"].to_i)
+    if(1 != RbConfig::CONFIG["MAJOR"].to_i or 9 != RbConfig::CONFIG["MINOR"].to_i)
       fail("Ruby 1.9.0 or higher required")
     end
 
     # Update rpath
-    @options["rpath"] = Config.expand(@options["rpath"])
+    @options["rpath"] = RbConfig.expand(@options["rpath"])
 
     # Get options
     @options.each_key do |k|
@@ -204,22 +204,30 @@ task(:config) do
     end
 
     # Get ruby header dir
-    if(CONFIG["rubyhdrdir"].nil?)
-      @options["hdrdir"]  = Config.expand(CONFIG["archdir"])
+    if(RbConfig::CONFIG["rubyhdrdir"].nil?)
+      @options["hdrdir"]  = RbConfig.expand(
+        RbConfig::CONFIG["archdir"]
+      )
     else
-      @options["hdrdir"]  = Config.expand(CONFIG["rubyhdrdir"])
+      @options["hdrdir"]  = RbConfig.expand(
+        RbConfig::CONFIG["rubyhdrdir"]
+      )
     end
 
     @options["archdir"] = File.join(
       @options["hdrdir"],
-      Config.expand(CONFIG["arch"])
+      RbConfig.expand(RbConfig::CONFIG["arch"])
     )
 
     # Expand options and defines
-    @options["sitelibdir"] = Config.expand(CONFIG["sitelibdir"])
+    @options["sitelibdir"] = RbConfig.expand(
+      RbConfig::CONFIG["sitelibdir"]
+    )
     [@options, @defines].each do |hash|
       hash.each do |k, v|
-        hash[k] = Config.expand(v, CONFIG.merge(@options.merge(@defines)))
+        hash[k] = RbConfig.expand(
+          v, CONFIG.merge(@options.merge(@defines))
+        )
       end
     end
 
@@ -405,8 +413,9 @@ task(:install => [:config, :build]) do
 
   # Get path of sed and ruby interpreter
   sed         = find_executable0("sed")
-  interpreter = File.join(Config.expand(CONFIG["bindir"]), 
-    CONFIG["ruby_install_name"]
+  interpreter = File.join(
+    RbConfig.expand(RbConfig::CONFIG["bindir"]),
+    RbConfig::CONFIG["ruby_install_name"]
   )
 
   # Install subtler
