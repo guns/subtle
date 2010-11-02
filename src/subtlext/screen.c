@@ -285,17 +285,7 @@ subScreenClientList(VALUE self)
 VALUE
 subScreenToString(VALUE self)
 {
-  char buf[256] = { 0 };
-  int x = 0, y = 0, width = 0, height = 0;
-
-  x      = FIX2INT(rb_iv_get(self, "@x"));
-  y      = FIX2INT(rb_iv_get(self, "@y"));
-  width  = FIX2INT(rb_iv_get(self, "@width"));
-  height = FIX2INT(rb_iv_get(self, "@height"));
-
-  snprintf(buf, sizeof(buf), "%dx%d+%d+%d", x, y, width, height);
-
-  return rb_str_new2(buf);
+  return subGeometryToString(rb_iv_get(self, "@geometry"));
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
