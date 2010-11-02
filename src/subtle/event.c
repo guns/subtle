@@ -678,6 +678,13 @@ EventMessage(XClientMessageEvent *ev)
                 subScreenRender();
               }
             break; /* }}} */
+          case SUB_EWMH_SUBTLE_SUBLET_FOREGROUND: /* {{{ */
+            if((p = EventFindSublet((int)ev->data.l[0])))
+              {
+                p->sublet->fg = ev->data.l[1];
+                subPanelRender(p);
+              }
+            break; /* }}} */
           case SUB_EWMH_SUBTLE_SUBLET_BACKGROUND: /* {{{ */
             if((p = EventFindSublet((int)ev->data.l[0])))
               {
@@ -1281,11 +1288,11 @@ EventFocus(XFocusChangeEvent *ev)
 
           subClientRender(c);
 
-          /* EWMH: Active window, current desktop */
+          /* EWMH: Active window */
           subEwmhSetWindows(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW,
             &subtle->windows.focus, 1);
 
-          /* EWMH: Current destop */
+          /* EWMH: Current desktop */
           if((s = SCREEN(subArrayGet(subtle->screens, c->screen))))
             {
               subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP,

@@ -224,6 +224,37 @@ subSubletDataWriter(VALUE self,
   return value;
 } /* }}} */
 
+/* subSubletForegroundWriter {{{ */
+/*
+ * call-seq: foreground=(color) -> nil
+ *
+ * Set default foreground of sublet
+ *
+ *  sublet.foreground = "#ff0000"
+ *  => nil
+ */
+
+VALUE
+subSubletForegroundWriter(VALUE self,
+  VALUE value)
+{
+  /* Check object type */
+  if(T_STRING == rb_type(value))
+    {
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+      data.l[0] = FIX2INT(rb_iv_get(self, "@id"));
+      data.l[1] = subSharedParseColor(display, RSTRING_PTR(value));
+
+      subSharedMessage(display, DefaultRootWindow(display),
+        "SUBTLE_SUBLET_FOREGROUND", data, True);
+    }
+  else rb_raise(rb_eArgError, "Failed setting value type `%s'",
+    rb_obj_classname(value));
+
+  return value;
+} /* }}} */
+
 /* subSubletBackgroundWriter {{{ */
 /*
  * call-seq: background=(color) -> nil
@@ -246,9 +277,11 @@ subSubletBackgroundWriter(VALUE self,
       data.l[0] = FIX2INT(rb_iv_get(self, "@id"));
       data.l[1] = subSharedParseColor(display, RSTRING_PTR(value));
 
-      subSharedMessage(display, DefaultRootWindow(display), "SUBTLE_SUBLET_BACKGROUND", data, True);
+      subSharedMessage(display, DefaultRootWindow(display),
+        "SUBTLE_SUBLET_BACKGROUND", data, True);
     }
-  else rb_raise(rb_eArgError, "Failed setting value type `%s'", rb_obj_classname(value));
+  else rb_raise(rb_eArgError, "Failed setting value type `%s'",
+    rb_obj_classname(value));
 
   return value;
 } /* }}} */

@@ -2232,6 +2232,56 @@ RubySubletDataWriter(VALUE self,
   return Qnil;
 } /* }}} */
 
+/* RubySubletForegroundWriter {{{ */
+/*
+ * call-seq: foreground=(value) -> nil
+ *
+ * Set the default foreground color of a Sublet
+ *
+ *  sublet.foreground("#ffffff")
+ *  => nil
+ *
+ *  sublet.foreground(Sublet::Color.new("#ffffff"))
+ *  => nil
+ */
+
+static VALUE
+RubySubletForegroundWriter(VALUE self,
+  VALUE value)
+{
+  SubPanel *p = NULL;
+
+  Data_Get_Struct(self, SubPanel, p);
+  if(p)
+    {
+      p->sublet->fg = subtle->colors.fg_sublets; ///< Set default color
+
+      /* Check value type */
+      switch(rb_type(value))
+        {
+          case T_STRING:
+            p->sublet->fg = subSharedParseColor(subtle->dpy, RSTRING_PTR(value));
+            break;
+          case T_OBJECT:
+              {
+                VALUE klass = Qnil;
+
+                klass = rb_const_get(mod, rb_intern("Color"));
+
+                if(rb_obj_is_instance_of(value, klass)) ///< Check object instance
+                  p->sublet->fg = NUM2LONG(rb_iv_get(self, "@pixel"));
+              }
+            break;
+          default:
+            rb_raise(rb_eArgError, "Unknown value type");
+        }
+
+      subPanelRender(p);
+    }
+
+  return Qnil;
+} /* }}} */
+
 /* RubySubletBackgroundWriter {{{ */
 /*
  * call-seq: background=(value) -> nil
@@ -2639,6 +2689,7 @@ subRubyInit(void)
   rb_define_method(sublet, "interval=",      RubySubletIntervalWriter,    1);
   rb_define_method(sublet, "data",           RubySubletDataReader,        0);
   rb_define_method(sublet, "data=",          RubySubletDataWriter,        1);
+  rb_define_method(sublet, "foreground=",    RubySubletForegroundWriter,  1);
   rb_define_method(sublet, "background=",    RubySubletBackgroundWriter,  1);
   rb_define_method(sublet, "geometry",       RubySubletGeometryReader,    0);
   rb_define_method(sublet, "show",           RubySubletShow,              0);
