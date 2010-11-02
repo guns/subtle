@@ -429,10 +429,13 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_SUBLET_NEW,                                     ///< Subtle sublet new
   SUB_EWMH_SUBTLE_SUBLET_UPDATE,                                  ///< Subtle sublet update
   SUB_EWMH_SUBTLE_SUBLET_DATA,                                    ///< Subtle sublet data
+  SUB_EWMH_SUBTLE_SUBLET_FOREGROUND,                              ///< Subtle sublet foreground
   SUB_EWMH_SUBTLE_SUBLET_BACKGROUND,                              ///< Subtle sublet background
   SUB_EWMH_SUBTLE_SUBLET_LIST,                                    ///< Subtle sublet list
   SUB_EWMH_SUBTLE_SUBLET_WINDOWS,                                 ///< Subtle sublet windows
   SUB_EWMH_SUBTLE_SUBLET_KILL,                                    ///< Subtle sublet kill
+  SUB_EWMH_SUBTLE_VISIBLE_TAGS,                                   ///< Subtle visible tags
+  SUB_EWMH_SUBTLE_VISIBLE_VIEWS,                                  ///< Subtle visible views
   SUB_EWMH_SUBTLE_RELOAD,                                         ///< Subtle reload
   SUB_EWMH_SUBTLE_RESTART,                                        ///< Subtle restart
   SUB_EWMH_SUBTLE_QUIT,                                           ///< Subtle quit
