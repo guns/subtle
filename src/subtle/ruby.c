@@ -24,7 +24,7 @@
 #define CHAR2SYM(name) ID2SYM(rb_intern(name))
 #define SYM2CHAR(sym)  rb_id2name(SYM2ID(sym))
 
-static VALUE shelter = Qnil, mod = Qnil, subtlext = Qnil, config = Qnil; ///< Globals
+static VALUE shelter = Qnil, mod = Qnil, config = Qnil; ///< Globals
 
 /* Typedef {{{ */
 typedef struct rubypanels_t
@@ -88,11 +88,11 @@ RubyConvert(void *data)
   if((c = CLIENT(data)))
     {
       int id = 0;
-      VALUE klass = Qnil;
-
-      subRubyLoadSubtlext(); ///< Load subtlext on demand
+      VALUE subtlext = Qnil, klass = Qnil;
 
       XSync(subtle->dpy, False); ///< Sync before going on
+
+      subtlext = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
 
       if(c->flags & SUB_TYPE_CLIENT) /* {{{ */
         {
@@ -838,17 +838,7 @@ RubyEvalConfig(void)
 static VALUE
 RubyWrapLoadSubtlext(VALUE data)
 {
-  /* Load subtlext */
-  if(NIL_P(subtlext))
-    {
-      rb_require("subtle/subtlext");
-
-      subtlext = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
-
-      printf("Loaded subtlext\n");
-    }
-
-  return Qnil;
+  return rb_require("subtle/subtlext");
 }/* }}} */
 
 /* RubyWrapLoadPanels {{{ */
@@ -1031,6 +1021,42 @@ RubyWrapEval(VALUE data)
   rb_obj_instance_eval(2, rargs, rargs[2]);
 
   return Qnil;
+} /* }}} */
+
+/* Object */
+
+/* RubyObjectDispatcher {{{ */
+/*
+ * Dispatcher for Subtlext constants - internal use only
+ */
+
+static VALUE
+RubyObjectDispatcher(VALUE self,
+  VALUE missing)
+{
+  VALUE ret = Qnil;
+
+  /* Load subtlext on demand */
+  if(CHAR2SYM("Subtlext") == missing)
+    {
+      int state = 0;
+      ID id = SYM2ID(missing);
+
+      /* Carefully load sublext */
+      rb_protect(RubyWrapLoadSubtlext, Qnil, &state);
+      if(state)
+        {
+          subSharedLogWarn("Failed loading subtlext\n");
+          RubyBacktrace();
+          subSubtleFinish();
+
+          exit(-1);
+        }
+
+      ret = rb_const_get(rb_mKernel, id);
+    }
+
+  return ret;
 } /* }}} */
 
 /* Options */
@@ -2355,10 +2381,7 @@ RubySubletGeometryReader(VALUE self)
       unsigned int wwidth = 0, wheight = 0, wbw = 0, wdepth = 0;
       unsigned int pwidth = 0, pheight = 0, pbw = 0, pdepth = 0, size = 0;
       Window *wins = NULL, parent = None, wroot = None, proot = None;
-      VALUE klass = Qnil;
-
-      /* Load subtlext on demand */
-      subRubyLoadSubtlext();
+      VALUE subtlext = Qnil, klass = Qnil;
 
       /* Get parent and geometries */
       XGetGeometry(subtle->dpy, p->win, &wroot, &wx, &wy,
@@ -2371,6 +2394,7 @@ RubySubletGeometryReader(VALUE self)
         &pwidth, &pheight, &pbw, &pdepth);
 
       /* Create geometry object */
+      subtlext = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
       klass    = rb_const_get(subtlext, rb_intern("Geometry"));
       geometry = rb_funcall(klass, rb_intern("new"), 4, INT2FIX(px + wx),
         INT2FIX(py + wy), INT2FIX(wwidth), INT2FIX(wheight));
@@ -2618,8 +2642,16 @@ subRubyInit(void)
   rb_define_module("Gem");
   Init_prelude();
 
-  /* Add subtlext to autoload list */
-  rb_autoload(rb_cObject, SYM2ID(CHAR2SYM("Subtlext")), "subtle/subtlext");
+  /* FIXME: Autload seems to be broken in <1.9.2, use dispatcher */
+  //rb_autoload(rb_cObject, SYM2ID(CHAR2SYM("Subtlext")), "subtle/subtlext");
+
+  /*
+   * Document-class: Object
+   *
+   * Ruby Object class dispatcher
+   */
+
+  rb_define_singleton_method(rb_cObject, "const_missing", RubyObjectDispatcher, 1);
 
   /*
    * Document-class: Subtle
@@ -3051,27 +3083,6 @@ subRubyLoadSublets(void)
       subArraySort(subtle->grabs, subGrabCompare);
     }
   else subSharedLogWarn("No sublets found\n");
-} /* }}} */
-
- /** subRubyLoadSubtlext {{{
-  * @brief Load subtlext
-  **/
-
-void
-subRubyLoadSubtlext(void)
-{
-  int state = 0;
-
-  /* Carefully load sublext */
-  rb_protect(RubyWrapLoadSubtlext, Qnil, &state);
-  if(state)
-    {
-      subSharedLogWarn("Failed loading subtlext\n");
-      RubyBacktrace();
-      subSubtleFinish();
-
-      exit(-1);
-    }
 } /* }}} */
 
  /** subRubyCall {{{
