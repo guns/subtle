@@ -714,7 +714,6 @@ int subRubyLoadConfig(void);                                      ///< Load conf
 void subRubyReloadConfig(void);                                   ///< Reload config file
 void subRubyLoadSublet(const char *file);                         ///< Load sublet
 void subRubyLoadSublets(void);                                    ///< Load sublets
-void subRubyLoadSubtlext(void);                                   ///< Load subtlext
 void subRubyLoadPanels(void);                                     ///< Load panels
 int subRubyCall(int type, unsigned long proc, void *data);        ///< Call Ruby script
 int subRubyRelease(unsigned long recv);                           ///< Release receiver
