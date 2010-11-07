@@ -37,8 +37,10 @@ subPanelNew(int type)
   switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_VIEWS|SUB_PANEL_TITLE))
     {
       case SUB_PANEL_SUBLET: /* {{{ */
-        p->sublet = (struct subsublet_t *)subSharedMemoryAlloc(1, sizeof(struct subsublet_t));
+        p->sublet = (struct subsublet_t *)subSharedMemoryAlloc(1,
+          sizeof(struct subsublet_t));
 
+        /* Sublet specific */
         p->sublet->time  = subSubtleTime();
         p->sublet->text  = subSharedTextNew();
         p->sublet->fg    = subtle->colors.fg_sublets;
@@ -86,10 +88,6 @@ subPanelNew(int type)
 
         XChangeWindowAttributes(subtle->dpy, p->win,
           CWOverrideRedirect, &sattrs);
-
-        /* Update title border */
-        XSetWindowBorder(subtle->dpy, p->win, subtle->colors.bo_panel);
-        XSetWindowBorderWidth(subtle->dpy, p->win, subtle->pbw);
         break; /* }}} */
     }
 
@@ -115,8 +113,8 @@ subPanelUpdate(SubPanel *p)
         XResizeWindow(subtle->dpy, p->win, p->width - 2 * subtle->pbw,
           subtle->th - 2 * subtle->pbw);
 
-        /* Set borders */
-        XSetWindowBorder(subtle->dpy, p->win, subtle->colors.bo_panel);
+        /* Update borders */
+        XSetWindowBorder(subtle->dpy, p->win, subtle->colors.bo_sublets);
         XSetWindowBorderWidth(subtle->dpy, p->win, subtle->pbw);
         break; /* }}} */
       case SUB_PANEL_VIEWS: /* {{{ */
@@ -139,9 +137,9 @@ subPanelUpdate(SubPanel *p)
                   v->width - 2 * subtle->pbw, subtle->th - 2 * subtle->pbw);
                 p->width += v->width;
 
-                /* Set borders */
+                /* Update borders */
                 XSetWindowBorder(subtle->dpy, p->views[i],
-                  subtle->colors.bo_panel);
+                  subtle->colors.bo_views);
                 XSetWindowBorderWidth(subtle->dpy, p->views[i], subtle->pbw);
               }
 
@@ -181,6 +179,10 @@ subPanelUpdate(SubPanel *p)
                   }
               }
           }
+
+        /* Update border */
+        XSetWindowBorder(subtle->dpy, p->win, subtle->colors.bo_focus);
+        XSetWindowBorderWidth(subtle->dpy, p->win, subtle->pbw);
         break; /* }}} */
     }
 } /* }}} */
@@ -212,40 +214,47 @@ subPanelRender(SubPanel *p)
         if(0 < subtle->views->ndata)
           {
             int i;
-            long fg = 0, bg = 0;
+            long fg = 0, bg = 0, bo = 0;
 
             /* View buttons */
             for(i = 0; i < subtle->views->ndata; i++)
               {
                 SubView *v = VIEW(subtle->views->data[i]);
 
-                if(!(v->flags & SUB_PANEL_HIDDEN))
+                /* Select color pair */
+                if(v->flags & SUB_VIEW_URGENT)
                   {
-                    /* Select color pair */
-                    if(v->flags & SUB_CLIENT_MODE_URGENT)
-                      {
-                        fg = subtle->colors.fg_urgent;
-                        bg = subtle->colors.bg_urgent;
-                      }
-                    else if(p->screen->vid == i)
-                      {
-                        fg = subtle->colors.fg_focus;
-                        bg = subtle->colors.bg_focus;
-                      }
-                    else
-                      {
-                        fg = subtle->colors.fg_views;
-                        bg = subtle->colors.bg_views;
-                      }
-
-                    /* Set window background */
-                    XSetWindowBackground(subtle->dpy, p->views[i], bg);
-                    XClearWindow(subtle->dpy, p->views[i]);
-
-                    subSharedTextDraw(subtle->dpy, subtle->gcs.font,
-                      subtle->font, p->views[i], 3, subtle->font->y,
-                      fg, bg, v->name);
+                    fg = subtle->colors.fg_urgent;
+                    bg = subtle->colors.bg_urgent;
+                    bo = subtle->colors.bo_urgent;
                   }
+                else if(p->screen->vid == i)
+                  {
+                    fg = subtle->colors.fg_focus;
+                    bg = subtle->colors.bg_focus;
+                    bo = subtle->colors.bo_focus;
+                  }
+                else if(subtle->visible_clients & v->tags)
+                  {
+                    fg = subtle->colors.fg_occupied;
+                    bg = subtle->colors.bg_occupied;
+                    bo = subtle->colors.bo_occupied;
+                  }
+                else
+                  {
+                    fg = subtle->colors.fg_views;
+                    bg = subtle->colors.bg_views;
+                    bo = subtle->colors.bo_views;
+                  }
+
+                /* Set window background and border*/
+                XSetWindowBackground(subtle->dpy, p->views[i], bg);
+                XSetWindowBorder(subtle->dpy, p->views[i], bo);
+                XClearWindow(subtle->dpy, p->views[i]);
+
+                subSharedTextDraw(subtle->dpy, subtle->gcs.font,
+                  subtle->font, p->views[i], 3, subtle->font->y,
+                  fg, bg, v->name);
               }
           }
         break; /* }}} */

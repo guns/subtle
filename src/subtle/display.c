@@ -295,26 +295,32 @@ subDisplayPublish(void)
 {
   unsigned long *colors;
 
-#define NCOLORS 15
+#define NCOLORS 21
 
   /* Create color array */
   colors = (unsigned long *)subSharedMemoryAlloc(NCOLORS, sizeof(unsigned long));
 
-  colors[0]  = subtle->colors.fg_panel;
-  colors[1]  = subtle->colors.fg_views;
-  colors[2]  = subtle->colors.fg_sublets;
-  colors[3]  = subtle->colors.fg_focus;
-  colors[4]  = subtle->colors.fg_urgent;
-  colors[5]  = subtle->colors.bg_panel;
-  colors[6]  = subtle->colors.bg_views;
-  colors[7]  = subtle->colors.bg_sublets;
-  colors[8]  = subtle->colors.bg_focus;
-  colors[9]  = subtle->colors.bg_urgent;
-  colors[10] = subtle->colors.bo_focus;
-  colors[11] = subtle->colors.bo_normal;
-  colors[12] = subtle->colors.bo_panel;
-  colors[13] = subtle->colors.bg;
-  colors[14] = subtle->colors.separator;
+  colors[0]  = subtle->colors.fg_focus;
+  colors[1]  = subtle->colors.bg_focus;
+  colors[2]  = subtle->colors.bo_focus;
+  colors[3]  = subtle->colors.fg_urgent;
+  colors[4]  = subtle->colors.bg_urgent;
+  colors[5]  = subtle->colors.bo_urgent;
+  colors[6]  = subtle->colors.fg_occupied;
+  colors[7]  = subtle->colors.bg_occupied;
+  colors[8]  = subtle->colors.bo_occupied;
+  colors[9]  = subtle->colors.fg_views;
+  colors[10] = subtle->colors.bg_views;
+  colors[11] = subtle->colors.bo_views;
+  colors[12] = subtle->colors.fg_sublets;
+  colors[13] = subtle->colors.bg_sublets;
+  colors[14] = subtle->colors.bo_sublets;
+  colors[15] = subtle->colors.fg_panel;
+  colors[16] = subtle->colors.bg_panel;
+  colors[17] = subtle->colors.bo_active;
+  colors[18] = subtle->colors.bo_inactive;
+  colors[19] = subtle->colors.bg;
+  colors[20] = subtle->colors.separator;
 
   /* EWMH: Colors */
   subEwmhSetCardinals(ROOT, SUB_EWMH_SUBTLE_COLORS, (long *)colors, NCOLORS);

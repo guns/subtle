@@ -116,7 +116,7 @@ subClientNew(Window win)
     subEwmhGet(SUB_EWMH_WM_WINDOW_ROLE), NULL);
 
   /* X properties */
-  sattrs.border_pixel = subtle->colors.bo_normal;
+  sattrs.border_pixel = subtle->colors.bo_inactive;
   sattrs.event_mask   = EVENTMASK;
   XChangeWindowAttributes(subtle->dpy, c->win, CWBorderPixel|CWEventMask, &sattrs);
   XSetWindowBorderWidth(subtle->dpy, c->win, subtle->bw);
@@ -208,7 +208,7 @@ subClientRender(SubClient *c)
   if(!(c->flags & SUB_CLIENT_TYPE_DESKTOP))
     {
       XSetWindowBorder(subtle->dpy, c->win, subtle->windows.focus == c->win ?
-        subtle->colors.bo_focus : subtle->colors.bo_normal);
+        subtle->colors.bo_active : subtle->colors.bo_inactive);
     }
 } /* }}} */
 

@@ -722,7 +722,7 @@ RubyEvalConfig(void)
 {
   int i;
 
-  /* Check and update colors */
+  /* FIXME: Check and update colors */
   if(0 == subtle->colors.separator)
     subtle->colors.separator = subtle->colors.fg_panel;
 
@@ -898,7 +898,7 @@ RubyWrapLoadPanels(VALUE data)
 
                           /* Set borders */
                           XSetWindowBorder(subtle->dpy, sublet->win,
-                            subtle->colors.bo_panel);
+                            subtle->colors.bo_sublets);
                           XSetWindowBorderWidth(subtle->dpy, sublet->win,
                             subtle->pbw);
                         }
@@ -1342,70 +1342,117 @@ RubyConfigColor(VALUE self,
     {
       if(subtle->flags & SUB_SUBTLE_CHECK) return Qnil; ///< Skip on check
 
-      /* Plain if to save register */
-      if(CHAR2SYM("fg_panel") == option)
-        {
-          subtle->colors.fg_panel = subSharedParseColor(subtle->dpy,
-            RSTRING_PTR(value));
-        }
-      else if(CHAR2SYM("fg_views") == option)
-        {
-          subtle->colors.fg_views = subSharedParseColor(subtle->dpy,
-            RSTRING_PTR(value));
-        }
-      else if(CHAR2SYM("fg_sublets") == option)
-        {
-          subtle->colors.fg_sublets = subSharedParseColor(subtle->dpy,
-            RSTRING_PTR(value));
-        }
-      else if(CHAR2SYM("fg_focus") == option)
+      /* Plain 'if' to save lookups */
+      if(CHAR2SYM("fg_focus") == option || CHAR2SYM("focus_fg") == option)
         {
           subtle->colors.fg_focus = subSharedParseColor(subtle->dpy,
             RSTRING_PTR(value));
         }
-      else if(CHAR2SYM("fg_urgent") == option)
-        {
-          subtle->colors.fg_urgent = subSharedParseColor(subtle->dpy,
-            RSTRING_PTR(value));
-        }
-      else if(CHAR2SYM("bg_panel") == option)
-        {
-          subtle->colors.bg_panel = subSharedParseColor(subtle->dpy,
-            RSTRING_PTR(value));
-        }
-      else if(CHAR2SYM("bg_views") == option)
-        {
-          subtle->colors.bg_views = subSharedParseColor(subtle->dpy,
-            RSTRING_PTR(value));
-        }
-      else if(CHAR2SYM("bg_sublets") == option)
-        {
-          subtle->colors.bg_sublets = subSharedParseColor(subtle->dpy,
-            RSTRING_PTR(value));
-        }
-      else if(CHAR2SYM("bg_focus") == option)
+      else if(CHAR2SYM("bg_focus") == option || CHAR2SYM("focus_bg") == option)
         {
           subtle->colors.bg_focus = subSharedParseColor(subtle->dpy,
             RSTRING_PTR(value));
         }
-      else if(CHAR2SYM("bg_urgent") == option)
-        {
-          subtle->colors.bg_urgent = subSharedParseColor(subtle->dpy,
-            RSTRING_PTR(value));
-        }
-      else if(CHAR2SYM("border_focus") == option)
+      else if(CHAR2SYM("focus_border") == option)
         {
           subtle->colors.bo_focus = subSharedParseColor(subtle->dpy,
             RSTRING_PTR(value));
         }
-      else if(CHAR2SYM("border_normal") == option)
+      else if(CHAR2SYM("fg_urgent") == option || CHAR2SYM("urgent_fg") == option)
         {
-          subtle->colors.bo_normal = subSharedParseColor(subtle->dpy,
+          subtle->colors.fg_urgent = subSharedParseColor(subtle->dpy,
+            RSTRING_PTR(value));
+        }
+      else if(CHAR2SYM("bg_urgent") == option || CHAR2SYM("urgent_bg") == option)
+        {
+          subtle->colors.bg_urgent = subSharedParseColor(subtle->dpy,
+            RSTRING_PTR(value));
+        }
+      else if(CHAR2SYM("urgent_border") == option)
+        {
+          subtle->colors.bo_urgent = subSharedParseColor(subtle->dpy,
+            RSTRING_PTR(value));
+        }
+      else if(CHAR2SYM("fg_occupied") == option || CHAR2SYM("occupied_fg") == option)
+        {
+          subtle->colors.fg_occupied = subSharedParseColor(subtle->dpy,
+            RSTRING_PTR(value));
+        }
+      else if(CHAR2SYM("bg_occupied") == option || CHAR2SYM("occupied_bg") == option)
+        {
+          subtle->colors.bg_occupied = subSharedParseColor(subtle->dpy,
+            RSTRING_PTR(value));
+        }
+      else if(CHAR2SYM("occupied_border") == option)
+        {
+          subtle->colors.bo_occupied = subSharedParseColor(subtle->dpy,
+            RSTRING_PTR(value));
+        }
+      else if(CHAR2SYM("fg_views") == option || CHAR2SYM("views_fg") == option)
+        {
+          subtle->colors.fg_views = subSharedParseColor(subtle->dpy,
+            RSTRING_PTR(value));
+        }
+      else if(CHAR2SYM("bg_views") == option || CHAR2SYM("views_bg") == option)
+        {
+          subtle->colors.bg_views = subSharedParseColor(subtle->dpy,
+            RSTRING_PTR(value));
+        }
+      else if(CHAR2SYM("views_border") == option)
+        {
+          subtle->colors.bo_views = subSharedParseColor(subtle->dpy,
+            RSTRING_PTR(value));
+        }
+      else if(CHAR2SYM("fg_sublets") == option ||
+          CHAR2SYM("sublets_fg") == option)
+        {
+          subtle->colors.fg_sublets = subSharedParseColor(subtle->dpy,
+            RSTRING_PTR(value));
+        }
+      else if(CHAR2SYM("bg_sublets") == option ||
+          CHAR2SYM("sublets_bg") == option)
+        {
+          subtle->colors.bg_sublets = subSharedParseColor(subtle->dpy,
+            RSTRING_PTR(value));
+        }
+      else if(CHAR2SYM("sublets_border") == option)
+        {
+          subtle->colors.bo_sublets = subSharedParseColor(subtle->dpy,
+            RSTRING_PTR(value));
+        }
+      else if(CHAR2SYM("fg_panel") == option || CHAR2SYM("panel_fg") == option)
+        {
+          subtle->colors.fg_panel = subSharedParseColor(subtle->dpy,
+            RSTRING_PTR(value));
+        }
+      else if(CHAR2SYM("bg_panel") == option || CHAR2SYM("panel_bg") == option)
+        {
+          subtle->colors.bg_panel = subSharedParseColor(subtle->dpy,
             RSTRING_PTR(value));
         }
       else if(CHAR2SYM("border_panel") == option)
         {
-          subtle->colors.bo_panel = subSharedParseColor(subtle->dpy,
+          subSharedLogDeprecated("Color `:border_panel` has been splitted "
+            "into separate border colors\n");
+
+          /* TODO: Update all border colors */
+          subtle->colors.bo_focus    = subSharedParseColor(subtle->dpy,
+            RSTRING_PTR(value));
+          subtle->colors.bo_urgent   = subtle->colors.bo_focus;
+          subtle->colors.bo_occupied = subtle->colors.bo_focus;
+          subtle->colors.bo_views    = subtle->colors.bo_focus;
+          subtle->colors.bo_sublets  = subtle->colors.bo_focus;
+        }
+      else if(CHAR2SYM("border_focus") == option ||
+          CHAR2SYM("client_active") == option)
+        {
+          subtle->colors.bo_active = subSharedParseColor(subtle->dpy,
+            RSTRING_PTR(value));
+        }
+      else if(CHAR2SYM("border_normal") == option ||
+          CHAR2SYM("client_inactive") == option)
+        {
+          subtle->colors.bo_inactive = subSharedParseColor(subtle->dpy,
             RSTRING_PTR(value));
         }
       else if(CHAR2SYM("background") == option)

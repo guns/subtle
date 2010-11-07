@@ -255,15 +255,15 @@ EventMapRequest(XMapRequestEvent *ev)
           /* Check visibility first */
           if(VISIBLE(subtle->visible_tags, c))
             {
-              subScreenConfigure();
-              subScreenRender();
-
               /* Hook: Tile */
               subHookCall(SUB_HOOK_TILE, NULL);
             }
 
           if(c->flags & SUB_CLIENT_TYPE_DESKTOP) ///< Reorder stacking
             subArraySort(subtle->clients, subClientCompare);
+
+          subScreenConfigure();
+          subScreenRender();
 
           /* Hook: Create */
           subHookCall(SUB_HOOK_CLIENT_CREATE, (void *)c);
@@ -307,8 +307,6 @@ EventUnmap(XUnmapEvent *ev)
   /* Check if we know this window */
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID)))) ///< Client
     {
-      int visible = VISIBLE(subtle->visible_tags, c);
-
       subEwmhSetWMState(c->win, WithdrawnState);
 
       /* Ignore our generated unmap events */
@@ -322,8 +320,8 @@ EventUnmap(XUnmapEvent *ev)
       subArrayRemove(subtle->clients, (void *)c);
       subClientPublish();
       subClientKill(c, False);
-
-      if(visible) subScreenConfigure();
+      subScreenConfigure();
+      subScreenRender();
     }
   else if((t = TRAY(subSubtleFind(ev->window, TRAYID)))) ///< Tray
     {
@@ -356,14 +354,12 @@ EventDestroy(XDestroyWindowEvent *ev)
   /* Check if we know this window */
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID)))) ///< Client
     {
-      int visible = VISIBLE(subtle->visible_tags, c);
-
       c->flags |= SUB_CLIENT_DEAD; ///< Ignore remaining events
       subArrayRemove(subtle->clients, (void *)c);
       subClientPublish();
       subClientKill(c, True);
-
-      if(visible) subScreenConfigure();
+      subScreenConfigure();
+      subScreenRender();
     }
   else if((t = TRAY(subSubtleFind(ev->event, TRAYID)))) ///< Tray
     {
@@ -467,8 +463,6 @@ EventMessage(XClientMessageEvent *ev)
 
                           if(visible)
                             {
-                              subScreenConfigure();
-
                               /* Reactivate grabs on untag */
                               if(subtle->windows.focus == c->win &&
                                   !(c->tags & tag))
@@ -477,6 +471,9 @@ EventMessage(XClientMessageEvent *ev)
                               /* Hook: Tile */
                               subHookCall(SUB_HOOK_TILE, NULL);
                             }
+
+                          subScreenConfigure();
+                          subScreenRender();
                         }
                       break;
                     case 1: ///< Views
@@ -822,8 +819,9 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_NET_CLOSE_WINDOW: /* {{{ */
             subArrayRemove(subtle->clients, (void *)c);
             subClientPublish();
-            if(VISIBLE(subtle->visible_tags, c)) subScreenConfigure();
             subClientKill(c, True);
+            subScreenConfigure();
+            subScreenRender();
             break; /* }}} */
           case SUB_EWMH_NET_MOVERESIZE_WINDOW: /* {{{ */
             if(!(c->flags & SUB_CLIENT_MODE_FLOAT))

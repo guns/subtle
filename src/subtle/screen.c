@@ -212,8 +212,9 @@ subScreenConfigure(void)
   SubView *v = NULL;
 
   /* Reset visible tags and views */
-  subtle->visible_tags  = 0;
-  subtle->visible_views = 0;
+  subtle->visible_tags    = 0;
+  subtle->visible_clients = 0;
+  subtle->visible_views   = 0;
 
   /* Either check each client or just get visibles */
   if(0 < subtle->clients->ndata)
@@ -225,6 +226,8 @@ subScreenConfigure(void)
         {
           SubClient *c = CLIENT(subtle->clients->data[i]);
           int visible = 0;
+
+          subtle->visible_clients |= c->tags;
 
           /* Check views of each screen */
           for(j = 0; j < subtle->screens->ndata; j++)
@@ -244,6 +247,8 @@ subScreenConfigure(void)
                   /* EWMH: Desktop */
                   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP,
                     (long *)&s->vid, 1);
+
+                 v->flags |= SUB_VIEW_OCCUPIED;
 
                   visible++;
                 }

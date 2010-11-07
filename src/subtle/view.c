@@ -77,9 +77,9 @@ subViewHighlight(int tags)
 
       /* Enable/disable highlighting */
       if(v->tags & tags)
-        v->flags |= SUB_CLIENT_MODE_URGENT;
+        v->flags |= SUB_VIEW_URGENT;
       else
-        v->flags &= ~SUB_CLIENT_MODE_URGENT;
+        v->flags &= ~SUB_VIEW_URGENT;
     }
 
   subScreenRender();

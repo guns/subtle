@@ -274,6 +274,10 @@
 /* Tray flags */
 #define SUB_TRAY_UNMAP                (1L << 10)                  ///< Ignore unmaps
 
+/* View flags */
+#define SUB_VIEW_URGENT               (1L << 10)                  ///< Urgent views
+#define SUB_VIEW_OCCUPIED             (1L << 11)                  ///< Occupied view
+
 /* Special flags */
 #define SUB_RUBY_DATA                 (1L << 31)                  ///< Object stores ruby data
 
@@ -507,7 +511,8 @@ typedef struct subsubtle_t /* {{{ */
   FLAGS                flags;                                     ///< Subtle flags
 
   int                  th, bw, pbw, step, snap, gap;              ///< Subtle properties
-  int                  visible_tags, visible_views;               ///< Subtle visible tags and views
+  int                  visible_tags, visible_views;
+  int                  visible_clients;                           ///< Subtle visible tags and views
   unsigned long        gravity;                                   ///< Subtle gravity
 
   Display              *dpy;                                      ///< Subtle Xorg display
@@ -550,9 +555,10 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    unsigned long      fg_panel, fg_views, fg_sublets, fg_focus, fg_urgent,
-                       bg_panel, bg_views, bg_sublets, bg_focus, bg_urgent,
-                       bo_focus, bo_normal, bo_panel, bg, separator;
+    unsigned long      fg_focus, fg_urgent, fg_occupied, fg_views, fg_sublets, fg_panel,
+                       bg_focus, bg_urgent, bg_occupied, bg_views, bg_sublets, bg_panel,
+                       bo_focus, bo_urgent, bo_occupied, bo_views, bo_sublets,
+                       bo_active, bo_inactive, bg, separator;
   } colors;                                                       ///< Subtle colors
 
   struct
