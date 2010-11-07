@@ -258,9 +258,13 @@ subSubtleColors(VALUE self)
   unsigned long *colors = NULL;
   VALUE meth = Qnil, klass = Qnil, hash = Qnil;
   const char *names[] = {
-    "fg_panel", "fg_views", "fg_sublets", "fg_focus", "fg_urgent",
-    "bg_panel", "bg_views", "bg_sublets", "bg_focus", "bg_urgent",
-    "border_focus", "border_normal", "border_panel",
+    "focus_fg",    "focus_bg",    "focus_border",
+    "urgent_fg",   "urgent_bg",   "urgent_border",
+    "occupied_fg", "occupied_bg", "occupied_border",
+    "views_fg",    "views_bg",    "views_border",
+    "sublets_fg",  "sublets_bg",  "sublets_border",
+    "panel_fg",    "panel_bg",
+    "client_active", "client_inactive",
     "background", "separator"
   };
 
