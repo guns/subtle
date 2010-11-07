@@ -107,50 +107,44 @@ end
 # http://subforge.org/wiki/subtle/Themes
 #
 
-# Foreground color of panel and separator
-color :fg_panel,      "#757575"
+# Colors of focus window titles and active views
+color :focus_fg,         "#fecf35"
+color :focus_bg,         "#202020"
+color :focus_border,     "#303030"
 
-  # Foreground color of view button
-color :fg_views,      "#757575"
+# Colors of urgent window titles and views
+color :urgent_fg,        "#ff9800"
+color :urgent_bg,        "#202020"
+color :urgent_border,    "#303030"
 
-# Foreground color of sublets
-color :fg_sublets,    "#757575"
+# Colors of occupied views (views with clients)
+color :occupied_fg,      "#feb435"
+color :occupied_bg,      "#202020"
+color :occupied_border,  "#303030"
 
-# Foreground color of focus window titles and active views
-color :fg_focus,      "#fecf35"
+# Color of view buttons
+color :views_fg,         "#757575"
+color :views_bg,         "#202020"
+color :views_border,     "#303030"
 
-# Foreground color of urgent window titles and views
-color :fg_urgent,     "#FF9800"
+# Colors of sublets
+color :sublets_fg,       "#757575"
+color :sublets_bg,       "#202020"
+color :sublets_border,   "#303030"
 
-# Background color of panel
-color :bg_panel,      "#202020"
+# Colors of panel
+color :panel_fg,        "#757575"
+color :panel_bg,        "#202020"
 
-# Background color of view button
-color :bg_views,      "#202020"
-
-  # Background color of sublets
-color :bg_sublets,    "#202020"
-
-# Background color of focus window titles and active views
-color :bg_focus,      "#202020"
-
-# Background color of urgent window titles and views
-color :bg_urgent,     "#202020"
-
-# Border color of focus windows
-color :border_focus,  "#303030"
-
-# Border color of normal windows
-color :border_normal, "#202020"
-
-# Border color of panel items
-color :border_panel,  "#303030"
+# Border colors of active/inactive windows
+color :client_active,   "#303030"
+color :client_inactive, "#202020"
 
 # Background color of root background
-color :background,    "#3d3d3d"
+color :background,      "#3d3d3d"
 
 # Color of the separator
-color :separator,     "#757575"
+color :separator,       "#757575"
 
 #
 # == Gravities
