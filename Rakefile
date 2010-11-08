@@ -187,7 +187,8 @@ task(:config) do
 
     # Debug
     if("yes" == @options["debug"])
-      @options["cflags"] << " -g -DDEBUG"
+      @options["cflags"]  << " -g -DDEBUG"
+      @options["ldflags"] << " -rdynamic"
     else
       @options["cflags"] << " -g -DNDEBUG"
     end
