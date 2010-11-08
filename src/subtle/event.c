@@ -632,7 +632,8 @@ EventMessage(XClientMessageEvent *ev)
             if(ev->data.b && (v = subViewNew(ev->data.b, NULL)))
               {
                 subArrayPush(subtle->views, (void *)v);
-                subClientUpdate(-1); ///< Grow
+                subClientDimension(-1); ///< Grow
+                subPanelDimension(-1); ///< Grow
                 subViewPublish();
                 subScreenUpdate();
                 subScreenRender();
@@ -647,7 +648,8 @@ EventMessage(XClientMessageEvent *ev)
                 int visible = !!(subtle->visible_views & (1L << (ev->data.l[0] + 1)));
 
                 subArrayRemove(subtle->views, (void *)v);
-                subClientUpdate((int)ev->data.l[0]); ///< Shrink
+                subClientDimension((int)ev->data.l[0]); ///< Shrink
+                subPanelDimension((int)ev->data.l[0]); ///< Shrink
                 subViewKill(v);
                 subViewPublish();
                 subScreenUpdate();

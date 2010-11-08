@@ -639,6 +639,7 @@ void subClientSetState(SubClient *c, int *flags);                 ///< Set clien
 void subClientSetTransient(SubClient *c, int *flags);             ///< Set client transient
 void subClientSetType(SubClient *c, int *flags);                  ///< Set client tyoe
 void subClientToggle(SubClient *c, int type, int gravity);        ///< Toggle client state
+void subClientDimension(int id);                                  ///< Dimension clients
 void subClientPublish(void);                                      ///< Publish all clients
 void subClientKill(SubClient *c, int destroy);                    ///< Kill client
 /* }}} */
@@ -707,9 +708,11 @@ void subHookKill(SubHook *h);                                     ///< Kill hook
 
 /* panel.c {{{ */
 SubPanel *subPanelNew(int type);                                  ///< Create new panel
-void subPanelUpdate(SubPanel *p);                                 ///< Configure panels
+void subPanelConfigure(SubPanel *p);                              ///< Configure panels
+void subPanelUpdate(SubPanel *p);                                 ///< Update panels
 void subPanelRender(SubPanel *p);                                 ///< Render panels
 int subPanelCompare(const void *a, const void *b);                ///< Compare two panels
+void subPanelDimension(int id);                                   ///< Dimension panels
 void subPanelPublish(void);                                       ///< Publish sublets
 void subPanelKill(SubPanel *p);                                   ///< Kill panel
 /* }}} */

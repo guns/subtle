@@ -55,7 +55,6 @@ SubtleSignal(int signum)
               printf("%s\n", strings[i]);
 
             free(strings);
-
 #endif /* HAVE_EXECINFO_H */
 
             printf("Please report this bug to <%s>\n", PKG_BUGREPORT);

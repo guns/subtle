@@ -91,18 +91,20 @@ subPanelNew(int type)
         break; /* }}} */
     }
 
+  subPanelConfigure(p);
+
   subSharedLogDebug("new=panel, type=%s\n", SUB_PANEL_VIEWS == type ? "views" : "title");
 
   return p;
 } /* }}} */
 
- /** subPanelUpdate {{{
-  * @brief Update panel
+ /** subPanelConfigure {{{
+  * @brief Configure panel
   * @param[in]  p  A #SubPanel
   **/
 
 void
-subPanelUpdate(SubPanel *p)
+subPanelConfigure(SubPanel *p)
 {
   assert(p);
 
@@ -110,9 +112,6 @@ subPanelUpdate(SubPanel *p)
   switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_VIEWS|SUB_PANEL_TITLE))
     {
       case SUB_PANEL_SUBLET: /* {{{ */
-        XResizeWindow(subtle->dpy, p->win, p->width - 2 * subtle->pbw,
-          subtle->th - 2 * subtle->pbw);
-
         /* Update borders */
         XSetWindowBorder(subtle->dpy, p->win, subtle->colors.bo_sublets);
         XSetWindowBorderWidth(subtle->dpy, p->win, subtle->pbw);
@@ -147,6 +146,31 @@ subPanelUpdate(SubPanel *p)
           }
         break; /* }}} */
       case SUB_PANEL_TITLE: /* {{{ */
+        /* Update border */
+        XSetWindowBorder(subtle->dpy, p->win, subtle->colors.bo_focus);
+        XSetWindowBorderWidth(subtle->dpy, p->win, subtle->pbw);
+        break; /* }}} */
+    }
+} /* }}} */
+
+ /** subPanelUpdate {{{
+  * @brief Update panel
+  * @param[in]  p  A #SubPanel
+  **/
+
+void
+subPanelUpdate(SubPanel *p)
+{
+  assert(p);
+
+  /* Handle panel item type */
+  switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_TITLE))
+    {
+      case SUB_PANEL_SUBLET: /* {{{ */
+        XResizeWindow(subtle->dpy, p->win, p->width - 2 * subtle->pbw,
+          subtle->th - 2 * subtle->pbw);
+        break; /* }}} */
+      case SUB_PANEL_TITLE: /* {{{ */
         p->width = 0;
 
         if(0 < subtle->clients->ndata)
@@ -179,10 +203,6 @@ subPanelUpdate(SubPanel *p)
                   }
               }
           }
-
-        /* Update border */
-        XSetWindowBorder(subtle->dpy, p->win, subtle->colors.bo_focus);
-        XSetWindowBorderWidth(subtle->dpy, p->win, subtle->pbw);
         break; /* }}} */
     }
 } /* }}} */
@@ -333,6 +353,69 @@ subPanelCompare(const void *a,
 
   return p1->sublet->time < p2->sublet->time ? -1 :
     (p1->sublet->time == p2->sublet->time ? 0 : 1);
+} /* }}} */
+
+ /** subPanelDimension {{{
+  * @brief Redimension panel items
+  * @param[in]  id  View id
+  **/
+
+void
+subPanelDimension(int id)
+{
+  int i, j, k;
+
+  /* Update all clients */
+  for(i = 0; i < subtle->screens->ndata; i++)
+    {
+      SubScreen *s = SCREEN(subtle->screens->data[i]);
+
+      for(j = 0; j < s->panels->ndata; j++)
+        {
+          SubPanel *p = PANEL(s->panels->data[j]);
+
+          if(p->flags & SUB_PANEL_VIEWS)
+            {
+              if(-1 != id)
+                {
+                  XUnmapWindow(subtle->dpy, p->views[id]);
+                  XDestroyWindow(subtle->dpy, p->views[id]);
+
+                  /* Shift if necessary */
+                  for(k = id; k < subtle->views->ndata; k++)
+                    p->views[k] = p->views[k + 1];
+                }
+
+              /* Resize array */
+              p->views = (Window *)subSharedMemoryRealloc((void *)p->views,
+                subtle->views->ndata * sizeof(Window));
+
+              /* Create new window */
+              if(-1 == id)
+                {
+                  XSetWindowAttributes sattrs;
+                  int vid = subtle->views->ndata - 1;
+
+                  p->views[vid] = XCreateSimpleWindow(subtle->dpy,
+                    p->win, 0, 0, 1, subtle->th, 0, 0, subtle->colors.bg_views);
+
+                  XSaveContext(subtle->dpy, p->views[vid], VIEWID,
+                    subtle->views->data[vid]);
+                  XSelectInput(subtle->dpy, p->views[vid], ButtonPressMask);
+
+                  sattrs.override_redirect = True;
+
+                  XChangeWindowAttributes(subtle->dpy, p->views[vid],
+                    CWOverrideRedirect, &sattrs);
+
+                  XMapRaised(subtle->dpy, p->views[vid]);
+                }
+
+              subPanelConfigure(p);
+              subPanelRender(p);
+            }
+        }
+    }
 } /* }}} */
 
  /** subPanelPublish {{{

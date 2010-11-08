@@ -193,6 +193,34 @@ subClientConfigure(SubClient *c)
   subHookCall(SUB_HOOK_CLIENT_CONFIGURE, (void *)c);
 } /* }}} */
 
+ /** subClientDimension {{{
+  * @brief Redimension clients
+  * @param[in]  id  View id
+  **/
+
+void
+subClientDimension(int id)
+{
+  int i, j;
+
+  /* Update all clients */
+  for(i = 0; i < subtle->clients->ndata; i++)
+    {
+      SubClient *c = CLIENT(subtle->clients->data[i]);
+
+      /* Shift if necessary */
+      for(j = id; -1 < id && j < subtle->views->ndata; j++)
+        c->gravities[j] = c->gravities[j + 1];
+
+      /* Resize array */
+      c->gravities = (int *)subSharedMemoryRealloc((void *)c->gravities,
+        subtle->views->ndata * sizeof(int));
+
+      if(-1 == id) ///< Initialize
+        c->gravities[subtle->views->ndata - 1] = ClientGravity();
+    }
+} /* }}} */
+
  /** subClientRender {{{
   * @brief Render client
   * @param[in]  c  A #SubClient
@@ -435,33 +463,6 @@ subClientDrag(SubClient *c,
   XUngrabPointer(subtle->dpy, CurrentTime);
   XUngrabKeyboard(subtle->dpy, CurrentTime);
   XUngrabServer(subtle->dpy);
-} /* }}} */
-
- /** subClientUpdate {{{
-   * @brief Update gravity array
-   * @param[in]  vid  View index
-   **/
-
-void
-subClientUpdate(int vid)
-{
-  int i, j;
-
-  for(i = 0; i < subtle->clients->ndata; i++)
-    {
-      SubClient *c = CLIENT(subtle->clients->data[i]);
-
-      /* Shift if necessary */
-      for(j = vid; -1 < vid && j < subtle->views->ndata - 1; j++)
-        c->gravities[j] = c->gravities[j + 1];
-
-      /* Resize arrays */
-      c->gravities = (int *)subSharedMemoryRealloc((void *)c->gravities,
-        subtle->views->ndata * sizeof(int));
-
-      if(-1 == vid) ///< Initialise
-        c->gravities[subtle->views->ndata - 1] = ClientGravity();
-    }
 } /* }}} */
 
   /** subClientResize {{{
