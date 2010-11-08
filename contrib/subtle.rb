@@ -118,7 +118,7 @@ color :urgent_bg,        "#202020"
 color :urgent_border,    "#303030"
 
 # Colors of occupied views (views with clients)
-color :occupied_fg,      "#feb435"
+color :occupied_fg,      "#b8b8b8"
 color :occupied_bg,      "#202020"
 color :occupied_border,  "#303030"
 
