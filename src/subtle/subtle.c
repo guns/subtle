@@ -27,13 +27,9 @@ SubSubtle *subtle = NULL;
 static void
 SubtleSignal(int signum)
 {
-#ifdef HAVE_EXECINFO_H
-  void *array[10];
-  size_t size;
-#endif /* HAVE_EXECINFO_H */
-
   switch(signum)
     {
+      case SIGCHLD: wait(NULL); break;
       case SIGHUP: subRubyReloadConfig(); break; ///< Reload config
       case SIGINT:
         if(subtle)
@@ -44,16 +40,28 @@ SubtleSignal(int signum)
           }
         break;
       case SIGSEGV:
+          {
 #ifdef HAVE_EXECINFO_H
-        size = backtrace(array, 10);
+            int i, frames = 0;
+            void *callstack[10] = { 0 };
+            char **strings = NULL;
 
-        printf("Last %zd stack frames:\n", size);
+            frames  = backtrace(callstack, 10);
+            strings = backtrace_symbols(callstack, frames);
+
+            printf("Last %d stack frames:\n", frames);
+
+            for(i = 0; i < frames; i++)
+              printf("%s\n", strings[i]);
+
+            free(strings);
 
 #endif /* HAVE_EXECINFO_H */
 
-        printf("Please report this bug to <%s>\n", PKG_BUGREPORT);
-        abort();
-      case SIGCHLD: wait(NULL); break;
+            printf("Please report this bug to <%s>\n", PKG_BUGREPORT);
+            abort();
+          }
+        break;
     }
 } /* }}} */
 
