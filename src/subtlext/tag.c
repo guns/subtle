@@ -232,7 +232,7 @@ subTagUpdate(VALUE self)
 
           snprintf(data.b, sizeof(data.b), "%s", RSTRING_PTR(name));
           subSharedMessage(display, DefaultRootWindow(display),
-            "SUBTLE_TAG_NEW", data, True);
+            "SUBTLE_TAG_NEW", data, 8, True);
 
           id = subSubtlextFind("SUBTLE_TAG_LIST", RSTRING_PTR(name), NULL);
         }
@@ -338,7 +338,7 @@ subTagKill(VALUE self)
       data.l[0] = FIX2INT(id);
 
       subSharedMessage(display, DefaultRootWindow(display),
-        "SUBTLE_TAG_KILL", data, True);
+        "SUBTLE_TAG_KILL", data, 32, True);
     }
   else rb_raise(rb_eStandardError, "Failed killing tag");
 

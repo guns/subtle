@@ -19,7 +19,8 @@ SubtleSend(char *message)
 
   subSubtlextConnect(NULL); ///< Implicit open connection
 
-  subSharedMessage(display, DefaultRootWindow(display), message, data, True);
+  subSharedMessage(display, DefaultRootWindow(display),
+    message, data, 32, True);
 
   return Qnil;
 } /* }}} */

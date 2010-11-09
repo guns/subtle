@@ -170,7 +170,8 @@ subSubletUpdate(VALUE self)
       /* Send data */
       data.l[0] = id;
 
-      subSharedMessage(display, DefaultRootWindow(display), "SUBTLE_SUBLET_UPDATE", data, True);
+      subSharedMessage(display, DefaultRootWindow(display),
+        "SUBTLE_SUBLET_UPDATE", data, 32, True);
     }
   else rb_raise(rb_eStandardError, "Failed finding sublet");
 
@@ -217,7 +218,8 @@ subSubletDataWriter(VALUE self,
       snprintf(data.b, sizeof(data.b), "%c%s",
         (char)NUM2LONG(id), RSTRING_PTR(value));
 
-      subSharedMessage(display, DefaultRootWindow(display), "SUBTLE_SUBLET_DATA", data, True);
+      subSharedMessage(display, DefaultRootWindow(display),
+        "SUBTLE_SUBLET_DATA", data, 8, True);
     }
   else rb_raise(rb_eArgError, "Failed setting value type `%s'", rb_obj_classname(value));
 
@@ -247,7 +249,7 @@ subSubletForegroundWriter(VALUE self,
       data.l[1] = subSharedParseColor(display, RSTRING_PTR(value));
 
       subSharedMessage(display, DefaultRootWindow(display),
-        "SUBTLE_SUBLET_FOREGROUND", data, True);
+        "SUBTLE_SUBLET_FOREGROUND", data, 32, True);
     }
   else rb_raise(rb_eArgError, "Failed setting value type `%s'",
     rb_obj_classname(value));
@@ -278,7 +280,7 @@ subSubletBackgroundWriter(VALUE self,
       data.l[1] = subSharedParseColor(display, RSTRING_PTR(value));
 
       subSharedMessage(display, DefaultRootWindow(display),
-        "SUBTLE_SUBLET_BACKGROUND", data, True);
+        "SUBTLE_SUBLET_BACKGROUND", data, 32, True);
     }
   else rb_raise(rb_eArgError, "Failed setting value type `%s'",
     rb_obj_classname(value));
@@ -368,7 +370,7 @@ subSubletKill(VALUE self)
       data.l[0] = FIX2INT(id);
 
       subSharedMessage(display, DefaultRootWindow(display),
-        "SUBTLE_SUBLET_KILL", data, True);
+        "SUBTLE_SUBLET_KILL", data, 32, True);
     }
   else rb_raise(rb_eStandardError, "Failed killing sublet");
 

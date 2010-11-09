@@ -278,7 +278,8 @@ subGravityUpdate(VALUE self)
           /* Create new gravity */
           snprintf(data.b, sizeof(data.b), "%hdx%hd+%hd+%hd#%s",
             geom.x, geom.y, geom.width, geom.height, RSTRING_PTR(match));
-          subSharedMessage(display, DefaultRootWindow(display), "SUBTLE_GRAVITY_NEW", data, True);
+          subSharedMessage(display, DefaultRootWindow(display),
+            "SUBTLE_GRAVITY_NEW", data, 8, True);
 
           id = subGravityFindId(RSTRING_PTR(match), NULL, NULL);
         }
@@ -541,7 +542,7 @@ subGravityKill(VALUE self)
       data.l[0] = FIX2INT(id);
 
       subSharedMessage(display, DefaultRootWindow(display),
-        "SUBTLE_GRAVITY_KILL", data, True);
+        "SUBTLE_GRAVITY_KILL", data, 32, True);
     }
   else rb_raise(rb_eStandardError, "Failed killing gravity");
 

@@ -383,7 +383,8 @@ subViewUpdate(VALUE self)
           SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
           snprintf(data.b, sizeof(data.b), "%s", RSTRING_PTR(name));
-          subSharedMessage(display, DefaultRootWindow(display), "SUBTLE_VIEW_NEW", data, True);
+          subSharedMessage(display, DefaultRootWindow(display),
+            "SUBTLE_VIEW_NEW", data, 8, True);
 
           id = ViewFind(RSTRING_PTR(name), NULL, NULL);
         }
@@ -501,7 +502,8 @@ subViewJump(VALUE self)
 
   data.l[0] = FIX2INT(id);
 
-  subSharedMessage(display, DefaultRootWindow(display), "_NET_CURRENT_DESKTOP", data, True);
+  subSharedMessage(display, DefaultRootWindow(display),
+    "_NET_CURRENT_DESKTOP", data, 32, True);
 
   return Qnil;
 } /* }}} */
@@ -609,7 +611,7 @@ subViewKill(VALUE self)
       data.l[0] = FIX2INT(id);
 
       subSharedMessage(display, DefaultRootWindow(display),
-        "SUBTLE_VIEW_KILL", data, True);
+        "SUBTLE_VIEW_KILL", data, 32, True);
     }
   else rb_raise(rb_eStandardError, "Failed killing view");
 

@@ -113,7 +113,8 @@ SubtlextTag(VALUE self,
           data.l[2] = rb_obj_is_instance_of(self,
             rb_const_get(mod, rb_intern("Client"))) ? 0 : 1; ///< Client = 0, View = 1
 
-          subSharedMessage(display, DefaultRootWindow(display), action, data, True);
+          subSharedMessage(display, DefaultRootWindow(display),
+            action, data, 32, True);
         }
     }
   else rb_raise(rb_eStandardError, "Failed adding tag");
@@ -257,7 +258,7 @@ SubtlextTagReload(VALUE self)
       data.l[0] = FIX2INT(id);
 
       subSharedMessage(display, DefaultRootWindow(display),
-        "SUBTLE_WINDOW_RETAG", data, True);
+        "SUBTLE_WINDOW_RETAG", data, 32, True);
     }
   else rb_raise(rb_eStandardError, "Failed tagging window");
 
@@ -436,7 +437,8 @@ SubtlextFocus(VALUE self)
 
       data.l[0] = NUM2LONG(win);
 
-      subSharedMessage(display, DefaultRootWindow(display), "_NET_ACTIVE_WINDOW", data, True);
+      subSharedMessage(display, DefaultRootWindow(display),
+        "_NET_ACTIVE_WINDOW", data, 32, True);
     }
   else rb_raise(rb_eStandardError, "Failed setting focus");
 

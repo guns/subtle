@@ -248,7 +248,7 @@ subTrayKill(VALUE self)
       data.l[0] = FIX2INT(id);
 
       subSharedMessage(display, DefaultRootWindow(display),
-        "SUBTLE_TRAY_KILL", data, True);
+        "SUBTLE_TRAY_KILL", data, 32, True);
     }
   else rb_raise(rb_eStandardError, "Failed killing tray");
 

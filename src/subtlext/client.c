@@ -37,7 +37,7 @@ ClientToggle(VALUE self,
 
       rb_iv_set(self, "@flags", INT2FIX(flags));
 
-      subSharedMessage(display, win, "_NET_WM_STATE", data, True);
+      subSharedMessage(display, win, "_NET_WM_STATE", data, 32, True);
     }
   else rb_raise(rb_eStandardError, "Failed toggling client");
 
@@ -131,7 +131,8 @@ ClientRestack(VALUE self,
       data.l[1] = NUM2LONG(win);
       data.l[2] = detail;
 
-      subSharedMessage(display, DefaultRootWindow(display), "_NET_RESTACK_WINDOW", data, True);
+      subSharedMessage(display, DefaultRootWindow(display),
+        "_NET_RESTACK_WINDOW", data, 32, True);
     }
   else rb_raise(rb_eStandardError, "Failed restacking client");
 
@@ -850,7 +851,8 @@ subClientGravityWriter(VALUE self,
       data.l[0] = FIX2LONG(rb_iv_get(self,    "@id"));
       data.l[1] = FIX2LONG(rb_iv_get(gravity, "@id"));
 
-      subSharedMessage(display, DefaultRootWindow(display), "SUBTLE_WINDOW_GRAVITY", data, True);
+      subSharedMessage(display, DefaultRootWindow(display),
+        "SUBTLE_WINDOW_GRAVITY", data, 32, True);
 
       rb_iv_set(self, "@gravity", gravity);
     }
@@ -934,7 +936,8 @@ subClientScreenWriter(VALUE self,
       data.l[0] = FIX2LONG(rb_iv_get(self,   "@id"));
       data.l[1] = FIX2LONG(rb_iv_get(screen, "@id"));
 
-      subSharedMessage(display, DefaultRootWindow(display), "SUBTLE_WINDOW_SCREEN", data, True);
+      subSharedMessage(display, DefaultRootWindow(display),
+        "SUBTLE_WINDOW_SCREEN", data, 32, True);
 
       rb_iv_set(self, "@screen", INT2FIX(screen));
     }
@@ -1026,7 +1029,7 @@ subClientGeometryWriter(int argc,
       data.l[3] = FIX2INT(rb_iv_get(geometry,  "@width"));
       data.l[4] = FIX2INT(rb_iv_get(geometry,  "@height"));
 
-      subSharedMessage(display, win, "_NET_MOVERESIZE_WINDOW", data, True);
+      subSharedMessage(display, win, "_NET_MOVERESIZE_WINDOW", data, 32, True);
 
       rb_iv_set(self, "@geometry", geometry);
     }
@@ -1060,7 +1063,8 @@ subClientResizeWriter(VALUE self,
       data.l[0] = FIX2LONG(rb_iv_get(self, "@id"));
       data.l[1] = (Qtrue == value);
 
-      subSharedMessage(display, DefaultRootWindow(display), "SUBTLE_WINDOW_RESIZE", data, True);
+      subSharedMessage(display, DefaultRootWindow(display),
+        "SUBTLE_WINDOW_RESIZE", data, 32, True);
     }
   else rb_raise(rb_eArgError, "Unknown value type");
 
@@ -1181,7 +1185,8 @@ subClientKill(VALUE self)
       data.l[0] = CurrentTime;
       data.l[1] = 2; ///< Claim to be a pager
 
-      subSharedMessage(display, NUM2LONG(win), "_NET_CLOSE_WINDOW", data, True);
+      subSharedMessage(display, NUM2LONG(win),
+        "_NET_CLOSE_WINDOW", data, 32, True);
     }
   else rb_raise(rb_eStandardError, "Failed killing client");
 
