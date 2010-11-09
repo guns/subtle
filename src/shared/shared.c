@@ -481,7 +481,8 @@ subSharedTextParse(Display *disp,
               item->width     = geometry.width;
               item->height    = geometry.height;
 
-              t->width += item->width + (0 == i ? 2 : 4); ///< Add spacing and check if icon is first
+              /* Add spacing and check if icon is first */
+              t->width += item->width + (0 == i ? 2 : 4);
             }
           else
             {
@@ -489,7 +490,8 @@ subSharedTextParse(Display *disp,
               item->width       = subSharedTextWidth(disp, f, tok, strlen(tok),
                 &left, &right, False);
 
-              t->width += item->width - (0 == i ? left : 0); ///< Remove left bearing from first text item
+              /* Remove left bearing from first text item */
+              t->width += item->width - (0 == i ? left : 0);
             }
 
           item->color = color;
@@ -502,12 +504,15 @@ subSharedTextParse(Display *disp,
     ITEM(t->items[i])->flags |= SUB_TEXT_EMPTY;
 
   /* Fix spacing of last item */
-  if(item && !(item->flags & SUB_TEXT_ICON))
+  if(item)
     {
-      t->width    -= right;
-      item->width -= right;
+      if(item->flags & SUB_TEXT_ICON) t->width -= 2;
+      else
+        {
+          t->width    -= right;
+          item->width -= right;
+        }
     }
-  else if(item->flags & SUB_TEXT_ICON) t->width -= 2;
 
   return t->width;
 } /* }}} */
