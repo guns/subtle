@@ -381,8 +381,6 @@ EventMessage(XClientMessageEvent *ev)
 {
   SubClient *c = NULL;
 
-  if(32 != ev->format) return; ///< Just skip
-
   /* Messages for root window {{{ */
   if(ROOT == ev->window)
     {
