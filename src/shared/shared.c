@@ -1006,17 +1006,16 @@ subSharedSpawn(char *cmd)
   return pid;
 } /* }}} */
 
-
-
 #ifndef SUBTLE
 
  /** subSharedMessage {{{
   * @brief Send client message to window
-  * @param[in]  disp   Display
-  * @param[in]  win    Client window
-  * @param[in]  type   Message type
-  * @param[in]  data   A #SubMessageData
-  * @param[in]  xsync  Sync connection
+  * @param[in]  disp    Display
+  * @param[in]  win     Client window
+  * @param[in]  type    Message type
+  * @param[in]  data    A #SubMessageData
+  * @param[in]  format  Data format
+  * @param[in]  xsync   Sync connection
   * @returns
   **/
 
@@ -1025,6 +1024,7 @@ subSharedMessage(Display *disp,
   Window win,
   char *type,
   SubMessageData data,
+  int format,
   int xsync)
 {
   int status = 0;
@@ -1039,9 +1039,9 @@ subSharedMessage(Display *disp,
   ev.xclient.send_event   = True;
   ev.xclient.message_type = XInternAtom(disp, type, False);
   ev.xclient.window       = win;
-  ev.xclient.format       = 32;
+  ev.xclient.format       = format;
 
-  /* Data */
+  /* Copy data over */
   ev.xclient.data.l[0] = data.l[0];
   ev.xclient.data.l[1] = data.l[1];
   ev.xclient.data.l[2] = data.l[2];

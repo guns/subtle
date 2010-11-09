@@ -208,7 +208,7 @@ pid_t subSharedSpawn(char *cmd);                                  ///< Spawn com
 
 /* Message {{{ */
 int subSharedMessage(Display *disp, Window win, char *type,
-  SubMessageData data, int xsync);                                ///< Send client message
+  SubMessageData data, int format, int xsync);                    ///< Send client message
 /* }}} */
 
 #endif /* SUBTLE */
