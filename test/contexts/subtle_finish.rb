@@ -1,0 +1,27 @@
+#
+# @package test
+#
+# @file Test Subtlext::Subtle functions
+# @author Christoph Kappel <unexist@dorfelite.net>
+# @version $Id$
+#
+# This program can be distributed under the terms of the GNU GPL.
+# See the file COPYING.
+#
+
+context "Subtle - Finish" do
+  asserts("Check quit") do
+    # Kill all clients
+    Subtlext::Client.all.each do |c|
+      c.kill
+    end
+
+    Subtlext::Subtle.quit
+
+    sleep 1
+
+    !Subtlext::Subtle.running?
+  end
+end
+
+# vim:ts=2:bs=2:sw=2:et:fdm=marker
