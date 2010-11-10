@@ -481,39 +481,55 @@ SubtlextFocusAsk(VALUE self)
 
 /* SubtlextPropReader {{{ */
 /*
- * call-seq: [value] -> String
+ * call-seq: [value] -> String or Nil
  *
- * Get arbitrary property of window
+ * Get arbitrary persistent property
  *
  *  object["wm"]
+ *  => "subtle"
+ *
+ *  object[:wm]
  *  => "subtle"
  */
 
 VALUE
 SubtlextPropReader(VALUE self,
-  VALUE value)
+  VALUE key)
 {
+  char *prop = NULL;
   VALUE ret = Qnil;
 
   /* Check object type */
-  if(T_STRING == rb_type(value))
+  switch(rb_type(key))
+    {
+      case T_STRING: prop = RSTRING_PTR(key);      break;
+      case T_SYMBOL: prop = (char *)SYM2CHAR(key); break;
+      default:
+        rb_raise(rb_eArgError, "Unexpected key value type `%s'",
+          rb_obj_classname(key));
+
+        return Qnil;
+    }
+
+  if(prop)
     {
       VALUE win = Qnil;
 
       /* Get win */
       if(Qnil != (win = rb_iv_get(self, "@win")))
         {
-          char prop[255] = { 0 }, *name = NULL, *result = NULL;
+          char propname[255] = { 0 }, *name = NULL, *result = NULL;
 
           /* Sanitize property name */
-          name = strdup(RSTRING_PTR(value));
+          name = strdup(prop);
           SubtlextStringify(name);
 
-          snprintf(prop, sizeof(prop), "SUBTLE_PROPERTY_%s", name);
+          snprintf(propname, sizeof(propname), "SUBTLE_PROPERTY_%s", name);
 
+          /* Get actual property */
           if((result = subSharedPropertyGet(display, NUM2LONG(win),
               XInternAtom(display, "UTF8_STRING", False),
-              XInternAtom(display, prop, False), NULL)))
+              XInternAtom(display, propname, False), NULL)))
             ret = rb_str_new2(result);
 
           free(name);
@@ -521,17 +537,15 @@ SubtlextPropReader(VALUE self,
         }
       else rb_raise(rb_eStandardError, "Failed getting property");
     }
-  else rb_raise(rb_eArgError, "Failed getting value type `%s'",
-    rb_obj_classname(value));
 
   return ret;
 } /* }}} */
 
 /* SubtlextPropWriter {{{ */
 /*
- * call-seq: [key]= value -> String
+ * call-seq: [key]= value -> Nil
  *
- * Set arbitrary property of window
+ * Set arbitrary persistent property
  *
  *  object["wm"] = "subtle"
  *  => nil
@@ -542,24 +556,39 @@ SubtlextPropWriter(VALUE self,
   VALUE key,
   VALUE value)
 {
+  char *prop = NULL;
+
   /* Check object type */
-  if(T_STRING == rb_type(key) && T_STRING == rb_type(value))
+  switch(rb_type(key))
+    {
+      case T_STRING: prop = RSTRING_PTR(key);      break;
+      case T_SYMBOL: prop = (char *)SYM2CHAR(key); break;
+      default:
+        rb_raise(rb_eArgError, "Unexpected key value-type `%s'",
+          rb_obj_classname(key));
+
+        return Qnil;
+    }
+
+  /* Check object type */
+  if(T_STRING == rb_type(value))
     {
       VALUE win = Qnil;
 
       /* Get win */
       if(Qnil != (win = rb_iv_get(self, "@win")))
         {
-          char prop[255] = { 0 }, *name = NULL;
+          char propname[255] = { 0 }, *name = NULL;
 
           /* Sanitize property name */
-          name = strdup(RSTRING_PTR(key));
+          name = strdup(prop);
           SubtlextStringify(name);
 
-          snprintf(prop, sizeof(prop), "SUBTLE_PROPERTY_%s", name);
+          snprintf(propname, sizeof(propname), "SUBTLE_PROPERTY_%s", name);
 
+          /* Update property */
           XChangeProperty(display, NUM2LONG(win),
-            XInternAtom(display, prop, False),
+            XInternAtom(display, propname, False),
             XInternAtom(display, "UTF8_STRING", False), 8, PropModeReplace,
             (unsigned char *)RSTRING_PTR(value), RSTRING_LEN(value));
 
@@ -569,7 +598,7 @@ SubtlextPropWriter(VALUE self,
         }
       else rb_raise(rb_eStandardError, "Failed setting property");
     }
-  else rb_raise(rb_eArgError, "Failed setting value type `%s'",
+  else rb_raise(rb_eArgError, "Unexpected value value-type `%s'",
     rb_obj_classname(value));
 
   return Qnil;
