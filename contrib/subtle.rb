@@ -32,7 +32,7 @@ set :gravity, :center
 # Make transient windows urgent
 set :urgent, false
 
-# Enable respecting of size hints globally
+# Honor resize size hints globally
 set :resize, false
 
 # Screen size padding (left, right, top, bottom)
