@@ -132,7 +132,7 @@ subIconInit(int argc,
           i->pixmap = XCreatePixmap(display, DefaultRootWindow(display),
             i->width, i->height, 1);
         }
-      else rb_raise(rb_eArgError, "Unknown value types");
+      else rb_raise(rb_eArgError, "Unexpected value-types");
 
       /* Update object */
       rb_iv_set(i->instance, "@width",  INT2FIX(i->width));
@@ -141,7 +141,7 @@ subIconInit(int argc,
       XSync(display, False); ///< Sync all changes
 
       subSharedLogDebug("new=icon, width=%03d, height=%03d\n",
-            i->width, i->height);
+        i->width, i->height);
     }
 
   return Qnil;
@@ -162,6 +162,7 @@ subIconDraw(VALUE self,
   VALUE x,
   VALUE y)
 {
+  /* Check object type */
   if(FIXNUM_P(x) && FIXNUM_P(y))
     {
       SubtlextIcon *i = NULL;
@@ -184,7 +185,7 @@ subIconDraw(VALUE self,
           XFlush(display);
         }
     }
-  else rb_raise(rb_eArgError, "Unknown value types");
+  else rb_raise(rb_eArgError, "Unexpected value-types");
 
   return Qnil;
 } /* }}} */
@@ -237,7 +238,7 @@ subIconDrawRect(int argc,
           XFlush(display);
         }
     }
-  else rb_raise(rb_eArgError, "Unknown value types");
+  else rb_raise(rb_eArgError, "Unexpected value-types");
 
   return Qnil;
 } /* }}} */
@@ -345,7 +346,8 @@ subIconOperatorMult(VALUE self,
       /* Passthru to string class */
       ret = rb_funcall(subIconToString(self), rb_intern("*"), 1, value);
     }
-  else rb_raise(rb_eArgError, "Unknown value types");
+  else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+    rb_obj_classname(value));
 
   return ret;
 } /* }}} */

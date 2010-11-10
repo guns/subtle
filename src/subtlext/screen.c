@@ -79,7 +79,8 @@ subScreenInit(VALUE self,
   VALUE id)
 {
   if(!FIXNUM_P(id) || 0 > FIX2INT(id))
-    rb_raise(rb_eArgError, "Invalid value type");
+    rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+      rb_obj_classname(id));
 
   rb_iv_set(self, "@id",       id);
   rb_iv_set(self, "@geometry", Qnil);
@@ -118,7 +119,8 @@ subScreenFind(VALUE self,
 
       screen = rb_ary_entry(screens, FIX2INT(value));
     }
-  else rb_raise(rb_eArgError, "Unknown value type");
+  else rb_raise(rb_eArgError, "Unexpected value type `%s'",
+    rb_obj_classname(value));
 
   return screen;
 } /* }}} */
@@ -202,6 +204,7 @@ subScreenUpdate(VALUE self)
 {
   VALUE id = Qnil;
 
+  /* Check object type */
   if(FIXNUM_P(id = rb_iv_get(self, "@id")))
     {
       VALUE screens = Qnil, screen = Qnil;
@@ -216,7 +219,7 @@ subScreenUpdate(VALUE self)
         }
       else rb_raise(rb_eStandardError, "Failed finding screen");
     }
-  else rb_raise(rb_eArgError, "Unknown value type");
+  else rb_raise(rb_eStandardError, "Failed updating screen");
 
   return Qnil;
 } /* }}} */

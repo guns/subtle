@@ -188,7 +188,8 @@ subWindowInit(VALUE self,
                 data[i] = FIX2INT(val);
             }
         }
-      else rb_raise(rb_eArgError, "Unknown value type");
+      else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+        rb_obj_classname(geometry));
 
       /* Create geometry */
       geom = subGeometryInstantiate(data[0], data[1], data[2], data[3]);
@@ -244,25 +245,23 @@ subWindowNameWriter(VALUE self,
       char *name = NULL;
 
       /* Check object type */
-      switch(rb_type(value))
+      if(T_STRING == rb_type(value))
         {
-          case T_STRING:
-            name = RSTRING_PTR(value);
-            win  = NUM2LONG(rb_iv_get(self, "@win"));
+          name = RSTRING_PTR(value);
+          win  = NUM2LONG(rb_iv_get(self, "@win"));
 
-            /* Set Window informations */
-            hint.res_name  = name;
-            hint.res_class = "Subtlext";
+          /* Set Window informations */
+          hint.res_name  = name;
+          hint.res_class = "Subtlext";
 
-            XSetClassHint(display, win, &hint);
-            XStringListToTextProperty(&name, 1, &text);
-            XSetWMName(display, win, &text);
+          XSetClassHint(display, win, &hint);
+          XStringListToTextProperty(&name, 1, &text);
+          XSetWMName(display, win, &text);
 
-            free(text.value);
-            break;
-          default:
-            rb_raise(rb_eArgError, "Unknown value type");
+          free(text.value);
         }
+      else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+        rb_obj_classname(value));
     }
 
   return Qnil;
@@ -290,23 +289,21 @@ subWindowFontWriter(VALUE self,
       char *font = NULL;
       SubFont *f = NULL;
 
-      switch(rb_type(value))
+      /* Check object type */
+      if(T_STRING == rb_type(value))
         {
-          case T_STRING:
-            font = RSTRING_PTR(value);
+          font = RSTRING_PTR(value);
 
-            /* Create window font */
-            if(!(f = subSharedFontNew(display, font)))
-              rb_raise(rb_eArgError, "Unknown value type");
+          /* Create window font */
+          if(!(f = subSharedFontNew(display, font)))
+            rb_raise(rb_eStandardError, "Failed loading font");
 
-            /* Replace font */
-            if(w->font) subSharedFontKill(display, w->font);
+          /* Replace font */
+          if(w->font) subSharedFontKill(display, w->font);
 
-            w->font = f;
-            break;
-          default:
-            rb_raise(rb_eArgError, "Unknown value type");
+          w->font = f;
         }
+      else rb_raise(rb_eStandardError, "Failed creating font");
     }
 
   return Qnil;
@@ -416,7 +413,8 @@ subWindowBorderSizeWriter(VALUE self,
           XSetWindowBorderWidth(display, w->win, width);
           XFlush(display);
         }
-      else rb_raise(rb_eArgError, "Unknown value type");
+      else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+        rb_obj_classname(value));
     }
 
   return Qnil;
@@ -525,7 +523,7 @@ subWindowWrite(VALUE self,
           len = subSharedTextParse(display, w->font, wt->text,
             RSTRING_PTR(text));
         }
-      else rb_raise(rb_eArgError, "Unknown value type");
+      else rb_raise(rb_eArgError, "Unknown value-types");
     }
 
   return INT2FIX(len);
@@ -565,7 +563,7 @@ subWindowRead(int argc,
       /* Check object type */
       if(T_FIXNUM != rb_type(x) || T_FIXNUM != rb_type(y))
         {
-          rb_raise(rb_eArgError, "Unknown value type");
+          rb_raise(rb_eArgError, "Unknown value types");
 
           return Qnil;
         }

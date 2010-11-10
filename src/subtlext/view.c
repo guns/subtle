@@ -131,7 +131,8 @@ subViewInit(VALUE self,
   VALUE name)
 {
   if(T_STRING != rb_type(name))
-    rb_raise(rb_eArgError, "Invalid value type");
+    rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+      rb_obj_classname(name));
 
   rb_iv_set(self, "@id",   Qnil);
   rb_iv_set(self, "@win",  Qnil);
@@ -406,7 +407,7 @@ subViewUpdate(VALUE self)
       rb_iv_set(self, "@id",  INT2FIX(id));
       rb_iv_set(self, "@win", LONG2NUM(win));
     }
-  else rb_raise(rb_eArgError, "Unknown value type");
+  else rb_raise(rb_eStandardError, "Failed updating view");
 
   return Qnil;
 } /* }}} */

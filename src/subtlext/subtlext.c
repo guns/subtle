@@ -410,7 +410,8 @@ SubtlextSendKey(int argc,
       XSendEvent(display, win, True, KeyReleaseMask, &event);
       XFlush(display);
     }
-  else rb_raise(rb_eArgError, "Unknown value type");
+  else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+    rb_obj_classname(key));
 
   return Qnil;
 } /* }}} */
@@ -783,7 +784,7 @@ subSubtlextParse(VALUE value,
         snprintf(buf, len, "%s", SYM2CHAR(value));
         break; /* }}} */
       default: /* {{{ */
-        rb_raise(rb_eArgError, "Unknwon value type `%s'",
+        rb_raise(rb_eArgError, "Unexpected value-type `%s'",
           rb_obj_classname(value));
 
         ret = Qfalse; /* }}} */

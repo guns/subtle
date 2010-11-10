@@ -167,7 +167,8 @@ subClientInit(VALUE self,
   VALUE win)
 {
   if(!FIXNUM_P(win) && T_BIGNUM != rb_type(win))
-    rb_raise(rb_eArgError, "Invalid value type");
+    rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+      rb_obj_classname(win));
 
   rb_iv_set(self, "@id",       Qnil);
   rb_iv_set(self, "@win",      win);
@@ -446,7 +447,7 @@ subClientUpdate(VALUE self)
         }
       else rb_raise(rb_eStandardError, "Failed finding client");
     }
-  else rb_raise(rb_eArgError, "Unknown value type");
+  else rb_raise(rb_eStandardError, "Unknown value type");
 
   return Qnil;
 } /* }}} */
@@ -856,7 +857,8 @@ subClientGravityWriter(VALUE self,
 
       rb_iv_set(self, "@gravity", gravity);
     }
-  else rb_raise(rb_eArgError, "Failed setting value type `%s'", rb_obj_classname(value));
+  else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+    rb_obj_classname(value));
 
   return Qnil;
 } /* }}} */
@@ -941,7 +943,8 @@ subClientScreenWriter(VALUE self,
 
       rb_iv_set(self, "@screen", INT2FIX(screen));
     }
-  else rb_raise(rb_eArgError, "Failed setting value type `%s'", rb_obj_classname(value));
+  else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+    rb_obj_classname(value));
 
   return Qnil;
 } /* }}} */
@@ -1066,7 +1069,8 @@ subClientResizeWriter(VALUE self,
       subSharedMessage(display, DefaultRootWindow(display),
         "SUBTLE_WINDOW_RESIZE", data, 32, True);
     }
-  else rb_raise(rb_eArgError, "Unknown value type");
+  else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+    rb_obj_classname(value));
 
   return Qnil;
 } /* }}} */

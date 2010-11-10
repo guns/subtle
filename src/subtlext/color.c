@@ -40,7 +40,8 @@ subColorPixel(VALUE value)
           }
         break;
       default:
-        rb_raise(rb_eArgError, "Unknown value type");
+        rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+          rb_obj_classname(value));
     }
 
   return pixel;

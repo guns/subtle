@@ -39,7 +39,8 @@ subSubletInit(VALUE self,
   VALUE name)
 {
   if(T_STRING != rb_type(name))
-    rb_raise(rb_eArgError, "Invalid value type");
+    rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+      rb_obj_classname(name));
 
   rb_iv_set(self, "@id",   Qnil);
   rb_iv_set(self, "@name", name);
@@ -210,6 +211,7 @@ VALUE
 subSubletDataWriter(VALUE self,
   VALUE value)
 {
+  /* Check object type */
   if(T_STRING == rb_type(value))
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
@@ -221,7 +223,8 @@ subSubletDataWriter(VALUE self,
       subSharedMessage(display, DefaultRootWindow(display),
         "SUBTLE_SUBLET_DATA", data, 8, True);
     }
-  else rb_raise(rb_eArgError, "Failed setting value type `%s'", rb_obj_classname(value));
+  else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+    rb_obj_classname(value));
 
   return value;
 } /* }}} */
@@ -251,7 +254,7 @@ subSubletForegroundWriter(VALUE self,
       subSharedMessage(display, DefaultRootWindow(display),
         "SUBTLE_SUBLET_FOREGROUND", data, 32, True);
     }
-  else rb_raise(rb_eArgError, "Failed setting value type `%s'",
+  else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
     rb_obj_classname(value));
 
   return value;
@@ -282,7 +285,7 @@ subSubletBackgroundWriter(VALUE self,
       subSharedMessage(display, DefaultRootWindow(display),
         "SUBTLE_SUBLET_BACKGROUND", data, 32, True);
     }
-  else rb_raise(rb_eArgError, "Failed setting value type `%s'",
+  else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
     rb_obj_classname(value));
 
   return value;

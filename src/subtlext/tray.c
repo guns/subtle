@@ -39,7 +39,8 @@ subTrayInit(VALUE self,
   VALUE win)
 {
   if(!FIXNUM_P(win) && T_BIGNUM != rb_type(win))
-    rb_raise(rb_eArgError, "Invalid value type");
+    rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+      rb_obj_classname(win));
 
   rb_iv_set(self, "@id",    Qnil);
   rb_iv_set(self, "@win",   win);
@@ -201,7 +202,7 @@ subTrayUpdate(VALUE self)
         }
       else rb_raise(rb_eStandardError, "Failed finding tray");
     }
-  else rb_raise(rb_eArgError, "Unknown value type");
+  else rb_raise(rb_eStandardError, "Failed updating tray");
 
   return Qnil;
 } /* }}} */

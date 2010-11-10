@@ -310,11 +310,13 @@ subSubtleSpawn(VALUE self,
 {
   VALUE ret = Qnil;
 
+  /* Check object type */
   if(T_STRING == rb_type(cmd))
     {
       ret = INT2FIX((int)subSharedSpawn(RSTRING_PTR(cmd)));
     }
-  else rb_raise(rb_eArgError, "Unknown value type");
+  else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+    rb_obj_classname(cmd));
 
   return ret;
 } /* }}} */
