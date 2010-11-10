@@ -54,8 +54,6 @@ subScreenInit(void)
                       XRRFreeCrtcInfo(crtc);
                     }
                 }
-
-              XRRFreeScreenResources(res);
             }
           else
 #endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
@@ -69,6 +67,7 @@ subScreenInit(void)
                 }
             }
 
+          if(res) XRRFreeScreenResources(res);
           XFree(info);
         }
     }
