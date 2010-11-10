@@ -487,17 +487,6 @@ randr=[yes|no]     Whether to build with XRandR support (current: #{@options["xr
 EOF
 end # }}}
 
-# Task: test {{{
-desc("Run tests")
-task(:test => [:build]) do
-  if(!ENV["sublet"].nil?)
-    require("test/unit/sublet_test")
-    require(ENV["sublet"])
-  else
-    require("test/subtlext_suite")
-  end
-end # }}}
-
 # Task: rdoc {{{
 Rake::RDocTask.new(:rdoc) do |rdoc|
   rdoc.rdoc_files.include(
