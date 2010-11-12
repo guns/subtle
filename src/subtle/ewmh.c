@@ -368,6 +368,8 @@ subEwmhFinish(void)
       /* subtle extension */
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_TAG_LIST));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_SUBLET_LIST));
+
+      subTrayDeselect();
     }
 
   subSharedLogDebug("kill=ewmh\n");

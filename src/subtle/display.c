@@ -356,6 +356,7 @@ subDisplayFinish(void)
       /* Free font */
       if(subtle->font) subSharedFontKill(subtle->dpy, subtle->font);
 
+      XDestroyWindow(subtle->dpy, subtle->windows.tray.win);
       XDestroyWindow(subtle->dpy, subtle->windows.support);
 
       XInstallColormap(subtle->dpy, DefaultColormap(subtle->dpy, SCRN));
