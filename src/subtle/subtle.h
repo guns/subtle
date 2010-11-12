@@ -768,9 +768,10 @@ SubTray *subTrayNew(Window win);                                  ///< Create tr
 void subTrayConfigure(SubTray *t);                                ///< Configure tray
 void subTrayFocus(SubTray * t);                                   ///< Focus tray
 void subTrayUpdate(void);                                         ///< Update tray bar
-void subTraySelect(void);                                         ///< Get selection
 void subTrayFocus(SubTray *t);                                    ///< Focus tray
 void subTraySetState(SubTray *t);                                 ///< Set state
+void subTraySelect(void);                                         ///< Set selection
+void subTrayDeselect(void);                                       ///< Get selection
 void subTrayPublish(void);                                        ///< Publish trays
 void subTrayKill(SubTray *t);                                     ///< Delete tray
 /* }}} */

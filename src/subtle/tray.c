@@ -39,8 +39,9 @@ subTrayNew(Window win)
   XAddToSaveSet(subtle->dpy, t->win);
   XSaveContext(subtle->dpy, t->win, TRAYID, (void *)t);
 
+  /* Start embedding life cycle */
   subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime,
-    XEMBED_EMBEDDED_NOTIFY, 0, subtle->windows.tray.win, 0); ///< Start embedding life cycle
+    XEMBED_EMBEDDED_NOTIFY, 0, subtle->windows.tray.win, 0);
 
   subSharedLogDebug("new=tray, name=%s, win=%#lx\n", t->name, win);
 
@@ -113,29 +114,6 @@ subTrayUpdate(void)
     }
 } /* }}} */
 
- /** subTraySelect {{{
-  * @brief Get tray selection for screen
-  **/
-
-void
-subTraySelect(void)
-{
-  Atom sel = subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION);
-
-  /* Tray selection */
-  XSetSelectionOwner(subtle->dpy, sel, subtle->windows.tray.win, CurrentTime);
-  if(XGetSelectionOwner(subtle->dpy, sel) == subtle->windows.tray.win)
-    {
-      subSharedLogDebug("Selection: type=%ld\n", sel);
-    }
-  else subSharedLogError("Failed getting tray selection\n");
-
-  /* Send manager info */
-  subEwmhMessage(ROOT, ROOT, SUB_EWMH_MANAGER, CurrentTime,
-    subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION),
-      subtle->windows.tray.win, 0, 0);
-} /* }}} */
-
  /** subTrayFocus {{{
   * @brief Set focus to tray
   * @param[in]  t  A #SubTray
@@ -186,6 +164,48 @@ subTraySetState(SubTray *t)
     }
 } /* }}} */
 
+ /** subTraySelect {{{
+  * @brief Set tray selection owner for screen
+  **/
+
+void
+subTraySelect(void)
+{
+  Atom selection = subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION);
+
+  /* Tray selection */
+  XSetSelectionOwner(subtle->dpy, selection,
+    subtle->windows.tray.win, CurrentTime);
+  if(XGetSelectionOwner(subtle->dpy, selection) == subtle->windows.tray.win)
+    {
+      subSharedLogDebug("Selection: type=%ld\n", selection);
+    }
+  else subSharedLogError("Failed getting tray selection\n");
+
+  /* Send manager info */
+  subEwmhMessage(ROOT, ROOT, SUB_EWMH_MANAGER, CurrentTime,
+    subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION),
+      subtle->windows.tray.win, 0, 0);
+} /* }}} */
+
+ /** subTrayDeselect {{{
+  * @brief Unset tray selection owner for screen
+  **/
+
+void
+subTrayDeselect(void)
+{
+  Atom selection = None;
+
+  /* Tray selection */
+  if((selection = subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION)) &&
+      XGetSelectionOwner(subtle->dpy, selection) == subtle->windows.tray.win)
+    {
+      XSetSelectionOwner(subtle->dpy, selection, None, CurrentTime);
+      subSharedPropertyDelete(subtle->dpy, ROOT, selection);
+    }
+} /* }}} */
+
  /** subTrayPublish {{{
   * @brief Publish trays
   **/
@@ -219,10 +239,14 @@ subTrayKill(SubTray *t)
 {
   assert(t);
 
+  /* Reparent back to root to avoid kill when embedder is destroyed */
+  XUnmapWindow(subtle->dpy, t->win);
+  subEwmhSetWMState(t->win, WithdrawnState);
+  XReparentWindow(subtle->dpy, t->win, ROOT, 0, 0);
+
   /* Ignore further events and delete context */
   XSelectInput(subtle->dpy, t->win, NoEventMask);
   XDeleteContext(subtle->dpy, t->win, TRAYID);
-  XUnmapWindow(subtle->dpy, t->win);
 
   if(t->name) XFree(t->name);
   free(t);
