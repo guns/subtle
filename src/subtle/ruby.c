@@ -2886,7 +2886,7 @@ subRubyLoadConfig(void)
 void
 subRubyReloadConfig(void)
 {
-  int i;
+  int i, *vids = NULL;
 
   /* Reset before reloading */
   subtle->flags &= (SUB_SUBTLE_DEBUG|SUB_SUBTLE_EWMH|SUB_SUBTLE_RUN|
@@ -2905,11 +2905,15 @@ subRubyReloadConfig(void)
       p->screen = NULL;
     }
 
+  /* Allocate memory to store views */
+  vids = (int *)subSharedMemoryAlloc(subtle->screens->ndata, sizeof(int));
+
   /* Reset screen panels */
   for(i = 0; i < subtle->screens->ndata; i++)
     {
       SubScreen *s = SCREEN(subtle->screens->data[i]);
 
+      vids[i]   = s->vid; ///< Store views
       s->flags &= ~(SUB_SCREEN_STIPPLE|SUB_SCREEN_PANEL1|SUB_SCREEN_PANEL2);
       subArrayClear(s->panels, True);
     }
@@ -2938,6 +2942,13 @@ subRubyReloadConfig(void)
   subRubyLoadPanels();
   subDisplayConfigure();
 
+  /* Restore views */
+  for(i = 0; i < subtle->screens->ndata; i++)
+    {
+      if(vids[i] < subtle->views->ndata)
+        SCREEN(subtle->screens->data[i])->vid = vids[i];
+    }
+
   /* Update client tags */
   for(i = 0; i < subtle->clients->ndata; i++)
     {
@@ -2959,6 +2970,8 @@ subRubyReloadConfig(void)
 
   /* Hook: Reload */
   subHookCall(SUB_HOOK_RELOAD, NULL);
+
+  free(vids);
 } /* }}} */
 
  /** subRubyLoadSublet {{{
