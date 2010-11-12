@@ -511,7 +511,6 @@ typedef struct subsubtle_t /* {{{ */
   FLAGS                flags;                                     ///< Subtle flags
 
   int                  th, bw, pbw, step, snap, gap;              ///< Subtle properties
-  int                  screenw, screenh;                          ///< Subtle screen geoemtry
   int                  visible_tags, visible_views;
   int                  visible_clients;                           ///< Subtle visible tags and views
   unsigned long        gravity;                                   ///< Subtle gravity
