@@ -220,6 +220,19 @@ EventConfigure(XConfigureEvent *ev)
   /* Ckeck window */
   if(ROOT == ev->window)
     {
+      int screenw = 0, screenh = 0;
+
+      /* Compare screen geometry */
+      screenw = SCREENW;
+      screenh = SCREENH;
+
+      /* Skip when nothing has changes */
+      if(screenw == subtle->screenw &&
+        screenh == subtle->screenh) return;
+
+      subtle->screenw = screenw;
+      subtle->screenh = screenh;
+
       if(subtle->flags & SUB_SUBTLE_XRANDR)
         {
 #ifdef HAVE_X11_EXTENSIONS_XRANDR_H
@@ -231,6 +244,7 @@ EventConfigure(XConfigureEvent *ev)
       subArrayClear(subtle->sublets, False);
       subArrayClear(subtle->screens, True);
       subScreenInit();
+
       subRubyReloadConfig();
       subScreenResize();
 
@@ -986,13 +1000,11 @@ EventSelection(XSelectionClearEvent *ev)
   /* Handle selection clear events */
   if(ev->window == subtle->windows.tray.win) ///< Tray selection
     {
-      subSharedLogDebug("SelectionClear: type=tray, win=%#lx\n", ev->window);
-      subTraySelect();
+      subTrayDeselect();
     }
   else if(ev->window == subtle->windows.support) ///< Session selection
     {
-      subSharedLogDebug("SelectionClear: type=session, win=%#lx\n", ev->window);
-      subSharedLogWarn("Quitting the field\n");
+      subSharedLogWarn("Leaving the field\n");
       subtle->flags &= ~SUB_SUBTLE_RUN; ///< Exit
     }
 
