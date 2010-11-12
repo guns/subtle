@@ -191,7 +191,7 @@ subSubtleFocus(int focus)
   return ROOT;
 } /* }}} */
 
- /** subPanelFinish {{{
+ /** subSubtleFinish {{{
   * @brief Finish subtle
   **/
 
