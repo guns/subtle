@@ -83,6 +83,8 @@ subScreenInit(void)
     }
 
   printf("Runnning on %d screen(s)\n", subtle->screens->ndata);
+
+  subScreenPublish();
 } /* }}} ^*/
 
  /** subScreenNew {{{
@@ -246,8 +248,6 @@ subScreenConfigure(void)
                   /* EWMH: Desktop */
                   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP,
                     (long *)&s->vid, 1);
-
-                 v->flags |= SUB_VIEW_OCCUPIED;
 
                   visible++;
                 }

@@ -276,7 +276,6 @@
 
 /* View flags */
 #define SUB_VIEW_URGENT               (1L << 10)                  ///< Urgent views
-#define SUB_VIEW_OCCUPIED             (1L << 11)                  ///< Occupied view
 
 /* Special flags */
 #define SUB_RUBY_DATA                 (1L << 31)                  ///< Object stores ruby data
