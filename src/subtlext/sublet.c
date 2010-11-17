@@ -11,6 +11,107 @@
 
 #include "subtlext.h"
 
+/* Singleton */
+
+/* subSubletSingFind {{{ */
+/*
+ * call-seq: find(value) -> Subtlext::Sublet or nil
+ *           [value]     -> Subtlext::Sublet or nil
+ *
+ * Find Sublet by a given value which can be of following type:
+ *
+ * [fixnum] Array id
+ * [string] Match against name of Sublet
+ * [symbol] :all for an array of all Sublet
+ *
+ *  Subtlext::Sublet.find("subtle")
+ *  => #<Subtlext::Sublet:xxx>
+ *
+ *  Subtlext::Sublet[1]
+ *  => #<Subtlext::Sublet:xxx>
+ *
+ *  Subtlext::Sublet["subtle"]
+ *  => nil
+ */
+
+VALUE
+subSubletSingFind(VALUE self,
+  VALUE value)
+{
+  int id = 0;
+  VALUE parsed = Qnil, sublet = Qnil;
+  char *name = NULL, buf[50] = { 0 };
+
+  subSubtlextConnect(NULL); ///< Implicit open connection
+
+  /* Check object type */
+  if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
+      value, buf, sizeof(buf), NULL)))
+    {
+      if(CHAR2SYM("all") == parsed)
+        return subSubletSingAll(Qnil);
+    }
+
+  /* Find sublet */
+  if(-1 != (id = subSubtlextFind("SUBTLE_SUBLET_LIST", buf, &name)))
+    {
+      if(!NIL_P((sublet = subSubletInstantiate(name))))
+        rb_iv_set(sublet, "@id", INT2FIX(id));
+
+      free(name);
+    }
+
+  return sublet;
+} /* }}} */
+
+/* subSubletSingAll {{{ */
+/*
+ * call-seq: all -> Array
+ *
+ * Get Array of Sublet
+ *
+ *  Subtlext::Sublet.all
+ *  => [#<Subtlext::Sublet:xxx>, #<Subtlext::Sublet:xxx>]
+ *
+ *  Subtlext::Sublet.all
+ *  => []
+ */
+
+VALUE
+subSubletSingAll(VALUE self)
+{
+  int i, size = 0;
+  char **sublets = NULL;
+  VALUE meth = Qnil, klass = Qnil, array = Qnil;
+
+  subSubtlextConnect(NULL); ///< Implicit open connection
+
+  /* Fetch data */
+  meth    = rb_intern("new");
+  klass   = rb_const_get(mod, rb_intern("Sublet"));
+  sublets = subSharedPropertyStrings(display, DefaultRootWindow(display),
+    XInternAtom(display, "SUBTLE_SUBLET_LIST", False), &size);
+  array   = rb_ary_new2(size);
+
+  /* Populate array */
+  if(sublets)
+    {
+      for(i = 0; i < size; i++)
+        {
+          VALUE s = rb_funcall(klass, meth, 1, rb_str_new2(sublets[i]));
+
+          rb_iv_set(s, "@id", INT2FIX(i));
+          rb_ary_push(array, s);
+        }
+
+      XFreeStringList(sublets);
+    }
+
+  return array;
+} /* }}} */
+
+/* Class */
+
 /* subSubletInstantiate {{{ */
 VALUE
 subSubletInstantiate(char *name)
@@ -48,103 +149,6 @@ subSubletInit(VALUE self,
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   return self;
-} /* }}} */
-
-/* subSubletFind {{{ */
-/*
- * call-seq: find(value) -> Subtlext::Sublet or nil
- *           [value]     -> Subtlext::Sublet or nil
- *
- * Find Sublet by a given value which can be of following type:
- *
- * [fixnum] Array id
- * [string] Match against name of Sublet
- * [symbol] :all for an array of all Sublet
- *
- *  Subtlext::Sublet.find("subtle")
- *  => #<Subtlext::Sublet:xxx>
- *
- *  Subtlext::Sublet[1]
- *  => #<Subtlext::Sublet:xxx>
- *
- *  Subtlext::Sublet["subtle"]
- *  => nil
- */
-
-VALUE
-subSubletFind(VALUE self,
-  VALUE value)
-{
-  int id = 0;
-  VALUE parsed = Qnil, sublet = Qnil;
-  char *name = NULL, buf[50] = { 0 };
-
-  subSubtlextConnect(NULL); ///< Implicit open connection
-
-  /* Check object type */
-  if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
-      value, buf, sizeof(buf), NULL)))
-    {
-      if(CHAR2SYM("all") == parsed)
-        return subClientAll(Qnil);
-    }
-
-  /* Find sublet */
-  if(-1 != (id = subSubtlextFind("SUBTLE_SUBLET_LIST", buf, &name)))
-    {
-      if(!NIL_P((sublet = subSubletInstantiate(name))))
-        rb_iv_set(sublet, "@id", INT2FIX(id));
-
-      free(name);
-    }
-
-  return sublet;
-} /* }}} */
-
-/* subSubletAll {{{ */
-/*
- * call-seq: all -> Array
- *
- * Get Array of Sublet
- *
- *  Subtlext::Sublet.all
- *  => [#<Subtlext::Sublet:xxx>, #<Subtlext::Sublet:xxx>]
- *
- *  Subtlext::Sublet.all
- *  => []
- */
-
-VALUE
-subSubletAll(VALUE self)
-{
-  int i, size = 0;
-  char **sublets = NULL;
-  VALUE meth = Qnil, klass = Qnil, array = Qnil;
-
-  subSubtlextConnect(NULL); ///< Implicit open connection
-
-  /* Fetch data */
-  meth    = rb_intern("new");
-  klass   = rb_const_get(mod, rb_intern("Sublet"));
-  sublets = subSharedPropertyStrings(display, DefaultRootWindow(display),
-    XInternAtom(display, "SUBTLE_SUBLET_LIST", False), &size);
-  array   = rb_ary_new2(size);
-
-  /* Populate array */
-  if(sublets)
-    {
-      for(i = 0; i < size; i++)
-        {
-          VALUE s = rb_funcall(klass, meth, 1, rb_str_new2(sublets[i]));
-
-          rb_iv_set(s, "@id", INT2FIX(i));
-          rb_ary_push(array, s);
-        }
-
-      XFreeStringList(sublets);
-    }
-
-  return array;
 } /* }}} */
 
 /* subSubletUpdate {{{ */

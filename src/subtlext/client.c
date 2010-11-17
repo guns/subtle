@@ -139,6 +139,210 @@ ClientRestack(VALUE self,
   return Qnil;
 } /* }}} */
 
+/* Singleton */
+
+/* subClientSingFind {{{ */
+/*
+ * call-seq: find(value) -> Subtlext::Client or nil
+ *           [value]     -> Subtlext::Client or nil
+ *
+ * Find Client by a given value which can be of following type:
+ *
+ * [fixnum] Array id
+ * [string] Match against WM_NAME or WM_CLASS
+ * [hash]   With one of following keys: :title, :name, :class, :gravity
+ * [symbol] Either :current for current Client or :all for an array
+ *
+ *  Subtlext::Client.find("subtle")
+ *  => #<Subtlext::Client:xxx>
+ *
+ *  Subtlext::Client[:name => "subtle"]
+ *  => #<Subtlext::Client:xxx>
+ *
+ *  Subtlext::Client["subtle"]
+ *  => nil
+ */
+
+VALUE
+subClientSingFind(VALUE self,
+  VALUE value)
+{
+  int id = 0, flags = 0;
+  Window win = None;
+  VALUE parsed = Qnil, client = Qnil;
+  char *name = NULL, buf[50] = { 0 };
+
+  subSubtlextConnect(NULL); ///< Implicit open connection
+
+  /* Check object type */
+  if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
+      value, buf, sizeof(buf), &flags)))
+    {
+      if(CHAR2SYM("visible") == parsed)
+        return subClientSingVisible(Qnil);
+      else if(CHAR2SYM("all") == parsed)
+        return subClientSingAll(Qnil);
+      else if(CHAR2SYM("current") == parsed)
+        return subClientSingCurrent(Qnil);
+    }
+
+  /* Find client */
+  if(-1 != (id = subSubtlextFindWindow("_NET_CLIENT_LIST",
+      buf, NULL, &win, flags)))
+    {
+      if(!NIL_P((client = subClientInstantiate(win))))
+        {
+          rb_iv_set(client, "@id", INT2FIX(id));
+
+          subClientUpdate(client);
+        }
+
+      free(name);
+    }
+
+  return client;
+} /* }}} */
+
+/* subClientSingCurrent {{{ */
+/*
+ * call-seq: current -> Subtlext::Client
+ *
+ * Get current active Client
+ *
+ *  Subtlext::Client.current
+ *  => #<Subtlext::Client:xxx>
+ */
+
+VALUE
+subClientSingCurrent(VALUE self)
+{
+  VALUE client = Qnil;
+  unsigned long *focus = NULL;
+
+  subSubtlextConnect(NULL); ///< Implicit open connection
+
+  if((focus = (unsigned long *)subSharedPropertyGet(display,
+      DefaultRootWindow(display), XA_WINDOW,
+      XInternAtom(display, "_NET_ACTIVE_WINDOW", False), NULL)))
+    {
+      client = subClientInstantiate(*focus);
+
+      if(!NIL_P(client)) subClientUpdate(client);
+
+      free(focus);
+    }
+  else rb_raise(rb_eStandardError, "Failed getting current client");
+
+  return client;
+} /* }}} */
+
+/* subClientSingVisible {{{ */
+/*
+ * call-seq: visible -> Array
+ *
+ * Get Array of all visible Client
+ *
+ *  Subtlext::Client.visible
+ *  => [#<Subtlext::Client:xxx>, #<Subtlext::Client:xxx>]
+ *
+ *  Subtlext::Client.visible
+ *  => []
+ */
+
+VALUE
+subClientSingVisible(VALUE self)
+{
+  int i, size = 0;
+  Window *clients = NULL;
+  unsigned long *visible = NULL;
+  VALUE meth = Qnil, klass = Qnil, array = Qnil, client = Qnil;
+
+  subSubtlextConnect(NULL); ///< Implicit open connection
+
+  /* Fetch data */
+  meth    = rb_intern("new");
+  klass   = rb_const_get(mod, rb_intern("Client"));
+  clients = subSubtlextList("_NET_CLIENT_LIST", &size);
+  visible = (unsigned long *)subSharedPropertyGet(display,
+    DefaultRootWindow(display), XA_CARDINAL, XInternAtom(display,
+    "SUBTLE_VISIBLE_TAGS", False), NULL);
+  array   = rb_ary_new2(size);
+
+  /* Populate array */
+  if(clients && visible)
+    {
+      for(i = 0; i < size; i++)
+        {
+          unsigned long *tags = (unsigned long *)subSharedPropertyGet(display,
+            clients[i], XA_CARDINAL, XInternAtom(display,
+            "SUBTLE_WINDOW_TAGS", False), NULL);
+
+          /* Create client on match */
+          if(*tags && *visible & *tags && !NIL_P(client = rb_funcall(klass,
+              meth, 1, LONG2NUM(clients[i]))))
+            {
+              subClientUpdate(client);
+              rb_ary_push(array, client);
+            }
+
+          if(tags) free(tags);
+        }
+
+      free(clients);
+      free(visible);
+    }
+
+  return array;
+} /* }}} */
+
+/* subClientSingAll {{{ */
+/*
+ * call-seq: all -> Array
+ *
+ * Get Array of all Client
+ *
+ *  Subtlext::Client.all
+ *  => [#<Subtlext::Client:xxx>, #<Subtlext::Client:xxx>]
+ *
+ *  Subtlext::Client.all
+ *  => []
+ */
+
+VALUE
+subClientSingAll(VALUE self)
+{
+  int i, size = 0;
+  Window *clients = NULL;
+  VALUE meth = Qnil, klass = Qnil, array = Qnil, client = Qnil;
+
+  subSubtlextConnect(NULL); ///< Implicit open connection
+
+  /* Fetch data */
+  meth    = rb_intern("new");
+  klass   = rb_const_get(mod, rb_intern("Client"));
+  clients = subSubtlextList("_NET_CLIENT_LIST", &size);
+  array   = rb_ary_new2(size);
+
+  /* Populate array */
+  if(clients)
+    {
+      for(i = 0; i < size; i++)
+        {
+          if(!NIL_P(client = rb_funcall(klass, meth, 1, LONG2NUM(clients[i]))))
+            {
+              subClientUpdate(client);
+              rb_ary_push(array, client);
+            }
+        }
+
+      free(clients);
+    }
+
+  return array;
+} /* }}} */
+
+/* Class */
+
 /* subClientInstantiate {{{ */
 VALUE
 subClientInstantiate(Window win)
@@ -185,206 +389,6 @@ subClientInit(VALUE self,
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   return self;
-} /* }}} */
-
-/* subClientFind {{{ */
-/*
- * call-seq: find(value) -> Subtlext::Client or nil
- *           [value]     -> Subtlext::Client or nil
- *
- * Find Client by a given value which can be of following type:
- *
- * [fixnum] Array id
- * [string] Match against WM_NAME or WM_CLASS
- * [hash]   With one of following keys: :title, :name, :class, :gravity
- * [symbol] Either :current for current Client or :all for an array
- *
- *  Subtlext::Client.find("subtle")
- *  => #<Subtlext::Client:xxx>
- *
- *  Subtlext::Client[:name => "subtle"]
- *  => #<Subtlext::Client:xxx>
- *
- *  Subtlext::Client["subtle"]
- *  => nil
- */
-
-VALUE
-subClientFind(VALUE self,
-  VALUE value)
-{
-  int id = 0, flags = 0;
-  Window win = None;
-  VALUE parsed = Qnil, client = Qnil;
-  char *name = NULL, buf[50] = { 0 };
-
-  subSubtlextConnect(NULL); ///< Implicit open connection
-
-  /* Check object type */
-  if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
-      value, buf, sizeof(buf), &flags)))
-    {
-      if(CHAR2SYM("visible") == parsed)
-        return subClientVisible(Qnil);
-      else if(CHAR2SYM("all") == parsed)
-        return subClientAll(Qnil);
-      else if(CHAR2SYM("current") == parsed)
-        return subClientCurrent(Qnil);
-    }
-
-  /* Find client */
-  if(-1 != (id = subSubtlextFindWindow("_NET_CLIENT_LIST",
-      buf, NULL, &win, flags)))
-    {
-      if(!NIL_P((client = subClientInstantiate(win))))
-        {
-          rb_iv_set(client, "@id", INT2FIX(id));
-
-          subClientUpdate(client);
-        }
-
-      free(name);
-    }
-
-  return client;
-} /* }}} */
-
-/* subClientCurrent {{{ */
-/*
- * call-seq: current -> Subtlext::Client
- *
- * Get current active Client
- *
- *  Subtlext::Client.current
- *  => #<Subtlext::Client:xxx>
- */
-
-VALUE
-subClientCurrent(VALUE self)
-{
-  VALUE client = Qnil;
-  unsigned long *focus = NULL;
-
-  subSubtlextConnect(NULL); ///< Implicit open connection
-
-  if((focus = (unsigned long *)subSharedPropertyGet(display,
-      DefaultRootWindow(display), XA_WINDOW,
-      XInternAtom(display, "_NET_ACTIVE_WINDOW", False), NULL)))
-    {
-      client = subClientInstantiate(*focus);
-
-      if(!NIL_P(client)) subClientUpdate(client);
-
-      free(focus);
-    }
-  else rb_raise(rb_eStandardError, "Failed getting current client");
-
-  return client;
-} /* }}} */
-
-/* subClientVisible {{{ */
-/*
- * call-seq: visible -> Array
- *
- * Get Array of all visible Client
- *
- *  Subtlext::Client.visible
- *  => [#<Subtlext::Client:xxx>, #<Subtlext::Client:xxx>]
- *
- *  Subtlext::Client.visible
- *  => []
- */
-
-VALUE
-subClientVisible(VALUE self)
-{
-  int i, size = 0;
-  Window *clients = NULL;
-  unsigned long *visible = NULL;
-  VALUE meth = Qnil, klass = Qnil, array = Qnil, client = Qnil;
-
-  subSubtlextConnect(NULL); ///< Implicit open connection
-
-  /* Fetch data */
-  meth    = rb_intern("new");
-  klass   = rb_const_get(mod, rb_intern("Client"));
-  clients = subSubtlextList("_NET_CLIENT_LIST", &size);
-  visible = (unsigned long *)subSharedPropertyGet(display,
-    DefaultRootWindow(display), XA_CARDINAL, XInternAtom(display,
-    "SUBTLE_VISIBLE_TAGS", False), NULL);
-  array   = rb_ary_new2(size);
-
-  /* Populate array */
-  if(clients && visible)
-    {
-      for(i = 0; i < size; i++)
-        {
-          unsigned long *tags = (unsigned long *)subSharedPropertyGet(display,
-            clients[i], XA_CARDINAL, XInternAtom(display,
-            "SUBTLE_WINDOW_TAGS", False), NULL);
-
-          /* Create client on match */
-          if(*tags && *visible & *tags && !NIL_P(client = rb_funcall(klass,
-              meth, 1, LONG2NUM(clients[i]))))
-            {
-              subClientUpdate(client);
-              rb_ary_push(array, client);
-            }
-
-          if(tags) free(tags);
-        }
-
-      free(clients);
-      free(visible);
-    }
-
-  return array;
-} /* }}} */
-
-/* subClientAll {{{ */
-/*
- * call-seq: all -> Array
- *
- * Get Array of all Client
- *
- *  Subtlext::Client.all
- *  => [#<Subtlext::Client:xxx>, #<Subtlext::Client:xxx>]
- *
- *  Subtlext::Client.all
- *  => []
- */
-
-VALUE
-subClientAll(VALUE self)
-{
-  int i, size = 0;
-  Window *clients = NULL;
-  VALUE meth = Qnil, klass = Qnil, array = Qnil, client = Qnil;
-
-  subSubtlextConnect(NULL); ///< Implicit open connection
-
-  /* Fetch data */
-  meth    = rb_intern("new");
-  klass   = rb_const_get(mod, rb_intern("Client"));
-  clients = subSubtlextList("_NET_CLIENT_LIST", &size);
-  array   = rb_ary_new2(size);
-
-  /* Populate array */
-  if(clients)
-    {
-      for(i = 0; i < size; i++)
-        {
-          if(!NIL_P(client = rb_funcall(klass, meth, 1, LONG2NUM(clients[i]))))
-            {
-              subClientUpdate(client);
-              rb_ary_push(array, client);
-            }
-        }
-
-      free(clients);
-    }
-
-  return array;
 } /* }}} */
 
 /* subClientUpdate {{{ */
@@ -842,7 +846,7 @@ subClientGravityWriter(VALUE self,
   /* Check instance type */
   if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("Gravity"))))
     gravity = value;
-  else gravity = subGravityFind(Qnil, value);
+  else gravity = subGravitySingFind(Qnil, value);
 
   /* Set gravity */
   if(Qnil != gravity)
@@ -928,7 +932,7 @@ subClientScreenWriter(VALUE self,
   /* Check instance type */
   if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("Screen"))))
     screen = value;
-  else subScreenFind(Qnil, value);
+  else subScreenSingFind(Qnil, value);
 
   /* Set screen */
   if(RTEST(screen))

@@ -115,6 +115,41 @@ WindowDefine(VALUE self,
   return Qnil;
 } /* }}} */
 
+/* Singleton */
+
+/* subWindowSingOnce {{{ */
+/*
+ * call-seq: once(geometry) -> Value
+ *
+ * Show window once as long as proc runs
+ *
+ *  Subtlext::Window.once(:x => 10, :y => 10, :widht => 100, :height => 100) do |w|
+ *    "test"
+ *  end
+ *  => "test"
+ **/
+
+VALUE
+subWindowSingOnce(VALUE self,
+  VALUE geometry)
+{
+  VALUE win = Qnil, ret = Qnil;
+
+  rb_need_block();
+
+  /* Create new window */
+  win = subWindowInstantiate(geometry);
+
+  /* Yield block */
+  ret = rb_yield_values(1, win);
+
+  subWindowKill(win);
+
+  return ret;
+} /* }}} */
+
+/* Class */
+
 /* subWindowInstantiate {{{ */
 VALUE
 subWindowInstantiate(VALUE geometry)
@@ -828,37 +863,6 @@ VALUE
 subWindowInput(VALUE self)
 {
   return WindowDefine(self, 1, WINDOW_INPUT_FUNC, CHAR2SYM("__input"));
-} /* }}} */
-
-/* subWindowOnce {{{ */
-/*
- * call-seq: once(geometry) -> Value
- *
- * Show window once as long as proc runs
- *
- *  Subtlext::Window.once(:x => 10, :y => 10, :widht => 100, :height => 100) do |w|
- *    "test"
- *  end
- *  => "test"
- **/
-
-VALUE
-subWindowOnce(VALUE self,
-  VALUE geometry)
-{
-  VALUE win = Qnil, ret = Qnil;
-
-  rb_need_block();
-
-  /* Create new window */
-  win = subWindowInstantiate(geometry);
-
-  /* Yield block */
-  ret = rb_yield_values(1, win);
-
-  subWindowKill(win);
-
-  return ret;
 } /* }}} */
 
 /* subWindowShow {{{ */

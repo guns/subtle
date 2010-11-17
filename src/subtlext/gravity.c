@@ -80,6 +80,130 @@ subGravityFindId(char *match,
   return ret;
 } /* }}} */
 
+/* Singleton */
+
+/* subGravitySingFind {{{ */
+/*
+ * call-seq: find(value) -> Subtlext::Gravity or nil
+ *           [value]     -> Subtlext::Gravity or nil
+ *
+ * Find Gravity by a given value which can be of following type:
+ *
+ * [fixnum] Array id
+ * [string] Match against name of Gravity
+ * [symbol] Symbol of the Gravity or :all for an array of all Gravity
+ *
+ *  Subtlext::Gravity.find("center")
+ *  => #<Subtlext::Gravity:xxx>
+ *
+ *  Subtlext::Gravity[:center]
+ *  => #<Subtlext::Gravity:xxx>
+ *
+ *  Subtlext::Gravity["center"]
+ *  => nil
+ */
+
+VALUE
+subGravitySingFind(VALUE self,
+  VALUE value)
+{
+  int id = 0;
+  VALUE parsed = Qnil, gravity = Qnil;
+  XRectangle geometry = { 0 };
+  char *name = NULL, buf[50] = { 0 };
+
+  subSubtlextConnect(NULL); ///< Implicit open connection
+
+  /* Check object type */
+  if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
+      value, buf, sizeof(buf), NULL)))
+    {
+      if(CHAR2SYM("all") == parsed)
+        return subGravitySingAll(Qnil);
+      else snprintf(buf, sizeof(buf), "%s", SYM2CHAR(value));
+    }
+
+  /* Find gravity */
+  if(-1 != (id = subGravityFindId(buf, &name, &geometry)))
+    {
+      if(!NIL_P((gravity = subGravityInstantiate(name))))
+        {
+          VALUE geom = subGeometryInstantiate(geometry.x, geometry.y,
+            geometry.width, geometry.height);
+
+          rb_iv_set(gravity, "@id",       INT2FIX(id));
+          rb_iv_set(gravity, "@geometry", geom);
+        }
+
+      free(name);
+    }
+
+  return gravity;
+} /* }}} */
+
+/* subGravitySingAll {{{ */
+/*
+ * call-seq: gravities -> Array
+ *
+ * Get Array of all Gravity
+ *
+ *  Subtlext::Gravity.all
+ *  => [#<Subtlext::Gravity:xxx>, #<Subtlext::Gravity:xxx>]
+ *
+ *  Subtlext::Gravity.all
+ *  => []
+ */
+
+VALUE
+subGravitySingAll(VALUE self)
+{
+  int size = 0;
+  char **gravities = NULL;
+
+  VALUE array = rb_ary_new();
+
+  subSubtlextConnect(NULL); ///< Implicit open connection
+
+  /* Get gravity list */
+  if((gravities = subSharedPropertyStrings(display, DefaultRootWindow(display),
+      XInternAtom(display, "SUBTLE_GRAVITY_LIST", False), &size)))
+    {
+      int i;
+      XRectangle geometry = { 0 };
+      char buf[30] = { 0 };
+      VALUE klass_grav = Qnil, klass_geom = Qnil, meth = Qnil;
+      VALUE gravity = Qnil, geom = Qnil;
+
+      klass_grav = rb_const_get(mod, rb_intern("Gravity"));
+      klass_geom = rb_const_get(mod, rb_intern("Geometry"));
+      meth       = rb_intern("new");
+
+      /* Create gravity list */
+      for(i = 0; i < size; i++)
+        {
+          sscanf(gravities[i], "%hdx%hd+%hd+%hd#%s", &geometry.x, &geometry.y,
+            &geometry.width, &geometry.height, buf);
+
+          gravity = rb_funcall(klass_grav, meth, 1, rb_str_new2(buf));
+          geom    = rb_funcall(klass_geom, meth, 4, INT2FIX(geometry.x),
+            INT2FIX(geometry.y), INT2FIX(geometry.width),
+            INT2FIX(geometry.height));
+
+          rb_iv_set(gravity, "@id", INT2FIX(i));
+          rb_iv_set(gravity, "@geometry", geom);
+
+          rb_ary_push(array, gravity);
+        }
+
+      XFreeStringList(gravities);
+    }
+  else rb_raise(rb_eStandardError, "Failed getting gravity list");
+
+  return array;
+} /* }}} */
+
+/* Class */
+
 /* subGravityInstantiate {{{ */
 VALUE
 subGravityInstantiate(char *name)
@@ -122,124 +246,6 @@ subGravityInit(int argc,
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   return self;
-} /* }}} */
-
-/* subGravityFind {{{ */
-/*
- * call-seq: find(value) -> Subtlext::Gravity or nil
- *           [value]     -> Subtlext::Gravity or nil
- *
- * Find Gravity by a given value which can be of following type:
- *
- * [fixnum] Array id
- * [string] Match against name of Gravity
- * [symbol] Symbol of the Gravity or :all for an array of all Gravity
- *
- *  Subtlext::Gravity.find("center")
- *  => #<Subtlext::Gravity:xxx>
- *
- *  Subtlext::Gravity[:center]
- *  => #<Subtlext::Gravity:xxx>
- *
- *  Subtlext::Gravity["center"]
- *  => nil
- */
-
-VALUE
-subGravityFind(VALUE self,
-  VALUE value)
-{
-  int id = 0;
-  VALUE parsed = Qnil, gravity = Qnil;
-  XRectangle geometry = { 0 };
-  char *name = NULL, buf[50] = { 0 };
-
-  subSubtlextConnect(NULL); ///< Implicit open connection
-
-  /* Check object type */
-  if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
-      value, buf, sizeof(buf), NULL)))
-    {
-      if(CHAR2SYM("all") == parsed)
-        return subGravityAll(Qnil);
-      else snprintf(buf, sizeof(buf), "%s", SYM2CHAR(value));
-    }
-
-  /* Find gravity */
-  if(-1 != (id = subGravityFindId(buf, &name, &geometry)))
-    {
-      if(!NIL_P((gravity = subGravityInstantiate(name))))
-        {
-          VALUE geom = subGeometryInstantiate(geometry.x, geometry.y,
-            geometry.width, geometry.height);
-
-          rb_iv_set(gravity, "@id",       INT2FIX(id));
-          rb_iv_set(gravity, "@geometry", geom);
-        }
-
-      free(name);
-    }
-
-  return gravity;
-} /* }}} */
-
-/* subGravityAll {{{ */
-/*
- * call-seq: gravities -> Array
- *
- * Get Array of all Gravity
- *
- *  Subtlext::Gravity.all
- *  => [#<Subtlext::Gravity:xxx>, #<Subtlext::Gravity:xxx>]
- *
- *  Subtlext::Gravity.all
- *  => []
- */
-
-VALUE
-subGravityAll(VALUE self)
-{
-  int size = 0;
-  char **gravities = NULL;
-
-  VALUE array = rb_ary_new();
-
-  subSubtlextConnect(NULL); ///< Implicit open connection
-
-  /* Get gravity list */
-  if((gravities = subSharedPropertyStrings(display, DefaultRootWindow(display),
-      XInternAtom(display, "SUBTLE_GRAVITY_LIST", False), &size)))
-    {
-      int i;
-      XRectangle geometry = { 0 };
-      char buf[30] = { 0 };
-      VALUE klass_grav = Qnil, klass_geom = Qnil, meth = Qnil, gravity = Qnil, geom = Qnil;
-
-      klass_grav = rb_const_get(mod, rb_intern("Gravity"));
-      klass_geom = rb_const_get(mod, rb_intern("Geometry"));
-      meth       = rb_intern("new");
-
-      /* Create gravity list */
-      for(i = 0; i < size; i++)
-        {
-          sscanf(gravities[i], "%hdx%hd+%hd+%hd#%s", &geometry.x, &geometry.y,
-            &geometry.width, &geometry.height, buf);
-
-          gravity = rb_funcall(klass_grav, meth, 1, rb_str_new2(buf));
-          geom    = rb_funcall(klass_geom, meth, 4, INT2FIX(geometry.x), INT2FIX(geometry.y),
-            INT2FIX(geometry.width), INT2FIX(geometry.height));
-
-          rb_iv_set(gravity, "@id", INT2FIX(i));
-          rb_iv_set(gravity, "@geometry", geom);
-
-          rb_ary_push(array, gravity);
-        }
-
-      XFreeStringList(gravities);
-    }
-  else rb_raise(rb_eStandardError, "Failed getting gravity list");
-
-  return array;
 } /* }}} */
 
 /* subGravityUpdate {{{ */

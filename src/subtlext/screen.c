@@ -46,10 +46,113 @@ ScreenList(void)
 
       free(workareas);
     }
-  else subSharedLogDebug("Failed getting workarea list\n");
+  else printf("Failed getting workarea list\n");
 
   return array;
 } /* }}} */
+
+/* Singleton */
+
+/* subScreenSingFind {{{ */
+/*
+ * call-seq: find(value) -> Subtlext::Screen or nil
+ *           [value]     -> Subtlext::Screen or nil
+ *
+ * Find Screen by a given value which can be of following type:
+ *
+ * [fixnum] Array id
+ *
+ *  Subtlext::Screen.find(1)
+ *  => #<Subtlext::Screen:xxx>
+ *
+ *  Subtlext::Screen[1]
+ *  => #<Subtlext::Screen:xxx>
+ */
+
+VALUE
+subScreenSingFind(VALUE self,
+  VALUE value)
+{
+  VALUE screen = Qnil;
+
+  /* Check object type */
+  if(FIXNUM_P(value))
+    {
+      VALUE screens = ScreenList();
+
+      screen = rb_ary_entry(screens, FIX2INT(value));
+    }
+  else rb_raise(rb_eArgError, "Unexpected value type `%s'",
+    rb_obj_classname(value));
+
+  return screen;
+} /* }}} */
+
+/* subScreenSingAll {{{ */
+/*
+ * call-seq: all -> Array
+ *
+ * Get Array of all Screen
+ *
+ *  Subtlext::Screen.all
+ *  => [#<Subtlext::Screen:xxx>, #<Subtlext::Screen:xxx>]
+ *
+ *  Subtlext::Screen.all
+ *  => []
+ */
+
+VALUE
+subScreenSingAll(VALUE self)
+{
+  return ScreenList();
+} /* }}} */
+
+/* subScreenSingCurrent {{{ */
+/*
+ * call-seq: current -> Subtlext::Screen
+ *
+ * Get current active Screen
+ *
+ *  Subtlext::Screen.current
+ *  => #<Subtlext::Screen:xxx>
+ */
+
+VALUE
+subScreenSingCurrent(VALUE self)
+{
+  int id = 0;
+  unsigned long *focus = NULL;
+  VALUE screen = Qnil;
+
+  subSubtlextConnect(NULL); ///< Implicit open connection
+
+  /* Get current screen from current client or use the first */
+  if((focus = (unsigned long *)subSharedPropertyGet(display,
+      DefaultRootWindow(display), XA_WINDOW,
+      XInternAtom(display, "_NET_ACTIVE_WINDOW", False), NULL)))
+    {
+      int *screen_id = NULL;
+
+      if((screen_id = (int *)subSharedPropertyGet(display, *focus, XA_CARDINAL,
+          XInternAtom(display, "SUBTLE_WINDOW_SCREEN", False), NULL)))
+        {
+          id = *screen_id;
+
+          free(screen_id);
+        }
+
+      free(focus);
+    }
+
+  /* Create screen */
+  screen = subScreenInstantiate(id);
+
+  subScreenUpdate(screen);
+
+  return screen;
+} /* }}} */
+
+/* Class */
 
 /* subScreenInstantiate {{{ */
 VALUE
@@ -88,105 +191,6 @@ subScreenInit(VALUE self,
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   return self;
-} /* }}} */
-
-/* subScreenFind {{{ */
-/*
- * call-seq: find(value) -> Subtlext::Screen or nil
- *           [value]     -> Subtlext::Screen or nil
- *
- * Find Screen by a given value which can be of following type:
- *
- * [fixnum] Array id
- *
- *  Subtlext::Screen.find(1)
- *  => #<Subtlext::Screen:xxx>
- *
- *  Subtlext::Screen[1]
- *  => #<Subtlext::Screen:xxx>
- */
-
-VALUE
-subScreenFind(VALUE self,
-  VALUE value)
-{
-  VALUE screen = Qnil;
-
-  /* Check object type */
-  if(FIXNUM_P(value))
-    {
-      VALUE screens = ScreenList();
-
-      screen = rb_ary_entry(screens, FIX2INT(value));
-    }
-  else rb_raise(rb_eArgError, "Unexpected value type `%s'",
-    rb_obj_classname(value));
-
-  return screen;
-} /* }}} */
-
-/* subScreenAll {{{ */
-/*
- * call-seq: all -> Array
- *
- * Get Array of all Screen
- *
- *  Subtlext::Screen.all
- *  => [#<Subtlext::Screen:xxx>, #<Subtlext::Screen:xxx>]
- *
- *  Subtlext::Screen.all
- *  => []
- */
-
-VALUE
-subScreenAll(VALUE self)
-{
-  return ScreenList();
-} /* }}} */
-
-/* subScreenCurrent {{{ */
-/*
- * call-seq: current -> Subtlext::Screen
- *
- * Get current active Screen
- *
- *  Subtlext::Screen.current
- *  => #<Subtlext::Screen:xxx>
- */
-
-VALUE
-subScreenCurrent(VALUE self)
-{
-  int id = 0;
-  unsigned long *focus = NULL;
-  VALUE screen = Qnil;
-
-  subSubtlextConnect(NULL); ///< Implicit open connection
-
-  /* Get current screen from current client or use the first */
-  if((focus = (unsigned long *)subSharedPropertyGet(display,
-      DefaultRootWindow(display), XA_WINDOW,
-      XInternAtom(display, "_NET_ACTIVE_WINDOW", False), NULL)))
-    {
-      int *screen_id = NULL;
-
-      if((screen_id = (int *)subSharedPropertyGet(display, *focus, XA_CARDINAL,
-          XInternAtom(display, "SUBTLE_WINDOW_SCREEN", False), NULL)))
-        {
-          id = *screen_id;
-
-          free(screen_id);
-        }
-
-      free(focus);
-    }
-
-  /* Create screen */
-  screen = subScreenInstantiate(id);
-
-  subScreenUpdate(screen);
-
-  return screen;
 } /* }}} */
 
 /* subScreenUpdate {{{ */
@@ -288,7 +292,9 @@ subScreenClientList(VALUE self)
 VALUE
 subScreenToString(VALUE self)
 {
-  return subGeometryToString(rb_iv_get(self, "@geometry"));
+  VALUE geometry = rb_iv_get(self, "@geometry");
+
+  return RTEST(geometry) ? subGeometryToString(geometry) : Qnil;
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

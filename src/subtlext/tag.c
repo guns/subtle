@@ -11,46 +11,9 @@
 
 #include "subtlext.h"
 
-/* subTagInstantiate {{{ */
-VALUE
-subTagInstantiate(char *name)
-{
-  VALUE klass = Qnil, tag = Qnil;
+/* Singleton */
 
-  /* Create new instance */
-  klass = rb_const_get(mod, rb_intern("Tag"));
-  tag   = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(name));
-
-  return tag;
-} /* }}} */
-
-/* subTagInit {{{ */
-/*
- * call-seq: new(name) -> Subtlext::Tag
- *
- * Create new Tag object
- *
- *  tag = Subtlext::Tag.new("subtle")
- *  => #<Subtlext::Tag:xxx>
- */
-
-VALUE
-subTagInit(VALUE self,
-  VALUE name)
-{
-  if(T_STRING != rb_type(name))
-    rb_raise(rb_eArgError, "Unexpected value-type `%s'",
-      rb_obj_classname(name));
-
-  rb_iv_set(self, "@id",   Qnil);
-  rb_iv_set(self, "@name", name);
-
-  subSubtlextConnect(NULL); ///< Implicit open connection
-
-  return self;
-} /* }}} */
-
-/* subTagFind {{{ */
+/* subTagSingFind {{{ */
 /*
  * call-seq: find(value) -> Subtlext::Tag or nil
  *           [value]     -> Subtlext::Tag or nil
@@ -72,7 +35,7 @@ subTagInit(VALUE self,
  */
 
 VALUE
-subTagFind(VALUE self,
+subTagSingFind(VALUE self,
   VALUE value)
 {
   int id = 0;
@@ -86,9 +49,9 @@ subTagFind(VALUE self,
       value, buf, sizeof(buf), NULL)))
     {
       if(CHAR2SYM("visible") == parsed)
-        return subTagVisible(Qnil);
+        return subTagSingVisible(Qnil);
       else if(CHAR2SYM("all") == parsed)
-        return subTagAll(Qnil);
+        return subTagSingAll(Qnil);
     }
 
   /* Find tag */
@@ -103,7 +66,7 @@ subTagFind(VALUE self,
   return tag;
 } /* }}} */
 
-/* subTagVisible {{{ */
+/* subTagSingVisible {{{ */
 /*
  * call-seq: visible -> Array
  *
@@ -117,7 +80,7 @@ subTagFind(VALUE self,
  */
 
 VALUE
-subTagVisible(VALUE self)
+subTagSingVisible(VALUE self)
 {
   int i, size = 0;
   char **tags = NULL;
@@ -157,7 +120,7 @@ subTagVisible(VALUE self)
   return array;
 } /* }}} */
 
-/* subTagAll {{{ */
+/* subTagSingAll {{{ */
 /*
  * call-seq: all -> Array
  *
@@ -171,7 +134,7 @@ subTagVisible(VALUE self)
  */
 
 VALUE
-subTagAll(VALUE self)
+subTagSingAll(VALUE self)
 {
   int i, size = 0;
   char **tags = NULL;
@@ -201,6 +164,47 @@ subTagAll(VALUE self)
     }
 
   return array;
+} /* }}} */
+
+/* Class */
+
+/* subTagInstantiate {{{ */
+VALUE
+subTagInstantiate(char *name)
+{
+  VALUE klass = Qnil, tag = Qnil;
+
+  /* Create new instance */
+  klass = rb_const_get(mod, rb_intern("Tag"));
+  tag   = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(name));
+
+  return tag;
+} /* }}} */
+
+/* subTagInit {{{ */
+/*
+ * call-seq: new(name) -> Subtlext::Tag
+ *
+ * Create new Tag object
+ *
+ *  tag = Subtlext::Tag.new("subtle")
+ *  => #<Subtlext::Tag:xxx>
+ */
+
+VALUE
+subTagInit(VALUE self,
+  VALUE name)
+{
+  if(T_STRING != rb_type(name))
+    rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+      rb_obj_classname(name));
+
+  rb_iv_set(self, "@id",   Qnil);
+  rb_iv_set(self, "@name", name);
+
+  subSubtlextConnect(NULL); ///< Implicit open connection
+
+  return self;
 } /* }}} */
 
 /* subTagUpdate {{{ */

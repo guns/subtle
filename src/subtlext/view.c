@@ -103,47 +103,9 @@ ViewSelect(VALUE self,
   return ret;
 } /* }}} */
 
-/* subViewInstantiate {{{ */
-VALUE
-subViewInstantiate(char *name)
-{
-  VALUE klass = Qnil, view = Qnil;
+/* Singleton */
 
-  /* Create new instance */
-  klass = rb_const_get(mod, rb_intern("View"));
-  view  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(name));
-
-  return view;
-} /* }}} */
-
-/* subViewInit {{{ */
-/*
- * call-seq: new(name) -> Subtlext::View
- *
- * Create a new View object
- *
- *  view = Subtlext::View.new("subtle")
- *  => #<Subtlext::View:xxx>
- */
-
-VALUE
-subViewInit(VALUE self,
-  VALUE name)
-{
-  if(T_STRING != rb_type(name))
-    rb_raise(rb_eArgError, "Unexpected value-type `%s'",
-      rb_obj_classname(name));
-
-  rb_iv_set(self, "@id",   Qnil);
-  rb_iv_set(self, "@win",  Qnil);
-  rb_iv_set(self, "@name", name);
-
-  subSubtlextConnect(NULL); ///< Implicit open connection
-
-  return self;
-} /* }}} */
-
-/* subViewFind {{{ */
+/* subViewSingFind {{{ */
 /*
  * call-seq: find(value) -> Subtlext::Client or nil
  *           [value]     -> Subtlext::Client or nil
@@ -165,7 +127,7 @@ subViewInit(VALUE self,
  */
 
 VALUE
-subViewFind(VALUE self,
+subViewSingFind(VALUE self,
   VALUE value)
 {
   int id = 0;
@@ -180,11 +142,11 @@ subViewFind(VALUE self,
       value, buf, sizeof(buf), NULL)))
     {
       if(CHAR2SYM("visible") == parsed)
-        return subViewVisible(Qnil);
+        return subViewSingVisible(Qnil);
       else if(CHAR2SYM("all") == parsed)
-        return subViewAll(Qnil);
+        return subViewSingAll(Qnil);
       else if(CHAR2SYM("current") == parsed)
-        return subViewCurrent(Qnil);
+        return subViewSingCurrent(Qnil);
     }
 
   /* Find view */
@@ -202,7 +164,7 @@ subViewFind(VALUE self,
   return view;
 } /* }}} */
 
-/* subViewCurrent {{{ */
+/* subViewSingCurrent {{{ */
 /*
  * call-seq: current -> Subtlext::View
  *
@@ -213,7 +175,7 @@ subViewFind(VALUE self,
  */
 
 VALUE
-subViewCurrent(VALUE self)
+subViewSingCurrent(VALUE self)
 {
   int size = 0;
   char **names = NULL;
@@ -245,7 +207,7 @@ subViewCurrent(VALUE self)
   return view;
 } /* }}} */
 
-/* subViewVisible {{{ */
+/* subViewSingVisible {{{ */
 /*
  * call-seq: visible -> Array
  *
@@ -259,7 +221,7 @@ subViewCurrent(VALUE self)
  */
 
 VALUE
-subViewVisible(VALUE self)
+subViewSingVisible(VALUE self)
 {
   int i, size = 0;
   char **names = NULL;
@@ -304,7 +266,7 @@ subViewVisible(VALUE self)
   return array;
 } /* }}} */
 
-/* subViewAll {{{ */
+/* subViewSingAll {{{ */
 /*
  * call-seq: all -> Array
  *
@@ -318,7 +280,7 @@ subViewVisible(VALUE self)
  */
 
 VALUE
-subViewAll(VALUE self)
+subViewSingAll(VALUE self)
 {
   int i, size = 0;
   char **names = NULL;
@@ -352,6 +314,48 @@ subViewAll(VALUE self)
     }
 
   return array;
+} /* }}} */
+
+/* Class */
+
+/* subViewInstantiate {{{ */
+VALUE
+subViewInstantiate(char *name)
+{
+  VALUE klass = Qnil, view = Qnil;
+
+  /* Create new instance */
+  klass = rb_const_get(mod, rb_intern("View"));
+  view  = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(name));
+
+  return view;
+} /* }}} */
+
+/* subViewInit {{{ */
+/*
+ * call-seq: new(name) -> Subtlext::View
+ *
+ * Create a new View object
+ *
+ *  view = Subtlext::View.new("subtle")
+ *  => #<Subtlext::View:xxx>
+ */
+
+VALUE
+subViewInit(VALUE self,
+  VALUE name)
+{
+  if(T_STRING != rb_type(name))
+    rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+      rb_obj_classname(name));
+
+  rb_iv_set(self, "@id",   Qnil);
+  rb_iv_set(self, "@win",  Qnil);
+  rb_iv_set(self, "@name", name);
+
+  subSubtlextConnect(NULL); ///< Implicit open connection
+
+  return self;
 } /* }}} */
 
 /* subViewUpdate {{{ */

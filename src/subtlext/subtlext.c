@@ -94,7 +94,7 @@ SubtlextTag(VALUE self,
   /* Check instance type */
   if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("Tag"))))
     tag = value;
-  else tag = subTagFind(Qnil, value);
+  else tag = subTagSingFind(Qnil, value);
 
   /* Find tag */
   if(RTEST(tag))
@@ -222,7 +222,7 @@ SubtlextTagAsk(VALUE self,
   VALUE tag = Qnil, ret = Qfalse;
 
   /* Find tag */
-  if(Qnil != (tag = subTagFind(Qnil, value)))
+  if(Qnil != (tag = subTagSingFind(Qnil, value)))
     {
       int id = 0;
       Window win = 0;
@@ -659,7 +659,7 @@ subSubtlextConnect(char *display_string)
       if(!setlocale(LC_CTYPE, "")) XSupportsLocale();
 
       /* Check if subtle is running */
-      if(Qtrue != subSubtleRunningAsk(Qnil))
+      if(Qtrue != subSubtleSingRunningAsk(Qnil))
         {
           XCloseDisplay(display);
           display = NULL;
@@ -887,7 +887,7 @@ subSubtlextFindWindow(char *prop,
 
       /* Select window */
       if(0 == strcmp(match, "#") && win)
-        selwin = subSubtleSelect(Qnil);
+        selwin = subSubtleSingSelect(Qnil);
 
       /* Find id of gravity */
       if(flags & SUB_MATCH_GRAVITY)
@@ -1139,10 +1139,10 @@ Init_subtlext(void)
   rb_define_attr(client, "hidden",   1, 0);
 
   /* Singleton methods */
-  rb_define_singleton_method(client, "find",    subClientFind,    1);
-  rb_define_singleton_method(client, "current", subClientCurrent, 0);
-  rb_define_singleton_method(client, "visible", subClientVisible, 0);
-  rb_define_singleton_method(client, "all",     subClientAll,     0);
+  rb_define_singleton_method(client, "find",    subClientSingFind,    1);
+  rb_define_singleton_method(client, "current", subClientSingCurrent, 0);
+  rb_define_singleton_method(client, "visible", subClientSingVisible, 0);
+  rb_define_singleton_method(client, "all",     subClientSingAll,     0);
 
   /* General methods */
   rb_define_method(client, "tags",        SubtlextTagList,     0);
@@ -1278,8 +1278,8 @@ Init_subtlext(void)
   rb_define_attr(gravity, "geometry", 0, 0);
 
   /* Singleton methods */
-  rb_define_singleton_method(gravity, "find", subGravityFind, 1);
-  rb_define_singleton_method(gravity, "all",  subGravityAll,  0);
+  rb_define_singleton_method(gravity, "find", subGravitySingFind, 1);
+  rb_define_singleton_method(gravity, "all",  subGravitySingAll,  0);
 
   /* General methods */
   rb_define_method(gravity, "==", SubtlextEqualId, 1);
@@ -1311,7 +1311,7 @@ Init_subtlext(void)
   icon = rb_define_class_under(mod, "Icon", rb_cObject);
 
   /* Icon width */
-  rb_define_attr(icon, "width", 1, 0);
+  rb_define_attr(icon, "width",  1, 0);
 
   /* Icon height */
   rb_define_attr(icon, "height", 1, 0);
@@ -1346,12 +1346,12 @@ Init_subtlext(void)
   rb_define_attr(screen, "geometry", 1, 0);
 
   /* Singleton methods */
-  rb_define_singleton_method(screen, "find",    subScreenFind,    1);
-  rb_define_singleton_method(screen, "current", subScreenCurrent, 0);
-  rb_define_singleton_method(screen, "all",     subScreenAll,     0);
+  rb_define_singleton_method(screen, "find",    subScreenSingFind,    1);
+  rb_define_singleton_method(screen, "current", subScreenSingCurrent, 0);
+  rb_define_singleton_method(screen, "all",     subScreenSingAll,     0);
 
   /* General methods */
-  rb_define_method(screen, "==", SubtlextEqualId, 1);
+  //rb_define_method(screen, "==", SubtlextEqualId, 1);
 
   /* Class methods */
   rb_define_method(screen, "initialize", subScreenInit,       1);
@@ -1375,15 +1375,15 @@ Init_subtlext(void)
   subtle = rb_define_module_under(mod, "Subtle");
 
   /* Singleton methods */
-  rb_define_singleton_method(subtle, "display",       subSubtleDisplayReader, 0);
-  rb_define_singleton_method(subtle, "display=",      subSubtleDisplayWriter, 1);
-  rb_define_singleton_method(subtle, "select_window", subSubtleSelect,        0);
-  rb_define_singleton_method(subtle, "running?",      subSubtleRunningAsk,    0);
-  rb_define_singleton_method(subtle, "reload",        subSubtleReload,        0);
-  rb_define_singleton_method(subtle, "restart",       subSubtleRestart,       0);
-  rb_define_singleton_method(subtle, "quit",          subSubtleQuit,          0);
-  rb_define_singleton_method(subtle, "colors",        subSubtleColors,        0);
-  rb_define_singleton_method(subtle, "spawn",         subSubtleSpawn,         1);
+  rb_define_singleton_method(subtle, "display",       subSubtleSingDisplayReader, 0);
+  rb_define_singleton_method(subtle, "display=",      subSubtleSingDisplayWriter, 1);
+  rb_define_singleton_method(subtle, "select_window", subSubtleSingSelect,        0);
+  rb_define_singleton_method(subtle, "running?",      subSubtleSingRunningAsk,    0);
+  rb_define_singleton_method(subtle, "reload",        subSubtleSingReload,        0);
+  rb_define_singleton_method(subtle, "restart",       subSubtleSingRestart,       0);
+  rb_define_singleton_method(subtle, "quit",          subSubtleSingQuit,          0);
+  rb_define_singleton_method(subtle, "colors",        subSubtleSingColors,        0);
+  rb_define_singleton_method(subtle, "spawn",         subSubtleSingSpawn,         1);
 
   /* Aliases */
   rb_define_alias(rb_singleton_class(subtle), "reload_config", "reload");
@@ -1397,14 +1397,14 @@ Init_subtlext(void)
   sublet = rb_define_class_under(mod, "Sublet", rb_cObject);
 
   /* Sublet id */
-  rb_define_attr(screen, "id",       1, 0);
+  rb_define_attr(screen, "id",   1, 0);
 
   /* Name of the sublet */
   rb_define_attr(sublet, "name", 1, 0);
 
   /* Singleton methods */
-  rb_define_singleton_method(sublet, "find", subSubletFind, 1);
-  rb_define_singleton_method(sublet, "all",  subSubletAll,  0);
+  rb_define_singleton_method(sublet, "find", subSubletSingFind, 1);
+  rb_define_singleton_method(sublet, "all",  subSubletSingAll,  0);
 
   /* General methods */
   rb_define_method(sublet, "==", SubtlextEqualId, 1);
@@ -1441,9 +1441,9 @@ Init_subtlext(void)
   rb_define_attr(tag,   "name", 1, 0);
 
   /* Singleton methods */
-  rb_define_singleton_method(tag, "find",    subTagFind,    1);
-  rb_define_singleton_method(tag, "visible", subTagVisible, 0);
-  rb_define_singleton_method(tag, "all",     subTagAll,     0);
+  rb_define_singleton_method(tag, "find",    subTagSingFind,    1);
+  rb_define_singleton_method(tag, "visible", subTagSingVisible, 0);
+  rb_define_singleton_method(tag, "all",     subTagSingAll,     0);
 
   /* General methods */
   rb_define_method(tag, "==", SubtlextEqualId, 1);
@@ -1487,8 +1487,8 @@ Init_subtlext(void)
   rb_define_attr(tag,  "name",  1, 0);
 
   /* Singleton methods */
-  rb_define_singleton_method(tray, "find", subTrayFind, 1);
-  rb_define_singleton_method(tray, "all",  subTrayAll,  0);
+  rb_define_singleton_method(tray, "find", subTraySingFind, 1);
+  rb_define_singleton_method(tray, "all",  subTraySingAll,  0);
 
   /* General methods */
   rb_define_method(tray, "send_button", SubtlextSendButton, -1);
@@ -1531,10 +1531,10 @@ Init_subtlext(void)
   rb_define_attr(view, "name", 1, 0);
 
   /* Singleton methods */
-  rb_define_singleton_method(view, "find",    subViewFind,    1);
-  rb_define_singleton_method(view, "current", subViewCurrent, 0);
-  rb_define_singleton_method(view, "visible", subViewVisible, 0);
-  rb_define_singleton_method(view, "all",     subViewAll,     0);
+  rb_define_singleton_method(view, "find",    subViewSingFind,    1);
+  rb_define_singleton_method(view, "current", subViewSingCurrent, 0);
+  rb_define_singleton_method(view, "visible", subViewSingVisible, 0);
+  rb_define_singleton_method(view, "all",     subViewSingAll,     0);
 
   /* General methods */
   rb_define_method(view, "tags",     SubtlextTagList,     0);
@@ -1575,21 +1575,23 @@ Init_subtlext(void)
   window = rb_define_class_under(mod, "Window", rb_cObject);
 
   /* Window id */
-  rb_define_attr(window, "win", 1, 0);
+  rb_define_attr(window, "win",    1, 0);
 
   /* Window visibility */
-  rb_define_attr(window, "hidden",   1, 0);
+  rb_define_attr(window, "hidden", 1, 0);
 
   /* Allocate */
   rb_define_alloc_func(window, subWindowAlloc);
 
   /* Singleton methods */
-  rb_define_singleton_method(window, "once", subWindowOnce, 1);
+  rb_define_singleton_method(window, "once", subWindowSingOnce, 1);
 
   /* General methods */
   rb_define_method(window, "send_button", SubtlextSendButton, -1);
   rb_define_method(window, "send_key",    SubtlextSendKey,    -1);
   rb_define_method(window, "focus",       SubtlextFocus,       0);
+  rb_define_method(window, "[]",          SubtlextPropReader,  1);
+  rb_define_method(window, "[]=",         SubtlextPropWriter,  2);
   rb_define_method(window, "==",          SubtlextEqualWindow, 1);
 
   /* Class methods */

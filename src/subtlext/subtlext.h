@@ -43,12 +43,15 @@ extern int debug;
 /* }}} */
 
 /* client.c {{{ */
+/* Singleton */
+VALUE subClientSingFind(VALUE self, VALUE value);                 ///< Find client
+VALUE subClientSingCurrent(VALUE self);                           ///< Get current client
+VALUE subClientSingVisible(VALUE self);                           ///< Get all visible clients
+VALUE subClientSingAll(VALUE self);                               ///< Get all clients
+
+/* Class */
 VALUE subClientInstantiate(Window win);                           ///< Instantiate client
 VALUE subClientInit(VALUE self, VALUE win);                       ///< Create client
-VALUE subClientFind(VALUE self, VALUE value);                     ///< Find client
-VALUE subClientCurrent(VALUE self);                               ///< Get current client
-VALUE subClientVisible(VALUE self);                               ///< Get all visible clients
-VALUE subClientAll(VALUE self);                                   ///< Get all clients
 VALUE subClientUpdate(VALUE self);                                ///< Update client
 VALUE subClientViewList(VALUE self);                              ///< Get views clients is on
 VALUE subClientStateFullAsk(VALUE self);                          ///< Is client fullscreen
@@ -103,10 +106,14 @@ VALUE subGeometryEqual(VALUE self, VALUE other);                  ///< Whether o
 /* gravity.c {{{ */
 int subGravityFindId(char *match, char **name,
   XRectangle *geometry);                                          ///< Find gravity id
+
+/* Singleton */
+VALUE subGravitySingFind(VALUE self, VALUE value);                ///< Find gravity
+VALUE subGravitySingAll(VALUE self);                              ///< Get all gravities
+
+/* Class */
 VALUE subGravityInstantiate(char *name);                          ///< Instantiate gravity
 VALUE subGravityInit(int argc, VALUE *argv, VALUE self);          ///< Create new gravity
-VALUE subGravityFind(VALUE self, VALUE value);                    ///< Find gravity
-VALUE subGravityAll(VALUE self);                                  ///< Get all gravities
 VALUE subGravityUpdate(VALUE self);                               ///< Update gravity
 VALUE subGravityClients(VALUE self);                              ///< List clients with gravity
 VALUE subGravityGeometryReader(VALUE self);                       ///< Get geometry gravity
@@ -129,21 +136,27 @@ VALUE subIconOperatorMult(VALUE self, VALUE value);               ///< Concat st
 /* }}} */
 
 /* screen.c {{{ */
+/* Singleton */
+VALUE subScreenSingFind(VALUE self, VALUE id);                    ///< Find screen
+VALUE subScreenSingAll(VALUE self);                               ///< Get all screens
+VALUE subScreenSingCurrent(VALUE self);                           ///< Get current screen
+
+/* Class */
 VALUE subScreenInstantiate(int id);                               ///< Instantiate screen
 VALUE subScreenInit(VALUE self, VALUE id);                        ///< Create new screen
-VALUE subScreenFind(VALUE self, VALUE id);                        ///< Find screen
-VALUE subScreenAll(VALUE self);                                   ///< Get all screens
-VALUE subScreenCurrent(VALUE self);                               ///< Get current screen
 VALUE subScreenUpdate(VALUE self);                                ///< Update screen
 VALUE subScreenClientList(VALUE self);                            ///< Get client list of screen
 VALUE subScreenToString(VALUE self);                              ///< Screen to string
 /* }}} */
 
 /* sublet.c {{{ */
+/* Singleton */
+VALUE subSubletSingFind(VALUE self, VALUE value);                 ///< Find sublet
+VALUE subSubletSingAll(VALUE self);                               ///< Get all sublets
+
+/* Class */
 VALUE subSubletInstantiate(char *name);                           ///< Instantiate sublet
 VALUE subSubletInit(VALUE self, VALUE name);                      ///< Create sublet
-VALUE subSubletFind(VALUE self, VALUE value);                     ///< Find sublet
-VALUE subSubletAll(VALUE self);                                   ///< Get all sublets
 VALUE subSubletUpdate(VALUE self);                                ///< Update sublet
 VALUE subSubletDataReader(VALUE self);                            ///< Get sublet data
 VALUE subSubletDataWriter(VALUE self, VALUE value);               ///< Set sublet data
@@ -155,15 +168,16 @@ VALUE subSubletKill(VALUE self);                                  ///< Kill subl
 /* }}} */
 
 /* subtle.c {{{ */
-VALUE subSubtleDisplayReader(VALUE self);                         ///< Get display
-VALUE subSubtleDisplayWriter(VALUE self, VALUE display);          ///< Set display
-VALUE subSubtleRunningAsk(VALUE self);                            ///< Is subtle running
-VALUE subSubtleSelect(VALUE self);                                ///< Select window
-VALUE subSubtleReload(VALUE self);                                ///< Reload config and sublets
-VALUE subSubtleRestart(VALUE self);                               ///< Restart subtle
-VALUE subSubtleQuit(VALUE self);                                  ///< Quit subtle
-VALUE subSubtleColors(VALUE self);                                ///< Get colors
-VALUE subSubtleSpawn(VALUE self, VALUE cmd);                      ///< Spawn command
+/* Singleton */
+VALUE subSubtleSingDisplayReader(VALUE self);                     ///< Get display
+VALUE subSubtleSingDisplayWriter(VALUE self, VALUE display);      ///< Set display
+VALUE subSubtleSingRunningAsk(VALUE self);                        ///< Is subtle running
+VALUE subSubtleSingSelect(VALUE self);                            ///< Select window
+VALUE subSubtleSingReload(VALUE self);                            ///< Reload config and sublets
+VALUE subSubtleSingRestart(VALUE self);                           ///< Restart subtle
+VALUE subSubtleSingQuit(VALUE self);                              ///< Quit subtle
+VALUE subSubtleSingColors(VALUE self);                            ///< Get colors
+VALUE subSubtleSingSpawn(VALUE self, VALUE cmd);                  ///< Spawn command
 /* }}} */
 
 /* subtlext.c {{{ */
@@ -181,11 +195,14 @@ Window *subSubtlextWMCheck(void);                                 ///< Get WM ch
 /* }}} */
 
 /* tag.c {{{ */
+/* Singleton */
+VALUE subTagSingFind(VALUE self, VALUE value);                    ///< Find tag
+VALUE subTagSingVisible(VALUE self);                              ///< Get all visible tags
+VALUE subTagSingAll(VALUE self);                                  ///< Get all tags
+
+/* Class */
 VALUE subTagInstantiate(char *name);                              ///< Instantiate tag
 VALUE subTagInit(VALUE self, VALUE name);                         ///< Create tag
-VALUE subTagFind(VALUE self, VALUE value);                        ///< Find tag
-VALUE subTagVisible(VALUE self);                                  ///< Get all visible tags
-VALUE subTagAll(VALUE self);                                      ///< Get all tags
 VALUE subTagUpdate(VALUE self);                                   ///< Update tag
 VALUE subTagClients(VALUE self);                                  ///< Get clients with tag
 VALUE subTagViews(VALUE self);                                    ///< Get views with tag
@@ -194,22 +211,28 @@ VALUE subTagKill(VALUE self);                                     ///< Kill tag
 /* }}} */
 
 /* tray.c {{{ */
+/* Singleton */
+VALUE subTraySingFind(VALUE self, VALUE name);                    ///< Find tray
+VALUE subTraySingAll(VALUE self);                                 ///< Get all trays
+
+/* Class */
 VALUE subTrayInstantiate(Window win);                             ///< Instantiate tray
 VALUE subTrayInit(VALUE self, VALUE win);                         ///< Create tray
-VALUE subTrayFind(VALUE self, VALUE name);                        ///< Find tray
-VALUE subTrayAll(VALUE self);                                     ///< Get all trays
 VALUE subTrayUpdate(VALUE self);                                  ///< Update tray
 VALUE subTrayToString(VALUE self);                                ///< Tray to string
 VALUE subTrayKill(VALUE self);                                    ///< Kill tray
 /* }}} */
 
 /* view.c {{{ */
+/* Singleton */
+VALUE subViewSingFind(VALUE self, VALUE name);                    ///< Find view
+VALUE subViewSingCurrent(VALUE self);                             ///< Get current view
+VALUE subViewSingVisible(VALUE self);                             ///< Get all visible views
+VALUE subViewSingAll(VALUE self);                                 ///< Get all views
+
+/* Class */
 VALUE subViewInstantiate(char *name);                             ///< Instantiate view
 VALUE subViewInit(VALUE self, VALUE name);                        ///< Create view
-VALUE subViewFind(VALUE self, VALUE name);                        ///< Find view
-VALUE subViewCurrent(VALUE self);                                 ///< Get current view
-VALUE subViewVisible(VALUE self);                                 ///< Get all visible views
-VALUE subViewAll(VALUE self);                                     ///< Get all views
 VALUE subViewUpdate(VALUE self);                                  ///< Update view
 VALUE subViewClients(VALUE self);                                 ///< Get clients of view
 VALUE subViewJump(VALUE self);                                    ///< Jump to view
@@ -221,6 +244,10 @@ VALUE subViewKill(VALUE self);                                    ///< Kill view
 /* }}} */
 
 /* window.c {{{ */
+/* Singleton */
+VALUE subWindowSingOnce(VALUE self, VALUE geometry);              ///< Run window once
+
+/* Class */
 VALUE subWindowInstantiate(VALUE geometry);                       ///< Instantiate window
 VALUE subWindowDispatcher(int argc, VALUE *argv, VALUE self);     ///< Window dispatcher
 VALUE subWindowAlloc(VALUE self);                                 ///< Allocate window
@@ -239,7 +266,6 @@ VALUE subWindowClear(int argc, VALUE *argv, VALUE self);          ///< Clear are
 VALUE subWindowRedraw(VALUE self);                                ///< Redraw window
 VALUE subWindowCompletion(VALUE self);                            ///< Add completion proc
 VALUE subWindowInput(VALUE self);                                 ///< Add input proc
-VALUE subWindowOnce(VALUE self, VALUE geometry);                  ///< Run window once
 VALUE subWindowShow(VALUE self);                                  ///< Show window
 VALUE subWindowHide(VALUE self);                                  ///< Hide window
 VALUE subWindowHiddenAsk(VALUE self);                             ///< Whether window is hidden

@@ -11,6 +11,114 @@
 
 #include "subtlext.h"
 
+/* Singleton */
+
+/* subTraySingFind {{{ */
+/*
+ * call-seq: find(value) -> Subtlext::Client or nil
+ *           [value]     -> Subtlext::Client or nil
+ *
+ * Find Client by a given value which can be of following type:
+ *
+ * [fixnum] Array id
+ * [string] Match against WM_NAME or WM_CLASS
+ * [hash]   With one of following keys: :title, :name, :class, :gravity
+ * [symbol] Either :current for current Client or :all for an array
+ *
+ *  Subtlext::Tray.find("subtle")
+ *  => #<Subtlext::Tray:xxx>
+ *
+ *  Subtlext::Tray[1]
+ *  => #<Subtlext::Tray:xxx>
+ *
+ *  Subtlext::Tray["subtle"]
+ *  => nil
+ */
+
+VALUE
+subTraySingFind(VALUE self,
+  VALUE value)
+{
+  int id = 0, flags = 0;
+  Window win = None;
+  VALUE parsed = Qnil, tray = Qnil;
+  char *name = NULL, buf[50] = { 0 };
+
+  subSubtlextConnect(NULL); ///< Implicit open connection
+
+  /* Check object type */
+  if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
+      value, buf, sizeof(buf), &flags)))
+    {
+      if(CHAR2SYM("all") == parsed)
+        return subTraySingAll(Qnil);
+    }
+
+  /* Find tray */
+  if(-1 != (id = subSubtlextFindWindow("SUBTLE_TRAY_LIST",
+      buf, NULL, &win, flags)))
+    {
+      if(!NIL_P((tray = subTrayInstantiate(win))))
+        {
+          rb_iv_set(tray, "@id", INT2FIX(id));
+
+          subTrayUpdate(tray);
+        }
+
+      free(name);
+    }
+
+  return tray;
+} /* }}} */
+
+/* subTraySingAll {{{ */
+/*
+ * call-seq: all -> Array
+ *
+ * Get Array of all Tray
+ *
+ *  Subtlext::Tray.all
+ *  => [#<Subtlext::Tray:xxx>, #<Subtlext::Tray:xxx>]
+ *
+ *  Subtlext::Tray.all
+ *  => []
+ */
+
+VALUE
+subTraySingAll(VALUE self)
+{
+  int i, size = 0;
+  Window *trays = NULL;
+  VALUE meth = Qnil, klass = Qnil, array = Qnil;
+
+  subSubtlextConnect(NULL); ///< Implicit open connection
+
+  /* Fetch data */
+  meth  = rb_intern("new");
+  klass = rb_const_get(mod, rb_intern("Tray"));
+  trays = subSubtlextList("SUBTLE_TRAY_LIST", &size);
+  array = rb_ary_new2(size);
+
+  /* Populate array */
+  if(trays)
+    {
+      for(i = 0; i < size; i++)
+        {
+          VALUE t = rb_funcall(klass, meth, 1, LONG2NUM(trays[i]));
+
+          if(!NIL_P(t)) subTrayUpdate(t);
+
+          rb_ary_push(array, t);
+        }
+
+      free(trays);
+    }
+
+  return array;
+} /* }}} */
+
+/* Class */
+
 /* subTrayInstantiate {{{ */
 VALUE
 subTrayInstantiate(Window win)
@@ -51,110 +159,6 @@ subTrayInit(VALUE self,
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   return self;
-} /* }}} */
-
-/* subTrayFind {{{ */
-/*
- * call-seq: find(value) -> Subtlext::Client or nil
- *           [value]     -> Subtlext::Client or nil
- *
- * Find Client by a given value which can be of following type:
- *
- * [fixnum] Array id
- * [string] Match against WM_NAME or WM_CLASS
- * [hash]   With one of following keys: :title, :name, :class, :gravity
- * [symbol] Either :current for current Client or :all for an array
- *
- *  Subtlext::Tray.find("subtle")
- *  => #<Subtlext::Tray:xxx>
- *
- *  Subtlext::Tray[1]
- *  => #<Subtlext::Tray:xxx>
- *
- *  Subtlext::Tray["subtle"]
- *  => nil
- */
-
-VALUE
-subTrayFind(VALUE self,
-  VALUE value)
-{
-  int id = 0, flags = 0;
-  Window win = None;
-  VALUE parsed = Qnil, tray = Qnil;
-  char *name = NULL, buf[50] = { 0 };
-
-  subSubtlextConnect(NULL); ///< Implicit open connection
-
-  /* Check object type */
-  if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
-      value, buf, sizeof(buf), &flags)))
-    {
-      if(CHAR2SYM("all") == parsed)
-        return subTrayAll(Qnil);
-    }
-
-  /* Find tray */
-  if(-1 != (id = subSubtlextFindWindow("SUBTLE_TRAY_LIST",
-      buf, NULL, &win, flags)))
-    {
-      if(!NIL_P((tray = subTrayInstantiate(win))))
-        {
-          rb_iv_set(tray, "@id", INT2FIX(id));
-
-          subTrayUpdate(tray);
-        }
-
-      free(name);
-    }
-
-  return tray;
-} /* }}} */
-
-/* subTrayAll {{{ */
-/*
- * call-seq: all -> Array
- *
- * Get Array of all Tray
- *
- *  Subtlext::Tray.all
- *  => [#<Subtlext::Tray:xxx>, #<Subtlext::Tray:xxx>]
- *
- *  Subtlext::Tray.all
- *  => []
- */
-
-VALUE
-subTrayAll(VALUE self)
-{
-  int i, size = 0;
-  Window *trays = NULL;
-  VALUE meth = Qnil, klass = Qnil, array = Qnil;
-
-  subSubtlextConnect(NULL); ///< Implicit open connection
-
-  /* Fetch data */
-  meth  = rb_intern("new");
-  klass = rb_const_get(mod, rb_intern("Tray"));
-  trays = subSubtlextList("SUBTLE_TRAY_LIST", &size);
-  array = rb_ary_new2(size);
-
-  /* Populate array */
-  if(trays)
-    {
-      for(i = 0; i < size; i++)
-        {
-          VALUE t = rb_funcall(klass, meth, 1, LONG2NUM(trays[i]));
-
-          if(!NIL_P(t)) subTrayUpdate(t);
-
-          rb_ary_push(array, t);
-        }
-
-      free(trays);
-    }
-
-  return array;
 } /* }}} */
 
 /* subTrayUpdate {{{ */

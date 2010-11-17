@@ -25,7 +25,9 @@ SubtleSend(char *message)
   return Qnil;
 } /* }}} */
 
-/* subSubtleDisplayReader {{{ */
+/* Singleton */
+
+/* subSubtleSingDisplayReader {{{ */
 /*
  * call-seq: display -> String
  *
@@ -36,14 +38,14 @@ SubtleSend(char *message)
  */
 
 VALUE
-subSubtleDisplayReader(VALUE self)
+subSubtleSingDisplayReader(VALUE self)
 {
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   return rb_str_new2(DisplayString(display));
 } /* }}} */
 
-/* subSubtleDisplayWriter {{{ */
+/* subSubtleSingDisplayWriter {{{ */
 /*
  * call-seq: display=(string) -> nil
  *
@@ -54,7 +56,7 @@ subSubtleDisplayReader(VALUE self)
  */
 
 VALUE
-subSubtleDisplayWriter(VALUE self,
+subSubtleSingDisplayWriter(VALUE self,
   VALUE display_string)
 {
   /* Explicit open connection */
@@ -64,7 +66,7 @@ subSubtleDisplayWriter(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* subSubtleRunningAsk {{{ */
+/* subSubtleSingRunningAsk {{{ */
 /*
  * call-seq: running? -> true or false
  *
@@ -78,7 +80,7 @@ subSubtleDisplayWriter(VALUE self,
  */
 
 VALUE
-subSubtleRunningAsk(VALUE self)
+subSubtleSingRunningAsk(VALUE self)
 {
   char *prop = NULL;
   Window *check = NULL;
@@ -92,8 +94,9 @@ subSubtleRunningAsk(VALUE self)
       subSharedLogDebug("Support: win=%#lx\n", *check);
 
       /* Get property */
-      if((prop = subSharedPropertyGet(display, *check, XInternAtom(display, "UTF8_STRING", False),
-        XInternAtom(display, "_NET_WM_NAME", False), NULL)))
+      if((prop = subSharedPropertyGet(display, *check, XInternAtom(display,
+          "UTF8_STRING", False), XInternAtom(display, "_NET_WM_NAME", False),
+          NULL)))
         {
           if(!strncmp(prop, PKG_NAME, strlen(prop))) running = Qtrue;
           subSharedLogDebug("Running: wmname=%s\n", prop);
@@ -107,7 +110,7 @@ subSubtleRunningAsk(VALUE self)
   return running;
 } /* }}} */
 
-/* subSubtleSelect {{{ */
+/* subSubtleSingSelect {{{ */
 /*
  * call-seq: select_window -> String
  *
@@ -118,7 +121,7 @@ subSubtleRunningAsk(VALUE self)
  */
 
 VALUE
-subSubtleSelect(VALUE self)
+subSubtleSingSelect(VALUE self)
 {
   int i, format = 0, buttons = 0;
   unsigned int n;
@@ -194,7 +197,7 @@ subSubtleSelect(VALUE self)
   return None != win ? LONG2NUM(win) : Qnil;
 } /* }}} */
 
-/* subSubtleReload {{{ */
+/* subSubtleSingReload {{{ */
 /*
  * call-seq: reload -> nil
  *
@@ -205,12 +208,12 @@ subSubtleSelect(VALUE self)
  */
 
 VALUE
-subSubtleReload(VALUE self)
+subSubtleSingReload(VALUE self)
 {
   return SubtleSend("SUBTLE_RELOAD");
 } /* }}} */
 
-/* subSubtleRestart {{{ */
+/* subSubtleSingRestart {{{ */
 /*
  * call-seq: restart -> nil
  *
@@ -221,12 +224,12 @@ subSubtleReload(VALUE self)
  */
 
 VALUE
-subSubtleRestart(VALUE self)
+subSubtleSingRestart(VALUE self)
 {
   return SubtleSend("SUBTLE_RESTART");
 } /* }}} */
 
-/* subSubtleQuit {{{ */
+/* subSubtleSingQuit {{{ */
 /*
  * call-seq: quit -> nil
  *
@@ -237,12 +240,12 @@ subSubtleRestart(VALUE self)
  */
 
 VALUE
-subSubtleQuit(VALUE self)
+subSubtleSingQuit(VALUE self)
 {
   return SubtleSend("SUBTLE_QUIT");
 } /* }}} */
 
-/* subSubtleColors {{{ */
+/* subSubtleSingColors {{{ */
 /*
  * call-seq: colors -> Hash
  *
@@ -253,7 +256,7 @@ subSubtleQuit(VALUE self)
  */
 
 VALUE
-subSubtleColors(VALUE self)
+subSubtleSingColors(VALUE self)
 {
   long unsigned int i, size = 0;
   unsigned long *colors = NULL;
@@ -294,7 +297,7 @@ subSubtleColors(VALUE self)
   return hash;
 } /* }}} */
 
-/* subSubtleSpawn {{{ */
+/* subSubtleSingSpawn {{{ */
 /*
  * call-seq: spawn(cmd) -> Fixnum
  *
@@ -305,7 +308,7 @@ subSubtleColors(VALUE self)
  */
 
 VALUE
-subSubtleSpawn(VALUE self,
+subSubtleSingSpawn(VALUE self,
   VALUE cmd)
 {
   VALUE ret = Qnil;
