@@ -83,6 +83,8 @@ subEwmhInit(void)
     "SUBTLE_RELOAD", "SUBTLE_RESTART", "SUBTLE_QUIT", "SUBTLE_COLORS"
   };
 
+  assert(SUB_EWMH_TOTAL == LENGTH(names));
+
   /* Apply tray selection */
   len       = strlen(names[SUB_EWMH_NET_SYSTEM_TRAY_SELECTION]) + 5; ///< For high screen counts
   selection = (char *)subSharedMemoryAlloc(len, sizeof(char));
@@ -119,6 +121,8 @@ subEwmhInit(void)
   subTraySelect(); ///< Finally select
 
   free(selection);
+
+  subSharedLogDebug("init=ewmh\n");
 } /* }}} */
 
  /** subEwmhGet {{{
@@ -348,7 +352,8 @@ subEwmhMessage(Window dst,
 void
 subEwmhFinish(void)
 {
-  if(subtle->flags & SUB_SUBTLE_EWMH) ///< Delete properties only on real shutdown
+  /* Delete root properties on real shutdown */
+  if(subtle->flags & SUB_SUBTLE_EWMH)
     {
       /* EWMH properties */
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_SUPPORTED));
@@ -366,13 +371,19 @@ subEwmhFinish(void)
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_CLIENT_LIST_STACKING));
 
       /* subtle extension */
+      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_GRAVITY_LIST));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_TAG_LIST));
+      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_TAG_LIST));
+      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_COLORS));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_SUBLET_LIST));
+      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_SUBLET_WINDOWS));
+      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_VISIBLE_VIEWS));
+      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_VISIBLE_TAGS));
 
       subTrayDeselect();
     }
 
-  subSharedLogDebug("kill=ewmh\n");
+  subSharedLogDebug("finish=ewmh\n");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
