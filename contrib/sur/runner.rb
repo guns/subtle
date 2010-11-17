@@ -275,7 +275,7 @@ module Subtle # {{{
                  "  yank [-v VERSION]                       Delete sublet from server\n"
         end
 
-        puts "\nPlease report bugs to <unexist@dorfelite.net>\n"
+        puts "\nPlease report bugs at http://subforge.org/projects/subtle/issues\n"
 
         exit
       end # }}}

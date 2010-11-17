@@ -79,7 +79,7 @@ SubtleUsage(void)
          "  -s, --sublets=DIR       Load sublets from DIR\n" \
          "  -v, --version           Show version info and exit\n" \
          "  -D, --debug             Print debugging messages\n" \
-         "Please report bugs to <%s>\n",
+         "Please report bugs at %s\n",
          PKG_NAME, PKG_BUGREPORT);
 } /* }}} */
 
@@ -328,9 +328,9 @@ main(int argc,
   /* Init */
   SubtleVersion();
   subDisplayInit(display);
+  subEwmhInit();
   subScreenInit();
   subRubyInit();
-  subEwmhInit();
   subGrabInit();
 
   /* Load */

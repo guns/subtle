@@ -416,7 +416,8 @@ EOF
     subtler -c -C -y 5           Set gravity 5 to current active client
     subtler -t -f term           Show every client/view tagged with 'term'
 
-  Please report bugs to <unexist@dorfelite.net>
+  Please report bugs at http://subforge.org/projects/subtle/issues
+
 EOF
       end # }}}
 
