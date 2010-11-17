@@ -180,18 +180,20 @@ subDisplayInit(const char *display)
   /* Check extensions */
 #ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
   if(!XineramaQueryExtension(subtle->dpy, &event, &junk))
-    subtle->flags &= ~SUB_SUBTLE_XINERAMA;
 #endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
+    subtle->flags &= ~SUB_SUBTLE_XINERAMA;
 
 #ifdef HAVE_X11_EXTENSIONS_XRANDR_H
   if(!XRRQueryExtension(subtle->dpy, &event, &junk))
-    subtle->flags &= ~SUB_SUBTLE_XRANDR;
 #endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
+    subtle->flags &= ~SUB_SUBTLE_XRANDR;
 
   XSync(subtle->dpy, False);
 
   printf("Display (%s) is %dx%d\n", DisplayString(subtle->dpy),
     SCREENW, SCREENH);
+
+  subSharedLogDebug("init=display\n");
 } /* }}} */
 
  /** subDisplayConfigure {{{
@@ -298,7 +300,8 @@ subDisplayPublish(void)
 #define NCOLORS 21
 
   /* Create color array */
-  colors = (unsigned long *)subSharedMemoryAlloc(NCOLORS, sizeof(unsigned long));
+  colors = (unsigned long *)subSharedMemoryAlloc(NCOLORS,
+    sizeof(unsigned long));
 
   colors[0]  = subtle->colors.fg_focus;
   colors[1]  = subtle->colors.bg_focus;
@@ -364,7 +367,7 @@ subDisplayFinish(void)
       XCloseDisplay(subtle->dpy);
     }
 
-  subSharedLogDebug("kill=display\n");
+  subSharedLogDebug("finish=display\n");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

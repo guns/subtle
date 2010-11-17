@@ -242,7 +242,8 @@ subSharedPropertyGet(Display *disp,
   /* Check result */
   if(type != rtype)
     {
-      subSharedLogDebug("Property: prop=%ld, type=%ld, rtype=%ld'\n", prop, type, rtype);
+      subSharedLogDebug("Property: prop=%ld, type=%ld, rtype=%ld\n",
+        prop, type, rtype);
       XFree(data);
 
       return NULL;

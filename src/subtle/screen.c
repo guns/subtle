@@ -85,6 +85,8 @@ subScreenInit(void)
   printf("Runnning on %d screen(s)\n", subtle->screens->ndata);
 
   subScreenPublish();
+
+  subSharedLogDebug("init=screen\n");
 } /* }}} ^*/
 
  /** subScreenNew {{{
@@ -615,8 +617,12 @@ subScreenPublish(void)
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_DESKTOP_VIEWPORT, viewports,
     2 * subtle->screens->ndata);
 
+  XSync(subtle->dpy, False); ///< Sync all changes
+
   free(workareas);
   free(viewports);
+
+  subSharedLogDebug("publish=screen, screens=%d\n", subtle->screens->ndata);
 } /* }}} */
 
  /** SubScreenKill {{{

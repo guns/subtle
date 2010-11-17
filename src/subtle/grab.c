@@ -62,6 +62,8 @@ subGrabInit(void)
           numlockmask = modmasks[i / modmap->max_keypermod];
     }
   if(modmap) XFreeModifiermap(modmap);
+
+  subSharedLogDebug("init=grab\n");
 } /* }}} */
 
  /** subGrabNew {{{

@@ -2780,6 +2780,8 @@ subRubyInit(void)
   /* Bypassing garbage collection */
   shelter = rb_ary_new();
   rb_gc_register_address(&shelter);
+
+  subSharedLogDebug("init=ruby\n");
 } /* }}} */
 
  /** subRubyLoadConfig {{{
@@ -3238,7 +3240,7 @@ subRubyFinish(void)
 #endif /* HAVE_SYS_INOTIFY_H */
     }
 
-  subSharedLogDebug("kill=ruby\n");
+  subSharedLogDebug("finish=ruby\n");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
