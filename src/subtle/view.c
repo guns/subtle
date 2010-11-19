@@ -61,30 +61,6 @@ subViewNew(char *name,
   return v;
 } /* }}} */
 
- /** subViewHighlight {{{
-  * @brief Highlight views with urgent clients
-  * @param[in]  tags  Matching tags
-  **/
-
-void
-subViewHighlight(int tags)
-{
-  int i;
-
-  for(i = 0; i < subtle->views->ndata; i++)
-    {
-      SubView *v = VIEW(subtle->views->data[i]);
-
-      /* Enable/disable highlighting */
-      if(v->tags & tags)
-        v->flags |= SUB_VIEW_URGENT;
-      else
-        v->flags &= ~SUB_VIEW_URGENT;
-    }
-
-  subScreenRender();
-} /* }}} */
-
  /** subViewFocus {{{
   * @brief Restore view focus
   * @param[in]  v  A #SubView
