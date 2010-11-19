@@ -511,7 +511,7 @@ typedef struct subsubtle_t /* {{{ */
 
   int                  th, bw, pbw, step, snap, gap;              ///< Subtle properties
   int                  visible_tags, visible_views;
-  int                  visible_clients;                           ///< Subtle visible tags and views
+  int                  visible_clients, urgent_tags;              ///< Subtle visible tags and views
   unsigned long        gravity;                                   ///< Subtle gravity
 
   Display              *dpy;                                      ///< Subtle Xorg display
@@ -777,7 +777,6 @@ void subTrayKill(SubTray *t);                                     ///< Delete tr
 
 /* view.c {{{ */
 SubView *subViewNew(char *name, char *tags);                      ///< Create view
-void subViewHighlight(int tags);                                  ///< Highlight views
 void subViewFocus(SubView *v, int focus);                         ///< Restore view focus
 void subViewJump(SubView *v);                                     ///< Jump to view
 void subViewPublish(void);                                        ///< Publish views
