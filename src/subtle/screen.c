@@ -21,10 +21,39 @@ subScreenInit(void)
 {
   SubScreen *s = NULL;
 
-#if defined HAVE_X11_EXTENSIONS_XINERAMA_H || defined HAVE_X11_EXTENSIONS_XRANDR_H
+#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
+  /* Check both but prefer xrandr */
+  if(subtle->flags & SUB_SUBTLE_XRANDR)
+    {
+      XRRScreenResources *res = NULL;
+
+      if((res = XRRGetScreenResourcesCurrent(subtle->dpy, ROOT)))
+        {
+          int i;
+          XRRCrtcInfo *crtc = NULL;
+
+          /* Query screens */
+          for(i = 0; i < res->ncrtc; i++)
+            {
+              if((crtc = XRRGetCrtcInfo(subtle->dpy, res, res->crtcs[i])))
+                {
+                  /* Create new screen if crtc is enabled */
+                  if(None != crtc->mode && (s = subScreenNew(crtc->x,
+                      crtc->y, crtc->width, crtc->height)))
+                    subArrayPush(subtle->screens, (void *)s);
+
+                  XRRFreeCrtcInfo(crtc);
+                }
+            }
+
+          XRRFreeScreenResources(res);
+        }
+    }
+#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
 
 #ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
-  if(subtle->flags & SUB_SUBTLE_XINERAMA && XineramaIsActive(subtle->dpy))
+  if(subtle->flags & SUB_SUBTLE_XINERAMA && 0 == subtle->screens->ndata &&
+      XineramaIsActive(subtle->dpy))
     {
       int i, n = 0;
       XineramaScreenInfo *info = NULL;
@@ -32,46 +61,17 @@ subScreenInit(void)
       /* Query screens */
       if((info = XineramaQueryScreens(subtle->dpy, &n)))
         {
-#ifdef HAVE_X11_EXTENSIONS_XRANDR_H
-          XRRScreenResources *res = NULL;
-
-          res = XRRGetScreenResourcesCurrent(subtle->dpy, ROOT);
-
-          /* Check if we have xrandr and if it knows more screens */
-          if(subtle->flags & SUB_SUBTLE_XRANDR && res && res->ncrtc >= n)
+          for(i = 0; i < n; i++)
             {
-              XRRCrtcInfo *crtc = NULL;
-
-              for(i = 0; i < res->ncrtc; i++)
-                {
-                  if((crtc = XRRGetCrtcInfo(subtle->dpy, res, res->crtcs[i])))
-                    {
-                      /* Create new screen if crtc is enabled */
-                      if(None != crtc->mode && (s = subScreenNew(crtc->x,
-                          crtc->y, crtc->width, crtc->height)))
-                        subArrayPush(subtle->screens, (void *)s);
-
-                      XRRFreeCrtcInfo(crtc);
-                    }
-                }
-            }
-          else
-#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
-            {
-              for(i = 0; i < n; i++)
-                {
-                  /* Create new screen */
-                  if((s = subScreenNew(info[i].x_org, info[i].y_org,
-                      info[i].width, info[i].height)))
-                    subArrayPush(subtle->screens, (void *)s);
-                }
+              /* Create new screen */
+              if((s = subScreenNew(info[i].x_org, info[i].y_org,
+                  info[i].width, info[i].height)))
+                subArrayPush(subtle->screens, (void *)s);
             }
 
-          if(res) XRRFreeScreenResources(res);
           XFree(info);
         }
     }
-#endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
 #endif /* HAVE_X11_EXTENSIONS_XINERAMA_H */
 
   /* Create default screen */
