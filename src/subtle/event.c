@@ -918,7 +918,7 @@ EventProperty(XPropertyEvent *ev)
             subClientToggle(c, (~c->flags & flags), True);
 
             if(c->flags & (SUB_CLIENT_MODE_URGENT|SUB_CLIENT_MODE_URGENT_FOCUS))
-              subViewHighlight(c->tags);
+              subtle->urgent_tags |= c->tags;
           }
         break; /* }}} */
       case SUB_EWMH_NET_WM_STRUT: /* {{{ */
@@ -1267,8 +1267,7 @@ EventFocus(XFocusChangeEvent *ev)
       if(c->flags & SUB_CLIENT_MODE_URGENT_FOCUS)
         {
           c->flags &= ~(SUB_CLIENT_MODE_URGENT|SUB_CLIENT_MODE_URGENT_FOCUS);
-
-          subViewHighlight(0);
+          subtle->urgent_tags &= ~c->tags;
           subScreenConfigure();
         }
     }

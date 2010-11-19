@@ -138,7 +138,7 @@ subClientNew(Window win)
   subClientToggle(c, (~c->flags & flags), False); ///< Toggle flags
   if(c->flags & SUB_CLIENT_TYPE_DIALOG) subClientCenter(c);
   if(c->flags & (SUB_CLIENT_MODE_URGENT|SUB_CLIENT_MODE_URGENT_FOCUS))
-    subViewHighlight(c->tags);
+    subtle->urgent_tags |= c->tags;
 
   /* EWMH: Gravity, screen and desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&subtle->gravity, 1);
@@ -1212,7 +1212,7 @@ subClientKill(SubClient *c,
 
   /* Remove highlight of urgent client */
   if(c->flags & (SUB_CLIENT_MODE_URGENT|SUB_CLIENT_MODE_URGENT_FOCUS))
-    subViewHighlight(0); ///< Dehighlight
+    subtle->urgent_tags &= ~c->tags;
 
   /* Ignore further events and delete context */
   XSelectInput(subtle->dpy, c->win, NoEventMask);

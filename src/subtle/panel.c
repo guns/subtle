@@ -242,7 +242,7 @@ subPanelRender(SubPanel *p)
                 SubView *v = VIEW(subtle->views->data[i]);
 
                 /* Select color pair */
-                if(v->flags & SUB_VIEW_URGENT)
+                if(subtle->urgent_tags & v->tags)
                   {
                     fg = subtle->colors.fg_urgent;
                     bg = subtle->colors.bg_urgent;
