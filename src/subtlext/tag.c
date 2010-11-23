@@ -223,6 +223,7 @@ subTagUpdate(VALUE self)
   VALUE name = rb_iv_get(self, "@name");
 
   rb_check_frozen(self);
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Check object type */
   if(T_STRING == rb_type(name))
