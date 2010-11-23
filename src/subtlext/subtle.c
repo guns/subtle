@@ -316,7 +316,21 @@ subSubtleSingSpawn(VALUE self,
   /* Check object type */
   if(T_STRING == rb_type(cmd))
     {
-      ret = INT2FIX((int)subSharedSpawn(RSTRING_PTR(cmd)));
+      pid_t pid = 0;
+
+      if(0 < (pid = subSharedSpawn(RSTRING_PTR(cmd))))
+        {
+          int size = 0;
+          Window *clients = NULL;
+
+          clients = subSubtlextList("_NET_CLIENT_LIST", &size);
+
+          /* Create client */
+          ret = subClientInstantiate(size);
+          rb_iv_set(ret, "@pid", INT2FIX((int)pid));
+
+          free(clients);
+        }
     }
   else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
     rb_obj_classname(cmd));

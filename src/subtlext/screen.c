@@ -264,7 +264,7 @@ subScreenClientList(VALUE self)
           /* Check if screen matches */
           if(id == *screen)
             {
-              if(!NIL_P(client = rb_funcall(klass, meth, 1, LONG2NUM(clients[i]))))
+              if(!NIL_P(client = rb_funcall(klass, meth, 1, INT2FIX(i))))
                 {
                   subClientUpdate(client);
                   rb_ary_push(array, client);

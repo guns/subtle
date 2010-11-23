@@ -101,7 +101,7 @@ RubyConvert(void *data)
           /* Create client instance */
           id     = subArrayIndex(subtle->clients, (void *)c);
           klass  = rb_const_get(subtlext, rb_intern("Client"));
-          object = rb_funcall(klass, rb_intern("new"), 1, LONG2NUM(c->win));
+          object = rb_funcall(klass, rb_intern("new"), 1, INT2FIX(id));
 
           /* Translate flags */
           if(c->flags & SUB_CLIENT_MODE_FULL)  flags |= SUB_EWMH_FULL;
@@ -109,7 +109,7 @@ RubyConvert(void *data)
           if(c->flags & SUB_CLIENT_MODE_STICK) flags |= SUB_EWMH_STICK;
 
           /* Set properties */
-          rb_iv_set(object, "@id",       INT2FIX(id));
+          rb_iv_set(object, "@win",      LONG2NUM(c->win));
           rb_iv_set(object, "@name",     rb_str_new2(c->name));
           rb_iv_set(object, "@instance", rb_str_new2(c->instance));
           rb_iv_set(object, "@klass",    rb_str_new2(c->klass));

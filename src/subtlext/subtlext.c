@@ -1046,7 +1046,7 @@ subSubtlextAssoc(VALUE self,
           switch(type)
             {
               case SUB_TYPE_CLIENT:
-                object = rb_funcall(klass, method, 1, LONG2NUM(wins[i]));
+                object = rb_funcall(klass, method, 1, INT2FIX(i));
 
                 if(!NIL_P(object)) subClientUpdate(object); ///< Init client
                 break;
