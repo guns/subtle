@@ -50,7 +50,7 @@ VALUE subClientSingVisible(VALUE self);                           ///< Get all v
 VALUE subClientSingAll(VALUE self);                               ///< Get all clients
 
 /* Class */
-VALUE subClientInstantiate(Window win);                           ///< Instantiate client
+VALUE subClientInstantiate(int id);                               ///< Instantiate client
 VALUE subClientInit(VALUE self, VALUE win);                       ///< Create client
 VALUE subClientUpdate(VALUE self);                                ///< Update client
 VALUE subClientViewList(VALUE self);                              ///< Get views clients is on

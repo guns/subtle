@@ -49,8 +49,8 @@ VALUE
 ClientSelect(VALUE self,
   int type)
 {
-  int i, size = 0, match = (1L << 30), score = 0, *gravity1 = NULL;
-  Window win = None, *clients = NULL, *views = NULL, found = None;
+  int i, size = 0, match = (1L << 30), score = 0, found = 0, *gravity1 = NULL;
+  Window win = None, *clients = NULL, *views = NULL;
   VALUE client = Qnil;
   unsigned long *cv = NULL;
   XRectangle geometry1 = { 0 }, geometry2 = { 0 };
@@ -91,7 +91,7 @@ ClientSelect(VALUE self,
               if(match > (score = subSharedMatch(type, &geometry1, &geometry2)))
                 {
                   match = score;
-                  found = clients[i];
+                  found = i;
                 }
 
             }
@@ -190,12 +190,8 @@ subClientSingFind(VALUE self,
   if(-1 != (id = subSubtlextFindWindow("_NET_CLIENT_LIST",
       buf, NULL, &win, flags)))
     {
-      if(!NIL_P((client = subClientInstantiate(win))))
-        {
-          rb_iv_set(client, "@id", INT2FIX(id));
-
-          subClientUpdate(client);
-        }
+      if(!NIL_P((client = subClientInstantiate(id))))
+        subClientUpdate(client);
 
       free(name);
     }
@@ -279,7 +275,7 @@ subClientSingVisible(VALUE self)
 
           /* Create client on match */
           if(*tags && *visible & *tags && !NIL_P(client = rb_funcall(klass,
-              meth, 1, LONG2NUM(clients[i]))))
+              meth, 1, INT2FIX(i))))
             {
               subClientUpdate(client);
               rb_ary_push(array, client);
@@ -328,7 +324,7 @@ subClientSingAll(VALUE self)
     {
       for(i = 0; i < size; i++)
         {
-          if(!NIL_P(client = rb_funcall(klass, meth, 1, LONG2NUM(clients[i]))))
+          if(!NIL_P(client = rb_funcall(klass, meth, 1, INT2FIX(i))))
             {
               subClientUpdate(client);
               rb_ary_push(array, client);
@@ -345,13 +341,13 @@ subClientSingAll(VALUE self)
 
 /* subClientInstantiate {{{ */
 VALUE
-subClientInstantiate(Window win)
+subClientInstantiate(int id)
 {
   VALUE klass = Qnil, client = Qnil;
 
   /* Create new instance */
   klass  = rb_const_get(mod, rb_intern("Client"));
-  client = rb_funcall(klass, rb_intern("new"), 1, LONG2NUM(win));
+  client = rb_funcall(klass, rb_intern("new"), 1, INT2FIX(id));
 
   return client;
 } /* }}} */
@@ -362,20 +358,19 @@ subClientInstantiate(Window win)
  *
  * Create a new Client object
  *
- *  client = Subtlext::Client.new(123456789)
+ *  client = Subtlext::Client.new(1)
  *  => #<Subtlext::Client:xxx>
  */
 
 VALUE
 subClientInit(VALUE self,
-  VALUE win)
+  VALUE id)
 {
-  if(!FIXNUM_P(win) && T_BIGNUM != rb_type(win))
-    rb_raise(rb_eArgError, "Unexpected value-type `%s'",
-      rb_obj_classname(win));
+  if(!FIXNUM_P(id))
+    rb_raise(rb_eArgError, "Unexpected value-type `%s'", rb_obj_classname(id));
 
-  rb_iv_set(self, "@id",       Qnil);
-  rb_iv_set(self, "@win",      win);
+  rb_iv_set(self, "@id",       id);
+  rb_iv_set(self, "@win",      Qnil);
   rb_iv_set(self, "@name",     Qnil);
   rb_iv_set(self, "@instance", Qnil);
   rb_iv_set(self, "@klass",    Qnil);
@@ -404,34 +399,34 @@ subClientInit(VALUE self,
 VALUE
 subClientUpdate(VALUE self)
 {
-  VALUE win = rb_iv_get(self, "@win");
+  VALUE id = rb_iv_get(self, "@id");
 
   rb_check_frozen(self);
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Check object type */
-  if(T_FIXNUM == rb_type(win) || T_BIGNUM == rb_type(win))
+  if(T_FIXNUM == rb_type(id))
     {
-      int id = 0;
+      Window win = None;
       char buf[20] = { 0 };
 
-      snprintf(buf, sizeof(buf), "%#lx", NUM2LONG(win));
+      snprintf(buf, sizeof(buf), "%d", FIX2INT(id));
       if(-1 != (id = subSubtlextFindWindow("_NET_CLIENT_LIST", buf,
-          NULL, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS))))
+          NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS))))
         {
           int *flags = NULL;
           char *wmname = NULL, *wminstance = NULL, *wmclass = NULL, *role = NULL;
 
-          subSharedPropertyClass(display, NUM2LONG(win), &wminstance, &wmclass);
-          subSharedPropertyName(display, NUM2LONG(win), &wmname, wmclass);
+          subSharedPropertyClass(display, win, &wminstance, &wmclass);
+          subSharedPropertyName(display, win, &wmname, wmclass);
 
-          flags = (int *)subSharedPropertyGet(display, NUM2LONG(win), XA_CARDINAL,
+          flags = (int *)subSharedPropertyGet(display, win, XA_CARDINAL,
             XInternAtom(display, "SUBTLE_WINDOW_FLAGS", False), NULL);
-          role = subSharedPropertyGet(display, NUM2LONG(win), XA_STRING,
+          role = subSharedPropertyGet(display, win, XA_STRING,
             XInternAtom(display, "WM_WINDOW_ROLE", False), NULL);
 
           /* Set properties */
-          rb_iv_set(self, "@id",       INT2FIX(id));
+          rb_iv_set(self, "@win",      INT2FIX(win));
           rb_iv_set(self, "@flags",    INT2FIX(*flags));
           rb_iv_set(self, "@name",     rb_str_new2(wmname));
           rb_iv_set(self, "@instance", rb_str_new2(wminstance));
@@ -449,9 +444,9 @@ subClientUpdate(VALUE self)
           free(wmclass);
           if(role) free(role);
         }
-      else rb_raise(rb_eStandardError, "Failed finding client");
     }
-  else rb_raise(rb_eStandardError, "Unknown value type");
+  else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+    rb_obj_classname(id));
 
   return Qnil;
 } /* }}} */
