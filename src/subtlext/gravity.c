@@ -359,17 +359,18 @@ subGravityClients(VALUE self)
 
           /* Get window flags */
           gravity = (unsigned long *)subSharedPropertyGet(display,
-            clients[i], XA_CARDINAL,
-            XInternAtom(display, "SUBTLE_WINDOW_GRAVITY", False), NULL);
+            clients[i], XA_CARDINAL, XInternAtom(display,
+            "SUBTLE_WINDOW_GRAVITY", False), NULL);
 
           /* Check if there are common tags or window is stick */
-          if(id == *gravity)
+          if(gravity && id == *gravity &&
+              !NIL_P(client = rb_funcall(klass, meth, 1, INT2FIX(i))))
             {
-              if(!NIL_P(client = rb_funcall(klass, meth, 1, LONG2NUM(clients[i]))))
-                {
-                  subClientUpdate(client);
-                  rb_ary_push(array, client);
-                }
+              rb_iv_set(client, "@win", LONG2NUM(clients[i]));
+
+              subClientUpdate(client);
+
+              rb_ary_push(array, client);
             }
 
           if(gravity) free(gravity);
