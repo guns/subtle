@@ -411,8 +411,6 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_XEMBED_INFO,                                           ///< XEmbed info
 
   /* subtle */
-  SUB_EWMH_SUBTLE_WINDOW_TAG,                                     ///< Subtle window tag
-  SUB_EWMH_SUBTLE_WINDOW_UNTAG,                                   ///< Subtle window untag
   SUB_EWMH_SUBTLE_WINDOW_TAGS,                                    ///< Subtle window tags
   SUB_EWMH_SUBTLE_WINDOW_RETAG,                                   ///< Subtle window retag
   SUB_EWMH_SUBTLE_WINDOW_GRAVITY,                                 ///< Subtle window gravity
@@ -626,7 +624,7 @@ void subClientDrag(SubClient *c, int mode);                       ///< Move/drag
 void subClientUpdate(int vid);                                    ///< Update clients
 void subClientResize(SubClient *c);                               ///< Set client sizes
 void subClientCenter(SubClient *c);                               ///< Center client
-int subClientTag(SubClient *c, int tag);                          ///< Tag client
+void subClientTag(SubClient *c, int tag, int *flags);             ///< Tag client
 void subClientSetTags(SubClient *c, int *flags);                  ///< Update client tags
 void subClientSetGravity(SubClient *c, int gravity,
   int screen, int force);                                         ///< Set client gravity
