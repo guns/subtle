@@ -27,12 +27,6 @@
 static VALUE shelter = Qnil, mod = Qnil, config = Qnil; ///< Globals
 
 /* Typedef {{{ */
-typedef struct rubypanels_t
-{
-  VALUE    sym;
-  SubPanel *panel;
-} RubyPanels;
-
 typedef struct rubysymbol_t
 {
   VALUE sym;
