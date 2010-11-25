@@ -915,6 +915,10 @@ EventProperty(XPropertyEvent *ev)
               subtle->urgent_tags |= c->tags;
           }
         break; /* }}} */
+      case SUB_EWMH_MOTIF_WM_HINTS: /* {{{ */
+        if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
+          subClientSetMWMHints(c);
+        break; /* }}} */
       case SUB_EWMH_NET_WM_STRUT: /* {{{ */
          if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
           {
