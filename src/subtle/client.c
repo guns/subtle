@@ -13,6 +13,17 @@
 #include <X11/Xatom.h>
 #include "subtle.h"
 
+/* Typedef {{{ */
+typedef struct clientmwmhints_t
+{
+  unsigned long flags;
+  unsigned long functions;
+  unsigned long decorations;
+  long input_mode;
+  unsigned long status;
+} ClientMWMHints;
+/* }}} */
+
 /* ClientMask {{{ */
 static void
 ClientMask(SubClient *c)
@@ -33,14 +44,14 @@ ClientSnap(SubClient *c)
 
   /* Snap to screen edges */
   if(s->geom.x + subtle->snap > c->geom.x)
-    c->geom.x = s->geom.x + subtle->bw;
-  else if(c->geom.x > (s->geom.x + s->geom.width + subtle->bw - c->geom.width - subtle->snap))
-    c->geom.x = s->geom.x + s->geom.width - c->geom.width - subtle->bw;
+    c->geom.x = s->geom.x + BORDER(c);
+  else if(c->geom.x > (s->geom.x + s->geom.width + BORDER(c) - c->geom.width - subtle->snap))
+    c->geom.x = s->geom.x + s->geom.width - c->geom.width - BORDER(c);
 
   if(s->geom.y + subtle->snap > c->geom.y)
-    c->geom.y = s->geom.y + subtle->bw;
-  else if(c->geom.y > (s->geom.y + s->geom.height + subtle->bw - c->geom.height - subtle->snap))
-    c->geom.y = s->geom.y + s->geom.height - c->geom.height - subtle->bw;
+    c->geom.y = s->geom.y + BORDER(c);
+  else if(c->geom.y > (s->geom.y + s->geom.height + BORDER(c) - c->geom.height - subtle->snap))
+    c->geom.y = s->geom.y + s->geom.height - c->geom.height - BORDER(c);
 } /* }}} */
 
 /* ClientGravity {{{ */
@@ -119,7 +130,6 @@ subClientNew(Window win)
   sattrs.border_pixel = subtle->colors.bo_inactive;
   sattrs.event_mask   = EVENTMASK;
   XChangeWindowAttributes(subtle->dpy, c->win, CWBorderPixel|CWEventMask, &sattrs);
-  XSetWindowBorderWidth(subtle->dpy, c->win, subtle->bw);
   XAddToSaveSet(subtle->dpy, c->win);
   XSaveContext(subtle->dpy, c->win, CLIENTID, (void *)c);
 
@@ -133,6 +143,10 @@ subClientNew(Window win)
   subClientSetWMHints(c, &flags);
   subClientSetState(c, &flags);
   subClientSetTransient(c, &flags);
+
+  /* Set border */
+  subClientSetMWMHints(c);
+  XSetWindowBorderWidth(subtle->dpy, c->win, BORDER(c));
 
   /* Update and handle according to flags */
   subClientToggle(c, (~c->flags & flags), False); ///< Toggle flags
@@ -178,7 +192,7 @@ subClientConfigure(SubClient *c)
   ev.y                 = r.y;
   ev.width             = r.width;
   ev.height            = r.height;
-  ev.border_width      = subtle->bw;
+  ev.border_width      = BORDER(c);
   ev.above             = None;
   ev.override_redirect = False;
 
@@ -453,8 +467,11 @@ subClientDrag(SubClient *c,
   if(c->flags & SUB_CLIENT_MODE_FLOAT) ///< Resize client
     {
       /* Subtract border */
-      c->geom.x -= subtle->bw;
-      c->geom.y -= subtle->bw;
+      if(!(c->flags & SUB_CLIENT_BORDERLESS))
+        {
+          c->geom.x -= subtle->bw;
+          c->geom.y -= subtle->bw;
+        }
 
       subClientConfigure(c);
     }
@@ -526,9 +543,9 @@ subClientCenter(SubClient *c)
       SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
 
       c->geom.x = s->geom.x +
-        (s->geom.width - c->geom.width - 2 * subtle->bw) / 2;
+        (s->geom.width - c->geom.width - 2 * BORDER(c)) / 2;
       c->geom.y = s->geom.y +
-        (s->geom.height - c->geom.height - 2 * subtle->bw) / 2;
+        (s->geom.height - c->geom.height - 2 * BORDER(c)) / 2;
     }
 } /* }}} */
 
@@ -679,8 +696,8 @@ subClientSetGravity(SubClient *c,
           /* Update border and gap */
           c->geom.x      += subtle->gap;
           c->geom.y      += subtle->gap;
-          c->geom.width  -= (2 * subtle->bw + 2 * subtle->gap);
-          c->geom.height -= (2 * subtle->bw + 2 * subtle->gap);
+          c->geom.width  -= (2 * BORDER(c) + 2 * subtle->gap);
+          c->geom.height -= (2 * BORDER(c) + 2 * subtle->gap);
 
           /* Update client */
           if(-1 != screen)  c->screen = screen;
@@ -797,8 +814,8 @@ subClientSetSizeHints(SubClient *c,
   /* Default values {{{ */
   c->minw   = MINW;
   c->minh   = MINH;
-  c->maxw   = s->base.width - 2 * subtle->bw;
-  c->maxh   = s->base.height - subtle->th - 2 * subtle->bw;
+  c->maxw   = s->base.width - 2 * BORDER(c);
+  c->maxh   = s->base.height - subtle->th - 2 * BORDER(c);
   c->minr   = 0.0f;
   c->maxr   = 0.0f;
   c->incw   = 1;
@@ -928,6 +945,36 @@ subClientSetWMHints(SubClient *c,
         c->flags |= SUB_CLIENT_INPUT;
 
       XFree(hints);
+    }
+} /* }}} */
+
+  /** subClientSetMWMHints {{{
+   * @brief Set client MWM hints
+   * @param[in]  c  A #SubClient
+   **/
+
+void
+subClientSetMWMHints(SubClient *c)
+{
+  unsigned long size = 0;
+  ClientMWMHints *hints = NULL;
+
+  assert(c);
+
+  /* Window manager hints */
+  if((hints = (ClientMWMHints *)subSharedPropertyGet(subtle->dpy, c->win,
+      subEwmhGet(SUB_EWMH_MOTIF_WM_HINTS),
+      subEwmhGet(SUB_EWMH_MOTIF_WM_HINTS), &size)))
+    {
+      /* Check if hints contain decoration flags */
+      if(hints->flags & MWM_FLAG_DECORATIONS)
+        {
+          /* Check window border */
+          if(!(hints->decorations & (MWM_DECOR_ALL|MWM_DECOR_BORDER)))
+            c->flags |= SUB_CLIENT_BORDERLESS;
+        }
+
+      free(hints);
     }
 } /* }}} */
 
@@ -1078,7 +1125,7 @@ subClientToggle(SubClient *c,
       c->flags &= ~type;
 
       /* Client modes */
-      if(type & SUB_CLIENT_MODE_FULL)
+      if(type & SUB_CLIENT_MODE_FULL && !(c->flags & SUB_CLIENT_BORDERLESS))
         XSetWindowBorderWidth(subtle->dpy, c->win, subtle->bw);
 
       if(type & SUB_CLIENT_MODE_FLOAT)
@@ -1136,7 +1183,6 @@ subClientToggle(SubClient *c,
               if(s->flags & SUB_SCREEN_PANEL2)
                 c->geom.height -= subtle->th;
 
-              XSetWindowBorderWidth(subtle->dpy, c->win, 0);
               XLowerWindow(subtle->dpy, c->win);
             }
           else XRaiseWindow(subtle->dpy, c->win);

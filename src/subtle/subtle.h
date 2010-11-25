@@ -55,6 +55,9 @@
 
 #define WIDTH(c)     (c->geom.width + 2 * subtle->bw)             ///< Get real width
 #define HEIGHT(c)    (c->geom.height + 2 * subtle->bw)            ///< Get real height
+#define BORDER(c) \
+  (c->flags & SUB_CLIENT_BORDERLESS ? 0 : subtle->bw)             ///< Get border width
+
 #define ZERO(n)      (0 < n ? n : 1)                              ///< Prevent zero
 #define MIN(a,b)     (a >= b ? b : a)                             ///< Minimum
 #define MAX(a,b)     (a >= b ? a : b)                             ///< Maximum
@@ -170,25 +173,26 @@
 #define SUB_CLIENT_FOCUS              (1L << 11)                  ///< Send focus message
 #define SUB_CLIENT_INPUT              (1L << 12)                  ///< Active/passive focus-model
 #define SUB_CLIENT_CLOSE              (1L << 13)                  ///< Send close message
-#define SUB_CLIENT_UNMAP              (1L << 14)                  ///< Ignore unmaps
+#define SUB_CLIENT_BORDERLESS         (1L << 14)                  ///< Borderless
+#define SUB_CLIENT_UNMAP              (1L << 15)                  ///< Ignore unmaps
 
-#define SUB_CLIENT_MODE_FULL          (1L << 15)                  ///< Fullscreen mode
-#define SUB_CLIENT_MODE_FLOAT         (1L << 16)                  ///< Float mode
-#define SUB_CLIENT_MODE_STICK         (1L << 17)                  ///< Stick mode
-#define SUB_CLIENT_MODE_URGENT        (1L << 18)                  ///< Urgent mode
-#define SUB_CLIENT_MODE_URGENT_FOCUS  (1L << 19)                  ///< Urgent mode until focus
-#define SUB_CLIENT_MODE_RESIZE        (1L << 20)                  ///< Resize mode
-#define SUB_CLIENT_MODE_NOFULL        (1L << 21)                  ///< Disable full mode
-#define SUB_CLIENT_MODE_NOFLOAT       (1L << 22)                  ///< Disable float mode
-#define SUB_CLIENT_MODE_NOSTICK       (1L << 23)                  ///< Disable stick mode
-#define SUB_CLIENT_MODE_NOURGENT      (1L << 24)                  ///< Disable urgent mode
-#define SUB_CLIENT_MODE_NORESIZE      (1L << 25)                  ///< Disable resize mode
+#define SUB_CLIENT_MODE_FULL          (1L << 16)                  ///< Fullscreen mode
+#define SUB_CLIENT_MODE_FLOAT         (1L << 17)                  ///< Float mode
+#define SUB_CLIENT_MODE_STICK         (1L << 18)                  ///< Stick mode
+#define SUB_CLIENT_MODE_URGENT        (1L << 19)                  ///< Urgent mode
+#define SUB_CLIENT_MODE_URGENT_FOCUS  (1L << 20)                  ///< Urgent mode until focus
+#define SUB_CLIENT_MODE_RESIZE        (1L << 21)                  ///< Resize mode
+#define SUB_CLIENT_MODE_NOFULL        (1L << 22)                  ///< Disable full mode
+#define SUB_CLIENT_MODE_NOFLOAT       (1L << 23)                  ///< Disable float mode
+#define SUB_CLIENT_MODE_NOSTICK       (1L << 24)                  ///< Disable stick mode
+#define SUB_CLIENT_MODE_NOURGENT      (1L << 25)                  ///< Disable urgent mode
+#define SUB_CLIENT_MODE_NORESIZE      (1L << 26)                  ///< Disable resize mode
 
-#define SUB_CLIENT_TYPE_DESKTOP       (1L << 26)                  ///< Desktop type (also used in match)
-#define SUB_CLIENT_TYPE_DOCK          (1L << 27)                  ///< Dock type
-#define SUB_CLIENT_TYPE_TOOLBAR       (1L << 28)                  ///< Toolbar type
-#define SUB_CLIENT_TYPE_SPLASH        (1L << 29)                  ///< Splash type
-#define SUB_CLIENT_TYPE_DIALOG        (1L << 30)                  ///< Dialog type
+#define SUB_CLIENT_TYPE_DESKTOP       (1L << 27)                  ///< Desktop type (also used in match)
+#define SUB_CLIENT_TYPE_DOCK          (1L << 28)                  ///< Dock type
+#define SUB_CLIENT_TYPE_TOOLBAR       (1L << 29)                  ///< Toolbar type
+#define SUB_CLIENT_TYPE_SPLASH        (1L << 30)                  ///< Splash type
+#define SUB_CLIENT_TYPE_DIALOG        (1L << 31)                  ///< Dialog type
 
 /* Drag flags */
 #define SUB_DRAG_START                (1L << 1)                   ///< Drag start
@@ -319,6 +323,19 @@
 
 /* Flags for _XEMBED_INFO */
 #define XEMBED_MAPPED                  (1L << 0)                  ///< Tray mapped
+
+/* Flags for MWM */
+#define MWM_FLAG_FUNCTIONS            (1L << 0)                   ///< Use functions
+#define MWM_FLAG_DECORATIONS          (1L << 1)                   ///< Use decorations
+
+/* Flags for MWM decoration */
+#define MWM_DECOR_ALL                 (1L << 0)                   ///< All decorations
+#define MWM_DECOR_BORDER              (1L << 1)                   ///< Window borders
+#define MWM_DECOR_RESIZEH             (1L << 2)                   ///< Resize handles
+#define MWM_DECOR_TITLE               (1L << 3)                   ///< Window title
+#define MWM_DECOR_MENU                (1L << 4)                   ///< Window menu
+#define MWM_DECOR_MINIMIZE            (1L << 5)                   ///< Minimize button
+#define MWM_DECOR_MAXIMIZE            (1L << 6)                   ///< Maximize button
 /* }}} */
 
 /* Typedefs {{{ */
@@ -405,6 +422,7 @@ typedef enum subewmh_t /* {{{ */
   /* Misc */
   SUB_EWMH_UTF8,                                                  ///< String encoding
   SUB_EWMH_MANAGER,                                               ///< Selection manager
+  SUB_EWMH_MOTIF_WM_HINTS,                                        ///< Motif decoration hints
 
   /* XEmbed */
   SUB_EWMH_XEMBED,                                                ///< XEmbed
@@ -632,6 +650,7 @@ void subClientSetStrut(SubClient *c);                             ///< Set clien
 void subClientSetProtocols(SubClient *c);                         ///< Set client protocols
 void subClientSetSizeHints(SubClient *c, int *flags);             ///< Set client normal hints
 void subClientSetWMHints(SubClient *c, int *flags);               ///< Set client WM hints
+void subClientSetMWMHints(SubClient *c);                          ///< Set client MWM hints
 void subClientSetState(SubClient *c, int *flags);                 ///< Set client WM state
 void subClientSetTransient(SubClient *c, int *flags);             ///< Set client transient
 void subClientSetType(SubClient *c, int *flags);                  ///< Set client tyoe
