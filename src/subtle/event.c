@@ -395,6 +395,7 @@ EventMessage(XClientMessageEvent *ev)
 
       switch(id)
         {
+          /* ICCCM */
           case SUB_EWMH_NET_CURRENT_DESKTOP: /* {{{ */
             if(0 <= ev->data.l[0] && ev->data.l[0] < subtle->views->ndata)
               {
@@ -430,66 +431,59 @@ EventMessage(XClientMessageEvent *ev)
             if((c = CLIENT(subSubtleFind(ev->data.l[1], CLIENTID))))
               EventRestack(c, ev->data.l[2]);
             break; /* }}} */
-          case SUB_EWMH_SUBTLE_WINDOW_TAG:
-          case SUB_EWMH_SUBTLE_WINDOW_UNTAG: /* {{{ */
-            if(0 <= ev->data.l[1] && subtle->tags->ndata > ev->data.l[1])
+
+          /* subtle */
+          case SUB_EWMH_SUBTLE_WINDOW_TAGS: /* {{{ */
+            switch(ev->data.l[2]) ///< Type
               {
-                tag = (1L << (ev->data.l[1] + 1));
+                case 0: ///< Clients
+                  if((c = CLIENT(subArrayGet(subtle->clients,
+                      (int)ev->data.l[0]))))
+                    {
+                      int i, flags = 0, tags = 0;
 
-                switch(ev->data.l[2]) ///< Type
-                  {
-                    case 0: ///< Clients
-                      if((c = CLIENT(subArrayGet(subtle->clients,
-                          (int)ev->data.l[0])))) ///< Clients
+                      /* Select only new tags */
+                      tags = (c->tags ^ (int)ev->data.l[1]) & (int)ev->data.l[1];
+
+                      /* Update tags and assign properties */
+                      for(i = 0; i < 31; i++)
+                        if(tags & (1L << (i + 1))) subClientTag(c, i, &flags);
+
+                      subClientToggle(c, flags, True); ///< Toggle flags
+
+                      c->tags = (int)ev->data.l[1];
+
+                      /* EWMH: Tags */
+                      subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS,
+                        (long *)&c->tags, 1);
+
+                      /* Check visibility after updating tags */
+                      if(VISIBLE(subtle->visible_tags, c))
                         {
-                          int visible = 0;
-
-                          /* Update tags and properties */
-                          if(SUB_EWMH_SUBTLE_WINDOW_TAG == id)
-                            {
-                              int flags = subClientTag(c, ev->data.l[1]);
-
-                              subClientToggle(c, flags, True); ///< Toggle flags
-                            }
-                          else c->tags &= ~tag;
-
-                          /* Check visibility after updating tags */
-                          visible = VISIBLE(subtle->visible_tags, c);
-
-                          /* EWMH: Tags */
-                          subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS,
-                            (long *)&c->tags, 1);
-
-                          if(visible)
-                            {
-                              /* Reactivate grabs on untag */
-                              if(subtle->windows.focus == c->win &&
-                                  !(c->tags & tag))
-                                subSubtleFocus(True);
-
-                              /* Hook: Tile */
-                              subHookCall(SUB_HOOK_TILE, NULL);
-                            }
-
-                          subScreenConfigure();
-                          subScreenRender();
+                          /* Reactivate grabs on untag */
+                          if(subtle->windows.focus == c->win &&
+                              !(c->tags & tag))
+                            subSubtleFocus(True);
                         }
-                      break;
-                    case 1: ///< Views
-                      if((v = VIEW(subArrayGet(subtle->views, (int)ev->data.l[0])))) ///< Views
-                        {
-                          int visible = !!(subtle->visible_views & (1L << (ev->data.l[0] + 1)));
 
-                          if(SUB_EWMH_SUBTLE_WINDOW_TAG == id) v->tags |= tag; ///< Action
-                          else v->tags &= ~tag;
+                      subScreenConfigure();
+                      subScreenRender();
+                    }
+                  break;
+                case 1: ///< Views
+                  if((v = VIEW(subArrayGet(subtle->views,
+                      (int)ev->data.l[0]))))
+                    {
+                      v->tags = (int)ev->data.l[1]; ///< Action
 
-                          /* EWMH: Tags */
-                          subEwmhSetCardinals(v->win, SUB_EWMH_SUBTLE_WINDOW_TAGS,
-                            (long *)&v->tags, 1);
+                      /* EWMH: Tags */
+                      subEwmhSetCardinals(v->win, SUB_EWMH_SUBTLE_WINDOW_TAGS,
+                        (long *)&v->tags, 1);
 
-                          if(visible) subScreenConfigure();
-                        }
-                  }
+                      /* Reconfigure if view is visible */
+                      if(subtle->visible_views & (1L << (ev->data.l[0] + 1)))
+                        subScreenConfigure();
+                    }
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_WINDOW_RETAG: /* {{{ */
