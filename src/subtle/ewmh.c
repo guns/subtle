@@ -63,7 +63,7 @@ subEwmhInit(void)
     "_NET_SYSTEM_TRAY_S",
 
     /* Misc */
-    "UTF8_STRING", "MANAGER",
+    "UTF8_STRING", "MANAGER", "_MOTIF_WM_HINTS",
 
     /* XEmbed */
     "_XEMBED", "_XEMBED_INFO",
