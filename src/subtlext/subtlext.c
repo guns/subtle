@@ -83,88 +83,112 @@ SubtlextPidReader(VALUE self)
   return pid;
 } /* }}} */
 
+/* SubtlextTagFind {{{ */
+static int
+SubtlextTagFind(VALUE value)
+{
+  int tags = 0;
+
+  switch(rb_type(value))
+    {
+      case T_STRING:
+          {
+            VALUE tag = Qnil;
+
+            if(RTEST(tag = subTagSingFind(Qnil, value)))
+              tags |= (1L << (FIX2INT(rb_iv_get(tag, "@id")) + 1));
+          }
+        break;
+      case T_OBJECT:
+        if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("Tag"))))
+          tags |= (1L << (FIX2INT(rb_iv_get(value, "@id")) + 1));
+        break;
+      default: break;
+    }
+
+  return tags;
+} /* }}} */
+
 /* SubtlextTag {{{ */
 static VALUE
 SubtlextTag(VALUE self,
   VALUE value,
-  char *action)
+  int action)
 {
-  VALUE tag = Qnil;
+  int tags = 0;
 
-  /* Check instance type */
-  if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("Tag"))))
-    tag = value;
-  else tag = subTagSingFind(Qnil, value);
-
-  /* Find tag */
-  if(RTEST(tag))
+  /* Check object type */
+  switch(rb_type(value))
     {
-      VALUE oid = Qnil, tid = Qnil;
+      case T_STRING:
+      case T_OBJECT:
+        tags |= SubtlextTagFind(value);
+        break;
+      case T_ARRAY:
+          {
+            int i;
+            VALUE entry = Qnil;
 
-      oid = rb_iv_get(self, "@id");
-      tid = rb_iv_get(tag, "@id");
-
-      if(Qnil != oid && Qnil != tid)
-        {
-          SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-          data.l[0] = FIX2LONG(oid);
-          data.l[1] = FIX2LONG(tid);
-          data.l[2] = rb_obj_is_instance_of(self,
-            rb_const_get(mod, rb_intern("Client"))) ? 0 : 1; ///< Client = 0, View = 1
-
-          subSharedMessage(display, DefaultRootWindow(display),
-            action, data, 32, True);
-        }
+            /* Collect tag ids */
+            for(i = 0; Qnil != (entry = rb_ary_entry(value, i)); ++i)
+              tags |= SubtlextTagFind(entry);
+          }
+        break;
+      default:
+        rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+          rb_obj_classname(value));
     }
-  else rb_raise(rb_eStandardError, "Failed adding tag");
+
+  /* Get win */
+  if(0 < tags)
+    {
+      VALUE id = Qnil, win = Qnil;
+      unsigned long *newtags = NULL;
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+      /* Fetch data */
+      id      = rb_iv_get(self, "@id");
+      win     = rb_iv_get(self, "@win");
+      newtags = (unsigned long *)subSharedPropertyGet(display, NUM2LONG(win),
+        XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
+
+      /* Update tags */
+      if(1 == action)      *newtags |= tags;
+      else if(0 == action) *newtags  = tags;
+      else                 *newtags &= ~tags;
+
+      data.l[0] = FIX2LONG(id);
+      data.l[1] = *newtags;
+      data.l[2] = rb_obj_is_instance_of(self,
+        rb_const_get(mod, rb_intern("Client"))) ? 0 : 1; ///< Client = 0, View = 1
+
+      subSharedMessage(display, DefaultRootWindow(display),
+        "SUBTLE_WINDOW_TAGS", data, 32, True);
+
+      free(newtags);
+    }
 
   return Qnil;
 } /* }}} */
 
-/* SubtlextTagAdd {{{ */
+/* SubtlextTagWriter {{{ */
 /*
- * call-seq: tag(value) -> Subtlext::Tag
- *           +(value)   -> Subtlext::Tag
+ * call-seq: tags=(value) -> nil
  *
- * Add an existing tag to window
+ * Set all tags of a window
  *
- *  object.tag("subtle")
- *  => #<Subtlext::Tag:xxx>
- *
- *  object + "subtle"
- *  => #<Subtlext::Tag:xxx>
+ *  object.tags=([ #<Subtlext::Tag:xxx>, #<Subtlext::Tag:xxx> ])
+ *  => nil
  */
 
 static VALUE
-SubtlextTagAdd(VALUE self,
+SubtlextTagWriter(VALUE self,
   VALUE value)
 {
-  return SubtlextTag(self, value, "SUBTLE_WINDOW_TAG");
+  return SubtlextTag(self, value, 0);
 } /* }}} */
 
-/* SubtlextTagDel {{{ */
-/*
- * call-seq: untag(value) -> Subtlext::Tag
- *           -(value)     -> Subtlext::Tag
- *
- * Remove an existing tag from window
- *
- *  object.untag("subtle")
- *  => #<Subtlext::Tag:xxx>
- *
- *  object - "subtle"
- *  => #<Subtlext::Tag:xxx>
- */
-
-static VALUE
-SubtlextTagDel(VALUE self,
-  VALUE value)
-{
-  return SubtlextTag(self, value, "SUBTLE_WINDOW_UNTAG");
-} /* }}} */
-
-/* SubtlextTagList {{{ */
+/* SubtlextTagReader {{{ */
 /*
  * call-seq: tags -> Array
  *
@@ -175,7 +199,7 @@ SubtlextTagDel(VALUE self,
  */
 
 static VALUE
-SubtlextTagList(VALUE self)
+SubtlextTagReader(VALUE self)
 {
   Window win = None;
   VALUE array = rb_ary_new();
@@ -212,6 +236,54 @@ SubtlextTagList(VALUE self)
     }
 
   return array;
+} /* }}} */
+
+/* SubtlextTagAdd {{{ */
+/*
+ * call-seq: tag(value) -> nil
+ *           +(value)   -> nil
+ *
+ * Add an existing tag to window
+ *
+ *  object.tag("subtle")
+ *  => nil
+ *
+ *  object.tag([ #<Subtlext::Tag:xxx>, #<Subtlext::Tag:xxx> ])
+ *  => nil
+ *
+ *  object + "subtle"
+ *  => nil
+ */
+
+static VALUE
+SubtlextTagAdd(VALUE self,
+  VALUE value)
+{
+  return SubtlextTag(self, value, 1);
+} /* }}} */
+
+/* SubtlextTagDel {{{ */
+/*
+ * call-seq: untag(value) -> nil
+ *           -(value)     -> nil
+ *
+ * Remove an existing tag from window
+ *
+ *  object.untag("subtle")
+ *  => nil
+ *
+ *  object.untag([ #<Subtlext::Tag:xxx>, #<Subtlext::Tag:xxx> ])
+ *  => nil
+ *
+ *  object - "subtle"
+ *  => nil
+ */
+
+static VALUE
+SubtlextTagDel(VALUE self,
+  VALUE value)
+{
+  return SubtlextTag(self, value, -1);
 } /* }}} */
 
 /* SubtlextTagAsk {{{ */
@@ -1036,11 +1108,11 @@ subSubtlextAssoc(VALUE self,
   /* Populate array */
   for(i = 0; i < size; i++)
     {
-      unsigned long *flags = (unsigned long *)subSharedPropertyGet(display,
+      unsigned long *tags = (unsigned long *)subSharedPropertyGet(display,
         wins[i], XA_CARDINAL,
         XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
 
-      if((int)*flags & (1L << (id + 1))) ///< Check if tag id matches
+      if((int)*tags & (1L << (id + 1))) ///< Check if tag id matches
         {
           /* Instantiate objects */
           switch(type)
@@ -1048,20 +1120,25 @@ subSubtlextAssoc(VALUE self,
               case SUB_TYPE_CLIENT:
                 object = rb_funcall(klass, method, 1, INT2FIX(i));
 
-                if(!NIL_P(object)) subClientUpdate(object); ///< Init client
+                if(!NIL_P(object))
+                  {
+                    rb_iv_set(object, "@win", LONG2NUM(wins[i]));
+
+                    subClientUpdate(object); ///< Init client
+                  }
                 break;
               case SUB_TYPE_VIEW:
                 object = rb_funcall(klass, method, 1, rb_str_new2(names[i]));
 
+                rb_iv_set(object, "@id", INT2FIX(i));
                 rb_iv_set(object, "@win", LONG2NUM(wins[i]));
                 break;
             }
 
-          rb_iv_set(object, "@id", INT2FIX(i));
           rb_ary_push(array, object);
         }
 
-      free(flags);
+      free(tags);
     }
 
   if(names) XFreeStringList(names);
@@ -1145,8 +1222,9 @@ Init_subtlext(void)
   rb_define_singleton_method(client, "all",     subClientSingAll,     0);
 
   /* General methods */
-  rb_define_method(client, "tags",        SubtlextTagList,     0);
   rb_define_method(client, "has_tag?",    SubtlextTagAsk,      1);
+  rb_define_method(client, "tags",        SubtlextTagReader,   0);
+  rb_define_method(client, "tags=",       SubtlextTagWriter,   1);
   rb_define_method(client, "tag",         SubtlextTagAdd,      1);
   rb_define_method(client, "untag",       SubtlextTagDel,      1);
   rb_define_method(client, "retag",       SubtlextTagReload,   0);
@@ -1537,8 +1615,9 @@ Init_subtlext(void)
   rb_define_singleton_method(view, "all",     subViewSingAll,     0);
 
   /* General methods */
-  rb_define_method(view, "tags",     SubtlextTagList,     0);
   rb_define_method(view, "has_tag?", SubtlextTagAsk,      1);
+  rb_define_method(view, "tags",     SubtlextTagReader,   0);
+  rb_define_method(view, "tags=",    SubtlextTagWriter,   1);
   rb_define_method(view, "tag",      SubtlextTagAdd,      1);
   rb_define_method(view, "untag",    SubtlextTagDel,      1);
   rb_define_method(view, "[]",       SubtlextPropReader,  1);
