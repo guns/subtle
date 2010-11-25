@@ -534,16 +534,17 @@ subClientCenter(SubClient *c)
 
  /** subClientTag {{{
   * @brief Set tag properties to client
-  * @param[in]  c    A #SubClient
-  * @param[in]  tag  Tag id
+  * @param[in]     c      A #SubClient
+  * @param[in]     tag    Tag id
+  * @param[inout]  flags  Mode flags
   * @return Return changed flags
   **/
 
-int
+void
 subClientTag(SubClient *c,
-  int tag)
+  int tag,
+  int *flags)
 {
-  int flags = 0;
   SubTag *t = NULL;
 
   assert(c);
@@ -555,14 +556,14 @@ subClientTag(SubClient *c,
       int i;
 
       /* Collect flags and tags */
-      flags    |= (t->flags & (TYPES_ALL|MODES_ALL));
+      *flags   |= (t->flags & (TYPES_ALL|MODES_ALL));
       c->flags |= (t->flags & MODES_NONE);
       c->tags  |= (1L << (tag + 1));
 
       /* Set size and enable float */
       if(t->flags & SUB_TAG_GEOMETRY && !(c->flags & SUB_CLIENT_MODE_NOFLOAT))
         {
-          flags   |= (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_NORESIZE); ///< Disable size checks
+          *flags  |= (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_NORESIZE); ///< Disable size checks
           c->geom  = t->geometry;
         }
 
@@ -576,14 +577,12 @@ subClientTag(SubClient *c,
             if(t->flags & SUB_TAG_GRAVITY) c->gravities[i] = t->gravity;
         }
     }
-
-  return flags;
 } /* }}} */
 
  /** subClientSetTags {{{
   * @brief Set client tags
-  * @param[in]  c      A #SubClient
-  * @param[in]  flags  Mode flags
+  * @param[in]     c      A #SubClient
+  * @param[inout]  flags  Mode flags
   **/
 
 void
@@ -602,7 +601,7 @@ subClientSetTags(SubClient *c,
     {
       /* Check if tag matches client */
       if(subTagMatch(TAG(subtle->tags->data[i]), c))
-        *flags |= subClientTag(c, i);
+        subClientTag(c, i, flags);
     }
 
   /* Check if client is visible on at least one screen w/o stick */
@@ -613,7 +612,7 @@ subClientSetTags(SubClient *c,
         break;
       }
 
-  if(0 == visible) *flags |= subClientTag(c, 0); ///< Set default tag
+  if(0 == visible) subClientTag(c, 0, flags); ///< Set default tag
 
   /* EWMH: Tags */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&c->tags, 1);
