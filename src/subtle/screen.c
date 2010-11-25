@@ -300,7 +300,7 @@ subScreenConfigure(void)
     (long *)&subtle->visible_views, 1);
 
   /* Hook: Configure */
-  subHookCall(SUB_HOOK_VIEW_TILE, NULL);
+  subHookCall(SUB_HOOK_TILE, NULL);
 } /* }}} */
 
  /** subScreenUpdate {{{
