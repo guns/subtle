@@ -221,9 +221,15 @@ subClientSingCurrent(VALUE self)
       DefaultRootWindow(display), XA_WINDOW,
       XInternAtom(display, "_NET_ACTIVE_WINDOW", False), NULL)))
     {
-      client = subClientInstantiate(*focus);
+      client = subClientInstantiate(-1);
 
-      if(!NIL_P(client)) subClientUpdate(client);
+      /* Update client values */
+      if(!NIL_P(client))
+        {
+          rb_iv_set(client, "@win", LONG2NUM(*focus));
+
+          subClientUpdate(client);
+        }
 
       free(focus);
     }
@@ -274,9 +280,11 @@ subClientSingVisible(VALUE self)
             "SUBTLE_WINDOW_TAGS", False), NULL);
 
           /* Create client on match */
-          if(*tags && *visible & *tags && !NIL_P(client = rb_funcall(klass,
-              meth, 1, INT2FIX(i))))
+          if(*tags && *visible & *tags &&
+              !NIL_P(client = rb_funcall(klass, meth, 1, INT2FIX(i))))
             {
+              rb_iv_set(client, "@win", LONG2NUM(clients[i]));
+
               subClientUpdate(client);
               rb_ary_push(array, client);
             }
@@ -324,8 +332,11 @@ subClientSingAll(VALUE self)
     {
       for(i = 0; i < size; i++)
         {
+          /* Create client */
           if(!NIL_P(client = rb_funcall(klass, meth, 1, INT2FIX(i))))
             {
+              rb_iv_set(client, "@win", LONG2NUM(clients[i]));
+
               subClientUpdate(client);
               rb_ary_push(array, client);
             }
@@ -399,54 +410,70 @@ subClientInit(VALUE self,
 VALUE
 subClientUpdate(VALUE self)
 {
-  VALUE id = rb_iv_get(self, "@id");
+  int id = 0;
+  Window win = None;
+  VALUE rid = Qnil, rwin = Qnil;
 
   rb_check_frozen(self);
   subSubtlextConnect(NULL); ///< Implicit open connection
 
-  /* Check object type */
-  if(T_FIXNUM == rb_type(id))
+  rid  = rb_iv_get(self, "@id");
+  rwin = rb_iv_get(self, "@win");
+
+  /* Find window */
+  if((NIL_P(rwin) && FIXNUM_P(rid)) ||
+      ((NIL_P(rid) || 0 > FIX2INT(rid)) && FIXNUM_P(rwin)))
     {
-      Window win = None;
       char buf[20] = { 0 };
 
-      snprintf(buf, sizeof(buf), "%d", FIX2INT(id));
-      if(-1 != (id = subSubtlextFindWindow("_NET_CLIENT_LIST", buf,
-          NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS))))
-        {
-          int *flags = NULL;
-          char *wmname = NULL, *wminstance = NULL, *wmclass = NULL, *role = NULL;
+      if(FIXNUM_P(rwin)) snprintf(buf, sizeof(buf), "%ld", NUM2LONG(rwin));
+      else snprintf(buf, sizeof(buf), "%d", FIX2INT(rid));
 
-          subSharedPropertyClass(display, win, &wminstance, &wmclass);
-          subSharedPropertyName(display, win, &wmname, wmclass);
-
-          flags = (int *)subSharedPropertyGet(display, win, XA_CARDINAL,
-            XInternAtom(display, "SUBTLE_WINDOW_FLAGS", False), NULL);
-          role = subSharedPropertyGet(display, win, XA_STRING,
-            XInternAtom(display, "WM_WINDOW_ROLE", False), NULL);
-
-          /* Set properties */
-          rb_iv_set(self, "@win",      INT2FIX(win));
-          rb_iv_set(self, "@flags",    INT2FIX(*flags));
-          rb_iv_set(self, "@name",     rb_str_new2(wmname));
-          rb_iv_set(self, "@instance", rb_str_new2(wminstance));
-          rb_iv_set(self, "@klass",    rb_str_new2(wmclass));
-          rb_iv_set(self, "@role",     role ? rb_str_new2(role) : Qnil);
-
-          /* Set to nil for on demand loading */
-          rb_iv_set(self, "@geometry", Qnil);
-          rb_iv_set(self, "@gravity",  Qnil);
-          rb_iv_set(self, "@screen",   Qnil);
-
-          free(flags);
-          free(wmname);
-          free(wminstance);
-          free(wmclass);
-          if(role) free(role);
-        }
+      id = subSubtlextFindWindow("_NET_CLIENT_LIST", buf,
+        NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS));
     }
-  else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
-    rb_obj_classname(id));
+  else
+    {
+      id  = FIX2INT(rid);
+      win = NUM2LONG(rwin);
+    }
+
+  /* Check values */
+  if(0 <= id && 0 < win)
+    {
+      int *flags = NULL;
+      char *wmname = NULL, *wminstance = NULL, *wmclass = NULL, *role = NULL;
+
+      /* Get name, instance and class */
+      subSharedPropertyClass(display, win, &wminstance, &wmclass);
+      subSharedPropertyName(display, win, &wmname, wmclass);
+
+      flags = (int *)subSharedPropertyGet(display, win, XA_CARDINAL,
+        XInternAtom(display, "SUBTLE_WINDOW_FLAGS", False), NULL);
+      role = subSharedPropertyGet(display, win, XA_STRING,
+        XInternAtom(display, "WM_WINDOW_ROLE", False), NULL);
+
+      /* Set properties */
+      rb_iv_set(self, "@id",       INT2FIX(id));
+      rb_iv_set(self, "@win",      LONG2NUM(win));
+      rb_iv_set(self, "@flags",    INT2FIX(*flags));
+      rb_iv_set(self, "@name",     rb_str_new2(wmname));
+      rb_iv_set(self, "@instance", rb_str_new2(wminstance));
+      rb_iv_set(self, "@klass",    rb_str_new2(wmclass));
+      rb_iv_set(self, "@role",     role ? rb_str_new2(role) : Qnil);
+
+      /* Set to nil for on demand loading */
+      rb_iv_set(self, "@geometry", Qnil);
+      rb_iv_set(self, "@gravity",  Qnil);
+      rb_iv_set(self, "@screen",   Qnil);
+
+      free(flags);
+      free(wmname);
+      free(wminstance);
+      free(wmclass);
+      if(role) free(role);
+    }
+  else rb_raise(rb_eStandardError, "Failed updating client");
 
   return Qnil;
 } /* }}} */
