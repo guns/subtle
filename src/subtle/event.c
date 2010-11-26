@@ -23,8 +23,10 @@
 #include <X11/extensions/Xrandr.h>
 #endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
 
+/* Globals */
 struct pollfd *watches = NULL;
-int nwatches = 0;
+XClientMessageEvent *queue = NULL;
+int nwatches = 0, nqueue = 0;
 
 /* EventUntag {{{ */
 static void
@@ -157,6 +159,59 @@ EventRestack(SubClient *c,
   c->flags |= flags;
 } /* }}} */
 
+/* EventQueuePush {{{ */
+static void
+EventQueuePush(XClientMessageEvent *ev)
+{
+  /* Copy event */
+  queue = (XClientMessageEvent *)subSharedMemoryRealloc(queue, 
+    (nqueue + 1) * sizeof(XClientMessageEvent));
+  queue[nqueue] = *ev;
+  nqueue++;
+
+  subSharedLogDebug("Queue: Store WINDOW_TAG oid=%ld, tid=%ld\n",
+    ev->data.l[0], ev->data.l[1]);
+} /* }}} */
+
+/* EventQueuePop {{{ */
+static void
+EventQueuePop(int id)
+{
+  /* Check queue */
+  if(0 < nqueue)
+    {
+      int i;
+
+      /* Check queued events */
+      for(i = 0; i < nqueue; i++)
+        {
+          XClientMessageEvent ev = queue[i];
+
+          /* Check if element id matches event */
+          if(ev.data.l[0] == id)
+            {
+              int j;
+
+              /* Sort queue */
+              for(j = i; j < nqueue - 1; j++)
+                queue[j] = queue[j + 1];
+
+              nqueue--;
+
+              queue = (XClientMessageEvent *)subSharedMemoryRealloc(queue,
+                nqueue * sizeof(XClientMessageEvent));
+
+              XPutBackEvent(subtle->dpy, (XEvent *)&ev);
+
+              subSharedLogDebug("Queue: Putback WINDOW_TAG oid=%ld, tid=%ld\n",
+                ev.data.l[0], ev.data.l[1]);
+
+              i--;
+            }
+        }
+    }
+} /* }}} */
+
 /* Events */
 
 /* EventConfigureRequest {{{ */
@@ -265,6 +320,8 @@ EventMapRequest(XMapRequestEvent *ev)
 
           subScreenConfigure();
           subScreenRender();
+
+          EventQueuePop(subtle->clients->ndata - 1);
 
           /* Hook: Create */
           subHookCall(SUB_HOOK_CLIENT_CREATE, (void *)c);
@@ -450,7 +507,6 @@ EventMessage(XClientMessageEvent *ev)
                         if(tags & (1L << (i + 1))) subClientTag(c, i, &flags);
 
                       subClientToggle(c, flags, True); ///< Toggle flags
-
                       c->tags = (int)ev->data.l[1];
 
                       /* EWMH: Tags */
@@ -469,6 +525,7 @@ EventMessage(XClientMessageEvent *ev)
                       subScreenConfigure();
                       subScreenRender();
                     }
+                  else EventQueuePush(ev);
                   break;
                 case 1: ///< Views
                   if((v = VIEW(subArrayGet(subtle->views,
@@ -484,6 +541,7 @@ EventMessage(XClientMessageEvent *ev)
                       if(subtle->visible_views & (1L << (ev->data.l[0] + 1)))
                         subScreenConfigure();
                     }
+                  else EventQueuePush(ev);
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_WINDOW_RETAG: /* {{{ */
@@ -579,6 +637,8 @@ EventMessage(XClientMessageEvent *ev)
                 subArrayPush(subtle->tags, (void *)t);
                 subTagPublish();
 
+                EventQueuePop(subtle->tags->ndata - 1);
+
                 /* Hook: Create */
                 subHookCall(SUB_HOOK_TAG_CREATE, (void *)t);
               }
@@ -630,6 +690,8 @@ EventMessage(XClientMessageEvent *ev)
                 subViewPublish();
                 subScreenUpdate();
                 subScreenRender();
+
+                EventQueuePop(subtle->views->ndata - 1);
 
                 /* Hook: Create */
                 subHookCall(SUB_HOOK_VIEW_CREATE, (void *)v);
@@ -1358,7 +1420,7 @@ subEventWatchDel(int fd)
 void
 subEventLoop(void)
 {
-  int i, timeout = 1, events = 0;
+  int i, timeout = 1, nevents = 0;
   XEvent ev;
   time_t now;
   SubPanel *p = NULL;
@@ -1383,7 +1445,7 @@ subEventLoop(void)
       now = subSubtleTime();
 
       /* Data ready on any connection */
-      if(0 < (events = poll(watches, nwatches, timeout * 1000)))
+      if(0 < (nevents = poll(watches, nwatches, timeout * 1000)))
         {
           for(i = 0; i < nwatches; i++) ///< Find descriptor
             {
@@ -1452,7 +1514,7 @@ subEventLoop(void)
                 }
             }
         }
-      else if(0 == events) ///< Timeout waiting for data or error {{{
+      else if(0 == nevents) ///< Timeout waiting for data or error {{{
         {
           if(0 < subtle->sublets->ndata)
             {
@@ -1496,6 +1558,7 @@ subEventFinish(void)
 {
 
   if(watches) free(watches);
+  if(queue)   free(queue);
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
