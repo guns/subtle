@@ -938,7 +938,8 @@ subSharedParseKey(Display *disp,
           for(i = 0; i < LENGTH(buttons); i++)
             if(!strncmp(tok, buttons[i], 2))
               {
-                sym = XK_Pointer_Button1 + i + 1; ///< @todo Implementation independent?
+                sym = XK_Pointer_Button1 + i; ///< @todo Implementation independent?
+
                 break;
               }
 

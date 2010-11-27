@@ -1099,7 +1099,7 @@ EventGrab(XEvent *ev)
             return;
           }
 
-        code = XK_Pointer_Button1 + ev->xbutton.button;
+        code = XK_Pointer_Button1 + ev->xbutton.button - 1; ///< Build button number
         mod  = ev->xbutton.state;
         break;
       case KeyPress:
