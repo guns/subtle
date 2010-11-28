@@ -74,7 +74,7 @@ SubtleUsage(void)
          "  -d, --display=DISPLAY   Connect to DISPLAY\n" \
          "  -h, --help              Show this help and exit\n" \
          "  -k, --check             Check config syntax\n" \
-         "  -n, --no-randr          Disable the usage of randr\n" \
+         "  -n, --no-randr          Disable RandR extension (required for Twinview)\n" \
          "  -r, --replace           Replace current window manager\n" \
          "  -s, --sublets=DIR       Load sublets from DIR\n" \
          "  -v, --version           Show version info and exit\n" \
