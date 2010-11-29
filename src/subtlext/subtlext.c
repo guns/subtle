@@ -126,6 +126,8 @@ SubtlextTag(VALUE self,
   int action)
 {
   int tags = 0;
+  VALUE id = Qnil, win = Qnil;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
   /* Check object type */
   switch(rb_type(value))
@@ -149,39 +151,32 @@ SubtlextTag(VALUE self,
           rb_obj_classname(value));
     }
 
-  /* Get win */
-  if(0 < tags)
+  /* Fetch data */
+  id  = rb_iv_get(self, "@id");
+  win = rb_iv_get(self, "@win");
+
+  /* Get and update tags */
+  if(0 != action && RTEST(win))
     {
-      VALUE id = Qnil, win = Qnil;
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+      unsigned long *newtags = (unsigned long *)subSharedPropertyGet(display,
+        NUM2LONG(win), XA_CARDINAL, XInternAtom(display,
+        "SUBTLE_WINDOW_TAGS", False), NULL);
 
-      /* Fetch data */
-      id  = rb_iv_get(self, "@id");
-      win = rb_iv_get(self, "@win");
+      /* Update masks */
+      if(1 == action)       tags = *newtags | tags;
+      else if(-1 == action) tags = *newtags & ~tags;
 
-      /* Get and update tags */
-      if(0 != action && RTEST(win))
-        {
-          unsigned long *newtags = (unsigned long *)subSharedPropertyGet(display,
-            NUM2LONG(win), XA_CARDINAL, XInternAtom(display,
-            "SUBTLE_WINDOW_TAGS", False), NULL);
-
-          /* Update masks */
-          if(1 == action)       tags = *newtags | tags;
-          else if(-1 == action) tags = *newtags & ~tags;
-
-          free(newtags);
-        }
-
-      /* Send message */
-      data.l[0] = FIX2LONG(id);
-      data.l[1] = tags;
-      data.l[2] = rb_obj_is_instance_of(self,
-        rb_const_get(mod, rb_intern("Client"))) ? 0 : 1; ///< Client = 0, View = 1
-
-      subSharedMessage(display, DefaultRootWindow(display),
-        "SUBTLE_WINDOW_TAGS", data, 32, True);
+      free(newtags);
     }
+
+  /* Send message */
+  data.l[0] = FIX2LONG(id);
+  data.l[1] = tags;
+  data.l[2] = rb_obj_is_instance_of(self,
+    rb_const_get(mod, rb_intern("Client"))) ? 0 : 1; ///< Client = 0, View = 1
+
+  subSharedMessage(display, DefaultRootWindow(display),
+    "SUBTLE_WINDOW_TAGS", data, 32, True);
 
   return Qnil;
 } /* }}} */
