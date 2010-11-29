@@ -22,7 +22,7 @@ rescue LoadError => error
   missing = error.to_s.split(" ").last.gsub(/\//, "-")
 
   puts <<EOF
->>> ERROR: Couldn't find the gem #{missing}
+>>> ERROR: Couldn't find the gem `#{missing}'
 >>>        Please install it with following command:
 >>>        gem install #{missing}
 EOF
