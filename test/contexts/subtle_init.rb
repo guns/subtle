@@ -18,6 +18,10 @@ context "Subtle - Init" do
     Subtlext::Subtle.colors.is_a?(Hash) and 21 == Subtlext::Subtle.colors.size
   end
 
+  asserts("Check font") do
+    "-*-*-medium-*-*-*-14-*-*-*-*-*-*-*" == Subtlext::Subtle.font
+  end
+
   asserts("Check reload") do
     Subtlext::Subtle.reload
     Subtlext::Subtle.running?
