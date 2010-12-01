@@ -318,6 +318,7 @@ subSubtleSingSpawn(VALUE self,
     {
       pid_t pid = 0;
 
+      /* Create client */
       if(0 < (pid = subSharedSpawn(RSTRING_PTR(cmd))))
         {
           int size = 0;
