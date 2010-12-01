@@ -299,6 +299,8 @@ subScreenConfigure(void)
   subEwmhSetCardinals(ROOT, SUB_EWMH_SUBTLE_VISIBLE_VIEWS,
     (long *)&subtle->visible_views, 1);
 
+  XSync(subtle->dpy, False); ///< Sync before going on
+
   /* Hook: Configure */
   subHookCall(SUB_HOOK_TILE, NULL);
 } /* }}} */
