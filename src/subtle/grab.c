@@ -103,7 +103,7 @@ subGrabNew(const char *chain,
     }
   else
     {
-      subSharedLogWarn("Failed assigning keychain `%s'\n", chain);
+      subSharedLogWarn("Failed assigning grab `%s'\n", chain);
 
       if(type & SUB_GRAB_SPAWN && data.string) free(data.string);
     }
