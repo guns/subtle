@@ -169,13 +169,14 @@ EventQueuePush(XClientMessageEvent *ev)
   queue[nqueue] = *ev;
   nqueue++;
 
-  subSharedLogDebug("Queue: Store WINDOW_TAG oid=%ld, tid=%ld\n",
-    ev->data.l[0], ev->data.l[1]);
+  subSharedLogDebug("Queue: Store WINDOW_TAG id=%ld, tags=%ld, type=%ld\n",
+    ev->data.l[0], ev->data.l[1], ev->data.l[2]);
 } /* }}} */
 
 /* EventQueuePop {{{ */
 static void
-EventQueuePop(int id)
+EventQueuePop(int id,
+  int type)
 {
   /* Check queue */
   if(0 < nqueue)
@@ -188,7 +189,7 @@ EventQueuePop(int id)
           XClientMessageEvent ev = queue[i];
 
           /* Check if element id matches event */
-          if(ev.data.l[0] == id)
+          if(ev.data.l[0] == id && ev.data.l[2] == type)
             {
               int j;
 
@@ -203,8 +204,8 @@ EventQueuePop(int id)
 
               XPutBackEvent(subtle->dpy, (XEvent *)&ev);
 
-              subSharedLogDebug("Queue: Putback WINDOW_TAG oid=%ld, tid=%ld\n",
-                ev.data.l[0], ev.data.l[1]);
+              subSharedLogDebug("Queue: Putback WINDOW_TAG id=%ld, tags=%ld, type=%ld\n",
+                ev.data.l[0], ev.data.l[1], ev.data.l[2]);
 
               i--;
             }
@@ -315,13 +316,14 @@ EventMapRequest(XMapRequestEvent *ev)
               subHookCall(SUB_HOOK_TILE, NULL);
             }
 
-          if(c->flags & SUB_CLIENT_TYPE_DESKTOP) ///< Reorder stacking
+          /* Reorder stacking */
+          if(c->flags & SUB_CLIENT_TYPE_DESKTOP)
             subArraySort(subtle->clients, subClientCompare);
 
           subScreenConfigure();
           subScreenRender();
 
-          EventQueuePop(subtle->clients->ndata - 1);
+          EventQueuePop(subtle->clients->ndata - 1, 0);
 
           /* Hook: Create */
           subHookCall(SUB_HOOK_CLIENT_CREATE, (void *)c);
@@ -637,8 +639,6 @@ EventMessage(XClientMessageEvent *ev)
                 subArrayPush(subtle->tags, (void *)t);
                 subTagPublish();
 
-                EventQueuePop(subtle->tags->ndata - 1);
-
                 /* Hook: Create */
                 subHookCall(SUB_HOOK_TAG_CREATE, (void *)t);
               }
@@ -691,7 +691,7 @@ EventMessage(XClientMessageEvent *ev)
                 subScreenUpdate();
                 subScreenRender();
 
-                EventQueuePop(subtle->views->ndata - 1);
+                EventQueuePop(subtle->views->ndata - 1, 1);
 
                 /* Hook: Create */
                 subHookCall(SUB_HOOK_VIEW_CREATE, (void *)v);
