@@ -324,7 +324,7 @@ module Subtle # {{{
     %body
       #frame
         =yield
-  EOF
+EOF
         end # }}}
 
         template :index do # {{{
@@ -385,7 +385,7 @@ module Subtle # {{{
           %a#download{:href => "http://sur.subtle.de/get/%s" % [ s.digest ] }
             ="%s-%s" % [ s.name, s.version ]
           ="(%d)" % [ s.annotations ]
-  EOF
+EOF
         end # }}}
 
         template :tag do # {{{
@@ -406,7 +406,7 @@ module Subtle # {{{
 
   .center
     %a{:href => "javascript:history.back()"} Back
-  EOF
+EOF
         end # }}}
 
         template :sublets do # {{{
@@ -425,7 +425,7 @@ module Subtle # {{{
 
   .center
     %a{:href => "javascript:history.back()"} Back
-  EOF
+EOF
         end # }}}
 
         template :search do # {{{
@@ -446,7 +446,7 @@ module Subtle # {{{
 
   .center
     %a{:href => "javascript:history.back()"} Back
-  EOF
+EOF
         end # }}}
 
         get "/" do # {{{
