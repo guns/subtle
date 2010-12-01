@@ -1473,6 +1473,7 @@ Init_subtlext(void)
   rb_define_singleton_method(subtle, "restart",       subSubtleSingRestart,       0);
   rb_define_singleton_method(subtle, "quit",          subSubtleSingQuit,          0);
   rb_define_singleton_method(subtle, "colors",        subSubtleSingColors,        0);
+  rb_define_singleton_method(subtle, "font",          subSubtleSingFont,          0);
   rb_define_singleton_method(subtle, "spawn",         subSubtleSingSpawn,         1);
 
   /* Aliases */

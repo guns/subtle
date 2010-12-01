@@ -297,6 +297,38 @@ subSubtleSingColors(VALUE self)
   return hash;
 } /* }}} */
 
+/* subSubtleSingFont {{{ */
+/*
+ * call-seq: Font -> String or nil
+ *
+ * Get font used in subtle
+ *
+ *  Subtlext::Subtle.font
+ *  => "-*-*-medium-*-*-*-14-*-*-*-*-*-*-*"
+ */
+
+VALUE
+subSubtleSingFont(VALUE self)
+{
+  char *prop = NULL;
+  VALUE font = Qnil;
+
+  subSubtlextConnect(NULL); ///< Implicit open connection
+
+  /* Get property */
+  if((prop = subSharedPropertyGet(display, DefaultRootWindow(display),
+      XInternAtom(display, "UTF8_STRING", False),
+      XInternAtom(display, "SUBTLE_FONT", False),
+      NULL)))
+    {
+      font = rb_str_new2(prop);
+
+      free(prop);
+    }
+
+  return font;
+} /* }}} */
+
 /* subSubtleSingSpawn {{{ */
 /*
  * call-seq: spawn(cmd) -> Fixnum

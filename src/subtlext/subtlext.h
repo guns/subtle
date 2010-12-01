@@ -177,6 +177,7 @@ VALUE subSubtleSingReload(VALUE self);                            ///< Reload co
 VALUE subSubtleSingRestart(VALUE self);                           ///< Restart subtle
 VALUE subSubtleSingQuit(VALUE self);                              ///< Quit subtle
 VALUE subSubtleSingColors(VALUE self);                            ///< Get colors
+VALUE subSubtleSingFont(VALUE self);                              ///< Get font
 VALUE subSubtleSingSpawn(VALUE self, VALUE cmd);                  ///< Spawn command
 /* }}} */
 
