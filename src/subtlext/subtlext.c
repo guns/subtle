@@ -127,7 +127,6 @@ SubtlextTag(VALUE self,
 {
   int tags = 0;
   VALUE id = Qnil, win = Qnil;
-  SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
   /* Check object type */
   switch(rb_type(value))
@@ -151,12 +150,9 @@ SubtlextTag(VALUE self,
           rb_obj_classname(value));
     }
 
-  /* Fetch data */
-  id  = rb_iv_get(self, "@id");
-  win = rb_iv_get(self, "@win");
-
   /* Get and update tags */
-  if(0 != action && RTEST(win))
+  if(0 != action && RTEST((win = rb_iv_get(self, "@win")) &&
+      0 != NUM2LONG(win)))
     {
       unsigned long *newtags = (unsigned long *)subSharedPropertyGet(display,
         NUM2LONG(win), XA_CARDINAL, XInternAtom(display,
@@ -169,14 +165,20 @@ SubtlextTag(VALUE self,
       free(newtags);
     }
 
-  /* Send message */
-  data.l[0] = FIX2LONG(id);
-  data.l[1] = tags;
-  data.l[2] = rb_obj_is_instance_of(self,
-    rb_const_get(mod, rb_intern("Client"))) ? 0 : 1; ///< Client = 0, View = 1
+  /* Get id */
+  if((FIXNUM_P(id = rb_iv_get(self, "@id"))))
+    {
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-  subSharedMessage(display, DefaultRootWindow(display),
-    "SUBTLE_WINDOW_TAGS", data, 32, True);
+      /* Send message */
+      data.l[0] = FIX2LONG(id);
+      data.l[1] = tags;
+      data.l[2] = rb_obj_is_instance_of(self,
+        rb_const_get(mod, rb_intern("Client"))) ? 0 : 1; ///< Client = 0, View = 1
+
+      subSharedMessage(display, DefaultRootWindow(display),
+        "SUBTLE_WINDOW_TAGS", data, 32, True);
+  }
 
   return Qnil;
 } /* }}} */
