@@ -1288,6 +1288,10 @@ RubyConfigSet(VALUE self,
                       }
 
                     subtle->th = subtle->font->height + 2 * subtle->pbw;
+
+                    /* EWMH: Font */
+                    subEwmhSetString(ROOT, SUB_EWMH_SUBTLE_FONT,
+                      RSTRING_PTR(value));
                   }
               }
             else if(CHAR2SYM("separator") == option)
