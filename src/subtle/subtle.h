@@ -458,7 +458,8 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_RELOAD,                                         ///< Subtle reload
   SUB_EWMH_SUBTLE_RESTART,                                        ///< Subtle restart
   SUB_EWMH_SUBTLE_QUIT,                                           ///< Subtle quit
-  SUB_EWMH_SUBTLE_COLORS,                                         ///< Subtle restart
+  SUB_EWMH_SUBTLE_COLORS,                                         ///< Subtle colors
+  SUB_EWMH_SUBTLE_FONT,                                           ///< Subtle font
 
   SUB_EWMH_TOTAL
 } SubEwmh; /* }}} */
