@@ -1308,6 +1308,7 @@ static void
 EventFocus(XFocusChangeEvent *ev)
 {
   SubClient *c = NULL;
+  SubTray *t = NULL;
 
   /* Check if window keeps focus */
   if(ev->window == subtle->windows.focus) return;
@@ -1366,6 +1367,11 @@ EventFocus(XFocusChangeEvent *ev)
           subScreenUpdate();
           subScreenRender();
         }
+    }
+  else if((t = TRAY(subSubtleFind(ev->window, TRAYID)))) ///< Tray
+    {
+      subtle->windows.focus = t->win;
+      subGrabSet(t->win, !(subtle->flags & SUB_SUBTLE_ESCAPE));
     }
 } /* }}} */
 
