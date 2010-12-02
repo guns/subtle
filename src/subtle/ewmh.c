@@ -342,7 +342,7 @@ subEwmhMessage(Window dst,
   ev.data.l[3]    = data3;
   ev.data.l[4]    = data4;
 
-  return XSendEvent(subtle->dpy, dst, False, NoEventMask, (XEvent *)&ev);
+  return XSendEvent(subtle->dpy, dst, False, 0xFFFFFF, (XEvent *)&ev);
 } /* }}} */
 
  /** subEwmhFinish {{{
@@ -355,6 +355,8 @@ subEwmhFinish(void)
   /* Delete root properties on real shutdown */
   if(subtle->flags & SUB_SUBTLE_EWMH)
     {
+      subTrayDeselect();
+
       /* EWMH properties */
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_SUPPORTED));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_SUPPORTING_WM_CHECK));
@@ -373,14 +375,13 @@ subEwmhFinish(void)
       /* subtle extension */
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_GRAVITY_LIST));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_TAG_LIST));
-      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_TAG_LIST));
+      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_TRAY_LIST));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_COLORS));
+      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_FONT));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_SUBLET_LIST));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_SUBLET_WINDOWS));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_VISIBLE_VIEWS));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_VISIBLE_TAGS));
-
-      subTrayDeselect();
     }
 
   subSharedLogDebug("finish=ewmh\n");
