@@ -168,14 +168,10 @@ subDisplayInit(const char *display)
   subtle->windows.tray.win = XCreateSimpleWindow(subtle->dpy,
     ROOT, 0, 0, 1, 1, 0, 0, subtle->colors.bg_focus);
 
-  /* Set override redirect */
   sattrs.override_redirect = True;
+  sattrs.event_mask        = KeyPressMask|ButtonPressMask;
   XChangeWindowAttributes(subtle->dpy, subtle->windows.tray.win,
-    CWOverrideRedirect, &sattrs);
-
-  /* Select input */
-  XSelectInput(subtle->dpy, subtle->windows.tray.win,
-    KeyPressMask|ButtonPressMask);
+    CWOverrideRedirect|CWEventMask, &sattrs);
 
   /* Check extensions */
 #ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
@@ -240,7 +236,7 @@ subDisplayConfigure(void)
 void
 subDisplayScan(void)
 {
-  unsigned int i, n = 0, flags = 0;
+  unsigned int i, n = 0;
   Window dummy, *wins = NULL;
 
   assert(subtle);
@@ -250,7 +246,6 @@ subDisplayScan(void)
   for(i = 0; i < n; i++)
     {
       SubClient *c = NULL;
-      SubTray *t = NULL;
       XWindowAttributes attr;
 
       XGetWindowAttributes(subtle->dpy, wins[i], &attr);
@@ -259,15 +254,8 @@ subDisplayScan(void)
           switch(attr.map_state)
             {
               case IsViewable:
-                if((flags = subEwmhGetXEmbedState(wins[i])) && ///< Tray
-                    (t = subTrayNew(wins[i])))
-                  {
-                    subArrayPush(subtle->trays, (void *)t);
-                  }
-                else if((c = subClientNew(wins[i]))) ///< Clients
-                  {
-                    subArrayPush(subtle->clients, (void *)c);
-                  }
+                if((c = subClientNew(wins[i])))
+                  subArrayPush(subtle->clients, (void *)c);
                 break;
             }
         }
@@ -346,6 +334,8 @@ subDisplayFinish(void)
 
   if(subtle->dpy)
     {
+      XSync(subtle->dpy, False); ///< Sync all changes
+
       /* Free cursors */
       if(subtle->cursors.arrow)  XFreeCursor(subtle->dpy, subtle->cursors.arrow);
       if(subtle->cursors.move)   XFreeCursor(subtle->dpy, subtle->cursors.move);
