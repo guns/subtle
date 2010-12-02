@@ -176,6 +176,7 @@ subTraySelect(void)
   /* Tray selection */
   XSetSelectionOwner(subtle->dpy, selection,
     subtle->windows.tray.win, CurrentTime);
+
   if(XGetSelectionOwner(subtle->dpy, selection) == subtle->windows.tray.win)
     {
       subSharedLogDebug("Selection: type=%ld\n", selection);
@@ -195,11 +196,10 @@ subTraySelect(void)
 void
 subTrayDeselect(void)
 {
-  Atom selection = None;
+  Atom selection = subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION);
 
   /* Tray selection */
-  if((selection = subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION)) &&
-      XGetSelectionOwner(subtle->dpy, selection) == subtle->windows.tray.win)
+  if(XGetSelectionOwner(subtle->dpy, selection) == subtle->windows.tray.win)
     {
       XSetSelectionOwner(subtle->dpy, selection, None, CurrentTime);
       subSharedPropertyDelete(subtle->dpy, ROOT, selection);
@@ -239,14 +239,14 @@ subTrayKill(SubTray *t)
 {
   assert(t);
 
-  /* Reparent back to root to avoid kill when embedder is destroyed */
-  XUnmapWindow(subtle->dpy, t->win);
-  subEwmhSetWMState(t->win, WithdrawnState);
-  XReparentWindow(subtle->dpy, t->win, ROOT, 0, 0);
-
   /* Ignore further events and delete context */
   XSelectInput(subtle->dpy, t->win, NoEventMask);
   XDeleteContext(subtle->dpy, t->win, TRAYID);
+
+  /* Unembed tray icon following xembed specs */
+  XUnmapWindow(subtle->dpy, t->win);
+  XReparentWindow(subtle->dpy, t->win, ROOT, 0, 0);
+  XMapRaised(subtle->dpy, t->win);
 
   if(t->name) XFree(t->name);
   free(t);
