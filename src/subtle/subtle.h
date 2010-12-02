@@ -224,24 +224,25 @@
 #define SUB_PANEL_SUBLET              (1L << 10)                  ///< Panel sublet type
 #define SUB_PANEL_VIEWS               (1L << 11)                  ///< Panel views type
 #define SUB_PANEL_TITLE               (1L << 12)                  ///< Panel title type
-#define SUB_PANEL_SPACER1             (1L << 13)                  ///< Panel spacer1
-#define SUB_PANEL_SPACER2             (1L << 14)                  ///< Panel spacer2
-#define SUB_PANEL_SEPARATOR1          (1L << 15)                  ///< Panel separator1
-#define SUB_PANEL_SEPARATOR2          (1L << 16)                  ///< Panel separator2
-#define SUB_PANEL_BOTTOM              (1L << 17)                  ///< Panel bottom
-#define SUB_PANEL_HIDDEN              (1L << 18)                  ///< Panel hidden
-#define SUB_PANEL_CENTER              (1L << 19)                  ///< Panel center
-#define SUB_PANEL_SUBLETS             (1L << 20)                  ///< Panel sublets
+#define SUB_PANEL_TRAY                (1L << 13)                  ///< Panel tray type
+#define SUB_PANEL_SPACER1             (1L << 14)                  ///< Panel spacer1
+#define SUB_PANEL_SPACER2             (1L << 15)                  ///< Panel spacer2
+#define SUB_PANEL_SEPARATOR1          (1L << 16)                  ///< Panel separator1
+#define SUB_PANEL_SEPARATOR2          (1L << 17)                  ///< Panel separator2
+#define SUB_PANEL_BOTTOM              (1L << 18)                  ///< Panel bottom
+#define SUB_PANEL_HIDDEN              (1L << 19)                  ///< Panel hidden
+#define SUB_PANEL_CENTER              (1L << 20)                  ///< Panel center
+#define SUB_PANEL_SUBLETS             (1L << 21)                  ///< Panel sublets
 
-#define SUB_PANEL_INTERVAL            (1L << 21)                  ///< Sublet has interval
-#define SUB_PANEL_INOTIFY             (1L << 22)                  ///< Sublet with inotify
-#define SUB_PANEL_SOCKET              (1L << 23)                  ///< Sublet with socket
+#define SUB_PANEL_INTERVAL            (1L << 22)                  ///< Sublet has interval
+#define SUB_PANEL_INOTIFY             (1L << 23)                  ///< Sublet with inotify
+#define SUB_PANEL_SOCKET              (1L << 24)                  ///< Sublet with socket
 
-#define SUB_PANEL_RUN                 (1L << 24)                  ///< Sublet run function
-#define SUB_PANEL_WATCH               (1L << 25)                  ///< Sublet watch function
-#define SUB_PANEL_DOWN                (1L << 26)                  ///< Sublet mouse down function
-#define SUB_PANEL_OVER                (1L << 27)                  ///< Sublet mouse over function
-#define SUB_PANEL_OUT                 (1L << 28)                  ///< Sublet mouse out function
+#define SUB_PANEL_RUN                 (1L << 25)                  ///< Sublet run function
+#define SUB_PANEL_WATCH               (1L << 26)                  ///< Sublet watch function
+#define SUB_PANEL_DOWN                (1L << 27)                  ///< Sublet mouse down function
+#define SUB_PANEL_OVER                (1L << 28)                  ///< Sublet mouse over function
+#define SUB_PANEL_OUT                 (1L << 29)                  ///< Sublet mouse out function
 
 /* Screen types */
 #define SUB_SCREEN_PANEL1             (1L << 10)                   ///< Panel1 enabled

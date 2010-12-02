@@ -469,7 +469,7 @@ subPanelKill(SubPanel *p)
   assert(p);
 
   /* Handle panel item type */
-  switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_VIEWS))
+  switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_VIEWS|SUB_PANEL_TRAY))
     {
       case SUB_PANEL_SUBLET: /* {{{ */
         subRubyRelease(p->sublet->instance);
@@ -513,6 +513,10 @@ subPanelKill(SubPanel *p)
             free(p->views);
           }
         break; /* }}} */
+      case SUB_PANEL_TRAY: /* {{{ */
+        /* Reparent and return to avoid destroy here */
+        XReparentWindow(subtle->dpy, subtle->windows.tray.win, ROOT, 0, 0);
+        return; /* }}} */
     }
 
   XDestroyWindow(subtle->dpy, p->win);
