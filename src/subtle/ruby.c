@@ -661,7 +661,8 @@ RubyEvalPanel(VALUE ary,
             }
           else if(entry == tray)
             {
-              p = &subtle->windows.tray;
+              flags |= (SUB_TYPE_PANEL|SUB_PANEL_TRAY);
+              p      = &subtle->windows.tray;
             }
           else if(entry == views)
             {
