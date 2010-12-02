@@ -280,7 +280,7 @@ subClientSingVisible(VALUE self)
             "SUBTLE_WINDOW_TAGS", False), NULL);
 
           /* Create client on match */
-          if(*tags && *visible & *tags &&
+          if(tags && *tags && *visible & *tags &&
               !NIL_P(client = rb_funcall(klass, meth, 1, INT2FIX(i))))
             {
               rb_iv_set(client, "@win", LONG2NUM(clients[i]));
