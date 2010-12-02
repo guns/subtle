@@ -604,34 +604,38 @@ subSharedTextWidth(Display *disp,
 {
   int width = 0, lbearing = 0, rbearing = 0;
 
-  assert(text);
+  assert(f);
 
-  /* Get text extents */
+  /* Get text extents based on font */
+  if(text)
+    {
 #ifdef HAVE_X11_XFT_XFT_H
-  if(f->xft) ///< XFT
-    {
-      XGlyphInfo extents;
+      if(f->xft) ///< XFT
+        {
+          XGlyphInfo extents;
 
-      XftTextExtents8(disp, f->xft, (XftChar8*)text, len, &extents);
+          XftTextExtents8(disp, f->xft, (XftChar8*)text, len, &extents);
 
-      width    = extents.xOff;
-      lbearing = extents.x;
-    }
-  else ///< XFS
+          width    = extents.xOff;
+          lbearing = extents.x;
+        }
+      else ///< XFS
 #endif /* HAVE_X11_XFT_XFT_H */
-    {
-      XRectangle overall_ink = { 0 }, overall_logical = { 0 };
+        {
+          XRectangle overall_ink = { 0 }, overall_logical = { 0 };
 
-      XmbTextExtents(f->xfs, text, len,
-        &overall_ink, &overall_logical);
+          XmbTextExtents(f->xfs, text, len,
+            &overall_ink, &overall_logical);
 
-      width    = overall_logical.width;
-      lbearing = overall_logical.x;
-      rbearing = rbearing;
+          width    = overall_logical.width;
+          lbearing = overall_logical.x;
+          rbearing = rbearing;
+        }
+
+      /* Get left and right spacing */
+      if(left)  *left  = lbearing;
+      if(right) *right = rbearing;
     }
-
-  if(left)  *left  = lbearing;
-  if(right) *right = rbearing;
 
   return center ? width - abs(lbearing - rbearing) : width;
 } /* }}} */
