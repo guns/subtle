@@ -637,20 +637,14 @@ subScreenKill(SubScreen *s)
 {
   assert(s);
 
+  if(s->panels) subArrayKill(s->panels, True);
+
   /* Destroy windows */
   if(s->panel1)
-    {
-      XDestroySubwindows(subtle->dpy, s->panel1);
-      XDestroyWindow(subtle->dpy, s->panel1);
-    }
+    XDestroyWindow(subtle->dpy, s->panel1);
 
   if(s->panel2)
-    {
-      XDestroySubwindows(subtle->dpy, s->panel2);
-      XDestroyWindow(subtle->dpy, s->panel2);
-    }
-
-  if(s->panels) subArrayKill(s->panels, True);
+    XDestroyWindow(subtle->dpy, s->panel2);
 
   free(s);
 
