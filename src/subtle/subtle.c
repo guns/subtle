@@ -49,7 +49,7 @@ SubtleSignal(int signum)
             frames  = backtrace(callstack, 10);
             strings = backtrace_symbols(callstack, frames);
 
-            printf("Last %d stack frames:\n", frames);
+            printf("\n\nLast %d stack frames:\n", frames);
 
             for(i = 0; i < frames; i++)
               printf("%s\n", strings[i]);
@@ -57,7 +57,7 @@ SubtleSignal(int signum)
             free(strings);
 #endif /* HAVE_EXECINFO_H */
 
-            printf("Please report this bug to <%s>\n", PKG_BUGREPORT);
+            printf("\nPlease report this bug to <%s>\n", PKG_BUGREPORT);
             abort();
           }
         break;
