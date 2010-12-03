@@ -26,6 +26,25 @@ context "Screen" do
     topic == Subtlext::Screen[0]
   end
 
+  asserts("Runtime: Change view") do
+    view1 = topic.view
+
+    sleep 0.5
+
+    topic.view = "www"
+
+    sleep 0.5
+
+    view2 = topic.view
+    topic.view = view1
+
+    sleep 0.5
+
+    view3 = topic.view
+
+    view1 == view3 and "www" == view2.name
+  end
+
   asserts("Convert to string")  { "0x16+1024+752" == topic.to_str }
 end
 
