@@ -145,6 +145,8 @@ VALUE subScreenSingCurrent(VALUE self);                           ///< Get curre
 VALUE subScreenInstantiate(int id);                               ///< Instantiate screen
 VALUE subScreenInit(VALUE self, VALUE id);                        ///< Create new screen
 VALUE subScreenUpdate(VALUE self);                                ///< Update screen
+VALUE subScreenViewReader(VALUE self);                            ///< Get screen view
+VALUE subScreenViewWriter(VALUE self, VALUE value);               ///< Set screen view
 VALUE subScreenClientList(VALUE self);                            ///< Get client list of screen
 VALUE subScreenToString(VALUE self);                              ///< Screen to string
 /* }}} */

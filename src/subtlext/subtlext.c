@@ -1124,7 +1124,7 @@ subSubtlextAssoc(VALUE self,
         wins[i], XA_CARDINAL,
         XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
 
-      if((int)*tags & (1L << (id + 1))) ///< Check if tag id matches
+      if(tags && (int)*tags & (1L << (id + 1))) ///< Check if tag id matches
         {
           /* Instantiate objects */
           switch(type)
@@ -1441,11 +1441,13 @@ Init_subtlext(void)
   rb_define_singleton_method(screen, "all",     subScreenSingAll,     0);
 
   /* General methods */
-  //rb_define_method(screen, "==", SubtlextEqualId, 1);
+  rb_define_method(screen, "==", SubtlextEqualId, 1);
 
   /* Class methods */
   rb_define_method(screen, "initialize", subScreenInit,       1);
   rb_define_method(screen, "update",     subScreenUpdate,     0);
+  rb_define_method(screen, "view",       subScreenViewReader, 0);
+  rb_define_method(screen, "view=",      subScreenViewWriter, 1);
   rb_define_method(screen, "clients",    subScreenClientList, 0);
   rb_define_method(screen, "to_str",     subScreenToString,   0);
 
@@ -1635,7 +1637,7 @@ Init_subtlext(void)
   rb_define_method(view, "untag",    SubtlextTagDel,      1);
   rb_define_method(view, "[]",       SubtlextPropReader,  1);
   rb_define_method(view, "[]=",      SubtlextPropWriter,  2);
-  rb_define_method(view, "==",       SubtlextEqualWindow, 1);
+  rb_define_method(view, "==",       SubtlextEqualId,     1);
 
   /* Class methods */
   rb_define_method(view, "initialize", subViewInit,          1);
