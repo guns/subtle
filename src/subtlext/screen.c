@@ -228,6 +228,101 @@ subScreenUpdate(VALUE self)
   return Qnil;
 } /* }}} */
 
+/* subScreenViewReader {{{ */
+/*
+ * call-seq: view -> Subtlext::View
+ *
+ * Get active view for screen
+ *
+ *  screen.view
+ *  => #<Subtlext::View:xxx>
+ */
+
+VALUE
+subScreenViewReader(VALUE self)
+{
+  VALUE ret = Qnil;
+  int nnames = 0;
+  char **names = NULL;
+  unsigned long *screens = NULL;
+
+  subSubtlextConnect(NULL); ///< Implicit open connection
+
+  /* Fetch data */
+  names   = subSharedPropertyStrings(display, DefaultRootWindow(display),
+    XInternAtom(display, "_NET_DESKTOP_NAMES", False), &nnames);
+  screens = (unsigned long *)subSharedPropertyGet(display,
+    DefaultRootWindow(display), XA_CARDINAL, XInternAtom(display,
+    "SUBTLE_SCREEN_VIEWS", False), NULL);
+
+  /* Check results */
+  if(names && screens)
+    {
+      int id = 0, vid = 0;
+
+      if(0 <= (id = FIX2INT(rb_iv_get(self, "@id"))))
+        {
+          if(0 <= (vid = screens[id]) && vid < nnames)
+            {
+              ret = subViewInstantiate(names[vid]);
+
+              if(!NIL_P(ret)) rb_iv_set(ret, "@id", INT2FIX(vid));
+            }
+        }
+    }
+
+  if(names)   XFreeStringList(names);
+  if(screens) free(screens);
+
+  return ret;
+} /* }}} */
+
+/* subScreenViewWriter {{{ */
+/*
+ * call-seq: view=(fixnum) -> nil
+ *           view=(symbol) -> nil
+ *           view=(object) -> nil
+ *
+ * Set active view for screen
+ *
+ *  screen.view = :www
+ *  => nil
+ *
+ *  screen.view = Subtlext::View[0]
+ *  => nil
+ */
+
+VALUE
+subScreenViewWriter(VALUE self,
+  VALUE value)
+{
+  VALUE view = Qnil;
+
+  subSubtlextConnect(NULL); ///< Implicit open connection
+
+  /* Check instance type */
+  if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("View"))))
+    view = value;
+  else view = subViewSingFind(Qnil, value);
+
+  /* Set view */
+  if(!NIL_P(view))
+    {
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+      data.l[0] = FIX2LONG(rb_iv_get(view, "@id"));
+      data.l[1] = CurrentTime;
+      data.l[2] = FIX2LONG(rb_iv_get(self, "@id"));
+
+      subSharedMessage(display, DefaultRootWindow(display),
+        "_NET_CURRENT_DESKTOP", data, 32, True);
+    }
+  else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+    rb_obj_classname(value));
+
+  return Qnil;
+} /* }}} */
+
 /* subScreenClientList {{{ */
 /*
  * call-seq: clients -> Array
