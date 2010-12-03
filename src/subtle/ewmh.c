@@ -45,7 +45,6 @@ subEwmhInit(void)
     "_NET_DESKTOP_VIEWPORT", "_NET_CURRENT_DESKTOP", "_NET_ACTIVE_WINDOW",
     "_NET_WORKAREA", "_NET_SUPPORTING_WM_CHECK", "_NET_VIRTUAL_ROOTS",
     "_NET_CLOSE_WINDOW", "_NET_RESTACK_WINDOW", "_NET_MOVERESIZE_WINDOW",
-    "_NET_SHOWING_DESKTOP",
 
     "_NET_WM_NAME", "_NET_WM_PID", "_NET_WM_DESKTOP", "_NET_WM_STRUT",
 
@@ -78,6 +77,7 @@ subEwmhInit(void)
     "SUBTLE_SUBLET_NEW", "SUBTLE_SUBLET_UPDATE", "SUBTLE_SUBLET_DATA",
     "SUBTLE_SUBLET_FOREGROUND", "SUBTLE_SUBLET_BACKGROUND",
     "SUBTLE_SUBLET_LIST", "SUBTLE_SUBLET_WINDOWS", "SUBTLE_SUBLET_KILL",
+    "SUBTLE_SCREEN_VIEWS",
     "SUBTLE_VISIBLE_TAGS", "SUBTLE_VISIBLE_VIEWS",
     "SUBTLE_RELOAD", "SUBTLE_RESTART", "SUBTLE_QUIT",
     "SUBTLE_COLORS", "SUBTLE_FONT"
@@ -107,7 +107,6 @@ subEwmhInit(void)
   subEwmhSetString(subtle->windows.support, SUB_EWMH_NET_WM_NAME, PKG_NAME);
   subEwmhSetString(subtle->windows.support, SUB_EWMH_WM_CLASS, PKG_NAME);
   subEwmhSetCardinals(subtle->windows.support, SUB_EWMH_NET_WM_PID, &pid, 1);
-  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_SHOWING_DESKTOP, (long *)&data, 1);
 
   /* EWMH: Desktop sizes */
   data[0] = SCREENW;
@@ -365,7 +364,6 @@ subEwmhFinish(void)
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_DESKTOP_NAMES));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_NUMBER_OF_DESKTOPS));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_DESKTOP_VIEWPORT));
-      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_SHOWING_DESKTOP));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_DESKTOP_GEOMETRY));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_VIRTUAL_ROOTS));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_WORKAREA));

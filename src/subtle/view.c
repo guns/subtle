@@ -127,6 +127,7 @@ subViewJump(SubView *v)
 
       subScreenConfigure();
       subScreenRender();
+      subScreenPublish();
       subViewFocus(v, True);
     }
 

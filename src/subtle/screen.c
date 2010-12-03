@@ -12,6 +12,48 @@
 
 #include "subtle.h"
 
+/* ScreenPublish {{{ */
+static void
+ScreenPublish(void)
+{
+  int i;
+  long *workareas = NULL, *viewports = NULL;
+
+  assert(subtle);
+
+  /* EWMH: Workarea */
+  workareas = (long *)subSharedMemoryAlloc(4 * subtle->screens->ndata,
+    sizeof(long));
+
+  /* Collect geometries */
+  for(i = 0; i < subtle->screens->ndata; i++)
+    {
+      SubScreen *s = SCREEN(subtle->screens->data[i]);
+
+      workareas[i * 4 + 0] = s->geom.x;
+      workareas[i * 4 + 1] = s->geom.y;
+      workareas[i * 4 + 2] = s->geom.width;
+      workareas[i * 4 + 3] = s->geom.height;
+    }
+
+  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_WORKAREA, workareas,
+    4 * subtle->screens->ndata);
+
+  /* EWMH: Desktop viewport */
+  viewports = (long *)subSharedMemoryAlloc(2 * subtle->screens->ndata,
+    sizeof(long)); ///< Calloc inits with zero - great
+
+  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_DESKTOP_VIEWPORT, viewports,
+    2 * subtle->screens->ndata);
+
+  free(workareas);
+  free(viewports);
+
+  XSync(subtle->dpy, False); ///< Sync all changes
+
+  subSharedLogDebug("publish=screen, screens=%d\n", subtle->screens->ndata);
+} /* }}} */
+
  /** subScreenInit {{{
   * @brief Init screens
   **/
@@ -84,6 +126,7 @@ subScreenInit(void)
 
   printf("Runnning on %d screen(s)\n", subtle->screens->ndata);
 
+  ScreenPublish();
   subScreenPublish();
 
   subSharedLogDebug("init=screen\n");
@@ -491,6 +534,8 @@ subScreenResize(void)
 {
   int i;
 
+  assert(subtle);
+
   /* Update screens */
   for(i = 0; i < subtle->screens->ndata; i++)
     {
@@ -532,7 +577,7 @@ subScreenResize(void)
       else XUnmapWindow(subtle->dpy, s->panel2);
     }
 
-  subScreenPublish();
+  ScreenPublish();
 } /* }}} */
 
  /** subScreenJump {{{
@@ -591,38 +636,24 @@ void
 subScreenPublish(void)
 {
   int i;
-  long *workareas = NULL, *viewports = NULL;
+  long *views = NULL;
 
   assert(subtle);
 
-  /* EWMH: Workarea size of every desktop */
-  workareas = (long *)subSharedMemoryAlloc(4 * subtle->screens->ndata,
+  /* EWMH: Views per screen */
+  views = (long *)subSharedMemoryAlloc(subtle->screens->ndata,
     sizeof(long));
 
+  /* Collect views */
   for(i = 0; i < subtle->screens->ndata; i++)
-    {
-      SubScreen *s = SCREEN(subtle->screens->data[i]);
+    views[i] = SCREEN(subtle->screens->data[i])->vid;
 
-      workareas[i * 4 + 0] = s->geom.x;
-      workareas[i * 4 + 1] = s->geom.y;
-      workareas[i * 4 + 2] = s->geom.width;
-      workareas[i * 4 + 3] = s->geom.height;
-    }
+  subEwmhSetCardinals(ROOT, SUB_EWMH_SUBTLE_SCREEN_VIEWS,
+    views, subtle->screens->ndata);
 
-  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_WORKAREA, workareas,
-    4 * subtle->screens->ndata);
-
-  /* EWMH: Desktop viewport */
-  viewports = (long *)subSharedMemoryAlloc(2 * subtle->screens->ndata,
-    sizeof(long)); ///< Calloc inits with zero - great
-
-  subEwmhSetCardinals(ROOT, SUB_EWMH_NET_DESKTOP_VIEWPORT, viewports,
-    2 * subtle->screens->ndata);
+  free(views);
 
   XSync(subtle->dpy, False); ///< Sync all changes
-
-  free(workareas);
-  free(viewports);
 
   subSharedLogDebug("publish=screen, screens=%d\n", subtle->screens->ndata);
 } /* }}} */
