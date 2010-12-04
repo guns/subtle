@@ -234,218 +234,218 @@ module Subtle # {{{
 
         template :layout do # {{{
           <<EOF
-  !!! 1.1
-  %html
-    %head
-      %title SUR - Subtle User Repository
+!!! 1.1
+%html
+  %head
+    %title SUR - Subtle User Repository
 
-      %style{:type => "text/css"}
-        :sass
-          body
-            :color #000000
-            :background-color #ffffff
-            :font-family Verdana,sans-serif
-            :font-size 12px
-            :margin 0px
-            :padding 0px
-          h1
-            :color #444444
-            :font-size 20px
-            :margin 0 0 10px
-            :padding 2px 10px 1px 0
-          h2
-            :color #444444
-            :font-size 16px
-            :margin 0 0 10px
-            :padding 2px 10px 1px 0
-          input
-            :margin-top 1px
-            :margin-bottom 1px
-            :vertical-align middle
-          input[type="text"]
-            :border 1px solid #D7D7D7
-          input[type="text"]:focus
-            :border 1px solid #888866
-          input[type="submit"]
-            :background-color #F2F2F2
-            :border 1px outset #CCCCCC
-            :color #222222
-          input[type="submit"]:hover
-            :background-color #CCCCBB
-          a#download:link, a#download:visited, a#download:active
-            :color #000000
-            :text-decoration none
-            :border-bottom 1px dotted #E4E4E4
-          a#download:hover
-            :color #000000
-            :text-decoration none
-          a:link, a:visited, a:active
-            :color #E92D45
-            :text-decoration none
-          a:hover
-            :text-decoration underline
-          .center
-            :margin 0px auto
-          .italic
-            :font-style italic
-          .gray
-            :color #999999
-          #box
-            :background-color #FCFCFC
-            :border 1px solid #E4E4E4
-            :color #505050
-            :line-height 1.5em
-            :padding 6px
-            :margin-bottom 10px
-            :margin-right 10px
-            :margin-top 10px
-            :float left
-            :min-width 280px
-            :min-height 240px
-          #form
-            :width 900px
-            :padding 10px 0px 10px 0px
-          #frame
-            :padding 10px
-          #left
-            :margin-right 10px
-            :margin-top 10px
-            :float left
-            :width 630px
-          #right
-            :margin-right 10px
-            :margin-top 10px
-            :float right
-            :width 230px
-            :text-align right
-          #clear
-            :clear both
+    %style{:type => "text/css"}
+      :sass
+        body
+          :color #000000
+          :background-color #ffffff
+          :font-family Verdana,sans-serif
+          :font-size 12px
+          :margin 0px
+          :padding 0px
+        h1
+          :color #444444
+          :font-size 20px
+          :margin 0 0 10px
+          :padding 2px 10px 1px 0
+        h2
+          :color #444444
+          :font-size 16px
+          :margin 0 0 10px
+          :padding 2px 10px 1px 0
+        input
+          :margin-top 1px
+          :margin-bottom 1px
+          :vertical-align middle
+        input[type="text"]
+          :border 1px solid #D7D7D7
+        input[type="text"]:focus
+          :border 1px solid #888866
+        input[type="submit"]
+          :background-color #F2F2F2
+          :border 1px outset #CCCCCC
+          :color #222222
+        input[type="submit"]:hover
+          :background-color #CCCCBB
+        a#download:link, a#download:visited, a#download:active
+          :color #000000
+          :text-decoration none
+          :border-bottom 1px dotted #E4E4E4
+        a#download:hover
+          :color #000000
+          :text-decoration none
+        a:link, a:visited, a:active
+          :color #E92D45
+          :text-decoration none
+        a:hover
+          :text-decoration underline
+        .center
+          :margin 0px auto
+        .italic
+          :font-style italic
+        .gray
+          :color #999999
+        #box
+          :background-color #FCFCFC
+          :border 1px solid #E4E4E4
+          :color #505050
+          :line-height 1.5em
+          :padding 6px
+          :margin-bottom 10px
+          :margin-right 10px
+          :margin-top 10px
+          :float left
+          :min-width 280px
+          :min-height 240px
+        #form
+          :width 900px
+          :padding 10px 0px 10px 0px
+        #frame
+          :padding 10px
+        #left
+          :margin-right 10px
+          :margin-top 10px
+          :float left
+          :width 630px
+        #right
+          :margin-right 10px
+          :margin-top 10px
+          :float right
+          :width 230px
+          :text-align right
+        #clear
+          :clear both
 
-    %body
-      #frame
-        =yield
+  %body
+    #frame
+      =yield
 EOF
         end # }}}
 
         template :index do # {{{
           <<EOF
-  %h2 Sublets
-  %p
-    Small Ruby scripts written in a
-    %a{:href => "http://en.wikipedia.org/wiki/Domain_Specific_Language"} DSL
-    that provide things like system information for the
-    %a{:href => "http://subtle.subforge.org"} subtle
-    panel.
+%h2 Sublets
+%p
+  Small Ruby scripts written in a
+  %a{:href => "http://en.wikipedia.org/wiki/Domain_Specific_Language"} DSL
+  that provides things like system information for the
+  %a{:href => "http://subtle.subforge.org"} subtle
+  panel.
 
-  #form
-    #left
-      %form{:method => "get", :action => "/search"}
-        Search:
-        %input{:type => "text", :size => 40, :name => "query"}
-        %input{:type => "submit", :name => "submit", :value => "Go"}
+#form
+  #left
+    %form{:method => "get", :action => "/search"}
+      Search:
+      %input{:type => "text", :size => 40, :name => "query"}
+      %input{:type => "submit", :name => "submit", :value => "Go"}
 
-    #right
-      %a{:href => "http://subforge.org/wiki/sur/Specification"} Sublet specification
-      |
-      %a{:href => "http://sur.subtle.de/sublets"} All sublets
+  #right
+    %a{:href => "http://subforge.org/wiki/sur/Specification"} Sublet specification
+    |
+    %a{:href => "http://sur.subtle.de/sublets"} All sublets
 
-  #clear
+#clear
 
-  #box
-    %h2 Latest sublets
-    %ul
-      -@newest.each do |s|
-        %li
-          %a#download{:href => "http://sur.subtle.de/get/%s" % [ s.digest ] }
-            ="%s-%s" % [ s.name, s.version ]
-          ="(%s)" % [ s.tags.map { |t| '<a href="/tag/%s">#%s</a>' % [ t.tag.name, t.tag.name ] }.join(", ") ]
+#box
+  %h2 Latest sublets
+  %ul
+    -@newest.each do |s|
+      %li
+        %a#download{:href => "http://sur.subtle.de/get/%s" % [ s.digest ] }
+          ="%s-%s" % [ s.name, s.version ]
+        ="(%s)" % [ s.tags.map { |t| '<a href="/tag/%s">#%s</a>' % [ t.tag.name, t.tag.name ] }.join(", ") ]
 
-  #box
-    %h2 Most downloaded
-    %ul
-      -@most.each do |s|
-        %li
-          %a#download{:href => "http://sur.subtle.de/get/%s" % [ s.digest ] }
-            ="%s-%s" % [ s.name, s.version ]
-          ="(%d)" % [ s.downloads ]
+#box
+  %h2 Most downloaded
+  %ul
+    -@most.each do |s|
+      %li
+        %a#download{:href => "http://sur.subtle.de/get/%s" % [ s.digest ] }
+          ="%s-%s" % [ s.name, s.version ]
+        ="(%d)" % [ s.downloads ]
 
-  #box
-    %h2 Never downloaded
-    %ul
-      -@never.each do |s|
-        %li
-          %a#download{:href => "http://sur.subtle.de/get/%s" % [ s.digest ] }
-            ="%s-%s" % [ s.name, s.version ]
-          ="(%s)" % [ s.tags.map { |t| '<a href="/tag/%s">#%s</a>' % [ t.tag.name, t.tag.name ] }.join(", ") ]
+#box
+  %h2 Never downloaded
+  %ul
+    -@never.each do |s|
+      %li
+        %a#download{:href => "http://sur.subtle.de/get/%s" % [ s.digest ] }
+          ="%s-%s" % [ s.name, s.version ]
+        ="(%s)" % [ s.tags.map { |t| '<a href="/tag/%s">#%s</a>' % [ t.tag.name, t.tag.name ] }.join(", ") ]
 
-    %h2 Just broken
-    %ul
-      -@worst.each do |s|
-        %li
-          %a#download{:href => "http://sur.subtle.de/get/%s" % [ s.digest ] }
-            ="%s-%s" % [ s.name, s.version ]
-          ="(%d)" % [ s.annotations ]
+  %h2 Just broken
+  %ul
+    -@worst.each do |s|
+      %li
+        %a#download{:href => "http://sur.subtle.de/get/%s" % [ s.digest ] }
+          ="%s-%s" % [ s.name, s.version ]
+        ="(%d)" % [ s.annotations ]
 EOF
         end # }}}
 
         template :tag do # {{{
           <<EOF
-  #box
-    %h2
-      Sublets tagged with
-      %span.italic= @tag
+#box
+  %h2
+    Sublets tagged with
+    %span.italic= @tag
 
-    %ul
-      -if(!@list.nil?)
-        -@list.each do |s|
-          %li
-            %a#download{:href => "/get/%s" % [ s.digest ] }
-              ="%s-%s" % [ s.name, s.version ]
-            ="(%s)" % [ s.tags.map { |t| '<a href="/tag/%s">#%s</a>' % [ t.tag.name, t.tag.name ] }.join(", ") ]
-  #clear
+  %ul
+    -if(!@list.nil?)
+      -@list.each do |s|
+        %li
+          %a#download{:href => "/get/%s" % [ s.digest ] }
+            ="%s-%s" % [ s.name, s.version ]
+          ="(%s)" % [ s.tags.map { |t| '<a href="/tag/%s">#%s</a>' % [ t.tag.name, t.tag.name ] }.join(", ") ]
+#clear
 
-  .center
-    %a{:href => "javascript:history.back()"} Back
+.center
+  %a{:href => "javascript:history.back()"} Back
 EOF
         end # }}}
 
         template :sublets do # {{{
           <<EOF
-  #box
-    %h2= "All sublets (%d)" % [ @list.size ]
+#box
+  %h2= "All sublets (%d)" % [ @list.size ]
 
-    %ul
-      -@list.each do |s|
-        %li
-          %a#download{:href => "/get/%s" % [ s.digest ] }
-            ="%s-%s" % [ s.name, s.version ]
-          ="(%s)" % [ s.tags.map { |t| '<a href="/tag/%s">#%s</a>' % [ t.tag.name, t.tag.name ] }.join(", ") ]
-          %span.gray= "(%d downloads)" % [ s.downloads ]
-  #clear
+  %ul
+    -@list.each do |s|
+      %li
+        %a#download{:href => "/get/%s" % [ s.digest ] }
+          ="%s-%s" % [ s.name, s.version ]
+        ="(%s)" % [ s.tags.map { |t| '<a href="/tag/%s">#%s</a>' % [ t.tag.name, t.tag.name ] }.join(", ") ]
+        %span.gray= "(%d downloads)" % [ s.downloads ]
+#clear
 
-  .center
-    %a{:href => "javascript:history.back()"} Back
+.center
+  %a{:href => "javascript:history.back()"} Back
 EOF
         end # }}}
 
         template :search do # {{{
           <<EOF
-  #box
-    %h2
-      Search for
-      %span.italic= @query
+#box
+  %h2
+    Search for
+    %span.italic= @query
 
-    %ul
-      -@list.each do |s|
-        %li
-          %a#download{:href => "/get/%s" % [ s.digest ] }
-            ="%s-%s" % [ s.name, s.version ]
-          ="(%s)" % [ s.tags.map { |t| '<a href="/tag/%s">#%s</a>' % [ t.tag.name, t.tag.name ] }.join(", ") ]
-          %span.gray= "(%d downloads)" % [ s.downloads ]
-  #clear
+  %ul
+    -@list.each do |s|
+      %li
+        %a#download{:href => "/get/%s" % [ s.digest ] }
+          ="%s-%s" % [ s.name, s.version ]
+        ="(%s)" % [ s.tags.map { |t| '<a href="/tag/%s">#%s</a>' % [ t.tag.name, t.tag.name ] }.join(", ") ]
+        %span.gray= "(%d downloads)" % [ s.downloads ]
+#clear
 
-  .center
-    %a{:href => "javascript:history.back()"} Back
+.center
+  %a{:href => "javascript:history.back()"} Back
 EOF
         end # }}}
 
