@@ -32,6 +32,9 @@ module Subtle # {{{
       # Sublet notes
       attr_accessor :notes
 
+      # Sublet config notes
+      attr_accessor :config
+
       # Package version
       attr_accessor :version
 
