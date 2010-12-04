@@ -216,10 +216,79 @@ module Subtle # {{{
         end
       end # }}}
 
+      ## Sur::Client::config {{{
+      # Show config settings for installed sublets if any
+      #
+      # @param [String]  name       Name of the Sublet
+      # @param [Bool]    use_color  Use colors
+      #
+      # @raise [String] Config error
+      # @since 0.2
+      #
+      # @example
+      #   Sur::Client.new.config("sublet")
+      #   => "Color (String)  Default color"
+
+      def config(name, use_color = true)
+        build_local if(@cache_local.nil?)
+
+        # Check if sublet is installed
+        if((specs = search(name, @cache_local)) && !specs.empty?)
+          spec = specs.first
+
+          show_config(spec, use_color)
+        end
+      end # }}}
+
+      ## Sur::Client::fetch {{{
+      # Install a new Sublet
+      #
+      # @param [Array]   names     Names of Sublets
+      # @param [String]  version   Version of the Sublet
+      # @param [String]  use_tags  Use tags
+      #
+      # @raise [String] Fetch error
+      # @since 0.0
+      #
+      # @example
+      #   Sur::Client.new.fetch([ "sublet" ])
+      #   => nil
+
+      def fetch(names, version = nil, use_tags = false)
+        build_remote if(@cache_remote.nil?)
+
+        # Install all sublets
+        names.each do |name|
+          # Check if remote sublet exists
+          if((specs = search(name, @cache_remote, version, use_tags)) &&
+              specs.empty?)
+            puts ">>> WARNING: Couldn't find sublet `#{name}' " \
+                 "in remote repository"
+
+            next
+          end
+
+          spec = specs.first
+
+          # Download and copy sublet to current directory
+          unless((temp = download(spec)).nil?)
+            FileUtils.cp(
+              temp.path,
+              File.join(
+                Dir.getwd,
+                "%s-%s.sublet" % [ spec.name.downcase, spec.version ]
+              )
+            )
+
+            temp.close
+          end
+        end
+      end # }}}
+
       ## Sur::Client::install {{{
       # Install a new Sublet
       #
-      # @param [Array]  names     Names of Sublets
+      # @param [Array]   names     Names of Sublets
       # @param [String]  version   Version of the Sublet
       # @param [String]  use_tags  Use tags
       # @param [Bool]    reload    Reload sublets after installing
@@ -267,38 +336,13 @@ module Subtle # {{{
           spec = specs.first
           raise "Couldn't install sublet `#{name}'" unless(spec.satisfied?)
 
-          # Create tempfile
-          temp = Tempfile.new(spec.to_s)
+          # Download and install sublet
+          unless((temp = download(spec)).nil?)
+            install_sublet(temp.path)
 
-          # Fetch file
-          c = Curl::Easy.new(HOST + "/get/" + spec.digest)
+            reload_sublets if(reload)
 
-          # Progress handler
-          c.on_progress do |dl_total, dl_now, ul_total, ul_now|
-            progress(">>> Fetching sublet `#{spec.to_s}'", dl_total, dl_now)
-            true
-          end
-
-          c.perform
-          puts
-
-          # Check server response
-          case c.response_code
-            when 200
-              body = c.body_str
-
-              # Write file to tempfile
-              File.open(temp.path, "w+") do |out|
-                out.write(body)
-              end
-
-              # Install sublet
-              install_sublet(temp.path)
-
-              reload_sublets if(reload)
-            else
-              puts ">>> WARNING: Coudln't retrieve sublet. Server " \
-                   "returned HTTP error #{c.response_code}"
+            temp.close
           end
         end
       end # }}}
@@ -306,8 +350,8 @@ module Subtle # {{{
       ## Sur::Client::list {{{
       # List the Sublet in a repository
       #
-      # @param [String]  repo  Repo name
-      # @param [Bool]  color  Use colors
+      # @param [String]  repo       Repo name
+      # @param [Bool]    use_color  Use colors
       #
       # @since 0.0
       #
@@ -315,7 +359,7 @@ module Subtle # {{{
       #   Sur::Client.new.list("remote")
       #   => nil
 
-      def list(repo, color)
+      def list(repo, use_color = true)
         # Select cache
         case repo
           when "local" then specs = @cache_local
@@ -325,7 +369,7 @@ module Subtle # {{{
             specs = @cache_remote
         end
 
-        dump(specs, color)
+        show_list(specs, use_color)
       end # }}}
 
       ## Sur::Client::notes {{{
@@ -343,7 +387,7 @@ module Subtle # {{{
       def notes(name)
         build_local if(@cache_local.nil?)
 
-        # Check if sublet is already installed
+        # Check if sublet is installed
         if((specs = search(name, @cache_local)) && !specs.empty?)
           spec = specs.first
 
@@ -382,7 +426,7 @@ module Subtle # {{{
             end
         end
 
-        dump(specs, use_color)
+        show_list(specs, use_color)
       end # }}}
 
       ## Sur::Client::reorder {{{
@@ -578,9 +622,9 @@ module Subtle # {{{
       ## Sur::Client::upgrade {{{
       # Upgrade all Sublets
       #
-      # @param [Bool]  color   Use colors
-      # @param [Bool]  reload  Reload sublets after uninstalling
-      # @param [Bool]  assume  Whether to assume yes
+      # @param [Bool]  use_color  Use colors
+      # @param [Bool]  reload     Reload sublets after uninstalling
+      # @param [Bool]  assume     Whether to assume yes
       #
       # @raise Upgrade error
       # @since 0.2
@@ -655,6 +699,44 @@ module Subtle # {{{
 
       private
 
+      def download(spec) # {{{
+        # Create tempfile
+        temp = Tempfile.new(spec.to_s)
+
+        # Fetch file
+        c = Curl::Easy.new(HOST + "/get/" + spec.digest)
+
+        # Progress handler
+        c.on_progress do |dl_total, dl_now, ul_total, ul_now|
+          progress(">>> Fetching sublet `#{spec.to_s}'", dl_total, dl_now)
+          true
+        end
+
+        c.perform
+        puts
+
+        # Check server response
+        case c.response_code
+          when 200
+            body = c.body_str
+
+            # Write file to tempfile
+            File.open(temp.path, "w+") do |out|
+              out.write(body)
+            end
+
+          else
+            puts ">>> WARNING: Coudln't fetch sublet `#{spec.name}`."
+            puts "             Server returned HTTP error #{c.response_code}"
+
+            temp.close
+
+            temp = nil
+        end
+
+        return temp
+      end # }}}
+
       def progress(mesg, total, now) # {{{
         if(0.0 < total)
           percent = (now.to_f * 100 / total.to_f).floor
@@ -680,6 +762,13 @@ module Subtle # {{{
         end
 
         results
+      end # }}}
+
+      def colorize(color, text, bold = false, mode = :fg) # {{{
+        c = true == bold ? 1 : 30 + color  #< Bold mode
+        m = :fg == mode  ? 1 :  3 #< Color mode
+
+        "\033[#{m};#{c}m#{text}\033[m"
       end # }}}
 
       def build_local # {{{
@@ -738,14 +827,7 @@ module Subtle # {{{
         end
       end # }}}
 
-      def colorize(color, text, bold = false, mode = :fg) # {{{
-        c = true == bold ? 1 : 30 + color  #< Bold mode
-        m = :fg == mode  ? 1 :  3 #< Color mode
-
-        "\033[#{m};#{c}m#{text}\033[m"
-      end # }}}
-
-      def dump(specs, use_color) # {{{
+      def show_list(specs, use_color) # {{{
         i = 1
         specs.sort { |a, b| [ a.name, a.version ] <=> [ b.name, b.version ] }
         specs.each do |s|
@@ -789,6 +871,50 @@ module Subtle # {{{
         unless(spec.notes.nil? or spec.notes.empty?)
           puts
           puts spec.notes
+          puts
+        end
+      end # }}}
+
+      def show_config(spec, use_color) # {{{
+        unless(spec.nil?)
+          puts
+
+          # Add default config settings
+          config = [
+            {
+              :name        => "interval",
+              :type        => "integer",
+              :description => "Update interval in seconds"
+            },
+            {
+              :name        => "foreground",
+              :type        => "string",
+              :description => "Default foreground color (#rrggbb)"
+            },
+            {
+              :name        => "background",
+              :type        => "string",
+              :description => "Default background color (#rrggbb)"
+            }
+          ]
+
+          config |= spec.config unless(spec.config.nil?)
+
+          # Dump all settings
+          config.each do |c|
+            if(use_color)
+              puts "%-25s  %-20s  %s" % [
+                colorize(2, c[:name]),
+                colorize(5, c[:type]),
+                c[:description]
+              ]
+            else
+              puts "%-25s  %20s  %s" % [
+                c[:name], c[:type], c[:description]
+              ]
+            end
+          end
+
           puts
         end
       end # }}}

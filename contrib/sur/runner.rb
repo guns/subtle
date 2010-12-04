@@ -33,14 +33,14 @@ module Subtle # {{{
 
       def run(args)
         # Default options
-        @repo    = "local"
-        @version = nil
-        @tags    = false
-        @port    = 4567
-        @color   = true
-        @regex   = false
-        @reload  = false
-        @assume  = false
+        @repo      = "local"
+        @version   = nil
+        @port      = 4567
+        @use_tags  = false
+        @use_color = true
+        @use_regex = false
+        @reload    = false
+        @assume    = false
 
         # GetoptLong only works on ARGV so we use something own
         begin
@@ -58,11 +58,11 @@ module Subtle # {{{
 
                 true
               when "-e", "--regex"
-                @regex = true
+                @use_regex = true
 
                 true
               when "-t", "--tag"
-                @tags = true
+                @use_tags = true
 
                 true
               when "-v", "--version"
@@ -74,7 +74,7 @@ module Subtle # {{{
 
                 true
               when "-c", "--no-color"
-                @color = false
+                @use_color = false
 
                 true
               when "-R", "--reload"
@@ -102,13 +102,21 @@ module Subtle # {{{
             usage(cmd) if(args.empty?)
 
             Subtle::Sur::Client.new.build(args.first)
+          when "config"
+            usage(cmd) if(args.empty?)
+
+            Subtle::Sur::Client.new.config(args.first, @use_color)
+          when "fetch"
+            usage(cmd) if(args.empty?)
+
+            Subtle::Sur::Client.new.fetch(args, @version, @use_tags)
           when "help" then usage(nil)
           when "install"
             usage(cmd) if(args.empty?)
 
-            Sur::Client.new.install(args, @version, @tags, @reload)
+            Sur::Client.new.install(args, @version, @use_tags, @reload)
           when "list"
-            Subtle::Sur::Client.new.list(@repo, @color)
+            Subtle::Sur::Client.new.list(@repo, @use_color)
           when "notes"
             usage(cmd) if(args.empty?)
 
@@ -117,7 +125,8 @@ module Subtle # {{{
             usage(cmd) if(args.empty?)
 
             Subtle::Sur::Client.new.query(args.first, @repo,
-              @version, @regex, @tags, @color)
+              @version, @use_regex, @use_tags, @use_color
+            )
           when "reorder"
             Subtle::Sur::Client.new.reorder
           when "server"
@@ -139,11 +148,11 @@ module Subtle # {{{
           when "uninstall"
             usage(cmd) if(args.empty?)
 
-            Subtle::Sur::Client.new.uninstall(args, @version, @tags, @reload)
+            Subtle::Sur::Client.new.uninstall(args, @version, @use_tags, @reload)
           when "update"
             Subtle::Sur::Client.new.update(@repo)
           when "upgrade"
-            Subtle::Sur::Client.new.upgrade(@color, @assume, @reload)
+            Subtle::Sur::Client.new.upgrade(@use_color, @assume, @reload)
           when "version" then version
           when "yank"
             usage(cmd) if(args.empty?)
@@ -178,8 +187,18 @@ module Subtle # {{{
                  "  -v, --version VERSION     Annotate a specific version\n" \
                  "  -h, --help                Show this help and exit\n\n" \
                  "Examples:\n" \
-                 "sur list -l\n" \
-                 "sur list -r\n"
+                 "sur annotate -l\n" \
+                 "sur annotate -r\n"
+          when "fetch"
+            puts "Usage: sur fetch NAME [OPTIONS]\n\n" \
+                 "Download sublet to current directory\n\n" \
+                 "Options:\n" \
+                 "  -t, --tags                Include tags in search\n" \
+                 "  -v, --version VERSION     Search for a specific version\n" \
+                 "  -h, --help                Show this help and exit\n\n" \
+                 "Examples:\n" \
+                 "sur fetch clock\n" \
+                 "sur fetch clock -v 0.3\n"
           when "install"
             puts "Usage: sur install NAME [OPTIONS]\n\n" \
                  "Install a sublet by given name\n\n" \
@@ -258,6 +277,8 @@ module Subtle # {{{
                  "Options:\n" \
                  "  annotate NAME [-v VERSION|-h]           Mark sublet to be reviewed\n" \
                  "  build SPEC                              Create a sublet package\n" \
+                 "  config NAME                             Show available config settings\n" \
+                 "  fetch NAME                              Download sublet to current directory\n" \
                  "  help                                    Show this help and exit\n" \
                  "  install NAME [-R|-t|-v VERSION|-h]      Install a sublet\n" \
                  "  list [-l|-r|-h]                         List local/remote sublets\n" \
