@@ -10,6 +10,16 @@
 #
 
 context "Subtle - Finish" do
+  asserts("Check reload") do
+    Subtlext::Subtle.reload
+    Subtlext::Subtle.running?
+  end
+
+  asserts("Check restart") do
+    Subtlext::Subtle.reload
+    Subtlext::Subtle.running?
+  end
+
   asserts("Check quit") do
     # Kill all clients
     Subtlext::Client.all.each do |c|

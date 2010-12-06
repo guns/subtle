@@ -30,8 +30,6 @@ context "Gravity" do
   asserts("Check associations") do
     clients = topic.clients
 
-    sleep 0.5
-
     clients.is_a?(Array) and 1 == clients.size
   end
 

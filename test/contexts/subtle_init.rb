@@ -22,22 +22,16 @@ context "Subtle - Init" do
     "-*-*-medium-*-*-*-14-*-*-*-*-*-*-*" == Subtlext::Subtle.font
   end
 
-  asserts("Check reload") do
-    Subtlext::Subtle.reload
-    Subtlext::Subtle.running?
-  end
-
-  asserts("Check restart") do
-    Subtlext::Subtle.reload
-    Subtlext::Subtle.running?
-  end
-
   asserts("Check spawn") do
     if((xterm = find_executable0("xterm")).nil?)
       raise "xterm not found in path"
     else
       Subtlext::Subtle.spawn("#{xterm} -display :10")
     end
+
+    sleep 1
+
+    1 == Subtlext::Client.all.size
   end
 end
 

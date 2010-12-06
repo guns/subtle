@@ -30,7 +30,7 @@ context "View" do
     clients = topic.clients
     tags    = topic.tags
 
-    clients.is_a?(Array) and 0 == clients.size and
+    clients.is_a?(Array) and 1 == clients.size and
       tags.is_a?(Array) and 2 == tags.size
   end
 
