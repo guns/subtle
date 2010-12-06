@@ -47,8 +47,11 @@ EventUntag(SubClient *c,
     }
 
   /* EWMH: Tags */
-  subEwmhSetCardinals(c->flags & SUB_TYPE_VIEW ? VIEW(c)->win : c->win,
-    SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&c->tags, 1);
+  if(c->flags & SUB_TYPE_CLIENT)
+    {
+      subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS,
+        (long *)&c->tags, 1);
+    }
 } /* }}} */
 
 /* EventFindSublet {{{ */
@@ -538,9 +541,7 @@ EventMessage(XClientMessageEvent *ev)
                     {
                       v->tags = (int)ev->data.l[1]; ///< Action
 
-                      /* EWMH: Tags */
-                      subEwmhSetCardinals(v->win, SUB_EWMH_SUBTLE_WINDOW_TAGS,
-                        (long *)&v->tags, 1);
+                      subViewPublish();
 
                       /* Reconfigure if view is visible */
                       if(subtle->visible_views & (1L << (ev->data.l[0] + 1)))
@@ -669,6 +670,7 @@ EventMessage(XClientMessageEvent *ev)
                 subArrayRemove(subtle->tags, (void *)t);
                 subTagKill(t);
                 subTagPublish();
+                subViewPublish();
 
                 if(reconf) subScreenConfigure();
               }

@@ -121,7 +121,6 @@ RubyConvert(void *data)
 
           /* Set properties */
           rb_iv_set(object, "@id",  INT2FIX(id));
-          rb_iv_set(object, "@win", LONG2NUM(v->win));
         } /* }}} */
       else if(c->flags & SUB_TYPE_TAG) /* {{{ */
         {
@@ -817,10 +816,6 @@ RubyEvalConfig(void)
           }
 
       v->tags |= DEFAULTTAG; ///< Set default tag
-
-      /* EWMH: Tags */
-      subEwmhSetCardinals(v->win, SUB_EWMH_SUBTLE_WINDOW_TAGS,
-        (long *)&v->tags, 1);
     }
 
   subViewPublish();

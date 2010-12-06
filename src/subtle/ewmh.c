@@ -43,9 +43,10 @@ subEwmhInit(void)
     "_NET_SUPPORTED", "_NET_CLIENT_LIST", "_NET_CLIENT_LIST_STACKING",
     "_NET_NUMBER_OF_DESKTOPS", "_NET_DESKTOP_NAMES", "_NET_DESKTOP_GEOMETRY",
     "_NET_DESKTOP_VIEWPORT", "_NET_CURRENT_DESKTOP", "_NET_ACTIVE_WINDOW",
-    "_NET_WORKAREA", "_NET_SUPPORTING_WM_CHECK", "_NET_VIRTUAL_ROOTS",
-    "_NET_CLOSE_WINDOW", "_NET_RESTACK_WINDOW", "_NET_MOVERESIZE_WINDOW",
+    "_NET_WORKAREA", "_NET_SUPPORTING_WM_CHECK",
 
+    /* Client */
+    "_NET_CLOSE_WINDOW", "_NET_RESTACK_WINDOW", "_NET_MOVERESIZE_WINDOW",
     "_NET_WM_NAME", "_NET_WM_PID", "_NET_WM_DESKTOP", "_NET_WM_STRUT",
 
     /* Types */
@@ -73,7 +74,7 @@ subEwmhInit(void)
     "SUBTLE_GRAVITY_NEW", "SUBTLE_GRAVITY_LIST", "SUBTLE_GRAVITY_KILL",
     "SUBTLE_TAG_NEW", "SUBTLE_TAG_LIST", "SUBTLE_TAG_KILL",
     "SUBTLE_TRAY_LIST", "SUBTLE_TRAY_KILL",
-    "SUBTLE_VIEW_NEW", "SUBTLE_VIEW_KILL",
+    "SUBTLE_VIEW_NEW", "SUBTLE_VIEW_TAGS", "SUBTLE_VIEW_KILL",
     "SUBTLE_SUBLET_NEW", "SUBTLE_SUBLET_UPDATE", "SUBTLE_SUBLET_DATA",
     "SUBTLE_SUBLET_FOREGROUND", "SUBTLE_SUBLET_BACKGROUND",
     "SUBTLE_SUBLET_LIST", "SUBTLE_SUBLET_WINDOWS", "SUBTLE_SUBLET_KILL",
@@ -365,7 +366,6 @@ subEwmhFinish(void)
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_NUMBER_OF_DESKTOPS));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_DESKTOP_VIEWPORT));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_DESKTOP_GEOMETRY));
-      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_VIRTUAL_ROOTS));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_WORKAREA));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_CLIENT_LIST));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_CLIENT_LIST_STACKING));
@@ -374,6 +374,7 @@ subEwmhFinish(void)
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_GRAVITY_LIST));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_TAG_LIST));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_TRAY_LIST));
+      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_VIEW_TAGS));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_COLORS));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_FONT));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_SUBLET_LIST));

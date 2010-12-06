@@ -389,11 +389,11 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_NET_ACTIVE_WINDOW,                                     ///< Focus window
   SUB_EWMH_NET_WORKAREA,                                          ///< Workarea of the views
   SUB_EWMH_NET_SUPPORTING_WM_CHECK,                               ///< Check for compliant window manager
-  SUB_EWMH_NET_VIRTUAL_ROOTS,                                     ///< List of virtual destops
+
+  /* Client */
   SUB_EWMH_NET_CLOSE_WINDOW,                                      ///< Close window
   SUB_EWMH_NET_RESTACK_WINDOW,                                    ///< Change window stacking
   SUB_EWMH_NET_MOVERESIZE_WINDOW,                                 ///< Resize window
-
   SUB_EWMH_NET_WM_NAME,                                           ///< Name of client
   SUB_EWMH_NET_WM_PID,                                            ///< PID of client
   SUB_EWMH_NET_WM_DESKTOP,                                        ///< Desktop client is on
@@ -444,6 +444,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_TRAY_LIST,                                      ///< Subtle tray list
   SUB_EWMH_SUBTLE_TRAY_KILL,                                      ///< Subtle tray kill
   SUB_EWMH_SUBTLE_VIEW_NEW,                                       ///< Subtle view new
+  SUB_EWMH_SUBTLE_VIEW_TAGS,                                      ///< Subtle view tags
   SUB_EWMH_SUBTLE_VIEW_KILL,                                      ///< Subtle view kill
   SUB_EWMH_SUBTLE_SUBLET_NEW,                                     ///< Subtle sublet new
   SUB_EWMH_SUBTLE_SUBLET_UPDATE,                                  ///< Subtle sublet update
@@ -613,7 +614,7 @@ typedef struct subview_t /* {{{ */
   FLAGS    flags;                                                 ///< View flags
   char     *name;                                                 ///< View name
   TAGS     tags;                                                  ///< View tags
-  Window   win, focus;                                            ///< View window, focus
+  Window   focus;                                                 ///< View window, focus
   int      width;                                                 ///< View width
 } SubView; /* }}} */
 
