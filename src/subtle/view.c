@@ -70,7 +70,7 @@ subViewFocus(SubView *v,
           VISIBLE(v->tags, c))
         {
           subClientFocus(c);
-          subClientWarp(c);
+          subClientWarp(c, False);
 
           return;
         }

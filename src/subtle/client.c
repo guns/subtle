@@ -313,16 +313,18 @@ subClientFocus(SubClient *c)
 
  /** subClientWarp {{{
   * @brief Warp pointer to window center
-  * @param[in]  c  A #SubClient
+  * @param[in]  c     A #SubClient
+  * @param[in]  rise  Raise window
   **/
 
 void
-subClientWarp(SubClient *c)
+subClientWarp(SubClient *c,
+  int rise)
 {
   DEAD(c);
   assert(c);
 
-  XRaiseWindow(subtle->dpy, c->win);
+  if(rise) XRaiseWindow(subtle->dpy, c->win);
   XWarpPointer(subtle->dpy, None, ROOT, 0, 0, 0, 0,
     c->geom.x + c->geom.width / 2, c->geom.y + c->geom.height / 2);
 } /* }}} */

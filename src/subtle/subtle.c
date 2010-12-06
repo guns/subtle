@@ -166,7 +166,7 @@ subSubtleFocus(int focus)
           if(c->screen == sid && VISIBLE(subtle->visible_tags, c))
             {
               subClientFocus(c);
-              subClientWarp(c);
+              subClientWarp(c, True);
 
               return c->win;
             }

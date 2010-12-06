@@ -311,7 +311,7 @@ subScreenConfigure(void)
 
               /* Warp after gravity and screen is set */
               if(c->flags & SUB_CLIENT_MODE_URGENT)
-                subClientWarp(c);
+                subClientWarp(c, True);
             }
           else ///< Unmap other windows
             {

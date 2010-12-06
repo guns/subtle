@@ -640,7 +640,7 @@ void subClientConfigure(SubClient *c);                            ///< Send conf
 void subClientRender(SubClient *c);                               ///< Render client
 int subClientCompare(const void *a, const void *b);               ///< Compare two clients
 void subClientFocus(SubClient *c);                                ///< Focus client
-void subClientWarp(SubClient *c);                                 ///< Warp to client
+void subClientWarp(SubClient *c, int rise);                       ///< Warp to client
 void subClientDrag(SubClient *c, int mode);                       ///< Move/drag client
 void subClientUpdate(int vid);                                    ///< Update clients
 void subClientResize(SubClient *c);                               ///< Set client sizes

@@ -486,7 +486,7 @@ EventMessage(XClientMessageEvent *ev)
                       }
                   }
 
-                subClientWarp(c);
+                subClientWarp(c, True);
                 subClientFocus(c);
               }
             else if((r = TRAY(subSubtleFind(ev->data.l[0], TRAYID))))
@@ -569,7 +569,7 @@ EventMessage(XClientMessageEvent *ev)
               {
                 subClientSetGravity(c, (int)ev->data.l[1], c->screen, True);
                 subClientConfigure(c);
-                subClientWarp(c);
+                subClientWarp(c, True);
                 XRaiseWindow(subtle->dpy, c->win);
 
                 /* Hook: Tile */
@@ -624,7 +624,7 @@ EventMessage(XClientMessageEvent *ev)
                       {
                         subClientSetGravity(c, 0, -1, True); ///< Fallback to first gravity
                         subClientConfigure(c);
-                        subClientWarp(c);
+                        subClientWarp(c, True);
                         XRaiseWindow(subtle->dpy, c->win);
                       }
                   }
@@ -1183,7 +1183,7 @@ EventGrab(XEvent *ev)
 
                 if(found)
                   {
-                    subClientWarp(found);
+                    subClientWarp(found, True);
                     subClientFocus(found);
 
                     subSharedLogDebug("Match: win=%#lx, score=%d\n",
@@ -1201,7 +1201,7 @@ EventGrab(XEvent *ev)
                     if(VISIBLE(subtle->visible_tags, iter))
                       {
                         subClientFocus(iter);
-                        subClientWarp(iter);
+                        subClientWarp(iter, True);
                         break;
                       }
                   }
@@ -1239,7 +1239,7 @@ EventGrab(XEvent *ev)
                   {
                     subClientSetGravity(c, id, c->screen, True);
                     subClientConfigure(c);
-                    subClientWarp(c);
+                    subClientWarp(c, True);
                     XRaiseWindow(subtle->dpy, c->win);
 
                     /* Hook: Tile */
