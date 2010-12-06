@@ -33,6 +33,7 @@ void
 subGeometryToRect(VALUE self,
   XRectangle *r)
 {
+  /* Set values */
   r->x      = FIX2INT(rb_iv_get(self, "@x"));
   r->y      = FIX2INT(rb_iv_get(self, "@y"));
   r->width  = FIX2INT(rb_iv_get(self, "@width"));
@@ -162,16 +163,24 @@ subGeometryToArray(VALUE self)
 VALUE
 subGeometryToHash(VALUE self)
 {
-  VALUE klass = Qnil, hash = Qnil, meth = Qnil;
+  VALUE klass = Qnil, hash = Qnil;
+  VALUE x = Qnil, y = Qnil, width = Qnil, height = Qnil;
 
+  /* Check ruby object */
+  GET_ATTR(self, "@x",      x);
+  GET_ATTR(self, "@y",      y);
+  GET_ATTR(self, "@width",  width);
+  GET_ATTR(self, "@height", height);
+
+  /* Create new hash */
   klass = rb_const_get(rb_mKernel, rb_intern("Hash"));
   hash  = rb_funcall(klass, rb_intern("new"), 0, NULL);
-  meth  = rb_intern("store");
 
-  rb_funcall(hash, meth, 2, CHAR2SYM("x"),      rb_iv_get(self, "@x"));
-  rb_funcall(hash, meth, 2, CHAR2SYM("y"),      rb_iv_get(self, "@y"));
-  rb_funcall(hash, meth, 2, CHAR2SYM("width"),  rb_iv_get(self, "@width"));
-  rb_funcall(hash, meth, 2, CHAR2SYM("height"), rb_iv_get(self, "@height"));
+  /* Set values */
+  rb_hash_aset(hash, CHAR2SYM("x"),      x);
+  rb_hash_aset(hash, CHAR2SYM("y"),      y);
+  rb_hash_aset(hash, CHAR2SYM("width"),  width);
+  rb_hash_aset(hash, CHAR2SYM("height"), height);
 
   return hash;
 } /* }}} */
@@ -190,15 +199,16 @@ VALUE
 subGeometryToString(VALUE self)
 {
   char buf[256] = { 0 };
-  int x = 0, y = 0, width = 0, height = 0;
+  VALUE x = Qnil, y = Qnil, width = Qnil, height = Qnil;
 
-  /* Fetch data */
-  x      = FIX2INT(rb_iv_get(self, "@x"));
-  y      = FIX2INT(rb_iv_get(self, "@y"));
-  width  = FIX2INT(rb_iv_get(self, "@width"));
-  height = FIX2INT(rb_iv_get(self, "@height"));
+  /* Check ruby object */
+  GET_ATTR(self, "@x",      x);
+  GET_ATTR(self, "@y",      y);
+  GET_ATTR(self, "@width",  width);
+  GET_ATTR(self, "@height", height);
 
-  snprintf(buf, sizeof(buf), "%dx%d+%d+%d", x, y, width, height);
+  snprintf(buf, sizeof(buf), "%dx%d+%d+%d",
+    FIX2INT(x), FIX2INT(y), FIX2INT(width), FIX2INT(height));
 
   return rb_str_new2(buf);
 } /* }}} */

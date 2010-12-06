@@ -80,7 +80,7 @@ subSubletSingFind(VALUE self,
 VALUE
 subSubletSingAll(VALUE self)
 {
-  int i, size = 0;
+  int i, nsublets = 0;
   char **sublets = NULL;
   VALUE meth = Qnil, klass = Qnil, array = Qnil;
 
@@ -89,14 +89,14 @@ subSubletSingAll(VALUE self)
   /* Fetch data */
   meth    = rb_intern("new");
   klass   = rb_const_get(mod, rb_intern("Sublet"));
+  array   = rb_ary_new();
   sublets = subSharedPropertyStrings(display, DefaultRootWindow(display),
-    XInternAtom(display, "SUBTLE_SUBLET_LIST", False), &size);
-  array   = rb_ary_new2(size);
+    XInternAtom(display, "SUBTLE_SUBLET_LIST", False), &nsublets);
 
-  /* Populate array */
+  /* Check results */
   if(sublets)
     {
-      for(i = 0; i < size; i++)
+      for(i = 0; i < nsublets; i++)
         {
           VALUE s = rb_funcall(klass, meth, 1, rb_str_new2(sublets[i]));
 
@@ -143,6 +143,7 @@ subSubletInit(VALUE self,
     rb_raise(rb_eArgError, "Unexpected value-type `%s'",
       rb_obj_classname(name));
 
+  /* Init object */
   rb_iv_set(self, "@id",   Qnil);
   rb_iv_set(self, "@name", name);
 
@@ -165,14 +166,18 @@ VALUE
 subSubletUpdate(VALUE self)
 {
   int id = -1;
-  VALUE name = rb_iv_get(self, "@name");
+  VALUE name = Qnil;
 
-  if(RTEST(name) && -1 != ((id = subSubtlextFind("SUB_SUBLET_LIST",
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@name", name);
+
+  if(-1 != ((id = subSubtlextFind("SUB_SUBLET_LIST",
       RSTRING_PTR(name), NULL))))
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-      /* Send data */
+      /* Send message */
       data.l[0] = id;
 
       subSharedMessage(display, DefaultRootWindow(display),
@@ -196,9 +201,13 @@ subSubletUpdate(VALUE self)
 VALUE
 subSubletDataReader(VALUE self)
 {
-  VALUE id = rb_iv_get(self, "@id");
+  VALUE id = Qnil;
 
-  return RTEST(id) ? id : Qnil;
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@id", id);
+
+  return id;
 } /* }}} */
 
 /* subSubletDataWriter {{{ */
@@ -215,14 +224,19 @@ VALUE
 subSubletDataWriter(VALUE self,
   VALUE value)
 {
+  VALUE id = Qnil;
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@id", id);
+
   /* Check object type */
   if(T_STRING == rb_type(value))
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
-      VALUE id = rb_iv_get(self, "@id");
 
       snprintf(data.b, sizeof(data.b), "%c%s",
-        (char)NUM2LONG(id), RSTRING_PTR(value));
+        (char)FIX2LONG(id), RSTRING_PTR(value));
 
       subSharedMessage(display, DefaultRootWindow(display),
         "SUBTLE_SUBLET_DATA", data, 8, True);
@@ -247,12 +261,18 @@ VALUE
 subSubletForegroundWriter(VALUE self,
   VALUE value)
 {
+  VALUE id = Qnil;
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@id", id);
+
   /* Check object type */
   if(T_STRING == rb_type(value))
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-      data.l[0] = FIX2INT(rb_iv_get(self, "@id"));
+      data.l[0] = FIX2INT(id);
       data.l[1] = subSharedParseColor(display, RSTRING_PTR(value));
 
       subSharedMessage(display, DefaultRootWindow(display),
@@ -278,6 +298,12 @@ VALUE
 subSubletBackgroundWriter(VALUE self,
   VALUE value)
 {
+  VALUE id = Qnil;
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@id", id);
+
   /* Check object type */
   if(T_STRING == rb_type(value))
     {
@@ -308,24 +334,30 @@ subSubletBackgroundWriter(VALUE self,
 VALUE
 subSubletGeometryReader(VALUE self)
 {
-  int id = 0, size = 0, wx = 0, wy = 0, px = 0, py = 0;
+  int nwins = 0, wx = 0, wy = 0, px = 0, py = 0;
   unsigned int wwidth = 0, wheight = 0, wbw = 0, wdepth = 0;
   unsigned int pwidth = 0, pheight = 0, pbw = 0, pdepth = 0;
   Window *wins = NULL, win = None, parent = None, wroot = None, proot = None;
+  VALUE id = Qnil;
+
+ /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@id", id);
 
   /* Fetch data */
-  id   = FIX2INT(rb_iv_get(self, "@id"));
-  wins = subSubtlextList("SUBTLE_SUBLET_WINDOWS", &size);
-  win  = wins[id];
+  if((wins = subSubtlextList("SUBTLE_SUBLET_WINDOWS", &nwins)))
+    {
+      win  = wins[id];
 
-  free(wins);
+      free(wins);
+    }
 
   /* Get parent and geometries */
   XGetGeometry(display, win, &wroot, &wx, &wy,
     &wwidth, &wheight, &wbw, &wdepth);
 
   XQueryTree(display, win, &wroot, &parent, &wins,
-    (unsigned int *)&size); ///< Get parent
+    (unsigned int *)&nwins); ///< Get parent
 
   XGetGeometry(display, parent, &proot, &px, &py,
     &pwidth, &pheight, &pbw, &pdepth);
@@ -348,9 +380,12 @@ subSubletGeometryReader(VALUE self)
 VALUE
 subSubletToString(VALUE self)
 {
-  VALUE name = rb_iv_get(self, "@name");
+  VALUE name = Qnil;
 
-  return RTEST(name) ? name : Qnil;
+  /* Check ruby object */
+  GET_ATTR(self, "@name", name);
+
+  return name;
 } /* }}} */
 
 /* subSubletKill {{{ */
@@ -366,20 +401,22 @@ subSubletToString(VALUE self)
 VALUE
 subSubletKill(VALUE self)
 {
-  VALUE id = rb_iv_get(self, "@id");
+  VALUE id = Qnil;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@id", id);
 
   subSubtlextConnect(NULL); ///< Implicit open connection
 
-  if(RTEST(id))
-    {
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+  /* Send message */
+  data.l[0] = FIX2INT(id);
 
-      data.l[0] = FIX2INT(id);
+  subSharedMessage(display, DefaultRootWindow(display),
+    "SUBTLE_VIEW_KILL", data, 32, True);
 
-      subSharedMessage(display, DefaultRootWindow(display),
-        "SUBTLE_SUBLET_KILL", data, 32, True);
-    }
-  else rb_raise(rb_eStandardError, "Failed killing sublet");
+  rb_obj_freeze(self); ///< Freeze object
 
   return Qnil;
 } /* }}} */

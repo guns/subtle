@@ -209,7 +209,8 @@ subIconDrawRect(int argc,
 
   rb_scan_args(argc, argv, "05", &data[0], &data[1], &data[2], &data[3], &data[4]);
 
-  if(FIXNUM_P(data[0]) && FIXNUM_P(data[1]) && FIXNUM_P(data[2]) && FIXNUM_P(data[3]))
+  if(FIXNUM_P(data[0]) && FIXNUM_P(data[1]) &&
+      FIXNUM_P(data[2]) && FIXNUM_P(data[3]))
     {
       SubtlextIcon *i = NULL;
 

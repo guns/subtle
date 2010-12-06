@@ -34,7 +34,7 @@ subGravityFindId(char *match,
   char **name,
   XRectangle *geometry)
 {
-  int ret = -1, size = 0;
+  int ret = -1, ngravities = 0;
   char **gravities = NULL;
   regex_t *preg = NULL;
 
@@ -43,13 +43,13 @@ subGravityFindId(char *match,
   /* Find gravity id */
   if((preg = subSharedRegexNew(match)) &&
       (gravities = subSharedPropertyStrings(display, DefaultRootWindow(display),
-      XInternAtom(display, "SUBTLE_GRAVITY_LIST", False), &size)))
+      XInternAtom(display, "SUBTLE_GRAVITY_LIST", False), &ngravities)))
     {
       int i;
       XRectangle geom = { 0 };
       char buf[30] = { 0 };
 
-      for(i = 0; i < size; i++)
+      for(i = 0; i < ngravities; i++)
         {
           sscanf(gravities[i], "%hdx%hd+%hd+%hd#%s", &geom.x, &geom.y,
             &geom.width, &geom.height, buf);
@@ -69,13 +69,13 @@ subGravityFindId(char *match,
 
               ret = i;
               break;
-            }
-          }
-
-      subSharedRegexKill(preg);
-      XFreeStringList(gravities);
+           }
+       }
     }
   else subSharedLogDebug("Failed finding gravity `%s'\n", name);
+
+  if(preg)       subSharedRegexKill(preg);
+  if(gravities) XFreeStringList(gravities);
 
   return ret;
 } /* }}} */
@@ -157,7 +157,7 @@ subGravitySingFind(VALUE self,
 VALUE
 subGravitySingAll(VALUE self)
 {
-  int size = 0;
+  int ngravities = 0;
   char **gravities = NULL;
 
   VALUE array = rb_ary_new();
@@ -166,7 +166,7 @@ subGravitySingAll(VALUE self)
 
   /* Get gravity list */
   if((gravities = subSharedPropertyStrings(display, DefaultRootWindow(display),
-      XInternAtom(display, "SUBTLE_GRAVITY_LIST", False), &size)))
+      XInternAtom(display, "SUBTLE_GRAVITY_LIST", False), &ngravities)))
     {
       int i;
       XRectangle geometry = { 0 };
@@ -179,7 +179,7 @@ subGravitySingAll(VALUE self)
       meth       = rb_intern("new");
 
       /* Create gravity list */
-      for(i = 0; i < size; i++)
+      for(i = 0; i < ngravities; i++)
         {
           sscanf(gravities[i], "%hdx%hd+%hd+%hd#%s", &geometry.x, &geometry.y,
             &geometry.width, &geometry.height, buf);
@@ -239,6 +239,7 @@ subGravityInit(int argc,
   if(T_STRING != rb_type(data[0]))
     rb_raise(rb_eArgError, "Invalid value type");
 
+  /* Init object */
   rb_iv_set(self, "@id",       Qnil);
   rb_iv_set(self, "@name",     data[0]);
   rb_iv_set(self, "@geometry", data[1]);
@@ -261,64 +262,62 @@ subGravityInit(int argc,
 VALUE
 subGravityUpdate(VALUE self)
 {
-  VALUE match = rb_iv_get(self, "@name");
+  int id = -1;
+  XRectangle geom = { 0 };
+  char *name = NULL;
+  VALUE match = Qnil;
 
-  /* Check value type */
-  if(T_STRING == rb_type(match))
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@name", match);
+
+  /* Find gravity */
+  if(-1 == (id = subGravityFindId(RSTRING_PTR(match), &name, &geom)))
     {
-      int id = -1;
-      XRectangle geom = { 0 };
-      char *name = NULL;
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+      VALUE geometry = rb_iv_get(self, "@geometry");
 
-      /* Find gravity */
-      if(-1 == (id = subGravityFindId(RSTRING_PTR(match), &name, &geom)))
-        {
-          SubMessageData data = { { 0, 0, 0, 0, 0 } };
-          VALUE geometry = rb_iv_get(self, "@geometry");
+      if(NIL_P(geometry = rb_iv_get(self, "@geometry")))
+        rb_raise(rb_eStandardError, "No geometry given");
 
-          if(NIL_P(geometry = rb_iv_get(self, "@geometry")))
-            rb_raise(rb_eStandardError, "No geometry given");
+      subGeometryToRect(geometry, &geom); ///< Get values
 
-          subGeometryToRect(geometry, &geom); ///< Get values
+      /* Create new gravity */
+      snprintf(data.b, sizeof(data.b), "%hdx%hd+%hd+%hd#%s",
+        geom.x, geom.y, geom.width, geom.height, RSTRING_PTR(match));
+      subSharedMessage(display, DefaultRootWindow(display),
+        "SUBTLE_GRAVITY_NEW", data, 8, True);
 
-          /* Create new gravity */
-          snprintf(data.b, sizeof(data.b), "%hdx%hd+%hd+%hd#%s",
-            geom.x, geom.y, geom.width, geom.height, RSTRING_PTR(match));
-          subSharedMessage(display, DefaultRootWindow(display),
-            "SUBTLE_GRAVITY_NEW", data, 8, True);
-
-          id = subGravityFindId(RSTRING_PTR(match), NULL, NULL);
-        }
-      else ///< Update gravity
-        {
-          VALUE geometry = Qnil;
-
-          geometry = subGeometryInstantiate(geom.x, geom.y,
-            geom.width, geom.height);
-
-          rb_iv_set(self, "@name",    rb_str_new2(name));
-          rb_iv_set(self, "@gravity", geometry);
-
-          free(name);
-        }
-
-      /* Guess gravity id */
-      if(-1 == id)
-        {
-          int size = 0;
-          char **gravities = NULL;
-
-          gravities = subSharedPropertyStrings(display, DefaultRootWindow(display),
-            XInternAtom(display, "SUBTLE_GRAVITY_LIST", False), &size);
-
-          id = size; ///< New id should be last
-
-          XFreeStringList(gravities);
-        }
-
-      rb_iv_set(self, "@id", INT2FIX(id));
+      id = subGravityFindId(RSTRING_PTR(match), NULL, NULL);
     }
-  else rb_raise(rb_eArgError, "Unknown value type");
+  else ///< Update gravity
+    {
+      VALUE geometry = Qnil;
+
+      geometry = subGeometryInstantiate(geom.x, geom.y,
+        geom.width, geom.height);
+
+      rb_iv_set(self, "@name",    rb_str_new2(name));
+      rb_iv_set(self, "@gravity", geometry);
+
+      free(name);
+    }
+
+  /* Guess gravity id */
+  if(-1 == id)
+    {
+      int ngravities = 0;
+      char **gravities = NULL;
+
+      gravities = subSharedPropertyStrings(display, DefaultRootWindow(display),
+        XInternAtom(display, "SUBTLE_GRAVITY_LIST", False), &ngravities);
+
+      id = ngravities; ///< New id should be last
+
+      XFreeStringList(gravities);
+    }
+
+  rb_iv_set(self, "@id", INT2FIX(id));
 
   return Qnil;
 } /* }}} */
@@ -339,38 +338,43 @@ subGravityUpdate(VALUE self)
 VALUE
 subGravityClients(VALUE self)
 {
-  int i, id = 0, size = 0;
+  int i, nclients = 0;
   Window *clients = NULL;
-  VALUE klass = Qnil, meth = Qnil, array = Qnil, client = Qnil;
+  VALUE id = Qnil, klass = Qnil, meth = Qnil, array = Qnil, c = Qnil;
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@id", id);
+
+  subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Fetch data */
-  id      = FIX2INT(rb_iv_get(self, "@id"));
   klass   = rb_const_get(mod, rb_intern("Client"));
   meth    = rb_intern("new");
-  array   = rb_ary_new2(size);
-  clients = subSubtlextList("_NET_CLIENT_LIST", &size);
+  array   = rb_ary_new();
+  clients = subSubtlextList("_NET_CLIENT_LIST", &nclients);
 
-  /* Populate array */
+  /* Check results */
   if(clients)
     {
-      for(i = 0; i < size; i++)
+      for(i = 0; i < nclients; i++)
         {
           unsigned long *gravity = NULL;
 
-          /* Get window flags */
+          /* Get window gravity */
           gravity = (unsigned long *)subSharedPropertyGet(display,
             clients[i], XA_CARDINAL, XInternAtom(display,
             "SUBTLE_WINDOW_GRAVITY", False), NULL);
 
           /* Check if there are common tags or window is stick */
-          if(gravity && id == *gravity &&
-              !NIL_P(client = rb_funcall(klass, meth, 1, INT2FIX(i))))
+          if(gravity && FIX2INT(id) == *gravity &&
+              !NIL_P(c = rb_funcall(klass, meth, 1, INT2FIX(i))))
             {
-              rb_iv_set(client, "@win", LONG2NUM(clients[i]));
+              rb_iv_set(c, "@win", LONG2NUM(clients[i]));
 
-              subClientUpdate(client);
+              subClientUpdate(c);
 
-              rb_ary_push(array, client);
+              rb_ary_push(array, c);
             }
 
           if(gravity) free(gravity);
@@ -397,15 +401,19 @@ subGravityGeometryReader(VALUE self)
 {
   VALUE geometry = Qnil, name = Qnil;
 
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@name", name);
+
   /* Load on demand */
-  if(NIL_P((geometry = rb_iv_get(self, "@geometry"))) &&
-      T_STRING == rb_type((name = rb_iv_get(self, "@name"))))
+  if(NIL_P((geometry = rb_iv_get(self, "@geometry"))))
     {
       XRectangle geom = { 0 };
 
       subGravityFindId(RSTRING_PTR(name), NULL, &geom);
 
-      geometry = subGeometryInstantiate(geom.x, geom.y, geom.width, geom.height);
+      geometry = subGeometryInstantiate(geom.x, geom.y,
+        geom.width, geom.height);
       rb_iv_set(self, "@geometry", geometry);
     }
 
@@ -436,7 +444,8 @@ subGravityGeometryWriter(VALUE self,
         {
           rb_iv_set(self, "@geometry", value);
         }
-      else rb_raise(rb_eArgError, "Unknown value type");
+      else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+        rb_obj_classname(value));
     }
 
   return Qnil;
@@ -485,7 +494,8 @@ subGravityGeometryFor(VALUE self,
           rb_ary_push(ary, INT2FIX(real.width));
           rb_ary_push(ary, INT2FIX(real.height));
         }
-      else rb_raise(rb_eArgError, "Unknown value type");
+      else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+        rb_obj_classname(value));
     }
 
   return ary;
@@ -504,7 +514,12 @@ subGravityGeometryFor(VALUE self,
 VALUE
 subGravityToString(VALUE self)
 {
-  return rb_iv_get(self, "@name");
+  VALUE name = Qnil;
+
+  /* Check ruby object */
+  GET_ATTR(self, "@name", name);
+
+  return name;
 } /* }}} */
 
 /* subGravityToSym {{{ */
@@ -520,7 +535,10 @@ subGravityToString(VALUE self)
 VALUE
 subGravityToSym(VALUE self)
 {
-  VALUE name = rb_iv_get(self, "@name");
+  VALUE name = Qnil;
+
+  /* Check ruby object */
+  GET_ATTR(self, "@name", name);
 
   return CHAR2SYM(RSTRING_PTR(name));
 } /* }}} */
@@ -538,20 +556,20 @@ subGravityToSym(VALUE self)
 VALUE
 subGravityKill(VALUE self)
 {
-  VALUE id = rb_iv_get(self, "@id");
+  VALUE id = Qnil;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@id", id);
 
   subSubtlextConnect(NULL); ///< Implicit open connection
 
-  if(RTEST(id))
-    {
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+  /* Send message */
+  data.l[0] = FIX2INT(id);
 
-      data.l[0] = FIX2INT(id);
-
-      subSharedMessage(display, DefaultRootWindow(display),
-        "SUBTLE_GRAVITY_KILL", data, 32, True);
-    }
-  else rb_raise(rb_eStandardError, "Failed killing gravity");
+  subSharedMessage(display, DefaultRootWindow(display),
+    "SUBTLE_GRAVITY_KILL", data, 32, True);
 
   rb_obj_freeze(self); ///< Freeze object
 

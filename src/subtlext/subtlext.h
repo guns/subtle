@@ -21,6 +21,9 @@
 /* Macros {{{ */
 #define CHAR2SYM(name) ID2SYM(rb_intern(name))
 #define SYM2CHAR(sym)  rb_id2name(SYM2ID(sym))
+
+#define GET_ATTR(owner,name,value) \
+  if(NIL_P(value = rb_iv_get(owner, name))) return Qnil;
 /* }}} */
 
 /* Flags {{{ */
@@ -67,8 +70,6 @@ VALUE subClientSelectLeft(VALUE self);                            ///< Get clien
 VALUE subClientSelectRight(VALUE self);                           ///< Get client right
 VALUE subClientSelectDown(VALUE self);                            ///< Get client down
 VALUE subClientAliveAsk(VALUE self);                              ///< Is client alive
-VALUE subClientScreenReader(VALUE self);                          ///< Get client screen
-VALUE subClientScreenWriter(VALUE self, VALUE value);             ///< Set client screen
 VALUE subClientGravityReader(VALUE self);                         ///< Get client gravity
 VALUE subClientGravityWriter(VALUE self, VALUE value);            ///< Set client gravity
 VALUE subClientGeometryReader(VALUE self);                        ///< Get client geometry
@@ -147,7 +148,6 @@ VALUE subScreenInit(VALUE self, VALUE id);                        ///< Create ne
 VALUE subScreenUpdate(VALUE self);                                ///< Update screen
 VALUE subScreenViewReader(VALUE self);                            ///< Get screen view
 VALUE subScreenViewWriter(VALUE self, VALUE value);               ///< Set screen view
-VALUE subScreenClientList(VALUE self);                            ///< Get client list of screen
 VALUE subScreenToString(VALUE self);                              ///< Screen to string
 /* }}} */
 
@@ -193,7 +193,6 @@ Window *subSubtlextList(char *prop, int *size);                   ///< Get windo
 int subSubtlextFind(char *prop, char *match, char **name);        ///< Find object
 int subSubtlextFindWindow(char *prop, char *match, char **name,
   Window *win, int flags);                                        ///< Find window
-VALUE subSubtlextAssoc(VALUE self, int type);                     ///< Get tags from object
 Window *subSubtlextWMCheck(void);                                 ///< Get WM check window
 /* }}} */
 

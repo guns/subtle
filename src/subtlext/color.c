@@ -110,15 +110,15 @@ VALUE
 subColorToHex(VALUE self)
 {
   char buf[8] = { 0 };
-  int red = 0, green = 0, blue = 0;
+  VALUE red = Qnil, green = Qnil, blue = Qnil;
 
-  /* Get rgb values */
-  red   = FIX2INT(rb_iv_get(self, "@red"));
-  green = FIX2INT(rb_iv_get(self, "@green"));
-  blue  = FIX2INT(rb_iv_get(self, "@blue"));
+  /* Check ruby object */
+  GET_ATTR(self, "@red",   red);
+  GET_ATTR(self, "@green", green);
+  GET_ATTR(self, "@blue",  blue);
 
   snprintf(buf, sizeof(buf), "#%02x%02x%02x",
-    red & 0xff, green & 0xff, blue & 0xff);
+    FIX2INT(red) & 0xff, FIX2INT(green) & 0xff, FIX2INT(blue) & 0xff);
 
   return rb_str_new2(buf);
 } /* }}} */
@@ -137,7 +137,10 @@ VALUE
 subColorToString(VALUE self)
 {
   char buf[20] = { 0 };
-  VALUE pixel = rb_iv_get(self, "@pixel");
+  VALUE pixel = Qnil;
+
+  /* Check ruby object */
+  GET_ATTR(self, "@pixel", pixel);
 
   snprintf(buf, sizeof(buf), "%s#%ld%s",
     SEPARATOR, NUM2LONG(pixel), SEPARATOR);
@@ -176,8 +179,13 @@ VALUE
 subColorEqual(VALUE self,
   VALUE other)
 {
-  return rb_iv_get(self, "@pixel") == rb_iv_get(other, "@pixel") ?
-    Qtrue : Qfalse;
+  VALUE pixel1 = Qnil, pixel2 = Qnil;
+
+  /* Check ruby object */
+  GET_ATTR(self,  "@pixel", pixel1);
+  GET_ATTR(other, "@pixel", pixel2);
+
+  return pixel1 == pixel2 ?  Qtrue : Qfalse;
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

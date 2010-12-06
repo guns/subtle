@@ -171,24 +171,26 @@ subSubtleSingSelect(VALUE self)
   XQueryTree(display, win, &dummy, &dummy, &wins, &n);
 
   for(i = 0; i < n; i++)
-    if(Success == XGetWindowProperty(display, wins[i], type, 0, 0, False,
-        AnyPropertyType, &rtype, &format, &nitems, &bytes, &data))
-      {
-        if(data)
-          {
-            XFree(data);
-            data = NULL;
-          }
+    {
+      if(Success == XGetWindowProperty(display, wins[i], type, 0, 0, False,
+          AnyPropertyType, &rtype, &format, &nitems, &bytes, &data))
+        {
+          if(data)
+            {
+              XFree(data);
+              data = NULL;
+            }
 
-        if(type == rtype)
-          {
-            win = wins[i];
+          if(type == rtype)
+            {
+              win = wins[i];
 
-            break;
-          }
-      }
+              break;
+            }
+        }
+    }
 
-  XFree(wins);
+  if(wins) XFree(wins);
   XFreeCursor(display, cursor);
   XUngrabPointer(display, CurrentTime);
 
@@ -258,8 +260,8 @@ subSubtleSingQuit(VALUE self)
 VALUE
 subSubtleSingColors(VALUE self)
 {
-  long unsigned int i, size = 0;
-  unsigned long *colors = NULL;
+  int i;
+  unsigned long ncolors = 0, *colors = NULL;
   VALUE meth = Qnil, klass = Qnil, hash = Qnil;
   const char *names[] = {
     "focus_fg",    "focus_bg",    "focus_border",
@@ -277,14 +279,14 @@ subSubtleSingColors(VALUE self)
   /* Fetch data */
   meth  = rb_intern("new");
   klass = rb_const_get(mod, rb_intern("Color"));
-  colors = (unsigned long *)subSharedPropertyGet(display,
-    DefaultRootWindow(display), XA_CARDINAL,
-    XInternAtom(display, "SUBTLE_COLORS", False), &size);
-  hash = rb_hash_new();
+  hash  = rb_hash_new();
 
-  if(colors)
+  /* Check result */
+  if((colors = (unsigned long *)subSharedPropertyGet(display,
+      DefaultRootWindow(display), XA_CARDINAL,
+      XInternAtom(display, "SUBTLE_COLORS", False), &ncolors)))
     {
-      for(i = 0; i < size; i++)
+      for(i = 0; i < ncolors; i++)
         {
           VALUE c = rb_funcall(klass, meth, 1, LONG2NUM(colors[i]));
 
@@ -315,7 +317,7 @@ subSubtleSingFont(VALUE self)
 
   subSubtlextConnect(NULL); ///< Implicit open connection
 
-  /* Get property */
+  /* Get results */
   if((prop = subSharedPropertyGet(display, DefaultRootWindow(display),
       XInternAtom(display, "UTF8_STRING", False),
       XInternAtom(display, "SUBTLE_FONT", False),
@@ -353,16 +355,16 @@ subSubtleSingSpawn(VALUE self,
       /* Create client */
       if(0 < (pid = subSharedSpawn(RSTRING_PTR(cmd))))
         {
-          int size = 0;
+          int nclients = 0;
           Window *clients = NULL;
 
-          clients = subSubtlextList("_NET_CLIENT_LIST", &size);
+          clients = subSubtlextList("_NET_CLIENT_LIST", &nclients);
 
           /* Create client */
-          ret = subClientInstantiate(size);
+          ret = subClientInstantiate(nclients);
           rb_iv_set(ret, "@pid", INT2FIX((int)pid));
 
-          free(clients);
+          if(clients) free(clients);
         }
     }
   else rb_raise(rb_eArgError, "Unexpected value-type `%s'",

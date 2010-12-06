@@ -72,15 +72,18 @@ WindowWrapCall(VALUE data)
 static void
 WindowExpose(SubtlextWindow *w)
 {
-  int i;
+  if(w)
+    {
+      int i;
 
-  XClearWindow(display, w->win);
+      XClearWindow(display, w->win);
 
-  for(i = 0; i < w->ntext; i++)
-    subSharedTextRender(display, DefaultGC(display, 0), w->font,
-      w->win, w->text[i].x, w->text[i].y, w->fg, w->bg, w->text[i].text);
+      for(i = 0; i < w->ntext; i++)
+        subSharedTextRender(display, DefaultGC(display, 0), w->font,
+          w->win, w->text[i].x, w->text[i].y, w->fg, w->bg, w->text[i].text);
 
- XSync(display, False); ///< Sync with X
+     XSync(display, False); ///< Sync with X
+  }
 } /* }}} */
 
 /* WindowDefine {{{ */
@@ -92,6 +95,8 @@ WindowDefine(VALUE self,
 {
   SubtlextWindow *w = NULL;
 
+  /* Check ruby object */
+  rb_check_frozen(self);
   rb_need_block();
 
   Data_Get_Struct(self, SubtlextWindow, w);
@@ -100,6 +105,7 @@ WindowDefine(VALUE self,
       VALUE p = rb_block_proc();
       int arity = rb_proc_arity(p);
 
+      /* Check arity */
       if(argc == arity)
         {
           VALUE sing = rb_singleton_class(w->instance);
@@ -271,6 +277,9 @@ subWindowNameWriter(VALUE self,
 {
   SubtlextWindow *w = NULL;
 
+  /* Check ruby object */
+  rb_check_frozen(self);
+
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w)
     {
@@ -318,6 +327,9 @@ subWindowFontWriter(VALUE self,
 {
   SubtlextWindow *w = NULL;
 
+  /* Check ruby object */
+  rb_check_frozen(self);
+
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w)
     {
@@ -360,6 +372,9 @@ subWindowForegroundWriter(VALUE self,
 {
   SubtlextWindow *w = NULL;
 
+  /* Check ruby object */
+  rb_check_frozen(self);
+
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w) w->fg = subColorPixel(value);
 
@@ -381,6 +396,9 @@ subWindowBackgroundWriter(VALUE self,
   VALUE value)
 {
   SubtlextWindow *w = NULL;
+
+  /* Check ruby object */
+  rb_check_frozen(self);
 
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w)
@@ -409,6 +427,9 @@ subWindowBorderColorWriter(VALUE self,
 {
   SubtlextWindow *w = NULL;
 
+  /* Check ruby object */
+  rb_check_frozen(self);
+
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w)
     {
@@ -434,6 +455,9 @@ subWindowBorderSizeWriter(VALUE self,
   VALUE value)
 {
   SubtlextWindow *w = NULL;
+
+  /* Check ruby object */
+  rb_check_frozen(self);
 
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w)
@@ -468,7 +492,13 @@ subWindowBorderSizeWriter(VALUE self,
 VALUE
 subWindowGeometryReader(VALUE self)
 {
-  return rb_iv_get(self, "@geometry");
+  VALUE geom = Qnil;
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@geom", geom);
+
+  return geom;
 } /* }}} */
 
 /* subWindowGeometryWriter {{{ */
@@ -486,6 +516,9 @@ subWindowGeometryWriter(VALUE self,
   VALUE value)
 {
   SubtlextWindow *w = NULL;
+
+  /* Check ruby object */
+  rb_check_frozen(self);
 
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w)
@@ -519,6 +552,9 @@ subWindowWrite(VALUE self,
 {
   int len = 0;
   SubtlextWindow *w = NULL;
+
+  /* Check ruby object */
+  rb_check_frozen(self);
 
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w)
@@ -580,7 +616,10 @@ subWindowRead(int argc,
   VALUE self)
 {
   SubtlextWindow *w = NULL;
+
   VALUE ret = Qnil;
+  /* Check ruby object */
+  rb_check_frozen(self);
 
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w)
@@ -790,6 +829,9 @@ subWindowClear(int argc,
 {
   SubtlextWindow *w = NULL;
 
+  /* Check ruby object */
+  rb_check_frozen(self);
+
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w)
     {
@@ -823,6 +865,9 @@ VALUE
 subWindowRedraw(VALUE self)
 {
   SubtlextWindow *w = NULL;
+
+  /* Check ruby object */
+  rb_check_frozen(self);
 
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w) WindowExpose(w);
@@ -880,6 +925,9 @@ subWindowShow(VALUE self)
 {
   SubtlextWindow *w = NULL;
 
+  /* Check ruby object */
+  rb_check_frozen(self);
+
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w)
     {
@@ -905,7 +953,11 @@ subWindowShow(VALUE self)
 VALUE
 subWindowHide(VALUE self)
 {
-  VALUE win = rb_iv_get(self, "@win");
+  VALUE win = Qnil;
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@win", win);
 
   if(RTEST(win))
     {
@@ -931,7 +983,13 @@ subWindowHide(VALUE self)
 VALUE
 subWindowHiddenAsk(VALUE self)
 {
-  return rb_iv_get(self, "@hidden");
+  VALUE hidden  = Qnil;
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@hidden", hidden);
+
+  return hidden;
 } /* }}} */
 
 /* subWindowKill {{{ */
@@ -947,14 +1005,16 @@ subWindowHiddenAsk(VALUE self)
 VALUE
 subWindowKill(VALUE self)
 {
-  VALUE win = rb_iv_get(self, "@win");
+  VALUE win  = Qnil;
 
-  if(RTEST(win))
-    {
-      /* Destroy window */
-      XDestroyWindow(display, NUM2LONG(win));
-      rb_iv_set(self, "@win", Qnil);
-    }
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@win", win);
+
+  /* Destroy window */
+  XDestroyWindow(display, NUM2LONG(win));
+
+  rb_obj_freeze(self); ///< Freeze object
 
   return Qnil;
 } /* }}} */

@@ -14,51 +14,44 @@
 /* ViewFind {{{ */
 int
 ViewFind(char *match,
-  char **name,
-  Window *win)
+  char **name)
 {
-  int ret = -1;
-  Window *views = NULL;
+  int ret = -1, i, nnames = 0;
+  long digit = -1;
+  char **names = NULL;
+  regex_t *preg = NULL;
 
   assert(match);
 
-  /* Find view id */
-  if((views = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display),
-      XA_WINDOW, XInternAtom(display, "_NET_VIRTUAL_ROOTS", False), NULL)))
+  /* Fetch data */
+  names = subSharedPropertyStrings(display, DefaultRootWindow(display),
+    XInternAtom(display, "_NET_DESKTOP_NAMES", False), &nnames);
+  preg  = subSharedRegexNew(match);
+
+  /* Check results */
+  if(names && preg)
     {
-      int i, size = 0;
-      long digit = -1;
-      char **names = NULL;
-      regex_t *preg = NULL;
-
-      names = subSharedPropertyStrings(display, DefaultRootWindow(display),
-        XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size);
-      preg  = subSharedRegexNew(match);
-
       if(isdigit(match[0])) digit = strtol(match, NULL, 0);
 
-      for(i = 0; i < size; i++)
+      for(i = 0; i < nnames; i++)
         {
           /* Find view either by name or by window id */
-          if(digit == (long)i || digit == views[i] ||
-              subSharedRegexMatch(preg, names[i]))
+          if(digit == (long)i || subSharedRegexMatch(preg, names[i]))
             {
-              subSharedLogDebug("Found: type=view, match=%s, name=%s win=%#lx, id=%d\n",
-                match, names[i], views[i], i);
+              subSharedLogDebug("Found: type=view, match=%s, name=%s, id=%d\n",
+                match, names[i], i);
 
-              if(win) *win   = views[i];
               if(name) *name = strdup(names[i]);
 
               ret = i;
               break;
             }
         }
-
-      subSharedRegexKill(preg);
-      XFreeStringList(names);
-      free(views);
     }
   else subSharedLogDebug("Failed finding view `%s'\n", match);
+
+  if(preg)  subSharedRegexKill(preg);
+  if(names) XFreeStringList(names);
 
   return ret;
 } /* }}} */
@@ -68,33 +61,34 @@ static VALUE
 ViewSelect(VALUE self,
   int dir)
 {
-  int id, size = 0;
+  int nnames = 0;
   char **names = NULL;
-  VALUE ret = Qnil;
+  VALUE id = Qnil, ret = Qnil;
 
+  /* Check ruby object */
   rb_check_frozen(self);
+  GET_ATTR(self, "@id", id);
+
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Fetch data */
-  id    = FIX2INT(rb_iv_get(self, "@id"));
-  names = subSharedPropertyStrings(display, DefaultRootWindow(display),
-    XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size); 
-
-  if(names)
+  if((names = subSharedPropertyStrings(display, DefaultRootWindow(display),
+    XInternAtom(display, "_NET_DESKTOP_NAMES", False), &nnames)))
     {
+      int vid = FIX2INT(id);
+
       /* Select view */
-      if(SUB_VIEW_NEXT == dir && id < (size - 1))
+      if(SUB_VIEW_NEXT == dir && vid < (nnames - 1))
         {
-          id++;
+          vid++;
         }
-      else if(SUB_VIEW_PREV == dir && 0 < id)
+      else if(SUB_VIEW_PREV == dir && 0 < vid)
         {
-          id--;
+          vid--;
         }
-      else return Qnil;
 
       /* Create view */
-      ret = subViewInstantiate(names[id]);
+      ret = subViewInstantiate(names[vid]);
       subViewUpdate(ret);
 
       XFreeStringList(names);
@@ -131,7 +125,6 @@ subViewSingFind(VALUE self,
   VALUE value)
 {
   int id = 0;
-  Window win = None;
   VALUE parsed = Qnil, view = Qnil;
   char *name = NULL, buf[50] = { 0 };
 
@@ -150,13 +143,10 @@ subViewSingFind(VALUE self,
     }
 
   /* Find view */
-  if(-1 != (id = ViewFind(buf, &name, &win)))
+  if(-1 != (id = ViewFind(buf, &name)))
     {
       if(!NIL_P((view = subViewInstantiate(name))))
-        {
-          rb_iv_set(view, "@id",  INT2FIX(id));
-          rb_iv_set(view, "@win", LONG2NUM(win));
-        }
+        rb_iv_set(view, "@id",  INT2FIX(id));
 
       free(name);
     }
@@ -177,32 +167,30 @@ subViewSingFind(VALUE self,
 VALUE
 subViewSingCurrent(VALUE self)
 {
-  int size = 0;
+  int nnames = 0;
   char **names = NULL;
-  unsigned long *cv = NULL;
-  Window *views = NULL;
+  unsigned long *cur_view = NULL;
   VALUE view = Qnil;
 
   subSubtlextConnect(NULL); ///< Implicit open connection
 
-  /* Get current view */
-  names = subSharedPropertyStrings(display, DefaultRootWindow(display),
-    XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size);
-  cv    = (unsigned long *)subSharedPropertyGet(display,
+  /* Fetch data */
+  names    = subSharedPropertyStrings(display, DefaultRootWindow(display),
+    XInternAtom(display, "_NET_DESKTOP_NAMES", False), &nnames);
+  cur_view = (unsigned long *)subSharedPropertyGet(display,
     DefaultRootWindow(display), XA_CARDINAL,
     XInternAtom(display, "_NET_CURRENT_DESKTOP", False), NULL);
-  views = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display),
-    XA_WINDOW, XInternAtom(display, "_NET_VIRTUAL_ROOTS", False), NULL);
 
-  /* Create instance */
-  view = subViewInstantiate(names[*cv]);
-  rb_iv_set(view, "@win", LONG2NUM(views[*cv]));
+  /* Check results */
+  if(names && cur_view)
+    {
+      /* Create instance */
+      view = subViewInstantiate(names[*cur_view]);
+      rb_iv_set(view, "@id",  INT2FIX(*cur_view));
+    }
 
-  if(!NIL_P(view)) subViewUpdate(view);
-
-  XFreeStringList(names);
-  free(views);
-  free(cv);
+  if(names)    XFreeStringList(names);
+  if(cur_view) free(cur_view);
 
   return view;
 } /* }}} */
@@ -223,43 +211,38 @@ subViewSingCurrent(VALUE self)
 VALUE
 subViewSingVisible(VALUE self)
 {
-  int i, size = 0;
+  int i, nnames = 0;
   char **names = NULL;
-  Window *views = NULL;
   unsigned long *visible = NULL;
-  VALUE meth = Qnil, klass = Qnil, array = Qnil, view = Qnil;
+  VALUE meth = Qnil, klass = Qnil, array = Qnil, v = Qnil;
 
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Fetch data */
   meth  = rb_intern("new");
   klass = rb_const_get(mod, rb_intern("View"));
+  array = rb_ary_new();
   names = subSharedPropertyStrings(display, DefaultRootWindow(display),
-    XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size);
-  views = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display),
-    XA_WINDOW, XInternAtom(display, "_NET_VIRTUAL_ROOTS", False), NULL);
+    XInternAtom(display, "_NET_DESKTOP_NAMES", False), &nnames);
   visible = (unsigned long *)subSharedPropertyGet(display,
     DefaultRootWindow(display), XA_CARDINAL, XInternAtom(display,
     "SUBTLE_VISIBLE_VIEWS", False), NULL);
-  array = rb_ary_new2(size);
 
-  /* Populate array */
-  if(names && views)
+  /* Check results */
+  if(names && visible)
     {
-      for(i = 0; i < size; i++)
+      for(i = 0; i < nnames; i++)
         {
           /* Create view on match */
-          if(*visible & (1L << (i + 1)) && !NIL_P(view = rb_funcall(klass,
-              meth, 1, rb_str_new2(names[i]))))
+          if(*visible & (1L << (i + 1)) &&
+              !NIL_P(v = rb_funcall(klass, meth, 1, rb_str_new2(names[i]))))
             {
-              rb_iv_set(view, "@id",  INT2FIX(i));
-              rb_iv_set(view, "@win", LONG2NUM(views[i]));
-              rb_ary_push(array, view);
+              rb_iv_set(v, "@id", INT2FIX(i));
+              rb_ary_push(array, v);
             }
         }
 
       XFreeStringList(names);
-      free(views);
       free(visible);
     }
 
@@ -282,35 +265,31 @@ subViewSingVisible(VALUE self)
 VALUE
 subViewSingAll(VALUE self)
 {
-  int i, size = 0;
+  int i, nnames = 0;
   char **names = NULL;
-  Window *views = NULL;
-  VALUE meth = Qnil, klass = Qnil, array = Qnil;
+  VALUE meth = Qnil, klass = Qnil, array = Qnil, v = Qnil;
 
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Fetch data */
-  meth  = rb_intern("new");
   klass = rb_const_get(mod, rb_intern("View"));
-  names = subSharedPropertyStrings(display, DefaultRootWindow(display),
-    XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size);
-  views = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display),
-    XA_WINDOW, XInternAtom(display, "_NET_VIRTUAL_ROOTS", False), NULL);
-  array = rb_ary_new2(size);
+  meth  = rb_intern("new");
+  array = rb_ary_new();
 
-  if(names && views)
+  /* Check results */
+  if((names = subSharedPropertyStrings(display, DefaultRootWindow(display),
+      XInternAtom(display, "_NET_DESKTOP_NAMES", False), &nnames)))
     {
-      for(i = 0; i < size; i++)
+      for(i = 0; i < nnames; i++)
         {
-          VALUE v = rb_funcall(klass, meth, 1, rb_str_new2(names[i]));
-
-          rb_iv_set(v, "@id",  INT2FIX(i));
-          rb_iv_set(v, "@win", LONG2NUM(views[i]));
-          rb_ary_push(array, v);
+          if(!NIL_P(v = rb_funcall(klass, meth, 1, rb_str_new2(names[i]))))
+            {
+              rb_iv_set(v, "@id",  INT2FIX(i));
+              rb_ary_push(array, v);
+            }
         }
 
       XFreeStringList(names);
-      free(views);
     }
 
   return array;
@@ -323,6 +302,8 @@ VALUE
 subViewInstantiate(char *name)
 {
   VALUE klass = Qnil, view = Qnil;
+
+  assert(name);
 
   /* Create new instance */
   klass = rb_const_get(mod, rb_intern("View"));
@@ -349,8 +330,8 @@ subViewInit(VALUE self,
     rb_raise(rb_eArgError, "Unexpected value-type `%s'",
       rb_obj_classname(name));
 
+  /* Init object */
   rb_iv_set(self, "@id",   Qnil);
-  rb_iv_set(self, "@win",  Qnil);
   rb_iv_set(self, "@name", name);
 
   subSubtlextConnect(NULL); ///< Implicit open connection
@@ -371,47 +352,42 @@ subViewInit(VALUE self,
 VALUE
 subViewUpdate(VALUE self)
 {
-  VALUE name = rb_iv_get(self, "@name");
+  int id = -1;
+  VALUE name = Qnil;
 
+  /* Check ruby object */
   rb_check_frozen(self);
+  GET_ATTR(self, "@name", name);
+
   subSubtlextConnect(NULL); ///< Implicit open connection
 
-  /* Check object type */
-  if(T_STRING == rb_type(name))
+  /* Create view if needed */
+  if(-1 == (id = ViewFind(RSTRING_PTR(name), NULL)))
     {
-      int id = -1;
-      Window win = None;
+      SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-      /* Create view if needed */
-      if(-1 == (id = ViewFind(RSTRING_PTR(name), NULL, &win)))
-        {
-          SubMessageData data = { { 0, 0, 0, 0, 0 } };
+      snprintf(data.b, sizeof(data.b), "%s", RSTRING_PTR(name));
+      subSharedMessage(display, DefaultRootWindow(display),
+        "SUBTLE_VIEW_NEW", data, 8, True);
 
-          snprintf(data.b, sizeof(data.b), "%s", RSTRING_PTR(name));
-          subSharedMessage(display, DefaultRootWindow(display),
-            "SUBTLE_VIEW_NEW", data, 8, True);
-
-          id = ViewFind(RSTRING_PTR(name), NULL, NULL);
-        }
-
-      /* Guess view id */
-      if(-1 == id)
-        {
-          int size = 0;
-          char **names = NULL;
-
-          names = subSharedPropertyStrings(display, DefaultRootWindow(display),
-            XInternAtom(display, "_NET_DESKTOP_NAMES", False), &size);
-
-          id = size; ///< New id should be last
-
-          XFreeStringList(names);
-        }
-
-      rb_iv_set(self, "@id",  INT2FIX(id));
-      rb_iv_set(self, "@win", LONG2NUM(win));
+      id = ViewFind(RSTRING_PTR(name), NULL);
     }
-  else rb_raise(rb_eStandardError, "Failed updating view");
+
+  /* Guess view id */
+  if(-1 == id)
+    {
+      int nnames = 0;
+      char **names = NULL;
+
+      names = subSharedPropertyStrings(display, DefaultRootWindow(display),
+        XInternAtom(display, "_NET_DESKTOP_NAMES", False), &nnames);
+
+      id = nnames; ///< New id should be last
+
+      if(names) XFreeStringList(names);
+    }
+
+  rb_iv_set(self, "@id", INT2FIX(id));
 
   return Qnil;
 } /* }}} */
@@ -432,40 +408,44 @@ subViewUpdate(VALUE self)
 VALUE
 subViewClients(VALUE self)
 {
-  int i, size = 0;
+  int i, nclients = 0;
   Window *clients = NULL;
-  VALUE win = Qnil, klass = Qnil, meth = Qnil, array = Qnil, client = Qnil;
-  unsigned long *tags1 = NULL;
+  VALUE id = Qnil, klass = Qnil, meth = Qnil, array = Qnil, client = Qnil;
+  unsigned long *view_tags = NULL;
 
+  /* Check ruby object */
   rb_check_frozen(self);
+  GET_ATTR(self, "@id", id);
+
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Fetch data */
-  win     = rb_iv_get(self, "@win");
-  klass   = rb_const_get(mod, rb_intern("Client"));
-  meth    = rb_intern("new");
-  array   = rb_ary_new2(size);
-  clients = subSubtlextList("_NET_CLIENT_LIST", &size);
-  tags1   = (unsigned long *)subSharedPropertyGet(display, NUM2LONG(win), XA_CARDINAL,
-    XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
+  klass     = rb_const_get(mod, rb_intern("Client"));
+  meth      = rb_intern("new");
+  array     = rb_ary_new();
+  clients   = subSubtlextList("_NET_CLIENT_LIST", &nclients);
+  view_tags = (unsigned long *)subSharedPropertyGet(display,
+    DefaultRootWindow(display), XA_CARDINAL,
+    XInternAtom(display, "SUBTLE_VIEW_TAGS", False), NULL);
 
-  /* Populate array */
-  if(clients)
+  /* Check results */
+  if(clients && view_tags)
     {
-      for(i = 0; i < size; i++)
+      for(i = 0; i < nclients; i++)
         {
-          unsigned long *tags2 = NULL, *flags = NULL;
+          unsigned long *client_tags = NULL, *flags = NULL;
 
-          /* Get window flags */
-          tags2 = (unsigned long *)subSharedPropertyGet(display,
+          /* Fetch window data */
+          client_tags = (unsigned long *)subSharedPropertyGet(display,
             clients[i], XA_CARDINAL,
             XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
-          flags = (unsigned long *)subSharedPropertyGet(display,
+          flags       = (unsigned long *)subSharedPropertyGet(display,
             clients[i], XA_CARDINAL,
             XInternAtom(display, "SUBTLE_WINDOW_FLAGS", False), NULL);
 
           /* Check if there are common tags or window is stick */
-          if((tags1 && tags2 && *tags1 & *tags2) ||( flags && *flags & SUB_EWMH_STICK))
+          if((client_tags && view_tags[FIX2INT(id)] & *client_tags) ||
+              (flags && *flags & SUB_EWMH_STICK))
             {
               if(!NIL_P(client = rb_funcall(klass, meth, 1, INT2FIX(i))))
                 {
@@ -474,14 +454,13 @@ subViewClients(VALUE self)
                 }
             }
 
-          if(tags2) free(tags2);
-          if(flags) free(flags);
+          if(client_tags) free(client_tags);
+          if(flags)       free(flags);
         }
-
-      free(clients);
     }
 
-  free(tags1);
+  if(clients)   free(clients);
+  if(view_tags) free(view_tags);
 
   return array;
 } /* }}} */
@@ -499,12 +478,16 @@ subViewClients(VALUE self)
 VALUE
 subViewJump(VALUE self)
 {
-  VALUE id = rb_iv_get(self, "@id");
+  VALUE id = Qnil;
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
+  /* Check ruby object */
   rb_check_frozen(self);
+  GET_ATTR(self, "@id", id);
+
   subSubtlextConnect(NULL); ///< Implicit open connection
 
+  /* Send message */
   data.l[0] = FIX2INT(id);
 
   subSharedMessage(display, DefaultRootWindow(display),
@@ -561,15 +544,22 @@ subViewSelectPrev(VALUE self)
 VALUE
 subViewCurrentAsk(VALUE self)
 {
-  unsigned long *cv = NULL;
   VALUE id = Qnil, ret = Qfalse;;
+  unsigned long *cur_view = NULL;
 
-  id = rb_iv_get(self, "@id");
-  cv = (unsigned long *)subSharedPropertyGet(display, DefaultRootWindow(display),
-    XA_CARDINAL, XInternAtom(display, "_NET_CURRENT_DESKTOP", False), NULL);
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@id", id);
 
-  if(FIX2INT(id) == *cv) ret = Qtrue;
-  free(cv);
+  /* Check results */
+  if((cur_view = (unsigned long *)subSharedPropertyGet(display,
+      DefaultRootWindow(display), XA_CARDINAL,
+      XInternAtom(display, "_NET_CURRENT_DESKTOP", False), NULL)))
+    {
+      if(FIX2INT(id) == *cur_view) ret = Qtrue;
+
+      free(cur_view);
+    }
 
   return ret;
 } /* }}} */
@@ -587,9 +577,12 @@ subViewCurrentAsk(VALUE self)
 VALUE
 subViewToString(VALUE self)
 {
-  VALUE name = rb_iv_get(self, "@name");
+  VALUE name = Qnil;
 
-  return RTEST(name) ? name : Qnil;
+  /* Check ruby object */
+  GET_ATTR(self, "@name", name);
+
+  return name;
 } /* }}} */
 
 /* subViewKill {{{ */
@@ -605,20 +598,20 @@ subViewToString(VALUE self)
 VALUE
 subViewKill(VALUE self)
 {
-  VALUE id = rb_iv_get(self, "@id");
+  VALUE id = Qnil;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@id", id);
 
   subSubtlextConnect(NULL); ///< Implicit open connection
 
-  if(RTEST(id))
-    {
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+  /* Send message */
+  data.l[0] = FIX2INT(id);
 
-      data.l[0] = FIX2INT(id);
-
-      subSharedMessage(display, DefaultRootWindow(display),
-        "SUBTLE_VIEW_KILL", data, 32, True);
-    }
-  else rb_raise(rb_eStandardError, "Failed killing view");
+  subSharedMessage(display, DefaultRootWindow(display),
+    "SUBTLE_VIEW_KILL", data, 32, True);
 
   rb_obj_freeze(self); ///< Freeze object
 

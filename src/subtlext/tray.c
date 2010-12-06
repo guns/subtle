@@ -87,7 +87,7 @@ subTraySingFind(VALUE self,
 VALUE
 subTraySingAll(VALUE self)
 {
-  int i, size = 0;
+  int i, ntrays = 0;
   Window *trays = NULL;
   VALUE meth = Qnil, klass = Qnil, array = Qnil;
 
@@ -96,13 +96,12 @@ subTraySingAll(VALUE self)
   /* Fetch data */
   meth  = rb_intern("new");
   klass = rb_const_get(mod, rb_intern("Tray"));
-  trays = subSubtlextList("SUBTLE_TRAY_LIST", &size);
-  array = rb_ary_new2(size);
+  array = rb_ary_new();
 
-  /* Populate array */
-  if(trays)
+  /* Check results */
+  if((trays = subSubtlextList("SUBTLE_TRAY_LIST", &ntrays)))
     {
-      for(i = 0; i < size; i++)
+      for(i = 0; i < ntrays; i++)
         {
           VALUE t = rb_funcall(klass, meth, 1, LONG2NUM(trays[i]));
 
@@ -150,6 +149,7 @@ subTrayInit(VALUE self,
     rb_raise(rb_eArgError, "Unexpected value-type `%s'",
       rb_obj_classname(win));
 
+  /* Init object */
   rb_iv_set(self, "@id",    Qnil);
   rb_iv_set(self, "@win",   win);
   rb_iv_set(self, "@name",  Qnil);
@@ -174,39 +174,36 @@ subTrayInit(VALUE self,
 VALUE
 subTrayUpdate(VALUE self)
 {
-  VALUE win = rb_iv_get(self, "@win");
+  int id = 0;
+  char buf[20] = { 0 };
+  VALUE win = Qnil;
 
+  /* Check ruby object */
   rb_check_frozen(self);
+  GET_ATTR(self, "@win", win);
+
   subSubtlextConnect(NULL); ///< Implicit open connection
 
-  /* Check object type */
-  if(RTEST(win) && (T_FIXNUM == rb_type(win) || T_BIGNUM == rb_type(win)))
+  /* Find tray */
+  snprintf(buf, sizeof(buf), "%#lx", NUM2LONG(win));
+  if(-1 != (id = subSubtlextFindWindow("SUBTLE_TRAY_LIST", buf, NULL,
+      NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS))))
     {
-      int id = 0;
-      char buf[20] = { 0 };
+      char *title = NULL, *wmname = NULL, *wmclass = NULL;
 
-      snprintf(buf, sizeof(buf), "%#lx", NUM2LONG(win));
-      if(-1 != (id = subSubtlextFindWindow("SUBTLE_TRAY_LIST", buf, NULL,
-          NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS))))
-        {
-          char *title = NULL, *wmname = NULL, *wmclass = NULL;
+      XFetchName(display, NUM2LONG(win), &title);
+      subSharedPropertyClass(display, NUM2LONG(win), &wmname, &wmclass);
 
-          XFetchName(display, NUM2LONG(win), &title);
-          subSharedPropertyClass(display, NUM2LONG(win), &wmname, &wmclass);
+      /* Set properties */
+      rb_iv_set(self, "@id",    INT2FIX(id));
+      rb_iv_set(self, "@title", rb_str_new2(title));
+      rb_iv_set(self, "@name",  rb_str_new2(wmname));
+      rb_iv_set(self, "@klass", rb_str_new2(wmclass));
 
-          /* Set properties */
-          rb_iv_set(self, "@id",    INT2FIX(id));
-          rb_iv_set(self, "@title", rb_str_new2(title));
-          rb_iv_set(self, "@name",  rb_str_new2(wmname));
-          rb_iv_set(self, "@klass", rb_str_new2(wmclass));
-
-          free(title);
-          free(wmname);
-          free(wmclass);
-        }
-      else rb_raise(rb_eStandardError, "Failed finding tray");
+      free(title);
+      free(wmname);
+      free(wmclass);
     }
-  else rb_raise(rb_eStandardError, "Failed updating tray");
 
   return Qnil;
 } /* }}} */
@@ -224,9 +221,12 @@ subTrayUpdate(VALUE self)
 VALUE
 subTrayToString(VALUE self)
 {
-  VALUE name = rb_iv_get(self, "@name");
+  VALUE name = Qnil;
 
-  return RTEST(name) ? name : Qnil;
+  /* Check ruby object */
+  GET_ATTR(self, "@name", name);
+
+  return name;
 } /* }}} */
 
 /* subTrayKill {{{ */
@@ -242,20 +242,20 @@ subTrayToString(VALUE self)
 VALUE
 subTrayKill(VALUE self)
 {
-  VALUE id = rb_iv_get(self, "@id");
+  VALUE id = Qnil;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@id", id);
 
   subSubtlextConnect(NULL); ///< Implicit open connection
 
-  if(RTEST(id))
-    {
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+  /* Send message */
+  data.l[0] = FIX2INT(id);
 
-      data.l[0] = FIX2INT(id);
-
-      subSharedMessage(display, DefaultRootWindow(display),
-        "SUBTLE_TRAY_KILL", data, 32, True);
-    }
-  else rb_raise(rb_eStandardError, "Failed killing tray");
+  subSharedMessage(display, DefaultRootWindow(display),
+    "SUBTLE_TRAY_KILL", data, 32, True);
 
   rb_obj_freeze(self); ///< Freeze object
 

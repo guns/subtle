@@ -15,7 +15,7 @@
 VALUE
 ScreenList(void)
 {
-  unsigned long size = 0;
+  unsigned long nworkareas = 0;
   VALUE method = Qnil, klass = Qnil, array = Qnil, screen = Qnil, geometry = Qnil;
   long *workareas = NULL;
 
@@ -29,11 +29,11 @@ ScreenList(void)
   /* Get workarea list */
   if((workareas = (long *)subSharedPropertyGet(display,
       DefaultRootWindow(display), XA_CARDINAL,
-      XInternAtom(display, "_NET_WORKAREA", False), &size)))
+      XInternAtom(display, "_NET_WORKAREA", False), &nworkareas)))
     {
       int i;
 
-      for(i = 0; i < size / 4; i++)
+      for(i = 0; i < nworkareas / 4; i++)
         {
           /* Create new screen */
           screen   = rb_funcall(klass, method, 1, INT2FIX(i));
@@ -46,7 +46,6 @@ ScreenList(void)
 
       free(workareas);
     }
-  else printf("Failed getting workarea list\n");
 
   return array;
 } /* }}} */
@@ -185,6 +184,7 @@ subScreenInit(VALUE self,
     rb_raise(rb_eArgError, "Unexpected value-type `%s'",
       rb_obj_classname(id));
 
+  /* Init object */
   rb_iv_set(self, "@id",       id);
   rb_iv_set(self, "@geometry", Qnil);
 
@@ -206,24 +206,21 @@ subScreenInit(VALUE self,
 VALUE
 subScreenUpdate(VALUE self)
 {
-  VALUE id = Qnil;
+  VALUE id = Qnil, screens = Qnil, screen = Qnil;
 
-  /* Check object type */
-  if(FIXNUM_P(id = rb_iv_get(self, "@id")))
+  /* Check ruby object */
+  GET_ATTR(self, "@id", id);
+
+  screens = ScreenList();
+
+  if((screens = ScreenList()) &&
+      RTEST(screen = rb_ary_entry(screens, FIX2INT(id))))
     {
-      VALUE screens = Qnil, screen = Qnil;
+      VALUE geometry = rb_iv_get(screen, "@geometry");
 
-      screens = ScreenList();
-
-      if(RTEST(screen = rb_ary_entry(screens, FIX2INT(id))))
-        {
-          VALUE geometry = rb_iv_get(screen, "@geometry");
-
-          rb_iv_set(self, "@geometry", geometry);
-        }
-      else rb_raise(rb_eStandardError, "Failed finding screen");
+      rb_iv_set(self, "@geometry", geometry);
     }
-  else rb_raise(rb_eStandardError, "Failed updating screen");
+  else rb_raise(rb_eStandardError, "Failed finding screen");
 
   return Qnil;
 } /* }}} */
@@ -296,7 +293,11 @@ VALUE
 subScreenViewWriter(VALUE self,
   VALUE value)
 {
-  VALUE view = Qnil;
+  VALUE vid = Qnil, view = Qnil, sid = Qnil;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+ /* Check ruby object */
+  GET_ATTR(self, "@id", sid);
 
   subSubtlextConnect(NULL); ///< Implicit open connection
 
@@ -305,73 +306,17 @@ subScreenViewWriter(VALUE self,
     view = value;
   else view = subViewSingFind(Qnil, value);
 
-  /* Set view */
-  if(!NIL_P(view))
-    {
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+  GET_ATTR(view, "@id", vid);
 
-      data.l[0] = FIX2LONG(rb_iv_get(view, "@id"));
-      data.l[1] = CurrentTime;
-      data.l[2] = FIX2LONG(rb_iv_get(self, "@id"));
+  /* Send message */
+  data.l[0] = FIX2LONG(vid);
+  data.l[1] = CurrentTime;
+  data.l[2] = FIX2LONG(sid);
 
-      subSharedMessage(display, DefaultRootWindow(display),
-        "_NET_CURRENT_DESKTOP", data, 32, True);
-    }
-  else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
-    rb_obj_classname(value));
+  subSharedMessage(display, DefaultRootWindow(display),
+    "_NET_CURRENT_DESKTOP", data, 32, True);
 
   return Qnil;
-} /* }}} */
-
-/* subScreenClientList {{{ */
-/*
- * call-seq: clients -> Array
- *
- * Get Client on Screen
- *
- *  screen.clients
- *  => [ #<Subtlext::Client:xxx>, #<Subtlext::Client:xxx> ]
- *
- *  screen.clients
- *  => []
- */
-
-VALUE
-subScreenClientList(VALUE self)
-{
-  int i, id, size = 0;
-  Window *clients = NULL;
-  VALUE klass = Qnil, meth = Qnil, array = Qnil, client = Qnil;
-
-  id      = FIX2INT(rb_iv_get(self, "@id"));
-  klass   = rb_const_get(mod, rb_intern("Client"));
-  meth    = rb_intern("new");
-  array   = rb_ary_new();
-  clients = subSubtlextList("_NET_CLIENT_LIST", &size);
-
-  if(clients)
-    {
-      for(i = 0; i < size; i++)
-        {
-          int *screen = (int *)subSharedPropertyGet(display, clients[i],XA_CARDINAL,
-            XInternAtom(display, "SUBTLE_WINDOW_SCREEN", False), NULL);
-
-          /* Check if screen matches */
-          if(id == *screen)
-            {
-              if(!NIL_P(client = rb_funcall(klass, meth, 1, INT2FIX(i))))
-                {
-                  subClientUpdate(client);
-                  rb_ary_push(array, client);
-                }
-            }
-
-          free(screen);
-        }
-      free(clients);
-    }
-
-  return array;
 } /* }}} */
 
 /* subScreenToString {{{ */
@@ -387,9 +332,12 @@ subScreenClientList(VALUE self)
 VALUE
 subScreenToString(VALUE self)
 {
-  VALUE geometry = rb_iv_get(self, "@geometry");
+  VALUE geom = Qnil;
 
-  return RTEST(geometry) ? subGeometryToString(geometry) : Qnil;
+  /* Check ruby object */
+  GET_ATTR(self, "@geometry", geom);
+
+  return subGeometryToString(geom);
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
