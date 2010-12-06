@@ -451,7 +451,7 @@ EventMessage(XClientMessageEvent *ev)
   /* Messages for root window {{{ */
   if(ROOT == ev->window)
     {
-      int tag = 0, id = subEwmhFind(ev->message_type);
+      int id = subEwmhFind(ev->message_type);
 
       SubPanel   *p = NULL;
       SubTag     *t = NULL;
@@ -515,22 +515,20 @@ EventMessage(XClientMessageEvent *ev)
                         if(tags & (1L << (i + 1))) subClientTag(c, i, &flags);
 
                       subClientToggle(c, flags, True); ///< Toggle flags
-                      c->tags = (int)ev->data.l[1];
+                      c->tags = (int)ev->data.l[1]; ///< Write all tags
 
                       /* EWMH: Tags */
                       subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS,
                         (long *)&c->tags, 1);
 
-                      /* Check visibility after updating tags */
-                      if(VISIBLE(subtle->visible_tags, c))
-                        {
-                          /* Reactivate grabs on untag */
-                          if(subtle->windows.focus == c->win &&
-                              !(c->tags & tag))
-                            subSubtleFocus(True);
-                        }
-
                       subScreenConfigure();
+
+                      /* Check visibility of focus wubdiw after updating tags
+                       * and reactivate grabs if necessary */
+                      if(subtle->windows.focus == c->win &&
+                          !VISIBLE(subtle->visible_tags, c))
+                        subSubtleFocus(True);
+
                       subScreenRender();
                     }
                   else EventQueuePush(ev);

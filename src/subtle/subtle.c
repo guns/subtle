@@ -175,11 +175,10 @@ subSubtleFocus(int focus)
 
   /* Fallback to root */
   subtle->windows.focus = ROOT;
-
   XSetInputFocus(subtle->dpy, ROOT, RevertToNone, CurrentTime);
   subGrabSet(ROOT, !(subtle->flags & SUB_SUBTLE_ESCAPE));
 
-  subScreenUpdate();
+  subScreenConfigure();
   subScreenRender();
 
   /* EWMH: Current destop */
