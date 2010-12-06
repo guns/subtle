@@ -343,8 +343,9 @@ subClientDrag(SubClient *c,
   Window win;
   unsigned int dummy = 0;
   int loop = True, left = False;
-  int wx = 0, wy = 0, ww = 0, wh = 0, rx = 0, ry = 0;
+  int wx = 0, wy = 0, ww = 0, wh = 0, rx = 0, ry = 0, maxw = 0, maxh = 0;
   short *dirx = NULL, *diry = NULL;
+  SubScreen *s = NULL;
   Cursor cursor;
 
   DEAD(c);
@@ -356,6 +357,11 @@ subClientDrag(SubClient *c,
   c->geom.y = ry - wy;
   ww        = c->geom.width;
   wh        = c->geom.height;
+
+  /* Fet max width/height */
+  s    = SCREEN(subtle->screens->data[c->screen]);
+  maxw = -1 == c->maxw ? s->geom.width - 2 * BORDER(c) : c->maxw;
+  maxh = -1 == c->maxh ? s->geom.height - 2 * BORDER(c) : c->maxh;
 
   switch(mode)
     {
@@ -412,8 +418,8 @@ subClientDrag(SubClient *c,
 
                 if(SUB_DRAG_MOVE == mode)
                   {
-                    *dirx = MINMAX(*dirx, c->minw, c->maxw);
-                    *diry = MINMAX(*diry, c->minh, c->maxh);
+                    *dirx = MINMAX(*dirx, c->minw, maxw);
+                    *diry = MINMAX(*diry, c->minh, maxh);
                   }
 
                 subClientResize(c);
@@ -423,8 +429,6 @@ subClientDrag(SubClient *c,
           case MotionNotify: /* {{{ */
             if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE))
               {
-                SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
-
                 if(XYINRECT(ev.xmotion.x_root,
                     ev.xmotion.y_root, s->geom)) ///< Check values
                   {
@@ -492,21 +496,28 @@ subClientDrag(SubClient *c,
 void
 subClientResize(SubClient *c)
 {
+  SubScreen *s = NULL;
+
   DEAD(c);
   assert(c);
+
+  s = SCREEN(subtle->screens->data[c->screen]);
 
   /* Check sizes */
   if(!(c->flags & SUB_CLIENT_MODE_NORESIZE) &&
       (subtle->flags & SUB_SUBTLE_RESIZE ||
       c->flags & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_RESIZE)))
     {
+      int maxw = -1 == c->maxw ? s->geom.width - 2 * BORDER(c) : c->maxw;
+      int maxh = -1 == c->maxh ? s->geom.height - 2 * BORDER(c) : c->maxh;
+
       /* Limit width */
       if(c->geom.width < c->minw)  c->geom.width  = c->minw;
-      if(c->geom.width > c->maxw)  c->geom.width  = c->maxw;
+      if(c->geom.width > maxw)     c->geom.width  = maxw;
 
       /* Limit height */
       if(c->geom.height < c->minh) c->geom.height = c->minh;
-      if(c->geom.height > c->maxh) c->geom.height = c->maxh;
+      if(c->geom.height > maxh)    c->geom.height = maxh;
 
       /* Check incs */
       c->geom.width  -= WIDTH(c) % c->incw;
@@ -522,11 +533,7 @@ subClientResize(SubClient *c)
 
   /* Fit sizes */
   if(!(c->flags & SUB_CLIENT_TYPE_DESKTOP))
-    {
-      SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
-
-      subScreenFit(s, &c->geom);
-    }
+    subScreenFit(s, &c->geom);
 } /* }}} */
 
   /** subClientCenter {{{
@@ -816,8 +823,8 @@ subClientSetSizeHints(SubClient *c,
   /* Default values {{{ */
   c->minw   = MINW;
   c->minh   = MINH;
-  c->maxw   = s->base.width - 2 * BORDER(c);
-  c->maxh   = s->base.height - subtle->th - 2 * BORDER(c);
+  c->maxw   = -1;
+  c->maxh   = -1;
   c->minr   = 0.0f;
   c->maxr   = 0.0f;
   c->incw   = 1;
