@@ -114,7 +114,6 @@ module Subtle # {{{
             when "--update"  then @action = :update
             when "--data"    then @action = :data=
             when "--gravity" then @action = :gravity=
-            when "--screen"  then @action = :screen=
             when "--raise"   then @action = :raise
             when "--lower"   then @action = :lower
 
@@ -216,7 +215,7 @@ module Subtle # {{{
       def printer(value) # {{{
         case value
           when Subtlext::Client # {{{
-            puts "%#10x %s %d %4d x %4d + %4d + %-4d %12.12s %d %s%s%s %s (%s)" % [
+            puts "%#10x %s %d %4d x %4d + %4d + %-4d %12.12s %s%s%s %s (%s)" % [
               value.win,
               value.views.map { |v| v.name }.include?(Subtlext::View.current.name) ? "*" : "-",
               Subtlext::View.current.id,
@@ -225,7 +224,6 @@ module Subtle # {{{
               value.geometry.width,
               value.geometry.height,
               value.gravity.name,
-              value.screen.id,
               (value.flags & MODE_FULL).zero?  ? "-" : "F",
               (value.flags & MODE_FLOAT).zero? ? "-" : "O",
               (value.flags & MODE_STICK).zero? ? "-" : "S",
@@ -311,7 +309,6 @@ EOF
     -U, --untag=PATTERN     Remove tag from client
     -G, --tags              Show client tags
     -Y, --gravity           Set client gravity
-    -n, --screen            Set client screen
     -E, --raise             Raise client window
     -L, --lower             Lower client window
     -k, --kill=PATTERN      Kill client
@@ -401,7 +398,7 @@ EOF
       If the PATTERN is '-' subtler will read from stdin.
 
   Listings:
-    Client listing:  <window id> [-*] <view id> <geometry> <gravity> <screen> <flags> <name> (<class>)
+    Client listing:  <window id> [-*] <view id> <geometry> <gravity> <flags> <name> (<class>)
     Gravity listing: <gravity id> <geometry>
     Screen listing:  <screen id> <geometry>
     Tag listing:     <name>
