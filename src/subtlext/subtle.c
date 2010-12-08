@@ -352,6 +352,8 @@ subSubtleSingSpawn(VALUE self,
     {
       pid_t pid = 0;
 
+      subSubtlextConnect(NULL); ///< Implicit open connection
+
       /* Create client */
       if(0 < (pid = subSharedSpawn(RSTRING_PTR(cmd))))
         {
