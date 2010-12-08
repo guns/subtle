@@ -102,7 +102,7 @@
 /* Masks {{{ */
 #define ROOTMASK \
   (StructureNotifyMask|SubstructureNotifyMask|\
-  SubstructureRedirectMask|PropertyChangeMask)
+  SubstructureRedirectMask|PropertyChangeMask|FocusChangeMask)
 #define EVENTMASK \
   (StructureNotifyMask|PropertyChangeMask|\
   EnterWindowMask|FocusChangeMask)
