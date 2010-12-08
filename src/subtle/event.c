@@ -976,8 +976,11 @@ EventProperty(XPropertyEvent *ev)
             subClientSetWMHints(c, &flags);
             subClientToggle(c, (~c->flags & flags), True);
 
+            /* Store urgent tags */
             if(c->flags & (SUB_CLIENT_MODE_URGENT|SUB_CLIENT_MODE_URGENT_FOCUS))
               subtle->urgent_tags |= c->tags;
+
+            subScreenRender();
           }
         break; /* }}} */
       case SUB_EWMH_MOTIF_WM_HINTS: /* {{{ */
@@ -1316,10 +1319,6 @@ EventFocus(XFocusChangeEvent *ev)
   /* Check if window keeps focus */
   if(ev->window == subtle->windows.focus) return;
 
-  /* Check if client is visible */
-  if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
-    if(!(VISIBLE(subtle->visible_tags, c))) return;
-
   /* Remove focus */
   subGrabUnset(subtle->windows.focus);
   if((c = CLIENT(subSubtleFind(subtle->windows.focus, CLIENTID))))
@@ -1332,13 +1331,13 @@ EventFocus(XFocusChangeEvent *ev)
         {
           c->flags &= ~(SUB_CLIENT_MODE_URGENT|SUB_CLIENT_MODE_URGENT_FOCUS);
           subtle->urgent_tags &= ~c->tags;
-          subScreenConfigure();
         }
     }
 
   /* Handle focus event */
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID)))) ///< Clients
     {
+      /* Check if client is visible */
       if(!(c->flags & SUB_CLIENT_DEAD) && VISIBLE(subtle->visible_tags, c))
         {
           SubScreen *s = NULL;
@@ -1366,9 +1365,6 @@ EventFocus(XFocusChangeEvent *ev)
 
           /* Hook: Focus */
           subHookCall(SUB_HOOK_CLIENT_FOCUS, (void *)c);
-
-          subScreenUpdate();
-          subScreenRender();
         }
     }
   else if((t = TRAY(subSubtleFind(ev->window, TRAYID)))) ///< Tray
@@ -1376,6 +1372,11 @@ EventFocus(XFocusChangeEvent *ev)
       subtle->windows.focus = t->win;
       subGrabSet(t->win, !(subtle->flags & SUB_SUBTLE_ESCAPE));
     }
+  else subtle->windows.focus = ev->window;
+
+  /* Update screen */
+  subScreenUpdate();
+  subScreenRender();
 } /* }}} */
 
 /* Extern */
