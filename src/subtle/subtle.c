@@ -138,8 +138,6 @@ subSubtleFocus(int focus)
   SubClient *c = NULL;
   SubScreen *s = NULL;
 
-  if(!(subtle->flags & SUB_SUBTLE_RUN)) return ROOT;
-
   /* Get pointer window */
   XQueryPointer(subtle->dpy, ROOT, (Window *)&dummy, &win,
     &dummy, &dummy, &dummy, &dummy, (unsigned int *)&dummy);
@@ -175,7 +173,6 @@ subSubtleFocus(int focus)
 
   /* Fallback to root */
   XSetInputFocus(subtle->dpy, ROOT, RevertToNone, CurrentTime);
-  subGrabSet(ROOT, !(subtle->flags & SUB_SUBTLE_ESCAPE));
 
   subScreenUpdate();
   subScreenRender();
