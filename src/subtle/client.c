@@ -151,8 +151,6 @@ subClientNew(Window win)
   /* Update and handle according to flags */
   subClientToggle(c, (~c->flags & flags), False); ///< Toggle flags
   if(c->flags & SUB_CLIENT_TYPE_DIALOG) subClientCenter(c);
-  if(c->flags & (SUB_CLIENT_MODE_URGENT|SUB_CLIENT_MODE_URGENT_FOCUS))
-    subtle->urgent_tags |= c->tags;
 
   /* EWMH: Gravity, screen and desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&subtle->gravity, 1);
@@ -298,6 +296,13 @@ subClientFocus(SubClient *c)
 {
   DEAD(c);
   assert(c);
+
+  /* Remove urgent after getting focus */
+  if(c->flags & SUB_CLIENT_MODE_URGENT)
+    {
+      c->flags            &= ~SUB_CLIENT_MODE_URGENT;
+      subtle->urgent_tags &= ~c->tags;
+    }
 
   /* Check client input focus type */
   if(!(c->flags & SUB_CLIENT_INPUT) && c->flags & SUB_CLIENT_FOCUS)
@@ -932,11 +937,12 @@ subClientSetWMHints(SubClient *c,
       /* Handle urgency hint */
       if(!(c->flags & SUB_CLIENT_MODE_NOURGENT))
         {
-          /* Set urgency or remove urgency after losing focus */
+          /* Set urgency and remove it after getting focus */
           if(hints->flags & XUrgencyHint)
-            *flags |= SUB_CLIENT_MODE_URGENT;
-          else if(c->flags & SUB_CLIENT_MODE_URGENT)
-            *flags |= SUB_CLIENT_MODE_URGENT_FOCUS;
+            {
+              *flags              |= SUB_CLIENT_MODE_URGENT;
+              subtle->urgent_tags |= c->tags;
+            }
         }
 
       /* Handle window group hint */
@@ -1265,7 +1271,7 @@ subClientKill(SubClient *c,
   subHookCall(SUB_HOOK_CLIENT_KILL, (void *)c);
 
   /* Remove highlight of urgent client */
-  if(c->flags & (SUB_CLIENT_MODE_URGENT|SUB_CLIENT_MODE_URGENT_FOCUS))
+  if(c->flags & SUB_CLIENT_MODE_URGENT)
     subtle->urgent_tags &= ~c->tags;
 
   /* Ignore further events and delete context */
