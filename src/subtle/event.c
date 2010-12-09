@@ -976,10 +976,6 @@ EventProperty(XPropertyEvent *ev)
             subClientSetWMHints(c, &flags);
             subClientToggle(c, (~c->flags & flags), True);
 
-            /* Store urgent tags */
-            if(c->flags & (SUB_CLIENT_MODE_URGENT|SUB_CLIENT_MODE_URGENT_FOCUS))
-              subtle->urgent_tags |= c->tags;
-
             subScreenRender();
           }
         break; /* }}} */
@@ -1325,13 +1321,6 @@ EventFocus(XFocusChangeEvent *ev)
     {
       subtle->windows.focus = 0;
       subClientRender(c);
-
-      /* Remove urgent after losing focus */
-      if(c->flags & SUB_CLIENT_MODE_URGENT_FOCUS)
-        {
-          c->flags &= ~(SUB_CLIENT_MODE_URGENT|SUB_CLIENT_MODE_URGENT_FOCUS);
-          subtle->urgent_tags &= ~c->tags;
-        }
     }
 
   /* Handle focus event */
@@ -1372,7 +1361,13 @@ EventFocus(XFocusChangeEvent *ev)
       subtle->windows.focus = t->win;
       subGrabSet(t->win, !(subtle->flags & SUB_SUBTLE_ESCAPE));
     }
-  else subtle->windows.focus = ev->window;
+  else
+    {
+      /* FIXME: No idea why we need the second XSetInputFocus */
+      subtle->windows.focus = ev->window;
+      subGrabSet(ev->window, !(subtle->flags & SUB_SUBTLE_ESCAPE));
+      XSetInputFocus(subtle->dpy, ROOT, RevertToNone, CurrentTime);
+  }
 
   /* Update screen */
   subScreenUpdate();
@@ -1439,16 +1434,27 @@ subEventLoop(void)
   char buf[BUFLEN];
 #endif /* HAVE_SYS_INOTIFY_H */
 
-  subScreenRender(); ///< Initially render panels
-  subEventWatchAdd(ConnectionNumber(subtle->dpy));
+  /* Update screens */
+  subScreenConfigure();
+  subScreenUpdate();
+  subScreenRender();
 
+  /* Add watches */
+  subEventWatchAdd(ConnectionNumber(subtle->dpy));
 #ifdef HAVE_SYS_INOTIFY_H
   subEventWatchAdd(subtle->notify);
 #endif /* HAVE_SYS_INOTIFY_H */
 
+  subtle->flags |= SUB_SUBTLE_RUN;
   XSync(subtle->dpy, False); ///< Sync before going on
 
-  subtle->flags |= SUB_SUBTLE_RUN;
+  /* Set focus */
+  subtle->windows.focus = ROOT;
+  subGrabSet(ROOT, !(subtle->flags & SUB_SUBTLE_ESCAPE));
+  subSubtleFocus(True);
+
+  /* Hook: Start */
+  subHookCall(SUB_HOOK_START, NULL);
 
   while(subtle && subtle->flags & SUB_SUBTLE_RUN)
     {

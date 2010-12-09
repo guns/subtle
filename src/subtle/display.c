@@ -263,17 +263,6 @@ subDisplayScan(void)
   XFree(wins);
 
   subClientPublish();
-  subScreenUpdate();
-  subTrayUpdate();
-
-  /* Update screens */
-  subScreenConfigure();
-  subSubtleFocus(True);
-  subtle->windows.focus = ROOT;
-  subGrabSet(ROOT, !(subtle->flags & SUB_SUBTLE_ESCAPE));
-
-  /* Hook: Start */
-  subHookCall(SUB_HOOK_START, NULL);
 } /* }}} */
 
  /** subDisplayPublish {{{
