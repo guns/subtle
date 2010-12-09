@@ -180,19 +180,18 @@
 #define SUB_CLIENT_MODE_FLOAT         (1L << 17)                  ///< Float mode
 #define SUB_CLIENT_MODE_STICK         (1L << 18)                  ///< Stick mode
 #define SUB_CLIENT_MODE_URGENT        (1L << 19)                  ///< Urgent mode
-#define SUB_CLIENT_MODE_URGENT_FOCUS  (1L << 20)                  ///< Urgent mode until focus
-#define SUB_CLIENT_MODE_RESIZE        (1L << 21)                  ///< Resize mode
-#define SUB_CLIENT_MODE_NOFULL        (1L << 22)                  ///< Disable full mode
-#define SUB_CLIENT_MODE_NOFLOAT       (1L << 23)                  ///< Disable float mode
-#define SUB_CLIENT_MODE_NOSTICK       (1L << 24)                  ///< Disable stick mode
-#define SUB_CLIENT_MODE_NOURGENT      (1L << 25)                  ///< Disable urgent mode
-#define SUB_CLIENT_MODE_NORESIZE      (1L << 26)                  ///< Disable resize mode
+#define SUB_CLIENT_MODE_RESIZE        (1L << 20)                  ///< Resize mode
+#define SUB_CLIENT_MODE_NOFULL        (1L << 21)                  ///< Disable full mode
+#define SUB_CLIENT_MODE_NOFLOAT       (1L << 22)                  ///< Disable float mode
+#define SUB_CLIENT_MODE_NOSTICK       (1L << 23)                  ///< Disable stick mode
+#define SUB_CLIENT_MODE_NOURGENT      (1L << 24)                  ///< Disable urgent mode
+#define SUB_CLIENT_MODE_NORESIZE      (1L << 25)                  ///< Disable resize mode
 
-#define SUB_CLIENT_TYPE_DESKTOP       (1L << 27)                  ///< Desktop type (also used in match)
-#define SUB_CLIENT_TYPE_DOCK          (1L << 28)                  ///< Dock type
-#define SUB_CLIENT_TYPE_TOOLBAR       (1L << 29)                  ///< Toolbar type
-#define SUB_CLIENT_TYPE_SPLASH        (1L << 30)                  ///< Splash type
-#define SUB_CLIENT_TYPE_DIALOG        (1L << 31)                  ///< Dialog type
+#define SUB_CLIENT_TYPE_DESKTOP       (1L << 26)                  ///< Desktop type (also used in match)
+#define SUB_CLIENT_TYPE_DOCK          (1L << 27)                  ///< Dock type
+#define SUB_CLIENT_TYPE_TOOLBAR       (1L << 28)                  ///< Toolbar type
+#define SUB_CLIENT_TYPE_SPLASH        (1L << 29)                  ///< Splash type
+#define SUB_CLIENT_TYPE_DIALOG        (1L << 30)                  ///< Dialog type
 
 /* Drag flags */
 #define SUB_DRAG_START                (1L << 1)                   ///< Drag start
