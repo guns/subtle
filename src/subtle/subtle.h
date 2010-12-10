@@ -534,7 +534,7 @@ typedef struct subsubtle_t /* {{{ */
 
   Display              *dpy;                                      ///< Subtle Xorg display
 
-  XRectangle           strut;                                     ///< Subtle strut
+  XRectangle           strut, padding;                            ///< Subtle strut, padding
 
   struct subfont_t     *font;                                     ///< Subtle font
   struct subgrab_t     *escape;                                   ///< Subtle escape grab
