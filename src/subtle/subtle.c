@@ -172,7 +172,7 @@ subSubtleFocus(int focus)
     }
 
   /* Fallback to root */
-  XSetInputFocus(subtle->dpy, ROOT, RevertToNone, CurrentTime);
+  XSetInputFocus(subtle->dpy, ROOT, RevertToPointerRoot, CurrentTime);
 
   subScreenUpdate();
   subScreenRender();
