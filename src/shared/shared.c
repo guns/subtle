@@ -566,8 +566,9 @@ subSharedTextRender(Display *disp,
           gvals.background = bg;
           XChangeGC(disp, gc, GCForeground|GCBackground, &gvals);
 
+          /* Copy icon to destination window */
           XCopyPlane(disp, (Pixmap)item->data.num, win, gc, 0, 0, item->width,
-            item->height, width + dx, abs(f->height - item->height) / 2, 1);
+            item->height, width + dx, y - item->height, 1);
 
           /* Add spacing when icon isn't last */
           width += item->width + dx + (i != t->nitems - 1 ? 2 : 0);

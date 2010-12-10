@@ -713,6 +713,10 @@ RubyEvalConfig(void)
   if(0 == subtle->colors.separator)
     subtle->colors.separator = subtle->colors.fg_panel;
 
+  /* Update panel height */
+  subtle->th = subtle->font->height + 2 * subtle->pbw +
+    subtle->padding.width + subtle->padding.height;
+
   /* Check and update grabs */
   if(0 == subtle->grabs->ndata)
     {
@@ -1176,7 +1180,6 @@ RubyConfigSet(VALUE self,
                 if(!(subtle->flags & SUB_SUBTLE_CHECK))
                   {
                     subtle->pbw = FIX2INT(value);
-                    subtle->th  = subtle->font->height + 2 * subtle->pbw;
                   }
               }
             else if(CHAR2SYM("gap") == option)
@@ -1215,10 +1218,15 @@ RubyConfigSet(VALUE self,
               SYM2CHAR(option));
             break; /* }}} */
           case T_ARRAY: /* {{{ */
-            if(CHAR2SYM("padding") == option)
+            if(CHAR2SYM("strut") == option)
               {
                 if(!(subtle->flags & SUB_SUBTLE_CHECK))
                   RubyGetGeometry(value, &subtle->strut);
+              }
+            else if(CHAR2SYM("padding") == option)
+              {
+                if(!(subtle->flags & SUB_SUBTLE_CHECK))
+                  RubyGetGeometry(value, &subtle->padding);
               }
             else subSharedLogWarn("Unknown set option `:%s'\n",
               SYM2CHAR(option));
@@ -2233,7 +2241,8 @@ RubySubletDataWriter(VALUE self,
       if(T_STRING == rb_type(value))
         {
           p->width = subSharedTextParse(subtle->dpy, subtle->font,
-            p->sublet->text, RSTRING_PTR(value)) + 2 * subtle->pbw;
+            p->sublet->text, RSTRING_PTR(value)) +
+            2 * subtle->pbw + subtle->padding.x + subtle->padding.y;
         }
       else rb_raise(rb_eArgError, "Unknown value type");
     }

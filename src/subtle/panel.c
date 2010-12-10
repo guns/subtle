@@ -128,9 +128,10 @@ subPanelConfigure(SubPanel *p)
               {
                 SubView *v = VIEW(subtle->views->data[i]);
 
+                /* Font offset, panel border and padding */
                 v->width = subSharedTextWidth(subtle->dpy, subtle->font,
                   v->name, strlen(v->name), NULL, NULL, True)
-                  + 6 + 2 * subtle->pbw; ///< Font offset and panel border
+                  + 6 + 2 * subtle->pbw + subtle->padding.x + subtle->padding.y;
 
                 XMoveResizeWindow(subtle->dpy, p->views[i], p->width, 0,
                   v->width - 2 * subtle->pbw, subtle->th - 2 * subtle->pbw);
@@ -167,7 +168,7 @@ subPanelUpdate(SubPanel *p)
   switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_TITLE))
     {
       case SUB_PANEL_SUBLET: /* {{{ */
-        XResizeWindow(subtle->dpy, p->win, p->width - 2 * subtle->pbw,
+        XResizeWindow(subtle->dpy, p->win, p->width - 2 * subtle->pbw + subtle->padding.x + subtle->padding.y,
           subtle->th - 2 * subtle->pbw);
         break; /* }}} */
       case SUB_PANEL_TITLE: /* {{{ */
@@ -192,10 +193,10 @@ subPanelUpdate(SubPanel *p)
                     if(c->flags & SUB_CLIENT_MODE_FLOAT) len++;
                     if(c->flags & SUB_CLIENT_MODE_STICK) len++;
 
-                    /* Update panel width */
+                    /* Font offset, panel border and padding */
                     p->width = subSharedTextWidth(subtle->dpy, subtle->font,
                       c->name, 50 >= len ? len : 50, NULL, NULL, True) +
-                      6 + 2 * subtle->pbw; ///< Font offset and panel border
+                      6 + 2 * subtle->pbw  + subtle->padding.x + subtle->padding.y;
 
                     XResizeWindow(subtle->dpy, p->win,
                       p->width - 2 * subtle->pbw,
@@ -227,8 +228,8 @@ subPanelRender(SubPanel *p)
 
         /* Render text parts */
         subSharedTextRender(subtle->dpy, subtle->gcs.font, subtle->font,
-          p->win, 3, subtle->font->y, p->sublet->fg, p->sublet->bg,
-          p->sublet->text);
+          p->win, 3 + subtle->padding.x, subtle->font->y + subtle->padding.width,
+          p->sublet->fg, p->sublet->bg, p->sublet->text);
         break; /* }}} */
       case SUB_PANEL_VIEWS: /* {{{ */
         if(0 < subtle->views->ndata)
@@ -273,7 +274,8 @@ subPanelRender(SubPanel *p)
                 XClearWindow(subtle->dpy, p->views[i]);
 
                 subSharedTextDraw(subtle->dpy, subtle->gcs.font,
-                  subtle->font, p->views[i], 3, subtle->font->y,
+                  subtle->font, p->views[i], 3 + subtle->padding.x,
+                  subtle->font->y + subtle->padding.width,
                   fg, bg, v->name);
               }
           }
@@ -322,7 +324,8 @@ subPanelRender(SubPanel *p)
                 XClearWindow(subtle->dpy, p->win);
 
                 subSharedTextDraw(subtle->dpy, subtle->gcs.font, subtle->font,
-                  p->win, 3, subtle->font->y, fg, bg, buf);
+                  p->win, 3 + subtle->padding.x,
+                  subtle->font->y + subtle->padding.width, fg, bg, buf);
               }
           }
         break; /* }}} */
