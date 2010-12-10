@@ -1313,8 +1313,7 @@ EventFocus(XFocusChangeEvent *ev)
   SubTray *t = NULL;
 
   /* Check if are interested in this event */
-  if(NotifyGrab == ev->mode || NotifyUngrab == ev->mode ||
-      ev->window == subtle->windows.focus) return;
+  if(ev->window == subtle->windows.focus) return;
 
   /* Remove focus */
   subGrabUnset(subtle->windows.focus);
