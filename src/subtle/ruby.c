@@ -428,13 +428,6 @@ RubyEvalGrab(VALUE chain,
                 type = SUB_GRAB_VIEW_SELECT;
                 data = DATA((unsigned long)SUB_VIEW_PREV);
               }
-            /* TODO: Deprecated */
-            else if(CHAR2SYM("SubletsReload") == value)
-              {
-                subSharedLogDeprecated("Grab `:SubletsReload` has been removed\n");
-
-                return;
-              }
             else if(CHAR2SYM("SubtleReload") == value)
               {
                 type = SUB_GRAB_SUBTLE_RELOAD;
@@ -1208,20 +1201,7 @@ RubyConfigSet(VALUE self,
             break; /* }}} */
           case T_TRUE:
           case T_FALSE: /* {{{ */
-            /* TODO: Deprecated */
-            if(CHAR2SYM("stipple") == option)
-              {
-                if(!(subtle->flags & SUB_SUBTLE_CHECK) && Qtrue == value)
-                  {
-                    SubScreen *s = SCREEN(subtle->screens->data[0]);
-
-                    subSharedLogDeprecated("Option `:stipple` has been "
-                      "replaced by screen config\n");
-
-                    s->flags |= SUB_SCREEN_STIPPLE;
-                  }
-              }
-            else if(CHAR2SYM("urgent") == option)
+            if(CHAR2SYM("urgent") == option)
               {
                 if(!(subtle->flags & SUB_SUBTLE_CHECK) && Qtrue == value)
                   subtle->flags |= SUB_SUBTLE_URGENT;
@@ -1235,34 +1215,7 @@ RubyConfigSet(VALUE self,
               SYM2CHAR(option));
             break; /* }}} */
           case T_ARRAY: /* {{{ */
-            /* TODO: Deprecated */
-            if(CHAR2SYM("top") == option)
-              {
-                if(!(subtle->flags & SUB_SUBTLE_CHECK))
-                  {
-                    SubScreen *s = SCREEN(subtle->screens->data[0]);
-
-                    subSharedLogDeprecated("Option `:top` has been replaced "
-                      "by screen config\n");
-
-                    s->top = value; /// Lazy eval
-                    rb_ary_push(shelter, value); ///< Protect from GC
-                  }
-              }
-            else if(CHAR2SYM("bottom") == option)
-              {
-                if(!(subtle->flags & SUB_SUBTLE_CHECK))
-                  {
-                    SubScreen *s = SCREEN(subtle->screens->data[0]);
-
-                    subSharedLogDeprecated("Option `:bottom` has been replaced "
-                      "by screen config\n");
-
-                    s->bottom = value; ///< Lazy eval
-                    rb_ary_push(shelter, value); ///< Protect from GC
-                  }
-              }
-            else if(CHAR2SYM("padding") == option)
+            if(CHAR2SYM("padding") == option)
               {
                 if(!(subtle->flags & SUB_SUBTLE_CHECK))
                   RubyGetGeometry(value, &subtle->strut);
@@ -1566,22 +1519,6 @@ RubyConfigTag(int argc,
       options = rb_funcall(klass, rb_intern("new"), 0, NULL);
       rb_obj_instance_eval(0, 0, options);
       params = rb_iv_get(options, "@params");
-
-      /* TODO: Deprecated */
-      if(T_STRING == rb_type(value = rb_hash_lookup(params,
-        CHAR2SYM("regex"))) || T_REGEXP == rb_type(value))
-        {
-          subSharedLogDeprecated("Property `regex` has been "
-            "replaced by `match'\n");
-
-          RubyOptionsMatch(options, value);
-        }
-
-      /* TODO: Deprecated */
-      if(T_NIL != (rb_type(value = rb_hash_lookup(params,
-          CHAR2SYM("screen")))))
-        subSharedLogDeprecated("Property `screen' has been "
-            "removed from tags\n");
 
       /* Check match */
       if(T_HASH == rb_type(value = rb_hash_lookup(params,
