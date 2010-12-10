@@ -35,8 +35,8 @@ set :urgent, false
 # Honor resize size hints globally
 set :resize, false
 
-# Screen size padding (left, right, top, bottom)
-set :padding, [ 0, 0, 0, 0 ]
+# Screen strut for e.g. other panels (left, right, top, bottom)
+set :strut, [ 0, 0, 0, 0 ]
 
 # Font string either take from e.g. xfontsel or use xft
 set :font, "-*-*-medium-*-*-*-14-*-*-*-*-*-*-*"
@@ -44,6 +44,9 @@ set :font, "-*-*-medium-*-*-*-14-*-*-*-*-*-*-*"
 
 # Space around windows
 set :gap, 0
+
+# Panel size padding (left, right, top, bottom)
+set :padding, [ 0, 0, 0, 0 ]
 
 # Separator between sublets
 set :separator, "|"
