@@ -717,6 +717,16 @@ RubyEvalConfig(void)
   subtle->th = subtle->font->height + 2 * subtle->pbw +
     subtle->padding.width + subtle->padding.height;
 
+  /* Set separator */
+  if(subtle->separator.string)
+    {
+      subtle->separator.width = subSharedTextWidth(subtle->dpy, subtle->font,
+        subtle->separator.string, strlen(subtle->separator.string), NULL,
+        NULL, True);
+
+      if(0 < subtle->separator.width) subtle->separator.width += 6;
+    }
+
   /* Check and update grabs */
   if(0 == subtle->grabs->ndata)
     {
@@ -1244,8 +1254,6 @@ RubyConfigSet(VALUE self,
                         exit(-1); ///< Should never happen
                       }
 
-                    subtle->th = subtle->font->height + 2 * subtle->pbw;
-
                     /* EWMH: Font */
                     subEwmhSetString(ROOT, SUB_EWMH_SUBTLE_FONT,
                       RSTRING_PTR(value));
@@ -1257,13 +1265,6 @@ RubyConfigSet(VALUE self,
                   {
                     if(subtle->separator.string) free(subtle->separator.string);
                     subtle->separator.string = strdup(RSTRING_PTR(value));
-                    subtle->separator.width  = subSharedTextWidth(subtle->dpy,
-                      subtle->font, subtle->separator.string,
-                      strlen(subtle->separator.string),
-                      NULL, NULL, True);
-
-                    if(0 < subtle->separator.width)
-                      subtle->separator.width += 6; ///< Add spacings
                   }
               }
             else subSharedLogWarn("Unknown set option `:%s'\n", SYM2CHAR(option));
