@@ -1312,8 +1312,9 @@ EventFocus(XFocusChangeEvent *ev)
   SubClient *c = NULL;
   SubTray *t = NULL;
 
-  /* Check if window keeps focus */
-  if(ev->window == subtle->windows.focus) return;
+  /* Check if are interested in this event */
+  if(NotifyGrab == ev->mode || NotifyUngrab == ev->mode ||
+      ev->window == subtle->windows.focus) return;
 
   /* Remove focus */
   subGrabUnset(subtle->windows.focus);
@@ -1363,10 +1364,8 @@ EventFocus(XFocusChangeEvent *ev)
     }
   else
     {
-      /* FIXME: No idea why we need the second XSetInputFocus */
       subtle->windows.focus = ev->window;
       subGrabSet(ev->window, !(subtle->flags & SUB_SUBTLE_ESCAPE));
-      XSetInputFocus(subtle->dpy, ROOT, RevertToNone, CurrentTime);
   }
 
   /* Update screen */
