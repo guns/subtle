@@ -1566,6 +1566,11 @@ RubyConfigTag(int argc,
           SUB_CLIENT_MODE_NOFULL);
 
       if(Qtrue == (value = rb_hash_lookup(params,
+          CHAR2SYM("full"))) || Qfalse == value)
+        flags |= (Qtrue == value ? SUB_CLIENT_MODE_FULL :
+          SUB_CLIENT_MODE_NOFULL);
+
+      if(Qtrue == (value = rb_hash_lookup(params,
           CHAR2SYM("float"))) || Qfalse == value)
         flags |= (Qtrue == value ? SUB_CLIENT_MODE_FLOAT :
           SUB_CLIENT_MODE_NOFLOAT);
