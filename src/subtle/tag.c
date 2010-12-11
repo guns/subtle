@@ -77,20 +77,18 @@ subTagNew(char *name,
   assert(name);
 
   /* Check if tag already exists */
-  if((t = TagFind(name)))
+  if(duplicate && (t = TagFind(name)))
     {
-      TagClear(t);
-      if(duplicate) *duplicate = True;
+      *duplicate = True;
     }
   else
     {
       /* Create new tag */
       t = TAG(subSharedMemoryAlloc(1, sizeof(SubTag)));
+      t->flags = SUB_TYPE_TAG;
       t->name  = strdup(name);
       if(duplicate) *duplicate = False;
     }
-
-  t->flags = SUB_TYPE_TAG;
 
   subSharedLogDebug("new=tag, name=%s\n", name);
 
