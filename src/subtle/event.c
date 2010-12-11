@@ -1309,52 +1309,55 @@ EventGrab(XEvent *ev)
 static void
 EventFocus(XFocusChangeEvent *ev)
 {
-  SubClient *c = NULL;
+  SubClient *c = NULL, *focus = NULL;
   SubTray *t = NULL;
 
   /* Check if are interested in this event */
   if(ev->window == subtle->windows.focus) return;
 
-  /* Remove focus */
+  /* Check if focus client is alive/visible before unsetting focus */
+  if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
+    {
+      if(c->flags & SUB_CLIENT_DEAD || !VISIBLE(subtle->visible_tags, c))
+        return;
+    }
+
+  /* Remove current focus */
   subGrabUnset(subtle->windows.focus);
-  if((c = CLIENT(subSubtleFind(subtle->windows.focus, CLIENTID))))
+  if((focus = CLIENT(subSubtleFind(subtle->windows.focus, CLIENTID))))
     {
       subtle->windows.focus = 0;
-      subClientRender(c);
+      subClientRender(focus);
     }
 
   /* Handle focus event */
-  if((c = CLIENT(subSubtleFind(ev->window, CLIENTID)))) ///< Clients
+  if(c) ///< Clients
     {
-      /* Check if client is visible */
-      if(!(c->flags & SUB_CLIENT_DEAD) && VISIBLE(subtle->visible_tags, c))
+      SubScreen *s = NULL;
+      SubView *v = NULL;
+
+      subtle->windows.focus = c->win;
+      subGrabSet(c->win, !(subtle->flags & SUB_SUBTLE_ESCAPE));
+
+      subClientRender(c);
+
+      /* EWMH: Active window */
+      subEwmhSetWindows(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW,
+        &subtle->windows.focus, 1);
+
+      /* EWMH: Current desktop */
+      if((s = SCREEN(subArrayGet(subtle->screens, c->screen))))
         {
-          SubScreen *s = NULL;
-          SubView *v = NULL;
-
-          subtle->windows.focus = c->win;
-          subGrabSet(c->win, !(subtle->flags & SUB_SUBTLE_ESCAPE));
-
-          subClientRender(c);
-
-          /* EWMH: Active window */
-          subEwmhSetWindows(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW,
-            &subtle->windows.focus, 1);
-
-          /* EWMH: Current desktop */
-          if((s = SCREEN(subArrayGet(subtle->screens, c->screen))))
-            {
-              subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP,
-                (long *)&s->vid, 1);
-            }
-
-          /* Set view focus */
-          if((v = VIEW(subArrayGet(subtle->views, s->vid))))
-            v->focus = c->win;;
-
-          /* Hook: Focus */
-          subHookCall(SUB_HOOK_CLIENT_FOCUS, (void *)c);
+          subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP,
+            (long *)&s->vid, 1);
         }
+
+      /* Set view focus */
+      if((v = VIEW(subArrayGet(subtle->views, s->vid))))
+        v->focus = c->win;;
+
+      /* Hook: Focus */
+      subHookCall(SUB_HOOK_CLIENT_FOCUS, (void *)c);
     }
   else if((t = TRAY(subSubtleFind(ev->window, TRAYID)))) ///< Tray
     {
