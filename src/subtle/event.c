@@ -636,13 +636,18 @@ EventMessage(XClientMessageEvent *ev)
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_TAG_NEW: /* {{{ */
-            if(ev->data.b && (t = subTagNew(ev->data.b, NULL)))
+            if(ev->data.b)
               {
-                subArrayPush(subtle->tags, (void *)t);
-                subTagPublish();
+                int duplicate = False;
 
-                /* Hook: Create */
-                subHookCall(SUB_HOOK_TAG_CREATE, (void *)t);
+                if((t = subTagNew(ev->data.b, &duplicate)) && !duplicate)
+                  {
+                    subArrayPush(subtle->tags, (void *)t);
+                    subTagPublish();
+
+                    /* Hook: Create */
+                    subHookCall(SUB_HOOK_TAG_CREATE, (void *)t);
+                  }
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_TAG_KILL: /* {{{ */
