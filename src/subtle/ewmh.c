@@ -307,9 +307,9 @@ subEwmhSetWMState(Window win,
 
  /** subEwmhMessage {{{
   * @brief Send message
-  * @param[in]  dst    Destination window
   * @param[in]  win    Target window
   * @param[in]  e      A #SubEwmh
+  * @param[in]  mask   Event mask
   * @param[in]  data0  Data part 1
   * @param[in]  data1  Data part 2
   * @param[in]  data2  Data part 3
@@ -320,9 +320,9 @@ subEwmhSetWMState(Window win,
   **/
 
 int
-subEwmhMessage(Window dst,
-  Window win,
+subEwmhMessage(Window win,
   SubEwmh e,
+  long mask,
   long data0,
   long data1,
   long data2,
@@ -342,7 +342,7 @@ subEwmhMessage(Window dst,
   ev.data.l[3]    = data3;
   ev.data.l[4]    = data4;
 
-  return XSendEvent(subtle->dpy, dst, False, 0xFFFFFF, (XEvent *)&ev);
+  return XSendEvent(subtle->dpy, win, False, mask, (XEvent *)&ev);
 } /* }}} */
 
  /** subEwmhFinish {{{
