@@ -372,6 +372,17 @@ grab "W-KP_1", [ :bottom_left,  :bottom_left66,  :bottom_left33  ]
 grab "W-KP_2", [ :bottom,       :bottom66,       :bottom33       ]
 grab "W-KP_3", [ :bottom_right, :bottom_right66, :bottom_right33 ]
 
+# In case no numpad is available e.g. on notebooks
+#grab "W-q", [ :top_left,     :top_left66,     :top_left33     ]
+#grab "W-w", [ :top,          :top66,          :top33          ]
+#grab "W-e", [ :top_right,    :top_right66,    :top_right33    ]
+#grab "W-a", [ :left,         :left66,         :left33         ]
+#grab "W-s", [ :center,       :center66,       :center33       ]
+#grab "W-d", [ :right,        :right66,        :right33        ]
+#grab "W-y", [ :bottom_left,  :bottom_left66,  :bottom_left33  ]
+#grab "W-x", [ :bottom,       :bottom66,       :bottom33       ]
+#grab "W-c", [ :bottom_right, :bottom_right66, :bottom_right33 ]
+
 # Exec programs
 grab "W-Return", "urxvt"
 
