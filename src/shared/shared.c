@@ -334,9 +334,9 @@ subSharedPropertyName(Display *disp,
 
           XFreeStringList(list);
         }
-
-      XFree(text.value);
     }
+
+  if(text.value) XFree(text.value);
 
   /* Fallback */
   if(!*name) *name = strdup(fallback);

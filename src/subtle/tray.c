@@ -235,7 +235,7 @@ subTrayKill(SubTray *t)
   XReparentWindow(subtle->dpy, t->win, ROOT, 0, 0);
   XMapRaised(subtle->dpy, t->win);
 
-  if(t->name) XFree(t->name);
+  if(t->name) free(t->name);
   free(t);
 
   subSharedLogDebug("kill=tray\n");
