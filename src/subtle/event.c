@@ -398,7 +398,6 @@ EventFocus(XFocusChangeEvent *ev)
   SubClient *c = NULL, *focus = NULL;
   SubTray *t = NULL;
 
-printf("focusin: win=%#lx\n", ev->window);
   /* Check if are interested in this event */
   if(ev->window == subtle->windows.focus) return;
 
