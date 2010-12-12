@@ -2853,7 +2853,7 @@ subRubyReloadConfig(void)
       p->screen = NULL;
     }
 
-  /* Allocate memory to store views */
+  /* Allocate memory to store current views per screen */
   vids = (int *)subSharedMemoryAlloc(subtle->screens->ndata, sizeof(int));
 
   /* Reset screen panels */
@@ -2890,7 +2890,7 @@ subRubyReloadConfig(void)
   subRubyLoadPanels();
   subDisplayConfigure();
 
-  /* Restore views */
+  /* Restore current views */
   for(i = 0; i < subtle->screens->ndata; i++)
     {
       if(vids[i] < subtle->views->ndata)

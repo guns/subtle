@@ -34,13 +34,13 @@ subTrayNew(Window win)
   /* Update tray properties */
   subSharedPropertyName(subtle->dpy, win, &t->name, PKG_NAME);
   subEwmhSetWMState(t->win, WithdrawnState);
-  XSelectInput(subtle->dpy, t->win, EVENTMASK);
+  XSelectInput(subtle->dpy, t->win, TRAYMASK);
   XReparentWindow(subtle->dpy, t->win, subtle->windows.tray.win, 0, 0);
   XAddToSaveSet(subtle->dpy, t->win);
   XSaveContext(subtle->dpy, t->win, TRAYID, (void *)t);
 
   /* Start embedding life cycle */
-  subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime,
+  subEwmhMessage(t->win, SUB_EWMH_XEMBED, 0xFFFFFF, CurrentTime,
     XEMBED_EMBEDDED_NOTIFY, 0, subtle->windows.tray.win, 0);
 
   subSharedLogDebug("new=tray, name=%s, win=%#lx\n", t->name, win);
@@ -114,21 +114,6 @@ subTrayUpdate(void)
     }
 } /* }}} */
 
- /** subTrayFocus {{{
-  * @brief Set focus to tray
-  * @param[in]  t  A #SubTray
-  **/
-
-void
-subTrayFocus(SubTray *t)
-{
-  assert(t);
-
-  XSetInputFocus(subtle->dpy, t->win, RevertToNone, CurrentTime);
-
-  subSharedLogDebug("Focus: type=tray, win=%#lx\n", t->win);
-} /* }}} */
-
  /** subTraySetState {{{
   * @brief Set window state and map/unmap accordingly
   * @param[in]  t  A #SubTray
@@ -137,7 +122,6 @@ subTrayFocus(SubTray *t)
 void
 subTraySetState(SubTray *t)
 {
-  int opcode = 0;
   long flags = 0;
 
   assert(t);
@@ -145,6 +129,8 @@ subTraySetState(SubTray *t)
   /* Get xembed data */
   if((flags = subEwmhGetXEmbedState(t->win)))
     {
+      int opcode = 0;
+
       if(flags & XEMBED_MAPPED) ///< Map if wanted
         {
           opcode = XEMBED_WINDOW_ACTIVATE;
@@ -160,7 +146,8 @@ subTraySetState(SubTray *t)
           subEwmhSetWMState(t->win, WithdrawnState);
         }
 
-      subEwmhMessage(t->win, t->win, SUB_EWMH_XEMBED, CurrentTime, opcode, 0, 0, 0);
+      subEwmhMessage(t->win, SUB_EWMH_XEMBED, 0xFFFFFF,
+        CurrentTime, opcode, 0, 0, 0);
     }
 } /* }}} */
 
@@ -184,7 +171,7 @@ subTraySelect(void)
   else subSharedLogError("Failed getting tray selection\n");
 
   /* Send manager info */
-  subEwmhMessage(ROOT, ROOT, SUB_EWMH_MANAGER, CurrentTime,
+  subEwmhMessage(ROOT, SUB_EWMH_MANAGER, 0xFFFFFF, CurrentTime,
     subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION),
       subtle->windows.tray.win, 0, 0);
 } /* }}} */

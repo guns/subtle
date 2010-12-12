@@ -168,7 +168,7 @@ subArrayClear(SubArray *a,
           SubClient *c = CLIENT(a->data[i]);
 
           /* Common types first */
-          if(c->flags & SUB_TYPE_CLIENT)       subClientKill(c, False);
+          if(c->flags & SUB_TYPE_CLIENT)       subClientKill(c);
           else if(c->flags & SUB_TYPE_GRAB)    subGrabKill(GRAB(c));
           else if(c->flags & SUB_TYPE_GRAVITY) subGravityKill(GRAVITY(c));
           else if(c->flags & SUB_TYPE_HOOK)    subHookKill(HOOK(c));
