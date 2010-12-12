@@ -273,6 +273,9 @@ subScreenConfigure(void)
           SubClient *c = CLIENT(subtle->clients->data[i]);
           int visible = 0;
 
+          /* Ignore dead or just iconified clients */
+          if(c->flags & SUB_CLIENT_DEAD) continue;
+
           subtle->visible_clients |= c->tags;
 
           /* Check views of each screen */
@@ -298,11 +301,11 @@ subScreenConfigure(void)
                 }
             }
 
-          /* Check visibility */
+          /* Check visibility after all screens are checked */
           if(0 < visible)
             {
-              /* Wait until all screens are checked */
               subClientConfigure(c);
+              subEwmhSetWMState(c->win, NormalState);
 
               /* Special treatment */
               if(c->flags & (SUB_CLIENT_MODE_FULL|SUB_CLIENT_MODE_FLOAT))
@@ -316,6 +319,7 @@ subScreenConfigure(void)
           else ///< Unmap other windows
             {
               c->flags |= SUB_CLIENT_UNMAP; ///< Ignore next unmap
+              subEwmhSetWMState(c->win, WithdrawnState);
               XUnmapWindow(subtle->dpy, c->win);
             }
         }
