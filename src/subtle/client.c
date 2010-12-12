@@ -940,8 +940,9 @@ subClientSetWMHints(SubClient *c,
       /* Handle urgency hint */
       if(!(c->flags & SUB_CLIENT_MODE_NOURGENT))
         {
-          /* Set urgency and remove it after getting focus */
-          if(hints->flags & XUrgencyHint)
+          /* Set urgency if window hasn't focus and and
+           * remove it after getting focus */
+          if(hints->flags & XUrgencyHint && c->win != subtle->windows.focus)
             {
               *flags              |= SUB_CLIENT_MODE_URGENT;
               subtle->urgent_tags |= c->tags;
