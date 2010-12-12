@@ -246,18 +246,15 @@ subDisplayScan(void)
   for(i = 0; i < n; i++)
     {
       SubClient *c = NULL;
-      XWindowAttributes attr;
+      XWindowAttributes attrs;
 
-      XGetWindowAttributes(subtle->dpy, wins[i], &attr);
-      if(False == attr.override_redirect) ///< Skip some windows
+      XGetWindowAttributes(subtle->dpy, wins[i], &attrs);
+      switch(attrs.map_state)
         {
-          switch(attr.map_state)
-            {
-              case IsViewable:
-                if((c = subClientNew(wins[i])))
-                  subArrayPush(subtle->clients, (void *)c);
-                break;
-            }
+          case IsViewable:
+            if((c = subClientNew(wins[i])))
+              subArrayPush(subtle->clients, (void *)c);
+            break;
         }
     }
   XFree(wins);
