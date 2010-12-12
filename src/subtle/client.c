@@ -100,6 +100,10 @@ subClientNew(Window win)
 
   assert(win);
 
+  /* Check override_redirect */
+  XGetWindowAttributes(subtle->dpy, win, &attrs);
+  if(True == attrs.override_redirect) return NULL;
+
   /* Create new client */
   c = CLIENT(subSharedMemoryAlloc(1, sizeof(SubClient)));
   c->gravities = (int *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(int));
@@ -108,7 +112,6 @@ subClientNew(Window win)
   c->win       = win;
 
   /* Window attributes */
-  XGetWindowAttributes(subtle->dpy, c->win, &attrs);
   c->cmap        = attrs.colormap;
   c->geom.x      = attrs.x;
   c->geom.y      = attrs.y;
@@ -128,7 +131,7 @@ subClientNew(Window win)
 
   /* X properties */
   sattrs.border_pixel = subtle->colors.bo_inactive;
-  sattrs.event_mask   = EVENTMASK;
+  sattrs.event_mask   = CLIENTMASK;
   XChangeWindowAttributes(subtle->dpy, c->win, CWBorderPixel|CWEventMask, &sattrs);
   XAddToSaveSet(subtle->dpy, c->win);
   XSaveContext(subtle->dpy, c->win, CLIENTID, (void *)c);
@@ -307,7 +310,7 @@ subClientFocus(SubClient *c)
   /* Check client input focus type */
   if(!(c->flags & SUB_CLIENT_INPUT) && c->flags & SUB_CLIENT_FOCUS)
     {
-      subEwmhMessage(c->win, c->win, SUB_EWMH_WM_PROTOCOLS,
+      subEwmhMessage(c->win, SUB_EWMH_WM_PROTOCOLS, NoEventMask,
         subEwmhGet(SUB_EWMH_WM_TAKE_FOCUS), CurrentTime, 0, 0, 0);
     }
   else XSetInputFocus(subtle->dpy, c->win, RevertToPointerRoot, CurrentTime);
@@ -1255,15 +1258,42 @@ subClientPublish(void)
   free(wins);
 } /* }}} */
 
- /** subClientKill {{{
-  * @brief Send interested clients the  signal and/or kill it
-  * @param[in]  c        A #SubClient
-  * @param[in]  destroy  Destroy window
+ /** subClientClose {{{
+  * @brief Send client delete message or just kill it
+  * @param[in]  c  A #SubClient
   **/
 
 void
-subClientKill(SubClient *c,
-  int destroy)
+subClientClose(SubClient *c)
+{
+  assert(c);
+
+  /* Update client */
+  c->flags |= SUB_CLIENT_DEAD;
+  subEwmhSetWMState(c->win, WithdrawnState);
+
+  /* Honor window preferences */
+  if(c->flags & SUB_CLIENT_CLOSE)
+    {
+      subEwmhMessage(c->win, SUB_EWMH_WM_PROTOCOLS, NoEventMask,
+        subEwmhGet(SUB_EWMH_WM_DELETE_WINDOW), CurrentTime, 0, 0, 0);
+    }
+  else
+    {
+      XDeleteContext(subtle->dpy, c->win, CLIENTID);
+      XKillClient(subtle->dpy, c->win);
+
+      subClientKill(c);
+    }
+} /* }}} */
+
+ /** subClientKill {{{
+  * @brief Kill a client
+  * @param[in]  c  A #SubClient
+  **/
+
+void
+subClientKill(SubClient *c)
 {
   assert(c);
 
@@ -1273,22 +1303,6 @@ subClientKill(SubClient *c,
   /* Remove highlight of urgent client */
   if(c->flags & SUB_CLIENT_MODE_URGENT)
     subtle->urgent_tags &= ~c->tags;
-
-  /* Ignore further events and delete context */
-  XSelectInput(subtle->dpy, c->win, NoEventMask);
-  XDeleteContext(subtle->dpy, c->win, CLIENTID);
-  XUnmapWindow(subtle->dpy, c->win);
-
-  /* Destroy window */
-  if(destroy && !(c->flags & SUB_CLIENT_DEAD))
-    {
-      if(c->flags & SUB_CLIENT_CLOSE) ///< Honor window preferences
-        {
-          subEwmhMessage(c->win, c->win, SUB_EWMH_WM_PROTOCOLS,
-            subEwmhGet(SUB_EWMH_WM_DELETE_WINDOW), CurrentTime, 0, 0, 0);
-        }
-      else XKillClient(subtle->dpy, c->win);
-    }
 
   if(c->gravities) free(c->gravities);
   if(c->name)      free(c->name);
