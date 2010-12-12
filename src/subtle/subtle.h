@@ -62,6 +62,7 @@
 #define MIN(a,b)     (a >= b ? b : a)                             ///< Minimum
 #define MAX(a,b)     (a >= b ? a : b)                             ///< Maximum
 
+#define ALIVE(c) (c && !(c->flags & SUB_CLIENT_DEAD))             ///< Check if client is alive
 #define DEAD(c) \
   if(!c || c->flags & SUB_CLIENT_DEAD) return;                    ///< Check dead clients
 
@@ -103,9 +104,9 @@
 #define ROOTMASK \
   (StructureNotifyMask|SubstructureNotifyMask|\
   SubstructureRedirectMask|PropertyChangeMask|FocusChangeMask)
-#define EVENTMASK \
-  (StructureNotifyMask|PropertyChangeMask|\
-  EnterWindowMask|FocusChangeMask)
+#define CLIENTMASK \
+  (PropertyChangeMask|EnterWindowMask|FocusChangeMask)
+#define TRAYMASK (StructureNotifyMask|CLIENTMASK)
 #define DRAGMASK \
   (PointerMotionMask|ButtonReleaseMask|KeyPressMask| \
   EnterWindowMask|FocusChangeMask)
@@ -659,7 +660,8 @@ void subClientSetType(SubClient *c, int *flags);                  ///< Set clien
 void subClientToggle(SubClient *c, int type, int gravity);        ///< Toggle client state
 void subClientDimension(int id);                                  ///< Dimension clients
 void subClientPublish(void);                                      ///< Publish all clients
-void subClientKill(SubClient *c, int destroy);                    ///< Kill client
+void subClientClose(SubClient *c);                                ///< Close client
+void subClientKill(SubClient *c);                                 ///< Kill client
 /* }}} */
 
 /* display.c {{{ */
@@ -692,7 +694,7 @@ void subEwmhSetString(Window win, SubEwmh e,
 void subEwmhSetStrings(Window win, SubEwmh e,                     ///< Set string properties
   char **values, int size);
 void subEwmhSetWMState(Window win, long state);                   ///< Set window WM state
-int subEwmhMessage(Window dst, Window win, SubEwmh e,
+int subEwmhMessage(Window win, SubEwmh e, long mask,
   long data0, long data1, long data2, long data3,
   long data4);                                                    ///< Send message
 void subEwmhFinish(void);                                         ///< Unset EWMH properties
@@ -784,9 +786,7 @@ void subTagKill(SubTag *t);                                       ///< Delete ta
 /* tray.c {{{ */
 SubTray *subTrayNew(Window win);                                  ///< Create tray
 void subTrayConfigure(SubTray *t);                                ///< Configure tray
-void subTrayFocus(SubTray * t);                                   ///< Focus tray
 void subTrayUpdate(void);                                         ///< Update tray bar
-void subTrayFocus(SubTray *t);                                    ///< Focus tray
 void subTraySetState(SubTray *t);                                 ///< Set state
 void subTraySelect(void);                                         ///< Set selection
 void subTrayDeselect(void);                                       ///< Get selection
