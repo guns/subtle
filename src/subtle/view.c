@@ -186,6 +186,7 @@ subViewKill(SubView *v)
   /* Hook: Kill */
   subHookCall(SUB_HOOK_VIEW_KILL, (void *)v);
 
+  if(v->text) subSharedTextFree(v->text);
   free(v->name);
   free(v);
 
