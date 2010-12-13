@@ -3,12 +3,12 @@
 # Version:: $Id$
 # License:: GNU GPL
 #
-# = Subtle example configuration
+# = Subtle default configuration
 #
 # This file will be installed as default and can also be used as a starter for
 # an own custom configuration file. The system wide config usually resides in
 # +/etc/xdg/subtle+ and the user config in +HOME/.config/subtle+, both locations
-# are dependent on the locations specified by +XDG_CONFIG_DIRS+ and 
+# are dependent on the locations specified by +XDG_CONFIG_DIRS+ and
 # +XDG_CONFIG_HOME+.
 #
 
@@ -406,8 +406,27 @@ end
 #
 # There are to ways to define a tag:
 #
-# [*string*]  With a WM_CLASS/WM_NAME
-# [*hash*]    With a hash of properties
+# === Simple
+#
+# The simple way just needs a name and a regular expression to just handle the
+# placement:
+#
+# Example:
+#
+#  tag "terms", "terms"
+#
+# === Extended
+#
+# Additionally tags can do a lot more then just control the placement - they
+# also have properties than can define and control some aspects of a window
+# like the default gravity or the default screen per view.
+#
+# Example:
+#
+#  tag "terms" do
+#    match   "xterm|[u]?rxvt"
+#    gravity :center
+#  end
 #
 # === Default
 #
@@ -418,26 +437,22 @@ end
 #
 # === Properties
 #
-# Additionally tags can do a lot more then just control the placement - they
-# also have properties than can define and control some aspects of a window
-# like the default gravity or the default screen per view.
-#
-# [*float*]   This property either sets the tagged client floating or prevents
+# [*float*]    This property either sets the tagged client floating or prevents
 #              it from being floating depending on the value.
 #
 #              Example: float true
 #
-# [*full*]    This property either sets the tagged client to fullscreen or
+# [*full*]     This property either sets the tagged client to fullscreen or
 #              prevents it from being set to fullscreen depending on the value.
 #
 #              Example: full true
 #
-# [*gravity*] This property sets a certain to gravity to the tagged client,
+# [*gravity*]  This property sets a certain to gravity to the tagged client,
 #              but only on views that have this tag too.
 #
 #              Example: gravity :center
 #
-# [*match*]   This property adds matching patterns to a tag, a tag can have
+# [*match*]    This property adds matching patterns to a tag, a tag can have
 #              more than one. Matching works either via plaintext, regex
 #              (see man regex(7)) or window id. Per default tags will only
 #              match the WM_NAME and the WM_CLASS portion of a client, this
@@ -452,30 +467,30 @@ end
 #                       match [:role, :class] => "test"
 #                       match "[xa]+term"
 #
-# [*exclude*] This property works exactly the same way as *match*, but it
+# [*exclude*]  This property works exactly the same way as *match*, but it
 #              excludes clients that match from this tag. That can be helpful
 #              with catch-all tags e.g. for console apps.
 #
 #              Example: exclude :instance => "irssi"
 #
-# [*resize*]  This property either enables or disables honoring of client
+# [*resize*]   This property either enables or disables honoring of client
 #              resize hints and is independent of the global option.
 #
 #              Example: resize true
 #
-# [*size*]    This property sets a certain to size as well as floating to the
+# [*size*]     This property sets a certain to size as well as floating to the
 #              tagged client, but only on views that have this tag too. It
 #              expects an array with x, y, width and height values.
 #
 #              Example: size [100, 100, 50, 50]
 #
-# [*stick*]   This property either sets the tagged client to stick or prevents
+# [*stick*]    This property either sets the tagged client to stick or prevents
 #              it from being set to stick depending on the value. Stick clients
 #              are visible on every view.
 #
 #              Example: stick true
 #
-# [*type*]    This property sets the [[Tagging|tagged]] client to be treated
+# [*type*]     This property sets the [[Tagging|tagged]] client to be treated
 #              as a specific window type though as the window sets the type
 #              itself. Following types are possible:
 #
@@ -487,7 +502,7 @@ end
 #
 #              Example: type :desktop
 #
-# [*urgent*]  This property either sets the tagged client to be urgent or
+# [*urgent*]   This property either sets the tagged client to be urgent or
 #              prevents it from being urgent depending on the value. Urgent
 #              clients will get keyboard and mouse focus automatically.
 #
@@ -558,6 +573,42 @@ end
 # which is the view with the default tag or the first defined view when this
 # tag isn't set.
 #
+# Like tags views can be defined in two ways:
+#
+# === Simple
+#
+# The simple way is exactly the same as for tags:
+#
+# Example:
+#
+#   view "terms", "terms"
+#
+# === Extended
+#
+# The extended way for views is also similar to the tags, but with fewer
+# properties.
+#
+# Example:
+#
+#  view "terms" do
+#    match "terms"
+#    icon  "/usr/share/icons/icon.xbm"
+#  end
+#
+# === Properties
+#
+# [*match*]    This property adds a matching pattern to a view. Matching works
+#              either via plaintext or regex (see man regex(7)) and applies to
+#              names of tags.
+#
+#              Example: match "terms"
+
+# [*icon*]     This property adds an icon in front of the view name. The icon
+#              can either be path to an icon or an instance of Subtlext::Icon.
+#
+#              Example: icon "/usr/share/icons/icon.xbm"
+#                       icon Subtlext::Icon.new("/usr/share/icons/icon.xbm")
+#
 # === Link
 #
 # http://subforge.org/wiki/subtle/Tagging
@@ -574,11 +625,31 @@ view "dev",   "editor"
 # Sublets are Ruby scripts that provide data for the panel and can be managed
 # with the sur script that comes with subtle.
 #
-# Follwing properties can be changed directly:
+# === Example
+#
+#  sur install clock
+#  sur uninstall clock
+#  sur list
+#
+# === Configuration
+#
+# All sublets have a set of configuration values that can be changed directly
+# from the config of subtle.
+#
+# There are three default properties, that can be be changed for every sublet:
 #
 # [*interval*]    Update interval of the sublet
 # [*foreground*]  Default foreground color
 # [*background*]  Default background color
+#
+# sur can also give a brief overview about properties:
+#
+# === Example
+#
+#   sur config clock
+#
+# The syntax of the sublet configuration is similar to other configuration
+# options in subtle:
 #
 # === Example
 #
@@ -591,7 +662,7 @@ view "dev",   "editor"
 #
 #  === Link
 #
-# http://subforge.org/wiki/subtle/Sublets#Configuration
+# http://subforge.org/wiki/subtle/Sublets
 #
 
 #
