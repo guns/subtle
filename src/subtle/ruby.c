@@ -724,7 +724,9 @@ RubyEvalConfig(void)
         subtle->separator.string, strlen(subtle->separator.string), NULL,
         NULL, True);
 
-      if(0 < subtle->separator.width) subtle->separator.width += 6;
+      /* Add spacing for separator */
+      if(0 < subtle->separator.width)
+        subtle->separator.width += 6 + subtle->padding.x + subtle->padding.y;
     }
 
   /* Check and update grabs */
