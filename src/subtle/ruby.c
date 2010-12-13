@@ -621,11 +621,11 @@ RubyEvalPanel(VALUE ary,
 
           if(entry == spacer)
             {
-              /* Add separator after panel item */
-              if(last && flags & SUB_PANEL_SEPARATOR1)
+              /* Add spacer after panel item */
+              if(last && flags & SUB_PANEL_SPACER1)
                 {
-                  last->flags |= SUB_PANEL_SEPARATOR2;
-                  flags       &= ~SUB_PANEL_SEPARATOR1;
+                  last->flags |= SUB_PANEL_SPACER2;
+                  flags       &= ~SUB_PANEL_SPACER1;
                 }
 
               flags |= SUB_PANEL_SPACER1;
@@ -636,9 +636,12 @@ RubyEvalPanel(VALUE ary,
             }
           else if(entry == separator)
             {
-              /* Add spacer after panel item */
+              /* Add separator after panel item */
               if(last && flags & SUB_PANEL_SEPARATOR1)
-                last->flags |= SUB_PANEL_SEPARATOR2;
+                {
+                  last->flags |= SUB_PANEL_SEPARATOR2;
+                  flags       &= ~SUB_PANEL_SEPARATOR1;
+                }
 
               flags |= SUB_PANEL_SEPARATOR1;
             }
@@ -695,9 +698,9 @@ RubyEvalPanel(VALUE ary,
         }
 
       /* Add stuff to last item */
-      if(p && flags & SUB_PANEL_SPACER1)    p->flags |= SUB_PANEL_SPACER2;
-      if(p && flags & SUB_PANEL_SEPARATOR1) p->flags |= SUB_PANEL_SEPARATOR2;
-      if(p && flags & SUB_PANEL_CENTER)     p->flags |= SUB_PANEL_CENTER;
+      if(last && flags & SUB_PANEL_SPACER1)    last->flags |= SUB_PANEL_SPACER2;
+      if(last && flags & SUB_PANEL_SEPARATOR1) last->flags |= SUB_PANEL_SEPARATOR2;
+      if(last && flags & SUB_PANEL_CENTER)     last->flags |= SUB_PANEL_CENTER;
 
       subRubyRelease(ary);
     }
