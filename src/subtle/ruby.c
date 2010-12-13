@@ -275,7 +275,6 @@ RubyHashMatch(VALUE key,
 
   if(key == Qundef) return ST_CONTINUE;
 
-
   /* Check value type */
   switch(rb_type(key))
     {
@@ -1657,10 +1656,55 @@ RubyConfigTag(int argc,
  */
 
 static VALUE
-RubyConfigView(VALUE self,
-  VALUE name,
-  VALUE regex)
+RubyConfigView(int argc,
+  VALUE *argv,
+  VALUE self)
 {
+  VALUE name = Qnil, match = Qnil, params = Qnil, value = Qnil, icon = value;
+
+  rb_scan_args(argc, argv, "11", &name, &match);
+
+  /* Call proc */
+  if(rb_block_given_p())
+    {
+      VALUE subtlext = Qnil, klass = Qnil, options = Qnil;
+
+      /* Collect options */
+      subtlext = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
+      klass    = rb_const_get(mod, rb_intern("Options"));
+      options  = rb_funcall(klass, rb_intern("new"), 0, NULL);
+      rb_obj_instance_eval(0, 0, options);
+      params  = rb_iv_get(options, "@params");
+
+      /* Check match */
+      if(T_HASH == rb_type(value = rb_hash_lookup(params,
+          CHAR2SYM("match"))))
+        match = rb_hash_lookup(value, Qnil); ///< Lazy eval
+
+      /* Check icon */
+      switch(rb_type(value = rb_hash_lookup(params, CHAR2SYM("icon"))))
+        {
+          case T_DATA:
+            /* Check object instance */
+            if(rb_obj_is_instance_of(value,
+                rb_const_get(subtlext, rb_intern("Icon"))))
+              {
+                icon = value; ///< Lazy eval
+
+                rb_ary_push(shelter, icon); ///< Protect from GC
+              }
+            break;
+          case T_STRING:
+            /* Create new text icon */
+            klass = rb_const_get(subtlext, rb_intern("Icon"));
+            icon  = rb_funcall(klass, rb_intern("new"), 1, value);
+
+            rb_ary_push(shelter, icon); ///< Protect from GC
+            break;
+          default: break;
+        }
+    }
+
   /* Check value type */
   if(T_STRING == rb_type(name))
     {
@@ -1671,14 +1715,32 @@ RubyConfigView(VALUE self,
           char *re = NULL;
 
           /* Convert regex */
-          if(T_REGEXP == rb_type(regex))
-            regex = rb_funcall(regex, rb_intern("source"), 0, NULL);
+          if(T_REGEXP == rb_type(match))
+            match = rb_funcall(match, rb_intern("source"), 0, NULL);
 
-          if(!NIL_P(regex)) re = RSTRING_PTR(regex);
+          if(T_STRING == rb_type(match)) re = RSTRING_PTR(match);
 
           /* Finally create new view */
           if((v = subViewNew(RSTRING_PTR(name), re)))
-            subArrayPush(subtle->views, (void *)v);
+            {
+              subArrayPush(subtle->views, (void *)v);
+
+              /* Combine icon and text */
+              if(!NIL_P(icon))
+                {
+                  char buf[256] = { 0 };
+                  VALUE iconstr = rb_funcall(icon, rb_intern("to_str"), 0, NULL);
+
+                  v->text = subSharedTextNew();
+
+                  snprintf(buf, sizeof(buf), "%s%s%s",
+                    RSTRING_PTR(iconstr), RSTRING_PTR(name), SEPARATOR);
+
+                  v->width = subSharedTextParse(subtle->dpy, subtle->font,
+                    v->text, buf) + 2 * subtle->pbw + subtle->padding.x +
+                    subtle->padding.y;
+                }
+            }
        }
     }
   else rb_raise(rb_eArgError, "Unknown value type for view");
@@ -2673,7 +2735,7 @@ subRubyInit(void)
   rb_define_method(config, "gravity", RubyConfigGravity,   2);
   rb_define_method(config, "grab",    RubyConfigGrab,     -1);
   rb_define_method(config, "tag",     RubyConfigTag,      -1);
-  rb_define_method(config, "view",    RubyConfigView,      2);
+  rb_define_method(config, "view",    RubyConfigView,     -1);
   rb_define_method(config, "on",      RubyConfigOn,        1);
   rb_define_method(config, "sublet",  RubyConfigSublet,    1);
   rb_define_method(config, "screen",  RubyConfigScreen,    1);

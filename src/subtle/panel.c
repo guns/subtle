@@ -128,10 +128,13 @@ subPanelConfigure(SubPanel *p)
               {
                 SubView *v = VIEW(subtle->views->data[i]);
 
-                /* Font offset, panel border and padding */
-                v->width = subSharedTextWidth(subtle->dpy, subtle->font,
-                  v->name, strlen(v->name), NULL, NULL, True)
-                  + 6 + 2 * subtle->pbw + subtle->padding.x + subtle->padding.y;
+                /* Font offset, panel border and padding without icon */
+                if(!v->text)
+                  {
+                    v->width = subSharedTextWidth(subtle->dpy, subtle->font,
+                      v->name, strlen(v->name), NULL, NULL, True)
+                      + 6 + 2 * subtle->pbw + subtle->padding.x + subtle->padding.y;
+                  }
 
                 XMoveResizeWindow(subtle->dpy, p->views[i], p->width, 0,
                   v->width - 2 * subtle->pbw, subtle->th - 2 * subtle->pbw);
@@ -273,10 +276,21 @@ subPanelRender(SubPanel *p)
                 XSetWindowBorder(subtle->dpy, p->views[i], bo);
                 XClearWindow(subtle->dpy, p->views[i]);
 
-                subSharedTextDraw(subtle->dpy, subtle->gcs.font,
-                  subtle->font, p->views[i], 3 + subtle->padding.x,
-                  subtle->font->y + subtle->padding.width,
-                  fg, bg, v->name);
+                /* Draw view name or icon text */
+                if(!v->text)
+                  {
+                    subSharedTextDraw(subtle->dpy, subtle->gcs.font,
+                      subtle->font, p->views[i], 3 + subtle->padding.x,
+                      subtle->font->y + subtle->padding.width,
+                      fg, bg, v->name);
+                  }
+                else
+                  {
+                    subSharedTextRender(subtle->dpy, subtle->gcs.font,
+                      subtle->font, p->views[i], 3 + subtle->padding.x,
+                      subtle->font->y + subtle->padding.width,
+                      fg, bg, v->text);
+                  }
               }
           }
         break; /* }}} */
