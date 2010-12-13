@@ -611,11 +611,13 @@ typedef struct subtray_t /* {{{ */
 
 typedef struct subview_t /* {{{ */
 {
-  FLAGS    flags;                                                 ///< View flags
-  char     *name;                                                 ///< View name
-  TAGS     tags;                                                  ///< View tags
-  Window   focus;                                                 ///< View window, focus
-  int      width;                                                 ///< View width
+  FLAGS             flags;                                        ///< View flags
+  char              *name;                                        ///< View name
+  TAGS              tags;                                         ///< View tags
+  Window            focus;                                        ///< View window, focus
+  int               width;                                        ///< View width
+
+  struct subtext_t  *text;                                        ///< View text
 } SubView; /* }}} */
 
 extern SubSubtle *subtle;

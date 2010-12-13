@@ -701,8 +701,6 @@ EventGrab(XEvent *ev)
           subGrabUnset(win);
           subGrabSet(win, False);
         }
-
-      subSharedLogDebug("Grab: code=%03d, mod=%03d\n", g->code, g->mod);
     }
 } /* }}} */
 
