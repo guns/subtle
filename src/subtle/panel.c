@@ -168,7 +168,7 @@ subPanelUpdate(SubPanel *p)
   switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_TITLE))
     {
       case SUB_PANEL_SUBLET: /* {{{ */
-        XResizeWindow(subtle->dpy, p->win, p->width - 2 * subtle->pbw + subtle->padding.x + subtle->padding.y,
+        XResizeWindow(subtle->dpy, p->win, p->width - 2 * subtle->pbw,
           subtle->th - 2 * subtle->pbw);
         break; /* }}} */
       case SUB_PANEL_TITLE: /* {{{ */
