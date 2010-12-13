@@ -510,6 +510,7 @@ EventGrab(XEvent *ev)
       FLAGS flag = 0;
 
       win  = ev->xbutton.window == ROOT ? ev->xbutton.subwindow : ev->xbutton.window;
+      win  = 0 == win ? ROOT : win;
       flag = g->flags & ~(SUB_TYPE_GRAB|SUB_GRAB_KEY|SUB_GRAB_MOUSE); ///< Clear mask
 
       switch(flag)
@@ -688,10 +689,17 @@ EventGrab(XEvent *ev)
               }
             break; /* }}} */
           case SUB_GRAB_SUBTLE_ESCAPE: /* {{{ */
-            subGrabSet(0 != win ? win : ROOT, True);
+            subGrabSet(win, True);
             break; /* }}} */
           default:
             subSharedLogWarn("Failed finding grab!\n");
+        }
+
+      /* Reset escape grab */
+      if(subtle->flags & SUB_SUBTLE_ESCAPE && SUB_GRAB_SUBTLE_ESCAPE != flag)
+        {
+          subGrabUnset(win);
+          subGrabSet(win, False);
         }
 
       subSharedLogDebug("Grab: code=%03d, mod=%03d\n", g->code, g->mod);
