@@ -699,7 +699,6 @@ RubyEvalPanel(VALUE ary,
       /* Add stuff to last item */
       if(last && flags & SUB_PANEL_SPACER1)    last->flags |= SUB_PANEL_SPACER2;
       if(last && flags & SUB_PANEL_SEPARATOR1) last->flags |= SUB_PANEL_SEPARATOR2;
-      if(last && flags & SUB_PANEL_CENTER)     last->flags |= SUB_PANEL_CENTER;
 
       subRubyRelease(ary);
     }

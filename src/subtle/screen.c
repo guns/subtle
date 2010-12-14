@@ -515,8 +515,7 @@ subScreenRender(void)
             subSharedTextDraw(subtle->dpy, subtle->gcs.font, subtle->font,
               panel, p->x - subtle->separator.width + 3,
               subtle->font->y + subtle->pbw + subtle->padding.width,
-              subtle->colors.separator, -1,
-              subtle->separator.string);
+              subtle->colors.separator, -1, subtle->separator.string);
 
           subPanelRender(p);
 
