@@ -85,10 +85,6 @@
 #define VISIBLE(visible_tags,c) \
   (c && (visible_tags & c->tags || \
   c->flags & (SUB_CLIENT_TYPE_DESKTOP|SUB_CLIENT_MODE_STICK)))    ///< Visible on view
-#define SCREENW \
-  DisplayWidth(subtle->dpy, DefaultScreen(subtle->dpy))           ///< Get screen width
-#define SCREENH \
-  DisplayHeight(subtle->dpy, DefaultScreen(subtle->dpy))          ///< Get screen height
 
 #define ROOT       DefaultRootWindow(subtle->dpy)                 ///< Root window
 #define SCRN       DefaultScreen(subtle->dpy)                     ///< Default screen
@@ -528,9 +524,10 @@ typedef struct subsubtle_t /* {{{ */
 {
   FLAGS                flags;                                     ///< Subtle flags
 
+  int                  width, height;                             ///< Subtle screen size
   int                  th, bw, pbw, step, snap, gap;              ///< Subtle properties
-  int                  visible_tags, visible_views;
-  int                  visible_clients, urgent_tags;              ///< Subtle visible tags and views
+  int                  visible_tags, visible_views;               ///< Subtle visible tags, views
+  int                  visible_clients, urgent_tags;              ///< Subtle clients, urgent tags
   unsigned long        gravity;                                   ///< Subtle gravity
 
   Display              *dpy;                                      ///< Subtle Xorg display
