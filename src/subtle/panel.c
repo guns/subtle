@@ -494,7 +494,8 @@ subPanelKill(SubPanel *p)
         /* Remove socket watch */
         if(p->flags & SUB_PANEL_SOCKET)
           {
-            XDeleteContext(subtle->dpy, subtle->windows.support, p->sublet->watch);
+            XDeleteContext(subtle->dpy, subtle->windows.support,
+              p->sublet->watch);
             subEventWatchDel(p->sublet->watch);
           }
 
@@ -502,7 +503,8 @@ subPanelKill(SubPanel *p)
         /* Remove inotify watch */
         if(p->flags & SUB_PANEL_INOTIFY)
           {
-            XDeleteContext(subtle->dpy, subtle->windows.support, p->sublet->watch);
+            XDeleteContext(subtle->dpy, subtle->windows.support,
+              p->sublet->watch);
             inotify_rm_watch(subtle->notify, p->sublet->interval);
           }
 #endif /* HAVE_SYS_INOTIFY_H */
