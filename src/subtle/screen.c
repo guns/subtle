@@ -511,7 +511,9 @@ subScreenRender(void)
 
           if(p->flags & SUB_PANEL_HIDDEN) continue;
           if(p->flags & SUB_PANEL_BOTTOM) panel = s->panel2;
-          if(p->flags & SUB_PANEL_SEPARATOR1) ///< Draw separator before panel
+
+          /* Draw separator before panel */
+          if(0 < subtle->separator.width && p->flags & SUB_PANEL_SEPARATOR1)
             subSharedTextDraw(subtle->dpy, subtle->gcs.font, subtle->font,
               panel, p->x - subtle->separator.width + 3,
               subtle->font->y + subtle->pbw + subtle->padding.width,
@@ -519,7 +521,8 @@ subScreenRender(void)
 
           subPanelRender(p);
 
-          if(p->flags & SUB_PANEL_SEPARATOR2) ///< Draw separator after panel
+          /* Draw separator after panel */
+          if(0 < subtle->separator.width && p->flags & SUB_PANEL_SEPARATOR2)
             subSharedTextDraw(subtle->dpy, subtle->gcs.font, subtle->font,
               panel, p->x + p->width + 3,
               subtle->font->y + subtle->pbw + subtle->padding.width,
