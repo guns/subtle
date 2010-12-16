@@ -241,10 +241,17 @@ EventConfigure(XConfigureEvent *ev)
   /* Ckeck window */
   if(ROOT == ev->window)
     {
+      int sw = DisplayWidth(subtle->dpy, DefaultScreen(subtle->dpy));
+      int sh = DisplayHeight(subtle->dpy, DefaultScreen(subtle->dpy));
+
 #ifdef HAVE_X11_EXTENSIONS_XRANDR_H
+      /* Update RandR config */
       if(subtle->flags & SUB_SUBTLE_XRANDR)
         XRRUpdateConfiguration((XEvent *)ev);
 #endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
+
+      /* Skip event if screen size doesn't change */
+      if(subtle->width == sw && subtle->height == sh) return;
 
       /* Reload screens */
       subArrayClear(subtle->sublets, False);
@@ -253,6 +260,10 @@ EventConfigure(XConfigureEvent *ev)
 
       subRubyReloadConfig();
       subScreenResize();
+
+      /* Update size */
+      subtle->width  = sw;
+      subtle->height = sh;
 
       printf("Updated screens\n");
     }
