@@ -110,8 +110,8 @@ subEwmhInit(void)
   subEwmhSetCardinals(subtle->windows.support, SUB_EWMH_NET_WM_PID, &pid, 1);
 
   /* EWMH: Desktop sizes */
-  data[0] = SCREENW;
-  data[1] = SCREENH;
+  data[0] = subtle->width;
+  data[1] = subtle->height;
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_DESKTOP_GEOMETRY, (long *)&data, 2);
 
   /* EWMH: Client list and client list stacking */

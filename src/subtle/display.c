@@ -173,6 +173,10 @@ subDisplayInit(const char *display)
   XChangeWindowAttributes(subtle->dpy, subtle->windows.tray.win,
     CWOverrideRedirect|CWEventMask, &sattrs);
 
+  /* Init screen width and height */
+  subtle->width  = DisplayWidth(subtle->dpy, DefaultScreen(subtle->dpy));
+  subtle->height = DisplayHeight(subtle->dpy, DefaultScreen(subtle->dpy));
+
   /* Check extensions */
 #ifdef HAVE_X11_EXTENSIONS_XINERAMA_H
   if(!XineramaQueryExtension(subtle->dpy, &event, &junk))
@@ -187,7 +191,7 @@ subDisplayInit(const char *display)
   XSync(subtle->dpy, False);
 
   printf("Display (%s) is %dx%d\n", DisplayString(subtle->dpy),
-    SCREENW, SCREENH);
+    subtle->width, subtle->height);
 
   subSharedLogDebug("init=display\n");
 } /* }}} */

@@ -120,7 +120,7 @@ subScreenInit(void)
   if(0 == subtle->screens->ndata)
     {
       /* Create new screen */
-      if((s = subScreenNew(0, 0, SCREENW, SCREENH)))
+      if((s = subScreenNew(0, 0, subtle->width, subtle->height)))
         subArrayPush(subtle->screens, (void *)s);
     }
 
