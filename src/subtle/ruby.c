@@ -1665,7 +1665,7 @@ RubyConfigView(int argc,
       VALUE subtlext = Qnil, klass = Qnil, options = Qnil;
 
       /* Collect options */
-      subtlext = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
+      subtlext = rb_const_get(rb_cObject, rb_intern("Subtlext"));
       klass    = rb_const_get(mod, rb_intern("Options"));
       options  = rb_funcall(klass, rb_intern("new"), 0, NULL);
       rb_obj_instance_eval(0, 0, options);
