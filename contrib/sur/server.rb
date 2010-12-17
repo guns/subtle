@@ -332,9 +332,9 @@ EOF
 %h2 Sublets
 %p
   Small Ruby scripts written in a
-  %a{:href => "http://en.wikipedia.org/wiki/Domain_Specific_Language"} DSL
+  %a{:target => "_parent", :href => "http://en.wikipedia.org/wiki/Domain_Specific_Language"} DSL
   that provides things like system information for the
-  %a{:href => "http://subtle.subforge.org"} subtle
+  %a{:target => "_parent", :href => "http://subtle.subforge.org"} subtle
   panel.
 
 #form
@@ -345,7 +345,7 @@ EOF
       %input{:type => "submit", :name => "submit", :value => "Go"}
 
   #right
-    %a{:href => "http://subforge.org/wiki/subtle/Specification"} Sublet specification
+    %a{:target => "_parent", :href => "http://subforge.org/wiki/subtle/Specification"} Sublet specification
     |
     %a{:href => "http://sur.subforge.org/sublets"} All sublets
 
