@@ -289,7 +289,7 @@ subSharedPropertyStrings(Display *disp,
  /** subSharedPropertyName {{{
   * @brief Get window title
   * @warning Must be free'd
-  * @param[in]     disp   Display
+  * @param[in]     disp      Display
   * @param[in]     win       A #Window
   * @param[inout]  name      Window WM_NAME
   * @param[in]     fallback  Fallback name
@@ -303,16 +303,13 @@ subSharedPropertyName(Display *disp,
 {
   char **list = NULL;
   XTextProperty text;
-  Atom prop;
-
-  prop = XInternAtom(disp, "_NET_WM_NAME", False);
 
   /* Get text property */
-  XGetTextProperty(disp, win, &text, prop);
-  if(!text.nitems)
+  XGetTextProperty(disp, win, &text, XInternAtom(disp, "_NET_WM_NAME", False));
+  if(0 == text.nitems)
     {
       XGetTextProperty(disp, win, &text, XA_WM_NAME);
-      if(!text.nitems)
+      if(0 == text.nitems)
         {
           *name = strdup(fallback);
 
@@ -322,15 +319,24 @@ subSharedPropertyName(Display *disp,
 
   /* Handle encoding */
   if(XA_STRING == text.encoding)
-    *name = strdup((char *)text.value);
-  else
     {
-      int size = 0;
+      *name = strdup((char *)text.value);
+    }
+  else ///< Utf8 string
+    {
+      int nlist = 0;
 
-      if(Success == XmbTextPropertyToTextList(disp,
-          &text, &list, &size) && 0 < size)
+      /* Convert text property */
+      if(Success == XmbTextPropertyToTextList(disp, &text, &list, &nlist) &&
+          list)
         {
-          *name = strdup(*list);
+          if(0 < nlist && *list)
+            {
+              printf("nitems=%ld\n", text.nitems);
+              // *name = strndup(*list, strlen(*list));
+              *name = subSharedMemoryAlloc(text.nitems + 2, sizeof(char));
+              strncpy(*name, *list, text.nitems);
+            }
 
           XFreeStringList(list);
         }
@@ -608,7 +614,7 @@ subSharedTextWidth(Display *disp,
   assert(f);
 
   /* Get text extents based on font */
-  if(text)
+  if(text && 0 < len)
     {
 #ifdef HAVE_X11_XFT_XFT_H
       if(f->xft) ///< XFT
