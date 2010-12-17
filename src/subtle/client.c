@@ -205,7 +205,8 @@ subClientConfigure(SubClient *c)
     c->geom.x, c->geom.y, c->geom.width, c->geom.height);
 
   /* Hook: Create */
-  subHookCall(SUB_HOOK_CLIENT_CONFIGURE, (void *)c);
+  subHookCall((SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_CONFIGURE),
+    (void *)c);
 } /* }}} */
 
  /** subClientDimension {{{
@@ -729,9 +730,6 @@ subClientSetGravity(SubClient *c,
             (long *)&c->screen, 1);
 
           XSync(subtle->dpy, False); ///< Sync all changes
-
-          /* Hook: Gravity */
-          subHookCall(SUB_HOOK_CLIENT_GRAVITY, (void *)c);
         }
     }
 } /* }}} */
@@ -1299,7 +1297,8 @@ subClientKill(SubClient *c)
   assert(c);
 
   /* Hook: Kill */
-  subHookCall(SUB_HOOK_CLIENT_KILL, (void *)c);
+  subHookCall((SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_KILL), 
+    (void *)c);
 
   /* Remove highlight of urgent client */
   if(c->flags & SUB_CLIENT_MODE_URGENT)

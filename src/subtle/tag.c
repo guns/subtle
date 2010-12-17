@@ -206,7 +206,8 @@ subTagPublish(void)
     names[i] = TAG(subtle->tags->data[i])->name;
 
   /* EWMH: Tag list */
-  subEwmhSetStrings(ROOT, SUB_EWMH_SUBTLE_TAG_LIST, names, i);
+  subSharedPropertySetStrings(subtle->dpy, ROOT,
+    subEwmhGet(SUB_EWMH_SUBTLE_TAG_LIST), names, i);
 
   subSharedLogDebug("publish=tags, n=%d\n", i);
 
@@ -226,7 +227,8 @@ subTagKill(SubTag *t)
   assert(t);
 
   /* Hook: Kill */
-  subHookCall(SUB_HOOK_TAG_KILL, (void *)t);
+  subHookCall((SUB_HOOK_TYPE_TAG|SUB_HOOK_ACTION_KILL),
+    (void *)t);
 
   /* Remove matcher */
   if(t->matcher)

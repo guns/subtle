@@ -115,7 +115,8 @@ subGravityPublish(void)
     }
 
   /* EWMH: Gravity list and geometries */
-  subEwmhSetStrings(ROOT, SUB_EWMH_SUBTLE_GRAVITY_LIST, gravities,
+  subSharedPropertySetStrings(subtle->dpy, ROOT,
+    subEwmhGet(SUB_EWMH_SUBTLE_GRAVITY_LIST), gravities,
     subtle->gravities->ndata);
 
   /* Tidy up */

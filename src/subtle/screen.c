@@ -254,7 +254,7 @@ void
 subScreenConfigure(void)
 {
   int i;
-  SubScreen *s = NULL;
+  SubScreen *s = NULL, *cs = NULL;
   SubView *v = NULL;
 
   /* Reset visible tags and views */
@@ -291,6 +291,13 @@ subScreenConfigure(void)
               /* Find visible clients */
               if(VISIBLE(v->tags, c))
                 {
+                  /* Show sticky windows on current screen */
+                  if(c->flags & SUB_CLIENT_MODE_STICK)
+                    {
+                      if(!cs) cs = subScreenCurrent(NULL);
+                      if(s != cs) continue;
+                    }
+
                   subClientSetGravity(c, c->gravities[s->vid], j, False);
 
                   /* EWMH: Desktop */

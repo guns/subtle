@@ -132,7 +132,8 @@ EventSwitchView(int vid,
       subViewFocus(v, focus);
 
       /* Hook: Jump */
-      subHookCall(SUB_HOOK_VIEW_JUMP, (void *)v);
+      subHookCall((SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_FOCUS),
+        (void *)v);
     }
 } /* }}} */
 
@@ -459,7 +460,8 @@ EventFocus(XFocusChangeEvent *ev)
         v->focus = c->win;;
 
       /* Hook: Focus */
-      subHookCall(SUB_HOOK_CLIENT_FOCUS, (void *)c);
+      subHookCall((SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_FOCUS),
+        (void *)c);
     }
   else if((t = TRAY(subSubtleFind(ev->window, TRAYID)))) ///< Tray
     {
@@ -752,7 +754,8 @@ EventMapRequest(XMapRequestEvent *ev)
           EventQueuePop(subtle->clients->ndata - 1, 0);
 
           /* Hook: Create */
-          subHookCall(SUB_HOOK_CLIENT_CREATE, (void *)c);
+          subHookCall((SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_CREATE),
+            (void *)c);
         }
     }
   else
@@ -970,7 +973,8 @@ EventMessage(XClientMessageEvent *ev)
                     subTagPublish();
 
                     /* Hook: Create */
-                    subHookCall(SUB_HOOK_TAG_CREATE, (void *)t);
+                    subHookCall((SUB_HOOK_TYPE_TAG|SUB_HOOK_ACTION_CREATE),
+                      (void *)t);
                   }
               }
             break; /* }}} */
@@ -1026,7 +1030,8 @@ EventMessage(XClientMessageEvent *ev)
                 EventQueuePop(subtle->views->ndata - 1, 1);
 
                 /* Hook: Create */
-                subHookCall(SUB_HOOK_VIEW_CREATE, (void *)v);
+                subHookCall((SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_CREATE),
+                  (void *)v);
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_VIEW_KILL: /* {{{ */
@@ -1056,13 +1061,9 @@ EventMessage(XClientMessageEvent *ev)
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_SUBLET_DATA: /* {{{ */
-            if((p = EventFindSublet((int)ev->data.b[0])))
-              {
-                p->width = subSharedTextParse(subtle->dpy, subtle->font,
-                  p->sublet->text, ev->data.b + 1) + 2 * subtle->pbw;
-                subScreenUpdate();
-                subScreenRender();
-              }
+            if((p = EventFindSublet((int)ev->data.l[0])) &&
+                p->flags & SUB_PANEL_DATA)
+              subRubyCall(SUB_CALL_DATA, p->sublet->instance, NULL);
             break; /* }}} */
           case SUB_EWMH_SUBTLE_SUBLET_FOREGROUND: /* {{{ */
             if((p = EventFindSublet((int)ev->data.l[0])))

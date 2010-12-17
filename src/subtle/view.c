@@ -103,7 +103,8 @@ subViewJump(SubView *v)
           subScreenJump(s);
 
           /* Hook: Jump */
-          subHookCall(SUB_HOOK_VIEW_JUMP, (void *)v);
+          subHookCall((SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_FOCUS),
+            (void *)v);
 
           return;
         }
@@ -123,7 +124,7 @@ subViewJump(SubView *v)
   subSharedLogDebug("Jump: type=view\n");
 
   /* Hook: Jump, Tile */
-  subHookCall(SUB_HOOK_VIEW_JUMP, (void *)v);
+  subHookCall((SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_FOCUS), (void *)v);
   subHookCall(SUB_HOOK_TILE, NULL);
 } /* }}} */
 
@@ -158,8 +159,8 @@ subViewPublish(void)
 
       /* EWMH: Desktops */
       subEwmhSetCardinals(ROOT, SUB_EWMH_NET_NUMBER_OF_DESKTOPS, (long *)&i, 1);
-      subEwmhSetStrings(ROOT, SUB_EWMH_NET_DESKTOP_NAMES,
-        names, subtle->views->ndata);
+      subSharedPropertySetStrings(subtle->dpy, ROOT,
+        subEwmhGet(SUB_EWMH_NET_DESKTOP_NAMES), names, subtle->views->ndata);
 
       /* EWMH: Current desktop */
       subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP, &vid, 1);
@@ -184,7 +185,8 @@ subViewKill(SubView *v)
   assert(v);
 
   /* Hook: Kill */
-  subHookCall(SUB_HOOK_VIEW_KILL, (void *)v);
+  subHookCall((SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_KILL),
+    (void *)v);
 
   if(v->text) subSharedTextFree(v->text);
   free(v->name);

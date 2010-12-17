@@ -470,8 +470,8 @@ subPanelPublish(void)
     }
 
   /* EWMH: Sublet list and windows */
-  subEwmhSetStrings(ROOT, SUB_EWMH_SUBTLE_SUBLET_LIST,
-    names, subtle->sublets->ndata);
+  subSharedPropertySetStrings(subtle->dpy, ROOT,
+    subEwmhGet(SUB_EWMH_SUBTLE_SUBLET_LIST), names, subtle->sublets->ndata);
   subEwmhSetWindows(ROOT, SUB_EWMH_SUBTLE_SUBLET_WINDOWS,
     wins, subtle->sublets->ndata);
 
