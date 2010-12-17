@@ -342,7 +342,7 @@ EOF
     -a, --add=FILE          Create new sublet
     -l, --list              List all sublets
     -u, --update            Updates value of sublet
-    -A, --data              Set data of sublet
+    -D, --data              Set data of sublet
     -k, --kill=PATTERN      Kill sublet
 
 EOF
