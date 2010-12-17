@@ -442,7 +442,7 @@ subPanelDimension(int id)
 void
 subPanelPublish(void)
 {
-  int i = 0, idx = 0;
+  int i = 0, j = 0, idx = 0;
   char **names = NULL;
   Window *wins = NULL;
 
@@ -452,13 +452,21 @@ subPanelPublish(void)
   wins  = (Window *)subSharedMemoryAlloc(subtle->sublets->ndata,
     sizeof(Window));
 
-  /* Find sublets */
-  for(i = 0; i < subtle->sublets->ndata; i++)
+  /* Find sublet in panels */
+  for(i = 0; i < subtle->screens->ndata; i++)
     {
-      SubPanel *p = PANEL(subtle->sublets->data[i]);
+      SubScreen *s = SCREEN(subtle->screens->data[i]);
 
-      names[idx]  = p->sublet->name;
-      wins[idx++] = p->win;
+      for(j = 0; j < s->panels->ndata; j++)
+        {
+          SubPanel *p = PANEL(s->panels->data[j]);
+
+          if(p->flags & SUB_PANEL_SUBLET)
+            {
+              names[idx]  = p->sublet->name;
+              wins[idx++] = p->win;
+            }
+        }
     }
 
   /* EWMH: Sublet list and windows */

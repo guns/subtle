@@ -58,18 +58,23 @@ EventUntag(SubClient *c,
 static SubPanel *
 EventFindSublet(int id)
 {
-  int i = 0, idx = 0;
-  SubPanel *p = NULL;
+  int i = 0, j = 0, idx = 0;
 
-  /* Find sublet in linked list */
-  for(i = 0; i < subtle->sublets->ndata; i++)
+  /* Find sublet in panels */
+  for(i = 0; i < subtle->screens->ndata; i++)
     {
-      p = PANEL(subtle->sublets->data[i]);
+      SubScreen *s = SCREEN(subtle->screens->data[i]);
 
-      if(p->flags & SUB_PANEL_SUBLET && idx++ == id) break;
+      for(j = 0; j < s->panels->ndata; j++)
+        {
+          SubPanel *p = PANEL(s->panels->data[j]);
+
+          if(p->flags & SUB_PANEL_SUBLET && idx++ == id)
+            return p;
+        }
     }
 
-  return p;
+  return NULL;
 } /* }}} */
 
 /* EventSwitchView {{{ */
