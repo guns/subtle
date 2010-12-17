@@ -367,21 +367,20 @@ RubyEvalHook(VALUE event,
 
   RubySymbols hooks[] =
   {
-    { CHAR2SYM("start"),            SUB_HOOK_START            },
-    { CHAR2SYM("exit"),             SUB_HOOK_EXIT             },
-    { CHAR2SYM("tile"),             SUB_HOOK_TILE             },
-    { CHAR2SYM("reload"),           SUB_HOOK_RELOAD           },
-    { CHAR2SYM("client_create"),    SUB_HOOK_CLIENT_CREATE    },
-    { CHAR2SYM("client_configure"), SUB_HOOK_CLIENT_CONFIGURE },
-    { CHAR2SYM("client_focus"),     SUB_HOOK_CLIENT_FOCUS     },
-    { CHAR2SYM("client_gravity"),   SUB_HOOK_CLIENT_GRAVITY   },
-    { CHAR2SYM("client_kill"),      SUB_HOOK_CLIENT_KILL      },
-    { CHAR2SYM("tag_create"),       SUB_HOOK_TAG_CREATE       },
-    { CHAR2SYM("tag_kill"),         SUB_HOOK_TAG_KILL         },
-    { CHAR2SYM("view_create"),      SUB_HOOK_VIEW_CREATE      },
-    { CHAR2SYM("view_configure"),   SUB_HOOK_VIEW_CONFIGURE   },
-    { CHAR2SYM("view_jump"),        SUB_HOOK_VIEW_JUMP        },
-    { CHAR2SYM("view_kill"),        SUB_HOOK_VIEW_KILL        }
+    { CHAR2SYM("start"),            SUB_HOOK_START                                   },
+    { CHAR2SYM("exit"),             SUB_HOOK_EXIT                                    },
+    { CHAR2SYM("tile"),             SUB_HOOK_TILE                                    },
+    { CHAR2SYM("reload"),           SUB_HOOK_RELOAD                                  },
+    { CHAR2SYM("client_create"),    (SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_CREATE)    },
+    { CHAR2SYM("client_configure"), (SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_CONFIGURE) },
+    { CHAR2SYM("client_focus"),     (SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_FOCUS)     },
+    { CHAR2SYM("client_kill"),      (SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_KILL)      },
+    { CHAR2SYM("tag_create"),       (SUB_HOOK_TYPE_TAG|SUB_HOOK_ACTION_CREATE)       },
+    { CHAR2SYM("tag_kill"),         (SUB_HOOK_TYPE_TAG|SUB_HOOK_ACTION_KILL)         },
+    { CHAR2SYM("view_create"),      (SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_CREATE)      },
+    { CHAR2SYM("view_configure"),   (SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_CONFIGURE)   },
+    { CHAR2SYM("view_jump"),        (SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_FOCUS)       },
+    { CHAR2SYM("view_kill"),        (SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_KILL)        }
   };
 
   if(subtle->flags & SUB_SUBTLE_CHECK) return; ///< Skip on check
@@ -392,7 +391,7 @@ RubyEvalHook(VALUE event,
       if(hooks[i].sym == event)
         {
           /* Create new hook */
-          if((h = subHookNew(hooks[i].flags|SUB_CALL_HOOKS, proc)))
+          if((h = subHookNew(hooks[i].flags, proc)))
             {
               subArrayPush(subtle->hooks, (void *)h);
               rb_ary_push(shelter, proc); ///< Protect from GC
@@ -942,17 +941,41 @@ RubyWrapCall(VALUE data)
       case SUB_CALL_RUN: /* {{{ */
         rb_funcall(rargs[1], rb_intern("__run"), 1, rargs[1]);
         break; /* }}} */
+      case SUB_CALL_DATA: /* {{{ */
+          {
+            int nlist = 0;
+            char **list = NULL;
+            Atom prop = subEwmhGet(SUB_EWMH_SUBTLE_DATA);
+            VALUE meth = rb_intern("__data"), str = Qnil;
+
+            /* Get data */
+            if((list = subSharedPropertyGetStrings(subtle->dpy, ROOT,
+                prop, &nlist)))
+              {
+                if(list && 0 < nlist)
+                  str = rb_str_new2(list[0]);
+
+                XFreeStringList(list);
+              }
+
+            subSharedPropertyDelete(subtle->dpy, ROOT, prop);
+
+            rb_funcall(rargs[1], meth,
+              MINMAX(rb_obj_method_arity(rargs[1], meth), 1, 2),
+              rargs[1], str);
+          }
+        break; /* }}} */
       case SUB_CALL_WATCH: /* {{{ */
         rb_funcall(rargs[1], rb_intern("__watch"), 1, rargs[1]);
         break; /* }}} */
       case SUB_CALL_DOWN: /* {{{ */
           {
             XButtonEvent *ev = (XButtonEvent *)rargs[2];
+            VALUE meth = rb_intern("_down");
 
-            rb_funcall(rargs[1], rb_intern("__down"),
-              MINMAX(rb_obj_method_arity(rargs[1],
-              rb_intern("__down")), 1, 4), rargs[1], INT2FIX(ev->x),
-              INT2FIX(ev->y), INT2FIX(ev->button));
+            rb_funcall(rargs[1], meth,
+              MINMAX(rb_obj_method_arity(rargs[1], meth), 1, 4),
+              rargs[1], INT2FIX(ev->x), INT2FIX(ev->y), INT2FIX(ev->button));
           }
         break; /* }}} */
       case SUB_CALL_OVER: /* {{{ */
@@ -2057,6 +2080,7 @@ RubySubletOn(VALUE self,
           RubyMethods methods[] =
           {
             { CHAR2SYM("run"),        CHAR2SYM("__run"),    SUB_PANEL_RUN,    1 },
+            { CHAR2SYM("data"),       CHAR2SYM("__data"),   SUB_PANEL_DATA,   2 },
             { CHAR2SYM("watch"),      CHAR2SYM("__watch"),  SUB_PANEL_WATCH,  1 },
             { CHAR2SYM("mouse_down"), CHAR2SYM("__down"),   SUB_PANEL_DOWN,   4 },
             { CHAR2SYM("mouse_over"), CHAR2SYM("__over"),   SUB_PANEL_OVER,   1 },
