@@ -139,31 +139,28 @@
 #define SUB_TYPE_VIEW                 (1L << 9)                   ///< View
 
 /* Call flags */
-#define SUB_CALL_HOOKS                (1L << 10)                  ///< Call hook
-#define SUB_CALL_CONFIGURE            (1L << 11)                  ///< Sublet watch hook
-#define SUB_CALL_RUN                  (1L << 12)                  ///< Sublet run hook
-#define SUB_CALL_UNLOAD               (1L << 13)                  ///< Sublet unload hook
-#define SUB_CALL_WATCH                (1L << 14)                  ///< Sublet watch hook
-#define SUB_CALL_DOWN                 (1L << 15)                  ///< Sublet mouse down hook
-#define SUB_CALL_OVER                 (1L << 16)                  ///< Sublet mouse over hook
-#define SUB_CALL_OUT                  (1L << 17)                  ///< Sublet mouse out hook
+#define SUB_CALL_HOOKS                (1L << 10)                  ///< Call generic hook
+#define SUB_CALL_CONFIGURE            (1L << 11)                  ///< Call watch hook
+#define SUB_CALL_RUN                  (1L << 12)                  ///< Call run hook
+#define SUB_CALL_DATA                 (1L << 13)                  ///< Call data hook
+#define SUB_CALL_WATCH                (1L << 14)                  ///< Call watch hook
+#define SUB_CALL_DOWN                 (1L << 15)                  ///< Call mouse down hook
+#define SUB_CALL_OVER                 (1L << 16)                  ///< Call mouse over hook
+#define SUB_CALL_OUT                  (1L << 17)                  ///< Call mouse out hook
+#define SUB_CALL_UNLOAD               (1L << 18)                  ///< Call unload hook
 
 /* Hooks */
-#define SUB_HOOK_START                (1L << 15)                  ///< Start hook (after call flags [15])
-#define SUB_HOOK_RELOAD               (1L << 16)                  ///< Reload hook
-#define SUB_HOOK_EXIT                 (1L << 17)                  ///< Exit hook
-#define SUB_HOOK_TILE                 (1L << 18)                  ///< Tile hook
-#define SUB_HOOK_CLIENT_CREATE        (1L << 19)                  ///< Client create hook
-#define SUB_HOOK_CLIENT_CONFIGURE     (1L << 20)                  ///< Client configure hook
-#define SUB_HOOK_CLIENT_FOCUS         (1L << 21)                  ///< Client focus hook
-#define SUB_HOOK_CLIENT_GRAVITY       (1L << 22)                  ///< Client gravity hook
-#define SUB_HOOK_CLIENT_KILL          (1L << 23)                  ///< Client kill hook
-#define SUB_HOOK_TAG_CREATE           (1L << 24)                  ///< Tag create hook
-#define SUB_HOOK_TAG_KILL             (1L << 25)                  ///< Tag kill hook
-#define SUB_HOOK_VIEW_CREATE          (1L << 26)                  ///< View create hook
-#define SUB_HOOK_VIEW_CONFIGURE       (1L << 27)                  ///< View configure hook
-#define SUB_HOOK_VIEW_JUMP            (1L << 28)                  ///< View jump hook
-#define SUB_HOOK_VIEW_KILL            (1L << 29)                  ///< View kill hook
+#define SUB_HOOK_START                (1L << 10)                  ///< Start hook
+#define SUB_HOOK_RELOAD               (1L << 11)                  ///< Reload hook
+#define SUB_HOOK_EXIT                 (1L << 12)                  ///< Exit hook
+#define SUB_HOOK_TILE                 (1L << 13)                  ///< Tile hook
+#define SUB_HOOK_TYPE_CLIENT          (1L << 14)                  ///< Client hooks
+#define SUB_HOOK_TYPE_VIEW            (1L << 15)                  ///< View hooks
+#define SUB_HOOK_TYPE_TAG             (1L << 16)                  ///< Tag hooks
+#define SUB_HOOK_ACTION_CREATE        (1L << 17)                  ///< Create action
+#define SUB_HOOK_ACTION_CONFIGURE     (1L << 18)                  ///< Configure action
+#define SUB_HOOK_ACTION_FOCUS         (1L << 19)                  ///< Focus action
+#define SUB_HOOK_ACTION_KILL          (1L << 20)                  ///< Kill action
 
 /* Client flags */
 #define SUB_CLIENT_DEAD               (1L << 10)                  ///< Dead window
@@ -235,10 +232,11 @@
 #define SUB_PANEL_SOCKET              (1L << 24)                  ///< Sublet with socket
 
 #define SUB_PANEL_RUN                 (1L << 25)                  ///< Sublet run function
-#define SUB_PANEL_WATCH               (1L << 26)                  ///< Sublet watch function
-#define SUB_PANEL_DOWN                (1L << 27)                  ///< Sublet mouse down function
-#define SUB_PANEL_OVER                (1L << 28)                  ///< Sublet mouse over function
-#define SUB_PANEL_OUT                 (1L << 29)                  ///< Sublet mouse out function
+#define SUB_PANEL_DATA                (1L << 26)                  ///< Sublet data function
+#define SUB_PANEL_WATCH               (1L << 27)                  ///< Sublet watch function
+#define SUB_PANEL_DOWN                (1L << 28)                  ///< Sublet mouse down function
+#define SUB_PANEL_OVER                (1L << 29)                  ///< Sublet mouse over function
+#define SUB_PANEL_OUT                 (1L << 30)                  ///< Sublet mouse out function
 
 /* Screen types */
 #define SUB_SCREEN_PANEL1             (1L << 10)                   ///< Panel1 enabled
@@ -458,6 +456,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_QUIT,                                           ///< Subtle quit
   SUB_EWMH_SUBTLE_COLORS,                                         ///< Subtle colors
   SUB_EWMH_SUBTLE_FONT,                                           ///< Subtle font
+  SUB_EWMH_SUBTLE_DATA,                                           ///< Subtle data
 
   SUB_EWMH_TOTAL
 } SubEwmh; /* }}} */
@@ -690,8 +689,6 @@ void subEwmhSetCardinals(Window win, SubEwmh e,
   long *values, int size);                                        ///< Set cardinal properties
 void subEwmhSetString(Window win, SubEwmh e,
   char *value);                                                   ///< Set string property
-void subEwmhSetStrings(Window win, SubEwmh e,                     ///< Set string properties
-  char **values, int size);
 void subEwmhSetWMState(Window win, long state);                   ///< Set window WM state
 int subEwmhMessage(Window win, SubEwmh e, long mask,
   long data0, long data1, long data2, long data3,

@@ -81,7 +81,7 @@ subEwmhInit(void)
     "SUBTLE_SCREEN_VIEWS",
     "SUBTLE_VISIBLE_TAGS", "SUBTLE_VISIBLE_VIEWS",
     "SUBTLE_RELOAD", "SUBTLE_RESTART", "SUBTLE_QUIT",
-    "SUBTLE_COLORS", "SUBTLE_FONT"
+    "SUBTLE_COLORS", "SUBTLE_FONT", "SUBTLE_DATA"
   };
 
   assert(SUB_EWMH_TOTAL == LENGTH(names));
@@ -261,28 +261,6 @@ subEwmhSetString(Window win,
 {
   XChangeProperty(subtle->dpy, win, atoms[e], atoms[SUB_EWMH_UTF8], 8,
     PropModeReplace, (unsigned char *)value, strlen(value));
-} /* }}} */
-
- /** subEwmhSetStrings {{{
-  * @brief Change window property
-  * @param[in]  win     Window
-  * @param[in]  e       A #SubEwmh
-  * @param[in]  values  String list
-  * @param[in]  size    Size of the list
-  **/
-
-void
-subEwmhSetStrings(Window win,
-  SubEwmh e,
-  char **values,
-  int size)
-{
-  XTextProperty text;
-
-  XStringListToTextProperty(values, size, &text);
-  XSetTextProperty(subtle->dpy, win, &text, atoms[e]);
-
-  XFree (text.value);
 } /* }}} */
 
  /** subEwmhSetWMState {{{

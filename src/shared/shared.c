@@ -254,7 +254,7 @@ subSharedPropertyGet(Display *disp,
   return (char *)data;
 } /* }}} */
 
- /** subSharedPropertyStrings {{{
+ /** subSharedPropertyGetStrings {{{
   * @brief Get property list
   * @param[in]     disp Display
   * @param[in]     win     Client window
@@ -264,7 +264,7 @@ subSharedPropertyGet(Display *disp,
   **/
 
 char **
-subSharedPropertyStrings(Display *disp,
+subSharedPropertyGetStrings(Display *disp,
   Window win,
   Atom prop,
   int *size)
@@ -284,6 +284,31 @@ subSharedPropertyStrings(Display *disp,
     }
 
   return list;
+} /* }}} */
+
+ /** subSharedPropertySetStrings {{{
+  * @brief Get property list
+  * @param[in]  disp    Display
+  * @param[in]  win     Window
+  * @param[in]  prop    Property
+  * @param[in]  list    String list
+  * @param[in]  nsize   Number of elements
+  * return Returns the property list
+  **/
+
+void
+subSharedPropertySetStrings(Display *disp,
+  Window win,
+  Atom prop,
+  char **list,
+  int nlist)
+{
+  XTextProperty text;
+
+  XStringListToTextProperty(list, nlist, &text);
+  XSetTextProperty(disp, win, &text, prop);
+
+  XFree(text.value);
 } /* }}} */
 
  /** subSharedPropertyName {{{
@@ -332,8 +357,7 @@ subSharedPropertyName(Display *disp,
         {
           if(0 < nlist && *list)
             {
-              printf("nitems=%ld\n", text.nitems);
-              // *name = strndup(*list, strlen(*list));
+              /* FIXME strdup() allocates not enough memory to hold string */
               *name = subSharedMemoryAlloc(text.nitems + 2, sizeof(char));
               strncpy(*name, *list, text.nitems);
             }
@@ -368,7 +392,7 @@ subSharedPropertyClass(Display *disp,
 
   assert(win);
 
-  klasses = subSharedPropertyStrings(disp, win, XA_WM_CLASS, &size);
+  klasses = subSharedPropertyGetStrings(disp, win, XA_WM_CLASS, &size);
 
   /* Sanitize instance/class names */
   if(inst)  *inst  = strdup(0 < size ? klasses[0] : "subtle");
