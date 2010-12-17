@@ -24,7 +24,7 @@ ViewFind(char *match,
   assert(match);
 
   /* Fetch data */
-  names = subSharedPropertyStrings(display, DefaultRootWindow(display),
+  names = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
     XInternAtom(display, "_NET_DESKTOP_NAMES", False), &nnames);
   preg  = subSharedRegexNew(match);
 
@@ -72,7 +72,7 @@ ViewSelect(VALUE self,
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Fetch data */
-  if((names = subSharedPropertyStrings(display, DefaultRootWindow(display),
+  if((names = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
     XInternAtom(display, "_NET_DESKTOP_NAMES", False), &nnames)))
     {
       int vid = FIX2INT(id);
@@ -175,7 +175,7 @@ subViewSingCurrent(VALUE self)
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Fetch data */
-  names    = subSharedPropertyStrings(display, DefaultRootWindow(display),
+  names    = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
     XInternAtom(display, "_NET_DESKTOP_NAMES", False), &nnames);
   cur_view = (unsigned long *)subSharedPropertyGet(display,
     DefaultRootWindow(display), XA_CARDINAL,
@@ -222,7 +222,7 @@ subViewSingVisible(VALUE self)
   meth  = rb_intern("new");
   klass = rb_const_get(mod, rb_intern("View"));
   array = rb_ary_new();
-  names = subSharedPropertyStrings(display, DefaultRootWindow(display),
+  names = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
     XInternAtom(display, "_NET_DESKTOP_NAMES", False), &nnames);
   visible = (unsigned long *)subSharedPropertyGet(display,
     DefaultRootWindow(display), XA_CARDINAL, XInternAtom(display,
@@ -277,7 +277,7 @@ subViewSingAll(VALUE self)
   array = rb_ary_new();
 
   /* Check results */
-  if((names = subSharedPropertyStrings(display, DefaultRootWindow(display),
+  if((names = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
       XInternAtom(display, "_NET_DESKTOP_NAMES", False), &nnames)))
     {
       for(i = 0; i < nnames; i++)
@@ -379,7 +379,7 @@ subViewUpdate(VALUE self)
       int nnames = 0;
       char **names = NULL;
 
-      names = subSharedPropertyStrings(display, DefaultRootWindow(display),
+      names = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
         XInternAtom(display, "_NET_DESKTOP_NAMES", False), &nnames);
 
       id = nnames; ///< New id should be last

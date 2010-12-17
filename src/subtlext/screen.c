@@ -246,7 +246,7 @@ subScreenViewReader(VALUE self)
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Fetch data */
-  names   = subSharedPropertyStrings(display, DefaultRootWindow(display),
+  names   = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
     XInternAtom(display, "_NET_DESKTOP_NAMES", False), &nnames);
   screens = (unsigned long *)subSharedPropertyGet(display,
     DefaultRootWindow(display), XA_CARDINAL, XInternAtom(display,

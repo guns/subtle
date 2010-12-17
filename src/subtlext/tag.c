@@ -93,7 +93,7 @@ subTagSingVisible(VALUE self)
   meth    = rb_intern("new");
   klass   = rb_const_get(mod, rb_intern("Tag"));
   array   = rb_ary_new();
-  tags    = subSharedPropertyStrings(display, DefaultRootWindow(display),
+  tags    = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
     XInternAtom(display, "SUBTLE_TAG_LIST", False), &ntags);
   visible = (unsigned long *)subSharedPropertyGet(display,
     DefaultRootWindow(display), XA_CARDINAL, XInternAtom(display,
@@ -149,7 +149,7 @@ subTagSingAll(VALUE self)
   array = rb_ary_new();
 
   /* Check results */
-  if((tags = subSharedPropertyStrings(display, DefaultRootWindow(display),
+  if((tags = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
       XInternAtom(display, "SUBTLE_TAG_LIST", False), &ntags)))
     {
       for(i = 0; i < ntags; i++)
@@ -249,7 +249,7 @@ subTagUpdate(VALUE self)
       int ntags = 0;
       char **tags = NULL;
 
-      tags = subSharedPropertyStrings(display, DefaultRootWindow(display),
+      tags = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
         XInternAtom(display, "SUBTLE_TAG_LIST", False), &ntags);
 
       id = ntags; ///< New id should be last
@@ -354,7 +354,7 @@ subTagViews(VALUE self)
   klass  = rb_const_get(mod, rb_intern("View"));
   meth   = rb_intern("new");
   array  = rb_ary_new();
-  names  = subSharedPropertyStrings(display, DefaultRootWindow(display),
+  names  = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
     XInternAtom(display, "_NET_DESKTOP_NAMES", False), &nnames);
   tags   = (unsigned long *)subSharedPropertyGet(display,
     DefaultRootWindow(display), XA_CARDINAL,

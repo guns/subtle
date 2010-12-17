@@ -265,7 +265,7 @@ SubtlextTagReader(VALUE self)
   value_tags = SubtlextTagGet(self);
 
   /* Check results */
-  if((tags = subSharedPropertyStrings(display, DefaultRootWindow(display),
+  if((tags = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
       XInternAtom(display, "SUBTLE_TAG_LIST", False), &ntags)))
     {
       for(i = 0; i < ntags; i++)
@@ -961,7 +961,7 @@ subSubtlextFind(char *prop,
 
   /* Find id */
   if((preg = subSharedRegexNew(match)) &&
-      (strings = subSharedPropertyStrings(display, DefaultRootWindow(display),
+      (strings = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
       XInternAtom(display, prop, False), &size)))
     {
       int i;
@@ -1022,7 +1022,7 @@ subSubtlextFindWindow(char *prop,
       /* Find id of gravity */
       if(flags & SUB_MATCH_GRAVITY)
         {
-          gravities = subSharedPropertyStrings(display,
+          gravities = subSharedPropertyGetStrings(display,
             DefaultRootWindow(display),
             XInternAtom(display, "SUBTLE_GRAVITY_LIST", False), &ngravities);
 

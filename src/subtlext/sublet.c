@@ -90,7 +90,7 @@ subSubletSingAll(VALUE self)
   meth    = rb_intern("new");
   klass   = rb_const_get(mod, rb_intern("Sublet"));
   array   = rb_ary_new();
-  sublets = subSharedPropertyStrings(display, DefaultRootWindow(display),
+  sublets = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
     XInternAtom(display, "SUBTLE_SUBLET_LIST", False), &nsublets);
 
   /* Check results */
@@ -233,13 +233,19 @@ subSubletDataWriter(VALUE self,
   /* Check object type */
   if(T_STRING == rb_type(value))
     {
+      char *list = NULL;
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
-      snprintf(data.b, sizeof(data.b), "%c%s",
-        (char)FIX2LONG(id), RSTRING_PTR(value));
+      /* Store data */
+      list = strdup(RSTRING_PTR(value));
+      subSharedPropertySetStrings(display, DefaultRootWindow(display),
+        XInternAtom(display, "SUBTLE_DATA", False), &list, 1);
+      free(list);
+
+      data.l[0] = FIX2LONG(id);
 
       subSharedMessage(display, DefaultRootWindow(display),
-        "SUBTLE_SUBLET_DATA", data, 8, True);
+        "SUBTLE_SUBLET_DATA", data, 32, True);
     }
   else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
     rb_obj_classname(value));

@@ -508,7 +508,7 @@ subClientViewList(VALUE self)
   method  = rb_intern("new");
   klass   = rb_const_get(mod, rb_intern("View"));
   array   = rb_ary_new();
-  names   = subSharedPropertyStrings(display, DefaultRootWindow(display),
+  names   = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
     XInternAtom(display, "_NET_DESKTOP_NAMES", False), &nnames);
   view_tags   = (unsigned long *)subSharedPropertyGet(display,
     DefaultRootWindow(display), XA_CARDINAL, XInternAtom(display,

@@ -42,7 +42,7 @@ subGravityFindId(char *match,
 
   /* Find gravity id */
   if((preg = subSharedRegexNew(match)) &&
-      (gravities = subSharedPropertyStrings(display, DefaultRootWindow(display),
+      (gravities = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
       XInternAtom(display, "SUBTLE_GRAVITY_LIST", False), &ngravities)))
     {
       int i;
@@ -165,7 +165,7 @@ subGravitySingAll(VALUE self)
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Get gravity list */
-  if((gravities = subSharedPropertyStrings(display, DefaultRootWindow(display),
+  if((gravities = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
       XInternAtom(display, "SUBTLE_GRAVITY_LIST", False), &ngravities)))
     {
       int i;
@@ -309,7 +309,7 @@ subGravityUpdate(VALUE self)
       int ngravities = 0;
       char **gravities = NULL;
 
-      gravities = subSharedPropertyStrings(display, DefaultRootWindow(display),
+      gravities = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
         XInternAtom(display, "SUBTLE_GRAVITY_LIST", False), &ngravities);
 
       id = ngravities; ///< New id should be last
