@@ -345,9 +345,9 @@ EOF
       %input{:type => "submit", :name => "submit", :value => "Go"}
 
   #right
-    %a{:href => "http://subforge.org/wiki/sur/Specification"} Sublet specification
+    %a{:href => "http://subforge.org/wiki/subtle/Specification"} Sublet specification
     |
-    %a{:href => "http://sur.subtle.de/sublets"} All sublets
+    %a{:href => "http://sur.subforge.org/sublets"} All sublets
 
 #clear
 
@@ -356,7 +356,7 @@ EOF
   %ul
     -@newest.each do |s|
       %li
-        %a#download{:href => "http://sur.subtle.de/get/%s" % [ s.digest ] }
+        %a#download{:href => "http://sur.subforge.org/get/%s" % [ s.digest ] }
           ="%s-%s" % [ s.name, s.version ]
         ="(%s)" % [ s.tags.map { |t| '<a href="/tag/%s">#%s</a>' % [ t.tag.name, t.tag.name ] }.join(", ") ]
 
@@ -365,7 +365,7 @@ EOF
   %ul
     -@most.each do |s|
       %li
-        %a#download{:href => "http://sur.subtle.de/get/%s" % [ s.digest ] }
+        %a#download{:href => "http://sur.subforge.org/get/%s" % [ s.digest ] }
           ="%s-%s" % [ s.name, s.version ]
         ="(%d)" % [ s.downloads ]
 
@@ -374,7 +374,7 @@ EOF
   %ul
     -@never.each do |s|
       %li
-        %a#download{:href => "http://sur.subtle.de/get/%s" % [ s.digest ] }
+        %a#download{:href => "http://sur.subforge.org/get/%s" % [ s.digest ] }
           ="%s-%s" % [ s.name, s.version ]
         ="(%s)" % [ s.tags.map { |t| '<a href="/tag/%s">#%s</a>' % [ t.tag.name, t.tag.name ] }.join(", ") ]
 
@@ -382,7 +382,7 @@ EOF
   %ul
     -@worst.each do |s|
       %li
-        %a#download{:href => "http://sur.subtle.de/get/%s" % [ s.digest ] }
+        %a#download{:href => "http://sur.subforge.org/get/%s" % [ s.digest ] }
           ="%s-%s" % [ s.name, s.version ]
         ="(%d)" % [ s.annotations ]
 EOF
