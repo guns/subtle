@@ -31,6 +31,7 @@ require "rake/rdoctask"
   "extdir"     => "$(destdir)/$(sitelibdir)/$(PKG_NAME)",
   "mandir"     => "$(destdir)/$(manprefix)/man1",
   "debug"      => "no",
+  "xpm"        => "yes",
   "xft"        => "yes",
   "xinerama"   => "yes",
   "xrandr"     => "yes",
@@ -259,6 +260,27 @@ task(:config) do
       true
     end
 
+    # Check pkg-config for Xpm
+    if("yes" == @options["xpm"])
+      checking_for("X11/Xpm.h") do
+        ret = false
+
+        cflags, ldflags, libs = pkg_config("xpm")
+        unless(libs.nil?)
+          # Update flags
+          @options["cpppath"] << " %s" % [ cflags ]
+          @options["extflags"] << " %s %s" % [ ldflags, libs ]
+
+          $defs.push("-DHAVE_X11_XPM_H")
+          ret = true
+        else
+          @options["xpm"] = "no"
+        end
+
+        ret
+      end
+    end
+
     # Check pkg-config for Xft
     if("yes" == @options["xft"])
       checking_for("X11/Xft/Xft.h") do
@@ -352,6 +374,7 @@ Configuration.......: #{@options["configdir"]}
 Scripts.............: #{@options["scriptdir"]}
 Extension...........: #{@options["extdir"]}
 
+Xpm support.........: #{@options["xpm"]}
 Xft support.........: #{@options["xft"]}
 Xinerama support....: #{@options["xinerama"]}
 XRandR support......: #{@options["xrandr"]}
@@ -481,6 +504,7 @@ sysconfdir=PATH    Set config directory (current: #{@options["sysconfdir"]})
 datadir=PATH       Set data directory (current: #{@options["datadir"]})
 mandir=PATH        Set man directory (current: #{@options["mandir"]})
 debug=[yes|no]     Whether to build with debugging messages (current: #{@options["debug"]})
+xpm=[yes|no]       Whether to build with Xpm support (current: #{@options["xpm"]})
 xft=[yes|no]       Whether to build with Xft support (current: #{@options["xft"]})
 xinerama=[yes|no]  Whether to build with Xinerama support (current: #{@options["xinerama"]})
 randr=[yes|no]     Whether to build with XRandR support (current: #{@options["xrandr"]})
