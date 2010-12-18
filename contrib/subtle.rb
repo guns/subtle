@@ -109,9 +109,13 @@ end
 # === Link
 #
 # http://subforge.org/wiki/subtle/Themes
-#
 
-# Colors of focus window titles and active views
+# Colors of focus window title
+color :title_fg,         "#fecf35"
+color :title_bg,         "#202020"
+color :title_border,     "#303030"
+
+# Colors of the active views
 color :focus_fg,         "#fecf35"
 color :focus_bg,         "#202020"
 color :focus_border,     "#303030"
@@ -136,16 +140,18 @@ color :sublets_fg,       "#757575"
 color :sublets_bg,       "#202020"
 color :sublets_border,   "#303030"
 
-# Colors of panel
-color :panel_fg,        "#757575"
-color :panel_bg,        "#202020"
-
 # Border colors of active/inactive windows
 color :client_active,   "#303030"
 color :client_inactive, "#202020"
 
+# Background colors of panels
+color :panel,           "#202020"
+
 # Background color of root background
 color :background,      "#3d3d3d"
+
+# Color of the stipple (if enabled)
+color :stipple,         "#757575"
 
 # Color of the separator
 color :separator,       "#757575"
