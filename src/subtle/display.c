@@ -281,9 +281,9 @@ subDisplayPublish(void)
   colors = (unsigned long *)subSharedMemoryAlloc(NCOLORS,
     sizeof(unsigned long));
 
-  colors[0]  = subtle->colors.fg_focus;
-  colors[1]  = subtle->colors.bg_focus;
-  colors[2]  = subtle->colors.bo_focus;
+  colors[0]  = subtle->colors.fg_title;
+  colors[1]  = subtle->colors.bg_title;
+  colors[2]  = subtle->colors.bo_title;
   colors[3]  = subtle->colors.fg_focus;
   colors[4]  = subtle->colors.bg_focus;
   colors[5]  = subtle->colors.bo_focus;

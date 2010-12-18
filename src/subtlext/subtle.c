@@ -264,14 +264,15 @@ subSubtleSingColors(VALUE self)
   unsigned long ncolors = 0, *colors = NULL;
   VALUE meth = Qnil, klass = Qnil, hash = Qnil;
   const char *names[] = {
+    "title_fg",    "title_bg",    "title_border",
     "focus_fg",    "focus_bg",    "focus_border",
     "urgent_fg",   "urgent_bg",   "urgent_border",
     "occupied_fg", "occupied_bg", "occupied_border",
     "views_fg",    "views_bg",    "views_border",
     "sublets_fg",  "sublets_bg",  "sublets_border",
-    "panel_fg",    "panel_bg",
     "client_active", "client_inactive",
-    "background", "separator"
+    "panel",    "background",
+    "stipple", "separator"
   };
 
   subSubtlextConnect(NULL); ///< Implicit open connection
