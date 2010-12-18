@@ -487,10 +487,11 @@ subSharedTextParse(Display *disp,
           /* Re-use items to save alloc cycles */
           if(i < t->nitems && (item = ITEM(t->items[i])))
             {
-              if(!(item->flags & SUB_TEXT_ICON) && item->data.string)
+              if(!(item->flags & (SUB_TEXT_BITMAP|SUB_TEXT_PIXMAP)) &&
+                  item->data.string)
                 free(item->data.string);
 
-              item->flags &= ~(SUB_TEXT_EMPTY|SUB_TEXT_ICON);
+              item->flags &= ~(SUB_TEXT_EMPTY|SUB_TEXT_BITMAP|SUB_TEXT_PIXMAP);
             }
           else if((item = ITEM(subSharedMemoryAlloc(1, sizeof(SubTextItem)))))
             {
@@ -500,14 +501,16 @@ subSharedTextParse(Display *disp,
               t->items[(t->nitems)++] = item;
             }
 
-          /* Get geometry of pixmap */
-          if('!' == *tok && (pixmap = strtol(tok + 1, NULL, 0)))
+          /* Get geometry of bitmap/pixmap */
+          if(('!' == *tok || '&' == *tok) &&
+              (pixmap = strtol(tok + 1, NULL, 0)))
             {
               XRectangle geometry = { 0 };
 
               subSharedPropertyGeometry(disp, pixmap, &geometry);
 
-              item->flags    |= SUB_TEXT_ICON;
+              item->flags    |= ('!' == *tok ? SUB_TEXT_BITMAP :
+                SUB_TEXT_PIXMAP);
               item->data.num  = pixmap;
               item->width     = geometry.width;
               item->height    = geometry.height;
@@ -537,7 +540,8 @@ subSharedTextParse(Display *disp,
   /* Fix spacing of last item */
   if(item)
     {
-      if(item->flags & SUB_TEXT_ICON) t->width -= 2;
+      if(item->flags & (SUB_TEXT_BITMAP|SUB_TEXT_PIXMAP))
+        t->width -= 2;
       else
         {
           t->width    -= right;
@@ -585,7 +589,7 @@ subSharedTextRender(Display *disp,
         {
           break; ///< Break loop
         }
-      else if(item->flags & SUB_TEXT_ICON) ///< Icon
+      else if(item->flags & (SUB_TEXT_BITMAP|SUB_TEXT_PIXMAP)) ///<Icons
         {
           int dx = (0 == i) ? 0 : 2; ///< Add spacing when icon isn't first
 
@@ -597,8 +601,18 @@ subSharedTextRender(Display *disp,
           XChangeGC(disp, gc, GCForeground|GCBackground, &gvals);
 
           /* Copy icon to destination window */
-          XCopyPlane(disp, (Pixmap)item->data.num, win, gc, 0, 0, item->width,
-            item->height, width + dx, y - item->height, 1);
+          if(item->flags & SUB_TEXT_BITMAP)
+            {
+              XCopyPlane(disp, (Pixmap)item->data.num, win, gc, 0, 0,
+                item->width, item->height, width + dx, y - item->height, 1);
+            }
+#ifdef HAVE_X11_XPM_H
+          else
+            {
+              XCopyArea(disp, (Pixmap)item->data.num, win, gc, 0, 0,
+                item->width, item->height, width + dx, y - item->height);
+            }
+#endif /* HAVE_X11_XPM_H */
 
           /* Add spacing when icon isn't last */
           width += item->width + dx + (i != t->nitems - 1 ? 2 : 0);
@@ -748,7 +762,8 @@ subSharedTextFree(SubText *t)
     {
       SubTextItem *item = (SubTextItem *)t->items[i];
 
-      if(!(item->flags & SUB_TEXT_ICON) && item->data.string)
+      if(!(item->flags & (SUB_TEXT_BITMAP|SUB_TEXT_PIXMAP)) &&
+          item->data.string)
         free(item->data.string);
 
       free(t->items[i]);

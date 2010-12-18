@@ -78,7 +78,8 @@
 
 /* Text flags */
 #define SUB_TEXT_EMPTY   (1L << 1)                                ///< Empty text
-#define SUB_TEXT_ICON    (1L << 2)                                ///< Text icon
+#define SUB_TEXT_BITMAP  (1L << 2)                                ///< Text bitmap
+#define SUB_TEXT_PIXMAP  (1L << 3)                                ///< Text pixmap
 /* }}} */
 
 /* Typedefs {{{ */
