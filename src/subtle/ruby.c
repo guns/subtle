@@ -971,7 +971,7 @@ RubyWrapCall(VALUE data)
       case SUB_CALL_DOWN: /* {{{ */
           {
             XButtonEvent *ev = (XButtonEvent *)rargs[2];
-            VALUE meth = rb_intern("_down");
+            VALUE meth = rb_intern("__down");
 
             rb_funcall(rargs[1], meth,
               MINMAX(rb_obj_method_arity(rargs[1], meth), 1, 4),
