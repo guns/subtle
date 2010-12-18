@@ -119,34 +119,48 @@ subScreenSingAll(VALUE self)
 VALUE
 subScreenSingCurrent(VALUE self)
 {
-  int id = 0;
-  unsigned long *focus = NULL;
+  int x = 0, y = 0;
+  unsigned long nworkareas = 0;
+  long *workareas = NULL;
   VALUE screen = Qnil;
+  Window dummy = None;
 
   subSubtlextConnect(NULL); ///< Implicit open connection
 
-  /* Get current screen from current client or use the first */
-  if((focus = (unsigned long *)subSharedPropertyGet(display,
-      DefaultRootWindow(display), XA_WINDOW,
-      XInternAtom(display, "_NET_ACTIVE_WINDOW", False), NULL)))
+  /* Get current screen */
+  XQueryPointer(display, DefaultRootWindow(display), &dummy, &dummy,
+    &x, &y, (int *)&dummy, (int *)&dummy, (unsigned int *)&dummy);
+
+  /* Get workarea list */
+  if((workareas = (long *)subSharedPropertyGet(display,
+      DefaultRootWindow(display), XA_CARDINAL,
+      XInternAtom(display, "_NET_WORKAREA", False), &nworkareas)))
     {
-      int *screen_id = NULL;
+      int i;
 
-      if((screen_id = (int *)subSharedPropertyGet(display, *focus, XA_CARDINAL,
-          XInternAtom(display, "SUBTLE_WINDOW_SCREEN", False), NULL)))
+      for(i = 0; i < nworkareas / 4; i++)
         {
-          id = *screen_id;
+          /* Check if coordinates are in screen rects */
+          if((x >= workareas[i * 4 + 0] &&
+              x < workareas[i * 4 + 0] + workareas[i * 4 + 2]) &&
+              (y >= workareas[i * 4 + 1] &&
+              y < workareas[i * 4 + 1] + workareas[i * 4 + 3]))
+            {
+              VALUE geometry = Qnil;
 
-          free(screen_id);
+              /* Create new screen */
+              screen   = rb_funcall(rb_const_get(mod, rb_intern("Screen")),
+                rb_intern("new"), 1, INT2FIX(i));
+              geometry = subGeometryInstantiate(workareas[i * 4 + 0],
+                workareas[i * 4 + 1], workareas[i * 4 + 2],
+                workareas[i * 4 + 3]);
+
+              rb_iv_set(screen, "@geometry", geometry);
+            }
         }
 
-      free(focus);
+      free(workareas);
     }
-
-  /* Create screen */
-  screen = subScreenInstantiate(id);
-
-  subScreenUpdate(screen);
 
   return screen;
 } /* }}} */
