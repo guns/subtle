@@ -164,7 +164,7 @@ subScreenNew(int x,
   /* Create panels */
   sattrs.event_mask        = ButtonPressMask|ExposureMask;
   sattrs.override_redirect = True;
-  sattrs.background_pixel  = subtle->colors.bg_panel;
+  sattrs.background_pixel  = subtle->colors.panel;
   mask                     = CWEventMask|CWOverrideRedirect|CWBackPixel;
 
   s->panel1    = XCreateWindow(subtle->dpy, ROOT, 0, 1, 1, 1, 0,
@@ -568,8 +568,7 @@ subScreenResize(void)
         {
           XMoveResizeWindow(subtle->dpy, s->panel1, s->base.x, s->base.y,
             s->base.width, subtle->th);
-          XSetWindowBackground(subtle->dpy, s->panel1,
-            subtle->colors.bg_panel);
+          XSetWindowBackground(subtle->dpy, s->panel1, subtle->colors.panel);
           XMapRaised(subtle->dpy, s->panel1);
 
           /* Update height */
@@ -582,8 +581,7 @@ subScreenResize(void)
         {
           XMoveResizeWindow(subtle->dpy, s->panel2, s->base.x,
             s->base.y + s->base.height - subtle->th, s->base.width, subtle->th);
-          XSetWindowBackground(subtle->dpy, s->panel2,
-            subtle->colors.bg_panel);
+          XSetWindowBackground(subtle->dpy, s->panel2, subtle->colors.panel);
           XMapRaised(subtle->dpy, s->panel2);
 
           /* Update height */

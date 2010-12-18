@@ -568,10 +568,10 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    unsigned long      fg_focus, fg_urgent, fg_occupied, fg_views, fg_sublets, fg_panel,
-                       bg_focus, bg_urgent, bg_occupied, bg_views, bg_sublets, bg_panel,
-                       bo_focus, bo_urgent, bo_occupied, bo_views, bo_sublets,
-                       bo_active, bo_inactive, bg, separator;
+    unsigned long      fg_title, fg_focus, fg_urgent, fg_occupied, fg_views, fg_sublets,
+                       bg_title, bg_focus, bg_urgent, bg_occupied, bg_views, bg_sublets,
+                       bo_title, bo_focus, bo_urgent, bo_occupied, bo_views, bo_sublets,
+                       bo_active, bo_inactive, panel, bg, stipple, separator;
   } colors;                                                       ///< Subtle colors
 
   struct

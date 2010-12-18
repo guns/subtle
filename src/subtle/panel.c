@@ -84,7 +84,7 @@ subPanelNew(int type)
         break; /* }}} */
       case SUB_PANEL_TITLE: /* {{{ */
         p->win = XCreateSimpleWindow(subtle->dpy, ROOT, 0, 0, 1, 1, 0, 0,
-          subtle->colors.bg_focus);
+          subtle->colors.bg_title);
 
         XChangeWindowAttributes(subtle->dpy, p->win,
           CWOverrideRedirect, &sattrs);
@@ -151,7 +151,7 @@ subPanelConfigure(SubPanel *p)
         break; /* }}} */
       case SUB_PANEL_TITLE: /* {{{ */
         /* Update border */
-        XSetWindowBorder(subtle->dpy, p->win, subtle->colors.bo_focus);
+        XSetWindowBorder(subtle->dpy, p->win, subtle->colors.bo_title);
         XSetWindowBorderWidth(subtle->dpy, p->win, subtle->pbw);
         break; /* }}} */
     }
@@ -329,8 +329,8 @@ subPanelRender(SubPanel *p)
                   }
                 else
                   {
-                    fg = subtle->colors.fg_focus;
-                    bg = subtle->colors.bg_focus;
+                    fg = subtle->colors.fg_title;
+                    bg = subtle->colors.bg_title;
                   }
 
                 /* Set window background */

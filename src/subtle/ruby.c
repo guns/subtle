@@ -705,10 +705,6 @@ RubyEvalConfig(void)
 {
   int i;
 
-  /* FIXME: Check and update colors */
-  if(0 == subtle->colors.separator)
-    subtle->colors.separator = subtle->colors.fg_panel;
-
   /* Update panel height */
   subtle->th = subtle->font->height + 2 * subtle->pbw +
     subtle->padding.width + subtle->padding.height;
@@ -1321,7 +1317,22 @@ RubyConfigColor(VALUE self,
       if(subtle->flags & SUB_SUBTLE_CHECK) return Qnil; ///< Skip on check
 
       /* Plain 'if' to save lookups */
-      if(CHAR2SYM("fg_focus") == option || CHAR2SYM("focus_fg") == option)
+      if(CHAR2SYM("fg_title") == option || CHAR2SYM("title_fg") == option)
+        {
+          subtle->colors.fg_title = subSharedParseColor(subtle->dpy,
+            RSTRING_PTR(value));
+        }
+      else if(CHAR2SYM("bg_title") == option || CHAR2SYM("title_bg") == option)
+        {
+          subtle->colors.bg_title = subSharedParseColor(subtle->dpy,
+            RSTRING_PTR(value));
+        }
+      else if(CHAR2SYM("title_border") == option)
+        {
+          subtle->colors.bo_title = subSharedParseColor(subtle->dpy,
+            RSTRING_PTR(value));
+        }
+      else if(CHAR2SYM("fg_focus") == option || CHAR2SYM("focus_fg") == option)
         {
           subtle->colors.fg_focus = subSharedParseColor(subtle->dpy,
             RSTRING_PTR(value));
@@ -1398,28 +1409,25 @@ RubyConfigColor(VALUE self,
           subtle->colors.bo_sublets = subSharedParseColor(subtle->dpy,
             RSTRING_PTR(value));
         }
-      else if(CHAR2SYM("fg_panel") == option || CHAR2SYM("panel_fg") == option)
+      else if(CHAR2SYM("fg_panel") == option ||
+          CHAR2SYM("panel_fg") == option || CHAR2SYM("stipple") == option)
         {
-          subtle->colors.fg_panel = subSharedParseColor(subtle->dpy,
-            RSTRING_PTR(value));
-        }
-      else if(CHAR2SYM("bg_panel") == option || CHAR2SYM("panel_bg") == option)
-        {
-          subtle->colors.bg_panel = subSharedParseColor(subtle->dpy,
-            RSTRING_PTR(value));
-        }
-      else if(CHAR2SYM("border_panel") == option)
-        {
-          subSharedLogDeprecated("Color `:border_panel` has been splitted "
-            "into separate border colors\n");
+          if(CHAR2SYM("stipple") != option)
+            subSharedLogDeprecated("Color `:panel_fg` has been renamed "
+             "to `:stipple`\n");
 
-          /* TODO: Update all border colors */
-          subtle->colors.bo_focus    = subSharedParseColor(subtle->dpy,
+          subtle->colors.stipple = subSharedParseColor(subtle->dpy,
             RSTRING_PTR(value));
-          subtle->colors.bo_urgent   = subtle->colors.bo_focus;
-          subtle->colors.bo_occupied = subtle->colors.bo_focus;
-          subtle->colors.bo_views    = subtle->colors.bo_focus;
-          subtle->colors.bo_sublets  = subtle->colors.bo_focus;
+        }
+      else if(CHAR2SYM("bg_panel") == option ||
+          CHAR2SYM("panel_bg") == option || CHAR2SYM("panel") == option)
+        {
+          if(CHAR2SYM("panel") != option)
+            subSharedLogDeprecated("Color `:panel_bg` has been renamed "
+              "to `:panel`\n");
+
+          subtle->colors.panel = subSharedParseColor(subtle->dpy,
+            RSTRING_PTR(value));
         }
       else if(CHAR2SYM("border_focus") == option ||
           CHAR2SYM("client_active") == option)

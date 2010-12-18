@@ -134,7 +134,6 @@ subDisplayInit(const char *display)
 
   XSetErrorHandler(subSharedLogXError);
   setenv("DISPLAY", DisplayString(subtle->dpy), True); ///< Set display for clients
-  XrmInitialize();
 
   /* Create GCs */
   gvals.function           = GXcopy;
@@ -208,19 +207,20 @@ subDisplayConfigure(void)
   assert(subtle);
 
   /* Update GCs */
-  gvals.foreground = subtle->colors.fg_panel;
+  gvals.foreground = subtle->colors.stipple;
   gvals.line_width = subtle->bw;
   XChangeGC(subtle->dpy, subtle->gcs.stipple,
     GCForeground|GCLineWidth, &gvals);
 
-  gvals.foreground = subtle->colors.fg_panel;
+  gvals.foreground = subtle->colors.separator;
   XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
 
   /* Update windows */
   XSetWindowBackground(subtle->dpy, subtle->windows.tray.win,
-    subtle->colors.bg_panel);
+    subtle->colors.panel);
 
-  if(subtle->flags & SUB_SUBTLE_BACKGROUND) ///< Set background if set
+  /* Set background if set */
+  if(subtle->flags & SUB_SUBTLE_BACKGROUND)
     XSetWindowBackground(subtle->dpy, ROOT, subtle->colors.bg);
 
   XClearWindow(subtle->dpy, subtle->windows.tray.win);
@@ -275,7 +275,7 @@ subDisplayPublish(void)
 {
   unsigned long *colors;
 
-#define NCOLORS 21
+#define NCOLORS 24
 
   /* Create color array */
   colors = (unsigned long *)subSharedMemoryAlloc(NCOLORS,
@@ -284,24 +284,27 @@ subDisplayPublish(void)
   colors[0]  = subtle->colors.fg_focus;
   colors[1]  = subtle->colors.bg_focus;
   colors[2]  = subtle->colors.bo_focus;
-  colors[3]  = subtle->colors.fg_urgent;
-  colors[4]  = subtle->colors.bg_urgent;
-  colors[5]  = subtle->colors.bo_urgent;
-  colors[6]  = subtle->colors.fg_occupied;
-  colors[7]  = subtle->colors.bg_occupied;
-  colors[8]  = subtle->colors.bo_occupied;
-  colors[9]  = subtle->colors.fg_views;
-  colors[10] = subtle->colors.bg_views;
-  colors[11] = subtle->colors.bo_views;
-  colors[12] = subtle->colors.fg_sublets;
-  colors[13] = subtle->colors.bg_sublets;
-  colors[14] = subtle->colors.bo_sublets;
-  colors[15] = subtle->colors.fg_panel;
-  colors[16] = subtle->colors.bg_panel;
-  colors[17] = subtle->colors.bo_active;
-  colors[18] = subtle->colors.bo_inactive;
-  colors[19] = subtle->colors.bg;
-  colors[20] = subtle->colors.separator;
+  colors[3]  = subtle->colors.fg_focus;
+  colors[4]  = subtle->colors.bg_focus;
+  colors[5]  = subtle->colors.bo_focus;
+  colors[6]  = subtle->colors.fg_urgent;
+  colors[7]  = subtle->colors.bg_urgent;
+  colors[8]  = subtle->colors.bo_urgent;
+  colors[9]  = subtle->colors.fg_occupied;
+  colors[10] = subtle->colors.bg_occupied;
+  colors[11] = subtle->colors.bo_occupied;
+  colors[12] = subtle->colors.fg_views;
+  colors[13] = subtle->colors.bg_views;
+  colors[14] = subtle->colors.bo_views;
+  colors[15] = subtle->colors.fg_sublets;
+  colors[16] = subtle->colors.bg_sublets;
+  colors[17] = subtle->colors.bo_sublets;
+  colors[18] = subtle->colors.bo_active;
+  colors[19] = subtle->colors.bo_inactive;
+  colors[20] = subtle->colors.panel;
+  colors[21] = subtle->colors.bg;
+  colors[22] = subtle->colors.stipple;
+  colors[23] = subtle->colors.separator;
 
   /* EWMH: Colors */
   subEwmhSetCardinals(ROOT, SUB_EWMH_SUBTLE_COLORS, (long *)colors, NCOLORS);
