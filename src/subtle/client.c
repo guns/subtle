@@ -157,7 +157,6 @@ subClientNew(Window win)
 
   /* EWMH: Gravity, screen and desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&subtle->gravity, 1);
-  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_SCREEN, (long *)&c->screen, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
   subSharedLogDebug("new=client, name=%s, instance=%s, klass=%s, win=%#lx\n",
@@ -193,7 +192,7 @@ subClientConfigure(SubClient *c)
   ev.y                 = r.y;
   ev.width             = r.width;
   ev.height            = r.height;
-  ev.border_width      = BORDER(c);
+  ev.border_width      = 0;
   ev.above             = None;
   ev.override_redirect = False;
 
@@ -691,10 +690,6 @@ subClientSetGravity(SubClient *c,
               c->geom.y = c->geom.y - s1->geom.y + s2->geom.y;
 
               c->screen = screen;
-
-              /* EWMH: Screen */
-              subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_SCREEN,
-                (long *)&c->screen, 1);
             }
         }
       /* Exclude desktop type windows */
@@ -723,11 +718,9 @@ subClientSetGravity(SubClient *c,
 
           subClientResize(c);
 
-          /* EWMH: Gravity and screen */
+          /* EWMH: Gravity */
           subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY,
             (long *)&c->gravity, 1);
-          subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_SCREEN,
-            (long *)&c->screen, 1);
 
           XSync(subtle->dpy, False); ///< Sync all changes
         }

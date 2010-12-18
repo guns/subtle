@@ -321,7 +321,7 @@ EventConfigureRequest(XConfigureRequestEvent *ev)
       wc.y            = ev->y;
       wc.width        = ev->width;
       wc.height       = ev->height;
-      wc.border_width = subtle->bw;
+      wc.border_width = 0;
       wc.sibling      = ev->above;
       wc.stack_mode   = ev->detail;
 

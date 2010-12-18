@@ -2891,6 +2891,7 @@ subRubyLoadConfig(void)
   rargs[0] = str;
   rargs[1] = rb_str_new2(path);
   rargs[2] = conf;
+
   rb_protect(RubyWrapEval, (VALUE)&rargs, &state);
   if(state)
     {
