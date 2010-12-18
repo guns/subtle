@@ -12,11 +12,16 @@
 #include <unistd.h>
 #include "subtlext.h"
 
+#ifdef HAVE_X11_XPM_H
+  #include <X11/xpm.h>
+#endif /* HAVE_X11_XPM_H */
+
 /* Typedef {{{ */
 typedef struct subtlexticon_t
 {
   GC           gc;
   Pixmap       pixmap;
+  int          flags;
   unsigned int width, height;
   VALUE        instance;
 } SubtlextIcon;
@@ -115,21 +120,42 @@ subIconInit(int argc,
                 rb_raise(rb_eStandardError, "Icon not found `%s'", file);
             }
 
-          /* Reading icon file */
+          /* Reading bitmap or pixmap icon file */
           if(BitmapSuccess != XReadBitmapFile(display, DefaultRootWindow(display),
               buf, &i->width, &i->height, &i->pixmap, &hotx, &hoty))
             {
-              rb_raise(rb_eStandardError, "Icon not found `%s'", buf);
+#ifdef HAVE_X11_XPM_H
+              XpmAttributes attrs;
 
-              return Qnil;
+              /* Init attributes */
+              attrs.colormap  = DefaultColormap(display, DefaultScreen(display));
+              attrs.depth     = DefaultDepth(display, DefaultScreen(display));
+              attrs.visual    = DefaultVisual(display, DefaultScreen(display));
+              attrs.valuemask = XpmColormap|XpmDepth|XpmVisual;
+
+              if(XpmSuccess == XpmReadFileToPixmap(display,
+                  DefaultRootWindow(display), buf, &i->pixmap, NULL, &attrs))
+                {
+                  i->flags  |= SUB_TEXT_PIXMAP;
+                  i->width   = attrs.width;
+                  i->height  = attrs.height;
+                }
+              else
+#endif /* HAVE_X11_XPM_H */
+                {
+                  rb_raise(rb_eStandardError, "Icon not found `%s'", buf);
+
+                  return Qnil;
+               }
             }
         }
       else if(FIXNUM_P(arg1) && FIXNUM_P(arg2)) ///< Icon dimensions
         {
           /* Create empty pixmap */
-          i->width  = FIX2INT(arg1);
-          i->height = FIX2INT(arg2);
-          i->pixmap = XCreatePixmap(display, DefaultRootWindow(display),
+          i->flags  |= SUB_TEXT_BITMAP;
+          i->width   = FIX2INT(arg1);
+          i->height  = FIX2INT(arg2);
+          i->pixmap  = XCreatePixmap(display, DefaultRootWindow(display),
             i->width, i->height, 1);
         }
       else rb_raise(rb_eArgError, "Unexpected value-types");
@@ -301,7 +327,8 @@ subIconToString(VALUE self)
     {
       char buf[20] = { 0 };
 
-      snprintf(buf, sizeof(buf), "%s!%ld%s", SEPARATOR, i->pixmap, SEPARATOR);
+      snprintf(buf, sizeof(buf), "%s%c%ld%s", SEPARATOR,
+        i->flags & SUB_TEXT_PIXMAP ? '&' : '!', i->pixmap, SEPARATOR);
       ret = rb_str_new2(buf);
     }
 
