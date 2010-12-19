@@ -274,7 +274,7 @@
 #define SUB_TRAY_UNMAP                (1L << 10)                  ///< Ignore unmaps
 
 /* View flags */
-#define SUB_VIEW_URGENT               (1L << 10)                  ///< Urgent views
+#define SUB_VIEW_DYNAMIC              (1L << 10)                  ///< Dynamic views
 
 /* Special flags */
 #define SUB_RUBY_DATA                 (1L << 31)                  ///< Object stores ruby data

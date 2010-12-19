@@ -128,6 +128,11 @@ subPanelConfigure(SubPanel *p)
               {
                 SubView *v = VIEW(subtle->views->data[i]);
 
+                /* Check dynamic views */
+                if(v->flags & SUB_VIEW_DYNAMIC &&
+                    !(subtle->visible_clients & v->tags))
+                  continue;
+
                 /* Font offset, panel border and padding without icon */
                 if(!v->text)
                   {
@@ -168,11 +173,36 @@ subPanelUpdate(SubPanel *p)
   assert(p);
 
   /* Handle panel item type */
-  switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_TITLE))
+  switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_VIEWS|SUB_PANEL_TITLE))
     {
       case SUB_PANEL_SUBLET: /* {{{ */
         XResizeWindow(subtle->dpy, p->win, p->width - 2 * subtle->pbw,
           subtle->th - 2 * subtle->pbw);
+        break; /* }}} */
+      case SUB_PANEL_VIEWS: /* {{{ */
+        p->width = 0;
+
+        if(0 < subtle->views->ndata)
+          {
+            int i;
+
+            /* Update for each view */
+            for(i = 0; i < subtle->views->ndata; i++)
+              {
+                SubView *v = VIEW(subtle->views->data[i]);
+
+                /* Check dynamic views */
+                if(v->flags & SUB_VIEW_DYNAMIC &&
+                    !(subtle->visible_clients & v->tags))
+                  continue;
+
+                XMoveResizeWindow(subtle->dpy, p->views[i], p->width, 0,
+                  v->width - 2 * subtle->pbw, subtle->th - 2 * subtle->pbw);
+                p->width += v->width;
+              }
+
+            XResizeWindow(subtle->dpy, p->win, p->width, subtle->th);
+          }
         break; /* }}} */
       case SUB_PANEL_TITLE: /* {{{ */
         p->width = 0;

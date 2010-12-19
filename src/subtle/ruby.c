@@ -1686,6 +1686,7 @@ RubyConfigView(int argc,
   VALUE *argv,
   VALUE self)
 {
+  int flags = 0;
   VALUE name = Qnil, match = Qnil, params = Qnil, value = Qnil, icon = value;
 
   rb_scan_args(argc, argv, "11", &name, &match);
@@ -1706,6 +1707,11 @@ RubyConfigView(int argc,
       if(T_HASH == rb_type(value = rb_hash_lookup(params,
           CHAR2SYM("match"))))
         match = rb_hash_lookup(value, Qnil); ///< Lazy eval
+
+      /* Check dynamic */
+      if(Qtrue == (value = rb_hash_lookup(params,
+          CHAR2SYM("dynamic"))))
+        flags |= SUB_VIEW_DYNAMIC;
 
       /* Check icon */
       switch(rb_type(value = rb_hash_lookup(params, CHAR2SYM("icon"))))
@@ -1749,6 +1755,8 @@ RubyConfigView(int argc,
           /* Finally create new view */
           if((v = subViewNew(RSTRING_PTR(name), re)))
             {
+              v->flags |= flags;
+
               subArrayPush(subtle->views, (void *)v);
 
               /* Combine icon and text */

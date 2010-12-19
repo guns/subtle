@@ -384,6 +384,7 @@ EventDestroy(XDestroyWindowEvent *ev)
       subClientPublish();
       subClientKill(c);
       subScreenConfigure();
+      subScreenUpdate();
       subScreenRender();
     }
 
@@ -749,6 +750,7 @@ EventMapRequest(XMapRequestEvent *ev)
             subArraySort(subtle->clients, subClientCompare);
 
           subScreenConfigure();
+          subScreenUpdate();
           subScreenRender();
 
           EventQueuePop(subtle->clients->ndata - 1, 0);
@@ -856,6 +858,7 @@ EventMessage(XClientMessageEvent *ev)
                           !VISIBLE(subtle->visible_tags, c))
                         subSubtleFocus(True);
 
+                      subScreenUpdate();
                       subScreenRender();
                     }
                   else EventQueuePush(ev);
