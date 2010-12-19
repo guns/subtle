@@ -608,7 +608,12 @@ end
 #              names of tags.
 #
 #              Example: match "terms"
-
+#
+# [*dynamic*]  This property hides unoccupied views, views that display no
+#              windows.
+#
+#              Example: dynamic true
+#
 # [*icon*]     This property adds an icon in front of the view name. The icon
 #              can either be path to an icon or an instance of Subtlext::Icon.
 #
