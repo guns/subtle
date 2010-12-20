@@ -111,34 +111,34 @@ end
 # http://subforge.org/wiki/subtle/Themes
 
 # Colors of focus window title
-color :title_fg,         "#fecf35"
-color :title_bg,         "#202020"
-color :title_border,     "#303030"
+color :title_fg,        "#fecf35"
+color :title_bg,        "#202020"
+color :title_border,    "#303030"
 
 # Colors of the active views
-color :focus_fg,         "#fecf35"
-color :focus_bg,         "#202020"
-color :focus_border,     "#303030"
+color :focus_fg,        "#fecf35"
+color :focus_bg,        "#202020"
+color :focus_border,    "#303030"
 
 # Colors of urgent window titles and views
-color :urgent_fg,        "#ff9800"
-color :urgent_bg,        "#202020"
-color :urgent_border,    "#303030"
+color :urgent_fg,       "#ff9800"
+color :urgent_bg,       "#202020"
+color :urgent_border,   "#303030"
 
 # Colors of occupied views (views with clients)
-color :occupied_fg,      "#b8b8b8"
-color :occupied_bg,      "#202020"
-color :occupied_border,  "#303030"
+color :occupied_fg,     "#b8b8b8"
+color :occupied_bg,     "#202020"
+color :occupied_border, "#303030"
 
 # Color of view buttons
-color :views_fg,         "#757575"
-color :views_bg,         "#202020"
-color :views_border,     "#303030"
+color :views_fg,        "#757575"
+color :views_bg,        "#202020"
+color :views_border,    "#303030"
 
 # Colors of sublets
-color :sublets_fg,       "#757575"
-color :sublets_bg,       "#202020"
-color :sublets_border,   "#303030"
+color :sublets_fg,      "#757575"
+color :sublets_bg,      "#202020"
+color :sublets_border,  "#303030"
 
 # Border colors of active/inactive windows
 color :client_active,   "#303030"

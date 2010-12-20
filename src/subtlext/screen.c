@@ -16,7 +16,7 @@ VALUE
 ScreenList(void)
 {
   unsigned long nworkareas = 0;
-  VALUE method = Qnil, klass = Qnil, array = Qnil, screen = Qnil, geometry = Qnil;
+  VALUE method = Qnil, klass = Qnil, array = Qnil, screen = Qnil, geom = Qnil;
   long *workareas = NULL;
 
   subSubtlextConnect(NULL); ///< Implicit open connection
@@ -36,11 +36,11 @@ ScreenList(void)
       for(i = 0; i < nworkareas / 4; i++)
         {
           /* Create new screen */
-          screen   = rb_funcall(klass, method, 1, INT2FIX(i));
-          geometry = subGeometryInstantiate(workareas[i * 4 + 0],
+          screen = rb_funcall(klass, method, 1, INT2FIX(i));
+          geom   = subGeometryInstantiate(workareas[i * 4 + 0],
             workareas[i * 4 + 1], workareas[i * 4 + 2], workareas[i * 4 + 3]);
 
-          rb_iv_set(screen, "@geometry", geometry);
+          rb_iv_set(screen, "@geometry", geom);
           rb_ary_push(array, screen);
         }
 
