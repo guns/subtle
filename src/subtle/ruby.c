@@ -110,17 +110,22 @@ RubyConvert(void *data)
           rb_iv_set(object, "@role",     c->role ? rb_str_new2(c->role) : Qnil);
           rb_iv_set(object, "@flags",    INT2FIX(flags));
         } /* }}} */
-      else if(c->flags & SUB_TYPE_VIEW) /* {{{ */
+      else if(c->flags & SUB_TYPE_SCREEN) /* {{{ */
         {
-          SubView *v = VIEW(c);
+          SubScreen *s = SCREEN(c);
+          VALUE klass_geom, geom = Qnil;
 
-          /* Create view instance */
-          id     = subArrayIndex(subtle->views, (void *)v);
-          klass  = rb_const_get(subtlext, rb_intern("View"));
-          object = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(v->name));
+          /* Create tag instance */
+          id         = subArrayIndex(subtle->screens, (void *)s);
+          klass      = rb_const_get(subtlext, rb_intern("Screen"));
+          klass_geom = rb_const_get(subtlext, rb_intern("Geometry"));
+          object     = rb_funcall(klass, rb_intern("new"), 1, INT2FIX(id));
+          geom       = rb_funcall(klass_geom, rb_intern("new"), 4,
+            INT2FIX(s->geom.x), INT2FIX(s->geom.y),
+            INT2FIX(s->geom.width), INT2FIX(s->geom.height));
 
           /* Set properties */
-          rb_iv_set(object, "@id",  INT2FIX(id));
+          rb_iv_set(object, "@geometry", geom);
         } /* }}} */
       else if(c->flags & SUB_TYPE_TAG) /* {{{ */
         {
@@ -133,6 +138,18 @@ RubyConvert(void *data)
 
           /* Set properties */
           rb_iv_set(object, "@id", INT2FIX(id));
+        } /* }}} */
+      else if(c->flags & SUB_TYPE_VIEW) /* {{{ */
+        {
+          SubView *v = VIEW(c);
+
+          /* Create view instance */
+          id     = subArrayIndex(subtle->views, (void *)v);
+          klass  = rb_const_get(subtlext, rb_intern("View"));
+          object = rb_funcall(klass, rb_intern("new"), 1, rb_str_new2(v->name));
+
+          /* Set properties */
+          rb_iv_set(object, "@id",  INT2FIX(id));
         } /* }}} */
     }
 
@@ -2455,11 +2472,11 @@ RubySubletBackgroundWriter(VALUE self,
 
 /* RubySubletGeometryReader {{{ */
 /*
- * call-seq: gemetry -> Subtlext::Geometry
+ * call-seq: geometry -> Subtlext::Geometry
  *
  * Get geometry of a sublet
  *
- *  win.geometry
+ *  sublet.geometry
  *  => #<Subtlext::Geometry:xxx>
  */
 
@@ -2496,6 +2513,28 @@ RubySubletGeometryReader(VALUE self)
 
       if(wins) XFree(wins);
     }
+
+  return geometry;
+} /* }}} */
+
+/* RubySubletScreenReader {{{ */
+/*
+ * call-seq: screen -> Subtlext::Screen
+ *
+ * Get screen of a sublet
+ *
+ *  sublet.screen
+ *  => #<Subtlext::screen:xxx>
+ */
+
+VALUE
+RubySubletScreenReader(VALUE self)
+{
+  SubPanel *p = NULL;
+  VALUE geometry = Qnil;
+
+  Data_Get_Struct(self, SubPanel, p);
+  if(p) geometry = RubyConvert(p->screen);
 
   return geometry;
 } /* }}} */
@@ -2819,6 +2858,7 @@ subRubyInit(void)
   rb_define_method(sublet, "foreground=",    RubySubletForegroundWriter,  1);
   rb_define_method(sublet, "background=",    RubySubletBackgroundWriter,  1);
   rb_define_method(sublet, "geometry",       RubySubletGeometryReader,    0);
+  rb_define_method(sublet, "screen",         RubySubletScreenReader,      0);
   rb_define_method(sublet, "show",           RubySubletShow,              0);
   rb_define_method(sublet, "hide",           RubySubletHide,              0);
   rb_define_method(sublet, "hidden?",        RubySubletHidden,            0);
