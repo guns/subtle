@@ -899,7 +899,8 @@ RubyWrapLoadPanels(VALUE data)
                       /* Check if screen is empty */
                       if(NULL == sublet->screen)
                         {
-                          sublet->flags |= SUB_PANEL_SEPARATOR2;
+                          sublet->flags  |= SUB_PANEL_SEPARATOR2;
+                          sublet->screen  = s;
 
                           subArrayInsert(s->panels, pos++, (void *)sublet);
                           XReparentWindow(subtle->dpy, sublet->win, panel, 0, 0);
