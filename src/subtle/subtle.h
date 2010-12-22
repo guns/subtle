@@ -252,13 +252,12 @@
 #define SUB_SUBTLE_RUN                (1L << 3)                   ///< Run event loop
 #define SUB_SUBTLE_URGENT             (1L << 4)                   ///< Urgent transients
 #define SUB_SUBTLE_RESIZE             (1L << 5)                   ///< Respect size
-#define SUB_SUBTLE_BACKGROUND         (1L << 6)                   ///< Set root background
-#define SUB_SUBTLE_XINERAMA           (1L << 7)                   ///< Using Xinerama
-#define SUB_SUBTLE_XRANDR             (1L << 8)                   ///< Using Xrandr
-#define SUB_SUBTLE_EWMH               (1L << 9)                   ///< EWMH set
-#define SUB_SUBTLE_REPLACE            (1L << 10)                  ///< Replace previous wm
-#define SUB_SUBTLE_RESTART            (1L << 11)                  ///< Restart
-#define SUB_SUBTLE_ESCAPE             (1L << 12)                  ///< Use escape key
+#define SUB_SUBTLE_XINERAMA           (1L << 6)                   ///< Using Xinerama
+#define SUB_SUBTLE_XRANDR             (1L << 7)                   ///< Using Xrandr
+#define SUB_SUBTLE_EWMH               (1L << 8)                   ///< EWMH set
+#define SUB_SUBTLE_REPLACE            (1L << 9)                   ///< Replace previous wm
+#define SUB_SUBTLE_RESTART            (1L << 10)                  ///< Restart
+#define SUB_SUBTLE_ESCAPE             (1L << 11)                  ///< Use escape key
 
 /* Tag flags */
 #define SUB_TAG_GRAVITY               (1L << 10)                  ///< Gravity property
