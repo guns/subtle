@@ -683,11 +683,34 @@ RubyEvalPanel(VALUE ary,
               /* Check for sublets */
               for(j = 0; j < subtle->sublets->ndata; j++)
                 {
-                  SubPanel *sublet = PANEL(subtle->sublets->data[j]);
+                  SubPanel *p2 = PANEL(subtle->sublets->data[j]);
 
-                  if(entry == CHAR2SYM(sublet->sublet->name))
+                  if(entry == CHAR2SYM(p2->sublet->name))
                     {
-                      p = sublet;
+                      /* Avoid adding a sublet multiple times */
+                      if(p2->screen)
+                        {
+                          int mask = 0;
+
+                          /* Copy sublet */
+                          p = subPanelNew(SUB_PANEL_COPY);
+
+                          p->flags  |= SUB_PANEL_SUBLET;
+                          p->sublet  = p2->sublet;
+
+                          /* Update window input mask */
+                          if(p->sublet->flags & SUB_SUBLET_DOWN)
+                            mask |= ButtonPressMask;
+                          if(p->sublet->flags & SUB_SUBLET_OVER)
+                            mask |= EnterWindowMask;
+                          if(p->sublet->flags & SUB_SUBLET_OUT)
+                            mask |= LeaveWindowMask;
+
+                          XSelectInput(subtle->dpy, p->win, mask);
+
+                          printf("Cloned sublet (%s)\n", p->sublet->name);
+                        }
+                      else p = p2;
 
                       break;
                     }
@@ -2038,11 +2061,12 @@ RubySubletConfigure(VALUE self,
           VALUE proc = Qnil;
 
           /* Assume latest sublet */
-          proc    = rb_block_proc();
+          proc            = rb_block_proc();
           p->sublet->name = strdup(SYM2CHAR(name));
 
           /* Define configure method */
-          rb_funcall(rb_singleton_class(p->sublet->instance), rb_intern("define_method"),
+          rb_funcall(rb_singleton_class(p->sublet->instance),
+            rb_intern("define_method"),
             2, CHAR2SYM("__configure"), proc);
         }
     }
@@ -2113,12 +2137,12 @@ RubySubletOn(VALUE self,
 
           RubyMethods methods[] =
           {
-            { CHAR2SYM("run"),        CHAR2SYM("__run"),    SUB_PANEL_RUN,    1 },
-            { CHAR2SYM("data"),       CHAR2SYM("__data"),   SUB_PANEL_DATA,   2 },
-            { CHAR2SYM("watch"),      CHAR2SYM("__watch"),  SUB_PANEL_WATCH,  1 },
-            { CHAR2SYM("mouse_down"), CHAR2SYM("__down"),   SUB_PANEL_DOWN,   4 },
-            { CHAR2SYM("mouse_over"), CHAR2SYM("__over"),   SUB_PANEL_OVER,   1 },
-            { CHAR2SYM("mouse_out"),  CHAR2SYM("__out"),    SUB_PANEL_OUT,    1 }
+            { CHAR2SYM("run"),        CHAR2SYM("__run"),    SUB_SUBLET_RUN,    1 },
+            { CHAR2SYM("data"),       CHAR2SYM("__data"),   SUB_SUBLET_DATA,   2 },
+            { CHAR2SYM("watch"),      CHAR2SYM("__watch"),  SUB_SUBLET_WATCH,  1 },
+            { CHAR2SYM("mouse_down"), CHAR2SYM("__down"),   SUB_SUBLET_DOWN,   4 },
+            { CHAR2SYM("mouse_over"), CHAR2SYM("__over"),   SUB_SUBLET_OVER,   1 },
+            { CHAR2SYM("mouse_out"),  CHAR2SYM("__out"),    SUB_SUBLET_OUT,    1 }
           };
 
           /* Collect stuff */
@@ -2135,15 +2159,18 @@ RubySubletOn(VALUE self,
                   /* Check proc arity */
                   if(-1 == arity || (1 <= arity && methods[i].arity >= arity))
                     {
-                      p->flags |= methods[i].flags;
+                      p->sublet->flags |= methods[i].flags;
 
                       /* Create instance method from proc */
                       rb_funcall(sing, meth, 2, methods[i].real, proc);
 
                       /* Update window input mask */
-                      if(p->flags & SUB_PANEL_DOWN) mask |= ButtonPressMask;
-                      if(p->flags & SUB_PANEL_OVER) mask |= EnterWindowMask;
-                      if(p->flags & SUB_PANEL_OUT)  mask |= LeaveWindowMask;
+                      if(p->sublet->flags & SUB_SUBLET_DOWN)
+                        mask |= ButtonPressMask;
+                      if(p->sublet->flags & SUB_SUBLET_OVER)
+                        mask |= EnterWindowMask;
+                      if(p->sublet->flags & SUB_SUBLET_OUT)
+                        mask |= LeaveWindowMask;
 
                       XSelectInput(subtle->dpy, p->win, mask);
 
@@ -2294,8 +2321,9 @@ RubySubletIntervalWriter(VALUE self,
           p->sublet->interval = FIX2INT(value);
           p->sublet->time     = subSubtleTime() + p->sublet->interval;
 
-          if(0 < p->sublet->interval) p->flags |= SUB_PANEL_INTERVAL;
-          else p->flags &= ~SUB_PANEL_INTERVAL;
+          if(0 < p->sublet->interval)
+            p->sublet->flags |= SUB_SUBLET_INTERVAL;
+          else p->sublet->flags &= ~SUB_SUBLET_INTERVAL;
         }
       else rb_raise(rb_eArgError, "Unknown value type `%s'", rb_obj_classname(value));
     }
@@ -2361,8 +2389,8 @@ RubySubletDataWriter(VALUE self,
       /* Check value type */
       if(T_STRING == rb_type(value))
         {
-          p->width = subSharedTextParse(subtle->dpy, subtle->font,
-            p->sublet->text, RSTRING_PTR(value)) +
+          p->sublet->width = subSharedTextParse(subtle->dpy,
+            subtle->font, p->sublet->text, RSTRING_PTR(value)) +
             2 * subtle->pbw + subtle->padding.x + subtle->padding.y;
         }
       else rb_raise(rb_eArgError, "Unknown value type");
@@ -2641,14 +2669,15 @@ RubySubletWatch(VALUE self,
   Data_Get_Struct(self, SubPanel, p);
   if(p)
     {
-      if(!(p->flags & (SUB_PANEL_SOCKET|SUB_PANEL_INOTIFY)) && RTEST(value))
+      if(!(p->sublet->flags & (SUB_SUBLET_SOCKET|SUB_SUBLET_INOTIFY)) &&
+          RTEST(value))
         {
           /* Socket file descriptor or ruby socket */
           if(FIXNUM_P(value) || rb_respond_to(value, rb_intern("fileno")))
             {
               int flags = 0;
 
-              p->flags |= SUB_PANEL_SOCKET;
+              p->sublet->flags |= SUB_SUBLET_SOCKET;
 
               /* Get socket file descriptor */
               if(FIXNUM_P(value)) p->sublet->watch = FIX2INT(value);
@@ -2677,7 +2706,7 @@ RubySubletWatch(VALUE self,
               if(0 < (p->sublet->watch = inotify_add_watch(subtle->notify,
                   watch, IN_MODIFY)))
                 {
-                  p->flags |= SUB_PANEL_INOTIFY;
+                  p->sublet->flags |= SUB_SUBLET_INOTIFY;
 
                   XSaveContext(subtle->dpy, subtle->windows.support, p->sublet->watch,
                     (void *)p);
@@ -2715,23 +2744,25 @@ RubySubletUnwatch(VALUE self)
   Data_Get_Struct(self, SubPanel, p);
   if(p)
     {
-      if(p->flags & SUB_PANEL_SOCKET) ///< Probably a socket
+      /* Probably a socket */
+      if(p->sublet->flags & SUB_SUBLET_SOCKET)
         {
           XDeleteContext(subtle->dpy, subtle->windows.support, p->sublet->watch);
           subEventWatchDel(p->sublet->watch);
 
-          p->flags &= ~SUB_PANEL_SOCKET;
+          p->sublet->flags &= ~SUB_SUBLET_SOCKET;
           p->sublet->watch  = 0;
 
           ret = Qtrue;
         }
 #ifdef HAVE_SYS_INOTIFY_H
-      else if(p->flags & SUB_PANEL_INOTIFY) /// Inotify file
+      /* Inotify file */
+      else if(p->sublet->flags & SUB_SUBLET_INOTIFY)
         {
           XDeleteContext(subtle->dpy, subtle->windows.support, p->sublet->watch);
           inotify_rm_watch(subtle->notify, p->sublet->watch);
 
-          p->flags &= ~SUB_PANEL_INOTIFY;
+          p->sublet->flags &= ~SUB_SUBLET_INOTIFY;
           p->sublet->watch  = 0;
 
           ret = Qtrue;
@@ -3115,6 +3146,7 @@ subRubyLoadSublet(const char *file)
   rargs[0] = str;
   rargs[1] = rb_str_new2(buf);
   rargs[2] = p->sublet->instance;
+
   rb_protect(RubyWrapEval, (VALUE)&rargs, &state);
   if(state)
     {
@@ -3153,7 +3185,7 @@ subRubyLoadSublet(const char *file)
   if(0 >= p->sublet->interval) p->sublet->interval = 60;
 
   /* First run */
-  if(p->flags & SUB_PANEL_RUN)
+  if(p->sublet->flags & SUB_SUBLET_RUN)
     subRubyCall(SUB_CALL_RUN, p->sublet->instance, NULL);
 
   printf("Loaded sublet (%s)\n", p->sublet->name);
