@@ -1213,8 +1213,7 @@ subClientToggle(SubClient *c,
             }
 
           /* Set screen stick */
-          if(c->flags & SUB_CLIENT_TYPE_DIALOG)
-            subScreenCurrent(&c->screen);
+          subScreenCurrent(&c->screen);
         }
 
       /* Set floating mode */
