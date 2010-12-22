@@ -2742,7 +2742,7 @@ RubySubletUnwatch(VALUE self)
   return ret;
 } /* }}} */
 
-/* Extern */
+/* Public */
 
  /** subRubyInit {{{
   * @brief Init ruby

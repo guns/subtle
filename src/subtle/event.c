@@ -303,14 +303,7 @@ EventConfigureRequest(XConfigureRequestEvent *ev)
 
           /* Check new values */
           if(RECTINRECT(geom, s->geom))
-            {
-              c->geom = geom;
-
-              /* Resize client */
-              subScreenFit(s, &c->geom);
-
-              subClientConfigure(c);
-            }
+            subClientConfigure(c, &geom, False);
         }
     }
   else ///< Unmanaged windows
@@ -650,7 +643,6 @@ EventGrab(XEvent *ev)
                 if(0 <= id && id < subtle->gravities->ndata)
                   {
                     subClientSetGravity(c, id, c->screen, True);
-                    subClientConfigure(c);
                     subClientWarp(c, True);
                     XRaiseWindow(subtle->dpy, c->win);
 
@@ -898,7 +890,6 @@ EventMessage(XClientMessageEvent *ev)
                 VISIBLE(subtle->visible_tags, c))
               {
                 subClientSetGravity(c, (int)ev->data.l[1], c->screen, True);
-                subClientConfigure(c);
                 subClientWarp(c, True);
                 XRaiseWindow(subtle->dpy, c->win);
 
@@ -953,7 +944,6 @@ EventMessage(XClientMessageEvent *ev)
                     if((c = CLIENT(subtle->clients->data[i])) && c->gravity == ev->data.l[0])
                       {
                         subClientSetGravity(c, 0, -1, True); ///< Fallback to first gravity
-                        subClientConfigure(c);
                         subClientWarp(c, True);
                         XRaiseWindow(subtle->dpy, c->win);
                       }
@@ -1215,16 +1205,19 @@ EventMessage(XClientMessageEvent *ev)
             subClientClose(c);
             break; /* }}} */
           case SUB_EWMH_NET_MOVERESIZE_WINDOW: /* {{{ */
-            if(!(c->flags & SUB_CLIENT_MODE_FLOAT))
-              subClientToggle(c, SUB_CLIENT_MODE_FLOAT, True);
+              {
+                XRectangle geom = { 0 };
 
-            c->geom.x      = ev->data.l[1];
-            c->geom.y      = ev->data.l[2];
-            c->geom.width  = ev->data.l[3];
-            c->geom.height = ev->data.l[4];
+                if(!(c->flags & SUB_CLIENT_MODE_FLOAT))
+                  subClientToggle(c, SUB_CLIENT_MODE_FLOAT, True);
 
-            subClientResize(c);
-            subClientConfigure(c);
+                geom.x      = ev->data.l[1];
+                geom.y      = ev->data.l[2];
+                geom.width  = ev->data.l[3];
+                geom.height = ev->data.l[4];
+
+                subClientConfigure(c, &geom, False);
+              }
             break; /* }}} */
           default: break;
         }

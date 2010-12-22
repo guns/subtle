@@ -270,8 +270,8 @@ subScreenConfigure(void)
       /* Check each client */
       for(i = 0; i < subtle->clients->ndata; i++)
         {
+          int gravity = 0, screen = 0, view = 0, visible = 0;
           SubClient *c = CLIENT(subtle->clients->data[i]);
-          int visible = 0;
 
           /* Ignore dead or just iconified clients */
           if(c->flags & SUB_CLIENT_DEAD) continue;
@@ -298,20 +298,17 @@ subScreenConfigure(void)
                       if(s != cs) continue;
                     }
 
-                  subClientSetGravity(c, c->gravities[s->vid], j, False);
-
-                  /* EWMH: Desktop */
-                  subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP,
-                    (long *)&s->vid, 1);
-
+                  gravity = c->gravities[s->vid];
+                  screen  = j;
+                  view    = s->vid;
                   visible++;
                 }
             }
 
-          /* Check visibility after all screens are checked */
+          /* Update client after all screens are checked */
           if(0 < visible)
             {
-              subClientConfigure(c);
+              subClientSetGravity(c, gravity, screen, False);
               subEwmhSetWMState(c->win, NormalState);
 
               /* Special treatment */
@@ -322,6 +319,10 @@ subScreenConfigure(void)
               /* Warp after gravity and screen is set */
               if(c->flags & SUB_CLIENT_MODE_URGENT)
                 subClientWarp(c, True);
+
+              /* EWMH: Desktop */
+              subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP,
+                (long *)&view, 1);
             }
           else ///< Unmap other windows
             {
@@ -609,36 +610,6 @@ subScreenJump(SubScreen *s)
   subViewFocus(VIEW(subArrayGet(subtle->views, s->vid)), True);
 
   subSharedLogDebug("Jump: type=screen\n");
-} /* }}} */
-
- /** SubScreenFit {{{
-  * @brief Fit a rect to in screen boundaries
-  * @param[in]  s  A #SubScreen
-  * @param[in]  r  A XRectangle
-  **/
-
-void
-subScreenFit(SubScreen *s,
-  XRectangle *r)
-{
-  int maxx, maxy;
-
-  assert(s && r);
-
-  /* Check size */
-  if(r->width > s->geom.width)   r->width  = s->geom.width;
-  if(r->height > s->geom.height) r->height = s->geom.height;
-
-  /* Check position */
-  if(r->x < s->geom.x) r->x = s->geom.x;
-  if(r->y < s->geom.y) r->y = s->geom.y;
-
-  /* Check width and height */
-  maxx = s->geom.x + s->geom.width;
-  maxy = s->geom.y + s->geom.height;
-
-  if(r->x > maxx || r->x + r->width > maxx)  r->x = s->geom.x;
-  if(r->y > maxy || r->y + r->height > maxy) r->y = s->geom.y;
 } /* }}} */
 
  /** subScreenPublish {{{
