@@ -3013,7 +3013,8 @@ subRubyReloadConfig(void)
 
   /* Reset before reloading */
   subtle->flags &= (SUB_SUBTLE_DEBUG|SUB_SUBTLE_EWMH|SUB_SUBTLE_RUN|
-    SUB_SUBTLE_XINERAMA|SUB_SUBTLE_XRANDR);
+    SUB_SUBTLE_XINERAMA|SUB_SUBTLE_XRANDR|SUB_SUBTLE_URGENT|
+    SUB_SUBTLE_BACKGROUND);
 
   /* Unregister current sublet config hash */
   rb_gc_unregister_address(&config);
