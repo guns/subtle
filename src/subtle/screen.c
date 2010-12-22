@@ -271,7 +271,7 @@ subScreenConfigure(void)
       for(i = 0; i < subtle->clients->ndata; i++)
         {
           SubClient *c = CLIENT(subtle->clients->data[i]);
-          int gravity = 0, screen = c->screen, view = 0, visible = 0;
+          int gravity = 0, screen = 0, view = 0, visible = 0;
 
           /* Ignore dead or just iconified clients */
           if(c->flags & SUB_CLIENT_DEAD) continue;
@@ -293,12 +293,12 @@ subScreenConfigure(void)
                 {
                   gravity = c->gravities[s->vid];
                   view    = s->vid;
+                  screen  = j;
                   visible++;
 
                   /* Keep screen stick */
-                  if(!(c->flags & (SUB_CLIENT_MODE_STICK|
-                      SUB_CLIENT_TYPE_DIALOG)))
-                    screen  = j;
+                  if(c->flags & SUB_CLIENT_MODE_STICK)
+                    screen = c->screen;
                 }
             }
 
@@ -313,7 +313,7 @@ subScreenConfigure(void)
                 XMapRaised(subtle->dpy, c->win);
               else XMapWindow(subtle->dpy, c->win);
 
-              /* Warp after gravity and screen is set */
+              /* Warp after gravity and screen are set */
               if(c->flags & SUB_CLIENT_MODE_URGENT)
                 subClientWarp(c, True);
 
