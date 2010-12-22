@@ -595,7 +595,7 @@ typedef struct subtag_t /* {{{ */
   char              *name;                                        ///< Tag name
   int               type;                                         ///< Tag screen, type
   unsigned long     gravity;                                      ///< Tag gravity
-  XRectangle        geometry;                                     ///< Tag geometry
+  XRectangle        geom;                                         ///< Tag geometry
   struct subarray_t *matcher;                                     ///< Tag matcher
 } SubTag; /* }}} */
 

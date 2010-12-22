@@ -1584,7 +1584,7 @@ RubyConfigTag(int argc,
 {
   int flags = 0, type = 0;
   unsigned long gravity = 0;
-  XRectangle geometry = { 0 };
+  XRectangle geom = { 0 };
   VALUE name = Qnil, match = Qnil, exclude = Qnil, params = Qnil, value = Qnil;
 
   rb_scan_args(argc, argv, "11", &name, &match);
@@ -1622,7 +1622,7 @@ RubyConfigTag(int argc,
       /* Set geometry */
       if(T_ARRAY == rb_type(value = rb_hash_lookup(params,
           CHAR2SYM("geometry"))) &&
-          RubyGetGeometry(value, &geometry))
+          RubyGetGeometry(value, &geom))
         flags |= SUB_TAG_GEOMETRY;
 
       /* Set window type */
@@ -1685,10 +1685,10 @@ RubyConfigTag(int argc,
             {
               VALUE rargs[2] = { 0 };
 
-              t->flags    |= flags;
-              t->gravity   = gravity;
-              t->geometry  = geometry;
-              t->type      = type;
+              t->flags   |= flags;
+              t->gravity  = gravity;
+              t->geom     = geom;
+              t->type     = type;
 
               /* Add matcher */
               rargs[0] = (VALUE)t;
