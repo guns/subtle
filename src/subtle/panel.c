@@ -34,7 +34,8 @@ subPanelNew(int type)
   sattrs.override_redirect = True;
 
   /* Handle panel item type */
-  switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_VIEWS|SUB_PANEL_TITLE))
+  switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_COPY|
+      SUB_PANEL_VIEWS|SUB_PANEL_TITLE))
     {
       case SUB_PANEL_SUBLET: /* {{{ */
         p->sublet = (struct subsublet_t *)subSharedMemoryAlloc(1,
@@ -44,8 +45,8 @@ subPanelNew(int type)
         p->sublet->time  = subSubtleTime();
         p->sublet->text  = subSharedTextNew();
         p->sublet->fg    = subtle->colors.fg_sublets;
-        p->sublet->bg    = subtle->colors.bg_sublets;
-
+        p->sublet->bg    = subtle->colors.bg_sublets; /* }}} */
+      case SUB_PANEL_COPY: /* {{{ */
         /* Create window */
         p->win = XCreateSimpleWindow(subtle->dpy, ROOT, 0, 0, 1,
           subtle->th, 0, 0, subtle->colors.bg_sublets);
@@ -93,7 +94,8 @@ subPanelNew(int type)
 
   subPanelConfigure(p);
 
-  subSharedLogDebug("new=panel, type=%s\n", SUB_PANEL_VIEWS == type ? "views" : "title");
+  subSharedLogDebug("new=panel, type=%s\n",
+    SUB_PANEL_VIEWS == type ? "views" : "title");
 
   return p;
 } /* }}} */
@@ -176,6 +178,9 @@ subPanelUpdate(SubPanel *p)
   switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_VIEWS|SUB_PANEL_TITLE))
     {
       case SUB_PANEL_SUBLET: /* {{{ */
+        /* Copy width in case of shallow copies */
+        p->width = p->sublet->width;
+
         XResizeWindow(subtle->dpy, p->win, p->width - 2 * subtle->pbw,
           subtle->th - 2 * subtle->pbw);
         break; /* }}} */
@@ -395,8 +400,8 @@ subPanelCompare(const void *a,
   assert(a && b);
 
   /* Include only interval sublets */
-  if(!(p1->flags & (SUB_PANEL_INTERVAL))) return 1;
-  if(!(p2->flags & (SUB_PANEL_INTERVAL))) return -1;
+  if(!(p1->sublet->flags & (SUB_SUBLET_INTERVAL))) return 1;
+  if(!(p2->sublet->flags & (SUB_SUBLET_INTERVAL))) return -1;
 
   return p1->sublet->time < p2->sublet->time ? -1 :
     (p1->sublet->time == p2->sublet->time ? 0 : 1);
@@ -491,7 +496,8 @@ subPanelPublish(void)
         {
           SubPanel *p = PANEL(s->panels->data[j]);
 
-          if(p->flags & SUB_PANEL_SUBLET)
+          /* Include sublets, exclude shallow copies */
+          if(p->flags & SUB_PANEL_SUBLET && !(p->flags & SUB_PANEL_COPY))
             {
               names[idx]  = p->sublet->name;
               wins[idx++] = p->win;
@@ -524,40 +530,44 @@ subPanelKill(SubPanel *p)
   assert(p);
 
   /* Handle panel item type */
-  switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_VIEWS|SUB_PANEL_TRAY))
+  switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_COPY|
+      SUB_PANEL_VIEWS|SUB_PANEL_TRAY))
     {
+      case SUB_PANEL_COPY: break;
       case SUB_PANEL_SUBLET: /* {{{ */
-        subRubyRelease(p->sublet->instance);
-
-        /* Remove socket watch */
-        if(p->flags & SUB_PANEL_SOCKET)
+        if(!(p->flags & SUB_PANEL_COPY))
           {
-            XDeleteContext(subtle->dpy, subtle->windows.support,
-              p->sublet->watch);
-            subEventWatchDel(p->sublet->watch);
-          }
+            subRubyRelease(p->sublet->instance);
+
+            /* Remove socket watch */
+            if(p->sublet->flags & SUB_SUBLET_SOCKET)
+              {
+                XDeleteContext(subtle->dpy, subtle->windows.support,
+                  p->sublet->watch);
+                subEventWatchDel(p->sublet->watch);
+              }
 
 #ifdef HAVE_SYS_INOTIFY_H
-        /* Remove inotify watch */
-        if(p->flags & SUB_PANEL_INOTIFY)
-          {
-            XDeleteContext(subtle->dpy, subtle->windows.support,
-              p->sublet->watch);
-            inotify_rm_watch(subtle->notify, p->sublet->interval);
-          }
+            /* Remove inotify watch */
+            if(p->sublet->flags & SUB_SUBLET_INOTIFY)
+              {
+                XDeleteContext(subtle->dpy, subtle->windows.support,
+                  p->sublet->watch);
+                inotify_rm_watch(subtle->notify, p->sublet->interval);
+              }
 #endif /* HAVE_SYS_INOTIFY_H */
 
-        XDeleteContext(subtle->dpy, p->win, SUBLETID);
+            XDeleteContext(subtle->dpy, p->win, SUBLETID);
 
-        if(p->sublet->name)
-          {
-            printf("Unloaded sublet (%s)\n", p->sublet->name);
-            free(p->sublet->name);
+            if(p->sublet->name)
+              {
+                printf("Unloaded sublet (%s)\n", p->sublet->name);
+                free(p->sublet->name);
+              }
+            if(p->sublet->text) subSharedTextFree(p->sublet->text);
+
+            free(p->sublet);
           }
-        if(p->sublet->text) subSharedTextFree(p->sublet->text);
-
-        free(p->sublet);
-
         break; /* }}} */
       case SUB_PANEL_VIEWS: /* {{{ */
         if(p->views)

@@ -69,7 +69,8 @@ EventFindSublet(int id)
         {
           SubPanel *p = PANEL(s->panels->data[j]);
 
-          if(p->flags & SUB_PANEL_SUBLET && idx++ == id)
+          if(p->flags & SUB_PANEL_SUBLET &&
+              !(p->flags & SUB_PANEL_COPY) && idx++ == id)
             return p;
         }
     }
@@ -344,14 +345,14 @@ EventCrossing(XCrossingEvent *ev)
           }
         else if((p = PANEL(subSubtleFind(ev->window, SUBLETID)))) ///< Sublet
           {
-            if(p->flags & SUB_PANEL_OVER)
+            if(p->sublet->flags & SUB_SUBLET_OVER)
               subRubyCall(SUB_CALL_OVER, p->sublet->instance, NULL);
           }
         break;
       case LeaveNotify:
         if((p = PANEL(subSubtleFind(ev->window, SUBLETID)))) ///< Sublet
           {
-            if(p->flags & SUB_PANEL_OUT)
+            if(p->sublet->flags & SUB_SUBLET_OUT)
               subRubyCall(SUB_CALL_OUT, p->sublet->instance, NULL);
           }
     }
@@ -495,7 +496,7 @@ EventGrab(XEvent *ev)
           }
         else if((p = PANEL(subSubtleFind(ev->xbutton.window, SUBLETID))))
           {
-            if(p->flags & SUB_PANEL_DOWN) ///< Call click method
+            if(p->sublet->flags & SUB_SUBLET_DOWN) ///< Call click method
               {
                 subRubyCall(SUB_CALL_DOWN, p->sublet->instance,
                   (void *)&ev->xbutton);
@@ -1055,7 +1056,7 @@ EventMessage(XClientMessageEvent *ev)
             break; /* }}} */
           case SUB_EWMH_SUBTLE_SUBLET_DATA: /* {{{ */
             if((p = EventFindSublet((int)ev->data.l[0])) &&
-                p->flags & SUB_PANEL_DATA)
+                p->sublet->flags & SUB_SUBLET_DATA)
               subRubyCall(SUB_CALL_DATA, p->sublet->instance, NULL);
             break; /* }}} */
           case SUB_EWMH_SUBTLE_SUBLET_FOREGROUND: /* {{{ */
@@ -1392,7 +1393,7 @@ EventUnmap(XUnmapEvent *ev)
     }
 } /* }}} */
 
-/* Extern */
+/* Public */
 
  /** subEventWatchAdd {{{
   * @brief Add descriptor to watch list
@@ -1553,11 +1554,14 @@ subEventLoop(void)
             {
               p = PANEL(subtle->sublets->data[0]);
 
-              while(p && p->flags & SUB_PANEL_INTERVAL && p->sublet->time <= now)
+              /* Update all pending sublets */
+              while(p && p->sublet->flags & SUB_SUBLET_INTERVAL &&
+                  p->sublet->time <= now)
                 {
                   subRubyCall(SUB_CALL_RUN, p->sublet->instance, NULL);
 
-                  if(p->flags & SUB_PANEL_INTERVAL) ///< This may change in run
+                  /* This may change during run */
+                  if(p->sublet->flags & SUB_SUBLET_INTERVAL) 
                     {
                       p->sublet->time  = now + p->sublet->interval; ///< Adjust seconds
                       p->sublet->time -= p->sublet->time % p->sublet->interval;
@@ -1575,7 +1579,9 @@ subEventLoop(void)
       if(0 < subtle->sublets->ndata)
         {
           p = PANEL(subtle->sublets->data[0]);
-          timeout = p->flags & SUB_PANEL_INTERVAL ? p->sublet->time - now : 60;
+
+          timeout = p->sublet->flags & SUB_SUBLET_INTERVAL ?
+            p->sublet->time - now : 60;
           if(0 >= timeout) timeout = 1; ///< Sanitize
         }
       else timeout = 60;
