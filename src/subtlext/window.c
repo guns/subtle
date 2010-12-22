@@ -78,6 +78,7 @@ WindowExpose(SubtlextWindow *w)
 
       XClearWindow(display, w->win);
 
+      /* Render all text */
       for(i = 0; i < w->ntext; i++)
         subSharedTextRender(display, DefaultGC(display, 0), w->font,
           w->win, w->text[i].x, w->text[i].y, w->fg, w->bg, w->text[i].text);
@@ -584,9 +585,9 @@ subWindowWrite(VALUE self,
 
               w->text[w->ntext].text = subSharedTextNew();
 
-              wt = &w->text[w->ntext];
-              wt->x    = FIX2INT(x);
-              wt->y    = FIX2INT(y);
+              wt    = &w->text[w->ntext];
+              wt->x = xi;
+              wt->y = yi;
 
               w->ntext++;
             }
