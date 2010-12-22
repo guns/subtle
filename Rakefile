@@ -400,6 +400,8 @@ task(PG_SUBTLEXT => [:config])
 # Task: install {{{
 desc("Install subtle")
 task(:install => [:config, :build]) do
+  verbose = (:default != RakeFileUtils.verbose)
+
   # Make install dirs
   FileUtils.mkdir_p(
     [
@@ -414,25 +416,25 @@ task(:install => [:config, :build]) do
   )
 
   # Install config
-  message("INSTALL config\n" % [ @defines["PKG_CONFIG"] ])
+  message("INSTALL config\n")
   FileUtils.install(
     File.join("contrib", @defines["PKG_CONFIG"]),
     @options["configdir"],
-    :mode => 0644, :verbose => false
+    :mode => 0644, :verbose => verbose
   )
 
   # Install subtle
   message("INSTALL %s\n" % [PG_SUBTLE])
   FileUtils.install(
     PG_SUBTLE, @options["bindir"],
-    :mode => 0755, :verbose => false
+    :mode => 0755, :verbose => verbose
   )
 
   # Install subtlext
   message("INSTALL %s\n" % [PG_SUBTLEXT])
   FileUtils.install(
     PG_SUBTLEXT + ".so", @options["extdir"],
-    :mode => 0644, :verbose => false
+    :mode => 0644, :verbose => verbose
   )
 
   # Get path of sed and ruby interpreter
@@ -447,7 +449,7 @@ task(:install => [:config, :build]) do
   FileList["contrib/subtler/*.rb"].collect do |f|
     FileUtils.install(f,
     File.join(@options["extdir"], "subtler"),
-      :mode => 0644, :verbose => false
+      :mode => 0644, :verbose => verbose
     )
   end
 
@@ -456,7 +458,7 @@ task(:install => [:config, :build]) do
   FileList["contrib/sur/*.rb"].collect do |f|
     FileUtils.install(f,
       File.join(@options["extdir"], "sur"),
-      :mode => 0644, :verbose => false
+      :mode => 0644, :verbose => verbose
     )
   end
 
@@ -464,7 +466,7 @@ task(:install => [:config, :build]) do
   message("INSTALL tools\n")
   FileList["contrib/bin/*"].collect do |f|
     FileUtils.install(f, @options["bindir"],
-      :mode => 0755, :verbose => false
+      :mode => 0755, :verbose => verbose
     )
 
     # Update interpreter name
@@ -476,7 +478,7 @@ task(:install => [:config, :build]) do
   message("INSTALL scripts\n")
   FileList["contrib/scripts/*.*"].collect do |f|
     FileUtils.install(f, @options["scriptdir"],
-      :mode => 0644, :verbose => false
+      :mode => 0644, :verbose => verbose
     )
 
     # Update interpreter name
@@ -488,7 +490,74 @@ task(:install => [:config, :build]) do
   message("INSTALL manpages\n")
   FileList["contrib/man/*.*"].collect do |f|
     FileUtils.install(f, @options["mandir"],
-    :mode => 0644, :verbose => false)
+      :mode => 0644, :verbose => verbose
+    )
+  end
+end # }}}
+
+# Task: install {{{
+desc("Uninstall subtle")
+task(:uninstall => [:config]) do
+  verbose = (:default != RakeFileUtils.verbose)
+
+  # Uninstall config
+  message("UNINSTALL config\n")
+  FileUtils.rm_r(
+    @options["configdir"],
+    :verbose => verbose
+  )
+
+  # Uninstall subtle
+  message("UNINSTALL %s\n" % [PG_SUBTLE])
+  FileUtils.rm(
+    File.join(@options["bindir"], PG_SUBTLE),
+    :verbose => verbose
+  )
+
+  # Uninstall subtlext
+  message("UNINSTALL %s\n" % [PG_SUBTLEXT])
+  FileUtils.rm(
+    File.join(@options["extdir"], PG_SUBTLEXT + ".so"),
+    :verbose => verbose
+  )
+
+  # Uninstall subtler
+  message("UNINSTALL subtler\n")
+  FileUtils.rm_r(
+    File.join(@options["extdir"], "subtler"),
+    :verbose => verbose
+  )
+
+  # Uninstall sur
+  message("UNINSTALL sur\n")
+  FileUtils.rm_r(
+    File.join(@options["extdir"], "sur"),
+    :verbose => verbose
+  )
+
+  # Uninstall tools
+  message("UNINSTALL tools\n")
+  FileList["contrib/bin/*"].collect do |f|
+    FileUtils.rm(
+      File.join(@options["bindir"], File.basename(f)),
+      :verbose => verbose
+    )
+  end
+
+  # Install scripts
+  message("UNINSTALL scripts\n")
+  FileUtils.rm_r(
+    @options["datadir"],
+    :verbose => verbose
+  )
+
+  # Install manpages
+  message("UNINSTALL manpages\n")
+  FileList["contrib/man/*.*"].collect do |f|
+    FileUtils.rm(
+      File.join(@options["mandir"], File.basename(f)),
+      :verbose => verbose
+    )
   end
 end # }}}
 
