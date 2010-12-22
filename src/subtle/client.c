@@ -134,10 +134,13 @@ ClientCenter(SubClient *c)
     {
       SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
 
+      /* Set to screen center */
       c->geom.x = s->geom.x +
         (s->geom.width - c->geom.width - 2 * BORDER(c)) / 2;
       c->geom.y = s->geom.y +
         (s->geom.height - c->geom.height - 2 * BORDER(c)) / 2;
+
+      subClientConfigure(c, &c->geom, True);
     }
 } /* }}} */
 
@@ -862,7 +865,8 @@ subClientSetSizeHints(SubClient *c,
   /* Size hints - no idea why it's called normal hints */
   if(XGetWMNormalHints(subtle->dpy, c->win, size, &supplied))
     {
-      if(size->flags & PMinSize) ///< Program min size
+      /* Program min size */
+      if(size->flags & PMinSize)
         {
           /* Limit min size to screen size if larger */
           if(size->min_width)
@@ -873,12 +877,14 @@ subClientSetSizeHints(SubClient *c,
               MIN(MINH, size->min_height);
         }
 
-      if(size->flags & PMaxSize) ///< Program max size
+      /* Program max size */
+      if(size->flags & PMaxSize)
         {
           /* Limit max size to screen size if larger */
           if(size->max_width)
             c->maxw = size->max_width > s->geom.width ?
               s->geom.width : size->max_width;
+
           if(size->max_height)
             c->maxh = size->max_height > s->geom.height - subtle->th ?
               s->geom.height - subtle->th : size->max_height;
@@ -896,7 +902,8 @@ subClientSetSizeHints(SubClient *c,
             }
         }
 
-      if(size->flags & PAspect) ///< Aspect
+      /* Aspect ratios */
+      if(size->flags & PAspect)
         {
           if(size->min_aspect.y)
             c->minr = (float)size->min_aspect.x / size->min_aspect.y;
@@ -904,7 +911,8 @@ subClientSetSizeHints(SubClient *c,
             c->maxr = (float)size->max_aspect.x / size->max_aspect.y;
         }
 
-      if(size->flags & PResizeInc) ///< Resize inc
+      /* Resize increment steps */
+      if(size->flags & PResizeInc)
         {
           if(size->width_inc)  c->incw = size->width_inc;
           if(size->height_inc) c->inch = size->height_inc;
@@ -915,13 +923,15 @@ subClientSetSizeHints(SubClient *c,
           (subtle->flags & SUB_SUBTLE_RESIZE ||
           c->flags & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_RESIZE)))
         {
-          if(size->flags & (USSize|PSize)) ///< User/program size
+          /* User/program size */
+          if(size->flags & (USSize|PSize))
             {
               c->geom.width  = size->width;
               c->geom.height = size->height;
             }
 
-          if(size->flags & (USPosition|PPosition)) ///< User/program position
+          /* User/program position */
+          if(size->flags & (USPosition|PPosition))
             {
               c->geom.x = size->x;
               c->geom.y = size->y;
@@ -1045,7 +1055,7 @@ subClientSetState(SubClient *c,
               case SUB_EWMH_NET_WM_STATE_FULLSCREEN: *flags |= SUB_CLIENT_MODE_FULL;   break;
               case SUB_EWMH_NET_WM_STATE_ABOVE:      *flags |= SUB_CLIENT_MODE_FLOAT;  break;
               case SUB_EWMH_NET_WM_STATE_STICKY:     *flags |= SUB_CLIENT_MODE_STICK;  break;
-              case SUB_EWMH_NET_WM_STATE_MODAL:      *flags |= SUB_CLIENT_MODE_URGENT; break;
+              case SUB_EWMH_NET_WM_STATE_ATTENTION:  *flags |= SUB_CLIENT_MODE_URGENT; break;
               default: break;
             }
         }
@@ -1201,6 +1211,10 @@ subClientToggle(SubClient *c,
                     if(-1 != c->gravity) c->gravities[i] = c->gravity;
                 }
             }
+
+          /* Set screen stick */
+          if(c->flags & SUB_CLIENT_TYPE_DIALOG)
+            subScreenCurrent(&c->screen);
         }
 
       /* Set floating mode */

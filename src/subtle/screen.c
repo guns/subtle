@@ -254,7 +254,7 @@ void
 subScreenConfigure(void)
 {
   int i;
-  SubScreen *s = NULL, *cs = NULL;
+  SubScreen *s = NULL;
   SubView *v = NULL;
 
   /* Reset visible tags and views */
@@ -270,8 +270,8 @@ subScreenConfigure(void)
       /* Check each client */
       for(i = 0; i < subtle->clients->ndata; i++)
         {
-          int gravity = 0, screen = 0, view = 0, visible = 0;
           SubClient *c = CLIENT(subtle->clients->data[i]);
+          int gravity = 0, screen = c->screen, view = 0, visible = 0;
 
           /* Ignore dead or just iconified clients */
           if(c->flags & SUB_CLIENT_DEAD) continue;
@@ -291,17 +291,14 @@ subScreenConfigure(void)
               /* Find visible clients */
               if(VISIBLE(v->tags, c))
                 {
-                  /* Show sticky windows on current screen */
-                  if(c->flags & SUB_CLIENT_MODE_STICK)
-                    {
-                      if(!cs) cs = subScreenCurrent(NULL);
-                      if(s != cs) continue;
-                    }
-
                   gravity = c->gravities[s->vid];
-                  screen  = j;
                   view    = s->vid;
                   visible++;
+
+                  /* Keep screen stick */
+                  if(!(c->flags & (SUB_CLIENT_MODE_STICK|
+                      SUB_CLIENT_TYPE_DIALOG)))
+                    screen  = j;
                 }
             }
 
