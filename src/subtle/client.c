@@ -708,16 +708,14 @@ subClientSetGravity(SubClient *c,
         {
           if(-1 != screen && c->screen != screen)
             {
-              SubScreen *s1 = NULL, *s2 = NULL;
-
-              /* Get screens */
-              s1 = SCREEN(subArrayGet(subtle->screens,
+              SubScreen *s2 = SCREEN(subArrayGet(subtle->screens,
                 -1 != c->screen ? c->screen : 0));
-              s2 = SCREEN(subArrayGet(subtle->screens, screen));
 
               /* Update screen offsets */
-              geom.x = geom.x - s1->geom.x + s2->geom.x;
-              geom.y = geom.y - s1->geom.y + s2->geom.y;
+              geom.x      = c->geom.x - s2->geom.x + s->geom.x;
+              geom.y      = c->geom.y - s2->geom.y + s->geom.y;
+              geom.width  = c->geom.width;
+              geom.height = c->geom.height;
 
               c->screen = screen;
 
