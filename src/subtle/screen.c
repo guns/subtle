@@ -54,6 +54,8 @@ ScreenPublish(void)
   subSharedLogDebug("publish=screen, screens=%d\n", subtle->screens->ndata);
 } /* }}} */
 
+/* Public */
+
  /** subScreenInit {{{
   * @brief Init screens
   **/

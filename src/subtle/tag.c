@@ -61,6 +61,8 @@ TagFind(char *name)
   return NULL;
 } /* }}} */
 
+/* Public */
+
  /** subTagNew {{{
   * @brief Create new tag
   * @param[in]   name       Name of the tag

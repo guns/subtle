@@ -78,6 +78,8 @@ DisplayClaim(void)
   return success;
 } /* }}} */
 
+/* Public */
+
  /** subDisplayInit {{{
   * @brief Open connection to X server and create display
   * @param[in]  display  The display name as string
