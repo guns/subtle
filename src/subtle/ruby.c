@@ -1486,8 +1486,6 @@ RubyConfigColor(VALUE self,
         {
           subtle->colors.bg = subSharedParseColor(subtle->dpy,
             RSTRING_PTR(value));
-
-          subtle->flags |= SUB_SUBTLE_BACKGROUND;
         }
       else if(CHAR2SYM("separator") == option)
         {
@@ -2949,6 +2947,12 @@ subRubyLoadConfig(void)
       (t = subTagNew("default", NULL)))
     subArrayPush(subtle->tags, (void *)t);
 
+  /* Set default values for optional colors */
+  subtle->colors.fg_urgent = -1;
+  subtle->colors.bg_urgent = -1;
+  subtle->colors.bo_urgent = -1;
+  subtle->colors.bg        = -1;
+
   /* Create and register sublet config hash */
   config = rb_hash_new();
   rb_gc_register_address(&config);
@@ -3013,8 +3017,7 @@ subRubyReloadConfig(void)
 
   /* Reset before reloading */
   subtle->flags &= (SUB_SUBTLE_DEBUG|SUB_SUBTLE_EWMH|SUB_SUBTLE_RUN|
-    SUB_SUBTLE_XINERAMA|SUB_SUBTLE_XRANDR|SUB_SUBTLE_URGENT|
-    SUB_SUBTLE_BACKGROUND);
+    SUB_SUBTLE_XINERAMA|SUB_SUBTLE_XRANDR|SUB_SUBTLE_URGENT);
 
   /* Unregister current sublet config hash */
   rb_gc_unregister_address(&config);

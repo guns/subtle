@@ -281,13 +281,7 @@ subPanelRender(SubPanel *p)
                 SubView *v = VIEW(subtle->views->data[i]);
 
                 /* Select color pair */
-                if(subtle->urgent_tags & v->tags)
-                  {
-                    fg = subtle->colors.fg_urgent;
-                    bg = subtle->colors.bg_urgent;
-                    bo = subtle->colors.bo_urgent;
-                  }
-                else if(p->screen->vid == i)
+                if(p->screen->vid == i)
                   {
                     fg = subtle->colors.fg_focus;
                     bg = subtle->colors.bg_focus;
@@ -304,6 +298,17 @@ subPanelRender(SubPanel *p)
                     fg = subtle->colors.fg_views;
                     bg = subtle->colors.bg_views;
                     bo = subtle->colors.bo_views;
+                  }
+
+                /* Add urgent colors */
+                if(subtle->urgent_tags & v->tags)
+                  {
+                    if(-1 != subtle->colors.fg_urgent)
+                      fg = subtle->colors.fg_urgent;
+                    if(-1 != subtle->colors.bg_urgent)
+                      bg = subtle->colors.bg_urgent;
+                    if(-1 != subtle->colors.bo_urgent)
+                      bo = subtle->colors.bo_urgent;
                   }
 
                 /* Set window background and border*/
@@ -338,7 +343,7 @@ subPanelRender(SubPanel *p)
               {
                 int x = 0;
                 char buf[50] = { 0 };
-                long fg = 0, bg = 0;
+                long fg = 0, bg = 0, bo = 0;
 
                 DEAD(c);
 
@@ -357,19 +362,24 @@ subPanelRender(SubPanel *p)
                 snprintf(buf + x, sizeof(buf), "%s", c->name);
 
                 /* Select color pair */
+                fg = subtle->colors.fg_title;
+                bg = subtle->colors.bg_title;
+                bo = subtle->colors.bo_title;
+
+                /* Add urgent colors */
                 if(c->flags & SUB_CLIENT_MODE_URGENT)
                   {
-                    fg = subtle->colors.fg_urgent;
-                    bg = subtle->colors.bg_urgent;
-                  }
-                else
-                  {
-                    fg = subtle->colors.fg_title;
-                    bg = subtle->colors.bg_title;
+                    if(-1 != subtle->colors.fg_urgent)
+                      fg = subtle->colors.fg_urgent;
+                    if(-1 != subtle->colors.bg_urgent)
+                      bg = subtle->colors.bg_urgent;
+                    if(-1 != subtle->colors.bo_urgent)
+                      bo = subtle->colors.bo_urgent;
                   }
 
                 /* Set window background */
                 XSetWindowBackground(subtle->dpy, p->win, bg);
+                XSetWindowBorder(subtle->dpy, p->win, bo);
                 XClearWindow(subtle->dpy, p->win);
 
                 subSharedTextDraw(subtle->dpy, subtle->gcs.font, subtle->font,
