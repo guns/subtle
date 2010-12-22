@@ -241,7 +241,7 @@
 #define SUB_SUBLET_OVER               (1L << 16)                  ///< Sublet mouse over function
 #define SUB_SUBLET_OUT                (1L << 17)                  ///< Sublet mouse out function
 
-/* Screen types */
+/* Screen flags */
 #define SUB_SCREEN_PANEL1             (1L << 10)                   ///< Panel1 enabled
 #define SUB_SCREEN_PANEL2             (1L << 11)                   ///< Panel2 enabled
 #define SUB_SCREEN_STIPPLE            (1L << 12)                   ///< Stipple enabled
@@ -409,7 +409,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_NET_WM_STATE_FULLSCREEN,                               ///< Fullscreen window
   SUB_EWMH_NET_WM_STATE_ABOVE,                                    ///< Floating window
   SUB_EWMH_NET_WM_STATE_STICKY,                                   ///< Sticky window
-  SUB_EWMH_NET_WM_STATE_MODAL,                                    ///< Modal window
+  SUB_EWMH_NET_WM_STATE_ATTENTION,                                ///< Urgent window
 
   /* Tray */
   SUB_EWMH_NET_SYSTEM_TRAY_OPCODE,                                ///< Tray messages
