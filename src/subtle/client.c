@@ -627,7 +627,7 @@ subClientTag(SubClient *c,
       if(t->flags & SUB_TAG_GEOMETRY && !(c->flags & SUB_CLIENT_MODE_NOFLOAT))
         {
           *flags  |= (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_NORESIZE); ///< Disable size checks
-          c->geom  = t->geometry;
+          c->geom  = t->geom;
         }
 
       /* Set gravity and screens for matching views */
@@ -1207,7 +1207,7 @@ subClientToggle(SubClient *c,
 
       /* Set floating mode */
       if(type & SUB_CLIENT_MODE_FLOAT)
-        subClientConfigure(c, &c->geom, False);
+        subClientConfigure(c, &c->geom, True);
 
       /* Set fullscreen mode */
       if(type & SUB_CLIENT_MODE_FULL)
