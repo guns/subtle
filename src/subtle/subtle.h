@@ -633,15 +633,14 @@ void subArrayKill(SubArray *a, int clean);                        ///< Kill arra
 
 /* client.c {{{ */
 SubClient *subClientNew(Window win);                              ///< Create client
-void subClientConfigure(SubClient *c);                            ///< Send configure request
+void subClientConfigure(SubClient *c, XRectangle *geom,
+  int force);                                                     ///< Send configure request
 void subClientRender(SubClient *c);                               ///< Render client
 int subClientCompare(const void *a, const void *b);               ///< Compare two clients
 void subClientFocus(SubClient *c);                                ///< Focus client
 void subClientWarp(SubClient *c, int rise);                       ///< Warp to client
 void subClientDrag(SubClient *c, int mode);                       ///< Move/drag client
 void subClientUpdate(int vid);                                    ///< Update clients
-void subClientResize(SubClient *c);                               ///< Set client sizes
-void subClientCenter(SubClient *c);                               ///< Center client
 void subClientTag(SubClient *c, int tag, int *flags);             ///< Tag client
 void subClientSetTags(SubClient *c, int *flags);                  ///< Update client tags
 void subClientSetGravity(SubClient *c, int gravity,
@@ -756,7 +755,6 @@ void subScreenConfigure(void);                                    ///< Configure
 void subScreenUpdate(void);                                       ///< Update screens
 void subScreenRender(void);                                       ///< Render screens
 void subScreenResize(void);                                       ///< Update screen sizes
-void subScreenFit(SubScreen *s, XRectangle *r);                   ///< Fit rect size
 void subScreenJump(SubScreen *s);                                 ///< Jump to screen
 void subScreenPublish(void);                                      ///< Publish screens
 void subScreenKill(SubScreen *s);                                 ///< Kill screen
