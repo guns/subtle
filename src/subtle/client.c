@@ -1230,7 +1230,7 @@ subClientToggle(SubClient *c,
           /* Set full size of screen */
           s = SCREEN(subArrayGet(subtle->screens, c->screen));
 
-          subClientConfigure(c, &s->base, False);
+          subClientConfigure(c, &s->base, True);
         }
 
       /* Set dock and desktop type */
