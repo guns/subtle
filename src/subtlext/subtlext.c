@@ -1375,6 +1375,9 @@ Init_subtlext(void)
   /* Icon height */
   rb_define_attr(icon, "height", 1, 0);
 
+  /* Icon pixmap idt */
+  rb_define_attr(icon, "pixmap", 1, 0);
+
   /* Allocate */
   rb_define_alloc_func(icon, subIconAlloc);
 
@@ -1383,6 +1386,7 @@ Init_subtlext(void)
   rb_define_method(icon, "draw",       subIconDraw,          2);
   rb_define_method(icon, "draw_rect",  subIconDrawRect,     -1);
   rb_define_method(icon, "clear",      subIconClear,         0);
+  rb_define_method(icon, "bitmap?",    subIconBitmapAsk,     0);
   rb_define_method(icon, "to_str",     subIconToString,      0);
   rb_define_method(icon, "+",          subIconOperatorPlus,  1);
   rb_define_method(icon, "*",          subIconOperatorMult,  1);

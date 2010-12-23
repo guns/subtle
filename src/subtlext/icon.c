@@ -127,11 +127,15 @@ subIconInit(int argc,
 #ifdef HAVE_X11_XPM_H
               XpmAttributes attrs;
 
+              /* We could define a color to use on trasparent areas, but this can
+               * be done on init only, so we just ignore it and expect pixmaps to
+               * have no transparent areas at all */
+
               /* Init attributes */
-              attrs.colormap  = DefaultColormap(display, DefaultScreen(display));
-              attrs.depth     = DefaultDepth(display, DefaultScreen(display));
-              attrs.visual    = DefaultVisual(display, DefaultScreen(display));
-              attrs.valuemask = XpmColormap|XpmDepth|XpmVisual;
+              attrs.colormap     = DefaultColormap(display, DefaultScreen(display));
+              attrs.depth        = DefaultDepth(display, DefaultScreen(display));
+              attrs.visual       = DefaultVisual(display, DefaultScreen(display));
+              attrs.valuemask    = XpmColormap|XpmDepth|XpmVisual;
 
               if(XpmSuccess == XpmReadFileToPixmap(display,
                   DefaultRootWindow(display), buf, &i->pixmap, NULL, &attrs))
@@ -148,6 +152,7 @@ subIconInit(int argc,
                   return Qnil;
                }
             }
+          else i->flags |= SUB_TEXT_BITMAP;
         }
       else if(FIXNUM_P(arg1) && FIXNUM_P(arg2)) ///< Icon dimensions
         {
@@ -163,6 +168,7 @@ subIconInit(int argc,
       /* Update object */
       rb_iv_set(i->instance, "@width",  INT2FIX(i->width));
       rb_iv_set(i->instance, "@height", INT2FIX(i->height));
+      rb_iv_set(i->instance, "@pixmap", LONG2NUM(i->pixmap));
 
       XSync(display, False); ///< Sync all changes
 
@@ -304,6 +310,31 @@ subIconClear(VALUE self)
     }
 
   return Qnil;
+} /* }}} */
+
+/* subIconBitmapAsk {{{ */
+/*
+ * call-seq: bitmap? -> true or false
+ *
+ * Whether icon is a bitmap
+ *
+ *  icon.bitmap?
+ *  => true
+ *
+ *  icon.bitmap?
+ *  => false
+ */
+
+VALUE
+subIconBitmapAsk(VALUE self)
+{
+  VALUE ret = Qfalse;
+  SubtlextIcon *i = NULL;
+
+  Data_Get_Struct(self, SubtlextIcon, i);
+  if(i) ret = (i->flags & SUB_TEXT_BITMAP) ? Qtrue : Qfalse;
+
+  return ret;
 } /* }}} */
 
 /* subIconToString {{{ */
