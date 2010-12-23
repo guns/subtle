@@ -219,15 +219,16 @@
 #define SUB_PANEL_VIEWS               (1L << 12)                  ///< Panel views type
 #define SUB_PANEL_TITLE               (1L << 13)                  ///< Panel title type
 #define SUB_PANEL_TRAY                (1L << 14)                  ///< Panel tray type
+#define SUB_PANEL_ICON                (1L << 15)                  ///< Panel icon type
 
-#define SUB_PANEL_SPACER1             (1L << 15)                  ///< Panel spacer1
-#define SUB_PANEL_SPACER2             (1L << 16)                  ///< Panel spacer2
-#define SUB_PANEL_SEPARATOR1          (1L << 17)                  ///< Panel separator1
-#define SUB_PANEL_SEPARATOR2          (1L << 18)                  ///< Panel separator2
-#define SUB_PANEL_BOTTOM              (1L << 19)                  ///< Panel bottom
-#define SUB_PANEL_HIDDEN              (1L << 20)                  ///< Panel hidden
-#define SUB_PANEL_CENTER              (1L << 21)                  ///< Panel center
-#define SUB_PANEL_SUBLETS             (1L << 22)                  ///< Panel sublets
+#define SUB_PANEL_SPACER1             (1L << 16)                  ///< Panel spacer1
+#define SUB_PANEL_SPACER2             (1L << 17)                  ///< Panel spacer2
+#define SUB_PANEL_SEPARATOR1          (1L << 18)                  ///< Panel separator1
+#define SUB_PANEL_SEPARATOR2          (1L << 19)                  ///< Panel separator2
+#define SUB_PANEL_BOTTOM              (1L << 20)                  ///< Panel bottom
+#define SUB_PANEL_HIDDEN              (1L << 21)                  ///< Panel hidden
+#define SUB_PANEL_CENTER              (1L << 22)                  ///< Panel center
+#define SUB_PANEL_SUBLETS             (1L << 23)                  ///< Panel sublets
 
 /* Sublet flags */
 #define SUB_SUBLET_INTERVAL           (1L << 10)                  ///< Sublet has interval
@@ -485,6 +486,11 @@ typedef struct subhook_t /* {{{ */
   unsigned long proc;                                             ///< Hook proc
 } SubHook; /* }}} */
 
+typedef struct subicon_t { /* {{{ */
+  int     width, height, bitmap;                                  ///< Icon height, bitmap
+  Pixmap  pixmap;                                                 ///< Icon pixmap
+} SubIcon; /* }}} */
+
 typedef struct subpanel_t /* {{{ */
 {
   FLAGS              flags;                                       ///< Panel flags
@@ -493,8 +499,9 @@ typedef struct subpanel_t /* {{{ */
   struct subscreen_t *screen;                                     ///< Panel screen
 
   union {
-    Window             *views;                                    ///< Panel view windows
+    Window             *views;                                    ///< Panel view
     struct subsublet_t *sublet;                                   ///< Panel sublet
+    struct subicon_t   *icon;                                     ///< Panel icon
   };
 } SubPanel; /* }}} */
 
