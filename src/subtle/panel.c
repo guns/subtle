@@ -24,9 +24,6 @@ subPanelNew(int type)
   SubPanel *p = NULL;
   XSetWindowAttributes sattrs;
 
-  assert(SUB_PANEL_SUBLET == type || SUB_PANEL_VIEWS == type ||
-    SUB_PANEL_TITLE == type);
-
   /* Create new panel */
   p = PANEL(subSharedMemoryAlloc(1, sizeof(SubPanel)));
   p->flags = (SUB_TYPE_PANEL|type);
@@ -35,7 +32,7 @@ subPanelNew(int type)
 
   /* Handle panel item type */
   switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_COPY|
-      SUB_PANEL_VIEWS|SUB_PANEL_TITLE))
+      SUB_PANEL_VIEWS|SUB_PANEL_TITLE|SUB_PANEL_ICON))
     {
       case SUB_PANEL_SUBLET: /* {{{ */
         p->sublet = (struct subsublet_t *)subSharedMemoryAlloc(1,
@@ -90,6 +87,17 @@ subPanelNew(int type)
         XChangeWindowAttributes(subtle->dpy, p->win,
           CWOverrideRedirect, &sattrs);
         break; /* }}} */
+      case SUB_PANEL_ICON:
+        p->icon = (struct subicon_t *)subSharedMemoryAlloc(1,
+          sizeof(struct subicon_t));
+
+        /* Create window */
+        p->win = XCreateSimpleWindow(subtle->dpy, ROOT, 0, 0, 1, 1, 0, 0,
+          subtle->colors.panel);
+
+        XChangeWindowAttributes(subtle->dpy, p->win,
+          CWOverrideRedirect, &sattrs);
+        break;
     }
 
   subPanelConfigure(p);
@@ -111,7 +119,8 @@ subPanelConfigure(SubPanel *p)
   assert(p);
 
   /* Handle panel item type */
-  switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_VIEWS|SUB_PANEL_TITLE))
+  switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_VIEWS|
+      SUB_PANEL_TITLE|SUB_PANEL_ICON))
     {
       case SUB_PANEL_SUBLET: /* {{{ */
         /* Update borders */
@@ -161,6 +170,9 @@ subPanelConfigure(SubPanel *p)
         XSetWindowBorder(subtle->dpy, p->win, subtle->colors.bo_title);
         XSetWindowBorderWidth(subtle->dpy, p->win, subtle->pbw);
         break; /* }}} */
+      case SUB_PANEL_ICON: /* {{{ */
+        XResizeWindow(subtle->dpy, p->win, p->width, subtle->th);
+        break; /* }}} */
     }
 } /* }}} */
 
@@ -175,7 +187,8 @@ subPanelUpdate(SubPanel *p)
   assert(p);
 
   /* Handle panel item type */
-  switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_VIEWS|SUB_PANEL_TITLE))
+  switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_VIEWS|
+      SUB_PANEL_TITLE|SUB_PANEL_ICON))
     {
       case SUB_PANEL_SUBLET: /* {{{ */
         /* Copy width in case of shallow copies */
@@ -234,7 +247,7 @@ subPanelUpdate(SubPanel *p)
                     /* Font offset, panel border and padding */
                     p->width = subSharedTextWidth(subtle->dpy, subtle->font,
                       c->name, 50 >= len ? len : 50, NULL, NULL, True) +
-                      6 + 2 * subtle->pbw  + subtle->padding.x + subtle->padding.y;
+                      6 + 2 * subtle->pbw + subtle->padding.x + subtle->padding.y;
 
                     XResizeWindow(subtle->dpy, p->win,
                       p->width - 2 * subtle->pbw,
@@ -242,6 +255,12 @@ subPanelUpdate(SubPanel *p)
                   }
               }
           }
+        break; /* }}} */
+      case SUB_PANEL_ICON: /* {{{ */
+        p->width = p->icon->width + subtle->padding.x + subtle->padding.y + 4;
+
+        XResizeWindow(subtle->dpy, p->win, p->width - 2 * subtle->pbw,
+          subtle->th - 2 * subtle->pbw);
         break; /* }}} */
     }
 } /* }}} */
@@ -257,7 +276,8 @@ subPanelRender(SubPanel *p)
   assert(p);
 
   /* Handle panel item type */
-  switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_VIEWS|SUB_PANEL_TITLE))
+  switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_VIEWS|
+      SUB_PANEL_TITLE|SUB_PANEL_ICON))
     {
       case SUB_PANEL_SUBLET: /* {{{ */
         /* Set window background */
@@ -387,6 +407,13 @@ subPanelRender(SubPanel *p)
                   subtle->font->y + subtle->padding.width, fg, bg, buf);
               }
           }
+        break; /* }}} */
+      case SUB_PANEL_ICON: /* {{{ */
+        subSharedTextIconDraw(subtle->dpy, subtle->gcs.font,
+          p->win, 2 + subtle->padding.x,
+          (subtle->th - p->icon->height) / 2,
+          p->icon->width, p->icon->height, subtle->colors.fg_sublets,
+          subtle->colors.bg_sublets, p->icon->pixmap, p->icon->bitmap);
         break; /* }}} */
     }
 } /* }}} */
@@ -541,7 +568,7 @@ subPanelKill(SubPanel *p)
 
   /* Handle panel item type */
   switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_COPY|
-      SUB_PANEL_VIEWS|SUB_PANEL_TRAY))
+      SUB_PANEL_VIEWS|SUB_PANEL_TRAY|SUB_PANEL_ICON))
     {
       case SUB_PANEL_COPY: break;
       case SUB_PANEL_SUBLET: /* {{{ */
@@ -594,6 +621,9 @@ subPanelKill(SubPanel *p)
         /* Reparent and return to avoid destroy here */
         XReparentWindow(subtle->dpy, subtle->windows.tray.win, ROOT, 0, 0);
         return; /* }}} */
+      case SUB_PANEL_ICON: /* {{{ */
+        if(p->icon) free(p->icon);
+        break; /* }}} */
     }
 
   XDestroyWindow(subtle->dpy, p->win);

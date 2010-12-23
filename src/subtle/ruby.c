@@ -611,6 +611,7 @@ RubyEvalPanel(VALUE ary,
       Window panel = s->panel1;
       VALUE entry = Qnil, tray = Qnil, spacer = Qnil, separator = Qnil;
       VALUE sublets = Qnil, views = Qnil, title = Qnil, center = Qnil;
+      VALUE subtlext = Qnil;
       SubPanel *p = NULL, *last = NULL;;
 
       /* Get syms */
@@ -677,6 +678,34 @@ RubyEvalPanel(VALUE ary,
           else if(entry == title)
             {
               p = subPanelNew(SUB_PANEL_TITLE);
+            }
+          else if(T_DATA == rb_type(entry))
+            {
+              if(NIL_P(subtlext))
+                subtlext = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
+
+              if(rb_obj_is_instance_of(entry,
+                  rb_const_get(subtlext, rb_intern("Icon"))))
+                {
+                  VALUE width = Qnil, height = Qnil, pixmap = Qnil, bitmap = Qnil;
+
+                  /* Create new panel */
+                  p = subPanelNew(SUB_PANEL_ICON);
+
+                  /* Get properties */
+                  width  = rb_iv_get(entry, "@width");
+                  height = rb_iv_get(entry, "@height");
+                  pixmap = rb_iv_get(entry, "@pixmap");
+                  bitmap = rb_funcall(entry, rb_intern("bitmap?"), 0, NULL);
+
+                  /* Update panel */
+                  p->icon->pixmap = NUM2LONG(pixmap);
+                  p->icon->width  = FIX2INT(width);
+                  p->icon->height = FIX2INT(height);
+                  p->icon->bitmap = (Qtrue == bitmap) ? True : False;
+
+                  rb_ary_push(shelter, entry); ///< Protect from GC
+                }
             }
           else
             {
