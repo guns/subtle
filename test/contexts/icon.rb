@@ -12,10 +12,12 @@
 context "Icon" do
   setup { Subtlext::Icon.new(8, 8) }
 
-  asserts("Init types and compare") do
-    icon = Subtlext::Icon.new("icon/clock.xbm")
+  asserts("Init from file") do
+    nil != Subtlext::Icon.new("icon/clock.xbm")
+  end
 
-    topic.height == icon.height and topic.width == icon.width
+  asserts("Equal and compare") do
+    topic.eql? Subtlext::Icon.new(8, 8) and topic == topic
   end
 
   asserts("Check attributes") do

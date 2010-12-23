@@ -22,8 +22,12 @@ context "Tag" do
     list.is_a?(Array) and 12 == list.size
   end
 
-  asserts("Find and compare") do
-    topic == Subtlext::Tag["terms"]
+  asserts("Finder") do
+    "terms" == Subtlext::Tag["terms"].name
+  end
+
+  asserts("Equal and compare") do
+    topic.eql? Subtlext::Tag["terms"] and topic == topic
   end
 
   asserts("Check associations") do

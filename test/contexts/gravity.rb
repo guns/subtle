@@ -23,8 +23,12 @@ context "Gravity" do
     list.is_a?(Array) and 30 == list.size
   end
 
-  asserts("Find and compare") do
-    topic == Subtlext::Gravity["center"]
+  asserts("Finder") do
+    "center" == Subtlext::Gravity["center"].name
+  end
+
+  asserts("Equal and compare") do
+    topic.eql? Subtlext::Gravity["center"] and topic == topic
   end
 
   asserts("Check associations") do

@@ -22,8 +22,12 @@ context "Sublet" do
     list.is_a?(Array) and 1 == list.size
   end
 
-  asserts("Find and compare") do
-    topic == Subtlext::Sublet[0]
+  asserts("Finder") do
+    "dummy" == Subtlext::Sublet[0].name
+  end
+
+  asserts("Equal and compare") do
+    topic.eql? topic and topic == topic
   end
 
   asserts("Set colors") do

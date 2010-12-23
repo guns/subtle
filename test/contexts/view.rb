@@ -22,8 +22,12 @@ context "View" do
     list.is_a?(Array) and 4 == list.size
   end
 
-  asserts("Find and compare") do
-    topic == Subtlext::View["terms"]
+  asserts("Finder") do
+    "terms" == Subtlext::View["terms"].name
+  end
+
+  asserts("Equal and compare") do
+    topic.eql? Subtlext::View.current and topic == topic
   end
 
   asserts("Check associations") do

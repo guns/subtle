@@ -22,8 +22,8 @@ context "Color" do
     true
   end
 
-  asserts("Compare") do
-    topic == Subtlext::Color.new("#ff0000") 
+  asserts("Equal and compare") do
+    topic.eql? Subtlext::Color.new("#ff0000") and topic == topic
   end
 
   asserts("Convert to string") { topic.to_str.match(/<>#[0-9]+<>/) }

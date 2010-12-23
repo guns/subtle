@@ -23,8 +23,12 @@ context "Client" do
     list.is_a?(Array) and 1 == list.size
   end
 
-  asserts("Find and compare") do
-    topic == Subtlext::Client[0]
+  asserts("Finder") do
+    "xterm" == Subtlext::Client[0].name
+  end
+
+  asserts("Equal and compare") do
+    topic.eql? Subtlext::Client.current and topic == topic
   end
 
   asserts("Convert to string") { "xterm" == topic.to_str }

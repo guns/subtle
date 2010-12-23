@@ -26,6 +26,14 @@ context "Screen" do
     topic == Subtlext::Screen[0]
   end
 
+  asserts("Finder") do
+    0 == Subtlext::Screen["terms"].id
+  end
+
+  asserts("Equal and compare") do
+    topic.eql? Subtlext::Screen.current and topic == topic
+  end
+
   asserts("Runtime: Change view") do
     view1 = topic.view
 
