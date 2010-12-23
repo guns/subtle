@@ -114,13 +114,6 @@ typedef struct subfont_t /* {{{ */
 #endif /* HAVE_X11_XFT_XFT_H */
 } SubFont; /* }}} */
 
-typedef struct subicon_t /* {{{ */
-{
-  Pixmap       pixmap;                                            ///< Icon pixmap
-  unsigned int width, height;                                     ///< Icon width, height
-  GC           gc;                                                ///< Icon GC
-} SubtIcon; /* }}} */
-
 typedef union submessagedata_t /* {{{ */
 {
   char  b[20];                                                    ///< MessageData char
@@ -188,7 +181,9 @@ void subSharedTextRender(Display *disp, GC gc, SubFont *f,
 int subSharedTextWidth(Display *disp, SubFont *f,
   const char *text, int len, int *left, int *right, int center);  ///< Get text width
 void subSharedTextFree(SubText *t);                               ///< Free text
-
+void subSharedTextIconDraw(Display *disp, GC gc, Window win,
+  int x, int y, int width, int height, long fg, long bg,
+  Pixmap pixmap, int bitmap);                                     ///< Draw icons
 void subSharedTextDraw(Display *disp, GC gc, SubFont *f,
   Window win, int x, int y, long fg, long bg, const char *text);  ///< Draw text
 /* }}} */

@@ -589,30 +589,13 @@ subSharedTextRender(Display *disp,
         {
           break; ///< Break loop
         }
-      else if(item->flags & (SUB_TEXT_BITMAP|SUB_TEXT_PIXMAP)) ///<Icons
+      else if(item->flags & (SUB_TEXT_BITMAP|SUB_TEXT_PIXMAP)) ///< Icons
         {
           int dx = (0 == i) ? 0 : 2; ///< Add spacing when icon isn't first
 
-          XGCValues gvals;
-
-          /* Plane color */
-          gvals.foreground = -1 == item->color ? fg : item->color;
-          gvals.background = bg;
-          XChangeGC(disp, gc, GCForeground|GCBackground, &gvals);
-
-          /* Copy icon to destination window */
-          if(item->flags & SUB_TEXT_BITMAP)
-            {
-              XCopyPlane(disp, (Pixmap)item->data.num, win, gc, 0, 0,
-                item->width, item->height, width + dx, y - item->height, 1);
-            }
-#ifdef HAVE_X11_XPM_H
-          else
-            {
-              XCopyArea(disp, (Pixmap)item->data.num, win, gc, 0, 0,
-                item->width, item->height, width + dx, y - item->height);
-            }
-#endif /* HAVE_X11_XPM_H */
+          subSharedTextIconDraw(disp, gc, win, width + dx, y - item->height,
+            item->width, item->height, (-1 == item->color) ? fg : item->color,
+            bg, (Pixmap)item->data.num, (item->flags & SUB_TEXT_BITMAP));
 
           /* Add spacing when icon isn't last */
           width += item->width + dx + (i != t->nitems - 1 ? 2 : 0);
@@ -620,7 +603,7 @@ subSharedTextRender(Display *disp,
       else ///< Text
         {
           subSharedTextDraw(disp, gc, f, win, width, y,
-            -1 == item->color ? fg : item->color, bg, item->data.string);
+            (-1 == item->color) ? fg : item->color, bg, item->data.string);
 
           width += item->width;
         }
@@ -744,6 +727,49 @@ subSharedTextDraw(Display *disp,
       XChangeGC(disp, gc, GCForeground|GCBackground, &gvals);
       XmbDrawString(disp, win, f->xfs, gc, x, y, text, strlen(text));
     }
+} /* }}} */
+
+ /** subSharedTextIconDraw {{{
+  * @brief Draw text
+  * @param[in]  disp    Display
+  * @param[in]  gc      GC
+  * @param[in]  win     Target window
+  * @param[in]  x       X position
+  * @param[in]  y       Y position
+  * @param[in]  width   Width of pixmap
+  * @param[in]  height  Height of pixmap
+  * @param[in]  fg      Foreground color
+  * @param[in]  bg      Background color
+  * @param[in]  pixmap  Pixmap to draw
+  * @param[in]  bitmap  Whether icon is a bitmap
+  **/
+
+void
+subSharedTextIconDraw(Display *disp,
+  GC gc,
+  Window win,
+  int x,
+  int y,
+  int width,
+  int height,
+  long fg,
+  long bg,
+  Pixmap pixmap,
+  int bitmap)
+{
+  XGCValues gvals;
+
+  /* Plane color */
+  gvals.foreground = fg;
+  gvals.background = bg;
+  XChangeGC(disp, gc, GCForeground|GCBackground, &gvals);
+
+  /* Copy icon to destination window */
+  if(bitmap)
+      XCopyPlane(disp, pixmap, win, gc, 0, 0, width, height, x, y, 1);
+#ifdef HAVE_X11_XPM_H
+  else XCopyArea(disp, pixmap, win, gc, 0, 0, width, height, x, y);
+#endif /* HAVE_X11_XPM_H */
 } /* }}} */
 
  /** subSharedTextFree {{{
