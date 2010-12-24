@@ -603,22 +603,29 @@ end
 #
 # === Properties
 #
-# [*match*]    This property adds a matching pattern to a view. Matching works
-#              either via plaintext or regex (see man regex(7)) and applies to
-#              names of tags.
+# [*match*]      This property adds a matching pattern to a view. Matching
+#                works either via plaintext or regex (see man regex(7)) and
+#                applies to names of tags.
 #
-#              Example: match "terms"
+#                Example: match "terms"
 #
-# [*dynamic*]  This property hides unoccupied views, views that display no
-#              windows.
+# [*dynamic*]    This property hides unoccupied views, views that display no
+#                windows.
 #
-#              Example: dynamic true
+#                Example: dynamic true
 #
-# [*icon*]     This property adds an icon in front of the view name. The icon
-#              can either be path to an icon or an instance of Subtlext::Icon.
+# [*icon*]       This property adds an icon in front of the view name. The
+#                icon can either be path to an icon or an instance of
+#                Subtlext::Icon.
 #
-#              Example: icon "/usr/share/icons/icon.xbm"
-#                       icon Subtlext::Icon.new("/usr/share/icons/icon.xbm")
+#                Example: icon "/usr/share/icons/icon.xbm"
+#                         icon Subtlext::Icon.new("/usr/share/icons/icon.xbm")
+#
+# [*icon_only*]  This property hides the view name from the view buttons, just
+#                the icon will be visible.
+#
+#                Example: icon_only true
+#
 #
 # === Link
 #
