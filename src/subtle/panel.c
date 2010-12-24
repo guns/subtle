@@ -144,8 +144,7 @@ subPanelConfigure(SubPanel *p)
 
                 /* Add width of view icon and/or text */
                 if(v->flags & SUB_VIEW_ICON)
-                  v->width = v->icon->width + 2 * subtle->pbw +
-                    subtle->padding.x + subtle->padding.y;
+                  v->width = v->icon->width;
 
                 if(!(v->flags & SUB_VIEW_ICON_ONLY))
                   {
@@ -155,7 +154,8 @@ subPanelConfigure(SubPanel *p)
                       v->name, strlen(v->name), NULL, NULL, True);
                   }
 
-                v->width += 6;
+                v->width += subtle->padding.x + subtle->padding.y + 6
+                  + 2 * subtle->pbw;
 
                 XMoveResizeWindow(subtle->dpy, p->views[i], p->width, 0,
                   v->width - 2 * subtle->pbw, subtle->th - 2 * subtle->pbw);
