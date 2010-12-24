@@ -1854,6 +1854,7 @@ RubyConfigView(int argc,
 
                   rb_ary_push(shelter, icon); ///< Protect from GC
                 }
+              else v->flags &= ~SUB_VIEW_ICON_ONLY;
             }
        }
     }
