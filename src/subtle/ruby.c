@@ -156,6 +156,28 @@ RubyConvert(void *data)
   return object;
 } /* }}} */
 
+/* RubyIcon {{{ */
+static void
+RubyIcon(VALUE icon,
+  SubIcon *i)
+{
+  VALUE width = Qnil, height = Qnil, pixmap = Qnil, bitmap = Qnil;
+
+  assert(i);
+
+  /* Get properties */
+  width  = rb_iv_get(icon, "@width");
+  height = rb_iv_get(icon, "@height");
+  pixmap = rb_iv_get(icon, "@pixmap");
+  bitmap = rb_funcall(icon, rb_intern("bitmap?"), 0, NULL);
+
+  /* Update panel */
+  i->pixmap = NUM2LONG(pixmap);
+  i->width  = FIX2INT(width);
+  i->height = FIX2INT(height);
+  i->bitmap = (Qtrue == bitmap) ? True : False;
+} /* }}} */
+
 /* Get */
 
 /* RubyGetGeometry {{{ */
@@ -673,10 +695,12 @@ RubyEvalPanel(VALUE ary,
             }
           else if(entry == views)
             {
+              /* Create new panel views */
               p = subPanelNew(SUB_PANEL_VIEWS);
             }
           else if(entry == title)
             {
+              /* Create new panel views */
               p = subPanelNew(SUB_PANEL_TITLE);
             }
           else if(T_DATA == rb_type(entry))
@@ -687,22 +711,10 @@ RubyEvalPanel(VALUE ary,
               if(rb_obj_is_instance_of(entry,
                   rb_const_get(subtlext, rb_intern("Icon"))))
                 {
-                  VALUE width = Qnil, height = Qnil, pixmap = Qnil, bitmap = Qnil;
-
-                  /* Create new panel */
+                  /* Create new panel icon */
                   p = subPanelNew(SUB_PANEL_ICON);
 
-                  /* Get properties */
-                  width  = rb_iv_get(entry, "@width");
-                  height = rb_iv_get(entry, "@height");
-                  pixmap = rb_iv_get(entry, "@pixmap");
-                  bitmap = rb_funcall(entry, rb_intern("bitmap?"), 0, NULL);
-
-                  /* Update panel */
-                  p->icon->pixmap = NUM2LONG(pixmap);
-                  p->icon->width  = FIX2INT(width);
-                  p->icon->height = FIX2INT(height);
-                  p->icon->bitmap = (Qtrue == bitmap) ? True : False;
+                  RubyIcon(entry, p->icon);
 
                   rb_ary_push(shelter, entry); ///< Protect from GC
                 }
@@ -1781,6 +1793,11 @@ RubyConfigView(int argc,
           CHAR2SYM("dynamic"))))
         flags |= SUB_VIEW_DYNAMIC;
 
+      /* Check icon only */
+      if(Qtrue == (value = rb_hash_lookup(params,
+          CHAR2SYM("icon_only"))))
+        flags |= SUB_VIEW_ICON_ONLY;
+
       /* Check icon */
       switch(rb_type(value = rb_hash_lookup(params, CHAR2SYM("icon"))))
         {
@@ -1827,20 +1844,15 @@ RubyConfigView(int argc,
 
               subArrayPush(subtle->views, (void *)v);
 
-              /* Combine icon and text */
+              /* Add icon */
               if(!NIL_P(icon))
                 {
-                  char buf[256] = { 0 };
-                  VALUE iconstr = rb_funcall(icon, rb_intern("to_str"), 0, NULL);
+                  v->flags |= SUB_VIEW_ICON;
+                  v->icon   = ICON(subSharedMemoryAlloc(1, sizeof(SubIcon)));
 
-                  v->text = subSharedTextNew();
+                  RubyIcon(icon, v->icon);
 
-                  snprintf(buf, sizeof(buf), "%s%s%s",
-                    RSTRING_PTR(iconstr), RSTRING_PTR(name), SEPARATOR);
-
-                  v->width = subSharedTextParse(subtle->dpy, subtle->font,
-                    v->text, buf) + 2 * subtle->pbw + subtle->padding.x +
-                    subtle->padding.y;
+                  rb_ary_push(shelter, icon); ///< Protect from GC
                 }
             }
        }

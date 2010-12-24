@@ -35,8 +35,7 @@ subPanelNew(int type)
       SUB_PANEL_VIEWS|SUB_PANEL_TITLE|SUB_PANEL_ICON))
     {
       case SUB_PANEL_SUBLET: /* {{{ */
-        p->sublet = (struct subsublet_t *)subSharedMemoryAlloc(1,
-          sizeof(struct subsublet_t));
+        p->sublet = SUBLET(subSharedMemoryAlloc(1, sizeof(SubSublet)));
 
         /* Sublet specific */
         p->sublet->time  = subSubtleTime();
@@ -88,8 +87,7 @@ subPanelNew(int type)
           CWOverrideRedirect, &sattrs);
         break; /* }}} */
       case SUB_PANEL_ICON:
-        p->icon = (struct subicon_t *)subSharedMemoryAlloc(1,
-          sizeof(struct subicon_t));
+        p->icon = ICON(subSharedMemoryAlloc(1, sizeof(SubIcon)));
 
         /* Create window */
         p->win = XCreateSimpleWindow(subtle->dpy, ROOT, 0, 0, 1, 1, 0, 0,
@@ -144,13 +142,20 @@ subPanelConfigure(SubPanel *p)
                     !(subtle->visible_clients & v->tags))
                   continue;
 
-                /* Font offset, panel border and padding without icon */
-                if(!v->text)
+                /* Add width of view icon and/or text */
+                if(v->flags & SUB_VIEW_ICON)
+                  v->width = v->icon->width + 2 * subtle->pbw +
+                    subtle->padding.x + subtle->padding.y;
+
+                if(!(v->flags & SUB_VIEW_ICON_ONLY))
                   {
-                    v->width = subSharedTextWidth(subtle->dpy, subtle->font,
-                      v->name, strlen(v->name), NULL, NULL, True)
-                      + 6 + 2 * subtle->pbw + subtle->padding.x + subtle->padding.y;
+                    if(v->flags & SUB_VIEW_ICON) v->width += 3;
+
+                    v->width += subSharedTextWidth(subtle->dpy, subtle->font,
+                      v->name, strlen(v->name), NULL, NULL, True);
                   }
+
+                v->width += 6;
 
                 XMoveResizeWindow(subtle->dpy, p->views[i], p->width, 0,
                   v->width - 2 * subtle->pbw, subtle->th - 2 * subtle->pbw);
@@ -298,6 +303,7 @@ subPanelRender(SubPanel *p)
             /* View buttons */
             for(i = 0; i < subtle->views->ndata; i++)
               {
+                int x = subtle->padding.x + 3;
                 SubView *v = VIEW(subtle->views->data[i]);
 
                 /* Select color pair */
@@ -336,20 +342,24 @@ subPanelRender(SubPanel *p)
                 XSetWindowBorder(subtle->dpy, p->views[i], bo);
                 XClearWindow(subtle->dpy, p->views[i]);
 
-                /* Draw view name or icon text */
-                if(!v->text)
+                /* Draw view icon and/or text */
+                if(v->flags & SUB_VIEW_ICON)
                   {
-                    subSharedTextDraw(subtle->dpy, subtle->gcs.font,
-                      subtle->font, p->views[i], 3 + subtle->padding.x,
-                      subtle->font->y + subtle->padding.width,
-                      fg, bg, v->name);
+                    subSharedTextIconDraw(subtle->dpy, subtle->gcs.font,
+                      p->views[i], x, subtle->font->y - v->icon->height +
+                      subtle->padding.width, v->icon->width, v->icon->height,
+                      fg, bg, v->icon->pixmap, v->icon->bitmap);
+
+                    x += v->icon->width;
                   }
-                else
+
+                if(!(v->flags & SUB_VIEW_ICON_ONLY))
                   {
-                    subSharedTextRender(subtle->dpy, subtle->gcs.font,
-                      subtle->font, p->views[i], 3 + subtle->padding.x,
-                      subtle->font->y + subtle->padding.width,
-                      fg, bg, v->text);
+                    if(v->flags & SUB_VIEW_ICON) x += 3;
+
+                    subSharedTextDraw(subtle->dpy, subtle->gcs.font,
+                      subtle->font, p->views[i], x, subtle->font->y +
+                      subtle->padding.width, fg, bg, v->name);
                   }
               }
           }
