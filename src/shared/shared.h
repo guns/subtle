@@ -45,10 +45,10 @@
 
 #define DEFFONT   "-*-*-medium-*-*-*-14-*-*-*-*-*-*-*"            ///< Default font
 
+#define DATA(d)   ((SubData)d)                                    ///< Cast to SubData
 #define FONT(f)   ((SubFont *)f)                                  ///< Cast to SubFont
 #define TEXT(t)   ((SubText *)t)                                  ///< Cast to SubText
 #define ITEM(i)   ((SubTextItem *)i)                              ///< Cast to SubTextItem
-#define ICON(i)   ((SubIcon *)i)                                  ///< Cast to SubIcon
 /* }}} */
 
 /* Flags {{{ */
