@@ -188,7 +188,7 @@ subViewKill(SubView *v)
   subHookCall((SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_KILL),
     (void *)v);
 
-  if(v->text) subSharedTextFree(v->text);
+  if(v->icon) free(v->icon);
   free(v->name);
   free(v);
 

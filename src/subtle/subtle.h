@@ -88,12 +88,6 @@
 
 #define ROOT       DefaultRootWindow(subtle->dpy)                 ///< Root window
 #define SCRN       DefaultScreen(subtle->dpy)                     ///< Default screen
-
-#define SETRECT(r,a,b,c,d) \
-  r.x      = a; \
-  r.y      = b; \
-  r.width  = c; \
-  r.height = d;                                                   ///< Set rect values
 /* }}} */
 
 /* Masks {{{ */
@@ -113,14 +107,13 @@
 /* Casts {{{ */
 #define ARRAY(a)   ((SubArray *)a)                                ///< Cast to SubArray
 #define CLIENT(c)  ((SubClient *)c)                               ///< Cast to SubClient
-#define DATA(d)    ((SubData)d)                                   ///< Cast to SubData
 #define GRAB(g)    ((SubGrab *)g)                                 ///< Cast to SubGrab
 #define GRAVITY(g) ((SubGravity *)g)                              ///< Cast to SubGravity
 #define HOOK(h)    ((SubHook *)h)                                 ///< Cast to SubHook
 #define ICON(i)    ((SubIcon *)i)                                 ///< Cast to SubIcon
 #define PANEL(p)   ((SubPanel *)p)                                ///< Cast to SubPanel
 #define SCREEN(s)  ((SubScreen *)s)                               ///< Cast to SubScreen
-#define TEXT(t)    ((SubText *)t)                                 ///< Cast to SubText
+#define SUBLET(s)  ((SubSublet *)s)                               ///< Cast to SubSublet
 #define TAG(t)     ((SubTag *)t)                                  ///< Cast to SubTag
 #define TRAY(t)    ((SubTray *)t)                                 ///< Cast to SubTray
 #define VIEW(v)    ((SubView *)v)                                 ///< Cast to SubView
@@ -277,7 +270,9 @@
 #define SUB_TRAY_UNMAP                (1L << 10)                  ///< Ignore unmaps
 
 /* View flags */
-#define SUB_VIEW_DYNAMIC              (1L << 10)                  ///< Dynamic views
+#define SUB_VIEW_ICON                 (1L << 10)                  ///< View icon
+#define SUB_VIEW_ICON_ONLY            (1L << 11)                  ///< Icon only
+#define SUB_VIEW_DYNAMIC              (1L << 12)                  ///< Dynamic views
 
 /* Special flags */
 #define SUB_RUBY_DATA                 (1L << 31)                  ///< Object stores ruby data
@@ -622,7 +617,7 @@ typedef struct subview_t /* {{{ */
   Window            focus;                                        ///< View window, focus
   int               width;                                        ///< View width
 
-  struct subtext_t  *text;                                        ///< View text
+  struct subicon_t  *icon;                                        ///< View icon
 } SubView; /* }}} */
 
 extern SubSubtle *subtle;
