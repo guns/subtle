@@ -516,7 +516,7 @@ subSharedTextParse(Display *disp,
               item->height    = geometry.height;
 
               /* Add spacing and check if icon is first */
-              t->width += item->width + (0 == i ? 2 : 4);
+              t->width += item->width + (0 == i ? 3 : 6);
             }
           else
             {
@@ -591,14 +591,14 @@ subSharedTextRender(Display *disp,
         }
       else if(item->flags & (SUB_TEXT_BITMAP|SUB_TEXT_PIXMAP)) ///< Icons
         {
-          int dx = (0 == i) ? 0 : 2; ///< Add spacing when icon isn't first
+          int dx = (0 == i) ? 0 : 3; ///< Add spacing when icon isn't first
 
           subSharedTextIconDraw(disp, gc, win, width + dx, y - item->height,
             item->width, item->height, (-1 == item->color) ? fg : item->color,
             bg, (Pixmap)item->data.num, (item->flags & SUB_TEXT_BITMAP));
 
           /* Add spacing when icon isn't last */
-          width += item->width + dx + (i != t->nitems - 1 ? 2 : 0);
+          width += item->width + dx + (i != t->nitems - 1 ? 3 : 0);
         }
       else ///< Text
         {
