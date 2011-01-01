@@ -443,18 +443,25 @@ end
 #
 # === Properties
 #
-# [*float*]    This property either sets the tagged client floating or prevents
-#              it from being floating depending on the value.
+# [*float*]     This property either sets the tagged client floating or prevents
+#               it from being floating depending on the value.
 #
-#              Example: float true
+#               Example: float true
 #
-# [*full*]     This property either sets the tagged client to fullscreen or
-#              prevents it from being set to fullscreen depending on the value.
+# [*full*]      This property either sets the tagged client to fullscreen or
+#               prevents it from being set to fullscreen depending on the value.
 #
-#              Example: full true
+#               Example: full true
 #
-# [*gravity*]  This property sets a certain to gravity to the tagged client,
-#              but only on views that have this tag too.
+# [*geometry*]  This property sets a certain geometry as well as floating mode
+#               to the tagged client, but only on views that have this tag too.
+#               It expects an array with x, y, width and height values whereas
+#               width and height must be >0.
+#
+#               Example: geometry [100, 100, 50, 50]
+#
+# [*gravity*]   This property sets a certain to gravity to the tagged client,
+#               but only on views that have this tag too.
 #
 #              Example: gravity :center
 #
@@ -483,12 +490,6 @@ end
 #              resize hints and is independent of the global option.
 #
 #              Example: resize true
-#
-# [*size*]     This property sets a certain to size as well as floating to the
-#              tagged client, but only on views that have this tag too. It
-#              expects an array with x, y, width and height values.
-#
-#              Example: size [100, 100, 50, 50]
 #
 # [*stick*]    This property either sets the tagged client to stick or prevents
 #              it from being set to stick depending on the value. Stick clients
