@@ -908,8 +908,11 @@ EventMessage(XClientMessageEvent *ev)
                 if(ev->data.l[1] & SUB_EWMH_FLOAT) flags |= SUB_CLIENT_MODE_FLOAT;
                 if(ev->data.l[1] & SUB_EWMH_STICK) flags |= SUB_CLIENT_MODE_STICK;
 
-                subClientToggle(c, flags, True);
+                subClientToggle(c, (~c->flags & flags), False); ///< Enable only
+
+                if(VISIBLE(subtle->visible_tags, c)) subScreenConfigure();
               }
+            else EventQueuePush(ev);
             break; /* }}} */
           case SUB_EWMH_SUBTLE_WINDOW_RESIZE: /* {{{ */
             if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0]))))
