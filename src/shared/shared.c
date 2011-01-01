@@ -839,7 +839,7 @@ subSharedFontNew(Display *disp,
             DefaultColormap(disp, DefaultScreen(disp)));
 
           /* Font metrics */
-          f->height = f->xft->ascent + f->xft->descent + 1;
+          f->height = f->xft->ascent + f->xft->descent + 2;
           f->y      = (f->height - 2 + f->xft->ascent) / 2;
         }
 
