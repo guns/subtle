@@ -215,7 +215,7 @@ subClientNew(Window win)
   XSetWindowBorderWidth(subtle->dpy, c->win, BORDER(c));
 
   /* Update and handle according to flags */
-  subClientToggle(c, (~c->flags & flags), False); ///< Toggle flags
+  subClientToggle(c, (~c->flags & flags), False); ///< Enable only
   if(c->flags & SUB_CLIENT_TYPE_DIALOG) ClientCenter(c);
 
   /* EWMH: Gravity, screen and desktop */
