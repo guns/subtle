@@ -3,7 +3,7 @@
   * @package subtle
   *
   * @file Array functions
-  * @copyright 2005-2010 Christoph Kappel <unexist@dorfelite.net>
+  * @copyright 2005-2011 Christoph Kappel <unexist@dorfelite.net>
   * @version $Id$
   *
   * This program can be distributed under the terms of the GNU GPL.

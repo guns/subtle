@@ -1,6 +1,6 @@
 #
 # dmenu based tagging script
-# Copyright (c) 2005-2010 Christoph Kappel
+# Copyright (c) 2005-2011 Christoph Kappel
 #
 # This program can be distributed under the terms of the GNU GPL.
 # See the file COPYING.

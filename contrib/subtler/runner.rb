@@ -3,7 +3,7 @@
 # @package subtler
 #
 # @file Subtle remote
-# @copyright (c) 2005-2010 Christoph Kappel <unexist@dorfelite.net>
+# @copyright (c) 2005-2011 Christoph Kappel <unexist@dorfelite.net>
 # @version $Id$
 #
 # This program can be distributed under the terms of the GNU GPL.
@@ -420,7 +420,7 @@ EOF
 
       def version # {{{
         puts <<EOF
-  subtler #{Subtlext::VERSION} - Copyright (c) 2005-2010 Christoph Kappel
+  subtler #{Subtlext::VERSION} - Copyright (c) 2005-2011 Christoph Kappel
   Released under the GNU General Public License
   Using Ruby #{RUBY_VERSION}
 EOF
