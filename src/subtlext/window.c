@@ -357,6 +357,56 @@ subWindowFontWriter(VALUE self,
   return Qnil;
 } /* }}} */
 
+/* subWindowFontYReader {{{ */
+/*
+ * call-seq: font_y -> Fixnum
+ *
+ * Get y offset of selected font
+ *
+ *  win.font_y
+ *  => 10
+ */
+
+VALUE
+subWindowFontYReader(VALUE self)
+{
+  VALUE ret = INT2FIX(0);
+  SubtlextWindow *w = NULL;
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+
+  Data_Get_Struct(self, SubtlextWindow, w);
+  if(w && w->font) ret = INT2FIX(w->font->y);
+
+  return ret;
+} /* }}} */
+
+/* subWindowFontHeightReader {{{ */
+/*
+ * call-seq: font_height -> Fixnum
+ *
+ * Get height of selected font
+ *
+ *  win.font_height
+ *  => 10
+ */
+
+VALUE
+subWindowFontHeightReader(VALUE self)
+{
+  VALUE ret = INT2FIX(0);
+  SubtlextWindow *w = NULL;
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+
+  Data_Get_Struct(self, SubtlextWindow, w);
+  if(w && w->font) ret = INT2FIX(w->font->height);
+
+  return ret;
+} /* }}} */
+
 /* subWindowForegroundWriter {{{ */
 /*
  * call-seq: foreground=(color) -> nil

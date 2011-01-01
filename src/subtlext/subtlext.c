@@ -1661,6 +1661,8 @@ Init_subtlext(void)
   rb_define_method(window, "initialize",    subWindowInit,              1);
   rb_define_method(window, "name=",         subWindowNameWriter,        1);
   rb_define_method(window, "font=",         subWindowFontWriter,        1);
+  rb_define_method(window, "font_y",        subWindowFontYReader,       0);
+  rb_define_method(window, "font_height",   subWindowFontHeightReader,  0);
   rb_define_method(window, "foreground=",   subWindowForegroundWriter,  1);
   rb_define_method(window, "background=",   subWindowBackgroundWriter,  1);
   rb_define_method(window, "border_color=", subWindowBorderColorWriter, 1);

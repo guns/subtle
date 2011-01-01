@@ -257,6 +257,8 @@ VALUE subWindowAlloc(VALUE self);                                 ///< Allocate 
 VALUE subWindowInit(VALUE self, VALUE geometry);                  ///< Init window
 VALUE subWindowNameWriter(VALUE self, VALUE value);               ///< Set name
 VALUE subWindowFontWriter(VALUE self, VALUE value);               ///< Set font
+VALUE subWindowFontYReader(VALUE self);                           ///< Get y offset of font
+VALUE subWindowFontHeightReader(VALUE self);                      ///< Get height of font
 VALUE subWindowForegroundWriter(VALUE self, VALUE value);         ///< Set foreground
 VALUE subWindowBackgroundWriter(VALUE self, VALUE value);         ///< Set background
 VALUE subWindowBorderColorWriter(VALUE self, VALUE value);        ///< Set border color
