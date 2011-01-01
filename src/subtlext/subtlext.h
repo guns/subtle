@@ -57,12 +57,13 @@ VALUE subClientInstantiate(int id);                               ///< Instantia
 VALUE subClientInit(VALUE self, VALUE win);                       ///< Create client
 VALUE subClientUpdate(VALUE self);                                ///< Update client
 VALUE subClientViewList(VALUE self);                              ///< Get views clients is on
-VALUE subClientStateFullAsk(VALUE self);                          ///< Is client fullscreen
-VALUE subClientStateFloatAsk(VALUE self);                         ///< Is client floating
-VALUE subClientStateStickAsk(VALUE self);                         ///< Is client stick
-VALUE subClientToggleFull(VALUE self);                            ///< Toggle fullscreen
-VALUE subClientToggleFloat(VALUE self);                           ///< Toggle floating
-VALUE subClientToggleStick(VALUE self);                           ///< Toggle stick
+VALUE subClientFlagsFullAsk(VALUE self);                          ///< Is client fullscreen
+VALUE subClientFlagsFloatAsk(VALUE self);                         ///< Is client floating
+VALUE subClientFlagsStickAsk(VALUE self);                         ///< Is client stick
+VALUE subClientFlagsToggleFull(VALUE self);                       ///< Toggle fullscreen
+VALUE subClientFlagsToggleFloat(VALUE self);                      ///< Toggle floating
+VALUE subClientFlagsToggleStick(VALUE self);                      ///< Toggle stick
+VALUE subClientFlagsWriter(VALUE self, VALUE value);              ///< Set multiple flags
 VALUE subClientRestackRaise(VALUE self);                          ///< Raise client
 VALUE subClientRestackLower(VALUE self);                          ///< Lower client
 VALUE subClientSelectUp(VALUE self);                              ///< Get client above
