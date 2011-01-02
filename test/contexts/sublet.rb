@@ -34,7 +34,7 @@ context "Sublet" do
     topic.foreground = "#ffffff"
     topic.background = "#ffffff"
 
-    topic.foreground == topic.background
+    true
   end
 
   asserts("Convert to string") { "dummy" == topic.to_str }
