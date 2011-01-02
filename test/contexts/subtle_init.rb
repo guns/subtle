@@ -15,7 +15,7 @@ context "Subtle - Init" do
   end
 
   asserts("Check colors") do
-    Subtlext::Subtle.colors.is_a?(Hash) and 21 == Subtlext::Subtle.colors.size
+    Subtlext::Subtle.colors.is_a?(Hash) and 24 == Subtlext::Subtle.colors.size
   end
 
   asserts("Check font") do
