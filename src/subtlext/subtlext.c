@@ -1358,13 +1358,14 @@ Init_subtlext(void)
 
   /* Class methods */
   rb_define_method(geometry, "initialize", subGeometryInit,      -1);
-  rb_define_method(geometry, "to_a",       subGeometryToArray,    0);
+  rb_define_method(geometry, "to_ary",     subGeometryToArray,    0);
   rb_define_method(geometry, "to_hash",    subGeometryToHash,     0);
   rb_define_method(geometry, "to_str",     subGeometryToString,   0);
   rb_define_method(geometry, "==",         subGeometryEqual,      1);
   rb_define_method(geometry, "eql?",       subGeometryEqualTyped, 1);
 
   /* Aliases */
+  rb_define_alias(geometry, "to_a", "to_ary");
   rb_define_alias(geometry, "to_h", "to_hash");
   rb_define_alias(geometry, "to_s", "to_str");
 
@@ -1515,7 +1516,7 @@ Init_subtlext(void)
   sublet = rb_define_class_under(mod, "Sublet", rb_cObject);
 
   /* Sublet id */
-  rb_define_attr(screen, "id",   1, 0);
+  rb_define_attr(sublet, "id",   1, 0);
 
   /* Name of the sublet */
   rb_define_attr(sublet, "name", 1, 0);
