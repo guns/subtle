@@ -719,11 +719,36 @@ SubtlextPropWriter(VALUE self,
   return Qnil;
 } /* }}} */
 
+/* SubtlextEqual {{{ */
+VALUE
+SubtlextEqual(VALUE self,
+  VALUE other,
+  const char *attr,
+  int check_type)
+{
+  int ret = False;
+  VALUE val1 = Qnil, val2 = Qnil;
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self,  attr, val1);
+  GET_ATTR(other, attr, val2);
+
+  /* Check ruby object types */
+  if(check_type)
+    {
+      ret = (rb_obj_class(self) == rb_obj_class(other) && val1 == val2);
+    }
+  else ret = (val1 == val2);
+
+  return ret ? Qtrue : Qfalse;
+} /* }}} */
+
 /* SubtlextEqualId {{{ */
 /*
  * call-seq: ==(other) -> True or False
  *
- * Whether both objects are equal (based on id)
+ * Whether both objects have the same values (based on id)
  *
  *  object1 == object2
  *  => true
@@ -733,21 +758,14 @@ static VALUE
 SubtlextEqualId(VALUE self,
   VALUE other)
 {
-  VALUE id1 = Qnil, id2 = Qnil;
-
-  /* Check ruby object */
-  rb_check_frozen(self);
-  GET_ATTR(self,  "@id", id1);
-  GET_ATTR(other, "@id", id2);
-
-  return id1 == id2 ? Qtrue : Qfalse;
+  return SubtlextEqual(self, other, "@id", False);
 } /* }}} */
 
 /* SubtlextEqualWindow {{{ */
 /*
  * call-seq: ==(other) -> True or False
  *
- * Whether both objects are equal (based on win)
+ * Whether both objects have the same values (based on win)
  *
  *  object1 == object2
  *  => true
@@ -757,14 +775,41 @@ static VALUE
 SubtlextEqualWindow(VALUE self,
   VALUE other)
 {
-  VALUE win1 = Qnil, win2 = Qnil;
+  return SubtlextEqual(self, other, "@win", False);
+} /* }}} */
 
-  /* Check ruby object */
-  rb_check_frozen(self);
-  GET_ATTR(self,  "@win", win1);
-  GET_ATTR(other, "@win", win2);
+/* SubtlextEqualTypedId {{{ */
+/*
+ * call-seq: eql?(other) -> True or False
+ *
+ * Whether both objects have the same values and types (based on id)
+ *
+ *  object1.eql? object2
+ *  => true
+ */
 
-  return win1 == win2 ? Qtrue : Qfalse;
+static VALUE
+SubtlextEqualTypedId(VALUE self,
+  VALUE other)
+{
+  return SubtlextEqual(self, other, "@id", True);
+} /* }}} */
+
+/* SubtlextEqualTypedWindow {{{ */
+/*
+ * call-seq: eql?(other) -> True or False
+ *
+ * Whether both objects have the same value and types (based on win)
+ *
+ *  object1.eql? object2
+ *  => true
+ */
+
+static VALUE
+SubtlextEqualTypedWindow(VALUE self,
+  VALUE other)
+{
+  return SubtlextEqual(self, other, "@win", True);
 } /* }}} */
 
 /* Exported */
@@ -1205,19 +1250,20 @@ Init_subtlext(void)
   rb_define_singleton_method(client, "all",     subClientSingAll,     0);
 
   /* General methods */
-  rb_define_method(client, "has_tag?",    SubtlextTagAsk,      1);
-  rb_define_method(client, "tags",        SubtlextTagReader,   0);
-  rb_define_method(client, "tags=",       SubtlextTagWriter,   1);
-  rb_define_method(client, "tag",         SubtlextTagAdd,      1);
-  rb_define_method(client, "untag",       SubtlextTagDel,      1);
-  rb_define_method(client, "retag",       SubtlextTagReload,   0);
-  rb_define_method(client, "send_button", SubtlextSendButton, -1);
-  rb_define_method(client, "send_key",    SubtlextSendKey,    -1);
-  rb_define_method(client, "focus",       SubtlextFocus,       0);
-  rb_define_method(client, "has_focus?",  SubtlextFocusAsk,    0);
-  rb_define_method(client, "[]",          SubtlextPropReader,  1);
-  rb_define_method(client, "[]=",         SubtlextPropWriter,  2);
-  rb_define_method(client, "==",          SubtlextEqualWindow, 1);
+  rb_define_method(client, "has_tag?",    SubtlextTagAsk,           1);
+  rb_define_method(client, "tags",        SubtlextTagReader,        0);
+  rb_define_method(client, "tags=",       SubtlextTagWriter,        1);
+  rb_define_method(client, "tag",         SubtlextTagAdd,           1);
+  rb_define_method(client, "untag",       SubtlextTagDel,           1);
+  rb_define_method(client, "retag",       SubtlextTagReload,        0);
+  rb_define_method(client, "send_button", SubtlextSendButton,      -1);
+  rb_define_method(client, "send_key",    SubtlextSendKey,         -1);
+  rb_define_method(client, "focus",       SubtlextFocus,            0);
+  rb_define_method(client, "has_focus?",  SubtlextFocusAsk,         0);
+  rb_define_method(client, "[]",          SubtlextPropReader,       1);
+  rb_define_method(client, "[]=",         SubtlextPropWriter,       2);
+  rb_define_method(client, "==",          SubtlextEqualWindow,      1);
+  rb_define_method(client, "eql?",        SubtlextEqualTypedWindow, 1);
 
   /* Class methods */
   rb_define_method(client, "initialize",   subClientInit,             1);
@@ -1285,6 +1331,7 @@ Init_subtlext(void)
   rb_define_method(color, "to_str",     subColorToString,     0);
   rb_define_method(color, "+",          subColorOperatorPlus, 1);
   rb_define_method(color, "==",         subColorEqual,        1);
+  rb_define_method(color, "eql?",       subColorEqualTyped,   1);
 
   /* Aliases */
   rb_define_alias(color, "to_s", "to_str");
@@ -1310,11 +1357,12 @@ Init_subtlext(void)
   rb_define_attr(geometry, "height", 1, 1);
 
   /* Class methods */
-  rb_define_method(geometry, "initialize", subGeometryInit,     -1);
-  rb_define_method(geometry, "to_a",       subGeometryToArray,   0);
-  rb_define_method(geometry, "to_hash",    subGeometryToHash,    0);
-  rb_define_method(geometry, "to_str",     subGeometryToString,  0);
-  rb_define_method(geometry, "==",         subGeometryEqual,     1);
+  rb_define_method(geometry, "initialize", subGeometryInit,      -1);
+  rb_define_method(geometry, "to_a",       subGeometryToArray,    0);
+  rb_define_method(geometry, "to_hash",    subGeometryToHash,     0);
+  rb_define_method(geometry, "to_str",     subGeometryToString,   0);
+  rb_define_method(geometry, "==",         subGeometryEqual,      1);
+  rb_define_method(geometry, "eql?",       subGeometryEqualTyped, 1);
 
   /* Aliases */
   rb_define_alias(geometry, "to_h", "to_hash");
@@ -1342,7 +1390,8 @@ Init_subtlext(void)
   rb_define_singleton_method(gravity, "all",  subGravitySingAll,  0);
 
   /* General methods */
-  rb_define_method(gravity, "==", SubtlextEqualId, 1);
+  rb_define_method(gravity, "==",   SubtlextEqualId,      1);
+  rb_define_method(gravity, "eql?", SubtlextEqualTypedId, 1);
 
   /* Class methods */
   rb_define_method(gravity, "initialize",   subGravityInit,           -1);
@@ -1391,6 +1440,8 @@ Init_subtlext(void)
   rb_define_method(icon, "to_str",     subIconToString,      0);
   rb_define_method(icon, "+",          subIconOperatorPlus,  1);
   rb_define_method(icon, "*",          subIconOperatorMult,  1);
+  rb_define_method(icon, "==",         subIconEqual,         1);
+  rb_define_method(icon, "eql?",       subIconEqualTyped,    1);
 
   /* Aliases */
   rb_define_alias(icon, "to_s", "to_str");
@@ -1415,7 +1466,8 @@ Init_subtlext(void)
   rb_define_singleton_method(screen, "all",     subScreenSingAll,     0);
 
   /* General methods */
-  rb_define_method(screen, "==", SubtlextEqualId, 1);
+  rb_define_method(screen, "==",   SubtlextEqualId,      1);
+  rb_define_method(screen, "eql?", SubtlextEqualTypedId, 1);
 
   /* Class methods */
   rb_define_method(screen, "initialize", subScreenInit,       1);
@@ -1473,7 +1525,8 @@ Init_subtlext(void)
   rb_define_singleton_method(sublet, "all",  subSubletSingAll,  0);
 
   /* General methods */
-  rb_define_method(sublet, "==", SubtlextEqualId, 1);
+  rb_define_method(sublet, "==",   SubtlextEqualId,      1);
+  rb_define_method(sublet, "eql?", SubtlextEqualTypedId, 1);
 
   /* Class methods */
   rb_define_method(sublet, "initialize",  subSubletInit,             1);
@@ -1512,7 +1565,8 @@ Init_subtlext(void)
   rb_define_singleton_method(tag, "all",     subTagSingAll,     0);
 
   /* General methods */
-  rb_define_method(tag, "==", SubtlextEqualId, 1);
+  rb_define_method(tag, "==",   SubtlextEqualId,      1);
+  rb_define_method(tag, "eql?", SubtlextEqualTypedId, 1);
 
   /* Class methods */
   rb_define_method(tag, "initialize", subTagInit,     1);
@@ -1557,13 +1611,14 @@ Init_subtlext(void)
   rb_define_singleton_method(tray, "all",  subTraySingAll,  0);
 
   /* General methods */
-  rb_define_method(tray, "send_button", SubtlextSendButton, -1);
-  rb_define_method(tray, "send_key",    SubtlextSendKey,    -1);
-  rb_define_method(tray, "focus",       SubtlextFocus,       0);
-  rb_define_method(tray, "has_focus?",  SubtlextFocusAsk,    0);
-  rb_define_method(tray, "[]",          SubtlextPropReader,  1);
-  rb_define_method(tray, "[]=",         SubtlextPropWriter,  2);
-  rb_define_method(tray, "==",          SubtlextEqualWindow, 1);
+  rb_define_method(tray, "send_button", SubtlextSendButton,      -1);
+  rb_define_method(tray, "send_key",    SubtlextSendKey,         -1);
+  rb_define_method(tray, "focus",       SubtlextFocus,            0);
+  rb_define_method(tray, "has_focus?",  SubtlextFocusAsk,         0);
+  rb_define_method(tray, "[]",          SubtlextPropReader,       1);
+  rb_define_method(tray, "[]=",         SubtlextPropWriter,       2);
+  rb_define_method(tray, "==",          SubtlextEqualWindow,      1);
+  rb_define_method(tray, "eql?",        SubtlextEqualTypedWindow, 1);
 
   /* Class methods */
   rb_define_method(tray, "initialize", subTrayInit,       1);
@@ -1600,14 +1655,15 @@ Init_subtlext(void)
   rb_define_singleton_method(view, "all",     subViewSingAll,     0);
 
   /* General methods */
-  rb_define_method(view, "has_tag?", SubtlextTagAsk,      1);
-  rb_define_method(view, "tags",     SubtlextTagReader,   0);
-  rb_define_method(view, "tags=",    SubtlextTagWriter,   1);
-  rb_define_method(view, "tag",      SubtlextTagAdd,      1);
-  rb_define_method(view, "untag",    SubtlextTagDel,      1);
-  rb_define_method(view, "[]",       SubtlextPropReader,  1);
-  rb_define_method(view, "[]=",      SubtlextPropWriter,  2);
-  rb_define_method(view, "==",       SubtlextEqualId,     1);
+  rb_define_method(view, "has_tag?", SubtlextTagAsk,       1);
+  rb_define_method(view, "tags",     SubtlextTagReader,    0);
+  rb_define_method(view, "tags=",    SubtlextTagWriter,    1);
+  rb_define_method(view, "tag",      SubtlextTagAdd,       1);
+  rb_define_method(view, "untag",    SubtlextTagDel,       1);
+  rb_define_method(view, "[]",       SubtlextPropReader,   1);
+  rb_define_method(view, "[]=",      SubtlextPropWriter,   2);
+  rb_define_method(view, "==",       SubtlextEqualId,      1);
+  rb_define_method(view, "eql?",     SubtlextEqualTypedId, 1);
 
   /* Class methods */
   rb_define_method(view, "initialize", subViewInit,          1);
@@ -1651,12 +1707,13 @@ Init_subtlext(void)
   rb_define_singleton_method(window, "once", subWindowSingOnce, 1);
 
   /* General methods */
-  rb_define_method(window, "send_button", SubtlextSendButton, -1);
-  rb_define_method(window, "send_key",    SubtlextSendKey,    -1);
-  rb_define_method(window, "focus",       SubtlextFocus,       0);
-  rb_define_method(window, "[]",          SubtlextPropReader,  1);
-  rb_define_method(window, "[]=",         SubtlextPropWriter,  2);
-  rb_define_method(window, "==",          SubtlextEqualWindow, 1);
+  rb_define_method(window, "send_button", SubtlextSendButton,      -1);
+  rb_define_method(window, "send_key",    SubtlextSendKey,         -1);
+  rb_define_method(window, "focus",       SubtlextFocus,            0);
+  rb_define_method(window, "[]",          SubtlextPropReader,       1);
+  rb_define_method(window, "[]=",         SubtlextPropWriter,       2);
+  rb_define_method(window, "==",          SubtlextEqualWindow,      1);
+  rb_define_method(window, "eql?",        SubtlextEqualTypedWindow, 1);
 
   /* Class methods */
   rb_define_method(window, "initialize",    subWindowInit,              1);

@@ -11,6 +11,31 @@
 
 #include "subtlext.h"
 
+/* GeometryEqual {{{ */
+VALUE
+GeometryEqual(VALUE self,
+  VALUE other)
+{
+  int ret = False;
+
+  /* Check ruby object types */
+  if(rb_obj_class(self) == rb_obj_class(other))
+    {
+      XRectangle r1 = { 0 }, r2 = { 0 };
+
+      /* Get rectangles */
+      subGeometryToRect(self,  &r1);
+      subGeometryToRect(other, &r2);
+
+      ret = (r1.x == r2.x && r1.y == r2.y &&
+        r1.width == r2.width && r1.height == r2.height);
+    }
+
+  return ret ? Qtrue : Qfalse;
+} /* }}} */
+
+/* Exported */
+
 /* subGeometryInstantiate {{{ */
 VALUE
 subGeometryInstantiate(int x,
@@ -217,7 +242,7 @@ subGeometryToString(VALUE self)
 /*
  * call-seq: ==(other) -> True or False
  *
- * Whether both objects are equal (based on geometry)
+ * Whether both objects have the same values (based on geometry)
  *
  *  object1 == object2
  *  => true
@@ -227,13 +252,24 @@ VALUE
 subGeometryEqual(VALUE self,
   VALUE other)
 {
-  XRectangle r1 = { 0 }, r2 = { 0 };
+  return GeometryEqual(self, other);
+} /* }}} */
 
-  subGeometryToRect(self, &r1);
-  subGeometryToRect(other, &r2);
+/* subGeometryEqualTyped {{{ */
+/*
+ * call-seq: eql?(other) -> True or False
+ *
+ * Whether both objects have the same values and types (based on geometry)
+ *
+ *  object1.eql? object2
+ *  => true
+ */
 
-  return (r1.x == r2.x && r1.y == r2.y &&
-    r1.width == r2.width && r1.height == r2.height) ? Qtrue : Qfalse;
+VALUE
+subGeometryEqualTyped(VALUE self,
+  VALUE other)
+{
+  return GeometryEqual(self, other);
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

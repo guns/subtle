@@ -47,6 +47,30 @@ IconSweep(SubtlextIcon *i)
     }
 } /* }}} */
 
+/* IconEqual {{{ */
+VALUE
+IconEqual(VALUE self,
+  VALUE other)
+{
+  int ret = False;
+
+  /* Check ruby object types */
+  if(rb_obj_class(self) == rb_obj_class(other))
+    {
+      SubtlextIcon *i1 = NULL, *i2 = NULL;
+
+      /* Get icons */
+      Data_Get_Struct(self,  SubtlextIcon, i1);
+      Data_Get_Struct(other, SubtlextIcon, i2);
+
+      ret = (i1 && i2 && i1->width == i2->width && i1->height == i2->height);
+    }
+
+  return ret ? Qtrue : Qfalse;
+} /* }}} */
+
+/* Exported */
+
 /* subIconAlloc {{{ */
 /*
  * call-seq: new(path)          -> Subtle::Icon
@@ -409,6 +433,40 @@ subIconOperatorMult(VALUE self,
     rb_obj_classname(value));
 
   return ret;
+} /* }}} */
+
+/* subIconEqual {{{ */
+/*
+ * call-seq: ==(other) -> True or False
+ *
+ * Whether both objects have the same values (based on geometry)
+ *
+ *  object1 == object2
+ *  => true
+ */
+
+VALUE
+subIconEqual(VALUE self,
+  VALUE other)
+{
+  return IconEqual(self, other);
+} /* }}} */
+
+/* subIconEqualTyped {{{ */
+/*
+ * call-seq: eql?(other) -> True or False
+ *
+ * Whether both objects have the same values and types (based on geometry)
+ *
+ *  object1.eql? object2
+ *  => true
+ */
+
+VALUE
+subIconEqualTyped(VALUE self,
+  VALUE other)
+{
+  return IconEqual(self, other);
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

@@ -92,6 +92,7 @@ VALUE subColorToHex(VALUE self);                                  ///< Convert t
 VALUE subColorToString(VALUE self);                               ///< Convert to string
 VALUE subColorOperatorPlus(VALUE self, VALUE value);              ///< Concat string
 VALUE subColorEqual(VALUE self, VALUE other);                     ///< Whether objects are equal
+VALUE subColorEqualTyped(VALUE self, VALUE other);                ///< Whether objects are equal typed
 /* }}} */
 
 /* geometry.c {{{ */
@@ -103,6 +104,7 @@ VALUE subGeometryToArray(VALUE self);                             ///< Geometry 
 VALUE subGeometryToHash(VALUE self);                              ///< Geometry to hash
 VALUE subGeometryToString(VALUE self);                            ///< Geometry to string
 VALUE subGeometryEqual(VALUE self, VALUE other);                  ///< Whether objects are equal
+VALUE subGeometryEqualTyped(VALUE self, VALUE other);             ///< Whether objects are equal typed
 /* }}} */
 
 /* gravity.c {{{ */
@@ -136,6 +138,8 @@ VALUE subIconBitmapAsk(VALUE self);                               ///< Whether i
 VALUE subIconToString(VALUE self);                                ///< Convert to string
 VALUE subIconOperatorPlus(VALUE self, VALUE value);               ///< Concat string
 VALUE subIconOperatorMult(VALUE self, VALUE value);               ///< Concat string
+VALUE subIconEqual(VALUE self, VALUE other);                      ///< Whether objects are equal
+VALUE subIconEqualTyped(VALUE self, VALUE other);                 ///< Whether objects are equal typed
 /* }}} */
 
 /* screen.c {{{ */

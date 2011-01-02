@@ -12,6 +12,31 @@
 
 #include "subtlext.h"
 
+/* ColorEqual {{{ */
+VALUE
+ColorEqual(VALUE self,
+  VALUE other,
+  int check_type)
+{
+  int ret = False;
+  VALUE pixel1 = Qnil, pixel2 = Qnil;
+
+  /* Check ruby object */
+  GET_ATTR(self,  "@pixel", pixel1);
+  GET_ATTR(other, "@pixel", pixel2);
+
+  /* Check ruby object types */
+  if(check_type)
+    {
+      ret = (rb_obj_class(self) == rb_obj_class(other) && pixel1 == pixel2);
+    }
+  else ret = (pixel1 == pixel2);
+
+  return ret ? Qtrue : Qfalse;
+} /* }}} */
+
+/* Exported */
+
 /* subColorPixel {{{ */
 unsigned long
 subColorPixel(VALUE value)
@@ -169,7 +194,7 @@ subColorOperatorPlus(VALUE self,
 /*
  * call-seq: ==(other) -> True or False
  *
- * Whether both objects are equal (based on pixel)
+ * Whether both objects have the same values (based on pixel)
  *
  *  object1 == object2
  *  => true
@@ -179,13 +204,24 @@ VALUE
 subColorEqual(VALUE self,
   VALUE other)
 {
-  VALUE pixel1 = Qnil, pixel2 = Qnil;
+  return ColorEqual(self, other, False);
+} /* }}} */
 
-  /* Check ruby object */
-  GET_ATTR(self,  "@pixel", pixel1);
-  GET_ATTR(other, "@pixel", pixel2);
+/* subColorEqualTyped {{{ */
+/*
+ * call-seq: eql?(other) -> True or False
+ *
+ * Whether both objects have the same values and types (based on pixel)
+ *
+ *  object1.eql? object2
+ *  => true
+ */
 
-  return pixel1 == pixel2 ?  Qtrue : Qfalse;
+VALUE
+subColorEqualTyped(VALUE self,
+  VALUE other)
+{
+  return ColorEqual(self, other, True);
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
