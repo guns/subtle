@@ -27,7 +27,7 @@ context "Screen" do
   end
 
   asserts("Finder") do
-    0 == Subtlext::Screen["terms"].id
+    0 == Subtlext::Screen[0].id
   end
 
   asserts("Equal and compare") do
