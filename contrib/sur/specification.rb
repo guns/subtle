@@ -53,11 +53,8 @@ module Subtle # {{{
       # Hash of dependencies
       attr_accessor :dependencies
 
-      # Version of subtlext
-      attr_accessor :subtlext_version
-
-      # Version of sur
-      attr_accessor :sur_version
+      # Version of subtle
+      attr_accessor :required_version
 
       # Path of spec
       attr_accessor :path
@@ -312,7 +309,7 @@ EOF
 
       def satisfied?
         satisfied = true
-        gems      = []
+        missing   = []
 
         # Check subtlext version
         unless(@subtlext_version.nil?)
@@ -320,12 +317,12 @@ EOF
             require "subtle/subtlext"
 
             # Check version
-            major_have, minor_have, teeny_have = Subtlext::VERSION.split(".").map { |i| i.to_i }
-            major_need, minor_need, teeny_need = @subtlext_version.split(".").map { |i| i.to_i }
+            major_have, minor_have, teeny_have = Subtlext::VERSION.split(".").map(&:to_i)
+            major_need, minor_need, teeny_need = @subtlext_version.split(".").map(&:to_i)
 
             if(major_need > major_have or minor_need > minor_have or
-                teeny_need.nil? and teeny_have.nil? and teeny_need > teeny_have)
-              puts ">>> ERROR: Need at least subtlext >= #{@subtlext_version}"
+               teeny_need.nil? or teeny_have.nil? or teeny_need > teeny_have)
+              puts ">>> ERROR: Need at least subtle >= #{@subtlext_version}"
 
               satisfied = false
             end
@@ -333,34 +330,19 @@ EOF
           end
         end
 
-        # Check sur version
-        unless(@sur_version.nil?)
-          # Check version
-          major_have, minor_have, teeny_have = Subtle::Sur::VERSION.split(".").map { |i| i.to_i }
-          major_need, minor_need, teeny_need = @sur_version.split(".").map { |i| i.to_i }
-
-          if(major_need > major_have or minor_need > minor_have or
-              teeny_need.nil? and teeny_have.nil? and teeny_need > teeny_have)
-            puts ">>> ERROR: Need at least sur >= #{@sur_version}"
-
-            satisfied = false
-          end
-        end
-
-        # Check gems
+        # Just try to load the gem and catch errors
         @dependencies.each do |k, v|
-          # Just load the gem and catch error
           begin
             gem(k, v)
           rescue Gem::LoadError
-            gems.push("%s (%s)" % [ k, v])
+            missing.push("%s (%s)" % [ k, v])
 
             satisfied = false
           end
         end
 
-        unless(gems.empty?)
-          puts ">>> ERROR: Following gems are missing: #{gems.join(", ")}"
+        unless(missing.empty?)
+          puts ">>> ERROR: Following gems are missing: #{missing.join(", ")}"
         end
 
         satisfied
@@ -381,7 +363,12 @@ EOF
         "#{@name}-#{@version}".downcase
       end # }}}
 
+      # Aliases
       alias :to_s :to_str
+
+      # FIXME: Deprecated
+      alias :subtlext_version :required_version
+      alias :subtlext_version= :required_version=
     end # }}}
   end # }}}
 end # }}}
