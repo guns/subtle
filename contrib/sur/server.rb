@@ -40,8 +40,7 @@ module Subtle # {{{
         property(:path,        String)
         property(:digest,      String)
         property(:ip,          String)
-        property(:subtlext,    String, :required => false)
-        property(:sur,         String, :required => false)
+        property(:required,    String, :required => false)
         property(:downloads,   Integer, :default => 0)
         property(:annotations, Integer, :default => 0)
         property(:created_at,  ::DataMapper::Types::EpochTime)
@@ -199,8 +198,7 @@ module Subtle # {{{
                 spec.date             = s.date
                 spec.tags             = tags
                 spec.digest           = s.digest
-                spec.subtlext_version = s.subtlext
-                spec.sur_version      = s.sur
+                spec.required_version = s.required
               end
 
                list.push(spec)
@@ -556,8 +554,7 @@ EOF
                     :path        => path,
                     :digest      => digest,
                     :ip          => ip,
-                    :subtlext    => spec.subtlext_version,
-                    :sur         => spec.sur_version,
+                    :required    => spec.required_version,
                     :created_at  => Time.now
                   )
                   raise if(!s.save)
