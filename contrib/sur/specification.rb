@@ -208,10 +208,7 @@ NOTES
   s.icons       = [ ]
 
   # Version requirements
-  # s.subtlext_version = "0.9.2127"
-  # s.sur_version      = "0.2.168"
-
-  # Gem requirements
+  # s.required_version = "0.9.2127"
   # s.add_dependency("subtle", "~> 0.1.2")
 end
 EOF
