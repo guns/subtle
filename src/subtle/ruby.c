@@ -193,14 +193,19 @@ RubyGetGeometry(VALUE ary,
   if(T_ARRAY == rb_type(ary))
     {
       int i;
-      VALUE value = Qnil, meth = rb_intern("at");
+      VALUE value = Qnil;
 
-      if((4 == FIX2INT(rb_funcall(ary, rb_intern("size"), 0, NULL))))
+      if(4 == RARRAY_LENINT(ary))
         {
-          for(i = 0; i < 4; i++) ///< Safely fetching array values
+          /* Check array values */
+          for(i = 0; i < 4; i++)
             {
-              value   = rb_funcall(ary, meth, 1, INT2FIX(i)) ;
-              data[i] = RTEST(value) ? FIX2INT(value) : 0;
+              /* Check value type */
+              switch(rb_type(value = rb_ary_entry(ary, i)))
+                {
+                  case T_FIXNUM: data[i] = FIX2INT(value);            break;
+                  case T_FLOAT:  data[i] = FIX2INT(rb_to_int(value)); break;
+                }
             }
 
           ret = True;
@@ -225,12 +230,8 @@ RubyGetGravity(VALUE value)
   /* Check value type */
   switch(rb_type(value))
     {
-      case T_FIXNUM:
-        gravity = FIX2INT(value);
-        break;
-      case T_SYMBOL:
-        gravity = subGravityFind(SYM2CHAR(value), 0);
-        break;
+      case T_FIXNUM: gravity = FIX2INT(value);                     break;
+      case T_SYMBOL: gravity = subGravityFind(SYM2CHAR(value), 0); break;
     }
 
   return 0 <= gravity && gravity < subtle->gravities->ndata ? gravity : -1;
