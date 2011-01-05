@@ -255,7 +255,7 @@ main(int argc,
   subtle->flags |= (SUB_SUBTLE_XRANDR|SUB_SUBTLE_XINERAMA);
 
   /* Parse arguments */
-  while(-1 != (c = getopt_long(argc, argv, "c:d:hkrs:vD", long_options, NULL)))
+  while(-1 != (c = getopt_long(argc, argv, "c:d:hknrs:vD", long_options, NULL)))
     {
       switch(c)
         {
