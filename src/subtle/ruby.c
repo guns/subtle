@@ -195,7 +195,8 @@ RubyGetGeometry(VALUE ary,
       int i;
       VALUE value = Qnil;
 
-      if(4 == RARRAY_LENINT(ary))
+      /* Check length of array */
+      if(4 == FIX2INT(rb_funcall(ary, rb_intern("size"), 0, NULL)))
         {
           /* Check array values */
           for(i = 0; i < 4; i++)
