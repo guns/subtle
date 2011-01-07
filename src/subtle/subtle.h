@@ -162,23 +162,24 @@
 #define SUB_CLIENT_CLOSE              (1L << 13)                  ///< Send close message
 #define SUB_CLIENT_BORDERLESS         (1L << 14)                  ///< Borderless
 #define SUB_CLIENT_UNMAP              (1L << 15)                  ///< Ignore unmaps
+#define SUB_CLIENT_ARRANGE            (1L << 16)                  ///< Re-arrange client
 
-#define SUB_CLIENT_MODE_FULL          (1L << 16)                  ///< Fullscreen mode
-#define SUB_CLIENT_MODE_FLOAT         (1L << 17)                  ///< Float mode
-#define SUB_CLIENT_MODE_STICK         (1L << 18)                  ///< Stick mode
-#define SUB_CLIENT_MODE_URGENT        (1L << 19)                  ///< Urgent mode
-#define SUB_CLIENT_MODE_RESIZE        (1L << 20)                  ///< Resize mode
-#define SUB_CLIENT_MODE_NOFULL        (1L << 21)                  ///< Disable full mode
-#define SUB_CLIENT_MODE_NOFLOAT       (1L << 22)                  ///< Disable float mode
-#define SUB_CLIENT_MODE_NOSTICK       (1L << 23)                  ///< Disable stick mode
-#define SUB_CLIENT_MODE_NOURGENT      (1L << 24)                  ///< Disable urgent mode
-#define SUB_CLIENT_MODE_NORESIZE      (1L << 25)                  ///< Disable resize mode
+#define SUB_CLIENT_MODE_FULL          (1L << 17)                  ///< Fullscreen mode
+#define SUB_CLIENT_MODE_FLOAT         (1L << 18)                  ///< Float mode
+#define SUB_CLIENT_MODE_STICK         (1L << 19)                  ///< Stick mode
+#define SUB_CLIENT_MODE_URGENT        (1L << 20)                  ///< Urgent mode
+#define SUB_CLIENT_MODE_RESIZE        (1L << 21)                  ///< Resize mode
+#define SUB_CLIENT_MODE_NOFULL        (1L << 22)                  ///< Disable full mode
+#define SUB_CLIENT_MODE_NOFLOAT       (1L << 23)                  ///< Disable float mode
+#define SUB_CLIENT_MODE_NOSTICK       (1L << 24)                  ///< Disable stick mode
+#define SUB_CLIENT_MODE_NOURGENT      (1L << 25)                  ///< Disable urgent mode
+#define SUB_CLIENT_MODE_NORESIZE      (1L << 26)                  ///< Disable resize mode
 
-#define SUB_CLIENT_TYPE_DESKTOP       (1L << 26)                  ///< Desktop type (also used in match)
-#define SUB_CLIENT_TYPE_DOCK          (1L << 27)                  ///< Dock type
-#define SUB_CLIENT_TYPE_TOOLBAR       (1L << 28)                  ///< Toolbar type
-#define SUB_CLIENT_TYPE_SPLASH        (1L << 29)                  ///< Splash type
-#define SUB_CLIENT_TYPE_DIALOG        (1L << 30)                  ///< Dialog type
+#define SUB_CLIENT_TYPE_DESKTOP       (1L << 27)                  ///< Desktop type (also used in match)
+#define SUB_CLIENT_TYPE_DOCK          (1L << 28)                  ///< Dock type
+#define SUB_CLIENT_TYPE_TOOLBAR       (1L << 29)                  ///< Toolbar type
+#define SUB_CLIENT_TYPE_SPLASH        (1L << 30)                  ///< Splash type
+#define SUB_CLIENT_TYPE_DIALOG        (1L << 31)                  ///< Dialog type
 
 /* Drag flags */
 #define SUB_DRAG_START                (1L << 1)                   ///< Drag start
@@ -291,6 +292,11 @@
   (SUB_CLIENT_MODE_NOFULL|SUB_CLIENT_MODE_NOFLOAT| \
   SUB_CLIENT_MODE_NOSTICK|SUB_CLIENT_MODE_NOURGENT| \
   SUB_CLIENT_MODE_NORESIZE)                                       ///< All none mode flags
+
+/* State action */
+#define _NET_WM_STATE_REMOVE           0L                         /// Remove/unset property
+#define _NET_WM_STATE_ADD              1L                         /// Add/set property
+#define _NET_WM_STATE_TOGGLE           2L                         /// Toggle property
 
 /* XEmbed messages */
 #define XEMBED_EMBEDDED_NOTIFY         0L                         ///< Start embedding
@@ -640,6 +646,7 @@ void subArrayKill(SubArray *a, int clean);                        ///< Kill arra
 SubClient *subClientNew(Window win);                              ///< Create client
 void subClientConfigure(SubClient *c, XRectangle *geom,
   int force);                                                     ///< Send configure request
+void subClientDimension(int id);                                  ///< Dimension clients
 void subClientRender(SubClient *c);                               ///< Render client
 int subClientCompare(const void *a, const void *b);               ///< Compare two clients
 void subClientFocus(SubClient *c);                                ///< Focus client
@@ -647,9 +654,10 @@ void subClientWarp(SubClient *c, int rise);                       ///< Warp to c
 void subClientDrag(SubClient *c, int mode);                       ///< Move/drag client
 void subClientUpdate(int vid);                                    ///< Update clients
 void subClientTag(SubClient *c, int tag, int *flags);             ///< Tag client
-void subClientSetTags(SubClient *c, int *flags);                  ///< Update client tags
-void subClientSetGravity(SubClient *c, int gravity,
-  int screen, int force);                                         ///< Set client gravity
+void subClientRetag(SubClient *c, int *flags);                    ///< Update client tags
+void subClientArrange(SubClient *c, int gravity,
+  int screen, int force);                                         ///< Arrange client
+void subClientToggle(SubClient *c, int type, int gravity);        ///< Toggle client state
 void subClientSetStrut(SubClient *c);                             ///< Set client strut
 void subClientSetProtocols(SubClient *c);                         ///< Set client protocols
 void subClientSetSizeHints(SubClient *c, int *flags);             ///< Set client normal hints
@@ -658,8 +666,6 @@ void subClientSetMWMHints(SubClient *c);                          ///< Set clien
 void subClientSetState(SubClient *c, int *flags);                 ///< Set client WM state
 void subClientSetTransient(SubClient *c, int *flags);             ///< Set client transient
 void subClientSetType(SubClient *c, int *flags);                  ///< Set client tyoe
-void subClientToggle(SubClient *c, int type, int gravity);        ///< Toggle client state
-void subClientDimension(int id);                                  ///< Dimension clients
 void subClientPublish(void);                                      ///< Publish all clients
 void subClientClose(SubClient *c);                                ///< Close client
 void subClientKill(SubClient *c);                                 ///< Kill client
@@ -693,6 +699,7 @@ void subEwmhSetCardinals(Window win, SubEwmh e,
 void subEwmhSetString(Window win, SubEwmh e,
   char *value);                                                   ///< Set string property
 void subEwmhSetWMState(Window win, long state);                   ///< Set window WM state
+void subEwmhTranslateWMState(Atom atom, int *flags);              ///< Translate WM states
 int subEwmhMessage(Window win, SubEwmh e, long mask,
   long data0, long data1, long data2, long data3,
   long data4);                                                    ///< Send message
