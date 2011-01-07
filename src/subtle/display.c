@@ -311,11 +311,11 @@ subDisplayPublish(void)
   /* EWMH: Colors */
   subEwmhSetCardinals(ROOT, SUB_EWMH_SUBTLE_COLORS, (long *)colors, NCOLORS);
 
-  subSharedLogDebug("publish=colors, n=%d\n", NCOLORS);
+  free(colors);
 
   XSync(subtle->dpy, False); ///< Sync all changes
 
-  free(colors);
+  subSharedLogDebug("publish=colors, n=%d\n", NCOLORS);
 } /* }}} */
 
  /** subDisplayFinish {{{
