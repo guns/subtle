@@ -3128,7 +3128,7 @@ subRubyReloadConfig(void)
 
       c->gravity = -1;
 
-      subClientSetTags(c, &flags);
+      subClientRetag(c, &flags);
       subClientToggle(c, ~c->flags & flags, True); ///< Toggle flags
     }
 

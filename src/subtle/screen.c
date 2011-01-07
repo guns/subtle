@@ -30,6 +30,7 @@ ScreenPublish(void)
     {
       SubScreen *s = SCREEN(subtle->screens->data[i]);
 
+      /* Set workarea */
       workareas[i * 4 + 0] = s->geom.x;
       workareas[i * 4 + 1] = s->geom.y;
       workareas[i * 4 + 2] = s->geom.width;
@@ -298,7 +299,7 @@ subScreenConfigure(void)
                   screen  = j;
                   visible++;
 
-                  /* Keep screen stick */
+                  /* Keep stick screen */
                   if(c->flags & SUB_CLIENT_MODE_STICK)
                     screen = c->screen;
                 }
@@ -307,7 +308,7 @@ subScreenConfigure(void)
           /* Update client after all screens are checked */
           if(0 < visible)
             {
-              subClientSetGravity(c, gravity, screen, False);
+              subClientArrange(c, gravity, screen, False);
               subEwmhSetWMState(c->win, NormalState);
 
               /* Special treatment */
