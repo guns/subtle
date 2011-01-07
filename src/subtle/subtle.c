@@ -143,7 +143,7 @@ subSubtleFocus(int focus)
     &dummy, &dummy, &dummy, &dummy, (unsigned int *)&dummy);
 
   /* Find pointer window */
-  if((c = CLIENT(subSubtleFind(win, CLIENTID))))
+  if((c = CLIENT(subSubtleFind(win, CLIENTID))) && ALIVE(c))
     {
       subClientFocus(c);
 
@@ -161,7 +161,8 @@ subSubtleFocus(int focus)
           c = CLIENT(subtle->clients->data[i]);
 
           /* Check visibility on current screen */
-          if(c->screen == sid && VISIBLE(subtle->visible_tags, c))
+          if(c->screen == sid && ALIVE(c) &&
+              VISIBLE(subtle->visible_tags, c))
             {
               subClientFocus(c);
               subClientWarp(c, True);
