@@ -283,6 +283,35 @@ subEwmhSetWMState(Window win,
     atoms[SUB_EWMH_WM_STATE], 32, PropModeReplace, (unsigned char *)data, 2);
 } /* }}} */
 
+ /** subEwmhTranslateWMState {{{
+  * @brief Set WM state for window
+  * @param[in]     atom   A window
+  * @param[inout]  flags  Translated flags
+  **/
+
+void
+subEwmhTranslateWMState(Atom atom,
+  int *flags)
+{
+  /* Translate supported WM states */
+  switch(subEwmhFind(atom))
+    {
+      case SUB_EWMH_NET_WM_STATE_FULLSCREEN:
+        *flags |= SUB_CLIENT_MODE_FULL;
+        break;
+      case SUB_EWMH_NET_WM_STATE_ABOVE:
+        *flags |= SUB_CLIENT_MODE_FLOAT;
+        break;
+      case SUB_EWMH_NET_WM_STATE_STICKY:
+        *flags |= SUB_CLIENT_MODE_STICK;
+        break;
+      case SUB_EWMH_NET_WM_STATE_ATTENTION:
+        *flags |= SUB_CLIENT_MODE_URGENT;
+        break;
+      default: break;
+    }
+} /* }}} */
+
  /** subEwmhMessage {{{
   * @brief Send message
   * @param[in]  win    Target window
