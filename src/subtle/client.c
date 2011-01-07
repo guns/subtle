@@ -78,7 +78,7 @@ ClientResize(SubClient *c,
       (subtle->flags & SUB_SUBTLE_RESIZE ||
       c->flags & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_RESIZE)))
     {
-      int maxw = -1 == c->maxw ? s->geom.width - 2 * BORDER(c)  : c->maxw;
+      int maxw = -1 == c->maxw ? s->geom.width  - 2 * BORDER(c) : c->maxw;
       int maxh = -1 == c->maxh ? s->geom.height - 2 * BORDER(c) : c->maxh;
 
       /* Limit width */
@@ -102,7 +102,7 @@ ClientResize(SubClient *c,
     }
 
   /* Fit sizes */
-  if(!(c->flags & SUB_CLIENT_TYPE_DESKTOP))
+  if(!(c->flags & (SUB_CLIENT_TYPE_DESKTOP|SUB_CLIENT_MODE_FULL)))
     {
       int maxx = 0, maxy = 0;
 
@@ -130,6 +130,7 @@ ClientCenter(SubClient *c)
   DEAD(c);
   assert(c);
 
+  /* Exclude desktop type noresize windows */
   if(!(c->flags & (SUB_CLIENT_TYPE_DESKTOP|SUB_CLIENT_MODE_NORESIZE)))
     {
       SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
@@ -181,7 +182,7 @@ subClientNew(Window win)
   c->geom.width  = MAX(MINW, attrs.width);
   c->geom.height = MAX(MINH, attrs.height);
 
-  /* Init gravities and screens */
+  /* Init gravities */
   grav = ClientGravity();
   for(i = 0; i < subtle->views->ndata; i++)
     c->gravities[i] = grav;
@@ -204,7 +205,7 @@ subClientNew(Window win)
   subClientSetProtocols(c);
   subClientSetStrut(c);
   subClientSetType(c, &flags);
-  subClientSetTags(c, &flags);
+  subClientRetag(c, &flags);
   subClientSetSizeHints(c, &flags);
   subClientSetWMHints(c, &flags);
   subClientSetState(c, &flags);
@@ -215,10 +216,10 @@ subClientNew(Window win)
   XSetWindowBorderWidth(subtle->dpy, c->win, BORDER(c));
 
   /* Update and handle according to flags */
-  subClientToggle(c, (~c->flags & flags), False); ///< Enable only
+  subClientToggle(c, (~c->flags & flags), False); ///< Just enable
   if(c->flags & SUB_CLIENT_TYPE_DIALOG) ClientCenter(c);
 
-  /* EWMH: Gravity, screen and desktop */
+  /* EWMH: Gravity and desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&subtle->gravity, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
@@ -244,12 +245,15 @@ subClientConfigure(SubClient *c,
   DEAD(c);
 
   /* Resize client on a change (see ICCCM 4.1.5) */
-  if(force || c->geom.x != geom->x || c->geom.y != geom->y ||
+  if(force || c->flags & SUB_CLIENT_ARRANGE ||
+      c->geom.x != geom->x || c->geom.y != geom->y ||
       c->geom.width != geom->width || c->geom.height != geom->height)
     {
+      /* Update geometry of non-full clients */
       if(!(c->flags & SUB_CLIENT_MODE_FULL))
         {
-          c->geom = *geom;
+          c->geom   = *geom;
+          c->flags &= ~SUB_CLIENT_ARRANGE;
           ClientResize(c, &c->geom);
         }
 
@@ -645,14 +649,14 @@ subClientTag(SubClient *c,
     }
 } /* }}} */
 
- /** subClientSetTags {{{
+ /** subClientRetag {{{
   * @brief Set client tags
   * @param[in]     c      A #SubClient
   * @param[inout]  flags  Mode flags
   **/
 
 void
-subClientSetTags(SubClient *c,
+subClientRetag(SubClient *c,
   int *flags)
 {
   int i, visible = 0;
@@ -684,8 +688,8 @@ subClientSetTags(SubClient *c,
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&c->tags, 1);
 } /* }}} */
 
-  /** subClientSetGravity {{{
-   * @brief Set client gravity for current view
+  /** subClientArrange {{{
+   * @brief Arrange position of client
    * @param[in]  c        A #SubClient
    * @param[in]  gravity  The gravity id
    * @param[in]  screen   The screen id
@@ -693,40 +697,45 @@ subClientSetTags(SubClient *c,
    **/
 
 void
-subClientSetGravity(SubClient *c,
+subClientArrange(SubClient *c,
   int gravity,
   int screen,
   int force)
 {
+  XRectangle geom = { 0 };
+  SubScreen *s = SCREEN(subArrayGet(subtle->screens, screen));
+
   DEAD(c);
-  assert(c);
+  assert(c && s);
 
-  /*< Check if update is required */
-  if(force || c->gravity != gravity || c->screen != screen)
+  /* Check flags */
+  if(c->flags & SUB_CLIENT_MODE_FULL)
     {
-      XRectangle geom = { 0 };
-      SubScreen *s = SCREEN(subArrayGet(subtle->screens, screen));
-
-      if(c->flags & SUB_CLIENT_MODE_FLOAT)
+      subClientConfigure(c, &s->base, False);
+    }
+  else if(c->flags & SUB_CLIENT_MODE_FLOAT)
+    {
+      if(c->flags & SUB_CLIENT_ARRANGE || (-1 != screen && c->screen != screen))
         {
-          if(-1 != screen && c->screen != screen)
-            {
-              SubScreen *s2 = SCREEN(subArrayGet(subtle->screens,
-                -1 != c->screen ? c->screen : 0));
+          SubScreen *s2 = SCREEN(subArrayGet(subtle->screens,
+            -1 != c->screen ? c->screen : 0));
 
-              /* Update screen offsets */
-              geom.x      = c->geom.x - s2->geom.x + s->geom.x;
-              geom.y      = c->geom.y - s2->geom.y + s->geom.y;
-              geom.width  = c->geom.width;
-              geom.height = c->geom.height;
+          /* Update screen offsets */
+          geom.x      = c->geom.x - s2->geom.x + s->geom.x;
+          geom.y      = c->geom.y - s2->geom.y + s->geom.y;
+          geom.width  = c->geom.width;
+          geom.height = c->geom.height;
 
-              c->screen = screen;
+          c->screen = screen;
 
-              subClientConfigure(c, &geom, False);
-            }
+          subClientConfigure(c, &geom, True);
         }
-      /* Exclude desktop type windows */
-      else if(!(c->flags & SUB_CLIENT_TYPE_DESKTOP))
+    }
+  /* Exclude desktop type windows */
+  else if(!(c->flags & SUB_CLIENT_TYPE_DESKTOP))
+    {
+      if(c->flags & SUB_CLIENT_ARRANGE ||
+          c->gravity != gravity || c->screen != screen)
         {
           SubGravity *g = GRAVITY(subtle->gravities->data[-1 != gravity ?
             gravity : c->gravity]);
@@ -749,7 +758,7 @@ subClientSetGravity(SubClient *c,
           if(-1 != screen)  c->screen = screen;
           if(-1 != gravity) c->gravity = c->gravities[s->vid] = gravity;
 
-          subClientConfigure(c, &geom, False);
+          subClientConfigure(c, &geom, True);
 
           /* EWMH: Gravity */
           subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY,
@@ -758,6 +767,136 @@ subClientSetGravity(SubClient *c,
           XSync(subtle->dpy, False); ///< Sync all changes
         }
     }
+} /* }}} */
+
+ /** subClientToggle {{{
+  * @brief Toggle various states of client
+  * @param[in]  c        A #SubClient
+  * @param[in]  type     Toggle type
+  * @param[in]  gravity  Whether gravity should be set
+  **/
+
+void
+subClientToggle(SubClient *c,
+  int type,
+  int gravity)
+{
+  int flags = 0, nstates = 0;
+  Atom states[3] = { None };
+
+  DEAD(c);
+  assert(c);
+
+  /* Remove flags */
+  if(type & SUB_CLIENT_MODE_FULL   && c->flags & SUB_CLIENT_MODE_NOFULL)
+    type &= ~SUB_CLIENT_MODE_FULL;
+  if(type & SUB_CLIENT_MODE_FLOAT  && c->flags & SUB_CLIENT_MODE_NOFLOAT)
+    type &= ~SUB_CLIENT_MODE_FLOAT;
+  if(type & SUB_CLIENT_MODE_STICK  && c->flags & SUB_CLIENT_MODE_NOSTICK)
+    type &= ~SUB_CLIENT_MODE_STICK;
+  if(type & SUB_CLIENT_MODE_URGENT && c->flags & SUB_CLIENT_MODE_NOURGENT)
+    type &= ~SUB_CLIENT_MODE_URGENT;
+
+  if(c->flags & type) ///< Unset flags
+    {
+      c->flags &= ~type;
+
+      /* Unset floating mode */
+      if(type & SUB_CLIENT_MODE_FLOAT)
+        c->gravity = -1; ///< Updating gravity
+
+      /* Unset fullscreen mode */
+      if(type & SUB_CLIENT_MODE_FULL)
+        {
+          c->flags |= SUB_CLIENT_ARRANGE; ///< Force rearrange
+
+          if(!(c->flags & SUB_CLIENT_BORDERLESS))
+            XSetWindowBorderWidth(subtle->dpy, c->win, subtle->bw);
+        }
+    }
+  else ///< Set flags
+    {
+      c->flags |= type;
+
+      /* Set sticky mode */
+      if(type & SUB_CLIENT_MODE_STICK)
+        {
+          /* Check if gravity should be set */
+          if(gravity)
+            {
+              int i;
+
+              /* Set gravity for untagged views */
+              for(i = 0; i < subtle->views->ndata; i++)
+                {
+                  SubView *v = VIEW(subtle->views->data[i]);
+
+                  /* Check visibility manually */
+                  if(!(v->tags & c->tags))
+                    if(-1 != c->gravity) c->gravities[i] = c->gravity;
+                }
+            }
+
+          /* Set screen stick */
+          subScreenCurrent(&c->screen);
+        }
+
+      /* Set fullscreen mode */
+      if(type & SUB_CLIENT_MODE_FULL)
+        XSetWindowBorderWidth(subtle->dpy, c->win, 0);
+
+      /* Set dock and desktop type */
+      if(type & (SUB_CLIENT_TYPE_DOCK|SUB_CLIENT_TYPE_DESKTOP))
+        {
+          XSetWindowBorderWidth(subtle->dpy, c->win, 0);
+
+          /* Special treatment */
+          if(type & SUB_CLIENT_TYPE_DESKTOP)
+            {
+              SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
+
+              c->geom = s->base;
+
+              /* Add panel heights without struts */
+              if(s->flags & SUB_SCREEN_PANEL1)
+                {
+                  c->geom.y      += subtle->th;
+                  c->geom.height -= subtle->th;
+                }
+
+              if(s->flags & SUB_SCREEN_PANEL2)
+                c->geom.height -= subtle->th;
+
+              XLowerWindow(subtle->dpy, c->win);
+            }
+          else XRaiseWindow(subtle->dpy, c->win);
+        }
+    }
+
+  /* Sort for keeping stacking order */
+  if(type & SUB_CLIENT_MODE_FULL) subArraySort(subtle->clients, subClientCompare);
+
+  /* EWMH: State and flags */
+  if(c->flags & SUB_CLIENT_MODE_FULL)
+    {
+      flags             |= SUB_EWMH_FULL;
+      states[nstates++]  = subEwmhGet(SUB_EWMH_NET_WM_STATE_FULLSCREEN);
+    }
+  else if(c->flags & SUB_CLIENT_MODE_FLOAT)
+    {
+      flags             |= SUB_EWMH_STICK;
+      states[nstates++]  = subEwmhGet(SUB_EWMH_NET_WM_STATE_ABOVE);
+    }
+  else if(c->flags & SUB_CLIENT_MODE_STICK)
+    {
+      flags             |= SUB_EWMH_STICK;
+      states[nstates++]  = subEwmhGet(SUB_EWMH_NET_WM_STATE_STICKY);
+    }
+
+  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_FLAGS, (long *)&flags, 1);
+
+  XChangeProperty(subtle->dpy, c->win, subEwmhGet(SUB_EWMH_NET_WM_STATE),
+    XA_ATOM, 32, PropModeReplace, (unsigned char *)&states, nstates);
 } /* }}} */
 
   /** subClientSetStrut {{{
@@ -890,7 +1029,7 @@ subClientSetSizeHints(SubClient *c,
               s->geom.height - subtle->th : size->max_height;
         }
 
-      /* Floating on equal min and max sizes */
+      /* Floating on equal min and max sizes (EWMH: Fixed size windows) */
       if(size->flags & PMinSize && size->flags & PMaxSize)
         {
           if(size->min_width == size->max_width &&
@@ -1039,26 +1178,17 @@ subClientSetState(SubClient *c,
   int *flags)
 {
   int i;
-  unsigned long size = 0;
+  unsigned long nstates = 0;
   Atom *states = NULL;
 
   assert(c);
 
   /* Window state */
   if((states = (Atom *)subSharedPropertyGet(subtle->dpy, c->win, XA_ATOM,
-      subEwmhGet(SUB_EWMH_NET_WM_STATE), &size)))
+      subEwmhGet(SUB_EWMH_NET_WM_STATE), &nstates)))
     {
-      for(i = 0; i < size; i++)
-        {
-          switch(subEwmhFind(states[i]))
-            {
-              case SUB_EWMH_NET_WM_STATE_FULLSCREEN: *flags |= SUB_CLIENT_MODE_FULL;   break;
-              case SUB_EWMH_NET_WM_STATE_ABOVE:      *flags |= SUB_CLIENT_MODE_FLOAT;  break;
-              case SUB_EWMH_NET_WM_STATE_STICKY:     *flags |= SUB_CLIENT_MODE_STICK;  break;
-              case SUB_EWMH_NET_WM_STATE_ATTENTION:  *flags |= SUB_CLIENT_MODE_URGENT; break;
-              default: break;
-            }
-        }
+      for(i = 0; i < nstates; i++)
+        subEwmhTranslateWMState(states[i], flags);
 
       XFree(states);
     }
@@ -1140,146 +1270,6 @@ subClientSetType(SubClient *c,
         }
 
       XFree(types);
-    }
-} /* }}} */
-
- /** subClientToggle {{{
-  * @brief Toggle various states of client
-  * @param[in]  c        A #SubClient
-  * @param[in]  type     Toggle type
-  * @param[in]  gravity  Whether gravity should be set
-  **/
-
-void
-subClientToggle(SubClient *c,
-  int type,
-  int gravity)
-{
-  int flags = 0;
-
-  DEAD(c);
-  assert(c);
-
-  /* Remove flags */
-  if(type & SUB_CLIENT_MODE_FULL   && c->flags & SUB_CLIENT_MODE_NOFULL)
-    type &= ~SUB_CLIENT_MODE_FULL;
-  if(type & SUB_CLIENT_MODE_FLOAT  && c->flags & SUB_CLIENT_MODE_NOFLOAT)
-    type &= ~SUB_CLIENT_MODE_FLOAT;
-  if(type & SUB_CLIENT_MODE_STICK  && c->flags & SUB_CLIENT_MODE_NOSTICK)
-    type &= ~SUB_CLIENT_MODE_STICK;
-  if(type & SUB_CLIENT_MODE_URGENT && c->flags & SUB_CLIENT_MODE_NOURGENT)
-    type &= ~SUB_CLIENT_MODE_URGENT;
-
-  if(c->flags & type) ///< Unset flags
-    {
-      c->flags &= ~type;
-
-      /* Unset sticky mode */
-      if(type & SUB_CLIENT_MODE_STICK)
-        subScreenConfigure();
-
-      /* Unset floating mode */
-      if(type & SUB_CLIENT_MODE_FLOAT)
-        c->gravity = -1; ///< Updating gravity
-
-      /* Unset fullscreen mode */
-      if(type & SUB_CLIENT_MODE_FULL)
-        {
-          if(!(c->flags & SUB_CLIENT_BORDERLESS))
-            XSetWindowBorderWidth(subtle->dpy, c->win, subtle->bw);
-
-          subClientConfigure(c, &c->geom, True);
-        }
-    }
-  else ///< Set flags
-    {
-      c->flags |= type;
-
-      /* Set sticky mode */
-      if(type & SUB_CLIENT_MODE_STICK)
-        {
-          if(gravity) ///< Check if gravity should be set
-            {
-              int i;
-
-              /* Set gravity for untagged views */
-              for(i = 0; i < subtle->views->ndata; i++)
-                {
-                  SubView *v = VIEW(subtle->views->data[i]);
-
-                  if(!(v->tags & c->tags)) ///< Check manually
-                    if(-1 != c->gravity) c->gravities[i] = c->gravity;
-                }
-            }
-
-          /* Set screen stick */
-          subScreenCurrent(&c->screen);
-        }
-
-      /* Set floating mode */
-      if(type & SUB_CLIENT_MODE_FLOAT)
-        subClientConfigure(c, &c->geom, True);
-
-      /* Set fullscreen mode */
-      if(type & SUB_CLIENT_MODE_FULL)
-        {
-          SubScreen *s = NULL;
-
-          XSetWindowBorderWidth(subtle->dpy, c->win, 0);
-
-          /* Set full size of screen */
-          s = SCREEN(subArrayGet(subtle->screens, c->screen));
-
-          subClientConfigure(c, &s->base, True);
-        }
-
-      /* Set dock and desktop type */
-      if(type & (SUB_CLIENT_TYPE_DOCK|SUB_CLIENT_TYPE_DESKTOP))
-        {
-          XSetWindowBorderWidth(subtle->dpy, c->win, 0);
-
-          /* Special treatment */
-          if(type & SUB_CLIENT_TYPE_DESKTOP)
-            {
-              SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
-
-              c->geom = s->base;
-
-              /* Add panel heights without struts */
-              if(s->flags & SUB_SCREEN_PANEL1)
-                {
-                  c->geom.y      += subtle->th;
-                  c->geom.height -= subtle->th;
-                }
-
-              if(s->flags & SUB_SCREEN_PANEL2)
-                c->geom.height -= subtle->th;
-
-              XLowerWindow(subtle->dpy, c->win);
-
-              subClientConfigure(c, &c->geom, False);
-            }
-          else XRaiseWindow(subtle->dpy, c->win);
-        }
-    }
-
-  /* Sort for keeping stacking order */
-  if(type & SUB_CLIENT_MODE_FULL) subArraySort(subtle->clients, subClientCompare);
-
-  /* Translate flags */
-  if(c->flags & SUB_CLIENT_MODE_FULL)  flags |= SUB_EWMH_FULL;
-  if(c->flags & SUB_CLIENT_MODE_FLOAT) flags |= SUB_EWMH_FLOAT;
-  if(c->flags & SUB_CLIENT_MODE_STICK) flags |= SUB_EWMH_STICK;
-
-  /* EWMH: Flags */
-  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_FLAGS, (long *)&flags, 1);
-
-  /* Update panel */
-  if(type & (SUB_CLIENT_MODE_FULL|SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_STICK)
-      && subtle->windows.focus == c->win)
-    {
-      subScreenUpdate();
-      subScreenRender();
     }
 } /* }}} */
 
