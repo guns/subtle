@@ -378,6 +378,11 @@ subPanelRender(SubPanel *p)
                 DEAD(c);
 
                 /* Title modes */
+                if(c->flags & SUB_CLIENT_MODE_FULL)
+                  {
+                    snprintf(buf + x, sizeof(buf), "%c", '+');
+                    x++;
+                  }
                 if(c->flags & SUB_CLIENT_MODE_FLOAT)
                   {
                     snprintf(buf + x, sizeof(buf), "%c", '^');
