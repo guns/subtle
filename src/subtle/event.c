@@ -365,11 +365,12 @@ EventDestroy(XDestroyWindowEvent *ev)
 {
   SubClient *c = NULL;
   SubTray *t = NULL;
-  int focus = (subtle->windows.focus == ev->window); ///< Save
 
   /* Check if we know this window */
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID)))) ///< Client
     {
+      int focus = (subtle->windows.focus == ev->window); ///< Save
+
       /* Ignore remaining events */
       c->flags |= SUB_CLIENT_DEAD;
       XSelectInput(subtle->dpy, c->win, NoEventMask);
@@ -381,6 +382,9 @@ EventDestroy(XDestroyWindowEvent *ev)
       subScreenConfigure();
       subScreenUpdate();
       subScreenRender();
+
+      /* Update focus if necessary */
+      if(focus) subSubtleFocus(True);
     }
 
   if((t = TRAY(subSubtleFind(ev->event, TRAYID)))) ///< Tray
@@ -392,9 +396,6 @@ EventDestroy(XDestroyWindowEvent *ev)
       subScreenUpdate();
       subScreenRender();
     }
-
-  /* Update focus if necessary */
-  if(focus) subSubtleFocus(True);
 } /* }}} */
 
 /* EventExpose {{{ */
@@ -1417,6 +1418,8 @@ EventUnmap(XUnmapEvent *ev)
     {
       if(ev->send_event && ALIVE(c)) ///< Client
         {
+          int focus = (subtle->windows.focus == ev->window); ///< Save
+
           subEwmhSetWMState(c->win, WithdrawnState);
 
           /* Ignore our generated unmap events */
@@ -1430,6 +1433,9 @@ EventUnmap(XUnmapEvent *ev)
           c->flags |= SUB_CLIENT_DEAD;
           subScreenUpdate();
           subScreenRender();
+
+          /* Update focus if necessary */
+          if(focus) subSubtleFocus(True);
         }
     }
   else if((t = TRAY(subSubtleFind(ev->window, TRAYID)))) ///< Tray
