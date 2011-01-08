@@ -721,12 +721,16 @@ subClientArrange(SubClient *c,
             -1 != c->screen ? c->screen : 0));
 
           /* Update screen offsets */
-          geom.x      = c->geom.x - s2->geom.x + s->geom.x;
-          geom.y      = c->geom.y - s2->geom.y + s->geom.y;
-          geom.width  = c->geom.width;
-          geom.height = c->geom.height;
+          if(s != s2)
+            {
+              geom.x      = c->geom.x - s2->geom.x + s->geom.x;
+              geom.y      = c->geom.y - s2->geom.y + s->geom.y;
+              geom.width  = c->geom.width;
+              geom.height = c->geom.height;
 
-          c->screen = screen;
+              c->screen = screen;
+            }
+          else ClientResize(c, &geom);
 
           subClientConfigure(c, &geom, True);
         }
@@ -844,6 +848,10 @@ subClientToggle(SubClient *c,
       /* Set fullscreen mode */
       if(type & SUB_CLIENT_MODE_FULL)
         XSetWindowBorderWidth(subtle->dpy, c->win, 0);
+
+      /* Set floating mode */
+      if(type & SUB_CLIENT_MODE_FLOAT)
+        c->flags |= SUB_CLIENT_ARRANGE;
 
       /* Set dock and desktop type */
       if(type & (SUB_CLIENT_TYPE_DOCK|SUB_CLIENT_TYPE_DESKTOP))
