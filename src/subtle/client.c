@@ -720,6 +720,8 @@ subClientArrange(SubClient *c,
           SubScreen *s2 = SCREEN(subArrayGet(subtle->screens,
             -1 != c->screen ? c->screen : 0));
 
+          geom = c->geom;
+
           /* Update screen offsets */
           if(s != s2)
             {
