@@ -347,14 +347,22 @@ EventCrossing(XCrossingEvent *ev)
         else if((p = PANEL(subSubtleFind(ev->window, SUBLETID)))) ///< Sublet
           {
             if(p->sublet->flags & SUB_SUBLET_OVER)
-              subRubyCall(SUB_CALL_OVER, p->sublet->instance, NULL);
+              {
+                subRubyCall(SUB_CALL_OVER, p->sublet->instance, NULL);
+                subScreenUpdate();
+                subScreenRender();
+              }
           }
         break;
       case LeaveNotify:
         if((p = PANEL(subSubtleFind(ev->window, SUBLETID)))) ///< Sublet
           {
             if(p->sublet->flags & SUB_SUBLET_OUT)
-              subRubyCall(SUB_CALL_OUT, p->sublet->instance, NULL);
+              {
+                subRubyCall(SUB_CALL_OUT, p->sublet->instance, NULL);
+                subScreenUpdate();
+                subScreenRender();
+              }
           }
     }
 } /* }}} */
