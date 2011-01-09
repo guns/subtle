@@ -287,10 +287,6 @@ subClientConfigure(SubClient *c,
     c->win, c->klass, c->flags & SUB_CLIENT_MODE_FLOAT ? 'f' :
     c->flags & SUB_CLIENT_MODE_FULL ? 'u' : 'n',
     c->geom.x, c->geom.y, c->geom.width, c->geom.height);
-
-  /* Hook: Create */
-  subHookCall((SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_CONFIGURE),
-    (void *)c);
 } /* }}} */
 
  /** subClientDimension {{{
@@ -809,7 +805,7 @@ subClientToggle(SubClient *c,
 
       /* Unset floating mode */
       if(type & SUB_CLIENT_MODE_FLOAT)
-        c->gravity = -1; ///< Updating gravity
+        c->flags |= SUB_CLIENT_ARRANGE;
 
       /* Unset fullscreen mode */
       if(type & SUB_CLIENT_MODE_FULL)
@@ -892,23 +888,26 @@ subClientToggle(SubClient *c,
       flags             |= SUB_EWMH_FULL;
       states[nstates++]  = subEwmhGet(SUB_EWMH_NET_WM_STATE_FULLSCREEN);
     }
-  else if(c->flags & SUB_CLIENT_MODE_FLOAT)
+  if(c->flags & SUB_CLIENT_MODE_FLOAT)
     {
       flags             |= SUB_EWMH_FLOAT;
       states[nstates++]  = subEwmhGet(SUB_EWMH_NET_WM_STATE_ABOVE);
     }
-  else if(c->flags & SUB_CLIENT_MODE_STICK)
+  if(c->flags & SUB_CLIENT_MODE_STICK)
     {
       flags             |= SUB_EWMH_STICK;
       states[nstates++]  = subEwmhGet(SUB_EWMH_NET_WM_STATE_STICKY);
     }
 
-  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_FLAGS, (long *)&flags, 1);
-
   XChangeProperty(subtle->dpy, c->win, subEwmhGet(SUB_EWMH_NET_WM_STATE),
     XA_ATOM, 32, PropModeReplace, (unsigned char *)&states, nstates);
 
+  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_FLAGS, (long *)&flags, 1);
+
   XSync(subtle->dpy, False); ///< Sync all changes
+
+  /* Hook: Configure */
+  subHookCall((SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_MODE), (void *)c);
 } /* }}} */
 
   /** subClientSetStrut {{{
