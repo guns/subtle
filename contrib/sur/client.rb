@@ -572,7 +572,7 @@ module Subtle # {{{
 
                 if(a == b || File.fnmatch("[0-9_]*#{a}", b))
                   puts ">>>>>> Uninstallling file `#{b}'"
-                  FileUtils.remove_file(File.join(@path_sublets, b))
+                  FileUtils.remove_file(File.join(@path_sublets, b), true)
                 end
               end
             end
@@ -580,12 +580,16 @@ module Subtle # {{{
             # Uninstall icons
             spec.icons.each do |f|
               puts ">>>>>> Uninstallling icon `#{f}'"
-              FileUtils.remove_file(File.join(@path_icons, File.basename(f)))
+              FileUtils.remove_file(
+                File.join(@path_icons, File.basename(f)), true
+              )
             end
 
             # Uninstall specification
             puts ">>>>>> Uninstallling specification `#{spec.to_s}.spec'"
-            FileUtils.remove_file(File.join(@path_specs, spec.to_s + ".spec"))
+            FileUtils.remove_file(
+              File.join(@path_specs, spec.to_s + ".spec"), true
+            )
 
             puts ">>> Uninstalled sublet #{spec.to_s}"
 
