@@ -408,20 +408,19 @@ RubyEvalHook(VALUE event,
 
   RubySymbols hooks[] =
   {
-    { CHAR2SYM("start"),            SUB_HOOK_START                                   },
-    { CHAR2SYM("exit"),             SUB_HOOK_EXIT                                    },
-    { CHAR2SYM("tile"),             SUB_HOOK_TILE                                    },
-    { CHAR2SYM("reload"),           SUB_HOOK_RELOAD                                  },
-    { CHAR2SYM("client_create"),    (SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_CREATE)    },
-    { CHAR2SYM("client_configure"), (SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_CONFIGURE) },
-    { CHAR2SYM("client_focus"),     (SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_FOCUS)     },
-    { CHAR2SYM("client_kill"),      (SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_KILL)      },
-    { CHAR2SYM("tag_create"),       (SUB_HOOK_TYPE_TAG|SUB_HOOK_ACTION_CREATE)       },
-    { CHAR2SYM("tag_kill"),         (SUB_HOOK_TYPE_TAG|SUB_HOOK_ACTION_KILL)         },
-    { CHAR2SYM("view_create"),      (SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_CREATE)      },
-    { CHAR2SYM("view_configure"),   (SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_CONFIGURE)   },
-    { CHAR2SYM("view_jump"),        (SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_FOCUS)       },
-    { CHAR2SYM("view_kill"),        (SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_KILL)        }
+    { CHAR2SYM("start"),          SUB_HOOK_START                                },
+    { CHAR2SYM("exit"),           SUB_HOOK_EXIT                                 },
+    { CHAR2SYM("tile"),           SUB_HOOK_TILE                                 },
+    { CHAR2SYM("reload"),         SUB_HOOK_RELOAD                               },
+    { CHAR2SYM("client_create"),  (SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_CREATE) },
+    { CHAR2SYM("client_mode"),    (SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_MODE)   },
+    { CHAR2SYM("client_focus"),   (SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_FOCUS)  },
+    { CHAR2SYM("client_kill"),    (SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_KILL)   },
+    { CHAR2SYM("tag_create"),     (SUB_HOOK_TYPE_TAG|SUB_HOOK_ACTION_CREATE)    },
+    { CHAR2SYM("tag_kill"),       (SUB_HOOK_TYPE_TAG|SUB_HOOK_ACTION_KILL)      },
+    { CHAR2SYM("view_create"),    (SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_CREATE)   },
+    { CHAR2SYM("view_jump"),      (SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_FOCUS)    },
+    { CHAR2SYM("view_kill"),      (SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_KILL)     }
   };
 
   if(subtle->flags & SUB_SUBTLE_CHECK) return; ///< Skip on check

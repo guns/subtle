@@ -151,7 +151,7 @@
 #define SUB_HOOK_TYPE_VIEW            (1L << 15)                  ///< View hooks
 #define SUB_HOOK_TYPE_TAG             (1L << 16)                  ///< Tag hooks
 #define SUB_HOOK_ACTION_CREATE        (1L << 17)                  ///< Create action
-#define SUB_HOOK_ACTION_CONFIGURE     (1L << 18)                  ///< Configure action
+#define SUB_HOOK_ACTION_MODE          (1L << 18)                  ///< Mode action
 #define SUB_HOOK_ACTION_FOCUS         (1L << 19)                  ///< Focus action
 #define SUB_HOOK_ACTION_KILL          (1L << 20)                  ///< Kill action
 
