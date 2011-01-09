@@ -894,7 +894,7 @@ subClientToggle(SubClient *c,
     }
   else if(c->flags & SUB_CLIENT_MODE_FLOAT)
     {
-      flags             |= SUB_EWMH_STICK;
+      flags             |= SUB_EWMH_FLOAT;
       states[nstates++]  = subEwmhGet(SUB_EWMH_NET_WM_STATE_ABOVE);
     }
   else if(c->flags & SUB_CLIENT_MODE_STICK)
@@ -907,6 +907,8 @@ subClientToggle(SubClient *c,
 
   XChangeProperty(subtle->dpy, c->win, subEwmhGet(SUB_EWMH_NET_WM_STATE),
     XA_ATOM, 32, PropModeReplace, (unsigned char *)&states, nstates);
+
+  XSync(subtle->dpy, False); ///< Sync all changes
 } /* }}} */
 
   /** subClientSetStrut {{{
