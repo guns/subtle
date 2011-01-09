@@ -309,21 +309,24 @@ EOF
         missing   = []
 
         # Check subtlext version
-        unless(@subtlext_version.nil?)
+        unless(@required_version.nil?)
           begin
             require "subtle/subtlext"
 
             # Check version
             major_have, minor_have, teeny_have = Subtlext::VERSION.split(".").map(&:to_i)
-            major_need, minor_need, teeny_need = @subtlext_version.split(".").map(&:to_i)
+            major_need, minor_need, teeny_need = @required_version.split(".").map(&:to_i)
 
             if(major_need > major_have or minor_need > minor_have or
                teeny_need.nil? or teeny_have.nil? or teeny_need > teeny_have)
-              puts ">>> ERROR: Need at least subtle >= #{@subtlext_version}"
+              puts ">>> ERROR: Need at least subtle >= #{@required_version}"
 
               satisfied = false
             end
-          rescue
+          rescue => err
+            puts ">>> ERROR: Failed checking version of subtlext"
+
+            satisfied = false
           end
         end
 
