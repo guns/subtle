@@ -115,7 +115,7 @@ module Subtle # {{{
         end
 
         # Check object
-        if(spec.nil? || !spec.is_a?(Sur::Specification) || !spec.valid?)
+        if(spec.nil? || !spec.is_a?(Specification) || !spec.valid?)
           raise "Couldn't load specification file `#{file}'"
         end
 
@@ -154,8 +154,8 @@ module Subtle # {{{
         end
 
         # Check object
-        if(spec.nil? || !spec.is_a?(Sur::Specification) || !spec.valid?)
-          raise "Couldn't load specification file from `#{file}'"
+        if(spec.nil? || !spec.is_a?(Specification) || !spec.valid?)
+          raise "Couldn't extract specification from `#{file}'"
         end
 
         spec
