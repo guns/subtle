@@ -137,11 +137,6 @@ subPanelConfigure(SubPanel *p)
               {
                 SubView *v = VIEW(subtle->views->data[i]);
 
-                /* Check dynamic views */
-                if(v->flags & SUB_VIEW_DYNAMIC &&
-                    !(subtle->visible_clients & v->tags))
-                  continue;
-
                 /* Add width of view icon and/or text */
                 if(v->flags & SUB_VIEW_ICON)
                   v->width = v->icon->width;
@@ -216,7 +211,7 @@ subPanelUpdate(SubPanel *p)
 
                 /* Check dynamic views */
                 if(v->flags & SUB_VIEW_DYNAMIC &&
-                    !(subtle->visible_clients & v->tags))
+                    !(subtle->client_tags & v->tags))
                   continue;
 
                 XMoveResizeWindow(subtle->dpy, p->views[i], p->width, 0,
@@ -313,7 +308,7 @@ subPanelRender(SubPanel *p)
                     bg = subtle->colors.bg_focus;
                     bo = subtle->colors.bo_focus;
                   }
-                else if(subtle->visible_clients & v->tags)
+                else if(subtle->client_tags & v->tags)
                   {
                     fg = subtle->colors.fg_occupied;
                     bg = subtle->colors.bg_occupied;
