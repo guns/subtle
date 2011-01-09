@@ -535,8 +535,8 @@ typedef struct subsubtle_t /* {{{ */
 
   int                  width, height;                             ///< Subtle screen size
   int                  th, bw, pbw, step, snap, gap;              ///< Subtle properties
-  int                  visible_tags, visible_views;               ///< Subtle visible tags, views
-  int                  visible_clients, urgent_tags;              ///< Subtle clients, urgent tags
+  int                  visible_tags, visible_views;               ///< Subtle visible tags and views
+  int                  client_tags, urgent_tags;                  ///< Subtle clients and urgent tags
   unsigned long        gravity;                                   ///< Subtle gravity
 
   Display              *dpy;                                      ///< Subtle Xorg display

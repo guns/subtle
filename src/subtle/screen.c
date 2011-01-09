@@ -260,10 +260,10 @@ subScreenConfigure(void)
   SubScreen *s = NULL;
   SubView *v = NULL;
 
-  /* Reset visible tags and views */
-  subtle->visible_tags    = 0;
-  subtle->visible_clients = 0;
-  subtle->visible_views   = 0;
+  /* Reset visible tags, views and avaiclients */
+  subtle->visible_tags  = 0;
+  subtle->visible_views = 0;
+  subtle->client_tags   = 0;
 
   /* Either check each client or just get visibles */
   if(0 < subtle->clients->ndata)
@@ -279,7 +279,8 @@ subScreenConfigure(void)
           /* Ignore dead or just iconified clients */
           if(c->flags & SUB_CLIENT_DEAD) continue;
 
-          subtle->visible_clients |= c->tags;
+          /* Set client tags to ease lookups */
+          subtle->client_tags |= c->tags;
 
           /* Check views of each screen */
           for(j = 0; j < subtle->screens->ndata; j++)
@@ -341,8 +342,8 @@ subScreenConfigure(void)
           v = VIEW(subtle->views->data[s->vid]);
 
           /* Set visible tags and views to ease lookups */
-          subtle->visible_tags  |= v->tags;
-          subtle->visible_views |= (1L << (s->vid + 1));
+          subtle->visible_tags    |= v->tags;
+          subtle->visible_views   |= (1L << (s->vid + 1));
         }
     }
 
