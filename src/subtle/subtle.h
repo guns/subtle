@@ -644,8 +644,7 @@ void subArrayKill(SubArray *a, int clean);                        ///< Kill arra
 
 /* client.c {{{ */
 SubClient *subClientNew(Window win);                              ///< Create client
-void subClientConfigure(SubClient *c, XRectangle *geom,
-  int force);                                                     ///< Send configure request
+void subClientConfigure(SubClient *c);                            ///< Send configure request
 void subClientDimension(int id);                                  ///< Dimension clients
 void subClientRender(SubClient *c);                               ///< Render client
 int subClientCompare(const void *a, const void *b);               ///< Compare two clients

@@ -173,6 +173,44 @@ EventRestack(SubClient *c,
   c->flags |= flags;
 } /* }}} */
 
+/* EventResize {{{ */
+static void
+EventResize(SubClient *c)
+{
+  /* Fit sizes */
+  if(!(c->flags & (SUB_CLIENT_TYPE_DESKTOP|SUB_CLIENT_MODE_FULL)))
+    {
+      int maxx = 0, maxy = 0;
+      SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
+
+      /* Check size */
+      if(c->geom.width > s->geom.width)   c->geom.width  = s->geom.width;
+      if(c->geom.height > s->geom.height) c->geom.height = s->geom.height;
+
+      /* Check whether window fits onto screen */
+      maxx = s->geom.x + s->geom.width;
+      maxy = s->geom.y + s->geom.height;
+
+      /* Check x */
+      if(c->geom.x < s->geom.x || c->geom.x > maxx ||
+          c->geom.x + c->geom.width > maxx)
+        {
+          if(c->flags & SUB_CLIENT_MODE_FLOAT)
+            c->geom.x = s->geom.x + ((s->geom.width - c->geom.width) / 2);
+          else c->geom.x = s->geom.x;
+        }
+
+      /* Check y */
+      if(c->geom.y < s->geom.y || c->geom.y > maxy ||
+          c->geom.y + c->geom.height > maxy)
+        {
+          if(c->flags & SUB_CLIENT_MODE_FLOAT)
+            c->geom.y = s->geom.y + ((s->geom.height - c->geom.height) / 2);
+          else c->geom.y = s->geom.y;
+        }
+    }
+} /* }}} */
+
 /* EventQueuePush {{{ */
 static void
 EventQueuePush(XClientMessageEvent *ev)
@@ -283,30 +321,36 @@ EventConfigureRequest(XConfigureRequestEvent *ev)
 {
   SubClient *c = NULL;
 
+  /* Complicated request! (see ICCCM 4.1.5)
+   * No change    -> synthetic ConfigureNotify
+   * Move/restack -> real + synthetic ConfigureNotify
+   * Resize       -> real ConfigureNotify */
+
   /* Check window */
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
     {
-      if(!(c->flags & (SUB_CLIENT_MODE_NORESIZE|SUB_CLIENT_TYPE_DESKTOP)) &&
-          (subtle->flags & SUB_SUBTLE_RESIZE ||
+      if(!(c->flags & (SUB_CLIENT_MODE_NORESIZE|SUB_CLIENT_TYPE_DESKTOP|
+          SUB_CLIENT_MODE_FLOAT)) && (subtle->flags & SUB_SUBTLE_RESIZE ||
           c->flags & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_RESIZE)))
         {
           SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
-          XRectangle geom = c->geom;
 
-          /* We restrict this from graviated clients */
-          if(c->flags & SUB_CLIENT_MODE_FLOAT)
-            {
-              if(ev->value_mask & CWX) geom.x = s->geom.x + ev->x;
-              if(ev->value_mask & CWY) geom.y = s->geom.y + ev->y;
-            }
+          if(ev->value_mask & CWX)      c->geom.x      = s->geom.x + ev->x;
+          if(ev->value_mask & CWY)      c->geom.y      = s->geom.y + ev->y;
+          if(ev->value_mask & CWWidth)  c->geom.width  = ev->width;
+          if(ev->value_mask & CWHeight) c->geom.height = ev->height;
 
-          if(ev->value_mask & CWWidth)  geom.width  = ev->width;
-          if(ev->value_mask & CWHeight) geom.height = ev->height;
+          EventResize(c);
 
-          /* Check new values */
-          if(RECTINRECT(geom, s->geom))
-            subClientConfigure(c, &geom, False);
+          /* Send synthetic configure notify */
+          if((ev->value_mask & (CWX|CWY)) && !(ev->value_mask & (CWWidth|CWHeight)))
+            subClientConfigure(c);
+
+          /* Send real configure notify */
+          XMoveResizeWindow(subtle->dpy, c->win, c->geom.x, c->geom.y,
+            c->geom.width, c->geom.height);
         }
+      else subClientConfigure(c);
     }
   else ///< Unmanaged windows
     {
@@ -1259,17 +1303,18 @@ EventMessage(XClientMessageEvent *ev)
             break; /* }}} */
           case SUB_EWMH_NET_MOVERESIZE_WINDOW: /* {{{ */
               {
-                XRectangle geom = { 0 };
-
                 if(!(c->flags & SUB_CLIENT_MODE_FLOAT))
                   subClientToggle(c, SUB_CLIENT_MODE_FLOAT, True);
 
-                geom.x      = ev->data.l[1];
-                geom.y      = ev->data.l[2];
-                geom.width  = ev->data.l[3];
-                geom.height = ev->data.l[4];
+                c->geom.x      = ev->data.l[1];
+                c->geom.y      = ev->data.l[2];
+                c->geom.width  = ev->data.l[3];
+                c->geom.height = ev->data.l[4];
 
-                subClientConfigure(c, &geom, False);
+                EventResize(c);
+
+                XMoveResizeWindow(subtle->dpy, c->win, c->geom.x, c->geom.y,
+                  c->geom.width, c->geom.height);
 
                 if(VISIBLE(subtle->visible_tags, c))
                   {
