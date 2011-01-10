@@ -268,7 +268,8 @@
 #define SUB_TAG_MATCH_INVERT          (1L << 15)                  ///< Match invert
 
 /* Tray flags */
-#define SUB_TRAY_UNMAP                (1L << 10)                  ///< Ignore unmaps
+#define SUB_TRAY_DEAD                 (1L << 10)                  ///< Dead window
+#define SUB_TRAY_UNMAP                (1L << 11)                  ///< Ignore unmaps
 
 /* View flags */
 #define SUB_VIEW_ICON                 (1L << 10)                  ///< View icon

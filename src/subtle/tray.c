@@ -101,6 +101,8 @@ subTrayUpdate(void)
         {
           SubTray *t = TRAY(subtle->trays->data[i]);
 
+          if(t->flags & SUB_TRAY_DEAD) continue;
+
           XMapWindow(subtle->dpy, t->win);
           XMoveResizeWindow(subtle->dpy, t->win, subtle->windows.tray.width,
             0, t->width, subtle->th);

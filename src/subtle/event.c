@@ -438,8 +438,7 @@ EventDestroy(XDestroyWindowEvent *ev)
       /* Update focus if necessary */
       if(focus) subSubtleFocus(True);
     }
-
-  if((t = TRAY(subSubtleFind(ev->event, TRAYID)))) ///< Tray
+  else if((t = TRAY(subSubtleFind(ev->event, TRAYID)))) ///< Tray
     {
       subArrayRemove(subtle->trays, (void *)t);
       subTrayKill(t);
@@ -784,13 +783,29 @@ EventGrab(XEvent *ev)
     }
 } /* }}} */
 
+/* EventMap {{{ */
+static void
+EventMap(XMapEvent *ev)
+{
+  SubTray *t = NULL;
+
+  /* Check if we know the window */
+  if((t = TRAY(subSubtleFind(ev->window, TRAYID)))) ///< Tray
+    {
+      t->flags &= ~SUB_TRAY_DEAD;
+      subTrayUpdate();
+      subScreenConfigure();
+      subScreenRender();
+    }
+} /* }}} */
+
 /* EventMapRequest {{{ */
 static void
 EventMapRequest(XMapRequestEvent *ev)
 {
   SubClient *c = NULL;
 
-  /* Check if client exists */
+  /* Check if we know the window */
   if(!(c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
     {
       /* Create new client */
@@ -1502,10 +1517,8 @@ EventUnmap(XUnmapEvent *ev)
           return;
         }
 
-      subArrayRemove(subtle->trays, (void *)t);
-      subTrayKill(t);
+      t->flags |= SUB_TRAY_DEAD;
       subTrayUpdate();
-      subTrayPublish();
       subScreenUpdate();
       subScreenRender();
     }
@@ -1621,6 +1634,7 @@ subEventLoop(void)
                               case FocusIn:           EventFocus(&ev.xfocus);                       break;
                               case ButtonPress:
                               case KeyPress:          EventGrab(&ev);                               break;
+                              case MapNotify:         EventMap(&ev.xmap);                           break;
                               case MapRequest:        EventMapRequest(&ev.xmaprequest);             break;
                               case ClientMessage:     EventMessage(&ev.xclient);                    break;
                               case PropertyNotify:    EventProperty(&ev.xproperty);                 break;
