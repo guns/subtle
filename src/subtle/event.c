@@ -418,11 +418,11 @@ EventDestroy(XDestroyWindowEvent *ev)
   SubClient *c = NULL;
   SubTray *t = NULL;
 
+  int focus = (subtle->windows.focus == ev->window); ///< Save
+
   /* Check if we know this window */
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID)))) ///< Client
     {
-      int focus = (subtle->windows.focus == ev->window); ///< Save
-
       /* Ignore remaining events */
       c->flags |= SUB_CLIENT_DEAD;
       XSelectInput(subtle->dpy, c->win, NoEventMask);
@@ -446,6 +446,9 @@ EventDestroy(XDestroyWindowEvent *ev)
       subTrayPublish();
       subScreenUpdate();
       subScreenRender();
+
+      /* Update focus if necessary */
+      if(focus) subSubtleFocus(True);
     }
 } /* }}} */
 
@@ -1481,13 +1484,13 @@ EventUnmap(XUnmapEvent *ev)
   SubClient *c = NULL;
   SubTray *t = NULL;
 
+  int focus = (subtle->windows.focus == ev->window); ///< Save
+
   /* Check if we know this window */
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
     {
       if(ev->send_event && ALIVE(c)) ///< Client
         {
-          int focus = (subtle->windows.focus == ev->window); ///< Save
-
           subEwmhSetWMState(c->win, WithdrawnState);
 
           /* Ignore our generated unmap events */
@@ -1521,6 +1524,9 @@ EventUnmap(XUnmapEvent *ev)
       subTrayUpdate();
       subScreenUpdate();
       subScreenRender();
+
+      /* Update focus if necessary */
+      if(focus) subSubtleFocus(True);
     }
 } /* }}} */
 
