@@ -137,6 +137,8 @@ subPanelConfigure(SubPanel *p)
               {
                 SubView *v = VIEW(subtle->views->data[i]);
 
+                v->width = 0; ///< Reset width
+
                 /* Add width of view icon and/or text */
                 if(v->flags & SUB_VIEW_ICON)
                   v->width = v->icon->width;
