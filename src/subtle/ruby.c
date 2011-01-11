@@ -104,11 +104,15 @@ RubyConvert(void *data)
 
           /* Set properties */
           rb_iv_set(object, "@win",      LONG2NUM(c->win));
+          rb_iv_set(object, "@flags",    INT2FIX(flags));
           rb_iv_set(object, "@name",     rb_str_new2(c->name));
           rb_iv_set(object, "@instance", rb_str_new2(c->instance));
           rb_iv_set(object, "@klass",    rb_str_new2(c->klass));
           rb_iv_set(object, "@role",     c->role ? rb_str_new2(c->role) : Qnil);
-          rb_iv_set(object, "@flags",    INT2FIX(flags));
+
+          /* Set to nil for on demand loading */
+          rb_iv_set(object, "@geometry", Qnil);
+          rb_iv_set(object, "@gravity",  Qnil);
         } /* }}} */
       else if(c->flags & SUB_TYPE_SCREEN) /* {{{ */
         {
