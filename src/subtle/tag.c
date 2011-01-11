@@ -174,7 +174,7 @@ subTagMatch(SubTag *t,
     {
       TagMatcher *m = (TagMatcher *)t->matcher->data[i];
 
-      /* Complex matching */
+      /* Complex matching: WM_NAME, WM_CLASS, WM_ROLE, _NET_WM_WINDOW_TYPE */
       if((m->flags & SUB_TAG_MATCH_NAME && c->name &&
             subSharedRegexMatch(m->regex, c->name)) ||
           (m->flags & SUB_TAG_MATCH_INSTANCE && c->instance &&
