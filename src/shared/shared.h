@@ -60,26 +60,21 @@
 #define SUB_VIEW_NEXT      0L                                     ///< View next
 #define SUB_VIEW_PREV      1L                                     ///< View prev
 
-#define SUB_EWMH_FULL      (1L << 1)                              ///< EWMH full flag
-#define SUB_EWMH_FLOAT     (1L << 2)                              ///< EWMH float flag
-#define SUB_EWMH_STICK     (1L << 3)                              ///< EWMH stick flag
+#define SUB_EWMH_FULL      (1L << 0)                              ///< EWMH full flag
+#define SUB_EWMH_FLOAT     (1L << 1)                              ///< EWMH float flag
+#define SUB_EWMH_STICK     (1L << 2)                              ///< EWMH stick flag
 
-#define SUB_MATCH_NAME     (1L << 1)                              ///< Match SUBTLE_NAME
-#define SUB_MATCH_INSTANCE (1L << 2)                              ///< Match instance of WM_CLASS
-#define SUB_MATCH_CLASS    (1L << 3)                              ///< Match class of WM_CLASS
-#define SUB_MATCH_GRAVITY  (1L << 4)                              ///< Match gravity
-#define SUB_MATCH_ROLE     (1L << 5)                              ///< Match window role
-#define SUB_MATCH_PID      (1L << 6)                              ///< Match pid
-
-/* Data flags */
-#define SUB_DATA_STRING  (1L << 13)                               ///< String data
-#define SUB_DATA_NUM     (1L << 14)                               ///< Num data
-#define SUB_DATA_NIL     (1L << 15)                               ///< Nil data
+#define SUB_MATCH_NAME     (1L << 0)                              ///< Match SUBTLE_NAME
+#define SUB_MATCH_INSTANCE (1L << 1)                              ///< Match instance of WM_CLASS
+#define SUB_MATCH_CLASS    (1L << 2)                              ///< Match class of WM_CLASS
+#define SUB_MATCH_GRAVITY  (1L << 3)                              ///< Match gravity
+#define SUB_MATCH_ROLE     (1L << 4)                              ///< Match window role
+#define SUB_MATCH_PID      (1L << 5)                              ///< Match pid
 
 /* Text flags */
-#define SUB_TEXT_EMPTY   (1L << 1)                                ///< Empty text
-#define SUB_TEXT_BITMAP  (1L << 2)                                ///< Text bitmap
-#define SUB_TEXT_PIXMAP  (1L << 3)                                ///< Text pixmap
+#define SUB_TEXT_EMPTY   (1L << 0)                                ///< Empty text
+#define SUB_TEXT_BITMAP  (1L << 1)                                ///< Text bitmap
+#define SUB_TEXT_PIXMAP  (1L << 2)                                ///< Text pixmap
 /* }}} */
 
 /* Typedefs {{{ */
