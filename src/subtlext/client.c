@@ -138,6 +138,20 @@ ClientRestack(VALUE self,
   return Qnil;
 } /* }}} */
 
+/* ClientFlags {{{ */
+static VALUE
+ClientFlag(VALUE self,
+  int flag)
+{
+  VALUE flags = Qnil;
+
+  rb_check_frozen(self);
+
+  flags = rb_iv_get(self, "@flags");
+
+  return (FIXNUM_P(flags) && FIX2INT(flags) & flag) ? Qtrue : Qfalse;
+} /* }}} */
+
 /* Singleton */
 
 /* subClientSingFind {{{ */
@@ -465,7 +479,6 @@ subClientUpdate(VALUE self)
       /* Set to nil for on demand loading */
       rb_iv_set(self, "@geometry", Qnil);
       rb_iv_set(self, "@gravity",  Qnil);
-      rb_iv_set(self, "@screen",   Qnil);
 
       if(flags) free(flags);
       if(role) free(role);
@@ -561,9 +574,7 @@ subClientViewList(VALUE self)
 VALUE
 subClientFlagsFullAsk(VALUE self)
 {
-  rb_check_frozen(self);
-
-  return FIX2INT(rb_iv_get(self, "@flags")) & SUB_EWMH_FULL ? Qtrue : Qfalse;
+  return ClientFlag(self, SUB_EWMH_FULL);
 } /* }}} */
 
 /* subClientFlagsFloatAsk {{{ */
@@ -582,9 +593,7 @@ subClientFlagsFullAsk(VALUE self)
 VALUE
 subClientFlagsFloatAsk(VALUE self)
 {
-  rb_check_frozen(self);
-
-  return FIX2INT(rb_iv_get(self, "@flags")) & SUB_EWMH_FLOAT ? Qtrue : Qfalse;
+  return ClientFlag(self, SUB_EWMH_FLOAT);
 } /* }}} */
 
 /* subClientFlagsStickAsk {{{ */
@@ -603,9 +612,7 @@ subClientFlagsFloatAsk(VALUE self)
 VALUE
 subClientFlagsStickAsk(VALUE self)
 {
-  rb_check_frozen(self);
-
-  return FIX2INT(rb_iv_get(self, "@flags")) & SUB_EWMH_STICK ? Qtrue : Qfalse;
+  return ClientFlag(self, SUB_EWMH_STICK);
 } /* }}} */
 
 /* subClientFlagsToggleFull {{{ */
