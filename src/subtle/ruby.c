@@ -3190,7 +3190,6 @@ subRubyLoadSublet(const char *file)
   klass               = rb_const_get(mod, rb_intern("Sublet"));
   p->sublet->instance = Data_Wrap_Struct(klass, NULL, NULL, (void *)p);
 
-  subArrayPush(subtle->sublets, (void *)p);
   rb_ary_push(shelter, p->sublet->instance); ///< Protect from GC
 
   /* Carefully eval file */
@@ -3204,7 +3203,6 @@ subRubyLoadSublet(const char *file)
       subSharedLogWarn("Failed loading sublet `%s'\n", file);
       RubyBacktrace();
 
-      subArrayRemove(subtle->sublets, (void *)p);
       subPanelKill(p);
 
       return;
@@ -3226,11 +3224,15 @@ subRubyLoadSublet(const char *file)
       if(T_STRING == rb_type(value = rb_hash_lookup(hash,
           CHAR2SYM("background"))))
         p->sublet->bg = subSharedParseColor(subtle->dpy, RSTRING_PTR(value));
-
     }
 
-  /* Configure sublet */
-  subRubyCall(SUB_CALL_CONFIGURE, p->sublet->instance, NULL);
+  /* Try to configure sublet */
+  if(!subRubyCall(SUB_CALL_CONFIGURE, p->sublet->instance, NULL))
+    {
+      subPanelKill(p);
+
+      return;
+    }
 
   /* Sanitize interval time */
   if(0 >= p->sublet->interval) p->sublet->interval = 60;
@@ -3238,6 +3240,8 @@ subRubyLoadSublet(const char *file)
   /* First run */
   if(p->sublet->flags & SUB_SUBLET_RUN)
     subRubyCall(SUB_CALL_RUN, p->sublet->instance, NULL);
+
+  subArrayPush(subtle->sublets, (void *)p);
 
   printf("Loaded sublet (%s)\n", p->sublet->name);
 } /* }}} */
@@ -3325,9 +3329,8 @@ subRubyLoadSublets(void)
   * @param[in]  type   Script type
   * @param[in]  proc   Script receiver
   * @param[in]  data   Extra data
-  * @retval   0  Called script returned false
-  * @retval   1  Called script returned true
-  * @retval  -1  Calling script failed
+  * @retval  1  Call was successful
+  * @retval  0  Call failed
   **/
 
 int
@@ -3336,7 +3339,7 @@ subRubyCall(int type,
   void *data)
 {
   int state = 0;
-  VALUE result = Qnil, rargs[3] = { Qnil };
+  VALUE rargs[3] = { Qnil };
 
   /* Wrap up data */
   rargs[0] = (VALUE)type;
@@ -3344,13 +3347,11 @@ subRubyCall(int type,
   rargs[2] = (VALUE)data;
 
   /* Carefully call */
-  result = rb_protect(RubyWrapCall, (VALUE)&rargs, &state);
+  rb_protect(RubyWrapCall, (VALUE)&rargs, &state);
   if(state)
     {
       subSharedLogWarn("Failed calling proc\n");
       RubyBacktrace();
-
-      result = Qnil;
     }
 
 #ifdef DEBUG
@@ -3358,7 +3359,7 @@ subRubyCall(int type,
   rb_gc_start();
 #endif /* DEBUG */
 
-  return Qtrue == result ? 1 : (Qfalse == result ? 0 : -1);
+  return !state; ///< Reverse odd logic
 } /* }}} */
 
  /** subRubyRelease {{{
