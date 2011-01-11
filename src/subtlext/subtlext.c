@@ -1240,9 +1240,6 @@ Init_subtlext(void)
   /* Bitfield of window states */
   rb_define_attr(client, "flags",    1, 0);
 
-  /* Window visibility */
-  rb_define_attr(client, "hidden",   1, 0);
-
   /* Singleton methods */
   rb_define_singleton_method(client, "find",    subClientSingFind,    1);
   rb_define_singleton_method(client, "current", subClientSingCurrent, 0);
@@ -1287,9 +1284,6 @@ Init_subtlext(void)
   rb_define_method(client, "gravity=",     subClientGravityWriter,    1);
   rb_define_method(client, "geometry",     subClientGeometryReader,   0);
   rb_define_method(client, "geometry=",    subClientGeometryWriter,  -1);
-  rb_define_method(client, "show",         subClientShow,             0);
-  rb_define_method(client, "hide",         subClientHide,             0);
-  rb_define_method(client, "hidden?",      subClientHiddenAsk,        0);
   rb_define_method(client, "resize=",      subClientResizeWriter,     1);
   rb_define_method(client, "pid",          SubtlextPidReader,         0);
   rb_define_method(client, "alive?",       subClientAliveAsk,         0);

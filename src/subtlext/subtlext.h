@@ -76,9 +76,6 @@ VALUE subClientGravityWriter(VALUE self, VALUE value);            ///< Set clien
 VALUE subClientGeometryReader(VALUE self);                        ///< Get client geometry
 VALUE subClientGeometryWriter(int argc, VALUE *argv,
   VALUE self);                                                    ///< Set client geometry
-VALUE subClientShow(VALUE self);                                  ///< Show client
-VALUE subClientHide(VALUE self);                                  ///< Hide client
-VALUE subClientHiddenAsk(VALUE self);                             ///< Whether client is hidden
 VALUE subClientResizeWriter(VALUE self, VALUE value);             ///< Set Client resize
 VALUE subClientToString(VALUE self);                              ///< Client to string
 VALUE subClientKill(VALUE self);                                  ///< Kill client

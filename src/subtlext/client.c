@@ -404,7 +404,6 @@ subClientInit(VALUE self,
   rb_iv_set(self, "@gravity",  Qnil);
   rb_iv_set(self, "@screen",   Qnil);
   rb_iv_set(self, "@flags",    Qnil);
-  rb_iv_set(self, "@hidden",   Qfalse);
 
   subSubtlextConnect(NULL); ///< Implicit open connection
 
@@ -1085,76 +1084,6 @@ subClientResizeWriter(VALUE self,
     rb_obj_classname(value));
 
   return Qnil;
-} /* }}} */
-
-/* subClientShow {{{ */
-/*
- * call-seq: show() -> nil
- *
- * Show a Client
- *
- *  client.show
- *  => nil
- */
-
-VALUE
-subClientShow(VALUE self)
-{
-  VALUE win = Qnil;
-
-  /* Check ruby object */
-  rb_check_frozen(self);
-  GET_ATTR(self, "@win", win);
-
-  rb_iv_set(self, "@hidden", Qfalse);
-
-  XMapWindow(display, NUM2LONG(win));
-  XSync(display, False); ///< Sync all changes
-
-  return Qnil;
-} /* }}} */
-
-/* subClientHide {{{ */
-/*
- * call-seq: hide() -> nil
- *
- * Hide a Client
- *
- *  client.hide
- *  => nil
- */
-
-VALUE
-subClientHide(VALUE self)
-{
-  VALUE win = Qnil;
-
-  /* Check ruby object */
-  rb_check_frozen(self);
-  GET_ATTR(self, "@win", win);
-
-  rb_iv_set(self, "@hidden", Qtrue);
-
-  XUnmapWindow(display, NUM2LONG(win));
-  XSync(display, False); ///< Sync all changes
-
-  return Qnil;
-} /* }}} */
-
-/* subClientHiddenAsk {{{ */
-/*
- * call-seq: hidden -> true or false
- *
- * Whether Client is hidden
- *
- *  client.hidden?
- *  => true
- */
-
-VALUE
-subClientHiddenAsk(VALUE self)
-{
-  return rb_iv_get(self, "@hidden");
 } /* }}} */
 
 /* subClientToString {{{ */
