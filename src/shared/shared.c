@@ -19,6 +19,7 @@
 
 int debug = 0; ///< Enable debugging messages
 
+
 /* Log */
 
  /** subSharedLogDebug {{{
@@ -312,7 +313,7 @@ subSharedPropertySetStrings(Display *disp,
 } /* }}} */
 
  /** subSharedPropertyName {{{
-  * @brief Get window title
+  * @brief Get window name
   * @warning Must be free'd
   * @param[in]     disp      Display
   * @param[in]     win       A #Window
@@ -326,47 +327,37 @@ subSharedPropertyName(Display *disp,
   char **name,
   char *fallback)
 {
+  XTextProperty prop, converted;
   char **list = NULL;
-  XTextProperty text;
+  int nlist = 0;
+  unsigned long size = 0;
 
-  /* Get text property */
-  XGetTextProperty(disp, win, &text, XInternAtom(disp, "_NET_WM_NAME", False));
-  if(0 == text.nitems)
+  /* Get window name */
+  if(!(*name = subSharedPropertyGet(disp, win,
+      XInternAtom(disp, "_NET_WM_NAME", False),
+      XInternAtom(disp, "UTF8_STRING", False), &size)))
     {
-      XGetTextProperty(disp, win, &text, XA_WM_NAME);
-      if(0 == text.nitems)
+      /* Get WM_NAME */
+      if(XGetWMName(disp, win, &prop))
         {
-          *name = strdup(fallback);
-
-          return;
-        }
-    }
-
-  /* Handle encoding */
-  if(XA_STRING == text.encoding)
-    {
-      *name = strdup((char *)text.value);
-    }
-  else ///< Utf8 string
-    {
-      int nlist = 0;
-
-      /* Convert text property */
-      if(Success == XmbTextPropertyToTextList(disp, &text, &list, &nlist) &&
-          list)
-        {
-          if(0 < nlist && *list)
+          /* Check property list */
+          if(Success == Xutf8TextPropertyToTextList(disp,
+              &prop, &list, &nlist))
             {
-              /* FIXME strdup() allocates not enough memory to hold string */
-              *name = subSharedMemoryAlloc(text.nitems + 2, sizeof(char));
-              strncpy(*name, *list, text.nitems);
-            }
+              /* Try to convert property to utf8 */
+              if(Success == Xutf8TextListToTextProperty(disp, list, nlist,
+                  XUTF8StringStyle, &converted))
+                {
+                  *name = (char *)converted.value;
 
-          XFreeStringList(list);
+                  XFree(prop.value);
+                }
+
+              XFreeStringList(list);
+            }
+          else *name = (char *)prop.value;
         }
     }
-
-  if(text.value) XFree(text.value);
 
   /* Fallback */
   if(!*name) *name = strdup(fallback);
@@ -521,8 +512,8 @@ subSharedTextParse(Display *disp,
           else
             {
               item->data.string = strdup(tok);
-              item->width       = subSharedTextWidth(disp, f, tok, strlen(tok),
-                &left, &right, False);
+              item->width       = subSharedTextWidth(disp, f, tok,
+                strlen(tok), &left, &right, False);
 
               /* Remove left bearing from first text item */
               t->width += item->width - (0 == i ? left : 0);
