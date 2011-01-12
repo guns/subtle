@@ -59,8 +59,8 @@ set :outline, 0
 #
 # Generally subtle comes with two panels per screen, one on the top and one at
 # the bottom. Each panel can be configured with different panel items and
-# sublets # screen wise. The default config uses top panel on the first screen
-# only, it's # up to the user to enable the bottom panel or disable either one
+# sublets screen wise. The default config uses top panel on the first screen
+# only, it's up to the user to enable the bottom panel or disable either one
 # or both.
 #
 # Empty panels are hidden.
@@ -91,6 +91,18 @@ screen 1 do
   # Content of the bottom panel
   bottom  [ ]
 end
+
+# Example for a second screen:
+#screen 2 do
+#  # Add stipple to panels
+#  stipple false
+#
+#  # Content of the top panel
+#  top     [ :views, :title, :spacer ]
+#
+#  # Content of the bottom panel
+#  bottom  [ ]
+#end
 
 #
 # == Colors
