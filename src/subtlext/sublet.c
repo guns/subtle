@@ -87,14 +87,14 @@ subSubletSingAll(VALUE self)
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Fetch data */
-  meth    = rb_intern("new");
-  klass   = rb_const_get(mod, rb_intern("Sublet"));
-  array   = rb_ary_new();
-  sublets = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
-    XInternAtom(display, "SUBTLE_SUBLET_LIST", False), &nsublets);
+  meth   = rb_intern("new");
+  klass  = rb_const_get(mod, rb_intern("Sublet"));
+  array  = rb_ary_new();
 
   /* Check results */
-  if(sublets)
+  if((sublets = subSharedPropertyGetStrings(display,
+      DefaultRootWindow(display), XInternAtom(display, "SUBTLE_SUBLET_LIST",
+      False), &nsublets)))
     {
       for(i = 0; i < nsublets; i++)
         {

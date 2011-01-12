@@ -19,7 +19,6 @@
 
 int debug = 0; ///< Enable debugging messages
 
-
 /* Log */
 
  /** subSharedLogDebug {{{
