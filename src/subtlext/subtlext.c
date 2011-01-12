@@ -831,17 +831,6 @@ subSubtlextConnect(char *display_string)
 
       if(!setlocale(LC_CTYPE, "")) XSupportsLocale();
 
-      /* Check if subtle is running */
-      if(Qtrue != subSubtleSingRunningAsk(Qnil))
-        {
-          XCloseDisplay(display);
-          display = NULL;
-
-          rb_raise(rb_eStandardError, "Failed finding running %s", PKG_NAME);
-
-          return;
-        }
-
       /* Register sweeper */
       atexit(SubtlextSweep);
 
@@ -1173,18 +1162,6 @@ subSubtlextFindWindow(char *prop,
   else subSharedLogDebug("Failed finding window `%s'\n", match);
 
   return id;
-} /* }}} */
-
- /** subSubtlextWMCheck {{{
-  * @brief Get WM check window
-  * @return A #Window
-  **/
-
-Window *
-subSubtlextWMCheck(void)
-{
-  return (Window *)subSharedPropertyGet(display, DefaultRootWindow(display),
-    XA_WINDOW, XInternAtom(display, "_NET_SUPPORTING_WM_CHECK", False), NULL);
 } /* }}} */
 
 /* Plugin */

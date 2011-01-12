@@ -83,18 +83,20 @@ VALUE
 subSubtleSingRunningAsk(VALUE self)
 {
   char *prop = NULL;
-  Window *check = NULL;
+  Window *support = NULL;
   VALUE running = Qfalse;
 
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Get supporting window */
-  if(display && (check = subSubtlextWMCheck()))
+  if((support = (Window *)subSharedPropertyGet(display,
+      DefaultRootWindow(display), XA_WINDOW, XInternAtom(display,
+      "_NET_SUPPORTING_WM_CHECK", False), NULL)))
     {
-      subSharedLogDebug("Support: win=%#lx\n", *check);
+      subSharedLogDebug("Support: win=%#lx\n", *support);
 
       /* Get property */
-      if((prop = subSharedPropertyGet(display, *check, XInternAtom(display,
+      if((prop = subSharedPropertyGet(display, *support, XInternAtom(display,
           "UTF8_STRING", False), XInternAtom(display, "_NET_WM_NAME", False),
           NULL)))
         {
@@ -104,7 +106,7 @@ subSubtleSingRunningAsk(VALUE self)
           free(prop);
         }
 
-      free(check);
+      free(support);
     }
 
   return running;

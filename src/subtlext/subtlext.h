@@ -196,7 +196,6 @@ Window *subSubtlextList(char *prop, int *size);                   ///< Get windo
 int subSubtlextFind(char *prop, char *match, char **name);        ///< Find object
 int subSubtlextFindWindow(char *prop, char *match, char **name,
   Window *win, int flags);                                        ///< Find window
-Window *subSubtlextWMCheck(void);                                 ///< Get WM check window
 /* }}} */
 
 /* tag.c {{{ */
