@@ -420,7 +420,7 @@ subSubletKill(VALUE self)
   data.l[0] = FIX2INT(id);
 
   subSharedMessage(display, DefaultRootWindow(display),
-    "SUBTLE_VIEW_KILL", data, 32, True);
+    "SUBTLE_SUBLET_KILL", data, 32, True);
 
   rb_obj_freeze(self); ///< Freeze object
 
