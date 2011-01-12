@@ -54,6 +54,9 @@ set :separator, "|"
 # Outline border size in pixel of panel items
 set :outline, 0
 
+# Set the WM_NAME of subtle (Java quirk)
+# set _wmname, "LG3D"
+
 #
 # == Screen
 #
