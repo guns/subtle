@@ -1372,7 +1372,17 @@ RubyConfigSet(VALUE self,
                     subtle->separator.string = strdup(RSTRING_PTR(value));
                   }
               }
-            else subSharedLogWarn("Unknown set option `:%s'\n", SYM2CHAR(option));
+            else if(CHAR2SYM("wmname") == option)
+              {
+                /* Update WM_NAME */
+                if(!(subtle->flags & SUB_SUBTLE_CHECK))
+                  {
+                    subEwmhSetString(subtle->windows.support,
+                      SUB_EWMH_NET_WM_NAME, RSTRING_PTR(value));
+                  }
+              }
+            else subSharedLogWarn("Unknown set option `:%s'\n",
+              SYM2CHAR(option));
             break; /* }}} */
           default:
             rb_raise(rb_eArgError, "Unknown value type for option `:%s'",
