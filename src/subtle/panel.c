@@ -243,13 +243,14 @@ subPanelUpdate(SubPanel *p)
                     int len = strlen(c->name);
 
                     /* Title modes */
+                    if(c->flags & SUB_CLIENT_MODE_FULL)  len++;
                     if(c->flags & SUB_CLIENT_MODE_FLOAT) len++;
                     if(c->flags & SUB_CLIENT_MODE_STICK) len++;
 
                     /* Font offset, panel border and padding */
                     p->width = subSharedTextWidth(subtle->dpy, subtle->font,
-                      c->name, 50 >= len ? len : 50, NULL, NULL, True) +
-                      6 + 2 * subtle->pbw + subtle->padding.x + subtle->padding.y;
+                      c->name, 50 >= len ? len : 50, NULL, NULL, True) + 6 +
+                      2 * subtle->pbw + subtle->padding.x + subtle->padding.y;
 
                     XResizeWindow(subtle->dpy, p->win,
                       p->width - 2 * subtle->pbw,
@@ -391,7 +392,7 @@ subPanelRender(SubPanel *p)
                     x++;
                   }
 
-                snprintf(buf + x, sizeof(buf), "%s", c->name);
+                snprintf(buf + x, sizeof(buf) - x, "%s", c->name);
 
                 /* Select color pair */
                 fg = subtle->colors.fg_title;
