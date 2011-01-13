@@ -134,13 +134,14 @@ Window
 subSubtleFocus(int focus)
 {
   int dummy = 0;
-  Window win = None;
+  unsigned int mask = 0;
+  Window root = None, win = None;
   SubClient *c = NULL;
   SubScreen *s = NULL;
 
   /* Get pointer window */
-  XQueryPointer(subtle->dpy, ROOT, (Window *)&dummy, &win,
-    &dummy, &dummy, &dummy, &dummy, (unsigned int *)&dummy);
+  XQueryPointer(subtle->dpy, ROOT, &root, &win,
+    &dummy, &dummy, &dummy, &dummy, &mask);
 
   /* Find pointer window */
   if((c = CLIENT(subSubtleFind(win, CLIENTID))) && ALIVE(c))

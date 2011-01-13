@@ -402,8 +402,8 @@ subClientDrag(SubClient *c,
   int mode)
 {
   XEvent ev;
-  Window win;
-  unsigned int dummy = 0;
+  Window root = None, win = None;
+  unsigned int mask = 0;
   int loop = True, left = False;
   int wx = 0, wy = 0, ww = 0, wh = 0, rx = 0, ry = 0, maxw = 0, maxh = 0;
   short *dirx = NULL, *diry = NULL;
@@ -418,7 +418,7 @@ subClientDrag(SubClient *c,
   if(c->flags & SUB_CLIENT_MODE_NOFLOAT) return;
 
   /* Init {{{ */
-  XQueryPointer(subtle->dpy, c->win, &win, &win, &rx, &ry, &wx, &wy, &dummy);
+  XQueryPointer(subtle->dpy, c->win, &root, &win, &rx, &ry, &wx, &wy, &mask);
   geom.x      = rx - wx;
   geom.y      = ry - wy;
   geom.width  = ww = c->geom.width;
