@@ -791,6 +791,10 @@ RubyEvalConfig(void)
 {
   int i;
 
+  /* Check font */
+  if(!subtle->font)
+    subtle->font = subSharedFontNew(subtle->dpy, DEFFONT);
+
   /* Update panel height */
   subtle->th = subtle->font->height + 2 * subtle->pbw +
     subtle->padding.width + subtle->padding.height;
