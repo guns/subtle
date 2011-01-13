@@ -17,30 +17,29 @@ ClientFlagsToggle(VALUE self,
   char *type,
   int flag)
 {
-  Window win = 0;
+  int iflags = 0;
+  VALUE win = Qnil, flags = Qnil;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
+  /* Check ruby object */
   rb_check_frozen(self);
+  GET_ATTR(self, "@win",   win);
+  GET_ATTR(self, "@flags", flags);
+
   subSubtlextConnect(NULL); ///< Implicit open connection
 
-  /* Find window */
-  if((win = NUM2LONG(rb_iv_get(self, "@win"))))
-    {
-      int flags = 0;
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+  /* Update flags */
+  iflags = FIX2INT(flags);
+  if(iflags & flag) iflags &= ~flag;
+  else iflags |= flag;
 
-      GET_ATTR(self, "@flags", flags);
+  rb_iv_set(self, "@flags", INT2FIX(iflags));
 
-      data.l[1] = XInternAtom(display, type, False);
+  /* Send message */
+  data.l[0] = XInternAtom(display, "_NET_WM_STATE_TOGGLE", False);
+  data.l[1] = XInternAtom(display, type, False);
 
-      /* Toggle flag */
-      if(flags & flag) flags &= ~flag;
-      else flags |= flag;
-
-      rb_iv_set(self, "@flags", INT2FIX(flags));
-
-      subSharedMessage(display, win, "_NET_WM_STATE", data, 32, True);
-    }
-  else rb_raise(rb_eStandardError, "Failed toggling client");
+  subSharedMessage(display, NUM2LONG(win), "_NET_WM_STATE", data, 32, True);
 
   return Qnil;
 } /* }}} */
