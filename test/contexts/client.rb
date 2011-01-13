@@ -33,6 +33,31 @@ context "Client" do
 
   asserts("Convert to string") { "xterm" == topic.to_str }
 
+  asserts("Runtime: Add/remove flags") do
+    p = lambda { |c, is, toggle|
+      ret = []
+
+      2.times do |i|
+        ret << c.send(is)
+        c.send(toggle)
+        sleep 0.5
+      end
+
+      ret << c.send(is)
+
+      ret
+    }
+
+    # Check flags
+    full  = p.call(topic, :is_full?,  :toggle_full)
+    float = p.call(topic, :is_float?, :toggle_float)
+    stick = p.call(topic, :is_stick?, :toggle_stick)
+
+    expected = [ false, true, false ]
+
+    expected == full and expected == float and expected == stick
+  end
+
   asserts("Runtime: Add/remove tags") do
     tag = Subtlext::Tag.all.last
 
@@ -42,16 +67,19 @@ context "Client" do
 
     sleep 0.5
 
+    # Compare tag counts
     middle1 = topic.tags.size
     topic.tags = [ tag, "default" ]
 
     sleep 0.5
 
+    # Compare tag counts
     middle2 = topic.tags.size
     topic.untag(tag)
 
     sleep 0.5
 
+    # Compare tag counts
     after = topic.tags.size
 
     before == middle1 - 1 and 2 == middle2 and before == after
