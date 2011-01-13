@@ -632,7 +632,7 @@ subSharedTextWidth(Display *disp,
         {
           XGlyphInfo extents;
 
-          XftTextExtents8(disp, f->xft, (XftChar8*)text, len, &extents);
+          XftTextExtentsUtf8(disp, f->xft, (XftChar8 *)text, len, &extents);
 
           width    = extents.xOff;
           lbearing = extents.x;
@@ -642,7 +642,7 @@ subSharedTextWidth(Display *disp,
         {
           XRectangle overall_ink = { 0 }, overall_logical = { 0 };
 
-          XmbTextExtents(f->xfs, text, len,
+          Xutf8TextExtents(f->xfs, text, len,
             &overall_ink, &overall_logical);
 
           width    = overall_logical.width;
@@ -704,8 +704,8 @@ subSharedTextDraw(Display *disp,
       color.color.alpha = 0xffff;
 
       XftDrawChange(f->draw, win);
-      XftDrawStringUtf8(f->draw, &color, f->xft,
-        x, y, (XftChar8 *)text, strlen(text));
+      XftDrawStringUtf8(f->draw, &color, f->xft, x, y,
+        (XftChar8 *)text, strlen(text));
     }
   else ///< XFS
 #endif /* HAVE_X11_XFT_XFT_H */
@@ -715,7 +715,7 @@ subSharedTextDraw(Display *disp,
       gvals.background = bg;
 
       XChangeGC(disp, gc, GCForeground|GCBackground, &gvals);
-      XmbDrawString(disp, win, f->xfs, gc, x, y, text, strlen(text));
+      Xutf8DrawString(disp, win, f->xfs, gc, x, y, text, strlen(text));
     }
 } /* }}} */
 
