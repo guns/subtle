@@ -421,7 +421,7 @@ EventDestroy(XDestroyWindowEvent *ev)
   int focus = (subtle->windows.focus == ev->window); ///< Save
 
   /* Check if we know this window */
-  if((c = CLIENT(subSubtleFind(ev->window, CLIENTID)))) ///< Client
+  if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))) && ALIVE(c)) ///< Client
     {
       /* Ignore remaining events */
       c->flags |= SUB_CLIENT_DEAD;
@@ -725,12 +725,7 @@ EventGrab(XEvent *ev)
             break; /* }}} */
           case SUB_GRAB_WINDOW_KILL: /* {{{ */
             if((c = CLIENT(subSubtleFind(win, CLIENTID))))
-              {
-                /*subArrayRemove(subtle->clients, (void *)c);
-                subClientPublish();
-                if(VISIBLE(subtle->visible_tags, c)) subScreenConfigure();*/
-                subClientClose(c);
-              }
+              subClientClose(c);
             break; /* }}} */
           case SUB_GRAB_VIEW_JUMP: /* {{{ */
             if(g->data.num < subtle->views->ndata)
@@ -818,13 +813,6 @@ EventMapRequest(XMapRequestEvent *ev)
           subArrayPush(subtle->clients, (void *)c);
           subClientPublish();
 
-          /* Check visibility first */
-          if(VISIBLE(subtle->visible_tags, c))
-            {
-              /* Hook: Tile */
-              subHookCall(SUB_HOOK_TILE, NULL);
-            }
-
           /* Reorder stacking */
           if(c->flags & SUB_CLIENT_TYPE_DESKTOP)
             subArraySort(subtle->clients, subClientCompare);
@@ -840,7 +828,7 @@ EventMapRequest(XMapRequestEvent *ev)
             (void *)c);
         }
     }
-  else
+  else ///< Yes, we do!
     {
       c->flags &= ~SUB_CLIENT_DEAD;
       subScreenConfigure();
