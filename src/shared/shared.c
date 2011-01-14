@@ -326,37 +326,46 @@ subSharedPropertyName(Display *disp,
   char **name,
   char *fallback)
 {
-  XTextProperty prop, converted;
-  char **list = NULL;
-  int nlist = 0;
-  unsigned long size = 0;
+ char **list = NULL;
+  XTextProperty text;
 
-  /* Get window name */
-  if(!(*name = subSharedPropertyGet(disp, win,
-      XInternAtom(disp, "_NET_WM_NAME", False),
-      XInternAtom(disp, "UTF8_STRING", False), &size)))
+  /* Get text property */
+  XGetTextProperty(disp, win, &text, XInternAtom(disp, "_NET_WM_NAME", False));
+  if(0 == text.nitems)
     {
-      /* Get WM_NAME */
-      if(XGetWMName(disp, win, &prop))
+      XGetTextProperty(disp, win, &text, XA_WM_NAME);
+      if(0 == text.nitems)
         {
-          /* Check property list */
-          if(Success == Xutf8TextPropertyToTextList(disp,
-              &prop, &list, &nlist))
-            {
-              /* Try to convert property to utf8 */
-              if(Success == Xutf8TextListToTextProperty(disp, list, nlist,
-                  XUTF8StringStyle, &converted))
-                {
-                  *name = (char *)converted.value;
+          *name = strdup(fallback);
 
-                  XFree(prop.value);
-                }
-
-              XFreeStringList(list);
-            }
-          else *name = (char *)prop.value;
+          return;
         }
     }
+
+  /* Handle encoding */
+  if(XA_STRING == text.encoding)
+    {
+      *name = strdup((char *)text.value);
+    }
+  else ///< Utf8 string
+    {
+      int nlist = 0;
+
+      /* Convert text property */
+      if(Success == XmbTextPropertyToTextList(disp, &text, &list, &nlist) &&
+          list)
+        {
+          if(0 < nlist && *list)
+            {
+              /* FIXME strdup() allocates not enough memory to hold string */
+              *name = subSharedMemoryAlloc(text.nitems + 2, sizeof(char));
+              strncpy(*name, *list, text.nitems);
+            }
+          XFreeStringList(list);
+        }
+    }
+
+  if(text.value) XFree(text.value);
 
   /* Fallback */
   if(!*name) *name = strdup(fallback);
@@ -642,7 +651,7 @@ subSharedTextWidth(Display *disp,
         {
           XRectangle overall_ink = { 0 }, overall_logical = { 0 };
 
-          Xutf8TextExtents(f->xfs, text, len,
+          XmbTextExtents(f->xfs, text, len,
             &overall_ink, &overall_logical);
 
           width    = overall_logical.width;
@@ -715,7 +724,7 @@ subSharedTextDraw(Display *disp,
       gvals.background = bg;
 
       XChangeGC(disp, gc, GCForeground|GCBackground, &gvals);
-      Xutf8DrawString(disp, win, f->xfs, gc, x, y, text, strlen(text));
+      XmbDrawString(disp, win, f->xfs, gc, x, y, text, strlen(text));
     }
 } /* }}} */
 
