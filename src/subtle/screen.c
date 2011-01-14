@@ -311,12 +311,13 @@ subScreenConfigure(void)
           if(0 < visible)
             {
               subClientArrange(c, gravity, screen, False);
-              subEwmhSetWMState(c->win, NormalState);
 
               /* Special treatment */
               if(c->flags & (SUB_CLIENT_MODE_FULL|SUB_CLIENT_MODE_FLOAT))
                 XMapRaised(subtle->dpy, c->win);
               else XMapWindow(subtle->dpy, c->win);
+
+              subEwmhSetWMState(c->win, NormalState);
 
               /* Warp after gravity and screen are set */
               if(c->flags & SUB_CLIENT_MODE_URGENT)
@@ -348,8 +349,6 @@ subScreenConfigure(void)
         }
     }
 
-  subSharedLogDebug("Configure: type=screen\n");
-
   /* EWMH: Visible tags, views */
   subEwmhSetCardinals(ROOT, SUB_EWMH_SUBTLE_VISIBLE_TAGS,
     (long *)&subtle->visible_tags, 1);
@@ -360,6 +359,8 @@ subScreenConfigure(void)
 
   /* Hook: Configure */
   subHookCall(SUB_HOOK_TILE, NULL);
+
+  subSharedLogDebug("Configure: type=screen\n");
 } /* }}} */
 
  /** subScreenUpdate {{{
