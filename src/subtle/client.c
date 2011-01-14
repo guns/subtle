@@ -61,9 +61,9 @@ ClientGravity(void)
   return grav;
 } /* }}} */
 
-/* ClientResize {{{ */
+/* ClientBounds {{{ */
 static void
-ClientResize(SubClient *c,
+ClientBounds(SubClient *c,
   XRectangle *geom)
 {
   SubScreen *s = NULL;
@@ -486,7 +486,7 @@ subClientDrag(SubClient *c,
                     *diry = MINMAX(*diry, c->minh, maxh);
                   }
 
-                ClientResize(c, &geom);
+                ClientBounds(c, &geom);
                 ClientMask(&geom);
               }
             break; /* }}} */
@@ -540,7 +540,7 @@ subClientDrag(SubClient *c,
 
                       geom.height = wh - (ry - ev.xmotion.y_root);
 
-                      ClientResize(c, &geom);
+                      ClientBounds(c, &geom);
 
                       break;
                   }
@@ -699,7 +699,7 @@ subClientArrange(SubClient *c,
 
               c->screen = screen;
             }
-          else ClientResize(c, &c->geom);
+          else ClientBounds(c, &c->geom);
 
           XMoveResizeWindow(subtle->dpy, c->win, c->geom.x, c->geom.y,
             c->geom.width, c->geom.height);
@@ -732,7 +732,7 @@ subClientArrange(SubClient *c,
           if(-1 != screen)  c->screen = screen;
           if(-1 != gravity) c->gravity = c->gravities[s->vid] = gravity;
 
-          ClientResize(c, &c->geom);
+          ClientBounds(c, &c->geom);
           XMoveResizeWindow(subtle->dpy, c->win, c->geom.x, c->geom.y,
             c->geom.width, c->geom.height);
 
@@ -1063,7 +1063,7 @@ subClientSetSizeHints(SubClient *c,
 
           /* Sanitize positions for stupid clients like GIMP */
           if(size->flags & (USSize|PSize|USPosition|PPosition))
-            ClientResize(c, &c->geom);
+            ClientBounds(c, &c->geom);
         }
     }
 
@@ -1307,10 +1307,21 @@ subClientClose(SubClient *c)
     }
   else
     {
+      int focus = (subtle->windows.focus == c->win); ///< Save
+
+      /* Kill it manually */
       XDeleteContext(subtle->dpy, c->win, CLIENTID);
       XKillClient(subtle->dpy, c->win);
 
+      subArrayRemove(subtle->clients, (void *)c);
+      subClientPublish();
       subClientKill(c);
+      subScreenConfigure();
+      subScreenUpdate();
+      subScreenRender();
+
+      /* Update focus if necessary */
+      if(focus) subSubtleFocus(True);
     }
 } /* }}} */
 
@@ -1325,7 +1336,7 @@ subClientKill(SubClient *c)
   assert(c);
 
   /* Hook: Kill */
-  subHookCall((SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_KILL), 
+  subHookCall((SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_KILL),
     (void *)c);
 
   /* Remove highlight of urgent client */
@@ -1338,9 +1349,6 @@ subClientKill(SubClient *c)
   if(c->klass)     free(c->klass);
   if(c->role)      free(c->role);
   free(c);
-
-  /* Hook: Tile */
-  subHookCall(SUB_HOOK_TILE, NULL);
 
   subSharedLogDebug("kill=client\n");
 } /* }}} */
