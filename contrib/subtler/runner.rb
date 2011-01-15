@@ -207,11 +207,6 @@ module Subtle # {{{
 
       private
 
-      # Client modes
-      MODE_FULL  = (1 << 1)
-      MODE_FLOAT = (1 << 2)
-      MODE_STICK = (1 << 3)
-
       def printer(value) # {{{
         case value
           when Subtlext::Client # {{{
@@ -224,9 +219,9 @@ module Subtle # {{{
               value.geometry.width,
               value.geometry.height,
               value.gravity.name,
-              (value.flags & MODE_FULL).zero?  ? "-" : "F",
-              (value.flags & MODE_FLOAT).zero? ? "-" : "O",
-              (value.flags & MODE_STICK).zero? ? "-" : "S",
+              (value.is_full?)  ? "+" : "-",
+              (value.is_float?) ? "^" : "-",
+              (value.is_stick?) ? "*" : "-",
               value.instance,
               value.klass
             ] # }}}
