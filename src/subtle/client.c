@@ -634,17 +634,19 @@ subClientRetag(SubClient *c,
 
  /** subClientResize {{{
   * @brief Resize client for screen
-  * @param[in]  c  A #SubClient
+  * @param[in]  c           A #SubClient
+  * @param[in]  size_hints  Apply size hints
   **/
 
 void
-subClientResize(SubClient *c)
+subClientResize(SubClient *c,
+  int size_hints)
 {
   DEAD(c);
   assert(c);
 
   /* Honor size hints */
-  ClientBounds(c, &c->geom);
+  if(size_hints) ClientBounds(c, &c->geom);
 
   /* Fit sizes */
   if(!(c->flags & (SUB_CLIENT_TYPE_DESKTOP|SUB_CLIENT_MODE_FULL)))
@@ -720,7 +722,7 @@ subClientArrange(SubClient *c,
 
               c->screen = screen;
             }
-          else subClientResize(c);
+          else subClientResize(c, True);
 
           XMoveResizeWindow(subtle->dpy, c->win, c->geom.x, c->geom.y,
             c->geom.width, c->geom.height);
@@ -753,7 +755,7 @@ subClientArrange(SubClient *c,
           if(-1 != screen)  c->screen = screen;
           if(-1 != gravity) c->gravity = c->gravities[s->vid] = gravity;
 
-          subClientResize(c);
+          subClientResize(c, True);
           XMoveResizeWindow(subtle->dpy, c->win, c->geom.x, c->geom.y,
             c->geom.width, c->geom.height);
 
@@ -1084,7 +1086,7 @@ subClientSetSizeHints(SubClient *c,
 
           /* Sanitize positions for stupid clients like GIMP */
           if(size->flags & (USSize|PSize|USPosition|PPosition))
-            subClientResize(c);
+            subClientResize(c, True);
         }
     }
 

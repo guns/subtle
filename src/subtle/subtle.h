@@ -655,7 +655,7 @@ void subClientDrag(SubClient *c, int mode);                       ///< Move/drag
 void subClientUpdate(int vid);                                    ///< Update clients
 void subClientTag(SubClient *c, int tag, int *flags);             ///< Tag client
 void subClientRetag(SubClient *c, int *flags);                    ///< Update client tags
-void subClientResize(SubClient *c);                               ///< Resize client for screen
+void subClientResize(SubClient *c, int size_hints);               ///< Resize client for screen
 void subClientArrange(SubClient *c, int gravity,
   int screen);                                                    ///< Arrange client
 void subClientToggle(SubClient *c, int type, int gravity);        ///< Toggle client state
