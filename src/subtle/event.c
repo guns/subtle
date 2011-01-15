@@ -599,19 +599,19 @@ EventGrab(XEvent *ev)
                 /* Iterate once to find a client with smallest score */
                 for(i = 0; i < subtle->clients->ndata; i++)
                   {
-                    SubClient *iter = CLIENT(subtle->clients->data[i]);
+                    SubClient *k = CLIENT(subtle->clients->data[i]);
 
-                    /* Check if client and gravity are different and client visible*/
-                    if(c != iter && c->gravity != iter->gravity &&
-                        (subtle->visible_tags & iter->tags ||
-                        iter->flags & SUB_CLIENT_MODE_STICK))
+                    /* Check if both clients are different and visible*/
+                    if(c != k && (subtle->visible_tags & k->tags ||
+                        k->flags & SUB_CLIENT_MODE_STICK))
                       {
-                        /* Substract stack position to get window on top */
+                        /* Substract stack position index to get window
+                         * on top of sorted stack */
                         if(match > (score = subSharedMatch(g->data.num,
-                            &c->geom, &iter->geom) - i))
+                            &c->geom, &k->geom) - i))
                           {
                             match = score;
-                            found = iter;
+                            found = k;
                           }
                       }
                   }
