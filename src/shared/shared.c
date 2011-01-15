@@ -906,44 +906,47 @@ subSharedFontKill(Display *disp,
 
  /** subSharedMatch {{{
   * @brief Match a window based on position
-  * @param[in]  type       Type of matching
-  * @param[in]  geometry1  Geometry 1
-  * @param[in]  geometry2  Geometry 2
+  * @param[in]  type    Type of matching
+  * @param[in]  origin  Geometry of origin window
+  * @param[in]  test    Geometry of test window
   **/
 
 int
 subSharedMatch(int type,
-  XRectangle *geometry1,
-  XRectangle *geometry2)
+  XRectangle *origin,
+  XRectangle *test)
 {
   int dx = 0, dy = 0;
 
-  /* Euclidean distance */
-  dx = abs(geometry1->x - geometry2->x);
-  dy = abs(geometry1->y - geometry2->y);
+  /* This check is complicated and consists of two parts:
+   * 1) Check if x/y value decrease in given direction
+   * 2) Check if a corner of one of the rects is close enough to
+   *    a side of the other rect */
 
-  if(0 == dx) dx = 100;
-  if(0 == dy) dy = 100;
+  /* Check geometries */
+  if((((SUB_WINDOW_LEFT  == type      && test->x   <= origin->x)                  ||
+       (SUB_WINDOW_RIGHT == type      && test->x   >= origin->x))                 &&
+       ((test->y         >= origin->y && test->y   <= origin->y + origin->height) ||
+       (origin->y        >= test->y   && origin->y <= test->y   + test->height))) ||
 
-  /* Add weighting */
-  switch(type)
+     (((SUB_WINDOW_UP    == type      && test->y   <= origin->y)                  ||
+       (SUB_WINDOW_DOWN  == type      && test->y   >= origin->y))                 &&
+       ((test->x         >= origin->x && test->x   <= origin->x + origin->width)  ||
+       (origin->x        >= test->x   && origin->x <= test->x   + test->width))))
     {
-     case SUB_WINDOW_LEFT:
-        if(geometry2->x < geometry1->x) dx /= 8;
-        dy *= 2;
-        break;
-      case SUB_WINDOW_RIGHT:
-        if(geometry2->x > geometry1->x) dx /= 8;
-        dy *= 2;
-        break;
-      case SUB_WINDOW_UP:
-        if(geometry2->y < geometry1->y) dy /= 8;
-        dx *= 2;
-        break;
-      case SUB_WINDOW_DOWN:
-        if(geometry2->y > geometry1->y) dy /= 8;
-        dx *= 2;
-        break;
+      /* Euclidean distance */
+      dx = abs(origin->x - test->x);
+      dy = abs(origin->y - test->y);
+
+      /* Zero distance means same dimensions - score this bad */
+      if(0 == dx) dx = 1L << 15;
+      if(0 == dy) dy = 1L << 15;
+    }
+  else
+    {
+      /* No match - score bad as well */
+      dx = 1L << 15;
+      dy = 1L << 15;
     }
 
   return dx + dy;
