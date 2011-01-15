@@ -656,6 +656,8 @@ EventGrab(XEvent *ev)
                       (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_FULL), True);
                     subScreenUpdate();
                     subScreenRender();
+
+                    c->gravity = -1; ///< Reset
                   }
 
                 /* Select next gravity */
