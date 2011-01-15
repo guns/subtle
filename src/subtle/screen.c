@@ -310,7 +310,7 @@ subScreenConfigure(void)
           /* Update client after all screens are checked */
           if(0 < visible)
             {
-              subClientArrange(c, gravity, screen, False);
+              subClientArrange(c, gravity, screen);
 
               /* Special treatment */
               if(c->flags & (SUB_CLIENT_MODE_FULL|SUB_CLIENT_MODE_FLOAT))

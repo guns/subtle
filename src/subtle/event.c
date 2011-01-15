@@ -678,7 +678,7 @@ EventGrab(XEvent *ev)
                 /* Sanity check */
                 if(0 <= id && id < subtle->gravities->ndata)
                   {
-                    subClientArrange(c, id, c->screen, True);
+                    subClientArrange(c, id, c->screen);
                     subClientWarp(c, True);
                     XRaiseWindow(subtle->dpy, c->win);
 
@@ -935,7 +935,7 @@ EventMessage(XClientMessageEvent *ev)
                 ((g = GRAVITY(subArrayGet(subtle->gravities, (int)ev->data.l[1])))) &&
                 VISIBLE(subtle->visible_tags, c))
               {
-                subClientArrange(c, (int)ev->data.l[1], c->screen, True);
+                subClientArrange(c, (int)ev->data.l[1], c->screen);
                 subClientWarp(c, True);
                 XRaiseWindow(subtle->dpy, c->win);
 
@@ -998,7 +998,7 @@ EventMessage(XClientMessageEvent *ev)
                   {
                     if((c = CLIENT(subtle->clients->data[i])) && c->gravity == ev->data.l[0])
                       {
-                        subClientArrange(c, 0, -1, True); ///< Fallback to first gravity
+                        subClientArrange(c, 0, -1); ///< Fallback to first gravity
                         subClientWarp(c, True);
                         XRaiseWindow(subtle->dpy, c->win);
                       }

@@ -685,14 +685,12 @@ subClientResize(SubClient *c)
    * @param[in]  c        A #SubClient
    * @param[in]  gravity  The gravity id
    * @param[in]  screen   The screen id
-   * @param[in]  force    Force update
    **/
 
 void
 subClientArrange(SubClient *c,
   int gravity,
-  int screen,
-  int force)
+  int screen)
 {
   SubScreen *s = SCREEN(subArrayGet(subtle->screens, screen));
 

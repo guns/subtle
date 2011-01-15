@@ -657,7 +657,7 @@ void subClientTag(SubClient *c, int tag, int *flags);             ///< Tag clien
 void subClientRetag(SubClient *c, int *flags);                    ///< Update client tags
 void subClientResize(SubClient *c);                               ///< Resize client for screen
 void subClientArrange(SubClient *c, int gravity,
-  int screen, int force);                                         ///< Arrange client
+  int screen);                                                    ///< Arrange client
 void subClientToggle(SubClient *c, int type, int gravity);        ///< Toggle client state
 void subClientSetStrut(SubClient *c);                             ///< Set client strut
 void subClientSetProtocols(SubClient *c);                         ///< Set client protocols
