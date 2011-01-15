@@ -302,7 +302,7 @@ EventConfigureRequest(XConfigureRequestEvent *ev)
           if(ev->value_mask & CWWidth)  c->geom.width  = ev->width;
           if(ev->value_mask & CWHeight) c->geom.height = ev->height;
 
-          subClientResize(c);
+          subClientResize(c, False);
 
           /* Send synthetic configure notify */
           if((ev->value_mask & (CWX|CWY)) && !(ev->value_mask & (CWWidth|CWHeight)))
@@ -1282,7 +1282,7 @@ EventMessage(XClientMessageEvent *ev)
                 c->geom.width  = ev->data.l[3];
                 c->geom.height = ev->data.l[4];
 
-                subClientResize(c);
+                subClientResize(c, True);
 
                 XMoveResizeWindow(subtle->dpy, c->win, c->geom.x, c->geom.y,
                   c->geom.width, c->geom.height);
