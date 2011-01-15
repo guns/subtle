@@ -1288,24 +1288,28 @@ subClientSetType(SubClient *c,
 void
 subClientPublish(void)
 {
-  int i;
+  int i, nwins = 0;
   Window *wins = (Window *)subSharedMemoryAlloc(subtle->clients->ndata,
     sizeof(Window));
 
+  /* Collect alive clients */
   for(i = 0; i < subtle->clients->ndata; i++)
-    wins[i] = CLIENT(subtle->clients->data[i])->win;
+    {
+      SubClient *c = CLIENT(subtle->clients->data[i]);
+
+      if(ALIVE(c))
+        wins[nwins++] = CLIENT(subtle->clients->data[i])->win;
+    }
 
   /* EWMH: Client list and client list stacking */
-  subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST, wins,
-    subtle->clients->ndata);
-  subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST_STACKING, wins,
-    subtle->clients->ndata);
+  subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST, wins, nwins);
+  subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST_STACKING, wins, nwins);
 
   XSync(subtle->dpy, False); ///< Sync all changes
 
-  subSharedLogDebug("publish=client, clients=%d\n", subtle->clients->ndata);
-
   free(wins);
+
+  subSharedLogDebug("publish=client, clients=%d\n", nwins);
 } /* }}} */
 
  /** subClientClose {{{
