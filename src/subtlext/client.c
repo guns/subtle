@@ -50,6 +50,7 @@ ClientSelect(VALUE self,
   int type)
 {
   int nclients = 0, i, match = (1L << 30), score = 0, found = 0;
+  unsigned long *visible = NULL;
   Window *clients = NULL;
   VALUE win = Qnil, client = Qnil;
 
@@ -60,39 +61,38 @@ ClientSelect(VALUE self,
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Fetch data */
-  if((clients = subSubtlextList("_NET_CLIENT_LIST", &nclients)))
+  clients = subSubtlextList("_NET_CLIENT_LIST", &nclients);
+  visible = (unsigned long *)subSharedPropertyGet(display,
+    DefaultRootWindow(display), XA_CARDINAL, XInternAtom(display,
+    "SUBTLE_VISIBLE_TAGS", False), NULL);
+
+  /* Check values */
+  if(clients && visible)
     {
       XRectangle geometry1 = { 0 }, geometry2 = { 0 };
-      int *gravity1 = (int *)subSharedPropertyGet(display, NUM2LONG(win),
-        XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_GRAVITY", False),
-        NULL);
 
-      if(gravity1)
+      subSharedPropertyGeometry(display, win, &geometry1);
+
+      /* Iterate once to find a client score-based */
+      for(i = 0; i < nclients; i++)
         {
-          subSharedPropertyGeometry(display, win, &geometry1);
+          unsigned long *tags = (unsigned long *)subSharedPropertyGet(display,
+            clients[i], XA_CARDINAL, XInternAtom(display,
+            "SUBTLE_WINDOW_TAGS", False), NULL);
 
-          /* Iterate once to find a client score-based */
-          for(i = 0; i < nclients; i++)
+          /* Check if both clients are different and visible*/
+          if(tags && win != clients[i] && *visible & *tags)
             {
-              int *gravity2 = (int *)subSharedPropertyGet(display, clients[i],
-                XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_GRAVITY",
-                  False), NULL);
+              subSharedPropertyGeometry(display, clients[i], &geometry2);
 
-              /* Check if there are common tags */
-              if(gravity2 && win != clients[i] && *gravity1 != *gravity2)
+              if(match > (score = subSharedMatch(type,
+                  &geometry1, &geometry2) - i))
                 {
-                  subSharedPropertyGeometry(display, clients[i], &geometry2);
-
-                  if(match > (score = subSharedMatch(type,
-                      &geometry1, &geometry2)))
-                    {
-                      match = score;
-                      found = i;
-                    }
-
+                  match = score;
+                  found = i;
                 }
 
-              if(gravity2) free(gravity2);
+              free(tags);
             }
 
           /* Create object from found window */
@@ -103,11 +103,11 @@ ClientSelect(VALUE self,
               subClientUpdate(client);
             }
 
-          free(gravity1);
         }
-
-      free(clients);
     }
+
+  if(clients) free(clients);
+  if(visible) free(visible);
 
   return client;
 } /* }}} */
