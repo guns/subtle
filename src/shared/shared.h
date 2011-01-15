@@ -154,7 +154,7 @@ void subSharedRegexKill(regex_t *preg);                           ///< Kill rege
 char *subSharedPropertyGet(Display *disp, Window win,
   Atom type, Atom prop, unsigned long *size);                     ///< Get window property
 char **subSharedPropertyGetStrings(Display *disp, Window win,
-  Atom prop, int *size);                                          ///< Get window property list
+  Atom prop, int *nlist);                                         ///< Get window property list
 void subSharedPropertySetStrings(Display *disp, Window win,
   Atom prop, char **list, int nlist);                             ///< Set window property list
 void subSharedPropertyName(Display *disp, Window win,

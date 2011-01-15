@@ -259,7 +259,7 @@ subSharedPropertyGet(Display *disp,
   * @param[in]     disp Display
   * @param[in]     win     Client window
   * @param[in]     prop    Property
-  * @param[inout]  size    Size of the property list
+  * @param[inout]  nlist   Size of the property list
   * return Returns the property list
   **/
 
@@ -267,7 +267,7 @@ char **
 subSharedPropertyGetStrings(Display *disp,
   Window win,
   Atom prop,
-  int *size)
+  int *nlist)
 {
   char **list = NULL;
   XTextProperty text;
@@ -278,7 +278,7 @@ subSharedPropertyGetStrings(Display *disp,
   if((XGetTextProperty(disp, win, &text, prop) ||
       XGetTextProperty(disp, win, &text, XA_STRING)) && text.nitems)
     {
-      XmbTextPropertyToTextList(disp, &text, &list, size);
+      XmbTextPropertyToTextList(disp, &text, &list, nlist);
 
       XFree(text.value);
     }
@@ -287,7 +287,7 @@ subSharedPropertyGetStrings(Display *disp,
 } /* }}} */
 
  /** subSharedPropertySetStrings {{{
-  * @brief Get property list
+  * @brief Convert list to multibyte and set property
   * @param[in]  disp    Display
   * @param[in]  win     Window
   * @param[in]  prop    Property
@@ -305,7 +305,8 @@ subSharedPropertySetStrings(Display *disp,
 {
   XTextProperty text;
 
-  XStringListToTextProperty(list, nlist, &text);
+  /* Convert list to multibyte text property */
+  XmbTextListToTextProperty(disp, list, nlist, XUTF8StringStyle, &text);
   XSetTextProperty(disp, win, &text, prop);
 
   XFree(text.value);
