@@ -66,18 +66,15 @@ static void
 ClientBounds(SubClient *c,
   XRectangle *geom)
 {
-  SubScreen *s = NULL;
-
   DEAD(c);
   assert(c && geom);
-
-  s = SCREEN(subtle->screens->data[c->screen]);
 
   /* Check size hints */
   if(!(c->flags & (SUB_CLIENT_MODE_NORESIZE|SUB_CLIENT_TYPE_DESKTOP)) &&
       (subtle->flags & SUB_SUBTLE_RESIZE ||
       c->flags & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_RESIZE)))
     {
+      SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
       int maxw = -1 == c->maxw ? s->geom.width  - 2 * BORDER(c) : c->maxw;
       int maxh = -1 == c->maxh ? s->geom.height - 2 * BORDER(c) : c->maxh;
 
@@ -99,30 +96,6 @@ ClientBounds(SubClient *c,
 
       if(c->maxr && geom->height * c->maxr < geom->width)
         geom->width = (int)(geom->height * c->maxr);
-    }
-
-  /* Check whether window fits onto screen */
-  if(!(c->flags & (SUB_CLIENT_TYPE_DESKTOP|SUB_CLIENT_MODE_FULL)))
-    {
-      int maxx = 0, maxy = 0;
-
-      /* Check size */
-      if(c->geom.width > s->geom.width)   c->geom.width  = s->geom.width;
-      if(c->geom.height > s->geom.height) c->geom.height = s->geom.height;
-
-      /* Check whether window fits onto screen */
-      maxx = s->geom.x + s->geom.width;
-      maxy = s->geom.y + s->geom.height;
-
-      /* Check x */
-      if(c->geom.x < s->geom.x || c->geom.x > maxx ||
-          c->geom.x + c->geom.width > maxx)
-        c->geom.x = s->geom.x;
-
-      /* Check y */
-      if(c->geom.y < s->geom.y || c->geom.y > maxy ||
-          c->geom.y + c->geom.height > maxy)
-        c->geom.y = s->geom.y;
     }
 } /* }}} */
 
@@ -197,7 +170,8 @@ subClientNew(Window win)
   /* X properties */
   sattrs.border_pixel = subtle->colors.bo_inactive;
   sattrs.event_mask   = CLIENTMASK;
-  XChangeWindowAttributes(subtle->dpy, c->win, CWBorderPixel|CWEventMask, &sattrs);
+  XChangeWindowAttributes(subtle->dpy, c->win,
+    CWBorderPixel|CWEventMask, &sattrs);
   XAddToSaveSet(subtle->dpy, c->win);
   XSaveContext(subtle->dpy, c->win, CLIENTID, (void *)c);
 
@@ -221,7 +195,8 @@ subClientNew(Window win)
   if(c->flags & SUB_CLIENT_TYPE_DIALOG) ClientCenter(c);
 
   /* EWMH: Gravity and desktop */
-  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY, (long *)&subtle->gravity, 1);
+  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY,
+    (long *)&subtle->gravity, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
   subSharedLogDebug("new=client, name=%s, instance=%s, klass=%s, win=%#lx\n",
@@ -657,6 +632,54 @@ subClientRetag(SubClient *c,
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&c->tags, 1);
 } /* }}} */
 
+ /** subClientResize {{{
+  * @brief Resize client for screen
+  * @param[in]  c  A #SubClient
+  **/
+
+void
+subClientResize(SubClient *c)
+{
+  DEAD(c);
+  assert(c);
+
+  /* Honor size hints */
+  ClientBounds(c, &c->geom);
+
+  /* Fit sizes */
+  if(!(c->flags & (SUB_CLIENT_TYPE_DESKTOP|SUB_CLIENT_MODE_FULL)))
+    {
+      int maxx = 0, maxy = 0;
+      SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
+
+      /* Check size */
+      if(c->geom.width > s->geom.width)   c->geom.width  = s->geom.width;
+      if(c->geom.height > s->geom.height) c->geom.height = s->geom.height;
+
+      /* Check whether window fits onto screen */
+      maxx = s->geom.x + s->geom.width;
+      maxy = s->geom.y + s->geom.height;
+
+      /* Check x */
+      if(c->geom.x < s->geom.x || c->geom.x > maxx ||
+          c->geom.x + c->geom.width > maxx)
+        {
+          if(c->flags & SUB_CLIENT_MODE_FLOAT)
+            c->geom.x = s->geom.x + ((s->geom.width - c->geom.width) / 2);
+          else c->geom.x = s->geom.x;
+        }
+
+      /* Check y */
+      if(c->geom.y < s->geom.y || c->geom.y > maxy ||
+          c->geom.y + c->geom.height > maxy)
+        {
+          if(c->flags & SUB_CLIENT_MODE_FLOAT)
+            c->geom.y = s->geom.y + ((s->geom.height - c->geom.height) / 2);
+          else c->geom.y = s->geom.y;
+        }
+    }
+} /* }}} */
+
   /** subClientArrange {{{
    * @brief Arrange position of client
    * @param[in]  c        A #SubClient
@@ -699,7 +722,7 @@ subClientArrange(SubClient *c,
 
               c->screen = screen;
             }
-          else ClientBounds(c, &c->geom);
+          else subClientResize(c);
 
           XMoveResizeWindow(subtle->dpy, c->win, c->geom.x, c->geom.y,
             c->geom.width, c->geom.height);
@@ -732,7 +755,7 @@ subClientArrange(SubClient *c,
           if(-1 != screen)  c->screen = screen;
           if(-1 != gravity) c->gravity = c->gravities[s->vid] = gravity;
 
-          ClientBounds(c, &c->geom);
+          subClientResize(c);
           XMoveResizeWindow(subtle->dpy, c->win, c->geom.x, c->geom.y,
             c->geom.width, c->geom.height);
 
@@ -1063,7 +1086,7 @@ subClientSetSizeHints(SubClient *c,
 
           /* Sanitize positions for stupid clients like GIMP */
           if(size->flags & (USSize|PSize|USPosition|PPosition))
-            ClientBounds(c, &c->geom);
+            subClientResize(c);
         }
     }
 

@@ -655,6 +655,7 @@ void subClientDrag(SubClient *c, int mode);                       ///< Move/drag
 void subClientUpdate(int vid);                                    ///< Update clients
 void subClientTag(SubClient *c, int tag, int *flags);             ///< Tag client
 void subClientRetag(SubClient *c, int *flags);                    ///< Update client tags
+void subClientResize(SubClient *c);                               ///< Resize client for screen
 void subClientArrange(SubClient *c, int gravity,
   int screen, int force);                                         ///< Arrange client
 void subClientToggle(SubClient *c, int type, int gravity);        ///< Toggle client state
@@ -665,7 +666,7 @@ void subClientSetWMHints(SubClient *c, int *flags);               ///< Set clien
 void subClientSetMWMHints(SubClient *c);                          ///< Set client MWM hints
 void subClientSetState(SubClient *c, int *flags);                 ///< Set client WM state
 void subClientSetTransient(SubClient *c, int *flags);             ///< Set client transient
-void subClientSetType(SubClient *c, int *flags);                  ///< Set client tyoe
+void subClientSetType(SubClient *c, int *flags);                  ///< Set client type
 void subClientPublish(void);                                      ///< Publish all clients
 void subClientClose(SubClient *c);                                ///< Close client
 void subClientKill(SubClient *c);                                 ///< Kill client
