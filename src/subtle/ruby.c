@@ -98,9 +98,10 @@ RubyConvert(void *data)
           object = rb_funcall(klass, rb_intern("new"), 1, INT2FIX(id));
 
           /* Translate flags */
-          if(c->flags & SUB_CLIENT_MODE_FULL)  flags |= SUB_EWMH_FULL;
-          if(c->flags & SUB_CLIENT_MODE_FLOAT) flags |= SUB_EWMH_FLOAT;
-          if(c->flags & SUB_CLIENT_MODE_STICK) flags |= SUB_EWMH_STICK;
+          if(c->flags & SUB_CLIENT_MODE_FULL)   flags |= SUB_EWMH_FULL;
+          if(c->flags & SUB_CLIENT_MODE_FLOAT)  flags |= SUB_EWMH_FLOAT;
+          if(c->flags & SUB_CLIENT_MODE_STICK)  flags |= SUB_EWMH_STICK;
+          if(c->flags & SUB_CLIENT_MODE_RESIZE) flags |= SUB_EWMH_RESIZE;
 
           /* Set properties */
           rb_iv_set(object, "@win",      LONG2NUM(c->win));

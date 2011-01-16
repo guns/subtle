@@ -895,6 +895,7 @@ subClientToggle(SubClient *c,
       flags             |= SUB_EWMH_STICK;
       states[nstates++]  = subEwmhGet(SUB_EWMH_NET_WM_STATE_STICKY);
     }
+  if(c->flags & SUB_CLIENT_MODE_RESIZE) flags |= SUB_EWMH_RESIZE;
 
   XChangeProperty(subtle->dpy, c->win, subEwmhGet(SUB_EWMH_NET_WM_STATE),
     XA_ATOM, 32, PropModeReplace, (unsigned char *)&states, nstates);
