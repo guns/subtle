@@ -69,8 +69,8 @@ subEwmhInit(void)
     "_XEMBED", "_XEMBED_INFO",
 
     /* subtle */
-    "SUBTLE_WINDOW_TAGS", "SUBTLE_WINDOW_RETAG", "SUBTLE_WINDOW_GRAVITY",
-    "SUBTLE_WINDOW_FLAGS", "SUBTLE_WINDOW_RESIZE",
+    "SUBTLE_WINDOW_TAGS", "SUBTLE_WINDOW_RETAG",
+    "SUBTLE_WINDOW_GRAVITY", "SUBTLE_WINDOW_FLAGS",
     "SUBTLE_GRAVITY_NEW", "SUBTLE_GRAVITY_LIST", "SUBTLE_GRAVITY_KILL",
     "SUBTLE_TAG_NEW", "SUBTLE_TAG_LIST", "SUBTLE_TAG_KILL",
     "SUBTLE_TRAY_LIST", "SUBTLE_TRAY_KILL",
@@ -94,8 +94,8 @@ subEwmhInit(void)
   subSharedLogDebug("Selection: len=%d, name=%s\n", len, selection);
   names[SUB_EWMH_NET_SYSTEM_TRAY_SELECTION] = selection;
 
-  XInternAtoms(subtle->dpy, names, SUB_EWMH_TOTAL, 0, atoms); ///< Register atoms
-
+  /* Register atoms */
+  XInternAtoms(subtle->dpy, names, SUB_EWMH_TOTAL, 0, atoms);
   subtle->flags |= SUB_SUBTLE_EWMH; ///< Set EWMH flag
 
   /* EWMH: Supported hints */
@@ -109,7 +109,7 @@ subEwmhInit(void)
   subEwmhSetString(subtle->windows.support, SUB_EWMH_WM_CLASS, PKG_NAME);
   subEwmhSetCardinals(subtle->windows.support, SUB_EWMH_NET_WM_PID, &pid, 1);
 
-  /* EWMH: Desktop sizes */
+  /* EWMH: Desktop geometry */
   data[0] = subtle->width;
   data[1] = subtle->height;
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_DESKTOP_GEOMETRY, (long *)&data, 2);
