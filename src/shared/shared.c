@@ -428,8 +428,8 @@ subSharedPropertyGeometry(Display *disp,
  /** subSharedPropertyDelete {{{
   * @brief Deletes the property
   * @param[in]  disp  Display
-  * @param[in]  win      A #Window
-  * @param[in]  prop     Property
+  * @param[in]  win   A #Window
+  * @param[in]  prop  Property
   **/
 
 void

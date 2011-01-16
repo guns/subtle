@@ -1288,22 +1288,18 @@ subClientSetType(SubClient *c,
 void
 subClientPublish(void)
 {
-  int i, nwins = 0;
+  int i;
   Window *wins = (Window *)subSharedMemoryAlloc(subtle->clients->ndata,
     sizeof(Window));
 
-  /* Collect alive clients */
   for(i = 0; i < subtle->clients->ndata; i++)
-    {
-      SubClient *c = CLIENT(subtle->clients->data[i]);
-
-      if(ALIVE(c))
-        wins[nwins++] = CLIENT(subtle->clients->data[i])->win;
-    }
+    wins[i] = CLIENT(subtle->clients->data[i])->win;
 
   /* EWMH: Client list and client list stacking */
-  subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST, wins, nwins);
-  subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST_STACKING, wins, nwins);
+  subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST, wins,
+    subtle->clients->ndata);
+  subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST_STACKING, wins,
+    subtle->clients->ndata);
 
   XSync(subtle->dpy, False); ///< Sync all changes
 
@@ -1337,7 +1333,6 @@ subClientClose(SubClient *c)
       int focus = (subtle->windows.focus == c->win); ///< Save
 
       /* Kill it manually */
-      XDeleteContext(subtle->dpy, c->win, CLIENTID);
       XKillClient(subtle->dpy, c->win);
 
       subArrayRemove(subtle->clients, (void *)c);
@@ -1365,6 +1360,8 @@ subClientKill(SubClient *c)
   /* Hook: Kill */
   subHookCall((SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_KILL),
     (void *)c);
+
+  XDeleteContext(subtle->dpy, c->win, CLIENTID);
 
   /* Remove highlight of urgent client */
   if(c->flags & SUB_CLIENT_MODE_URGENT)

@@ -348,7 +348,7 @@ EventCrossing(XCrossingEvent *ev)
           }
         else if((c = CLIENT(subSubtleFind(ev->window, CLIENTID)))) ///< Client
           {
-            if(!(c->flags & SUB_CLIENT_DEAD)) subClientFocus(c);
+            if(ALIVE(c)) subClientFocus(c);
           }
         else if((p = PANEL(subSubtleFind(ev->window, SUBLETID)))) ///< Sublet
           {
@@ -388,30 +388,30 @@ EventDestroy(XDestroyWindowEvent *ev)
       /* Ignore remaining events */
       c->flags |= SUB_CLIENT_DEAD;
       XSelectInput(subtle->dpy, c->win, NoEventMask);
-      XDeleteContext(subtle->dpy, c->win, CLIENTID);
 
+      /* Kill client */
       subArrayRemove(subtle->clients, (void *)c);
-      subClientPublish();
       subClientKill(c);
+      subClientPublish();
+
       subScreenConfigure();
       subScreenUpdate();
       subScreenRender();
-
-      /* Update focus if necessary */
-      if(focus) subSubtleFocus(True);
     }
   else if((t = TRAY(subSubtleFind(ev->event, TRAYID)))) ///< Tray
     {
+      /* Kill tray */
       subArrayRemove(subtle->trays, (void *)t);
       subTrayKill(t);
       subTrayUpdate();
       subTrayPublish();
+
       subScreenUpdate();
       subScreenRender();
-
-      /* Update focus if necessary */
-      if(focus) subSubtleFocus(True);
     }
+
+  /* Update focus if necessary */
+  if(focus) subSubtleFocus(True);
 } /* }}} */
 
 /* EventExpose {{{ */
@@ -756,6 +756,7 @@ EventMap(XMapEvent *ev)
   if((t = TRAY(subSubtleFind(ev->window, TRAYID)))) ///< Tray
     {
       t->flags &= ~SUB_TRAY_DEAD;
+
       subTrayUpdate();
       subScreenConfigure();
       subScreenRender();
@@ -769,34 +770,33 @@ EventMapRequest(XMapRequestEvent *ev)
   SubClient *c = NULL;
 
   /* Check if we know the window */
-  if(!(c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
-    {
-      /* Create new client */
-      if((c = subClientNew(ev->window)))
-        {
-          subArrayPush(subtle->clients, (void *)c);
-          subClientPublish();
-
-          /* Reorder stacking */
-          if(c->flags & SUB_CLIENT_TYPE_DESKTOP)
-            subArraySort(subtle->clients, subClientCompare);
-
-          subScreenConfigure();
-          subScreenUpdate();
-          subScreenRender();
-
-          EventQueuePop(subtle->clients->ndata - 1, 0);
-
-          /* Hook: Create */
-          subHookCall((SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_CREATE),
-            (void *)c);
-        }
-    }
-  else ///< Yes, we do!
+  if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
     {
       c->flags &= ~SUB_CLIENT_DEAD;
+      c->flags |= SUB_CLIENT_ARRANGE;
+
       subScreenConfigure();
+      subScreenUpdate();
       subScreenRender();
+    }
+  else if((c = subClientNew(ev->window)))
+    {
+      subArrayPush(subtle->clients, (void *)c);
+      subClientPublish();
+
+      /* Reorder stacking */
+      if(c->flags & SUB_CLIENT_TYPE_DESKTOP)
+        subArraySort(subtle->clients, subClientCompare);
+
+      subScreenConfigure();
+      subScreenUpdate();
+      subScreenRender();
+
+      EventQueuePop(subtle->clients->ndata - 1, 0);
+
+      /* Hook: Create */
+      subHookCall((SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_CREATE),
+        (void *)c);
     }
 } /* }}} */
 
@@ -1442,8 +1442,9 @@ EventUnmap(XUnmapEvent *ev)
   /* Check if we know this window */
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
     {
-      if(ev->send_event && ALIVE(c)) ///< Client
+      if(ev->send_event) ///< Client
         {
+          /* Set withdrawn state (see ICCCM 4.1.4) */
           subEwmhSetWMState(c->win, WithdrawnState);
 
           /* Ignore our generated unmap events */
@@ -1454,33 +1455,44 @@ EventUnmap(XUnmapEvent *ev)
               return;
             }
 
+          /* Unset _NET_WM_STATE (see EWMH 1.3) */
+          subSharedPropertyDelete(subtle->dpy, c->win,
+            subEwmhGet(SUB_EWMH_NET_WM_STATE));
+
+          /* Kill client */
           c->flags |= SUB_CLIENT_DEAD;
+          subArrayRemove(subtle->clients, (void *)c);
+          subClientKill(c);
+          subClientPublish();
+
           subScreenUpdate();
           subScreenRender();
-
-          /* Update focus if necessary */
-          if(focus) subSubtleFocus(True);
         }
     }
   else if((t = TRAY(subSubtleFind(ev->window, TRAYID)))) ///< Tray
     {
+      /* Set withdrawn state (see ICCCM 4.1.4) */
       subEwmhSetWMState(t->win, WithdrawnState);
 
       /* Ignore out own generated unmap events */
       if(t->flags & SUB_TRAY_UNMAP)
         {
           t->flags &= ~SUB_TRAY_UNMAP;
+
           return;
         }
 
+      /* FIXME: Shouldn't we kill the tray? */
       t->flags |= SUB_TRAY_DEAD;
       subTrayUpdate();
+      subTrayPublish();
+
       subScreenUpdate();
       subScreenRender();
-
-      /* Update focus if necessary */
-      if(focus) subSubtleFocus(True);
     }
+
+  /* Update focus if necessary */
+  if(focus) subSubtleFocus(True);
 } /* }}} */
 
 /* Public */
