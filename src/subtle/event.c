@@ -82,7 +82,8 @@ EventFindSublet(int id)
 static void
 EventSwitchView(int vid,
   int sid,
-  int focus)
+  int focus,
+  int warp)
 {
   SubView *v = NULL;
 
@@ -130,7 +131,7 @@ EventSwitchView(int vid,
       subScreenRender();
       subScreenPublish();
 
-      subViewFocus(v, focus);
+      subViewFocus(v, focus, warp);
 
       /* Hook: Jump */
       subHookCall((SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_FOCUS),
@@ -522,7 +523,8 @@ EventGrab(XEvent *ev)
       case ButtonPress:
         if((v = VIEW(subSubtleFind(ev->xbutton.window, VIEWID))))
           {
-            EventSwitchView(subArrayIndex(subtle->views, (void *)v), -1, False);
+            EventSwitchView(subArrayIndex(subtle->views,
+              (void *)v), -1, False, False);
 
             return;
           }
@@ -716,7 +718,7 @@ EventGrab(XEvent *ev)
             break; /* }}} */
           case SUB_GRAB_VIEW_SWITCH: /* {{{ */
             if(g->data.num < subtle->views->ndata)
-              EventSwitchView(g->data.num, -1, True);
+              EventSwitchView(g->data.num, -1, True, True);
             break; /* }}} */
           case SUB_GRAB_VIEW_SELECT: /* {{{ */
               {
@@ -726,10 +728,10 @@ EventGrab(XEvent *ev)
                 if(SUB_VIEW_NEXT == g->data.num &&
                     screen->vid < (subtle->views->ndata - 1))
                   {
-                    EventSwitchView(screen->vid + 1, -1, True);
+                    EventSwitchView(screen->vid + 1, -1, True, True);
                   }
                 else if(SUB_VIEW_PREV == g->data.num && 0 < screen->vid)
-                  EventSwitchView(screen->vid - 1, -1, True);
+                  EventSwitchView(screen->vid - 1, -1, True, True);
               }
             break; /* }}} */
           case SUB_GRAB_SCREEN_JUMP: /* {{{ */
@@ -847,7 +849,7 @@ EventMessage(XClientMessageEvent *ev)
             /* Switchs views of screen */
             if(0 <= ev->data.l[0] && ev->data.l[0] < subtle->views->ndata &&
                 0 <= ev->data.l[2] && ev->data.l[2] < subtle->screens->ndata)
-              EventSwitchView(ev->data.l[0], ev->data.l[2], True);
+              EventSwitchView(ev->data.l[0], ev->data.l[2], True, True);
             break; /* }}} */
           case SUB_EWMH_NET_ACTIVE_WINDOW: /* {{{ */
             if((c = CLIENT(subSubtleFind(ev->data.l[0], CLIENTID))))

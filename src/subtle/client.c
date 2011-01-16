@@ -1310,7 +1310,8 @@ subClientPublish(void)
 
   free(wins);
 
-  subSharedLogDebugSubtle("publish=client, clients=%d\n", subtle->clients->ndata);
+  subSharedLogDebugSubtle("publish=client, clients=%d\n",
+    subtle->clients->ndata);
 } /* }}} */
 
  /** subClientClose {{{
