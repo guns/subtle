@@ -60,9 +60,11 @@ VALUE subClientViewList(VALUE self);                              ///< Get views
 VALUE subClientFlagsFullAsk(VALUE self);                          ///< Is client fullscreen
 VALUE subClientFlagsFloatAsk(VALUE self);                         ///< Is client floating
 VALUE subClientFlagsStickAsk(VALUE self);                         ///< Is client stick
+VALUE subClientFlagsResizeAsk(VALUE self);                        ///< Is client resize
 VALUE subClientFlagsToggleFull(VALUE self);                       ///< Toggle fullscreen
 VALUE subClientFlagsToggleFloat(VALUE self);                      ///< Toggle floating
 VALUE subClientFlagsToggleStick(VALUE self);                      ///< Toggle stick
+VALUE subClientFlagsToggleResize(VALUE self);                     ///< Toggle resize
 VALUE subClientFlagsWriter(VALUE self, VALUE value);              ///< Set multiple flags
 VALUE subClientRestackRaise(VALUE self);                          ///< Raise client
 VALUE subClientRestackLower(VALUE self);                          ///< Lower client

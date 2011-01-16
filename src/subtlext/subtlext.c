@@ -1240,31 +1240,32 @@ Init_subtlext(void)
   rb_define_method(client, "eql?",        SubtlextEqualTypedWindow, 1);
 
   /* Class methods */
-  rb_define_method(client, "initialize",   subClientInit,             1);
-  rb_define_method(client, "update",       subClientUpdate,           0);
-  rb_define_method(client, "views",        subClientViewList,         0);
-  rb_define_method(client, "is_full?",     subClientFlagsFullAsk,     0);
-  rb_define_method(client, "is_float?",    subClientFlagsFloatAsk,    0);
-  rb_define_method(client, "is_stick?",    subClientFlagsStickAsk,    0);
-  rb_define_method(client, "toggle_full",  subClientFlagsToggleFull,  0);
-  rb_define_method(client, "toggle_float", subClientFlagsToggleFloat, 0);
-  rb_define_method(client, "toggle_stick", subClientFlagsToggleStick, 0);
-  rb_define_method(client, "flags=",       subClientFlagsWriter,      1);
-  rb_define_method(client, "raise",        subClientRestackRaise,     0);
-  rb_define_method(client, "lower",        subClientRestackLower,     0);
-  rb_define_method(client, "up",           subClientSelectUp,         0);
-  rb_define_method(client, "left",         subClientSelectLeft,       0);
-  rb_define_method(client, "right",        subClientSelectRight,      0);
-  rb_define_method(client, "down",         subClientSelectDown,       0);
-  rb_define_method(client, "to_str",       subClientToString,         0);
-  rb_define_method(client, "gravity",      subClientGravityReader,    0);
-  rb_define_method(client, "gravity=",     subClientGravityWriter,    1);
-  rb_define_method(client, "geometry",     subClientGeometryReader,   0);
-  rb_define_method(client, "geometry=",    subClientGeometryWriter,  -1);
-  rb_define_method(client, "resize=",      subClientResizeWriter,     1);
-  rb_define_method(client, "pid",          SubtlextPidReader,         0);
-  rb_define_method(client, "alive?",       subClientAliveAsk,         0);
-  rb_define_method(client, "kill",         subClientKill,             0);
+  rb_define_method(client, "initialize",    subClientInit,              1);
+  rb_define_method(client, "update",        subClientUpdate,            0);
+  rb_define_method(client, "views",         subClientViewList,          0);
+  rb_define_method(client, "is_full?",      subClientFlagsFullAsk,      0);
+  rb_define_method(client, "is_float?",     subClientFlagsFloatAsk,     0);
+  rb_define_method(client, "is_stick?",     subClientFlagsStickAsk,     0);
+  rb_define_method(client, "is_resize?",    subClientFlagsResizeAsk,    0);
+  rb_define_method(client, "toggle_full",   subClientFlagsToggleFull,   0);
+  rb_define_method(client, "toggle_float",  subClientFlagsToggleFloat,  0);
+  rb_define_method(client, "toggle_stick",  subClientFlagsToggleStick,  0);
+  rb_define_method(client, "toggle_resize", subClientFlagsToggleResize, 0);
+  rb_define_method(client, "flags=",        subClientFlagsWriter,       1);
+  rb_define_method(client, "raise",         subClientRestackRaise,      0);
+  rb_define_method(client, "lower",         subClientRestackLower,      0);
+  rb_define_method(client, "up",            subClientSelectUp,          0);
+  rb_define_method(client, "left",          subClientSelectLeft,        0);
+  rb_define_method(client, "right",         subClientSelectRight,       0);
+  rb_define_method(client, "down",          subClientSelectDown,        0);
+  rb_define_method(client, "to_str",        subClientToString,          0);
+  rb_define_method(client, "gravity",       subClientGravityReader,     0);
+  rb_define_method(client, "gravity=",      subClientGravityWriter,     1);
+  rb_define_method(client, "geometry",      subClientGeometryReader,    0);
+  rb_define_method(client, "geometry=",     subClientGeometryWriter,   -1);
+  rb_define_method(client, "pid",           SubtlextPidReader,          0);
+  rb_define_method(client, "alive?",        subClientAliveAsk,          0);
+  rb_define_method(client, "kill",          subClientKill,              0);
 
   /* Singleton aliases */
   rb_define_alias(rb_singleton_class(client), "[]", "find");
