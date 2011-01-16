@@ -129,7 +129,7 @@ SubtleLevel(const char *str)
 
       tok = strtok(NULL, ",");
     }
-printf("%ld %ld\n", SUB_LOG_SUBTLE, SUB_LOG_SUBTLEXT);
+
   free(tokens);
 
   return level;
