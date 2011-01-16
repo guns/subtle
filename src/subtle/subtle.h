@@ -388,6 +388,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_NET_ACTIVE_WINDOW,                                     ///< Focus window
   SUB_EWMH_NET_WORKAREA,                                          ///< Workarea of the views
   SUB_EWMH_NET_SUPPORTING_WM_CHECK,                               ///< Check for compliant window manager
+  SUB_EWMH_NET_WM_FULL_PLACEMENT,                                 ///< WM does all placement
 
   /* Client */
   SUB_EWMH_NET_CLOSE_WINDOW,                                      ///< Close window
