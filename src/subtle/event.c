@@ -949,9 +949,10 @@ EventMessage(XClientMessageEvent *ev)
                 int flags = 0;
 
                 /* Translate flags */
-                if(ev->data.l[1] & SUB_EWMH_FULL)  flags |= SUB_CLIENT_MODE_FULL;
-                if(ev->data.l[1] & SUB_EWMH_FLOAT) flags |= SUB_CLIENT_MODE_FLOAT;
-                if(ev->data.l[1] & SUB_EWMH_STICK) flags |= SUB_CLIENT_MODE_STICK;
+                if(ev->data.l[1] & SUB_EWMH_FULL)   flags |= SUB_CLIENT_MODE_FULL;
+                if(ev->data.l[1] & SUB_EWMH_FLOAT)  flags |= SUB_CLIENT_MODE_FLOAT;
+                if(ev->data.l[1] & SUB_EWMH_STICK)  flags |= SUB_CLIENT_MODE_STICK;
+                if(ev->data.l[1] & SUB_EWMH_RESIZE) flags |= SUB_CLIENT_MODE_RESIZE;
 
                 subClientToggle(c, (~c->flags & flags), False); ///< Enable only
 
@@ -964,13 +965,6 @@ EventMessage(XClientMessageEvent *ev)
                   }
               }
             else EventQueuePush(ev);
-            break; /* }}} */
-          case SUB_EWMH_SUBTLE_WINDOW_RESIZE: /* {{{ */
-            if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0]))))
-              {
-                if(True == ev->data.l[1]) c->flags &= ~SUB_CLIENT_MODE_NORESIZE;
-                else c->flags |= SUB_CLIENT_MODE_NORESIZE;
-              }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_GRAVITY_NEW: /* {{{ */
             if(ev->data.b)
