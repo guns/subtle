@@ -1325,7 +1325,6 @@ subClientClose(SubClient *c)
 
   /* Update client */
   c->flags |= SUB_CLIENT_DEAD;
-  subEwmhSetWMState(c->win, WithdrawnState);
 
   /* Honor window preferences (see ICCCM 4.1.2.7, 4.2.8.1) */
   if(c->flags & SUB_CLIENT_CLOSE)
@@ -1365,6 +1364,10 @@ subClientKill(SubClient *c)
   /* Hook: Kill */
   subHookCall((SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_KILL),
     (void *)c);
+
+  /* Remove _NET_WM_STATE (see EWMH 1.3) */
+  subSharedPropertyDelete(subtle->dpy, c->win,
+    subEwmhGet(SUB_EWMH_NET_WM_STATE));
 
   XDeleteContext(subtle->dpy, c->win, CLIENTID);
 
