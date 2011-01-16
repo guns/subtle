@@ -38,7 +38,7 @@ ViewFind(char *match,
           /* Find view either by name or by window id */
           if(digit == (long)i || subSharedRegexMatch(preg, names[i]))
             {
-              subSharedLogDebug("Found: type=view, match=%s, name=%s, id=%d\n",
+              subSharedLogDebugSubtlext("Found: type=view, match=%s, name=%s, id=%d\n",
                 match, names[i], i);
 
               if(name) *name = strdup(names[i]);
@@ -48,7 +48,7 @@ ViewFind(char *match,
             }
         }
     }
-  else subSharedLogDebug("Failed finding view `%s'\n", match);
+  else subSharedLogDebugSubtlext("Failed finding view `%s'\n", match);
 
   if(preg)  subSharedRegexKill(preg);
   if(names) XFreeStringList(names);

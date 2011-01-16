@@ -43,7 +43,7 @@ subTrayNew(Window win)
   subEwmhMessage(t->win, SUB_EWMH_XEMBED, 0xFFFFFF, CurrentTime,
     XEMBED_EMBEDDED_NOTIFY, 0, subtle->windows.tray.win, 0);
 
-  subSharedLogDebug("new=tray, name=%s, win=%#lx\n", t->name, win);
+  subSharedLogDebugSubtle("new=tray, name=%s, win=%#lx\n", t->name, win);
 
   return t;
 } /* }}} */
@@ -211,11 +211,11 @@ subTrayPublish(void)
   /* EWMH: Client list and client list stacking */
   subEwmhSetWindows(ROOT, SUB_EWMH_SUBTLE_TRAY_LIST, wins, subtle->trays->ndata);
 
-  subSharedLogDebug("publish=tray, trays=%d\n", subtle->trays->ndata);
-
   XSync(subtle->dpy, False); ///< Sync all changes
 
   free(wins);
+
+  subSharedLogDebugSubtle("publish=tray, trays=%d\n", subtle->trays->ndata);
 } /* }}} */
 
  /** subTrayKill {{{
@@ -240,7 +240,7 @@ subTrayKill(SubTray *t)
   if(t->name) free(t->name);
   free(t);
 
-  subSharedLogDebug("kill=tray\n");
+  subSharedLogDebugSubtle("kill=tray\n");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

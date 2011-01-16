@@ -903,7 +903,7 @@ RubyEvalConfig(void)
       for(i = subtle->views->ndata - 1; 0 <= i; i--)
         if((v = VIEW(subtle->views->data[i])) && v->tags & DEFAULTTAG)
           {
-            subSharedLogDebug("Default view: name=%s\n", v->name);
+            subSharedLogDebugRuby("Default view: name=%s\n", v->name);
             break;
           }
 
@@ -2961,7 +2961,7 @@ subRubyInit(void)
   shelter = rb_ary_new();
   rb_gc_register_address(&shelter);
 
-  subSharedLogDebug("init=ruby\n");
+  subSharedLogDebugSubtle("init=ruby\n");
 } /* }}} */
 
  /** subRubyLoadConfig {{{
@@ -3000,7 +3000,7 @@ subRubyLoadConfig(void)
           if(-1 != access(path, R_OK)) ///< Check if config file exists
             break;
 
-          subSharedLogDebug("Checked config=%s\n", path);
+          subSharedLogDebugRuby("Checked config=%s\n", path);
         }
     }
 
@@ -3188,7 +3188,7 @@ subRubyLoadSublet(const char *file)
       snprintf(buf, sizeof(buf), "%s/%s/sublets/%s",
         home ? home : path, PKG_NAME, file);
     }
-  subSharedLogDebug("sublet=%s\n", buf);
+  subSharedLogDebugRuby("sublet=%s\n", buf);
 
   /* Carefully read sublet */
   str = rb_protect(RubyWrapRead, rb_str_new2(buf), &state);
@@ -3370,7 +3370,7 @@ subRubyCall(int type,
     }
 
 #ifdef DEBUG
-  subSharedLogDebug("GC RUN\n");
+  subSharedLogDebugRuby("GC RUN\n");
   rb_gc_start();
 #endif /* DEBUG */
 
@@ -3429,7 +3429,7 @@ subRubyFinish(void)
 #endif /* HAVE_SYS_INOTIFY_H */
     }
 
-  subSharedLogDebug("finish=ruby\n");
+  subSharedLogDebugSubtle("finish=ruby\n");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

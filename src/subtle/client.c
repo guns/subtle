@@ -199,7 +199,8 @@ subClientNew(Window win)
     (long *)&subtle->gravity, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
-  subSharedLogDebug("new=client, name=%s, instance=%s, klass=%s, win=%#lx\n",
+  subSharedLogDebugSubtle("new=client, name=%s, instance=%s, "
+    "class=%s, win=%#lx\n",
     c->name, c->instance, c->klass, win);
 
   return c;
@@ -232,7 +233,7 @@ subClientConfigure(SubClient *c)
 
   XSendEvent(subtle->dpy, c->win, False, StructureNotifyMask, (XEvent *)&ev);
 
-  subSharedLogDebug("Configure: type=client, win=%#lx "
+  subSharedLogDebugSubtle("Configure: type=client, win=%#lx "
     "x=%03d, y=%03d, width=%03d, height=%03d\n",
     c->win, c->geom.x, c->geom.y, c->geom.width, c->geom.height);
 } /* }}} */
@@ -344,8 +345,10 @@ subClientFocus(SubClient *c)
     }
   else XSetInputFocus(subtle->dpy, c->win, RevertToPointerRoot, CurrentTime);
 
-  subSharedLogDebug("Focus: type=client, win=%#lx, current=%#lx, input=%d, focus=%d\n", c->win,
-    subtle->windows.focus, !!(c->flags & SUB_CLIENT_INPUT), !!(c->flags & SUB_CLIENT_FOCUS));
+  subSharedLogDebugSubtle("Focus: type=client, win=%#lx, "
+    "current=%#lx, input=%d, focus=%d\n",
+    c->win, subtle->windows.focus, !!(c->flags & SUB_CLIENT_INPUT),
+    !!(c->flags & SUB_CLIENT_FOCUS));
 } /* }}} */
 
  /** subClientWarp {{{
@@ -937,8 +940,9 @@ subClientSetStrut(SubClient *c)
           subScreenResize();
           subScreenConfigure();
 
-          subSharedLogDebug("Strut: x=%ld, y=%d, width=%d, height=%d\n", subtle->strut.x,
-            subtle->strut.y, subtle->strut.width, subtle->strut.height);
+          subSharedLogDebug("Strut: x=%ld, y=%d, width=%d, height=%d\n",
+            subtle->strut.x, subtle->strut.y, subtle->strut.width,
+            subtle->strut.height);
         }
 
       XFree(strut);
@@ -1093,8 +1097,8 @@ subClientSetSizeHints(SubClient *c,
 
   XFree(size);
 
-  subSharedLogDebug("Normal hints: x=%d, y=%d, width=%d, height=%d, minw=%d, minh=%d, " \
-    "maxw=%d, maxh=%d, minr=%f, maxr=%f\n",
+  subSharedLogDebug("Size hints: x=%d, y=%d, width=%d, height=%d, "
+    "minw=%d, minh=%d, maxw=%d, maxh=%d, minr=%f, maxr=%f\n",
     c->geom.x, c->geom.y, c->geom.width, c->geom.height, c->minw,
     c->minh, c->maxw, c->maxh, c->minr, c->maxr);
 } /* }}} */
@@ -1306,7 +1310,7 @@ subClientPublish(void)
 
   free(wins);
 
-  subSharedLogDebug("publish=client, clients=%d\n", nwins);
+  subSharedLogDebugSubtle("publish=client, clients=%d\n", subtle->clients->ndata);
 } /* }}} */
 
  /** subClientClose {{{
@@ -1375,7 +1379,7 @@ subClientKill(SubClient *c)
   if(c->role)      free(c->role);
   free(c);
 
-  subSharedLogDebug("kill=client\n");
+  subSharedLogDebugSubtle("kill=client\n");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

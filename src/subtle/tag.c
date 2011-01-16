@@ -92,7 +92,7 @@ subTagNew(char *name,
       if(duplicate) *duplicate = False;
     }
 
-  subSharedLogDebug("new=tag, name=%s\n", name);
+  subSharedLogDebugSubtle("new=tag, name=%s\n", name);
 
   return t;
 } /* }}} */
@@ -211,11 +211,11 @@ subTagPublish(void)
   subSharedPropertySetStrings(subtle->dpy, ROOT,
     subEwmhGet(SUB_EWMH_SUBTLE_TAG_LIST), names, i);
 
-  subSharedLogDebug("publish=tags, n=%d\n", i);
-
   XSync(subtle->dpy, False); ///< Sync all changes
 
   free(names);
+
+  subSharedLogDebugSubtle("publish=tags, n=%d\n", i);
 } /* }}} */
 
  /** subTagKill {{{
@@ -242,7 +242,7 @@ subTagKill(SubTag *t)
   free(t->name);
   free(t);
 
-  subSharedLogDebug("kill=tag\n");
+  subSharedLogDebugSubtle("kill=tag\n");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

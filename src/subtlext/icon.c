@@ -196,7 +196,7 @@ subIconInit(int argc,
 
       XSync(display, False); ///< Sync all changes
 
-      subSharedLogDebug("new=icon, width=%03d, height=%03d\n",
+      subSharedLogDebugSubtlext("new=icon, width=%03d, height=%03d\n",
         i->width, i->height);
     }
 

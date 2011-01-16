@@ -93,7 +93,7 @@ subSubtleSingRunningAsk(VALUE self)
       DefaultRootWindow(display), XA_WINDOW, XInternAtom(display,
       "_NET_SUPPORTING_WM_CHECK", False), NULL)))
     {
-      subSharedLogDebug("Support: win=%#lx\n", *support);
+      subSharedLogDebugSubtlext("Support: win=%#lx\n", *support);
 
       /* Get property */
       if((prop = subSharedPropertyGet(display, *support, XInternAtom(display,
@@ -101,7 +101,7 @@ subSubtleSingRunningAsk(VALUE self)
           NULL)))
         {
           if(!strncmp(prop, PKG_NAME, strlen(prop))) running = Qtrue;
-          subSharedLogDebug("Running: wmname=%s\n", prop);
+          subSharedLogDebugSubtlext("Running: wmname=%s\n", prop);
 
           free(prop);
         }

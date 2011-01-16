@@ -194,7 +194,7 @@ subDisplayInit(const char *display)
   printf("Display (%s) is %dx%d\n", DisplayString(subtle->dpy),
     subtle->width, subtle->height);
 
-  subSharedLogDebug("init=display\n");
+  subSharedLogDebugSubtle("init=display\n");
 } /* }}} */
 
  /** subDisplayConfigure {{{
@@ -315,7 +315,7 @@ subDisplayPublish(void)
 
   XSync(subtle->dpy, False); ///< Sync all changes
 
-  subSharedLogDebug("publish=colors, n=%d\n", NCOLORS);
+  subSharedLogDebugSubtle("publish=colors, n=%d\n", NCOLORS);
 } /* }}} */
 
  /** subDisplayFinish {{{
@@ -352,7 +352,7 @@ subDisplayFinish(void)
       XCloseDisplay(subtle->dpy);
     }
 
-  subSharedLogDebug("finish=display\n");
+  subSharedLogDebugSubtle("finish=display\n");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

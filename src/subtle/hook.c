@@ -32,7 +32,7 @@ subHookNew(int type,
   h->flags = (SUB_TYPE_HOOK|type);
   h->proc  = proc;
 
-  subSharedLogDebug("new=hook, type=%d, proc=%ld\n", type, proc);
+  subSharedLogDebugSubtle("new=hook, type=%d, proc=%ld\n", type, proc);
 
   return h;
 } /* }}} */
@@ -76,7 +76,7 @@ subHookKill(SubHook *h)
 
   free(h);
 
-  subSharedLogDebug("kill=hook\n");
+  subSharedLogDebugSubtle("kill=hook\n");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

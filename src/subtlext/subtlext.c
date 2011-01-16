@@ -40,7 +40,7 @@ SubtlextSweep(void)
 {
   if(display)
     {
-      subSharedLogDebug("Connection closed (%s)\n", DisplayString(display));
+      subSharedLogDebugSubtlext("Connection closed (%s)\n", DisplayString(display));
 
       XCloseDisplay(display);
 
@@ -834,7 +834,7 @@ subSubtlextConnect(char *display_string)
       /* Register sweeper */
       atexit(SubtlextSweep);
 
-      subSharedLogDebug("Connection opened (%s)\n", DisplayString(display));
+      subSharedLogDebugSubtlext("Connection opened (%s)\n", DisplayString(display));
     }
 } /* }}} */
 
@@ -975,7 +975,7 @@ subSubtlextList(char *prop,
     {
       if(size) *size = 0;
 
-      subSharedLogDebug("Failed getting window list\n");
+      subSharedLogDebugSubtlext("Failed getting window list\n");
     }
 
   return wins;
@@ -1005,7 +1005,7 @@ subSubtlextFind(char *prop,
           if((isdigit(match[0]) && atoi(match) == i) ||
               (!isdigit(match[0]) && subSharedRegexMatch(preg, strings[i])))
             {
-              subSharedLogDebug("Found: prop=%s, match=%s, name=%s, id=%d\n",
+              subSharedLogDebugSubtlext("Found: prop=%s, match=%s, name=%s, id=%d\n",
                 prop, match, strings[i], i);
 
               if(name) *name = strdup(strings[i]);
@@ -1015,7 +1015,7 @@ subSubtlextFind(char *prop,
             }
         }
     }
-  else subSharedLogDebug("Failed finding string `%s'\n", match);
+  else subSharedLogDebugSubtlext("Failed finding string `%s'\n", match);
 
   if(preg)    subSharedRegexKill(preg);
   if(strings) XFreeStringList(strings);
@@ -1083,7 +1083,7 @@ subSubtlextFindWindow(char *prop,
                 {
                   gravity2 = *gravity;
 
-                  subSharedLogDebug("Gravity: match=%s, gravity1=%d, gravity2=%d\n",
+                  subSharedLogDebugSubtlext("Gravity: match=%s, gravity1=%d, gravity2=%d\n",
                     match, gravity1, gravity2);
 
                   free(gravity);
@@ -1136,7 +1136,7 @@ subSubtlextFindWindow(char *prop,
               /* Compare pids */
               (flags & SUB_MATCH_PID && pid1 == pid2))
             {
-              subSharedLogDebug("Found: prop=%s, name=%s, win=%#lx, id=%d, flags\n",
+              subSharedLogDebugSubtlext("Found: prop=%s, name=%s, win=%#lx, id=%d, flags\n",
                 prop, match, wins[i], i, flags);
 
               if(win) *win = wins[i];
@@ -1159,7 +1159,7 @@ subSubtlextFindWindow(char *prop,
       subSharedRegexKill(preg);
       free(wins);
     }
-  else subSharedLogDebug("Failed finding window `%s'\n", match);
+  else subSharedLogDebugSubtlext("Failed finding window `%s'\n", match);
 
   return id;
 } /* }}} */

@@ -240,6 +240,8 @@ EventColormap(XColormapEvent *ev)
       c->cmap = ev->colormap;
       XInstallColormap(subtle->dpy, c->cmap);
     }
+
+  subSharedLogDebugEvents("Colormap: win=%#lx\n", ev->window);
 } /* }}} */
 
 /* EventConfigure {{{ */
@@ -275,6 +277,8 @@ EventConfigure(XConfigureEvent *ev)
 
       printf("Updated screens\n");
     }
+
+  subSharedLogDebugEvents("Configure: win=%#lx\n", ev->window);
 } /* }}} */
 
 /* EventConfigureRequest {{{ */
@@ -328,6 +332,8 @@ EventConfigureRequest(XConfigureRequestEvent *ev)
 
       XConfigureWindow(subtle->dpy, ev->window, ev->value_mask, &wc);
     }
+
+  subSharedLogDebugEvents("ConfigureRequest: win=%#lx\n", ev->window);
 } /* }}} */
 
 /* EventCrossing {{{ */
@@ -371,6 +377,8 @@ EventCrossing(XCrossingEvent *ev)
               }
           }
     }
+
+  subSharedLogDebugEvents("Enter: win=%#lx\n", ev->window);
 } /* }}} */
 
 /* EventDestroy {{{ */
@@ -412,6 +420,8 @@ EventDestroy(XDestroyWindowEvent *ev)
 
   /* Update focus if necessary */
   if(focus) subSubtleFocus(True);
+
+  subSharedLogDebugEvents("Destroy: win=%#lx\n", ev->window);
 } /* }}} */
 
 /* EventExpose {{{ */
@@ -419,6 +429,8 @@ static void
 EventExpose(XExposeEvent *ev)
 {
   if(0 == ev->count) subScreenRender(); ///< Render once
+
+  subSharedLogDebugEvents("Expose: win=%#lx\n", ev->window);
 } /* }}} */
 
 /* EventFocus {{{ */
@@ -490,6 +502,8 @@ EventFocus(XFocusChangeEvent *ev)
   /* Update screen */
   subScreenUpdate();
   subScreenRender();
+
+  subSharedLogDebugEvents("Focus: %#lx\n", ev->window);
 } /* }}} */
 
 /* EventGrab {{{ */
@@ -527,10 +541,15 @@ EventGrab(XEvent *ev)
 
         code = XK_Pointer_Button1 + ev->xbutton.button - 1; ///< Build button number
         mod  = ev->xbutton.state;
+
+        subSharedLogDebugEvents("Grab: win=%#lx\n", ev->xbutton.window);
         break;
       case KeyPress:
         code = ev->xkey.keycode;
         mod  = ev->xkey.state;
+
+        subSharedLogDebugEvents("Grab: keycode=%d, state=%d\n", 
+          ev->xkey.keycode, ev->xkey.state);
         break;
     } /* }}} */
 
@@ -761,6 +780,8 @@ EventMap(XMapEvent *ev)
       subScreenConfigure();
       subScreenRender();
     }
+
+  subSharedLogDebugEvents("Map: win=%#lx\n", ev->window);
 } /* }}} */
 
 /* EventMapRequest {{{ */
@@ -798,6 +819,8 @@ EventMapRequest(XMapRequestEvent *ev)
       subHookCall((SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_CREATE),
         (void *)c);
     }
+
+  subSharedLogDebugEvents("MapRequest: win=%#lx\n", ev->window);
 } /* }}} */
 
 /* EventMessage {{{ */
@@ -1296,10 +1319,13 @@ EventMessage(XClientMessageEvent *ev)
   {
     char *name = XGetAtomName(subtle->dpy, ev->message_type);
 
-    subSharedLogDebug("ClientMessage: name=%s, type=%ld, format=%d, win=%#lx\n",
+    subSharedLogDebugEvents("ClientMessage: name=%s, type=%ld,"
+      "format=%d, win=%#lx\n",
       name ? name : "n/a", ev->message_type, ev->format, ev->window);
-    subSharedLogDebug("ClientMessage: [0]=%#lx, [1]=%#lx, [2]=%#lx, [3]=%#lx, [4]=%#lx\n",
-      ev->data.l[0], ev->data.l[1], ev->data.l[2], ev->data.l[3], ev->data.l[4]);
+    subSharedLogDebugEvents("ClientMessage: [0]=%#lx, [1]=%#lx,"
+      "[2]=%#lx, [3]=%#lx, [4]=%#lx\n",
+      ev->data.l[0], ev->data.l[1], ev->data.l[2], 
+      ev->data.l[3], ev->data.l[4]);
 
     if(name) XFree(name);
   }
@@ -1397,7 +1423,7 @@ EventProperty(XPropertyEvent *ev)
   {
     char *name = XGetAtomName(subtle->dpy, ev->atom);
 
-    subSharedLogDebug("Property: name=%s, type=%ld, win=%#lx\n",
+    subSharedLogDebugEvents("Property: name=%s, type=%ld, win=%#lx\n",
       name ? name : "n/a", ev->atom, ev->window);
 
     if(name) XFree(name);
@@ -1420,7 +1446,7 @@ EventSelection(XSelectionClearEvent *ev)
       subtle->flags &= ~SUB_SUBTLE_RUN; ///< Exit
     }
 
-  subSharedLogDebug("SelectionClear: win=%#lx, tray=%#lx, support=%#lx\n",
+  subSharedLogDebugEvents("SelectionClear: win=%#lx, tray=%#lx, support=%#lx\n",
     ev->window, subtle->windows.tray.win, subtle->windows.support);
 } /* }}} */
 
@@ -1487,6 +1513,8 @@ EventUnmap(XUnmapEvent *ev)
 
   /* Update focus if necessary */
   if(focus) subSubtleFocus(True);
+
+  subSharedLogDebugEvents("Unmap: win=%#lx\n", ev->window);
 } /* }}} */
 
 /* Public */

@@ -122,7 +122,7 @@ subEwmhInit(void)
 
   free(selection);
 
-  subSharedLogDebug("init=ewmh\n");
+  subSharedLogDebugSubtle("init=ewmh\n");
 } /* }}} */
 
  /** subEwmhGet {{{
@@ -390,7 +390,7 @@ subEwmhFinish(void)
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_VISIBLE_TAGS));
     }
 
-  subSharedLogDebug("finish=ewmh\n");
+  subSharedLogDebugSubtle("finish=ewmh\n");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
