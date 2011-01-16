@@ -49,9 +49,28 @@
 #define FONT(f)   ((SubFont *)f)                                  ///< Cast to SubFont
 #define TEXT(t)   ((SubText *)t)                                  ///< Cast to SubText
 #define ITEM(i)   ((SubTextItem *)i)                              ///< Cast to SubTextItem
+
+#define DEFAULT_LOGLEVEL \
+  (SUB_LOG_WARN|SUB_LOG_ERROR|SUB_LOG_DEPRECATED)                 ///< Default loglevel
+
+#define DEBUG_LOGLEVEL \
+  (SUB_LOG_EVENTS|SUB_LOG_RUBY|SUB_LOG_XERROR| \
+  SUB_LOG_SUBTLE|SUB_LOG_SUBTLEXT|SUB_LOG_DEBUG)                  ///< Debug loglevel
 /* }}} */
 
 /* Flags {{{ */
+/* Logelevel flags */
+#define SUB_LOG_WARN       (1L << 0)                              ///< Log warning messages
+#define SUB_LOG_ERROR      (1L << 1)                              ///< Log error messages
+#define SUB_LOG_DEPRECATED (1L << 2)                              ///< Log deprecation messages
+#define SUB_LOG_EVENTS     (1L << 3)                              ///< Log event messages
+#define SUB_LOG_RUBY       (1L << 4)                              ///< Log ruby messages
+#define SUB_LOG_XERROR     (1L << 5)                              ///< Log X error messages
+#define SUB_LOG_SUBTLEXT   (1L << 6)                              ///< Log subtlext messages
+#define SUB_LOG_SUBTLE     (1L << 7)                              ///< Log subtle messages
+#define SUB_LOG_DEBUG      (1L << 8)                              ///< Log other debug messages
+
+/* Window selections flags */
 #define SUB_WINDOW_LEFT    0L                                     ///< Window left
 #define SUB_WINDOW_DOWN    1L                                     ///< Window down
 #define SUB_WINDOW_UP      2L                                     ///< Window above
@@ -65,6 +84,7 @@
 #define SUB_EWMH_STICK     (1L << 2)                              ///< EWMH stick flag
 #define SUB_EWMH_RESIZE    (1L << 3)                              ///< EWMH resize flag
 
+/* Match types flags */
 #define SUB_MATCH_NAME     (1L << 0)                              ///< Match SUBTLE_NAME
 #define SUB_MATCH_INSTANCE (1L << 1)                              ///< Match instance of WM_CLASS
 #define SUB_MATCH_CLASS    (1L << 2)                              ///< Match class of WM_CLASS
@@ -73,9 +93,9 @@
 #define SUB_MATCH_PID      (1L << 5)                              ///< Match pid
 
 /* Text flags */
-#define SUB_TEXT_EMPTY   (1L << 0)                                ///< Empty text
-#define SUB_TEXT_BITMAP  (1L << 1)                                ///< Text bitmap
-#define SUB_TEXT_PIXMAP  (1L << 2)                                ///< Text pixmap
+#define SUB_TEXT_EMPTY     (1L << 0)                              ///< Empty text
+#define SUB_TEXT_BITMAP    (1L << 1)                              ///< Text bitmap
+#define SUB_TEXT_PIXMAP    (1L << 2)                              ///< Text pixmap
 /* }}} */
 
 /* Typedefs {{{ */
@@ -119,23 +139,35 @@ typedef union submessagedata_t /* {{{ */
 /* }}} */
 
 /* Log {{{ */
+/* Macros for convenience */
+#define subSharedLogError(...) \
+  subSharedLog(SUB_LOG_ERROR, __FILE__, __LINE__, __VA_ARGS__);
+#define subSharedLogWarn(...) \
+  subSharedLog(SUB_LOG_WARN, __FILE__, __LINE__, __VA_ARGS__);
+#define subSharedLogDeprecated(...) \
+  subSharedLog(SUB_LOG_DEPRECATED, __FILE__, __LINE__, __VA_ARGS__);
+
 #ifdef DEBUG
+#define subSharedLogDebugEvents(...)  \
+  subSharedLog(SUB_LOG_EVENTS, __FILE__, __LINE__, __VA_ARGS__);
+#define subSharedLogDebugRuby(...)  \
+  subSharedLog(SUB_LOG_RUBY, __FILE__, __LINE__, __VA_ARGS__);
+#define subSharedLogDebugSubtlext(...)  \
+  subSharedLog(SUB_LOG_SUBTLEXT, __FILE__, __LINE__, __VA_ARGS__);
+#define subSharedLogDebugSubtle(...)  \
+  subSharedLog(SUB_LOG_SUBTLE, __FILE__, __LINE__, __VA_ARGS__);
 #define subSharedLogDebug(...)  \
-  subSharedLog(0, __FILE__, __LINE__, __VA_ARGS__);
+  subSharedLog(SUB_LOG_DEBUG, __FILE__, __LINE__, __VA_ARGS__);
 #else /* DEBUG */
+#define subSharedLogDebugEvents(...)
+#define subSharedLogDebugRuby(...)
+#define subSharedLogDebugSubtlext(...)
+#define subSharedLogDebugSubtle(...)
 #define subSharedLogDebug(...)
 #endif /* DEBUG */
 
-/* Macros for convenience */
-#define subSharedLogError(...) \
-  subSharedLog(1, __FILE__, __LINE__, __VA_ARGS__);
-#define subSharedLogWarn(...) \
-  subSharedLog(2, __FILE__, __LINE__, __VA_ARGS__);
-#define subSharedLogDeprecated(...) \
-  subSharedLog(3, __FILE__, __LINE__, __VA_ARGS__);
-
-void subSharedDebug(void);                                        ///< Enable debugging messages
-void subSharedLog(int type, const char *file,
+void subSharedLogLevel(int level);                                ///< Set loglevel
+void subSharedLog(int level, const char *file,
   int line, const char *format, ...);                             ///< Print messages
 int subSharedLogXError(Display *disp, XErrorEvent *ev);           ///< Print X error messages
 /* }}} */

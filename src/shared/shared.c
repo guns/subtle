@@ -17,23 +17,24 @@
 #include <sys/time.h>
 #include "shared.h"
 
-int debug = 0; ///< Enable debugging messages
-
 /* Log */
 
- /** subSharedLogDebug {{{
-  * @brief Enable debugging messages
+/* Enable default messages */
+static int loglevel = DEFAULT_LOGLEVEL;
+
+ /** subSharedLogLevel {{{
+  * @brief Set loglevel
   **/
 
 void
-subSharedDebug(void)
+subSharedLogLevel(int level)
 {
-  debug++;
+  loglevel |= level;
 } /* }}} */
 
  /** subSharedLog {{{
   * @brief Print messages depending on type
-  * @param[in]  type    Message type
+  * @param[in]  level   Message level
   * @param[in]  file    File name
   * @param[in]  line    Line number
   * @param[in]  format  Message format
@@ -41,7 +42,7 @@ subSharedDebug(void)
   **/
 
 void
-subSharedLog(int type,
+subSharedLog(int level,
   const char *file,
   int line,
   const char *format,
@@ -51,28 +52,41 @@ subSharedLog(int type,
   char buf[255];
 
 #ifdef DEBUG
-  if(!debug && !type) return;
+  if(!(loglevel & level)) return;
 #endif /* DEBUG */
 
+  /* Get variadic arguments */
   va_start(ap, format);
   vsnprintf(buf, sizeof(buf), format, ap);
   va_end(ap);
 
-  switch(type)
-    {
+  /* Print according to loglevel */
+  if(level & SUB_LOG_WARN)
+    fprintf(stdout, "<WARNING> %s", buf);
+  else if(level & SUB_LOG_ERROR)
+    fprintf(stderr, "<ERROR> %s", buf);
+  else if(level & SUB_LOG_DEPRECATED)
+    fprintf(stdout, "<DEPRECATED> %s", buf);
 #ifdef DEBUG
-      case 0: fprintf(stderr, "<DEBUG> %s:%d: %s", file, line, buf); break;
+  else if(level & SUB_LOG_EVENTS)
+    fprintf(stderr, "<EVENTS> %s:%d: %s", file, line, buf);
+  else if(level & SUB_LOG_RUBY)
+    fprintf(stderr, "<RUBY> %s:%d: %s", file, line, buf);
+  else if(level & SUB_LOG_XERROR)
+    fprintf(stderr, "<XERROR> %s", buf);
+  else if(level & SUB_LOG_SUBTLEXT)
+    fprintf(stderr, "<SUBTLEXT> %s:%d: %s", file, line, buf);
+  else if(level & SUB_LOG_SUBTLE)
+    fprintf(stderr, "<SUBTLE> %s:%d: %s", file, line, buf);
+  else if(level & SUB_LOG_DEBUG)
+    fprintf(stderr, "<DEBUG> %s:%d: %s", file, line, buf);
 #endif /* DEBUG */
-      case 1: fprintf(stderr, "<ERROR> %s", buf);                    break;
-      case 2: fprintf(stdout, "<WARNING> %s", buf);                  break;
-      case 3: fprintf(stdout, "<DEPRECATION WARNING> %s", buf);      break;
-    }
 } /* }}} */
 
  /** subSharedLogXError {{{
   * @brief Print X error messages
   * @params[in]  disp  Display
-  * @params[in]  ev       A #XErrorEvent
+  * @params[in]  ev    A #XErrorEvent
   * @return Returns zero
   * @retval  0  Default return value
   **/
@@ -82,7 +96,7 @@ subSharedLogXError(Display *disp,
   XErrorEvent *ev)
 {
 #ifdef DEBUG
-  if(debug) return 0;
+  if(loglevel) return 0;
 #endif /* DEBUG */
 
   if(42 != ev->request_code) /* X_SetInputFocus */
@@ -90,7 +104,8 @@ subSharedLogXError(Display *disp,
       char error[255] = { 0 };
 
       XGetErrorText(disp, ev->error_code, error, sizeof(error));
-      subSharedLogDebug("%s: win=%#lx, request=%d\n",
+      subSharedLog(SUB_LOG_XERROR, __FILE__, __LINE__,
+        "%s: win=%#lx, request=%d\n",
         error, ev->resourceid, ev->request_code);
     }
 
@@ -272,7 +287,7 @@ subSharedPropertyGetStrings(Display *disp,
   char **list = NULL;
   XTextProperty text;
 
-  assert(win && size);
+  assert(win && nlist);
 
   /* Check UTF8 and XA_STRING */
   if((XGetTextProperty(disp, win, &text, prop) ||
