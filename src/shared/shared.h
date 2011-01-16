@@ -63,6 +63,7 @@
 #define SUB_EWMH_FULL      (1L << 0)                              ///< EWMH full flag
 #define SUB_EWMH_FLOAT     (1L << 1)                              ///< EWMH float flag
 #define SUB_EWMH_STICK     (1L << 2)                              ///< EWMH stick flag
+#define SUB_EWMH_RESIZE    (1L << 3)                              ///< EWMH resize flag
 
 #define SUB_MATCH_NAME     (1L << 0)                              ///< Match SUBTLE_NAME
 #define SUB_MATCH_INSTANCE (1L << 1)                              ///< Match instance of WM_CLASS
