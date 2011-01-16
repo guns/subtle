@@ -49,13 +49,15 @@ context "Client" do
     }
 
     # Check flags
-    full  = p.call(topic, :is_full?,  :toggle_full)
-    float = p.call(topic, :is_float?, :toggle_float)
-    stick = p.call(topic, :is_stick?, :toggle_stick)
+    full   = p.call(topic, :is_full?,   :toggle_full)
+    float  = p.call(topic, :is_float?,  :toggle_float)
+    stick  = p.call(topic, :is_stick?,  :toggle_stick)
+    resize = p.call(topic, :is_resize?, :toggle_resize)
 
     expected = [ false, true, false ]
 
-    expected == full and expected == float and expected == stick
+    expected == full and expected == float and
+      expected == stick and expected == resize
   end
 
   asserts("Runtime: Add/remove tags") do
