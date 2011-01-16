@@ -11,38 +11,6 @@
 
 #include "subtlext.h"
 
-/* ClientFlagsToggle {{{ */
-VALUE
-ClientFlagsToggle(VALUE self,
-  char *type,
-  int flag)
-{
-  int iflags = 0;
-  VALUE win = Qnil, flags = Qnil;
-  SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-  /* Check ruby object */
-  rb_check_frozen(self);
-  GET_ATTR(self, "@win",   win);
-  GET_ATTR(self, "@flags", flags);
-
-  subSubtlextConnect(NULL); ///< Implicit open connection
-
-  /* Update flags */
-  iflags = FIX2INT(flags);
-  if(iflags & flag) iflags &= ~flag;
-  else iflags |= flag;
-
-  rb_iv_set(self, "@flags", INT2FIX(iflags));
-
-  /* Send message */
-  data.l[0] = XInternAtom(display, "_NET_WM_STATE_TOGGLE", False);
-  data.l[1] = XInternAtom(display, type, False);
-
-  subSharedMessage(display, NUM2LONG(win), "_NET_WM_STATE", data, 32, True);
-
-  return Qnil;
-} /* }}} */
 
 /* ClientSelect {{{ */
 VALUE
@@ -137,18 +105,91 @@ ClientRestack(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* ClientFlags {{{ */
+/* ClientFlagsGet {{{ */
 static VALUE
-ClientFlag(VALUE self,
+ClientFlagsGet(VALUE self,
   int flag)
 {
   VALUE flags = Qnil;
 
+  /* Check ruby object */
   rb_check_frozen(self);
+  GET_ATTR(self, "@flags", flags)
 
   flags = rb_iv_get(self, "@flags");
 
   return (FIXNUM_P(flags) && FIX2INT(flags) & flag) ? Qtrue : Qfalse;
+} /* }}} */
+
+/* ClientFlagsGet {{{ */
+static VALUE
+ClientFlagsSet(VALUE self,
+  int flag,
+  int toggle)
+{
+  int iflags = flag;
+  VALUE id = Qnil;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@id",    id);
+
+  /* Toggle flags */
+  if(toggle)
+    {
+      VALUE flags = Qnil;
+
+      GET_ATTR(self, "@flags", flags);
+
+      iflags = FIX2INT(flags);
+      if(iflags & flag) iflags &= ~flag;
+      else iflags |= flag;
+    }
+
+  /* Assemble message */
+  data.l[0] = FIX2LONG(id);
+  data.l[1] = iflags;
+
+  subSharedMessage(display, DefaultRootWindow(display),
+    "SUBTLE_WINDOW_FLAGS", data, 32, True);
+
+  rb_iv_set(self, "@flags", INT2FIX(iflags));
+
+  return Qnil;
+} /* }}} */
+
+/* ClientFlagsToggle {{{ */
+VALUE
+ClientFlagsToggle(VALUE self,
+  char *type,
+  int flag)
+{
+  int iflags = 0;
+  VALUE win = Qnil, flags = Qnil;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@win",   win);
+  GET_ATTR(self, "@flags", flags);
+
+  subSubtlextConnect(NULL); ///< Implicit open connection
+
+  /* Update flags */
+  iflags = FIX2INT(flags);
+  if(iflags & flag) iflags &= ~flag;
+  else iflags |= flag;
+
+  rb_iv_set(self, "@flags", INT2FIX(iflags));
+
+  /* Send message */
+  data.l[0] = XInternAtom(display, "_NET_WM_STATE_TOGGLE", False);
+  data.l[1] = XInternAtom(display, type, False);
+
+  subSharedMessage(display, NUM2LONG(win), "_NET_WM_STATE", data, 32, True);
+
+  return Qnil;
 } /* }}} */
 
 /* Singleton */
@@ -572,7 +613,7 @@ subClientViewList(VALUE self)
 VALUE
 subClientFlagsFullAsk(VALUE self)
 {
-  return ClientFlag(self, SUB_EWMH_FULL);
+  return ClientFlagsGet(self, SUB_EWMH_FULL);
 } /* }}} */
 
 /* subClientFlagsFloatAsk {{{ */
@@ -591,7 +632,7 @@ subClientFlagsFullAsk(VALUE self)
 VALUE
 subClientFlagsFloatAsk(VALUE self)
 {
-  return ClientFlag(self, SUB_EWMH_FLOAT);
+  return ClientFlagsGet(self, SUB_EWMH_FLOAT);
 } /* }}} */
 
 /* subClientFlagsStickAsk {{{ */
@@ -610,7 +651,26 @@ subClientFlagsFloatAsk(VALUE self)
 VALUE
 subClientFlagsStickAsk(VALUE self)
 {
-  return ClientFlag(self, SUB_EWMH_STICK);
+  return ClientFlagsGet(self, SUB_EWMH_STICK);
+} /* }}} */
+
+/* subClientFlagsResizeAsk {{{ */
+/*
+ * call-seq: is_resize? -> true or false
+ *
+ * Check if a client uses size hints
+ *
+ *  client.is_resize?
+ *  => true
+ *
+ *  client.is_resize?
+ *  => false
+ */
+
+VALUE
+subClientFlagsResizeAsk(VALUE self)
+{
+  return ClientFlagsGet(self, SUB_EWMH_RESIZE);
 } /* }}} */
 
 /* subClientFlagsToggleFull {{{ */
@@ -661,6 +721,22 @@ subClientFlagsToggleStick(VALUE self)
   return ClientFlagsToggle(self, "_NET_WM_STATE_STICKY", SUB_EWMH_STICK);
 } /* }}} */
 
+/* subClientFlagsToggleResize {{{ */
+/*
+ * call-seq: toggle_stick -> nil
+ *
+ * Toggle Client sticky state
+ *
+ *  client.toggle_stick
+ *  => nil
+ */
+
+VALUE
+subClientFlagsToggleResize(VALUE self)
+{
+  return ClientFlagsSet(self, SUB_EWMH_RESIZE, True);
+} /* }}} */
+
 /* subClientFlagsWriter {{{ */
 /*
  * call-seq: flags=(array) -> nil
@@ -668,9 +744,10 @@ subClientFlagsToggleStick(VALUE self)
  * Set multiple flags at once. Flags can be one or a combination of the
  * following:
  *
- * [*:full*]   Set fullscreen mode
- * [*:float*]  Set floating mode
- * [*:stick*]  Set sticky mode
+ * [*:full*]    Set fullscreen mode
+ * [*:float*]   Set floating mode
+ * [*:stick*]   Set sticky mode
+ * [*:resize*]  Set resize mode
  *
  *  client.flags = [ :float, :stick ]
  *  => nil
@@ -680,34 +757,22 @@ VALUE
 subClientFlagsWriter(VALUE self,
   VALUE value)
 {
-  rb_check_frozen(self);
-  subSubtlextConnect(NULL); ///< Implicit open connection
-
   /* Check object type */
   if(T_ARRAY == rb_type(value))
     {
       int i, flags = 0;
-      VALUE entry = Qnil, id = Qnil;
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-      GET_ATTR(self, "@id", id);
+      VALUE entry = Qnil;
 
       /* Translate flags */
       for(i = 0; Qnil != (entry = rb_ary_entry(value, i)); ++i)
         {
-          if(CHAR2SYM("full") == entry)       flags |= SUB_EWMH_FULL;
-          else if(CHAR2SYM("float") == entry) flags |= SUB_EWMH_FLOAT;
-          else if(CHAR2SYM("stick") == entry) flags |= SUB_EWMH_STICK;
+          if(CHAR2SYM("full") == entry)        flags |= SUB_EWMH_FULL;
+          else if(CHAR2SYM("float") == entry)  flags |= SUB_EWMH_FLOAT;
+          else if(CHAR2SYM("stick") == entry)  flags |= SUB_EWMH_STICK;
+          else if(CHAR2SYM("resize") == entry) flags |= SUB_EWMH_RESIZE;
         }
 
-      /* Assemble message */
-      data.l[0] = FIX2LONG(id);
-      data.l[1] = flags;
-
-      subSharedMessage(display, DefaultRootWindow(display),
-        "SUBTLE_WINDOW_FLAGS", data, 32, True);
-
-      rb_iv_set(self, "@flags", INT2FIX(flags));
+      ClientFlagsSet(self, flags, False);
     }
 
   return Qnil;
@@ -1043,46 +1108,6 @@ subClientGeometryWriter(int argc,
     }
 
   return geometry;
-} /* }}} */
-
-/* subClientResizeWriter {{{ */
-/*
- * call-seq: resize=(bool) -> nil
- *
- * Set Client resize
- *
- *  client.resize = :false
- *  => nil
- *
- */
-
-VALUE
-subClientResizeWriter(VALUE self,
-  VALUE value)
-{
-  /* Check ruby object */
-  rb_check_frozen(self);
-  subSubtlextConnect(NULL); ///< Implicit open connection
-
-  /* Check instance type */
-  if(Qtrue == value || Qfalse == value)
-    {
-      VALUE id = Qnil;
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
-
-      GET_ATTR(self, "@id", id);
-
-      /* Assemble message */
-      data.l[0] = FIX2LONG(id);
-      data.l[1] = (Qtrue == value);
-
-      subSharedMessage(display, DefaultRootWindow(display),
-        "SUBTLE_WINDOW_RESIZE", data, 32, True);
-    }
-  else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
-    rb_obj_classname(value));
-
-  return Qnil;
 } /* }}} */
 
 /* subClientToString {{{ */
