@@ -391,7 +391,7 @@ EventDestroy(XDestroyWindowEvent *ev)
   int focus = (subtle->windows.focus == ev->window); ///< Save
 
   /* Check if we know this window */
-  if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))) && ALIVE(c)) ///< Client
+  if((c = CLIENT(subSubtleFind(ev->window, CLIENTID)))) ///< Client
     {
       /* Ignore remaining events */
       c->flags |= SUB_CLIENT_DEAD;
@@ -1474,10 +1474,6 @@ EventUnmap(XUnmapEvent *ev)
 
               return;
             }
-
-          /* Unset _NET_WM_STATE (see EWMH 1.3) */
-          subSharedPropertyDelete(subtle->dpy, c->win,
-            subEwmhGet(SUB_EWMH_NET_WM_STATE));
 
           /* Kill client */
           c->flags |= SUB_CLIENT_DEAD;
