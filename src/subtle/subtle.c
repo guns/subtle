@@ -78,6 +78,7 @@ SubtleUsage(void)
          "  -r, --replace           Replace current window manager\n" \
          "  -s, --sublets=DIR       Load sublets from DIR\n" \
          "  -v, --version           Show version info and exit\n" \
+         "  -l, --level             Set logging level\n" \
          "  -D, --debug             Print debugging messages\n" \
          "\nPlease report bugs at %s\n",
          PKG_NAME, PKG_BUGREPORT);
@@ -92,6 +93,50 @@ SubtleVersion(void)
          "Compiled for X%dR%d and Ruby %s\n",
          PKG_NAME, PKG_VERSION, X_PROTOCOL, X_PROTOCOL_REVISION, RUBY_VERSION);
 } /* }}} */
+
+#ifdef DEBUG
+/* SubtleLevel {{{ */
+static int
+SubtleLevel(const char *str)
+{
+  int level = 0;
+  char *tokens = NULL, *tok = NULL;
+
+  tokens = strdup(str);
+  tok    = strtok((char *)tokens, ",");
+
+  /* Parse levels */
+  while(tok)
+    {
+      if(0 == strncasecmp(tok, "warnings", 8))
+        level |= SUB_LOG_WARN;
+      else if(0 == strncasecmp(tok, "error", 5))
+        level |= SUB_LOG_ERROR;
+      else if(0 == strncasecmp(tok, "depcrecated", 11))
+        level |= SUB_LOG_DEPRECATED;
+      else if(0 == strncasecmp(tok, "events", 6))
+        level |= SUB_LOG_EVENTS;
+      else if(0 == strncasecmp(tok, "ruby", 4))
+        level |= SUB_LOG_RUBY;
+      else if(0 == strncasecmp(tok, "xerror", 6))
+        level |= SUB_LOG_XERROR;
+      else if(0 == strncasecmp(tok, "subtlext", 8))
+        level |= SUB_LOG_SUBTLEXT;
+      else if(0 == strncasecmp(tok, "subtle", 6))
+        level |= SUB_LOG_SUBTLE;
+      else if(0 == strncasecmp(tok, "debug", 4))
+        level |= SUB_LOG_DEBUG;
+
+      tok = strtok(NULL, ",");
+    }
+printf("%ld %ld\n", SUB_LOG_SUBTLE, SUB_LOG_SUBTLEXT);
+  free(tokens);
+
+  return level;
+} /* }}} */
+#endif /* DEBUG */
+
+/* Public */
 
  /** subSubtleFind {{{
   * @brief Find data with the context manager
@@ -247,6 +292,7 @@ main(int argc,
     { "sublets",  required_argument, 0, 's' },
     { "version",  no_argument,       0, 'v' },
 #ifdef DEBUG
+    { "level",    required_argument, 0, 'l' },
     { "debug",    no_argument,       0, 'D' },
 #endif /* DEBUG */
     { 0, 0, 0, 0}
@@ -257,7 +303,7 @@ main(int argc,
   subtle->flags |= (SUB_SUBTLE_XRANDR|SUB_SUBTLE_XINERAMA);
 
   /* Parse arguments */
-  while(-1 != (c = getopt_long(argc, argv, "c:d:hknrs:vD", long_options, NULL)))
+  while(-1 != (c = getopt_long(argc, argv, "c:d:hknrs:vl:D", long_options, NULL)))
     {
       switch(c)
         {
@@ -270,11 +316,15 @@ main(int argc,
           case 's': subtle->paths.sublets = optarg;       break;
           case 'v': SubtleVersion();                      return 0;
 #ifdef DEBUG
+          case 'l':
+            subSharedLogLevel(SubtleLevel(optarg));
+            break;
           case 'D':
             subtle->flags |= SUB_SUBTLE_DEBUG;
-            subSharedDebug();
+            subSharedLogLevel(DEFAULT_LOGLEVEL|DEBUG_LOGLEVEL);
             break;
 #else /* DEBUG */
+          case 'l':
           case 'D':
             printf("Please recompile %s with `debug=yes'\n", PKG_NAME);
             return 0;
