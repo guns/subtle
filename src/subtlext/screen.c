@@ -119,17 +119,17 @@ subScreenSingAll(VALUE self)
 VALUE
 subScreenSingCurrent(VALUE self)
 {
-  int x = 0, y = 0;
-  unsigned long nworkareas = 0;
+  int x = 0, y = 0, dummy = 0;
+  unsigned long mask = 0, nworkareas = 0;
   long *workareas = NULL;
   VALUE screen = Qnil;
-  Window dummy = None;
+  Window root = None, win = None;
 
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Get current screen */
-  XQueryPointer(display, DefaultRootWindow(display), &dummy, &dummy,
-    &x, &y, (int *)&dummy, (int *)&dummy, (unsigned int *)&dummy);
+  XQueryPointer(display, DefaultRootWindow(display), &root, &win,
+    &x, &y, &dummy, &dummy, (unsigned int *)&mask);
 
   /* Get workarea list */
   if((workareas = (long *)subSharedPropertyGet(display,
