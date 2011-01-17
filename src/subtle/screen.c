@@ -17,28 +17,36 @@ static void
 ScreenPublish(void)
 {
   int i;
-  long *workareas = NULL, *viewports = NULL;
+  long *workareas = NULL, *panels = NULL, *viewports = NULL;
 
   assert(subtle);
 
-  /* EWMH: Workarea */
+  /* EWMH: Workarea and screen panels */
   workareas = (long *)subSharedMemoryAlloc(4 * subtle->screens->ndata,
     sizeof(long));
+  panels = (long *)subSharedMemoryAlloc(2 * subtle->screens->ndata,
+    sizeof(long));
 
-  /* Collect geometries */
+  /* Collect data*/
   for(i = 0; i < subtle->screens->ndata; i++)
     {
       SubScreen *s = SCREEN(subtle->screens->data[i]);
 
-      /* Set workarea */
+      /* Set workareas */
       workareas[i * 4 + 0] = s->geom.x;
       workareas[i * 4 + 1] = s->geom.y;
       workareas[i * 4 + 2] = s->geom.width;
       workareas[i * 4 + 3] = s->geom.height;
+
+      /* Set panels */
+      panels[i * 2 + 0] = s->flags & SUB_SCREEN_PANEL1 ? subtle->th : 0;
+      panels[i * 2 + 1] = s->flags & SUB_SCREEN_PANEL2 ? subtle->th : 0;
     }
 
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_WORKAREA, workareas,
     4 * subtle->screens->ndata);
+  subEwmhSetCardinals(ROOT, SUB_EWMH_SUBTLE_SCREEN_PANELS, panels,
+    2 * subtle->screens->ndata);
 
   /* EWMH: Desktop viewport */
   viewports = (long *)subSharedMemoryAlloc(2 * subtle->screens->ndata,
@@ -48,6 +56,7 @@ ScreenPublish(void)
     2 * subtle->screens->ndata);
 
   free(workareas);
+  free(panels);
   free(viewports);
 
   XSync(subtle->dpy, False); ///< Sync all changes
@@ -128,7 +137,7 @@ subScreenInit(void)
         subArrayPush(subtle->screens, (void *)s);
     }
 
-  printf("Runnning on %d screen(s)\n", subtle->screens->ndata);
+  printf("Running on %d screen(s)\n", subtle->screens->ndata);
 
   ScreenPublish();
   subScreenPublish();
