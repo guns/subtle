@@ -452,6 +452,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_SUBLET_LIST,                                    ///< Subtle sublet list
   SUB_EWMH_SUBTLE_SUBLET_WINDOWS,                                 ///< Subtle sublet windows
   SUB_EWMH_SUBTLE_SUBLET_KILL,                                    ///< Subtle sublet kill
+  SUB_EWMH_SUBTLE_SCREEN_PANELS,                                  ///< Subtle screen panels
   SUB_EWMH_SUBTLE_SCREEN_VIEWS,                                   ///< Subtle screen views
   SUB_EWMH_SUBTLE_VISIBLE_TAGS,                                   ///< Subtle visible tags
   SUB_EWMH_SUBTLE_VISIBLE_VIEWS,                                  ///< Subtle visible views
