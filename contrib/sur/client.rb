@@ -18,7 +18,7 @@ require "archive/tar/minitar"
 
 require "subtle/sur/specification"
 
-# Fixme: Different class paths
+# FIXME: Different class paths
 module Sur
   class Specification < Subtle::Sur::Specification
   end
@@ -831,11 +831,36 @@ module Subtle # {{{
         end
       end # }}}
 
-      def show_list(specs, use_color) # {{{
-        i = 1
-        specs.sort { |a, b| [ a.name, a.version ] <=> [ b.name, b.version ] }
-        specs.each do |s|
+      def compact_list(specs) # {{{
+        list = []
+        prev = nil
 
+        specs.sort { |a, b| [ a.name, a.version ] <=> [ b.name, b.version ] }.reverse!
+
+        specs.each do |s|
+          # Compress versions
+          if(!prev.nil? and prev.name == s.name)
+            if(prev.version.is_a?(Array))
+              prev.version << s.version
+            else
+              prev.version = [ prev.version, s.version ]
+            end
+          else
+            list << prev unless(prev.nil?)
+            prev = s
+          end
+        end
+
+        list << prev unless(prev.nil? and prev.name == s.name)
+
+        list
+      end # }}}
+
+      def show_list(specs, use_color) # {{{
+        specs = compact_list(specs)
+        i     = 1
+
+        specs.each do |s|
           # Find if installed
           installed = ""
           @cache_local.each do |cs|
@@ -845,12 +870,15 @@ module Subtle # {{{
             end
           end
 
+          # Convert version array to string
+          version = s.version.is_a?(Array) ? s.version.join(", ") : s.version
+
           # Do we like colors?
           if(use_color)
-            puts "%s %s %s %s" % [
+            puts "%s %s (%s) %s" % [
               colorize(2, i.to_s, false, :bg),
               colorize(1, s.name.downcase, true),
-              colorize(2, s.version),
+              colorize(2, version),
               colorize(2, installed, false, :bg)
             ]
             puts "   %s" % [ s.description ]
@@ -859,7 +887,7 @@ module Subtle # {{{
               puts "   %s" % [ s.tags.map { |t| colorize(5, "##{t}") }.join(" ") ]
             end
           else
-            puts "(%d) %s %s %s" % [ i, s.name.downcase, s.version, installed ]
+            puts "(%d) %s (%s) %s" % [ i, s.name.downcase, version, installed ]
             puts "   %s" % [ s.description ]
 
             unless(s.tags.empty?)
