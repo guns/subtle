@@ -54,13 +54,11 @@ subViewNew(char *name,
   * @brief Restore view focus
   * @param[in]  v      A #SubView
   * @param[in]  focus  Whether to focus next client
-  * @param[in]  warp   Whether to warp to client
   **/
 
 void
 subViewFocus(SubView *v,
-  int focus,
-  int warp)
+  int focus)
 {
   assert(v);
 
@@ -73,7 +71,7 @@ subViewFocus(SubView *v,
           VISIBLE(v->tags, c))
         {
           subClientFocus(c);
-          if(warp) subClientWarp(c, False);
+          subClientWarp(c, False);
 
           return;
         }
@@ -121,7 +119,7 @@ subViewJump(SubView *v)
       subScreenConfigure();
       subScreenRender();
       subScreenPublish();
-      subViewFocus(v, True, True);
+      subViewFocus(v, True);
     }
 
   /* Hook: Jump, Tile */

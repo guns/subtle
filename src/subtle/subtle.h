@@ -803,7 +803,7 @@ void subTrayKill(SubTray *t);                                     ///< Delete tr
 
 /* view.c {{{ */
 SubView *subViewNew(char *name, char *tags);                      ///< Create view
-void subViewFocus(SubView *v, int focus, int warp);               ///< Restore view focus
+void subViewFocus(SubView *v, int focus);                         ///< Restore view focus
 void subViewJump(SubView *v);                                     ///< Jump to view
 void subViewPublish(void);                                        ///< Publish views
 void subViewKill(SubView *v);                                     ///< Kill view
