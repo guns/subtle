@@ -120,8 +120,8 @@ VALUE
 subScreenSingCurrent(VALUE self)
 {
   int x = 0, y = 0, dummy = 0;
-  unsigned long mask = 0, nworkareas = 0;
-  long *workareas = NULL;
+  unsigned long mask = 0, nworkareas = 0, npanels = 0;
+  long *workareas = NULL, *panels = NULL;
   VALUE screen = Qnil;
   Window root = None, win = None;
 
@@ -131,20 +131,26 @@ subScreenSingCurrent(VALUE self)
   XQueryPointer(display, DefaultRootWindow(display), &root, &win,
     &x, &y, &dummy, &dummy, (unsigned int *)&mask);
 
+  /* Fetch data */
+  workareas = (long *)subSharedPropertyGet(display, DefaultRootWindow(display),
+    XA_CARDINAL, XInternAtom(display, "_NET_WORKAREA", False), &nworkareas);
+  panels    = (long *)subSharedPropertyGet(display, DefaultRootWindow(display),
+    XA_CARDINAL, XInternAtom(display, "SUBTLE_SCREEN_PANELS", False),
+    &npanels);
+
   /* Get workarea list */
-  if((workareas = (long *)subSharedPropertyGet(display,
-      DefaultRootWindow(display), XA_CARDINAL,
-      XInternAtom(display, "_NET_WORKAREA", False), &nworkareas)))
+  if(workareas && panels)
     {
       int i;
 
       for(i = 0; i < nworkareas / 4; i++)
         {
-          /* Check if coordinates are in screen rects */
-          if((x >= workareas[i * 4 + 0] &&
-              x < workareas[i * 4 + 0] + workareas[i * 4 + 2]) &&
-              (y >= workareas[i * 4 + 1] &&
-              y < workareas[i * 4 + 1] + workareas[i * 4 + 3]))
+          /* Check if coordinates are in screen rects including panel size */
+          if(x >= workareas[i * 4 + 0] &&
+              x < workareas[i * 4 + 0] + workareas[i * 4 + 2] &&
+              y >= (workareas[i * 4 + 1] - panels[i * 2 + 0]) &&
+              y < (workareas[i * 4 + 1] + workareas[i * 4 + 3] +
+              panels[i * 2 + 1]))
             {
               VALUE geometry = Qnil;
 
@@ -158,9 +164,10 @@ subScreenSingCurrent(VALUE self)
               rb_iv_set(screen, "@geometry", geometry);
             }
         }
-
-      free(workareas);
     }
+
+  if(workareas) free(workareas);
+  if(panels)    free(panels);
 
   return screen;
 } /* }}} */
