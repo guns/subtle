@@ -916,33 +916,54 @@ module Subtle # {{{
             {
               :name        => "interval",
               :type        => "integer",
-              :description => "Update interval in seconds"
+              :description => "Update interval in seconds",
+              :def_value   => "60"
             },
             {
               :name        => "foreground",
               :type        => "string",
-              :description => "Default foreground color (#rrggbb)"
+              :description => "Default foreground color (#rrggbb)",
+              :def_value   => "Sublet fg color"
             },
             {
               :name        => "background",
               :type        => "string",
-              :description => "Default background color (#rrggbb)"
+              :description => "Default background color (#rrggbb)",
+              :def_value   => "Sublet bg color"
             }
           ]
 
           config |= spec.config unless(spec.config.nil?)
 
+          # Header
+          if(use_color)
+            puts "%-24s  %-19s  %-39s  %s" % [
+              colorize(1, "Name", true),
+              colorize(1, "Type", true),
+              colorize(1, "Default value", true),
+              colorize(1, "Description", true)
+            ]
+          else
+            puts "%-15s  %-10s  %-30s  %s" % [
+              "Name", "Type", "Default value", "Description"
+            ]
+          end
+
           # Dump all settings
           config.each do |c|
             if(use_color)
-              puts "%-25s  %-20s  %s" % [
-                colorize(2, c[:name]),
-                colorize(5, c[:type]),
+              puts "%-25s  %-20s  %-40s  %s" % [
+                colorize(2, c[:name][0..24]).ljust(25),
+                colorize(5, c[:type][0..19]).ljust(20),
+                colorize(3, c[:def_value]) || "",
                 c[:description]
               ]
             else
-              puts "%-25s  %20s  %s" % [
-                c[:name], c[:type], c[:description]
+              puts "%-14s  %9s  %-30s  %s" % [
+                c[:name][0..15].ljust(15),
+                c[:type][0..10].ljust(10),
+                c[:def_value] || "",
+                c[:description]
               ]
             end
           end
