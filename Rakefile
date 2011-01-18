@@ -38,7 +38,7 @@ require "rake/rdoctask"
   "builddir"   => "build",
   "hdrdir"     => "",
   "archdir"    => "",
-  "revision"   => "0",
+  "revision"   => "2573", #< Latest stable
   "cflags"     => "-Wall -Werror -Wpointer-arith -Wstrict-prototypes -Wunused -Wshadow -std=gnu99",
   "cpppath"    => "-I. -I$(builddir) -Isrc -Isrc/shared -Isrc/subtle -idirafter$(hdrdir) -idirafter$(archdir)",
   "ldflags"    => "-L$(libdir) $(rpath) -l$(RUBY_SO_NAME)",
@@ -199,8 +199,6 @@ task(:config) do
 
       if(!match.nil? && 2 == match.size)
         @options["revision"] = match[1]
-      else
-        @options["revision"] = "9999"
       end
     end
 
