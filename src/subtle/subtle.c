@@ -349,16 +349,18 @@ main(int argc,
   /* Load and check config only */
   if(subtle->flags & SUB_SUBTLE_CHECK)
     {
+      int ret = 0;
+
       subRubyInit();
 
-      if(subRubyLoadConfig())
+      if((ret = subRubyLoadConfig()))
         printf("Syntax OK\n");
 
       subRubyFinish();
 
       free(subtle);
 
-      return 0;
+      return !ret;
     }
 
   /* Alloc arrays */
