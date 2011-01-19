@@ -126,7 +126,7 @@ VALUE
 subSubtleSingSelect(VALUE self)
 {
   int i, format = 0, buttons = 0;
-  unsigned int n;
+  unsigned int nwins = 0;
   unsigned long nitems = 0, bytes = 0;
   unsigned char *data = NULL;
   XEvent event;
@@ -170,9 +170,9 @@ subSubtleSingSelect(VALUE self)
       }
 
   /* Find children with WM_STATE atom */
-  XQueryTree(display, win, &dummy, &dummy, &wins, &n);
+  XQueryTree(display, win, &dummy, &dummy, &wins, &nwins);
 
-  for(i = 0; i < n; i++)
+  for(i = 0; i < nwins; i++)
     {
       if(Success == XGetWindowProperty(display, wins[i], type, 0, 0, False,
           AnyPropertyType, &rtype, &format, &nitems, &bytes, &data))
