@@ -59,9 +59,9 @@ WindowSweep(SubtlextWindow *w)
     }
 } /* }}} */
 
-/* WindowWrapCall {{{ */
+/* WindowCall {{{ */
 static VALUE
-WindowWrapCall(VALUE data)
+WindowCall(VALUE data)
 {
   VALUE *rargs = (VALUE *)data;
 
@@ -192,7 +192,7 @@ subWindowAlloc(VALUE self)
 
 /* subWindowInit {{{
  *
- * call-seq: new(geometry) -> Subtlext::Window
+ * call-seq: new(geometry, &block) -> Subtlext::Window
  *
  * Initialize Window object
  *
@@ -260,6 +260,47 @@ subWindowInit(VALUE self,
     }
 
   return Qnil;
+} /* }}} */
+
+/* subWindowSubwindow {{{
+ *
+ * call-seq: subwindow(geometry, &block) -> Subtlext::Window or nil
+ *
+ * Create a subwindow
+ *
+ *  win.subwindow(:x => 5, :y => 5) do |w|
+ *    s.background = "#ffffff"
+ *  end
+ */
+
+VALUE
+subWindowSubwindow(VALUE self,
+  VALUE geometry)
+{
+  VALUE ret = Qnil;
+  SubtlextWindow *w1 = NULL;
+
+  Data_Get_Struct(self, SubtlextWindow, w1);
+  if(w1)
+    {
+      SubtlextWindow *w2 = NULL;
+
+      subSubtlextConnect(NULL); ///< Implicit open connection
+
+      ret = subWindowInstantiate(geometry);
+
+      Data_Get_Struct(ret, SubtlextWindow, w2);
+      if(w2)
+        {
+          /* Yield to block if given */
+          if(rb_block_given_p())
+            rb_yield_values(1, w2->instance);
+
+          XReparentWindow(display, w2->win, w1->win, 0, 0);
+        }
+    }
+
+  return ret;
 } /* }}} */
 
 /* subWindowNameWriter {{{ */
@@ -547,7 +588,7 @@ subWindowGeometryReader(VALUE self)
 
   /* Check ruby object */
   rb_check_frozen(self);
-  GET_ATTR(self, "@geom", geom);
+  GET_ATTR(self, "@geometry", geom);
 
   return geom;
 } /* }}} */
@@ -575,7 +616,11 @@ subWindowGeometryWriter(VALUE self,
   if(w)
     {
       XRectangle r = { 0 };
-      VALUE geom = subGeometryInit(1, &value, Qnil);
+      VALUE geom = Qnil;
+
+      /* Create geometry */
+      geom = subGeometryInstantiate(0, 0, 1, 1);
+      geom = subGeometryInit(1, &value, geom);
 
       rb_iv_set(self, "@geometry", geom);
       subGeometryToRect(geom, &r);
@@ -666,9 +711,9 @@ subWindowRead(int argc,
   VALUE *argv,
   VALUE self)
 {
+  VALUE ret = Qnil;
   SubtlextWindow *w = NULL;
 
-  VALUE ret = Qnil;
   /* Check ruby object */
   rb_check_frozen(self);
 
@@ -801,7 +846,7 @@ subWindowRead(int argc,
                           rargs[4] = INT2FIX(guess);
 
                           /* Carefully call completion proc */
-                          result = rb_protect(WindowWrapCall, (VALUE)&rargs, &state);
+                          result = rb_protect(WindowCall, (VALUE)&rargs, &state);
                           if(state)
                             {
                               subSubtlextBacktrace();
@@ -839,7 +884,7 @@ subWindowRead(int argc,
               rargs[3] = rb_str_new2(text);
 
               /* Carefully call completion proc */
-              rb_protect(WindowWrapCall, (VALUE)&rargs, &state);
+              rb_protect(WindowCall, (VALUE)&rargs, &state);
               if(state) subSubtlextBacktrace();
             }
         }
@@ -858,6 +903,100 @@ subWindowRead(int argc,
     }
 
   return ret;
+} /* }}} */
+
+/* subWindowListen {{{ */
+/*
+ * call-seq: listen(&block) -> nil
+ *
+ * Listen to key events
+ *
+ *  listen do |key|
+ *    case key
+ *      when :return then p "return"
+ *    end
+ *  end
+ *  => nil
+ */
+
+VALUE
+subWindowListen(VALUE self)
+{
+  SubtlextWindow *w = NULL;
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+  rb_need_block();
+
+  Data_Get_Struct(self, SubtlextWindow, w);
+  if(w && rb_block_given_p())
+    {
+      XEvent ev;
+      int loop = True, state = 0;
+      char buf[32] = { 0 };
+      unsigned long *focus = NULL;
+      VALUE p = rb_block_proc(), result = Qnil, rargs[5] = { Qnil }, sym = Qnil;
+      KeySym keysym;
+
+      /* Grab and set focus */
+      XGrabKeyboard(display, DefaultRootWindow(display), True,
+        GrabModeAsync, GrabModeAsync, CurrentTime);
+      XMapRaised(display, w->win);
+      XSelectInput(display, w->win, KeyPressMask);
+      XFlush(display);
+
+      while(loop)
+        {
+          XNextEvent(display, &ev);
+          switch(ev.type)
+            {
+              case KeyPress: /* {{{ */
+                XLookupString(&ev.xkey, buf, sizeof(buf), &keysym, NULL);
+
+                /* Translate syms */
+                switch(keysym)
+                  {
+                    case XK_Left:   sym = CHAR2SYM("left");   break;
+                    case XK_Right:  sym = CHAR2SYM("right");  break;
+                    case XK_Up:     sym = CHAR2SYM("up");     break;
+                    case XK_Down:   sym = CHAR2SYM("down");   break;
+                    case XK_Escape: sym = CHAR2SYM("escape"); break;
+                    case XK_Tab:    sym = CHAR2SYM("tab");    break;
+                    case XK_Return: sym = CHAR2SYM("return"); break;
+                    default: sym = CHAR2SYM(buf);
+                  }
+
+                /* Wrap up data */
+                rargs[0] = p;
+                rargs[1] = rb_intern("call");
+                rargs[2] = 1;
+                rargs[3] = sym;
+
+                /* Carefully call listen proc */
+                result = rb_protect(WindowCall, (VALUE)&rargs, &state);
+                if(state) subSubtlextBacktrace();
+
+                /* End event loop? */
+                if(Qtrue != result || state) loop = False;
+                break; /* }}} */
+              default: break;
+            }
+        }
+
+      XUngrabKeyboard(display, CurrentTime);
+
+      /* Restore logical focus */
+      if((focus = (unsigned long *)subSharedPropertyGet(display,
+          DefaultRootWindow(display), XA_WINDOW,
+          XInternAtom(display, "_NET_ACTIVE_WINDOW", False), NULL)))
+        {
+          XSetInputFocus(display, *focus, RevertToPointerRoot, CurrentTime);
+
+          free(focus);
+        }
+    }
+
+  return Qnil;
 } /* }}} */
 
 /* subWindowClear {{{ */
@@ -956,6 +1095,62 @@ VALUE
 subWindowInput(VALUE self)
 {
   return WindowDefine(self, 1, WINDOW_INPUT_FUNC, CHAR2SYM("__input"));
+} /* }}} */
+
+/* subWindowRaise {{{ */
+/*
+ * call-seq: raise -> nil
+ *
+ * Raise a Window
+ *
+ *  win.raise
+ *  => nil
+ */
+
+VALUE
+subWindowRaise(VALUE self)
+{
+  SubtlextWindow *w = NULL;
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+
+  Data_Get_Struct(self, SubtlextWindow, w);
+  if(w)
+    {
+      XRaiseWindow(display, w->win);
+      WindowExpose(w);
+    }
+
+  return Qnil;
+} /* }}} */
+
+/* subWindowLower {{{ */
+/*
+ * call-seq: lower -> nil
+ *
+ * Lower a Window
+ *
+ *  win.lower
+ *  => nil
+ */
+
+VALUE
+subWindowLower(VALUE self)
+{
+  SubtlextWindow *w = NULL;
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+
+  Data_Get_Struct(self, SubtlextWindow, w);
+  if(w)
+    {
+      XLowerWindow(display, w->win);
+      WindowExpose(w);
+    }
+
+  return Qnil;
 } /* }}} */
 
 /* subWindowShow {{{ */

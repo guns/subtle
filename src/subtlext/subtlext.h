@@ -258,6 +258,7 @@ VALUE subWindowInstantiate(VALUE geometry);                       ///< Instantia
 VALUE subWindowDispatcher(int argc, VALUE *argv, VALUE self);     ///< Window dispatcher
 VALUE subWindowAlloc(VALUE self);                                 ///< Allocate window
 VALUE subWindowInit(VALUE self, VALUE geometry);                  ///< Init window
+VALUE subWindowSubwindow(VALUE self, VALUE geometry);             ///< Create a subwindow
 VALUE subWindowNameWriter(VALUE self, VALUE value);               ///< Set name
 VALUE subWindowFontWriter(VALUE self, VALUE value);               ///< Set font
 VALUE subWindowFontYReader(VALUE self);                           ///< Get y offset of font
@@ -270,10 +271,13 @@ VALUE subWindowGeometryReader(VALUE self);                        ///< Get geome
 VALUE subWindowGeometryWriter(VALUE self, VALUE value);           ///< Set geometry
 VALUE subWindowWrite(VALUE self, VALUE x, VALUE y, VALUE text);   ///< Write text
 VALUE subWindowRead(int argc, VALUE *argv, VALUE self);           ///< Read text
+VALUE subWindowListen(VALUE self);                                ///< Listen to key events
 VALUE subWindowClear(int argc, VALUE *argv, VALUE self);          ///< Clear area or window
 VALUE subWindowRedraw(VALUE self);                                ///< Redraw window
 VALUE subWindowCompletion(VALUE self);                            ///< Add completion proc
 VALUE subWindowInput(VALUE self);                                 ///< Add input proc
+VALUE subWindowRaise(VALUE self);                                 ///< Raise window
+VALUE subWindowLower(VALUE self);                                 ///< Lower window
 VALUE subWindowShow(VALUE self);                                  ///< Show window
 VALUE subWindowHide(VALUE self);                                  ///< Hide window
 VALUE subWindowHiddenAsk(VALUE self);                             ///< Whether window is hidden

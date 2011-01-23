@@ -1690,6 +1690,7 @@ Init_subtlext(void)
 
   /* Class methods */
   rb_define_method(window, "initialize",    subWindowInit,              1);
+  rb_define_method(window, "subwindow",     subWindowSubwindow,         1);
   rb_define_method(window, "name=",         subWindowNameWriter,        1);
   rb_define_method(window, "font=",         subWindowFontWriter,        1);
   rb_define_method(window, "font_y",        subWindowFontYReader,       0);
@@ -1700,12 +1701,15 @@ Init_subtlext(void)
   rb_define_method(window, "border_size=",  subWindowBorderSizeWriter,  1);
   rb_define_method(window, "write",         subWindowWrite,             3);
   rb_define_method(window, "read",          subWindowRead,             -1);
+  rb_define_method(window, "listen",        subWindowListen,            0);
   rb_define_method(window, "clear",         subWindowClear,            -1);
   rb_define_method(window, "redraw",        subWindowRedraw,            0);
   rb_define_method(window, "completion",    subWindowCompletion,        0);
   rb_define_method(window, "input",         subWindowInput,             0);
   rb_define_method(window, "geometry",      subWindowGeometryReader,    0);
   rb_define_method(window, "geometry=",     subWindowGeometryWriter,    1);
+  rb_define_method(window, "raise",         subWindowRaise,             0);
+  rb_define_method(window, "lower",         subWindowLower,             0);
   rb_define_method(window, "show",          subWindowShow,              0);
   rb_define_method(window, "hide",          subWindowHide,              0);
   rb_define_method(window, "hidden?",       subWindowHiddenAsk,         0);
