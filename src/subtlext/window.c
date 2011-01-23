@@ -889,6 +889,7 @@ subWindowRead(int argc,
             }
         }
 
+      XSelectInput(display, w->win, NoEventMask);
       XUngrabKeyboard(display, CurrentTime);
 
       /* Restore logical focus */
@@ -942,6 +943,7 @@ subWindowListen(VALUE self)
       XGrabKeyboard(display, DefaultRootWindow(display), True,
         GrabModeAsync, GrabModeAsync, CurrentTime);
       XMapRaised(display, w->win);
+      XSetInputFocus(display, w->win, RevertToPointerRoot, CurrentTime);
       XSelectInput(display, w->win, KeyPressMask);
       XFlush(display);
 
@@ -983,6 +985,7 @@ subWindowListen(VALUE self)
             }
         }
 
+      XSelectInput(display, w->win, NoEventMask);
       XUngrabKeyboard(display, CurrentTime);
 
       /* Restore logical focus */
