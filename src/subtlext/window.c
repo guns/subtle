@@ -955,17 +955,29 @@ subWindowListen(VALUE self)
               case KeyPress: /* {{{ */
                 XLookupString(&ev.xkey, buf, sizeof(buf), &keysym, NULL);
 
-                /* Translate syms */
+                /* Skip modifier keys */
+                if(IsModifierKey(keysym)) continue;
+
+                /* Translate syms to something meaningful */
                 switch(keysym)
                   {
-                    case XK_Left:   sym = CHAR2SYM("left");   break;
-                    case XK_Right:  sym = CHAR2SYM("right");  break;
-                    case XK_Up:     sym = CHAR2SYM("up");     break;
-                    case XK_Down:   sym = CHAR2SYM("down");   break;
-                    case XK_Escape: sym = CHAR2SYM("escape"); break;
-                    case XK_Tab:    sym = CHAR2SYM("tab");    break;
-                    case XK_Return: sym = CHAR2SYM("return"); break;
-                    default: sym = CHAR2SYM(buf);
+                    /* Arrow keys */
+                    case XK_KP_Left:
+                    case XK_Left:      sym = CHAR2SYM("left");      break;
+                    case XK_KP_Right:
+                    case XK_Right:     sym = CHAR2SYM("right");     break;
+                    case XK_KP_Up:
+                    case XK_Up:        sym = CHAR2SYM("up");        break;
+                    case XK_KP_Down:
+                    case XK_Down:      sym = CHAR2SYM("down");      break;
+
+                    /* Input */
+                    case XK_KP_Enter:
+                    case XK_Return:    sym = CHAR2SYM("return");    break;
+                    case XK_Escape:    sym = CHAR2SYM("escape");    break;
+                    case XK_BackSpace: sym = CHAR2SYM("backspace"); break;
+                    case XK_Tab:       sym = CHAR2SYM("tab");       break;
+                    default:           sym = CHAR2SYM(buf);
                   }
 
                 /* Wrap up data */
