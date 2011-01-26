@@ -188,14 +188,14 @@ task(:config) do
 
     # Debug
     if("yes" == @options["debug"])
-      @options["cflags"]  << " -g -DDEBUG"
+      @options["cflags"] << " -g -DDEBUG"
     else
       @options["cflags"] << " -DNDEBUG"
     end
 
     # Get revision
     if(File.exists?(".hg") && (hg = find_executable0("hg")))
-      match = `#{hg} tip`.match(/changeset:\s*(\d+).*/)
+      match = `#{hg} tip`.match(/^[^:]+:\s*(\d+).*/)
 
       if(!match.nil? && 2 == match.size)
         @options["revision"] = match[1]
@@ -204,11 +204,11 @@ task(:config) do
 
     # Get ruby header dir
     if(RbConfig::CONFIG["rubyhdrdir"].nil?)
-      @options["hdrdir"]  = RbConfig.expand(
+      @options["hdrdir"] = RbConfig.expand(
         RbConfig::CONFIG["archdir"]
       )
     else
-      @options["hdrdir"]  = RbConfig.expand(
+      @options["hdrdir"] = RbConfig.expand(
         RbConfig::CONFIG["rubyhdrdir"]
       )
     end
