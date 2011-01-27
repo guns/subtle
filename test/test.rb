@@ -30,7 +30,7 @@ end
 # Configuration
 subtle   = "../subtle"
 subtlext = "../subtlext.so"
-config   = "../contrib/subtle.rb"
+config   = "../data/subtle.rb"
 sublets  = "./sublet"
 display  = ":10"
 

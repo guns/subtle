@@ -27,7 +27,6 @@ require "rake/rdoctask"
   "sysconfdir" => "$(destdir)/etc",
   "configdir"  => "$(sysconfdir)/xdg/$(PKG_NAME)",
   "datadir"    => "$(destdir)/$(prefix)/share/$(PKG_NAME)",
-  "scriptdir"  => "$(datadir)/scripts",
   "extdir"     => "$(destdir)/$(sitelibdir)/$(PKG_NAME)",
   "mandir"     => "$(destdir)/$(manprefix)/man1",
   "debug"      => "no",
@@ -368,7 +367,6 @@ task(:config) do
 -----------------
 Binaries............: #{@options["bindir"]}
 Configuration.......: #{@options["configdir"]}
-Scripts.............: #{@options["scriptdir"]}
 Extension...........: #{@options["extdir"]}
 
 Xpm support.........: #{@options["xpm"]}
@@ -404,7 +402,6 @@ task(:install => [:config, :build]) do
     [
       @options["bindir"],
       @options["configdir"],
-      @options["scriptdir"],
       @options["extdir"],
       @options["mandir"],
       File.join(@options["extdir"], "subtler"),
@@ -415,7 +412,7 @@ task(:install => [:config, :build]) do
   # Install config
   message("INSTALL config\n")
   FileUtils.install(
-    File.join("contrib", @defines["PKG_CONFIG"]),
+    File.join("data", @defines["PKG_CONFIG"]),
     @options["configdir"],
     :mode => 0644, :verbose => verbose
   )
@@ -443,7 +440,7 @@ task(:install => [:config, :build]) do
 
   # Install subtler
   message("INSTALL subtler\n")
-  FileList["contrib/subtler/*.rb"].collect do |f|
+  FileList["data/subtler/*.rb"].collect do |f|
     FileUtils.install(f,
     File.join(@options["extdir"], "subtler"),
       :mode => 0644, :verbose => verbose
@@ -452,7 +449,7 @@ task(:install => [:config, :build]) do
 
   # Install sur
   message("INSTALL sur\n")
-  FileList["contrib/sur/*.rb"].collect do |f|
+  FileList["data/sur/*.rb"].collect do |f|
     FileUtils.install(f,
       File.join(@options["extdir"], "sur"),
       :mode => 0644, :verbose => verbose
@@ -461,7 +458,7 @@ task(:install => [:config, :build]) do
 
   # Install tools
   message("INSTALL tools\n")
-  FileList["contrib/bin/*"].collect do |f|
+  FileList["data/bin/*"].collect do |f|
     FileUtils.install(f, @options["bindir"],
       :mode => 0755, :verbose => verbose
     )
@@ -471,28 +468,16 @@ task(:install => [:config, :build]) do
       #{File.join(@options["bindir"], File.basename(f))}`
   end
 
-  # Install scripts
-  message("INSTALL scripts\n")
-  FileList["contrib/scripts/*.*"].collect do |f|
-    FileUtils.install(f, @options["scriptdir"],
-      :mode => 0644, :verbose => verbose
-    )
-
-    # Update interpreter name
-    `#{sed} -i -e 's#/usr/bin/ruby.*##{interpreter}#' \
-      #{File.join(@options["scriptdir"], File.basename(f))}`
-  end
-
   # Install manpages
   message("INSTALL manpages\n")
-  FileList["contrib/man/*.*"].collect do |f|
+  FileList["data/man/*.*"].collect do |f|
     FileUtils.install(f, @options["mandir"],
       :mode => 0644, :verbose => verbose
     )
   end
 end # }}}
 
-# Task: install {{{
+# Task: uninstall {{{
 desc("Uninstall subtle")
 task(:uninstall => [:config]) do
   verbose = (:default != RakeFileUtils.verbose)
@@ -534,23 +519,16 @@ task(:uninstall => [:config]) do
 
   # Uninstall tools
   message("UNINSTALL tools\n")
-  FileList["contrib/bin/*"].collect do |f|
+  FileList["data/bin/*"].collect do |f|
     FileUtils.rm(
       File.join(@options["bindir"], File.basename(f)),
       :verbose => verbose
     )
   end
 
-  # Install scripts
-  message("UNINSTALL scripts\n")
-  FileUtils.rm_r(
-    @options["datadir"],
-    :verbose => verbose
-  )
-
   # Install manpages
   message("UNINSTALL manpages\n")
-  FileList["contrib/man/*.*"].collect do |f|
+  FileList["data/man/*.*"].collect do |f|
     FileUtils.rm(
       File.join(@options["mandir"], File.basename(f)),
       :verbose => verbose
@@ -580,9 +558,21 @@ end # }}}
 # Task: rdoc {{{
 Rake::RDocTask.new(:rdoc) do |rdoc|
   rdoc.rdoc_files.include(
-    "contrib/subtle.rb",
+    "data/subtle.rb",
     "src/subtle/ruby.c",
-    "src/subtlext/subtlext.c"
+    "src/subtlext/client.c",
+    "src/subtlext/color.c",
+    "src/subtlext/geometry.c",
+    "src/subtlext/gravity.c",
+    "src/subtlext/icon.c",
+    "src/subtlext/screen.c",
+    "src/subtlext/sublet.c",
+    "src/subtlext/subtle.c",
+    "src/subtlext/subtlext.c",
+    "src/subtlext/tag.c",
+    "src/subtlext/tray.c",
+    "src/subtlext/view.c",
+    "src/subtlext/window.c"
   )
   rdoc.options << "-o doc"
   rdoc.title    = "Subtle RDoc Documentation"
