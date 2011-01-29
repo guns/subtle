@@ -449,7 +449,7 @@ RubyEvalHook(VALUE event,
 
 /* RubyEvalGrab {{{ */
 static void
-RubyEvalGrab(VALUE chain,
+RubyEvalGrab(VALUE keys,
   VALUE value)
 {
   int type = -1;
@@ -482,11 +482,6 @@ RubyEvalGrab(VALUE chain,
             else if(CHAR2SYM("SubtleQuit") == value)
               {
                 type = SUB_GRAB_SUBTLE_QUIT;
-              }
-            else if(CHAR2SYM("SubtleEscape") == value)
-              {
-                type           = SUB_GRAB_SUBTLE_ESCAPE;
-                subtle->flags |= SUB_SUBTLE_ESCAPE;
               }
             else if(CHAR2SYM("WindowMove") == value)
               {
@@ -602,22 +597,69 @@ RubyEvalGrab(VALUE chain,
     }
 
   /* Check value type */
-  if(T_STRING == rb_type(chain))
+  if(T_STRING == rb_type(keys))
     {
       if(-1 != type)
         {
           /* Skip on checking only */
           if(!(subtle->flags & SUB_SUBTLE_CHECK))
             {
-              SubGrab *g = NULL;
+              int duplicate = False, ntok = 0;
+              char *tokens = NULL, *tok = NULL, *save = NULL;
+              SubGrab *prev = NULL, *g = NULL;
 
-              /* Finally create new grab */
-              if((g = subGrabNew(RSTRING_PTR(chain), type, data)))
+              /* Parse keys */
+              tokens = strdup(RSTRING_PTR(keys));
+              tok    = strtok_r(tokens, " ", &save);
+
+              while(tok)
                 {
-                  subArrayPush(subtle->grabs, (void *)g);
+                  /* Find or create grab */
+                  if((g = subGrabNew(tok, &duplicate)))
+                    {
+                      if(!duplicate)
+                        {
+                          subArrayPush(subtle->grabs, (void *)g);
+                          subArraySort(subtle->grabs, subGrabCompare);
+                        }
 
-                  /* Store address of escape grab to limit search times */
-                  if(g->flags & SUB_GRAB_SUBTLE_ESCAPE) subtle->escape = g;
+                      /* Assemble chain */
+                      if(0 < ntok)
+                        {
+                          /* Init chain array */
+                          if(NULL == prev->keys)
+                            {
+                              /* Mark first grab as chain start */
+                              if(1 == ntok) prev->flags |= SUB_GRAB_CHAIN_START;
+
+                              prev->keys = subArrayNew();
+                            }
+
+                          /* Mark grabs w/o action as chain link */
+                          if(0 == (g->flags & ~(SUB_TYPE_GRAB|
+                              SUB_GRAB_KEY|SUB_GRAB_MOUSE|SUB_GRAB_CHAIN_LINK)))
+                            g->flags |= SUB_GRAB_CHAIN_LINK;
+
+                          subArrayPush(prev->keys, (void *)g);
+                        }
+
+                      prev = g;
+                    }
+
+                  tok = strtok_r(NULL, " ", &save);
+                  ntok++;
+                }
+
+              /* Add type/action to new grabs and mark as chain end */
+              if(!duplicate)
+                {
+                  if(g->flags & SUB_GRAB_CHAIN_LINK)
+                    g->flags &= ~SUB_GRAB_CHAIN_LINK;
+
+                  g->flags |= type;
+                  g->data   = data;
+
+                  free(tokens);
                 }
             }
         }
@@ -638,8 +680,8 @@ RubyEvalPanel(VALUE ary,
       int i, j, flags = 0;
       Window panel = s->panel1;
       VALUE entry = Qnil, tray = Qnil, spacer = Qnil, separator = Qnil;
-      VALUE sublets = Qnil, views = Qnil, title = Qnil, center = Qnil;
-      VALUE subtlext = Qnil;
+      VALUE sublets = Qnil, views = Qnil, title = Qnil, keychain;
+      VALUE center = Qnil, subtlext = Qnil;
       SubPanel *p = NULL, *last = NULL;;
 
       /* Get syms */
@@ -650,6 +692,7 @@ RubyEvalPanel(VALUE ary,
       sublets   = CHAR2SYM("sublets");
       views     = CHAR2SYM("views");
       title     = CHAR2SYM("title");
+      keychain  = CHAR2SYM("keychain");
 
       /* Set position of panel */
       if(SUB_SCREEN_PANEL2 == position)
@@ -696,8 +739,12 @@ RubyEvalPanel(VALUE ary,
             }
           else if(entry == tray)
             {
-              flags |= (SUB_TYPE_PANEL|SUB_PANEL_TRAY);
-              p      = &subtle->windows.tray;
+              /* Prevent multiple use */
+              if(!subtle->panels.tray.screen)
+                {
+                  flags |= (SUB_TYPE_PANEL|SUB_PANEL_TRAY);
+                  p      = &subtle->panels.tray;
+                }
             }
           else if(entry == views)
             {
@@ -706,8 +753,19 @@ RubyEvalPanel(VALUE ary,
             }
           else if(entry == title)
             {
-              /* Create new panel views */
+              /* Create new panel title */
               p = subPanelNew(SUB_PANEL_TITLE);
+            }
+          else if(entry == keychain)
+            {
+              /* Prevent multiple use */
+              if(!subtle->panels.keychain.screen)
+                {
+                  flags       |= (SUB_TYPE_PANEL|SUB_PANEL_KEYCHAIN);
+                  p            = &subtle->panels.keychain;
+                  p->keychain  = KEYCHAIN(subSharedMemoryAlloc(1,
+                    sizeof(SubKeychain)));
+                }
             }
           else if(T_DATA == rb_type(entry))
             {
@@ -1356,6 +1414,8 @@ RubyConfigSet(VALUE self,
               {
                 if(!(subtle->flags & SUB_SUBTLE_CHECK))
                   {
+                    if(subtle->font)
+                      subSharedFontKill(subtle->dpy, subtle->font);
                     if(!(subtle->font = subSharedFontNew(subtle->dpy,
                         RSTRING_PTR(value))))
                       {
@@ -3104,6 +3164,7 @@ subRubyReloadConfig(void)
 
       vids[i]   = s->vid; ///< Store views
       s->flags &= ~(SUB_SCREEN_STIPPLE|SUB_SCREEN_PANEL1|SUB_SCREEN_PANEL2);
+
       subArrayClear(s->panels, True);
     }
 
@@ -3113,9 +3174,6 @@ subRubyReloadConfig(void)
       subSharedFontKill(subtle->dpy, subtle->font);
       subtle->font = NULL;
     }
-
-  /* Unset escape grab */
-  subtle->escape = NULL;
 
   /* Clear arrays */
   subArrayClear(subtle->hooks,     True); ///< Must be first
