@@ -105,18 +105,20 @@
 /* }}} */
 
 /* Casts {{{ */
-#define ARRAY(a)   ((SubArray *)a)                                ///< Cast to SubArray
-#define CLIENT(c)  ((SubClient *)c)                               ///< Cast to SubClient
-#define GRAB(g)    ((SubGrab *)g)                                 ///< Cast to SubGrab
-#define GRAVITY(g) ((SubGravity *)g)                              ///< Cast to SubGravity
-#define HOOK(h)    ((SubHook *)h)                                 ///< Cast to SubHook
-#define ICON(i)    ((SubIcon *)i)                                 ///< Cast to SubIcon
-#define PANEL(p)   ((SubPanel *)p)                                ///< Cast to SubPanel
-#define SCREEN(s)  ((SubScreen *)s)                               ///< Cast to SubScreen
-#define SUBLET(s)  ((SubSublet *)s)                               ///< Cast to SubSublet
-#define TAG(t)     ((SubTag *)t)                                  ///< Cast to SubTag
-#define TRAY(t)    ((SubTray *)t)                                 ///< Cast to SubTray
-#define VIEW(v)    ((SubView *)v)                                 ///< Cast to SubView
+#define ARRAY(a)     ((SubArray *)a)                              ///< Cast to SubArray
+#define CHAIN(c)     ((SubChain *)c)                              ///< Cast to SubChain
+#define CLIENT(c)    ((SubClient *)c)                             ///< Cast to SubClient
+#define GRAB(g)      ((SubGrab *)g)                               ///< Cast to SubGrab
+#define GRAVITY(g)   ((SubGravity *)g)                            ///< Cast to SubGravity
+#define HOOK(h)      ((SubHook *)h)                               ///< Cast to SubHook
+#define ICON(i)      ((SubIcon *)i)                               ///< Cast to SubIcon
+#define KEYCHAIN(k)  ((SubKeychain *)k)                           ///< Cast to SubKeychain
+#define PANEL(p)     ((SubPanel *)p)                              ///< Cast to SubPanel
+#define SCREEN(s)    ((SubScreen *)s)                             ///< Cast to SubScreen
+#define SUBLET(s)    ((SubSublet *)s)                             ///< Cast to SubSublet
+#define TAG(t)       ((SubTag *)t)                                ///< Cast to SubTag
+#define TRAY(t)      ((SubTray *)t)                               ///< Cast to SubTray
+#define VIEW(v)      ((SubView *)v)                               ///< Cast to SubView
 /* }}} */
 
 /* Flags {{{ */
@@ -191,38 +193,40 @@
 #define SUB_GRAB_MOUSE                (1L << 10)                  ///< Mouse grab
 #define SUB_GRAB_SPAWN                (1L << 11)                  ///< Spawn an app
 #define SUB_GRAB_PROC                 (1L << 12)                  ///< Grab with proc
-#define SUB_GRAB_VIEW_JUMP            (1L << 13)                  ///< Jump to view
-#define SUB_GRAB_VIEW_SWITCH          (1L << 14)                  ///< Jump to view
-#define SUB_GRAB_VIEW_SELECT          (1L << 15)                  ///< Jump to view
-#define SUB_GRAB_SCREEN_JUMP          (1L << 16)                  ///< Jump to screen
-#define SUB_GRAB_SUBTLE_RELOAD        (1L << 17)                  ///< Reload subtle
-#define SUB_GRAB_SUBTLE_RESTART       (1L << 18)                  ///< Restart subtle
-#define SUB_GRAB_SUBTLE_QUIT          (1L << 19)                  ///< Quit subtle
-#define SUB_GRAB_SUBTLE_ESCAPE        (1L << 20)                  ///< Escape key
-#define SUB_GRAB_WINDOW_MOVE          (1L << 21)                  ///< Resize window
-#define SUB_GRAB_WINDOW_RESIZE        (1L << 22)                  ///< Move window
-#define SUB_GRAB_WINDOW_TOGGLE        (1L << 23)                  ///< Toggle window
-#define SUB_GRAB_WINDOW_STACK         (1L << 24)                  ///< Stack window
-#define SUB_GRAB_WINDOW_SELECT        (1L << 25)                  ///< Select window
-#define SUB_GRAB_WINDOW_GRAVITY       (1L << 26)                  ///< Set gravity of window
-#define SUB_GRAB_WINDOW_KILL          (1L << 27)                  ///< Kill window
+#define SUB_GRAB_CHAIN_START          (1L << 13)                  ///< Chain grab start
+#define SUB_GRAB_CHAIN_LINK           (1L << 14)                  ///< Chain grab link
+#define SUB_GRAB_VIEW_JUMP            (1L << 15)                  ///< Jump to view
+#define SUB_GRAB_VIEW_SWITCH          (1L << 16)                  ///< Jump to view
+#define SUB_GRAB_VIEW_SELECT          (1L << 17)                  ///< Jump to view
+#define SUB_GRAB_SCREEN_JUMP          (1L << 18)                  ///< Jump to screen
+#define SUB_GRAB_SUBTLE_RELOAD        (1L << 19)                  ///< Reload subtle
+#define SUB_GRAB_SUBTLE_RESTART       (1L << 20)                  ///< Restart subtle
+#define SUB_GRAB_SUBTLE_QUIT          (1L << 21)                  ///< Quit subtle
+#define SUB_GRAB_WINDOW_MOVE          (1L << 22)                  ///< Resize window
+#define SUB_GRAB_WINDOW_RESIZE        (1L << 23)                  ///< Move window
+#define SUB_GRAB_WINDOW_TOGGLE        (1L << 24)                  ///< Toggle window
+#define SUB_GRAB_WINDOW_STACK         (1L << 25)                  ///< Stack window
+#define SUB_GRAB_WINDOW_SELECT        (1L << 26)                  ///< Select window
+#define SUB_GRAB_WINDOW_GRAVITY       (1L << 27)                  ///< Set gravity of window
+#define SUB_GRAB_WINDOW_KILL          (1L << 28)                  ///< Kill window
 
 /* Panel flags */
 #define SUB_PANEL_SUBLET              (1L << 9)                   ///< Panel sublet type
 #define SUB_PANEL_COPY                (1L << 10)                  ///< Panel copy type
 #define SUB_PANEL_VIEWS               (1L << 11)                  ///< Panel views type
 #define SUB_PANEL_TITLE               (1L << 12)                  ///< Panel title type
-#define SUB_PANEL_TRAY                (1L << 13)                  ///< Panel tray type
-#define SUB_PANEL_ICON                (1L << 14)                  ///< Panel icon type
+#define SUB_PANEL_KEYCHAIN            (1L << 13)                  ///< Panel keychain type
+#define SUB_PANEL_TRAY                (1L << 14)                  ///< Panel tray type
+#define SUB_PANEL_ICON                (1L << 15)                  ///< Panel icon type
 
-#define SUB_PANEL_SPACER1             (1L << 15)                  ///< Panel spacer1
-#define SUB_PANEL_SPACER2             (1L << 16)                  ///< Panel spacer2
-#define SUB_PANEL_SEPARATOR1          (1L << 17)                  ///< Panel separator1
-#define SUB_PANEL_SEPARATOR2          (1L << 18)                  ///< Panel separator2
-#define SUB_PANEL_BOTTOM              (1L << 19)                  ///< Panel bottom
-#define SUB_PANEL_HIDDEN              (1L << 20)                  ///< Panel hidden
-#define SUB_PANEL_CENTER              (1L << 21)                  ///< Panel center
-#define SUB_PANEL_SUBLETS             (1L << 22)                  ///< Panel sublets
+#define SUB_PANEL_SPACER1             (1L << 16)                  ///< Panel spacer1
+#define SUB_PANEL_SPACER2             (1L << 17)                  ///< Panel spacer2
+#define SUB_PANEL_SEPARATOR1          (1L << 18)                  ///< Panel separator1
+#define SUB_PANEL_SEPARATOR2          (1L << 19)                  ///< Panel separator2
+#define SUB_PANEL_BOTTOM              (1L << 20)                  ///< Panel bottom
+#define SUB_PANEL_HIDDEN              (1L << 21)                  ///< Panel hidden
+#define SUB_PANEL_CENTER              (1L << 22)                  ///< Panel center
+#define SUB_PANEL_SUBLETS             (1L << 23)                  ///< Panel sublets
 
 /* Sublet flags */
 #define SUB_SUBLET_INTERVAL           (1L << 9)                   ///< Sublet has interval
@@ -252,7 +256,6 @@
 #define SUB_SUBTLE_EWMH               (1L << 7)                   ///< EWMH set
 #define SUB_SUBTLE_REPLACE            (1L << 8)                   ///< Replace previous wm
 #define SUB_SUBTLE_RESTART            (1L << 9)                   ///< Restart
-#define SUB_SUBTLE_ESCAPE             (1L << 10)                  ///< Use escape key
 
 /* Tag flags */
 #define SUB_TAG_GRAVITY               (1L << 9)                   ///< Gravity property
@@ -344,6 +347,11 @@ typedef struct subarray_t /* {{{ */
   int   ndata;                                                    ///< Array data count
   void **data;                                                    ///< Array data
 } SubArray; /* }}} */
+
+typedef struct subkeychain_t { /* {{{ */
+  int              len;                                           ///< Keychain length
+  char             *keys;                                         ///< Keychain keys
+} SubKeychain; /* }}} */
 
 typedef struct subclient_t /* {{{ */
 {
@@ -468,11 +476,12 @@ typedef enum subewmh_t /* {{{ */
 
 typedef struct subgrab_t /* {{{ */
 {
-  FLAGS           flags;                                          ///< Grab flags
+  FLAGS              flags;                                    ///< Grab flags
 
-  KeySym          sym;                                            ///< Grab sym
-  unsigned int    code, mod;                                      ///< Grab code, modifier
-  union subdata_t data;                                           ///< Grab data
+  unsigned int       code, mod;                                ///< Grab code, modifier
+  union subdata_t    data;                                     ///< Grab data
+
+  struct subarray_t  *keys;                                    ///< Grab chain keys
 } SubGrab; /* }}} */
 
 typedef struct subgravity_t /* {{{ */
@@ -496,15 +505,16 @@ typedef struct subicon_t { /* {{{ */
 
 typedef struct subpanel_t /* {{{ */
 {
-  FLAGS              flags;                                       ///< Panel flags
-  Window             win;                                         ///< Panel win
-  int                x, width;                                    ///< Panel x, width
-  struct subscreen_t *screen;                                     ///< Panel screen
+  FLAGS                   flags;                                  ///< Panel flags
+  Window                  win;                                    ///< Panel win
+  int                     x, width;                               ///< Panel x, width
+  struct subscreen_t      *screen;                                ///< Panel screen
 
   union {
-    Window             *views;                                    ///< Panel view
-    struct subsublet_t *sublet;                                   ///< Panel sublet
-    struct subicon_t   *icon;                                     ///< Panel icon
+    Window                *views;                                 ///< Panel view
+    struct subkeychain_t  *keychain;                              ///< Panel chain
+    struct subsublet_t    *sublet;                                ///< Panel sublet
+    struct subicon_t      *icon;                                  ///< Panel icon
   };
 } SubPanel; /* }}} */
 
@@ -546,7 +556,7 @@ typedef struct subsubtle_t /* {{{ */
   XRectangle           strut, padding;                            ///< Subtle strut, padding
 
   struct subfont_t     *font;                                     ///< Subtle font
-  struct subgrab_t     *escape;                                   ///< Subtle escape grab
+  struct subgrab_t     *keychain;                                 ///< Subtle current keychain
 
   struct subarray_t    *clients;                                  ///< Subtle clients
   struct subarray_t    *grabs;                                    ///< Subtle grabs
@@ -576,8 +586,12 @@ typedef struct subsubtle_t /* {{{ */
   struct
   {
     Window             focus, support;
-    struct subpanel_t  tray;
   } windows;                                                      ///< Subtle windows
+
+  struct
+  {
+    struct subpanel_t  tray, keychain;
+  } panels;                                                       ///< Subtle panels
 
   struct
   {
@@ -710,11 +724,9 @@ void subEwmhFinish(void);                                         ///< Unset EWM
 
 /* grab.c {{{ */
 void subGrabInit(void);                                           ///< Init keymap
-SubGrab *subGrabNew(const char *chain, int type,                  ///< Create grab
-  SubData data);
-KeySym subGrabGet(void);                                          ///< Get grab
+SubGrab *subGrabNew(const char *keys, int *duplicate);            ///< Create grab
 SubGrab *subGrabFind(int code, unsigned int mod);                 ///< Find grab
-void subGrabSet(Window win, int all);                             ///< Grab window
+void subGrabSet(Window win);                                      ///< Grab window
 void subGrabUnset(Window win);                                    ///< Ungrab window
 int subGrabCompare(const void *a, const void *b);                 ///< Compare grabs
 void subGrabKill(SubGrab *g);                                     ///< Kill grab
