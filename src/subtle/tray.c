@@ -35,13 +35,13 @@ subTrayNew(Window win)
   subSharedPropertyName(subtle->dpy, win, &t->name, PKG_NAME);
   subEwmhSetWMState(t->win, WithdrawnState);
   XSelectInput(subtle->dpy, t->win, TRAYMASK);
-  XReparentWindow(subtle->dpy, t->win, subtle->windows.tray.win, 0, 0);
+  XReparentWindow(subtle->dpy, t->win, subtle->panels.tray.win, 0, 0);
   XAddToSaveSet(subtle->dpy, t->win);
   XSaveContext(subtle->dpy, t->win, TRAYID, (void *)t);
 
   /* Start embedding life cycle */
   subEwmhMessage(t->win, SUB_EWMH_XEMBED, 0xFFFFFF, CurrentTime,
-    XEMBED_EMBEDDED_NOTIFY, 0, subtle->windows.tray.win, 0);
+    XEMBED_EMBEDDED_NOTIFY, 0, subtle->panels.tray.win, 0);
 
   subSharedLogDebugSubtle("new=tray, name=%s, win=%#lx\n", t->name, win);
 
@@ -90,29 +90,29 @@ subTrayConfigure(SubTray *t)
 void
 subTrayUpdate(void)
 {
-  subtle->windows.tray.width = 0; ///< Reset width
+  subtle->panels.tray.width = 0; ///< Reset width
 
   if(0 < subtle->trays->ndata)
     {
       int i;
 
       /* Resize every tray */
-      for(i = 0, subtle->windows.tray.width = 3; i < subtle->trays->ndata; i++)
+      for(i = 0, subtle->panels.tray.width = 3; i < subtle->trays->ndata; i++)
         {
           SubTray *t = TRAY(subtle->trays->data[i]);
 
           if(t->flags & SUB_TRAY_DEAD) continue;
 
           XMapWindow(subtle->dpy, t->win);
-          XMoveResizeWindow(subtle->dpy, t->win, subtle->windows.tray.width,
+          XMoveResizeWindow(subtle->dpy, t->win, subtle->panels.tray.width,
             0, t->width, subtle->th);
-          subtle->windows.tray.width += t->width;
+          subtle->panels.tray.width += t->width;
         }
 
-      subtle->windows.tray.width += 3; ///< Add padding
+      subtle->panels.tray.width += 3; ///< Add padding
 
-      XResizeWindow(subtle->dpy, subtle->windows.tray.win,
-        subtle->windows.tray.width, subtle->th);
+      XResizeWindow(subtle->dpy, subtle->panels.tray.win,
+        subtle->panels.tray.width, subtle->th);
     }
 } /* }}} */
 
@@ -164,9 +164,9 @@ subTraySelect(void)
 
   /* Tray selection */
   XSetSelectionOwner(subtle->dpy, selection,
-    subtle->windows.tray.win, CurrentTime);
+    subtle->panels.tray.win, CurrentTime);
 
-  if(XGetSelectionOwner(subtle->dpy, selection) == subtle->windows.tray.win)
+  if(XGetSelectionOwner(subtle->dpy, selection) == subtle->panels.tray.win)
     {
       subSharedLogDebug("Selection: type=%ld\n", selection);
     }
@@ -175,7 +175,7 @@ subTraySelect(void)
   /* Send manager info */
   subEwmhMessage(ROOT, SUB_EWMH_MANAGER, 0xFFFFFF, CurrentTime,
     subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION),
-      subtle->windows.tray.win, 0, 0);
+      subtle->panels.tray.win, 0, 0);
 } /* }}} */
 
  /** subTrayDeselect {{{
@@ -188,7 +188,7 @@ subTrayDeselect(void)
   Atom selection = subEwmhGet(SUB_EWMH_NET_SYSTEM_TRAY_SELECTION);
 
   /* Tray selection */
-  if(XGetSelectionOwner(subtle->dpy, selection) == subtle->windows.tray.win)
+  if(XGetSelectionOwner(subtle->dpy, selection) == subtle->panels.tray.win)
     {
       XSetSelectionOwner(subtle->dpy, selection, None, CurrentTime);
       subSharedPropertyDelete(subtle->dpy, ROOT, selection);
