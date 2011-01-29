@@ -23,7 +23,7 @@ GrabBind(SubGrab *g,
   const unsigned int modifiers[] = { 0, LockMask, numlockmask,
     numlockmask|LockMask };
 
-  /* @todo Ugly key/modifier grabbing */
+  /* FIXME: Ugly key/modifier grabbing */
   for(i = 0; i < LENGTH(modifiers); i++)
     {
       if(g->flags & SUB_GRAB_KEY)
@@ -40,6 +40,8 @@ GrabBind(SubGrab *g,
         }
     }
 } /* }}} */
+
+/* Public */
 
  /** subGrabInit {{{
   * @brief Init grabs and get modifiers
@@ -68,53 +70,50 @@ subGrabInit(void)
 
  /** subGrabNew {{{
   * @brief Create new grab
-  * @param[in]  chain  Key chain
-  * @param[in]  type   Type
-  * @param[in]  data   Data
+  * @param[in]   keys       Key chain
+  * @param[out]  duplicate  Added twice
   * @return Returns a #SubGrab or \p NULL
   **/
 
 SubGrab *
-subGrabNew(const char *chain,
-  int type,
-  SubData data)
+subGrabNew(const char *keys,
+  int *duplicate)
 {
   int mouse = False;
   unsigned int code = 0, mod = 0;
   KeySym sym = NoSymbol;
   SubGrab *g = NULL;
 
-  assert(chain);
+  assert(keys);
 
   /* Parse keys */
   if(NoSymbol != (sym = subSharedParseKey(subtle->dpy,
-      chain, &code, &mod, &mouse)))
+      keys, &code, &mod, &mouse)))
     {
-      /* Create new grab */
-      g = GRAB(subSharedMemoryAlloc(1, sizeof(SubGrab)));
-      g->data   = data;
-      g->code   = code;
-      g->mod    = mod;
-      g->flags |= (SUB_TYPE_GRAB|type|
-        (True == mouse ? SUB_GRAB_MOUSE : SUB_GRAB_KEY));
+      /* Find or create new grab */
+      if(!(g = subGrabFind(code, mod)))
+        {
+          g = GRAB(subSharedMemoryAlloc(1, sizeof(SubGrab)));
+          g->code  = code;
+          g->mod   = mod;
+          g->flags = SUB_TYPE_GRAB|(mouse ? SUB_GRAB_MOUSE : SUB_GRAB_KEY);
 
-      subSharedLogDebug("new=grab, type=%s, chain=%s, code=%03d, mod=%02d\n",
-        g->flags & SUB_GRAB_KEY ? "k" : "m", chain, g->code, g->mod);
-    }
-  else
-    {
-      subSharedLogWarn("Failed assigning grab `%s'\n", chain);
+          if(duplicate) *duplicate = False;
+        }
+      else if(duplicate) *duplicate = True;
 
-      if(type & SUB_GRAB_SPAWN && data.string) free(data.string);
+      subSharedLogDebugSubtle("new=grab, type=%s, keys=%s, code=%03d, mod=%02d\n",
+        g->flags & SUB_GRAB_KEY ? "key" : "mouse", keys, g->code, g->mod);
     }
+  else subSharedLogWarn("Failed assigning grab `%s'\n", keys);
 
   return g;
 } /* }}} */
 
  /** subGrabFind {{{
   * @brief Find grab
-  * @param[in]  code   A code
-  * @param[in]  mod    A modmask
+  * @param[in]  code  A code
+  * @param[in]  mod   A modmask
   * @return Returns a #SubGrab or \p NULL
   **/
 
@@ -125,10 +124,10 @@ subGrabFind(int code,
   SubGrab **ret = NULL, *gptr = NULL, g;
 
   /* Find grab via binary search */
-  g.code = code;
-  g.mod  = (mod & ~(LockMask|numlockmask));
-  gptr   = &g;
-  ret    = (SubGrab **)bsearch(&gptr, subtle->grabs->data, subtle->grabs->ndata,
+  g.code   = code;
+  g.mod    = (mod & ~(LockMask|numlockmask));
+  gptr     = &g;
+  ret      = (SubGrab **)bsearch(&gptr, subtle->grabs->data, subtle->grabs->ndata,
     sizeof(SubGrab *), subGrabCompare);
 
   return ret ? *ret : NULL;
@@ -137,24 +136,24 @@ subGrabFind(int code,
  /** subGrabSet {{{
   * @brief Grab keys for a window
   * @param[in]  win  Window
-  * @param[in]  all  Bind all grabs
   **/
 
 void
-subGrabSet(Window win,
-  int all)
+subGrabSet(Window win)
 {
   if(win)
     {
-      if(all)
-        {
-          int i;
+      int i;
 
-          /* Bind all grabs */
-          for(i = 0; i < subtle->grabs->ndata; i++)
-            GrabBind(GRAB(subtle->grabs->data[i]), win);
+      /* Bind grabs */
+      for(i = 0; i < subtle->grabs->ndata; i++)
+        {
+          SubGrab *g = GRAB(subtle->grabs->data[i]);
+
+          /* Assign only grabs with action */
+          if(!(g->flags & SUB_GRAB_CHAIN_LINK))
+            GrabBind(g, win);
         }
-      else GrabBind(subtle->escape, win); ///< Bind escape grab only
     }
 } /* }}} */
 
@@ -189,7 +188,7 @@ subGrabCompare(const void *a,
 
   assert(a && b);
 
-  /* @todo Complicated.. */
+  /* FIXME Complicated.. */
   if(g1->code < g2->code) ret = -1;
   else if(g1->code == g2->code)
   {
@@ -220,9 +219,12 @@ subGrabKill(SubGrab *g)
   else if(g->flags & (SUB_GRAB_SPAWN|SUB_GRAB_WINDOW_GRAVITY) && g->data.string)
     free(g->data.string);
 
+  /* Delete keys */
+  if(g->keys) subArrayKill(g->keys, False);
+
   free(g);
 
-  subSharedLogDebug("kill=grab\n");
+  subSharedLogDebugSubtle("kill=grab\n");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
