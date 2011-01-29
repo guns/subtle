@@ -872,6 +872,7 @@ subSharedFontNew(Display *disp,
               subSharedLogError("Failed loading fallback font `%s`\n",
                 DEFFONT);
 
+              if(missing) XFreeStringList(missing); ///< Ignore this
               free(f);
 
               return NULL;
@@ -1000,8 +1001,8 @@ subSharedParseColor(Display *disp,
   * @brief Parse key
   * @param[in]     disp     Display
   * @param[in]     key      Key string
-  * @param[inout]  code     Color string
-  * @param[inout]  mod      Color string
+  * @param[inout]  code     Key code
+  * @param[inout]  state    Key state
   * @param[inout]  mouse    Whether this is mouse press
   * @return Color keysym or \p NoSymbol
   **/
@@ -1010,16 +1011,16 @@ KeySym
 subSharedParseKey(Display *disp,
   const char *key,
   unsigned int *code,
-  unsigned int *mod,
+  unsigned int *state,
   int *mouse)
 {
   int i;
   KeySym sym = NoSymbol;
-  char *tokens = NULL, *tok = NULL;
+  char *tokens = NULL, *tok = NULL, *save = NULL;
 
   /* Parse keys */
   tokens = strdup(key);
-  tok    = strtok((char *)tokens, "-");
+  tok    = strtok_r(tokens, "-", &save);
 
   while(tok)
     {
@@ -1050,11 +1051,11 @@ subSharedParseKey(Display *disp,
       switch(sym)
         {
           /* Keys */
-          case XK_A: *mod |= Mod1Mask;    break;
-          case XK_S: *mod |= ShiftMask;   break;
-          case XK_C: *mod |= ControlMask; break;
-          case XK_W: *mod |= Mod4Mask;    break;
-          case XK_M: *mod |= Mod3Mask;    break;
+          case XK_A: *state |= Mod1Mask;    break;
+          case XK_S: *state |= ShiftMask;   break;
+          case XK_C: *state |= ControlMask; break;
+          case XK_W: *state |= Mod4Mask;    break;
+          case XK_M: *state |= Mod3Mask;    break;
 
           /* Mouse */
           case XK_Pointer_Button1:
@@ -1070,7 +1071,7 @@ subSharedParseKey(Display *disp,
             *code  = XKeysymToKeycode(disp, sym);
         }
 
-      tok = strtok(NULL, "-");
+      tok = strtok_r(NULL, "-", &save);
     }
 
   free(tokens);
