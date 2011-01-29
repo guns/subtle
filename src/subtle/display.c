@@ -165,14 +165,18 @@ subDisplayInit(const char *display)
   sattrs.event_mask = ROOTMASK;
   XChangeWindowAttributes(subtle->dpy, ROOT, CWCursor|CWEventMask, &sattrs);
 
-  /* Create tray window */
-  subtle->windows.tray.win = XCreateSimpleWindow(subtle->dpy,
+  /* Create tray and keychain window */
+  subtle->panels.tray.win = XCreateSimpleWindow(subtle->dpy,
     ROOT, 0, 0, 1, 1, 0, 0, subtle->colors.bg_focus);
+  subtle->panels.keychain.win = XCreateSimpleWindow(subtle->dpy,
+    ROOT, 0, 0, 1, 1, 0, 0, subtle->colors.bg_title);
 
   sattrs.override_redirect = True;
   sattrs.event_mask        = KeyPressMask|ButtonPressMask;
-  XChangeWindowAttributes(subtle->dpy, subtle->windows.tray.win,
+  XChangeWindowAttributes(subtle->dpy, subtle->panels.tray.win,
     CWOverrideRedirect|CWEventMask, &sattrs);
+  XChangeWindowAttributes(subtle->dpy, subtle->panels.keychain.win,
+    CWOverrideRedirect, &sattrs);
 
   /* Init screen width and height */
   subtle->width  = DisplayWidth(subtle->dpy, DefaultScreen(subtle->dpy));
@@ -218,14 +222,16 @@ subDisplayConfigure(void)
   XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
 
   /* Update windows */
-  XSetWindowBackground(subtle->dpy, subtle->windows.tray.win,
+  XSetWindowBackground(subtle->dpy, subtle->panels.tray.win,
     subtle->colors.panel);
+  XSetWindowBackground(subtle->dpy, subtle->panels.keychain.win,
+    subtle->colors.bg_title);
 
   /* Set background if set */
   if(-1 != subtle->colors.bg)
     XSetWindowBackground(subtle->dpy, ROOT, subtle->colors.bg);
 
-  XClearWindow(subtle->dpy, subtle->windows.tray.win);
+  XClearWindow(subtle->dpy, subtle->panels.tray.win);
   XClearWindow(subtle->dpy, ROOT);
 
   /* Update struts and panels */
@@ -344,7 +350,8 @@ subDisplayFinish(void)
       /* Free font */
       if(subtle->font) subSharedFontKill(subtle->dpy, subtle->font);
 
-      XDestroyWindow(subtle->dpy, subtle->windows.tray.win);
+      XDestroyWindow(subtle->dpy, subtle->panels.tray.win);
+      XDestroyWindow(subtle->dpy, subtle->panels.keychain.win);
       XDestroyWindow(subtle->dpy, subtle->windows.support);
 
       XInstallColormap(subtle->dpy, DefaultColormap(subtle->dpy, SCRN));
