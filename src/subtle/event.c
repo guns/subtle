@@ -350,7 +350,7 @@ EventCrossing(XCrossingEvent *ev)
         /* Handle crossing event */
         if(ROOT == ev->window) ///< Root
           {
-            subGrabSet(ROOT, !(subtle->flags & SUB_SUBTLE_ESCAPE));
+            subGrabSet(ROOT);
           }
         else if((c = CLIENT(subSubtleFind(ev->window, CLIENTID)))) ///< Client
           {
@@ -468,7 +468,7 @@ EventFocus(XFocusChangeEvent *ev)
       SubView *v = NULL;
 
       subtle->windows.focus = c->win;
-      subGrabSet(c->win, !(subtle->flags & SUB_SUBTLE_ESCAPE));
+      subGrabSet(c->win);
 
       subClientRender(c);
 
@@ -494,12 +494,12 @@ EventFocus(XFocusChangeEvent *ev)
   else if((t = TRAY(subSubtleFind(ev->window, TRAYID)))) ///< Tray
     {
       subtle->windows.focus = t->win;
-      subGrabSet(t->win, !(subtle->flags & SUB_SUBTLE_ESCAPE));
+      subGrabSet(t->win);
     }
   else
     {
       subtle->windows.focus = ev->window;
-      subGrabSet(ev->window, !(subtle->flags & SUB_SUBTLE_ESCAPE));
+      subGrabSet(ev->window);
   }
 
   /* Update screen */
@@ -513,11 +513,14 @@ EventFocus(XFocusChangeEvent *ev)
 static void
 EventGrab(XEvent *ev)
 {
+  int chained = -1; ///< Not found
+  unsigned int code = 0, state = 0;
   SubGrab *g = NULL;
   SubClient *c = NULL;
   SubPanel *p = NULL;
   SubView *v = NULL;
-  unsigned int code = 0, mod = 0;
+  Window win = 0;
+  KeySym sym = None;
 
   /* Distinct types {{{ */
   switch(ev->type)
@@ -543,30 +546,136 @@ EventGrab(XEvent *ev)
             return;
           }
 
-        code = XK_Pointer_Button1 + ev->xbutton.button - 1; ///< Build button number
-        mod  = ev->xbutton.state;
+        code  = XK_Pointer_Button1 + ev->xbutton.button - 1; ///< Build button number
+        state = ev->xbutton.state;
 
-        subSharedLogDebugEvents("Grab: win=%#lx\n", ev->xbutton.window);
+        subSharedLogDebugEvents("Grab: type=mouse, win=%#lx\n",
+          ev->xbutton.window);
         break;
       case KeyPress:
-        code = ev->xkey.keycode;
-        mod  = ev->xkey.state;
+        code  = ev->xkey.keycode;
+        state = ev->xkey.state;
 
-        subSharedLogDebugEvents("Grab: keycode=%d, state=%d\n", 
+        subSharedLogDebugEvents("Grab: type=key, keycode=%d, state=%d\n",
           ev->xkey.keycode, ev->xkey.state);
         break;
     } /* }}} */
 
   /* Find grab */
-  if((g = subGrabFind(code, mod)))
+  g   = subGrabFind(code, state);
+  win = ROOT == ev->xbutton.window ? ev->xbutton.subwindow : ev->xbutton.window;
+  win = 0 == win ? ROOT : win;
+
+  /* Check chain end */
+  if(subtle->keychain)
     {
-      Window win = 0;
-      FLAGS flag = 0;
+      int modifier = False;
 
-      win  = ROOT == ev->xbutton.window ? ev->xbutton.subwindow : ev->xbutton.window;
-      win  = 0 == win ? ROOT : win;
-      flag = g->flags & ~(SUB_TYPE_GRAB|SUB_GRAB_KEY|SUB_GRAB_MOUSE); ///< Clear mask
+      /* Check if key is just a modifier */
+      if(!g)
+        {
+          sym      = XLookupKeysym(&(ev->xkey), 0);
+          modifier = IsModifierKey(sym);
 
+          if(modifier) return;
+        }
+      else chained = subArrayIndex(subtle->keychain->keys, (void *)g);
+
+      /* Break chain on end or invalid link */
+      if((!g && !modifier) || -1 == chained || !g->keys)
+        {
+          free(subtle->panels.keychain.keychain->keys);
+          subtle->panels.keychain.keychain->keys = NULL;
+          subtle->panels.keychain.keychain->len  = 0;
+          subtle->keychain                       = NULL;
+
+          subScreenUpdate();
+          subScreenRender();
+
+          /* Restore binds */
+          subGrabUnset(win);
+          subGrabSet(win);
+
+          if(-1 == chained) return;
+        }
+    }
+
+  /* Handle grab */
+  if(g)
+    {
+      FLAGS flag = g->flags & ~(SUB_TYPE_GRAB|SUB_GRAB_KEY|SUB_GRAB_MOUSE|
+        SUB_GRAB_CHAIN_START|SUB_GRAB_CHAIN_LINK); ///< Clear mask
+
+      subSharedLogDebug("chain_start=%ld, chain_link=%ld, chained=%d, "
+        "subtle->keychain=%p, g->keys=%p, flag=%d\n",
+        g->flags & SUB_GRAB_CHAIN_START, g->flags & SUB_GRAB_CHAIN_LINK,
+        chained, subtle->keychain, g->keys, flag);
+
+      /* Handle key chains {{{ */
+      if(g->keys && (-1 != chained || g->flags & SUB_GRAB_CHAIN_START))
+        {
+          char *key = NULL, buf[12] = { 0 };
+          int len = 0, pos = 0;
+
+          /* Convert event to key */
+          sym = XLookupKeysym(&(ev->xkey), 0);
+          key = XKeysymToString(sym);
+
+          /* Append space before each key */
+          if(0 < subtle->panels.keychain.keychain->len) buf[pos++] = ' ';
+
+          /* Translate states to string {{{ */
+          if(state & Mod1Mask)
+            {
+              snprintf(buf + pos, sizeof(buf) - pos, "%s", "A-");
+              pos += 2;
+            }
+          if(state & ShiftMask)
+            {
+              snprintf(buf + pos, sizeof(buf) - pos, "%s", "S-");
+              pos += 2;
+            }
+          if(state & ControlMask)
+            {
+              snprintf(buf + pos, sizeof(buf) - pos, "%s", "C-");
+              pos += 2;
+            }
+          if(state & Mod4Mask)
+            {
+              snprintf(buf + pos, sizeof(buf) - pos, "%s", "M-");
+              pos += 2;
+            }
+          if(state & Mod3Mask)
+            {
+              snprintf(buf + pos, sizeof(buf) - pos, "%s", "W-");
+              pos += 2;
+            } /* }}} */
+
+          /* Assemble chain string */
+          len += strlen(buf) + strlen(key);
+
+          subtle->panels.keychain.keychain->keys = subSharedMemoryRealloc(
+            subtle->panels.keychain.keychain->keys,
+            (len + subtle->panels.keychain.keychain->len + 1) * sizeof(char));
+
+          sprintf(subtle->panels.keychain.keychain->keys +
+            subtle->panels.keychain.keychain->len, "%s%s", buf, key);
+
+          subtle->panels.keychain.keychain->len += len;
+          subtle->keychain                       = g;
+
+          subScreenUpdate();
+          subScreenRender();
+
+          /* Bind any keys to exit chain on invalid link */
+          subGrabUnset(win);
+          XGrabKey(subtle->dpy, AnyKey, AnyModifier, win, True,
+            GrabModeAsync, GrabModeAsync);
+
+          return;
+        } /* }}} */
+
+      /* Select action */
       switch(flag)
         {
           case SUB_GRAB_SPAWN: /* {{{ */
@@ -753,18 +862,8 @@ EventGrab(XEvent *ev)
                 subtle->flags |= SUB_SUBTLE_RESTART;
               }
             break; /* }}} */
-          case SUB_GRAB_SUBTLE_ESCAPE: /* {{{ */
-            subGrabSet(win, True);
-            break; /* }}} */
           default:
             subSharedLogWarn("Failed finding grab!\n");
-        }
-
-      /* Reset escape grab */
-      if(subtle->flags & SUB_SUBTLE_ESCAPE && SUB_GRAB_SUBTLE_ESCAPE != flag)
-        {
-          subGrabUnset(win);
-          subGrabSet(win, False);
         }
     }
 } /* }}} */
@@ -1221,7 +1320,7 @@ EventMessage(XClientMessageEvent *ev)
         }
     } /* }}} */
   /* Messages for tray window {{{ */
-  else if(ev->window == subtle->windows.tray.win)
+  else if(ev->window == subtle->panels.tray.win)
     {
       SubTray *t = NULL;
       int id = subEwmhFind(ev->message_type);
@@ -1440,7 +1539,7 @@ void
 EventSelection(XSelectionClearEvent *ev)
 {
   /* Handle selection clear events */
-  if(ev->window == subtle->windows.tray.win) ///< Tray selection
+  if(ev->window == subtle->panels.tray.win) ///< Tray selection
     {
       subTrayDeselect();
     }
@@ -1451,7 +1550,7 @@ EventSelection(XSelectionClearEvent *ev)
     }
 
   subSharedLogDebugEvents("SelectionClear: win=%#lx, tray=%#lx, support=%#lx\n",
-    ev->window, subtle->windows.tray.win, subtle->windows.support);
+    ev->window, subtle->panels.tray.win, subtle->windows.support);
 } /* }}} */
 
 /* EventUnmap {{{ */
@@ -1596,7 +1695,7 @@ subEventLoop(void)
 
   /* Set focus */
   subtle->windows.focus = ROOT;
-  subGrabSet(ROOT, !(subtle->flags & SUB_SUBTLE_ESCAPE));
+  subGrabSet(ROOT);
   subSubtleFocus(True);
 
   /* Hook: Start */
