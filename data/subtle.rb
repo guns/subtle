@@ -72,7 +72,8 @@ set :outline, 0
 #
 # [*:views*]     List of views with buttons
 # [*:title*]     Title of the current active window
-# [*:tray*]      Systray icons (Can be used once)
+# [*:tray*]      Systray icons (Can be used only once)
+# [*:keychain*]  Display current chain (Can be used only once)
 # [*:sublets*]   Catch-all for installed sublets
 # [*:sublet*]    Name of a sublet for direct placement
 # [*:spacer*]    Variable spacer (free width / count of spacers)
@@ -89,7 +90,7 @@ screen 1 do
   stipple false
 
   # Content of the top panel
-  top     [ :views, :title, :spacer, :tray, :sublets ]
+  top     [ :views, :title, :keychain, :spacer, :tray, :sublets ]
 
   # Content of the bottom panel
   bottom  [ ]
@@ -267,19 +268,17 @@ gravity :gimp_dock,      [ 100,   0,  10, 100 ]
 #
 # === Chaining
 #
-# Chains are a combination of keys and modifiers to one key and can be used in
-# various ways to trigger an action. In subtle there are two ways to define
-# chains for grabs:
+# Chains are a combination of keys and modifiers to one or a list of keys
+# and can be used in various ways to trigger an action. In subtle, there are
+# two ways to define chains for grabs:
 #
-#   1. Default way*: Add modifiers to a key and use it for a grab
+#   1. *Default*: Add modifiers to a key and use it for a grab
 #
 #      *Example*: grab "W-Return", "urxvt"
 #
-#   2. *Escape way*: Define an escape grab that needs to be pressed before
-#      *any* other grab can be used like in screen/tmux.
+#   2. *Chain*: Define a list of grabs that need to be pressed in order
 #
-#      *Example*: grab "C-y", :SubtleEscape
-#                 grab "Return", "urxvt"
+#      *Example*: grab "C-y Return", "urxvt"
 #
 # ==== Mouse buttons
 #
@@ -312,14 +311,12 @@ gravity :gimp_dock,      [ 100,   0,  10, 100 ]
 # This will create a grab that starts a urxvt when Alt+Enter are pressed:
 #
 #   grab "A-Return", "urxvt"
+#   grab "C-a c",    "urxvt"
 #
 # === Link
 #
 # http://subforge.org/wiki/subtle/Grabs
 #
-
-# Escape grab
-#  grab "C-y", :SubtleEscape
 
 # Jump to view1, view2, ...
 grab "W-S-1", :ViewJump1
@@ -400,7 +397,13 @@ grab "W-KP_3", [ :bottom_right, :bottom_right66, :bottom_right33 ]
 #grab "W-a", [ :left,         :left66,         :left33         ]
 #grab "W-s", [ :center,       :center66,       :center33       ]
 #grab "W-d", [ :right,        :right66,        :right33        ]
+#
+# QUERTZ
 #grab "W-y", [ :bottom_left,  :bottom_left66,  :bottom_left33  ]
+#
+# QWERTY
+#grab "W-z", [ :bottom_left,  :bottom_left66,  :bottom_left33  ]
+#
 #grab "W-x", [ :bottom,       :bottom66,       :bottom33       ]
 #grab "W-c", [ :bottom_right, :bottom_right66, :bottom_right33 ]
 
