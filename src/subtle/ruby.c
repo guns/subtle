@@ -653,8 +653,10 @@ RubyEvalGrab(VALUE keys,
               /* Add type/action to new grabs and mark as chain end */
               if(!duplicate)
                 {
+                  /* Update flags */
                   if(g->flags & SUB_GRAB_CHAIN_LINK)
                     g->flags &= ~SUB_GRAB_CHAIN_LINK;
+                  if(1 < ntok) g->flags |= SUB_GRAB_CHAIN_END;
 
                   g->flags |= type;
                   g->data   = data;

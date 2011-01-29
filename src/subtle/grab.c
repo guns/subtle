@@ -151,7 +151,7 @@ subGrabSet(Window win)
           SubGrab *g = GRAB(subtle->grabs->data[i]);
 
           /* Assign only grabs with action */
-          if(!(g->flags & SUB_GRAB_CHAIN_LINK))
+          if(!(g->flags & (SUB_GRAB_CHAIN_LINK|SUB_GRAB_CHAIN_END)))
             GrabBind(g, win);
         }
     }

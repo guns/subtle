@@ -604,7 +604,7 @@ EventGrab(XEvent *ev)
   if(g)
     {
       FLAGS flag = g->flags & ~(SUB_TYPE_GRAB|SUB_GRAB_KEY|SUB_GRAB_MOUSE|
-        SUB_GRAB_CHAIN_START|SUB_GRAB_CHAIN_LINK); ///< Clear mask
+        SUB_GRAB_CHAIN_START|SUB_GRAB_CHAIN_LINK|SUB_GRAB_CHAIN_END); ///< Clear mask
 
       subSharedLogDebug("chain_start=%ld, chain_link=%ld, chained=%d, "
         "subtle->keychain=%p, g->keys=%p, flag=%d\n",
