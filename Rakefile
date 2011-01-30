@@ -188,7 +188,7 @@ def checksums
   sums  = files.map { |h| Digest::MD5.file(h).to_s }
 
   # Call clean task when sums don't match
-  if((@options["checksums"] - sums).any?)
+  if((@options["checksums"] - sums).any? rescue true)
     Rake::Task["clean"].invoke
     ret = false
   end
