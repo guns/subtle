@@ -14,10 +14,10 @@ require "yaml"
 require "fileutils"
 require "rake/clean"
 require "rake/rdoctask"
+require "digest/md5"
 
-#
 # Settings
-#
+
 # Options / defines {{{
 @options = {
   "destdir"    => "",
@@ -42,7 +42,8 @@ require "rake/rdoctask"
   "cpppath"    => "-I. -I$(builddir) -Isrc -Isrc/shared -Isrc/subtle -idirafter$(hdrdir) -idirafter$(archdir)",
   "ldflags"    => "-L$(libdir) $(rpath) -l$(RUBY_SO_NAME)",
   "extflags"   => "$(LDFLAGS) $(rpath) -l$(RUBY_SO_NAME)",
-  "rpath"      => "-L$(libdir) -Wl,-rpath=$(libdir)"
+  "rpath"      => "-L$(libdir) -Wl,-rpath=$(libdir)",
+  "checksums"  => []
 }
 
 @defines = {
@@ -87,13 +88,17 @@ CLEAN.include(PG_SUBTLE, "#{PG_SUBTLEXT}.so", OBJ_SUBTLE, OBJ_SUBTLEXT)
 CLOBBER.include(@options["builddir"], "config.h", "config.log", "config.yml")
 # }}}
 
-#
 # Funcs
-#
-# Func: silent_sh {{{
+
+ ## silent_sh {{{
+ # Wraper to suppress the output of shell commands
+ # @param  [String]  cmd    Command name
+ # @param  [String]  msg    Command replacement message
+ # @param  [Block]   block  Command block
+ ##
+
 def silent_sh(cmd, msg, &block)
   # Hide raw messages?
-
   if(:default == RakeFileUtils.verbose)
     rake_output_message(msg)
   else
@@ -106,12 +111,18 @@ def silent_sh(cmd, msg, &block)
   end
 end # }}}
 
-# Func: make_header {{{
-# FIXME: Shellwords strips quotes!
+ ## make_header {{{
+ # Create config header
+ # @param [String]  header  Name of the header
+ ##
+
 def make_header(header = "config.h")
   message "creating %s\n", header
+
   sym = header.tr("a-z./\055", "A-Z___")
   hdr = ["#ifndef #{sym}\n#define #{sym}\n"]
+
+  # Create lines from defitions
   for line in $defs
     case line
     when /^-D([^=]+)(?:=(.*))?/
@@ -122,58 +133,108 @@ def make_header(header = "config.h")
   end
   hdr << "#endif\n"
   hdr = hdr.join
-  unless (IO.read(header) == hdr rescue false)
+
+  unless(IO.read(header) == hdr rescue false)
     open(header, "w") do |hfile|
       hfile.write(hdr)
     end
   end
 end # }}}
 
-# Func: compile {{{
+ ## make_config {{{
+ # Create config file
+ # @param [String]  file  Name of config file
+ ##
+
+def make_config(file = "config.yml")
+  message("Creating %s\n" % [ file ])
+
+  yaml = [@options, @defines].to_yaml
+
+  # Dump yaml
+  File.open(file, "w+") do |out|
+    YAML::dump(yaml, out)
+  end
+end # }}}
+
+ ## compile {{{
+ # Wrapper to suppress the output of gcc
+ # @param  [String]  src  Input filename
+ # @param  [String]  out      Output filename
+ # @param  [String]  options  Addiotional compiler options
+ ##
+
 def compile(src, out = nil, options = "")
   out = File.join(@options["builddir"], File.basename(src).ext("o")) unless(!out.nil?)
   opt = ["shared.c", "subtlext.c"].include?(File.basename(src)) ? " -fPIC " : ""
   opt << options
 
+  # Suppress default output
   silent_sh("gcc -o #{out} -c #{@options["cflags"]} #{opt} #{@options["cpppath"]} #{src}",
     "CC #{out}") do |ok, status|
       ok or fail("Compiler failed with status #{status.exitstatus}")
   end
 end # }}}
 
-#
+ ## checksums # {{{
+ # Create and check checksums of header files
+ ##
+
+def checksums
+  ret = true
+
+  # Create checksums
+  files = Dir["src/*/*.h"]
+  sums  = files.map { |h| Digest::MD5.file(h).to_s }
+
+  # Call clean task when sums don't match
+  if((@options["checksums"] - sums).any?)
+    Rake::Task["clean"].invoke
+    ret = false
+  end
+
+  @options["checksums"] = sums
+
+  ret
+end # }}}
+
 # Tasks
-#
-# Task: default {{{
+
+ ## default {{{
+ # Default task for rake
+ ##
+
 desc("Configure and build subtle")
 task(:default => [:config, :build])
 # }}}
 
-# Task: config {{{
+ ## config {{{
+ # Configure build environment
+ ##
+
 desc("Configure subtle")
 task(:config) do
-  #Check if build dir exists
-  if(!File.exists?(@options["builddir"]))
-    Dir.mkdir(@options["builddir"])
+  # Check if build dirs exist
+  [
+    File.join(@options["builddir"], "subtle"),
+    File.join(@options["builddir"], "subtlext")
+  ].each do |dir|
+    FileUtils.mkdir_p(dir) unless(File.exist?(dir))
   end
 
-  # Create more build dirs
-  FileUtils.mkdir_p(
-    [
-      File.join(@options["builddir"], "subtle"),
-      File.join(@options["builddir"], "subtlext")
-    ]
-  )
-
-  # Check if options.yaml exists or config is run per target
+  # Check if options.yaml exists or config is run explicitly
   if((!ARGV.nil? && !ARGV.include?("config")) && File.exist?("config.yml"))
     yaml = YAML::load(File.open("config.yml"))
     @options, @defines = YAML::load(yaml)
+
+    make_config unless(checksums)
   else
     # Check version
     if(1 != RbConfig::CONFIG["MAJOR"].to_i or 9 != RbConfig::CONFIG["MINOR"].to_i)
       fail("Ruby 1.9.0 or higher required")
     end
+
+    checksums
 
     # Update rpath
     @options["rpath"] = RbConfig.expand(@options["rpath"])
@@ -223,9 +284,11 @@ task(:config) do
     )
     [@options, @defines].each do |hash|
       hash.each do |k, v|
-        hash[k] = RbConfig.expand(
-          v, CONFIG.merge(@options.merge(@defines))
-        )
+        if(v.is_a?(String))
+          hash[k] = RbConfig.expand(
+            v, CONFIG.merge(@options.merge(@defines))
+          )
+        end
       end
     end
 
@@ -350,15 +413,9 @@ task(:config) do
       $defs.push(format('-D%s="%s"', k, v))
     end
 
-    # Dump options to file
-    message("creating config.yml\n")
-    yaml = [@options, @defines].to_yaml
-    File.open("config.yml", "w+") do |out|
-      YAML::dump(yaml, out)
-    end
-
-    # Write header
-    make_header("config.h")
+    # Write files
+    make_config
+    make_header
 
     # Dump info
     puts <<EOF
@@ -379,20 +436,32 @@ EOF
   end
 end # }}}
 
-# Task: build {{{
+ ## build {{{
+ # Wrapper task for build
+ ##
+
 desc("Build all")
 task(:build => [:config, PG_SUBTLE, PG_SUBTLEXT])
 # }}}
 
-# Task: subtle/subtlext {{{
+ ## subtle {{{
+ # Wrapper task for subtle
+ ##
+
 desc("Build subtle")
-task(PG_SUBTLE => [:config])
+task(PG_SUBTLE => [:config]) # }}}
+
+ ## subtlext # {{{
+ # Wrapper task for subtlext
+ ##
 
 desc("Build subtlext")
-task(PG_SUBTLEXT => [:config])
-# }}}
+task(PG_SUBTLEXT => [:config]) # }}}
 
-# Task: install {{{
+ ## install {{{
+ # Install subtle and components
+ ##
+
 desc("Install subtle")
 task(:install => [:config, :build]) do
   verbose = (:default != RakeFileUtils.verbose)
@@ -477,7 +546,10 @@ task(:install => [:config, :build]) do
   end
 end # }}}
 
-# Task: uninstall {{{
+ ## uninstall {{{
+ # Uninstall subtle and components
+ ##
+
 desc("Uninstall subtle")
 task(:uninstall => [:config]) do
   verbose = (:default != RakeFileUtils.verbose)
@@ -536,7 +608,10 @@ task(:uninstall => [:config]) do
   end
 end # }}}
 
-# Task: help {{{
+ ## help {{{
+ # Display help
+ ##
+
 desc("Show help")
 task(:help => [:config]) do
   puts <<EOF
@@ -555,7 +630,10 @@ randr=[yes|no]     Whether to build with XRandR support (current: #{@options["xr
 EOF
 end # }}}
 
-# Task: rdoc {{{
+ ## rdoc {{{
+ # Create rdoc documents
+ ##
+
 Rake::RDocTask.new(:rdoc) do |rdoc|
   rdoc.rdoc_files.include(
     "data/subtle.rb",
@@ -578,10 +656,9 @@ Rake::RDocTask.new(:rdoc) do |rdoc|
   rdoc.title    = "Subtle RDoc Documentation"
 end # }}}
 
-#
 # File tasks
-#
-# Task: compile {{{
+
+# subtle # {{{
 SRC_SUBTLE.each do |src|
   out = File.join(@options["builddir"], PG_SUBTLE, File.basename(src).ext("o"))
 
@@ -590,20 +667,19 @@ SRC_SUBTLE.each do |src|
   end
 end
 
+file(PG_SUBTLE => OBJ_SUBTLE) do
+  silent_sh("gcc -o #{PG_SUBTLE} #{OBJ_SUBTLE} #{@options["ldflags"]}",
+    "LD #{PG_SUBTLE}") do |ok, status|
+      ok or fail("Linker failed with status #{status.exitstatus}")
+  end
+end # }}}
+
+# subtlext # {{{
 SRC_SUBTLEXT.each do |src|
   out = File.join(@options["builddir"], PG_SUBTLEXT, File.basename(src).ext("o"))
 
   file(out => src) do
     compile(src, out, "-D#{PG_SUBTLEXT.upcase} -fPIC")
-  end
-end
-# }}}
-
-# Task: link {{{
-file(PG_SUBTLE => OBJ_SUBTLE) do
-  silent_sh("gcc -o #{PG_SUBTLE} #{OBJ_SUBTLE} #{@options["ldflags"]}",
-    "LD #{PG_SUBTLE}") do |ok, status|
-      ok or fail("Linker failed with status #{status.exitstatus}")
   end
 end
 
