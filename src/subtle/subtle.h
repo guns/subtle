@@ -257,6 +257,7 @@
 #define SUB_SUBTLE_EWMH               (1L << 7)                   ///< EWMH set
 #define SUB_SUBTLE_REPLACE            (1L << 8)                   ///< Replace previous wm
 #define SUB_SUBTLE_RESTART            (1L << 9)                   ///< Restart
+#define SUB_SUBTLE_RELOAD             (1L << 10)                  ///< Reload config
 
 /* Tag flags */
 #define SUB_TAG_GRAVITY               (1L << 9)                   ///< Gravity property

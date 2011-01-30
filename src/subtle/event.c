@@ -566,7 +566,7 @@ EventGrab(XEvent *ev)
   win = ROOT == ev->xbutton.window ? ev->xbutton.subwindow : ev->xbutton.window;
   win = 0 == win ? ROOT : win;
 
-  /* Check chain end */
+  /* Check chain end {{{ */
   if(subtle->keychain)
     {
       int modifier = False;
@@ -598,7 +598,7 @@ EventGrab(XEvent *ev)
 
           if(-1 == chained) return;
         }
-    }
+    } /* }}} */
 
   /* Handle grab */
   if(g)
@@ -850,7 +850,7 @@ EventGrab(XEvent *ev)
               subScreenJump(SCREEN(subtle->screens->data[g->data.num]));
             break; /* }}} */
           case SUB_GRAB_SUBTLE_RELOAD: /* {{{ */
-            subRubyReloadConfig();
+            if(subtle) subtle->flags |= SUB_SUBTLE_RELOAD;
             break; /* }}} */
           case SUB_GRAB_SUBTLE_QUIT: /* {{{ */
             if(subtle) subtle->flags &= ~SUB_SUBTLE_RUN;
@@ -1305,10 +1305,10 @@ EventMessage(XClientMessageEvent *ev)
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_RELOAD: /* {{{ */
-            subRubyReloadConfig();
+            if(subtle) subtle->flags |= SUB_SUBTLE_RELOAD;
             break; /* }}} */
           case SUB_EWMH_SUBTLE_RESTART: /* {{{ */
-            if(subtle) 
+            if(subtle)
               {
                 subtle->flags &= ~SUB_SUBTLE_RUN;
                 subtle->flags |= SUB_SUBTLE_RESTART;
@@ -1704,6 +1704,13 @@ subEventLoop(void)
   while(subtle && subtle->flags & SUB_SUBTLE_RUN)
     {
       now = subSubtleTime();
+
+      /* Check if we need to reload */
+      if(subtle->flags & SUB_SUBTLE_RELOAD)
+        {
+          subtle->flags &= ~SUB_SUBTLE_RELOAD;
+          subRubyReloadConfig();
+        }
 
       /* Data ready on any connection */
       if(0 < (nevents = poll(watches, nwatches, timeout * 1000)))

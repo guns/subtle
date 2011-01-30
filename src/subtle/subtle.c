@@ -29,16 +29,9 @@ SubtleSignal(int signum)
 {
   switch(signum)
     {
-      case SIGCHLD: wait(NULL); break;
-      case SIGHUP: subRubyReloadConfig(); break; ///< Reload config
-      case SIGINT:
-        if(subtle)
-          {
-            subtle->flags &= ~SUB_SUBTLE_RUN;
-            XNoOp(subtle->dpy); ///< Pushing some data for poll
-            XSync(subtle->dpy, True);
-          }
-        break;
+      case SIGCHLD: wait(NULL);                                    break;
+      case SIGHUP:  if(subtle) subtle->flags |= SUB_SUBTLE_RELOAD; break;
+      case SIGINT:  if(subtle) subtle->flags &= ~SUB_SUBTLE_RUN;   break;
       case SIGSEGV:
           {
 #ifdef HAVE_EXECINFO_H
