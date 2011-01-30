@@ -1190,6 +1190,33 @@ RubyWrapEval(VALUE data)
   return Qnil;
 } /* }}} */
 
+/* RubyWrapConfig {{{ */
+static VALUE
+RubyWrapConfig(VALUE data)
+{
+  VALUE *rargs = (VALUE *)data, hash = Qnil;
+  SubSublet *s = SUBLET(rargs[1]);
+
+  /* Check if config hash exists */
+  if(T_HASH == rb_type(hash = rb_hash_lookup(config, rargs[0])))
+    {
+      VALUE value = Qnil;
+
+      if(FIXNUM_P(value = rb_hash_lookup(hash, CHAR2SYM("interval"))))
+        s->interval = FIX2INT(value);
+
+      if(T_STRING == rb_type(value = rb_hash_lookup(hash,
+          CHAR2SYM("foreground"))))
+        s->fg = subSharedParseColor(subtle->dpy, RSTRING_PTR(value));
+
+      if(T_STRING == rb_type(value = rb_hash_lookup(hash,
+          CHAR2SYM("background"))))
+        s->bg = subSharedParseColor(subtle->dpy, RSTRING_PTR(value));
+    }
+
+  return Qnil;
+} /* }}} */
+
 /* Object */
 
 /* RubyObjectDispatcher {{{ */
@@ -3234,7 +3261,7 @@ subRubyLoadSublet(const char *file)
   int state = 0;
   char buf[100] = { 0 };
   SubPanel *p = NULL;
-  VALUE str = Qnil, klass = Qnil, hash = Qnil, rargs[2] = { Qnil };
+  VALUE str = Qnil, klass = Qnil, rargs[2] = { Qnil };
 
   /* Check path */
   if(subtle->paths.sublets)
@@ -3283,22 +3310,19 @@ subRubyLoadSublet(const char *file)
       return;
     }
 
-  /* Check for config hash */
-  if(T_HASH == rb_type(hash = rb_hash_lookup(config,
-      CHAR2SYM(p->sublet->name))))
+  /* Carefully apply config */
+  rargs[0] = CHAR2SYM(p->sublet->name);
+  rargs[1] = (VALUE)p->sublet;
+
+  rb_protect(RubyWrapConfig, (VALUE)&rargs, &state);
+  if(state)
     {
-      VALUE value = Qnil;
+      subSharedLogWarn("Failed configuring sublet `%s'\n", file);
+      RubyBacktrace();
 
-      if(FIXNUM_P(rb_type(value = rb_hash_lookup(hash, CHAR2SYM("interval")))))
-        p->sublet->interval = FIX2INT(value);
+      subPanelKill(p);
 
-      if(T_STRING == rb_type(value = rb_hash_lookup(hash,
-          CHAR2SYM("foreground"))))
-        p->sublet->fg = subSharedParseColor(subtle->dpy, RSTRING_PTR(value));
-
-      if(T_STRING == rb_type(value = rb_hash_lookup(hash,
-          CHAR2SYM("background"))))
-        p->sublet->bg = subSharedParseColor(subtle->dpy, RSTRING_PTR(value));
+      return;
     }
 
   /* Try to configure sublet */
