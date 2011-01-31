@@ -1580,6 +1580,8 @@ EventUnmap(XUnmapEvent *ev)
 
           /* Kill client */
           c->flags |= SUB_CLIENT_DEAD;
+          XSelectInput(subtle->dpy, c->win, NoEventMask);
+
           subArrayRemove(subtle->clients, (void *)c);
           subClientKill(c);
           subClientPublish();
