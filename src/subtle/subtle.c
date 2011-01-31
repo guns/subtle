@@ -201,7 +201,8 @@ subSubtleFocus(int focus)
 
           /* Check visibility on current screen */
           if(c->screen == sid && ALIVE(c) &&
-              VISIBLE(subtle->visible_tags, c))
+              VISIBLE(subtle->visible_tags, c) &&
+              c->win != subtle->windows.focus)
             {
               subClientFocus(c);
               subClientWarp(c, True);
@@ -212,7 +213,8 @@ subSubtleFocus(int focus)
     }
 
   /* Fallback to root */
-  XSetInputFocus(subtle->dpy, ROOT, RevertToPointerRoot, CurrentTime);
+  subtle->windows.focus = ROOT;
+  subGrabSet(ROOT);
 
   subScreenUpdate();
   subScreenRender();
