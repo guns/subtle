@@ -614,58 +614,62 @@ EventGrab(XEvent *ev)
       /* Handle key chains {{{ */
       if(g->keys && (-1 != chained || g->flags & SUB_GRAB_CHAIN_START))
         {
-          char *key = NULL, buf[12] = { 0 };
-          int len = 0, pos = 0;
-
-          /* Convert event to key */
-          sym = XLookupKeysym(&(ev->xkey), 0);
-          key = XKeysymToString(sym);
-
-          /* Append space before each key */
-          if(0 < subtle->panels.keychain.keychain->len) buf[pos++] = ' ';
-
-          /* Translate states to string {{{ */
-          if(state & Mod1Mask)
+          /* Update keychain panel if in use */
+          if(subtle->panels.keychain.keychain)
             {
-              snprintf(buf + pos, sizeof(buf) - pos, "%s", "A-");
-              pos += 2;
+              char *key = NULL, buf[12] = { 0 };
+              int len = 0, pos = 0;
+
+              /* Convert event to key */
+              sym = XLookupKeysym(&(ev->xkey), 0);
+              key = XKeysymToString(sym);
+
+              /* Append space before each key */
+              if(0 < subtle->panels.keychain.keychain->len) buf[pos++] = ' ';
+
+              /* Translate states to string {{{ */
+              if(state & ShiftMask)
+                {
+                  snprintf(buf + pos, sizeof(buf) - pos, "%s", "S-");
+                  pos += 2;
+                }
+              if(state & ControlMask)
+                {
+                  snprintf(buf + pos, sizeof(buf) - pos, "%s", "C-");
+                  pos += 2;
+                }
+              if(state & Mod1Mask)
+                {
+                  snprintf(buf + pos, sizeof(buf) - pos, "%s", "A-");
+                  pos += 2;
+                }
+              if(state & Mod3Mask)
+                {
+                  snprintf(buf + pos, sizeof(buf) - pos, "%s", "M-");
+                  pos += 2;
+                }
+              if(state & Mod4Mask)
+                {
+                  snprintf(buf + pos, sizeof(buf) - pos, "%s", "W-");
+                  pos += 2;
+                } /* }}} */
+
+              /* Assemble chain string */
+              len += strlen(buf) + strlen(key);
+
+              subtle->panels.keychain.keychain->keys = subSharedMemoryRealloc(
+                subtle->panels.keychain.keychain->keys, (len +
+                subtle->panels.keychain.keychain->len + 1) * sizeof(char));
+
+              sprintf(subtle->panels.keychain.keychain->keys +
+                subtle->panels.keychain.keychain->len, "%s%s", buf, key);
+
+              subtle->panels.keychain.keychain->len += len;
+              subtle->keychain                       = g;
+
+              subScreenUpdate();
+              subScreenRender();
             }
-          if(state & ShiftMask)
-            {
-              snprintf(buf + pos, sizeof(buf) - pos, "%s", "S-");
-              pos += 2;
-            }
-          if(state & ControlMask)
-            {
-              snprintf(buf + pos, sizeof(buf) - pos, "%s", "C-");
-              pos += 2;
-            }
-          if(state & Mod4Mask)
-            {
-              snprintf(buf + pos, sizeof(buf) - pos, "%s", "M-");
-              pos += 2;
-            }
-          if(state & Mod3Mask)
-            {
-              snprintf(buf + pos, sizeof(buf) - pos, "%s", "W-");
-              pos += 2;
-            } /* }}} */
-
-          /* Assemble chain string */
-          len += strlen(buf) + strlen(key);
-
-          subtle->panels.keychain.keychain->keys = subSharedMemoryRealloc(
-            subtle->panels.keychain.keychain->keys,
-            (len + subtle->panels.keychain.keychain->len + 1) * sizeof(char));
-
-          sprintf(subtle->panels.keychain.keychain->keys +
-            subtle->panels.keychain.keychain->len, "%s%s", buf, key);
-
-          subtle->panels.keychain.keychain->len += len;
-          subtle->keychain                       = g;
-
-          subScreenUpdate();
-          subScreenRender();
 
           /* Bind any keys to exit chain on invalid link */
           subGrabUnset(win);
