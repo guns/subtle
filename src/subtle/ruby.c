@@ -1133,6 +1133,7 @@ RubyWrapCall(VALUE data)
         rb_funcall(rargs[1], rb_intern("__out"), 1, rargs[1]);
         break; /* }}} */
       default: /* {{{ */
+        /* Call instance methods or just a proc */
         if(rb_obj_is_instance_of(rargs[1], rb_cMethod))
           {
             int arity = 0;
@@ -1146,6 +1147,9 @@ RubyWrapCall(VALUE data)
 
             rb_funcall(rargs[1], rb_intern("call"), arity, receiver,
               RubyConvert((VALUE *)rargs[2]));
+
+            subScreenUpdate();
+            subScreenRender();
           }
         else
           {
