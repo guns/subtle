@@ -781,7 +781,7 @@ subSharedTextIconDraw(Display *disp,
 
   /* Copy icon to destination window */
   if(bitmap)
-      XCopyPlane(disp, pixmap, win, gc, 0, 0, width, height, x, y, 1);
+    XCopyPlane(disp, pixmap, win, gc, 0, 0, width, height, x, y, 1);
 #ifdef HAVE_X11_XPM_H
   else XCopyArea(disp, pixmap, win, gc, 0, 0, width, height, x, y);
 #endif /* HAVE_X11_XPM_H */
