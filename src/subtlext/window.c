@@ -977,6 +977,7 @@ subWindowListen(VALUE self)
                     case XK_Escape:    sym = CHAR2SYM("escape");    break;
                     case XK_BackSpace: sym = CHAR2SYM("backspace"); break;
                     case XK_Tab:       sym = CHAR2SYM("tab");       break;
+                    case XK_space:     sym = CHAR2SYM("space");     break;
                     default:           sym = CHAR2SYM(buf);
                   }
 
