@@ -125,32 +125,39 @@ subTagCompare(const void *a,
 
  /** subTagRegex {{{
   * @brief Add regex to tag
-  * @param[in]  t      A #SubTag
-  * @param[in]  type   Matcher type
-  * @param[in]  regex  Regex string
+  * @param[in]  t        A #SubTag
+  * @param[in]  type     Matcher type
+  * @param[in]  pattern  Regex
   **/
 
 void
 subTagRegex(SubTag *t,
   int type,
-  char *regex)
+  char *pattern)
 {
-  TagMatcher *m = NULL;
-
   assert(t);
 
-  /* Create new matcher */
-  m = (TagMatcher *)subSharedMemoryAlloc(1, sizeof(TagMatcher));
-  m->flags = type;
-
   /* Prevent emtpy regex */
-  if(regex && 0 != strncmp("", regex, 1))
-    m->regex  = subSharedRegexNew(regex);
+  if(pattern && 0 != strncmp("", pattern, 1))
+    {
+      regex_t *regex = NULL;
 
-  /* Create on demand to safe memory */
-  if(NULL == t->matcher) t->matcher = subArrayNew();
+      /* Check if regex is valid */
+      if((regex = subSharedRegexNew(pattern)))
+        {
+          TagMatcher *m = NULL;
 
-  subArrayPush(t->matcher, (void *)m);
+          /* Create new matcher */
+          m = (TagMatcher *)subSharedMemoryAlloc(1, sizeof(TagMatcher));
+          m->flags = type;
+          m->regex = regex;
+
+          /* Create on demand to safe memory */
+          if(NULL == t->matcher) t->matcher = subArrayNew();
+
+          subArrayPush(t->matcher, (void *)m);
+        }
+    }
 } /* }}} */
 
  /** subTagMatch {{{
