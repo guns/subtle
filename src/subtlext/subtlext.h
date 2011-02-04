@@ -130,7 +130,7 @@ VALUE subGravityKill(VALUE self);                                 ///< Kill grav
 /* icon.c {{{ */
 VALUE subIconAlloc(VALUE self);                                   ///< Allocate icon
 VALUE subIconInit(int argc, VALUE *argv, VALUE self);             ///< Init icon
-VALUE subIconDraw(VALUE self, VALUE x, VALUE y);                  ///< Draw a pixel
+VALUE subIconDrawPoint(int argc, VALUE *argv, VALUE self);        ///< Draw a point
 VALUE subIconDrawRect(int argc, VALUE *argv, VALUE self);         ///< Draw a rect
 VALUE subIconClear(VALUE self);                                   ///< Clear icon
 VALUE subIconBitmapAsk(VALUE self);                               ///< Whether icon is bitmap

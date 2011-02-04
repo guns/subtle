@@ -1406,7 +1406,7 @@ Init_subtlext(void)
 
   /* Class methods */
   rb_define_method(icon, "initialize", subIconInit,         -1);
-  rb_define_method(icon, "draw",       subIconDraw,          2);
+  rb_define_method(icon, "draw_point", subIconDrawPoint,    -1);
   rb_define_method(icon, "draw_rect",  subIconDrawRect,     -1);
   rb_define_method(icon, "clear",      subIconClear,         0);
   rb_define_method(icon, "bitmap?",    subIconBitmapAsk,     0);
@@ -1418,6 +1418,7 @@ Init_subtlext(void)
 
   /* Aliases */
   rb_define_alias(icon, "to_s", "to_str");
+  rb_define_alias(icon, "draw", "draw_point");
 
   /*
    * Document-class: Subtlext::Screen
