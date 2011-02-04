@@ -110,6 +110,10 @@ module Subtle # {{{
             usage(cmd) if(args.empty?)
 
             Subtle::Sur::Client.new.fetch(args, @version, @use_tags)
+          when "grabs"
+            usage(cmd) if(args.empty?)
+
+            Subtle::Sur::Client.new.grabs(args.first, @use_color)
           when "help" then usage(nil)
           when "install"
             usage(cmd) if(args.empty?)

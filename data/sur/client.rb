@@ -227,7 +227,8 @@ module Subtle # {{{
       #
       # @example
       #   Sur::Client.new.config("sublet")
-      #   => "Color (String)  Default color"
+      #   => "Name     Type    Default value Description"
+      #      "interval integer 60            Update interval in seconds"
 
       def config(name, use_color = true)
         build_local if(@cache_local.nil?)
@@ -282,6 +283,31 @@ module Subtle # {{{
 
             temp.close
           end
+        end
+      end # }}}
+
+      ## Sur::Client::grabs {{{
+      # Show grabs for installed sublets if any
+      #
+      # @param [String]  name       Name of the Sublet
+      # @param [Bool]    use_color  Use colors
+      #
+      # @raise [String] Config error
+      # @since 0.2
+      #
+      # @example
+      #   Sur::Client.new.grabs("sublet")
+      #   => "Name        Description"
+      #      "SubletTest  Test grabs"
+
+      def grabs(name, use_color = true)
+        build_local if(@cache_local.nil?)
+
+        # Check if sublet is installed
+        if((specs = search(name, @cache_local)) && !specs.empty?)
+          spec = specs.first
+
+          show_grabs(spec, use_color)
         end
       end # }}}
 
@@ -964,6 +990,39 @@ module Subtle # {{{
                 c[:type][0..10].ljust(10),
                 c[:def_value] || "",
                 c[:description]
+              ]
+            end
+          end
+
+          puts
+        end
+      end # }}}
+
+      def show_grabs(spec, use_color) # {{{
+        unless(spec.nil? or spec.grabs.nil? or spec.grabs.empty?)
+          puts
+
+          # Header
+          if(use_color)
+            puts "%-24s  %s" % [
+              colorize(1, "Name", true),
+              colorize(1, "Description", true)
+            ]
+          else
+            puts "%-15s  %s" % [
+              "Name", "Description"
+            ]
+          end
+
+          # Dump all settings
+          spec.grabs.each do |k, v|
+            if(use_color)
+              puts "%-25s  %s" % [
+                colorize(2, k[0..24]).ljust(25), v
+              ]
+            else
+              puts "%-14s  %s" % [
+                k[0..15].ljust(15), v
               ]
             end
           end
