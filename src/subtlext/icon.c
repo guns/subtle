@@ -93,8 +93,8 @@ subIconAlloc(VALUE self)
 
 /* subIconInit {{{ */
 /*
- * call-seq: initialize(path)          -> Subtle::Icon
- *           initialize(width, height) -> Subtle::Icon
+ * call-seq: initialize(path)                  -> Subtle::Icon
+ *           initialize(width, height, bitmap) -> Subtle::Icon
  *
  * Initialize Icon object
  *
@@ -115,51 +115,52 @@ subIconInit(int argc,
   Data_Get_Struct(self, SubtlextIcon, i);
   if(i)
     {
-      VALUE arg1 = Qnil, arg2 = Qnil;
+      VALUE data[3] = { Qnil };
 
-      rb_scan_args(argc, argv, "02", &arg1, &arg2);
+      rb_scan_args(argc, argv, "12", &data[0], &data[1], &data[2]);
 
       subSubtlextConnect(NULL); ///< Implicit open connection
 
       /* Find or create icon */
-      if(T_STRING == rb_type(arg1)) ///< Icon path
+      if(T_STRING == rb_type(data[0])) ///< Icon path
         {
           int hotx = 0, hoty = 0;
-          char buf[100] = { 0 }, *file = RSTRING_PTR(arg1);
+          char buf[100] = { 0 }, *file = RSTRING_PTR(data[0]);
 
           /* Find file */
           if(-1 != access(file, R_OK))
             snprintf(buf, sizeof(buf), "%s", file);
           else
             {
-              char fallback[256] = { 0 }, *data = getenv("XDG_DATA_HOME");
+              char fallback[256] = { 0 }, *home = getenv("XDG_DATA_HOME");
 
               /* Combine paths */
               snprintf(fallback, sizeof(fallback), "%s/.local/share",
                 getenv("HOME"));
               snprintf(buf, sizeof(buf), "%s/subtle/icons/%s",
-                data ? data : fallback, file);
+                home ? home : fallback, file);
 
               if(-1 == access(buf, R_OK))
                 rb_raise(rb_eStandardError, "Icon not found `%s'", file);
             }
 
           /* Reading bitmap or pixmap icon file */
-          if(BitmapSuccess != XReadBitmapFile(display, DefaultRootWindow(display),
-              buf, &i->width, &i->height, &i->pixmap, &hotx, &hoty))
+          if(BitmapSuccess != XReadBitmapFile(display,
+              DefaultRootWindow(display), buf, &i->width, &i->height,
+              &i->pixmap, &hotx, &hoty))
             {
 #ifdef HAVE_X11_XPM_H
               XpmAttributes attrs;
 
-              /* We could define a color to use on trasparent areas, but this can
-               * be done on init only, so we just ignore it and expect pixmaps to
-               * have no transparent areas at all */
+              /* We could define a color to use on transparent areas, but
+               * this can be done on init only, so we just ignore it and
+               * expect pixmaps to have no transparent areas at all */
 
               /* Init attributes */
-              attrs.colormap     = DefaultColormap(display, DefaultScreen(display));
-              attrs.depth        = DefaultDepth(display, DefaultScreen(display));
-              attrs.visual       = DefaultVisual(display, DefaultScreen(display));
-              attrs.valuemask    = XpmColormap|XpmDepth|XpmVisual;
+              attrs.colormap  = DefaultColormap(display, DefaultScreen(display));
+              attrs.depth     = DefaultDepth(display, DefaultScreen(display));
+              attrs.visual    = DefaultVisual(display, DefaultScreen(display));
+              attrs.valuemask = XpmColormap|XpmDepth|XpmVisual;
 
               if(XpmSuccess == XpmReadFileToPixmap(display,
                   DefaultRootWindow(display), buf, &i->pixmap, NULL, &attrs))
@@ -171,21 +172,35 @@ subIconInit(int argc,
               else
 #endif /* HAVE_X11_XPM_H */
                 {
-                  rb_raise(rb_eStandardError, "Icon not found `%s'", buf);
+                  rb_raise(rb_eStandardError, "Malormed icon");
 
                   return Qnil;
                }
             }
           else i->flags |= SUB_TEXT_BITMAP;
         }
-      else if(FIXNUM_P(arg1) && FIXNUM_P(arg2)) ///< Icon dimensions
+      else if(FIXNUM_P(data[0]) && FIXNUM_P(data[1])) ///< Icon dimensions
         {
           /* Create empty pixmap */
-          i->flags  |= SUB_TEXT_BITMAP;
-          i->width   = FIX2INT(arg1);
-          i->height  = FIX2INT(arg2);
+          i->width   = FIX2INT(data[0]);
+          i->height  = FIX2INT(data[1]);
           i->pixmap  = XCreatePixmap(display, DefaultRootWindow(display),
-            i->width, i->height, 1);
+              i->width, i->height, 1);
+
+          /* Create pixmap or bitmap */
+          i->flags |= Qtrue == data[2] ? SUB_TEXT_PIXMAP : SUB_TEXT_BITMAP;
+        }
+      else if(FIXNUM_P(data[0]))
+        {
+          XRectangle geom = { 0 };
+
+          i->flags  |= SUB_TEXT_BITMAP;
+          i->pixmap  = NUM2LONG(data[0]);
+
+          subSharedPropertyGeometry(display, i->pixmap, &geom);
+
+          i->width  = geom.width;
+          i->height = geom.height;
         }
       else rb_raise(rb_eArgError, "Unexpected value-types");
 
@@ -203,23 +218,30 @@ subIconInit(int argc,
   return Qnil;
 } /* }}} */
 
-/* subIconDraw {{{ */
+/* subIconDrawPoint {{{ */
 /*
- * call-seq: draw(x, y) -> nil
+ * call-seq: draw_point(x, y, fg, bg) -> nil
  *
  * Draw a pixel on the icon
  *
- *  icon.draw(1, 1)
+ *  icon.draw_point(1, 1)
+ *  => nil
+ *
+ *  icon.draw_point(1, 1, "#ff0000", "#000000")
  *  => nil
  */
 
 VALUE
-subIconDraw(VALUE self,
-  VALUE x,
-  VALUE y)
+subIconDrawPoint(int argc,
+  VALUE *argv,
+  VALUE self)
 {
-  /* Check object type */
-  if(FIXNUM_P(x) && FIXNUM_P(y))
+  VALUE data[4] = { Qnil };
+
+  rb_scan_args(argc, argv, "22", &data[0], &data[1], &data[2], &data[3]);
+
+  /* Check object types */
+  if(FIXNUM_P(data[0]) && FIXNUM_P(data[1]))
     {
       SubtlextIcon *i = NULL;
 
@@ -228,15 +250,24 @@ subIconDraw(VALUE self,
         {
           XGCValues gvals;
 
-          if(0 == i->gc) ///< Create on demand
+          /* Create on demand */
+          if(0 == i->gc)
             i->gc = XCreateGC(display, i->pixmap, 0, NULL);
 
           /* Update GC */
           gvals.foreground = 1;
           gvals.background = 0;
+
+          if(i->flags & SUB_TEXT_BITMAP)
+            {
+              if(!NIL_P(data[2])) gvals.foreground = subColorPixel(data[2]);
+              if(!NIL_P(data[3])) gvals.background = subColorPixel(data[3]);
+            }
+
           XChangeGC(display, i->gc, GCForeground|GCBackground, &gvals);
 
-          XDrawPoint(display, i->pixmap, i->gc, FIX2INT(x), FIX2INT(y));
+          XDrawPoint(display, i->pixmap, i->gc,
+            FIX2INT(data[0]), FIX2INT(data[1]));
 
           XFlush(display);
         }
@@ -248,11 +279,14 @@ subIconDraw(VALUE self,
 
 /* subIconDrawRect {{{ */
 /*
- * call-seq: draw_rect(x, y, width, height, fill) -> nil
+ * call-seq: draw_rect(x, y, width, height, fill, fg, bg) -> nil
  *
  * Draw a rect on the icon
  *
  *  icon.draw_rect(1, 1, 10, 10, false)
+ *  => nil
+ *
+ *  icon.draw_rect(1, 1, 10, 10, false, "#ff0000", "#000000")
  *  => nil
  */
 
@@ -261,10 +295,12 @@ subIconDrawRect(int argc,
   VALUE *argv,
   VALUE self)
 {
-  VALUE data[5] = { Qnil };
+  VALUE data[7] = { Qnil };
 
-  rb_scan_args(argc, argv, "05", &data[0], &data[1], &data[2], &data[3], &data[4]);
+  rb_scan_args(argc, argv, "43", &data[0], &data[1], &data[2], &data[3],
+    &data[4], &data[5], &data[6]);
 
+  /* Check object types */
   if(FIXNUM_P(data[0]) && FIXNUM_P(data[1]) &&
       FIXNUM_P(data[2]) && FIXNUM_P(data[3]))
     {
@@ -275,12 +311,20 @@ subIconDrawRect(int argc,
         {
           XGCValues gvals;
 
-          if(0 == i->gc) ///< Create on demand
+          /* Create on demand */
+          if(0 == i->gc)
             i->gc = XCreateGC(display, i->pixmap, 0, NULL);
 
           /* Update GC */
           gvals.foreground = 1;
           gvals.background = 0;
+
+          if(i->flags & SUB_TEXT_BITMAP)
+            {
+              if(!NIL_P(data[5])) gvals.foreground = subColorPixel(data[5]);
+              if(!NIL_P(data[6])) gvals.background = subColorPixel(data[6]);
+            }
+
           XChangeGC(display, i->gc, GCForeground|GCBackground, &gvals);
 
           /* Draw rect */
