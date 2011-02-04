@@ -571,6 +571,12 @@ RubyEvalGrab(VALUE keys,
                         data = DATA((unsigned long)(atol(name) - 1));
                       }
                   }
+                else
+                  {
+                    /* Sublet grabs? */
+                    type = SUB_RUBY_DATA;
+                    data = DATA((unsigned long)value);
+                  }
               }
           }
         break; /* }}} */
@@ -599,73 +605,69 @@ RubyEvalGrab(VALUE keys,
   /* Check value type */
   if(T_STRING == rb_type(keys))
     {
-      if(-1 != type)
+      /* Skip on checking only */
+      if(!(subtle->flags & SUB_SUBTLE_CHECK))
         {
-          /* Skip on checking only */
-          if(!(subtle->flags & SUB_SUBTLE_CHECK))
+          int duplicate = False, ntok = 0;
+          char *tokens = NULL, *tok = NULL, *save = NULL;
+          SubGrab *prev = NULL, *g = NULL;
+
+          /* Parse keys */
+          tokens = strdup(RSTRING_PTR(keys));
+          tok    = strtok_r(tokens, " ", &save);
+
+          while(tok)
             {
-              int duplicate = False, ntok = 0;
-              char *tokens = NULL, *tok = NULL, *save = NULL;
-              SubGrab *prev = NULL, *g = NULL;
-
-              /* Parse keys */
-              tokens = strdup(RSTRING_PTR(keys));
-              tok    = strtok_r(tokens, " ", &save);
-
-              while(tok)
+              /* Find or create grab */
+              if((g = subGrabNew(tok, &duplicate)))
                 {
-                  /* Find or create grab */
-                  if((g = subGrabNew(tok, &duplicate)))
+                  if(!duplicate)
                     {
-                      if(!duplicate)
-                        {
-                          subArrayPush(subtle->grabs, (void *)g);
-                          subArraySort(subtle->grabs, subGrabCompare);
-                        }
-
-                      /* Assemble chain */
-                      if(0 < ntok)
-                        {
-                          /* Init chain array */
-                          if(NULL == prev->keys)
-                            {
-                              /* Mark first grab as chain start */
-                              if(1 == ntok) prev->flags |= SUB_GRAB_CHAIN_START;
-
-                              prev->keys = subArrayNew();
-                            }
-
-                          /* Mark grabs w/o action as chain link */
-                          if(0 == (g->flags & ~(SUB_TYPE_GRAB|
-                              SUB_GRAB_KEY|SUB_GRAB_MOUSE|SUB_GRAB_CHAIN_LINK)))
-                            g->flags |= SUB_GRAB_CHAIN_LINK;
-
-                          subArrayPush(prev->keys, (void *)g);
-                        }
-
-                      prev = g;
+                      subArrayPush(subtle->grabs, (void *)g);
+                      subArraySort(subtle->grabs, subGrabCompare);
                     }
 
-                  tok = strtok_r(NULL, " ", &save);
-                  ntok++;
+                  /* Assemble chain */
+                  if(0 < ntok)
+                    {
+                      /* Init chain array */
+                      if(NULL == prev->keys)
+                        {
+                          /* Mark first grab as chain start */
+                          if(1 == ntok) prev->flags |= SUB_GRAB_CHAIN_START;
+
+                          prev->keys = subArrayNew();
+                        }
+
+                      /* Mark grabs w/o action as chain link */
+                      if(0 == (g->flags & ~(SUB_TYPE_GRAB|
+                          SUB_GRAB_KEY|SUB_GRAB_MOUSE|SUB_GRAB_CHAIN_LINK)))
+                        g->flags |= SUB_GRAB_CHAIN_LINK;
+
+                      subArrayPush(prev->keys, (void *)g);
+                    }
+
+                  prev = g;
                 }
 
-              /* Add type/action to new grabs and mark as chain end */
-              if(!duplicate)
-                {
-                  /* Update flags */
-                  if(g->flags & SUB_GRAB_CHAIN_LINK)
-                    g->flags &= ~SUB_GRAB_CHAIN_LINK;
-                  if(1 < ntok) g->flags |= SUB_GRAB_CHAIN_END;
+              tok = strtok_r(NULL, " ", &save);
+              ntok++;
+            }
 
-                  g->flags |= type;
-                  g->data   = data;
+          /* Add type/action to new grabs and mark as chain end */
+          if(!duplicate)
+            {
+              /* Update flags */
+              if(g->flags & SUB_GRAB_CHAIN_LINK)
+                g->flags &= ~SUB_GRAB_CHAIN_LINK;
+              if(1 < ntok) g->flags |= SUB_GRAB_CHAIN_END;
 
-                  free(tokens);
-                }
+              g->flags |= type;
+              g->data   = data;
+
+              free(tokens);
             }
         }
-      else subSharedLogWarn("Unknown grab action `:%s'\n", SYM2CHAR(value));
     }
   else rb_raise(rb_eArgError, "Unknown value type for grab");
 } /* }}} */
@@ -2279,8 +2281,6 @@ RubySubletOn(VALUE self,
     {
       SubPanel *p = NULL;
 
-      if(subtle->flags & SUB_SUBTLE_CHECK) return Qnil; ///< Skip on check
-
       Data_Get_Struct(self, SubPanel, p);
       if(p)
         {
@@ -2359,29 +2359,39 @@ RubySubletOn(VALUE self,
 
 static VALUE
 RubySubletGrab(VALUE self,
-  VALUE chain)
+  VALUE name)
 {
-  rb_need_block();
-
   /* Check value type */
-  if(T_STRING == rb_type(chain))
+  if(T_SYMBOL == rb_type(name) && rb_block_given_p())
     {
       SubPanel *p = NULL;
-
-      if(subtle->flags & SUB_SUBTLE_CHECK) return Qnil; ///< Skip on check
 
       Data_Get_Struct(self, SubPanel, p);
       if(p)
         {
+          int i;
           char buf[64] = { 0 };
+          VALUE meth = Qnil;
 
-          snprintf(buf, sizeof(buf), "__grab_%s", RSTRING_PTR(chain));
+          /* Add proc as instance method */
+          snprintf(buf, sizeof(buf), "__grab_%s", SYM2CHAR(name));
 
-          /* Define method */
           rb_funcall(rb_singleton_class(p->sublet->instance),
             rb_intern("define_method"), 2, CHAR2SYM(buf), rb_block_proc());
 
-          RubyEvalGrab(chain, rb_obj_method(p->sublet->instance, CHAR2SYM(buf)));
+          meth = rb_obj_method(p->sublet->instance, CHAR2SYM(buf));
+
+          /* Find grabs with this symbol */
+          for(i = 0; i < subtle->grabs->ndata; i++)
+            {
+              SubGrab *g = GRAB(subtle->grabs->data[i]);
+
+              if(g->flags & SUB_RUBY_DATA && g->data.num == name)
+                {
+                  g->flags    ^= (SUB_RUBY_DATA|SUB_GRAB_PROC);
+                  g->data.num  = (unsigned long)meth;
+                }
+            }
         }
     }
   else rb_raise(rb_eArgError, "Unknown value type for grab");
