@@ -10,7 +10,6 @@
 #
 
 require "archive/tar/minitar"
-
 require "rubygems"
 
 module Subtle # {{{
@@ -32,8 +31,11 @@ module Subtle # {{{
       # Sublet notes
       attr_accessor :notes
 
-      # Sublet config notes
+      # Sublet config values
       attr_accessor :config
+
+      # Sublet grabs
+      attr_accessor :grabs
 
       # Package version
       attr_accessor :version
