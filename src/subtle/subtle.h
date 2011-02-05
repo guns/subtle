@@ -93,7 +93,7 @@
 /* Masks {{{ */
 #define ROOTMASK \
   (StructureNotifyMask|SubstructureNotifyMask|\
-  SubstructureRedirectMask|PropertyChangeMask|FocusChangeMask)
+  SubstructureRedirectMask|PropertyChangeMask)
 #define CLIENTMASK \
   (PropertyChangeMask|EnterWindowMask|FocusChangeMask)
 #define TRAYMASK (StructureNotifyMask|CLIENTMASK)
