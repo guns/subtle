@@ -232,7 +232,7 @@ subGeometryToString(VALUE self)
   GET_ATTR(self, "@width",  width);
   GET_ATTR(self, "@height", height);
 
-  snprintf(buf, sizeof(buf), "%dx%d+%d+%d",
+  snprintf(buf, sizeof(buf), "%ldx%ld+%ld+%ld",
     FIX2INT(x), FIX2INT(y), FIX2INT(width), FIX2INT(height));
 
   return rb_str_new2(buf);
