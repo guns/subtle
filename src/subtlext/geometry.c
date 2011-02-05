@@ -232,8 +232,8 @@ subGeometryToString(VALUE self)
   GET_ATTR(self, "@width",  width);
   GET_ATTR(self, "@height", height);
 
-  snprintf(buf, sizeof(buf), "%ldx%ld+%ld+%ld",
-    FIX2INT(x), FIX2INT(y), FIX2INT(width), FIX2INT(height));
+  snprintf(buf, sizeof(buf), "%dx%d+%d+%d", (int)FIX2INT(x),
+    (int)FIX2INT(y), (int)FIX2INT(width), (int)FIX2INT(height));
 
   return rb_str_new2(buf);
 } /* }}} */

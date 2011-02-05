@@ -142,8 +142,8 @@ subColorToHex(VALUE self)
   GET_ATTR(self, "@green", green);
   GET_ATTR(self, "@blue",  blue);
 
-  snprintf(buf, sizeof(buf), "#%02lx%02lx%02lx",
-    FIX2INT(red) & 0xff, FIX2INT(green) & 0xff, FIX2INT(blue) & 0xff);
+  snprintf(buf, sizeof(buf), "#%02x%02x%02x", (int)(FIX2INT(red) & 0xff),
+    (int)(FIX2INT(green) & 0xff), (int)(FIX2INT(blue) & 0xff));
 
   return rb_str_new2(buf);
 } /* }}} */
