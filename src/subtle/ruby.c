@@ -664,9 +664,9 @@ RubyEvalGrab(VALUE keys,
 
               g->flags |= type;
               g->data   = data;
-
-              free(tokens);
             }
+
+          free(tokens);
         }
     }
   else rb_raise(rb_eArgError, "Unknown value type for grab");
