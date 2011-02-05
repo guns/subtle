@@ -480,7 +480,7 @@ typedef struct subgrab_t /* {{{ */
 {
   FLAGS              flags;                                    ///< Grab flags
 
-  unsigned int       code, mod;                                ///< Grab code, modifier
+  unsigned int       code, state;                              ///< Grab code, stater
   union subdata_t    data;                                     ///< Grab data
 
   struct subarray_t  *keys;                                    ///< Grab chain keys

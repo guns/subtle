@@ -20,22 +20,21 @@ GrabBind(SubGrab *g,
   Window win)
 {
   int i;
-  const unsigned int modifiers[] = { 0, LockMask, numlockmask,
+  const unsigned int states[] = { 0, LockMask, numlockmask,
     numlockmask|LockMask };
 
-  /* FIXME: Ugly key/modifier grabbing */
-  for(i = 0; i < LENGTH(modifiers); i++)
+  /* FIXME: Ugly key/state grabbing */
+  for(i = 0; i < LENGTH(states); i++)
     {
       if(g->flags & SUB_GRAB_KEY)
         {
-          XGrabKey(subtle->dpy, g->code, g->mod|modifiers[i],
+          XGrabKey(subtle->dpy, g->code, g->state|states[i],
             win, True, GrabModeAsync, GrabModeAsync);
         }
       else if(g->flags & SUB_GRAB_MOUSE)
         {
           XGrabButton(subtle->dpy, g->code - XK_Pointer_Button1,
-            g->mod|modifiers[i], win, False,
-            ButtonPressMask|ButtonReleaseMask,
+            g->state|states[i], win, False, ButtonPressMask|ButtonReleaseMask,
             GrabModeAsync, GrabModeSync, None, None);
         }
     }
@@ -80,7 +79,7 @@ subGrabNew(const char *keys,
   int *duplicate)
 {
   int mouse = False;
-  unsigned int code = 0, mod = 0;
+  unsigned int code = 0, state = 0;
   KeySym sym = NoSymbol;
   SubGrab *g = NULL;
 
@@ -88,22 +87,22 @@ subGrabNew(const char *keys,
 
   /* Parse keys */
   if(NoSymbol != (sym = subSharedParseKey(subtle->dpy,
-      keys, &code, &mod, &mouse)))
+      keys, &code, &state, &mouse)))
     {
       /* Find or create new grab */
-      if(!(g = subGrabFind(code, mod)))
+      if(!(g = subGrabFind(code, state)))
         {
           g = GRAB(subSharedMemoryAlloc(1, sizeof(SubGrab)));
           g->code  = code;
-          g->mod   = mod;
+          g->state = state;
           g->flags = SUB_TYPE_GRAB|(mouse ? SUB_GRAB_MOUSE : SUB_GRAB_KEY);
 
           if(duplicate) *duplicate = False;
         }
       else if(duplicate) *duplicate = True;
 
-      subSharedLogDebugSubtle("new=grab, type=%s, keys=%s, code=%03d, mod=%02d\n",
-        g->flags & SUB_GRAB_KEY ? "key" : "mouse", keys, g->code, g->mod);
+      subSharedLogDebugSubtle("new=grab, type=%s, keys=%s, code=%03d, state=%02d\n",
+        g->flags & SUB_GRAB_KEY ? "key" : "mouse", keys, g->code, g->state);
     }
   else subSharedLogWarn("Failed assigning grab `%s'\n", keys);
 
@@ -112,20 +111,20 @@ subGrabNew(const char *keys,
 
  /** subGrabFind {{{
   * @brief Find grab
-  * @param[in]  code  A code
-  * @param[in]  mod   A modmask
+  * @param[in]  code   A key code
+  * @param[in]  state  A key state
   * @return Returns a #SubGrab or \p NULL
   **/
 
 SubGrab *
 subGrabFind(int code,
-  unsigned int mod)
+  unsigned int state)
 {
   SubGrab **ret = NULL, *gptr = NULL, g;
 
   /* Find grab via binary search */
   g.code   = code;
-  g.mod    = (mod & ~(LockMask|numlockmask));
+  g.state  = (state & ~(LockMask|numlockmask));
   gptr     = &g;
   ret      = (SubGrab **)bsearch(&gptr, subtle->grabs->data, subtle->grabs->ndata,
     sizeof(SubGrab *), subGrabCompare);
@@ -192,8 +191,8 @@ subGrabCompare(const void *a,
   if(g1->code < g2->code) ret = -1;
   else if(g1->code == g2->code)
   {
-    if(g1->mod < g2->mod) ret = -1;
-    else if(g1->mod == g2->mod) ret = 0;
+    if(g1->state < g2->state) ret = -1;
+    else if(g1->state == g2->state) ret = 0;
     else ret = 1;
   }
   else if(g1->code > g2->code) ret = 1;

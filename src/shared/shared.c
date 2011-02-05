@@ -1027,7 +1027,7 @@ subSharedParseKey(Display *disp,
       /* Get key sym and modifier */
       if(NoSymbol == ((sym = XStringToKeysym(tok))))
         {
-          static const char *buttons[] = { "B1", "B2", "B3", "B4", "B5" };
+          const char *buttons[] = { "B1", "B2", "B3", "B4", "B5" };
 
           /* Check mouse buttons */
           for(i = 0; i < LENGTH(buttons); i++)
