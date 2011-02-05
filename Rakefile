@@ -34,6 +34,7 @@ require "digest/md5"
   "xft"        => "yes",
   "xinerama"   => "yes",
   "xrandr"     => "yes",
+  "xtest"      => "yes",
   "builddir"   => "build",
   "hdrdir"     => "",
   "archdir"    => "",
@@ -398,6 +399,13 @@ task(:config) do
       end
     end
 
+    # Xtest
+    if("yes" == @options["xtest"])
+      if(have_header("X11/extensions/XTest.h"))
+        @options["extflags"] << " -lXtst"
+      end
+    end
+
     # Check functions
     FUNCS.each do |f|
       if(!have_func(f))
@@ -430,6 +438,7 @@ Xpm support.........: #{@options["xpm"]}
 Xft support.........: #{@options["xft"]}
 Xinerama support....: #{@options["xinerama"]}
 XRandR support......: #{@options["xrandr"]}
+XTest support.......: #{@options["xtest"]}
 Debugging messages..: #{@options["debug"]}
 
 EOF
