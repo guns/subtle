@@ -480,7 +480,7 @@ subClientUpdate(VALUE self)
       char buf[20] = { 0 };
 
       if(FIXNUM_P(rwin)) snprintf(buf, sizeof(buf), "%ld", NUM2LONG(rwin));
-      else snprintf(buf, sizeof(buf), "%d", FIX2INT(rid));
+      else snprintf(buf, sizeof(buf), "%ld", FIX2INT(rid));
 
       id = subSubtlextFindWindow("_NET_CLIENT_LIST", buf,
         NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS));
