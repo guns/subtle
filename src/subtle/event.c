@@ -440,71 +440,67 @@ EventExpose(XExposeEvent *ev)
 static void
 EventFocus(XFocusChangeEvent *ev)
 {
-  SubClient *c = NULL, *focus = NULL;
+  SubClient *c = NULL;
   SubTray *t = NULL;
 
-  /* Check if are interested in this event */
+  /* Check if we can skip this event */
   if(ev->window == subtle->windows.focus) return;
 
-  /* Check if focus client is alive/visible before unsetting focus */
-  if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
+  /* Check if focus client is known, alive and visible */
+  if(((c = CLIENT(subSubtleFind(ev->window, CLIENTID))) &&
+      ALIVE(c) && VISIBLE(subtle->visible_tags, c)) ||
+      (t = TRAY(subSubtleFind(ev->window, TRAYID))))
     {
-      if(c->flags & SUB_CLIENT_DEAD || !VISIBLE(subtle->visible_tags, c))
-        return;
-    }
+      SubClient *focus = NULL;
 
-  /* Remove current focus */
-  subGrabUnset(subtle->windows.focus);
-  if((focus = CLIENT(subSubtleFind(subtle->windows.focus, CLIENTID))))
-    {
-      subtle->windows.focus = 0;
-      subClientRender(focus);
-    }
-
-  /* Handle focus event */
-  if(c) ///< Clients
-    {
-      SubScreen *s = NULL;
-      SubView *v = NULL;
-
-      subtle->windows.focus = c->win;
-      subGrabSet(c->win);
-
-      subClientRender(c);
-
-      /* EWMH: Active window */
-      subEwmhSetWindows(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW,
-        &subtle->windows.focus, 1);
-
-      /* EWMH: Current desktop */
-      if((s = SCREEN(subArrayGet(subtle->screens, c->screen))))
+      /* Unset current focus */
+      subGrabUnset(subtle->windows.focus);
+      if((focus = CLIENT(subSubtleFind(subtle->windows.focus, CLIENTID))))
         {
-          subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP,
-            (long *)&s->vid, 1);
+          subtle->windows.focus = 0;
+          subClientRender(focus);
         }
 
-      /* Set view focus */
-      if((v = VIEW(subArrayGet(subtle->views, s->vid))))
-        v->focus = c->win;;
+      /* Handle focus event */
+      if(c) ///< Clients
+        {
+          SubScreen *s = NULL;
+          SubView *v = NULL;
 
-      /* Hook: Focus */
-      subHookCall((SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_FOCUS),
-        (void *)c);
-    }
-  else if((t = TRAY(subSubtleFind(ev->window, TRAYID)))) ///< Tray
-    {
-      subtle->windows.focus = t->win;
-      subGrabSet(t->win);
-    }
-  else
-    {
-      subtle->windows.focus = ev->window;
-      subGrabSet(ev->window);
-  }
+          subtle->windows.focus = c->win;
+          subGrabSet(c->win);
 
-  /* Update screen */
-  subScreenUpdate();
-  subScreenRender();
+          subClientRender(c);
+
+          /* EWMH: Active window */
+          subEwmhSetWindows(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW,
+            &subtle->windows.focus, 1);
+
+          /* EWMH: Current desktop */
+          if((s = SCREEN(subArrayGet(subtle->screens, c->screen))))
+            {
+              subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP,
+                (long *)&s->vid, 1);
+            }
+
+          /* Set view focus */
+          if((v = VIEW(subArrayGet(subtle->views, s->vid))))
+            v->focus = c->win;;
+
+          /* Hook: Focus */
+          subHookCall((SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_FOCUS),
+            (void *)c);
+        }
+      else if(t) ///< Trays
+        {
+          subtle->windows.focus = t->win;
+          subGrabSet(t->win);
+        }
+
+      /* Update screen */
+      subScreenUpdate();
+      subScreenRender();
+    }
 
   subSharedLogDebugEvents("Focus: %#lx\n", ev->window);
 } /* }}} */
@@ -723,7 +719,8 @@ EventGrab(XEvent *ev)
             break; /* }}} */
           case SUB_GRAB_WINDOW_STACK: /* {{{ */
             if((c = CLIENT(subSubtleFind(win, CLIENTID))) &&
-                !(c->flags & SUB_CLIENT_TYPE_DESKTOP) && VISIBLE(subtle->visible_tags, c))
+                !(c->flags & SUB_CLIENT_TYPE_DESKTOP) &&
+                VISIBLE(subtle->visible_tags, c))
               EventRestack(c, g->data.num);
             break; /* }}} */
           case SUB_GRAB_WINDOW_SELECT: /* {{{ */
@@ -867,7 +864,7 @@ EventGrab(XEvent *ev)
               }
             break; /* }}} */
           default:
-            subSharedLogWarn("Failed finding grab!\n");
+            subSharedLogWarn("Failed finding grab action!\n");
         }
     }
 } /* }}} */
@@ -1593,8 +1590,8 @@ EventUnmap(XUnmapEvent *ev)
           subScreenUpdate();
           subScreenRender();
 
-        /* Update focus if necessary */
-        if(focus) subSubtleFocus(True);
+          /* Update focus if necessary */
+          if(focus) subSubtleFocus(True);
         }
     }
   else if((t = TRAY(subSubtleFind(ev->window, TRAYID)))) ///< Tray
