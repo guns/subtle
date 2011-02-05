@@ -14,6 +14,10 @@
 #include <locale.h>
 #include "subtlext.h"
 
+#ifdef HAVE_X11_EXTENSIONS_XTEST_H
+#include <X11/extensions/XTest.h>
+#endif /* HAVE_X11_EXTENSIONS_XTEST_H */
+
 Display *display = NULL;
 VALUE mod = Qnil;
 
@@ -393,11 +397,11 @@ SubtlextSendButton(int argc,
 {
   VALUE button = Qnil, x = Qnil, y = Qnil, win = Qnil;
 
-  rb_scan_args(argc, argv, "03", &button, &x, &y);
-
   /* Check ruby object */
   rb_check_frozen(self);
   GET_ATTR(self, "@win", win);
+
+  rb_scan_args(argc, argv, "12", &button, &x, &y);
 
   /* Check object type */
   if(FIXNUM_P(button))
@@ -442,6 +446,41 @@ SubtlextSendButton(int argc,
   return Qnil;
 } /* }}} */
 
+#ifdef HAVE_X11_EXTENSIONS_XTEST_H
+/* SubtlextSendModifier {{{ */
+static void
+SubtlextSendModifier(unsigned long state,
+  int press)
+{
+  /* Send modifier press/release events */
+  if(state & ShiftMask)
+    {
+      XTestFakeKeyEvent(display, XKeysymToKeycode(display, XK_Shift_L),
+        press, CurrentTime);
+    }
+  else if(state & ControlMask)
+    {
+      XTestFakeKeyEvent(display, XKeysymToKeycode(display, XK_Control_L),
+        press, CurrentTime);
+    }
+  else if(state & Mod1Mask)
+    {
+      XTestFakeKeyEvent(display, XKeysymToKeycode(display, XK_Alt_L),
+        press, CurrentTime);
+    }
+  else if(state & Mod3Mask)
+    {
+      XTestFakeKeyEvent(display, XKeysymToKeycode(display, XK_Meta_L),
+        press, CurrentTime);
+    }
+  else if(state & Mod4Mask)
+    {
+      XTestFakeKeyEvent(display, XKeysymToKeycode(display, XK_Super_L),
+        press, CurrentTime);
+    }
+} /* }}} */
+#endif /* HAVE_X11_EXTENSIONS_XTEST_H */
+
 /* SubtlextSendKey {{{ */
 /*
  * call-seq: send_key(key, x, y) -> nil
@@ -457,42 +496,25 @@ SubtlextSendKey(int argc,
   VALUE *argv,
   VALUE self)
 {
-  VALUE key = Qnil, x = Qnil, y = Qnil, win = Qnil;
-
-  rb_scan_args(argc, argv, "03", &key, &x, &y);
+  VALUE keys = Qnil, x = Qnil, y = Qnil, win = Qnil;
 
   /* Check ruby object */
   rb_check_frozen(self);
   GET_ATTR(self, "@win", win);
 
+  rb_scan_args(argc, argv, "12", &keys, &x, &y);
+
   /* Check object type */
-  if(T_STRING == rb_type(key))
+  if(T_STRING == rb_type(keys))
     {
       int mouse = False;
       unsigned int code = 0, state = 0;
+      char *tokens = NULL, *tok = NULL, *save = NULL;
       Window subwin = None;
       KeySym sym = None;
       XEvent event = { 0 };
 
-      /* Parse keys */
-      if(NoSymbol == (sym = subSharedParseKey(display, RSTRING_PTR(key),
-          &code, &state, &mouse)))
-        {
-          rb_raise(rb_eStandardError, "Unknown key");
-
-          return Qnil;
-        }
-
-      /* Check mouse */
-      if(True == mouse)
-        {
-          rb_raise(rb_eNotImpError,
-            "Please use #send_button / #click for button events");
-
-          return Qnil;
-        }
-
-      /* Assemble button event */
+      /* Assemble enter event */
       event.type                  = EnterNotify;
       event.xcrossing.window      = NUM2LONG(win);
       event.xcrossing.root        = DefaultRootWindow(display);
@@ -506,27 +528,68 @@ SubtlextSendKey(int argc,
         event.xcrossing.root, event.xcrossing.x, event.xcrossing.y,
         &event.xcrossing.x_root, &event.xcrossing.y_root, &subwin);
 
-      //XSetInputFocus(display, event.xany.window, RevertToPointerRoot, CurrentTime);
       XSendEvent(display, NUM2LONG(win), True, EnterWindowMask, &event);
 
-      /* Send button press event */
-      event.type         = KeyPress;
-      event.xkey.state   = state;
-      event.xkey.keycode = code;
+      /* Parse keys */
+      tokens = strdup(RSTRING_PTR(keys));
+      tok    = strtok_r(tokens, " ", &save);
 
-      XSendEvent(display, NUM2LONG(win), True, KeyPressMask, &event);
+      while(tok)
+        {
+          /* Parse key chain */
+          if(NoSymbol == (sym = subSharedParseKey(display,
+              tok, &code, &state, &mouse)))
+            {
+              rb_raise(rb_eStandardError, "Unknown key");
+
+              return Qnil;
+            }
+
+          /* Check mouse */
+          if(True == mouse)
+            {
+              rb_raise(rb_eNotImpError,
+                "Please use #send_button / #click for button events");
+
+              return Qnil;
+            }
+
+#ifdef HAVE_X11_EXTENSIONS_XTEST_H
+          XTestGrabControl(display, True);
+
+          /* Send key press/release events */
+          SubtlextSendModifier(state, True);
+          XTestFakeKeyEvent(display, code, True, CurrentTime);
+          XTestFakeKeyEvent(display, code, False, CurrentTime);
+          SubtlextSendModifier(state, False);
+
+          XTestGrabControl(display, False);
+#else /* HAVE_X11_EXTENSIONS_XTEST_H */
+          /* Send key press event */
+          event.type         = KeyPress;
+          event.xkey.state   = state;
+          event.xkey.keycode = code;
+
+          XSendEvent(display, NUM2LONG(win), True, KeyPressMask, &event);
+          XFlush(display);
+
+          usleep(12000);
+
+          /* Send key release event */
+          event.type = KeyRelease;
+
+          XSendEvent(display, NUM2LONG(win), True, KeyReleaseMask, &event);
+#endif /* HAVE_X11_EXTENSIONS_XTEST_H */
+
+          tok = strtok_r(NULL, " ", &save);
+        }
+
       XFlush(display);
 
-      usleep(12000);
-
-      /* Send button release event */
-      event.type = KeyRelease;
-
-      XSendEvent(display, NUM2LONG(win), True, KeyReleaseMask, &event);
-      XFlush(display);
+      free(tokens);
     }
   else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
-    rb_obj_classname(key));
+    rb_obj_classname(keys));
 
   return Qnil;
 } /* }}} */
