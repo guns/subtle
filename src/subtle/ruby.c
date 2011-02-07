@@ -2390,6 +2390,8 @@ RubySubletGrab(VALUE self,
                 {
                   g->flags    ^= (SUB_RUBY_DATA|SUB_GRAB_PROC);
                   g->data.num  = (unsigned long)meth;
+
+                  rb_ary_push(shelter, meth); ///< Protect from GC
                 }
             }
         }
