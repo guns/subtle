@@ -665,6 +665,8 @@ RubyEvalGrab(VALUE keys,
               g->flags |= type;
               g->data   = data;
             }
+          else if(type & SUB_GRAB_SPAWN)
+            free(data.string);
 
           free(tokens);
         }
