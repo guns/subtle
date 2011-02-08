@@ -959,7 +959,22 @@ module Subtle # {{{
             }
           ]
 
-          config |= spec.config unless(spec.config.nil?)
+          # Merge configs
+          unless(spec.config.nil?)
+            skip = []
+
+            spec.config.each do |c|
+              case c[:name]
+                when "interval"   then skip << "interval"
+                when "foreground" then skip << "foreground"
+                when "background" then skip << "background"
+              end
+            end
+
+            config.delete_if { |c| skip.include?(c[:name]) }
+
+            config |= spec.config
+          end
 
           # Header
           if(use_color)
