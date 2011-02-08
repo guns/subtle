@@ -19,29 +19,8 @@ module Subtle # {{{
       # Sublet name
       attr_accessor :name
 
-      # Author list
-      attr_accessor :authors
-
-      # Contact address
-      attr_accessor :contact
-
-      # Sublet description
-      attr_accessor :description
-
-      # Sublet notes
-      attr_accessor :notes
-
-      # Sublet config values
-      attr_accessor :config
-
-      # Sublet grabs
-      attr_accessor :grabs
-
-      # Package version
+      # Sublet version
       attr_accessor :version
-
-      # Date of creation
-      attr_accessor :date
 
       # Tag list
       attr_accessor :tags
@@ -51,6 +30,27 @@ module Subtle # {{{
 
       # Icon list
       attr_accessor :icons
+
+      # Short description
+      attr_accessor :description
+
+      # Notes
+      attr_accessor :notes
+
+      # Author list
+      attr_accessor :authors
+
+      # Contact address
+      attr_accessor :contact
+
+      # Date of creation
+      attr_accessor :date
+
+      # Config values
+      attr_accessor :config
+
+      # Provided grabs
+      attr_accessor :grabs
 
       # Hash of dependencies
       attr_accessor :dependencies
@@ -186,7 +186,7 @@ module Subtle # {{{
         spec    = File.join(folder, name + ".spec")
         sublet  = File.join(folder, name + ".rb")
 
-        if(!File.exist?(name))
+        unless(File.exist?(name))
           FileUtils.mkdir_p([ folder ])
 
           # Create spec
@@ -196,20 +196,40 @@ module Subtle # {{{
 # #{name.capitalize} specification file
 # Created with sur-#{Subtle::Sur::VERSION}
 Sur::Specification.new do |s|
+  # Sublet information
   s.name        = "#{name.capitalize}"
-  s.authors     = [ "#{ENV["USER"]}" ]
-  s.date        = "#{Time.now.strftime("%a %b %d %H:%M %Z %Y")}"
-  s.contact     = "YOUREMAIL"
+  s.version     = "0.0"
+  s.tags        = [ ]
+  s.files       = [ "#{name.downcase}.rb" ]
+  s.icons       = [ ]
+
+  # Sublet description
   s.description = "SHORT DESCRIPTION"
   s.notes       = <<NOTES
 LONG DESCRIPTION
 NOTES
-  s.version     = "0.0"
-  s.tags        = [ ]
-  s.files       = [ "#{name}.rb" ]
-  s.icons       = [ ]
 
-  # Version requirements
+  # Sublet authors
+  s.authors     = [ "#{ENV["USER"]}" ]
+  s.contact     = "YOUREMAIL"
+  s.date        = "#{Time.now.strftime("%a %b %d %H:%M %Z %Y")}"
+
+  # Sublet config
+  #s.config = [
+  #  {
+  #    :name        => "Value name",
+  #    :type        => "Value type",
+  #    :description => "Description",
+  #    :def_value   => "Default value"
+  #  }
+  #]
+
+  # Sublet grabs
+  #s.grabs = {
+  #  :#{name.capitalize}Grab => "Sublet grab"
+  #}
+
+  # Sublet requirements
   # s.required_version = "0.9.2127"
   # s.add_dependency("subtle", "~> 0.1.2")
 end
