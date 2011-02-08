@@ -336,12 +336,12 @@ subSubtleSingFont(VALUE self)
 
 /* subSubtleSingSpawn {{{ */
 /*
- * call-seq: spawn(cmd) -> Fixnum
+ * call-seq: spawn(cmd) -> Subtlext::Client
  *
- * Spawn a command and return the pid
+ * Spawn a command and returns a client
  *
  *  spawn("xterm")
- *  => 123
+ *  => #<Subtlext::Client:xxx>
  */
 
 VALUE
