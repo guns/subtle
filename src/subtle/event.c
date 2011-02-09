@@ -837,13 +837,27 @@ EventGrab(XEvent *ev)
                 SubScreen *screen = subScreenCurrent(NULL);
 
                 /* Select view */
-                if(SUB_VIEW_NEXT == g->data.num &&
-                    screen->vid < (subtle->views->ndata - 1))
+                if(SUB_VIEW_NEXT == g->data.num)
                   {
-                    EventSwitchView(screen->vid + 1, -1, True);
+                    int vid = 0;
+
+                    /* Cycle if necessary */
+                    if(screen->vid < (subtle->views->ndata - 1))
+                      vid = screen->vid + 1;
+                    else vid = 0;
+
+                    EventSwitchView(vid, -1, True);
                   }
-                else if(SUB_VIEW_PREV == g->data.num && 0 < screen->vid)
-                  EventSwitchView(screen->vid - 1, -1, True);
+                else if(SUB_VIEW_PREV == g->data.num)
+                  {
+                    int vid = 0;
+
+                    /* Cycle if necessary */
+                    if(0 < screen->vid) vid = screen->vid - 1;
+                    else vid = subtle->views->ndata - 1;
+
+                    EventSwitchView(vid, -1, True);
+                  }
               }
             break; /* }}} */
           case SUB_GRAB_SCREEN_JUMP: /* {{{ */
