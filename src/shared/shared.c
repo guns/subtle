@@ -936,7 +936,7 @@ subSharedMatch(int type,
   int dx = 0, dy = 0;
 
   /* This check is complicated and consists of two parts:
-   * 1) Check if x/y value decrease in given direction
+   * 1) Check if x/y values decrease in given direction
    * 2) Check if a corner of one of the rects is close enough to
    *    a side of the other rect */
 
@@ -956,8 +956,8 @@ subSharedMatch(int type,
       dy = abs(origin->y - test->y);
 
       /* Zero distance means same dimensions - score this bad */
-      if(0 == dx) dx = 1L << 15;
-      if(0 == dy) dy = 1L << 15;
+      if(0 == dx && 0 == dy)
+        dx = dy = 1L << 15;
     }
   else
     {
