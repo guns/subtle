@@ -12,6 +12,10 @@
 #include <unistd.h>
 #include "subtlext.h"
 
+#ifdef HAVE_WORDEXP_H
+  #include <wordexp.h>
+#endif /* HAVE_WORDEXP_H */
+
 #ifdef HAVE_X11_XPM_H
   #include <X11/xpm.h>
 #endif /* HAVE_X11_XPM_H */
@@ -125,23 +129,42 @@ subIconInit(int argc,
       if(T_STRING == rb_type(data[0])) ///< Icon path
         {
           int hotx = 0, hoty = 0;
-          char buf[100] = { 0 }, *file = RSTRING_PTR(data[0]);
+          char buf[100] = { 0 };
+
+#ifdef HAVE_WORDEXP_H
+          /* Expand tildes in path */
+          wordexp_t we;
+
+          if(0 == wordexp(RSTRING_PTR(data[0]), &we, 0))
+            {
+              snprintf(buf, sizeof(buf), "%s", we.we_wordv[0]);
+
+              wordfree(&we);
+            }
+          else
+#endif /* HAVE_WORDEXP_H */
+          snprintf(buf, sizeof(buf), "%s", RSTRING_PTR(data[0]));
 
           /* Find file */
-          if(-1 != access(file, R_OK))
-            snprintf(buf, sizeof(buf), "%s", file);
-          else
+          if(-1 == access(buf, R_OK))
             {
-              char fallback[256] = { 0 }, *home = getenv("XDG_DATA_HOME");
+              char *home = NULL;
 
               /* Combine paths */
-              snprintf(fallback, sizeof(fallback), "%s/.local/share",
-                getenv("HOME"));
-              snprintf(buf, sizeof(buf), "%s/subtle/icons/%s",
-                home ? home : fallback, file);
+              if((home = getenv("XDG_DATA_HOME")))
+                {
+                  snprintf(buf, sizeof(buf), "%s/subtle/icons/%s",
+                    home, RSTRING_PTR(data[0]));
+                }
+              else
+                {
+                  snprintf(buf, sizeof(buf), "%s/.local/share/subtle/icons/%s",
+                   getenv("HOME"), RSTRING_PTR(data[0]));
+                }
 
               if(-1 == access(buf, R_OK))
-                rb_raise(rb_eStandardError, "Icon not found `%s'", file);
+                rb_raise(rb_eStandardError, "Icon not found `%s'",
+                  RSTRING_PTR(data[0]));
             }
 
           /* Reading bitmap or pixmap icon file */

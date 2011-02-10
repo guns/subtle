@@ -80,7 +80,7 @@ HEADER  = [
   "stdio.h", "stdlib.h", "stdarg.h", "string.h", "unistd.h", "signal.h", "errno.h",
   "assert.h", "sys/time.h", "sys/types.h"
 ]
-OPTIONAL = [ "sys/inotify.h", "execinfo.h" ]
+OPTIONAL = [ "sys/inotify.h", "execinfo.h", "wordexp.h" ]
 # }}}
 
 # Miscellaneous {{{
@@ -401,8 +401,23 @@ task(:config) do
 
     # Xtest
     if("yes" == @options["xtest"])
-      if(have_header("X11/extensions/XTest.h"))
-        @options["extflags"] << " -lXtst"
+      ret = false
+
+      checking_for("X11/extensions/XTest.h") do
+        # Check for debian header/lib separation
+        if(try_func("XTestFakeKeyEvent", "-lXtst"))
+          @options["extflags"] << " -lXtst"
+
+          $defs.push("-DHAVE_X11_EXTENSIONS_XTEST_H")
+
+          ret = true
+        else
+          puts "XTestFakeKeyEvent couldn't be found"
+        end
+
+        @options["xtest"] = "no" unless(ret)
+
+        ret
       end
     end
 
