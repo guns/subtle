@@ -21,6 +21,10 @@
 #include <ruby/encoding.h>
 #include "subtle.h"
 
+#ifdef HAVE_WORDEXP_H
+  #include <wordexp.h>
+#endif /* HAVE_WORDEXP_H */
+
 #define CHAR2SYM(name) ID2SYM(rb_intern(name))
 #define SYM2CHAR(sym)  rb_id2name(SYM2ID(sym))
 
@@ -2867,22 +2871,36 @@ RubySubletWatch(VALUE self,
 #ifdef HAVE_SYS_INOTIFY_H
           else if(T_STRING == rb_type(value)) /// Inotify file
             {
-              char *watch = RSTRING_PTR(value);
+              char buf[100] = { 0 };
+
+#ifdef HAVE_WORDEXP_H
+              /* Expand tildes in path */
+              wordexp_t we;
+
+              if(0 == wordexp(RSTRING_PTR(value), &we, 0))
+                {
+                  snprintf(buf, sizeof(buf), "%s", we.we_wordv[0]);
+
+                  wordfree(&we);
+                }
+              else
+#endif /* HAVE_WORDEXP_H */
+              snprintf(buf, sizeof(buf), "%s", RSTRING_PTR(value));
 
               /* Create inotify watch */
-              if(0 < (p->sublet->watch = inotify_add_watch(subtle->notify,
-                  watch, IN_MODIFY)))
+              if(0 < (p->sublet->watch = inotify_add_watch(
+                  subtle->notify, buf, IN_MODIFY)))
                 {
                   p->sublet->flags |= SUB_SUBLET_INOTIFY;
 
                   XSaveContext(subtle->dpy, subtle->windows.support, p->sublet->watch,
                     (void *)p);
-                  subSharedLogDebug("Inotify: Adding watch on %s\n", watch);
+                  subSharedLogDebug("Inotify: Adding watch on %s\n", buf);
 
                   ret = Qtrue;
                 }
               else subSharedLogWarn("Failed adding watch on file `%s': %s\n",
-                watch, strerror(errno));
+                buf, strerror(errno));
             }
 #endif /* HAVE_SYS_INOTIFY_H */
           else subSharedLogWarn("Failed handling unknown value type\n");
