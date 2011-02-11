@@ -712,6 +712,10 @@ EventGrab(XEvent *ev)
                     SUB_CLIENT_MODE_STICK == g->data.num)
                   {
                     subScreenConfigure();
+
+                    if(!VISIBLE(subtle->visible_tags, c))
+                      subSubtleFocus(True);
+
                     subScreenUpdate();
                     subScreenRender();
                   }
@@ -1025,7 +1029,7 @@ EventMessage(XClientMessageEvent *ev)
 
                       subScreenConfigure();
 
-                      /* Check visibility of focus wubdiw after updating tags
+                      /* Check visibility of focus window after updating tags
                        * and reactivate grabs if necessary */
                       if(subtle->windows.focus == c->win &&
                           !VISIBLE(subtle->visible_tags, c))
