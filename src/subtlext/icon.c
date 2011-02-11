@@ -281,7 +281,7 @@ subIconDrawPoint(int argc,
           gvals.foreground = 1;
           gvals.background = 0;
 
-          if(i->flags & SUB_TEXT_BITMAP)
+          if(i->flags & SUB_TEXT_PIXMAP)
             {
               if(!NIL_P(data[2])) gvals.foreground = subColorPixel(data[2]);
               if(!NIL_P(data[3])) gvals.background = subColorPixel(data[3]);
@@ -342,7 +342,7 @@ subIconDrawRect(int argc,
           gvals.foreground = 1;
           gvals.background = 0;
 
-          if(i->flags & SUB_TEXT_BITMAP)
+          if(i->flags & SUB_TEXT_PIXMAP)
             {
               if(!NIL_P(data[5])) gvals.foreground = subColorPixel(data[5]);
               if(!NIL_P(data[6])) gvals.background = subColorPixel(data[6]);
