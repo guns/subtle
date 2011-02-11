@@ -406,6 +406,11 @@ subPanelRender(SubPanel *p)
                     snprintf(buf + x, sizeof(buf), "%c", '*');
                     x++;
                   }
+                if(c->flags & SUB_CLIENT_MODE_RESIZE)
+                  {
+                    snprintf(buf + x, sizeof(buf), "%c", '~');
+                    x++;
+                  }
 
                 snprintf(buf + x, sizeof(buf) - x, "%s", c->name);
 
