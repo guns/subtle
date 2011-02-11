@@ -1341,8 +1341,9 @@ subClientClose(SubClient *c)
       XKillClient(subtle->dpy, c->win);
 
       subArrayRemove(subtle->clients, (void *)c);
-      subClientPublish();
       subClientKill(c);
+      subClientPublish();
+
       subScreenConfigure();
       subScreenUpdate();
       subScreenRender();
