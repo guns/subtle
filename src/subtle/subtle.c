@@ -215,6 +215,7 @@ subSubtleFocus(int focus)
   /* Fallback to root */
   subtle->windows.focus = ROOT;
   subGrabSet(ROOT);
+  XSetInputFocus(subtle->dpy, ROOT, RevertToPointerRoot, CurrentTime);
 
   subScreenUpdate();
   subScreenRender();
