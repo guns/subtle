@@ -204,14 +204,21 @@ subIconInit(int argc,
         }
       else if(FIXNUM_P(data[0]) && FIXNUM_P(data[1])) ///< Icon dimensions
         {
-          /* Create empty pixmap */
-          i->width   = FIX2INT(data[0]);
-          i->height  = FIX2INT(data[1]);
-          i->pixmap  = XCreatePixmap(display, DefaultRootWindow(display),
-              i->width, i->height, 1);
+          int depth = 1;
 
           /* Create pixmap or bitmap */
-          i->flags |= Qtrue == data[2] ? SUB_TEXT_PIXMAP : SUB_TEXT_BITMAP;
+          if(Qtrue == data[2])
+            {
+              i->flags |= SUB_TEXT_PIXMAP;
+              depth     = XDefaultDepth(display, DefaultScreen(display));
+            }
+          else i->flags |= SUB_TEXT_BITMAP;
+
+          /* Create empty pixmap */
+          i->width  = FIX2INT(data[0]);
+          i->height = FIX2INT(data[1]);
+          i->pixmap = XCreatePixmap(display, DefaultRootWindow(display),
+            i->width, i->height, depth);
         }
       else if(FIXNUM_P(data[0]))
         {
