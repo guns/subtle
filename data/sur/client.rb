@@ -859,25 +859,29 @@ module Subtle # {{{
 
       def compact_list(specs) # {{{
         list = []
-        prev = nil
 
-        specs.sort { |a, b| [ a.name, a.version ] <=> [ b.name, b.version ] }.reverse!
+        # Skip if specs list is empty
+        if(specs.any?)
+          prev = nil
 
-        specs.each do |s|
+          specs.sort { |a, b| [ a.name, a.version ] <=> [ b.name, b.version ] }.reverse!
+
           # Compress versions
-          if(!prev.nil? and prev.name == s.name)
-            if(prev.version.is_a?(Array))
-              prev.version << s.version
+          specs.each do |s|
+            if(!prev.nil? and prev.name == s.name)
+              if(prev.version.is_a?(Array))
+                prev.version << s.version
+              else
+                prev.version = [ prev.version, s.version ]
+              end
             else
-              prev.version = [ prev.version, s.version ]
+              list << prev unless(prev.nil?)
+              prev = s
             end
-          else
-            list << prev unless(prev.nil?)
-            prev = s
           end
-        end
 
-        list << prev unless(prev.nil? and prev.name == s.name)
+          list << prev unless(prev.nil? and prev.name == s.name)
+        end
 
         list
       end # }}}
