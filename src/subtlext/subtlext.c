@@ -1471,7 +1471,7 @@ Init_subtlext(void)
   rb_define_method(icon, "initialize", subIconInit,         -1);
   rb_define_method(icon, "draw_point", subIconDrawPoint,    -1);
   rb_define_method(icon, "draw_rect",  subIconDrawRect,     -1);
-  rb_define_method(icon, "clear",      subIconClear,         0);
+  rb_define_method(icon, "clear",      subIconClear,        -1);
   rb_define_method(icon, "bitmap?",    subIconBitmapAsk,     0);
   rb_define_method(icon, "to_str",     subIconToString,      0);
   rb_define_method(icon, "+",          subIconOperatorPlus,  1);

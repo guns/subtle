@@ -376,16 +376,22 @@ subIconDrawRect(int argc,
 
 /* subIconClear {{{ */
 /*
- * call-seq: clear -> nil
+ * call-seq: clear         -> nil
+ *           clear(fg, bg) -> nil
  *
  * Clear the icon
  *
  *  icon.clear
  *  => nil
+ *
+ *  icon.clear("#ff0000", "#000000")
+ *  => nil
  */
 
 VALUE
-subIconClear(VALUE self)
+subIconClear(int argc,
+  VALUE *argv,
+  VALUE self)
 {
   SubtlextIcon *i = NULL;
 
@@ -400,6 +406,17 @@ subIconClear(VALUE self)
       /* Update GC */
       gvals.foreground = 0;
       gvals.background = 1;
+
+      if(i->flags & SUB_TEXT_PIXMAP)
+        {
+          VALUE colors[2] = { Qnil };
+
+          rb_scan_args(argc, argv, "02", &colors[0], &colors[1]);
+
+          if(!NIL_P(colors[0])) gvals.foreground = subColorPixel(colors[0]);
+          if(!NIL_P(colors[1])) gvals.background = subColorPixel(colors[1]);
+        }
+
       XChangeGC(display, i->gc, GCForeground|GCBackground, &gvals);
 
       XFillRectangle(display, i->pixmap, i->gc, 0, 0, i->width, i->height);

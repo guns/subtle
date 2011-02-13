@@ -132,7 +132,7 @@ VALUE subIconAlloc(VALUE self);                                   ///< Allocate 
 VALUE subIconInit(int argc, VALUE *argv, VALUE self);             ///< Init icon
 VALUE subIconDrawPoint(int argc, VALUE *argv, VALUE self);        ///< Draw a point
 VALUE subIconDrawRect(int argc, VALUE *argv, VALUE self);         ///< Draw a rect
-VALUE subIconClear(VALUE self);                                   ///< Clear icon
+VALUE subIconClear(int argc, VALUE *argv, VALUE self);            ///< Clear icon
 VALUE subIconBitmapAsk(VALUE self);                               ///< Whether icon is bitmap
 VALUE subIconToString(VALUE self);                                ///< Convert to string
 VALUE subIconOperatorPlus(VALUE self, VALUE value);               ///< Concat string
