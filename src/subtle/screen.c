@@ -333,9 +333,11 @@ subScreenConfigure(void)
               if(c->flags & SUB_CLIENT_MODE_URGENT)
                 subClientWarp(c, True);
 
-              /* EWMH: Desktop */
+              /* EWMH: Desktop, screen */
               subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP,
                 (long *)&view, 1);
+              subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_SCREEN,
+                (long *)&screen, 1);
             }
           else ///< Unmap other windows
             {

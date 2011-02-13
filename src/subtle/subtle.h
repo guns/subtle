@@ -442,6 +442,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_WINDOW_TAGS,                                    ///< Subtle window tags
   SUB_EWMH_SUBTLE_WINDOW_RETAG,                                   ///< Subtle window retag
   SUB_EWMH_SUBTLE_WINDOW_GRAVITY,                                 ///< Subtle window gravity
+  SUB_EWMH_SUBTLE_WINDOW_SCREEN,                                  ///< Subtle window screen
   SUB_EWMH_SUBTLE_WINDOW_FLAGS,                                   ///< Subtle window flags
   SUB_EWMH_SUBTLE_GRAVITY_NEW,                                    ///< Subtle gravity new
   SUB_EWMH_SUBTLE_GRAVITY_LIST,                                   ///< Subtle gravity list

@@ -194,9 +194,11 @@ subClientNew(Window win)
   subClientToggle(c, (~c->flags & flags), False); ///< Just enable
   if(c->flags & SUB_CLIENT_TYPE_DIALOG) ClientCenter(c);
 
-  /* EWMH: Gravity and desktop */
+  /* EWMH: Gravity, screen, desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY,
     (long *)&subtle->gravity, 1);
+  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_SCREEN,
+    (long *)&c->screen, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
   subSharedLogDebugSubtle("new=client, name=%s, instance=%s, "
