@@ -87,6 +87,14 @@ context "Client" do
     before == middle1 - 1 and 2 == middle2 and before == after
   end
 
+  asserts("Runtime: Gravity") do
+    topic.gravity == Subtlext::Gravity[:center]
+  end
+
+  asserts("Runtime: Screen") do
+    topic.screen == Subtlext::Screen[0]
+  end
+
   asserts("Runtime: Kill a client") do
     topic.kill
 

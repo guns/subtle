@@ -27,7 +27,9 @@ context "Screen" do
   end
 
   asserts("Finder") do
-    0 == Subtlext::Screen[0].id
+    Subtlext::Screen[0] == Subtlext::Screen.find(
+      Subtlext::Geometry.new(100, 100, 100, 100)
+    )
   end
 
   asserts("Equal and compare") do

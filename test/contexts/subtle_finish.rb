@@ -26,6 +26,8 @@ context "Subtle - Finish" do
       c.kill
     end
 
+    sleep 0.5
+
     Subtlext::Subtle.quit
 
     sleep 1
