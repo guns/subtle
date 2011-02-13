@@ -2858,8 +2858,8 @@ RubySubletWatch(VALUE self,
                     0, NULL));
                 }
 
-              XSaveContext(subtle->dpy, subtle->windows.support, p->sublet->watch,
-                (void *)p);
+              XSaveContext(subtle->dpy, subtle->windows.support,
+                p->sublet->watch, (void *)p);
               subEventWatchAdd(p->sublet->watch);
 
               /* Set nonblocking */
@@ -2893,8 +2893,8 @@ RubySubletWatch(VALUE self,
                 {
                   p->sublet->flags |= SUB_SUBLET_INOTIFY;
 
-                  XSaveContext(subtle->dpy, subtle->windows.support, p->sublet->watch,
-                    (void *)p);
+                  XSaveContext(subtle->dpy, subtle->windows.support,
+                    p->sublet->watch, (void *)p);
                   subSharedLogDebug("Inotify: Adding watch on %s\n", buf);
 
                   ret = Qtrue;
