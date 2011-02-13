@@ -237,9 +237,9 @@
 #define SUB_SUBLET_RUN                (1L << 12)                  ///< Sublet run function
 #define SUB_SUBLET_DATA               (1L << 13)                  ///< Sublet data function
 #define SUB_SUBLET_WATCH              (1L << 14)                  ///< Sublet watch function
-#define SUB_SUBLET_DOWN               (1L << 14)                  ///< Sublet mouse down function
-#define SUB_SUBLET_OVER               (1L << 15)                  ///< Sublet mouse over function
-#define SUB_SUBLET_OUT                (1L << 16)                  ///< Sublet mouse out function
+#define SUB_SUBLET_DOWN               (1L << 15)                  ///< Sublet mouse down function
+#define SUB_SUBLET_OVER               (1L << 16)                  ///< Sublet mouse over function
+#define SUB_SUBLET_OUT                (1L << 17)                  ///< Sublet mouse out function
 
 /* Screen flags */
 #define SUB_SCREEN_PANEL1             (1L << 9)                    ///< Panel1 enabled
