@@ -1128,6 +1128,38 @@ subClientGeometryWriter(int argc,
   return geometry;
 } /* }}} */
 
+/* subClientScreenReader {{{ */
+/*
+ * call-seq: screen -> Subtlext::Screen
+ *
+ * Get Client Screen
+ *
+ *  client.screen
+ *  => #<Subtlext::Screen:xxx>
+ */
+
+VALUE
+subClientScreenReader(VALUE self)
+{
+  VALUE screen = Qnil, win = Qnil;
+  int *sid = NULL;
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@win", win);
+
+  /* Get screen */
+  if((sid = (int *)subSharedPropertyGet(display, NUM2LONG(win), XA_CARDINAL,
+      XInternAtom(display, "SUBTLE_WINDOW_SCREEN", False), NULL)))
+    {
+      screen = subScreenSingFind(self, INT2FIX(*sid));
+
+      free(sid);
+    }
+
+  return screen;
+} /* }}} */
+
 /* subClientToString {{{ */
 /*
  * call-seq: to_str -> String
