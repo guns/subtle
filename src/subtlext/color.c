@@ -1,5 +1,4 @@
  /**
-  *
   * @package subtlext
   *
   * @file Gravity functions
