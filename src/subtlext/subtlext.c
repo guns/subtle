@@ -1281,6 +1281,7 @@ Init_subtlext(void)
   rb_define_attr(client, "flags",    1, 0);
 
   /* Singleton methods */
+  rb_define_singleton_method(client, "select",  subClientSingSelect,  0);
   rb_define_singleton_method(client, "find",    subClientSingFind,    1);
   rb_define_singleton_method(client, "current", subClientSingCurrent, 0);
   rb_define_singleton_method(client, "visible", subClientSingVisible, 0);

@@ -47,6 +47,7 @@ extern int debug;
 
 /* client.c {{{ */
 /* Singleton */
+VALUE subClientSingSelect(VALUE self);                            ///< Select client
 VALUE subClientSingFind(VALUE self, VALUE value);                 ///< Find client
 VALUE subClientSingCurrent(VALUE self);                           ///< Get current client
 VALUE subClientSingVisible(VALUE self);                           ///< Get all visible clients

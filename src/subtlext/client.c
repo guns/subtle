@@ -194,6 +194,24 @@ ClientFlagsToggle(VALUE self,
 
 /* Singleton */
 
+/* subClientSingSelect {{{ */
+/*
+ * call-seq: select -> Subtlext::Client or nil
+ *
+ * Select a client
+ *
+ *  Subtlext::Client.select
+ *  => #<Subtlext::Client:xxx>
+ */
+
+VALUE
+subClientSingSelect(VALUE self)
+{
+  VALUE win = subSubtleSingSelect(self);
+
+  return None != NUM2LONG(win) ? subClientSingFind(self, win) : Qnil;
+} /* }}} */
+
 /* subClientSingFind {{{ */
 /*
  * call-seq: find(value) -> Subtlext::Client or nil
