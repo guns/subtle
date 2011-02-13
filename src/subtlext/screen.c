@@ -59,12 +59,16 @@ ScreenList(void)
  *
  * Find Screen by a given value which can be of following type:
  *
- * [fixnum] Array id
+ * [fixnum]             Array id
+ * [Subtlext::Geometry] Geometry
  *
  *  Subtlext::Screen.find(1)
  *  => #<Subtlext::Screen:xxx>
  *
  *  Subtlext::Screen[1]
+ *  => #<Subtlext::Screen:xxx>
+ *
+ *  Subtlext::Screen.find(Subtlext::Geometry(10, 10, 100, 100)
  *  => #<Subtlext::Screen:xxx>
  */
 
@@ -75,14 +79,68 @@ subScreenSingFind(VALUE self,
   VALUE screen = Qnil;
 
   /* Check object type */
-  if(FIXNUM_P(value))
+  switch(rb_type(value))
     {
-      VALUE screens = ScreenList();
+      case T_FIXNUM:
+          {
+            VALUE screens = ScreenList();
 
-      screen = rb_ary_entry(screens, FIX2INT(value));
+            screen = rb_ary_entry(screens, FIX2INT(value));
+          }
+        break;
+      case T_OBJECT:
+          {
+            VALUE klass = rb_const_get(mod, rb_intern("Geometry"));
+
+            /* Check object instance */
+            if(rb_obj_is_instance_of(value, klass))
+              {
+                unsigned long nworkareas = 0;
+                long *workareas = NULL;
+
+                subSubtlextConnect(NULL); ///< Implicit open connection
+
+                /* Get workarea list */
+                if((workareas = (long *)subSharedPropertyGet(display,
+                    DefaultRootWindow(display), XA_CARDINAL,
+                    XInternAtom(display, "_NET_WORKAREA", False),
+                    &nworkareas)))
+                  {
+                    int i;
+                    XRectangle geom = { 0 };
+
+                    subGeometryToRect(value, &geom);
+
+                    for(i = 0; i < nworkareas / 4; i++)
+                      {
+                        /* Check if coordinates are in screen rects */
+                        if(geom.x >= workareas[i * 4 + 0] && geom.x <
+                            workareas[i * 4 + 0] + workareas[i * 4 + 2] &&
+                            geom.y >= workareas[i * 4 + 1] && geom.y <
+                            workareas[i * 4 + 1] + workareas[i * 4 + 3])
+                          {
+                            VALUE geometry = Qnil;
+
+                            /* Create new screen */
+                            screen   = subScreenInstantiate(i);
+                            geometry = subGeometryInstantiate(
+                              workareas[i * 4 + 0], workareas[i * 4 + 1],
+                              workareas[i * 4 + 2], workareas[i * 4 + 3]);
+
+                            rb_iv_set(screen, "@geometry", geometry);
+
+                            break;
+                          }
+                      }
+
+                    free(workareas);
+                  }
+              }
+          }
+        break;
+      default: rb_raise(rb_eArgError, "Unexpected value type `%s'",
+        rb_obj_classname(value));
     }
-  else rb_raise(rb_eArgError, "Unexpected value type `%s'",
-    rb_obj_classname(value));
 
   return screen;
 } /* }}} */
@@ -155,8 +213,7 @@ subScreenSingCurrent(VALUE self)
               VALUE geometry = Qnil;
 
               /* Create new screen */
-              screen   = rb_funcall(rb_const_get(mod, rb_intern("Screen")),
-                rb_intern("new"), 1, INT2FIX(i));
+              screen   = subScreenInstantiate(i);
               geometry = subGeometryInstantiate(workareas[i * 4 + 0],
                 workareas[i * 4 + 1], workareas[i * 4 + 2],
                 workareas[i * 4 + 3]);
