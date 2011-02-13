@@ -34,7 +34,7 @@ GeometryEqual(VALUE self,
   return ret ? Qtrue : Qfalse;
 } /* }}} */
 
-/* Exported */
+/* Class */
 
 /* subGeometryInstantiate {{{ */
 VALUE
