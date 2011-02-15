@@ -2576,10 +2576,10 @@ RubySubletDataWriter(VALUE self,
  *
  * Set the default foreground color of a Sublet
  *
- *  sublet.foreground("#ffffff")
+ *  sublet.foreground = "#ffffff"
  *  => nil
  *
- *  sublet.foreground(Sublet::Color.new("#ffffff"))
+ *  sublet.foreground = Sublet::Color.new("#ffffff")
  *  => nil
  */
 
@@ -2626,10 +2626,10 @@ RubySubletForegroundWriter(VALUE self,
  *
  * Set the background color of a Sublet
  *
- *  sublet.background("#ffffff")
+ *  sublet.background = "#ffffff"
  *  => nil
  *
- *  sublet.background(Sublet::Color.new("#ffffff"))
+ *  sublet.background = Sublet::Color.new("#ffffff")
  *  => nil
  */
 
@@ -2648,7 +2648,8 @@ RubySubletBackgroundWriter(VALUE self,
       switch(rb_type(value))
         {
           case T_STRING:
-            p->sublet->bg = subSharedParseColor(subtle->dpy, RSTRING_PTR(value));
+            p->sublet->bg = subSharedParseColor(subtle->dpy,
+              RSTRING_PTR(value));
             break;
           case T_OBJECT:
               {
