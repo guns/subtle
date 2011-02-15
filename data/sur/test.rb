@@ -80,8 +80,8 @@ module Subtle # {{{
         ## Subtle::Sur::Test::Sublet::method_missing {{{
         # Dispatcher for Sublet instance
         #
-        # @param [Symbol, #read]  meth  Method name
-        # @param [Array,  #read]  args  Argument array
+        # @param [Symbol]  meth  Method name
+        # @param [Array]   args  Argument array
         #
         # @since 0.1
 
@@ -125,7 +125,7 @@ module Subtle # {{{
         ## Subtle::Sur::Test::Sublet::interval= {{{
         # Set the interval of a Sublet
         #
-        # @param [Fixnum, #read]  interval  Interval time
+        # @param [Fixnum]  interval  Interval time
         #
         # @raise [String] Sublet error
         # @since 0.0
@@ -157,7 +157,7 @@ module Subtle # {{{
         ## Subtle::Sur::Test::Sublet::data= {{{
         # Set the data of a Sublet
         #
-        # @param [String, #read}  data  Sublet data
+        # @param [String]  data  Sublet data
         #
         # @raise [String] Sublet error
         # @since 0.0
@@ -174,7 +174,7 @@ module Subtle # {{{
         ## Subtle::Sur::Test::Sublet::background= {{{
         # Set the background of a Sublet
         #
-        # @param [String, #read}  value  Sublet background
+        # @param [String]  value  Sublet background
         #
         # @raise [String] Sublet error
         # @since 0.2
@@ -276,7 +276,7 @@ module Subtle # {{{
         ## Subtle::Sur::Test::Sublet::configure {{{
         # Configure block for Sublet
         #
-        # @param [Symbol, #read]  name  Sublet name
+        # @param [Symbol]  name  Sublet name
         #
         # @yield [Object] New Sublet
         #
@@ -301,7 +301,7 @@ module Subtle # {{{
         ## Subtle::Sur::Test::Sublet::on {{{
         # Event block for Sublet
         #
-        # @param [Symbol, #read]  event  Event name
+        # @param [Symbol]  event  Event name
         #
         # @yield [Proc] Event handler
         #
@@ -368,8 +368,8 @@ module Subtle # {{{
       ## Subtle::Sur::Test::Dummy::method_missing {{{
       # Dispatcher for Dummy instance
       #
-      # @param [Symbol, #read]  meth  Method name
-      # @param [Array,  #read]  args  Argument array
+      # @param [Symbol]  meth  Method name
+      # @param [Array]   args  Argument array
       #
       # @since 0.1
 
@@ -400,13 +400,14 @@ module Subtle # {{{
       ## Subtle::Sur::Test::run {{{
       # Run test for every file in args
       #
-      # @param  [Array, #read]  args  Args array
+      # @param [Array]  config  Config values
+      # @param [Array]  args    Args array
       #
       # @example
       #   Sur::Test::Subtle.new.run(args)
       #   => nil
 
-      def self.run(args)
+      def self.run(config, args)
         args.each do |arg|
           # Load sublet
           if(File.exist?(arg))
@@ -431,6 +432,9 @@ module Subtle # {{{
             unless(sublet.nil?)
               methods = []
               dummy   = Subtle::Sur::Test::Dummy.new
+
+              # Apply config values
+              sublet.config = parse_config(config)
 
               # Configure and run sublet
               sublet.__configure(sublet)
@@ -538,6 +542,24 @@ module Subtle # {{{
             end
           end
         end
+      end # }}}
+
+      private
+
+      def self.parse_config(config) # {{{
+        hash = {}
+
+        config.each do |c|
+          key, value = c.split("=")
+
+          hash[key] = value
+        end
+
+        hash
+      rescue => error
+        puts ">>> ERROR: #{error}"
+
+        {}
       end # }}}
     end # }}}
   end # }}}

@@ -23,7 +23,7 @@ module Subtle # {{{
       ## Subtle::Sur::Runner::run {{{
       # Start runner
       #
-      # @param [Array, #read]  args  Argument array
+      # @param [Array]  args  Argument array
       #
       # @raise [String] Command error
       # @since 0.0
@@ -41,58 +41,55 @@ module Subtle # {{{
         @use_regex = false
         @reload    = false
         @assume    = false
+        @config    = []
 
         # GetoptLong only works on ARGV so we use something own
         begin
-          args.delete_if do |arg|
-            case arg
+          idx    = 0
+          no_opt = []
+
+          while(idx < args.size)
+            case args[idx]
+              # Enable flags
+              when "-l", "--local"    then @repo      = "local"
+              when "-r", "--remote"   then @repo      = "remote"
+              when "-c", "--no-color" then @use_color = false
+              when "-e", "--regex"    then @use_regex = true
+              when "-t", "--tag"      then @use_tags  = true
+              when "-R", "--reload"   then @reload    = true
+              when "-y", "--yes"      then @assume    = true
+
+              # Get command help
               when "-h", "--help"
                 usage(args[0])
                 exit
-              when "-l", "--local"
-                @repo = "local"
 
-                true
-              when "-r", "--remote"
-                @repo = "remote"
-
-                true
-              when "-e", "--regex"
-                @use_regex = true
-
-                true
-              when "-t", "--tag"
-                @use_tags = true
-
-                true
+              # Get option arguments
               when "-v", "--version"
-                @version = extract(args, arg)
-
-                true
+                idx      += 1
+                @version  = args[idx]
               when "-p", "--port"
-                @port = extract(args, arg).to_i
+                idx   += 1
+                @port  = args[idx].to_i
+              when "-C", "--config"
+                idx     += 1
+                @config << args[idx]
 
-                true
-              when "-c", "--no-color"
-                @use_color = false
-
-                true
-              when "-R", "--reload"
-                @reload = true
-
-                true
-              when "-y", "--yes"
-                @assume = true
-
-                true
+              # Save other arguments
+              else
+                no_opt << args[idx]
             end
+
+            idx += 1
           end
+
+          args = no_opt
         rescue
           raise "Couldn't find required arguments"
         end
 
         # Run
-        cmd = args.shift
+        cmd  = args.shift
         case cmd
           when "annotate"
             usage(cmd) if(args.empty?)
@@ -146,13 +143,16 @@ module Subtle # {{{
 
             Subtle::Sur::Specification.template(args.first)
           when "test"
+            usage(cmd) if(args.empty?)
+
             require "subtle/sur/test"
 
-            Subtle::Sur::Test.run(args)
+            Subtle::Sur::Test.run(@config, args)
           when "uninstall"
             usage(cmd) if(args.empty?)
 
-            Subtle::Sur::Client.new.uninstall(args, @version, @use_tags, @reload)
+            Subtle::Sur::Client.new.uninstall(args,
+              @version, @use_tags, @reload)
           when "update"
             Subtle::Sur::Client.new.update(@repo)
           when "upgrade"
@@ -167,20 +167,6 @@ module Subtle # {{{
       end # }}}
 
       private
-
-      def extract_at(args, idx) # {{{
-        ret = args.at(idx)
-        args.delete_at(idx)
-
-        ret
-      end # }}}
-
-      def extract(args, arg) # {{{
-        idx = args.index(arg)
-        ret = extract_at(args, idx + 1)
-
-        ret
-      end # }}}
 
       def usage(arg) # {{{
         case arg
@@ -245,6 +231,15 @@ module Subtle # {{{
                  "  -h, --help                Show this help and exit\n\n" \
                  "Examples:\n" \
                  "sur server -p 3000\n"
+          when "test"
+            puts "Usage: sur uninstall NAME [OPTIONS]\n\n" \
+                 "Test given sublets for syntax and functionality\n\n" \
+                 "Options:\n" \
+                 "  -C, --config VALUE        Add config value (can be used multiple times)\n" \
+                 "  -h, --help                Show this help and exit\n\n" \
+                 "Examples:\n" \
+                 "sur test -C user=name -C pass=pass sublet.rb\n" \
+                 "sur test sublet.rb\n"
           when "uninstall"
             puts "Usage: sur uninstall NAME [OPTIONS]\n\n" \
                  "Uninstall a sublet by given name and optionally by given version\n\n" \
@@ -292,7 +287,6 @@ module Subtle # {{{
                  "  server [-p PORT|-h]                     Serve sublets (default: http://localhost:4567)\n" \
                  "  submit FILE                             Submit a sublet to SUR\n" \
                  "  template FILE                           Create a new sublet template in current dir\n" \
-                 "  test FILE                               Test given sublets for syntax and functionality\n" \
                  "  uninstall NAME [-R|-t|-v VERSION|-h]    Uninstall a sublet\n" \
                  "  update [-l|-r|-h]                       Update local/remote sublet cache\n" \
                  "  upgrade [-R|-y|-h]                      Upgrade all installed sublets\n" \
