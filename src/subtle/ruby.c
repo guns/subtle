@@ -786,8 +786,9 @@ RubyEvalPanel(VALUE ary,
               /* Prevent multiple use */
               if(!subtle->panels.tray.screen)
                 {
-                  flags |= (SUB_TYPE_PANEL|SUB_PANEL_TRAY);
-                  p      = &subtle->panels.tray;
+                  subtle->flags |= SUB_SUBTLE_TRAY;
+                  flags         |= (SUB_TYPE_PANEL|SUB_PANEL_TRAY);
+                  p              = &subtle->panels.tray;
                 }
             }
           else if(entry == views)

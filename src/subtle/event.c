@@ -1560,6 +1560,7 @@ EventSelection(XSelectionClearEvent *ev)
   /* Handle selection clear events */
   if(ev->window == subtle->panels.tray.win) ///< Tray selection
     {
+      subtle->flags &= ~SUB_SUBTLE_TRAY;
       subTrayDeselect();
     }
   else if(ev->window == subtle->windows.support) ///< Session selection
@@ -1711,6 +1712,9 @@ subEventLoop(void)
   subEventWatchAdd(subtle->notify);
 #endif /* HAVE_SYS_INOTIFY_H */
 
+  /* Set tray selection */
+  if(subtle->flags & SUB_SUBTLE_TRAY) subTraySelect();
+
   subtle->flags |= SUB_SUBTLE_RUN;
   XSync(subtle->dpy, False); ///< Sync before going on
 
@@ -1729,8 +1733,16 @@ subEventLoop(void)
       /* Check if we need to reload */
       if(subtle->flags & SUB_SUBTLE_RELOAD)
         {
+          int tray = subtle->flags & SUB_SUBTLE_TRAY;
+
           subtle->flags &= ~SUB_SUBTLE_RELOAD;
           subRubyReloadConfig();
+
+          /* Update tray selection */
+          if(tray && !(subtle->flags & SUB_SUBTLE_TRAY))
+            subTrayDeselect();
+          else if(subtle->flags & SUB_SUBTLE_TRAY)
+            subTraySelect();
         }
 
       /* Data ready on any connection */
@@ -1841,6 +1853,9 @@ subEventLoop(void)
         }
       else timeout = 60;
     }
+
+  /* Drop tray selection */
+  if(subtle->flags & SUB_SUBTLE_TRAY) subTrayDeselect();
 } /* }}} */
 
  /** subEventFinish {{{
