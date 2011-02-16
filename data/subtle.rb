@@ -65,10 +65,24 @@ set :outline, 0
 # sublets screen wise. The default config uses top panel on the first screen
 # only, it's up to the user to enable the bottom panel or disable either one
 # or both.
+
+# === Properties
 #
-# Empty panels are hidden.
+# [*stipple*]    This property adds a stipple pattern to both screen panels.
 #
-# Following items are available:
+#                Example: stipple "~/stipple.xbm"
+#                         stipple Subtlext::Icon.new("~/stipple.xbm")
+#
+# [*top*]        This property adds a top panel to the screen.
+#
+#                Example: top [ :views, :title ]
+#
+# [*bottom*]     This property adds a bottom panel to the screen.
+#
+#                Example: bottom [ :views, :title ]
+
+#
+# Following items are available for the panels:
 #
 # [*:views*]     List of views with buttons
 # [*:title*]     Title of the current active window
@@ -80,32 +94,23 @@ set :outline, 0
 # [*:center*]    Enclose items with :center to center them on the panel
 # [*:separator*] Insert separator
 #
-# === Link
+# Empty panels are hidden.
 #
+# === Links
+#
+# http://subforge.org/wiki/subtle/Multihead
 # http://subforge.org/wiki/subtle/Panel
 #
 
 screen 1 do
-  # Add stipple to panels
-  # stipple Subtlext::Icon.new("~/stipple.xbm")
-
-  # Content of the top panel
-  top     [ :views, :title, :spacer, :keychain, :spacer, :tray, :sublets ]
-
-  # Content of the bottom panel
-  bottom  [ ]
+  top    [ :views, :title, :spacer, :keychain, :spacer, :tray, :sublets ]
+  bottom [ ]
 end
 
 # Example for a second screen:
 #screen 2 do
-#  # Add stipple to panels
-#  stipple Subtlext::Icon.new("~/stipple.xbm")
-#
-#  # Content of the top panel
-#  top     [ :views, :title, :spacer ]
-#
-#  # Content of the bottom panel
-#  bottom  [ ]
+#  top    [ :views, :title, :spacer ]
+#  bottom [ ]
 #end
 
 #
