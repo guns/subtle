@@ -208,8 +208,8 @@ module Subtle # {{{
             end
 
             puts ">>> Created sublet `#{File.basename(sublet)}'"
-          rescue
-            raise "Couldn't create tgz file"
+          rescue => error
+            raise error, "Couldn't create tgz file", caller
           end
         else
           spec.validate
