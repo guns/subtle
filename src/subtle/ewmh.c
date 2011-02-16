@@ -86,7 +86,7 @@ subEwmhInit(void)
 
   assert(SUB_EWMH_TOTAL == LENGTH(names));
 
-  /* Apply tray selection */
+  /* Update tray selection name for current screen */
   len       = strlen(names[SUB_EWMH_NET_SYSTEM_TRAY_SELECTION]) + 5; ///< For high screen counts
   selection = (char *)subSharedMemoryAlloc(len, sizeof(char));
 
@@ -97,6 +97,8 @@ subEwmhInit(void)
   /* Register atoms */
   XInternAtoms(subtle->dpy, names, SUB_EWMH_TOTAL, 0, atoms);
   subtle->flags |= SUB_SUBTLE_EWMH; ///< Set EWMH flag
+
+  free(selection);
 
   /* EWMH: Supported hints */
   XChangeProperty(subtle->dpy, ROOT, atoms[SUB_EWMH_NET_SUPPORTED], XA_ATOM,
@@ -117,10 +119,6 @@ subEwmhInit(void)
   /* EWMH: Client list and client list stacking */
   subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST, NULL, 0);
   subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST_STACKING, NULL, 0);
-
-  subTraySelect(); ///< Finally select
-
-  free(selection);
 
   subSharedLogDebugSubtle("init=ewmh\n");
 } /* }}} */
@@ -362,8 +360,6 @@ subEwmhFinish(void)
   /* Delete root properties on real shutdown */
   if(subtle->flags & SUB_SUBTLE_EWMH)
     {
-      subTrayDeselect();
-
       /* EWMH properties */
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_SUPPORTED));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_NET_SUPPORTING_WM_CHECK));
