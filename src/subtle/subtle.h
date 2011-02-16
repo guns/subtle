@@ -527,6 +527,7 @@ typedef struct subscreen_t /* {{{ */
 
   int               vid;                                          ///< Screen current view id
   XRectangle        geom, base;                                   ///< Screen geom, base
+  Pixmap            stipple;                                      ///< Screen stipple
   Window            panel1, panel2;                               ///< Screen windows
   struct subarray_t *panels;                                      ///< Screen panels
 

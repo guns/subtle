@@ -2082,13 +2082,28 @@ RubyConfigScreen(VALUE self,
   if(FIXNUM_P(id))
     {
       int flags = 0, vid = -1;
+      Pixmap stipple = None;
       VALUE top = Qnil, bottom = Qnil;
 
       /* Get options */
       if(T_HASH == rb_type(params))
         {
-          if(Qtrue == (value = rb_hash_lookup(params, CHAR2SYM("stipple"))))
-            flags |= SUB_SCREEN_STIPPLE;
+          if(T_DATA == rb_type(value = rb_hash_lookup(params,
+              CHAR2SYM("stipple"))))
+            {
+              VALUE subtlext = Qnil;
+
+              subtlext = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
+              klass    = rb_const_get(subtlext, rb_intern("Icon"));
+
+              /* Check object instance */
+              if(rb_obj_is_instance_of(value, klass))
+                {
+                  flags   |= SUB_SCREEN_STIPPLE;
+                  stipple  = NUM2LONG(rb_iv_get(value, "@pixmap"));
+                  rb_ary_push(shelter, value); ///< Protect from GC
+                }
+            }
           if(T_ARRAY == rb_type(value = rb_hash_lookup(params,
               CHAR2SYM("top"))))
             {
@@ -2111,9 +2126,10 @@ RubyConfigScreen(VALUE self,
         {
           if((s = subArrayGet(subtle->screens, FIX2INT(id) - 1)))
             {
-              s->flags |= (flags|SUB_RUBY_DATA);
-              s->top    = top;
-              s->bottom = bottom;
+              s->flags   |= (flags|SUB_RUBY_DATA);
+              s->top      = top;
+              s->bottom   = bottom;
+              s->stipple  = stipple;
 
               if(-1 != vid) s->vid = vid;
             }

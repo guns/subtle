@@ -91,11 +91,6 @@ subDisplayInit(const char *display)
   XGCValues gvals;
   XSetWindowAttributes sattrs;
   unsigned long mask = 0;
-  const char stipple[] = {
-    0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 0x49, 0x12, 0x24, 0x49, 0x92, 0x24,
-    0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 0x49, 0x12, 0x24, 0x49, 0x92, 0x24,
-    0x49, 0x12, 0x24, 0x49, 0x92, 0x24, 0x49, 0x12
-  };
 
 #if defined HAVE_X11_EXTENSIONS_XINERAMA_H || defined HAVE_X11_EXTENSIONS_XRANDR_H
   int event = 0, junk = 0;
@@ -140,8 +135,7 @@ subDisplayInit(const char *display)
   /* Create GCs */
   gvals.function           = GXcopy;
   gvals.fill_style         = FillStippled;
-  gvals.stipple            = XCreateBitmapFromData(subtle->dpy, ROOT, stipple, 15, 16);
-  mask                     = GCFunction|GCFillStyle|GCStipple;
+  mask                     = GCFunction|GCFillStyle;
   subtle->gcs.stipple      = XCreateGC(subtle->dpy, ROOT, mask, &gvals);
 
   gvals.plane_mask         = AllPlanes;

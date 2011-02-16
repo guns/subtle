@@ -521,6 +521,11 @@ subScreenRender(void)
       /* Draw stipple on panels */
       if(s->flags & SUB_SCREEN_STIPPLE)
         {
+          XGCValues gvals;
+
+          gvals.stipple = s->stipple;
+          XChangeGC(subtle->dpy, subtle->gcs.stipple, GCStipple, &gvals);
+
           XFillRectangle(subtle->dpy, s->panel1, subtle->gcs.stipple,
             0, 2, s->base.width, subtle->th - 4);
           XFillRectangle(subtle->dpy, s->panel2, subtle->gcs.stipple,
