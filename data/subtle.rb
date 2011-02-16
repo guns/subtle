@@ -87,10 +87,10 @@ set :outline, 0
 
 screen 1 do
   # Add stipple to panels
-  stipple false
+  # stipple Subtlext::Icon.new("~/stipple.xbm")
 
   # Content of the top panel
-  top     [ :views, :title, :keychain, :spacer, :tray, :sublets ]
+  top     [ :views, :title, :spacer, :keychain, :spacer, :tray, :sublets ]
 
   # Content of the bottom panel
   bottom  [ ]
@@ -99,7 +99,7 @@ end
 # Example for a second screen:
 #screen 2 do
 #  # Add stipple to panels
-#  stipple false
+#  stipple Subtlext::Icon.new("~/stipple.xbm")
 #
 #  # Content of the top panel
 #  top     [ :views, :title, :spacer ]
