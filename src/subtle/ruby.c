@@ -165,9 +165,9 @@ RubyConvert(void *data)
   return object;
 } /* }}} */
 
-/* RubyIcon {{{ */
+/* RubyIconConvert {{{ */
 static void
-RubyIcon(VALUE icon,
+RubyIconConvert(VALUE icon,
   SubIcon *i)
 {
   VALUE width = Qnil, height = Qnil, pixmap = Qnil, bitmap = Qnil;
@@ -188,6 +188,40 @@ RubyIcon(VALUE icon,
 } /* }}} */
 
 /* Get */
+
+/* RubyGetIcon {{{ */
+static VALUE
+RubyGetIcon(VALUE value)
+{
+  VALUE icon = Qnil, subtlext = Qnil, klass = Qnil;
+
+  /* Fetch data */
+  subtlext = rb_const_get(rb_cObject, rb_intern("Subtlext"));
+  klass    = rb_const_get(subtlext, rb_intern("Icon"));
+
+  /* Check icon */
+  switch(rb_type(value))
+    {
+      case T_DATA:
+        /* Check object instance */
+        if(rb_obj_is_instance_of(value, klass))
+          {
+            icon = value; ///< Lazy eval
+
+            rb_ary_push(shelter, icon); ///< Protect from GC
+          }
+        break;
+      case T_STRING:
+        /* Create new text icon */
+        icon  = rb_funcall(klass, rb_intern("new"), 1, value);
+
+        rb_ary_push(shelter, icon); ///< Protect from GC
+        break;
+      default: break;
+    }
+
+  return icon;
+} /* }}} */
 
 /* RubyGetGeometry {{{ */
 static int
@@ -788,7 +822,7 @@ RubyEvalPanel(VALUE ary,
                   /* Create new panel icon */
                   p = subPanelNew(SUB_PANEL_ICON);
 
-                  RubyIcon(entry, p->icon);
+                  RubyIconConvert(entry, p->icon);
 
                   rb_ary_push(shelter, entry); ///< Protect from GC
                 }
@@ -1895,10 +1929,9 @@ RubyConfigView(int argc,
   /* Call proc */
   if(rb_block_given_p())
     {
-      VALUE subtlext = Qnil, klass = Qnil, options = Qnil;
+      VALUE klass = Qnil, options = Qnil;
 
       /* Collect options */
-      subtlext = rb_const_get(rb_cObject, rb_intern("Subtlext"));
       klass    = rb_const_get(mod, rb_intern("Options"));
       options  = rb_funcall(klass, rb_intern("new"), 0, NULL);
       rb_obj_instance_eval(0, 0, options);
@@ -1920,27 +1953,7 @@ RubyConfigView(int argc,
         flags |= SUB_VIEW_ICON_ONLY;
 
       /* Check icon */
-      switch(rb_type(value = rb_hash_lookup(params, CHAR2SYM("icon"))))
-        {
-          case T_DATA:
-            /* Check object instance */
-            if(rb_obj_is_instance_of(value,
-                rb_const_get(subtlext, rb_intern("Icon"))))
-              {
-                icon = value; ///< Lazy eval
-
-                rb_ary_push(shelter, icon); ///< Protect from GC
-              }
-            break;
-          case T_STRING:
-            /* Create new text icon */
-            klass = rb_const_get(subtlext, rb_intern("Icon"));
-            icon  = rb_funcall(klass, rb_intern("new"), 1, value);
-
-            rb_ary_push(shelter, icon); ///< Protect from GC
-            break;
-          default: break;
-        }
+      icon = RubyGetIcon(rb_hash_lookup(params, CHAR2SYM("icon")));
     }
 
   /* Check value type */
@@ -1971,7 +1984,7 @@ RubyConfigView(int argc,
                   v->flags |= SUB_VIEW_ICON;
                   v->icon   = ICON(subSharedMemoryAlloc(1, sizeof(SubIcon)));
 
-                  RubyIcon(icon, v->icon);
+                  RubyIconConvert(icon, v->icon);
 
                   rb_ary_push(shelter, icon); ///< Protect from GC
                 }
@@ -2088,21 +2101,11 @@ RubyConfigScreen(VALUE self,
       /* Get options */
       if(T_HASH == rb_type(params))
         {
-          if(T_DATA == rb_type(value = rb_hash_lookup(params,
-              CHAR2SYM("stipple"))))
+          if(!NIL_P(value = RubyGetIcon(rb_hash_lookup(params,
+              CHAR2SYM("stipple")))))
             {
-              VALUE subtlext = Qnil;
-
-              subtlext = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
-              klass    = rb_const_get(subtlext, rb_intern("Icon"));
-
-              /* Check object instance */
-              if(rb_obj_is_instance_of(value, klass))
-                {
-                  flags   |= SUB_SCREEN_STIPPLE;
-                  stipple  = NUM2LONG(rb_iv_get(value, "@pixmap"));
-                  rb_ary_push(shelter, value); ///< Protect from GC
-                }
+              flags   |= SUB_SCREEN_STIPPLE;
+              stipple  = NUM2LONG(rb_iv_get(value, "@pixmap"));
             }
           if(T_ARRAY == rb_type(value = rb_hash_lookup(params,
               CHAR2SYM("top"))))
