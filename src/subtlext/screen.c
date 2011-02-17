@@ -177,8 +177,9 @@ subScreenSingAll(VALUE self)
 VALUE
 subScreenSingCurrent(VALUE self)
 {
-  int x = 0, y = 0, dummy = 0;
-  unsigned long mask = 0, nworkareas = 0, npanels = 0;
+  int rx = 0, ry = 0, x = 0, y = 0;
+  unsigned int mask = 0;
+  unsigned long nworkareas = 0, npanels = 0;
   long *workareas = NULL, *panels = NULL;
   VALUE screen = Qnil;
   Window root = None, win = None;
@@ -186,8 +187,8 @@ subScreenSingCurrent(VALUE self)
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Get current screen */
-  XQueryPointer(display, DefaultRootWindow(display), &root, &win,
-    &x, &y, &dummy, &dummy, (unsigned int *)&mask);
+  XQueryPointer(display, DefaultRootWindow(display), &root,
+    &win, &rx, &ry, &x, &y, &mask);
 
   /* Fetch data */
   workareas = (long *)subSharedPropertyGet(display, DefaultRootWindow(display),
@@ -204,10 +205,10 @@ subScreenSingCurrent(VALUE self)
       for(i = 0; i < nworkareas / 4; i++)
         {
           /* Check if coordinates are in screen rects including panel size */
-          if(x >= workareas[i * 4 + 0] &&
-              x < workareas[i * 4 + 0] + workareas[i * 4 + 2] &&
-              y >= (workareas[i * 4 + 1] - panels[i * 2 + 0]) &&
-              y < (workareas[i * 4 + 1] + workareas[i * 4 + 3] +
+          if(rx >= workareas[i * 4 + 0] &&
+              rx < workareas[i * 4 + 0] + workareas[i * 4 + 2] &&
+              ry >= (workareas[i * 4 + 1] - panels[i * 2 + 0]) &&
+              ry < (workareas[i * 4 + 1] + workareas[i * 4 + 3] +
               panels[i * 2 + 1]))
             {
               VALUE geometry = Qnil;

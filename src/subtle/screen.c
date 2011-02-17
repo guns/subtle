@@ -246,15 +246,14 @@ subScreenCurrent(int *sid)
     }
   else
     {
-      int dummy = 0, x = 0, y = 0;
+      int rx = 0, ry = 0, x = 0, y = 0;
       Window root = None, win = None;
       unsigned int mask = 0;
 
       /* Get current screen */
-      XQueryPointer(subtle->dpy, ROOT, &root, &win, &x, &y,
-        &dummy, &dummy, &mask);
+      XQueryPointer(subtle->dpy, ROOT, &root, &win, &rx, &ry, &x, &y, &mask);
 
-      ret = subScreenFind(x, y, sid);
+      ret = subScreenFind(rx, ry, sid);
     }
 
   return ret;

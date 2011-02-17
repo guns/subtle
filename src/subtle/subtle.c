@@ -171,15 +171,14 @@ subSubtleTime(void)
 Window
 subSubtleFocus(int focus)
 {
-  int dummy = 0;
+  int rx = 0, ry = 0, x = 0, y = 0;
   unsigned int mask = 0;
   Window root = None, win = None;
   SubClient *c = NULL;
   SubScreen *s = NULL;
 
   /* Get pointer window */
-  XQueryPointer(subtle->dpy, ROOT, &root, &win,
-    &dummy, &dummy, &dummy, &dummy, &mask);
+  XQueryPointer(subtle->dpy, ROOT, &root, &win, &rx, &ry, &x, &y, &mask);
 
   /* Find pointer window */
   if((c = CLIENT(subSubtleFind(win, CLIENTID))) && ALIVE(c))
