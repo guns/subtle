@@ -132,7 +132,7 @@ subSubtleSingSelect(VALUE self)
   XEvent event;
   Window win = None;
   Atom type = None, rtype = None;
-  Window dummy = None, root = None, *wins = NULL;
+  Window wroot = None, parent = None, root = None, *wins = NULL;
   Cursor cursor = None;
 
   subSubtlextConnect(NULL); ///< Implicit open connection
@@ -170,7 +170,7 @@ subSubtleSingSelect(VALUE self)
       }
 
   /* Find children with WM_STATE atom */
-  XQueryTree(display, win, &dummy, &dummy, &wins, &nwins);
+  XQueryTree(display, win, &wroot, &parent, &wins, &nwins);
 
   for(i = 0; i < nwins; i++)
     {

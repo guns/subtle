@@ -243,12 +243,12 @@ void
 subDisplayScan(void)
 {
   unsigned int i, n = 0;
-  Window dummy, *wins = NULL;
+  Window wroot = None, parent = None, *wins = NULL;
 
   assert(subtle);
 
   /* Scan for client windows */
-  XQueryTree(subtle->dpy, ROOT, &dummy, &dummy, &wins, &n);
+  XQueryTree(subtle->dpy, ROOT, &wroot, &parent, &wins, &n);
   for(i = 0; i < n; i++)
     {
       SubClient *c = NULL;
