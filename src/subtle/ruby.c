@@ -1175,6 +1175,9 @@ RubyWrapCall(VALUE data)
       case SUB_CALL_OUT: /* {{{ */
         rb_funcall(rargs[1], rb_intern("__out"), 1, rargs[1]);
         break; /* }}} */
+      case SUB_CALL_UNLOAD: /* {{{ */
+        rb_funcall(rargs[1], rb_intern("__unload"), 1, rargs[1]);
+        break; /* }}} */
       default: /* {{{ */
         /* Call instance methods or just a proc */
         if(rb_obj_is_instance_of(rargs[1], rb_cMethod))
@@ -2321,7 +2324,8 @@ RubySubletOn(VALUE self,
             { CHAR2SYM("watch"),      CHAR2SYM("__watch"),  SUB_SUBLET_WATCH,  1 },
             { CHAR2SYM("mouse_down"), CHAR2SYM("__down"),   SUB_SUBLET_DOWN,   4 },
             { CHAR2SYM("mouse_over"), CHAR2SYM("__over"),   SUB_SUBLET_OVER,   1 },
-            { CHAR2SYM("mouse_out"),  CHAR2SYM("__out"),    SUB_SUBLET_OUT,    1 }
+            { CHAR2SYM("mouse_out"),  CHAR2SYM("__out"),    SUB_SUBLET_OUT,    1 },
+            { CHAR2SYM("unload"),     CHAR2SYM("__unload"), SUB_SUBLET_UNLOAD, 1 }
           };
 
           /* Collect stuff */
@@ -3382,7 +3386,7 @@ subRubyLoadSublet(const char *file)
       return;
     }
 
-  /* Try to configure sublet */
+  /* Carefully configure sublet */
   if(!subRubyCall(SUB_CALL_CONFIGURE, p->sublet->instance, NULL))
     {
       subPanelKill(p);
