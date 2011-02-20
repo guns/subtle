@@ -579,7 +579,7 @@ subScreenResize(void)
       /* Add strut: x => left, y => right, width => top, height => bottom */
       s->geom.x      = s->base.x + subtle->strut.x;
       s->geom.y      = s->base.y + subtle->strut.width;
-      s->geom.width  = s->base.width - subtle->strut.x;
+      s->geom.width  = s->base.width - subtle->strut.x - subtle->strut.y;
       s->geom.height = s->base.height - subtle->strut.height -
         subtle->strut.width;
 
