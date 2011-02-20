@@ -1277,48 +1277,7 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_SUBTLE_SUBLET_KILL: /* {{{ */
             if((p = EventFindSublet((int)ev->data.l[0])))
               {
-                int i;
-
-                /* Remove sublet from panels to avoid overhead */
-                for(i = 0; i < subtle->screens->ndata; i++)
-                  {
-                    subArrayRemove(SCREEN(subtle->screens->data[i])->panels,
-                      (void *)p);
-                  }
-
-                /* Remove hooks */
-                for(i = 0; i < subtle->hooks->ndata; i++)
-                  {
-                    SubHook *hook = HOOK(subtle->hooks->data[i]);
-
-                    if(hook->flags & SUB_CALL_HOOKS &&
-                        subRubyReceiver(p->sublet->instance, hook->proc))
-                      {
-                        subArrayRemove(subtle->hooks, (void *)hook);
-                        subRubyRelease(hook->proc);
-                        subHookKill(hook);
-                        i--; ///< Prevent skipping of entries
-                      }
-                  }
-
-                /* Remove grabs */
-                for(i = 0; i < subtle->grabs->ndata; i++)
-                  {
-                    SubGrab *grab = GRAB(subtle->grabs->data[i]);
-
-                    if(grab->flags & SUB_GRAB_PROC &&
-                        subRubyReceiver(p->sublet->instance, grab->data.num))
-                      {
-                        subArrayRemove(subtle->grabs, (void *)grab);
-                        subRubyRelease(grab->data.num);
-                        subGrabKill(grab);
-                        i--; ///< Prevent skipping of entries
-                      }
-                  }
-
-                subArrayRemove(subtle->sublets, (void *)p);
-                subPanelKill(p);
-                subPanelPublish();
+                subRubyUnloadSublet(p);
                 subScreenUpdate();
                 subScreenRender();
               }

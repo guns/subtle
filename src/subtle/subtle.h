@@ -768,12 +768,11 @@ void subRubyInit(void);                                           ///< Init Ruby
 int subRubyLoadConfig(void);                                      ///< Load config file
 void subRubyReloadConfig(void);                                   ///< Reload config file
 void subRubyLoadSublet(const char *file);                         ///< Load sublet
+void subRubyUnloadSublet(SubPanel *p);                            ///< Unload sublet
 void subRubyLoadSublets(void);                                    ///< Load sublets
 void subRubyLoadPanels(void);                                     ///< Load panels
 int subRubyCall(int type, unsigned long proc, void *data);        ///< Call Ruby script
 int subRubyRelease(unsigned long recv);                           ///< Release receiver
-int subRubyReceiver(unsigned long instance,
-  unsigned long proc);                                            ///< Check if instance is receiver
 void subRubyFinish(void);                                         ///< Kill Ruby stack
 /* }}} */
 

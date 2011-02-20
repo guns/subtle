@@ -165,6 +165,20 @@ RubyConvert(void *data)
   return object;
 } /* }}} */
 
+/* RubyReceiver {{{ */
+static int
+RubyReceiver(unsigned long instance,
+  unsigned long meth)
+{
+  VALUE receiver = Qnil;
+
+  /* Check object instance */
+  if(rb_obj_is_instance_of(meth, rb_cMethod))
+    receiver = rb_funcall(meth, rb_intern("receiver"), 0, NULL);
+
+  return receiver == instance;
+} /* }}} */
+
 /* RubyIconConvert {{{ */
 static void
 RubyIconConvert(VALUE icon,
@@ -2019,11 +2033,9 @@ RubyConfigOn(VALUE self,
   /* Check value type */
   if(T_SYMBOL == rb_type(event) && rb_block_given_p())
     {
-      VALUE proc = rb_block_proc();
-
       if(subtle->flags & SUB_SUBTLE_CHECK) return Qnil; ///< Skip on check
 
-      RubyEvalHook(event, proc);
+      RubyEvalHook(event, rb_block_proc());
     }
   else rb_raise(rb_eArgError, "Unknown value type for on");
 
@@ -2368,7 +2380,8 @@ RubySubletOn(VALUE self,
           snprintf(buf, sizeof(buf), "__hook_%s", SYM2CHAR(event));
           rb_funcall(sing, meth, 2, CHAR2SYM(buf), proc);
 
-          RubyEvalHook(event, rb_obj_method(p->sublet->instance, CHAR2SYM(buf)));
+          RubyEvalHook(event, rb_obj_method(p->sublet->instance,
+            CHAR2SYM(buf)));
         }
     }
   else rb_raise(rb_eArgError, "Unknown value type for on");
@@ -3366,7 +3379,7 @@ subRubyLoadSublet(const char *file)
       subSharedLogWarn("Failed loading sublet `%s'\n", file);
       RubyBacktrace();
 
-      subPanelKill(p);
+      subRubyUnloadSublet(p);
 
       return;
     }
@@ -3381,7 +3394,7 @@ subRubyLoadSublet(const char *file)
       subSharedLogWarn("Failed configuring sublet `%s'\n", file);
       RubyBacktrace();
 
-      subPanelKill(p);
+      subRubyUnloadSublet(p);
 
       return;
     }
@@ -3389,7 +3402,7 @@ subRubyLoadSublet(const char *file)
   /* Carefully configure sublet */
   if(!subRubyCall(SUB_CALL_CONFIGURE, p->sublet->instance, NULL))
     {
-      subPanelKill(p);
+      subRubyUnloadSublet(p);
 
       return;
     }
@@ -3404,6 +3417,64 @@ subRubyLoadSublet(const char *file)
   subArrayPush(subtle->sublets, (void *)p);
 
   printf("Loaded sublet (%s)\n", p->sublet->name);
+} /* }}} */
+
+ /** subRubyUnloadSublet {{{
+  * @brief Load sublets from path
+  * @param[in]  p  A #SubPanel
+  **/
+
+void
+subRubyUnloadSublet(SubPanel *p)
+{
+  int i;
+
+  assert(p);
+
+  /* Call unload */
+  if(p->sublet->flags & SUB_SUBLET_UNLOAD)
+    subRubyCall(SUB_CALL_UNLOAD, p->sublet->instance, NULL);
+
+  /* Remove sublet from panels to avoid overhead */
+  for(i = 0; i < subtle->screens->ndata; i++)
+    {
+      SubScreen *s = SCREEN(subtle->screens->data[i]);
+
+      if(s->panels) subArrayRemove(s->panels, (void *)p);
+    }
+
+  /* Remove hooks */
+  for(i = 0; i < subtle->hooks->ndata; i++)
+    {
+      SubHook *hook = HOOK(subtle->hooks->data[i]);
+
+      if(RubyReceiver(p->sublet->instance, hook->proc))
+        {
+          subArrayRemove(subtle->hooks, (void *)hook);
+          subRubyRelease(hook->proc);
+          subHookKill(hook);
+          i--; ///< Prevent skipping of entries
+        }
+    }
+
+  /* Remove grabs */
+  for(i = 0; i < subtle->grabs->ndata; i++)
+    {
+      SubGrab *grab = GRAB(subtle->grabs->data[i]);
+
+      if(grab->flags & SUB_GRAB_PROC &&
+          RubyReceiver(p->sublet->instance, grab->data.num))
+        {
+          subArrayRemove(subtle->grabs, (void *)grab);
+          subRubyRelease(grab->data.num);
+          subGrabKill(grab);
+          i--; ///< Prevent skipping of entries
+        }
+    }
+printf("sublets=%d\n", subtle->sublets->ndata);
+  subArrayRemove(subtle->sublets, (void *)p);
+  subPanelKill(p);
+  subPanelPublish();
 } /* }}} */
 
  /** subRubyLoadPanels {{{
@@ -3535,27 +3606,6 @@ subRubyRelease(unsigned long value)
   rb_protect(RubyWrapRelease, value, &state);
 
   return state;
-} /* }}} */
-
- /** subRubyReceiver {{{
-  * @brief Whether instance is receiver of method
-  * @param[in]  instance  Object instance
-  * @param[in]  meth      Method
-  * @retval  1  Instance is receiver
-  * @retval  0  Instance is not receiver
-  **/
-
-int
-subRubyReceiver(unsigned long instance,
-  unsigned long meth)
-{
-  VALUE receiver = Qnil;
-
-  /* Check object instance */
-  if(rb_obj_is_instance_of(meth, rb_cMethod))
-    receiver = rb_funcall(meth, rb_intern("receiver"), 0, NULL);
-
-  return receiver == instance;
 } /* }}} */
 
  /** subRubyFinish {{{
