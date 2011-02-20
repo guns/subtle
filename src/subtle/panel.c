@@ -572,15 +572,18 @@ subPanelPublish(void)
     {
       SubScreen *s = SCREEN(subtle->screens->data[i]);
 
-      for(j = 0; j < s->panels->ndata; j++)
+      if(s->panels)
         {
-          SubPanel *p = PANEL(s->panels->data[j]);
-
-          /* Include sublets, exclude shallow copies */
-          if(p->flags & SUB_PANEL_SUBLET && !(p->flags & SUB_PANEL_COPY))
+          for(j = 0; j < s->panels->ndata; j++)
             {
-              names[idx]  = p->sublet->name;
-              wins[idx++] = p->win;
+              SubPanel *p = PANEL(s->panels->data[j]);
+
+              /* Include sublets, exclude shallow copies */
+              if(p->flags & SUB_PANEL_SUBLET && !(p->flags & SUB_PANEL_COPY))
+                {
+                  names[idx]  = p->sublet->name;
+                  wins[idx++] = p->win;
+                }
             }
         }
     }
@@ -617,10 +620,6 @@ subPanelKill(SubPanel *p)
       case SUB_PANEL_SUBLET: /* {{{ */
         if(!(p->flags & SUB_PANEL_COPY))
           {
-            /* Call unload */
-            if(p->sublet->flags & SUB_SUBLET_UNLOAD)
-              subRubyCall(SUB_CALL_UNLOAD, p->sublet->instance, NULL);
-
             subRubyRelease(p->sublet->instance);
 
             /* Remove socket watch */
