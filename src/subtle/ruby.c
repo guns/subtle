@@ -3471,7 +3471,7 @@ subRubyUnloadSublet(SubPanel *p)
           i--; ///< Prevent skipping of entries
         }
     }
-printf("sublets=%d\n", subtle->sublets->ndata);
+
   subArrayRemove(subtle->sublets, (void *)p);
   subPanelKill(p);
   subPanelPublish();
