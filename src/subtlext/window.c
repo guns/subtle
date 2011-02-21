@@ -46,15 +46,18 @@ WindowSweep(SubtlextWindow *w)
 {
   if(w)
     {
-      int i;
+      /* Free text */
+      if(w->text)
+        {
+          int i;
 
-      /* Free texts */
-      for(i = 0; i < w->ntext; i++)
-        subSharedTextFree(w->text[i].text);
+          for(i = 0; i < w->ntext; i++)
+            subSharedTextFree(w->text[i].text);
 
-      subSharedFontKill(display, w->font);
+          free(w->text);
+        }
+      if(w->font) subSharedFontKill(display, w->font);
 
-      free(w->text);
       free(w);
     }
 } /* }}} */
