@@ -620,6 +620,10 @@ subPanelKill(SubPanel *p)
       case SUB_PANEL_SUBLET: /* {{{ */
         if(!(p->flags & SUB_PANEL_COPY))
           {
+            /* Call unload */
+            if(p->sublet->flags & SUB_SUBLET_UNLOAD)
+              subRubyCall(SUB_CALL_UNLOAD, p->sublet->instance, NULL);
+
             subRubyRelease(p->sublet->instance);
 
             /* Remove socket watch */

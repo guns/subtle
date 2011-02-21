@@ -3420,7 +3420,7 @@ subRubyLoadSublet(const char *file)
 } /* }}} */
 
  /** subRubyUnloadSublet {{{
-  * @brief Load sublets from path
+  * @brief Unload sublets at runtime
   * @param[in]  p  A #SubPanel
   **/
 
@@ -3431,11 +3431,7 @@ subRubyUnloadSublet(SubPanel *p)
 
   assert(p);
 
-  /* Call unload */
-  if(p->sublet->flags & SUB_SUBLET_UNLOAD)
-    subRubyCall(SUB_CALL_UNLOAD, p->sublet->instance, NULL);
-
-  /* Remove sublet from panels to avoid overhead */
+  /* Remove sublet from panels */
   for(i = 0; i < subtle->screens->ndata; i++)
     {
       SubScreen *s = SCREEN(subtle->screens->data[i]);
