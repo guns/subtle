@@ -1286,6 +1286,7 @@ Init_subtlext(void)
   rb_define_singleton_method(client, "current", subClientSingCurrent, 0);
   rb_define_singleton_method(client, "visible", subClientSingVisible, 0);
   rb_define_singleton_method(client, "all",     subClientSingAll,     0);
+  rb_define_singleton_method(client, "recent",  subClientSingRecent,  0);
 
   /* General methods */
   rb_define_method(client, "has_tag?",    SubtlextTagAsk,           1);

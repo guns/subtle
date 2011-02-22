@@ -52,6 +52,7 @@ VALUE subClientSingFind(VALUE self, VALUE value);                 ///< Find clie
 VALUE subClientSingCurrent(VALUE self);                           ///< Get current client
 VALUE subClientSingVisible(VALUE self);                           ///< Get all visible clients
 VALUE subClientSingAll(VALUE self);                               ///< Get all clients
+VALUE subClientSingRecent(VALUE self);                            ///< Get recent active clients
 
 /* Class */
 VALUE subClientInstantiate(int id);                               ///< Instantiate client

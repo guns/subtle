@@ -419,6 +419,52 @@ subClientSingAll(VALUE self)
   return array;
 } /* }}} */
 
+/* subClientSingRecent {{{ */
+/*
+ * call-seq: recent -> Array
+ *
+ * Get recent active clients
+ *
+ *  Subtlext::Client.recent
+ *  => [ #<Subtlext::Client:xxx> ]
+ */
+
+VALUE
+subClientSingRecent(VALUE self)
+{
+  int i, nclients = 0;
+  Window *clients = NULL;
+  VALUE meth = Qnil, klass = Qnil, array = Qnil, client = Qnil;
+
+  subSubtlextConnect(NULL); ///< Implicit open connection
+
+  /* Fetch data */
+  meth    = rb_intern("new");
+  array   = rb_ary_new();
+  klass   = rb_const_get(mod, rb_intern("Client"));
+  clients = subSubtlextList("_NET_ACTIVE_WINDOW", &nclients);
+
+  /* Check results */
+  if(clients)
+    {
+      for(i = 0; i < nclients; i++)
+        {
+          /* Create client */
+          if(!NIL_P(client = rb_funcall(klass, meth, 1, INT2FIX(i))))
+            {
+              rb_iv_set(client, "@win", LONG2NUM(clients[i]));
+
+              subClientUpdate(client);
+              rb_ary_push(array, client);
+            }
+        }
+
+      free(clients);
+    }
+
+  return array;
+} /* }}} */
+
 /* Class */
 
 /* subClientInstantiate {{{ */
