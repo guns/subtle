@@ -233,7 +233,7 @@ subPanelUpdate(SubPanel *p)
             SubClient *c = NULL;
 
             /* Find focus window */
-            if((c = CLIENT(subSubtleFind(subtle->windows.focus, CLIENTID))))
+            if((c = CLIENT(subSubtleFind(subtle->windows.focus[0], CLIENTID))))
               {
                 assert(c);
                 DEAD(c);
@@ -382,7 +382,7 @@ subPanelRender(SubPanel *p)
           {
             SubClient *c = NULL;
 
-            if((c = CLIENT(subSubtleFind(subtle->windows.focus, CLIENTID))))
+            if((c = CLIENT(subSubtleFind(subtle->windows.focus[0], CLIENTID))))
               {
                 int x = 0;
                 char buf[50] = { 0 };

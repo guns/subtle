@@ -51,6 +51,7 @@
 #define MINW         1L                                           ///< Client min width
 #define MINH         1L                                           ///< Client min height
 #define WAITTIME     10                                           ///< Max waiting time
+#define HISTORYSIZE  5                                            ///< Size of the focus history
 #define DEFAULTTAG   (1L << 1)                                    ///< Default tag
 
 #define WIDTH(c)     (c->geom.width + 2 * subtle->bw)             ///< Get real width
@@ -591,7 +592,7 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    Window             focus, support;
+    Window             support, focus[HISTORYSIZE];
   } windows;                                                      ///< Subtle windows
 
   struct

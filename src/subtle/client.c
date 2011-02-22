@@ -53,7 +53,7 @@ ClientGravity(void)
   /* Default gravity */
   if(0 == subtle->gravity)
     {
-      if((c = CLIENT(subSubtleFind(subtle->windows.focus, CLIENTID))))
+      if((c = CLIENT(subSubtleFind(subtle->windows.focus[0], CLIENTID))))
         grav = c->gravity; ///< Copy gravity
     }
   else grav = subtle->gravity; ///< Set default
@@ -282,7 +282,7 @@ subClientRender(SubClient *c)
   /* Exclude desktop type windows */
   if(!(c->flags & SUB_CLIENT_TYPE_DESKTOP))
     {
-      XSetWindowBorder(subtle->dpy, c->win, subtle->windows.focus == c->win ?
+      XSetWindowBorder(subtle->dpy, c->win, subtle->windows.focus[0] == c->win ?
         subtle->colors.bo_active : subtle->colors.bo_inactive);
     }
 } /* }}} */
@@ -349,7 +349,7 @@ subClientFocus(SubClient *c)
 
   subSharedLogDebugSubtle("Focus: type=client, win=%#lx, "
     "current=%#lx, input=%d, focus=%d\n",
-    c->win, subtle->windows.focus, !!(c->flags & SUB_CLIENT_INPUT),
+    c->win, subtle->windows.focus[0], !!(c->flags & SUB_CLIENT_INPUT),
     !!(c->flags & SUB_CLIENT_FOCUS));
 } /* }}} */
 
@@ -1127,7 +1127,7 @@ subClientSetWMHints(SubClient *c,
         {
           /* Set urgency if window hasn't focus and and
            * remove it after getting focus */
-          if(hints->flags & XUrgencyHint && c->win != subtle->windows.focus)
+          if(hints->flags & XUrgencyHint && c->win != subtle->windows.focus[0])
             {
               *flags              |= SUB_CLIENT_MODE_URGENT;
               subtle->urgent_tags |= c->tags;
@@ -1337,7 +1337,7 @@ subClientClose(SubClient *c)
     }
   else
     {
-      int focus = (subtle->windows.focus == c->win); ///< Save
+      int focus = (subtle->windows.focus[0] == c->win); ///< Save
 
       /* Kill it manually */
       XKillClient(subtle->dpy, c->win);
