@@ -157,7 +157,7 @@ module Subtle # {{{
 
         # Check object
         if(spec.nil? || !spec.is_a?(Specification) || !spec.valid?)
-          raise error, "Couldn't extract specification from `#{file}'", caller
+          raise "Couldn't extract specification from `#{file}'"
         end
 
         spec
