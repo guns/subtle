@@ -480,7 +480,7 @@ EventFocus(XFocusChangeEvent *ev)
 
           /* EWMH: Active window */
           subEwmhSetWindows(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW,
-            &subtle->windows.focus[0], 1);
+            subtle->windows.focus, HISTORYSIZE);
 
           /* EWMH: Current desktop */
           if((s = SCREEN(subArrayGet(subtle->screens, c->screen))))
