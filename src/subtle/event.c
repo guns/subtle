@@ -228,6 +228,47 @@ EventQueuePop(int id,
     }
 } /* }}} */
 
+/* subSharedMatch {{{ */
+static int
+EventMatch(int type,
+  XRectangle *origin,
+  XRectangle *test)
+{
+  int dx = 0, dy = 0;
+
+  /* This check is complicated and consists of two parts:
+   * 1) Check if x/y values decrease in given direction
+   * 2) Check if a corner of one of the rects is close enough to
+   *    a side of the other rect */
+
+  /* Check geometries */
+  if((((SUB_WINDOW_LEFT  == type      && test->x   <= origin->x)                  ||
+       (SUB_WINDOW_RIGHT == type      && test->x   >= origin->x))                 &&
+       ((test->y         >= origin->y && test->y   <= origin->y + origin->height) ||
+       (origin->y        >= test->y   && origin->y <= test->y   + test->height))) ||
+
+     (((SUB_WINDOW_UP    == type      && test->y   <= origin->y)                  ||
+       (SUB_WINDOW_DOWN  == type      && test->y   >= origin->y))                 &&
+       ((test->x         >= origin->x && test->x   <= origin->x + origin->width)  ||
+       (origin->x        >= test->x   && origin->x <= test->x   + test->width))))
+    {
+      /* Euclidean distance */
+      dx = abs(origin->x - test->x);
+      dy = abs(origin->y - test->y);
+
+      /* Zero distance means same dimensions - score this bad */
+      if(0 == dx && 0 == dy) dx = dy = 1L << 15;
+    }
+  else
+    {
+      /* No match - score bad as well */
+      dx = 1L << 15;
+      dy = 1L << 15;
+    }
+
+  return dx + dy;
+} /* }}} */
+
 /* Events */
 
 /* EventColormap {{{ */
@@ -744,14 +785,16 @@ EventGrab(XEvent *ev)
                   {
                     SubClient *k = CLIENT(subtle->clients->data[i]);
 
-                    /* Check if both clients are different and visible*/
+                    /* Check if both clients are different and visible */
                     if(c != k && (subtle->visible_tags & k->tags ||
                         k->flags & SUB_CLIENT_MODE_STICK))
                       {
                         /* Substract stack position index to get window
                          * on top of sorted stack */
-                        if(match > (score = subSharedMatch(g->data.num,
-                            &c->geom, &k->geom) - i))
+                        score = EventMatch(g->data.num, &c->geom,
+                          &k->geom) - i;
+
+                        if(match > score)
                           {
                             match = score;
                             found = k;
