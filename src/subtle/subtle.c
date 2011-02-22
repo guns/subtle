@@ -194,6 +194,25 @@ subSubtleFocus(int focus)
       /* Get current screen */
       s = subScreenCurrent(&sid);
 
+      /* Check focus history */
+      for(i = 1; i < HISTORYSIZE; i++)
+        {
+          if((c = CLIENT(subSubtleFind(subtle->windows.focus[i], CLIENTID))))
+            {
+              /* Check visibility on current screen */
+              if(c->screen == sid && ALIVE(c) &&
+                  VISIBLE(subtle->visible_tags, c) &&
+                  c->win != subtle->windows.focus[0])
+                {
+                  subClientFocus(c);
+                  subClientWarp(c, True);
+
+                  return c->win;
+                }
+            }
+        }
+
+      /* Check client list */
       for(i = 0; i < subtle->clients->ndata; i++)
         {
           c = CLIENT(subtle->clients->data[i]);
@@ -201,7 +220,7 @@ subSubtleFocus(int focus)
           /* Check visibility on current screen */
           if(c->screen == sid && ALIVE(c) &&
               VISIBLE(subtle->visible_tags, c) &&
-              c->win != subtle->windows.focus)
+              c->win != subtle->windows.focus[0])
             {
               subClientFocus(c);
               subClientWarp(c, True);
@@ -212,7 +231,7 @@ subSubtleFocus(int focus)
     }
 
   /* Fallback to root */
-  subtle->windows.focus = ROOT;
+  subtle->windows.focus[0] = ROOT;
   subGrabSet(ROOT);
   XSetInputFocus(subtle->dpy, ROOT, RevertToPointerRoot, CurrentTime);
 
