@@ -70,10 +70,6 @@ VALUE subClientFlagsToggleResize(VALUE self);                     ///< Toggle re
 VALUE subClientFlagsWriter(VALUE self, VALUE value);              ///< Set multiple flags
 VALUE subClientRestackRaise(VALUE self);                          ///< Raise client
 VALUE subClientRestackLower(VALUE self);                          ///< Lower client
-VALUE subClientSelectUp(VALUE self);                              ///< Get client above
-VALUE subClientSelectLeft(VALUE self);                            ///< Get client left
-VALUE subClientSelectRight(VALUE self);                           ///< Get client right
-VALUE subClientSelectDown(VALUE self);                            ///< Get client down
 VALUE subClientAliveAsk(VALUE self);                              ///< Is client alive
 VALUE subClientGravityReader(VALUE self);                         ///< Get client gravity
 VALUE subClientGravityWriter(VALUE self, VALUE value);            ///< Set client gravity
