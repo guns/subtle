@@ -388,7 +388,7 @@ EventDestroy(XDestroyWindowEvent *ev)
   SubClient *c = NULL;
   SubTray *t = NULL;
 
-  int focus = (subtle->windows.focus == ev->window); ///< Save
+  int focus = (subtle->windows.focus[0] == ev->window); ///< Save
 
   /* Check if we know this window */
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID)))) ///< Client
@@ -444,7 +444,7 @@ EventFocus(XFocusChangeEvent *ev)
   SubTray *t = NULL;
 
   /* Check if we can skip this event */
-  if(ev->window == subtle->windows.focus) return;
+  if(ev->window == subtle->windows.focus[0]) return;
 
   /* Check if focus client is known, alive and visible */
   if(((c = CLIENT(subSubtleFind(ev->window, CLIENTID))) &&
@@ -454,10 +454,16 @@ EventFocus(XFocusChangeEvent *ev)
       SubClient *focus = NULL;
 
       /* Unset current focus */
-      subGrabUnset(subtle->windows.focus);
-      if((focus = CLIENT(subSubtleFind(subtle->windows.focus, CLIENTID))))
+      subGrabUnset(subtle->windows.focus[0]);
+      if((focus = CLIENT(subSubtleFind(subtle->windows.focus[0], CLIENTID))))
         {
-          subtle->windows.focus = 0;
+          int i;
+
+          /* Reorder focus history */
+          for(i = (HISTORYSIZE - 1); i > 0; i--)
+            subtle->windows.focus[i] = subtle->windows.focus[i - 1];
+          subtle->windows.focus[0] = 0;
+
           subClientRender(focus);
         }
 
@@ -467,14 +473,14 @@ EventFocus(XFocusChangeEvent *ev)
           SubScreen *s = NULL;
           SubView *v = NULL;
 
-          subtle->windows.focus = c->win;
+          /* Update focus */
+          subtle->windows.focus[0] = c->win;
           subGrabSet(c->win);
-
           subClientRender(c);
 
           /* EWMH: Active window */
           subEwmhSetWindows(ROOT, SUB_EWMH_NET_ACTIVE_WINDOW,
-            &subtle->windows.focus, 1);
+            &subtle->windows.focus[0], 1);
 
           /* EWMH: Current desktop */
           if((s = SCREEN(subArrayGet(subtle->screens, c->screen))))
@@ -493,7 +499,7 @@ EventFocus(XFocusChangeEvent *ev)
         }
       else if(t) ///< Trays
         {
-          subtle->windows.focus = t->win;
+          subtle->windows.focus[0] = t->win;
           subGrabSet(t->win);
         }
 
@@ -1031,7 +1037,7 @@ EventMessage(XClientMessageEvent *ev)
 
                       /* Check visibility of focus window after updating tags
                        * and reactivate grabs if necessary */
-                      if(subtle->windows.focus == c->win &&
+                      if(subtle->windows.focus[0] == c->win &&
                           !VISIBLE(subtle->visible_tags, c))
                         subSubtleFocus(True);
 
@@ -1432,7 +1438,7 @@ EventProperty(XPropertyEvent *ev)
             if(c->name) free(c->name);
             subSharedPropertyName(subtle->dpy, c->win, &c->name, c->klass);
 
-            if(subtle->windows.focus == c->win)
+            if(subtle->windows.focus[0] == c->win)
               {
                 subScreenUpdate();
                 subScreenRender();
@@ -1539,7 +1545,7 @@ EventUnmap(XUnmapEvent *ev)
   SubClient *c = NULL;
   SubTray *t = NULL;
 
-  int focus = (subtle->windows.focus == ev->window); ///< Save
+  int focus = (subtle->windows.focus[0] == ev->window); ///< Save
 
   /* Check if we know this window */
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
@@ -1678,7 +1684,7 @@ subEventLoop(void)
   XSync(subtle->dpy, False); ///< Sync before going on
 
   /* Set focus */
-  subtle->windows.focus = ROOT;
+  subtle->windows.focus[0] = ROOT;
   subGrabSet(ROOT);
   subSubtleFocus(True);
 
