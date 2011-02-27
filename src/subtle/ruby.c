@@ -1411,6 +1411,28 @@ RubyOptionsGravity(VALUE self,
 
 /* Config */
 
+/* RubyConfigMissing {{{ */
+/*
+ * Check error of missing methods
+ */
+
+static VALUE
+RubyConfigMissing(int argc,
+  VALUE *argv,
+  VALUE self)
+{
+  char *name = NULL;
+  VALUE missing = Qnil, args = Qnil;
+
+  rb_scan_args(argc, argv, "1*", &missing, &args);
+
+  name = (char *)rb_id2name(SYM2ID(missing));
+
+  subSharedLogWarn("Unknown method `%s'\n", name);
+
+  return Qnil;
+} /* }}} */
+
 /* RubyConfigSet {{{ */
 /*
  * call-seq: set(option, value) -> nil
@@ -3059,15 +3081,16 @@ subRubyInit(void)
   config = rb_define_class_under(mod, "Config", rb_cObject);
 
   /* Class methods */
-  rb_define_method(config, "set",     RubyConfigSet,       2);
-  rb_define_method(config, "color",   RubyConfigColor ,    2);
-  rb_define_method(config, "gravity", RubyConfigGravity,   2);
-  rb_define_method(config, "grab",    RubyConfigGrab,     -1);
-  rb_define_method(config, "tag",     RubyConfigTag,      -1);
-  rb_define_method(config, "view",    RubyConfigView,     -1);
-  rb_define_method(config, "on",      RubyConfigOn,        1);
-  rb_define_method(config, "sublet",  RubyConfigSublet,    1);
-  rb_define_method(config, "screen",  RubyConfigScreen,    1);
+  rb_define_method(config, "method_missing", RubyConfigMissing,  -1);
+  rb_define_method(config, "set",            RubyConfigSet,       2);
+  rb_define_method(config, "color",          RubyConfigColor ,    2);
+  rb_define_method(config, "gravity",        RubyConfigGravity,   2);
+  rb_define_method(config, "grab",           RubyConfigGrab,     -1);
+  rb_define_method(config, "tag",            RubyConfigTag,      -1);
+  rb_define_method(config, "view",           RubyConfigView,     -1);
+  rb_define_method(config, "on",             RubyConfigOn,        1);
+  rb_define_method(config, "sublet",         RubyConfigSublet,    1);
+  rb_define_method(config, "screen",         RubyConfigScreen,    1);
 
   /*
    * Document-class: Options
