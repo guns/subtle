@@ -171,28 +171,17 @@ subSubtleTime(void)
 Window
 subSubtleFocus(int focus)
 {
-  int rx = 0, ry = 0, x = 0, y = 0;
-  unsigned int mask = 0;
-  Window root = None, win = None;
+  int sid = 0;
   SubClient *c = NULL;
   SubScreen *s = NULL;
 
-  /* Get pointer window */
-  XQueryPointer(subtle->dpy, ROOT, &root, &win, &rx, &ry, &x, &y, &mask);
+  /* Get current screen */
+  s = subScreenCurrent(&sid);
 
-  /* Find pointer window */
-  if((c = CLIENT(subSubtleFind(win, CLIENTID))) && ALIVE(c))
+  /* Find next window */
+  if(focus)
     {
-      subClientFocus(c);
-
-      return c->win;
-    }
-  else if(focus) ///< Find next window
-    {
-      int i, sid = 0;
-
-      /* Get current screen */
-      s = subScreenCurrent(&sid);
+      int i;
 
       /* Check focus history */
       for(i = 1; i < HISTORYSIZE; i++)
@@ -239,8 +228,6 @@ subSubtleFocus(int focus)
   subScreenRender();
 
   /* EWMH: Current destop */
-  s = subScreenCurrent(NULL);
-
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_CURRENT_DESKTOP,
     (long *)&s->vid, 1);
 
