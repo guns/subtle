@@ -228,7 +228,7 @@ EventQueuePop(int id,
     }
 } /* }}} */
 
-/* subSharedMatch {{{ */
+/* EventMatch {{{ */
 static int
 EventMatch(int type,
   XRectangle *origin,
@@ -1411,6 +1411,10 @@ EventMessage(XClientMessageEvent *ev)
                     flags & SUB_CLIENT_MODE_STICK)
                   {
                     subScreenConfigure();
+
+                    if(!VISIBLE(subtle->visible_tags, c))
+                      subSubtleFocus(True);
+
                     subScreenUpdate();
                     subScreenRender();
                   }
