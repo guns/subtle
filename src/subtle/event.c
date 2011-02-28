@@ -234,34 +234,42 @@ EventMatch(int type,
   XRectangle *origin,
   XRectangle *test)
 {
-  int dx = 0, dy = 0;
+  int cx_origin = 0, cx_test = 0, cy_origin = 0, cy_test = 0, dx = 0, dy = 0;
 
-  /* This check is complicated and consists of two parts:
-   * 1) Check if x/y values decrease in given direction
-   * 2) Check if a corner of one of the rects is close enough to
+  /* This check is complicated and consists of three parts:
+   * 1) Calculate window center positions
+   * 2) Check if x/y values decrease in given direction
+   * 3) Check if a corner of one of the rects is close enough to
    *    a side of the other rect */
 
-  /* Check geometries */
-  if((((SUB_WINDOW_LEFT  == type      && test->x   <= origin->x)                  ||
-       (SUB_WINDOW_RIGHT == type      && test->x   >= origin->x))                 &&
-       ((test->y         >= origin->y && test->y   <= origin->y + origin->height) ||
-       (origin->y        >= test->y   && origin->y <= test->y   + test->height))) ||
+  /* Calculate window centers */
+  cx_origin = origin->x + (origin->width / 2);
+  cx_test   = test->x + (test->width / 2);
 
-     (((SUB_WINDOW_UP    == type      && test->y   <= origin->y)                  ||
-       (SUB_WINDOW_DOWN  == type      && test->y   >= origin->y))                 &&
-       ((test->x         >= origin->x && test->x   <= origin->x + origin->width)  ||
-       (origin->x        >= test->x   && origin->x <= test->x   + test->width))))
+  cy_origin = origin->y + (origin->height / 2);
+  cy_test   = test->y + (test->height / 2);
+
+  /* Check geometries */
+  if((((SUB_WINDOW_LEFT  == type      && cx_test   <= cx_origin)                  ||
+       (SUB_WINDOW_RIGHT == type      && cx_test   >= cx_origin))                 &&
+       ((cy_test         >= origin->y && cy_test   <= origin->y + origin->height) ||
+       (cy_origin        >= test->y   && cy_origin <= test->y   + test->height))) ||
+
+     (((SUB_WINDOW_UP    == type      && cy_test   <= cy_origin)                  ||
+       (SUB_WINDOW_DOWN  == type      && cy_test   >= cy_origin))                 &&
+       ((cx_test         >= origin->x && cx_test   <= origin->x + origin->width)  ||
+       (cx_origin        >= test->x   && cx_origin <= test->x   + test->width))))
     {
       /* Euclidean distance */
-      dx = abs(origin->x - test->x);
-      dy = abs(origin->y - test->y);
+      dx = abs(cx_origin - cx_test);
+      dy = abs(cy_origin - cy_test);
 
-      /* Zero distance means same dimensions - score this bad */
+      /* Zero distance means same dimensions - highest distance */
       if(0 == dx && 0 == dy) dx = dy = 1L << 15;
     }
   else
     {
-      /* No match - score bad as well */
+      /* No match - highest distance too */
       dx = 1L << 15;
       dy = 1L << 15;
     }
@@ -755,6 +763,8 @@ EventGrab(XEvent *ev)
             if((c = CLIENT(subSubtleFind(win, CLIENTID))))
               {
                 subClientToggle(c, g->data.num, True);
+
+                /* Update screen and focus */
                 if(VISIBLE(subtle->visible_tags, c) ||
                     SUB_CLIENT_MODE_STICK == g->data.num)
                   {
@@ -777,10 +787,10 @@ EventGrab(XEvent *ev)
           case SUB_GRAB_WINDOW_SELECT: /* {{{ */
             if((c = CLIENT(subSubtleFind(win, CLIENTID))))
               {
-                int i, match = (1L << 30), score = 0;
+                int i, j, match = (1L << 30), distance = 0;
                 SubClient *found = NULL;
 
-                /* Iterate once to find a client with smallest score */
+                /* Iterate once to find a client with smallest distance */
                 for(i = 0; i < subtle->clients->ndata; i++)
                   {
                     SubClient *k = CLIENT(subtle->clients->data[i]);
@@ -789,14 +799,24 @@ EventGrab(XEvent *ev)
                     if(c != k && (subtle->visible_tags & k->tags ||
                         k->flags & SUB_CLIENT_MODE_STICK))
                       {
-                        /* Substract stack position index to get window
-                         * on top of sorted stack */
-                        score = EventMatch(g->data.num, &c->geom,
+                        /* Substract stack position index to get top window */
+                        distance = EventMatch(g->data.num, &c->geom,
                           &k->geom) - i;
 
-                        if(match > score)
+                        /* Substract history stack position index */
+                        for(j = 1; j < HISTORYSIZE; j++)
                           {
-                            match = score;
+                            if(subtle->windows.focus[j] == k->win)
+                              {
+                                distance -= (HISTORYSIZE - j);
+                                break;
+                              }
+                          }
+
+                        /* Finally compare distance */
+                        if(match > distance)
+                          {
+                            match = distance;
                             found = k;
                           }
                       }
@@ -807,7 +827,7 @@ EventGrab(XEvent *ev)
                     subClientWarp(found, True);
                     subClientFocus(found);
 
-                    subSharedLogDebug("Match: win=%#lx, score=%d\n",
+                    subSharedLogDebug("Match: win=%#lx, distance=%d\n",
                       found->win, match);
                   }
               }
@@ -1407,6 +1427,7 @@ EventMessage(XClientMessageEvent *ev)
 
                 subClientToggle(c, flags, True);
 
+                /* Update screen and focus */
                 if(VISIBLE(subtle->visible_tags, c) ||
                     flags & SUB_CLIENT_MODE_STICK)
                   {
