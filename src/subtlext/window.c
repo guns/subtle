@@ -14,6 +14,7 @@
 /* Flags {{{ */
 #define WINDOW_COMPLETION_FUNC (1L << 1)
 #define WINDOW_INPUT_FUNC      (1L << 2)
+#define WINDOW_FOREIGN_WIN     (1L << 3)
 /* }}} */
 
 /* Typedefs {{{ */
@@ -46,6 +47,10 @@ WindowSweep(SubtlextWindow *w)
 {
   if(w)
     {
+      /* Destroy window */
+      if(!(w->flags & WINDOW_FOREIGN_WIN))
+        XDestroyWindow(display, w->win);
+
       /* Free text */
       if(w->text)
         {
@@ -206,58 +211,75 @@ subWindowAlloc(VALUE self)
 
 VALUE
 subWindowInit(VALUE self,
-  VALUE geometry)
+  VALUE value)
 {
   SubtlextWindow *w = NULL;
 
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w)
     {
-      int data[4] = { 0, 0, 1, 1 };
-      VALUE geom = Qnil;
-      XSetWindowAttributes sattrs;
+      VALUE geometry = Qnil;
 
       subSubtlextConnect(NULL); ///< Implicit open connection
 
-      /* Parse geometry hash */
-      if(T_HASH == rb_type(geometry))
+      /* Check object type */
+      switch(rb_type(value))
         {
-          int i;
-          const char *syms[] = { "x", "y", "width", "height" };
+          case T_HASH:
+          case T_ARRAY:
+              {
+                XSetWindowAttributes sattrs;
+                XRectangle r = { 0 };
 
-          for(i = 0; 4 > i; i++)
-            {
-              VALUE val = Qnil;
+                /* Create geometry */
+                geometry = subGeometryInstantiate(0, 0, 1, 1);
+                geometry = subGeometryInit(1, &value, geometry);
 
-              if(RTEST(val = rb_hash_lookup(geometry, CHAR2SYM(syms[i]))))
-                data[i] = FIX2INT(val);
-            }
+                subGeometryToRect(geometry, &r);
+
+                /* Create window */
+                sattrs.override_redirect = True;
+
+                w->win = XCreateWindow(display, DefaultRootWindow(display),
+                  r.x, r.y, r.width, r.height, 1, CopyFromParent,
+                  CopyFromParent, CopyFromParent, CWOverrideRedirect, &sattrs);
+              }
+            break;
+          case T_FIXNUM:
+          case T_BIGNUM:
+              {
+                int x = 0, y = 0;
+                unsigned int width = 0, height = 0, bw = 0, depth = 0;
+                Window root = None;
+
+                /* Update values */
+                w->win    = FIX2LONG(value);
+                w->flags |= WINDOW_FOREIGN_WIN;
+
+                /* Get window geometry */
+                if(XGetGeometry(display, w->win, &root,
+                    &x, &y, &width, &height, &bw, &depth))
+                  geometry = subGeometryInstantiate(x, y, width, height);
+                else rb_raise(rb_eArgError,
+                  "Unable to get geometry of window `%#lx'", w->win);
+              }
+            break;
+          default: rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+            rb_obj_classname(value));
         }
-      else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
-        rb_obj_classname(geometry));
-
-      /* Create geometry */
-      geom = subGeometryInstantiate(data[0], data[1], data[2], data[3]);
-
-      /* Create window */
-      sattrs.override_redirect = True;
-
-      w->win = XCreateWindow(display, DefaultRootWindow(display),
-        data[0], data[1], data[2], data[3], 1, CopyFromParent, CopyFromParent, CopyFromParent,
-        CWOverrideRedirect, &sattrs);
-
-      /* Set window defaults */
-      w->font = subSharedFontNew(display, "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*");
-      w->bg   = BlackPixel(display, DefaultScreen(display));
 
       /* Store data */
       rb_iv_set(w->instance, "@win",      LONG2NUM(w->win));
-      rb_iv_set(w->instance, "@geometry", geom);
+      rb_iv_set(w->instance, "@geometry", geometry);
       rb_iv_set(w->instance, "@hidden",   Qtrue);
 
       /* Yield to block if given */
       if(rb_block_given_p())
         rb_yield_values(1, w->instance);
+
+      /* Set window font */
+      if(!w->font) w->font = subSharedFontNew(display,
+          "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*");
 
       XSync(display, False); ///< Sync with X
     }
@@ -1267,16 +1289,18 @@ subWindowHiddenAsk(VALUE self)
 VALUE
 subWindowKill(VALUE self)
 {
-  VALUE win  = Qnil;
+  SubtlextWindow *w = NULL;
 
   /* Check ruby object */
   rb_check_frozen(self);
-  GET_ATTR(self, "@win", win);
 
-  /* Destroy window */
-  XDestroyWindow(display, NUM2LONG(win));
+  Data_Get_Struct(self, SubtlextWindow, w);
+  if(w)
+    {
+      XUnmapWindow(display, w->win);
 
-  rb_obj_freeze(self); ///< Freeze object
+      rb_obj_freeze(self); ///< Freeze object
+    }
 
   return Qnil;
 } /* }}} */
