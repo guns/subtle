@@ -911,7 +911,12 @@ RubyEvalConfig(void)
 
   /* Check font */
   if(!subtle->font)
-    subtle->font = subSharedFontNew(subtle->dpy, DEFFONT);
+    {
+      subtle->font = subSharedFontNew(subtle->dpy, DEFFONT);
+
+      /* EWMH: Font */
+      subEwmhSetString(ROOT, SUB_EWMH_SUBTLE_FONT, DEFFONT);
+    }
 
   /* Update panel height */
   subtle->th = subtle->font->height + 2 * subtle->pbw +
@@ -2777,6 +2782,36 @@ RubySubletGeometryReader(VALUE self)
   return geometry;
 } /* }}} */
 
+/* RubySubletWindowReader {{{ */
+/*
+ * call-seq: window -> Subtlext::Window
+ *
+ * Get window of a sublet
+ *
+ *  sublet.window
+ *  => #<Subtlext::Window:xxx>
+ */
+
+VALUE
+RubySubletWindowReader(VALUE self)
+{
+  SubPanel *p = NULL;
+  VALUE win = Qnil;
+
+  Data_Get_Struct(self, SubPanel, p);
+  if(p)
+    {
+      VALUE subtlext = Qnil, klass = Qnil;
+
+      /* Create window object */
+      subtlext = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
+      klass    = rb_const_get(subtlext, rb_intern("Window"));
+      win      = rb_funcall(klass, rb_intern("new"), 1, LONG2NUM(p->win));
+    }
+
+  return win;
+} /* }}} */
+
 /* RubySubletScreenReader {{{ */
 /*
  * call-seq: screen -> Subtlext::Screen
@@ -2791,12 +2826,12 @@ VALUE
 RubySubletScreenReader(VALUE self)
 {
   SubPanel *p = NULL;
-  VALUE geometry = Qnil;
+  VALUE screen = Qnil;
 
   Data_Get_Struct(self, SubPanel, p);
-  if(p) geometry = RubyConvert(p->screen);
+  if(p) screen = RubyConvert(p->screen);
 
-  return geometry;
+  return screen;
 } /* }}} */
 
 /* RubySubletShow {{{ */
@@ -3136,6 +3171,7 @@ subRubyInit(void)
   rb_define_method(sublet, "foreground=",    RubySubletForegroundWriter,  1);
   rb_define_method(sublet, "background=",    RubySubletBackgroundWriter,  1);
   rb_define_method(sublet, "geometry",       RubySubletGeometryReader,    0);
+  rb_define_method(sublet, "window",         RubySubletWindowReader,      0);
   rb_define_method(sublet, "screen",         RubySubletScreenReader,      0);
   rb_define_method(sublet, "show",           RubySubletShow,              0);
   rb_define_method(sublet, "hide",           RubySubletHide,              0);
