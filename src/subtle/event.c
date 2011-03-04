@@ -1659,8 +1659,11 @@ EventUnmap(XUnmapEvent *ev)
           return;
         }
 
-      /* FIXME: Shouldn't we kill the tray? */
+      /*  Kill tray */
       t->flags |= SUB_TRAY_DEAD;
+
+      subArrayRemove(subtle->trays, (void *)t);
+      subTrayKill(t);
       subTrayUpdate();
       subTrayPublish();
 
@@ -1774,7 +1777,7 @@ subEventLoop(void)
           /* Update tray selection */
           if(tray && !(subtle->flags & SUB_SUBTLE_TRAY))
             subTrayDeselect();
-          else if(subtle->flags & SUB_SUBTLE_TRAY)
+          else if(!tray && subtle->flags & SUB_SUBTLE_TRAY)
             subTraySelect();
         }
 
