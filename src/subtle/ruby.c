@@ -3634,11 +3634,7 @@ subRubyCall(int type,
 
   /* Carefully call */
   rb_protect(RubyWrapCall, (VALUE)&rargs, &state);
-  if(state)
-    {
-      subSharedLogWarn("Failed calling proc\n");
-      RubyBacktrace();
-    }
+  if(state) RubyBacktrace();
 
 #ifdef DEBUG
   subSharedLogDebugRuby("GC RUN\n");
