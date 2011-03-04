@@ -3297,7 +3297,10 @@ subRubyLoadConfig(void)
 void
 subRubyReloadConfig(void)
 {
-  int i, *vids = NULL;
+  int i, rx = 0, ry = 0, x = 0, y = 0, *vids = NULL;
+  unsigned int mask = 0;
+  Window root = None, win = None;
+  SubClient *c = NULL;
 
   /* Reset before reloading */
   subtle->flags &= (SUB_SUBTLE_DEBUG|SUB_SUBTLE_EWMH|SUB_SUBTLE_RUN|
@@ -3362,8 +3365,8 @@ subRubyReloadConfig(void)
   for(i = 0; i < subtle->clients->ndata; i++)
     {
       int flags = 0;
-      SubClient *c = CLIENT(subtle->clients->data[i]);
 
+      c          = CLIENT(subtle->clients->data[i]);
       c->gravity = -1;
 
       subClientRetag(c, &flags);
@@ -3375,7 +3378,13 @@ subRubyReloadConfig(void)
   subScreenConfigure();
   subScreenUpdate();
   subScreenRender();
-  subSubtleFocus(True);
+
+  /* Focus pointer window */
+  XQueryPointer(subtle->dpy, ROOT, &root, &win, &rx, &ry, &x, &y, &mask);
+
+  if((c = CLIENT(subSubtleFind(win, CLIENTID))))
+    subClientFocus(c);
+  else subSubtleFocus(False);
 
   /* Hook: Reload */
   subHookCall(SUB_HOOK_RELOAD, NULL);
