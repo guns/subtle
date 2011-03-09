@@ -493,7 +493,7 @@ subWindowForegroundWriter(VALUE self,
   rb_check_frozen(self);
 
   Data_Get_Struct(self, SubtlextWindow, w);
-  if(w) w->fg = subColorPixel(value);
+  if(w) w->fg = subColorPixel(value, Qnil, Qnil, NULL);
 
   return Qnil;
 } /* }}} */
@@ -520,7 +520,7 @@ subWindowBackgroundWriter(VALUE self,
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w)
     {
-      w->bg = subColorPixel(value);
+      w->bg = subColorPixel(value, Qnil, Qnil, NULL);
 
       XSetWindowBackground(display, w->win, w->bg);
     }
@@ -550,7 +550,8 @@ subWindowBorderColorWriter(VALUE self,
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w)
     {
-      XSetWindowBorder(display, w->win, subColorPixel(value));
+      XSetWindowBorder(display, w->win,
+        subColorPixel(value, Qnil, Qnil, NULL));
       XFlush(display);
     }
 
@@ -931,13 +932,13 @@ subWindowRead(int argc,
   return ret;
 } /* }}} */
 
-/* subWindowListen {{{ */
+/* subWindowGrabKeys {{{ */
 /*
- * call-seq: listen(&block) -> nil
+ * call-seq: grab_keys(&block) -> nil
  *
- * Listen to key events
+ * Grab key events
  *
- *  listen do |key|
+ *  grab_keys do |key|
  *    case key
  *      when :return then p "return"
  *    end
@@ -946,7 +947,7 @@ subWindowRead(int argc,
  */
 
 VALUE
-subWindowListen(VALUE self)
+subWindowGrabKeys(VALUE self)
 {
   SubtlextWindow *w = NULL;
 
@@ -961,7 +962,7 @@ subWindowListen(VALUE self)
       int loop = True, state = 0;
       char buf[32] = { 0 };
       unsigned long *focus = NULL;
-      VALUE p = rb_block_proc(), result = Qnil, rargs[5] = { Qnil }, sym = Qnil;
+      VALUE p = rb_block_proc(), result = Qnil, rargs[4] = { Qnil }, sym = Qnil;
       KeySym keysym;
 
       /* Grab and set focus */
@@ -974,7 +975,7 @@ subWindowListen(VALUE self)
 
       while(loop)
         {
-          XNextEvent(display, &ev);
+          XMaskEvent(display, KeyPressMask, &ev);
           switch(ev.type)
             {
               case KeyPress: /* {{{ */
@@ -1035,6 +1036,99 @@ subWindowListen(VALUE self)
 
           free(focus);
         }
+    }
+
+  return Qnil;
+} /* }}} */
+
+/* subWindowGrabMouse {{{ */
+/*
+ * call-seq: grab_mouse(&block) -> nil
+ *
+ * Grab mouse events
+ *
+ *  grab_mouse do |x, y, button|
+ *    p "x=#{x}, y=#{y}, button=#{button}"
+ *  end
+ *  => nil
+ */
+
+VALUE
+subWindowGrabMouse(VALUE self)
+{
+  SubtlextWindow *w = NULL;
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+  rb_need_block();
+  Data_Get_Struct(self, SubtlextWindow, w);
+  if(w && rb_block_given_p())
+    {
+
+#if 0
+      XEvent ev;
+      int loop = True, state = 0;
+      char buf[32] = { 0 };
+      unsigned long *focus = NULL;
+      VALUE p = rb_block_proc(), result = Qnil, rargs[6] = { Qnil }, sym = Qnil;
+      KeySym keysym;
+
+      /* Grab and set focus */
+      XGrabPointer(display, w->win, True,
+        GrabModeAsync, GrabModeAsync, CurrentTime);
+      XMapRaised(display, w->win);
+      XSetInputFocus(display, w->win, RevertToPointerRoot, CurrentTime);
+      XSelectInput(display, w->win, KeyPressMask);
+      XFlush(display);
+
+      while(loop)
+        {
+          XMaskEvent(display, PointerMotionMask|ButtonPressMask, &ev);
+          switch(ev.type)
+            {
+              case ButtonPress: /* {{{ */
+                /* Wrap up data */
+                rargs[0] = p;
+                rargs[1] = rb_intern("call");
+                rargs[2] = 3;
+                rargs[3] = sym;
+
+                /* Carefully call listen proc */
+                result = rb_protect(WindowCall, (VALUE)&rargs, &state);
+                if(state) subSubtlextBacktrace();
+                break;
+              case MotionNotify:
+
+                /* Wrap up data */
+                rargs[0] = p;
+                rargs[1] = rb_intern("call");
+                rargs[2] = 3;
+                rargs[3] = sym;
+
+                /* Carefully call listen proc */
+                result = rb_protect(WindowCall, (VALUE)&rargs, &state);
+                if(state) subSubtlextBacktrace();
+
+                /* End event loop? */
+                if(Qtrue != result || state) loop = False;
+                break; /* }}} */
+              default: break;
+            }
+        }
+
+      XSelectInput(display, w->win, NoEventMask);
+      XUngrabPointer(display, CurrentTime);
+
+      /* Restore logical focus */
+      if((focus = (unsigned long *)subSharedPropertyGet(display,
+          DefaultRootWindow(display), XA_WINDOW,
+          XInternAtom(display, "_NET_ACTIVE_WINDOW", False), NULL)))
+        {
+          XSetInputFocus(display, *focus, RevertToPointerRoot, CurrentTime);
+
+          free(focus);
+        }
+#endif
     }
 
   return Qnil;
