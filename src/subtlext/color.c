@@ -11,6 +11,8 @@
 
 #include "subtlext.h"
 
+#define SCALE(i,div,mul) (unsigned long)(0 < i ? ((float)i / div) * mul : 0)
+
 /* ColorEqual {{{ */
 VALUE
 ColorEqual(VALUE self,
@@ -34,41 +36,120 @@ ColorEqual(VALUE self,
   return ret ? Qtrue : Qfalse;
 } /* }}} */
 
+/* ColorPixelToRGB {{{ */
+static void
+ColorPixelToRGB(XColor *xcolor)
+{
+  XQueryColor(display, DefaultColormap(display,
+    DefaultScreen(display)), xcolor);
+
+  /* Scale 65535 to 255 */
+  xcolor->red   = SCALE(xcolor->red,   65535, 255);
+  xcolor->green = SCALE(xcolor->green, 65535, 255);
+  xcolor->blue  = SCALE(xcolor->blue,  65535, 255);
+} /* }}} */
+
+/* ColorRGBToPixel {{{ */
+static void
+ColorRGBToPixel(XColor *xcolor)
+{
+  /* Scale 255 to 65535 */
+  xcolor->red   = SCALE(xcolor->red,   255, 65535);
+  xcolor->green = SCALE(xcolor->green, 255, 65535);
+  xcolor->blue  = SCALE(xcolor->blue,  255, 65535);
+
+  XAllocColor(display, DefaultColormap(display,
+      DefaultScreen(display)), xcolor);
+
+  /* Scale 65535 to 255 */
+  xcolor->red   = SCALE(xcolor->red,   65535, 255);
+  xcolor->green = SCALE(xcolor->green, 65535, 255);
+  xcolor->blue  = SCALE(xcolor->blue,  65535, 255);
+} /* }}} */
+
 /* Exported */
 
 /* subColorPixel {{{ */
 unsigned long
-subColorPixel(VALUE value)
+subColorPixel(VALUE red,
+  VALUE green,
+  VALUE blue,
+  XColor *xcolor)
 {
-  unsigned long pixel = 0;
+  XColor xcol = { 0 };
 
   /* Check object type */
-  switch(rb_type(value))
+  switch(rb_type(red))
     {
-      case T_STRING:
-        pixel = subSharedParseColor(display, RSTRING_PTR(value));
-        break;
       case T_FIXNUM:
-        pixel = FIX2LONG(value);
-        break;
       case T_BIGNUM:
-        pixel = NUM2LONG(value);
+        if(NIL_P(green) && NIL_P(blue))
+          {
+            xcol.pixel = NUM2LONG(red);
+
+            ColorPixelToRGB(&xcol);
+          }
+        else
+          {
+            xcol.red   = NUM2INT(red);
+            xcol.green = NUM2INT(green);
+            xcol.blue  = NUM2INT(blue);
+
+            ColorRGBToPixel(&xcol);
+          }
+        break;
+      case T_STRING:
+        xcol.pixel = subSharedParseColor(display, RSTRING_PTR(red));
+
+        ColorPixelToRGB(&xcol);
+        break;
+      case T_ARRAY:
+        if(3 == FIX2INT(rb_funcall(red, rb_intern("size"), 0, NULL)))
+          {
+            xcol.red   = NUM2INT(rb_ary_entry(red, 0));
+            xcol.green = NUM2INT(rb_ary_entry(red, 1));
+            xcol.blue  = NUM2INT(rb_ary_entry(red, 2));
+
+            ColorRGBToPixel(&xcol);
+          }
+        break;
+      case T_HASH:
+          {
+            xcol.red   = NUM2INT(rb_hash_lookup(red, CHAR2SYM("red")));
+            xcol.green = NUM2INT(rb_hash_lookup(red, CHAR2SYM("green")));
+            xcol.blue  = NUM2INT(rb_hash_lookup(red, CHAR2SYM("blue")));
+
+            ColorRGBToPixel(&xcol);
+          }
         break;
       case T_OBJECT:
           {
             VALUE klass = rb_const_get(mod, rb_intern("Color"));
 
             /* Check object instance */
-            if(rb_obj_is_instance_of(value, klass))
-              pixel = NUM2LONG(rb_iv_get(value, "@pixel"));
+            if(rb_obj_is_instance_of(red, klass))
+              {
+                xcol.red   = NUM2INT(rb_iv_get(red, "@red"));
+                xcol.green = NUM2INT(rb_iv_get(red, "@green"));
+                xcol.blue  = NUM2INT(rb_iv_get(red, "@blue"));
+                xcol.pixel = NUM2LONG(rb_iv_get(red, "@pixel"));
+              }
           }
         break;
       default:
         rb_raise(rb_eArgError, "Unexpected value-type `%s'",
-          rb_obj_classname(value));
+          rb_obj_classname(red));
     }
 
-  return pixel;
+  if(xcolor)
+    {
+      xcolor->red   = xcol.red;
+      xcolor->green = xcol.green;
+      xcolor->blue  = xcol.blue;
+      xcolor->pixel = xcol.pixel;
+    }
+
+  return xcol.pixel;
 } /* }}} */
 
 /* subColorInstantiate {{{ */
@@ -86,30 +167,51 @@ subColorInstantiate(unsigned long pixel)
 
 /* subColorInit {{{ */
 /*
- * call-seq: new(color) -> Subtlext::Color
+ * call-seq: new(red, green, blue) -> Subtlext::Color
+ *           new(string)           -> Subtlext::Color
+ *           new(array)            -> Subtlext::Color
+ *           new(hash)             -> Subtlext::Color
+ *           new(pixel)            -> Subtlext::Color
+ *           new(color)            -> Subtlext::Color
  *
  * Create new Color object
+ *
+ *  color = Subtlext::Color.new(51, 102, 253)
+ *  => #<Subtlext::Color:xxx>
  *
  *  color = Subtlext::Color.new("#336699")
  *  => #<Subtlext::Color:xxx>
  *
+ *  color = Subtlext::Color.new("red")
+ *  => #<Subtlext::Color:xxx>
+ *
+ *  color = Subtlext::Color.new([ 51, 102, 253 ])
+ *  => #<Subtlext::Color:xxx>
+ *
+ *  color = Subtlext::Color.new({ :red => 51, :green => 102, :blue => 253 ])
+ *  => #<Subtlext::Color:xxx>
+ *
  *  color = Subtlext::Color.new(14253553)
+ *  => #<Subtlext::Color:xxx>
+ *
+ *  color = Subtlext::Color.new(Subtlext::Color.new(51, 102, 253))
  *  => #<Subtlext::Color:xxx>
  */
 
 VALUE
-subColorInit(VALUE self,
-  VALUE value)
+subColorInit(int argc,
+  VALUE *argv,
+  VALUE self)
 {
+  VALUE data[3] = { Qnil };
   XColor xcolor = { 0 };
+
+  rb_scan_args(argc, argv, "12", &data[0], &data[1], &data[2]);
 
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Get color values */
-  xcolor.pixel = subColorPixel(value);
-
-  XQueryColor(display, DefaultColormap(display,
-    DefaultScreen(display)), &xcolor);
+  subColorPixel(data[0], data[1], data[2], &xcolor);
 
   /* Set values */
   rb_iv_set(self, "@red",   INT2FIX(xcolor.red));
@@ -141,10 +243,73 @@ subColorToHex(VALUE self)
   GET_ATTR(self, "@green", green);
   GET_ATTR(self, "@blue",  blue);
 
-  snprintf(buf, sizeof(buf), "#%02x%02x%02x", (int)(FIX2INT(red) & 0xff),
-    (int)(FIX2INT(green) & 0xff), (int)(FIX2INT(blue) & 0xff));
+  snprintf(buf, sizeof(buf), "#%02X%02X%02X",
+    FIX2INT(red), FIX2INT(green), FIX2INT(blue));
 
   return rb_str_new2(buf);
+} /* }}} */
+
+/* subColorToArray {{{ */
+/*
+ * call-seq: to_a -> String
+ *
+ * Convert Color object to Array
+ *
+ *  color.to_a
+ *  => [ 51, 102, 253 ]
+ */
+
+VALUE
+subColorToArray(VALUE self)
+{
+  VALUE ary = Qnil, red = Qnil, green = Qnil, blue = Qnil;
+
+  /* Check ruby object */
+  GET_ATTR(self, "@red",   red);
+  GET_ATTR(self, "@green", green);
+  GET_ATTR(self, "@blue",  blue);
+
+  /* Create new array */
+  ary = rb_ary_new2(3);
+
+  /* Set values */
+  rb_ary_push(ary, red);
+  rb_ary_push(ary, green);
+  rb_ary_push(ary, blue);
+
+  return ary;
+} /* }}} */
+
+/* subColorToHash {{{ */
+/*
+ * call-seq: to_hash -> Hash
+ *
+ * Convert Color object to Hash
+ *
+ *  color.to_hash
+ *  => { :red => 51, :green => 102, :blue => 253 }
+ */
+
+VALUE
+subColorToHash(VALUE self)
+{
+  VALUE klass = Qnil, hash = Qnil, red = Qnil, green = Qnil, blue = Qnil;
+
+  /* Check ruby object */
+  GET_ATTR(self, "@red",   red);
+  GET_ATTR(self, "@green", green);
+  GET_ATTR(self, "@blue",  blue);
+
+  /* Create new hash */
+  klass = rb_const_get(rb_mKernel, rb_intern("Hash"));
+  hash  = rb_funcall(klass, rb_intern("new"), 0, NULL);
+
+  /* Set values */
+  rb_hash_aset(hash, CHAR2SYM("red"),   red);
+  rb_hash_aset(hash, CHAR2SYM("green"), green);
+  rb_hash_aset(hash, CHAR2SYM("blue"),  blue);
+
+  return hash;
 } /* }}} */
 
 /* subColorToString {{{ */
