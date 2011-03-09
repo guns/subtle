@@ -290,8 +290,10 @@ subIconDrawPoint(int argc,
 
           if(i->flags & SUB_TEXT_PIXMAP)
             {
-              if(!NIL_P(data[2])) gvals.foreground = subColorPixel(data[2]);
-              if(!NIL_P(data[3])) gvals.background = subColorPixel(data[3]);
+              if(!NIL_P(data[2]))
+                gvals.foreground = subColorPixel(data[2], Qnil, Qnil, NULL);
+              if(!NIL_P(data[3]))
+                gvals.background = subColorPixel(data[3], Qnil, Qnil, NULL);
             }
 
           XChangeGC(display, i->gc, GCForeground|GCBackground, &gvals);
@@ -351,8 +353,10 @@ subIconDrawRect(int argc,
 
           if(i->flags & SUB_TEXT_PIXMAP)
             {
-              if(!NIL_P(data[5])) gvals.foreground = subColorPixel(data[5]);
-              if(!NIL_P(data[6])) gvals.background = subColorPixel(data[6]);
+              if(!NIL_P(data[5]))
+                gvals.foreground = subColorPixel(data[5], Qnil, Qnil, NULL);
+              if(!NIL_P(data[6]))
+                gvals.background = subColorPixel(data[6], Qnil, Qnil, NULL);
             }
 
           XChangeGC(display, i->gc, GCForeground|GCBackground, &gvals);
@@ -413,8 +417,10 @@ subIconClear(int argc,
 
           rb_scan_args(argc, argv, "02", &colors[0], &colors[1]);
 
-          if(!NIL_P(colors[0])) gvals.foreground = subColorPixel(colors[0]);
-          if(!NIL_P(colors[1])) gvals.background = subColorPixel(colors[1]);
+          if(!NIL_P(colors[0]))
+            gvals.foreground = subColorPixel(colors[0], Qnil, Qnil, NULL);
+          if(!NIL_P(colors[1]))
+            gvals.background = subColorPixel(colors[1], Qnil, Qnil, NULL);
         }
 
       XChangeGC(display, i->gc, GCForeground|GCBackground, &gvals);
