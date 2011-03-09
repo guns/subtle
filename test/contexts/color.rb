@@ -12,14 +12,24 @@
 context "Color" do
   setup { Subtlext::Color.new("#ff0000") }
 
+  asserts("Init types") do
+    c1 = Subtlext::Color.new(topic)
+    c2 = Subtlext::Color.new([ 255, 0, 0 ])
+    c3 = Subtlext::Color.new({ red: 255, green: 0, blue: 0})
+
+    topic == c1 and c1 == c2 and c1 == c3
+  end
+
   asserts("Check attributes") do
-    65535 == topic.red and 0 == topic.green and 0 == topic.blue
+    255 == topic.red and 0 == topic.green and 0 == topic.blue
   end
 
   asserts("Type conversions") do
-    hex = topic.to_hex
+    hex  = topic.to_hex
+    hash = topic.to_hash
+    ary  = topic.to_ary
 
-    true
+    "#FF0000" == hex and hash.values == ary
   end
 
   asserts("Equal and compare") do
