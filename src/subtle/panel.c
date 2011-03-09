@@ -38,10 +38,12 @@ subPanelNew(int type)
         p->sublet = SUBLET(subSharedMemoryAlloc(1, sizeof(SubSublet)));
 
         /* Sublet specific */
-        p->sublet->time  = subSubtleTime();
-        p->sublet->text  = subSharedTextNew();
-        p->sublet->fg    = subtle->colors.fg_sublets;
-        p->sublet->bg    = subtle->colors.bg_sublets; /* }}} */
+        p->sublet->time   = subSubtleTime();
+        p->sublet->text   = subSharedTextNew();
+        p->sublet->fg     = subtle->colors.fg_sublets;
+        p->sublet->bg     = subtle->colors.bg_sublets;
+        p->sublet->textfg = -1;
+        p->sublet->iconfg = -1; /* }}} */
       case SUB_PANEL_COPY: /* {{{ */
         /* Create window */
         p->win = XCreateSimpleWindow(subtle->dpy, ROOT, 0, 0, 1,

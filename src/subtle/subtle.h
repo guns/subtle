@@ -542,7 +542,7 @@ typedef struct subsublet_t { /* {{{ */
   FLAGS             flags;                                        ///< Sublet flags
   int               watch, width;                                 ///< Sublet watch id
   char              *name;                                        ///< Sublet name
-  unsigned long     instance, fg, bg;                             ///< Sublet ruby instance, fg and bg color
+  unsigned long     instance, fg, bg, textfg, iconfg;             ///< Sublet ruby instance, fg, bg and icon color
   time_t            time, interval;                               ///< Sublet update/interval time
 
   struct subtext_t  *text;                                        ///< Sublet text

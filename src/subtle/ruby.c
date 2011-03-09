@@ -1281,6 +1281,14 @@ RubyWrapConfig(VALUE data)
       if(T_STRING == rb_type(value = rb_hash_lookup(hash,
           CHAR2SYM("background"))))
         s->bg = subSharedParseColor(subtle->dpy, RSTRING_PTR(value));
+
+      if(T_STRING == rb_type(value = rb_hash_lookup(hash,
+          CHAR2SYM("text_fg"))))
+        s->textfg = subSharedParseColor(subtle->dpy, RSTRING_PTR(value));
+
+      if(T_STRING == rb_type(value = rb_hash_lookup(hash,
+          CHAR2SYM("icon_fg"))))
+        s->iconfg = subSharedParseColor(subtle->dpy, RSTRING_PTR(value));
     }
 
   return Qnil;
@@ -2625,8 +2633,9 @@ RubySubletDataWriter(VALUE self,
       if(T_STRING == rb_type(value))
         {
           p->sublet->width = subSharedTextParse(subtle->dpy,
-            subtle->font, p->sublet->text, RSTRING_PTR(value)) +
-            2 * subtle->pbw + subtle->padding.x + subtle->padding.y;
+            subtle->font, p->sublet->text, p->sublet->textfg,
+            p->sublet->iconfg, RSTRING_PTR(value)) + 2 * subtle->pbw +
+            subtle->padding.x + subtle->padding.y;
         }
       else rb_raise(rb_eArgError, "Unknown value type");
     }
