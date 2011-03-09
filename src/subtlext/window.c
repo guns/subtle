@@ -714,7 +714,7 @@ subWindowWrite(VALUE self,
             }
 
           len = subSharedTextParse(display, w->font, wt->text,
-            RSTRING_PTR(text));
+            -1, -1, RSTRING_PTR(text));
         }
       else rb_raise(rb_eArgError, "Unknown value-types");
     }
