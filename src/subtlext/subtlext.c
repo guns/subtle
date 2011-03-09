@@ -1360,14 +1360,18 @@ Init_subtlext(void)
   rb_define_attr(color, "pixel", 1, 0);
 
   /* Class methods */
-  rb_define_method(color, "initialize", subColorInit,         1);
-  rb_define_method(color, "to_hex",     subColorToHex,        0);
-  rb_define_method(color, "to_str",     subColorToString,     0);
-  rb_define_method(color, "+",          subColorOperatorPlus, 1);
-  rb_define_method(color, "==",         subColorEqual,        1);
-  rb_define_method(color, "eql?",       subColorEqualTyped,   1);
+  rb_define_method(color, "initialize", subColorInit,         -1);
+  rb_define_method(color, "to_hex",     subColorToHex,         0);
+  rb_define_method(color, "to_ary",     subColorToArray,       0);
+  rb_define_method(color, "to_hash",    subColorToHash,        0);
+  rb_define_method(color, "to_str",     subColorToString,      0);
+  rb_define_method(color, "+",          subColorOperatorPlus,  1);
+  rb_define_method(color, "==",         subColorEqual,         1);
+  rb_define_method(color, "eql?",       subColorEqualTyped,    1);
 
   /* Aliases */
+  rb_define_alias(color, "to_a", "to_ary");
+  rb_define_alias(color, "to_h", "to_hash");
   rb_define_alias(color, "to_s", "to_str");
 
   /*
@@ -1764,7 +1768,8 @@ Init_subtlext(void)
   rb_define_method(window, "border_size=",  subWindowBorderSizeWriter,  1);
   rb_define_method(window, "write",         subWindowWrite,             3);
   rb_define_method(window, "read",          subWindowRead,             -1);
-  rb_define_method(window, "listen",        subWindowListen,            0);
+  rb_define_method(window, "grab_keys",     subWindowGrabKeys,          0);
+  rb_define_method(window, "grab_mouse",    subWindowGrabMouse,         0);
   rb_define_method(window, "clear",         subWindowClear,            -1);
   rb_define_method(window, "redraw",        subWindowRedraw,            0);
   rb_define_method(window, "completion",    subWindowCompletion,        0);
@@ -1782,7 +1787,8 @@ Init_subtlext(void)
   rb_define_alias(rb_singleton_class(window), "configure", "new");
 
   /* Aliases */
-  rb_define_alias(window, "click", "send_button");
+  rb_define_alias(window, "click",  "send_button");
+  rb_define_alias(window, "listen", "grab_keys");
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

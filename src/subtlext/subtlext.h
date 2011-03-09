@@ -83,10 +83,13 @@ VALUE subClientKill(VALUE self);                                  ///< Kill clie
 /* }}} */
 
 /* color.c {{{ */
-unsigned long subColorPixel(VALUE value);                         ///< Get pixel value
+unsigned long subColorPixel(VALUE red, VALUE green,
+  VALUE blue, XColor *xcolor);                                    ///< Get pixel value
 VALUE subColorInstantiate(unsigned long pixel);                   ///< Instantiate color
-VALUE subColorInit(VALUE self, VALUE value);                      ///< Create new color
+VALUE subColorInit(int argc, VALUE *argv, VALUE self);            ///< Create new color
 VALUE subColorToHex(VALUE self);                                  ///< Convert to hex string
+VALUE subColorToArray(VALUE self);                                ///< Color to array
+VALUE subColorToHash(VALUE self);                                 ///< Color to hash
 VALUE subColorToString(VALUE self);                               ///< Convert to string
 VALUE subColorOperatorPlus(VALUE self, VALUE value);              ///< Concat string
 VALUE subColorEqual(VALUE self, VALUE other);                     ///< Whether objects are equal
@@ -270,7 +273,8 @@ VALUE subWindowGeometryReader(VALUE self);                        ///< Get geome
 VALUE subWindowGeometryWriter(VALUE self, VALUE value);           ///< Set geometry
 VALUE subWindowWrite(VALUE self, VALUE x, VALUE y, VALUE text);   ///< Write text
 VALUE subWindowRead(int argc, VALUE *argv, VALUE self);           ///< Read text
-VALUE subWindowListen(VALUE self);                                ///< Listen to key events
+VALUE subWindowGrabKeys(VALUE self);                              ///< Grab key events
+VALUE subWindowGrabMouse(VALUE self);                             ///< Grab mouse events
 VALUE subWindowClear(int argc, VALUE *argv, VALUE self);          ///< Clear area or window
 VALUE subWindowRedraw(VALUE self);                                ///< Redraw window
 VALUE subWindowCompletion(VALUE self);                            ///< Add completion proc
