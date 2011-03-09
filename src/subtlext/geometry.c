@@ -154,7 +154,7 @@ subGeometryInit(int argc,
 
 /* subGeometryToArray {{{ */
 /*
- * call-seq: to_str -> String
+ * call-seq: to_a -> Array
  *
  * Convert Geometry object to Array
  *
@@ -165,12 +165,22 @@ subGeometryInit(int argc,
 VALUE
 subGeometryToArray(VALUE self)
 {
-  VALUE ary = rb_ary_new2(4);
+  VALUE ary = Qnil, x = Qnil, y = Qnil, width = Qnil, height = Qnil;
 
-  rb_ary_push(ary, rb_iv_get(self, "@x"));
-  rb_ary_push(ary, rb_iv_get(self, "@y"));
-  rb_ary_push(ary, rb_iv_get(self, "@width"));
-  rb_ary_push(ary, rb_iv_get(self, "@height"));
+  /* Check ruby object */
+  GET_ATTR(self, "@x",      x);
+  GET_ATTR(self, "@y",      y);
+  GET_ATTR(self, "@width",  width);
+  GET_ATTR(self, "@height", height);
+
+  /* Create new array */
+  ary = rb_ary_new2(4);
+
+  /* Set values */
+  rb_ary_push(ary, x);
+  rb_ary_push(ary, y);
+  rb_ary_push(ary, width);
+  rb_ary_push(ary, height);
 
   return ary;
 } /* }}} */
