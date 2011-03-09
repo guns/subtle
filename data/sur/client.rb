@@ -960,7 +960,20 @@ module Subtle # {{{
               :type        => "string",
               :description => "Default background color (#rrggbb)",
               :def_value   => "Sublet bg color"
+            },
+            {
+              :name        => "text_fg",
+              :type        => "string",
+              :description => "Default text color (#rrggbb)",
+              :def_value   => "Sublet fg or foreground color"
+            },
+            {
+              :name        => "icon_fg",
+              :type        => "string",
+              :description => "Default icon color (#rrggbb)",
+              :def_value   => "Sublet fg or foreground color"
             }
+
           ]
 
           # Merge configs
@@ -972,6 +985,8 @@ module Subtle # {{{
                 when "interval"   then skip << "interval"
                 when "foreground" then skip << "foreground"
                 when "background" then skip << "background"
+                when "text_fg"    then skip << "text_fg"
+                when "icon_fg"    then skip << "icon_fg"
               end
             end
 
