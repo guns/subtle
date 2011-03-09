@@ -472,16 +472,20 @@ subSharedTextNew(void)
 
  /** subSharedTextParse {{{
   * @brief Parse text
-  * @param[in]  disp  Display
-  * @param[in]  f     A #SubFont
-  * @param[in]  t     A #SubText
-  * @param[in]  text  String to parse
+  * @param[in]  disp    Display
+  * @param[in]  f       A #SubFont
+  * @param[in]  t       A #SubText
+  * @param[in]  textfg  Default text color
+  * @param[in]  iconfg  Default icon color
+  * @param[in]  text    String to parse
   **/
 
 int
 subSharedTextParse(Display *disp,
   SubFont *f,
   SubText *t,
+  unsigned long textfg,
+  unsigned long iconfg,
   char *text)
 {
   int i = 0, left = 0, right = 0;
@@ -532,8 +536,10 @@ subSharedTextParse(Display *disp,
 
               /* Add spacing and check if icon is first */
               t->width += item->width + (0 == i ? 3 : 6);
+
+              item->color = -1 != iconfg ? iconfg : color;
             }
-          else
+          else ///< Ordinary text
             {
               item->data.string = strdup(tok);
               item->width       = subSharedTextWidth(disp, f, tok,
@@ -541,9 +547,10 @@ subSharedTextParse(Display *disp,
 
               /* Remove left bearing from first text item */
               t->width += item->width - (0 == i ? left : 0);
+
+              item->color = -1 != textfg ? textfg : color;
             }
 
-          item->color = color;
           i++;
         }
     }

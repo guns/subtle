@@ -202,8 +202,8 @@ void subSharedPropertyDelete(Display *disp, Window win,
 
 /* Text {{{ */
 SubText *subSharedTextNew(void);                                  ///< Create new text
-int subSharedTextParse(Display *disp, SubFont *f,
-  SubText *t, char *text);                                        ///< Parse text
+int subSharedTextParse(Display *disp, SubFont *f, SubText *t,
+  unsigned long textfg, unsigned long iconfg, char *text);        ///< Parse text
 void subSharedTextRender(Display *disp, GC gc, SubFont *f,
   Window win, int x, int y, long fg, long bg, SubText *t);        ///< Render text
 int subSharedTextWidth(Display *disp, SubFont *f,
