@@ -98,8 +98,8 @@ set :outline, 0
 #
 # === Links
 #
-# http://subforge.org/wiki/subtle/Multihead
-# http://subforge.org/wiki/subtle/Panel
+# http://subforge.org/projects/subtle/wiki/Multihead
+# http://subforge.org/projects/subtle/wiki/Panel
 #
 
 screen 1 do
@@ -129,7 +129,7 @@ end
 #
 # === Link
 #
-# http://subforge.org/wiki/subtle/Themes
+# http://subforge.org/projects/subtle/wiki/Themes
 
 # Colors of focus window title
 color :title_fg,        "#fecf35"
@@ -197,7 +197,7 @@ color :separator,       "#757575"
 #
 # === Link
 #
-# http://subforge.org/wiki/subtle/Gravity
+# http://subforge.org/projects/subtle/wiki/Gravity
 #
 
   # Top left
@@ -320,7 +320,7 @@ gravity :gimp_dock,      [ 100,   0,  10, 100 ]
 #
 # === Link
 #
-# http://subforge.org/wiki/subtle/Grabs
+# http://subforge.org/projects/subtle/wiki/Grabs
 #
 
 # Jump to view1, view2, ...
@@ -540,7 +540,7 @@ end
 #
 # === Link
 #
-# http://subforge.org/wiki/subtle/Tagging
+# http://subforge.org/projects/subtle/wiki/Tagging
 #
 
 # Simple tags
@@ -653,7 +653,7 @@ end
 #
 # === Link
 #
-# http://subforge.org/wiki/subtle/Tagging
+# http://subforge.org/projects/subtle/wiki/Tagging
 #
 
 view "terms", "terms|default"
@@ -704,7 +704,7 @@ view "dev",   "editor"
 #
 #  === Link
 #
-# http://subforge.org/wiki/subtle/Sublets
+# http://subforge.org/projects/subtle/wiki/Sublets
 #
 
 #
@@ -742,7 +742,7 @@ view "dev",   "editor"
 #
 # === Link
 #
-# http://subforge.org/wiki/subtle/Hooks
+# http://subforge.org/projects/subtle/wiki/Hooks
 #
 
 # vim:ts=2:bs=2:sw=2:et:fdm=marker
