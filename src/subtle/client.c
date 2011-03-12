@@ -868,12 +868,12 @@ subClientToggle(SubClient *c,
               /* Add panel heights without struts */
               if(s->flags & SUB_SCREEN_PANEL1)
                 {
-                  c->geom.y      += subtle->th;
-                  c->geom.height -= subtle->th;
+                  c->geom.y      += subtle->ph;
+                  c->geom.height -= subtle->ph;
                 }
 
               if(s->flags & SUB_SCREEN_PANEL2)
-                c->geom.height -= subtle->th;
+                c->geom.height -= subtle->ph;
 
               XLowerWindow(subtle->dpy, c->win);
             }
@@ -1040,8 +1040,8 @@ subClientSetSizeHints(SubClient *c,
               s->geom.width : size->max_width;
 
           if(size->max_height)
-            c->maxh = size->max_height > s->geom.height - subtle->th ?
-              s->geom.height - subtle->th : size->max_height;
+            c->maxh = size->max_height > s->geom.height - subtle->ph ?
+              s->geom.height - subtle->ph : size->max_height;
         }
 
       /* Floating on equal min and max sizes (EWMH: Fixed size windows) */
