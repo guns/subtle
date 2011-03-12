@@ -39,8 +39,8 @@ ScreenPublish(void)
       workareas[i * 4 + 3] = s->geom.height;
 
       /* Set panels */
-      panels[i * 2 + 0] = s->flags & SUB_SCREEN_PANEL1 ? subtle->th : 0;
-      panels[i * 2 + 1] = s->flags & SUB_SCREEN_PANEL2 ? subtle->th : 0;
+      panels[i * 2 + 0] = s->flags & SUB_SCREEN_PANEL1 ? subtle->ph : 0;
+      panels[i * 2 + 1] = s->flags & SUB_SCREEN_PANEL2 ? subtle->ph : 0;
     }
 
   subEwmhSetCardinals(ROOT, SUB_EWMH_NET_WORKAREA, workareas,
@@ -63,6 +63,28 @@ ScreenPublish(void)
 
   subSharedLogDebugSubtle("publish=screen, screens=%d\n",
     subtle->screens->ndata);
+} /* }}} */
+
+/* ScreenClear {{{ */
+static void
+ScreenClear(SubScreen *s)
+{
+  /* Clear pixmap */
+  XSetForeground(subtle->dpy, subtle->gcs.draw, subtle->colors.panel);
+  XFillRectangle(subtle->dpy, s->drawable, subtle->gcs.draw,
+    0, 0, s->geom.width, subtle->ph);
+
+  /* Draw stipple on panels */
+  if(s->flags & SUB_SCREEN_STIPPLE)
+    {
+      XGCValues gvals;
+
+      gvals.stipple = s->stipple;
+      XChangeGC(subtle->dpy, subtle->gcs.stipple, GCStipple, &gvals);
+
+      XFillRectangle(subtle->dpy, s->drawable, subtle->gcs.stipple,
+        0, 2, s->base.width, subtle->ph - 4);
+    }
 } /* }}} */
 
 /* Public */
@@ -174,16 +196,20 @@ subScreenNew(int x,
   s->base        = s->geom; ///< Backup size
   s->vid         = subtle->screens->ndata; ///< Init
 
-  /* Create panels */
-  sattrs.event_mask        = ButtonPressMask|ExposureMask;
+  /* Create panel windows */
+  sattrs.event_mask        = ButtonPressMask|EnterWindowMask|
+    LeaveWindowMask|ExposureMask;
   sattrs.override_redirect = True;
-  sattrs.background_pixel  = subtle->colors.panel;
-  mask                     = CWEventMask|CWOverrideRedirect|CWBackPixel;
+  sattrs.background_pixmap = ParentRelative;
+  mask                     = CWEventMask|CWOverrideRedirect|CWBackPixmap;
 
-  s->panel1    = XCreateWindow(subtle->dpy, ROOT, 0, 1, 1, 1, 0,
+  s->panel1 = XCreateWindow(subtle->dpy, ROOT, 0, 1, 1, 1, 0,
     CopyFromParent, InputOutput, CopyFromParent, mask, &sattrs);
-  s->panel2    = XCreateWindow(subtle->dpy, ROOT, 0, 0, 1, 1, 0,
+  s->panel2 = XCreateWindow(subtle->dpy, ROOT, 0, 0, 1, 1, 0,
     CopyFromParent, InputOutput, CopyFromParent, mask, &sattrs);
+
+  XSaveContext(subtle->dpy, s->panel1, SCREENID, (void *)s);
+  XSaveContext(subtle->dpy, s->panel2, SCREENID, (void *)s);
 
   subSharedLogDebugSubtle("new=screen, x=%d, y=%d, width=%u, height=%u\n",
     s->geom.x, s->geom.y, s->geom.width, s->geom.height);
@@ -401,7 +427,7 @@ subScreenUpdate(void)
 
           /* Check flags */
           if(p->flags & SUB_PANEL_HIDDEN)  continue;
-          if(p->flags & SUB_PANEL_BOTTOM)
+          if(0 == npanel && p->flags & SUB_PANEL_BOTTOM)
             {
               npanel = 1;
               center = False;
@@ -438,7 +464,7 @@ subScreenUpdate(void)
 
           /* Check flags */
           if(p->flags & SUB_PANEL_HIDDEN) continue;
-          if(p->flags & SUB_PANEL_BOTTOM)
+          if(0 == npanel && p->flags & SUB_PANEL_BOTTOM)
             {
               /* Reset for new panel */
               npanel     = 1;
@@ -471,8 +497,9 @@ subScreenUpdate(void)
                 x[offset] += fix[offset];
             }
 
-          /* Set window position */
-          XMoveWindow(subtle->dpy, p->win, x[offset], 0);
+          /* Set panel position */
+          if(p->flags & SUB_PANEL_TRAY)
+            XMoveWindow(subtle->dpy, subtle->windows.tray, x[offset], 0);
           p->x = x[offset];
 
           /* Add separator after panel item */
@@ -490,10 +517,6 @@ subScreenUpdate(void)
             }
 
           x[offset] += p->width;
-
-          /* Remap window only when needed */
-          if(0 < p->width) XMapWindow(subtle->dpy, p->win);
-          else XUnmapWindow(subtle->dpy, p->win);
         }
     }
 } /* }}} */
@@ -514,22 +537,7 @@ subScreenRender(void)
       SubScreen *s = SCREEN(subtle->screens->data[i]);
       Window panel = s->panel1;
 
-      XClearWindow(subtle->dpy, s->panel1);
-      XClearWindow(subtle->dpy, s->panel2);
-
-      /* Draw stipple on panels */
-      if(s->flags & SUB_SCREEN_STIPPLE)
-        {
-          XGCValues gvals;
-
-          gvals.stipple = s->stipple;
-          XChangeGC(subtle->dpy, subtle->gcs.stipple, GCStipple, &gvals);
-
-          XFillRectangle(subtle->dpy, s->panel1, subtle->gcs.stipple,
-            0, 2, s->base.width, subtle->th - 4);
-          XFillRectangle(subtle->dpy, s->panel2, subtle->gcs.stipple,
-            0, 2, s->base.width, subtle->th - 4);
-        }
+      ScreenClear(s);
 
       /* Render panel items */
       for(j = 0; s->panels && j < s->panels->ndata; j++)
@@ -537,25 +545,36 @@ subScreenRender(void)
           SubPanel *p = PANEL(s->panels->data[j]);
 
           if(p->flags & SUB_PANEL_HIDDEN) continue;
-          if(p->flags & SUB_PANEL_BOTTOM) panel = s->panel2;
+          if(panel != s->panel2 && p->flags & SUB_PANEL_BOTTOM)
+            {
+              XCopyArea(subtle->dpy, s->drawable, panel, subtle->gcs.draw,
+                0, 0, s->geom.width, subtle->ph, 0, 0);
+
+              ScreenClear(s);
+              panel = s->panel2;
+            }
 
           /* Draw separator before panel */
           if(0 < subtle->separator.width && p->flags & SUB_PANEL_SEPARATOR1)
-            subSharedTextDraw(subtle->dpy, subtle->gcs.font, subtle->font,
-              panel, p->x - subtle->separator.width + 3,
+            subSharedTextDraw(subtle->dpy, subtle->gcs.draw, subtle->font,
+              s->drawable, p->x - subtle->separator.width + 3,
               subtle->font->y + subtle->pbw + subtle->padding.width,
               subtle->colors.separator, -1, subtle->separator.string);
 
-          subPanelRender(p);
+          subPanelRender(p, s->drawable);
 
           /* Draw separator after panel */
           if(0 < subtle->separator.width && p->flags & SUB_PANEL_SEPARATOR2)
-            subSharedTextDraw(subtle->dpy, subtle->gcs.font, subtle->font,
-              panel, p->x + p->width + 3,
+            subSharedTextDraw(subtle->dpy, subtle->gcs.draw, subtle->font,
+              s->drawable, p->x + p->width + 3,
               subtle->font->y + subtle->pbw + subtle->padding.width,
               subtle->colors.separator, -1, subtle->separator.string);
         }
+
+      XCopyArea(subtle->dpy, s->drawable, panel, subtle->gcs.draw,
+        0, 0, s->geom.width, subtle->ph, 0, 0);
     }
+
 
   XSync(subtle->dpy, False); ///< Sync before going on
 } /* }}} */
@@ -587,27 +606,30 @@ subScreenResize(void)
       if(s->flags & SUB_SCREEN_PANEL1)
         {
           XMoveResizeWindow(subtle->dpy, s->panel1, s->base.x, s->base.y,
-            s->base.width, subtle->th);
-          XSetWindowBackground(subtle->dpy, s->panel1, subtle->colors.panel);
+            s->base.width, subtle->ph);
           XMapRaised(subtle->dpy, s->panel1);
 
           /* Update height */
-          s->geom.y      += subtle->th;
-          s->geom.height -= subtle->th;
+          s->geom.y      += subtle->ph;
+          s->geom.height -= subtle->ph;
         }
       else XUnmapWindow(subtle->dpy, s->panel1);
 
       if(s->flags & SUB_SCREEN_PANEL2)
         {
           XMoveResizeWindow(subtle->dpy, s->panel2, s->base.x,
-            s->base.y + s->base.height - subtle->th, s->base.width, subtle->th);
-          XSetWindowBackground(subtle->dpy, s->panel2, subtle->colors.panel);
+            s->base.y + s->base.height - subtle->ph, s->base.width, subtle->ph);
           XMapRaised(subtle->dpy, s->panel2);
 
           /* Update height */
-          s->geom.height -= subtle->th;
+          s->geom.height -= subtle->ph;
         }
       else XUnmapWindow(subtle->dpy, s->panel2);
+
+      /* Create/update drawable for double buffering */
+      if(s->drawable) XFreePixmap(subtle->dpy, s->drawable);
+      s->drawable = XCreatePixmap(subtle->dpy, ROOT, s->geom.width, subtle->ph,
+        XDefaultDepth(subtle->dpy, DefaultScreen(subtle->dpy)));
     }
 
   ScreenPublish();
@@ -674,12 +696,20 @@ subScreenKill(SubScreen *s)
 
   if(s->panels) subArrayKill(s->panels, True);
 
-  /* Destroy windows */
+  /* Destroy panel windows */
   if(s->panel1)
-    XDestroyWindow(subtle->dpy, s->panel1);
-
+    {
+      XDeleteContext(subtle->dpy, s->panel1, SCREENID);
+      XDestroyWindow(subtle->dpy, s->panel1);
+    }
   if(s->panel2)
-    XDestroyWindow(subtle->dpy, s->panel2);
+    {
+      XDeleteContext(subtle->dpy, s->panel2, SCREENID);
+      XDestroyWindow(subtle->dpy, s->panel2);
+    }
+
+  /* Destroy drawable */
+  if(s->drawable) XFreePixmap(subtle->dpy, s->drawable);
 
   free(s);
 
