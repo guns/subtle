@@ -138,16 +138,20 @@ subDisplayInit(const char *display)
   mask                     = GCFunction|GCFillStyle;
   subtle->gcs.stipple      = XCreateGC(subtle->dpy, ROOT, mask, &gvals);
 
-  gvals.plane_mask         = AllPlanes;
-  gvals.graphics_exposures = False;
-  mask                     = GCFunction|GCPlaneMask|GCGraphicsExposures;
-  subtle->gcs.font         = XCreateGC(subtle->dpy, ROOT, mask, &gvals);
-
   gvals.function           = GXinvert;
   gvals.subwindow_mode     = IncludeInferiors;
   gvals.line_width         = 3;
   mask                     = GCFunction|GCSubwindowMode|GCLineWidth;
   subtle->gcs.invert       = XCreateGC(subtle->dpy, ROOT, mask, &gvals);
+
+  gvals.line_width         = 1;
+  gvals.line_style         = LineSolid;
+  gvals.join_style         = JoinMiter;
+  gvals.cap_style          = CapButt;
+  gvals.fill_style         = FillSolid;
+  mask                     = GCLineWidth|GCLineStyle|GCJoinStyle|GCCapStyle|
+    GCFillStyle;
+  subtle->gcs.draw         = XCreateGC(subtle->dpy, ROOT, mask, &gvals);
 
   /* Create cursors */
   subtle->cursors.arrow  = XCreateFontCursor(subtle->dpy, XC_left_ptr);
@@ -159,18 +163,14 @@ subDisplayInit(const char *display)
   sattrs.event_mask = ROOTMASK;
   XChangeWindowAttributes(subtle->dpy, ROOT, CWCursor|CWEventMask, &sattrs);
 
-  /* Create tray and keychain window */
-  subtle->panels.tray.win = XCreateSimpleWindow(subtle->dpy,
+  /* Create tray window */
+  subtle->windows.tray = XCreateSimpleWindow(subtle->dpy,
     ROOT, 0, 0, 1, 1, 0, 0, subtle->colors.bg_focus);
-  subtle->panels.keychain.win = XCreateSimpleWindow(subtle->dpy,
-    ROOT, 0, 0, 1, 1, 0, 0, subtle->colors.bg_title);
 
   sattrs.override_redirect = True;
   sattrs.event_mask        = KeyPressMask|ButtonPressMask;
-  XChangeWindowAttributes(subtle->dpy, subtle->panels.tray.win,
+  XChangeWindowAttributes(subtle->dpy, subtle->windows.tray,
     CWOverrideRedirect|CWEventMask, &sattrs);
-  XChangeWindowAttributes(subtle->dpy, subtle->panels.keychain.win,
-    CWOverrideRedirect, &sattrs);
 
   /* Init screen width and height */
   subtle->width  = DisplayWidth(subtle->dpy, DefaultScreen(subtle->dpy));
@@ -212,20 +212,15 @@ subDisplayConfigure(void)
   XChangeGC(subtle->dpy, subtle->gcs.stipple,
     GCForeground|GCLineWidth, &gvals);
 
-  gvals.foreground = subtle->colors.separator;
-  XChangeGC(subtle->dpy, subtle->gcs.font, GCForeground, &gvals);
-
   /* Update windows */
-  XSetWindowBackground(subtle->dpy, subtle->panels.tray.win,
+  XSetWindowBackground(subtle->dpy, subtle->windows.tray,
     subtle->colors.panel);
-  XSetWindowBackground(subtle->dpy, subtle->panels.keychain.win,
-    subtle->colors.bg_title);
 
   /* Set background if set */
   if(-1 != subtle->colors.bg)
     XSetWindowBackground(subtle->dpy, ROOT, subtle->colors.bg);
 
-  XClearWindow(subtle->dpy, subtle->panels.tray.win);
+  XClearWindow(subtle->dpy, subtle->windows.tray);
   XClearWindow(subtle->dpy, ROOT);
 
   /* Update struts and panels */
@@ -338,14 +333,13 @@ subDisplayFinish(void)
 
       /* Free GCs */
       if(subtle->gcs.stipple) XFreeGC(subtle->dpy, subtle->gcs.stipple);
-      if(subtle->gcs.font)    XFreeGC(subtle->dpy, subtle->gcs.font);
       if(subtle->gcs.invert)  XFreeGC(subtle->dpy, subtle->gcs.invert);
+      if(subtle->gcs.draw)    XFreeGC(subtle->dpy, subtle->gcs.draw);
 
       /* Free font */
       if(subtle->font) subSharedFontKill(subtle->dpy, subtle->font);
 
-      XDestroyWindow(subtle->dpy, subtle->panels.tray.win);
-      XDestroyWindow(subtle->dpy, subtle->panels.keychain.win);
+      XDestroyWindow(subtle->dpy, subtle->windows.tray);
       XDestroyWindow(subtle->dpy, subtle->windows.support);
 
       XInstallColormap(subtle->dpy, DefaultColormap(subtle->dpy, SCRN));
