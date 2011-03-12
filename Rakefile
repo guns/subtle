@@ -20,7 +20,7 @@ require "digest/md5"
 
 # Options / defines {{{
 @options = {
-  "destdir"    => "",
+  "destdir"    => ENV["DESTDIR"] || "",
   "prefix"     => "/usr",
   "manprefix"  => "$(prefix)/share/man",
   "bindir"     => "$(destdir)/$(prefix)/bin",
