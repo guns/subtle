@@ -78,66 +78,6 @@ EventFindSublet(int id)
   return NULL;
 } /* }}} */
 
-/* EventSwitchView {{{ */
-static void
-EventSwitchView(int vid,
-  int sid,
-  int focus)
-{
-  SubView *v = NULL;
-
-  if(vid < subtle->views->ndata)
-    {
-      int i;
-      SubScreen *sc1 = NULL;
-
-      /* Get working screen */
-      if(!(sc1 = subArrayGet(subtle->screens, sid)))
-        sc1 = subScreenCurrent(NULL);
-
-      /* Check if there is only one screen */
-      if(1 < subtle->screens->ndata)
-        {
-          /* Check if view is visible on any screen */
-          for(i = 0; i < subtle->screens->ndata; i++)
-            {
-              SubScreen *sc2 = SCREEN(subtle->screens->data[i]);
-
-              if(sc1 != sc2 && sc2->vid == vid)
-                {
-                  int swap = 0;
-
-                  /* Swap views */
-                  swap     = sc1->vid;
-                  sc1->vid = sc2->vid;
-                  sc2->vid = swap;
-
-                  v = VIEW(subArrayGet(subtle->views, vid));
-
-                  break;
-                }
-            }
-        }
-
-      if(!v)
-        {
-          /* Set view and configure */
-          sc1->vid = vid;
-          v        = VIEW(subArrayGet(subtle->views, vid));
-        }
-
-      subScreenConfigure();
-      subScreenRender();
-      subScreenPublish();
-
-      subViewFocus(v, focus);
-
-      /* Hook: Jump */
-      subHookCall((SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_FOCUS),
-        (void *)v);
-    }
-} /* }}} */
-
 /* EventRestack {{{ */
 static void
 EventRestack(SubClient *c,
@@ -390,7 +330,7 @@ static void
 EventCrossing(XCrossingEvent *ev)
 {
   SubClient *c = NULL;
-  SubPanel *p = NULL;
+  SubScreen *s = NULL;
 
   /* Handle both crossing events */
   switch(ev->type)
@@ -405,26 +345,16 @@ EventCrossing(XCrossingEvent *ev)
           {
             if(ALIVE(c)) subClientFocus(c);
           }
-        else if((p = PANEL(subSubtleFind(ev->window, SUBLETID)))) ///< Sublet
+        else if((s = SCREEN(subSubtleFind(ev->window, SCREENID)))) ///< Screen panels
           {
-            if(p->sublet->flags & SUB_SUBLET_OVER)
-              {
-                subRubyCall(SUB_CALL_OVER, p->sublet->instance, NULL);
-                subScreenUpdate();
-                subScreenRender();
-              }
+            subPanelAction(s->panels, SUB_PANEL_OVER, ev->x, ev->y, -1,
+              ev->y_root > 2 * subtle->ph);
           }
         break;
       case LeaveNotify:
-        if((p = PANEL(subSubtleFind(ev->window, SUBLETID)))) ///< Sublet
-          {
-            if(p->sublet->flags & SUB_SUBLET_OUT)
-              {
-                subRubyCall(SUB_CALL_OUT, p->sublet->instance, NULL);
-                subScreenUpdate();
-                subScreenRender();
-              }
-          }
+        if((s = SCREEN(subSubtleFind(ev->window, SCREENID)))) ///< Screen panels
+          subPanelAction(s->panels, SUB_PANEL_OUT, ev->x, ev->y, -1,
+            ev->y_root > 2 * subtle->ph);
     }
 
   subSharedLogDebugEvents("Enter: win=%#lx\n", ev->window);
@@ -568,8 +498,7 @@ EventGrab(XEvent *ev)
   unsigned int code = 0, state = 0;
   SubGrab *g = NULL;
   SubClient *c = NULL;
-  SubPanel *p = NULL;
-  SubView *v = NULL;
+  SubScreen *s = NULL;
   Window win = 0;
   KeySym sym = None;
 
@@ -577,22 +506,11 @@ EventGrab(XEvent *ev)
   switch(ev->type)
     {
       case ButtonPress:
-        if((v = VIEW(subSubtleFind(ev->xbutton.window, VIEWID))))
+        if((s = SCREEN(subSubtleFind(ev->xbutton.window, SCREENID))))
           {
-            EventSwitchView(subArrayIndex(subtle->views,
-              (void *)v), -1, False);
-
-            return;
-          }
-        else if((p = PANEL(subSubtleFind(ev->xbutton.window, SUBLETID))))
-          {
-            if(p->sublet->flags & SUB_SUBLET_DOWN) ///< Call click method
-              {
-                subRubyCall(SUB_CALL_DOWN, p->sublet->instance,
-                  (void *)&ev->xbutton);
-                subScreenUpdate();
-                subScreenRender();
-               }
+            subPanelAction(s->panels, SUB_PANEL_DOWN, ev->xbutton.x,
+              ev->xbutton.y, ev->xbutton.button,
+              ev->xbutton.y_root > 2 * subtle->ph);
 
             return;
           }
@@ -903,7 +821,7 @@ EventGrab(XEvent *ev)
             break; /* }}} */
           case SUB_GRAB_VIEW_SWITCH: /* {{{ */
             if(g->data.num < subtle->views->ndata)
-              EventSwitchView(g->data.num, -1, True);
+              subViewSwitch(subtle->views->data[g->data.num], -1, True);
             break; /* }}} */
           case SUB_GRAB_VIEW_SELECT: /* {{{ */
               {
@@ -919,7 +837,7 @@ EventGrab(XEvent *ev)
                       vid = screen->vid + 1;
                     else vid = 0;
 
-                    EventSwitchView(vid, -1, True);
+                    subViewSwitch(subtle->views->data[vid], -1, True);
                   }
                 else if(SUB_VIEW_PREV == g->data.num)
                   {
@@ -929,7 +847,7 @@ EventGrab(XEvent *ev)
                     if(0 < screen->vid) vid = screen->vid - 1;
                     else vid = subtle->views->ndata - 1;
 
-                    EventSwitchView(vid, -1, True);
+                    subViewSwitch(subtle->views->data[vid], -1, True);
                   }
               }
             break; /* }}} */
@@ -1038,7 +956,7 @@ EventMessage(XClientMessageEvent *ev)
             /* Switchs views of screen */
             if(0 <= ev->data.l[0] && ev->data.l[0] < subtle->views->ndata &&
                 0 <= ev->data.l[2] && ev->data.l[2] < subtle->screens->ndata)
-              EventSwitchView(ev->data.l[0], ev->data.l[2], True);
+              subViewSwitch(subtle->views->data[ev->data.l[0]], -1, True);
             break; /* }}} */
           case SUB_EWMH_NET_ACTIVE_WINDOW: /* {{{ */
             if((c = CLIENT(subSubtleFind(ev->data.l[0], CLIENTID))))
@@ -1278,7 +1196,6 @@ EventMessage(XClientMessageEvent *ev)
               {
                 subArrayPush(subtle->views, (void *)v);
                 subClientDimension(-1); ///< Grow
-                subPanelDimension(-1); ///< Grow
                 subViewPublish();
                 subScreenUpdate();
                 subScreenRender();
@@ -1297,7 +1214,6 @@ EventMessage(XClientMessageEvent *ev)
 
                 subArrayRemove(subtle->views, (void *)v);
                 subClientDimension((int)ev->data.l[0]); ///< Shrink
-                subPanelDimension((int)ev->data.l[0]); ///< Shrink
                 subViewKill(v);
                 subViewPublish();
                 subScreenUpdate();
@@ -1325,14 +1241,14 @@ EventMessage(XClientMessageEvent *ev)
             if((p = EventFindSublet((int)ev->data.l[0])))
               {
                 p->sublet->fg = ev->data.l[1];
-                subPanelRender(p);
+                /*FIXME subPanelRender(p); */
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_SUBLET_BACKGROUND: /* {{{ */
             if((p = EventFindSublet((int)ev->data.l[0])))
               {
                 p->sublet->bg = ev->data.l[1];
-                subPanelRender(p);
+                /*FIXME subPanelRender(p); */
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_SUBLET_UPDATE: /* {{{ */
@@ -1367,7 +1283,7 @@ EventMessage(XClientMessageEvent *ev)
         }
     } /* }}} */
   /* Messages for tray window {{{ */
-  else if(ev->window == subtle->panels.tray.win)
+  else if(ev->window == subtle->windows.tray)
     {
       SubTray *t = NULL;
       int id = subEwmhFind(ev->message_type);
@@ -1591,7 +1507,7 @@ void
 EventSelection(XSelectionClearEvent *ev)
 {
   /* Handle selection clear events */
-  if(ev->window == subtle->panels.tray.win) ///< Tray selection
+  if(ev->window == subtle->windows.tray) ///< Tray selection
     {
       subtle->flags &= ~SUB_SUBTLE_TRAY;
       subTrayDeselect();
@@ -1603,7 +1519,7 @@ EventSelection(XSelectionClearEvent *ev)
     }
 
   subSharedLogDebugEvents("SelectionClear: win=%#lx, tray=%#lx, support=%#lx\n",
-    ev->window, subtle->panels.tray.win, subtle->windows.support);
+    ev->window, subtle->windows.tray, subtle->windows.support);
 } /* }}} */
 
 /* EventUnmap {{{ */
