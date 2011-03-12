@@ -129,6 +129,60 @@ subViewJump(SubView *v)
   subSharedLogDebugSubtle("Jump: type=view\n");
 } /* }}} */
 
+ /** subViewSwitch {{{
+  * @brief Switch views or jump
+  * @param[in]  v      A #SubView
+  * @param[in]  sid    Screen id
+  * @param[in]  focus  Whether to focus next client
+  **/
+
+void
+subViewSwitch(SubView *v,
+  int sid,
+  int focus)
+{
+  int i, swap = -1;
+  SubScreen *s1 = NULL;
+
+  assert(v);
+
+  /* Get working screen */
+  if(!(s1 = subArrayGet(subtle->screens, sid)))
+    s1 = subScreenCurrent(NULL);
+
+  /* Check if there is only one screen */
+  if(1 < subtle->screens->ndata)
+    {
+      /* Check if view is visible on any screen */
+      for(i = 0; i < subtle->screens->ndata; i++)
+        {
+          SubScreen *s2 = SCREEN(subtle->screens->data[i]);
+
+          if(s1 != s2 && subArrayGet(subtle->views, s2->vid) == v)
+            {
+              /* Swap views */
+              swap    = s1->vid;
+              s1->vid = s2->vid;
+              s2->vid = swap;
+
+              break;
+            }
+        }
+    }
+
+  /* Set view and configure */
+  if(-1 == swap) s1->vid = subArrayIndex(subtle->views, (void *)v);
+
+  subScreenConfigure();
+  subScreenRender();
+  subScreenPublish();
+
+  subViewFocus(v, focus);
+
+  /* Hook: Jump */
+  subHookCall((SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_FOCUS), (void *)v);
+} /* }}} */
+
  /** subViewPublish {{{
   * @brief Update EWMH infos
   **/
