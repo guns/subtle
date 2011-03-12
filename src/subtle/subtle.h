@@ -47,6 +47,7 @@
 #define VIEWID       2L                                           ///< View data id
 #define TRAYID       3L                                           ///< Tray data id
 #define SUBLETID     4L                                           ///< Sublet data id
+#define SCREENID     5L                                           ///< Screen data id
 
 #define MINW         1L                                           ///< Client min width
 #define MINH         1L                                           ///< Client min height
@@ -230,6 +231,10 @@
 #define SUB_PANEL_CENTER              (1L << 22)                  ///< Panel center
 #define SUB_PANEL_SUBLETS             (1L << 23)                  ///< Panel sublets
 
+#define SUB_PANEL_DOWN                (1L << 24)                  ///< Panel mouse down
+#define SUB_PANEL_OVER                (1L << 25)                  ///< Panel mouse over
+#define SUB_PANEL_OUT                 (1L << 26)                  ///< Panel mouse out
+
 /* Sublet flags */
 #define SUB_SUBLET_INTERVAL           (1L << 9)                   ///< Sublet has interval
 #define SUB_SUBLET_INOTIFY            (1L << 10)                  ///< Sublet with inotify
@@ -238,10 +243,7 @@
 #define SUB_SUBLET_RUN                (1L << 12)                  ///< Sublet run function
 #define SUB_SUBLET_DATA               (1L << 13)                  ///< Sublet data function
 #define SUB_SUBLET_WATCH              (1L << 14)                  ///< Sublet watch function
-#define SUB_SUBLET_DOWN               (1L << 15)                  ///< Sublet mouse down function
-#define SUB_SUBLET_OVER               (1L << 16)                  ///< Sublet mouse over function
-#define SUB_SUBLET_OUT                (1L << 17)                  ///< Sublet mouse out function
-#define SUB_SUBLET_UNLOAD             (1L << 18)                  ///< Sublet unload function
+#define SUB_SUBLET_UNLOAD             (1L << 15)                  ///< Sublet unload function
 
 /* Screen flags */
 #define SUB_SCREEN_PANEL1             (1L << 9)                    ///< Panel1 enabled
@@ -512,12 +514,10 @@ typedef struct subicon_t { /* {{{ */
 typedef struct subpanel_t /* {{{ */
 {
   FLAGS                   flags;                                  ///< Panel flags
-  Window                  win;                                    ///< Panel win
   int                     x, width;                               ///< Panel x, width
   struct subscreen_t      *screen;                                ///< Panel screen
 
   union {
-    Window                *views;                                 ///< Panel view
     struct subkeychain_t  *keychain;                              ///< Panel chain
     struct subsublet_t    *sublet;                                ///< Panel sublet
     struct subicon_t      *icon;                                  ///< Panel icon
@@ -531,6 +531,7 @@ typedef struct subscreen_t /* {{{ */
   int               vid;                                          ///< Screen current view id
   XRectangle        geom, base;                                   ///< Screen geom, base
   Pixmap            stipple;                                      ///< Screen stipple
+  Drawable          drawable;                                     ///< Screen drawable
   Window            panel1, panel2;                               ///< Screen windows
   struct subarray_t *panels;                                      ///< Screen panels
 
@@ -553,7 +554,7 @@ typedef struct subsubtle_t /* {{{ */
   FLAGS                flags;                                     ///< Subtle flags
 
   int                  width, height;                             ///< Subtle screen size
-  int                  th, bw, pbw, step, snap, gap;              ///< Subtle properties
+  int                  ph, bw, pbw, step, snap, gap;              ///< Subtle properties
   int                  visible_tags, visible_views;               ///< Subtle visible tags and views
   int                  client_tags, urgent_tags;                  ///< Subtle clients and urgent tags
   unsigned long        gravity;                                   ///< Subtle gravity
@@ -592,7 +593,7 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    Window             support, focus[HISTORYSIZE];
+    Window             support, focus[HISTORYSIZE], tray;
   } windows;                                                      ///< Subtle windows
 
   struct
@@ -610,7 +611,7 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    GC                 font, stipple, invert;
+    GC                 stipple, invert, draw;
   } gcs;                                                          ///< Subtle graphic contexts
 
   struct
@@ -757,9 +758,10 @@ void subHookKill(SubHook *h);                                     ///< Kill hook
 SubPanel *subPanelNew(int type);                                  ///< Create new panel
 void subPanelConfigure(SubPanel *p);                              ///< Configure panels
 void subPanelUpdate(SubPanel *p);                                 ///< Update panels
-void subPanelRender(SubPanel *p);                                 ///< Render panels
+void subPanelRender(SubPanel *p, Drawable drawable);              ///< Render panels
 int subPanelCompare(const void *a, const void *b);                ///< Compare two panels
-void subPanelDimension(int id);                                   ///< Dimension panels
+void subPanelAction(SubArray *panels, int type, int x, int y,
+  int button, int bottom);                                        ///< Handle panel action
 void subPanelPublish(void);                                       ///< Publish sublets
 void subPanelKill(SubPanel *p);                                   ///< Kill panel
 /* }}} */
@@ -823,6 +825,7 @@ void subTrayKill(SubTray *t);                                     ///< Delete tr
 SubView *subViewNew(char *name, char *tags);                      ///< Create view
 void subViewFocus(SubView *v, int focus);                         ///< Restore view focus
 void subViewJump(SubView *v);                                     ///< Jump to view
+void subViewSwitch(SubView *v, int sid, int focus);               ///< Switch view
 void subViewPublish(void);                                        ///< Publish views
 void subViewKill(SubView *v);                                     ///< Kill view
 /* }}} */
