@@ -753,11 +753,7 @@ RubyEvalPanel(VALUE ary,
       keychain  = CHAR2SYM("keychain");
 
       /* Set position of panel */
-      if(SUB_SCREEN_PANEL2 == position)
-        {
-          flags |= SUB_PANEL_BOTTOM;
-          panel  = s->panel2;
-        }
+      if(SUB_SCREEN_PANEL2 == position) panel  = s->panel2;
 
       /* Parse array and assemble panel */
       for(i = 0; Qnil != (entry = rb_ary_entry(ary, i)); ++i)
@@ -803,6 +799,9 @@ RubyEvalPanel(VALUE ary,
                   subtle->flags |= SUB_SUBTLE_TRAY;
                   flags         |= (SUB_TYPE_PANEL|SUB_PANEL_TRAY);
                   p              = &subtle->panels.tray;
+
+                  XReparentWindow(subtle->dpy, subtle->windows.tray,
+                    panel, 0, 0);
                 }
             }
           else if(entry == views)
@@ -854,23 +853,12 @@ RubyEvalPanel(VALUE ary,
                       /* Avoid adding a sublet multiple times */
                       if(p2->screen)
                         {
-                          int mask = 0;
-
                           /* Copy sublet */
                           p = subPanelNew(SUB_PANEL_COPY);
 
-                          p->flags  |= SUB_PANEL_SUBLET;
+                          p->flags  |= (p2->flags & (SUB_PANEL_SUBLET|
+                            SUB_PANEL_DOWN|SUB_PANEL_OVER|SUB_PANEL_OUT));
                           p->sublet  = p2->sublet;
-
-                          /* Update window input mask */
-                          if(p->sublet->flags & SUB_SUBLET_DOWN)
-                            mask |= ButtonPressMask;
-                          if(p->sublet->flags & SUB_SUBLET_OVER)
-                            mask |= EnterWindowMask;
-                          if(p->sublet->flags & SUB_SUBLET_OUT)
-                            mask |= LeaveWindowMask;
-
-                          XSelectInput(subtle->dpy, p->win, mask);
 
                           printf("Cloned sublet (%s)\n", p->sublet->name);
                         }
@@ -890,8 +878,10 @@ RubyEvalPanel(VALUE ary,
               flags      = 0;
               last       = p;
 
+              /* Mark for bottom panel */
+              if(SUB_SCREEN_PANEL2 == position) p->flags  |= SUB_PANEL_BOTTOM;
+
               subArrayPush(s->panels, (void *)p);
-              XReparentWindow(subtle->dpy, p->win, panel, 0, 0);
             }
         }
 
@@ -919,7 +909,7 @@ RubyEvalConfig(void)
     }
 
   /* Update panel height */
-  subtle->th = subtle->font->height + 2 * subtle->pbw +
+  subtle->ph = subtle->font->height + 2 * subtle->pbw +
     subtle->padding.width + subtle->padding.height;
 
   /* Set separator */
@@ -1076,7 +1066,8 @@ RubyWrapLoadPanels(VALUE data)
             {
               SubPanel *p = PANEL(s->panels->data[j]);
 
-              if(p->flags & SUB_PANEL_BOTTOM) panel = s->panel2;
+              if(panel != s->panel2 && p->flags & SUB_PANEL_BOTTOM)
+                panel = s->panel2;
 
               /* Find dummy panel */
               if(p->flags & SUB_PANEL_SUBLETS)
@@ -1099,13 +1090,6 @@ RubyWrapLoadPanels(VALUE data)
                           sublet->screen  = s;
 
                           subArrayInsert(s->panels, pos++, (void *)sublet);
-                          XReparentWindow(subtle->dpy, sublet->win, panel, 0, 0);
-
-                          /* Set borders */
-                          XSetWindowBorder(subtle->dpy, sublet->win,
-                            subtle->colors.bo_sublets);
-                          XSetWindowBorderWidth(subtle->dpy, sublet->win,
-                            subtle->pbw);
                         }
                     }
 
@@ -1180,12 +1164,12 @@ RubyWrapCall(VALUE data)
         break; /* }}} */
       case SUB_CALL_DOWN: /* {{{ */
           {
-            XButtonEvent *ev = (XButtonEvent *)rargs[2];
+            int *args = (int *)rargs[2];
             VALUE meth = rb_intern("__down");
 
             rb_funcall(rargs[1], meth,
               MINMAX(rb_obj_method_arity(rargs[1], meth), 1, 4),
-              rargs[1], INT2FIX(ev->x), INT2FIX(ev->y), INT2FIX(ev->button));
+              rargs[1], INT2FIX(args[0]), INT2FIX(args[1]), INT2FIX(args[2]));
           }
         break; /* }}} */
       case SUB_CALL_OVER: /* {{{ */
@@ -2361,7 +2345,7 @@ RubySubletOn(VALUE self,
       if(p)
         {
           char buf[64] = { 0 };
-          int i, arity = 0, mask = 0;
+          int i, arity = 0;
           VALUE proc = Qnil, sing = Qnil, meth = Qnil;
 
           RubyMethods methods[] =
@@ -2369,10 +2353,10 @@ RubySubletOn(VALUE self,
             { CHAR2SYM("run"),        CHAR2SYM("__run"),    SUB_SUBLET_RUN,    1 },
             { CHAR2SYM("data"),       CHAR2SYM("__data"),   SUB_SUBLET_DATA,   2 },
             { CHAR2SYM("watch"),      CHAR2SYM("__watch"),  SUB_SUBLET_WATCH,  1 },
-            { CHAR2SYM("mouse_down"), CHAR2SYM("__down"),   SUB_SUBLET_DOWN,   4 },
-            { CHAR2SYM("mouse_over"), CHAR2SYM("__over"),   SUB_SUBLET_OVER,   1 },
-            { CHAR2SYM("mouse_out"),  CHAR2SYM("__out"),    SUB_SUBLET_OUT,    1 },
-            { CHAR2SYM("unload"),     CHAR2SYM("__unload"), SUB_SUBLET_UNLOAD, 1 }
+            { CHAR2SYM("unload"),     CHAR2SYM("__unload"), SUB_SUBLET_UNLOAD, 1 },
+            { CHAR2SYM("mouse_down"), CHAR2SYM("__down"),   SUB_PANEL_DOWN,    4 },
+            { CHAR2SYM("mouse_over"), CHAR2SYM("__over"),   SUB_PANEL_OVER,    1 },
+            { CHAR2SYM("mouse_out"),  CHAR2SYM("__out"),    SUB_PANEL_OUT,     1 }
           };
 
           /* Collect stuff */
@@ -2389,20 +2373,14 @@ RubySubletOn(VALUE self,
                   /* Check proc arity */
                   if(-1 == arity || (1 <= arity && methods[i].arity >= arity))
                     {
-                      p->sublet->flags |= methods[i].flags;
+                      /* Add flags */
+                      if(methods[i].flags & (SUB_PANEL_DOWN|
+                          SUB_PANEL_OVER|SUB_PANEL_OUT))
+                        p->flags |= methods[i].flags;
+                      else p->sublet->flags |= methods[i].flags;
 
                       /* Create instance method from proc */
                       rb_funcall(sing, meth, 2, methods[i].real, proc);
-
-                      /* Update window input mask */
-                      if(p->sublet->flags & SUB_SUBLET_DOWN)
-                        mask |= ButtonPressMask;
-                      if(p->sublet->flags & SUB_SUBLET_OVER)
-                        mask |= EnterWindowMask;
-                      if(p->sublet->flags & SUB_SUBLET_OUT)
-                        mask |= LeaveWindowMask;
-
-                      XSelectInput(subtle->dpy, p->win, mask);
 
                       return Qnil;
                     }
@@ -2495,7 +2473,7 @@ RubySubletRender(VALUE self)
   SubPanel *p = NULL;
 
   Data_Get_Struct(self, SubPanel, p);
-  if(p) subPanelRender(p);
+  if(p) subScreenRender();
 
   return Qnil;
 } /* }}} */
@@ -2687,7 +2665,7 @@ RubySubletForegroundWriter(VALUE self,
             rb_raise(rb_eArgError, "Unknown value type");
         }
 
-      subPanelRender(p);
+      subScreenRender();
     }
 
   return Qnil;
@@ -2738,7 +2716,7 @@ RubySubletBackgroundWriter(VALUE self,
             rb_raise(rb_eArgError, "Unknown value type");
         }
 
-      subPanelRender(p);
+      subScreenRender();
     }
 
   return Qnil;
@@ -2763,29 +2741,18 @@ RubySubletGeometryReader(VALUE self)
   Data_Get_Struct(self, SubPanel, p);
   if(p)
     {
-      int wx = 0, wy = 0, px = 0, py = 0;
-      unsigned int wwidth = 0, wheight = 0, wbw = 0, wdepth = 0;
-      unsigned int pwidth = 0, pheight = 0, pbw = 0, pdepth = 0, size = 0;
-      Window *wins = NULL, parent = None, wroot = None, proot = None;
+      int y = 0;
       VALUE subtlext = Qnil, klass = Qnil;
 
-      /* Get parent and geometries */
-      XGetGeometry(subtle->dpy, p->win, &wroot, &wx, &wy,
-        &wwidth, &wheight, &wbw, &wdepth);
-
-      XQueryTree(subtle->dpy, p->win, &wroot, &parent,
-        &wins, &size);
-
-      XGetGeometry(subtle->dpy, parent, &proot, &px, &py,
-        &pwidth, &pheight, &pbw, &pdepth);
+      /* Calculate bottom panel position */
+      if(p->flags & SUB_PANEL_BOTTOM)
+        y = p->screen->geom.y + p->screen->geom.height - subtle->ph;
 
       /* Create geometry object */
       subtlext = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
       klass    = rb_const_get(subtlext, rb_intern("Geometry"));
-      geometry = rb_funcall(klass, rb_intern("new"), 4, INT2FIX(px + wx),
-        INT2FIX(py + wy), INT2FIX(wwidth), INT2FIX(wheight));
-
-      if(wins) XFree(wins);
+      geometry = rb_funcall(klass, rb_intern("new"), 4, INT2FIX(p->x + subtle->pbw),
+        INT2FIX(y), INT2FIX(p->width - 2 * subtle->pbw), INT2FIX(subtle->ph));
     }
 
   return geometry;
@@ -2810,12 +2777,15 @@ RubySubletWindowReader(VALUE self)
   Data_Get_Struct(self, SubPanel, p);
   if(p)
     {
+/* FIXME */
+#if 0
       VALUE subtlext = Qnil, klass = Qnil;
 
       /* Create window object */
       subtlext = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
       klass    = rb_const_get(subtlext, rb_intern("Window"));
       win      = rb_funcall(klass, rb_intern("new"), 1, LONG2NUM(p->win));
+#endif
     }
 
   return win;
@@ -2891,7 +2861,6 @@ RubySubletHide(VALUE self,
   if(p)
     {
       p->flags |= SUB_PANEL_HIDDEN;
-      XUnmapWindow(subtle->dpy, p->win);
 
       /* Update screens */
       subScreenUpdate();
