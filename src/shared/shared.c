@@ -598,12 +598,9 @@ subSharedTextRender(Display *disp,
   long bg,
   SubText *t)
 {
-  int i, pad = 0, width = x;
+  int i, width = x;
 
   assert(t);
-
-  /* Get padding */
-  pad = abs(y - f->y);
 
   /* Render text items */
   for(i = 0; i < t->nitems; i++)
@@ -618,7 +615,8 @@ subSharedTextRender(Display *disp,
         {
           int icony = 0, dx = (0 == i) ? 0 : 3; ///< Add spacing when icon isn't first
 
-          icony = item->height > f->y ? pad - 2 : y - item->height;
+          icony = item->height > f->height ?
+            y - f->y - ((item->height - f->height) / 2): y - item->height;
 
           subSharedTextIconDraw(disp, gc, win, width + dx, icony,
             item->width, item->height, (-1 == item->color) ? fg : item->color,
