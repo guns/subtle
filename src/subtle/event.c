@@ -661,7 +661,8 @@ EventGrab(XEvent *ev)
           case SUB_GRAB_WINDOW_MOVE:
           case SUB_GRAB_WINDOW_RESIZE: /* {{{ */
             if((c = CLIENT(subSubtleFind(win, CLIENTID))) &&
-                !(c->flags & (SUB_CLIENT_MODE_FULL|SUB_CLIENT_MODE_NOFLOAT)))
+                !(c->flags & (SUB_CLIENT_MODE_FULL|SUB_CLIENT_MODE_NOFLOAT|
+                SUB_CLIENT_TYPE_DESKTOP)))
               {
                 if(!(c->flags & SUB_CLIENT_MODE_FLOAT))
                   {
