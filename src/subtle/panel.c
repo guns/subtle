@@ -211,7 +211,7 @@ subPanelRender(SubPanel *p,
       case SUB_PANEL_ICON: /* {{{ */
         subSharedTextIconDraw(subtle->dpy, subtle->gcs.draw,
           drawable, p->x + 2 + subtle->padding.x,
-          (subtle->ph - p->icon->height) / 2 + subtle->pbw,
+          (subtle->ph - 2 * subtle->pbw - p->icon->height) / 2 + subtle->pbw,
           p->icon->width, p->icon->height, subtle->colors.fg_sublets,
           subtle->colors.bg_sublets, p->icon->pixmap, p->icon->bitmap);
         break; /* }}} */
@@ -374,8 +374,9 @@ subPanelRender(SubPanel *p,
                 if(v->flags & SUB_VIEW_ICON)
                   {
                     subSharedTextIconDraw(subtle->dpy, subtle->gcs.draw,
-                      drawable, p->x + px + vx, subtle->font->y - v->icon->height +
-                      subtle->padding.width + subtle->pbw, v->icon->width, v->icon->height,
+                      drawable, p->x + px + vx, ((subtle->ph -
+                      2 * subtle->pbw - v->icon->height) / 2) +
+                      subtle->padding.width, v->icon->width, v->icon->height,
                       fg, bg, v->icon->pixmap, v->icon->bitmap);
 
                     vx += v->icon->width;
