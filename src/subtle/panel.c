@@ -254,7 +254,8 @@ subPanelRender(SubPanel *p,
           {
             SubClient *c = NULL;
 
-            if((c = CLIENT(subSubtleFind(subtle->windows.focus[0], CLIENTID))))
+            if((c = CLIENT(subSubtleFind(subtle->windows.focus[0], CLIENTID))) &&
+                !(c->flags & SUB_CLIENT_TYPE_DESKTOP))
               {
                 int x = 0;
                 char buf[50] = { 0 };

@@ -733,8 +733,15 @@ subClientArrange(SubClient *c,
             c->geom.width, c->geom.height);
         }
     }
-  /* Exclude desktop type windows */
-  else if(!(c->flags & SUB_CLIENT_TYPE_DESKTOP))
+  else if(c->flags & SUB_CLIENT_TYPE_DESKTOP)
+    {
+      c->geom = s->geom;
+
+      XMoveResizeWindow(subtle->dpy, c->win, c->geom.x, c->geom.y,
+        c->geom.width, c->geom.height);
+      XLowerWindow(subtle->dpy, c->win);
+    }
+  else
     {
       if(c->flags & SUB_CLIENT_ARRANGE ||
           c->gravity != gravity || c->screen != screen)
