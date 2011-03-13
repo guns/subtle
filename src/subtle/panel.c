@@ -209,11 +209,17 @@ subPanelRender(SubPanel *p,
       SUB_PANEL_SUBLET|SUB_PANEL_TITLE|SUB_PANEL_VIEWS))
     {
       case SUB_PANEL_ICON: /* {{{ */
-        subSharedTextIconDraw(subtle->dpy, subtle->gcs.draw,
-          drawable, p->x + 2 + subtle->padding.x,
-          (subtle->ph - 2 * subtle->pbw - p->icon->height) / 2 + subtle->pbw,
-          p->icon->width, p->icon->height, subtle->colors.fg_sublets,
-          subtle->colors.bg_sublets, p->icon->pixmap, p->icon->bitmap);
+          {
+            int y = 0, icony = 0;
+
+            y     = subtle->font->y + subtle->padding.width + subtle->pbw;
+            icony = p->icon->height > y ? subtle->pbw : y - p->icon->height;
+
+            subSharedTextIconDraw(subtle->dpy, subtle->gcs.draw,
+              drawable, p->x + 2 + subtle->padding.x, icony,
+              p->icon->width, p->icon->height, subtle->colors.fg_sublets,
+              subtle->colors.bg_sublets, p->icon->pixmap, p->icon->bitmap);
+          }
         break; /* }}} */
       case SUB_PANEL_KEYCHAIN: /* {{{ */
         if(p->keychain && p->keychain->keys)
@@ -239,7 +245,7 @@ subPanelRender(SubPanel *p,
 
         /* Render text parts */
         subSharedTextRender(subtle->dpy, subtle->gcs.draw, subtle->font,
-          drawable, p->x + 3 + subtle->padding.x, subtle->font->y +
+          drawable, p->x + 3 + subtle->padding.x + subtle->pbw, subtle->font->y +
           subtle->padding.width + subtle->pbw, p->sublet->fg, p->sublet->bg,
           p->sublet->text);
         break; /* }}} */
@@ -373,11 +379,15 @@ subPanelRender(SubPanel *p,
                 /* Draw view icon and/or text */
                 if(v->flags & SUB_VIEW_ICON)
                   {
+                    int y = 0, icony = 0;
+
+                    y     = subtle->font->y + subtle->padding.width + subtle->pbw;
+                    icony = v->icon->height > y ? subtle->pbw : y - v->icon->height;
+
                     subSharedTextIconDraw(subtle->dpy, subtle->gcs.draw,
-                      drawable, p->x + px + vx, ((subtle->ph -
-                      2 * subtle->pbw - v->icon->height) / 2) +
-                      subtle->padding.width, v->icon->width, v->icon->height,
-                      fg, bg, v->icon->pixmap, v->icon->bitmap);
+                      drawable, p->x + px + vx, icony, v->icon->width,
+                      v->icon->height, fg, bg, v->icon->pixmap,
+                      v->icon->bitmap);
 
                     vx += v->icon->width;
                   }
