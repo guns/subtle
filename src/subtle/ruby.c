@@ -2761,39 +2761,6 @@ RubySubletGeometryReader(VALUE self)
   return geometry;
 } /* }}} */
 
-/* RubySubletWindowReader {{{ */
-/*
- * call-seq: window -> Subtlext::Window
- *
- * Get window of a sublet
- *
- *  sublet.window
- *  => #<Subtlext::Window:xxx>
- */
-
-VALUE
-RubySubletWindowReader(VALUE self)
-{
-  SubPanel *p = NULL;
-  VALUE win = Qnil;
-
-  Data_Get_Struct(self, SubPanel, p);
-  if(p)
-    {
-/* FIXME */
-#if 0
-      VALUE subtlext = Qnil, klass = Qnil;
-
-      /* Create window object */
-      subtlext = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
-      klass    = rb_const_get(subtlext, rb_intern("Window"));
-      win      = rb_funcall(klass, rb_intern("new"), 1, LONG2NUM(p->win));
-#endif
-    }
-
-  return win;
-} /* }}} */
-
 /* RubySubletScreenReader {{{ */
 /*
  * call-seq: screen -> Subtlext::Screen
@@ -3152,7 +3119,6 @@ subRubyInit(void)
   rb_define_method(sublet, "foreground=",    RubySubletForegroundWriter,  1);
   rb_define_method(sublet, "background=",    RubySubletBackgroundWriter,  1);
   rb_define_method(sublet, "geometry",       RubySubletGeometryReader,    0);
-  rb_define_method(sublet, "window",         RubySubletWindowReader,      0);
   rb_define_method(sublet, "screen",         RubySubletScreenReader,      0);
   rb_define_method(sublet, "show",           RubySubletShow,              0);
   rb_define_method(sublet, "hide",           RubySubletHide,              0);
