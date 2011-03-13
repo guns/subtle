@@ -77,7 +77,7 @@ subEwmhInit(void)
     "SUBTLE_VIEW_NEW", "SUBTLE_VIEW_TAGS", "SUBTLE_VIEW_KILL",
     "SUBTLE_SUBLET_NEW", "SUBTLE_SUBLET_UPDATE", "SUBTLE_SUBLET_DATA",
     "SUBTLE_SUBLET_FOREGROUND", "SUBTLE_SUBLET_BACKGROUND",
-    "SUBTLE_SUBLET_LIST", "SUBTLE_SUBLET_WINDOWS", "SUBTLE_SUBLET_KILL",
+    "SUBTLE_SUBLET_LIST", "SUBTLE_SUBLET_KILL",
     "SUBTLE_SCREEN_PANELS", "SUBTLE_SCREEN_VIEWS",
     "SUBTLE_VISIBLE_TAGS", "SUBTLE_VISIBLE_VIEWS",
     "SUBTLE_RELOAD", "SUBTLE_RESTART", "SUBTLE_QUIT",
@@ -381,7 +381,6 @@ subEwmhFinish(void)
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_COLORS));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_FONT));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_SUBLET_LIST));
-      subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_SUBLET_WINDOWS));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_SCREEN_VIEWS));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_VISIBLE_VIEWS));
       subSharedPropertyDelete(subtle->dpy, ROOT, subEwmhGet(SUB_EWMH_SUBTLE_VISIBLE_TAGS));
