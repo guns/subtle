@@ -2741,18 +2741,21 @@ RubySubletGeometryReader(VALUE self)
   Data_Get_Struct(self, SubPanel, p);
   if(p)
     {
-      int y = 0;
+      int y = subtle->ph, width = 0;
       VALUE subtlext = Qnil, klass = Qnil;
 
       /* Calculate bottom panel position */
       if(p->flags & SUB_PANEL_BOTTOM)
         y = p->screen->geom.y + p->screen->geom.height - subtle->ph;
 
+      width = 0 == p->width ? 1 : p->width - 2 * subtle->pbw;
+
       /* Create geometry object */
       subtlext = rb_const_get(rb_mKernel, rb_intern("Subtlext"));
       klass    = rb_const_get(subtlext, rb_intern("Geometry"));
-      geometry = rb_funcall(klass, rb_intern("new"), 4, INT2FIX(p->x + subtle->pbw),
-        INT2FIX(y), INT2FIX(p->width - 2 * subtle->pbw), INT2FIX(subtle->ph));
+      geometry = rb_funcall(klass, rb_intern("new"), 4,
+        INT2FIX(p->x + subtle->pbw), INT2FIX(y), INT2FIX(width),
+        INT2FIX(subtle->ph - 2 * subtle->pbw));
     }
 
   return geometry;
