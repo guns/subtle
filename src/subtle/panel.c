@@ -525,7 +525,6 @@ subPanelPublish(void)
 {
   int i = 0, j = 0, idx = 0;
   char **names = NULL;
-  Window *wins = NULL;
 
   /* Alloc space */
   names = (char **)subSharedMemoryAlloc(subtle->sublets->ndata,
@@ -544,7 +543,7 @@ subPanelPublish(void)
 
               /* Include sublets, exclude shallow copies */
               if(p->flags & SUB_PANEL_SUBLET && !(p->flags & SUB_PANEL_COPY))
-                names[idx]  = p->sublet->name;
+                names[idx++] = p->sublet->name;
             }
         }
     }
@@ -552,15 +551,12 @@ subPanelPublish(void)
   /* EWMH: Sublet list and windows */
   subSharedPropertySetStrings(subtle->dpy, ROOT,
     subEwmhGet(SUB_EWMH_SUBTLE_SUBLET_LIST), names, subtle->sublets->ndata);
-  /* FIXME subEwmhSetWindows(ROOT, SUB_EWMH_SUBTLE_SUBLET_WINDOWS,
-    wins, subtle->sublets->ndata); */
 
   subSharedLogDebugSubtle("publish=panel, n=%d\n", subtle->sublets->ndata);
 
   XSync(subtle->dpy, False); ///< Sync all changes
 
   free(names);
-  free(wins);
 } /* }}} */
 
  /** subPanelKill {{{
