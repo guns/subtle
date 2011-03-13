@@ -577,14 +577,14 @@ subSharedTextParse(Display *disp,
  /** subSharedTextRender {{{
   * @brief Render text
   * @param[in]  disp  Display
-  * @param[in]  gc   GC
-  * @param[in]  f    A #SubFont
-  * @param[in]  win  A #Window
-  * @param[in]  x    X position
-  * @param[in]  y    Y position
-  * @param[in]  fg   Foreground color
-  * @param[in]  bg   Background color
-  * @param[in]  t    A #SubText
+  * @param[in]  gc    GC
+  * @param[in]  f     A #SubFont
+  * @param[in]  win   A #Window
+  * @param[in]  x     X position
+  * @param[in]  y     Y position
+  * @param[in]  fg    Foreground color
+  * @param[in]  bg    Background color
+  * @param[in]  t     A #SubText
   **/
 
 void
@@ -598,9 +598,12 @@ subSharedTextRender(Display *disp,
   long bg,
   SubText *t)
 {
-  int i, width = x;
+  int i, pad = 0, width = x;
 
   assert(t);
+
+  /* Get padding */
+  pad = abs(y - f->y) / 2;
 
   /* Render text items */
   for(i = 0; i < t->nitems; i++)
@@ -613,9 +616,11 @@ subSharedTextRender(Display *disp,
         }
       else if(item->flags & (SUB_TEXT_BITMAP|SUB_TEXT_PIXMAP)) ///< Icons
         {
-          int dx = (0 == i) ? 0 : 3; ///< Add spacing when icon isn't first
+          int icony = 0, dx = (0 == i) ? 0 : 3; ///< Add spacing when icon isn't first
 
-          subSharedTextIconDraw(disp, gc, win, width + dx, y - item->height,
+          icony = (pad + pad + f->height - item->height) / 2 + pad;
+
+          subSharedTextIconDraw(disp, gc, win, width + dx, icony,
             item->width, item->height, (-1 == item->color) ? fg : item->color,
             bg, (Pixmap)item->data.num, (item->flags & SUB_TEXT_BITMAP));
 
