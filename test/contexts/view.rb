@@ -87,6 +87,12 @@ context "View" do
     before == middle1 - 1 and 2 == middle2 and 1 == after
   end
 
+  asserts("Runtime: Store values") do
+    topic[:test] = "test"
+
+    "test" == Subtlext::View.current[:test]
+  end
+
   asserts("Runtime: Kill a view") do
     Subtlext::View["test"].kill
 

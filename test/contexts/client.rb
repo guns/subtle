@@ -95,6 +95,12 @@ context "Client" do
     topic.screen == Subtlext::Screen[0]
   end
 
+  asserts("Runtime: Store values") do
+    topic[:test] = "test"
+
+    "test" == Subtlext::Client.current[:test]
+  end
+
   asserts("Runtime: Kill a client") do
     topic.kill
 
