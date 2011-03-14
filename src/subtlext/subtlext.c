@@ -676,11 +676,10 @@ SubtlextPropReader(VALUE self,
   VALUE key)
 {
   char *prop = NULL;
-  VALUE ret = Qnil, win = Qnil;
+  VALUE ret = Qnil;
 
   /* Check ruby object */
   rb_check_frozen(self);
-  GET_ATTR(self, "@win", win);
 
   /* Check object type */
   switch(rb_type(key))
@@ -698,17 +697,30 @@ SubtlextPropReader(VALUE self,
   if(prop)
     {
       char propname[255] = { 0 }, *name = NULL, *result = NULL;
+      Window win = DefaultRootWindow(display);
+      VALUE val = Qnil;
 
       /* Sanitize property name */
       name = strdup(prop);
       SubtlextStringify(name);
 
-      snprintf(propname, sizeof(propname), "SUBTLE_PROPERTY_%s", name);
+      /* Check object type */
+      if(rb_obj_is_instance_of(self, rb_const_get(mod, rb_intern("View"))))
+        {
+          GET_ATTR(self, "@name", val);
+          snprintf(propname, sizeof(propname), "SUBTLE_PROPERTY_%s_%s",
+            RSTRING_PTR(val), name);
+        }
+      else ///< Client
+        {
+          GET_ATTR(self, "@win", val);
+          win = NUM2LONG(val);
+          snprintf(propname, sizeof(propname), "SUBTLE_PROPERTY_%s", name);
+        }
 
       /* Get actual property */
-      if((result = subSharedPropertyGet(display, NUM2LONG(win),
-          XInternAtom(display, "UTF8_STRING", False),
-          XInternAtom(display, propname, False), NULL)))
+      if((result = subSharedPropertyGet(display, win, XInternAtom(display,
+          "UTF8_STRING", False), XInternAtom(display, propname, False), NULL)))
         {
           ret = rb_str_new2(result);
 
@@ -737,11 +749,9 @@ SubtlextPropWriter(VALUE self,
   VALUE value)
 {
   char *prop = NULL;
-  VALUE win = Qnil;
 
   /* Check ruby object */
   rb_check_frozen(self);
-  GET_ATTR(self, "@win", win);
 
   /* Check object type */
   switch(rb_type(key))
@@ -759,16 +769,29 @@ SubtlextPropWriter(VALUE self,
   if(T_STRING == rb_type(value))
     {
       char propname[255] = { 0 }, *name = NULL;
+      Window win = DefaultRootWindow(display);
+      VALUE val = Qnil;
 
       /* Sanitize property name */
       name = strdup(prop);
       SubtlextStringify(name);
 
-      snprintf(propname, sizeof(propname), "SUBTLE_PROPERTY_%s", name);
+      /* Check object type */
+      if(rb_obj_is_instance_of(self, rb_const_get(mod, rb_intern("View"))))
+        {
+          GET_ATTR(self, "@name", val);
+          snprintf(propname, sizeof(propname), "SUBTLE_PROPERTY_%s_%s",
+            RSTRING_PTR(val), name);
+        }
+      else ///< Client
+        {
+          GET_ATTR(self, "@win", val);
+          win = NUM2LONG(val);
+          snprintf(propname, sizeof(propname), "SUBTLE_PROPERTY_%s", name);
+        }
 
       /* Update property */
-      XChangeProperty(display, NUM2LONG(win),
-        XInternAtom(display, propname, False),
+      XChangeProperty(display, win, XInternAtom(display, propname, False),
         XInternAtom(display, "UTF8_STRING", False), 8, PropModeReplace,
         (unsigned char *)RSTRING_PTR(value), RSTRING_LEN(value));
 
