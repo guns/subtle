@@ -361,7 +361,7 @@ subScreenConfigure(void)
               /* EWMH: Desktop, screen */
               subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP,
                 (long *)&view, 1);
-              subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_SCREEN,
+              subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_SCREEN,
                 (long *)&screen, 1);
             }
           else ///< Unmap other windows

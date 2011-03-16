@@ -144,7 +144,7 @@ SubtlextTagGet(VALUE self)
         {
           if((value_tags = (unsigned long *)subSharedPropertyGet(
               display, NUM2LONG(win), XA_CARDINAL, XInternAtom(display,
-              "SUBTLE_WINDOW_TAGS", False), NULL)))
+              "SUBTLE_CLIENT_TAGS", False), NULL)))
             {
               tags = *value_tags;
 
@@ -216,11 +216,14 @@ SubtlextTag(VALUE self,
   /* Send message */
   data.l[0] = FIX2LONG(id);
   data.l[1] = tags;
-  data.l[2] = rb_obj_is_instance_of(self,
-    rb_const_get(mod, rb_intern("Client"))) ? 0 : 1; ///< Client = 0, View = 1
 
-  subSharedMessage(display, DefaultRootWindow(display),
-    "SUBTLE_WINDOW_TAGS", data, 32, True);
+  /* Check object type */
+  if(rb_obj_is_instance_of(self,
+      rb_const_get(mod, rb_intern("Client"))))
+    subSharedMessage(display, DefaultRootWindow(display),
+      "SUBTLE_CLIENT_TAGS", data, 32, True);
+  else subSharedMessage(display, DefaultRootWindow(display),
+    "SUBTLE_VIEW_TAGS", data, 32, True);
 
   return Qnil;
 } /* }}} */
@@ -375,7 +378,7 @@ SubtlextTagReload(VALUE self)
   data.l[0] = FIX2INT(id);
 
   subSharedMessage(display, DefaultRootWindow(display),
-    "SUBTLE_WINDOW_RETAG", data, 32, True);
+    "SUBTLE_CLIENT_RETAG", data, 32, True);
 
   return Qnil;
 } /* }}} */
@@ -1164,7 +1167,7 @@ subSubtlextFindWindow(char *prop,
               int *gravity = NULL;
 
               if((gravity = (int *)subSharedPropertyGet(display, wins[i],
-                  XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_GRAVITY",
+                  XA_CARDINAL, XInternAtom(display, "SUBTLE_CLIENT_GRAVITY",
                   False), NULL)))
                 {
                   gravity2 = *gravity;

@@ -200,9 +200,9 @@ subClientNew(Window win)
   if(c->flags & SUB_CLIENT_TYPE_DIALOG) ClientCenter(c);
 
   /* EWMH: Gravity, screen, desktop */
-  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY,
+  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_GRAVITY,
     (long *)&subtle->gravity, 1);
-  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_SCREEN,
+  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_SCREEN,
     (long *)&c->screen, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
 
@@ -674,7 +674,7 @@ subClientRetag(SubClient *c,
   if(0 == visible) subClientTag(c, 0, flags); ///< Set default tag
 
   /* EWMH: Tags */
-  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS, (long *)&c->tags, 1);
+  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS, (long *)&c->tags, 1);
 } /* }}} */
 
  /** subClientResize {{{
@@ -812,7 +812,7 @@ subClientArrange(SubClient *c,
             c->geom.width, c->geom.height);
 
           /* EWMH: Gravity */
-          subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_GRAVITY,
+          subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_GRAVITY,
             (long *)&c->gravity, 1);
 
           XSync(subtle->dpy, False); ///< Sync all changes
@@ -952,7 +952,7 @@ subClientToggle(SubClient *c,
   XChangeProperty(subtle->dpy, c->win, subEwmhGet(SUB_EWMH_NET_WM_STATE),
     XA_ATOM, 32, PropModeReplace, (unsigned char *)&states, nstates);
 
-  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_FLAGS, (long *)&flags, 1);
+  subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_FLAGS, (long *)&flags, 1);
 
   XSync(subtle->dpy, False); ///< Sync all changes
 

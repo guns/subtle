@@ -49,7 +49,7 @@ EventUntag(SubClient *c,
   /* EWMH: Tags */
   if(c->flags & SUB_TYPE_CLIENT)
     {
-      subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS,
+      subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS,
         (long *)&c->tags, 1);
     }
 } /* }}} */
@@ -992,58 +992,40 @@ EventMessage(XClientMessageEvent *ev)
             break; /* }}} */
 
           /* subtle */
-          case SUB_EWMH_SUBTLE_WINDOW_TAGS: /* {{{ */
-            switch(ev->data.l[2]) ///< Type
+          case SUB_EWMH_SUBTLE_CLIENT_TAGS: /* {{{ */
+            if((c = CLIENT(subArrayGet(subtle->clients,
+                (int)ev->data.l[0]))))
               {
-                case 0: ///< Clients
-                  if((c = CLIENT(subArrayGet(subtle->clients,
-                      (int)ev->data.l[0]))))
-                    {
-                      int i, flags = 0, tags = 0;
+                int i, flags = 0, tags = 0;
 
-                      /* Select only new tags */
-                      tags = (c->tags ^ (int)ev->data.l[1]) & (int)ev->data.l[1];
+                /* Select only new tags */
+                tags = (c->tags ^ (int)ev->data.l[1]) & (int)ev->data.l[1];
 
-                      /* Update tags and assign properties */
-                      for(i = 0; i < 31; i++)
-                        if(tags & (1L << (i + 1))) subClientTag(c, i, &flags);
+                /* Update tags and assign properties */
+                for(i = 0; i < 31; i++)
+                  if(tags & (1L << (i + 1))) subClientTag(c, i, &flags);
 
-                      subClientToggle(c, flags, True); ///< Toggle flags
-                      c->tags = (int)ev->data.l[1]; ///< Write all tags
+                subClientToggle(c, flags, True); ///< Toggle flags
+                c->tags = (int)ev->data.l[1]; ///< Write all tags
 
-                      /* EWMH: Tags */
-                      subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_WINDOW_TAGS,
-                        (long *)&c->tags, 1);
+                /* EWMH: Tags */
+                subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_TAGS,
+                  (long *)&c->tags, 1);
 
-                      subScreenConfigure();
+                subScreenConfigure();
 
-                      /* Check visibility of focus window after updating tags
-                       * and reactivate grabs if necessary */
-                      if(subtle->windows.focus[0] == c->win &&
-                          !VISIBLE(subtle->visible_tags, c))
-                        subSubtleFocus(True);
+                /* Check visibility of focus window after updating tags
+                 * and reactivate grabs if necessary */
+                if(subtle->windows.focus[0] == c->win &&
+                    !VISIBLE(subtle->visible_tags, c))
+                  subSubtleFocus(True);
 
-                      subScreenUpdate();
-                      subScreenRender();
-                    }
-                  else EventQueuePush(ev);
-                  break;
-                case 1: ///< Views
-                  if((v = VIEW(subArrayGet(subtle->views,
-                      (int)ev->data.l[0]))))
-                    {
-                      v->tags = (int)ev->data.l[1]; ///< Action
-
-                      subViewPublish();
-
-                      /* Reconfigure if view is visible */
-                      if(subtle->visible_views & (1L << (ev->data.l[0] + 1)))
-                        subScreenConfigure();
-                    }
-                  else EventQueuePush(ev);
+                subScreenUpdate();
+                subScreenRender();
               }
+            else EventQueuePush(ev);
             break; /* }}} */
-          case SUB_EWMH_SUBTLE_WINDOW_RETAG: /* {{{ */
+          case SUB_EWMH_SUBTLE_CLIENT_RETAG: /* {{{ */
             if((c = CLIENT(subArrayGet(subtle->clients,
                 (int)ev->data.l[0])))) ///< Clients
               {
@@ -1063,7 +1045,7 @@ EventMessage(XClientMessageEvent *ev)
                   }
               }
             break; /* }}} */
-          case SUB_EWMH_SUBTLE_WINDOW_GRAVITY: /* {{{ */
+          case SUB_EWMH_SUBTLE_CLIENT_GRAVITY: /* {{{ */
             if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0]))) &&
                 ((g = GRAVITY(subArrayGet(subtle->gravities, (int)ev->data.l[1])))) &&
                 VISIBLE(subtle->visible_tags, c))
@@ -1076,7 +1058,7 @@ EventMessage(XClientMessageEvent *ev)
                 subHookCall(SUB_HOOK_TILE, NULL);
               }
             break; /* }}} */
-          case SUB_EWMH_SUBTLE_WINDOW_FLAGS: /* {{{ */
+          case SUB_EWMH_SUBTLE_CLIENT_FLAGS: /* {{{ */
             if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0]))))
               {
                 int flags = 0;
@@ -1207,6 +1189,20 @@ EventMessage(XClientMessageEvent *ev)
                 subHookCall((SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_CREATE),
                   (void *)v);
               }
+            break; /* }}} */
+          case SUB_EWMH_SUBTLE_VIEW_TAGS: /* {{{ */
+            if((v = VIEW(subArrayGet(subtle->views,
+                (int)ev->data.l[0]))))
+              {
+                v->tags = (int)ev->data.l[1]; ///< Action
+
+                subViewPublish();
+
+                /* Reconfigure if view is visible */
+                if(subtle->visible_views & (1L << (ev->data.l[0] + 1)))
+                  subScreenConfigure();
+              }
+            else EventQueuePush(ev);
             break; /* }}} */
           case SUB_EWMH_SUBTLE_VIEW_KILL: /* {{{ */
             if((v = VIEW(subArrayGet(subtle->views, (int)ev->data.l[0]))))

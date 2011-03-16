@@ -83,7 +83,7 @@ ClientFlagsSet(VALUE self,
   data.l[1] = iflags;
 
   subSharedMessage(display, DefaultRootWindow(display),
-    "SUBTLE_WINDOW_FLAGS", data, 32, True);
+    "SUBTLE_CLIENT_FLAGS", data, 32, True);
 
   rb_iv_set(self, "@flags", INT2FIX(iflags));
 
@@ -279,7 +279,7 @@ subClientSingVisible(VALUE self)
         {
           unsigned long *tags = (unsigned long *)subSharedPropertyGet(display,
             clients[i], XA_CARDINAL, XInternAtom(display,
-            "SUBTLE_WINDOW_TAGS", False), NULL);
+            "SUBTLE_CLIENT_TAGS", False), NULL);
 
           /* Create client on match */
           if(tags && *tags && *visible & *tags &&
@@ -497,7 +497,7 @@ subClientUpdate(VALUE self)
       subSharedPropertyName(display, win, &wmname, wmclass);
 
       flags = (int *)subSharedPropertyGet(display, win, XA_CARDINAL,
-        XInternAtom(display, "SUBTLE_WINDOW_FLAGS", False), NULL);
+        XInternAtom(display, "SUBTLE_CLIENT_FLAGS", False), NULL);
       role = subSharedPropertyGet(display, win, XA_STRING,
         XInternAtom(display, "WM_WINDOW_ROLE", False), NULL);
 
@@ -562,9 +562,9 @@ subClientViewList(VALUE self)
     DefaultRootWindow(display), XA_CARDINAL, XInternAtom(display,
     "SUBTLE_VIEW_TAGS", False), NULL);
   client_tags = (unsigned long *)subSharedPropertyGet(display, NUM2LONG(win),
-    XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
+    XA_CARDINAL, XInternAtom(display, "SUBTLE_CLIENT_TAGS", False), NULL);
   flags       = (unsigned long *)subSharedPropertyGet(display, NUM2LONG(win),
-    XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_FLAGS", False), NULL);
+    XA_CARDINAL, XInternAtom(display, "SUBTLE_CLIENT_FLAGS", False), NULL);
 
   /* Check results */
   if(names && view_tags && client_tags)
@@ -866,7 +866,7 @@ subClientGravityReader(VALUE self)
 
       /* Get gravity */
       if((id = (int *)subSharedPropertyGet(display, NUM2LONG(win), XA_CARDINAL,
-          XInternAtom(display, "SUBTLE_WINDOW_GRAVITY", False), NULL)))
+          XInternAtom(display, "SUBTLE_CLIENT_GRAVITY", False), NULL)))
         {
           /* Create gravity */
           snprintf(buf, sizeof(buf), "%d", *id);
@@ -928,7 +928,7 @@ subClientGravityWriter(VALUE self,
       data.l[1] = FIX2LONG(rb_iv_get(gravity, "@id"));
 
       subSharedMessage(display, DefaultRootWindow(display),
-        "SUBTLE_WINDOW_GRAVITY", data, 32, True);
+        "SUBTLE_CLIENT_GRAVITY", data, 32, True);
 
       rb_iv_set(self, "@gravity", gravity);
     }
@@ -1051,7 +1051,7 @@ subClientScreenReader(VALUE self)
 
   /* Get screen */
   if((sid = (int *)subSharedPropertyGet(display, NUM2LONG(win), XA_CARDINAL,
-      XInternAtom(display, "SUBTLE_WINDOW_SCREEN", False), NULL)))
+      XInternAtom(display, "SUBTLE_CLIENT_SCREEN", False), NULL)))
     {
       screen = subScreenSingFind(self, INT2FIX(*sid));
 

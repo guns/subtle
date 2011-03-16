@@ -364,7 +364,7 @@ subGravityClients(VALUE self)
           /* Get window gravity */
           gravity = (unsigned long *)subSharedPropertyGet(display,
             clients[i], XA_CARDINAL, XInternAtom(display,
-            "SUBTLE_WINDOW_GRAVITY", False), NULL);
+            "SUBTLE_CLIENT_GRAVITY", False), NULL);
 
           /* Check if there are common tags or window is stick */
           if(gravity && FIX2INT(id) == *gravity &&

@@ -438,10 +438,10 @@ subViewClients(VALUE self)
           /* Fetch window data */
           client_tags = (unsigned long *)subSharedPropertyGet(display,
             clients[i], XA_CARDINAL,
-            XInternAtom(display, "SUBTLE_WINDOW_TAGS", False), NULL);
+            XInternAtom(display, "SUBTLE_CLIENT_TAGS", False), NULL);
           flags       = (unsigned long *)subSharedPropertyGet(display,
             clients[i], XA_CARDINAL,
-            XInternAtom(display, "SUBTLE_WINDOW_FLAGS", False), NULL);
+            XInternAtom(display, "SUBTLE_CLIENT_FLAGS", False), NULL);
 
           /* Check if there are common tags or window is stick */
           if((client_tags && view_tags[FIX2INT(id)] & *client_tags) ||

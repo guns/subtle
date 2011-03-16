@@ -299,7 +299,7 @@ subTagClients(VALUE self)
       for(i = 0; i < nclients; i++)
         {
           if((tags = (unsigned long *)subSharedPropertyGet(display,
-              clients[i], XA_CARDINAL, XInternAtom(display, "SUBTLE_WINDOW_TAGS",
+              clients[i], XA_CARDINAL, XInternAtom(display, "SUBTLE_CLIENT_TAGS",
               False), NULL)))
             {
               /* Check if tag id matches */
