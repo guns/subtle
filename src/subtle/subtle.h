@@ -444,11 +444,11 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_XEMBED_INFO,                                           ///< XEmbed info
 
   /* subtle */
-  SUB_EWMH_SUBTLE_WINDOW_TAGS,                                    ///< Subtle window tags
-  SUB_EWMH_SUBTLE_WINDOW_RETAG,                                   ///< Subtle window retag
-  SUB_EWMH_SUBTLE_WINDOW_GRAVITY,                                 ///< Subtle window gravity
-  SUB_EWMH_SUBTLE_WINDOW_SCREEN,                                  ///< Subtle window screen
-  SUB_EWMH_SUBTLE_WINDOW_FLAGS,                                   ///< Subtle window flags
+  SUB_EWMH_SUBTLE_CLIENT_TAGS,                                    ///< Subtle client tags
+  SUB_EWMH_SUBTLE_CLIENT_RETAG,                                   ///< Subtle client retag
+  SUB_EWMH_SUBTLE_CLIENT_GRAVITY,                                 ///< Subtle client gravity
+  SUB_EWMH_SUBTLE_CLIENT_SCREEN,                                  ///< Subtle client screen
+  SUB_EWMH_SUBTLE_CLIENT_FLAGS,                                   ///< Subtle client flags
   SUB_EWMH_SUBTLE_GRAVITY_NEW,                                    ///< Subtle gravity new
   SUB_EWMH_SUBTLE_GRAVITY_LIST,                                   ///< Subtle gravity list
   SUB_EWMH_SUBTLE_GRAVITY_KILL,                                   ///< Subtle gravtiy kill
