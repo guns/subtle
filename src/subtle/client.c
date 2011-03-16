@@ -13,6 +13,11 @@
 #include <X11/Xatom.h>
 #include "subtle.h"
 
+#define EDGE_LEFT   (1L << 0)
+#define EDGE_RIGHT  (1L << 1)
+#define EDGE_TOP    (1L << 2)
+#define EDGE_BOTTOM (1L << 3)
+
 /* Typedef {{{ */
 typedef struct clientmwmhints_t
 {
@@ -384,7 +389,7 @@ subClientDrag(SubClient *c,
   XEvent ev;
   Window root = None, win = None;
   unsigned int mask = 0;
-  int loop = True, left = False;
+  int loop = True, edge = 0, sx = 0, sy = 0;
   int wx = 0, wy = 0, ww = 0, wh = 0, rx = 0, ry = 0, maxw = 0, maxh = 0;
   short *dirx = NULL, *diry = NULL;
   SubScreen *s = NULL;
@@ -421,7 +426,16 @@ subClientDrag(SubClient *c,
         dirx   = (short *)&geom.width;
         diry   = (short *)&geom.height;
         cursor = subtle->cursors.resize;
-        left   = wx < geom.width / 2; ///< Resize from left
+
+        /* Get starting edge */
+        edge |= (wx < (geom.width  / 2)) ? EDGE_LEFT : EDGE_RIGHT;
+        edge |= (wy < (geom.height / 2)) ? EDGE_TOP  : EDGE_BOTTOM;
+
+        /* Set starting point */
+        if(edge & EDGE_LEFT)        sx = geom.x + geom.width;
+        else if(edge & EDGE_RIGHT)  sx = geom.x;
+        if(edge & EDGE_TOP)         sy = geom.y + geom.height;
+        else if(edge & EDGE_BOTTOM) sy = geom.y;
         break;
     } /* }}} */
 
@@ -482,7 +496,7 @@ subClientDrag(SubClient *c,
                 /* Calculate selection rect */
                 switch(mode)
                   {
-                    case SUB_DRAG_MOVE:
+                    case SUB_DRAG_MOVE: /* {{{ */
                       geom.x = (rx - wx) - (rx - ev.xmotion.x_root);
                       geom.y = (ry - wy) - (ry - ev.xmotion.y_root);
 
@@ -505,8 +519,33 @@ subClientDrag(SubClient *c,
                           geom.y = s->geom.y + s->geom.height -
                             geom.height - BORDER(c);
                         }
-                      break;
+                      break; /* }}} */
                     case SUB_DRAG_RESIZE:
+                      /* Handle resize based on edge */
+                      if(edge & EDGE_LEFT)
+                        {
+                          geom.x     = ev.xmotion.x_root;
+                          geom.width = sx - ev.xmotion.x_root;
+                        }
+                      else if(edge & EDGE_RIGHT)
+                        {
+                          geom.x     = sx;
+                          geom.width = ev.xmotion.x_root - sx;
+                        }
+                      if(edge & EDGE_TOP)
+                        {
+                          geom.y      = ev.xmotion.y_root;
+                          geom.height = sy - ev.xmotion.y_root;
+                        }
+                      else if(edge & EDGE_BOTTOM)
+                        {
+                          geom.y      = sy;
+                          geom.height = ev.xmotion.y_root - sy;
+                        }
+
+                          geom.width  -= geom.width & c->incw;
+                          geom.height -= geom.height & c->inch;
+#if 0
                       if(left) ///< Drag left
                         {
                           /* Calculate width and x */
@@ -519,6 +558,7 @@ subClientDrag(SubClient *c,
                       else geom.width = ww - (rx - ev.xmotion.x_root); ///< Drag right
 
                       geom.height = wh - (ry - ev.xmotion.y_root);
+#endif
 
                       ClientBounds(c, &geom);
 
@@ -535,7 +575,7 @@ subClientDrag(SubClient *c,
 
   c->geom = geom;
 
-  /* Subtract border */
+  /* Subtract border width */
   if(!(c->flags & SUB_CLIENT_BORDERLESS))
     {
       c->geom.x -= subtle->bw;
