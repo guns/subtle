@@ -133,25 +133,24 @@ subDisplayInit(const char *display)
   setenv("DISPLAY", DisplayString(subtle->dpy), True); ///< Set display for clients
 
   /* Create GCs */
-  gvals.function           = GXcopy;
-  gvals.fill_style         = FillStippled;
-  mask                     = GCFunction|GCFillStyle;
-  subtle->gcs.stipple      = XCreateGC(subtle->dpy, ROOT, mask, &gvals);
+  gvals.fill_style     = FillStippled;
+  mask                 = GCFillStyle;
+  subtle->gcs.stipple  = XCreateGC(subtle->dpy, ROOT, mask, &gvals);
 
-  gvals.function           = GXinvert;
-  gvals.subwindow_mode     = IncludeInferiors;
-  gvals.line_width         = 3;
-  mask                     = GCFunction|GCSubwindowMode|GCLineWidth;
-  subtle->gcs.invert       = XCreateGC(subtle->dpy, ROOT, mask, &gvals);
+  gvals.function       = GXinvert;
+  gvals.subwindow_mode = IncludeInferiors;
+  gvals.line_width     = 3;
+  mask                 = GCFunction|GCSubwindowMode|GCLineWidth;
+  subtle->gcs.invert   = XCreateGC(subtle->dpy, ROOT, mask, &gvals);
 
-  gvals.line_width         = 1;
-  gvals.line_style         = LineSolid;
-  gvals.join_style         = JoinMiter;
-  gvals.cap_style          = CapButt;
-  gvals.fill_style         = FillSolid;
-  mask                     = GCLineWidth|GCLineStyle|GCJoinStyle|GCCapStyle|
+  gvals.line_width     = 1;
+  gvals.line_style     = LineSolid;
+  gvals.join_style     = JoinMiter;
+  gvals.cap_style      = CapButt;
+  gvals.fill_style     = FillSolid;
+  mask                 = GCLineWidth|GCLineStyle|GCJoinStyle|GCCapStyle|
     GCFillStyle;
-  subtle->gcs.draw         = XCreateGC(subtle->dpy, ROOT, mask, &gvals);
+  subtle->gcs.draw     = XCreateGC(subtle->dpy, ROOT, mask, &gvals);
 
   /* Create cursors */
   subtle->cursors.arrow  = XCreateFontCursor(subtle->dpy, XC_left_ptr);
