@@ -12,6 +12,25 @@
 
 #include "subtle.h"
 
+/* PanelRect {{{ */
+static void
+PanelRect(Drawable drawable,
+  int x,
+  int width,
+  unsigned long border,
+  unsigned long rect)
+{
+  XSetForeground(subtle->dpy, subtle->gcs.draw, border);
+  XFillRectangle(subtle->dpy, drawable, subtle->gcs.draw, x, 0,
+    width, subtle->ph);
+
+  XSetForeground(subtle->dpy, subtle->gcs.draw, rect);
+  XFillRectangle(subtle->dpy, drawable, subtle->gcs.draw, x + subtle->pbw,
+    subtle->pbw, width - 2 * subtle->pbw, subtle->ph - 2 * subtle->pbw);
+} /* }}} */
+
+/* Public */
+
  /** subPanelNew {{{
   * @brief Create a new panel
   * @param[in]  type  Type of the panel
@@ -232,16 +251,8 @@ subPanelRender(SubPanel *p,
         break; /* }}} */
       case SUB_PANEL_SUBLET: /* {{{ */
         /* Set window background and border*/
-        XSetForeground(subtle->dpy, subtle->gcs.draw,
-          subtle->colors.bo_sublets);
-        XFillRectangle(subtle->dpy, drawable, subtle->gcs.draw,
-          p->x, 0, p->width, subtle->ph);
-
-        XSetForeground(subtle->dpy, subtle->gcs.draw,
+        PanelRect(drawable, p->x, p->width, subtle->colors.bo_sublets,
           subtle->colors.bg_sublets);
-        XFillRectangle(subtle->dpy, drawable, subtle->gcs.draw,
-          p->x + subtle->pbw, subtle->pbw,
-          p->width - 2 * subtle->pbw, subtle->ph - 2 * subtle->pbw);
 
         /* Render text parts */
         subSharedTextRender(subtle->dpy, subtle->gcs.draw, subtle->font,
@@ -263,7 +274,7 @@ subPanelRender(SubPanel *p,
 
                 DEAD(c);
 
-                /* Title modes */
+                /* Title modes {{{ */
                 if(c->flags & SUB_CLIENT_MODE_FULL)
                   {
                     snprintf(buf + x, sizeof(buf), "%c", '+');
@@ -283,7 +294,7 @@ subPanelRender(SubPanel *p,
                   {
                     snprintf(buf + x, sizeof(buf), "%c", '~');
                     x++;
-                  }
+                  } /* }}} */
 
                 snprintf(buf + x, sizeof(buf) - x, "%s", c->name);
 
@@ -304,14 +315,7 @@ subPanelRender(SubPanel *p,
                   }
 
                 /* Set window background and border*/
-                XSetForeground(subtle->dpy, subtle->gcs.draw, bo);
-                XFillRectangle(subtle->dpy, drawable, subtle->gcs.draw,
-                  p->x, 0, p->width, subtle->ph);
-
-                XSetForeground(subtle->dpy, subtle->gcs.draw, bg);
-                XFillRectangle(subtle->dpy, drawable, subtle->gcs.draw,
-                  p->x + subtle->pbw, subtle->pbw, p->width - 2 * subtle->pbw,
-                  subtle->ph - 2 * subtle->pbw);
+                PanelRect(drawable, p->x, p->width, bo, bg);
 
                 subSharedTextDraw(subtle->dpy, subtle->gcs.draw, subtle->font,
                   drawable, p->x + 3 + subtle->padding.x, subtle->font->y +
@@ -368,14 +372,7 @@ subPanelRender(SubPanel *p,
                   }
 
                 /* Set window background and border*/
-                XSetForeground(subtle->dpy, subtle->gcs.draw, bo);
-                XFillRectangle(subtle->dpy, drawable, subtle->gcs.draw,
-                  p->x + px, 0, v->width, subtle->ph);
-
-                XSetForeground(subtle->dpy, subtle->gcs.draw, bg);
-                XFillRectangle(subtle->dpy, drawable, subtle->gcs.draw,
-                  p->x + px + subtle->pbw, subtle->pbw,
-                  v->width - 2 * subtle->pbw, subtle->ph - 2 * subtle->pbw);
+                PanelRect(drawable, p->x + px, v->width, bo, bg);
 
                 /* Draw view icon and/or text */
                 if(v->flags & SUB_VIEW_ICON)
