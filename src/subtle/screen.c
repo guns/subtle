@@ -73,8 +73,14 @@ ScreenClear(SubScreen *s)
   XSetForeground(subtle->dpy, subtle->gcs.draw, subtle->colors.panel);
   XFillRectangle(subtle->dpy, s->drawable, subtle->gcs.draw,
     0, 0, s->geom.width, subtle->ph);
+} /* }}} */
 
-  /* Draw stipple on panels */
+/* ScreenCopy {{{ */
+static void
+ScreenCopy(SubScreen *s,
+  Window panel)
+{
+   /* Draw stipple on panels */
   if(s->flags & SUB_SCREEN_STIPPLE)
     {
       XGCValues gvals;
@@ -83,8 +89,12 @@ ScreenClear(SubScreen *s)
       XChangeGC(subtle->dpy, subtle->gcs.stipple, GCStipple, &gvals);
 
       XFillRectangle(subtle->dpy, s->drawable, subtle->gcs.stipple,
-        0, 2, s->base.width, subtle->ph - 4);
+        0, 0, s->base.width, subtle->ph);
     }
+
+  /* Swap buffer */
+  XCopyArea(subtle->dpy, s->drawable, panel, subtle->gcs.draw,
+    0, 0, s->geom.width, subtle->ph, 0, 0);
 } /* }}} */
 
 /* Public */
@@ -528,12 +538,11 @@ subScreenUpdate(void)
 void
 subScreenRender(void)
 {
-  int i;
+  int i, j;
 
   /* Render all screens */
   for(i = 0; i < subtle->screens->ndata; i++)
     {
-      int j;
       SubScreen *s = SCREEN(subtle->screens->data[i]);
       Window panel = s->panel1;
 
@@ -547,9 +556,7 @@ subScreenRender(void)
           if(p->flags & SUB_PANEL_HIDDEN) continue;
           if(panel != s->panel2 && p->flags & SUB_PANEL_BOTTOM)
             {
-              XCopyArea(subtle->dpy, s->drawable, panel, subtle->gcs.draw,
-                0, 0, s->geom.width, subtle->ph, 0, 0);
-
+              ScreenCopy(s, panel);
               ScreenClear(s);
               panel = s->panel2;
             }
@@ -571,8 +578,7 @@ subScreenRender(void)
               subtle->colors.separator, -1, subtle->separator.string);
         }
 
-      XCopyArea(subtle->dpy, s->drawable, panel, subtle->gcs.draw,
-        0, 0, s->geom.width, subtle->ph, 0, 0);
+      ScreenCopy(s, panel);
     }
 
 
