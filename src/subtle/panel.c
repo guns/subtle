@@ -466,7 +466,9 @@ subPanelAction(SubArray *panels,
       /* Check if x is in panel rect */
       if(p->flags & type && x >= p->x && x <= p->x + p->width)
         {
-          if(bottom && !(p->flags & SUB_PANEL_BOTTOM)) continue;
+          /* Check if action is for bottom panel */
+          if((bottom && !(p->flags & SUB_PANEL_BOTTOM)) ||
+            (!bottom && p->flags & SUB_PANEL_BOTTOM)) continue;
 
           /* Handle panel item type */
           switch(p->flags & (SUB_PANEL_SUBLET|SUB_PANEL_VIEWS))

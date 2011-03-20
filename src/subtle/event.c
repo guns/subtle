@@ -348,13 +348,13 @@ EventCrossing(XCrossingEvent *ev)
         else if((s = SCREEN(subSubtleFind(ev->window, SCREENID)))) ///< Screen panels
           {
             subPanelAction(s->panels, SUB_PANEL_OVER, ev->x, ev->y, -1,
-              ev->y_root > 2 * subtle->ph);
+              s->panel2 == ev->window);
           }
         break;
       case LeaveNotify:
         if((s = SCREEN(subSubtleFind(ev->window, SCREENID)))) ///< Screen panels
           subPanelAction(s->panels, SUB_PANEL_OUT, ev->x, ev->y, -1,
-            ev->y_root > 2 * subtle->ph);
+            s->panel2 == ev->window);
     }
 
   subSharedLogDebugEvents("Enter: win=%#lx\n", ev->window);
@@ -510,7 +510,7 @@ EventGrab(XEvent *ev)
           {
             subPanelAction(s->panels, SUB_PANEL_DOWN, ev->xbutton.x,
               ev->xbutton.y, ev->xbutton.button,
-              ev->xbutton.y_root > 2 * subtle->ph);
+              s->panel2 == ev->xbutton.window);
 
             return;
           }
