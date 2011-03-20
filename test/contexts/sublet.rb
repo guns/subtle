@@ -26,6 +26,10 @@ context "Sublet" do
     "dummy" == Subtlext::Sublet[0].name
   end
 
+  asserts("Update sublet") do
+    nil == topic.update
+  end
+
   asserts("Equal and compare") do
     topic.eql? topic and topic == topic
   end
