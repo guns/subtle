@@ -276,12 +276,13 @@ module Subtle # {{{
                  "Options:\n" \
                  "  annotate NAME [-v VERSION|-h]           Mark sublet to be reviewed\n" \
                  "  build SPEC                              Create a sublet package\n" \
-                 "  config NAME                             Show available config settings\n" \
+                 "  config NAME                             Show available config settings of a sublet\n" \
                  "  fetch NAME                              Download sublet to current directory\n" \
                  "  help                                    Show this help and exit\n" \
+                 "  grabs NAME                              Show available grabs provided by a sublet\n" \
                  "  install NAME [-R|-t|-v VERSION|-h]      Install a sublet\n" \
                  "  list [-l|-r|-h]                         List local/remote sublets\n" \
-                 "  notes                                   Show notes about an installed sublet\n" \
+                 "  notes NAME                              Show notes about a sublet\n" \
                  "  query NAME [-e|-l|-t|-v VERSION|-h]     Query for a sublet (e.g clock, clock -v 0.3)\n" \
                  "  reorder                                 Reorder installed sublets for loading order\n" \
                  "  server [-p PORT|-h]                     Serve sublets (default: http://localhost:4567)\n" \
@@ -300,7 +301,7 @@ module Subtle # {{{
       end # }}}
 
       def version # {{{
-        puts "Sur #{VERSION} - Copyright (c) 2009-2010 Christoph Kappel\n" \
+        puts "Sur #{VERSION} - Copyright (c) 2009-2011 Christoph Kappel\n" \
              "Released under the GNU General Public License\n"
       end # }}}
     end # }}}
