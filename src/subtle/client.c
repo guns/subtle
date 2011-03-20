@@ -1373,9 +1373,6 @@ subClientClose(SubClient *c)
 {
   assert(c);
 
-  /* Update client */
-  c->flags |= SUB_CLIENT_DEAD;
-
   /* Honor window preferences (see ICCCM 4.1.2.7, 4.2.8.1) */
   if(c->flags & SUB_CLIENT_CLOSE)
     {
