@@ -172,7 +172,8 @@ subSubletUpdate(VALUE self)
   rb_check_frozen(self);
   GET_ATTR(self, "@name", name);
 
-  if(-1 != ((id = subSubtlextFind("SUB_SUBLET_LIST",
+  /* Check results */
+  if(-1 != ((id = subSubtlextFind("SUBTLE_SUBLET_LIST",
       RSTRING_PTR(name), NULL))))
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
