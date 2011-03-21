@@ -459,6 +459,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_TRAY_KILL,                                      ///< Subtle tray kill
   SUB_EWMH_SUBTLE_VIEW_NEW,                                       ///< Subtle view new
   SUB_EWMH_SUBTLE_VIEW_TAGS,                                      ///< Subtle view tags
+  SUB_EWMH_SUBTLE_VIEW_ICONS,                                     ///< Subtle view icons
   SUB_EWMH_SUBTLE_VIEW_KILL,                                      ///< Subtle view kill
   SUB_EWMH_SUBTLE_SUBLET_NEW,                                     ///< Subtle sublet new
   SUB_EWMH_SUBTLE_SUBLET_UPDATE,                                  ///< Subtle sublet update
