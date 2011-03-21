@@ -564,6 +564,50 @@ subViewCurrentAsk(VALUE self)
   return ret;
 } /* }}} */
 
+/* subViewIcon {{{ */
+/*
+ * call-seq: icon -> Subtlext::Icon or nil
+ *
+ * Get icon of View
+ *
+ *  view.icon
+ *  => #<Subtlext::Icon:xxx>
+ */
+
+VALUE
+subViewIcon(VALUE self)
+{
+  unsigned long nicons = 0;
+  VALUE id = Qnil, ret = Qnil;
+  unsigned long *icons = NULL;
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@id", id);
+
+  subSubtlextConnect(NULL); ///< Implicit open connection
+
+  /* Check results */
+  if((icons = (unsigned long *)subSharedPropertyGet(display,
+      DefaultRootWindow(display), XA_CARDINAL,
+      XInternAtom(display, "SUBTLE_VIEW_ICONS", False), &nicons)))
+    {
+      int iid = FIX2INT(id);
+
+      /* Check if id is in range and icon available */
+      if(0 <= iid && iid < nicons && -1 != icons[iid])
+        {
+          /* Create new icon */
+          ret = rb_funcall(rb_const_get(mod, rb_intern("Icon")),
+            rb_intern("new"), 1, LONG2NUM(icons[iid]));
+        }
+
+      free(icons);
+    }
+
+  return ret;
+} /* }}} */
+
 /* subViewToString {{{ */
 /*
  * call-seq: to_str -> String
