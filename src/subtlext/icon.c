@@ -20,6 +20,12 @@
   #include <X11/xpm.h>
 #endif /* HAVE_X11_XPM_H */
 
+/* Flags {{{ */
+#define ICON_BITMAP  (1L << 0)
+#define ICON_PIXMAP  (1L << 1)
+#define ICON_FOREIGN (1L << 2)
+/* }}} */
+
 /* Typedef {{{ */
 typedef struct subtlexticon_t
 {
@@ -44,7 +50,10 @@ IconSweep(SubtlextIcon *i)
 {
   if(i)
     {
-      XFreePixmap(display, i->pixmap);
+      /* Check if we can kill the pixmap here */
+      if(!(i->flags & ICON_FOREIGN))
+        XFreePixmap(display, i->pixmap);
+
       if(0 != i->gc) XFreeGC(display, i->gc);
 
       free(i);
@@ -188,7 +197,7 @@ subIconInit(int argc,
               if(XpmSuccess == XpmReadFileToPixmap(display,
                   DefaultRootWindow(display), buf, &i->pixmap, NULL, &attrs))
                 {
-                  i->flags  |= SUB_TEXT_PIXMAP;
+                  i->flags  |= ICON_PIXMAP;
                   i->width   = attrs.width;
                   i->height  = attrs.height;
                 }
@@ -200,7 +209,7 @@ subIconInit(int argc,
                   return Qnil;
                }
             }
-          else i->flags |= SUB_TEXT_BITMAP;
+          else i->flags |= ICON_BITMAP;
         }
       else if(FIXNUM_P(data[0]) && FIXNUM_P(data[1])) ///< Icon dimensions
         {
@@ -209,10 +218,10 @@ subIconInit(int argc,
           /* Create pixmap or bitmap */
           if(Qtrue == data[2])
             {
-              i->flags |= SUB_TEXT_PIXMAP;
+              i->flags |= ICON_PIXMAP;
               depth     = XDefaultDepth(display, DefaultScreen(display));
             }
-          else i->flags |= SUB_TEXT_BITMAP;
+          else i->flags |= ICON_BITMAP;
 
           /* Create empty pixmap */
           i->width  = FIX2INT(data[0]);
@@ -224,7 +233,7 @@ subIconInit(int argc,
         {
           XRectangle geom = { 0 };
 
-          i->flags  |= SUB_TEXT_BITMAP;
+          i->flags  |= (ICON_BITMAP|ICON_FOREIGN);
           i->pixmap  = NUM2LONG(data[0]);
 
           subSharedPropertyGeometry(display, i->pixmap, &geom);
@@ -288,7 +297,7 @@ subIconDrawPoint(int argc,
           gvals.foreground = 1;
           gvals.background = 0;
 
-          if(i->flags & SUB_TEXT_PIXMAP)
+          if(i->flags & ICON_PIXMAP)
             {
               if(!NIL_P(data[2]))
                 gvals.foreground = subColorPixel(data[2], Qnil, Qnil, NULL);
@@ -351,7 +360,7 @@ subIconDrawRect(int argc,
           gvals.foreground = 1;
           gvals.background = 0;
 
-          if(i->flags & SUB_TEXT_PIXMAP)
+          if(i->flags & ICON_PIXMAP)
             {
               if(!NIL_P(data[5]))
                 gvals.foreground = subColorPixel(data[5], Qnil, Qnil, NULL);
@@ -369,6 +378,89 @@ subIconDrawRect(int argc,
             }
           else XDrawRectangle(display, i->pixmap, i->gc, FIX2INT(data[0]),
             FIX2INT(data[1]), FIX2INT(data[2]), FIX2INT(data[3]));
+
+          XFlush(display);
+        }
+    }
+  else rb_raise(rb_eArgError, "Unexpected value-types");
+
+  return Qnil;
+} /* }}} */
+
+/* subIconCopyArea {{{ */
+/*
+ * call-seq: copy_area(icon2, src_x, src_y, width, height, dest_x, dest_y) -> nil
+ *
+ * Copy area of one icon to another
+ *
+ *  icon.copy_area(icon, 0, 0, 10, 10, 0, 0)
+ *  => nil
+ */
+
+VALUE
+subIconCopyArea(int argc,
+  VALUE *argv,
+  VALUE self)
+{
+  VALUE data[7] = { Qnil };
+
+  rb_scan_args(argc, argv, "16", &data[0], &data[1], &data[2], &data[3],
+    &data[4], &data[5], &data[6]);
+
+  /* Check object type */
+  if(rb_obj_is_instance_of(data[0],
+      rb_const_get(mod, rb_intern("Icon"))))
+    {
+      SubtlextIcon *src = NULL, *dest = NULL;
+
+      Data_Get_Struct(data[0], SubtlextIcon, src);
+      Data_Get_Struct(self,    SubtlextIcon, dest);
+
+      if(src && dest)
+        {
+          int src_x = 0, src_y = 0, dest_x = 0, dest_y = 0;
+          int iwidth = 0, iheight = 0, area_w = 0, area_h = 0;
+          VALUE width = Qnil, height = Qnil;
+
+          /* Get icon dimesions */
+          GET_ATTR(self, "@width",  width);
+          GET_ATTR(self, "@height", height);
+
+          iwidth  = FIX2INT(width);
+          iheight = FIX2INT(height);
+
+          /* Check args */
+          if(!NIL_P(data[1])) src_x  = FIX2INT(data[1]);
+          if(!NIL_P(data[2])) src_y  = FIX2INT(data[2]);
+          if(!NIL_P(data[3])) area_w = FIX2INT(data[3]);
+          if(!NIL_P(data[4])) area_h = FIX2INT(data[4]);
+          if(!NIL_P(data[5])) dest_x = FIX2INT(data[5]);
+          if(!NIL_P(data[6])) dest_y = FIX2INT(data[6]);
+
+          /* Sanitize args */
+          if(0 == area_w) area_w = iwidth;
+          if(0 == area_h) area_h = iheight;
+
+          if(area_w > dest_x + iwidth)  area_w = iwidth  - dest_x;
+          if(area_h > dest_y + iheight) area_h = iheight - dest_y;
+
+          if(0 > src_x  || src_x  > iwidth)  src_x  = 0;
+          if(0 > src_y  || src_y  > iheight) src_y  = 0;
+          if(0 > dest_x || dest_x > iwidth)  dest_x = 0;
+          if(0 > dest_y || dest_y > iheight) dest_y = 0;
+
+          /* Create on demand */
+          if(0 == dest->gc)
+            dest->gc = XCreateGC(display, dest->pixmap, 0, NULL);
+
+          /* Copy area */
+          if(src->flags & ICON_PIXMAP && dest->flags & ICON_PIXMAP)
+            {
+              XCopyPlane(display, src->pixmap, dest->pixmap, dest->gc,
+                src_x, src_y, area_w, area_h, dest_x, dest_y, 1);
+            }
+          else XCopyArea(display, src->pixmap, dest->pixmap, dest->gc,
+            src_x, src_y, area_w, area_h, dest_x, dest_y);
 
           XFlush(display);
         }
@@ -411,7 +503,7 @@ subIconClear(int argc,
       gvals.foreground = 0;
       gvals.background = 1;
 
-      if(i->flags & SUB_TEXT_PIXMAP)
+      if(i->flags & ICON_PIXMAP)
         {
           VALUE colors[2] = { Qnil };
 
@@ -453,7 +545,7 @@ subIconBitmapAsk(VALUE self)
   SubtlextIcon *i = NULL;
 
   Data_Get_Struct(self, SubtlextIcon, i);
-  if(i) ret = (i->flags & SUB_TEXT_BITMAP) ? Qtrue : Qfalse;
+  if(i) ret = (i->flags & ICON_BITMAP) ? Qtrue : Qfalse;
 
   return ret;
 } /* }}} */
@@ -480,7 +572,7 @@ subIconToString(VALUE self)
       char buf[20] = { 0 };
 
       snprintf(buf, sizeof(buf), "%s%c%ld%s", SEPARATOR,
-        i->flags & SUB_TEXT_PIXMAP ? '&' : '!', i->pixmap, SEPARATOR);
+        i->flags & ICON_PIXMAP ? '&' : '!', i->pixmap, SEPARATOR);
       ret = rb_str_new2(buf);
     }
 
