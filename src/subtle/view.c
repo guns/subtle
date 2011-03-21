@@ -191,13 +191,13 @@ void
 subViewPublish(void)
 {
   int i;
-  long vid = 0;
+  long vid = 0, *tags = NULL, *icons = NULL;
   char **names = NULL;
-  long *tags = NULL;
 
   if(0 < subtle->views->ndata)
     {
-      tags = (long *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(long));
+      tags  = (long *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(long));
+      icons = (long *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(long));
       names = (char **)subSharedMemoryAlloc(subtle->views->ndata, sizeof(char *));
 
       for(i = 0; i < subtle->views->ndata; i++)
@@ -205,12 +205,17 @@ subViewPublish(void)
           SubView *v = VIEW(subtle->views->data[i]);
 
           tags[i]  = v->tags;
+          icons[i] = v->icon ? v->icon->pixmap : -1;
           names[i] = v->name;
         }
 
       /* EWMH: Tags */
       subEwmhSetCardinals(ROOT, SUB_EWMH_SUBTLE_VIEW_TAGS,
         tags, subtle->views->ndata);
+
+      /* EWMH: Icons */
+      subEwmhSetCardinals(ROOT, SUB_EWMH_SUBTLE_VIEW_ICONS,
+        icons, subtle->views->ndata);
 
       /* EWMH: Desktops */
       subEwmhSetCardinals(ROOT, SUB_EWMH_NET_NUMBER_OF_DESKTOPS, (long *)&i, 1);
@@ -223,6 +228,7 @@ subViewPublish(void)
       XSync(subtle->dpy, False); ///< Sync all changes
 
       free(tags);
+      free(icons);
       free(names);
     }
 
