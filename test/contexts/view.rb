@@ -38,6 +38,10 @@ context "View" do
       tags.is_a?(Array) and 2 == tags.size
   end
 
+  asserts("Check icon") do
+    nil == topic.icon
+  end
+
   asserts("Convert to string") { "terms" == topic.to_str }
 
   asserts("Runtime: Create new view") do

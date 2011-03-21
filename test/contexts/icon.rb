@@ -10,11 +10,7 @@
 #
 
 context "Icon" do
-  setup { Subtlext::Icon.new(8, 8) }
-
-  asserts("Init from file") do
-    nil != Subtlext::Icon.new("icon/clock.xbm")
-  end
+  setup { Subtlext::Icon.new("icon/clock.xbm") }
 
   asserts("Equal and compare") do
     topic.eql? Subtlext::Icon.new(8, 8) and topic == topic
@@ -25,9 +21,17 @@ context "Icon" do
   end
 
   asserts("Draw routines") do
-    topic.draw(1, 1)
+    topic.draw_point(1, 1)
     topic.draw_rect(1, 1, 6, 6, false)
     topic.clear
+
+    true
+  end
+
+  asserts("Copy area") do
+    icon = Subtlext::Icon.new("icon/clock.xbm")
+
+    topic.copy_area(icon, 0, 0, 4, 4, 2, 2)
 
     true
   end
