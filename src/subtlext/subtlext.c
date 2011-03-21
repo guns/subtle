@@ -1500,6 +1500,7 @@ Init_subtlext(void)
   rb_define_method(icon, "initialize", subIconInit,         -1);
   rb_define_method(icon, "draw_point", subIconDrawPoint,    -1);
   rb_define_method(icon, "draw_rect",  subIconDrawRect,     -1);
+  rb_define_method(icon, "copy_area",  subIconCopyArea,     -1);
   rb_define_method(icon, "clear",      subIconClear,        -1);
   rb_define_method(icon, "bitmap?",    subIconBitmapAsk,     0);
   rb_define_method(icon, "to_str",     subIconToString,      0);
@@ -1739,6 +1740,7 @@ Init_subtlext(void)
   rb_define_method(view, "next",       subViewSelectNext,    0);
   rb_define_method(view, "prev",       subViewSelectPrev,    0);
   rb_define_method(view, "current?",   subViewCurrentAsk,    0);
+  rb_define_method(view, "icon",       subViewIcon,          0);
   rb_define_method(view, "to_str",     subViewToString,      0);
   rb_define_method(view, "kill",       subViewKill,          0);
 

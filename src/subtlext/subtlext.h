@@ -134,6 +134,7 @@ VALUE subIconAlloc(VALUE self);                                   ///< Allocate 
 VALUE subIconInit(int argc, VALUE *argv, VALUE self);             ///< Init icon
 VALUE subIconDrawPoint(int argc, VALUE *argv, VALUE self);        ///< Draw a point
 VALUE subIconDrawRect(int argc, VALUE *argv, VALUE self);         ///< Draw a rect
+VALUE subIconCopyArea(int argc, VALUE *argv, VALUE self);         ///< Copy icon area
 VALUE subIconClear(int argc, VALUE *argv, VALUE self);            ///< Clear icon
 VALUE subIconBitmapAsk(VALUE self);                               ///< Whether icon is bitmap
 VALUE subIconToString(VALUE self);                                ///< Convert to string
@@ -247,6 +248,7 @@ VALUE subViewJump(VALUE self);                                    ///< Jump to v
 VALUE subViewSelectNext(VALUE self);                              ///< Select next view
 VALUE subViewSelectPrev(VALUE self);                              ///< Select next view
 VALUE subViewCurrentAsk(VALUE self);                              ///< Is view the current
+VALUE subViewIcon(VALUE self);                                    ///< View icon if any
 VALUE subViewToString(VALUE self);                                ///< View to string
 VALUE subViewKill(VALUE self);                                    ///< Kill view
 /* }}} */
