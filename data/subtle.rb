@@ -1,7 +1,7 @@
 #
 # Author::  Christoph Kappel <unexist@dorfelite.net>
 # Version:: $Id$
-# License:: GNU GPL
+# License:: GNU GPLv2
 #
 # = Subtle default configuration
 #

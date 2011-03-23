@@ -6,8 +6,8 @@
 # @author Christoph Kappel <unexist@dorfelite.net>
 # @version $Id: sur.rb,v 7 2009/09/07 21:25:11 unexist $
 #
-# This program can be distributed under the terms of the GNU GPL.
-# See the file COPYING.
+# This program can be distributed under the terms of the GNU GPLv2.
+# See the file COPYING for details.
 #
 
 begin

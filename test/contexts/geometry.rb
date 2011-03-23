@@ -5,8 +5,8 @@
 # @author Christoph Kappel <unexist@dorfelite.net>
 # @version $Id$
 #
-# This program can be distributed under the terms of the GNU GPL.
-# See the file COPYING.
+# This program can be distributed under the terms of the GNU GPLv2.
+# See the file COPYING for details.
 #
 
 context "Geometry" do
