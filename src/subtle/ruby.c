@@ -3001,6 +3001,29 @@ RubySubletUnwatch(VALUE self)
   return ret;
 } /* }}} */
 
+/* RubySubletWarn {{{ */
+/*
+ * call-seq: warn(string) -> nil
+ *
+ * Print sublet warning
+ *
+ *  sublet.warn("test")
+ *  => "<WARNING SUBLET sublet> test"
+ */
+
+static VALUE
+RubySubletWarn(VALUE self,
+  VALUE str)
+{
+  SubPanel *p = NULL;
+
+  Data_Get_Struct(self, SubPanel, p);
+  if(p && T_STRING == rb_type(str))
+    subSharedLogSubletError(p->sublet->name, RSTRING_PTR(str));
+
+  return Qnil;
+} /* }}} */
+
 /* Public */
 
  /** subRubyInit {{{
@@ -3125,6 +3148,7 @@ subRubyInit(void)
   rb_define_method(sublet, "hidden?",        RubySubletHidden,            0);
   rb_define_method(sublet, "watch",          RubySubletWatch,             1);
   rb_define_method(sublet, "unwatch",        RubySubletUnwatch,           0);
+  rb_define_method(sublet, "warn",           RubySubletWarn,              1);
 
   /* Bypassing garbage collection */
   shelter = rb_ary_new();
