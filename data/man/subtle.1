@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "SUBTLE" "1" "January 2011" "" ""
+.TH "SUBTLE" "1" "March 2011" "" ""
 .
 .SH "NAME"
 \fBsubtle\fR \- a grid\-based manual tiling window manager
@@ -76,6 +76,57 @@ Set logging level
 .
 .br
 Print debugging messages
+.
+.IP "" 0
+.
+.SH "LOGLEVELS"
+subtle uses a loglevel system to distinguish between messages and to be able to turn certain messages off\. The level can be set with the \-l or \-\-level= options, multiple values are comma separated without any whitespace\.
+.
+.IP "\(bu" 4
+\fBsubtle \-l ruby,subtlext\fR
+.
+.IP "\(bu" 4
+\fBsubtle \-\-level=ruby,subtlext\fR
+.
+.IP "" 0
+.
+.P
+Default levels:
+.
+.IP "\(bu" 4
+\fBwarnings\fR Warning messages
+.
+.IP "\(bu" 4
+\fBsublet\fR Sublet warnings
+.
+.IP "\(bu" 4
+\fBerror\fR Error messages
+.
+.IP "\(bu" 4
+\fBdeprecated\fR Deprecation warnings
+.
+.IP "" 0
+.
+.P
+Debugging levels:
+.
+.IP "\(bu" 4
+\fBevents\fR Information about handled events
+.
+.IP "\(bu" 4
+\fBruby\fR Ruby debugging messages
+.
+.IP "\(bu" 4
+\fBxerror\fR X11 error messages
+.
+.IP "\(bu" 4
+\fBsubtlext\fR Debugging messages of subtlext
+.
+.IP "\(bu" 4
+\fBsubtle\fR Subsystem messages of subtle
+.
+.IP "\(bu" 4
+\fBdebug\fR General debugging messages
 .
 .IP "" 0
 .
