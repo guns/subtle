@@ -51,7 +51,8 @@
 #define ITEM(i)   ((SubTextItem *)i)                              ///< Cast to SubTextItem
 
 #define DEFAULT_LOGLEVEL \
-  (SUB_LOG_WARN|SUB_LOG_ERROR|SUB_LOG_DEPRECATED)                 ///< Default loglevel
+  (SUB_LOG_WARN|SUB_LOG_ERROR|SUB_LOG_SUBLET| \
+  SUB_LOG_DEPRECATED)                                             ///< Default loglevel
 
 #define DEBUG_LOGLEVEL \
   (SUB_LOG_EVENTS|SUB_LOG_RUBY|SUB_LOG_XERROR| \
@@ -62,13 +63,14 @@
 /* Logelevel flags */
 #define SUB_LOG_WARN       (1L << 0)                              ///< Log warning messages
 #define SUB_LOG_ERROR      (1L << 1)                              ///< Log error messages
-#define SUB_LOG_DEPRECATED (1L << 2)                              ///< Log deprecation messages
-#define SUB_LOG_EVENTS     (1L << 3)                              ///< Log event messages
-#define SUB_LOG_RUBY       (1L << 4)                              ///< Log ruby messages
-#define SUB_LOG_XERROR     (1L << 5)                              ///< Log X error messages
-#define SUB_LOG_SUBTLEXT   (1L << 6)                              ///< Log subtlext messages
-#define SUB_LOG_SUBTLE     (1L << 7)                              ///< Log subtle messages
-#define SUB_LOG_DEBUG      (1L << 8)                              ///< Log other debug messages
+#define SUB_LOG_SUBLET     (1L << 2)                              ///< Log error messages
+#define SUB_LOG_DEPRECATED (1L << 3)                              ///< Log deprecation messages
+#define SUB_LOG_EVENTS     (1L << 4)                              ///< Log event messages
+#define SUB_LOG_RUBY       (1L << 5)                              ///< Log ruby messages
+#define SUB_LOG_XERROR     (1L << 6)                              ///< Log X error messages
+#define SUB_LOG_SUBTLEXT   (1L << 7)                              ///< Log subtlext messages
+#define SUB_LOG_SUBTLE     (1L << 8)                              ///< Log subtle messages
+#define SUB_LOG_DEBUG      (1L << 9)                              ///< Log other debug messages
 
 /* Window selections flags */
 #define SUB_WINDOW_LEFT    0L                                     ///< Window left
@@ -142,6 +144,8 @@ typedef union submessagedata_t /* {{{ */
 /* Macros for convenience */
 #define subSharedLogError(...) \
   subSharedLog(SUB_LOG_ERROR, __FILE__, __LINE__, __VA_ARGS__);
+#define subSharedLogSubletError(SUBLET, ...) \
+  subSharedLog(SUB_LOG_SUBLET, SUBLET, __LINE__, __VA_ARGS__);
 #define subSharedLogWarn(...) \
   subSharedLog(SUB_LOG_WARN, __FILE__, __LINE__, __VA_ARGS__);
 #define subSharedLogDeprecated(...) \

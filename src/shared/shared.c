@@ -65,6 +65,8 @@ subSharedLog(int level,
     fprintf(stdout, "<WARNING> %s", buf);
   else if(level & SUB_LOG_ERROR)
     fprintf(stderr, "<ERROR> %s", buf);
+  else if(level & SUB_LOG_SUBLET)
+    fprintf(stderr, "<WARNING SUBLET %s> %s", file, buf);
   else if(level & SUB_LOG_DEPRECATED)
     fprintf(stdout, "<DEPRECATED> %s", buf);
 #ifdef DEBUG

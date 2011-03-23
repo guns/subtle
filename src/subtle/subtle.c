@@ -105,6 +105,8 @@ SubtleLevel(const char *str)
         level |= SUB_LOG_WARN;
       else if(0 == strncasecmp(tok, "error", 5))
         level |= SUB_LOG_ERROR;
+      else if(0 == strncasecmp(tok, "sublet", 6))
+        level |= SUB_LOG_SUBLET;
       else if(0 == strncasecmp(tok, "depcrecated", 11))
         level |= SUB_LOG_DEPRECATED;
       else if(0 == strncasecmp(tok, "events", 6))
