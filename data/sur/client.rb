@@ -238,6 +238,7 @@ module Subtle # {{{
           spec = specs.first
 
           show_config(spec, use_color)
+          see_also(spec)
         end
       end # }}}
 
@@ -308,6 +309,7 @@ module Subtle # {{{
           spec = specs.first
 
           show_grabs(spec, use_color)
+          see_also(spec)
         end
       end # }}}
 
@@ -418,6 +420,7 @@ module Subtle # {{{
           spec = specs.first
 
           show_notes(spec)
+          see_also(spec)
         end
       end # }}}
 
@@ -728,6 +731,15 @@ module Subtle # {{{
       end # }}}
 
       private
+
+      def see_also(spec) # {{{
+        also = [ "config" ]
+
+        also << "notes" unless(spec.notes.nil?)
+        also << "grabs" unless(spec.grabs.nil?)
+
+        puts "See also: #{also.join(", ")}"
+      end # }}}
 
       def download(spec) # {{{
         # Create tempfile
