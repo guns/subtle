@@ -175,9 +175,10 @@ subPanelUpdate(SubPanel *p)
                     int len = strlen(c->name);
 
                     /* Title modes */
-                    if(c->flags & SUB_CLIENT_MODE_FULL)  len++;
-                    if(c->flags & SUB_CLIENT_MODE_FLOAT) len++;
-                    if(c->flags & SUB_CLIENT_MODE_STICK) len++;
+                    if(c->flags & SUB_CLIENT_MODE_FULL)   len++;
+                    if(c->flags & SUB_CLIENT_MODE_FLOAT)  len++;
+                    if(c->flags & SUB_CLIENT_MODE_STICK)  len++;
+                    if(c->flags & SUB_CLIENT_MODE_RESIZE) len++;
 
                     /* Font offset, panel border and padding */
                     p->width = subSharedTextWidth(subtle->dpy, subtle->font,
