@@ -404,7 +404,7 @@ module Subtle # {{{
       # @param [Array]  args    Args array
       #
       # @example
-      #   Sur::Test::Subtle.new.run(args)
+      #   Subtle::Sur::Test::Subtle.new.run(args)
       #   => nil
 
       def self.run(config, args)
@@ -534,7 +534,6 @@ module Subtle # {{{
                   puts ">>> ERROR: #{error}"
 
                   unless(error.is_a?(RuntimeError))
-                    puts error.message
                     puts error.backtrace
                   end
                 end
