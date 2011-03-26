@@ -64,7 +64,7 @@ module Subtle # {{{
       # Digest
       attr_accessor :digest
 
-      ## Sur::Specification::initialize {{{
+      ## Subtle::Sur::Specification::initialize {{{
       # Create a new Specification object
       #
       # @yield [self] Init block
@@ -74,7 +74,7 @@ module Subtle # {{{
       # @since 0.1
       #
       # @example
-      #   Sur::Specification.new
+      #   Subtle::Sur::Specification.new
       #   => #<Sur::Specification:xxx>
 
       def initialize
@@ -91,7 +91,7 @@ module Subtle # {{{
         yield(self) if(block_given?)
       end # }}}
 
-      ## Sur::Specification::load_spec {{{
+      ## Subtle::Sur::Specification::load_spec {{{
       # Load Specification from file
       #
       # @param [String]  file  Specification file name
@@ -101,7 +101,7 @@ module Subtle # {{{
       # @since 0.1
       #
       # @example
-      #   Sur::Specification.load_file("sublet.spec")
+      #   Subtle::Sur::Specification.load_file("sublet.spec")
       #   => #<Sur::Specification:xxx>
 
       def self.load_spec(file)
@@ -117,25 +117,27 @@ module Subtle # {{{
         end
 
         # Check object
-        if(spec.nil? || !spec.is_a?(Specification) || !spec.valid?)
-          raise "Couldn't load specification file `#{file}'"
+        if(spec.nil? || !spec.is_a?(Specification))
+          raise "Can't extract specification from file `#{file}'"
+        elsif(!spec.valid?)
+          raise spec.validate
         end
 
         spec
       end # }}}
 
-      ## Sur::Specification::extract_spec {{{
+      ## Subtle::Sur::Specification::extract_spec {{{
       # Extract and load Specification from file
       #
       # @param [String]  file  Tar file name
       # @return [Object] New Specification
       #
       # @raise [String] Loading error
-      # @see Sur::Specification.load_spec
+      # @see Subtle::Sur::Specification.load_spec
       # @since 0.1
       #
       # @example
-      #   Sur::Specification.extract_spec("foo.sublet")
+      #   Subtle::Sur::Specification.extract_spec("foo.sublet")
       #   => #<Sur::Specification:xxx>
 
       def self.extract_spec(file)
@@ -156,14 +158,16 @@ module Subtle # {{{
         end
 
         # Check object
-        if(spec.nil? || !spec.is_a?(Specification) || !spec.valid?)
-          raise "Couldn't extract specification from `#{file}'"
+        if(spec.nil? || !spec.is_a?(Specification))
+          raise "Can't extract specification from file `#{file}'"
+        elsif(!spec.valid?)
+          raise spec.validate
         end
 
         spec
       end # }}}
 
-      ## Sur::Specification::template {{{
+      ## Subtle::Sur::Specification::template {{{
       # Create a new Specification object
       #
       # @param [String]  file  Template name
@@ -171,7 +175,7 @@ module Subtle # {{{
       # @since 0.1
       #
       # @example
-      #   Sur::Specification.template("foobar")
+      #   Subtle::Sur::Specification.template("foobar")
       #   => nil
 
       def self.template(file)
@@ -257,7 +261,7 @@ EOF
         end
       end # }}}
 
-      ## Sur::Specification::valid? {{{
+      ## Subtle::Sur::Specification::valid? {{{
       # Checks if a specification is valid
       #
       # @return [true, false] Validity of the package
@@ -265,7 +269,7 @@ EOF
       # @since 0.1
       #
       # @example
-      #   Sur::Specification.new.valid?
+      #   Subtle::Sur::Specification.new.valid?
       #   => true
 
       def valid?
@@ -273,20 +277,20 @@ EOF
           !@description.nil? && !@version.nil? && !@files.empty?)
       end # }}}
 
-      ## Sur::Specification::validate {{{
+      ## Subtle::Sur::Specification::validate {{{
       # Check if a specification is valid
       #
       # @raise [String] Validity error
       # @since 0.1
       #
       # @example
-      #   Sur::Specification.new.validate
+      #   Subtle::Sur::Specification.new.validate
       #   => nil
 
       def validate
         fields = []
 
-        # Check fields of spec
+        # Check required fields of spec
         fields.push("name")        if(@name.nil?)
         fields.push("authors")     if(@authors.empty?)
         fields.push("contact")     if(@contact.nil?)
@@ -295,11 +299,12 @@ EOF
         fields.push("files")       if(@files.empty?)
 
         unless(fields.empty?)
-          raise "Couldn't find `#{fields.join(", ")}' in specification"
+          raise SpecificationValidationError,
+            "Couldn't find `#{fields.join(", ")}' in specification"
         end
       end # }}}
 
-      ## Sur::Specification::add_dependency {{{
+      ## Subtle::Sur::Specification::add_dependency {{{
       # Add a gem dependency to the package
       #
       # @param [String]  name     Dependency name
@@ -308,14 +313,14 @@ EOF
       # @since 0.1
       #
       # @example
-      #   Sur::Specification.new.add_dependency("subtle", "0.8")
+      #   Subtle::Sur::Specification.new.add_dependency("subtle", "0.8")
       #   => nil
 
       def add_dependency(name, version)
         @dependencies[name] = version
       end # }}}
 
-      ## Sur::Specification::satisfied? {{{
+      ## Subtle::Sur::Specification::satisfied? {{{
       # Check if all dependencies are satisfied
       #
       # @return [true, false] Validity of the package
@@ -323,7 +328,7 @@ EOF
       # @since 0.1
       #
       # @example
-      #   Sur::Specification.new.satisfied?
+      #   Subtle::Sur::Specification.new.satisfied?
       #   => true
 
       def satisfied?
@@ -370,7 +375,7 @@ EOF
         satisfied
       end # }}}
 
-      ## Sur::Specification::to_str {{{
+      ## Subtle::Sur::Specification::to_str {{{
       # Convert Specification to string
       #
       # @return [String] Specification as string
@@ -378,11 +383,42 @@ EOF
       # @since 0.1
       #
       # @example
-      #   Sur::Specification.new.to_str
+      #   Subtle::Sur::Specification.new.to_str
       #   => "sublet-0.1"
 
       def to_str
         "#{@name}-#{@version}".downcase
+      end # }}}
+
+      ## Subtle::Sur::Specification::method_missing {{{
+      # Dispatcher for Specification instance
+      #
+      # @param [Symbol]  meth  Method name
+      # @param [Array]   args  Argument array
+      #
+      # @since 0.2
+
+      def method_missing(meth, *args)
+        ret = nil
+
+        # Check if symbol is a method or a var
+        if(self.respond_to?(meth))
+          ret = self.send(meth, args)
+        else
+          sym = ("@" + meth.to_s).to_sym #< Construct symbol
+
+          # Check getter or setter
+          if(meth.to_s.index("="))
+            sym = sym.to_s.chop.to_sym
+
+            self.instance_variable_set(sym, args.first)
+          else
+            ret = self.instance_variable_get(sym)
+            ret = self if(ret.nil?)
+          end
+        end
+
+        ret
       end # }}}
 
       # Aliases
