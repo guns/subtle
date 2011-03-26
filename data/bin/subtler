@@ -15,7 +15,16 @@ begin
 
   Subtle::Subtler::Runner.new.run
 rescue LoadError => error
-  missing = error.to_s.split(" ").last.gsub(/\//, "-")
+  missing = error.to_s.split(" ").last
+
+  # Check missing files
+  if(missing.match("subtle"))
+    puts <<EOF
+>>> ERROR: Couldn't find runtime files of subtler
+>>>        Please make sure that you installed subtle into the
+>>>        current ruby environment (#{RUBY_VERSION})
+EOF
+    exit
 
   puts <<EOF
 >>> ERROR: Couldn't find the gem #{missing}
@@ -25,7 +34,7 @@ EOF
 rescue => error
   puts ">>> ERROR: #{error}"
 
-  unless(error.is_a?(RuntimeError)) 
+  unless(error.is_a?(RuntimeError))
     puts error.backtrace
   end
 end

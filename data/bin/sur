@@ -19,7 +19,19 @@ begin
 
   Subtle::Sur::Runner.new.run(args)
 rescue LoadError => error
-  missing = error.to_s.split(" ").last.gsub(/\//, "-")
+  missing = error.to_s.split(" ").last
+
+  # Check missing files
+  if(missing == "archive/tar/initar")
+    missing = "archive-tar-minitar"
+  elsif(missing.match("subtle"))
+    puts <<EOF
+>>> ERROR: Couldn't find runtime files of sur
+>>>        Please make sure that you installed subtle into the
+>>>        current ruby environment (#{RUBY_VERSION})
+EOF
+    exit
+  end
 
   puts <<EOF
 >>> ERROR: Couldn't find the gem `#{missing}'
