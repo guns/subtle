@@ -1551,11 +1551,13 @@ RubyConfigSet(VALUE self,
               }
             else if(CHAR2SYM("wmname") == option)
               {
-                /* Update WM_NAME */
+                /* Update WM_NAME and remove WM_CLASS */
                 if(!(subtle->flags & SUB_SUBTLE_CHECK))
                   {
                     subEwmhSetString(subtle->windows.support,
                       SUB_EWMH_NET_WM_NAME, RSTRING_PTR(value));
+                    subSharedPropertyDelete(subtle->dpy, subtle->windows.support,
+                      subEwmhGet(SUB_EWMH_WM_CLASS));
                   }
               }
             else subSharedLogWarn("Unknown set option `:%s'\n",
