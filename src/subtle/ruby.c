@@ -1551,13 +1551,15 @@ RubyConfigSet(VALUE self,
               }
             else if(CHAR2SYM("wmname") == option)
               {
-                /* Update WM_NAME and remove WM_CLASS */
+                /* Set support window to root (broken Java) and update WM_NAME */
                 if(!(subtle->flags & SUB_SUBTLE_CHECK))
                   {
-                    subEwmhSetString(subtle->windows.support,
-                      SUB_EWMH_NET_WM_NAME, RSTRING_PTR(value));
-                    subSharedPropertyDelete(subtle->dpy, subtle->windows.support,
-                      subEwmhGet(SUB_EWMH_WM_CLASS));
+                    Window root = ROOT;
+
+                    subEwmhSetWindows(ROOT,
+                      SUB_EWMH_NET_SUPPORTING_WM_CHECK, &root, 1);
+                    subEwmhSetString(root, SUB_EWMH_NET_WM_NAME,
+                      RSTRING_PTR(value));
                   }
               }
             else subSharedLogWarn("Unknown set option `:%s'\n",
