@@ -25,6 +25,7 @@ rescue LoadError => error
 >>>        current ruby environment (#{RUBY_VERSION})
 EOF
     exit
+  end
 
   puts <<EOF
 >>> ERROR: Couldn't find the gem #{missing}
