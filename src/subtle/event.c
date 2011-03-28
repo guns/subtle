@@ -277,15 +277,15 @@ EventConfigureRequest(XConfigureRequestEvent *ev)
   SubClient *c = NULL;
 
   /* Complicated request! (see ICCCM 4.1.5)
-   * No change    -> synthetic ConfigureNotify
-   * Move/restack -> real + synthetic ConfigureNotify
-   * Resize       -> real ConfigureNotify */
+   * No change    -> Synthetic ConfigureNotify
+   * Move/restack -> Synthetic + real ConfigureNotify
+   * Resize       -> Real ConfigureNotify */
 
   /* Check window */
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
     {
-      if(!(c->flags & (SUB_CLIENT_MODE_NORESIZE|SUB_CLIENT_TYPE_DESKTOP|
-          SUB_CLIENT_MODE_FLOAT)) && (subtle->flags & SUB_SUBTLE_RESIZE ||
+      if(!(c->flags & (SUB_CLIENT_MODE_NORESIZE|SUB_CLIENT_TYPE_DESKTOP)) &&
+          (subtle->flags & SUB_SUBTLE_RESIZE ||
           c->flags & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_RESIZE)))
         {
           SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
