@@ -318,6 +318,69 @@ subIconDrawPoint(int argc,
   return Qnil;
 } /* }}} */
 
+/* subIconDrawLine {{{ */
+/*
+ * call-seq: draw_line(x1, y1, x2, y2, fg, bg) -> nil
+ *
+ * Draw a line on the icon
+ *
+ *  icon.draw_line(1, 1, 10, 1)
+ *  => nil
+ *
+ *  icon.draw_line(1, 1, 10, 1, "#ff0000", "#000000")
+ *  => nil
+ */
+
+VALUE
+subIconDrawLine(int argc,
+  VALUE *argv,
+  VALUE self)
+{
+  VALUE data[6] = { Qnil };
+
+  rb_scan_args(argc, argv, "42", &data[0], &data[1], &data[2], &data[3],
+    &data[4], &data[5]);
+
+  /* Check object types */
+  if(FIXNUM_P(data[0]) && FIXNUM_P(data[1]) &&
+      FIXNUM_P(data[2]) && FIXNUM_P(data[3]))
+    {
+      SubtlextIcon *i = NULL;
+
+      Data_Get_Struct(self, SubtlextIcon, i);
+      if(i)
+        {
+          XGCValues gvals;
+
+          /* Create on demand */
+          if(0 == i->gc)
+            i->gc = XCreateGC(display, i->pixmap, 0, NULL);
+
+          /* Update GC */
+          gvals.foreground = 1;
+          gvals.background = 0;
+
+          if(i->flags & ICON_PIXMAP)
+            {
+              if(!NIL_P(data[4]))
+                gvals.foreground = subColorPixel(data[4], Qnil, Qnil, NULL);
+              if(!NIL_P(data[5]))
+                gvals.background = subColorPixel(data[5], Qnil, Qnil, NULL);
+            }
+
+          XChangeGC(display, i->gc, GCForeground|GCBackground, &gvals);
+
+          XDrawLine(display, i->pixmap, i->gc, FIX2INT(data[0]),
+            FIX2INT(data[1]), FIX2INT(data[2]), FIX2INT(data[3]));
+
+          XFlush(display);
+        }
+    }
+  else rb_raise(rb_eArgError, "Unexpected value-types");
+
+  return Qnil;
+} /* }}} */
+
 /* subIconDrawRect {{{ */
 /*
  * call-seq: draw_rect(x, y, width, height, fill, fg, bg) -> nil

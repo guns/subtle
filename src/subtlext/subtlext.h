@@ -133,6 +133,7 @@ VALUE subGravityKill(VALUE self);                                 ///< Kill grav
 VALUE subIconAlloc(VALUE self);                                   ///< Allocate icon
 VALUE subIconInit(int argc, VALUE *argv, VALUE self);             ///< Init icon
 VALUE subIconDrawPoint(int argc, VALUE *argv, VALUE self);        ///< Draw a point
+VALUE subIconDrawLine(int argc, VALUE *argv, VALUE self);         ///< Draw a line
 VALUE subIconDrawRect(int argc, VALUE *argv, VALUE self);         ///< Draw a rect
 VALUE subIconCopyArea(int argc, VALUE *argv, VALUE self);         ///< Copy icon area
 VALUE subIconClear(int argc, VALUE *argv, VALUE self);            ///< Clear icon

@@ -1499,6 +1499,7 @@ Init_subtlext(void)
   /* Class methods */
   rb_define_method(icon, "initialize", subIconInit,         -1);
   rb_define_method(icon, "draw_point", subIconDrawPoint,    -1);
+  rb_define_method(icon, "draw_line",  subIconDrawLine,     -1);
   rb_define_method(icon, "draw_rect",  subIconDrawRect,     -1);
   rb_define_method(icon, "copy_area",  subIconCopyArea,     -1);
   rb_define_method(icon, "clear",      subIconClear,        -1);
