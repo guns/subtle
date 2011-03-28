@@ -284,8 +284,9 @@ EventConfigureRequest(XConfigureRequestEvent *ev)
   /* Check window */
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
     {
-      if(!(c->flags & (SUB_CLIENT_MODE_NORESIZE|SUB_CLIENT_TYPE_DESKTOP)) &&
-          (subtle->flags & SUB_SUBTLE_RESIZE ||
+      /* Check flags if the request is important */
+      if(!(c->flags & (SUB_CLIENT_MODE_NORESIZE|SUB_CLIENT_TYPE_DESKTOP|
+          SUB_CLIENT_MODE_FULL)) && (subtle->flags & SUB_SUBTLE_RESIZE ||
           c->flags & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_RESIZE)))
         {
           SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
