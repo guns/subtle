@@ -80,20 +80,18 @@ ClientBounds(SubClient *c,
       c->flags & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_RESIZE)))
     {
       SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
-      int maxw = -1 == c->maxw ? s->geom.width  - 2 * BORDER(c) : c->maxw;
-      int maxh = -1 == c->maxh ? s->geom.height - 2 * BORDER(c) : c->maxh;
+      int maxw = -1 == c->maxw ? s->geom.width  - 2 * BORDER(c) - 2 * subtle->gap : c->maxw;
+      int maxh = -1 == c->maxh ? s->geom.height - 2 * BORDER(c) - 2 * subtle->gap : c->maxh;
 
-      /* Limit width */
+      /* Limit width and height */
       if(geom->width < c->minw)  geom->width  = c->minw;
       if(geom->width > maxw)     geom->width  = maxw;
-
-      /* Limit height */
       if(geom->height < c->minh) geom->height = c->minh;
       if(geom->height > maxh)    geom->height = maxh;
 
-      /* Check incs */
-      geom->width  -= WIDTH(c)  % c->incw;
-      geom->height -= HEIGHT(c) % c->inch;
+      /* Adjust for increment values (see ICCCM 4.1.2.3) */
+      geom->width  -= (geom->width  - c->basew) % c->incw;
+      geom->height -= (geom->height - c->baseh) % c->inch;
 
       /* Check aspect ratios */
       if(c->minr && geom->height * c->minr > geom->width)
@@ -543,9 +541,9 @@ subClientDrag(SubClient *c,
                           geom.height = ev.xmotion.y_root - sy;
                         }
 
-                      /* Apply increment values */
-                      geom.width  -= geom.width % c->incw;
-                      geom.height -= geom.height % c->inch;
+                      /* Adjust for increment values (see ICCCM 4.1.2.3) */
+                      geom.width  -= (geom.width - c->basew)  % c->incw;
+                      geom.height -= (geom.height - c->baseh) % c->inch;
 
                       ClientBounds(c, &geom);
 
@@ -1041,14 +1039,16 @@ subClientSetSizeHints(SubClient *c,
   s = SCREEN(subtle->screens->data[0]); ///< Assume first screen
 
   /* Default values {{{ */
-  c->minw   = MINW;
-  c->minh   = MINH;
-  c->maxw   = -1;
-  c->maxh   = -1;
-  c->minr   = 0.0f;
-  c->maxr   = 0.0f;
-  c->incw   = 1;
-  c->inch   = 1; /* }}} */
+  c->minw  = MINW;
+  c->minh  = MINH;
+  c->maxw  = -1;
+  c->maxh  = -1;
+  c->minr  = 0.0f;
+  c->maxr  = 0.0f;
+  c->incw  = 1;
+  c->inch  = 1;
+  c->basew = 0;
+  c->baseh = 0; /* }}} */
 
   /* Size hints - no idea why it's called normal hints */
   if(XGetWMNormalHints(subtle->dpy, c->win, size, &supplied))
@@ -1059,10 +1059,10 @@ subClientSetSizeHints(SubClient *c,
           /* Limit min size to screen size if larger */
           if(size->min_width)
             c->minw = c->minw > s->geom.width ? s->geom.width :
-              MIN(MINW, size->min_width);
+              MAX(MINW, size->min_width);
           if(size->min_height)
             c->minh = c->minh > s->geom.height ? s->geom.height :
-              MIN(MINH, size->min_height);
+              MAX(MINH, size->min_height);
         }
 
       /* Program max size */
@@ -1106,6 +1106,13 @@ subClientSetSizeHints(SubClient *c,
           if(size->height_inc) c->inch = size->height_inc;
         }
 
+      /* Base sizes */
+      if(size->flags & PBaseSize)
+        {
+          if(size->base_width)  c->basew = size->base_width;
+          if(size->base_height) c->baseh = size->base_height;
+        }
+
       /* Check for specific position */
       if(!(c->flags & SUB_CLIENT_MODE_NORESIZE) &&
           (subtle->flags & SUB_SUBTLE_RESIZE ||
@@ -1134,9 +1141,10 @@ subClientSetSizeHints(SubClient *c,
   XFree(size);
 
   subSharedLogDebug("Size hints: x=%d, y=%d, width=%d, height=%d, "
-    "minw=%d, minh=%d, maxw=%d, maxh=%d, minr=%f, maxr=%f\n",
-    c->geom.x, c->geom.y, c->geom.width, c->geom.height, c->minw,
-    c->minh, c->maxw, c->maxh, c->minr, c->maxr);
+    "minw=%d, minh=%d, maxw=%d, maxh=%d, minr=%.1f, maxr=%.1f, "
+    "incw=%d, inch=%d, basew=%d, baseh=%d\n",
+    c->geom.x, c->geom.y, c->geom.width, c->geom.height, c->minw, c->minh,
+    c->maxw, c->maxh, c->minr, c->maxr, c->incw, c->inch, c->basew, c->baseh);
 } /* }}} */
 
   /** subClientSetWMHints {{{
