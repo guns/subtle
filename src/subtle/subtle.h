@@ -371,7 +371,7 @@ typedef struct subclient_t /* {{{ */
   XRectangle geom;                                                ///< Client geom
 
   float      minr, maxr;                                          ///< Client ratios
-  int        minw, minh, maxw, maxh, incw, inch;                  ///< Client sizes
+  int        minw, minh, maxw, maxh, incw, inch, basew, baseh;    ///< Client sizes
 
   int        screen, gravity, *gravities;                         ///< Client placement
 } SubClient; /* }}} */
