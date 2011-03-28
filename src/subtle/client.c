@@ -543,22 +543,9 @@ subClientDrag(SubClient *c,
                           geom.height = ev.xmotion.y_root - sy;
                         }
 
-                          geom.width  -= geom.width & c->incw;
-                          geom.height -= geom.height & c->inch;
-#if 0
-                      if(left) ///< Drag left
-                        {
-                          /* Calculate width and x */
-                          int check = ww + (rx - ev.xmotion.x_root);
-
-                          geom.width  = MAX(check, c->minw);
-                          geom.width -= (geom.width % c->incw);
-                          geom.x      = (rx - wx) + ww - geom.width;
-                        }
-                      else geom.width = ww - (rx - ev.xmotion.x_root); ///< Drag right
-
-                      geom.height = wh - (ry - ev.xmotion.y_root);
-#endif
+                      /* Apply increment values */
+                      geom.width  -= geom.width % c->incw;
+                      geom.height -= geom.height % c->inch;
 
                       ClientBounds(c, &geom);
 
