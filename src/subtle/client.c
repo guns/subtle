@@ -646,7 +646,7 @@ subClientRetag(SubClient *c,
   for(i = 0; i < subtle->tags->ndata; i++)
     {
       /* Check if tag matches client */
-      if(subTagMatch(TAG(subtle->tags->data[i]), c))
+      if(subTagMatcherCheck(TAG(subtle->tags->data[i]), c))
         subClientTag(c, i, flags);
     }
 

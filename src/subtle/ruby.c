@@ -453,7 +453,7 @@ RubyHashMatch(VALUE key,
   /* Finally create regex if there is any and append additional flags */
   if(0 < type)
     {
-      subTagRegex(TAG(rargs[0]), type|rargs[1],
+      subTagMatcherAdd(TAG(rargs[0]), type|rargs[1],
         NIL_P(regex) ? NULL : RSTRING_PTR(regex));
     }
 
