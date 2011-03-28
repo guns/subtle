@@ -201,6 +201,24 @@ RubyIconConvert(VALUE icon,
   i->bitmap = (Qtrue == bitmap) ? True : False;
 } /* }}} */
 
+/* RubySymbolToFlag {{{ */
+static void
+RubySymbolToFlag(VALUE sym,
+  int *flags)
+{
+  /* Translate symbols to flags */
+  if(CHAR2SYM("name")          == sym) (*flags) |= SUB_TAG_MATCH_NAME;
+  else if(CHAR2SYM("instance") == sym) (*flags) |= SUB_TAG_MATCH_INSTANCE;
+  else if(CHAR2SYM("class")    == sym) (*flags) |= SUB_TAG_MATCH_CLASS;
+  else if(CHAR2SYM("role")     == sym) (*flags) |= SUB_TAG_MATCH_ROLE;
+  else if(CHAR2SYM("type")     == sym) (*flags) |= SUB_TAG_MATCH_TYPE;
+  else if(CHAR2SYM("desktop")  == sym) (*flags) |= SUB_CLIENT_TYPE_DESKTOP;
+  else if(CHAR2SYM("dock")     == sym) (*flags) |= SUB_CLIENT_TYPE_DOCK;
+  else if(CHAR2SYM("toolbar")  == sym) (*flags) |= SUB_CLIENT_TYPE_TOOLBAR;
+  else if(CHAR2SYM("splash")   == sym) (*flags) |= SUB_CLIENT_TYPE_SPLASH;
+  else if(CHAR2SYM("dialog")   == sym) (*flags) |= SUB_CLIENT_TYPE_DIALOG;
+} /* }}} */
+
 /* Get */
 
 /* RubyGetIcon {{{ */
@@ -333,12 +351,8 @@ RubyHashConvert(VALUE value)
   /* Check value type */
   switch(rb_type(value))
     {
-      case T_HASH:
-        hash = value;
-        break;
-      case T_NIL:
-        /* Ignore this case */
-        break;
+      case T_HASH: hash = value; break;
+      case T_NIL:                break; ///< Ignore this case
       default:
         /* Convert to hash */
         hash = rb_hash_new();
@@ -349,15 +363,37 @@ RubyHashConvert(VALUE value)
   return hash;
 } /* }}} */
 
-/* RubyHashUpdate {{{ */
+/* RubyHashMerge {{{ */
 static int
-RubyHashUpdate(VALUE key,
+RubyHashMerge(VALUE key,
   VALUE value,
   VALUE data)
 {
+  VALUE lookup = Qnil;
+
   if(key == Qundef) return ST_CONTINUE;
 
-  rb_hash_aset(data, key, value);
+  /* Check if key exists and is non-nil:
+   * Yes: Create new array, append both values and replace key
+   * No:  Just add key to hash */
+  if(!NIL_P(key) && (lookup = rb_hash_lookup(data, key)))
+    {
+      /* Check value type */
+      switch(rb_type(lookup))
+        {
+          case T_ARRAY: rb_ary_push(lookup, value); break;
+          default:
+            {
+              VALUE ary = rb_ary_new2(2);
+
+              rb_ary_push(ary, lookup);
+              rb_ary_push(ary, value);
+
+              rb_hash_aset(data, key, ary);
+            }
+        }
+    }
+  else rb_hash_aset(data, key, value);
 
   return ST_CONTINUE;
 } /* }}} */
@@ -373,19 +409,13 @@ RubyHashMatch(VALUE key,
 
   if(key == Qundef) return ST_CONTINUE;
 
-  /* Check value type */
+  /* Check key value type */
   switch(rb_type(key))
     {
       case T_NIL:
         type = SUB_TAG_MATCH_INSTANCE|SUB_TAG_MATCH_CLASS; ///< Defaults
         break;
-      case T_SYMBOL:
-        if(CHAR2SYM("name") == key)          type = SUB_TAG_MATCH_NAME;
-        else if(CHAR2SYM("instance") == key) type = SUB_TAG_MATCH_INSTANCE;
-        else if(CHAR2SYM("class") == key)    type = SUB_TAG_MATCH_CLASS;
-        else if(CHAR2SYM("role") == key)     type = SUB_TAG_MATCH_ROLE;
-        else if(CHAR2SYM("type") == key)     type = SUB_TAG_MATCH_TYPE;
-        break;
+      case T_SYMBOL: RubySymbolToFlag(key, &type); break;
       case T_ARRAY:
           {
             int i;
@@ -393,13 +423,7 @@ RubyHashMatch(VALUE key,
 
             /* Check flags in array */
             for(i = 0; Qnil != (entry = rb_ary_entry(key, i)); i++)
-              {
-                if(CHAR2SYM("name") == entry)          type |= SUB_TAG_MATCH_NAME;
-                else if(CHAR2SYM("instance") == entry) type |= SUB_TAG_MATCH_INSTANCE;
-                else if(CHAR2SYM("class") == entry)    type |= SUB_TAG_MATCH_CLASS;
-                else if(CHAR2SYM("role") == entry)     type |= SUB_TAG_MATCH_ROLE;
-                else if(CHAR2SYM("type") == entry)     type |= SUB_TAG_MATCH_TYPE;
-              }
+              RubySymbolToFlag(entry, &type);
           }
         break;
       default: rb_raise(rb_eArgError, "Unknown value type");
@@ -411,13 +435,16 @@ RubyHashMatch(VALUE key,
       case T_REGEXP:
         regex = rb_funcall(value, rb_intern("source"), 0, NULL);
         break;
-      case T_SYMBOL:
-        if(CHAR2SYM("desktop") == value)      type |= SUB_CLIENT_TYPE_DESKTOP;
-        else if(CHAR2SYM("dock") == value)    type |= SUB_CLIENT_TYPE_DOCK;
-        else if(CHAR2SYM("toolbar") == value) type |= SUB_CLIENT_TYPE_TOOLBAR;
-        else if(CHAR2SYM("splash") == value)  type |= SUB_CLIENT_TYPE_SPLASH;
-        else if(CHAR2SYM("dialog") == value)  type |= SUB_CLIENT_TYPE_DIALOG;
-        else regex = rb_sym_to_s(value);
+      case T_SYMBOL: RubySymbolToFlag(value, &type); break;
+      case T_ARRAY:
+          {
+            int i;
+            VALUE entry = Qnil;
+
+            /* Check flags in array */
+            for(i = 0; Qnil != (entry = rb_ary_entry(value, i)); i++)
+              RubySymbolToFlag(entry, &type);
+          }
         break;
       case T_STRING: regex = value; break;
       default: rb_raise(rb_eArgError, "Unknown value type");
@@ -446,7 +473,7 @@ RubyHashCombine(VALUE self,
   /* Check if hash contains key and append or otherwise create it */
   if(T_HASH == rb_type(match = rb_hash_lookup(params, sym)))
     {
-      rb_hash_foreach(hash, RubyHashUpdate, match); ///< Merge!
+      rb_hash_foreach(hash, RubyHashMerge, match); ///< Merge!
     }
   else rb_hash_aset(params, sym, hash);
 
