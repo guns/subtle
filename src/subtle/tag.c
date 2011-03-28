@@ -135,28 +135,32 @@ subTagRegex(SubTag *t,
   int type,
   char *pattern)
 {
+  TagMatcher *m = NULL;
+  regex_t *regex = NULL;
+
   assert(t);
 
   /* Prevent emtpy regex */
-  if(pattern && 0 != strncmp("", pattern, 1))
+  if(pattern && 0 != strlen(pattern))
+    regex = subSharedRegexNew(pattern);
+
+  /* Remove matcher types that need a regexp */
+  if(!regex)
+    type &= ~(SUB_TAG_MATCH_NAME|SUB_TAG_MATCH_INSTANCE|
+      SUB_TAG_MATCH_CLASS|SUB_TAG_MATCH_ROLE);
+
+  /* Check if anything is left for matching */
+  if(0 < type)
     {
-      regex_t *regex = NULL;
+      /* Create new matcher */
+      m = (TagMatcher *)subSharedMemoryAlloc(1, sizeof(TagMatcher));
+      m->flags = type;
+      m->regex = regex;
 
-      /* Check if regex is valid */
-      if((regex = subSharedRegexNew(pattern)))
-        {
-          TagMatcher *m = NULL;
+      /* Create on demand to safe memory */
+      if(NULL == t->matcher) t->matcher = subArrayNew();
 
-          /* Create new matcher */
-          m = (TagMatcher *)subSharedMemoryAlloc(1, sizeof(TagMatcher));
-          m->flags = type;
-          m->regex = regex;
-
-          /* Create on demand to safe memory */
-          if(NULL == t->matcher) t->matcher = subArrayNew();
-
-          subArrayPush(t->matcher, (void *)m);
-        }
+      subArrayPush(t->matcher, (void *)m);
     }
 } /* }}} */
 
@@ -182,14 +186,14 @@ subTagMatch(SubTag *t,
       TagMatcher *m = (TagMatcher *)t->matcher->data[i];
 
       /* Complex matching: WM_NAME, WM_CLASS, WM_ROLE, _NET_WM_WINDOW_TYPE */
-      if((m->flags & SUB_TAG_MATCH_NAME && c->name &&
+      if((m->regex && ((m->flags & SUB_TAG_MATCH_NAME && c->name &&
             subSharedRegexMatch(m->regex, c->name)) ||
           (m->flags & SUB_TAG_MATCH_INSTANCE && c->instance &&
             subSharedRegexMatch(m->regex, c->instance)) ||
           (m->flags & SUB_TAG_MATCH_CLASS && c->klass &&
             subSharedRegexMatch(m->regex, c->klass)) ||
           (m->flags & SUB_TAG_MATCH_ROLE && c->role &&
-            subSharedRegexMatch(m->regex, c->role)) ||
+            subSharedRegexMatch(m->regex, c->role)))) ||
           (m->flags & SUB_TAG_MATCH_TYPE && c->flags & (m->flags & TYPES_ALL)))
         return m->flags & SUB_TAG_MATCH_INVERT ? False : True;
     }
