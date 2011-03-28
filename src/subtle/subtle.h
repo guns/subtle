@@ -803,9 +803,9 @@ void subSubtleFinish(void);                                       ///< Finish su
 
 /* tag.c {{{ */
 SubTag *subTagNew(char *name, int *duplicate);                    ///< Create tag
-void subTagRegex(SubTag *t, int type, char *pattern);             ///< Add regex
 int subTagCompare(const void *a, const void *b);                  ///< Compare two tags
-int subTagMatch(SubTag *t, SubClient *c);                         ///< Check for match
+void subTagMatcherAdd(SubTag *t, int type, char *pattern);        ///< Add a matcher
+int subTagMatcherCheck(SubTag *t, SubClient *c);                  ///< Check for match
 void subTagPublish(void);                                         ///< Publish tags
 void subTagKill(SubTag *t);                                       ///< Delete tag
 /* }}} */

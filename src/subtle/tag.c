@@ -123,15 +123,15 @@ subTagCompare(const void *a,
   return ret;
 } /* }}} */
 
- /** subTagRegex {{{
-  * @brief Add regex to tag
+ /** subTagMatcherAdd {{{
+  * @brief Add a matcher to a tag
   * @param[in]  t        A #SubTag
   * @param[in]  type     Matcher type
   * @param[in]  pattern  Regex
   **/
 
 void
-subTagRegex(SubTag *t,
+subTagMatcherAdd(SubTag *t,
   int type,
   char *pattern)
 {
@@ -164,8 +164,8 @@ subTagRegex(SubTag *t,
     }
 } /* }}} */
 
- /** subTagMatch {{{
-  * @brief Check whether client matches tag
+ /** subTagMatcherCheck {{{
+  * @brief Check if client matches tag
   * @param[in]  t  A #SubTag
   * @param[in]  c  A #SubClient
   * @retval  True  Client matches
@@ -173,7 +173,7 @@ subTagRegex(SubTag *t,
   **/
 
 int
-subTagMatch(SubTag *t,
+subTagMatcherCheck(SubTag *t,
   SubClient *c)
 {
   int i;
