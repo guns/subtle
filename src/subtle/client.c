@@ -79,9 +79,12 @@ ClientBounds(SubClient *c,
       (subtle->flags & SUB_SUBTLE_RESIZE ||
       c->flags & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_RESIZE)))
     {
+      int maxw = 0, maxh = 0, diffw = 0, diffh = 0;
       SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
-      int maxw = -1 == c->maxw ? s->geom.width  - 2 * BORDER(c) - 2 * subtle->gap : c->maxw;
-      int maxh = -1 == c->maxh ? s->geom.height - 2 * BORDER(c) - 2 * subtle->gap : c->maxh;
+
+      /* Calculate max width and height for screen */
+      maxw = -1 == c->maxw ? s->geom.width  - 2 * BORDER(c) - 2 * subtle->gap : c->maxw;
+      maxh = -1 == c->maxh ? s->geom.height - 2 * BORDER(c) - 2 * subtle->gap : c->maxh;
 
       /* Limit width and height */
       if(geom->width < c->minw)  geom->width  = c->minw;
@@ -90,8 +93,14 @@ ClientBounds(SubClient *c,
       if(geom->height > maxh)    geom->height = maxh;
 
       /* Adjust for increment values (see ICCCM 4.1.2.3) */
-      geom->width  -= (geom->width  - c->basew) % c->incw;
-      geom->height -= (geom->height - c->baseh) % c->inch;
+      diffw = (geom->width  - c->basew) % c->incw;
+      diffh = (geom->height - c->baseh) % c->inch;
+
+      /* Center client on current gravity */
+      geom->x      += 0 < diffw ? diffw / 2 : 0;
+      geom->y      += 0 < diffh ? diffh / 2 : 0;
+      geom->width  -= diffw;
+      geom->height -= diffh;
 
       /* Check aspect ratios */
       if(c->minr && geom->height * c->minr > geom->width)
