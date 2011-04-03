@@ -72,7 +72,7 @@ ScreenClear(SubScreen *s)
   /* Clear pixmap */
   XSetForeground(subtle->dpy, subtle->gcs.draw, subtle->colors.panel);
   XFillRectangle(subtle->dpy, s->drawable, subtle->gcs.draw,
-    0, 0, s->geom.width, subtle->ph);
+    0, 0, s->base.width, subtle->ph);
 } /* }}} */
 
 /* ScreenCopy {{{ */
@@ -94,7 +94,7 @@ ScreenCopy(SubScreen *s,
 
   /* Swap buffer */
   XCopyArea(subtle->dpy, s->drawable, panel, subtle->gcs.draw,
-    0, 0, s->geom.width, subtle->ph, 0, 0);
+    0, 0, s->base.width, subtle->ph, 0, 0);
 } /* }}} */
 
 /* Public */
@@ -634,7 +634,7 @@ subScreenResize(void)
 
       /* Create/update drawable for double buffering */
       if(s->drawable) XFreePixmap(subtle->dpy, s->drawable);
-      s->drawable = XCreatePixmap(subtle->dpy, ROOT, s->geom.width, subtle->ph,
+      s->drawable = XCreatePixmap(subtle->dpy, ROOT, s->base.width, subtle->ph,
         XDefaultDepth(subtle->dpy, DefaultScreen(subtle->dpy)));
     }
 
