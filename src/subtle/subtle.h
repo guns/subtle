@@ -267,7 +267,8 @@
 /* Tag flags */
 #define SUB_TAG_GRAVITY               (1L << 9)                   ///< Gravity property
 #define SUB_TAG_GEOMETRY              (1L << 10)                  ///< Geometry property
-#define SUB_TAG_TYPE                  (1L << 11)                  ///< Type property
+#define SUB_TAG_POSITION              (1L << 11)                  ///< Position property
+#define SUB_TAG_TYPE                  (1L << 12)                  ///< Type property
 
 /* Tag matcher */
 #define SUB_TAG_MATCH_NAME            (1L << 9)                   ///< Match WM_NAME

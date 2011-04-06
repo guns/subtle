@@ -258,23 +258,24 @@ RubyGetIcon(VALUE value)
 /* RubyGetGeometry {{{ */
 static int
 RubyGetGeometry(VALUE ary,
-  XRectangle *geometry)
+  XRectangle *geometry,
+  int need)
 {
-  int data[4] = { 0 }, ret = False;
+  int data[4] = { 1 }, ret = False;
 
   assert(geometry);
 
   /* Check value type */
   if(T_ARRAY == rb_type(ary))
     {
-      int i;
+      int i, len = 0;
       VALUE value = Qnil;
 
       /* Check length of array */
-      if(4 == FIX2INT(rb_funcall(ary, rb_intern("size"), 0, NULL)))
+      if(need == (len = FIX2INT(rb_funcall(ary, rb_intern("size"), 0, NULL))))
         {
           /* Check array values */
-          for(i = 0; i < 4; i++)
+          for(i = 0; i < len; i++)
             {
               /* Check value type */
               switch(rb_type(value = rb_ary_entry(ary, i)))
@@ -1538,12 +1539,12 @@ RubyConfigSet(VALUE self,
             if(CHAR2SYM("strut") == option)
               {
                 if(!(subtle->flags & SUB_SUBTLE_CHECK))
-                  RubyGetGeometry(value, &subtle->strut);
+                  RubyGetGeometry(value, &subtle->strut, 4);
               }
             else if(CHAR2SYM("padding") == option)
               {
                 if(!(subtle->flags & SUB_SUBTLE_CHECK))
-                  RubyGetGeometry(value, &subtle->padding);
+                  RubyGetGeometry(value, &subtle->padding, 4);
               }
             else subSharedLogWarn("Unknown set option `:%s'\n",
               SYM2CHAR(option));
@@ -1782,7 +1783,7 @@ RubyConfigGravity(VALUE self,
     {
       XRectangle geometry = { 0 };
 
-      RubyGetGeometry(value, &geometry);
+      RubyGetGeometry(value, &geometry, 4);
 
       /* Skip on checking only */
       if(!(subtle->flags & SUB_SUBTLE_CHECK))
@@ -1884,8 +1885,14 @@ RubyConfigTag(int argc,
       /* Set geometry */
       if(T_ARRAY == rb_type(value = rb_hash_lookup(params,
           CHAR2SYM("geometry"))) &&
-          RubyGetGeometry(value, &geom))
+          RubyGetGeometry(value, &geom, 4))
         flags |= SUB_TAG_GEOMETRY;
+
+      /* Set geometry */
+      if(T_ARRAY == rb_type(value = rb_hash_lookup(params,
+          CHAR2SYM("position"))) &&
+          RubyGetGeometry(value, &geom, 2))
+        flags |= SUB_TAG_POSITION;
 
       /* Set window type */
       if(T_SYMBOL == rb_type(value = rb_hash_lookup(params,

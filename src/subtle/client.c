@@ -613,11 +613,20 @@ subClientTag(SubClient *c,
       c->flags |= (t->flags & MODES_NONE);
       c->tags  |= (1L << (tag + 1));
 
-      /* Set size and enable float */
-      if(t->flags & SUB_TAG_GEOMETRY && !(c->flags & SUB_CLIENT_MODE_NOFLOAT))
+      /* Set size/position and enable float */
+      if(t->flags & (SUB_TAG_GEOMETRY|SUB_TAG_POSITION) &&
+          !(c->flags & SUB_CLIENT_MODE_NOFLOAT))
         {
           *flags  |= (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_NORESIZE); ///< Disable size checks
-          c->geom  = t->geom;
+
+          /* Apply size/position */
+          if(t->flags & SUB_TAG_GEOMETRY)
+            c->geom  = t->geom;
+          else
+            {
+              c->geom.x = t->geom.x;
+              c->geom.y = t->geom.y;
+            }
         }
 
       /* Set gravity and screens for matching views */
