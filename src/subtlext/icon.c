@@ -86,8 +86,8 @@ IconEqual(VALUE self,
 
 /* subIconAlloc {{{ */
 /*
- * call-seq: new(path)          -> Subtle::Icon
- *           new(width, height) -> Subtle::Icon
+ * call-seq: new(path)          -> Subtlext::Icon
+ *           new(width, height) -> Subtlext::Icon
  *
  * Allocate new Icon object
  */
@@ -106,8 +106,8 @@ subIconAlloc(VALUE self)
 
 /* subIconInit {{{ */
 /*
- * call-seq: initialize(path)                  -> Subtle::Icon
- *           initialize(width, height, bitmap) -> Subtle::Icon
+ * call-seq: initialize(path)                  -> Subtlext::Icon
+ *           initialize(width, height, bitmap) -> Subtlext::Icon
  *
  * Initialize Icon object
  *
