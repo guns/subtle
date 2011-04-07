@@ -127,8 +127,14 @@ void *
 subSharedMemoryAlloc(size_t n,
   size_t size)
 {
-  void *mem = calloc(n, size);
-  if(!mem) subSharedLogError("Failed allocating memory\n");
+  void *mem = NULL;
+
+  /* Check result */
+  if(!(mem = calloc(n, size)))
+    {
+      subSharedLogError("Failed allocating memory\n");
+    }
+
   return mem;
 } /* }}} */
 
@@ -143,8 +149,11 @@ void *
 subSharedMemoryRealloc(void *mem,
   size_t size)
 {
-  mem = realloc(mem, size);
-  if(!mem) subSharedLogDebug("Memory has been freed. Expected?\n");
+  /* Check result */
+  if(!(mem = realloc(mem, size)))
+    {
+      subSharedLogDebug("Memory has been freed. Expected?\n");
+    }
 
   return mem;
 } /* }}} */
