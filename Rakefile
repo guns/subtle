@@ -80,7 +80,7 @@ HEADER  = [
   "stdio.h", "stdlib.h", "stdarg.h", "string.h", "unistd.h", "signal.h", "errno.h",
   "assert.h", "sys/time.h", "sys/types.h"
 ]
-OPTIONAL = [ "sys/inotify.h", "execinfo.h", "wordexp.h" ]
+OPTIONAL = [ "sys/inotify.h", "wordexp.h" ]
 # }}}
 
 # Miscellaneous {{{
@@ -303,6 +303,28 @@ task(:config) do
     # Check optional headers
     OPTIONAL.each do |h|
       have_header(h)
+    end
+
+    # Check execinfo
+    checking_for("execinfo.h") do
+      ret = false
+      lib = " -lexecinfo"
+
+      # Check if execinfo is a separate lib (freebsd)
+      if(find_header("execinfo.h"))
+        if(try_func("backtrace", ""))
+          $defs.push("-DHAVE_EXECINFO_H")
+
+          ret = true
+        elsif(try_func("backtrace", lib))
+          @options["ldflags"] << lib
+          $defs.push("-DHAVE_EXECINFO_H")
+
+          ret = true
+        end
+      end
+
+      ret
     end
 
     # Check pkg-config for X11
