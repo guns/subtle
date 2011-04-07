@@ -20,6 +20,7 @@ require "digest/md5"
 
 # Options / defines {{{
 @options = {
+  "cc"         => ENV["CC"] || "gcc",
   "destdir"    => ENV["DESTDIR"] || "",
   "prefix"     => "/usr",
   "manprefix"  => "$(prefix)/share/man",
@@ -159,8 +160,8 @@ def make_config(file = "config.yml")
 end # }}}
 
  ## compile {{{
- # Wrapper to suppress the output of gcc
- # @param  [String]  src  Input filename
+ # Wrapper to suppress compiler output
+ # @param  [String]  src      Input filename
  # @param  [String]  out      Output filename
  # @param  [String]  options  Addiotional compiler options
  ##
@@ -171,7 +172,7 @@ def compile(src, out = nil, options = "")
   opt << options
 
   # Suppress default output
-  silent_sh("gcc -o #{out} -c #{@options["cflags"]} #{opt} #{@options["cpppath"]} #{src}",
+  silent_sh("#{@options["cc"]} -o #{out} -c #{@options["cflags"]} #{opt} #{@options["cpppath"]} #{src}",
     "CC #{out}") do |ok, status|
       ok or fail("Compiler failed with status #{status.exitstatus}")
   end
@@ -714,7 +715,7 @@ SRC_SUBTLE.each do |src|
 end
 
 file(PG_SUBTLE => OBJ_SUBTLE) do
-  silent_sh("gcc -o #{PG_SUBTLE} #{OBJ_SUBTLE} #{@options["ldflags"]}",
+  silent_sh("#{@options["cc"]} -o #{PG_SUBTLE} #{OBJ_SUBTLE} #{@options["ldflags"]}",
     "LD #{PG_SUBTLE}") do |ok, status|
       ok or fail("Linker failed with status #{status.exitstatus}")
   end
@@ -730,7 +731,7 @@ SRC_SUBTLEXT.each do |src|
 end
 
 file(PG_SUBTLEXT => OBJ_SUBTLEXT) do
-  silent_sh("gcc -o #{PG_SUBTLEXT}.so #{OBJ_SUBTLEXT} -shared #{@options["extflags"]}",
+  silent_sh("#{@options["cc"]} -o #{PG_SUBTLEXT}.so #{OBJ_SUBTLEXT} -shared #{@options["extflags"]}",
     "LD #{PG_SUBTLEXT}") do |ok, status|
       ok or fail("Linker failed with status #{status.exitstatus}")
   end
