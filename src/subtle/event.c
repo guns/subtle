@@ -1316,7 +1316,7 @@ EventMessage(XClientMessageEvent *ev)
         }
     } /* }}} */
   /* Messages for client windows {{{ */
-  else if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))));
+  else if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
     {
       DEAD(c);
 
