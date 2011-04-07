@@ -201,6 +201,22 @@ subSubtleSingSelect(VALUE self)
   return None != win ? LONG2NUM(win) : Qnil;
 } /* }}} */
 
+/* subSubtleSingRender {{{ */
+/*
+ * call-seq: render -> nil
+ *
+ * Force Subtle to render screen panels
+ *
+ *  subtle.reload
+ *  => nil
+ */
+
+VALUE
+subSubtleSingRender(VALUE self)
+{
+  return SubtleSend("SUBTLE_RENDER");
+} /* }}} */
+
 /* subSubtleSingReload {{{ */
 /*
  * call-seq: reload -> nil

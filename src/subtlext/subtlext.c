@@ -1564,6 +1564,7 @@ Init_subtlext(void)
   rb_define_singleton_method(subtle, "display=",      subSubtleSingDisplayWriter, 1);
   rb_define_singleton_method(subtle, "select_window", subSubtleSingSelect,        0);
   rb_define_singleton_method(subtle, "running?",      subSubtleSingRunningAsk,    0);
+  rb_define_singleton_method(subtle, "render",        subSubtleSingRender,        0);
   rb_define_singleton_method(subtle, "reload",        subSubtleSingReload,        0);
   rb_define_singleton_method(subtle, "restart",       subSubtleSingRestart,       0);
   rb_define_singleton_method(subtle, "quit",          subSubtleSingQuit,          0);

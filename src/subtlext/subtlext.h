@@ -184,6 +184,7 @@ VALUE subSubtleSingDisplayReader(VALUE self);                     ///< Get displ
 VALUE subSubtleSingDisplayWriter(VALUE self, VALUE display);      ///< Set display
 VALUE subSubtleSingRunningAsk(VALUE self);                        ///< Is subtle running
 VALUE subSubtleSingSelect(VALUE self);                            ///< Select window
+VALUE subSubtleSingRender(VALUE self);                            ///< Render panels
 VALUE subSubtleSingReload(VALUE self);                            ///< Reload config and sublets
 VALUE subSubtleSingRestart(VALUE self);                           ///< Restart subtle
 VALUE subSubtleSingQuit(VALUE self);                              ///< Quit subtle
