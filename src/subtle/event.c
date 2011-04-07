@@ -1265,6 +1265,9 @@ EventMessage(XClientMessageEvent *ev)
                 subScreenRender();
               }
             break; /* }}} */
+          case SUB_EWMH_SUBTLE_RENDER: /* {{{ */
+            subScreenRender();
+            break; /* }}} */
           case SUB_EWMH_SUBTLE_RELOAD: /* {{{ */
             if(subtle) subtle->flags |= SUB_SUBTLE_RELOAD;
             break; /* }}} */

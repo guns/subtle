@@ -473,6 +473,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_SCREEN_VIEWS,                                   ///< Subtle screen views
   SUB_EWMH_SUBTLE_VISIBLE_TAGS,                                   ///< Subtle visible tags
   SUB_EWMH_SUBTLE_VISIBLE_VIEWS,                                  ///< Subtle visible views
+  SUB_EWMH_SUBTLE_RENDER,                                         ///< Subtle render
   SUB_EWMH_SUBTLE_RELOAD,                                         ///< Subtle reload
   SUB_EWMH_SUBTLE_RESTART,                                        ///< Subtle restart
   SUB_EWMH_SUBTLE_QUIT,                                           ///< Subtle quit
