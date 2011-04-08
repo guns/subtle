@@ -3412,7 +3412,7 @@ subRubyLoadSublet(const char *file)
   int state = 0;
   char buf[100] = { 0 };
   SubPanel *p = NULL;
-  VALUE str = Qnil, klass = Qnil, rargs[2] = { Qnil };
+  VALUE str = Qnil, klass = Qnil, rargs[3] = { Qnil };
 
   /* Check path */
   if(subtle->paths.sublets)
