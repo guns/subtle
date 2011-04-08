@@ -693,7 +693,6 @@ subSharedTextWidth(Display *disp,
 
           width    = overall_logical.width;
           lbearing = overall_logical.x;
-          rbearing = rbearing;
         }
 
       /* Get left and right spacing */
