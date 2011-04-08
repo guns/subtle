@@ -143,8 +143,24 @@ module Subtle # {{{
 
         # Pipes?
         arg1 = ARGF.read.chop if("-" == arg1)
-        arg2 = ARGF.read.chop if("-" == arg2)
 
+        if("-" == arg2)
+          # Read pipe until EOF
+          begin
+            while((arg2 = ARGF.readline)) do
+              handle(arg1, arg2.chop)
+            end
+          rescue EOFError
+            # Just ignore this
+          end
+        else
+          handle(arg1, arg2)
+        end
+      end # }}}
+
+      private
+
+      def handle(arg1, arg2) # {{{
         # Modifiers
         case @mod
           when :reload  then  Subtlext::Subtle.reload
@@ -204,8 +220,6 @@ module Subtle # {{{
           exit
         end
       end # }}}
-
-      private
 
       def printer(value) # {{{
         case value
