@@ -1233,7 +1233,11 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_SUBTLE_SUBLET_DATA: /* {{{ */
             if((p = EventFindSublet((int)ev->data.l[0])) &&
                 p->sublet->flags & SUB_SUBLET_DATA)
-              subRubyCall(SUB_CALL_DATA, p->sublet->instance, NULL);
+              {
+                subRubyCall(SUB_CALL_DATA, p->sublet->instance, NULL);
+                subScreenUpdate();
+                subScreenRender();
+              }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_SUBLET_FOREGROUND: /* {{{ */
             if((p = EventFindSublet((int)ev->data.l[0])))
