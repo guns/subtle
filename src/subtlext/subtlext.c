@@ -1542,6 +1542,7 @@ Init_subtlext(void)
   rb_define_method(screen, "update",     subScreenUpdate,     0);
   rb_define_method(screen, "view",       subScreenViewReader, 0);
   rb_define_method(screen, "view=",      subScreenViewWriter, 1);
+  rb_define_method(screen, "current?",   subScreenCurrentAsk, 0);
   rb_define_method(screen, "to_str",     subScreenToString,   0);
 
   /* Singleton aliases */

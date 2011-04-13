@@ -157,6 +157,7 @@ VALUE subScreenInit(VALUE self, VALUE id);                        ///< Create ne
 VALUE subScreenUpdate(VALUE self);                                ///< Update screen
 VALUE subScreenViewReader(VALUE self);                            ///< Get screen view
 VALUE subScreenViewWriter(VALUE self, VALUE value);               ///< Set screen view
+VALUE subScreenCurrentAsk(VALUE self);                            ///< Whether screen is current
 VALUE subScreenToString(VALUE self);                              ///< Screen to string
 /* }}} */
 
@@ -249,7 +250,7 @@ VALUE subViewClients(VALUE self);                                 ///< Get clien
 VALUE subViewJump(VALUE self);                                    ///< Jump to view
 VALUE subViewSelectNext(VALUE self);                              ///< Select next view
 VALUE subViewSelectPrev(VALUE self);                              ///< Select next view
-VALUE subViewCurrentAsk(VALUE self);                              ///< Is view the current
+VALUE subViewCurrentAsk(VALUE self);                              ///< Whether view the current
 VALUE subViewIcon(VALUE self);                                    ///< View icon if any
 VALUE subViewToString(VALUE self);                                ///< View to string
 VALUE subViewKill(VALUE self);                                    ///< Kill view

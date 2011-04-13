@@ -398,6 +398,28 @@ subScreenViewWriter(VALUE self,
   return Qnil;
 } /* }}} */
 
+/* subScreenCurrentAsk {{{ */
+/*
+ * call-seq: screen? -> true or false
+ *
+ * Check if this Screen is the current active Screen
+ *
+ *  screen.current?
+ *  => true
+ *
+ *  screen.current?
+ *  => false
+ */
+
+VALUE
+subScreenCurrentAsk(VALUE self)
+{
+  /* Check ruby object */
+  rb_check_frozen(self);
+
+  return rb_equal(self, subScreenSingCurrent(Qnil));
+} /* }}} */
+
 /* subScreenToString {{{ */
 /*
  * call-seq: to_str -> String
