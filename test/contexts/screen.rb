@@ -32,6 +32,10 @@ context "Screen" do
     )
   end
 
+  asserts("Check current") do
+    topic.current?
+  end
+
   asserts("Equal and compare") do
     topic.eql? Subtlext::Screen.current and topic == topic
   end

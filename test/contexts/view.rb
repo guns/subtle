@@ -42,6 +42,10 @@ context "View" do
     nil == topic.icon
   end
 
+  asserts("Check current") do
+    topic.current?
+  end
+
   asserts("Convert to string") { "terms" == topic.to_str }
 
   asserts("Runtime: Create new view") do
@@ -64,7 +68,7 @@ context "View" do
 
     sleep 1
 
-    view_prev == topic and topic.current?
+    view_prev == topic
   end
 
   asserts("Runtime: Add/remove tags") do
