@@ -44,10 +44,8 @@
 #define TAGS         unsigned int                                 ///< Tags
 
 #define CLIENTID     1L                                           ///< Client data id
-#define VIEWID       2L                                           ///< View data id
-#define TRAYID       3L                                           ///< Tray data id
-#define SUBLETID     4L                                           ///< Sublet data id
-#define SCREENID     5L                                           ///< Screen data id
+#define TRAYID       2L                                           ///< Tray data id
+#define SCREENID     3L                                           ///< Screen data id
 
 #define MINW         1L                                           ///< Client min width
 #define MINH         1L                                           ///< Client min height
@@ -55,12 +53,22 @@
 #define HISTORYSIZE  5                                            ///< Size of the focus history
 #define DEFAULTTAG   (1L << 1)                                    ///< Default tag
 
-#define WIDTH(c)     (c->geom.width + 2 * subtle->bw)             ///< Get real width
-#define HEIGHT(c)    (c->geom.height + 2 * subtle->bw)            ///< Get real height
 #define BORDER(c) \
-  (c->flags & SUB_CLIENT_BORDERLESS ? 0 : subtle->bw)             ///< Get border width
+  (c->flags & SUB_CLIENT_BORDERLESS ? 0 : \
+  subtle->styles.clients.border.top)                              ///< Get border width
 
-#define ZERO(n)      (0 < n ? n : 1)                              ///< Prevent zero
+#define STYLE_TOP(s) \
+  (s.border.top + s.padding.top + s.margin.top)                   ///< Get style top
+#define STYLE_RIGHT(s) \
+  (s.border.right + s.padding.right + s.margin.right)             ///< Get style right
+#define STYLE_BOTTOM(s) \
+  (s.border.bottom + s.padding.bottom + s.margin.bottom)          ///< Get style bottom
+#define STYLE_LEFT(s) \
+  (s.border.left + s.padding.left + s.margin.left)                ///< Get style left
+
+#define STYLE_WIDTH(s)  (STYLE_LEFT(s) + STYLE_RIGHT(s))          ///< Get style width
+#define STYLE_HEIGHT(s) (STYLE_TOP(s) + STYLE_BOTTOM(s))          ///< Get style height
+
 #define MIN(a,b)     (a >= b ? b : a)                             ///< Minimum
 #define MAX(a,b)     (a >= b ? a : b)                             ///< Maximum
 
@@ -75,21 +83,12 @@
   (wx >= r.x && wx <= (r.x + r.width) && \
    wy >= r.y && wy <= (r.y + r.height))                           ///< Whether x/y is in rect
 
-#define RECTINRECT(r1,r2) \
-  (r1.x >= r2.x && r1.y >= r2.y && \
-  (r1.x + r1.width)  <= (r2.x + r2.width) && \
-  (r1.y + r1.height) <= (r2.y + r2.height))                       ///< Whether rect is in rect
-
-#define VISUAL \
-  DefaultVisual(subtle->dpy, DefaultScreen(subtle->dpy))          ///< Default visual
-#define COLORMAP \
-  DefaultColormap(subtle->dpy, DefaultScreen(subtle->dpy))        ///< Default colormap
 #define VISIBLE(visible_tags,c) \
   (c && (visible_tags & c->tags || \
   c->flags & (SUB_CLIENT_TYPE_DESKTOP|SUB_CLIENT_MODE_STICK)))    ///< Visible on view
 
-#define ROOT       DefaultRootWindow(subtle->dpy)                 ///< Root window
-#define SCRN       DefaultScreen(subtle->dpy)                     ///< Default screen
+#define ROOT DefaultRootWindow(subtle->dpy)                       ///< Root window
+#define SCRN DefaultScreen(subtle->dpy)                           ///< Default screen
 /* }}} */
 
 /* Masks {{{ */
@@ -356,7 +355,8 @@ typedef struct subarray_t /* {{{ */
   void **data;                                                    ///< Array data
 } SubArray; /* }}} */
 
-typedef struct subkeychain_t { /* {{{ */
+typedef struct subkeychain_t /* {{{ */
+{
   int              len;                                           ///< Keychain length
   char             *keys;                                         ///< Keychain keys
 } SubKeychain; /* }}} */
@@ -508,7 +508,8 @@ typedef struct subhook_t /* {{{ */
   unsigned long proc;                                             ///< Hook proc
 } SubHook; /* }}} */
 
-typedef struct subicon_t { /* {{{ */
+typedef struct subicon_t /* {{{ */
+{
   int     width, height, bitmap;                                  ///< Icon height, bitmap
   Pixmap  pixmap;                                                 ///< Icon pixmap
 } SubIcon; /* }}} */
@@ -551,19 +552,28 @@ typedef struct subsublet_t { /* {{{ */
   struct subtext_t  *text;                                        ///< Sublet text
 } SubSublet; /* }}} */
 
+typedef struct subsides_t /* {{{ */
+{
+  int top, right, bottom, left;                                   ///< Side values
+} SubSides; /* }}} */
+
+typedef struct substyle_t /* {{{ */
+{
+  unsigned long fg, bg, top, right, bottom, left;                 ///< Style colors
+  struct subsides_t border, padding, margin;                      ///< Style border, padding and margin
+} SubStyle; /* }}} */
+
 typedef struct subsubtle_t /* {{{ */
 {
   FLAGS                flags;                                     ///< Subtle flags
 
   int                  width, height;                             ///< Subtle screen size
-  int                  ph, bw, pbw, step, snap, gap;              ///< Subtle properties
+  int                  ph, step, snap;                            ///< Subtle properties
   int                  visible_tags, visible_views;               ///< Subtle visible tags and views
   int                  client_tags, urgent_tags;                  ///< Subtle clients and urgent tags
   unsigned long        gravity;                                   ///< Subtle gravity
 
   Display              *dpy;                                      ///< Subtle Xorg display
-
-  XRectangle           strut, padding;                            ///< Subtle strut, padding
 
   struct subfont_t     *font;                                     ///< Subtle font
   struct subgrab_t     *keychain;                                 ///< Subtle current keychain
@@ -605,11 +615,9 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    unsigned long      fg_title, fg_focus, fg_urgent, fg_occupied, fg_views, fg_sublets,
-                       bg_title, bg_focus, bg_urgent, bg_occupied, bg_views, bg_sublets,
-                       bo_title, bo_focus, bo_urgent, bo_occupied, bo_views, bo_sublets,
-                       bo_active, bo_inactive, panel, bg, stipple, separator;
-  } colors;                                                       ///< Subtle colors
+    struct substyle_t title, focus, urgent, occupied, views,
+                      sublets, separator, clients, subtle;
+  } styles;                                                       ///< Subtle styles
 
   struct
   {
