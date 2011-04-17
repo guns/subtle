@@ -67,10 +67,11 @@ ScreenPublish(void)
 
 /* ScreenClear {{{ */
 static void
-ScreenClear(SubScreen *s)
+ScreenClear(SubScreen *s,
+  unsigned long col)
 {
   /* Clear pixmap */
-  XSetForeground(subtle->dpy, subtle->gcs.draw, subtle->colors.panel);
+  XSetForeground(subtle->dpy, subtle->gcs.draw, col);
   XFillRectangle(subtle->dpy, s->drawable, subtle->gcs.draw,
     0, 0, s->base.width, subtle->ph);
 } /* }}} */
@@ -425,7 +426,7 @@ subScreenUpdate(void)
       SubScreen *s = SCREEN(subtle->screens->data[i]);
       SubPanel *p = NULL;
       int j, npanel = 0, center = False, offset = 0;
-      int x[4] = { 0 }, nspacer[4] = { 0 }; ///< Waste four ints but it's easier for the algo
+      int x[4] = { 0 }, nspacer[4] = { 0 }; ///< Waste ints but it's easier for the algo
       int sw[4] = { 0 }, fix[4] = { 0 }, width[4] = { 0 }, spacer[4] = { 0 };
 
       /* Pass 1: Collect width for spacer sizes */
@@ -450,9 +451,9 @@ subScreenUpdate(void)
           if(p->flags & SUB_PANEL_SPACER1) spacer[offset]++;
           if(p->flags & SUB_PANEL_SPACER2) spacer[offset]++;
           if(p->flags & SUB_PANEL_SEPARATOR1)
-            width[offset] += subtle->separator.width;
+              width[offset] += subtle->separator.width;
           if(p->flags & SUB_PANEL_SEPARATOR2)
-            width[offset] += subtle->separator.width;
+              width[offset] += subtle->separator.width;
 
           width[offset] += p->width;
         }
@@ -546,7 +547,7 @@ subScreenRender(void)
       SubScreen *s = SCREEN(subtle->screens->data[i]);
       Window panel = s->panel1;
 
-      ScreenClear(s);
+      ScreenClear(s, subtle->styles.subtle.top);
 
       /* Render panel items */
       for(j = 0; s->panels && j < s->panels->ndata; j++)
@@ -557,30 +558,15 @@ subScreenRender(void)
           if(panel != s->panel2 && p->flags & SUB_PANEL_BOTTOM)
             {
               ScreenCopy(s, panel);
-              ScreenClear(s);
+              ScreenClear(s, subtle->styles.subtle.bottom);
               panel = s->panel2;
             }
 
-          /* Draw separator before panel */
-          if(0 < subtle->separator.width && p->flags & SUB_PANEL_SEPARATOR1)
-            subSharedTextDraw(subtle->dpy, subtle->gcs.draw, subtle->font,
-              s->drawable, p->x - subtle->separator.width + 3,
-              subtle->font->y + subtle->pbw + subtle->padding.width,
-              subtle->colors.separator, -1, subtle->separator.string);
-
           subPanelRender(p, s->drawable);
-
-          /* Draw separator after panel */
-          if(0 < subtle->separator.width && p->flags & SUB_PANEL_SEPARATOR2)
-            subSharedTextDraw(subtle->dpy, subtle->gcs.draw, subtle->font,
-              s->drawable, p->x + p->width + 3,
-              subtle->font->y + subtle->pbw + subtle->padding.width,
-              subtle->colors.separator, -1, subtle->separator.string);
         }
 
       ScreenCopy(s, panel);
     }
-
 
   XSync(subtle->dpy, False); ///< Sync before going on
 } /* }}} */
@@ -601,12 +587,13 @@ subScreenResize(void)
     {
       SubScreen *s = SCREEN(subtle->screens->data[i]);
 
-      /* Add strut: x => left, y => right, width => top, height => bottom */
-      s->geom.x      = s->base.x + subtle->strut.x;
-      s->geom.y      = s->base.y + subtle->strut.width;
-      s->geom.width  = s->base.width - subtle->strut.x - subtle->strut.y;
-      s->geom.height = s->base.height - subtle->strut.height -
-        subtle->strut.width;
+      /* Add strut */
+      s->geom.x      = s->base.x + subtle->styles.subtle.margin.left;
+      s->geom.y      = s->base.y + subtle->styles.subtle.margin.top;
+      s->geom.width  = s->base.width - subtle->styles.subtle.margin.left -
+        subtle->styles.subtle.margin.right;
+      s->geom.height = s->base.height - subtle->styles.subtle.margin.top -
+        subtle->styles.subtle.margin.bottom;
 
       /* Update panels */
       if(s->flags & SUB_SCREEN_PANEL1)
