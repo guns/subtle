@@ -78,6 +78,20 @@ DisplayClaim(void)
   return success;
 } /* }}} */
 
+/* DisplayStyleToColor {{{ */
+static void
+DisplayStyleToColor(SubStyle *s,
+  unsigned long *colors,
+  int *pos)
+{
+  colors[(*pos)++] = s->fg;
+  colors[(*pos)++] = s->bg;
+  colors[(*pos)++] = s->top;
+  colors[(*pos)++] = s->right;
+  colors[(*pos)++] = s->bottom;
+  colors[(*pos)++] = s->left;
+} /* }}} */
+
 /* Public */
 
  /** subDisplayInit {{{
@@ -164,7 +178,7 @@ subDisplayInit(const char *display)
 
   /* Create tray window */
   subtle->windows.tray = XCreateSimpleWindow(subtle->dpy,
-    ROOT, 0, 0, 1, 1, 0, 0, subtle->colors.bg_focus);
+    ROOT, 0, 0, 1, 1, 0, 0, subtle->styles.focus.bg);
 
   sattrs.override_redirect = True;
   sattrs.event_mask        = KeyPressMask|ButtonPressMask;
@@ -206,18 +220,18 @@ subDisplayConfigure(void)
   assert(subtle);
 
   /* Update GCs */
-  gvals.foreground = subtle->colors.stipple;
-  gvals.line_width = subtle->bw;
+  gvals.foreground = subtle->styles.subtle.fg;
+  gvals.line_width = subtle->styles.clients.border.top;
   XChangeGC(subtle->dpy, subtle->gcs.stipple,
     GCForeground|GCLineWidth, &gvals);
 
   /* Update windows */
   XSetWindowBackground(subtle->dpy, subtle->windows.tray,
-    subtle->colors.panel);
+    subtle->styles.subtle.top);
 
   /* Set background if set */
-  if(-1 != subtle->colors.bg)
-    XSetWindowBackground(subtle->dpy, ROOT, subtle->colors.bg);
+  if(-1 != subtle->styles.subtle.bg)
+    XSetWindowBackground(subtle->dpy, ROOT, subtle->styles.subtle.bg);
 
   XClearWindow(subtle->dpy, subtle->windows.tray);
   XClearWindow(subtle->dpy, ROOT);
@@ -269,38 +283,28 @@ subDisplayScan(void)
 void
 subDisplayPublish(void)
 {
+  int pos = 0;
   unsigned long *colors;
 
-#define NCOLORS 24
+#define NCOLORS 42
 
   /* Create color array */
   colors = (unsigned long *)subSharedMemoryAlloc(NCOLORS,
     sizeof(unsigned long));
 
-  colors[0]  = subtle->colors.fg_title;
-  colors[1]  = subtle->colors.bg_title;
-  colors[2]  = subtle->colors.bo_title;
-  colors[3]  = subtle->colors.fg_focus;
-  colors[4]  = subtle->colors.bg_focus;
-  colors[5]  = subtle->colors.bo_focus;
-  colors[6]  = subtle->colors.fg_urgent;
-  colors[7]  = subtle->colors.bg_urgent;
-  colors[8]  = subtle->colors.bo_urgent;
-  colors[9]  = subtle->colors.fg_occupied;
-  colors[10] = subtle->colors.bg_occupied;
-  colors[11] = subtle->colors.bo_occupied;
-  colors[12] = subtle->colors.fg_views;
-  colors[13] = subtle->colors.bg_views;
-  colors[14] = subtle->colors.bo_views;
-  colors[15] = subtle->colors.fg_sublets;
-  colors[16] = subtle->colors.bg_sublets;
-  colors[17] = subtle->colors.bo_sublets;
-  colors[18] = subtle->colors.bo_active;
-  colors[19] = subtle->colors.bo_inactive;
-  colors[20] = subtle->colors.panel;
-  colors[21] = subtle->colors.bg;
-  colors[22] = subtle->colors.stipple;
-  colors[23] = subtle->colors.separator;
+  DisplayStyleToColor(&subtle->styles.title,    colors, &pos);
+  DisplayStyleToColor(&subtle->styles.focus,    colors, &pos);
+  DisplayStyleToColor(&subtle->styles.urgent,   colors, &pos);
+  DisplayStyleToColor(&subtle->styles.occupied, colors, &pos);
+  DisplayStyleToColor(&subtle->styles.views,    colors, &pos);
+  DisplayStyleToColor(&subtle->styles.sublets,  colors, &pos);
+
+  colors[pos++] = subtle->styles.clients.fg; ///< Active
+  colors[pos++] = subtle->styles.clients.bg; ///< Inactive
+  colors[pos++] = subtle->styles.subtle.top;
+  colors[pos++] = subtle->styles.subtle.bottom;
+  colors[pos++] = subtle->styles.subtle.bg;
+  colors[pos++] = subtle->styles.subtle.fg;  ///< Stipple
 
   /* EWMH: Colors */
   subEwmhSetCardinals(ROOT, SUB_EWMH_SUBTLE_COLORS, (long *)colors, NCOLORS);

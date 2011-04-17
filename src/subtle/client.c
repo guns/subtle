@@ -79,12 +79,14 @@ ClientBounds(SubClient *c,
       (subtle->flags & SUB_SUBTLE_RESIZE ||
       c->flags & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_RESIZE)))
     {
-      int maxw = 0, maxh = 0, diffw = 0, diffh = 0;
+      int bw = 0, maxw = 0, maxh = 0, diffw = 0, diffh = 0;
       SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
 
       /* Calculate max width and height for screen */
-      maxw = -1 == c->maxw ? s->geom.width  - 2 * BORDER(c) - 2 * subtle->gap : c->maxw;
-      maxh = -1 == c->maxh ? s->geom.height - 2 * BORDER(c) - 2 * subtle->gap : c->maxh;
+      bw   = 2 * BORDER(c) + subtle->styles.clients.margin.left +
+        subtle->styles.clients.margin.right; 
+      maxw = -1 == c->maxw ? s->geom.width  - bw : c->maxw;
+      maxh = -1 == c->maxh ? s->geom.height - bw : c->maxh;
 
       /* Limit width and height */
       if(geom->width < c->minw)  geom->width  = c->minw;
@@ -180,7 +182,7 @@ subClientNew(Window win)
     subEwmhGet(SUB_EWMH_WM_WINDOW_ROLE), NULL);
 
   /* X properties */
-  sattrs.border_pixel = subtle->colors.bo_inactive;
+  sattrs.border_pixel = subtle->styles.clients.bg; ///< Inactive
   sattrs.event_mask   = CLIENTMASK;
   XChangeWindowAttributes(subtle->dpy, c->win,
     CWBorderPixel|CWEventMask, &sattrs);
@@ -241,7 +243,7 @@ subClientConfigure(SubClient *c)
   ev.y                 = c->geom.y;
   ev.width             = c->geom.width;
   ev.height            = c->geom.height;
-  ev.border_width      = subtle->bw;
+  ev.border_width      = subtle->styles.clients.border.top;
   ev.above             = None;
   ev.override_redirect = False;
 
@@ -295,7 +297,7 @@ subClientRender(SubClient *c)
   if(!(c->flags & SUB_CLIENT_TYPE_DESKTOP))
     {
       XSetWindowBorder(subtle->dpy, c->win, subtle->windows.focus[0] == c->win ?
-        subtle->colors.bo_active : subtle->colors.bo_inactive);
+        subtle->styles.clients.fg : subtle->styles.clients.bg);
     }
 } /* }}} */
 
@@ -572,8 +574,8 @@ subClientDrag(SubClient *c,
   /* Subtract border width */
   if(!(c->flags & SUB_CLIENT_BORDERLESS))
     {
-      c->geom.x -= subtle->bw;
-      c->geom.y -= subtle->bw;
+      c->geom.x -= subtle->styles.clients.border.top;
+      c->geom.y -= subtle->styles.clients.border.top;
     }
 
   XMoveResizeWindow(subtle->dpy, c->win, c->geom.x, c->geom.y,
@@ -801,10 +803,14 @@ subClientArrange(SubClient *c,
             g->geom.y / 100);
 
           /* Update border and gap */
-          c->geom.x      += subtle->gap;
-          c->geom.y      += subtle->gap;
-          c->geom.width  -= (2 * BORDER(c) + 2 * subtle->gap);
-          c->geom.height -= (2 * BORDER(c) + 2 * subtle->gap);
+          c->geom.x      += subtle->styles.clients.margin.left;
+          c->geom.y      += subtle->styles.clients.margin.top;
+          c->geom.width  -= (2 * BORDER(c) +
+            subtle->styles.clients.margin.left +
+            subtle->styles.clients.margin.right);
+          c->geom.height -= (2 * BORDER(c) +
+            subtle->styles.clients.margin.top +
+            subtle->styles.clients.margin.bottom);
 
           /* Update client */
           if(-1 != screen)  c->screen = screen;
@@ -865,7 +871,8 @@ subClientToggle(SubClient *c,
           c->flags |= SUB_CLIENT_ARRANGE; ///< Force rearrange
 
           if(!(c->flags & SUB_CLIENT_BORDERLESS))
-            XSetWindowBorderWidth(subtle->dpy, c->win, subtle->bw);
+            XSetWindowBorderWidth(subtle->dpy, c->win,
+              subtle->styles.clients.border.top);
         }
     }
   else ///< Set flags
@@ -983,18 +990,22 @@ subClientSetStrut(SubClient *c)
     {
       if(4 == size) ///< Only complete struts
         {
-          subtle->strut.x      = MAX(subtle->strut.x,      strut[0]); ///< Left
-          subtle->strut.y      = MAX(subtle->strut.y,      strut[1]); ///< Right
-          subtle->strut.width  = MAX(subtle->strut.width,  strut[2]); ///< Top
-          subtle->strut.height = MAX(subtle->strut.height, strut[3]); ///< Bottom
+          subtle->styles.subtle.left   =
+            MAX(subtle->styles.subtle.left, strut[0]);
+          subtle->styles.subtle.right  =
+            MAX(subtle->styles.subtle.right, strut[1]);
+          subtle->styles.subtle.top    = 
+            MAX(subtle->styles.subtle.top, strut[2]);
+          subtle->styles.subtle.bottom =
+            MAX(subtle->styles.subtle.bottom, strut[3]);
 
           /* Update screen and clients */
           subScreenResize();
           subScreenConfigure();
 
-          subSharedLogDebug("Strut: x=%ld, y=%d, width=%d, height=%d\n",
-            subtle->strut.x, subtle->strut.y, subtle->strut.width,
-            subtle->strut.height);
+          subSharedLogDebug("Strut: left=%ld, right=%d, top=%d, bottom=%d\n",
+            subtle->styles.subtle.left, subtle->styles.subtle.right,
+            subtle->styles.subtle.bottom, subtle->styles.subtle.top);
         }
 
       XFree(strut);
