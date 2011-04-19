@@ -282,15 +282,22 @@ subSubtleSingColors(VALUE self)
   unsigned long ncolors = 0, *colors = NULL;
   VALUE meth = Qnil, klass = Qnil, hash = Qnil;
   const char *names[] = {
-    "title_fg",    "title_bg",    "title_border",
-    "focus_fg",    "focus_bg",    "focus_border",
-    "urgent_fg",   "urgent_bg",   "urgent_border",
-    "occupied_fg", "occupied_bg", "occupied_border",
-    "views_fg",    "views_bg",    "views_border",
-    "sublets_fg",  "sublets_bg",  "sublets_border",
-    "client_active", "client_inactive",
-    "panel",    "background",
-    "stipple", "separator"
+    "title_fg",           "title_bg",            "title_bo_top",
+    "title_bo_right",     "title_bo_bottom",     "title_bo_left",
+    "focus_fg",           "focus_bg",            "focus_bo_top",
+    "focus_bo_right",     "focus_bo_bottom",     "focus_bo_left",
+    "urgent_fg",          "urgent_bg",           "urgent_bo_top",
+    "urgent_bo_right",    "urgent_bo_bottom",    "urgent_bo_left",
+    "occupied_fg",        "occupied_bg",         "occupied_bo_top",
+    "occupied_bo_right",  "occupied_bo_bottom",  "occupied_bo_left",
+    "views_fg",           "views_bg",            "views_bo_top",
+    "views_bo_right",     "views_bo_bottom",     "views_bo_left",
+    "sublets_fg",         "sublets_bg",          "sublets_bo_top",
+    "sublets_bo_right",   "sublets_bo_bottom",   "sublets_bo_left",
+    "separator_fg",       "separator_bg",        "separator_bo_top",
+    "separator_bo_right", "separator_bo_bottom", "separator_bo_left",
+    "client_active",      "client_inactive",
+    "panel_top",          "panel_bottom",        "stipple", "background"
   };
 
   subSubtlextConnect(NULL); ///< Implicit open connection
@@ -309,7 +316,7 @@ subSubtleSingColors(VALUE self)
         {
           VALUE c = rb_funcall(klass, meth, 1, LONG2NUM(colors[i]));
 
-          rb_hash_aset(hash, CHAR2SYM(names[i]), c);
+          rb_hash_aset(hash, CHAR2SYM(names[i]), c); ///< FIXME
         }
 
       free(colors);

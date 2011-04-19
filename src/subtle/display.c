@@ -286,18 +286,19 @@ subDisplayPublish(void)
   int pos = 0;
   unsigned long *colors;
 
-#define NCOLORS 42
+#define NCOLORS 48
 
   /* Create color array */
   colors = (unsigned long *)subSharedMemoryAlloc(NCOLORS,
     sizeof(unsigned long));
 
-  DisplayStyleToColor(&subtle->styles.title,    colors, &pos);
-  DisplayStyleToColor(&subtle->styles.focus,    colors, &pos);
-  DisplayStyleToColor(&subtle->styles.urgent,   colors, &pos);
-  DisplayStyleToColor(&subtle->styles.occupied, colors, &pos);
-  DisplayStyleToColor(&subtle->styles.views,    colors, &pos);
-  DisplayStyleToColor(&subtle->styles.sublets,  colors, &pos);
+  DisplayStyleToColor(&subtle->styles.title,     colors, &pos);
+  DisplayStyleToColor(&subtle->styles.focus,     colors, &pos);
+  DisplayStyleToColor(&subtle->styles.urgent,    colors, &pos);
+  DisplayStyleToColor(&subtle->styles.occupied,  colors, &pos);
+  DisplayStyleToColor(&subtle->styles.views,     colors, &pos);
+  DisplayStyleToColor(&subtle->styles.sublets,   colors, &pos);
+  DisplayStyleToColor(&subtle->styles.separator, colors, &pos);
 
   colors[pos++] = subtle->styles.clients.fg; ///< Active
   colors[pos++] = subtle->styles.clients.bg; ///< Inactive
