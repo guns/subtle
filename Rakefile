@@ -50,7 +50,7 @@ require "digest/md5"
 
 @defines = {
   "PKG_NAME"      => "subtle",
-  "PKG_VERSION"   => "0.9.$(revision)",
+  "PKG_VERSION"   => "0.10.$(revision)",
   "PKG_BUGREPORT" => "http://subforge.org/projects/subtle/issues",
   "PKG_CONFIG"    => "subtle.rb",
   "RUBY_VERSION"  => "$(MAJOR).$(MINOR).$(TEENY)"
