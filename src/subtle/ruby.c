@@ -389,6 +389,19 @@ RubyHashToColor(VALUE hash,
     *col = subSharedParseColor(subtle->dpy, RSTRING_PTR(value));
 } /* }}} */
 
+/* RubyHashToInt {{{ */
+static void
+RubyHashToInt(VALUE hash,
+  const char *key,
+  int *val)
+{
+  VALUE value = Qnil;
+
+  /* Parse and set color if key found */
+  if(FIXNUM_P(value = rb_hash_lookup(hash, CHAR2SYM(key))))
+    *val = FIX2INT(value);
+} /* }}} */
+
 /* RubyHashToBorder {{{ */
 static void
 RubyHashToBorder(VALUE hash,
@@ -1591,7 +1604,7 @@ RubyConfigSet(VALUE self,
                 if(!(subtle->flags & SUB_SUBTLE_CHECK))
                   subtle->gravity = value; ///< Store for later
               }
-            else subSharedLogWarn("Unknown set option `:%s'\n", SYM2CHAR(option));
+            else subSharedLogWarn("Unknown option `:%s'\n", SYM2CHAR(option));
             break; /* }}} */
           case T_SYMBOL: /* {{{ */
             if(CHAR2SYM("gravity") == option)
@@ -1599,11 +1612,11 @@ RubyConfigSet(VALUE self,
                 if(!(subtle->flags & SUB_SUBTLE_CHECK))
                   subtle->gravity = value; ///< Store for later
               }
-            else subSharedLogWarn("Unknown set option `:%s'\n",
+            else subSharedLogWarn("Unknown option `:%s'\n",
               SYM2CHAR(option));
             break; /* }}} */
           case T_ARRAY: /* {{{ */
-            subSharedLogWarn("Unknown set option `:%s'\n", SYM2CHAR(option));
+            subSharedLogWarn("Unknown option `:%s'\n", SYM2CHAR(option));
             break; /* }}} */
           case T_TRUE:
           case T_FALSE: /* {{{ */
@@ -1617,7 +1630,7 @@ RubyConfigSet(VALUE self,
                 if(!(subtle->flags & SUB_SUBTLE_CHECK) && Qtrue == value)
                   subtle->flags |= SUB_SUBTLE_RESIZE;
               }
-            else subSharedLogWarn("Unknown set option `:%s'\n",
+            else subSharedLogWarn("Unknown option `:%s'\n",
               SYM2CHAR(option));
             break; /* }}} */
           case T_STRING: /* {{{ */
@@ -1662,7 +1675,7 @@ RubyConfigSet(VALUE self,
                       RSTRING_PTR(value));
                   }
               }
-            else subSharedLogWarn("Unknown set option `:%s'\n",
+            else subSharedLogWarn("Unknown option `:%s'\n",
               SYM2CHAR(option));
             break; /* }}} */
           default:
@@ -2232,6 +2245,13 @@ RubyConfigStyle(VALUE self,
           s->padding.top = s->padding.right =
             s->padding.bottom = s->padding.left = FIX2INT(value);
         }
+      else
+        {
+          RubyHashToInt(params, "padding_top",    &s->padding.top);
+          RubyHashToInt(params, "padding_right",  &s->padding.right);
+          RubyHashToInt(params, "padding_bottom", &s->padding.bottom);
+          RubyHashToInt(params, "padding_left",   &s->padding.left);
+        }
 
       /* Get margin */
       if(T_ARRAY == rb_type(value = rb_hash_lookup(params,
@@ -2241,6 +2261,13 @@ RubyConfigStyle(VALUE self,
         {
           s->margin.top = s->margin.right =
             s->margin.bottom = s->margin.left = FIX2INT(value);
+        }
+      else
+        {
+          RubyHashToInt(params, "margin_top",    &s->margin.top);
+          RubyHashToInt(params, "margin_right",  &s->margin.right);
+          RubyHashToInt(params, "margin_bottom", &s->margin.bottom);
+          RubyHashToInt(params, "margin_left",   &s->margin.left);
         }
 
       /* Check max height */
