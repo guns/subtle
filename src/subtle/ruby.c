@@ -277,7 +277,7 @@ RubyArrayToSides(VALUE ary,
    * 4 values => 1. top,        2. right,      3. bottom, 4. left
    **/
 
-  switch(RARRAY_LENINT(ary))
+  switch((int)RARRAY_LEN(ary))
     {
       case 2:
         sides->top    = sides->bottom = values[0];
