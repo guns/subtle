@@ -17,8 +17,6 @@
 #
 # Following options change behaviour and sizes of the window manager:
 #
-# Border size in pixel of the windows
-set :border, 2
 
 # Window move/resize steps in pixel per keypress
 set :step, 5
@@ -35,24 +33,12 @@ set :urgent, false
 # Honor resize size hints globally
 set :resize, false
 
-# Screen strut for e.g. other panels (left, right, top, bottom)
-set :strut, [ 0, 0, 0, 0 ]
-
 # Font string either take from e.g. xfontsel or use xft
 set :font, "-*-*-medium-*-*-*-14-*-*-*-*-*-*-*"
 #set :font, "xft:sans-8"
 
-# Space around windows
-set :gap, 0
-
-# Panel size padding (left, right, top, bottom)
-set :padding, [ 0, 0, 0, 0 ]
-
 # Separator between sublets
 set :separator, "|"
-
-# Outline border size in pixel of panel items
-set :outline, 0
 
 # Set the WM_NAME of subtle (Java quirk)
 # set :wmname, "LG3D"
@@ -114,68 +100,87 @@ end
 #end
 
 #
-# == Colors
+# == Styles
 #
-# Colors directly define the look of subtle, valid values are:
+# Styles define various properties of styleable items in a CSS-like syntax.
 #
-# [*hexadecimal*] #0000ff
-# [*decimal*]     (0, 0, 255)
-# [*names*]       blue
-#
-# Whenever there is no valid value for a color set - subtle will use a default
-# one. There is only one exception to this: If no background color is given no
-# color will be set. This will ensure a custom background pixmap won't be
-# overwritten.
+# If no background color is given no color will be set. This will ensure a
+# custom background pixmap won't be overwritten.
 #
 # === Link
 #
-# http://subforge.org/projects/subtle/wiki/Themes
+# http://subforge.org/projects/subtle/wiki/Styles
 
-# Colors of focus window title
-color :title_fg,        "#fecf35"
-color :title_bg,        "#202020"
-color :title_border,    "#303030"
+# Style for focus window title
+style :title do
+  padding     0, 0, 0, 0
+  border      "#303030", 0
+  foreground  "#fecf35"
+  background  "#202020"
+end
 
-# Colors of the active views
-color :focus_fg,        "#fecf35"
-color :focus_bg,        "#202020"
-color :focus_border,    "#303030"
+# Style for the active views
+style :focus do
+  padding     0, 0, 0, 0
+  border      "#303030", 0
+  foreground  "#fecf35"
+  background  "#202020"
+end
 
-# Colors of urgent window titles and views
-color :urgent_fg,       "#ff9800"
-color :urgent_bg,       "#202020"
-color :urgent_border,   "#303030"
+# Style for urgent window titles and views
+style :urgent do
+  padding     0, 0, 0, 0
+  border      "#303030", 0
+  foreground  "#ff9800"
+  background  "#202020"
+end
 
-# Colors of occupied views (views with clients)
-color :occupied_fg,     "#b8b8b8"
-color :occupied_bg,     "#202020"
-color :occupied_border, "#303030"
+# Style for occupied views (views with clients)
+style :occupied do
+  padding     0, 0, 0, 0
+  border      "#303030", 0
+  foreground  "#b8b8b8"
+  background  "#202020"
+end
 
-# Color of view buttons
-color :views_fg,        "#757575"
-color :views_bg,        "#202020"
-color :views_border,    "#303030"
+# Style for view buttons
+style :views do
+  padding     0, 0, 0, 0
+  border      "#303030", 0
+  foreground  "#757575"
+  background  "#202020"
+end
 
-# Colors of sublets
-color :sublets_fg,      "#757575"
-color :sublets_bg,      "#202020"
-color :sublets_border,  "#303030"
+# Style for sublets
+style :sublets do
+  padding     0, 0, 0, 0
+  border      "#303030", 0
+  foreground  "#757575"
+  background  "#202020"
+end
 
-# Border colors of active/inactive windows
-color :client_active,   "#303030"
-color :client_inactive, "#202020"
+# Style for separator
+style :separator do
+  padding     0, 0, 0, 0
+  border      0
+  background  "#202020"
+  foreground  "#757575"
+end
 
-# Background colors of panels
-color :panel,           "#202020"
+# Style for active/inactive windows
+style :clients do
+  active      "#303030", 2
+  inactive    "#202020", 2
+  margin      0
+end
 
-# Background color of root background
-color :background,      "#3d3d3d"
-
-# Color of the stipple (if enabled)
-color :stipple,         "#757575"
-
-# Color of the separator
-color :separator,       "#757575"
+# Style for subtle
+style :subtle do
+  margin      0, 0, 0, 0
+  panel       "#202020"
+  background  "#3d3d3d"
+  stipple     "#757575"
+end
 
 #
 # == Gravities
