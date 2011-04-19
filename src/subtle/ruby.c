@@ -2202,6 +2202,11 @@ RubyConfigStyle(VALUE self,
           RubyHashToColor(params, "panel_bottom", &s->bottom);
           RubyHashToColor(params, "stipple",      &s->fg);
 
+          /* Set strut */
+          if(T_ARRAY == rb_type(value = rb_hash_lookup(params,
+              CHAR2SYM("strut"))))
+            RubyArrayToSides(value, &s->padding);
+
           /* Set both colors */
           if(!NIL_P(value = rb_hash_lookup(params, CHAR2SYM("panel"))))
             {
@@ -2271,7 +2276,7 @@ RubyConfigStyle(VALUE self,
         }
 
       /* Check max height */
-      if(CHAR2SYM("clients") != name)
+      if(CHAR2SYM("clients") != name && CHAR2SYM("subtle") != name)
         {
           int height = STYLE_HEIGHT((*s));
 

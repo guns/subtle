@@ -588,12 +588,12 @@ subScreenResize(void)
       SubScreen *s = SCREEN(subtle->screens->data[i]);
 
       /* Add strut */
-      s->geom.x      = s->base.x + subtle->styles.subtle.margin.left;
-      s->geom.y      = s->base.y + subtle->styles.subtle.margin.top;
-      s->geom.width  = s->base.width - subtle->styles.subtle.margin.left -
-        subtle->styles.subtle.margin.right;
-      s->geom.height = s->base.height - subtle->styles.subtle.margin.top -
-        subtle->styles.subtle.margin.bottom;
+      s->geom.x      = s->base.x + subtle->styles.subtle.padding.left;
+      s->geom.y      = s->base.y + subtle->styles.subtle.padding.top;
+      s->geom.width  = s->base.width - subtle->styles.subtle.padding.left -
+        subtle->styles.subtle.padding.right;
+      s->geom.height = s->base.height - subtle->styles.subtle.padding.top -
+        subtle->styles.subtle.padding.bottom;
 
       /* Update panels */
       if(s->flags & SUB_SCREEN_PANEL1)
