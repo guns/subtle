@@ -63,7 +63,7 @@ PanelSeparator(int type,
   PanelRect(drawable, x, subtle->separator.width, &subtle->styles.separator);
 
   subSharedTextDraw(subtle->dpy, subtle->gcs.draw, subtle->font,
-    drawable, x + 3 + STYLE_LEFT(subtle->styles.separator), subtle->font->y +
+    drawable, x + STYLE_LEFT(subtle->styles.separator), subtle->font->y +
     STYLE_TOP(subtle->styles.separator), subtle->styles.separator.fg,
     subtle->styles.separator.bg, subtle->separator.string);
 } /* }}} */
@@ -140,7 +140,7 @@ subPanelConfigure(SubPanel *p)
               {
                 SubView *v = VIEW(subtle->views->data[i]);
 
-                v->width = 6; ///< Reset width
+                v->width = 0; ///< Reset width
 
                 /* Add width of view icon and/or text */
                 if(v->flags & SUB_VIEW_ICON) v->width += v->icon->width;
@@ -185,7 +185,7 @@ subPanelUpdate(SubPanel *p)
           {
             /* Font offset, panel border and padding */
             p->width = subSharedTextWidth(subtle->dpy, subtle->font,
-              p->keychain->keys, p->keychain->len, NULL, NULL, True) + 6 +
+              p->keychain->keys, p->keychain->len, NULL, NULL, True) +
               subtle->styles.separator.padding.left + subtle->styles.separator.padding.right;
           }
         break; /* }}} */
@@ -219,7 +219,7 @@ subPanelUpdate(SubPanel *p)
 
                     /* Font offset, panel border and padding */
                     p->width = subSharedTextWidth(subtle->dpy, subtle->font,
-                      c->name, 50 >= len ? len : 50, NULL, NULL, True) + 6 +
+                      c->name, 50 >= len ? len : 50, NULL, NULL, True) +
                       STYLE_WIDTH(subtle->styles.title);
                   }
               }
@@ -297,7 +297,7 @@ subPanelRender(SubPanel *p,
         if(p->keychain && p->keychain->keys)
           {
             subSharedTextDraw(subtle->dpy, subtle->gcs.draw, subtle->font,
-              drawable, p->x + 3 + subtle->styles.separator.padding.left,
+              drawable, p->x + subtle->styles.separator.padding.left,
               subtle->font->y + subtle->styles.separator.padding.left,
               subtle->styles.title.fg, subtle->styles.title.bg,
               p->keychain->keys);
@@ -309,7 +309,7 @@ subPanelRender(SubPanel *p,
 
         /* Render text parts */
         subSharedTextRender(subtle->dpy, subtle->gcs.draw, subtle->font,
-          drawable, p->x + 3 + STYLE_LEFT(subtle->styles.sublets), subtle->font->y +
+          drawable, p->x + STYLE_LEFT(subtle->styles.sublets), subtle->font->y +
           STYLE_TOP(subtle->styles.sublets), p->sublet->fg, p->sublet->bg,
           p->sublet->text);
         break; /* }}} */
@@ -360,7 +360,7 @@ subPanelRender(SubPanel *p,
                 PanelRect(drawable, p->x, p->width, s);
 
                 subSharedTextDraw(subtle->dpy, subtle->gcs.draw, subtle->font,
-                  drawable, p->x + 3 + STYLE_LEFT(subtle->styles.title), subtle->font->y +
+                  drawable, p->x + STYLE_LEFT(subtle->styles.title), subtle->font->y +
                   STYLE_TOP(subtle->styles.title), s->fg, s->bg, buf);
               }
           }
@@ -394,7 +394,7 @@ subPanelRender(SubPanel *p,
                 /* Set window background and border*/
                 PanelRect(drawable, vx, v->width + STYLE_WIDTH((*s)), s);
 
-                x += STYLE_LEFT((*s)) + 3;
+                x += STYLE_LEFT((*s));
 
                 /* Draw view icon and/or text */
                 if(v->flags & SUB_VIEW_ICON)
