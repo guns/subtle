@@ -113,7 +113,7 @@ end
 
 # Style for focus window title
 style :title do
-  padding     0, 0, 0, 0
+  padding     0, 3
   border      "#303030", 0
   foreground  "#fecf35"
   background  "#202020"
@@ -121,7 +121,7 @@ end
 
 # Style for the active views
 style :focus do
-  padding     0, 0, 0, 0
+  padding     0, 3
   border      "#303030", 0
   foreground  "#fecf35"
   background  "#202020"
@@ -129,7 +129,7 @@ end
 
 # Style for urgent window titles and views
 style :urgent do
-  padding     0, 0, 0, 0
+  padding     0, 3
   border      "#303030", 0
   foreground  "#ff9800"
   background  "#202020"
@@ -137,7 +137,7 @@ end
 
 # Style for occupied views (views with clients)
 style :occupied do
-  padding     0, 0, 0, 0
+  padding     0, 3
   border      "#303030", 0
   foreground  "#b8b8b8"
   background  "#202020"
@@ -145,7 +145,7 @@ end
 
 # Style for view buttons
 style :views do
-  padding     0, 0, 0, 0
+  padding     0, 3
   border      "#303030", 0
   foreground  "#757575"
   background  "#202020"
@@ -153,7 +153,7 @@ end
 
 # Style for sublets
 style :sublets do
-  padding     0, 0, 0, 0
+  padding     0, 3
   border      "#303030", 0
   foreground  "#757575"
   background  "#202020"
@@ -161,7 +161,7 @@ end
 
 # Style for separator
 style :separator do
-  padding     0, 0, 0, 0
+  padding     0, 3
   border      0
   background  "#202020"
   foreground  "#757575"
