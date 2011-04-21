@@ -1069,11 +1069,13 @@ EventMessage(XClientMessageEvent *ev)
                 if(ev->data.l[1] & SUB_EWMH_FLOAT)  flags |= SUB_CLIENT_MODE_FLOAT;
                 if(ev->data.l[1] & SUB_EWMH_STICK)  flags |= SUB_CLIENT_MODE_STICK;
                 if(ev->data.l[1] & SUB_EWMH_RESIZE) flags |= SUB_CLIENT_MODE_RESIZE;
+                if(ev->data.l[1] & SUB_EWMH_URGENT) flags |= SUB_CLIENT_MODE_URGENT;
 
                 subClientToggle(c, (~c->flags & flags), False); ///< Enable only
 
+                /* Configure and render when necessary */
                 if(VISIBLE(subtle->visible_tags, c) ||
-                    flags & SUB_CLIENT_MODE_FULL)
+                    flags & (SUB_CLIENT_MODE_FULL|SUB_CLIENT_MODE_URGENT))
                   {
                     subScreenConfigure();
                     subScreenUpdate();
@@ -1465,7 +1467,9 @@ EventProperty(XPropertyEvent *ev)
             subClientSetWMHints(c, &flags);
             subClientToggle(c, (~c->flags & flags), True);
 
-            if(VISIBLE(subtle->visible_tags, c))
+            /* Update and render when necessary */
+            if(VISIBLE(subtle->visible_tags, c) ||
+                flags & SUB_CLIENT_MODE_URGENT)
               {
                 subScreenUpdate();
                 subScreenRender();

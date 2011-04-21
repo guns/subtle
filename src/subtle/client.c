@@ -957,6 +957,12 @@ subClientToggle(SubClient *c,
       flags             |= SUB_EWMH_STICK;
       states[nstates++]  = subEwmhGet(SUB_EWMH_NET_WM_STATE_STICKY);
     }
+  if(c->flags & SUB_CLIENT_MODE_URGENT)
+    {
+      flags               |= SUB_EWMH_URGENT;
+      states[nstates++]    = subEwmhGet(SUB_EWMH_NET_WM_STATE_ATTENTION);
+      subtle->urgent_tags |= c->tags;
+    }
   if(c->flags & SUB_CLIENT_MODE_RESIZE) flags |= SUB_EWMH_RESIZE;
 
   XChangeProperty(subtle->dpy, c->win, subEwmhGet(SUB_EWMH_NET_WM_STATE),
@@ -1199,10 +1205,7 @@ subClientSetWMHints(SubClient *c,
           /* Set urgency if window hasn't focus and and
            * remove it after getting focus */
           if(hints->flags & XUrgencyHint && c->win != subtle->windows.focus[0])
-            {
-              *flags              |= SUB_CLIENT_MODE_URGENT;
-              subtle->urgent_tags |= c->tags;
-            }
+            *flags |= SUB_CLIENT_MODE_URGENT;
         }
 
       /* Handle window group hint */
