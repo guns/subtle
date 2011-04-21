@@ -341,7 +341,7 @@ SubtlextTagDel(VALUE self,
 } /* }}} */
 
 /* SubtlextTagAsk {{{ */
-VALUE
+static VALUE
 SubtlextTagAsk(VALUE self,
   VALUE value)
 {
@@ -349,13 +349,12 @@ SubtlextTagAsk(VALUE self,
 
   /* Check ruby object */
   rb_check_frozen(self);
+  GET_ATTR(tag, "@id", id);
 
   /* Find tag */
   if(Qnil != (tag = subTagSingFind(Qnil, value)))
     {
       int tags = SubtlextTagGet(self);
-
-      GET_ATTR(tag, "@id", id);
 
       if(tags & (1L << (FIX2INT(id) + 1))) ret = Qtrue;
     }
@@ -626,7 +625,7 @@ SubtlextFocus(VALUE self)
   return Qnil;
 } /* }}} */
 
-/* SubtlextFocusAsk {{{ */
+/* SubtlextAskFocus {{{ */
 /*
  * call-seq: has_focus? -> true or false
  *
@@ -640,7 +639,7 @@ SubtlextFocus(VALUE self)
  */
 
 static VALUE
-SubtlextFocusAsk(VALUE self)
+SubtlextAskFocus(VALUE self)
 {
   VALUE ret = Qfalse, win = Qnil;
   unsigned long *focus = NULL;
@@ -1324,7 +1323,7 @@ Init_subtlext(void)
   rb_define_method(client, "send_button", SubtlextSendButton,      -1);
   rb_define_method(client, "send_key",    SubtlextSendKey,         -1);
   rb_define_method(client, "focus",       SubtlextFocus,            0);
-  rb_define_method(client, "has_focus?",  SubtlextFocusAsk,         0);
+  rb_define_method(client, "has_focus?",  SubtlextAskFocus,         0);
   rb_define_method(client, "[]",          SubtlextPropReader,       1);
   rb_define_method(client, "[]=",         SubtlextPropWriter,       2);
   rb_define_method(client, "==",          SubtlextEqualWindow,      1);
@@ -1334,14 +1333,16 @@ Init_subtlext(void)
   rb_define_method(client, "initialize",    subClientInit,              1);
   rb_define_method(client, "update",        subClientUpdate,            0);
   rb_define_method(client, "views",         subClientViewList,          0);
-  rb_define_method(client, "is_full?",      subClientFlagsFullAsk,      0);
-  rb_define_method(client, "is_float?",     subClientFlagsFloatAsk,     0);
-  rb_define_method(client, "is_stick?",     subClientFlagsStickAsk,     0);
-  rb_define_method(client, "is_resize?",    subClientFlagsResizeAsk,    0);
+  rb_define_method(client, "is_full?",      subClientFlagsAskFull,      0);
+  rb_define_method(client, "is_float?",     subClientFlagsAskFloat,     0);
+  rb_define_method(client, "is_stick?",     subClientFlagsAskStick,     0);
+  rb_define_method(client, "is_resize?",    subClientFlagsAskResize,    0);
+  rb_define_method(client, "is_urgent?",    subClientFlagsAskUrgent,    0);
   rb_define_method(client, "toggle_full",   subClientFlagsToggleFull,   0);
   rb_define_method(client, "toggle_float",  subClientFlagsToggleFloat,  0);
   rb_define_method(client, "toggle_stick",  subClientFlagsToggleStick,  0);
   rb_define_method(client, "toggle_resize", subClientFlagsToggleResize, 0);
+  rb_define_method(client, "toggle_urgent", subClientFlagsToggleUrgent, 0);
   rb_define_method(client, "flags=",        subClientFlagsWriter,       1);
   rb_define_method(client, "raise",         subClientRestackRaise,      0);
   rb_define_method(client, "lower",         subClientRestackLower,      0);
@@ -1352,7 +1353,7 @@ Init_subtlext(void)
   rb_define_method(client, "geometry=",     subClientGeometryWriter,   -1);
   rb_define_method(client, "screen",        subClientScreenReader,      0);
   rb_define_method(client, "pid",           SubtlextPidReader,          0);
-  rb_define_method(client, "alive?",        subClientAliveAsk,          0);
+  rb_define_method(client, "alive?",        subClientAskAlive,          0);
   rb_define_method(client, "kill",          subClientKill,              0);
 
   /* Singleton aliases */
@@ -1503,7 +1504,7 @@ Init_subtlext(void)
   rb_define_method(icon, "draw_rect",  subIconDrawRect,     -1);
   rb_define_method(icon, "copy_area",  subIconCopyArea,     -1);
   rb_define_method(icon, "clear",      subIconClear,        -1);
-  rb_define_method(icon, "bitmap?",    subIconBitmapAsk,     0);
+  rb_define_method(icon, "bitmap?",    subIconAskBitmap,     0);
   rb_define_method(icon, "to_str",     subIconToString,      0);
   rb_define_method(icon, "+",          subIconOperatorPlus,  1);
   rb_define_method(icon, "*",          subIconOperatorMult,  1);
@@ -1542,7 +1543,7 @@ Init_subtlext(void)
   rb_define_method(screen, "update",     subScreenUpdate,     0);
   rb_define_method(screen, "view",       subScreenViewReader, 0);
   rb_define_method(screen, "view=",      subScreenViewWriter, 1);
-  rb_define_method(screen, "current?",   subScreenCurrentAsk, 0);
+  rb_define_method(screen, "current?",   subScreenAskCurrent, 0);
   rb_define_method(screen, "to_str",     subScreenToString,   0);
 
   /* Singleton aliases */
@@ -1564,7 +1565,7 @@ Init_subtlext(void)
   rb_define_singleton_method(subtle, "display",       subSubtleSingDisplayReader, 0);
   rb_define_singleton_method(subtle, "display=",      subSubtleSingDisplayWriter, 1);
   rb_define_singleton_method(subtle, "select_window", subSubtleSingSelect,        0);
-  rb_define_singleton_method(subtle, "running?",      subSubtleSingRunningAsk,    0);
+  rb_define_singleton_method(subtle, "running?",      subSubtleSingAskRunning,    0);
   rb_define_singleton_method(subtle, "render",        subSubtleSingRender,        0);
   rb_define_singleton_method(subtle, "reload",        subSubtleSingReload,        0);
   rb_define_singleton_method(subtle, "restart",       subSubtleSingRestart,       0);
@@ -1684,7 +1685,7 @@ Init_subtlext(void)
   rb_define_method(tray, "send_button", SubtlextSendButton,      -1);
   rb_define_method(tray, "send_key",    SubtlextSendKey,         -1);
   rb_define_method(tray, "focus",       SubtlextFocus,            0);
-  rb_define_method(tray, "has_focus?",  SubtlextFocusAsk,         0);
+  rb_define_method(tray, "has_focus?",  SubtlextAskFocus,         0);
   rb_define_method(tray, "[]",          SubtlextPropReader,       1);
   rb_define_method(tray, "[]=",         SubtlextPropWriter,       2);
   rb_define_method(tray, "==",          SubtlextEqualWindow,      1);
@@ -1742,7 +1743,7 @@ Init_subtlext(void)
   rb_define_method(view, "jump",       subViewJump,          0);
   rb_define_method(view, "next",       subViewSelectNext,    0);
   rb_define_method(view, "prev",       subViewSelectPrev,    0);
-  rb_define_method(view, "current?",   subViewCurrentAsk,    0);
+  rb_define_method(view, "current?",   subViewAskCurrent,    0);
   rb_define_method(view, "icon",       subViewIcon,          0);
   rb_define_method(view, "to_str",     subViewToString,      0);
   rb_define_method(view, "kill",       subViewKill,          0);
@@ -1811,7 +1812,7 @@ Init_subtlext(void)
   rb_define_method(window, "lower",         subWindowLower,             0);
   rb_define_method(window, "show",          subWindowShow,              0);
   rb_define_method(window, "hide",          subWindowHide,              0);
-  rb_define_method(window, "hidden?",       subWindowHiddenAsk,         0);
+  rb_define_method(window, "hidden?",       subWindowAskHidden,         0);
   rb_define_method(window, "kill",          subWindowKill,              0);
 
   /* Singleton aliases */

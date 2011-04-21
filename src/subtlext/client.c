@@ -592,11 +592,11 @@ subClientViewList(VALUE self)
   return array;
 } /* }}} */
 
-/* subClientFlagsFullAsk {{{ */
+/* subClientFlagsAskFull {{{ */
 /*
  * call-seq: is_full? -> true or false
  *
- * Check if a Client is fullscreen
+ * Check if Client is fullscreen
  *
  *  client.is_full?
  *  => true
@@ -606,16 +606,16 @@ subClientViewList(VALUE self)
  */
 
 VALUE
-subClientFlagsFullAsk(VALUE self)
+subClientFlagsAskFull(VALUE self)
 {
   return ClientFlagsGet(self, SUB_EWMH_FULL);
 } /* }}} */
 
-/* subClientFlagsFloatAsk {{{ */
+/* subClientFlagsAskFloat {{{ */
 /*
  * call-seq: is_float? -> true or false
  *
- * Check if a Client is floating
+ * Check if Client is floating
  *
  *  client.is_float?
  *  => true
@@ -625,16 +625,16 @@ subClientFlagsFullAsk(VALUE self)
  */
 
 VALUE
-subClientFlagsFloatAsk(VALUE self)
+subClientFlagsAskFloat(VALUE self)
 {
   return ClientFlagsGet(self, SUB_EWMH_FLOAT);
 } /* }}} */
 
-/* subClientFlagsStickAsk {{{ */
+/* subClientFlagsAskStick {{{ */
 /*
  * call-seq: is_stick? -> true or false
  *
- * Check if a client is sticky
+ * Check if Client is sticky
  *
  *  client.is_stick?
  *  => true
@@ -644,16 +644,16 @@ subClientFlagsFloatAsk(VALUE self)
  */
 
 VALUE
-subClientFlagsStickAsk(VALUE self)
+subClientFlagsAskStick(VALUE self)
 {
   return ClientFlagsGet(self, SUB_EWMH_STICK);
 } /* }}} */
 
-/* subClientFlagsResizeAsk {{{ */
+/* subClientFlagsAskResize {{{ */
 /*
  * call-seq: is_resize? -> true or false
  *
- * Check if a client uses size hints
+ * Check if Client uses size hints
  *
  *  client.is_resize?
  *  => true
@@ -663,9 +663,28 @@ subClientFlagsStickAsk(VALUE self)
  */
 
 VALUE
-subClientFlagsResizeAsk(VALUE self)
+subClientFlagsAskResize(VALUE self)
 {
   return ClientFlagsGet(self, SUB_EWMH_RESIZE);
+} /* }}} */
+
+/* subClientFlagsAskResize {{{ */
+/*
+ * call-seq: is_urgent? -> true or false
+ *
+ * Check if Client is urgent
+ *
+ *  client.is_urgent?
+ *  => true
+ *
+ *  client.is_urgent?
+ *  => false
+ */
+
+VALUE
+subClientFlagsAskUrgent(VALUE self)
+{
+  return ClientFlagsGet(self, SUB_EWMH_URGENT);
 } /* }}} */
 
 /* subClientFlagsToggleFull {{{ */
@@ -720,7 +739,7 @@ subClientFlagsToggleStick(VALUE self)
 /*
  * call-seq: toggle_stick -> nil
  *
- * Toggle Client sticky state
+ * Toggle Client resize state
  *
  *  client.toggle_stick
  *  => nil
@@ -730,6 +749,22 @@ VALUE
 subClientFlagsToggleResize(VALUE self)
 {
   return ClientFlagsSet(self, SUB_EWMH_RESIZE, True);
+} /* }}} */
+
+/* subClientFlagsToggleResize {{{ */
+/*
+ * call-seq: toggle_stick -> nil
+ *
+ * Toggle Client urgent state
+ *
+ *  client.toggle_urgent
+ *  => nil
+ */
+
+VALUE
+subClientFlagsToggleUrgent(VALUE self)
+{
+  return ClientFlagsSet(self, SUB_EWMH_URGENT, True);
 } /* }}} */
 
 /* subClientFlagsWriter {{{ */
@@ -805,7 +840,7 @@ subClientRestackLower(VALUE self)
   return ClientRestack(self, Below);
 } /* }}} */
 
-/* subClientAliveAsk {{{ */
+/* subClientAskAlive {{{ */
 /*
  * call-seq: alive? -> true or false
  *
@@ -819,7 +854,7 @@ subClientRestackLower(VALUE self)
  */
 
 VALUE
-subClientAliveAsk(VALUE self)
+subClientAskAlive(VALUE self)
 {
   VALUE ret = Qfalse, name = Qnil;
 

@@ -59,18 +59,20 @@ VALUE subClientInstantiate(int id);                               ///< Instantia
 VALUE subClientInit(VALUE self, VALUE win);                       ///< Create client
 VALUE subClientUpdate(VALUE self);                                ///< Update client
 VALUE subClientViewList(VALUE self);                              ///< Get views clients is on
-VALUE subClientFlagsFullAsk(VALUE self);                          ///< Is client fullscreen
-VALUE subClientFlagsFloatAsk(VALUE self);                         ///< Is client floating
-VALUE subClientFlagsStickAsk(VALUE self);                         ///< Is client stick
-VALUE subClientFlagsResizeAsk(VALUE self);                        ///< Is client resize
+VALUE subClientFlagsAskFull(VALUE self);                          ///< Is client fullscreen
+VALUE subClientFlagsAskFloat(VALUE self);                         ///< Is client floating
+VALUE subClientFlagsAskStick(VALUE self);                         ///< Is client stick
+VALUE subClientFlagsAskResize(VALUE self);                        ///< Is client resize
+VALUE subClientFlagsAskUrgent(VALUE self);                        ///< Is client urgent
 VALUE subClientFlagsToggleFull(VALUE self);                       ///< Toggle fullscreen
 VALUE subClientFlagsToggleFloat(VALUE self);                      ///< Toggle floating
 VALUE subClientFlagsToggleStick(VALUE self);                      ///< Toggle stick
 VALUE subClientFlagsToggleResize(VALUE self);                     ///< Toggle resize
+VALUE subClientFlagsToggleUrgent(VALUE self);                     ///< Toggle urgent
 VALUE subClientFlagsWriter(VALUE self, VALUE value);              ///< Set multiple flags
 VALUE subClientRestackRaise(VALUE self);                          ///< Raise client
 VALUE subClientRestackLower(VALUE self);                          ///< Lower client
-VALUE subClientAliveAsk(VALUE self);                              ///< Is client alive
+VALUE subClientAskAlive(VALUE self);                              ///< Is client alive
 VALUE subClientGravityReader(VALUE self);                         ///< Get client gravity
 VALUE subClientGravityWriter(VALUE self, VALUE value);            ///< Set client gravity
 VALUE subClientGeometryReader(VALUE self);                        ///< Get client geometry
@@ -137,7 +139,7 @@ VALUE subIconDrawLine(int argc, VALUE *argv, VALUE self);         ///< Draw a li
 VALUE subIconDrawRect(int argc, VALUE *argv, VALUE self);         ///< Draw a rect
 VALUE subIconCopyArea(int argc, VALUE *argv, VALUE self);         ///< Copy icon area
 VALUE subIconClear(int argc, VALUE *argv, VALUE self);            ///< Clear icon
-VALUE subIconBitmapAsk(VALUE self);                               ///< Whether icon is bitmap
+VALUE subIconAskBitmap(VALUE self);                               ///< Whether icon is bitmap
 VALUE subIconToString(VALUE self);                                ///< Convert to string
 VALUE subIconOperatorPlus(VALUE self, VALUE value);               ///< Concat string
 VALUE subIconOperatorMult(VALUE self, VALUE value);               ///< Concat string
@@ -157,7 +159,7 @@ VALUE subScreenInit(VALUE self, VALUE id);                        ///< Create ne
 VALUE subScreenUpdate(VALUE self);                                ///< Update screen
 VALUE subScreenViewReader(VALUE self);                            ///< Get screen view
 VALUE subScreenViewWriter(VALUE self, VALUE value);               ///< Set screen view
-VALUE subScreenCurrentAsk(VALUE self);                            ///< Whether screen is current
+VALUE subScreenAskCurrent(VALUE self);                            ///< Whether screen is current
 VALUE subScreenToString(VALUE self);                              ///< Screen to string
 /* }}} */
 
@@ -183,7 +185,7 @@ VALUE subSubletKill(VALUE self);                                  ///< Kill subl
 /* Singleton */
 VALUE subSubtleSingDisplayReader(VALUE self);                     ///< Get display
 VALUE subSubtleSingDisplayWriter(VALUE self, VALUE display);      ///< Set display
-VALUE subSubtleSingRunningAsk(VALUE self);                        ///< Is subtle running
+VALUE subSubtleSingAskRunning(VALUE self);                        ///< Is subtle running
 VALUE subSubtleSingSelect(VALUE self);                            ///< Select window
 VALUE subSubtleSingRender(VALUE self);                            ///< Render panels
 VALUE subSubtleSingReload(VALUE self);                            ///< Reload config and sublets
@@ -250,7 +252,7 @@ VALUE subViewClients(VALUE self);                                 ///< Get clien
 VALUE subViewJump(VALUE self);                                    ///< Jump to view
 VALUE subViewSelectNext(VALUE self);                              ///< Select next view
 VALUE subViewSelectPrev(VALUE self);                              ///< Select next view
-VALUE subViewCurrentAsk(VALUE self);                              ///< Whether view the current
+VALUE subViewAskCurrent(VALUE self);                              ///< Whether view the current
 VALUE subViewIcon(VALUE self);                                    ///< View icon if any
 VALUE subViewToString(VALUE self);                                ///< View to string
 VALUE subViewKill(VALUE self);                                    ///< Kill view
@@ -288,7 +290,7 @@ VALUE subWindowRaise(VALUE self);                                 ///< Raise win
 VALUE subWindowLower(VALUE self);                                 ///< Lower window
 VALUE subWindowShow(VALUE self);                                  ///< Show window
 VALUE subWindowHide(VALUE self);                                  ///< Hide window
-VALUE subWindowHiddenAsk(VALUE self);                             ///< Whether window is hidden
+VALUE subWindowAskHidden(VALUE self);                             ///< Whether window is hidden
 VALUE subWindowKill(VALUE self);                                  ///< Kill window
 /* }}} */
 
