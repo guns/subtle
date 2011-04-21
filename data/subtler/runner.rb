@@ -74,6 +74,7 @@ module Subtle # {{{
           [ "--select",  "-X", GetoptLong::NO_ARGUMENT ],
 
           # Other
+          [ "--display", "-d", GetoptLong::NO_ARGUMENT ],
           [ "--help",    "-h", GetoptLong::NO_ARGUMENT ],
           [ "--version", "-V", GetoptLong::NO_ARGUMENT ]
         )
@@ -127,6 +128,8 @@ module Subtle # {{{
             when "--select"  then @mod = :select
 
             # Other
+            when "--display"
+              Subtlext::Subtle.display = ARGV.shift
             when "--help"
               usage(@group)
               exit
@@ -284,7 +287,6 @@ module Subtle # {{{
           puts <<EOF
   Generic:
     -d, --display=DISPLAY   Connect to DISPLAY (default: #{ENV["DISPLAY"]})
-    -D, --debug             Print debugging messages
     -h, --help              Show this help and exit
     -V, --version           Show version info and exit
 
