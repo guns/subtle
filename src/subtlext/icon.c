@@ -588,7 +588,7 @@ subIconClear(int argc,
   return Qnil;
 } /* }}} */
 
-/* subIconBitmapAsk {{{ */
+/* subIconAskBitmap {{{ */
 /*
  * call-seq: bitmap? -> true or false
  *
@@ -602,7 +602,7 @@ subIconClear(int argc,
  */
 
 VALUE
-subIconBitmapAsk(VALUE self)
+subIconAskBitmap(VALUE self)
 {
   VALUE ret = Qfalse;
   SubtlextIcon *i = NULL;

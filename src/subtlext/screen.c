@@ -398,7 +398,7 @@ subScreenViewWriter(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* subScreenCurrentAsk {{{ */
+/* subScreenAskCurrent {{{ */
 /*
  * call-seq: screen? -> true or false
  *
@@ -412,7 +412,7 @@ subScreenViewWriter(VALUE self,
  */
 
 VALUE
-subScreenCurrentAsk(VALUE self)
+subScreenAskCurrent(VALUE self)
 {
   /* Check ruby object */
   rb_check_frozen(self);

@@ -66,7 +66,7 @@ subSubtleSingDisplayWriter(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* subSubtleSingRunningAsk {{{ */
+/* subSubtleSingAskRunning {{{ */
 /*
  * call-seq: running? -> true or false
  *
@@ -80,7 +80,7 @@ subSubtleSingDisplayWriter(VALUE self,
  */
 
 VALUE
-subSubtleSingRunningAsk(VALUE self)
+subSubtleSingAskRunning(VALUE self)
 {
   char *prop = NULL;
   Window *support = NULL;

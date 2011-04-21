@@ -528,7 +528,7 @@ subViewSelectPrev(VALUE self)
   return ViewSelect(self, SUB_VIEW_PREV);
 } /* }}} */
 
-/* subViewCurrentAsk {{{ */
+/* subViewAskCurrent {{{ */
 /*
  * call-seq: current? -> true or false
  *
@@ -542,7 +542,7 @@ subViewSelectPrev(VALUE self)
  */
 
 VALUE
-subViewCurrentAsk(VALUE self)
+subViewAskCurrent(VALUE self)
 {
   VALUE id = Qnil, ret = Qfalse;;
   unsigned long *cur_view = NULL;

@@ -1348,7 +1348,7 @@ subWindowHide(VALUE self)
   return Qnil;
 } /* }}} */
 
-/* subWindowHiddenAsk {{{ */
+/* subWindowAskHidden {{{ */
 /*
  * call-seq: hidden -> true or false
  *
@@ -1359,7 +1359,7 @@ subWindowHide(VALUE self)
  */
 
 VALUE
-subWindowHiddenAsk(VALUE self)
+subWindowAskHidden(VALUE self)
 {
   VALUE hidden  = Qnil;
 
