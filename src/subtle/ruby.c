@@ -1036,7 +1036,7 @@ RubyEvalConfig(void)
 
       /* Add spacing for separator */
       if(0 < subtle->separator.width)
-        subtle->separator.width += STYLE_WIDTH(subtle->styles.separator) + 6;
+        subtle->separator.width += STYLE_WIDTH(subtle->styles.separator);
     }
 
   /* Check and update grabs */

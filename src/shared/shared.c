@@ -506,7 +506,7 @@ subSharedTextParse(Display *disp,
 
   assert(f && t);
 
-  t->width = 6;
+  t->width = 0;
 
   /* Split and iterate over tokens */
   while((tok = strsep(&text, SEPARATOR)))

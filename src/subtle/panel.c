@@ -56,7 +56,7 @@ PanelSeparator(int type,
   int x = 0;
 
   if(SUB_PANEL_SEPARATOR1 == type)
-    x = p->x - subtle->separator.width - STYLE_WIDTH(subtle->styles.separator) + 6;
+    x = p->x - subtle->separator.width - STYLE_WIDTH(subtle->styles.separator);
   else x = p->x + p->width;
 
   /* Set window background and border*/
@@ -190,7 +190,6 @@ subPanelUpdate(SubPanel *p)
           }
         break; /* }}} */
       case SUB_PANEL_SUBLET: /* {{{ */
-        /* Copy width in case of shallow copies */
         p->width = p->sublet->width;
         break; /* }}} */
       case SUB_PANEL_TITLE: /* {{{ */
