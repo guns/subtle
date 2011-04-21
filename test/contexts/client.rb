@@ -53,11 +53,12 @@ context "Client" do
     float  = p.call(topic, :is_float?,  :toggle_float)
     stick  = p.call(topic, :is_stick?,  :toggle_stick)
     resize = p.call(topic, :is_resize?, :toggle_resize)
+    urgent = p.call(topic, :is_urgent?, :toggle_urgent)
 
     expected = [ false, true, false ]
 
     expected == full and expected == float and
-      expected == stick and expected == resize
+      expected == stick and expected == resize and expected == urgent
   end
 
   asserts("Runtime: Add/remove tags") do
