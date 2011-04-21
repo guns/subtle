@@ -968,7 +968,7 @@ RubyEvalPanel(VALUE ary,
 
                   if(entry == CHAR2SYM(p2->sublet->name))
                     {
-                      /* Avoid adding a sublet multiple times */
+                      /* Check if sublet is already on a panel */
                       if(p2->screen)
                         {
                           /* Clone sublet */
@@ -990,14 +990,12 @@ RubyEvalPanel(VALUE ary,
           /* Finally add to panel */
           if(p)
             {
-              p->flags  |= flags;
+              p->flags  |= SUB_SCREEN_PANEL2 == position ?
+                (flags|SUB_PANEL_BOTTOM) : flags; ///< Mark for bottom panel
               p->screen  = s;
               s->flags  |= position; ///< Enable this panel
               flags      = 0;
               last       = p;
-
-              /* Mark for bottom panel */
-              if(SUB_SCREEN_PANEL2 == position) p->flags  |= SUB_PANEL_BOTTOM;
 
               subArrayPush(s->panels, (void *)p);
             }
@@ -1205,6 +1203,10 @@ RubyWrapLoadPanels(VALUE data)
                         {
                           sublet->flags  |= SUB_PANEL_SEPARATOR2;
                           sublet->screen  = s;
+
+                          /* Mark for bottom panel */
+                          if(p->flags & SUB_PANEL_BOTTOM)
+                            sublet->flags |= SUB_PANEL_BOTTOM;
 
                           subArrayInsert(s->panels, pos++, (void *)sublet);
                         }
