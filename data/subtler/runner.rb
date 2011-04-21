@@ -50,6 +50,7 @@ module Subtle # {{{
           [ "--full",    "-F", GetoptLong::NO_ARGUMENT ],
           [ "--float",   "-O", GetoptLong::NO_ARGUMENT ],
           [ "--stick",   "-S", GetoptLong::NO_ARGUMENT ],
+          [ "--urgent",  "-N", GetoptLong::NO_ARGUMENT ],
           [ "--jump",    "-j", GetoptLong::NO_ARGUMENT ],
           [ "--list",    "-l", GetoptLong::NO_ARGUMENT ],
           [ "--tag",     "-T", GetoptLong::NO_ARGUMENT ],
@@ -103,6 +104,7 @@ module Subtle # {{{
             when "--full"    then @action = :toggle_full
             when "--float"   then @action = :toggle_float
             when "--stick"   then @action = :toggle_stick
+            when "--urgent"  then @action = :toggle_urgent
             when "--jump"    then @action = :jump
             when "--list"    then @action = :all
             when "--tag"     then @action = :tag
@@ -313,6 +315,7 @@ EOF
     -F, --full              Toggle full
     -O, --float             Toggle float
     -S, --stick             Toggle stick
+    -N, --urgent            Toggle urgent
     -l, --list              List all clients
     -T, --tag=PATTERN       Add tag to client
     -U, --untag=PATTERN     Remove tag from client
