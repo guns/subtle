@@ -172,6 +172,7 @@ style :clients do
   active      "#303030", 2
   inactive    "#202020", 2
   margin      0
+  width       50
 end
 
 # Style for subtle
