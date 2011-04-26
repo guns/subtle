@@ -1002,6 +1002,10 @@ EventMessage(XClientMessageEvent *ev)
                 /* Select only new tags */
                 tags = (c->tags ^ (int)ev->data.l[1]) & (int)ev->data.l[1];
 
+                /* Remove highlight of tagless, urgent client */
+                if(0 == tags && c->flags & SUB_CLIENT_MODE_URGENT)
+                  subtle->urgent_tags &= ~c->tags;
+
                 /* Update tags and assign properties */
                 for(i = 0; i < 31; i++)
                   if(tags & (1L << (i + 1))) subClientTag(c, i, &flags);

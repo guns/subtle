@@ -847,7 +847,7 @@ subClientToggle(SubClient *c,
   DEAD(c);
   assert(c);
 
-  /* Remove flags */
+  /* Remove disabled flags */
   if(type & SUB_CLIENT_MODE_FULL   && c->flags & SUB_CLIENT_MODE_NOFULL)
     type &= ~SUB_CLIENT_MODE_FULL;
   if(type & SUB_CLIENT_MODE_FLOAT  && c->flags & SUB_CLIENT_MODE_NOFLOAT)
@@ -864,6 +864,13 @@ subClientToggle(SubClient *c,
       /* Unset floating mode */
       if(type & SUB_CLIENT_MODE_FLOAT)
         c->flags |= SUB_CLIENT_ARRANGE;
+
+      if(type & SUB_CLIENT_MODE_STICK)
+        {
+          /* Remove highlight of tagless, urgent client */
+          if(0 == c->tags && c->flags & SUB_CLIENT_MODE_URGENT)
+            subtle->urgent_tags &= ~c->tags;
+        }
 
       /* Unset fullscreen mode */
       if(type & SUB_CLIENT_MODE_FULL)
@@ -909,6 +916,10 @@ subClientToggle(SubClient *c,
       /* Set floating mode */
       if(type & SUB_CLIENT_MODE_FLOAT)
         c->flags |= SUB_CLIENT_ARRANGE;
+
+      /* Set urgent mode */
+      if(type & SUB_CLIENT_MODE_URGENT)
+        subtle->urgent_tags |= c->tags;
 
       /* Set dock and desktop type */
       if(type & (SUB_CLIENT_TYPE_DOCK|SUB_CLIENT_TYPE_DESKTOP))
@@ -959,9 +970,8 @@ subClientToggle(SubClient *c,
     }
   if(c->flags & SUB_CLIENT_MODE_URGENT)
     {
-      flags               |= SUB_EWMH_URGENT;
-      states[nstates++]    = subEwmhGet(SUB_EWMH_NET_WM_STATE_ATTENTION);
-      subtle->urgent_tags |= c->tags;
+      flags             |= SUB_EWMH_URGENT;
+      states[nstates++]  = subEwmhGet(SUB_EWMH_NET_WM_STATE_ATTENTION);
     }
   if(c->flags & SUB_CLIENT_MODE_RESIZE) flags |= SUB_EWMH_RESIZE;
 
@@ -1205,7 +1215,9 @@ subClientSetWMHints(SubClient *c,
           /* Set urgency if window hasn't focus and and
            * remove it after getting focus */
           if(hints->flags & XUrgencyHint && c->win != subtle->windows.focus[0])
-            *flags |= SUB_CLIENT_MODE_URGENT;
+            {
+              *flags |= SUB_CLIENT_MODE_URGENT;
+            }
         }
 
       /* Handle window group hint */
