@@ -208,7 +208,7 @@ subPanelUpdate(SubPanel *p)
                 /* Exclude desktop type windows */
                 if(!(c->flags & SUB_CLIENT_TYPE_DESKTOP))
                   {
-                    int len = strlen(c->name);
+                    unsigned long len = strlen(c->name);
 
                     /* Title modes */
                     if(c->flags & SUB_CLIENT_MODE_FULL)   len++;
@@ -218,7 +218,8 @@ subPanelUpdate(SubPanel *p)
 
                     /* Font offset, panel border and padding */
                     p->width = subSharedTextWidth(subtle->dpy, subtle->font,
-                      c->name, 50 >= len ? len : 50, NULL, NULL, True) +
+                      c->name, subtle->styles.clients.right >= len ? len :
+                      subtle->styles.clients.right, NULL, NULL, True) +
                       STYLE_WIDTH(subtle->styles.title);
                   }
               }
@@ -321,7 +322,7 @@ subPanelRender(SubPanel *p,
                 !(c->flags & SUB_CLIENT_TYPE_DESKTOP))
               {
                 int x = 0;
-                char buf[50] = { 0 };
+                char buf[100] = { 0 };
                 SubStyle *s = NULL;
 
                 DEAD(c);

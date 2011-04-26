@@ -2195,7 +2195,7 @@ RubyConfigStyle(VALUE self,
       klass   = rb_const_get(mod, rb_intern("Options"));
       options = rb_funcall(klass, rb_intern("new"), 0, NULL);
       rb_obj_instance_eval(0, 0, options);
-      params = rb_iv_get(options, "@params");
+      params  = rb_iv_get(options, "@params");
 
       /* Special arguments */
       if(CHAR2SYM("subtle") == name)
@@ -2218,8 +2218,17 @@ RubyConfigStyle(VALUE self,
         }
       else if(CHAR2SYM("clients") == name)
         {
+          /* We misuse some style values here:
+           * border-top   <-> client border
+           * border-right <-> title length */
+
           RubyHashToBorder(params, "active",   &s->fg, &s->border.top);
           RubyHashToBorder(params, "inactive", &s->bg, &s->border.top);
+
+          /* Set title width */
+          if(FIXNUM_P(value = rb_hash_lookup(params, CHAR2SYM("width"))))
+            s->right = FIX2INT(value);
+          else s->right = 50;
         }
 
       /* Get colors */
