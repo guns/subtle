@@ -13,6 +13,8 @@
 #include <X11/Xresource.h>
 #include "subtle.h"
 
+/* Method */
+
  /** subGravityNew {{{
   * @brief Create new gravity
   * @param[in]  name  Gravity name
@@ -46,6 +48,49 @@ subGravityNew(const char *name,
 
   return g;
 } /* }}} */
+
+ /** subGravityGeometry {{{
+  * @brief Calculate geometry of gravity
+  * @param[in]   gravity  Gravity id
+  * @param[in]   screen   Screen id
+  * @param[out]  geom     A #XRectangle
+  **/
+
+void
+subGravityGeometry(int gravity,
+  int screen,
+  XRectangle *geom)
+{
+  SubGravity *g = GRAVITY(subArrayGet(subtle->gravities, gravity));
+  SubScreen *s = SCREEN(subArrayGet(subtle->screens, screen));
+
+  assert(geom);
+
+  /* Calculate gravity size for screen */
+  geom->width  = (s->geom.width * g->geom.width / 100);
+  geom->height = (s->geom.height * g->geom.height / 100);
+  geom->x      = s->geom.x + ((s->geom.width - geom->width) *
+    g->geom.x / 100);
+  geom->y      = s->geom.y + ((s->geom.height - geom->height) *
+    g->geom.y / 100);
+} /* }}} */
+
+ /** subGravityKill {{{
+  * @brief Kill gravity
+  * @param[in]  g  A #SubGravity
+  **/
+
+void
+subGravityKill(SubGravity *g)
+{
+  assert(g);
+
+  free(g);
+
+  subSharedLogDebugSubtle("kill=gravity\n");
+} /* }}} */
+
+/* All */
 
  /** subGravityFind {{{
   * @brief Find gravity
@@ -130,19 +175,4 @@ subGravityPublish(void)
   XSync(subtle->dpy, False); ///< Sync all changes
 
   free(gravities);
-} /* }}} */
-
- /** subGravityKill {{{
-  * @brief Kill gravity
-  * @param[in]  g  A #SubGravity
-  **/
-
-void
-subGravityKill(SubGravity *g)
-{
-  assert(g);
-
-  free(g);
-
-  subSharedLogDebugSubtle("kill=gravity\n");
 } /* }}} */

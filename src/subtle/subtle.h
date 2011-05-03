@@ -262,6 +262,7 @@
 #define SUB_SUBTLE_RESTART            (1L << 9)                   ///< Restart
 #define SUB_SUBTLE_RELOAD             (1L << 10)                  ///< Reload config
 #define SUB_SUBTLE_TRAY               (1L << 11)                  ///< Use tray
+#define SUB_SUBTLE_TILING             (1L << 12)                  ///< Enable tiling
 
 /* Tag flags */
 #define SUB_TAG_GRAVITY               (1L << 9)                   ///< Gravity property
@@ -700,9 +701,9 @@ void subClientSetMWMHints(SubClient *c);                          ///< Set clien
 void subClientSetState(SubClient *c, int *flags);                 ///< Set client WM state
 void subClientSetTransient(SubClient *c, int *flags);             ///< Set client transient
 void subClientSetType(SubClient *c, int *flags);                  ///< Set client type
-void subClientPublish(void);                                      ///< Publish all clients
 void subClientClose(SubClient *c);                                ///< Close client
 void subClientKill(SubClient *c);                                 ///< Kill client
+void subClientPublish(void);                                      ///< Publish all clients
 /* }}} */
 
 /* display.c {{{ */
@@ -753,9 +754,11 @@ void subGrabKill(SubGrab *g);                                     ///< Kill grab
 /* gravity.c {{{ */
 SubGravity *subGravityNew(const char *name,
   XRectangle *geom);                                              ///< Create gravity
+void subGravityGeometry(int gravity, int screen,
+  XRectangle *geom);                                              ///< Kill gravity
+void subGravityKill(SubGravity *g);                               ///< Kill gravity
 int subGravityFind(const char *name, int quark);                  ///< Find gravity id
 void subGravityPublish(void);                                     ///< Publish gravities
-void subGravityKill(SubGravity *g);                               ///< Kill gravity
 /* }}} */
 
 /* hook.c {{{ */
