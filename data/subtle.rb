@@ -24,7 +24,8 @@ set :step, 5
 # Window screen border snapping
 set :snap, 10
 
-# Default starting gravity for windows (0 = gravity of last client)
+# Default starting gravity for windows. Comment out to use gravity of
+# currently active client
 set :gravity, :center
 
 # Make transient windows urgent
