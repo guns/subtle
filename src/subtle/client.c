@@ -13,10 +13,12 @@
 #include <X11/Xatom.h>
 #include "subtle.h"
 
+/* Flags {{{ */
 #define EDGE_LEFT   (1L << 0)
 #define EDGE_RIGHT  (1L << 1)
 #define EDGE_TOP    (1L << 2)
 #define EDGE_BOTTOM (1L << 3)
+/* }}} */
 
 /* Typedef {{{ */
 typedef struct clientmwmhints_t
@@ -28,6 +30,8 @@ typedef struct clientmwmhints_t
   unsigned long status;
 } ClientMWMHints;
 /* }}} */
+
+/* Private */
 
 /* ClientMask {{{ */
 static void
@@ -133,7 +137,69 @@ ClientCenter(SubClient *c)
     }
 } /* }}} */
 
-/* Public */
+/* ClientResize {{{ */
+static void
+ClientResize(SubClient *c)
+{
+  assert(c);
+
+  /* Update border and gap */
+  c->geom.x      += subtle->styles.clients.margin.left;
+  c->geom.y      += subtle->styles.clients.margin.top;
+  c->geom.width  -= (2 * BORDER(c) + subtle->styles.clients.margin.left +
+    subtle->styles.clients.margin.right);
+  c->geom.height -= (2 * BORDER(c) + subtle->styles.clients.margin.top +
+    subtle->styles.clients.margin.bottom);
+
+  subClientResize(c, True);
+  XMoveResizeWindow(subtle->dpy, c->win, c->geom.x, c->geom.y,
+    c->geom.width, c->geom.height);
+} /* }}} */
+
+/* ClientTile {{{ */
+static void
+ClientTile(int gravity,
+  int screen)
+{
+  int i, used = 0, pos = 0, width = 0, fix = 0;
+  XRectangle geom = { 0 };
+
+  /* Pass 1: Count clients with this gravity */
+  for(i = 0; i < subtle->clients->ndata; i++)
+    {
+      SubClient *c = CLIENT(subtle->clients->data[i]);
+
+      if(c->gravity == gravity && c->screen == screen &&
+        !(c->flags &(SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_FULL))) used++;
+    }
+
+  if(0 == used) return;
+
+  /* Calculate tiled gravity width */
+  subGravityGeometry(gravity, screen, &geom);
+
+  width = geom.width / used;
+  fix   = geom.width - width * used;
+
+  /* Pass 2: Update geometry of every client with this gravity */
+  for(i = 0; i < subtle->clients->ndata; i++)
+    {
+      SubClient *c = CLIENT(subtle->clients->data[i]);
+
+      if(c->gravity == gravity && c->screen == screen &&
+          !(c->flags &(SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_FULL)))
+        {
+          c->geom.width  = pos == used ? width + fix : width;
+          c->geom.height = geom.height;
+          c->geom.x      = geom.x + pos++ * width;
+          c->geom.y      = geom.y;
+
+          ClientResize(c);
+        }
+    }
+} /* }}} */
+
+/* Method */
 
  /** subClientNew {{{
   * @brief Create new client
@@ -791,34 +857,25 @@ subClientArrange(SubClient *c,
       if(c->flags & SUB_CLIENT_ARRANGE ||
           c->gravity != gravity || c->screen != screen)
         {
-          SubGravity *g = GRAVITY(subtle->gravities->data[-1 != gravity ?
-            gravity : c->gravity]);
-
-          /* Calculate gravity size on screen */
-          c->geom.width  = (s->geom.width * g->geom.width / 100);
-          c->geom.height = (s->geom.height * g->geom.height / 100);
-          c->geom.x      = s->geom.x + ((s->geom.width - c->geom.width) *
-            g->geom.x / 100);
-          c->geom.y      = s->geom.y + ((s->geom.height - c->geom.height) *
-            g->geom.y / 100);
-
-          /* Update border and gap */
-          c->geom.x      += subtle->styles.clients.margin.left;
-          c->geom.y      += subtle->styles.clients.margin.top;
-          c->geom.width  -= (2 * BORDER(c) +
-            subtle->styles.clients.margin.left +
-            subtle->styles.clients.margin.right);
-          c->geom.height -= (2 * BORDER(c) +
-            subtle->styles.clients.margin.top +
-            subtle->styles.clients.margin.bottom);
+          int old_gravity = c->gravity, old_screen = c->screen;
 
           /* Update client */
           if(-1 != screen)  c->screen = screen;
           if(-1 != gravity) c->gravity = c->gravities[s->vid] = gravity;
 
-          subClientResize(c, True);
-          XMoveResizeWindow(subtle->dpy, c->win, c->geom.x, c->geom.y,
-            c->geom.width, c->geom.height);
+          /* Gravity tiling */
+          if(subtle->flags & SUB_SUBTLE_TILING)
+            {
+              if(-1 != old_gravity && -1 != old_screen)
+                ClientTile(old_gravity, old_screen);
+              ClientTile(gravity, screen);
+            }
+          else
+            {
+              subGravityGeometry(gravity, screen, &c->geom);
+
+              ClientResize(c);
+            }
 
           /* EWMH: Gravity */
           subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_GRAVITY,
@@ -1374,34 +1431,6 @@ subClientSetType(SubClient *c,
     }
 } /* }}} */
 
- /** subClientPublish {{{
-  * @brief Publish clients
-  **/
-
-void
-subClientPublish(void)
-{
-  int i;
-  Window *wins = (Window *)subSharedMemoryAlloc(subtle->clients->ndata,
-    sizeof(Window));
-
-  for(i = 0; i < subtle->clients->ndata; i++)
-    wins[i] = CLIENT(subtle->clients->data[i])->win;
-
-  /* EWMH: Client list and client list stacking */
-  subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST, wins,
-    subtle->clients->ndata);
-  subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST_STACKING, wins,
-    subtle->clients->ndata);
-
-  XSync(subtle->dpy, False); ///< Sync all changes
-
-  free(wins);
-
-  subSharedLogDebugSubtle("publish=client, clients=%d\n",
-    subtle->clients->ndata);
-} /* }}} */
-
  /** subClientClose {{{
   * @brief Send client delete message or just kill it
   * @param[in]  c  A #SubClient
@@ -1462,6 +1491,10 @@ subClientKill(SubClient *c)
   if(c->flags & SUB_CLIENT_MODE_URGENT)
     subtle->urgent_tags &= ~c->tags;
 
+  /* Tile remaining clients if necessary */
+  if(subtle->flags & SUB_SUBTLE_TILING)
+    ClientTile(c->gravity, c->screen);
+
   if(c->gravities) free(c->gravities);
   if(c->name)      free(c->name);
   if(c->instance)  free(c->instance);
@@ -1470,6 +1503,36 @@ subClientKill(SubClient *c)
   free(c);
 
   subSharedLogDebugSubtle("kill=client\n");
+} /* }}} */
+
+/* All */
+
+ /** subClientPublish {{{
+  * @brief Publish clients
+  **/
+
+void
+subClientPublish(void)
+{
+  int i;
+  Window *wins = (Window *)subSharedMemoryAlloc(subtle->clients->ndata,
+    sizeof(Window));
+
+  for(i = 0; i < subtle->clients->ndata; i++)
+    wins[i] = CLIENT(subtle->clients->data[i])->win;
+
+  /* EWMH: Client list and client list stacking */
+  subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST, wins,
+    subtle->clients->ndata);
+  subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST_STACKING, wins,
+    subtle->clients->ndata);
+
+  XSync(subtle->dpy, False); ///< Sync all changes
+
+  free(wins);
+
+  subSharedLogDebugSubtle("publish=client, clients=%d\n",
+    subtle->clients->ndata);
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
