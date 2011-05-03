@@ -1577,7 +1577,7 @@ RubyConfigMissing(int argc,
  *
  * Set options
  *
- *  set :border, 2
+ *  set :urgent, true
  */
 
 static VALUE
@@ -1631,6 +1631,11 @@ RubyConfigSet(VALUE self,
               {
                 if(!(subtle->flags & SUB_SUBTLE_CHECK) && Qtrue == value)
                   subtle->flags |= SUB_SUBTLE_RESIZE;
+              }
+            else if(CHAR2SYM("tiling") == option)
+              {
+                if(!(subtle->flags & SUB_SUBTLE_CHECK) && Qtrue == value)
+                  subtle->flags |= SUB_SUBTLE_TILING;
               }
             else subSharedLogWarn("Unknown option `:%s'\n",
               SYM2CHAR(option));

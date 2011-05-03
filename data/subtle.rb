@@ -33,6 +33,9 @@ set :urgent, false
 # Honor resize size hints globally
 set :resize, false
 
+# Enable gravity tiling
+set :tiling, true
+
 # Font string either take from e.g. xfontsel or use xft
 set :font, "-*-*-medium-*-*-*-14-*-*-*-*-*-*-*"
 #set :font, "xft:sans-8"
