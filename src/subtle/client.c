@@ -56,14 +56,15 @@ ClientCopy(SubClient *c,
 int
 ClientGravity(void)
 {
-  int grav = 5;
+  int grav = 0;
   SubClient *c = NULL;
 
   /* Default gravity */
-  if(0 == subtle->gravity)
+  if(-1 == subtle->gravity)
     {
+      /* Copy gravity from current client */
       if((c = CLIENT(subSubtleFind(subtle->windows.focus[0], CLIENTID))))
-        grav = c->gravity; ///< Copy gravity
+        grav = c->gravity;
     }
   else grav = subtle->gravity; ///< Set default
 
@@ -868,7 +869,7 @@ subClientArrange(SubClient *c,
             {
               if(-1 != old_gravity && -1 != old_screen)
                 ClientTile(old_gravity, old_screen);
-              ClientTile(gravity, screen);
+              ClientTile(gravity, -1 == screen ? 0 : screen);
             }
           else
             {

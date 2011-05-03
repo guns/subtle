@@ -1079,9 +1079,8 @@ RubyEvalConfig(void)
       exit(-1);
     }
 
-  /* Get default gravity */
-  if(-1 == (subtle->gravity = RubyValueToGravity(subtle->gravity)))
-    subtle->gravity = 0;
+  /* Get default gravity or use default (-1) */
+  subtle->gravity = RubyValueToGravity(subtle->gravity);
 
   subGravityPublish();
 
@@ -1105,8 +1104,9 @@ RubyEvalConfig(void)
       /* Update gravities */
       if(t->flags & SUB_TAG_GRAVITY)
         {
+          /* Disable tag gravity when gravity can't be found */
           if(-1 == (t->gravity = RubyValueToGravity(t->gravity)))
-            t->gravity = 0;
+            t->flags &= ~SUB_TAG_GRAVITY;
         }
     }
 
@@ -3330,8 +3330,9 @@ subRubyLoadConfig(void)
       (t = subTagNew("default", NULL)))
     subArrayPush(subtle->tags, (void *)t);
 
-  /* Set default values for optional colors */
+  /* Set default values */
   subtle->styles.subtle.bg = -1;
+  subtle->gravity          = -1;
 
   /* Create and register sublet config hash */
   config = rb_hash_new();

@@ -64,7 +64,7 @@ subGravityGeometry(int gravity,
   SubGravity *g = GRAVITY(subArrayGet(subtle->gravities, gravity));
   SubScreen *s = SCREEN(subArrayGet(subtle->screens, screen));
 
-  assert(geom);
+  assert(geom && g && s);
 
   /* Calculate gravity size for screen */
   geom->width  = (s->geom.width * g->geom.width / 100);
