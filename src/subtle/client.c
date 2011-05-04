@@ -163,7 +163,7 @@ ClientTile(int gravity,
   int screen)
 {
   int i, used = 0, pos = 0, width = 0, fix = 0;
-  XRectangle geom = { 0 };
+  XRectangle geom = { 1 };
 
   /* Pass 1: Count clients with this gravity */
   for(i = 0; i < subtle->clients->ndata; i++)
@@ -171,6 +171,7 @@ ClientTile(int gravity,
       SubClient *c = CLIENT(subtle->clients->data[i]);
 
       if(c->gravity == gravity && c->screen == screen &&
+        subtle->visible_tags & c->tags &&
         !(c->flags &(SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_FULL))) used++;
     }
 
@@ -188,7 +189,8 @@ ClientTile(int gravity,
       SubClient *c = CLIENT(subtle->clients->data[i]);
 
       if(c->gravity == gravity && c->screen == screen &&
-          !(c->flags &(SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_FULL)))
+          subtle->visible_tags & c->tags &&
+          !(c->flags & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_FULL)))
         {
           c->geom.width  = pos == used ? width + fix : width;
           c->geom.height = geom.height;
