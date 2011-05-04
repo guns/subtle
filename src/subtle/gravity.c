@@ -67,12 +67,15 @@ subGravityGeometry(int gravity,
   assert(geom && g && s);
 
   /* Calculate gravity size for screen */
-  geom->width  = (s->geom.width * g->geom.width / 100);
-  geom->height = (s->geom.height * g->geom.height / 100);
-  geom->x      = s->geom.x + ((s->geom.width - geom->width) *
-    g->geom.x / 100);
-  geom->y      = s->geom.y + ((s->geom.height - geom->height) *
-    g->geom.y / 100);
+  if(g && s)
+    {
+      geom->width  = (s->geom.width * g->geom.width / 100);
+      geom->height = (s->geom.height * g->geom.height / 100);
+      geom->x      = s->geom.x + ((s->geom.width - geom->width) *
+        g->geom.x / 100);
+      geom->y      = s->geom.y + ((s->geom.height - geom->height) *
+        g->geom.y / 100);
+    }
 } /* }}} */
 
  /** subGravityKill {{{
