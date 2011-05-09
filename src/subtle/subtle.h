@@ -276,7 +276,7 @@
 #define SUB_TAG_MATCH_CLASS           (1L << 11)                  ///< Match class of WM_CLASS
 #define SUB_TAG_MATCH_ROLE            (1L << 12)                  ///< Match role of window
 #define SUB_TAG_MATCH_TYPE            (1L << 13)                  ///< Match type of window
-#define SUB_TAG_MATCH_INVERT          (1L << 14)                  ///< Match invert
+#define SUB_TAG_MATCH_AND             (1L << 14)                  ///< Match logical AND
 
 /* Tray flags */
 #define SUB_TRAY_DEAD                 (1L << 9)                   ///< Dead window
@@ -816,8 +816,8 @@ void subSubtleFinish(void);                                       ///< Finish su
 
 /* tag.c {{{ */
 SubTag *subTagNew(char *name, int *duplicate);                    ///< Create tag
-int subTagCompare(const void *a, const void *b);                  ///< Compare two tags
-void subTagMatcherAdd(SubTag *t, int type, char *pattern);        ///< Add a matcher
+void subTagMatcherAdd(SubTag *t, int type,
+  char *pattern, int and);                                        ///< Add a matcher
 int subTagMatcherCheck(SubTag *t, SubClient *c);                  ///< Check for match
 void subTagPublish(void);                                         ///< Publish tags
 void subTagKill(SubTag *t);                                       ///< Delete tag
