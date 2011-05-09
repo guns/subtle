@@ -89,6 +89,16 @@ RubyReceiver(unsigned long instance,
   return receiver == instance;
 } /* }}} */
 
+/* RubyResetStyle {{{ */
+static void
+RubyResetStyle(SubStyle *s)
+{
+  s->fg = s->bg = s->top  = s->right = s->bottom = s->left = 0;
+  s->border.top  = s->border.left  = s->border.bottom  = s->border.right  = 0;
+  s->padding.top = s->padding.left = s->padding.bottom = s->padding.right = 0;
+  s->margin.top  = s->margin.left  = s->margin.bottom  = s->margin.right  = 0;
+} /* }}} */
+
 /* Type converter */
 
 /* RubySubtleToSubtlext {{{ */
@@ -3340,6 +3350,17 @@ subRubyReloadConfig(void)
 
   /* Reset panel height */
   subtle->ph = 0;
+
+  /* Reset styles */
+  RubyResetStyle(&subtle->styles.title);
+  RubyResetStyle(&subtle->styles.focus);
+  RubyResetStyle(&subtle->styles.urgent);
+  RubyResetStyle(&subtle->styles.occupied);
+  RubyResetStyle(&subtle->styles.views);
+  RubyResetStyle(&subtle->styles.sublets);
+  RubyResetStyle(&subtle->styles.separator);
+  RubyResetStyle(&subtle->styles.clients);
+  RubyResetStyle(&subtle->styles.subtle);
 
   /* Reset before reloading */
   subtle->flags &= (SUB_SUBTLE_DEBUG|SUB_SUBTLE_EWMH|SUB_SUBTLE_RUN|
