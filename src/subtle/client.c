@@ -202,7 +202,7 @@ ClientTile(int gravity,
     }
 } /* }}} */
 
-/* Method */
+/* Public */
 
  /** subClientNew {{{
   * @brief Create new client

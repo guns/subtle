@@ -392,8 +392,8 @@ subScreenConfigure(void)
           v = VIEW(subtle->views->data[s->vid]);
 
           /* Set visible tags and views to ease lookups */
-          subtle->visible_tags    |= v->tags;
-          subtle->visible_views   |= (1L << (s->vid + 1));
+          subtle->visible_tags  |= v->tags;
+          subtle->visible_views |= (1L << (s->vid + 1));
         }
     }
 
