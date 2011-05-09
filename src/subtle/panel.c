@@ -56,7 +56,7 @@ PanelSeparator(int type,
   int x = 0;
 
   if(SUB_PANEL_SEPARATOR1 == type)
-    x = p->x - subtle->separator.width - STYLE_WIDTH(subtle->styles.separator);
+    x = p->x - subtle->separator.width;
   else x = p->x + p->width;
 
   /* Set window background and border*/

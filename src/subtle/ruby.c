@@ -772,15 +772,15 @@ RubyEvalPanel(VALUE ary,
           /* Parse array and assemble panel */
           if(entry == spacer || entry == center || entry == separator)
             {
-              /* Add spacer after panel item (except separator) */
-              if(last && entry != separator && flags & SUB_PANEL_SPACER1)
+              /* Add spacer after panel item */
+              if(last && flags & SUB_PANEL_SPACER1)
                 {
                   last->flags |= SUB_PANEL_SPACER2;
                   flags       &= ~SUB_PANEL_SPACER1;
                 }
 
-              /* Add separator after panel item (except spacer) */
-              if(last && entry != spacer && flags & SUB_PANEL_SEPARATOR1)
+              /* Add separator after panel item */
+              if(last && flags & SUB_PANEL_SEPARATOR1)
                 {
                   last->flags |= SUB_PANEL_SEPARATOR2;
                   flags       &= ~SUB_PANEL_SEPARATOR1;
@@ -2164,7 +2164,7 @@ RubyConfigStyle(VALUE self,
               CHAR2SYM("strut"))))
             RubyArrayToSides(value, &s->padding);
 
-          /* Set both colors */
+          /* Set both panel colors */
           if(!NIL_P(value = rb_hash_lookup(params, CHAR2SYM("panel"))))
             {
               RubyHashToColor(params, "panel", &s->top);
