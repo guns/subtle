@@ -12,13 +12,18 @@
 
 #include "subtle.h"
 
+#define MATCHER(m) ((TagMatcher *)m)
+
 /* Typedef {{{ */
 typedef struct tagmatcher_t
 {
-  FLAGS   flags;
-  regex_t *regex;
+  FLAGS               flags;
+  struct tagmatcher_t *and;
+  regex_t             *regex;
 } TagMatcher;
 /* }}} */
+
+/* Private */
 
 /* TagClear {{{ */
 static void
@@ -42,7 +47,7 @@ TagClear(SubTag *t)
 } /* }}} */
 
 /* TagFind {{{ */
-SubTag *
+static SubTag *
 TagFind(char *name)
 {
   int i;
@@ -59,6 +64,32 @@ TagFind(char *name)
     }
 
   return NULL;
+} /* }}} */
+
+/* TagMatch {{{ */
+static int
+TagMatch(TagMatcher *m,
+  SubClient *c)
+{
+  /* Complex matching */
+  if((m->regex &&
+      /* Check WM_NAME */
+      ((m->flags & SUB_TAG_MATCH_NAME && c->name &&
+        subSharedRegexMatch(m->regex, c->name)) ||
+      /* Check instance part of WM_CLASS */
+      (m->flags & SUB_TAG_MATCH_INSTANCE && c->instance &&
+        subSharedRegexMatch(m->regex, c->instance)) ||
+      /* Check class part of WM_CLASS */
+      (m->flags & SUB_TAG_MATCH_CLASS && c->klass &&
+        subSharedRegexMatch(m->regex, c->klass)) ||
+      /* Check WM_ROLE */
+      (m->flags & SUB_TAG_MATCH_ROLE && c->role &&
+        subSharedRegexMatch(m->regex, c->role)))) ||
+      /* Check _NET_WM_WINDOW_TYPE */
+      (m->flags & SUB_TAG_MATCH_TYPE && c->flags & (m->flags & TYPES_ALL)))
+    return True;
+
+  return False;
 } /* }}} */
 
 /* Public */
@@ -97,43 +128,19 @@ subTagNew(char *name,
   return t;
 } /* }}} */
 
- /** subTagCompare {{{
-  * @brief Compare tags based on inversion
-  * @param[in]  a  A #SubTag
-  * @param[in]  b  A #SubTag
-  * @return Returns the result of the comparison of both tags
-  * @retval  -1  a is smaller
-  * @retval  0   a and b are equal
-  * @retval  1   a is greater
-  **/
-
-int
-subTagCompare(const void *a,
-  const void *b)
-{
-  int ret = 0;
-  SubTag *t1 = *(SubTag **)a, *t2 = *(SubTag **)b;
-
-  assert(a && b);
-
-  /* Check flags */
-  if(t1->flags & SUB_TAG_MATCH_INVERT) ret = -1;
-  if(t2->flags & SUB_TAG_MATCH_INVERT) ret = 1;
-
-  return ret;
-} /* }}} */
-
  /** subTagMatcherAdd {{{
   * @brief Add a matcher to a tag
   * @param[in]  t        A #SubTag
   * @param[in]  type     Matcher type
   * @param[in]  pattern  Regex
+  * @param[in]  and      Logical AND with last matcher
   **/
 
 void
 subTagMatcherAdd(SubTag *t,
   int type,
-  char *pattern)
+  char *pattern,
+  int and)
 {
   TagMatcher *m = NULL;
   regex_t *regex = NULL;
@@ -153,12 +160,19 @@ subTagMatcherAdd(SubTag *t,
   if(0 < type)
     {
       /* Create new matcher */
-      m = (TagMatcher *)subSharedMemoryAlloc(1, sizeof(TagMatcher));
+      m = MATCHER(subSharedMemoryAlloc(1, sizeof(TagMatcher)));
       m->flags = type;
       m->regex = regex;
 
       /* Create on demand to safe memory */
       if(NULL == t->matcher) t->matcher = subArrayNew();
+      else if(and && 0 < t->matcher->ndata)
+        {
+          /* Link matcher */
+          MATCHER(t->matcher->data[t->matcher->ndata - 1])->and = m;
+
+          m->flags |= SUB_TAG_MATCH_AND;
+        }
 
       subArrayPush(t->matcher, (void *)m);
     }
@@ -183,50 +197,26 @@ subTagMatcherCheck(SubTag *t,
   /* Check if a matcher and client fit together */
   for(i = 0; t->matcher && i < t->matcher->ndata; i++)
     {
-      TagMatcher *m = (TagMatcher *)t->matcher->data[i];
+      TagMatcher *m = MATCHER(t->matcher->data[i]);
 
-      /* Complex matching: WM_NAME, WM_CLASS, WM_ROLE, _NET_WM_WINDOW_TYPE */
-      if((m->regex && ((m->flags & SUB_TAG_MATCH_NAME && c->name &&
-            subSharedRegexMatch(m->regex, c->name)) ||
-          (m->flags & SUB_TAG_MATCH_INSTANCE && c->instance &&
-            subSharedRegexMatch(m->regex, c->instance)) ||
-          (m->flags & SUB_TAG_MATCH_CLASS && c->klass &&
-            subSharedRegexMatch(m->regex, c->klass)) ||
-          (m->flags & SUB_TAG_MATCH_ROLE && c->role &&
-            subSharedRegexMatch(m->regex, c->role)))) ||
-          (m->flags & SUB_TAG_MATCH_TYPE && c->flags & (m->flags & TYPES_ALL)))
-        return m->flags & SUB_TAG_MATCH_INVERT ? False : True;
+      /* Exclude AND linked matcher */
+      if(!(m->flags & SUB_TAG_MATCH_AND))
+        {
+          int and = True;
+          TagMatcher *cur = m;
+
+          /* Check current matcher and chain */
+          while(and && cur)
+            {
+              and = TagMatch(cur, c);
+              cur = cur->and;
+            }
+
+          if(and) return True;
+        }
     }
 
   return False;
-} /* }}} */
-
- /** subTagPublish {{{
-  * @brief Publish tags
-  **/
-
-void
-subTagPublish(void)
-{
-  int i;
-  char **names = NULL;
-
-  assert(0 < subtle->tags->ndata);
-
-  names = (char **)subSharedMemoryAlloc(subtle->tags->ndata, sizeof(char *));
-
-  for(i = 0; i < subtle->tags->ndata; i++)
-    names[i] = TAG(subtle->tags->data[i])->name;
-
-  /* EWMH: Tag list */
-  subSharedPropertySetStrings(subtle->dpy, ROOT,
-    subEwmhGet(SUB_EWMH_SUBTLE_TAG_LIST), names, i);
-
-  XSync(subtle->dpy, False); ///< Sync all changes
-
-  free(names);
-
-  subSharedLogDebugSubtle("publish=tags, n=%d\n", i);
 } /* }}} */
 
  /** subTagKill {{{
@@ -254,6 +244,36 @@ subTagKill(SubTag *t)
   free(t);
 
   subSharedLogDebugSubtle("kill=tag\n");
+} /* }}} */
+
+/* All */
+
+ /** subTagPublish {{{
+  * @brief Publish tags
+  **/
+
+void
+subTagPublish(void)
+{
+  int i;
+  char **names = NULL;
+
+  assert(0 < subtle->tags->ndata);
+
+  names = (char **)subSharedMemoryAlloc(subtle->tags->ndata, sizeof(char *));
+
+  for(i = 0; i < subtle->tags->ndata; i++)
+    names[i] = TAG(subtle->tags->data[i])->name;
+
+  /* EWMH: Tag list */
+  subSharedPropertySetStrings(subtle->dpy, ROOT,
+    subEwmhGet(SUB_EWMH_SUBTLE_TAG_LIST), names, i);
+
+  XSync(subtle->dpy, False); ///< Sync all changes
+
+  free(names);
+
+  subSharedLogDebugSubtle("publish=tags, n=%d\n", i);
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker

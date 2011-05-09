@@ -91,14 +91,14 @@ RubyReceiver(unsigned long instance,
 
 /* Type converter */
 
-/* RubyConvert {{{ */
+/* RubySubtleToSubtlext {{{ */
 static VALUE
-RubyConvert(void *data)
+RubySubtleToSubtlext(void *data)
 {
   SubClient *c = NULL;
   VALUE object = Qnil;
 
-  /* Convert object to ruby */
+  /* Convert subtle object to subtlext */
   if((c = CLIENT(data)))
     {
       int id = 0;
@@ -376,6 +376,27 @@ RubyValueToIcon(VALUE value)
   return icon;
 } /* }}} */
 
+/* RubyValueToHash {{{ */
+static VALUE
+RubyValueToHash(VALUE value)
+{
+  VALUE hash = Qnil;
+
+  /* Check value type */
+  switch(rb_type(value))
+    {
+      case T_HASH: hash = value; break;
+      case T_NIL:                break; ///< Ignore this case
+      default:
+        /* Convert to hash */
+        hash = rb_hash_new();
+
+        rb_hash_aset(hash, Qnil, value);
+    }
+
+  return hash;
+} /* }}} */
+
 /* RubyHashToColor {{{ */
 static void
 RubyHashToColor(VALUE hash,
@@ -429,146 +450,6 @@ RubyHashToBorder(VALUE hash,
         *col = subSharedParseColor(subtle->dpy, RSTRING_PTR(value));
         break;
     }
-} /* }}} */
-
-/* Hash */
-
-/* RubyHashConvert {{{ */
-static VALUE
-RubyHashConvert(VALUE value)
-{
-  VALUE hash = Qnil;
-
-  /* Check value type */
-  switch(rb_type(value))
-    {
-      case T_HASH: hash = value; break;
-      case T_NIL:                break; ///< Ignore this case
-      default:
-        /* Convert to hash */
-        hash = rb_hash_new();
-
-        rb_hash_aset(hash, Qnil, value);
-    }
-
-  return hash;
-} /* }}} */
-
-/* RubyHashMerge {{{ */
-static int
-RubyHashMerge(VALUE key,
-  VALUE value,
-  VALUE data)
-{
-  VALUE lookup = Qnil;
-
-  if(key == Qundef) return ST_CONTINUE;
-
-  /* Check if key exists and is non-nil:
-   * Yes: Create new array, append both values and replace key
-   * No:  Just add key to hash */
-  if(!NIL_P(key) && (lookup = rb_hash_lookup(data, key)))
-    {
-      /* Check value type */
-      switch(rb_type(lookup))
-        {
-          case T_ARRAY: rb_ary_push(lookup, value); break;
-          default:
-            {
-              VALUE ary = rb_ary_new2(2);
-
-              rb_ary_push(ary, lookup);
-              rb_ary_push(ary, value);
-
-              rb_hash_aset(data, key, ary);
-            }
-        }
-    }
-  else rb_hash_aset(data, key, value);
-
-  return ST_CONTINUE;
-} /* }}} */
-
-/* RubyHashMatch {{{ */
-static int
-RubyHashMatch(VALUE key,
-  VALUE value,
-  VALUE data)
-{
-  int type = 0;
-  VALUE regex = Qnil, *rargs = (VALUE *)data;
-
-  if(key == Qundef) return ST_CONTINUE;
-
-  /* Check key value type */
-  switch(rb_type(key))
-    {
-      case T_NIL:
-        type = SUB_TAG_MATCH_INSTANCE|SUB_TAG_MATCH_CLASS; ///< Defaults
-        break;
-      case T_SYMBOL: RubySymbolToFlag(key, &type); break;
-      case T_ARRAY:
-          {
-            int i;
-            VALUE entry = Qnil;
-
-            /* Check flags in array */
-            for(i = 0; Qnil != (entry = rb_ary_entry(key, i)); i++)
-              RubySymbolToFlag(entry, &type);
-          }
-        break;
-      default: rb_raise(rb_eArgError, "Unknown value type");
-    }
-
-  /* Check value type */
-  switch(rb_type(value))
-    {
-      case T_REGEXP:
-        regex = rb_funcall(value, rb_intern("source"), 0, NULL);
-        break;
-      case T_SYMBOL: RubySymbolToFlag(value, &type); break;
-      case T_ARRAY:
-          {
-            int i;
-            VALUE entry = Qnil;
-
-            /* Check flags in array */
-            for(i = 0; Qnil != (entry = rb_ary_entry(value, i)); i++)
-              RubySymbolToFlag(entry, &type);
-          }
-        break;
-      case T_STRING: regex = value; break;
-      default: rb_raise(rb_eArgError, "Unknown value type");
-    }
-
-  /* Finally create regex if there is any and append additional flags */
-  if(0 < type)
-    {
-      subTagMatcherAdd(TAG(rargs[0]), type|rargs[1],
-        NIL_P(regex) ? NULL : RSTRING_PTR(regex));
-    }
-
-  return ST_CONTINUE;
-} /* }}} */
-
-/* RubyHashCombine {{{ */
-static VALUE
-RubyHashCombine(VALUE self,
-  VALUE sym,
-  VALUE value)
-{
-  VALUE hash = Qnil, match = Qnil, params = rb_iv_get(self, "@params");
-
-  hash = RubyHashConvert(value);
-
-  /* Check if hash contains key and append or otherwise create it */
-  if(T_HASH == rb_type(match = rb_hash_lookup(params, sym)))
-    {
-      rb_hash_foreach(hash, RubyHashMerge, match); ///< Merge!
-    }
-  else rb_hash_aset(params, sym, hash);
-
-  return Qnil;
 } /* }}} */
 
 /* Eval */
@@ -1141,6 +1022,68 @@ RubyEvalConfig(void)
   subDisplayPublish();
 } /* }}} */
 
+/* RubyEvalMatcher {{{ */
+static int
+RubyEvalMatcher(VALUE key,
+  VALUE value,
+  VALUE data)
+{
+  int type = 0;
+  VALUE regex = Qnil, *rargs = (VALUE *)data;
+
+  if(key == Qundef) return ST_CONTINUE;
+
+  /* Check key value type */
+  switch(rb_type(key))
+    {
+      case T_NIL:
+        type = SUB_TAG_MATCH_INSTANCE|SUB_TAG_MATCH_CLASS; ///< Defaults
+        break;
+      case T_SYMBOL: RubySymbolToFlag(key, &type); break;
+      case T_ARRAY:
+          {
+            int i;
+            VALUE entry = Qnil;
+
+            /* Check flags in array */
+            for(i = 0; Qnil != (entry = rb_ary_entry(key, i)); i++)
+              RubySymbolToFlag(entry, &type);
+          }
+        break;
+      default: rb_raise(rb_eArgError, "Unknown value type");
+    }
+
+  /* Check value type */
+  switch(rb_type(value))
+    {
+      case T_REGEXP:
+        regex = rb_funcall(value, rb_intern("source"), 0, NULL);
+        break;
+      case T_SYMBOL: RubySymbolToFlag(value, &type); break;
+      case T_ARRAY:
+          {
+            int i;
+            VALUE entry = Qnil;
+
+            /* Check flags in array */
+            for(i = 0; Qnil != (entry = rb_ary_entry(value, i)); i++)
+              RubySymbolToFlag(entry, &type);
+          }
+        break;
+      case T_STRING: regex = value; break;
+      default: rb_raise(rb_eArgError, "Unknown value type");
+    }
+
+  /* Finally create regex if there is any and append additional flags */
+  if(0 < type)
+    {
+      subTagMatcherAdd(TAG(rargs[0]), type,
+        NIL_P(regex) ? NULL : RSTRING_PTR(regex), 0 < rargs[1]++);
+    }
+
+  return ST_CONTINUE;
+} /* }}} */
+
 /* Wrap */
 
 /* RubyWrapLoadSubtlext {{{ */
@@ -1323,7 +1266,7 @@ RubyWrapCall(VALUE data)
             arity    = -1 == arity ? 2 : MINMAX(arity, 1, 2);
 
             rb_funcall(rargs[1], rb_intern("call"), arity, receiver,
-              RubyConvert((VALUE *)rargs[2]));
+              RubySubtleToSubtlext((VALUE *)rargs[2]));
 
             subScreenUpdate();
             subScreenRender();
@@ -1332,7 +1275,7 @@ RubyWrapCall(VALUE data)
           {
             rb_funcall(rargs[1], rb_intern("call"),
               MINMAX(rb_proc_arity(rargs[1]), 0, 1),
-              RubyConvert((VALUE *)rargs[2]));
+              RubySubtleToSubtlext((VALUE *)rargs[2]));
           }
         break; /* }}} */
     }
@@ -1506,24 +1449,25 @@ static VALUE
 RubyOptionsMatch(VALUE self,
   VALUE value)
 {
-  return RubyHashCombine(self, CHAR2SYM("match"), value);
-} /* }}} */
+  VALUE params = Qnil, ary = Qnil, hash = Qnil, sym = Qnil;
 
-/* RubyOptionsExclude {{{ */
-/*
- * call-seq: exclude -> nil
- *
- * Append exclude hashes if called multiple times
- *
- *  option.exclude :name => /foo/
- *  => nil
- */
+  /* Get params and convert value to hash */
+  params = rb_iv_get(self, "@params");
+  hash   = RubyValueToHash(value);
+  sym    = CHAR2SYM("match");
 
-static VALUE
-RubyOptionsExclude(VALUE self,
-  VALUE value)
-{
-  return RubyHashCombine(self, CHAR2SYM("exclude"), value);
+  /* Check if hash contains key and add or otherwise create it */
+  if(T_ARRAY != rb_type(ary = rb_hash_lookup(params, sym)))
+    {
+      ary = rb_ary_new();
+
+      rb_hash_aset(params, sym, ary);
+    }
+
+  /* Finally add value to array */
+  rb_ary_push(ary, hash);
+
+  return Qnil;
 } /* }}} */
 
 /* RubyOptionsGravity {{{ */
@@ -1779,7 +1723,7 @@ RubyConfigTag(int argc,
   int flags = 0, type = 0;
   unsigned long gravity = 0;
   XRectangle geom = { 0 };
-  VALUE name = Qnil, match = Qnil, exclude = Qnil, params = Qnil, value = Qnil;
+  VALUE name = Qnil, match = Qnil, params = Qnil, value = Qnil;
 
   rb_scan_args(argc, argv, "11", &name, &match);
 
@@ -1794,15 +1738,10 @@ RubyConfigTag(int argc,
       rb_obj_instance_eval(0, 0, options);
       params = rb_iv_get(options, "@params");
 
-      /* Check match */
-      if(T_HASH == rb_type(value = rb_hash_lookup(params,
+      /* Check matcher */
+      if(T_ARRAY == rb_type(value = rb_hash_lookup(params,
           CHAR2SYM("match"))))
         match = value; ///< Lazy eval
-
-      /* Check exclude */
-      if(T_HASH == rb_type(value = rb_hash_lookup(params,
-          CHAR2SYM("exclude"))))
-        exclude = value; ///< Lazy eval
 
       /* Set gravity */
       if(T_SYMBOL == rb_type(value = rb_hash_lookup(params,
@@ -1884,11 +1823,14 @@ RubyConfigTag(int argc,
           int duplicate = False;
           SubTag *t = NULL;
 
-          /* Finally create new tag */
-          if((t = subTagNew(RSTRING_PTR(name), &duplicate)))
+          /* Finally create and add new tag if no duplicate */
+          if((t = subTagNew(RSTRING_PTR(name), &duplicate)) &&
+              False == duplicate)
             {
-              VALUE rargs[2] = { 0 };
+              int i;
+              VALUE entry = Qnil, rargs[2] = { 0 };
 
+              /* Set tag values */
               t->flags   |= flags;
               t->gravity  = gravity;
               t->geom     = geom;
@@ -1896,19 +1838,17 @@ RubyConfigTag(int argc,
 
               /* Add matcher */
               rargs[0] = (VALUE)t;
-              if(!NIL_P(match = RubyHashConvert(match)))
-                rb_hash_foreach(match, RubyHashMatch, (VALUE)&rargs);
+              if(T_ARRAY == rb_type(match))
+                {
+                  for(i = 0; T_HASH == rb_type(entry =
+                      rb_ary_entry(match, i)); i++)
+                    {
+                      rargs[1] = 0; ///< Reset matcher count
+                      rb_hash_foreach(entry, RubyEvalMatcher, (VALUE)&rargs);
+                    }
+                }
 
-              /* Add excludes */
-              rargs[1] = SUB_TAG_MATCH_INVERT;
-              if(!NIL_P(exclude = RubyHashConvert(exclude)))
-                rb_hash_foreach(exclude, RubyHashMatch, (VALUE)&rargs);
-
-              if(t->matcher) subArraySort(t->matcher, subTagCompare);
-
-              /* Check if Duplicate */
-              if(False == duplicate)
-                subArrayPush(subtle->tags, (void *)t);
+              subArrayPush(subtle->tags, (void *)t);
             }
         }
     }
@@ -2906,7 +2846,7 @@ RubySubletScreenReader(VALUE self)
   VALUE screen = Qnil;
 
   Data_Get_Struct(self, SubPanel, p);
-  if(p) screen = RubyConvert(p->screen);
+  if(p) screen = RubySubtleToSubtlext(p->screen);
 
   return screen;
 } /* }}} */
@@ -3240,7 +3180,6 @@ subRubyInit(void)
   /* Class methods */
   rb_define_method(options, "initialize",     RubyOptionsInit,        0);
   rb_define_method(options, "match",          RubyOptionsMatch,       1);
-  rb_define_method(options, "exclude",        RubyOptionsExclude,     1);
   rb_define_method(options, "gravity",        RubyOptionsGravity,     1);
   rb_define_method(options, "method_missing", RubyOptionsDispatcher, -1);
 
