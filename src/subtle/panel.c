@@ -351,6 +351,10 @@ subPanelRender(SubPanel *p,
 
                 snprintf(buf + x, sizeof(buf) - x, "%s", c->name);
 
+                /* Limit size */
+                if(x + subtle->styles.clients.right < sizeof(buf))
+                  buf[x + subtle->styles.clients.right] = '\0';
+
                 /* Add urgent colors */
                 if(c->flags & SUB_CLIENT_MODE_URGENT)
                   s = &subtle->styles.urgent;
