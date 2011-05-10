@@ -403,6 +403,19 @@ EventDestroy(XDestroyWindowEvent *ev)
       /* Update focus if necessary */
       if(focus) subSubtleFocus(True);
     }
+  else
+    {
+      int i;
+
+      /* Check if window is client leader */
+      for(i = 0; i < subtle->clients->ndata; i++)
+        {
+          c = CLIENT(subtle->clients->data[i]);
+
+          /* Mark all windows with leader as dead */
+          if(c->leader == ev->window) c->flags |= SUB_CLIENT_DEAD;
+        }
+    }
 
   subSharedLogDebugEvents("Destroy: win=%#lx\n", ev->window);
 } /* }}} */
