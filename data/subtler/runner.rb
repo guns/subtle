@@ -423,8 +423,8 @@ EOF
     subtler -t -a subtle         Add new tag 'subtle'
     subtler -v subtle -T rocks   Tag view 'subtle' with tag 'rocks'
     subtler -c xterm -G          Show tags of client 'xterm'
-    subtler -c -x -f             Select client and show info
-    subtler -c -C -y 5           Set gravity 5 to current active client
+    subtler -c -X -f             Select client and show info
+    subtler -c -C -Y 5           Set gravity 5 to current active client
     subtler -t -f term           Show every client/view tagged with 'term'
 
   Please report bugs at http://subforge.org/projects/subtle/issues
