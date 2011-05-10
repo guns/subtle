@@ -1898,9 +1898,9 @@ RubyConfigView(int argc,
       params  = rb_iv_get(options, "@params");
 
       /* Check match */
-      if(T_HASH == rb_type(value = rb_hash_lookup(params,
+      if(T_ARRAY == rb_type(value = rb_hash_lookup(params,
           CHAR2SYM("match"))))
-        match = rb_hash_lookup(value, Qnil); ///< Lazy eval
+        match = rb_hash_lookup(rb_ary_entry(value, 0), Qnil); ///< Lazy eval
 
       /* Check dynamic */
       if(Qtrue == (value = rb_hash_lookup(params,
@@ -1925,11 +1925,15 @@ RubyConfigView(int argc,
           SubView *v = NULL;
           char *re = NULL;
 
-          /* Convert regex */
-          if(T_REGEXP == rb_type(match))
-            match = rb_funcall(match, rb_intern("source"), 0, NULL);
-
-          if(T_STRING == rb_type(match)) re = RSTRING_PTR(match);
+          /* Convert type */
+          switch(rb_type(match))
+            {
+              case T_REGEXP:
+                match = rb_funcall(match, rb_intern("source"), 0, NULL);
+              case T_STRING:
+                re = RSTRING_PTR(match);
+                break;
+            }
 
           /* Finally create new view */
           if((v = subViewNew(RSTRING_PTR(name), re)))
