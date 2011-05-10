@@ -368,7 +368,7 @@ typedef struct subclient_t /* {{{ */
   char       *name, *instance, *klass, *role;                     ///< Client instance, klass
 
   TAGS       tags;                                                ///< Client tags
-  Window     win;                                                 ///< Client window
+  Window     win, leader;                                         ///< Client window and leader
   Colormap   cmap;                                                ///< Client colormap
   XRectangle geom;                                                ///< Client geom
 

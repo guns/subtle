@@ -217,6 +217,7 @@ subClientNew(Window win)
   long vid = 0;
   XWindowAttributes attrs;
   XSetWindowAttributes sattrs;
+  Window *leader = NULL;
   SubClient *c = NULL;
 
   assert(win);
@@ -268,6 +269,15 @@ subClientNew(Window win)
   subClientSetWMHints(c, &flags);
   subClientSetState(c, &flags);
   subClientSetTransient(c, &flags);
+
+  /* Set leader window */
+  if((leader = (Window *)subSharedPropertyGet(subtle->dpy, c->win, XA_WINDOW,
+      subEwmhGet(SUB_EWMH_WM_CLIENT_LEADER), NULL)))
+    {
+      c->leader = *leader;
+
+      free(leader);
+    }
 
   /* Set border */
   subClientSetMWMHints(c);
