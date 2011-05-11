@@ -1848,14 +1848,19 @@ RubyConfigTag(int argc,
 
               /* Add matcher */
               rargs[0] = (VALUE)t;
-              if(T_ARRAY == rb_type(match))
+              switch(rb_type(match))
                 {
-                  for(i = 0; T_HASH == rb_type(entry =
-                      rb_ary_entry(match, i)); i++)
-                    {
-                      rargs[1] = 0; ///< Reset matcher count
-                      rb_hash_foreach(entry, RubyEvalMatcher, (VALUE)&rargs);
-                    }
+                  case T_ARRAY:
+                    for(i = 0; T_HASH == rb_type(entry =
+                        rb_ary_entry(match, i)); i++)
+                      {
+                        rargs[1] = 0; ///< Reset matcher count
+                        rb_hash_foreach(entry, RubyEvalMatcher, (VALUE)&rargs);
+                      }
+                    break;
+                  case T_REGEXP:
+                  case T_STRING:
+                    RubyEvalMatcher(Qnil, match, (VALUE)&rargs);
                 }
 
               subArrayPush(subtle->tags, (void *)t);
