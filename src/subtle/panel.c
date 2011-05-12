@@ -297,8 +297,8 @@ subPanelRender(SubPanel *p,
         if(p->keychain && p->keychain->keys)
           {
             subSharedTextDraw(subtle->dpy, subtle->gcs.draw, subtle->font,
-              drawable, p->x + subtle->styles.separator.padding.left,
-              subtle->font->y + subtle->styles.separator.padding.left,
+              drawable, p->x + STYLE_LEFT(subtle->styles.separator),
+              subtle->font->y + STYLE_TOP(subtle->styles.separator),
               subtle->styles.title.fg, subtle->styles.title.bg,
               p->keychain->keys);
           }
