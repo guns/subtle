@@ -2137,7 +2137,8 @@ RubyConfigStyle(VALUE self,
       VALUE klass = Qnil, options = Qnil, params = Qnil, value = Qnil;
 
       /* Select style struct */
-      if(CHAR2SYM("title")          == name) s = &subtle->styles.title;
+      if(CHAR2SYM("all") == name || CHAR2SYM("title") == name)
+        s = &subtle->styles.title;
       else if(CHAR2SYM("focus")     == name) s = &subtle->styles.focus;
       else if(CHAR2SYM("urgent")    == name) s = &subtle->styles.urgent;
       else if(CHAR2SYM("occupied")  == name) s = &subtle->styles.occupied;
@@ -2256,6 +2257,24 @@ RubyConfigStyle(VALUE self,
           int height = STYLE_HEIGHT((*s));
 
           if(height > subtle->ph) subtle->ph = height;
+        }
+
+      /* Cascading styles */
+      if(CHAR2SYM("all") == name)
+        {
+          /* Set all styles */
+          subtle->styles.focus     = subtle->styles.title;
+          subtle->styles.urgent    = subtle->styles.title;
+          subtle->styles.occupied  = subtle->styles.title;
+          subtle->styles.views     = subtle->styles.title;
+          subtle->styles.sublets   = subtle->styles.title;
+          subtle->styles.separator = subtle->styles.title;
+        }
+      else if(CHAR2SYM("views") == name)
+        {
+          /* Set view styles */
+          subtle->styles.focus    = subtle->styles.views;
+          subtle->styles.occupied = subtle->styles.views;
         }
     }
   else rb_raise(rb_eArgError, "Unknown value type for style");
