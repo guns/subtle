@@ -2270,12 +2270,6 @@ RubyConfigStyle(VALUE self,
           subtle->styles.sublets   = subtle->styles.title;
           subtle->styles.separator = subtle->styles.title;
         }
-      else if(CHAR2SYM("views") == name)
-        {
-          /* Set view styles */
-          subtle->styles.focus    = subtle->styles.views;
-          subtle->styles.occupied = subtle->styles.views;
-        }
     }
   else rb_raise(rb_eArgError, "Unknown value type for style");
 
