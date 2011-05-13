@@ -508,8 +508,7 @@ EventFocus(XFocusChangeEvent *ev)
 static void
 EventGrab(XEvent *ev)
 {
-  int chained = -1; ///< Not found
-  unsigned int code = 0, state = 0;
+  unsigned int code = 0, state = 0, chain = False;
   SubGrab *g = NULL;
   SubClient *c = NULL;
   SubScreen *s = NULL;
@@ -552,20 +551,20 @@ EventGrab(XEvent *ev)
   /* Check chain end {{{ */
   if(subtle->keychain)
     {
-      int modifier = False;
-
       /* Check if key is just a modifier */
       if(!g)
         {
-          sym      = XLookupKeysym(&(ev->xkey), 0);
-          modifier = IsModifierKey(sym);
+          sym = XLookupKeysym(&(ev->xkey), 0);
 
-          if(modifier) return;
+          if(IsModifierKey(sym)) return;
         }
-      else chained = subArrayIndex(subtle->keychain->keys, (void *)g);
+
+      /* Check if grab belongs to current chain */
+      if(g && subtle->keychain->keys)
+        chain = (-1 != subArrayIndex(subtle->keychain->keys, (void *)g));
 
       /* Break chain on end or invalid link */
-      if((!g && !modifier) || -1 == chained || !g->keys)
+      if(!chain || (g && !g->keys))
         {
           free(subtle->panels.keychain.keychain->keys);
           subtle->panels.keychain.keychain->keys = NULL;
@@ -579,7 +578,7 @@ EventGrab(XEvent *ev)
           subGrabUnset(win);
           subGrabSet(win);
 
-          if(-1 == chained) return;
+          if(!chain) return;
         }
     } /* }}} */
 
@@ -589,15 +588,10 @@ EventGrab(XEvent *ev)
       FLAGS flag = g->flags & ~(SUB_TYPE_GRAB|SUB_GRAB_KEY|SUB_GRAB_MOUSE|
         SUB_GRAB_CHAIN_START|SUB_GRAB_CHAIN_LINK|SUB_GRAB_CHAIN_END); ///< Clear mask
 
-      subSharedLogDebug("chain_start=%ld, chain_link=%ld, chained=%d, "
-        "subtle->keychain=%p, g->keys=%p, flag=%d\n",
-        g->flags & SUB_GRAB_CHAIN_START, g->flags & SUB_GRAB_CHAIN_LINK,
-        chained, subtle->keychain, g->keys, flag);
-
       /* Handle key chains {{{ */
-      if(g->keys && (-1 != chained || g->flags & SUB_GRAB_CHAIN_START))
+      if(g->flags & SUB_GRAB_CHAIN_START && g->keys)
         {
-          /* Update keychain panel if in use */
+          /* Update keychain panel if in use {{{ */
           if(subtle->panels.keychain.keychain)
             {
               char *key = NULL, buf[12] = { 0 };
@@ -648,11 +642,13 @@ EventGrab(XEvent *ev)
                 subtle->panels.keychain.keychain->len, "%s%s", buf, key);
 
               subtle->panels.keychain.keychain->len += len;
-              subtle->keychain                       = g;
 
               subScreenUpdate();
               subScreenRender();
-            }
+            }  /* }}} */
+
+          /* Keep chain position */
+          subtle->keychain = g;
 
           /* Bind any keys to exit chain on invalid link */
           subGrabUnset(win);
