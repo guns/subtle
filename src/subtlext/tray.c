@@ -47,11 +47,16 @@ subTraySingFind(VALUE self,
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Check object type */
-  if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
-      value, buf, sizeof(buf), &flags)))
+  switch(rb_type(parsed = subSubtlextParse(
+      value, buf, sizeof(buf), NULL)))
     {
-      if(CHAR2SYM("all") == parsed)
-        return subTraySingAll(Qnil);
+      case T_SYMBOL:
+        if(CHAR2SYM("all") == parsed)
+          return subTraySingAll(Qnil);
+        break;
+      case T_OBJECT:
+        if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("Tray"))))
+          return parsed;
     }
 
   /* Find tray */

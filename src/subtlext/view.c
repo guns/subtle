@@ -131,15 +131,21 @@ subViewSingFind(VALUE self,
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Check object type */
-  if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
+  switch(rb_type(parsed = subSubtlextParse(
       value, buf, sizeof(buf), NULL)))
     {
-      if(CHAR2SYM("visible") == parsed)
-        return subViewSingVisible(Qnil);
-      else if(CHAR2SYM("all") == parsed)
-        return subViewSingAll(Qnil);
-      else if(CHAR2SYM("current") == parsed)
-        return subViewSingCurrent(Qnil);
+      case T_SYMBOL:
+        if(CHAR2SYM("visible") == parsed)
+          return subViewSingVisible(Qnil);
+        else if(CHAR2SYM("all") == parsed)
+          return subViewSingAll(Qnil);
+        else if(CHAR2SYM("current") == parsed)
+          return subViewSingCurrent(Qnil);
+        else snprintf(buf, sizeof(buf), "%s", SYM2CHAR(value));
+        break;
+      case T_OBJECT:
+        if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("View"))))
+          return parsed;
     }
 
   /* Find view */

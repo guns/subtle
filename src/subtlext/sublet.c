@@ -45,11 +45,17 @@ subSubletSingFind(VALUE self,
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Check object type */
-  if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
+  switch(rb_type(parsed = subSubtlextParse(
       value, buf, sizeof(buf), NULL)))
     {
-      if(CHAR2SYM("all") == parsed)
-        return subSubletSingAll(Qnil);
+      case T_SYMBOL:
+        if(CHAR2SYM("all") == parsed)
+          return subSubletSingAll(Qnil);
+        else snprintf(buf, sizeof(buf), "%s", SYM2CHAR(value));
+        break;
+      case T_OBJECT:
+        if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("Sublet"))))
+          return parsed;
     }
 
   /* Find sublet */
