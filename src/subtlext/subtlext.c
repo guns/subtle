@@ -900,6 +900,34 @@ SubtlextEqualTypedWindow(VALUE self,
   return SubtlextEqual(self, other, "@win", True);
 } /* }}} */
 
+/* SubtlextFlags {{{ */
+static int
+SubtlextFlags(VALUE key,
+  VALUE value,
+  VALUE data)
+{
+  VALUE *rargs = (VALUE *)data;
+
+  /* Set flags */
+  if(CHAR2SYM("name")          == key) rargs[0] = SUB_MATCH_NAME;
+  else if(CHAR2SYM("instance") == key) rargs[0] = SUB_MATCH_INSTANCE;
+  else if(CHAR2SYM("class")    == key) rargs[0] = SUB_MATCH_CLASS;
+  else if(CHAR2SYM("gravity")  == key) rargs[0] = SUB_MATCH_GRAVITY;
+  else if(CHAR2SYM("role")     == key) rargs[0] = SUB_MATCH_ROLE;
+  else if(CHAR2SYM("pid")      == key) rargs[0] = SUB_MATCH_PID;
+
+  /* Set value */
+  if(0 != rargs[0] && RTEST(value))
+    {
+      rargs[1] = value;
+      printf("DEBUG %s:%d\n", __FILE__, __LINE__);
+
+      return ST_STOP;
+    }
+
+  return ST_CONTINUE;
+} /* }}} */
+
 /* Exported */
 
 /* subSubtlextConnect {{{ */
@@ -982,42 +1010,24 @@ subSubtlextParse(VALUE value,
   int len,
   int *flags)
 {
-  VALUE ret = Qtrue;
+  VALUE ret = Qnil;
 
-  /* Set defaults */
-  if(flags) *flags = (SUB_MATCH_INSTANCE|SUB_MATCH_CLASS);
-
-  /* Check for hash */
-  if(T_HASH == rb_type(value) && flags) /* {{{ */
+  /* Handle flags {{{ */
+  if(flags)
     {
-      int i;
-      VALUE match = Qnil;
+      /* Set defaults */
+      *flags = (SUB_MATCH_INSTANCE|SUB_MATCH_CLASS);
 
-      struct properties
-      {
-        VALUE sym;
-        int   flags;
-      } props[] = {
-        /* Only clients use all flags */
-        { CHAR2SYM("name"),     SUB_MATCH_NAME     },
-        { CHAR2SYM("instance"), SUB_MATCH_INSTANCE },
-        { CHAR2SYM("class"),    SUB_MATCH_CLASS    },
-        { CHAR2SYM("gravity"),  SUB_MATCH_GRAVITY  },
-        { CHAR2SYM("role"),     SUB_MATCH_ROLE     },
-        { CHAR2SYM("pid"),      SUB_MATCH_PID      }
-      };
-
-      /* Check hash keys */
-      for(i = 0; LENGTH(props) > i; i++)
+      /* Set flags from hash */
+      if(T_HASH == rb_type(value))
         {
-          if(!NIL_P((match = rb_hash_lookup(value, props[i].sym))))
-            {
-              *flags = props[i].flags;
-              break;
-            }
-        }
+          VALUE rargs[2] = { 0, Qnil };
 
-      value = match; ///< Just copy over
+          rb_hash_foreach(value, SubtlextFlags, (VALUE)&rargs);
+
+          *flags = (int)rargs[0];
+          value  = rargs[1];
+        }
     } /* }}} */
 
   /* Check object type */
@@ -1033,11 +1043,12 @@ subSubtlextParse(VALUE value,
         ret = value;
         snprintf(buf, len, "%s", SYM2CHAR(value));
         break; /* }}} */
+      case T_OBJECT: /* {{{ */
+        ret = value;
+        break; /* }}} */
       default: /* {{{ */
         rb_raise(rb_eArgError, "Unexpected value-type `%s'",
-          rb_obj_classname(value));
-
-        ret = Qfalse; /* }}} */
+          rb_obj_classname(value)); /* }}} */
     }
 
   return ret;
