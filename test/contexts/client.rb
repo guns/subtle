@@ -88,8 +88,19 @@ context "Client" do
     before == middle1 - 1 and 2 == middle2 and before == after
   end
 
-  asserts("Runtime: Gravity") do
-    topic.gravity == Subtlext::Gravity[:center]
+  asserts("Runtime: Set/get gravity") do
+    # Check gravity
+    result1 = topic.gravity == Subtlext::Gravity[:center]
+
+    # Set gravity on www view
+    topic.toggle_stick
+    topic.gravity = { :www => :left }
+
+    # Jump to www vew and check gravity
+    Subtlext::View[:www].jump
+    result2 = topic.gravity == Subtlext::Gravity[:left]
+
+    result1 and result2
   end
 
   asserts("Runtime: Screen") do
