@@ -1061,15 +1061,32 @@ EventMessage(XClientMessageEvent *ev)
             break; /* }}} */
           case SUB_EWMH_SUBTLE_CLIENT_GRAVITY: /* {{{ */
             if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0]))) &&
-                ((g = GRAVITY(subArrayGet(subtle->gravities, (int)ev->data.l[1])))) &&
-                VISIBLE(subtle->visible_tags, c))
+                ((g = GRAVITY(subArrayGet(subtle->gravities, (int)ev->data.l[1])))))
               {
-                subClientArrange(c, (int)ev->data.l[1], c->screen);
-                subClientWarp(c, True);
-                XRaiseWindow(subtle->dpy, c->win);
+                /* Set gravity for specified view */
+                if((v = VIEW(subArrayGet(subtle->views, (int)ev->data.l[2]))))
+                  {
+                    c->gravities[(int)ev->data.l[2]] = (int)ev->data.l[1];
 
-                /* Hook: Tile */
-                subHookCall(SUB_HOOK_TILE, NULL);
+                    if(subtle->visible_views & (1L << ((int)ev->data.l[2] + 1)))
+                      {
+                        subClientArrange(c, c->gravities[(int)ev->data.l[2]], c->screen);
+                        subClientWarp(c, True);
+                        XRaiseWindow(subtle->dpy, c->win);
+
+                        /* Hook: Tile */
+                        subHookCall(SUB_HOOK_TILE, NULL);
+                      }
+                  }
+                else if(VISIBLE(subtle->visible_tags, c))
+                  {
+                    subClientArrange(c, (int)ev->data.l[1], c->screen);
+                    subClientWarp(c, True);
+                    XRaiseWindow(subtle->dpy, c->win);
+
+                    /* Hook: Tile */
+                    subHookCall(SUB_HOOK_TILE, NULL);
+                  }
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_CLIENT_FLAGS: /* {{{ */
