@@ -281,7 +281,7 @@ int
 main(int argc,
   char *argv[])
 {
-  int c, restart = 0;
+  int c;
   char *display = NULL;
   struct sigaction sa;
   const struct option long_options[] =
@@ -340,7 +340,7 @@ main(int argc,
 
   /* Signal handler */
   sa.sa_handler = SubtleSignal;
-  sa.sa_flags   = 0;
+  sa.sa_flags   = SA_NOCLDSTOP|SA_NODEFER;
   memset(&sa.sa_mask, 0, sizeof(sigset_t)); ///< Avoid uninitialized values
   sigemptyset(&sa.sa_mask);
 
@@ -396,18 +396,16 @@ main(int argc,
 
   subEventLoop();
 
-  /* Save restart flag */
-  if(subtle->flags & SUB_SUBTLE_RESTART) restart++;
-
-  subSubtleFinish();
-
   /* Restart if necessary */
-  if(restart)
+  if(subtle->flags & SUB_SUBTLE_RESTART)
     {
+      subSubtleFinish();
+
       printf("Restarting\n");
 
       execvp(argv[0], argv);
     }
+  else subSubtleFinish();
 
   printf("Exit\n");
 
