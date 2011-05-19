@@ -123,6 +123,42 @@ ClientFlagsToggle(VALUE self,
   return Qnil;
 } /* }}} */
 
+/* ClientGravity {{{ */
+static int
+ClientGravity(VALUE key,
+  VALUE value,
+  VALUE client)
+{
+  SubMessageData data = { .l = { -1, -1, -1, -1, -1 } };
+
+  data.l[0] = FIX2INT(rb_iv_get(client, "@id"));
+
+  /* Find gravity */
+  if(RTEST(value))
+    {
+      VALUE gravity = subGravitySingFind(Qnil, value);
+
+      data.l[1] = RTEST(gravity) ? FIX2INT(rb_iv_get(gravity, "@id")) : -1;
+    }
+
+  /* Find view id if any */
+  if(RTEST(key))
+    {
+      VALUE view = subViewSingFind(Qnil, key);
+
+      data.l[2] = RTEST(view) ? FIX2INT(rb_iv_get(view, "@id")) : -1;
+    }
+
+  /* Finally send */
+  if(-1 != data.l[0] && -1 != data.l[1])
+    {
+      subSharedMessage(display, DefaultRootWindow(display),
+        "SUBTLE_CLIENT_GRAVITY", data, 32, True);
+    }
+
+  return ST_CONTINUE;
+} /* }}} */
+
 /* Singleton */
 
 /* subClientSingSelect {{{ */
@@ -177,15 +213,21 @@ subClientSingFind(VALUE self,
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Check object type */
-  if(T_SYMBOL == rb_type(parsed = subSubtlextParse(
+  switch(rb_type(parsed = subSubtlextParse(
       value, buf, sizeof(buf), &flags)))
     {
-      if(CHAR2SYM("visible") == parsed)
-        return subClientSingVisible(Qnil);
-      else if(CHAR2SYM("all") == parsed)
-        return subClientSingAll(Qnil);
-      else if(CHAR2SYM("current") == parsed)
-        return subClientSingCurrent(Qnil);
+      case T_SYMBOL:
+        if(CHAR2SYM("visible") == parsed)
+          return subClientSingVisible(Qnil);
+        else if(CHAR2SYM("all") == parsed)
+          return subClientSingAll(Qnil);
+        else if(CHAR2SYM("current") == parsed)
+          return subClientSingCurrent(Qnil);
+        else snprintf(buf, sizeof(buf), "%s", SYM2CHAR(value));
+        break;
+      case T_OBJECT:
+        if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("Client"))))
+          return parsed;
     }
 
   /* Find client */
@@ -923,9 +965,11 @@ subClientGravityReader(VALUE self)
  * call-seq: gravity=(fixnum) -> nil
  *           gravity=(symbol) -> nil
  *           gravity=(object) -> nil
+ *           gravity=(hash)   -> nil
  *
- * Set Client Gravity
+ * Set Client Gravity either for current or for specific view
  *
+ *  # Set gravity for current view
  *  client.gravity = 0
  *  => nil
  *
@@ -935,6 +979,9 @@ subClientGravityReader(VALUE self)
  *  client.gravity = Subtlext::Gravity[0]
  *  => nil
  *
+ *  # Set gravity for specific view
+ *  client.gravity = { :terms => :center }
+ *  => nil
  */
 
 VALUE
@@ -950,25 +997,27 @@ subClientGravityWriter(VALUE self,
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Check instance type */
-  if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("Gravity"))))
-    gravity = value;
-  else gravity = subGravitySingFind(Qnil, value);
-
-  /* Set gravity */
-  if(Qnil != gravity)
+  switch(rb_type(value))
     {
-      SubMessageData data = { { 0, 0, 0, 0, 0 } };
+      case T_FIXNUM:
+      case T_SYMBOL:
+      case T_OBJECT:
+        if(rb_obj_is_instance_of(value,
+            rb_const_get(mod, rb_intern("Gravity"))) ||
+            RTEST(gravity = subGravitySingFind(Qnil, value)))
+          {
+            ClientGravity(Qnil, gravity, self);
 
-      data.l[0] = FIX2LONG(id);
-      data.l[1] = FIX2LONG(rb_iv_get(gravity, "@id"));
-
-      subSharedMessage(display, DefaultRootWindow(display),
-        "SUBTLE_CLIENT_GRAVITY", data, 32, True);
-
-      rb_iv_set(self, "@gravity", gravity);
+            rb_iv_set(self, "@gravity", gravity);
+          }
+        break;
+      case T_HASH:
+        rb_hash_foreach(value, ClientGravity, self);
+        rb_iv_set(self, "@gravity", Qnil); ///< Reset to update on demand
+        break;
+      default: rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+        rb_obj_classname(value));
     }
-  else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
-    rb_obj_classname(value));
 
   return Qnil;
 } /* }}} */
