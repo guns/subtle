@@ -386,7 +386,11 @@ SubtlextTagReload(VALUE self)
 /*
  * call-seq: send_click(button, x, y) -> nil
  *
- * Emulate a click on a window
+ * Emulate a click on a window with optional button
+ * and x/y position
+ *
+ *  object.send_button
+ *  => nil
  *
  *  object.send_button(2)
  *  => nil
@@ -397,53 +401,47 @@ SubtlextSendButton(int argc,
   VALUE *argv,
   VALUE self)
 {
+  Window subwin = None;
+  XEvent event = { 0 };
   VALUE button = Qnil, x = Qnil, y = Qnil, win = Qnil;
 
   /* Check ruby object */
   rb_check_frozen(self);
   GET_ATTR(self, "@win", win);
 
-  rb_scan_args(argc, argv, "12", &button, &x, &y);
+  rb_scan_args(argc, argv, "03", &button, &x, &y);
 
-  /* Check object type */
-  if(FIXNUM_P(button))
-    {
-      Window subwin = None;
-      XEvent event = { 0 };
+  /* Assemble button event */
+  event.type                  = EnterNotify;
+  event.xcrossing.window      = NUM2LONG(win);
+  event.xcrossing.root        = DefaultRootWindow(display);
+  event.xcrossing.subwindow   = NUM2LONG(win);
+  event.xcrossing.same_screen = True;
+  event.xcrossing.x           = FIXNUM_P(x) ? FIX2INT(x) : 5;
+  event.xcrossing.y           = FIXNUM_P(y) ? FIX2INT(y) : 5;
 
-      /* Assemble button event */
-      event.type                  = EnterNotify;
-      event.xcrossing.window      = NUM2LONG(win);
-      event.xcrossing.root        = DefaultRootWindow(display);
-      event.xcrossing.subwindow   = NUM2LONG(win);
-      event.xcrossing.same_screen = True;
-      event.xcrossing.x           = FIXNUM_P(x) ? FIX2INT(x) : 5;
-      event.xcrossing.y           = FIXNUM_P(y) ? FIX2INT(y) : 5;
+  /* Translate window x/y to root x/y */
+  XTranslateCoordinates(display, event.xcrossing.window,
+    event.xcrossing.root, event.xcrossing.x, event.xcrossing.y,
+    &event.xcrossing.x_root, &event.xcrossing.y_root, &subwin);
 
-      /* Translate window x/y to root x/y */
-      XTranslateCoordinates(display, event.xcrossing.window,
-        event.xcrossing.root, event.xcrossing.x, event.xcrossing.y,
-        &event.xcrossing.x_root, &event.xcrossing.y_root, &subwin);
+  //XSetInputFocus(display, event.xany.window, RevertToPointerRoot, CurrentTime);
+  XSendEvent(display, NUM2LONG(win), True, EnterWindowMask, &event);
 
-      //XSetInputFocus(display, event.xany.window, RevertToPointerRoot, CurrentTime);
-      XSendEvent(display, NUM2LONG(win), True, EnterWindowMask, &event);
+  /* Send button press event */
+  event.type           = ButtonPress;
+  event.xbutton.button = FIXNUM_P(button) ? FIX2INT(button) : 1;
 
-      /* Send button press event */
-      event.type           = ButtonPress;
-      event.xbutton.button = FIX2INT(button);
+  XSendEvent(display, NUM2LONG(win), True, ButtonPressMask, &event);
+  XFlush(display);
 
-      XSendEvent(display, NUM2LONG(win), True, ButtonPressMask, &event);
-      XFlush(display);
+  usleep(12000);
 
-      usleep(12000);
+  /* Send button release event */
+  event.type = ButtonRelease;
 
-      /* Send button release event */
-      event.type = ButtonRelease;
-
-      XSendEvent(display, NUM2LONG(win), True, ButtonReleaseMask, &event);
-      XFlush(display);
-    }
-  else rb_raise(rb_eArgError, "Unknown value type");
+  XSendEvent(display, NUM2LONG(win), True, ButtonReleaseMask, &event);
+  XFlush(display);
 
   return Qnil;
 } /* }}} */
