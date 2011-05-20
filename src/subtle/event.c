@@ -240,8 +240,7 @@ EventConfigure(XConfigureEvent *ev)
   /* Ckeck window */
   if(ROOT == ev->window)
     {
-      int sw = DisplayWidth(subtle->dpy, DefaultScreen(subtle->dpy));
-      int sh = DisplayHeight(subtle->dpy, DefaultScreen(subtle->dpy));
+      int sw = 0, sh = 0;
 
 #ifdef HAVE_X11_EXTENSIONS_XRANDR_H
       /* Update RandR config */
@@ -249,7 +248,11 @@ EventConfigure(XConfigureEvent *ev)
         XRRUpdateConfiguration((XEvent *)ev);
 #endif /* HAVE_X11_EXTENSIONS_XRANDR_H */
 
-      /* Skip event if screen size doesn't change */
+      /* Fetch screen geometry after update */
+      sw = DisplayWidth(subtle->dpy, DefaultScreen(subtle->dpy));
+      sh = DisplayHeight(subtle->dpy, DefaultScreen(subtle->dpy));
+
+      /* Skip event if screen size didn't change */
       if(subtle->width == sw && subtle->height == sh) return;
 
       /* Reload screens */
