@@ -1573,33 +1573,30 @@ EventUnmap(XUnmapEvent *ev)
   /* Check if we know this window */
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
     {
-      if(ev->send_event) ///< Client
+      /* Set withdrawn state (see ICCCM 4.1.4) */
+      subEwmhSetWMState(c->win, WithdrawnState);
+
+      /* Ignore our generated unmap events */
+      if(c->flags & SUB_CLIENT_UNMAP)
         {
-          /* Set withdrawn state (see ICCCM 4.1.4) */
-          subEwmhSetWMState(c->win, WithdrawnState);
+          c->flags &= ~SUB_CLIENT_UNMAP;
 
-          /* Ignore our generated unmap events */
-          if(c->flags & SUB_CLIENT_UNMAP)
-            {
-              c->flags &= ~SUB_CLIENT_UNMAP;
-
-              return;
-            }
-
-          /* Kill client */
-          c->flags |= SUB_CLIENT_DEAD;
-          XSelectInput(subtle->dpy, c->win, NoEventMask);
-
-          subArrayRemove(subtle->clients, (void *)c);
-          subClientKill(c);
-          subClientPublish();
-
-          subScreenUpdate();
-          subScreenRender();
-
-          /* Update focus if necessary */
-          if(focus) subSubtleFocus(True);
+          return;
         }
+
+      /* Kill client */
+      c->flags |= SUB_CLIENT_DEAD;
+      XSelectInput(subtle->dpy, c->win, NoEventMask);
+
+      subArrayRemove(subtle->clients, (void *)c);
+      subClientKill(c);
+      subClientPublish();
+
+      subScreenUpdate();
+      subScreenRender();
+
+      /* Update focus if necessary */
+      if(focus) subSubtleFocus(True);
     }
   else if((t = TRAY(subSubtleFind(ev->window, TRAYID)))) ///< Tray
     {
