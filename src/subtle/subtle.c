@@ -340,7 +340,7 @@ main(int argc,
 
   /* Signal handler */
   sa.sa_handler = SubtleSignal;
-  sa.sa_flags   = SA_NOCLDSTOP|SA_NODEFER;
+  sa.sa_flags   = 0;
   memset(&sa.sa_mask, 0, sizeof(sigset_t)); ///< Avoid uninitialized values
   sigemptyset(&sa.sa_mask);
 
