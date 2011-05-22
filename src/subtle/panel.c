@@ -143,10 +143,10 @@ subPanelUpdate(SubPanel *p)
           }
         break; /* }}} */
       case SUB_PANEL_SUBLET: /* {{{ */
-        p->width = p->sublet->width;
+        p->width = MAX(subtle->styles.sublets.min, p->sublet->width);
         break; /* }}} */
       case SUB_PANEL_TITLE: /* {{{ */
-        p->width = 0;
+        p->width = subtle->styles.clients.min;
 
         if(0 < subtle->clients->ndata)
           {
@@ -174,12 +174,14 @@ subPanelUpdate(SubPanel *p)
                       c->name, subtle->styles.clients.right >= len ? len :
                       subtle->styles.clients.right, NULL, NULL, True) +
                       STYLE_WIDTH(subtle->styles.title);
+
+                    p->width = MAX(subtle->styles.clients.min, p->width);
                   }
               }
           }
         break; /* }}} */
       case SUB_PANEL_VIEWS: /* {{{ */
-        p->width = 0;
+        p->width = subtle->styles.views.min;
 
         if(0 < subtle->views->ndata)
           {
@@ -205,7 +207,7 @@ subPanelUpdate(SubPanel *p)
                   s = &subtle->styles.occupied;
                 else s = &subtle->styles.views;
 
-                p->width += v->width + STYLE_WIDTH((*s));
+                p->width += MAX(s->min, v->width) + STYLE_WIDTH((*s));
               }
           }
         break; /* }}} */

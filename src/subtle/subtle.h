@@ -560,6 +560,7 @@ typedef struct subsides_t /* {{{ */
 
 typedef struct substyle_t /* {{{ */
 {
+  int min;                                                        ///< Style min width
   unsigned long fg, bg, top, right, bottom, left;                 ///< Style colors
   struct subsides_t border, padding, margin;                      ///< Style border, padding and margin
 } SubStyle; /* }}} */

@@ -2257,6 +2257,10 @@ RubyConfigStyle(VALUE self,
           RubyHashToInt(params, "margin_left",   &s->margin.left);
         }
 
+      /* Get min width */
+      RubyHashToInt(params, "min_width", &s->min);
+      s->min = MAX(0, s->min);
+
       /* Check max height */
       if(CHAR2SYM("clients") != name && CHAR2SYM("subtle") != name)
         {
