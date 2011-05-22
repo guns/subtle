@@ -1955,6 +1955,12 @@ RubyConfigView(int argc,
 
                   RubyIconToIcon(icon, v->icon);
 
+                  /* Set view width */
+                  if(v->flags & SUB_VIEW_ICON_ONLY)
+                    v->width  = v->icon->width;
+                  else
+                    v->width += v->icon->width + 3;
+
                   rb_ary_push(shelter, icon); ///< Protect from GC
                 }
               else v->flags &= ~SUB_VIEW_ICON_ONLY;

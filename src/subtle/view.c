@@ -31,6 +31,8 @@ subViewNew(char *name,
   v = VIEW(subSharedMemoryAlloc(1, sizeof(SubView)));
   v->flags = SUB_TYPE_VIEW;
   v->name  = strdup(name);
+  v->width = subSharedTextWidth(subtle->dpy, subtle->font,
+    v->name, strlen(v->name), NULL, NULL, True);
 
   /* Tags */
   if(tags && strncmp("", tags, 1))
