@@ -769,7 +769,6 @@ void subHookKill(SubHook *h);                                     ///< Kill hook
 
 /* panel.c {{{ */
 SubPanel *subPanelNew(int type);                                  ///< Create new panel
-void subPanelConfigure(SubPanel *p);                              ///< Configure panels
 void subPanelUpdate(SubPanel *p);                                 ///< Update panels
 void subPanelRender(SubPanel *p, Drawable drawable);              ///< Render panels
 int subPanelCompare(const void *a, const void *b);                ///< Compare two panels

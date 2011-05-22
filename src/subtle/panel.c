@@ -107,57 +107,10 @@ subPanelNew(int type)
         break; /* }}} */
     }
 
-  subPanelConfigure(p);
-
   subSharedLogDebugSubtle("new=panel, type=%s\n",
     SUB_PANEL_VIEWS == type ? "views" : "title");
 
   return p;
-} /* }}} */
-
- /** subPanelConfigure {{{
-  * @brief Configure panel
-  * @param[in]  p  A #SubPanel
-  **/
-
-void
-subPanelConfigure(SubPanel *p)
-{
-  assert(p);
-
-  /* Handle panel item type */
-  switch(p->flags & SUB_PANEL_VIEWS)
-    {
-      case SUB_PANEL_VIEWS: /* {{{ */
-        p->width = 0;
-
-        if(0 < subtle->views->ndata)
-          {
-            int i;
-
-            /* Update for each view */
-            for(i = 0; i < subtle->views->ndata; i++)
-              {
-                SubView *v = VIEW(subtle->views->data[i]);
-
-                v->width = 0; ///< Reset width
-
-                /* Add width of view icon and/or text */
-                if(v->flags & SUB_VIEW_ICON) v->width += v->icon->width;
-
-                if(!(v->flags & SUB_VIEW_ICON_ONLY))
-                  {
-                    if(v->flags & SUB_VIEW_ICON) v->width += 3;
-
-                    v->width += subSharedTextWidth(subtle->dpy, subtle->font,
-                      v->name, strlen(v->name), NULL, NULL, True);
-                  }
-
-                p->width += v->width;
-              }
-          }
-        break; /* }}} */
-    }
 } /* }}} */
 
  /** subPanelUpdate {{{
