@@ -48,11 +48,12 @@ subTraySingFind(VALUE self,
 
   /* Check object type */
   switch(rb_type(parsed = subSubtlextParse(
-      value, buf, sizeof(buf), NULL)))
+      value, buf, sizeof(buf), &flags)))
     {
       case T_SYMBOL:
         if(CHAR2SYM("all") == parsed)
           return subTraySingAll(Qnil);
+        else snprintf(buf, sizeof(buf), "%s", SYM2CHAR(value));
         break;
       case T_OBJECT:
         if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("Tray"))))
@@ -194,19 +195,20 @@ subTrayUpdate(VALUE self)
   if(-1 != (id = subSubtlextFindWindow("SUBTLE_TRAY_LIST", buf, NULL,
       NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS))))
     {
-      char *title = NULL, *wmname = NULL, *wmclass = NULL;
+      char *wmname = NULL, *wminstance = NULL, *wmclass = NULL;
 
-      XFetchName(display, NUM2LONG(win), &title);
-      subSharedPropertyClass(display, NUM2LONG(win), &wmname, &wmclass);
+      /* Get name, instance and class */
+      subSharedPropertyClass(display, win, &wminstance, &wmclass);
+      subSharedPropertyName(display, win, &wmname, wmclass);
 
       /* Set properties */
-      rb_iv_set(self, "@id",    INT2FIX(id));
-      rb_iv_set(self, "@title", rb_str_new2(title));
-      rb_iv_set(self, "@name",  rb_str_new2(wmname));
-      rb_iv_set(self, "@klass", rb_str_new2(wmclass));
+      rb_iv_set(self, "@id",       INT2FIX(id));
+      rb_iv_set(self, "@name",     rb_str_new2(wmname));
+      rb_iv_set(self, "@instance", rb_str_new2(wminstance));
+      rb_iv_set(self, "@klass",    rb_str_new2(wmclass));
 
-      free(title);
       free(wmname);
+      free(wminstance);
       free(wmclass);
     }
 

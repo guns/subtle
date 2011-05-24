@@ -1233,7 +1233,7 @@ subSubtlextFindWindow(char *prop,
               /* Compare pids */
               (flags & SUB_MATCH_PID && pid1 == pid2))
             {
-              subSharedLogDebugSubtlext("Found: prop=%s, name=%s, win=%#lx, id=%d, flags\n",
+              subSharedLogDebugSubtlext("Found: prop=%s, name=%s, win=%#lx, id=%d, flags=%d\n",
                 prop, match, wins[i], i, flags);
 
               if(win) *win = wins[i];
@@ -1672,19 +1672,19 @@ Init_subtlext(void)
   tray = rb_define_class_under(mod, "Tray", rb_cObject);
 
   /* Tray id */
-  rb_define_attr(tray, "id",    1, 0);
+  rb_define_attr(tray, "id",       1, 0);
 
   /* Window id */
-  rb_define_attr(tray, "win",   1, 0);
-
-  /* WM_CLASS */
-  rb_define_attr(tag,  "klass", 1, 0);
+  rb_define_attr(tray, "win",      1, 0);
 
   /* WM_NAME */
-  rb_define_attr(tag,  "title", 1, 0);
+  rb_define_attr(tray, "name",     1, 0);
 
-  /* WM_NAME */
-  rb_define_attr(tag,  "name",  1, 0);
+  /* Instance of WM_CLASS */
+  rb_define_attr(tray, "instance", 1, 0);
+
+  /* Class of WM_CLASS */
+  rb_define_attr(tray, "klass",    1, 0);
 
   /* Singleton methods */
   rb_define_singleton_method(tray, "find", subTraySingFind, 1);
