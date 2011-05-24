@@ -10,8 +10,25 @@
 # See the file COPYING for details.
 #
 
-require "mkmf"
-require "riot"
+# Configuration
+subtle   = "../subtle"
+subtlext = "../subtlext.so"
+config   = "../data/subtle.rb"
+sublets  = "./sublet"
+display  = ":10"
+
+begin
+  require "mkmf"
+  require "riot"
+  require "gtk2/base"
+  require subtlext
+rescue LoadError => missing
+  puts <<EOF
+>>> ERROR: Couldn't find the gem `#{missing}'
+>>>        Please install it with following command:
+>>>        gem install #{missing}
+EOF
+end
 
 def fork_and_forget(cmd)
   pid = Process.fork
@@ -27,20 +44,17 @@ if((xterm = find_executable0("xterm")).nil?)
   raise "xterm not found in path"
 end
 
-# Configuration
-subtle   = "../subtle"
-subtlext = "../subtlext.so"
-config   = "../data/subtle.rb"
-sublets  = "./sublet"
-display  = ":10"
-
-# Start environment
+# Start subtle
 fork_and_forget("#{subtle} -d #{display} -c #{config} -s #{sublets} &>/dev/null")
 
 sleep 1
 
-require subtlext
+# Create dummy tray icon
+Gtk.init(["--display=%s" % [ display ]])
 
+Gtk::StatusIcon.new
+
+# Set subtlext display
 Subtlext::Subtle.display = display
 
 # Run tests
@@ -54,6 +68,7 @@ require_relative "contexts/sublet.rb"
 require_relative "contexts/tag.rb"
 require_relative "contexts/view.rb"
 require_relative "contexts/client.rb"
+require_relative "contexts/tray.rb"
 require_relative "contexts/subtle_finish.rb"
 
 # vim:ts=2:bs=2:sw=2:et:fdm=marker
