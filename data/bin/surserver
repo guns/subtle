@@ -16,7 +16,12 @@ begin
 
   Subtle::Sur::Server.new.run
 rescue LoadError => error
-  missing = error.to_s.split(" ").last.gsub(/\//, "-")
+  missing = error.to_s.split(" ").last
+
+  # Check missing files
+  if(missing == "archive/tar/initar")
+    missing = "archive-tar-minitar"
+  end
 
   puts <<EOF
 >>> ERROR: Couldn't find the gem #{missing}
