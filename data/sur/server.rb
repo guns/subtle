@@ -14,10 +14,10 @@ require "fileutils"
 require "yaml"
 require "sinatra"
 require "haml"
-require "dm-core"
-require "dm-types"
+require "datamapper"
 require "digest/md5"
-require "curb"
+require "uri"
+require "net/http"
 require "xmlrpc/marshal"
 
 require "subtle/sur/specification"
@@ -33,17 +33,17 @@ module Subtle # {{{
 
         property(:id,          Serial)
         property(:name,        String, :unique_index => :name)
-        property(:contact,     String)
-        property(:description, String)
+        property(:contact,     String, :length => 255)
+        property(:description, String, :length => 255)
         property(:version,     String, :unique_index => :name)
-        property(:date,        ::DataMapper::Types::EpochTime)
-        property(:path,        String)
-        property(:digest,      String)
-        property(:ip,          String)
+        property(:date,        DateTime)
+        property(:path,        String, :length => 255)
+        property(:digest,      String, :length => 255)
+        property(:ip,          String, :length => 255)
         property(:required,    String, :required => false)
         property(:downloads,   Integer, :default => 0)
         property(:annotations, Integer, :default => 0)
-        property(:created_at,  ::DataMapper::Types::EpochTime)
+        property(:created_at,  DateTime)
 
         has(n, :authors, :model => "Sur::Model::Assoc::Author")
         has(n, :tags,    :model => "Sur::Model::Assoc::Tag")
@@ -54,8 +54,8 @@ module Subtle # {{{
         include DataMapper::Resource
 
         property(:id,         Serial)
-        property(:name,       String, :unique => true)
-        property(:created_at, ::DataMapper::Types::EpochTime)
+        property(:name,       String, :length => 255, :unique => true)
+        property(:created_at, DateTime)
 
         has(n, :taggings, :model => "Sur::Model::Assoc::Tag")
       end # }}}
@@ -65,8 +65,8 @@ module Subtle # {{{
         include DataMapper::Resource
 
         property(:id,         Serial)
-        property(:name,       String, :unique => true)
-        property(:created_at, ::DataMapper::Types::EpochTime)
+        property(:name,       String, :length => 255, :unique => true)
+        property(:created_at, DateTime)
       end # }}}
 
       # Assoc classes for datamapper
@@ -79,7 +79,7 @@ module Subtle # {{{
           property(:id,         Serial)
           property(:user_id,    Integer, :unique_index => :author)
           property(:sublet_id,  Integer, :unique_index => :author)
-          property(:created_at, ::DataMapper::Types::EpochTime)
+          property(:created_at, DateTime)
 
           belongs_to(:user,   :model => "Sur::Model::User")
           belongs_to(:sublet, :model => "Sur::Model::Sublet")
@@ -92,7 +92,7 @@ module Subtle # {{{
           property(:id,         Serial)
           property(:tag_id,     Integer, :unique_index => :tag)
           property(:sublet_id,  Integer, :unique_index => :tag)
-          property(:created_at, ::DataMapper::Types::EpochTime)
+          property(:created_at, DateTime)
 
           belongs_to(:tag,    :model => "Sur::Model::Tag")
           belongs_to(:sublet, :model => "Sur::Model::Sublet")
@@ -105,7 +105,7 @@ module Subtle # {{{
           property(:id,         Serial)
           property(:sublet_id,  Integer)
           property(:user_id,    Integer)
-          property(:created_at, ::DataMapper::Types::EpochTime)
+          property(:created_at, DateTime)
 
           belongs_to(:sublet, :model => "Sur::Model::Sublet")
           belongs_to(:user,   :model => "Sur::Model::User")
@@ -144,16 +144,11 @@ module Subtle # {{{
 
       def initialize(port = 4567)
         DataMapper.setup(:default, "sqlite3://" + DATABASE)
+        #DataMapper::Model.raise_on_save_failure = true
 
-        # Create database
-        if(!File.exists?(DATABASE))
-          DataMapper.auto_migrate!
-        end
-
-        # Create store
-        if(!File.exists?(REPOSITORY))
-          Dir.mkdir(REPOSITORY)
-        end
+        # Create database and store
+        DataMapper.auto_migrate!  unless(File.exists?(DATABASE))
+        Dir.mkdir(REPOSITORY)     unless(File.exists?(REPOSITORY))
 
         # Configure sinatra application
         set :port, port
@@ -165,12 +160,12 @@ module Subtle # {{{
       # @since 0.0
       #
       # @example
-      #  Sur::Client.new.run
+      #  Sur::Server.new.run
       #  => nil
 
       def run
         helpers do # {{{
-          def build_sublets # :nodoc: {{{
+          def build_cache # :nodoc: {{{
             list = []
 
             # Fetch sublets from database
@@ -230,6 +225,8 @@ module Subtle # {{{
           end # }}}
         end # }}}
 
+        # Templates
+
         template :layout do # {{{
           <<EOF
 !!! 1.1
@@ -278,10 +275,10 @@ module Subtle # {{{
           :color #000000
           :text-decoration none
         a:link, a:visited, a:active
-          :color #E92D45
-          :text-decoration none
-        a:hover
+          :color #59554e
           :text-decoration underline
+        a:hover
+          :text-decoration none
         .center
           :margin 0px auto
         .italic
@@ -290,7 +287,7 @@ module Subtle # {{{
           :color #999999
         #box
           :background-color #FCFCFC
-          :border 1px solid #E4E4E4
+          :border 1px solid #eee9de
           :color #505050
           :line-height 1.5em
           :padding 6px
@@ -447,6 +444,8 @@ EOF
 EOF
         end # }}}
 
+        # Handlers
+
         get "/" do # {{{
           @newest = Sur::Model::Sublet.all(:order => [ :created_at.desc ], :limit => 10)
           @most   = Sur::Model::Sublet.all(:downloads.gte => 0, :order => [ :downloads.desc ], :limit => 10)
@@ -457,22 +456,25 @@ EOF
         end # }}}
 
         get "/get/:digest" do # {{{
-          if((s = Sur::Model::Sublet.first(:digest => params[:digest])) && File.exist?(s.path))
-
+          if((s = Sur::Model::Sublet.first(:digest => params[:digest])))
+            # Increment count
             s.downloads = s.downloads + 1
             s.save
 
-            send_file(s.path, :type => "application/x-tar", :filename => File.basename(s.path))
+            # Send requested file
+            send_file(File.join(REPOSITORY, s.path),
+              :type     => "application/x-tar",
+              :filename => File.basename(s.path)
+            )
           else
-            puts ">>> WARNING: Couldn't find sublet with digest `#{params[:digest]}`"
-            error = 404
+            halt 404
           end
         end # }}}
 
         get "/list" do # {{{
           # Check cache age
           if(!File.exist?(CACHE) or (86400 < (Time.now - File.new(CACHE).ctime)))
-            build_sublets
+            build_cache
           end
 
           send_file(CACHE, :type => "text/plain", :last_modified => File.new(CACHE).ctime)
@@ -480,7 +482,9 @@ EOF
 
         get "/tag/:tag" do # {{{
           @tag  = params[:tag].capitalize
-          @list = Sur::Model::Sublet.all(Sur::Model::Sublet.tags.tag.name => params[:tag])
+          @list = Sur::Model::Sublet.all(
+            Sur::Model::Sublet.tags.tag.name => params[:tag]
+          )
 
           haml(:tag)
         end # }}}
@@ -493,196 +497,159 @@ EOF
 
         get "/search" do # {{{
           @query = params[:query]
-          @list  = Sur::Model::Sublet.all(:name.like => params[:query].gsub(/\*/, "%"))
+          @list  = Sur::Model::Sublet.all(
+            :name.like => params[:query].gsub(/\*/, "%")
+          )
 
           haml(:search)
         end # }}}
 
         post "/annotate" do # {{{
           if((s = Sur::Model::Sublet.first(:digest => params[:digest])))
-            # Check if user exists
-            if(!u = Sur::Model::User.first(:name => params[:user]))
-              u = Sur::Model::User.new(
-                :name       => user,
-                :created_at => Time.now
-              )
+            # Find or create user
+            u = Sur::Model::User.first_or_create(
+              { :name       => params[:user] },
+              { :created_at => Time.now      }
+            )
 
-              raise if(!u.save)
-              u.update
-
-              puts ">>> Added user `#{u.name}`"
-            end
-
-            a = Sur::Model::Assoc::Annotate.new(
+            # Create annotation
+            Sur::Model::Assoc::Annotate.create(
               :sublet_id  => s.id,
               :user_id    => u.id,
               :created_at => Time.now
             )
-            raise if(!a.save)
 
+            # Increase annotation count
             s.annotations = s.annotations + 1
             s.save
 
             puts ">>> Added annotation from `#{u.name}` for `#{s.name}'"
           else
             puts ">>> WARNING: Couldn't find sublet with digest `#{params[:digest]}`"
-            error = 404
+            halt 404
           end
         end # }}}
 
         post "/submit" do # {{{
-          if(params[:file] && params[:file][:tempfile] && params[:user])
+          # Check if required params are available
+          if(params[:file] and params[:file][:tempfile] and params[:user])
             file = params[:file][:tempfile]
-            spec = Sur::Specification.extract_spec(file.path)
-            mesg = ""
 
             # Validate spec
-            if(spec.valid?)
-              begin
-                # Add or find sublet
-                if(!(s = Sur::Model::Sublet.first(:name => spec.name, :version => spec.version)))
-                  digest = Digest::MD5.hexdigest(File.read(file.path))
-                  path   = File.join(REPOSITORY, spec.to_s + ".sublet")
-                  ip     = request.env['REMOTE_ADDR'][/.[^,]+/]
+            spec = Sur::Specification.extract_spec(file.path)
+            halt 415 unless(spec.valid?)
 
-                  s = Sur::Model::Sublet.new(
-                    :name        => spec.name,
-                    :contact     => spec.contact,
-                    :description => spec.description,
-                    :version     => spec.version,
-                    :date        => spec.date,
-                    :path        => path,
-                    :digest      => digest,
-                    :ip          => ip,
-                    :required    => spec.required_version,
-                    :created_at  => Time.now
-                  )
-                  raise if(!s.save)
-                  s.update
+            begin
+              # Create or find sublet
+              s = Sur::Model::Sublet.first_or_create(
+                { :name => spec.name, :version => spec.version },
+                {
+                  :contact     => spec.contact,
+                  :description => spec.description,
+                  :date        => spec.date,
+                  :path        => spec.to_s + ".sublet",
+                  :digest      => Digest::MD5.hexdigest(File.read(file.path)),
+                  :ip          => request.env["REMOTE_ADDR"][/.[^,]+/],
+                  :required    => spec.required_version,
+                  :created_at  => Time.now
+                }
+              )
 
-                  puts ">>> Added sublet `#{s.name}'"
-                end
+              # Create or find user
+              u = Sur::Model::User.first_or_create(
+                { :name       => params[:user] },
+                { :created_at => Time.now      }
+              )
 
-                # Add or find user
-                if(!(u = Sur::Model::User.first(:name => params[:user])))
-                  u = Sur::Model::User.new(
-                    :name => params[:user]
-                  )
-                  raise if(!u.save)
-                  u.update
+              # Parse authors
+              spec.authors.each do |user|
+                # Check if user exists
+                u = Sur::Model::User.first_or_create(
+                  { :name       => user     },
+                  { :created_at => Time.now }
+                )
 
-                  puts ">>> Added user `#{params[:user]}'"
-                end
-
-                # Parse authors
-                spec.authors.each do |user|
-                  # Check if user exists
-                  if(!u = Sur::Model::User.first(:name => user))
-                    u = Sur::Model::User.new(
-                      :name       => user,
-                      :created_at => Time.now
-                    )
-
-                    raise if(!u.save)
-                    u.update
-
-                    puts ">>> Added user `#{u.name}`"
-                  end
-
-                  # Check if user assoc exists
-                  if(!(assoc = Sur::Model::Assoc::Author.first(
-                      :user_id   => u.id,
-                      :sublet_id => s.id)))
-                    assoc = Sur::Model::Assoc::Author.new(
-                      :user_id     => u.id,
-                      :sublet_id   => s.id,
-                      :created_at  => Time.now
-                    )
-                    raise if(!assoc.save)
-
-                    puts ">>> Added user `#{u.name}` to `#{s.name}'"
-                  end
-                end
-
-                # Parse tags
-                spec.tags.each do |tag|
-                  # Check if tag exists
-                  if(!t = Sur::Model::Tag.first(:name => tag))
-                    t = Sur::Model::Tag.new(
-                      :name       => tag,
-                      :created_at => Time.now
-                    )
-
-                    puts ">>> Added tag `#{t.name}`"
-
-                    raise if(!t.save)
-                    t.update
-                  end
-
-                  # Check if tag assoc exists
-                  if(!(assoc = Sur::Model::Assoc::Tag.first(
-                      :tag_id    => t.id,
-                      :sublet_id => s.id)))
-                    assoc = Sur::Model::Assoc::Tag.new(
-                      :tag_id      => t.id,
-                      :sublet_id   => s.id,
-                      :created_at  => Time.now
-                    )
-                    raise if(!assoc.save)
-
-                    puts ">>> Added tag `#{t.name}` to `#{s.name}'"
-                  end
-                end
-
-                FileUtils.copy(file.path, path)
-                build_sublets
-
-                # Post via identi.ca
-                unless(USERNAME.empty? && PASSWORD.empty?)
-                  c = Curl::Easy.perform("http://identi.ca/api/statuses/update.xml")
-
-                  c.userpwd = "%s:%s" % [ USERNAME, PASSWORD ]
-                  c.http_post(
-                    Curl::PostField.content("status",
-                      "New sublet: %s (%s) !subtle" % [ spec.name, spec.version ]
-                    )
-                  )
-                end
-              rescue
-                error = 406
+                # Find or create assoc
+                assoc = Sur::Model::Assoc::Author.first_or_create(
+                  { :user_id    => u.id, :sublet_id => s.id },
+                  { :created_at => Time.now                 }
+                )
               end
-            else
-              error = 406
+
+              # Parse tags
+              spec.tags.each do |tag|
+                # Find or create tag
+                t = Sur::Model::Tag.first_or_create(
+                  { :name       => tag      },
+                  { :created_at => Time.now }
+                )
+
+                # Find or create assoc
+                assoc = Sur::Model::Assoc::Tag.first_or_create(
+                  { :tag_id     => t.id, :sublet_id => s.id },
+                  { :created_at => Time.now                 }
+                )
+              end
+            rescue => error
+              p error
+              halt 500
+            end
+
+            # Copy file and update cache
+            begin
+              FileUtils.copy(file.path, File.join(REPOSITORY, s.path))
+              build_cache
+            rescue => error
+              p error
+              halt 500
+            end
+
+            # Post via identi.ca
+            unless(USERNAME.empty? or PASSWORD.empty?)
+              uri = URI.parse("http://identi.ca/api/statuses/update.xml")
+
+              # Create request
+              req = Net::HTTP::Post.new(uri.path)
+              req.basic_auth(USERNAME, PASSWORD)
+              req.set_form_data(
+                {
+                  "status" => "New sublet: %s (%s) !subtle" % [
+                    spec.name, spec.version
+                  ]
+                }, ";"
+              )
+
+              # Finally send request
+              Net::HTTP.new(uri.host).start { |http| http.request(req) }
             end
           else
-            error = 415
+            halt 405
           end
         end # }}}
 
-      post "/xmlrpc" do # {{{
-        xml = @request.body.read
+        post "/xmlrpc" do # {{{
+          xml = @request.body.read
 
-        if(xml.empty?)
-          error = 400
-          return
-        end
+          if(xml.empty?)
+            error = 400
+            return
+          end
 
-        # Parse xml
-        method, arguments = XMLRPC::Marshal.load_call(xml)
-        method = method.gsub(/([A-Z])/, '_\1').downcase
+          # Parse xml
+          method, arguments = XMLRPC::Marshal.load_call(xml)
+          method = method.gsub(/([A-Z])/, '_\1').downcase
 
-        # Check if method exists
-        if(respond_to?(method))
-          content_type("text/xml", :charset => "utf-8")
-          send(method, arguments)
-        else
-          error = 404
-        end
+          # Check if method exists
+          if(respond_to?(method))
+            content_type("text/xml", :charset => "utf-8")
+            send(method, arguments)
+          else
+            error = 404
+          end
+        end # }}}
+
+        Sinatra::Application.run!
       end # }}}
-
-       Sinatra::Application.run!
-      end # }}}
-
     end # }}}
   end # }}}
 end # }}}

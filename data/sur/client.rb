@@ -13,7 +13,8 @@ require "rubygems"
 require "fileutils"
 require "tempfile"
 require "yaml"
-require "curb"
+require "uri"
+require "net/http"
 require "archive/tar/minitar"
 
 require "subtle/sur/specification"
@@ -30,6 +31,9 @@ module Subtle # {{{
     class Client # {{{
       # Remote repository host
       HOST = "http://sur.subforge.org"
+
+      # Header separator
+      BOUNDARY = "AaB03x"
 
       # Local sublet cache
       attr_accessor :cache_local
@@ -120,25 +124,20 @@ module Subtle # {{{
 
       def annotate(name, version = nil)
         # Check if sublet exists
-        if((specs = search(name, @cache_remote, version, false)) && specs.empty?)
+        if((specs = search(name, @cache_remote, version, false)) and specs.empty?)
           raise "Sublet `#{name}' does not exist"
         end
 
         spec = specs.first
-        c    = Curl::Easy.new(HOST + "/annotate")
-
-        c.http_post(
-          Curl::PostField.content("digest", spec.digest),
-          Curl::PostField.content("user",   ENV["USER"])
+        uri  = URI.parse(HOST + "/annotate")
+        res  = Net::HTTP.post_form(uri,
+          {
+            "digest" => spec.digest,
+            "user"   => ENV["USER"]
+          }
         )
 
-        # Check server response
-        case c.response_code
-          when 200 then return
-          when 404 then raise "Couldn't find sublet"
-          when 415 then raise "Couldn't store annotation"
-          else raise "Couldn't annotate sublet"
-        end
+        raise "Couldn't annotate sublet: Sublet not found" if(404 == res.code)
       end # }}}
 
       ## Sur::Client::build {{{
@@ -234,7 +233,7 @@ module Subtle # {{{
         build_local if(@cache_local.nil?)
 
         # Check if sublet is installed
-        if((specs = search(name, @cache_local)) && !specs.empty?)
+        if((specs = search(name, @cache_local)) and !specs.empty?)
           spec = specs.first
 
           show_config(spec, use_color)
@@ -262,7 +261,7 @@ module Subtle # {{{
         # Install all sublets
         names.each do |name|
           # Check if remote sublet exists
-          if((specs = search(name, @cache_remote, version, use_tags)) &&
+          if((specs = search(name, @cache_remote, version, use_tags)) and
               specs.empty?)
             puts ">>> WARNING: Couldn't find sublet `#{name}' " \
                  "in remote repository"
@@ -274,15 +273,12 @@ module Subtle # {{{
 
           # Download and copy sublet to current directory
           unless((temp = download(spec)).nil?)
-            FileUtils.cp(
-              temp.path,
+            FileUtils.cp(temp.path,
               File.join(
                 Dir.getwd,
                 "%s-%s.sublet" % [ spec.name.downcase, spec.version ]
               )
             )
-
-            temp.close
           end
         end
       end # }}}
@@ -305,7 +301,7 @@ module Subtle # {{{
         build_local if(@cache_local.nil?)
 
         # Check if sublet is installed
-        if((specs = search(name, @cache_local)) && !specs.empty?)
+        if((specs = search(name, @cache_local)) and !specs.empty?)
           spec = specs.first
 
           show_grabs(spec, use_color)
@@ -335,7 +331,7 @@ module Subtle # {{{
         # Install all sublets
         names.each do |name|
           # Check if sublet is already installed
-          if((specs = search(name, @cache_local, version, use_tags)) &&
+          if((specs = search(name, @cache_local, version, use_tags)) and
               !specs.empty?)
             puts ">>> WARNING: Sublet `#{name}' is already installed"
 
@@ -352,7 +348,7 @@ module Subtle # {{{
           end
 
           # Check if remote sublet exists
-          if((specs = search(name, @cache_remote, version, use_tags)) &&
+          if((specs = search(name, @cache_remote, version, use_tags)) and
               specs.empty?)
             puts ">>> WARNING: Couldn't find sublet `#{name}' " \
                  "in remote repository"
@@ -369,8 +365,6 @@ module Subtle # {{{
             install_sublet(temp.path)
 
             reload_sublets if(reload)
-
-            temp.close
           end
         end
       end # }}}
@@ -416,7 +410,7 @@ module Subtle # {{{
         build_local if(@cache_local.nil?)
 
         # Check if sublet is installed
-        if((specs = search(name, @cache_local)) && !specs.empty?)
+        if((specs = search(name, @cache_local)) and !specs.empty?)
           spec = specs.first
 
           show_notes(spec)
@@ -444,13 +438,13 @@ module Subtle # {{{
         case repo
           when "local"
             unless((specs = search(query, @cache_local, version,
-                use_regex, use_tags)) && !specs.empty?)
+                use_regex, use_tags)) and !specs.empty?)
               raise "Couldn't find `#{query}' in local repository"
             end
           when "remote"
             build_remote if(@cache_remote.nil?)
             unless((specs = search(query, @cache_remote, version,
-                use_regex, use_tags)) && !specs.empty?)
+                use_regex, use_tags)) and !specs.empty?)
               raise "Couldn't find `#{query}' in remote repository"
             end
         end
@@ -530,35 +524,11 @@ module Subtle # {{{
       #   => nil
 
       def submit(file)
-        if(!file.nil? && File.file?(file) && ".sublet" == File.extname(file))
+        if(!file.nil? and File.file?(file) and ".sublet" == File.extname(file))
           spec = Sur::Specification.extract_spec(file)
 
           if(spec.valid?)
-            c      = Curl::Easy.new(HOST + "/submit")
-            @file  = File.basename(file)
-
-            c.multipart_form_post = true
-
-            # Progress handler
-            c.on_progress do |dl_total, dl_now, ul_total, ul_now|
-              progress(">>> Submitting sublet `#{@file}'", ul_total, ul_now)
-              true
-            end
-
-            c.http_post(
-              Curl::PostField.file("file", file),
-              Curl::PostField.content("user", ENV["USER"])
-            )
-            puts ""
-
-            # Check server response
-            case c.response_code
-              when 200 then build_remote
-              when 406 then raise "Couldn't overwrite sublet"
-              when 409 then raise "Couldn't overwrite sublet version"
-              when 415 then raise "Couldn't store sublet"
-              else raise "Couldn't submit sublet"
-            end
+            upload(file)
           else
             spec.validate()
           end
@@ -588,7 +558,7 @@ module Subtle # {{{
         # Install all sublets
         names.each do |name|
           # Check if sublet is installed
-          if((specs = search(name, @cache_local, version, use_tags)) &&
+          if((specs = search(name, @cache_local, version, use_tags)) and
               !specs.empty?)
             spec = specs.first
 
@@ -741,40 +711,70 @@ module Subtle # {{{
         puts "See also: #{also.join(", ")}"
       end # }}}
 
+      def upload(file) # {{{
+        uri    = URI.parse(HOST + "/submit")
+        http   = Net::HTTP.new(uri.host, uri.port)
+        base   = File.basename(file)
+        body   = ""
+
+        # Assemble data
+        body << "--#{BOUNDARY}\r\n"
+        body << "Content-Disposition: form-data; name=\"user\"\r\n\r\n"
+        body << ENV["USER"]
+        body << "\r\n--#{BOUNDARY}\r\n"
+        body << "Content-Disposition: form-data; name=\"file\"; filename=\"#{base}\"\r\n"
+        body << "Content-Type: application/x-tar\r\n\r\n"
+        body << File.read(file)
+        body << "\r\n--#{BOUNDARY}--\r\n"
+
+        # Send reqiest
+        req = Net::HTTP::Post.new(uri.request_uri)
+        req.body            = body
+        req["Content-Type"] = "multipart/form-data; boundary=#{BOUNDARY}"
+
+        # Check result
+        case(http.request(req).code.to_i)
+          when 200
+             puts ">>> Submitted sublet `#{base}'"
+
+            build_remote
+          when 405 then raise "Couldn't submit sublet: Invalid request"
+          when 415 then raise "Couldn't submit sublet: Invalid Spec"
+          when 500 then raise "Couldn't submit sublet: Server error"
+          else raise "Couldn't submit sublet"
+        end
+      end # }}}
+
       def download(spec) # {{{
-        # Create tempfile
-        temp = Tempfile.new(spec.to_s)
+        temp = nil
+        uri  = URI.parse(HOST)
+        http = Net::HTTP.new(uri.host, uri.port)
 
         # Fetch file
-        c = Curl::Easy.new(HOST + "/get/" + spec.digest)
+        http.request_get("/get/" + spec.digest) do |response|
+          # Check result
+          case(response.code.to_i)
+            when 200
+              total = 0
 
-        # Progress handler
-        c.on_progress do |dl_total, dl_now, ul_total, ul_now|
-          progress(">>> Fetching sublet `#{spec.to_s}'", dl_total, dl_now)
-          true
+              # Create tempfile
+              temp = Tempfile.new(spec.to_s)
+
+              # Write file content
+              response.read_body do |str|
+                total += str.length
+                temp  << str
+
+                progress(">>> Fetching sublet `#{spec.to_s}'", response.content_length, total)
+              end
+
+              temp.close
+            when 404 then raise "Couldn't download sublet: Sublet not found"
+            else raise "Couldn't download sublet: Server error"
+          end
         end
 
-        c.perform
         puts
-
-        # Check server response
-        case c.response_code
-          when 200
-            body = c.body_str
-
-            # Write file to tempfile
-            File.open(temp.path, "w+") do |out|
-              out.write(body)
-            end
-
-          else
-            puts ">>> WARNING: Coudln't fetch sublet `#{spec.name}`."
-            puts "             Server returned HTTP error #{c.response_code}"
-
-            temp.close
-
-            temp = nil
-        end
 
         return temp
       end # }}}
@@ -793,9 +793,9 @@ module Subtle # {{{
 
         # Search in repo
         repo.each do |s|
-          if(!query.nil? && (s.name.downcase == query.downcase ||
-              (use_regex && s.name.downcase.match(query)) ||
-              (use_tags  && s.tags.include?(query.capitalize))))
+          if(!query.nil? and (s.name.downcase == query.downcase ||
+              (use_regex and s.name.downcase.match(query)) ||
+              (use_tags  and s.tags.include?(query.capitalize))))
             # Check version?
             if(version.nil? || s.version == version)
               results.push(s)
@@ -846,26 +846,43 @@ module Subtle # {{{
 
       def build_remote # {{{
         @cache_remote = []
+        uri           = URI.parse(HOST)
+        http          = Net::HTTP.new(uri.host, uri.port)
 
-        # Fetch list
-        c = Curl::Easy.perform(HOST + "/list")
+        # Fetch file
+        http.request_get("/list") do |response|
+          # Check result
+          case(response.code.to_i)
+            when 200
+              total = 0
+              data  = ""
 
-        if(200 == c.response_code)
-          @cache_remote = YAML::load(YAML::load(c.body_str))
+              # Downloading list
+              response.read_body do |str|
+                total += str.length
+                data  << str
 
-          puts ">>> Updated remote cache with #{@cache_remote.size} entries"
+                progress(">>> Fetching list", response.content_length, total)
+              end
 
-          @cache_remote.sort do |a, b|
-            [ a.name, a.version ] <=> [ b.name, b.version ]
+              puts
+
+              # Reading list
+              @cache_remote = YAML::load(YAML::load(data))
+
+              @cache_remote.sort do |a, b|
+                [ a.name, a.version ] <=> [ b.name, b.version ]
+              end
+
+              # Dump yaml file
+              yaml = @cache_remote.to_yaml
+              File.open(@path_remote, "w+") do |out|
+                YAML::dump(yaml, out)
+              end
+
+              puts ">>> Updated remote cache with #{@cache_remote.size} entries"
+            else raise "Couldn't download sublet list: Server error"
           end
-
-          # Dump yaml file
-          yaml = @cache_remote.to_yaml
-          File.open(@path_remote, "w+") do |out|
-            YAML::dump(yaml, out)
-          end
-        else
-          raise "Couldn't get list from remote server"
         end
       end # }}}
 
