@@ -85,28 +85,6 @@ module Subtle # {{{
             @path_sublets ].each do |p|
           FileUtils.mkdir_p([ p ]) unless(File.exist?(p))
         end
-
-        # Load local cache
-        if(File.exist?(@path_local))
-          yaml = YAML::load(File.open(@path_local))
-
-          @cache_local = YAML::load(yaml)
-        else
-          build_local
-        end
-
-        # Load remote cache
-        if(File.exist?(@path_remote))
-          # Check age of cache
-          if(86400 > (Time.now - File.new(@path_remote).ctime))
-            yaml = YAML::load(File.open(@path_remote))
-
-            @cache_remote = YAML::load(yaml)
-          else
-            build_remote
-          end
-        end
-
       end # }}}
 
       ## Sur::Client::annotate {{{
@@ -123,6 +101,9 @@ module Subtle # {{{
       #   => nil
 
       def annotate(name, version = nil)
+        build_local
+        build_remote
+
         # Check if sublet exists
         if((specs = search(name, @cache_remote, version, false)) and specs.empty?)
           raise "Sublet `#{name}' does not exist"
@@ -230,7 +211,7 @@ module Subtle # {{{
       #      "interval integer 60            Update interval in seconds"
 
       def config(name, use_color = true)
-        build_local if(@cache_local.nil?)
+        build_local
 
         # Check if sublet is installed
         if((specs = search(name, @cache_local)) and !specs.empty?)
@@ -256,7 +237,7 @@ module Subtle # {{{
       #   => nil
 
       def fetch(names, version = nil, use_tags = false)
-        build_remote if(@cache_remote.nil?)
+        build_remote
 
         # Install all sublets
         names.each do |name|
@@ -298,7 +279,7 @@ module Subtle # {{{
       #      "SubletTest  Test grabs"
 
       def grabs(name, use_color = true)
-        build_local if(@cache_local.nil?)
+        build_local
 
         # Check if sublet is installed
         if((specs = search(name, @cache_local)) and !specs.empty?)
@@ -325,8 +306,8 @@ module Subtle # {{{
       #   => nil
 
       def install(names, version = nil, use_tags = false, reload = false)
-        build_local  if(@cache_local.nil?)
-        build_remote if(@cache_remote.nil?)
+        build_local
+        build_remote
 
         # Install all sublets
         names.each do |name|
@@ -341,8 +322,6 @@ module Subtle # {{{
           # Check if sublet is local
           if(File.exist?(name))
             install_sublet(name)
-
-            reload_sublets if(reload)
 
             next
           end
@@ -363,10 +342,12 @@ module Subtle # {{{
           # Download and install sublet
           unless((temp = download(spec)).nil?)
             install_sublet(temp.path)
-
-            reload_sublets if(reload)
           end
         end
+
+        build_local(true)
+
+        reload_sublets if(reload)
       end # }}}
 
       ## Sur::Client::list {{{
@@ -384,10 +365,12 @@ module Subtle # {{{
       def list(repo, use_color = true)
         # Select cache
         case repo
-          when "local" then specs = @cache_local
+          when "local"
+            build_local
+            specs = @cache_local
           when "remote"
-            build_remote if(@cache_remote.nil?)
-
+            build_local
+            build_remote
             specs = @cache_remote
         end
 
@@ -407,7 +390,7 @@ module Subtle # {{{
       #   => "Notes"
 
       def notes(name)
-        build_local if(@cache_local.nil?)
+        build_local
 
         # Check if sublet is installed
         if((specs = search(name, @cache_local)) and !specs.empty?)
@@ -437,12 +420,13 @@ module Subtle # {{{
       def query(query, repo, version = nil, use_regex = false, use_tags = false, use_color = true)
         case repo
           when "local"
+            build_local
             unless((specs = search(query, @cache_local, version,
                 use_regex, use_tags)) and !specs.empty?)
               raise "Couldn't find `#{query}' in local repository"
             end
           when "remote"
-            build_remote if(@cache_remote.nil?)
+            build_remote
             unless((specs = search(query, @cache_remote, version,
                 use_regex, use_tags)) and !specs.empty?)
               raise "Couldn't find `#{query}' in remote repository"
@@ -460,7 +444,7 @@ module Subtle # {{{
       #   => nil
 
       def reorder
-        build_local if(@cache_local.nil?)
+        build_local
 
         i     = 0
         list  = []
@@ -507,7 +491,7 @@ module Subtle # {{{
             end
           end
 
-          build_local #< Update local cache
+          build_local(true) #< Update local cache
         end
       end # }}}
 
@@ -529,6 +513,7 @@ module Subtle # {{{
 
           if(spec.valid?)
             upload(file)
+            build_remote(true)
           else
             spec.validate()
           end
@@ -553,7 +538,7 @@ module Subtle # {{{
       #   => nil
 
       def uninstall(names, version = nil, use_tags = false, reload = false)
-        build_local if(@cache_local.nil?)
+        build_local
 
         # Install all sublets
         names.each do |name|
@@ -591,15 +576,15 @@ module Subtle # {{{
             )
 
             puts ">>> Uninstalled sublet #{spec.to_s}"
-
-            build_local
-
-            reload_sublets if(reload)
           else
             puts ">>> WARNING: Couldn't find sublet `#{name}' in local " \
                  "repository"
           end
         end
+
+        build_local(true)
+
+        reload_sublets if(reload)
       end # }}}
 
       ## Sur::Client::update {{{
@@ -616,9 +601,9 @@ module Subtle # {{{
       def update(repo)
         case repo
           when "local"
-            build_local
+            build_local(true)
           when "remote"
-            build_remote
+            build_remote(true)
         end
       end # }}}
 
@@ -637,6 +622,7 @@ module Subtle # {{{
       #   => nil
 
       def upgrade(use_color = true, reload = false, assume = false)
+        build_local
         build_remote
 
         list = []
@@ -675,10 +661,8 @@ module Subtle # {{{
         end
 
         # Finally upgrade
-        list.each do |spec|
-          uninstall(list)
-          install(list)
-        end
+        uninstall(list)
+        install(list)
 
         reload_sublets if(reload)
       end # }}}
@@ -813,8 +797,17 @@ module Subtle # {{{
         "\033[#{m};#{c}m#{text}\033[m"
       end # }}}
 
-      def build_local # {{{
+      def build_local(force = false) # {{{
         @cache_local = []
+
+        # Load local cache
+        if(!force and File.exist?(@path_local))
+          yaml = YAML::load(File.open(@path_local))
+
+          @cache_local = YAML::load(yaml)
+
+          return
+        end
 
         # Check installed sublets
         Dir[@path_specs + "/*"].each do |file|
@@ -844,10 +837,20 @@ module Subtle # {{{
         end
       end # }}}
 
-      def build_remote # {{{
+      def build_remote(force = false) # {{{
         @cache_remote = []
         uri           = URI.parse(HOST)
         http          = Net::HTTP.new(uri.host, uri.port)
+
+        # Check age of cache
+        if(!force and File.exist?(@path_remote) and
+            86400 > (Time.now - File.new(@path_remote).ctime))
+          yaml = YAML::load(File.open(@path_remote))
+
+          @cache_remote = YAML::load(yaml)
+
+          return
+        end
 
         # Fetch file
         http.request_get("/list") do |response|
@@ -1124,7 +1127,6 @@ module Subtle # {{{
             puts ">>> Installed sublet #{spec.to_str}"
 
             show_notes(spec)
-            build_local
           end
         end
       end # }}}
