@@ -290,6 +290,36 @@ module Subtle # {{{
         end
       end # }}}
 
+
+      ## Sur::Client::info {{{
+      # Show info for installed sublets if any
+      #
+      # @param [Array]   names      Names of the Sublets
+      # @param [Bool]    use_color  Use colors
+      #
+      # @raise [String] Config error
+      # @since 0.2
+      #
+      # @example
+      #   Sur::Client.new.info("sublet")
+      #   => "Name        Description"
+      #      "SubletTest  Test grabs"
+
+      def info(names, use_color = true)
+        build_local
+
+        # Show info for all sublets
+        names.each do |name|
+          # Check if sublet is installed
+          if((specs = search(name, @cache_local)) and !specs.empty?)
+            spec = specs.first
+
+            show_info(spec, use_color)
+            see_also(spec)
+          end
+        end
+      end # }}}
+
       ## Sur::Client::install {{{
       # Install a new Sublet
       #
@@ -426,6 +456,7 @@ module Subtle # {{{
               raise "Couldn't find `#{query}' in local repository"
             end
           when "remote"
+            build_local
             build_remote
             unless((specs = search(query, @cache_remote, version,
                 use_regex, use_tags)) and !specs.empty?)
@@ -687,7 +718,7 @@ module Subtle # {{{
       private
 
       def see_also(spec) # {{{
-        also = [ "config" ]
+        also = [ "info", "config" ]
 
         also << "notes" unless(spec.notes.nil?)
         also << "grabs" unless(spec.grabs.nil?)
@@ -1094,6 +1125,44 @@ module Subtle # {{{
           end
 
           puts
+        end
+      end # }}}
+
+      def show_info(spec, use_color) # {{{
+        unless(spec.nil?)
+          authors = spec.authors.join(", ")
+          tags    = spec.tags.map { |t| "##{t}" }.join(" ")
+          files   = spec.files.join(", ")
+          icons   = spec.icons.map { |i| File.basename(i) }.join(", ")
+          deps    = spec.dependencies.map { |k, v| "#{k} (#{v})" }.join(", ")
+
+          if(use_color)
+            puts <<EOF
+
+#{colorize(1, "Name:", true)}     #{spec.name}
+#{colorize(1, "Version:", true)}  #{colorize(2, spec.version)}
+#{colorize(1, "Authors:", true)}  #{authors}
+#{colorize(1, "Contact:", true)}  #{colorize(6, spec.contact)}
+#{colorize(1, "Tags:", true)}     #{colorize(5, tags)}
+#{colorize(1, "Files:", true)}    #{files}
+#{colorize(1, "Icons:", true)}    #{icons}
+#{colorize(1, "Deps:", true)}     #{spec.dependencies.map { |k, v| "#{k} (#{colorize(2, v)})" }.join(", ")}
+
+EOF
+          else
+            puts <<EOF
+
+Name:     #{spec.name}
+Version:  #{spec.version}
+Authors:  #{authors}
+Contact:  #{spec.contact}
+Tags:     #{tags}
+Files:    #{files}
+Icons:    #{icons}
+Deps:     #{spec.dependencies.map { |k, v| "#{k} (#{v})" }.join(", ")}
+
+EOF
+          end
         end
       end # }}}
 

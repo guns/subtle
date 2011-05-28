@@ -112,6 +112,10 @@ module Subtle # {{{
 
             Subtle::Sur::Client.new.grabs(args.first, @use_color)
           when "help" then usage(nil)
+          when "info"
+            usage(cmd) if(args.empty?)
+
+            Sur::Client.new.info(args, @use_color)
           when "install"
             usage(cmd) if(args.empty?)
 
@@ -280,6 +284,7 @@ module Subtle # {{{
                  "  fetch NAME                              Download sublet to current directory\n" \
                  "  help                                    Show this help and exit\n" \
                  "  grabs NAME                              Show available grabs provided by a sublet\n" \
+                 "  info NAME                               Show info about an installed sublet\n" \
                  "  install NAME [-R|-t|-v VERSION|-h]      Install a sublet\n" \
                  "  list [-l|-r|-h]                         List local/remote sublets\n" \
                  "  notes NAME                              Show notes about a sublet\n" \
