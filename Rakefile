@@ -13,7 +13,6 @@ require "mkmf"
 require "yaml"
 require "fileutils"
 require "rake/clean"
-require "rdoc/task"
 require "digest/md5"
 
 # Settings
@@ -681,7 +680,18 @@ end # }}}
  # Create rdoc documents
  ##
 
-RDoc::Task.new(:rdoc) do |rdoc|
+# Handle rdoc version issues
+begin
+  require "rdoc/task"
+
+  rdoc = RDoc::Task
+rescue LoadError
+  require "rake/rdoctask"
+
+  rdoc = Rake::RDocTask
+end
+
+rdoc.send(:new, :rdoc) do |rdoc|
   rdoc.rdoc_files.include(
     "data/subtle.rb",
     "src/subtle/ruby.c",
