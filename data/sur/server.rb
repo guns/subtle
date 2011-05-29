@@ -622,6 +622,8 @@ EOF
               # Finally send request
               Net::HTTP.new(uri.host).start { |http| http.request(req) }
             end
+
+            halt 200
           else
             halt 405
           end
