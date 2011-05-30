@@ -880,7 +880,8 @@ subWindowRead(int argc,
                               continue;
                             }
 
-                          if(!(NIL_P(result)))
+                          /* Check type */
+                          if(T_STRING == rb_type(result))
                             {
                               strncpy(text + start, RSTRING_PTR(result), sizeof(text) - len);
 
