@@ -962,6 +962,7 @@ EventMessage(XClientMessageEvent *ev)
       SubTray    *r = NULL;
       SubView    *v = NULL;
       SubGravity *g = NULL;
+      SubScreen  *s = NULL;
 
       switch(id)
         {
@@ -1163,6 +1164,62 @@ EventMessage(XClientMessageEvent *ev)
                 subGravityPublish();
               }
             break; /* }}} */
+          case SUB_EWMH_SUBTLE_SCREEN_JUMP: /* {{{ */
+            if((s = SCREEN(subArrayGet(subtle->screens,
+                (int)ev->data.l[0]))))
+              {
+                subScreenJump(s);
+              }
+            break; /* }}} */
+          case SUB_EWMH_SUBTLE_SUBLET_NEW: /* {{{ */
+            if(ev->data.b)
+              {
+                subRubyLoadSublet(ev->data.b);
+                subArraySort(subtle->sublets, subPanelCompare);
+                subPanelPublish();
+                subScreenUpdate();
+                subScreenRender();
+              }
+            break; /* }}} */
+          case SUB_EWMH_SUBTLE_SUBLET_DATA: /* {{{ */
+            if((p = EventFindSublet((int)ev->data.l[0])) &&
+                p->sublet->flags & SUB_SUBLET_DATA)
+              {
+                subRubyCall(SUB_CALL_DATA, p->sublet->instance, NULL);
+                subScreenUpdate();
+                subScreenRender();
+              }
+            break; /* }}} */
+          case SUB_EWMH_SUBTLE_SUBLET_FOREGROUND: /* {{{ */
+            if((p = EventFindSublet((int)ev->data.l[0])))
+              {
+                p->sublet->fg = ev->data.l[1];
+                /*FIXME subPanelRender(p); */
+              }
+            break; /* }}} */
+          case SUB_EWMH_SUBTLE_SUBLET_BACKGROUND: /* {{{ */
+            if((p = EventFindSublet((int)ev->data.l[0])))
+              {
+                p->sublet->bg = ev->data.l[1];
+                /*FIXME subPanelRender(p); */
+              }
+            break; /* }}} */
+          case SUB_EWMH_SUBTLE_SUBLET_UPDATE: /* {{{ */
+            if((p = EventFindSublet((int)ev->data.l[0])))
+              {
+                subRubyCall(SUB_CALL_RUN, p->sublet->instance, NULL);
+                subScreenUpdate();
+                subScreenRender();
+              }
+            break; /* }}} */
+          case SUB_EWMH_SUBTLE_SUBLET_KILL: /* {{{ */
+            if((p = EventFindSublet((int)ev->data.l[0])))
+              {
+                subRubyUnloadSublet(p);
+                subScreenUpdate();
+                subScreenRender();
+              }
+            break; /* }}} */
           case SUB_EWMH_SUBTLE_TAG_NEW: /* {{{ */
             if(ev->data.b)
               {
@@ -1261,55 +1318,6 @@ EventMessage(XClientMessageEvent *ev)
                 subScreenRender();
 
                 if(visible) subViewJump(VIEW(subtle->views->data[0]));
-              }
-            break; /* }}} */
-          case SUB_EWMH_SUBTLE_SUBLET_NEW: /* {{{ */
-            if(ev->data.b)
-              {
-                subRubyLoadSublet(ev->data.b);
-                subArraySort(subtle->sublets, subPanelCompare);
-                subPanelPublish();
-                subScreenUpdate();
-                subScreenRender();
-              }
-            break; /* }}} */
-          case SUB_EWMH_SUBTLE_SUBLET_DATA: /* {{{ */
-            if((p = EventFindSublet((int)ev->data.l[0])) &&
-                p->sublet->flags & SUB_SUBLET_DATA)
-              {
-                subRubyCall(SUB_CALL_DATA, p->sublet->instance, NULL);
-                subScreenUpdate();
-                subScreenRender();
-              }
-            break; /* }}} */
-          case SUB_EWMH_SUBTLE_SUBLET_FOREGROUND: /* {{{ */
-            if((p = EventFindSublet((int)ev->data.l[0])))
-              {
-                p->sublet->fg = ev->data.l[1];
-                /*FIXME subPanelRender(p); */
-              }
-            break; /* }}} */
-          case SUB_EWMH_SUBTLE_SUBLET_BACKGROUND: /* {{{ */
-            if((p = EventFindSublet((int)ev->data.l[0])))
-              {
-                p->sublet->bg = ev->data.l[1];
-                /*FIXME subPanelRender(p); */
-              }
-            break; /* }}} */
-          case SUB_EWMH_SUBTLE_SUBLET_UPDATE: /* {{{ */
-            if((p = EventFindSublet((int)ev->data.l[0])))
-              {
-                subRubyCall(SUB_CALL_RUN, p->sublet->instance, NULL);
-                subScreenUpdate();
-                subScreenRender();
-              }
-            break; /* }}} */
-          case SUB_EWMH_SUBTLE_SUBLET_KILL: /* {{{ */
-            if((p = EventFindSublet((int)ev->data.l[0])))
-              {
-                subRubyUnloadSublet(p);
-                subScreenUpdate();
-                subScreenRender();
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_RENDER: /* {{{ */
