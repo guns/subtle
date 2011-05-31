@@ -968,9 +968,17 @@ EventMessage(XClientMessageEvent *ev)
           /* ICCCM */
           case SUB_EWMH_NET_CURRENT_DESKTOP: /* {{{ */
             /* Switchs views of screen */
-            if(0 <= ev->data.l[0] && ev->data.l[0] < subtle->views->ndata &&
-                0 <= ev->data.l[2] && ev->data.l[2] < subtle->screens->ndata)
-              subViewSwitch(subtle->views->data[ev->data.l[0]], -1, True);
+            if(0 <= ev->data.l[0] && ev->data.l[0] < subtle->views->ndata)
+              {
+                /* Switch view of specific or current screen */
+                if(0 <= ev->data.l[2] && ev->data.l[2] < subtle->screens->ndata)
+                  {
+                    subViewSwitch(subtle->views->data[ev->data.l[0]],
+                      ev->data.l[2], True);
+                  }
+                else subViewSwitch(subtle->views->data[ev->data.l[0]],
+                  -1, True);
+              }
             break; /* }}} */
           case SUB_EWMH_NET_ACTIVE_WINDOW: /* {{{ */
             if((c = CLIENT(subSubtleFind(ev->data.l[0], CLIENTID))))
