@@ -1550,6 +1550,7 @@ Init_subtlext(void)
   /* Class methods */
   rb_define_method(screen, "initialize", subScreenInit,       1);
   rb_define_method(screen, "update",     subScreenUpdate,     0);
+  rb_define_method(screen, "jump",       subScreenJump,       0);
   rb_define_method(screen, "view",       subScreenViewReader, 0);
   rb_define_method(screen, "view=",      subScreenViewWriter, 1);
   rb_define_method(screen, "current?",   subScreenAskCurrent, 0);

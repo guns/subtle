@@ -304,6 +304,37 @@ subScreenUpdate(VALUE self)
   return Qnil;
 } /* }}} */
 
+/* subScreenJump {{{ */
+/*
+ * call-seq: screen -> nil
+ *
+ * Jump to this Screen
+ *
+ *  screen.jump
+ *  => nil
+ */
+
+VALUE
+subScreenJump(VALUE self)
+{
+  VALUE id = Qnil;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@id", id);
+
+  subSubtlextConnect(NULL); ///< Implicit open connection
+
+  /* Send message */
+  data.l[0] = FIX2INT(id);
+
+  subSharedMessage(display, DefaultRootWindow(display),
+    "SUBTLE_SCREEN_JUMP", data, 32, True);
+
+  return Qnil;
+} /* }}} */
+
 /* subScreenViewReader {{{ */
 /*
  * call-seq: view -> Subtlext::View
