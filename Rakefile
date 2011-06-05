@@ -19,6 +19,11 @@ begin
   require "rdoc/task"
 rescue LoadError
   require "rake/rdoctask"
+
+  module RDoc
+    class Task < Rake::RDocTask
+    end
+  end
 end
 
 # FIXME: mkmf redefines #rm_f for splats and rake (>=0.9.1)
@@ -701,7 +706,7 @@ end # }}}
  # Create rdoc documents
  ##
 
-RDoc::Task.new(:rdoc) do |rdoc|
+RDoc::Task.new :rdoc do |rdoc|
   rdoc.rdoc_files.include(
     "data/subtle.rb",
     "src/subtle/ruby.c",
