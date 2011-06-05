@@ -11,9 +11,27 @@
 
 require "mkmf"
 require "yaml"
-require "fileutils"
 require "rake/clean"
 require "digest/md5"
+
+# FIXME: RDoc version crap
+begin
+  require "rdoc/task"
+rescue LoadError
+  require "rake/rdoctask"
+end
+
+# FIXME: mkmf redefines #rm_f for splats and rake (>=0.9.1)
+# includes FileUtils and just dispatches to it
+module Rake
+  module FileUtilsExt
+    def rm_f(*files)
+      # Copied from mkmf.rb:197
+      opt = (Hash === files.last ? [files.pop] : [])
+      FileUtils.rm_f(Dir[*files.flatten], *opt)
+    end
+  end
+end
 
 # Settings
 
@@ -99,8 +117,11 @@ CLOBBER.include(@options["builddir"], "config.h", "config.log", "config.yml")
  ##
 
 def silent_sh(cmd, msg, &block)
-  # Hide raw messages?
-  if(:default == RakeFileUtils.verbose)
+  # FIXME: Hide raw messages in 0.8.7 and 0.9.1
+  unless(true === RakeFileUtils.verbose or
+      (defined? Rake::FileUtilsExt and
+      Rake::FileUtilsExt.respond_to? :verbose_flag and
+      true === Rake::FileUtilsExt.verbose_flag))
     rake_output_message(msg)
   else
     rake_output_message(Array == cmd.class ? cmd.join(" ") : cmd) #< Check type
@@ -295,7 +316,7 @@ task(:config) do
 
     # Check header
     HEADER.each do |h|
-      if(!have_header(h))
+      unless(have_header(h))
         fail("Header #{h} was not found")
       end
     end
@@ -680,18 +701,7 @@ end # }}}
  # Create rdoc documents
  ##
 
-# Handle rdoc version issues
-begin
-  require "rdoc/task"
-
-  rdoc = RDoc::Task
-rescue LoadError
-  require "rake/rdoctask"
-
-  rdoc = Rake::RDocTask
-end
-
-rdoc.send(:new, :rdoc) do |rdoc|
+RDoc::Task.new(:rdoc) do |rdoc|
   rdoc.rdoc_files.include(
     "data/subtle.rb",
     "src/subtle/ruby.c",
