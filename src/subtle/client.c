@@ -1011,17 +1011,13 @@ subClientToggle(SubClient *c,
       if(type & SUB_CLIENT_MODE_FULL)
         XSetWindowBorderWidth(subtle->dpy, c->win, 0);
 
-      /* Set floating mode */
-      if(type & SUB_CLIENT_MODE_FLOAT)
+      /* Set floating and zaphod mode */
+      if(type & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_ZAPHOD))
         c->flags |= SUB_CLIENT_ARRANGE;
 
       /* Set urgent mode */
       if(type & SUB_CLIENT_MODE_URGENT)
         subtle->urgent_tags |= c->tags;
-
-      /* Set zaphod mode */
-      if(type & SUB_CLIENT_MODE_ZAPHOD)
-        c->flags |= (SUB_CLIENT_MODE_STICK|SUB_CLIENT_ARRANGE);
 
       /* Set dock and desktop type */
       if(type & (SUB_CLIENT_TYPE_DOCK|SUB_CLIENT_TYPE_DESKTOP))
