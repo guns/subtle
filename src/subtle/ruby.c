@@ -567,6 +567,11 @@ RubyEvalGrab(VALUE keys,
                 type = SUB_GRAB_WINDOW_TOGGLE;
                 data = DATA((unsigned long)SUB_CLIENT_MODE_STICK);
               }
+            else if(CHAR2SYM("WindowZaphod") == value)
+              {
+                type = SUB_GRAB_WINDOW_TOGGLE;
+                data = DATA((unsigned long)SUB_CLIENT_MODE_ZAPHOD);
+              }
             else if(CHAR2SYM("WindowRaise") == value)
               {
                 type = SUB_GRAB_WINDOW_STACK;
@@ -1794,34 +1799,22 @@ RubyConfigTag(int argc,
 
       /* Check tri-state properties */
       if(Qtrue == (value = rb_hash_lookup(params,
-          CHAR2SYM("geometry"))) || Qfalse == value)
-        flags |= (Qtrue == value ? SUB_CLIENT_MODE_FULL :
-          SUB_CLIENT_MODE_NOFULL);
+        CHAR2SYM("full")))) flags |= SUB_CLIENT_MODE_FULL;
 
       if(Qtrue == (value = rb_hash_lookup(params,
-          CHAR2SYM("full"))) || Qfalse == value)
-        flags |= (Qtrue == value ? SUB_CLIENT_MODE_FULL :
-          SUB_CLIENT_MODE_NOFULL);
+        CHAR2SYM("float")))) flags |= SUB_CLIENT_MODE_FLOAT;
 
       if(Qtrue == (value = rb_hash_lookup(params,
-          CHAR2SYM("float"))) || Qfalse == value)
-        flags |= (Qtrue == value ? SUB_CLIENT_MODE_FLOAT :
-          SUB_CLIENT_MODE_NOFLOAT);
+        CHAR2SYM("stick")))) flags |= SUB_CLIENT_MODE_STICK;
 
       if(Qtrue == (value = rb_hash_lookup(params,
-          CHAR2SYM("stick"))) || Qfalse == value)
-        flags |= (Qtrue == value ? SUB_CLIENT_MODE_STICK :
-          SUB_CLIENT_MODE_NOSTICK);
+        CHAR2SYM("urgent")))) flags |= SUB_CLIENT_MODE_URGENT;
 
       if(Qtrue == (value = rb_hash_lookup(params,
-          CHAR2SYM("urgent"))) || Qfalse == value)
-        flags |= (Qtrue == value ? SUB_CLIENT_MODE_URGENT :
-          SUB_CLIENT_MODE_NOURGENT);
+        CHAR2SYM("resize")))) flags |= SUB_CLIENT_MODE_RESIZE;
 
       if(Qtrue == (value = rb_hash_lookup(params,
-          CHAR2SYM("resize"))) || Qfalse == value)
-        flags |= (Qtrue == value ? SUB_CLIENT_MODE_RESIZE :
-          SUB_CLIENT_MODE_NORESIZE);
+        CHAR2SYM("zaphod")))) flags |= SUB_CLIENT_MODE_ZAPHOD;
     }
 
   /* Check value type */
