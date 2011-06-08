@@ -54,6 +54,7 @@ context "Client" do
     stick  = p.call(topic, :is_stick?,  :toggle_stick)
     resize = p.call(topic, :is_resize?, :toggle_resize)
     urgent = p.call(topic, :is_urgent?, :toggle_urgent)
+    urgent = p.call(topic, :is_zaphod?, :toggle_zaphod)
 
     expected = [ false, true, false ]
 
