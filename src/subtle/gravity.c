@@ -50,30 +50,24 @@ subGravityNew(const char *name,
 } /* }}} */
 
  /** subGravityGeometry {{{
-  * @brief Calculate geometry of gravity
-  * @param[in]   gravity  Gravity id
-  * @param[in]   screen   Screen id
-  * @param[out]  geom     A #XRectangle
+  * @brief Calculate geometry of gravity for bounds
+  * @param[in]   g       A #SubGravity
+  * @param[in]   bounds  A #XRectangle
+  * @param[out]  geom    A #XRectangle
   **/
 
 void
-subGravityGeometry(int gravity,
-  int screen,
+subGravityGeometry(SubGravity *g,
+  XRectangle *bounds,
   XRectangle *geom)
 {
-  SubGravity *g = GRAVITY(subArrayGet(subtle->gravities, gravity));
-  SubScreen *s = SCREEN(subArrayGet(subtle->screens, screen));
+  assert(g && bounds && geom);
 
-  assert(geom && g && s);
-
-  /* Calculate gravity size for screen */
-  if(g && s)
-    {
-      geom->x      = s->geom.x + (s->geom.width * g->geom.x / 100);
-      geom->y      = s->geom.y + (s->geom.height * g->geom.y / 100);
-      geom->width  = (s->geom.width * g->geom.width / 100);
-      geom->height = (s->geom.height * g->geom.height / 100);
-    }
+  /* Calculate gravity size for bounds */
+  geom->x      = bounds->x + (bounds->width * g->geom.x / 100);
+  geom->y      = bounds->y + (bounds->height * g->geom.y / 100);
+  geom->width  = (bounds->width * g->geom.width / 100);
+  geom->height = (bounds->height * g->geom.height / 100);
 } /* }}} */
 
  /** subGravityKill {{{
