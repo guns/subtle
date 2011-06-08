@@ -35,7 +35,7 @@ set :urgent, false
 set :resize, false
 
 # Enable gravity tiling
-set :tiling, true
+set :tiling, false
 
 # Font string either take from e.g. xfontsel or use xft
 set :font, "-*-*-medium-*-*-*-14-*-*-*-*-*-*-*"
@@ -378,6 +378,9 @@ grab "W-space", :WindowFull
 
 # Toggle sticky mode of window (will be visible on all views)
 grab "W-s", :WindowStick
+
+# Toggle zaphod mode of window (will span across all screens)
+grab "W-equal", :WindowZaphod
 
 # Raise window
 grab "W-r", :WindowRaise
