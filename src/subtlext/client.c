@@ -710,7 +710,7 @@ subClientFlagsAskResize(VALUE self)
   return ClientFlagsGet(self, SUB_EWMH_RESIZE);
 } /* }}} */
 
-/* subClientFlagsAskResize {{{ */
+/* subClientFlagsAskUrgent {{{ */
 /*
  * call-seq: is_urgent? -> true or false
  *
@@ -727,6 +727,25 @@ VALUE
 subClientFlagsAskUrgent(VALUE self)
 {
   return ClientFlagsGet(self, SUB_EWMH_URGENT);
+} /* }}} */
+
+/* subClientFlagsAskZaphod {{{ */
+/*
+ * call-seq: is_zaphod? -> true or false
+ *
+ * Check if Client is zaphod
+ *
+ *  client.is_zaphod?
+ *  => true
+ *
+ *  client.is_zaphod?
+ *  => false
+ */
+
+VALUE
+subClientFlagsAskZaphod(VALUE self)
+{
+  return ClientFlagsGet(self, SUB_EWMH_ZAPHOD);
 } /* }}} */
 
 /* subClientFlagsToggleFull {{{ */
@@ -793,9 +812,9 @@ subClientFlagsToggleResize(VALUE self)
   return ClientFlagsSet(self, SUB_EWMH_RESIZE, True);
 } /* }}} */
 
-/* subClientFlagsToggleResize {{{ */
+/* subClientFlagsToggleUrgent {{{ */
 /*
- * call-seq: toggle_stick -> nil
+ * call-seq: toggle_urgent -> nil
  *
  * Toggle Client urgent state
  *
@@ -807,6 +826,22 @@ VALUE
 subClientFlagsToggleUrgent(VALUE self)
 {
   return ClientFlagsSet(self, SUB_EWMH_URGENT, True);
+} /* }}} */
+
+/* subClientFlagsToggleZaphod {{{ */
+/*
+ * call-seq: toggle_zaphod -> nil
+ *
+ * Toggle Client zaphod state
+ *
+ *  client.toggle_zaphod
+ *  => nil
+ */
+
+VALUE
+subClientFlagsToggleZaphod(VALUE self)
+{
+  return ClientFlagsSet(self, SUB_EWMH_ZAPHOD, True);
 } /* }}} */
 
 /* subClientFlagsWriter {{{ */
