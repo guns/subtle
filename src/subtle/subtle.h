@@ -172,11 +172,7 @@
 #define SUB_CLIENT_MODE_STICK         (1L << 18)                  ///< Stick mode
 #define SUB_CLIENT_MODE_URGENT        (1L << 19)                  ///< Urgent mode
 #define SUB_CLIENT_MODE_RESIZE        (1L << 20)                  ///< Resize mode
-#define SUB_CLIENT_MODE_NOFULL        (1L << 21)                  ///< Disable full mode
-#define SUB_CLIENT_MODE_NOFLOAT       (1L << 22)                  ///< Disable float mode
-#define SUB_CLIENT_MODE_NOSTICK       (1L << 23)                  ///< Disable stick mode
-#define SUB_CLIENT_MODE_NOURGENT      (1L << 24)                  ///< Disable urgent mode
-#define SUB_CLIENT_MODE_NORESIZE      (1L << 25)                  ///< Disable resize mode
+#define SUB_CLIENT_MODE_ZAPHOD        (1L << 21)                  ///< Zaphod mode
 
 #define SUB_CLIENT_TYPE_DESKTOP       (1L << 26)                  ///< Desktop type (also used in match)
 #define SUB_CLIENT_TYPE_DOCK          (1L << 27)                  ///< Dock type
@@ -299,11 +295,6 @@
   (SUB_CLIENT_MODE_FULL|SUB_CLIENT_MODE_FLOAT| \
   SUB_CLIENT_MODE_STICK|SUB_CLIENT_MODE_URGENT| \
   SUB_CLIENT_MODE_RESIZE)                                         ///< All mode flags
-
-#define MODES_NONE \
-  (SUB_CLIENT_MODE_NOFULL|SUB_CLIENT_MODE_NOFLOAT| \
-  SUB_CLIENT_MODE_NOSTICK|SUB_CLIENT_MODE_NOURGENT| \
-  SUB_CLIENT_MODE_NORESIZE)                                       ///< All none mode flags
 
 /* State action */
 #define _NET_WM_STATE_REMOVE           0L                         /// Remove/unset property
@@ -691,7 +682,8 @@ void subClientDrag(SubClient *c, int mode);                       ///< Move/drag
 void subClientUpdate(int vid);                                    ///< Update clients
 void subClientTag(SubClient *c, int tag, int *flags);             ///< Tag client
 void subClientRetag(SubClient *c, int *flags);                    ///< Update client tags
-void subClientResize(SubClient *c, int size_hints);               ///< Resize client for screen
+void subClientResize(SubClient *c, XRectangle *bounds,
+  int size_hints);                                                ///< Resize client for screen
 void subClientArrange(SubClient *c, int gravity,
   int screen);                                                    ///< Arrange client
 void subClientToggle(SubClient *c, int type, int gravity);        ///< Toggle client state
@@ -756,8 +748,8 @@ void subGrabKill(SubGrab *g);                                     ///< Kill grab
 /* gravity.c {{{ */
 SubGravity *subGravityNew(const char *name,
   XRectangle *geom);                                              ///< Create gravity
-void subGravityGeometry(int gravity, int screen,
-  XRectangle *geom);                                              ///< Kill gravity
+void subGravityGeometry(SubGravity *g, XRectangle *bounds,
+  XRectangle *geom);                                              ///< Calculate gravity geometry
 void subGravityKill(SubGravity *g);                               ///< Kill gravity
 int subGravityFind(const char *name, int quark);                  ///< Find gravity id
 void subGravityPublish(void);                                     ///< Publish gravities
