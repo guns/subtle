@@ -288,8 +288,8 @@ EventConfigureRequest(XConfigureRequestEvent *ev)
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
     {
       /* Check flags if the request is important */
-      if(!(c->flags & (SUB_CLIENT_MODE_NORESIZE|SUB_CLIENT_TYPE_DESKTOP|
-          SUB_CLIENT_MODE_FULL)) && (subtle->flags & SUB_SUBTLE_RESIZE ||
+      if(!(c->flags & (SUB_CLIENT_TYPE_DESKTOP|SUB_CLIENT_MODE_FULL)) &&
+          (subtle->flags & SUB_SUBTLE_RESIZE ||
           c->flags & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_RESIZE)))
         {
           SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
@@ -299,7 +299,7 @@ EventConfigureRequest(XConfigureRequestEvent *ev)
           if(ev->value_mask & CWWidth)  c->geom.width  = ev->width;
           if(ev->value_mask & CWHeight) c->geom.height = ev->height;
 
-          subClientResize(c, False);
+          subClientResize(c, &(s->geom), False);
 
           /* Send synthetic configure notify */
           if((ev->value_mask & (CWX|CWY)) && !(ev->value_mask & (CWWidth|CWHeight)))
@@ -674,8 +674,7 @@ EventGrab(XEvent *ev)
           case SUB_GRAB_WINDOW_MOVE:
           case SUB_GRAB_WINDOW_RESIZE: /* {{{ */
             if((c = CLIENT(subSubtleFind(win, CLIENTID))) &&
-                !(c->flags & (SUB_CLIENT_MODE_FULL|SUB_CLIENT_MODE_NOFLOAT|
-                SUB_CLIENT_TYPE_DESKTOP)))
+                !(c->flags & (SUB_CLIENT_MODE_FULL|SUB_CLIENT_TYPE_DESKTOP)))
               {
                 if(!(c->flags & SUB_CLIENT_MODE_FLOAT))
                   {
@@ -1112,6 +1111,7 @@ EventMessage(XClientMessageEvent *ev)
                 if(ev->data.l[1] & SUB_EWMH_STICK)  flags |= SUB_CLIENT_MODE_STICK;
                 if(ev->data.l[1] & SUB_EWMH_RESIZE) flags |= SUB_CLIENT_MODE_RESIZE;
                 if(ev->data.l[1] & SUB_EWMH_URGENT) flags |= SUB_CLIENT_MODE_URGENT;
+                if(ev->data.l[1] & SUB_EWMH_ZAPHOD) flags |= SUB_CLIENT_MODE_ZAPHOD;
 
                 subClientToggle(c, (~c->flags & flags), False); ///< Enable only
 
@@ -1418,6 +1418,8 @@ EventMessage(XClientMessageEvent *ev)
             break; /* }}} */
           case SUB_EWMH_NET_MOVERESIZE_WINDOW: /* {{{ */
               {
+                SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
+
                 if(!(c->flags & SUB_CLIENT_MODE_FLOAT))
                   subClientToggle(c, SUB_CLIENT_MODE_FLOAT, True);
 
@@ -1426,7 +1428,7 @@ EventMessage(XClientMessageEvent *ev)
                 c->geom.width  = ev->data.l[3];
                 c->geom.height = ev->data.l[4];
 
-                subClientResize(c, True);
+                subClientResize(c, &(s->geom), True);
 
                 XMoveResizeWindow(subtle->dpy, c->win, c->geom.x, c->geom.y,
                   c->geom.width, c->geom.height);
