@@ -895,12 +895,14 @@ subClientArrange(SubClient *c,
                     {
                       int i, flags = (SUB_SCREEN_PANEL1|SUB_SCREEN_PANEL2);
 
-                      bounds.x      = 0;
-                      bounds.y      = 0;
-                      bounds.width  = subtle->width;
-                      bounds.height = subtle->height;
+                      bounds.x      = subtle->styles.subtle.padding.left;
+                      bounds.y      = subtle->styles.subtle.padding.top;
+                      bounds.width  = subtle->width - subtle->styles.subtle.padding.left -
+                        subtle->styles.subtle.padding.right;
+                      bounds.height = subtle->height - subtle->styles.subtle.padding.top -
+                        subtle->styles.subtle.padding.bottom;
 
-                      /* Iterate over screens to find least fitting square */
+                      /* Iterate over screens to find fitting square */
                       for(i = 0; i < subtle->screens->ndata; i++)
                         {
                           SubScreen *s2 = SCREEN(subtle->screens->data[i]);
