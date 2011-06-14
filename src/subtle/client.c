@@ -118,6 +118,36 @@ ClientBounds(SubClient *c,
     }
 } /* }}} */
 
+/* ClientSnap {{{ */
+static void
+ClientSnap(SubClient *c,
+  SubScreen *s,
+  XRectangle *geom)
+{
+  DEAD(c);
+  assert(c && s && geom);
+
+  /* Snap to screen border - X axis */
+  if(s->geom.x + subtle->snap > geom->x)
+    geom->x = s->geom.x + BORDER(c);
+  else if(geom->x > (s->geom.x + s->geom.width +
+      BORDER(c) - geom->width - subtle->snap))
+    {
+      geom->x = s->geom.x + s->geom.width -
+        geom->width - BORDER(c);
+    }
+
+  /* Snap tp screen border - Y axis */
+  if(s->geom.y + subtle->snap > geom->y)
+    geom->y = s->geom.y + BORDER(c);
+  else if(geom->y > (s->geom.y + s->geom.height +
+      BORDER(c) - geom->height - subtle->snap))
+    {
+      geom->y = s->geom.y + s->geom.height -
+        geom->height - BORDER(c);
+    }
+} /* }}} */
+
 /* ClientCenter {{{ */
 static void
 ClientCenter(SubClient *c)
@@ -469,20 +499,21 @@ subClientWarp(SubClient *c,
 
  /** subClientDrag {{{
   * @brief Move and/or drag client
-  * @param[in]  c     A #SubClient
-  * @param[in]  mode  Drag/move mode
+  * @param[in]  c          A #SubClient
+  * @param[in]  mode       Drag/move mode
+  * @param[in]  direction  Resize/drag direction
   **/
 
 void
 subClientDrag(SubClient *c,
-  int mode)
+  int mode,
+  int direction)
 {
   XEvent ev;
   Window root = None, win = None;
   unsigned int mask = 0;
   int loop = True, edge = 0, sx = 0, sy = 0;
   int wx = 0, wy = 0, ww = 0, wh = 0, rx = 0, ry = 0, maxw = 0, maxh = 0;
-  short *dirx = NULL, *diry = NULL;
   SubScreen *s = NULL;
   XRectangle geom = { 0 };
   Cursor cursor;
@@ -499,20 +530,16 @@ subClientDrag(SubClient *c,
 
   /* Set max width/height */
   s    = SCREEN(subtle->screens->data[c->screen]);
-  maxw = -1 == c->maxw ? s->geom.width - 2 * BORDER(c) : c->maxw;
+  maxw = -1 == c->maxw ? s->geom.width  - 2 * BORDER(c) : c->maxw;
   maxh = -1 == c->maxh ? s->geom.height - 2 * BORDER(c) : c->maxh;
 
   /* Set variables according to mode */
   switch(mode)
     {
       case SUB_DRAG_MOVE:
-        dirx   = &geom.x;
-        diry   = &geom.y;
         cursor = subtle->cursors.move;
         break;
       case SUB_DRAG_RESIZE:
-        dirx   = (short *)&geom.width;
-        diry   = (short *)&geom.height;
         cursor = subtle->cursors.resize;
 
         /* Get starting edge */
@@ -527,134 +554,130 @@ subClientDrag(SubClient *c,
         break;
     } /* }}} */
 
-  /* Grab pointer, keyboard and server */
+  /* Grab pointer server */
   XGrabPointer(subtle->dpy, c->win, True, GRABMASK, GrabModeAsync,
     GrabModeAsync, None, cursor, CurrentTime);
-  XGrabKeyboard(subtle->dpy, ROOT, True, GrabModeAsync,
-    GrabModeAsync, CurrentTime);
   XGrabServer(subtle->dpy);
 
-  if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE)) ClientMask(&geom);
-
-  while(loop) ///< Event loop
+  switch(direction)
     {
-      XMaskEvent(subtle->dpy, DRAGMASK, &ev);
-      switch(ev.type)
-        {
-          case EnterNotify:   win = ev.xcrossing.window; break; ///< Find destination window
-          case ButtonRelease: loop = False;              break;
-          case FocusIn:
-          case FocusOut:                                 break; ///< Ignore focus changes
-          case KeyPress: /* {{{ */
-            if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE))
+      case SUB_GRAB_DIRECTION_UP:
+        if(SUB_DRAG_RESIZE == mode)
+          {
+            c->geom.y      -= c->inch;
+            c->geom.height += c->inch;
+          }
+        else c->geom.y -= subtle->step;
+
+        ClientSnap(c, s, &c->geom);
+        ClientBounds(c, &(s->geom), &c->geom);
+        break;
+      case SUB_GRAB_DIRECTION_RIGHT:
+        if(SUB_DRAG_RESIZE == mode)
+          c->geom.width += c->incw;
+        else c->geom.x += subtle->step;
+
+        ClientSnap(c, s, &c->geom);
+        ClientBounds(c, &(s->geom), &c->geom);
+        break;
+      case SUB_GRAB_DIRECTION_DOWN:
+        if(SUB_DRAG_RESIZE == mode)
+          c->geom.height += c->inch;
+        else c->geom.y += subtle->step;
+
+        ClientSnap(c, s, &c->geom);
+        ClientBounds(c, &(s->geom), &c->geom);
+        break;
+      case SUB_GRAB_DIRECTION_LEFT:
+        if(SUB_DRAG_RESIZE == mode)
+          {
+            c->geom.x     -= c->incw;
+            c->geom.width += c->incw;
+          }
+        else c->geom.x -= subtle->step;
+
+        ClientSnap(c, s, &c->geom);
+        ClientBounds(c, &(s->geom), &c->geom);
+        break;
+      default: /* {{{ */
+        ClientMask(&geom);
+
+        /* Start event loop */
+        while(loop)
+          {
+            XMaskEvent(subtle->dpy, DRAGMASK, &ev);
+            switch(ev.type)
               {
-                ClientMask(&geom);
+                case EnterNotify:   win = ev.xcrossing.window; break; ///< Find destination window
+                case ButtonRelease: loop = False;              break;
+                case FocusIn:
+                case FocusOut:                                 break; ///< Ignore focus changes
+                case MotionNotify: /* {{{ */
+                  if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE))
+                    {
+                      /* Check values */
+                      if(!XYINRECT(ev.xmotion.x_root, ev.xmotion.y_root, s->geom))
+                        continue;
 
-                /* Handle keys */
-                switch(XKeycodeToKeysym(subtle->dpy, ev.xkey.keycode, 0))
-                  {
-                    case XK_Left:   *dirx -= subtle->step; break;
-                    case XK_Right:  *dirx += subtle->step; break;
-                    case XK_Up:     *diry -= subtle->step; break;
-                    case XK_Down:   *diry += subtle->step; break;
-                    case XK_Return:
-                    case XK_Escape: loop = False;          break;
-                    default: break;
-                  }
+                      ClientMask(&geom);
 
-                if(SUB_DRAG_MOVE == mode)
-                  {
-                    *dirx = MINMAX(*dirx, c->minw, maxw);
-                    *diry = MINMAX(*diry, c->minh, maxh);
-                  }
+                      /* Calculate selection rect */
+                      switch(mode)
+                        {
+                          case SUB_DRAG_MOVE: /* {{{ */
+                            geom.x = (rx - wx) - (rx - ev.xmotion.x_root);
+                            geom.y = (ry - wy) - (ry - ev.xmotion.y_root);
 
-                ClientBounds(c, &(s->geom), &geom);
-                ClientMask(&geom);
+                            ClientSnap(c, s, &geom);
+                            break; /* }}} */
+                          case SUB_DRAG_RESIZE: /* {{{ */
+                            /* Handle resize based on edge */
+                            if(edge & EDGE_LEFT)
+                              {
+                                geom.x     = ev.xmotion.x_root;
+                                geom.width = sx - ev.xmotion.x_root;
+                              }
+                            else if(edge & EDGE_RIGHT)
+                              {
+                                geom.x     = sx;
+                                geom.width = ev.xmotion.x_root - sx;
+                              }
+                            if(edge & EDGE_TOP)
+                              {
+                                geom.y      = ev.xmotion.y_root;
+                                geom.height = sy - ev.xmotion.y_root;
+                              }
+                            else if(edge & EDGE_BOTTOM)
+                              {
+                                geom.y      = sy;
+                                geom.height = ev.xmotion.y_root - sy;
+                              }
+
+                            /* Adjust for increment values (see ICCCM 4.1.2.3) */
+                            geom.width  -= (geom.width - c->basew)  % c->incw;
+                            geom.height -= (geom.height - c->baseh) % c->inch;
+
+                            ClientBounds(c, &(s->geom), &geom);
+
+                            break; /* }}} */
+                        }
+
+                      ClientMask(&geom);
+                    }
+                  break; /* }}} */
               }
-            break; /* }}} */
-          case MotionNotify: /* {{{ */
-            if(mode & (SUB_DRAG_MOVE|SUB_DRAG_RESIZE))
-              {
-                /* Check values */
-                if(!XYINRECT(ev.xmotion.x_root, ev.xmotion.y_root, s->geom))
-                  continue;
+          }
 
-                ClientMask(&geom);
+        ClientMask(&geom); ///< Erase mask
 
-                /* Calculate selection rect */
-                switch(mode)
-                  {
-                    case SUB_DRAG_MOVE: /* {{{ */
-                      geom.x = (rx - wx) - (rx - ev.xmotion.x_root);
-                      geom.y = (ry - wy) - (ry - ev.xmotion.y_root);
+        /* Subtract border width */
+        if(!(c->flags & SUB_CLIENT_BORDERLESS))
+          {
+            geom.x -= subtle->styles.clients.border.top;
+            geom.y -= subtle->styles.clients.border.top;
+          } /* }}} */
 
-                      /* Snap to screen border - X axis */
-                      if(s->geom.x + subtle->snap > geom.x)
-                        geom.x = s->geom.x + BORDER(c);
-                      else if(geom.x > (s->geom.x + s->geom.width +
-                          BORDER(c) - geom.width - subtle->snap))
-                        {
-                          geom.x = s->geom.x + s->geom.width -
-                            geom.width - BORDER(c);
-                        }
-
-                      /* Snap tp screen border - Y axis */
-                      if(s->geom.y + subtle->snap > geom.y)
-                        geom.y = s->geom.y + BORDER(c);
-                      else if(geom.y > (s->geom.y + s->geom.height +
-                          BORDER(c) - geom.height - subtle->snap))
-                        {
-                          geom.y = s->geom.y + s->geom.height -
-                            geom.height - BORDER(c);
-                        }
-                      break; /* }}} */
-                    case SUB_DRAG_RESIZE:
-                      /* Handle resize based on edge */
-                      if(edge & EDGE_LEFT)
-                        {
-                          geom.x     = ev.xmotion.x_root;
-                          geom.width = sx - ev.xmotion.x_root;
-                        }
-                      else if(edge & EDGE_RIGHT)
-                        {
-                          geom.x     = sx;
-                          geom.width = ev.xmotion.x_root - sx;
-                        }
-                      if(edge & EDGE_TOP)
-                        {
-                          geom.y      = ev.xmotion.y_root;
-                          geom.height = sy - ev.xmotion.y_root;
-                        }
-                      else if(edge & EDGE_BOTTOM)
-                        {
-                          geom.y      = sy;
-                          geom.height = ev.xmotion.y_root - sy;
-                        }
-
-                      /* Adjust for increment values (see ICCCM 4.1.2.3) */
-                      geom.width  -= (geom.width - c->basew)  % c->incw;
-                      geom.height -= (geom.height - c->baseh) % c->inch;
-
-                      ClientBounds(c, &(s->geom), &geom);
-
-                      break;
-                  }
-
-                ClientMask(&geom);
-              }
-            break; /* }}} */
-        }
-    }
-
-  ClientMask(&geom); ///< Erase mask
-
-  c->geom = geom;
-
-  /* Subtract border width */
-  if(!(c->flags & SUB_CLIENT_BORDERLESS))
-    {
-      c->geom.x -= subtle->styles.clients.border.top;
-      c->geom.y -= subtle->styles.clients.border.top;
+        c->geom = geom;
     }
 
   XMoveResizeWindow(subtle->dpy, c->win, c->geom.x, c->geom.y,
@@ -662,7 +685,6 @@ subClientDrag(SubClient *c,
 
   /* Remove grabs */
   XUngrabPointer(subtle->dpy, CurrentTime);
-  XUngrabKeyboard(subtle->dpy, CurrentTime);
   XUngrabServer(subtle->dpy);
 } /* }}} */
 
@@ -918,7 +940,7 @@ subClientArrange(SubClient *c,
                               if(s2->flags & SUB_SCREEN_PANEL2)
                                 bounds.height -= subtle->ph;
 
-                              flags &= ~(s2->flags & 
+                              flags &= ~(s2->flags &
                                 (SUB_SCREEN_PANEL1|SUB_SCREEN_PANEL2));
                             }
                         }
@@ -933,6 +955,10 @@ subClientArrange(SubClient *c,
           /* EWMH: Gravity */
           subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_GRAVITY,
             (long *)&c->gravity, 1);
+
+          /* Hook: Gravity */
+          subHookCall((SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_GRAVITY),
+            (void *)c);
 
           XSync(subtle->dpy, False); ///< Sync all changes
         }
@@ -1083,7 +1109,7 @@ subClientToggle(SubClient *c,
 
   XSync(subtle->dpy, False); ///< Sync all changes
 
-  /* Hook: Configure */
+  /* Hook: Mode */
   subHookCall((SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_MODE), (void *)c);
 } /* }}} */
 
