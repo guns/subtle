@@ -190,15 +190,15 @@ EventMatch(int type,
   cy_test   = test->y + (test->height / 2);
 
   /* Check geometries */
-  if((((SUB_WINDOW_LEFT  == type      && cx_test   <= cx_origin)                  ||
-       (SUB_WINDOW_RIGHT == type      && cx_test   >= cx_origin))                 &&
-       ((cy_test         >= origin->y && cy_test   <= origin->y + origin->height) ||
-       (cy_origin        >= test->y   && cy_origin <= test->y   + test->height))) ||
+  if((((SUB_GRAB_DIRECTION_LEFT  == type      && cx_test   <= cx_origin)                  ||
+       (SUB_GRAB_DIRECTION_RIGHT == type      && cx_test   >= cx_origin))                 &&
+       ((cy_test                 >= origin->y && cy_test   <= origin->y + origin->height) ||
+       (cy_origin                >= test->y   && cy_origin <= test->y   + test->height))) ||
 
-     (((SUB_WINDOW_UP    == type      && cy_test   <= cy_origin)                  ||
-       (SUB_WINDOW_DOWN  == type      && cy_test   >= cy_origin))                 &&
-       ((cx_test         >= origin->x && cx_test   <= origin->x + origin->width)  ||
-       (cx_origin        >= test->x   && cx_origin <= test->x   + test->width))))
+     (((SUB_GRAB_DIRECTION_UP    == type      && cy_test   <= cy_origin)                  ||
+       (SUB_GRAB_DIRECTION_DOWN  == type      && cy_test   >= cy_origin))                 &&
+       ((cx_test                 >= origin->x && cx_test   <= origin->x + origin->width)  ||
+       (cx_origin                 >= test->x   && cx_origin <= test->x   + test->width))))
     {
       /* Euclidean distance */
       dx = abs(cx_origin - cx_test);
@@ -687,7 +687,7 @@ EventGrab(XEvent *ev)
                 if(SUB_GRAB_WINDOW_MOVE == flag)        flag = SUB_DRAG_MOVE;
                 else if(SUB_GRAB_WINDOW_RESIZE == flag) flag = SUB_DRAG_RESIZE;
 
-                subClientDrag(c, flag);
+                subClientDrag(c, flag, (int)g->data.num);
               }
             break; /* }}} */
           case SUB_GRAB_WINDOW_TOGGLE: /* {{{ */
