@@ -513,7 +513,7 @@ subClientDrag(SubClient *c,
   Window root = None, win = None;
   unsigned int mask = 0;
   int loop = True, edge = 0, sx = 0, sy = 0;
-  int wx = 0, wy = 0, ww = 0, wh = 0, rx = 0, ry = 0, maxw = 0, maxh = 0;
+  int wx = 0, wy = 0, ww = 0, wh = 0, rx = 0, ry = 0;
   SubScreen *s = NULL;
   XRectangle geom = { 0 };
   Cursor cursor;
@@ -529,9 +529,7 @@ subClientDrag(SubClient *c,
   geom.height = wh = c->geom.height;
 
   /* Set max width/height */
-  s    = SCREEN(subtle->screens->data[c->screen]);
-  maxw = -1 == c->maxw ? s->geom.width  - 2 * BORDER(c) : c->maxw;
-  maxh = -1 == c->maxh ? s->geom.height - 2 * BORDER(c) : c->maxh;
+  s  = SCREEN(subtle->screens->data[c->screen]);
 
   /* Set variables according to mode */
   switch(mode)
