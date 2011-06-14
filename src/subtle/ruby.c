@@ -474,19 +474,20 @@ RubyEvalHook(VALUE event,
 
   RubySymbols hooks[] =
   {
-    { CHAR2SYM("start"),          SUB_HOOK_START                                },
-    { CHAR2SYM("exit"),           SUB_HOOK_EXIT                                 },
-    { CHAR2SYM("tile"),           SUB_HOOK_TILE                                 },
-    { CHAR2SYM("reload"),         SUB_HOOK_RELOAD                               },
-    { CHAR2SYM("client_create"),  (SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_CREATE) },
-    { CHAR2SYM("client_mode"),    (SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_MODE)   },
-    { CHAR2SYM("client_focus"),   (SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_FOCUS)  },
-    { CHAR2SYM("client_kill"),    (SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_KILL)   },
-    { CHAR2SYM("tag_create"),     (SUB_HOOK_TYPE_TAG|SUB_HOOK_ACTION_CREATE)    },
-    { CHAR2SYM("tag_kill"),       (SUB_HOOK_TYPE_TAG|SUB_HOOK_ACTION_KILL)      },
-    { CHAR2SYM("view_create"),    (SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_CREATE)   },
-    { CHAR2SYM("view_jump"),      (SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_FOCUS)    },
-    { CHAR2SYM("view_kill"),      (SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_KILL)     }
+    { CHAR2SYM("start"),          SUB_HOOK_START                                 },
+    { CHAR2SYM("exit"),           SUB_HOOK_EXIT                                  },
+    { CHAR2SYM("tile"),           SUB_HOOK_TILE                                  },
+    { CHAR2SYM("reload"),         SUB_HOOK_RELOAD                                },
+    { CHAR2SYM("client_create"),  (SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_CREATE)  },
+    { CHAR2SYM("client_mode"),    (SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_MODE)    },
+    { CHAR2SYM("client_gravity"), (SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_GRAVITY) },
+    { CHAR2SYM("client_focus"),   (SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_FOCUS)   },
+    { CHAR2SYM("client_kill"),    (SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_KILL)    },
+    { CHAR2SYM("tag_create"),     (SUB_HOOK_TYPE_TAG|SUB_HOOK_ACTION_CREATE)     },
+    { CHAR2SYM("tag_kill"),       (SUB_HOOK_TYPE_TAG|SUB_HOOK_ACTION_KILL)       },
+    { CHAR2SYM("view_create"),    (SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_CREATE)    },
+    { CHAR2SYM("view_jump"),      (SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_FOCUS)     },
+    { CHAR2SYM("view_kill"),      (SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_KILL)      }
   };
 
   if(subtle->flags & SUB_SUBTLE_CHECK) return; ///< Skip on check
@@ -548,9 +549,49 @@ RubyEvalGrab(VALUE keys,
               {
                 type = SUB_GRAB_WINDOW_MOVE;
               }
+            else if(CHAR2SYM("WindowMoveUp") == value)
+              {
+                type = SUB_GRAB_WINDOW_MOVE;
+                data = DATA((unsigned long)SUB_GRAB_DIRECTION_UP);
+              }
+            else if(CHAR2SYM("WindowMoveRight") == value)
+              {
+                type = SUB_GRAB_WINDOW_MOVE;
+                data = DATA((unsigned long)SUB_GRAB_DIRECTION_RIGHT);
+              }
+            else if(CHAR2SYM("WindowMoveDown") == value)
+              {
+                type = SUB_GRAB_WINDOW_MOVE;
+                data = DATA((unsigned long)SUB_GRAB_DIRECTION_DOWN);
+              }
+            else if(CHAR2SYM("WindowMoveLeft") == value)
+              {
+                type = SUB_GRAB_WINDOW_MOVE;
+                data = DATA((unsigned long)SUB_GRAB_DIRECTION_LEFT);
+              }
             else if(CHAR2SYM("WindowResize") == value)
               {
                 type = SUB_GRAB_WINDOW_RESIZE;
+              }
+            else if(CHAR2SYM("WindowResizeUp") == value)
+              {
+                type = SUB_GRAB_WINDOW_RESIZE;
+                data = DATA((unsigned long)SUB_GRAB_DIRECTION_UP);
+              }
+            else if(CHAR2SYM("WindowResizeRight") == value)
+              {
+                type = SUB_GRAB_WINDOW_RESIZE;
+                data = DATA((unsigned long)SUB_GRAB_DIRECTION_RIGHT);
+              }
+            else if(CHAR2SYM("WindowResizeDown") == value)
+              {
+                type = SUB_GRAB_WINDOW_RESIZE;
+                data = DATA((unsigned long)SUB_GRAB_DIRECTION_DOWN);
+              }
+            else if(CHAR2SYM("WindowResizeLeft") == value)
+              {
+                type = SUB_GRAB_WINDOW_RESIZE;
+                data = DATA((unsigned long)SUB_GRAB_DIRECTION_LEFT);
               }
             else if(CHAR2SYM("WindowFloat") == value)
               {
@@ -585,22 +626,22 @@ RubyEvalGrab(VALUE keys,
             else if(CHAR2SYM("WindowLeft") == value)
               {
                 type = SUB_GRAB_WINDOW_SELECT;
-                data = DATA((unsigned long)SUB_WINDOW_LEFT);
+                data = DATA((unsigned long)SUB_GRAB_DIRECTION_LEFT);
               }
             else if(CHAR2SYM("WindowDown") == value)
               {
                 type = SUB_GRAB_WINDOW_SELECT;
-                data = DATA((unsigned long)SUB_WINDOW_DOWN);
+                data = DATA((unsigned long)SUB_GRAB_DIRECTION_DOWN);
               }
             else if(CHAR2SYM("WindowUp") == value)
               {
                 type = SUB_GRAB_WINDOW_SELECT;
-                data = DATA((unsigned long)SUB_WINDOW_UP);
+                data = DATA((unsigned long)SUB_GRAB_DIRECTION_UP);
               }
             else if(CHAR2SYM("WindowRight") == value)
               {
                 type = SUB_GRAB_WINDOW_SELECT;
-                data = DATA((unsigned long)SUB_WINDOW_RIGHT);
+                data = DATA((unsigned long)SUB_GRAB_DIRECTION_RIGHT);
               }
             else if(CHAR2SYM("WindowKill") == value)
               {
