@@ -155,8 +155,9 @@
 #define SUB_HOOK_TYPE_TAG             (1L << 15)                  ///< Tag hooks
 #define SUB_HOOK_ACTION_CREATE        (1L << 16)                  ///< Create action
 #define SUB_HOOK_ACTION_MODE          (1L << 17)                  ///< Mode action
-#define SUB_HOOK_ACTION_FOCUS         (1L << 18)                  ///< Focus action
-#define SUB_HOOK_ACTION_KILL          (1L << 19)                  ///< Kill action
+#define SUB_HOOK_ACTION_GRAVITY       (1L << 18)                  ///< Gravity action
+#define SUB_HOOK_ACTION_FOCUS         (1L << 19)                  ///< Focus action
+#define SUB_HOOK_ACTION_KILL          (1L << 20)                  ///< Kill action
 
 /* Client flags */
 #define SUB_CLIENT_DEAD               (1L << 9)                   ///< Dead window
@@ -207,6 +208,12 @@
 #define SUB_GRAB_WINDOW_SELECT        (1L << 27)                  ///< Select window
 #define SUB_GRAB_WINDOW_GRAVITY       (1L << 28)                  ///< Set gravity of window
 #define SUB_GRAB_WINDOW_KILL          (1L << 29)                  ///< Kill window
+
+/* Grab dirctions flags */
+#define SUB_GRAB_DIRECTION_UP         (1L << 0)                   ///< Direction up
+#define SUB_GRAB_DIRECTION_RIGHT      (1L << 1)                   ///< Direction right
+#define SUB_GRAB_DIRECTION_DOWN       (1L << 2)                   ///< Direction down
+#define SUB_GRAB_DIRECTION_LEFT       (1L << 3)                   ///< Direction left
 
 /* Panel flags */
 #define SUB_PANEL_SUBLET              (1L << 9)                   ///< Panel sublet type
@@ -678,7 +685,7 @@ void subClientRender(SubClient *c);                               ///< Render cl
 int subClientCompare(const void *a, const void *b);               ///< Compare two clients
 void subClientFocus(SubClient *c);                                ///< Focus client
 void subClientWarp(SubClient *c, int rise);                       ///< Warp to client
-void subClientDrag(SubClient *c, int mode);                       ///< Move/drag client
+void subClientDrag(SubClient *c, int mode, int direction);        ///< Move/drag client
 void subClientUpdate(int vid);                                    ///< Update clients
 void subClientTag(SubClient *c, int tag, int *flags);             ///< Tag client
 void subClientRetag(SubClient *c, int *flags);                    ///< Update client tags

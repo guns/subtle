@@ -72,12 +72,6 @@
 #define SUB_LOG_SUBTLE     (1L << 8)                              ///< Log subtle messages
 #define SUB_LOG_DEBUG      (1L << 9)                              ///< Log other debug messages
 
-/* Window selections flags */
-#define SUB_WINDOW_LEFT    0L                                     ///< Window left
-#define SUB_WINDOW_DOWN    1L                                     ///< Window down
-#define SUB_WINDOW_UP      2L                                     ///< Window above
-#define SUB_WINDOW_RIGHT   3L                                     ///< Window right
-
 #define SUB_VIEW_NEXT      0L                                     ///< View next
 #define SUB_VIEW_PREV      1L                                     ///< View prev
 
