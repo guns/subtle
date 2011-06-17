@@ -639,7 +639,8 @@ subSharedTextRender(Display *disp,
       else ///< Text
         {
           subSharedTextDraw(disp, gc, f, win, width, y,
-            (-1 == item->color) ? fg : item->color, bg, item->data.string);
+            (-1 == item->color) ? fg : item->color, bg, 
+            item->data.string, strlen(item->data.string));
 
           width += item->width;
         }
@@ -714,6 +715,7 @@ subSharedTextWidth(Display *disp,
   * @param[in]  fg    Foreground color
   * @param[in]  bg    Background color
   * @param[in]  text  Text to draw
+  * @param[in]  len   Text length
   **/
 
 void
@@ -725,7 +727,8 @@ subSharedTextDraw(Display *disp,
   int y,
   long fg,
   long bg,
-  const char *text)
+  const char *text,
+  int len)
 {
   XGCValues gvals;
 
@@ -749,8 +752,7 @@ subSharedTextDraw(Display *disp,
       color.color.alpha = 0xffff;
 
       XftDrawChange(f->draw, win);
-      XftDrawStringUtf8(f->draw, &color, f->xft, x, y,
-        (XftChar8 *)text, strlen(text));
+      XftDrawStringUtf8(f->draw, &color, f->xft, x, y, (XftChar8 *)text, len);
     }
   else ///< XFS
 #endif /* HAVE_X11_XFT_XFT_H */
@@ -760,7 +762,7 @@ subSharedTextDraw(Display *disp,
       gvals.background = bg;
 
       XChangeGC(disp, gc, GCForeground|GCBackground, &gvals);
-      XmbDrawString(disp, win, f->xfs, gc, x, y, text, strlen(text));
+      XmbDrawString(disp, win, f->xfs, gc, x, y, text, len);
     }
 } /* }}} */
 

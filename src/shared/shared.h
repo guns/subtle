@@ -213,7 +213,8 @@ void subSharedTextIconDraw(Display *disp, GC gc, Window win,
   int x, int y, int width, int height, long fg, long bg,
   Pixmap pixmap, int bitmap);                                     ///< Draw icons
 void subSharedTextDraw(Display *disp, GC gc, SubFont *f,
-  Window win, int x, int y, long fg, long bg, const char *text);  ///< Draw text
+  Window win, int x, int y, long fg, long bg,
+  const char *text, int len);                                     ///< Draw text
 /* }}} */
 
 /* Font {{{ */
