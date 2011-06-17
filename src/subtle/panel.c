@@ -65,7 +65,8 @@ PanelSeparator(int type,
   subSharedTextDraw(subtle->dpy, subtle->gcs.draw, subtle->font,
     drawable, x + STYLE_LEFT(subtle->styles.separator), subtle->font->y +
     STYLE_TOP(subtle->styles.separator), subtle->styles.separator.fg,
-    subtle->styles.separator.bg, subtle->separator.string);
+    subtle->styles.separator.bg, subtle->separator.string,
+    strlen(subtle->separator.string));
 } /* }}} */
 
 /* Public */
@@ -143,6 +144,7 @@ subPanelUpdate(SubPanel *p)
           }
         break; /* }}} */
       case SUB_PANEL_SUBLET: /* {{{ */
+        /* Ensure min width */
         p->width = MAX(subtle->styles.sublets.min, p->sublet->width);
         break; /* }}} */
       case SUB_PANEL_TITLE: /* {{{ */
@@ -168,6 +170,7 @@ subPanelUpdate(SubPanel *p)
                     if(c->flags & SUB_CLIENT_MODE_FLOAT)  len++;
                     if(c->flags & SUB_CLIENT_MODE_STICK)  len++;
                     if(c->flags & SUB_CLIENT_MODE_RESIZE) len++;
+                    if(c->flags & SUB_CLIENT_MODE_ZAPHOD) len++;
 
                     /* Font offset, panel border and padding */
                     p->width = subSharedTextWidth(subtle->dpy, subtle->font,
@@ -175,6 +178,7 @@ subPanelUpdate(SubPanel *p)
                       subtle->styles.clients.right, NULL, NULL, True) +
                       STYLE_WIDTH(subtle->styles.title);
 
+                    /* Ensure min width */
                     p->width = MAX(subtle->styles.clients.min, p->width);
                   }
               }
@@ -255,7 +259,7 @@ subPanelRender(SubPanel *p,
               drawable, p->x + STYLE_LEFT(subtle->styles.separator),
               subtle->font->y + STYLE_TOP(subtle->styles.separator),
               subtle->styles.title.fg, subtle->styles.title.bg,
-              p->keychain->keys);
+              p->keychain->keys, strlen(p->keychain->keys));
           }
         break; /* }}} */
       case SUB_PANEL_SUBLET: /* {{{ */
@@ -276,13 +280,13 @@ subPanelRender(SubPanel *p,
             if((c = CLIENT(subSubtleFind(subtle->windows.focus[0], CLIENTID))) &&
                 !(c->flags & SUB_CLIENT_TYPE_DESKTOP))
               {
-                int x = 0;
-                char buf[100] = { 0 };
+                int x = 0, y = 0, width = 0, len = 0;
+                char buf[5] = { 0 };
                 SubStyle *s = NULL;
 
                 DEAD(c);
 
-                /* Title modes {{{ */
+                /* Collect window modes {{{ */
                 if(c->flags & SUB_CLIENT_MODE_FULL)
                   {
                     snprintf(buf + x, sizeof(buf), "%c", '+');
@@ -307,13 +311,11 @@ subPanelRender(SubPanel *p,
                   {
                     snprintf(buf + x, sizeof(buf), "%c", '=');
                     x++;
-                  } /* }}} */
+                  }
 
-                snprintf(buf + x, sizeof(buf) - x, "%s", c->name);
-
-                /* Limit size */
-                if(x + subtle->styles.clients.right < sizeof(buf))
-                  buf[x + subtle->styles.clients.right] = '\0';
+                width = subSharedTextWidth(subtle->dpy, subtle->font,
+                  buf, strlen(buf), NULL, NULL, True);
+                /* }}} */
 
                 /* Add urgent colors */
                 if(c->flags & SUB_CLIENT_MODE_URGENT)
@@ -323,9 +325,19 @@ subPanelRender(SubPanel *p,
                 /* Set window background and border*/
                 PanelRect(drawable, p->x, p->width, s);
 
+                /* Draw modes and title */
+                len = strlen(c->name);
+                x   = p->x + STYLE_LEFT(subtle->styles.title);
+                y   = subtle->font->y + STYLE_TOP(subtle->styles.title);
+
                 subSharedTextDraw(subtle->dpy, subtle->gcs.draw, subtle->font,
-                  drawable, p->x + STYLE_LEFT(subtle->styles.title), subtle->font->y +
-                  STYLE_TOP(subtle->styles.title), s->fg, s->bg, buf);
+                  drawable, x, y, s->fg, s->bg, buf, strlen(buf));
+
+                subSharedTextDraw(subtle->dpy, subtle->gcs.draw, subtle->font,
+                  drawable, x + width, y, s->fg, s->bg, c->name,
+                  /* Limit string length */
+                  len > subtle->styles.clients.right ? 
+                  subtle->styles.clients.right : len);
               }
           }
         break; /* }}} */
@@ -381,7 +393,7 @@ subPanelRender(SubPanel *p,
 
                     subSharedTextDraw(subtle->dpy, subtle->gcs.draw,
                       subtle->font, drawable, vx + x, subtle->font->y +
-                      STYLE_TOP((*s)), s->fg, s->bg, v->name);
+                      STYLE_TOP((*s)), s->fg, s->bg, v->name, strlen(v->name));
                   }
 
                 vx += v->width + STYLE_WIDTH((*s));
