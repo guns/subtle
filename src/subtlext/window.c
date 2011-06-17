@@ -749,7 +749,7 @@ subWindowRead(int argc,
       XEvent ev;
       int pos = 0, len = 0, loop = True, start = 0;
       int guess = -1, state = 0, window = 10;
-      char buf[32] = { 0 }, text[1024] = { 0 }, last[32] = { 0 };
+      char buf[32] = { 0 }, text[1024] = { 0 }, last[32] = { 0 }, *textwin = NULL;
       unsigned long *focus = NULL;
       VALUE x = Qnil, y = Qnil, width = Qnil, rargs[5] = { Qnil }, result = Qnil;
       Atom selection = None;
@@ -779,11 +779,12 @@ subWindowRead(int argc,
       while(loop)
         {
           text[len] = '_';
+          textwin   = text + (len > window ? len - window : 0); ///< Apply text window size
 
           WindowExpose(w);
           subSharedTextDraw(display, DefaultGC(display, 0), w->font,
             w->win, FIX2INT(x), FIX2INT(y), w->fg, w->bg,
-            text + (len > window ? len - window : 0)); ///< Apply text window size
+            textwin, strlen(textwin));
 
           XFlush(display);
           XNextEvent(display, &ev);
