@@ -87,7 +87,7 @@ ClientBounds(SubClient *c,
     {
       int bw = 0, maxw = 0, maxh = 0, diffw = 0, diffh = 0;
 
-      /* Calculate max width and height for screen */
+      /* Calculate max width and max height for bounds */
       bw   = 2 * BORDER(c) + subtle->styles.clients.margin.left +
         subtle->styles.clients.margin.right; 
       maxw = -1 == c->maxw ? bounds->width  - bw : c->maxw;
@@ -803,10 +803,10 @@ subClientResize(SubClient *c,
       int maxx = 0, maxy = 0;
 
       /* Check size */
-      if(c->geom.width > bounds->width)   c->geom.width  = bounds->width;
+      if(c->geom.width  > bounds->width)  c->geom.width  = bounds->width;
       if(c->geom.height > bounds->height) c->geom.height = bounds->height;
 
-      /* Check whether window fits onto screen */
+      /* Check whether window fits into bounds */
       maxx = bounds->x + bounds->width;
       maxy = bounds->y + bounds->height;
 
@@ -867,10 +867,11 @@ subClientArrange(SubClient *c,
               c->geom.y      = c->geom.y - s2->geom.y + s->geom.y;
               c->geom.width  = c->geom.width;
               c->geom.height = c->geom.height;
-
-              c->screen = screen;
+              c->screen      = screen;
             }
-          else subClientResize(c, &(s->geom), True);
+
+          /* Finally resize window */
+          subClientResize(c, &(s->geom), True);
 
           XMoveResizeWindow(subtle->dpy, c->win, c->geom.x, c->geom.y,
             c->geom.width, c->geom.height);
