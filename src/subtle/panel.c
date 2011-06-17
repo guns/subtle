@@ -69,6 +69,45 @@ PanelSeparator(int type,
     strlen(subtle->separator.string));
 } /* }}} */
 
+/* PanelModes {{{ */
+void
+PanelModes(SubClient *c,
+  char *buf,
+  int *width)
+{
+  int x = 0;
+
+  /* Collect window modes */
+  if(c->flags & SUB_CLIENT_MODE_FULL)
+    {
+      snprintf(buf + x, sizeof(buf), "%c", '+');
+      x++;
+    }
+  if(c->flags & SUB_CLIENT_MODE_FLOAT)
+    {
+      snprintf(buf + x, sizeof(buf), "%c", '^');
+      x++;
+    }
+  if(c->flags & SUB_CLIENT_MODE_STICK)
+    {
+      snprintf(buf + x, sizeof(buf), "%c", '*');
+      x++;
+    }
+  if(c->flags & SUB_CLIENT_MODE_RESIZE)
+    {
+      snprintf(buf + x, sizeof(buf), "%c", '~');
+      x++;
+    }
+  if(c->flags & SUB_CLIENT_MODE_ZAPHOD)
+    {
+      snprintf(buf + x, sizeof(buf), "%c", '=');
+      x++;
+    }
+
+  *width = subSharedTextWidth(subtle->dpy, subtle->font,
+    buf, strlen(buf), NULL, NULL, True);
+} /* }}} */
+
 /* Public */
 
  /** subPanelNew {{{
@@ -163,20 +202,18 @@ subPanelUpdate(SubPanel *p)
                 /* Exclude desktop type windows */
                 if(!(c->flags & SUB_CLIENT_TYPE_DESKTOP))
                   {
-                    unsigned long len = strlen(c->name);
+                    char buf[5] = { 0 };
+                    int width = 0, len = strlen(c->name);
 
-                    /* Title modes */
-                    if(c->flags & SUB_CLIENT_MODE_FULL)   len++;
-                    if(c->flags & SUB_CLIENT_MODE_FLOAT)  len++;
-                    if(c->flags & SUB_CLIENT_MODE_STICK)  len++;
-                    if(c->flags & SUB_CLIENT_MODE_RESIZE) len++;
-                    if(c->flags & SUB_CLIENT_MODE_ZAPHOD) len++;
+                    PanelModes(c, buf, &width);
 
                     /* Font offset, panel border and padding */
-                    p->width = subSharedTextWidth(subtle->dpy, subtle->font,
-                      c->name, subtle->styles.clients.right >= len ? len :
-                      subtle->styles.clients.right, NULL, NULL, True) +
-                      STYLE_WIDTH(subtle->styles.title);
+                    p->width = subSharedTextWidth(subtle->dpy,
+                      subtle->font, c->name,
+                      /* Limit string length */
+                      len > subtle->styles.clients.right ? 
+                      subtle->styles.clients.right : len,
+                      NULL, NULL, True) + width + STYLE_WIDTH(subtle->styles.title);
 
                     /* Ensure min width */
                     p->width = MAX(subtle->styles.clients.min, p->width);
@@ -286,36 +323,7 @@ subPanelRender(SubPanel *p,
 
                 DEAD(c);
 
-                /* Collect window modes {{{ */
-                if(c->flags & SUB_CLIENT_MODE_FULL)
-                  {
-                    snprintf(buf + x, sizeof(buf), "%c", '+');
-                    x++;
-                  }
-                if(c->flags & SUB_CLIENT_MODE_FLOAT)
-                  {
-                    snprintf(buf + x, sizeof(buf), "%c", '^');
-                    x++;
-                  }
-                if(c->flags & SUB_CLIENT_MODE_STICK)
-                  {
-                    snprintf(buf + x, sizeof(buf), "%c", '*');
-                    x++;
-                  }
-                if(c->flags & SUB_CLIENT_MODE_RESIZE)
-                  {
-                    snprintf(buf + x, sizeof(buf), "%c", '~');
-                    x++;
-                  }
-                if(c->flags & SUB_CLIENT_MODE_ZAPHOD)
-                  {
-                    snprintf(buf + x, sizeof(buf), "%c", '=');
-                    x++;
-                  }
-
-                width = subSharedTextWidth(subtle->dpy, subtle->font,
-                  buf, strlen(buf), NULL, NULL, True);
-                /* }}} */
+                PanelModes(c, buf, &width);
 
                 /* Add urgent colors */
                 if(c->flags & SUB_CLIENT_MODE_URGENT)
