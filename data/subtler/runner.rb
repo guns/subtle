@@ -229,7 +229,7 @@ module Subtle # {{{
       def printer(value) # {{{
         case value
           when Subtlext::Client # {{{
-            puts "%#10x %s %d %4d x %4d + %4d + %-4d %12.12s %s%s%s%s%s %s (%s)" % [
+            puts "%#10x %s %d %4d x %4d + %4d + %-4d %12.12s %s%s%s%s%s%s %s (%s)" % [
               value.win,
               value.views.map { |v| v.name }.include?(Subtlext::View.current.name) ? "*" : "-",
               Subtlext::View.current.id,
@@ -243,6 +243,7 @@ module Subtle # {{{
               (value.is_stick?)  ? "*" : "-",
               (value.is_resize?) ? "~" : "-",
               (value.is_zaphod?) ? "=" : "-",
+              (value.is_fixed?)  ? "!" : "-",
               value.instance,
               value.klass
             ] # }}}
