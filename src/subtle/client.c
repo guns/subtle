@@ -405,8 +405,8 @@ subClientRender(SubClient *c)
   DEAD(c);
   assert(c);
 
-  /* Exclude fixed type windows */
-  if(!(c->flags & SUB_CLIENT_MODE_FIXED))
+  /* Exclude desktop type windows */
+  if(!(c->flags & SUB_CLIENT_TYPE_DESKTOP))
     {
       XSetWindowBorder(subtle->dpy, c->win, subtle->windows.focus[0] == c->win ?
         subtle->styles.clients.fg : subtle->styles.clients.bg);
