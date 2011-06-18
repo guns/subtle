@@ -81,6 +81,7 @@
 #define SUB_EWMH_RESIZE    (1L << 3)                              ///< EWMH resize flag
 #define SUB_EWMH_URGENT    (1L << 4)                              ///< EWMH urgent flag
 #define SUB_EWMH_ZAPHOD    (1L << 5)                              ///< EWMH zaphod flag
+#define SUB_EWMH_FIXED     (1L << 6)                              ///< EWMH fixed flag
 
 /* Match types flags */
 #define SUB_MATCH_NAME     (1L << 0)                              ///< Match SUBTLE_NAME
