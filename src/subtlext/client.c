@@ -748,6 +748,25 @@ subClientFlagsAskZaphod(VALUE self)
   return ClientFlagsGet(self, SUB_EWMH_ZAPHOD);
 } /* }}} */
 
+/* subClientFlagsAskFixed {{{ */
+/*
+ * call-seq: is_foxed? -> true or false
+ *
+ * Check if Client is fixed
+ *
+ *  client.is_fixed?
+ *  => true
+ *
+ *  client.is_firxed?
+ *  => false
+ */
+
+VALUE
+subClientFlagsAskFixed(VALUE self)
+{
+  return ClientFlagsGet(self, SUB_EWMH_FIXED);
+} /* }}} */
+
 /* subClientFlagsToggleFull {{{ */
 /*
  * call-seq: toggle_full -> nil
@@ -842,6 +861,22 @@ VALUE
 subClientFlagsToggleZaphod(VALUE self)
 {
   return ClientFlagsSet(self, SUB_EWMH_ZAPHOD, True);
+} /* }}} */
+
+/* subClientFlagsToggleFixed {{{ */
+/*
+ * call-seq: toggle_fixed -> nil
+ *
+ * Toggle Client fixed state
+ *
+ *  client.toggle_fixed
+ *  => nil
+ */
+
+VALUE
+subClientFlagsToggleFixed(VALUE self)
+{
+  return ClientFlagsSet(self, SUB_EWMH_FIXED, True);
 } /* }}} */
 
 /* subClientFlagsWriter {{{ */
