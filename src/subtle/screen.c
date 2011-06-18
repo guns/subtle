@@ -365,7 +365,7 @@ subScreenConfigure(void)
 
               subEwmhSetWMState(c->win, NormalState);
 
-              /* Warp after gravity and screen are set */
+              /* Warp after gravity and screen have been set */
               if(c->flags & SUB_CLIENT_MODE_URGENT)
                 subClientWarp(c, True);
 

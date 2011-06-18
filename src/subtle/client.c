@@ -81,7 +81,7 @@ ClientBounds(SubClient *c,
   assert(c && geom);
 
   /* Check size hints */
-  if(!(c->flags & SUB_CLIENT_TYPE_DESKTOP) &&
+  if(!(c->flags & SUB_CLIENT_MODE_FIXED) &&
       (subtle->flags & SUB_SUBTLE_RESIZE ||
       c->flags & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_RESIZE)))
     {
@@ -156,7 +156,7 @@ ClientCenter(SubClient *c)
   assert(c);
 
   /* Exclude desktop type noresize windows */
-  if(!(c->flags & SUB_CLIENT_TYPE_DESKTOP))
+  if(!(c->flags & SUB_CLIENT_MODE_FIXED))
     {
       SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
 
@@ -405,8 +405,8 @@ subClientRender(SubClient *c)
   DEAD(c);
   assert(c);
 
-  /* Exclude desktop type windows */
-  if(!(c->flags & SUB_CLIENT_TYPE_DESKTOP))
+  /* Exclude fixed type windows */
+  if(!(c->flags & SUB_CLIENT_MODE_FIXED))
     {
       XSetWindowBorder(subtle->dpy, c->win, subtle->windows.focus[0] == c->win ?
         subtle->styles.clients.fg : subtle->styles.clients.bg);
@@ -798,7 +798,7 @@ subClientResize(SubClient *c,
   if(size_hints) ClientBounds(c, bounds, &c->geom);
 
   /* Fit sizes */
-  if(!(c->flags & (SUB_CLIENT_TYPE_DESKTOP|SUB_CLIENT_MODE_FULL)))
+  if(!(c->flags & (SUB_CLIENT_MODE_FIXED|SUB_CLIENT_MODE_FULL)))
     {
       int maxx = 0, maxy = 0;
 
@@ -810,19 +810,21 @@ subClientResize(SubClient *c,
       maxx = bounds->x + bounds->width;
       maxy = bounds->y + bounds->height;
 
-      /* Check x */
+      /* Check x and center */
       if(c->geom.x < bounds->x || c->geom.x > maxx ||
           c->geom.x + c->geom.width > maxx)
         {
+        printf("DEBUG %s:%d\n", __FILE__, __LINE__);
           if(c->flags & SUB_CLIENT_MODE_FLOAT)
             c->geom.x = bounds->x + ((bounds->width - c->geom.width) / 2);
           else c->geom.x = bounds->x;
         }
 
-      /* Check y */
+      /* Check y and center */
       if(c->geom.y < bounds->y || c->geom.y > maxy ||
           c->geom.y + c->geom.height > maxy)
         {
+        printf("DEBUG %s:%d\n", __FILE__, __LINE__);
           if(c->flags & SUB_CLIENT_MODE_FLOAT)
             c->geom.y = bounds->y + ((bounds->height - c->geom.height) / 2);
           else c->geom.y = bounds->y;
@@ -881,6 +883,7 @@ subClientArrange(SubClient *c,
     {
       c->geom = s->geom;
 
+      /* Just use screen size for desktop windows */
       XMoveResizeWindow(subtle->dpy, c->win, c->geom.x, c->geom.y,
         c->geom.width, c->geom.height);
       XLowerWindow(subtle->dpy, c->win);
@@ -1036,7 +1039,16 @@ subClientToggle(SubClient *c,
 
       /* Set fullscreen mode */
       if(type & SUB_CLIENT_MODE_FULL)
-        XSetWindowBorderWidth(subtle->dpy, c->win, 0);
+        {
+          /* Prevent fixed windows from set to fullscreen */
+          if(c->flags & SUB_CLIENT_MODE_FIXED)
+            {
+              c->flags &= ~SUB_CLIENT_MODE_FULL;
+
+              return;
+            }
+          else XSetWindowBorderWidth(subtle->dpy, c->win, 0);
+        }
 
       /* Set floating and zaphod mode */
       if(type & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_ZAPHOD))
@@ -1100,6 +1112,7 @@ subClientToggle(SubClient *c,
     }
   if(c->flags & SUB_CLIENT_MODE_RESIZE) flags |= SUB_EWMH_RESIZE;
   if(c->flags & SUB_CLIENT_MODE_ZAPHOD) flags |= SUB_EWMH_ZAPHOD;
+  if(c->flags & SUB_CLIENT_MODE_FIXED)  flags |= SUB_EWMH_FIXED;
 
   XChangeProperty(subtle->dpy, c->win, subEwmhGet(SUB_EWMH_NET_WM_STATE),
     XA_ATOM, 32, PropModeReplace, (unsigned char *)&states, nstates);
@@ -1255,10 +1268,7 @@ subClientSetSizeHints(SubClient *c,
           if(size->min_width == size->max_width &&
               size->min_height == size->max_height &&
               !(c->flags & SUB_CLIENT_TYPE_DESKTOP))
-            {
-              *flags   |= SUB_CLIENT_MODE_FLOAT;
-              c->flags |= SUB_CLIENT_TYPE_DIALOG;
-            }
+            *flags |= (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_FIXED);
         }
 
       /* Aspect ratios */
@@ -1477,6 +1487,7 @@ subClientSetType(SubClient *c,
                 break;
               case SUB_EWMH_NET_WM_WINDOW_TYPE_DESKTOP:
                 c->flags |= SUB_CLIENT_TYPE_DESKTOP;
+                *flags   |= SUB_CLIENT_MODE_FIXED;
                 break;
               case SUB_EWMH_NET_WM_WINDOW_TYPE_TOOLBAR:
                 c->flags |= SUB_CLIENT_TYPE_TOOLBAR;

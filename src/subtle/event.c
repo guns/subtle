@@ -288,7 +288,7 @@ EventConfigureRequest(XConfigureRequestEvent *ev)
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
     {
       /* Check flags if the request is important */
-      if(!(c->flags & (SUB_CLIENT_TYPE_DESKTOP|SUB_CLIENT_MODE_FULL)) &&
+      if(!(c->flags & (SUB_CLIENT_MODE_FIXED|SUB_CLIENT_MODE_FULL)) &&
           (subtle->flags & SUB_SUBTLE_RESIZE ||
           c->flags & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_RESIZE)))
         {
@@ -673,9 +673,13 @@ EventGrab(XEvent *ev)
             break; /* }}} */
           case SUB_GRAB_WINDOW_MOVE:
           case SUB_GRAB_WINDOW_RESIZE: /* {{{ */
+            /* Prevent resize of fixed and move/resize of fullscreen windows */
             if((c = CLIENT(subSubtleFind(win, CLIENTID))) &&
-                !(c->flags & (SUB_CLIENT_MODE_FULL|SUB_CLIENT_TYPE_DESKTOP)))
+                !(c->flags & SUB_CLIENT_MODE_FULL) &&
+                !(SUB_GRAB_WINDOW_RESIZE == flag &&
+                  c->flags & SUB_CLIENT_MODE_FIXED))
               {
+                /* Set floating when necessary */
                 if(!(c->flags & SUB_CLIENT_MODE_FLOAT))
                   {
                     subClientToggle(c, SUB_CLIENT_MODE_FLOAT, True);
@@ -781,7 +785,7 @@ EventGrab(XEvent *ev)
             break; /* }}} */
           case SUB_GRAB_WINDOW_GRAVITY: /* {{{ */
             if((c = CLIENT(subSubtleFind(win, CLIENTID))) &&
-                !(c->flags & SUB_CLIENT_TYPE_DESKTOP))
+                !(c->flags & SUB_CLIENT_MODE_FIXED))
               {
                 int i, id = -1, cid = 0, fid = (int)g->data.string[0] - 65,
                   size = strlen(g->data.string);
