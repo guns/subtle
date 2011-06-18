@@ -103,6 +103,11 @@ PanelModes(SubClient *c,
       snprintf(buf + x, sizeof(buf), "%c", '=');
       x++;
     }
+  if(c->flags & SUB_CLIENT_MODE_FIXED)
+    {
+      snprintf(buf + x, sizeof(buf), "%c", '!');
+      x++;
+    }
 
   *width = subSharedTextWidth(subtle->dpy, subtle->font,
     buf, strlen(buf), NULL, NULL, True);
