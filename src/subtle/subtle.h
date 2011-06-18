@@ -174,6 +174,7 @@
 #define SUB_CLIENT_MODE_URGENT        (1L << 19)                  ///< Urgent mode
 #define SUB_CLIENT_MODE_RESIZE        (1L << 20)                  ///< Resize mode
 #define SUB_CLIENT_MODE_ZAPHOD        (1L << 21)                  ///< Zaphod mode
+#define SUB_CLIENT_MODE_FIXED         (1L << 22)                  ///< Fixed window size
 
 #define SUB_CLIENT_TYPE_DESKTOP       (1L << 26)                  ///< Desktop type (also used in match)
 #define SUB_CLIENT_TYPE_DOCK          (1L << 27)                  ///< Dock type
@@ -299,9 +300,10 @@
   SUB_CLIENT_TYPE_SPLASH|SUB_CLIENT_TYPE_DIALOG)                  ///< All type flags
 
 #define MODES_ALL \
-  (SUB_CLIENT_MODE_FULL|SUB_CLIENT_MODE_FLOAT| \
-  SUB_CLIENT_MODE_STICK|SUB_CLIENT_MODE_URGENT| \
-  SUB_CLIENT_MODE_RESIZE)                                         ///< All mode flags
+  (SUB_CLIENT_MODE_FULL|SUB_CLIENT_MODE_FLOAT|   \
+  SUB_CLIENT_MODE_STICK|SUB_CLIENT_MODE_URGENT|  \
+  SUB_CLIENT_MODE_RESIZE|SUB_CLIENT_MODE_ZAPHOD| \
+  SUB_CLIENT_MODE_FIXED)                                          ///< All mode flags
 
 /* State action */
 #define _NET_WM_STATE_REMOVE           0L                         /// Remove/unset property
