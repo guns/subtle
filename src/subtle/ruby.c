@@ -1856,6 +1856,9 @@ RubyConfigTag(int argc,
 
       if(Qtrue == (value = rb_hash_lookup(params,
         CHAR2SYM("zaphod")))) flags |= SUB_CLIENT_MODE_ZAPHOD;
+
+      if(Qtrue == (value = rb_hash_lookup(params,
+        CHAR2SYM("fixed")))) flags |= SUB_CLIENT_MODE_FIXED;
     }
 
   /* Check value type */
