@@ -814,7 +814,6 @@ subClientResize(SubClient *c,
       if(c->geom.x < bounds->x || c->geom.x > maxx ||
           c->geom.x + c->geom.width > maxx)
         {
-        printf("DEBUG %s:%d\n", __FILE__, __LINE__);
           if(c->flags & SUB_CLIENT_MODE_FLOAT)
             c->geom.x = bounds->x + ((bounds->width - c->geom.width) / 2);
           else c->geom.x = bounds->x;
@@ -824,7 +823,6 @@ subClientResize(SubClient *c,
       if(c->geom.y < bounds->y || c->geom.y > maxy ||
           c->geom.y + c->geom.height > maxy)
         {
-        printf("DEBUG %s:%d\n", __FILE__, __LINE__);
           if(c->flags & SUB_CLIENT_MODE_FLOAT)
             c->geom.y = bounds->y + ((bounds->height - c->geom.height) / 2);
           else c->geom.y = bounds->y;
