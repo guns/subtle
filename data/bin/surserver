@@ -19,7 +19,7 @@ rescue LoadError => error
   missing = error.to_s.split(" ").last
 
   # Check missing files
-  if(missing == "archive/tar/initar")
+  if("archive/tar/minitar" == missing)
     missing = "archive-tar-minitar"
   end
 
