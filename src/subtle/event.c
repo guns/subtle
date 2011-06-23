@@ -1110,12 +1110,14 @@ EventMessage(XClientMessageEvent *ev)
                 int flags = 0;
 
                 /* Translate flags */
-                if(ev->data.l[1] & SUB_EWMH_FULL)   flags |= SUB_CLIENT_MODE_FULL;
-                if(ev->data.l[1] & SUB_EWMH_FLOAT)  flags |= SUB_CLIENT_MODE_FLOAT;
-                if(ev->data.l[1] & SUB_EWMH_STICK)  flags |= SUB_CLIENT_MODE_STICK;
-                if(ev->data.l[1] & SUB_EWMH_RESIZE) flags |= SUB_CLIENT_MODE_RESIZE;
-                if(ev->data.l[1] & SUB_EWMH_URGENT) flags |= SUB_CLIENT_MODE_URGENT;
-                if(ev->data.l[1] & SUB_EWMH_ZAPHOD) flags |= SUB_CLIENT_MODE_ZAPHOD;
+                if(ev->data.l[1] & SUB_EWMH_FULL)       flags |= SUB_CLIENT_MODE_FULL;
+                if(ev->data.l[1] & SUB_EWMH_FLOAT)      flags |= SUB_CLIENT_MODE_FLOAT;
+                if(ev->data.l[1] & SUB_EWMH_STICK)      flags |= SUB_CLIENT_MODE_STICK;
+                if(ev->data.l[1] & SUB_EWMH_RESIZE)     flags |= SUB_CLIENT_MODE_RESIZE;
+                if(ev->data.l[1] & SUB_EWMH_URGENT)     flags |= SUB_CLIENT_MODE_URGENT;
+                if(ev->data.l[1] & SUB_EWMH_ZAPHOD)     flags |= SUB_CLIENT_MODE_ZAPHOD;
+                if(ev->data.l[1] & SUB_EWMH_FIXED)      flags |= SUB_CLIENT_MODE_FIXED;
+                if(ev->data.l[1] & SUB_EWMH_BORDERLESS) flags |= SUB_CLIENT_MODE_BORDERLESS;
 
                 subClientToggle(c, (~c->flags & flags), False); ///< Enable only
 
