@@ -176,7 +176,8 @@
 #define SUB_CLIENT_MODE_FIXED         (1L << 21)                  ///< Fixed window size
 #define SUB_CLIENT_MODE_BORDERLESS    (1L << 22)                  ///< Borderless
 
-#define SUB_CLIENT_TYPE_DESKTOP       (1L << 26)                  ///< Desktop type (also used in match)
+#define SUB_CLIENT_TYPE_NORMAL        (1L << 25)                  ///< Normal type (also used in match)
+#define SUB_CLIENT_TYPE_DESKTOP       (1L << 26)                  ///< Desktop type
 #define SUB_CLIENT_TYPE_DOCK          (1L << 27)                  ///< Dock type
 #define SUB_CLIENT_TYPE_TOOLBAR       (1L << 28)                  ///< Toolbar type
 #define SUB_CLIENT_TYPE_SPLASH        (1L << 29)                  ///< Splash type
