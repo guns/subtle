@@ -173,8 +173,9 @@
 #define SUB_CLIENT_MODE_URGENT        (1L << 18)                  ///< Urgent mode
 #define SUB_CLIENT_MODE_RESIZE        (1L << 19)                  ///< Resize mode
 #define SUB_CLIENT_MODE_ZAPHOD        (1L << 20)                  ///< Zaphod mode
-#define SUB_CLIENT_MODE_FIXED         (1L << 21)                  ///< Fixed window size
-#define SUB_CLIENT_MODE_BORDERLESS    (1L << 22)                  ///< Borderless
+#define SUB_CLIENT_MODE_FIXED         (1L << 21)                  ///< Fixed size mode
+#define SUB_CLIENT_MODE_CENTER        (1L << 22)                  ///< Center position mode
+#define SUB_CLIENT_MODE_BORDERLESS    (1L << 23)                  ///< Borderless
 
 #define SUB_CLIENT_TYPE_NORMAL        (1L << 25)                  ///< Normal type (also used in match)
 #define SUB_CLIENT_TYPE_DESKTOP       (1L << 26)                  ///< Desktop type
