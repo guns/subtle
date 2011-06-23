@@ -918,7 +918,6 @@ SubtlextFlags(VALUE key,
   if(0 != rargs[0] && RTEST(value))
     {
       rargs[1] = value;
-      printf("DEBUG %s:%d\n", __FILE__, __LINE__);
 
       return ST_STOP;
     }
@@ -1339,35 +1338,37 @@ Init_subtlext(void)
   rb_define_method(client, "eql?",        SubtlextEqualTypedWindow, 1);
 
   /* Class methods */
-  rb_define_method(client, "initialize",    subClientInit,              1);
-  rb_define_method(client, "update",        subClientUpdate,            0);
-  rb_define_method(client, "views",         subClientViewList,          0);
-  rb_define_method(client, "is_full?",      subClientFlagsAskFull,      0);
-  rb_define_method(client, "is_float?",     subClientFlagsAskFloat,     0);
-  rb_define_method(client, "is_stick?",     subClientFlagsAskStick,     0);
-  rb_define_method(client, "is_resize?",    subClientFlagsAskResize,    0);
-  rb_define_method(client, "is_urgent?",    subClientFlagsAskUrgent,    0);
-  rb_define_method(client, "is_zaphod?",    subClientFlagsAskZaphod,    0);
-  rb_define_method(client, "is_fixed?",     subClientFlagsAskFixed,     0);
-  rb_define_method(client, "toggle_full",   subClientFlagsToggleFull,   0);
-  rb_define_method(client, "toggle_float",  subClientFlagsToggleFloat,  0);
-  rb_define_method(client, "toggle_stick",  subClientFlagsToggleStick,  0);
-  rb_define_method(client, "toggle_resize", subClientFlagsToggleResize, 0);
-  rb_define_method(client, "toggle_urgent", subClientFlagsToggleUrgent, 0);
-  rb_define_method(client, "toggle_zaphod", subClientFlagsToggleZaphod, 0);
-  rb_define_method(client, "toggle_fixed",  subClientFlagsToggleFixed,  0);
-  rb_define_method(client, "flags=",        subClientFlagsWriter,       1);
-  rb_define_method(client, "raise",         subClientRestackRaise,      0);
-  rb_define_method(client, "lower",         subClientRestackLower,      0);
-  rb_define_method(client, "to_str",        subClientToString,          0);
-  rb_define_method(client, "gravity",       subClientGravityReader,     0);
-  rb_define_method(client, "gravity=",      subClientGravityWriter,     1);
-  rb_define_method(client, "geometry",      subClientGeometryReader,    0);
-  rb_define_method(client, "geometry=",     subClientGeometryWriter,   -1);
-  rb_define_method(client, "screen",        subClientScreenReader,      0);
-  rb_define_method(client, "pid",           SubtlextPidReader,          0);
-  rb_define_method(client, "alive?",        subClientAskAlive,          0);
-  rb_define_method(client, "kill",          subClientKill,              0);
+  rb_define_method(client, "initialize",        subClientInit,                  1);
+  rb_define_method(client, "update",            subClientUpdate,                0);
+  rb_define_method(client, "views",             subClientViewList,              0);
+  rb_define_method(client, "is_full?",          subClientFlagsAskFull,          0);
+  rb_define_method(client, "is_float?",         subClientFlagsAskFloat,         0);
+  rb_define_method(client, "is_stick?",         subClientFlagsAskStick,         0);
+  rb_define_method(client, "is_resize?",        subClientFlagsAskResize,        0);
+  rb_define_method(client, "is_urgent?",        subClientFlagsAskUrgent,        0);
+  rb_define_method(client, "is_zaphod?",        subClientFlagsAskZaphod,        0);
+  rb_define_method(client, "is_fixed?",         subClientFlagsAskFixed,         0);
+  rb_define_method(client, "is_borderless?",    subClientFlagsAskBorderless,    0);
+  rb_define_method(client, "toggle_full",       subClientFlagsToggleFull,       0);
+  rb_define_method(client, "toggle_float",      subClientFlagsToggleFloat,      0);
+  rb_define_method(client, "toggle_stick",      subClientFlagsToggleStick,      0);
+  rb_define_method(client, "toggle_resize",     subClientFlagsToggleResize,     0);
+  rb_define_method(client, "toggle_urgent",     subClientFlagsToggleUrgent,     0);
+  rb_define_method(client, "toggle_zaphod",     subClientFlagsToggleZaphod,     0);
+  rb_define_method(client, "toggle_fixed",      subClientFlagsToggleFixed,      0);
+  rb_define_method(client, "toggle_borderless", subClientFlagsToggleBorderless, 0);
+  rb_define_method(client, "flags=",            subClientFlagsWriter,           1);
+  rb_define_method(client, "raise",             subClientRestackRaise,          0);
+  rb_define_method(client, "lower",             subClientRestackLower,          0);
+  rb_define_method(client, "to_str",            subClientToString,              0);
+  rb_define_method(client, "gravity",           subClientGravityReader,         0);
+  rb_define_method(client, "gravity=",          subClientGravityWriter,         1);
+  rb_define_method(client, "geometry",          subClientGeometryReader,        0);
+  rb_define_method(client, "geometry=",         subClientGeometryWriter,       -1);
+  rb_define_method(client, "screen",            subClientScreenReader,          0);
+  rb_define_method(client, "pid",               SubtlextPidReader,              0);
+  rb_define_method(client, "alive?",            subClientAskAlive,              0);
+  rb_define_method(client, "kill",              subClientKill,                  0);
 
   /* Singleton aliases */
   rb_define_alias(rb_singleton_class(client), "[]", "find");

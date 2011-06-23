@@ -66,6 +66,7 @@ VALUE subClientFlagsAskResize(VALUE self);                        ///< Is client
 VALUE subClientFlagsAskUrgent(VALUE self);                        ///< Is client urgent
 VALUE subClientFlagsAskZaphod(VALUE self);                        ///< Is client zaphod
 VALUE subClientFlagsAskFixed(VALUE self);                         ///< Is client fixed
+VALUE subClientFlagsAskBorderless(VALUE self);                    ///< Is client borderless
 VALUE subClientFlagsToggleFull(VALUE self);                       ///< Toggle fullscreen
 VALUE subClientFlagsToggleFloat(VALUE self);                      ///< Toggle floating
 VALUE subClientFlagsToggleStick(VALUE self);                      ///< Toggle stick
@@ -73,6 +74,7 @@ VALUE subClientFlagsToggleResize(VALUE self);                     ///< Toggle re
 VALUE subClientFlagsToggleUrgent(VALUE self);                     ///< Toggle urgent
 VALUE subClientFlagsToggleZaphod(VALUE self);                     ///< Toggle zaphod
 VALUE subClientFlagsToggleFixed(VALUE self);                      ///< Toggle fixed
+VALUE subClientFlagsToggleBorderless(VALUE self);                 ///< Toggle borderless
 VALUE subClientFlagsWriter(VALUE self, VALUE value);              ///< Set multiple flags
 VALUE subClientRestackRaise(VALUE self);                          ///< Raise client
 VALUE subClientRestackLower(VALUE self);                          ///< Lower client

@@ -750,14 +750,14 @@ subClientFlagsAskZaphod(VALUE self)
 
 /* subClientFlagsAskFixed {{{ */
 /*
- * call-seq: is_foxed? -> true or false
+ * call-seq: is_fixed? -> true or false
  *
  * Check if Client is fixed
  *
  *  client.is_fixed?
  *  => true
  *
- *  client.is_firxed?
+ *  client.is_fixed?
  *  => false
  */
 
@@ -765,6 +765,25 @@ VALUE
 subClientFlagsAskFixed(VALUE self)
 {
   return ClientFlagsGet(self, SUB_EWMH_FIXED);
+} /* }}} */
+
+/* subClientFlagsAskBorderless {{{ */
+/*
+ * call-seq: is_borderless? -> true or false
+ *
+ * Check if Client is borderless
+ *
+ *  client.is_borderless?
+ *  => true
+ *
+ *  client.is_borderless?
+ *  => false
+ */
+
+VALUE
+subClientFlagsAskBorderless(VALUE self)
+{
+  return ClientFlagsGet(self, SUB_EWMH_BORDERLESS);
 } /* }}} */
 
 /* subClientFlagsToggleFull {{{ */
@@ -877,6 +896,22 @@ VALUE
 subClientFlagsToggleFixed(VALUE self)
 {
   return ClientFlagsSet(self, SUB_EWMH_FIXED, True);
+} /* }}} */
+
+/* subClientFlagsToggleBorderless {{{ */
+/*
+ * call-seq: toggle_borderless -> nil
+ *
+ * Toggle Client borderless state
+ *
+ *  client.toggle_borderless
+ *  => nil
+ */
+
+VALUE
+subClientFlagsToggleBorderless(VALUE self)
+{
+  return ClientFlagsSet(self, SUB_EWMH_BORDERLESS, True);
 } /* }}} */
 
 /* subClientFlagsWriter {{{ */
