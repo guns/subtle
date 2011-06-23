@@ -148,26 +148,6 @@ ClientSnap(SubClient *c,
     }
 } /* }}} */
 
-/* ClientCenter {{{ */
-static void
-ClientCenter(SubClient *c)
-{
-  DEAD(c);
-  assert(c);
-
-  /* Exclude desktop type noresize windows */
-  if(!(c->flags & SUB_CLIENT_MODE_FIXED))
-    {
-      SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
-
-      /* Set to screen center */
-      c->geom.x = s->geom.x +
-        (s->geom.width - c->geom.width - 2 * BORDER(c)) / 2;
-      c->geom.y = s->geom.y +
-        (s->geom.height - c->geom.height - 2 * BORDER(c)) / 2;
-    }
-} /* }}} */
-
 /* ClientResize {{{ */
 static void
 ClientResize(SubClient *c,
@@ -317,7 +297,6 @@ subClientNew(Window win)
 
   /* Update and handle according to flags */
   subClientToggle(c, (~c->flags & flags), False); ///< Just enable
-  if(c->flags & SUB_CLIENT_TYPE_DIALOG) ClientCenter(c);
 
   /* EWMH: Gravity, screen, desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_GRAVITY,
@@ -986,8 +965,8 @@ subClientToggle(SubClient *c,
     {
       c->flags &= ~type;
 
-      /* Unset floating mode */
-      if(type & SUB_CLIENT_MODE_FLOAT)
+      /* Unset float/center mode */
+      if(type & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_CENTER))
         c->flags |= SUB_CLIENT_ARRANGE;
 
       /* Unset stick mode */
@@ -1062,6 +1041,20 @@ subClientToggle(SubClient *c,
       if(type & SUB_CLIENT_MODE_URGENT)
         subtle->urgent_tags |= c->tags;
 
+      /* Set center mode */
+      if(type & SUB_CLIENT_MODE_CENTER)
+        {
+          SubScreen *s = SCREEN(subtle->screens->data[c->screen]);
+
+          /* Set to screen center */
+          c->geom.x = s->geom.x +
+            (s->geom.width - c->geom.width - 2 * BORDER(c)) / 2;
+          c->geom.y = s->geom.y +
+            (s->geom.height - c->geom.height - 2 * BORDER(c)) / 2;
+
+          c->flags |= SUB_CLIENT_MODE_FLOAT;
+        }
+
       /* Set dock and desktop type */
       if(type & (SUB_CLIENT_TYPE_DOCK|SUB_CLIENT_TYPE_DESKTOP))
         {
@@ -1117,6 +1110,7 @@ subClientToggle(SubClient *c,
   if(c->flags & SUB_CLIENT_MODE_RESIZE)     flags |= SUB_EWMH_RESIZE;
   if(c->flags & SUB_CLIENT_MODE_ZAPHOD)     flags |= SUB_EWMH_ZAPHOD;
   if(c->flags & SUB_CLIENT_MODE_FIXED)      flags |= SUB_EWMH_FIXED;
+  if(c->flags & SUB_CLIENT_MODE_CENTER)     flags |= SUB_EWMH_CENTER;
   if(c->flags & SUB_CLIENT_MODE_BORDERLESS) flags |= SUB_EWMH_BORDERLESS;
 
   XChangeProperty(subtle->dpy, c->win, subEwmhGet(SUB_EWMH_NET_WM_STATE),
@@ -1502,7 +1496,7 @@ subClientSetType(SubClient *c,
                 break;
               case SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG:
                 c->flags |= SUB_CLIENT_TYPE_DIALOG;
-                *flags   |= SUB_CLIENT_MODE_FLOAT;
+                *flags   |= (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_CENTER);
                 break;
               default: break;
             }
