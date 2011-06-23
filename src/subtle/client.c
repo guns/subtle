@@ -317,8 +317,8 @@ subClientNew(Window win)
   subClientToggle(c, (~c->flags & flags), False); ///< Just enable
   if(c->flags & SUB_CLIENT_TYPE_DIALOG) ClientCenter(c);
 
-  /* Set border after updating flags */
-  XSetWindowBorderWidth(subtle->dpy, c->win, BORDER(c));
+      /* Set border after updating flags */
+      XSetWindowBorderWidth(subtle->dpy, c->win, BORDER(c));
 
   /* EWMH: Gravity, screen, desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_GRAVITY,
@@ -991,6 +991,7 @@ subClientToggle(SubClient *c,
       if(type & SUB_CLIENT_MODE_FLOAT)
         c->flags |= SUB_CLIENT_ARRANGE;
 
+      /* Unset stick mode */
       if(type & SUB_CLIENT_MODE_STICK)
         {
           /* Remove highlight of tagless, urgent client */
@@ -998,12 +999,13 @@ subClientToggle(SubClient *c,
             subtle->urgent_tags &= ~c->tags;
         }
 
-      /* Unset fullscreen mode */
-      if(type & SUB_CLIENT_MODE_FULL)
+      /* Unset borderless or fullscreen mode */
+      if(type & (SUB_CLIENT_MODE_BORDERLESS|SUB_CLIENT_MODE_FULL))
         {
           c->flags |= SUB_CLIENT_ARRANGE; ///< Force rearrange
 
-          if(!(c->flags & SUB_CLIENT_MODE_BORDERLESS))
+          if(type & SUB_CLIENT_MODE_BORDERLESS ||
+              !(c->flags & SUB_CLIENT_MODE_BORDERLESS))
             XSetWindowBorderWidth(subtle->dpy, c->win,
               subtle->styles.clients.border.top);
         }
@@ -1048,9 +1050,14 @@ subClientToggle(SubClient *c,
           else XSetWindowBorderWidth(subtle->dpy, c->win, 0);
         }
 
-      /* Set floating and zaphod mode */
-      if(type & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_ZAPHOD))
-        c->flags |= SUB_CLIENT_ARRANGE;
+      /* Set floating or zaphod or borderless mode */
+      if(type & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_ZAPHOD|
+          SUB_CLIENT_MODE_BORDERLESS))
+        c->flags |= SUB_CLIENT_ARRANGE; ///< Force rearrange
+
+      /* Set borderless mode */
+      if(type & SUB_CLIENT_MODE_BORDERLESS)
+        XSetWindowBorderWidth(subtle->dpy, c->win, 0);
 
       /* Set urgent mode */
       if(type & SUB_CLIENT_MODE_URGENT)
