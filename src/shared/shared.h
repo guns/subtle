@@ -82,6 +82,7 @@
 #define SUB_EWMH_URGENT     (1L << 4)                             ///< EWMH urgent flag
 #define SUB_EWMH_ZAPHOD     (1L << 5)                             ///< EWMH zaphod flag
 #define SUB_EWMH_FIXED      (1L << 6)                             ///< EWMH fixed flag
+#define SUB_EWMH_CENTER     (1L << 7)                             ///< EWMH center flag
 #define SUB_EWMH_BORDERLESS (1L << 7)                             ///< EWMH fixed flag
 
 /* Match types flags */
