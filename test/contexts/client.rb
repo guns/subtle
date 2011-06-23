@@ -49,18 +49,15 @@ context "Client" do
     }
 
     # Check flags
-    full   = p.call(topic, :is_full?,   :toggle_full)
-    float  = p.call(topic, :is_float?,  :toggle_float)
-    stick  = p.call(topic, :is_stick?,  :toggle_stick)
-    resize = p.call(topic, :is_resize?, :toggle_resize)
-    urgent = p.call(topic, :is_urgent?, :toggle_urgent)
-    urgent = p.call(topic, :is_zaphod?, :toggle_zaphod)
-    urgent = p.call(topic, :is_fixed?,  :toggle_fixed)
-
     expected = [ false, true, false ]
+    results  = [
+      :full ,:float, :stick, :resize,
+      :urgent, :zaphod, :fixed, :borderless
+    ].map { |flag|
+      p.call(topic, "is_#{flag}?".to_sym, "toggle_#{flag}".to_sym)
+    }
 
-    expected == full and expected == float and
-      expected == stick and expected == resize and expected == urgent
+    results.all? { |r| r == expected }
   end
 
   asserts("Runtime: Add/remove tags") do
