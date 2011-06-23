@@ -224,6 +224,7 @@ RubySymbolToFlag(VALUE sym,
   else if(CHAR2SYM("class")    == sym) (*flags) |= SUB_TAG_MATCH_CLASS;
   else if(CHAR2SYM("role")     == sym) (*flags) |= SUB_TAG_MATCH_ROLE;
   else if(CHAR2SYM("type")     == sym) (*flags) |= SUB_TAG_MATCH_TYPE;
+  else if(CHAR2SYM("normal")   == sym) (*flags) |= SUB_CLIENT_TYPE_NORMAL;
   else if(CHAR2SYM("desktop")  == sym) (*flags) |= SUB_CLIENT_TYPE_DESKTOP;
   else if(CHAR2SYM("dock")     == sym) (*flags) |= SUB_CLIENT_TYPE_DOCK;
   else if(CHAR2SYM("toolbar")  == sym) (*flags) |= SUB_CLIENT_TYPE_TOOLBAR;
@@ -1829,19 +1830,29 @@ RubyConfigTag(int argc,
           CHAR2SYM("type"))))
         {
           /* Check type */
-          if(CHAR2SYM("desktop") == value)      flags = SUB_CLIENT_TYPE_DESKTOP;
-          else if(CHAR2SYM("dock") == value)    flags = SUB_CLIENT_TYPE_DOCK;
+          if(CHAR2SYM("normal")       == value) flags = SUB_CLIENT_TYPE_NORMAL;
+          else if(CHAR2SYM("desktop") == value) flags = SUB_CLIENT_TYPE_DESKTOP;
+          else if(CHAR2SYM("dock")    == value) flags = SUB_CLIENT_TYPE_DOCK;
           else if(CHAR2SYM("toolbar") == value) flags = SUB_CLIENT_TYPE_TOOLBAR;
-          else if(CHAR2SYM("splash") == value)  flags = SUB_CLIENT_TYPE_SPLASH;
-          else if(CHAR2SYM("dialog") == value)  flags = SUB_CLIENT_TYPE_DIALOG;
+          else if(CHAR2SYM("splash")  == value) flags = SUB_CLIENT_TYPE_SPLASH;
+          else if(CHAR2SYM("dialog")  == value) flags = SUB_CLIENT_TYPE_DIALOG;
         }
 
       /* Check tri-state properties */
       if(Qtrue == (value = rb_hash_lookup(params,
-        CHAR2SYM("full")))) flags |= SUB_CLIENT_MODE_FULL;
+        CHAR2SYM("borderless")))) flags |= SUB_CLIENT_MODE_BORDERLESS;
+
+      if(Qtrue == (value = rb_hash_lookup(params,
+        CHAR2SYM("fixed")))) flags |= SUB_CLIENT_MODE_FIXED;
 
       if(Qtrue == (value = rb_hash_lookup(params,
         CHAR2SYM("float")))) flags |= SUB_CLIENT_MODE_FLOAT;
+
+      if(Qtrue == (value = rb_hash_lookup(params,
+        CHAR2SYM("full")))) flags |= SUB_CLIENT_MODE_FULL;
+
+      if(Qtrue == (value = rb_hash_lookup(params,
+        CHAR2SYM("resize")))) flags |= SUB_CLIENT_MODE_RESIZE;
 
       if(Qtrue == (value = rb_hash_lookup(params,
         CHAR2SYM("stick")))) flags |= SUB_CLIENT_MODE_STICK;
@@ -1850,16 +1861,7 @@ RubyConfigTag(int argc,
         CHAR2SYM("urgent")))) flags |= SUB_CLIENT_MODE_URGENT;
 
       if(Qtrue == (value = rb_hash_lookup(params,
-        CHAR2SYM("resize")))) flags |= SUB_CLIENT_MODE_RESIZE;
-
-      if(Qtrue == (value = rb_hash_lookup(params,
         CHAR2SYM("zaphod")))) flags |= SUB_CLIENT_MODE_ZAPHOD;
-
-      if(Qtrue == (value = rb_hash_lookup(params,
-        CHAR2SYM("fixed")))) flags |= SUB_CLIENT_MODE_FIXED;
-
-      if(Qtrue == (value = rb_hash_lookup(params,
-        CHAR2SYM("borderless")))) flags |= SUB_CLIENT_MODE_BORDERLESS;
     }
 
   /* Check value type */
