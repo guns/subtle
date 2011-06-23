@@ -291,6 +291,8 @@ subClientNew(Window win)
     CWBorderPixel|CWEventMask, &sattrs);
   XAddToSaveSet(subtle->dpy, c->win);
   XSaveContext(subtle->dpy, c->win, CLIENTID, (void *)c);
+  XSetWindowBorderWidth(subtle->dpy, c->win,
+    subtle->styles.clients.border.top);
 
   /* Update client */
   subEwmhSetWMState(c->win, WithdrawnState);
@@ -316,9 +318,6 @@ subClientNew(Window win)
   /* Update and handle according to flags */
   subClientToggle(c, (~c->flags & flags), False); ///< Just enable
   if(c->flags & SUB_CLIENT_TYPE_DIALOG) ClientCenter(c);
-
-      /* Set border after updating flags */
-      XSetWindowBorderWidth(subtle->dpy, c->win, BORDER(c));
 
   /* EWMH: Gravity, screen, desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_GRAVITY,
@@ -1488,12 +1487,12 @@ subClientSetType(SubClient *c,
         {
           switch((id = subEwmhFind(types[i])))
             {
-              case SUB_EWMH_NET_WM_WINDOW_TYPE_DOCK:
-                c->flags |= SUB_CLIENT_TYPE_DOCK;
-                break;
               case SUB_EWMH_NET_WM_WINDOW_TYPE_DESKTOP:
                 c->flags |= SUB_CLIENT_TYPE_DESKTOP;
                 *flags   |= SUB_CLIENT_MODE_FIXED;
+                break;
+              case SUB_EWMH_NET_WM_WINDOW_TYPE_DOCK:
+                c->flags |= SUB_CLIENT_TYPE_DOCK;
                 break;
               case SUB_EWMH_NET_WM_WINDOW_TYPE_TOOLBAR:
                 c->flags |= SUB_CLIENT_TYPE_TOOLBAR;
@@ -1511,6 +1510,10 @@ subClientSetType(SubClient *c,
 
       XFree(types);
     }
+
+  /* Set normal type */
+  if(!(c->flags & TYPES_ALL))
+    c->flags |= SUB_CLIENT_TYPE_NORMAL;
 } /* }}} */
 
  /** subClientClose {{{
