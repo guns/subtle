@@ -1843,6 +1843,9 @@ RubyConfigTag(int argc,
         CHAR2SYM("borderless")))) flags |= SUB_CLIENT_MODE_BORDERLESS;
 
       if(Qtrue == (value = rb_hash_lookup(params,
+        CHAR2SYM("center")))) flags |= SUB_CLIENT_MODE_CENTER;
+
+      if(Qtrue == (value = rb_hash_lookup(params,
         CHAR2SYM("fixed")))) flags |= SUB_CLIENT_MODE_FIXED;
 
       if(Qtrue == (value = rb_hash_lookup(params,
