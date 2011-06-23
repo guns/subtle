@@ -1776,7 +1776,7 @@ RubyConfigTag(int argc,
   VALUE *argv,
   VALUE self)
 {
-  int flags = 0, type = 0;
+  int flags = 0;
   unsigned long gravity = 0;
   XRectangle geom = { 0 };
   VALUE name = Qnil, match = Qnil, params = Qnil, value = Qnil;
@@ -1828,14 +1828,12 @@ RubyConfigTag(int argc,
       if(T_SYMBOL == rb_type(value = rb_hash_lookup(params,
           CHAR2SYM("type"))))
         {
-          flags |= SUB_TAG_TYPE;
-
           /* Check type */
-          if(CHAR2SYM("desktop") == value)      type = SUB_CLIENT_TYPE_DESKTOP;
-          else if(CHAR2SYM("dock") == value)    type = SUB_CLIENT_TYPE_DOCK;
-          else if(CHAR2SYM("toolbar") == value) type = SUB_CLIENT_TYPE_TOOLBAR;
-          else if(CHAR2SYM("splash") == value)  type = SUB_CLIENT_TYPE_SPLASH;
-          else if(CHAR2SYM("dialog") == value)  type = SUB_CLIENT_TYPE_DIALOG;
+          if(CHAR2SYM("desktop") == value)      flags = SUB_CLIENT_TYPE_DESKTOP;
+          else if(CHAR2SYM("dock") == value)    flags = SUB_CLIENT_TYPE_DOCK;
+          else if(CHAR2SYM("toolbar") == value) flags = SUB_CLIENT_TYPE_TOOLBAR;
+          else if(CHAR2SYM("splash") == value)  flags = SUB_CLIENT_TYPE_SPLASH;
+          else if(CHAR2SYM("dialog") == value)  flags = SUB_CLIENT_TYPE_DIALOG;
         }
 
       /* Check tri-state properties */
@@ -1859,6 +1857,9 @@ RubyConfigTag(int argc,
 
       if(Qtrue == (value = rb_hash_lookup(params,
         CHAR2SYM("fixed")))) flags |= SUB_CLIENT_MODE_FIXED;
+
+      if(Qtrue == (value = rb_hash_lookup(params,
+        CHAR2SYM("borderless")))) flags |= SUB_CLIENT_MODE_BORDERLESS;
     }
 
   /* Check value type */
@@ -1881,7 +1882,6 @@ RubyConfigTag(int argc,
               t->flags   |= flags;
               t->gravity  = gravity;
               t->geom     = geom;
-              t->type     = type;
 
               /* Add matcher */
               rargs[0] = (VALUE)t;
