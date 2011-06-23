@@ -86,7 +86,8 @@ TagMatch(TagMatcher *m,
       (m->flags & SUB_TAG_MATCH_ROLE && c->role &&
         subSharedRegexMatch(m->regex, c->role)))) ||
       /* Check _NET_WM_WINDOW_TYPE */
-      (m->flags & SUB_TAG_MATCH_TYPE && c->flags & (m->flags & TYPES_ALL)))
+      (m->flags & SUB_TAG_MATCH_TYPE &&
+        c->flags & (m->flags & (SUB_CLIENT_TYPE_NORMAL|TYPES_ALL))))
     return True;
 
   return False;
