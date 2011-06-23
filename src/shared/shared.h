@@ -61,40 +61,41 @@
 
 /* Flags {{{ */
 /* Logelevel flags */
-#define SUB_LOG_WARN       (1L << 0)                              ///< Log warning messages
-#define SUB_LOG_ERROR      (1L << 1)                              ///< Log error messages
-#define SUB_LOG_SUBLET     (1L << 2)                              ///< Log error messages
-#define SUB_LOG_DEPRECATED (1L << 3)                              ///< Log deprecation messages
-#define SUB_LOG_EVENTS     (1L << 4)                              ///< Log event messages
-#define SUB_LOG_RUBY       (1L << 5)                              ///< Log ruby messages
-#define SUB_LOG_XERROR     (1L << 6)                              ///< Log X error messages
-#define SUB_LOG_SUBTLEXT   (1L << 7)                              ///< Log subtlext messages
-#define SUB_LOG_SUBTLE     (1L << 8)                              ///< Log subtle messages
-#define SUB_LOG_DEBUG      (1L << 9)                              ///< Log other debug messages
+#define SUB_LOG_WARN        (1L << 0)                             ///< Log warning messages
+#define SUB_LOG_ERROR       (1L << 1)                             ///< Log error messages
+#define SUB_LOG_SUBLET      (1L << 2)                             ///< Log error messages
+#define SUB_LOG_DEPRECATED  (1L << 3)                             ///< Log deprecation messages
+#define SUB_LOG_EVENTS      (1L << 4)                             ///< Log event messages
+#define SUB_LOG_RUBY        (1L << 5)                             ///< Log ruby messages
+#define SUB_LOG_XERROR      (1L << 6)                             ///< Log X error messages
+#define SUB_LOG_SUBTLEXT    (1L << 7)                             ///< Log subtlext messages
+#define SUB_LOG_SUBTLE      (1L << 8)                             ///< Log subtle messages
+#define SUB_LOG_DEBUG       (1L << 9)                             ///< Log other debug messages
 
-#define SUB_VIEW_NEXT      0L                                     ///< View next
-#define SUB_VIEW_PREV      1L                                     ///< View prev
+#define SUB_VIEW_NEXT       0L                                    ///< View next
+#define SUB_VIEW_PREV       1L                                    ///< View prev
 
-#define SUB_EWMH_FULL      (1L << 0)                              ///< EWMH full flag
-#define SUB_EWMH_FLOAT     (1L << 1)                              ///< EWMH float flag
-#define SUB_EWMH_STICK     (1L << 2)                              ///< EWMH stick flag
-#define SUB_EWMH_RESIZE    (1L << 3)                              ///< EWMH resize flag
-#define SUB_EWMH_URGENT    (1L << 4)                              ///< EWMH urgent flag
-#define SUB_EWMH_ZAPHOD    (1L << 5)                              ///< EWMH zaphod flag
-#define SUB_EWMH_FIXED     (1L << 6)                              ///< EWMH fixed flag
+#define SUB_EWMH_FULL       (1L << 0)                             ///< EWMH full flag
+#define SUB_EWMH_FLOAT      (1L << 1)                             ///< EWMH float flag
+#define SUB_EWMH_STICK      (1L << 2)                             ///< EWMH stick flag
+#define SUB_EWMH_RESIZE     (1L << 3)                             ///< EWMH resize flag
+#define SUB_EWMH_URGENT     (1L << 4)                             ///< EWMH urgent flag
+#define SUB_EWMH_ZAPHOD     (1L << 5)                             ///< EWMH zaphod flag
+#define SUB_EWMH_FIXED      (1L << 6)                             ///< EWMH fixed flag
+#define SUB_EWMH_BORDERLESS (1L << 7)                             ///< EWMH fixed flag
 
 /* Match types flags */
-#define SUB_MATCH_NAME     (1L << 0)                              ///< Match SUBTLE_NAME
-#define SUB_MATCH_INSTANCE (1L << 1)                              ///< Match instance of WM_CLASS
-#define SUB_MATCH_CLASS    (1L << 2)                              ///< Match class of WM_CLASS
-#define SUB_MATCH_GRAVITY  (1L << 3)                              ///< Match gravity
-#define SUB_MATCH_ROLE     (1L << 4)                              ///< Match window role
-#define SUB_MATCH_PID      (1L << 5)                              ///< Match pid
+#define SUB_MATCH_NAME      (1L << 0)                             ///< Match SUBTLE_NAME
+#define SUB_MATCH_INSTANCE  (1L << 1)                             ///< Match instance of WM_CLASS
+#define SUB_MATCH_CLASS     (1L << 2)                             ///< Match class of WM_CLASS
+#define SUB_MATCH_GRAVITY   (1L << 3)                             ///< Match gravity
+#define SUB_MATCH_ROLE      (1L << 4)                             ///< Match window role
+#define SUB_MATCH_PID       (1L << 5)                             ///< Match pid
 
 /* Text flags */
-#define SUB_TEXT_EMPTY     (1L << 0)                              ///< Empty text
-#define SUB_TEXT_BITMAP    (1L << 1)                              ///< Text bitmap
-#define SUB_TEXT_PIXMAP    (1L << 2)                              ///< Text pixmap
+#define SUB_TEXT_EMPTY      (1L << 0)                             ///< Empty text
+#define SUB_TEXT_BITMAP     (1L << 1)                             ///< Text bitmap
+#define SUB_TEXT_PIXMAP     (1L << 2)                             ///< Text pixmap
 /* }}} */
 
 /* Typedefs {{{ */
