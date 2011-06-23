@@ -54,7 +54,7 @@
 #define DEFAULTTAG   (1L << 1)                                    ///< Default tag
 
 #define BORDER(c) \
-  (c->flags & SUB_CLIENT_BORDERLESS ? 0 : \
+  (c->flags & SUB_CLIENT_MODE_BORDERLESS ? 0 : \
   subtle->styles.clients.border.top)                              ///< Get border width
 
 #define STYLE_TOP(s) \
@@ -164,17 +164,17 @@
 #define SUB_CLIENT_FOCUS              (1L << 10)                  ///< Send focus message
 #define SUB_CLIENT_INPUT              (1L << 11)                  ///< Active/passive focus-model
 #define SUB_CLIENT_CLOSE              (1L << 12)                  ///< Send close message
-#define SUB_CLIENT_BORDERLESS         (1L << 13)                  ///< Borderless
-#define SUB_CLIENT_UNMAP              (1L << 14)                  ///< Ignore unmaps
-#define SUB_CLIENT_ARRANGE            (1L << 15)                  ///< Re-arrange client
+#define SUB_CLIENT_UNMAP              (1L << 13)                  ///< Ignore unmaps
+#define SUB_CLIENT_ARRANGE            (1L << 14)                  ///< Re-arrange client
 
-#define SUB_CLIENT_MODE_FULL          (1L << 16)                  ///< Fullscreen mode
-#define SUB_CLIENT_MODE_FLOAT         (1L << 17)                  ///< Float mode
-#define SUB_CLIENT_MODE_STICK         (1L << 18)                  ///< Stick mode
-#define SUB_CLIENT_MODE_URGENT        (1L << 19)                  ///< Urgent mode
-#define SUB_CLIENT_MODE_RESIZE        (1L << 20)                  ///< Resize mode
-#define SUB_CLIENT_MODE_ZAPHOD        (1L << 21)                  ///< Zaphod mode
-#define SUB_CLIENT_MODE_FIXED         (1L << 22)                  ///< Fixed window size
+#define SUB_CLIENT_MODE_FULL          (1L << 15)                  ///< Fullscreen mode
+#define SUB_CLIENT_MODE_FLOAT         (1L << 16)                  ///< Float mode
+#define SUB_CLIENT_MODE_STICK         (1L << 17)                  ///< Stick mode
+#define SUB_CLIENT_MODE_URGENT        (1L << 18)                  ///< Urgent mode
+#define SUB_CLIENT_MODE_RESIZE        (1L << 19)                  ///< Resize mode
+#define SUB_CLIENT_MODE_ZAPHOD        (1L << 20)                  ///< Zaphod mode
+#define SUB_CLIENT_MODE_FIXED         (1L << 21)                  ///< Fixed window size
+#define SUB_CLIENT_MODE_BORDERLESS    (1L << 22)                  ///< Borderless
 
 #define SUB_CLIENT_TYPE_DESKTOP       (1L << 26)                  ///< Desktop type (also used in match)
 #define SUB_CLIENT_TYPE_DOCK          (1L << 27)                  ///< Dock type
@@ -272,7 +272,6 @@
 #define SUB_TAG_GRAVITY               (1L << 9)                   ///< Gravity property
 #define SUB_TAG_GEOMETRY              (1L << 10)                  ///< Geometry property
 #define SUB_TAG_POSITION              (1L << 11)                  ///< Position property
-#define SUB_TAG_TYPE                  (1L << 12)                  ///< Type property
 
 /* Tag matcher */
 #define SUB_TAG_MATCH_NAME            (1L << 9)                   ///< Match WM_NAME
@@ -303,7 +302,7 @@
   (SUB_CLIENT_MODE_FULL|SUB_CLIENT_MODE_FLOAT|   \
   SUB_CLIENT_MODE_STICK|SUB_CLIENT_MODE_URGENT|  \
   SUB_CLIENT_MODE_RESIZE|SUB_CLIENT_MODE_ZAPHOD| \
-  SUB_CLIENT_MODE_FIXED)                                          ///< All mode flags
+  SUB_CLIENT_MODE_FIXED|SUB_CLIENT_MODE_BORDERLESS)               ///< All mode flags
 
 /* State action */
 #define _NET_WM_STATE_REMOVE           0L                         /// Remove/unset property
@@ -637,7 +636,6 @@ typedef struct subtag_t /* {{{ */
 {
   FLAGS             flags;                                        ///< Tag flags
   char              *name;                                        ///< Tag name
-  int               type;                                         ///< Tag screen, type
   unsigned long     gravity;                                      ///< Tag gravity
   XRectangle        geom;                                         ///< Tag geometry
   struct subarray_t *matcher;                                     ///< Tag matcher
