@@ -302,6 +302,7 @@ subClientNew(Window win)
   subClientSetWMHints(c, &flags);
   subClientSetState(c, &flags);
   subClientSetTransient(c, &flags);
+  subClientSetMWMHints(c);
 
   /* Set leader window */
   if((leader = (Window *)subSharedPropertyGet(subtle->dpy, c->win, XA_WINDOW,
@@ -312,13 +313,12 @@ subClientNew(Window win)
       free(leader);
     }
 
-  /* Set border */
-  subClientSetMWMHints(c);
-  XSetWindowBorderWidth(subtle->dpy, c->win, BORDER(c));
-
   /* Update and handle according to flags */
   subClientToggle(c, (~c->flags & flags), False); ///< Just enable
   if(c->flags & SUB_CLIENT_TYPE_DIALOG) ClientCenter(c);
+
+  /* Set border after updating flags */
+  XSetWindowBorderWidth(subtle->dpy, c->win, BORDER(c));
 
   /* EWMH: Gravity, screen, desktop */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_GRAVITY,
@@ -669,7 +669,7 @@ subClientDrag(SubClient *c,
         ClientMask(&geom); ///< Erase mask
 
         /* Subtract border width */
-        if(!(c->flags & SUB_CLIENT_BORDERLESS))
+        if(!(c->flags & SUB_CLIENT_MODE_BORDERLESS))
           {
             geom.x -= subtle->styles.clients.border.top;
             geom.y -= subtle->styles.clients.border.top;
@@ -710,8 +710,8 @@ subClientTag(SubClient *c,
       int i;
 
       /* Collect flags and tags */
-      *flags   |= (t->flags & (TYPES_ALL|MODES_ALL));
-      c->tags  |= (1L << (tag + 1));
+      *flags  |= (t->flags & (TYPES_ALL|MODES_ALL));
+      c->tags |= (1L << (tag + 1));
 
       /* Set size/position and enable float */
       if(t->flags & (SUB_TAG_GEOMETRY|SUB_TAG_POSITION))
@@ -1003,7 +1003,7 @@ subClientToggle(SubClient *c,
         {
           c->flags |= SUB_CLIENT_ARRANGE; ///< Force rearrange
 
-          if(!(c->flags & SUB_CLIENT_BORDERLESS))
+          if(!(c->flags & SUB_CLIENT_MODE_BORDERLESS))
             XSetWindowBorderWidth(subtle->dpy, c->win,
               subtle->styles.clients.border.top);
         }
@@ -1108,9 +1108,10 @@ subClientToggle(SubClient *c,
       flags             |= SUB_EWMH_URGENT;
       states[nstates++]  = subEwmhGet(SUB_EWMH_NET_WM_STATE_ATTENTION);
     }
-  if(c->flags & SUB_CLIENT_MODE_RESIZE) flags |= SUB_EWMH_RESIZE;
-  if(c->flags & SUB_CLIENT_MODE_ZAPHOD) flags |= SUB_EWMH_ZAPHOD;
-  if(c->flags & SUB_CLIENT_MODE_FIXED)  flags |= SUB_EWMH_FIXED;
+  if(c->flags & SUB_CLIENT_MODE_RESIZE)     flags |= SUB_EWMH_RESIZE;
+  if(c->flags & SUB_CLIENT_MODE_ZAPHOD)     flags |= SUB_EWMH_ZAPHOD;
+  if(c->flags & SUB_CLIENT_MODE_FIXED)      flags |= SUB_EWMH_FIXED;
+  if(c->flags & SUB_CLIENT_MODE_BORDERLESS) flags |= SUB_EWMH_BORDERLESS;
 
   XChangeProperty(subtle->dpy, c->win, subEwmhGet(SUB_EWMH_NET_WM_STATE),
     XA_ATOM, 32, PropModeReplace, (unsigned char *)&states, nstates);
@@ -1391,7 +1392,7 @@ subClientSetMWMHints(SubClient *c)
         {
           /* Check window border */
           if(!(hints->decorations & (MWM_DECOR_ALL|MWM_DECOR_BORDER)))
-            c->flags |= SUB_CLIENT_BORDERLESS;
+            c->flags |= SUB_CLIENT_MODE_BORDERLESS;
         }
 
       free(hints);
