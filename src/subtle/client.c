@@ -1088,30 +1088,15 @@ subClientToggle(SubClient *c,
 
   /* EWMH: State and flags */
   if(c->flags & SUB_CLIENT_MODE_FULL)
-    {
-      flags             |= SUB_EWMH_FULL;
-      states[nstates++]  = subEwmhGet(SUB_EWMH_NET_WM_STATE_FULLSCREEN);
-    }
+    states[nstates++] = subEwmhGet(SUB_EWMH_NET_WM_STATE_FULLSCREEN);
   if(c->flags & SUB_CLIENT_MODE_FLOAT)
-    {
-      flags             |= SUB_EWMH_FLOAT;
-      states[nstates++]  = subEwmhGet(SUB_EWMH_NET_WM_STATE_ABOVE);
-    }
+    states[nstates++] = subEwmhGet(SUB_EWMH_NET_WM_STATE_ABOVE);
   if(c->flags & SUB_CLIENT_MODE_STICK)
-    {
-      flags             |= SUB_EWMH_STICK;
-      states[nstates++]  = subEwmhGet(SUB_EWMH_NET_WM_STATE_STICKY);
-    }
+    states[nstates++] = subEwmhGet(SUB_EWMH_NET_WM_STATE_STICKY);
   if(c->flags & SUB_CLIENT_MODE_URGENT)
-    {
-      flags             |= SUB_EWMH_URGENT;
-      states[nstates++]  = subEwmhGet(SUB_EWMH_NET_WM_STATE_ATTENTION);
-    }
-  if(c->flags & SUB_CLIENT_MODE_RESIZE)     flags |= SUB_EWMH_RESIZE;
-  if(c->flags & SUB_CLIENT_MODE_ZAPHOD)     flags |= SUB_EWMH_ZAPHOD;
-  if(c->flags & SUB_CLIENT_MODE_FIXED)      flags |= SUB_EWMH_FIXED;
-  if(c->flags & SUB_CLIENT_MODE_CENTER)     flags |= SUB_EWMH_CENTER;
-  if(c->flags & SUB_CLIENT_MODE_BORDERLESS) flags |= SUB_EWMH_BORDERLESS;
+    states[nstates++] = subEwmhGet(SUB_EWMH_NET_WM_STATE_ATTENTION);
+
+  subEwmhTranslateClientMode(c->flags, &flags);
 
   XChangeProperty(subtle->dpy, c->win, subEwmhGet(SUB_EWMH_NET_WM_STATE),
     XA_ATOM, 32, PropModeReplace, (unsigned char *)&states, nstates);

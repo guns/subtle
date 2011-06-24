@@ -25,10 +25,12 @@
   #include <wordexp.h>
 #endif /* HAVE_WORDEXP_H */
 
+static VALUE shelter = Qnil, mod = Qnil, config = Qnil; ///< Globals
+
+/* Macros {{{ */
 #define CHAR2SYM(name) ID2SYM(rb_intern(name))
 #define SYM2CHAR(sym)  rb_id2name(SYM2ID(sym))
-
-static VALUE shelter = Qnil, mod = Qnil, config = Qnil; ///< Globals
+/* }}} */
 
 /* Typedef {{{ */
 typedef struct rubysymbol_t
@@ -128,10 +130,7 @@ RubySubtleToSubtlext(void *data)
           object = rb_funcall(klass, rb_intern("new"), 1, INT2FIX(id));
 
           /* Translate flags */
-          if(c->flags & SUB_CLIENT_MODE_FULL)   flags |= SUB_EWMH_FULL;
-          if(c->flags & SUB_CLIENT_MODE_FLOAT)  flags |= SUB_EWMH_FLOAT;
-          if(c->flags & SUB_CLIENT_MODE_STICK)  flags |= SUB_EWMH_STICK;
-          if(c->flags & SUB_CLIENT_MODE_RESIZE) flags |= SUB_EWMH_RESIZE;
+          subEwmhTranslateClientMode(c->flags, &flags);
 
           /* Set properties */
           rb_iv_set(object, "@win",      LONG2NUM(c->win));
