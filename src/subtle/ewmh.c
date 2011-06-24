@@ -283,7 +283,7 @@ subEwmhSetWMState(Window win,
 } /* }}} */
 
  /** subEwmhTranslateWMState {{{
-  * @brief Set WM state for window
+  * @brief Translate WM state to flags
   * @param[in]     atom   A window
   * @param[inout]  flags  Translated flags
   **/
@@ -309,6 +309,27 @@ subEwmhTranslateWMState(Atom atom,
         break;
       default: break;
     }
+} /* }}} */
+
+ /** subEwmhTranslateClientMode {{{
+  * @brief Translate mode flags to ewmh flags
+  * @param[in]     client_flags  Client mode flags
+  * @param[inout]  flags         Translated flags
+  **/
+
+void
+subEwmhTranslateClientMode(int client_flags,
+  int *flags)
+{
+  /* Translate supported mode flags */
+  if(client_flags & SUB_CLIENT_MODE_FULL)       *flags |= SUB_EWMH_FULL;
+  if(client_flags & SUB_CLIENT_MODE_FLOAT)      *flags |= SUB_EWMH_FLOAT;
+  if(client_flags & SUB_CLIENT_MODE_STICK)      *flags |= SUB_EWMH_STICK;
+  if(client_flags & SUB_CLIENT_MODE_RESIZE)     *flags |= SUB_EWMH_RESIZE;
+  if(client_flags & SUB_CLIENT_MODE_URGENT)     *flags |= SUB_EWMH_URGENT;
+  if(client_flags & SUB_CLIENT_MODE_ZAPHOD)     *flags |= SUB_EWMH_ZAPHOD;
+  if(client_flags & SUB_CLIENT_MODE_FIXED)      *flags |= SUB_EWMH_FIXED;
+  if(client_flags & SUB_CLIENT_MODE_BORDERLESS) *flags |= SUB_EWMH_BORDERLESS;
 } /* }}} */
 
  /** subEwmhMessage {{{

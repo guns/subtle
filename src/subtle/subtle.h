@@ -738,6 +738,7 @@ void subEwmhSetString(Window win, SubEwmh e,
   char *value);                                                   ///< Set string property
 void subEwmhSetWMState(Window win, long state);                   ///< Set window WM state
 void subEwmhTranslateWMState(Atom atom, int *flags);              ///< Translate WM states
+void subEwmhTranslateClientMode(int client_flags, int *flags);    ///< Translate client modes
 int subEwmhMessage(Window win, SubEwmh e, long mask,
   long data0, long data1, long data2, long data3,
   long data4);                                                    ///< Send message
