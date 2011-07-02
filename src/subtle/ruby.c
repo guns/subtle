@@ -25,11 +25,14 @@
   #include <wordexp.h>
 #endif /* HAVE_WORDEXP_H */
 
-static VALUE shelter = Qnil, mod = Qnil, config = Qnil; ///< Globals
-
 /* Macros {{{ */
 #define CHAR2SYM(name) ID2SYM(rb_intern(name))
 #define SYM2CHAR(sym)  rb_id2name(SYM2ID(sym))
+/* }}} */
+
+/* Globals {{{ */
+static VALUE shelter = Qnil, mod = Qnil, config_sublets = Qnil;
+static VALUE config_instance = Qnil, config_methods = Qnil;
 /* }}} */
 
 /* Typedef {{{ */
@@ -1370,15 +1373,15 @@ RubyWrapEval(VALUE data)
   return Qnil;
 } /* }}} */
 
-/* RubyWrapConfig {{{ */
+/* RubyWrapSubletConfig {{{ */
 static VALUE
-RubyWrapConfig(VALUE data)
+RubyWrapSubletConfig(VALUE data)
 {
   VALUE *rargs = (VALUE *)data, hash = Qnil;
   SubSublet *s = SUBLET(rargs[1]);
 
   /* Check if config hash exists */
-  if(T_HASH == rb_type(hash = rb_hash_lookup(config, rargs[0])))
+  if(T_HASH == rb_type(hash = rb_hash_lookup(config_sublets, rargs[0])))
     {
       VALUE value = Qnil;
 
@@ -1456,7 +1459,7 @@ RubyObjectDispatcher(VALUE self,
 static VALUE
 RubyOptionsInit(VALUE self)
 {
-  rb_iv_set(self, "@params", rb_hash_new());
+  rb_iv_set(self, "@params",  rb_hash_new());
 
   return Qnil;
 } /* }}} */
@@ -1471,24 +1474,38 @@ RubyOptionsDispatcher(int argc,
   VALUE *argv,
   VALUE self)
 {
-  VALUE missing = Qnil, args[4] = { Qnil }, arg = Qnil;
+  VALUE ret = Qnil, missing = Qnil, args[4] = { Qnil };
 
   rb_scan_args(argc, argv, "23", &missing,
     &args[0], &args[1], &args[2], &args[3]);
 
-  if(2 < argc)
+  /* Check whether missing is included in methods array
+   * and dispatch to config or just store param*/
+  if(RTEST(config_methods) && rb_ary_includes(config_methods, missing))
     {
-      int i;
-
-      /* Move args into array */
-      arg = rb_ary_new();
-
-      for(i = 0; i < LENGTH(args); i++)
-        if(!NIL_P(args[i])) rb_ary_push(arg, args[i]);
+      ret = rb_funcall2(config_instance, rb_to_id(missing), --argc, ++argv);
     }
-  else arg = args[0];
-  
-  return rb_hash_aset(rb_iv_get(self, "@params"), missing, arg); ///< Just store param
+  else
+    {
+      VALUE arg = Qnil;
+
+      /* Convert multiple argument to one array */
+      if(2 < argc)
+        {
+          int i;
+
+          /* Move args into array */
+          arg = rb_ary_new();
+
+          for(i = 0; i < LENGTH(args); i++)
+            if(!NIL_P(args[i])) rb_ary_push(arg, args[i]);
+        }
+      else arg = args[0];
+
+      ret = rb_hash_aset(rb_iv_get(self, "@params"), missing, arg);
+    }
+
+  return ret;
 } /* }}} */
 
 /* RubyOptionsMatch {{{ */
@@ -1567,6 +1584,27 @@ RubyConfigMissing(int argc,
   name = (char *)rb_id2name(SYM2ID(missing));
 
   subSharedLogWarn("Unknown method `%s'\n", name);
+
+  return Qnil;
+} /* }}} */
+
+/* RubyConfigAdded {{{ */
+/*
+ * Updated methods list when singleton methods are added
+ */
+
+static VALUE
+RubyConfigAdded(VALUE self,
+  VALUE name)
+{
+  VALUE rargs[1] = { Qtrue };
+
+  /* Update config methods list */
+  rb_gc_unregister_address(&config_methods);
+  config_methods = rb_obj_singleton_methods(1, rargs, config_instance);
+  rb_gc_register_address(&config_methods);
+
+  subSharedLogDebugRuby("Singleton method `%s' added\n", SYM2CHAR(name));
 
   return Qnil;
 } /* }}} */
@@ -1790,7 +1828,7 @@ RubyConfigTag(int argc,
 
       /* Collect options */
       klass   = rb_const_get(mod, rb_intern("Options"));
-      options = rb_funcall(klass, rb_intern("new"), 0, NULL);
+      options = rb_funcall(klass, rb_intern("new"), 1, self);
       rb_obj_instance_eval(0, 0, options);
       params = rb_iv_get(options, "@params");
 
@@ -1939,7 +1977,7 @@ RubyConfigView(int argc,
 
       /* Collect options */
       klass    = rb_const_get(mod, rb_intern("Options"));
-      options  = rb_funcall(klass, rb_intern("new"), 0, NULL);
+      options  = rb_funcall(klass, rb_intern("new"), 1, self);
       rb_obj_instance_eval(0, 0, options);
       params  = rb_iv_get(options, "@params");
 
@@ -2064,11 +2102,11 @@ RubyConfigSublet(VALUE self,
     {
       /* Collect options */
       klass   = rb_const_get(mod, rb_intern("Options"));
-      options = rb_funcall(klass, rb_intern("new"), 0, NULL);
+      options = rb_funcall(klass, rb_intern("new"), 1, self);
       rb_obj_instance_eval(0, 0, options);
 
       /* Clone to get rid of object instance and store it */
-      rb_hash_aset(config, sublet,
+      rb_hash_aset(config_sublets, sublet,
         rb_obj_clone(rb_iv_get(options, "@params")));
     }
   else rb_raise(rb_eArgError, "Unknown value type for sublet");
@@ -2101,7 +2139,7 @@ RubyConfigScreen(VALUE self,
 
   /* Collect options */
   klass   = rb_const_get(mod, rb_intern("Options"));
-  options = rb_funcall(klass, rb_intern("new"), 0, NULL);
+  options = rb_funcall(klass, rb_intern("new"), 1, self);
   rb_obj_instance_eval(0, 0, options);
   params = rb_iv_get(options, "@params");
 
@@ -2205,7 +2243,7 @@ RubyConfigStyle(VALUE self,
 
       /* Collect options */
       klass   = rb_const_get(mod, rb_intern("Options"));
-      options = rb_funcall(klass, rb_intern("new"), 0, NULL);
+      options = rb_funcall(klass, rb_intern("new"), 1, self);
       rb_obj_instance_eval(0, 0, options);
       params  = rb_iv_get(options, "@params");
 
@@ -2390,7 +2428,7 @@ RubySubletConfig(VALUE self)
   if(p)
     {
       /* Get config hash */
-      if(NIL_P(hash = rb_hash_lookup(config, CHAR2SYM(p->sublet->name))))
+      if(NIL_P(hash = rb_hash_lookup(config_sublets, CHAR2SYM(p->sublet->name))))
         hash = rb_hash_new();
     }
 
@@ -3184,7 +3222,7 @@ RubySubletWarn(VALUE self,
 void
 subRubyInit(void)
 {
-  VALUE options = Qnil, sublet = Qnil;
+  VALUE config = Qnil, options = Qnil, sublet = Qnil;
 
   void Init_prelude(void);
 
@@ -3238,16 +3276,17 @@ subRubyInit(void)
   config = rb_define_class_under(mod, "Config", rb_cObject);
 
   /* Class methods */
-  rb_define_method(config, "method_missing", RubyConfigMissing,  -1);
-  rb_define_method(config, "set",            RubyConfigSet,       2);
-  rb_define_method(config, "gravity",        RubyConfigGravity,   2);
-  rb_define_method(config, "grab",           RubyConfigGrab,     -1);
-  rb_define_method(config, "tag",            RubyConfigTag,      -1);
-  rb_define_method(config, "view",           RubyConfigView,     -1);
-  rb_define_method(config, "on",             RubyConfigOn,        1);
-  rb_define_method(config, "sublet",         RubyConfigSublet,    1);
-  rb_define_method(config, "screen",         RubyConfigScreen,    1);
-  rb_define_method(config, "style",          RubyConfigStyle,     1);
+  rb_define_method(config, "method_missing",         RubyConfigMissing,  -1);
+  rb_define_method(config, "singleton_method_added", RubyConfigAdded,     1);
+  rb_define_method(config, "set",                    RubyConfigSet,       2);
+  rb_define_method(config, "gravity",                RubyConfigGravity,   2);
+  rb_define_method(config, "grab",                   RubyConfigGrab,     -1);
+  rb_define_method(config, "tag",                    RubyConfigTag,      -1);
+  rb_define_method(config, "view",                   RubyConfigView,     -1);
+  rb_define_method(config, "on",                     RubyConfigOn,        1);
+  rb_define_method(config, "sublet",                 RubyConfigSublet,    1);
+  rb_define_method(config, "screen",                 RubyConfigScreen,    1);
+  rb_define_method(config, "style",                  RubyConfigStyle,     1);
 
   /*
    * Document-class: Options
@@ -3261,7 +3300,7 @@ subRubyInit(void)
   rb_define_attr(options, "params", 1, 1);
 
   /* Class methods */
-  rb_define_method(options, "initialize",     RubyOptionsInit,        0);
+  rb_define_method(options, "initialize",     RubyOptionsInit,        1);
   rb_define_method(options, "match",          RubyOptionsMatch,       1);
   rb_define_method(options, "gravity",        RubyOptionsGravity,     1);
   rb_define_method(options, "method_missing", RubyOptionsDispatcher, -1);
@@ -3319,7 +3358,7 @@ subRubyLoadConfig(void)
 {
   int state = 0;
   char buf[100] = { 0 }, path[100] = { 0 };
-  VALUE str = Qnil , klass = Qnil, conf = Qnil, rargs[3] = { Qnil };
+  VALUE str = Qnil , klass = Qnil, rargs[3] = { Qnil };
   SubTag *t = NULL;
 
   /* Check config paths */
@@ -3357,8 +3396,8 @@ subRubyLoadConfig(void)
   subtle->gravity          = -1;
 
   /* Create and register sublet config hash */
-  config = rb_hash_new();
-  rb_gc_register_address(&config);
+  config_sublets = rb_hash_new();
+  rb_gc_register_address(&config_sublets);
 
   /* Carefully read config */
   printf("Using config `%s'\n", path);
@@ -3379,13 +3418,14 @@ subRubyLoadConfig(void)
     }
 
   /* Create config */
-  klass = rb_const_get(mod, rb_intern("Config"));
-  conf  = rb_funcall(klass, rb_intern("new"), 0, NULL);
+  klass           = rb_const_get(mod, rb_intern("Config"));
+  config_instance = rb_funcall(klass, rb_intern("new"), 0, NULL);
+  rb_gc_register_address(&config_instance);
 
   /* Carefully eval file */
   rargs[0] = str;
   rargs[1] = rb_str_new2(path);
-  rargs[2] = conf;
+  rargs[2] = config_instance;
 
   rb_protect(RubyWrapEval, (VALUE)&rargs, &state);
   if(state)
@@ -3405,6 +3445,9 @@ subRubyLoadConfig(void)
 
   /* If not check only lazy eval config values */
   if(!(subtle->flags & SUB_SUBTLE_CHECK)) RubyEvalConfig();
+
+  /* Release methods list */
+  rb_gc_unregister_address(&config_methods);
 
   return !state;
 } /* }}} */
@@ -3440,7 +3483,8 @@ subRubyReloadConfig(void)
     SUB_SUBTLE_XINERAMA|SUB_SUBTLE_XRANDR|SUB_SUBTLE_URGENT);
 
   /* Unregister current sublet config hash */
-  rb_gc_unregister_address(&config);
+  rb_gc_unregister_address(&config_sublets);
+  rb_gc_unregister_address(&config_instance);
 
   /* Reset sublet panel flags */
   for(i = 0; i < subtle->sublets->ndata; i++)
@@ -3585,11 +3629,11 @@ subRubyLoadSublet(const char *file)
       return;
     }
 
-  /* Carefully apply config */
+  /* Carefully apply sublet config */
   rargs[0] = CHAR2SYM(p->sublet->name);
   rargs[1] = (VALUE)p->sublet;
 
-  rb_protect(RubyWrapConfig, (VALUE)&rargs, &state);
+  rb_protect(RubyWrapSubletConfig, (VALUE)&rargs, &state);
   if(state)
     {
       subSharedLogWarn("Failed configuring sublet `%s'\n", file);
