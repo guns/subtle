@@ -1597,12 +1597,8 @@ static VALUE
 RubyConfigAdded(VALUE self,
   VALUE name)
 {
-  VALUE rargs[1] = { Qtrue };
-
-  /* Update config methods list */
-  rb_gc_unregister_address(&config_methods);
-  config_methods = rb_obj_singleton_methods(1, rargs, config_instance);
-  rb_gc_register_address(&config_methods);
+  /* Append method name to methods list */
+  rb_ary_push(config_methods, name);
 
   subSharedLogDebugRuby("Singleton method `%s' added\n", SYM2CHAR(name));
 
@@ -3395,9 +3391,11 @@ subRubyLoadConfig(void)
   subtle->styles.subtle.bg = -1;
   subtle->gravity          = -1;
 
-  /* Create and register sublet config hash */
+  /* Create and register config values */
   config_sublets = rb_hash_new();
+  config_methods = rb_ary_new();
   rb_gc_register_address(&config_sublets);
+  rb_gc_register_address(&config_methods);
 
   /* Carefully read config */
   printf("Using config `%s'\n", path);
@@ -3482,9 +3480,10 @@ subRubyReloadConfig(void)
   subtle->flags &= (SUB_SUBTLE_DEBUG|SUB_SUBTLE_EWMH|SUB_SUBTLE_RUN|
     SUB_SUBTLE_XINERAMA|SUB_SUBTLE_XRANDR|SUB_SUBTLE_URGENT);
 
-  /* Unregister current sublet config hash */
+  /* Unregister config values */
   rb_gc_unregister_address(&config_sublets);
   rb_gc_unregister_address(&config_instance);
+  rb_gc_unregister_address(&config_methods);
 
   /* Reset sublet panel flags */
   for(i = 0; i < subtle->sublets->ndata; i++)
