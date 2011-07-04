@@ -10,54 +10,63 @@
 #
 
 context "View" do
-  setup { Subtlext::View.current }
+  VIEW_COUNT = 4
 
-  asserts("Check attributes") do
+  setup do # {{{
+    Subtlext::View.current
+  end # }}}
+
+  asserts("Check attributes") do # {{{
     0 == topic.id and "terms" == topic.name
-  end
+  end # }}}
 
-  asserts("Get list") do
+  asserts("Get list") do # {{{
     list = Subtlext::View.all
 
-    list.is_a?(Array) and 4 == list.size
-  end
+    list.is_a?(Array) and VIEW_COUNT == list.size
+  end # }}}
 
-  asserts("Finder") do
-    "terms" == Subtlext::View["terms"].name
-  end
+  asserts("Finder") do # {{{
+    ary = Subtlext::View['.*']
 
-  asserts("Equal and compare") do
+    "terms" == Subtlext::View["terms"].name and ary.is_a? Array and
+      VIEW_COUNT == ary.size
+  end # }}}
+
+  asserts("Equal and compare") do # {{{
     topic.eql? Subtlext::View.current and topic == topic
-  end
+  end # }}}
 
-  asserts("Check associations") do
+  asserts("Check associations") do # {{{
     clients = topic.clients
     tags    = topic.tags
 
     clients.is_a?(Array) and 1 == clients.size and
       tags.is_a?(Array) and 2 == tags.size
-  end
+  end # }}}
 
-  asserts("Check icon") do
+  asserts("Check icon") do # {{{
     nil == topic.icon
-  end
+  end # }}}
 
-  asserts("Check current") do
+  asserts("Check current") do # {{{
     topic.current?
-  end
+  end # }}}
 
-  asserts("Convert to string") { "terms" == topic.to_str }
+  asserts("Convert to string") do # {{{
+    "terms" == topic.to_str
+  end # }}}
 
-  asserts("Runtime: Create new view") do
+  asserts("Runtime: Create new view") do # {{{
     v = Subtlext::View.new("test")
     v.save
 
     sleep 1
 
     5 == Subtlext::View.all.size
-  end
+  end # }}}
 
-  asserts("Runtime: Switch views") do
+  asserts("Runtime: Switch views") do # {{{
     view_next = topic.next
     view_next.jump
 
@@ -69,9 +78,9 @@ context "View" do
     sleep 1
 
     view_prev == topic
-  end
+  end # }}}
 
-  asserts("Runtime: Add/remove tags") do
+  asserts("Runtime: Add/remove tags") do # {{{
     tag = Subtlext::Tag.all.last
 
     # Compare tag counts
@@ -93,21 +102,21 @@ context "View" do
     after = topic.tags.size
 
     before == middle1 - 1 and 2 == middle2 and 1 == after
-  end
+  end # }}}
 
-  asserts("Runtime: Store values") do
+  asserts("Runtime: Store values") do # {{{
     topic[:test] = "test"
 
     "test" == Subtlext::View.current[:test]
-  end
+  end # }}}
 
-  asserts("Runtime: Kill a view") do
+  asserts("Runtime: Kill a view") do # {{{
     Subtlext::View["test"].kill
 
     sleep 1
 
     4 == Subtlext::View.all.size
-  end
+  end # }}}
 end
 
 # vim:ts=2:bs=2:sw=2:et:fdm=marker

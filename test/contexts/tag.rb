@@ -10,52 +10,61 @@
 #
 
 context "Tag" do
-  setup { Subtlext::Tag["terms"] }
+  TAG_COUNT = 12
 
-  asserts("Check attributes") do
+  setup do # {{{
+    Subtlext::Tag["terms"]
+  end # }}}
+
+  asserts("Check attributes") do # {{{
     1 == topic.id and "terms" == topic.name
-  end
+  end # }}}
 
-  asserts("Get list") do
+  asserts("Get list") do # {{{
     list = Subtlext::Tag.all
 
-    list.is_a?(Array) and 12 == list.size
-  end
+    list.is_a?(Array) and TAG_COUNT == list.size
+  end # }}}
 
-  asserts("Finder") do
-    "terms" == Subtlext::Tag["terms"].name
-  end
+  asserts("Finder") do # {{{
+    ary = Subtlext::Tag['.*']
 
-  asserts("Equal and compare") do
+    "terms" == Subtlext::Tag["terms"].name and ary.is_a? Array and
+      TAG_COUNT == ary.size
+  end # }}}
+
+  asserts("Equal and compare") do # {{{
     topic.eql? Subtlext::Tag["terms"] and topic == topic
-  end
+  end # }}}
 
-  asserts("Check associations") do
+  asserts("Check associations") do # {{{
     clients = topic.clients
     views   = topic.views
 
     clients.is_a?(Array) and 1 == clients.size and
       views.is_a?(Array) and 1 == views.size
-  end
+  end # }}}
 
-  asserts("Convert to string") { "terms" == topic.to_str }
+  asserts("Convert to string") do # {{{
+    "terms" == topic.to_str
+  end # }}}
 
-  asserts("Runtime: Create new tag") do
+  asserts("Runtime: Create new tag") do # {{{
     t = Subtlext::Tag.new("test")
     t.save
 
     sleep 1
 
     13 == Subtlext::Tag.all.size
-  end
+  end # }}}
 
-  asserts("Runtime: Kill a tag") do
+  asserts("Runtime: Kill a tag") do # {{{
     Subtlext::Tag["test"].kill
 
     sleep 1
 
     12 == Subtlext::Tag.all.size
-  end
+  end # }}}
 end
 
 # vim:ts=2:bs=2:sw=2:et:fdm=marker

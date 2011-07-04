@@ -10,30 +10,37 @@
 #
 
 context "Client" do
-  setup { Subtlext::Client.current }
+  CLIENT_COUNT = 1
 
-  asserts("Check attributes") do
+  setup do # {{{
+    Subtlext::Client.current
+  end # }}}
+
+  asserts("Check attributes") do # {{{
     0 == topic.id and "xterm" == topic.name and
       "xterm" == topic.instance and "XTerm" == topic.klass
-  end
+  end # }}}
 
-  asserts("Get list") do
+  asserts("Get list") do # {{{
     list = Subtlext::Client.all
 
-    list.is_a?(Array) and 1 == list.size
-  end
+    list.is_a?(Array) and CLIENT_COUNT == list.size
+  end # }}}
 
-  asserts("Finder") do
-    "xterm" == Subtlext::Client[0].name
-  end
+  asserts("Finder") do # {{{
+    "xterm" == Subtlext::Client[0].name and ary.is_a? Array and
+      CLIENT_COUNT == ary.size
+  end # }}}
 
-  asserts("Equal and compare") do
+  asserts("Equal and compare") do # {{{
     topic.eql? Subtlext::Client.current and topic == topic
-  end
+  end # }}}
 
-  asserts("Convert to string") { "xterm" == topic.to_str }
+  asserts("Convert to string") do # {{{
+    "xterm" == topic.to_str
+  end # }}}
 
-  asserts("Runtime: Add/remove flags") do
+  asserts("Runtime: Add/remove flags") do # {{{
     p = lambda { |c, is, toggle|
       ret = []
 
@@ -58,9 +65,9 @@ context "Client" do
     }
 
     results.all? { |r| r == expected }
-  end
+  end # }}}
 
-  asserts("Runtime: Add/remove tags") do
+  asserts("Runtime: Add/remove tags") do # {{{
     tag = Subtlext::Tag.all.last
 
     # Compare tag counts
@@ -85,9 +92,9 @@ context "Client" do
     after = topic.tags.size
 
     before == middle1 - 1 and 2 == middle2 and before == after
-  end
+  end # }}}
 
-  asserts("Runtime: Set/get gravity") do
+  asserts("Runtime: Set/get gravity") do # {{{
     # Check gravity
     result1 = topic.gravity == Subtlext::Gravity[:center]
 
@@ -100,25 +107,25 @@ context "Client" do
     result2 = topic.gravity == Subtlext::Gravity[:left]
 
     result1 and result2
-  end
+  end # }}}
 
-  asserts("Runtime: Screen") do
+  asserts("Runtime: Screen") do # {{{
     topic.screen == Subtlext::Screen[0]
-  end
+  end # }}}
 
-  asserts("Runtime: Store values") do
+  asserts("Runtime: Store values") do # {{{
     topic[:test] = "test"
 
     "test" == Subtlext::Client.current[:test]
-  end
+  end # }}}
 
-  asserts("Runtime: Kill a client") do
+  asserts("Runtime: Kill a client") do # {{{
     topic.kill
 
     sleep 1
 
     0 == Subtlext::Client.all.size
-  end
+  end # }}}
 end
 
 # vim:ts=2:bs=2:sw=2:et:fdm=marker

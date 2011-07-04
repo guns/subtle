@@ -10,36 +10,45 @@
 #
 
 context "Gravity" do
-  setup { Subtlext::Gravity["center"] }
+  GRAVITY_COUNT = 30
 
-  asserts("Check attributes") do
+  setup do # {{{
+    Subtlext::Gravity["center"]
+  end # }}}
+
+  asserts("Check attributes") do # {{{
     12 == topic.id and "center" == topic.name and
       "0x0+100+100" == topic.geometry.to_s
-  end
+  end # }}}
 
-  asserts("Get list") do
+  asserts("Get list") do # {{{
     list = Subtlext::Gravity.all
 
-    list.is_a?(Array) and 30 == list.size
-  end
+    list.is_a?(Array) and GRAVITY_COUNT == list.size
+  end # }}}
 
-  asserts("Finder") do
-    "center" == Subtlext::Gravity["center"].name
-  end
+  asserts("Finder") do # {{{
+    ary = Subtlext::Gravity['.*']
 
-  asserts("Equal and compare") do
+    "center" == Subtlext::Gravity["center"].name and ary.is_a? Array
+      GRAVITY_COUNT == ary.size
+  end # }}}
+
+  asserts("Equal and compare") do # {{{
     topic.eql? Subtlext::Gravity["center"] and topic == topic
-  end
+  end # }}}
 
-  asserts("Check associations") do
+  asserts("Check associations") do # {{{
     clients = topic.clients
 
     clients.is_a?(Array) and 1 == clients.size
-  end
+  end # }}}
 
-  asserts("Convert to string") { "center" == topic.to_str }
+  asserts("Convert to string") do # {{{
+    "center" == topic.to_str
+  end # }}}
 
-  asserts("Runtime: Create new gravity") do
+  asserts("Runtime: Create new gravity") do # {{{
     g = Subtlext::Gravity.new("test")
     g.geometry = Subtlext::Geometry.new(0, 0, 100, 100)
     g.save
@@ -47,15 +56,15 @@ context "Gravity" do
     sleep 0.5
 
     31 == Subtlext::Gravity.all.size
-  end
+  end # }}}
 
-  asserts("Runtime: Kill a gravity") do
+  asserts("Runtime: Kill a gravity") do # {{{
     Subtlext::Gravity["test"].kill
 
     sleep 0.5
 
     30 == Subtlext::Gravity.all.size
-  end
+  end # }}}
 end
 
 # vim:ts=2:bs=2:sw=2:et:fdm=marker

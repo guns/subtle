@@ -10,38 +10,47 @@
 #
 
 context "Sublet" do
-  setup { Subtlext::Sublet[0] }
+  SUBLET_COUNT = 1
 
-  asserts("Check attributes") do
+  setup do # {{{
+    Subtlext::Sublet[0]
+  end # }}}
+
+  asserts("Check attributes") do # {{{
     0 == topic.id and "dummy" == topic.name
-  end
+  end # }}}
 
-  asserts("Get list") do
+  asserts("Get list") do # {{{
     list = Subtlext::Sublet.all
 
-    list.is_a?(Array) and 1 == list.size
-  end
+    list.is_a?(Array) and SUBLET_COUNT == list.size
+  end # }}}
 
-  asserts("Finder") do
-    "dummy" == Subtlext::Sublet[0].name
-  end
+  asserts("Finder") do # {{{
+    ary = Subtlext::Sublet['.*']
 
-  asserts("Update sublet") do
+    "dummy" == Subtlext::Sublet[0].name and ary.is_a? Array and
+      SUBLET_COUNT == ary.size
+  end # }}}
+
+  asserts("Update sublet") do # {{{
     nil == topic.update
-  end
+  end # }}}
 
-  asserts("Equal and compare") do
+  asserts("Equal and compare") do # {{{
     topic.eql? topic and topic == topic
-  end
+  end # }}}
 
-  asserts("Set colors") do
+  asserts("Set colors") do # {{{
     topic.foreground = "#ffffff"
     topic.background = "#ffffff"
 
     true
-  end
+  end # }}}
 
-  asserts("Convert to string") { "dummy" == topic.to_str }
+  asserts("Convert to string") do # {{{
+    "dummy" == topic.to_str
+  end # }}}
 end
 
 # vim:ts=2:bs=2:sw=2:et:fdm=marker

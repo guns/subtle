@@ -10,40 +10,49 @@
 #
 
 context "Tray" do
-  setup { Subtlext::Tray[0] }
+  TRAY_COUNT = 1
 
-  asserts("Check attributes") do
+  setup do # {{{
+    Subtlext::Tray[0]
+  end # }}}
+
+  asserts("Check attributes") do # {{{
     0 == topic.id and "subtle" == topic.name and
       "subtle" == topic.instance and "subtle" == topic.klass
-  end
+  end # }}}
 
-  asserts("Get list") do
+  asserts("Get list") do # {{{
     list = Subtlext::Tray.all
 
-    list.is_a?(Array) and 1 == list.size
-  end
+    list.is_a?(Array) and TRAY_COUNT == list.size
+  end # }}}
 
-  asserts("Finder") do
-    "subtle" == Subtlext::Tray[0].name
-  end
+  asserts("Finder") do # {{{
+    ary = Subtlext::Tray['.*']
 
-  asserts("Equal and compare") do
+    "subtle" == Subtlext::Tray[0].name and ary.is_a? Array and
+      TRAY_COUNT == ary.size
+  end # }}}
+
+  asserts("Equal and compare") do # {{{
     topic.eql? Subtlext::Tray[0] and topic == topic
-  end
+  end # }}}
 
-  asserts("Convert to string") { "subtle" == topic.to_str }
+  asserts("Convert to string") do # {{{
+    "subtle" == topic.to_str
+  end # }}}
 
-  asserts("Runtime: click") do
+  asserts("Runtime: click") do # {{{
     nil == topic.click
-  end
+  end # }}}
 
-  asserts("Runtime: Kill a tray") do
+  asserts("Runtime: Kill a tray") do # {{{
     topic.kill
 
     sleep 1
 
     0 == Subtlext::Tray.all.size
-  end
+  end # }}}
 end
 
 # vim:ts=2:bs=2:sw=2:et:fdm=marker
