@@ -10,19 +10,19 @@
 #
 
 context "Subtle - Init" do
-  asserts("Check running") do
+  asserts("Check running") do # {{{
     Subtlext::Subtle.running?
-  end
+  end # }}}
 
-  asserts("Check colors") do
+  asserts("Check colors") do # {{{
     Subtlext::Subtle.colors.is_a?(Hash) and 48 == Subtlext::Subtle.colors.size
-  end
+  end # }}}
 
-  asserts("Check font") do
+  asserts("Check font") do # {{{
     "-*-*-medium-*-*-*-14-*-*-*-*-*-*-*" == Subtlext::Subtle.font
-  end
+  end # }}}
 
-  asserts("Check spawn") do
+  asserts("Check spawn") do # {{{
     if((xterm = find_executable0("xterm")).nil?)
       raise "xterm not found in path"
     else
@@ -32,7 +32,7 @@ context "Subtle - Init" do
     sleep 1
 
     1 == Subtlext::Client.all.size
-  end
+  end # }}}
 end
 
 # vim:ts=2:bs=2:sw=2:et:fdm=marker

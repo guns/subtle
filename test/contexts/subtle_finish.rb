@@ -10,17 +10,17 @@
 #
 
 context "Subtle - Finish" do
-  asserts("Check reload") do
+  asserts("Check reload") do # {{{
     Subtlext::Subtle.reload
     Subtlext::Subtle.running?
-  end
+  end # }}}
 
-  asserts("Check restart") do
+  asserts("Check restart") do # {{{
     Subtlext::Subtle.reload
     Subtlext::Subtle.running?
-  end
+  end # }}}
 
-  asserts("Check quit") do
+  asserts("Check quit") do # {{{
     # Kill all clients
     Subtlext::Client.all.each do |c|
       c.kill
@@ -33,7 +33,7 @@ context "Subtle - Finish" do
     sleep 1
 
     !Subtlext::Subtle.running?
-  end
+  end # }}}
 end
 
 # vim:ts=2:bs=2:sw=2:et:fdm=marker
