@@ -117,9 +117,6 @@ VALUE subGeometryEqualTyped(VALUE self, VALUE other);             ///< Whether o
 /* }}} */
 
 /* gravity.c {{{ */
-int subGravityFindId(char *match, char **name,
-  XRectangle *geometry);                                          ///< Find gravity id
-
 /* Singleton */
 VALUE subGravitySingFind(VALUE self, VALUE value);                ///< Find gravity
 VALUE subGravitySingAll(VALUE self);                              ///< Get all gravities
@@ -209,10 +206,14 @@ void subSubtlextBacktrace(void);                                  ///< Print rub
 VALUE subSubtlextConcat(VALUE str1, VALUE str2);                  ///< Concat strings
 VALUE subSubtlextParse(VALUE value, char *buf,
   int len, int *flags);                                           ///< Parse arguments
-Window *subSubtlextList(char *prop, int *size);                   ///< Get window list
-int subSubtlextFind(char *prop, char *match, char **name);        ///< Find object
-int subSubtlextFindWindow(char *prop, char *match, char **name,
-  Window *win, int flags);                                        ///< Find window
+VALUE subSubtlextOneOrMany(VALUE obj, VALUE recent);              ///< Return one or many
+Window *subSubtlextWindowList(char *prop_name, int *size);        ///< Get window list
+int subSubtlextWindowMatch(Window win, regex_t *preg,
+  const char *source, char **name, int flags);                    ///< Match window
+int subSubtlextFindString(char *prop_name, char *source,
+  char **name, int flags);                                        ///< Find string id
+VALUE subSubtlextFindObjects(char *prop_name, char *class_name,
+  char *source, int flags);                                       ///< Find objects
 /* }}} */
 
 /* tag.c {{{ */

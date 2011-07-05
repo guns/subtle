@@ -92,6 +92,7 @@
 #define SUB_MATCH_GRAVITY   (1L << 3)                             ///< Match gravity
 #define SUB_MATCH_ROLE      (1L << 4)                             ///< Match window role
 #define SUB_MATCH_PID       (1L << 5)                             ///< Match pid
+#define SUB_MATCH_EXACT     (1L << 6)                             ///< Match exact string
 
 /* Text flags */
 #define SUB_TEXT_EMPTY      (1L << 0)                             ///< Empty text
