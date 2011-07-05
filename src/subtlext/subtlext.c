@@ -1281,7 +1281,7 @@ subSubtlextWindowMatch(Window win,
           char pidbuf[10] = { 0 };
 
           /* Convert pid to string */
-          snprintf(pidbuf, sizeof(pidbuf), "%d", (int)pid);
+          snprintf(pidbuf, sizeof(pidbuf), "%d", (int)*pid);
 
           ret = (flags & SUB_MATCH_EXACT ? 0 == strcmp(source, pidbuf) :
             subSharedRegexMatch(preg, pidbuf));
