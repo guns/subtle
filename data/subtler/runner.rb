@@ -266,7 +266,7 @@ module Subtle # {{{
           when Subtlext::Tag # {{{
             puts value.name # }}}
           when Subtlext::Tray # {{{
-            puts "%#10lx %s (%s)" % [
+            puts "%#10x %s (%s)" % [
               value.win,
               value.instance,
               value.klass
