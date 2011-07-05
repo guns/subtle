@@ -9,37 +9,37 @@
 # See the file COPYING for details.
 #
 
-context "Color" do
+context 'Color' do
   setup do # {{{
-    Subtlext::Color.new("#ff0000")
+    Subtlext::Color.new '#ff0000'
   end # }}}
 
-  asserts("Init types") do # {{{
-    c1 = Subtlext::Color.new(topic)
-    c2 = Subtlext::Color.new([ 255, 0, 0 ])
-    c3 = Subtlext::Color.new({ red: 255, green: 0, blue: 0})
+  asserts 'Init types' do # {{{
+    c1 = Subtlext::Color.new topic
+    c2 = Subtlext::Color.new [ 255, 0, 0 ]
+    c3 = Subtlext::Color.new({ red: 255, green: 0, blue: 0 })
 
     topic == c1 and c1 == c2 and c1 == c3
   end # }}}
 
-  asserts("Check attributes") do # {{{
+  asserts 'Check attributes' do # {{{
     255 == topic.red and 0 == topic.green and 0 == topic.blue
   end # }}}
 
-  asserts("Type conversions") do # {{{
+  asserts 'Type conversions' do # {{{
     hex  = topic.to_hex
     hash = topic.to_hash
     ary  = topic.to_ary
 
-    "#FF0000" == hex and hash.values == ary
+    '#FF0000' == hex and hash.values == ary
   end # }}}
 
-  asserts("Equal and compare") do # {{{
-    topic.eql? Subtlext::Color.new("#ff0000") and topic == topic
+  asserts 'Equal and compare' do # {{{
+    topic.eql? Subtlext::Color.new('#ff0000') and topic == topic
   end # }}}
 
-  asserts("Convert to string") do # {{{
-    topic.to_str.match(/<>#[0-9]+<>/)
+  asserts 'Convert to string' do # {{{
+    topic.to_str.match /<>#[0-9]+<>/
   end # }}}
 end
 

@@ -9,56 +9,61 @@
 # See the file COPYING for details.
 #
 
-context "View" do
+context 'View' do
   VIEW_COUNT = 4
+  VIEW_ID    = 0
+  VIEW_NAME  = 'terms'
 
   setup do # {{{
-    Subtlext::View.current
+    Subtlext::View[VIEW_ID]
   end # }}}
 
-  asserts("Check attributes") do # {{{
-    0 == topic.id and "terms" == topic.name
+  asserts 'Check attributes' do # {{{
+    VIEW_ID == topic.id and VIEW_NAME == topic.name
   end # }}}
 
-  asserts("Get list") do # {{{
+  asserts 'Get list' do # {{{
     list = Subtlext::View.all
 
-    list.is_a?(Array) and VIEW_COUNT == list.size
+    list.is_a? Array and VIEW_COUNT == list.size
   end # }}}
 
-  asserts("Finder") do # {{{
-    ary = Subtlext::View['.*']
+  asserts 'Finder' do # {{{
+    index  = Subtlext::View[VIEW_ID]
+    string = Subtlext::View[VIEW_NAME]
+    sym    = Subtlext::View[VIEW_NAME.to_sym]
+    all    = Subtlext::View['.*']
 
-    "terms" == Subtlext::View["terms"].name and ary.is_a? Array and
-      VIEW_COUNT == ary.size
+    index == string and index == sym and
+      all.is_a? Array and VIEW_COUNT == all.size
   end # }}}
 
-  asserts("Equal and compare") do # {{{
-    topic.eql? Subtlext::View.current and topic == topic
+  asserts 'Equal and compare' do # {{{
+    topic.eql? Subtlext::View[VIEW_ID] and topic == topic
   end # }}}
 
-  asserts("Check associations") do # {{{
+  asserts 'Check associations' do # {{{
     clients = topic.clients
     tags    = topic.tags
 
-    clients.is_a?(Array) and 1 == clients.size and
-      tags.is_a?(Array) and 2 == tags.size
+    clients.is_a? Array and 1 == clients.size and
+      tags.is_a? Array and 2 == tags.size
   end # }}}
 
-  asserts("Check icon") do # {{{
+  asserts 'Check icon' do # {{{
     nil == topic.icon
   end # }}}
 
-  asserts("Check current") do # {{{
+  asserts 'Check current' do # {{{
     topic.current?
   end # }}}
 
-  asserts("Convert to string") do # {{{
-    "terms" == topic.to_str
+  asserts 'Convert to string' do # {{{
+    VIEW_NAME == topic.to_str
   end # }}}
 
-  asserts("Runtime: Create new view") do # {{{
-    v = Subtlext::View.new("test")
+  asserts 'Create new view' do # {{{
+    v = Subtlext::View.new 'test'
     v.save
 
     sleep 1
@@ -66,7 +71,7 @@ context "View" do
     5 == Subtlext::View.all.size
   end # }}}
 
-  asserts("Runtime: Switch views") do # {{{
+  asserts 'Switch views' do # {{{
     view_next = topic.next
     view_next.jump
 
@@ -80,7 +85,7 @@ context "View" do
     view_prev == topic
   end # }}}
 
-  asserts("Runtime: Add/remove tags") do # {{{
+  asserts 'Add/remove tags' do # {{{
     tag = Subtlext::Tag.all.last
 
     # Compare tag counts
@@ -90,7 +95,7 @@ context "View" do
     sleep 0.5
 
     middle1 = topic.tags.size
-    topic.tags = [ tag, "default" ]
+    topic.tags = [ tag, 'default' ]
 
     sleep 0.5
 
@@ -104,18 +109,18 @@ context "View" do
     before == middle1 - 1 and 2 == middle2 and 1 == after
   end # }}}
 
-  asserts("Runtime: Store values") do # {{{
-    topic[:test] = "test"
+  asserts 'Store values' do # {{{
+    topic[:test] = 'test'
 
-    "test" == Subtlext::View.current[:test]
+    'test' == Subtlext::View.current[:test]
   end # }}}
 
-  asserts("Runtime: Kill a view") do # {{{
-    Subtlext::View["test"].kill
+  asserts 'Kill a view' do # {{{
+    Subtlext::View['test'].kill
 
     sleep 1
 
-    4 == Subtlext::View.all.size
+    VIEW_COUNT == Subtlext::View.all.size
   end # }}}
 end
 

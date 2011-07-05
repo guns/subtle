@@ -9,47 +9,59 @@
 # See the file COPYING for details.
 #
 
-context "Sublet" do
+context 'Sublet' do
   SUBLET_COUNT = 1
+  SUBLET_ID    = 0
+  SUBLET_NAME  = 'dummy'
 
   setup do # {{{
     Subtlext::Sublet[0]
   end # }}}
 
-  asserts("Check attributes") do # {{{
-    0 == topic.id and "dummy" == topic.name
+  asserts 'Check attributes' do # {{{
+    SUBLET_ID == topic.id and SUBLET_NAME == topic.name
   end # }}}
 
-  asserts("Get list") do # {{{
+  asserts 'Get list' do # {{{
     list = Subtlext::Sublet.all
 
     list.is_a?(Array) and SUBLET_COUNT == list.size
   end # }}}
 
-  asserts("Finder") do # {{{
-    ary = Subtlext::Sublet['.*']
+  asserts 'Finder' do # {{{
+    index  = Subtlext::Sublet[SUBLET_ID]
+    string = Subtlext::Sublet[SUBLET_NAME]
+    sym    = Subtlext::Sublet[SUBLET_NAME.to_sym]
+    all    = Subtlext::Sublet['.*']
 
-    "dummy" == Subtlext::Sublet[0].name and ary.is_a? Array and
-      SUBLET_COUNT == ary.size
+    index == string and index == sym and index == all
   end # }}}
 
-  asserts("Update sublet") do # {{{
+  asserts 'Update sublet' do # {{{
     nil == topic.update
   end # }}}
 
-  asserts("Equal and compare") do # {{{
+  asserts 'Get screen' do # {{{
+    topic.screen.is_a? Subtlext::Screen
+  end # }}}
+
+  asserts 'Get geometry' do # {{{
+    topic.geometry.is_a? Subtlext::Geometry
+  end # }}}
+
+  asserts 'Equal and compare' do # {{{
     topic.eql? topic and topic == topic
   end # }}}
 
-  asserts("Set colors") do # {{{
-    topic.foreground = "#ffffff"
-    topic.background = "#ffffff"
+  asserts 'Set colors' do # {{{
+    topic.foreground = '#ffffff'
+    topic.background = '#ffffff'
 
     true
   end # }}}
 
-  asserts("Convert to string") do # {{{
-    "dummy" == topic.to_str
+  asserts 'Convert to string' do # {{{
+    SUBLET_NAME == topic.to_str
   end # }}}
 end
 

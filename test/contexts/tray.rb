@@ -9,44 +9,52 @@
 # See the file COPYING for details.
 #
 
-context "Tray" do
+context 'Tray' do
   TRAY_COUNT = 1
+  TRAY_ID    = 0
+  TRAY_NAME  = 'test.rb'
 
   setup do # {{{
-    Subtlext::Tray[0]
+    Subtlext::Tray[TRAY_ID]
   end # }}}
 
-  asserts("Check attributes") do # {{{
-    0 == topic.id and "subtle" == topic.name and
-      "subtle" == topic.instance and "subtle" == topic.klass
+  asserts 'Check attributes' do # {{{
+    TRAY_ID == topic.id and TRAY_NAME == topic.name and
+      TRAY_NAME == topic.instance and TRAY_NAME == topic.klass.downcase
   end # }}}
 
-  asserts("Get list") do # {{{
+  asserts 'Get list' do # {{{
     list = Subtlext::Tray.all
 
-    list.is_a?(Array) and TRAY_COUNT == list.size
+    list.is_a? Array and TRAY_COUNT == list.size
   end # }}}
 
-  asserts("Finder") do # {{{
-    ary = Subtlext::Tray['.*']
+  asserts 'Finder' do # {{{
+    index  = Subtlext::Tray[TRAY_ID]
+    string = Subtlext::Tray[TRAY_NAME]
+    sym    = Subtlext::Tray[TRAY_NAME.to_sym]
+    all    = Subtlext::Tray['.*']
 
-    "subtle" == Subtlext::Tray[0].name and ary.is_a? Array and
-      TRAY_COUNT == ary.size
+    index == string and index == sym and index == all
   end # }}}
 
-  asserts("Equal and compare") do # {{{
-    topic.eql? Subtlext::Tray[0] and topic == topic
+  asserts 'Equal and compare' do # {{{
+    topic.eql? Subtlext::Tray[TRAY_ID] and topic == topic
   end # }}}
 
-  asserts("Convert to string") do # {{{
-    "subtle" == topic.to_str
+  asserts 'Convert to string' do # {{{
+    TRAY_NAME == topic.to_str
   end # }}}
 
-  asserts("Runtime: click") do # {{{
-    nil == topic.click
+  asserts 'Send button' do # {{{
+    nil == topic.send_button(1)
   end # }}}
 
-  asserts("Runtime: Kill a tray") do # {{{
+  asserts 'Send key' do # {{{
+    nil == topic.send_key('a')
+  end # }}}
+
+  asserts 'Kill a tray' do # {{{
     topic.kill
 
     sleep 1

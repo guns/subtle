@@ -42,7 +42,7 @@ context "Screen" do
     topic.eql? Subtlext::Screen.current and topic == topic
   end # }}}
 
-  asserts("Runtime: Change view") do # {{{
+  asserts("Change view") do # {{{
     view1 = topic.view
 
     sleep 0.5

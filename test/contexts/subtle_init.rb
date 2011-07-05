@@ -9,22 +9,25 @@
 # See the file COPYING for details.
 #
 
-context "Subtle - Init" do
-  asserts("Check running") do # {{{
+context 'Subtle - Init' do
+  COLORS_COUNT = 48
+
+  asserts 'Check running' do # {{{
     Subtlext::Subtle.running?
   end # }}}
 
-  asserts("Check colors") do # {{{
-    Subtlext::Subtle.colors.is_a?(Hash) and 48 == Subtlext::Subtle.colors.size
+  asserts 'Check colors' do # {{{
+    Subtlext::Subtle.colors.is_a? Hash and
+      COLORS_COUNT == Subtlext::Subtle.colors.size
   end # }}}
 
-  asserts("Check font") do # {{{
-    "-*-*-medium-*-*-*-14-*-*-*-*-*-*-*" == Subtlext::Subtle.font
+  asserts 'Check font' do # {{{
+    '-*-*-medium-*-*-*-14-*-*-*-*-*-*-*' == Subtlext::Subtle.font
   end # }}}
 
-  asserts("Check spawn") do # {{{
-    if((xterm = find_executable0("xterm")).nil?)
-      raise "xterm not found in path"
+  asserts 'Check spawn' do # {{{
+    if((xterm = find_executable0('xterm')).nil?)
+      raise 'xterm not found in path'
     else
       Subtlext::Subtle.spawn("#{xterm} -display :10")
     end
