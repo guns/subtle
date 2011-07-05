@@ -159,6 +159,35 @@ ClientGravity(VALUE key,
   return ST_CONTINUE;
 } /* }}} */
 
+/* ClientWindowId {{{ */
+int
+ClientWindowId(Window win)
+{
+  int ret = -1, size = 0;
+  Window *wins = NULL;
+
+  /* Fetch window list */
+  if((wins = subSubtlextWindowList("_NET_CLIENT_LIST", &size)))
+    {
+      int i;
+
+      /* Check if window is in window list */
+      for(i = 0; i < size; i++)
+        {
+          if(wins[i] == win)
+            {
+              ret = i;
+              break;
+            }
+        }
+
+      free(wins);
+    }
+  else subSharedLogDebugSubtlext("Failed finding window `%#lx'\n", win);
+
+  return ret;
+} /* }}} */
+
 /* Singleton */
 
 /* subClientSingSelect {{{ */
@@ -205,10 +234,10 @@ VALUE
 subClientSingFind(VALUE self,
   VALUE value)
 {
-  int id = 0, flags = 0;
-  Window win = None;
-  VALUE parsed = Qnil, client = Qnil;
-  char *name = NULL, buf[50] = { 0 };
+  int i, flags = 0, size = 0;
+  VALUE ret = Qnil, parsed = Qnil, client = Qnil;
+  char buf[50] = { 0 };
+  Window *wins = NULL;
 
   subSubtlextConnect(NULL); ///< Implicit open connection
 
@@ -223,24 +252,54 @@ subClientSingFind(VALUE self,
           return subClientSingAll(Qnil);
         else if(CHAR2SYM("current") == parsed)
           return subClientSingCurrent(Qnil);
-        else snprintf(buf, sizeof(buf), "%s", SYM2CHAR(value));
         break;
       case T_OBJECT:
         if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("Client"))))
           return parsed;
     }
 
-  /* Find client */
-  if(-1 != (id = subSubtlextFindWindow("_NET_CLIENT_LIST",
-      buf, NULL, &win, flags)))
+  /* Get client list */
+  if((wins = subSubtlextWindowList("_NET_CLIENT_LIST", &size)))
     {
-      if(!NIL_P((client = subClientInstantiate(id))))
-        subClientUpdate(client);
+      int selid = -1;
+      Window selwin = None;
+      VALUE meth = Qnil, klass = Qnil;
+      regex_t *preg = NULL;
 
-      free(name);
+      /* Create regexp when required */
+      if(!(flags & SUB_MATCH_EXACT)) preg = subSharedRegexNew(buf);
+
+      /* Special values */
+      if(FIXNUM_P(value)) selid  = (int)FIX2INT(value);
+      if('#' == buf[0])   selwin = subSubtleSingSelect(Qnil);
+
+      /* Fetch data */
+      meth  = rb_intern("new");
+      klass = rb_const_get(mod, rb_intern("Client"));
+
+      /* Check each client */
+      for(i = 0; i < size; i++)
+        {
+          if(selid == i || selwin == wins[i] || (-1 == selid &&
+              subSubtlextWindowMatch(wins[i], preg, buf, NULL, flags)))
+            {
+              /* Create new client */
+              if(RTEST((client = rb_funcall(klass, meth, 1, INT2FIX(i)))))
+                {
+                  rb_iv_set(client, "@win", LONG2NUM(wins[i]));
+
+                  subClientUpdate(client);
+
+                  ret = subSubtlextOneOrMany(client, ret);
+                }
+            }
+        }
+
+      if(preg) subSharedRegexKill(preg);
+      free(wins);
     }
 
-  return client;
+  return ret;
 } /* }}} */
 
 /* subClientSingCurrent {{{ */
@@ -261,14 +320,15 @@ subClientSingCurrent(VALUE self)
 
   subSubtlextConnect(NULL); ///< Implicit open connection
 
+  /* Get current client */
   if((focus = (unsigned long *)subSharedPropertyGet(display,
       DefaultRootWindow(display), XA_WINDOW,
       XInternAtom(display, "_NET_ACTIVE_WINDOW", False), NULL)))
     {
-      client = subClientInstantiate(-1);
+      int id = ClientWindowId(*focus);
 
       /* Update client values */
-      if(!NIL_P(client))
+      if(RTEST(client = subClientInstantiate(id)))
         {
           rb_iv_set(client, "@win", LONG2NUM(*focus));
 
@@ -309,7 +369,7 @@ subClientSingVisible(VALUE self)
   meth    = rb_intern("new");
   array   = rb_ary_new();
   klass   = rb_const_get(mod, rb_intern("Client"));
-  clients = subSubtlextList("_NET_CLIENT_LIST", &nclients);
+  clients = subSubtlextWindowList("_NET_CLIENT_LIST", &nclients);
   visible = (unsigned long *)subSharedPropertyGet(display,
     DefaultRootWindow(display), XA_CARDINAL, XInternAtom(display,
     "SUBTLE_VISIBLE_TAGS", False), NULL);
@@ -325,7 +385,7 @@ subClientSingVisible(VALUE self)
 
           /* Create client on match */
           if(tags && *tags && *visible & *tags &&
-              !NIL_P(client = rb_funcall(klass, meth, 1, INT2FIX(i))))
+              RTEST(client = rb_funcall(klass, meth, 1, INT2FIX(i))))
             {
               rb_iv_set(client, "@win", LONG2NUM(clients[i]));
 
@@ -369,7 +429,7 @@ subClientSingAll(VALUE self)
   meth    = rb_intern("new");
   array   = rb_ary_new();
   klass   = rb_const_get(mod, rb_intern("Client"));
-  clients = subSubtlextList("_NET_CLIENT_LIST", &nclients);
+  clients = subSubtlextWindowList("_NET_CLIENT_LIST", &nclients);
 
   /* Check results */
   if(clients)
@@ -377,7 +437,7 @@ subClientSingAll(VALUE self)
       for(i = 0; i < nclients; i++)
         {
           /* Create client */
-          if(!NIL_P(client = rb_funcall(klass, meth, 1, INT2FIX(i))))
+          if(RTEST(client = rb_funcall(klass, meth, 1, INT2FIX(i))))
             {
               rb_iv_set(client, "@win", LONG2NUM(clients[i]));
 
@@ -415,7 +475,7 @@ subClientSingRecent(VALUE self)
   meth    = rb_intern("new");
   array   = rb_ary_new();
   klass   = rb_const_get(mod, rb_intern("Client"));
-  clients = subSubtlextList("_NET_ACTIVE_WINDOW", &nclients);
+  clients = subSubtlextWindowList("_NET_ACTIVE_WINDOW", &nclients);
 
   /* Check results */
   if(clients)
@@ -502,31 +562,13 @@ subClientUpdate(VALUE self)
 {
   int id = 0;
   Window win = None;
-  VALUE rid = Qnil, rwin = Qnil;
 
   rb_check_frozen(self);
   subSubtlextConnect(NULL); ///< Implicit open connection
 
-  rid  = rb_iv_get(self, "@id");
-  rwin = rb_iv_get(self, "@win");
-
-  /* Find window */
-  if((NIL_P(rwin) && FIXNUM_P(rid)) ||
-      ((NIL_P(rid) || 0 > FIX2INT(rid)) && FIXNUM_P(rwin)))
-    {
-      char buf[20] = { 0 };
-
-      if(FIXNUM_P(rwin)) snprintf(buf, sizeof(buf), "%ld", NUM2LONG(rwin));
-      else snprintf(buf, sizeof(buf), "%d", (int)FIX2INT(rid));
-
-      id = subSubtlextFindWindow("_NET_CLIENT_LIST", buf,
-        NULL, &win, (SUB_MATCH_NAME|SUB_MATCH_CLASS));
-    }
-  else
-    {
-      id  = FIX2INT(rid);
-      win = NUM2LONG(rwin);
-    }
+  /* Get client values */
+  id  = FIX2INT(rb_iv_get(self, "@id"));
+  win = NUM2LONG(rb_iv_get(self, "@win"));
 
   /* Check values */
   if(0 <= id && 0 < win)
@@ -534,18 +576,17 @@ subClientUpdate(VALUE self)
       int *flags = NULL;
       char *wmname = NULL, *wminstance = NULL, *wmclass = NULL, *role = NULL;
 
-      /* Get name, instance and class */
+      /* Fetch name, instance and class */
       subSharedPropertyClass(display, win, &wminstance, &wmclass);
       subSharedPropertyName(display, win, &wmname, wmclass);
 
+      /* Fetch window flags and role */
       flags = (int *)subSharedPropertyGet(display, win, XA_CARDINAL,
         XInternAtom(display, "SUBTLE_CLIENT_FLAGS", False), NULL);
       role = subSharedPropertyGet(display, win, XA_STRING,
         XInternAtom(display, "WM_WINDOW_ROLE", False), NULL);
 
       /* Set properties */
-      rb_iv_set(self, "@id",       INT2FIX(id));
-      rb_iv_set(self, "@win",      LONG2NUM(win));
       rb_iv_set(self, "@flags",    flags ? INT2FIX(*flags) : INT2FIX(0));
       rb_iv_set(self, "@name",     rb_str_new2(wmname));
       rb_iv_set(self, "@instance", rb_str_new2(wminstance));
@@ -562,7 +603,7 @@ subClientUpdate(VALUE self)
       free(wminstance);
       free(wmclass);
     }
-  else rb_raise(rb_eStandardError, "Failed updating client");
+  else rb_raise(rb_eStandardError, "Invalid client");
 
   return Qnil;
 } /* }}} */
@@ -1003,18 +1044,18 @@ subClientRestackLower(VALUE self)
 VALUE
 subClientAskAlive(VALUE self)
 {
-  VALUE ret = Qfalse, name = Qnil;
+  VALUE ret = Qfalse, win = Qnil;
 
   /* Check ruby object */
   rb_check_frozen(self);
-  GET_ATTR(self, "@name", name);
+  GET_ATTR(self, "@win", win);
 
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Just find the client */
-  if(-1 != subSubtlextFindWindow("_NET_CLIENT_LIST", RSTRING_PTR(name),
-      NULL, NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS)))
+  if(-1 != ClientWindowId(NUM2LONG(win)))
     ret = Qtrue;
+  else rb_obj_freeze(self);
 
   return ret;
 } /* }}} */

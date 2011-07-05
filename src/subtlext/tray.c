@@ -18,7 +18,7 @@
  * call-seq: find(value) -> Subtlext::Client or nil
  *           [value]     -> Subtlext::Client or nil
  *
- * Find Client by a given value which can be of following type:
+ * Find Clients by a given value which can be of following type:
  *
  * [fixnum] Array id
  * [string] Match against WM_NAME or WM_CLASS
@@ -39,10 +39,10 @@ VALUE
 subTraySingFind(VALUE self,
   VALUE value)
 {
-  int id = 0, flags = 0;
-  Window win = None;
-  VALUE parsed = Qnil, tray = Qnil;
-  char *name = NULL, buf[50] = { 0 };
+  int i, flags = 0, size = 0;
+  VALUE ret = Qnil, parsed = Qnil, tray = Qnil;
+  char buf[50] = { 0 };
+  Window *wins = NULL;
 
   subSubtlextConnect(NULL); ///< Implicit open connection
 
@@ -53,28 +53,49 @@ subTraySingFind(VALUE self,
       case T_SYMBOL:
         if(CHAR2SYM("all") == parsed)
           return subTraySingAll(Qnil);
-        else snprintf(buf, sizeof(buf), "%s", SYM2CHAR(value));
         break;
       case T_OBJECT:
         if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("Tray"))))
           return parsed;
     }
 
-  /* Find tray */
-  if(-1 != (id = subSubtlextFindWindow("SUBTLE_TRAY_LIST",
-      buf, NULL, &win, flags)))
+  /* Get tray list */
+  if((wins = subSubtlextWindowList("SUBTLE_TRAY_LIST", &size)))
     {
-      if(!NIL_P((tray = subTrayInstantiate(win))))
-        {
-          rb_iv_set(tray, "@id", INT2FIX(id));
+      int selid = -1;
+      VALUE meth = Qnil, klass = Qnil;
+      regex_t *preg = subSharedRegexNew(buf);
 
-          subTrayUpdate(tray);
+      /* Special values */
+      if(FIXNUM_P(value)) selid = (int)FIX2INT(value);
+
+      /* Fetch data */
+      meth  = rb_intern("new");
+      klass = rb_const_get(mod, rb_intern("Tray"));
+
+      /* Check each tray */
+      for(i = 0; i < size; i++)
+        {
+          if(selid == i || (-1 == selid &&
+              preg && subSubtlextWindowMatch(wins[i], preg, buf, NULL, flags)))
+            {
+              /* Create new tray */
+              if(RTEST((tray = rb_funcall(klass, meth, 1, LONG2NUM(wins[i])))))
+                {
+                  rb_iv_set(tray, "@id", INT2FIX(i));
+
+                  subTrayUpdate(tray);
+
+                  ret = subSubtlextOneOrMany(tray, ret);
+                }
+            }
         }
 
-      free(name);
+      subSharedRegexKill(preg);
+      free(wins);
     }
 
-  return tray;
+  return ret;
 } /* }}} */
 
 /* subTraySingAll {{{ */
@@ -105,7 +126,7 @@ subTraySingAll(VALUE self)
   array = rb_ary_new();
 
   /* Check results */
-  if((trays = subSubtlextList("SUBTLE_TRAY_LIST", &ntrays)))
+  if((trays = subSubtlextWindowList("SUBTLE_TRAY_LIST", &ntrays)))
     {
       for(i = 0; i < ntrays; i++)
         {
@@ -181,19 +202,18 @@ VALUE
 subTrayUpdate(VALUE self)
 {
   int id = 0;
-  char buf[20] = { 0 };
-  VALUE win = Qnil;
+  Window win = None;
 
   /* Check ruby object */
   rb_check_frozen(self);
-  GET_ATTR(self, "@win", win);
-
   subSubtlextConnect(NULL); ///< Implicit open connection
 
-  /* Find tray */
-  snprintf(buf, sizeof(buf), "%#lx", NUM2LONG(win));
-  if(-1 != (id = subSubtlextFindWindow("SUBTLE_TRAY_LIST", buf, NULL,
-      NULL, (SUB_MATCH_NAME|SUB_MATCH_CLASS))))
+  /* Get tray values */
+  id  = FIX2INT(rb_iv_get(self, "@id"));
+  win = NUM2LONG(rb_iv_get(self, "@win"));
+
+  /* Check values */
+  if(0 <= id && 0 < win)
     {
       char *wmname = NULL, *wminstance = NULL, *wmclass = NULL;
 
@@ -202,7 +222,6 @@ subTrayUpdate(VALUE self)
       subSharedPropertyName(display, win, &wmname, wmclass);
 
       /* Set properties */
-      rb_iv_set(self, "@id",       INT2FIX(id));
       rb_iv_set(self, "@name",     rb_str_new2(wmname));
       rb_iv_set(self, "@instance", rb_str_new2(wminstance));
       rb_iv_set(self, "@klass",    rb_str_new2(wmclass));
@@ -211,6 +230,7 @@ subTrayUpdate(VALUE self)
       free(wminstance);
       free(wmclass);
     }
+  else rb_raise(rb_eStandardError, "Invalid tray");
 
   return Qnil;
 } /* }}} */

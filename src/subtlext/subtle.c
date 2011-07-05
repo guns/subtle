@@ -386,7 +386,7 @@ subSubtleSingSpawn(VALUE self,
           int nclients = 0;
           Window *clients = NULL;
 
-          clients = subSubtlextList("_NET_CLIENT_LIST", &nclients);
+          clients = subSubtlextWindowList("_NET_CLIENT_LIST", &nclients);
 
           /* Create client */
           ret = subClientInstantiate(nclients);

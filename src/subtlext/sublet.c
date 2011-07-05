@@ -38,36 +38,26 @@ VALUE
 subSubletSingFind(VALUE self,
   VALUE value)
 {
-  int id = 0;
-  VALUE parsed = Qnil, sublet = Qnil;
-  char *name = NULL, buf[50] = { 0 };
+  int flags = 0;
+  VALUE parsed = Qnil;
+  char buf[50] = { 0 };
 
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Check object type */
   switch(rb_type(parsed = subSubtlextParse(
-      value, buf, sizeof(buf), NULL)))
+      value, buf, sizeof(buf), &flags)))
     {
       case T_SYMBOL:
         if(CHAR2SYM("all") == parsed)
           return subSubletSingAll(Qnil);
-        else snprintf(buf, sizeof(buf), "%s", SYM2CHAR(value));
         break;
       case T_OBJECT:
         if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("Sublet"))))
           return parsed;
     }
 
-  /* Find sublet */
-  if(-1 != (id = subSubtlextFind("SUBTLE_SUBLET_LIST", buf, &name)))
-    {
-      if(!NIL_P((sublet = subSubletInstantiate(name))))
-        rb_iv_set(sublet, "@id", INT2FIX(id));
-
-      free(name);
-    }
-
-  return sublet;
+  return subSubtlextFindObjects("SUBTLE_SUBLET_LIST", "Sublet", buf, flags);
 } /* }}} */
 
 /* subSubletSingAll {{{ */
@@ -179,8 +169,8 @@ subSubletUpdate(VALUE self)
   GET_ATTR(self, "@name", name);
 
   /* Check results */
-  if(-1 != ((id = subSubtlextFind("SUBTLE_SUBLET_LIST",
-      RSTRING_PTR(name), NULL))))
+  if(-1 != ((id = subSubtlextFindString("SUBTLE_SUBLET_LIST",
+      RSTRING_PTR(name), NULL, SUB_MATCH_EXACT))))
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
@@ -358,7 +348,7 @@ subSubletGeometryReader(VALUE self)
   GET_ATTR(self, "@id", id);
 
   /* Fetch data */
-  if((wins = subSubtlextList("SUBTLE_SUBLET_WINDOWS", &nwins)))
+  if((wins = subSubtlextWindowList("SUBTLE_SUBLET_WINDOWS", &nwins)))
     {
       win  = wins[id];
 

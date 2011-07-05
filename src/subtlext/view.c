@@ -11,51 +11,6 @@
 
 #include "subtlext.h"
 
-/* ViewFind {{{ */
-int
-ViewFind(char *match,
-  char **name)
-{
-  int ret = -1, i, nnames = 0;
-  long digit = -1;
-  char **names = NULL;
-  regex_t *preg = NULL;
-
-  assert(match);
-
-  /* Fetch data */
-  names = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
-    XInternAtom(display, "_NET_DESKTOP_NAMES", False), &nnames);
-  preg  = subSharedRegexNew(match);
-
-  /* Check results */
-  if(names && preg)
-    {
-      if(isdigit(match[0])) digit = strtol(match, NULL, 0);
-
-      for(i = 0; i < nnames; i++)
-        {
-          /* Find view either by name or by window id */
-          if(digit == (long)i || subSharedRegexMatch(preg, names[i]))
-            {
-              subSharedLogDebugSubtlext("Found: type=view, match=%s, name=%s, id=%d\n",
-                match, names[i], i);
-
-              if(name) *name = strdup(names[i]);
-
-              ret = i;
-              break;
-            }
-        }
-    }
-  else subSharedLogDebugSubtlext("Failed finding view `%s'\n", match);
-
-  if(preg)  subSharedRegexKill(preg);
-  if(names) XFreeStringList(names);
-
-  return ret;
-} /* }}} */
-
 /* ViewSelect {{{ */
 static VALUE
 ViewSelect(VALUE self,
@@ -124,15 +79,15 @@ VALUE
 subViewSingFind(VALUE self,
   VALUE value)
 {
-  int id = 0;
-  VALUE parsed = Qnil, view = Qnil;
-  char *name = NULL, buf[50] = { 0 };
+  int flags = 0;
+  VALUE parsed = Qnil;
+  char buf[50] = { 0 };
 
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Check object type */
   switch(rb_type(parsed = subSubtlextParse(
-      value, buf, sizeof(buf), NULL)))
+      value, buf, sizeof(buf), &flags)))
     {
       case T_SYMBOL:
         if(CHAR2SYM("visible") == parsed)
@@ -141,23 +96,13 @@ subViewSingFind(VALUE self,
           return subViewSingAll(Qnil);
         else if(CHAR2SYM("current") == parsed)
           return subViewSingCurrent(Qnil);
-        else snprintf(buf, sizeof(buf), "%s", SYM2CHAR(value));
         break;
       case T_OBJECT:
         if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("View"))))
           return parsed;
     }
 
-  /* Find view */
-  if(-1 != (id = ViewFind(buf, &name)))
-    {
-      if(!NIL_P((view = subViewInstantiate(name))))
-        rb_iv_set(view, "@id",  INT2FIX(id));
-
-      free(name);
-    }
-
-  return view;
+  return subSubtlextFindObjects("_NET_DESKTOP_NAMES", "View", buf, flags);
 } /* }}} */
 
 /* subViewSingCurrent {{{ */
@@ -368,7 +313,8 @@ subViewUpdate(VALUE self)
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Create view if needed */
-  if(-1 == (id = ViewFind(RSTRING_PTR(name), NULL)))
+  if(-1 == (id = subSubtlextFindString("_NET_DESKTOP_NAMES",
+      RSTRING_PTR(name), NULL, SUB_MATCH_EXACT)))
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
@@ -376,7 +322,8 @@ subViewUpdate(VALUE self)
       subSharedMessage(display, DefaultRootWindow(display),
         "SUBTLE_VIEW_NEW", data, 8, True);
 
-      id = ViewFind(RSTRING_PTR(name), NULL);
+      id = subSubtlextFindString("_NET_DESKTOP_NAMES",
+        RSTRING_PTR(name), NULL, SUB_MATCH_EXACT);
     }
 
   /* Guess view id */
@@ -385,6 +332,7 @@ subViewUpdate(VALUE self)
       int nnames = 0;
       char **names = NULL;
 
+      /* Get names of views */
       names = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
         XInternAtom(display, "_NET_DESKTOP_NAMES", False), &nnames);
 
@@ -429,7 +377,7 @@ subViewClients(VALUE self)
   klass     = rb_const_get(mod, rb_intern("Client"));
   meth      = rb_intern("new");
   array     = rb_ary_new();
-  clients   = subSubtlextList("_NET_CLIENT_LIST", &nclients);
+  clients   = subSubtlextWindowList("_NET_CLIENT_LIST", &nclients);
   view_tags = (unsigned long *)subSharedPropertyGet(display,
     DefaultRootWindow(display), XA_CARDINAL,
     XInternAtom(display, "SUBTLE_VIEW_TAGS", False), NULL);
@@ -453,9 +401,12 @@ subViewClients(VALUE self)
           if((client_tags && view_tags[FIX2INT(id)] & *client_tags) ||
               (flags && *flags & SUB_EWMH_STICK))
             {
-              if(!NIL_P(client = rb_funcall(klass, meth, 1, INT2FIX(i))))
+              if(RTEST(client = rb_funcall(klass, meth, 1, INT2FIX(i))))
                 {
+                  rb_iv_set(client, "@win", LONG2NUM(clients[i]));
+
                   subClientUpdate(client);
+
                   rb_ary_push(array, client);
                 }
             }

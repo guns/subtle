@@ -38,38 +38,28 @@ VALUE
 subTagSingFind(VALUE self,
   VALUE value)
 {
-  int id = 0;
-  VALUE parsed = Qnil, tag = Qnil;
-  char *name = NULL, buf[50] = { 0 };
+  int flags = 0;
+  VALUE parsed = Qnil;
+  char buf[50] = { 0 };
 
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Check object type */
   switch(rb_type(parsed = subSubtlextParse(
-      value, buf, sizeof(buf), NULL)))
+      value, buf, sizeof(buf), &flags)))
     {
       case T_SYMBOL:
         if(CHAR2SYM("visible") == parsed)
           return subTagSingVisible(Qnil);
         else if(CHAR2SYM("all") == parsed)
           return subTagSingAll(Qnil);
-        else snprintf(buf, sizeof(buf), "%s", SYM2CHAR(value));
         break;
       case T_OBJECT:
         if(rb_obj_is_instance_of(value, rb_const_get(mod, rb_intern("Tag"))))
           return parsed;
     }
 
-  /* Find tag */
-  if(-1 != (id = subSubtlextFind("SUBTLE_TAG_LIST", buf, &name)))
-    {
-      if(!NIL_P((tag = subTagInstantiate(name))))
-        rb_iv_set(tag, "@id", INT2FIX(id));
-
-      free(name);
-    }
-
-  return tag;
+  return subSubtlextFindObjects("SUBTLE_TAG_LIST", "Tag", buf, flags);
 } /* }}} */
 
 /* subTagSingVisible {{{ */
@@ -237,8 +227,8 @@ subTagUpdate(VALUE self)
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Create tag if needed */
-  if(-1 == (id = subSubtlextFind("SUBTLE_TAG_LIST",
-      RSTRING_PTR(name), NULL)))
+  if(-1 == (id = subSubtlextFindString("SUBTLE_TAG_LIST",
+      RSTRING_PTR(name), NULL, SUB_MATCH_EXACT)))
     {
       SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
@@ -246,7 +236,8 @@ subTagUpdate(VALUE self)
       subSharedMessage(display, DefaultRootWindow(display),
         "SUBTLE_TAG_NEW", data, 8, True);
 
-      id = subSubtlextFind("SUBTLE_TAG_LIST", RSTRING_PTR(name), NULL);
+      id = subSubtlextFindString("SUBTLE_TAG_LIST",
+        RSTRING_PTR(name), NULL, SUB_MATCH_EXACT);
     }
 
   /* Guess tag id */
@@ -255,6 +246,7 @@ subTagUpdate(VALUE self)
       int ntags = 0;
       char **tags = NULL;
 
+      /* Get names of tags */
       tags = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
         XInternAtom(display, "SUBTLE_TAG_LIST", False), &ntags);
 
@@ -297,7 +289,7 @@ subTagClients(VALUE self)
   klass   = rb_const_get(mod, rb_intern("Client"));
   meth    = rb_intern("new");
   array   = rb_ary_new();
-  clients = subSubtlextList("_NET_CLIENT_LIST", &nclients);
+  clients = subSubtlextWindowList("_NET_CLIENT_LIST", &nclients);
 
   /* Check results */
   if(clients)
@@ -317,6 +309,7 @@ subTagClients(VALUE self)
                       rb_iv_set(c, "@win", LONG2NUM(clients[i]));
 
                       subClientUpdate(c);
+
                       rb_ary_push(array, c);
                     }
                 }
