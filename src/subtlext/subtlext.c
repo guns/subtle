@@ -92,6 +92,35 @@ SubtlextPidReader(VALUE self)
   return pid;
 } /* }}} */
 
+/* SubtlextFlags {{{ */
+static int
+SubtlextFlags(VALUE key,
+  VALUE value,
+  VALUE data)
+{
+  VALUE *rargs = (VALUE *)data;
+
+  /* Set flags */
+  if(CHAR2SYM("name")          == key) rargs[0] = SUB_MATCH_NAME;
+  else if(CHAR2SYM("instance") == key) rargs[0] = SUB_MATCH_INSTANCE;
+  else if(CHAR2SYM("class")    == key) rargs[0] = SUB_MATCH_CLASS;
+  else if(CHAR2SYM("gravity")  == key) rargs[0] = SUB_MATCH_GRAVITY;
+  else if(CHAR2SYM("role")     == key) rargs[0] = SUB_MATCH_ROLE;
+  else if(CHAR2SYM("pid")      == key) rargs[0] = SUB_MATCH_PID;
+
+  /* Set value */
+  if(0 != rargs[0] && RTEST(value))
+    {
+      rargs[1] = value;
+
+      return ST_STOP;
+    }
+
+  return ST_CONTINUE;
+} /* }}} */
+
+/* Tags */
+
 /* SubtlextTagFind {{{ */
 static int
 SubtlextTagFind(VALUE value)
@@ -101,13 +130,23 @@ SubtlextTagFind(VALUE value)
   /* Check object type */
   switch(rb_type(value))
     {
+      case T_SYMBOL:
       case T_STRING:
           {
-            int id;
+            int id, flags = 0;
+            char *string = NULL;
+
+            /* Handle symbols and strings */
+            if(T_SYMBOL == rb_type(value))
+              {
+                flags  |= SUB_MATCH_EXACT;
+                string  = (char *)SYM2CHAR(value);
+              }
+            else string = RSTRING_PTR(value);
 
             /* Find tag and get id */
-            if(-1 != (id = subSubtlextFind("SUBTLE_TAG_LIST",
-                RSTRING_PTR(value), NULL)))
+            if(-1 != (id = subSubtlextFindString("SUBTLE_TAG_LIST",
+                string, NULL, flags)))
               tags |= (1L << (id + 1));
           }
         break;
@@ -184,6 +223,7 @@ SubtlextTag(VALUE self,
   /* Check object type */
   switch(rb_type(value))
     {
+      case T_SYMBOL:
       case T_STRING:
       case T_OBJECT:
         tags |= SubtlextTagFind(value);
@@ -381,6 +421,8 @@ SubtlextTagReload(VALUE self)
 
   return Qnil;
 } /* }}} */
+
+/* Send button/key */
 
 /* SubtlextSendButton {{{ */
 /*
@@ -594,6 +636,8 @@ SubtlextSendKey(int argc,
   return Qnil;
 } /* }}} */
 
+/* Focus */
+
 /* SubtlextFocus {{{ */
 /*
  * call-seq: focus -> nil
@@ -657,6 +701,8 @@ SubtlextAskFocus(VALUE self)
 
   return ret;
 } /* }}} */
+
+/* Properties */
 
 /* SubtlextPropReader {{{ */
 /*
@@ -805,6 +851,8 @@ SubtlextPropWriter(VALUE self,
   return Qnil;
 } /* }}} */
 
+/* Comparisons */
+
 /* SubtlextEqual {{{ */
 VALUE
 SubtlextEqual(VALUE self,
@@ -898,36 +946,13 @@ SubtlextEqualTypedWindow(VALUE self,
   return SubtlextEqual(self, other, "@win", True);
 } /* }}} */
 
-/* SubtlextFlags {{{ */
-static int
-SubtlextFlags(VALUE key,
-  VALUE value,
-  VALUE data)
-{
-  VALUE *rargs = (VALUE *)data;
-
-  /* Set flags */
-  if(CHAR2SYM("name")          == key) rargs[0] = SUB_MATCH_NAME;
-  else if(CHAR2SYM("instance") == key) rargs[0] = SUB_MATCH_INSTANCE;
-  else if(CHAR2SYM("class")    == key) rargs[0] = SUB_MATCH_CLASS;
-  else if(CHAR2SYM("gravity")  == key) rargs[0] = SUB_MATCH_GRAVITY;
-  else if(CHAR2SYM("role")     == key) rargs[0] = SUB_MATCH_ROLE;
-  else if(CHAR2SYM("pid")      == key) rargs[0] = SUB_MATCH_PID;
-
-  /* Set value */
-  if(0 != rargs[0] && RTEST(value))
-    {
-      rargs[1] = value;
-
-      return ST_STOP;
-    }
-
-  return ST_CONTINUE;
-} /* }}} */
-
 /* Exported */
 
-/* subSubtlextConnect {{{ */
+ /** subSubtlextConnect {{{
+  * @brief Open connection to X display
+  * @param[in]  display_string  Display name
+  **/
+
 void
 subSubtlextConnect(char *display_string)
 {
@@ -947,11 +972,15 @@ subSubtlextConnect(char *display_string)
       /* Register sweeper */
       atexit(SubtlextSweep);
 
-      subSharedLogDebugSubtlext("Connection opened (%s)\n", DisplayString(display));
+      subSharedLogDebugSubtlext("Connection opened (%s)\n",
+        DisplayString(display));
     }
 } /* }}} */
 
-/* subSubtlextBacktrace {{{ */
+  /** subSubtlextBacktrace {{{
+   * @brief Print ruby backtrace
+   **/
+
 void
 subSubtlextBacktrace(void)
 {
@@ -975,14 +1004,20 @@ subSubtlextBacktrace(void)
     }
 } /* }}} */
 
-/* subSubtlextConcat {{{ */
+ /** subSubtlextConcat {{{
+  * @brief Concat string2 to string1
+  * @param[inout]  str1  First string
+  * @param[in]     str2  Second string
+  * @return Concatted string
+  **/
+
 VALUE
 subSubtlextConcat(VALUE str1,
   VALUE str2)
 {
   VALUE ret = Qnil;
 
-  /* Check value */
+  /* Check values */
   if(RTEST(str1) && RTEST(str2) && T_STRING == rb_type(str1))
     {
       VALUE string = str2;
@@ -1000,7 +1035,13 @@ subSubtlextConcat(VALUE str1,
   return ret;
 } /* }}} */
 
-/* subSubtlextParse {{{ */
+ /** subSubtlextParse {{{
+  * @brief Parse finder values
+  * @param[in]     buf    Passed buffer
+  * @param[in]     len    Buffer length
+  * @param[inout]  flags  Set flags
+  **/
+
 VALUE
 subSubtlextParse(VALUE value,
   char *buf,
@@ -1037,7 +1078,8 @@ subSubtlextParse(VALUE value,
         snprintf(buf, len, "%s", RSTRING_PTR(value));
         break; /* }}} */
       case T_SYMBOL: /* {{{ */
-        ret = value;
+        ret     = value;
+        *flags |= SUB_MATCH_EXACT;
         snprintf(buf, len, "%s", SYM2CHAR(value));
         break; /* }}} */
       case T_OBJECT: /* {{{ */
@@ -1051,19 +1093,66 @@ subSubtlextParse(VALUE value,
   return ret;
 } /* }}} */
 
-/* subSubtlextList {{{ */
+ /** subSubtlextOneOrMany {{{
+  * @brief Return one value or many in an array
+  * @param[in]  obj    Object
+  * @param[in]  array  Array or recent object
+  * @retval Object  Just one value
+  * @retval Array   Many values
+  **/
+
+VALUE
+subSubtlextOneOrMany(VALUE obj,
+  VALUE recent)
+{
+  VALUE ret = Qnil;
+
+  /* Handle different value types */
+  switch(rb_type(recent))
+    {
+      case T_NIL:
+        ret = obj;
+        break;
+      case T_ARRAY:
+        /* Just append */
+        rb_ary_push(recent, obj);
+        ret = recent;
+        break;
+      case T_DATA:
+      case T_OBJECT:
+        {
+          /* Create new array and add data */
+          VALUE ary = rb_ary_new();
+
+          rb_ary_push(ary, recent);
+          rb_ary_push(ary, obj);
+
+          ret = ary;
+        }
+    }
+
+  return ret;
+} /* }}} */
+
+ /** subSubtlextWindowList {{{
+  * @brief Get property window list
+  * @param[in]  prop_name  Property name
+  * @param[inout]  size  List length
+  * @return Property list
+  **/
 
 Window *
-subSubtlextList(char *prop,
+subSubtlextWindowList(char *prop_name,
   int *size)
 {
   Window *wins = NULL;
   unsigned long len = 0;
 
-  assert(prop && size);
+  assert(prop_name && size);
 
+  /* Get property list */
   if((wins = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display),
-      XA_WINDOW, XInternAtom(display, prop, False), &len)))
+      XA_WINDOW, XInternAtom(display, prop_name, False), &len)))
     {
       if(size) *size = len;
     }
@@ -1077,32 +1166,187 @@ subSubtlextList(char *prop,
   return wins;
 } /* }}} */
 
-/* subSubtlextFind {{{ */
+ /** subSubtlextWindowMatch {{{
+  * @brief Check if window matches flags and regexp
+  * @param[in]     win     Window id
+  * @param[in]     preg    Compiled regexp
+  * @param[in]     source  Regexp source
+  * @param[inout]  name    Real window name
+  * @param[in]     flags   Match flags
+  * @retval  True   Window matches
+  * @retval  False  Window doesn't match
+  **/
+
 int
-subSubtlextFind(char *prop,
-  char *match,
-  char **name)
+subSubtlextWindowMatch(Window win,
+  regex_t *preg,
+  const char *source,
+  char **name,
+  int flags)
+{
+  int ret = False;
+  char *wminstance = NULL, *wmclass = NULL;
+
+  /* Fetch when needed */
+  if(name || flags & (SUB_MATCH_INSTANCE|SUB_MATCH_CLASS))
+    subSharedPropertyClass(display, win, &wminstance, &wmclass);
+
+  /* Check window WM_NAME */
+  if(!ret && flags & SUB_MATCH_NAME)
+    {
+      char *wmname = NULL;
+
+      subSharedPropertyName(display, win, &wmname, "subtle");
+
+      if(wmname)
+        {
+          ret = (flags & SUB_MATCH_EXACT ? 0 == strcmp(source, wmname) :
+            subSharedRegexMatch(preg, wmname));
+
+          free(wmname);
+        }
+    }
+
+  /* Check window WM_CLASS */
+  if(!ret && flags & (SUB_MATCH_INSTANCE|SUB_MATCH_CLASS))
+    {
+      /* Check instance */
+      if(wminstance && flags & SUB_MATCH_INSTANCE)
+        {
+          ret = (flags & SUB_MATCH_EXACT ?
+            0 == strcmp(source, wminstance) :
+            subSharedRegexMatch(preg, wminstance));
+        }
+
+      /* Check class */
+      if(!ret && wmclass && flags & SUB_MATCH_CLASS)
+        {
+          ret = (flags & SUB_MATCH_EXACT ?
+            0 == strcmp(source, wmclass) :
+            subSharedRegexMatch(preg, wmclass));
+
+          free(wmclass);
+        }
+    }
+
+  /* Check window role */
+  if(!ret && flags & SUB_MATCH_ROLE)
+    {
+      char *role = NULL;
+
+      if((role = subSharedPropertyGet(display, win, XA_STRING,
+          XInternAtom(display, "WM_WINDOW_ROLE", False), NULL)))
+        {
+          ret = (flags & SUB_MATCH_EXACT ? 0 == strcmp(source, role) :
+            subSharedRegexMatch(preg, role));
+
+          free(role);
+        }
+     }
+
+  /* Check window gravity */
+  if(!ret && flags & SUB_MATCH_GRAVITY)
+    {
+      int *gravity = NULL, ngravities = 0;
+      char **gravities = NULL;
+
+      /* Fetch gravities */
+      gravities = subSharedPropertyGetStrings(display,
+        DefaultRootWindow(display), XInternAtom(display,
+        "SUBTLE_GRAVITY_LIST", False), &ngravities);
+      gravity = (int *)subSharedPropertyGet(display, win,
+        XA_CARDINAL, XInternAtom(display, "SUBTLE_CLIENT_GRAVITY", False), NULL);
+
+      /* Finally compare gravities */
+      if(gravities && gravity && 0 <= *gravity && *gravity < ngravities)
+        {
+          ret = (flags & SUB_MATCH_EXACT ?
+            0 == strcmp(source, gravities[*gravity]) :
+            subSharedRegexMatch(preg, gravities[*gravity]));
+        }
+
+      if(gravities) XFreeStringList(gravities);
+      if(gravity)   free(gravity);
+    }
+
+  /* Check window pid */
+  if(!ret && flags & SUB_MATCH_PID)
+    {
+      int *pid = NULL;
+
+      /* Fetch pid from window */
+      if((pid = (int *)subSharedPropertyGet(display, win, XA_CARDINAL,
+          XInternAtom(display, "_NET_WM_PID", False), NULL)))
+        {
+          char pidbuf[10] = { 0 };
+
+          /* Convert pid to string */
+          snprintf(pidbuf, sizeof(pidbuf), "%d", (int)pid);
+
+          ret = (flags & SUB_MATCH_EXACT ? 0 == strcmp(source, pidbuf) :
+            subSharedRegexMatch(preg, pidbuf));
+
+          free(pid);
+        }
+    }
+
+  /* Copy instance name */
+  if(ret && name)
+    {
+      *name = (char *)subSharedMemoryAlloc(
+        strlen(wminstance) + 1, sizeof(char));
+      strncpy(*name, wminstance, strlen(wminstance));
+    }
+
+  if(wminstance) free(wminstance);
+
+  return ret;
+} /* }}} */
+
+ /** subSubtlextFindString {{{
+  * @brief Find string in property list
+  * @param[in]     prop_name  Property name
+  * @param[in]     source     Regexp source
+  * @param[inout]  name       Found name
+  * @param[in]     flags      Match flags
+  * @retval  -1   String not found
+  * @retval  >=0  Found id
+  **/
+
+int
+subSubtlextFindString(char *prop_name,
+  char *source,
+  char **name,
+  int flags)
 {
   int ret = -1, size = 0;
   char **strings = NULL;
   regex_t *preg = NULL;
 
-  assert(prop && match);
+  assert(prop_name && source);
 
-  /* Find id */
-  if((preg = subSharedRegexNew(match)) &&
-      (strings = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
-      XInternAtom(display, prop, False), &size)))
+  /* Fetch data */
+  preg    = subSharedRegexNew(source);
+  strings = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
+    XInternAtom(display, prop_name, False), &size);
+
+  /* Check results */
+  if(preg && strings)
     {
-      int i;
+      int selid = -1, i;
+
+      /* Special values */
+      if(isdigit(source[0])) selid = atoi(source);
 
       for(i = 0; i < size; i++)
         {
-          if((isdigit(match[0]) && atoi(match) == i) ||
-              (!isdigit(match[0]) && subSharedRegexMatch(preg, strings[i])))
+          if(selid == i || (-1 == selid &&
+              ((flags & SUB_MATCH_EXACT && 0 == strcmp(source, strings[i])) ||
+              (preg && !(flags & SUB_MATCH_EXACT) &&
+                subSharedRegexMatch(preg, strings[i])))))
             {
-              subSharedLogDebugSubtlext("Found: prop=%s, match=%s, name=%s, id=%d\n",
-                prop, match, strings[i], i);
+              subSharedLogDebugSubtlext("Found: prop=%s, source=%s, name=%s, id=%d\n",
+                prop_name, source, strings[i], i);
 
               if(name) *name = strdup(strings[i]);
 
@@ -1111,7 +1355,7 @@ subSubtlextFind(char *prop,
             }
         }
     }
-  else subSharedLogDebugSubtlext("Failed finding string `%s'\n", match);
+  else subSharedLogDebugSubtlext("Failed finding string `%s'\n", source);
 
   if(preg)    subSharedRegexKill(preg);
   if(strings) XFreeStringList(strings);
@@ -1119,145 +1363,70 @@ subSubtlextFind(char *prop,
   return ret;
 } /* }}} */
 
-/* subSubtlextFindWindow {{{ */
-int
-subSubtlextFindWindow(char *prop,
-  char *match,
-  char **name,
-  Window *win,
+ /** subSubtlextFindObjects {{{
+  * @brief Find match in propery list and create objects
+  * @param[in]  prop_name   Property name
+  * @param[in]  class_name  Class name
+  * @param[in]  source      Regexp source
+  * @param[in]  flags       Match flags
+  * @retval  Qnil    No match
+  * @retval  Object  One match
+  * @retval  Array   Multiple matches
+  **/
+
+VALUE
+subSubtlextFindObjects(char *prop_name,
+  char *class_name,
+  char *source,
   int flags)
 {
-  int id = -1, size = 0;
-  Window *wins = NULL;
+  int i, nstrings = 0;
+  char **strings = NULL;
+  VALUE ret = Qnil;
 
-  assert(prop && match);
+  assert(prop_name && class_name && source);
 
-  /* Find window id */
-  if((wins = subSubtlextList(prop, &size)))
+  /* Check results */
+  if((strings = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
+      XInternAtom(display, prop_name, False), &nstrings)))
     {
-      int i, gravity1 = 0, gravity2 = -1, ngravities = 0;
-      int pid1 = 0, pid2 = -1; ///<  Init differently
-      long digit = -1;
-      char *wmname = NULL, *instance = NULL, *klass = NULL;
-      char *role = NULL, **gravities = NULL;
-      Window selwin = None;
-      regex_t *preg = subSharedRegexNew(match);
+      int selid = -1;
+      VALUE meth = Qnil, klass = Qnil, obj = Qnil;
+      regex_t *preg = subSharedRegexNew(source);
 
-      if(isdigit(match[0])) digit = strtol(match, NULL, 0);
+      /* Special values */
+      if(isdigit(source[0])) selid = atoi(source);
 
-      /* Select window */
-      if(0 == strcmp(match, "#") && win)
-        selwin = subSubtleSingSelect(Qnil);
+      /* Fetch data */
+      meth  = rb_intern("new");
+      klass = rb_const_get(mod, rb_intern(class_name));
 
-      /* Find id of gravity */
-      if(flags & SUB_MATCH_GRAVITY)
+      /* Check each string */
+      for(i = 0; i < nstrings; i++)
         {
-          gravities = subSharedPropertyGetStrings(display,
-            DefaultRootWindow(display),
-            XInternAtom(display, "SUBTLE_GRAVITY_LIST", False), &ngravities);
-
-          gravity1 = subGravityFindId(match, NULL, NULL);
-        }
-
-      /* Get pid */
-      if(flags & SUB_MATCH_PID)
-        pid1 = atoi(match);
-
-      for(i = 0; -1 == id && i < size; i++)
-        {
-          XFetchName(display, wins[i], &wmname);
-          subSharedPropertyClass(display, wins[i], &instance, &klass);
-
-          /* Get window gravity */
-          if(flags & SUB_MATCH_GRAVITY)
+          /* Check if string matches */
+          if(selid == i || (-1 == selid &&
+              ((flags & SUB_MATCH_EXACT && 0 == strcmp(source, strings[i])) ||
+              (preg && !(flags & SUB_MATCH_EXACT) &&
+                subSharedRegexMatch(preg, strings[i])))))
             {
-              int *gravity = NULL;
-
-              if((gravity = (int *)subSharedPropertyGet(display, wins[i],
-                  XA_CARDINAL, XInternAtom(display, "SUBTLE_CLIENT_GRAVITY",
-                  False), NULL)))
+              /* Create new object */
+              if(RTEST((obj = rb_funcall(klass, meth, 1,
+                  rb_str_new2(strings[i])))))
                 {
-                  gravity2 = *gravity;
+                  rb_iv_set(obj, "@id", INT2FIX(i));
 
-                  subSharedLogDebugSubtlext("Gravity: match=%s, gravity1=%d, gravity2=%d\n",
-                    match, gravity1, gravity2);
-
-                  free(gravity);
+                  ret = subSubtlextOneOrMany(obj, ret);
                 }
             }
-
-          /* Get window role */
-          if(flags & SUB_MATCH_ROLE)
-            role = subSharedPropertyGet(display, wins[i], XA_STRING,
-              XInternAtom(display, "WM_WINDOW_ROLE", False), NULL);
-
-          /* Get window pid */
-          if(flags & SUB_MATCH_PID)
-            {
-              int *pid = NULL;
-
-              if((pid = (int *)subSharedPropertyGet(display, wins[i], XA_CARDINAL,
-                  XInternAtom(display, "_NET_WM_PID", False), NULL)))
-                {
-                  pid2 = *pid;
-
-                  free(pid);
-                }
-            }
-
-          /* Find window either by window id, title, inst, class, gravity or pid */
-          if(selwin == wins[i] || digit == wins[i] || digit == (long)i ||
-              /* Compare WM_NAME */
-              (flags & SUB_MATCH_NAME && wmname
-                && subSharedRegexMatch(preg, wmname)) ||
-
-              /* Compare instance part of WM_CLASS */
-              (flags & SUB_MATCH_INSTANCE && instance
-                && subSharedRegexMatch(preg, instance)) ||
-
-              /* Compare class part of WM_CLASS */
-              (flags & SUB_MATCH_CLASS && klass
-                && subSharedRegexMatch(preg, klass)) ||
-
-              /* Compare instance part of WM_CLASS */
-              (flags & SUB_MATCH_ROLE && role
-                && subSharedRegexMatch(preg, role)) ||
-
-              /* Compare gravities */
-              (flags & SUB_MATCH_GRAVITY && (gravity1 == gravity2 ||
-                (0 <= gravity1 && gravity1 < ngravities &&
-                0 <= gravity2 && gravity2 < ngravities &&
-                !strcmp(gravities[gravity1], gravities[gravity2])))) ||
-
-              /* Compare pids */
-              (flags & SUB_MATCH_PID && pid1 == pid2))
-            {
-              subSharedLogDebugSubtlext("Found: prop=%s, name=%s, win=%#lx, id=%d, flags=%d\n",
-                prop, match, wins[i], i, flags);
-
-              if(win) *win = wins[i];
-              if(name)
-                {
-                  *name = (char *)subSharedMemoryAlloc(strlen(instance) + 1, sizeof(char));
-                  strncpy(*name, instance, strlen(instance));
-                 }
-
-              id = i;
-            }
-
-          if(role) free(role);
-          free(wmname);
-          free(instance);
-          free(klass);
         }
 
-      if(gravities) XFreeStringList(gravities);
-      subSharedRegexKill(preg);
-      free(wins);
+      if(preg) subSharedRegexKill(preg);
+      XFreeStringList(strings);
     }
-  else subSharedLogDebugSubtlext("Failed finding window `%s'\n", match);
+  else rb_raise(rb_eStandardError, "Failed getting property list");
 
-  return id;
+  return ret;
 } /* }}} */
 
 /* Plugin */
