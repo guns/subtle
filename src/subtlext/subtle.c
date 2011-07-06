@@ -31,7 +31,7 @@ SubtleSend(char *message)
 /*
  * call-seq: display -> String
  *
- * Get the display name
+ * Get the display name.
  *
  *  subtle.display
  *  => ":0"
@@ -49,7 +49,7 @@ subSubtleSingDisplayReader(VALUE self)
 /*
  * call-seq: display=(string) -> nil
  *
- * Set the display name
+ * Set the display name.
  *
  *  subtle.display = ":0"
  *  => nil
@@ -70,7 +70,7 @@ subSubtleSingDisplayWriter(VALUE self,
 /*
  * call-seq: running? -> true or false
  *
- * Check if subtle is running
+ * Whether a subtle instance on current display is running.
  *
  *  subtle.running?
  *  => true
@@ -114,12 +114,12 @@ subSubtleSingAskRunning(VALUE self)
 
 /* subSubtleSingSelect {{{ */
 /*
- * call-seq: select_window -> String
+ * call-seq: select_window -> Fixnum
  *
- * Select window and get name
+ * Select a window and get the window id of it.
  *
  *  select_window
- *  => "urxvt"
+ *  => 8388617
  */
 
 VALUE
@@ -205,7 +205,7 @@ subSubtleSingSelect(VALUE self)
 /*
  * call-seq: render -> nil
  *
- * Force Subtle to render screen panels
+ * Force Subtle to render screen panels.
  *
  *  subtle.reload
  *  => nil
@@ -221,7 +221,7 @@ subSubtleSingRender(VALUE self)
 /*
  * call-seq: reload -> nil
  *
- * Force Subtle to reload config and sublets
+ * Force Subtle to reload config and sublets.
  *
  *  subtle.reload
  *  => nil
@@ -237,7 +237,7 @@ subSubtleSingReload(VALUE self)
 /*
  * call-seq: restart -> nil
  *
- * Force Subtle to restart
+ * Force Subtle to restart.
  *
  *  subtle.restart
  *  => nil
@@ -253,7 +253,7 @@ subSubtleSingRestart(VALUE self)
 /*
  * call-seq: quit -> nil
  *
- * Force Subtle to exit
+ * Force Subtle to exit.
  *
  *  subtle.reload
  *  => nil
@@ -269,7 +269,7 @@ subSubtleSingQuit(VALUE self)
 /*
  * call-seq: colors -> Hash
  *
- * Get array of all Colors
+ * Get an array of all Colors.
  *
  *  Subtlext::Subtle.colors
  *  => { :fg_panel => #<Subtlext::Color:xxx> }
@@ -329,7 +329,7 @@ subSubtleSingColors(VALUE self)
 /*
  * call-seq: Font -> String or nil
  *
- * Get font used in subtle
+ * Get the font used in subtle.
  *
  *  Subtlext::Subtle.font
  *  => "-*-*-medium-*-*-*-14-*-*-*-*-*-*-*"
@@ -361,7 +361,7 @@ subSubtleSingFont(VALUE self)
 /*
  * call-seq: spawn(cmd) -> Subtlext::Client
  *
- * Spawn a command and returns a client
+ * Spawn a command and returns a Client object.
  *
  *  spawn("xterm")
  *  => #<Subtlext::Client:xxx>

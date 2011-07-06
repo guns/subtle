@@ -89,7 +89,7 @@ IconEqual(VALUE self,
  * call-seq: new(path)          -> Subtlext::Icon
  *           new(width, height) -> Subtlext::Icon
  *
- * Allocate new Icon object
+ * Allocate space for a new Icon object.
  */
 
 VALUE
@@ -109,7 +109,7 @@ subIconAlloc(VALUE self)
  * call-seq: initialize(path)                  -> Subtlext::Icon
  *           initialize(width, height, bitmap) -> Subtlext::Icon
  *
- * Initialize Icon object
+ * Initialize Icon object.
  *
  *  icon = Subtlext::Icon.new("/path/to/icon")
  *  => #<Subtlext::Icon:xxx>
@@ -261,7 +261,7 @@ subIconInit(int argc,
 /*
  * call-seq: draw_point(x, y, fg, bg) -> nil
  *
- * Draw a pixel on the icon
+ * Draw a pixel on the icon at given coordinates in given colors.
  *
  *  icon.draw_point(1, 1)
  *  => nil
@@ -322,7 +322,7 @@ subIconDrawPoint(int argc,
 /*
  * call-seq: draw_line(x1, y1, x2, y2, fg, bg) -> nil
  *
- * Draw a line on the icon
+ * Draw a line on the Icon starting at x1/y1 to x2/y2 in given colors.
  *
  *  icon.draw_line(1, 1, 10, 1)
  *  => nil
@@ -385,7 +385,8 @@ subIconDrawLine(int argc,
 /*
  * call-seq: draw_rect(x, y, width, height, fill, fg, bg) -> nil
  *
- * Draw a rect on the icon
+ * Draw a rect on the Icon starting at x/y with given width, height
+ * and colors.
  *
  *  icon.draw_rect(1, 1, 10, 10, false)
  *  => nil
@@ -454,7 +455,7 @@ subIconDrawRect(int argc,
 /*
  * call-seq: copy_area(icon2, src_x, src_y, width, height, dest_x, dest_y) -> nil
  *
- * Copy area of one icon to another
+ * Copy area of given width/height from one Icon to another.
  *
  *  icon.copy_area(icon, 0, 0, 10, 10, 0, 0)
  *  => nil
@@ -538,7 +539,7 @@ subIconCopyArea(int argc,
  * call-seq: clear         -> nil
  *           clear(fg, bg) -> nil
  *
- * Clear the icon
+ * Clear the icon and optionally set a fore-/background color.
  *
  *  icon.clear
  *  => nil
@@ -592,7 +593,7 @@ subIconClear(int argc,
 /*
  * call-seq: bitmap? -> true or false
  *
- * Whether icon is a bitmap
+ * Whether icon is a bitmap.
  *
  *  icon.bitmap?
  *  => true
@@ -617,7 +618,7 @@ subIconAskBitmap(VALUE self)
 /*
  * call-seq: to_str -> String
  *
- * Convert Icon object to String
+ * Convert this Icon object to string.
  *
  *  puts icon
  *  => "<>!4<>"
@@ -646,7 +647,7 @@ subIconToString(VALUE self)
 /*
 * call-seq: +(string) -> String
 *
-* Convert self to String and add String
+* Convert this Icon to string and concat given string.
 *
 *  icon + "subtle"
 *  => "<>!4<>subtle"
@@ -663,7 +664,7 @@ subIconOperatorPlus(VALUE self,
 /*
 * call-seq: *(value) -> String
 *
-* Convert self to String and multiply String
+* Convert this Icon to string and concat it multiple times.
 *
 *  icon * 2
 *  => "<>!4<><>!4<>"
@@ -691,7 +692,7 @@ subIconOperatorMult(VALUE self,
 /*
  * call-seq: ==(other) -> True or False
  *
- * Whether both objects have the same values (based on geometry)
+ * Whether both objects have the same values (based on geometry).
  *
  *  object1 == object2
  *  => true
@@ -708,7 +709,7 @@ subIconEqual(VALUE self,
 /*
  * call-seq: eql?(other) -> True or False
  *
- * Whether both objects have the same values and types (based on geometry)
+ * Whether both objects have the same values and types (based on geometry).
  *
  *  object1.eql? object2
  *  => true

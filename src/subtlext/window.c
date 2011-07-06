@@ -182,7 +182,7 @@ subWindowInstantiate(VALUE geometry)
 /*
  * call-seq: new(geometry) -> Subtlext::Window
  *
- * Allocate new Window object
+ * Allocate space for new Window object.
  **/
 
 VALUE
@@ -202,7 +202,7 @@ subWindowAlloc(VALUE self)
  *
  * call-seq: new(geometry, &block) -> Subtlext::Window
  *
- * Initialize Window object
+ * Initialize Window object.
  *
  *  win = Subtlext::Window.new(:x => 5, :y => 5) do |w|
  *    s.background = "#ffffff"
@@ -291,7 +291,7 @@ subWindowInit(VALUE self,
  *
  * call-seq: subwindow(geometry, &block) -> Subtlext::Window or nil
  *
- * Create a subwindow
+ * Create a subwindow of Window with given Geometry.
  *
  *  win.subwindow(:x => 5, :y => 5) do |w|
  *    s.background = "#ffffff"
@@ -332,7 +332,7 @@ subWindowSubwindow(VALUE self,
 /*
  * call-seq: name=(str) -> nil
  *
- * Set name of a window
+ * Set the WM_NAME of a Window-
  *
  *  win.name = "sublet"
  *  => nil
@@ -380,9 +380,9 @@ subWindowNameWriter(VALUE self,
 
 /* subWindowFontWriter {{{ */
 /*
- * call-seq: font=(str) -> nil
+ * call-seq: font=(string) -> nil
  *
- * Set font of a window
+ * Set the font that is used for text inside of a W.indow
  *
  *  win.font = "-*-fixed-*-*-*-*-10-*-*-*-*-*-*-*"
  *  => nil
@@ -427,7 +427,7 @@ subWindowFontWriter(VALUE self,
 /*
  * call-seq: font_y -> Fixnum
  *
- * Get y offset of selected font
+ * Get y offset of the selected Window font.
  *
  *  win.font_y
  *  => 10
@@ -452,7 +452,7 @@ subWindowFontYReader(VALUE self)
 /*
  * call-seq: font_height -> Fixnum
  *
- * Get height of selected font
+ * Get the height of selected Window font.
  *
  *  win.font_height
  *  => 10
@@ -475,9 +475,20 @@ subWindowFontHeightReader(VALUE self)
 
 /* subWindowForegroundWriter {{{ */
 /*
- * call-seq: foreground=(color) -> nil
+ * call-seq: foreground=(string) -> nil
+ *           foreground=(array)  -> nil
+ *           foreground=(hash)   -> nil
+ *           foreground=(fixnum) -> nil
+ *           foreground=(color)  -> nil
  *
- * Set foreground color of a window
+ * Set the foreground color of this Window which can be of
+ * following types:
+ *
+ * [String] Any color representation of Xlib is allowed
+ * [Array]  Must be an array with values for red, green and blue
+ * [Hash]   Must be a hash with values for red, green and blue
+ * [Fixnum] Pixel representation of a color in Xlib
+ * [Color]  Copy color from a Color object
  *
  *  win.foreground = "#000000"
  *  => nil
@@ -500,10 +511,21 @@ subWindowForegroundWriter(VALUE self,
 
 /* subWindowBackgroundWriter {{{ */
 /*
- * call-seq: background=(color) -> nil
+ * call-seq: background=(string) -> nil
+ *           background=(array)  -> nil
+ *           background=(hash)   -> nil
+ *           background=(fixnum) -> nil
+ *           background=(color)  -> nil
  *
- * Set background color of a window
+ * Set the background color of this Window which can be of
+ * following types:
  *
+ * [String] Any color representation of Xlib is allowed
+ * [Array]  Must be an array with values for red, green and blue
+ * [Hash]   Must be a hash with values for red, green and blue
+ * [Fixnum] Pixel representation of a color in Xlib
+ * [Color]  Copy color from a Color object
+
  *  win.background = "#000000"
  *  => nil
  */
@@ -530,9 +552,20 @@ subWindowBackgroundWriter(VALUE self,
 
 /* subWindowBorderColorWriter {{{ */
 /*
- * call-seq: border_color=(color) -> nil
+ * call-seq: border=(string) -> nil
+ *           border=(array)  -> nil
+ *           border=(hash)   -> nil
+ *           border=(fixnum) -> nil
+ *           border=(color)  -> nil
  *
- * Set border color of a window
+ * Set the border color of this Window which can be of
+ * following types:
+ *
+ * [String] Any color representation of Xlib is allowed
+ * [Array]  Must be an array with values for red, green and blue
+ * [Hash]   Must be a hash with values for red, green and blue
+ * [Fixnum] Pixel representation of a color in Xlib
+ * [Color]  Copy color from a Color object
  *
  *  win.border_color = "#000000"
  *  => nil
@@ -560,9 +593,9 @@ subWindowBorderColorWriter(VALUE self,
 
 /* subWindowBorderSizeWriter {{{ */
 /*
- * call-seq: border_size=(width) -> nil
+ * call-seq: border_size=(fixnum) -> nil
  *
- * Set border size of a window
+ * Set border size of this Window.
  *
  *  win.border_size = 3
  *  => nil
@@ -601,7 +634,7 @@ subWindowBorderSizeWriter(VALUE self,
 /*
  * call-seq: geometry -> Subtlext::Geometry
  *
- * Get geometry of a window
+ * Get the Geometry of this Window.
  *
  *  win.geometry
  *  => #<Subtlext::Geometry:xxx>
@@ -621,9 +654,17 @@ subWindowGeometryReader(VALUE self)
 
 /* subWindowGeometryWriter {{{ */
 /*
- * call-seq: geometry=(value) -> nil
+ * call-seq: geometry=(value)    -> nil
+ *           geometry=(array)    -> nil
+ *           geometry=(hash)     -> nil
+ *           geometry=(geometry) -> nil
  *
- * Get geometry of a window
+ * Set the geometry of this Window which can be of following
+ * types:
+ *
+ * [Array]    Must be an array with values for x, y, width and height
+ * [Hash]     Must be a hash with values for x, y, width and height
+ * [Geometry] Copy geometry from a Geometry object
  *
  *  win.geometry = { :x => 0, :y => 0, :width => 50, :height => 50 }
  *  => nil
@@ -658,9 +699,11 @@ subWindowGeometryWriter(VALUE self,
 
 /* subWindowWrite {{{ */
 /*
- * call-seq: write(x, y, text) -> nil
+ * call-seq: write(x, y, string) -> nil
  *
- * Writes a string onto the window
+ * Write a string onto this Window at given x/y coordinates, that
+ * <b>won't</b> be visible unless the Window content is updated
+ * with #redraw.
  *
  *  win.write(10, 10, "subtle")
  *  => 15
@@ -726,7 +769,7 @@ subWindowWrite(VALUE self,
 /*
  * call-seq: read(x, y, width) -> String
  *
- * Read input
+ * Read input from given x/y coordinates and width.
  *
  *  string = read(10, 10, 10)
  *  => "subtle"
@@ -938,7 +981,7 @@ subWindowRead(int argc,
 /*
  * call-seq: grab_keys(&block) -> nil
  *
- * Grab key events
+ * Grab key events and pass them to the block.
  *
  *  grab_keys do |key|
  *    case key
@@ -1047,7 +1090,7 @@ subWindowGrabKeys(VALUE self)
 /*
  * call-seq: grab_mouse(&block) -> nil
  *
- * Grab mouse events
+ * Grab mouse events and pass them to the block.
  *
  *  grab_mouse do |x, y, button|
  *    p "x=#{x}, y=#{y}, button=#{button}"
@@ -1066,71 +1109,7 @@ subWindowGrabMouse(VALUE self)
   Data_Get_Struct(self, SubtlextWindow, w);
   if(w && rb_block_given_p())
     {
-
-#if 0
-      XEvent ev;
-      int loop = True, state = 0;
-      char buf[32] = { 0 };
-      unsigned long *focus = NULL;
-      VALUE p = rb_block_proc(), result = Qnil, rargs[6] = { Qnil }, sym = Qnil;
-      KeySym keysym;
-
-      /* Grab and set focus */
-      XGrabPointer(display, w->win, True,
-        GrabModeAsync, GrabModeAsync, CurrentTime);
-      XMapRaised(display, w->win);
-      XSetInputFocus(display, w->win, RevertToPointerRoot, CurrentTime);
-      XSelectInput(display, w->win, KeyPressMask);
-      XFlush(display);
-
-      while(loop)
-        {
-          XMaskEvent(display, PointerMotionMask|ButtonPressMask, &ev);
-          switch(ev.type)
-            {
-              case ButtonPress: /* {{{ */
-                /* Wrap up data */
-                rargs[0] = p;
-                rargs[1] = rb_intern("call");
-                rargs[2] = 3;
-                rargs[3] = sym;
-
-                /* Carefully call listen proc */
-                result = rb_protect(WindowCall, (VALUE)&rargs, &state);
-                if(state) subSubtlextBacktrace();
-                break;
-              case MotionNotify:
-
-                /* Wrap up data */
-                rargs[0] = p;
-                rargs[1] = rb_intern("call");
-                rargs[2] = 3;
-                rargs[3] = sym;
-
-                /* Carefully call listen proc */
-                result = rb_protect(WindowCall, (VALUE)&rargs, &state);
-                if(state) subSubtlextBacktrace();
-
-                /* End event loop? */
-                if(Qtrue != result || state) loop = False;
-                break; /* }}} */
-              default: break;
-            }
-        }
-
-      XSelectInput(display, w->win, NoEventMask);
-      XUngrabPointer(display, CurrentTime);
-
-      /* Restore logical focus */
-      if((focus = (unsigned long *)subSharedPropertyGet(display,
-          DefaultRootWindow(display), XA_WINDOW,
-          XInternAtom(display, "_NET_ACTIVE_WINDOW", False), NULL)))
-        {
-          XSetInputFocus(display, *focus, RevertToPointerRoot, CurrentTime);
-
-          free(focus);
-        }
-#endif
+      rb_raise(rb_eNotImpError, "Not implemented yet");
     }
 
   return Qnil;
@@ -1140,7 +1119,7 @@ subWindowGrabMouse(VALUE self)
 /*
  * call-seq: clear -> nil
  *
- * Clear window
+ * Clear this Window and remove all stored text.
  *
  *  win.clear
  *  => nil
@@ -1179,7 +1158,7 @@ subWindowClear(int argc,
 /*
  * call-seq: redraw -> nil
  *
- * Redraw window
+ * Redraw Window content.
  *
  *  win.redraw
  *  => nil
@@ -1203,7 +1182,8 @@ subWindowRedraw(VALUE self)
 /*
  * call-seq: completion(&block) -> nil
  *
- * Add completion proc
+ * Add completion block to this Window, that is called whenever the
+ * tab key is pressed.
  *
  *  win.completion do |str, guess|
  *    str
@@ -1221,7 +1201,8 @@ subWindowCompletion(VALUE self)
 /*
  * call-seq: input(&block) -> nil
  *
- * Add input proc
+ * Add input block that to this Window, that is called whenever the user
+ * makes any input in a #read call.
  *
  *  win.input do |str|
  *    str
@@ -1238,7 +1219,8 @@ subWindowInput(VALUE self)
 /*
  * call-seq: raise -> nil
  *
- * Raise a Window
+ * Raise this Window to the top of the window stack, when the window manager
+ * supports that. (subtle does)
  *
  *  win.raise
  *  => nil
@@ -1266,7 +1248,8 @@ subWindowRaise(VALUE self)
 /*
  * call-seq: lower -> nil
  *
- * Lower a Window
+ * Lower this Window to the bottom of the window stack, when the window manager
+ * supports that. (subtle does)
  *
  *  win.lower
  *  => nil
@@ -1294,7 +1277,7 @@ subWindowLower(VALUE self)
 /*
  * call-seq: show() -> nil
  *
- * Show a Window
+ * Show this Window on screen.
  *
  *  win.show
  *  => nil
@@ -1324,7 +1307,7 @@ subWindowShow(VALUE self)
 /*
  * call-seq: hide() -> nil
  *
- * Hide a Window
+ * Hide this Window from screen.
  *
  *  win.hide
  *  => nil
@@ -1354,7 +1337,7 @@ subWindowHide(VALUE self)
 /*
  * call-seq: hidden -> true or false
  *
- * Whether Window is hidden
+ * Whether Window is hidden.
  *
  *  win.hidden?
  *  => true
@@ -1376,7 +1359,7 @@ subWindowAskHidden(VALUE self)
 /*
  * call-seq: kill() -> nil
  *
- * Kill a Window
+ * Destroy this Window and <b>freeze</b> this object.
  *
  *  win.kill
  *  => nil

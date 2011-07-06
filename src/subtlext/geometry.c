@@ -72,7 +72,17 @@ subGeometryToRect(VALUE self,
  *           new(hash)                -> Subtlext::Geometry
  *           new(geometry)            -> Subtlext::Geometry
  *
- * Create a new Geometry object
+ * Create a new Geometry object from givem <i>value</i> which can be of
+ * following types:
+ *
+ * [Array]    Must be an array with values for x, y, width and height
+ * [Hash]     Must be a hash with values for x, y, width and height
+ * [Geometry] Copy geometry from a Geometry object
+ *
+ * Or just pass one argument for x, y, width and height.
+ *
+ * Creating a geometry with <b>zero</b> width or height will raise
+ * a StandardError.
  *
  *  geom = Subtlext::Geometry.new(0, 0, 50, 50)
  *  => #<Subtlext::Geometry:xxx>
@@ -156,7 +166,8 @@ subGeometryInit(int argc,
 /*
  * call-seq: to_a -> Array
  *
- * Convert Geometry object to Array
+ * Convert this Geometry object to an array with one fixnum for x, y, width
+ * and height.
  *
  *  geom.to_a
  *  => [0, 0, 50, 50]
@@ -189,7 +200,8 @@ subGeometryToArray(VALUE self)
 /*
  * call-seq: to_hash -> Hash
  *
- * Convert Geometry object to Hash
+ * Convert this Geometry object to hash with one symbol/fixnum pair for
+ * x, y, height and width.
  *
  *  geom.to_hash
  *  => { :x => 0, :y => 0, :width => 50, :height => 50 }
@@ -224,7 +236,7 @@ subGeometryToHash(VALUE self)
 /*
  * call-seq: to_str -> String
  *
- * Convert Geometry object to String
+ * Convert this Geometry object to string.
  *
  *  puts geom
  *  => "0x0+50+50"
@@ -252,7 +264,7 @@ subGeometryToString(VALUE self)
 /*
  * call-seq: ==(other) -> True or False
  *
- * Whether both objects have the same values (based on geometry)
+ * Whether both objects have the same values (based on geometry).
  *
  *  object1 == object2
  *  => true
@@ -269,7 +281,7 @@ subGeometryEqual(VALUE self,
 /*
  * call-seq: eql?(other) -> True or False
  *
- * Whether both objects have the same values and types (based on geometry)
+ * Whether both objects have the same values and types (based on geometry).
  *
  *  object1.eql? object2
  *  => true

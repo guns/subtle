@@ -15,24 +15,39 @@
 
 /* subTraySingFind {{{ */
 /*
- * call-seq: find(value) -> Subtlext::Client or nil
- *           [value]     -> Subtlext::Client or nil
+ * call-seq: find(value) -> Subtlext::Tray, Array or nil
+ *           [value]     -> Subtlext::Tray, Array or nil
  *
- * Find Clients by a given value which can be of following type:
+ * Find Tray by a given <i>value</i> which can be of following type:
  *
- * [fixnum] Array id
- * [string] Match against WM_NAME or WM_CLASS
- * [hash]   With one of following keys: :title, :name, :class, :gravity
- * [symbol] Either :current for current Client or :all for an array
+ * [Fixnum] Array index of the <code>SUBTLE_TRAY_LIST</code> property list.
+ * [String] Regexp match against both <code>WM_CLASS</code> values.
+ * [Hash]   Instead of just match <code>WM_CLASS</code> match against
+ *          following properties:
+ *
+ *          [:name]     Match against <code>WM_NAME</code>
+ *          [:instance] Match against first value of <code>WM_NAME</code>
+ *          [:class]    Match against second value of <code>WM_NAME</code>
+ * [Symbol] Either <i>:all</i> for an array of all Trays or any string for
+ *          an <b>exact</b> match.
+
+ *  Subtlext::Tray.find(1)
+ *  => #<Subtlext::Tray:xxx>
  *
  *  Subtlext::Tray.find("subtle")
  *  => #<Subtlext::Tray:xxx>
  *
- *  Subtlext::Tray[1]
- *  => #<Subtlext::Tray:xxx>
+ *  Subtlext::Tray[".*"]
+ *  => [#<Subtlext::Tray:xxx>, #<Subtlext::Tray:xxx>]
  *
  *  Subtlext::Tray["subtle"]
  *  => nil
+ *
+ *  Subtlext::Tray[:terms]
+ *  => #<Subtlext::Tray:xxx>
+ *
+ *  Subtlext::Tray[name: "subtle"]
+ *  => #<Subtlext::Tray:xxx>
  */
 
 VALUE
@@ -102,7 +117,8 @@ subTraySingFind(VALUE self,
 /*
  * call-seq: all -> Array
  *
- * Get Array of all Tray
+ * Get an array of all Trays based on <code>SUBTLE_TRAY_LIST</code>
+ * property list.
  *
  *  Subtlext::Tray.all
  *  => [#<Subtlext::Tray:xxx>, #<Subtlext::Tray:xxx>]
@@ -162,7 +178,9 @@ subTrayInstantiate(Window win)
 /*
  * call-seq: new(name) -> Subtlext::Tray
  *
- * Create new Tray object
+ * Create a new Tray object locally <b>without</b> calling #save automatically.
+ *
+ * The Tray <b>won't</b> be visible until #save is called.
  *
  *  tag = Subtlext::Tray.new("subtle")
  *  => #<Subtlext::Tray:xxx>
@@ -192,7 +210,7 @@ subTrayInit(VALUE self,
 /*
  * call-seq: update -> nil
  *
- * Update Tray properties
+ * Update Tray properties based on <b>required</b> Tray index and window id.
  *
  *  tray.update
  *  => nil
@@ -239,7 +257,7 @@ subTrayUpdate(VALUE self)
 /*
  * call-seq: to_str -> String
  *
- * Convert Tray object to String
+ * Convert this Tray object to string.
  *
  *  puts tray
  *  => "subtle"
@@ -260,7 +278,7 @@ subTrayToString(VALUE self)
 /*
  * call-seq: kill -> nil
  *
- * Kill a Tray
+ * Send a close signal to Client and <b>freeze</b> this object.
  *
  *  tray.kill
  *  => nil

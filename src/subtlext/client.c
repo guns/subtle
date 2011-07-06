@@ -194,7 +194,7 @@ ClientWindowId(Window win)
 /*
  * call-seq: select -> Subtlext::Client or nil
  *
- * Select a client
+ * Click on a wondow and get the selected Client.
  *
  *  Subtlext::Client.select
  *  => #<Subtlext::Client:xxx>
@@ -213,21 +213,41 @@ subClientSingSelect(VALUE self)
  * call-seq: find(value) -> Subtlext::Client or nil
  *           [value]     -> Subtlext::Client or nil
  *
- * Find Client by a given value which can be of following type:
+ * Find Client by a given <i>value</i> which can be of following type:
  *
- * [fixnum] Array id
- * [string] Match against WM_NAME or WM_CLASS
- * [hash]   With one of following keys: :title, :name, :class, :gravity
- * [symbol] Either :current for current Client or :all for an array
+ * [Fixnum] Array index of the <code>_NET_CLIENT_LIST</code> property list.
+ * [String] Regexp match against both <code>WM_CLASS</code> values.
+ * [Hash]   Instead of just match <code>WM_CLASS</code> match against
+ *          following properties:
+ *
+ *          [:name]     Match against <code>WM_NAME</code>
+ *          [:instance] Match against first value of <code>WM_NAME</code>
+ *          [:class]    Match against second value of <code>WM_NAME</code>
+ *          [:gravity]  Match against window Gravity
+ *          [:role]     Match against <code>WM_ROLE</code>
+ *          [:pid]      Match against window pid
+ *
+ *          With one of following keys: :title, :name, :class, :gravity
+ * [Symbol] Either <i>:current</i> for current View, <i>:all</i> for an
+ *          array of all Views or any string for an <b>exact</b> match.
+ *
+ *  Subtlext::Client.find(1)
+ *  => #<Subtlext::Client:xxx>
  *
  *  Subtlext::Client.find("subtle")
  *  => #<Subtlext::Client:xxx>
  *
- *  Subtlext::Client[:name => "subtle"]
- *  => #<Subtlext::Client:xxx>
+ *  Subtlext::Client[".*"]
+ *  => [#<Subtlext::Client:xxx>, #<Subtlext::Client:xxx>]
  *
  *  Subtlext::Client["subtle"]
  *  => nil
+ *
+ *  Subtlext::Client[:terms]
+ *  => #<Subtlext::Client:xxx>
+ *
+ *  Subtlext::Client[name: "subtle"]
+ *  => #<Subtlext::Client:xxx>
  */
 
 VALUE
@@ -306,7 +326,7 @@ subClientSingFind(VALUE self,
 /*
  * call-seq: current -> Subtlext::Client
  *
- * Get current active Client
+ * Get current active Client.
  *
  *  Subtlext::Client.current
  *  => #<Subtlext::Client:xxx>
@@ -346,7 +366,7 @@ subClientSingCurrent(VALUE self)
 /*
  * call-seq: visible -> Array
  *
- * Get Array of all visible Client
+ * Get array of all visible Client on all Views.
  *
  *  Subtlext::Client.visible
  *  => [#<Subtlext::Client:xxx>, #<Subtlext::Client:xxx>]
@@ -407,7 +427,8 @@ subClientSingVisible(VALUE self)
 /*
  * call-seq: all -> Array
  *
- * Get Array of all Client
+ * Get an array of all Clients based on <code>_NET_CLIENT_LIST</code>
+ * property list.
  *
  *  Subtlext::Client.all
  *  => [#<Subtlext::Client:xxx>, #<Subtlext::Client:xxx>]
@@ -456,7 +477,7 @@ subClientSingAll(VALUE self)
 /*
  * call-seq: recent -> Array
  *
- * Get recent active clients
+ * Get array of the last five active Clients.
  *
  *  Subtlext::Client.recent
  *  => [ #<Subtlext::Client:xxx> ]
@@ -517,7 +538,9 @@ subClientInstantiate(int id)
 /*
  * call-seq: new(win) -> Subtlext::Client
  *
- * Create a new Client object
+ * Create a new Client object locally <b>without</b> calling #save automatically.
+ *
+ * The Client <b>won't</b> be visible until #save is called.
  *
  *  client = Subtlext::Client.new(1)
  *  => #<Subtlext::Client:xxx>
@@ -551,7 +574,7 @@ subClientInit(VALUE self,
 /*
  * call-seq: update -> nil
  *
- * Update Client properties
+ * Update Client properties based on <b>required</b> Client index and window id.
  *
  *  client.update
  *  => nil
@@ -612,7 +635,7 @@ subClientUpdate(VALUE self)
 /*
  * call-seq: views -> Array
  *
- * Get Array of View Client is on
+ * Get array of Views Client is visible.
  *
  *  client.views
  *  => [#<Subtlext::View:xxx>, #<Subtlext::View:xxx>]
@@ -679,7 +702,7 @@ subClientViewList(VALUE self)
 /*
  * call-seq: is_full? -> true or false
  *
- * Check if Client is fullscreen
+ * Check if Client is fullscreen.
  *
  *  client.is_full?
  *  => true
@@ -698,7 +721,7 @@ subClientFlagsAskFull(VALUE self)
 /*
  * call-seq: is_float? -> true or false
  *
- * Check if Client is floating
+ * Check if Client is floating.
  *
  *  client.is_float?
  *  => true
@@ -717,7 +740,7 @@ subClientFlagsAskFloat(VALUE self)
 /*
  * call-seq: is_stick? -> true or false
  *
- * Check if Client is sticky
+ * Check if Client is sticky.
  *
  *  client.is_stick?
  *  => true
@@ -736,7 +759,7 @@ subClientFlagsAskStick(VALUE self)
 /*
  * call-seq: is_resize? -> true or false
  *
- * Check if Client uses size hints
+ * Check if Client uses size hints.
  *
  *  client.is_resize?
  *  => true
@@ -755,7 +778,7 @@ subClientFlagsAskResize(VALUE self)
 /*
  * call-seq: is_urgent? -> true or false
  *
- * Check if Client is urgent
+ * Check if Client is urgent.
  *
  *  client.is_urgent?
  *  => true
@@ -774,7 +797,7 @@ subClientFlagsAskUrgent(VALUE self)
 /*
  * call-seq: is_zaphod? -> true or false
  *
- * Check if Client is zaphod
+ * Check if Client is zaphod.
  *
  *  client.is_zaphod?
  *  => true
@@ -793,7 +816,7 @@ subClientFlagsAskZaphod(VALUE self)
 /*
  * call-seq: is_fixed? -> true or false
  *
- * Check if Client is fixed
+ * Check if Client is fixed.
  *
  *  client.is_fixed?
  *  => true
@@ -812,7 +835,7 @@ subClientFlagsAskFixed(VALUE self)
 /*
  * call-seq: is_borderless? -> true or false
  *
- * Check if Client is borderless
+ * Check if Client is borderless.
  *
  *  client.is_borderless?
  *  => true
@@ -831,7 +854,7 @@ subClientFlagsAskBorderless(VALUE self)
 /*
  * call-seq: toggle_full -> nil
  *
- * Toggle Client fullscreen state
+ * Toggle Client fullscreen state.
  *
  *  client.toggle_full
  *  => nil
@@ -847,7 +870,7 @@ subClientFlagsToggleFull(VALUE self)
 /*
  * call-seq: toggle_float -> nil
  *
- * Toggle Client floating state
+ * Toggle Client floating state.
  *
  *  client.toggle_float
  *  => nil
@@ -863,7 +886,7 @@ subClientFlagsToggleFloat(VALUE self)
 /*
  * call-seq: toggle_stick -> nil
  *
- * Toggle Client sticky state
+ * Toggle Client sticky state.
  *
  *  client.toggle_stick
  *  => nil
@@ -879,7 +902,7 @@ subClientFlagsToggleStick(VALUE self)
 /*
  * call-seq: toggle_stick -> nil
  *
- * Toggle Client resize state
+ * Toggle Client resize state.
  *
  *  client.toggle_stick
  *  => nil
@@ -895,7 +918,7 @@ subClientFlagsToggleResize(VALUE self)
 /*
  * call-seq: toggle_urgent -> nil
  *
- * Toggle Client urgent state
+ * Toggle Client urgent state.
  *
  *  client.toggle_urgent
  *  => nil
@@ -911,7 +934,7 @@ subClientFlagsToggleUrgent(VALUE self)
 /*
  * call-seq: toggle_zaphod -> nil
  *
- * Toggle Client zaphod state
+ * Toggle Client zaphod state.
  *
  *  client.toggle_zaphod
  *  => nil
@@ -927,7 +950,7 @@ subClientFlagsToggleZaphod(VALUE self)
 /*
  * call-seq: toggle_fixed -> nil
  *
- * Toggle Client fixed state
+ * Toggle Client fixed state.
  *
  *  client.toggle_fixed
  *  => nil
@@ -943,7 +966,7 @@ subClientFlagsToggleFixed(VALUE self)
 /*
  * call-seq: toggle_borderless -> nil
  *
- * Toggle Client borderless state
+ * Toggle Client borderless state.
  *
  *  client.toggle_borderless
  *  => nil
@@ -962,10 +985,14 @@ subClientFlagsToggleBorderless(VALUE self)
  * Set multiple flags at once. Flags can be one or a combination of the
  * following:
  *
- * [*:full*]    Set fullscreen mode
- * [*:float*]   Set floating mode
- * [*:stick*]   Set sticky mode
- * [*:resize*]  Set resize mode
+ * [:full]       Set fullscreen mode
+ * [:float]      Set floating mode
+ * [:stick]      Set sticky mode
+ * [:resize]     Set resize mode
+ * [:urgent]     Set urgent mode
+ * [:zaphod]     Set zaphod mode
+ * [:fixed]      Set fixed mode
+ * [:borderless] Set borderless mode
  *
  *  client.flags = [ :float, :stick ]
  *  => nil
@@ -984,10 +1011,14 @@ subClientFlagsWriter(VALUE self,
       /* Translate flags */
       for(i = 0; Qnil != (entry = rb_ary_entry(value, i)); ++i)
         {
-          if(CHAR2SYM("full") == entry)        flags |= SUB_EWMH_FULL;
-          else if(CHAR2SYM("float") == entry)  flags |= SUB_EWMH_FLOAT;
-          else if(CHAR2SYM("stick") == entry)  flags |= SUB_EWMH_STICK;
-          else if(CHAR2SYM("resize") == entry) flags |= SUB_EWMH_RESIZE;
+          if(CHAR2SYM("full") == entry)            flags |= SUB_EWMH_FULL;
+          else if(CHAR2SYM("float") == entry)      flags |= SUB_EWMH_FLOAT;
+          else if(CHAR2SYM("stick") == entry)      flags |= SUB_EWMH_STICK;
+          else if(CHAR2SYM("resize") == entry)     flags |= SUB_EWMH_RESIZE;
+          else if(CHAR2SYM("urgent") == entry)     flags |= SUB_EWMH_URGENT;
+          else if(CHAR2SYM("zaphod") == entry)     flags |= SUB_EWMH_ZAPHOD;
+          else if(CHAR2SYM("fixed") == entry)      flags |= SUB_EWMH_FIXED;
+          else if(CHAR2SYM("borderless") == entry) flags |= SUB_EWMH_BORDERLESS;
         }
 
       ClientFlagsSet(self, flags, False);
@@ -1000,7 +1031,7 @@ subClientFlagsWriter(VALUE self,
 /*
  * call-seq: raise -> nil
  *
- * Move Client window to top of window stack
+ * Move Client window to top of window stack.
  *
  *  client.raise
  *  => nil
@@ -1016,7 +1047,7 @@ subClientRestackRaise(VALUE self)
 /*
  * call-seq: lower -> nil
  *
- * Move Client window to bottom of window stack
+ * Move Client window to bottom of window stack.
  *
  *  client.raise
  *  => nil
@@ -1032,7 +1063,7 @@ subClientRestackLower(VALUE self)
 /*
  * call-seq: alive? -> true or false
  *
- * Check if client is alive
+ * Check if client is alive.
  *
  *  client.alive?
  *  => true
@@ -1064,7 +1095,7 @@ subClientAskAlive(VALUE self)
 /*
  * call-seq: gravity -> Subtlext::Gravity
  *
- * Get Client Gravity
+ * Get Client Gravity.
  *
  *  client.gravity
  *  => #<Subtlext::Gravity:xxx>
@@ -1113,7 +1144,7 @@ subClientGravityReader(VALUE self)
  *           gravity=(object) -> nil
  *           gravity=(hash)   -> nil
  *
- * Set Client Gravity either for current or for specific view
+ * Set Client Gravity either for current or for specific View.
  *
  *  # Set gravity for current view
  *  client.gravity = 0
@@ -1172,7 +1203,7 @@ subClientGravityWriter(VALUE self,
 /*
  * call-seq: geometry -> Subtlext::Geometry
  *
- * Get Client Geometry
+ * Get Client Geometry.
  *
  *  client.geometry
  *  => #<Subtlext::Geometry:xxx>
@@ -1211,7 +1242,7 @@ subClientGeometryReader(VALUE self)
  *           geometry=(array)               -> Subtlext::Geometry
  *           geometry=(geometry)            -> Subtlext::Geometry
  *
- * Set Client geometry
+ * Set Client geometry.
  *
  *  client.geometry = 0, 0, 100, 100
  *  => #<Subtlext::Geometry:xxx>
@@ -1263,7 +1294,7 @@ subClientGeometryWriter(int argc,
 /*
  * call-seq: screen -> Subtlext::Screen
  *
- * Get Client Screen
+ * Get Client Screen.
  *
  *  client.screen
  *  => #<Subtlext::Screen:xxx>
@@ -1295,7 +1326,7 @@ subClientScreenReader(VALUE self)
 /*
  * call-seq: to_str -> String
  *
- * Convert Client object to String
+ * Convert this Client object to string.
  *
  *  puts client
  *  => "subtle"
@@ -1316,7 +1347,7 @@ subClientToString(VALUE self)
 /*
  * call-seq: kill -> nil
  *
- * Send a close signal to Client
+ * Send a close signal to Client and <b>freeze</b> this object.
  *
  *  client.kill
  *  => nil

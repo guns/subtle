@@ -15,23 +15,32 @@
 
 /* subSubletSingFind {{{ */
 /*
- * call-seq: find(value) -> Subtlext::Sublet or nil
- *           [value]     -> Subtlext::Sublet or nil
+ * call-seq: find(value) -> Subtlext::Sublet, Array or nil
+ *           [value]     -> Subtlext::Sublet, Array or nil
  *
- * Find Sublet by a given value which can be of following type:
+ * Find Sublet by a given <i>value</i> which can be of following type:
  *
- * [fixnum] Array id
- * [string] Match against name of Sublet
- * [symbol] :all for an array of all Sublet
+ * [Fixnum] Array index of the <code>SUBTLE_SUBLET_LIST</code> property list.
+ * [String] Regexp match against name of Sublets, returns a Sublet on single
+ *          match or an Array on multiple matches.
+ * [Symbol] Either <i>:all</i> for an array of all Sublets or any string for
+ *          an <b>exact</b> match.
+ *
+ *  Subtlext::Sublet.find(1)
+ *  => #<Subtlext::Sublet:xxx>
  *
  *  Subtlext::Sublet.find("subtle")
  *  => #<Subtlext::Sublet:xxx>
  *
- *  Subtlext::Sublet[1]
- *  => #<Subtlext::Sublet:xxx>
+ *  Subtlext::Sublet[".*"]
+ *  => [#<Subtlext::Sublet:xxx>, #<Subtlext::Sublet:xxx>]
  *
  *  Subtlext::Sublet["subtle"]
  *  => nil
+ *
+ *  Subtlext::Sublet[:clock]
+ *  => #<Subtlext::Sublet:xxx>
+
  */
 
 VALUE
@@ -64,7 +73,7 @@ subSubletSingFind(VALUE self,
 /*
  * call-seq: all -> Array
  *
- * Get Array of Sublet
+ * Get an array of all running Sublets.
  *
  *  Subtlext::Sublet.all
  *  => [#<Subtlext::Sublet:xxx>, #<Subtlext::Sublet:xxx>]
@@ -125,7 +134,7 @@ subSubletInstantiate(char *name)
 /*
  * call-seq: new(name) -> Subtlext::Sublet
  *
- * Create new Sublet object
+ * Create new Sublet object locally <b>without</b> calling #save automatically.
  *
  *  sublet = Subtlext::Sublet.new("subtle")
  *  => #<Subtlext::Sublet:xxx> *
@@ -152,7 +161,7 @@ subSubletInit(VALUE self,
 /*
  * call-seq: update -> nil
  *
- * Force Sublet to update it's data
+ * Force subtle to update the data of this Sublet.
  *
  *  sublet.update
  *  => nil
@@ -189,7 +198,7 @@ subSubletUpdate(VALUE self)
 /*
  * call-seq: data -> String
  *
- * Get data of Sublet
+ * Get data of this Sublet.
  *
  *  puts sublet.data
  *  => "subtle"
@@ -211,7 +220,7 @@ subSubletDataReader(VALUE self)
 /*
  * call-seq: data=(string) -> String
  *
- * Set data of sublet
+ * Set data of this Sublet.
  *
  *  sublet.data = "subtle"
  *  => "subtle"
@@ -252,9 +261,20 @@ subSubletDataWriter(VALUE self,
 
 /* subSubletForegroundWriter {{{ */
 /*
- * call-seq: foreground=(color) -> nil
+ * call-seq: foreground=(string) -> nil
+ *           foreground=(array)  -> nil
+ *           foreground=(hash)   -> nil
+ *           foreground=(fixnum) -> nil
+ *           foreground=(color)  -> nil
  *
- * Set default foreground of sublet
+ * Set the foreground color of this Sublet which can be of
+ * following types:
+ *
+ * [String] Any color representation of Xlib is allowed
+ * [Array]  Must be an array with values for red, green and blue
+ * [Hash]   Must be a hash with values for red, green and blue
+ * [Fixnum] Pixel representation of a color in Xlib
+ * [Color]  Copy color from a Color object
  *
  *  sublet.foreground = "#ff0000"
  *  => nil
@@ -289,9 +309,20 @@ subSubletForegroundWriter(VALUE self,
 
 /* subSubletBackgroundWriter {{{ */
 /*
- * call-seq: background=(color) -> nil
+ * call-seq: background=(string) -> nil
+ *           background=(array)  -> nil
+ *           background=(hash)   -> nil
+ *           background=(fixnum) -> nil
+ *           background=(color)  -> nil
  *
- * Set background of sublet
+ * Set the background color of this Sublet which can be of
+ * following types:
+ *
+ * [String] Any color representation of Xlib is allowed
+ * [Array]  Must be an array with values for red, green and blue
+ * [Hash]   Must be a hash with values for red, green and blue
+ * [Fixnum] Pixel representation of a color in Xlib
+ * [Color]  Copy color from a Color object
  *
  *  sublet.background = "#ff0000"
  *  => nil
@@ -328,7 +359,7 @@ subSubletBackgroundWriter(VALUE self,
 /*
  * call-seq: geometry -> Subtlext::Geometry
  *
- * Get geometry of a sublet
+ * Get Geometry of this Sublet
  *
  *  win.geometry
  *  => #<Subtlext::Geometry:xxx>
@@ -374,7 +405,7 @@ subSubletGeometryReader(VALUE self)
 /*
  * call-seq: to_str -> String
  *
- * Convert Sublet object to String
+ * Convert Sublet object to string.
  *
  *  puts sublet
  *  => sublet
@@ -395,7 +426,7 @@ subSubletToString(VALUE self)
 /*
  * call-seq: kill -> nil
  *
- * Kill a Sublet
+ * Remove this Sublet from subtle and <b>freeze</b> this object.
  *
  *  sublet.kill
  *  => nil

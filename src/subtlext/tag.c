@@ -15,23 +15,31 @@
 
 /* subTagSingFind {{{ */
 /*
- * call-seq: find(value) -> Subtlext::Tag or nil
- *           [value]     -> Subtlext::Tag or nil
+ * call-seq: find(value) -> Subtlext::Tag, Array or nil
+ *           [value]     -> Subtlext::Tag, Array or nil
  *
- * Find Tag by a given value which can be of following type:
+ * Find Tag by a given <i>value</i> which can be of following type:
  *
- * [fixnum] Array id
- * [string] Match against name of Tag
- * [symbol] :all for an array of all Tag
+ * [Fixnum] Array index of the <code>SUBTLE_TAG_LIST</code> property list.
+ * [String] Regexp match against name of Tags, returns a Tag on single
+ *          match or an Array on multiple matches.
+ * [Symbol] Either <i>:all</i> for an array of all Tags or any string for
+ *          an <b>exact</b> match.
+ *
+ *  Subtlext::Tag.find(1)
+ *  => #<Subtlext::Tag:xxx>
  *
  *  Subtlext::Tag.find("subtle")
  *  => #<Subtlext::Tag:xxx>
  *
- *  Subtlext::Tag[1]
- *  => #<Subtlext::Tag:xxx>
+ *  Subtlext::Tag[".*"]
+ *  => [#<Subtlext::Tag:xxx>, #<Subtlext::Tag:xxx>]
  *
  *  Subtlext::Tag["subtle"]
  *  => nil
+ *
+ *  Subtlext::Tag[:terms]
+ *  => #<Subtlext::Tag:xxx>
  */
 
 VALUE
@@ -66,7 +74,7 @@ subTagSingFind(VALUE self,
 /*
  * call-seq: visible -> Array
  *
- * Get Array of all visible Tag
+ * Get an array of all <i>visible</i> Tags on all Views.
  *
  *  Subtlext::Tag.visible
  *  => [#<Subtlext::Tag:xxx>, #<Subtlext::Tag:xxx>]
@@ -121,7 +129,8 @@ subTagSingVisible(VALUE self)
 /*
  * call-seq: all -> Array
  *
- * Get Array of all Tag
+ * Get an array of all Tags based on the <code>SUBTLE_TAG_LIST</code>
+ * property list.
  *
  *  Subtlext::Tag.all
  *  => [#<Subtlext::Tag:xxx>, #<Subtlext::Tag:xxx>]
@@ -181,7 +190,9 @@ subTagInstantiate(char *name)
 /*
  * call-seq: new(name) -> Subtlext::Tag
  *
- * Create new Tag object
+ * Create new Tag object locally <b>without</b> calling #save automatically.
+ *
+ * The Tag <b>won't</b> be useable until #save is called.
  *
  *  tag = Subtlext::Tag.new("subtle")
  *  => #<Subtlext::Tag:xxx>
@@ -208,7 +219,7 @@ subTagInit(VALUE self,
 /*
  * call-seq: update -> nil
  *
- * Update Tag properties
+ * Update Tag properties based on Tag index.
  *
  *  tag.update
  *  => nil
@@ -264,7 +275,7 @@ subTagUpdate(VALUE self)
 /*
  * call-seq: clients -> Array
  *
- * Get Array of Client that are tagged with this
+ * Get an rray of Clients that are tagged with this Tag.
  *
  *  tag.clients
  *  => [#<Subtlext::Client:xxx>, #<Subtlext::Client:xxx>]
@@ -326,7 +337,7 @@ subTagClients(VALUE self)
 /*
  * call-seq: views -> Array
  *
- * Get Array of View that are tagged with this
+ * Get an rray of Views that are tagged with this Tag.
  *
  *  tag.views
  *  => [#<Subtlext::Views:xxx>, #<Subtlext::Views:xxx>]
@@ -387,7 +398,7 @@ subTagViews(VALUE self)
 /*
  * call-seq: to_str -> String
  *
- * Convert Tag object to String
+ * Convert this Tag object to string.
  *
  *  puts tag
  *  => "subtle"
@@ -408,7 +419,7 @@ subTagToString(VALUE self)
 /*
  * call-seq: kill -> nil
  *
- * Kill a Tag
+ * Remove this Tag from subtle and <b>freeze</b> this object.
  *
  *  tag.kill
  *  => nil

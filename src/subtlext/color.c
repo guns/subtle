@@ -149,6 +149,7 @@ subColorPixel(VALUE red,
       xcolor->pixel = xcol.pixel;
     }
 
+
   return xcol.pixel;
 } /* }}} */
 
@@ -171,10 +172,19 @@ subColorInstantiate(unsigned long pixel)
  *           new(string)           -> Subtlext::Color
  *           new(array)            -> Subtlext::Color
  *           new(hash)             -> Subtlext::Color
- *           new(pixel)            -> Subtlext::Color
+ *           new(fixnum)           -> Subtlext::Color
  *           new(color)            -> Subtlext::Color
  *
- * Create new Color object
+ * Create new Color object from given <i>value</i> which can be of
+ * following types:
+ *
+ * [String] Any color representation of Xlib is allowed
+ * [Array]  Must be an array with values for red, green and blue
+ * [Hash]   Must be a hash with values for red, green and blue
+ * [Fixnum] Pixel representation of a color in Xlib
+ * [Color]  Copy color from a Color object
+ *
+ * Or just pass one argument for red, green or blue.
  *
  *  color = Subtlext::Color.new(51, 102, 253)
  *  => #<Subtlext::Color:xxx>
@@ -226,7 +236,7 @@ subColorInit(int argc,
 /*
  * call-seq: to_hex -> String
  *
- * Convert Color object to <b>rrggbb</b> hex String
+ * Convert this Color object to <b>rrggbb</b> hex string.
  *
  *  puts color.to_hex
  *  => "#ff0000"
@@ -251,9 +261,10 @@ subColorToHex(VALUE self)
 
 /* subColorToArray {{{ */
 /*
- * call-seq: to_a -> String
+ * call-seq: to_a -> Array
  *
- * Convert Color object to Array
+ * Convert this Color object to an array with one fixnum for red, blue
+ * and green.
  *
  *  color.to_a
  *  => [ 51, 102, 253 ]
@@ -284,7 +295,8 @@ subColorToArray(VALUE self)
 /*
  * call-seq: to_hash -> Hash
  *
- * Convert Color object to Hash
+ * Convert this Color object to a hash with one symbol/fixnum pair for
+ * red, green and blue.
  *
  *  color.to_hash
  *  => { :red => 51, :green => 102, :blue => 253 }
@@ -316,7 +328,7 @@ subColorToHash(VALUE self)
 /*
  * call-seq: to_str -> String
  *
- * Convert Color object to String
+ * Convert this Color object to string.
  *
  *  puts color
  *  => "<>123456789<>"
@@ -341,7 +353,7 @@ subColorToString(VALUE self)
 /*
  * call-seq: +(string) -> String
  *
- * Convert self to String and add String
+ * Convert this Color to string and concat given string.
  *
  *  color + "subtle"
  *  => "<>123456789<>subtle"
@@ -358,7 +370,7 @@ subColorOperatorPlus(VALUE self,
 /*
  * call-seq: ==(other) -> True or False
  *
- * Whether both objects have the same values (based on pixel)
+ * Whether both objects have the same values (based on pixel).
  *
  *  object1 == object2
  *  => true
@@ -375,7 +387,7 @@ subColorEqual(VALUE self,
 /*
  * call-seq: eql?(other) -> True or False
  *
- * Whether both objects have the same values and types (based on pixel)
+ * Whether both objects have the same values and types (based on pixel).
  *
  *  object1.eql? object2
  *  => true

@@ -144,23 +144,32 @@ GravityFindId(char *match,
 
 /* subGravitySingFind {{{ */
 /*
- * call-seq: find(value) -> Subtlext::Gravity or nil
- *           [value]     -> Subtlext::Gravity or nil
+ * call-seq: find(value) -> Subtlext::Gravity, Array or nil
+ *           [value]     -> Subtlext::Gravity, Array or nil
  *
- * Find Gravity by a given value which can be of following type:
+ * Find Gravity by a given <i>value</i> which can be of following type:
  *
- * [fixnum] Array id
- * [string] Match against name of Gravity
- * [symbol] Symbol of the Gravity or :all for an array of all Gravity
+ * [Fixnum] Array index of the <code>SUBTLE_GRAVITY_LIST</code> property list.
+ * [String] Regexp match against name of Gravities, returns a Gravity on single
+ *          match or an Array on multiple matches.
+ * [Symbol] Either <i>:all</i> for an array of all Views or any string for an
+ *          <b>exact</b> match.
  *
- *  Subtlext::Gravity.find("center")
+ *  Subtlext::Gravity.find(1)
  *  => #<Subtlext::Gravity:xxx>
+ *
+ *  Subtlext::Gravity.find("subtle")
+ *  => #<Subtlext::Gravity:xxx>
+ *
+ *  Subtlext::Gravity[".*"]
+ *  => [#<Subtlext::Gravity:xxx>, #<Subtlext::Gravity:xxx>]
+ *
+ *  Subtlext::Gravity["subtle"]
+ *  => nil
  *
  *  Subtlext::Gravity[:center]
  *  => #<Subtlext::Gravity:xxx>
- *
- *  Subtlext::Gravity["center"]
- *  => nil
+
  */
 
 VALUE
@@ -191,9 +200,8 @@ subGravitySingFind(VALUE self,
 
 /* subGravitySingAll {{{ */
 /*
- * call-seq: gravities -> Array
- *
- * Get Array of all Gravity
+ * Get an array of all Gravites based on the <code>SUBTLE_GRAVITIY_LIST</code>
+ * property list.
  *
  *  Subtlext::Gravity.all
  *  => [#<Subtlext::Gravity:xxx>, #<Subtlext::Gravity:xxx>]
@@ -227,7 +235,9 @@ subGravityInstantiate(char *name)
 /*
  * call-seq: new(name, gravity) -> Subtlext::Gravity
  *
- * Create a new Gravity object
+ * Create a new Gravity object locally <b>without</b> calling #save automatically.
+ *
+ * The Gravity <b>won't</b> be useable until #save is called.
  *
  *  gravity = Subtlext::Gravity.new("top")
  *  => #<Subtlext::Gravity:xxx>
@@ -259,7 +269,7 @@ subGravityInit(int argc,
 /*
  * call-seq: update -> nil
  *
- * Update Gravity properties
+ * Update Gravity properties based on <b>required</b> Gravity index.
  *
  *  gravity.update
  *  => nil
@@ -332,7 +342,7 @@ subGravityUpdate(VALUE self)
 /*
  * call-seq: clients -> Array
  *
- * Get Array of Client that have this gravity
+ * Get an array of Clients that have this Gravity.
  *
  *  gravity.clients
  *  => [#<Subtlext::Client:xxx>, #<Subtlext::Client:xxx>]
@@ -396,7 +406,7 @@ subGravityClients(VALUE self)
 /*
  * call-seq: geometry -> Subtlext::Geometry
  *
- * Get Gravity Geometry
+ * Get the Gravity Geometry
  *
  *  gravity.geometry
  *  => #<Subtlext::Geometry:xxx>
@@ -430,7 +440,7 @@ subGravityGeometryReader(VALUE self)
 /*
  * call-seq: geometry=(geometry) -> nil
  *
- * Set Gravity Geometry
+ * Set the Gravity Geometry
  *
  *  gravity.geometry=geometry
  *  => #<Subtlext::Geometry:xxx>
@@ -461,7 +471,7 @@ subGravityGeometryWriter(VALUE self,
 /*
  * call-seq: geometry_for(screen) -> nil
  *
- * Get Gravity Geometry for Screen in pixel values
+ * Get the Gravity Geometry for given Screen in pixel values.
  *
  *  gravity.geometry_for(screen)
  *  => #<Subtlext::Geometry:xxx>
@@ -511,7 +521,7 @@ subGravityGeometryFor(VALUE self,
 /*
  * call-seq: to_str -> String
  *
- * Convert Gravity object to String
+ * Convert this Gravity object to string.
  *
  *  puts gravity
  *  => "TopLeft"
@@ -532,7 +542,7 @@ subGravityToString(VALUE self)
 /*
  * call-seq: to_sym -> Symbol
  *
- * Convert Gravity object to Symbol
+ * Convert this Gravity object to symbol.
  *
  *  puts gravity.to_sym
  *  => :center
@@ -553,7 +563,7 @@ subGravityToSym(VALUE self)
 /*
  * call-seq: kill -> nil
  *
- * Kill a Gravity
+ * Remove this Gravity from subtle and <b>freeze</b> this object.
  *
  *  gravity.kill
  *  => nil

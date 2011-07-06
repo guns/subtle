@@ -56,23 +56,31 @@ ViewSelect(VALUE self,
 
 /* subViewSingFind {{{ */
 /*
- * call-seq: find(value) -> Subtlext::Client or nil
- *           [value]     -> Subtlext::Client or nil
+ * call-seq: find(value) -> Subtlext::View, Array or nil
+ *           [value]     -> Subtlext::View, Array or nil
  *
- * Find View by a given value which can be of following type:
+ * Find View by a given <i>value</i> which can be of following type:
  *
- * [fixnum] Array id
- * [string] Match against name of View
- * [symbol] Either :current for current View or :all for an array
+ * [Fixnum] Array index of the <code>_NET_DESKTOP_NAMES</code> property list.
+ * [String] Regexp match against name of Views, returns a View on single
+ *          match or an Array on multiple matches.
+ * [Symbol] Either <i>:current</i> for current View, <i>:all</i> for an
+ *          array of all Views or any string for an <b>exact</b> match.
+ *
+ *  Subtlext::View.find(1)
+ *  => #<Subtlext::View:xxx>
  *
  *  Subtlext::View.find("subtle")
  *  => #<Subtlext::View:xxx>
  *
- *  Subtlext::View[1]
- *  => #<Subtlext::View:xxx>
+ *  Subtlext::View[".*"]
+ *  => [#<Subtlext::View:xxx>, #<Subtlext::View:xxx>]
  *
  *  Subtlext::View["subtle"]
  *  => nil
+ *
+ *  Subtlext::View[:terms]
+ *  => #<Subtlext::View:xxx>
  */
 
 VALUE
@@ -109,7 +117,7 @@ subViewSingFind(VALUE self,
 /*
  * call-seq: current -> Subtlext::View
  *
- * Get current active View
+ * Get currently active View.
  *
  *  Subtlext::View.current
  *  => #<Subtlext::View:xxx>
@@ -150,7 +158,7 @@ subViewSingCurrent(VALUE self)
 /*
  * call-seq: visible -> Array
  *
- * Get array of all visible View
+ * Get an array of all <i>visible</i> Views on connected Screens.
  *
  *  Subtlext::View.visible
  *  => [#<Subtlext::View:xxx>, #<Subtlext::View:xxx>]
@@ -204,7 +212,8 @@ subViewSingVisible(VALUE self)
 /*
  * call-seq: all -> Array
  *
- * Get array of all View
+ * Get an array of all Views based on the <code>_NET_DESKTOP_NAMES</code>
+ * property list.
  *
  *  Subtlext::View.all
  *  => [#<Subtlext::View:xxx>, #<Subtlext::View:xxx>]
@@ -267,7 +276,9 @@ subViewInstantiate(char *name)
 /*
  * call-seq: new(name) -> Subtlext::View
  *
- * Create a new View object
+ * Create a new View object locally <b>without</b> calling #save automatically.
+ *
+ * The View <b>won't</b> be visible until #save is called.
  *
  *  view = Subtlext::View.new("subtle")
  *  => #<Subtlext::View:xxx>
@@ -294,7 +305,7 @@ subViewInit(VALUE self,
 /*
  * call-seq: Update -> nil
  *
- * Update View properties
+ * Update View properties based on <b>required</b> View index.
  *
  *  view.update
  *  => nil
@@ -350,7 +361,7 @@ subViewUpdate(VALUE self)
 /*
  * call-seq: clients -> Array
  *
- * Get Array of Client on View
+ * Get an array of visible Clients on this View.
  *
  *  view.clients
  *  => [#<Subtlext::Client:xxx>, #<Subtlext::Client:xxx>]
@@ -426,7 +437,7 @@ subViewClients(VALUE self)
 /*
  * call-seq: jump -> nil
  *
- * Jump to this View
+ * Set this View to the current active one
  *
  *  view.jump
  *  => nil
@@ -457,7 +468,7 @@ subViewJump(VALUE self)
 /*
  * call-seq: next -> Subtlext::View or nil
  *
- * Select next View
+ * Select next View, but <b>doesn't</b> cycle list.
  *
  *  view.next
  *  => #<Subtlext::View:xxx>
@@ -473,7 +484,7 @@ subViewSelectNext(VALUE self)
 /*
  * call-seq: prev -> Subtlext::View or nil
  *
- * Select prev View
+ * Select prev View, but <b>doesn't</b> cycle list.
  *
  *  view.prev
  *  => #<Subtlext::View:xxx>
@@ -489,7 +500,7 @@ subViewSelectPrev(VALUE self)
 /*
  * call-seq: current? -> true or false
  *
- * Check if this View is the current active View
+ * Check if this View is the current active View.
  *
  *  view.current?
  *  => true
@@ -525,7 +536,7 @@ subViewAskCurrent(VALUE self)
 /*
  * call-seq: icon -> Subtlext::Icon or nil
  *
- * Get icon of View
+ * Get the Icon of the View.
  *
  *  view.icon
  *  => #<Subtlext::Icon:xxx>
@@ -569,7 +580,7 @@ subViewIcon(VALUE self)
 /*
  * call-seq: to_str -> String
  *
- * Convert View object to String
+ * Convert this View object to string.
  *
  *  puts view
  *  => "subtle"
@@ -590,7 +601,7 @@ subViewToString(VALUE self)
 /*
  * call-seq: kill -> nil
  *
- * Kill a View
+ * Remove this View from subtle and <b>freeze</b> this object.
  *
  *  view.kill
  *  => nil
