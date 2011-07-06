@@ -227,7 +227,7 @@ SubClient *
 subClientNew(Window win)
 {
   int i, grav = 0, flags = 0;
-  long vid = 0;
+  long vid = 0, extents[4] = { 0 };
   XWindowAttributes attrs;
   XSetWindowAttributes sattrs;
   Window *leader = NULL;
@@ -298,12 +298,13 @@ subClientNew(Window win)
   /* Update and handle according to flags */
   subClientToggle(c, (~c->flags & flags), False); ///< Just enable
 
-  /* EWMH: Gravity, screen, desktop */
+  /* EWMH: Gravity, screen, desktop, extents */
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_GRAVITY,
     (long *)&subtle->gravity, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_SUBTLE_CLIENT_SCREEN,
     (long *)&c->screen, 1);
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_WM_DESKTOP, &vid, 1);
+  subEwmhSetCardinals(c->win, SUB_EWMH_NET_FRAME_EXTENTS, extents, 4);
 
   subSharedLogDebugSubtle("new=client, name=%s, instance=%s, "
     "class=%s, win=%#lx\n",
