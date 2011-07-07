@@ -403,7 +403,7 @@ SubtlextTagAsk(VALUE self,
 } /* }}} */
 
 /* SubtlextTagReload {{{ */
-VALUE
+static VALUE
 SubtlextTagReload(VALUE self)
 {
   VALUE id = Qnil;
@@ -648,7 +648,7 @@ SubtlextSendKey(int argc,
  *  => nil
  */
 
-VALUE
+static VALUE
 SubtlextFocus(VALUE self)
 {
   VALUE win = Qnil;
@@ -717,7 +717,7 @@ SubtlextAskFocus(VALUE self)
  *  => "subtle"
  */
 
-VALUE
+static VALUE
 SubtlextPropReader(VALUE self,
   VALUE key)
 {
@@ -789,7 +789,7 @@ SubtlextPropReader(VALUE self,
  *  => nil
  */
 
-VALUE
+static VALUE
 SubtlextPropWriter(VALUE self,
   VALUE key,
   VALUE value)
@@ -854,7 +854,7 @@ SubtlextPropWriter(VALUE self,
 /* Comparisons */
 
 /* SubtlextEqual {{{ */
-VALUE
+static VALUE
 SubtlextEqual(VALUE self,
   VALUE other,
   const char *attr,
@@ -876,6 +876,22 @@ SubtlextEqual(VALUE self,
   else ret = (val1 == val2);
 
   return ret ? Qtrue : Qfalse;
+} /* }}} */
+
+/* SubtlextSpaceship {{{ */
+static VALUE
+SubtlextSpaceship(VALUE self,
+  VALUE other,
+  const char *attr)
+{
+  VALUE val1 = Qnil, val2 = Qnil;
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self,  attr, val1);
+  GET_ATTR(other, attr, val2);
+
+  return INT2FIX(val1 < val2 ? -1 : (val1 == val2 ? 0 : 1));
 } /* }}} */
 
 /* SubtlextEqualId {{{ */
@@ -944,6 +960,78 @@ SubtlextEqualTypedWindow(VALUE self,
   VALUE other)
 {
   return SubtlextEqual(self, other, "@win", True);
+} /* }}} */
+
+/* SubtlextEqualSpaceWindow {{{ */
+/*
+ * call-seq: <=>(other) -> -1, 0 or 1
+ *
+ * Whether both objects have the same value. Returns -1, 0 or 1 when self is
+ * less than, equal to or grater than other. (based on win)
+ *
+ *  object1 <=> object2
+ *  => 0
+ */
+
+static VALUE
+SubtlextEqualSpaceWindow(VALUE self,
+  VALUE other)
+{
+  return SubtlextSpaceship(self, other, "@win");
+} /* }}} */
+
+/* SubtlextEqualSpacePixel {{{ */
+/*
+ * call-seq: <=>(other) -> -1, 0 or 1
+ *
+ * Whether both objects have the same value. Returns -1, 0 or 1 when self is
+ * less than, equal to or grater than other. (based on pixel)
+ *
+ *  object1 <=> object2
+ *  => 0
+ */
+
+static VALUE
+SubtlextEqualSpacePixel(VALUE self,
+  VALUE other)
+{
+  return SubtlextSpaceship(self, other, "@pixel");
+} /* }}} */
+
+/* SubtlextEqualSpacePixmap {{{ */
+/*
+ * call-seq: <=>(other) -> -1, 0 or 1
+ *
+ * Whether both objects have the same value. Returns -1, 0 or 1 when self is
+ * less than, equal to or grater than other. (based on pixmap)
+ *
+ *  object1 <=> object2
+ *  => 0
+ */
+
+static VALUE
+SubtlextEqualSpacePixmap(VALUE self,
+  VALUE other)
+{
+  return SubtlextSpaceship(self, other, "@pixmap");
+} /* }}} */
+
+/* SubtlextEqualSpaceId {{{ */
+/*
+ * call-seq: <=>(other) -> -1, 0 or 1
+ *
+ * Whether both objects have the same value. Returns -1, 0 or 1 when self is
+ * less than, equal to or grater than other. (based on id)
+ *
+ *  object1 <=> object2
+ *  => 0
+ */
+
+static VALUE
+SubtlextEqualSpaceId(VALUE self,
+  VALUE other)
+{
+  return SubtlextSpaceship(self, other, "@id");
 } /* }}} */
 
 /* Exported */
@@ -1503,6 +1591,7 @@ Init_subtlext(void)
   rb_define_method(client, "has_focus?",  SubtlextAskFocus,         0);
   rb_define_method(client, "[]",          SubtlextPropReader,       1);
   rb_define_method(client, "[]=",         SubtlextPropWriter,       2);
+  rb_define_method(client, "<=>",         SubtlextEqualSpaceWindow, 1);
   rb_define_method(client, "==",          SubtlextEqualWindow,      1);
   rb_define_method(client, "eql?",        SubtlextEqualTypedWindow, 1);
 
@@ -1568,6 +1657,9 @@ Init_subtlext(void)
 
   /* Pixel number */
   rb_define_attr(color, "pixel", 1, 0);
+
+  /* General methods */
+  rb_define_method(color, "<=>", SubtlextEqualSpacePixel, 1);
 
   /* Class methods */
   rb_define_method(color, "initialize", subColorInit,         -1);
@@ -1639,6 +1731,7 @@ Init_subtlext(void)
   rb_define_singleton_method(gravity, "all",  subGravitySingAll,  0);
 
   /* General methods */
+  rb_define_method(gravity, "<=>",  SubtlextEqualSpaceId, 1);
   rb_define_method(gravity, "==",   SubtlextEqualId,      1);
   rb_define_method(gravity, "eql?", SubtlextEqualTypedId, 1);
 
@@ -1680,6 +1773,9 @@ Init_subtlext(void)
   /* Allocate */
   rb_define_alloc_func(icon, subIconAlloc);
 
+  /* General methods */
+  rb_define_method(icon, "<=>", SubtlextEqualSpacePixmap, 1);
+
   /* Class methods */
   rb_define_method(icon, "initialize", subIconInit,         -1);
   rb_define_method(icon, "draw_point", subIconDrawPoint,    -1);
@@ -1718,6 +1814,7 @@ Init_subtlext(void)
   rb_define_singleton_method(screen, "all",     subScreenSingAll,     0);
 
   /* General methods */
+  rb_define_method(screen, "<=>",  SubtlextEqualSpaceId, 1);
   rb_define_method(screen, "==",   SubtlextEqualId,      1);
   rb_define_method(screen, "eql?", SubtlextEqualTypedId, 1);
 
@@ -1780,6 +1877,7 @@ Init_subtlext(void)
   rb_define_singleton_method(sublet, "all",  subSubletSingAll,  0);
 
   /* General methods */
+  rb_define_method(sublet, "<=>",  SubtlextEqualSpaceId, 1);
   rb_define_method(sublet, "==",   SubtlextEqualId,      1);
   rb_define_method(sublet, "eql?", SubtlextEqualTypedId, 1);
 
@@ -1820,6 +1918,7 @@ Init_subtlext(void)
   rb_define_singleton_method(tag, "all",     subTagSingAll,     0);
 
   /* General methods */
+  rb_define_method(tag, "<=>",  SubtlextEqualSpaceId, 1);
   rb_define_method(tag, "==",   SubtlextEqualId,      1);
   rb_define_method(tag, "eql?", SubtlextEqualTypedId, 1);
 
@@ -1872,6 +1971,7 @@ Init_subtlext(void)
   rb_define_method(tray, "has_focus?",  SubtlextAskFocus,         0);
   rb_define_method(tray, "[]",          SubtlextPropReader,       1);
   rb_define_method(tray, "[]=",         SubtlextPropWriter,       2);
+  rb_define_method(tray, "<=>",         SubtlextEqualSpaceWindow, 1);
   rb_define_method(tray, "==",          SubtlextEqualWindow,      1);
   rb_define_method(tray, "eql?",        SubtlextEqualTypedWindow, 1);
 
@@ -1917,6 +2017,7 @@ Init_subtlext(void)
   rb_define_method(view, "untag",    SubtlextTagDel,       1);
   rb_define_method(view, "[]",       SubtlextPropReader,   1);
   rb_define_method(view, "[]=",      SubtlextPropWriter,   2);
+  rb_define_method(view, "<=>",      SubtlextEqualSpaceId, 1);
   rb_define_method(view, "==",       SubtlextEqualId,      1);
   rb_define_method(view, "eql?",     SubtlextEqualTypedId, 1);
 
@@ -1968,6 +2069,7 @@ Init_subtlext(void)
   rb_define_method(window, "focus",       SubtlextFocus,            0);
   rb_define_method(window, "[]",          SubtlextPropReader,       1);
   rb_define_method(window, "[]=",         SubtlextPropWriter,       2);
+  rb_define_method(window, "<=>",         SubtlextEqualSpaceWindow, 1);
   rb_define_method(window, "==",          SubtlextEqualWindow,      1);
   rb_define_method(window, "eql?",        SubtlextEqualTypedWindow, 1);
 
