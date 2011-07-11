@@ -52,7 +52,7 @@ ClientFlagsGet(VALUE self,
   return (FIXNUM_P(flags) && FIX2INT(flags) & flag) ? Qtrue : Qfalse;
 } /* }}} */
 
-/* ClientFlagsGet {{{ */
+/* ClientFlagsSet {{{ */
 static VALUE
 ClientFlagsSet(VALUE self,
   int flag,
@@ -91,7 +91,7 @@ ClientFlagsSet(VALUE self,
 } /* }}} */
 
 /* ClientFlagsToggle {{{ */
-VALUE
+static VALUE
 ClientFlagsToggle(VALUE self,
   char *type,
   int flag)
