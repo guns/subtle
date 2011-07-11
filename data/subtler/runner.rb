@@ -153,19 +153,19 @@ module Subtle # {{{
           # Read pipe until EOF
           begin
             while((arg2 = ARGF.readline)) do
-              handle(arg1, arg2.chop)
+              handle_command(arg1, arg2.chop)
             end
           rescue EOFError
             # Just ignore this
           end
         else
-          handle(arg1, arg2)
+          handle_command(arg1, arg2)
         end
       end # }}}
 
       private
 
-      def handle(arg1, arg2) # {{{
+      def handle_command(arg1, arg2) # {{{
         # Modifiers
         case @mod
           when :reload  then  Subtlext::Subtle.reload
@@ -195,12 +195,22 @@ module Subtle # {{{
           # Check arity
           case arity
             when 1
-              ret = obj.send(@action, arg)
+              # Handle different return types
+              if(obj.is_a?(Array))
+                obj.each do |o|
+                  p "%s:" % o
+                  handle_result(o.send(@action, arg))
+                end
+              else
+                handle_result(obj.send(@action, arg))
+              end
             when -1
               if([ Subtlext::View, Subtlext::Tag ].include?(@group))
                 # Create new object
                 ret = obj.send(@action, arg)
                 ret.save
+
+                handle_result(ret)
               end
 
               exit
@@ -208,21 +218,30 @@ module Subtle # {{{
               usage(@group)
               exit
             else
-              ret = obj.send(@action)
-          end
-
-          # Handle result
-          case ret
-            when Array
-              ret.each do |r|
-                printer(r)
+              # Handle different return types
+              if(obj.is_a?(Array))
+                obj.each do |o|
+                  p "%s:" % o
+                  handle_result(o.send(@action))
+                end
+              else
+                handle_result(obj.send(@action))
               end
-            else
-              printer(ret)
           end
         elsif(:reload != @mod and :restart != @mod and :quit != @mod)
           usage(@group)
           exit
+        end
+      end # }}}
+
+      def handle_result(result) # {{{
+        case result
+          when Array
+            result.each do |r|
+              printer(r)
+            end
+          else
+            printer(result)
         end
       end # }}}
 
