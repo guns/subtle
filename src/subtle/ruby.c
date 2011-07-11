@@ -3025,26 +3025,6 @@ RubySubletHide(VALUE self,
   return Qnil;
 } /* }}} */
 
-/* RubySubletHidden {{{ */
-/*
- * call-seq: hidden? -> Bool
- *
- * Whether sublet is hidden
- *
- *  puts sublet.display
- *  => true
- */
-
-static VALUE
-RubySubletHidden(VALUE self)
-{
-  SubPanel *p = NULL;
-
-  Data_Get_Struct(self, SubPanel, p);
-
-  return p && p->flags & SUB_PANEL_HIDDEN ? Qtrue : Qfalse;
-} /* }}} */
-
 /* RubySubletWatch {{{ */
 /*
  * call-seq: watch(source) -> true or false
@@ -3330,7 +3310,6 @@ subRubyInit(void)
   rb_define_method(sublet, "screen",         RubySubletScreenReader,      0);
   rb_define_method(sublet, "show",           RubySubletShow,              0);
   rb_define_method(sublet, "hide",           RubySubletHide,              0);
-  rb_define_method(sublet, "hidden?",        RubySubletHidden,            0);
   rb_define_method(sublet, "watch",          RubySubletWatch,             1);
   rb_define_method(sublet, "unwatch",        RubySubletUnwatch,           0);
   rb_define_method(sublet, "warn",           RubySubletWarn,              1);
