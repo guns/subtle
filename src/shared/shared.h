@@ -72,9 +72,11 @@
 #define SUB_LOG_SUBTLE      (1L << 8)                             ///< Log subtle messages
 #define SUB_LOG_DEBUG       (1L << 9)                             ///< Log other debug messages
 
+/* View select flags */
 #define SUB_VIEW_NEXT       0L                                    ///< View next
 #define SUB_VIEW_PREV       1L                                    ///< View prev
 
+/* EWMH flags */
 #define SUB_EWMH_FULL       (1L << 0)                             ///< EWMH full flag
 #define SUB_EWMH_FLOAT      (1L << 1)                             ///< EWMH float flag
 #define SUB_EWMH_STICK      (1L << 2)                             ///< EWMH stick flag
@@ -83,7 +85,9 @@
 #define SUB_EWMH_ZAPHOD     (1L << 5)                             ///< EWMH zaphod flag
 #define SUB_EWMH_FIXED      (1L << 6)                             ///< EWMH fixed flag
 #define SUB_EWMH_CENTER     (1L << 7)                             ///< EWMH center flag
-#define SUB_EWMH_BORDERLESS (1L << 7)                             ///< EWMH fixed flag
+#define SUB_EWMH_BORDERLESS (1L << 8)                             ///< EWMH fixed flag
+#define SUB_EWMH_VISIBLE    (1L << 9)                             ///< EWMH visible flag
+#define SUB_EWMH_HIDDEN     (1L << 10)                            ///< EWMH hidden flag
 
 /* Match types flags */
 #define SUB_MATCH_NAME      (1L << 0)                             ///< Match SUBTLE_NAME
