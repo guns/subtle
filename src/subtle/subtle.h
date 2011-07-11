@@ -470,6 +470,7 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_SUBLET_DATA,                                    ///< Subtle sublet data
   SUB_EWMH_SUBTLE_SUBLET_FOREGROUND,                              ///< Subtle sublet foreground
   SUB_EWMH_SUBTLE_SUBLET_BACKGROUND,                              ///< Subtle sublet background
+  SUB_EWMH_SUBTLE_SUBLET_FLAGS,                                   ///< Subtle sublet flags
   SUB_EWMH_SUBTLE_SUBLET_LIST,                                    ///< Subtle sublet list
   SUB_EWMH_SUBTLE_SUBLET_KILL,                                    ///< Subtle sublet kill
   SUB_EWMH_SUBTLE_SCREEN_PANELS,                                  ///< Subtle screen panels
