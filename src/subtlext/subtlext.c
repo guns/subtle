@@ -1889,6 +1889,8 @@ Init_subtlext(void)
   rb_define_method(sublet, "geometry",    subSubletGeometryReader,   0);
   rb_define_method(sublet, "foreground=", subSubletForegroundWriter, 1);
   rb_define_method(sublet, "background=", subSubletBackgroundWriter, 1);
+  rb_define_method(sublet, "show",        subSubletVisibilityShow,   0);
+  rb_define_method(sublet, "hide",        subSubletVisibilityHide,   0);
   rb_define_method(sublet, "to_str",      subSubletToString,         0);
   rb_define_method(sublet, "kill",        subSubletKill,             0);
 

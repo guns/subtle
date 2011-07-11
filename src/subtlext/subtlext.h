@@ -180,6 +180,8 @@ VALUE subSubletDataReader(VALUE self);                            ///< Get suble
 VALUE subSubletDataWriter(VALUE self, VALUE value);               ///< Set sublet data
 VALUE subSubletForegroundWriter(VALUE self, VALUE value);         ///< Set sublet foreground
 VALUE subSubletBackgroundWriter(VALUE self, VALUE value);         ///< Set sublet background
+VALUE subSubletVisibilityShow(VALUE self);                        ///< Show sublet
+VALUE subSubletVisibilityHide(VALUE self);                        ///< Hide sublet
 VALUE subSubletGeometryReader(VALUE self);                        ///< Get sublet geometry
 VALUE subSubletToString(VALUE self);                              ///< Sublet to string
 VALUE subSubletKill(VALUE self);                                  ///< Kill sublet

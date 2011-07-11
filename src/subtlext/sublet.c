@@ -355,6 +355,64 @@ subSubletBackgroundWriter(VALUE self,
   return value;
 } /* }}} */
 
+/* subSubletVisibilityShow {{{ */
+/*
+ * call-seq: show -> nil
+ *
+ * Show sublet in the panels.
+ *
+ *  sublet.show
+ *  => nil
+ */
+
+VALUE
+subSubletVisibilityShow(VALUE self)
+{
+  VALUE id = Qnil;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@id", id);
+
+  data.l[0] = FIX2LONG(id);
+  data.l[1] = SUB_EWMH_VISIBLE;
+
+  subSharedMessage(display, DefaultRootWindow(display),
+    "SUBTLE_SUBLET_FLAGS", data, 32, True);
+
+  return Qnil;
+} /* }}} */
+
+/* subSubletVisibilityHide {{{ */
+/*
+ * call-seq: hide -> nil
+ *
+ * Hide sublet from the panels.
+ *
+ *  sublet.hide
+ *  => nil
+ */
+
+VALUE
+subSubletVisibilityHide(VALUE self)
+{
+  VALUE id = Qnil;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@id", id);
+
+  data.l[0] = FIX2LONG(id);
+  data.l[1] = SUB_EWMH_HIDDEN;
+
+  subSharedMessage(display, DefaultRootWindow(display),
+    "SUBTLE_SUBLET_FLAGS", data, 32, True);
+
+  return Qnil;
+} /* }}} */
+
 /* subSubletGeometryReader {{{ */
 /*
  * call-seq: geometry -> Subtlext::Geometry
