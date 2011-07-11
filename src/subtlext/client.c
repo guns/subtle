@@ -300,8 +300,9 @@ subClientSingFind(VALUE self,
       /* Check each client */
       for(i = 0; i < size; i++)
         {
-          if(selid == i || selwin == wins[i] || (-1 == selid &&
-              subSubtlextWindowMatch(wins[i], preg, buf, NULL, flags)))
+          if(selid == i || selid == wins[i] || selwin == wins[i] ||
+              (-1 == selid && subSubtlextWindowMatch(wins[i],
+                preg, buf, NULL, flags)))
             {
               /* Create new client */
               if(RTEST((client = rb_funcall(klass, meth, 1, INT2FIX(i)))))

@@ -91,7 +91,7 @@ subTraySingFind(VALUE self,
       /* Check each tray */
       for(i = 0; i < size; i++)
         {
-          if(selid == i || (-1 == selid &&
+          if(selid == i || selid == wins[i] || (-1 == selid &&
               preg && subSubtlextWindowMatch(wins[i], preg, buf, NULL, flags)))
             {
               /* Create new tray */
