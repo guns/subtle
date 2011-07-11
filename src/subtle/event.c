@@ -1200,14 +1200,34 @@ EventMessage(XClientMessageEvent *ev)
             if((p = EventFindSublet((int)ev->data.l[0])))
               {
                 p->sublet->fg = ev->data.l[1];
-                /*FIXME subPanelRender(p); */
+                subScreenRender();
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_SUBLET_BACKGROUND: /* {{{ */
             if((p = EventFindSublet((int)ev->data.l[0])))
               {
                 p->sublet->bg = ev->data.l[1];
-                /*FIXME subPanelRender(p); */
+                subScreenRender();
+              }
+            break; /* }}} */
+          case SUB_EWMH_SUBTLE_SUBLET_FLAGS: /* {{{ */
+            if((p = EventFindSublet((int)ev->data.l[0])))
+              {
+                /* Update visibility */
+                if(ev->data.l[1] & SUB_EWMH_VISIBLE &&
+                    p->flags & SUB_PANEL_HIDDEN)
+                  {
+                    p->flags &= ~SUB_PANEL_HIDDEN;
+                    subScreenUpdate();
+                    subScreenRender();
+                  }
+                else if(ev->data.l[1] & SUB_EWMH_HIDDEN &&
+                    !(p->flags & SUB_PANEL_HIDDEN))
+                  {
+                    p->flags |= SUB_PANEL_HIDDEN;
+                    subScreenUpdate();
+                    subScreenRender();
+                  }
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_SUBLET_UPDATE: /* {{{ */
