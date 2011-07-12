@@ -89,6 +89,7 @@ EventRestack(SubClient *c,
   flags     = c->flags & (SUB_CLIENT_TYPE_DESKTOP|SUB_CLIENT_MODE_FULL);
   c->flags &= ~flags;
 
+  /* Check direction */
   if(Above == dir)
     {
       XRaiseWindow(subtle->dpy, c->win);
@@ -97,6 +98,9 @@ EventRestack(SubClient *c,
       c->flags |= SUB_CLIENT_MODE_FULL;
       subArraySort(subtle->clients, subClientCompare);
       c->flags &= ~SUB_CLIENT_MODE_FULL;
+
+      /* Update stacking list */
+      subClientPublish();
     }
   else if(Below == dir)
     {
@@ -106,6 +110,9 @@ EventRestack(SubClient *c,
       c->flags |= SUB_CLIENT_TYPE_DESKTOP;
       subArraySort(subtle->clients, subClientCompare);
       c->flags &= ~SUB_CLIENT_TYPE_DESKTOP;
+
+      /* Update stacking list */
+      subClientPublish();
     }
   else subSharedLogDebug("Ignoring unknown stacking mode `%ld'", dir);
 
