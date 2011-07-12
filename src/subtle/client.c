@@ -397,31 +397,26 @@ subClientRender(SubClient *c)
   * @param[in]  a  A #SubClient
   * @param[in]  b  A #SubClient
   * @return Returns the result of the comparison of both clients
-  * @retval  -1  a is smaller
+  * @retval  -1  a is lower
   * @retval  0   a and b are equal
-  * @retval  1   a is greater
+  * @retval  1   a is higher
   **/
 
 int
 subClientCompare(const void *a,
   const void *b)
 {
-  int ret = 0;
+  int ret = 0, mask = (SUB_CLIENT_MODE_FULL|SUB_CLIENT_TYPE_DESKTOP);
   SubClient *c1 = *(SubClient **)a, *c2 = *(SubClient **)b;
 
   assert(a && b);
 
   /* Check flags */
-  if((c1->flags | c2->flags) & SUB_CLIENT_MODE_FULL)
-    {
-      if(c1->flags & SUB_CLIENT_MODE_FULL) ret = 1;
-      if(c2->flags & SUB_CLIENT_MODE_FULL) ret = -1;
-    }
-  else if((c1->flags | c2->flags) & SUB_CLIENT_TYPE_DESKTOP)
-    {
-      if(c1->flags & SUB_CLIENT_TYPE_DESKTOP) ret = -1;
-      if(c2->flags & SUB_CLIENT_TYPE_DESKTOP) ret = 1;
-    }
+  if((c1->flags & mask) == (c2->flags & mask)) ret = 0;
+  else if(c1->flags & SUB_CLIENT_MODE_FULL ||
+      c2->flags & SUB_CLIENT_TYPE_DESKTOP)     ret = -1;
+  else if(c1->flags & SUB_CLIENT_TYPE_DESKTOP ||
+      c2->flags & SUB_CLIENT_MODE_FULL)        ret = 1;
 
   return ret;
 } /* }}} */
