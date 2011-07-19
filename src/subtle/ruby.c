@@ -765,7 +765,7 @@ RubyEvalGrab(VALUE keys,
             }
 
           /* Add type/action to new grabs and mark as chain end */
-          if(!duplicate)
+          if(g && !duplicate)
             {
               /* Update flags */
               if(g->flags & SUB_GRAB_CHAIN_LINK)
