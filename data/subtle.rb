@@ -147,8 +147,8 @@ style :occupied do
   background  "#202020"
 end
 
-# Style for view buttons
-style :views do
+# Style for unoccupied views (views without clients)
+style :unoccupied do
   padding     0, 3
   border      "#303030", 0
   foreground  "#757575"
