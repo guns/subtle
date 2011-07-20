@@ -565,7 +565,7 @@ typedef struct subsides_t /* {{{ */
 typedef struct substyle_t /* {{{ */
 {
   int min;                                                        ///< Style min width
-  unsigned long fg, bg, top, right, bottom, left;                 ///< Style colors
+  long fg, bg, top, right, bottom, left;                          ///< Style colors
   struct subsides_t border, padding, margin;                      ///< Style border, padding and margin
 } SubStyle; /* }}} */
 
@@ -621,8 +621,8 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    struct substyle_t title, focus, urgent, occupied, views,
-                      sublets, separator, clients, subtle;
+    struct substyle_t all, views, title, focus, urgent, occupied,
+                      unoccupied, sublets, separator, clients, subtle;
   } styles;                                                       ///< Subtle styles
 
   struct
