@@ -94,14 +94,47 @@ RubyReceiver(unsigned long instance,
   return receiver == instance;
 } /* }}} */
 
-/* RubyResetStyle {{{ */
+/* Styles */
+
+/* RubyStyleReset {{{ */
 static void
-RubyResetStyle(SubStyle *s)
+RubyStyleReset(SubStyle *s,
+  int val)
 {
-  s->fg = s->bg = s->top  = s->right = s->bottom = s->left = 0;
-  s->border.top  = s->border.left  = s->border.bottom  = s->border.right  = 0;
-  s->padding.top = s->padding.left = s->padding.bottom = s->padding.right = 0;
-  s->margin.top  = s->margin.left  = s->margin.bottom  = s->margin.right  = 0;
+  s->fg = s->bg = s->top  = s->right = s->bottom = s->left = val;
+  s->border.top  = s->border.right  = s->border.bottom  = s->border.left  = val;
+  s->padding.top = s->padding.right = s->padding.bottom = s->padding.left = val;
+  s->margin.top  = s->margin.right  = s->margin.bottom  = s->margin.left  = val;
+} /* }}} */
+
+/* RubyStyleCascadeSides {{{ */
+static void
+RubyStyleCascadeSides(SubSides *s1,
+  SubSides *s2)
+{
+  if(-1 == s1->top)    s1->top    = s2->top;
+  if(-1 == s1->right)  s1->right  = s2->right;
+  if(-1 == s1->bottom) s1->bottom = s2->bottom;
+  if(-1 == s1->left)   s1->left   = s2->left;
+} /* }}} */
+
+/* RubyStyleCascade {{{ */
+static void
+RubyStyleCascade(SubStyle *s1,
+  SubStyle *s2)
+{
+  /* Cascade colors */
+  if(-1 == s1->fg)     s1->fg     = s2->fg;
+  if(-1 == s1->bg)     s1->bg     = s2->bg;
+  if(-1 == s1->top)    s1->top    = s2->top;
+  if(-1 == s1->right)  s1->right  = s2->right;
+  if(-1 == s1->bottom) s1->bottom = s2->bottom;
+  if(-1 == s1->left)   s1->left   = s2->left;
+
+  /* Cascade borrder, padding and margin */
+  RubyStyleCascadeSides(&s1->border,  &s2->border);
+  RubyStyleCascadeSides(&s1->padding, &s2->padding);
+  RubyStyleCascadeSides(&s1->margin,  &s2->margin);
 } /* }}} */
 
 /* Type converter */
@@ -414,13 +447,13 @@ RubyValueToHash(VALUE value)
 static void
 RubyHashToColor(VALUE hash,
   const char *key,
-  unsigned long *col)
+  long *col)
 {
   VALUE value = Qnil;
 
   /* Parse and set color if key found */
   if(T_STRING == rb_type(value = rb_hash_lookup(hash, CHAR2SYM(key))))
-    *col = subSharedParseColor(subtle->dpy, RSTRING_PTR(value));
+    *col = (long)subSharedParseColor(subtle->dpy, RSTRING_PTR(value));
 } /* }}} */
 
 /* RubyHashToInt {{{ */
@@ -440,7 +473,7 @@ RubyHashToInt(VALUE hash,
 static void
 RubyHashToBorder(VALUE hash,
   const char *key,
-  unsigned long *col,
+  long *col,
   int *bw)
 {
   VALUE value = Qnil;
@@ -453,14 +486,14 @@ RubyHashToBorder(VALUE hash,
             VALUE val = Qnil;
 
             if(T_STRING == rb_type(val = rb_ary_entry(value, 0)))
-              *col = subSharedParseColor(subtle->dpy, RSTRING_PTR(val));
+              *col = (long)subSharedParseColor(subtle->dpy, RSTRING_PTR(val));
 
             if(FIXNUM_P(val  = rb_ary_entry(value, 1)))
               *bw = FIX2INT(val);
           }
         break;
       case T_STRING:
-        *col = subSharedParseColor(subtle->dpy, RSTRING_PTR(value));
+        *col = (long)subSharedParseColor(subtle->dpy, RSTRING_PTR(value));
         break;
     }
 } /* }}} */
@@ -966,6 +999,20 @@ RubyEvalConfig(void)
 
   /* Update panel height */
   subtle->ph += subtle->font->height;
+
+  /* Style cascading */
+  RubyStyleCascade(&subtle->styles.title,      &subtle->styles.all);
+  RubyStyleCascade(&subtle->styles.urgent,     &subtle->styles.all);
+  RubyStyleCascade(&subtle->styles.sublets,    &subtle->styles.all);
+  RubyStyleCascade(&subtle->styles.clients,    &subtle->styles.all);
+  RubyStyleCascade(&subtle->styles.separator,  &subtle->styles.all);
+
+  RubyStyleCascade(&subtle->styles.focus,      &subtle->styles.views);
+  RubyStyleCascade(&subtle->styles.focus,      &subtle->styles.all);
+  RubyStyleCascade(&subtle->styles.occupied,   &subtle->styles.views);
+  RubyStyleCascade(&subtle->styles.occupied,   &subtle->styles.all);
+  RubyStyleCascade(&subtle->styles.unoccupied, &subtle->styles.views);
+  RubyStyleCascade(&subtle->styles.unoccupied, &subtle->styles.all);
 
   /* Set separator */
   if(subtle->separator.string)
@@ -2213,21 +2260,22 @@ RubyConfigStyle(VALUE self,
   if(T_SYMBOL == rb_type(name))
     {
       int bw = -1;
-      unsigned long border = -1;
+      long border = -1;
       SubStyle *s = NULL;
       VALUE klass = Qnil, options = Qnil, params = Qnil, value = Qnil;
 
       /* Select style struct */
-      if(CHAR2SYM("all") == name || CHAR2SYM("title") == name)
-        s = &subtle->styles.title;
-      else if(CHAR2SYM("focus")     == name) s = &subtle->styles.focus;
-      else if(CHAR2SYM("urgent")    == name) s = &subtle->styles.urgent;
-      else if(CHAR2SYM("occupied")  == name) s = &subtle->styles.occupied;
-      else if(CHAR2SYM("views")     == name) s = &subtle->styles.views;
-      else if(CHAR2SYM("sublets")   == name) s = &subtle->styles.sublets;
-      else if(CHAR2SYM("separator") == name) s = &subtle->styles.separator;
-      else if(CHAR2SYM("clients")   == name) s = &subtle->styles.clients;
-      else if(CHAR2SYM("subtle")    == name) s = &subtle->styles.subtle;
+      if(CHAR2SYM("all")             == name) s = &subtle->styles.all;
+      else if(CHAR2SYM("views")      == name) s = &subtle->styles.views;
+      else if(CHAR2SYM("title")      == name) s = &subtle->styles.title;
+      else if(CHAR2SYM("focus")      == name) s = &subtle->styles.focus;
+      else if(CHAR2SYM("urgent")     == name) s = &subtle->styles.urgent;
+      else if(CHAR2SYM("occupied")   == name) s = &subtle->styles.occupied;
+      else if(CHAR2SYM("unoccupied") == name) s = &subtle->styles.unoccupied;
+      else if(CHAR2SYM("sublets")    == name) s = &subtle->styles.sublets;
+      else if(CHAR2SYM("separator")  == name) s = &subtle->styles.separator;
+      else if(CHAR2SYM("clients")    == name) s = &subtle->styles.clients;
+      else if(CHAR2SYM("subtle")     == name) s = &subtle->styles.subtle;
       else
         {
           subSharedLogWarn("Unknown style name `:%s'\n", SYM2CHAR(name));
@@ -2342,18 +2390,6 @@ RubyConfigStyle(VALUE self,
           int height = STYLE_HEIGHT((*s));
 
           if(height > subtle->ph) subtle->ph = height;
-        }
-
-      /* Cascading styles */
-      if(CHAR2SYM("all") == name)
-        {
-          /* Set all styles */
-          subtle->styles.focus     = subtle->styles.title;
-          subtle->styles.urgent    = subtle->styles.title;
-          subtle->styles.occupied  = subtle->styles.title;
-          subtle->styles.views     = subtle->styles.title;
-          subtle->styles.sublets   = subtle->styles.title;
-          subtle->styles.separator = subtle->styles.title;
         }
     }
   else rb_raise(rb_eArgError, "Unknown value type for style");
@@ -3367,8 +3403,20 @@ subRubyLoadConfig(void)
     subArrayPush(subtle->tags, (void *)t);
 
   /* Set default values */
-  subtle->styles.subtle.bg = -1;
-  subtle->gravity          = -1;
+  subtle->gravity = -1;
+
+  /* Reset styles */
+  RubyStyleReset(&subtle->styles.all,         0); ///< Ensure sane values
+  RubyStyleReset(&subtle->styles.views,      -1);
+  RubyStyleReset(&subtle->styles.title,      -1);
+  RubyStyleReset(&subtle->styles.focus,      -1);
+  RubyStyleReset(&subtle->styles.urgent,     -1);
+  RubyStyleReset(&subtle->styles.occupied,   -1);
+  RubyStyleReset(&subtle->styles.unoccupied, -1);
+  RubyStyleReset(&subtle->styles.sublets,    -1);
+  RubyStyleReset(&subtle->styles.separator,  -1);
+  RubyStyleReset(&subtle->styles.clients,    -1);
+  RubyStyleReset(&subtle->styles.subtle,     -1);
 
   /* Create and register config values */
   config_sublets = rb_hash_new();
@@ -3443,17 +3491,6 @@ subRubyReloadConfig(void)
 
   /* Reset panel height */
   subtle->ph = 0;
-
-  /* Reset styles */
-  RubyResetStyle(&subtle->styles.title);
-  RubyResetStyle(&subtle->styles.focus);
-  RubyResetStyle(&subtle->styles.urgent);
-  RubyResetStyle(&subtle->styles.occupied);
-  RubyResetStyle(&subtle->styles.views);
-  RubyResetStyle(&subtle->styles.sublets);
-  RubyResetStyle(&subtle->styles.separator);
-  RubyResetStyle(&subtle->styles.clients);
-  RubyResetStyle(&subtle->styles.subtle);
 
   /* Reset before reloading */
   subtle->flags &= (SUB_SUBTLE_DEBUG|SUB_SUBTLE_EWMH|SUB_SUBTLE_RUN|
