@@ -251,7 +251,7 @@ subPanelUpdate(SubPanel *p)
                   s = &subtle->styles.focus;
                 else if(subtle->client_tags & v->tags)
                   s = &subtle->styles.occupied;
-                else s = &subtle->styles.views;
+                else s = &subtle->styles.unoccupied;
 
                 p->width += MAX(s->min, v->width) + STYLE_WIDTH((*s));
               }
@@ -378,7 +378,7 @@ subPanelRender(SubPanel *p,
                   s = &subtle->styles.focus;
                 else if(subtle->client_tags & v->tags)
                   s = &subtle->styles.occupied;
-                else s = &subtle->styles.views;
+                else s = &subtle->styles.unoccupied;
 
                 /* Set window background and border*/
                 PanelRect(drawable, vx, v->width + STYLE_WIDTH((*s)), s);
@@ -532,7 +532,7 @@ subPanelAction(SubArray *panels,
                           s = &subtle->styles.focus;
                         else if(subtle->client_tags & v->tags)
                           s = &subtle->styles.occupied;
-                        else s = &subtle->styles.views;
+                        else s = &subtle->styles.unoccupied;
 
                         swidth = v->width + STYLE_WIDTH((*s)); ///< Get width with style
 
