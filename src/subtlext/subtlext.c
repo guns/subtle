@@ -708,7 +708,7 @@ SubtlextAskFocus(VALUE self)
 /*
  * call-seq: [value] -> String or Nil
  *
- * Get arbitrary persistent property
+ * Get arbitrary persistent property string or symbol value
  *
  *  object["wm"]
  *  => "subtle"
@@ -783,9 +783,18 @@ SubtlextPropReader(VALUE self,
 /*
  * call-seq: [key]= value -> Nil
  *
- * Set arbitrary persistent property
+ * Set arbitrary persistent property string or symbol value
+ *
+ * Symbols are implictly converted to string, to remove a property just
+ * set it to +nil+.
  *
  *  object["wm"] = "subtle"
+ *  => nil
+ *
+ *  object[:wm] = "subtle"
+ *  => nil
+ *
+ *  object[:wm] = nil
  *  => nil
  */
 
@@ -794,7 +803,9 @@ SubtlextPropWriter(VALUE self,
   VALUE key,
   VALUE value)
 {
-  char *prop = NULL;
+  VALUE val = Qnil, str = value;
+  char *prop = NULL, *name = NULL, propname[255] = { 0 };
+  Window win = DefaultRootWindow(display);
 
   /* Check ruby object */
   rb_check_frozen(self);
@@ -811,42 +822,44 @@ SubtlextPropWriter(VALUE self,
         return Qnil;
     }
 
-  /* Check object type */
-  if(T_STRING == rb_type(value))
+  /* Sanitize property name */
+  name = strdup(prop);
+  SubtlextStringify(name);
+
+  /* Assemble property name */
+  if(rb_obj_is_instance_of(self, rb_const_get(mod, rb_intern("View"))))
     {
-      char propname[255] = { 0 }, *name = NULL;
-      Window win = DefaultRootWindow(display);
-      VALUE val = Qnil;
-
-      /* Sanitize property name */
-      name = strdup(prop);
-      SubtlextStringify(name);
-
-      /* Check object type */
-      if(rb_obj_is_instance_of(self, rb_const_get(mod, rb_intern("View"))))
-        {
-          GET_ATTR(self, "@name", val);
-          snprintf(propname, sizeof(propname), "SUBTLE_PROPERTY_%s_%s",
-            RSTRING_PTR(val), name);
-        }
-      else ///< Client
-        {
-          GET_ATTR(self, "@win", val);
-          win = NUM2LONG(val);
-          snprintf(propname, sizeof(propname), "SUBTLE_PROPERTY_%s", name);
-        }
-
-      /* Update property */
-      XChangeProperty(display, win, XInternAtom(display, propname, False),
-        XInternAtom(display, "UTF8_STRING", False), 8, PropModeReplace,
-        (unsigned char *)RSTRING_PTR(value), RSTRING_LEN(value));
-
-      XSync(display, False); ///< Sync all changes
-
-      free(name);
+      GET_ATTR(self, "@name", val);
+      snprintf(propname, sizeof(propname), "SUBTLE_PROPERTY_%s_%s",
+        RSTRING_PTR(val), name);
     }
-  else rb_raise(rb_eArgError, "Unexpected value value-type `%s'",
-    rb_obj_classname(value));
+  else ///< Client
+    {
+      GET_ATTR(self, "@win", val);
+      win = NUM2LONG(val);
+      snprintf(propname, sizeof(propname), "SUBTLE_PROPERTY_%s", name);
+    }
+
+  /* Check value type */
+  switch(rb_type(value))
+    {
+      case T_SYMBOL: str = rb_sym_to_s(value);
+      case T_STRING:
+        XChangeProperty(display, win, XInternAtom(display, propname, False),
+          XInternAtom(display, "UTF8_STRING", False), 8, PropModeReplace,
+          (unsigned char *)RSTRING_PTR(str), RSTRING_LEN(str));
+        break;
+      case T_NIL:
+        XDeleteProperty(display, win, XInternAtom(display, propname, False));
+        break;
+      default:
+        rb_raise(rb_eArgError, "Unexpected value value-type `%s'",
+          rb_obj_classname(value));
+    }
+
+  XSync(display, False); ///< Sync all changes
+
+  if(name) free(name);
 
   return Qnil;
 } /* }}} */
