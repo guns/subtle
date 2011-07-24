@@ -441,7 +441,7 @@ subClientFocus(SubClient *c)
     }
 
   /* Check client input focus type (see ICCCM 4.1.7, 4.1.2.7, 4.2.8) */
-  if(c->flags & SUB_CLIENT_FOCUS)
+  if(!(c->flags & SUB_CLIENT_INPUT) && c->flags & SUB_CLIENT_FOCUS)
     {
       subEwmhMessage(c->win, SUB_EWMH_WM_PROTOCOLS, NoEventMask,
         subEwmhGet(SUB_EWMH_WM_TAKE_FOCUS), CurrentTime, 0, 0, 0);
