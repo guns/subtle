@@ -242,7 +242,7 @@ subClientNew(Window win)
   /* Create new client */
   c = CLIENT(subSharedMemoryAlloc(1, sizeof(SubClient)));
   c->gravities = (int *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(int));
-  c->flags     = SUB_TYPE_CLIENT;
+  c->flags     = (SUB_TYPE_CLIENT|SUB_CLIENT_INPUT);
   c->gravity   = -1; ///< Force update
   c->win       = win;
 
@@ -307,8 +307,9 @@ subClientNew(Window win)
   subEwmhSetCardinals(c->win, SUB_EWMH_NET_FRAME_EXTENTS, extents, 4);
 
   subSharedLogDebugSubtle("new=client, name=%s, instance=%s, "
-    "class=%s, win=%#lx\n",
-    c->name, c->instance, c->klass, win);
+    "class=%s, win=%#lx, input=%d, focus=%d\n",
+    c->name, c->instance, c->klass, win, !!(c->flags & SUB_CLIENT_INPUT),
+    !!(c->flags & SUB_CLIENT_FOCUS));
 
   return c;
 } /* }}} */
@@ -440,18 +441,13 @@ subClientFocus(SubClient *c)
     }
 
   /* Check client input focus type (see ICCCM 4.1.7, 4.1.2.7, 4.2.8) */
-  if(!(c->flags & SUB_CLIENT_INPUT) && c->flags & SUB_CLIENT_FOCUS)
+  if(c->flags & SUB_CLIENT_FOCUS)
     {
       subEwmhMessage(c->win, SUB_EWMH_WM_PROTOCOLS, NoEventMask,
         subEwmhGet(SUB_EWMH_WM_TAKE_FOCUS), CurrentTime, 0, 0, 0);
     }
   else if(c->flags & SUB_CLIENT_INPUT)
     XSetInputFocus(subtle->dpy, c->win, RevertToPointerRoot, CurrentTime);
-
-  subSharedLogDebugSubtle("Focus: type=client, win=%#lx, "
-    "current=%#lx, input=%d, focus=%d\n",
-    c->win, subtle->windows.focus[0], !!(c->flags & SUB_CLIENT_INPUT),
-    !!(c->flags & SUB_CLIENT_FOCUS));
 } /* }}} */
 
  /** subClientWarp {{{
@@ -1322,7 +1318,7 @@ subClientSetWMHints(SubClient *c,
 
   assert(c && flags);
 
-  /* Window manager hints */
+  /* Window manager hints (ICCCM 4.1.7) */
   if((hints = XGetWMHints(subtle->dpy, c->win)))
     {
       /* Handle urgency hint:
@@ -1343,9 +1339,9 @@ subClientSetWMHints(SubClient *c,
             ClientCopy(c, k);
         }
 
-      /* Handle input hint */
-      if(hints->flags & InputHint && hints->input)
-        c->flags |= SUB_CLIENT_INPUT;
+      /* Handle just false value of input hint since it is default */
+      if(hints->flags & InputHint && !hints->input)
+        c->flags &= ~SUB_CLIENT_INPUT;
 
       XFree(hints);
     }
