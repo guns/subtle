@@ -203,8 +203,8 @@ subSubtleFocus(int focus)
             }
         }
 
-      /* Check client list */
-      for(i = 0; i < subtle->clients->ndata; i++)
+      /* Check client list backwards to get fullscreen first */
+      for(i = subtle->clients->ndata - 1; i > 0; i--)
         {
           c = CLIENT(subtle->clients->data[i]);
 
