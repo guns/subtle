@@ -2106,15 +2106,22 @@ RubyConfigView(int argc,
  */
 
 static VALUE
-RubyConfigOn(VALUE self,
-  VALUE event)
+RubyConfigOn(int argc,
+  VALUE *argv,
+  VALUE self)
 {
+  VALUE event = Qnil, value = Qnil;
+
+  rb_scan_args(argc, argv, "11", &event, &value);
+
   /* Check value type */
-  if(T_SYMBOL == rb_type(event) && rb_block_given_p())
+  if(T_SYMBOL == rb_type(event))
     {
       if(subtle->flags & SUB_SUBTLE_CHECK) return Qnil; ///< Skip on check
 
-      RubyEvalHook(event, rb_block_proc());
+      if(rb_block_given_p()) value = rb_block_proc(); ///< Get proc
+
+      RubyEvalHook(event, value);
     }
   else rb_raise(rb_eArgError, "Unknown value type for on");
 
@@ -3295,7 +3302,7 @@ subRubyInit(void)
   rb_define_method(config, "grab",                   RubyConfigGrab,     -1);
   rb_define_method(config, "tag",                    RubyConfigTag,      -1);
   rb_define_method(config, "view",                   RubyConfigView,     -1);
-  rb_define_method(config, "on",                     RubyConfigOn,        1);
+  rb_define_method(config, "on",                     RubyConfigOn,       -1);
   rb_define_method(config, "sublet",                 RubyConfigSublet,    1);
   rb_define_method(config, "screen",                 RubyConfigScreen,    1);
   rb_define_method(config, "style",                  RubyConfigStyle,     1);
