@@ -96,36 +96,20 @@ subStyleNew(void)
   * @brief Add state to style
   * @param[in]  s      A #SubStyle
   * @param[in]  state  A #SubStyle
-  * @param[in]  idx    State index
   **/
 
 void
 subStyleAddState(SubStyle *s,
-  SubStyle *state,
-  int idx)
+  SubStyle *state)
 {
   assert(s);
 
   if(!s->states) s->states = subArrayNew();
 
   /* Add state to style */
-  if(-1 == idx) subArrayPush(s->states, (void *)state);
-  else
-    {
-      s->flags |= STYLE_FLAG(idx);
+  subArrayPush(s->states, (void *)state);
 
-      /* Extend array */
-      if(s->states->ndata <= idx + 1)
-        {
-          s->states->data = (void **)subSharedMemoryRealloc(s->states->data,
-            (s->states->ndata + (idx + 1 - s->states->ndata)) * sizeof(void *));
-          s->states->ndata += (idx + 1 - s->states->ndata);
-        }
-
-      s->states->data[idx] = (void *)state;
-    }
-
-  subSharedLogDebugSubtle("Add state: idx=%d, total=%d\n", idx, s->states->ndata);
+  subSharedLogDebugSubtle("Add state: total=%d\n", s->states->ndata);
 } /* }}} */
 
  /** subStyleFindState {{{
@@ -179,10 +163,15 @@ subStyleReset(SubStyle *s,
 {
   assert(s);
 
+  /* Set value */
   s->fg = s->bg = s->top  = s->right = s->bottom = s->left = val;
   s->border.top  = s->border.right  = s->border.bottom  = s->border.left  = val;
   s->padding.top = s->padding.right = s->padding.bottom = s->padding.left = val;
   s->margin.top  = s->margin.right  = s->margin.bottom  = s->margin.left  = val;
+
+  /* Remove states */
+  if(s->states) subArrayKill(s->states, True);
+  s->states = NULL;
 } /* }}} */
 
  /** subStyleKill {{{
