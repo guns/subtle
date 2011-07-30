@@ -3474,13 +3474,13 @@ subRubyLoadConfig(void)
   subtle->styles.focus      = NULL;
 
   /* Reset styles */
-  subStyleReset(&subtle->styles.all,        0); ///< Ensure sane values
+  subStyleReset(&subtle->styles.all,        0); ///< Ensure sane base values
   subStyleReset(&subtle->styles.views,     -1);
   subStyleReset(&subtle->styles.title,     -1);
   subStyleReset(&subtle->styles.sublets,   -1);
   subStyleReset(&subtle->styles.separator, -1);
-  subStyleReset(&subtle->styles.clients,   -1);
-  subStyleReset(&subtle->styles.subtle,    -1);
+  subStyleReset(&subtle->styles.clients,    0);
+  subStyleReset(&subtle->styles.subtle,     0);
 
   /* Create and register config values */
   config_sublets = rb_hash_new();
