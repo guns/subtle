@@ -69,6 +69,8 @@
 #define STYLE_WIDTH(s)  (STYLE_LEFT(s) + STYLE_RIGHT(s))          ///< Get style width
 #define STYLE_HEIGHT(s) (STYLE_TOP(s) + STYLE_BOTTOM(s))          ///< Get style height
 
+#define STYLE_FLAG(flag)    (1L << (10 + flag))                   ///< Get style flag
+
 #define MIN(a,b)     (a >= b ? b : a)                             ///< Minimum
 #define MAX(a,b)     (a >= b ? a : b)                             ///< Maximum
 
@@ -116,6 +118,7 @@
 #define KEYCHAIN(k)  ((SubKeychain *)k)                           ///< Cast to SubKeychain
 #define PANEL(p)     ((SubPanel *)p)                              ///< Cast to SubPanel
 #define SCREEN(s)    ((SubScreen *)s)                             ///< Cast to SubScreen
+#define STYLE(s)     ((SubStyle *)s)                              ///< Cast to SubStyle
 #define SUBLET(s)    ((SubSublet *)s)                             ///< Cast to SubSublet
 #define TAG(t)       ((SubTag *)t)                                ///< Cast to SubTag
 #define TRAY(t)      ((SubTray *)t)                               ///< Cast to SubTray
@@ -130,52 +133,53 @@
 #define SUB_TYPE_HOOK                 (1L << 3)                   ///< Hook
 #define SUB_TYPE_PANEL                (1L << 4)                   ///< Panel
 #define SUB_TYPE_SCREEN               (1L << 5)                   ///< Screen
-#define SUB_TYPE_TAG                  (1L << 6)                   ///< Tag
-#define SUB_TYPE_TRAY                 (1L << 7)                   ///< Tray
-#define SUB_TYPE_VIEW                 (1L << 8)                   ///< View
+#define SUB_TYPE_STYLE                (1L << 6)                   ///< Style
+#define SUB_TYPE_TAG                  (1L << 7)                   ///< Tag
+#define SUB_TYPE_TRAY                 (1L << 8)                   ///< Tray
+#define SUB_TYPE_VIEW                 (1L << 9)                   ///< View
 
 /* Call flags */
-#define SUB_CALL_HOOKS                (1L << 9)                   ///< Call generic hook
-#define SUB_CALL_CONFIGURE            (1L << 10)                  ///< Call watch hook
-#define SUB_CALL_RUN                  (1L << 11)                  ///< Call run hook
-#define SUB_CALL_DATA                 (1L << 12)                  ///< Call data hook
-#define SUB_CALL_WATCH                (1L << 13)                  ///< Call watch hook
-#define SUB_CALL_DOWN                 (1L << 14)                  ///< Call mouse down hook
-#define SUB_CALL_OVER                 (1L << 15)                  ///< Call mouse over hook
-#define SUB_CALL_OUT                  (1L << 16)                  ///< Call mouse out hook
-#define SUB_CALL_UNLOAD               (1L << 17)                  ///< Call unload hook
+#define SUB_CALL_HOOKS                (1L << 10)                  ///< Call generic hook
+#define SUB_CALL_CONFIGURE            (1L << 11)                  ///< Call watch hook
+#define SUB_CALL_RUN                  (1L << 12)                  ///< Call run hook
+#define SUB_CALL_DATA                 (1L << 13)                  ///< Call data hook
+#define SUB_CALL_WATCH                (1L << 14)                  ///< Call watch hook
+#define SUB_CALL_DOWN                 (1L << 15)                  ///< Call mouse down hook
+#define SUB_CALL_OVER                 (1L << 16)                  ///< Call mouse over hook
+#define SUB_CALL_OUT                  (1L << 17)                  ///< Call mouse out hook
+#define SUB_CALL_UNLOAD               (1L << 18)                  ///< Call unload hook
 
-/* Hooks */
-#define SUB_HOOK_START                (1L << 9)                   ///< Start hook
-#define SUB_HOOK_RELOAD               (1L << 10)                  ///< Reload hook
-#define SUB_HOOK_EXIT                 (1L << 11)                  ///< Exit hook
-#define SUB_HOOK_TILE                 (1L << 12)                  ///< Tile hook
-#define SUB_HOOK_TYPE_CLIENT          (1L << 13)                  ///< Client hooks
-#define SUB_HOOK_TYPE_VIEW            (1L << 14)                  ///< View hooks
-#define SUB_HOOK_TYPE_TAG             (1L << 15)                  ///< Tag hooks
-#define SUB_HOOK_ACTION_CREATE        (1L << 16)                  ///< Create action
-#define SUB_HOOK_ACTION_MODE          (1L << 17)                  ///< Mode action
-#define SUB_HOOK_ACTION_GRAVITY       (1L << 18)                  ///< Gravity action
-#define SUB_HOOK_ACTION_FOCUS         (1L << 19)                  ///< Focus action
-#define SUB_HOOK_ACTION_KILL          (1L << 20)                  ///< Kill action
+/* Hook flags */
+#define SUB_HOOK_START                (1L << 10)                  ///< Start hook
+#define SUB_HOOK_RELOAD               (1L << 11)                  ///< Reload hook
+#define SUB_HOOK_EXIT                 (1L << 12)                  ///< Exit hook
+#define SUB_HOOK_TILE                 (1L << 13)                  ///< Tile hook
+#define SUB_HOOK_TYPE_CLIENT          (1L << 14)                  ///< Client hooks
+#define SUB_HOOK_TYPE_VIEW            (1L << 15)                  ///< View hooks
+#define SUB_HOOK_TYPE_TAG             (1L << 16)                  ///< Tag hooks
+#define SUB_HOOK_ACTION_CREATE        (1L << 17)                  ///< Create action
+#define SUB_HOOK_ACTION_MODE          (1L << 18)                  ///< Mode action
+#define SUB_HOOK_ACTION_GRAVITY       (1L << 19)                  ///< Gravity action
+#define SUB_HOOK_ACTION_FOCUS         (1L << 20)                  ///< Focus action
+#define SUB_HOOK_ACTION_KILL          (1L << 21)                  ///< Kill action
 
 /* Client flags */
-#define SUB_CLIENT_DEAD               (1L << 9)                   ///< Dead window
-#define SUB_CLIENT_FOCUS              (1L << 10)                  ///< Send focus message
-#define SUB_CLIENT_INPUT              (1L << 11)                  ///< Active/passive focus-model
-#define SUB_CLIENT_CLOSE              (1L << 12)                  ///< Send close message
-#define SUB_CLIENT_UNMAP              (1L << 13)                  ///< Ignore unmaps
-#define SUB_CLIENT_ARRANGE            (1L << 14)                  ///< Re-arrange client
+#define SUB_CLIENT_DEAD               (1L << 10)                  ///< Dead window
+#define SUB_CLIENT_FOCUS              (1L << 11)                  ///< Send focus message
+#define SUB_CLIENT_INPUT              (1L << 12)                  ///< Active/passive focus-model
+#define SUB_CLIENT_CLOSE              (1L << 13)                  ///< Send close message
+#define SUB_CLIENT_UNMAP              (1L << 14)                  ///< Ignore unmaps
+#define SUB_CLIENT_ARRANGE            (1L << 15)                  ///< Re-arrange client
 
-#define SUB_CLIENT_MODE_FULL          (1L << 15)                  ///< Fullscreen mode
-#define SUB_CLIENT_MODE_FLOAT         (1L << 16)                  ///< Float mode
-#define SUB_CLIENT_MODE_STICK         (1L << 17)                  ///< Stick mode
-#define SUB_CLIENT_MODE_URGENT        (1L << 18)                  ///< Urgent mode
-#define SUB_CLIENT_MODE_RESIZE        (1L << 19)                  ///< Resize mode
-#define SUB_CLIENT_MODE_ZAPHOD        (1L << 20)                  ///< Zaphod mode
-#define SUB_CLIENT_MODE_FIXED         (1L << 21)                  ///< Fixed size mode
-#define SUB_CLIENT_MODE_CENTER        (1L << 22)                  ///< Center position mode
-#define SUB_CLIENT_MODE_BORDERLESS    (1L << 23)                  ///< Borderless
+#define SUB_CLIENT_MODE_FULL          (1L << 16)                  ///< Fullscreen mode
+#define SUB_CLIENT_MODE_FLOAT         (1L << 17)                  ///< Float mode
+#define SUB_CLIENT_MODE_STICK         (1L << 18)                  ///< Stick mode
+#define SUB_CLIENT_MODE_URGENT        (1L << 19)                  ///< Urgent mode
+#define SUB_CLIENT_MODE_RESIZE        (1L << 20)                  ///< Resize mode
+#define SUB_CLIENT_MODE_ZAPHOD        (1L << 21)                  ///< Zaphod mode
+#define SUB_CLIENT_MODE_FIXED         (1L << 22)                  ///< Fixed size mode
+#define SUB_CLIENT_MODE_CENTER        (1L << 23)                  ///< Center position mode
+#define SUB_CLIENT_MODE_BORDERLESS    (1L << 24)                  ///< Borderless
 
 #define SUB_CLIENT_TYPE_NORMAL        (1L << 25)                  ///< Normal type (also used in match)
 #define SUB_CLIENT_TYPE_DESKTOP       (1L << 26)                  ///< Desktop type
@@ -190,27 +194,27 @@
 #define SUB_DRAG_RESIZE               (1L << 2)                   ///< Drag resize
 
 /* Grab flags */
-#define SUB_GRAB_KEY                  (1L << 9)                   ///< Key grab
-#define SUB_GRAB_MOUSE                (1L << 10)                  ///< Mouse grab
-#define SUB_GRAB_SPAWN                (1L << 11)                  ///< Spawn an app
-#define SUB_GRAB_PROC                 (1L << 12)                  ///< Grab with proc
-#define SUB_GRAB_CHAIN_START          (1L << 13)                  ///< Chain grab start
-#define SUB_GRAB_CHAIN_LINK           (1L << 14)                  ///< Chain grab link
-#define SUB_GRAB_CHAIN_END            (1L << 15)                  ///< Chain grab end
-#define SUB_GRAB_VIEW_JUMP            (1L << 16)                  ///< Jump to view
-#define SUB_GRAB_VIEW_SWITCH          (1L << 17)                  ///< Jump to view
-#define SUB_GRAB_VIEW_SELECT          (1L << 18)                  ///< Jump to view
-#define SUB_GRAB_SCREEN_JUMP          (1L << 19)                  ///< Jump to screen
-#define SUB_GRAB_SUBTLE_RELOAD        (1L << 20)                  ///< Reload subtle
-#define SUB_GRAB_SUBTLE_RESTART       (1L << 21)                  ///< Restart subtle
-#define SUB_GRAB_SUBTLE_QUIT          (1L << 22)                  ///< Quit subtle
-#define SUB_GRAB_WINDOW_MOVE          (1L << 23)                  ///< Resize window
-#define SUB_GRAB_WINDOW_RESIZE        (1L << 24)                  ///< Move window
-#define SUB_GRAB_WINDOW_TOGGLE        (1L << 25)                  ///< Toggle window
-#define SUB_GRAB_WINDOW_STACK         (1L << 26)                  ///< Stack window
-#define SUB_GRAB_WINDOW_SELECT        (1L << 27)                  ///< Select window
-#define SUB_GRAB_WINDOW_GRAVITY       (1L << 28)                  ///< Set gravity of window
-#define SUB_GRAB_WINDOW_KILL          (1L << 29)                  ///< Kill window
+#define SUB_GRAB_KEY                  (1L << 10)                  ///< Key grab
+#define SUB_GRAB_MOUSE                (1L << 11)                  ///< Mouse grab
+#define SUB_GRAB_SPAWN                (1L << 12)                  ///< Spawn an app
+#define SUB_GRAB_PROC                 (1L << 13)                  ///< Grab with proc
+#define SUB_GRAB_CHAIN_START          (1L << 14)                  ///< Chain grab start
+#define SUB_GRAB_CHAIN_LINK           (1L << 15)                  ///< Chain grab link
+#define SUB_GRAB_CHAIN_END            (1L << 16)                  ///< Chain grab end
+#define SUB_GRAB_VIEW_JUMP            (1L << 17)                  ///< Jump to view
+#define SUB_GRAB_VIEW_SWITCH          (1L << 18)                  ///< Jump to view
+#define SUB_GRAB_VIEW_SELECT          (1L << 19)                  ///< Jump to view
+#define SUB_GRAB_SCREEN_JUMP          (1L << 20)                  ///< Jump to screen
+#define SUB_GRAB_SUBTLE_RELOAD        (1L << 21)                  ///< Reload subtle
+#define SUB_GRAB_SUBTLE_RESTART       (1L << 22)                  ///< Restart subtle
+#define SUB_GRAB_SUBTLE_QUIT          (1L << 23)                  ///< Quit subtle
+#define SUB_GRAB_WINDOW_MOVE          (1L << 24)                  ///< Resize window
+#define SUB_GRAB_WINDOW_RESIZE        (1L << 25)                  ///< Move window
+#define SUB_GRAB_WINDOW_TOGGLE        (1L << 26)                  ///< Toggle window
+#define SUB_GRAB_WINDOW_STACK         (1L << 27)                  ///< Stack window
+#define SUB_GRAB_WINDOW_SELECT        (1L << 28)                  ///< Select window
+#define SUB_GRAB_WINDOW_GRAVITY       (1L << 29)                  ///< Set gravity of window
+#define SUB_GRAB_WINDOW_KILL          (1L << 30)                  ///< Kill window
 
 /* Grab dirctions flags */
 #define SUB_GRAB_DIRECTION_UP         (1L << 0)                   ///< Direction up
@@ -219,41 +223,47 @@
 #define SUB_GRAB_DIRECTION_LEFT       (1L << 3)                   ///< Direction left
 
 /* Panel flags */
-#define SUB_PANEL_SUBLET              (1L << 9)                   ///< Panel sublet type
-#define SUB_PANEL_COPY                (1L << 10)                  ///< Panel copy type
-#define SUB_PANEL_VIEWS               (1L << 11)                  ///< Panel views type
-#define SUB_PANEL_TITLE               (1L << 12)                  ///< Panel title type
-#define SUB_PANEL_KEYCHAIN            (1L << 13)                  ///< Panel keychain type
-#define SUB_PANEL_TRAY                (1L << 14)                  ///< Panel tray type
-#define SUB_PANEL_ICON                (1L << 15)                  ///< Panel icon type
+#define SUB_PANEL_SUBLET              (1L << 10)                  ///< Panel sublet type
+#define SUB_PANEL_COPY                (1L << 11)                  ///< Panel copy type
+#define SUB_PANEL_VIEWS               (1L << 12)                  ///< Panel views type
+#define SUB_PANEL_TITLE               (1L << 13)                  ///< Panel title type
+#define SUB_PANEL_KEYCHAIN            (1L << 14)                  ///< Panel keychain type
+#define SUB_PANEL_TRAY                (1L << 15)                  ///< Panel tray type
+#define SUB_PANEL_ICON                (1L << 16)                  ///< Panel icon type
 
-#define SUB_PANEL_SPACER1             (1L << 16)                  ///< Panel spacer1
-#define SUB_PANEL_SPACER2             (1L << 17)                  ///< Panel spacer2
-#define SUB_PANEL_SEPARATOR1          (1L << 18)                  ///< Panel separator1
-#define SUB_PANEL_SEPARATOR2          (1L << 19)                  ///< Panel separator2
-#define SUB_PANEL_BOTTOM              (1L << 20)                  ///< Panel bottom
-#define SUB_PANEL_HIDDEN              (1L << 21)                  ///< Panel hidden
-#define SUB_PANEL_CENTER              (1L << 22)                  ///< Panel center
-#define SUB_PANEL_SUBLETS             (1L << 23)                  ///< Panel sublets
+#define SUB_PANEL_SPACER1             (1L << 17)                  ///< Panel spacer1
+#define SUB_PANEL_SPACER2             (1L << 18)                  ///< Panel spacer2
+#define SUB_PANEL_SEPARATOR1          (1L << 19)                  ///< Panel separator1
+#define SUB_PANEL_SEPARATOR2          (1L << 20)                  ///< Panel separator2
+#define SUB_PANEL_BOTTOM              (1L << 21)                  ///< Panel bottom
+#define SUB_PANEL_HIDDEN              (1L << 22)                  ///< Panel hidden
+#define SUB_PANEL_CENTER              (1L << 23)                  ///< Panel center
+#define SUB_PANEL_SUBLETS             (1L << 24)                  ///< Panel sublets
 
-#define SUB_PANEL_DOWN                (1L << 24)                  ///< Panel mouse down
-#define SUB_PANEL_OVER                (1L << 25)                  ///< Panel mouse over
-#define SUB_PANEL_OUT                 (1L << 26)                  ///< Panel mouse out
+#define SUB_PANEL_DOWN                (1L << 25)                  ///< Panel mouse down
+#define SUB_PANEL_OVER                (1L << 26)                  ///< Panel mouse over
+#define SUB_PANEL_OUT                 (1L << 27)                  ///< Panel mouse out
 
 /* Sublet flags */
-#define SUB_SUBLET_INTERVAL           (1L << 9)                   ///< Sublet has interval
-#define SUB_SUBLET_INOTIFY            (1L << 10)                  ///< Sublet with inotify
-#define SUB_SUBLET_SOCKET             (1L << 11)                  ///< Sublet with socket
+#define SUB_SUBLET_INTERVAL           (1L << 10)                  ///< Sublet has interval
+#define SUB_SUBLET_INOTIFY            (1L << 11)                  ///< Sublet with inotify
+#define SUB_SUBLET_SOCKET             (1L << 12)                  ///< Sublet with socket
 
-#define SUB_SUBLET_RUN                (1L << 12)                  ///< Sublet run function
-#define SUB_SUBLET_DATA               (1L << 13)                  ///< Sublet data function
-#define SUB_SUBLET_WATCH              (1L << 14)                  ///< Sublet watch function
-#define SUB_SUBLET_UNLOAD             (1L << 15)                  ///< Sublet unload function
+#define SUB_SUBLET_RUN                (1L << 13)                  ///< Sublet run function
+#define SUB_SUBLET_DATA               (1L << 14)                  ///< Sublet data function
+#define SUB_SUBLET_WATCH              (1L << 15)                  ///< Sublet watch function
+#define SUB_SUBLET_UNLOAD             (1L << 16)                  ///< Sublet unload function
 
 /* Screen flags */
-#define SUB_SCREEN_PANEL1             (1L << 9)                    ///< Panel1 enabled
-#define SUB_SCREEN_PANEL2             (1L << 10)                   ///< Panel2 enabled
-#define SUB_SCREEN_STIPPLE            (1L << 11)                   ///< Stipple enabled
+#define SUB_SCREEN_PANEL1             (1L << 10)                  ///< Panel1 enabled
+#define SUB_SCREEN_PANEL2             (1L << 11)                  ///< Panel2 enabled
+#define SUB_SCREEN_STIPPLE            (1L << 12)                  ///< Stipple enabled
+
+/* Style flags */
+#define SUB_STYLE_URGENT              0                           ///< Urgent style id
+#define SUB_STYLE_OCCUPIED            1                           ///< Occupied style id
+#define SUB_STYLE_UNOCCUPIED          2                           ///< Unoccupied style id
+#define SUB_STYLE_FOCUS               3                           ///< Focus style id
 
 /* Subtle flags */
 #define SUB_SUBTLE_DEBUG              (1L << 0)                   ///< Debug enabled
@@ -271,26 +281,26 @@
 #define SUB_SUBTLE_TILING             (1L << 12)                  ///< Enable tiling
 
 /* Tag flags */
-#define SUB_TAG_GRAVITY               (1L << 9)                   ///< Gravity property
-#define SUB_TAG_GEOMETRY              (1L << 10)                  ///< Geometry property
-#define SUB_TAG_POSITION              (1L << 11)                  ///< Position property
+#define SUB_TAG_GRAVITY               (1L << 10)                  ///< Gravity property
+#define SUB_TAG_GEOMETRY              (1L << 11)                  ///< Geometry property
+#define SUB_TAG_POSITION              (1L << 12)                  ///< Position property
 
 /* Tag matcher */
-#define SUB_TAG_MATCH_NAME            (1L << 9)                   ///< Match WM_NAME
-#define SUB_TAG_MATCH_INSTANCE        (1L << 10)                  ///< Match instance of WM_CLASS
-#define SUB_TAG_MATCH_CLASS           (1L << 11)                  ///< Match class of WM_CLASS
-#define SUB_TAG_MATCH_ROLE            (1L << 12)                  ///< Match role of window
-#define SUB_TAG_MATCH_TYPE            (1L << 13)                  ///< Match type of window
-#define SUB_TAG_MATCH_AND             (1L << 14)                  ///< Match logical AND
+#define SUB_TAG_MATCH_NAME            (1L << 10)                  ///< Match WM_NAME
+#define SUB_TAG_MATCH_INSTANCE        (1L << 11)                  ///< Match instance of WM_CLASS
+#define SUB_TAG_MATCH_CLASS           (1L << 12)                  ///< Match class of WM_CLASS
+#define SUB_TAG_MATCH_ROLE            (1L << 13)                  ///< Match role of window
+#define SUB_TAG_MATCH_TYPE            (1L << 14)                  ///< Match type of window
+#define SUB_TAG_MATCH_AND             (1L << 15)                  ///< Match logical AND
 
 /* Tray flags */
 #define SUB_TRAY_DEAD                 (1L << 9)                   ///< Dead window
 #define SUB_TRAY_UNMAP                (1L << 10)                  ///< Ignore unmaps
 
 /* View flags */
-#define SUB_VIEW_ICON                 (1L << 9)                   ///< View icon
-#define SUB_VIEW_ICON_ONLY            (1L << 10)                  ///< Icon only
-#define SUB_VIEW_DYNAMIC              (1L << 11)                  ///< Dynamic views
+#define SUB_VIEW_ICON                 (1L << 10)                  ///< View icon
+#define SUB_VIEW_ICON_ONLY            (1L << 11)                  ///< Icon only
+#define SUB_VIEW_DYNAMIC              (1L << 12)                  ///< Dynamic views
 
 /* Special flags */
 #define SUB_RUBY_DATA                 (1L << 30)                  ///< Object stores ruby data
@@ -463,11 +473,13 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_TRAY_KILL,                                      ///< Subtle tray kill
   SUB_EWMH_SUBTLE_VIEW_NEW,                                       ///< Subtle view new
   SUB_EWMH_SUBTLE_VIEW_TAGS,                                      ///< Subtle view tags
+  SUB_EWMH_SUBTLE_VIEW_STYLE,                                     ///< Subtle view style
   SUB_EWMH_SUBTLE_VIEW_ICONS,                                     ///< Subtle view icons
   SUB_EWMH_SUBTLE_VIEW_KILL,                                      ///< Subtle view kill
   SUB_EWMH_SUBTLE_SUBLET_NEW,                                     ///< Subtle sublet new
   SUB_EWMH_SUBTLE_SUBLET_UPDATE,                                  ///< Subtle sublet update
   SUB_EWMH_SUBTLE_SUBLET_DATA,                                    ///< Subtle sublet data
+  SUB_EWMH_SUBTLE_SUBLET_STYLE,                                   ///< Subtle sublet style
   SUB_EWMH_SUBTLE_SUBLET_FOREGROUND,                              ///< Subtle sublet foreground
   SUB_EWMH_SUBTLE_SUBLET_BACKGROUND,                              ///< Subtle sublet background
   SUB_EWMH_SUBTLE_SUBLET_FLAGS,                                   ///< Subtle sublet flags
@@ -549,7 +561,7 @@ typedef struct subscreen_t /* {{{ */
 
 typedef struct subsublet_t { /* {{{ */
   FLAGS             flags;                                        ///< Sublet flags
-  int               watch, width;                                 ///< Sublet watch id
+  int               watch, width, style;                          ///< Sublet watch id, width and style state
   char              *name;                                        ///< Sublet name
   unsigned long     instance, fg, bg, textfg, iconfg;             ///< Sublet ruby instance, fg, bg and icon color
   time_t            time, interval;                               ///< Sublet update/interval time
@@ -564,9 +576,12 @@ typedef struct subsides_t /* {{{ */
 
 typedef struct substyle_t /* {{{ */
 {
-  int min;                                                        ///< Style min width
-  long fg, bg, top, right, bottom, left;                          ///< Style colors
+  FLAGS             flags;                                        ///< Styke flags
+  char              *name;                                        ///< Style name
+  int               min;                                          ///< Style min width
+  long              fg, bg, top, right, bottom, left;             ///< Style colors
   struct subsides_t border, padding, margin;                      ///< Style border, padding and margin
+  struct subarray_t *states;                                      ///< Style state list
 } SubStyle; /* }}} */
 
 typedef struct subsubtle_t /* {{{ */
@@ -621,8 +636,8 @@ typedef struct subsubtle_t /* {{{ */
 
   struct
   {
-    struct substyle_t all, views, title, focus, urgent, occupied,
-                      unoccupied, sublets, separator, clients, subtle;
+    struct substyle_t all, views, title, sublets,
+                      separator, clients, subtle;
   } styles;                                                       ///< Subtle styles
 
   struct
@@ -660,7 +675,7 @@ typedef struct subview_t /* {{{ */
   char              *name;                                        ///< View name
   TAGS              tags;                                         ///< View tags
   Window            focus;                                        ///< View window, focus
-  int               width;                                        ///< View width
+  int               width, style;                                 ///< View width, style state
 
   struct subicon_t  *icon;                                        ///< View icon
 } SubView; /* }}} */
@@ -810,6 +825,15 @@ void subScreenResize(void);                                       ///< Update sc
 void subScreenJump(SubScreen *s);                                 ///< Jump to screen
 void subScreenPublish(void);                                      ///< Publish screens
 void subScreenKill(SubScreen *s);                                 ///< Kill screen
+/* }}} */
+
+/* style.c {{{ */
+SubStyle *subStyleNew(void);                                      ///< Create new style
+void subStyleAddState(SubStyle *s, SubStyle *state, int idx);     ///< Add state to style
+SubStyle *subStyleFindState(SubStyle *s, char *name, int *idx);   ///< Find state
+void subStyleReset(SubStyle *s, int val);                         ///< Reset style values to given val
+void subStyleKill(SubStyle *s);                                   ///< Kill style
+void subStyleInheritance(void);                                   ///< Inherit values
 /* }}} */
 
 /* subtle.c {{{ */
