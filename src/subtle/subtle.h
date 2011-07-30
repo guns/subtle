@@ -259,12 +259,6 @@
 #define SUB_SCREEN_PANEL2             (1L << 11)                  ///< Panel2 enabled
 #define SUB_SCREEN_STIPPLE            (1L << 12)                  ///< Stipple enabled
 
-/* Style flags */
-#define SUB_STYLE_URGENT              0                           ///< Urgent style id
-#define SUB_STYLE_OCCUPIED            1                           ///< Occupied style id
-#define SUB_STYLE_UNOCCUPIED          2                           ///< Unoccupied style id
-#define SUB_STYLE_FOCUS               3                           ///< Focus style id
-
 /* Subtle flags */
 #define SUB_SUBTLE_DEBUG              (1L << 0)                   ///< Debug enabled
 #define SUB_SUBTLE_CHECK              (1L << 1)                   ///< Check config
@@ -637,7 +631,8 @@ typedef struct subsubtle_t /* {{{ */
   struct
   {
     struct substyle_t all, views, title, sublets,
-                      separator, clients, subtle;
+                      separator, clients, subtle,
+                      *urgent, *occupied, *unoccupied, *focus; ///< For faster access
   } styles;                                                       ///< Subtle styles
 
   struct
@@ -829,7 +824,7 @@ void subScreenKill(SubScreen *s);                                 ///< Kill scre
 
 /* style.c {{{ */
 SubStyle *subStyleNew(void);                                      ///< Create new style
-void subStyleAddState(SubStyle *s, SubStyle *state, int idx);     ///< Add state to style
+void subStyleAddState(SubStyle *s, SubStyle *state);              ///< Add state to style
 SubStyle *subStyleFindState(SubStyle *s, char *name, int *idx);   ///< Find state
 void subStyleReset(SubStyle *s, int val);                         ///< Reset style values to given val
 void subStyleKill(SubStyle *s);                                   ///< Kill style
