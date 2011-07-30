@@ -113,6 +113,36 @@ PanelModes(SubClient *c,
     buf, strlen(buf), NULL, NULL, True);
 } /* }}} */
 
+/* PanelViewStyle {{{ */
+static SubStyle *
+PanelViewStyle(SubView *v,
+  int focus)
+{
+  SubStyle *s = &subtle->styles.views, *state = NULL;
+
+  /* Select style */
+  if(subtle->styles.views.states)
+    {
+      /* Pick supported state */
+      if(subtle->urgent_tags & v->tags && subtle->styles.urgent)
+        s = subtle->styles.urgent;
+      else if(focus && subtle->styles.focus)
+        s = subtle->styles.focus;
+      else if(subtle->client_tags & v->tags &&
+          subtle->styles.occupied)
+        s = subtle->styles.occupied;
+      else if(subtle->styles.unoccupied)
+        s = subtle->styles.unoccupied;
+
+      /* Pick custom state */
+      if((state = subArrayGet(subtle->styles.views.states,
+          v->style)))
+        s = state;
+    }
+
+  return s;
+} /* }}} */
+
 /* Public */
 
  /** subPanelNew {{{
@@ -225,7 +255,7 @@ subPanelUpdate(SubPanel *p)
                     p->width = subSharedTextWidth(subtle->dpy,
                       subtle->font, c->name,
                       /* Limit string length */
-                      len > subtle->styles.clients.right ? 
+                      len > subtle->styles.clients.right ?
                       subtle->styles.clients.right : len,
                       NULL, NULL, True) + width + STYLE_WIDTH(subtle->styles.title);
 
@@ -246,32 +276,12 @@ subPanelUpdate(SubPanel *p)
             for(i = 0; i < subtle->views->ndata; i++)
               {
                 SubView *v = VIEW(subtle->views->data[i]);
-                SubStyle *s = &subtle->styles.views, *state = NULL;
+                SubStyle *s = PanelViewStyle(v, (p->screen->vid == i));
 
                 /* Check dynamic views */
                 if(v->flags & SUB_VIEW_DYNAMIC &&
                     !(subtle->client_tags & v->tags))
                   continue;
-
-                /* Select style */
-                if(subtle->styles.views.states)
-                  {
-                    if(subtle->urgent_tags & v->tags &&
-                        s->flags & STYLE_FLAG(SUB_STYLE_URGENT))
-                      s = STYLE(s->states->data[SUB_STYLE_URGENT]);
-                    else if(p->screen->vid == i &&
-                        s->flags & STYLE_FLAG(SUB_STYLE_FOCUS))
-                      s = STYLE(s->states->data[SUB_STYLE_FOCUS]);
-                    else if(subtle->client_tags & v->tags &&
-                        s->flags & STYLE_FLAG(SUB_STYLE_OCCUPIED))
-                      s = STYLE(s->states->data[SUB_STYLE_OCCUPIED]);
-                    else if(s->flags & STYLE_FLAG(SUB_STYLE_UNOCCUPIED))
-                      s = STYLE(s->states->data[SUB_STYLE_UNOCCUPIED]);
-
-                    if((state = subArrayGet(subtle->styles.views.states,
-                        v->style)))
-                      s = state;
-                  }
 
                 p->width += MAX(s->min, v->width) + STYLE_WIDTH((*s));
               }
@@ -358,11 +368,6 @@ subPanelRender(SubPanel *p,
 
                 PanelModes(c, buf, &width);
 
-                /* Add urgent colors */
-                if(c->flags & SUB_CLIENT_MODE_URGENT &&
-                    s->flags & STYLE_FLAG(SUB_STYLE_URGENT))
-                  s = s->states->data[SUB_STYLE_URGENT];
-
                 /* Set window background and border*/
                 PanelRect(drawable, p->x, p->width, s);
 
@@ -392,32 +397,12 @@ subPanelRender(SubPanel *p,
               {
                 int x = 0;
                 SubView *v = VIEW(subtle->views->data[i]);
-                SubStyle *s = &subtle->styles.views, *state = NULL;
+                SubStyle *s = PanelViewStyle(v, (p->screen->vid == i));
 
                 /* Check dynamic views */
                 if(v->flags & SUB_VIEW_DYNAMIC &&
                     !(subtle->client_tags & v->tags))
                   continue;
-
-                /* Select style */
-                if(subtle->styles.views.states)
-                  {
-                    if(subtle->urgent_tags & v->tags &&
-                        s->flags & STYLE_FLAG(SUB_STYLE_URGENT))
-                      s = STYLE(s->states->data[SUB_STYLE_URGENT]);
-                    else if(p->screen->vid == i &&
-                        s->flags & STYLE_FLAG(SUB_STYLE_FOCUS))
-                      s = STYLE(s->states->data[SUB_STYLE_FOCUS]);
-                    else if(subtle->client_tags & v->tags &&
-                        s->flags & STYLE_FLAG(SUB_STYLE_OCCUPIED))
-                      s = STYLE(s->states->data[SUB_STYLE_OCCUPIED]);
-                    else if(s->flags & STYLE_FLAG(SUB_STYLE_UNOCCUPIED))
-                      s = STYLE(s->states->data[SUB_STYLE_UNOCCUPIED]);
-
-                    if((state = subArrayGet(subtle->styles.views.states,
-                        v->style)))
-                      s = state;
-                  }
 
                 /* Set window background and border*/
                 PanelRect(drawable, vx, v->width + STYLE_WIDTH((*s)), s);
@@ -556,35 +541,13 @@ subPanelAction(SubArray *panels,
                     for(j = 0; j < subtle->views->ndata; j++)
                       {
                         SubView *v = VIEW(subtle->views->data[j]);
-                        SubStyle *s = &subtle->styles.views, *state = NULL;
-                        int swidth = 0;
+                        SubStyle *s = PanelViewStyle(v, (p->screen->vid == i));
+                        int swidth = v->width + STYLE_WIDTH((*s)); ///< Get width with style
 
                         /* Check dynamic views */
                         if(v->flags & SUB_VIEW_DYNAMIC &&
                             !(subtle->client_tags & v->tags))
                           continue;
-
-                        /* Select style */
-                        if(subtle->styles.views.states)
-                          {
-                            if(subtle->urgent_tags & v->tags &&
-                                s->flags & STYLE_FLAG(SUB_STYLE_URGENT))
-                              s = STYLE(s->states->data[SUB_STYLE_URGENT]);
-                            else if(p->screen->vid == i &&
-                                s->flags & STYLE_FLAG(SUB_STYLE_FOCUS))
-                              s = STYLE(s->states->data[SUB_STYLE_FOCUS]);
-                            else if(subtle->client_tags & v->tags &&
-                                s->flags & STYLE_FLAG(SUB_STYLE_OCCUPIED))
-                              s = STYLE(s->states->data[SUB_STYLE_OCCUPIED]);
-                            else if(s->flags & STYLE_FLAG(SUB_STYLE_UNOCCUPIED))
-                              s = STYLE(s->states->data[SUB_STYLE_UNOCCUPIED]);
-
-                            if((state = subArrayGet(subtle->styles.views.states,
-                                v->style)))
-                              s = state;
-                          }
-
-                        swidth = v->width + STYLE_WIDTH((*s)); ///< Get width with style
 
                         /* Check if x is in view rect */
                         if(x >= vx && x <= vx + swidth)

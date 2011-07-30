@@ -1257,7 +1257,6 @@ RubyForeachState(VALUE key,
   VALUE value,
   VALUE data)
 {
-  int idx = -1;
   SubStyle *s = (SubStyle *)data, *state = NULL;
 
   if(key == Qundef || NIL_P(value)) return ST_CONTINUE;
@@ -1267,14 +1266,14 @@ RubyForeachState(VALUE key,
   state->name = strdup(SYM2CHAR(key));
   RubyEvalStyle(key, state, rb_iv_get(value, "@params"));
 
-  /* Translate flagsá */
-  if(CHAR2SYM("urgent")          == key) idx = SUB_STYLE_URGENT;
-  else if(CHAR2SYM("occupied")   == key) idx = SUB_STYLE_OCCUPIED;
-  else if(CHAR2SYM("unoccupied") == key) idx = SUB_STYLE_UNOCCUPIED;
-  else if(CHAR2SYM("focus")      == key) idx = SUB_STYLE_FOCUS;
+  /* Translate flags */
+  if(CHAR2SYM("urgent")          == key) subtle->styles.urgent     = state;
+  else if(CHAR2SYM("occupied")   == key) subtle->styles.occupied   = state;
+  else if(CHAR2SYM("unoccupied") == key) subtle->styles.unoccupied = state;
+  else if(CHAR2SYM("focus")      == key) subtle->styles.focus      = state;
 
   /* Finally add state */
-  subStyleAddState(s, state, idx);
+  subStyleAddState(s, state);
 
   return ST_CONTINUE;
 } /* }}} */
@@ -2403,32 +2402,32 @@ RubyConfigStyle(VALUE self,
       /* FIXME: Deprecated */
       else if(CHAR2SYM("urgent") == name)
         {
-          s = subStyleNew();
-          subStyleAddState(&subtle->styles.views, s, SUB_STYLE_URGENT);
+          s = subtle->styles.urgent = subStyleNew();
+          subStyleAddState(&subtle->styles.views, s);
 
           subSharedLogDeprecated("The `urgent' style is deprecated. "
             "Please use the `urgent' state instead.\n");
         }
       else if(CHAR2SYM("occupied") == name)
         {
-          s = subStyleNew();
-          subStyleAddState(&subtle->styles.views, s, SUB_STYLE_OCCUPIED);
+          s = subtle->styles.occupied = subStyleNew();
+          subStyleAddState(&subtle->styles.views, s);
 
           subSharedLogDeprecated("The `occupied' style is deprecated. "
             "Please use the `occupied' state instead.\n");
         }
       else if(CHAR2SYM("unoccupied") == name)
         {
-          s = subStyleNew();
-          subStyleAddState(&subtle->styles.views, s, SUB_STYLE_UNOCCUPIED);
+          s = subtle->styles.unoccupied = subStyleNew();
+          subStyleAddState(&subtle->styles.views, s);
 
           subSharedLogDeprecated("The `unoccupied' style is deprecated. "
             "Please use the `unoccupied' state instead.\n");
         }
       else if(CHAR2SYM("focus") == name)
         {
-          s = subStyleNew();
-          subStyleAddState(&subtle->styles.views, s, SUB_STYLE_FOCUS);
+          s = subtle->styles.focus = subStyleNew();
+          subStyleAddState(&subtle->styles.views, s);
 
           subSharedLogDeprecated("The `focus' style is deprecated. "
             "Please use the `focus' state instead.\n");
@@ -3467,17 +3466,21 @@ subRubyLoadConfig(void)
       (t = subTagNew("default", NULL)))
     subArrayPush(subtle->tags, (void *)t);
 
-  /* Set default values */
-  subtle->gravity = -1;
+  /* Reset values */
+  subtle->gravity           = -1;
+  subtle->styles.urgent     = NULL;
+  subtle->styles.occupied   = NULL;
+  subtle->styles.unoccupied = NULL;
+  subtle->styles.focus      = NULL;
 
   /* Reset styles */
-  subStyleReset(&subtle->styles.all,         0); ///< Ensure sane values
-  subStyleReset(&subtle->styles.views,      -1);
-  subStyleReset(&subtle->styles.title,      -1);
-  subStyleReset(&subtle->styles.sublets,    -1);
-  subStyleReset(&subtle->styles.separator,  -1);
-  subStyleReset(&subtle->styles.clients,    -1);
-  subStyleReset(&subtle->styles.subtle,     -1);
+  subStyleReset(&subtle->styles.all,        0); ///< Ensure sane values
+  subStyleReset(&subtle->styles.views,     -1);
+  subStyleReset(&subtle->styles.title,     -1);
+  subStyleReset(&subtle->styles.sublets,   -1);
+  subStyleReset(&subtle->styles.separator, -1);
+  subStyleReset(&subtle->styles.clients,   -1);
+  subStyleReset(&subtle->styles.subtle,    -1);
 
   /* Create and register config values */
   config_sublets = rb_hash_new();

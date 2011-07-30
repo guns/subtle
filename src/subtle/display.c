@@ -295,25 +295,17 @@ subDisplayPublish(void)
   DisplayStyleToColor(&subtle->styles.title, colors, &pos);
   DisplayStyleToColor(&subtle->styles.views, colors, &pos);
 
-  if(subtle->styles.views.flags & STYLE_FLAG(SUB_STYLE_FOCUS))
-    DisplayStyleToColor(
-      STYLE(subtle->styles.views.states->data[SUB_STYLE_FOCUS]),
-      colors, &pos);
+  if(subtle->styles.focus)
+    DisplayStyleToColor(subtle->styles.focus, colors, &pos);
 
-  if(subtle->styles.views.flags & STYLE_FLAG(SUB_STYLE_URGENT))
-    DisplayStyleToColor(
-      STYLE(subtle->styles.views.states->data[SUB_STYLE_URGENT]),
-      colors, &pos);
+  if(subtle->styles.urgent)
+    DisplayStyleToColor(subtle->styles.urgent, colors, &pos);
 
-  if(subtle->styles.views.flags & STYLE_FLAG(SUB_STYLE_OCCUPIED))
-    DisplayStyleToColor(
-      STYLE(subtle->styles.views.states->data[SUB_STYLE_OCCUPIED]),
-      colors, &pos);
+  if(subtle->styles.occupied)
+    DisplayStyleToColor(subtle->styles.occupied, colors, &pos);
 
-  if(subtle->styles.views.flags & STYLE_FLAG(SUB_STYLE_UNOCCUPIED))
-    DisplayStyleToColor(
-      STYLE(subtle->styles.views.states->data[SUB_STYLE_UNOCCUPIED]),
-      colors, &pos);
+  if(subtle->styles.unoccupied)
+    DisplayStyleToColor(subtle->styles.unoccupied, colors, &pos);
 
   DisplayStyleToColor(&subtle->styles.sublets,   colors, &pos);
   DisplayStyleToColor(&subtle->styles.separator, colors, &pos);
