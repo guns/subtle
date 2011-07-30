@@ -178,7 +178,7 @@ subDisplayInit(const char *display)
 
   /* Create tray window */
   subtle->windows.tray = XCreateSimpleWindow(subtle->dpy,
-    ROOT, 0, 0, 1, 1, 0, 0, subtle->styles.focus.bg);
+    ROOT, 0, 0, 1, 1, 0, 0, 0);
 
   sattrs.override_redirect = True;
   sattrs.event_mask        = KeyPressMask|ButtonPressMask;
@@ -286,19 +286,37 @@ subDisplayPublish(void)
   int pos = 0;
   unsigned long *colors;
 
-#define NCOLORS 48
+#define NCOLORS 54
 
   /* Create color array */
   colors = (unsigned long *)subSharedMemoryAlloc(NCOLORS,
     sizeof(unsigned long));
 
-  DisplayStyleToColor(&subtle->styles.title,      colors, &pos);
-  DisplayStyleToColor(&subtle->styles.focus,      colors, &pos);
-  DisplayStyleToColor(&subtle->styles.urgent,     colors, &pos);
-  DisplayStyleToColor(&subtle->styles.occupied,   colors, &pos);
-  DisplayStyleToColor(&subtle->styles.unoccupied, colors, &pos);
-  DisplayStyleToColor(&subtle->styles.sublets,    colors, &pos);
-  DisplayStyleToColor(&subtle->styles.separator,  colors, &pos);
+  DisplayStyleToColor(&subtle->styles.title, colors, &pos);
+  DisplayStyleToColor(&subtle->styles.views, colors, &pos);
+
+  if(subtle->styles.views.flags & STYLE_FLAG(SUB_STYLE_FOCUS))
+    DisplayStyleToColor(
+      STYLE(subtle->styles.views.states->data[SUB_STYLE_FOCUS]),
+      colors, &pos);
+
+  if(subtle->styles.views.flags & STYLE_FLAG(SUB_STYLE_URGENT))
+    DisplayStyleToColor(
+      STYLE(subtle->styles.views.states->data[SUB_STYLE_URGENT]),
+      colors, &pos);
+
+  if(subtle->styles.views.flags & STYLE_FLAG(SUB_STYLE_OCCUPIED))
+    DisplayStyleToColor(
+      STYLE(subtle->styles.views.states->data[SUB_STYLE_OCCUPIED]),
+      colors, &pos);
+
+  if(subtle->styles.views.flags & STYLE_FLAG(SUB_STYLE_UNOCCUPIED))
+    DisplayStyleToColor(
+      STYLE(subtle->styles.views.states->data[SUB_STYLE_UNOCCUPIED]),
+      colors, &pos);
+
+  DisplayStyleToColor(&subtle->styles.sublets,   colors, &pos);
+  DisplayStyleToColor(&subtle->styles.separator, colors, &pos);
 
   colors[pos++] = subtle->styles.clients.fg; ///< Active
   colors[pos++] = subtle->styles.clients.bg; ///< Inactive
