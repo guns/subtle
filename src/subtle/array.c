@@ -172,6 +172,7 @@ subArrayClear(SubArray *a,
           else if(c->flags & SUB_TYPE_GRAVITY) subGravityKill(GRAVITY(c));
           else if(c->flags & SUB_TYPE_HOOK)    subHookKill(HOOK(c));
           else if(c->flags & SUB_TYPE_SCREEN)  subScreenKill(SCREEN(c));
+          else if(c->flags & SUB_TYPE_STYLE)   subStyleKill(STYLE(c));
           else if(c->flags & SUB_TYPE_TAG)     subTagKill(TAG(c));
           else if(c->flags & SUB_TYPE_TRAY)    subTrayKill(TRAY(c));
           else if(c->flags & SUB_TYPE_VIEW)    subViewKill(VIEW(c));
