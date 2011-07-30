@@ -265,6 +265,22 @@ subSubtleFinish(void)
       subArrayKill(subtle->views,     True);
       subArrayKill(subtle->hooks,     False);
 
+      /* Kill styles */
+      if(subtle->styles.all.states)
+        subArrayKill(subtle->styles.all.states, True);
+      if(subtle->styles.views.states)
+        subArrayKill(subtle->styles.views.states, True);
+      if(subtle->styles.title.states)
+        subArrayKill(subtle->styles.title.states, True);
+      if(subtle->styles.sublets.states)
+        subArrayKill(subtle->styles.sublets.states, True);
+      if(subtle->styles.separator.states)
+        subArrayKill(subtle->styles.separator.states, True);
+      if(subtle->styles.clients.states)
+        subArrayKill(subtle->styles.clients.states, True);
+      if(subtle->styles.subtle.states)
+        subArrayKill(subtle->styles.subtle.states, True);
+
       subEventFinish();
       subRubyFinish();
       subEwmhFinish();
