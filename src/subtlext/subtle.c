@@ -284,6 +284,8 @@ subSubtleSingColors(VALUE self)
   const char *names[] = {
     "title_fg",            "title_bg",             "title_bo_top",
     "title_bo_right",      "title_bo_bottom",      "title_bo_left",
+    "view_fg",             "view_bg",              "view_bo_top",
+    "view_bo_right",       "view_bo_bottom",       "view_bo_left",
     "focus_fg",            "focus_bg",             "focus_bo_top",
     "focus_bo_right",      "focus_bo_bottom",      "focus_bo_left",
     "urgent_fg",           "urgent_bg",            "urgent_bo_top",
@@ -297,7 +299,8 @@ subSubtleSingColors(VALUE self)
     "separator_fg",       "separator_bg",          "separator_bo_top",
     "separator_bo_right", "separator_bo_bottom",   "separator_bo_left",
     "client_active",      "client_inactive",
-    "panel_top",          "panel_bottom",        "stipple", "background"
+    "panel_top",          "panel_bottom",
+    "stipple",            "background"
   };
 
   subSubtlextConnect(NULL); ///< Implicit open connection
@@ -312,11 +315,11 @@ subSubtleSingColors(VALUE self)
       DefaultRootWindow(display), XA_CARDINAL,
       XInternAtom(display, "SUBTLE_COLORS", False), &ncolors)))
     {
-      for(i = 0; i < ncolors; i++)
+      for(i = 0; i < ncolors && i < LENGTH(names); i++)
         {
           VALUE c = rb_funcall(klass, meth, 1, LONG2NUM(colors[i]));
 
-          rb_hash_aset(hash, CHAR2SYM(names[i]), c); ///< FIXME
+          rb_hash_aset(hash, CHAR2SYM(names[i]), c);
         }
 
       free(colors);
