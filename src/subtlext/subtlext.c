@@ -154,13 +154,13 @@ SubtlextStyle(VALUE self,
       case T_SYMBOL: str = rb_sym_to_s(value);
       case T_STRING:
         snprintf(data.b, sizeof(data.b), "%d#%s",
-          FIX2INT(id), RSTRING_PTR(str));
+          (int)FIX2INT(id), RSTRING_PTR(str));
 
         subSharedMessage(display, DefaultRootWindow(display),
             prop, data, 32, True);
         break;
       case T_NIL:
-        snprintf(data.b, sizeof(data.b), "%d#", FIX2INT(id));
+        snprintf(data.b, sizeof(data.b), "%d#", (int)FIX2INT(id));
         subSharedMessage(display, DefaultRootWindow(display),
             prop, data, 32, True);
         break;
