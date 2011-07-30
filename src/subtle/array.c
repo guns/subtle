@@ -161,22 +161,24 @@ subArrayClear(SubArray *a,
   if(a)
     {
       int i;
+      SubClient *c = NULL;
 
       for(i = 0; clean && i < a->ndata; i++)
         {
-          SubClient *c = CLIENT(a->data[i]);
-
           /* Check type and kill */
-          if(c->flags & SUB_TYPE_CLIENT)       subClientKill(c);
-          else if(c->flags & SUB_TYPE_GRAB)    subGrabKill(GRAB(c));
-          else if(c->flags & SUB_TYPE_GRAVITY) subGravityKill(GRAVITY(c));
-          else if(c->flags & SUB_TYPE_HOOK)    subHookKill(HOOK(c));
-          else if(c->flags & SUB_TYPE_SCREEN)  subScreenKill(SCREEN(c));
-          else if(c->flags & SUB_TYPE_STYLE)   subStyleKill(STYLE(c));
-          else if(c->flags & SUB_TYPE_TAG)     subTagKill(TAG(c));
-          else if(c->flags & SUB_TYPE_TRAY)    subTrayKill(TRAY(c));
-          else if(c->flags & SUB_TYPE_VIEW)    subViewKill(VIEW(c));
-          else if(c->flags & SUB_TYPE_PANEL)   subPanelKill(PANEL(c));
+          if((c = CLIENT(a->data[i])))
+            {
+              if(c->flags & SUB_TYPE_CLIENT)       subClientKill(c);
+              else if(c->flags & SUB_TYPE_GRAB)    subGrabKill(GRAB(c));
+              else if(c->flags & SUB_TYPE_GRAVITY) subGravityKill(GRAVITY(c));
+              else if(c->flags & SUB_TYPE_HOOK)    subHookKill(HOOK(c));
+              else if(c->flags & SUB_TYPE_SCREEN)  subScreenKill(SCREEN(c));
+              else if(c->flags & SUB_TYPE_STYLE)   subStyleKill(STYLE(c));
+              else if(c->flags & SUB_TYPE_TAG)     subTagKill(TAG(c));
+              else if(c->flags & SUB_TYPE_TRAY)    subTrayKill(TRAY(c));
+              else if(c->flags & SUB_TYPE_VIEW)    subViewKill(VIEW(c));
+              else if(c->flags & SUB_TYPE_PANEL)   subPanelKill(PANEL(c));
+            }
         }
 
       if(a->data) free(a->data);
