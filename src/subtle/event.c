@@ -1203,6 +1203,26 @@ EventMessage(XClientMessageEvent *ev)
                 subScreenRender();
               }
             break; /* }}} */
+          case SUB_EWMH_SUBTLE_SUBLET_STYLE: /* {{{ */
+            if(ev->data.b)
+              {
+                int sublet_id = 0;
+                char name[30] = { 0 };
+
+                sscanf(ev->data.b, "%d#%s", &sublet_id, name);
+
+                /* Find sublet and state */
+                if((p = EventFindSublet(sublet_id)))
+                  {
+                    int state_id = -1;
+                    subStyleFindState(&subtle->styles.sublets,
+                      name, &state_id);
+
+                    p->sublet->style = -1 != state_id ? state_id : -1;
+                    subScreenRender();
+                  }
+              }
+            break; /* }}} */
           case SUB_EWMH_SUBTLE_SUBLET_FOREGROUND: /* {{{ */
             if((p = EventFindSublet((int)ev->data.l[0])))
               {
@@ -1337,6 +1357,25 @@ EventMessage(XClientMessageEvent *ev)
                   subScreenConfigure();
               }
             else EventQueuePush(ev);
+            break; /* }}} */
+          case SUB_EWMH_SUBTLE_VIEW_STYLE: /* {{{ */
+            if(ev->data.b)
+              {
+                int view_id = 0;
+                char name[30] = { 0 };
+
+                sscanf(ev->data.b, "%d#%s", &view_id, name);
+
+                /* Find sublet and state */
+                if((v = VIEW(subArrayGet(subtle->views, view_id))))
+                  {
+                    int state_id = -1;
+                    subStyleFindState(&subtle->styles.views, name, &state_id);
+
+                    v->style = -1 != state_id ? state_id : -1;
+                    subScreenRender();
+                  }
+              }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_VIEW_KILL: /* {{{ */
             if((v = VIEW(subArrayGet(subtle->views, (int)ev->data.l[0]))))
