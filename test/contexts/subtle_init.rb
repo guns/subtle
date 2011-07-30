@@ -10,7 +10,7 @@
 #
 
 context 'Subtle - Init' do
-  COLORS_COUNT = 48
+  COLORS_COUNT = 54
 
   asserts 'Check running' do # {{{
     Subtlext::Subtle.running?
