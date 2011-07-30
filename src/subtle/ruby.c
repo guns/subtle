@@ -94,49 +94,6 @@ RubyReceiver(unsigned long instance,
   return receiver == instance;
 } /* }}} */
 
-/* Styles */
-
-/* RubyStyleReset {{{ */
-static void
-RubyStyleReset(SubStyle *s,
-  int val)
-{
-  s->fg = s->bg = s->top  = s->right = s->bottom = s->left = val;
-  s->border.top  = s->border.right  = s->border.bottom  = s->border.left  = val;
-  s->padding.top = s->padding.right = s->padding.bottom = s->padding.left = val;
-  s->margin.top  = s->margin.right  = s->margin.bottom  = s->margin.left  = val;
-} /* }}} */
-
-/* RubyStyleCascadeSides {{{ */
-static void
-RubyStyleCascadeSides(SubSides *s1,
-  SubSides *s2)
-{
-  if(-1 == s1->top)    s1->top    = s2->top;
-  if(-1 == s1->right)  s1->right  = s2->right;
-  if(-1 == s1->bottom) s1->bottom = s2->bottom;
-  if(-1 == s1->left)   s1->left   = s2->left;
-} /* }}} */
-
-/* RubyStyleCascade {{{ */
-static void
-RubyStyleCascade(SubStyle *s1,
-  SubStyle *s2)
-{
-  /* Cascade colors */
-  if(-1 == s1->fg)     s1->fg     = s2->fg;
-  if(-1 == s1->bg)     s1->bg     = s2->bg;
-  if(-1 == s1->top)    s1->top    = s2->top;
-  if(-1 == s1->right)  s1->right  = s2->right;
-  if(-1 == s1->bottom) s1->bottom = s2->bottom;
-  if(-1 == s1->left)   s1->left   = s2->left;
-
-  /* Cascade borrder, padding and margin */
-  RubyStyleCascadeSides(&s1->border,  &s2->border);
-  RubyStyleCascadeSides(&s1->padding, &s2->padding);
-  RubyStyleCascadeSides(&s1->margin,  &s2->margin);
-} /* }}} */
-
 /* Type converter */
 
 /* RubySubtleToSubtlext {{{ */
@@ -1000,19 +957,8 @@ RubyEvalConfig(void)
   /* Update panel height */
   subtle->ph += subtle->font->height;
 
-  /* Style cascading */
-  RubyStyleCascade(&subtle->styles.title,      &subtle->styles.all);
-  RubyStyleCascade(&subtle->styles.urgent,     &subtle->styles.all);
-  RubyStyleCascade(&subtle->styles.sublets,    &subtle->styles.all);
-  RubyStyleCascade(&subtle->styles.clients,    &subtle->styles.all);
-  RubyStyleCascade(&subtle->styles.separator,  &subtle->styles.all);
-
-  RubyStyleCascade(&subtle->styles.focus,      &subtle->styles.views);
-  RubyStyleCascade(&subtle->styles.focus,      &subtle->styles.all);
-  RubyStyleCascade(&subtle->styles.occupied,   &subtle->styles.views);
-  RubyStyleCascade(&subtle->styles.occupied,   &subtle->styles.all);
-  RubyStyleCascade(&subtle->styles.unoccupied, &subtle->styles.views);
-  RubyStyleCascade(&subtle->styles.unoccupied, &subtle->styles.all);
+  /* Inherit style values */
+  subStyleInheritance();
 
   /* Set separator */
   if(subtle->separator.string)
@@ -1128,9 +1074,124 @@ RubyEvalConfig(void)
   subDisplayPublish();
 } /* }}} */
 
-/* RubyEvalMatcher {{{ */
+/* RubyEvalStyle {{{ */
+static void
+RubyEvalStyle(VALUE name,
+  SubStyle *s,
+  VALUE params)
+{
+  int bw = -1;
+  long border = -1;
+  VALUE value = Qnil;
+
+  /* Special cases */
+  if(CHAR2SYM("subtle") == name)
+    {
+      RubyHashToColor(params, "panel_top",    &s->top);
+      RubyHashToColor(params, "panel_bottom", &s->bottom);
+      RubyHashToColor(params, "stipple",      &s->fg);
+
+      /* Set strut */
+      if(T_ARRAY == rb_type(value = rb_hash_lookup(params,
+          CHAR2SYM("strut"))))
+        RubyArrayToSides(value, &s->padding);
+
+      /* Set both panel colors */
+      if(!NIL_P(value = rb_hash_lookup(params, CHAR2SYM("panel"))))
+        {
+          RubyHashToColor(params, "panel", &s->top);
+          s->bottom = s->top;
+        }
+    }
+  else if(CHAR2SYM("clients") == name)
+    {
+      /* We misuse some style values here:
+       * border-top   <-> client border
+       * border-right <-> title length */
+
+      RubyHashToBorder(params, "active",   &s->fg, &s->border.top);
+      RubyHashToBorder(params, "inactive", &s->bg, &s->border.top);
+
+      /* FIXME: Set title width
+       * Should be a title style, right? */
+      if(FIXNUM_P(value = rb_hash_lookup(params, CHAR2SYM("width"))))
+        s->right = FIX2INT(value);
+      else s->right = 50;
+    }
+
+  /* Get colors */
+  RubyHashToColor(params, "foreground", &s->fg);
+  RubyHashToColor(params, "background", &s->bg);
+
+  /* Set all borders */
+  RubyHashToBorder(params, "border", &border, &bw);
+
+  /* Get borders */
+  RubyHashToBorder(params, "border_top",    &s->top,    &s->border.top);
+  RubyHashToBorder(params, "border_right",  &s->right,  &s->border.right);
+  RubyHashToBorder(params, "border_bottom", &s->bottom, &s->border.bottom);
+  RubyHashToBorder(params, "border_left",   &s->left,   &s->border.left);
+
+  /* Apply catchall values */
+  if(-1 != border) s->top = s->right = s->bottom = s->left = border;
+  if(-1 != bw)
+    {
+      s->border.top = s->border.right =
+        s->border.bottom = s->border.left = bw;
+    }
+
+  /* Get padding */
+  if(T_ARRAY == rb_type(value = rb_hash_lookup(params,
+      CHAR2SYM("padding")))) ///< Two or more values
+    RubyArrayToSides(value, &s->padding);
+  else if(FIXNUM_P(value)) ///< Single value
+    {
+      s->padding.top = s->padding.right =
+        s->padding.bottom = s->padding.left = FIX2INT(value);
+    }
+  else
+    {
+      RubyHashToInt(params, "padding_top",    &s->padding.top);
+      RubyHashToInt(params, "padding_right",  &s->padding.right);
+      RubyHashToInt(params, "padding_bottom", &s->padding.bottom);
+      RubyHashToInt(params, "padding_left",   &s->padding.left);
+    }
+
+  /* Get margin */
+  if(T_ARRAY == rb_type(value = rb_hash_lookup(params,
+      CHAR2SYM("margin")))) ///< Two or more values
+    RubyArrayToSides(value, &s->margin);
+  else if(FIXNUM_P(value)) ///< Single value
+    {
+      s->margin.top = s->margin.right =
+        s->margin.bottom = s->margin.left = FIX2INT(value);
+    }
+  else
+    {
+      RubyHashToInt(params, "margin_top",    &s->margin.top);
+      RubyHashToInt(params, "margin_right",  &s->margin.right);
+      RubyHashToInt(params, "margin_bottom", &s->margin.bottom);
+      RubyHashToInt(params, "margin_left",   &s->margin.left);
+    }
+
+  /* Get min width */
+  RubyHashToInt(params, "min_width", &s->min);
+  s->min = MAX(0, s->min);
+
+  /* Check max height */
+  if(CHAR2SYM("clients") != name && CHAR2SYM("subtle") != name)
+    {
+      int height = STYLE_HEIGHT((*s));
+
+      if(height > subtle->ph) subtle->ph = height;
+    }
+} /* }}} */
+
+/* Foreach */
+
+/* RubyForeachMatcher {{{ */
 static int
-RubyEvalMatcher(VALUE key,
+RubyForeachMatcher(VALUE key,
   VALUE value,
   VALUE data)
 {
@@ -1186,6 +1247,34 @@ RubyEvalMatcher(VALUE key,
       subTagMatcherAdd(TAG(rargs[0]), type,
         NIL_P(regex) ? NULL : RSTRING_PTR(regex), 0 < rargs[1]++);
     }
+
+  return ST_CONTINUE;
+} /* }}} */
+
+/* RubyForeachState {{{ */
+static int
+RubyForeachState(VALUE key,
+  VALUE value,
+  VALUE data)
+{
+  int idx = -1;
+  SubStyle *s = (SubStyle *)data, *state = NULL;
+
+  if(key == Qundef || NIL_P(value)) return ST_CONTINUE;
+
+  /* Create new state */
+  state = subStyleNew();
+  state->name = strdup(SYM2CHAR(key));
+  RubyEvalStyle(key, state, rb_iv_get(value, "@params"));
+
+  /* Translate flagsá */
+  if(CHAR2SYM("urgent")          == key) idx = SUB_STYLE_URGENT;
+  else if(CHAR2SYM("occupied")   == key) idx = SUB_STYLE_OCCUPIED;
+  else if(CHAR2SYM("unoccupied") == key) idx = SUB_STYLE_UNOCCUPIED;
+  else if(CHAR2SYM("focus")      == key) idx = SUB_STYLE_FOCUS;
+
+  /* Finally add state */
+  subStyleAddState(s, state, idx);
 
   return ST_CONTINUE;
 } /* }}} */
@@ -1499,14 +1588,14 @@ RubyObjectDispatcher(VALUE self,
  *
  * Create a new Options object
  *
- *  client = Subtle::Options.new
+ *  options = Subtle::Options.new
  *  => #<Subtle::Options:xxx>
  */
 
 static VALUE
 RubyOptionsInit(VALUE self)
 {
-  rb_iv_set(self, "@params",  rb_hash_new());
+  rb_iv_set(self, "@params", rb_hash_new());
 
   return Qnil;
 } /* }}} */
@@ -1606,9 +1695,43 @@ RubyOptionsGravity(VALUE self,
 {
   VALUE params = rb_iv_get(self, "@params");
 
-
   /* Just store param */
   return rb_hash_aset(params, CHAR2SYM("gravity"), gravity);
+} /* }}} */
+
+/* RubyOptionsState {{{ */
+/*
+ * call-seq: state(name) -> nil
+ *
+ * Overwrite global state method
+ *
+ *  option.state :urgent do
+ *    foreground "#fecf35"
+ *  end
+ *  => nil
+ */
+
+static VALUE
+RubyOptionsState(VALUE self,
+  VALUE name)
+{
+  VALUE klass = Qnil, options = Qnil, states = rb_iv_get(self, "@states");
+
+  /* Create states hash if necessary */
+  if(NIL_P(states))
+    {
+      states = rb_hash_new();
+      rb_iv_set(self, "@states", states);
+    }
+
+  /* Collect options */
+  klass   = rb_const_get(mod, rb_intern("Options"));
+  options = rb_funcall(klass, rb_intern("new"), 1, self);
+  rb_obj_instance_eval(0, 0, options);
+
+  rb_hash_aset(states, name, options);
+
+  return Qnil;
 } /* }}} */
 
 /* Config */
@@ -1977,12 +2100,12 @@ RubyConfigTag(int argc,
                         rb_ary_entry(match, i)); i++)
                       {
                         rargs[1] = 0; ///< Reset matcher count
-                        rb_hash_foreach(entry, RubyEvalMatcher, (VALUE)&rargs);
+                        rb_hash_foreach(entry, RubyForeachMatcher, (VALUE)&rargs);
                       }
                     break;
                   case T_REGEXP:
                   case T_STRING:
-                    RubyEvalMatcher(Qnil, match, (VALUE)&rargs);
+                    RubyForeachMatcher(Qnil, match, (VALUE)&rargs);
                 }
 
               subArrayPush(subtle->tags, (void *)t);
@@ -2266,23 +2389,50 @@ RubyConfigStyle(VALUE self,
   /* Check value type */
   if(T_SYMBOL == rb_type(name))
     {
-      int bw = -1;
-      long border = -1;
       SubStyle *s = NULL;
-      VALUE klass = Qnil, options = Qnil, params = Qnil, value = Qnil;
+      VALUE klass = Qnil, options = Qnil, states = Qnil;
 
       /* Select style struct */
-      if(CHAR2SYM("all")             == name) s = &subtle->styles.all;
-      else if(CHAR2SYM("views")      == name) s = &subtle->styles.views;
-      else if(CHAR2SYM("title")      == name) s = &subtle->styles.title;
-      else if(CHAR2SYM("focus")      == name) s = &subtle->styles.focus;
-      else if(CHAR2SYM("urgent")     == name) s = &subtle->styles.urgent;
-      else if(CHAR2SYM("occupied")   == name) s = &subtle->styles.occupied;
-      else if(CHAR2SYM("unoccupied") == name) s = &subtle->styles.unoccupied;
-      else if(CHAR2SYM("sublets")    == name) s = &subtle->styles.sublets;
-      else if(CHAR2SYM("separator")  == name) s = &subtle->styles.separator;
-      else if(CHAR2SYM("clients")    == name) s = &subtle->styles.clients;
-      else if(CHAR2SYM("subtle")     == name) s = &subtle->styles.subtle;
+      if(CHAR2SYM("all")            == name) s = &subtle->styles.all;
+      else if(CHAR2SYM("views")     == name) s = &subtle->styles.views;
+      else if(CHAR2SYM("title")     == name) s = &subtle->styles.title;
+      else if(CHAR2SYM("sublets")   == name) s = &subtle->styles.sublets;
+      else if(CHAR2SYM("separator") == name) s = &subtle->styles.separator;
+      else if(CHAR2SYM("clients")   == name) s = &subtle->styles.clients;
+      else if(CHAR2SYM("subtle")    == name) s = &subtle->styles.subtle;
+      /* FIXME: Deprecated */
+      else if(CHAR2SYM("urgent") == name)
+        {
+          s = subStyleNew();
+          subStyleAddState(&subtle->styles.views, s, SUB_STYLE_URGENT);
+
+          subSharedLogDeprecated("The `urgent' style is deprecated. "
+            "Please use the `urgent' state instead.\n");
+        }
+      else if(CHAR2SYM("occupied") == name)
+        {
+          s = subStyleNew();
+          subStyleAddState(&subtle->styles.views, s, SUB_STYLE_OCCUPIED);
+
+          subSharedLogDeprecated("The `occupied' style is deprecated. "
+            "Please use the `occupied' state instead.\n");
+        }
+      else if(CHAR2SYM("unoccupied") == name)
+        {
+          s = subStyleNew();
+          subStyleAddState(&subtle->styles.views, s, SUB_STYLE_UNOCCUPIED);
+
+          subSharedLogDeprecated("The `unoccupied' style is deprecated. "
+            "Please use the `unoccupied' state instead.\n");
+        }
+      else if(CHAR2SYM("focus") == name)
+        {
+          s = subStyleNew();
+          subStyleAddState(&subtle->styles.views, s, SUB_STYLE_FOCUS);
+
+          subSharedLogDeprecated("The `focus' style is deprecated. "
+            "Please use the `focus' state instead.\n");
+        }
       else
         {
           subSharedLogWarn("Unknown style name `:%s'\n", SYM2CHAR(name));
@@ -2296,108 +2446,14 @@ RubyConfigStyle(VALUE self,
       klass   = rb_const_get(mod, rb_intern("Options"));
       options = rb_funcall(klass, rb_intern("new"), 1, self);
       rb_obj_instance_eval(0, 0, options);
-      params  = rb_iv_get(options, "@params");
 
-      /* Special arguments */
-      if(CHAR2SYM("subtle") == name)
-        {
-          RubyHashToColor(params, "panel_top",    &s->top);
-          RubyHashToColor(params, "panel_bottom", &s->bottom);
-          RubyHashToColor(params, "stipple",      &s->fg);
+      /* Eval style before styles */
+      RubyEvalStyle(name, s, rb_iv_get(options, "@params"));
 
-          /* Set strut */
-          if(T_ARRAY == rb_type(value = rb_hash_lookup(params,
-              CHAR2SYM("strut"))))
-            RubyArrayToSides(value, &s->padding);
+      /* Eval states */
+      if(T_HASH == rb_type((states = rb_iv_get(options, "@states"))))
+        rb_hash_foreach(states, RubyForeachState, (VALUE)s);
 
-          /* Set both panel colors */
-          if(!NIL_P(value = rb_hash_lookup(params, CHAR2SYM("panel"))))
-            {
-              RubyHashToColor(params, "panel", &s->top);
-              s->bottom = s->top;
-            }
-        }
-      else if(CHAR2SYM("clients") == name)
-        {
-          /* We misuse some style values here:
-           * border-top   <-> client border
-           * border-right <-> title length */
-
-          RubyHashToBorder(params, "active",   &s->fg, &s->border.top);
-          RubyHashToBorder(params, "inactive", &s->bg, &s->border.top);
-
-          /* Set title width */
-          if(FIXNUM_P(value = rb_hash_lookup(params, CHAR2SYM("width"))))
-            s->right = FIX2INT(value);
-          else s->right = 50;
-        }
-
-      /* Get colors */
-      RubyHashToColor(params, "foreground", &s->fg);
-      RubyHashToColor(params, "background", &s->bg);
-
-      /* Set all borders */
-      RubyHashToBorder(params, "border", &border, &bw);
-
-      /* Get borders */
-      RubyHashToBorder(params, "border_top",    &s->top,    &s->border.top);
-      RubyHashToBorder(params, "border_right",  &s->right,  &s->border.right);
-      RubyHashToBorder(params, "border_bottom", &s->bottom, &s->border.bottom);
-      RubyHashToBorder(params, "border_left",   &s->left,   &s->border.left);
-
-      /* Apply catchall values */
-      if(-1 != border) s->top = s->right = s->bottom = s->left = border;
-      if(-1 != bw)
-        {
-          s->border.top = s->border.right =
-            s->border.bottom = s->border.left = bw;
-        }
-
-      /* Get padding */
-      if(T_ARRAY == rb_type(value = rb_hash_lookup(params,
-          CHAR2SYM("padding")))) ///< Two or more values
-        RubyArrayToSides(value, &s->padding);
-      else if(FIXNUM_P(value)) ///< Single value
-        {
-          s->padding.top = s->padding.right =
-            s->padding.bottom = s->padding.left = FIX2INT(value);
-        }
-      else
-        {
-          RubyHashToInt(params, "padding_top",    &s->padding.top);
-          RubyHashToInt(params, "padding_right",  &s->padding.right);
-          RubyHashToInt(params, "padding_bottom", &s->padding.bottom);
-          RubyHashToInt(params, "padding_left",   &s->padding.left);
-        }
-
-      /* Get margin */
-      if(T_ARRAY == rb_type(value = rb_hash_lookup(params,
-          CHAR2SYM("margin")))) ///< Two or more values
-        RubyArrayToSides(value, &s->margin);
-      else if(FIXNUM_P(value)) ///< Single value
-        {
-          s->margin.top = s->margin.right =
-            s->margin.bottom = s->margin.left = FIX2INT(value);
-        }
-      else
-        {
-          RubyHashToInt(params, "margin_top",    &s->margin.top);
-          RubyHashToInt(params, "margin_right",  &s->margin.right);
-          RubyHashToInt(params, "margin_bottom", &s->margin.bottom);
-          RubyHashToInt(params, "margin_left",   &s->margin.left);
-        }
-
-      /* Get min width */
-      RubyHashToInt(params, "min_width", &s->min);
-      s->min = MAX(0, s->min);
-
-      /* Check max height */
-      if(CHAR2SYM("clients") != name && CHAR2SYM("subtle") != name)
-        {
-          int height = STYLE_HEIGHT((*s));
-
-          if(height > subtle->ph) subtle->ph = height;
-        }
     }
   else rb_raise(rb_eArgError, "Unknown value type for style");
 
@@ -3317,11 +3373,13 @@ subRubyInit(void)
 
   /* Params list */
   rb_define_attr(options, "params", 1, 1);
+  rb_define_attr(options, "states", 1, 1);
 
   /* Class methods */
   rb_define_method(options, "initialize",     RubyOptionsInit,        1);
   rb_define_method(options, "match",          RubyOptionsMatch,       1);
   rb_define_method(options, "gravity",        RubyOptionsGravity,     1);
+  rb_define_method(options, "state",          RubyOptionsState,       1);
   rb_define_method(options, "method_missing", RubyOptionsDispatcher, -1);
 
   /*
@@ -3413,17 +3471,13 @@ subRubyLoadConfig(void)
   subtle->gravity = -1;
 
   /* Reset styles */
-  RubyStyleReset(&subtle->styles.all,         0); ///< Ensure sane values
-  RubyStyleReset(&subtle->styles.views,      -1);
-  RubyStyleReset(&subtle->styles.title,      -1);
-  RubyStyleReset(&subtle->styles.focus,      -1);
-  RubyStyleReset(&subtle->styles.urgent,     -1);
-  RubyStyleReset(&subtle->styles.occupied,   -1);
-  RubyStyleReset(&subtle->styles.unoccupied, -1);
-  RubyStyleReset(&subtle->styles.sublets,    -1);
-  RubyStyleReset(&subtle->styles.separator,  -1);
-  RubyStyleReset(&subtle->styles.clients,    -1);
-  RubyStyleReset(&subtle->styles.subtle,     -1);
+  subStyleReset(&subtle->styles.all,         0); ///< Ensure sane values
+  subStyleReset(&subtle->styles.views,      -1);
+  subStyleReset(&subtle->styles.title,      -1);
+  subStyleReset(&subtle->styles.sublets,    -1);
+  subStyleReset(&subtle->styles.separator,  -1);
+  subStyleReset(&subtle->styles.clients,    -1);
+  subStyleReset(&subtle->styles.subtle,     -1);
 
   /* Create and register config values */
   config_sublets = rb_hash_new();
