@@ -119,6 +119,58 @@ SubtlextFlags(VALUE key,
   return ST_CONTINUE;
 } /* }}} */
 
+/* SubtlextStyle {{{ */
+/*
+ * call-seq: style=(string) -> nil
+ *           style=(symbol) -> nil
+ *           style=(nil)    -> nil
+ *
+ * Set style state of this Object, use <b>nil</b> to reset state.
+ *
+ *  object.style = :blue
+ *  => nil
+ */
+
+static VALUE
+SubtlextStyle(VALUE self,
+  VALUE value)
+{
+  char *prop = NULL;
+  VALUE id = Qnil, str = Qnil;
+  SubMessageData data = { { 0, 0, 0, 0, 0 } };
+
+  /* Check ruby object */
+  rb_check_frozen(self);
+  GET_ATTR(self, "@id", id);
+
+  /* Check object type */
+  if(rb_obj_is_instance_of(self, rb_const_get(mod, rb_intern("View"))))
+    prop = "SUBTLE_VIEW_STYLE";
+  else prop = "SUBTLE_SUBLET_STYLE";
+
+  /* Check value type */
+  switch(rb_type(value))
+    {
+      case T_SYMBOL: str = rb_sym_to_s(value);
+      case T_STRING:
+        snprintf(data.b, sizeof(data.b), "%d#%s",
+          FIX2INT(id), RSTRING_PTR(str));
+
+        subSharedMessage(display, DefaultRootWindow(display),
+            prop, data, 32, True);
+        break;
+      case T_NIL:
+        snprintf(data.b, sizeof(data.b), "%d#", FIX2INT(id));
+        subSharedMessage(display, DefaultRootWindow(display),
+            prop, data, 32, True);
+        break;
+      default: rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+        rb_obj_classname(value));
+    }
+
+  return Qnil;
+} /* }}} */
+
 /* Tags */
 
 /* SubtlextTagFind {{{ */
@@ -1890,9 +1942,10 @@ Init_subtlext(void)
   rb_define_singleton_method(sublet, "all",  subSubletSingAll,  0);
 
   /* General methods */
-  rb_define_method(sublet, "<=>",  SubtlextEqualSpaceId, 1);
-  rb_define_method(sublet, "==",   SubtlextEqualId,      1);
-  rb_define_method(sublet, "eql?", SubtlextEqualTypedId, 1);
+  rb_define_method(sublet, "<=>",    SubtlextEqualSpaceId, 1);
+  rb_define_method(sublet, "==",     SubtlextEqualId,      1);
+  rb_define_method(sublet, "eql?",   SubtlextEqualTypedId, 1);
+  rb_define_method(sublet, "style=", SubtlextStyle,        1);
 
   /* Class methods */
   rb_define_method(sublet, "initialize",  subSubletInit,             1);
@@ -2035,6 +2088,7 @@ Init_subtlext(void)
   rb_define_method(view, "<=>",      SubtlextEqualSpaceId, 1);
   rb_define_method(view, "==",       SubtlextEqualId,      1);
   rb_define_method(view, "eql?",     SubtlextEqualTypedId, 1);
+  rb_define_method(view, "style=",   SubtlextStyle,        1);
 
   /* Class methods */
   rb_define_method(view, "initialize", subViewInit,          1);
