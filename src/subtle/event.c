@@ -1214,27 +1214,13 @@ EventMessage(XClientMessageEvent *ev)
                 /* Find sublet and state */
                 if((p = EventFindSublet(sublet_id)))
                   {
-                    int state_id = -1;
-                    subStyleFindState(&subtle->styles.sublets,
-                      name, &state_id);
+                    int style_id = -1;
+                    subStyleFind(&subtle->styles.sublets, name, &style_id);
 
-                    p->sublet->style = -1 != state_id ? state_id : -1;
+                    p->sublet->style = -1 != style_id ? style_id : -1;
+                    subScreenUpdate();
                     subScreenRender();
                   }
-              }
-            break; /* }}} */
-          case SUB_EWMH_SUBTLE_SUBLET_FOREGROUND: /* {{{ */
-            if((p = EventFindSublet((int)ev->data.l[0])))
-              {
-                p->sublet->fg = ev->data.l[1];
-                subScreenRender();
-              }
-            break; /* }}} */
-          case SUB_EWMH_SUBTLE_SUBLET_BACKGROUND: /* {{{ */
-            if((p = EventFindSublet((int)ev->data.l[0])))
-              {
-                p->sublet->bg = ev->data.l[1];
-                subScreenRender();
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_SUBLET_FLAGS: /* {{{ */
@@ -1369,10 +1355,11 @@ EventMessage(XClientMessageEvent *ev)
                 /* Find sublet and state */
                 if((v = VIEW(subArrayGet(subtle->views, view_id))))
                   {
-                    int state_id = -1;
-                    subStyleFindState(&subtle->styles.views, name, &state_id);
+                    int style_id = -1;
+                    subStyleFind(&subtle->styles.views, name, &style_id);
 
-                    v->style = -1 != state_id ? state_id : -1;
+                    v->style = -1 != style_id ? style_id : -1;
+                    subScreenUpdate();
                     subScreenRender();
                   }
               }
