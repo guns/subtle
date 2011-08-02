@@ -1948,17 +1948,15 @@ Init_subtlext(void)
   rb_define_method(sublet, "style=", SubtlextStyle,        1);
 
   /* Class methods */
-  rb_define_method(sublet, "initialize",  subSubletInit,             1);
-  rb_define_method(sublet, "update",      subSubletUpdate,           0);
-  rb_define_method(sublet, "data",        subSubletDataReader,       0);
-  rb_define_method(sublet, "data=",       subSubletDataWriter,       1);
-  rb_define_method(sublet, "geometry",    subSubletGeometryReader,   0);
-  rb_define_method(sublet, "foreground=", subSubletForegroundWriter, 1);
-  rb_define_method(sublet, "background=", subSubletBackgroundWriter, 1);
-  rb_define_method(sublet, "show",        subSubletVisibilityShow,   0);
-  rb_define_method(sublet, "hide",        subSubletVisibilityHide,   0);
-  rb_define_method(sublet, "to_str",      subSubletToString,         0);
-  rb_define_method(sublet, "kill",        subSubletKill,             0);
+  rb_define_method(sublet, "initialize", subSubletInit,           1);
+  rb_define_method(sublet, "update",     subSubletUpdate,         0);
+  rb_define_method(sublet, "data",       subSubletDataReader,     0);
+  rb_define_method(sublet, "data=",      subSubletDataWriter,     1);
+  rb_define_method(sublet, "geometry",   subSubletGeometryReader, 0);
+  rb_define_method(sublet, "show",       subSubletVisibilityShow, 0);
+  rb_define_method(sublet, "hide",       subSubletVisibilityHide, 0);
+  rb_define_method(sublet, "to_str",     subSubletToString,       0);
+  rb_define_method(sublet, "kill",       subSubletKill,           0);
 
   /* Singleton aliases */
   rb_define_alias(rb_singleton_class(sublet), "[]", "find");

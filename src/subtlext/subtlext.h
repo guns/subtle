@@ -178,8 +178,6 @@ VALUE subSubletInit(VALUE self, VALUE name);                      ///< Create su
 VALUE subSubletUpdate(VALUE self);                                ///< Update sublet
 VALUE subSubletDataReader(VALUE self);                            ///< Get sublet data
 VALUE subSubletDataWriter(VALUE self, VALUE value);               ///< Set sublet data
-VALUE subSubletForegroundWriter(VALUE self, VALUE value);         ///< Set sublet foreground
-VALUE subSubletBackgroundWriter(VALUE self, VALUE value);         ///< Set sublet background
 VALUE subSubletVisibilityShow(VALUE self);                        ///< Show sublet
 VALUE subSubletVisibilityHide(VALUE self);                        ///< Hide sublet
 VALUE subSubletGeometryReader(VALUE self);                        ///< Get sublet geometry
