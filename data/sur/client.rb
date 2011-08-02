@@ -1013,28 +1013,10 @@ module Subtle # {{{
               :def_value   => "60"
             },
             {
-              :name        => "foreground",
+              :name        => "style",
               :type        => "string",
-              :description => "Default foreground color (#rrggbb)",
-              :def_value   => "Sublet fg color"
-            },
-            {
-              :name        => "background",
-              :type        => "string",
-              :description => "Default background color (#rrggbb)",
-              :def_value   => "Sublet bg color"
-            },
-            {
-              :name        => "text_fg",
-              :type        => "string",
-              :description => "Default text color (#rrggbb)",
-              :def_value   => "Sublet fg or foreground color"
-            },
-            {
-              :name        => "icon_fg",
-              :type        => "string",
-              :description => "Default icon color (#rrggbb)",
-              :def_value   => "Sublet fg or foreground color"
+              :description => "Default sublet style (sub-style of sublets)",
+              :def_value   => "Sublet name"
             }
 
           ]
@@ -1045,11 +1027,8 @@ module Subtle # {{{
 
             spec.config.each do |c|
               case c[:name]
-                when "interval"   then skip << "interval"
-                when "foreground" then skip << "foreground"
-                when "background" then skip << "background"
-                when "text_fg"    then skip << "text_fg"
-                when "icon_fg"    then skip << "icon_fg"
+                when "interval" then skip << "interval"
+                when "style"    then skip << "style"
               end
             end
 
