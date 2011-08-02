@@ -118,10 +118,10 @@ static SubStyle *
 PanelViewStyle(SubView *v,
   int focus)
 {
-  SubStyle *s = &subtle->styles.views, *state = NULL;
+  SubStyle *s = &subtle->styles.views, *style = NULL;
 
   /* Select style */
-  if(subtle->styles.views.states)
+  if(subtle->styles.views.styles)
     {
       /* Pick supported state */
       if(subtle->urgent_tags & v->tags && subtle->styles.urgent)
@@ -135,9 +135,9 @@ PanelViewStyle(SubView *v,
         s = subtle->styles.unoccupied;
 
       /* Pick custom state */
-      if((state = subArrayGet(subtle->styles.views.states,
+      if((style = subArrayGet(subtle->styles.views.styles,
           v->style)))
-        s = state;
+        s = style;
     }
 
   return s;
@@ -172,10 +172,6 @@ subPanelNew(int type)
         /* Sublet specific */
         p->sublet->time   = subSubtleTime();
         p->sublet->text   = subSharedTextNew();
-        p->sublet->fg     = subtle->styles.sublets.fg;
-        p->sublet->bg     = subtle->styles.sublets.bg;
-        p->sublet->textfg = -1;
-        p->sublet->iconfg = -1;
         p->sublet->style  = -1;
         break; /* }}} */
       case SUB_PANEL_VIEWS: /* {{{ */
@@ -220,11 +216,11 @@ subPanelUpdate(SubPanel *p)
         break; /* }}} */
       case SUB_PANEL_SUBLET: /* {{{ */
           {
-            SubStyle *s = &subtle->styles.sublets, *state = NULL;
+            SubStyle *s = &subtle->styles.sublets, *style = NULL;
 
             /* Select style */
-            if(s->states && (state = subArrayGet(s->states, p->sublet->style)))
-              s = state;
+            if(s->styles && (style = subArrayGet(s->styles, p->sublet->style)))
+              s = style;
 
             /* Ensure min width */
             p->width = MAX(s->min, p->sublet->width);
@@ -336,11 +332,11 @@ subPanelRender(SubPanel *p,
         break; /* }}} */
       case SUB_PANEL_SUBLET: /* {{{ */
           {
-            SubStyle *s = &subtle->styles.sublets, *state = NULL;
+            SubStyle *s = &subtle->styles.sublets, *style = NULL;
 
             /* Select style */
-            if(s->states && (state = subArrayGet(s->states, p->sublet->style)))
-              s = state;
+            if(s->styles && (style = subArrayGet(s->styles, p->sublet->style)))
+              s = style;
 
             /* Set window background and border*/
             PanelRect(drawable, p->x, p->width, s);
@@ -348,8 +344,7 @@ subPanelRender(SubPanel *p,
             /* Render text parts */
             subSharedTextRender(subtle->dpy, subtle->gcs.draw, subtle->font,
               drawable, p->x + STYLE_LEFT((*s)), subtle->font->y +
-              STYLE_TOP((*s)), p->sublet->fg, p->sublet->bg,
-              p->sublet->text);
+              STYLE_TOP((*s)), s->fg, s->bg, p->sublet->text);
           }
         break; /* }}} */
       case SUB_PANEL_TITLE: /* {{{ */
@@ -420,7 +415,7 @@ subPanelRender(SubPanel *p,
 
                     subSharedTextIconDraw(subtle->dpy, subtle->gcs.draw,
                       drawable, vx + x, icony, v->icon->width,
-                      v->icon->height, s->fg, s->bg, v->icon->pixmap,
+                      v->icon->height, s->icon, s->bg, v->icon->pixmap,
                       v->icon->bitmap);
                   }
 
