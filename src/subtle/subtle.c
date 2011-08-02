@@ -266,20 +266,20 @@ subSubtleFinish(void)
       subArrayKill(subtle->hooks,     False);
 
       /* Kill styles */
-      if(subtle->styles.all.states)
-        subArrayKill(subtle->styles.all.states, True);
-      if(subtle->styles.views.states)
-        subArrayKill(subtle->styles.views.states, True);
-      if(subtle->styles.title.states)
-        subArrayKill(subtle->styles.title.states, True);
-      if(subtle->styles.sublets.states)
-        subArrayKill(subtle->styles.sublets.states, True);
-      if(subtle->styles.separator.states)
-        subArrayKill(subtle->styles.separator.states, True);
-      if(subtle->styles.clients.states)
-        subArrayKill(subtle->styles.clients.states, True);
-      if(subtle->styles.subtle.states)
-        subArrayKill(subtle->styles.subtle.states, True);
+      if(subtle->styles.all.styles)
+        subArrayKill(subtle->styles.all.styles,       True);
+      if(subtle->styles.views.styles)
+        subArrayKill(subtle->styles.views.styles,     True);
+      if(subtle->styles.title.styles)
+        subArrayKill(subtle->styles.title.styles,     True);
+      if(subtle->styles.sublets.styles)
+        subArrayKill(subtle->styles.sublets.styles,   True);
+      if(subtle->styles.separator.styles)
+        subArrayKill(subtle->styles.separator.styles, True);
+      if(subtle->styles.clients.styles)
+        subArrayKill(subtle->styles.clients.styles,   True);
+      if(subtle->styles.subtle.styles)
+        subArrayKill(subtle->styles.subtle.styles,    True);
 
       subEventFinish();
       subRubyFinish();
