@@ -115,60 +115,50 @@ end
 #
 # http://subforge.org/projects/subtle/wiki/Styles
 
-# Style for focus window title
-style :title do
-  padding     0, 3
-  border      "#303030", 0
-  foreground  "#fecf35"
+# Style for all style elements
+style :all do
   background  "#202020"
+  border      "#303030", 0
+  padding     0, 3
 end
 
-# Style for the active views
-style :focus do
-  padding     0, 3
-  border      "#303030", 0
-  foreground  "#fecf35"
-  background  "#202020"
-end
+# Style for the views
+style :views do
 
-# Style for urgent window titles and views
-style :urgent do
-  padding     0, 3
-  border      "#303030", 0
-  foreground  "#ff9800"
-  background  "#202020"
-end
+  # Style for the active views
+  style :focus do
+    foreground  "#fecf35"
+  end
 
-# Style for occupied views (views with clients)
-style :occupied do
-  padding     0, 3
-  border      "#303030", 0
-  foreground  "#b8b8b8"
-  background  "#202020"
-end
+  # Style for urgent window titles and views
+  style :urgent do
+    foreground  "#ff9800"
+  end
 
-# Style for unoccupied views (views without clients)
-style :unoccupied do
-  padding     0, 3
-  border      "#303030", 0
-  foreground  "#757575"
-  background  "#202020"
+  # Style for occupied views (views with clients)
+  style :occupied do
+    foreground  "#b8b8b8"
+  end
+
+  # Style for unoccupied views (views without clients)
+  style :unoccupied do
+    foreground  "#757575"
+  end
 end
 
 # Style for sublets
 style :sublets do
-  padding     0, 3
-  border      "#303030", 0
   foreground  "#757575"
-  background  "#202020"
 end
 
 # Style for separator
 style :separator do
-  padding     0, 3
-  border      0
-  background  "#202020"
   foreground  "#757575"
+end
+
+# Style for focus window title
+style :title do
+  foreground  "#fecf35"
 end
 
 # Style for active/inactive windows
