@@ -1122,6 +1122,7 @@ RubyEvalStyle(VALUE name,
   /* Get colors */
   RubyHashToColor(params, "foreground", &s->fg);
   RubyHashToColor(params, "background", &s->bg);
+  RubyHashToColor(params, "icon",       &s->icon);
 
   /* Set all borders */
   RubyHashToBorder(params, "border", &border, &bw);
@@ -1257,23 +1258,23 @@ RubyForeachState(VALUE key,
   VALUE value,
   VALUE data)
 {
-  SubStyle *s = (SubStyle *)data, *state = NULL;
+  SubStyle *s = (SubStyle *)data, *style = NULL;
 
   if(key == Qundef || NIL_P(value)) return ST_CONTINUE;
 
   /* Create new state */
-  state = subStyleNew();
-  state->name = strdup(SYM2CHAR(key));
-  RubyEvalStyle(key, state, rb_iv_get(value, "@params"));
+  style = subStyleNew();
+  style->name = strdup(SYM2CHAR(key));
+  RubyEvalStyle(key, style, rb_iv_get(value, "@params"));
 
   /* Translate flags */
-  if(CHAR2SYM("urgent")          == key) subtle->styles.urgent     = state;
-  else if(CHAR2SYM("occupied")   == key) subtle->styles.occupied   = state;
-  else if(CHAR2SYM("unoccupied") == key) subtle->styles.unoccupied = state;
-  else if(CHAR2SYM("focus")      == key) subtle->styles.focus      = state;
+  if(CHAR2SYM("urgent")          == key) subtle->styles.urgent     = style;
+  else if(CHAR2SYM("occupied")   == key) subtle->styles.occupied   = style;
+  else if(CHAR2SYM("unoccupied") == key) subtle->styles.unoccupied = style;
+  else if(CHAR2SYM("focus")      == key) subtle->styles.focus      = style;
 
-  /* Finally add state */
-  subStyleAddState(s, state);
+  /* Finally add style */
+  subStylePush(s, style);
 
   return ST_CONTINUE;
 } /* }}} */
@@ -1520,25 +1521,23 @@ RubyWrapSubletConfig(VALUE data)
     {
       VALUE value = Qnil;
 
+      /* Set sublet interval */
       if(FIXNUM_P(value = rb_hash_lookup(hash, CHAR2SYM("interval"))))
         s->interval = FIX2INT(value);
 
-      if(T_STRING == rb_type(value = rb_hash_lookup(hash,
-          CHAR2SYM("foreground"))))
-        s->fg = subSharedParseColor(subtle->dpy, RSTRING_PTR(value));
+      /* Set sublet style */
+      if(T_SYMBOL == rb_type(value = rb_hash_lookup(hash,
+          CHAR2SYM("style"))))
+        {
+          value = rb_sym_to_s(value);
 
-      if(T_STRING == rb_type(value = rb_hash_lookup(hash,
-          CHAR2SYM("background"))))
-        s->bg = subSharedParseColor(subtle->dpy, RSTRING_PTR(value));
-
-      if(T_STRING == rb_type(value = rb_hash_lookup(hash,
-          CHAR2SYM("text_fg"))))
-        s->textfg = subSharedParseColor(subtle->dpy, RSTRING_PTR(value));
-
-      if(T_STRING == rb_type(value = rb_hash_lookup(hash,
-          CHAR2SYM("icon_fg"))))
-        s->iconfg = subSharedParseColor(subtle->dpy, RSTRING_PTR(value));
+          subStyleFind(&subtle->styles.sublets, RSTRING_PTR(value),
+            &s->style);
+        }
     }
+
+  /* Check if there is a matching style */
+  subStyleFind(&subtle->styles.sublets, s->name, &s->style);
 
   return Qnil;
 } /* }}} */
@@ -2403,7 +2402,7 @@ RubyConfigStyle(VALUE self,
       else if(CHAR2SYM("urgent") == name)
         {
           s = subtle->styles.urgent = subStyleNew();
-          subStyleAddState(&subtle->styles.views, s);
+          subStylePush(&subtle->styles.views, s);
 
           subSharedLogDeprecated("The `urgent' style is deprecated. "
             "Please use the `urgent' state instead.\n");
@@ -2411,7 +2410,7 @@ RubyConfigStyle(VALUE self,
       else if(CHAR2SYM("occupied") == name)
         {
           s = subtle->styles.occupied = subStyleNew();
-          subStyleAddState(&subtle->styles.views, s);
+          subStylePush(&subtle->styles.views, s);
 
           subSharedLogDeprecated("The `occupied' style is deprecated. "
             "Please use the `occupied' state instead.\n");
@@ -2419,7 +2418,7 @@ RubyConfigStyle(VALUE self,
       else if(CHAR2SYM("unoccupied") == name)
         {
           s = subtle->styles.unoccupied = subStyleNew();
-          subStyleAddState(&subtle->styles.views, s);
+          subStylePush(&subtle->styles.views, s);
 
           subSharedLogDeprecated("The `unoccupied' style is deprecated. "
             "Please use the `unoccupied' state instead.\n");
@@ -2427,7 +2426,7 @@ RubyConfigStyle(VALUE self,
       else if(CHAR2SYM("focus") == name)
         {
           s = subtle->styles.focus = subStyleNew();
-          subStyleAddState(&subtle->styles.views, s);
+          subStylePush(&subtle->styles.views, s);
 
           subSharedLogDeprecated("The `focus' style is deprecated. "
             "Please use the `focus' state instead.\n");
@@ -2891,113 +2890,17 @@ RubySubletDataWriter(VALUE self,
       /* Check value type */
       if(T_STRING == rb_type(value))
         {
+          SubStyle *s = &subtle->styles.sublets, *style = NULL;
+
+          /* Select style */
+          if(s->styles && (style = subArrayGet(s->styles, p->sublet->style)))
+              s = style;
+
           p->sublet->width = subSharedTextParse(subtle->dpy,
-            subtle->font, p->sublet->text, p->sublet->textfg,
-            p->sublet->iconfg, RSTRING_PTR(value)) +
-            STYLE_WIDTH(subtle->styles.sublets);
+            subtle->font, p->sublet->text, s->fg,
+            s->icon, RSTRING_PTR(value)) + STYLE_WIDTH((*s));
         }
       else rb_raise(rb_eArgError, "Unknown value type");
-    }
-
-  return Qnil;
-} /* }}} */
-
-/* RubySubletForegroundWriter {{{ */
-/*
- * call-seq: foreground=(value) -> nil
- *
- * Set the default foreground color of a Sublet
- *
- *  sublet.foreground = "#ffffff"
- *  => nil
- *
- *  sublet.foreground = Sublet::Color.new("#ffffff")
- *  => nil
- */
-
-static VALUE
-RubySubletForegroundWriter(VALUE self,
-  VALUE value)
-{
-  SubPanel *p = NULL;
-
-  Data_Get_Struct(self, SubPanel, p);
-  if(p)
-    {
-      p->sublet->fg = subtle->styles.sublets.fg; ///< Set default color
-
-      /* Check value type */
-      switch(rb_type(value))
-        {
-          case T_STRING:
-            p->sublet->fg = subSharedParseColor(subtle->dpy, RSTRING_PTR(value));
-            break;
-          case T_OBJECT:
-              {
-                VALUE klass = Qnil;
-
-                klass = rb_const_get(mod, rb_intern("Color"));
-
-                if(rb_obj_is_instance_of(value, klass)) ///< Check object instance
-                  p->sublet->fg = NUM2LONG(rb_iv_get(self, "@pixel"));
-              }
-            break;
-          default:
-            rb_raise(rb_eArgError, "Unknown value type");
-        }
-
-      subScreenRender();
-    }
-
-  return Qnil;
-} /* }}} */
-
-/* RubySubletBackgroundWriter {{{ */
-/*
- * call-seq: background=(value) -> nil
- *
- * Set the background color of a Sublet
- *
- *  sublet.background = "#ffffff"
- *  => nil
- *
- *  sublet.background = Sublet::Color.new("#ffffff")
- *  => nil
- */
-
-static VALUE
-RubySubletBackgroundWriter(VALUE self,
-  VALUE value)
-{
-  SubPanel *p = NULL;
-
-  Data_Get_Struct(self, SubPanel, p);
-  if(p)
-    {
-      p->sublet->bg = subtle->styles.sublets.bg; ///< Set default color
-
-      /* Check value type */
-      switch(rb_type(value))
-        {
-          case T_STRING:
-            p->sublet->bg = subSharedParseColor(subtle->dpy,
-              RSTRING_PTR(value));
-            break;
-          case T_OBJECT:
-              {
-                VALUE klass = Qnil;
-
-                klass = rb_const_get(mod, rb_intern("Color"));
-
-                if(rb_obj_is_instance_of(value, klass)) ///< Check object instance
-                  p->sublet->bg = NUM2LONG(rb_iv_get(self, "@pixel"));
-              }
-            break;
-          default:
-            rb_raise(rb_eArgError, "Unknown value type");
-        }
-
-      subScreenRender();
     }
 
   return Qnil;
@@ -3064,6 +2967,48 @@ RubySubletScreenReader(VALUE self)
   if(p) screen = RubySubtleToSubtlext(p->screen);
 
   return screen;
+} /* }}} */
+
+/* RubySubletStyleWriter {{{ */
+/*
+ * call-seq: style=(string) -> nil
+ *           style=(symbol) -> nil
+ *
+ * Set style of Sublet
+ *
+ *  sublet.style = :subtle
+ *  => nil
+ */
+
+static VALUE
+RubySubletStyleWriter(VALUE self,
+  VALUE value)
+{
+  SubPanel *p = NULL;
+
+  Data_Get_Struct(self, SubPanel, p);
+  if(p)
+    {
+      /* Check value type */
+      if(FIXNUM_P(value))
+        {
+          SubStyle *s = &subtle->styles.sublets, *style = NULL;
+
+          /* Select style */
+          if(s->styles && (style = subArrayGet(s->styles, FIX2INT(value))))
+            {
+              s                = style;
+              p->sublet->style = FIX2INT(value);
+            }
+
+          p->sublet->width = subSharedTextParse(subtle->dpy,
+            subtle->font, p->sublet->text, s->fg,
+            s->bg, RSTRING_PTR(value)) + STYLE_WIDTH((*s));
+        }
+      else rb_raise(rb_eArgError, "Unknown value type");
+    }
+
+  return Qnil;
 } /* }}} */
 
 /* RubySubletShow {{{ */
@@ -3404,11 +3349,10 @@ subRubyInit(void)
   rb_define_method(sublet, "interval=",      RubySubletIntervalWriter,    1);
   rb_define_method(sublet, "data",           RubySubletDataReader,        0);
   rb_define_method(sublet, "data=",          RubySubletDataWriter,        1);
-  rb_define_method(sublet, "foreground=",    RubySubletForegroundWriter,  1);
-  rb_define_method(sublet, "background=",    RubySubletBackgroundWriter,  1);
   rb_define_method(sublet, "geometry",       RubySubletGeometryReader,    0);
   rb_define_method(sublet, "screen",         RubySubletScreenReader,      0);
   rb_define_method(sublet, "show",           RubySubletShow,              0);
+  rb_define_method(sublet, "style=",         RubySubletStyleWriter,       1);
   rb_define_method(sublet, "hide",           RubySubletHide,              0);
   rb_define_method(sublet, "watch",          RubySubletWatch,             1);
   rb_define_method(sublet, "unwatch",        RubySubletUnwatch,           0);

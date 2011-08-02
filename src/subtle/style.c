@@ -11,10 +11,6 @@
 
 #include "subtle.h"
 
-/* Prototypes {{{ */
-static void StyleInherit(SubStyle *s1, SubStyle *s2);
-/* }}} */
-
 /* StyleInheritSides {{{ */
 static void
 StyleInheritSides(SubSides *s1,
@@ -26,46 +22,44 @@ StyleInheritSides(SubSides *s1,
   if(-1 == s1->left)   s1->left   = s2->left;
 } /* }}} */
 
-/* StyleInheritStates {{{ */
-static void
-StyleInheritStates(SubStyle *s)
-{
-  if(s->states)
-    {
-      int i;
-
-      /* Inherit all values from parent state */
-      for(i = 0; i < s->states->ndata; i++)
-        {
-          SubStyle *state = STYLE(s->states->data[i]);
-
-          StyleInherit(state, s);
-        }
-    }
-} /* }}} */
-
 /* StyleInherit {{{ */
 static void
 StyleInherit(SubStyle *s1,
-  SubStyle *s2)
+  SubStyle *s2,
+  int sanitize)
 {
   assert(s1 && s2);
 
-  /* Inherit colors */
+  /* Inherit nset colors */
   if(-1 == s1->fg)     s1->fg     = s2->fg;
   if(-1 == s1->bg)     s1->bg     = s2->bg;
+  if(-1 == s1->icon)   s1->icon   = s2->icon;
   if(-1 == s1->top)    s1->top    = s2->top;
   if(-1 == s1->right)  s1->right  = s2->right;
   if(-1 == s1->bottom) s1->bottom = s2->bottom;
   if(-1 == s1->left)   s1->left   = s2->left;
 
-  /* Inherit border, padding and margin */
+  /* Sanitize icon */
+  if(sanitize && -1 == s1->icon) s1->icon = s1->fg;
+
+  /* Inherit unset border, padding and margin */
   StyleInheritSides(&s1->border,  &s2->border);
   StyleInheritSides(&s1->padding, &s2->padding);
   StyleInheritSides(&s1->margin,  &s2->margin);
 
-  /* Inherit states */
-  StyleInheritStates(s1);
+  /* Check styles */
+  if(s1->styles)
+    {
+      int i;
+
+      /* Inherit unset values from parent style */
+      for(i = 0; i < s1->styles->ndata; i++)
+        {
+          SubStyle *style = STYLE(s1->styles->data[i]);
+
+          StyleInherit(style, s1, True);
+        }
+    }
 } /* }}} */
 
 /* Public */
@@ -92,28 +86,24 @@ subStyleNew(void)
   return s;
 } /* }}} */
 
- /** subStyleAddState {{{
-  * @brief Add state to style
-  * @param[in]  s      A #SubStyle
-  * @param[in]  state  A #SubStyle
+ /** subStylePush {{{
+  * @brief Push style state
+  * @param[in]  s1  A #SubStyle
+  * @param[in]  s2  A #SubStyle
   **/
 
 void
-subStyleAddState(SubStyle *s,
-  SubStyle *state)
+subStylePush(SubStyle *s1,
+  SubStyle *s2)
 {
-  assert(s);
+  assert(s1 && s2);
 
-  if(!s->states) s->states = subArrayNew();
-
-  /* Add state to style */
-  subArrayPush(s->states, (void *)state);
-
-  subSharedLogDebugSubtle("Add state: total=%d\n", s->states->ndata);
+  if(!s1->styles) s1->styles = subArrayNew();
+  subArrayPush(s1->styles, (void *)s2);
 } /* }}} */
 
- /** subStyleFindState {{{
-  * @brief Find style state
+ /** subStyleFind {{{
+  * @brief Find style
   * @param[in]    s      A #SubStyle
   * @param[in]    name   Name of style state
   * @param[inout] idx    Index of found state
@@ -121,7 +111,7 @@ subStyleAddState(SubStyle *s,
   **/
 
 SubStyle *
-subStyleFindState(SubStyle *s,
+subStyleFind(SubStyle *s,
   char *name,
   int *idx)
 {
@@ -129,19 +119,19 @@ subStyleFindState(SubStyle *s,
 
   assert(s);
 
-  if(s->states && name)
+  if(s->styles && name)
     {
       int i;
 
       /* Check each state */
-      for(i = 0; i < s->states->ndata; i++)
+      for(i = 0; i < s->styles->ndata; i++)
         {
-          SubStyle *state = STYLE(s->states->data[i]);
+          SubStyle *style = STYLE(s->styles->data[i]);
 
           /* Compare state name */
-          if(0 == strcmp(name, state->name))
+          if(0 == strcmp(name, style->name))
             {
-              found = state;
+              found = style;
               if(idx) *idx = i;
 
               break;
@@ -164,14 +154,17 @@ subStyleReset(SubStyle *s,
   assert(s);
 
   /* Set value */
-  s->fg = s->bg = s->top  = s->right = s->bottom = s->left = val;
+  s->fg = s->bg = s->top = s->right = s->bottom = s->left = val;
   s->border.top  = s->border.right  = s->border.bottom  = s->border.left  = val;
   s->padding.top = s->padding.right = s->padding.bottom = s->padding.left = val;
   s->margin.top  = s->margin.right  = s->margin.bottom  = s->margin.left  = val;
 
+  /* Force value to prevent inheriting of 0 value from all */
+  s->icon = -1;
+
   /* Remove states */
-  if(s->states) subArrayKill(s->states, True);
-  s->states = NULL;
+  if(s->styles) subArrayKill(s->styles, True);
+  s->styles = NULL;
 } /* }}} */
 
  /** subStyleKill {{{
@@ -185,7 +178,7 @@ subStyleKill(SubStyle *s)
   assert(s);
 
   if(s->name)   free(s->name);
-  if(s->states) subArrayKill(s->states, True);
+  if(s->styles) subArrayKill(s->styles, True);
   free(s);
 
   subSharedLogDebugSubtle("kill=style\n");
@@ -201,10 +194,10 @@ void
 subStyleInheritance(void)
 {
   /* Inherit styles */
-  StyleInherit(&subtle->styles.views,     &subtle->styles.all);
-  StyleInherit(&subtle->styles.title,     &subtle->styles.all);
-  StyleInherit(&subtle->styles.sublets,   &subtle->styles.all);
-  StyleInherit(&subtle->styles.separator, &subtle->styles.all);
+  StyleInherit(&subtle->styles.views,     &subtle->styles.all, False);
+  StyleInherit(&subtle->styles.title,     &subtle->styles.all, False);
+  StyleInherit(&subtle->styles.sublets,   &subtle->styles.all, False);
+  StyleInherit(&subtle->styles.separator, &subtle->styles.all, False);
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
