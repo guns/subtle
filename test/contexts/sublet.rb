@@ -53,13 +53,6 @@ context 'Sublet' do
     topic.eql? topic and topic == topic
   end # }}}
 
-  asserts 'Set colors' do # {{{
-    topic.foreground = '#ffffff'
-    topic.background = '#ffffff'
-
-    true
-  end # }}}
-
   asserts 'Convert to string' do # {{{
     SUBLET_NAME == topic.to_str
   end # }}}
