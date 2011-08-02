@@ -1697,11 +1697,11 @@ RubyOptionsGravity(VALUE self,
   return rb_hash_aset(params, CHAR2SYM("gravity"), gravity);
 } /* }}} */
 
-/* RubyOptionsState {{{ */
+/* RubyOptionsStyle {{{ */
 /*
- * call-seq: state(name) -> nil
+ * call-seq: style(name) -> nil
  *
- * Overwrite global state method
+ * Overwrite global style method
  *
  *  option.state :urgent do
  *    foreground "#fecf35"
@@ -1710,24 +1710,35 @@ RubyOptionsGravity(VALUE self,
  */
 
 static VALUE
-RubyOptionsState(VALUE self,
+RubyOptionsStyle(VALUE self,
   VALUE name)
 {
-  VALUE klass = Qnil, options = Qnil, states = rb_iv_get(self, "@states");
-
-  /* Create states hash if necessary */
-  if(NIL_P(states))
+  /* Check if block is given */
+  if(rb_block_given_p())
     {
-      states = rb_hash_new();
-      rb_iv_set(self, "@states", states);
+      VALUE klass = Qnil, options = Qnil, styles = rb_iv_get(self, "@styles");
+
+      /* Create styles hash if necessary */
+      if(NIL_P(styles))
+        {
+          styles = rb_hash_new();
+          rb_iv_set(self, "@styles", styles);
+        }
+
+      /* Collect options */
+      klass   = rb_const_get(mod, rb_intern("Options"));
+      options = rb_funcall(klass, rb_intern("new"), 1, self);
+      rb_obj_instance_eval(0, 0, options);
+
+      rb_hash_aset(styles, name, options);
     }
+  else
+    {
+      VALUE params = rb_iv_get(self, "@params");
 
-  /* Collect options */
-  klass   = rb_const_get(mod, rb_intern("Options"));
-  options = rb_funcall(klass, rb_intern("new"), 1, self);
-  rb_obj_instance_eval(0, 0, options);
-
-  rb_hash_aset(states, name, options);
+      /* Just append to params */
+      rb_hash_aset(params, CHAR2SYM("style"), name);
+    }
 
   return Qnil;
 } /* }}} */
@@ -2388,7 +2399,7 @@ RubyConfigStyle(VALUE self,
   if(T_SYMBOL == rb_type(name))
     {
       SubStyle *s = NULL;
-      VALUE klass = Qnil, options = Qnil, states = Qnil;
+      VALUE klass = Qnil, options = Qnil, styles = Qnil;
 
       /* Select style struct */
       if(CHAR2SYM("all")            == name) s = &subtle->styles.all;
@@ -2448,9 +2459,9 @@ RubyConfigStyle(VALUE self,
       /* Eval style before styles */
       RubyEvalStyle(name, s, rb_iv_get(options, "@params"));
 
-      /* Eval states */
-      if(T_HASH == rb_type((states = rb_iv_get(options, "@states"))))
-        rb_hash_foreach(states, RubyForeachState, (VALUE)s);
+      /* Eval styles */
+      if(T_HASH == rb_type((styles = rb_iv_get(options, "@styles"))))
+        rb_hash_foreach(styles, RubyForeachState, (VALUE)s);
 
     }
   else rb_raise(rb_eArgError, "Unknown value type for style");
@@ -3317,13 +3328,13 @@ subRubyInit(void)
 
   /* Params list */
   rb_define_attr(options, "params", 1, 1);
-  rb_define_attr(options, "states", 1, 1);
+  rb_define_attr(options, "styles", 1, 1);
 
   /* Class methods */
   rb_define_method(options, "initialize",     RubyOptionsInit,        1);
   rb_define_method(options, "match",          RubyOptionsMatch,       1);
   rb_define_method(options, "gravity",        RubyOptionsGravity,     1);
-  rb_define_method(options, "state",          RubyOptionsState,       1);
+  rb_define_method(options, "style",          RubyOptionsStyle,       1);
   rb_define_method(options, "method_missing", RubyOptionsDispatcher, -1);
 
   /*
