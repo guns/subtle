@@ -474,8 +474,6 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_SUBLET_UPDATE,                                  ///< Subtle sublet update
   SUB_EWMH_SUBTLE_SUBLET_DATA,                                    ///< Subtle sublet data
   SUB_EWMH_SUBTLE_SUBLET_STYLE,                                   ///< Subtle sublet style
-  SUB_EWMH_SUBTLE_SUBLET_FOREGROUND,                              ///< Subtle sublet foreground
-  SUB_EWMH_SUBTLE_SUBLET_BACKGROUND,                              ///< Subtle sublet background
   SUB_EWMH_SUBTLE_SUBLET_FLAGS,                                   ///< Subtle sublet flags
   SUB_EWMH_SUBTLE_SUBLET_LIST,                                    ///< Subtle sublet list
   SUB_EWMH_SUBTLE_SUBLET_KILL,                                    ///< Subtle sublet kill
@@ -557,7 +555,7 @@ typedef struct subsublet_t { /* {{{ */
   FLAGS             flags;                                        ///< Sublet flags
   int               watch, width, style;                          ///< Sublet watch id, width and style state
   char              *name;                                        ///< Sublet name
-  unsigned long     instance, fg, bg, textfg, iconfg;             ///< Sublet ruby instance, fg, bg and icon color
+  unsigned long     instance;                                     ///< Sublet ruby instance, fg, bg and icon color
   time_t            time, interval;                               ///< Sublet update/interval time
 
   struct subtext_t  *text;                                        ///< Sublet text
@@ -573,9 +571,9 @@ typedef struct substyle_t /* {{{ */
   FLAGS             flags;                                        ///< Styke flags
   char              *name;                                        ///< Style name
   int               min;                                          ///< Style min width
-  long              fg, bg, top, right, bottom, left;             ///< Style colors
+  long              fg, bg, icon, top, right, bottom, left;       ///< Style colors
   struct subsides_t border, padding, margin;                      ///< Style border, padding and margin
-  struct subarray_t *states;                                      ///< Style state list
+  struct subarray_t *styles;                                      ///< Style state list
 } SubStyle; /* }}} */
 
 typedef struct subsubtle_t /* {{{ */
@@ -824,8 +822,8 @@ void subScreenKill(SubScreen *s);                                 ///< Kill scre
 
 /* style.c {{{ */
 SubStyle *subStyleNew(void);                                      ///< Create new style
-void subStyleAddState(SubStyle *s, SubStyle *state);              ///< Add state to style
-SubStyle *subStyleFindState(SubStyle *s, char *name, int *idx);   ///< Find state
+void subStylePush(SubStyle *s1, SubStyle *s2);                    ///< Append style
+SubStyle *subStyleFind(SubStyle *s, char *name, int *idx);        ///< Find state
 void subStyleReset(SubStyle *s, int val);                         ///< Reset style values to given val
 void subStyleKill(SubStyle *s);                                   ///< Kill style
 void subStyleInheritance(void);                                   ///< Inherit values
