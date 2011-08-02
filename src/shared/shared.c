@@ -495,13 +495,13 @@ int
 subSharedTextParse(Display *disp,
   SubFont *f,
   SubText *t,
-  unsigned long textfg,
-  unsigned long iconfg,
+  long textfg,
+  long iconfg,
   char *text)
 {
   int i = 0, left = 0, right = 0;
   char *tok = NULL;
-  unsigned long color = -1, pixmap = 0;
+  long color = -1, pixmap = 0;
   SubTextItem *item = NULL;
 
   assert(f && t);
@@ -559,7 +559,7 @@ subSharedTextParse(Display *disp,
               /* Remove left bearing from first text item */
               t->width += item->width - (0 == i ? left : 0);
 
-              item->color = -1 != textfg ? textfg : color;
+              item->color = -1 != color ? color : textfg;
             }
 
           i++;

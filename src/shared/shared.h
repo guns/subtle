@@ -114,7 +114,7 @@ typedef union subdata_t /* {{{ */
 typedef struct subtextitem_t /* {{{ */
 {
   int             flags, width, height;                           ///< Text flags, width, height
-  unsigned long   color;                                          ///< Text color
+  long            color;                                          ///< Text color
 
   union subdata_t data;                                           ///< Text data
 } SubTextItem; /* }}} */
@@ -211,7 +211,7 @@ void subSharedPropertyDelete(Display *disp, Window win,
 /* Text {{{ */
 SubText *subSharedTextNew(void);                                  ///< Create new text
 int subSharedTextParse(Display *disp, SubFont *f, SubText *t,
-  unsigned long textfg, unsigned long iconfg, char *text);        ///< Parse text
+  long textfg, long iconfg, char *text);                          ///< Parse text
 void subSharedTextRender(Display *disp, GC gc, SubFont *f,
   Window win, int x, int y, long fg, long bg, SubText *t);        ///< Render text
 int subSharedTextWidth(Display *disp, SubFont *f,
