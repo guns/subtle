@@ -253,7 +253,7 @@ EventConfigureRequest(XConfigureRequestEvent *ev)
   if((c = CLIENT(subSubtleFind(ev->window, CLIENTID))))
     {
       /* Check flags if the request is important */
-      if(!(c->flags & (SUB_CLIENT_MODE_FIXED|SUB_CLIENT_MODE_FULL)) &&
+      if(!(c->flags & SUB_CLIENT_MODE_FULL) &&
           (subtle->flags & SUB_SUBTLE_RESIZE ||
           c->flags & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_RESIZE)))
         {
@@ -267,7 +267,8 @@ EventConfigureRequest(XConfigureRequestEvent *ev)
           subClientResize(c, &(s->geom), False);
 
           /* Send synthetic configure notify */
-          if((ev->value_mask & (CWX|CWY)) && !(ev->value_mask & (CWWidth|CWHeight)))
+          if((ev->value_mask & (CWX|CWY)) &&
+              !(ev->value_mask & (CWWidth|CWHeight)))
             subClientConfigure(c);
 
           /* Send real configure notify */
