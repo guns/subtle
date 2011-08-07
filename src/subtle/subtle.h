@@ -188,6 +188,10 @@
 #define SUB_CLIENT_TYPE_SPLASH        (1L << 29)                  ///< Splash type
 #define SUB_CLIENT_TYPE_DIALOG        (1L << 30)                  ///< Dialog type
 
+/* Client restack */
+#define SUB_CLIENT_RESTACK_DOWN       0                           ///< Restack down
+#define SUB_CLIENT_RESTACK_UP         1                           ///< Restack up
+
 /* Drag flags */
 #define SUB_DRAG_START                (1L << 0)                   ///< Drag start
 #define SUB_DRAG_MOVE                 (1L << 1)                   ///< Drag move
@@ -380,7 +384,7 @@ typedef struct subclient_t /* {{{ */
   float      minr, maxr;                                          ///< Client ratios
   int        minw, minh, maxw, maxh, incw, inch, basew, baseh;    ///< Client sizes
 
-  int        screen, gravity, *gravities;                         ///< Client placement
+  int        dir, screen, gravity, *gravities;                    ///< Client placement
 } SubClient; /* }}} */
 
 typedef enum subewmh_t /* {{{ */
@@ -464,7 +468,6 @@ typedef enum subewmh_t /* {{{ */
   SUB_EWMH_SUBTLE_TAG_LIST,                                       ///< Subtle tag list
   SUB_EWMH_SUBTLE_TAG_KILL,                                       ///< Subtle tag kill
   SUB_EWMH_SUBTLE_TRAY_LIST,                                      ///< Subtle tray list
-  SUB_EWMH_SUBTLE_TRAY_KILL,                                      ///< Subtle tray kill
   SUB_EWMH_SUBTLE_VIEW_NEW,                                       ///< Subtle view new
   SUB_EWMH_SUBTLE_VIEW_TAGS,                                      ///< Subtle view tags
   SUB_EWMH_SUBTLE_VIEW_STYLE,                                     ///< Subtle view style
@@ -694,7 +697,6 @@ SubClient *subClientNew(Window win);                              ///< Create cl
 void subClientConfigure(SubClient *c);                            ///< Send configure request
 void subClientDimension(int id);                                  ///< Dimension clients
 void subClientRender(SubClient *c);                               ///< Render client
-int subClientCompare(const void *a, const void *b);               ///< Compare two clients
 void subClientFocus(SubClient *c);                                ///< Focus client
 void subClientWarp(SubClient *c, int rise);                       ///< Warp to client
 void subClientDrag(SubClient *c, int mode, int direction);        ///< Move/drag client
@@ -703,6 +705,7 @@ void subClientTag(SubClient *c, int tag, int *flags);             ///< Tag clien
 void subClientRetag(SubClient *c, int *flags);                    ///< Update client tags
 void subClientResize(SubClient *c, XRectangle *bounds,
   int size_hints);                                                ///< Resize client for screen
+void subClientRestack(SubClient *c, int dir);                     ///< Restack clients
 void subClientArrange(SubClient *c, int gravity,
   int screen);                                                    ///< Arrange client
 void subClientToggle(SubClient *c, int type, int gravity);        ///< Toggle client state
@@ -716,7 +719,7 @@ void subClientSetTransient(SubClient *c, int *flags);             ///< Set clien
 void subClientSetType(SubClient *c, int *flags);                  ///< Set client type
 void subClientClose(SubClient *c);                                ///< Close client
 void subClientKill(SubClient *c);                                 ///< Kill client
-void subClientPublish(void);                                      ///< Publish all clients
+void subClientPublish(int restack);                               ///< Publish all clients
 /* }}} */
 
 /* display.c {{{ */
