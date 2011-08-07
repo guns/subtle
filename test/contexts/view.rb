@@ -13,6 +13,7 @@ context 'View' do
   VIEW_COUNT = 4
   VIEW_ID    = 0
   VIEW_NAME  = 'terms'
+  VIEW_TAG   = :default
 
   setup do # {{{
     Subtlext::View[VIEW_ID]
@@ -106,7 +107,8 @@ context 'View' do
 
     after = topic.tags.size
 
-    before == middle1 - 1 and 2 == middle2 and 1 == after
+    before == middle1 - 1 and 2 == middle2 and
+      1 == after and topic.has_tag?(VIEW_TAG)
   end # }}}
 
   asserts 'Store values' do # {{{

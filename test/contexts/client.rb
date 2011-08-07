@@ -12,13 +12,14 @@
 context 'Client' do
   CLIENT_COUNT = 1
   CLIENT_NAME  = 'xterm'
+  CLIENT_TAG   = :default
 
   setup do # {{{
     Subtlext::Client.current
   end # }}}
 
   asserts 'Check attributes' do # {{{
-    0 == topic.id and CLIENT_NAME == topic.name and
+    CLIENT_NAME == topic.name and
       CLIENT_NAME == topic.instance and CLIENT_NAME == topic.klass.downcase
   end # }}}
 
@@ -104,7 +105,8 @@ context 'Client' do
     # Compare tag counts
     after = topic.tags.size
 
-    before == middle1 - 1 and 2 == middle2 and before == after
+    before == middle1 - 1 and 2 == middle2 and
+      before == after and topic.has_tag?(CLIENT_TAG)
   end # }}}
 
   asserts 'Set/get gravity' do # {{{
