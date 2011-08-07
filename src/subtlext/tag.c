@@ -308,17 +308,16 @@ subTagClients(VALUE self)
       for(i = 0; i < nclients; i++)
         {
           if((tags = (unsigned long *)subSharedPropertyGet(display,
-              clients[i], XA_CARDINAL, XInternAtom(display, "SUBTLE_CLIENT_TAGS",
-              False), NULL)))
+              clients[i], XA_CARDINAL, XInternAtom(display,
+              "SUBTLE_CLIENT_TAGS", False), NULL)))
             {
               /* Check if tag id matches */
               if(*tags & (1L << (FIX2INT(id) + 1)))
                 {
                   /* Create new client */
-                  if(!NIL_P(c = rb_funcall(klass, meth, 1, INT2FIX(i))))
+                  if(!NIL_P(c = rb_funcall(klass, meth, 1,
+                      LONG2NUM(clients[i]))))
                     {
-                      rb_iv_set(c, "@win", LONG2NUM(clients[i]));
-
                       subClientUpdate(c);
 
                       rb_ary_push(array, c);
