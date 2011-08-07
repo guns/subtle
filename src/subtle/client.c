@@ -215,6 +215,56 @@ ClientTile(int gravity,
     }
 } /* }}} */
 
+/* ClientCompare {{{ */
+static int
+ClientCompare(const void *a,
+  const void *b)
+{
+  int ret = 0, dirret = 0;
+  SubClient *c1 = *(SubClient **)a, *c2 = *(SubClient **)b;
+
+  assert(a && b);
+
+  /* Direction is required when we change stacking on a level */
+  if(SUB_CLIENT_RESTACK_DOWN      == c1->dir) dirret = -1;
+  else if(SUB_CLIENT_RESTACK_UP   == c1->dir) dirret = 1;
+  else if(SUB_CLIENT_RESTACK_DOWN == c2->dir) dirret = 1;
+  else if(SUB_CLIENT_RESTACK_UP   == c2->dir) dirret = -1;
+
+  /* Complicated comparisons to ensure stacking order. Our desired
+   * order is following: desktop < gravity < float < full
+   *
+   * This function returns following values:
+   * -1 => c1 is on a lower level
+   *  0 => c1 and c2 are on the same level
+   *  1 => c1 is on a higher level */
+  if(c1->flags & SUB_CLIENT_TYPE_DESKTOP)
+    {
+      if(c2->flags & SUB_CLIENT_TYPE_DESKTOP) ret = dirret;
+      else ret = 0;
+    }
+  else if(c1->flags & SUB_CLIENT_MODE_FULL)
+    {
+      if(c2->flags & SUB_CLIENT_MODE_FULL) ret = dirret;
+      else ret = 1;
+    }
+  else if(c1->flags & SUB_CLIENT_MODE_FLOAT)
+    {
+      if(c2->flags & SUB_CLIENT_MODE_FULL) ret = -1;
+      else if(c2->flags & SUB_CLIENT_MODE_FLOAT) ret = dirret;
+      else ret = 1;
+    }
+  else
+    {
+      if(c2->flags & SUB_CLIENT_TYPE_DESKTOP) ret = 1;
+      else if(c2->flags & (SUB_CLIENT_MODE_FLOAT|
+          SUB_CLIENT_MODE_FULL)) ret = -1;
+      else ret = dirret;
+    }
+
+  return ret;
+} /* }}} */
+
 /* Public */
 
  /** subClientNew {{{
@@ -244,6 +294,7 @@ subClientNew(Window win)
   c->gravities = (int *)subSharedMemoryAlloc(subtle->views->ndata, sizeof(int));
   c->flags     = (SUB_TYPE_CLIENT|SUB_CLIENT_INPUT);
   c->gravity   = -1; ///< Force update
+  c->dir       = -1;
   c->win       = win;
 
   /* Window attributes */
@@ -393,35 +444,6 @@ subClientRender(SubClient *c)
     }
 } /* }}} */
 
- /** subClientCompare {{{
-  * @brief Compare stacking level of clients
-  * @param[in]  a  A #SubClient
-  * @param[in]  b  A #SubClient
-  * @return Returns the result of the comparison of both clients
-  * @retval  -1  a is lower
-  * @retval  0   a and b are equal
-  * @retval  1   a is higher
-  **/
-
-int
-subClientCompare(const void *a,
-  const void *b)
-{
-  int ret = 0, mask = (SUB_CLIENT_MODE_FULL|SUB_CLIENT_TYPE_DESKTOP);
-  SubClient *c1 = *(SubClient **)a, *c2 = *(SubClient **)b;
-
-  assert(a && b);
-
-  /* Check flags */
-  if((c1->flags & mask) == (c2->flags & mask)) ret = 0;
-  else if(c1->flags & SUB_CLIENT_MODE_FULL ||
-      c2->flags & SUB_CLIENT_TYPE_DESKTOP)     ret = -1;
-  else if(c1->flags & SUB_CLIENT_TYPE_DESKTOP ||
-      c2->flags & SUB_CLIENT_MODE_FULL)        ret = 1;
-
-  return ret;
-} /* }}} */
-
  /** subClientFocus {{{
   * @brief Set focus to client
   * @param[in]  c  A #SubClient
@@ -463,7 +485,6 @@ subClientWarp(SubClient *c,
   DEAD(c);
   assert(c);
 
-  if(rise) XRaiseWindow(subtle->dpy, c->win);
   XWarpPointer(subtle->dpy, None, ROOT, 0, 0, 0, 0,
     c->geom.x + c->geom.width / 2, c->geom.y + c->geom.height / 2);
 } /* }}} */
@@ -801,6 +822,26 @@ subClientResize(SubClient *c,
     }
 } /* }}} */
 
+ /** subClientRestack {{{
+  * @brief Restack client
+  * @param[in]  c    A #SubClient
+  * @param[in]  dir  Either below or above
+  **/
+
+void
+subClientRestack(SubClient *c,
+  int dir)
+{
+  c->dir = dir;
+  subArraySort(subtle->clients, ClientCompare);
+  c->dir = -1;
+
+  subClientPublish(True);
+
+  subSharedLogDebugSubtle("Restack: instance=%s, win=%#lx, dir=%s\n",
+    c->instance, c->win, SUB_CLIENT_RESTACK_DOWN == dir ? "down" : "up");
+} /* }}} */
+
   /** subClientArrange {{{
    * @brief Arrange position of client
    * @param[in]  c        A #SubClient
@@ -823,6 +864,7 @@ subClientArrange(SubClient *c,
     {
       XMoveResizeWindow(subtle->dpy, c->win, s->base.x, s->base.y,
         s->base.width, s->base.height);
+      XRaiseWindow(subtle->dpy, c->win);
     }
   else if(c->flags & SUB_CLIENT_MODE_FLOAT)
     {
@@ -1069,15 +1111,14 @@ subClientToggle(SubClient *c,
 
               if(s->flags & SUB_SCREEN_PANEL2)
                 c->geom.height -= subtle->ph;
-
-              XLowerWindow(subtle->dpy, c->win);
             }
-          else XRaiseWindow(subtle->dpy, c->win);
         }
     }
 
   /* Sort for keeping stacking order */
-  if(type & SUB_CLIENT_MODE_FULL) subArraySort(subtle->clients, subClientCompare);
+  if(type & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_FULL|
+      SUB_CLIENT_TYPE_DESKTOP|SUB_CLIENT_TYPE_DOCK))
+    subClientRestack(c, SUB_CLIENT_RESTACK_UP);
 
   /* EWMH: State and flags */
   if(c->flags & SUB_CLIENT_MODE_FULL)
@@ -1513,7 +1554,7 @@ subClientClose(SubClient *c)
 
       subArrayRemove(subtle->clients, (void *)c);
       subClientKill(c);
-      subClientPublish();
+      subClientPublish(False);
 
       subScreenConfigure();
       subScreenUpdate();
@@ -1564,32 +1605,37 @@ subClientKill(SubClient *c)
 
 /* All */
 
- /** subClientPublish {{{
+ /** subClientPublish(False) {{{
   * @brief Publish clients
+  * @param[in]  restack  Restack windows
   **/
 
 void
-subClientPublish(void)
+subClientPublish(int restack)
 {
   int i;
   Window *wins = (Window *)subSharedMemoryAlloc(subtle->clients->ndata,
     sizeof(Window));
 
+  /* Sort clients from top (=> 0) to bottom */
   for(i = 0; i < subtle->clients->ndata; i++)
-    wins[i] = CLIENT(subtle->clients->data[i])->win;
+    wins[subtle->clients->ndata - 1 - i] = CLIENT(subtle->clients->data[i])->win;
 
-  /* EWMH: Client list and client list stacking */
+  /* EWMH: Client list and client list stacking (same for us) */
   subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST, wins,
     subtle->clients->ndata);
   subEwmhSetWindows(ROOT, SUB_EWMH_NET_CLIENT_LIST_STACKING, wins,
     subtle->clients->ndata);
 
+  /* Restack windows? We assembled the array anyway. */
+  if(restack) XRestackWindows(subtle->dpy, wins, subtle->clients->ndata);
+
   XSync(subtle->dpy, False); ///< Sync all changes
 
   free(wins);
 
-  subSharedLogDebugSubtle("publish=client, clients=%d\n",
-    subtle->clients->ndata);
+  subSharedLogDebugSubtle("publish=client, clients=%d, restack=%d\n",
+    subtle->clients->ndata, restack);
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
