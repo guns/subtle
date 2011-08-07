@@ -78,97 +78,55 @@ EventFindSublet(int id)
   return NULL;
 } /* }}} */
 
-/* EventRestack {{{ */
-static void
-EventRestack(SubClient *c,
-  long dir)
-{
-  int flags = 0;
-
-  /* Save flags */
-  flags     = c->flags & (SUB_CLIENT_TYPE_DESKTOP|SUB_CLIENT_MODE_FULL);
-  c->flags &= ~flags;
-
-  /* Check direction */
-  if(Above == dir)
-    {
-      XRaiseWindow(subtle->dpy, c->win);
-
-      /* Sort stack up */
-      c->flags |= SUB_CLIENT_MODE_FULL;
-      subArraySort(subtle->clients, subClientCompare);
-      c->flags &= ~SUB_CLIENT_MODE_FULL;
-
-      /* Update stacking list */
-      subClientPublish();
-    }
-  else if(Below == dir)
-    {
-      XLowerWindow(subtle->dpy, c->win);
-
-      /* Sort stack down */
-      c->flags |= SUB_CLIENT_TYPE_DESKTOP;
-      subArraySort(subtle->clients, subClientCompare);
-      c->flags &= ~SUB_CLIENT_TYPE_DESKTOP;
-
-      /* Update stacking list */
-      subClientPublish();
-    }
-  else subSharedLogDebug("Ignoring unknown stacking mode `%ld'", dir);
-
-  /* Restore flags */
-  c->flags |= flags;
-} /* }}} */
-
 /* EventQueuePush {{{ */
 static void
-EventQueuePush(XClientMessageEvent *ev)
+EventQueuePush(XClientMessageEvent *ev,
+  long type)
 {
   /* Since we are dealing with race conditions we need to cache
-   * client messages when a client/view/tag isn't read yet */
+   * client messages when a client/view/tag isn't ready yet */
   queue = (XClientMessageEvent *)subSharedMemoryRealloc(queue,
     (nqueue + 1) * sizeof(XClientMessageEvent));
   queue[nqueue] = *ev;
+  queue[nqueue].data.l[2] = type;
   nqueue++;
 
-  subSharedLogDebug("Queue: Store WINDOW_TAG id=%ld, tags=%ld, type=%ld\n",
-    ev->data.l[0], ev->data.l[1], ev->data.l[2]);
+  subSharedLogDebugEvents("Queue push: id=%ld, tags=%ld, type=%ld\n",
+    ev->data.l[0], ev->data.l[1], type);
 } /* }}} */
 
 /* EventQueuePop {{{ */
 static void
-EventQueuePop(int id,
-  int type)
+EventQueuePop(long value,
+  long type)
 {
   /* Check queue */
-  if(0 < nqueue)
+  if(queue)
     {
       int i;
 
       /* Check queued events */
       for(i = 0; i < nqueue; i++)
         {
-          XClientMessageEvent ev = queue[i];
-
-          /* Check if element id matches event */
-          if(ev.data.l[0] == id && ev.data.l[2] == type)
+          /* Check event type matches */
+          if(queue[i].data.l[2] == type)
             {
               int j;
 
-              /* Sort queue */
+              subSharedLogDebugEvents("Queue pop: id=%ld, tags=%ld, type=%ld\n",
+                queue[i].data.l[0], queue[i].data.l[1], queue[i].data.l[2]);
+
+              /* Update window id or array index and put back */ 
+              queue[i].data.l[0] = value;
+              XPutBackEvent(subtle->dpy, (XEvent *)&queue[i]);
+
+              /* Remove element from queue */
               for(j = i; j < nqueue - 1; j++)
                 queue[j] = queue[j + 1];
 
               nqueue--;
-
               queue = (XClientMessageEvent *)subSharedMemoryRealloc(queue,
                 nqueue * sizeof(XClientMessageEvent));
-
-              XPutBackEvent(subtle->dpy, (XEvent *)&ev);
-
-              subSharedLogDebug("Queue: Putback WINDOW_TAG id=%ld, tags=%ld, type=%ld\n",
-                ev.data.l[0], ev.data.l[1], ev.data.l[2]);
-
               i--;
             }
         }
@@ -390,7 +348,7 @@ EventDestroy(XDestroyWindowEvent *ev)
       /* Kill client */
       subArrayRemove(subtle->clients, (void *)c);
       subClientKill(c);
-      subClientPublish();
+      subClientPublish(False);
 
       subScreenConfigure();
       subScreenUpdate();
@@ -724,7 +682,7 @@ EventGrab(XEvent *ev)
             if((c = CLIENT(subSubtleFind(win, CLIENTID))) &&
                 !(c->flags & SUB_CLIENT_TYPE_DESKTOP) &&
                 VISIBLE(subtle->visible_tags, c))
-              EventRestack(c, g->data.num);
+              subClientRestack(c, g->data.num);
             break; /* }}} */
           case SUB_GRAB_WINDOW_SELECT: /* {{{ */
             if((c = CLIENT(subSubtleFind(win, CLIENTID))))
@@ -827,8 +785,8 @@ EventGrab(XEvent *ev)
                 if(0 <= id && id < subtle->gravities->ndata)
                   {
                     subClientArrange(c, id, c->screen);
-                    subClientWarp(c, True);
-                    XRaiseWindow(subtle->dpy, c->win);
+                    subClientWarp(c, False);
+                    subClientRestack(c, SUB_CLIENT_RESTACK_UP);
 
                     /* Hook: Tile */
                     subHookCall(SUB_HOOK_TILE, NULL);
@@ -936,17 +894,13 @@ EventMapRequest(XMapRequestEvent *ev)
   else if((c = subClientNew(ev->window)))
     {
       subArrayPush(subtle->clients, (void *)c);
-      subClientPublish();
-
-      /* Reorder stacking */
-      if(c->flags & SUB_CLIENT_TYPE_DESKTOP)
-        subArraySort(subtle->clients, subClientCompare);
+      subClientRestack(c, SUB_CLIENT_RESTACK_UP);
 
       subScreenConfigure();
       subScreenUpdate();
       subScreenRender();
 
-      EventQueuePop(subtle->clients->ndata - 1, 0);
+      EventQueuePop(ev->window, SUB_TYPE_CLIENT);
 
       /* Hook: Create */
       subHookCall((SUB_HOOK_TYPE_CLIENT|SUB_HOOK_ACTION_CREATE),
@@ -961,20 +915,18 @@ static void
 EventMessage(XClientMessageEvent *ev)
 {
   SubClient *c = NULL;
+  SubTray *r = NULL;
 
   /* Messages for root window {{{ */
   if(ROOT == ev->window)
     {
-      int id = subEwmhFind(ev->message_type);
-
       SubPanel   *p = NULL;
       SubTag     *t = NULL;
-      SubTray    *r = NULL;
       SubView    *v = NULL;
       SubGravity *g = NULL;
       SubScreen  *s = NULL;
 
-      switch(id)
+      switch(subEwmhFind(ev->message_type))
         {
           /* ICCCM */
           case SUB_EWMH_NET_CURRENT_DESKTOP: /* {{{ */
@@ -1020,13 +972,13 @@ EventMessage(XClientMessageEvent *ev)
             break; /* }}} */
           case SUB_EWMH_NET_RESTACK_WINDOW: /* {{{ */
             if((c = CLIENT(subSubtleFind(ev->data.l[1], CLIENTID))))
-              EventRestack(c, ev->data.l[2]);
+              subClientRestack(c, Above == ev->data.l[2] ?
+                SUB_CLIENT_RESTACK_UP : SUB_CLIENT_RESTACK_DOWN);
             break; /* }}} */
 
           /* subtle */
           case SUB_EWMH_SUBTLE_CLIENT_TAGS: /* {{{ */
-            if((c = CLIENT(subArrayGet(subtle->clients,
-                (int)ev->data.l[0]))))
+            if((c = CLIENT(subSubtleFind(ev->data.l[0], CLIENTID))))
               {
                 int i, flags = 0, tags = 0;
 
@@ -1059,11 +1011,10 @@ EventMessage(XClientMessageEvent *ev)
                 subScreenUpdate();
                 subScreenRender();
               }
-            else EventQueuePush(ev);
+            else EventQueuePush(ev, SUB_TYPE_CLIENT);
             break; /* }}} */
           case SUB_EWMH_SUBTLE_CLIENT_RETAG: /* {{{ */
-            if((c = CLIENT(subArrayGet(subtle->clients,
-                (int)ev->data.l[0])))) ///< Clients
+            if((c = CLIENT(subSubtleFind(ev->data.l[0], CLIENTID))))
               {
                 int flags = 0;
 
@@ -1082,8 +1033,9 @@ EventMessage(XClientMessageEvent *ev)
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_CLIENT_GRAVITY: /* {{{ */
-            if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0]))) &&
-                ((g = GRAVITY(subArrayGet(subtle->gravities, (int)ev->data.l[1])))))
+            if((c = CLIENT(subSubtleFind(ev->data.l[0], CLIENTID))) &&
+                ((g = GRAVITY(subArrayGet(subtle->gravities,
+                (int)ev->data.l[1])))))
               {
                 /* Set gravity for specified view */
                 if((v = VIEW(subArrayGet(subtle->views, (int)ev->data.l[2]))))
@@ -1112,7 +1064,7 @@ EventMessage(XClientMessageEvent *ev)
               }
             break; /* }}} */
           case SUB_EWMH_SUBTLE_CLIENT_FLAGS: /* {{{ */
-            if((c = CLIENT(subArrayGet(subtle->clients, (int)ev->data.l[0]))))
+            if((c = CLIENT(subSubtleFind(ev->data.l[0], CLIENTID))))
               {
                 int flags = 0;
 
@@ -1137,7 +1089,7 @@ EventMessage(XClientMessageEvent *ev)
                     subScreenRender();
                   }
               }
-            else EventQueuePush(ev);
+            else EventQueuePush(ev, SUB_TYPE_CLIENT);
             break; /* }}} */
           case SUB_EWMH_SUBTLE_GRAVITY_NEW: /* {{{ */
             if(ev->data.b)
@@ -1303,17 +1255,6 @@ EventMessage(XClientMessageEvent *ev)
                 if(reconf) subScreenConfigure();
               }
             break; /* }}} */
-          case SUB_EWMH_SUBTLE_TRAY_KILL: /* {{{ */
-            if((r = TRAY(subArrayGet(subtle->trays, (int)ev->data.l[0]))))
-              {
-                subArrayRemove(subtle->trays, (void *)r);
-                subTrayKill(r);
-                subTrayPublish();
-                subTrayUpdate();
-                subScreenUpdate();
-                subScreenRender();
-              }
-            break; /* }}} */
           case SUB_EWMH_SUBTLE_VIEW_NEW: /* {{{ */
             if(ev->data.b && (v = subViewNew(ev->data.b, NULL)))
               {
@@ -1323,7 +1264,7 @@ EventMessage(XClientMessageEvent *ev)
                 subScreenUpdate();
                 subScreenRender();
 
-                EventQueuePop(subtle->views->ndata - 1, 1);
+                EventQueuePop(subtle->views->ndata - 1, SUB_TYPE_VIEW);
 
                 /* Hook: Create */
                 subHookCall((SUB_HOOK_TYPE_VIEW|SUB_HOOK_ACTION_CREATE),
@@ -1342,7 +1283,7 @@ EventMessage(XClientMessageEvent *ev)
                 if(subtle->visible_views & (1L << (ev->data.l[0] + 1)))
                   subScreenConfigure();
               }
-            else EventQueuePush(ev);
+            else EventQueuePush(ev, SUB_TYPE_VIEW);
             break; /* }}} */
           case SUB_EWMH_SUBTLE_VIEW_STYLE: /* {{{ */
             if(ev->data.b)
@@ -1395,38 +1336,53 @@ EventMessage(XClientMessageEvent *ev)
           case SUB_EWMH_SUBTLE_QUIT: /* {{{ */
             if(subtle) subtle->flags &= ~SUB_SUBTLE_RUN;
             break; /* }}} */
+          default: break;
         }
     } /* }}} */
   /* Messages for tray window {{{ */
   else if(ev->window == subtle->windows.tray)
     {
-      SubTray *t = NULL;
-      int id = subEwmhFind(ev->message_type);
-
-      switch(id)
+      switch(subEwmhFind(ev->message_type))
         {
           case SUB_EWMH_NET_SYSTEM_TRAY_OPCODE: /* {{{ */
             switch(ev->data.l[1])
               {
-                case XEMBED_EMBEDDED_NOTIFY:
-                  if(!(t = TRAY(subSubtleFind(ev->window, TRAYID))))
+                case XEMBED_EMBEDDED_NOTIFY: /* {{{ */
+                  if(!(r = TRAY(subSubtleFind(ev->window, TRAYID))))
                     {
-                      if((t = subTrayNew(ev->data.l[2])))
+                      if((r = subTrayNew(ev->data.l[2])))
                         {
-                          subArrayPush(subtle->trays, (void *)t);
+                          subArrayPush(subtle->trays, (void *)r);
                           subTrayPublish();
                           subTrayUpdate();
                           subScreenUpdate();
                           subScreenRender();
                         }
                     }
-                  break;
-                case XEMBED_REQUEST_FOCUS:
-                  subEwmhMessage(t->win, SUB_EWMH_XEMBED, 0xFFFFFF,
+                  break; /* }}} */
+                case XEMBED_REQUEST_FOCUS: /* {{{ */
+                  subEwmhMessage(r->win, SUB_EWMH_XEMBED, 0xFFFFFF,
                     CurrentTime, XEMBED_FOCUS_IN, XEMBED_FOCUS_CURRENT, 0, 0);
-                  break;
+                  break; /* }}} */
               }
             break; /* }}} */
+          default: break;
+        }
+    } /* }}} */
+  /* Messages for tray windows {{{ */
+  else if((r = TRAY(subSubtleFind(ev->window, TRAYID)))) ///< Tray
+    {
+      switch(subEwmhFind(ev->message_type))
+        {
+          case SUB_EWMH_NET_CLOSE_WINDOW: /* {{{ */
+            subArrayRemove(subtle->trays, (void *)r);
+            subTrayKill(r);
+            subTrayPublish();
+            subTrayUpdate();
+            subScreenUpdate();
+            subScreenRender();
+            break; /* }}} */
+          default: break;
         }
     } /* }}} */
   /* Messages for client windows {{{ */
@@ -1670,7 +1626,7 @@ EventUnmap(XUnmapEvent *ev)
 
       subArrayRemove(subtle->clients, (void *)c);
       subClientKill(c);
-      subClientPublish();
+      subClientPublish(False);
 
       subScreenUpdate();
       subScreenRender();
