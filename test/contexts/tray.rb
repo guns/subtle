@@ -10,8 +10,8 @@
 #
 
 context 'Tray' do
-  TRAY_COUNT = 1
   TRAY_ID    = 0
+  TRAY_COUNT = 1
   TRAY_NAME  = 'test.rb'
 
   setup do # {{{
@@ -19,7 +19,7 @@ context 'Tray' do
   end # }}}
 
   asserts 'Check attributes' do # {{{
-    TRAY_ID == topic.id and TRAY_NAME == topic.name and
+    TRAY_NAME == topic.name and
       TRAY_NAME == topic.instance and TRAY_NAME == topic.klass.downcase
   end # }}}
 
