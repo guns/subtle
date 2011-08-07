@@ -156,13 +156,11 @@ SubtlextStyle(VALUE self,
         snprintf(data.b, sizeof(data.b), "%d#%s",
           (int)FIX2INT(id), RSTRING_PTR(str));
 
-        subSharedMessage(display, DefaultRootWindow(display),
-            prop, data, 32, True);
+        subSharedMessage(display, ROOT, prop, data, 32, True);
         break;
       case T_NIL:
         snprintf(data.b, sizeof(data.b), "%d#", (int)FIX2INT(id));
-        subSharedMessage(display, DefaultRootWindow(display),
-            prop, data, 32, True);
+        subSharedMessage(display, ROOT, prop, data, 32, True);
         break;
       default: rb_raise(rb_eArgError, "Unexpected value-type `%s'",
         rb_obj_classname(value));
@@ -246,8 +244,8 @@ SubtlextTagGet(VALUE self)
   else if(FIXNUM_P(id = rb_iv_get(self, "@id"))) ///< View
     {
       if((value_tags = (unsigned long *)subSharedPropertyGet(display,
-          DefaultRootWindow(display), XA_CARDINAL,
-          XInternAtom(display, "SUBTLE_VIEW_TAGS", False), NULL)))
+          ROOT, XA_CARDINAL, XInternAtom(display,
+          "SUBTLE_VIEW_TAGS", False), NULL)))
         {
           tags = value_tags[FIX2INT(id)];
 
@@ -264,13 +262,10 @@ SubtlextTag(VALUE self,
   VALUE value,
   int action)
 {
-  int tags = 0;
-  VALUE id = Qnil;
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
   /* Check ruby object */
   rb_check_frozen(self);
-  GET_ATTR(self, "@id", id);
 
   /* Check object type */
   switch(rb_type(value))
@@ -278,7 +273,7 @@ SubtlextTag(VALUE self,
       case T_SYMBOL:
       case T_STRING:
       case T_OBJECT:
-        tags |= SubtlextTagFind(value);
+        data.l[1] |= SubtlextTagFind(value);
         break;
       case T_ARRAY:
           {
@@ -287,7 +282,7 @@ SubtlextTag(VALUE self,
 
             /* Collect tag ids */
             for(i = 0; Qnil != (entry = rb_ary_entry(value, i)); ++i)
-              tags |= SubtlextTagFind(entry);
+              data.l[1] |= SubtlextTagFind(entry);
           }
         break;
       default:
@@ -295,27 +290,35 @@ SubtlextTag(VALUE self,
           rb_obj_classname(value));
     }
 
-  /* Get and update tags */
+  /* Get and update tag mask */
   if(0 != action)
     {
-      int cur_tags = SubtlextTagGet(self);
+      int tags = SubtlextTagGet(self);
 
       /* Update masks */
-      if(1 == action)       tags = cur_tags | tags;
-      else if(-1 == action) tags = cur_tags & ~tags;
+      if(1 == action)       data.l[1] = tags | data.l[1];
+      else if(-1 == action) data.l[1] = tags & ~data.l[1];
     }
 
-  /* Send message */
-  data.l[0] = FIX2LONG(id);
-  data.l[1] = tags;
+  /* Send message based on object type */
+  if(rb_obj_is_instance_of(self, rb_const_get(mod, rb_intern("Client"))))
+    {
+      VALUE win = Qnil;
 
-  /* Check object type */
-  if(rb_obj_is_instance_of(self,
-      rb_const_get(mod, rb_intern("Client"))))
-    subSharedMessage(display, DefaultRootWindow(display),
-      "SUBTLE_CLIENT_TAGS", data, 32, True);
-  else subSharedMessage(display, DefaultRootWindow(display),
-    "SUBTLE_VIEW_TAGS", data, 32, True);
+      GET_ATTR(self, "@win", win);
+      data.l[0] = NUM2LONG(win);
+
+      subSharedMessage(display, ROOT, "SUBTLE_CLIENT_TAGS", data, 32, True);
+    }
+  else
+    {
+      VALUE id = Qnil;
+
+      GET_ATTR(self, "@id", id);
+      data.l[0] = FIX2LONG(id);
+
+      subSharedMessage(display, ROOT, "SUBTLE_VIEW_TAGS", data, 32, True);
+    }
 
   return Qnil;
 } /* }}} */
@@ -364,7 +367,7 @@ SubtlextTagReader(VALUE self)
   value_tags = SubtlextTagGet(self);
 
   /* Check results */
-  if((tags = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
+  if((tags = subSharedPropertyGetStrings(display, ROOT,
       XInternAtom(display, "SUBTLE_TAG_LIST", False), &ntags)))
     {
       for(i = 0; i < ntags; i++)
@@ -458,18 +461,17 @@ SubtlextTagAsk(VALUE self,
 static VALUE
 SubtlextTagReload(VALUE self)
 {
-  VALUE id = Qnil;
+  VALUE win = Qnil;
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
   /* Check ruby object */
   rb_check_frozen(self);
-  GET_ATTR(self, "@id", id);
+  GET_ATTR(self, "@win", win);
 
   /* Send message */
-  data.l[0] = FIX2INT(id);
+  data.l[0] = NUM2LONG(win);
 
-  subSharedMessage(display, DefaultRootWindow(display),
-    "SUBTLE_CLIENT_RETAG", data, 32, True);
+  subSharedMessage(display, ROOT, "SUBTLE_CLIENT_RETAG", data, 32, True);
 
   return Qnil;
 } /* }}} */
@@ -508,7 +510,7 @@ SubtlextSendButton(int argc,
   /* Assemble button event */
   event.type                  = EnterNotify;
   event.xcrossing.window      = NUM2LONG(win);
-  event.xcrossing.root        = DefaultRootWindow(display);
+  event.xcrossing.root        = ROOT;
   event.xcrossing.subwindow   = NUM2LONG(win);
   event.xcrossing.same_screen = True;
   event.xcrossing.x           = FIXNUM_P(x) ? FIX2INT(x) : 5;
@@ -611,7 +613,7 @@ SubtlextSendKey(int argc,
       /* Assemble enter event */
       event.type                  = EnterNotify;
       event.xcrossing.window      = NUM2LONG(win);
-      event.xcrossing.root        = DefaultRootWindow(display);
+      event.xcrossing.root        = ROOT;
       event.xcrossing.subwindow   = NUM2LONG(win);
       event.xcrossing.same_screen = True;
       event.xcrossing.x           = FIXNUM_P(x) ? FIX2INT(x) : 5;
@@ -713,8 +715,7 @@ SubtlextFocus(VALUE self)
   /* Send message */
   data.l[0] = NUM2LONG(win);
 
-  subSharedMessage(display, DefaultRootWindow(display),
-    "_NET_ACTIVE_WINDOW", data, 32, True);
+  subSharedMessage(display, ROOT, "_NET_ACTIVE_WINDOW", data, 32, True);
 
   return Qnil;
 } /* }}} */
@@ -743,7 +744,7 @@ SubtlextAskFocus(VALUE self)
   GET_ATTR(self, "@win", win);
 
   /* Fetch data */
-  if((focus = (unsigned long *)subSharedPropertyGet(display, DefaultRootWindow(display),
+  if((focus = (unsigned long *)subSharedPropertyGet(display, ROOT,
       XA_WINDOW, XInternAtom(display, "_NET_ACTIVE_WINDOW", False), NULL)))
     {
       if(*focus == NUM2LONG(win)) ret = Qtrue;
@@ -795,7 +796,7 @@ SubtlextPropReader(VALUE self,
   if(prop)
     {
       char propname[255] = { 0 }, *name = NULL, *result = NULL;
-      Window win = DefaultRootWindow(display);
+      Window win = ROOT;
       VALUE val = Qnil;
 
       /* Sanitize property name */
@@ -857,7 +858,7 @@ SubtlextPropWriter(VALUE self,
 {
   VALUE val = Qnil, str = value;
   char *prop = NULL, *name = NULL, propname[255] = { 0 };
-  Window win = DefaultRootWindow(display);
+  Window win = ROOT;
 
   /* Check ruby object */
   rb_check_frozen(self);
@@ -1304,7 +1305,7 @@ subSubtlextWindowList(char *prop_name,
   assert(prop_name && size);
 
   /* Get property list */
-  if((wins = (Window *)subSharedPropertyGet(display, DefaultRootWindow(display),
+  if((wins = (Window *)subSharedPropertyGet(display, ROOT,
       XA_WINDOW, XInternAtom(display, prop_name, False), &len)))
     {
       if(size) *size = len;
@@ -1405,10 +1406,11 @@ subSubtlextWindowMatch(Window win,
 
       /* Fetch gravities */
       gravities = subSharedPropertyGetStrings(display,
-        DefaultRootWindow(display), XInternAtom(display,
-        "SUBTLE_GRAVITY_LIST", False), &ngravities);
+        ROOT, XInternAtom(display, "SUBTLE_GRAVITY_LIST",
+        False), &ngravities);
       gravity = (int *)subSharedPropertyGet(display, win,
-        XA_CARDINAL, XInternAtom(display, "SUBTLE_CLIENT_GRAVITY", False), NULL);
+        XA_CARDINAL, XInternAtom(display, "SUBTLE_CLIENT_GRAVITY",
+        False), NULL);
 
       /* Finally compare gravities */
       if(gravities && gravity && 0 <= *gravity && *gravity < ngravities)
@@ -1480,7 +1482,7 @@ subSubtlextFindString(char *prop_name,
 
   /* Fetch data */
   preg    = subSharedRegexNew(source);
-  strings = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
+  strings = subSharedPropertyGetStrings(display, ROOT,
     XInternAtom(display, prop_name, False), &size);
 
   /* Check results */
@@ -1540,7 +1542,7 @@ subSubtlextFindObjects(char *prop_name,
   assert(prop_name && class_name && source);
 
   /* Check results */
-  if((strings = subSharedPropertyGetStrings(display, DefaultRootWindow(display),
+  if((strings = subSharedPropertyGetStrings(display, ROOT,
       XInternAtom(display, prop_name, False), &nstrings)))
     {
       int selid = -1;
@@ -1613,9 +1615,6 @@ Init_subtlext(void)
    */
 
   client = rb_define_class_under(mod, "Client", rb_cObject);
-
-  /* Client id */
-  rb_define_attr(client, "id",       1, 0);
 
   /* Window id */
   rb_define_attr(client, "win",      1, 0);
@@ -2010,9 +2009,6 @@ Init_subtlext(void)
    */
 
   tray = rb_define_class_under(mod, "Tray", rb_cObject);
-
-  /* Tray id */
-  rb_define_attr(tray, "id",       1, 0);
 
   /* Window id */
   rb_define_attr(tray, "win",      1, 0);

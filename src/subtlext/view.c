@@ -412,10 +412,9 @@ subViewClients(VALUE self)
           if((client_tags && view_tags[FIX2INT(id)] & *client_tags) ||
               (flags && *flags & SUB_EWMH_STICK))
             {
-              if(RTEST(client = rb_funcall(klass, meth, 1, INT2FIX(i))))
+              if(RTEST(client = rb_funcall(klass, meth,
+                  1, LONG2NUM(clients[i]))))
                 {
-                  rb_iv_set(client, "@win", LONG2NUM(clients[i]));
-
                   subClientUpdate(client);
 
                   rb_ary_push(array, client);

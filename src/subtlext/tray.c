@@ -97,8 +97,6 @@ subTraySingFind(VALUE self,
               /* Create new tray */
               if(RTEST((tray = rb_funcall(klass, meth, 1, LONG2NUM(wins[i])))))
                 {
-                  rb_iv_set(tray, "@id", INT2FIX(i));
-
                   subTrayUpdate(tray);
 
                   ret = subSubtlextOneOrMany(tray, ret);
@@ -195,7 +193,6 @@ subTrayInit(VALUE self,
       rb_obj_classname(win));
 
   /* Init object */
-  rb_iv_set(self, "@id",    Qnil);
   rb_iv_set(self, "@win",   win);
   rb_iv_set(self, "@name",  Qnil);
   rb_iv_set(self, "@klass", Qnil);
@@ -210,7 +207,7 @@ subTrayInit(VALUE self,
 /*
  * call-seq: update -> nil
  *
- * Update Tray properties based on <b>required</b> Tray index and window id.
+ * Update Tray properties based on <b>required</b> Tray window id.
  *
  *  tray.update
  *  => nil
@@ -219,7 +216,6 @@ subTrayInit(VALUE self,
 VALUE
 subTrayUpdate(VALUE self)
 {
-  int id = 0;
   Window win = None;
 
   /* Check ruby object */
@@ -227,11 +223,10 @@ subTrayUpdate(VALUE self)
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Get tray values */
-  id  = FIX2INT(rb_iv_get(self, "@id"));
   win = NUM2LONG(rb_iv_get(self, "@win"));
 
   /* Check values */
-  if(0 <= id && 0 < win)
+  if(0 <= win)
     {
       char *wmname = NULL, *wminstance = NULL, *wmclass = NULL;
 
@@ -287,22 +282,23 @@ subTrayToString(VALUE self)
 VALUE
 subTrayKill(VALUE self)
 {
-  VALUE id = Qnil;
+  VALUE win = Qnil;
   SubMessageData data = { { 0, 0, 0, 0, 0 } };
 
   /* Check ruby object */
   rb_check_frozen(self);
-  GET_ATTR(self, "@id", id);
+  GET_ATTR(self, "@win", win);
 
   subSubtlextConnect(NULL); ///< Implicit open connection
 
   /* Send message */
-  data.l[0] = FIX2INT(id);
+  data.l[0] = CurrentTime;
+  data.l[1] = 2; ///< Claim to be a pager
 
-  subSharedMessage(display, DefaultRootWindow(display),
-    "SUBTLE_TRAY_KILL", data, 32, True);
+  subSharedMessage(display, NUM2LONG(win),
+    "_NET_CLOSE_WINDOW", data, 32, True);
 
-  rb_obj_freeze(self); ///< Freeze object
+  rb_obj_freeze(self);
 
   return Qnil;
 } /* }}} */

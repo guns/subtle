@@ -24,6 +24,8 @@
 
 #define GET_ATTR(owner,name,value) \
   if(NIL_P(value = rb_iv_get(owner, name))) return Qnil;
+
+#define ROOT DefaultRootWindow(display)
 /* }}} */
 
 /* Flags {{{ */
@@ -55,7 +57,7 @@ VALUE subClientSingAll(VALUE self);                               ///< Get all c
 VALUE subClientSingRecent(VALUE self);                            ///< Get recent active clients
 
 /* Class */
-VALUE subClientInstantiate(int id);                               ///< Instantiate client
+VALUE subClientInstantiate(Window win);                           ///< Instantiate client
 VALUE subClientInit(VALUE self, VALUE win);                       ///< Create client
 VALUE subClientUpdate(VALUE self);                                ///< Update client
 VALUE subClientViewList(VALUE self);                              ///< Get views clients is on

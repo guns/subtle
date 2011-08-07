@@ -383,19 +383,12 @@ subSubtleSingSpawn(VALUE self,
 
       subSubtlextConnect(NULL); ///< Implicit open connection
 
-      /* Create client */
+      /* Create client with empty window id since we cannot
+       * know the real window id at this point (race) */
       if(0 < (pid = subSharedSpawn(RSTRING_PTR(cmd))))
         {
-          int nclients = 0;
-          Window *clients = NULL;
-
-          clients = subSubtlextWindowList("_NET_CLIENT_LIST", &nclients);
-
-          /* Create client */
-          ret = subClientInstantiate(nclients);
+          ret = subClientInstantiate((int)pid);
           rb_iv_set(ret, "@pid", INT2FIX((int)pid));
-
-          if(clients) free(clients);
         }
     }
   else rb_raise(rb_eArgError, "Unexpected value-type `%s'",
