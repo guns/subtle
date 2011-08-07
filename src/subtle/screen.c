@@ -353,16 +353,12 @@ subScreenConfigure(void)
                 }
             }
 
-          /* Update client after all screens are checked */
+          /* After all screens are checked.. */
           if(0 < visible)
             {
+              /* Update client */
               subClientArrange(c, gravity, screen);
-
-              /* Special treatment */
-              if(c->flags & (SUB_CLIENT_MODE_FULL|SUB_CLIENT_MODE_FLOAT))
-                XMapRaised(subtle->dpy, c->win);
-              else XMapWindow(subtle->dpy, c->win);
-
+              XMapWindow(subtle->dpy, c->win);
               subEwmhSetWMState(c->win, NormalState);
 
               /* Warp after gravity and screen have been set */
@@ -646,37 +642,6 @@ subScreenJump(SubScreen *s)
   subSharedLogDebugSubtle("Jump: type=screen\n");
 } /* }}} */
 
- /** subScreenPublish {{{
-  * @brief Publish screens
-  **/
-
-void
-subScreenPublish(void)
-{
-  int i;
-  long *views = NULL;
-
-  assert(subtle);
-
-  /* EWMH: Views per screen */
-  views = (long *)subSharedMemoryAlloc(subtle->screens->ndata,
-    sizeof(long));
-
-  /* Collect views */
-  for(i = 0; i < subtle->screens->ndata; i++)
-    views[i] = SCREEN(subtle->screens->data[i])->vid;
-
-  subEwmhSetCardinals(ROOT, SUB_EWMH_SUBTLE_SCREEN_VIEWS,
-    views, subtle->screens->ndata);
-
-  free(views);
-
-  XSync(subtle->dpy, False); ///< Sync all changes
-
-  subSharedLogDebugSubtle("publish=screen, screens=%d\n",
-    subtle->screens->ndata);
-} /* }}} */
-
  /** SubScreenKill {{{
   * @brief Kill a screen
   * @param[in]  s  A #SubScreem
@@ -707,6 +672,39 @@ subScreenKill(SubScreen *s)
   free(s);
 
   subSharedLogDebugSubtle("kill=screen\n");
+} /* }}} */
+
+/* All */
+
+ /** subScreenPublish {{{
+  * @brief Publish screens
+  **/
+
+void
+subScreenPublish(void)
+{
+  int i;
+  long *views = NULL;
+
+  assert(subtle);
+
+  /* EWMH: Views per screen */
+  views = (long *)subSharedMemoryAlloc(subtle->screens->ndata,
+    sizeof(long));
+
+  /* Collect views */
+  for(i = 0; i < subtle->screens->ndata; i++)
+    views[i] = SCREEN(subtle->screens->data[i])->vid;
+
+  subEwmhSetCardinals(ROOT, SUB_EWMH_SUBTLE_SCREEN_VIEWS,
+    views, subtle->screens->ndata);
+
+  free(views);
+
+  XSync(subtle->dpy, False); ///< Sync all changes
+
+  subSharedLogDebugSubtle("publish=screen, screens=%d\n",
+    subtle->screens->ndata);
 } /* }}} */
 
 // vim:ts=2:bs=2:sw=2:et:fdm=marker
