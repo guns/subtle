@@ -250,14 +250,15 @@ subDisplayConfigure(void)
 void
 subDisplayScan(void)
 {
-  unsigned int i, n = 0;
+  unsigned int i, nwins = 0;
   Window wroot = None, parent = None, *wins = NULL;
 
   assert(subtle);
 
   /* Scan for client windows */
-  XQueryTree(subtle->dpy, ROOT, &wroot, &parent, &wins, &n);
-  for(i = 0; i < n; i++)
+  XQueryTree(subtle->dpy, ROOT, &wroot, &parent, &wins, &nwins);
+
+  for(i = 0; i < nwins; i++)
     {
       SubClient *c = NULL;
       XWindowAttributes attrs;
@@ -271,9 +272,10 @@ subDisplayScan(void)
             break;
         }
     }
+
   XFree(wins);
 
-  subClientPublish();
+  subClientPublish(False);
 } /* }}} */
 
  /** subDisplayPublish {{{

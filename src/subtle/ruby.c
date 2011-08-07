@@ -609,12 +609,12 @@ RubyEvalGrab(VALUE keys,
             else if(CHAR2SYM("WindowRaise") == value)
               {
                 type = SUB_GRAB_WINDOW_STACK;
-                data = DATA((unsigned long)Above);
+                data = DATA((unsigned long)SUB_CLIENT_RESTACK_UP);
               }
             else if(CHAR2SYM("WindowLower") == value)
               {
                 type = SUB_GRAB_WINDOW_STACK;
-                data = DATA((unsigned long)Below);
+                data = DATA((unsigned long)SUB_CLIENT_RESTACK_DOWN);
               }
             else if(CHAR2SYM("WindowLeft") == value)
               {
