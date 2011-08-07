@@ -440,15 +440,25 @@ static VALUE
 SubtlextTagAsk(VALUE self,
   VALUE value)
 {
-  VALUE id = Qnil, tag = Qnil, ret = Qfalse;
+  VALUE sym = Qnil, tag = Qnil, ret = Qfalse;
 
   /* Check ruby object */
   rb_check_frozen(self);
-  GET_ATTR(tag, "@id", id);
+
+  /* Check value type */
+  switch(rb_type(value))
+    {
+      case T_STRING: sym = CHAR2SYM(RSTRING_PTR(value)); break;
+      case T_SYMBOL:
+      case T_OBJECT: sym = value;                        break;
+      default: rb_raise(rb_eArgError, "Unexpected value-type `%s'",
+        rb_obj_classname(value));
+    }
 
   /* Find tag */
-  if(Qnil != (tag = subTagSingFind(Qnil, value)))
+  if(RTEST(tag = subTagSingFind(Qnil, sym)))
     {
+      VALUE id = rb_iv_get(tag, "@id");
       int tags = SubtlextTagGet(self);
 
       if(tags & (1L << (FIX2INT(id) + 1))) ret = Qtrue;
