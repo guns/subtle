@@ -41,10 +41,6 @@ context 'Sublet' do
     nil == topic.update
   end # }}}
 
-  asserts 'Get screen' do # {{{
-    topic.screen.is_a? Subtlext::Screen
-  end # }}}
-
   asserts 'Get geometry' do # {{{
     topic.geometry.is_a? Subtlext::Geometry
   end # }}}
