@@ -173,7 +173,7 @@ static void
 ClientTile(int gravity,
   int screen)
 {
-  int i, used = 0, pos = 0, width = 0, fix = 0;
+  int i, used = 0, pos = 0, calc = 0, fix = 0;
   XRectangle geom = { 1 };
   SubScreen *s = SCREEN(subArrayGet(subtle->screens, screen));
   SubGravity *g = GRAVITY(subArrayGet(subtle->gravities, gravity));
@@ -190,11 +190,19 @@ ClientTile(int gravity,
 
   if(0 == used || !s || !g) return;
 
-  /* Calculate tiled gravity width */
+  /* Calculate tiled gravity value and rounding fix */
   subGravityGeometry(g, &(s->geom), &geom);
 
-  width = geom.width / used;
-  fix   = geom.width - width * used;
+  if(g->flags & SUB_GRAVITY_HORZ)
+    {
+      calc = geom.width / used;
+      fix  = geom.width - calc * used;
+    }
+  else
+    {
+      calc = geom.height / used;
+      fix  = geom.height - calc * used;
+    }
 
   /* Pass 2: Update geometry of every client with this gravity */
   for(i = 0; i < subtle->clients->ndata; i++)
@@ -205,12 +213,59 @@ ClientTile(int gravity,
           subtle->visible_tags & c->tags &&
           !(c->flags & (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_FULL)))
         {
-          c->geom.width  = pos == used ? width + fix : width;
-          c->geom.height = geom.height;
-          c->geom.x      = geom.x + pos++ * width;
-          c->geom.y      = geom.y;
+          if(g->flags & SUB_GRAVITY_HORZ)
+            {
+              c->geom.width  = pos == used ? calc + fix : calc;
+              c->geom.height = geom.height;
+              c->geom.x      = geom.x + pos++ * calc;
+              c->geom.y      = geom.y;
+            }
+          else
+            {
+              c->geom.width  = geom.width;
+              c->geom.height = pos == used ? calc + fix : calc;
+              c->geom.x      = geom.x;
+              c->geom.y      = geom.y + pos++ * calc;
+            }
 
           ClientResize(c, &(s->geom));
+        }
+    }
+} /* }}} */
+
+/* ClientZaphod {{{ */
+static void
+ClientZaphod(SubClient *c,
+  XRectangle *bounds)
+{
+  int i, flags = (SUB_SCREEN_PANEL1|SUB_SCREEN_PANEL2);
+
+  /* Update bounds according to styles */
+  bounds->x      = subtle->styles.subtle.padding.left;
+  bounds->y      = subtle->styles.subtle.padding.top;
+  bounds->width  = subtle->width - subtle->styles.subtle.padding.left -
+    subtle->styles.subtle.padding.right;
+  bounds->height = subtle->height - subtle->styles.subtle.padding.top -
+    subtle->styles.subtle.padding.bottom;
+
+  /* Iterate over screens to find fitting square */
+  for(i = 0; i < subtle->screens->ndata; i++)
+    {
+      SubScreen *s2 = SCREEN(subtle->screens->data[i]);
+
+      if(s2->flags & flags)
+        {
+          if(s2->flags & SUB_SCREEN_PANEL1)
+            {
+              bounds->y      += subtle->ph;
+              bounds->height -= subtle->ph;
+            }
+
+          if(s2->flags & SUB_SCREEN_PANEL2)
+            bounds->height -= subtle->ph;
+
+          flags &= ~(s2->flags &
+            (SUB_SCREEN_PANEL1|SUB_SCREEN_PANEL2));
         }
     }
 } /* }}} */
@@ -904,65 +959,32 @@ subClientArrange(SubClient *c,
       if(c->flags & SUB_CLIENT_ARRANGE ||
           c->gravity != gravity || c->screen != screen)
         {
+          XRectangle bounds = s->geom;
           int old_gravity = c->gravity, old_screen = c->screen;
+          SubGravity *g = NULL, *old_g = NULL;
 
-          /* Update client */
+          /* Set values */
           if(-1 != screen)  c->screen = screen;
           if(-1 != gravity) c->gravity = c->gravities[s->vid] = gravity;
+          g     = GRAVITY(subArrayGet(subtle->gravities, gravity));
+          old_g = GRAVITY(subArrayGet(subtle->gravities, old_gravity));
 
           /* Gravity tiling */
-          if(subtle->flags & SUB_SUBTLE_TILING)
+          if(-1 != old_screen && (subtle->flags & SUB_SUBTLE_TILING ||
+              (old_g && old_g->flags & (SUB_GRAVITY_HORZ|SUB_GRAVITY_VERT))))
+            ClientTile(old_gravity, old_screen);
+
+          if(subtle->flags & SUB_SUBTLE_TILING ||
+              (g && g->flags & (SUB_GRAVITY_HORZ|SUB_GRAVITY_VERT)))
             {
-              if(-1 != old_gravity && -1 != old_screen)
-                ClientTile(old_gravity, old_screen);
               ClientTile(gravity, -1 == screen ? 0 : screen);
             }
           else
             {
-              SubGravity *g = GRAVITY(subArrayGet(subtle->gravities, gravity));
-
-              if(g)
-                {
-                  XRectangle bounds = s->geom;
-
-                  /* Set zaphod mode */
-                  if(c->flags & SUB_CLIENT_MODE_ZAPHOD)
-                    {
-                      int i, flags = (SUB_SCREEN_PANEL1|SUB_SCREEN_PANEL2);
-
-                      bounds.x      = subtle->styles.subtle.padding.left;
-                      bounds.y      = subtle->styles.subtle.padding.top;
-                      bounds.width  = subtle->width - subtle->styles.subtle.padding.left -
-                        subtle->styles.subtle.padding.right;
-                      bounds.height = subtle->height - subtle->styles.subtle.padding.top -
-                        subtle->styles.subtle.padding.bottom;
-
-                      /* Iterate over screens to find fitting square */
-                      for(i = 0; i < subtle->screens->ndata; i++)
-                        {
-                          SubScreen *s2 = SCREEN(subtle->screens->data[i]);
-
-                          if(s2->flags & flags)
-                            {
-                              if(s2->flags & SUB_SCREEN_PANEL1)
-                                {
-                                  bounds.y      += subtle->ph;
-                                  bounds.height -= subtle->ph;
-                                }
-
-                              if(s2->flags & SUB_SCREEN_PANEL2)
-                                bounds.height -= subtle->ph;
-
-                              flags &= ~(s2->flags &
-                                (SUB_SCREEN_PANEL1|SUB_SCREEN_PANEL2));
-                            }
-                        }
-                    }
-
-                  subGravityGeometry(g, &bounds, &c->geom);
-
-                  ClientResize(c, &bounds);
-                }
+              /* Set size for bounds*/
+              if(c->flags & SUB_CLIENT_MODE_ZAPHOD) ClientZaphod(c, &bounds);
+              subGravityGeometry(g, &bounds, &c->geom);
+              ClientResize(c, &bounds);
             }
 
           /* EWMH: Gravity */
