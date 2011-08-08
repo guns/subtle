@@ -1910,18 +1910,25 @@ RubyConfigSet(VALUE self,
 
 /* RubyConfigGravity {{{ */
 /*
- * call-seq: gravity(name, value) -> nil
+ * call-seq: gravity(name, value, tile) -> nil
  *
- * Create gravity
+ * Create gravity and optionally enable tiling, either
+ * horizonally (:horz) or vertically. (:vert)
  *
  *  gravity :top_left, [0, 0, 50, 50]
+ *
+ *  gravity :top_left, [0, 0, 50, 50], :vert
  */
 
 static VALUE
-RubyConfigGravity(VALUE self,
-  VALUE name,
-  VALUE value)
+RubyConfigGravity(int argc,
+  VALUE *argv,
+  VALUE self)
 {
+  VALUE name = Qnil, value = Qnil, tile = Qnil;
+
+  rb_scan_args(argc, argv, "21", &name, &value, &tile);
+
   /* Check value type */
   if(T_SYMBOL == rb_type(name) && T_ARRAY == rb_type(value))
     {
@@ -1936,7 +1943,16 @@ RubyConfigGravity(VALUE self,
 
           /* Finally create new gravity */
           if((g = subGravityNew(SYM2CHAR(name), &geometry)))
-            subArrayPush(subtle->gravities, (void *)g);
+            {
+              /* Tile just clients with this gravity */
+              if(T_SYMBOL == rb_type(tile))
+                {
+                  if(CHAR2SYM("horz")      == tile) g->flags |= SUB_GRAVITY_HORZ;
+                  else if(CHAR2SYM("vert") == tile) g->flags |= SUB_GRAVITY_VERT;
+                }
+
+              subArrayPush(subtle->gravities, (void *)g);
+            }
         }
     }
   else rb_raise(rb_eArgError, "Unknown value type for gravity");
@@ -3309,7 +3325,7 @@ subRubyInit(void)
   rb_define_method(config, "method_missing",         RubyConfigMissing,  -1);
   rb_define_method(config, "singleton_method_added", RubyConfigAdded,     1);
   rb_define_method(config, "set",                    RubyConfigSet,       2);
-  rb_define_method(config, "gravity",                RubyConfigGravity,   2);
+  rb_define_method(config, "gravity",                RubyConfigGravity,  -1);
   rb_define_method(config, "grab",                   RubyConfigGrab,     -1);
   rb_define_method(config, "tag",                    RubyConfigTag,      -1);
   rb_define_method(config, "view",                   RubyConfigView,     -1);
