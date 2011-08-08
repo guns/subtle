@@ -226,6 +226,10 @@
 #define SUB_GRAB_DIRECTION_DOWN       (1L << 2)                   ///< Direction down
 #define SUB_GRAB_DIRECTION_LEFT       (1L << 3)                   ///< Direction left
 
+/* Gravity flags */
+#define SUB_GRAVITY_HORZ              (1L << 10)                  ///< Gravity tile gravity horizontally
+#define SUB_GRAVITY_VERT              (1L << 11)                  ///< Gravity tile gravity vertically
+
 /* Panel flags */
 #define SUB_PANEL_SUBLET              (1L << 10)                  ///< Panel sublet type
 #define SUB_PANEL_COPY                (1L << 11)                  ///< Panel copy type
