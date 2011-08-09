@@ -844,14 +844,17 @@ subClientResize(SubClient *c,
   /* Honor size hints */
   if(size_hints) ClientBounds(c, bounds, &c->geom);
 
-  /* Fit sizes */
-  if(!(c->flags & (SUB_CLIENT_MODE_FIXED|SUB_CLIENT_MODE_FULL)))
+  /* Fit into bounds */
+  if(!(c->flags & SUB_CLIENT_MODE_FULL))
     {
       int maxx = 0, maxy = 0;
 
-      /* Check size */
-      if(c->geom.width  > bounds->width)  c->geom.width  = bounds->width;
-      if(c->geom.height > bounds->height) c->geom.height = bounds->height;
+      /* Check size for clients we are allowed to change */
+      if(!(c->flags & SUB_CLIENT_MODE_FIXED))
+        {
+          if(c->geom.width  > bounds->width)  c->geom.width  = bounds->width;
+          if(c->geom.height > bounds->height) c->geom.height = bounds->height;
+        }
 
       /* Check whether window fits into bounds */
       maxx = bounds->x + bounds->width;
@@ -1534,6 +1537,7 @@ subClientSetType(SubClient *c,
                 break;
               case SUB_EWMH_NET_WM_WINDOW_TYPE_SPLASH:
                 c->flags |= SUB_CLIENT_TYPE_SPLASH;
+                *flags    = (SUB_CLIENT_MODE_FLOAT|SUB_CLIENT_MODE_CENTER);
                 break;
               case SUB_EWMH_NET_WM_WINDOW_TYPE_DIALOG:
                 c->flags |= SUB_CLIENT_TYPE_DIALOG;
