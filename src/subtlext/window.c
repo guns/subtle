@@ -89,7 +89,8 @@ WindowExpose(SubtlextWindow *w)
       /* Render all text */
       for(i = 0; i < w->ntext; i++)
         subSharedTextRender(display, DefaultGC(display, 0), w->font,
-          w->win, w->text[i].x, w->text[i].y, w->fg, w->bg, w->text[i].text);
+          w->win, w->text[i].x, w->text[i].y, w->fg, w->fg,
+          w->bg, w->text[i].text);
 
      XSync(display, False); ///< Sync with X
   }
@@ -757,7 +758,7 @@ subWindowWrite(VALUE self,
             }
 
           len = subSharedTextParse(display, w->font, wt->text,
-            -1, -1, RSTRING_PTR(text));
+            RSTRING_PTR(text));
         }
       else rb_raise(rb_eArgError, "Unknown value-types");
     }

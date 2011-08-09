@@ -344,7 +344,7 @@ subPanelRender(SubPanel *p,
             /* Render text parts */
             subSharedTextRender(subtle->dpy, subtle->gcs.draw, subtle->font,
               drawable, p->x + STYLE_LEFT((*s)), subtle->font->y +
-              STYLE_TOP((*s)), s->fg, s->bg, p->sublet->text);
+              STYLE_TOP((*s)), s->fg, s->icon, s->bg, p->sublet->text);
           }
         break; /* }}} */
       case SUB_PANEL_TITLE: /* {{{ */
