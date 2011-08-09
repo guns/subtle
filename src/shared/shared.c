@@ -483,20 +483,16 @@ subSharedTextNew(void)
 
  /** subSharedTextParse {{{
   * @brief Parse text
-  * @param[in]  disp    Display
-  * @param[in]  f       A #SubFont
-  * @param[in]  t       A #SubText
-  * @param[in]  textfg  Default text color
-  * @param[in]  iconfg  Default icon color
-  * @param[in]  text    String to parse
+  * @param[in]  disp  Display
+  * @param[in]  f     A #SubFont
+  * @param[in]  t     A #SubText
+  * @param[in]  text  String to parse
   **/
 
 int
 subSharedTextParse(Display *disp,
   SubFont *f,
   SubText *t,
-  long textfg,
-  long iconfg,
   char *text)
 {
   int i = 0, left = 0, right = 0;
@@ -548,7 +544,7 @@ subSharedTextParse(Display *disp,
               /* Add spacing and check if icon is first */
               t->width += item->width + (0 == i ? 3 : 6);
 
-              item->color = -1 != iconfg ? iconfg : color;
+              item->color = color;
             }
           else ///< Ordinary text
             {
@@ -559,7 +555,7 @@ subSharedTextParse(Display *disp,
               /* Remove left bearing from first text item */
               t->width += item->width - (0 == i ? left : 0);
 
-              item->color = -1 != color ? color : textfg;
+              item->color = color;
             }
 
           i++;
@@ -594,6 +590,7 @@ subSharedTextParse(Display *disp,
   * @param[in]  x     X position
   * @param[in]  y     Y position
   * @param[in]  fg    Foreground color
+  * @param[in]  icon  Icon color
   * @param[in]  bg    Background color
   * @param[in]  t     A #SubText
   **/
@@ -606,6 +603,7 @@ subSharedTextRender(Display *disp,
   int x,
   int y,
   long fg,
+  long icon,
   long bg,
   SubText *t)
 {
@@ -630,7 +628,7 @@ subSharedTextRender(Display *disp,
             y - f->y - ((item->height - f->height) / 2): y - item->height;
 
           subSharedTextIconDraw(disp, gc, win, width + dx, icony,
-            item->width, item->height, (-1 == item->color) ? fg : item->color,
+            item->width, item->height, (-1 == item->color) ? icon : item->color,
             bg, (Pixmap)item->data.num, (item->flags & SUB_TEXT_BITMAP));
 
           /* Add spacing when icon isn't last */

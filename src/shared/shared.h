@@ -210,10 +210,11 @@ void subSharedPropertyDelete(Display *disp, Window win,
 
 /* Text {{{ */
 SubText *subSharedTextNew(void);                                  ///< Create new text
-int subSharedTextParse(Display *disp, SubFont *f, SubText *t,
-  long textfg, long iconfg, char *text);                          ///< Parse text
+int subSharedTextParse(Display *disp, SubFont *f,
+  SubText *t, char *text);                                        ///< Parse text
 void subSharedTextRender(Display *disp, GC gc, SubFont *f,
-  Window win, int x, int y, long fg, long bg, SubText *t);        ///< Render text
+  Window win, int x, int y, long fg, long icon,
+  long bg, SubText *t);                                           ///< Render text
 int subSharedTextWidth(Display *disp, SubFont *f,
   const char *text, int len, int *left, int *right, int center);  ///< Get text width
 void subSharedTextFree(SubText *t);                               ///< Free text
