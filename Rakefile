@@ -261,6 +261,12 @@ task(:config) do
       fail("Ruby 1.9.0 or higher required")
     end
 
+    # FIXME: Init_prelude is hidden in 1.9.3 and we need to
+    # fallback to the ruby_options2 hack
+    if("1.9.3" != RUBY_VERSION)
+      $defs.push("-DHAVE_RUBY_INIT_PRELUDE")
+    end
+
     checksums
 
     # Update rpath
