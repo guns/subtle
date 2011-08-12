@@ -70,6 +70,19 @@ end
   "checksums"  => []
 }
 
+if RUBY_PLATFORM =~ /darwin/
+  # There are lots of compile warnings on OS X
+  @options['cflags'].gsub! '-Werror', ''
+  # We are definitely not using system ruby libraries, so prepend include dirs
+  @options['cpppath'].gsub! /-idirafter(\S+)/, '-I\1'
+  # This is the standard form of passing linker params
+  @options['rpath'].gsub! '-rpath=', '-rpath,'
+  # The lib flag may be -lruby-static, for example
+  %w[ldflags extflags].each do |key|
+    @options[key].gsub! '-l$(RUBY_SO_NAME)', RbConfig::CONFIG['LIBRUBYARG']
+  end
+end
+
 @defines = {
   "PKG_NAME"      => "subtle",
   "PKG_VERSION"   => "0.10.$(revision)",
@@ -762,7 +775,9 @@ SRC_SUBTLEXT.each do |src|
 end
 
 file(PG_SUBTLEXT => OBJ_SUBTLEXT) do
-  silent_sh("#{@options["cc"]} -o #{PG_SUBTLEXT}.so #{OBJ_SUBTLEXT} -shared #{@options["extflags"]}",
+  # OS X doesn't support `gcc -shared`
+  shared = RUBY_PLATFORM =~ /darwin/ ? '-bundle -flat_namespace -undefined suppress' : '-shared'
+  silent_sh("#{@options["cc"]} -o #{PG_SUBTLEXT}.so #{OBJ_SUBTLEXT} #{shared} #{@options["extflags"]}",
     "LD #{PG_SUBTLEXT}") do |ok, status|
       ok or fail("Linker failed with status #{status.exitstatus}")
   end
